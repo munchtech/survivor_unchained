@@ -1,6 +1,8 @@
 /* How hard is the Verge? Measured with a character who earned their way there.
  *
- *   node tools/field.mjs [--fresh] [scenario...]
+ *   node tools/field.mjs [--fresh] [--shots] [scenario...]
+ *   ARCH=arcanist node tools/field.mjs night_play     (someone less armoured)
+ *   BASE=http://localhost:5174 node tools/field.mjs   (another checkout's server)
  *
  * First (or with --fresh) the autopilot plays the whole prologue and the save
  * it arrives in town with is kept in .shots/after_prologue.json. Then each
@@ -17,7 +19,9 @@ const fresh = args.includes('--fresh');
 // --shots: a full-size screenshot every 30 s of each scenario, to look at the fighting.
 const shots = args.includes('--shots');
 const want = args.filter((a) => !a.startsWith('--'));
-const SNAP = '.shots/after_prologue.json';
+// ARCH=arcanist (or reaver, stalker) plays the prologue as someone else.
+const ARCH = process.env.ARCH ?? 'warden';
+const SNAP = ARCH === 'warden' ? '.shots/after_prologue.json' : `.shots/after_prologue_${ARCH}.json`;
 fs.mkdirSync('.shots', { recursive: true });
 const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--enable-webgl'] });
 
@@ -31,7 +35,7 @@ const ready = (pg) => pg.waitForFunction(() => document.body.dataset.ready === '
 if (fresh || !fs.existsSync(SNAP)) {
   console.log('playing the prologue for a survivor...');
   const pg = await page();
-  await pg.goto('http://localhost:5173/?quick=warden&bg=hunter&name=Tester&auto&manual&quality=low', { waitUntil: 'load' });
+  await pg.goto(`${process.env.BASE ?? 'http://localhost:5173'}/?quick=${ARCH}&bg=hunter&name=Tester&auto&manual&quality=low`, { waitUntil: 'load' });
   await ready(pg);
   for (let t = 0; t < 900; t += 10) {
     await pg.evaluate(() => window.__advance(10, 30));
@@ -65,7 +69,7 @@ for (const [name, sc] of Object.entries(SCENARIOS)) {
   if (want.length && !want.includes(name)) continue;
   const pg = await page();
   await pg.addInitScript((s) => { for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v); }, snap.storage);
-  await pg.goto(`http://localhost:5173/?manual&quality=${shots ? 'high' : 'low'}&auto${sc.auto ? '' : '=idle'}`, { waitUntil: 'load' });
+  await pg.goto(`${process.env.BASE ?? 'http://localhost:5173'}/?manual&quality=${shots ? 'high' : 'low'}&auto${sc.auto ? '' : '=idle'}`, { waitUntil: 'load' });
   await ready(pg);
   await pg.evaluate(() => { const g = window.__game.game; const m = JSON.parse(localStorage.getItem('survivor-unchained.meta') || '{}'); g.continueJourney(m.last ?? 0); });
   await pg.waitForTimeout(1500);
