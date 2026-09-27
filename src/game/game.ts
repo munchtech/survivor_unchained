@@ -80,6 +80,8 @@ export class Game {
   private near: Interactable | null = null;
   private time = 0;
   private autosaveT = 0;
+  /** Dev: a crude player that drives the game (?auto). */
+  autopilot: { drive(dt: number): void } | null = null;
 
   constructor(readonly r: Renderer) {
     this.scene = new WorldScene(r);
@@ -529,6 +531,7 @@ export class Game {
   update(dt: number) {
     this.time += dt;
     Input.poll();
+    if (this.autopilot && this.mode === 'play') this.autopilot.drive(dt);
     if (this.mode === 'play') {
       this.playtime += dt;
       this.updateInteraction();

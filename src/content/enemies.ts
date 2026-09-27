@@ -111,7 +111,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
 
   ford_warden: {
     id: 'ford_warden', name: 'The Ford-Warden', family: 'undead', faction: 'dead', visual: 'view:warden', scale: 2.6,
-    health: 1500, speed: 2.4, damage: 24, radius: 1.4, mass: 30, xp: 90, gold: 40, resists: undeadResist, behavior: 'boss',
+    health: 2600, speed: 2.4, damage: 26, radius: 1.4, mass: 30, xp: 90, gold: 40, resists: undeadResist, behavior: 'boss',
     boss: true, attackEvery: 1.4,
     note: 'The Watch set it to keep the Low Ford, when there was a Watch. It kept the ford. It is keeping it still, from everyone. The lamps around the crossing feed it; while they burn, it is hard to hurt.',
   },

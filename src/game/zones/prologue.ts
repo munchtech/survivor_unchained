@@ -20,7 +20,8 @@ import { clamp } from '@/core/math';
  *   wake      the dead climb out of the ground around your fire     (move)
  *   rising    their stones hold light; the ember rises     (ember, the draft)
  *   road      up the road; shieldmen, bowmen             (build, positioning)
- *   post      the Watch-post: a dead watchman and his chest      (equipment)
+ *   ambush    the dead rise out of the ditch by a broken cart     (the horde)
+ *   post      a Barrow Knight over a dead watchman's chest (elites, equipment)
  *   barrow    a Grave-Caller raising the dead                     (ability)
  *   ford      the Ford-Warden                                        (boss)
  *   dawn      what took the Warden's heart; the gate opens      (the world)
@@ -29,7 +30,7 @@ import { clamp } from '@/core/math';
  * again at the last place you were safe. That is the only place in the game
  * where that is true. */
 
-type Stage = 'wake' | 'rising' | 'road' | 'post' | 'barrow' | 'toford' | 'intro' | 'boss' | 'victory' | 'dawn' | 'exit';
+type Stage = 'wake' | 'rising' | 'road' | 'ambush' | 'road2' | 'post' | 'barrow' | 'toford' | 'intro' | 'boss' | 'victory' | 'dawn' | 'exit';
 
 interface WardenAI {
   mode: 'sleep' | 'wake' | 'walk' | 'windup' | 'cleave' | 'chargeWind' | 'charge' | 'stun' | 'channel' | 'dead';
@@ -66,6 +67,7 @@ export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number 
   let wardenPos = { x: wardenHome.x, z: wardenHome.z, facing: 0 };
   const ai: WardenAI = { mode: 'sleep', t: 0, cleaveCd: 3, chargeCd: 6, channelCd: 30, dirX: 0, dirZ: 1, travelled: 0, channelHp: 0, thresholds: [0.7, 0.4], raiseT: 0, contactT: 0, hitX: 0, hitZ: 0 };
   let caller: Enemy | null = null;
+  let knight: Enemy | null = null;
   let cutT = 0;
   let core: THREE.Mesh | null = null;
   let coreLight: THREE.PointLight | null = null;
@@ -329,35 +331,67 @@ export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number 
         if (stageT > 3) { go('rising'); spawnT = 0; }
         break;
       case 'rising': {
-        if (spawnT <= 0 && n < 22) { spawnAround('risen', stageT > 25 ? 2 : 1, 8, 13); spawnT = stageT > 20 ? 1.15 : 1.6; }
+        // Keep the clearing full: more of them the longer it goes on.
+        const want = Math.min(40, 16 + stageT * 0.3);
+        if (spawnT <= 0 && n < want) { spawnAround('risen', 2 + (stageT > 40 ? 1 : 0), 9, 14); spawnT = stageT > 30 ? 0.8 : 1.1; }
         if (stageT > 14) tip('dash', 'Dash', `${key('dash')}: a quick roll that nothing can touch. It has two charges, and they come back.`, [key('dash')]);
-        if ((b.ember.level >= 3 && stageT > 35) || stageT > 80) {
+        if ((b.ember.level >= 4 && stageT > 70) || stageT > 110) {
           go('road');
           checkpoint = { x: p.x, z: p.z };
-          setObjective({ id: 'pro', title: 'The Low Ford', tone: 'tutorial', steps: [{ text: 'Survive the night' , done: true }, { text: 'Follow the road north' }] });
+          say('The ground goes still. For now. The road runs north, toward the Waystation.', undefined, 5);
+          setObjective({ id: 'pro', title: 'The Low Ford', tone: 'tutorial', steps: [{ text: 'Survive the night', done: true }, { text: 'Follow the road north' }] });
           tip('road', 'The road north', 'Follow the road. The dead keep coming; let them come to your weapons, and keep your feet moving.');
         }
         break;
       }
-      case 'road': {
-        if (spawnT <= 0 && n < 34) {
-          const t = stageT;
-          const def = t > 14 && b.rng.next() < 0.22 ? 'risen_warrior' : p.z < 62 && b.rng.next() < 0.14 ? 'risen_archer' : 'risen';
-          spawnAround(def, 1 + (b.rng.next() < 0.4 ? 1 : 0), 10, 15, 0.55, 1 + Math.floor(t / 50));
-          spawnT = 1.25;
+      case 'road':
+      case 'road2': {
+        if (spawnT <= 0 && n < 24) {
+          const def = stage === 'road2' && b.rng.next() < 0.2 ? 'risen_warrior' : b.rng.next() < 0.12 ? 'risen_archer' : 'risen';
+          spawnAround(def, 1 + (b.rng.next() < 0.5 ? 1 : 0), 10, 15, 0.55, stage === 'road2' ? 2 : 1);
+          spawnT = 1.3;
           if (def === 'risen_warrior') tip('shield', 'Shieldmen', 'Bolts and arrows glance off a raised shield. Get to its side, or hit it with something that is not a projectile.');
         }
-        if (Math.hypot(p.x - L.post.x, p.z - L.post.z) < 16) {
+        if (stage === 'road' && p.z < L.cart.z + 7) {
+          go('ambush');
+          checkpoint = { x: L.cart.x - 3, z: L.cart.z + 8 };
+          say('A wagon on its side, and the ditch beside it full of the drowned. They were waiting.', undefined, 5);
+          setObjective({ id: 'pro', title: 'The Low Ford', tone: 'tutorial', steps: [{ text: 'Follow the road north', done: true }, { text: 'Survive the ambush at the wagon' }] });
+          for (let i = 0; i < 10; i++) spawnAround(i % 4 === 0 ? 'risen_warrior' : 'risen', 1, 5, 9, 0, 2);
+        }
+        if (stage === 'road2' && Math.hypot(p.x - L.post.x, p.z - L.post.z) < 18) {
           go('post');
-          checkpoint = { x: L.post.x - 4, z: L.post.z };
-          setObjective({ id: 'pro', title: 'The Low Ford', tone: 'tutorial', steps: [{ text: 'Follow the road north', done: true }, { text: 'Search the old Watch-post' }] });
+          checkpoint = { x: L.post.x - 6, z: L.post.z + 4 };
+          knight = b.spawnEnemy('barrow_knight', L.post.x - 1, L.post.z - 1.5, { level: 1, tag: 'knight', style: 'rise' });
+          for (let i = 0; i < 4; i++) spawnAround('risen', 1, 5, 9, 0, 2);
+          say('Something in old armour is standing guard over the dead watchman. It turns to look at you.', undefined, 5);
+          setObjective({ id: 'pro', title: 'The Low Ford', tone: 'tutorial', steps: [{ text: 'Survive the ambush at the wagon', done: true }, { text: 'Put down the Barrow Knight' }, { text: 'Search the old Watch-post' }] });
+          tip('elite', 'Elites', 'Bigger, tougher, and worth it: elites carry better things. When a red line appears on the ground, it is about to come down it. Be off the line.', undefined, 12);
+        }
+        break;
+      }
+      case 'ambush': {
+        const want = Math.min(46, 26 + stageT * 0.5);
+        if (spawnT <= 0 && n < want) {
+          const r = b.rng.next();
+          spawnAround(r < 0.22 ? 'risen_warrior' : r < 0.32 ? 'risen_archer' : 'risen', 3 + (b.rng.next() < 0.5 ? 1 : 0), 8, 14, 0, 2);
+          spawnT = 1.05;
+        }
+        if (stageT > 48) {
+          go('road2');
+          checkpoint = { x: p.x, z: p.z };
+          say('The last of them falls back into the ditch and stays there.', undefined, 4);
+          setObjective({ id: 'pro', title: 'The Low Ford', tone: 'tutorial', steps: [{ text: 'Survive the ambush at the wagon', done: true }, { text: 'Follow the road north' }] });
         }
         break;
       }
       case 'post': {
-        if (stageT > 6 && spawnT <= 0 && n < 14) { spawnAround('risen', 1, 12, 16, 0.3, 2); spawnT = 3; }
-        if (!chestOpened) tip('chest', 'The Watch-post', 'Someone died holding this post. Their chest is still here.', [key('interact')]);
-        if (p.z < 21) {
+        if (stageT > 8 && spawnT <= 0 && n < 16) { spawnAround('risen', 1, 12, 16, 0.3, 2); spawnT = 2.5; }
+        if (!knight && !chestOpened) {
+          tip('chest', 'The Watch-post', 'The watchman\'s chest is unguarded now.', [key('interact')]);
+          setObjective({ id: 'pro', title: 'The Low Ford', tone: 'tutorial', steps: [{ text: 'Put down the Barrow Knight', done: true }, { text: 'Search the old Watch-post' }] });
+        }
+        if (p.z < 21 && !knight) {
           go('barrow');
           checkpoint = { x: p.x, z: p.z };
           startBarrow();
@@ -365,7 +399,7 @@ export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number 
         break;
       }
       case 'barrow': {
-        if (caller && caller.alive && caller.state !== 'dying') {
+        if (caller) {
           const d = Math.hypot(caller.x - p.x, caller.z - p.z);
           if (d < 16) {
             const ab = b.ability ? ABILITIES[b.ability] : null;
@@ -577,6 +611,7 @@ export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number 
     {
       id: 'chest', x: L.chest.x, z: L.chest.z, r: 2.6, verb: 'Open', name: 'Watch Chest',
       when: () => !chestOpened,
+      locked: () => (knight ? 'The Barrow Knight stands over it' : null),
       act: () => {
         chestOpened = true;
         const ch = g.ch!;
@@ -625,6 +660,11 @@ export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number 
       g.announceZone();
     },
     step: (dt) => director(dt),
+    debug: () => ({
+      stage, stageT, chestOpened, lit: litCount(), wardenHp: warden?.hp ?? null, wardenMax: warden?.maxHp ?? null, wardenMode: ai.mode,
+      wardenX: warden?.x ?? null, wardenZ: warden?.z ?? null, pylons: built.pylons.map((p, i) => ({ x: p.x, z: p.z, lit: litPylons[i] })),
+      caller: caller ? { x: caller.x, z: caller.z } : null, knight: knight ? { x: knight.x, z: knight.z } : null, checkpoint,
+    }),
     frame: (dt) => {
       const t = g.scene.time;
       watchman.update(dt);
@@ -644,8 +684,15 @@ export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number 
     hooks: {
       bossTick: (e, dt) => (e.tag === 'warden' ? wardenTick(e, dt) : false),
       onKill: (e) => {
-        if (e.tag === 'warden') onWardenDown(e);
-        if (e.tag === 'caller') toast('world', 'The Grave-Caller is still', { sub: 'The graves have stopped listening.' });
+        // Pooled creatures are reused: forget them the moment they die.
+        if (e.tag === 'warden') { onWardenDown(e); warden = null; }
+        if (e.tag === 'caller') { caller = null; toast('world', 'The Grave-Caller is still', { sub: 'The graves have stopped listening.' }); }
+        if (e.tag === 'knight') {
+          knight = null;
+          b?.spawnPickup('item', e.x, e.z, 2, 'ember_shard');
+          b?.spawnPickup('item', e.x + 1, e.z - 0.5, 1, 'bone_amulet');
+          for (let i = 0; i < 6; i++) b?.spawnPickup('gold', e.x + (Math.random() - 0.5) * 3, e.z + (Math.random() - 0.5) * 3, 3);
+        }
       },
       onHitProp: (tag, _id, _school, dmg) => {
         const m = /^pylon:(\d)$/.exec(tag);

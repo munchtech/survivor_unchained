@@ -230,7 +230,7 @@
 
 /* ----------------------------------------------------------------- boss -- */
 
-.bossbar { position: absolute; top: 74px; left: 50%; transform: translateX(-50%); width: min(620px, 52vw); }
+.bossbar { position: absolute; top: 74px; left: 0; right: 0; margin: 0 auto; width: min(620px, 48vw); }
 .boss-name { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 6px; text-align: center; }
 .boss-title { font: 700 20px var(--font-display); letter-spacing: 0.14em; text-transform: uppercase; color: #ffe8d0; text-shadow: 0 1px 0 #000, 0 0 14px rgba(255, 60, 40, 0.55); }
 .boss-sub { font: italic 400 14px var(--font-text); color: #c8a898; text-shadow: 0 1px 2px #000; margin-top: -2px; }
@@ -361,7 +361,7 @@
 .sub-text { font: 400 20px/1.35 var(--font-text); color: #f4ecdc; text-shadow: 0 1px 2px #000, 0 0 10px #000; }
 
 .prompt {
-  position: absolute; left: 50%; bottom: 150px; transform: translateX(-50%);
+  position: absolute; left: 0; right: 0; margin: 0 auto; width: fit-content; bottom: 150px;
   display: flex; align-items: center; gap: 9px; padding: 7px 16px 7px 8px; border-radius: 22px;
   background: linear-gradient(180deg, rgba(26, 22, 30, 0.92), rgba(12, 10, 14, 0.92));
   box-shadow: 0 0 0 1px #000, inset 0 0 0 1px var(--line), 0 6px 20px rgba(0, 0, 0, 0.6);

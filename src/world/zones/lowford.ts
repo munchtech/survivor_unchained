@@ -123,7 +123,7 @@ export function buildLowFord(grassDensity = 1): LowFordBuild {
   root.add(grass.mesh);
 
   // Water, and invisible banks where it is too deep to wade.
-  const water = createWater({ width: 260, depth: 34, color: '#12262c', murk: '#050c0e', flow: [0.35, 0.02], opacity: 0.84, sky: '#1a2a38' });
+  const water = createWater({ width: 260, depth: 34, color: '#1c3a42', murk: '#081418', flow: [0.35, 0.02], opacity: 0.82, sky: '#2a4458' });
   water.position.set(0, WATER_Y, -44);
   root.add(water);
   for (let x = -128; x <= 128; x += 3) {

@@ -120,6 +120,12 @@ class InputState {
 
   clearLatches() { this.latched.clear(); }
 
+  /** A synthetic press, as if the key went down (tools, the autopilot). */
+  press(a: Action) {
+    this.latched.add(a);
+    for (const l of this.listeners) if (l(a) === true) break;
+  }
+
   /** Called once per rendered frame: polls pads and recomputes movement. */
   poll() {
     let x = 0, z = 0;

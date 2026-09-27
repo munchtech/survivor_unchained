@@ -59,6 +59,12 @@ async function boot() {
       game.showTitle();
       if (params.get('screen') === 'create') game.newJourney();
     }
+    if (params.has('auto')) {
+      const { Autopilot } = await import('@/game/autopilot');
+      const ap = new Autopilot(game);
+      game.autopilot = ap;
+      (window as unknown as { __auto: unknown }).__auto = ap;
+    }
     tick = (dt) => game.update(dt);
     void screen;
   }

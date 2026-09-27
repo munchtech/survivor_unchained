@@ -52,5 +52,7 @@ export interface ZoneRuntime {
   timeOf?(w: WorldState): WorldState['time'];
   /** A death here: return true if the zone handled it (the prologue does). */
   onDeath?(killer: string): boolean;
+  /** Internal state for tools (the autopilot, the debug readout). */
+  debug?(): Record<string, unknown>;
   dispose?(): void;
 }
