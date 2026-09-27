@@ -4,6 +4,7 @@ import { Renderer, type Quality } from '@/render/renderer';
 import { Assets } from '@/render/assets';
 import { gallery } from '@/modes/dev/gallery';
 import { sandbox } from '@/modes/dev/sandbox';
+import { combatDev } from '@/modes/dev/combat';
 import { Input } from '@/core/input';
 
 /* Boot. The renderer and assets come up first; then the game shell takes
@@ -21,6 +22,7 @@ async function boot() {
   Input.attach();
   if (dev === 'gallery') tick = gallery(renderer, params);
   else if (dev === 'sandbox') tick = sandbox(renderer, params);
+  else if (dev === 'combat') tick = combatDev(renderer, params);
 
   let last = performance.now();
   let t = 0;

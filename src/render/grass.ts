@@ -165,7 +165,7 @@ vec4 worldPosition = modelMatrix * vec4(transformed, 1.0);`);
         // meadow from below and turned it into black specks.
         .replace('#include <normal_fragment_begin>', 'float faceDirection = 1.0;\nvec3 normal = normalize(vNormal);\nvec3 nonPerturbedNormal = normal;')
         .replace('#include <map_fragment>', `
-vec3 gb = vTint * mix(0.42, 1.18, pow(vT, 0.8));
+vec3 gb = vTint * mix(0.62, 1.12, pow(vT, 0.8));
 gb = mix(gb, gb * vec3(1.12, 1.08, 0.78), smoothstep(0.7, 1.0, vT) * 0.5);
 diffuseColor.rgb *= gb;`);
     };

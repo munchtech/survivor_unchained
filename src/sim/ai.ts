@@ -22,7 +22,7 @@ const tgt: Tgt = { x: 0, z: 0, r: 0, enemy: null, player: false };
 
 export function updateEnemy(b: Battle, e: Enemy, dt: number) {
   e.animT += dt;
-  if (e.flash > 0) e.flash = Math.max(0, e.flash - dt * 7);
+  if (e.flash > 0) e.flash = Math.max(0, e.flash - dt * 11);
 
   if (e.state === 'dying') {
     e.dieT += dt;

@@ -34,5 +34,14 @@ if (manual) {
 if (process.env.EVAL) console.log(await page.evaluate(process.env.EVAL));
 await page.screenshot({ path: `.shots/${name}.png`, timeout: 180000 });
 console.log(`saved .shots/${name}.png`);
+// SEQ="count,step": further frames, each after advancing `step` seconds.
+if (process.env.SEQ && manual) {
+  const [count, step] = process.env.SEQ.split(',').map(Number);
+  for (let i = 1; i <= count; i++) {
+    await page.evaluate((s) => window.__advance(s, 60), step);
+    await page.screenshot({ path: `.shots/${name}_${i}.png`, timeout: 180000 });
+    console.log(`saved .shots/${name}_${i}.png`);
+  }
+}
 await browser.close();
 if (errors.length || err) process.exit(1);
