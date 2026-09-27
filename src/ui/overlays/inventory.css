@@ -77,3 +77,15 @@
 .ic-foot { display: flex; justify-content: flex-end; gap: 12px; margin-top: 10px; font: 700 13px var(--font-ui); color: var(--ink-dim); }
 .ic-value { display: flex; align-items: center; gap: 4px; color: var(--gold); }
 .ic-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(217, 181, 106, 0.15); flex-wrap: wrap; }
+
+.shop { width: 1240px; }
+.shop-who { font: italic 400 14px var(--font-text); color: #c8b490; }
+.shop-body { display: grid; grid-template-columns: auto 330px auto; gap: 22px; align-items: start; }
+.stash-body { display: grid; grid-template-columns: auto auto; gap: 30px; align-items: start; }
+.sub-label { margin-bottom: 8px; font: 800 11px var(--font-ui); letter-spacing: 0.2em; text-transform: uppercase; color: #a8906a; }
+.pslot-price {
+  position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%); padding: 0 5px; border-radius: 3px;
+  font: 800 11px/15px var(--font-ui); color: #1a1208; background: linear-gradient(180deg, #f3d9a0, #c8a060); box-shadow: 0 1px 2px #000;
+}
+.pslot.refused { opacity: 0.4; }
+.refuse { font: italic 400 14px var(--font-text); color: #c88a70; }

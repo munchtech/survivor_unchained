@@ -206,3 +206,12 @@ export interface DialogueView {
   canContinue: boolean;
 }
 export const dialogue = signal<DialogueView | null>(null);
+
+/* ---------------------------------------------------------------- shops -- */
+
+export interface ShopView { id: string; name: string; npc: string }
+export const shopView = signal<ShopView | null>(null);
+
+/** The rest screen: the choice, then the morning. */
+export interface RestView { phase: 'choose' | 'report'; day: number; lines: string[]; canNight: boolean; cost: number; afford: boolean }
+export const restView = signal<RestView | null>(null);

@@ -14,3 +14,12 @@
 .chapter { position: relative; width: 520px; padding: 28px 30px; text-align: center; }
 .chapter-kicker { font: italic 400 16px var(--font-text); color: #c8a878; }
 .chapter-title { font-size: 32px; margin-top: 4px; }
+.rest .pause-item:disabled { opacity: 0.4; cursor: default; }
+.rest-cost { display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; font: 700 13px var(--font-ui); color: var(--gold); }
+.rest-note { margin: 14px 0 0; font: italic 400 14px/1.4 var(--font-text); color: var(--ink-dim); }
+.report { position: relative; width: 560px; padding: 30px 36px 26px; text-align: center; }
+.report-day { font: 700 40px var(--font-display); letter-spacing: 0.16em; text-transform: uppercase; color: #3a2414; }
+.report-sub { font: italic 400 17px var(--font-text); color: #6a5034; }
+.report-rule { height: 1px; margin: 14px 40px 16px; background: linear-gradient(90deg, transparent, rgba(90, 60, 20, 0.6), transparent); }
+.report p { font: 400 18px/1.5 var(--font-text); color: var(--parchment-ink); margin: 0 0 12px; animation: fadeIn 0.8s ease-out both; }
+.report .btn { margin-top: 10px; }

@@ -13,8 +13,14 @@ import { ZONES } from './zones';
 import { BarkLayer } from '@/ui/hud/barks';
 import {
   screen, overlay, prompt, toast, zoneInfo, slots, creation, fade, hud, levelUp, boss, objectives, announce,
-  character, worldView, touch, dialogue, type CreationDraft, type NoticeKind,
+  character, worldView, touch, dialogue, shopView, restView, type CreationDraft, type NoticeKind,
 } from '@/ui/store';
+import { SHOPS, type ShopDef } from '@/content/shops';
+import { RULES, SOCIAL } from '@/content/rules';
+import { advanceDay } from '@/world/simulation';
+import { PRESETS } from '@/render/atmosphere';
+import { test } from '@/world/logic';
+import type { ItemInstance } from '@/rpg/character';
 import { DialogueRunner, type Presented } from '@/world/dialogue';
 import { attitude } from '@/world/logic';
 import { CONVOS } from '@/content/dialogue';
@@ -24,11 +30,11 @@ import { renderPortrait } from '@/ui/portrait';
 import { Input } from '@/core/input';
 import { damp } from '@/core/math';
 import {
-  createCharacter, deriveKit, addToPack, makeItem, equip, unequip, findItem, slotFor, fitsSlot, itemName,
+  createCharacter, deriveKit, addToPack, makeItem, equip, unequip, findItem, slotFor, fitsSlot, itemName, gainXp,
   type CharacterData, type CreationChoice,
 } from '@/rpg/character';
 import { EQUIP_SLOTS, type EquipSlot } from '@/content/items';
-import { ARCHETYPES, BACKGROUNDS } from '@/content/archetypes';
+import { ARCHETYPES, BACKGROUNDS, TRAITS } from '@/content/archetypes';
 import { ITEMS } from '@/content/items';
 import { freshWorld, type WorldState } from '@/world/state';
 import { apply, npc, type Ctx, type Notice } from '@/world/logic';
@@ -98,6 +104,10 @@ export class Game {
     this.scene.onEvents = (evs) => {
       this.bridge.events(evs);
       this.zone?.events?.(evs);
+      for (const e of evs) {
+        // The codex remembers every pairing ever found, for every survivor.
+        if (e.t === 'discovery' && this.world && !this.world.codex.includes(e.id)) this.world.codex.push(e.id);
+      }
     };
     this.scene.onStep = (dt) => this.zone?.step?.(dt);
     this.bindActions();
@@ -218,6 +228,7 @@ export class Game {
     const bg = BACKGROUNDS[c.background];
     for (const [f, v] of Object.entries(bg.standing)) world.factions[f] = { id: f, standing: v, strength: 50, flags: {} };
     for (const [id, rel] of Object.entries(bg.npc)) Object.assign(npc(world, id), rel);
+    world.facts['beasts.population'] = 60;
     const starter = makeItem(ch, 'health_draught', { qty: 1 });
     addToPack(ch, starter);
     this.ch = ch;
@@ -371,6 +382,12 @@ export class Game {
         if (byPlayer) {
           ch.stats.kills++;
           if (e.lastWeapon) ch.mastery[e.lastWeapon] = (ch.mastery[e.lastWeapon] ?? 0) + 1;
+          // The survivor grows too, more slowly than the ember.
+          const levels = gainXp(ch, e.def.xp * (e.boss ? 3 : e.elite ? 2 : 1));
+          if (levels > 0) {
+            announce(`Level ${ch.level}`, ch.traitPicks > 0 ? 'A new trait can be chosen (C)' : 'Attribute points to spend (C)', 'boon', 3.2, 'You grow stronger');
+            touch();
+          }
           w.bestiary[e.def.id] = (w.bestiary[e.def.id] ?? 0) + 1;
           if (e.boss) ch.stats.bossesSlain++;
         }
@@ -523,6 +540,8 @@ export class Game {
   }
 
   closeOverlay() {
+    if (overlay.value === 'shop') shopView.value = null;
+    if (overlay.value === 'rest' && restView.value?.phase === 'report') { this.finishRest(); return; }
     overlay.value = null;
     this.scene.simPaused = false;
     Input.captured = false;
@@ -726,7 +745,7 @@ export class Game {
         return false;
       case 'rest':
         this.endDialogue();
-        this.openOverlay('rest');
+        this.openRest();
         return false;
       case 'fortune':
         this.endDialogue();
@@ -774,8 +793,179 @@ export class Game {
     return this.ch!.pack.reduce((n, p) => n + (p?.def === def ? p.qty : 0), 0);
   }
 
-  openShop(_id: string) {
-    toast('world', 'The stall is shut for now');
+  /* ============================================================ shops == */
+
+  openShop(id: string) {
+    const def = SHOPS[id];
+    const w = this.world, ch = this.ch;
+    if (!def || !w || !ch) { toast('world', 'They have nothing to sell you'); return; }
+    let st = w.shops[id];
+    if (!st || w.day >= st.restockDay) {
+      st = { stock: this.rollStock(def), restockDay: w.day + def.restockDays, priceMult: 1 };
+      w.shops[id] = st;
+    }
+    shopView.value = { id, name: def.name, npc: id };
+    this.openOverlay('shop');
+    touch();
+  }
+
+  private rollStock(def: ShopDef): ItemInstance[] {
+    const out: ItemInstance[] = [];
+    for (const l of def.lines) {
+      if (l.when && !test(l.when, this.ctx!)) continue;
+      if (l.chance !== undefined && Math.random() > l.chance) continue;
+      if (!ITEMS[l.id]) continue;
+      out.push(makeItem(this.ch, l.id, { qty: l.qty ?? 1, rarity: l.rarity }));
+    }
+    return out;
+  }
+
+  /** How much a seller likes you, as a price multiplier. */
+  private priceMod(npcId: string) {
+    const s = this.world ? npc(this.world, npcId) : null;
+    let m = 1;
+    if (s) {
+      if (s.trust >= 30 || s.affection >= 30) m *= 0.9;
+      if (s.trust <= -30) m *= 1.25;
+      if (s.fear >= 40) m *= 0.85;
+    }
+    if (this.ch?.traits.includes('silver_tongue')) m *= 0.9;
+    if (npcId === 'harlan' && s?.flags.discount) m *= 0.8;
+    return m;
+  }
+
+  private unitValue(it: ItemInstance) {
+    const def = ITEMS[it.def];
+    return def.value * (1 + 0.6 * Math.max(0, it.rarity - def.rarity)) * (1 + 0.15 * it.affixes.length);
+  }
+
+  priceOf(uid: string, side: 'buy' | 'sell'): number | null {
+    const sv = shopView.value, w = this.world, ch = this.ch;
+    if (!sv || !w || !ch) return null;
+    const def = SHOPS[sv.id];
+    if (side === 'buy') {
+      const it = w.shops[sv.id]?.stock.find((x) => x.uid === uid);
+      return it ? Math.max(1, Math.ceil(this.unitValue(it) * def.markup * this.priceMod(sv.npc))) : null;
+    }
+    const it = ch.pack.find((x) => x?.uid === uid);
+    if (!it) return null;
+    const kind = ITEMS[it.def].kind;
+    if (def.buys !== 'all' && !def.buys.includes(kind)) return null;
+    if (kind === 'quest' && def.buys !== 'all' && sv.id !== 'vonnra') return null;
+    return Math.max(1, Math.floor(this.unitValue(it) * def.pays / Math.max(0.8, this.priceMod(sv.npc)))) * it.qty;
+  }
+
+  buy(uid: string) {
+    const sv = shopView.value, w = this.world, ch = this.ch;
+    if (!sv || !w || !ch) return;
+    const st = w.shops[sv.id];
+    const i = st?.stock.findIndex((x) => x.uid === uid) ?? -1;
+    if (i < 0) return;
+    const it = st.stock[i];
+    const price = this.priceOf(uid, 'buy')!;
+    if (ch.gold < price) { toast('warning', `That costs ${price} gold`); return; }
+    const one = it.qty > 1 ? { ...it, uid: `i${ch.nextUid++}`, qty: 1, affixes: [...it.affixes] } : it;
+    if (!addToPack(ch, one)) { toast('warning', 'Your pack is full'); return; }
+    ch.gold -= price;
+    if (it.qty > 1) it.qty--; else st.stock.splice(i, 1);
+    toast('loot', `Bought ${itemName(one)}`, { icon: ITEMS[one.def].icon, rarity: one.rarity, sub: `−${price} gold` });
+    touch();
+  }
+
+  sell(uid: string) {
+    const sv = shopView.value, w = this.world, ch = this.ch;
+    if (!sv || !w || !ch) return;
+    const price = this.priceOf(uid, 'sell');
+    if (price === null) { toast('warning', 'They will not buy that'); return; }
+    const i = ch.pack.findIndex((x) => x?.uid === uid);
+    const it = ch.pack[i]!;
+    ch.pack[i] = null;
+    ch.gold += price;
+    ch.stats.goldEarned += price;
+    w.shops[sv.id]?.stock.push(it);
+    if (it.def === 'wolf_pelt' && sv.id === 'brannoc') this.apply([{ add: { 'beasts.pelts_sold': it.qty } }, { quest: { id: 'beasts', entry: 'pelts_sold' } }]);
+    toast('gold', `Sold ${itemName(it)}${it.qty > 1 ? ` ×${it.qty}` : ''}`, { sub: `+${price} gold` });
+    touch();
+  }
+
+  /* ============================================================ stash == */
+
+  toStash(uid: string) {
+    const ch = this.ch, w = this.world;
+    if (!ch || !w) return;
+    const i = ch.pack.findIndex((x) => x?.uid === uid);
+    const j = w.stash.indexOf(null);
+    if (i < 0) return;
+    if (j < 0) { toast('warning', 'The storeroom is full'); return; }
+    w.stash[j] = ch.pack[i];
+    ch.pack[i] = null;
+    touch();
+  }
+
+  fromStash(uid: string) {
+    const ch = this.ch, w = this.world;
+    if (!ch || !w) return;
+    const j = w.stash.findIndex((x) => x?.uid === uid);
+    if (j < 0) return;
+    if (!addToPack(ch, w.stash[j]!)) { toast('warning', 'Your pack is full'); return; }
+    w.stash[j] = null;
+    touch();
+  }
+
+  /* ============================================================= rest == */
+
+  openRest() {
+    const w = this.world!, ch = this.ch!;
+    const rook = npc(w, 'rook');
+    const cost = rook.affection >= 30 || rook.trust >= 40 ? 0 : 5;
+    restView.value = { phase: 'choose', day: w.day, lines: [], canNight: w.time !== 'night', cost, afford: ch.gold >= cost };
+    this.openOverlay('rest');
+  }
+
+  rest(mode: 'sleep' | 'night') {
+    const w = this.world!, ch = this.ch!, rv = restView.value;
+    if (!rv) return;
+    if (mode === 'night') {
+      w.time = 'night';
+      this.closeRest();
+      fade.value = { to: 1, seconds: 0.8, caption: 'Nightfall', sub: `Day ${w.day}` };
+      setTimeout(() => {
+        this.scene.atmo.set(PRESETS.night);
+        if (zoneInfo.value) zoneInfo.value = { ...zoneInfo.value, time: 'night' };
+        fade.value = { to: 0, seconds: 1.2 };
+        this.save('night');
+      }, 1400);
+      return;
+    }
+    if (!rv.afford) return;
+    ch.gold -= rv.cost;
+    const hadEmber = !!this.expedition || (this.scene.battle?.ember.level ?? 1) > 1;
+    const report = advanceDay(this.ctx!, RULES, SOCIAL);
+    w.time = 'day';
+    this.expedition = null;
+    const b = this.scene.battle;
+    if (b) b.player.hp = b.maxHp;
+    const lines = [...report.lines];
+    if (hadEmber) lines.push('The ember went out while you slept. Whatever you became out there, you will have to become again.');
+    if (!lines.length) lines.push('A quiet night. Rook\'s bread is hot, and nobody died.');
+    fade.value = { to: 1, seconds: 0.9 };
+    setTimeout(() => {
+      restView.value = { ...rv, phase: 'report', day: w.day, lines };
+      this.scene.atmo.set(PRESETS.day);
+      if (zoneInfo.value) zoneInfo.value = { ...zoneInfo.value, time: 'day', day: w.day };
+      touch();
+      this.save('rest');
+    }, 950);
+  }
+
+  finishRest() {
+    this.closeRest();
+    fade.value = { to: 0, seconds: 1.4 };
+  }
+
+  private closeRest() {
+    restView.value = null;
+    if (overlay.value === 'rest') this.closeOverlay();
   }
 
   /* ============================================================ frame == */
@@ -824,6 +1014,9 @@ export class Game {
     }
     this.zone?.frame?.(dt);
     this.figure?.update(dt);
+    // Speech bubbles and names step back during a conversation.
+    const quiet = overlay.value === 'dialogue' ? '0' : '1';
+    if (this.barks.root.style.opacity !== quiet) this.barks.root.style.opacity = quiet;
     this.scene.update(dt);
     // Blend from a held pose into wherever the live camera now is.
     if (this.blend) {
@@ -861,6 +1054,28 @@ export class Game {
       dropItem: (uid: string) => this.dropItem(uid),
       choose: (i: number) => this.chooseDialogue(i),
       advance: () => this.advanceDialogue(),
+      buy: (_shop: string, uid: string) => this.buy(uid),
+      sell: (uid: string) => this.sell(uid),
+      stash: (uid: string) => this.toStash(uid),
+      unstash: (uid: string) => this.fromStash(uid),
+      rest: (mode: 'sleep' | 'night') => this.rest(mode),
+      finishRest: () => this.finishRest(),
+      priceOf: (uid: string, side: 'buy' | 'sell') => this.priceOf(uid, side),
+      spendPoint: (a: 'might' | 'finesse' | 'wits' | 'resolve') => {
+        const ch = this.ch;
+        if (!ch || ch.points <= 0) return;
+        ch.points--;
+        ch.attributes[a]++;
+        this.refreshKit();
+      },
+      pickTrait: (id: string) => {
+        const ch = this.ch;
+        if (!ch || ch.traitPicks <= 0 || ch.traits.includes(id)) return;
+        ch.traitPicks--;
+        ch.traits.push(id);
+        toast('level', `You have become: ${TRAITS[id]?.name ?? id}`);
+        this.refreshKit();
+      },
     });
   }
 

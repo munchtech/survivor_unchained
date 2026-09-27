@@ -32,7 +32,9 @@ export interface GameActions {
   sell(uid: string): void;
   stash(uid: string): void;
   unstash(uid: string): void;
-  rest(): void;
+  rest(mode: 'sleep' | 'night'): void;
+  finishRest(): void;
+  priceOf(uid: string, side: 'buy' | 'sell'): number | null;
   /** Trait picks and attribute points on the character sheet. */
   spendPoint(attr: 'might' | 'finesse' | 'wits' | 'resolve'): void;
   pickTrait(id: string): void;
