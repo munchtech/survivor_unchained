@@ -130,6 +130,7 @@ All expect `npm run dev` running.
 | `node tools/verge.mjs [hollow roost dig death]` | Drive the Verge routes and check the world's answer |
 | `node tools/saveload.mjs` | Save mid-expedition, reload, continue, compare |
 | `node tools/flow.mjs` | Toll, both roads out of town and back, a night at the inn |
+| `node tools/field.mjs [--fresh]` | Balance: a survivor who played the prologue, in the Verge by day and night, playing or idle |
 | `node tools/listen.mjs "<query>" name secs` | Record the mix as a spectrogram with loudness |
 
 Useful URLs: `?quick=warden&bg=hunter&zone=verge&at=-60,-80` (start

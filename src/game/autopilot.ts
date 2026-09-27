@@ -23,6 +23,9 @@ export class Autopilot {
   private sideT = 0;
   private side = 1;
 
+  /** Take the drafts, and otherwise stand still (?auto=idle): the worst player. */
+  idle = false;
+
   constructor(private g: Game) {}
 
   get report() { return this.log; }
@@ -36,6 +39,8 @@ export class Autopilot {
     const b = g.scene.battle;
     const z = g.zone;
     if (!b || !z || !b.player.alive) return;
+    if (this.idle) { this.stats.time += dt; this.stats.minHp = Math.min(this.stats.minHp, b.player.hp / b.maxHp); return; }
+    if (z.id !== 'lowford') { this.field(dt); return; }
     const d = z.debug?.() ?? {};
     const stage = String(d.stage ?? '');
     if (stage !== this.lastStage) { this.log.push(`${this.t.toFixed(0)}s ${stage} lvl${b.ember.level} hp${Math.round(b.player.hp)} kills${b.killCount}`); this.lastStage = stage; }
@@ -115,4 +120,95 @@ export class Autopilot {
     if (near >= 5 && this.dashT <= 0) { Input.press('dash'); this.dashT = 1.2; }
     if (p.hp < b.maxHp * 0.35) Input.press('ultimate');
   }
+
+  /* ------------------------------------------------------------ field -- */
+
+  /** Out in a combat zone with no script: play like a careful player.
+   *  Circle a patch of ground (the territory), keep the crowd in front and
+   *  moving, never let it close a ring, step out of telegraphed ground and
+   *  lunges, pick up ember when nothing is close, bash when mobbed, drink
+   *  below a third of health. `stats` is what the balance tools read. */
+  territory: { x: number; z: number; r: number } | null = null;
+  stats = { draughts: 0, dashes: 0, bashes: 0, minHp: 1, time: 0, hurt: 0 };
+  private lastHp = -1;
+
+  private field(dt: number) {
+    const g = this.g, b = g.scene.battle!, p = b.player;
+    const st = this.stats;
+    st.time += dt;
+    st.minHp = Math.min(st.minHp, p.hp / b.maxHp);
+    if (this.lastHp >= 0 && p.hp < this.lastHp) st.hurt += this.lastHp - p.hp;
+    this.lastHp = p.hp;
+    const home = this.territory ?? (this.territory = { x: p.x, z: p.z, r: 18 });
+    // Threats: every hostile close by pushes, harder the closer and the
+    // more dangerous (a winding-up or lunging creature pushes sideways).
+    let rx = 0, rz = 0, cx = 0, cz = 0, n = 0, close = 0, ring = 0;
+    const sectors = new Array(8).fill(0);
+    b.enemies.forEach((e) => {
+      if (!e.alive || e.state === 'dying' || e.state === 'burrowed' || !b.hostileToPlayer(e)) return;
+      const dx = p.x - e.x, dz = p.z - e.z, dd = Math.hypot(dx, dz) || 0.01;
+      if (dd > 14) return;
+      n++; cx += e.x; cz += e.z;
+      if (dd < 3) close++;
+      if (dd < 7) sectors[Math.floor(((Math.atan2(dz, dx) + Math.PI) / (Math.PI * 2)) * 8) % 8] = 1;
+      const w = (e.elite || e.boss ? 2.2 : 1) * Math.max(0, 7 - dd) / 7;
+      rx += (dx / dd) * w; rz += (dz / dd) * w;
+      if ((e.state === 'windup' || e.state === 'lunging') && dd < 6) {
+        // Sidestep across its line.
+        const sx = -dz / dd, sz = dx / dd;
+        rx += sx * 2.5; rz += sz * 2.5;
+      }
+    });
+    ring = sectors.reduce((a, v) => a + v, 0);
+    // Ground about to be struck: get out.
+    for (const sk of (b as unknown as { strikes: Array<{ x: number; z: number; r: number; owner: string }> }).strikes) {
+      if (sk.owner !== 'enemy') continue;
+      const dx = p.x - sk.x, dz = p.z - sk.z, dd = Math.hypot(dx, dz) || 0.01;
+      if (dd < sk.r + 1) { rx += (dx / dd) * 4; rz += (dz / dd) * 4; }
+    }
+    b.zones.forEach((zn) => {
+      if (zn.owner === 'player' || zn.owner === 'ally') return;
+      const dx = p.x - zn.x, dz = p.z - zn.z, dd = Math.hypot(dx, dz) || 0.01;
+      if (dd < zn.radius + 0.8) { rx += (dx / dd) * 3; rz += (dz / dd) * 3; }
+    });
+    // The orbit: keep circling the territory, so the crowd trails behind.
+    this.orbit += dt * 0.32;
+    let tx = home.x + Math.cos(this.orbit) * home.r * 0.6, tz = home.z + Math.sin(this.orbit) * home.r * 0.6;
+    // Ember on the ground and nothing close: go and get it.
+    if (close === 0 && p.hp > b.maxHp * 0.4) {
+      let best = 1e9, bx = 0, bz = 0;
+      b.pickups.forEach((k) => {
+        const dd = Math.hypot(k.x - p.x, k.z - p.z);
+        if (dd < 9 && dd < best && Math.hypot(k.x - home.x, k.z - home.z) < home.r * 1.4) { best = dd; bx = k.x; bz = k.z; }
+      });
+      if (best < 9) { tx = bx; tz = bz; }
+    }
+    let mx = (tx - p.x) * 0.25 + rx * 1.6, mz = (tz - p.z) * 0.25 + rz * 1.6;
+    // Never drift far from home.
+    const hd = Math.hypot(p.x - home.x, p.z - home.z);
+    if (hd > home.r * 1.5) { mx += (home.x - p.x) / hd * 2; mz += (home.z - p.z) / hd * 2; }
+    // Wedged: sidestep.
+    this.stuckT += dt;
+    if (this.stuckT > 2) {
+      if (Math.hypot(p.x - this.lastX, p.z - this.lastZ) < 0.8) { this.sideT = 1.2; this.side = -this.side; }
+      this.stuckT = 0; this.lastX = p.x; this.lastZ = p.z;
+    }
+    if (this.sideT > 0) {
+      this.sideT -= dt;
+      const l = Math.hypot(mx, mz) || 1;
+      const ox = mx / l, oz = mz / l;
+      mx = ox - oz * 1.5 * this.side; mz = oz + ox * 1.5 * this.side;
+    }
+    const m = Math.hypot(mx, mz);
+    if (m > 0.05) { mx /= m; mz /= m; } else { mx = mz = 0; }
+    Input.moveX = mx; Input.moveZ = mz;
+    this.dashT -= dt; this.abilityT -= dt;
+    // Dash out when the ring is closing, or something big is about to land.
+    if ((ring >= 6 || close >= 4) && this.dashT <= 0 && p.dashCharges > 0) { Input.press('dash'); this.dashT = 0.8; st.dashes++; }
+    if (close >= 3 && this.abilityT <= 0) { Input.press('ability'); this.abilityT = 1.5; st.bashes++; }
+    if (p.hp < b.maxHp * 0.33 && this.drinkT <= 0) { Input.press('ultimate'); this.drinkT = 1.5; st.draughts++; }
+    this.drinkT -= dt;
+    void n; void cx; void cz;
+  }
+  private drinkT = 0;
 }

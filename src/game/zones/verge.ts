@@ -44,6 +44,8 @@ export function verge(g: Game): ZoneRuntime {
   const cagesOpen = [false, false, false];
   const brambleHp = built.brambles.map(() => 260);
   let dispT = 0;
+  /** Seconds since arriving: the director's clock. */
+  let stayT = 0;
   let greymuzzle: Enemy | null = null, redcowl: Enemy | null = null, snib: Enemy | null = null, nemesis: Enemy | null = null;
   const roostCrew: Enemy[] = [], digCrew: Enemy[] = [];
   let hollowSpawned = false, roostSpawned = false, digSpawned = false, sinkSpawned = false;
@@ -76,7 +78,9 @@ export function verge(g: Game): ZoneRuntime {
     if (text) announce(text, undefined, 'danger', 2.4);
   };
 
-  const level = () => 2 + Math.floor(w().day / 2) + Math.floor((b?.ember.level ?? 1) / 6);
+  // What comes at you grows with the days, with your ember, and with how
+  // long you have stayed out: the wood keeps up with you.
+  const level = () => 2 + Math.floor(w().day / 2) + Math.floor((b?.ember.level ?? 1) / 4) + Math.floor(stayT / 120);
 
   /* ------------------------------------------------------------ spawns -- */
 
@@ -97,44 +101,89 @@ export function verge(g: Game): ZoneRuntime {
     return out;
   };
 
-  /** The wood's own pressure: what comes at you depends on where you are. */
+  /** The wood's own pressure: what comes at you depends on where you are,
+   *  what you have made peace with, the hour, how bright your ember burns
+   *  and how long you have been out here. */
+  const kerchiefsOut = () => !kerchiefsFriendly() && F('redcowl') !== 'tricked' && F('redcowl') !== 'dead' && !F('roost.cleared');
   const director = (dt: number) => {
     if (!b) return;
     const p = b.player;
-    spawnT -= dt; surgeT -= dt;
+    spawnT -= dt; surgeT -= dt; stayT += dt;
     // Quiet near the gate and around a lit fire.
     if (p.x < -112 || (Math.hypot(p.x - V.post.x, p.z - V.post.z) < 16 && built.postFire.on)) return;
     let hostile = 0;
     b.enemies.forEach((e) => { if (e.alive && e.disposition === 'hostile') hostile++; });
     const night = w().time === 'night';
-    // More of them as the ember burns brighter: the wood notices.
     const ember = b.ember.level;
-    const cap = (night ? 40 : 30) + Math.min(16, ember * 1.5);
+    // The longer you stay, the more of the wood knows you are here.
+    const tension = Math.min(1, stayT / 300);
+    const cap = (night ? 48 : 34) + Math.min(42, ember * 2.6) + tension * 12;
     if (spawnT <= 0 && hostile < cap) {
-      spawnT = (night ? 2.8 : 3.8) * Math.max(0.6, 1 - ember * 0.025);
-      const a = Math.random() * Math.PI * 2, d = 17 + Math.random() * 5;
+      spawnT = (night ? 2.0 : 2.7) * Math.max(0.5, 1 - ember * 0.03) * (1 - tension * 0.2);
+      // Some come from where you are heading: running is not a way out of the wood.
+      const moving = Math.hypot(p.vx, p.vz) > 1;
+      const a = moving && Math.random() < 0.45 ? Math.atan2(p.vz, p.vx) + (Math.random() - 0.5) * 1.6 : Math.random() * Math.PI * 2;
+      const d = 17 + Math.random() * 5;
       const x = p.x + Math.cos(a) * d, z = p.z + Math.sin(a) * d;
       const pop = Number(F('beasts.population') ?? 60);
       const nearRoost = Math.hypot(x - V.roost.x, z - V.roost.z) < 60 || (x > 30 && Math.abs(z) < 20);
       const nearDig = Math.hypot(x - V.dig.x, z - V.dig.z) < 60;
       const nearVault = Math.hypot(x - V.vault.x, z - V.vault.z) < 45;
+      const nearSink = Math.hypot(x - V.sinkhole.x, z - V.sinkhole.z) < 45;
+      const onRoad = built.roadDist(x, z) < 14;
+      const extra = Math.floor(ember / 3);
       const r = Math.random();
-      if (night && nearVault) spawnGroup(r < 0.3 ? 'risen_warrior' : 'risen', 3 + Math.floor(Math.random() * 3), x, z, 4, { style: 'rise' });
-      else if (nearRoost && !kerchiefsFriendly() && F('redcowl') !== 'tricked' && F('redcowl') !== 'dead') spawnGroup(r < 0.25 ? 'pillager' : r < 0.35 ? 'bruiser' : 'footpad', 2 + Math.floor(Math.random() * 3), x, z, 4);
+      // Place first, then the wood at large.
+      if (night && nearVault) spawnGroup(r < 0.3 ? 'risen_warrior' : 'risen', 3 + Math.floor(Math.random() * 3) + extra, x, z, 4, { style: 'rise' });
+      else if (nearRoost && kerchiefsOut()) spawnGroup(r < 0.25 ? 'pillager' : r < 0.35 ? 'bruiser' : 'footpad', 2 + Math.floor(Math.random() * 3) + Math.floor(extra / 2), x, z, 4);
       // The diggers mind their pump unless given a reason; then they come up out of the ground.
-      else if (nearDig && !diggersFriendly() && Math.random() < 0.7) spawnGroup('lampling', 3 + Math.floor(Math.random() * 3), x, z, 4, { style: 'burrow', tag: 'dig:crew' });
-      else if (!wolvesFriendly() && Math.random() < pop / 70) {
-        const sick = F('beasts.outcome') !== 'cured' && built.streamDist(x, z) < 30;
-        spawnGroup(sick && r < 0.35 ? 'wolf_blighted' : 'wolf', 3 + Math.floor(Math.random() * 3 * (pop / 60)) + Math.floor(ember / 5), x, z, 4);
-      } else spawnGroup('boar', 1 + Math.floor(Math.random() * 2), x, z, 3);
+      else if (nearDig && !diggersFriendly() && Math.random() < 0.7) spawnGroup('lampling', 3 + Math.floor(Math.random() * 3) + extra, x, z, 4, { style: 'burrow', tag: 'dig:crew' });
+      // Near the pit, since the tremor: lamplings that went down and came back wrong.
+      else if (nearSink && F('tremor.felt') && Math.random() < 0.5) spawnGroup('lampling', 3 + Math.floor(Math.random() * 3) + extra, x, z, 4, { style: 'burrow', tag: 'feral' });
+      else {
+        // The wood at large: a weighted pick of whatever is still out here.
+        const pool: Array<[number, () => void]> = [];
+        if (!wolvesFriendly() && pop > 5) {
+          const sick = F('beasts.outcome') !== 'cured' && built.streamDist(x, z) < 30;
+          pool.push([3 * (pop / 60), () => spawnGroup(sick && r < 0.35 ? 'wolf_blighted' : 'wolf', 3 + Math.floor(Math.random() * 3 * (pop / 60)) + extra, x, z, 4)]);
+        }
+        // Every night the dark climbs out of the ground; the Verge is no different.
+        if (night) pool.push([2.2, () => spawnGroup(r < 0.2 ? 'risen_warrior' : r < 0.42 ? 'risen_archer' : 'risen', 3 + Math.floor(Math.random() * 3) + extra, x, z, 4, { style: 'rise' })]);
+        if (onRoad && kerchiefsOut() && w().day >= 2) pool.push([1, () => spawnGroup('footpad', 2 + Math.floor(Math.random() * 2) + Math.floor(extra / 2), x, z, 3)]);
+        pool.push([1, () => spawnGroup('boar', 1 + Math.floor(Math.random() * 2) + Math.floor(extra / 3), x, z, 3)]);
+        const total = pool.reduce((t, [wt]) => t + wt, 0);
+        let pick = Math.random() * total;
+        for (const [wt, fn] of pool) { pick -= wt; if (pick <= 0) { fn(); break; } }
+      }
     }
     // Now and then, a surge: the wood noticing you.
     if (surgeT <= 0) {
-      surgeT = 60 + Math.random() * 35;
-      if (!wolvesFriendly() && Number(F('beasts.population') ?? 60) > 20) {
-        const a = Math.random() * Math.PI * 2;
-        spawnGroup('wolf', 8 + Math.min(10, b.ember.level), p.x + Math.cos(a) * 18, p.z + Math.sin(a) * 18, 5);
-        b.events.emit({ t: 'bark', x: p.x + Math.cos(a) * 14, z: p.z + Math.sin(a) * 14, text: 'Howling — close!' });
+      surgeT = (night ? 40 : 52) + Math.random() * 25 - tension * 10;
+      const a = Math.random() * Math.PI * 2;
+      const sx = p.x + Math.cos(a) * 18, sz = p.z + Math.sin(a) * 18;
+      const size = 9 + Math.min(16, Math.floor(ember * 1.3)) + Math.floor(tension * 6);
+      /** A closing ring: every way out has something in it. */
+      const ring = (def: string, n: number, style: 'walk' | 'rise' = 'walk') => {
+        const out: Enemy[] = [];
+        for (let i = 0; i < n; i++) {
+          const t = (i / n) * Math.PI * 2 + Math.random() * 0.2, rr = 14 + Math.random() * 3;
+          out.push(...spawnGroup(def, 1, p.x + Math.cos(t) * rr, p.z + Math.sin(t) * rr, 1.5, { style }));
+        }
+        return out;
+      };
+      let group: Enemy[] = [];
+      let shout = '';
+      const big = ember >= 5 && Math.random() < 0.5;
+      if (!wolvesFriendly() && Number(F('beasts.population') ?? 60) > 20) { group = big ? ring('wolf', size) : spawnGroup('wolf', size, sx, sz, 5); shout = big ? 'Wolves — all around!' : 'Howling — close!'; }
+      else if (night) { group = big ? ring('risen', size + 4, 'rise') : spawnGroup('risen', size, sx, sz, 5, { style: 'rise' }); shout = 'The ground is moving.'; }
+      else if (kerchiefsOut()) { group = spawnGroup('footpad', Math.ceil(size * 0.6), sx, sz, 4); shout = 'Red kerchiefs in the trees!'; }
+      // A brighter ember draws something bigger with the crowd.
+      if (group.length && ember >= 6 && b) {
+        const lead = b.spawnEnemy(group[0].def.id, sx, sz, { level: level() + 1, elite: true, style: night && group[0].def.id === 'risen' ? 'rise' : 'walk' });
+        if (lead) setDisposition(lead);
+      }
+      if (shout) {
+        b.events.emit({ t: 'bark', x: p.x + Math.cos(a) * 14, z: p.z + Math.sin(a) * 14, text: shout });
         b.events.emit({ t: 'shake', amount: 0.2 });
       }
     }

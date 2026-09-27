@@ -73,6 +73,7 @@ async function boot() {
     if (params.has('auto')) {
       const { Autopilot } = await import('@/game/autopilot');
       const ap = new Autopilot(game);
+      ap.idle = params.get('auto') === 'idle';
       game.autopilot = ap;
       (window as unknown as { __auto: unknown }).__auto = ap;
     }

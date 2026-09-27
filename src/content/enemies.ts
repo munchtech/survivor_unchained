@@ -138,7 +138,7 @@ export const ENEMIES: Record<string, EnemyDef> = {
   /* --------------------------------------------------------------- beasts -- */
   wolf: {
     id: 'wolf', name: 'Longtooth Wolf', family: 'wolf', faction: 'pack', visual: 'wolf',
-    health: 30, speed: 5.0, damage: 9, radius: 0.5, xp: 4, resists: beastResist, behavior: 'pack', attackEvery: 0.9,
+    health: 30, speed: 5.3, damage: 9, radius: 0.5, xp: 4, resists: beastResist, behavior: 'pack', attackEvery: 0.9,
     tags: ['nature'], loot: 'wolf',
     note: 'Never alone. If you have counted one, count again. They come at you from every side at once, and they know which side you are not watching.',
   },
