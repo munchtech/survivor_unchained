@@ -61,12 +61,16 @@ const SCREENS = {
   journal_people: (g) => g.openOverlay('journal'),
   journal_deeds: (g) => g.openOverlay('journal'),
   journal_codex: (g) => g.openOverlay('journal'),
+  shop_pick: (g) => g.openShop('brannoc'),
+  pack_pick: (g) => g.openOverlay('inventory'),
 };
 // A second step, once the overlay has drawn (a tab to click).
 const THEN = {
   journal_people: () => document.querySelectorAll('.jr-tab')[1]?.click(),
   journal_deeds: () => document.querySelectorAll('.jr-tab')[2]?.click(),
   journal_codex: () => document.querySelectorAll('.jr-tab')[3]?.click(),
+  shop_pick: () => document.querySelectorAll('.shop-body .pslot.filled')[1]?.click(),
+  pack_pick: () => document.querySelectorAll('.inv .pslot.filled')[1]?.click(),
 };
 for (const [name, open] of Object.entries(SCREENS)) {
   if (only.length && !only.includes(name)) continue;

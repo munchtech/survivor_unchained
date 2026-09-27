@@ -81,18 +81,31 @@ function vial(liquid: string) {
   g.add(glass, neck, cork);
   return g;
 }
+/** A hide stretched out flat, the way a trapper pegs it: four legs, a
+ *  head, a tail, a darker stripe down the spine, draped a little. */
 function pelt(c: string) {
-  const geo = new THREE.PlaneGeometry(1.4, 1, 8, 6);
-  const pos = geo.getAttribute('position');
-  for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i), y = pos.getY(i);
-    pos.setZ(i, Math.sin(x * 3) * 0.06 + Math.cos(y * 4) * 0.05);
-    if (Math.abs(x) > 0.55 && Math.abs(y) > 0.35) pos.setXY(i, x * 0.8, y * 0.8);
-  }
-  geo.computeVertexNormals();
-  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: c, roughness: 1, side: THREE.DoubleSide, flatShading: true }));
-  m.rotation.x = -0.9;
-  return m;
+  const g = new THREE.Group();
+  const half: Array<[number, number]> = [
+    [0, 0.86], [0.1, 0.8], [0.13, 0.62], [0.28, 0.52], [0.56, 0.66], [0.72, 0.58], [0.62, 0.48], [0.38, 0.34],
+    [0.34, 0.05], [0.37, -0.22], [0.62, -0.36], [0.74, -0.5], [0.6, -0.54], [0.3, -0.46], [0.11, -0.56], [0.07, -0.9], [0, -0.96],
+  ];
+  const outline = (k: number) => {
+    const sh = new THREE.Shape();
+    const pts = [...half, ...half.slice(1, -1).reverse().map(([x, y]) => [-x, y] as [number, number])];
+    pts.forEach(([x, y], i) => { const px = x * k, py = y * (0.55 + k * 0.45); if (i === 0) sh.moveTo(px, py); else sh.lineTo(px, py); });
+    return sh;
+  };
+  const drape = (geo: THREE.BufferGeometry, lift: number) => {
+    const p = geo.getAttribute('position');
+    for (let i = 0; i < p.count; i++) p.setZ(i, p.getZ(i) + lift + Math.sin(p.getX(i) * 4.5) * 0.035 + Math.cos(p.getY(i) * 5) * 0.03 - Math.abs(p.getX(i)) * 0.12);
+    geo.computeVertexNormals();
+    return geo;
+  };
+  const hide = new THREE.Mesh(drape(new THREE.ExtrudeGeometry(outline(1), { depth: 0.05, bevelEnabled: true, bevelThickness: 0.025, bevelSize: 0.03, bevelSegments: 1, curveSegments: 1 }), 0),
+    [new THREE.MeshStandardMaterial({ color: c, roughness: 1, flatShading: true }), new THREE.MeshStandardMaterial({ color: '#d8b48a', roughness: 0.85, flatShading: true })]);
+  const stripe = new THREE.Mesh(drape(new THREE.ShapeGeometry(outline(0.34)), 0.085), new THREE.MeshStandardMaterial({ color: new THREE.Color(c).multiplyScalar(0.55), roughness: 1, flatShading: true }));
+  g.add(hide, stripe);
+  return g;
 }
 function circlet() {
   const g = new THREE.Group();
@@ -359,8 +372,8 @@ const SOURCES: Record<string, Source> = {
   lens: { make: lens, rot: [0.2, 0.5, 0] },
   totem: { make: totem, rot: [0.2, 0.4, 0.4] },
   seed: { make: seedPouch, rot: [0.2, 0.4, 0] },
-  pelt: { make: () => pelt('#8a8a90'), rot: [0, 0.3, 0] },
-  hide: { make: () => pelt('#7a5a3a'), rot: [0, 0.3, 0] },
+  pelt: { make: () => pelt('#9a9aa0'), rot: [-0.6, 0.2, 0.5] },
+  hide: { make: () => pelt('#8a6440'), rot: [-0.6, 0.2, 0.5] },
   ember: { make: () => crystal('#ffa04a'), rot: [0.2, 0.5, 0] },
   sigil: { make: sigil, rot: [0.3, 0.6, 0] },
   book: { prop: ['adventure_items', 'spellbook_closed'], rot: [0.3, 0.6, 0] },
