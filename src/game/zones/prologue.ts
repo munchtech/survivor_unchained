@@ -640,7 +640,8 @@ export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number 
 
   return {
     id: 'lowford', name: 'The Low Ford Road', region: 'Thornhollow, south', build: built.zone, combat: true, fire: L.fire,
-    arrival: () => ({ x: L.camp.x + 1.5, z: L.camp.z - 1.5, facing: Math.PI }),
+    // Back down the road from the Waystation: arrive at the north end, by the gate.
+    arrival: (from) => (from === 'waystation' ? { x: L.gate.x + 0.5, z: L.exitZ + 9, facing: 0 } : { x: L.camp.x + 1.5, z: L.camp.z - 1.5, facing: Math.PI }),
     timeOf: () => (stage === 'dawn' || stage === 'exit' ? 'dawn' : 'night'),
     begin: (battle) => {
       b = battle;

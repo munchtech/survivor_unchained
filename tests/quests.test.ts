@@ -198,3 +198,15 @@ describe('the chapter\'s end', () => {
     expect(sum.epithet).toBe('Wren, late of the Low Ford road');
   });
 });
+
+describe('the morning', () => {
+  it('reports who heard what overnight, and the clocks being felt', () => {
+    const { c, ch, world } = setup('hunter');
+    addToPack(ch, makeItem(ch, 'pell_ledger'));
+    talk(CONVOS.holloway, c, 'ledger');
+    const r = advanceDay(c, RULES, SOCIAL, () => 0.01);
+    expect(r.heard.some((h) => h.event === 'exposed_pell' && h.npc === 'rook')).toBe(true);
+    expect(r.lines.join(' ')).toMatch(/Harlan Coyle was at the east gate/);
+    void world;
+  });
+});

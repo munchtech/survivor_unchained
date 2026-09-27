@@ -14,6 +14,8 @@ const h = (id: string, text: string, tags: string[], spread: number): Effect => 
 export const RULES: DailyRule[] = [
   /* ------------------------------------------------ the beast problem -- */
   { id: 'beasts.escalate', when: { all: [{ not: { fact: 'beasts.outcome', exists: true } }, { fact: 'prologue.done', eq: true }] }, effect: { add: { 'beasts.severity': 1 } } },
+  { id: 'beasts.howl', once: true, when: { all: [{ fact: 'beasts.severity', gte: 2 }, { not: { fact: 'beasts.outcome', exists: true } }] }, effect: [],
+    report: 'The wolves howled close to the walls last night. Tam says one of them was coughing.' },
   { id: 'beasts.caravans', once: true, when: { fact: 'beasts.severity', gte: 3 }, effect: { set: { 'road.dangerous': true } },
     report: 'Another cart turned back on the Old Road. The drover says the wolves followed him to the gate.' },
   { id: 'beasts.farm', once: true, when: { all: [{ fact: 'beasts.severity', gte: 5 }, { not: { fact: 'beasts.outcome', exists: true } }] },
@@ -42,6 +44,11 @@ export const RULES: DailyRule[] = [
     effect: [{ set: { 'caravan.survivors': 'dead' } }, { quest: { id: 'caravan', entry: 'survivors_dead' } },
       h('prisoners_died', 'let the Coyle teamsters die in the Kerchief cages', ['caravan'], 1), { rel: { npc: 'harlan', affection: -20 }, quiet: true }],
     report: 'Word from the Old Road: the Kerchiefs have stopped feeding their prisoners. Harlan has not come out of his shop.' },
+  // The clock, felt: what the town is like while nobody has found them.
+  { id: 'caravan.watch', once: true, when: { all: [{ fact: 'caravan.days', gte: 1 }, { not: { fact: 'caravan.survivors', exists: true } }] }, effect: [],
+    report: 'Harlan Coyle was at the east gate before dawn, watching the Old Road. He did not eat.' },
+  { id: 'caravan.despair', once: true, when: { all: [{ fact: 'caravan.days', gte: 3 }, { not: { fact: 'caravan.survivors', exists: true } }] }, effect: { rel: { npc: 'harlan', trust: -5 }, quiet: true },
+    report: 'Harlan has stopped watching the road. Rook says he sat in the tavern until she put the lamps out, and asked her whether anyone was even looking.' },
   { id: 'kerchief.raid', when: { all: [{ fact: 'road.dangerous', eq: true }, { not: { fact: 'redcowl', exists: true } }, { day: { gte: 4 } }] },
     effect: { add: { 'kerchief.raids': 1 } }, report: 'The Kerchiefs stopped a pedlar on the Old Road and took his boots. The Watch is stretched thin.' },
 

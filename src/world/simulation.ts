@@ -33,7 +33,11 @@ export interface DailyRule {
 
 export interface SocialLinks { [npc: string]: string[] }
 
-export interface DayReport { day: number; lines: string[] }
+export interface DayReport {
+  day: number; lines: string[];
+  /** Who heard what overnight: the talk of the town, for the report. */
+  heard: Array<{ npc: string; event: string }>;
+}
 
 export function advanceDay(ctx: Ctx, rules: DailyRule[], social: SocialLinks, rng: () => number = Math.random): DayReport {
   const w = ctx.world;
@@ -58,15 +62,16 @@ export function advanceDay(ctx: Ctx, rules: DailyRule[], social: SocialLinks, rn
   w.facts['_rules.fired'] = fired.join(',');
 
   // 3. Gossip: one step along the links.
+  const heard: DayReport['heard'] = [];
   const spreading = w.history.filter((h) => h.spread > 0);
   for (const [who, circle] of Object.entries(social)) {
     const me = npc(w, who);
     if (!me.alive) continue;
     for (const ev of spreading) {
       if (me.memories.includes(ev.id)) continue;
-      const heard = circle.some((o) => npc(w, o).memories.includes(ev.id));
-      const p = heard ? 0.45 * ev.spread : ev.spread >= 2 ? 0.15 : 0;
-      if (p > 0 && rng() < p) witness(w, who, ev);
+      const told = circle.some((o) => npc(w, o).memories.includes(ev.id));
+      const p = told ? 0.45 * ev.spread : ev.spread >= 2 ? 0.15 : 0;
+      if (p > 0 && rng() < p && witness(w, who, ev)) heard.push({ npc: who, event: ev.id });
     }
   }
 
@@ -79,7 +84,7 @@ export function advanceDay(ctx: Ctx, rules: DailyRule[], social: SocialLinks, rn
   for (const c of healed) if (c.id === 'wounded') lines.push('Your wounds have closed.');
   ch.conditions.push({ id: 'rested', days: 1 });
 
-  return { day: w.day, lines };
+  return { day: w.day, lines, heard };
 }
 
 /** Evening falls: the time of day moves on without a full day passing. */

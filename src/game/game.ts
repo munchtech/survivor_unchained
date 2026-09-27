@@ -325,6 +325,8 @@ export class Game {
     this.mode = 'play';
     screen.value = 'play';
     overlay.value = null;
+    // Travel paused the world for the fade; a new place starts running.
+    this.scene.simPaused = false;
     const kit = deriveKit(ch);
     const start = at ?? z.arrival(from);
     const exp = z.combat ? this.expedition : null;
@@ -980,6 +982,20 @@ export class Game {
     const b = this.scene.battle;
     if (b) b.player.hp = b.maxHp;
     const lines = [...report.lines];
+    // The talk of the town: who heard what, overnight.
+    const byEvent = new Map<string, string[]>();
+    for (const h of report.heard) {
+      if (!NPC_NAMES[h.npc]) continue;
+      const l = byEvent.get(h.event) ?? [];
+      l.push({ holloway: 'Holloway', harlan: 'Harlan', pell: 'Pell', keegan: 'Keegan' }[h.npc] ?? NPC_NAMES[h.npc]);
+      byEvent.set(h.event, l);
+    }
+    for (const [id, who] of [...byEvent].slice(0, 2)) {
+      const ev = w.history.find((h) => h.id === id);
+      if (!ev) continue;
+      const names = who.length === 1 ? who[0] : `${who.slice(0, -1).join(', ')} and ${who[who.length - 1]}`;
+      lines.push(`By breakfast, ${names} had heard that you ${ev.text}.`);
+    }
     if (hadEmber) lines.push('The ember went out while you slept. Whatever you became out there, you will have to become again.');
     if (!lines.length) lines.push('A quiet night. Rook\'s bread is hot, and nobody died.');
     fade.value = { to: 1, seconds: 0.9 };
