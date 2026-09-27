@@ -106,9 +106,11 @@ export function verge(g: Game): ZoneRuntime {
     let hostile = 0;
     b.enemies.forEach((e) => { if (e.alive && e.disposition === 'hostile') hostile++; });
     const night = w().time === 'night';
-    const cap = night ? 38 : 30;
+    // More of them as the ember burns brighter: the wood notices.
+    const ember = b.ember.level;
+    const cap = (night ? 40 : 30) + Math.min(16, ember * 1.5);
     if (spawnT <= 0 && hostile < cap) {
-      spawnT = night ? 3.6 : 5;
+      spawnT = (night ? 2.8 : 3.8) * Math.max(0.6, 1 - ember * 0.025);
       const a = Math.random() * Math.PI * 2, d = 17 + Math.random() * 5;
       const x = p.x + Math.cos(a) * d, z = p.z + Math.sin(a) * d;
       const pop = Number(F('beasts.population') ?? 60);
@@ -122,15 +124,15 @@ export function verge(g: Game): ZoneRuntime {
       else if (nearDig && !diggersFriendly() && Math.random() < 0.7) spawnGroup('lampling', 3 + Math.floor(Math.random() * 3), x, z, 4, { style: 'burrow', tag: 'dig:crew' });
       else if (!wolvesFriendly() && Math.random() < pop / 70) {
         const sick = F('beasts.outcome') !== 'cured' && built.streamDist(x, z) < 30;
-        spawnGroup(sick && r < 0.35 ? 'wolf_blighted' : 'wolf', 3 + Math.floor(Math.random() * 3 * (pop / 60)), x, z, 4);
+        spawnGroup(sick && r < 0.35 ? 'wolf_blighted' : 'wolf', 3 + Math.floor(Math.random() * 3 * (pop / 60)) + Math.floor(ember / 5), x, z, 4);
       } else spawnGroup('boar', 1 + Math.floor(Math.random() * 2), x, z, 3);
     }
     // Now and then, a surge: the wood noticing you.
     if (surgeT <= 0) {
-      surgeT = 80 + Math.random() * 40;
+      surgeT = 60 + Math.random() * 35;
       if (!wolvesFriendly() && Number(F('beasts.population') ?? 60) > 20) {
         const a = Math.random() * Math.PI * 2;
-        spawnGroup('wolf', 9, p.x + Math.cos(a) * 18, p.z + Math.sin(a) * 18, 5);
+        spawnGroup('wolf', 8 + Math.min(10, b.ember.level), p.x + Math.cos(a) * 18, p.z + Math.sin(a) * 18, 5);
         b.events.emit({ t: 'bark', x: p.x + Math.cos(a) * 14, z: p.z + Math.sin(a) * 14, text: 'Howling — close!' });
         b.events.emit({ t: 'shake', amount: 0.2 });
       }
