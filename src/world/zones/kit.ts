@@ -32,6 +32,25 @@ export interface LightSource {
 
 interface Fire { x: number; y: number; z: number; size: number; acc: number; src: LightSource }
 
+let spillTex: THREE.Texture | null = null;
+/** A soft round falloff, shared by every pool of light on the ground. */
+function spillTexture() {
+  if (spillTex) return spillTex;
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d')!;
+  const rg = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  rg.addColorStop(0, 'rgba(255,255,255,1)');
+  rg.addColorStop(0.3, 'rgba(255,255,255,0.55)');
+  rg.addColorStop(0.65, 'rgba(255,255,255,0.15)');
+  rg.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = rg;
+  g.fillRect(0, 0, 128, 128);
+  spillTex = new THREE.CanvasTexture(c);
+  spillTex.colorSpace = THREE.SRGBColorSpace;
+  return spillTex;
+}
+
 const POOL_SIZE = 6;
 
 export class ZoneKit {
@@ -46,8 +65,16 @@ export class ZoneKit {
   private focus = new THREE.Vector3();
   private emberColor = new THREE.Color('#ffb060');
 
-  constructor(readonly terrain: Terrain, readonly col: CollisionWorld) {
-    for (let i = 0; i < POOL_SIZE; i++) {
+  /** Chimneys: smoke that rises whether anyone watches or not. */
+  private chimneys: Array<{ x: number; y: number; z: number; acc: number }> = [];
+  /** Things that only show after dark (light spilling from a doorway). */
+  private nightOnly: THREE.Object3D[] = [];
+  /** Lamps moths gather round, after dark. */
+  private mothLamps: LightSource[] = [];
+  night = false;
+
+  constructor(readonly terrain: Terrain, readonly col: CollisionWorld, poolSize = POOL_SIZE) {
+    for (let i = 0; i < poolSize; i++) {
       const l = new THREE.PointLight(0xffffff, 0, 10, 1.7);
       l.castShadow = false;
       this.root.add(l);
@@ -147,6 +174,64 @@ export class ZoneKit {
     return src;
   }
 
+  /** A chimney's smoke, from a roof at (x, y, z). */
+  chimney(x: number, y: number, z: number) { this.chimneys.push({ x, y, z, acc: Math.random() }); }
+
+  /** An iron brazier on three legs, a fire in its bowl. Lit or not. */
+  brazier(x: number, z: number, lit = true, size = 0.8) {
+    const y = this.y(x, z);
+    const iron = new THREE.MeshStandardMaterial({ color: '#2a2624', roughness: 0.55, metalness: 0.6 });
+    const g = new THREE.Group();
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2;
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.05, 1.05, 5), iron);
+      leg.position.set(Math.cos(a) * 0.28, 0.5, Math.sin(a) * 0.28);
+      leg.rotation.set(Math.sin(a) * 0.22, 0, -Math.cos(a) * 0.22);
+      g.add(leg);
+    }
+    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.26, 0.32, 12, 1, true), iron);
+    bowl.position.y = 1.05;
+    bowl.material.side = THREE.DoubleSide;
+    g.add(bowl);
+    const coals = new THREE.Mesh(new THREE.CircleGeometry(0.44, 14), new THREE.MeshBasicMaterial({ color: new THREE.Color('#ff6a1a').multiplyScalar(2) }));
+    coals.rotation.x = -Math.PI / 2;
+    coals.position.y = 1.12;
+    g.add(coals);
+    g.traverse((o) => { if ((o as THREE.Mesh).isMesh) o.castShadow = true; });
+    g.position.set(x, y, z);
+    this.root.add(g);
+    this.col.addCircle(x, z, 0.45);
+    const src = this.source(x, y + 1.9, z, 0xff9848, 11 * size, 13, 0.25, [coals]);
+    this.fires.push({ x, y: y + 1.0, z, size: size * 0.75, acc: 0, src });
+    this.setLit(src, lit);
+    return src;
+  }
+
+  /** A warm pool on the ground (light from a doorway or a window) that
+   *  only shows after dark. */
+  spill(x: number, z: number, radius: number, color = '#ffb070', strength = 0.5) {
+    const tex = spillTexture();
+    const m = new THREE.Mesh(new THREE.CircleGeometry(radius, 24), new THREE.MeshBasicMaterial({
+      map: tex, color: new THREE.Color(color).multiplyScalar(strength), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
+    }));
+    m.rotation.x = -Math.PI / 2;
+    m.position.set(x, this.y(x, z) + 0.06, z);
+    m.renderOrder = 3;
+    m.visible = this.night;
+    this.root.add(m);
+    this.nightOnly.push(m);
+    return m;
+  }
+
+  /** Moths about this lamp, after dark. */
+  moths(s: LightSource) { this.mothLamps.push(s); }
+
+  /** After dark or not: night-only things show, braziers light. */
+  setNight(on: boolean) {
+    this.night = on;
+    for (const o of this.nightOnly) o.visible = on;
+  }
+
   /** A felled log: bark all round, pale cut ends. For sitting on. */
   log(x: number, z: number, rot: number, len = 2.2, r = 0.26, collide = true) {
     const g = new THREE.Group();
@@ -244,6 +329,31 @@ export class ZoneKit {
       l.intensity = s.intensity * f * edge;
       l.distance = s.distance;
       l.position.set(s.x, s.y + Math.sin(t * 11 + s.phase) * 0.03 * s.flicker, s.z);
+    }
+    // Chimneys: a thin grey thread, leaning with the wind.
+    for (const c of this.chimneys) {
+      if (Math.hypot(c.x - focusX, c.z - focusZ) > 55) continue;
+      c.acc += dt * 3.2;
+      while (c.acc >= 1) {
+        c.acc -= 1;
+        this.smoke.spawn({
+          x: c.x + (Math.random() - 0.5) * 0.25, y: c.y, z: c.z + (Math.random() - 0.5) * 0.25,
+          vx: 0.35 + Math.random() * 0.2, vy: 0.8 + Math.random() * 0.3, vz: 0.1 + (Math.random() - 0.5) * 0.15,
+          drag: 0.25, life: 4.5, size: 0.5, sizeEnd: 2.6, color: this.night ? 0x2a2c34 : 0x8a8680, colorEnd: this.night ? 0x14161c : 0x6a6864, alpha: this.night ? 0.3 : 0.22, shape: 4,
+        });
+      }
+    }
+    // Moths round the lamps, after dark.
+    if (this.night) {
+      for (const s of this.mothLamps) {
+        if (!s.on || Math.hypot(s.x - focusX, s.z - focusZ) > 30 || Math.random() > dt * 4) continue;
+        const a = Math.random() * Math.PI * 2;
+        this.flames.spawn({
+          x: s.x + Math.cos(a) * 0.5, y: s.y + (Math.random() - 0.3) * 0.6, z: s.z + Math.sin(a) * 0.5,
+          vx: -Math.sin(a) * 1.2 + (Math.random() - 0.5), vy: (Math.random() - 0.5) * 0.6, vz: Math.cos(a) * 1.2 + (Math.random() - 0.5),
+          gravity: 0, drag: 0.4, life: 1.6 + Math.random(), size: 0.05, sizeEnd: 0.04, color: 0xfff0c8, colorEnd: 0xffd890, alpha: 0.9, shape: 1,
+        });
+      }
     }
     // Fires: flames, sparks and smoke.
     for (const fire of this.fires) {

@@ -145,6 +145,7 @@ export function waystation(g: Game): ZoneRuntime {
     const p = g.scene.battle?.player;
     for (const [id, a] of actors) {
       const hide = c ? !!PRESENT[id] && !test(PRESENT[id], c) : false;
+      a.night = g.world?.time === 'night' || g.world?.time === 'dusk';
       // Nobody vanishes in front of you: someone leaving waits until you look away.
       const watched = !!p && !a.hidden && Math.hypot(p.x - a.x, p.z - a.z) < 16;
       if (hide !== a.hidden && !(hide && (watched || a.talking) && placed.has(id))) a.hidden = hide;
@@ -163,6 +164,8 @@ export function waystation(g: Game): ZoneRuntime {
     }
   };
   const placed = new Set<string>();
+  const atmosphereFor = (t: string) => PRESETS[t === 'night' ? 'nightTown' : t === 'dusk' ? 'dusk' : t === 'dawn' ? 'dawn' : 'day'];
+  let nightNow = false;
 
   const tracker = (): Objective[] => {
     const w = g.world;
@@ -187,6 +190,7 @@ export function waystation(g: Game): ZoneRuntime {
       return { x: WAY.south.x, z: WAY.south.z - 8, facing: Math.PI };
     },
     timeOf: (w) => w.time,
+    atmosphereFor,
     mapMarks: () => {
       const c = ctx();
       const marks: MapMark[] = [
@@ -226,7 +230,9 @@ export function waystation(g: Game): ZoneRuntime {
     },
     begin: () => {
       const w = g.world!;
-      g.scene.atmo.set(PRESETS[w.time === 'night' ? 'night' : w.time === 'dusk' ? 'dusk' : w.time === 'dawn' ? 'dawn' : 'day']);
+      g.scene.atmo.set(atmosphereFor(w.time));
+      built.setNight(w.time === 'night' || w.time === 'dusk');
+      nightNow = w.time === 'night' || w.time === 'dusk';
       presence();
       objectives.value = tracker();
       g.announceZone();
@@ -242,7 +248,12 @@ export function waystation(g: Game): ZoneRuntime {
       for (const a of actors.values()) a.update(dt, px, pz);
       for (const a of guards) a.update(dt, px, pz);
       trackT -= dt;
-      if (trackT <= 0) { trackT = 1; presence(); objectives.value = tracker(); }
+      if (trackT <= 0) {
+        trackT = 1; presence(); objectives.value = tracker();
+        // The hour turned (a rest, waiting for night): light the braziers or put them out.
+        const n = g.world?.time === 'night' || g.world?.time === 'dusk';
+        if (n !== nightNow) { nightNow = n; built.setNight(n); }
+      }
       const c = ctx();
       const items = [];
       for (const [id, a] of actors) {

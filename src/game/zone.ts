@@ -1,3 +1,4 @@
+import type { AtmospherePreset } from '@/render/atmosphere';
 import type { AmbienceMix } from '@/audio/ambience';
 
 export interface MapMark { x: number; z: number; label: string; kind: 'place' | 'quest' | 'turn' | 'exit' | 'danger' | 'person' | 'mystery' }
@@ -60,6 +61,8 @@ export interface ZoneRuntime {
   onDeath?(killer: string): boolean;
   /** Places, people and exits to show on the map (only what is known). */
   mapMarks?(): MapMark[];
+  /** The sky and light for an hour of the day, if the place has its own. */
+  atmosphereFor?(time: WorldState['time']): AtmospherePreset;
   /** A place that wants its own music (a mystery, a shrine), or null. */
   musicMood?(x: number, z: number): 'mystery' | null;
   /** What the place sounds like where the survivor (or the camera) is. */

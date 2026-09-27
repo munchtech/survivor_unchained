@@ -1014,7 +1014,7 @@ export class Game {
       this.closeRest();
       fade.value = { to: 1, seconds: 0.8, caption: 'Nightfall', sub: `Day ${w.day}` };
       setTimeout(() => {
-        this.scene.atmo.set(PRESETS.night);
+        this.scene.atmo.set(this.zone?.atmosphereFor?.('night') ?? PRESETS.night);
         if (zoneInfo.value) zoneInfo.value = { ...zoneInfo.value, time: 'night' };
         fade.value = { to: 0, seconds: 1.2 };
         this.save('night');
@@ -1049,7 +1049,7 @@ export class Game {
     fade.value = { to: 1, seconds: 0.9 };
     setTimeout(() => {
       restView.value = { ...rv, phase: 'report', day: w.day, lines };
-      this.scene.atmo.set(PRESETS.day);
+      this.scene.atmo.set(this.zone?.atmosphereFor?.('day') ?? PRESETS.day);
       if (zoneInfo.value) zoneInfo.value = { ...zoneInfo.value, time: 'day', day: w.day };
       touch();
       this.save('rest');

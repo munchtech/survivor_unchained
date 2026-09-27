@@ -43,6 +43,8 @@ export interface WaystationBuild {
   kit: ZoneKit;
   /** Door positions, for interactions. */
   doors: Record<string, { x: number; z: number }>;
+  /** After dark: braziers lit, doorways spilling light. */
+  setNight: (on: boolean) => void;
 }
 
 export function buildWaystation(grassDensity = 1): WaystationBuild {
@@ -96,7 +98,8 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
 
   const col = new CollisionWorld(180);
   col.bound = 86;
-  const kit = new ZoneKit(terrain, col);
+  // A town at night is many small lights: a bigger pool than the wood.
+  const kit = new ZoneKit(terrain, col, 9);
   const root = kit.root;
   root.add(terrain.mesh);
   const grass = new Grass(terrain, { density: grassDensity * 0.8 });
@@ -159,7 +162,11 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
     const lx = p.x + dx * (doorOut - 0.6) + dz * 1.7, lz = p.z + dz * (doorOut - 0.6) - dx * 1.7;
     kit.prop('halloween', 'lantern_standing', lx, lz, { rot: p.rot, scale: 0.9, r: 0.25 });
     const glow = kit.flameGlow(lx, kit.y(lx, lz) + 0.62, lz, 0.05, '#ffd08a');
-    kit.source(lx, kit.y(lx, lz) + 1.1, lz, 0xffb468, 4.5, 8, 0.08, [glow]);
+    const lsrc = kit.source(lx, kit.y(lx, lz) + 1.1, lz, 0xffb468, 4.5, 8, 0.08, [glow]);
+    kit.moths(lsrc);
+    // After dark the doorway spills light onto the step, and the chimney smokes.
+    kit.spill(p.x + dx * (doorOut - 0.8), p.z + dz * (doorOut - 0.8), 3.0, '#ffae62', 0.3);
+    kit.chimney(p.x - dx * r * 0.3 + dz * r * 0.25, kit.y(p.x, p.z) + scale * 1.05, p.z - dz * r * 0.3 - dx * r * 0.25);
     return doors[key];
   };
   building('inn', 'building_home_B_red', W.inn, 8.6, 4.2, 5.2);
@@ -226,12 +233,63 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
     root.add(b);
     col.addBox(W.board.x, W.board.z, 1.3, 0.3, 0.6);
   }
-  // Market stalls round the square.
-  const stalls: Array<[number, number, number]> = [[-8, 7, 0.4], [8, 8, -0.3], [-9, -7, 2.6], [10, -6, 3.5]];
-  for (const [x, z, rot] of stalls) {
-    kit.prop('hex_nature', 'tent', x, z, { rot, scale: 6.5, r: 1.6 });
-    kit.prop('hex_nature', 'crate_A_big', x + 1.6, z + 0.6, { rot, scale: 6, r: 0.6 });
-    kit.prop('hex_nature', hash1(x, 3) > 0.5 ? 'barrel' : 'sack', x - 1.4, z + 1, { rot, scale: 6.5, r: 0.5 });
+  // Market stalls round the square: four posts, a striped awning, a
+  // counter with whatever is for sale today.
+  const stalls: Array<[number, number, number, string, string]> = [[-8, 7, 0.4, '#8a2a24', 'produce'], [8, 8, -0.3, '#2a4a6a', 'cloth'], [-9, -7, 2.6, '#3a5a2a', 'herbs'], [10, -6, 3.5, '#8a6a2a', 'pots']];
+  const postM = new THREE.MeshStandardMaterial({ color: '#4a3424', roughness: 0.9 });
+  const counterM = new THREE.MeshStandardMaterial({ color: '#6a4a32', roughness: 0.85 });
+  const awningTex = (stripe: string) => {
+    const c = document.createElement('canvas');
+    c.width = 64; c.height = 8;
+    const g2 = c.getContext('2d')!;
+    for (let i = 0; i < 8; i++) { g2.fillStyle = i % 2 ? '#d8ccb0' : stripe; g2.fillRect(i * 8, 0, 8, 8); }
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.magFilter = THREE.NearestFilter;
+    return t;
+  };
+  const goods: Record<string, string[]> = { produce: ['#c84a2a', '#e8b030', '#6a9a3a', '#b8322a'], cloth: ['#3a5a8a', '#8a3a4a', '#d8c8a0', '#5a7a4a'], herbs: ['#5a8a3a', '#8aa84a', '#6a5a3a', '#b0c070'], pots: ['#8a5a3a', '#a86a4a', '#6a4a3a', '#c8a070'] };
+  for (const [x, z, rot, stripe, kind] of stalls) {
+    const st = new THREE.Group();
+    for (const [px, pz] of [[-1.3, -0.8], [1.3, -0.8], [-1.3, 0.9], [1.3, 0.9]]) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, pz < 0 ? 2.5 : 2.1, 6), postM);
+      post.position.set(px, (pz < 0 ? 2.5 : 2.1) / 2, pz);
+      st.add(post);
+    }
+    const aw = new THREE.Mesh(new THREE.PlaneGeometry(3.1, 2.1, 6, 1), new THREE.MeshStandardMaterial({ map: awningTex(stripe), roughness: 0.95, side: THREE.DoubleSide }));
+    // Sagging a little between the posts.
+    const pa = aw.geometry.attributes.position;
+    for (let i = 0; i < pa.count; i++) pa.setZ(i, -Math.sin((pa.getX(i) / 3.1 + 0.5) * Math.PI) * 0.12);
+    aw.geometry.computeVertexNormals();
+    aw.rotation.x = -Math.PI / 2 + 0.2;
+    aw.position.set(0, 2.32, 0.05);
+    st.add(aw);
+    // A scalloped valance along the front.
+    for (let i = 0; i < 7; i++) {
+      const v = new THREE.Mesh(new THREE.CircleGeometry(0.22, 8, 0, Math.PI), new THREE.MeshStandardMaterial({ color: i % 2 ? '#d8ccb0' : stripe, roughness: 0.95, side: THREE.DoubleSide }));
+      v.rotation.z = Math.PI;
+      v.position.set(-1.32 + i * 0.44, 2.1, 1.07);
+      st.add(v);
+    }
+    const counter = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.9, 0.7), counterM);
+    counter.position.set(0, 0.45, 0.75);
+    st.add(counter);
+    const cols = goods[kind];
+    for (let i = 0; i < 9; i++) {
+      const c = new THREE.Color(cols[i % cols.length]);
+      const piece = kind === 'cloth' ? new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.08 + hash1(i, 7) * 0.1, 0.4), new THREE.MeshStandardMaterial({ color: c, roughness: 1 }))
+        : kind === 'pots' ? new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.13, 0.26, 8), new THREE.MeshStandardMaterial({ color: c, roughness: 0.7 }))
+          : new THREE.Mesh(new THREE.SphereGeometry(0.09 + hash1(i, 8) * 0.05, 7, 5), new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 }));
+      piece.position.set(-1.1 + (i % 5) * 0.55 + hash1(i, 9) * 0.1, 0.95 + (kind === 'pots' ? 0.04 : 0), 0.6 + Math.floor(i / 5) * 0.28);
+      st.add(piece);
+    }
+    st.traverse((o) => { if ((o as THREE.Mesh).isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    st.position.set(x, kit.y(x, z), z);
+    st.rotation.y = rot;
+    root.add(st);
+    col.addBox(x, z, 1.5, 1.2, -rot);
+    kit.prop('hex_nature', 'crate_A_big', x + Math.cos(rot) * 2.1, z - Math.sin(rot) * 2.1 + 0.2, { rot, scale: 6, r: 0.6 });
+    kit.prop('hex_nature', hash1(x, 3) > 0.5 ? 'barrel' : 'sack', x - Math.cos(rot) * 2.0, z + Math.sin(rot) * 2.0, { rot, scale: 6.5, r: 0.5 });
   }
   // Benches, barrels and life.
   kit.prop('halloween', 'bench', W.tavern.x + 5.5, W.tavern.z + 3.2, { rot: Math.PI / 2, scale: 0.8, box: [0.8, 0.3] });
@@ -304,7 +362,14 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
 
   /* ------------------------------------------------------ lamps, trees -- */
   const lamps: Array<[number, number, number]> = [[-4, 12, 0], [5, -12, Math.PI], [12, 4, -Math.PI / 2], [-12, -3, Math.PI / 2], [-4, 24, 0], [24, 3.8, 0], [-4, -20, Math.PI], [4, 33, Math.PI]];
-  for (const [x, z, r] of lamps) kit.lamp(x, z, r, true, 0.85);
+  for (const [x, z, r] of lamps) {
+    const { src } = kit.lamp(x, z, r, true, 0.85);
+    kit.moths(src);
+    kit.spill(src.x, src.z, 2.8, '#ffb070', 0.22);
+  }
+  // Braziers in the square, lit at dusk by the Watch.
+  const braziers = [kit.brazier(5.4, 1.4, false), kit.brazier(-5.4, -1.8, false), kit.brazier(-2.2, 30.5, false), kit.brazier(2.2, 30.5, false)];
+  for (const b of braziers) kit.spill(b.x, b.z, 3.6, '#ff9a50', 0.26);
   for (let i = 0; i < 160; i++) {
     const a = hash1(i, 11) * Math.PI * 2, d = 52 + hash1(i, 12) * 34;
     const x = Math.cos(a) * d * 1.05, z = Math.sin(a) * d;
@@ -330,7 +395,11 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
       kit.tick(dt, fx, fz);
     },
   };
-  return { zone, kit, doors };
+  const setNight = (on: boolean) => {
+    kit.setNight(on);
+    for (const b of braziers) kit.setLit(b, on);
+  };
+  return { zone, kit, doors, setNight };
 }
 
 function flora(kit: ZoneKit, kind: 'pine' | 'broadleaf' | 'autumn', x: number, z: number, rot: number, s: number) {

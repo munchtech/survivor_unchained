@@ -43,6 +43,22 @@ const NIGHT: AtmospherePreset = {
   },
 };
 
+/** Night inside walls: the moon is a cold wash, and what light there is
+ *  comes from lamps, doorways and braziers. Darker and bluer than the wild
+ *  night, which has to stay readable for a fight. */
+const NIGHT_TOWN: AtmospherePreset = {
+  ...NIGHT,
+  sky: { ...NIGHT.sky, glow: '#2c4470' },
+  keyColor: '#9fb6e6', keyIntensity: 1.35, keyElevation: 48,
+  hemiSky: '#2c3e62', hemiGround: '#1a150f', hemiIntensity: 0.58, envIntensity: 0.4,
+  fogColor: '#0b121c', fogDensity: 0.011, exposure: 1.32,
+  grade: {
+    ...NIGHT.grade,
+    lift: [0.01, 0.018, 0.035], shadowTint: '#2a4a66', highlightTint: '#ffa34e', tintStrength: 0.3,
+    saturation: 1.08, vibrance: 0.4, contrast: 1.18,
+  },
+};
+
 const DUSK: AtmospherePreset = {
   sky: { top: '#141a36', horizon: '#b0583a', bottom: '#120c0c', glow: '#ff8a4a', glowPower: 7, stars: 0.25, moon: 0 },
   keyColor: '#ffae70', keyIntensity: 2.3, keyElevation: 18, keyAzimuth: 200,
@@ -79,7 +95,7 @@ const DAY: AtmospherePreset = {
   },
 };
 
-export const PRESETS = { night: NIGHT, dusk: DUSK, dawn: DAWN, day: DAY } as const;
+export const PRESETS = { night: NIGHT, nightTown: NIGHT_TOWN, dusk: DUSK, dawn: DAWN, day: DAY } as const;
 export type PresetName = keyof typeof PRESETS;
 
 function mixHex(a: string, b: string, t: number) {

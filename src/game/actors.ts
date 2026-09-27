@@ -20,6 +20,8 @@ export class NpcActor {
   private barkT: number;
   talking = false;
   hidden = false;
+  /** After dark: they say different things. */
+  night = false;
   private poseLoop: string;
 
   constructor(readonly def: NpcDef, parent: THREE.Object3D, private heightAt: (x: number, z: number) => number, private barks: BarkLayer | null, at?: { x: number; z: number; facing: number }) {
@@ -73,7 +75,8 @@ export class NpcActor {
     this.barkT -= dt;
     if (this.barkT <= 0 && !this.talking && d < 9 && d > 2.5 && this.barks) {
       this.barkT = 30 + Math.random() * 30;
-      const line = this.def.barks[Math.floor(Math.random() * this.def.barks.length)];
+      const pool = this.night && this.def.nightBarks?.length ? this.def.nightBarks : this.def.barks;
+      const line = pool[Math.floor(Math.random() * pool.length)];
       this.barks.speech(line, undefined, this.x, y + (this.def.scale ?? 1) * 0.4 - 0.2, this.z);
     }
   }
