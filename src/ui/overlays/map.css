@@ -17,11 +17,16 @@
 .map-world { position: absolute; inset: 0; transform-origin: 50% 50%; transition: transform 0.12s ease-out; }
 .map-base, .map-fog { position: absolute; inset: 0; width: 100%; height: 100%; user-select: none; pointer-events: none; }
 .map-fog { filter: blur(1px); }
-.map-mark { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 1px; pointer-events: none; white-space: nowrap; }
-.map-pin { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; color: #3a2414; background: rgba(230, 214, 176, 0.9); box-shadow: 0 0 0 1.5px #5a3e24, 0 1px 3px rgba(0, 0, 0, 0.35); }
+.map-mark { position: absolute; width: 0; height: 0; transform-origin: 0 0; pointer-events: none; white-space: nowrap; }
+.map-label { position: absolute; left: 0; top: 0; }
+.map-pin { position: absolute; left: 0; top: 0; translate: -50% -50%; pointer-events: auto; cursor: help; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; color: #3a2414; background: rgba(230, 214, 176, 0.9); box-shadow: 0 0 0 1.5px #5a3e24, 0 1px 3px rgba(0, 0, 0, 0.35); }
 .map-label { font: italic 700 13px var(--font-text); color: #2a1a0c; text-shadow: 0 0 3px #e8dcc0, 0 0 3px #e8dcc0, 0 0 6px #e8dcc0; }
 .map-mark.k-place .map-pin { width: 14px; height: 14px; background: none; box-shadow: none; color: #5a3e24; }
-.map-mark.k-place .map-label { font-weight: 400; font-size: 13px; letter-spacing: 0.02em; }
+.map-mark.k-place .map-label {
+  font: 600 11px var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; color: #3a2414; text-shadow: none;
+  padding: 2px 6px 1px; border-radius: 2px; background: rgba(236, 224, 194, 0.88);
+  box-shadow: 0 0 0 1px rgba(90, 62, 36, 0.55), 0 1px 3px rgba(0, 0, 0, 0.25);
+}
 .map-mark.k-exit .map-pin { color: #2a4a2a; }
 .map-mark.k-danger .map-pin { color: #f4e4c8; background: #7a2418; box-shadow: 0 0 0 1.5px #3a0c06, 0 0 10px rgba(160, 30, 10, 0.5); }
 .map-mark.k-danger .map-label { color: #5a140a; }

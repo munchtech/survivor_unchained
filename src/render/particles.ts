@@ -174,8 +174,9 @@ export class ParticleSystem {
     this.time = time;
     this.material.uniforms.uTime.value = time;
     if (this.dirtyTo >= 0) {
+      // Ranges pile up until the renderer uploads them (it clears them then):
+      // several steps between two frames must not drop each other's spawns.
       for (const a of [this.aPos, this.aVel, this.aPhys, this.aCol, this.aColEnd, this.aSpin]) {
-        a.clearUpdateRanges();
         a.addUpdateRange(this.dirtyFrom * a.itemSize, (this.dirtyTo - this.dirtyFrom + 1) * a.itemSize);
         a.needsUpdate = true;
       }

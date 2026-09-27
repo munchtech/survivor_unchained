@@ -228,5 +228,7 @@ export interface MapView {
   marks: Array<{ x: number; z: number; label: string; kind: string }>;
   player: { x: number; z: number; facing: number };
   corpse?: { x: number; z: number; label: string };
+  /** Where the map opens and how close (a small town is worth a closer look). */
+  focus?: { x: number; z: number; zoom: number };
 }
 export const mapView = signal<MapView | null>(null);

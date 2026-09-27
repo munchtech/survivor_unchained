@@ -61,6 +61,10 @@ export interface ZoneRuntime {
   onDeath?(killer: string): boolean;
   /** Places, people and exits to show on the map (only what is known). */
   mapMarks?(): MapMark[];
+  /** Ground you know without walking it (a town seen whole from its gate). */
+  mapKnown?: Array<{ x: number; z: number; r: number }>;
+  /** Where the map opens and how close, if not the whole zone. */
+  mapFocus?: { x: number; z: number; zoom: number };
   /** The sky and light for an hour of the day, if the place has its own. */
   atmosphereFor?(time: WorldState['time']): AtmospherePreset;
   /** A place that wants its own music (a mystery, a shrine), or null. */

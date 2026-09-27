@@ -45,6 +45,8 @@ export interface WaystationBuild {
   doors: Record<string, { x: number; z: number }>;
   /** After dark: braziers lit, doorways spilling light. */
   setNight: (on: boolean) => void;
+  /** The market stalls: where they stand, which way the counter faces, what they sell. */
+  stalls: Array<{ x: number; z: number; rot: number; kind: string }>;
 }
 
 export function buildWaystation(grassDensity = 1): WaystationBuild {
@@ -399,7 +401,7 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
     kit.setNight(on);
     for (const b of braziers) kit.setLit(b, on);
   };
-  return { zone, kit, doors, setNight };
+  return { zone, kit, doors, setNight, stalls: stalls.map(([x, z, rot, , kind]) => ({ x, z, rot, kind })) };
 }
 
 function flora(kit: ZoneKit, kind: 'pine' | 'broadleaf' | 'autumn', x: number, z: number, rot: number, s: number) {

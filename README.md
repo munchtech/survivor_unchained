@@ -68,7 +68,11 @@ take from each level-up, and, out of combat, what to say and to whom.
   ink trees, footprints of every house), fog where you have not walked,
   places named once found.
 - **A town that notices**: people keep routines and move with their
-  troubles (Harlan watches the east gate while the caravan is missing), the
+  troubles (Harlan watches the east gate while the caravan is missing);
+  nameless townsfolk run errands between the stalls, the well, the board
+  and their doors, children chase each other round the square, a watchman
+  walks the rounds by torchlight, and what they mutter as you pass is what
+  the town thinks of what you did; the
   notice board changes as the world does, and each morning's report says
   who heard what about you overnight.
 - **The chapter's end**: when both questlines are settled, Vonnra reads your
@@ -131,6 +135,8 @@ All expect `npm run dev` running.
 | `node tools/saveload.mjs` | Save mid-expedition, reload, continue, compare |
 | `node tools/flow.mjs` | Toll, both roads out of town and back, a night at the inn |
 | `node tools/field.mjs [--fresh]` | Balance: a survivor who played the prologue, in the Verge by day and night, playing or idle |
+| `node tools/folk.mjs [day\|night]` | The townsfolk: lanes checked against colliders, three minutes of errands, anyone stuck |
+| `node tools/ui.mjs [w h] [screen...]` | Every overlay (shops, stash, pack, self, journal, map, rest, pause, talk) at one size |
 | `node tools/listen.mjs "<query>" name secs` | Record the mix as a spectrogram with loudness |
 
 Useful URLs: `?quick=warden&bg=hunter&zone=verge&at=-60,-80` (start

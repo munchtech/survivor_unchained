@@ -11,6 +11,8 @@ import { test, type Cond } from '@/world/logic';
 import { QUESTS } from '@/content/quests';
 import { objectives, say, toast, type Objective } from '@/ui/store';
 import { hist } from '@/content/dialogue/town';
+import { Folk, type FolkNode } from '../folk';
+import { FOLK_LINES, FOLK_LOOKS } from '@/content/folk';
 
 /* The Waystation, lived in.
  *
@@ -26,6 +28,14 @@ const GUARD_DEF = (i: number): NpcDef => ({
   model: 'knight', show: ['Knight_Helmet', '1H_Sword', 'Rectangle_Shield'], tint: '#8a98b0', idle: 'Idle',
   spot: GUARDS[i], barks: [GUARDS[i].line],
 });
+
+/** What the stall-keepers shout. */
+const STALL_CALLS: Record<string, string[]> = {
+  produce: ['Apples! Aldo apples, crisp as frost!', 'Turnips, onions, the last of the beans!', 'Two for a copper, and I\'m robbing myself!'],
+  cloth: ['Wool from the south, warm as a bed!', 'Mend your cloak, traveller? It needs it.', 'Dyed in the Morrow, never fades!'],
+  herbs: ['Feverfew, woundwort, sleep-easy!', 'Wenna\'s not the only one who knows a leaf.', 'Something for the cough? Everyone\'s got the cough.'],
+  pots: ['Pots! Pans! Things to put things in!', 'Fired in Low Kiln, sound as a bell. Hear that?', 'You look like someone who needs a pot.'],
+};
 
 /** Who is out and about, given what has happened. */
 const PRESENT: Record<string, Cond> = {
@@ -65,6 +75,69 @@ export function waystation(g: Game): ZoneRuntime {
     actors.set(def.id, a);
   }
   GUARDS.forEach((_, i) => guards.push(new NpcActor(GUARD_DEF(i), root, heightAt, g.barks)));
+
+  // Behind every stall, someone selling; they pack up at dusk.
+  const keepers = built.stalls.map((st, i) => {
+    const look = FOLK_LOOKS[(i * 3 + 1) % FOLK_LOOKS.length];
+    return new NpcActor({
+      id: `keeper${i}`, name: 'Stall-keeper', title: '', role: '', model: look.model, show: look.show, tint: look.tint, scale: look.scale, idle: i % 2 ? 'Idle_B' : 'Idle',
+      spot: { x: st.x - Math.sin(st.rot) * 0.35, z: st.z - Math.cos(st.rot) * 0.35, facing: st.rot }, barks: STALL_CALLS[st.kind] ?? ['Come and look!'],
+    }, root, heightAt, g.barks);
+  });
+
+  // Where the town walks: the lanes, and what is at the end of them.
+  const D = built.doors;
+  const node = (id: string, x: number, z: number, kind: FolkNode['kind'] = 'path', extra: Partial<FolkNode> = {}): FolkNode => ({ id, x, z, kind, ...extra });
+  const door = (id: string, key: string, extra: Partial<FolkNode> = {}, out = 0.5) => {
+    const d = D[key];
+    // Stand on the step, not in the wall: half a pace out from the door.
+    const b = key.startsWith('home') ? null : (WAY as Record<string, { x: number; z: number }>)[key];
+    let x = d.x, z = d.z;
+    if (b) { const l = Math.hypot(d.x - b.x, d.z - b.z) || 1; x += ((d.x - b.x) / l) * out; z += ((d.z - b.z) / l) * out; }
+    return node(id, x, z, 'door', { face: b ? { x: b.x, z: b.z } : undefined, ...extra });
+  };
+  const stallNodes = built.stalls.map((st, i) => node(`stall${i}`, st.x + Math.sin(st.rot) * 2.1, st.z + Math.cos(st.rot) * 2.1, 'stall', { face: { x: st.x, z: st.z }, square: true }));
+  const folkNodes: FolkNode[] = [
+    node('gS', 0, 33, 'gate'), node('s3', 0, 27.5), node('s1', 0, 20), node('s2', 0, 12),
+    node('sL', -5, 25.3), node('sR', 5, 25.3), node('swL', -14.5, 25), node('seL', 14.5, 25),
+    node('sqSW', -3.6, 3.2, 'path', { square: true }), node('sqSE', 4.4, 4.2, 'path', { square: true }),
+    node('sqNW', -4.4, -4.6, 'path', { square: true }), node('board', 4.2, -3.2, 'board', { face: { x: WAY.board.x, z: WAY.board.z }, square: true }),
+    node('well', -2.3, 1.2, 'well', { face: { x: 0, z: 0 }, square: true }),
+    node('n1', 0, -12.5), node('n2', 0, -23.5), node('e1', 12, 0.6), node('e2', 24, 0.6), node('gE', 33, 0, 'gate'),
+    node('innL', -6, 9.5), node('innN', -11.5, 15.5), node('tavL', -6, -9.5), node('wN', -9, -3), node('trS', 8.5, -15), node('smL', 6, 10.5), node('trL', 5, -10.2),
+    node('w1', -18, 17.5), node('wW', -19, -5.5), node('sh0', -6, -16), node('sh1', -14, -19.5), node('shF', -20.5, -23.5), node('ne0', 10, -19), node('ne1', 17, -23.5), node('eS', 25, 5),
+    door('inn', 'inn'), door('tavern', 'tavern', { tavern: true }), door('smithy', 'smithy'), door('trading', 'trading'), door('shrine', 'shrine', {}, 0),
+    ...[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => door(`home${i}`, `home${i}`)),
+    ...stallNodes,
+  ];
+  const folkEdges: Array<[string, string]> = [
+    ['gS', 's3'], ['s3', 's1'], ['s3', 'sL'], ['s3', 'sR'], ['sL', 'home5'], ['sR', 'home4'], ['sL', 'swL'], ['swL', 'home7'], ['sR', 'seL'], ['seL', 'home8'], ['s1', 's2'],
+    ['s2', 'sqSW'], ['s2', 'sqSE'], ['sqSW', 'well'], ['sqSW', 'sqNW'], ['well', 'sqNW'], ['sqSE', 'board'], ['sqSE', 'e1'], ['board', 'e1'], ['board', 'n1'], ['sqNW', 'n1'],
+    ['n1', 'n2'], ['n2', 'home11'], ['e1', 'e2'], ['e2', 'gE'], ['e2', 'eS'], ['eS', 'home6'],
+    ['s2', 'innL'], ['innL', 'inn'], ['inn', 'innN'], ['innN', 'w1'], ['w1', 'home9'], ['w1', 'home7'],
+    ['sqNW', 'tavL'], ['tavL', 'tavern'], ['sqNW', 'wN'], ['wN', 'wW'], ['wW', 'home2'], ['wW', 'home3'],
+    ['sqSE', 'smL'], ['s2', 'smL'], ['smL', 'smithy'], ['n1', 'trL'], ['trL', 'trading'], ['trading', 'trS'], ['trL', 'trS'], ['trS', 'ne0'], ['ne0', 'ne1'], ['ne1', 'home0'], ['ne1', 'home1'],
+    ['n1', 'sh0'], ['sh0', 'sh1'], ['sh1', 'shF'], ['shF', 'shrine'], ['e2', 'home10'],
+    ['innL', 'stall0'], ['smL', 'stall1'], ['tavL', 'stall2'], ['sqNW', 'stall2'], ['trL', 'stall3'],
+  ];
+  const hour = () => g.world?.time ?? 'day';
+  const folk = new Folk({
+    parent: root, nodes: folkNodes, edges: folkEdges, col: built.zone.collision, kit: built.kit, barks: g.barks, heightAt,
+    plan: () => {
+      const t = hour();
+      return t === 'night' ? { adults: 2, children: 0, watch: true } : t === 'dusk' ? { adults: 5, children: 0, watch: true } : t === 'dawn' ? { adults: 3, children: 0, watch: false } : { adults: 8, children: 1, watch: false };
+    },
+    dark: () => hour() === 'night' || hour() === 'dusk',
+    lines: (role) => {
+      const c = g.ctx;
+      if (!c) return [];
+      const dark = hour() === 'night' || hour() === 'dusk';
+      const died = (g.ch?.stats.deaths ?? 0) > 0;
+      return FOLK_LINES.filter((l) => (role === 'child' ? l.child : role === 'watch' ? l.watch : !l.child && !l.watch)
+        && (l.night === undefined || l.night === dark) && (!l.died || died) && test(l.when, c));
+    },
+    round: ['gS', 's2', 'sqSW', 'sqNW', 'n1', 'n2', 'n1', 'board', 'e1', 'e2', 'gE', 'e2', 'e1', 'sqSE', 's2', 's1'],
+  });
 
   const interactables: Interactable[] = [];
   for (const [id, a] of actors) {
@@ -191,6 +264,9 @@ export function waystation(g: Game): ZoneRuntime {
     },
     timeOf: (w) => w.time,
     atmosphereFor,
+    // The town is seen whole from its gate; the corner behind the shrine is not.
+    mapKnown: [{ x: 0, z: 2, r: 35 }, { x: 22, z: 20, r: 20 }, { x: -22, z: 20, r: 20 }, { x: 22, z: -20, r: 20 }, { x: -20, z: -18, r: 17 }],
+    mapFocus: { x: 0, z: 3, zoom: 1.5 },
     mapMarks: () => {
       const c = ctx();
       const marks: MapMark[] = [
@@ -247,6 +323,9 @@ export function waystation(g: Game): ZoneRuntime {
       const px = b.player.x, pz = b.player.z;
       for (const a of actors.values()) a.update(dt, px, pz);
       for (const a of guards) a.update(dt, px, pz);
+      const dark = g.world?.time === 'night' || g.world?.time === 'dusk';
+      for (const a of keepers) { a.hidden = dark; a.update(dt, px, pz); }
+      folk.update(dt, px, pz);
       trackT -= dt;
       if (trackT <= 0) {
         trackT = 1; presence(); objectives.value = tracker();
@@ -271,9 +350,12 @@ export function waystation(g: Game): ZoneRuntime {
       void THREE;
     },
     interactables,
+    debug: () => ({ folk: folk.count, walkers: folk.debugState(), lanes: folk.validate(), lit: built.kit.sources.filter((x) => x.on).length, night: nightNow }),
     dispose: () => {
       for (const a of actors.values()) a.dispose();
       for (const a of guards) a.dispose();
+      for (const a of keepers) a.dispose();
+      folk.dispose();
       plates.clear();
       plates.root.remove();
       objectives.value = [];

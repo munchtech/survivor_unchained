@@ -180,7 +180,7 @@ export class ZoneKit {
   /** An iron brazier on three legs, a fire in its bowl. Lit or not. */
   brazier(x: number, z: number, lit = true, size = 0.8) {
     const y = this.y(x, z);
-    const iron = new THREE.MeshStandardMaterial({ color: '#2a2624', roughness: 0.55, metalness: 0.6 });
+    const iron = new THREE.MeshStandardMaterial({ color: '#4a423c', roughness: 0.5, metalness: 0.55 });
     const g = new THREE.Group();
     for (let i = 0; i < 3; i++) {
       const a = (i / 3) * Math.PI * 2;
@@ -193,6 +193,23 @@ export class ZoneKit {
     bowl.position.y = 1.05;
     bowl.material.side = THREE.DoubleSide;
     g.add(bowl);
+    // A rolled rim, and what is left in the bowl by day: ash and charcoal.
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.035, 5, 16), iron);
+    rim.rotation.x = Math.PI / 2;
+    rim.position.y = 1.21;
+    g.add(rim);
+    const ash = new THREE.Mesh(new THREE.CircleGeometry(0.45, 14), new THREE.MeshStandardMaterial({ color: '#5a5450', roughness: 1 }));
+    ash.rotation.x = -Math.PI / 2;
+    ash.position.y = 1.1;
+    g.add(ash);
+    const charMat = new THREE.MeshStandardMaterial({ color: '#1c1a19', roughness: 0.9 });
+    for (let i = 0; i < 6; i++) {
+      const a = i * 2.4, r = 0.08 + (i % 3) * 0.1;
+      const lump = new THREE.Mesh(new THREE.DodecahedronGeometry(0.07 + (i % 2) * 0.03, 0), charMat);
+      lump.position.set(Math.cos(a) * r, 1.13, Math.sin(a) * r);
+      lump.rotation.set(i, i * 0.7, 0);
+      g.add(lump);
+    }
     const coals = new THREE.Mesh(new THREE.CircleGeometry(0.44, 14), new THREE.MeshBasicMaterial({ color: new THREE.Color('#ff6a1a').multiplyScalar(2) }));
     coals.rotation.x = -Math.PI / 2;
     coals.position.y = 1.12;

@@ -589,15 +589,19 @@ export class Game {
     const extent = this.scene.zone?.map?.extent ?? (this.scene.zone?.collision.bound ?? 100) * 2;
     const zs = (w.zones[z.id] ??= {});
     let seen = typeof zs.seen === 'string' && zs.seen.length === FOG_N * FOG_N ? zs.seen : '0'.repeat(FOG_N * FOG_N);
-    const p = b.player, r = 30, c = extent / FOG_N;
-    const i0 = Math.floor((p.x - r) / c + FOG_N / 2), i1 = Math.floor((p.x + r) / c + FOG_N / 2);
-    const j0 = Math.floor((p.z - r) / c + FOG_N / 2), j1 = Math.floor((p.z + r) / c + FOG_N / 2);
+    const c = extent / FOG_N;
     let changed = false;
     const arr = seen.split('');
-    for (let j = Math.max(0, j0); j <= Math.min(FOG_N - 1, j1); j++) for (let i = Math.max(0, i0); i <= Math.min(FOG_N - 1, i1); i++) {
-      const cx = (i + 0.5 - FOG_N / 2) * c, cz = (j + 0.5 - FOG_N / 2) * c;
-      if (arr[j * FOG_N + i] === '0' && Math.hypot(cx - p.x, cz - p.z) < r) { arr[j * FOG_N + i] = '1'; changed = true; }
-    }
+    const reveal = (x: number, z: number, r: number) => {
+      const i0 = Math.floor((x - r) / c + FOG_N / 2), i1 = Math.floor((x + r) / c + FOG_N / 2);
+      const j0 = Math.floor((z - r) / c + FOG_N / 2), j1 = Math.floor((z + r) / c + FOG_N / 2);
+      for (let j = Math.max(0, j0); j <= Math.min(FOG_N - 1, j1); j++) for (let i = Math.max(0, i0); i <= Math.min(FOG_N - 1, i1); i++) {
+        const cx = (i + 0.5 - FOG_N / 2) * c, cz = (j + 0.5 - FOG_N / 2) * c;
+        if (arr[j * FOG_N + i] === '0' && Math.hypot(cx - x, cz - z) < r) { arr[j * FOG_N + i] = '1'; changed = true; }
+      }
+    };
+    reveal(b.player.x, b.player.z, 30);
+    for (const k of z.mapKnown ?? []) reveal(k.x, k.z, k.r);
     if (changed) { seen = arr.join(''); zs.seen = seen; }
   }
 
@@ -613,6 +617,7 @@ export class Game {
     mapView.value = {
       zone: z.id, name: z.name, region: z.region ?? '', image: art.url, fog: fogImage(seen, FOG_N), extent: art.extent, seen, n: FOG_N,
       marks: z.mapMarks?.() ?? [],
+      focus: z.mapFocus,
       player: { x: b.player.x, z: b.player.z, facing: b.player.facing },
       corpse: c ? { x: c.x, z: c.z, label: `${c.heroName}'s belongings` } : undefined,
     };
