@@ -779,6 +779,7 @@ export class Game {
         return false;
       case 'fortune':
         this.endDialogue();
+        this.save('chapter');
         this.openOverlay('chapter');
         return false;
       case 'sellpelts': {

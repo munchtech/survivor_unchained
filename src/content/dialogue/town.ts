@@ -776,7 +776,7 @@ const vonnraHub: DChoice[] = [
   { text: 'The sealed door in the Verge...', when: { quest: { id: 'vault', entry: 'seen' } }, once: 'vault', goto: 'vault' },
   { text: 'I have come to read your old script.', when: { knows: 'arcana' }, badge: 'Arcana', once: 'arcana', goto: 'arcana' },
   { text: 'What do you sell?', action: 'trade' },
-  { text: 'Tell me my fortune.', when: { fact: 'chapter.ready', eq: true }, action: 'fortune' },
+  { text: 'Tell me my fortune.', when: { fact: 'chapter.ready', eq: true }, goto: 'fortune' },
   bye(),
 ];
 
@@ -810,6 +810,66 @@ export const VONNRA: Conversation = {
       text: 'No. Not for any price. That is the only thing I will ever say to you without charging for it.',
       effects: [{ quest: { id: 'vault', entry: 'vonnra_refuses' } }],
       choices: vonnraHub,
+    },
+    /* The fortune: what she sees is what you did. */
+    fortune: {
+      id: 'fortune',
+      text: 'Sit. Give me your hand. No, the other one: the one you hold the blade with. No charge, this once. I have been waiting to see how it came out.',
+      next: 'f_beasts',
+    },
+    f_beasts: {
+      id: 'f_beasts',
+      text: [
+        { when: { fact: 'beasts.outcome', eq: 'cured' }, text: 'I see water running clear. Wolves in the deep wood where they belong, and a hole in the hillside with no poison coming out of it. You went looking for the cause and not the culprit. Most people never learn the difference.' },
+        { when: { fact: 'beasts.outcome', eq: 'allied' }, text: 'I see wolves running beside you, not at you. The old grey one lets you walk in front. Holloway sleeps with his sword across his knees now. Be careful what you have taught them to follow.' },
+        { when: { all: [{ fact: 'beasts.outcome', eq: 'slaughtered' }, { fact: 'greymuzzle', eq: 'dead' }] }, text: 'I see pelts. A great many pelts, and a grey one on top of the pile. The road is safe and the wood is quiet. Something that was sick got sicker, and then there was nothing left of it to be sick.' },
+        { when: { fact: 'beasts.outcome', eq: 'slaughtered' }, text: 'I see a quiet wood. Too quiet. You made the road safe the way a fire makes a house warm.' },
+        { when: { fact: 'beasts.outcome', eq: 'ignored' }, text: 'I see wolves at the east gate, and a man of the Watch who did not come home. You were busy. The world was not.' },
+        { text: 'The wolves, I see only dimly. Whatever you meant to do about them, you have not done it yet.' },
+      ],
+      next: 'f_caravan',
+    },
+    f_caravan: {
+      id: 'f_caravan',
+      text: [
+        { when: { all: [{ fact: 'caravan.survivors', eq: 'rescued' }, { fact: 'caravan.cargo', eq: 'returned' }] }, text: 'I see a boy asleep in a wagon, and his uncle sitting up beside him all night. Salt and iron back where they belong. The Coyle Company will say your name at every table it sits at.' },
+        { when: { all: [{ fact: 'caravan.survivors', eq: 'rescued' }, { fact: 'caravan.cargo', eq: 'sold' }] }, text: 'I see a boy come home, and a strongbox go the other way. Harlan will learn where it went. People always do.' },
+        { when: { fact: 'caravan.survivors', eq: 'rescued' }, text: 'I see three teamsters walking home, thinner than when they left. What became of the rest of it is between you and the Kerchiefs.' },
+        { when: { fact: 'caravan.survivors', eq: 'dead' }, text: 'I see cages. I will not tell you what is in them. You know.' },
+        { text: 'The caravan: a cold trail, cold cages. It is not finished. Neither are you.' },
+      ],
+      next: 'f_pell',
+    },
+    f_pell: {
+      id: 'f_pell',
+      text: [
+        { when: { fact: 'caravan.pell', eq: 'exposed' }, text: 'And Pell. Pell in irons, being walked to the cells, telling everyone who will listen that he has friends. He does. They are not in this town.' },
+        { when: { fact: 'caravan.pell', eq: 'ally' }, text: 'And a ledger, with your name in it, in Pell\'s small tidy hand. You were paid. So was everyone else in that book. I would keep an eye on all of them.' },
+        { when: { fact: 'caravan.pell', eq: 'fled' }, text: 'And an empty warehouse, and a man on a fast horse who will not stop until he is somewhere that has never heard of the Coyle Company. He will not forget you.' },
+        { text: 'And Pell Varrow, counting. He is always counting. One day he will count you.' },
+      ],
+      next: 'f_self',
+    },
+    f_self: {
+      id: 'f_self',
+      text: [
+        { when: { trait: 'risen_once' }, text: 'And you. You have already died on this road. Most people only get to do that the once. Something did not want you to stay down, and I would very much like to know what.' },
+        { when: { fact: 'player.wanted', eq: true }, text: 'And you. The Watch has your description. It is not flattering.' },
+        { when: { trait: 'wolf_friend' }, text: 'And you, who smell of the Pack now. Dogs in the square will not bark at you. People will.' },
+        { text: 'And you. You came up the Low Ford road at night, and the lamps lit for you. They have not done that for anyone in a long time.' },
+      ],
+      next: 'f_below',
+    },
+    f_below: {
+      id: 'f_below',
+      text: 'Last. Under the Verge, something is turning over in its sleep. The little lamp-people are digging down to it with the Warden\'s heart in their arms, and they think it will be grateful. And the door in the hillside...',
+      choices: [{ text: 'What about the door?', goto: 'f_door' }],
+    },
+    f_door: {
+      id: 'f_door',
+      text: 'No. That is all. That is all I see for free. The rest you will have to walk into yourself, and you will, because you are the kind that does.',
+      effects: [{ set: { 'chapter.done': true } }, hist('fortune_read', 'had your fortune read by Vonnra Hydrocheck', ['chapter'], 0)],
+      choices: [{ text: 'Close the book on this chapter.', action: 'fortune' }],
     },
     arcana: {
       id: 'arcana',

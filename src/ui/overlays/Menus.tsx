@@ -3,7 +3,7 @@ import { actions } from '@/game/actions';
 import { Input } from '@/core/input';
 import './menus.css';
 
-/* The small overlays: the pause menu, the fall, the end of the chapter. */
+/* The small overlays: the pause menu and the fall. */
 
 export function Pause() {
   const items = [
@@ -47,21 +47,6 @@ export function Death() {
         <div class="death-title">You fell</div>
         <p class="death-text">The ember gutters and goes out. But the world is not finished with you, and it will remember this.</p>
         <button class="btn primary" onClick={() => actions.rise()}>Rise</button>
-      </div>
-    </div>
-  );
-}
-
-export function ChapterEnd() {
-  return (
-    <div class="menu-overlay">
-      <div class="scrim fade-in" />
-      <div class="chapter panel rise-in">
-        <div class="chapter-kicker">End of the first chapter</div>
-        <div class="chapter-title title-cap">To be continued</div>
-        <div class="rule" />
-        <p class="death-text">Your journey is saved. Everything you did is remembered.</p>
-        <button class="btn primary" onClick={() => actions.quitToTitle()}>Return to the fire</button>
       </div>
     </div>
   );

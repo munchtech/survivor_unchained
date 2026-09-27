@@ -7,6 +7,7 @@ import { advanceDay } from '@/world/simulation';
 import { CONVOS } from '@/content/dialogue';
 import { RULES, SOCIAL } from '@/content/rules';
 import { ARCHETYPES, type BackgroundId } from '@/content/archetypes';
+import { chapterSummary } from '@/content/chapter';
 
 /* The two questlines, played through the same data the game uses, by
  * survivors from different backgrounds taking different roads. */
@@ -161,5 +162,39 @@ describe('being found out', () => {
     world.facts['beasts.outcome'] = 'cured';
     advanceDay(c, RULES, SOCIAL, () => 0.99);
     expect(npc(world, 'holloway').memories).not.toContain('lied_to_holloway');
+  });
+});
+
+describe('the chapter\'s end', () => {
+  it('Vonnra reads back what you did, and the chapter closes', () => {
+    const { c, world, ch } = setup('scholar');
+    world.facts['beasts.outcome'] = 'cured';
+    world.facts['caravan.survivors'] = 'rescued';
+    world.facts['caravan.cargo'] = 'sold';
+    advanceDay(c, RULES, SOCIAL, () => 0.5);
+    expect(world.facts['chapter.ready']).toBe(true);
+    const r = new DialogueRunner(CONVOS.vonnra, c);
+    let p = r.start();
+    p = r.choose(p!.choices.find((x) => /fortune/i.test(x.text))!.index).next;
+    const read: string[] = [];
+    while (p && !p.choices.length) { read.push(p.text); p = r.advance(); }
+    read.push(p!.text);
+    expect(read.join(' ')).toMatch(/water running clear/);
+    expect(read.join(' ')).toMatch(/strongbox go the other way/);
+    p = r.choose(p!.choices[0].index).next;
+    const end = r.choose(p!.choices[0].index);
+    expect(end.action).toBe('fortune');
+    expect(world.facts['chapter.done']).toBe(true);
+    const sum = chapterSummary(ch, world);
+    expect(sum.epithet).toBe('Wren, who sold the Coyle strongbox');
+    expect(sum.threads.map((t) => t.verdict)).toEqual(['Cured at the source', 'Rescued, and robbed']);
+    expect(sum.open.map((o) => o.id)).toEqual(['vault', 'below']);
+  });
+
+  it('a chapter with nothing settled still reads as a page', () => {
+    const { world, ch } = setup('devout');
+    const sum = chapterSummary(ch, world);
+    expect(sum.threads.every((t) => t.tone === 'open')).toBe(true);
+    expect(sum.epithet).toBe('Wren, late of the Low Ford road');
   });
 });
