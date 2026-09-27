@@ -155,6 +155,11 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
     // Doors face local +z.
     const dx = Math.sin(p.rot), dz = Math.cos(p.rot);
     doors[key] = { x: p.x + dx * doorOut, z: p.z + dz * doorOut };
+    // A lantern by every door: after dark, the town is where the light is.
+    const lx = p.x + dx * (doorOut - 0.6) + dz * 1.7, lz = p.z + dz * (doorOut - 0.6) - dx * 1.7;
+    kit.prop('halloween', 'lantern_standing', lx, lz, { rot: p.rot, scale: 0.9, r: 0.25 });
+    const glow = kit.flameGlow(lx, kit.y(lx, lz) + 0.62, lz, 0.05, '#ffd08a');
+    kit.source(lx, kit.y(lx, lz) + 1.1, lz, 0xffb468, 4.5, 8, 0.08, [glow]);
     return doors[key];
   };
   building('inn', 'building_home_B_red', W.inn, 8.6, 4.2, 5.2);
