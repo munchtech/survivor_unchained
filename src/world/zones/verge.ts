@@ -218,7 +218,9 @@ export function buildVerge(grassDensity = 1): VergeBuild {
       const edgeWall = Math.max(Math.abs(x), Math.abs(z)) > 118;
       // Glades: the wood opens up here and there, room to fight in.
       const glade = noise.fbm(x * 0.012 + 40, z * 0.012 - 7, 2);
-      if (!edgeWall && (glade > 0.22 || hash2(gx * 7, gz * 7, 3) > 0.5 + forest * 0.38)) continue;
+      // Inside, the wood is a place to fight in: stands of trees with room
+      // between them. The edges stay a wall.
+      if (!edgeWall && (glade > 0.16 || hash2(gx * 7, gz * 7, 3) > 0.34 + forest * 0.36)) continue;
       const sc = 0.85 + hash2(gx, gz, 4) * 0.6;
       if (blight > 0.35) flora.add(h < 0.6 ? 'dead' : 'sick', x, y - 0.1, z, rot, sc);
       else if (h < 0.05) flora.add('dead', x, y - 0.1, z, rot, sc);

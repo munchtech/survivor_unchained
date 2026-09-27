@@ -382,6 +382,9 @@ varying float vLane;`)
     float reach = length(instanceMatrix[0].xyz);
     vLane = uFocus.w * smoothstep(-2.5 * reach, 0.5, along) * (1.0 - smoothstep(13.0, 18.0, along))
           * (1.0 - smoothstep(4.0 * reach, 6.5 * reach, lat));
+    // Anything standing close around the survivor thins a little too, so
+    // the ground the fight is on stays readable.
+    vLane = max(vLane, uFocus.w * 0.55 * (1.0 - smoothstep(5.0 * reach, 8.5 * reach, length(d))));
   }` : ''}
   #endif
   float h = max(position.y, 0.0);
