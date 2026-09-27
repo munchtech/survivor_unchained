@@ -55,13 +55,16 @@ take from each level-up, and, out of combat, what to say and to whom.
 - **Thornhollow Verge** (the outside zone): reactive factions (the Pack,
   the Kerchiefs, the Dig) whose disposition you set by what you know and
   do; a director that surges; named nemeses; the stream, the Roost, the
-  Dig, the Hollow, a Moon Grove behind burnable brambles.
+  Dig, the Hollow (a den in the rock, beds of flattened grass, bones), a
+  Moon Grove behind burnable brambles (moonflowers, a pale tree, a ring of
+  standing stones round a shrine). Elites drop gear rolled where it falls;
+  the light over it says how good it is.
 - **Breadcrumbs**: the Sealed Vault (a black door, a sigil fragment,
   bootprints going in and not out) and the Thing Below (tremors, a pit, and
   something enormous at the bottom of it).
 - **Death as content**: your body keeps half your gold where you fell; the
   thing that killed you takes one of your things and a name, and waits for
-  you. You wake at the shrine, wounded, and Chid has something to say.
+  you (put it down and you get that very thing back). You wake at the shrine, wounded, and Chid has something to say.
 - **Persistence**: every save holds the character, the world, where you
   stand and the ember build you carry; saves migrate forward, never vanish.
 - **The map**: each zone drawn by hand from itself (hill shading, contours,
@@ -75,6 +78,9 @@ take from each level-up, and, out of combat, what to say and to whom.
   the town thinks of what you did; the
   notice board changes as the world does, and each morning's report says
   who heard what about you overnight.
+- **The journal**: what each person has on their mind, how they feel about
+  you in words, what the world remembers, and where you stand with the
+  Watch, the Coyle Company, the Kerchiefs, the Pack and the Dig.
 - **The chapter's end**: when both questlines are settled, Vonnra reads your
   fortune (it is your own story, read back), and the chapter closes on a
   page worked out from the world: what was done, what is still waiting, who
