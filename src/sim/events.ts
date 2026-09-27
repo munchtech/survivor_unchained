@@ -28,7 +28,7 @@ export type CombatEvent =
   | { t: 'dash'; x0: number; z0: number; x1: number; z1: number }
   | { t: 'ability'; id: string; x: number; z: number; angle: number; radius: number }
   | { t: 'bark'; x: number; z: number; text: string; speaker?: string }
-  | { t: 'announce'; title: string; subtitle?: string; tone?: 'danger' | 'info' | 'boon' | 'story' }
+  | { t: 'announce'; title: string; subtitle?: string; kicker?: string; tone?: 'danger' | 'info' | 'boon' | 'story' }
   | { t: 'shake'; amount: number }
   | { t: 'sound'; id: string; x?: number; z?: number; volume?: number };
 

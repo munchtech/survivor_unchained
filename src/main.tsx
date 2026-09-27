@@ -6,6 +6,8 @@ import { gallery } from '@/modes/dev/gallery';
 import { sandbox } from '@/modes/dev/sandbox';
 import { combatDev } from '@/modes/dev/combat';
 import { Input } from '@/core/input';
+import { mountUi } from '@/ui/App';
+import { renderItemIcons } from '@/ui/itemIcons';
 
 /* Boot. The renderer and assets come up first; then the game shell takes
  * over. `?dev=` routes to development views used by the screenshot tools. */
@@ -16,6 +18,8 @@ async function boot() {
   const renderer = new Renderer(stage, (params.get('quality') as Quality) || 'high');
   (window as unknown as { __game: unknown }).__game = { renderer };
   await Assets.loadAll();
+  renderItemIcons();
+  mountUi(document.getElementById('ui')!);
 
   let tick: (dt: number, t: number) => void = () => {};
   const dev = params.get('dev');

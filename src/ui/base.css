@@ -14,4 +14,4 @@ body { font-family: var(--font-ui); -webkit-font-smoothing: antialiased; user-se
 #stage { position: fixed; inset: 0; }
 #stage canvas { display: block; }
 #ui { position: fixed; inset: 0; pointer-events: none; }
-#ui > * { pointer-events: auto; }
+#ui > * { pointer-events: none; }

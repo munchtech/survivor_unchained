@@ -13,7 +13,7 @@ import {
   Pool, blankEnemy, blankProjectile, blankZone, blankPickup,
   type Enemy, type Projectile, type GroundZone, type Pickup, type PickupKind,
 } from './entities';
-import { makeWeapon, tickWeapon, schoolOf, tagsOf, type WeaponInst } from './weapons';
+import { makeWeapon, tickWeapon, schoolOf, tagsOf, cooldownOf, type WeaponInst } from './weapons';
 import type { TriggerDef, TriggerEvent, TriggerInstance, Effect, TriggerCond } from './procs';
 import type { School, Tag, FactionId, StatusKind } from './types';
 import { updateEnemy } from './ai';
@@ -1269,7 +1269,7 @@ export class Battle {
     if (!evo) return;
     w.evolution = evo;
     this.events.emit({ t: 'evolve', weapon: w.id, into: evo.id });
-    this.events.emit({ t: 'announce', title: evo.name, subtitle: evo.description, tone: 'boon' });
+    this.events.emit({ t: 'announce', kicker: `${w.def.name} evolves`, title: evo.name, subtitle: evo.description, tone: 'boon' });
   }
 
   addBoon(id: string) {
@@ -1306,7 +1306,7 @@ export class Battle {
       const [a, b] = d.weapons.map((id) => this.weapons.find((w) => w.id === id)!);
       d.apply(a, b, this);
       this.events.emit({ t: 'discovery', id: d.id });
-      this.events.emit({ t: 'announce', title: `Discovery: ${d.name}`, subtitle: d.description, tone: 'boon' });
+      this.events.emit({ t: 'announce', kicker: 'Discovery', title: d.name, subtitle: d.description, tone: 'boon' });
     }
   }
 
@@ -1537,7 +1537,7 @@ export class Battle {
 
   /** For the HUD: seconds left on a weapon, 0..1. */
   weaponReady(w: WeaponInst) {
-    return clamp(1 - w.timer / Math.max(0.01, w.def.base.cooldown), 0, 1);
+    return clamp(1 - w.timer / Math.max(0.01, cooldownOf(this, w)), 0, 1);
   }
 
   get retreat() { return this.retreatT; }

@@ -6,6 +6,9 @@ import { LOADOUTS } from '@/render/playerView';
 import { StatBlock } from '@/sim/stats';
 import { draft, choose } from '@/sim/levelup';
 import { Input } from '@/core/input';
+import { HudBridge } from '@/game/hudBridge';
+import { BarkLayer } from '@/ui/hud/barks';
+import { screen, zoneInfo, objectives, toast, announce } from '@/ui/store';
 import type { AbilityKind } from '@/content/abilities';
 
 /* Development arena for watching fights:
@@ -61,13 +64,29 @@ export function combatDev(r: Renderer, params: URLSearchParams) {
         b.spawnEnemy(f, x, z, { style: f.startsWith('risen') || f === 'grave_caller' ? 'rise' : 'walk', level: 1 + Math.floor(t / 40) });
       }
     }
-    while (b.pendingLevels > 0) choose(b, draft(b, 3)[0]);
+    if (autopick) while (b.pendingLevels > 0) choose(b, draft(b, 3)[0]);
   };
 
-  // A bare-bones readout until the real HUD exists.
-  const hud = document.createElement('div');
-  hud.style.cssText = 'position:fixed;left:16px;top:12px;font:600 14px var(--font-ui);color:#e9dfcb;text-shadow:0 1px 3px #000;pointer-events:none';
-  document.getElementById('ui')!.appendChild(hud);
+  const bridge = new HudBridge(scene, new BarkLayer(document.getElementById('stage')!));
+  scene.onEvents = (evs) => bridge.events(evs);
+  const autopick = params.has('autopick');
+  screen.value = 'play';
+  zoneInfo.value = { name: 'Proving Ground', region: 'Low Ford', day: 1, time: (params.get('time') as 'night') || 'night' };
+  if (params.has('demo')) {
+    // Fill every corner of the interface for layout work.
+    objectives.value = [
+      { id: 'q1', title: 'The Beast Problem', steps: [{ text: 'Ask Maeca about the wolves', done: true }, { text: 'Find where the pack is coming from' }, { text: 'Look for Greymuzzle at the Moon Grove', optional: true }] },
+      { id: 't1', title: 'Survive the night', tone: 'tutorial', steps: [{ text: 'Hold out until dawn (2:41)' }] },
+    ];
+    toast('loot', 'Wolf Pelt ×3', { icon: 'pelt', rarity: 0 });
+    toast('loot', 'Wolf-Fang Necklace', { icon: 'fang', rarity: 2, sub: 'Hits have a 12% chance to bleed.' });
+    toast('relation', 'Maeca will remember that', { sub: 'Respect +15' });
+    toast('quest', 'New lead: The Missing Caravan');
+    announce('The Ford-Warden', 'It has kept this crossing for three hundred years', 'danger', 60);
+    b.player.burnT = 3; b.player.burnDps = 0;
+    b.player.shield = 30; b.player.shieldT = 20;
+  }
+  if (params.has('draft')) { b.pendingLevels = 1; b.ember.level = 7; }
 
   if (params.get('camdist')) { scene.cam.targetDistance = Number(params.get('camdist')); scene.cam.distance = scene.cam.targetDistance; }
   (window as unknown as { __scene: WorldScene }).__scene = scene;
@@ -75,6 +94,6 @@ export function combatDev(r: Renderer, params: URLSearchParams) {
     Input.poll();
     if (walk) { Input.moveX = Math.cos(t * 0.3) * 0.6; Input.moveZ = Math.sin(t * 0.3) * 0.6; }
     scene.update(dt);
-    hud.textContent = `HP ${Math.ceil(b.player.hp)}/${Math.round(b.maxHp)}  ·  Ember ${b.ember.level}  ·  Kills ${b.killCount}  ·  Foes ${b.enemies.count}  ·  ${b.weapons.map((w) => `${w.evolution?.name ?? w.def.name} ${w.rank}`).join(', ')}`;
+    bridge.update(dt);
   };
 }

@@ -1,0 +1,125 @@
+.levelup { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; }
+.lu-scrim {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 70% 60% at 50% 52%, rgba(30, 14, 4, 0.55), rgba(4, 3, 6, 0.9));
+  backdrop-filter: blur(3px) saturate(0.7);
+  animation: fadeIn 0.3s ease-out both;
+}
+.lu-rays {
+  position: absolute; left: 50%; top: 50%; width: 1400px; height: 1400px; margin: -700px 0 0 -700px; pointer-events: none;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 170, 80, 0.06) 0 4deg, transparent 4deg 18deg);
+  -webkit-mask: radial-gradient(circle, #000 0%, transparent 60%); mask: radial-gradient(circle, #000 0%, transparent 60%);
+  animation: luRays 60s linear infinite, fadeIn 0.8s ease-out both;
+}
+@keyframes luRays { to { transform: rotate(360deg); } }
+
+.lu-head { position: relative; text-align: center; margin-bottom: 28px; animation: riseIn 0.4s ease-out both; }
+.lu-kicker { font: 600 14px var(--font-text); font-style: italic; letter-spacing: 0.1em; color: #e8b878; text-shadow: 0 1px 2px #000; }
+.lu-level {
+  display: flex; align-items: center; gap: 18px; justify-content: center;
+  font: 700 40px var(--font-display); letter-spacing: 0.16em; text-transform: uppercase;
+  color: #ffe6b8; text-shadow: 0 2px 0 #000, 0 0 24px rgba(255, 150, 50, 0.6);
+}
+.lu-orn { width: 120px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold-hi)); position: relative; }
+.lu-orn::after { content: ''; position: absolute; right: -4px; top: -3px; width: 7px; height: 7px; transform: rotate(45deg); background: var(--gold); }
+.lu-orn.r { background: linear-gradient(270deg, transparent, var(--gold-hi)); }
+.lu-orn.r::after { right: auto; left: -4px; }
+.lu-queued { font: 600 13px var(--font-ui); color: var(--ink-dim); margin-top: 2px; }
+
+.lu-cards { position: relative; display: flex; gap: 22px; align-items: stretch; }
+
+.card {
+  --sc: var(--gold); --rc: var(--r0);
+  position: relative; width: 250px; min-height: 350px; padding: 18px 18px 14px; border: 0; border-radius: 10px;
+  display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer;
+  font-family: var(--font-ui); color: var(--ink);
+  background:
+    var(--noise),
+    radial-gradient(90% 55% at 50% 22%, color-mix(in srgb, var(--sc) 16%, transparent), transparent 70%),
+    linear-gradient(180deg, #221d27 0%, #141117 55%, #0b0a0d 100%);
+  box-shadow: 0 0 0 1px #000, 0 18px 50px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 230, 180, 0.08);
+  animation: cardIn 0.5s cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.25s, filter 0.25s;
+}
+@keyframes cardIn { from { opacity: 0; transform: translateY(60px) rotateX(18deg) scale(0.9); } to { opacity: 1; transform: none; } }
+.card-frame {
+  position: absolute; inset: 0; border-radius: 10px; pointer-events: none;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--rc) 70%, transparent), inset 0 0 0 5px rgba(0, 0, 0, 0.6), inset 0 0 0 6px color-mix(in srgb, var(--rc) 22%, transparent), inset 0 0 40px color-mix(in srgb, var(--rc) 12%, transparent);
+}
+.card-frame::before, .card-frame::after {
+  content: ''; position: absolute; left: 50%; width: 12px; height: 12px; margin-left: -6px; transform: rotate(45deg);
+  background: #0b0a0d; box-shadow: 0 0 0 1.5px var(--rc), 0 0 10px color-mix(in srgb, var(--rc) 60%, transparent);
+}
+.card-frame::before { top: -6px; }
+.card-frame::after { bottom: -6px; }
+.card:not(.armed) { pointer-events: none; }
+.card.focus, .card:hover {
+  transform: translateY(-10px) scale(1.03);
+  box-shadow: 0 0 0 1px #000, 0 26px 60px rgba(0, 0, 0, 0.75), 0 0 34px color-mix(in srgb, var(--rc) 35%, transparent);
+}
+.card.chosen { animation: cardChosen 0.3s ease-out both; }
+@keyframes cardChosen { to { transform: translateY(-24px) scale(1.1); box-shadow: 0 0 0 2px var(--gold-hi), 0 0 80px rgba(255, 190, 90, 0.8); } }
+.card.dimmed { opacity: 0; filter: blur(4px); transform: translateY(20px) scale(0.95); }
+.levelup.leaving .lu-scrim { animation: fadeOut 0.3s ease-in 0.05s both; }
+.levelup.leaving .lu-head, .levelup.leaving .lu-foot, .levelup.leaving .lu-rays { opacity: 0; transition: opacity 0.2s; }
+@keyframes fadeOut { to { opacity: 0; } }
+
+.card-kicker {
+  font: 800 11px var(--font-ui); letter-spacing: 0.18em; text-transform: uppercase; color: color-mix(in srgb, var(--rc) 80%, #fff);
+  padding: 3px 10px; border-radius: 10px; background: rgba(0, 0, 0, 0.45); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rc) 40%, transparent);
+}
+.card-art { position: relative; width: 120px; height: 120px; margin: 12px 0 6px; display: grid; place-items: center; }
+.card-halo {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--sc) 35%, transparent) 0%, color-mix(in srgb, var(--sc) 8%, transparent) 45%, transparent 70%);
+  animation: pulse 2.8s ease-in-out infinite;
+}
+.card-sigil {
+  position: absolute; inset: 10px; border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--sc) 35%, transparent);
+  box-shadow: inset 0 0 0 5px rgba(0, 0, 0, 0.25), inset 0 0 0 6px color-mix(in srgb, var(--sc) 18%, transparent);
+  background: repeating-conic-gradient(color-mix(in srgb, var(--sc) 25%, transparent) 0 2deg, transparent 2deg 30deg);
+  -webkit-mask: radial-gradient(circle, transparent 60%, #000 61%); mask: radial-gradient(circle, transparent 60%, #000 61%);
+  animation: luRays 30s linear infinite;
+}
+.card-art .glyph { position: relative; }
+.card-title { font: 700 21px/1.15 var(--font-display); letter-spacing: 0.03em; color: #fff0d8; text-shadow: 0 1px 0 #000, 0 0 12px color-mix(in srgb, var(--sc) 35%, transparent); }
+.card-evo { display: flex; align-items: center; gap: 5px; margin-top: 2px; font: 600 12px var(--font-ui); color: var(--ink-dim); }
+.card-pips { display: flex; gap: 4px; margin: 8px 0 2px; }
+.card-pips i { width: 7px; height: 7px; transform: rotate(45deg); background: #141117; box-shadow: 0 0 0 1px #000, inset 0 0 0 1px rgba(217, 181, 106, 0.35); }
+.card-pips i.had { background: color-mix(in srgb, var(--sc) 70%, #000); }
+.card-pips i.gain { background: var(--sc); box-shadow: 0 0 0 1px #000, 0 0 8px var(--sc); animation: pulse 1.2s ease-in-out infinite; }
+.card-text { margin-top: 10px; font: 400 15.5px/1.4 var(--font-text); color: #e4d9c4; flex: 1; }
+.card-tags { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin-top: 10px; }
+.card-tags span {
+  font: 700 10px var(--font-ui); letter-spacing: 0.08em; text-transform: uppercase; color: #9a9080;
+  padding: 2px 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.card-tags span.fit { color: #ffe0a8; box-shadow: inset 0 0 0 1px rgba(255, 200, 120, 0.5); background: rgba(255, 170, 80, 0.1); }
+.card-fit { display: flex; align-items: center; gap: 4px; margin-top: 6px; font: 700 11px var(--font-ui); color: var(--ember-hi); letter-spacing: 0.04em; }
+.card-foot { display: flex; width: 100%; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 9px; border-top: 1px solid rgba(217, 181, 106, 0.15); }
+.card-rarity { font: 800 11px var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; }
+.card .key { font-size: 12px; min-width: 22px; }
+
+/* Rare and up get a moving edge; evolutions are gold throughout. */
+.card.rb-3::before, .card.rb-4::before, .card.k-evolve::before {
+  content: ''; position: absolute; inset: -2px; border-radius: 12px; padding: 2px; pointer-events: none;
+  background: conic-gradient(from var(--spin, 0deg), transparent 0 60%, var(--rc) 80%, #fff 85%, var(--rc) 90%, transparent 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: spinBorder 3.2s linear infinite;
+}
+.card.k-evolve { --rc: #ffc860; background: var(--noise), radial-gradient(90% 60% at 50% 20%, rgba(255, 190, 90, 0.25), transparent 70%), linear-gradient(180deg, #2e2214, #16100a 60%, #0b0806); }
+.card.k-evolve .card-title { font-size: 23px; background: linear-gradient(180deg, #fffaf0 10%, #ffd87a 55%, #d8962e); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; filter: drop-shadow(0 1px 0 #000) drop-shadow(0 0 10px rgba(255, 190, 90, 0.45)); }
+.card.syn .card-sigil { border-radius: 14px; transform: rotate(45deg); animation: none; }
+
+.card-banish {
+  position: absolute; inset: 0; border-radius: 10px; display: none; align-items: center; justify-content: center; gap: 8px;
+  font: 800 16px var(--font-ui); letter-spacing: 0.12em; text-transform: uppercase; color: #ffb0a0;
+  background: rgba(40, 6, 6, 0.72); box-shadow: inset 0 0 0 2px rgba(255, 90, 70, 0.7);
+}
+.levelup.banishing .card-banish { display: flex; }
+.levelup.banishing .card.focus .card-banish, .levelup.banishing .card:hover .card-banish { background: rgba(80, 10, 8, 0.82); color: #fff; }
+
+.lu-foot { position: relative; display: flex; gap: 12px; margin-top: 30px; animation: fadeIn 0.5s ease-out 0.3s both; }
+.lu-foot em { font-style: normal; color: var(--ember-hi); margin-left: 4px; }
+.lu-foot .key { margin-right: 6px; }
