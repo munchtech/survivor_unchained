@@ -3,6 +3,7 @@ import { createCharacter, deriveKit, equip, makeItem, addToPack, countItem, worl
 import { freshWorld } from '@/world/state';
 import { test as check, apply, npc, attitude, type Ctx, type Notice } from '@/world/logic';
 import { advanceDay } from '@/world/simulation';
+import { ARCHETYPES } from '@/content/archetypes';
 import { DialogueRunner, type Conversation } from '@/world/dialogue';
 import { Saves } from '@/world/save';
 
@@ -155,5 +156,19 @@ describe('save', () => {
     expect(back.world.npcs.harlan.trust).toBe(-40);
     expect(back.character.pack.some((p) => p?.def === 'wolf_fang_necklace')).toBe(true);
     expect(back.location).toEqual({ zone: 'thornhollow', x: 3, z: -7, facing: 1 });
+  });
+});
+
+
+describe('quest status', () => {
+  it('a settled quest is never reopened by a late "active"', () => {
+    const w = freshWorld(3);
+    const A = ARCHETYPES.warden;
+    const ch = createCharacter({ name: 'X', archetype: 'warden', background: 'hunter', palette: A.palettes[0].id, weaponItem: A.weapons[0], ability: A.abilities[0], startBoon: 'might' }, 1, 3);
+    const c = { world: w, ch, notify: () => {} };
+    apply({ quest: { id: 'beasts', status: 'resolved', outcome: 'cured' } }, c);
+    apply({ quest: { id: 'beasts', status: 'active', entry: 'holloway_bounty' } }, c);
+    expect(w.quests.beasts.status).toBe('resolved');
+    expect(w.quests.beasts.entries).toContain('holloway_bounty');
   });
 });

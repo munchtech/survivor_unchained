@@ -183,7 +183,10 @@ export function apply(e: Effect | Effect[] | undefined, ctx: Ctx): void {
   }
   if ('quest' in e) {
     const q = (w.quests[e.quest.id] ??= { id: e.quest.id, status: 'unknown', entries: [] });
-    if (e.quest.status && q.status !== e.quest.status) {
+    // A settled quest stays settled: meeting someone late, or reading an
+    // old notice, can add to its story but never reopens it.
+    const settled = q.status === 'resolved' || q.status === 'failed' || q.status === 'abandoned';
+    if (e.quest.status && q.status !== e.quest.status && !(settled && e.quest.status === 'active')) {
       const was = q.status;
       q.status = e.quest.status;
       if (was === 'unknown' && q.status === 'active') { q.startedDay = w.day; ctx.notify({ text: `New: ${ctx.questName?.(q.id) ?? q.id}`, tone: 'journal' }); }
