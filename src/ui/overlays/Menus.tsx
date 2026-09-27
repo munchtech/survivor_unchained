@@ -6,9 +6,11 @@ import './menus.css';
 /* The small overlays: the pause menu and the fall. */
 
 export function Pause() {
+  const [sound, setSound] = useState(() => actions.soundLevel());
   const items = [
     { label: 'Resume', act: () => actions.resume() },
     { label: 'Save', act: () => actions.saveNow() },
+    { label: `Sound: ${{ on: 'On', quiet: 'Quiet', off: 'Off' }[sound]}`, act: () => setSound(actions.cycleSound()) },
     { label: 'Pack', act: () => actions.openOverlay('inventory') },
     { label: 'Journal', act: () => actions.openOverlay('journal') },
     { label: 'Leave to the title', act: () => actions.quitToTitle() },

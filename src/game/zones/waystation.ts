@@ -150,6 +150,15 @@ export function waystation(g: Game): ZoneRuntime {
       return { x: WAY.south.x, z: WAY.south.z - 8, facing: Math.PI };
     },
     timeOf: (w) => w.time,
+    ambience: (x, z) => {
+      const t = g.world?.time ?? 'day', dark = t === 'night', day = t === 'day' || t === 'dawn';
+      const forge = Math.max(0, 1 - Math.hypot(x - WAY.smithy.x, z - WAY.smithy.z) / 26);
+      return {
+        wind: 0.3, leaves: 0.2, town: (dark ? 0.25 : 0.85) * (1 - Math.min(1, Math.hypot(x, z) / 60) * 0.6),
+        fire: built.kit.warmth(x, z), smithy: day ? forge : 0,
+        birds: day ? 0.45 : 0, crickets: dark ? 0.55 : t === 'dusk' ? 0.25 : 0, owl: dark ? 0.3 : 0,
+      };
+    },
     begin: () => {
       const w = g.world!;
       g.scene.atmo.set(PRESETS[w.time === 'night' ? 'night' : w.time === 'dusk' ? 'dusk' : w.time === 'dawn' ? 'dawn' : 'day']);

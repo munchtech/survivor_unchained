@@ -211,6 +211,17 @@ export class ZoneKit {
     return g;
   }
 
+  /** How close a lit fire is, 0..1: for the crackle in the ambience. */
+  warmth(x: number, z: number, reach = 13) {
+    let k = 0;
+    for (const s of this.sources) {
+      if (!s.on || s.flicker < 0.18 || s.color.r < s.color.b) continue;
+      const d = Math.hypot(s.x - x, s.z - z);
+      if (d < reach) k = Math.max(k, (1 - d / reach) ** 2 * Math.min(1, s.intensity / 6));
+    }
+    return k;
+  }
+
   /** Put the brightest nearby sources into the light pool. Call per frame. */
   tick(dt: number, focusX: number, focusZ: number) {
     this.time += dt;

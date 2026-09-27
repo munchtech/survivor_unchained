@@ -11,6 +11,7 @@ import { actions } from './actions';
 import type { ZoneRuntime, Interactable } from './zone';
 import { ZONES } from './zones';
 import { BarkLayer } from '@/ui/hud/barks';
+import { SoundBridge } from './soundBridge';
 import {
   screen, overlay, prompt, toast, zoneInfo, slots, creation, fade, hud, levelUp, boss, objectives, announce,
   character, worldView, touch, dialogue, shopView, restView, subtitle, type CreationDraft, type NoticeKind,
@@ -94,6 +95,7 @@ export class Game {
   private near: Interactable | null = null;
   private time = 0;
   private autosaveT = 0;
+  readonly sound = new SoundBridge();
   /** Dev: a crude player that drives the game (?auto). */
   autopilot: { drive(dt: number): void } | null = null;
 
@@ -103,6 +105,7 @@ export class Game {
     this.bridge = new HudBridge(this.scene, this.barks);
     this.scene.onEvents = (evs) => {
       this.bridge.events(evs);
+      this.sound.events(evs, this.scene.battle);
       this.zone?.events?.(evs);
       for (const e of evs) {
         // The codex remembers every pairing ever found, for every survivor.
@@ -1049,6 +1052,12 @@ export class Game {
     const quiet = overlay.value === 'dialogue' ? '0' : '1';
     if (this.barks.root.style.opacity !== quiet) this.barks.root.style.opacity = quiet;
     this.scene.update(dt);
+    {
+      const b = this.scene.battle;
+      const f = b ? b.player : this.scene.showcase?.look ?? this.scene.cam.focus;
+      const time = (this.world && this.zone?.timeOf?.(this.world)) ?? this.world?.time ?? 'night';
+      this.sound.update(dt, { zone: this.zone?.id ?? null, mode: this.mode, time, px: f.x, pz: f.z, battle: b, ambience: this.zone?.ambience });
+    }
     // Blend from a held pose into wherever the live camera now is.
     if (this.blend) {
       const bl = this.blend;
@@ -1075,6 +1084,8 @@ export class Game {
       setQuality: (q: Quality) => { this.r.setQuality(q); },
       resume: () => this.closeOverlay(),
       saveNow: () => { this.save('manual'); toast('world', 'Journey saved'); },
+      cycleSound: () => this.sound.cycle(),
+      soundLevel: () => this.sound.level,
       quitToTitle: () => { this.save('quit'); fade.value = { to: 1, seconds: 0.6 }; setTimeout(() => this.showTitle(), 650); },
       openOverlay: (o: 'inventory' | 'character' | 'journal' | 'pause') => this.openOverlay(o),
       closeOverlay: () => this.closeOverlay(),

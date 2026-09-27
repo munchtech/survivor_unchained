@@ -597,6 +597,17 @@ export function verge(g: Game): ZoneRuntime {
     },
     interactables: I,
     hooks: { onKill, onLoot, onHitProp },
+    ambience: (x, z) => {
+      const t = w().time, dark = t === 'night', day = t === 'day' || t === 'dawn';
+      const pumping = !F('dig.pump') || F('dig.pump') === 'running';
+      return {
+        wind: 0.6, leaves: 0.7, fire: kit.warmth(x, z),
+        water: Math.max(0, 1 - built.streamDist(x, z) / 24),
+        hum: pumping ? Math.max(0, 1 - Math.hypot(x - V.pump.x, z - V.pump.z) / 40) : 0,
+        birds: day && F('beasts.outcome') !== 'slaughtered' ? 0.8 : day ? 0.3 : 0,
+        crickets: dark ? 0.7 : t === 'dusk' ? 0.35 : 0, owl: dark ? 0.55 : 0,
+      };
+    },
     debug: () => ({ roostHostile: F('roost.hostile'), digHostile: F('dig.hostile'), pop: F('beasts.population'), wolvesFriendly: wolvesFriendly(), kerchiefsFriendly: kerchiefsFriendly() }),
     dispose: () => {
       for (const a of actors.values()) a.dispose();

@@ -15,6 +15,8 @@ export interface GameActions {
   resume(): void;
   saveNow(): void;
   quitToTitle(): void;
+  cycleSound(): 'on' | 'quiet' | 'off';
+  soundLevel(): 'on' | 'quiet' | 'off';
   openOverlay(o: 'inventory' | 'character' | 'journal' | 'pause'): void;
   closeOverlay(): void;
   /** Death screen: get up again. */

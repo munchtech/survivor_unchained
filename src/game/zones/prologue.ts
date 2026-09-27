@@ -660,6 +660,14 @@ export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number 
       g.announceZone();
     },
     step: (dt) => director(dt),
+    ambience: (x, z) => {
+      const dawn = stage === 'dawn' || stage === 'exit';
+      return {
+        wind: 0.55, leaves: 0.35, fire: kit.warmth(x, z),
+        water: clamp(1 - Math.abs(z - riverZ(x)) / 26, 0, 1),
+        crickets: dawn ? 0.15 : 0.75, owl: dawn ? 0 : 0.6, birds: dawn ? 0.7 : 0,
+      };
+    },
     debug: () => ({
       stage, stageT, chestOpened, lit: litCount(), wardenHp: warden?.hp ?? null, wardenMax: warden?.maxHp ?? null, wardenMode: ai.mode,
       wardenX: warden?.x ?? null, wardenZ: warden?.z ?? null, pylons: built.pylons.map((p, i) => ({ x: p.x, z: p.z, lit: litPylons[i] })),

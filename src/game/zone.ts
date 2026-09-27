@@ -1,3 +1,4 @@
+import type { AmbienceMix } from '@/audio/ambience';
 import type { ZoneBuild } from './scene';
 import type { Battle, BattleHooks } from '@/sim/battle';
 import type { CombatEvent } from '@/sim/events';
@@ -55,6 +56,8 @@ export interface ZoneRuntime {
   timeOf?(w: WorldState): WorldState['time'];
   /** A death here: return true if the zone handled it (the prologue does). */
   onDeath?(killer: string): boolean;
+  /** What the place sounds like where the survivor (or the camera) is. */
+  ambience?(x: number, z: number): Partial<AmbienceMix>;
   /** Internal state for tools (the autopilot, the debug readout). */
   debug?(): Record<string, unknown>;
   dispose?(): void;
