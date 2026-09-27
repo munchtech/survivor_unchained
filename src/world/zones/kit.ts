@@ -287,6 +287,43 @@ export class ZoneKit {
     return g;
   }
 
+  /** A fingerpost: a weathered post with an arm pointing along each way
+   *  (world angles, 0 = +x), and a little cap against the rain. */
+  signpost(x: number, z: number, arms: number[], lean = 0.04) {
+    const g = new THREE.Group();
+    const wood = new THREE.MeshStandardMaterial({ color: '#5a4230', roughness: 0.95, flatShading: true });
+    const board = new THREE.MeshStandardMaterial({ color: '#8a6a48', roughness: 0.9, flatShading: true });
+    const paint = new THREE.MeshStandardMaterial({ color: '#e0d2b0', roughness: 0.9 });
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 2.5, 6), wood);
+    post.position.y = 1.25;
+    g.add(post);
+    const cap = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.18, 4), wood);
+    cap.position.y = 2.58;
+    cap.rotation.y = Math.PI / 4;
+    g.add(cap);
+    arms.forEach((a, i) => {
+      const arm = new THREE.Group();
+      const plank = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.2, 0.05), board);
+      plank.position.x = 0.58;
+      const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.05, 3), board);
+      tip.rotation.set(Math.PI / 2, 0, -Math.PI / 2);
+      tip.position.x = 1.14;
+      // Letters worn to a pale smear.
+      const smear = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.05, 0.056), paint);
+      smear.position.set(0.52, 0, 0);
+      arm.add(plank, tip, smear);
+      arm.position.y = 2.15 - i * 0.3;
+      arm.rotation.set(0, -a, (hash1(i, 21) - 0.5) * 0.1);
+      g.add(arm);
+    });
+    g.rotation.z = lean;
+    g.position.set(x, this.y(x, z), z);
+    g.traverse((o) => { if ((o as THREE.Mesh).isMesh) o.castShadow = true; });
+    this.root.add(g);
+    this.col.addCircle(x, z, 0.2);
+    return g;
+  }
+
   /** A bedroll on the ground: a blanket with a rolled head. */
   bedroll(x: number, z: number, rot: number, color = '#6a2e26') {
     const g = new THREE.Group();

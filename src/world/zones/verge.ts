@@ -1015,6 +1015,14 @@ export function buildVerge(grassDensity = 1, state: VergeState = { cleanDays: 0 
   kit.source(V.groveShrine.x, kit.y(V.groveShrine.x, V.groveShrine.z) + 3, V.groveShrine.z, 0xa8d0ff, 10, 16, 0.05);
   kit.prop('halloween', 'shrine', V.groveShrine.x, V.groveShrine.z - 0.8, { rot: 0.4, scale: 0.9, r: 0.6 });
 
+  /* ----------------------------------------------------------- the ways -- */
+  // Where the Old Road comes in from the Waystation: a fingerpost back west,
+  // on east, and a track south-east to the ravine somebody has scratched in.
+  kit.signpost(V.entry.x + 7, V.entry.z + 4.2, [Math.PI, 0, Math.PI * 0.25]);
+  // The far end, where the chapter stops: a milestone, and the road going on.
+  kit.signpost(V.exitEast.x - 8, V.exitEast.z - 4.2, [Math.PI, -0.1]);
+  kit.prop('hex_nature', 'rock_single_B', V.exitEast.x - 9.5, V.exitEast.z + 4.2, { rot: 0.6, scale: 3, r: 0.6 });
+
   /* ----------------------------------------------------- road furniture -- */
   kit.lamp(-120, 13, -Math.PI / 2, false);
   kit.lamp(-30, 18, -Math.PI / 2, false);

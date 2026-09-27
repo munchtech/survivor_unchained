@@ -274,6 +274,8 @@ export function buildLowFord(grassDensity = 1): LowFordBuild {
   kit.prop('dungeon', 'crates_stacked', P.x + 3.0, P.z - 2.8, { rot: 0.1, scale: 0.6, r: 1.0 });
   kit.prop('dungeon', 'trunk_large_A', L.chest.x, L.chest.z, { rot: 2.3, scale: 0.7, r: 0.6, tag: 'watch_chest' });
   kit.lamp(9.5, 38, Math.PI, false);
+  // At the top of the road, where it leaves the ford behind: which way is town.
+  kit.signpost(L.gate.x + 4.6, L.exitZ + 12, [-Math.PI / 2, Math.PI / 2]);
 
   /* ------------------------------------------------------------ barrow -- */
   const B = L.barrow;
