@@ -514,7 +514,8 @@ export function verge(g: Game): ZoneRuntime {
       const wd = w();
       g.scene.atmo.set(PRESETS[wd.time === 'night' ? 'night' : wd.time === 'dusk' ? 'dusk' : wd.time === 'dawn' ? 'dawn' : 'day']);
       // Who is out today.
-      if (wd.time !== 'night' && F('beasts.outcome') !== 'slaughtered') {
+      // Maeca hunts here by day, once you have met her in town.
+      if (wd.time !== 'night' && F('beasts.outcome') !== 'slaughtered' && wd.npcs.maeca?.flags.met) {
         const m = new NpcActor({ ...NPCS.maeca, spot: { x: V.blind.x + 2.6, z: V.blind.z + 4.2, facing: 0.4 } }, root, heightAt, g.barks);
         actors.set('maeca', m);
         I.push({ id: 'talk:maeca', x: m.x, z: m.z, r: 2.8, verb: 'Talk', name: 'Maeca Barefoot', act: () => g.talk('maeca') });
