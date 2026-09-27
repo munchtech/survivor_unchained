@@ -1,7 +1,7 @@
 .dlg-overlay { position: fixed; inset: 0; pointer-events: auto; }
 .dlg-shade { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(4, 3, 6, 0.86) 0%, rgba(4, 3, 6, 0.5) 34%, transparent 60%); }
 .dlg {
-  position: absolute; left: 0; right: 0; bottom: 34px; margin: 0 auto; width: min(1080px, 94vw);
+  position: absolute; left: 0; right: 0; bottom: 34px; margin: 0 auto; width: min(1080px, calc(100% - 32px));
   display: grid; grid-template-columns: 210px 1fr; gap: 26px; align-items: end;
 }
 .dlg-portrait { text-align: center; }

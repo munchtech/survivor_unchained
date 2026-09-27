@@ -315,7 +315,8 @@ function Announcement() {
 
 function Subtitle() {
   const s = subtitle.value;
-  if (!s) return null;
+  // A conversation has the floor: narration waits under it rather than over it.
+  if (!s || overlay.value === 'dialogue') return null;
   return (
     <div key={s.id} class="subtitle fade-in">
       {s.speaker && <span class="sub-speaker">{s.speaker}</span>}

@@ -18,10 +18,12 @@ import './theme.css';
 
 /* The interface root. The HUD and overlays are laid out for a 900 px tall
  * screen and zoomed to the real one, so proportions hold everywhere and
- * text stays sharp (zoom re-lays out rather than scaling a bitmap). */
+ * text stays sharp (zoom re-lays out rather than scaling a bitmap). On a
+ * squarer screen the width decides instead, so the widest panels (the shop,
+ * the pack) still fit side to side. */
 
 function useUiScale() {
-  const calc = () => Math.max(0.72, Math.min(1.6, window.innerHeight / 900));
+  const calc = () => Math.max(0.6, Math.min(1.6, window.innerHeight / 900, window.innerWidth / 1320));
   const [s, setS] = useState(calc);
   useEffect(() => {
     const on = () => setS(calc());

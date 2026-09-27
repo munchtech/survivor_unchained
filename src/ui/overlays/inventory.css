@@ -1,5 +1,5 @@
 .inv-overlay { position: fixed; inset: 0; display: grid; place-items: center; pointer-events: auto; }
-.inv { position: relative; width: 1180px; max-width: 96vw; padding: 18px 22px 20px; }
+.inv { position: relative; width: 1180px; max-width: calc(100% - 24px); padding: 18px 22px 20px; }
 .inv-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .inv-head .title-cap { font-size: 22px; }
 .inv-body { display: grid; grid-template-columns: 430px 420px 1fr; gap: 20px; align-items: start; }
