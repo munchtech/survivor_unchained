@@ -96,7 +96,7 @@ export class PlateLayer {
     parent.appendChild(this.root);
   }
 
-  update(items: Array<{ id: string; x: number; y: number; z: number; info: PlateInfo }>, px: number, pz: number, camera: THREE.Camera, w: number, h: number) {
+  update(items: Array<{ id: string; x: number; y: number; z: number; info: PlateInfo }>, px: number, pz: number, camera: THREE.Camera, w: number, h: number, hush: Array<{ x: number; z: number }> = []) {
     const seen = new Set<string>();
     for (const it of items) {
       const d = Math.hypot(it.x - px, it.z - pz);
@@ -127,7 +127,9 @@ export class PlateLayer {
       const sx = (v3.x * 0.5 + 0.5) * w, sy = (-v3.y * 0.5 + 0.5) * h;
       const fadeIn = 1 - Math.max(0, Math.min(1, (d - 14) / 6));
       p.el.style.transform = `translate(${sx}px, ${sy}px) translate(-50%, -100%)`;
-      p.el.style.opacity = String(fadeIn);
+      // Someone speaking keeps their bubble; the plate steps aside.
+      const speaking = hush.some((q) => Math.hypot(q.x - it.x, q.z - it.z) < 1.6);
+      p.el.style.opacity = String(speaking ? 0 : fadeIn);
       p.el.classList.toggle('near', d < 5);
     }
     for (const [id, p] of this.plates) if (!seen.has(id)) { p.el.remove(); this.plates.delete(id); }

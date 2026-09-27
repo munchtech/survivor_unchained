@@ -6,7 +6,7 @@ import * as THREE from 'three';
  * and use the game's typefaces; positioned imperatively every frame because
  * a signal per frame per label would be waste. */
 
-interface Bark { el: HTMLDivElement; x: number; y: number; z: number; born: number; life: number; rise: number; follow?: () => { x: number; y: number; z: number } | null }
+interface Bark { el: HTMLDivElement; x: number; y: number; z: number; born: number; life: number; rise: number; speech?: boolean; speaker?: string; follow?: () => { x: number; y: number; z: number } | null }
 
 const v = new THREE.Vector3();
 
@@ -30,7 +30,12 @@ export class BarkLayer {
   speech(text: string, speaker: string | undefined, x: number, y: number, z: number, follow?: Bark['follow']) {
     // One bubble per speaker: a new line replaces the old.
     const life = Math.max(2.4, text.length * 0.065);
+    for (let i = this.list.length - 1; i >= 0; i--) {
+      const b = this.list[i];
+      if (b.speech && (speaker ? b.speaker === speaker : Math.hypot(b.x - x, b.z - z) < 1)) this.remove(i);
+    }
     const el = this.add('', x, y, z, 'speech', life, 0.25, follow);
+    this.list[this.list.length - 1].speaker = speaker;
     if (speaker) {
       const b = document.createElement('b');
       b.textContent = speaker;
@@ -44,7 +49,7 @@ export class BarkLayer {
     el.className = `bark ${cls}`;
     el.textContent = text;
     this.root.appendChild(el);
-    this.list.push({ el, x, y, z, born: this.time, life, rise, follow });
+    this.list.push({ el, x, y, z, born: this.time, life, rise, follow, speech: cls === 'speech' });
     if (this.list.length > 24) this.remove(0);
     return el;
   }
@@ -77,5 +82,10 @@ export class BarkLayer {
 
   clear() {
     while (this.list.length) this.remove(0);
+  }
+
+  /** Where someone is speaking right now (so their nameplate can step aside). */
+  speakers(): Array<{ x: number; z: number }> {
+    return this.list.filter((b) => b.speech).map((b) => ({ x: b.x, z: b.z }));
   }
 }

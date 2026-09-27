@@ -7,7 +7,7 @@ import type { Grass } from '@/render/grass';
 import { CrowdRenderer } from '@/render/crowd';
 import { CombatFx } from '@/render/fx/combatFx';
 import { PlayerView, type Loadout } from '@/render/playerView';
-import { floraUniforms, setOccluder } from '@/render/flora';
+import { floraUniforms, setOccluder, setFocus } from '@/render/flora';
 import { tickWind } from '@/render/instancing';
 import { Battle, type BattleSetup } from '@/sim/battle';
 import type { CollisionWorld } from '@/sim/collision';
@@ -155,12 +155,14 @@ export class WorldScene {
       const buf = this.r.gl.getDrawingBufferSize(new THREE.Vector2());
       const depth = this.r.camera.position.distanceTo(new THREE.Vector3(p.x, y + 1, p.z));
       setOccluder((sp.x * 0.5 + 0.5) * buf.x, (sp.y * 0.5 + 0.5) * buf.y, depth, buf.y * 0.15);
+      setFocus(p.x, y, p.z, this.r.camera.position.x, this.r.camera.position.z);
       // Taking a blow bruises the edges of the picture.
       this.damageFlash = Math.max(0, this.damageFlash - dt * 2.2);
       const lowHp = p.alive ? Math.max(0, 0.35 - p.hp / b.maxHp) * 1.2 : 0.6;
       this.r.grade.damage = Math.min(1, this.damageFlash * 0.7 + lowHp);
       this.r.grade.desaturate = p.alive ? 0 : 0.85;
     }
+    if (!b || this.showcase) floraUniforms.uFocus.value.w = 0;
     if (this.showcase) {
       this.r.camera.position.copy(this.showcase.pos);
       this.r.camera.lookAt(this.showcase.look);

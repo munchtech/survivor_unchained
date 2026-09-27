@@ -59,7 +59,9 @@ async function boot() {
       if (z && z !== 'lowford') {
         game.world!.facts['prologue.done'] = true;
         game.world!.time = (params.get('time') as 'day') || 'day';
-        game.enterZone(z, 'lowford');
+        // ?at=x,z: arrive somewhere other than the zone's entrance.
+        const at = params.get('at')?.split(',').map(Number);
+        game.enterZone(z, 'lowford', at ? { x: at[0], z: at[1] } : undefined);
       }
       fade.value = { to: 0, seconds: 0.5 };
     } else {

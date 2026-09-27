@@ -318,6 +318,10 @@ export const floraUniforms = {
   uTime: { value: 0 },
   // Survivor on screen: pixel x, pixel y, view depth, radius in pixels.
   uOccluder: { value: new THREE.Vector4(0, 0, 0, 0) },
+  // Survivor in the world (xyz, w = on) and the way to the camera across
+  // the ground: whole trees standing in that lane thin out.
+  uFocus: { value: new THREE.Vector4(0, 0, 0, 0) },
+  uCamXZ: { value: new THREE.Vector2(0, 1) },
   uRim: { value: new THREE.Color('#6d86b8') },
 };
 
@@ -326,6 +330,13 @@ export const floraUniforms = {
  *  dithered away. */
 export function setOccluder(px: number, py: number, viewDepth: number, radiusPx: number) {
   floraUniforms.uOccluder.value.set(px, py, viewDepth, radiusPx);
+}
+
+/** Per frame: the survivor's feet and the camera, for the tree lane. */
+export function setFocus(x: number, y: number, z: number, camX: number, camZ: number, on = true) {
+  floraUniforms.uFocus.value.set(x, y, z, on ? 1 : 0);
+  const dx = camX - x, dz = camZ - z, l = Math.hypot(dx, dz) || 1;
+  floraUniforms.uCamXZ.value.set(dx / l, dz / l);
 }
 
 /** Shared fragment code for the occlusion cut-out; buildings use it too. */
@@ -352,12 +363,26 @@ export function floraMaterial(opts: { wind?: number; rim?: number; occlude?: boo
   mat.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, floraUniforms);
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nuniform float uTime;')
+      .replace('#include <common>', `#include <common>
+uniform float uTime;
+uniform vec4 uFocus;
+uniform vec2 uCamXZ;
+varying float vLane;`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>
 {
   vec3 ip = vec3(0.0);
+  vLane = 0.0;
   #ifdef USE_INSTANCING
   ip = vec3(instanceMatrix[3][0], instanceMatrix[3][1], instanceMatrix[3][2]);
+  ${occlude ? `{
+    // Standing between the survivor and the camera: thin the whole tree.
+    vec2 d = ip.xz - uFocus.xz;
+    float along = dot(d, uCamXZ);
+    float lat = length(d - along * uCamXZ);
+    float reach = length(instanceMatrix[0].xyz);
+    vLane = uFocus.w * smoothstep(-2.5 * reach, 0.5, along) * (1.0 - smoothstep(13.0, 18.0, along))
+          * (1.0 - smoothstep(4.0 * reach, 6.5 * reach, lat));
+  }` : ''}
   #endif
   float h = max(position.y, 0.0);
   float ph = uTime * 1.1 + ip.x * 0.23 + ip.z * 0.19;
@@ -368,9 +393,11 @@ export function floraMaterial(opts: { wind?: number; rim?: number; occlude?: boo
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>
 uniform vec3 uRim;
+varying float vLane;
 ${OCCLUDE_PARS}`)
       .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
-${occlude ? OCCLUDE_FRAG : ''}`)
+${occlude ? OCCLUDE_FRAG : ''}
+${occlude ? 'if (vLane > 0.0 && bayer4(gl_FragCoord.xy + 1.0) < vLane * 0.9) discard;' : ''}`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
 {
   vec3 vdir = normalize(vViewPosition);
@@ -378,6 +405,6 @@ ${occlude ? OCCLUDE_FRAG : ''}`)
   totalEmissiveRadiance += uRim * rimT * ${rim.toFixed(3)} * diffuseColor.rgb * 2.0;
 }`);
   };
-  mat.customProgramCacheKey = () => `flora-${wind}-${rim}-${occlude}-${!!opts.flatShading}`;
+  mat.customProgramCacheKey = () => `flora2-${wind}-${rim}-${occlude}-${!!opts.flatShading}`;
   return mat;
 }

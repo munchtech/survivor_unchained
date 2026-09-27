@@ -182,7 +182,7 @@ export function waystation(g: Game): ZoneRuntime {
       }
       const cam = g.r.camera;
       const zoom = 1;
-      plates.update(items, px, pz, cam, g.r.width / zoom, g.r.height / zoom);
+      plates.update(items, px, pz, cam, g.r.width / zoom, g.r.height / zoom, g.barks.speakers());
       void THREE;
     },
     interactables,

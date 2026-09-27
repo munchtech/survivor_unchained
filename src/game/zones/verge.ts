@@ -575,7 +575,7 @@ export function verge(g: Game): ZoneRuntime {
       const f = fight as Enemy | null;
       if (f) boss.value = { name: f.named!.title, title: f === nemesis ? `Who took ${w().nemesis?.heroName}'s light` : f.def.name, hp: f.hp, maxHp: f.maxHp };
       else if (boss.value && !f) boss.value = null;
-      plates.update(items, p.x, p.z, g.r.camera, g.r.width, g.r.height);
+      plates.update(items, p.x, p.z, g.r.camera, g.r.width, g.r.height, g.barks.speakers());
       trackT -= dt;
       if (trackT <= 0) { trackT = 1.5; objectives.value = tracker(); }
     },

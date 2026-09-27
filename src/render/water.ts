@@ -21,6 +21,9 @@ export interface WaterOpts {
   glow?: number;
   /** The sky it reflects, added at grazing angles. */
   sky?: string;
+  /** Streams only: the colour of the shallows and of the foam at the banks. */
+  shallow?: string;
+  foam?: string;
 }
 
 export const waterUniforms = { uTime: { value: 0 } };
@@ -38,8 +41,17 @@ function finish(m: THREE.Mesh) {
   return m;
 }
 
-/** A stream: a ribbon of water that follows a path downhill. */
-export function createStream(path: Array<[number, number]>, width: number, surface: (x: number, z: number) => number, o: Omit<WaterOpts, 'width' | 'depth'>): THREE.Mesh {
+/** A stream: a ribbon of water that follows a path downhill.
+ *
+ *  Given the ground under it, the ribbon knows how deep it is at every
+ *  vertex (several lanes across, not just two edges), so the shallows at
+ *  the banks can clear to show the mud, scum can gather where it laps the
+ *  edge, and the surface can flow along the stream rather than across the
+ *  world. */
+export function createStream(
+  path: Array<[number, number]>, width: number, surface: (x: number, z: number) => number,
+  o: Omit<WaterOpts, 'width' | 'depth'>, ground?: (x: number, z: number) => number, lanes = 6,
+): THREE.Mesh {
   // Resample the path every metre or so.
   const pts: Array<[number, number]> = [];
   for (let i = 0; i < path.length - 1; i++) {
@@ -48,12 +60,13 @@ export function createStream(path: Array<[number, number]>, width: number, surfa
     for (let k = 0; k < n; k++) pts.push([x0 + ((x1 - x0) * k) / n, z0 + ((z1 - z0) * k) / n]);
   }
   pts.push(path[path.length - 1]);
-  const pos: number[] = [], uv: number[] = [], idx: number[] = [];
+  const pos: number[] = [], flow: number[] = [], depth: number[] = [], idx: number[] = [];
+  const row = lanes + 1;
   let run = 0;
   let prevY = Infinity;
   for (let i = 0; i < pts.length; i++) {
     const [x, z] = pts[i];
-    const [ax, az] = pts[Math.max(0, i - 1)], [bx, bz] = pts[Math.min(pts.length - 1, i + 1)];
+    const [ax, az] = pts[Math.max(0, i - 2)], [bx, bz] = pts[Math.min(pts.length - 1, i + 2)];
     let tx = bx - ax, tz = bz - az;
     const l = Math.hypot(tx, tz) || 1;
     tx /= l; tz /= l;
@@ -62,19 +75,30 @@ export function createStream(path: Array<[number, number]>, width: number, surfa
     const y = Math.min(prevY, surface(x, z));
     prevY = y;
     if (i > 0) run += Math.hypot(x - pts[i - 1][0], z - pts[i - 1][1]);
-    pos.push(x + nx * width / 2, y, z + nz * width / 2, x - nx * width / 2, y, z - nz * width / 2);
-    uv.push(0, run / width, 1, run / width);
-    if (i > 0) { const a = (i - 1) * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    for (let j = 0; j <= lanes; j++) {
+      const off = (0.5 - j / lanes) * width;
+      const vx = x + nx * off, vz = z + nz * off;
+      pos.push(vx, y, vz);
+      flow.push(off, run);
+      depth.push(ground ? Math.max(-1, Math.min(3, y - ground(vx, vz))) : 1);
+    }
+    if (i > 0) {
+      for (let j = 0; j < lanes; j++) {
+        const p = (i - 1) * row + j, q = i * row + j;
+        idx.push(p, p + 1, q, p + 1, q + 1, q);
+      }
+    }
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  geo.setAttribute('aFlow', new THREE.Float32BufferAttribute(flow, 2));
+  geo.setAttribute('aDepth', new THREE.Float32BufferAttribute(depth, 1));
   geo.setIndex(idx);
   geo.computeVertexNormals();
-  return finish(new THREE.Mesh(geo, waterMaterial({ ...o, width, depth: run })));
+  return finish(new THREE.Mesh(geo, waterMaterial({ ...o, width, depth: run }, true)));
 }
 
-function waterMaterial(o: WaterOpts) {
+function waterMaterial(o: WaterOpts, stream = false) {
   const mat = new THREE.MeshStandardMaterial({
     color: o.color ?? '#0e1c20', roughness: 0.06, metalness: 0.0, transparent: true, opacity: o.opacity ?? 0.86,
     envMapIntensity: 1.6, depthWrite: false,
@@ -88,9 +112,24 @@ function waterMaterial(o: WaterOpts) {
     sh.uniforms.uMurk = { value: murk };
     sh.uniforms.uGlow = { value: o.glow ?? 0 };
     sh.uniforms.uSky = { value: new THREE.Color(o.sky ?? '#1c2c3c') };
+    sh.uniforms.uShallow = { value: new THREE.Color(o.shallow ?? '#4a4230') };
+    sh.uniforms.uFoam = { value: new THREE.Color(o.foam ?? '#cfd8d4') };
+    if (stream) sh.defines = { ...(sh.defines ?? {}), STREAM: '' };
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying vec3 vWPos;')
-      .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+      .replace('#include <common>', `#include <common>
+varying vec3 vWPos;
+#ifdef STREAM
+attribute vec2 aFlow;
+attribute float aDepth;
+varying vec2 vFlow;
+varying float vDepth;
+#endif`)
+      .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
+vWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;
+#ifdef STREAM
+vFlow = aFlow;
+vDepth = aDepth;
+#endif`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
 varying vec3 vWPos;
@@ -100,6 +139,12 @@ uniform vec2 uFlow;
 uniform vec3 uMurk;
 uniform float uGlow;
 uniform vec3 uSky;
+uniform vec3 uShallow;
+uniform vec3 uFoam;
+#ifdef STREAM
+varying vec2 vFlow;
+varying float vDepth;
+#endif
 float wh(vec2 p) {
   vec2 a = p * 0.045 + uFlow * uTime * 0.05;
   vec2 b = p * 0.11 - uFlow.yx * uTime * 0.07 + 3.7;
@@ -108,9 +153,16 @@ float wh(vec2 p) {
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
 {
   float e = 0.35;
-  float h0 = wh(vWPos.xz);
-  float hx = wh(vWPos.xz + vec2(e, 0.0));
-  float hz = wh(vWPos.xz + vec2(0.0, e));
+  #ifdef STREAM
+  // Stream space: across in x, downstream in y, so the ripples travel
+  // with the current however the stream bends.
+  vec2 wp = vec2(vFlow.x, -vFlow.y);
+  #else
+  vec2 wp = vWPos.xz;
+  #endif
+  float h0 = wh(wp);
+  float hx = wh(wp + vec2(e, 0.0));
+  float hz = wh(wp + vec2(0.0, e));
   vec3 nW = normalize(vec3(-(hx - h0) * 1.3, 1.0, -(hz - h0) * 1.3));
   normal = normalize((viewMatrix * vec4(nW, 0.0)).xyz);
 }`)
@@ -121,6 +173,23 @@ float wh(vec2 p) {
   totalEmissiveRadiance += uMurk * uGlow * (0.6 + 0.4 * wh(vWPos.xz * 2.0));
   float ripple = smoothstep(0.52, 0.7, wh(vWPos.xz * 1.7));
   totalEmissiveRadiance += uSky * (0.25 + fres * 1.1 + ripple * 0.35);
+  #ifdef STREAM
+  {
+    // Shallows clear towards the mud; scum gathers where it laps the bank.
+    float sh = 1.0 - smoothstep(0.0, 0.55, vDepth);
+    diffuseColor.rgb = mix(diffuseColor.rgb, uShallow, sh * 0.6);
+    totalEmissiveRadiance *= 1.0 - sh * 0.5;
+    diffuseColor.a *= mix(1.0, 0.4, sh);
+    vec2 fp = vec2(vFlow.x * 1.6, -vFlow.y * 0.9);
+    float fn = wh(fp * 2.4) * 0.65 + wh(fp * 6.0 + 11.0) * 0.35;
+    float edge = 1.0 - smoothstep(0.02, 0.22, vDepth);
+    float streak = smoothstep(0.5, 0.66, fn) * (0.25 + 0.75 * edge);
+    float foam = max(edge * smoothstep(0.35, 0.55, fn), streak * 0.35);
+    diffuseColor.rgb = mix(diffuseColor.rgb, uFoam, foam * 0.75);
+    totalEmissiveRadiance += uFoam * foam * 0.18;
+    diffuseColor.a = max(diffuseColor.a, foam * 0.85);
+  }
+  #endif
 }`);
   };
   mat.side = THREE.DoubleSide;
