@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { hud, boss, zoneInfo, objectives, prompt, toasts, announcement, subtitle, hint, type HudState, type HudWeapon } from '../store';
+import { hud, boss, zoneInfo, objectives, prompt, toasts, announcement, subtitle, hint, overlay, type HudState, type HudWeapon } from '../store';
 import { Glyph, Icon } from '../components/Icon';
 import { SCHOOL_UI } from '../palette';
 import { Input } from '@/core/input';
@@ -16,8 +16,9 @@ import './hud.css';
 
 export function Hud() {
   const h = hud.value;
+  const talking = overlay.value === 'dialogue';
   return (
-    <div class="hud">
+    <div class={`hud${talking ? ' talking' : ''}`}>
       {h && h.combat && <EmberBar h={h} />}
       <BossBar />
       <ZoneCorner />

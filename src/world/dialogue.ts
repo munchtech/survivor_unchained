@@ -30,8 +30,8 @@ export interface DChoice {
   goto?: string;
   /** Can only be picked once in this person's lifetime. */
   once?: string;
-  /** Special actions the game handles. */
-  action?: 'trade' | 'rest' | 'stash' | 'sell' | 'craft' | 'leave' | 'fortune';
+  /** Special actions the game handles: services and computed trades. */
+  action?: 'trade' | 'rest' | 'stash' | 'sell' | 'craft' | 'leave' | 'fortune' | 'bounty' | 'sellpelts' | 'reforge' | 'travel_verge';
   end?: boolean;
 }
 
@@ -51,9 +51,11 @@ export interface Conversation {
   /** Entry points: the first whose condition holds is where it starts. */
   entry: Array<{ when?: Cond; node: string }>;
   nodes: Record<string, DNode>;
+  /** The mark over their head: '!' something new to say, '?' waiting on you. */
+  marker?: Array<{ when: Cond; mark: '!' | '?' }>;
 }
 
-export interface PresentedChoice { index: number; text: string; enabled: boolean; locked?: string; badge?: string }
+export interface PresentedChoice { index: number; text: string; enabled: boolean; locked?: string; badge?: string; ends?: boolean; action?: DChoice['action'] }
 
 export interface Presented { node: DNode; speaker: string; text: string; choices: PresentedChoice[] }
 
@@ -108,7 +110,7 @@ export class DialogueRunner {
       if (c.once && s.flags[`once:${c.once}`]) return;
       const ok = test(c.when, this.ctx);
       if (!ok && !c.locked) return;
-      choices.push({ index, text: template(pickText(c.text, this.ctx), this.ctx), enabled: ok, locked: ok ? undefined : c.locked, badge: c.badge });
+      choices.push({ index, text: template(pickText(c.text, this.ctx), this.ctx), enabled: ok, locked: ok ? undefined : c.locked, badge: c.badge, ends: !!c.end || (!c.goto && !c.action), action: c.action });
     });
     return {
       node: n, speaker: n.speaker ?? this.convo.npc,
@@ -138,4 +140,10 @@ export class DialogueRunner {
     this.node = null;
     return null;
   }
+}
+
+/** The marker a conversation shows right now, if any. */
+export function markerOf(convo: Conversation, ctx: Ctx): '!' | '?' | null {
+  for (const m of convo.marker ?? []) if (test(m.when, ctx)) return m.mark;
+  return null;
 }

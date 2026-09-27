@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { floraUniforms, OCCLUDE_PARS, OCCLUDE_FRAG } from './flora';
 
 /* Everything the game draws from a file comes through here, once.
  *
@@ -126,6 +127,7 @@ function prepareStatic(root: THREE.Object3D) {
       if (s.isMeshStandardMaterial) {
         s.roughness = Math.max(s.roughness, 0.82);
         s.metalness = Math.min(s.metalness, 0.1);
+        occludable(s);
         if (s.map) {
           s.map.colorSpace = THREE.SRGBColorSpace;
           s.map.anisotropy = 8;
@@ -133,6 +135,20 @@ function prepareStatic(root: THREE.Object3D) {
       }
     }
   });
+}
+
+/** Props dither away where they stand between the camera and the survivor
+ *  (walls, houses, a stack of crates), the way the trees do. */
+function occludable(mat: THREE.MeshStandardMaterial) {
+  if (mat.userData.occludable) return;
+  mat.userData.occludable = true;
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uOccluder = floraUniforms.uOccluder;
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `#include <common>\n${OCCLUDE_PARS}`)
+      .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>\n${OCCLUDE_FRAG}`);
+  };
+  mat.customProgramCacheKey = () => 'occludable-prop';
 }
 
 function prepareCharacter(root: THREE.Object3D) {

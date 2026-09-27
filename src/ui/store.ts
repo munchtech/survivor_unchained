@@ -14,7 +14,7 @@ import type { WorldState } from '@/world/state';
 export type Screen = 'boot' | 'title' | 'create' | 'play';
 export type Overlay =
   | null | 'levelup' | 'inventory' | 'character' | 'journal' | 'dialogue' | 'shop'
-  | 'pause' | 'death' | 'chapter' | 'map' | 'rest';
+  | 'pause' | 'death' | 'chapter' | 'map' | 'rest' | 'stash';
 
 export const screen = signal<Screen>('boot');
 export const overlay = signal<Overlay>(null);
@@ -188,3 +188,21 @@ export const character = signal<CharacterData | null>(null);
 export const worldView = signal<WorldState | null>(null);
 export const rev = signal(0);
 export function touch() { rev.value++; }
+
+/* ------------------------------------------------------------- dialogue -- */
+
+export interface DialogueChoiceView { index: number; text: string; enabled: boolean; locked?: string; badge?: string; ends?: boolean; action?: string }
+export interface DialogueView {
+  npc: string;
+  name: string;
+  title: string;
+  portrait: string | null;
+  mood: string;
+  /** Who is speaking this line: the npc, 'player' or 'narrator'. */
+  speaker: 'npc' | 'player' | 'narrator';
+  text: string;
+  key: number;
+  choices: DialogueChoiceView[];
+  canContinue: boolean;
+}
+export const dialogue = signal<DialogueView | null>(null);

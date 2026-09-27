@@ -54,6 +54,13 @@ async function boot() {
       const arch = (quick in { warden: 1, reaver: 1, arcanist: 1, stalker: 1 } ? quick : 'warden') as 'warden';
       const A = (await import('@/content/archetypes')).ARCHETYPES[arch];
       game.beginJourney({ name: params.get('name') || 'Ashe', archetype: arch, background: (params.get('bg') as 'hunter') || 'hunter', palette: A.palettes[0].id, weaponItem: params.get('weapon') || A.weapons[0], ability: A.abilities[0], startBoon: 'might' });
+      // ?zone=waystation: skip ahead (the prologue counts as done).
+      const z = params.get('zone');
+      if (z && z !== 'lowford') {
+        game.world!.facts['prologue.done'] = true;
+        game.world!.time = (params.get('time') as 'day') || 'day';
+        game.enterZone(z, 'lowford');
+      }
       fade.value = { to: 0, seconds: 0.5 };
     } else {
       game.showTitle();

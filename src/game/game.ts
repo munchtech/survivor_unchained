@@ -13,8 +13,14 @@ import { ZONES } from './zones';
 import { BarkLayer } from '@/ui/hud/barks';
 import {
   screen, overlay, prompt, toast, zoneInfo, slots, creation, fade, hud, levelUp, boss, objectives, announce,
-  character, worldView, touch, type CreationDraft, type NoticeKind,
+  character, worldView, touch, dialogue, type CreationDraft, type NoticeKind,
 } from '@/ui/store';
+import { DialogueRunner, type Presented } from '@/world/dialogue';
+import { attitude } from '@/world/logic';
+import { CONVOS } from '@/content/dialogue';
+import { NPCS } from '@/content/npcs';
+import { QUESTS } from '@/content/quests';
+import { renderPortrait } from '@/ui/portrait';
 import { Input } from '@/core/input';
 import { damp } from '@/core/math';
 import {
@@ -417,12 +423,18 @@ export class Game {
       notify: (n) => this.notify(n),
       npcName: (id) => NPC_NAMES[id] ?? id,
       questName: (id) => QUEST_NAMES[id] ?? id,
+      entryText: (q, e) => `${QUESTS[q]?.name ?? q}: ${QUESTS[q]?.entries[e] ?? 'journal updated'}`,
     };
   }
 
   notify(n: Notice) {
     const kind = TOAST_KIND[n.tone];
-    if (n.tone === 'journal') toast('quest', n.text, { life: 6 });
+    if (n.tone === 'journal') {
+      // "Quest: what you learned" reads as a title and a line.
+      const i = n.text.indexOf(': ');
+      if (i > 0 && !n.text.startsWith('New')) toast('quest', n.text.slice(0, i), { sub: n.text.slice(i + 2), life: 8 });
+      else toast('quest', n.text, { life: 6 });
+    }
     else if (n.tone === 'item') {
       const def = Object.values(ITEMS).find((d) => n.text.startsWith(d.name));
       toast('loot', n.text, { icon: def?.icon, rarity: def?.rarity });
@@ -503,7 +515,7 @@ export class Game {
     b.healPlayer(b.maxHp * (ITEMS.health_draught.consumable?.heal ?? 0.4), 'draught');
   }
 
-  openOverlay(o: 'inventory' | 'character' | 'journal' | 'pause' | 'dialogue' | 'shop' | 'rest') {
+  openOverlay(o: 'inventory' | 'character' | 'journal' | 'pause' | 'dialogue' | 'shop' | 'rest' | 'stash' | 'chapter') {
     overlay.value = o;
     this.scene.simPaused = true;
     Input.captured = true;
@@ -609,6 +621,163 @@ export class Game {
     return loadoutFor({ archetype: ch.archetype, weaponItem: ch.equipment.weapon?.def ?? ARCHETYPES[ch.archetype].weapons[0], model: ch.model, palette: ch.palette, headgear: ch.headgear });
   }
 
+  /* ======================================================= dialogue == */
+
+  private runner: DialogueRunner | null = null;
+  private talkNpc: string | null = null;
+  private dlgKey = 0;
+  private portraits = new Map<string, string | null>();
+  private camSaved: number | null = null;
+
+  talk(id: string) {
+    const convo = CONVOS[id];
+    if (!convo || !this.ctx) return;
+    const runner = new DialogueRunner(convo, this.ctx);
+    const p = runner.start();
+    if (!p) return;
+    this.runner = runner;
+    this.talkNpc = id;
+    const actor = this.zone?.actors?.get(id);
+    const b = this.scene.battle;
+    if (actor && b) {
+      actor.talking = true;
+      actor.gesture();
+      const y = this.scene.heightAt(actor.x, actor.z);
+      this.scene.cam.focusOverride = new THREE.Vector3((actor.x + b.player.x) / 2, y + 1, (actor.z + b.player.z) / 2);
+      this.camSaved = this.scene.cam.targetDistance;
+      this.scene.cam.targetDistance = 12.5;
+      // Face the person you are talking to.
+      b.player.facing = Math.atan2(actor.x - b.player.x, actor.z - b.player.z);
+    }
+    this.openOverlay('dialogue');
+    this.present(p);
+    touch();
+  }
+
+  private portraitOf(id: string) {
+    if (!this.portraits.has(id)) {
+      const d = NPCS[id];
+      this.portraits.set(id, d ? renderPortrait({ model: d.model, show: d.show, attackClips: [], heavyClip: '', tint: d.tint }, 190, 228, 'bust', d.scale ?? 1) : null);
+    }
+    return this.portraits.get(id) ?? null;
+  }
+
+  private present(p: Presented) {
+    const id = this.talkNpc!;
+    const d = NPCS[id];
+    const s = this.world ? npc(this.world, id) : null;
+    dialogue.value = {
+      npc: id, name: d?.name ?? (id === 'board' ? 'Notice Board' : id), title: d?.title ?? '', portrait: this.portraitOf(id),
+      mood: s && d ? attitude(s) : '', speaker: p.speaker === 'player' ? 'player' : p.speaker === 'narrator' ? 'narrator' : 'npc',
+      text: p.text, key: ++this.dlgKey,
+      choices: p.choices.map((c) => ({ index: c.index, text: c.text, enabled: c.enabled, locked: c.locked, badge: c.badge, ends: c.ends, action: c.action })),
+      canContinue: p.choices.length === 0,
+    };
+  }
+
+  chooseDialogue(i: number) {
+    const r = this.runner;
+    if (!r) return;
+    const res = r.choose(i);
+    touch();
+    if (res.action) {
+      const keepTalking = this.dialogueAction(res.action);
+      if (!keepTalking) { this.endDialogue(); return; }
+    }
+    if (res.next) this.present(res.next);
+    else if (!res.action) this.endDialogue();
+    else if (r.node) { const p = r.present(); if (p) this.present(p); }
+  }
+
+  advanceDialogue() {
+    const r = this.runner;
+    if (!r) return;
+    const p = r.advance();
+    touch();
+    if (p) this.present(p);
+    else this.endDialogue();
+  }
+
+  endDialogue() {
+    const actor = this.talkNpc ? this.zone?.actors?.get(this.talkNpc) : null;
+    if (actor) actor.talking = false;
+    this.scene.cam.focusOverride = null;
+    if (this.camSaved !== null) { this.scene.cam.targetDistance = this.camSaved; this.camSaved = null; }
+    this.runner = null;
+    this.talkNpc = null;
+    dialogue.value = null;
+    if (overlay.value === 'dialogue') this.closeOverlay();
+    this.save('talk');
+  }
+
+  /** Services a conversation opens. Returns true to stay in the conversation. */
+  private dialogueAction(a: string): boolean {
+    const ch = this.ch!, w = this.world!;
+    const from = this.talkNpc ?? '';
+    switch (a) {
+      case 'trade':
+      case 'sell':
+        this.endDialogue();
+        this.openShop(from);
+        return false;
+      case 'stash':
+        this.endDialogue();
+        this.openOverlay('stash');
+        return false;
+      case 'rest':
+        this.endDialogue();
+        this.openOverlay('rest');
+        return false;
+      case 'fortune':
+        this.endDialogue();
+        this.openOverlay('chapter');
+        return false;
+      case 'sellpelts': {
+        const pelts = this.countOf('wolf_pelt'), hides = this.countOf('boar_hide');
+        if (!pelts && !hides) { toast('warning', 'You have nothing he wants'); return true; }
+        this.apply([
+          { take: 'wolf_pelt', qty: pelts }, { take: 'boar_hide', qty: hides }, { gold: pelts * 8 + hides * 6 },
+          { add: { 'beasts.pelts_sold': pelts } }, { quest: { id: 'beasts', entry: 'pelts_sold' } },
+          { history: { id: 'sold_pelts', text: 'sold wolf pelts to Brannoc', tags: ['beasts', 'trade'], spread: 1, reactions: { maeca: { affection: -10 } } } },
+        ]);
+        return true;
+      }
+      case 'bounty': {
+        const pelts = this.countOf('wolf_pelt');
+        if (!pelts) return true;
+        const sold = Number(w.facts['beasts.pelts_sold'] ?? 0) > 0;
+        this.apply([
+          { take: 'wolf_pelt', qty: pelts }, { gold: pelts * 5 }, { set: { 'beasts.bounty_claimed': true } }, { quest: { id: 'beasts', entry: 'bounty_claimed' } },
+          { rel: { npc: 'holloway', respect: Math.min(15, pelts * 2) } },
+        ]);
+        if (sold) this.apply({ history: { id: 'double_dipped', text: 'sold pelts to Brannoc and claimed Holloway\'s bounty on the same wolves', tags: ['greed', 'beasts'], spread: 2, reactions: { holloway: { trust: -30 }, brannoc: { trust: -20 } } } });
+        return true;
+      }
+      case 'reforge': {
+        const wpn = ch.equipment.weapon;
+        if (!wpn) return true;
+        if (wpn.rarity >= 4) { toast('warning', 'Brannoc: "There is nothing more I can do to that."'); return true; }
+        const cost = 40 * (wpn.rarity + 1);
+        if (ch.gold < cost) { toast('warning', `Reforging costs ${cost} gold`); return true; }
+        ch.gold -= cost;
+        wpn.rarity++;
+        (wpn.history ??= []).push(`Reforged by Brannoc, day ${w.day}`);
+        toast('loot', `${itemName(wpn)} reforged`, { icon: ITEMS[wpn.def].icon, rarity: wpn.rarity, sub: 'It starts every expedition a rank higher.' });
+        this.refreshKit();
+        return true;
+      }
+    }
+    return true;
+  }
+
+  private countOf(def: string) {
+    return this.ch!.pack.reduce((n, p) => n + (p?.def === def ? p.qty : 0), 0);
+  }
+
+  openShop(_id: string) {
+    toast('world', 'The stall is shut for now');
+  }
+
   /* ============================================================ frame == */
 
   private startBlend(dur: number) {
@@ -690,6 +859,8 @@ export class Game {
       unequip: (slot: string) => this.unequipSlot(slot),
       useItem: (uid: string) => this.useItem(uid),
       dropItem: (uid: string) => this.dropItem(uid),
+      choose: (i: number) => this.chooseDialogue(i),
+      advance: () => this.advanceDialogue(),
     });
   }
 

@@ -22,6 +22,7 @@ export const TAG_LINES: Record<string, string> = {
   moon_touched: 'Something in the grove marked you.',
   explosive: 'Something could be blown open with this. Or up.',
   warden_iron: 'Remembers the light it held.',
+  wolf_pelts: 'Any wolf that smells it will know what it is.',
 };
 
 const KIND_NAMES: Record<string, string> = {

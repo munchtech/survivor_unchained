@@ -1,0 +1,46 @@
+.dlg-overlay { position: fixed; inset: 0; pointer-events: auto; }
+.dlg-shade { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(4, 3, 6, 0.86) 0%, rgba(4, 3, 6, 0.5) 34%, transparent 60%); }
+.dlg {
+  position: absolute; left: 0; right: 0; bottom: 34px; margin: 0 auto; width: min(1080px, 94vw);
+  display: grid; grid-template-columns: 210px 1fr; gap: 26px; align-items: end;
+}
+.dlg-portrait { text-align: center; }
+.dlg-frame {
+  position: relative; width: 190px; height: 228px; margin: 0 auto 8px; border-radius: 8px; overflow: hidden;
+  background: radial-gradient(circle at 50% 35%, rgba(255, 190, 110, 0.22), transparent 65%), linear-gradient(180deg, #2a2430, #0e0c11);
+  box-shadow: 0 0 0 1px #000, inset 0 0 0 1px var(--line), 0 12px 30px rgba(0, 0, 0, 0.7);
+}
+.dlg-frame::after { content: ''; position: absolute; inset: 0; box-shadow: inset 0 -40px 40px -20px rgba(8, 6, 10, 0.8); border-radius: 8px; }
+.dlg-frame img { position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: 190px; height: 228px; object-fit: cover; }
+.dlg-name { font: 700 20px var(--font-display); letter-spacing: 0.06em; color: #fff0d8; text-shadow: 0 1px 2px #000; }
+.dlg-title { font: italic 400 14px var(--font-text); color: #c8b490; text-shadow: 0 1px 2px #000; }
+.dlg-mood { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; padding: 2px 8px; border-radius: 10px; font: 700 11px var(--font-ui); letter-spacing: 0.06em; color: #b8c8e0; background: rgba(0, 0, 0, 0.45); box-shadow: inset 0 0 0 1px rgba(160, 190, 230, 0.2); }
+.dlg-main { padding-bottom: 6px; }
+.dlg-speaker { font: 700 13px var(--font-display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-bottom: 2px; }
+.dlg-text { font: 400 22px/1.45 var(--font-text); color: #f6eedc; text-shadow: 0 1px 2px #000, 0 0 16px rgba(0, 0, 0, 0.9); min-height: 64px; max-width: 820px; }
+.dlg-text.narrator { font-style: italic; color: #d8ccb6; }
+.dlg-text.player { color: #e8d8b8; }
+.dlg-rest { color: transparent; text-shadow: none; }
+.dlg-choices { display: flex; flex-direction: column; gap: 4px; margin-top: 16px; opacity: 0.35; transition: opacity 0.2s; }
+.dlg-choices.ready { opacity: 1; }
+.dlg-choice {
+  display: flex; align-items: center; gap: 10px; width: fit-content; max-width: 820px; padding: 6px 14px 6px 8px; border: 0; border-radius: 4px; cursor: pointer; text-align: left;
+  background: linear-gradient(90deg, rgba(20, 17, 24, 0.85), rgba(20, 17, 24, 0.4));
+  box-shadow: inset 0 0 0 1px rgba(217, 181, 106, 0.12);
+  font: 500 17px/1.35 var(--font-text); color: #e8dcc4;
+  animation: riseIn 0.3s ease-out both;
+  transition: background 0.15s, box-shadow 0.15s, color 0.15s, transform 0.15s;
+}
+.dlg-choice:hover:not(:disabled) { color: #fff; transform: translateX(4px); background: linear-gradient(90deg, rgba(92, 60, 30, 0.8), rgba(34, 22, 12, 0.4)); box-shadow: inset 0 0 0 1px var(--line-hi); }
+.dlg-choice .key { flex: none; }
+.dlg-choice.locked { cursor: default; color: #7a7064; background: rgba(12, 10, 14, 0.6); }
+.dlg-choice.ends .dlg-choice-text { color: #b8ab96; }
+.dlg-choice.act .dlg-choice-text { color: #ffe0a8; }
+.dlg-choice.cont .dlg-choice-text { font-style: italic; }
+.dlg-lock { display: inline-flex; align-items: center; gap: 4px; font: 700 11px var(--font-ui); letter-spacing: 0.04em; color: #c88a70; }
+.dlg-badge { flex: none; padding: 1px 7px; border-radius: 3px; font: 800 10px var(--font-ui); letter-spacing: 0.12em; text-transform: uppercase; }
+.dlg-badge.hunter { color: #b8f090; background: rgba(90, 160, 60, 0.22); box-shadow: inset 0 0 0 1px rgba(140, 220, 100, 0.45); }
+.dlg-badge.scholar { color: #a8d0ff; background: rgba(60, 110, 200, 0.22); box-shadow: inset 0 0 0 1px rgba(120, 170, 255, 0.45); }
+.dlg-badge.outcast { color: #ffa898; background: rgba(190, 50, 40, 0.22); box-shadow: inset 0 0 0 1px rgba(255, 110, 90, 0.45); }
+.dlg-badge.devout { color: #ffe29a; background: rgba(200, 160, 60, 0.22); box-shadow: inset 0 0 0 1px rgba(255, 210, 110, 0.45); }
+.dlg-badge.item { color: #e0d0b8; background: rgba(160, 140, 110, 0.18); box-shadow: inset 0 0 0 1px rgba(220, 200, 170, 0.35); }

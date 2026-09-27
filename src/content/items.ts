@@ -139,6 +139,12 @@ export const ITEMS: Record<string, ItemDef> = {
     triggers: [{ on: 'kill', chance: 0.03, effects: [{ do: 'raise', kind: 'ghoul', duration: 10, max: 3 }] }],
     tags: ['necromantic'], downside: 'Chid will know what it is.' },
 
+  wolfhide_cloak: { id: 'wolfhide_cloak', name: 'Wolfhide Cloak', kind: 'cloak', rarity: 2, icon: 'pelt', value: 90,
+    description: '+20 maximum health. +8% speed. 15% less damage from beasts.',
+    mods: [mod('maxHealth', 'flat', 20), mod('moveSpeed', 'inc', 0.08), mod('from.wolf', 'flat', 0.15), mod('from.boar', 'flat', 0.15)],
+    tags: ['wolf_pelts'], downside: 'Any wolf can smell what it is made of.',
+    lore: 'Brannoc stitched it from five pelts. He did not ask where they came from; he did not need to.' },
+
   /* ------------------------------------------------ plain gear (affixes) -- */
   leather_cap: { id: 'leather_cap', name: 'Leather Cap', kind: 'head', rarity: 0, icon: 'helm_light', value: 8, base: true, description: 'A cap. It keeps rain off.', mods: [mod('armor', 'flat', 1)] },
   iron_helm: { id: 'iron_helm', name: 'Iron Helm', kind: 'head', rarity: 0, icon: 'helm', value: 18, base: true, description: 'Dented, but it was dented protecting someone.', mods: [mod('armor', 'flat', 3), mod('moveSpeed', 'inc', -0.02)] },

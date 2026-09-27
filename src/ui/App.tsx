@@ -5,6 +5,7 @@ import { Hud } from './hud/Hud';
 import { LevelUp } from './overlays/LevelUp';
 import { Pause, Death, ChapterEnd } from './overlays/Menus';
 import { Inventory } from './overlays/Inventory';
+import { Dialogue } from './overlays/Dialogue';
 import { Title } from './screens/Title';
 import { Create } from './screens/Create';
 import './theme.css';
@@ -37,6 +38,7 @@ function App() {
       {ov === 'levelup' && <LevelUp />}
       {ov === 'pause' && <Pause />}
       {ov === 'inventory' && <Inventory />}
+      {ov === 'dialogue' && <Dialogue />}
       {ov === 'death' && <Death />}
       {ov === 'chapter' && <ChapterEnd />}
       <div class="fader" style={{ opacity: f.to, transitionDuration: `${f.seconds}s` }}>

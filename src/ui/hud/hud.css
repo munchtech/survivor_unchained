@@ -409,3 +409,25 @@
 .hint-text { margin-top: 4px; font: 400 16px/1.35 var(--font-text); }
 .hint-keys { display: flex; gap: 5px; margin-top: 8px; }
 .hint-keys .key { font-size: 12px; padding: 2px 7px; color: #f3d9a0; }
+
+/* ----------------------------------------------------------- nameplates -- */
+
+.plates { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+.plate { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; will-change: transform; transition: opacity 0.2s; }
+.plate-name { font: 700 14px var(--font-display); letter-spacing: 0.06em; color: #f4e6c8; text-shadow: 0 1px 2px #000, 0 0 6px #000, 0 0 12px rgba(0, 0, 0, 0.8); white-space: nowrap; }
+.plate-role { font: italic 400 12px var(--font-text); color: #c8b490; text-shadow: 0 1px 2px #000, 0 0 6px #000; white-space: nowrap; }
+.plate-role:empty { display: none; }
+.plate.near .plate-name { color: #fff; }
+.plate-mark {
+  font: 800 22px var(--font-display); line-height: 1; margin-bottom: 2px; color: #ffd070;
+  text-shadow: 0 2px 0 #000, 0 0 10px rgba(255, 180, 60, 0.9);
+  animation: markBob 1.4s ease-in-out infinite;
+}
+.plate-mark:empty { display: none; }
+.plate-mark.turn { color: #9ad8ff; text-shadow: 0 2px 0 #000, 0 0 10px rgba(120, 200, 255, 0.9); }
+@keyframes markBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+/* In conversation the world steps back: only the feed and the corner stay. */
+.hud.talking .vitals, .hud.talking .subtitle, .hud.talking .prompt, .hud.talking .hint, .hud.talking .arsenal, .hud.talking .hands, .hud.talking .ember, .hud.talking .tally { opacity: 0; transition: opacity 0.25s; }
+.hud.talking ~ .barks { opacity: 0; }
+.toast.quest .toast-sub { font-style: normal; color: #d8ccb6; }

@@ -1,0 +1,114 @@
+/* The journal: every quest's name, what it is about, and the line written
+ * for each thing the survivor can learn or do in it. Entries appear in the
+ * order they were found, so two players' journals for the same quest read
+ * as two different stories. */
+
+export interface QuestDef {
+  id: string;
+  name: string;
+  giver?: string;
+  summary: string;
+  entries: Record<string, string>;
+  /** How each ending reads. */
+  outcomes?: Record<string, string>;
+  /** Shown as a breadcrumb, not a quest with an ending. */
+  mystery?: boolean;
+}
+
+export const QUESTS: Record<string, QuestDef> = {
+  prologue: {
+    id: 'prologue', name: 'The Low Ford', summary: 'One night on the Low Ford road, and the thing that kept the crossing.',
+    entries: {},
+    outcomes: { resolved: 'You crossed the Low Ford at dawn. The Warden is down. Its heart went into the ground in Grimtunnel\'s arms.' },
+  },
+  beasts: {
+    id: 'beasts', name: 'The Beast Problem', giver: 'holloway',
+    summary: 'The wolves of Thornhollow have turned on the road. Everyone in the Waystation has a reason why.',
+    entries: {
+      rumour: 'Wolves are attacking travellers on the Old Road. Everyone in the Waystation has an opinion about why.',
+      holloway_bounty: 'Captain Holloway pays five gold a pelt, and fifty for the fang of Greymuzzle, the old alpha. "They\'re bolder," he says.',
+      maeca_theory: 'Maeca Barefoot says the wolves are not hunting but running: something is driving them out of the deep wood.',
+      wenna_request: 'Old Wenna says the animals were never like this. She wants a sample of the Thornhollow stream to test.',
+      tam_plea: 'Tam saw wolves drink from the stream and fall down. "Something is killing them," he says. Nobody listens to him.',
+      harlan_view: 'Harlan Coyle blames the wolves for his missing caravan. He wants them dead, all of them.',
+      'clue.sick_wolf': 'A dead wolf in the Verge with no wound on it: black gums, milky eyes, ribs like a washboard.',
+      'clue.green_stream': 'The Thornhollow stream runs green below the blight. Nothing grows at its edge.',
+      'clue.pipe': 'Upstream, a pipe of riveted iron spills warm, faintly glowing slurry into the water.',
+      'clue.lampling_tracks': 'Small clawed prints and the drag-marks of lamps, coming and going from the pipe. Lamplings.',
+      sample: 'You have a stoppered bottle of the green water.',
+      'clue.analysis': 'Wenna tested the water: ember slurry. It rots the gut of anything that drinks it, and someone is dumping it on purpose.',
+      root_cause: 'The Dig. Grimtunnel\'s crew is pumping ember slurry into the stream to clear their workings. The wolves are sick, starving and afraid.',
+      greymuzzle_met: 'Greymuzzle did not attack. The old wolf let you close, and showed you the sick ones.',
+      pelts_sold: 'Brannoc bought wolf pelts from you.',
+      bounty_claimed: 'Holloway paid the bounty.',
+      pump_broken: 'The Dig\'s pump is wrecked. The slurry has stopped.',
+      pump_moved: 'You talked the diggers\' foreman into moving the outflow away from the stream.',
+      pump_blown: 'You blew the Dig\'s powder. The pump, the pipe and a good part of the hillside are gone.',
+      alpha_dead: 'Greymuzzle is dead.',
+      pack_led: 'You led the Pack onto the Kerchief camp.',
+      told_holloway: 'You told Holloway the beasts were dealt with.',
+      dig_sold: 'You sold the Dig\'s location to Pell Varrow.',
+    },
+    outcomes: {
+      slaughtered: 'The wolves are gone from Thornhollow. The road is safe. It is also very quiet.',
+      allied: 'The Pack runs with you now. Not everyone in the Waystation is glad of it.',
+      cured: 'The stream is running clear again. The wolves have gone back to the deep wood, and the blight is drawing back.',
+      exploited: 'You were paid, and paid again. People talk, in the end.',
+      ignored: 'Nobody dealt with it. The wolves came closer every night.',
+    },
+  },
+  caravan: {
+    id: 'caravan', name: 'The Missing Caravan', giver: 'harlan',
+    summary: 'Harlan Coyle\'s caravan never reached the Waystation. His nephew Jory was driving the lead wagon.',
+    entries: {
+      harlan_plea: 'Harlan Coyle\'s caravan never arrived. His nephew Jory was with it. Harlan blames the wolves.',
+      wreck: 'The caravan\'s wreck, off the Old Road: no wolf did this. Wagons were led off the road, and there is red fletching in the sideboards.',
+      ruts: 'Wheel ruts turn off the road into the forest. Someone drove the wagons away, loaded.',
+      guard_says: 'The east-gate guard swears the Old Road was never closed that day.',
+      clerk_turned: 'In the tavern: a toll clerk told Coyle\'s teamsters the road was closed and sent them down the forest track.',
+      toll_ledger: 'Vonnra\'s toll ledger: the Coyle caravan never paid the toll. It never came through the gate at all.',
+      pell_ledger: 'Pell Varrow\'s ledger: a payment to "R." the night the caravan vanished, and another to the toll clerk.',
+      clerks_key: 'The toll clerk had a key to Pell\'s warehouse. He should not have.',
+      roost_found: 'Redcowl\'s Roost: the Kerchief camp in the ravine. The Coyle cargo is there. So are three survivors, in cages.',
+      manifest: 'A torn manifest: salt, cloth, iron, and six crates marked only "B.E." for a buyer called G.',
+      blasting_ember: 'The "B.E." crates are blasting ember. Bound for the Dig.',
+      redcowl_met: 'Redcowl, who leads the Kerchiefs, would rather talk than bleed. He says so, anyway.',
+      survivors_freed: 'You opened the cages. Jory and the other two are free.',
+      survivors_dead: 'The prisoners in the Roost did not survive.',
+      cargo_returned: 'Harlan has his cargo back.',
+      cargo_kept: 'You kept the Coyle cargo.',
+      cargo_sold: 'Rav\'s friend bought the cargo, no questions asked.',
+      pell_exposed: 'Pell Varrow has been exposed.',
+      pell_joined: 'You took Pell Varrow\'s money, and his side.',
+    },
+    outcomes: {
+      returned: 'The Coyle Company has its goods back, and knows who to thank.',
+      kept: 'The cargo is yours. The Coyle Company knows that too.',
+      lost: 'The cargo is gone.',
+      with_kerchiefs: 'The Kerchiefs kept what they took.',
+    },
+  },
+  vault: {
+    id: 'vault', name: 'The Sealed Vault', mystery: true,
+    summary: 'An old-empire door in the Verge hillside, sealed. Someone has been trying to get in.',
+    entries: {
+      seen: 'A door of black stone in the hillside of the Verge, older than anything in the Waystation, sealed with a sigil nobody can read.',
+      script: 'You read the script over the door: "Here the Seventh Legion buried what it could not burn."',
+      fragment: 'A fragment of a sigil, from the hand of someone who did not make it out. It fits the door.',
+      bootprints: 'Fresh bootprints in the mud at the door, going in, not coming out. Someone got inside.',
+      vonnra_refuses: 'Vonnra will not talk about the vault. Not for money, which is how you know it matters.',
+      chid_empire: 'Chid says the old empire "did something here" before the Watch was founded, and the Watch was founded to keep it done.',
+    },
+  },
+  below: {
+    id: 'below', name: 'The Thing Below', mystery: true,
+    summary: 'Tremors under the Verge. The lamplings are digging toward something, and they took the Warden\'s heart with them.',
+    entries: {
+      grimtunnel: 'Grimtunnel, foreman of the lamplings, stole the Ford-Warden\'s heart and went down, not away.',
+      tremor: 'The ground shook in the Verge. Not an earthquake: something moved.',
+      sinkhole: 'At the bottom of the sinkhole: something pale, eyeless and segmented, bigger than a house. Dead. Probably.',
+      survivor: 'A lampling survivor, half-mad: "It moved. The dark moved. Grimtunnel says it is ours now."',
+      map: 'A digger\'s survey of the tunnels under the Verge. The last one just says "DOWN" and keeps going.',
+    },
+  },
+};

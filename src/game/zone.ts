@@ -2,6 +2,7 @@ import type { ZoneBuild } from './scene';
 import type { Battle, BattleHooks } from '@/sim/battle';
 import type { CombatEvent } from '@/sim/events';
 import type { WorldState } from '@/world/state';
+import type { NpcActor } from './actors';
 
 /* A place the survivor can be, as the game runs it.
  *
@@ -47,6 +48,8 @@ export interface ZoneRuntime {
   frame?(dt: number): void;
   events?(evs: CombatEvent[]): void;
   interactables: Interactable[];
+  /** People standing here, by id. */
+  actors?: Map<string, NpcActor>;
   hooks?: Partial<BattleHooks>;
   /** Time of day the zone shows, from the world. */
   timeOf?(w: WorldState): WorldState['time'];
