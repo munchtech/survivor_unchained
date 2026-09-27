@@ -31,6 +31,21 @@ const GUARD_DEF = (i: number): NpcDef => ({
 const PRESENT: Record<string, Cond> = {
   pell: { all: [{ not: { fact: 'caravan.pell', eq: 'exposed' } }, { not: { fact: 'caravan.pell', eq: 'fled' } }] },
   jory: { fact: 'caravan.survivors', eq: 'rescued' },
+  // A farm boy goes home at night.
+  tam: { not: { time: 'night' } },
+};
+
+/** Where people are, by the hour and by what has happened to them. The
+ *  first entry whose condition holds wins; none means their usual spot. */
+const ROUTINE: Record<string, Array<{ when: Cond; spot?: { x: number; z: number; facing: number }; idle?: string }>> = {
+  harlan: [
+    // Nobody has found the caravan: by day he watches the road; once he
+    // gives up, he sits outside the tavern.
+    { when: { all: [{ fact: 'caravan.days', gte: 3 }, { not: { fact: 'caravan.survivors', exists: true } }] }, spot: { x: -12.3, z: -14.2, facing: Math.PI / 2 }, idle: 'Sit_Floor_Idle' },
+    { when: { all: [{ fact: 'caravan.days', gte: 1 }, { not: { fact: 'caravan.survivors', exists: true } }, { not: { time: 'night' } }] }, spot: { x: 35.4, z: 1.4, facing: Math.PI / 2 } },
+  ],
+  // The smith stops at night.
+  brannoc: [{ when: { time: 'night' }, idle: 'Idle' }],
 };
 
 export function waystation(g: Game): ZoneRuntime {
@@ -124,8 +139,24 @@ export function waystation(g: Game): ZoneRuntime {
 
   const presence = () => {
     const c = ctx();
-    for (const [id, a] of actors) a.hidden = c ? !!PRESENT[id] && !test(PRESENT[id], c) : false;
+    for (const [id, a] of actors) {
+      a.hidden = c ? !!PRESENT[id] && !test(PRESENT[id], c) : false;
+      if (!c) continue;
+      const r = ROUTINE[id]?.find((e) => test(e.when, c));
+      const spot = r?.spot ?? a.def.spot, idle = r?.idle ?? a.def.idle;
+      if (spot.x !== a.x || spot.z !== a.z || idle !== a.pose) {
+        // Only while nobody is looking: never pop someone across the square mid-conversation.
+        const p = g.scene.battle?.player;
+        const near = p && (Math.hypot(p.x - a.x, p.z - a.z) < 16 || Math.hypot(p.x - spot.x, p.z - spot.z) < 16);
+        if (a.talking || (near && placed.has(id))) continue;
+        a.place(spot, idle);
+        const it = interactables.find((i) => i.id === `talk:${id}`);
+        if (it) { it.x = spot.x; it.z = spot.z; }
+      }
+      placed.add(id);
+    }
   };
+  const placed = new Set<string>();
 
   const tracker = (): Objective[] => {
     const w = g.world;

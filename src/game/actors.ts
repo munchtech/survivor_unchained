@@ -37,6 +37,17 @@ export class NpcActor {
   }
 
   get seated() { return this.poseLoop.startsWith('Sit'); }
+  get pose() { return this.poseLoop; }
+
+  /** Somewhere else now (a routine, a change in their circumstances). */
+  place(spot: { x: number; z: number; facing: number }, idle = this.def.idle) {
+    this.x = spot.x; this.z = spot.z; this.facing = spot.facing;
+    this.view.face(spot.facing, true);
+    if (idle !== this.poseLoop) {
+      this.poseLoop = idle;
+      this.view.loop(idle, 0.3, idle === '1H_Melee_Attack_Chop' ? 0.55 : 1);
+    }
+  }
 
   update(dt: number, px: number, pz: number) {
     const v = this.view;
