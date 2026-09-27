@@ -8,7 +8,7 @@ import { PRESETS, blendPresets } from '@/render/atmosphere';
 import type { Battle } from '@/sim/battle';
 import type { Enemy } from '@/sim/entities';
 import { ABILITIES } from '@/content/abilities';
-import { hint, objectives, boss, say, announce, toast, overlay, type Objective } from '@/ui/store';
+import { hint, objectives, boss, say, announce, toast, overlay, zoneInfo, type Objective } from '@/ui/store';
 import { Input } from '@/core/input';
 import { clamp } from '@/core/math';
 
@@ -594,6 +594,7 @@ export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number 
       say('Grey light, then gold. Up the road, the Waystation\'s gate is opening.', undefined, 6);
       setObjective({ id: 'pro', title: 'The Low Ford', tone: 'tutorial', steps: [{ text: 'Walk up the road to the Waystation' }] });
       g.world!.time = 'dawn';
+      if (zoneInfo.value) zoneInfo.value = { ...zoneInfo.value, time: 'dawn' };
     }
   };
 
