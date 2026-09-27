@@ -24,7 +24,7 @@ import type { ItemInstance } from '@/rpg/character';
 import { DialogueRunner, type Presented } from '@/world/dialogue';
 import { attitude } from '@/world/logic';
 import { CONVOS } from '@/content/dialogue';
-import { NPCS } from '@/content/npcs';
+import { NPCS, OUTSIDERS, SPEAKERS } from '@/content/npcs';
 import { QUESTS } from '@/content/quests';
 import { renderPortrait } from '@/ui/portrait';
 import { Input } from '@/core/input';
@@ -424,12 +424,40 @@ export class Game {
     const ch = this.ch!;
     ch.stats.deaths++;
     if (this.zone?.onDeath?.(killer)) return;
-    // Outside the prologue: the town's shrine (see the Waystation runtime).
+    const w = this.world!, b = this.scene.battle, z = this.zone!;
+    const p = b?.player;
+    const k = p?.lastKiller ?? null;
+    // Your gold stays where you fell; one thing you carried goes with
+    // whatever killed you, and it is not the same creature any more.
+    const gold = Math.floor(ch.gold / 2);
+    ch.gold -= gold;
+    const pool = ch.pack.map((it, i) => ({ it, i })).filter((x) => x.it && !['quest', 'consumable'].includes(ITEMS[x.it.def].kind));
+    const pick = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+    if (pick) ch.pack[pick.i] = null;
+    w.corpse = { zone: z.id, x: p?.x ?? 0, z: p?.z ?? 0, gold, items: [], day: w.day, killer, heroName: ch.name };
+    if (k && !k.boss && k.def.id !== 'grimtunnel') {
+      const title = `${nemesisName(k.def.family)}, Who Took Your Light`;
+      w.nemesis = { zone: z.id, def: k.def.id, title, level: k.level + 2, carries: pick ? [pick.it!] : [], heroName: ch.name, killed: false };
+    }
+    ch.conditions = ch.conditions.filter((c) => c.id !== 'rested');
+    this.apply([
+      { condition: { id: 'wounded', days: 2, note: 'You fell in the Verge' } },
+      { if: { not: { trait: 'risen_once' } }, then: { trait: 'risen_once' } },
+      { history: { id: `fell_${w.day}_${ch.stats.deaths}`, text: `fell in ${z.name} to ${killer}`, tags: ['death'], spread: 2, sentiment: { respect: -3 }, reactions: { chid: { affection: 10 } } } },
+      { set: { 'player.just_died': true } },
+    ]);
     this.expedition = null;
     setTimeout(() => {
-      fade.value = { to: 1, seconds: 1.6, caption: 'You fell', sub: `Taken by ${killer}` };
-      setTimeout(() => { overlay.value = 'death'; }, 1700);
-    }, 1800);
+      fade.value = { to: 1, seconds: 1.8, caption: 'You fell', sub: `Taken by ${killer}` };
+      setTimeout(() => {
+        this.enterZone('waystation', 'death');
+        this.save('death');
+        setTimeout(() => {
+          fade.value = { to: 0, seconds: 2 };
+          setTimeout(() => this.talk('chid'), 1600);
+        }, 1400);
+      }, 2400);
+    }, 1500);
   }
 
   /* ========================================================= world ===== */
@@ -675,7 +703,7 @@ export class Game {
 
   private portraitOf(id: string) {
     if (!this.portraits.has(id)) {
-      const d = NPCS[id];
+      const d = NPCS[id] ?? OUTSIDERS[id];
       this.portraits.set(id, d ? renderPortrait({ model: d.model, show: d.show, attackClips: [], heavyClip: '', tint: d.tint }, 190, 228, 'bust', d.scale ?? 1) : null);
     }
     return this.portraits.get(id) ?? null;
@@ -683,11 +711,12 @@ export class Game {
 
   private present(p: Presented) {
     const id = this.talkNpc!;
-    const d = NPCS[id];
+    const d = NPCS[id] ?? OUTSIDERS[id];
+    const sp = SPEAKERS[id];
     const s = this.world ? npc(this.world, id) : null;
     dialogue.value = {
-      npc: id, name: d?.name ?? (id === 'board' ? 'Notice Board' : id), title: d?.title ?? '', portrait: this.portraitOf(id),
-      mood: s && d ? attitude(s) : '', speaker: p.speaker === 'player' ? 'player' : p.speaker === 'narrator' ? 'narrator' : 'npc',
+      npc: id, name: d?.name ?? sp?.name ?? id, title: d?.title ?? sp?.title ?? '', portrait: this.portraitOf(id), glyph: sp?.glyph,
+      mood: s && (d || id === 'greymuzzle' || id === 'snib') ? attitude(s) : '', speaker: p.speaker === 'player' ? 'player' : p.speaker === 'narrator' ? 'narrator' : 'npc',
       text: p.text, key: ++this.dlgKey,
       choices: p.choices.map((c) => ({ index: c.index, text: c.text, enabled: c.enabled, locked: c.locked, badge: c.badge, ends: c.ends, action: c.action })),
       canContinue: p.choices.length === 0,
@@ -1085,6 +1114,19 @@ export class Game {
     const z = this.zone;
     if (z) announce(z.name, z.region, 'zone', 4.2);
   }
+}
+
+/** What the thing that killed you is called now. */
+function nemesisName(family: string) {
+  const names: Record<string, string[]> = {
+    wolf: ['Ash-Fang', 'Hollow-Eye', 'Old Greyback', 'Split-Ear'],
+    boar: ['Old Tusk', 'the Hedge-Breaker'],
+    kerchief: ['Red Wat', 'Knuckles Marro', 'Sly Dell'],
+    lampling: ['Wick', 'Soot-Tooth'],
+    undead: ['the Unburied', 'the Drowned Watchman'],
+  };
+  const list = names[family] ?? ['the Thing in the Wood'];
+  return list[Math.floor(Math.random() * list.length)];
 }
 
 /* Names for notices; the full cast lives with the town's content. */

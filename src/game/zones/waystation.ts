@@ -4,7 +4,7 @@ import type { ZoneRuntime, Interactable } from '../zone';
 import { NpcActor, PlateLayer } from '../actors';
 import { buildWaystation, WAY } from '@/world/zones/waystation';
 import { PRESETS } from '@/render/atmosphere';
-import { NPCS, GUARDS, type NpcDef } from '@/content/npcs';
+import { NPCS, OUTSIDERS, GUARDS, type NpcDef } from '@/content/npcs';
 import { CONVOS } from '@/content/dialogue';
 import { markerOf } from '@/world/dialogue';
 import { test, type Cond } from '@/world/logic';
@@ -29,7 +29,8 @@ const GUARD_DEF = (i: number): NpcDef => ({
 
 /** Who is out and about, given what has happened. */
 const PRESENT: Record<string, Cond> = {
-  pell: { not: { fact: 'caravan.pell', eq: 'exposed' } },
+  pell: { all: [{ not: { fact: 'caravan.pell', eq: 'exposed' } }, { not: { fact: 'caravan.pell', eq: 'fled' } }] },
+  jory: { fact: 'caravan.survivors', eq: 'rescued' },
 };
 
 export function waystation(g: Game): ZoneRuntime {
@@ -41,7 +42,7 @@ export function waystation(g: Game): ZoneRuntime {
   const plates = new PlateLayer(document.getElementById('stage')!);
   const ctx = () => g.ctx!;
 
-  for (const def of Object.values(NPCS)) {
+  for (const def of [...Object.values(NPCS), OUTSIDERS.jory]) {
     const a = new NpcActor(def, root, heightAt, g.barks);
     actors.set(def.id, a);
   }

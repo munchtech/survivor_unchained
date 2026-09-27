@@ -28,6 +28,53 @@ export const waterUniforms = { uTime: { value: 0 } };
 export function createWater(o: WaterOpts): THREE.Mesh {
   const geo = new THREE.PlaneGeometry(o.width, o.depth, 1, 1);
   geo.rotateX(-Math.PI / 2);
+  return finish(new THREE.Mesh(geo, waterMaterial(o)));
+}
+
+function finish(m: THREE.Mesh) {
+  m.receiveShadow = true;
+  m.renderOrder = 2;
+  m.name = 'water';
+  return m;
+}
+
+/** A stream: a ribbon of water that follows a path downhill. */
+export function createStream(path: Array<[number, number]>, width: number, surface: (x: number, z: number) => number, o: Omit<WaterOpts, 'width' | 'depth'>): THREE.Mesh {
+  // Resample the path every metre or so.
+  const pts: Array<[number, number]> = [];
+  for (let i = 0; i < path.length - 1; i++) {
+    const [x0, z0] = path[i], [x1, z1] = path[i + 1];
+    const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, z1 - z0) / 1.2));
+    for (let k = 0; k < n; k++) pts.push([x0 + ((x1 - x0) * k) / n, z0 + ((z1 - z0) * k) / n]);
+  }
+  pts.push(path[path.length - 1]);
+  const pos: number[] = [], uv: number[] = [], idx: number[] = [];
+  let run = 0;
+  let prevY = Infinity;
+  for (let i = 0; i < pts.length; i++) {
+    const [x, z] = pts[i];
+    const [ax, az] = pts[Math.max(0, i - 1)], [bx, bz] = pts[Math.min(pts.length - 1, i + 1)];
+    let tx = bx - ax, tz = bz - az;
+    const l = Math.hypot(tx, tz) || 1;
+    tx /= l; tz /= l;
+    const nx = -tz, nz = tx;
+    // Water never runs uphill.
+    const y = Math.min(prevY, surface(x, z));
+    prevY = y;
+    if (i > 0) run += Math.hypot(x - pts[i - 1][0], z - pts[i - 1][1]);
+    pos.push(x + nx * width / 2, y, z + nz * width / 2, x - nx * width / 2, y, z - nz * width / 2);
+    uv.push(0, run / width, 1, run / width);
+    if (i > 0) { const a = (i - 1) * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  return finish(new THREE.Mesh(geo, waterMaterial({ ...o, width, depth: run })));
+}
+
+function waterMaterial(o: WaterOpts) {
   const mat = new THREE.MeshStandardMaterial({
     color: o.color ?? '#0e1c20', roughness: 0.06, metalness: 0.0, transparent: true, opacity: o.opacity ?? 0.86,
     envMapIntensity: 1.6, depthWrite: false,
@@ -76,9 +123,6 @@ float wh(vec2 p) {
   totalEmissiveRadiance += uSky * (0.25 + fres * 1.1 + ripple * 0.35);
 }`);
   };
-  const m = new THREE.Mesh(geo, mat);
-  m.receiveShadow = true;
-  m.renderOrder = 2;
-  m.name = 'water';
-  return m;
+  mat.side = THREE.DoubleSide;
+  return mat;
 }

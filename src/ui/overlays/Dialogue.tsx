@@ -46,7 +46,10 @@ function Talk({ d }: { d: NonNullable<typeof dialogue.value> }) {
       <div class="dlg-shade" />
       <div class="dlg rise-in">
         <div class="dlg-portrait">
-          <div class="dlg-frame">{d.portrait && <img src={d.portrait} alt="" draggable={false} />}</div>
+          <div class="dlg-frame">
+            {d.portrait && <img src={d.portrait} alt="" draggable={false} />}
+            {!d.portrait && d.glyph && <div class="dlg-glyph"><Glyph k={d.glyph} size={96} color="#e8c890" glow="rgba(255,170,80,0.5)" stroke={1.2} /></div>}
+          </div>
           <div class="dlg-name">{d.name}</div>
           <div class="dlg-title">{d.title}</div>
           <div class="dlg-mood"><Glyph k="eye" size={12} /> {d.mood}</div>

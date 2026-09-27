@@ -44,3 +44,4 @@
 .dlg-badge.outcast { color: #ffa898; background: rgba(190, 50, 40, 0.22); box-shadow: inset 0 0 0 1px rgba(255, 110, 90, 0.45); }
 .dlg-badge.devout { color: #ffe29a; background: rgba(200, 160, 60, 0.22); box-shadow: inset 0 0 0 1px rgba(255, 210, 110, 0.45); }
 .dlg-badge.item { color: #e0d0b8; background: rgba(160, 140, 110, 0.18); box-shadow: inset 0 0 0 1px rgba(220, 200, 170, 0.35); }
+.dlg-glyph { position: absolute; inset: 0; display: grid; place-items: center; }

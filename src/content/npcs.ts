@@ -102,6 +102,28 @@ export const NPCS: Record<string, NpcDef> = {
   },
 };
 
+/** People met outside the Waystation. */
+export const OUTSIDERS: Record<string, NpcDef> = {
+  redcowl: {
+    id: 'redcowl', name: 'Redcowl', title: 'Of the Kerchiefs', role: 'Kerchief chief',
+    model: 'rogue_hooded', show: ['2H_Crossbow', 'Rogue_Cape'], tint: '#a02820', scale: 1.08, idle: 'Idle',
+    spot: { x: 54, z: 90, facing: Math.PI }, barks: ['Keep walking.', 'Salvage is salvage.', 'Talk or bleed. Your choice.'],
+  },
+  jory: {
+    id: 'jory', name: 'Jory Coyle', title: 'Harlan\'s nephew', role: 'Teamster',
+    model: 'rogue', show: [], tint: '#7a6a8a', scale: 0.9, idle: 'Sit_Floor_Idle',
+    spot: { x: 12.4, z: -13.6, facing: -Math.PI / 2 }, barks: ['I thought I would die in that cage.', 'Uncle keeps hugging me. It is a lot.'],
+  },
+};
+
+/** Voices with no human face: shown with a mark instead of a portrait. */
+export const SPEAKERS: Record<string, { name: string; title: string; glyph: string }> = {
+  greymuzzle: { name: 'Greymuzzle', title: 'Alpha of the Thornhollow Pack', glyph: 'howl' },
+  snib: { name: 'Snib', title: 'Foreman of the Dig (self-appointed)', glyph: 'relic' },
+  survivor: { name: 'A lampling', title: 'Babbling at the edge of the pit', glyph: 'relic' },
+  board: { name: 'Notice Board', title: 'The square, the Waystation', glyph: 'scroll' },
+};
+
 /** The Watch on the gates. They say things; they do not have conversations. */
 export const GUARDS = [
   { x: -4.6, z: 34.6, facing: Math.PI, line: 'Dawn arrivals. We do not get many that live.' },

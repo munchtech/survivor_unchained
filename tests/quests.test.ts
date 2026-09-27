@@ -1,0 +1,165 @@
+import { describe, it, expect } from 'vitest';
+import { createCharacter, makeItem, addToPack, countItem } from '@/rpg/character';
+import { freshWorld } from '@/world/state';
+import { npc, test as check, type Ctx } from '@/world/logic';
+import { DialogueRunner, type Conversation } from '@/world/dialogue';
+import { advanceDay } from '@/world/simulation';
+import { CONVOS } from '@/content/dialogue';
+import { RULES, SOCIAL } from '@/content/rules';
+import { ARCHETYPES, type BackgroundId } from '@/content/archetypes';
+
+/* The two questlines, played through the same data the game uses, by
+ * survivors from different backgrounds taking different roads. */
+
+function setup(bg: BackgroundId) {
+  const A = ARCHETYPES.warden;
+  const ch = createCharacter({ name: 'Wren', archetype: 'warden', background: bg, palette: A.palettes[0].id, weaponItem: A.weapons[0], ability: A.abilities[0], startBoon: 'might' }, 1, 5);
+  const world = freshWorld(5);
+  world.facts['prologue.done'] = true;
+  world.facts['beasts.population'] = 60;
+  const c: Ctx = { world, ch, notify: () => {} };
+  return { ch, world, c };
+}
+
+/** Talk: pick choices by a fragment of their text, in order. */
+function talk(convo: Conversation, c: Ctx, ...picks: string[]) {
+  const r = new DialogueRunner(convo, c);
+  let p = r.start();
+  for (const pick of picks) {
+    if (!p) throw new Error(`conversation ended before "${pick}"`);
+    if (!p.choices.length) { p = r.advance(); if (!p) throw new Error('ended'); }
+    const choice = p.choices.find((x) => x.text.toLowerCase().includes(pick.toLowerCase()));
+    if (!choice) throw new Error(`no choice "${pick}" in [${p.choices.map((x) => x.text).join(' | ')}]`);
+    if (!choice.enabled) throw new Error(`choice "${pick}" is locked: ${choice.locked}`);
+    p = r.choose(choice.index).next;
+  }
+  return p;
+}
+
+describe('the Beast Problem', () => {
+  it('a hunter can walk into the Hollow and speak with Greymuzzle', () => {
+    const { c, world, ch } = setup('hunter');
+    talk(CONVOS.greymuzzle, c, 'kneel');
+    expect(world.facts['hollow.peace']).toBe(true);
+    expect(world.quests.beasts.entries).toContain('greymuzzle_met');
+    expect(ch.knowledge).toContain('clue.sick_wolf');
+    // Come back, and the Pack remembers your scent.
+    talk(CONVOS.greymuzzle, c, 'leave');
+  });
+
+  it('someone with no beastlore cannot', () => {
+    const { c } = setup('scholar');
+    expect(() => talk(CONVOS.greymuzzle, c, 'kneel')).toThrow(/locked/);
+  });
+
+  it('a scholar reads the stream and finds the root cause in one visit to Wenna', () => {
+    const { c, ch, world } = setup('scholar');
+    addToPack(ch, makeItem(ch, 'stream_sample'));
+    talk(CONVOS.wenna, c, 'test it');
+    expect(ch.knowledge).toContain('root_cause');
+    expect(countItem(ch, 'stream_sample')).toBe(0);
+    expect(world.quests.beasts.entries).toContain('root_cause');
+  });
+
+  it('talking Snib into moving the pump, then resting, cures the stream', () => {
+    const { c, world } = setup('scholar');
+    talk(CONVOS.snib, c, 'sinkhole');
+    expect(world.facts['dig.pump']).toBe('moved');
+    advanceDay(c, RULES, SOCIAL, () => 0.5);
+    advanceDay(c, RULES, SOCIAL, () => 0.5);
+    expect(world.facts['beasts.outcome']).toBe('cured');
+    expect(world.quests.beasts.status).toBe('resolved');
+  });
+
+  it('left alone, the wolves come to the gate', () => {
+    const { c, world } = setup('devout');
+    for (let d = 0; d < 7; d++) advanceDay(c, RULES, SOCIAL, () => 0.5);
+    expect(world.facts['tam.farm']).toBe('raided');
+    expect(world.facts['beasts.outcome']).toBe('ignored');
+  });
+
+  it('selling pelts to Holloway after lying to him is remembered', () => {
+    const { c, ch, world } = setup('outcast');
+    addToPack(ch, makeItem(ch, 'wolf_pelt', { qty: 4 }));
+    talk(CONVOS.holloway, c, 'dealt with');
+    expect(world.facts['beasts.told_holloway']).toBe(true);
+    // He believes you, for now.
+    expect(npc(world, 'holloway').memories).not.toContain('lied_to_holloway');
+    // Then the wolves take another drover.
+    advanceDay(c, RULES, SOCIAL, () => 0.99);
+    expect(npc(world, 'holloway').memories).toContain('lied_to_holloway');
+    expect(npc(world, 'holloway').trust).toBeLessThan(-30);
+  });
+});
+
+describe('the Missing Caravan', () => {
+  it('an outcast learns about the clerk from Rav, and gets his key', () => {
+    const { c, ch, world } = setup('outcast');
+    talk(CONVOS.rav, c, 'news of coyle');
+    expect(world.quests.caravan.entries).toEqual(expect.arrayContaining(['clerk_turned', 'clerks_key']));
+    expect(countItem(ch, 'clerks_key')).toBe(1);
+  });
+
+  it('Pell\'s ledger, shown to Holloway, exposes him - and Harlan hears', () => {
+    const { c, ch, world } = setup('hunter');
+    addToPack(ch, makeItem(ch, 'pell_ledger'));
+    talk(CONVOS.holloway, c, 'ledger');
+    expect(world.facts['caravan.pell']).toBe('exposed');
+    expect(npc(world, 'harlan').memories).toContain('exposed_pell');
+    expect(npc(world, 'harlan').trust).toBeGreaterThan(30);
+  });
+
+  it('Redcowl can be bluffed out of his own camp by someone who knows the cant', () => {
+    const { c, world } = setup('outcast');
+    talk(CONVOS.redcowl, c, 'watch is on its way');
+    expect(world.facts.redcowl).toBe('tricked');
+  });
+
+  it('or bought off with pelts', () => {
+    const { c, ch, world } = setup('hunter');
+    addToPack(ch, makeItem(ch, 'wolf_pelt', { qty: 5 }));
+    talk(CONVOS.redcowl, c, 'coyle wagons', 'pelts');
+    expect(world.facts.redcowl).toBe('bargained');
+    expect(countItem(ch, 'wolf_pelt')).toBe(0);
+  });
+
+  it('prisoners left in the cages do not wait forever', () => {
+    const { c, world } = setup('devout');
+    for (let d = 0; d < 5; d++) advanceDay(c, RULES, SOCIAL, () => 0.5);
+    expect(world.facts['caravan.survivors']).toBe('dead');
+  });
+
+  it('with both stories told, Vonnra sends for you', () => {
+    const { c, world } = setup('scholar');
+    world.facts['beasts.outcome'] = 'cured';
+    world.facts['caravan.survivors'] = 'rescued';
+    advanceDay(c, RULES, SOCIAL, () => 0.5);
+    expect(world.facts['chapter.ready']).toBe(true);
+    expect(check({ fact: 'chapter.ready', eq: true }, c)).toBe(true);
+  });
+});
+
+describe('being found out', () => {
+  it('Holloway confronts a liar, and a debt paid softens it', () => {
+    const { c, ch, world } = setup('outcast');
+    addToPack(ch, makeItem(ch, 'wolf_pelt', { qty: 4 }));
+    talk(CONVOS.holloway, c, 'dealt with');
+    advanceDay(c, RULES, SOCIAL, () => 0.99);
+    const before = npc(world, 'holloway').trust;
+    ch.gold = 40;
+    talk(CONVOS.holloway, c, 'pay back');
+    expect(ch.gold).toBe(10);
+    expect(world.facts['holloway.lie_settled']).toBe('repaid');
+    expect(npc(world, 'holloway').trust).toBe(before + 15);
+  });
+
+  it('a lie that comes true is never found out', () => {
+    const { c, ch, world } = setup('outcast');
+    addToPack(ch, makeItem(ch, 'wolf_pelt', { qty: 4 }));
+    talk(CONVOS.holloway, c, 'dealt with');
+    world.facts['dig.pump'] = 'broken';
+    world.facts['beasts.outcome'] = 'cured';
+    advanceDay(c, RULES, SOCIAL, () => 0.99);
+    expect(npc(world, 'holloway').memories).not.toContain('lied_to_holloway');
+  });
+});

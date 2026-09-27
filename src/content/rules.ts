@@ -28,6 +28,10 @@ export const RULES: DailyRule[] = [
     effect: [{ set: { 'beasts.outcome': 'cured', 'blight.level': 0 } }, { quest: { id: 'beasts', status: 'resolved', outcome: 'cured' } },
       h('stream_cleared', 'stopped the poison in the Thornhollow stream', ['deed', 'beasts'], 2)],
     report: 'Wenna came in at dawn, muddy to the knees: the stream is running clear. The Pack has gone back into the deep wood.' },
+  // A lie about the wolves lasts exactly as long as the wolves stay quiet.
+  { id: 'lie.found', once: true, when: { all: [{ fact: 'beasts.told_holloway', eq: true }, { not: { fact: 'beasts.outcome', exists: true } }] },
+    effect: [{ tell: { npc: 'holloway', event: 'lied_to_holloway' } }, { set: { 'holloway.lied_to': true } }],
+    report: 'A drover came in at dawn with his arm torn open, wolves on the east road. Captain Holloway listened to him, and then looked for you.' },
   { id: 'wolves.gone', once: true, when: { all: [{ fact: 'beasts.population', lte: 5 }, { not: { fact: 'beasts.outcome', exists: true } }] },
     effect: [{ set: { 'beasts.outcome': 'slaughtered' } }, { quest: { id: 'beasts', status: 'resolved', outcome: 'slaughtered' } }],
     report: 'No howling last night. None at all. Brannoc says it is the quietest he has ever heard the Verge.' },
@@ -40,6 +44,10 @@ export const RULES: DailyRule[] = [
     report: 'Word from the Old Road: the Kerchiefs have stopped feeding their prisoners. Harlan has not come out of his shop.' },
   { id: 'kerchief.raid', when: { all: [{ fact: 'road.dangerous', eq: true }, { not: { fact: 'redcowl', exists: true } }, { day: { gte: 4 } }] },
     effect: { add: { 'kerchief.raids': 1 } }, report: 'The Kerchiefs stopped a pedlar on the Old Road and took his boots. The Watch is stretched thin.' },
+
+  /* ------------------------------------------------ the chapter's end -- */
+  { id: 'chapter.ready', once: true, when: { all: [{ fact: 'beasts.outcome', exists: true }, { any: [{ fact: 'caravan.survivors', exists: true }, { fact: 'caravan.cargo', exists: true }] }] },
+    effect: { set: { 'chapter.ready': true } }, report: 'A note under your door, in violet ink: "Come and have your fortune read. No charge, this once. — V."' },
 
   /* ------------------------------------------------- the thing below -- */
   { id: 'dig.deeper', when: { all: [{ fact: 'prologue.done', eq: true }, { not: { fact: 'dig.pump', eq: 'blown' } }] }, effect: { add: { 'dig.depth': 1 } } },

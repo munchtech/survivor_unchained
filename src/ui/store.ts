@@ -197,6 +197,8 @@ export interface DialogueView {
   name: string;
   title: string;
   portrait: string | null;
+  /** A mark instead of a face (a wolf, a lampling, a notice board). */
+  glyph?: string;
   mood: string;
   /** Who is speaking this line: the npc, 'player' or 'narrator'. */
   speaker: 'npc' | 'player' | 'narrator';

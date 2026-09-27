@@ -3,6 +3,7 @@ import { PRESETS, type PresetName } from '@/render/atmosphere';
 import { WorldScene } from '@/game/scene';
 import { buildLowFord } from '@/world/zones/lowford';
 import { buildWaystation } from '@/world/zones/waystation';
+import { buildVerge } from '@/world/zones/verge';
 import { LOADOUTS } from '@/render/playerView';
 import { StatBlock } from '@/sim/stats';
 import { Input } from '@/core/input';
@@ -13,7 +14,7 @@ import { Input } from '@/core/input';
 export function zoneDev(r: Renderer, params: URLSearchParams) {
   const scene = new WorldScene(r);
   const id = params.get('zone') || 'lowford';
-  const built = id === 'waystation' ? buildWaystation(r.spec.grassDensity) : buildLowFord(r.spec.grassDensity);
+  const built = id === 'waystation' ? buildWaystation(r.spec.grassDensity) : id === 'verge' ? buildVerge(r.spec.grassDensity) : buildLowFord(r.spec.grassDensity);
   const zone = built.zone;
   if (params.get('time')) zone.atmosphere = PRESETS[params.get('time') as PresetName];
   scene.setZone(zone);

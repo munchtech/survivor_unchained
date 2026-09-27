@@ -18,6 +18,8 @@ type Feel = Partial<Record<Axis, number>>;
 /** Something the world will remember, who takes it personally, and how. */
 export const hist = (id: string, text: string, tags: string[], spread: number, sentiment?: Feel, reactions?: Record<string, Feel>): Effect =>
   ({ history: { id, text, tags, spread, sentiment, reactions } });
+/** The same deed, done in front of people: they know at once, the rest hear later. */
+export const seen = (e: Effect, ...who: string[]): Effect => ({ ...(e as Extract<Effect, { history: unknown }>), witnesses: who });
 
 /* ================================================================ Rook == */
 
@@ -110,6 +112,7 @@ export const HOLLOWAY: Conversation = {
   npc: 'holloway',
   entry: [
     { when: { all: [{ fact: 'player.wanted', eq: true }, { not: { fact: 'player.fined', eq: true } }] }, node: 'arrest' },
+    { when: { all: [{ fact: 'holloway.lied_to', eq: true }, { not: { fact: 'holloway.lie_settled', exists: true } }] }, node: 'liar' },
     { when: notMet('holloway'), node: 'first' },
     { node: 'hub' },
   ],
@@ -154,11 +157,41 @@ export const HOLLOWAY: Conversation = {
         { text: 'Hand over the fang.', when: { hasItem: 'greymuzzle_fang' }, effects: [
           { take: 'greymuzzle_fang' }, { gold: 50 }, { set: { 'beasts.bounty_claimed': true, 'greymuzzle': 'dead' } },
           { quest: { id: 'beasts', entry: 'bounty_claimed' } }, { rel: { npc: 'holloway', trust: 15, respect: 15 } },
-          hist('greymuzzle_fang_sold', 'turned in Greymuzzle\'s fang for the bounty', ['beasts', 'bounty'], 2, undefined, { maeca: { affection: -40, respect: -20 }, holloway: { respect: 10 } }),
+          seen(hist('greymuzzle_fang_sold', 'turned in Greymuzzle\'s fang for the bounty', ['beasts', 'bounty'], 2, undefined, { maeca: { affection: -40, respect: -20 }, holloway: { respect: 10 } }), 'holloway'),
         ], goto: 'hub' },
         { text: 'Hand over the pelts.', when: { hasItem: 'wolf_pelt' }, action: 'bounty' },
         back(),
       ],
+    },
+    liar: {
+      id: 'liar',
+      text: 'Dealt with. That is what you said. I paid you thirty gold of the Watch\'s money for "dealt with", and this morning I had a drover bleeding on my gate. So. Tell me why I should not put you in the cells.',
+      choices: [
+        { text: 'Pay back the thirty. [30 gold]', when: { gold: { gte: 30 } }, locked: 'You do not have it', effects: [
+          { gold: -30 }, { set: { 'holloway.lie_settled': 'repaid' } }, { rel: { npc: 'holloway', trust: 15 } },
+        ], goto: 'repaid' },
+        { text: 'They were dealt with. These are new ones. The wood is sick; they keep coming.', when: { any: [{ knows: 'clue.sick_wolf' }, { knows: 'root_cause' }] }, badge: 'Clue', effects: [
+          { set: { 'holloway.lie_settled': 'argued' } }, { rel: { npc: 'holloway', respect: 5 } },
+        ], goto: 'argued' },
+        { text: 'You got your pelts. Take it up with the wolves.', effects: [
+          { set: { 'holloway.lie_settled': 'defied' } }, { rel: { npc: 'holloway', trust: -15, fear: 5 } },
+        ], goto: 'defied' },
+      ],
+    },
+    repaid: {
+      id: 'repaid',
+      text: 'Hm. A liar who pays his debts. That is a rarer beast than a wolf. I will not forget it — either half of it.',
+      choices: hollowayHub,
+    },
+    argued: {
+      id: 'argued',
+      text: '...New ones. From a sick wood. Then the pelts buy me nothing, and you are telling me the bounty is a bucket against a flood. Find me the hole in the bucket, and we will call it even.',
+      choices: hollowayHub,
+    },
+    defied: {
+      id: 'defied',
+      text: 'Out of my sight. And if I see you near my gate with a blade out, you will find out how the cells feel on a cold night.',
+      choices: [bye('Go.')],
     },
     caravan: {
       id: 'caravan',
@@ -193,7 +226,7 @@ export const HOLLOWAY: Conversation = {
       effects: [
         { take: 'pell_ledger' }, { set: { 'caravan.pell': 'exposed' } }, { quest: { id: 'caravan', entry: 'pell_exposed' } },
         { gold: 40 }, { rel: { npc: 'holloway', trust: 30, respect: 25 } },
-        hist('exposed_pell', 'exposed Pell Varrow for paying the Kerchiefs to take the Coyle caravan', ['justice', 'caravan'], 2, { trust: 10, respect: 10 }, { harlan: { trust: 40, affection: 30 }, pell: { fear: 30, trust: -80 } }),
+        seen(hist('exposed_pell', 'exposed Pell Varrow for paying the Kerchiefs to take the Coyle caravan', ['justice', 'caravan'], 2, { trust: 10, respect: 10 }, { harlan: { trust: 40, affection: 30 }, pell: { fear: 30, trust: -80 } }), 'holloway', 'harlan'),
       ],
       choices: [bye()],
     },
@@ -505,7 +538,7 @@ export const HARLAN: Conversation = {
       effects: [
         { take: 'coyle_strongbox' }, { gold: 100 }, { set: { 'caravan.cargo': 'returned' } }, { quest: { id: 'caravan', entry: 'cargo_returned', outcome: 'returned' } },
         { rel: { npc: 'harlan', trust: 30, affection: 20 } },
-        hist('returned_cargo', 'brought the Coyle strongbox back unopened', ['honest', 'caravan'], 2, { trust: 10 }),
+        seen(hist('returned_cargo', 'brought the Coyle strongbox back unopened', ['honest', 'caravan'], 2, { trust: 10 }), 'harlan'),
       ],
       choices: harlanHub,
     },
@@ -515,7 +548,7 @@ export const HARLAN: Conversation = {
       effects: [
         { take: 'pell_ledger' }, { set: { 'caravan.pell': 'exposed' } }, { quest: { id: 'caravan', entry: 'pell_exposed' } },
         { rel: { npc: 'harlan', trust: 30 } },
-        hist('exposed_pell', 'exposed Pell Varrow for paying the Kerchiefs to take the Coyle caravan', ['justice', 'caravan'], 2, { trust: 10 }, { pell: { fear: 30, trust: -80 }, holloway: { respect: 20 } }),
+        seen(hist('exposed_pell', 'exposed Pell Varrow for paying the Kerchiefs to take the Coyle caravan', ['justice', 'caravan'], 2, { trust: 10 }, { pell: { fear: 30, trust: -80 }, holloway: { respect: 20 } }), 'harlan'),
       ],
       choices: harlanHub,
     },
@@ -565,7 +598,7 @@ export const PELL: Conversation = {
         { text: 'Take the money.', effects: [
           { gold: 60 }, { set: { 'caravan.pell': 'ally' } }, { quest: { id: 'caravan', entry: 'pell_joined' } }, { faction: { id: 'kerchief', standing: 20 } },
           { rel: { npc: 'pell', trust: 30 } },
-          hist('joined_pell', 'took Pell Varrow\'s money to leave the Coyle cargo with the Kerchiefs', ['corrupt', 'caravan'], 1, { trust: -15 }, { harlan: { trust: -60, affection: -40 }, rav: { respect: 10 } }),
+          seen(hist('joined_pell', 'took Pell Varrow\'s money to leave the Coyle cargo with the Kerchiefs', ['corrupt', 'caravan'], 1, { trust: -15 }, { harlan: { trust: -60, affection: -40 }, rav: { respect: 10 } }), 'pell'),
         ], end: true },
         { text: 'I will think about it.', end: true },
         { text: 'I think Holloway would like to hear this.', effects: [{ rel: { npc: 'pell', fear: 20, trust: -30 } }], end: true },
@@ -585,7 +618,7 @@ export const PELL: Conversation = {
       choices: [
         { text: 'Done.', effects: [
           { take: 'pell_ledger' }, { gold: 80 }, { set: { 'caravan.pell': 'ally' } }, { quest: { id: 'caravan', entry: 'pell_joined' } },
-          hist('sold_ledger', 'sold Pell Varrow his own ledger back', ['corrupt', 'caravan'], 1, { trust: -10 }),
+          seen(hist('sold_ledger', 'sold Pell Varrow his own ledger back', ['corrupt', 'caravan'], 1, { trust: -10 }), 'pell'),
         ], end: true },
         { text: 'No.', end: true },
       ],
@@ -644,7 +677,7 @@ export const RAV: Conversation = {
       choices: [
         { text: 'Sell it.', effects: [
           { take: 'coyle_strongbox' }, { gold: 150 }, { set: { 'caravan.cargo': 'sold', 'player.wanted': true } }, { quest: { id: 'caravan', entry: 'cargo_sold', outcome: 'kept' } },
-          hist('fenced_cargo', 'sold the Coyle strongbox to a fence', ['theft', 'caravan'], 2, { trust: -20 }, { harlan: { trust: -80, affection: -60 }, holloway: { trust: -40 } }),
+          seen(hist('fenced_cargo', 'sold the Coyle strongbox to a fence', ['theft', 'caravan'], 2, { trust: -20 }, { harlan: { trust: -80, affection: -60 }, holloway: { trust: -40 } }), 'rav'),
         ], goto: 'hub' },
         { text: 'On second thought.', goto: 'hub' },
       ],
@@ -671,7 +704,7 @@ const chidHub: DChoice[] = [
 
 export const CHID: Conversation = {
   npc: 'chid',
-  entry: [{ when: notMet('chid'), node: 'first' }, { node: 'hub' }],
+  entry: [{ when: { fact: 'player.just_died', eq: true }, node: 'woke' }, { when: notMet('chid'), node: 'first' }, { node: 'hub' }],
   marker: [{ when: notMet('chid'), mark: '!' }],
   nodes: {
     first: {
@@ -687,6 +720,23 @@ export const CHID: Conversation = {
       text: [{ when: { fact: 'shrine.lit', eq: true }, text: 'It is still burning. Every morning I check. It is still burning.' }, { text: 'Hello again! The light is patient. I am trying to be.' }],
       choices: chidHub,
     },
+    woke: {
+      id: 'woke',
+      text: [
+        { when: { fact: 'shrine.lit', eq: true }, text: 'You are awake! Good. Good. A carter found you on the Old Road and brought you here, and the flame — the flame kept you. I watched it. You will be sore for a day or two. Whatever did this to you is still out there, {name}. It will have your things. They always keep something.' },
+        { text: 'Oh, you are awake. A carter found you on the Old Road and brought you here, and I did not know what else to do, so I prayed at the shrine and — well. Here you are. You will be sore for a day or two. Whatever did this is still out there. It will have your things.' },
+      ],
+      effects: [{ set: { 'player.just_died': false } }],
+      choices: [
+        { text: 'Thank you, Chid.', effects: [{ rel: { npc: 'chid', affection: 10 } }], end: true },
+        { text: 'Where did I fall?', goto: 'where' },
+      ],
+    },
+    where: {
+      id: 'where',
+      text: 'In the Verge. The carter said there was a grave-mark where you lay, and your purse under it — and a beast standing over it that would not let him near. Be careful. It knows your smell now.',
+      choices: [bye('I will get it back.')],
+    },
     shrine: {
       id: 'shrine',
       text: 'The flame. It blessed people. Kept the dead lying down. Then the Order left and the flame went out, and I have been... trying. With prayers. And candles. And a bellows, once. That was a bad day.',
@@ -698,7 +748,7 @@ export const CHID: Conversation = {
       text: 'You open your lantern and say the words you learned at seven, the ones about the dark being only the part of the day that has not happened yet. The shrine takes the flame as if it had been waiting. Chid makes a sound like a kettle.',
       effects: [
         { set: { 'shrine.lit': true } }, { trait: 'lightbearer' }, { rel: { npc: 'chid', trust: 40, affection: 40 } },
-        hist('shrine_lit', 'relit the shrine of the Morning Light', ['faith', 'deed'], 2, { respect: 10, affection: 5 }),
+        seen(hist('shrine_lit', 'relit the shrine of the Morning Light', ['faith', 'deed'], 2, { respect: 10, affection: 5 }), 'chid'),
       ],
       next: 'lit',
     },
