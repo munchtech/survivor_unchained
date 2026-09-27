@@ -21,7 +21,7 @@ npm run build      # typecheck + production build
 | Dash | Space / Shift |
 | Ability | Q / right mouse |
 | Interact, talk | E / F |
-| Pack · Self · Journal | I (Tab) · C · J |
+| Pack · Self · Journal · Map | I (Tab) · C · J · M |
 | Level-up draft | 1–4 to pick, X reroll, B banish |
 | Pause (save, sound) | Esc / P |
 
@@ -64,6 +64,13 @@ take from each level-up, and, out of combat, what to say and to whom.
   you. You wake at the shrine, wounded, and Chid has something to say.
 - **Persistence**: every save holds the character, the world, where you
   stand and the ember build you carry; saves migrate forward, never vanish.
+- **The map**: each zone drawn by hand from itself (hill shading, contours,
+  ink trees, footprints of every house), fog where you have not walked,
+  places named once found.
+- **A town that notices**: people keep routines and move with their
+  troubles (Harlan watches the east gate while the caravan is missing), the
+  notice board changes as the world does, and each morning's report says
+  who heard what about you overnight.
 - **The chapter's end**: when both questlines are settled, Vonnra reads your
   fortune (it is your own story, read back), and the chapter closes on a
   page worked out from the world: what was done, what is still waiting, who
@@ -122,6 +129,7 @@ All expect `npm run dev` running.
 | `node tools/play.mjs "quick=warden&auto" name secs` | Autopilot through the prologue |
 | `node tools/verge.mjs [hollow roost dig death]` | Drive the Verge routes and check the world's answer |
 | `node tools/saveload.mjs` | Save mid-expedition, reload, continue, compare |
+| `node tools/flow.mjs` | Toll, both roads out of town and back, a night at the inn |
 | `node tools/listen.mjs "<query>" name secs` | Record the mix as a spectrogram with loudness |
 
 Useful URLs: `?quick=warden&bg=hunter&zone=verge&at=-60,-80` (start
