@@ -74,7 +74,12 @@ export interface VergeBuild {
   vaultGlow: THREE.Object3D;
 }
 
-export function buildVerge(grassDensity = 1): VergeBuild {
+/** How the wood is when you walk into it: poisoned, or healing. */
+export interface VergeState { cleanDays: number }
+
+export function buildVerge(grassDensity = 1, state: VergeState = { cleanDays: 0 }): VergeBuild {
+  // Once the poison stops, the blight draws back a little more each day.
+  const heal = Math.min(1, state.cleanDays / 3);
   const noise = new Noise2D(911);
   const roadIx = new PathIndex(VROAD, 14, 8, ROAD_KEYS);
   const rutIx = new PathIndex(RUTS, 14, 8, RUT_KEYS);
@@ -152,6 +157,8 @@ export function buildVerge(grassDensity = 1): VergeBuild {
     const alongDig = 1 - smoothstep(10, 150, Math.hypot(x - V.pipe.x, z - V.pipe.z));
     return (1 - smoothstep(2.6, 3.6 + alongDig * 2.5, sd + noise.noise(x * 0.25, z * 0.25) * 1.2)) * (0.15 + alongDig * 0.4);
   };
+  /** The blight on the ground now; what it killed stays dead. */
+  const blightNow = (x: number, z: number) => blightAt(x, z) * (1 - heal * 0.85);
 
   const terrain = new Terrain({
     size: 290, resolution: 291, height,
@@ -171,7 +178,7 @@ export function buildVerge(grassDensity = 1): VergeBuild {
       // The sinkhole: raw earth fallen in, wet at the bottom.
       o.dirt = Math.max(o.dirt, sink(x, z));
       o.mud = Math.max(o.mud, (1 - smoothstep(5, 9, Math.hypot(x - V.sinkhole.x, z - V.sinkhole.z) + n * 1.5)) * 0.85);
-      o.blight = blightAt(x, z);
+      o.blight = blightNow(x, z);
       // Bare mud banks: nothing grows at the water's edge.
       o.mud = Math.max(o.mud, 1 - smoothstep(3.0, 4.6, streamDist(x, z) + n * 0.8));
     },
@@ -187,8 +194,13 @@ export function buildVerge(grassDensity = 1): VergeBuild {
   root.add(grass.mesh);
 
   // The stream: a ribbon of water down its carved bed, poisoned green.
+  // Poisoned green, or running clear again.
+  const mix = (a: string, b: string) => '#' + new THREE.Color(a).lerp(new THREE.Color(b), heal).getHexString();
   root.add(createStream(STREAM, 6.8, (x, z) => waterLine(streamIx.nearest(x, z).s),
-    { color: '#2a4a1e', murk: '#0c1e06', flow: [0, 0.6], opacity: 0.94, glow: 0.45, sky: '#2e4a30', shallow: '#4e5a2a', foam: '#b8c890' },
+    {
+      color: mix('#2a4a1e', '#22485a'), murk: mix('#0c1e06', '#071620'), flow: [0, 0.6], opacity: 0.94, glow: 0.45 * (1 - heal), sky: mix('#2e4a30', '#2c4658'),
+      shallow: mix('#4e5a2a', '#5a5238'), foam: mix('#b8c890', '#dfe6e2'),
+    },
     (x, z) => terrain.heightAt(x, z)));
 
   /* ------------------------------------------------------------ forest -- */

@@ -35,12 +35,13 @@ function beasts(w: WorldState): Thread {
     allied: ['Ran with the Pack', 'grey'],
     slaughtered: [f.greymuzzle === 'dead' ? 'Put down, alpha and all' : 'Put down', 'grey'],
     ignored: ['Left to fester', 'bad'],
+    exploited: ['Settled, for a price', 'grey'],
   };
   const [verdict, tone] = out ? v[out] ?? ['Settled', 'grey'] : ['Not yet settled', 'open' as Tone];
   return {
     id: 'beasts', name: q.name, verdict, tone,
     outcome: (out && q.outcomes?.[out]) || 'The wolves are still out there, and still sick.',
-    beats: pick(w, 'beasts', ['greymuzzle_met', 'root_cause', 'pump_moved', 'pump_broken', 'pump_blown', 'alpha_dead', 'bounty_claimed', 'told_holloway', 'pelts_sold', 'pack_led']),
+    beats: pick(w, 'beasts', ['greymuzzle_met', 'root_cause', 'dig_sold', 'pump_moved', 'pump_broken', 'pump_blown', 'alpha_dead', 'bounty_claimed', 'told_holloway', 'pelts_sold', 'pack_led']),
   };
 }
 
@@ -64,6 +65,7 @@ function epithet(ch: CharacterData, w: WorldState) {
   const f = w.facts;
   if (f['beasts.outcome'] === 'allied') return `${ch.name}, who runs with wolves`;
   if (f['caravan.pell'] === 'ally') return `${ch.name}, in Pell Varrow's ledger`;
+  if (f['beasts.outcome'] === 'exploited') return `${ch.name}, who sold the cure`;
   if (f['caravan.cargo'] === 'sold') return `${ch.name}, who sold the Coyle strongbox`;
   if (f['beasts.outcome'] === 'cured' && f['caravan.survivors'] === 'rescued') return `${ch.name}, who cleared the water and opened the cages`;
   if (f['beasts.outcome'] === 'cured') return `${ch.name}, who cleared the water`;

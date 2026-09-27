@@ -920,6 +920,9 @@ export class Game {
     }
     if (this.ch?.traits.includes('silver_tongue')) m *= 0.9;
     if (npcId === 'harlan' && s?.flags.discount) m *= 0.8;
+    // A road the Kerchiefs work is a road wagons do not come down: everything costs more.
+    const raids = Number(this.world?.facts['kerchief.raids'] ?? 0);
+    if (raids >= 2) m *= 1 + Math.min(0.3, raids * 0.06);
     return m;
   }
 

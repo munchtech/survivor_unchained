@@ -628,6 +628,10 @@ export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number 
       act: () => {
         say('A Watchman, a long time dead. In his belt-book, the last line: "Lamps at the Low Ford lit again, and not by us. The Warden is walking."', undefined, 8);
         g.apply([{ learn: 'lore.warden', text: 'The lamps at the ford feed the Warden.' }]);
+        // The devout hear the dead, a little.
+        if (g.ch?.knowledge.includes('faith')) {
+          setTimeout(() => say('...and for you alone, the dead man\'s jaw moves: "It shatters its own lamps when it charges. Make it charge."', 'The dead Watchman', 7), 8200);
+        }
       },
     },
     {

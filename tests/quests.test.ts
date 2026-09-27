@@ -226,3 +226,36 @@ describe('the notice board', () => {
     expect(world.quests.beasts.status).toBe('resolved');
   });
 });
+
+describe('selling the cure', () => {
+  it('Pell buys what the Dig is doing, moves the pipe for his cut, and the stream clears on his terms', () => {
+    const { c, ch, world } = setup('outcast');
+    ch.knowledge.push('root_cause');
+    const gold = ch.gold;
+    talk(CONVOS.pell, c, 'terrible business');
+    talk(CONVOS.pell, c, 'killing the wolves', 'forty');
+    expect(ch.gold).toBe(gold + 40);
+    expect(world.quests.beasts.entries).toContain('dig_sold');
+    for (let d = 0; d < 5; d++) advanceDay(c, RULES, SOCIAL, () => 0.99);
+    expect(world.facts['dig.pump']).toBe('moved');
+    expect(world.facts['beasts.outcome']).toBe('exploited');
+    expect(world.quests.beasts.status).toBe('resolved');
+    const sum = chapterSummary(ch, world);
+    expect(sum.threads[0].verdict).toBe('Settled, for a price');
+  });
+});
+
+describe('what you know opens doors', () => {
+  it('the Warden\'s lore gets a probationary knight talking', () => {
+    const { c, ch } = setup('scholar');
+    talk(CONVOS.keegan, c, 'bye');
+    ch.knowledge.push('lore.warden');
+    const p = talk(CONVOS.keegan, c, 'ford-warden');
+    expect(p?.text).toMatch(/keep the Warden asleep/);
+  });
+
+  it('a devout survivor hears the bones at the Sealed Door (entry exists and reads)', () => {
+    const { c } = setup('devout');
+    expect(c.ch.knowledge).toContain('faith');
+  });
+});

@@ -29,6 +29,7 @@ const rookHub: DChoice[] = [
   { text: 'What is the talk in town?', goto: 'rumours' },
   { text: 'Tell me about the Waystation.', goto: 'town' },
   { text: 'That lamp over the door — it is from the Chapel of the Morning Light.', when: { bg: 'devout' }, badge: 'Faith', once: 'lamp', goto: 'lamp' },
+  { text: 'There is a grave in the garden behind the walls. A captain, with his lamp.', when: { knows: 'lore.firstlamp' }, badge: 'Found', once: 'firstlamp', goto: 'firstlamp' },
   bye('Another time.'),
 ];
 
@@ -79,6 +80,12 @@ export const ROOK: Conversation = {
     town: {
       id: 'town',
       text: 'Three roads meet here. South to the Low Ford, east to the Old Road and the Verge, and north... north is shut, and a boy in shiny armour will tell you why at length. Vonnra takes the toll, Holloway keeps the peace, Brannoc keeps the steel, Chid keeps the shrine, badly. Harlan and Pell keep each other honest. Mostly.',
+      choices: [back()],
+    },
+    firstlamp: {
+      id: 'firstlamp',
+      text: 'You found old Ashe. Captain of the first Watch, when it was forty lamps and not four. This inn is named for his: the Last Lamp, because it was the last one lit on the night they closed the north road. We light the hearth from it every winter. Nobody goes out there now. ...Thank you for not digging him up.',
+      effects: [{ rel: { npc: 'rook', trust: 10, affection: 10 } }, { learn: 'lore.ashe' }],
       choices: [back()],
     },
     lamp: {
@@ -136,6 +143,7 @@ export const HOLLOWAY: Conversation = {
       id: 'hub',
       text: [
         { when: { fact: 'beasts.outcome', eq: 'cured' }, text: 'The water is clean and the wolves are back in the deep wood. I was wrong about them. Do not tell anyone I said so.' },
+        { when: { fact: 'wolves.at_gate', eq: true }, text: 'You heard. Aldo. He had a wife in Ashford and a bad knee, and they took him at my gate. The bounty is still five gold a pelt. What do you want?' },
         { when: { rel: { npc: 'holloway', axis: 'trust', lte: -30 } }, text: 'You. Keep your hands where I can see them.' },
         { text: 'Captain Holloway. What is it?' },
       ],
@@ -329,6 +337,7 @@ export const MAECA: Conversation = {
 
 const wennaHub: DChoice[] = [
   { text: 'Holloway says the wolves are getting bolder.', goto: 'animals' },
+  { text: 'Tam says the wolves drank from the stream and fell down.', when: { all: [{ knows: 'hint.stream' }, { not: { knows: 'clue.analysis' } }] }, once: 'tam', goto: 'tamsays' },
   { text: 'I brought you water from the stream.', when: { hasItem: 'stream_sample' }, locked: 'Bring her a sample from the Thornhollow stream', goto: 'analyse' },
   { text: 'Let me help you test it.', when: { all: [{ knows: 'arcana' }, { hasItem: 'stream_sample' }] }, badge: 'Arcana', goto: 'analyse_arcana' },
   { text: 'I brought bitterroot.', when: { hasItem: 'bitterroot', qty: 3 }, locked: 'She wants three bitterroot', effects: [{ take: 'bitterroot', qty: 3 }, { gold: 15 }, { rel: { npc: 'wenna', affection: 12, trust: 6 } }], goto: 'root' },
@@ -355,6 +364,12 @@ export const WENNA: Conversation = {
       id: 'animals',
       text: 'The animals were never like this. Never. And the water tastes wrong this year — metal and smoke. Bring me some from the Thornhollow stream, above the blight if you can, below it if you must, and I will tell you what is in it.',
       effects: [{ quest: { id: 'beasts', status: 'active', entry: 'wenna_request' } }],
+      choices: wennaHub,
+    },
+    tamsays: {
+      id: 'tamsays',
+      text: 'Tam. Of course Tam saw it; nobody looks at the ground like a boy with nothing to do. Drank and fell down. Not fought, not starved: drank. ...Bring me that water. A bottle of it, from where he saw them. I have been smelling metal in the well for a month and telling myself I was old.',
+      effects: [{ quest: { id: 'beasts', status: 'active', entry: 'wenna_request' } }, { rel: { npc: 'wenna', respect: 10 } }, { rel: { npc: 'tam', trust: 5 }, quiet: true }],
       choices: wennaHub,
     },
     analyse: {
@@ -433,6 +448,8 @@ export const TAM: Conversation = {
     again: {
       id: 'again',
       text: [
+        { when: { fact: 'beasts.outcome', eq: 'ignored' }, text: 'They came right up to the gate. I heard them. Pa says we are not going home. Not ever, maybe.' },
+        { when: { fact: 'tam.farm', eq: 'raided' }, text: 'Pa is at Wenna\'s. She says he will keep the arm. The Watch says it was wolves. I told them it was wolves, weeks ago. Nobody listens.' },
         { when: { fact: 'beasts.severity', gte: 4 }, text: 'Pa did not come in last night. He always comes in.' },
         { text: 'Did you find out what is wrong with them?' },
       ],
@@ -583,6 +600,7 @@ const pellHub: DChoice[] = [
   { text: 'You smell of Kerchief money.', when: { knows: 'underworld' }, badge: 'Underworld', once: 'smell', goto: 'smell' },
   { text: 'I have read your ledger.', when: { hasItem: 'pell_ledger' }, badge: 'Evidence', goto: 'confront' },
   { text: 'Terrible business, the caravan.', goto: 'caravan' },
+  { text: 'I know what is killing the wolves. It is worth something.', when: { all: [{ knows: 'root_cause' }, { not: { fact: 'dig.sold', exists: true } }, { not: { fact: 'beasts.outcome', exists: true } }, { any: [{ not: { fact: 'dig.pump', exists: true } }, { fact: 'dig.pump', eq: 'running' }] }] }, goto: 'dig' },
   bye(),
 ];
 
@@ -633,6 +651,20 @@ export const PELL: Conversation = {
         { text: 'No.', end: true },
       ],
     },
+    dig: {
+      id: 'dig',
+      text: 'Is it? Go on. ...The Dig. Grimtunnel\'s little lamp-people, pumping their slurry into the stream. Oh, that is worth something. Not to Holloway: to the diggers. A pipe can be moved, for a consideration, and a consideration can be split. Forty gold, and the wolves stop dying. Everyone is happy. Especially me.',
+      choices: [
+        { text: 'Forty. Done.', effects: [
+          { gold: 40 }, { set: { 'dig.sold': true } }, { quest: { id: 'beasts', entry: 'dig_sold' } }, { rel: { npc: 'pell', trust: 20 } },
+          // Pell's men have a word with Snib; two days later the pipe goes into the sinkhole.
+          { later: { days: 2, id: 'pell.dig', effect: { if: { any: [{ not: { fact: 'dig.pump', exists: true } }, { fact: 'dig.pump', eq: 'running' }] }, then: [{ set: { 'dig.pump': 'moved', 'dig.pell_cut': true } }] } } },
+          seen(hist('sold_dig', 'sold what the Dig was doing to Pell Varrow, instead of stopping it', ['corrupt', 'beasts'], 1, { trust: -5 }, { wenna: { trust: -25, respect: -20 }, maeca: { respect: -25 }, pell: { respect: 15 } }), 'pell'),
+        ], goto: 'dig_done' },
+        { text: 'On second thought, I will deal with it myself.', goto: 'hub' },
+      ],
+    },
+    dig_done: { id: 'dig_done', text: 'A pleasure. Give it two days. And if anyone asks, you and I talked about the weather.', choices: pellHub },
     ally: { id: 'ally', text: 'Our arrangement stands. Discreetly, please.', choices: [{ text: 'What do you have?', action: 'trade' }, bye()] },
   },
 };
@@ -709,6 +741,7 @@ const chidHub: DChoice[] = [
   { text: 'Bless me, Chid.', when: { fact: 'shrine.lit', eq: true }, effects: [{ condition: { id: 'blessed', days: 2 } }, { notice: 'The flame\'s warmth stays with you. (Blessed: +15% holy damage)' }], goto: 'blessed' },
   { text: 'There is a sealed door in the Verge.', when: { quest: { id: 'vault', entry: 'seen' } }, once: 'vault', goto: 'vault' },
   { text: 'Something is digging under the Verge.', when: { knows: 'grimtunnel' }, once: 'below', goto: 'below' },
+  { text: 'The Warden at the Low Ford. The lamps fed it. Who made it?', when: { knows: 'lore.warden' }, once: 'warden', goto: 'warden' },
   bye(),
 ];
 
@@ -764,6 +797,12 @@ export const CHID: Conversation = {
     },
     lit: { id: 'lit', text: 'It WORKS. It works! I knew it worked. I said it worked! Nobody — I have to tell Rook. I have to tell everyone. Thank you. Thank you!', choices: chidHub },
     blessed: { id: 'blessed', text: 'There. Go on, then, and be warm.', choices: chidHub },
+    warden: {
+      id: 'warden',
+      text: 'The Order did, I think. Before the Watch. Before me, certainly, which is a long time. Everything the Morning Light made was made to guard something. That is the trouble with guards: they outlast whatever they were guarding against, and then they guard against us.',
+      effects: [{ rel: { npc: 'chid', respect: 10 } }],
+      choices: chidHub,
+    },
     vault: {
       id: 'vault',
       text: 'The old empire did something there, before the Watch. I think the Watch was founded to keep it done. I do not know what. Vonnra does. Vonnra will not say. That, I think, is the answer.',
@@ -804,7 +843,15 @@ export const VONNRA: Conversation = {
       effects: [{ rel: { npc: 'vonnra', respect: 0 }, quiet: true }],
       choices: vonnraHub,
     },
-    hub: { id: 'hub', text: 'Payment, always.', choices: vonnraHub },
+    hub: {
+      id: 'hub',
+      text: [
+        { when: { fact: 'chapter.done', eq: true }, text: 'Your chapter is written. The next one is not. Payment, always.' },
+        { when: { fact: 'kerchief.raids', gte: 2 }, text: 'Fewer wagons, fewer tolls. The Kerchiefs are bad for everyone\'s business but their own. Payment, always.' },
+        { text: 'Payment, always.' },
+      ],
+      choices: vonnraHub,
+    },
     paid: { id: 'paid', text: 'The east gate is yours. Try to come back through it.', choices: vonnraHub },
     ledger: {
       id: 'ledger',
@@ -835,6 +882,7 @@ export const VONNRA: Conversation = {
         { when: { all: [{ fact: 'beasts.outcome', eq: 'slaughtered' }, { fact: 'greymuzzle', eq: 'dead' }] }, text: 'I see pelts. A great many pelts, and a grey one on top of the pile. The road is safe and the wood is quiet. Something that was sick got sicker, and then there was nothing left of it to be sick.' },
         { when: { fact: 'beasts.outcome', eq: 'slaughtered' }, text: 'I see a quiet wood. Too quiet. You made the road safe the way a fire makes a house warm.' },
         { when: { fact: 'beasts.outcome', eq: 'ignored' }, text: 'I see wolves at the east gate, and a man of the Watch who did not come home. You were busy. The world was not.' },
+        { when: { fact: 'beasts.outcome', eq: 'exploited' }, text: 'I see clean water, and a ledger with a new line in it. The wolves are saved and Pell Varrow owns a hole in the ground. You were paid; he was paid. Someone always is. Wenna has not forgiven you, and she is the one who notices.' },
         { text: 'The wolves, I see only dimly. Whatever you meant to do about them, you have not done it yet.' },
       ],
       next: 'f_caravan',
@@ -901,7 +949,33 @@ export const KEEGAN: Conversation = {
       text: 'Halt! None pass north. Professor Keegan, Knight of the Argent Vigil. Probationary. It is a real title.',
       choices: [{ text: 'What is north?', goto: 'north' }, { text: 'Why "Professor"?', goto: 'prof' }, bye()],
     },
-    hub: { id: 'hub', text: 'Still not ready. I would know.', choices: [{ text: 'What is north?', goto: 'north' }, { text: 'Why "Professor"?', goto: 'prof' }, bye()] },
+    hub: {
+      id: 'hub', text: 'Still not ready. I would know.',
+      choices: [
+        { text: 'What is north?', goto: 'north' },
+        { text: 'Why "Professor"?', goto: 'prof' },
+        { text: 'The Ford-Warden. The Watch\'s lamps were feeding it.', when: { knows: 'lore.warden' }, once: 'warden', goto: 'warden' },
+        { text: 'Captain Ashe is buried in the garden. Did the Vigil know him?', when: { knows: 'lore.ashe' }, once: 'ashe', goto: 'ashe' },
+        bye(),
+      ],
+    },
+    warden: {
+      id: 'warden',
+      text: '...Who told you that? The Vigil kept those lamps before the Watch did. Before the Watch was the Watch. The lamps were never to keep the dark out. They were to keep the Warden asleep. If somebody lit them again, somebody wanted it awake. Do not repeat that. I am probationary.',
+      effects: [{ rel: { npc: 'keegan', respect: 15, trust: 10 } }],
+      choices: [{ text: 'Who would want it awake?', goto: 'who' }, bye()],
+    },
+    who: {
+      id: 'who',
+      text: 'Someone who needed the ford closed. Someone who wanted a heart. You tell me; you were there.',
+      choices: [bye()],
+    },
+    ashe: {
+      id: 'ashe',
+      text: 'Know him? The Vigil buried him. He closed the north road with forty lamps and walked back through it with one. What he saw up there is why I am standing here telling you no. When you are ready, he would have told you himself.',
+      effects: [{ rel: { npc: 'keegan', respect: 10 } }],
+      choices: [bye()],
+    },
     north: { id: 'north', text: 'Things you are not ready for. When you are, I will know. It is in the probationary handbook, chapter four.', choices: [{ text: 'Why "Professor"?', goto: 'prof' }, bye()] },
     prof: { id: 'prof', text: 'I taught, before. Rhetoric. It is very useful for telling people no.', choices: [{ text: 'What is north?', goto: 'north' }, bye()] },
   },

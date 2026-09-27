@@ -98,6 +98,7 @@ export const QUESTS: Record<string, QuestDef> = {
       bootprints: 'Fresh bootprints in the mud at the door, going in, not coming out. Someone got inside.',
       vonnra_refuses: 'Vonnra will not talk about the vault. Not for money, which is how you know it matters.',
       chid_empire: 'Chid says the old empire "did something here" before the Watch was founded, and the Watch was founded to keep it done.',
+      whisper: 'The bones at the door spoke, to you and no one else: "It was never locked from the outside."',
     },
   },
   below: {
@@ -109,6 +110,7 @@ export const QUESTS: Record<string, QuestDef> = {
       sinkhole: 'At the bottom of the sinkhole: something pale, eyeless and segmented, bigger than a house. Dead. Probably.',
       survivor: 'A lampling survivor, half-mad: "It moved. The dark moved. Grimtunnel says it is ours now."',
       map: 'A digger\'s survey of the tunnels under the Verge. The last one just says "DOWN" and keeps going.',
+      prayer: 'At the lip of the pit you heard it, under everything, for as long as a held breath: slow, patient, enormous. Not breathing. Praying.',
     },
   },
 };

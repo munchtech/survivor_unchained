@@ -9,12 +9,13 @@ import { StatBlock } from '@/sim/stats';
 import { Input } from '@/core/input';
 
 /* Walk a zone with nothing in it, for building and screenshots:
- *   ?dev=zone&zone=lowford&x=0&z=80&time=night&camdist=23&pitch=56&yaw=0 */
+ *   ?dev=zone&zone=lowford&x=0&z=80&time=night&camdist=23&pitch=56&yaw=0
+ * (&clean=3 shows the Verge the days after its stream was cured) */
 
 export function zoneDev(r: Renderer, params: URLSearchParams) {
   const scene = new WorldScene(r);
   const id = params.get('zone') || 'lowford';
-  const built = id === 'waystation' ? buildWaystation(r.spec.grassDensity) : id === 'verge' ? buildVerge(r.spec.grassDensity) : buildLowFord(r.spec.grassDensity);
+  const built = id === 'waystation' ? buildWaystation(r.spec.grassDensity) : id === 'verge' ? buildVerge(r.spec.grassDensity, { cleanDays: Number(params.get('clean') ?? 0) }) : buildLowFord(r.spec.grassDensity);
   const zone = built.zone;
   if (params.get('time')) zone.atmosphere = PRESETS[params.get('time') as PresetName];
   scene.setZone(zone);

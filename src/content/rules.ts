@@ -26,7 +26,11 @@ export const RULES: DailyRule[] = [
     report: 'Wolves at the east gate in the night, a dozen of them, sick and bold. The Watch lost a man.' },
   // A stopped pump heals the stream, slowly.
   { id: 'stream.heal', when: { any: [{ fact: 'dig.pump', eq: 'broken' }, { fact: 'dig.pump', eq: 'moved' }, { fact: 'dig.pump', eq: 'blown' }] }, effect: { add: { 'blight.days_clean': 1 } } },
-  { id: 'stream.clear', once: true, when: { all: [{ fact: 'blight.days_clean', gte: 2 }, { not: { fact: 'beasts.outcome', eq: 'slaughtered' } }] },
+  // Fixed, but for Pell's profit: the stream still clears; the story is different.
+  { id: 'stream.clear_sold', once: true, when: { all: [{ fact: 'blight.days_clean', gte: 2 }, { fact: 'dig.pell_cut', eq: true }, { not: { fact: 'beasts.outcome', exists: true } }] },
+    effect: [{ set: { 'beasts.outcome': 'exploited', 'blight.level': 0 } }, { quest: { id: 'beasts', status: 'resolved', outcome: 'exploited' } }],
+    report: 'The stream is running clear. Wenna says so, and does not look at you when she says it. Pell Varrow was seen coming back from the Verge, whistling.' },
+  { id: 'stream.clear', once: true, when: { all: [{ fact: 'blight.days_clean', gte: 2 }, { not: { fact: 'beasts.outcome', eq: 'slaughtered' } }, { not: { fact: 'dig.pell_cut', eq: true } }] },
     effect: [{ set: { 'beasts.outcome': 'cured', 'blight.level': 0 } }, { quest: { id: 'beasts', status: 'resolved', outcome: 'cured' } },
       h('stream_cleared', 'stopped the poison in the Thornhollow stream', ['deed', 'beasts'], 2)],
     report: 'Wenna came in at dawn, muddy to the knees: the stream is running clear. The Pack has gone back into the deep wood.' },
@@ -49,6 +53,8 @@ export const RULES: DailyRule[] = [
     report: 'Harlan Coyle was at the east gate before dawn, watching the Old Road. He did not eat.' },
   { id: 'caravan.despair', once: true, when: { all: [{ fact: 'caravan.days', gte: 3 }, { not: { fact: 'caravan.survivors', exists: true } }] }, effect: { rel: { npc: 'harlan', trust: -5 }, quiet: true },
     report: 'Harlan has stopped watching the road. Rook says he sat in the tavern until she put the lamps out, and asked her whether anyone was even looking.' },
+  { id: 'kerchief.prices', once: true, when: { fact: 'kerchief.raids', gte: 2 }, effect: [],
+    report: 'Harlan has put his prices up. So has everyone. Nothing is coming down the Old Road that the Kerchiefs have not had first.' },
   { id: 'kerchief.raid', when: { all: [{ fact: 'road.dangerous', eq: true }, { not: { fact: 'redcowl', exists: true } }, { day: { gte: 4 } }] },
     effect: { add: { 'kerchief.raids': 1 } }, report: 'The Kerchiefs stopped a pedlar on the Old Road and took his boots. The Watch is stretched thin.' },
 

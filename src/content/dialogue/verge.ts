@@ -158,6 +158,7 @@ export const SNIB: Conversation = {
       text: 'Oi! OI! Surface-meat! No surface-meat past the pump! Foreman\'s orders! ...I\'m the foreman. Snib. What do you want? Quick. The pump does not pump itself. It does, actually. But quick.',
       choices: [
         { text: 'Your pump is poisoning the stream.', goto: 'poison' },
+        { text: 'Your blasting ember came off the Coyle wagons.', when: { knows: 'clue.blasting_ember' }, once: 'ember', goto: 'ember' },
         { text: 'Pump it into the old sinkhole instead. Closer, and deeper.', when: { knows: 'arcana' }, badge: 'Arcana', goto: 'move' },
         { text: 'Grimtunnel sent me. He wants the outflow moved.', when: { any: [{ hasItem: 'grimtunnels_lamp' }, { hasTag: 'digger_lamp' }] }, badge: 'His lamp', goto: 'move' },
         { text: 'How much to shut it off for a week?', when: { knows: 'underworld' }, badge: 'Underworld', goto: 'bribe' },
@@ -168,11 +169,18 @@ export const SNIB: Conversation = {
     hub: {
       id: 'hub', text: 'You again. Pump is still pumping. Foreman is still foreman.',
       choices: [
+        { text: 'Your blasting ember came off the Coyle wagons.', when: { knows: 'clue.blasting_ember' }, once: 'ember', goto: 'ember' },
         { text: 'Your pump is poisoning the stream.', goto: 'poison' },
         { text: 'Pump it into the sinkhole instead.', when: { knows: 'arcana' }, badge: 'Arcana', goto: 'move' },
         { text: 'Then I will shut it off myself.', effects: [{ set: { 'dig.hostile': true } }], end: true },
         bye(),
       ],
+    },
+    ember: {
+      id: 'ember',
+      text: 'Snib does not KNOW where powder comes from. Powder comes in a crate. Crate comes from the Kerchiefs. The Kerchiefs get crates from a man with soft hands and a big book. Boss pays the man. Man pays the Kerchiefs. Everybody is happy except wagons. ...Snib did not say any of this.',
+      effects: [{ learn: 'grimtunnel' }, { quest: { id: 'below', status: 'active', entry: 'grimtunnel' } }, { rel: { npc: 'snib', fear: 10 } }],
+      choices: [{ text: 'Soft hands, big book. I know who that is.', end: true }],
     },
     poison: {
       id: 'poison',

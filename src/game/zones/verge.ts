@@ -29,7 +29,7 @@ import { hist } from '@/content/dialogue/town';
 type Pickup = { kind: PickupKind; ref: string | null; value: number; persistent?: boolean };
 
 export function verge(g: Game): ZoneRuntime {
-  const built = buildVerge(g.r.spec.grassDensity);
+  const built = buildVerge(g.r.spec.grassDensity, { cleanDays: Number(g.world?.facts['blight.days_clean'] ?? 0) });
   const kit = built.kit;
   const root = built.zone.root;
   const heightAt = (x: number, z: number) => kit.y(x, z);
@@ -237,6 +237,7 @@ export function verge(g: Game): ZoneRuntime {
       g.apply([{ quest: { id: 'below', status: 'active', entry: 'sinkhole' } }, { quest: { id: 'below', entry: 'tremor' } }]);
       b.events.emit({ t: 'shake', amount: 0.9 });
       say('The ground shivers. At the bottom of the pit lies something pale and segmented, bigger than a house, and — probably — dead.', undefined, 6);
+      if (test({ knows: 'faith' }, ctx())) setTimeout(() => { say('Under the silence you hear it, for as long as a held breath: slow, patient, enormous. Not breathing. Praying.', undefined, 7); g.apply({ quest: { id: 'below', entry: 'prayer' } }); }, 6500);
       const s = b.spawnEnemy('lampling', V.sinkhole.x + 15, V.sinkhole.z + 12, { level: 1, tag: 'survivor', disposition: 'neutral', home: { x: V.sinkhole.x + 15, z: V.sinkhole.z + 12, leash: 1.5 } });
       if (s) s.named = { title: 'A babbling lampling', carries: [], sourceHero: '' };
     }
@@ -398,7 +399,13 @@ export function verge(g: Game): ZoneRuntime {
     {
       id: 'vaultbody', x: V.vault.x + 3.8, z: V.vault.z + 3.2, r: 2.4, verb: 'Search', name: 'Bones',
       when: () => !test({ quest: { id: 'vault', entry: 'fragment' } }, ctx()),
-      act: () => { g.apply([{ give: 'sigil_fragment' }, { quest: { id: 'vault', status: 'active', entry: 'fragment' } }]); say('In the bones of one hand, a wedge of black stone cut to fit something.', undefined, 4); },
+      act: () => {
+        g.apply([{ give: 'sigil_fragment' }, { quest: { id: 'vault', status: 'active', entry: 'fragment' } }]);
+        say('In the bones of one hand, a wedge of black stone cut to fit something.', undefined, 4);
+        if (test({ knows: 'faith' }, ctx())) {
+          setTimeout(() => { say('The skull turns, very slightly, toward you. "It was never locked from the outside."', 'The bones', 6); g.apply({ quest: { id: 'vault', entry: 'whisper' } }); }, 4500);
+        }
+      },
     },
     {
       id: 'vaultprints', x: V.vault.x + 0.5, z: V.vault.z + 5, r: 2.6, verb: 'Look at', name: 'The Ground',
