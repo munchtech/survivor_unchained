@@ -23,6 +23,8 @@ export function Title() {
   const list = slots.value;
   const latest = [...list].sort((a, b) => b.savedAt - a.savedAt)[0] as SlotView | undefined;
   const [panel, setPanel] = useState<'none' | 'load' | 'settings' | 'credits'>('none');
+  const [quality, setQuality] = useState(() => actions.quality());
+  const [sound, setSound] = useState(() => actions.soundLevel());
   const items: Array<{ id: string; label: string; sub?: string; act: () => void; primary?: boolean }> = [];
   if (latest) items.push({ id: 'continue', label: 'Continue', sub: `${latest.name} · ${ARCHETYPES[latest.archetype as keyof typeof ARCHETYPES]?.name ?? ''} ${latest.level} · Day ${latest.day}`, act: () => actions.continueJourney(latest.slot), primary: true });
   items.push({ id: 'new', label: 'New Journey', act: () => actions.newJourney(), primary: !latest });
@@ -85,7 +87,13 @@ export function Title() {
           <div class="tp-row">
             <span>Picture</span>
             <div class="seg">
-              {(['low', 'medium', 'high'] as const).map((q) => <button key={q} class="btn small" onClick={() => actions.setQuality(q)}>{q}</button>)}
+              {(['low', 'medium', 'high'] as const).map((q) => <button key={q} class={`btn small${quality === q ? ' on' : ''}`} onClick={() => { actions.setQuality(q); setQuality(q); }}>{q}</button>)}
+            </div>
+          </div>
+          <div class="tp-row">
+            <span>Sound</span>
+            <div class="seg">
+              {(['on', 'quiet', 'off'] as const).map((l) => <button key={l} class={`btn small${sound === l ? ' on' : ''}`} onClick={() => { actions.setSound(l); setSound(l); }}>{l}</button>)}
             </div>
           </div>
           <div class="tp-note">Lower settings trade shadow detail, grass and ambient occlusion for speed.</div>
@@ -97,6 +105,7 @@ export function Title() {
           <p>Characters, creatures and props: <b>KayKit</b> by Kay Lousberg (CC0).</p>
           <p>World, lore and combat roots: <b>The Ember Watch</b>.</p>
           <p>Typefaces: Cinzel, Alegreya, Alegreya Sans (OFL).</p>
+          <p>Music, ambience and sound: made in code, played live.</p>
           <p>Built with Three.js, postprocessing, N8AO and Preact.</p>
         </div>
       )}

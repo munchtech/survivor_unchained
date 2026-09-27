@@ -18,7 +18,8 @@ import { screen, fade } from '@/ui/store';
 async function boot() {
   const params = new URLSearchParams(location.search);
   const stage = document.getElementById('stage')!;
-  const renderer = new Renderer(stage, (params.get('quality') as Quality) || 'high');
+  const saved = (() => { try { return localStorage.getItem('survivor-unchained.quality'); } catch { return null; } })();
+  const renderer = new Renderer(stage, ((params.get('quality') ?? saved) as Quality) || 'high');
   (window as unknown as { __game: unknown }).__game = { renderer };
   await Assets.loadAll();
   renderItemIcons();

@@ -16,6 +16,8 @@ export interface GameActions {
   saveNow(): void;
   quitToTitle(): void;
   cycleSound(): 'on' | 'quiet' | 'off';
+  setSound(level: 'on' | 'quiet' | 'off'): void;
+  quality(): 'low' | 'medium' | 'high';
   soundLevel(): 'on' | 'quiet' | 'off';
   openOverlay(o: 'inventory' | 'character' | 'journal' | 'pause'): void;
   closeOverlay(): void;

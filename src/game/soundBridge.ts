@@ -86,6 +86,13 @@ export class SoundBridge {
     });
   }
 
+  set(level: 'on' | 'quiet' | 'off') {
+    this.level = level;
+    try { localStorage.setItem(KEY, this.level); } catch { /* no storage */ }
+    audio.start();
+    this.apply();
+  }
+
   /** Cycle the sound setting from the pause menu. */
   cycle() {
     this.level = this.level === 'on' ? 'quiet' : this.level === 'quiet' ? 'off' : 'on';

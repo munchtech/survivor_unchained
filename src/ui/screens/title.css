@@ -45,6 +45,7 @@
 .tp-note { margin-top: 10px; font: italic 400 14px var(--font-text); color: var(--ink-dim); }
 .seg { display: flex; gap: 6px; }
 .seg .btn { text-transform: capitalize; }
+.seg .btn.on { color: #2a1a0c; background: linear-gradient(180deg, #e8c878, #b8903e); box-shadow: 0 0 0 1px #6a4a14, 0 0 12px rgba(255, 190, 90, 0.3); }
 .credits p { margin: 6px 0; font: 400 15px/1.4 var(--font-text); color: #ddd0b8; }
 .credits b { color: var(--gold-hi); font-weight: 700; }
 
