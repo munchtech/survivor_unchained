@@ -18,7 +18,7 @@ import { mapImage, fogImage } from '@/ui/mapArt';
 const FOG_N = 48;
 import {
   screen, overlay, prompt, toast, zoneInfo, slots, creation, fade, hud, levelUp, boss, objectives, announce,
-  character, worldView, touch, dialogue, shopView, restView, subtitle, mapView, type CreationDraft, type NoticeKind,
+  character, worldView, touch, dialogue, shopView, restView, subtitle, mapView, hint, type CreationDraft, type NoticeKind,
 } from '@/ui/store';
 import { SHOPS, type ShopDef } from '@/content/shops';
 import { RULES, SOCIAL } from '@/content/rules';
@@ -305,6 +305,8 @@ export class Game {
     prompt.value = null;
     boss.value = null;
     subtitle.value = null;
+    // A place's tips belong to the place.
+    hint.value = null;
   }
 
   /** Travel: fade, build the next zone, arrive. */
