@@ -509,7 +509,17 @@ export const HARLAN: Conversation = {
       effects: [{ quest: { id: 'caravan', status: 'active', entry: 'harlan_plea' } }, { quest: { id: 'beasts', entry: 'harlan_view' } }],
       choices: harlanHub,
     },
-    hub: { id: 'hub', text: [{ when: { fact: 'caravan.survivors', eq: 'rescued' }, text: 'Jory is sleeping upstairs at Rook\'s. Sleeping! What can I do for you, friend?' }, { text: 'Any word?' }], choices: harlanHub },
+    hub: {
+      id: 'hub',
+      text: [
+        { when: { fact: 'caravan.survivors', eq: 'rescued' }, text: 'Jory is sleeping upstairs at Rook\'s. Sleeping! What can I do for you, friend?' },
+        { when: { fact: 'caravan.survivors', eq: 'dead' }, text: 'I heard. I heard. You need not say it. What do you want?' },
+        { when: { fact: 'caravan.days', gte: 3 }, text: '(He does not get up.) Three days of watching that road. I stopped. Somebody has to keep the stock, I told myself. Any word? No. There never is.' },
+        { when: { fact: 'caravan.days', gte: 1 }, text: '(He keeps his eyes on the bend in the Old Road while he talks.) I keep thinking the lead wagon will come round there, Jory shouting that he got lost. Any word?' },
+        { text: 'Any word?' },
+      ],
+      choices: harlanHub,
+    },
     what: {
       id: 'what',
       text: 'The wolves, that is what. Three caravans this month. A hundred gold to whoever brings Jory home, and another hundred for my goods. The goods I can lose. Jory I cannot.',
