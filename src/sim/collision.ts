@@ -88,6 +88,8 @@ export class CollisionWorld {
   }
 
   byTag(tag: string) { return [...this.colliders.values()].filter((c) => c.tag === tag); }
+  /** Every collider (the map draws the walls and houses from these). */
+  all() { return [...this.colliders.values()]; }
 
   private near(x: number, z: number, r: number, out: Collider[]) {
     out.length = 0;

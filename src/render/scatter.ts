@@ -37,8 +37,13 @@ const KINDS: Record<FloraKind, KindSpec> = {
 
 const geometryCache = new Map<string, THREE.BufferGeometry>();
 
+/** Kinds that show on a map, as an ink mark. */
+const MAPPED = new Set(['pine', 'broadleaf', 'autumn', 'sick', 'dead', 'boulder', 'cliff']);
+
 export class FloraField {
   readonly group = new THREE.Group();
+  /** Where the trees and big rocks stand: [kind, x, z, scale], for the map. */
+  readonly marks: Array<[string, number, number, number]> = [];
   private meshes = new Map<string, THREE.InstancedMesh>();
   private m = new THREE.Matrix4();
   private q = new THREE.Quaternion();
@@ -76,6 +81,7 @@ export class FloraField {
     const v = variant ?? Math.floor(Math.abs(Math.sin(x * 12.9898 + z * 78.233) * 43758.5453) % 1 * spec.variants);
     const im = this.mesh(kind, v % spec.variants);
     if (im.count >= this.capacity) return;
+    if (MAPPED.has(kind)) this.marks.push([kind, x, z, scale]);
     this.q.setFromAxisAngle(this.up, rotY);
     if (tilt) this.q.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(tilt, 0, tilt * 0.6)));
     this.p.set(x, y, z);

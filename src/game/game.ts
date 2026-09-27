@@ -12,9 +12,13 @@ import type { ZoneRuntime, Interactable } from './zone';
 import { ZONES } from './zones';
 import { BarkLayer } from '@/ui/hud/barks';
 import { SoundBridge } from './soundBridge';
+import { mapImage, fogImage } from '@/ui/mapArt';
+
+/** The fog-of-war grid on each zone's map, cells per side. */
+const FOG_N = 48;
 import {
   screen, overlay, prompt, toast, zoneInfo, slots, creation, fade, hud, levelUp, boss, objectives, announce,
-  character, worldView, touch, dialogue, shopView, restView, subtitle, type CreationDraft, type NoticeKind,
+  character, worldView, touch, dialogue, shopView, restView, subtitle, mapView, type CreationDraft, type NoticeKind,
 } from '@/ui/store';
 import { SHOPS, type ShopDef } from '@/content/shops';
 import { RULES, SOCIAL } from '@/content/rules';
@@ -95,6 +99,7 @@ export class Game {
   private near: Interactable | null = null;
   private time = 0;
   private autosaveT = 0;
+  private fogT = 0;
   readonly sound = new SoundBridge();
   /** Dev: a crude player that drives the game (?auto). */
   autopilot: { drive(dt: number): void } | null = null;
@@ -538,12 +543,13 @@ export class Game {
     if (a === 'pause' && !ov) { this.openOverlay('pause'); return true; }
     if ((a === 'cancel' || a === 'pause') && ov && ov !== 'death' && ov !== 'dialogue' && ov !== 'chapter') { this.closeOverlay(); return true; }
     if (ov) {
-      if ((a === 'inventory' && ov === 'inventory') || (a === 'character' && ov === 'character') || (a === 'journal' && ov === 'journal')) { this.closeOverlay(); return true; }
+      if ((a === 'inventory' && ov === 'inventory') || (a === 'character' && ov === 'character') || (a === 'journal' && ov === 'journal') || (a === 'map' && ov === 'map')) { this.closeOverlay(); return true; }
       return;
     }
     if (a === 'inventory') { this.openOverlay('inventory'); return true; }
     if (a === 'character') { this.openOverlay('character'); return true; }
     if (a === 'journal') { this.openOverlay('journal'); return true; }
+    if (a === 'map') { this.openMap(); return true; }
     if (a === 'interact' && this.near) {
       const locked = this.near.locked?.();
       if (locked) { toast('warning', locked); return true; }
@@ -566,7 +572,49 @@ export class Game {
     b.healPlayer(b.maxHp * (ITEMS.health_draught.consumable?.heal ?? 0.4), 'draught');
   }
 
-  openOverlay(o: 'inventory' | 'character' | 'journal' | 'pause' | 'dialogue' | 'shop' | 'rest' | 'stash' | 'chapter') {
+  /* ============================================================== map == */
+
+  /** Mark the ground around the survivor as walked, on the zone's fog grid. */
+  private walk(dt: number) {
+    const b = this.scene.battle, z = this.zone, w = this.world;
+    if (!b || !z || !w || this.mode !== 'play') return;
+    this.fogT -= dt;
+    if (this.fogT > 0) return;
+    this.fogT = 0.4;
+    const extent = this.scene.zone?.map?.extent ?? (this.scene.zone?.collision.bound ?? 100) * 2;
+    const zs = (w.zones[z.id] ??= {});
+    let seen = typeof zs.seen === 'string' && zs.seen.length === FOG_N * FOG_N ? zs.seen : '0'.repeat(FOG_N * FOG_N);
+    const p = b.player, r = 30, c = extent / FOG_N;
+    const i0 = Math.floor((p.x - r) / c + FOG_N / 2), i1 = Math.floor((p.x + r) / c + FOG_N / 2);
+    const j0 = Math.floor((p.z - r) / c + FOG_N / 2), j1 = Math.floor((p.z + r) / c + FOG_N / 2);
+    let changed = false;
+    const arr = seen.split('');
+    for (let j = Math.max(0, j0); j <= Math.min(FOG_N - 1, j1); j++) for (let i = Math.max(0, i0); i <= Math.min(FOG_N - 1, i1); i++) {
+      const cx = (i + 0.5 - FOG_N / 2) * c, cz = (j + 0.5 - FOG_N / 2) * c;
+      if (arr[j * FOG_N + i] === '0' && Math.hypot(cx - p.x, cz - p.z) < r) { arr[j * FOG_N + i] = '1'; changed = true; }
+    }
+    if (changed) { seen = arr.join(''); zs.seen = seen; }
+  }
+
+  openMap() {
+    const z = this.zone, build = this.scene.zone, b = this.scene.battle, w = this.world;
+    if (!z || !build || !b || !w) return;
+    this.fogT = 0;
+    this.walk(0);
+    const art = mapImage(build);
+    const zs = w.zones[z.id] ?? {};
+    const seen = typeof zs.seen === 'string' ? zs.seen : '0'.repeat(FOG_N * FOG_N);
+    const c = w.corpse && w.corpse.zone === z.id ? w.corpse : null;
+    mapView.value = {
+      zone: z.id, name: z.name, region: z.region ?? '', image: art.url, fog: fogImage(seen, FOG_N), extent: art.extent, seen, n: FOG_N,
+      marks: z.mapMarks?.() ?? [],
+      player: { x: b.player.x, z: b.player.z, facing: b.player.facing },
+      corpse: c ? { x: c.x, z: c.z, label: `${c.heroName}'s belongings` } : undefined,
+    };
+    this.openOverlay('map');
+  }
+
+  openOverlay(o: 'inventory' | 'character' | 'journal' | 'pause' | 'dialogue' | 'shop' | 'rest' | 'stash' | 'chapter' | 'map') {
     overlay.value = o;
     this.scene.simPaused = true;
     Input.captured = true;
@@ -1044,6 +1092,7 @@ export class Game {
     if (this.mode === 'play') {
       this.playtime += dt;
       this.updateInteraction();
+      this.walk(dt);
       this.autosaveT += dt;
       if (this.autosaveT > 90 && !overlay.value) { this.autosaveT = 0; this.save('auto'); }
       if (this.ch) {

@@ -217,3 +217,14 @@ export const shopView = signal<ShopView | null>(null);
 /** The rest screen: the choice, then the morning. */
 export interface RestView { phase: 'choose' | 'report'; day: number; lines: string[]; canNight: boolean; cost: number; afford: boolean }
 export const restView = signal<RestView | null>(null);
+
+/** The map overlay: the drawn zone, the fog, and what is marked on it. */
+export interface MapView {
+  zone: string; name: string; region: string; image: string; fog: string; extent: number;
+  /** The fog grid itself ('1' walked), n cells per side, to hide unfound marks. */
+  seen: string; n: number;
+  marks: Array<{ x: number; z: number; label: string; kind: string }>;
+  player: { x: number; z: number; facing: number };
+  corpse?: { x: number; z: number; label: string };
+}
+export const mapView = signal<MapView | null>(null);

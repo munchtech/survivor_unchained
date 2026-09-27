@@ -36,6 +36,7 @@ export function Pause() {
           <span><span class="key">{Input.keyLabel('inventory')}</span> Pack</span>
           <span><span class="key">{Input.keyLabel('character')}</span> Self</span>
           <span><span class="key">{Input.keyLabel('journal')}</span> Journal</span>
+          <span><span class="key">{Input.keyLabel('map')}</span> Map</span>
         </div>
       </div>
     </div>

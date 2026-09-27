@@ -363,6 +363,7 @@ export function buildLowFord(grassDensity = 1): LowFordBuild {
 
   const zone: ZoneBuild = {
     id: 'lowford', terrain, grass, collision: col, root, atmosphere: PRESETS.night,
+    map: { water: (x, z) => terrain.heightAt(x, z) < WATER_Y - 0.05 && Math.abs(z - riverZ(x)) < 20, flora: kit.flora.marks },
     start: { x: L.camp.x + 1.5, z: L.camp.z - 1.5, facing: Math.PI },
     tick: (dt, t, fx, fz) => {
       waterUniforms.uTime.value = t;

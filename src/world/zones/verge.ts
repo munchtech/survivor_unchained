@@ -829,6 +829,10 @@ export function buildVerge(grassDensity = 1): VergeBuild {
 
   const zone: ZoneBuild = {
     id: 'verge', terrain, grass, collision: col, root, atmosphere: PRESETS.day,
+    map: {
+      water: (x, z) => { const n = streamIx.nearest(x, z); return n.d < 3.4 && terrain.heightAt(x, z) < waterLine(n.s); },
+      flora: kit.flora.marks,
+    },
     start: { x: V.entry.x, z: V.entry.z, facing: Math.PI / 2 },
     tick: (dt, t, fx, fz) => {
       waterUniforms.uTime.value = t;

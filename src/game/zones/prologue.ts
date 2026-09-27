@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { Game } from '../game';
-import type { ZoneRuntime, Interactable } from '../zone';
+import type { ZoneRuntime, Interactable, MapMark } from '../zone';
 import { buildLowFord, LOWFORD, riverZ, WATER_Y } from '@/world/zones/lowford';
 import { WardenView } from '@/render/bossViews';
 import { CharacterView } from '@/render/characterView';
@@ -661,6 +661,14 @@ export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number 
       g.announceZone();
     },
     step: (dt) => director(dt),
+    mapMarks: (): MapMark[] => [
+      { x: L.camp.x, z: L.camp.z, label: 'Your camp', kind: 'place' },
+      { x: L.cart.x, z: L.cart.z, label: 'Broken cart', kind: 'place' },
+      { x: L.post.x, z: L.post.z, label: 'Watch-post', kind: 'place' },
+      { x: L.barrow.x, z: L.barrow.z, label: 'The Barrow', kind: 'place' },
+      { x: L.ford.x, z: L.ford.z, label: 'The Low Ford', kind: wardenGone ? 'place' : 'danger' },
+      { x: L.gate.x, z: L.gate.z + 4, label: 'North, to the Waystation', kind: 'exit' },
+    ],
     ambience: (x, z) => {
       const dawn = stage === 'dawn' || stage === 'exit';
       return {

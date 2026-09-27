@@ -1,5 +1,5 @@
 import type { Game } from '../game';
-import type { ZoneRuntime, Interactable } from '../zone';
+import type { ZoneRuntime, Interactable, MapMark } from '../zone';
 import { NpcActor, PlateLayer } from '../actors';
 import { buildVerge, V } from '@/world/zones/verge';
 import { PRESETS } from '@/render/atmosphere';
@@ -599,6 +599,29 @@ export function verge(g: Game): ZoneRuntime {
     },
     interactables: I,
     hooks: { onKill, onLoot, onHitProp },
+    mapMarks: () => {
+      const c = ctx();
+      const q = (id: string, entry: string) => test({ quest: { id, entry } }, c);
+      const known = (k: string) => test({ knows: k }, c);
+      const marks: MapMark[] = [
+        { x: V.entry.x - 2, z: V.entry.z, label: 'The Waystation', kind: 'exit' },
+        { x: V.exitEast.x - 8, z: V.exitEast.z, label: 'Road washed out', kind: 'place' },
+        { x: V.post.x, z: V.post.z, label: 'Old Watch Fire', kind: 'place' },
+        { x: V.wreck.x, z: V.wreck.z, label: 'Coyle Wagons', kind: q('caravan', 'wreck') ? 'place' : 'turn' },
+        { x: V.blind.x, z: V.blind.z, label: 'Hunter\'s Blind', kind: 'place' },
+        { x: V.hollow.x, z: V.hollow.z, label: 'Wolf Hollow', kind: wolvesFriendly() ? 'place' : 'danger' },
+        { x: V.dig.x, z: V.dig.z, label: 'The Dig', kind: F('dig.hostile') ? 'danger' : 'place' },
+        { x: V.roost.x, z: V.roost.z, label: 'Redcowl\'s Roost', kind: kerchiefsFriendly() || F('redcowl') === 'tricked' ? 'place' : 'danger' },
+        { x: V.vault.x, z: V.vault.z, label: 'Sealed Door', kind: 'mystery' },
+        { x: V.sinkhole.x, z: V.sinkhole.z, label: 'The Sinkhole', kind: 'mystery' },
+        { x: V.grove.x, z: V.grove.z, label: 'Moon Grove', kind: 'place' },
+      ];
+      if (!known('clue.sick_wolf')) marks.push({ x: V.carcass.x, z: V.carcass.z, label: 'Something dead', kind: 'turn' });
+      if (!known('clue.green_stream')) marks.push({ x: V.sample.x, z: V.sample.z, label: 'The green water', kind: 'turn' });
+      if (!known('clue.pipe')) marks.push({ x: V.pipe.x, z: V.pipe.z, label: 'The pipe', kind: 'turn' });
+      if (F('caravan.survivors') !== 'rescued' && F('caravan.survivors') !== 'dead' && (known('hint.roost') || q('caravan', 'roost_found'))) marks.push({ x: V.cages.x, z: V.cages.z, label: 'The cages', kind: 'quest' });
+      return marks;
+    },
     ambience: (x, z) => {
       const t = w().time, dark = t === 'night', day = t === 'day' || t === 'dawn';
       const pumping = !F('dig.pump') || F('dig.pump') === 'running';

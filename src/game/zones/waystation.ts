@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { Game } from '../game';
-import type { ZoneRuntime, Interactable } from '../zone';
+import type { ZoneRuntime, Interactable, MapMark } from '../zone';
 import { NpcActor, PlateLayer } from '../actors';
 import { buildWaystation, WAY } from '@/world/zones/waystation';
 import { PRESETS } from '@/render/atmosphere';
@@ -150,6 +150,34 @@ export function waystation(g: Game): ZoneRuntime {
       return { x: WAY.south.x, z: WAY.south.z - 8, facing: Math.PI };
     },
     timeOf: (w) => w.time,
+    mapMarks: () => {
+      const c = ctx();
+      const marks: MapMark[] = [
+        { x: WAY.inn.x, z: WAY.inn.z, label: 'The Last Lamp', kind: 'place' },
+        { x: WAY.tavern.x, z: WAY.tavern.z, label: 'The Tavern', kind: 'place' },
+        { x: WAY.smithy.x, z: WAY.smithy.z, label: 'Smithy', kind: 'place' },
+        { x: WAY.trading.x, z: WAY.trading.z, label: 'Coyle Trading', kind: 'place' },
+        { x: WAY.warehouse.x, z: WAY.warehouse.z, label: 'Warehouse', kind: 'place' },
+        { x: WAY.shrine.x, z: WAY.shrine.z, label: 'Shrine', kind: 'place' },
+        { x: WAY.wenna.x, z: WAY.wenna.z, label: 'Wenna\'s', kind: 'place' },
+        { x: WAY.barracks.x, z: WAY.barracks.z, label: 'The Watch', kind: 'place' },
+        { x: 0, z: 0, label: 'The Square', kind: 'place' },
+        { x: WAY.south.x, z: WAY.south.z + 4, label: 'To the Low Ford', kind: 'exit' },
+        { x: WAY.east.x + 4, z: WAY.east.z, label: 'The Old Road, east', kind: 'exit' },
+        { x: WAY.north.x, z: WAY.north.z - 4, label: 'North (barred)', kind: 'exit' },
+      ];
+      if (g.world?.zones.waystation?.garden) marks.push({ x: WAY.garden.x, z: WAY.garden.z, label: 'Quiet Garden', kind: 'place' });
+      for (const [id, a] of actors) {
+        if (a.hidden) continue;
+        const convo = CONVOS[id];
+        const m = convo && c ? markerOf(convo, c) : null;
+        // On the map, a '?' (news to bring, something to turn in) is gold;
+        // someone you have simply not met yet is just a name.
+        if (m === '?') marks.push({ x: a.x, z: a.z, label: a.def.name, kind: 'quest' });
+        else if (m) marks.push({ x: a.x, z: a.z, label: a.def.name, kind: 'person' });
+      }
+      return marks;
+    },
     ambience: (x, z) => {
       const t = g.world?.time ?? 'day', dark = t === 'night', day = t === 'day' || t === 'dawn';
       const forge = Math.max(0, 1 - Math.hypot(x - WAY.smithy.x, z - WAY.smithy.z) / 26);

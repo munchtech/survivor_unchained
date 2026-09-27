@@ -5,6 +5,7 @@ import { Hud } from './hud/Hud';
 import { LevelUp } from './overlays/LevelUp';
 import { Pause, Death } from './overlays/Menus';
 import { ChapterEnd } from './overlays/Chapter';
+import { WorldMap } from './overlays/Map';
 import { Inventory } from './overlays/Inventory';
 import { Dialogue } from './overlays/Dialogue';
 import { Shop, Stash } from './overlays/Shop';
@@ -51,6 +52,7 @@ function App() {
       {ov === 'character' && <Sheet />}
       {ov === 'death' && <Death />}
       {ov === 'chapter' && <ChapterEnd />}
+      {ov === 'map' && <WorldMap />}
       <div class="fader" style={{ opacity: f.to, transitionDuration: `${f.seconds}s` }}>
         {f.caption && <div class="fader-caption">{f.caption}</div>}
         {f.sub && <div class="fader-sub">{f.sub}</div>}

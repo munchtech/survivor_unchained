@@ -1,0 +1,48 @@
+.map-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: auto; }
+.map-sheet {
+  position: relative; display: flex; flex-direction: column; align-items: center;
+  padding: 16px 22px 12px; border-radius: 6px;
+  background: linear-gradient(180deg, #2a2320, #1a1614);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(217, 181, 106, 0.25);
+}
+.map-head { text-align: center; margin-bottom: 10px; }
+.map-title { font: 700 30px var(--font-display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold-hi); text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6); }
+.map-region { font: italic 400 15px var(--font-text); color: #c8b490; }
+.map-frame {
+  position: relative; width: min(720px, 76vh); height: min(720px, 76vh); overflow: hidden; cursor: grab;
+  border-radius: 3px; background: #d9cba8;
+  box-shadow: inset 0 0 0 2px #6a4a2a, inset 0 0 0 5px #d9cba8, inset 0 0 0 6px rgba(106, 74, 42, 0.6), 0 0 0 1px #000;
+}
+.map-frame:active { cursor: grabbing; }
+.map-world { position: absolute; inset: 0; transform-origin: 50% 50%; transition: transform 0.12s ease-out; }
+.map-base, .map-fog { position: absolute; inset: 0; width: 100%; height: 100%; user-select: none; pointer-events: none; }
+.map-fog { filter: blur(1px); }
+.map-mark { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 1px; pointer-events: none; white-space: nowrap; }
+.map-pin { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; color: #3a2414; background: rgba(230, 214, 176, 0.9); box-shadow: 0 0 0 1.5px #5a3e24, 0 1px 3px rgba(0, 0, 0, 0.35); }
+.map-label { font: italic 700 13px var(--font-text); color: #2a1a0c; text-shadow: 0 0 3px #e8dcc0, 0 0 3px #e8dcc0, 0 0 6px #e8dcc0; }
+.map-mark.k-place .map-pin { width: 14px; height: 14px; background: none; box-shadow: none; color: #5a3e24; }
+.map-mark.k-place .map-label { font-weight: 400; font-size: 13px; letter-spacing: 0.02em; }
+.map-mark.k-exit .map-pin { color: #2a4a2a; }
+.map-mark.k-danger .map-pin { color: #f4e4c8; background: #7a2418; box-shadow: 0 0 0 1.5px #3a0c06, 0 0 10px rgba(160, 30, 10, 0.5); }
+.map-mark.k-danger .map-label { color: #5a140a; }
+.map-mark.k-mystery .map-pin { color: #e8dcff; background: #4a2e6a; box-shadow: 0 0 0 1.5px #22123a, 0 0 10px rgba(120, 80, 200, 0.5); }
+.map-mark.k-mystery .map-label { color: #3a1e5a; }
+.map-mark.k-quest .map-pin, .map-mark.k-turn .map-pin { color: #3a2006; background: #f0c860; box-shadow: 0 0 0 1.5px #6a4a10, 0 0 12px rgba(255, 190, 60, 0.6); animation: mapPulse 1.8s ease-in-out infinite; }
+.map-mark.k-turn .map-pin { background: #e8dcc0; }
+.map-mark.k-corpse .map-pin { color: #e8dcc0; background: #2a2420; box-shadow: 0 0 0 1.5px #000; }
+.map-you { position: absolute; display: grid; place-items: center; width: 22px; height: 22px; pointer-events: none; }
+.map-you svg { position: absolute; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)); }
+.map-you-ring { position: absolute; width: 34px; height: 34px; border-radius: 50%; border: 2px solid rgba(184, 50, 30, 0.7); animation: mapRing 2s ease-out infinite; }
+.map-compass { position: absolute; right: 12px; bottom: 12px; pointer-events: none; opacity: 0.9; }
+.map-foot { display: flex; align-items: center; gap: 18px; margin-top: 10px; font: 400 13px var(--font-text); color: #c8b490; }
+.map-foot .lg { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; vertical-align: -4px; margin-right: 4px; background: #e8dcc0; color: #3a2414; }
+.map-foot .lg.k-quest { background: #f0c860; }
+.map-foot .lg.k-danger { background: #7a2418; color: #f4e4c8; }
+.map-foot .lg.k-mystery { background: #4a2e6a; color: #e8dcff; }
+.map-foot .lg.k-exit { color: #2a4a2a; }
+.map-keys { margin-left: auto; opacity: 0.8; }
+@keyframes mapPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+@keyframes mapRing { from { transform: scale(0.6); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
+.map-mark.k-person .map-pin { width: 16px; height: 16px; color: #3a2414; background: rgba(230, 214, 176, 0.9); }
+.map-mark.k-person .map-label { font-weight: 400; font-size: 12px; }
+.map-mark.k-place .map-pin { display: none; }

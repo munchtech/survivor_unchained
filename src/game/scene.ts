@@ -32,6 +32,12 @@ export interface ZoneBuild {
   start: { x: number; z: number; facing?: number };
   /** Per-frame animation for the zone itself (torches, water, banners). */
   tick?: (dt: number, time: number, focusX: number, focusZ: number) => void;
+  /** What the map is drawn from, beyond the terrain and the colliders. */
+  map?: {
+    water?: (x: number, z: number) => boolean; flora?: Array<[string, number, number, number]>; extent?: number;
+    /** Houses and towers, drawn as hexagonal footprints. */
+    buildings?: Array<{ x: number; z: number; r: number; rot: number }>;
+  };
   dispose?: () => void;
 }
 

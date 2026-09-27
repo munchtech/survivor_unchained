@@ -146,9 +146,12 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
 
   /* --------------------------------------------------------- buildings -- */
   const doors: Record<string, { x: number; z: number }> = {};
+  /** Footprints for the map. */
+  const footprints: Array<{ x: number; z: number; r: number; rot: number }> = [];
   const building = (key: string, model: string, p: { x: number; z: number; rot: number }, scale = 6, r = 4.2, doorOut = 4.6) => {
     kit.prop('hex_buildings', model, p.x, p.z, { rot: p.rot, scale, y: kit.y(p.x, p.z) - 0.05 });
     col.addCircle(p.x, p.z, r);
+    footprints.push({ x: p.x, z: p.z, r: r * 1.15, rot: p.rot });
     // Doors face local +z.
     const dx = Math.sin(p.rot), dz = Math.cos(p.rot);
     doors[key] = { x: p.x + dx * doorOut, z: p.z + dz * doorOut };
@@ -185,6 +188,7 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
   kit.prop('hex_buildings', 'building_watermill_blue', 24, 50, { rot: Math.PI, scale: 7 });
   kit.prop('hex_buildings', 'building_grain', -30, 52, { rot: 0.2, scale: 8 });
   kit.prop('hex_buildings', 'building_grain', -42, 60, { rot: -0.3, scale: 8 });
+  footprints.push({ x: -58, z: 50, r: 5, rot: 0.4 }, { x: 24, z: 50, r: 4.5, rot: Math.PI }, { x: -30, z: 52, r: 3.5, rot: 0.2 }, { x: -42, z: 60, r: 3.5, rot: -0.3 });
 
   /* ------------------------------------------------------------ square -- */
   kit.prop('hex_buildings', 'building_well_blue', 0, 0, { scale: 5, r: 2 });
@@ -314,6 +318,7 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
 
   const zone: ZoneBuild = {
     id: 'waystation', terrain, grass, collision: col, root, atmosphere: PRESETS.day,
+    map: { flora: kit.flora.marks, extent: 120, buildings: footprints },
     start: { x: W.south.x, z: W.south.z - 4, facing: Math.PI },
     tick: (dt, t, fx, fz) => {
       waterUniforms.uTime.value = t;
