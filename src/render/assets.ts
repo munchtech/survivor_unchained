@@ -3,6 +3,7 @@ import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { floraUniforms, OCCLUDE_PARS, OCCLUDE_FRAG } from './flora';
+import { markShared } from './dispose';
 
 /* Everything the game draws from a file comes through here, once.
  *
@@ -60,6 +61,11 @@ class AssetStore {
     onProgress?.(0, jobs.length);
     await Promise.all(jobs.map((j) => j().then(() => onProgress?.(++done, jobs.length))));
     for (const g of this.characters.values()) prepareCharacter(g.scene);
+    // What every copy shares survives a zone being let go (see dispose.ts):
+    // props share geometry and material; characters share geometry and the
+    // texture atlas, but each copy has its own materials.
+    for (const g of this.characters.values()) markShared(g.scene, false);
+    for (const pack of this.packs.values()) for (const t of pack.values()) markShared(t, true);
     this.loaded = true;
   }
 

@@ -136,6 +136,8 @@ All expect `npm run dev` running.
 | `node tools/flow.mjs` | Toll, both roads out of town and back, a night at the inn |
 | `node tools/field.mjs [--fresh]` | Balance: a survivor who played the prologue, in the Verge by day and night, playing or idle |
 | `node tools/folk.mjs [day\|night]` | The townsfolk: lanes checked against colliders, three minutes of errands, anyone stuck |
+| `node tools/leaks.mjs [rounds]` | Back and forth between the zones: GPU geometries and textures must not climb |
+| `node tools/tour.mjs verge [day\|night]` | One picture per landmark of a zone, empty of people |
 | `node tools/ui.mjs [w h] [screen...]` | Every overlay (shops, stash, pack, self, journal, map, rest, pause, talk) at one size |
 | `node tools/listen.mjs "<query>" name secs` | Record the mix as a spectrogram with loudness |
 

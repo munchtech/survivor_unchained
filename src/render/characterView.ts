@@ -207,6 +207,11 @@ export class CharacterView {
 
   dispose() {
     this.mixer.stopAllAction();
+    this.mixer.uncacheRoot(this.model);
     this.root.removeFromParent();
+    // Each copy's own materials (tinted) and skeletons (each holds a bone
+    // texture on the GPU); geometry and atlas are shared.
+    for (const m of this.materials) m.dispose();
+    this.model.traverse((o) => { const sk = (o as THREE.SkinnedMesh).skeleton; if ((o as THREE.SkinnedMesh).isSkinnedMesh && sk) sk.dispose(); });
   }
 }

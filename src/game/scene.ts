@@ -6,6 +6,7 @@ import type { Terrain } from '@/render/terrain';
 import type { Grass } from '@/render/grass';
 import { CrowdRenderer } from '@/render/crowd';
 import { CombatFx } from '@/render/fx/combatFx';
+import { disposeTree } from '@/render/dispose';
 import { PlayerView, type Loadout } from '@/render/playerView';
 import { floraUniforms, setOccluder, setFocus } from '@/render/flora';
 import { tickWind } from '@/render/instancing';
@@ -87,8 +88,11 @@ export class WorldScene {
     if (!this.zone) return;
     this.r.scene.remove(this.zone.root);
     this.zone.dispose?.();
-    if (this.crowd) this.r.scene.remove(this.crowd.group);
-    if (this.fx) this.r.scene.remove(this.fx.group);
+    // Give the GPU back what this zone uploaded.
+    disposeTree(this.zone.root);
+    this.zone.grass?.mesh && disposeTree(this.zone.grass.mesh);
+    if (this.crowd) { this.r.scene.remove(this.crowd.group); disposeTree(this.crowd.group); }
+    if (this.fx) { this.r.scene.remove(this.fx.group); disposeTree(this.fx.group); }
     if (this.player) { this.player.view.dispose(); this.r.scene.remove(this.player.light); }
     this.zone = null;
     this.battle = null;
