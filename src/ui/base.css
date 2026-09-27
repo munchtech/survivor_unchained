@@ -1,0 +1,17 @@
+:root {
+  color-scheme: dark;
+  --ink: #e9dfcb;
+  --ink-dim: #a99c85;
+  --ink-faint: #6f6556;
+  --bg: #07080c;
+  --font-display: 'Cinzel', 'Times New Roman', serif;
+  --font-text: 'Alegreya', Georgia, serif;
+  --font-ui: 'Alegreya Sans', 'Segoe UI', sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); overflow: hidden; }
+body { font-family: var(--font-ui); -webkit-font-smoothing: antialiased; user-select: none; }
+#stage { position: fixed; inset: 0; }
+#stage canvas { display: block; }
+#ui { position: fixed; inset: 0; pointer-events: none; }
+#ui > * { pointer-events: auto; }
