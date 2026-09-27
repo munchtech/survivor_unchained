@@ -1,6 +1,6 @@
 import './ui/fonts';
 import './ui/base.css';
-import { Renderer, type Quality } from '@/render/renderer';
+import { Renderer } from '@/render/renderer';
 import { Assets } from '@/render/assets';
 import { gallery } from '@/modes/dev/gallery';
 import { sandbox } from '@/modes/dev/sandbox';
@@ -19,7 +19,8 @@ async function boot() {
   const params = new URLSearchParams(location.search);
   const stage = document.getElementById('stage')!;
   const saved = (() => { try { return localStorage.getItem('survivor-unchained.quality'); } catch { return null; } })();
-  const renderer = new Renderer(stage, ((params.get('quality') ?? saved) as Quality) || 'high');
+  const wantQ = params.get('quality') ?? saved;
+  const renderer = new Renderer(stage, wantQ === 'low' || wantQ === 'medium' || wantQ === 'high' ? wantQ : 'high');
   (window as unknown as { __game: unknown }).__game = { renderer };
   await Assets.loadAll();
   renderItemIcons();
