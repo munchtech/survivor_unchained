@@ -99,6 +99,14 @@ export class WorldScene {
     return this.battle;
   }
 
+  /** Change what the survivor visibly carries. */
+  setLoadout(loadout: Loadout) {
+    if (!this.player) return;
+    this.player.view.dispose();
+    this.r.scene.remove(this.player.light);
+    this.player = new PlayerView(loadout, this.r.scene);
+  }
+
   update(dt: number) {
     const b = this.battle;
     this.time += dt;

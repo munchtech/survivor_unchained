@@ -1259,6 +1259,13 @@ export class Battle {
     return w;
   }
 
+  removeWeapon(id: string) {
+    const i = this.weapons.findIndex((w) => w.id === id);
+    if (i < 0) return;
+    this.weapons.splice(i, 1);
+    this.weapons.forEach((w, k) => { w.slot = k; });
+  }
+
   rankWeapon(id: string) {
     const w = this.weapons.find((x) => x.id === id);
     if (!w || w.rank >= WEAPON_MAX_RANK) return;

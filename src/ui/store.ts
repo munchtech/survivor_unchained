@@ -1,6 +1,8 @@
 import { signal } from '@preact/signals';
 import type { Offer } from '@/sim/battle';
 import type { School } from '@/sim/types';
+import type { CharacterData } from '@/rpg/character';
+import type { WorldState } from '@/world/state';
 
 /* Everything the interface shows, as signals.
  *
@@ -176,3 +178,13 @@ export const loading = signal<{ progress: number; label: string } | null>({ prog
 /** A tutorial card: what to do, with the keys for it. */
 export interface Hint { id: string; title: string; text: string; keys?: string[] }
 export const hint = signal<Hint | null>(null);
+
+/* ----------------------------------------------------------- character -- */
+
+
+/** The survivor and the world, for the pack, sheet and journal. Mutated in
+ *  place by the game; `rev` ticks so components re-read. */
+export const character = signal<CharacterData | null>(null);
+export const worldView = signal<WorldState | null>(null);
+export const rev = signal(0);
+export function touch() { rev.value++; }

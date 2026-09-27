@@ -13,13 +13,15 @@ import { ZONES } from './zones';
 import { BarkLayer } from '@/ui/hud/barks';
 import {
   screen, overlay, prompt, toast, zoneInfo, slots, creation, fade, hud, levelUp, boss, objectives, announce,
-  type CreationDraft, type NoticeKind,
+  character, worldView, touch, type CreationDraft, type NoticeKind,
 } from '@/ui/store';
 import { Input } from '@/core/input';
 import { damp } from '@/core/math';
 import {
-  createCharacter, deriveKit, addToPack, makeItem, type CharacterData, type CreationChoice,
+  createCharacter, deriveKit, addToPack, makeItem, equip, unequip, findItem, slotFor, fitsSlot, itemName,
+  type CharacterData, type CreationChoice,
 } from '@/rpg/character';
+import { EQUIP_SLOTS, type EquipSlot } from '@/content/items';
 import { ARCHETYPES, BACKGROUNDS } from '@/content/archetypes';
 import { ITEMS } from '@/content/items';
 import { freshWorld, type WorldState } from '@/world/state';
@@ -108,6 +110,8 @@ export class Game {
     this.leaveZone();
     this.ch = null;
     this.world = null;
+    character.value = null;
+    worldView.value = null;
     this.expedition = null;
     const z = ZONES.lowford(this);
     this.zone = z;
@@ -212,6 +216,8 @@ export class Game {
     addToPack(ch, starter);
     this.ch = ch;
     this.world = world;
+    character.value = ch;
+    worldView.value = world;
     this.ctx = this.makeCtx();
     this.slot = this.freeSlot();
     this.playtime = 0;
@@ -241,6 +247,8 @@ export class Game {
     this.slot = slot;
     this.ch = d.character;
     this.world = d.world;
+    character.value = d.character;
+    worldView.value = d.world;
     this.ctx = this.makeCtx();
     this.playtime = d.playtime;
     this.expedition = (d.ember as Expedition | null | undefined) ?? null;
@@ -304,7 +312,8 @@ export class Game {
       weapons: kit.weapons, triggers: kit.triggers, ability: kit.ability,
       ember: exp ? { level: exp.level, xp: exp.xp } : undefined,
       hp: exp ? Math.min(exp.hp, kit.stats.get('maxHealth')) : undefined,
-    }, loadoutFor({ archetype: ch.archetype, weaponItem: ch.equipment.weapon?.def ?? ARCHETYPES[ch.archetype].weapons[0], model: ch.model, palette: ch.palette, headgear: ch.headgear }));
+    }, this.loadout());
+    this.gearWeapons = new Set(kit.weapons.map((w) => w.id));
     b.gearIds = kit.gearIds;
     b.gearStatuses = kit.gearStatuses;
     b.rerolls = exp?.rerolls ?? kit.rerolls;
@@ -384,6 +393,7 @@ export class Game {
     }
     const def = ITEMS[defId];
     toast('loot', `${def.name}${qty > 1 ? ` ×${qty}` : ''}`, { icon: def.icon, rarity: it.rarity, sub: def.kind === 'material' ? undefined : def.description });
+    touch();
     return true;
   }
 
@@ -422,6 +432,7 @@ export class Game {
   /** Apply world effects with notices (quests, dialogue, zone scripts). */
   apply(e: Parameters<typeof apply>[0]) {
     if (this.ctx) apply(e, this.ctx);
+    touch();
   }
 
   save(_reason: string) {
@@ -509,6 +520,95 @@ export class Game {
     this.bridge.extra.gold = this.ch?.gold ?? 0;
   }
 
+  /* ============================================================= gear == */
+
+  equipItem(uid: string, slot?: string) {
+    const ch = this.ch;
+    if (!ch) return;
+    const loc = findItem(ch, uid);
+    if (!loc) return;
+    const def = ITEMS[loc.item.def];
+    let target = (slot as EquipSlot | undefined) ?? slotFor(def);
+    if (!target) return;
+    // Rings go to whichever hand is free.
+    if (!slot && target === 'ring1' && ch.equipment.ring1 && !ch.equipment.ring2) target = 'ring2';
+    if (!fitsSlot(def, target)) return;
+    if (!equip(ch, loc.item, target)) { toast('warning', 'No room in your pack for what you are wearing'); return; }
+    toast('loot', `Wearing ${itemName(loc.item)}`, { icon: def.icon, rarity: loc.item.rarity });
+    this.refreshKit();
+  }
+
+  unequipSlot(slot: string) {
+    const ch = this.ch;
+    if (!ch || !EQUIP_SLOTS.includes(slot as EquipSlot)) return;
+    if (slot === 'weapon') { toast('warning', 'You will not walk this road unarmed'); return; }
+    if (!unequip(ch, slot as EquipSlot)) { toast('warning', 'Your pack is full'); return; }
+    this.refreshKit();
+  }
+
+  useItem(uid: string) {
+    const ch = this.ch, b = this.scene.battle;
+    if (!ch) return;
+    const loc = findItem(ch, uid);
+    if (!loc || loc.where !== 'pack') return;
+    const def = ITEMS[loc.item.def];
+    if (def.kind !== 'consumable' || !def.consumable) { this.equipItem(uid); return; }
+    const c = def.consumable;
+    if (c.heal && b) {
+      if (b.player.hp >= b.maxHp - 0.5) { toast('warning', 'You are unhurt'); return; }
+      b.healPlayer(b.maxHp * c.heal, 'draught');
+    }
+    for (const cure of c.cure ?? []) {
+      if (cure === 'poisoned' && b) b.player.poisonT = 0;
+      ch.conditions = ch.conditions.filter((x) => x.id !== cure);
+    }
+    loc.item.qty--;
+    if (loc.item.qty <= 0) ch.pack[loc.index as number] = null;
+    toast('world', `${def.name} used`);
+    touch();
+  }
+
+  dropItem(uid: string) {
+    const ch = this.ch;
+    if (!ch) return;
+    const loc = findItem(ch, uid);
+    if (!loc || loc.where !== 'pack') return;
+    const def = ITEMS[loc.item.def];
+    if (def.kind === 'quest') { toast('warning', 'You might need that'); return; }
+    ch.pack[loc.index as number] = null;
+    toast('world', `Left behind: ${itemName(loc.item)}`);
+    touch();
+  }
+
+  /** Gear changed: fold it into the running fight at once. */
+  refreshKit() {
+    const ch = this.ch, b = this.scene.battle;
+    touch();
+    if (!ch || !b) return;
+    const kit = deriveKit(ch);
+    const fromKit = (src: string) => src.startsWith('item:') || src === 'attributes' || src.startsWith('trait:') || src.startsWith('cond:');
+    b.stats.removeWhere(fromKit);
+    b.stats.setBase(kit.stats.getBase());
+    b.stats.addAll(kit.stats.list().filter((m) => fromKit(m.source)));
+    b.triggers = b.triggers.filter((t) => !t.source.startsWith('item:') && !t.source.startsWith('trait:'));
+    for (const t of kit.triggers) b.addTrigger(t.def, t.source);
+    const kitIds = new Set(kit.weapons.map((w) => w.id));
+    for (const id of this.gearWeapons) if (!kitIds.has(id)) b.removeWeapon(id);
+    for (const w of kit.weapons) if (!b.weapons.some((x) => x.id === w.id)) b.addWeapon(w.id, w.rank);
+    this.gearWeapons = kitIds;
+    b.gearIds = kit.gearIds;
+    b.gearStatuses = kit.gearStatuses;
+    b.player.hp = Math.min(b.player.hp, b.maxHp);
+    this.scene.setLoadout(this.loadout());
+  }
+
+  private gearWeapons = new Set<string>();
+
+  loadout() {
+    const ch = this.ch!;
+    return loadoutFor({ archetype: ch.archetype, weaponItem: ch.equipment.weapon?.def ?? ARCHETYPES[ch.archetype].weapons[0], model: ch.model, palette: ch.palette, headgear: ch.headgear });
+  }
+
   /* ============================================================ frame == */
 
   private startBlend(dur: number) {
@@ -586,6 +686,10 @@ export class Game {
       openOverlay: (o: 'inventory' | 'character' | 'journal' | 'pause') => this.openOverlay(o),
       closeOverlay: () => this.closeOverlay(),
       rise: () => this.zone && this.enterZone(this.zone.id, null),
+      equipItem: (uid: string, slot?: string) => this.equipItem(uid, slot),
+      unequip: (slot: string) => this.unequipSlot(slot),
+      useItem: (uid: string) => this.useItem(uid),
+      dropItem: (uid: string) => this.dropItem(uid),
     });
   }
 

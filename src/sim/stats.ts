@@ -140,6 +140,15 @@ export class StatBlock {
   }
 
   list() { return this.mods; }
+
+  getBase() { return { ...this.base }; }
+
+  /** Drop every modifier whose source matches. */
+  removeWhere(test: (source: string) => boolean) {
+    const n = this.mods.length;
+    this.mods = this.mods.filter((m) => !test(m.source));
+    if (this.mods.length !== n) this.cache.clear();
+  }
 }
 
 /** Armor's damage reduction: diminishing, never total. 10 armor ~ 33%. */
