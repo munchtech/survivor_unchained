@@ -415,7 +415,7 @@ export function verge(g: Game): ZoneRuntime {
       act: () => { g.apply({ quest: { id: 'vault', status: 'active', entry: 'bootprints' } }); say('Bootprints in the mud, fresh, going up to the door. None coming away.', undefined, 4); },
     },
     {
-      id: 'circlet', x: V.grove.x, z: V.grove.z - 1, r: 2.6, verb: 'Take', name: 'Something Silver',
+      id: 'circlet', x: V.groveShrine.x, z: V.groveShrine.z, r: 2.6, verb: 'Take', name: 'Something Silver',
       when: () => !F('grove.circlet'),
       act: () => {
         g.apply([

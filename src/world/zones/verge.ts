@@ -55,6 +55,8 @@ export const V = {
   vault: { x: -106, z: -56 },
   sinkhole: { x: 106, z: 54 },
   grove: { x: -114, z: 80 },
+  /** The Moon Grove's shrine, on the dry bank above the stream. */
+  groveShrine: { x: -110, z: 86 },
   brambles: { x: -100, z: 72 },
 };
 
@@ -917,15 +919,101 @@ export function buildVerge(grassDensity = 1, state: VergeState = { cleanDays: 0 
     kit.flora.add('boulder', x, kit.y(x, z) - 0.4, z, a, 0.8 + hash1(i, 3) * 0.4);
     col.addCircle(x, z, 2.4);
   }
-  for (let i = 0; i < 26; i++) {
-    const a = hash1(i, 61) * 6.28, d = hash1(i, 62) * 10;
-    const x = G.x + Math.cos(a) * d, z = G.z + Math.sin(a) * d;
-    const petal = new THREE.Mesh(new THREE.SphereGeometry(0.12, 6, 4), new THREE.MeshBasicMaterial({ color: new THREE.Color('#bfe0ff').multiplyScalar(2.2) }));
-    petal.position.set(x, kit.y(x, z) + 0.35, z);
-    root.add(petal);
+  // Moonflowers: five pale petals on a stem, glowing faintly, never in the water.
+  const petalGeo = new THREE.ConeGeometry(0.07, 0.26, 4);
+  petalGeo.rotateX(Math.PI / 2);
+  petalGeo.translate(0, 0, 0.12);
+  const petalMat = new THREE.MeshStandardMaterial({ color: '#e8f2ff', emissive: new THREE.Color('#9ec8ff'), emissiveIntensity: 1.4, roughness: 0.6 });
+  const stemMat = new THREE.MeshStandardMaterial({ color: '#3a5a3a', roughness: 0.9 });
+  const heart = new THREE.MeshBasicMaterial({ color: new THREE.Color('#fff4c8').multiplyScalar(2) });
+  for (let i = 0, placed = 0; i < 90 && placed < 34; i++) {
+    const a = hash1(i, 61) * 6.28, d = 2.4 + hash1(i, 62) * 9;
+    const x = V.groveShrine.x + Math.cos(a) * d, z = V.groveShrine.z + Math.sin(a) * d;
+    if (streamDist(x, z) < 2.4 || Math.hypot(x - G.x, z - G.z) > 14) continue;
+    placed++;
+    const f = new THREE.Group();
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.02, 0.4, 4), stemMat);
+    stem.position.y = 0.2;
+    f.add(stem);
+    for (let k = 0; k < 5; k++) {
+      const p = new THREE.Mesh(petalGeo, petalMat);
+      p.position.y = 0.42;
+      p.rotation.set(-0.45, (k / 5) * Math.PI * 2, 0);
+      f.add(p);
+    }
+    const c = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 4), heart);
+    c.position.y = 0.44;
+    f.add(c);
+    f.position.set(x, kit.y(x, z), z);
+    f.rotation.y = hash1(i, 63) * 6.28;
+    f.scale.setScalar(0.8 + hash1(i, 64) * 0.6);
+    root.add(f);
   }
-  kit.source(G.x, kit.y(G.x, G.z) + 3, G.z, 0xa8d0ff, 10, 16, 0.05);
-  kit.prop('halloween', 'shrine', G.x, G.z - 2, { rot: 0.4, scale: 0.9, r: 0.6 });
+  // A pale tree over the shrine: white bark, leaves the colour of moonlight.
+  {
+    const S = V.groveShrine;
+    const tx = S.x + 3.2, tz = S.z - 3.4, ty = kit.y(tx, tz);
+    const bark = new THREE.MeshStandardMaterial({ color: '#e4e0d6', roughness: 0.8, flatShading: true });
+    const scar = new THREE.MeshStandardMaterial({ color: '#3a3632', roughness: 1 });
+    const tree = new THREE.Group();
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.38, 4.2, 7), bark);
+    trunk.position.y = 2.1;
+    trunk.rotation.z = 0.06;
+    tree.add(trunk);
+    for (let k = 0; k < 6; k++) {
+      const band = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.05, 0.1), scar);
+      band.position.set(Math.cos(k * 2.3) * 0.26, 0.6 + k * 0.6, Math.sin(k * 2.3) * 0.26);
+      band.rotation.y = -k * 2.3;
+      tree.add(band);
+    }
+    for (const [bx, by, bz, rz] of [[0.6, 3.4, 0.1, -0.8], [-0.5, 3.0, -0.2, 0.9], [0.1, 3.9, 0.5, 0.2]] as const) {
+      const br = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.12, 1.6, 5), bark);
+      br.position.set(bx, by, bz);
+      br.rotation.set(bz, 0, rz);
+      tree.add(br);
+    }
+    const leaves = new THREE.MeshStandardMaterial({ color: '#cfe2f4', emissive: new THREE.Color('#6a8ab8'), emissiveIntensity: 0.35, roughness: 0.7, flatShading: true });
+    for (const [lx, ly, lz, ls] of [[0, 4.9, 0, 1.6], [1.2, 4.3, 0.3, 1.1], [-1.1, 4.1, -0.3, 1.2], [0.3, 4.4, 1.1, 1.0], [-0.2, 4.5, -1.1, 1.05], [0.7, 5.4, -0.5, 0.9]] as const) {
+      const clump = new THREE.Mesh(new THREE.IcosahedronGeometry(ls, 0), leaves);
+      clump.position.set(lx, ly, lz);
+      clump.rotation.set(lx, ly, lz);
+      tree.add(clump);
+    }
+    tree.traverse((o) => { if ((o as THREE.Mesh).isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    tree.position.set(tx, ty, tz);
+    root.add(tree);
+    col.addCircle(tx, tz, 0.5);
+  }
+  // Six stones stand round the shrine, older than it.
+  const stoneMat = new THREE.MeshStandardMaterial({ color: '#8a8a84', roughness: 0.95, flatShading: true });
+  const moss = new THREE.MeshStandardMaterial({ color: '#4a6a3a', roughness: 1, flatShading: true });
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 + 0.3, d = 5.2;
+    const x = V.groveShrine.x + Math.cos(a) * d, z = V.groveShrine.z + Math.sin(a) * d;
+    if (streamDist(x, z) < 2) continue;
+    const h = 1.3 + hash1(i, 65) * 0.8;
+    const st = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.34, h, 5), stoneMat);
+    st.scale.set(1.35, 1, 0.8);
+    st.position.set(x, kit.y(x, z) + h / 2 - 0.15, z);
+    st.rotation.set((hash1(i, 66) - 0.5) * 0.2, -a, (hash1(i, 67) - 0.5) * 0.24);
+    st.castShadow = true;
+    const cap = new THREE.Mesh(new THREE.IcosahedronGeometry(0.24, 0), moss);
+    cap.scale.set(1.1, 0.45, 1.1);
+    cap.position.y = h / 2 - 0.02;
+    st.add(cap);
+    root.add(st);
+    col.addCircle(x, z, 0.4);
+  }
+  // Moonlight pooled on the ground round the shrine, day or night.
+  const pool = new THREE.Mesh(new THREE.CircleGeometry(7, 32), new THREE.MeshBasicMaterial({
+    map: moonPool(), color: new THREE.Color('#9ec8ff').multiplyScalar(0.55), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false,
+  }));
+  pool.rotation.x = -Math.PI / 2;
+  pool.position.set(V.groveShrine.x, kit.y(V.groveShrine.x, V.groveShrine.z) + 0.07, V.groveShrine.z);
+  pool.renderOrder = 3;
+  root.add(pool);
+  kit.source(V.groveShrine.x, kit.y(V.groveShrine.x, V.groveShrine.z) + 3, V.groveShrine.z, 0xa8d0ff, 10, 16, 0.05);
+  kit.prop('halloween', 'shrine', V.groveShrine.x, V.groveShrine.z - 0.8, { rot: 0.4, scale: 0.9, r: 0.6 });
 
   /* ----------------------------------------------------- road furniture -- */
   kit.lamp(-120, 13, -Math.PI / 2, false);
@@ -962,4 +1050,21 @@ export function buildVerge(grassDensity = 1, state: VergeState = { cleanDays: 0 
     },
   };
   return { zone, kit, roadDist, streamDist, postFire, blindFire, brambles, pumpWheel, thing, cageBars, vaultGlow: sigil };
+}
+
+/** A soft pale disc, brightest at the middle, for moonlight on grass. */
+function moonPool() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d')!;
+  const r = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  r.addColorStop(0, 'rgba(255,255,255,0.9)');
+  r.addColorStop(0.35, 'rgba(255,255,255,0.45)');
+  r.addColorStop(0.75, 'rgba(255,255,255,0.12)');
+  r.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = r;
+  g.fillRect(0, 0, 128, 128);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
 }
