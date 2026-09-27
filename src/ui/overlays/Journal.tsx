@@ -5,7 +5,9 @@ import { QUESTS } from '@/content/quests';
 import { NPCS } from '@/content/npcs';
 import { ENEMIES } from '@/content/enemies';
 import { SYNERGY_PAIRS } from '@/content/discoveries';
-import { attitude } from '@/world/logic';
+import { attitude, test } from '@/world/logic';
+import { CONCERNS } from '@/content/concerns';
+import { standings } from '@/content/standing';
 import type { NpcState } from '@/world/state';
 import { Glyph } from '../components/Icon';
 import './journal.css';
@@ -91,8 +93,10 @@ function feel(v: number) {
 }
 
 function People() {
-  const w = worldView.value!;
+  const w = worldView.value!, ch = character.value!;
   const met = Object.values(NPCS).filter((d) => w.npcs[d.id]?.flags.met);
+  const ctx = { world: w, ch, notify: () => {} };
+  const mind = (id: string) => CONCERNS[id]?.find((c) => (!c.died || ch.stats.deaths > 0) && test(c.when, ctx))?.text;
   if (!met.length) return <p class="jr-empty">You have not met anyone yet.</p>;
   return (
     <div class="jr-people">
@@ -106,6 +110,7 @@ function People() {
               <div class="person-role">{d.role}{s.alive ? '' : ' · dead'}</div>
               <div class="person-att">{attitude(s)}</div>
             </div>
+            {s.alive && mind(d.id) && <div class="person-mind">{mind(d.id)}</div>}
             <div class="person-axes">
               <span>Trust</span>{feel(s.trust)}
               <span>Warmth</span>{feel(s.affection)}
@@ -122,26 +127,40 @@ function People() {
 
 function Deeds() {
   const w = worldView.value!, ch = character.value!;
+  const stand = standings({ world: w, ch, notify: () => {} });
   return (
-    <div class="jr-deeds">
-      <h2>What the world remembers</h2>
-      {w.history.length === 0 && <p class="jr-empty">Nothing, yet. Give it time.</p>}
-      {w.history.map((h) => {
-        const knowers = Object.values(w.npcs).filter((n) => n.memories.includes(h.id)).map((n) => NPCS[n.id]?.name).filter(Boolean);
-        return (
-          <div key={h.id} class="deed">
-            <div class="deed-day">Day {h.day}</div>
-            <div class="deed-text">You {h.text}.</div>
-            <div class="deed-who">{knowers.length ? `Known to ${knowers.join(', ')}` : h.spread > 0 ? 'Word has not got round yet.' : 'Nobody saw.'}</div>
+    <div class="jr-two">
+      <div class="jr-deeds">
+        <h2>What the world remembers</h2>
+        {w.history.length === 0 && <p class="jr-empty">Nothing, yet. Give it time.</p>}
+        {[...w.history].reverse().map((h) => {
+          const knowers = Object.values(w.npcs).filter((n) => n.memories.includes(h.id)).map((n) => NPCS[n.id]?.name).filter(Boolean);
+          return (
+            <div key={h.id} class="deed">
+              <div class="deed-day">Day {h.day}</div>
+              <div class="deed-text">You {h.text}.</div>
+              <div class="deed-who">{knowers.length ? `Known to ${knowers.join(', ')}` : h.spread > 0 ? 'Word has not got round yet.' : 'Nobody saw.'}</div>
+            </div>
+          );
+        })}
+      </div>
+      <div class="jr-deeds">
+        <h2>Where you stand</h2>
+        {stand.length === 0 && <p class="jr-empty">Nobody out here knows you yet.</p>}
+        {stand.map((st) => (
+          <div key={st.id} class={`stand t-${st.tone}`}>
+            <div class="stand-name">{st.name}</div>
+            <div class="stand-word">{st.word}</div>
+            <div class="stand-why">{st.why}</div>
           </div>
-        );
-      })}
-      <div class="jr-rule" />
-      <div class="jr-stats">
-        <span>Days on the road <b>{w.day}</b></span>
-        <span>Creatures slain <b>{ch.stats.kills}</b></span>
-        <span>Falls <b>{ch.stats.deaths}</b></span>
-        <span>Gold earned <b>{ch.stats.goldEarned}</b></span>
+        ))}
+        <div class="jr-rule" />
+        <div class="jr-stats">
+          <span>Days on the road <b>{w.day}</b></span>
+          <span>Creatures slain <b>{ch.stats.kills}</b></span>
+          <span>Falls <b>{ch.stats.deaths}</b></span>
+          <span>Gold earned <b>{ch.stats.goldEarned}</b></span>
+        </div>
       </div>
     </div>
   );

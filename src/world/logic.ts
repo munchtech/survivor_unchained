@@ -250,14 +250,13 @@ export function witness(w: WorldState, who: string, ev: HistoryEvent, ctx?: Ctx)
 
 /** A short read of how someone regards you, for the interface. */
 export function attitude(s: NpcState): string {
-  const parts: string[] = [];
-  if (s.fear >= 40) parts.push('afraid of you');
-  if (s.trust >= 40) parts.push('trusts you');
-  else if (s.trust <= -40) parts.push('distrusts you');
-  if (s.affection >= 40) parts.push('fond of you');
-  else if (s.affection <= -40) parts.push('dislikes you');
-  if (s.respect >= 40) parts.push('respects you');
-  else if (s.respect <= -40) parts.push('holds you in contempt');
-  if (!parts.length) return s.flags.met ? 'unsure of you' : 'a stranger';
-  return parts.join(', ');
+  // Each axis says something once it is past a murmur; the two loudest speak.
+  const said: Array<[number, string]> = [];
+  const say = (v: number, words: [number, string][]) => { for (const [at, w] of words) if (at > 0 ? v >= at : v <= at) { said.push([Math.abs(v), w]); return; } };
+  say(s.fear, [[40, 'afraid of you'], [20, 'uneasy around you']]);
+  say(s.trust, [[40, 'trusts you'], [15, 'starting to trust you'], [-40, 'distrusts you'], [-15, 'wary of you']]);
+  say(s.affection, [[40, 'fond of you'], [15, 'likes you'], [-40, 'dislikes you'], [-15, 'cool toward you']]);
+  say(s.respect, [[40, 'respects you'], [15, 'thinks you capable'], [-40, 'holds you in contempt'], [-15, 'thinks little of you']]);
+  if (!said.length) return s.flags.met ? 'unsure of you' : 'a stranger';
+  return said.sort((a, b) => b[0] - a[0]).slice(0, 2).map(([, w]) => w).join(', ');
 }

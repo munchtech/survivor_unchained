@@ -2,6 +2,7 @@ import type { Game } from '../game';
 import type { ZoneRuntime, Interactable, MapMark } from '../zone';
 import { NpcActor, PlateLayer } from '../actors';
 import { buildVerge, V } from '@/world/zones/verge';
+import { wolvesFriendly as canWolves, kerchiefsFriendly as canKerchiefs, diggersFriendly as canDiggers, hollowCalm as calmAtDen } from '@/content/standing';
 import { PRESETS } from '@/render/atmosphere';
 import { NPCS, OUTSIDERS } from '@/content/npcs';
 import type { Battle } from '@/sim/battle';
@@ -54,13 +55,13 @@ export function verge(g: Game): ZoneRuntime {
 
   /* ------------------------------------------------------ dispositions -- */
 
-  const wolvesFriendly = () => !F('hollow.hostile') && (!!F('hollow.peace') || !!F('pack.allied') || F('beasts.outcome') === 'cured' || g.ch!.traits.includes('wolf_friend'));
-  const kerchiefsFriendly = () => !F('roost.hostile') && (test({ hasTag: 'kerchief_colors' }, ctx()) || F('redcowl') === 'bargained' || F('caravan.pell') === 'ally' || (test({ knows: 'pass.redcowl' }, ctx()) && !!w().npcs.redcowl?.flags.met));
-  const diggersFriendly = () => !F('dig.hostile');
+  const wolvesFriendly = () => canWolves(ctx());
+  const kerchiefsFriendly = () => canKerchiefs(ctx());
+  const diggersFriendly = () => canDiggers(ctx());
   // At their own den, the Pack holds off for someone who knows how to come
   // to it (a hunter's lore, Maeca's advice, a wolf's fang worn openly):
   // long enough for Greymuzzle to come out and look.
-  const hollowCalm = () => wolvesFriendly() || (!F('hollow.hostile') && test({ any: [{ knows: 'beastlore' }, { knows: 'hint.greymuzzle' }, { hasTag: 'wolf_fang' }] }, ctx()));
+  const hollowCalm = () => calmAtDen(ctx());
   const alive = (e: Enemy | null) => !!e && e.alive && e.state !== 'dying';
 
   const setDisposition = (e: Enemy) => {

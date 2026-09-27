@@ -172,3 +172,44 @@ describe('quest status', () => {
     expect(w.quests.beasts.entries).toContain('holloway_bounty');
   });
 });
+
+describe('standing', () => {
+  it('reads the powers of the Verge from what the world holds', async () => {
+    const { standings, wolvesFriendly, kerchiefsFriendly } = await import('@/content/standing');
+    const { c } = ctx('hunter');
+    const find = (id: string) => standings(c).find((s) => s.id === id);
+    // Nothing started: only the Watch knows you.
+    expect(find('pack')).toBeUndefined();
+    apply([{ quest: { id: 'beasts', entry: 'rumour', status: 'active' } }, { quest: { id: 'caravan', entry: 'wreck', status: 'active' } }], c);
+    expect(find('pack')?.tone).toBe('hostile');
+    expect(find('kerchief')?.word).toBe('Hostile');
+    expect(wolvesFriendly(c)).toBe(false);
+    // Greymuzzle's peace, then the Pack's company.
+    apply([{ set: { 'hollow.peace': true } }], c);
+    expect(wolvesFriendly(c)).toBe(true);
+    expect(find('pack')?.word).toBe('Let you pass');
+    apply([{ set: { 'pack.allied': true } }], c);
+    expect(find('pack')?.tone).toBe('ally');
+    // A bargain with Redcowl holds until the Roost is crossed.
+    apply([{ set: { redcowl: 'bargained' } }], c);
+    expect(kerchiefsFriendly(c)).toBe(true);
+    expect(find('kerchief')?.word).toBe('Tolerated');
+    apply([{ set: { 'roost.hostile': true } }], c);
+    expect(kerchiefsFriendly(c)).toBe(false);
+    expect(find('kerchief')?.word).toBe('At war');
+    // The Coyle Company remembers who kept its cargo.
+    apply([{ set: { 'caravan.survivors': 'rescued', 'caravan.cargo': 'kept' } }], c);
+    expect(find('coyle')?.word).toBe('Cheated');
+  });
+
+  it('grades how people feel, loudest first', () => {
+    const { c } = ctx();
+    const s = npc(c.world, 'maeca');
+    s.flags.met = true;
+    expect(attitude(s)).toBe('unsure of you');
+    s.affection = 20; s.respect = 45;
+    expect(attitude(s)).toBe('respects you, likes you');
+    s.fear = 25; s.trust = -50;
+    expect(attitude(s)).toBe('distrusts you, respects you');
+  });
+});
