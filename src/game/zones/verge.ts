@@ -42,6 +42,7 @@ export function verge(g: Game): ZoneRuntime {
   const seen = new Set<string>();
   const cagesOpen = [false, false, false];
   const brambleHp = built.brambles.map(() => 260);
+  let dispT = 0;
   let greymuzzle: Enemy | null = null, redcowl: Enemy | null = null, snib: Enemy | null = null, nemesis: Enemy | null = null;
   const roostCrew: Enemy[] = [], digCrew: Enemy[] = [];
   let hollowSpawned = false, roostSpawned = false, digSpawned = false, sinkSpawned = false;
@@ -53,10 +54,17 @@ export function verge(g: Game): ZoneRuntime {
   const wolvesFriendly = () => !F('hollow.hostile') && (!!F('hollow.peace') || !!F('pack.allied') || F('beasts.outcome') === 'cured' || g.ch!.traits.includes('wolf_friend'));
   const kerchiefsFriendly = () => !F('roost.hostile') && (test({ hasTag: 'kerchief_colors' }, ctx()) || F('redcowl') === 'bargained' || F('caravan.pell') === 'ally' || (test({ knows: 'pass.redcowl' }, ctx()) && !!w().npcs.redcowl?.flags.met));
   const diggersFriendly = () => !F('dig.hostile');
+  // At their own den, the Pack holds off for someone who knows how to come
+  // to it (a hunter's lore, Maeca's advice, a wolf's fang worn openly):
+  // long enough for Greymuzzle to come out and look.
+  const hollowCalm = () => wolvesFriendly() || (!F('hollow.hostile') && test({ any: [{ knows: 'beastlore' }, { knows: 'hint.greymuzzle' }, { hasTag: 'wolf_fang' }] }, ctx()));
   const alive = (e: Enemy | null) => !!e && e.alive && e.state !== 'dying';
 
   const setDisposition = (e: Enemy) => {
-    if (e.faction === 'pack' && e.disposition !== 'ally') e.disposition = wolvesFriendly() ? 'neutral' : 'hostile';
+    if (e.faction === 'pack' && e.disposition !== 'ally') {
+      const den = e.tag === 'hollow' || e.tag === 'greymuzzle';
+      e.disposition = (den ? hollowCalm() : wolvesFriendly()) ? 'neutral' : 'hostile';
+    }
     if (e.faction === 'kerchief') e.disposition = kerchiefsFriendly() ? 'neutral' : 'hostile';
     if (e.faction === 'lampling' && e.tag?.startsWith('dig')) e.disposition = diggersFriendly() ? 'neutral' : 'hostile';
   };
@@ -110,7 +118,8 @@ export function verge(g: Game): ZoneRuntime {
       const r = Math.random();
       if (night && nearVault) spawnGroup(r < 0.3 ? 'risen_warrior' : 'risen', 3 + Math.floor(Math.random() * 3), x, z, 4, { style: 'rise' });
       else if (nearRoost && !kerchiefsFriendly() && F('redcowl') !== 'tricked' && F('redcowl') !== 'dead') spawnGroup(r < 0.25 ? 'pillager' : r < 0.35 ? 'bruiser' : 'footpad', 2 + Math.floor(Math.random() * 3), x, z, 4);
-      else if (nearDig && Math.random() < 0.6) spawnGroup('lampling', 3 + Math.floor(Math.random() * 3), x, z, 4, { style: 'burrow' });
+      // The diggers mind their pump unless given a reason; then they come up out of the ground.
+      else if (nearDig && !diggersFriendly() && Math.random() < 0.7) spawnGroup('lampling', 3 + Math.floor(Math.random() * 3), x, z, 4, { style: 'burrow', tag: 'dig:crew' });
       else if (!wolvesFriendly() && Math.random() < pop / 70) {
         const sick = F('beasts.outcome') !== 'cured' && built.streamDist(x, z) < 30;
         spawnGroup(sick && r < 0.35 ? 'wolf_blighted' : 'wolf', 3 + Math.floor(Math.random() * 3 * (pop / 60)), x, z, 4);
@@ -142,7 +151,7 @@ export function verge(g: Game): ZoneRuntime {
       if (greymuzzle) setDisposition(greymuzzle);
       spawnGroup('wolf', 5, V.hollow.x, V.hollow.z, 9, { tag: 'hollow', home: 14 });
       if (F('beasts.outcome') !== 'cured') spawnGroup('wolf_blighted', 3, V.hollow.x, V.hollow.z, 6, { tag: 'hollow', home: 8 });
-      if (wolvesFriendly()) say('The wolves watch you come. None of them move to stop you.', undefined, 4);
+      if (hollowCalm()) say('The wolves watch you come. None of them move to stop you.', undefined, 4);
       else say('Low growling from every side of the Hollow.', undefined, 3);
     }
     // Redcowl's Roost.
@@ -548,6 +557,13 @@ export function verge(g: Game): ZoneRuntime {
     step: (dt) => {
       director(dt);
       approach(dt);
+      // Peace made in a conversation reaches everyone already out there;
+      // anyone you have struck stays angry.
+      dispT -= dt;
+      if (dispT <= 0 && b) {
+        dispT = 0.5;
+        b.enemies.forEach((e) => { if (e.alive && !e.provoked && e.disposition !== 'ally') setDisposition(e); });
+      }
       if (chargeT > 0) {
         chargeT -= dt;
         if (chargeT <= 0) {

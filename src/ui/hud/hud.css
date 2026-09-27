@@ -428,6 +428,6 @@
 @keyframes markBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 
 /* In conversation the world steps back: only the feed and the corner stay. */
-.hud.talking .vitals, .hud.talking .subtitle, .hud.talking .prompt, .hud.talking .hint, .hud.talking .arsenal, .hud.talking .hands, .hud.talking .ember, .hud.talking .tally { opacity: 0; transition: opacity 0.25s; }
+.hud.talking .vitals, .hud.talking .subtitle, .hud.talking .prompt, .hud.talking .hint, .hud.talking .arsenal, .hud.talking .hands, .hud.talking .ember, .hud.talking .tally, .hud.talking .announce { opacity: 0; transition: opacity 0.25s; }
 .hud.talking ~ .barks { opacity: 0; }
 .toast.quest .toast-sub { font-style: normal; color: #d8ccb6; }

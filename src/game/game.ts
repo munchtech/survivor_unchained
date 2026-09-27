@@ -442,7 +442,7 @@ export class Game {
     }
     ch.conditions = ch.conditions.filter((c) => c.id !== 'rested');
     this.apply([
-      { condition: { id: 'wounded', days: 2, note: 'You fell in the Verge' } },
+      { condition: { id: 'wounded', days: 2, note: `You fell in ${z.name}` } },
       { if: { not: { trait: 'risen_once' } }, then: { trait: 'risen_once' } },
       { history: { id: `fell_${w.day}_${ch.stats.deaths}`, text: `fell in ${z.name} to ${killer}`, tags: ['death'], spread: 2, sentiment: { respect: -3 }, reactions: { chid: { affection: 10 } } } },
       { set: { 'player.just_died': true } },

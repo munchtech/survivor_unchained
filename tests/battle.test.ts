@@ -129,3 +129,23 @@ describe('battle', () => {
     expect(pickups).toBeGreaterThan(3);
   });
 });
+
+describe('neutral creatures', () => {
+  it('are never hurt by accident, and a pack only turns when it is struck on purpose', () => {
+    const b = arena(3, [{ id: 'oathblade', rank: 3 }]);
+    const wolf = b.spawnEnemy('wolf', 1.2, 0, { level: 1 })!;
+    wolf.disposition = 'neutral';
+    const mate = b.spawnEnemy('wolf', 2, 1, { level: 1 })!;
+    mate.disposition = 'neutral';
+    const hp = wolf.hp;
+    // Swings, auras and a shield bash right on top of them.
+    for (let i = 0; i < 600; i++) b.tick(1 / 60, 0, 0);
+    b.hitEnemy(wolf, 50, 'fire', ['area', 'fire']);
+    expect(wolf.hp).toBe(hp);
+    expect(wolf.provoked).toBe(false);
+    // A deliberate blow starts it, and the pack answers.
+    b.hitEnemy(wolf, 5, 'physical', ['physical'], { provoke: true });
+    expect(wolf.hp).toBeLessThan(hp);
+    expect(mate.provoked).toBe(true);
+  });
+});

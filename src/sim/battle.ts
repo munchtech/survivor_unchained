@@ -136,6 +136,8 @@ export interface HitOpts {
   projectile?: boolean;
   noProcs?: boolean;
   execute?: boolean;
+  /** A deliberate blow that may start a fight with a neutral creature. */
+  provoke?: boolean;
 }
 
 export class Battle {
@@ -543,6 +545,11 @@ export class Battle {
   /** Everything the survivor's side does to a creature passes through here. */
   hitEnemy(e: Enemy, base: number, school: School, tags: readonly Tag[], o: HitOpts = {}): number {
     if (!e.alive || e.state === 'dying') return 0;
+    // The survivor's side never hurts its allies, and never hurts a
+    // creature minding its own business by accident: auras, ground fires
+    // and swings that happen to reach a neutral pass it by. Picking a fight
+    // is a choice (a word, a match to the powder), not a stray spark.
+    if (e.disposition === 'ally' || (e.disposition === 'neutral' && !e.provoked && !o.provoke)) return 0;
     const st = this.stats;
     let dmg = base * st.damageMult(school, tags, e.def.family);
     if (o.summon) dmg *= st.get('summonDamage');
