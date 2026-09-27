@@ -78,6 +78,8 @@ export const QUESTS: Record<string, QuestDef> = {
       cargo_returned: 'Harlan has his cargo back.',
       cargo_kept: 'You kept the Coyle cargo.',
       cargo_sold: 'Rav\'s friend bought the cargo, no questions asked.',
+      cargo_lost: 'The Coyle cargo burned with the Roost.',
+      cargo_moved: 'The Kerchiefs broke the Coyle cargo up and sold it down the south road. Nobody went back for it.',
       pell_exposed: 'Pell Varrow has been exposed.',
       pell_joined: 'You took Pell Varrow\'s money, and his side.',
     },

@@ -40,6 +40,7 @@ export const CONCERNS: Record<string, Concern[]> = {
     { text: 'Patches up anybody, asks nobody anything, and remembers every answer he did not ask for.' },
   ],
   harlan: [
+    { when: { any: [{ fact: 'caravan.cargo', eq: 'kept' }, { fact: 'caravan.cargo', eq: 'sold' }] }, text: 'Has written off his strongbox, and says your name when he says it.' },
     { when: { fact: 'caravan.survivors', eq: 'rescued' }, text: 'Has Jory back. Keeps finding reasons to touch his shoulder.' },
     { when: { fact: 'caravan.survivors', eq: 'dead' }, text: 'Has closed the shutters on Coyle Trading and does not answer the door.' },
     { when: { fact: 'caravan.days', gte: 3 }, text: 'Has stopped watching the road. Sits outside the tavern instead.' },

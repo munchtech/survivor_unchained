@@ -2,6 +2,7 @@ import type { Game } from '../game';
 import type { ZoneRuntime, Interactable, MapMark } from '../zone';
 import { NpcActor, PlateLayer } from '../actors';
 import { buildVerge, V } from '@/world/zones/verge';
+import { CARAVAN_SETTLE } from '@/content/rules';
 import { wolvesFriendly as canWolves, kerchiefsFriendly as canKerchiefs, diggersFriendly as canDiggers, hollowCalm as calmAtDen } from '@/content/standing';
 import { PRESETS } from '@/render/atmosphere';
 import { NPCS, OUTSIDERS } from '@/content/npcs';
@@ -355,7 +356,7 @@ export function verge(g: Game): ZoneRuntime {
     })),
     {
       id: 'strongbox', x: V.cargo.x + 2.2, z: V.cargo.z - 1.4, r: 2.4, verb: 'Take', name: 'The Coyle Strongbox',
-      when: () => !F('caravan.box_taken'),
+      when: () => !F('caravan.box_taken') && !F('caravan.cargo'),
       act: () => {
         w().facts['caravan.box_taken'] = true;
         g.apply([{ give: 'coyle_strongbox' }]);
@@ -440,7 +441,7 @@ export function verge(g: Game): ZoneRuntime {
     say(['A teamster, thin and grey, stumbles out and grips your arm.', 'A woman who will not stop saying thank you.', 'A young man: "Jory. Jory Coyle. Is my uncle —? Is he —?"'][i], undefined, 4);
     if (cagesOpen.every(Boolean)) {
       g.apply([
-        { set: { 'caravan.survivors': 'rescued' } }, { quest: { id: 'caravan', entry: 'survivors_freed' } },
+        { set: { 'caravan.survivors': 'rescued' } }, { quest: { id: 'caravan', entry: 'survivors_freed' } }, CARAVAN_SETTLE,
         hist('freed_teamsters', 'freed the Coyle teamsters from the Kerchief cages', ['rescue', 'caravan'], 2, { affection: 10 }, { harlan: { affection: 40, trust: 30 }, holloway: { respect: 15 } }),
       ]);
     }
@@ -477,6 +478,9 @@ export function verge(g: Game): ZoneRuntime {
           g.apply([{ set: { 'caravan.survivors': 'dead' } }, { quest: { id: 'caravan', entry: 'survivors_dead' } }, hist('burned_roost', 'set the Roost burning with the prisoners still in their cages', ['caravan'], 2, { trust: -10 }, { harlan: { trust: -60, affection: -60 } })]);
           say('The fire takes the tents, and the cages with them. There is screaming, and then there is not.', undefined, 6);
         }
+        // Whatever of the Coyle cargo was still in the camp goes up with it.
+        if (!F('caravan.box_taken') && !F('caravan.cargo')) g.apply([{ set: { 'caravan.cargo': 'lost' } }, { quest: { id: 'caravan', entry: 'cargo_lost', outcome: 'lost' } }]);
+        g.apply([CARAVAN_SETTLE]);
       }
       return;
     }

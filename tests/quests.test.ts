@@ -130,6 +130,43 @@ describe('the Missing Caravan', () => {
     expect(world.facts['caravan.survivors']).toBe('dead');
   });
 
+  it('the cargo has an ending of its own: returned, kept, or moved on by the Kerchiefs', () => {
+    // Returned: the quest settles the moment both halves are known.
+    const a = setup('hunter');
+    a.world.facts['caravan.survivors'] = 'rescued';
+    a.world.facts['caravan.box_taken'] = true;
+    addToPack(a.ch, makeItem(a.ch, 'coyle_strongbox'));
+    talk(CONVOS.harlan, a.c, 'strongbox');
+    expect(a.world.facts['caravan.cargo']).toBe('returned');
+    expect(a.world.quests.caravan.status).toBe('resolved');
+    expect(a.world.quests.caravan.outcome).toBe('returned');
+    expect(chapterSummary(a.ch, a.world).threads[1].verdict).toBe('Brought home');
+    // Kept: carry the box about for three days and Harlan writes it off.
+    const b = setup('outcast');
+    b.world.facts['caravan.survivors'] = 'rescued';
+    b.world.facts['caravan.box_taken'] = true;
+    const heard: string[] = [];
+    for (let d = 0; d < 4; d++) heard.push(...advanceDay(b.c, RULES, SOCIAL, () => 0.5).lines);
+    expect(heard.join(' ')).toMatch(/Coyle strongbox/);
+    expect(b.world.facts['caravan.cargo']).toBe('kept');
+    expect(b.world.quests.caravan.status).toBe('resolved');
+    expect(npc(b.world, 'harlan').trust).toBeLessThan(-20);
+    expect(chapterSummary(b.ch, b.world).epithet).toMatch(/kept the Coyle strongbox/);
+    // Left in the Roost: the Kerchiefs sell it on down the south road.
+    const k = setup('scholar');
+    k.world.facts['caravan.survivors'] = 'rescued';
+    for (let d = 0; d < 5; d++) advanceDay(k.c, RULES, SOCIAL, () => 0.5);
+    expect(k.world.facts['caravan.cargo']).toBe('with_kerchiefs');
+    expect(k.world.quests.caravan.entries).toContain('cargo_moved');
+    expect(k.world.quests.caravan.status).toBe('resolved');
+    // ...unless there is nobody left in the Roost to move it.
+    const r = setup('scholar');
+    r.world.facts['caravan.survivors'] = 'rescued';
+    r.world.facts.redcowl = 'dead';
+    for (let d = 0; d < 5; d++) advanceDay(r.c, RULES, SOCIAL, () => 0.5);
+    expect(r.world.facts['caravan.cargo']).toBeUndefined();
+  });
+
   it('with both stories told, Vonnra sends for you', () => {
     const { c, world } = setup('scholar');
     world.facts['beasts.outcome'] = 'cured';

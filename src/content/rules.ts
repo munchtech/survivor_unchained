@@ -11,6 +11,9 @@ import type { Effect } from '@/world/logic';
 
 const h = (id: string, text: string, tags: string[], spread: number): Effect => ({ history: { id, text, tags, spread } });
 
+/** When both the teamsters' fate and the cargo's are known, the quest is settled. */
+export const CARAVAN_SETTLE: Effect = { if: { all: [{ fact: 'caravan.survivors', exists: true }, { fact: 'caravan.cargo', exists: true }] }, then: { quest: { id: 'caravan', status: 'resolved' } } };
+
 export const RULES: DailyRule[] = [
   /* ------------------------------------------------ the beast problem -- */
   { id: 'beasts.escalate', when: { all: [{ not: { fact: 'beasts.outcome', exists: true } }, { fact: 'prologue.done', eq: true }] }, effect: { add: { 'beasts.severity': 1 } } },
@@ -28,10 +31,10 @@ export const RULES: DailyRule[] = [
   { id: 'stream.heal', when: { any: [{ fact: 'dig.pump', eq: 'broken' }, { fact: 'dig.pump', eq: 'moved' }, { fact: 'dig.pump', eq: 'blown' }] }, effect: { add: { 'blight.days_clean': 1 } } },
   // Fixed, but for Pell's profit: the stream still clears; the story is different.
   { id: 'stream.clear_sold', once: true, when: { all: [{ fact: 'blight.days_clean', gte: 2 }, { fact: 'dig.pell_cut', eq: true }, { not: { fact: 'beasts.outcome', exists: true } }] },
-    effect: [{ set: { 'beasts.outcome': 'exploited', 'blight.level': 0 } }, { quest: { id: 'beasts', status: 'resolved', outcome: 'exploited' } }],
+    effect: [{ set: { 'beasts.outcome': 'exploited' } }, { quest: { id: 'beasts', status: 'resolved', outcome: 'exploited' } }],
     report: 'The stream is running clear. Wenna says so, and does not look at you when she says it. Pell Varrow was seen coming back from the Verge, whistling.' },
   { id: 'stream.clear', once: true, when: { all: [{ fact: 'blight.days_clean', gte: 2 }, { not: { fact: 'beasts.outcome', eq: 'slaughtered' } }, { not: { fact: 'dig.pell_cut', eq: true } }] },
-    effect: [{ set: { 'beasts.outcome': 'cured', 'blight.level': 0 } }, { quest: { id: 'beasts', status: 'resolved', outcome: 'cured' } },
+    effect: [{ set: { 'beasts.outcome': 'cured' } }, { quest: { id: 'beasts', status: 'resolved', outcome: 'cured' } },
       h('stream_cleared', 'stopped the poison in the Thornhollow stream', ['deed', 'beasts'], 2)],
     report: 'Wenna came in at dawn, muddy to the knees: the stream is running clear. The Pack has gone back into the deep wood.' },
   // A lie about the wolves lasts exactly as long as the wolves stay quiet.
@@ -53,6 +56,23 @@ export const RULES: DailyRule[] = [
     report: 'Harlan Coyle was at the east gate before dawn, watching the Old Road. He did not eat.' },
   { id: 'caravan.despair', once: true, when: { all: [{ fact: 'caravan.days', gte: 3 }, { not: { fact: 'caravan.survivors', exists: true } }] }, effect: { rel: { npc: 'harlan', trust: -5 }, quiet: true },
     report: 'Harlan has stopped watching the road. Rook says he sat in the tavern until she put the lamps out, and asked her whether anyone was even looking.' },
+  // The strongbox, once it leaves the Roost with you: Harlan hears, and waits.
+  { id: 'caravan.box_clock', when: { all: [{ fact: 'caravan.box_taken', eq: true }, { not: { fact: 'caravan.cargo', exists: true } }] }, effect: { add: { 'caravan.box_days': 1 } } },
+  { id: 'caravan.box_asks', once: true, when: { all: [{ fact: 'caravan.box_days', gte: 1 }, { not: { fact: 'caravan.cargo', exists: true } }] }, effect: [],
+    report: 'Harlan asked in the tavern whether anyone had seen a Coyle strongbox. Rook says he did not look at your door when he said it. He did not need to.' },
+  { id: 'caravan.box_kept', once: true, when: { all: [{ fact: 'caravan.box_days', gte: 3 }, { not: { fact: 'caravan.cargo', exists: true } }] },
+    effect: [{ set: { 'caravan.cargo': 'kept' } }, { quest: { id: 'caravan', entry: 'cargo_kept', outcome: 'kept' } },
+      h('kept_cargo', 'kept the Coyle strongbox for themselves', ['caravan', 'greed'], 2), { rel: { npc: 'harlan', trust: -40, affection: -30 }, quiet: true }],
+    report: 'Harlan Coyle has written the strongbox off, and says so to anyone who will listen. He says your name when he says it.' },
+  // Left in the Roost once the prisoners' fate is settled: the Kerchiefs do not
+  // sit on stolen goods (unless there are no Kerchiefs left to move them).
+  { id: 'caravan.box_waits', when: { all: [{ fact: 'caravan.survivors', exists: true }, { not: { fact: 'caravan.box_taken', eq: true } }, { not: { fact: 'caravan.cargo', exists: true } }, { not: { fact: 'redcowl', eq: 'dead' } }, { not: { fact: 'roost.cleared', eq: true } }] },
+    effect: { add: { 'caravan.box_left': 1 } } },
+  { id: 'caravan.box_moved', once: true, when: { all: [{ fact: 'caravan.box_left', gte: 3 }, { not: { fact: 'caravan.box_taken', eq: true } }, { not: { fact: 'caravan.cargo', exists: true } }] },
+    effect: [{ set: { 'caravan.cargo': 'with_kerchiefs' } }, { quest: { id: 'caravan', entry: 'cargo_moved', outcome: 'with_kerchiefs' } }],
+    report: 'A pedlar off the south road was selling Coyle cloth at half its price. Harlan bought a bolt of his own goods back and did not say a word.' },
+  // Both halves known: the Missing Caravan is settled, one way or another.
+  { id: 'caravan.settled', once: true, when: { all: [{ fact: 'caravan.survivors', exists: true }, { fact: 'caravan.cargo', exists: true }] }, effect: CARAVAN_SETTLE },
   { id: 'kerchief.prices', once: true, when: { fact: 'kerchief.raids', gte: 2 }, effect: [],
     report: 'Harlan has put his prices up. So has everyone. Nothing is coming down the Old Road that the Kerchiefs have not had first.' },
   { id: 'kerchief.raid', when: { all: [{ fact: 'road.dangerous', eq: true }, { not: { fact: 'redcowl', exists: true } }, { day: { gte: 4 } }] },

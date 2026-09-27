@@ -51,10 +51,14 @@ function caravan(w: WorldState): Thread {
   let verdict = 'Not yet found', tone: Tone = 'open', outcome = 'Jory and the others are still somewhere in the Verge. The clock is running.';
   if (surv === 'rescued' && cargo === 'returned') { verdict = 'Brought home'; tone = 'good'; outcome = q.outcomes!.returned; }
   else if (surv === 'rescued' && (cargo === 'sold' || cargo === 'kept')) { verdict = 'Rescued, and robbed'; tone = 'grey'; outcome = q.outcomes!.kept; }
+  else if (surv === 'rescued' && cargo === 'with_kerchiefs') { verdict = 'The teamsters freed'; tone = 'good'; outcome = `Jory is home. ${q.outcomes!.with_kerchiefs}`; }
+  else if (surv === 'rescued' && cargo === 'lost') { verdict = 'The teamsters freed'; tone = 'good'; outcome = 'Jory is home. The cargo burned with the Roost.'; }
   else if (surv === 'rescued') { verdict = 'The teamsters freed'; tone = 'good'; outcome = 'Jory is home. The cargo is another story.'; }
+  else if (surv === 'dead' && cargo === 'returned') { verdict = 'The goods, not the men'; tone = 'grey'; outcome = 'Harlan has his strongbox back. He would give it all to have Jory.'; }
+  else if (surv === 'dead' && (cargo === 'sold' || cargo === 'kept')) { verdict = 'Too late, and robbed'; tone = 'bad'; outcome = 'The prisoners did not come home, and the cargo went where you took it.'; }
   else if (surv === 'dead') { verdict = 'Too late'; tone = 'bad'; outcome = 'The prisoners in the Roost did not come home.'; }
   else if (cargo === 'returned') { verdict = 'The goods, not the men'; tone = 'grey'; outcome = q.outcomes!.returned; }
-  const beats = pick(w, 'caravan', ['roost_found', 'redcowl_met', 'survivors_freed', 'cargo_returned', 'cargo_sold', 'cargo_kept', 'pell_exposed', 'pell_joined']);
+  const beats = pick(w, 'caravan', ['roost_found', 'redcowl_met', 'survivors_freed', 'survivors_dead', 'cargo_returned', 'cargo_sold', 'cargo_kept', 'cargo_lost', 'cargo_moved', 'pell_exposed', 'pell_joined']);
   if (f.redcowl === 'tricked') beats.push('You bluffed the Kerchiefs out of their own camp.');
   if (f.redcowl === 'dead') beats.push('Redcowl is dead.');
   if (f['caravan.pell'] === 'fled') beats.push('Pell Varrow fled the Waystation in the night.');
@@ -67,6 +71,7 @@ function epithet(ch: CharacterData, w: WorldState) {
   if (f['caravan.pell'] === 'ally') return `${ch.name}, in Pell Varrow's ledger`;
   if (f['beasts.outcome'] === 'exploited') return `${ch.name}, who sold the cure`;
   if (f['caravan.cargo'] === 'sold') return `${ch.name}, who sold the Coyle strongbox`;
+  if (f['caravan.cargo'] === 'kept') return `${ch.name}, who kept the Coyle strongbox`;
   if (f['beasts.outcome'] === 'cured' && f['caravan.survivors'] === 'rescued') return `${ch.name}, who cleared the water and opened the cages`;
   if (f['beasts.outcome'] === 'cured') return `${ch.name}, who cleared the water`;
   if (f['caravan.survivors'] === 'rescued') return `${ch.name}, who opened the cages`;

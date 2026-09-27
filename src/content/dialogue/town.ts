@@ -1,6 +1,7 @@
 import type { Conversation, DChoice } from '@/world/dialogue';
 import type { Cond, Effect } from '@/world/logic';
 import type { Axis } from '@/world/state';
+import { CARAVAN_SETTLE } from '../rules';
 
 /* The Waystation, in its own words.
  *
@@ -145,6 +146,8 @@ export const HOLLOWAY: Conversation = {
         { when: { fact: 'beasts.outcome', eq: 'cured' }, text: 'The water is clean and the wolves are back in the deep wood. I was wrong about them. Do not tell anyone I said so.' },
         { when: { fact: 'wolves.at_gate', eq: true }, text: 'You heard. Aldo. He had a wife in Ashford and a bad knee, and they took him at my gate. The bounty is still five gold a pelt. What do you want?' },
         { when: { rel: { npc: 'holloway', axis: 'trust', lte: -30 } }, text: 'You. Keep your hands where I can see them.' },
+        { when: { fact: 'beasts.outcome', eq: 'slaughtered' }, text: 'The road is quiet. I paid for every pelt of it. Do you know how quiet? Maeca has stopped coming in to argue with me.' },
+        { when: { all: [{ fact: 'beasts.bounty_claimed', eq: true }, { not: { fact: 'beasts.outcome', exists: true } }] }, text: 'I pay for a pelt and two more wolves come down the road. I am starting to think Maeca is right, and I hate that. What is it?' },
         { text: 'Captain Holloway. What is it?' },
       ],
       choices: hollowayHub,
@@ -563,7 +566,7 @@ export const HARLAN: Conversation = {
       id: 'box',
       text: 'The strongbox! Unopened. You could have walked off with this and I would never have known. A hundred gold, and my thanks.',
       effects: [
-        { take: 'coyle_strongbox' }, { gold: 100 }, { set: { 'caravan.cargo': 'returned' } }, { quest: { id: 'caravan', entry: 'cargo_returned', outcome: 'returned' } },
+        { take: 'coyle_strongbox' }, { gold: 100 }, { set: { 'caravan.cargo': 'returned' } }, { quest: { id: 'caravan', entry: 'cargo_returned', outcome: 'returned' } }, CARAVAN_SETTLE,
         { rel: { npc: 'harlan', trust: 30, affection: 20 } },
         seen(hist('returned_cargo', 'brought the Coyle strongbox back unopened', ['honest', 'caravan'], 2, { trust: 10 }), 'harlan'),
       ],
@@ -718,7 +721,7 @@ export const RAV: Conversation = {
       text: 'Coyle\'s strongbox. Oh, dear. Yes, I know a man. A hundred and fifty, and nobody asks where it came from — at first. People always find out, in the end.',
       choices: [
         { text: 'Sell it.', effects: [
-          { take: 'coyle_strongbox' }, { gold: 150 }, { set: { 'caravan.cargo': 'sold', 'player.wanted': true } }, { quest: { id: 'caravan', entry: 'cargo_sold', outcome: 'kept' } },
+          { take: 'coyle_strongbox' }, { gold: 150 }, { set: { 'caravan.cargo': 'sold', 'player.wanted': true } }, { quest: { id: 'caravan', entry: 'cargo_sold', outcome: 'kept' } }, CARAVAN_SETTLE,
           seen(hist('fenced_cargo', 'sold the Coyle strongbox to a fence', ['theft', 'caravan'], 2, { trust: -20 }, { harlan: { trust: -80, affection: -60 }, holloway: { trust: -40 } }), 'rav'),
         ], goto: 'hub' },
         { text: 'On second thought.', goto: 'hub' },

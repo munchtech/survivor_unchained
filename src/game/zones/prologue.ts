@@ -599,7 +599,7 @@ export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number 
   };
 
   const finishPrologue = () => {
-    g.apply([{ set: { 'prologue.done': true } }, { quest: { id: 'prologue', status: 'resolved' } }]);
+    g.apply([{ set: { 'prologue.done': true } }, { quest: { id: 'prologue', status: 'resolved', outcome: 'resolved' } }]);
     hint.value = null;
     objectives.value = [];
     if (g.hasZone('waystation')) g.travel('waystation', 'The Waystation', 'Where the three roads meet');

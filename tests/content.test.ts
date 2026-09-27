@@ -8,6 +8,8 @@ import { RULES } from '@/content/rules';
 import { ENEMIES } from '@/content/enemies';
 import { NPCS, OUTSIDERS, SPEAKERS } from '@/content/npcs';
 import type { Cond, Effect } from '@/world/logic';
+import fs from 'node:fs';
+import path from 'node:path';
 
 /* The content is data; these tests read all of it and check that every
  * reference points at something real. A typo in a quest entry id is a
@@ -99,5 +101,40 @@ describe('content', () => {
       expect(it.description.length, it.id).toBeGreaterThan(8);
       expect(it.value, it.id).toBeGreaterThanOrEqual(0);
     }
+  });
+
+  /* Nothing written that nothing reads. Every quest entry and outcome is
+   * reachable from somewhere, every fact the content sets is asked about
+   * somewhere, and every piece of knowledge checked for can be learned. */
+  const walk = (d: string): string[] => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
+  const files = walk('src').filter((f) => /\.(ts|tsx)$/.test(f));
+  const source = (skip?: string) => files.filter((f) => !skip || !f.endsWith(skip)).map((f) => fs.readFileSync(f, 'utf8')).join('\n');
+
+  it('every quest entry and outcome can happen', () => {
+    const src = source('quests.ts');
+    const missing: string[] = [];
+    for (const q of Object.values(QUESTS)) {
+      for (const e of Object.keys(q.entries)) if (!src.includes(`'${e}'`)) missing.push(`${q.id}.${e}`);
+      for (const o of Object.keys(q.outcomes ?? {})) if (q.id !== 'lowford' && !src.includes(`outcome: '${o}'`)) missing.push(`${q.id} outcome ${o}`);
+    }
+    expect(missing).toEqual([]);
+  });
+
+  it('every fact the content sets is read somewhere', () => {
+    const src = source();
+    const set = new Set<string>();
+    for (const m of src.matchAll(/set: \{([^}]*)\}/g)) for (const k of m[1].matchAll(/'([a-z_]+\.[a-z_.]+)':/g)) set.add(k[1]);
+    const read = new Set<string>();
+    for (const re of [/fact: '([a-z_.]+)'/g, /F\((?:c, )?'([a-z_.]+)'\)/g, /facts\['([a-z_.]+)'\]/g, /f\['([a-z_.]+)'\]/g]) for (const m of src.matchAll(re)) read.add(m[1]);
+    expect([...set].filter((k) => !read.has(k))).toEqual([]);
+  });
+
+  it('every piece of knowledge asked about can be learned', () => {
+    const src = source();
+    const learned = new Set<string>();
+    for (const m of src.matchAll(/learn: (?:\[([^\]]+)\]|'([a-z_.]+)')/g)) (m[1] ? m[1].match(/'([a-z_.]+)'/g)!.map((x) => x.slice(1, -1)) : [m[2]]).forEach((k) => learned.add(k));
+    const checked = [...src.matchAll(/(?:knows|notKnows): '([a-z_.]+)'/g)].map((m) => m[1]);
+    const archetypes = fs.readFileSync('src/content/archetypes.ts', 'utf8');
+    expect(checked.filter((k) => !learned.has(k) && !archetypes.includes(`'${k}'`))).toEqual([]);
   });
 });
