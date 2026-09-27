@@ -35,7 +35,7 @@ import { renderPortrait } from '@/ui/portrait';
 import { Input } from '@/core/input';
 import { damp } from '@/core/math';
 import {
-  createCharacter, deriveKit, addToPack, makeItem, equip, unequip, findItem, slotFor, fitsSlot, itemName, gainXp,
+  createCharacter, deriveKit, addToPack, makeItem, equip, unequip, findItem, slotFor, fitsSlot, itemName, rarityName, gainXp,
   type CharacterData, type CreationChoice,
 } from '@/rpg/character';
 import { EQUIP_SLOTS, type EquipSlot } from '@/content/items';
@@ -415,7 +415,11 @@ export class Game {
       },
       onPickup: (p: Pickup) => {
         if (zh.onPickup && zh.onPickup(p) === false) return false;
-        if ((p.kind === 'item' || p.kind === 'material' || p.kind === 'quest') && p.ref) return this.giveItem(p.ref, Math.max(1, Math.round(p.value)));
+        if ((p.kind === 'item' || p.kind === 'material' || p.kind === 'quest') && p.ref) {
+          // Gear on the ground was rolled when it fell; its light said how good it is.
+          const rolled = p.kind === 'item' && ITEMS[p.ref]?.base ? p.tier : undefined;
+          return this.giveItem(p.ref, Math.max(1, Math.round(p.value)), rolled);
+        }
         return true;
       },
       onPlayerDeath: (killer) => {
@@ -427,17 +431,31 @@ export class Game {
   }
 
   /** Something picked up in the field. False if there is no room. */
-  giveItem(defId: string, qty = 1): boolean {
+  giveItem(defId: string, qty = 1, rarity?: number): boolean {
     const ch = this.ch!;
-    const it = makeItem(ch, defId, { qty });
+    const it = makeItem(ch, defId, { qty, rarity });
     if (!addToPack(ch, it)) {
       toast('warning', 'Your pack is full', { sub: ITEMS[defId].name });
       return false;
     }
     const def = ITEMS[defId];
-    toast('loot', `${def.name}${qty > 1 ? ` ×${qty}` : ''}`, { icon: def.icon, rarity: it.rarity, sub: def.kind === 'material' ? undefined : def.description });
+    toast('loot', `${itemName(it)}${qty > 1 ? ` ×${qty}` : ''}`, { icon: def.icon, rarity: it.rarity, sub: def.kind === 'material' ? undefined : it.rarity > def.rarity ? `${rarityName(it)} ${def.kind}` : def.description });
     touch();
     return true;
+  }
+
+  /** A particular thing come back (what a nemesis took): the same item,
+   *  affixes and all. A full pack sends it to Rook's storeroom instead. */
+  returnItem(it: ItemInstance) {
+    const ch = this.ch!, w = this.world!;
+    const def = ITEMS[it.def];
+    if (addToPack(ch, it)) toast('loot', itemName(it), { icon: def.icon, rarity: it.rarity, sub: 'Yours again' });
+    else {
+      const j = w.stash.indexOf(null);
+      if (j >= 0) { w.stash[j] = it; toast('loot', itemName(it), { icon: def.icon, rarity: it.rarity, sub: 'Your pack is full: Rook will keep it for you' }); }
+      else toast('warning', `${itemName(it)} is lost: no room anywhere`);
+    }
+    touch();
   }
 
   private onDeath(killer: string) {
@@ -451,13 +469,16 @@ export class Game {
     // whatever killed you, and it is not the same creature any more.
     const gold = Math.floor(ch.gold / 2);
     ch.gold -= gold;
-    const pool = ch.pack.map((it, i) => ({ it, i })).filter((x) => x.it && !['quest', 'consumable'].includes(ITEMS[x.it.def].kind));
-    const pick = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
-    if (pick) ch.pack[pick.i] = null;
     w.corpse = { zone: z.id, x: p?.x ?? 0, z: p?.z ?? 0, gold, items: [], day: w.day, killer, heroName: ch.name };
     if (k && !k.boss && k.def.id !== 'grimtunnel') {
+      // Only something that will carry it away takes a thing from you.
+      const pool = ch.pack.map((it, i) => ({ it, i })).filter((x) => x.it && !['quest', 'consumable'].includes(ITEMS[x.it.def].kind));
+      const pick = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+      if (pick) ch.pack[pick.i] = null;
+      // A nemesis still out there is not forgotten: the new one has what it had, too.
+      const before = w.nemesis && !w.nemesis.killed ? w.nemesis.carries : [];
       const title = `${nemesisName(k.def.family)}, Who Took Your Light`;
-      w.nemesis = { zone: z.id, def: k.def.id, title, level: k.level + 2, carries: pick ? [pick.it!] : [], heroName: ch.name, killed: false };
+      w.nemesis = { zone: z.id, def: k.def.id, title, level: k.level + 2, carries: [...before, ...(pick ? [pick.it!] : [])], heroName: ch.name, killed: false };
     }
     ch.conditions = ch.conditions.filter((c) => c.id !== 'rested');
     this.apply([

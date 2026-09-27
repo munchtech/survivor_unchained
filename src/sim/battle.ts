@@ -66,7 +66,9 @@ export interface BattleHooks {
   /** Every death, player-caused or not. */
   onKill?(e: Enemy, byPlayer: boolean): void;
   /** Extra drops for a death (items, materials). */
-  onLoot?(e: Enemy): Array<{ kind: PickupKind; ref: string | null; value: number; persistent?: boolean }>;
+  /** What a creature drops besides ember and gold. `rarity` colours an item's
+   *  beam of light (and, for gear, is the rarity it is made at). */
+  onLoot?(e: Enemy): Array<{ kind: PickupKind; ref: string | null; value: number; persistent?: boolean; rarity?: number }>;
   /** An item/material/quest pickup reached the survivor. Return false to
    *  leave it on the ground (a full pack). */
   onPickup?(p: Pickup): boolean;
@@ -669,6 +671,7 @@ export class Battle {
         for (const d of this.hooks.onLoot?.(e) ?? []) {
           const pk = this.spawnPickup(d.kind, e.x, e.z, d.value, d.ref);
           if (pk && d.persistent) pk.persistent = true;
+          if (pk && d.rarity !== undefined) pk.tier = d.rarity;
         }
       }
     }

@@ -145,7 +145,15 @@ const scenarios = {
 
   // Falling in the Verge: the corpse, the nemesis, waking at the shrine.
   death: () => run('death', 'quick=warden&bg=devout&zone=verge&at=-40,14', async ({ T, check, snap, page }) => {
-    await page.evaluate(() => { const g = window.__game.game; g.ch.gold = 120; });
+    // One thing worth taking: a rolled ring, and nothing else it could take instead.
+    const ring = await page.evaluate(() => {
+      const g = window.__game.game;
+      g.ch.gold = 120;
+      g.ch.pack = g.ch.pack.map(() => null);
+      g.giveItem('silver_ring', 1, 3);
+      const it = g.ch.pack.find((x) => x && x.def === 'silver_ring');
+      return { uid: it.uid, affixes: JSON.stringify(it.affixes), rarity: it.rarity };
+    });
     await T('T.tp(-50, -66)'); await T('T.adv(4)');
     await page.evaluate(() => { const b = window.__game.game.scene.battle; b.player.hp = 1; });
     await T('T.adv(6)');
@@ -169,6 +177,29 @@ const scenarios = {
     check('risen once', after.traits.includes('risen_once'));
     check('wounded', after.wounded);
     await snap();
+    // Go back for it.
+    await page.evaluate(() => { const g = window.__game.game; if (g.dialogue) g.endDialogue(); g.closeOverlay(); g.world.facts['toll.paid'] = true; g.enterZone('verge', 'waystation', { x: -50, z: -60 }); });
+    await page.waitForTimeout(600);
+    await T('T.adv(3)');
+    const nem = await page.evaluate(() => {
+      const b = window.__game.game.scene.battle;
+      let found = null;
+      b.enemies.forEach((e) => { if (e.alive && e.named?.sourceHero) found = { x: e.x, z: e.z, id: e.id }; });
+      return found;
+    });
+    check('the nemesis waits where you fell', !!nem, JSON.stringify(nem));
+    if (nem) {
+      await page.evaluate((n) => { const b = window.__game.game.scene.battle; b.enemies.forEach((e) => { if (e.id === n.id) e.hp = 1; }); b.player.hp = b.maxHp; }, nem);
+      await T(`T.tp(${nem.x - 2}, ${nem.z})`);
+      await T('T.adv(4)');
+      const back = await page.evaluate((r) => {
+        const g = window.__game.game;
+        const it = [...g.ch.pack, ...g.world.stash].find((x) => x && x.uid === r.uid);
+        return { killed: g.world.nemesis?.killed, same: !!it && JSON.stringify(it.affixes) === r.affixes && it.rarity === r.rarity };
+      }, ring);
+      check('put down', back.killed === true);
+      check('the same ring comes back, affixes and all', back.same);
+    }
   }),
 };
 

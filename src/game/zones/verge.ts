@@ -3,6 +3,7 @@ import type { ZoneRuntime, Interactable, MapMark } from '../zone';
 import { NpcActor, PlateLayer } from '../actors';
 import { buildVerge, V } from '@/world/zones/verge';
 import { CARAVAN_SETTLE } from '@/content/rules';
+import { ITEMS } from '@/content/items';
 import { wolvesFriendly as canWolves, kerchiefsFriendly as canKerchiefs, diggersFriendly as canDiggers, hollowCalm as calmAtDen } from '@/content/standing';
 import { PRESETS } from '@/render/atmosphere';
 import { NPCS, OUTSIDERS } from '@/content/npcs';
@@ -28,7 +29,7 @@ import { hist } from '@/content/dialogue/town';
  * The places the quests need are here too, each with the handful of things
  * a clever player might try. */
 
-type Pickup = { kind: PickupKind; ref: string | null; value: number; persistent?: boolean };
+type Pickup = { kind: PickupKind; ref: string | null; value: number; persistent?: boolean; rarity?: number };
 
 export function verge(g: Game): ZoneRuntime {
   const built = buildVerge(g.r.spec.grassDensity, { cleanDays: Number(g.world?.facts['blight.days_clean'] ?? 0) });
@@ -528,7 +529,7 @@ export function verge(g: Game): ZoneRuntime {
     if (e === nemesis) {
       const n = w().nemesis!;
       n.killed = true;
-      for (const it of n.carries) g.giveItem(it.def, it.qty);
+      for (const it of n.carries) g.returnItem(it);
       g.apply(hist('nemesis_slain', `put down ${n.title}, and took back what it took`, ['revenge'], 2, { respect: 10 }));
       nemesis = null;
       boss.value = null;
@@ -536,7 +537,7 @@ export function verge(g: Game): ZoneRuntime {
     }
   };
 
-  const onLoot = (e: Enemy): Pickup[] => {
+  const onLoot = (e: Enemy) => {
     const out: Pickup[] = [];
     const r = Math.random();
     if (e.def.loot === 'wolf' && r < 0.55) out.push({ kind: 'material', ref: 'wolf_pelt', value: 1 });
@@ -546,9 +547,15 @@ export function verge(g: Game): ZoneRuntime {
     if (e.def.family === 'lampling' && r < 0.18) out.push({ kind: 'material', ref: 'ember_shard', value: 1 });
     if (e.def.family === 'undead' && r < 0.25) out.push({ kind: 'material', ref: 'bone_dust', value: 1 });
     if (e.elite && e.def.loot === 'elite') {
-      const plain = ['iron_helm', 'chain_shirt', 'silver_ring', 'bone_amulet', 'travelers_cloak'];
-      out.push({ kind: 'item', ref: plain[Math.floor(Math.random() * plain.length)], value: 1, persistent: true });
+      // Gear, rolled where it falls: the deeper into the night's ember, the
+      // better the odds. The column of light over it says how good.
+      const plain = ['iron_helm', 'leather_cap', 'chain_shirt', 'padded_jerkin', 'silver_ring', 'copper_ring', 'bone_amulet', 'travelers_cloak', 'watch_buckler'];
+      const ember = b?.ember.level ?? 1, roll = Math.random();
+      const rarity = roll < 0.03 + ember * 0.006 ? 3 : roll < 0.16 + ember * 0.012 ? 2 : roll < 0.62 ? 1 : 0;
+      out.push({ kind: 'item', ref: plain[Math.floor(Math.random() * plain.length)], value: 1, persistent: true, rarity });
     }
+    // Named things keep the light of what they are.
+    for (const d of out) if (d.kind === 'item' && d.ref && d.rarity === undefined) d.rarity = ITEMS[d.ref]?.rarity ?? 0;
     return out;
   };
 
