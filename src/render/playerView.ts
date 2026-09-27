@@ -22,6 +22,16 @@ export interface Loadout {
   castClip?: string;
   /** Cloth colour for the chosen palette. */
   tint?: string;
+  /** A dyed cloak, and a skin tone, over the palette. */
+  capeTint?: string;
+  skinTint?: string;
+}
+
+/** Apply a loadout's colours to a character view (the survivor, portraits). */
+export function applyLook(view: { tintParts(c: string, m: RegExp): void }, lo: Loadout) {
+  if (lo.tint) view.tintParts(lo.tint, CLOTH);
+  if (lo.capeTint) view.tintParts(lo.capeTint, /Cape/);
+  if (lo.skinTint) view.tintParts(lo.skinTint, /Head/);
 }
 
 export const LOADOUTS: Record<string, Loadout> = {
@@ -49,7 +59,7 @@ export class PlayerView {
   constructor(readonly loadout: Loadout, scene: THREE.Object3D) {
     this.view = new CharacterView(loadout.model);
     this.view.showOnly(loadout.show);
-    if (loadout.tint) this.view.tintParts(loadout.tint, CLOTH);
+    applyLook(this.view, loadout);
     if (loadout.model === 'mage' || loadout.model === 'knight') this.view.idleClip = 'Idle';
     scene.add(this.view.root);
     this.light = new THREE.PointLight(0xffb070, this.lightBase, 11, 1.4);

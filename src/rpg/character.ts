@@ -41,6 +41,9 @@ export interface CharacterData {
   palette: string;
   /** Wears the archetype's helm or hat. */
   headgear?: boolean;
+  /** Look: a dyed cloak (or none), and skin. */
+  cloak?: string;
+  skin?: string;
   level: number;
   xp: number;
   attributes: Attributes;
@@ -82,6 +85,8 @@ export interface CreationChoice {
   ability: AbilityKind;
   startBoon: string;
   headgear?: boolean;
+  cloak?: string;
+  skin?: string;
 }
 
 export function createCharacter(c: CreationChoice, day = 1, seed = Date.now()): CharacterData {
@@ -89,7 +94,7 @@ export function createCharacter(c: CreationChoice, day = 1, seed = Date.now()): 
   const bg = BACKGROUNDS[c.background];
   const ch: CharacterData = {
     version: 1, id: `hero-${seed.toString(36)}`, name: c.name.trim() || 'Nameless', archetype: c.archetype, background: c.background,
-    model: c.model ?? a.model, palette: c.palette, headgear: c.headgear ?? true, level: 1, xp: 0, attributes: { ...START_ATTRS[c.archetype] }, points: 0,
+    model: c.model ?? a.model, palette: c.palette, headgear: c.headgear ?? true, cloak: c.cloak, skin: c.skin, level: 1, xp: 0, attributes: { ...START_ATTRS[c.archetype] }, points: 0,
     traits: [], traitPicks: 0, knowledge: [...bg.knowledge],
     equipment: Object.fromEntries(EQUIP_SLOTS.map((s) => [s, null])) as Record<EquipSlot, ItemInstance | null>,
     pack: new Array(PACK_SIZE).fill(null), gold: 25, ability: c.ability, startBoon: c.startBoon, conditions: [],

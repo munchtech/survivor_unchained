@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CharacterView } from '@/render/characterView';
-import { CLOTH, type Loadout } from '@/render/playerView';
+import { applyLook, type Loadout } from '@/render/playerView';
 
 /* A portrait of the survivor for the pack and the character sheet: the
  * real model in its real gear, lit like the item photographs, standing in
@@ -37,7 +37,7 @@ export function renderPortrait(lo: Loadout, w = 300, h = 420, framing: 'full' | 
   scene.add(key, rim, fill);
   const v = new CharacterView(lo.model, { scale: 0.8 * scale });
   v.showOnly(lo.show);
-  if (lo.tint) v.tintParts(lo.tint, CLOTH);
+  applyLook(v, lo);
   v.face(0.35, true);
   v.loop(lo.model === 'mage' || lo.model === 'knight' ? 'Idle' : 'Idle_B', 0);
   v.update(0.8);

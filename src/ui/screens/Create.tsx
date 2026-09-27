@@ -8,6 +8,7 @@ import { ABILITIES, type AbilityKind } from '@/content/abilities';
 import { BOONS } from '@/content/boons';
 import { Glyph, Icon } from '../components/Icon';
 import { SCHOOL_UI } from '../palette';
+import { CLOAK_DYES, SKINS } from '@/content/looks';
 import { Input } from '@/core/input';
 import type { CharacterModel } from '@/render/assets';
 import './create.css';
@@ -49,7 +50,7 @@ export function Create() {
     if (!canBegin) { set({ step: 3 }); return; }
     actions.beginJourney({
       name: d.name.trim(), archetype: d.archetype, background: d.background, palette: d.palette, model: d.model as CharacterModel,
-      weaponItem: d.weaponItem, ability: d.ability as AbilityKind, startBoon: d.startBoon, headgear: d.headgear,
+      weaponItem: d.weaponItem, ability: d.ability as AbilityKind, startBoon: d.startBoon, headgear: d.headgear, cloak: d.cloak, skin: d.skin,
     });
   };
   useEffect(() => Input.on((act, e) => {
@@ -212,6 +213,24 @@ function NameLook({ d }: { d: CreationDraft }) {
             <span>{p.name}</span>
           </button>
         ))}
+      </div>
+      <div class="sub-head">Cloak</div>
+      <div class="dyes">
+        {CLOAK_DYES.map((c) => (
+          <button key={c.id} title={c.name} class={`dye${d.cloak === c.id ? ' on' : ''}${c.id === 'none' ? ' none' : ''}${c.id === 'calling' ? ' calling' : ''}`} onClick={() => set({ cloak: c.id })}>
+            <i style={c.color ? { background: c.color } : undefined} />
+          </button>
+        ))}
+        <span class="dye-name">{CLOAK_DYES.find((c) => c.id === d.cloak)?.name}</span>
+      </div>
+      <div class="sub-head">Skin</div>
+      <div class="dyes">
+        {SKINS.map((c) => (
+          <button key={c.id} title={c.name} class={`dye skin${d.skin === c.id ? ' on' : ''}`} onClick={() => set({ skin: c.id })}>
+            <i style={{ background: c.id === 'fair' ? '#f4dcc4' : c.color }} />
+          </button>
+        ))}
+        <span class="dye-name">{SKINS.find((c) => c.id === d.skin)?.name}</span>
       </div>
       <div class="sub-head">Appearance</div>
       <div class="toggles">
