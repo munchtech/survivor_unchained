@@ -915,8 +915,26 @@ export const BOARD: Conversation = {
   nodes: {
     read: {
       id: 'read', speaker: 'narrator',
-      text: 'WOLF BOUNTY — five gold the pelt, fifty for the grey alpha. Capt. Holloway, the Watch.  ·  MISSING: Coyle Company caravan, three wagons, J. Coyle driving. REWARD. H. Coyle.  ·  WANTED: bitterroot, any quantity. Wenna.  ·  Has anyone seen my cat? Grey. Answers to nothing. M.',
-      effects: [{ quest: { id: 'beasts', status: 'active', entry: 'holloway_bounty' } }, { quest: { id: 'caravan', status: 'active', entry: 'harlan_plea' } }],
+      // The board is the town talking to itself: notices go up and come
+      // down as things happen.
+      text: [
+        { add: true, when: { not: { fact: 'beasts.outcome', exists: true } }, text: 'WOLF BOUNTY — five gold the pelt, fifty for the grey alpha. Capt. Holloway, the Watch.' },
+        { add: true, when: { fact: 'beasts.outcome', eq: 'cured' }, text: 'The wolf bounty is WITHDRAWN. The stream runs clear. (Someone has written underneath: "about time".)' },
+        { add: true, when: { fact: 'beasts.outcome', eq: 'slaughtered' }, text: 'BOUNTY CLOSED. No more pelts wanted. The Watch thanks the hunters of the Waystation.' },
+        { add: true, when: { fact: 'beasts.outcome', eq: 'allied' }, text: 'NOTICE: Travellers keep to the road. The Watch will not answer for wolves that WALK WITH PEOPLE. Capt. Holloway.' },
+        { add: true, when: { fact: 'beasts.outcome', eq: 'ignored' }, text: 'CURFEW. East gate closed at dusk until further notice. One of ours did not come home. The Watch.' },
+        { add: true, when: { not: { fact: 'caravan.survivors', exists: true } }, text: 'MISSING: Coyle Company caravan, three wagons, J. Coyle driving. REWARD. H. Coyle.' },
+        { add: true, when: { fact: 'caravan.survivors', eq: 'rescued' }, text: 'THANK YOU, whoever you are, from all of the Coyle Company. Jory is home. — H.' },
+        { add: true, when: { fact: 'caravan.survivors', eq: 'dead' }, text: '(Harlan\'s notice has been taken down. Only the nail is left.)' },
+        { add: true, when: { fact: 'caravan.pell', eq: 'exposed' }, text: 'BY ORDER OF THE WATCH: the warehouse of P. Varrow is sealed pending inquiry.' },
+        { add: true, when: { fact: 'caravan.pell', eq: 'fled' }, text: 'WANTED: Pell Varrow, factor, for questions about the Coyle caravan. He left in a hurry.' },
+        { add: true, when: { fact: 'player.wanted', eq: true }, text: 'WANTED: a traveller seen selling Coyle goods. The likeness is poor, but not poor enough.' },
+        { add: true, when: { fact: 'tremor.felt', eq: true }, text: 'Did anyone else feel that? — R.' },
+        { add: true, text: 'WANTED: bitterroot, any quantity. Wenna.' },
+        { add: true, when: { day: { lte: 3 } }, text: 'Has anyone seen my cat? Grey. Answers to nothing. M.' },
+        { add: true, when: { day: { gte: 4 } }, text: 'Cat found. She was in the grain store the whole time. — M.' },
+      ],
+      effects: [{ if: { not: { fact: 'caravan.survivors', exists: true } }, then: { quest: { id: 'caravan', status: 'active', entry: 'harlan_plea' } } }, { if: { not: { fact: 'beasts.outcome', exists: true } }, then: { quest: { id: 'beasts', status: 'active', entry: 'holloway_bounty' } } }],
       choices: [bye('Step back.')],
     },
   },

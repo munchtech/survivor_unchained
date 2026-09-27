@@ -210,3 +210,19 @@ describe('the morning', () => {
     void world;
   });
 });
+
+describe('the notice board', () => {
+  it('changes as the world does, and never reopens a settled quest', () => {
+    const { c, world } = setup('devout');
+    const read = () => new DialogueRunner(CONVOS.board, c).start()!.text;
+    expect(read()).toMatch(/WOLF BOUNTY/);
+    world.facts['beasts.outcome'] = 'cured';
+    world.quests.beasts.status = 'resolved';
+    world.facts['caravan.survivors'] = 'rescued';
+    const t = read();
+    expect(t).toMatch(/WITHDRAWN/);
+    expect(t).toMatch(/Jory is home/);
+    expect(t).not.toMatch(/WOLF BOUNTY|MISSING/);
+    expect(world.quests.beasts.status).toBe('resolved');
+  });
+});

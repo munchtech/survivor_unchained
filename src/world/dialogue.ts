@@ -18,7 +18,10 @@ import { test, apply, npc } from './logic';
  * ({name}, {day}, a fact) - that is how an NPC says "you're the one who
  * burned the camp" without a special case. */
 
-export interface Variant { when?: Cond; text: string }
+/** One way a line can read. The first variant whose condition holds is
+ *  used; `add` variants are instead all collected, in order, and joined
+ *  (a notice board, a list of what someone has heard). */
+export interface Variant { when?: Cond; text: string; add?: boolean }
 
 export interface DChoice {
   text: string | Variant[];
@@ -61,6 +64,7 @@ export interface Presented { node: DNode; speaker: string; text: string; choices
 
 function pickText(t: string | Variant[], ctx: Ctx): string {
   if (typeof t === 'string') return t;
+  if (t.some((v) => v.add)) return t.filter((v) => v.add && test(v.when, ctx)).map((v) => v.text).join('  ·  ');
   for (const v of t) if (test(v.when, ctx)) return v.text;
   return t[t.length - 1]?.text ?? '';
 }
