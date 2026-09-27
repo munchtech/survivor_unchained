@@ -8,7 +8,8 @@ import type { Battle } from '@/sim/battle';
 import type { Enemy, PickupKind } from '@/sim/entities';
 import type { School } from '@/sim/types';
 import { test } from '@/world/logic';
-import { boss, say, toast, announce, objectives, type Objective } from '@/ui/store';
+import { boss, say, toast, announce, objectives, hint, type Objective } from '@/ui/store';
+import { Input } from '@/core/input';
 import { QUESTS } from '@/content/quests';
 import { hist } from '@/content/dialogue/town';
 
@@ -555,6 +556,14 @@ export function verge(g: Game): ZoneRuntime {
         if (nemesis) nemesis.named = { title: n.title, carries: n.carries.map((i) => i.def), sourceHero: n.heroName };
       }
       g.announceZone();
+      // The first time out here: the wood is big, and there is a map.
+      if (!wd.facts['tip.verge_map']) {
+        wd.facts['tip.verge_map'] = true;
+        setTimeout(() => {
+          hint.value = { id: 'verge_map', title: 'The map', text: 'The Verge is wide and the trees close in. The map fills in as you walk, and marks what you have found.', keys: [Input.keyLabel('map')] };
+          setTimeout(() => { if (hint.value?.id === 'verge_map') hint.value = null; }, 10000);
+        }, 5000);
+      }
       objectives.value = tracker();
     },
     step: (dt) => {
