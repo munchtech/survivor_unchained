@@ -60,6 +60,8 @@ export interface ZoneRuntime {
   onDeath?(killer: string): boolean;
   /** Places, people and exits to show on the map (only what is known). */
   mapMarks?(): MapMark[];
+  /** A place that wants its own music (a mystery, a shrine), or null. */
+  musicMood?(x: number, z: number): 'mystery' | null;
   /** What the place sounds like where the survivor (or the camera) is. */
   ambience?(x: number, z: number): Partial<AmbienceMix>;
   /** Internal state for tools (the autopilot, the debug readout). */

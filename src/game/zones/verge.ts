@@ -622,6 +622,7 @@ export function verge(g: Game): ZoneRuntime {
       if (F('caravan.survivors') !== 'rescued' && F('caravan.survivors') !== 'dead' && (known('hint.roost') || q('caravan', 'roost_found'))) marks.push({ x: V.cages.x, z: V.cages.z, label: 'The cages', kind: 'quest' });
       return marks;
     },
+    musicMood: (x, z) => (Math.hypot(x - V.vault.x, z - V.vault.z) < 22 || Math.hypot(x - V.sinkhole.x, z - V.sinkhole.z) < 26 || Math.hypot(x - V.grove.x, z - V.grove.z) < 16 ? 'mystery' : null),
     ambience: (x, z) => {
       const t = w().time, dark = t === 'night', day = t === 'day' || t === 'dawn';
       const pumping = !F('dig.pump') || F('dig.pump') === 'running';

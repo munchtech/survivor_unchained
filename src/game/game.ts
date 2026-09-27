@@ -1121,7 +1121,7 @@ export class Game {
       const b = this.scene.battle;
       const f = b ? b.player : this.scene.showcase?.look ?? this.scene.cam.focus;
       const time = (this.world && this.zone?.timeOf?.(this.world)) ?? this.world?.time ?? 'night';
-      this.sound.update(dt, { zone: this.zone?.id ?? null, mode: this.mode, time, px: f.x, pz: f.z, battle: b, ambience: this.zone?.ambience });
+      this.sound.update(dt, { zone: this.zone?.id ?? null, mode: this.mode, time, px: f.x, pz: f.z, battle: b, ambience: this.zone?.ambience, musicMood: this.zone?.musicMood });
     }
     // Blend from a held pose into wherever the live camera now is.
     if (this.blend) {

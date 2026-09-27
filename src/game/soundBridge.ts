@@ -17,7 +17,11 @@ import { overlay, toasts, announcement, dialogue, boss, screen } from '@/ui/stor
 
 const KEY = 'survivor-unchained.sound';
 
-export interface SoundState { zone: string | null; mode: 'title' | 'create' | 'play'; time: string; px: number; pz: number; battle: Battle | null; ambience?: (x: number, z: number) => object }
+export interface SoundState {
+  zone: string | null; mode: 'title' | 'create' | 'play'; time: string; px: number; pz: number; battle: Battle | null;
+  ambience?: (x: number, z: number) => object;
+  musicMood?: (x: number, z: number) => 'mystery' | null;
+}
 
 export class SoundBridge {
   readonly ambience = new Ambience();
@@ -158,6 +162,7 @@ export class SoundBridge {
     if (screen.value === 'title' || s.mode === 'title' || s.mode === 'create') mood = 'title';
     else if (boss.value) mood = 'boss';
     else if (this.hostilesNear > 4) mood = 'combat';
+    else if (s.musicMood?.(s.px, s.pz)) mood = 'mystery';
     else if (s.zone === 'waystation') mood = s.time === 'night' ? 'night' : 'town';
     else if (s.time === 'night' || s.zone === 'lowford') mood = 'night';
     else mood = 'explore';
