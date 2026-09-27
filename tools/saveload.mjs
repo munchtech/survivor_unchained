@@ -63,6 +63,8 @@ const after = await page.evaluate(() => {
     trust: g.world.npcs.maeca.trust, memories: g.world.npcs.maeca.memories.slice(),
     entries: g.world.quests.beasts.entries.slice(),
     marker: g.world.facts['test.marker'], pump: g.world.facts['dig.pump'], mode: g.mode,
+    // The camera is over the survivor again, not still framing the title's campfire.
+    showcase: !!g.scene.showcase, camTo: p ? Math.hypot(g.r.camera.position.x - p.x, g.r.camera.position.z - p.z) : null,
   };
 });
 console.log('reloaded', JSON.stringify(after));
@@ -80,6 +82,7 @@ const checks = [
   ['journal', JSON.stringify(after.entries) === JSON.stringify(before.entries)],
   ['facts', after.marker === 'kept' && after.pump === 'moved'],
   ['playing', after.mode === 'play'],
+  ['camera on the survivor', !after.showcase && after.camTo !== null && after.camTo < 25],
   ['no page errors', errors.length === 0],
 ];
 let ok = true;

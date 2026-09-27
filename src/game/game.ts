@@ -286,6 +286,10 @@ export class Game {
     setTimeout(() => {
       this.figure?.dispose();
       this.figure = null;
+      this.figureKey = '';
+      // Out of the title's portrait and back over the survivor's shoulder
+      // (under the fade, so a cut, not a blend).
+      this.scene.showcase = null;
       this.enterZone(d.location.zone, null, { x: d.location.x, z: d.location.z, facing: d.location.facing });
       fade.value = { to: 0, seconds: 1.2 };
     }, 550);

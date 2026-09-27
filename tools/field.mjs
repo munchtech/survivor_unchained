@@ -14,13 +14,15 @@ import fs from 'node:fs';
 
 const args = process.argv.slice(2);
 const fresh = args.includes('--fresh');
+// --shots: a full-size screenshot every 30 s of each scenario, to look at the fighting.
+const shots = args.includes('--shots');
 const want = args.filter((a) => !a.startsWith('--'));
 const SNAP = '.shots/after_prologue.json';
 fs.mkdirSync('.shots', { recursive: true });
 const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--enable-webgl'] });
 
 async function page() {
-  const pg = await browser.newPage({ viewport: { width: 320, height: 180 } });
+  const pg = await browser.newPage({ viewport: shots ? { width: 1280, height: 720 } : { width: 320, height: 180 } });
   pg.on('pageerror', (e) => console.log('  [pageerror]', e.message));
   return pg;
 }
@@ -63,7 +65,7 @@ for (const [name, sc] of Object.entries(SCENARIOS)) {
   if (want.length && !want.includes(name)) continue;
   const pg = await page();
   await pg.addInitScript((s) => { for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v); }, snap.storage);
-  await pg.goto(`http://localhost:5173/?manual&quality=low&auto${sc.auto ? '' : '=idle'}`, { waitUntil: 'load' });
+  await pg.goto(`http://localhost:5173/?manual&quality=${shots ? 'high' : 'low'}&auto${sc.auto ? '' : '=idle'}`, { waitUntil: 'load' });
   await ready(pg);
   await pg.evaluate(() => { const g = window.__game.game; const m = JSON.parse(localStorage.getItem('survivor-unchained.meta') || '{}'); g.continueJourney(m.last ?? 0); });
   await pg.waitForTimeout(1500);
@@ -86,6 +88,7 @@ for (const [name, sc] of Object.entries(SCENARIOS)) {
       return { t: Math.round(b.time), hp: Math.round(p.hp), max: b.maxHp, alive: p.alive, ember: b.ember.level, kills: b.killCount, hostile: h, zone: g.zone?.id };
     });
     console.log(`  t=${String(s.t).padStart(3)} hp ${String(s.hp).padStart(3)}/${s.max} ember ${String(s.ember).padStart(2)} kills ${String(s.kills).padStart(4)} hostile ${s.hostile}${s.alive ? '' : '  DEAD'}`);
+    if (shots && (t + 10) % 30 === 0) await pg.screenshot({ path: `.shots/field_${name}_${String(t + 10).padStart(3, '0')}.png` });
     if (!s.alive || s.zone !== 'verge') { died = s.t; break; }
   }
   const sum = await pg.evaluate(() => { const a = window.__game.game.autopilot; return a ? a.stats : null; });
