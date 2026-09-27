@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { hud, boss, zoneInfo, objectives, prompt, toasts, announcement, subtitle, type HudState, type HudWeapon } from '../store';
+import { hud, boss, zoneInfo, objectives, prompt, toasts, announcement, subtitle, hint, type HudState, type HudWeapon } from '../store';
 import { Glyph, Icon } from '../components/Icon';
 import { SCHOOL_UI } from '../palette';
 import { Input } from '@/core/input';
@@ -25,6 +25,7 @@ export function Hud() {
       <Announcement />
       <Subtitle />
       <PromptView />
+      <HintCard />
       {h && <Vitals h={h} />}
       {h && h.combat && <Arsenal h={h} />}
       {h && h.combat && <Hands h={h} />}
@@ -331,6 +332,18 @@ function PromptView() {
       <span class="prompt-verb">{p.verb}</span>
       <span class="prompt-target">{p.target}</span>
       {(p.hint || p.locked) && <span class="prompt-hint">{p.locked ?? p.hint}</span>}
+    </div>
+  );
+}
+
+function HintCard() {
+  const t = hint.value;
+  if (!t) return null;
+  return (
+    <div key={t.id} class="hint rise-in">
+      <div class="hint-head"><Glyph k="scroll" size={15} /> {t.title}</div>
+      <div class="hint-text">{t.text}</div>
+      {t.keys && t.keys.length > 0 && <div class="hint-keys">{t.keys.map((k) => <span key={k} class="key">{k}</span>)}</div>}
     </div>
   );
 }

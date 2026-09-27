@@ -57,6 +57,8 @@ export class CrowdRenderer {
   }
 
   private draw(e: Enemy, heightAt: (x: number, z: number) => number, time: number) {
+    // Bosses with a full skeleton are drawn by their zone.
+    if (e.def.visual.startsWith('view:')) return;
     const crowd = this.crowd(e.def.visual);
     let role: AnimRole = 'idle';
     let t = e.animT;

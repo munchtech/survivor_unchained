@@ -33,8 +33,8 @@ export interface AtmospherePreset {
 
 const NIGHT: AtmospherePreset = {
   sky: { top: '#03050d', horizon: '#18203a', bottom: '#07080c', glow: '#3c5a8c', glowPower: 24, stars: 1, moon: 1 },
-  keyColor: '#b8cbf2', keyIntensity: 2.1, keyElevation: 56, keyAzimuth: 235,
-  hemiSky: '#3b5178', hemiGround: '#221c14', hemiIntensity: 0.85, envIntensity: 0.6,
+  keyColor: '#b8cbf2', keyIntensity: 2.2, keyElevation: 52, keyAzimuth: 128,
+  hemiSky: '#3f5780', hemiGround: '#241e16', hemiIntensity: 0.95, envIntensity: 0.6,
   fogColor: '#101a24', fogDensity: 0.0095, exposure: 1.42,
   grade: {
     lift: [0.015, 0.025, 0.04], gamma: [1.0, 1.0, 1.02], gain: [1.03, 1.0, 0.97],

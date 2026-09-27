@@ -20,6 +20,8 @@ export interface Loadout {
   attackClips: string[];
   heavyClip: string;
   castClip?: string;
+  /** Cloth colour for the chosen palette. */
+  tint?: string;
 }
 
 export const LOADOUTS: Record<string, Loadout> = {
@@ -28,6 +30,9 @@ export const LOADOUTS: Record<string, Loadout> = {
   arcanist: { model: 'mage', show: ['2H_Staff', 'Mage_Hat', 'Mage_Cape'], attackClips: ['Spellcast_Shoot'], heavyClip: 'Spellcast_Raise', castClip: 'Spellcast_Shoot' },
   stalker: { model: 'rogue_hooded', show: ['1H_Crossbow', 'Rogue_Cape', 'Knife_Offhand'], attackClips: ['1H_Ranged_Shoot'], heavyClip: 'Dualwield_Melee_Attack_Slice' },
 };
+
+/** Parts that are cloth or armour, not skin: what a palette recolours. */
+export const CLOTH = /Cape|Hat|Helmet|Body|Leg/;
 
 export class PlayerView {
   readonly view: CharacterView;
@@ -44,6 +49,7 @@ export class PlayerView {
   constructor(readonly loadout: Loadout, scene: THREE.Object3D) {
     this.view = new CharacterView(loadout.model);
     this.view.showOnly(loadout.show);
+    if (loadout.tint) this.view.tintParts(loadout.tint, CLOTH);
     if (loadout.model === 'mage' || loadout.model === 'knight') this.view.idleClip = 'Idle';
     scene.add(this.view.root);
     this.light = new THREE.PointLight(0xffb070, this.lightBase, 11, 1.4);
@@ -52,6 +58,12 @@ export class PlayerView {
   }
 
   levelFlare() { this.flare = 1; }
+
+  /** Up again after a fall (the prologue's second chances). */
+  revive() {
+    this.dead = false;
+    this.view.act('Lie_StandUp', { blocksLegs: true, speed: 1.2 });
+  }
 
   update(b: Battle, dt: number, time: number, heightAt: (x: number, z: number) => number) {
     const p = b.player;

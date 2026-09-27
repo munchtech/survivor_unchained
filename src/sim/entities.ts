@@ -63,6 +63,8 @@ export interface Enemy {
   provoked: boolean;
   /** Where this creature belongs; it drifts home when it has nothing to do. */
   homeX: number; homeZ: number; leash: number;
+  /** Multiplier on damage taken (a ward, a vulnerable moment). */
+  takenMul: number;
 }
 
 export interface Projectile {
@@ -163,7 +165,7 @@ export function blankEnemy(id: number): Enemy {
     radius: 0.5, mass: 1, hp: 1, maxHp: 1, damage: 1, speed: 1, faction: 'dead', disposition: 'hostile',
     elite: false, boss: false, state: 'active', stateT: 0, attackT: 0, rangedT: 0, raiseT: 0, target: -1, retargetT: 0,
     slot: 0, seed: 0, lungeX: 0, lungeZ: 0, status: {}, flash: 0, anim: 'move', animT: 0, lastSchool: 'physical',
-    lastWeapon: null, dieT: 0, lifeT: 0, credit: false, provoked: false, homeX: 0, homeZ: 0, leash: 0,
+    lastWeapon: null, dieT: 0, lifeT: 0, credit: false, provoked: false, homeX: 0, homeZ: 0, leash: 0, takenMul: 1,
   };
 }
 

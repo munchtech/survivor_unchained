@@ -392,3 +392,20 @@
   background: #d8c8a4; box-shadow: 1px 1px 0 rgba(60, 40, 20, 0.6);
 }
 .bark.alert { color: #ffd070; font-size: 17px; }
+
+/* ----------------------------------------------------------------- hint -- */
+
+.hint {
+  position: absolute; left: 28px; bottom: 112px; width: 330px; padding: 11px 14px 12px; border-radius: 4px;
+  background: var(--noise), radial-gradient(130% 120% at 50% 40%, #efe4c8 0%, #e0cfa8 60%, #c9b288 100%);
+  color: var(--parchment-ink);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), inset 0 0 24px rgba(120, 80, 30, 0.3), inset 0 0 0 1px rgba(90, 60, 20, 0.4);
+}
+.hint::before {
+  content: ''; position: absolute; left: -1px; top: 10px; bottom: 10px; width: 3px; border-radius: 2px; background: var(--ember);
+  box-shadow: 0 0 8px rgba(255, 140, 50, 0.7);
+}
+.hint-head { display: flex; align-items: center; gap: 6px; font: 700 13px var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; color: #6a3a14; }
+.hint-text { margin-top: 4px; font: 400 16px/1.35 var(--font-text); }
+.hint-keys { display: flex; gap: 5px; margin-top: 8px; }
+.hint-keys .key { font-size: 12px; padding: 2px 7px; color: #f3d9a0; }

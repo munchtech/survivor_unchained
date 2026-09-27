@@ -109,11 +109,23 @@ export const ENEMIES: Record<string, EnemyDef> = {
     note: 'A knight once, still standing a knight\'s watch over the wrong side. Plants, picks you, and comes down the line. Be off the line.',
   },
 
+  ford_warden: {
+    id: 'ford_warden', name: 'The Ford-Warden', family: 'undead', faction: 'dead', visual: 'view:warden', scale: 2.6,
+    health: 1500, speed: 2.4, damage: 24, radius: 1.4, mass: 30, xp: 90, gold: 40, resists: undeadResist, behavior: 'boss',
+    boss: true, attackEvery: 1.4,
+    note: 'The Watch set it to keep the Low Ford, when there was a Watch. It kept the ford. It is keeping it still, from everyone. The lamps around the crossing feed it; while they burn, it is hard to hurt.',
+  },
+
   /* ------------------------------------------------------------ lamplings -- */
   lampling: {
     id: 'lampling', name: 'Lampling Tunneler', family: 'lampling', faction: 'lampling', visual: 'lampling',
     health: 16, speed: 3.6, damage: 7, radius: 0.38, xp: 2, behavior: 'tunneler', resists: { fire: 0.3, frost: -0.3 },
     note: 'They dig toward light the way moths fly at it. A lampling will chew through a cellar wall to sit beside your candle, and then through you to keep it.',
+  },
+  grimtunnel: {
+    id: 'grimtunnel', name: 'Grimtunnel', family: 'lampling', faction: 'lampling', visual: 'lampling', scale: 1.9,
+    health: 400, speed: 5, damage: 10, radius: 0.7, xp: 0, behavior: 'stationary', resists: { fire: 0.5 },
+    note: 'Foreman of the diggers. Wears three lamps and a grudge. Took the Ford-Warden\'s heart out from under you and went back down the hole with it.',
   },
   lampling_sapper: {
     id: 'lampling_sapper', name: 'Lampling Sapper', family: 'lampling', faction: 'lampling', visual: 'lampling_sapper',

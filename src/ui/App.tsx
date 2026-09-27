@@ -3,6 +3,9 @@ import { useEffect, useState } from 'preact/hooks';
 import { screen, overlay, fade } from './store';
 import { Hud } from './hud/Hud';
 import { LevelUp } from './overlays/LevelUp';
+import { Pause, Death, ChapterEnd } from './overlays/Menus';
+import { Title } from './screens/Title';
+import { Create } from './screens/Create';
 import './theme.css';
 
 /* The interface root. The HUD and overlays are laid out for a 900 px tall
@@ -27,8 +30,13 @@ function App() {
   const f = fade.value;
   return (
     <div class="ui-root" style={{ zoom: s }}>
+      {sc === 'title' && <Title />}
+      {sc === 'create' && <Create />}
       {sc === 'play' && <Hud />}
       {ov === 'levelup' && <LevelUp />}
+      {ov === 'pause' && <Pause />}
+      {ov === 'death' && <Death />}
+      {ov === 'chapter' && <ChapterEnd />}
       <div class="fader" style={{ opacity: f.to, transitionDuration: `${f.seconds}s` }}>
         {f.caption && <div class="fader-caption">{f.caption}</div>}
         {f.sub && <div class="fader-sub">{f.sub}</div>}

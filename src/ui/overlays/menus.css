@@ -1,0 +1,16 @@
+.menu-overlay { position: fixed; inset: 0; display: grid; place-items: center; pointer-events: auto; }
+.pause { position: relative; width: 340px; padding: 22px 26px 18px; text-align: center; }
+.pause-title { font-size: 26px; }
+.pause-item {
+  display: block; width: 100%; padding: 9px 0; border: 0; background: none; cursor: pointer;
+  font: 700 19px var(--font-display); letter-spacing: 0.08em; color: #c8b898; transition: color 0.15s, letter-spacing 0.2s;
+}
+.pause-item.focus { color: #fff0d8; letter-spacing: 0.12em; text-shadow: 0 0 14px rgba(255, 170, 80, 0.5); }
+.pause-keys { display: flex; justify-content: center; gap: 14px; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(217, 181, 106, 0.15); font: 600 12px var(--font-ui); color: var(--ink-dim); }
+.pause-keys .key { margin-right: 4px; }
+.death { text-align: center; max-width: 560px; }
+.death-title { font: 700 64px var(--font-display); letter-spacing: 0.2em; text-transform: uppercase; color: #d8483a; text-shadow: 0 3px 0 #000, 0 0 30px rgba(200, 30, 20, 0.6); }
+.death-text { font: italic 400 19px/1.5 var(--font-text); color: #d8ccb6; margin: 12px 0 22px; }
+.chapter { position: relative; width: 520px; padding: 28px 30px; text-align: center; }
+.chapter-kicker { font: italic 400 16px var(--font-text); color: #c8a878; }
+.chapter-title { font-size: 32px; margin-top: 4px; }

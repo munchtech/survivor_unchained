@@ -27,6 +27,8 @@ export class HudBridge {
   extra: { gold?: number; quick?: HudState['quick'] } = {};
   /** Level-up drafts can be suppressed (a cutscene, the tutorial's own). */
   draftsEnabled = true;
+  /** Shown on the next draft only (the tutorial's first level). */
+  draftTip: string | null = null;
   onDraftClosed: () => void = () => {};
 
   constructor(private scene: WorldScene, private barks: BarkLayer | null) {}
@@ -102,7 +104,10 @@ export class HudBridge {
   private present(offers: ReturnType<typeof draft>) {
     const b = this.battle!;
     const tags = buildTags(b) as Set<string>;
+    const tip = this.draftTip ?? undefined;
+    this.draftTip = null;
     levelUp.value = {
+      tip,
       level: b.ember.level - b.pendingLevels + 1,
       offers,
       fits: offers.map((o) => o.kind === 'rank' || o.kind === 'evolve' ? [] : o.tags.filter((t) => tags.has(t))),

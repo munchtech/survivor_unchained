@@ -79,6 +79,7 @@ function Draft({ v }: { v: LevelUpView }) {
         </div>
         {v.queued > 0 && <div class="lu-queued">{v.queued} more to choose</div>}
       </div>
+      {v.tip && <div class="lu-tip"><Glyph k="scroll" size={15} /> {v.tip}</div>}
       <div class="lu-cards">
         {v.offers.map((o, i) => (
           <Card key={`${o.kind}:${o.id}:${o.branch ?? ''}`} o={o} i={i} fits={v.fits[i] ?? []}

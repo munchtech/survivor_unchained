@@ -5,9 +5,12 @@ import { Assets } from '@/render/assets';
 import { gallery } from '@/modes/dev/gallery';
 import { sandbox } from '@/modes/dev/sandbox';
 import { combatDev } from '@/modes/dev/combat';
+import { zoneDev } from '@/modes/dev/zone';
 import { Input } from '@/core/input';
 import { mountUi } from '@/ui/App';
 import { renderItemIcons } from '@/ui/itemIcons';
+import { Game } from '@/game/game';
+import { screen, fade } from '@/ui/store';
 
 /* Boot. The renderer and assets come up first; then the game shell takes
  * over. `?dev=` routes to development views used by the screenshot tools. */
@@ -27,6 +30,38 @@ async function boot() {
   if (dev === 'gallery') tick = gallery(renderer, params);
   else if (dev === 'sandbox') tick = sandbox(renderer, params);
   else if (dev === 'combat') tick = combatDev(renderer, params);
+  else if (dev === 'zone') tick = zoneDev(renderer, params);
+  else if (dev === 'icons') {
+    const { iconKeys, itemIcon } = await import('@/ui/itemIcons');
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;inset:0;display:flex;flex-wrap:wrap;gap:8px;padding:16px;background:#15131a;overflow:auto;z-index:9;align-content:flex-start';
+    for (const k of iconKeys()) {
+      const c = document.createElement('div');
+      c.style.cssText = 'width:128px;text-align:center;font:12px sans-serif;color:#ccc;background:radial-gradient(circle,#2a2530,#15131a);border:1px solid #333';
+      c.innerHTML = `<img src="${itemIcon(k)}" width="128" height="128"><div>${k}</div>`;
+      el.appendChild(c);
+    }
+    document.body.appendChild(el);
+  }
+  else {
+    const game = new Game(renderer);
+    (window as unknown as { __game: unknown }).__game = { renderer, game };
+    fade.value = { to: 1, seconds: 0 };
+    const quick = params.get('quick');
+    if (quick) {
+      // Straight into the prologue with a stock survivor (tools and tests).
+      game.showTitle();
+      const arch = (quick in { warden: 1, reaver: 1, arcanist: 1, stalker: 1 } ? quick : 'warden') as 'warden';
+      const A = (await import('@/content/archetypes')).ARCHETYPES[arch];
+      game.beginJourney({ name: params.get('name') || 'Ashe', archetype: arch, background: (params.get('bg') as 'hunter') || 'hunter', palette: A.palettes[0].id, weaponItem: params.get('weapon') || A.weapons[0], ability: A.abilities[0], startBoon: 'might' });
+      fade.value = { to: 0, seconds: 0.5 };
+    } else {
+      game.showTitle();
+      if (params.get('screen') === 'create') game.newJourney();
+    }
+    tick = (dt) => game.update(dt);
+    void screen;
+  }
 
   let last = performance.now();
   let t = 0;

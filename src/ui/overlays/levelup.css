@@ -123,3 +123,12 @@
 .lu-foot { position: relative; display: flex; gap: 12px; margin-top: 30px; animation: fadeIn 0.5s ease-out 0.3s both; }
 .lu-foot em { font-style: normal; color: var(--ember-hi); margin-left: 4px; }
 .lu-foot .key { margin-right: 6px; }
+
+.lu-tip {
+  position: relative; max-width: 620px; margin: -10px 0 22px; padding: 9px 16px; border-radius: 4px; text-align: center;
+  display: flex; gap: 8px; align-items: center; justify-content: center;
+  font: 400 16px/1.35 var(--font-text); color: var(--parchment-ink);
+  background: var(--noise), radial-gradient(130% 120% at 50% 40%, #efe4c8 0%, #dcc9a0 70%);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(90, 60, 20, 0.4);
+  animation: riseIn 0.4s ease-out 0.2s both;
+}

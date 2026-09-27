@@ -30,16 +30,45 @@ function ring(metal: THREE.Material, stone: string) {
 }
 function amulet(stone: string, pendant: 'gem' | 'fang' | 'bone' = 'gem') {
   const g = new THREE.Group();
-  const chain = new THREE.Mesh(new THREE.TorusGeometry(0.6, 0.03, 6, 32, Math.PI * 1.2), gold());
-  chain.rotation.z = Math.PI * 1.4;
-  const p = pendant === 'fang'
-    ? new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.6, 5), new THREE.MeshStandardMaterial({ color: '#f0e8d0', roughness: 0.5 }))
-    : pendant === 'bone'
-      ? new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.35, 4, 8), new THREE.MeshStandardMaterial({ color: '#e8dcc0', roughness: 0.7 }))
-      : new THREE.Mesh(new THREE.OctahedronGeometry(0.25, 0), gem(stone));
-  p.position.y = -0.55;
-  if (pendant === 'fang') p.rotation.z = Math.PI;
-  g.add(chain, p);
+  const chain = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.028, 6, 40), gold());
+  chain.scale.set(1, 1.15, 1);
+  chain.position.y = 0.28;
+  g.add(chain);
+  // Links: small beads so it reads as a chain, not a wire.
+  for (let i = 0; i < 18; i++) {
+    const a = (i / 18) * Math.PI * 2;
+    const bead = new THREE.Mesh(new THREE.TorusGeometry(0.045, 0.014, 4, 8), gold());
+    bead.position.set(Math.cos(a) * 0.55, 0.28 + Math.sin(a) * 0.63, 0);
+    bead.rotation.set(0, i % 2 ? Math.PI / 2 : 0, a);
+    g.add(bead);
+  }
+  const bail = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.022, 6, 12), gold());
+  bail.position.y = -0.39;
+  g.add(bail);
+  let p: THREE.Mesh;
+  if (pendant === 'fang') {
+    p = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.62, 7), new THREE.MeshStandardMaterial({ color: '#f2ead4', roughness: 0.45 }));
+    p.rotation.z = Math.PI;
+    p.position.y = -0.74;
+    p.geometry.translate(0.03, 0, 0);
+  } else if (pendant === 'bone') {
+    p = new THREE.Mesh(new THREE.CapsuleGeometry(0.09, 0.3, 4, 8), new THREE.MeshStandardMaterial({ color: '#e8dcc0', roughness: 0.7 }));
+    p.position.y = -0.66;
+    for (const y of [-0.52, -0.8]) {
+      const k = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), new THREE.MeshStandardMaterial({ color: '#e8dcc0', roughness: 0.7 }));
+      k.position.set(0.05, y, 0);
+      g.add(k);
+    }
+  } else {
+    p = new THREE.Mesh(new THREE.OctahedronGeometry(0.2, 0), gem(stone));
+    p.scale.set(0.8, 1.2, 0.5);
+    p.position.y = -0.66;
+    const setting = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.03, 6, 16), silver());
+    setting.position.y = -0.66;
+    setting.scale.set(0.85, 1.25, 1);
+    g.add(setting);
+  }
+  g.add(p);
   return g;
 }
 function vial(liquid: string) {
@@ -67,34 +96,67 @@ function pelt(c: string) {
 }
 function circlet() {
   const g = new THREE.Group();
-  g.add(new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.06, 8, 32), silver()));
-  const s = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 10), gem('#bfe0ff'));
-  s.position.set(0, 0, 0.58);
-  const moon = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.04, 6, 16, Math.PI), silver());
-  moon.position.set(0, 0.16, 0.56);
-  g.add(s, moon);
-  g.rotation.x = 1.1;
+  const band = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.05, 8, 40), silver());
+  band.rotation.x = Math.PI / 2;
+  g.add(band);
+  // A crescent brow-piece and a pale stone.
+  const moon = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.045, 8, 20, Math.PI * 1.1), silver());
+  moon.position.set(0, 0.15, 0.62);
+  moon.rotation.z = -0.1;
+  const stone = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 10), gem('#cfe8ff'));
+  stone.position.set(0, 0.05, 0.66);
+  g.add(moon, stone);
+  for (const sx of [-1, 1]) {
+    const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.22, 5), silver());
+    leaf.position.set(sx * 0.3, 0.06, 0.56);
+    leaf.rotation.z = sx * 0.9;
+    g.add(leaf);
+  }
   return g;
 }
 function mask() {
   const g = new THREE.Group();
-  const face = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 10, 0, Math.PI), new THREE.MeshStandardMaterial({ color: '#3a3028', roughness: 0.8 }));
-  const beak = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.9, 8), new THREE.MeshStandardMaterial({ color: '#4a3a2c', roughness: 0.7 }));
-  beak.rotation.x = Math.PI / 2;
-  beak.position.set(0, -0.1, 0.55);
-  for (const x of [-0.18, 0.18]) {
-    const eye = new THREE.Mesh(new THREE.CircleGeometry(0.1, 16), new THREE.MeshStandardMaterial({ color: '#9ad8a0', emissive: '#3a8a4a', roughness: 0.1 }));
-    eye.position.set(x, 0.12, 0.49);
-    g.add(eye);
-  }
+  const leather = new THREE.MeshStandardMaterial({ color: '#5a4430', roughness: 0.75 });
+  const face = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 12, 0, Math.PI), leather);
+  face.scale.set(1, 1.1, 0.7);
+  const beak = new THREE.Mesh(new THREE.ConeGeometry(0.2, 1.0, 10), leather);
+  beak.rotation.x = Math.PI / 2 + 0.35;
+  beak.position.set(0, -0.2, 0.62);
   g.add(face, beak);
+  for (const x of [-0.19, 0.19]) {
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.028, 6, 16), gold());
+    rim.position.set(x, 0.12, 0.36);
+    const glass = new THREE.Mesh(new THREE.CircleGeometry(0.1, 16), new THREE.MeshStandardMaterial({ color: '#9ad8a0', emissive: '#2a6a3a', roughness: 0.05 }));
+    glass.position.set(x, 0.12, 0.365);
+    g.add(rim, glass);
+  }
+  const strap = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.03, 6, 20, Math.PI), new THREE.MeshStandardMaterial({ color: '#2a2018', roughness: 0.9 }));
+  strap.rotation.y = Math.PI / 2;
+  g.add(strap);
   return g;
 }
 function kerchief() {
-  const geo = new THREE.ConeGeometry(0.7, 0.9, 3, 1, true);
-  const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: '#c02a28', roughness: 0.9, side: THREE.DoubleSide, flatShading: true }));
-  m.rotation.set(Math.PI, 0, 0);
-  return m;
+  // A red cloth folded into a triangle, knotted at the corners.
+  const geo = new THREE.BufferGeometry();
+  const shape = new THREE.Shape();
+  shape.moveTo(-0.8, 0.4); shape.lineTo(0.8, 0.4); shape.lineTo(0, -0.7); shape.closePath();
+  const g2 = new THREE.ExtrudeGeometry(shape, { depth: 0.04, bevelEnabled: true, bevelSize: 0.02, bevelThickness: 0.02, bevelSegments: 1, curveSegments: 1 });
+  const pos = g2.getAttribute('position');
+  for (let i = 0; i < pos.count; i++) pos.setZ(i, pos.getZ(i) + Math.sin(pos.getX(i) * 3) * 0.06 + pos.getY(i) * pos.getY(i) * 0.15);
+  g2.computeVertexNormals();
+  void geo;
+  const g = new THREE.Group();
+  const red = cloth('#b8201e');
+  g.add(new THREE.Mesh(g2, red));
+  for (const x of [-0.82, 0.82]) {
+    const knot = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), red);
+    knot.position.set(x, 0.42, 0.03);
+    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.3, 5), red);
+    tail.position.set(x * 1.08, 0.26, 0.03);
+    tail.rotation.z = x > 0 ? 0.5 : -0.5;
+    g.add(knot, tail);
+  }
+  return g;
 }
 function lens() {
   const g = new THREE.Group();
@@ -198,10 +260,69 @@ function dust() {
   g.add(tie);
   return g;
 }
-function mapRoll() {
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 1.2, 12), cloth('#d8c8a0'));
-  m.rotation.z = 0.8;
-  return m;
+function scroll() {
+  const g = new THREE.Group();
+  const paper = cloth('#e2d2aa');
+  const roll = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 1.1, 16), paper);
+  g.add(roll);
+  const wood = new THREE.MeshStandardMaterial({ color: '#4a2e1a', roughness: 0.6 });
+  for (const y of [-0.62, 0.62]) {
+    const knob = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.16, 10), wood);
+    knob.position.y = y;
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), wood);
+    cap.position.y = y * 1.13;
+    g.add(knob, cap);
+  }
+  const ribbon = new THREE.Mesh(new THREE.TorusGeometry(0.175, 0.025, 6, 20), cloth('#8a1a1a'));
+  ribbon.rotation.x = Math.PI / 2;
+  g.add(ribbon);
+  const seal = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.03, 12), new THREE.MeshStandardMaterial({ color: '#a01818', roughness: 0.4 }));
+  seal.rotation.x = Math.PI / 2;
+  seal.position.set(0, 0, 0.19);
+  g.add(seal);
+  g.rotation.z = 0.9;
+  return g;
+}
+function mapSheet() {
+  const g = new THREE.Group();
+  const geo = new THREE.PlaneGeometry(1.3, 0.95, 12, 8);
+  const pos = geo.getAttribute('position');
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    // One end still curls where it was rolled.
+    if (x > 0.35) { const a = (x - 0.35) * 3.2; pos.setX(i, 0.35 + Math.sin(a) * 0.3); pos.setZ(i, (1 - Math.cos(a)) * 0.3); }
+    else pos.setZ(i, Math.sin(pos.getY(i) * 4) * 0.02);
+  }
+  geo.computeVertexNormals();
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 96;
+  const c = canvas.getContext('2d')!;
+  c.fillStyle = '#dccaa0'; c.fillRect(0, 0, 128, 96);
+  c.strokeStyle = '#5a3a20'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(10, 70); c.bezierCurveTo(40, 40, 60, 80, 90, 30); c.stroke();
+  c.setLineDash([4, 4]); c.beginPath(); c.moveTo(20, 20); c.lineTo(60, 50); c.lineTo(80, 88); c.stroke();
+  c.fillStyle = '#8a1a1a'; c.beginPath(); c.arc(90, 30, 5, 0, 7); c.fill();
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  g.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9, side: THREE.DoubleSide })));
+  g.rotation.x = -0.9;
+  return g;
+}
+function bandage() {
+  const g = new THREE.Group();
+  const linen = cloth('#ece2cc');
+  g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.5, 20), linen));
+  for (let i = 0; i < 4; i++) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.42 - i * 0.07, 0.008, 4, 24), cloth('#c8bca4'));
+    ring.rotation.x = Math.PI / 2;
+    ring.position.y = 0.251;
+    g.add(ring);
+  }
+  const tail = new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.7), new THREE.MeshStandardMaterial({ color: '#ece2cc', roughness: 1, side: THREE.DoubleSide }));
+  tail.position.set(0.3, -0.35, 0.3);
+  tail.rotation.set(-0.5, 0.6, 0.2);
+  g.add(tail);
+  return g;
 }
 
 const SOURCES: Record<string, Source> = {
@@ -224,14 +345,14 @@ const SOURCES: Record<string, Source> = {
   antidote: { make: () => vial('#6ad84a') },
   vial: { make: () => vial('#7ad86a') },
   vial_orange: { make: () => vial('#ff8a2a') },
-  bandage: { make: () => new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.5, 16), cloth('#e8e0d0')), rot: [1.1, 0, 0.3] },
+  bandage: { make: bandage, rot: [0.5, 0.3, 0.2] },
   helm: { part: ['knight', 'Knight_Helmet'], rot: [0.2, 0.6, 0] },
   helm_light: { part: ['barbarian', 'Barbarian_Hat'], rot: [0.2, 0.6, 0] },
   cloak: { part: ['knight', 'Knight_Cape'], rot: [0.2, 2.6, 0] },
-  armor: { part: ['knight', 'Knight_Helmet'], rot: [0.2, 0.6, 0] },
-  mask: { make: mask, rot: [0.1, 0.5, 0] },
-  kerchief: { make: kerchief, rot: [0.3, 0.3, 0] },
-  circlet: { make: circlet, rot: [0.2, 0.4, 0] },
+  armor: { part: ['knight', 'Knight_Body'], rot: [0.1, 0.5, 0] },
+  mask: { make: mask, rot: [0.15, 0.7, 0] },
+  kerchief: { make: kerchief, rot: [-0.3, 0.3, 0.1] },
+  circlet: { make: circlet, rot: [0.55, 0.35, 0] },
   ring: { make: () => ring(gold(), '#c8323a'), rot: [0.4, 0.5, 0] },
   fang: { make: () => amulet('#fff', 'fang'), rot: [0, 0.3, 0] },
   bone: { make: () => amulet('#fff', 'bone'), rot: [0, 0.3, 0] },
@@ -244,16 +365,16 @@ const SOURCES: Record<string, Source> = {
   sigil: { make: sigil, rot: [0.3, 0.6, 0] },
   book: { prop: ['adventure_items', 'spellbook_closed'], rot: [0.3, 0.6, 0] },
   root: { make: root, rot: [0.2, 0.4, 0.3] },
-  journal: { make: () => book('#5a2a2a'), rot: [0.3, 0.6, 0] },
+  journal: { make: () => book('#5a2a2a'), rot: [0.3, -0.5, 0] },
   flower: { make: flower, rot: [0.5, 0.3, 0] },
   dust: { make: dust, rot: [0.5, 0.3, 0] },
-  scroll: { make: mapRoll, rot: [0.3, 0.6, 0] },
-  map: { make: mapRoll, rot: [0.3, 0.6, 0] },
+  scroll: { make: scroll, rot: [0.3, 0.4, 0] },
+  map: { make: mapSheet, rot: [0.2, 0.3, 0] },
   moon: { make: () => amulet('#bfe0ff'), rot: [0, 0.3, 0] },
   bomb: { prop: ['dungeon', 'keg'], rot: [0.3, 0.5, 0], scale: 0.9 },
   picks: { prop: ['dungeon', 'keyring'], rot: [0.5, 0.4, 0] },
-  armor_heavy: { part: ['knight', 'Knight_Helmet'], rot: [0.2, 0.6, 0] },
-  armor_light: { part: ['rogue', 'Rogue_Cape'], rot: [0.2, 2.6, 0] },
+  armor_heavy: { part: ['knight', 'Knight_Body'], rot: [0.1, 0.5, 0] },
+  armor_light: { part: ['barbarian', 'Barbarian_Body'], rot: [0.1, 0.5, 0] },
 };
 
 const cache = new Map<string, string>();
@@ -302,18 +423,22 @@ export function renderItemIcons(size = 128) {
     }
     if (!obj) continue;
     holder.clear();
+    holder.position.set(0, 0, 0);
+    holder.scale.setScalar(1);
     const pivot = new THREE.Group();
     pivot.add(obj);
     if (src.rot) pivot.rotation.set(...src.rot);
-    holder.add(pivot);
-    // Frame it: centre and fit the bounds.
+    // Frame it: measure the object on its own (no parent), then centre and
+    // fit it in the holder.
     pivot.updateMatrixWorld(true);
-    const box = new THREE.Box3().setFromObject(pivot);
+    const box = new THREE.Box3().setFromObject(pivot, true);
     const c = box.getCenter(new THREE.Vector3());
     const s = box.getSize(new THREE.Vector3());
-    const k = (2.1 / Math.max(s.x, s.y, s.z * 0.8)) * (src.scale ?? 1);
+    const k = (2.1 / Math.max(s.x, s.y, s.z * 0.8, 1e-3)) * (src.scale ?? 1);
+    holder.add(pivot);
     holder.scale.setScalar(k);
     holder.position.set(-c.x * k, -c.y * k, -c.z * k);
+    holder.updateMatrixWorld(true);
     gl.render(scene, cam);
     cache.set(name, canvas.toDataURL('image/png'));
     holder.position.set(0, 0, 0);
@@ -326,3 +451,6 @@ export function renderItemIcons(size = 128) {
 export function itemIcon(key: string): string | null {
   return cache.get(key) ?? null;
 }
+
+/** Every icon key with a photograph, for the gallery. */
+export function iconKeys(): string[] { return [...cache.keys()]; }

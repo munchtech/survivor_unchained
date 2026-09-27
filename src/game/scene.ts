@@ -31,7 +31,7 @@ export interface ZoneBuild {
   atmosphere: AtmospherePreset;
   start: { x: number; z: number; facing?: number };
   /** Per-frame animation for the zone itself (torches, water, banners). */
-  tick?: (dt: number, time: number) => void;
+  tick?: (dt: number, time: number, focusX: number, focusZ: number) => void;
   dispose?: () => void;
 }
 
@@ -55,6 +55,8 @@ export class WorldScene {
   onEvents: (events: CombatEvent[]) => void = () => {};
   /** Game-level per-step hook (directors, quest logic). */
   onStep: (dt: number) => void = () => {};
+  /** A posed camera (title, creation, cutscenes) instead of the follow cam. */
+  showcase: { pos: THREE.Vector3; look: THREE.Vector3 } | null = null;
 
   constructor(readonly r: Renderer) {
     this.atmo = new Atmosphere(r);
@@ -133,7 +135,7 @@ export class WorldScene {
       const p = b.player;
       const y = this.heightAt(p.x, p.z);
       this.player?.update(b, dt, t, this.heightAt);
-      this.cam.update(dt, p.x, y, p.z, p.vx, p.vz);
+      if (!this.showcase) this.cam.update(dt, p.x, y, p.z, p.vx, p.vz);
       this.crowd?.update(b, this.heightAt, t);
       if (this.fx) {
         this.fx.playerPos.set(p.x, y, p.z);
@@ -151,13 +153,17 @@ export class WorldScene {
       this.r.grade.damage = Math.min(1, this.damageFlash * 0.7 + lowHp);
       this.r.grade.desaturate = p.alive ? 0 : 0.85;
     }
-    const f = this.cam.focus;
+    if (this.showcase) {
+      this.r.camera.position.copy(this.showcase.pos);
+      this.r.camera.lookAt(this.showcase.look);
+    }
+    const f = this.showcase ? this.showcase.look : this.cam.focus;
     this.atmo.follow(f.x, f.y, f.z);
     this.atmo.update(t, this.r.camera.position);
     z.grass?.update(t, f.x, f.z);
     z.terrain.time = t;
     floraUniforms.uTime.value = t;
     tickWind(t);
-    z.tick?.(dt, t);
+    z.tick?.(dt, t, f.x, f.z);
   }
 }

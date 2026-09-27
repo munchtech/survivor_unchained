@@ -132,6 +132,7 @@ export function say(text: string, speaker?: string, life = Math.max(2.5, text.le
 
 export interface LevelUpView {
   level: number;
+  tip?: string;
   offers: Offer[];
   /** Per offer: which of its tags the build already has. */
   fits: string[][];
@@ -149,3 +150,29 @@ export const levelUp = signal<LevelUpView | null>(null);
 
 /** Full-screen fade, 0 clear .. 1 black, with an optional caption. */
 export const fade = signal<{ to: number; caption?: string; sub?: string; seconds: number }>({ to: 0, seconds: 0.6 });
+
+/* ------------------------------------------------------ title, creation -- */
+
+export interface SlotView { slot: number; name: string; level: number; archetype: string; day: number; zone: string; savedAt: number; alive: boolean }
+export const slots = signal<SlotView[]>([]);
+
+export interface CreationDraft {
+  step: number;
+  name: string;
+  archetype: 'warden' | 'reaver' | 'arcanist' | 'stalker';
+  weaponItem: string;
+  ability: string;
+  startBoon: string;
+  background: 'hunter' | 'scholar' | 'outcast' | 'devout';
+  palette: string;
+  model: string;
+  headgear: boolean;
+}
+export const creation = signal<CreationDraft | null>(null);
+
+/** Loading progress, 0..1, with what is being done. */
+export const loading = signal<{ progress: number; label: string } | null>({ progress: 0, label: 'Kindling' });
+
+/** A tutorial card: what to do, with the keys for it. */
+export interface Hint { id: string; title: string; text: string; keys?: string[] }
+export const hint = signal<Hint | null>(null);

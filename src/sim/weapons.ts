@@ -420,6 +420,13 @@ function fireSlash(b: Battle, w: WeaponInst) {
     const ai = a + (i === 0 ? 0 : (i % 2 ? 1 : -1) * Math.ceil(i / 2) * arc * 0.85);
     coneHit(b, w, ai, arc, reach, damageOf(b, w));
   }
+  // Blades hit things as well as creatures: barrels, brambles, a boss's lamps.
+  for (const c of b.collision.within(p.x, p.z, reach)) {
+    if (!c.tag) continue;
+    let da = Math.atan2(c.z - p.z, c.x - p.x) - a;
+    da = Math.atan2(Math.sin(da), Math.cos(da));
+    if (Math.abs(da) <= arc / 2 + 0.3) b.hooks.onHitProp?.(c.tag, c.id, schoolOf(w), damageOf(b, w), c.x, c.z);
+  }
   w.swing++;
   b.player.attackAnim = { weapon: w.id, angle: a, t: b.time, heavy: arc > 3 };
   // Oathkeeper: every swing throws a crescent onward.

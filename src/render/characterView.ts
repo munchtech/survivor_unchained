@@ -179,6 +179,15 @@ export class CharacterView {
     for (const m of this.materials) m.color.copy(c);
   }
 
+  /** Recolour only the parts whose names match (cloth, not skin). */
+  tintParts(color: THREE.ColorRepresentation, match: RegExp) {
+    const c = new THREE.Color(color);
+    this.model.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh && match.test(o.name)) (m.material as THREE.MeshStandardMaterial).color.copy(c);
+    });
+  }
+
   update(dt: number) {
     this.heading = dampAngle(this.heading, this.headingTarget, 14, dt);
     this.model.rotation.y = this.heading;

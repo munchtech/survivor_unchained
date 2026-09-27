@@ -553,6 +553,7 @@ export class Battle {
     if (s.frozen) dmg *= this.boons.deep_chill ? 1.35 : 1.15;
     if (s.sear && school === 'holy') dmg *= 1.3;
     if (s.shock && !o.dot) { dmg *= 1.35; if (!this.boons.static_charge) delete s.shock; }
+    dmg *= e.takenMul;
     // Resistances.
     const res = e.def.resists?.[school] ?? 0;
     dmg *= 1 - res;
@@ -564,6 +565,7 @@ export class Battle {
       const dot = fx * ix + fz * iz;
       if (dot > Math.cos(e.def.guard.arc / 2)) { dmg *= 1 - e.def.guard.reduction; blocked = true; }
     }
+    if (e.takenMul < 0.7) blocked = true;
     // Criticals.
     let crit = o.crit ?? false;
     if (!crit && o.canCrit !== false && !o.dot) {
@@ -893,6 +895,7 @@ export class Battle {
     e.provoked = false;
     e.homeX = o.home?.x ?? x; e.homeZ = o.home?.z ?? z; e.leash = o.home?.leash ?? 0;
     e.lastWeapon = null;
+    e.takenMul = 1;
     this.events.emit({ t: 'spawn', enemy: e.id, x, z, def: defId, style: o.style ?? 'walk' });
     return e;
   }
