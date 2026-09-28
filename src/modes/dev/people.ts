@@ -46,5 +46,11 @@ export async function peopleDev(r: Renderer, params: URLSearchParams) {
   const ly = Number(params.get('ly') || 1.0), cx = Number(params.get('cx') || 0);
   cam.position.set(cx + Math.sin(yaw) * Math.cos(pitch) * dist, ly + Math.sin(pitch) * dist, Math.cos(yaw) * Math.cos(pitch) * dist);
   cam.lookAt(cx, ly, 0);
+  // For tools: heights of everything in the row (skinned, as posed).
+  (window as unknown as { __people: () => string }).__people = () => r.scene.children.filter((c) => c.type === 'Group' || c === knight).map((c) => {
+    c.updateMatrixWorld(true);
+    const b = new THREE.Box3().setFromObject(c, true);
+    return `${c.name || c.type}@${c.position.x.toFixed(1)}: h=${(b.max.y - b.min.y).toFixed(2)} min=${b.min.y.toFixed(2)}`;
+  }).join('\n');
   return (dt: number, t: number) => { for (const m of mixers) m.update(dt); atmo.update(t, cam.position); };
 }

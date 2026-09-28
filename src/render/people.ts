@@ -132,21 +132,24 @@ const sstep = (a: number, b: number, x: number) => { const t = Math.min(1, Math.
  *  fuller chest, a narrower waist, rounder hips. Applied alike to the body
  *  and to the clothes over it, so a shirt follows what it covers.
  *
- *  Each breast is a rounded dome, not a peak: a sphere-cap profile (round
- *  on top, eased into the chest at its base), teardrop-shaped (more of it
- *  below its centre than above, as weight sits), set a little apart and
- *  lifting forward and slightly outward. Normals follow the new surface
- *  (from the shape's own slope) so the light rounds it. */
-const BUST = { cx: 0.086, cy: 1.318, ax: 0.098, up: 0.105, down: 0.08, lift: 0.052 };
+ *  Each breast follows the proportion people find most attractive (the
+ *  Mallucci study): about 45:55 above and below the nipple line, the upper
+ *  slope straight (a linear rise), the lower pole full and convex (a
+ *  sphere-cap curve), eased into the chest at its base, set a little
+ *  apart, projecting forward with the nipple tilted slightly up. Normals
+ *  follow the new surface (from the shape's own slope) so light rounds it. */
+const BUST = { cx: 0.086, cy: 1.305, ax: 0.098, up: 0.085, down: 0.098, lift: 0.052 };
 
 function domeAt(x: number, y: number, side: number) {
   const ex = (x - side * BUST.cx) / BUST.ax;
   const dy = y - BUST.cy;
-  const ey = dy / (dy > 0 ? BUST.up : BUST.down);
+  const upper = dy > 0;
+  const ey = dy / (upper ? BUST.up : BUST.down);
   const r = Math.sqrt(ex * ex + ey * ey);
   if (r >= 1) return 0;
-  // Round on top, eased in at the base.
-  return Math.sqrt(1 - r * r) * sstep(1.0, 0.62, r);
+  // Straight above, full and round below; eased in at the base.
+  const profile = upper ? 1 - r : Math.sqrt(1 - r * r);
+  return profile * sstep(1.0, 0.6, r);
 }
 
 function shapeFigure(g: THREE.BufferGeometry, bust: number) {
@@ -165,7 +168,7 @@ function shapeFigure(g: THREE.BufferGeometry, bust: number) {
       const side = x < 0 ? -1 : 1;
       z += H * k;
       x += side * H * 0.22 * k;
-      y -= H * 0.12 * k;
+      y += H * 0.1 * k * (y < BUST.cy + 0.02 ? 1 : 0.4);
       gx = H * front * (height(x + d, y) - height(x - d, y)) / (2 * d);
       gy = H * front * (height(x, y + d) - height(x, y - d)) / (2 * d);
     }
