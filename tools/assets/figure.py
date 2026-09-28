@@ -43,9 +43,10 @@ RX = 0.086        # each breast's radius across (m)
 SAG = 0.02        # the apex settles down...
 SPREAD = 0.012    # ...and out
 JOIN = 0.02       # softness of the join to the chest (wider over the upper slope)
-WAIST = 0.075     # waist taken in (fraction)
-HIPS = 0.085      # hips let out (fraction)
-SEAT = 0.12       # and behind
+WAIST_OUT = 0.125 # waist let out (fraction), to keep the ratio (see hips)
+HIPS = 0.025      # hips let out (fraction)
+SEAT_OUT = 0.024  # the seat, further back at its fullest (m)...
+SEAT_LIFT = 0.012 # ...and a little higher
 
 CT = {5126: 'f4', 5123: 'u2', 5125: 'u4', 5121: 'u1'}
 NC = {'SCALAR': 1, 'VEC2': 2, 'VEC3': 3, 'VEC4': 4, 'MAT4': 16}
@@ -321,16 +322,109 @@ class Bust:
         return d * facing[:, None]
 
 
-def hips(pos):
-    """Waist in, hips out, seat back: a field over the torso."""
+class Seat:
+    """The seat at full strength: each buttock an ellipsoid set into the
+    pelvis behind, rounder and a little higher than modelled, joined to the
+    body by the same soft union as the bust."""
+
+    def __init__(self, body_pos):
+        P = body_pos
+        R = (P[:, 1] > 0.84) & (P[:, 1] < 1.02) & (P[:, 0] > 0.02) & (P[:, 0] < 0.2) & (P[:, 2] < 0)
+        Q = P[R]
+        self.apex = Q[np.argmin(Q[:, 2])]
+        ax, ay, az = self.apex
+        self.back = np.array([ax + 0.004, ay + SEAT_LIFT, az - SEAT_OUT])
+        self.rx, self.up, self.down, self.rz = 0.085, 0.1, 0.07, 0.075
+        self.c = self.back + np.array([0, 0, self.rz])
+        print(f'  seat {self.apex.round(3)} -> {self.back.round(3)}')
+
+    def shape(self, pos):
+        d = np.zeros_like(pos)
+        near = (pos[:, 2] < 0.04) & (pos[:, 1] > 0.7) & (pos[:, 1] < 1.15) & (np.abs(pos[:, 0]) < 0.3)
+        for side in (1, -1):
+            mine = near & (pos[:, 0] * side > -0.01)
+            c = self.c * np.array([side, 1, 1])
+            q = pos[mine] - c
+            ry = np.where(q[:, 1] > 0, self.up, self.down)
+            rad = np.stack([np.full(len(q), self.rx), ry, np.full(len(q), self.rz)], 1)
+            u = q / rad
+            m = np.linalg.norm(u, axis=1)
+            depth = (1 - m) * rad.mean(1)
+            k = np.where(q[:, 1] > 0, JOIN * 1.6, JOIN)
+            amount = np.where(depth > k, depth, np.where(depth > -k, (depth + k) ** 2 / (4 * k), 0))
+            dirn = (u / np.maximum(m, 1e-9)[:, None]) * rad
+            dirn /= np.maximum(np.linalg.norm(dirn, axis=1, keepdims=True), 1e-9)
+            d[mine] += dirn * amount[:, None]
+        return d
+
+
+def hips(pos, seat):
+    """Hips at full strength: the seat fuller and rounder, the hips a touch
+    wider, and the waist let out enough to keep the two in the proportion
+    people prefer (a waist-to-hip ratio from about 0.60 as modelled toward
+    0.65, measured round, as a tape would)."""
     x, y, z = pos[:, 0], pos[:, 1], pos[:, 2]
-    torso = np.clip(1 - (np.abs(x) - 0.22) / 0.06, 0, 1)
-    waist = np.exp(-((y - 1.1) / 0.075) ** 2) * torso
-    hip = np.exp(-((y - 0.93) / 0.1) ** 2) * torso
+    torso = np.clip(1 - (np.abs(x) - 0.24) / 0.06, 0, 1)
+    waist = np.exp(-((y - 1.14) / 0.08) ** 2) * torso
+    hip = np.exp(-((y - 0.91) / 0.08) ** 2) * torso
     d = np.zeros_like(pos)
-    d[:, 0] = x * (-WAIST * waist + HIPS * hip)
-    d[:, 2] = (z - 0.0) * (-WAIST * 0.6 * waist) + np.where(z < 0, z * SEAT * hip, 0)
+    d[:, 0] = x * (WAIST_OUT * waist + HIPS * hip)
+    d[:, 2] = (z - 0.012) * (WAIST_OUT * 0.7 * waist)
+    return d + seat.shape(pos)
+
+
+def follow(pos, body_pos, body_d):
+    """A garment moves as the nearest skin beneath it does."""
+    d = np.zeros_like(pos)
+    for i in range(0, len(pos), 2048):
+        sl = slice(i, i + 2048)
+        dd = ((body_pos[None, :, :] - pos[sl, None, :]) ** 2).sum(-1)
+        d[sl] = body_d[np.argmin(dd, axis=1)]
     return d
+
+
+def seat_region(pos):
+    return (np.abs(pos[:, 0]) < 0.26) & (pos[:, 1] > 0.74) & (pos[:, 1] < 1.1) & (pos[:, 2] < 0.06)
+
+
+def whr(prim, pos):
+    """Waist and hip circumferences (round a convex hull of each section,
+    as a tape would go) and their ratio."""
+    ys = np.arange(0.86, 1.25, 0.005)
+    c = np.array([hull_perim(section(pos, prim.tri, y)) for y in ys])
+    w = np.where((ys > 1.0) & (ys < 1.24), c, 9).min()
+    h = np.where((ys > 0.86) & (ys < 1.0), c, 0).max()
+    return w, h, w / h
+
+
+def section(P, tri, y0):
+    a, b, c = P[tri[:, 0]], P[tri[:, 1]], P[tri[:, 2]]
+    pts = []
+    for u, v in ((a, b), (b, c), (c, a)):
+        du, dv = u[:, 1] - y0, v[:, 1] - y0
+        m = (du * dv) < 0
+        t = du[m] / (du[m] - dv[m])
+        pts.append(u[m] + (v[m] - u[m]) * t[:, None])
+    Q = np.concatenate(pts)
+    return Q[np.abs(Q[:, 0]) < 0.3][:, [0, 2]]
+
+
+def hull_perim(Q):
+    pts = sorted(set(map(tuple, np.round(Q, 5))))
+    if len(pts) < 3:
+        return 0
+    cross = lambda o, a, b: (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+    lo, up = [], []
+    for p in pts:
+        while len(lo) >= 2 and cross(lo[-2], lo[-1], p) <= 0:
+            lo.pop()
+        lo.append(p)
+    for p in reversed(pts):
+        while len(up) >= 2 and cross(up[-2], up[-1], p) <= 0:
+            up.pop()
+        up.append(p)
+    h = np.array(lo[:-1] + up[:-1])
+    return np.sum(np.linalg.norm(h - np.roll(h, 1, 0), axis=1))
 
 
 def normal_delta(prim, base, shaped):
@@ -339,6 +433,9 @@ def normal_delta(prim, base, shaped):
 
 def chest(pos):
     return (np.abs(pos[:, 0]) < 0.25) & (pos[:, 1] > 1.08) & (pos[:, 1] < 1.52) & (pos[:, 2] > -0.03)
+
+
+_seat = [None]
 
 
 def shape_file(name, bust, tops=False, legs=False, body=False):
@@ -354,6 +451,9 @@ def shape_file(name, bust, tops=False, legs=False, body=False):
             if (body or tops) and 'Belt' not in mesh.get('name', ''):
                 for _ in range(2):
                     prim.subdivide(chest)
+            if body or legs:
+                for _ in range(2):
+                    prim.subdivide(seat_region)
             base = prim.pos
             if body:
                 db = prim.smooth(bust.shape(base))
@@ -361,7 +461,13 @@ def shape_file(name, bust, tops=False, legs=False, body=False):
                 db = prim.smooth(bust.drape(base, prim.attr['NORMAL'], _body[0], _body[1]), 6)
             else:
                 db = np.zeros_like(base)
-            dh = hips(base)
+            if body:
+                dh = prim.smooth(hips(base, _seat[0]))
+                for k in (0, 0.5, 1, 1.25):
+                    w, h, r = whr(prim, base + k * dh)
+                    print(f'    hips x{k}: waist {w:.3f} m, hips {h:.3f} m, ratio {r:.3f}')
+            else:
+                dh = prim.smooth(follow(base, _body[3], _body[2]), 4)
             targets = [
                 {'POSITION': db, 'NORMAL': normal_delta(prim, base, base + db)},
                 {'POSITION': dh, 'NORMAL': normal_delta(prim, base, base + dh)},
@@ -374,7 +480,7 @@ def shape_file(name, bust, tops=False, legs=False, body=False):
     gl.save()
 
 
-_body = [None, None]
+_body = [None, None, None, None]
 
 
 def compact(name):
@@ -429,15 +535,20 @@ def main():
     mesh = next(m for m in body.g['meshes'] if m.get('name') == 'Superhero_Female')
     pos = body.read(mesh['primitives'][0]['attributes']['POSITION'])
     bust = Bust(pos)
+    _seat[0] = Seat(pos)
     print(BODY)
     shape_file(BODY, bust, body=True)
     # The shaped body's front, for garments to follow.
     body = Gltf(BODY)
     mesh = next(m for m in body.g['meshes'] if m.get('name') == 'Superhero_Female')
     p = mesh['primitives'][0]
-    bp, bd = body.read(p['attributes']['POSITION']), body.read(p['targets'][0]['POSITION'])
+    bp, bd, bh = body.read(p['attributes']['POSITION']), body.read(p['targets'][0]['POSITION']), body.read(p['targets'][1]['POSITION'])
     keep = chest(bp) & (bp[:, 2] > 0.02)
     _body[0], _body[1] = bp[keep], bd[keep]
+    # For the hips, every point of the torso and upper legs.
+    torso = (np.abs(bp[:, 0]) < 0.32) & (bp[:, 1] > 0.6) & (bp[:, 1] < 1.6)
+    _body[2] = bh[torso]
+    _body[3] = bp[torso]
     for t in TOPS:
         print(t)
         shape_file(t, bust, tops=True)

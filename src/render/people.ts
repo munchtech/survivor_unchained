@@ -216,7 +216,7 @@ function shapeFigure(m: THREE.SkinnedMesh, figure: number) {
   const dict = m.morphTargetDictionary, inf = m.morphTargetInfluences;
   if (!dict || !inf) return;
   if (dict.bust !== undefined) inf[dict.bust] = figure;
-  if (dict.hips !== undefined) inf[dict.hips] = Math.min(1.2, figure * 0.9);
+  if (dict.hips !== undefined) inf[dict.hips] = Math.min(1.25, figure);
 }
 
 /** Put a person together: a Group holding the rig and every part, bones
