@@ -33,3 +33,10 @@ export const HAIRS: Array<{ id: string; name: string; color: string }> = [
   { id: 'fair', name: 'Fair', color: '#d8b870' },
   { id: 'grey', name: 'Grey', color: '#a8a4a0' },
 ];
+
+/** Cuts of hair for a man and for a woman (people's hairstyles; 'none' is
+ *  shorn). The first is the one they start with. */
+export const HAIR_STYLES: Record<'male' | 'female', string[]> = {
+  male: ['Hair_SimpleParted', 'Hair_Buzzed', 'Hair_Long'],
+  female: ['Hair_Long', 'Hair_Buns', 'Hair_BuzzedFemale'],
+};

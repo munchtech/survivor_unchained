@@ -101,7 +101,58 @@ export interface PersonSpec {
   /** Skin tone (a CSS colour), as it would look on fair skin; none leaves
    *  the skin as painted. */
   skin?: string;
+  /** The outfit dyed (CSS colours): `cloth` the main cloth (the ranger's
+   *  greens, the peasant's shirt), `under` the trousers. */
+  dye?: { cloth?: string; under?: string };
 }
+
+/* Dyes. Each outfit's texture keeps its cloth in a colour of its own (the
+ * ranger's greens, the peasant's cream shirt and dark brown trousers), so a
+ * dye picks those pixels by hue, saturation and value and recolours them,
+ * keeping their shading: a pixel as bright as the cloth's middle tone
+ * becomes the dye colour itself. Leather, metal and skin are left alone. */
+interface DyeMask { h: [number, number]; s: [number, number]; v: [number, number]; lum: number }
+const DYES: Record<string, { cloth?: DyeMask; under?: DyeMask }> = {
+  MI_Ranger: { cloth: { h: [0.17, 0.45], s: [0.25, 1], v: [0.03, 1], lum: 0.037 } },
+  MI_Peasant: {
+    cloth: { h: [0.04, 0.2], s: [0, 0.35], v: [0.5, 1], lum: 0.25 },
+    under: { h: [0, 0.14], s: [0.3, 1], v: [0, 0.3], lum: 0.008 },
+  },
+};
+const DYE_GLSL = `
+uniform vec3 uDye;
+uniform vec3 uDyeH, uDyeS, uDyeV; // (lo, hi, soft)
+uniform float uDyeLum;
+float dyeBand(float x, vec3 r) { return smoothstep(r.x - r.z, r.x, x) * (1.0 - smoothstep(r.y, r.y + r.z, x)); }
+vec3 dyeHsv(vec3 c) {
+  vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+  vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+  vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+  float d = q.x - min(q.w, q.y);
+  return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + 1e-10)), d / (q.x + 1e-10), q.x);
+}`;
+function dyeMaterial(mat: THREE.MeshStandardMaterial, mask: DyeMask, color: THREE.Color) {
+  const prev = mat.onBeforeCompile;
+  const band = (r: [number, number]) => new THREE.Vector3(r[0], r[1], 0.05);
+  mat.onBeforeCompile = (sh, gl) => {
+    prev.call(mat, sh, gl);
+    Object.assign(sh.uniforms, {
+      uDye: { value: color }, uDyeH: { value: band(mask.h) }, uDyeS: { value: band(mask.s) }, uDyeV: { value: band(mask.v) }, uDyeLum: { value: mask.lum },
+    });
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>\n${DYE_GLSL}`)
+      .replace('#include <map_fragment>', `#include <map_fragment>
+      {
+        vec3 c = diffuseColor.rgb;
+        vec3 hsv = dyeHsv(pow(max(c, vec3(0.0)), vec3(1.0 / 2.2)));
+        float m = dyeBand(hsv.x, uDyeH) * dyeBand(hsv.y, uDyeS) * dyeBand(hsv.z, uDyeV);
+        float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
+        diffuseColor.rgb = mix(c, min(uDye * (lum / uDyeLum), vec3(1.0)), m);
+      }`);
+  };
+  const key = mat.customProgramCacheKey();
+  mat.customProgramCacheKey = () => `${key}|dye`;
+}
+
 
 /** The fair tone the skin choices are measured from (render/recolor.ts's
  *  palette): a choice becomes a multiply over the painted skin. */
@@ -264,12 +315,16 @@ function build(spec: PersonSpec, get: (url: string) => GLTF): { root: THREE.Grou
   const hair = new THREE.Color(spec.hairColor ?? '#3a2a1e');
   const skin = spec.skin ? new THREE.Color(spec.skin) : null;
   if (skin) { skin.r /= FAIR.r; skin.g /= FAIR.g; skin.b /= FAIR.b; }
-  const own = new Map<THREE.Material, THREE.MeshStandardMaterial>();
+  const own = new Map<string, THREE.MeshStandardMaterial>();
+  const cloth = spec.dye?.cloth ? new THREE.Color(spec.dye.cloth) : null;
+  const under = spec.dye?.under ? new THREE.Color(spec.dye.under) : null;
   body.traverse((o) => {
     const m = o as THREE.Mesh;
     if (!m.isMesh) return;
     const src = m.material as THREE.MeshStandardMaterial;
-    let mat = own.get(src);
+    const legs = /_Legs/.test(m.name);
+    const k = `${src.uuid}|${legs}`;
+    let mat = own.get(k);
     if (!mat) {
       mat = src.clone();
       // (A clone leaves shader changes behind: the body's cover mask.)
@@ -277,7 +332,11 @@ function build(spec: PersonSpec, get: (url: string) => GLTF): { root: THREE.Grou
       mat.customProgramCacheKey = src.customProgramCacheKey;
       if (/Hair/i.test(mat.name)) mat.color.copy(hair);
       else if (skin && SKIN_MAT.test(mat.name)) mat.color.copy(skin);
-      own.set(src, mat);
+      const d = DYES[mat.name];
+      // (One dye per material: trousers with a colour of their own take it.)
+      if (d?.under && under && legs) dyeMaterial(mat, d.under, under);
+      else if (d?.cloth && cloth) dyeMaterial(mat, d.cloth, cloth);
+      own.set(k, mat);
     }
     m.material = mat;
   });

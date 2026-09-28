@@ -8,7 +8,7 @@ import { ABILITIES, type AbilityKind } from '@/content/abilities';
 import { BOONS, START_BLESSINGS } from '@/content/boons';
 import { Glyph, Icon } from '../components/Icon';
 import { SCHOOL_UI } from '../palette';
-import { CLOAK_DYES, SKINS, HAIRS } from '@/content/looks';
+import { SKINS, HAIRS, HAIR_STYLES } from '@/content/looks';
 import { Input } from '@/core/input';
 import type { CharacterModel } from '@/render/assets';
 import './create.css';
@@ -191,6 +191,11 @@ function Origin({ d }: { d: CreationDraft }) {
   );
 }
 
+const HAIR_NAMES: Record<string, string> = {
+  Hair_SimpleParted: 'Parted', Hair_Buzzed: 'Cropped', Hair_Long: 'Long', Hair_Buns: 'Buns', Hair_BuzzedFemale: 'Cropped', none: 'Shorn',
+};
+const figureWord = (f: number) => f < 0.45 ? 'Slender' : f < 0.95 ? 'Shapely' : f < 1.25 ? 'Full' : 'Buxom';
+
 function NameLook({ d }: { d: CreationDraft }) {
   const a = ARCHETYPES[d.archetype];
   // Hair shows only when nothing covers it.
@@ -207,6 +212,22 @@ function NameLook({ d }: { d: CreationDraft }) {
           <Glyph k="arcane" size={16} />
         </button>
       </div>
+      <div class="sub-head">Body</div>
+      <div class="seg">
+        {(['male', 'female'] as const).map((x) => (
+          <button key={x} class={`btn small${d.sex === x ? ' on' : ''}`} onClick={() => set({ sex: x, hairStyle: HAIR_STYLES[x].includes(d.hairStyle) || d.hairStyle === 'none' ? d.hairStyle : HAIR_STYLES[x][0] })}>{x === 'male' ? 'Man' : 'Woman'}</button>
+        ))}
+        {d.sex === 'male' && (
+          <button class={`btn small${d.beard ? ' on' : ''}`} onClick={() => set({ beard: !d.beard })}>{d.beard ? 'Bearded' : 'Clean-shaven'}</button>
+        )}
+      </div>
+      {d.sex === 'female' && (
+        <div class="figure-row">
+          <span class="dye-name">Figure</span>
+          <input type="range" min="0" max="1.5" step="0.1" value={d.figure} onInput={(e) => set({ figure: Number((e.target as HTMLInputElement).value) })} />
+          <span class="dye-name">{figureWord(d.figure)}</span>
+        </div>
+      )}
       <div class="sub-head">Colours</div>
       <div class="swatches">
         {a.palettes.map((p) => (
@@ -215,15 +236,6 @@ function NameLook({ d }: { d: CreationDraft }) {
             <span>{p.name}</span>
           </button>
         ))}
-      </div>
-      <div class="sub-head">Cloak</div>
-      <div class="dyes">
-        {CLOAK_DYES.map((c) => (
-          <button key={c.id} title={c.name} class={`dye${d.cloak === c.id ? ' on' : ''}${c.id === 'none' ? ' none' : ''}${c.id === 'calling' ? ' calling' : ''}`} onClick={() => set({ cloak: c.id })}>
-            <i style={c.color ? { background: c.color } : undefined} />
-          </button>
-        ))}
-        <span class="dye-name">{CLOAK_DYES.find((c) => c.id === d.cloak)?.name}</span>
       </div>
       <div class="sub-head">Skin</div>
       <div class="dyes">
@@ -235,6 +247,11 @@ function NameLook({ d }: { d: CreationDraft }) {
         <span class="dye-name">{SKINS.find((c) => c.id === d.skin)?.name}</span>
       </div>
       <div class="sub-head">Hair</div>
+      <div class={`seg hair-cuts${hairHidden ? ' muted' : ''}`}>
+        {[...HAIR_STYLES[d.sex], 'none'].map((h) => (
+          <button key={h} class={`btn small${d.hairStyle === h ? ' on' : ''}`} onClick={() => set({ hairStyle: h })}>{HAIR_NAMES[h]}</button>
+        ))}
+      </div>
       <div class={`dyes${hairHidden ? ' muted' : ''}`}>
         {HAIRS.map((c) => (
           <button key={c.id} title={c.name} class={`dye${d.hair === c.id ? ' on' : ''}${c.id === 'as_is' ? ' calling' : ''}`} onClick={() => set({ hair: c.id })}>
@@ -242,17 +259,17 @@ function NameLook({ d }: { d: CreationDraft }) {
           </button>
         ))}
         <span class="dye-name">{HAIRS.find((c) => c.id === d.hair)?.name}</span>
-        {hairHidden && <span class="dye-note">under the {d.archetype === 'arcanist' ? 'hat' : d.archetype === 'stalker' ? 'hood' : 'helm'}</span>}
+        {hairHidden && <span class="dye-note">under the hood</span>}
       </div>
-      <div class="sub-head">Appearance</div>
+      {d.archetype !== 'reaver' && <div class="sub-head">Hood</div>}
       <div class="toggles">
         {a.altModel && (
           <button class={`btn small${d.model === a.altModel ? ' focus' : ''}`} onClick={() => set({ model: d.model === a.model ? a.altModel! : a.model })}>
             {d.model === a.model ? 'Hood up' : 'Hood down'}
           </button>
         )}
-        {d.archetype !== 'stalker' && (
-          <button class="btn small" onClick={() => set({ headgear: !d.headgear })}>{d.headgear ? 'Headgear: worn' : 'Headgear: off'}</button>
+        {d.archetype !== 'stalker' && d.archetype !== 'reaver' && (
+          <button class={`btn small${d.headgear ? '' : ' focus'}`} onClick={() => set({ headgear: !d.headgear })}>{d.headgear ? 'Hood up' : 'Hood down'}</button>
         )}
       </div>
     </div>

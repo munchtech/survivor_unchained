@@ -1,7 +1,7 @@
 import type { Loadout } from '@/render/playerView';
 import type { CharacterModel } from '@/render/assets';
 import { ARCHETYPES, type ArchetypeId } from '@/content/archetypes';
-import { CLOAK_DYES, SKINS, HAIRS } from '@/content/looks';
+import { CLOAK_DYES, SKINS, HAIRS, HAIR_STYLES } from '@/content/looks';
 import { PARTS, type PersonSpec, type Sex } from '@/render/people';
 
 /* What the survivor looks like and visibly carries: a person (a man or a
@@ -56,10 +56,7 @@ function outfitOf(archetype: ArchetypeId, sex: Sex, hood: boolean): string[] {
   return out;
 }
 
-export const HAIR_STYLES: Record<Sex, string[]> = {
-  male: ['Hair_SimpleParted', 'Hair_Buzzed', 'Hair_Long'],
-  female: ['Hair_Long', 'Hair_Buns', 'Hair_BuzzedFemale'],
-};
+const darker = (hex: string) => `#${[1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * 0.45).toString(16).padStart(2, '0')).join('')}`;
 
 const CAPE: Record<ArchetypeId, string> = { warden: 'Knight_Cape', reaver: 'Barbarian_Cape', arcanist: 'Mage_Cape', stalker: 'Rogue_Cape' };
 const HEAD: Partial<Record<ArchetypeId, string>> = { warden: 'Knight_Helmet', reaver: 'Barbarian_Hat', arcanist: 'Mage_Hat' };
@@ -89,9 +86,12 @@ export function loadoutFor(c: LookChoice): Loadout {
   const hood = hooded(c);
   const person: PersonSpec = {
     sex, outfit: outfitOf(c.archetype, sex, hood),
-    hair: hood ? null : c.hairStyle ?? HAIR_STYLES[sex][0],
+    hair: hood || c.hairStyle === 'none' ? null : c.hairStyle ?? HAIR_STYLES[sex][0],
     beard: sex === 'male' && (c.beard ?? true),
     hairColor: hair || undefined, skin: skin || undefined, figure: c.figure,
+    // The calling's colours dye the cloth; trousers take the darker colour
+    // (or the cloth's, darker still).
+    dye: pal.paint.cloth ? { cloth: pal.paint.cloth, under: pal.paint.under ?? darker(pal.paint.cloth) } : undefined,
   };
   return {
     model: c.model ?? a.model, show, attackClips: held.attack, heavyClip: held.heavy, castClip: held.cast,

@@ -125,3 +125,10 @@
 .dye-note { margin-left: 6px; font: italic 400 12px var(--font-text); color: #8a7a62; }
 .swatch span { word-spacing: 0.25em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sub-note { margin-left: 6px; font: italic 400 12px var(--font-text); letter-spacing: 0; text-transform: none; color: #8a7a62; }
+
+/* The body: a figure slider for a woman; the cuts of hair. */
+.figure-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.figure-row .dye-name { margin-left: 0; min-width: 58px; }
+.figure-row input[type=range] { flex: 1; accent-color: #d0a050; }
+.hair-cuts { flex-wrap: wrap; margin-bottom: 8px; }
+.hair-cuts.muted .btn { opacity: 0.45; }
