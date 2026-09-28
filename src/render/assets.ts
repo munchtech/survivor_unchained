@@ -149,7 +149,7 @@ function prepareStatic(root: THREE.Object3D) {
 
 /** Props dither away where they stand between the camera and the survivor
  *  (walls, houses, a stack of crates), the way the trees do. */
-function occludable(mat: THREE.MeshStandardMaterial) {
+export function occludable(mat: THREE.MeshStandardMaterial) {
   if (mat.userData.occludable) return;
   mat.userData.occludable = true;
   mat.onBeforeCompile = (shader) => {

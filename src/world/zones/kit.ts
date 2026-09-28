@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Assets, type PropPack } from '@/render/assets';
+import { envModel, type EnvKit } from '@/render/env';
 import { ParticleSystem } from '@/render/particles';
 import { FloraField } from '@/render/scatter';
 import type { Terrain } from '@/render/terrain';
@@ -97,6 +98,22 @@ export class ZoneKit {
     const opts = { tag: o.tag, soft: o.soft };
     if (o.r) this.col.addCircle(x, z, o.r, opts);
     // Collision boxes turn the other way round from Three's rotation.y.
+    if (o.box) this.col.addBox(x, z, o.box[0], o.box[1], -(o.rot ?? 0), opts);
+    return obj;
+  }
+
+  /** A piece of the world's kits (render/env.ts: village, nature, props),
+   *  in metres as authored; otherwise as prop(). */
+  env(envKit: EnvKit, name: string, x: number, z: number, o: {
+    rot?: number; scale?: number; r?: number; box?: [number, number]; y?: number; tag?: string; soft?: boolean; tilt?: [number, number]; sink?: number;
+  } = {}) {
+    const obj = envModel(envKit, name);
+    obj.position.set(x, (o.y ?? this.y(x, z)) - (o.sink ?? 0), z);
+    obj.rotation.set(o.tilt?.[0] ?? 0, o.rot ?? 0, o.tilt?.[1] ?? 0);
+    obj.scale.setScalar(o.scale ?? 1);
+    this.root.add(obj);
+    const opts = { tag: o.tag, soft: o.soft };
+    if (o.r) this.col.addCircle(x, z, o.r, opts);
     if (o.box) this.col.addBox(x, z, o.box[0], o.box[1], -(o.rot ?? 0), opts);
     return obj;
   }

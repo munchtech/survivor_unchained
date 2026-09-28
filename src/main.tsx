@@ -29,8 +29,11 @@ async function boot() {
   (window as unknown as { __game: unknown }).__game = { renderer };
   // The KayKit set, the people (bodies, outfits, hair, the animation
   // libraries) and the weapons, together.
-  const [{ preloadPeople }, { preloadArms }, { bakeReady }] = await Promise.all([import('@/render/people'), import('@/render/arms'), import('@/render/bakePerson')]);
-  await Promise.all([Assets.loadAll(), preloadPeople(), preloadArms(), bakeReady()]);
+  const [{ preloadPeople }, { preloadArms }, { bakeReady }, { preloadEnv }, { envUsed }] = await Promise.all([
+    import('@/render/people'), import('@/render/arms'), import('@/render/bakePerson'), import('@/render/env'), import('@/world/zones/envUse'),
+  ]);
+  // ...and the world's kits: what the zones build with (render/env.ts).
+  await Promise.all([Assets.loadAll(), preloadPeople(), preloadArms(), bakeReady(), preloadEnv(envUsed())]);
   renderItemIcons();
   mountUi(document.getElementById('ui')!);
 
@@ -42,6 +45,8 @@ async function boot() {
   else if (dev === 'sandbox') tick = sandbox(renderer, params);
   else if (dev === 'combat') tick = combatDev(renderer, params);
   else if (dev === 'zone') tick = zoneDev(renderer, params);
+  else if (dev === 'house') tick = await (await import('@/modes/dev/env')).houseDev(renderer, params);
+  else if (dev === 'env') tick = await (await import('@/modes/dev/env')).envDev(renderer, params);
   else if (dev === 'armory') tick = await (await import('@/modes/dev/armory')).armoryDev(renderer, params);
   else if (dev === 'people') tick = await (await import('@/modes/dev/people')).peopleDev(renderer, params);
   else if (dev === 'icons') {

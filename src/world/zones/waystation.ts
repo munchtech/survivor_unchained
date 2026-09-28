@@ -7,6 +7,7 @@ import { CollisionWorld } from '@/sim/collision';
 import { Noise2D, distToSegment, smoothstep, hash2, hash1 } from '@/core/math';
 import type { ZoneBuild } from '@/game/scene';
 import { ZoneKit } from './kit';
+import { Assembly, buildHouse, STOREY, type HouseSpec, type WallKind } from './houses';
 
 /* The Waystation: where the last three roads meet under Vonnra's toll.
  *
@@ -110,92 +111,156 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
   water.position.set(0, -0.95, 52);
   root.add(water);
 
+  /** Footprints for the map. */
+  const footprints: Array<{ x: number; z: number; r: number; rot: number }> = [];
+
   /* ------------------------------------------------------------- walls -- */
-  const ws = 5.2, seg = 2 * ws;
-  const wallRun = (x0: number, z0: number, x1: number, z1: number, gapAt?: number) => {
+  // Rough stone two storeys high (the village kit's panels, houses.ts),
+  // faced toward the town (the side the camera sees), with a dressed-stone
+  // buttress every few panels. Gates are gaps on the roads between towers;
+  // towers stand at the corners too.
+  const X = 42, Z = 39;
+  const GATE = 3, TOWER = 5; // half the opening; a gate tower's centre, from the gate
+  const tower = (x: number, z: number, rot: number, seed: number) => {
+    const t = buildHouse({ w: 4, d: 4, storeys: ['stone', 'stone', 'stone'], seed, roof: 'spire', windows: 0.35, chimney: false, door: { side: 'front' } });
+    t.root.position.set(x, kit.y(x, z) - 0.3, z);
+    t.root.rotation.y = rot;
+    kit.root.add(t.root);
+    col.addBox(x, z, 2.2, 2.2, -rot);
+    footprints.push({ x, z, r: 2.6, rot });
+  };
+  const wallRun = (x0: number, z0: number, x1: number, z1: number, gate?: number) => {
     const len = Math.hypot(x1 - x0, z1 - z0);
-    const n = Math.round(len / seg);
-    const rot = Math.atan2(-(z1 - z0), x1 - x0);
+    const ux = (x1 - x0) / len, uz = (z1 - z0) / len;
+    const mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
+    // Face the town (the origin): the normal on whichever side it lies.
+    const side = uz * mx - ux * mz > 0 ? 1 : -1;
+    const fx = -uz * side, fz = ux * side;
+    const rot = Math.atan2(fx, fz);
+    const baseY = kit.y(mx, mz) - 0.3;
+    const asm = new Assembly();
+    const n = Math.round(len / 2);
+    let runStart = -1;
+    const closeRun = (to: number) => {
+      if (runStart < 0) return;
+      // One collider per unbroken stretch of wall.
+      const a = runStart * 2, b = to * 2, c = (a + b) / 2 - len / 2;
+      col.addBox(mx + ux * c, mz + uz * c, (b - a) / 2, 0.45, -Math.atan2(-uz, ux));
+      runStart = -1;
+    };
     for (let i = 0; i < n; i++) {
-      const t = (i + 0.5) / n;
-      const x = x0 + (x1 - x0) * t, z = z0 + (z1 - z0) * t;
-      const isGate = gapAt !== undefined && i === gapAt;
-      kit.prop('hex_buildings', isGate ? 'wall_straight_gate' : 'wall_straight', x, z, { rot, scale: ws, y: kit.y(x, z) - 0.3 });
-      if (!isGate) col.addBox(x, z, ws, 2.1, -rot);
-      else {
-        // Gate posts either side; the opening itself is left clear.
-        const dx = Math.cos(rot), dz = -Math.sin(rot);
-        col.addBox(x + dx * ws * 0.78, z + dz * ws * 0.78, ws * 0.25, 2.1, -rot);
-        col.addBox(x - dx * ws * 0.78, z - dz * ws * 0.78, ws * 0.25, 2.1, -rot);
+      const s = (i + 0.5) * 2 - len / 2; // along the run, from its middle
+      if (gate !== undefined && Math.abs(s - gate) < TOWER + 2) { closeRun(i); continue; }
+      if (runStart < 0) runStart = i;
+      const x = mx + ux * s, z = mz + uz * s;
+      const y = kit.y(x, z) - 0.3 - baseY;
+      for (let f = 0; f < 2; f++) asm.put('Wall_UnevenBrick_Straight', x - mx, y + f * STOREY, z - mz, rot);
+      // A buttress at every fourth joint, on the town side.
+      if (i % 4 === 0) for (let f = 0; f < 2; f++) asm.put('Corner_Exterior_Brick', x - mx - ux, y + f * STOREY, z - mz - uz, rot);
+    }
+    closeRun(n);
+    const g = asm.build();
+    g.position.set(mx, baseY, mz);
+    kit.root.add(g);
+    if (gate !== undefined) {
+      for (const k of [-1, 1]) tower(mx + ux * (gate + k * TOWER), mz + uz * (gate + k * TOWER), rot, 40 + k + Math.round(mx + mz));
+      // A torch on each tower's town-facing wall, on the side nearer the
+      // opening (its bracket reaches half a metre out from the stone).
+      for (const k of [-1, 1]) {
+        const a = gate + k * (GATE + 1);
+        const tx = mx + ux * a + fx * 2.05, tz = mz + uz * a + fz * 2.05;
+        const ty = kit.y(tx, tz) + 3.3;
+        kit.env('props', 'Torch_Metal', tx, tz, { rot, y: ty, scale: 1.4 });
+        const glow = kit.flameGlow(tx + fx * 0.5, ty + 0.55, tz + fz * 0.5, 0.14);
+        kit.source(tx + fx * 0.8, ty + 1.0, tz + fz * 0.8, 0xffa050, 10, 14, 0.2, [glow]);
       }
     }
   };
-  const X = 41.6, Z = 39;
-  wallRun(-X, Z, X, Z, 4); // south, gate in the middle
-  wallRun(X, -Z, -X, -Z, 4); // north
+  // Gates sit on the roads: south and north at x = 0, east at z = 0.
+  wallRun(-X, Z, X, Z, 0); // south: the Low Ford road
+  wallRun(X, -Z, -X, -Z, 0); // north, shut
   wallRun(-X, -Z, -X, Z); // west
-  wallRun(X, Z, X, -Z, 3); // east
-  for (const [x, z] of [[-X, -Z], [X, -Z], [-X, Z], [X, Z]] as const) {
-    kit.prop('hex_buildings', 'building_tower_A_blue', x, z, { scale: 5.4, r: 3.4 });
-  }
-  // Gate towers and torches.
-  for (const [gx, gz, rot] of [[0, Z, 0], [0, -Z, Math.PI], [X, 0, -Math.PI / 2]] as const) {
-    for (const side of [-1, 1]) {
-      const along = rot === 0 || rot === Math.PI;
-      const tx = along ? gx + side * 7 : gx + 3.6, tz = along ? gz + (rot === 0 ? -3.6 : 3.6) : gz + side * 7;
-      const glow = kit.flameGlow(tx, kit.y(tx, tz) + 4.1, tz, 0.14);
-      kit.prop('dungeon', 'torch_mounted', tx, tz, { rot: rot + Math.PI, scale: 1, y: kit.y(tx, tz) + 3.3 });
-      kit.source(tx, kit.y(tx, tz) + 4.4, tz, 0xffa050, 10, 14, 0.2, [glow]);
-    }
-  }
+  wallRun(X, Z, X, -Z, 0); // east: the Old Road
+  for (const [x, z] of [[-X, -Z], [X, -Z], [-X, Z], [X, Z]] as const) tower(x, z, Math.atan2(-x, -z), Math.round(x * 3 + z));
 
   /* --------------------------------------------------------- buildings -- */
   const doors: Record<string, { x: number; z: number }> = {};
-  /** Footprints for the map. */
-  const footprints: Array<{ x: number; z: number; r: number; rot: number }> = [];
-  const building = (key: string, model: string, p: { x: number; z: number; rot: number }, scale = 6, r = 4.2, doorOut = 4.6) => {
-    kit.prop('hex_buildings', model, p.x, p.z, { rot: p.rot, scale, y: kit.y(p.x, p.z) - 0.05 });
-    col.addCircle(p.x, p.z, r);
-    footprints.push({ x: p.x, z: p.z, r: r * 1.15, rot: p.rot });
-    // Doors face local +z.
+  /** A house of the village kit (houses.ts), its front facing local +z. */
+  const building = (key: string, spec: HouseSpec, p: { x: number; z: number; rot: number }) => {
+    const h = buildHouse(spec);
+    // Stand it on the lowest ground under its corners (the stone base hides
+    // the rest), so no corner floats.
+    const c = Math.cos(p.rot), sn = Math.sin(p.rot);
+    let y = Infinity;
+    for (const [lx, lz] of [[-1, -1], [1, -1], [1, 1], [-1, 1], [0, 0]]) {
+      const ox = (lx * h.w) / 2, oz = (lz * h.d) / 2;
+      y = Math.min(y, kit.y(p.x + ox * c + oz * sn, p.z - ox * sn + oz * c));
+    }
+    h.root.position.set(p.x, y - 0.05, p.z);
+    h.root.rotation.y = p.rot;
+    kit.root.add(h.root);
+    col.addBox(p.x, p.z, h.w / 2 + 0.15, h.d / 2 + 0.15, -p.rot);
+    footprints.push({ x: p.x, z: p.z, r: Math.max(h.w, h.d) * 0.55, rot: p.rot });
+    // The door, and a step out from it.
+    const door = h.door.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), p.rot);
     const dx = Math.sin(p.rot), dz = Math.cos(p.rot);
-    doors[key] = { x: p.x + dx * doorOut, z: p.z + dz * doorOut };
-    // A lantern by every door: after dark, the town is where the light is.
-    const lx = p.x + dx * (doorOut - 0.6) + dz * 1.7, lz = p.z + dz * (doorOut - 0.6) - dx * 1.7;
-    kit.prop('halloween', 'lantern_standing', lx, lz, { rot: p.rot, scale: 0.9, r: 0.25 });
-    const glow = kit.flameGlow(lx, kit.y(lx, lz) + 0.62, lz, 0.05, '#ffd08a');
-    const lsrc = kit.source(lx, kit.y(lx, lz) + 1.1, lz, 0xffb468, 4.5, 8, 0.08, [glow]);
+    const doorOut = 0.7;
+    doors[key] = { x: p.x + door.x + dx * doorOut, z: p.z + door.z + dz * doorOut };
+    // A lantern on a bracket beside every door: after dark, the town is
+    // where the light is. (Its bracket reaches 1.25 m out from the wall.)
+    const side = new THREE.Vector3(1.15, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), p.rot);
+    const wx = p.x + door.x + dx * 0.1 + side.x, wz = p.z + door.z + dz * 0.1 + side.z;
+    kit.env('props', 'Lantern_Wall', wx, wz, { rot: p.rot, y: y + 1.3 });
+    const lx = wx + dx * 1.05, lz = wz + dz * 1.05;
+    const glow = kit.flameGlow(lx, y + 2.05, lz, 0.05, '#ffd08a');
+    const lsrc = kit.source(lx, y + 2.1, lz, 0xffb468, 4.5, 8, 0.08, [glow]);
     kit.moths(lsrc);
     // After dark the doorway spills light onto the step, and the chimney smokes.
-    kit.spill(p.x + dx * (doorOut - 0.8), p.z + dz * (doorOut - 0.8), 3.0, '#ffae62', 0.3);
-    kit.chimney(p.x - dx * r * 0.3 + dz * r * 0.25, kit.y(p.x, p.z) + scale * 1.05, p.z - dz * r * 0.3 - dx * r * 0.25);
+    kit.spill(p.x + door.x + dx * 0.8, p.z + door.z + dz * 0.8, 3.0, '#ffae62', 0.3);
+    if (spec.chimney) {
+      const ch = new THREE.Vector3(h.w / 2 - 1.2, 0, -h.d / 4).applyAxisAngle(new THREE.Vector3(0, 1, 0), p.rot);
+      kit.chimney(p.x + ch.x, y + spec.storeys.length * STOREY + 3.4, p.z + ch.z);
+    }
     return doors[key];
   };
-  building('inn', 'building_home_B_red', W.inn, 8.6, 4.2, 5.2);
-  building('tavern', 'building_tavern_blue', W.tavern, 6.8, 4.4, 5.2);
-  building('smithy', 'building_blacksmith_blue', W.smithy, 7.2, 4.6, 5.2);
-  building('trading', 'building_market_blue', W.trading, 6.8, 5.4, 5.6);
-  building('warehouse', 'building_barracks_red', W.warehouse, 6.4, 5, 5.8);
-  building('shrine', 'building_church_blue', W.shrine, 7.4, 4.2, 5);
-  building('wenna', 'building_home_A_blue', W.wenna, 7, 3.2, 3.8);
-  building('barracks', 'building_barracks_blue', W.barracks, 6.6, 5, 5.8);
-  building('toll', 'building_tower_B_blue', W.toll, 6, 3.8, 4.2);
-  const homes: Array<[string, number, number, number]> = [
-    ['building_home_B_blue', 25, -30, 0], ['building_home_A_red', 16, -30, 0.2], ['building_home_B_red', -31, 5, Math.PI / 2],
-    ['building_home_A_blue', -32, -8, Math.PI / 2], ['building_home_B_blue', 9, 30, Math.PI], ['building_home_A_red', -9, 30, Math.PI],
-    ['building_home_B_red', 31, 10, -Math.PI / 2], ['building_home_A_blue', -20, 31, Math.PI], ['building_home_A_red', 19, 31, Math.PI],
-    ['building_home_B_blue', -31, 15, Math.PI / 2], ['building_home_A_blue', 32, -20, -Math.PI / 2], ['building_home_B_red', -2, -31, 0],
+  const house = (w: number, d: number, storeys: WallKind[], seed: number, o: Partial<HouseSpec> = {}): HouseSpec => ({ w, d, storeys, seed, windows: 0.55, shutters: true, chimney: true, ...o });
+  building('inn', house(6, 10, ['stone', 'plaster', 'plaster'], 11, { windows: 0.75 }), W.inn);
+  building('tavern', house(8, 8, ['stone', 'plaster'], 12, { windows: 0.6 }), W.tavern);
+  building('smithy', house(6, 8, ['stone'], 13, { windows: 0.3, shutters: false, door: { side: 'front', flat: true } }), W.smithy);
+  building('trading', house(8, 10, ['stone', 'plaster'], 14, { windows: 0.65 }), W.trading);
+  building('warehouse', house(8, 12, ['stone', 'stone'], 15, { windows: 0.15, shutters: false, chimney: false, door: { side: 'front', flat: true } }), W.warehouse);
+  building('shrine', house(6, 6, ['stone', 'stone'], 16, { windows: 0.45, shutters: false, chimney: false }), W.shrine);
+  building('wenna', house(4, 6, ['plaster'], 17, { windows: 0.5 }), W.wenna);
+  building('barracks', house(8, 12, ['stone', 'stone'], 18, { windows: 0.4, shutters: false }), W.barracks);
+  building('toll', house(4, 4, ['stone', 'stone', 'plaster'], 19, { roof: 'spire', chimney: false, windows: 0.5, shutters: false }), W.toll);
+  // The shrine's bell tower, beside it.
+  {
+    const t = buildHouse(house(4, 4, ['stone', 'stone', 'stone'], 20, { roof: 'spire', chimney: false, windows: 0.35, shutters: false, door: { side: 'back' } }));
+    const off = new THREE.Vector3(-3.2, 0, -5.4).applyAxisAngle(new THREE.Vector3(0, 1, 0), W.shrine.rot);
+    const tx = W.shrine.x + off.x, tz = W.shrine.z + off.z;
+    t.root.position.set(tx, kit.y(tx, tz) - 0.05, tz);
+    t.root.rotation.y = W.shrine.rot;
+    kit.root.add(t.root);
+    col.addBox(tx, tz, 2.15, 2.15, -W.shrine.rot);
+    footprints.push({ x: tx, z: tz, r: 2.4, rot: W.shrine.rot });
+  }
+  const homes: Array<[number, number, number, number, number, number]> = [
+    // x, z, facing, width, depth, storeys
+    [25, -30, 0, 6, 6, 2], [16, -30, 0.2, 4, 6, 1], [-31, 5, Math.PI / 2, 6, 8, 2],
+    [-32, -8, Math.PI / 2, 4, 6, 1], [9, 30, Math.PI, 6, 6, 2], [-9, 30, Math.PI, 4, 6, 1],
+    [31, 10, -Math.PI / 2, 6, 8, 2], [-20, 31, Math.PI, 4, 6, 2], [19, 31, Math.PI, 6, 6, 1],
+    [-31, 15, Math.PI / 2, 4, 6, 1], [32, -20, -Math.PI / 2, 6, 6, 2], [-2, -31, 0, 6, 8, 2],
   ];
-  homes.forEach(([m, x, z, rot], i) => building(`home${i}`, m, { x, z, rot }, m.includes('_B_') ? 7 : 6.6, 3, 3.8));
+  homes.forEach(([x, z, rot, w, d, n], i) => building(`home${i}`, house(w, d, n === 1 ? [i % 3 ? 'plaster' : 'stone'] : ['stone', 'plaster'], 30 + i), { x, z, rot }));
   // Yards: low fences and a little clutter behind the houses.
-  homes.forEach(([, x, z, rot], i) => {
-    const bx = x - Math.sin(rot) * 4.4, bz = z - Math.cos(rot) * 4.4;
+  homes.forEach(([x, z, rot, , d], i) => {
+    const bx = x - Math.sin(rot) * (d / 2 + 1.4), bz = z - Math.cos(rot) * (d / 2 + 1.4);
     for (let k = -1; k <= 1; k++) {
-      const fx = bx + Math.cos(rot) * k * 2.2, fz = bz - Math.sin(rot) * k * 2.2;
-      kit.prop('hex_buildings', 'fence_wood_straight', fx, fz, { rot: rot + Math.PI / 2, scale: 2.2, y: kit.y(fx, fz) });
+      const fx = bx + Math.cos(rot) * k * 2.05, fz = bz - Math.sin(rot) * k * 2.05;
+      kit.env('village', k ? 'Prop_WoodenFence_Extension1' : 'Prop_WoodenFence_Single', fx, fz, { rot, y: kit.y(fx, fz) });
     }
-    const junk = ['barrel', 'crate_A_big', 'sack', 'bucket_water', 'resource_lumber', 'pallet'][i % 6];
-    kit.prop('hex_nature', junk, bx + Math.cos(rot) * 1.5, bz - Math.sin(rot) * 1.5 + 0.8, { rot: i, scale: 6, r: 0.4 });
+    const junk = ['Barrel', 'Crate_Wooden', 'Bag', 'Bucket_Wooden_1', 'Barrel_Holder', 'FarmCrate_Empty'][i % 6];
+    kit.env('props', junk, bx + Math.cos(rot) * 1.5, bz - Math.sin(rot) * 1.5 + 0.8, { rot: i, scale: junk === 'Crate_Wooden' ? 0.8 : 1, r: 0.45 });
   });
   // Outside the walls: a windmill and fields, for the skyline.
   kit.prop('hex_buildings', 'building_windmill_blue', -58, 50, { rot: 0.4, scale: 8 });
@@ -250,7 +315,6 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
     t.magFilter = THREE.NearestFilter;
     return t;
   };
-  const goods: Record<string, string[]> = { produce: ['#c84a2a', '#e8b030', '#6a9a3a', '#b8322a'], cloth: ['#3a5a8a', '#8a3a4a', '#d8c8a0', '#5a7a4a'], herbs: ['#5a8a3a', '#8aa84a', '#6a5a3a', '#b0c070'], pots: ['#8a5a3a', '#a86a4a', '#6a4a3a', '#c8a070'] };
   for (const [x, z, rot, stripe, kind] of stalls) {
     const st = new THREE.Group();
     for (const [px, pz] of [[-1.3, -0.8], [1.3, -0.8], [-1.3, 0.9], [1.3, 0.9]]) {
@@ -276,69 +340,67 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
     const counter = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.9, 0.7), counterM);
     counter.position.set(0, 0.45, 0.75);
     st.add(counter);
-    const cols = goods[kind];
-    for (let i = 0; i < 9; i++) {
-      const c = new THREE.Color(cols[i % cols.length]);
-      const piece = kind === 'cloth' ? new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.08 + hash1(i, 7) * 0.1, 0.4), new THREE.MeshStandardMaterial({ color: c, roughness: 1 }))
-        : kind === 'pots' ? new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.13, 0.26, 8), new THREE.MeshStandardMaterial({ color: c, roughness: 0.7 }))
-          : new THREE.Mesh(new THREE.SphereGeometry(0.09 + hash1(i, 8) * 0.05, 7, 5), new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 }));
-      piece.position.set(-1.1 + (i % 5) * 0.55 + hash1(i, 9) * 0.1, 0.95 + (kind === 'pots' ? 0.04 : 0), 0.6 + Math.floor(i / 5) * 0.28);
-      st.add(piece);
-    }
+    // What is for sale, in crates and pots along the counter.
+    const wares: Record<string, string[]> = {
+      produce: ['FarmCrate_Apple', 'FarmCrate_Carrot', 'FarmCrate_Apple'], cloth: ['Bag', 'Rope_1', 'Bag'],
+      herbs: ['Pot_1', 'Vase_2', 'Pot_1'], pots: ['Vase_4', 'Pot_1', 'Vase_2'],
+    };
     st.traverse((o) => { if ((o as THREE.Mesh).isMesh) { o.castShadow = true; o.receiveShadow = true; } });
     st.position.set(x, kit.y(x, z), z);
     st.rotation.y = rot;
     root.add(st);
+    const c = Math.cos(rot), sn = Math.sin(rot);
+    wares[kind].forEach((w, i) => {
+      const lx = -0.85 + i * 0.85, lz = 0.75;
+      kit.env('props', w, x + lx * c + lz * sn, z - lx * sn + lz * c, { rot: rot + (i - 1) * 0.2, y: kit.y(x, z) + 0.9, scale: w === 'Bag' ? 0.6 : 1 });
+    });
     col.addBox(x, z, 1.5, 1.2, -rot);
-    kit.prop('hex_nature', 'crate_A_big', x + Math.cos(rot) * 2.1, z - Math.sin(rot) * 2.1 + 0.2, { rot, scale: 6, r: 0.6 });
-    kit.prop('hex_nature', hash1(x, 3) > 0.5 ? 'barrel' : 'sack', x - Math.cos(rot) * 2.0, z + Math.sin(rot) * 2.0, { rot, scale: 6.5, r: 0.5 });
+    // Stock behind the counter, either side of the keeper (inside the
+    // stall's own footprint: the square's lanes run close by).
+    const back = (lx: number, lz: number): [number, number] => [x + lx * c + lz * sn, z - lx * sn + lz * c];
+    kit.env('props', 'Crate_Wooden', ...back(0.9, -0.45), { rot: rot + 0.15, scale: 0.6 });
+    kit.env('props', hash1(x, 3) > 0.5 ? 'Barrel_Apples' : 'Bag', ...back(-0.9, -0.45), { rot });
   }
   // Benches, barrels and life.
-  kit.prop('halloween', 'bench', W.tavern.x + 5.5, W.tavern.z + 3.2, { rot: Math.PI / 2, scale: 0.8, box: [0.8, 0.3] });
-  kit.prop('halloween', 'bench', -4, 6, { rot: 0.3, scale: 0.8, box: [0.8, 0.3] });
-  kit.prop('dungeon', 'barrel_small_stack', W.inn.x + 4, W.inn.z - 4.5, { rot: 0.4, scale: 0.8, r: 0.8 });
-  kit.prop('dungeon', 'keg_decorated', W.tavern.x + 3.5, W.tavern.z - 4.5, { rot: 0.2, scale: 0.6, r: 1.0 });
-  kit.prop('dungeon', 'crates_stacked', W.warehouse.x - 6, W.warehouse.z - 2, { rot: 0.3, scale: 0.8, r: 1.2 });
-  kit.prop('dungeon', 'box_stacked', W.warehouse.x + 5, W.warehouse.z - 4, { rot: -0.5, scale: 0.55, r: 1.1 });
-  kit.prop('hex_nature', 'wheelbarrow', W.trading.x - 5, W.trading.z + 5, { rot: 1.2, scale: 6, r: 0.8 });
-  kit.prop('hex_nature', 'crate_long_A', W.trading.x - 5.6, W.trading.z - 3, { rot: 0.2, scale: 6, r: 0.9 });
-  kit.prop('hex_nature', 'weaponrack', W.barracks.x + 5, W.barracks.z + 4, { rot: 0.5, scale: 7, r: 0.6 });
-  kit.prop('hex_nature', 'target', W.barracks.x - 5, W.barracks.z + 5, { rot: -0.3, scale: 7, r: 0.6 });
-  kit.prop('hex_nature', 'flag_blue', W.barracks.x + 2, W.barracks.z + 5, { scale: 9 });
-  kit.prop('hex_nature', 'flag_red', W.inn.x + 4.5, W.inn.z + 3, { scale: 7 });
+  kit.env('props', 'Bench', W.tavern.x + 5.5, W.tavern.z + 3.2, { rot: Math.PI / 2, scale: 0.8, box: [1.1, 0.3] });
+  kit.env('props', 'Bench', -4, 6, { rot: 0.3, scale: 0.8, box: [1.1, 0.3] });
+  kit.env('props', 'Barrel', W.inn.x + 4, W.inn.z - 4.5, { rot: 0.4, r: 0.4 });
+  kit.env('props', 'Barrel', W.inn.x + 4.6, W.inn.z - 5.2, { rot: 1.4, r: 0.4 });
+  kit.env('props', 'Barrel_Holder', W.tavern.x + 3.5, W.tavern.z - 4.5, { rot: 0.2, box: [0.7, 0.4] });
+  kit.env('props', 'Crate_Wooden', W.warehouse.x - 6, W.warehouse.z - 2, { rot: 0.3, r: 0.8 });
+  kit.env('props', 'Crate_Wooden', W.warehouse.x - 6, W.warehouse.z - 2, { rot: 0.9, scale: 0.8, y: kit.y(W.warehouse.x - 6, W.warehouse.z - 2) + 1.1 });
+  kit.env('props', 'Crate_Wooden', W.warehouse.x - 7.2, W.warehouse.z - 1.1, { rot: -0.2, scale: 0.85, r: 0.6 });
+  kit.env('props', 'Crate_Wooden', W.warehouse.x + 5, W.warehouse.z - 4, { rot: -0.5, scale: 0.9, r: 0.7 });
+  // The trader's wagon, unhitched along the post's south wall.
+  kit.env('village', 'Prop_Wagon', W.trading.x + 0.5, W.trading.z - 5.6, { rot: Math.PI / 2 + 0.08, box: [1.0, 2.0] });
+  kit.env('props', 'Crate_Wooden', W.trading.x - 5.6, W.trading.z - 3, { rot: 0.2, scale: 0.85, r: 0.7 });
+  kit.env('props', 'WeaponStand', W.barracks.x + 5, W.barracks.z + 4, { rot: 0.5, box: [0.7, 0.5] });
+  kit.env('props', 'Dummy', W.barracks.x - 5, W.barracks.z + 5, { rot: -0.3, r: 0.45 });
+  kit.env('props', 'Dummy', W.barracks.x - 6.6, W.barracks.z + 4.4, { rot: 0.4, r: 0.45 });
+  kit.env('props', 'Barrel', W.barracks.x + 6.4, W.barracks.z + 3, { r: 0.4 });
 
-  // The smithy's forge and anvil.
+  // The smithy's forge, anvil and bench.
   const smithFire = kit.campfire(W.smithy.x - 4.2, W.smithy.z - 3.2, 0.7);
   void smithFire;
-  {
-    const anvil = new THREE.Group();
-    const iron = new THREE.MeshStandardMaterial({ color: '#2e2c2a', roughness: 0.45, metalness: 0.75 });
-    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.36, 0.6, 8), new THREE.MeshStandardMaterial({ color: '#4a3526', roughness: 0.9 }));
-    base.position.y = 0.3;
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.26, 0.34), iron);
-    body.position.y = 0.73;
-    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.45, 8), iron);
-    horn.rotation.z = Math.PI / 2;
-    horn.position.set(0.6, 0.76, 0);
-    anvil.add(base, body, horn);
-    anvil.traverse((o) => { if ((o as THREE.Mesh).isMesh) o.castShadow = true; });
-    anvil.position.set(W.smithy.x - 5.2, kit.y(W.smithy.x - 5.2, W.smithy.z + 1.2), W.smithy.z + 1.2);
-    root.add(anvil);
-    col.addCircle(W.smithy.x - 5.2, W.smithy.z + 1.2, 0.5);
-  }
+  kit.env('props', 'Anvil_Log', W.smithy.x - 5.2, W.smithy.z + 1.2, { rot: Math.PI / 2, r: 0.5 });
+  kit.env('props', 'Workbench', W.smithy.x - 4.4, W.smithy.z + 4.2, { rot: -Math.PI / 2, box: [1.0, 0.5] });
+  kit.env('props', 'Bucket_Metal', W.smithy.x - 5.9, W.smithy.z + 2.2, {});
+  kit.env('props', 'Chain_Coil', W.smithy.x - 3.6, W.smithy.z + 2.4, { rot: 0.7 });
 
-  // The broken shrine: the church, a cracked altar and cold candles.
+  // The broken shrine: a cracked altar and cold candles.
   kit.prop('halloween', 'shrine', W.shrine.x + 4.4, W.shrine.z + 4.6, { rot: -Math.PI * 0.75, scale: 0.9, r: 0.6 });
-  kit.prop('halloween', 'candle_melted', W.shrine.x + 5.2, W.shrine.z + 3.8, { scale: 0.7 });
-  kit.prop('halloween', 'candle_thin', W.shrine.x + 3.6, W.shrine.z + 5.4, { scale: 0.7 });
-  kit.prop('dungeon', 'rubble_half', W.shrine.x - 4, W.shrine.z + 4, { rot: 2, scale: 0.4, box: [0.9, 0.5] });
+  kit.env('props', 'Candle_1', W.shrine.x + 5.2, W.shrine.z + 3.8, {});
+  kit.env('props', 'Candle_2', W.shrine.x + 3.6, W.shrine.z + 5.4, {});
+  kit.env('props', 'Vase_Rubble_Medium', W.shrine.x - 4, W.shrine.z + 4, { rot: 2 });
+  kit.env('village', 'Prop_Brick2', W.shrine.x - 3.2, W.shrine.z + 4.6, { rot: 0.6 });
+  kit.env('village', 'Prop_Brick3', W.shrine.x - 4.6, W.shrine.z + 3.2, { rot: 1.9 });
 
   // Wenna's garden.
   for (let i = 0; i < 14; i++) {
     const x = W.wenna.x + 4 + (i % 4) * 1.3, z = W.wenna.z - 4 + Math.floor(i / 4) * 1.4;
     kit.flora.add(i % 3 ? 'bush' : 'berry', x, kit.y(x, z), z, i, 0.45);
   }
-  kit.prop('hex_nature', 'bucket_water', W.wenna.x + 3, W.wenna.z + 3, { scale: 6 });
+  kit.env('props', 'Bucket_Wooden_1', W.wenna.x + 3, W.wenna.z + 3, {});
 
   /* ------------------------------------------------------ Quiet Garden -- */
   // Hedges close the corner behind the shrine; one gap, hard to see.
@@ -359,7 +421,7 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
   kit.prop('halloween', 'lantern_standing', G.x + 6, G.z + 3.5, { scale: 0.7 });
   const gGlow = kit.flameGlow(G.x + 6, kit.y(G.x + 6, G.z + 3.5) + 0.45, G.z + 3.5, 0.06, '#ffe8b0');
   kit.source(G.x + 6, kit.y(G.x, G.z) + 1, G.z + 3.5, 0xffe0a0, 5, 8, 0.1, [gGlow]);
-  kit.prop('dungeon', 'trunk_medium_B', G.x + 2.5, G.z + 4.5, { rot: 0.7, scale: 0.8, r: 0.5, tag: 'garden_chest' });
+  kit.env('props', 'Chest_Wood', G.x + 2.5, G.z + 4.5, { rot: 0.7, r: 0.6, tag: 'garden_chest' });
   for (let i = 0; i < 9; i++) kit.flora.add('berry', G.x + 1 + hash1(i, 1) * 8, kit.y(G.x, G.z), G.z + 1 + hash1(i, 2) * 5, i, 0.4);
 
   /* ------------------------------------------------------ lamps, trees -- */
