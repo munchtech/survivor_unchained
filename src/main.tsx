@@ -48,6 +48,7 @@ async function boot() {
   }
   else {
     const game = new Game(renderer);
+    game.pauseWhenAway = !params.has('manual');
     (window as unknown as { __game: unknown }).__game = { renderer, game };
     // For tools: the interface's state (which overlay is open, the draft...).
     (window as unknown as { __ui: unknown }).__ui = uiStore;

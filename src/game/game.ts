@@ -82,6 +82,8 @@ export class Game {
   readonly bridge: HudBridge;
   readonly barks: BarkLayer;
   mode: 'title' | 'create' | 'play' = 'title';
+  /** Pause when the window loses focus (off for tools stepping time by hand). */
+  pauseWhenAway = true;
   ch: CharacterData | null = null;
   world: WorldState | null = null;
   ctx: Ctx | null = null;
@@ -121,6 +123,14 @@ export class Game {
     this.scene.onStep = (dt) => this.zone?.step?.(dt);
     this.bindActions();
     Input.on((a) => this.onAction(a));
+    // Away from the window, the fight waits: another window in front or a
+    // hidden tab opens the pause menu (where something can hurt you).
+    const away = () => {
+      if (!this.pauseWhenAway || this.mode !== 'play' || overlay.value || levelUp.value || !this.scene.battle?.combat) return;
+      this.openOverlay('pause');
+    };
+    window.addEventListener('blur', away);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) away(); });
     // The creation screen edits a draft; the figure by the fire follows it.
     effect(() => {
       const d = creation.value;
