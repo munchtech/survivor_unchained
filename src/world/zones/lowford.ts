@@ -159,6 +159,7 @@ export function buildLowFord(grassDensity = 1): LowFordBuild {
         flora.add(big ? 'boulder' : 'rock', x + 1.1, terrain.heightAt(x + 1.1, z), z, rot, s);
         col.addCircle(x + 1.1, z, (big ? 2.1 : 0.8) * s);
       }
+      if (rd > 4 && clr < 0.6) kit.undergrowth(x, z, g, { under: !open && forest > -0.25, blight: Math.hypot(x - L.barrow.x, z - L.barrow.z) < 26 ? 0.4 : 0 });
       if (open) continue;
       const edgeWall = Math.abs(x) > 74 + Math.sin(z * 0.03) * 12;
       if (!edgeWall && hash2(gx * 7, gz * 7, 3) > 0.58 + forest * 0.4) continue;

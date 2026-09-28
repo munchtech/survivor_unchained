@@ -228,6 +228,7 @@ export function buildVerge(grassDensity = 1, state: VergeState = { cleanDays: 0 
         flora.add(big ? 'boulder' : 'rock', x + 1.1, terrain.heightAt(x + 1.1, z), z, rot, s);
         col.addCircle(x + 1.1, z, (big ? 2.1 : 0.8) * s);
       }
+      if (rd > 4 && ru > 2 && clr < 0.6) kit.undergrowth(x, z, g, { under: !open && forest > -0.3, blight });
       if (open) continue;
       const edgeWall = Math.max(Math.abs(x), Math.abs(z)) > 118;
       // Glades: the wood opens up here and there, room to fight in.

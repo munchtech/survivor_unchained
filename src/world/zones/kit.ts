@@ -5,7 +5,7 @@ import { ParticleSystem } from '@/render/particles';
 import { FloraField } from '@/render/scatter';
 import type { Terrain } from '@/render/terrain';
 import type { CollisionWorld } from '@/sim/collision';
-import { hash1 } from '@/core/math';
+import { hash1, hash2 } from '@/core/math';
 
 /* The toolbox every zone is built with.
  *
@@ -117,6 +117,22 @@ export class ZoneKit {
   }
 
   y(x: number, z: number) { return this.terrain.heightAt(x, z); }
+
+  /** Undergrowth for one cell of a zone's scatter grid, somewhere in it:
+   *  ferns and broad leaves on the forest floor (under: true), flowers and
+   *  clover where the light gets in, mushrooms where things rot (blight).
+   *  Walked through; nothing collides. */
+  undergrowth(x: number, z: number, cell: number, o: { under: boolean; blight?: number }) {
+    const ix = Math.round(x * 10), iz = Math.round(z * 10);
+    const u = hash2(ix, iz, 21);
+    const jx = x + (hash2(ix, iz, 22) - 0.5) * cell, jz = z + (hash2(ix, iz, 23) - 0.5) * cell;
+    const rot = hash2(ix, iz, 24) * Math.PI * 2, s = 0.75 + hash2(ix, iz, 25) * 0.6;
+    const rot2 = (o.blight ?? 0) > 0.25;
+    let kind: 'fern' | 'plant' | 'mushroom' | 'flowers' | 'clover' | null = null;
+    if (o.under) kind = u < 0.22 ? 'fern' : u < 0.25 ? 'plant' : u < 0.28 || (rot2 && u < 0.34) ? 'mushroom' : null;
+    else kind = u < 0.05 ? (rot2 ? 'mushroom' : 'flowers') : u < 0.1 ? 'clover' : null;
+    if (kind) this.flora.add(kind, jx, this.y(jx, jz) - 0.03, jz, rot, s);
+  }
 
   /** A prop on the ground. `r` adds a round collider, `box` an oriented one. */
   prop(pack: PropPack, name: string, x: number, z: number, o: {

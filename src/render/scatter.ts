@@ -19,7 +19,8 @@ import { envBounds, envLoaded, envTemplate, weatherOf } from './env';
 
 export type FloraKind =
   | 'pine' | 'broadleaf' | 'autumn' | 'sick' | 'dead' | 'bush' | 'bramble' | 'berry'
-  | 'rock' | 'boulder' | 'pebble' | 'cliff';
+  | 'rock' | 'boulder' | 'pebble' | 'cliff'
+  | 'fern' | 'flowers' | 'plant' | 'clover' | 'mushroom';
 
 interface KitSet {
   pieces: string[];
@@ -62,13 +63,20 @@ const KINDS: Record<FloraKind, KindSpec> = {
   bush: { variants: 4, make: (s) => bushGeometry(s, 1.3, 'green'), wind: 0.6, rim: 0.3, shadow: true, occlude: false, kit: { pieces: ['Bush_Common'], height: 1.4, leaves: { a: '#3c5a2a', b: '#52682e', amount: 0.9 } } },
   bramble: {
     variants: 3, make: (s) => bushGeometry(s + 30, 1.4, 'bramble'), wind: 0.3, rim: 0.2, shadow: true, occlude: false,
-    kit: { pieces: ['Bush_Common'], height: 1.3, leaves: { a: '#4a4626', b: '#5a3c2a', amount: 0.65 } },
+    kit: { pieces: ['Bush_Common'], height: 1.3, leaves: { a: '#3a4224', b: '#4a3c26', amount: 0.93 } },
   },
   berry: { variants: 2, make: (s) => bushGeometry(s + 60, 1.1, 'berry'), wind: 0.5, rim: 0.3, shadow: true, occlude: false, kit: { pieces: ['Bush_Common_Flowers'], height: 1.2 } },
   rock: { variants: 6, make: (s) => rockGeometry(s, 1.0), wind: 0, rim: 0.15, flat: true, shadow: true, occlude: false, kit: { pieces: n('Rock_Medium', 1, 2, 3), width: 2, squash: 0.6, moss: 0.5 } },
   boulder: { variants: 4, make: (s) => rockGeometry(s + 100, 2.6, { flat: 0.7 }), wind: 0, rim: 0.15, flat: true, shadow: true, occlude: true, kit: { pieces: n('Rock_Medium', 1, 2, 3), width: 5.2, squash: 0.6, moss: 0.6 } },
   pebble: { variants: 4, make: (s) => rockGeometry(s + 200, 0.35, { moss: 0.3 }), wind: 0, rim: 0.1, flat: true, shadow: false, occlude: false, kit: { pieces: [...n('Pebble_Round', 1, 2, 3, 4, 5), ...n('Pebble_Square', 1, 2, 3)], width: 0.7, moss: 0.25 } },
   cliff: { variants: 4, make: (s) => rockGeometry(s + 300, 6, { flat: 1.1, moss: 0.9 }), wind: 0, rim: 0.12, flat: true, shadow: true, occlude: true, kit: { pieces: n('Rock_Medium', 1, 2, 3), width: 12, squash: 0.8, moss: 0.8 } },
+  // Undergrowth: walked through, too low to hide anything, no shadows of
+  // its own (the generated stand-ins are small bushes).
+  fern: { variants: 1, make: (s) => bushGeometry(s + 400, 0.6, 'green'), wind: 0.45, rim: 0.3, shadow: false, occlude: false, kit: { pieces: ['Fern_1'], height: 1.4 } },
+  flowers: { variants: 2, make: (s) => bushGeometry(s + 420, 0.5, 'berry'), wind: 0.6, rim: 0.3, shadow: false, occlude: false, kit: { pieces: ['Flower_3_Group', 'Flower_4_Group'], height: 0.95 } },
+  plant: { variants: 1, make: (s) => bushGeometry(s + 440, 0.7, 'green'), wind: 0.5, rim: 0.3, shadow: false, occlude: false, kit: { pieces: ['Plant_1_Big'], height: 1.1 } },
+  clover: { variants: 2, make: (s) => bushGeometry(s + 460, 0.3, 'green'), wind: 0.4, rim: 0.25, shadow: false, occlude: false, kit: { pieces: ['Clover_1', 'Clover_2'], height: 0.55 } },
+  mushroom: { variants: 1, make: (s) => rockGeometry(s + 480, 0.15), wind: 0, rim: 0.2, shadow: false, occlude: false, kit: { pieces: ['Mushroom_Common'], height: 0.4 } },
 };
 
 /** The kit pieces the flora is drawn from (loaded at boot: world/zones/envUse.ts). */
