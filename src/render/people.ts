@@ -96,7 +96,8 @@ export interface PersonSpec {
   outfit?: readonly string[];
   hair?: string | null;
   beard?: boolean;
-  /** A woman's figure, 0 (as modelled) to 1.5; see shapeFigure. */
+  /** A woman's figure, 0 (as modelled) to 1.5 (1 is full); see
+   *  shapeFigure. */
   figure?: number;
   /** Skin tone (a CSS colour), as it would look on fair skin; none leaves
    *  the skin as painted. */
@@ -206,68 +207,16 @@ function maskCovered(mesh: THREE.SkinnedMesh, covered: RegExp[]) {
   mesh.material = mat;
 }
 
-const sstep = (a: number, b: number, x: number) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
-
-/** A woman's figure, in the rig's bind space (metres, Y up, +Z forward): a
- *  fuller chest, a narrower waist, rounder hips. Applied alike to the body
- *  and to the clothes over it, so a shirt follows what it covers.
- *
- *  Each breast follows the proportion people find most attractive (the
- *  Mallucci study): about 45:55 above and below the nipple line, the upper
- *  slope straight (a linear rise), the lower pole full and convex (a
- *  sphere-cap curve), eased into the chest at its base, set a little
- *  apart, projecting forward with the nipple tilted slightly up. Normals
- *  follow the new surface (from the shape's own slope) so light rounds it. */
-const BUST = { cx: 0.086, cy: 1.305, ax: 0.098, up: 0.085, down: 0.098, lift: 0.052 };
-
-function domeAt(x: number, y: number, side: number) {
-  const ex = (x - side * BUST.cx) / BUST.ax;
-  const dy = y - BUST.cy;
-  const upper = dy > 0;
-  const ey = dy / (upper ? BUST.up : BUST.down);
-  const r = Math.sqrt(ex * ex + ey * ey);
-  if (r >= 1) return 0;
-  // Straight above, full and round below; eased in at the base.
-  const profile = upper ? 1 - r : Math.sqrt(1 - r * r);
-  return profile * sstep(1.0, 0.6, r);
-}
-
-function shapeFigure(g: THREE.BufferGeometry, bust: number) {
-  const pos = g.getAttribute('position') as THREE.BufferAttribute;
-  const nor = g.getAttribute('normal') as THREE.BufferAttribute | undefined;
-  const n = new THREE.Vector3();
-  const H = BUST.lift * bust, d = 0.003;
-  const height = (x: number, y: number) => domeAt(x, y, -1) + domeAt(x, y, 1);
-  for (let i = 0; i < pos.count; i++) {
-    let x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
-    // Only the front of the chest (not the back, not arms held out).
-    const front = sstep(-0.01, 0.075, z) * (Math.abs(x) < 0.22 ? 1 : 0);
-    const k = height(x, y) * front;
-    let gx = 0, gy = 0;
-    if (k > 0) {
-      const side = x < 0 ? -1 : 1;
-      z += H * k;
-      x += side * H * 0.22 * k;
-      y += H * 0.1 * k * (y < BUST.cy + 0.02 ? 1 : 0.4);
-      gx = H * front * (height(x + d, y) - height(x - d, y)) / (2 * d);
-      gy = H * front * (height(x, y + d) - height(x, y - d)) / (2 * d);
-    }
-    // Waist in, hips out (the torso only).
-    if (Math.abs(x) < 0.3) {
-      const waist = Math.exp(-(((y - 1.12) / 0.07) ** 2)), hips = Math.exp(-(((y - 0.93) / 0.08) ** 2));
-      const t = Math.min(1, bust);
-      x *= 1 - 0.08 * t * waist + 0.07 * t * hips;
-      z *= 1 - 0.05 * t * waist + 0.04 * t * hips;
-    }
-    pos.setXYZ(i, x, y, z);
-    if (nor && (gx || gy)) {
-      n.fromBufferAttribute(nor, i);
-      if (n.z > 0) { n.x -= gx; n.y -= gy; n.normalize(); nor.setXYZ(i, n.x, n.y, n.z); }
-    }
-  }
-  pos.needsUpdate = true;
-  if (nor) nor.needsUpdate = true;
-  g.computeBoundingSphere();
+/** A woman's figure: the body and the clothes over it carry two morph
+ *  targets made offline (tools/assets/figure.py): 'bust', a fuller chest set
+ *  into the body with a soft join (the upper slope longer and flatter than
+ *  the lower, the proportion people read as natural), tops hanging from it;
+ *  and 'hips', a narrower waist and wider hips. The figure blends both in. */
+function shapeFigure(m: THREE.SkinnedMesh, figure: number) {
+  const dict = m.morphTargetDictionary, inf = m.morphTargetInfluences;
+  if (!dict || !inf) return;
+  if (dict.bust !== undefined) inf[dict.bust] = figure;
+  if (dict.hips !== undefined) inf[dict.hips] = Math.min(1.2, figure * 0.9);
 }
 
 /** Put a person together: a Group holding the rig and every part, bones
@@ -277,10 +226,8 @@ function build(spec: PersonSpec, get: (url: string) => GLTF): { root: THREE.Grou
   const body = SkeletonUtils.clone(get(`${BASE}/${P.body}.gltf`).scene) as THREE.Group;
   const bones = new Map<string, THREE.Bone>();
   body.traverse((o) => { if ((o as THREE.Bone).isBone) bones.set(o.name, o as THREE.Bone); });
-  const figure = spec.sex === 'female' ? spec.figure ?? 0.9 : 0;
-  const shape = (m: THREE.SkinnedMesh) => {
-    if (figure > 0) m.geometry = variant(m.geometry, `figure:${figure}`, (g) => shapeFigure(g, figure));
-  };
+  const figure = spec.sex === 'female' ? spec.figure ?? 1 : 0;
+  const shape = (m: THREE.SkinnedMesh) => shapeFigure(m, figure);
   const covered = COVER.filter(([part]) => (spec.outfit ?? []).some((p) => part.test(p))).map(([, bonesRe]) => bonesRe);
   // Top and trousers together cover the hips too (trousers alone sit lower,
   // and a bare-chested figure keeps its hips).

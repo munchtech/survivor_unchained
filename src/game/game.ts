@@ -177,7 +177,7 @@ export class Game {
     const draft: CreationDraft = {
       step: 0, name: '', archetype: 'warden', weaponItem: 'worn_oathblade', ability: 'shield_bash', startBoon: 'hunters_mark',
       background: 'hunter', palette: 'steel', model: 'knight', headgear: true, cloak: 'calling', skin: 'fair', hair: 'as_is',
-      sex: 'male', hairStyle: 'Hair_SimpleParted', beard: true, figure: 0.9,
+      sex: 'male', hairStyle: 'Hair_SimpleParted', beard: true, figure: 1.0,
     };
     creation.value = draft;
     screen.value = 'create';

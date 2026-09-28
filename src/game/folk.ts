@@ -72,7 +72,7 @@ function folkPerson(role: Role, l: FolkLook): PersonSpec {
     hair: hood ? null : Math.random() < 0.08 ? null : pick(HAIR_STYLES[sex]),
     beard: sex === 'male' && !child && Math.random() < 0.6,
     hairColor: pick(HAIRS.filter((h) => h.color)).color, skin: pick(SKINS).color || undefined,
-    figure: sex === 'female' ? (child ? 0 : rnd(0.4, 1.3)) : undefined,
+    figure: sex === 'female' ? (child ? 0 : rnd(0.6, 1.4)) : undefined,
     head: child ? 1.25 : undefined,
     dye: { cloth: l.tint, under: l.under },
   };

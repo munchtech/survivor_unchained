@@ -2,6 +2,7 @@
 """Gather the people (Quaternius, CC0) into public/assets/people.
 
     python3 tools/assets/people.py [unpacked-root]
+    python tools/assets/figure.py      (then: a woman's figure, see there)
 
 The root holds the packs as they unzip (Universal Base Characters, Modular
 Character Outfits - Fantasy, Universal Animation Library 1 and 2). Every part
@@ -73,6 +74,11 @@ def part(folder, name):
     src = os.path.join(ROOT, folder, name + '.gltf')
     with open(src) as f:
         g = json.load(f)
+    # Vertex colours here are all white and the extra UV sets unused: left
+    # in, a loader would upload them and switch vertex colours on.
+    for mesh in g.get('meshes', []):
+        for prim in mesh['primitives']:
+            prim['attributes'] = {k: v for k, v in prim['attributes'].items() if not (k.startswith('COLOR_') or (k.startswith('TEXCOORD_') and k != 'TEXCOORD_0'))}
     for img in g.get('images', []):
         img['uri'] = texture(folder, img['uri'])
         img['mimeType'] = 'image/webp'
@@ -100,6 +106,7 @@ def main():
         print(dst)
     total = sum(os.path.getsize(os.path.join(OUT, f)) for f in os.listdir(OUT))
     print(f'{OUT}: {total / 1e6:.1f} MB')
+    print('Now shape the women: python tools/assets/figure.py (needs numpy).')
 
 
 main()
