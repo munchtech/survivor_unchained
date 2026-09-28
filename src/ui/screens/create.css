@@ -73,9 +73,9 @@
 }
 .name-input:focus { box-shadow: inset 0 0 0 1px var(--gold), inset 0 2px 6px rgba(0, 0, 0, 0.8), 0 0 14px rgba(255, 150, 60, 0.25); }
 .name-input::placeholder { color: #5a5044; }
-.swatches { display: flex; gap: 8px; }
-.swatch { flex: 1; display: flex; align-items: center; gap: 8px; padding: 7px 9px; border: 0; border-radius: 5px; cursor: pointer; background: rgba(20, 17, 24, 0.85); box-shadow: inset 0 0 0 1px rgba(217, 181, 106, 0.16); color: #c8b898; font: 700 12px var(--font-ui); }
-.swatch i { width: 18px; height: 18px; border-radius: 50%; box-shadow: 0 0 0 1px #000, 0 0 0 2px rgba(255, 255, 255, 0.15); }
+.swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.swatch { min-width: 0; display: flex; align-items: center; gap: 8px; padding: 7px 9px; text-align: left; line-height: 1.15; border: 0; border-radius: 5px; cursor: pointer; background: rgba(20, 17, 24, 0.85); box-shadow: inset 0 0 0 1px rgba(217, 181, 106, 0.16); color: #c8b898; font: 700 12px var(--font-ui); }
+.swatch i { flex: none; width: 18px; height: 18px; border-radius: 50%; box-shadow: 0 0 0 1px #000, 0 0 0 2px rgba(255, 255, 255, 0.15); }
 .dyes { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .dye { width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; cursor: pointer; background: rgba(20, 17, 24, 0.85); box-shadow: inset 0 0 0 1px rgba(217, 181, 106, 0.2); display: grid; place-items: center; transition: transform 0.12s; }
 .dye:hover { transform: scale(1.1); }
@@ -120,3 +120,7 @@
 .create-caption { position: absolute; left: 50%; bottom: 44px; transform: translateX(-50%); text-align: center; pointer-events: none; }
 .cc-name { font: 700 34px var(--font-display); letter-spacing: 0.14em; text-transform: uppercase; color: #fff0d8; text-shadow: 0 2px 0 #000, 0 0 20px rgba(255, 150, 60, 0.4); }
 .cc-sub { font: italic 400 18px var(--font-text); color: #d8c4a0; text-shadow: 0 1px 3px #000; }
+
+.dyes.muted .dye { opacity: 0.45; }
+.dye-note { margin-left: 6px; font: italic 400 12px var(--font-text); color: #8a7a62; }
+.swatch span { word-spacing: 0.25em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

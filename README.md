@@ -30,7 +30,8 @@ take from each level-up, and, out of combat, what to say and to whom.
 
 ## What is in the slice
 
-- **Character creation**: name, look (body, palette, headgear), archetype
+- **Character creation**: name, look (the calling's colours repainting
+  armour and cloth, a dyed cloak or none, skin, hair, headgear), archetype
   (Warden, Reaver, Arcanist, Stalker), starting weapon, ability, a boon, and
   a background (hunter, scholar, devout or outcast). Backgrounds are
   knowledge: they open dialogue options, routes and readings of the world
@@ -144,6 +145,8 @@ All expect `npm run dev` running.
 | `node tools/folk.mjs [day\|night]` | The townsfolk: lanes checked against colliders, three minutes of errands, anyone stuck |
 | `node tools/leaks.mjs [rounds]` | Back and forth between the zones: GPU geometries and textures must not climb |
 | `node tools/tour.mjs verge [day\|night]` | One picture per landmark of a zone, empty of people |
+| `node tools/looks.mjs [calling...]` | Every colour, cloak, skin and hair option of creation, photographed |
+| `node tools/drafts.mjs [calling] [levels]` | A run of level-up drafts, photographed, taking a skill each time |
 | `node tools/ui.mjs [w h] [screen...]` | Every overlay (shops, stash, pack, self, journal, map, rest, pause, talk) at one size |
 | `node tools/listen.mjs "<query>" name secs` | Record the mix as a spectrogram with loudness |
 

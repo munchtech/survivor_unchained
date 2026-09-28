@@ -193,6 +193,8 @@ function Origin({ d }: { d: CreationDraft }) {
 
 function NameLook({ d }: { d: CreationDraft }) {
   const a = ARCHETYPES[d.archetype];
+  // Hair shows only when nothing covers it.
+  const hairHidden = d.archetype === 'stalker' ? d.model === 'rogue_hooded' : d.headgear && d.archetype !== 'reaver';
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => { ref.current?.focus(); }, []);
   return (
@@ -233,13 +235,14 @@ function NameLook({ d }: { d: CreationDraft }) {
         <span class="dye-name">{SKINS.find((c) => c.id === d.skin)?.name}</span>
       </div>
       <div class="sub-head">Hair</div>
-      <div class="dyes">
+      <div class={`dyes${hairHidden ? ' muted' : ''}`}>
         {HAIRS.map((c) => (
           <button key={c.id} title={c.name} class={`dye${d.hair === c.id ? ' on' : ''}${c.id === 'as_is' ? ' calling' : ''}`} onClick={() => set({ hair: c.id })}>
             <i style={c.color ? { background: c.color } : undefined} />
           </button>
         ))}
         <span class="dye-name">{HAIRS.find((c) => c.id === d.hair)?.name}</span>
+        {hairHidden && <span class="dye-note">under the {d.archetype === 'arcanist' ? 'hat' : d.archetype === 'stalker' ? 'hood' : 'helm'}</span>}
       </div>
       <div class="sub-head">Appearance</div>
       <div class="toggles">

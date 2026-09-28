@@ -74,7 +74,7 @@ function Draft({ v }: { v: LevelUpView }) {
         <div class="lu-kicker">The ember rises</div>
         <div class="lu-level">
           <span class="lu-orn" />
-          <span>Level {v.level}</span>
+          <span>Ember {v.level}</span>
           <span class="lu-orn r" />
         </div>
         {v.queued > 0 && <div class="lu-queued">{v.queued} more to choose</div>}
@@ -107,13 +107,13 @@ function schoolOf(o: Offer): School | null {
 
 function kicker(o: Offer): string {
   switch (o.kind) {
-    case 'weapon': return 'New weapon';
-    case 'rank': return `Rank ${o.from} → ${o.to}`;
-    case 'evolve': return 'Evolution';
+    case 'weapon': return 'New skill';
+    case 'rank': return `Skill · rank ${o.from} → ${o.to}`;
+    case 'evolve': return 'Skill evolves';
     case 'boon': {
       const syn = BOONS[o.id]?.kind === 'synergy';
-      if (!o.from) return syn ? 'New rule' : 'New boon';
-      return `${syn ? 'Rule' : 'Boon'} · rank ${o.from} → ${o.to}`;
+      if (!o.from) return syn ? 'Passive · combo' : 'Passive';
+      return `Passive · rank ${o.from} → ${o.to}`;
     }
     default: return 'Respite';
   }

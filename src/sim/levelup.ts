@@ -114,7 +114,7 @@ export function draft(b: Battle, count = 3): Offer[] {
     const next = w.rank + 1;
     const extra = next === 4 || next === 7 ? ' One more projectile.' : '';
     const hint = next === WEAPON_MAX_RANK && !w.evolution ? ' At rank 8 it can evolve.' : '';
-    skills.push({ o: { kind: 'rank', id: w.id, rarity: 'common', title: w.evolution?.name ?? w.def.name, text: `+20% damage.${extra}${hint}`, from: w.rank, to: next, icon: w.evolution?.art ?? w.def.art, tags: tagsOf(w) }, w: 9 * affinity(tagsOf(w), tags) });
+    skills.push({ o: { kind: 'rank', id: w.id, rarity: 'common', title: w.evolution?.name ?? w.def.name, text: `+20% damage (+${(next - 1) * 20}% in all).${extra}${hint}`, from: w.rank, to: next, icon: w.evolution?.art ?? w.def.art, tags: tagsOf(w) }, w: 9 * affinity(tagsOf(w), tags) });
   }
   if (b.weapons.length < MAX_WEAPONS) {
     // A small arsenal wants new weapons more than a full one does.
@@ -122,7 +122,9 @@ export function draft(b: Battle, count = 3): Offer[] {
     for (const id of WEAPON_POOL) {
       if (b.weapons.some((w) => w.id === id) || b.bannedCards.has(id)) continue;
       const d = WEAPONS[id];
-      skills.push({ o: { kind: 'weapon', id, rarity: 'uncommon', title: d.name, text: d.description, icon: d.art, tags: d.tags }, w: 3.2 * want * affinity(d.tags, tags) });
+      // A calling's own kind of skill comes up far more often than another's.
+      const own = !b.favours.size ? 1 : d.tags.some((t) => b.favours.has(t)) ? 2.6 : 0.3;
+      skills.push({ o: { kind: 'weapon', id, rarity: 'uncommon', title: d.name, text: d.description, icon: d.art, tags: d.tags }, w: 3.2 * want * own * affinity(d.tags, tags) });
     }
   }
   for (const d of Object.values(BOONS)) {

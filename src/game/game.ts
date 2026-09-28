@@ -353,6 +353,7 @@ export class Game {
       hp: exp ? Math.min(exp.hp, kit.stats.get('maxHealth')) : undefined,
     }, this.loadout());
     this.gearWeapons = new Set(kit.weapons.map((w) => w.id));
+    b.favours = new Set(ARCHETYPES[ch.archetype].favours);
     b.gearIds = kit.gearIds;
     b.gearStatuses = kit.gearStatuses;
     b.rerolls = exp?.rerolls ?? kit.rerolls;

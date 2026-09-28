@@ -27,6 +27,9 @@ export interface Archetype {
   /** Items that grant each starting weapon choice. */
   weapons: string[];
   abilities: AbilityKind[];
+  /** The kinds of skill the calling takes to (tags): the level-up draft
+   *  offers these far more often than others, though never only these. */
+  favours: string[];
   /** Their colours: which of the model's cloth swatches become what (see
    *  render/recolor.ts). The first is the model as it came. `ui` is the
    *  chip shown on the creation screen. */
@@ -38,7 +41,7 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
     id: 'warden', name: 'Warden', tagline: 'Hold the line.', model: 'knight',
     description: 'Armoured and patient. Wardens stand where others run, and the blows that reach them land on steel.',
     base: { maxHealth: 170, moveSpeed: 5.0, armor: 5, regen: 0.2, pickupRadius: 2.4, critChance: 0.04 },
-    weapons: ['worn_oathblade', 'judgement_disc_item'], abilities: ['shield_bash', 'bulwark'],
+    weapons: ['worn_oathblade', 'judgement_disc_item'], favours: ['holy', 'steel', 'melee', 'aura', 'thrown'], abilities: ['shield_bash', 'bulwark'],
     palettes: [
       { id: 'steel', name: 'Watch Steel', ui: 'linear-gradient(135deg, #a7b5bb 50%, #c2212b 50%)', paint: {} },
       { id: 'dusk', name: 'Duskbound', ui: 'linear-gradient(135deg, #5c6c8e 50%, #2e4080 50%)', paint: { plate: '#5c6c8e', cloth: '#2e4080', trim: '#d0d6e4' } },
@@ -51,7 +54,7 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
     id: 'reaver', name: 'Reaver', tagline: 'Wade in.', model: 'barbarian',
     description: 'Heavy, reckless and very hard to stop. Reavers kill what is close, and make sure everything is close.',
     base: { maxHealth: 185, moveSpeed: 5.1, armor: 3, regen: 0.4, pickupRadius: 2.4, critChance: 0.05 },
-    weapons: ['butchers_cleaver', 'gyre_axes'], abilities: ['leap', 'warcry'],
+    weapons: ['butchers_cleaver', 'gyre_axes'], favours: ['melee', 'steel', 'orbit', 'nova'], abilities: ['leap', 'warcry'],
     palettes: [
       { id: 'hide', name: 'Raw Hide', ui: '#53748d', paint: {} },
       { id: 'ember', name: 'Ember-Scarred', ui: '#a8322a', paint: { cloth: '#a8322a', fur: '#6a5a50' } },
@@ -64,7 +67,7 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
     id: 'arcanist', name: 'Arcanist', tagline: 'Burn brighter.', model: 'mage',
     description: 'Fragile and far-reaching. Arcanists turn ember into fire, frost and seeking light, and never let anything get near.',
     base: { maxHealth: 130, moveSpeed: 5.3, armor: 1, regen: 0.2, pickupRadius: 2.8, critChance: 0.06 },
-    weapons: ['apprentice_wand', 'ember_staff', 'rime_rod'], abilities: ['blink', 'time_slip'],
+    weapons: ['apprentice_wand', 'ember_staff', 'rime_rod'], favours: ['spell'], abilities: ['blink', 'time_slip'],
     palettes: [
       { id: 'violet', name: 'Low Cloister', ui: '#54507f', paint: {} },
       { id: 'crimson', name: 'Crimson Order', ui: '#8e1c28', paint: { cloth: '#8e1c28', under: '#3a0e14', trim: '#d8a040' } },
@@ -77,7 +80,7 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
     id: 'stalker', name: 'Stalker', tagline: 'Strike first.', model: 'rogue_hooded', altModel: 'rogue',
     description: 'Quick, patient and precise. Stalkers pick the fight\'s shape, mark what matters and are gone before it lands.',
     base: { maxHealth: 140, moveSpeed: 5.6, armor: 2, regen: 0.2, pickupRadius: 2.6, critChance: 0.1 },
-    weapons: ['hunting_bow', 'knife_belt'], abilities: ['mark_prey', 'smoke_bomb'],
+    weapons: ['hunting_bow', 'knife_belt'], favours: ['ranged', 'thrown', 'nature', 'projectile'], abilities: ['mark_prey', 'smoke_bomb'],
     palettes: [
       { id: 'forest', name: 'Greenwood', ui: '#008e56', paint: {} },
       { id: 'night', name: 'Nightcloak', ui: '#2c3244', paint: { cloth: '#2c3244', under: '#161a24' } },

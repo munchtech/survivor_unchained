@@ -283,7 +283,7 @@ export function rockGeometry(seed: number, size = 1.5, opts: { flat?: number; mo
   const rng = new Rng(seed * 6700417 + 3);
   const noise = new Noise2D(seed + 21);
   const g0 = new THREE.IcosahedronGeometry(1, 1);
-  const g = g0.toNonIndexed();
+  const g = g0.index ? g0.toNonIndexed() : g0;
   const pos = g.getAttribute('position');
   const flat = opts.flat ?? rng.range(0.45, 0.75);
   const sx = rng.range(0.8, 1.3), sz = rng.range(0.8, 1.3);

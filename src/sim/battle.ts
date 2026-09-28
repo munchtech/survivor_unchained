@@ -187,6 +187,8 @@ export class Battle {
   gearIds = new Set<string>();
   gearStatuses = new Set<StatusKind>();
   bannedCards = new Set<string>();
+  /** What the survivor's calling favours (skill tags), for the draft. */
+  favours = new Set<string>();
   rerolls = 2;
   banishes = 1;
   private q: number[] = [];
