@@ -30,6 +30,7 @@ Encoding is slow (a 4K sheet takes most of a minute); files already encoded
 and newer than their source are kept.
 """
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -84,6 +85,12 @@ def encode(src: Path, dst: Path, slots: set):
         im = im.convert('RGB')
     elif im.mode not in ('RGB', 'RGBA'):
         im = im.convert('RGBA' if 'A' in im.mode else 'RGB')
+    # The GPU formats are 4x4 blocks: a side that isn't a power of two leaves
+    # levels of the mip chain that don't divide into blocks, which WebGL
+    # refuses to upload (the kit's Flowers were 1008x981). The UVs don't mind.
+    pot = tuple(1 << round(math.log2(n)) for n in im.size)
+    if pot != im.size:
+        im = im.resize(pot, Image.LANCZOS)
     with tempfile.TemporaryDirectory() as tmp:
         png = Path(tmp) / 'in.png'
         im.save(png)

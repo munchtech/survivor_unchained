@@ -13,6 +13,9 @@ const PROPS = [
   'WeaponStand', 'Workbench', 'Chain_Coil',
 ];
 
+/** The game's own models (tools/models/). */
+const CUSTOM = ['Well'];
+
 const VILLAGE = ['Prop_WoodenFence_Single', 'Prop_WoodenFence_Extension1', 'Prop_Wagon', 'Prop_Brick2', 'Prop_Brick3'];
 
 export function envUsed(): Array<[EnvKit, string]> {
@@ -21,5 +24,6 @@ export function envUsed(): Array<[EnvKit, string]> {
     ...PROPS.map((n) => ['props', n] as [EnvKit, string]),
     ...VILLAGE.map((n) => ['village', n] as [EnvKit, string]),
     ...floraPieces().map((n) => ['nature', n] as [EnvKit, string]),
+    ...CUSTOM.map((n) => ['custom', n] as [EnvKit, string]),
   ];
 }

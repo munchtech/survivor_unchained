@@ -142,7 +142,8 @@ weapons are CC BY models from Sketchfab (credited in the game and in
 `public/assets/CREDITS.md`). Houses are put together from Quaternius's
 Medieval Village MegaKit on its 2 m grid (`src/world/zones/houses.ts`), with
 the Fantasy Props and Stylized Nature kits (CC0), each material weathered in
-its shader to suit a darker world. Trees, bushes and stone are the nature
+its shader to suit a darker world; what the kits lack (the town's well) is
+modelled for the game in Blender, in the kits' own sheets (`tools/models/`). Trees, bushes and stone are the nature
 kit's, instanced by the thousand in culled cells, the foliage recoloured for
 autumn and blight and the stone mossed (`src/render/scatter.ts`). The
 people's and the kits' 2K and 4K sheets ship as KTX2 (Basis UASTC,
@@ -200,10 +201,11 @@ All expect `npm run dev` running.
 | `python tools/assets/figure.py` | Then shape the women (bust and hips morph targets; needs numpy) |
 | `python3 tools/assets/env.py [.packs]` | Gather the world's kits (village, props, nature) with their bounds |
 | `python3 tools/assets/ktx2.py [--keep]` | Then compress every sheet to KTX2 (UASTC, mipmapped; needs `toktx` from KTX-Software) |
+| `<bpy venv>/bin/python tools/models/well.py` | Build one of the game's own models in headless Blender (`pip install bpy`, 4.2 LTS), painted with the village kit's sheets (`tools/models/kitmodel.py`) |
 | `node tools/assets/sketchfab.mjs search\|get ...` | Find and fetch CC0/CC BY models, writing their credit (`SKETCHFAB_TOKEN`) |
 
 `NO_HMR=1 npm run dev` serves without hot reload, so a long tool run
 survives edits to the source. Useful URLs: `?quick=warden&bg=hunter&zone=verge&at=-60,-80` (start
 anywhere as anyone), `?screen=create`, `?dev=zone&zone=verge&x=..&z=..`,
 `?dev=sandbox`, `?dev=combat`, `?dev=icons`, `?dev=gallery`, `?dev=people&view=1`
-(people, `&spec=`/`&arms=`/`&boss=idle`), `?dev=armory` (weapons), `?dev=env&kit=village` (a kit's pieces, labelled), `?dev=house` (houses), `&flora=gen` (the generated trees, to compare), `&quality=low`.
+(people, `&spec=`/`&arms=`/`&boss=idle`), `?dev=armory` (weapons), `?dev=env&kit=village` (a kit's pieces, labelled; `kit=custom` for the game's own), `?dev=house` (houses), `&flora=gen` (the generated trees, to compare), `&quality=low`.

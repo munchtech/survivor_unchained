@@ -104,7 +104,7 @@ export function waystation(g: Game): ZoneRuntime {
     node('sL', -5, 25.3), node('sR', 5, 25.3), node('swL', -14.5, 25), node('seL', 14.5, 25),
     node('sqSW', -3.6, 3.2, 'path', { square: true }), node('sqSE', 4.4, 4.2, 'path', { square: true }),
     node('sqNW', -4.4, -4.6, 'path', { square: true }), node('board', 4.2, -3.2, 'board', { face: { x: WAY.board.x, z: WAY.board.z }, square: true }),
-    node('well', -2.3, 1.2, 'well', { face: { x: 0, z: 0 }, square: true }),
+    node('well', -1.75, 0.9, 'well', { face: { x: 0, z: 0 }, square: true }),
     node('n1', 0, -12.5), node('n2', 0, -23.5), node('e1', 12, 0.6), node('e2', 24, 0.6), node('gE', 33, 0, 'gate'),
     node('innL', -6, 9.5), node('innN', -11.5, 15.5), node('tavL', -6, -9.5), node('wN', -9, -3), node('trS', 8.5, -15), node('smL', 6, 10.5), node('trL', 5, -10.2),
     node('w1', -18, 17.5), node('wW', -19, -5.5), node('sh0', -6, -16), node('sh1', -14, -19.5), node('shF', -20.5, -23.5), node('ne0', 10, -19), node('ne1', 17, -23.5), node('eS', 25, 5),

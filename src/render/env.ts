@@ -10,6 +10,8 @@ import { occludable } from './assets';
  *            houses are put together (world/zones/houses.ts)
  *   nature   the Stylized Nature MegaKit: trees, rocks, ferns, grass
  *   props    the Fantasy Props MegaKit: barrels, stalls, anvils, lanterns
+ *   custom   the game's own models (tools/models/, built in Blender), in the
+ *            village kit's materials and textures
  *
  * Only what the game uses is loaded (the kits hold hundreds of pieces, and
  * every texture decoded is memory); pieces share their textures by file.
@@ -17,7 +19,7 @@ import { occludable } from './assets';
  * piece casts and takes shadows, and dithers away where it stands between
  * the camera and the survivor, as the old props did. */
 
-export type EnvKit = 'village' | 'nature' | 'props';
+export type EnvKit = 'village' | 'nature' | 'props' | 'custom';
 
 const BASE = `${import.meta.env.BASE_URL}assets/env/`;
 const loader = sharedLoader();
@@ -63,6 +65,7 @@ export function envTemplate(kit: EnvKit, name: string) {
 }
 
 function prepare(root: THREE.Object3D, kit: EnvKit) {
+  bakeSkins(root);
   root.traverse((o) => {
     const m = o as THREE.Mesh;
     if (!m.isMesh) return;
@@ -83,6 +86,50 @@ function prepare(root: THREE.Object3D, kit: EnvKit) {
       weather(s, kit);
     }
   });
+}
+
+/* A few props come rigged (the chest, for its lid). Nothing here animates
+ * them, and a copy made by clone() stays bound to the template's bones, so it
+ * draws where the template is (the world's origin) whatever its position.
+ * Skinned meshes are baked, in the pose they were loaded in, to plain ones. */
+function bakeSkins(root: THREE.Object3D) {
+  const skinned: THREE.SkinnedMesh[] = [];
+  root.traverse((o) => { if ((o as THREE.SkinnedMesh).isSkinnedMesh) skinned.push(o as THREE.SkinnedMesh); });
+  if (!skinned.length) return;
+  root.updateMatrixWorld(true);
+  const skin = new THREE.Matrix4(), part = new THREE.Matrix4(), normal = new THREE.Matrix3();
+  const v = new THREE.Vector3();
+  for (const sm of skinned) {
+    sm.skeleton.update();
+    const geo = sm.geometry.clone();
+    const pos = geo.attributes.position, nrm = geo.attributes.normal;
+    const idx = geo.attributes.skinIndex, wt = geo.attributes.skinWeight;
+    const bones = sm.skeleton.boneMatrices!;
+    for (let i = 0; i < pos.count; i++) {
+      skin.elements.fill(0);
+      for (let k = 0; k < 4; k++) {
+        const w = wt.getComponent(i, k);
+        if (!w) continue;
+        part.fromArray(bones, idx.getComponent(i, k) * 16).multiplyScalar(w);
+        for (let e = 0; e < 16; e++) skin.elements[e] += part.elements[e];
+      }
+      skin.premultiply(sm.bindMatrixInverse).multiply(sm.bindMatrix);
+      pos.setXYZ(i, ...v.fromBufferAttribute(pos, i).applyMatrix4(skin).toArray());
+      if (nrm) nrm.setXYZ(i, ...v.fromBufferAttribute(nrm, i).applyMatrix3(normal.getNormalMatrix(skin)).normalize().toArray());
+    }
+    geo.deleteAttribute('skinIndex');
+    geo.deleteAttribute('skinWeight');
+    geo.computeBoundingBox();
+    geo.computeBoundingSphere();
+    const m = new THREE.Mesh(geo, sm.material);
+    m.name = sm.name;
+    m.matrix.copy(sm.matrix);
+    m.matrix.decompose(m.position, m.quaternion, m.scale);
+    sm.parent!.add(m);
+    sm.removeFromParent();
+    sm.geometry.dispose();
+    sm.skeleton.dispose();
+  }
 }
 
 /* The kits are painted bright and clean, for a sunnier world than this one.
@@ -113,7 +160,7 @@ function weather(mat: THREE.MeshStandardMaterial, kit: EnvKit) {
   if (mat.userData.weathered) return;
   mat.userData.weathered = true;
   const [sat, tint] = weatherOf(mat.name);
-  const foot = kit === 'village';
+  const foot = kit === 'village' || kit === 'custom';
   const prev = mat.onBeforeCompile;
   mat.onBeforeCompile = (sh, r) => {
     prev.call(mat, sh, r);

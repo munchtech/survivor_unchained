@@ -290,7 +290,9 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
   footprints.push({ x: -58, z: 50, r: 5, rot: 0.4 }, { x: 24, z: 50, r: 4.5, rot: Math.PI }, { x: -30, z: 52, r: 3.5, rot: 0.2 }, { x: -42, z: 60, r: 3.5, rot: -0.3 });
 
   /* ------------------------------------------------------------ square -- */
-  kit.prop('hex_buildings', 'building_well_blue', 0, 0, { scale: 5, r: 2, clay: true });
+  // The well (tools/models/well.py), a bucket left on its step.
+  kit.env('custom', 'Well', 0, 0, { rot: 0.35, r: 1.25 });
+  kit.env('props', 'Bucket_Wooden_1', 1.05, 1.1, { rot: 0.8 });
   // The notice board: posts and a plank with papers pinned to it.
   {
     const b = new THREE.Group();
