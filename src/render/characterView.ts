@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Assets, type CharacterModel, type PropPack } from './assets';
+import { paintedAtlas, type Paint } from './recolor';
 import { damp, dampAngle } from '@/core/math';
 
 /* One animated humanoid: the survivor, an NPC, a boss.
@@ -177,6 +178,22 @@ export class CharacterView {
   tint(color: THREE.ColorRepresentation) {
     const c = new THREE.Color(color);
     for (const m of this.materials) m.color.copy(c);
+  }
+
+  /** Dress the model: `body` repaints swatches of the atlas for every part
+   *  (cloth, skin, hair); the cloak gets `body` and `cloak` on top, so it can
+   *  differ from the tunic. See render/recolor.ts. */
+  paint(body: Paint, cloak: Paint = {}) {
+    this.model.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh) return;
+      const mat = m.material as THREE.MeshStandardMaterial;
+      const base = (mat.userData.atlas as THREE.Texture | undefined) ?? mat.map;
+      if (!base) return;
+      mat.userData.atlas = base;
+      mat.map = paintedAtlas(base, this.id, /Cape/.test(o.name) ? { ...body, ...cloak } : body);
+      mat.color.set('#ffffff');
+    });
   }
 
   /** Recolour only the parts whose names match (cloth, not skin). */

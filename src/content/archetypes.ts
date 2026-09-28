@@ -27,7 +27,10 @@ export interface Archetype {
   /** Items that grant each starting weapon choice. */
   weapons: string[];
   abilities: AbilityKind[];
-  palettes: Array<{ id: string; name: string; tint: string }>;
+  /** Their colours: which of the model's cloth swatches become what (see
+   *  render/recolor.ts). The first is the model as it came. `ui` is the
+   *  chip shown on the creation screen. */
+  palettes: Array<{ id: string; name: string; ui: string; paint: Record<string, string> }>;
 }
 
 export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
@@ -36,28 +39,52 @@ export const ARCHETYPES: Record<ArchetypeId, Archetype> = {
     description: 'Armoured and patient. Wardens stand where others run, and the blows that reach them land on steel.',
     base: { maxHealth: 170, moveSpeed: 5.0, armor: 5, regen: 0.2, pickupRadius: 2.4, critChance: 0.04 },
     weapons: ['worn_oathblade', 'judgement_disc_item'], abilities: ['shield_bash', 'bulwark'],
-    palettes: [{ id: 'steel', name: 'Watch Steel', tint: '#ffffff' }, { id: 'ash', name: 'Ashen', tint: '#b8b0a8' }, { id: 'dusk', name: 'Duskbound', tint: '#a8b0d0' }],
+    palettes: [
+      { id: 'steel', name: 'Watch Steel', ui: 'linear-gradient(135deg, #a7b5bb 50%, #c2212b 50%)', paint: {} },
+      { id: 'dusk', name: 'Duskbound', ui: 'linear-gradient(135deg, #5c6c8e 50%, #2e4080 50%)', paint: { plate: '#5c6c8e', cloth: '#2e4080', trim: '#d0d6e4' } },
+      { id: 'sun', name: 'Sun Guard', ui: 'linear-gradient(135deg, #c8a050 50%, #f2ead6 50%)', paint: { plate: '#d2b25a', cloth: '#f0e4c8', trim: '#f2ead6', leather: '#6a4a2c' } },
+      { id: 'oak', name: 'Old Oak', ui: 'linear-gradient(135deg, #8a6a48 50%, #35603a 50%)', paint: { plate: '#8a7a64', cloth: '#35603a', trim: '#dcd2b4' } },
+      { id: 'ash', name: 'Blackened', ui: 'linear-gradient(135deg, #3c3836 50%, #8a2a22 50%)', paint: { plate: '#46403c', cloth: '#7a2620', trim: '#8a8078', under: '#1e1c1a' } },
+    ],
   },
   reaver: {
     id: 'reaver', name: 'Reaver', tagline: 'Wade in.', model: 'barbarian',
     description: 'Heavy, reckless and very hard to stop. Reavers kill what is close, and make sure everything is close.',
     base: { maxHealth: 185, moveSpeed: 5.1, armor: 3, regen: 0.4, pickupRadius: 2.4, critChance: 0.05 },
     weapons: ['butchers_cleaver', 'gyre_axes'], abilities: ['leap', 'warcry'],
-    palettes: [{ id: 'hide', name: 'Raw Hide', tint: '#ffffff' }, { id: 'ember', name: 'Ember-Scarred', tint: '#e8b8a0' }, { id: 'frost', name: 'Frostborn', tint: '#c8d8e8' }],
+    palettes: [
+      { id: 'hide', name: 'Raw Hide', ui: '#53748d', paint: {} },
+      { id: 'ember', name: 'Ember-Scarred', ui: '#a8322a', paint: { cloth: '#a8322a', fur: '#6a5a50' } },
+      { id: 'frost', name: 'Frostborn', ui: '#9cc6e0', paint: { cloth: '#8cbcd8', fur: '#e4e8ec' } },
+      { id: 'bog', name: 'Bogland', ui: '#5a6a2c', paint: { cloth: '#56662a', fur: '#6a6048' } },
+      { id: 'soot', name: 'Soot and Bone', ui: '#3a3634', paint: { cloth: '#3a3634', fur: '#d8d0c0' } },
+    ],
   },
   arcanist: {
     id: 'arcanist', name: 'Arcanist', tagline: 'Burn brighter.', model: 'mage',
     description: 'Fragile and far-reaching. Arcanists turn ember into fire, frost and seeking light, and never let anything get near.',
     base: { maxHealth: 130, moveSpeed: 5.3, armor: 1, regen: 0.2, pickupRadius: 2.8, critChance: 0.06 },
     weapons: ['apprentice_wand', 'ember_staff', 'rime_rod'], abilities: ['blink', 'time_slip'],
-    palettes: [{ id: 'violet', name: 'Low Cloister', tint: '#ffffff' }, { id: 'crimson', name: 'Crimson Order', tint: '#e8a8a8' }, { id: 'grey', name: 'Ashen Scholar', tint: '#c8c4c0' }],
+    palettes: [
+      { id: 'violet', name: 'Low Cloister', ui: '#54507f', paint: {} },
+      { id: 'crimson', name: 'Crimson Order', ui: '#8e1c28', paint: { cloth: '#8e1c28', under: '#3a0e14', trim: '#d8a040' } },
+      { id: 'azure', name: 'Tidewater', ui: '#2c5c9c', paint: { cloth: '#2c5c9c', under: '#12284a', trim: '#e8c060' } },
+      { id: 'verdant', name: 'Greenhall', ui: '#2c6c4c', paint: { cloth: '#2c6c4c', under: '#10301e', trim: '#c8a050' } },
+      { id: 'grey', name: 'Ashen Scholar', ui: '#6a6864', paint: { cloth: '#6a6864', under: '#2a2826', trim: '#b8b0a0' } },
+    ],
   },
   stalker: {
     id: 'stalker', name: 'Stalker', tagline: 'Strike first.', model: 'rogue_hooded', altModel: 'rogue',
     description: 'Quick, patient and precise. Stalkers pick the fight\'s shape, mark what matters and are gone before it lands.',
     base: { maxHealth: 140, moveSpeed: 5.6, armor: 2, regen: 0.2, pickupRadius: 2.6, critChance: 0.1 },
     weapons: ['hunting_bow', 'knife_belt'], abilities: ['mark_prey', 'smoke_bomb'],
-    palettes: [{ id: 'forest', name: 'Greenwood', tint: '#ffffff' }, { id: 'night', name: 'Nightcloak', tint: '#9aa0b8' }, { id: 'sand', name: 'Dustreach', tint: '#e0d0b0' }],
+    palettes: [
+      { id: 'forest', name: 'Greenwood', ui: '#008e56', paint: {} },
+      { id: 'night', name: 'Nightcloak', ui: '#2c3244', paint: { cloth: '#2c3244', under: '#161a24' } },
+      { id: 'sand', name: 'Dustreach', ui: '#b89a68', paint: { cloth: '#b89a68', under: '#7a6444' } },
+      { id: 'blood', name: 'Bloodfern', ui: '#7c2222', paint: { cloth: '#7c2222', under: '#3a1212' } },
+      { id: 'slate', name: 'Slate', ui: '#56687a', paint: { cloth: '#56687a', under: '#2c3642' } },
+    ],
   },
 };
 

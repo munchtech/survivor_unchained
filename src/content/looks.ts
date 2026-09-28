@@ -1,23 +1,35 @@
 /* How a survivor can look, beyond their calling's colours: the dye of the
- * cloak on their back (or none) and the tone of their skin. Each is a
- * multiply over the model's own texture, so they stay in its palette. */
+ * cloak on their back (or none) and the tone of their skin. Each repaints
+ * its swatch of the model's atlas (render/recolor.ts), keeping its shading:
+ * 'calling' and 'fair' leave the model as it came. */
 
 export const CLOAK_DYES: Array<{ id: string; name: string; color: string }> = [
   { id: 'calling', name: 'Their calling\'s', color: '' },
-  { id: 'watch', name: 'Watch Blue', color: '#6a86c8' },
-  { id: 'crimson', name: 'Crimson', color: '#c8605a' },
-  { id: 'forest', name: 'Forest', color: '#7aa06a' },
-  { id: 'ochre', name: 'Ochre', color: '#d8b060' },
-  { id: 'violet', name: 'Violet', color: '#9a7ac0' },
-  { id: 'bone', name: 'Bone', color: '#e8e0cc' },
-  { id: 'soot', name: 'Soot', color: '#6a6660' },
+  { id: 'watch', name: 'Watch Blue', color: '#34508c' },
+  { id: 'crimson', name: 'Crimson', color: '#9c1e24' },
+  { id: 'forest', name: 'Forest', color: '#2e5c34' },
+  { id: 'ochre', name: 'Ochre', color: '#c89030' },
+  { id: 'violet', name: 'Violet', color: '#5c3a86' },
+  { id: 'bone', name: 'Bone', color: '#dcd4c0' },
+  { id: 'soot', name: 'Soot', color: '#34302e' },
   { id: 'none', name: 'No cloak', color: '' },
 ];
 
 export const SKINS: Array<{ id: string; name: string; color: string }> = [
-  { id: 'fair', name: 'Fair', color: '#ffffff' },
-  { id: 'warm', name: 'Warm', color: '#f0d4bc' },
-  { id: 'olive', name: 'Olive', color: '#dcc09a' },
-  { id: 'brown', name: 'Brown', color: '#b8896a' },
-  { id: 'deep', name: 'Deep', color: '#8a624c' },
+  { id: 'fair', name: 'Fair', color: '' },
+  { id: 'rose', name: 'Rose', color: '#f0b8a0' },
+  { id: 'warm', name: 'Warm', color: '#e0a47c' },
+  { id: 'olive', name: 'Olive', color: '#c4945e' },
+  { id: 'brown', name: 'Brown', color: '#946040' },
+  { id: 'deep', name: 'Deep', color: '#5e3c2a' },
+];
+
+/** Hair, for those who show it. */
+export const HAIRS: Array<{ id: string; name: string; color: string }> = [
+  { id: 'as_is', name: 'As it grew', color: '' },
+  { id: 'black', name: 'Black', color: '#2a2422' },
+  { id: 'brown', name: 'Brown', color: '#5e3e28' },
+  { id: 'auburn', name: 'Auburn', color: '#8e3e20' },
+  { id: 'fair', name: 'Fair', color: '#d8b870' },
+  { id: 'grey', name: 'Grey', color: '#a8a4a0' },
 ];

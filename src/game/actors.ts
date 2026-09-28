@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { CharacterView } from '@/render/characterView';
-import { CLOTH } from '@/render/playerView';
 import type { NpcDef } from '@/content/npcs';
 import type { BarkLayer } from '@/ui/hud/barks';
 import { dampAngle } from '@/core/math';
@@ -29,7 +28,8 @@ export class NpcActor {
     this.x = spot.x; this.z = spot.z; this.facing = spot.facing;
     const v = new CharacterView(def.model, { scale: 0.8 * (def.scale ?? 1) });
     v.showOnly(def.show);
-    if (def.tint) v.tintParts(def.tint, CLOTH);
+    // Their cloth in their own colour (the calling's swatches, repainted).
+    if (def.tint) v.paint({ cloth: def.tint });
     this.poseLoop = def.idle;
     v.loop(def.idle, 0, def.idle === '1H_Melee_Attack_Chop' ? 0.55 : 1);
     v.face(spot.facing, true);

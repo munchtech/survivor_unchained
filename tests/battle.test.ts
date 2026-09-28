@@ -149,3 +149,31 @@ describe('neutral creatures', () => {
     expect(mate.provoked).toBe(true);
   });
 });
+
+describe('the level-up draft', () => {
+  it('is mostly skills: weapons and their ranks, with one passive', () => {
+    const b = arena(11);
+    let skills = 0, passives = 0, draftsWithSkill = 0, drafts = 0;
+    for (let i = 0; i < 40; i++) {
+      const offers = draft(b, 3);
+      drafts++;
+      const s = offers.filter((o) => o.kind === 'weapon' || o.kind === 'rank' || o.kind === 'evolve').length;
+      const p = offers.filter((o) => o.kind === 'boon').length;
+      skills += s; passives += p;
+      if (s > 0) draftsWithSkill++;
+      expect(p).toBeLessThanOrEqual(1);
+      // Take a skill when there is one, the way the build grows.
+      choose(b, offers.find((o) => o.kind !== 'boon') ?? offers[0]);
+    }
+    expect(draftsWithSkill).toBe(drafts);
+    expect(skills).toBeGreaterThan(passives * 1.8);
+  });
+
+  it('fills with passives once every weapon is full and ranked', async () => {
+    const { WEAPON_POOL, WEAPON_MAX_RANK, MAX_WEAPONS } = await import('@/content/weapons');
+    const b = arena(12, WEAPON_POOL.slice(0, MAX_WEAPONS).map((id) => ({ id, rank: WEAPON_MAX_RANK })));
+    const offers = draft(b, 3);
+    expect(offers.every((o) => o.kind === 'boon' || o.kind === 'evolve')).toBe(true);
+    expect(offers.length).toBe(3);
+  });
+});

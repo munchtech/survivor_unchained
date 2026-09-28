@@ -156,7 +156,7 @@ export class Game {
     this.mode = 'create';
     const draft: CreationDraft = {
       step: 0, name: '', archetype: 'warden', weaponItem: 'worn_oathblade', ability: 'shield_bash', startBoon: 'might',
-      background: 'hunter', palette: 'steel', model: 'knight', headgear: true, cloak: 'calling', skin: 'fair',
+      background: 'hunter', palette: 'steel', model: 'knight', headgear: true, cloak: 'calling', skin: 'fair', hair: 'as_is',
     };
     creation.value = draft;
     screen.value = 'create';
@@ -196,13 +196,13 @@ export class Game {
   }
 
   private dressFigure(d: CreationDraft) {
-    const key = `${d.archetype}|${d.model}|${d.weaponItem}|${d.palette}|${d.headgear}|${d.cloak}|${d.skin}`;
+    const key = `${d.archetype}|${d.model}|${d.weaponItem}|${d.palette}|${d.headgear}|${d.cloak}|${d.skin}|${d.hair}`;
     if (key === this.figureKey && this.figure) return;
     const changedBody = !this.figureKey.startsWith(`${d.archetype}|${d.model}|`);
     // A new cloak is worth turning round to show.
     const changedCloak = !changedBody && this.figureKey.split('|')[5] !== d.cloak && d.cloak !== 'none';
     this.figureKey = key;
-    const lo = loadoutFor({ archetype: d.archetype, weaponItem: d.weaponItem, model: d.model as CharacterModel, palette: d.palette, headgear: d.headgear, cloak: d.cloak, skin: d.skin });
+    const lo = loadoutFor({ archetype: d.archetype, weaponItem: d.weaponItem, model: d.model as CharacterModel, palette: d.palette, headgear: d.headgear, cloak: d.cloak, skin: d.skin, hair: d.hair });
     this.placeFigure(lo.model, { show: lo.show, look: lo });
     if (changedBody && this.figure) this.figure.act(d.archetype === 'arcanist' ? 'Spellcast_Raise' : d.archetype === 'reaver' ? 'Taunt' : 'Cheer', { speed: 1 });
     if (changedCloak && this.figure) { this.figure.face(Math.PI * 0.08 + Math.PI * 0.85); this.figureTurnT = 1.8; }
@@ -756,7 +756,7 @@ export class Game {
 
   loadout() {
     const ch = this.ch!;
-    return loadoutFor({ archetype: ch.archetype, weaponItem: ch.equipment.weapon?.def ?? ARCHETYPES[ch.archetype].weapons[0], model: ch.model, palette: ch.palette, headgear: ch.headgear, cloak: ch.cloak, skin: ch.skin });
+    return loadoutFor({ archetype: ch.archetype, weaponItem: ch.equipment.weapon?.def ?? ARCHETYPES[ch.archetype].weapons[0], model: ch.model, palette: ch.palette, headgear: ch.headgear, cloak: ch.cloak, skin: ch.skin, hair: ch.hair });
   }
 
   /* ======================================================= dialogue == */
@@ -795,7 +795,7 @@ export class Game {
   private portraitOf(id: string) {
     if (!this.portraits.has(id)) {
       const d = NPCS[id] ?? OUTSIDERS[id];
-      this.portraits.set(id, d ? renderPortrait({ model: d.model, show: d.show, attackClips: [], heavyClip: '', tint: d.tint }, 190, 228, 'bust', d.scale ?? 1) : null);
+      this.portraits.set(id, d ? renderPortrait({ model: d.model, show: d.show, attackClips: [], heavyClip: '', paint: { body: d.tint ? { cloth: d.tint } : {}, cloak: {} } }, 190, 228, 'bust', d.scale ?? 1) : null);
     }
     return this.portraits.get(id) ?? null;
   }

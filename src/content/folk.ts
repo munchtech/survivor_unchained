@@ -10,26 +10,30 @@ import type { CharacterModel } from '@/render/assets';
  * with a condition are news, and are said first while they are fresh; the
  * rest is the weather and the price of bread. */
 
-export interface FolkLook { model: CharacterModel; show: string[]; tint: string; scale?: number }
+export interface FolkLook { model: CharacterModel; show: string[]; tint: string; under?: string; scale?: number }
 
 /** Plain clothes on the same five bodies the heroes use. */
 export const FOLK_LOOKS: FolkLook[] = [
-  { model: 'rogue', show: [], tint: '#7a5a3a' },
-  { model: 'rogue', show: [], tint: '#5a6a4a' },
-  { model: 'rogue', show: [], tint: '#8a6a6a', scale: 0.94 },
+  { model: 'rogue', show: [], tint: '#7a5a3a', under: '#4a3a2a' },
+  { model: 'rogue', show: [], tint: '#5a6a4a', under: '#3a4430' },
+  { model: 'rogue', show: [], tint: '#8a4a4a', under: '#4a2e2a', scale: 0.94 },
+  { model: 'rogue', show: [], tint: '#6a7a8a', under: '#3a4450' },
   { model: 'barbarian', show: [], tint: '#6a5040' },
   { model: 'barbarian', show: [], tint: '#4a5a6a' },
-  { model: 'barbarian', show: [], tint: '#7a6a4a', scale: 1.04 },
-  { model: 'mage', show: [], tint: '#8a7a5a' },
-  { model: 'mage', show: [], tint: '#6a4a4a' },
-  { model: 'mage', show: [], tint: '#4a5048', scale: 0.96 },
-  { model: 'rogue_hooded', show: [], tint: '#4a4a3a' },
-  { model: 'rogue_hooded', show: [], tint: '#6a5a4a' },
+  { model: 'barbarian', show: [], tint: '#8a7a4a', scale: 1.04 },
+  { model: 'mage', show: [], tint: '#8a7a5a', under: '#4a4030' },
+  { model: 'mage', show: [], tint: '#6a3a3a', under: '#3a2020' },
+  { model: 'mage', show: [], tint: '#4a5a48', under: '#2a3228', scale: 0.96 },
+  { model: 'mage', show: [], tint: '#b8a888', under: '#6a5e4a' },
+  { model: 'rogue_hooded', show: [], tint: '#4a4a3a', under: '#2a2a22' },
+  { model: 'rogue_hooded', show: [], tint: '#6a5a4a', under: '#3a3028' },
+  { model: 'rogue_hooded', show: [], tint: '#5a3a4a', under: '#32222a' },
 ];
 
 export const CHILD_LOOKS: FolkLook[] = [
-  { model: 'rogue', show: [], tint: '#9a6a4a', scale: 0.62 },
-  { model: 'rogue', show: [], tint: '#5a7a8a', scale: 0.58 },
+  { model: 'rogue', show: [], tint: '#9a6a4a', under: '#5a3e2a', scale: 0.62 },
+  { model: 'rogue', show: [], tint: '#5a7a8a', under: '#344854', scale: 0.58 },
+  { model: 'rogue', show: [], tint: '#a8844a', under: '#5e4a2a', scale: 0.6 },
   { model: 'barbarian', show: [], tint: '#8a8a5a', scale: 0.6 },
 ];
 

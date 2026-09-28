@@ -171,6 +171,7 @@ export interface CreationDraft {
   headgear: boolean;
   cloak: string;
   skin: string;
+  hair: string;
 }
 export const creation = signal<CreationDraft | null>(null);
 

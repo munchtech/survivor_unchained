@@ -8,7 +8,7 @@ import { ABILITIES, type AbilityKind } from '@/content/abilities';
 import { BOONS } from '@/content/boons';
 import { Glyph, Icon } from '../components/Icon';
 import { SCHOOL_UI } from '../palette';
-import { CLOAK_DYES, SKINS } from '@/content/looks';
+import { CLOAK_DYES, SKINS, HAIRS } from '@/content/looks';
 import { Input } from '@/core/input';
 import type { CharacterModel } from '@/render/assets';
 import './create.css';
@@ -50,7 +50,7 @@ export function Create() {
     if (!canBegin) { set({ step: 3 }); return; }
     actions.beginJourney({
       name: d.name.trim(), archetype: d.archetype, background: d.background, palette: d.palette, model: d.model as CharacterModel,
-      weaponItem: d.weaponItem, ability: d.ability as AbilityKind, startBoon: d.startBoon, headgear: d.headgear, cloak: d.cloak, skin: d.skin,
+      weaponItem: d.weaponItem, ability: d.ability as AbilityKind, startBoon: d.startBoon, headgear: d.headgear, cloak: d.cloak, skin: d.skin, hair: d.hair,
     });
   };
   useEffect(() => Input.on((act, e) => {
@@ -209,7 +209,7 @@ function NameLook({ d }: { d: CreationDraft }) {
       <div class="swatches">
         {a.palettes.map((p) => (
           <button key={p.id} class={`swatch${d.palette === p.id ? ' on' : ''}`} onClick={() => set({ palette: p.id })}>
-            <i style={{ background: p.tint === '#ffffff' ? 'linear-gradient(135deg, #d8c8a8, #6a5a48)' : p.tint }} />
+            <i style={{ background: p.ui }} />
             <span>{p.name}</span>
           </button>
         ))}
@@ -227,10 +227,19 @@ function NameLook({ d }: { d: CreationDraft }) {
       <div class="dyes">
         {SKINS.map((c) => (
           <button key={c.id} title={c.name} class={`dye skin${d.skin === c.id ? ' on' : ''}`} onClick={() => set({ skin: c.id })}>
-            <i style={{ background: c.id === 'fair' ? '#f4dcc4' : c.color }} />
+            <i style={{ background: c.color || '#f6c4a0' }} />
           </button>
         ))}
         <span class="dye-name">{SKINS.find((c) => c.id === d.skin)?.name}</span>
+      </div>
+      <div class="sub-head">Hair</div>
+      <div class="dyes">
+        {HAIRS.map((c) => (
+          <button key={c.id} title={c.name} class={`dye${d.hair === c.id ? ' on' : ''}${c.id === 'as_is' ? ' calling' : ''}`} onClick={() => set({ hair: c.id })}>
+            <i style={c.color ? { background: c.color } : undefined} />
+          </button>
+        ))}
+        <span class="dye-name">{HAIRS.find((c) => c.id === d.hair)?.name}</span>
       </div>
       <div class="sub-head">Appearance</div>
       <div class="toggles">

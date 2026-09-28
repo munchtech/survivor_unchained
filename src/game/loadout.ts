@@ -1,7 +1,7 @@
 import type { Loadout } from '@/render/playerView';
 import type { CharacterModel } from '@/render/assets';
 import { ARCHETYPES, type ArchetypeId } from '@/content/archetypes';
-import { CLOAK_DYES, SKINS } from '@/content/looks';
+import { CLOAK_DYES, SKINS, HAIRS } from '@/content/looks';
 
 /* What the survivor visibly carries. The KayKit models ship with every
  * weapon and hat attached; this picks the ones that match the weapon in
@@ -25,21 +25,23 @@ const ARMS: Record<string, Arms> = {
 const CAPE: Record<ArchetypeId, string> = { warden: 'Knight_Cape', reaver: 'Barbarian_Cape', arcanist: 'Mage_Cape', stalker: 'Rogue_Cape' };
 const HEAD: Partial<Record<ArchetypeId, string>> = { warden: 'Knight_Helmet', reaver: 'Barbarian_Hat', arcanist: 'Mage_Hat' };
 
-export interface LookChoice { archetype: ArchetypeId; weaponItem: string; model?: CharacterModel; palette?: string; headgear?: boolean; cloak?: string; skin?: string }
+export interface LookChoice { archetype: ArchetypeId; weaponItem: string; model?: CharacterModel; palette?: string; headgear?: boolean; cloak?: string; skin?: string; hair?: string }
 
 export function loadoutFor(c: LookChoice): Loadout {
   const a = ARCHETYPES[c.archetype];
   const arms = ARMS[c.weaponItem] ?? ARMS[a.weapons[0]];
   const show = [...arms.show];
   if (c.cloak !== 'none') show.push(CAPE[c.archetype]);
-  const dye = CLOAK_DYES.find((d) => d.id === c.cloak)?.color || undefined;
-  const skin = SKINS.find((s) => s.id === c.skin)?.color;
+  const dye = CLOAK_DYES.find((d) => d.id === c.cloak)?.color || '';
+  const skin = SKINS.find((s) => s.id === c.skin)?.color || '';
+  const hair = HAIRS.find((h) => h.id === c.hair)?.color || '';
   const head = HEAD[c.archetype];
   if (head && c.headgear) show.push(head);
   const pal = a.palettes.find((p) => p.id === c.palette) ?? a.palettes[0];
   return {
     model: c.model ?? a.model, show, attackClips: arms.attack, heavyClip: arms.heavy, castClip: arms.cast,
-    tint: pal.tint === '#ffffff' ? undefined : pal.tint,
-    capeTint: dye, skinTint: skin && skin !== '#ffffff' ? skin : undefined,
+    // The calling's colours on the cloth, the chosen skin and hair; the
+    // cloak takes a dye of its own, or follows the calling.
+    paint: { body: { ...pal.paint, skin, hair }, cloak: { cloak: dye } },
   };
 }

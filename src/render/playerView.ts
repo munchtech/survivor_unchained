@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CharacterView } from './characterView';
+import type { Paint } from './recolor';
 import type { CharacterModel } from './assets';
 import type { Battle } from '@/sim/battle';
 import { damp } from '@/core/math';
@@ -20,18 +21,17 @@ export interface Loadout {
   attackClips: string[];
   heavyClip: string;
   castClip?: string;
-  /** Cloth colour for the chosen palette. */
+  /** A plain multiply over the cloth (for figures without a painted look). */
   tint?: string;
-  /** A dyed cloak, and a skin tone, over the palette. */
-  capeTint?: string;
-  skinTint?: string;
+  /** The survivor's look: swatches of the atlas repainted (render/recolor.ts);
+   *  the cloak's own on top of the body's. */
+  paint?: { body: Paint; cloak: Paint };
 }
 
 /** Apply a loadout's colours to a character view (the survivor, portraits). */
-export function applyLook(view: { tintParts(c: string, m: RegExp): void }, lo: Loadout) {
-  if (lo.tint) view.tintParts(lo.tint, CLOTH);
-  if (lo.capeTint) view.tintParts(lo.capeTint, /Cape/);
-  if (lo.skinTint) view.tintParts(lo.skinTint, /Head/);
+export function applyLook(view: { tintParts(c: string, m: RegExp): void; paint(body: Paint, cloak?: Paint): void }, lo: Loadout) {
+  if (lo.paint) view.paint(lo.paint.body, lo.paint.cloak);
+  else if (lo.tint) view.tintParts(lo.tint, CLOTH);
 }
 
 export const LOADOUTS: Record<string, Loadout> = {

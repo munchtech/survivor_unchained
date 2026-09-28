@@ -1,12 +1,11 @@
 import * as THREE from 'three';
 import { CharacterView } from '@/render/characterView';
-import { CLOTH } from '@/render/playerView';
 import type { CollisionWorld } from '@/sim/collision';
 import type { BarkLayer } from '@/ui/hud/barks';
 import type { LightSource, ZoneKit } from '@/world/zones/kit';
 import { dampAngle } from '@/core/math';
 import { FOLK_LOOKS, CHILD_LOOKS, WATCH_LOOK, type FolkLook, type FolkLine } from '@/content/folk';
-import { SKINS } from '@/content/looks';
+import { SKINS, HAIRS } from '@/content/looks';
 
 /* A town's worth of people walking about.
  *
@@ -125,8 +124,8 @@ export class Folk {
     const l = look ?? (role === 'child' ? pick(CHILD_LOOKS) : role === 'watch' ? WATCH_LOOK : pick(FOLK_LOOKS));
     const view = new CharacterView(l.model, { scale: 0.8 * (l.scale ?? 1) });
     view.showOnly(l.show);
-    view.tintParts(l.tint, CLOTH);
-    if (role !== 'watch') view.tintParts(pick(SKINS).color, /Head/);
+    // Their own clothes, skin and hair: nobody in town dresses like a hero.
+    view.paint(role === 'watch' ? { cloth: l.tint } : { cloth: l.tint, under: l.under ?? '', skin: pick(SKINS).color, hair: pick(HAIRS).color });
     view.walkStride = 2.0;
     this.opts.parent.add(view.root);
     const w: Walker = {
