@@ -25,6 +25,9 @@ export interface Variant { when?: Cond; text: string; add?: boolean }
 
 export interface DChoice {
   text: string | Variant[];
+  /** Offered at all only while this holds (a choice that no longer applies
+   *  goes, rather than sitting there locked). */
+  show?: Cond;
   when?: Cond;
   /** Show the choice greyed out, with this reason, when `when` fails. */
   locked?: string;
@@ -112,6 +115,7 @@ export class DialogueRunner {
     const choices: PresentedChoice[] = [];
     (n.choices ?? []).forEach((c, index) => {
       if (c.once && s.flags[`once:${c.once}`]) return;
+      if (c.show && !test(c.show, this.ctx)) return;
       const ok = test(c.when, this.ctx);
       if (!ok && !c.locked) return;
       choices.push({ index, text: template(pickText(c.text, this.ctx), this.ctx), enabled: ok, locked: ok ? undefined : c.locked, badge: c.badge, ends: !!c.end || (!c.goto && !c.action), action: c.action });

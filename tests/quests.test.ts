@@ -296,3 +296,24 @@ describe('what you know opens doors', () => {
     expect(c.ch.knowledge).toContain('faith');
   });
 });
+
+describe('choices that no longer apply', () => {
+  const offered = (convo: Conversation, c: Ctx) => new DialogueRunner(convo, c).start()!.choices.map((x) => x.text);
+
+  it('the toll, once paid, is not offered again (not even locked)', () => {
+    const { c, world } = setup('hunter');
+    npc(world, 'vonnra').flags.met = true;
+    expect(offered(CONVOS.vonnra, c).some((t) => /pay the toll/i.test(t))).toBe(true);
+    world.facts['toll.paid'] = true;
+    expect(offered(CONVOS.vonnra, c).some((t) => /pay the toll/i.test(t))).toBe(false);
+  });
+
+  it('the stream sample, once read, is not asked for again', () => {
+    const { c, ch } = setup('hunter');
+    ch.knowledge.push('clue.analysis');
+    const r = new DialogueRunner(CONVOS.wenna, c);
+    let p = r.start();
+    while (p && !p.choices.length) p = r.advance();
+    expect(p!.choices.some((x) => /water from the stream/i.test(x.text))).toBe(false);
+  });
+});

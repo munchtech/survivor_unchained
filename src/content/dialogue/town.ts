@@ -111,7 +111,7 @@ const hollowayHub: DChoice[] = [
   { text: 'Harlan Coyle\'s caravan. What do you know?', goto: 'caravan' },
   { text: 'The wolves are sick, not bold.', when: { any: [{ knows: 'beastlore' }, { knows: 'clue.sick_wolf' }] }, badge: 'Beastlore', once: 'sick', goto: 'sick' },
   { text: 'The wolves are poisoned. The Dig is dumping ember slurry into the stream.', when: { knows: 'root_cause' }, once: 'cause', goto: 'cause' },
-  { text: 'The beasts are dealt with. You can stop worrying.', when: { all: [beastsOpen, { hasItem: 'wolf_pelt', qty: 3 }, { not: { fact: 'beasts.told_holloway', exists: true } }] }, locked: 'You would need something to show for it', goto: 'lie' },
+  { text: 'The beasts are dealt with. You can stop worrying.', show: { all: [beastsOpen, { not: { fact: 'beasts.told_holloway', exists: true } }] }, when: { hasItem: 'wolf_pelt', qty: 3 }, locked: 'You would need something to show for it', goto: 'lie' },
   { text: 'Pell Varrow paid the Kerchiefs to take Coyle\'s caravan. Here is his ledger.', when: { hasItem: 'pell_ledger' }, once: 'expose', goto: 'expose' },
   bye(),
 ];
@@ -341,7 +341,7 @@ export const MAECA: Conversation = {
 const wennaHub: DChoice[] = [
   { text: 'Holloway says the wolves are getting bolder.', goto: 'animals' },
   { text: 'Tam says the wolves drank from the stream and fell down.', when: { all: [{ knows: 'hint.stream' }, { not: { knows: 'clue.analysis' } }] }, once: 'tam', goto: 'tamsays' },
-  { text: 'I brought you water from the stream.', when: { hasItem: 'stream_sample' }, locked: 'Bring her a sample from the Thornhollow stream', goto: 'analyse' },
+  { text: 'I brought you water from the stream.', show: { not: { knows: 'clue.analysis' } }, when: { hasItem: 'stream_sample' }, locked: 'Bring her a sample from the Thornhollow stream', goto: 'analyse' },
   { text: 'Let me help you test it.', when: { all: [{ knows: 'arcana' }, { hasItem: 'stream_sample' }] }, badge: 'Arcana', goto: 'analyse_arcana' },
   { text: 'I brought bitterroot.', when: { hasItem: 'bitterroot', qty: 3 }, locked: 'She wants three bitterroot', effects: [{ take: 'bitterroot', qty: 3 }, { gold: 15 }, { rel: { npc: 'wenna', affection: 12, trust: 6 } }], goto: 'root' },
   { text: 'That beaked mask on the wall...', when: { rel: { npc: 'wenna', axis: 'affection', gte: 20 } }, locked: 'She does not know you well enough', once: 'mask', goto: 'mask' },
@@ -823,12 +823,12 @@ export const CHID: Conversation = {
 /* ============================================================== Vonnra == */
 
 const vonnraHub: DChoice[] = [
-  { text: 'I will pay the toll.', when: { all: [{ not: { fact: 'toll.paid', eq: true } }, { gold: { gte: 5 } }] }, locked: 'The toll is five gold', effects: [{ gold: -5 }, { set: { 'toll.paid': true } }], goto: 'paid' },
+  { text: 'I will pay the toll.', show: { not: { fact: 'toll.paid', eq: true } }, when: { gold: { gte: 5 } }, locked: 'The toll is five gold', effects: [{ gold: -5 }, { set: { 'toll.paid': true } }], goto: 'paid' },
   { text: 'Did Coyle\'s caravan pay your toll?', when: { quest: { id: 'caravan', status: 'active' } }, goto: 'ledger' },
   { text: 'The sealed door in the Verge...', when: { quest: { id: 'vault', entry: 'seen' } }, once: 'vault', goto: 'vault' },
   { text: 'I have come to read your old script.', when: { knows: 'arcana' }, badge: 'Arcana', once: 'arcana', goto: 'arcana' },
   { text: 'What do you sell?', action: 'trade' },
-  { text: 'Tell me my fortune.', when: { fact: 'chapter.ready', eq: true }, goto: 'fortune' },
+  { text: [{ when: { fact: 'chapter.done', eq: true }, text: 'Read my fortune again.' }, { text: 'Tell me my fortune.' }], when: { fact: 'chapter.ready', eq: true }, goto: 'fortune' },
   bye(),
 ];
 
