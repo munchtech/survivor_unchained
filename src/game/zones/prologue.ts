@@ -4,6 +4,7 @@ import type { ZoneRuntime, Interactable, MapMark } from '../zone';
 import { buildLowFord, LOWFORD, riverZ, WATER_Y } from '@/world/zones/lowford';
 import { WardenView } from '@/render/bossViews';
 import { CharacterView } from '@/render/characterView';
+import { outfitFor } from '@/content/looks';
 import { PRESETS, blendPresets } from '@/render/atmosphere';
 import type { Battle } from '@/sim/battle';
 import type { Enemy } from '@/sim/entities';
@@ -83,12 +84,13 @@ export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number 
   /* ------------------------------------------------------------- scenery -- */
 
   // The dead watchman at the post, and his chest.
-  const watchman = new CharacterView('knight');
-  watchman.showOnly(['Knight_Helmet', 'Round_Shield']);
-  watchman.tint('#9a9890');
+  const watchman = new CharacterView({ sex: 'male', outfit: outfitFor('male', 'ranger', { hood: true, pauldron: true }), hair: null, beard: true, hairColor: '#4a3a2a', skin: '#c8b0a0', dye: { cloth: '#4a5064' } });
+  watchman.wield('forearm.l', 'shield_round');
   watchman.root.position.set(L.watchman.x, kit.y(L.watchman.x, L.watchman.z), L.watchman.z);
   watchman.face(2.2, true);
-  watchman.loop('Death_A_Pose', 0);
+  // Where he fell: the fall played out and held.
+  watchman.act('Death_A', { clamp: true, blocksLegs: true, fade: 0 });
+  watchman.update(6);
   built.zone.root.add(watchman.root);
 
   /* ------------------------------------------------------------- helpers -- */

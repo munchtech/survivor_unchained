@@ -40,3 +40,17 @@ export const HAIR_STYLES: Record<'male' | 'female', string[]> = {
   male: ['Hair_SimpleParted', 'Hair_Buzzed', 'Hair_Long'],
   female: ['Hair_Long', 'Hair_Buns', 'Hair_BuzzedFemale'],
 };
+
+/** A person's clothes by kind (render/people.ts part names): the peasant's
+ *  shirt, vest and trousers; the ranger's leathers; or bare to the waist
+ *  (trousers and boots). A hood and a pauldron go on top. */
+export function outfitFor(sex: 'male' | 'female', kind: 'peasant' | 'ranger' | 'bare', o: { hood?: boolean; pauldron?: boolean } = {}): string[] {
+  const S = sex === 'male' ? 'Male' : 'Female';
+  const out = kind === 'ranger'
+    ? [`${S}_Ranger_Arms`, `${S}_Ranger_Body`, `${S}_Ranger_Legs`, sex === 'male' ? 'Male_Ranger_Feet_Boots' : 'Female_Ranger_Feet']
+    : kind === 'bare' ? [`${S}_Peasant_Legs`, `${S}_Peasant_Feet`]
+    : [`${S}_Peasant_Arms`, `${S}_Peasant_Body`, `${S}_Peasant_Legs`, `${S}_Peasant_Feet`];
+  if (o.pauldron) out.push(sex === 'male' ? 'Male_Ranger_Acc_Pauldron' : 'Female_Ranger_Acc_Pauldrons');
+  if (o.hood) out.push(`${S}_Ranger_Head_Hood`);
+  return out;
+}

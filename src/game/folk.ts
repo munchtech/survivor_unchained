@@ -5,7 +5,8 @@ import type { BarkLayer } from '@/ui/hud/barks';
 import type { LightSource, ZoneKit } from '@/world/zones/kit';
 import { dampAngle } from '@/core/math';
 import { FOLK_LOOKS, CHILD_LOOKS, WATCH_LOOK, type FolkLook, type FolkLine } from '@/content/folk';
-import { SKINS, HAIRS } from '@/content/looks';
+import { SKINS, HAIRS, HAIR_STYLES, outfitFor } from '@/content/looks';
+import type { PersonSpec } from '@/render/people';
 
 /* A town's worth of people walking about.
  *
@@ -56,6 +57,26 @@ interface Walker {
 
 const _v = new THREE.Vector3();
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
+
+/** Someone from the town, in the flesh: a man or a woman in the plain
+ *  clothes of a look (its colours dye them), with skin, hair and a beard of
+ *  their own. The watch wear leathers, a pauldron and a hood; children are
+ *  small, with a child's larger head and no figure. */
+function folkPerson(role: Role, l: FolkLook): PersonSpec {
+  const child = role === 'child';
+  const sex = Math.random() < (role === 'watch' ? 0.3 : 0.5) ? 'female' : 'male';
+  const hood = role === 'watch' || (!child && l.model === 'rogue_hooded');
+  const kind = role === 'watch' ? 'ranger' : l.model === 'rogue_hooded' || Math.random() < 0.2 ? 'ranger' : 'peasant';
+  return {
+    sex, outfit: outfitFor(sex, kind, { hood, pauldron: role === 'watch' }),
+    hair: hood ? null : Math.random() < 0.08 ? null : pick(HAIR_STYLES[sex]),
+    beard: sex === 'male' && !child && Math.random() < 0.6,
+    hairColor: pick(HAIRS.filter((h) => h.color)).color, skin: pick(SKINS).color || undefined,
+    figure: sex === 'female' ? (child ? 0 : rnd(0.4, 1.3)) : undefined,
+    head: child ? 1.25 : undefined,
+    dye: { cloth: l.tint, under: l.under },
+  };
+}
 const pick = <T,>(a: readonly T[]) => a[Math.floor(Math.random() * a.length)];
 
 export class Folk {
@@ -122,11 +143,7 @@ export class Folk {
 
   private make(role: Role, at: FolkNode, look?: FolkLook): Walker {
     const l = look ?? (role === 'child' ? pick(CHILD_LOOKS) : role === 'watch' ? WATCH_LOOK : pick(FOLK_LOOKS));
-    const view = new CharacterView(l.model, { scale: 0.8 * (l.scale ?? 1) });
-    view.showOnly(l.show);
-    // Their own clothes, skin and hair: nobody in town dresses like a hero.
-    view.paint(role === 'watch' ? { cloth: l.tint } : { cloth: l.tint, under: l.under ?? '', skin: pick(SKINS).color, hair: pick(HAIRS).color });
-    view.walkStride = 2.0;
+    const view = new CharacterView(folkPerson(role, l), { scale: 0.8 * (l.scale ?? 1) });
     this.opts.parent.add(view.root);
     const w: Walker = {
       id: this.nextId++, view, role, x: at.x + rnd(-0.6, 0.6), z: at.z + rnd(-0.6, 0.6), vx: 0, vz: 0,

@@ -1,4 +1,6 @@
 import type { CharacterModel } from '@/render/assets';
+import type { PersonSpec } from '@/render/people';
+import { outfitFor } from './looks';
 
 /* The people of the Waystation.
  *
@@ -27,19 +29,25 @@ export interface NpcDef {
   nightBarks?: string[];
   /** Short line for the nameplate once met ("Innkeeper"). */
   role: string;
+  /** Who they are in the flesh (render/people.ts), and what they hold
+   *  (render/arms.ts). The KayKit model above is the fallback. */
+  person?: PersonSpec;
+  arms?: { right?: string; left?: string; forearm?: string };
 }
 
 export const NPCS: Record<string, NpcDef> = {
   rook: {
     id: 'rook', name: 'Mother Rook', title: 'Keeper of the Last Lamp', role: 'Innkeeper',
-    model: 'barbarian', show: ['Mug'], tint: '#8a5a6a', scale: 0.95, idle: 'Idle',
+    model: 'barbarian', show: ['Mug'], tint: '#8a5a6a', scale: 0.95, idle: 'Idle_FoldArms_Loop',
+    person: { sex: 'female', outfit: outfitFor('female', 'peasant'), hair: 'Hair_Buns', hairColor: '#7a746e', skin: '#e0a47c', figure: 1.2, dye: { cloth: '#8a5a6a', under: '#3a2a2a' } },
     spot: { x: -11.2, z: 12.6, facing: Math.PI / 2 },
     barks: ['Beds are dry and the stew is hot. That is more than most can say.', 'Wipe your boots.', 'If you are bleeding, bleed outside.'],
     nightBarks: ['Lamps stay lit till the last one\'s in.', 'Bed\'s warm if you want it. Stew\'s gone.', 'Quietly, now. People are sleeping.'],
   },
   holloway: {
     id: 'holloway', name: 'Captain Holloway', title: 'Of the Waystation Watch', role: 'Watch captain',
-    model: 'knight', show: ['1H_Sword', 'Rectangle_Shield', 'Knight_Cape'], tint: '#9aa8c0', idle: 'Idle',
+    model: 'knight', show: ['1H_Sword', 'Rectangle_Shield', 'Knight_Cape'], tint: '#9aa8c0', idle: 'Idle_FoldArms_Loop',
+    person: { sex: 'male', outfit: outfitFor('male', 'ranger', { pauldron: true }), hair: 'Hair_Buzzed', hairColor: '#4a4038', beard: true, skin: '#e0a47c', dye: { cloth: '#56627e' } },
     spot: { x: -3.6, z: -9.5, facing: 0.6 },
     barks: ['Five gold a pelt. Fifty for the old grey one.', 'Keep to the road, and keep your blade where I can see it.', 'Three caravans this month. Three.'],
     nightBarks: ['Curfew\'s not law. Yet.', 'Two on the walls, one on each gate. It is not enough.', 'Go to bed, traveller.'],
@@ -47,6 +55,7 @@ export const NPCS: Record<string, NpcDef> = {
   maeca: {
     id: 'maeca', name: 'Maeca Barefoot', title: 'Last of the Ashford Garrison', role: 'Hunter',
     model: 'rogue', show: ['1H_Crossbow', 'Rogue_Cape'], tint: '#6a7a4a', idle: 'Idle_B',
+    person: { sex: 'female', outfit: outfitFor('female', 'ranger'), hair: 'Hair_Long', hairColor: '#2a1a12', skin: '#c4945e', figure: 0.8, dye: { cloth: '#4a5a36' } },
     spot: { x: 33.5, z: 3.6, facing: -Math.PI / 2 },
     barks: ['They are not hunting. They are running.', 'Something has the whole wood on edge.', 'Mind the east road after dark.'],
     nightBarks: ['Hear that? No. Neither do I. That is what worries me.', 'One more, then I sleep.', 'The Pack is loud tonight.'],
@@ -54,6 +63,7 @@ export const NPCS: Record<string, NpcDef> = {
   chid: {
     id: 'chid', name: 'Chid', title: '"The Fool", of the Morning Light', role: 'Priest',
     model: 'mage', show: ['Spellbook'], tint: '#d8ccb0', idle: 'Idle',
+    person: { sex: 'male', outfit: outfitFor('male', 'peasant'), hair: 'Hair_SimpleParted', hairColor: '#8a6a3a', dye: { cloth: '#d8ccb0' } },
     spot: { x: -20.6, z: -20.8, facing: Math.PI * 0.25 },
     barks: ['It used to work, you know. The shrine.', 'The light is patient. I am trying to be.', 'Morning comes. It always has.'],
     nightBarks: ['Even in the dark, the morning is on its way.', 'I leave a candle lit. Somebody might need it.', 'Can\'t sleep either?'],
@@ -61,13 +71,16 @@ export const NPCS: Record<string, NpcDef> = {
   rav: {
     id: 'rav', name: 'Dr. Rav McBreathless', title: 'Late of the Kerchiefs', role: 'Physician, of a sort',
     model: 'rogue_hooded', show: ['Knife'], tint: '#8a3a34', idle: 'Sit_Chair_Idle',
+    person: { sex: 'male', outfit: outfitFor('male', 'peasant', { hood: true }), hair: null, beard: true, hairColor: '#5a4a3a', skin: '#e0a47c', dye: { cloth: '#8a3a34', under: '#2a1a18' } },
+    arms: { right: 'dagger_b' },
     spot: { x: -11.4, z: -7.6, facing: Math.PI / 2 },
     barks: ['I am a doctor. Mostly.', 'Red cloth is a hard habit to break.', 'Buy me a drink and I will tell you a lie worth hearing.'],
     nightBarks: ['Night surgery costs double. Night anything costs double.', 'The best stories come after the third cup.', 'Pull up a stool. Mind the blood.'],
   },
   harlan: {
     id: 'harlan', name: 'Harlan Coyle', title: 'Of the Coyle Company', role: 'Merchant',
-    model: 'barbarian', show: [], tint: '#a0784a', idle: 'Idle',
+    model: 'barbarian', show: [], tint: '#a0784a', idle: 'Idle_Talking_Loop',
+    person: { sex: 'male', outfit: outfitFor('male', 'peasant'), hair: 'Hair_SimpleParted', hairColor: '#5e3e28', beard: true, skin: '#e0a47c', dye: { cloth: '#a0784a', under: '#3a2a1c' } },
     spot: { x: 10.4, z: -10.4, facing: -Math.PI / 2 },
     barks: ['Three days late. Jory is never late.', 'Salt, iron, cloth. Whatever you need, when the wagons come.', 'Somebody knows something.'],
     nightBarks: ['I keep the books by candlelight. It helps me not think.', 'Every wagon on that road is his, in the dark.', 'Can\'t sleep. Won\'t.'],
@@ -75,6 +88,7 @@ export const NPCS: Record<string, NpcDef> = {
   pell: {
     id: 'pell', name: 'Pell Varrow', title: 'Factor and Warehouseman', role: 'Factor',
     model: 'mage', show: ['1H_Wand'], tint: '#3e4a3a', idle: 'Idle',
+    person: { sex: 'male', outfit: outfitFor('male', 'peasant'), hair: 'Hair_SimpleParted', hairColor: '#1a1410', beard: false, dye: { cloth: '#3e4a3a', under: '#1a1e1a' } },
     spot: { x: 20.2, z: 22.2, facing: Math.PI },
     barks: ['Everything has a price. Most things have two.', 'Terrible business, Coyle\'s caravan. Terrible.', 'My warehouse is closed to the public.'],
     nightBarks: ['Closed. Closed! Come back in daylight.', 'A man can\'t count in peace in this town.', 'Who\'s there?'],
@@ -82,6 +96,8 @@ export const NPCS: Record<string, NpcDef> = {
   wenna: {
     id: 'wenna', name: 'Old Wenna', title: 'Herbalist', role: 'Herbalist',
     model: 'mage', show: ['Mage_Hat', '2H_Staff'], tint: '#5e7a4a', scale: 0.9, idle: 'Idle',
+    person: { sex: 'female', outfit: outfitFor('female', 'peasant', { hood: true }), hair: null, skin: '#e0a47c', figure: 0.6, dye: { cloth: '#5e7a4a', under: '#2a3222' } },
+    arms: { right: 'short_staff' },
     spot: { x: -23.6, z: 21.2, facing: Math.PI * 0.6 },
     barks: ['The animals were never like this. Never.', 'Bitterroot, bitterroot. Always need more.', 'The water tastes wrong this year.'],
     nightBarks: ['Moon\'s up. Good for picking. Bad for knees.', 'Mind the nettles in the dark.', 'Night air\'s full of things. Some of them are herbs.'],
@@ -89,12 +105,15 @@ export const NPCS: Record<string, NpcDef> = {
   tam: {
     id: 'tam', name: 'Tam', title: 'A farm boy from the Verge', role: 'Farm boy',
     model: 'rogue', show: [], tint: '#b8a070', scale: 0.76, idle: 'Sit_Floor_Idle',
+    person: { sex: 'male', outfit: outfitFor('male', 'peasant'), hair: 'Hair_Buzzed', hairColor: '#8a5a2a', beard: false, head: 1.18, dye: { cloth: '#b8a070', under: '#4a3a2a' } },
     spot: { x: 2.6, z: 2.8, facing: Math.PI * 0.8 },
     barks: ['They drank from the stream and fell down.', 'Pa says stay in town.', 'Something is killing them. Nobody listens.'],
   },
   brannoc: {
     id: 'brannoc', name: 'Brannoc', title: 'Smith', role: 'Blacksmith',
     model: 'barbarian', show: ['1H_Axe'], tint: '#5a4a3a', idle: '1H_Melee_Attack_Chop',
+    person: { sex: 'male', outfit: outfitFor('male', 'bare'), hair: 'Hair_Buzzed', hairColor: '#2a2422', beard: true, skin: '#946040', dye: { under: '#3a3028' } },
+    arms: { right: 'mace' },
     spot: { x: 11.6, z: 14.6, facing: -Math.PI / 2 },
     barks: ['Good steel does not come cheap. Neither do good pelts.', 'Mind the sparks.', 'Bring me hides, and I will make you something worth wearing.'],
     nightBarks: ['Forge is banked. Come back at first light.', 'My arm aches worse at night. Old iron does.', 'The fire keeps me company.'],
@@ -102,6 +121,7 @@ export const NPCS: Record<string, NpcDef> = {
   vonnra: {
     id: 'vonnra', name: 'Vonnra Hydrocheck', title: 'Far Seer, Keeper of the Toll', role: 'Toll-keeper',
     model: 'mage', show: ['Mage_Hat', 'Spellbook_open'], tint: '#5a4a7a', idle: 'Spellcasting',
+    person: { sex: 'female', outfit: outfitFor('female', 'peasant', { hood: true }), hair: null, skin: '#5e3c2a', figure: 1.0, dye: { cloth: '#5a4a7a', under: '#221a2e' } },
     spot: { x: 28.4, z: -4.4, facing: -Math.PI / 2 },
     barks: ['The toll is the toll.', 'I see a great deal. I say very little. You will find that is the arrangement.', 'Payment, always.'],
     nightBarks: ['The toll does not sleep, and neither do I.', 'The dark is also a customer.', 'Payment, even now.'],
@@ -109,6 +129,8 @@ export const NPCS: Record<string, NpcDef> = {
   keegan: {
     id: 'keegan', name: 'Professor Keegan', title: 'Knight of the Argent Vigil (probationary)', role: 'Gatekeeper',
     model: 'knight', show: ['Knight_Helmet', '2H_Sword', 'Knight_Cape'], tint: '#dfe4ec', idle: '2H_Melee_Idle',
+    person: { sex: 'female', outfit: outfitFor('female', 'ranger', { pauldron: true }), hair: 'Hair_Buns', hairColor: '#d8b870', skin: '#f0b8a0', figure: 0.8, dye: { cloth: '#b8bcc4' } },
+    arms: { right: 'zweihander' },
     spot: { x: 0, z: -33, facing: 0 },
     barks: ['None pass north. Not yet.', 'You are not ready for what is beyond there.', 'Probationary. It is a real title.'],
     nightBarks: ['Night watch. Probationary night watch.', 'Something moved out there. Probably.', 'Stand back from the gate, please.'],
@@ -119,12 +141,15 @@ export const NPCS: Record<string, NpcDef> = {
 export const OUTSIDERS: Record<string, NpcDef> = {
   redcowl: {
     id: 'redcowl', name: 'Redcowl', title: 'Of the Kerchiefs', role: 'Kerchief chief',
-    model: 'rogue_hooded', show: ['2H_Crossbow', 'Rogue_Cape'], tint: '#a02820', scale: 1.08, idle: 'Idle',
+    model: 'rogue_hooded', show: ['2H_Crossbow', 'Rogue_Cape'], tint: '#a02820', scale: 1.08, idle: 'Pistol_Idle_Loop',
+    person: { sex: 'male', outfit: outfitFor('male', 'ranger', { hood: true }), hair: null, beard: true, hairColor: '#3a1a10', skin: '#e0a47c', dye: { cloth: '#a02820' } },
+    arms: { right: 'crossbow' },
     spot: { x: 54, z: 90, facing: Math.PI }, barks: ['Keep walking.', 'Salvage is salvage.', 'Talk or bleed. Your choice.'],
   },
   jory: {
     id: 'jory', name: 'Jory Coyle', title: 'Harlan\'s nephew', role: 'Teamster',
     model: 'rogue', show: [], tint: '#7a6a8a', scale: 0.9, idle: 'Sit_Floor_Idle',
+    person: { sex: 'male', outfit: outfitFor('male', 'peasant'), hair: 'Hair_SimpleParted', hairColor: '#6a4a2a', beard: false, dye: { cloth: '#7a6a8a', under: '#2e2a34' } },
     spot: { x: 12.4, z: -13.6, facing: -Math.PI / 2 }, barks: ['I thought I would die in that cage.', 'Uncle keeps hugging me. It is a lot.'],
   },
 };

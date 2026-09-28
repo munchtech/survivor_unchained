@@ -1,8 +1,8 @@
 import type { Loadout } from '@/render/playerView';
 import type { CharacterModel } from '@/render/assets';
 import { ARCHETYPES, type ArchetypeId } from '@/content/archetypes';
-import { CLOAK_DYES, SKINS, HAIRS, HAIR_STYLES } from '@/content/looks';
-import { PARTS, type PersonSpec, type Sex } from '@/render/people';
+import { CLOAK_DYES, SKINS, HAIRS, HAIR_STYLES, outfitFor } from '@/content/looks';
+import type { PersonSpec, Sex } from '@/render/people';
 
 /* What the survivor looks like and visibly carries: a person (a man or a
  * woman in their calling's clothes, render/people.ts) with the weapon in
@@ -46,15 +46,8 @@ const HELD: Record<string, Held> = {
 
 /** Each calling's clothes. The Reaver goes bare-chested (a woman keeps the
  *  band the body is painted with). A hood, where worn, covers the hair. */
-function outfitOf(archetype: ArchetypeId, sex: Sex, hood: boolean): string[] {
-  const P = PARTS[sex];
-  const out: string[] = archetype === 'reaver' ? [P.peasant[2], P.peasant[3]]
-    : archetype === 'arcanist' ? [...P.peasant]
-    : [...P.ranger];
-  if (archetype === 'warden') out.push(P.pauldron);
-  if (hood) out.push(P.hood);
-  return out;
-}
+const outfitOf = (archetype: ArchetypeId, sex: Sex, hood: boolean) =>
+  outfitFor(sex, archetype === 'reaver' ? 'bare' : archetype === 'arcanist' ? 'peasant' : 'ranger', { hood, pauldron: archetype === 'warden' });
 
 const darker = (hex: string) => `#${[1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * 0.45).toString(16).padStart(2, '0')).join('')}`;
 

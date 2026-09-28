@@ -26,10 +26,16 @@ export class NpcActor {
   constructor(readonly def: NpcDef, parent: THREE.Object3D, private heightAt: (x: number, z: number) => number, private barks: BarkLayer | null, at?: { x: number; z: number; facing: number }) {
     const spot = at ?? def.spot;
     this.x = spot.x; this.z = spot.z; this.facing = spot.facing;
-    const v = new CharacterView(def.model, { scale: 0.8 * (def.scale ?? 1) });
-    v.showOnly(def.show);
-    // Their cloth in their own colour (the calling's swatches, repainted).
-    if (def.tint) v.paint({ cloth: def.tint });
+    const v = new CharacterView(def.person ?? def.model, { scale: 0.8 * (def.scale ?? 1) });
+    if (def.person) {
+      if (def.arms?.right) v.wield('handslot.r', def.arms.right);
+      if (def.arms?.left) v.wield('handslot.l', def.arms.left);
+      if (def.arms?.forearm) v.wield('forearm.l', def.arms.forearm);
+    } else {
+      v.showOnly(def.show);
+      // Their cloth in their own colour (the calling's swatches, repainted).
+      if (def.tint) v.paint({ cloth: def.tint });
+    }
     this.poseLoop = def.idle;
     v.loop(def.idle, 0, def.idle === '1H_Melee_Attack_Chop' ? 0.55 : 1);
     v.face(spot.facing, true);

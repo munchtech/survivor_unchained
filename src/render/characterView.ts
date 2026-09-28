@@ -41,7 +41,7 @@ const HUMAN_CLIPS: Record<string, string> = {
   '2H_Melee_Attack_Spin': 'Sword_Heavy_Combo', Dualwield_Melee_Attack_Slice: 'Sword_Regular_Combo', Unarmed_Melee_Attack_Punch_A: 'Punch_Jab',
   Spellcast_Shoot: 'Spell_Simple_Shoot', Spellcast_Raise: 'Spell_Simple_Enter', Spellcast_Summon: 'Spell_Simple_Enter', Spellcasting: 'Spell_Simple_Idle_Loop',
   Throw: 'OverhandThrow', '1H_Ranged_Shoot': 'Pistol_Shoot', '2H_Ranged_Shoot': 'Pistol_Shoot',
-  Sit_Floor_Idle: 'Sitting_Idle_Loop', Sit_Chair_Idle: 'Sitting_Idle_Loop', Interact: 'Interact', PickUp: 'PickUp_Table', Use_Item: 'Consume',
+  Sit_Floor_Idle: 'Crouch_Idle_Loop', Sit_Chair_Idle: 'Sitting_Idle_Loop', Interact: 'Interact', PickUp: 'PickUp_Table', Use_Item: 'Consume',
   Death_A: 'Death01', Death_B: 'Death01', Death_A_Pose: 'Death01', Death_C_Skeletons: 'Death01',
   Hit_A: 'Hit_Chest', Hit_B: 'Hit_Head', Cheer: 'Yes', Taunt: 'Punch_Cross', Block: 'Sword_Block', Blocking: 'Idle_Shield_Loop',
   Lie_StandUp: 'LayToIdle', Dodge_Forward: 'Roll', Jump_Full_Short: 'NinjaJump_Start', Wave: 'Yes',
@@ -97,6 +97,7 @@ export class CharacterView {
 
   /** A Quaternius person rather than a KayKit toy. */
   readonly human: boolean;
+  private headScale = 1;
 
   constructor(readonly id: CharacterModel | PersonSpec, opts: { scale?: number } = {}) {
     this.human = typeof id !== 'string';
@@ -105,6 +106,7 @@ export class CharacterView {
       this.model.scale.setScalar(opts.scale ?? CHARACTER_SCALE);
     } else {
       this.model = assembleSync(id).root;
+      this.headScale = id.head ?? 1;
       this.model.scale.setScalar((opts.scale ?? CHARACTER_SCALE) / CHARACTER_SCALE * HUMAN_SCALE);
       this.idleClip = 'Idle'; this.walkClip = 'Walking_A'; this.runClip = 'Running_A';
       this.walkStride = 1.55; this.runStride = 3.9;
@@ -212,6 +214,13 @@ export class CharacterView {
       return;
     }
     const next = this.action(name);
+    // Two names can be one clip (a person plays the library's clip for
+    // several of KayKit's): already playing, it only takes the new name.
+    if (next === this.base) {
+      this.baseName = name;
+      next.timeScale = speed;
+      return;
+    }
     next.enabled = true;
     next.setLoop(THREE.LoopRepeat, Infinity);
     next.timeScale = speed;
@@ -242,6 +251,8 @@ export class CharacterView {
   /** A one-shot over the top. Returns its duration in seconds. */
   act(name: string, opts: PlayOpts & { blocksLegs?: boolean } = {}) {
     const a = this.action(name);
+    // The clip already looping underneath (see setBase): nothing to add.
+    if (a === this.base) return 0;
     if (this.oneShot && this.oneShot !== a) this.oneShot.fadeOut(0.08);
     a.reset();
     a.setLoop(THREE.LoopOnce, 1);
@@ -311,6 +322,7 @@ export class CharacterView {
     this.model.rotation.y = this.heading;
     this.mixer.update(dt);
     if (!this.human) applyProportions(this.bones);
+    else if (this.headScale !== 1) this.bones.get('Head')?.scale.setScalar(this.headScale);
     if (this.oneShot) {
       this.oneShotEnds -= dt;
       if (this.oneShotEnds <= 0 && !this.oneShot.clampWhenFinished) this.endOneShot();

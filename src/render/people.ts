@@ -101,6 +101,8 @@ export interface PersonSpec {
   /** Skin tone (a CSS colour), as it would look on fair skin; none leaves
    *  the skin as painted. */
   skin?: string;
+  /** The head's size against the body (a youth's is larger). */
+  head?: number;
   /** The outfit dyed (CSS colours): `cloth` the main cloth (the ranger's
    *  greens, the peasant's shirt), `under` the trousers. */
   dye?: { cloth?: string; under?: string };

@@ -823,7 +823,7 @@ export class Game {
   private portraitOf(id: string) {
     if (!this.portraits.has(id)) {
       const d = NPCS[id] ?? OUTSIDERS[id];
-      this.portraits.set(id, d ? renderPortrait({ model: d.model, show: d.show, attackClips: [], heavyClip: '', paint: { body: d.tint ? { cloth: d.tint } : {}, cloak: {} } }, 190, 228, 'bust', d.scale ?? 1) : null);
+      this.portraits.set(id, d ? renderPortrait({ model: d.model, show: d.show, attackClips: [], heavyClip: '', paint: { body: d.tint ? { cloth: d.tint } : {}, cloak: {} }, person: d.person, wield: d.arms, idle: d.person ? 'Idle_Loop' : undefined }, 190, 228, 'bust', d.scale ?? 1) : null);
     }
     return this.portraits.get(id) ?? null;
   }
