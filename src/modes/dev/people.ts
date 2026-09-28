@@ -2,7 +2,9 @@ import * as THREE from 'three';
 import type { Renderer } from '@/render/renderer';
 import { Atmosphere, PRESETS, type PresetName } from '@/render/atmosphere';
 import { Assets } from '@/render/assets';
-import { assemble, peopleClips, PARTS, type PersonSpec } from '@/render/people';
+import { assemble, peopleClips, preloadPeople, PARTS, type PersonSpec } from '@/render/people';
+import { CharacterView, HUMAN_SOCKETS, basis } from '@/render/characterView';
+import { preloadArms } from '@/render/arms';
 
 /* Development view: Quaternius people in a row, dressed and animated, beside
  * a KayKit knight for scale. ?dev=people&clip=Idle_Loop&time=day */
@@ -24,6 +26,8 @@ export async function peopleDev(r: Renderer, params: URLSearchParams) {
     { sex: 'male', outfit: [PARTS.male.peasant[2], PARTS.male.peasant[3]], hair: 'Hair_Buzzed', beard: true, hairColor: '#8a5a2a' },
     { sex: 'female', outfit: [PARTS.female.peasant[2], PARTS.female.peasant[3]], hair: 'Hair_Long', hairColor: '#2a1a12', figure: Number(new URLSearchParams(location.search).get('figure') ?? 1) },
   ];
+  // ?pick=3: only that one (quicker shots).
+  if (params.get('pick')) specs.splice(0, specs.length, specs[Number(params.get('pick'))]);
   const mixers: THREE.AnimationMixer[] = [];
   const clipName = params.get('clip') || 'Idle_Loop';
   for (let i = 0; i < specs.length; i++) {
@@ -35,6 +39,40 @@ export async function peopleDev(r: Renderer, params: URLSearchParams) {
     m.clipAction(c).play();
     m.update(0.3 + i * 0.37);
     mixers.push(m);
+  }
+  // ?view=1: the same people through CharacterView (the game's own verbs:
+  // KayKit clip names mapped, a sword socketed in the right hand).
+  const views: CharacterView[] = [];
+  if (params.get('view')) {
+    await Promise.all([preloadPeople(), preloadArms()]);
+    // What each figure holds: ?arms=chevalier_sword,mage_staff,... (a "+"
+    // adds a left-hand piece: viking_sword+shield_round).
+    const kit = (params.get('arms') || 'chevalier_sword,mage_staff,viking_sword+shield_round,crossbow,viking_axe,daggers+dagger_b').split(',');
+    for (const m of mixers) m.stopAllAction();
+    r.scene.children.filter((c) => c.type === 'Group').forEach((c) => c.removeFromParent());
+    specs.forEach((sp, i) => {
+      const v = new CharacterView(sp);
+      v.root.position.set((i - (specs.length - 1) / 2) * 1.2, 0, 0);
+      // ?grip=test: each figure holds it a different way (blade along +Z,
+      // -Z, +X, -X of the hand), to find which is right.
+      if (params.get('grip') === 'test') {
+        const turns = [basis([0, 1, 0], [0, 0, 1]), basis([0, 1, 0], [0, 0, -1]), basis([0, 1, 0], [1, 0, 0]), basis([0, 1, 0], [-1, 0, 0]), basis([0, 0, 1], [1, 0, 0]), basis([0, 0, 1], [-1, 0, 0])];
+        HUMAN_SOCKETS['handslot.r'].turn = turns[i % turns.length];
+      }
+      // ?shield=0..5: try the forearm mount turned each way.
+      if (params.get('shield')) {
+        const turns = [basis([0, 1, 0], [0, 0, 1]), basis([0, 1, 0], [0, 0, -1]), basis([0, 1, 0], [1, 0, 0]), basis([0, 1, 0], [-1, 0, 0]), basis([1, 0, 0], [0, 1, 0]), basis([-1, 0, 0], [0, 1, 0])];
+        HUMAN_SOCKETS['forearm.l'].turn = turns[Number(params.get('shield')) % turns.length];
+      }
+      const [right, left] = kit[i % kit.length].split('+');
+      v.wield('handslot.r', right);
+      if (left) v.wield(left.startsWith('shield') ? 'forearm.l' : 'handslot.l', left);
+      r.scene.add(v.root);
+      const act = params.get('act');
+      if (act) v.loop(act, 0); else v.locomotion(Number(params.get('speed') || 0));
+      v.update(0.3 + i * 0.37);
+      views.push(v);
+    });
   }
   const knight = Assets.character('knight');
   knight.scale.setScalar(0.8);
@@ -52,5 +90,5 @@ export async function peopleDev(r: Renderer, params: URLSearchParams) {
     const b = new THREE.Box3().setFromObject(c, true);
     return `${c.name || c.type}@${c.position.x.toFixed(1)}: h=${(b.max.y - b.min.y).toFixed(2)} min=${b.min.y.toFixed(2)}`;
   }).join('\n');
-  return (dt: number, t: number) => { for (const m of mixers) m.update(dt); atmo.update(t, cam.position); };
+  return (dt: number, t: number) => { for (const m of mixers) m.update(dt); for (const v of views) v.update(dt); atmo.update(t, cam.position); };
 }

@@ -36,6 +36,7 @@ async function boot() {
   else if (dev === 'sandbox') tick = sandbox(renderer, params);
   else if (dev === 'combat') tick = combatDev(renderer, params);
   else if (dev === 'zone') tick = zoneDev(renderer, params);
+  else if (dev === 'armory') tick = await (await import('@/modes/dev/armory')).armoryDev(renderer, params);
   else if (dev === 'people') tick = await (await import('@/modes/dev/people')).peopleDev(renderer, params);
   else if (dev === 'icons') {
     const { iconKeys, itemIcon } = await import('@/ui/itemIcons');

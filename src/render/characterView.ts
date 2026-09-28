@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { Assets, type CharacterModel, type PropPack } from './assets';
 import { applyProportions, legLift } from './proportions';
+import { assembleSync, clipSync, type PersonSpec } from './people';
+import { ARMS, arm } from './arms';
 import { paintedAtlas, type Paint } from './recolor';
 import { damp, dampAngle } from '@/core/math';
 
@@ -24,9 +26,48 @@ import { damp, dampAngle } from '@/core/math';
  * that deserve a full skeleton. */
 
 export const CHARACTER_SCALE = 0.8;
+/** Quaternius people are authored in metres; a touch over life size so they
+ *  stand right beside doors and walls built for the old figures. */
+export const HUMAN_SCALE = 1.04;
+
+/** The game names clips in KayKit's words; a person plays the library clip
+ *  that does the same thing (Universal Animation Libraries 1 and 2). */
+const HUMAN_CLIPS: Record<string, string> = {
+  Idle: 'Idle_Loop', Idle_B: 'Idle_Loop', Idle_Combat: 'Sword_Idle', '2H_Melee_Idle': 'Sword_Idle', Unarmed_Idle: 'Idle_Loop',
+  Walking_A: 'Walk_Loop', Walking_B: 'Walk_Loop', Walking_C: 'Walk_Formal_Loop', Walking_D_Skeletons: 'Zombie_Walk_Fwd_Loop',
+  Running_A: 'Jog_Fwd_Loop', Running_B: 'Sprint_Loop',
+  '1H_Melee_Attack_Chop': 'Sword_Regular_A', '1H_Melee_Attack_Slice_Diagonal': 'Sword_Regular_B', '1H_Melee_Attack_Slice_Horizontal': 'Sword_Regular_C',
+  '1H_Melee_Attack_Stab': 'Sword_Regular_A', '2H_Melee_Attack_Chop': 'Sword_Attack', '2H_Melee_Attack_Slice': 'Sword_Attack',
+  '2H_Melee_Attack_Spin': 'Sword_Heavy_Combo', Dualwield_Melee_Attack_Slice: 'Sword_Regular_Combo', Unarmed_Melee_Attack_Punch_A: 'Punch_Jab',
+  Spellcast_Shoot: 'Spell_Simple_Shoot', Spellcast_Raise: 'Spell_Simple_Enter', Spellcast_Summon: 'Spell_Simple_Enter', Spellcasting: 'Spell_Simple_Idle_Loop',
+  Throw: 'OverhandThrow', '1H_Ranged_Shoot': 'Pistol_Shoot', '2H_Ranged_Shoot': 'Pistol_Shoot',
+  Sit_Floor_Idle: 'Sitting_Idle_Loop', Sit_Chair_Idle: 'Sitting_Idle_Loop', Interact: 'Interact', PickUp: 'PickUp_Table', Use_Item: 'Consume',
+  Death_A: 'Death01', Death_B: 'Death01', Death_A_Pose: 'Death01', Death_C_Skeletons: 'Death01',
+  Hit_A: 'Hit_Chest', Hit_B: 'Hit_Head', Cheer: 'Yes', Taunt: 'Punch_Cross', Block: 'Sword_Block', Blocking: 'Idle_Shield_Loop',
+  Lie_StandUp: 'LayToIdle', Dodge_Forward: 'Roll', Jump_Full_Short: 'NinjaJump_Start', Wave: 'Yes',
+};
+
+/** Sockets on a person's rig (hand bones point differently from KayKit's
+ *  hand slots; a fixed turn puts a prop the way the old slot held it). */
+export const basis = (x: [number, number, number], y: [number, number, number]) => {
+  const vx = new THREE.Vector3(...x), vy = new THREE.Vector3(...y);
+  return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(vx, vy, new THREE.Vector3().crossVectors(vx, vy)));
+};
+export const HUMAN_SOCKETS: Record<string, { bone: string; turn: THREE.Quaternion; pos: [number, number, number] }> = {
+  // In the hand's own space the fingers run +Y and the thumb side is +Z: a
+  // prop's shaft (its +Y) leaves the fist on the thumb side, its blade's
+  // width (its +X) in line with the knuckles.
+  'handslot.r': { bone: 'hand_r', turn: basis([0, 1, 0], [0, 0, 1]), pos: [-0.025, 0.075, 0] },
+  'handslot.l': { bone: 'hand_l', turn: basis([0, 1, 0], [0, 0, 1]), pos: [-0.025, 0.075, 0] },
+  // A shield on the left forearm, its face (+Z) out from the back of it.
+  'forearm.l': { bone: 'lowerarm_l', turn: basis([0, 1, 0], [0, 0, 1]), pos: [0, 0.14, 0] },
+  head: { bone: 'Head', turn: new THREE.Quaternion(), pos: [0, 0.12, 0] },
+  chest: { bone: 'spine_03', turn: new THREE.Quaternion(), pos: [0, 0, 0] },
+};
+const PISTOL = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3(0, 0, 1), new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0)));
 const _flash = new THREE.Color();
 
-export type Socket = 'handslot.r' | 'handslot.l' | 'head' | 'chest';
+export type Socket = 'handslot.r' | 'handslot.l' | 'forearm.l' | 'head' | 'chest';
 
 interface PlayOpts { fade?: number; speed?: number; loop?: boolean; clamp?: boolean }
 
@@ -54,9 +95,20 @@ export class CharacterView {
   private materials: THREE.MeshStandardMaterial[] = [];
   private baseEmissive: THREE.Color[] = [];
 
-  constructor(readonly id: CharacterModel, opts: { scale?: number } = {}) {
-    this.model = Assets.character(id);
-    this.model.scale.setScalar(opts.scale ?? CHARACTER_SCALE);
+  /** A Quaternius person rather than a KayKit toy. */
+  readonly human: boolean;
+
+  constructor(readonly id: CharacterModel | PersonSpec, opts: { scale?: number } = {}) {
+    this.human = typeof id !== 'string';
+    if (typeof id === 'string') {
+      this.model = Assets.character(id);
+      this.model.scale.setScalar(opts.scale ?? CHARACTER_SCALE);
+    } else {
+      this.model = assembleSync(id).root;
+      this.model.scale.setScalar((opts.scale ?? CHARACTER_SCALE) / CHARACTER_SCALE * HUMAN_SCALE);
+      this.idleClip = 'Idle'; this.walkClip = 'Walking_A'; this.runClip = 'Running_A';
+      this.walkStride = 1.55; this.runStride = 3.9;
+    }
     this.root.add(this.model);
     this.mixer = new THREE.AnimationMixer(this.model);
     this.model.traverse((o) => {
@@ -70,7 +122,7 @@ export class CharacterView {
       }
     });
     // Longer legs: stand the figure on them (see proportions.ts).
-    this.model.position.y = legLift(this.model, this.bones) * this.model.scale.y;
+    if (!this.human) this.model.position.y = legLift(this.model, this.bones) * this.model.scale.y;
     this.mixer.addEventListener('finished', (e) => {
       if (e.action === this.oneShot) this.endOneShot();
     });
@@ -87,7 +139,7 @@ export class CharacterView {
     for (const o of this.sockets.get(socket) ?? []) o.removeFromParent();
     this.sockets.set(socket, []);
     if (!pack || !prop) return null;
-    const bone = this.bones.get(socket);
+    const bone = this.mount(socket);
     if (!bone) return null;
     const o = Assets.prop(pack, prop);
     o.scale.setScalar(opts.scale ?? 1);
@@ -99,12 +151,56 @@ export class CharacterView {
     return o;
   }
 
+  /** Put one of the real weapons (arms.ts) in a socket, replacing what was
+   *  there; null empties it. */
+  wield(socket: Socket, id: string | null) {
+    for (const o of this.sockets.get(socket) ?? []) o.removeFromParent();
+    this.sockets.set(socket, []);
+    const bone = this.mount(socket);
+    const o = id ? arm(id) : null;
+    if (!bone || !o) return null;
+    // Weapons are in metres: sized with the person (the mount has undone it).
+    o.scale.setScalar((this.human ? HUMAN_SCALE : 1) / CHARACTER_SCALE);
+    if (ARMS[id!].hold === 'pistol') {
+      // The mount's frame is the fist's (its X along the fingers, Y out of
+      // the thumb side): the stock goes along X, its top along Y, sitting on
+      // the fist rather than through it.
+      o.quaternion.copy(PISTOL);
+      o.position.set(0, 0.05, 0);
+    }
+    bone.add(o);
+    this.sockets.get(socket)!.push(o);
+    return o;
+  }
+
+  /** Where a socket's props hang: KayKit's own slot bone, or on a person a
+   *  fixed mount under the matching bone, turned to hold a prop the way
+   *  KayKit's slot did. */
+  private mount(socket: Socket) {
+    if (!this.human) return this.bones.get(socket) ?? null;
+    const hs = HUMAN_SOCKETS[socket];
+    const b = hs && this.bones.get(hs.bone);
+    if (!b) return null;
+    let mount = b.getObjectByName(`mount:${socket}`);
+    if (!mount) {
+      mount = new THREE.Group();
+      mount.name = `mount:${socket}`;
+      mount.quaternion.copy(hs.turn);
+      mount.position.set(...hs.pos);
+      // Undo the person's scale so props keep their size.
+      mount.scale.setScalar(1 / HUMAN_SCALE * CHARACTER_SCALE);
+      b.add(mount);
+    }
+    return mount;
+  }
+
   bone(name: string) { return this.bones.get(name); }
 
   private action(name: string) {
     let a = this.actions.get(name);
     if (!a) {
-      a = this.mixer.clipAction(Assets.clip(name));
+      const clip = this.human ? (clipSync(HUMAN_CLIPS[name] ?? name) ?? clipSync('Idle_Loop')!) : Assets.clip(name);
+      a = this.mixer.clipAction(clip);
       this.actions.set(name, a);
     }
     return a;
@@ -187,6 +283,8 @@ export class CharacterView {
    *  (cloth, skin, hair); the cloak gets `body` and `cloak` on top, so it can
    *  differ from the tunic. See render/recolor.ts. */
   paint(body: Paint, cloak: Paint = {}) {
+    if (typeof this.id !== 'string') return; // people are dressed by their spec
+    const id = this.id;
     this.model.traverse((o) => {
       const m = o as THREE.Mesh;
       if (!m.isMesh) return;
@@ -194,7 +292,7 @@ export class CharacterView {
       const base = (mat.userData.atlas as THREE.Texture | undefined) ?? mat.map;
       if (!base) return;
       mat.userData.atlas = base;
-      mat.map = paintedAtlas(base, this.id, /Cape/.test(o.name) ? { ...body, ...cloak } : body);
+      mat.map = paintedAtlas(base, id, /Cape/.test(o.name) ? { ...body, ...cloak } : body);
       mat.color.set('#ffffff');
     });
   }
@@ -212,7 +310,7 @@ export class CharacterView {
     this.heading = dampAngle(this.heading, this.headingTarget, 14, dt);
     this.model.rotation.y = this.heading;
     this.mixer.update(dt);
-    applyProportions(this.bones);
+    if (!this.human) applyProportions(this.bones);
     if (this.oneShot) {
       this.oneShotEnds -= dt;
       if (this.oneShotEnds <= 0 && !this.oneShot.clampWhenFinished) this.endOneShot();
