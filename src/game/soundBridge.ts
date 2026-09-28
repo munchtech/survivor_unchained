@@ -123,6 +123,7 @@ export class SoundBridge {
         case 'hit': if (!e.dot) (e.blocked ? SFX.blocked(at(e.x, e.z)) : SFX.hit(e.school, e.crit, at(e.x, e.z))); break;
         case 'kill': SFX.kill(e.family, e.elite, e.boss, at(e.x, e.z)); break;
         case 'playerHit': if (e.dodged) SFX.dodge(); else if (e.blocked) SFX.blocked(); else SFX.hurt(e.amount); break;
+        case 'shieldHit': SFX.blocked(); if (e.broke) SFX.shatter(); break;
         case 'playerHeal': if (e.amount > 8) SFX.heal(); break;
         case 'playerDeath': SFX.death(); break;
         case 'explosion': SFX.explosion(e.power, at(e.x, e.z)); break;
@@ -148,6 +149,9 @@ export class SoundBridge {
     }
   }
 
+  /** Until the next heartbeat, at low health. */
+  private beatT = 0;
+
   update(dt: number, s: SoundState) {
     this.xpT -= dt;
     if (this.xpT <= 0) this.xpStreak = 0;
@@ -169,6 +173,16 @@ export class SoundBridge {
     this.music.set(mood);
     this.music.intensity = boss.value ? 1 : Math.min(1, this.hostilesNear / 18);
     const o = overlay.value;
+    // Close to the end, your own heart: faster the worse it gets.
+    const hp = b && s.mode === 'play' && b.combat && b.player.alive && !o ? b.player.hp / b.maxHp : 1;
+    if (hp < 0.3) {
+      this.beatT -= dt;
+      if (this.beatT <= 0) {
+        const urgency = 1 - hp / 0.3;
+        SFX.heartbeat(urgency);
+        this.beatT = 1.05 - urgency * 0.4;
+      }
+    } else this.beatT = 0;
     audio.duckMusic(o === 'dialogue' ? 0.55 : o && o !== 'levelup' ? 0.7 : 1);
     this.music.update(dt);
     this.ambience.set((s.ambience?.(s.px, s.pz) ?? {}) as never);

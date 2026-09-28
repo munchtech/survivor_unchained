@@ -11,6 +11,8 @@ export type CombatEvent =
    *  apart); dx, dz: which way it was going; scale: the creature's size. */
   | { t: 'kill'; x: number; z: number; enemy: number; def: string; family: Family; school: School; elite: boolean; boss: boolean; byPlayer: boolean; burst?: boolean; dx?: number; dz?: number; scale?: number }
   | { t: 'playerHit'; x: number; z: number; amount: number; school: School; source: string; dodged?: boolean; blocked?: boolean }
+  /** A ward took the blow (or some of it); broke: and is gone. */
+  | { t: 'shieldHit'; x: number; z: number; absorbed: number; broke: boolean }
   | { t: 'playerHeal'; amount: number }
   | { t: 'playerDeath'; x: number; z: number; killer: string; killerId: number }
   | { t: 'status'; target: number; kind: StatusKind; x: number; z: number }

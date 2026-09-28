@@ -197,11 +197,10 @@ export function verge(g: Game): ZoneRuntime {
 
   /* ------------------------------------------------------------ places -- */
 
-  const approach = (dt: number) => {
+  const approach = () => {
     if (!b) return;
     const p = b.player;
     const near = (pt: { x: number; z: number }, r: number) => Math.hypot(p.x - pt.x, p.z - pt.z) < r;
-    void dt;
     // Wolf Hollow.
     if (!hollowSpawned && near(V.hollow, 38) && F('greymuzzle') !== 'dead') {
       hollowSpawned = true;
@@ -243,7 +242,7 @@ export function verge(g: Game): ZoneRuntime {
       g.apply([{ quest: { id: 'below', status: 'active', entry: 'sinkhole' } }, { quest: { id: 'below', entry: 'tremor' } }]);
       b.events.emit({ t: 'shake', amount: 0.9 });
       say('The ground shivers. At the bottom of the pit lies something pale and segmented, bigger than a house, and — probably — dead.', undefined, 6);
-      if (test({ knows: 'faith' }, ctx())) setTimeout(() => { say('Under the silence you hear it, for as long as a held breath: slow, patient, enormous. Not breathing. Praying.', undefined, 7); g.apply({ quest: { id: 'below', entry: 'prayer' } }); }, 6500);
+      if (test({ knows: 'faith' }, ctx())) g.after(6.5, () => { say('Under the silence you hear it, for as long as a held breath: slow, patient, enormous. Not breathing. Praying.', undefined, 7); g.apply({ quest: { id: 'below', entry: 'prayer' } }); });
       const s = b.spawnEnemy('lampling', V.sinkhole.x + 15, V.sinkhole.z + 12, { level: 1, tag: 'survivor', disposition: 'neutral', home: { x: V.sinkhole.x + 15, z: V.sinkhole.z + 12, leash: 1.5 } });
       if (s) s.named = { title: 'A babbling lampling', carries: [], sourceHero: '' };
     }
@@ -409,7 +408,7 @@ export function verge(g: Game): ZoneRuntime {
         g.apply([{ give: 'sigil_fragment' }, { quest: { id: 'vault', status: 'active', entry: 'fragment' } }]);
         say('In the bones of one hand, a wedge of black stone cut to fit something.', undefined, 4);
         if (test({ knows: 'faith' }, ctx())) {
-          setTimeout(() => { say('The skull turns, very slightly, toward you. "It was never locked from the outside."', 'The bones', 6); g.apply({ quest: { id: 'vault', entry: 'whisper' } }); }, 4500);
+          g.after(4.5, () => { say('The skull turns, very slightly, toward you. "It was never locked from the outside."', 'The bones', 6); g.apply({ quest: { id: 'vault', entry: 'whisper' } }); });
         }
       },
     },
@@ -500,7 +499,6 @@ export function verge(g: Game): ZoneRuntime {
         if (!seen.has('grove')) { seen.add('grove'); say(school === 'fire' ? 'The brambles go up like paper. Beyond them, a glade full of pale light.' : 'You hack a way through the brambles. Beyond them, a glade full of pale light.', undefined, 5); }
       }
     }
-    void x; void z;
   };
 
   /* ---------------------------------------------------------- the dead -- */
@@ -621,16 +619,16 @@ export function verge(g: Game): ZoneRuntime {
       // The first time out here: the wood is big, and there is a map.
       if (!wd.facts['tip.verge_map']) {
         wd.facts['tip.verge_map'] = true;
-        setTimeout(() => {
+        g.after(5, () => {
           hint.value = { id: 'verge_map', title: 'The map', text: 'The Verge is wide and the trees close in. The map fills in as you walk, and marks what you have found.', keys: [Input.keyLabel('map')] };
-          setTimeout(() => { if (hint.value?.id === 'verge_map') hint.value = null; }, 10000);
-        }, 5000);
+          g.after(10, () => { if (hint.value?.id === 'verge_map') hint.value = null; });
+        });
       }
       objectives.value = tracker();
     },
     step: (dt) => {
       director(dt);
-      approach(dt);
+      approach();
       // Peace made in a conversation reaches everyone already out there;
       // anyone you have struck stays angry.
       dispT -= dt;

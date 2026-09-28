@@ -79,10 +79,9 @@ export class Autopilot {
           if (this.dashT <= 0) { Input.moveX = sx; Input.moveZ = sz; Input.press('dash'); this.dashT = 1; }
         }
       } else if (wx !== null) {
-        const ax = p.x - wx, az = p.z - wz, al = Math.hypot(ax, az) || 1;
+        const ax = p.x - wx, az = p.z - wz;
         const a = Math.atan2(az, ax) + 0.6;
         tx = wx + Math.cos(a) * 8; tz = wz + Math.sin(a) * 8;
-        void al;
       }
       if (d.wardenMode === 'channel' && this.abilityT <= 0 && wx !== null && Math.hypot(p.x - wx, p.z - wz) < 6) { Input.press('ability'); this.abilityT = 3; }
       if (d.wardenMode === 'channel' && wx !== null) { tx = wx + 2.5; tz = wz + 2.5; }
@@ -142,13 +141,12 @@ export class Autopilot {
     const home = this.territory ?? (this.territory = { x: p.x, z: p.z, r: 18 });
     // Threats: every hostile close by pushes, harder the closer and the
     // more dangerous (a winding-up or lunging creature pushes sideways).
-    let rx = 0, rz = 0, cx = 0, cz = 0, n = 0, close = 0, ring = 0;
+    let rx = 0, rz = 0, close = 0, ring = 0;
     const sectors = new Array(8).fill(0);
     b.enemies.forEach((e) => {
       if (!e.alive || e.state === 'dying' || e.state === 'burrowed' || !b.hostileToPlayer(e)) return;
       const dx = p.x - e.x, dz = p.z - e.z, dd = Math.hypot(dx, dz) || 0.01;
       if (dd > 14) return;
-      n++; cx += e.x; cz += e.z;
       if (dd < 3) close++;
       if (dd < 7) sectors[Math.floor(((Math.atan2(dz, dx) + Math.PI) / (Math.PI * 2)) * 8) % 8] = 1;
       const w = (e.elite || e.boss ? 2.2 : 1) * Math.max(0, 7 - dd) / 7;
@@ -208,7 +206,6 @@ export class Autopilot {
     if (close >= 3 && this.abilityT <= 0) { Input.press('ability'); this.abilityT = 1.5; st.bashes++; }
     if (p.hp < b.maxHp * 0.33 && this.drinkT <= 0) { Input.press('ultimate'); this.drinkT = 1.5; st.draughts++; }
     this.drinkT -= dt;
-    void n; void cx; void cz;
   }
   private drinkT = 0;
 }

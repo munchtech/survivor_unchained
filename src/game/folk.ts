@@ -53,6 +53,8 @@ interface Walker {
   /** Closest yet to the next waypoint, and how long since that improved. */
   best: number;
   stuckT: number;
+  /** Until the bucket comes up out of the well (the stoop takes a moment). */
+  bucketT: number;
 }
 
 const _v = new THREE.Vector3();
@@ -149,7 +151,7 @@ export class Folk {
       id: this.nextId++, view, role, x: at.x + rnd(-0.6, 0.6), z: at.z + rnd(-0.6, 0.6), vx: 0, vz: 0,
       path: [], dest: null, at, state: 'walk', t: 0,
       speed: role === 'child' ? rnd(3.3, 3.9) : role === 'watch' ? 1.25 : rnd(1.35, 1.8),
-      leaving: false, lead: null, side: 1, carry: null, barkT: rnd(8, 30), torch: null, torchObj: null, gone: false, round: 0, detour: 1, detourT: 0, best: Infinity, stuckT: 0,
+      leaving: false, lead: null, side: 1, carry: null, barkT: rnd(8, 30), torch: null, torchObj: null, gone: false, round: 0, detour: 1, detourT: 0, best: Infinity, stuckT: 0, bucketT: 0,
     };
     view.heading = Math.random() * Math.PI * 2;
     view.face(view.heading, true);
@@ -268,7 +270,7 @@ export class Folk {
       case 'well':
         w.state = 'busy'; w.t = rnd(4.5, 7);
         w.view.act('PickUp', { speed: 0.7 });
-        setTimeout(() => { if (!w.gone && !w.carry) { w.carry = 'bucket_water'; w.view.socket('handslot.r', 'hex_nature', 'bucket_water', { scale: 1.6, offset: [0, -0.18, 0] }); } }, 1400);
+        w.bucketT = 1.4;
         return;
       case 'board':
         w.state = 'busy'; w.t = rnd(4, 9);
@@ -388,6 +390,10 @@ export class Folk {
       if (lead.state === 'busy') face = Math.atan2(lead.x - w.x, lead.z - w.z);
     } else if (w.state === 'busy') {
       w.t -= dt;
+      if (w.bucketT > 0 && (w.bucketT -= dt) <= 0 && !w.carry) {
+        w.carry = 'bucket_water';
+        v.socket('handslot.r', 'hex_nature', 'bucket_water', { scale: 1.6, offset: [0, -0.18, 0] });
+      }
       const f = w.at.face;
       if (f) face = Math.atan2(f.x - w.x, f.z - w.z);
       // Two walking together talk while they stop.

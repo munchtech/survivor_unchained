@@ -77,7 +77,7 @@ export function paintedAtlas(base: THREE.Texture, model: CharacterModel, paint: 
       // The swatch's middle brightness becomes the chosen colour (scaled by
       // how bright this swatch was beside the first); its lighter and darker
       // ends stay lighter and darker by the same proportion.
-      const mean = means[0], rel = means[si] / means[0];
+      const rel = means[si] / means[0];
       for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
         const i = (y * W + x) * 4;
         const k = (lum(i) / means[si]) * rel;
@@ -85,7 +85,6 @@ export function paintedAtlas(base: THREE.Texture, model: CharacterModel, paint: 
         // The atlas it paints into is already worn (grime.ts); so is the dye.
         grimePixel(px, i, PEOPLE_GRIME);
       }
-      void mean;
     });
   }
   const c = document.createElement('canvas');

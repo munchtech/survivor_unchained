@@ -38,6 +38,8 @@ export class CombatFx {
   readonly numbers = new DamageNumbers();
   readonly gore: Gore;
   private flashes: Flash[] = [];
+  /** Effects waiting for their moment, on this clock (which hitstop holds). */
+  private pending: Array<{ at: number; fn: () => void }> = [];
   private zoneDecals = new Map<number, ReturnType<DecalLayer['circle']>>();
   private auraT = 0;
   time = 0;
@@ -139,6 +141,15 @@ export class CombatFx {
           this.onDamageFlash(Math.min(1, 0.35 + ev.amount / 40));
           break;
         }
+        case 'shieldHit': {
+          // The ward rings, and on the last blow it gives, shatters.
+          const y = this.y(ev.x, ev.z) + 1.1;
+          this.numbers.spawn(ev.x, y + 0.3, ev.z, ev.absorbed, 'blocked', this.time);
+          this.burst(ev.x, y, ev.z, 'holy', ev.broke ? 26 : 8, ev.broke ? 6 : 3, { size: ev.broke ? 0.1 : 0.07, shape: 3 });
+          this.flash(ev.x, y, ev.z, SCHOOL.holy.light, ev.broke ? 8 : 3, ev.broke ? 0.4 : 0.2, 7);
+          if (ev.broke) { this.ribbons.nova(ev.x, y - 0.8, ev.z, 2.2, SCHOOL.holy.core, SCHOOL.holy.glow, 0.3, 1); this.cam?.addTrauma(0.12); }
+          break;
+        }
         case 'playerHeal':
           if (ev.amount >= 3) this.numbers.spawn(this.playerPos.x, this.playerPos.y + 1.6, this.playerPos.z, ev.amount, 'heal', this.time);
           break;
@@ -191,7 +202,7 @@ export class CombatFx {
           const pal = SCHOOL[ev.school];
           if (ev.delay > 0.05) {
             this.decals.circle(ev.x, ev.z, ev.radius, 8, pal.glow.clone().multiplyScalar(0.6), { life: ev.delay, additive: true });
-            setTimeout(() => this.ribbons.pillar(ev.x, gy, ev.z, 16, 0.35 + ev.radius * 0.1, pal.core, pal.glow, 0.3), ev.delay * 1000);
+            this.pending.push({ at: this.time + ev.delay, fn: () => this.ribbons.pillar(ev.x, gy, ev.z, 16, 0.35 + ev.radius * 0.1, pal.core, pal.glow, 0.3) });
           } else {
             this.ribbons.pillar(ev.x, gy, ev.z, 16, 0.35, pal.core, pal.glow, 0.3);
           }
@@ -313,6 +324,10 @@ export class CombatFx {
 
   update(b: Battle, dt: number, time: number, camera: THREE.PerspectiveCamera, viewW: number, viewH: number) {
     this.time = time;
+    if (this.pending.length) {
+      const due = this.pending.filter((p) => p.at <= time);
+      if (due.length) { this.pending = this.pending.filter((p) => p.at > time); for (const p of due) p.fn(); }
+    }
     this.sparks.update(time);
     this.smoke.update(time);
     this.decals.update(dt, time);

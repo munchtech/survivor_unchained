@@ -842,6 +842,7 @@ export class Battle {
       const a = Math.min(p.shield, dmg);
       p.shield -= a;
       dmg -= a;
+      if (!silent && a > 0) this.events.emit({ t: 'shieldHit', x: p.x, z: p.z, absorbed: a, broke: p.shield <= 0 });
     }
     if (dmg <= 0) return 0;
     p.hp -= dmg;
@@ -956,7 +957,7 @@ export class Battle {
     const p = this.pickups.spawn();
     if (!p) return null;
     const a = this.rng.next() * TAU, v = 1.5 + this.rng.next() * 2;
-    Object.assign(p, { kind, x, z, vx: Math.cos(a) * v, vz: Math.sin(a) * v, value, ref, age: 0, pulled: false, persistent: false, tier: 0 });
+    Object.assign(p, { kind, x, z, vx: Math.cos(a) * v, vz: Math.sin(a) * v, value, ref, age: 0, pulled: false, pullT: 0, persistent: false, tier: 0 });
     if (kind === 'ember') p.tier = value >= 40 ? 3 : value >= 12 ? 2 : value >= 4 ? 1 : 0;
     return p;
   }
@@ -1241,10 +1242,18 @@ export class Battle {
       const d = Math.hypot(dx, dz);
       const autoPull = k.kind === 'ember' || k.kind === 'gold' || k.kind === 'heal' || k.kind === 'magnet';
       if (autoPull && (k.pulled || (d < reach && k.age > 0.25))) {
-        k.pulled = true;
-        const sp = 4 + k.age * 2 + (k.pulled ? 10 : 0);
-        k.x += (dx / (d || 1)) * Math.min(d, sp * dt);
-        k.z += (dz / (d || 1)) * Math.min(d, sp * dt);
+        const n = d || 1;
+        if (!k.pulled) {
+          // A little hop back as it notices you, then the rush: the eye
+          // reads it being pulled, not sliding.
+          k.pulled = true;
+          k.vx -= (dx / n) * 3.5;
+          k.vz -= (dz / n) * 3.5;
+        }
+        k.pullT += dt;
+        const sp = Math.min(36, 1 + k.pullT * k.pullT * 80);
+        k.x += (dx / n) * Math.min(d, sp * dt);
+        k.z += (dz / n) * Math.min(d, sp * dt);
       }
       if (d < p.radius + 0.35 && (autoPull || k.age > 0.4)) this.collect(k);
       // Ember on the ground cools after a long while; gear does not.

@@ -4,10 +4,10 @@ import { Terrain, type TerrainPaint } from '@/render/terrain';
 import { Grass } from '@/render/grass';
 import { createWater, waterUniforms } from '@/render/water';
 import { CollisionWorld } from '@/sim/collision';
-import { Noise2D, distToSegment, smoothstep, hash2, hash1 } from '@/core/math';
+import { Noise2D, distToSegment, smoothstep, hash1 } from '@/core/math';
 import type { ZoneBuild } from '@/game/scene';
 import { ZoneKit } from './kit';
-import { Assembly, buildHouse, STOREY, type HouseSpec, type WallKind } from './houses';
+import { Assembly, buildHouse, putDoor, STOREY, type HouseSpec, type WallKind } from './houses';
 
 /* The Waystation: where the last three roads meet under Vonnra's toll.
  *
@@ -167,18 +167,13 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
     if (gate !== undefined && shut) {
       // Shut: the opening walled up between its towers, stone both sides,
       // with one arched door in the middle that nobody opens.
-      const turn = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
       for (const k of [-1, 0, 1]) {
         const s = gate + k * 2, x = mx + ux * s, z = mz + uz * s;
         const y = kit.y(x, z) - 0.3 - baseY;
         for (const [dx, dz, r] of [[0, 0, rot], [-fx * 0.45, -fz * 0.45, rot + Math.PI]]) {
           for (let f = 0; f < 2; f++) {
-            const door = f === 0 && k === 0;
-            asm.put(door ? 'Wall_UnevenBrick_Door_Round' : 'Wall_UnevenBrick_Straight', x - mx + dx, y + f * STOREY, z - mz + dz, r);
-            if (!door) continue;
-            asm.put('DoorFrame_Round_WoodDark', x - mx + dx, y, z - mz + dz, r);
-            turn.set(-0.53, 0, 0).applyAxisAngle(up, r);
-            asm.put('Door_1_Round', x - mx + dx + turn.x, y, z - mz + dz + turn.z, r);
+            if (f === 0 && k === 0) putDoor(asm, 'UnevenBrick', 'Round', x - mx + dx, y, z - mz + dz, r);
+            else asm.put('Wall_UnevenBrick_Straight', x - mx + dx, y + f * STOREY, z - mz + dz, r);
           }
         }
       }
@@ -405,8 +400,7 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
   kit.env('props', 'Barrel', W.barracks.x + 6.4, W.barracks.z + 3, { r: 0.4 });
 
   // The smithy's forge, anvil and bench.
-  const smithFire = kit.campfire(W.smithy.x - 4.2, W.smithy.z - 3.2, 0.7);
-  void smithFire;
+  kit.campfire(W.smithy.x - 4.2, W.smithy.z - 3.2, 0.7);
   kit.env('props', 'Anvil_Log', W.smithy.x - 5.2, W.smithy.z + 1.2, { rot: Math.PI / 2, r: 0.5 });
   kit.env('props', 'Workbench', W.smithy.x - 4.4, W.smithy.z + 4.2, { rot: -Math.PI / 2, box: [1.0, 0.5] });
   kit.env('props', 'Bucket_Metal', W.smithy.x - 5.9, W.smithy.z + 2.2, {});
@@ -494,5 +488,4 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
 function flora(kit: ZoneKit, kind: 'pine' | 'broadleaf' | 'autumn', x: number, z: number, rot: number, s: number) {
   kit.flora.add(kind, x, kit.y(x, z) - 0.1, z, rot, s);
   kit.col.addCircle(x, z, 0.5 * s);
-  void hash2;
 }

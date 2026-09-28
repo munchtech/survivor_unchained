@@ -22,6 +22,7 @@ import {
   overlayBack,
 } from '@/ui/store';
 import { goreSetting, setGoreSetting, goreLevel, type GoreSetting } from '@/render/gore';
+import { motionSetting, setMotionSetting, type MotionSetting } from '@/render/motion';
 import { SHOPS, type ShopDef } from '@/content/shops';
 import { RULES, SOCIAL } from '@/content/rules';
 import { advanceDay } from '@/world/simulation';
@@ -104,6 +105,10 @@ export class Game {
   private near: Interactable | null = null;
   private time = 0;
   private autosaveT = 0;
+  /** Between places: faded out, the next zone not yet arrived in. */
+  private inTransit = false;
+  /** Things to happen a little later, in game time (after()). */
+  private later: Array<{ t: number; fn: () => void }> = [];
   private fogT = 0;
   readonly sound = new SoundBridge();
   /** Dev: a crude player that drives the game (?auto). */
@@ -152,6 +157,7 @@ export class Game {
 
   showTitle() {
     this.mode = 'title';
+    this.inTransit = false;
     this.leaveZone();
     this.ch = null;
     this.world = null;
@@ -322,9 +328,25 @@ export class Game {
     }, 550);
   }
 
+  /** Do this a little later, in game time: it waits while a menu, a
+   *  conversation or a fade holds the world still, and is forgotten if the
+   *  zone is left first (a line meant for the Verge is not said in town). */
+  after(seconds: number, fn: () => void) {
+    this.later.push({ t: seconds, fn });
+  }
+
+  private runLater(dt: number) {
+    if (!this.later.length || this.mode !== 'play' || this.scene.simPaused) return;
+    const due = this.later.filter((l) => (l.t -= dt) <= 0);
+    if (!due.length) return;
+    this.later = this.later.filter((l) => l.t > 0);
+    for (const l of due) l.fn();
+  }
+
   /* ============================================================ zones == */
 
   private leaveZone() {
+    this.later = [];
     if (this.zone) this.zone.dispose?.();
     this.zone = null;
     this.scene.clearZone();
@@ -338,6 +360,10 @@ export class Game {
 
   /** Travel: fade, build the next zone, arrive. */
   travel(to: string, caption?: string, sub?: string) {
+    // Once on the road, a second press at the gate (or a menu key) waits
+    // until you have arrived: one journey, one new place, one save.
+    if (this.inTransit) return;
+    this.inTransit = true;
     const from = this.zone?.id ?? null;
     this.captureExpedition();
     this.scene.simPaused = true;
@@ -349,6 +375,7 @@ export class Game {
       setTimeout(() => {
         fade.value = { to: 0, seconds: 1.4 };
         Input.captured = false;
+        this.inTransit = false;
       }, caption ? 1400 : 200);
     }, 850);
   }
@@ -580,7 +607,7 @@ export class Game {
   private updateInteraction() {
     const b = this.scene.battle;
     const z = this.zone;
-    if (!b || !z || overlay.value || !b.player.alive) { prompt.value = null; this.near = null; return; }
+    if (!b || !z || overlay.value || !b.player.alive || this.inTransit) { prompt.value = null; this.near = null; return; }
     const p = b.player;
     let best: Interactable | null = null, bd = 1e9;
     for (const it of z.interactables) {
@@ -597,7 +624,7 @@ export class Game {
   }
 
   private onAction(a: string): boolean | void {
-    if (this.mode !== 'play') return;
+    if (this.mode !== 'play' || this.inTransit) return;
     if (levelUp.value) return;
     const ov = overlay.value;
     if (a === 'pause' && !ov) { this.openOverlay('pause'); return true; }
@@ -1181,6 +1208,7 @@ export class Game {
       this.camLook.z = damp(this.camLook.z, this.camLookT.z, 2.2, dt);
     }
     this.zone?.frame?.(dt);
+    this.runLater(dt);
     if (this.figureTurnT > 0) {
       this.figureTurnT -= dt;
       if (this.figureTurnT <= 0) this.figure?.face(Math.PI * 0.08);
@@ -1228,6 +1256,8 @@ export class Game {
       soundLevel: () => this.sound.level,
       gore: () => goreSetting(),
       setGore: (v: GoreSetting) => { setGoreSetting(v); if (this.scene.fx) this.scene.fx.gore.level = goreLevel(v); },
+      motion: () => motionSetting(),
+      setMotion: (v: MotionSetting) => setMotionSetting(v),
       quitToTitle: () => { this.save('quit'); fade.value = { to: 1, seconds: 0.6 }; setTimeout(() => this.showTitle(), 650); },
       quitGame: () => { if (this.ch) this.save('quit'); fade.value = { to: 1, seconds: 0.4 }; setTimeout(() => void desktop?.quit(), 450); },
       openOverlay: (o: 'inventory' | 'character' | 'journal' | 'pause' | 'map') => (o === 'map' ? this.openMap() : this.openOverlay(o)),

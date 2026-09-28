@@ -162,6 +162,8 @@ export interface Pickup {
   ref: string | null;
   age: number;
   pulled: boolean;
+  /** How long it has been flying to the survivor (it speeds up). */
+  pullT: number;
   /** Stays on the ground forever (a corpse's gear, a quest item). */
   persistent: boolean;
   tier: number;
@@ -196,7 +198,7 @@ export function blankZone(id: number): GroundZone {
 }
 
 export function blankPickup(id: number): Pickup {
-  return { id, alive: false, kind: 'ember', x: 0, z: 0, vx: 0, vz: 0, value: 1, ref: null, age: 0, pulled: false, persistent: false, tier: 0 };
+  return { id, alive: false, kind: 'ember', x: 0, z: 0, vx: 0, vz: 0, value: 1, ref: null, age: 0, pulled: false, pullT: 0, persistent: false, tier: 0 };
 }
 
 /** A fixed-capacity pool; ids are indices and stay stable while alive. */

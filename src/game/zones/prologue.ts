@@ -100,7 +100,7 @@ export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number 
     if (shown.has(id)) return;
     shown.add(id);
     hint.value = { id, title, text, keys };
-    if (life > 0) setTimeout(() => { if (hint.value?.id === id) hint.value = null; }, life * 1000);
+    if (life > 0) g.after(life, () => { if (hint.value?.id === id) hint.value = null; });
   };
   const key = (a: Parameters<typeof Input.keyLabel>[0]) => Input.keyLabel(a);
   const go = (s: Stage) => { stage = s; stageT = 0; };
@@ -617,11 +617,9 @@ export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number 
       locked: () => (knight ? 'The Barrow Knight stands over it' : null),
       act: () => {
         chestOpened = true;
-        const ch = g.ch!;
         g.apply([{ give: 'padded_jerkin', rarity: 1 }, { give: 'health_draught', qty: 2 }, { gold: 15 }]);
-        void ch;
         hint.value = null;
-        setTimeout(() => tip('pack', 'Your pack', 'What you find, you keep. Ember fades when you rest; gear, gold and what you learn do not. Open your pack to wear the jerkin.', [key('inventory')], 14), 600);
+        g.after(0.6, () => tip('pack', 'Your pack', 'What you find, you keep. Ember fades when you rest; gear, gold and what you learn do not. Open your pack to wear the jerkin.', [key('inventory')], 14));
         setObjective({ id: 'pro', title: 'The Low Ford', tone: 'tutorial', steps: [{ text: 'Search the old Watch-post', done: true }, { text: 'Wear what you found', optional: true }, { text: 'Follow the road north' }] });
       },
     },
@@ -632,7 +630,7 @@ export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number 
         g.apply([{ learn: 'lore.warden', text: 'The lamps at the ford feed the Warden.' }]);
         // The devout hear the dead, a little.
         if (g.ch?.knowledge.includes('faith')) {
-          setTimeout(() => say('...and for you alone, the dead man\'s jaw moves: "It shatters its own lamps when it charges. Make it charge."', 'The dead Watchman', 7), 8200);
+          g.after(8.2, () => say('...and for you alone, the dead man\'s jaw moves: "It shatters its own lamps when it charges. Make it charge."', 'The dead Watchman', 7));
         }
       },
     },

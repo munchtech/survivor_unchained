@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { damp, clamp } from '@/core/math';
+import { shakeScale } from './motion';
 
 /* The game camera: a steep three-quarter view that follows the survivor.
  *
@@ -29,7 +30,7 @@ export class FollowCamera {
 
   constructor(readonly camera: THREE.PerspectiveCamera) {}
 
-  addTrauma(v: number) { this.trauma = clamp(this.trauma + v, 0, 1); }
+  addTrauma(v: number) { this.trauma = clamp(this.trauma + v * shakeScale(), 0, 1); }
 
   snap(x: number, y: number, z: number) {
     this.look.set(x, y, z);

@@ -67,6 +67,7 @@ function TitleMenu() {
   const [quality, setQuality] = useState(() => actions.quality());
   const [sound, setSound] = useState(() => actions.soundLevel());
   const [gore, setGore] = useState(() => actions.gore());
+  const [motion, setMotion] = useState(() => actions.motion());
   const [full, setFull] = useState(wantsFullscreen);
   const items: Array<{ id: string; label: string; sub?: string; act: () => void; primary?: boolean }> = [];
   if (latest) items.push({ id: 'continue', label: 'Continue', sub: `${latest.name} · ${ARCHETYPES[latest.archetype as keyof typeof ARCHETYPES]?.name ?? ''} ${latest.level} · Day ${latest.day}`, act: () => actions.continueJourney(latest.slot), primary: true });
@@ -155,7 +156,13 @@ function TitleMenu() {
               {(['full', 'reduced', 'off'] as const).map((g) => <button key={g} class={`btn small${gore === g ? ' on' : ''}`} onClick={() => { actions.setGore(g); setGore(g); }}>{g}</button>)}
             </div>
           </div>
-          <div class="tp-note">Lower settings trade shadow detail, grass and ambient occlusion for speed. Reduced gore keeps a little blood and throws nothing.</div>
+          <div class="tp-row">
+            <span>Screen shake</span>
+            <div class="seg">
+              {(['full', 'reduced', 'off'] as const).map((m) => <button key={m} class={`btn small${motion === m ? ' on' : ''}`} onClick={() => { actions.setMotion(m); setMotion(m); }}>{m}</button>)}
+            </div>
+          </div>
+          <div class="tp-note">Lower settings trade shadow detail, grass and ambient occlusion for speed. Reduced gore keeps a little blood and throws nothing. Screen shake off also stops the world holding still on a heavy blow.</div>
         </div>
       )}
       {panel === 'controls' && (

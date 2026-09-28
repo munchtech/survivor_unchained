@@ -32,11 +32,10 @@ export function mapImage(z: ZoneBuild): { url: string; extent: number } {
   const tint = new Float32Array(G * G * 3);
   const wet = new Uint8Array(G * G);
   const paint: TerrainPaint = { dirt: 0, stone: 0, blight: 0, mud: 0 };
-  let lo = Infinity, hi = -Infinity;
   for (let j = 0; j < G; j++) for (let i = 0; i < G; i++) {
     const x = at(i, G), zz = at(j, G), k = j * G + i;
     const y = z.terrain.heightAt(x, zz);
-    h[k] = y; lo = Math.min(lo, y); hi = Math.max(hi, y);
+    h[k] = y;
     z.terrain.paintAt(x, zz, paint);
     // Paper, then what is on the ground.
     let r = 222, gg = 208, b = 172;
@@ -88,7 +87,6 @@ export function mapImage(z: ZoneBuild): { url: string; extent: number } {
     d[o] = r + n; d[o + 1] = gg + n; d[o + 2] = b + n * 0.8; d[o + 3] = 255;
   }
   g.putImageData(img, 0, 0);
-  void lo; void hi;
 
   // Water's edge, inked.
   g.strokeStyle = 'rgba(52, 70, 78, 0.55)';

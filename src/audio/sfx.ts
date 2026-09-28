@@ -55,6 +55,21 @@ export const SFX = {
     A.fm({ f: r(520, 640), ratio: 1.41, index: 3.5, d: 0.35, g: 0.06, pan: w.pan, verb: 0.3 });
   },
 
+  /** A ward giving way: a bright crack, and glass going everywhere. */
+  shatter() {
+    if (!A.gate('shatter', 1, 250)) return;
+    A.fm({ f: r(1700, 1900), ratio: 2.76, index: 4, d: 0.5, g: 0.05, verb: 0.45 });
+    A.fm({ t: A.now + 0.03, f: r(2500, 2800), ratio: 3.41, index: 3, d: 0.6, g: 0.035, verb: 0.5 });
+    A.hiss({ a: 0.002, d: 0.35, g: 0.05, hp: 3500, verb: 0.3 });
+  },
+
+  /** Your own heart, when you are close to the end: lub, dub. */
+  heartbeat(urgency: number) {
+    const g = 0.05 + 0.06 * urgency;
+    A.tone({ f: 58, f2: 42, d: 0.16, g, lp: 220, bus: 'sfx' });
+    A.tone({ t: A.now + 0.24, f: 52, f2: 38, d: 0.2, g: g * 0.75, lp: 200, bus: 'sfx' });
+  },
+
   kill(family: string, elite: boolean, boss: boolean, w: Where = {}) {
     if (!A.gate('kill', 5, 90)) return;
     const pan = w.pan, g = 0.5 + 0.5 * (w.near ?? 1);

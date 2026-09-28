@@ -78,7 +78,6 @@ function prepare(root: THREE.Object3D, kit: EnvKit) {
         s.transparent = false;
         s.alphaTest = Math.max(s.alphaTest, 0.5);
         s.side = THREE.DoubleSide;
-        m.customDepthMaterial = undefined;
       }
       occludable(s);
       weather(s, kit);

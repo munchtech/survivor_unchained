@@ -14,6 +14,7 @@ import { Battle, type BattleSetup } from '@/sim/battle';
 import type { CollisionWorld } from '@/sim/collision';
 import type { CombatEvent } from '@/sim/events';
 import { Input } from '@/core/input';
+import { hitstopOn } from '@/render/motion';
 
 /* A place, and whatever is happening in it.
  *
@@ -54,6 +55,12 @@ export class WorldScene {
   player: PlayerView | null = null;
   private acc = 0;
   time = 0;
+  /** Hitstop: what is left, in real seconds, of the world holding still
+   *  after a heavy blow; and how long until it may again. */
+  private hitstop = 0;
+  private hitstopCd = 0;
+  /** The fight's own clock (it slows with hitstop; the camera does not). */
+  private fightTime = 0;
   simPaused = false;
   /** Events drained this frame, for the HUD and the world layer. */
   frameEvents: CombatEvent[] = [];
@@ -120,8 +127,13 @@ export class WorldScene {
   update(dt: number) {
     const b = this.battle;
     this.time += dt;
+    this.hitstopCd = Math.max(0, this.hitstopCd - dt);
+    const held = this.hitstop > 0;
+    if (held) this.hitstop -= dt;
+    const fightDt = held ? dt * 0.08 : dt;
+    this.fightTime += fightDt;
     if (b && !this.simPaused) {
-      this.acc += Math.min(dt, 0.1);
+      this.acc += Math.min(fightDt, 0.1);
       while (this.acc >= STEP) {
         this.acc -= STEP;
         if (Input.pressed('dash')) b.dash(Input.moveX, Input.moveZ);
@@ -131,20 +143,39 @@ export class WorldScene {
         const evs = b.events.drain();
         if (evs.length) {
           this.fx?.handle(evs, b);
+          this.weigh(evs, b);
           for (const e of evs) this.frameEvents.push(e);
           if (evs.some((e) => e.t === 'levelUp')) this.player?.levelFlare();
         }
       }
     }
-    this.render(dt);
+    this.render(dt, fightDt);
     if (this.frameEvents.length) {
       this.onEvents(this.frameEvents);
       this.frameEvents = [];
     }
   }
 
-  /** Bring every renderer up to the simulation. */
-  private render(dt: number) {
+  /** Heavy blows hold the world still for a few frames: a boss or an elite
+   *  going down, a critical that takes a third of what something had, a blow
+   *  that really hurt, a shield bash landing. Never twice in quick
+   *  succession, so a crowd going down does not stutter. */
+  private weigh(evs: CombatEvent[], b: Battle) {
+    if (this.hitstopCd > 0 || !hitstopOn()) return;
+    let s = 0;
+    for (const e of evs) {
+      if (e.t === 'kill' && e.byPlayer && (e.boss || e.elite)) s = Math.max(s, e.boss ? 0.14 : 0.08);
+      else if (e.t === 'hit' && e.crit && !e.dot && e.maxHp && e.amount >= e.maxHp * 0.35) s = Math.max(s, 0.045);
+      else if (e.t === 'playerHit' && e.amount > b.maxHp * 0.12) s = Math.max(s, 0.07);
+      else if (e.t === 'ability' && e.id === 'shield_bash') s = Math.max(s, 0.05);
+    }
+    if (s > 0) { this.hitstop = s; this.hitstopCd = s + 0.3; }
+  }
+
+  /** Bring every renderer up to the simulation. The fight (the survivor,
+   *  the crowd, their sparks) runs on its own clock, which hitstop holds;
+   *  the camera, its shake and the world around keep real time. */
+  private render(dt: number, fightDt: number) {
     const b = this.battle;
     const z = this.zone;
     if (!z) return;
@@ -152,12 +183,12 @@ export class WorldScene {
     if (b) {
       const p = b.player;
       const y = this.heightAt(p.x, p.z);
-      this.player?.update(b, dt, t, this.heightAt);
+      this.player?.update(b, fightDt, this.fightTime, this.heightAt);
       if (!this.showcase) this.cam.update(dt, p.x, y, p.z, p.vx, p.vz);
-      this.crowd?.update(b, this.heightAt, t);
+      this.crowd?.update(b, this.heightAt, this.fightTime);
       if (this.fx) {
         this.fx.playerPos.set(p.x, y, p.z);
-        this.fx.update(b, dt, t, this.r.camera, this.r.width, this.r.height);
+        this.fx.update(b, fightDt, this.fightTime, this.r.camera, this.r.width, this.r.height);
       }
       z.grass?.setPusher(0, p.x, p.z, 1.1, 1);
       // Where the survivor is on screen, so trees in front of them dither.

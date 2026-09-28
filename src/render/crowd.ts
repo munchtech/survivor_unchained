@@ -124,9 +124,12 @@ export class CrowdRenderer {
         else { role = 'idle'; t = time + e.seed * 9; }
     }
     const sc = e.def.scale ?? 1;
-    this.p.set(e.x, y, e.z);
+    // Struck: a squash, and a flinch along the blow, gone in a tenth of a
+    // second (the flash's own life).
+    const f = e.state === 'dying' ? 0 : e.flash;
+    this.p.set(e.x + e.lastDx * f * 0.14, y, e.z + e.lastDz * f * 0.14);
     this.q.setFromAxisAngle(this.up, Math.PI / 2 - e.facing);
-    this.s.setScalar(sc);
+    this.s.set(sc * (1 + f * 0.1), sc * (1 - f * 0.1), sc * (1 + f * 0.1));
     this.m.compose(this.p, this.q, this.s);
     const frozen = e.status.frozen ? 1 : e.status.chill ? Math.min(0.5, e.status.chill.stacks * 0.09) : 0;
     const burning = e.status.burn ? 1 : 0;

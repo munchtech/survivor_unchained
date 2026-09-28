@@ -62,11 +62,10 @@ export function statOf<K extends keyof WeaponStats>(w: WeaponInst, k: K): Weapon
 }
 export function artOf(w: WeaponInst) { return w.evolution?.art ?? w.def.art; }
 
-export function damageOf(b: Battle, w: WeaponInst) {
+export function damageOf(w: WeaponInst) {
   let d = w.def.base.damage * (1 + RANK.damageStep * (w.rank - 1)) * w.mods.damage;
   if (w.evolution) d *= w.evolution.mods.damage ?? 1;
   return d;
-  void b;
 }
 
 export function cooldownOf(b: Battle, w: WeaponInst) {
@@ -180,7 +179,7 @@ function launch(b: Battle, w: WeaponInst, angle: number, o: LaunchOpts = {}) {
   const pr = b.spawnProjectile({
     owner: 'player', x: o.x ?? p.x + Math.cos(angle) * 0.5, z: o.z ?? p.z + Math.sin(angle) * 0.5, y: 1.1,
     vx: Math.cos(angle) * sp, vz: Math.sin(angle) * sp, speed: sp,
-    damage: damageOf(b, w), school: schoolOf(w), tags: tagsOf(w),
+    damage: damageOf(w), school: schoolOf(w), tags: tagsOf(w),
     radius: (statOf(w, 'radius') ?? 0.2) * Math.sqrt(b.stats.get('area')), pierce: pierceOf(b, w),
     bounces: (statOf(w, 'bounces') ?? 0) + (w.evolution?.mods.bounces ?? 0),
     life: o.life ?? durationOf(b, w, statOf(w, 'life') ?? 2.0) / (1 + RANK.durationStep * (w.rank - 1)),
@@ -205,7 +204,7 @@ function fireSpray(b: Battle, w: WeaponInst) {
   for (let i = 0; i < n; i++) launch(b, w, a0 + (i - (n - 1) / 2) * spread, { target: t.id });
   // Arrowfall: the volley also rains on the densest knot of the crowd.
   const strikes = statOf(w, 'strikes');
-  if (strikes) stormAt(b, w, strikes, statOf(w, 'stormRadius') ?? 5, 1.3, damageOf(b, w) * 0.6);
+  if (strikes) stormAt(b, w, strikes, statOf(w, 'stormRadius') ?? 5, 1.3, damageOf(w) * 0.6);
   return true;
 }
 
@@ -223,7 +222,7 @@ function fireNova(b: Battle, w: WeaponInst) {
   if (!b.nearestHostile(p.x, p.z, r + 1)) return false;
   const rings = 1 + (w.rank >= RANK.projRankA ? 1 : 0) + (w.rank >= RANK.projRankB ? 1 : 0);
   b.events.emit({ t: 'nova', x: p.x, z: p.z, radius: r, school: schoolOf(w), duration: statOf(w, 'expandTime') ?? 0.35, rings });
-  const dmg = damageOf(b, w);
+  const dmg = damageOf(w);
   const kb = statOf(w, 'knockback') ?? 0;
   const heal = statOf(w, 'heal') ?? 0;
   let hitAny = false;
@@ -252,7 +251,7 @@ function fireZone(b: Battle, w: WeaponInst) {
   } else if (!b.nearestHostile(p.x, p.z, r + 2)) return false;
   const tick = statOf(w, 'tickRate') ?? 0.5;
   b.spawnZone({
-    owner: 'player', x, z, radius: r, life: durationOf(b, w, statOf(w, 'duration') ?? 4), dps: damageOf(b, w) / tick,
+    owner: 'player', x, z, radius: r, life: durationOf(b, w, statOf(w, 'duration') ?? 4), dps: damageOf(w) / tick,
     tick, school: schoolOf(w), tags: tagsOf(w), slow: statOf(w, 'slow') ?? 0, status: statOf(w, 'status') ?? null,
     art: artOf(w), weapon: w.id, follow: !statOf(w, 'atTarget'), armor: w.evolution?.id === 'sanctified_earth' ? 6 : 0,
     bossDamage: w.def.bossDamage ?? 1,
@@ -268,7 +267,7 @@ function fireChain(b: Battle, w: WeaponInst) {
   const reach = areaOf(b, w, statOf(w, 'chainRange') ?? 6);
   const fork = !!statOf(w, 'fork');
   const skybreak = w.evolution?.id === 'skybreak';
-  chainFrom(b, p.x, p.z, first, jumps, reach, damageOf(b, w), schoolOf(w), tagsOf(w), w, fork, skybreak);
+  chainFrom(b, p.x, p.z, first, jumps, reach, damageOf(w), schoolOf(w), tagsOf(w), w, fork, skybreak);
   return true;
 }
 
@@ -313,7 +312,7 @@ function fireOrbit(b: Battle, w: WeaponInst) {
   for (let i = 0; i < n; i++) {
     const pr = b.spawnProjectile({
       owner: 'player', x: b.player.x, z: b.player.z, y: 1, vx: 0, vz: 0, speed: 0,
-      damage: damageOf(b, w), school: schoolOf(w), tags: tagsOf(w), radius: (statOf(w, 'radius') ?? 0.5) * Math.sqrt(b.stats.get('area')),
+      damage: damageOf(w), school: schoolOf(w), tags: tagsOf(w), radius: (statOf(w, 'radius') ?? 0.5) * Math.sqrt(b.stats.get('area')),
       pierce: 999, bounces: 0, life, homing: 0, target: -2, weapon: w.id, art: artOf(w), status: statOf(w, 'status') ?? null,
       splash: 0, splitOnHit: 0, heal: 0, knockback: 0.25, chakram: false, groundOnHit: null, rank: w.rank, bossDamage: w.def.bossDamage ?? 1,
     });
@@ -342,7 +341,7 @@ function stormAt(b: Battle, w: WeaponInst, strikes: number, area: number, splash
 
 function fireStorm(b: Battle, w: WeaponInst) {
   const strikes = (statOf(w, 'strikes') ?? 5) + (w.evolution?.mods.strikes ?? 0) + Math.round(b.stats.get('projectiles'));
-  return stormAt(b, w, strikes, statOf(w, 'stormRadius') ?? 6, statOf(w, 'splash') ?? 1.5, damageOf(b, w));
+  return stormAt(b, w, strikes, statOf(w, 'stormRadius') ?? 6, statOf(w, 'splash') ?? 1.5, damageOf(w));
 }
 
 function fireBounce(b: Battle, w: WeaponInst) {
@@ -367,7 +366,7 @@ function fireBeam(b: Battle, w: WeaponInst) {
   const width = areaOf(b, w, statOf(w, 'beamWidth') ?? 0.6);
   const x1 = p.x + Math.cos(a) * len, z1 = p.z + Math.sin(a) * len;
   b.events.emit({ t: 'beam', x0: p.x, z0: p.z, x1, z1, width, school: schoolOf(w), duration: 0.35 });
-  const dmg = damageOf(b, w);
+  const dmg = damageOf(w);
   b.forEachHostileNearSegment(p.x, p.z, x1, z1, width, (e) => {
     b.hitEnemy(e, dmg, schoolOf(w), tagsOf(w), { weapon: w, status: statOf(w, 'status') ?? null, bossDamage: w.def.bossDamage });
   });
@@ -385,7 +384,7 @@ function firePalm(b: Battle, w: WeaponInst) {
   for (let i = 0; i < n; i++) {
     const t = targets[i % targets.length];
     const a = Math.atan2(t.z - p.z, t.x - p.x) + (i >= targets.length ? (i - targets.length + 1) * 0.6 : 0);
-    coneHit(b, w, a, arc, reach, damageOf(b, w));
+    coneHit(b, w, a, arc, reach, damageOf(w));
   }
   return true;
 }
@@ -418,14 +417,14 @@ function fireSlash(b: Battle, w: WeaponInst) {
   const n = countOf(b, w, 1);
   for (let i = 0; i < n; i++) {
     const ai = a + (i === 0 ? 0 : (i % 2 ? 1 : -1) * Math.ceil(i / 2) * arc * 0.85);
-    coneHit(b, w, ai, arc, reach, damageOf(b, w));
+    coneHit(b, w, ai, arc, reach, damageOf(w));
   }
   // Blades hit things as well as creatures: barrels, brambles, a boss's lamps.
   for (const c of b.collision.within(p.x, p.z, reach)) {
     if (!c.tag) continue;
     let da = Math.atan2(c.z - p.z, c.x - p.x) - a;
     da = Math.atan2(Math.sin(da), Math.cos(da));
-    if (Math.abs(da) <= arc / 2 + 0.3) b.hooks.onHitProp?.(c.tag, c.id, schoolOf(w), damageOf(b, w), c.x, c.z);
+    if (Math.abs(da) <= arc / 2 + 0.3) b.hooks.onHitProp?.(c.tag, c.id, schoolOf(w), damageOf(w), c.x, c.z);
   }
   w.swing++;
   b.player.attackAnim = { weapon: w.id, angle: a, t: b.time, heavy: arc > 3 };
@@ -435,7 +434,7 @@ function fireSlash(b: Battle, w: WeaponInst) {
     if (pr) { pr.pierce = 99; pr.radius = 1.1; pr.art = 'crescent_holy'; pr.school = 'holy'; }
   }
   if (w.evolution?.id === 'bonesplitter') {
-    b.scheduleStrike(p.x + Math.cos(a) * reach * 1.4, p.z + Math.sin(a) * reach * 1.4, 1.8, damageOf(b, w) * 0.8, 'physical', tagsOf(w), 0.12, w);
+    b.scheduleStrike(p.x + Math.cos(a) * reach * 1.4, p.z + Math.sin(a) * reach * 1.4, 1.8, damageOf(w) * 0.8, 'physical', tagsOf(w), 0.12, w);
   }
   return true;
 }
@@ -471,7 +470,7 @@ function fireChakram(b: Battle, w: WeaponInst) {
 /** What a weapon card should say it does at a rank. */
 export function describeRank(b: Battle, w: WeaponInst) {
   return {
-    damage: Math.round(damageOf(b, w) * b.stats.damageMult(schoolOf(w), tagsOf(w))),
+    damage: Math.round(damageOf(w) * b.stats.damageMult(schoolOf(w), tagsOf(w))),
     cooldown: cooldownOf(b, w),
     count: countOf(b, w),
   };

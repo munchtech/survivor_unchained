@@ -1,6 +1,7 @@
 import type { GoreSetting } from '@/render/gore';
 import type { CreationChoice } from '@/rpg/character';
 import type { Quality } from '@/render/renderer';
+import type { MotionSetting } from '@/render/motion';
 
 /* What the interface can ask the game to do. The game fills this in when it
  * boots; components call it without importing the game (no cycles, and the
@@ -25,6 +26,9 @@ export interface GameActions {
   /** Blood and bodies: full, reduced (a little blood) or off. */
   gore(): GoreSetting;
   setGore(v: GoreSetting): void;
+  /** Screen shake and hitstop: full, reduced or off. */
+  motion(): MotionSetting;
+  setMotion(v: MotionSetting): void;
   openOverlay(o: 'inventory' | 'character' | 'journal' | 'pause' | 'map'): void;
   closeOverlay(): void;
   /** Death screen: get up again. */

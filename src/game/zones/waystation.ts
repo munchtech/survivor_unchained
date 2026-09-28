@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import type { Game } from '../game';
 import type { ZoneRuntime, Interactable, MapMark } from '../zone';
 import { NpcActor, PlateLayer } from '../actors';
@@ -311,7 +310,7 @@ export function waystation(g: Game): ZoneRuntime {
       g.announceZone();
       if (!w.facts['waystation.visited']) {
         w.facts['waystation.visited'] = true;
-        setTimeout(() => say('The Waystation: walls, smoke, the smell of bread. People stop to look at you. News travels fast here.', undefined, 5), 2500);
+        g.after(2.5, () => say('The Waystation: walls, smoke, the smell of bread. People stop to look at you. News travels fast here.', undefined, 5));
       }
     },
     frame: (dt) => {
@@ -344,7 +343,6 @@ export function waystation(g: Game): ZoneRuntime {
       const cam = g.r.camera;
       const zoom = 1;
       plates.update(items, px, pz, cam, g.r.width / zoom, g.r.height / zoom, g.barks.speakers());
-      void THREE;
     },
     interactables,
     debug: () => ({ folk: folk.count, walkers: folk.debugState(), lanes: folk.validate(), lit: built.kit.sources.filter((x) => x.on).length, night: nightNow }),

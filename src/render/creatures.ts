@@ -439,11 +439,10 @@ export function buildBoar(): { root: THREE.Group; clips: Record<string, THREE.An
     B.add(cone(new THREE.Vector3(0.13 * sx, 0.84, 0.46), new THREE.Vector3(0.6 * sx, 0.8, -0.3), 0.06, 0.14, 3), 'head', () => dark);
     B.add(blob(new THREE.Vector3(0.14 * sx, 0.72, 0.62), 0.025, 1, 1, 1), 'head', () => new THREE.Color('#1a0e0a'));
   }
-  for (const [side, sx] of [['L', 1], ['R', -1]] as const) {
+  for (const side of ['L', 'R'] as const) {
     const f = B.boneWorld(`fu${side}`), b = B.boneWorld(`bu${side}`);
     B.add(limb(f, new THREE.Vector3(f.x, 0.03, f.z + 0.03), 0.09, 0.06, 5), `fu${side}`, () => dark);
     B.add(limb(b, new THREE.Vector3(b.x, 0.03, b.z - 0.02), 0.1, 0.06, 5), `bu${side}`, () => dark);
-    void sx;
   }
   B.add(cone(new THREE.Vector3(0, 0.66, -0.68), new THREE.Vector3(0, -0.5, -1), 0.03, 0.22, 3), 'tail', () => dark);
   const root = B.build(new THREE.Color('#000000'));

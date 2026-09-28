@@ -150,14 +150,12 @@ function mask() {
 }
 function kerchief() {
   // A red cloth folded into a triangle, knotted at the corners.
-  const geo = new THREE.BufferGeometry();
   const shape = new THREE.Shape();
   shape.moveTo(-0.8, 0.4); shape.lineTo(0.8, 0.4); shape.lineTo(0, -0.7); shape.closePath();
   const g2 = new THREE.ExtrudeGeometry(shape, { depth: 0.04, bevelEnabled: true, bevelSize: 0.02, bevelThickness: 0.02, bevelSegments: 1, curveSegments: 1 });
   const pos = g2.getAttribute('position');
   for (let i = 0; i < pos.count; i++) pos.setZ(i, pos.getZ(i) + Math.sin(pos.getX(i) * 3) * 0.06 + pos.getY(i) * pos.getY(i) * 0.15);
   g2.computeVertexNormals();
-  void geo;
   const g = new THREE.Group();
   const red = cloth('#b8201e');
   g.add(new THREE.Mesh(g2, red));

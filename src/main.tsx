@@ -99,7 +99,6 @@ async function boot() {
       (window as unknown as { __auto: unknown }).__auto = ap;
     }
     tick = (dt) => game.update(dt);
-    void screen;
   }
 
   let last = performance.now();

@@ -308,7 +308,7 @@ export function buildLowFord(grassDensity = 1): LowFordBuild {
   for (let i = 0; i < 3; i++) {
     const x = F.x + Math.cos(pyl[i]) * 11.5, z = F.z + Math.sin(pyl[i]) * 10.5;
     const gy = Math.max(kit.y(x, z), WATER_Y - 0.3);
-    const obj = kit.prop('halloween', 'pillar', x, z, { scale: 0.85, y: gy - 0.1 });
+    kit.prop('halloween', 'pillar', x, z, { scale: 0.85, y: gy - 0.1 });
     const top = gy + 4.4 * 0.85;
     const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.3, 0.35, 10), new THREE.MeshStandardMaterial({ color: '#3a3430', roughness: 0.6, metalness: 0.5 }));
     bowl.position.set(x, top + 0.1, z);
@@ -318,7 +318,6 @@ export function buildLowFord(grassDensity = 1): LowFordBuild {
     const src = kit.source(x, top + 0.8, z, 0x8ac8ff, 14, 16, 0.16, [flame]);
     const collider = col.addCircle(x, z, 0.75, { tag: `pylon:${i}` }).id;
     pylons.push({ x, z, src, flame, collider, top });
-    void obj;
   }
   // The old causeway: stepping stones across the ford.
   for (let i = 0; i < 9; i++) {
@@ -344,14 +343,12 @@ export function buildLowFord(grassDensity = 1): LowFordBuild {
   col.addBox(G.x - 34, G.z, 30, 2.2, 0);
   col.addBox(G.x + 34, G.z, 30, 2.2, 0);
   // The gate itself: shut until dawn.
-  const gateBar = col.addBox(G.x, G.z, 3.6, 2.2, 0, { tag: 'gate' });
+  col.addBox(G.x, G.z, 3.6, 2.2, 0, { tag: 'gate' });
   for (const side of [-1, 1]) {
-    const t = kit.prop('dungeon', 'torch_mounted', G.x + side * 4.2, G.z + 2.4, { rot: 0, scale: 1, y: kit.y(G.x, G.z) + 3.4 });
-    void t;
+    kit.prop('dungeon', 'torch_mounted', G.x + side * 4.2, G.z + 2.4, { rot: 0, scale: 1, y: kit.y(G.x, G.z) + 3.4 });
     const glow = kit.flameGlow(G.x + side * 4.2, kit.y(G.x, G.z) + 4.15, G.z + 2.75, 0.14);
     kit.source(G.x + side * 4.2, kit.y(G.x, G.z) + 4.5, G.z + 3.2, 0xffa050, 12, 16, 0.2, [glow]);
   }
-  void gateBar;
 
   // Dead lanterns along the road: the Watch's lights, long out.
   const lampZ = [74, 44, 12, -22, -64, -86];

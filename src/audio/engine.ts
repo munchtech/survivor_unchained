@@ -120,7 +120,7 @@ export class AudioEngine {
 
   /* ---------------------------------------------------------- voices -- */
 
-  private dest(bus: Bus, pan: number | undefined, verb: number | undefined, t: number, end: number): AudioNode {
+  private dest(bus: Bus, pan: number | undefined, verb: number | undefined, end: number): AudioNode {
     const ctx = this.ctx!;
     let node: AudioNode = this.buses[bus];
     if (verb !== undefined) {
@@ -141,7 +141,6 @@ export class AudioEngine {
       this.cleanup(end, p);
       node = p;
     }
-    void t;
     return node;
   }
 
@@ -182,7 +181,7 @@ export class AudioEngine {
       f.type = 'highpass'; f.frequency.value = o.hp;
       node.connect(f); node = f; extra.push(f);
     }
-    node.connect(g).connect(this.dest(o.bus ?? 'sfx', o.pan, o.verb, t, end));
+    node.connect(g).connect(this.dest(o.bus ?? 'sfx', o.pan, o.verb, end));
     osc.start(t);
     osc.stop(end + 0.05);
     this.cleanup(end, osc, g, ...extra);
@@ -217,7 +216,7 @@ export class AudioEngine {
       f.type = 'highpass'; f.frequency.value = o.hp;
       node.connect(f); node = f; extra.push(f);
     }
-    node.connect(g).connect(this.dest(o.bus ?? 'sfx', o.pan, o.verb, t, end));
+    node.connect(g).connect(this.dest(o.bus ?? 'sfx', o.pan, o.verb, end));
     src.start(t, Math.random() * 1.5);
     src.stop(end + 0.05);
     this.cleanup(end, src, g, ...extra);
@@ -238,7 +237,7 @@ export class AudioEngine {
     mod.connect(mg).connect(car.frequency);
     const g = ctx.createGain();
     this.envelope(g, t, a, o.d, o.g);
-    car.connect(g).connect(this.dest(o.bus ?? 'sfx', o.pan, o.verb, t, end));
+    car.connect(g).connect(this.dest(o.bus ?? 'sfx', o.pan, o.verb, end));
     car.start(t); mod.start(t);
     car.stop(end + 0.05); mod.stop(end + 0.05);
     this.cleanup(end, car, mod, mg, g);

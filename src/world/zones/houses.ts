@@ -6,7 +6,8 @@ import { Rng } from '@/core/rng';
 /* Houses, put together from the Medieval Village kit (render/env.ts).
  *
  * The kit is modular on a 2 m grid: wall panels 2 m wide and a storey high
- * (plaster over a stone base, plaster with timber, or rough stone), each in
+ * (timber-framed plaster, over a stone base on the ground floor, or rough
+ * stone), each in
  * plain, door and window versions; corner posts; gabled round-tile roofs
  * sized to a footprint (4x4 m up to 8x14 m) with brick gable ends; doors,
  * windows and shutters to fill the openings; chimneys. A house is a
@@ -18,7 +19,7 @@ import { Rng } from '@/core/rng';
  * are merged by material, so a house costs a handful of draw calls however
  * many panels it has. */
 
-export type WallKind = 'plaster' | 'timber' | 'stone';
+export type WallKind = 'plaster' | 'stone';
 export type Side = 'front' | 'back' | 'left' | 'right';
 
 export interface HouseSpec {
@@ -61,16 +62,34 @@ export function housePieces(): Array<[EnvKit, string]> {
 
 interface Placed { name: string; m: THREE.Matrix4 }
 
+const UP = new THREE.Vector3(0, 1, 0);
+
+/** Pieces put in place, merged by material when built: a house, a wall. */
+export class Assembly {
+  private placed: Placed[] = [];
+  put(name: string, x: number, y: number, z: number, rot = 0) {
+    this.placed.push({ name, m: new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromAxisAngle(UP, rot), new THREE.Vector3(1, 1, 1)) });
+  }
+  build() { return merge(this.placed); }
+}
+
+/** A doorway panel, its frame, and the door hung from its left edge,
+ *  closed across the opening (the panel's front facing `rot`). */
+export function putDoor(asm: Assembly, wall: 'Plaster' | 'UnevenBrick', shape: 'Round' | 'Flat', x: number, y: number, z: number, rot: number) {
+  asm.put(`Wall_${wall}_Door_${shape}`, x, y, z, rot);
+  asm.put(`DoorFrame_${shape}_WoodDark`, x, y, z, rot);
+  const hinge = new THREE.Vector3(-0.53, 0, 0).applyAxisAngle(UP, rot);
+  asm.put(`Door_1_${shape}`, x + hinge.x, y, z + hinge.z, rot);
+}
+
 export function buildHouse(spec: HouseSpec): House {
   const rng = new Rng(spec.seed ?? 1);
   const { w, d } = spec;
   const roof = `${w}x${d}`;
   const spire = spec.roof === 'spire';
   if (!spire && !ROOFS.includes(roof)) throw new Error(`no roof for a ${roof} house`);
-  const placed: Placed[] = [];
-  const put = (name: string, x: number, y: number, z: number, rot: number) => {
-    placed.push({ name, m: new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rot), new THREE.Vector3(1, 1, 1)) });
-  };
+  const asm = new Assembly();
+  const put = asm.put.bind(asm);
   // The four sides: where each panel stands and which way it faces.
   const sides: Record<Side, { n: number; at: (i: number) => [number, number]; rot: number }> = {
     front: { n: w / 2, at: (i) => [-w / 2 + 1 + i * 2, d / 2], rot: 0 },
@@ -90,15 +109,8 @@ export function buildHouse(spec: HouseSpec): House {
         // Windows: more on the front, fewer on the ground floor's sides.
         const chance = (spec.windows ?? 0.5) * (side === 'front' ? 1.2 : side === 'back' ? 0.6 : 0.8) * (f === 0 ? 0.7 : 1);
         const isWindow = !isDoor && rng.next() < chance;
-        let piece: string;
         if (isDoor) {
-          const shape = door.flat ? 'Flat' : 'Round';
-          piece = `Wall_${mat}_Door_${shape}`;
-          put(piece, x, y, z, s.rot);
-          put(`DoorFrame_${shape}_WoodDark`, x, y, z, s.rot);
-          // The door hangs from its left edge, closed across the opening.
-          const off = new THREE.Vector3(-0.53, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), s.rot);
-          put(`Door_1_${shape}`, x + off.x, y, z + off.z, s.rot);
+          putDoor(asm, mat, door.flat ? 'Flat' : 'Round', x, y, z, s.rot);
           continue;
         }
         if (isWindow) {
@@ -109,8 +121,7 @@ export function buildHouse(spec: HouseSpec): House {
           if (spec.shutters && i > 0 && i < s.n - 1 && rng.next() < 0.6) put(`WindowShutters_${shape}_Open`, x, y, z, s.rot);
           continue;
         }
-        piece = kind === 'stone' ? 'Wall_UnevenBrick_Straight' : f === 0 && kind === 'plaster' ? 'Wall_Plaster_Straight_Base' : 'Wall_Plaster_Straight';
-        put(piece, x, y, z, s.rot);
+        put(kind === 'stone' ? 'Wall_UnevenBrick_Straight' : f === 0 ? 'Wall_Plaster_Straight_Base' : 'Wall_Plaster_Straight', x, y, z, s.rot);
       }
     }
     // Corner posts: timber on plaster, dressed stone on stone.
@@ -131,7 +142,7 @@ export function buildHouse(spec: HouseSpec): House {
   if (spec.chimney && !spire) put('Prop_Chimney', w / 2 - 1.2, top + 0.4, -d / 4, 0);
   const s = sides[door.side];
   const [dx, dz] = s.at(doorAt);
-  return { root: merge(placed), door: new THREE.Vector3(dx, 0, dz), w, d, height: top + (spire ? 6.8 : w * 0.6 + 1) };
+  return { root: asm.build(), door: new THREE.Vector3(dx, 0, dz), w, d, height: top + (spire ? 6.8 : w * 0.6 + 1) };
 }
 
 /** One mesh per material: every piece's geometry, moved into place. */
@@ -179,17 +190,5 @@ function merge(placed: Placed[]) {
   return group;
 }
 
-/** Village pieces put anywhere (town walls, a gatehouse), merged the same
- *  way. Positions are relative to the group it builds: keep each assembly
- *  local (one wall run, not the whole town), since a piece dithers away by
- *  where its own origin stands against the survivor. */
-export class Assembly {
-  private placed: Placed[] = [];
-  put(name: string, x: number, y: number, z: number, rot = 0) {
-    this.placed.push({ name, m: new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rot), new THREE.Vector3(1, 1, 1)) });
-  }
-  build() { return merge(this.placed); }
-}
-
 /** Pieces a stone town wall uses (for preloading). */
-export const WALL_PIECES: Array<[EnvKit, string]> = [['village', 'Wall_UnevenBrick_Straight'], ['village', 'Corner_Exterior_Brick'], ['village', 'Wall_BottomCover']];
+export const WALL_PIECES: Array<[EnvKit, string]> = [['village', 'Wall_UnevenBrick_Straight'], ['village', 'Corner_Exterior_Brick']];

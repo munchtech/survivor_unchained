@@ -691,8 +691,7 @@ export function buildVerge(grassDensity = 1, state: VergeState = { cleanDays: 0 
   kit.env('props', 'Table_Large', R.x + 8, R.z + 2, { rot: 1.1 + Math.PI / 2, r: 1.2 });
   kit.prop('dungeon', 'banner_thin_red', R.x - 6, R.z - 7, { rot: 0.2, scale: 0.8 });
   kit.prop('dungeon', 'banner_thin_red', R.x + 7, R.z - 8, { rot: -0.3, scale: 0.8 });
-  const roostFire = kit.campfire(R.x + 1, R.z + 5, 1.1);
-  void roostFire;
+  kit.campfire(R.x + 1, R.z + 5, 1.1);
   kit.crates(V.cargo.x, V.cargo.z, 0.4, 1.0, { r: 1.2 });
   kit.crates(V.cargo.x - 3, V.cargo.z + 1.5, -0.2, 0.85, { r: 1.1 });
   kit.env('props', 'Chest_Wood', V.cargo.x + 2.2, V.cargo.z - 1.4, { rot: 1.2, scale: 0.95, r: 0.6, tag: 'strongbox' });
