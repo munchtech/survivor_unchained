@@ -318,6 +318,8 @@ export const floraUniforms = {
   uTime: { value: 0 },
   // Survivor on screen: pixel x, pixel y, view depth, radius in pixels.
   uOccluder: { value: new THREE.Vector4(0, 0, 0, 0) },
+  // The drawing buffer's size in pixels, for the cut-out's pattern.
+  uOccView: { value: new THREE.Vector2(1, 1) },
   // Survivor in the world (xyz, w = on) and the way to the camera across
   // the ground: whole trees standing in that lane thin out.
   uFocus: { value: new THREE.Vector4(0, 0, 0, 0) },
@@ -328,8 +330,9 @@ export const floraUniforms = {
 /** Per frame: where the survivor is on screen (in drawing-buffer pixels) and
  *  how far from the camera, so whatever stands in front of them can be
  *  dithered away. */
-export function setOccluder(px: number, py: number, viewDepth: number, radiusPx: number) {
+export function setOccluder(px: number, py: number, viewDepth: number, radiusPx: number, bufW = 1, bufH = 1) {
   floraUniforms.uOccluder.value.set(px, py, viewDepth, radiusPx);
+  floraUniforms.uOccView.value.set(bufW, bufH);
 }
 
 /** Per frame: the survivor's feet and the camera, for the tree lane. */
@@ -339,20 +342,53 @@ export function setFocus(x: number, y: number, z: number, camX: number, camZ: nu
   floraUniforms.uCamXZ.value.set(dx / l, dz / l);
 }
 
-/** Shared fragment code for the occlusion cut-out; buildings use it too. */
+/** Shared shader code for the occlusion cut-out; buildings use it too.
+ *
+ *  What stands between the camera and the survivor is eaten away in soft,
+ *  leaf-sized pieces rather than screen-doored with a fine dither (which
+ *  reads as a mesh laid over the picture). The pattern is drawn on the
+ *  screen, so every layer of a canopy is cut in the same places and you see
+ *  through to the ground, not into the tree; and it is pinned to each
+ *  object's own origin, so it moves with the tree instead of swimming. */
+export const OCCLUDE_VERT_PARS = /* glsl */ `
+varying vec4 vOccO;`;
+export const OCCLUDE_VERT = /* glsl */ `
+{
+  vec4 occO = vec4(0.0, 0.0, 0.0, 1.0);
+  #ifdef USE_INSTANCING
+  occO = instanceMatrix * occO;
+  #endif
+  vOccO = projectionMatrix * viewMatrix * modelMatrix * occO;
+}`;
 export const OCCLUDE_PARS = /* glsl */ `
 uniform vec4 uOccluder;
-float bayer4(vec2 p) {
-  ivec2 i = ivec2(mod(p, 4.0));
-  int idx = i.x + i.y * 4;
-  int m[16] = int[16](0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5);
-  return (float(m[idx]) + 0.5) / 16.0;
+uniform vec2 uOccView;
+varying vec4 vOccO;
+float occHash(vec2 p) {
+  vec3 q = fract(vec3(p.xyx) * 0.1031);
+  q += dot(q, q.yzx + 33.33);
+  return fract((q.x + q.y) * q.z);
+}
+float occNoise(vec2 x) {
+  vec2 i = floor(x), f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(occHash(i), occHash(i + vec2(1.0, 0.0)), f.x), mix(occHash(i + vec2(0.0, 1.0)), occHash(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+/* True where a surface faded this far (0 none, 1 all) is cut away. Value
+ * noise crowds the middle; stretching it keeps the fade close to linear. */
+bool occCut(float fade) {
+  if (fade <= 0.0) return false;
+  if (fade >= 0.999) return true;
+  vec2 o = (vOccO.xy / max(vOccO.w, 0.001) * 0.5 + 0.5) * uOccView;
+  vec2 p = (gl_FragCoord.xy - o) / (uOccView.y * 0.013);
+  float n = occNoise(p) * 0.78 + occNoise(p * 2.3 + 5.1) * 0.22;
+  return clamp((n - 0.2) / 0.6, 0.0, 1.0) < fade;
 }`;
 export const OCCLUDE_FRAG = /* glsl */ `
 if (uOccluder.w > 0.0 && -vViewPosition.z < uOccluder.z - 1.2) {
+  // A clean hole around the survivor, ragged at its edge.
   float dd = length(gl_FragCoord.xy - uOccluder.xy) / uOccluder.w;
-  float fade = 1.0 - smoothstep(0.5, 1.0, dd);
-  if (fade > 0.0 && bayer4(gl_FragCoord.xy) < fade * 0.82) discard;
+  if (occCut(1.0 - smoothstep(0.45, 1.0, dd))) discard;
 }`;
 
 export function floraMaterial(opts: { wind?: number; rim?: number; occlude?: boolean; flatShading?: boolean } = {}) {
@@ -367,7 +403,8 @@ export function floraMaterial(opts: { wind?: number; rim?: number; occlude?: boo
 uniform float uTime;
 uniform vec4 uFocus;
 uniform vec2 uCamXZ;
-varying float vLane;`)
+varying float vLane;
+${OCCLUDE_VERT_PARS}`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>
 {
   vec3 ip = vec3(0.0);
@@ -384,7 +421,7 @@ varying float vLane;`)
           * (1.0 - smoothstep(4.0 * reach, 6.5 * reach, lat));
     // Anything standing close around the survivor thins a little too, so
     // the ground the fight is on stays readable.
-    vLane = max(vLane, uFocus.w * 0.55 * (1.0 - smoothstep(5.0 * reach, 8.5 * reach, length(d))));
+    vLane = max(vLane, uFocus.w * 0.45 * (1.0 - smoothstep(5.0 * reach, 8.5 * reach, length(d))));
   }` : ''}
   #endif
   float h = max(position.y, 0.0);
@@ -392,7 +429,9 @@ varying float vLane;`)
   float sway = (sin(ph) * 0.65 + sin(ph * 2.3 + 1.7) * 0.25 + sin(ph * 5.1 + ip.x) * 0.1) * ${wind.toFixed(4)} * h * h * 0.02;
   transformed.x += sway;
   transformed.z += sway * 0.5;
-}`);
+}`)
+      .replace('#include <project_vertex>', `#include <project_vertex>
+${OCCLUDE_VERT}`);
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>
 uniform vec3 uRim;
@@ -400,7 +439,7 @@ varying float vLane;
 ${OCCLUDE_PARS}`)
       .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
 ${occlude ? OCCLUDE_FRAG : ''}
-${occlude ? 'if (vLane > 0.0 && bayer4(gl_FragCoord.xy + 1.0) < vLane * 0.9) discard;' : ''}`)
+${occlude ? 'if (occCut(vLane)) discard;' : ''}`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
 {
   vec3 vdir = normalize(vViewPosition);
@@ -408,6 +447,6 @@ ${occlude ? 'if (vLane > 0.0 && bayer4(gl_FragCoord.xy + 1.0) < vLane * 0.9) dis
   totalEmissiveRadiance += uRim * rimT * ${rim.toFixed(3)} * diffuseColor.rgb * 2.0;
 }`);
   };
-  mat.customProgramCacheKey = () => `flora2-${wind}-${rim}-${occlude}-${!!opts.flatShading}`;
+  mat.customProgramCacheKey = () => `flora3-${wind}-${rim}-${occlude}-${!!opts.flatShading}`;
   return mat;
 }

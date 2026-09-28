@@ -14,6 +14,7 @@ export class WardenView {
   private pose: WardenPose | '' = '';
   private eyes: THREE.MeshStandardMaterial[] = [];
   private lamp: THREE.Object3D | null = null;
+  private lampAt = new THREE.Vector3();
   glow = 1;
 
   constructor(parent: THREE.Object3D, readonly scale = 2.6) {
@@ -33,7 +34,7 @@ export class WardenView {
       }
     });
     parent.add(v.root);
-    this.light = new THREE.PointLight(0x8ac8ff, 0, 14, 1.6);
+    this.light = new THREE.PointLight(0x8ac8ff, 0, 16, 1.3);
     parent.add(this.light);
   }
 
@@ -71,8 +72,13 @@ export class WardenView {
     v.update(dt);
     const g = this.glow * (this.pose === 'sleep' ? 0.35 : 1) * (this.pose === 'dead' ? 0 : 1);
     for (const m of this.eyes) m.emissiveIntensity = 2 + g * 5 + Math.sin(time * 5) * g;
-    this.light.intensity = g * (9 + Math.sin(time * 3.1) * 1.5 + (this.pose === 'channel' ? 8 + Math.sin(time * 14) * 4 : 0));
-    this.light.position.set(x, y + this.scale * 1.7, z);
+    // The light is the lamp in its fist, hung a little out from the body:
+    // at the skull it burned the head white.
+    this.light.intensity = g * (5 + Math.sin(time * 3.1) * 0.8 + (this.pose === 'channel' ? 4 + Math.sin(time * 14) * 2 : 0));
+    if (this.lamp) {
+      this.lamp.getWorldPosition(this.lampAt);
+      this.light.position.set(this.lampAt.x, Math.max(this.lampAt.y, y + 1.2) + 0.8, this.lampAt.z);
+    } else this.light.position.set(x, y + this.scale * 2.2, z);
     if (this.lamp) this.lamp.visible = this.pose !== 'dead' || g > 0.01;
   }
 

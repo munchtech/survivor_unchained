@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { Assets, type CharacterModel, type PropPack } from './assets';
-import { OCCLUDE_PARS } from './flora';
 
 /* Vertex animation textures: how a horde of animated skeletons costs one draw.
  *
@@ -347,8 +346,7 @@ uniform float uVatTime;
 varying vec4 vFx;
 varying vec4 vTint;
 varying float vGlow;
-varying vec3 vVatLocal;
-${OCCLUDE_PARS}`)
+varying vec3 vVatLocal;`)
       .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
 // Dissolve: the dead go back to the dark in ragged flakes.
 float dn = fract(sin(dot(floor(vVatLocal * 18.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453);

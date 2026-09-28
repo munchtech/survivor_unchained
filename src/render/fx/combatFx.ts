@@ -222,10 +222,11 @@ export class CombatFx {
           break;
         case 'levelUp': {
           const p = this.playerPos;
-          this.ribbons.nova(p.x, p.y + 0.2, p.z, 6, SCHOOL.holy.core, SCHOOL.fire.glow, 0.6, 2);
-          this.ribbons.pillar(p.x, p.y, p.z, 12, 0.9, SCHOOL.holy.core, SCHOOL.fire.glow, 0.7);
-          this.flash(p.x, p.y + 2, p.z, 0xffc070, 22, 0.9, 14);
-          for (let i = 0; i < 40; i++) {
+          // It comes every level: a warm rise, not a detonation that hides the fight.
+          this.ribbons.nova(p.x, p.y + 0.2, p.z, 3.6, SCHOOL.holy.core, SCHOOL.fire.glow, 0.5, 1);
+          this.ribbons.pillar(p.x, p.y, p.z, 7, 0.55, SCHOOL.holy.core, SCHOOL.fire.glow, 0.55);
+          this.flash(p.x, p.y + 2, p.z, 0xffc070, 10, 0.7, 9);
+          for (let i = 0; i < 30; i++) {
             const a = Math.random() * Math.PI * 2;
             this.sparks.spawn({ x: p.x + Math.cos(a) * 0.8, y: p.y + 0.2, z: p.z + Math.sin(a) * 0.8, vx: Math.cos(a) * 0.5, vy: 3 + Math.random() * 4, vz: Math.sin(a) * 0.5, drag: 1.5, life: 1.2, size: 0.1, sizeEnd: 0.02, color: 0xffe0a0, colorEnd: 0xff7020, shape: 3 });
           }

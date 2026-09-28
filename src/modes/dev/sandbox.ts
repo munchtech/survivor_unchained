@@ -157,7 +157,7 @@ export function sandbox(r: Renderer, params: URLSearchParams) {
     const sp3 = new THREE.Vector3(pos.x, pos.y + 1, pos.z).project(r.camera);
     const buf = r.gl.getDrawingBufferSize(new THREE.Vector2());
     const depth = r.camera.position.distanceTo(new THREE.Vector3(pos.x, pos.y + 1, pos.z));
-    setOccluder((sp3.x * 0.5 + 0.5) * buf.x, (sp3.y * 0.5 + 0.5) * buf.y, depth * 0.98, buf.y * 0.14);
+    setOccluder((sp3.x * 0.5 + 0.5) * buf.x, (sp3.y * 0.5 + 0.5) * buf.y, depth * 0.98, buf.y * 0.14, buf.x, buf.y);
     lights.forEach((l, i) => { l.intensity = 7 + Math.sin(t * 9 + i * 3) * 0.6 + Math.sin(t * 23 + i) * 0.4; });
   };
 }

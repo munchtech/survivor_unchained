@@ -97,17 +97,20 @@ void main() {
       alpha = smoothstep(0.1, 0.5, flame) * edge;
       col = mix(uColor2, uColor, smoothstep(0.2, 0.7, flame));
     } else if (uKind == 4) {
-      float bub = step(0.8, fract(n2.b * 5.0 + uTime * 0.4)) * 0.5;
-      float rot = smoothstep(0.3, 0.7, n.r + n2.g * 0.3);
-      alpha = (0.35 + bub + rot * 0.25) * edge;
-      col = mix(uColor2, uColor, rot + bub);
+      // A dark pool of rot with sick light in its bubbles: it has to read as
+      // ground that hurts without hiding what stands in it.
+      float bub = step(0.82, fract(n2.b * 5.0 + uTime * 0.4));
+      float rot = smoothstep(0.55, 0.95, n.r + n2.g * 0.3);
+      float rim = ring(r, 0.9, 0.07);
+      alpha = (0.5 + rot * 0.15 + bub * 0.3 + rim * 0.3) * edge;
+      col = mix(uColor2, uColor * 0.12, rot) + uColor * (bub * 0.4 + rim * 0.22);
     } else if (uKind == 5) {
       float cracks = pow(1.0 - abs(n.g * 2.0 - 1.0), 12.0);
       alpha = (0.25 + cracks * 0.8 + ring(r, 0.9, 0.06) * 0.6) * edge;
     } else if (uKind == 6) {
       float briar = pow(1.0 - abs(n.b * 2.0 - 1.0), 8.0) + pow(1.0 - abs(n2.r * 2.0 - 1.0), 10.0);
-      alpha = (0.15 + briar * 0.7) * edge;
-      col = mix(uColor2, uColor, briar);
+      alpha = (0.06 + briar * 0.42 + ring(r, 0.92, 0.05) * 0.35) * edge;
+      col = mix(uColor2, uColor * 0.6, clamp(briar, 0.0, 1.0));
     } else if (uKind == 10) {
       float swirl = n2.g;
       alpha = (0.55 + swirl * 0.3) * edge;

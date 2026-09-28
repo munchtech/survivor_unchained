@@ -33,7 +33,7 @@ export function ChapterEnd() {
             {sum.threads.map((t) => (
               <div key={t.id} class={`ch-thread tone-${t.tone}`} style={d()}>
                 <div class="ch-thread-head">
-                  <span class="ch-thread-name"><Glyph k="quest" size={15} /> {t.name}</span>
+                  <span class="ch-thread-name"><Glyph k="scroll" size={16} /> {t.name}</span>
                   <span class="ch-verdict">{t.verdict}</span>
                 </div>
                 <p class="ch-outcome">{t.outcome}</p>

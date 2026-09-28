@@ -164,7 +164,7 @@ export class WorldScene {
       const sp = new THREE.Vector3(p.x, y + 1, p.z).project(this.r.camera);
       const buf = this.r.gl.getDrawingBufferSize(new THREE.Vector2());
       const depth = this.r.camera.position.distanceTo(new THREE.Vector3(p.x, y + 1, p.z));
-      setOccluder((sp.x * 0.5 + 0.5) * buf.x, (sp.y * 0.5 + 0.5) * buf.y, depth, buf.y * 0.15);
+      setOccluder((sp.x * 0.5 + 0.5) * buf.x, (sp.y * 0.5 + 0.5) * buf.y, depth, buf.y * 0.15, buf.x, buf.y);
       setFocus(p.x, y, p.z, this.r.camera.position.x, this.r.camera.position.z);
       // Taking a blow bruises the edges of the picture.
       this.damageFlash = Math.max(0, this.damageFlash - dt * 2.2);

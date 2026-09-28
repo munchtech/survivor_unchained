@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { floraUniforms, OCCLUDE_PARS, OCCLUDE_FRAG } from './flora';
+import { floraUniforms, OCCLUDE_PARS, OCCLUDE_FRAG, OCCLUDE_VERT_PARS, OCCLUDE_VERT } from './flora';
 import { markShared } from './dispose';
 
 /* Everything the game draws from a file comes through here, once.
@@ -150,11 +150,15 @@ function occludable(mat: THREE.MeshStandardMaterial) {
   mat.userData.occludable = true;
   mat.onBeforeCompile = (shader) => {
     shader.uniforms.uOccluder = floraUniforms.uOccluder;
+    shader.uniforms.uOccView = floraUniforms.uOccView;
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', `#include <common>\n${OCCLUDE_VERT_PARS}`)
+      .replace('#include <project_vertex>', `#include <project_vertex>\n${OCCLUDE_VERT}`);
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>\n${OCCLUDE_PARS}`)
       .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>\n${OCCLUDE_FRAG}`);
   };
-  mat.customProgramCacheKey = () => 'occludable-prop';
+  mat.customProgramCacheKey = () => 'occludable-prop2';
 }
 
 function prepareCharacter(root: THREE.Object3D) {
