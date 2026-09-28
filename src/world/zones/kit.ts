@@ -153,6 +153,14 @@ export class ZoneKit {
     return obj;
   }
 
+  /** Wooden crates stacked two high, the top one smaller and turned; one
+   *  collider for the pile. */
+  crates(x: number, z: number, rot: number, scale: number, o: { r?: number; tag?: string } = {}) {
+    this.env('props', 'Crate_Wooden', x, z, { rot, scale, r: o.r, tag: o.tag });
+    const t = hash1(Math.round(x * 10 + z), 31);
+    this.env('props', 'Crate_Wooden', x + (t - 0.5) * 0.3 * scale, z + (0.5 - t) * 0.25 * scale, { rot: rot + 0.3 + t * 0.4, scale: scale * 0.8, y: this.y(x, z) + 1.18 * scale });
+  }
+
   /** A piece of the world's kits (render/env.ts: village, nature, props),
    *  in metres as authored; otherwise as prop(). */
   env(envKit: EnvKit, name: string, x: number, z: number, o: {

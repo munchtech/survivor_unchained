@@ -190,7 +190,7 @@ export function buildLowFord(grassDensity = 1): LowFordBuild {
   const campfire = kit.campfire(L.fire.x, L.fire.z, 1);
   // Bedroll, pack and a log to sit on.
   kit.bedroll(L.fire.x - 2.4, L.fire.z + 1.9, 0.9);
-  kit.prop('hex_nature', 'sack', L.fire.x - 1.1, L.fire.z + 2.9, { rot: 0.6, scale: 9 });
+  kit.env('props', 'Bag', L.fire.x - 1.1, L.fire.z + 2.9, { rot: 0.6, tilt: [0, 0.25] });
   kit.log(L.fire.x + 2.0, L.fire.z - 0.2, 1.35, 2.3, 0.27);
   kit.log(L.fire.x - 0.4, L.fire.z - 2.3, 0.1, 1.6, 0.22);
   // A tripod and a pot over the fire.
@@ -221,7 +221,7 @@ export function buildLowFord(grassDensity = 1): LowFordBuild {
     root.add(tri);
   }
   kit.prop('halloween', 'lantern_standing', L.fire.x - 3.2, L.fire.z - 1.4, { scale: 0.7, r: 0.25 });
-  kit.prop('dungeon', 'trunk_small_A', L.fire.x - 1.6, L.fire.z - 2.2, { rot: -0.5, scale: 0.9 });
+  kit.env('props', 'Chest_Wood', L.fire.x - 1.6, L.fire.z - 2.2, { rot: -0.5, scale: 0.5 });
   // Your light by the road: the one lamp still burning.
   kit.lamp(-3.5, 94, Math.PI * 0.5, true);
 
@@ -253,8 +253,8 @@ export function buildLowFord(grassDensity = 1): LowFordBuild {
   cart.rotation.y = cartRot;
   root.add(cart);
   col.addBox(L.cart.x, L.cart.z, 1.0, 1.8, -cartRot);
-  kit.prop('dungeon', 'box_small', L.cart.x + 2.2, L.cart.z + 1.4, { rot: 0.7, scale: 0.7, r: 0.5, tilt: [0.2, 0.1] });
-  kit.prop('dungeon', 'barrel_small', L.cart.x - 1.8, L.cart.z - 2.4, { rot: 0.3, scale: 0.7, r: 0.4, tilt: [Math.PI / 2, 0] , y: kit.y(L.cart.x - 1.8, L.cart.z - 2.4) + 0.35 });
+  kit.env('props', 'Crate_Wooden', L.cart.x + 2.2, L.cart.z + 1.4, { rot: 0.7, scale: 0.6, r: 0.5, tilt: [0.2, 0.1] });
+  kit.env('props', 'Barrel', L.cart.x - 1.8, L.cart.z - 2.4, { rot: 0.3, scale: 0.85, r: 0.4, tilt: [Math.PI / 2, 0], y: kit.y(L.cart.x - 1.8, L.cart.z - 2.4) + 0.3 });
   kit.prop('halloween', 'gravemarker_A', L.cart.x + 3.2, L.cart.z - 2, { rot: -0.4, scale: 0.8 });
 
   /* -------------------------------------------------------- watch-post -- */
@@ -270,10 +270,10 @@ export function buildLowFord(grassDensity = 1): LowFordBuild {
   kit.prop('dungeon', 'rubble_half', P.x + 2.2, P.z + 6.5, { rot: 0.4, scale: 0.55, box: [1.3, 0.8] });
   kit.prop('dungeon', 'banner_thin_red', P.x - 0.4, P.z - 4.1, { scale: 0.85 });
   kit.prop('dungeon', 'torch_mounted', P.x + 1.6, P.z - 4.0, { scale: 0.85, y: kit.y(P.x, P.z - 4) + 2.2 });
-  kit.prop('dungeon', 'table_medium_broken', P.x + 1.8, P.z + 0.8, { rot: 0.5, scale: 0.75, r: 0.8 });
-  kit.prop('dungeon', 'chair', P.x + 0.2, P.z + 2.2, { rot: 2.5, scale: 0.75, tilt: [0, 1.4], y: kit.y(P.x, P.z + 2) + 0.2 });
-  kit.prop('dungeon', 'crates_stacked', P.x + 3.0, P.z - 2.8, { rot: 0.1, scale: 0.6, r: 1.0 });
-  kit.prop('dungeon', 'trunk_large_A', L.chest.x, L.chest.z, { rot: 2.3, scale: 0.7, r: 0.6, tag: 'watch_chest' });
+  kit.env('props', 'Table_Large', P.x + 1.8, P.z + 0.8, { rot: 0.5, scale: 0.65, r: 0.8 });
+  kit.env('props', 'Chair_1', P.x + 0.2, P.z + 2.2, { rot: 2.5, scale: 0.85, tilt: [0, 1.4], y: kit.y(P.x, P.z + 2) + 0.25 });
+  kit.crates(P.x + 3.0, P.z - 2.8, 0.1, 0.8, { r: 1.0 });
+  kit.env('props', 'Chest_Wood', L.chest.x, L.chest.z, { rot: 2.3, scale: 0.8, r: 0.6, tag: 'watch_chest' });
   kit.lamp(9.5, 38, Math.PI, false);
   // At the top of the road, where it leaves the ford behind: which way is town.
   kit.signpost(L.gate.x + 4.6, L.exitZ + 12, [-Math.PI / 2, Math.PI / 2]);

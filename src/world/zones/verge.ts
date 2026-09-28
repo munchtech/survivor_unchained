@@ -474,10 +474,10 @@ export function buildVerge(grassDensity = 1, state: VergeState = { cleanDays: 0 
   const D = V.dig;
   kit.prop('hex_buildings', 'building_mine_blue', D.x + 4, D.z - 4, { rot: -Math.PI * 0.75, scale: 7.5, r: 6, clay: true });
   kit.prop('hex_buildings', 'building_scaffolding', D.x - 8, D.z - 6, { rot: 0.4, scale: 6, r: 4 });
-  kit.prop('dungeon', 'crates_stacked', D.x - 3, D.z + 8, { rot: 0.2, scale: 0.8, r: 1.2 });
-  kit.prop('dungeon', 'barrel_large', D.x + 7, D.z + 5, { scale: 0.7, r: 0.7, tag: 'powder' });
-  kit.prop('dungeon', 'barrel_large', D.x + 8.4, D.z + 6.4, { scale: 0.65, r: 0.7, tag: 'powder' });
-  kit.prop('dungeon', 'keg_decorated', D.x + 5.5, D.z + 7.5, { rot: 1, scale: 0.55, r: 0.9, tag: 'powder' });
+  kit.crates(D.x - 3, D.z + 8, 0.2, 1.0, { r: 1.2 });
+  kit.env('props', 'Barrel', D.x + 7, D.z + 5, { scale: 1.5, r: 0.7, tag: 'powder' });
+  kit.env('props', 'Barrel', D.x + 8.4, D.z + 6.4, { rot: 1.3, scale: 1.4, r: 0.7, tag: 'powder' });
+  kit.env('props', 'Barrel_Holder', D.x + 5.5, D.z + 7.5, { rot: 1, scale: 1.3, r: 0.9, tag: 'powder' });
   // The spoil heap: what came out of the hole, tipped down the slope.
   for (let i = 0; i < 7; i++) {
     const a = i * 0.9, d = i === 0 ? 0 : 1.6 + hash1(i, 51) * 1.4;
@@ -670,21 +670,21 @@ export function buildVerge(grassDensity = 1, state: VergeState = { cleanDays: 0 
     spit.traverse((o) => { if ((o as THREE.Mesh).isMesh) o.castShadow = true; });
     root.add(spit);
   }
-  kit.prop('dungeon', 'sword_shield', R.x - 6.5, R.z + 3, { rot: 0.9, scale: 0.7, r: 0.5 });
-  kit.prop('dungeon', 'stool', R.x - 1.8, R.z + 3.4, { rot: 0.3, scale: 0.7 });
-  kit.prop('dungeon', 'table_long_broken', R.x + 8, R.z + 2, { rot: 1.1, scale: 0.7, r: 1.2 });
+  kit.env('props', 'WeaponStand', R.x - 6.5, R.z + 3, { rot: 0.9, scale: 0.9, r: 0.6 });
+  kit.env('props', 'Stool', R.x - 1.8, R.z + 3.4, { rot: 0.3, scale: 0.9 });
+  kit.env('props', 'Table_Large', R.x + 8, R.z + 2, { rot: 1.1 + Math.PI / 2, r: 1.2 });
   kit.prop('dungeon', 'banner_thin_red', R.x - 6, R.z - 7, { rot: 0.2, scale: 0.8 });
   kit.prop('dungeon', 'banner_thin_red', R.x + 7, R.z - 8, { rot: -0.3, scale: 0.8 });
   const roostFire = kit.campfire(R.x + 1, R.z + 5, 1.1);
   void roostFire;
-  kit.prop('dungeon', 'crates_stacked', V.cargo.x, V.cargo.z, { rot: 0.4, scale: 0.8, r: 1.2 });
-  kit.prop('dungeon', 'box_stacked', V.cargo.x - 3, V.cargo.z + 1.5, { rot: -0.2, scale: 0.5, r: 1.1 });
-  kit.prop('dungeon', 'trunk_large_B', V.cargo.x + 2.2, V.cargo.z - 1.4, { rot: 1.2, scale: 0.8, r: 0.6, tag: 'strongbox' });
-  kit.prop('dungeon', 'barrel_large', R.x + 14, R.z - 6, { scale: 0.7, r: 0.7, tag: 'powder' });
-  kit.prop('dungeon', 'barrel_small_stack', R.x + 15.5, R.z - 4, { scale: 0.7, r: 0.8, tag: 'powder' });
+  kit.crates(V.cargo.x, V.cargo.z, 0.4, 1.0, { r: 1.2 });
+  kit.crates(V.cargo.x - 3, V.cargo.z + 1.5, -0.2, 0.85, { r: 1.1 });
+  kit.env('props', 'Chest_Wood', V.cargo.x + 2.2, V.cargo.z - 1.4, { rot: 1.2, scale: 0.95, r: 0.6, tag: 'strongbox' });
+  kit.env('props', 'Barrel', R.x + 14, R.z - 6, { scale: 1.5, r: 0.7, tag: 'powder' });
+  kit.env('props', 'Barrel_Holder', R.x + 15.5, R.z - 4, { scale: 1.0, r: 0.8, tag: 'powder' });
   kit.prop('hex_nature', 'flag_red', R.x - 2, R.z - 8, { scale: 10 });
   kit.prop('hex_nature', 'flag_red', R.x + 10, R.z - 9, { scale: 10 });
-  kit.prop('dungeon', 'chair', V.redcowl.x, V.redcowl.z + 1, { rot: Math.PI, scale: 0.8 });
+  kit.env('props', 'Chair_1', V.redcowl.x, V.redcowl.z + 1, { rot: Math.PI, scale: 0.9 });
   kit.prop('dungeon', 'table_small_decorated_A', V.redcowl.x + 1.5, V.redcowl.z + 0.5, { scale: 0.8, r: 0.6 });
   // Three cages: iron bars on a wooden base.
   const cageBars: THREE.Object3D[] = [];
