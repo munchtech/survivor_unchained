@@ -2,7 +2,8 @@ import type { Renderer } from '@/render/renderer';
 import type { PresetName } from '@/render/atmosphere';
 import { WorldScene } from '@/game/scene';
 import { buildSandboxZone } from '@/world/zones/sandbox';
-import { LOADOUTS } from '@/render/playerView';
+import { loadoutFor } from '@/game/loadout';
+import { ARCHETYPES } from '@/content/archetypes';
 import { StatBlock } from '@/sim/stats';
 import { draft, choose } from '@/sim/levelup';
 import { Input } from '@/core/input';
@@ -28,7 +29,7 @@ export function combatDev(r: Renderer, params: URLSearchParams) {
   if (params.get('cdmul')) stats.add({ stat: 'cooldown', kind: 'more', value: Number(params.get('cdmul')) - 1, source: 'dev' });
   const cls = params.get('class') || 'warden';
   const ability = (params.get('ability') as AbilityKind) || 'shield_bash';
-  const b = scene.startBattle({ seed: 7, combat: true, stats, start: zone.start, weapons, ability }, LOADOUTS[cls]);
+  const b = scene.startBattle({ seed: 7, combat: true, stats, start: zone.start, weapons, ability }, loadoutFor({ archetype: cls as 'warden', weaponItem: ARCHETYPES[cls as 'warden'].weapons[0] }));
   for (const id of (params.get('boons') || '').split(',').filter(Boolean)) b.addBoon(id);
   for (const e of (params.get('evolve') || '').split(',').filter(Boolean)) {
     const [w, branch] = e.split(':');

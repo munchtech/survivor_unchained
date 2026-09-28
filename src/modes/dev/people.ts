@@ -76,6 +76,14 @@ export async function peopleDev(r: Renderer, params: URLSearchParams) {
       views.push(v);
     });
   }
+  // ?boss=idle: the Ford-Warden in that pose, beside the row.
+  const boss = params.get('boss');
+  let warden: import('@/render/bossViews').WardenView | null = null;
+  if (boss) {
+    const { WardenView } = await import('@/render/bossViews');
+    warden = new WardenView(r.scene);
+    warden.setPose(boss as 'idle');
+  }
   const knight = Assets.character('knight');
   knight.scale.setScalar(0.8);
   knight.position.set(specs.length * 0.6 + 0.6, 0, 0);
@@ -92,5 +100,10 @@ export async function peopleDev(r: Renderer, params: URLSearchParams) {
     const b = new THREE.Box3().setFromObject(c, true);
     return `${c.name || c.type}@${c.position.x.toFixed(1)}: h=${(b.max.y - b.min.y).toFixed(2)} min=${b.min.y.toFixed(2)}`;
   }).join('\n');
-  return (dt: number, t: number) => { for (const m of mixers) m.update(dt); for (const v of views) v.update(dt); atmo.update(t, cam.position); };
+  return (dt: number, t: number) => {
+    for (const m of mixers) m.update(dt);
+    for (const v of views) v.update(dt);
+    warden?.update(null, 0, 0, -3, 0, dt, t);
+    atmo.update(t, cam.position);
+  };
 }

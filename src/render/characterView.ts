@@ -67,6 +67,20 @@ export const HUMAN_SOCKETS: Record<string, { bone: string; turn: THREE.Quaternio
 const PISTOL = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3(0, 0, 1), new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0)));
 const _flash = new THREE.Color();
 
+/** A weapon as a hand holds it, in a socket's frame (render/arms.ts sizes).
+ *  The socket's frame is the fist's (its X along the fingers, Y out of the
+ *  thumb side): a crossbow held pistol-fashion has its stock along X, its
+ *  top along Y, sitting on the fist rather than through it. */
+export function heldArm(id: string): THREE.Object3D | null {
+  const o = arm(id);
+  if (!o) return null;
+  if (ARMS[id].hold === 'pistol') {
+    o.quaternion.copy(PISTOL);
+    o.position.set(0, 0.05, 0);
+  }
+  return o;
+}
+
 export type Socket = 'handslot.r' | 'handslot.l' | 'forearm.l' | 'head' | 'chest';
 
 interface PlayOpts { fade?: number; speed?: number; loop?: boolean; clamp?: boolean }
@@ -159,17 +173,10 @@ export class CharacterView {
     for (const o of this.sockets.get(socket) ?? []) o.removeFromParent();
     this.sockets.set(socket, []);
     const bone = this.mount(socket);
-    const o = id ? arm(id) : null;
+    const o = id ? heldArm(id) : null;
     if (!bone || !o) return null;
     // Weapons are in metres: sized with the person (the mount has undone it).
     o.scale.setScalar((this.human ? HUMAN_SCALE : 1) / CHARACTER_SCALE);
-    if (ARMS[id!].hold === 'pistol') {
-      // The mount's frame is the fist's (its X along the fingers, Y out of
-      // the thumb side): the stock goes along X, its top along Y, sitting on
-      // the fist rather than through it.
-      o.quaternion.copy(PISTOL);
-      o.position.set(0, 0.05, 0);
-    }
     bone.add(o);
     this.sockets.get(socket)!.push(o);
     return o;

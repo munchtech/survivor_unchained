@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CharacterView, CHARACTER_SCALE } from './characterView';
+import { outfitFor } from '@/content/looks';
 import type { Enemy } from '@/sim/entities';
 
 /* Bosses get a full skeleton, their own light and hand-picked motion, not a
@@ -18,15 +19,20 @@ export class WardenView {
   glow = 1;
 
   constructor(parent: THREE.Object3D, readonly scale = 2.6) {
-    const v = new CharacterView('skeleton_warrior', { scale: CHARACTER_SCALE * scale });
+    // A watchman of the old Watch, dead and got up, grown huge: rusted
+    // leathers and a pauldron, the hood up, grey-green skin, the greatsword
+    // and the lamp he carried in life.
+    const v = new CharacterView({
+      sex: 'male', outfit: outfitFor('male', 'ranger', { pauldron: true, hood: true }), hair: null, beard: true, hairColor: '#6a6660',
+      skin: '#8e9680', dye: { cloth: '#3a3e44' },
+    }, { scale: CHARACTER_SCALE * scale });
     this.view = v;
-    // Old Watch plate gone to rust: tint the whole frame a cold, wet grey.
-    v.tint('#b8c0c4');
-    v.socket('handslot.r', 'adventure_items', 'sword_2handed', { scale: 1.05 });
-    this.lamp = v.socket('handslot.l', 'halloween', 'lantern_hanging', { scale: 0.55, offset: [0, -0.1, 0] });
+    v.wield('handslot.r', 'zweihander');
+    // The lantern hangs from the fist, down along the fingers.
+    this.lamp = v.socket('handslot.l', 'halloween', 'lantern_hanging', { scale: 0.55, rot: [0, 0, Math.PI / 2], offset: [-0.1, 0, 0] });
     v.model.traverse((o) => {
       const m = o as THREE.Mesh;
-      if (m.isMesh && /Eyes/.test(o.name)) {
+      if (m.isMesh && (m.material as THREE.MeshStandardMaterial).name === 'MI_Eyes') {
         const mat = (m.material as THREE.MeshStandardMaterial);
         mat.emissive = new THREE.Color('#7ac8ff');
         mat.emissiveIntensity = 6;
@@ -43,8 +49,9 @@ export class WardenView {
     const v = this.view;
     this.pose = p;
     switch (p) {
-      case 'sleep': v.loop('Skeletons_Inactive_Floor_Pose', 0); break;
-      case 'wake': v.act('Skeletons_Awaken_Floor_Long', { clamp: true, blocksLegs: true, speed: 0.8 }); break;
+      // Lying where he fell (the first frame of getting up), then up.
+      case 'sleep': v.loop('LayToIdle', 0, 0); break;
+      case 'wake': v.loop('Sword_Idle', 0); v.act('LayToIdle', { clamp: true, blocksLegs: true, speed: 0.6, fade: 0 }); break;
       case 'walk': v.walkClip = 'Walking_D_Skeletons'; v.runClip = 'Walking_D_Skeletons'; v.idleClip = '2H_Melee_Idle'; break;
       case 'idle': v.idleClip = '2H_Melee_Idle'; break;
       case 'windup': v.loop('2H_Melee_Idle', 0.1, 0.5); break;
@@ -71,7 +78,7 @@ export class WardenView {
     if (e && e.flash > 0.05) v.hitFlash(e.flash * 0.25);
     v.update(dt);
     const g = this.glow * (this.pose === 'sleep' ? 0.35 : 1) * (this.pose === 'dead' ? 0 : 1);
-    for (const m of this.eyes) m.emissiveIntensity = 2 + g * 5 + Math.sin(time * 5) * g;
+    for (const m of this.eyes) m.emissiveIntensity = 1.2 + g * 2.4 + Math.sin(time * 5) * g * 0.5;
     // The light is the lamp in its fist, hung a little out from the body:
     // at the skull it burned the head white.
     this.light.intensity = g * (5 + Math.sin(time * 3.1) * 0.8 + (this.pose === 'channel' ? 4 + Math.sin(time * 14) * 2 : 0));

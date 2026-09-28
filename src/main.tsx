@@ -26,8 +26,8 @@ async function boot() {
   (window as unknown as { __game: unknown }).__game = { renderer };
   // The KayKit set, the people (bodies, outfits, hair, the animation
   // libraries) and the weapons, together.
-  const [{ preloadPeople }, { preloadArms }] = await Promise.all([import('@/render/people'), import('@/render/arms')]);
-  await Promise.all([Assets.loadAll(), preloadPeople(), preloadArms()]);
+  const [{ preloadPeople }, { preloadArms }, { bakeReady }] = await Promise.all([import('@/render/people'), import('@/render/arms'), import('@/render/bakePerson')]);
+  await Promise.all([Assets.loadAll(), preloadPeople(), preloadArms(), bakeReady()]);
   renderItemIcons();
   mountUi(document.getElementById('ui')!);
 

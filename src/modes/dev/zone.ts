@@ -4,7 +4,8 @@ import { WorldScene } from '@/game/scene';
 import { buildLowFord } from '@/world/zones/lowford';
 import { buildWaystation } from '@/world/zones/waystation';
 import { buildVerge } from '@/world/zones/verge';
-import { LOADOUTS } from '@/render/playerView';
+import { loadoutFor } from '@/game/loadout';
+import { ARCHETYPES } from '@/content/archetypes';
 import { StatBlock } from '@/sim/stats';
 import { Input } from '@/core/input';
 
@@ -22,7 +23,7 @@ export function zoneDev(r: Renderer, params: URLSearchParams) {
   const stats = new StatBlock();
   stats.setBase({ maxHealth: 100, moveSpeed: 9, pickupRadius: 2 });
   const x = Number(params.get('x') ?? zone.start.x), z = Number(params.get('z') ?? zone.start.z);
-  scene.startBattle({ seed: 1, combat: false, stats, start: { x, z }, weapons: [], ability: null }, LOADOUTS[params.get('class') || 'warden']);
+  scene.startBattle({ seed: 1, combat: false, stats, start: { x, z }, weapons: [], ability: null }, loadoutFor({ archetype: (params.get('class') || 'warden') as 'warden', weaponItem: ARCHETYPES[(params.get('class') || 'warden') as 'warden'].weapons[0] }));
   if (params.get('camdist')) { scene.cam.targetDistance = Number(params.get('camdist')); scene.cam.distance = scene.cam.targetDistance; }
   if (params.get('pitch')) scene.cam.pitch = Number(params.get('pitch')) * Math.PI / 180;
   if (params.get('yaw')) scene.cam.yaw = Number(params.get('yaw')) * Math.PI / 180;

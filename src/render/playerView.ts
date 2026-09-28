@@ -58,12 +58,6 @@ export function applyLook(view: { tintParts(c: string, m: RegExp): void; paint(b
   else if (lo.tint) view.tintParts(lo.tint, CLOTH);
 }
 
-export const LOADOUTS: Record<string, Loadout> = {
-  warden: { model: 'knight', show: ['1H_Sword', 'Round_Shield', 'Knight_Cape'], attackClips: ['1H_Melee_Attack_Slice_Diagonal', '1H_Melee_Attack_Slice_Horizontal', '1H_Melee_Attack_Chop'], heavyClip: '1H_Melee_Attack_Chop' },
-  reaver: { model: 'barbarian', show: ['2H_Axe', 'Barbarian_Cape'], attackClips: ['2H_Melee_Attack_Slice', '2H_Melee_Attack_Chop'], heavyClip: '2H_Melee_Attack_Spin' },
-  arcanist: { model: 'mage', show: ['2H_Staff', 'Mage_Hat', 'Mage_Cape'], attackClips: ['Spellcast_Shoot'], heavyClip: 'Spellcast_Raise', castClip: 'Spellcast_Shoot' },
-  stalker: { model: 'rogue_hooded', show: ['1H_Crossbow', 'Rogue_Cape', 'Knife_Offhand'], attackClips: ['1H_Ranged_Shoot'], heavyClip: 'Dualwield_Melee_Attack_Slice' },
-};
 
 /** Parts that are cloth or armour, not skin: what a palette recolours. */
 export const CLOTH = /Cape|Hat|Helmet|Body|Leg/;

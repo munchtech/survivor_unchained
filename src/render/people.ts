@@ -114,7 +114,7 @@ export interface PersonSpec {
  * dye picks those pixels by hue, saturation and value and recolours them,
  * keeping their shading: a pixel as bright as the cloth's middle tone
  * becomes the dye colour itself. Leather, metal and skin are left alone. */
-interface DyeMask { h: [number, number]; s: [number, number]; v: [number, number]; lum: number }
+export interface DyeMask { h: [number, number]; s: [number, number]; v: [number, number]; lum: number }
 const DYES: Record<string, { cloth?: DyeMask; under?: DyeMask }> = {
   MI_Ranger: { cloth: { h: [0.17, 0.45], s: [0.25, 1], v: [0.03, 1], lum: 0.037 } },
   MI_Peasant: {
@@ -135,6 +135,8 @@ vec3 dyeHsv(vec3 c) {
   return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + 1e-10)), d / (q.x + 1e-10), q.x);
 }`;
 function dyeMaterial(mat: THREE.MeshStandardMaterial, mask: DyeMask, color: THREE.Color) {
+  // (Kept for a bake that dyes the texture itself: bakePerson.ts.)
+  mat.userData.dye = { mask, color };
   const prev = mat.onBeforeCompile;
   const band = (r: [number, number]) => new THREE.Vector3(r[0], r[1], 0.05);
   mat.onBeforeCompile = (sh, gl) => {

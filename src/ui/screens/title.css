@@ -61,3 +61,10 @@
 .slot.fallen .slot-name { color: #a08a80; text-decoration: line-through; text-decoration-color: rgba(200, 80, 60, 0.5); }
 
 .title-foot { position: absolute; left: 7vw; bottom: 26px; font: 600 12px var(--font-ui); letter-spacing: 0.2em; text-transform: uppercase; color: #6f6556; }
+
+/* The first-launch notice: who the game is for. */
+.mature { position: absolute; inset: 0; display: grid; place-items: center; background: radial-gradient(ellipse at center, rgba(10, 8, 12, 0.55), rgba(6, 5, 8, 0.92)); pointer-events: auto; }
+.mature-card { width: min(520px, calc(100vw - 32px)); padding: 22px 26px; }
+.mature-card p { font: 400 16px/1.5 var(--font-text); color: #d8ccb4; margin: 10px 0; }
+.mature-note { font-style: italic; color: #a8987c !important; font-size: 14px !important; }
+.mature-actions { display: flex; gap: 10px; margin-top: 16px; }

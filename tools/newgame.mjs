@@ -125,7 +125,12 @@ while (t < 420) {
   for (let s = 0; s < 10; s += 5) { await pg.evaluate(() => window.__advance(5, 30)); await pg.waitForTimeout(20); }
   t += 10;
   const st = await pg.evaluate(() => { const g = window.__game.game; return { zone: g.zone?.id, stage: g.zone?.debug?.().stage, lvl: g.scene.battle?.ember.level, hp: Math.round(g.scene.battle?.player.hp ?? 0), deaths: g.ch.stats.deaths }; });
-  if (st.stage !== stage) { stage = st.stage; console.log(`  t=${t}s`, JSON.stringify(st)); }
+  if (st.stage !== stage) {
+    stage = st.stage;
+    console.log(`  t=${t}s`, JSON.stringify(st));
+    // The Ford-Warden getting up, and the fight.
+    if (stage === 'rising' || stage === 'boss') await shot(`prologue_${stage}`);
+  }
   if (t === 100 || t === 200) await shot(`prologue_${t}`);
   if (st.zone === 'waystation') break;
 }

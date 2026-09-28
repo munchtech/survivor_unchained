@@ -20,7 +20,46 @@ function ago(t: number) {
   return `${Math.round(s / 86400)} days ago`;
 }
 
+/** Said once, before anything else: who this is for. Kept once agreed
+ *  (tools, which run with ?manual, are taken as having agreed). */
+const MATURE_KEY = 'survivor-unchained.mature';
+const agreed = () => {
+  if (new URLSearchParams(location.search).has('manual')) return true;
+  try { return localStorage.getItem(MATURE_KEY) === '1'; } catch { return false; }
+};
+
+function Mature({ onAgree }: { onAgree: () => void }) {
+  const [left, setLeft] = useState(false);
+  const agree = () => { try { localStorage.setItem(MATURE_KEY, '1'); } catch { /* no storage */ } onAgree(); };
+  useEffect(() => Input.on((a) => { if (a === 'confirm' && !left) { agree(); return true; } return a === 'cancel' || a === 'up' || a === 'down' ? true : undefined; }), [left]);
+  return (
+    <div class="mature">
+      <div class="mature-card panel fade-in">
+        <div class="tp-head title-cap">For adults</div>
+        {left ? (
+          <p>Another time, then. The fire will still be burning.</p>
+        ) : (
+          <>
+            <p>Survivor Unchained is made for adults. It has graphic violence and gore, strong language, revealing clothes and sexual themes. Nothing sexual is shown on screen.</p>
+            <p class="mature-note">Gore can be reduced or turned off in Settings.</p>
+            <div class="mature-actions">
+              <button class="btn primary" onClick={agree}>I am 18 or over</button>
+              <button class="btn" onClick={() => setLeft(true)}>Leave</button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function Title() {
+  const [ok, setOk] = useState(agreed);
+  if (!ok) return <Mature onAgree={() => setOk(true)} />;
+  return <TitleMenu />;
+}
+
+function TitleMenu() {
   const list = slots.value;
   const latest = [...list].sort((a, b) => b.savedAt - a.savedAt)[0] as SlotView | undefined;
   const [panel, setPanel] = useState<'none' | 'load' | 'settings' | 'controls' | 'credits'>('none');
@@ -117,7 +156,9 @@ export function Title() {
       {panel === 'credits' && (
         <div class="title-panel panel fade-in credits">
           <div class="tp-head title-cap">Credits</div>
-          <p>Characters, creatures and props: <b>KayKit</b> by Kay Lousberg (CC0).</p>
+          <p>People and their clothes, hair and movement: <b>Quaternius</b> (Universal Base Characters, Modular Character Outfits, Universal Animation Libraries 1 and 2; CC0).</p>
+          <p>Weapons, from Sketchfab (CC BY 4.0): <i>Chevalier Sword</i> by rubenve; <i>Viking Sword</i> by Michael Makivic; <i>medieval sword</i> by LowSeb; <i>Zweihander</i> by Siesta; <i>Medieval Mace</i> by Kama Modeling; <i>Viking battle axe</i> by Mikhail Antonov; <i>Snake Axe</i> by Ashley Jay Thornton; <i>Mage Staff</i> by RMBehan; <i>Medieval Crossbow</i> by iedalton; <i>Medieval Shield</i> by Artem Mykhailov; <i>Silver Bladed weapons</i> by Peter Nox.</p>
+          <p>Creatures, buildings and props: <b>KayKit</b> by Kay Lousberg (CC0).</p>
           <p>World, lore and combat roots: <b>The Ember Watch</b>.</p>
           <p>Typefaces: Cinzel, Alegreya, Alegreya Sans (OFL).</p>
           <p>Music, ambience and sound: made in code, played live.</p>
