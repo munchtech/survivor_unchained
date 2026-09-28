@@ -23,7 +23,7 @@ import { Noise2D } from '@/core/math';
 
 type Part = THREE.BufferGeometry;
 
-function colorize(g: THREE.BufferGeometry, fn: (p: THREE.Vector3, n: THREE.Vector3, i: number) => THREE.Color) {
+export function colorize(g: THREE.BufferGeometry, fn: (p: THREE.Vector3, n: THREE.Vector3, i: number) => THREE.Color) {
   const pos = g.getAttribute('position');
   const nor = g.getAttribute('normal');
   const col = new Float32Array(pos.count * 3);
@@ -385,7 +385,9 @@ bool occCut(float fade) {
   return clamp((n - 0.2) / 0.6, 0.0, 1.0) < fade;
 }`;
 export const OCCLUDE_FRAG = /* glsl */ `
-if (uOccluder.w > 0.0 && -vViewPosition.z < uOccluder.z - 1.2) {
+// In front of the survivor: this part of the surface, or the object as a
+// whole (so the inner lumps of a boulder in the way are cut with its face).
+if (uOccluder.w > 0.0 && (-vViewPosition.z < uOccluder.z - 1.2 || vOccO.w < uOccluder.z - 1.5)) {
   // A clean hole around the survivor, ragged at its edge.
   float dd = length(gl_FragCoord.xy - uOccluder.xy) / uOccluder.w;
   if (occCut(1.0 - smoothstep(0.45, 1.0, dd))) discard;

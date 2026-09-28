@@ -8,7 +8,7 @@ import { Noise2D, smoothstep, hash2, hash1 } from '@/core/math';
 import { meander, PathIndex, type Pt } from '@/world/paths';
 import type { ZoneBuild } from '@/game/scene';
 import { ZoneKit, type LightSource } from './kit';
-import { bushGeometry, floraMaterial } from '@/render/flora';
+import { bushGeometry, floraMaterial, colorize } from '@/render/flora';
 
 /* Thornhollow Verge: the wood east of the Waystation.
  *
@@ -755,8 +755,23 @@ export function buildVerge(grassDensity = 1, state: VergeState = { cleanDays: 0 
     // Coiled round the floor of the pit, three-quarters of a turn, going
     // under the earth at the tail and lifting its head up the far slope.
     const floorY = kit.y(S.x, S.z);
-    const chitin = new THREE.MeshStandardMaterial({ color: '#d8d0c2', roughness: 0.5, metalness: 0.02, emissive: '#1c1814' });
-    const shell = new THREE.MeshStandardMaterial({ color: '#c4b8a2', roughness: 0.62, metalness: 0.02, emissive: '#16120d' });
+    const chitin = new THREE.MeshStandardMaterial({ color: '#a89c88', roughness: 0.55, metalness: 0.02 });
+    // The plates are old bone gone yellow, ringed with growth lines, stained
+    // with the pit's mud where they lie in it: painted per vertex, so from
+    // above it reads as a carcass and not as smooth white stones.
+    const shell = new THREE.MeshStandardMaterial({ color: '#ffffff', vertexColors: true, roughness: 0.66, metalness: 0.02 });
+    const boneN = new Noise2D(4242);
+    const bone = new THREE.Color('#b8aa8e'), boneDark = new THREE.Color('#6e604c'), mud = new THREE.Color('#3c3024'), lichen = new THREE.Color('#6a7250');
+    const cc = new THREE.Color();
+    // (The head is lifted clear of the pit floor and tilted up the slope:
+    // no mud on it.)
+    const paintPlate = (g: THREE.BufferGeometry, r: number, seed: number, muddy = true) => colorize(g, (p) => {
+      const n = boneN.noise(p.x * 0.9 + seed, p.z * 0.9 - seed) * 0.5 + 0.5;
+      const lines = Math.pow(Math.abs(Math.sin((p.z / r) * 7 + seed)), 10);
+      cc.copy(bone).lerp(boneDark, 0.25 + n * 0.35 + lines * 0.45);
+      if (n > 0.78) cc.lerp(lichen, (n - 0.78) * 2.2);
+      return muddy ? cc.lerp(mud, 1 - smoothstep(0.3, 0.62, p.y / r)) : cc;
+    });
     const flesh = new THREE.MeshStandardMaterial({ color: '#4a3a38', roughness: 0.55 });
     const joint = new THREE.MeshStandardMaterial({ color: '#8a7a70', roughness: 0.6 });
     const eyeM = new THREE.MeshStandardMaterial({ color: '#0c0a10', roughness: 0.08, metalness: 0.4 });
@@ -780,7 +795,7 @@ export function buildVerge(grassDensity = 1, state: VergeState = { cleanDays: 0 
       body.scale.set(0.6, 0.74, 1);
       seg.add(body);
       // An armoured plate over the back of each segment, a ridge down it.
-      const plate = new THREE.Mesh(new THREE.SphereGeometry(r * 1.07, 18, 8, 0, Math.PI * 2, 0, Math.PI * 0.42), shell);
+      const plate = new THREE.Mesh(paintPlate(new THREE.SphereGeometry(r * 1.07, 24, 10, 0, Math.PI * 2, 0, Math.PI * 0.42), r * 1.07, i * 3.7), shell);
       plate.scale.set(0.68, 0.84, 0.7);
       seg.add(plate);
       const ridge = new THREE.Mesh(new THREE.ConeGeometry(r * 0.16, r * 0.5, 4), flesh);
@@ -804,10 +819,10 @@ export function buildVerge(grassDensity = 1, state: VergeState = { cleanDays: 0 
     }
     // The head: heavier plates, mandibles, a cluster of dead eyes.
     const hp = curve.getPoint(1), ht = curve.getTangent(1);
-    const skull = new THREE.Mesh(new THREE.SphereGeometry(1.9, 18, 12), shell);
+    const skull = new THREE.Mesh(paintPlate(new THREE.SphereGeometry(1.9, 24, 14), 1.9, 71, false), shell);
     skull.scale.set(0.95, 0.8, 1.15);
     thingHead.add(skull);
-    const crest = new THREE.Mesh(new THREE.SphereGeometry(1.95, 18, 8, 0, Math.PI * 2, 0, Math.PI * 0.3), flesh);
+    const crest = new THREE.Mesh(paintPlate(new THREE.SphereGeometry(1.95, 24, 8, 0, Math.PI * 2, 0, Math.PI * 0.3), 1.95, 13, false), shell);
     crest.scale.set(1.0, 0.9, 1.2);
     crest.position.set(0, 0.1, -0.35);
     thingHead.add(crest);
