@@ -186,6 +186,7 @@ All expect `npm run dev` running.
 | `node tools/flow.mjs` | Toll, both roads out of town and back, a night at the inn |
 | `node tools/field.mjs [--fresh]` | Balance: a survivor who played the prologue, in the Verge by day and night, playing or idle |
 | `node tools/folk.mjs [day\|night]` | The townsfolk: lanes checked against colliders, three minutes of errands, anyone stuck |
+| `node tools/frames.mjs "<query>" name [frames] [fps] [setup]` | A run of frames stepped in game time, as a contact sheet: for judging motion |
 | `node tools/probe.mjs "<query>" "<expression>"` | Load the game somewhere and print what an expression gives there |
 | `node tools/reach.mjs [zone] [day\|night]` | Every door, person, clue and way in, checked for a walkable route from where you stand (and a map of it) |
 | `node tools/leaks.mjs [rounds]` | Back and forth between the zones: GPU geometries and textures must not climb |

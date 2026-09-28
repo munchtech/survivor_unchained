@@ -18,6 +18,10 @@ const CORPSE_MAX = 160;
 
 interface Corpse { visual: string; x: number; z: number; facing: number; scale: number; tint: THREE.Color; glow: number; born: number }
 
+/** What the renderer keeps per creature between frames (the simulation
+ *  pools creatures, so a new one in an old slot is known by its seed). */
+interface Gait { seed: number; phase: number; walking: boolean; facing: number }
+
 export class CrowdRenderer {
   readonly group = new THREE.Group();
   private crowds = new Map<string, VatCrowd>();
@@ -35,6 +39,8 @@ export class CrowdRenderer {
   private laidOut = new Set<string>();
   private battle: Battle | null = null;
   private time = 0;
+  private dt = 0;
+  private gaits = new Map<number, Gait>();
 
   constructor() { this.group.name = 'crowd'; }
 
@@ -58,7 +64,8 @@ export class CrowdRenderer {
   }
 
   update(b: Battle, heightAt: (x: number, z: number) => number, time: number) {
-    if (b !== this.battle) { this.battle = b; this.corpses = []; this.laidOut.clear(); }
+    if (b !== this.battle) { this.battle = b; this.corpses = []; this.laidOut.clear(); this.gaits.clear(); }
+    this.dt = THREE.MathUtils.clamp(time - this.time, 0, 0.1);
     this.time = time;
     for (const c of this.crowds.values()) c.begin();
     const items = b.enemies.items;
@@ -81,6 +88,11 @@ export class CrowdRenderer {
     let dissolve = 0;
     let y = heightAt(e.x, e.z);
     const speed = Math.hypot(e.vx, e.vz);
+    let g = this.gaits.get(e.id);
+    if (!g || g.seed !== e.seed) this.gaits.set(e.id, g = { seed: e.seed, phase: e.seed * 7, walking: false, facing: e.facing });
+    // Walking or standing, with a margin between the two, so a creature
+    // jostled at the edge of walking pace does not flicker between clips.
+    g.walking = speed > (g.walking ? 0.2 : 0.45);
     switch (e.state) {
       case 'rising':
         role = 'rise';
@@ -94,7 +106,7 @@ export class CrowdRenderer {
         t = e.dieT * Math.max(1, dieClip / (DIE_TIME * 0.62));
         // Summons fade; the rest fall and stay (a corpse, below).
         if (e.disposition === 'ally') dissolve = THREE.MathUtils.smoothstep(e.dieT, DIE_TIME * 0.55, DIE_TIME);
-        else if (e.dieT >= DIE_TIME - 0.12) this.layOut(e);
+        else if (e.dieT >= DIE_TIME - 0.12) this.layOut(e, g.facing);
         break;
       }
       case 'burrowed':
@@ -120,15 +132,28 @@ export class CrowdRenderer {
         break;
       default:
         if (e.anim === 'attack' && e.animT < crowd.clipDuration('attack')) { role = 'attack'; t = e.animT; }
-        else if (speed > 0.35) { role = 'move'; t = (time + e.seed * 7) * THREE.MathUtils.clamp(speed / Math.max(0.5, e.def.speed), 0.6, 1.6); }
-        else { role = 'idle'; t = time + e.seed * 9; }
+        else if (g.walking) {
+          // Its own walk clock, run faster or slower with its pace: time
+          // times pace would leap to a new pose at every change of speed.
+          role = 'move';
+          g.phase += this.dt * THREE.MathUtils.clamp(speed / Math.max(0.5, e.def.speed), 0.6, 1.6);
+          t = g.phase;
+        } else { role = 'idle'; t = time + e.seed * 9; }
+    }
+    // Turned toward where it is going when it walks (steered round a tree or
+    // shouldered by the crowd, it does not moonwalk), toward what it wants
+    // when it stands or strikes; never in a single frame.
+    const aim = g.walking && e.state === 'active' && e.anim !== 'attack' ? Math.atan2(e.vz, e.vx) : e.facing;
+    if (e.state !== 'dying') {
+      const turn = Math.atan2(Math.sin(aim - g.facing), Math.cos(aim - g.facing));
+      g.facing += turn * Math.min(1, this.dt * (e.state === 'active' && e.anim !== 'attack' ? 9 : 18));
     }
     const sc = e.def.scale ?? 1;
     // Struck: a squash, and a flinch along the blow, gone in a tenth of a
     // second (the flash's own life).
     const f = e.state === 'dying' ? 0 : e.flash;
     this.p.set(e.x + e.lastDx * f * 0.14, y, e.z + e.lastDz * f * 0.14);
-    this.q.setFromAxisAngle(this.up, Math.PI / 2 - e.facing);
+    this.q.setFromAxisAngle(this.up, Math.PI / 2 - g.facing);
     this.s.set(sc * (1 + f * 0.1), sc * (1 - f * 0.1), sc * (1 + f * 0.1));
     this.m.compose(this.p, this.q, this.s);
     const frozen = e.status.frozen ? 1 : e.status.chill ? Math.min(0.5, e.status.chill.stacks * 0.09) : 0;
@@ -140,13 +165,13 @@ export class CrowdRenderer {
     crowd.push(this.m, role, t, e.flash, dissolve, frozen, burning, this.tint, glow);
   }
 
-  private layOut(e: Enemy) {
+  private layOut(e: Enemy, facing: number) {
     const key = `${e.id}:${e.seed}`;
     if (this.laidOut.has(key)) return;
     this.laidOut.add(key);
     const tint = new THREE.Color();
     const glow = visualTint(e.def.visual, tint);
-    this.corpses.push({ visual: e.def.visual, x: e.x, z: e.z, facing: e.facing, scale: e.def.scale ?? 1, tint, glow: glow * 0.3, born: this.time });
+    this.corpses.push({ visual: e.def.visual, x: e.x, z: e.z, facing, scale: e.def.scale ?? 1, tint, glow: glow * 0.3, born: this.time });
     if (this.corpses.length > CORPSE_MAX) this.corpses.shift();
   }
 
