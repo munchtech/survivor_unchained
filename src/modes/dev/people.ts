@@ -64,7 +64,7 @@ export async function peopleDev(r: Renderer, params: URLSearchParams) {
         const turns = [basis([0, 1, 0], [0, 0, 1]), basis([0, 1, 0], [0, 0, -1]), basis([0, 1, 0], [1, 0, 0]), basis([0, 1, 0], [-1, 0, 0]), basis([1, 0, 0], [0, 1, 0]), basis([-1, 0, 0], [0, 1, 0])];
         HUMAN_SOCKETS['forearm.l'].turn = turns[Number(params.get('shield')) % turns.length];
       }
-      const [right, left] = kit[i % kit.length].split('+');
+      const [right, left] = kit[i % kit.length].split(/[+ ]/); // (a URL's + reads as a space)
       v.wield('handslot.r', right);
       if (left) v.wield(left.startsWith('shield') ? 'forearm.l' : 'handslot.l', left);
       r.scene.add(v.root);

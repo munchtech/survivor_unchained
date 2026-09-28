@@ -60,7 +60,7 @@ export const HUMAN_SOCKETS: Record<string, { bone: string; turn: THREE.Quaternio
   'handslot.r': { bone: 'hand_r', turn: basis([0, 1, 0], [0, 0, 1]), pos: [-0.025, 0.075, 0] },
   'handslot.l': { bone: 'hand_l', turn: basis([0, 1, 0], [0, 0, 1]), pos: [-0.025, 0.075, 0] },
   // A shield on the left forearm, its face (+Z) out from the back of it.
-  'forearm.l': { bone: 'lowerarm_l', turn: basis([0, 1, 0], [0, 0, 1]), pos: [0, 0.14, 0] },
+  'forearm.l': { bone: 'lowerarm_l', turn: basis([0, 1, 0], [0, 0, -1]), pos: [0, 0.14, 0] },
   head: { bone: 'Head', turn: new THREE.Quaternion(), pos: [0, 0.12, 0] },
   chest: { bone: 'spine_03', turn: new THREE.Quaternion(), pos: [0, 0, 0] },
 };

@@ -17,15 +17,11 @@ import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 export type Sex = 'male' | 'female';
 
-/** Where the unpacked assets are served from (see tools/assets). */
-const ROOT = '/_q';
-const BASE = `${ROOT}/Universal Base Characters/Universal Base Characters[Standard]/Base Characters/Godot - UE`;
-const OUTFITS = `${ROOT}/Modular Character Outfits - Fantasy/Modular Character Outfits - Fantasy[Standard]/Exports/glTF (Godot-Unreal)/Modular Parts`;
-const HAIR = `${ROOT}/Universal Base Characters/Universal Base Characters[Standard]/Hairstyles/Rigged to Head Bone/glTF (Godot -Unreal)`;
-const ANIMS = [
-  `${ROOT}/Universal Animation Library/Universal Animation Library[Standard]/Unreal-Godot/UAL1_Standard.glb`,
-  `${ROOT}/Universal Animation Library 2/Universal Animation Library 2[Standard]/Unreal-Godot/UAL2_Standard.glb`,
-];
+/** Every part in one folder, gathered from the packs by
+ *  tools/assets/people.py (textures shared by name, WebP at full size). */
+const DIR = '/assets/people';
+const BASE = DIR, OUTFITS = DIR, HAIR = DIR;
+const ANIMS = [`${DIR}/UAL1.glb`, `${DIR}/UAL2.glb`];
 
 export const PARTS = {
   male: {
@@ -45,6 +41,23 @@ export const PARTS = {
 export const HAIRSTYLES = ['Hair_SimpleParted', 'Hair_Long', 'Hair_Buns', 'Hair_Buzzed', 'Hair_BuzzedFemale', 'Hair_Beard'] as const;
 
 const loader = new GLTFLoader();
+/* Parts share their textures by file (an outfit's arms, body, legs and feet
+ * all paint from the same 4K sheets): each image is fetched and decoded
+ * once, and every part's texture is a copy over the one source, so the GPU
+ * holds one too. */
+const images = new Map<string, Promise<THREE.Texture>>();
+loader.register((parser) => {
+  const own = parser.loadImageSource.bind(parser);
+  parser.loadImageSource = (index: number, imageLoader: THREE.Loader) => {
+    const uri = (parser.json.images?.[index] as { uri?: string } | undefined)?.uri;
+    if (!uri || uri.startsWith('data:')) return own(index, imageLoader);
+    const key = new URL(uri, new URL(parser.options.path, location.href)).href;
+    let p = images.get(key);
+    if (!p) { p = own(index, imageLoader); images.set(key, p); }
+    return p.then((t) => t.clone());
+  };
+  return { name: 'shared_images' };
+});
 const cache = new Map<string, Promise<GLTF>>();
 const loaded = new Map<string, GLTF>();
 const load = (url: string) => {

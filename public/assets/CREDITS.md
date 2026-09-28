@@ -2,6 +2,10 @@
 
 Third-party art in this folder, with its licence. CC-BY works are used with credit as below.
 
+## Quaternius (CC0)
+
+- Universal Base Characters, Modular Character Outfits - Fantasy, Universal Animation Library and Universal Animation Library 2, by Quaternius (https://quaternius.com), CC0 -> public/assets/people (gathered by tools/assets/people.py)
+
 ## Sketchfab
 
 - "Chevalier Sword" by rubenve (https://sketchfab.com/rubenve), CC Attribution: https://sketchfab.com/3d-models/chevalier-sword-b2662f2666a844e8a1bd0e7c4a7672d8 -> public/assets/weapons/chevalier_sword.glb
