@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { Assets, type CharacterModel, type PropPack } from './assets';
+import { applyProportions, legLift } from './proportions';
 
 /* Vertex animation textures: how a horde of animated skeletons costs one draw.
  *
@@ -35,6 +36,8 @@ export interface VatSpec {
   /** Texture recolour: hue in [0,1) -> new hue, or null to leave it. */
   recolor?: (h: number, s: number, l: number) => [number, number, number] | null;
   fps?: number;
+  /** Bring the chibi head down to size (default); false for creatures. */
+  proportions?: boolean;
   /** Colour multiplier applied to the whole baked mesh. */
   tint?: THREE.ColorRepresentation;
   /** Shift the model in its own space (before scale), e.g. to centre a long
@@ -115,6 +118,8 @@ export function bakeVat(spec: VatSpec): VatAsset {
     bone.add(o);
   }
   root.updateMatrixWorld(true);
+  // Longer legs (proportions.ts): lift the whole bake by what they gained.
+  const lift = spec.proportions !== false ? legLift(root, bones) : 0;
 
   // Parts that make it into the bake.
   interface Part { mesh: THREE.Mesh; skinned: boolean; glow: number; offset: number; count: number }
@@ -195,6 +200,7 @@ export function bakeVat(spec: VatSpec): VatAsset {
     action.reset().play();
     for (let f = 0; f < frames; f++) {
       mixer.setTime((f / (frames - 1)) * clip.duration * 0.999);
+      if (spec.proportions !== false) applyProportions(bones);
       root.updateMatrixWorld(true);
       for (const p of parts) {
         const m = p.mesh;
@@ -205,6 +211,7 @@ export function bakeVat(spec: VatSpec): VatAsset {
           else v.fromBufferAttribute(pa, i);
           v.applyMatrix4(world);
           if (spec.offset) { v.x += spec.offset[0]; v.y += spec.offset[1]; v.z += spec.offset[2]; }
+          v.y += lift;
           const k = (p.offset + i) * 3;
           framePos[k] = v.x * spec.scale; framePos[k + 1] = v.y * spec.scale; framePos[k + 2] = v.z * spec.scale;
           if (framePos[k + 1] > height) height = framePos[k + 1];

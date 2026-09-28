@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Assets, type CharacterModel, type PropPack } from './assets';
+import { applyProportions, legLift } from './proportions';
 import { paintedAtlas, type Paint } from './recolor';
 import { damp, dampAngle } from '@/core/math';
 
@@ -68,6 +69,8 @@ export class CharacterView {
         this.baseEmissive.push(mat.emissive.clone());
       }
     });
+    // Longer legs: stand the figure on them (see proportions.ts).
+    this.model.position.y = legLift(this.model, this.bones) * this.model.scale.y;
     this.mixer.addEventListener('finished', (e) => {
       if (e.action === this.oneShot) this.endOneShot();
     });
@@ -209,6 +212,7 @@ export class CharacterView {
     this.heading = dampAngle(this.heading, this.headingTarget, 14, dt);
     this.model.rotation.y = this.heading;
     this.mixer.update(dt);
+    applyProportions(this.bones);
     if (this.oneShot) {
       this.oneShotEnds -= dt;
       if (this.oneShotEnds <= 0 && !this.oneShot.clampWhenFinished) this.endOneShot();
