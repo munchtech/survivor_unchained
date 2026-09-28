@@ -29,6 +29,7 @@ async function boot() {
 
   let tick: (dt: number, t: number) => void = () => {};
   const dev = params.get('dev');
+  Input.loadBindings();
   Input.attach();
   if (dev === 'gallery') tick = gallery(renderer, params);
   else if (dev === 'sandbox') tick = sandbox(renderer, params);

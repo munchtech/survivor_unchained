@@ -26,7 +26,8 @@ npm run build      # typecheck + production build
 | Level-up draft | 1–4 to pick, X reroll, B banish | D-pad and A, X, Y |
 | Pause (save, sound, graphics, controls) | Esc / P | Menu |
 
-The full list is under Controls, on the title and in the pause menu.
+The full list is under Controls, on the title and in the pause menu, where
+any gameplay key can be moved (click it, press the new one; Defaults undoes).
 
 Skills (weapons) fire on their own. You choose where to stand, when to
 dash, which skill to take or rank up each time the ember rises (anyone can

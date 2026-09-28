@@ -37,6 +37,12 @@ export const DEFAULT_BINDINGS: Record<Action, string[]> = {
   tabPrev: ['BracketLeft'],
 };
 
+/** The actions a player can move to other keys. Menus keep theirs (Escape,
+ *  Enter, the number keys of the draft) so nobody can lock themselves out. */
+export const REBINDABLE: Action[] = ['up', 'left', 'down', 'right', 'dash', 'ability', 'ultimate', 'interact', 'inventory', 'character', 'journal', 'map', 'reroll', 'banish'];
+const RESERVED = ['Escape', 'Enter', 'NumpadEnter', 'Backspace', 'Digit1', 'Digit2', 'Digit3', 'Digit4', 'BracketLeft', 'BracketRight'];
+const BINDINGS_KEY = 'survivor-unchained.bindings';
+
 // Standard gamepad mapping. View opens the pack; the self, journal and map
 // are in the pause menu (Menu), so a pad reaches everything.
 const PAD: Partial<Record<Action, number[]>> = {
@@ -173,6 +179,45 @@ class InputState {
     this.moveZ = this.captured ? 0 : z;
   }
 
+  /** Put this key on this action (its first keyboard key; a mouse button
+   *  stays). A key can only mean one of the rebindable actions, so it leaves
+   *  whichever had it. Saved for next time. */
+  rebind(a: Action, code: string) {
+    if (!REBINDABLE.includes(a) || RESERVED.includes(code)) return false;
+    for (const b of REBINDABLE) if (b !== a) this.bindings[b] = this.bindings[b].filter((c) => c !== code);
+    const list = [...this.bindings[a]];
+    const i = list.findIndex((c) => !c.startsWith('Mouse'));
+    if (i >= 0) list[i] = code; else list.unshift(code);
+    this.bindings[a] = [...new Set(list)];
+    this.saveBindings();
+    return true;
+  }
+
+  resetBindings() {
+    this.bindings = structuredClone(DEFAULT_BINDINGS);
+    this.saveBindings();
+  }
+
+  loadBindings() {
+    try {
+      const raw = localStorage.getItem(BINDINGS_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as Partial<Record<Action, unknown>>;
+      for (const a of REBINDABLE) {
+        const v = saved[a];
+        if (Array.isArray(v) && v.every((c) => typeof c === 'string')) this.bindings[a] = v as string[];
+      }
+    } catch { /* no storage, or nothing sensible in it */ }
+  }
+
+  private saveBindings() {
+    try {
+      const out: Partial<Record<Action, string[]>> = {};
+      for (const a of REBINDABLE) out[a] = this.bindings[a];
+      localStorage.setItem(BINDINGS_KEY, JSON.stringify(out));
+    } catch { /* no storage */ }
+  }
+
   keyLabel(a: Action) {
     return codeLabel(this.bindings[a][0] ?? '');
   }
@@ -192,10 +237,12 @@ const PAD_NAMES: Record<number, string> = { 0: 'A', 1: 'B', 2: 'X', 3: 'Y', 4: '
 
 function codeLabel(c: string) {
   const named: Record<string, string> = {
-    Mouse0: 'LMB', Mouse2: 'RMB', ShiftLeft: 'Shift', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→',
-    BracketLeft: '[', BracketRight: ']', NumpadEnter: 'Enter', Escape: 'Esc', Backspace: 'Backspace',
+    Mouse0: 'LMB', Mouse1: 'MMB', Mouse2: 'RMB', ShiftLeft: 'Shift', ShiftRight: 'Shift', ControlLeft: 'Ctrl', ControlRight: 'Ctrl',
+    AltLeft: 'Alt', AltRight: 'Alt', CapsLock: 'Caps', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→',
+    BracketLeft: '[', BracketRight: ']', NumpadEnter: 'Enter', Escape: 'Esc', Backspace: 'Backspace', Semicolon: ';', Quote: "'",
+    Comma: ',', Period: '.', Slash: '/', Backslash: '\\', Minus: '-', Equal: '=', Backquote: '`',
   };
-  return named[c] ?? c.replace(/^Key/, '').replace(/^Digit/, '');
+  return named[c] ?? c.replace(/^Key/, '').replace(/^Digit/, '').replace(/^Numpad/, 'Num ');
 }
 
 export const Input = new InputState();

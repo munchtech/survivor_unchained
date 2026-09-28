@@ -7,4 +7,9 @@
 .ctl-keys { display: flex; flex-wrap: wrap; gap: 4px; }
 .ctl-keys .key { min-width: 0; }
 .ctl-pad { opacity: 0.75; font: 500 13px var(--font-ui); word-spacing: 0.2em; }
-.ctl-note { margin-top: 8px; font-size: 12px; font-style: italic; opacity: 0.65; line-height: 1.35; }
+.ctl-foot { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.ctl-note { flex: 1; font-size: 12px; font-style: italic; opacity: 0.65; line-height: 1.35; }
+.key.rebind { cursor: pointer; pointer-events: auto; border-color: var(--gold); color: var(--gold-hi); background: rgba(217, 181, 106, 0.1); transition: background 0.15s, box-shadow 0.15s; }
+.key.rebind:hover { background: rgba(217, 181, 106, 0.25); }
+.key.rebind.waiting { min-width: 30px; color: #fff; box-shadow: 0 0 0 1px var(--gold-hi), 0 0 12px rgba(255, 200, 110, 0.6); animation: keyWait 0.9s ease-in-out infinite; }
+@keyframes keyWait { 50% { background: rgba(255, 210, 130, 0.35); } }

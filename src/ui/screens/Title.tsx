@@ -102,7 +102,7 @@ export function Title() {
         </div>
       )}
       {panel === 'controls' && (
-        <div class="title-panel panel fade-in">
+        <div class="title-panel tall panel fade-in">
           <div class="tp-head title-cap">Controls</div>
           <Controls />
         </div>
