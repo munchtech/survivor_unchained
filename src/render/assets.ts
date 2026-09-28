@@ -3,6 +3,7 @@ import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { floraUniforms, OCCLUDE_PARS, OCCLUDE_FRAG, OCCLUDE_VERT_PARS, OCCLUDE_VERT } from './flora';
+import { grimeTexture, grimeColor, WORLD_GRIME, PEOPLE_GRIME } from './grime';
 import { markShared } from './dispose';
 
 /* Everything the game draws from a file comes through here, once.
@@ -137,7 +138,10 @@ function prepareStatic(root: THREE.Object3D) {
         if (s.map) {
           s.map.colorSpace = THREE.SRGBColorSpace;
           s.map.anisotropy = 8;
+          s.map = grimeTexture(s.map, WORLD_GRIME);
         }
+        // Flat-coloured parts (no atlas) get the same wear.
+        else if (s.color && !s.userData.grimed) { grimeColor(s.color, WORLD_GRIME); s.userData.grimed = true; }
       }
     }
   });
@@ -172,7 +176,7 @@ function prepareCharacter(root: THREE.Object3D) {
     if (s.isMeshStandardMaterial) {
       s.roughness = Math.max(s.roughness, 0.7);
       s.metalness = Math.min(s.metalness, 0.2);
-      if (s.map) s.map.colorSpace = THREE.SRGBColorSpace;
+      if (s.map) { s.map.colorSpace = THREE.SRGBColorSpace; s.map = grimeTexture(s.map, PEOPLE_GRIME); }
     }
   });
 }

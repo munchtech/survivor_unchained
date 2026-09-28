@@ -28,6 +28,7 @@ uniform float uContrast;
 uniform float uTintStrength;
 uniform float uDamage;
 uniform float uDesaturate;
+uniform float uMute;
 
 float luma(vec3 c) { return dot(c, vec3(0.2126, 0.7152, 0.0722)); }
 
@@ -58,6 +59,13 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor)
   float sat = max(max(p.r, p.g), p.b) - min(min(p.r, p.g), p.b);
   float vib = 1.0 + uVibrance * (1.0 - sat);
   p = mix(grey, p, uSaturation * vib * (1.0 - uDesaturate));
+
+  // A worn world: colour drains from the mid and dark tones where the
+  // ground, the walls and the people are, but what burns bright (fire,
+  // magic, a spray of blood in the light) keeps all of it.
+  float peak = max(max(p.r, p.g), p.b);
+  float keep = smoothstep(0.62, 0.95, peak);
+  p = mix(vec3(luma(p)), p, 1.0 - uMute * (1.0 - keep));
 
   // Taking damage pulls the edges toward a bruised red.
   vec2 d = uv - 0.5;
@@ -96,6 +104,7 @@ export class GradeEffect extends Effect {
         ['uContrast', new Uniform(1)],
         ['uDamage', new Uniform(0)],
         ['uDesaturate', new Uniform(0)],
+        ['uMute', new Uniform(0.34)],
       ]),
     });
   }
@@ -118,5 +127,7 @@ export class GradeEffect extends Effect {
   }
 
   set damage(v: number) { this.uniforms.get('uDamage')!.value = v; }
+  /** How much colour the world keeps below the brights (0 all, 1 none). */
+  set mute(v: number) { this.uniforms.get('uMute')!.value = v; }
   set desaturate(v: number) { this.uniforms.get('uDesaturate')!.value = v; }
 }

@@ -30,7 +30,7 @@ export interface TerrainPalette {
 
 export const DEFAULT_PALETTE: TerrainPalette = {
   grassDark: '#2a4a1f', grassLight: '#4f7a2e', grassDry: '#8a8a42',
-  dirt: '#6e5a3c', dirtDark: '#3a2e20', stone: '#7a766c', mortar: '#2a2820',
+  dirt: '#6e5a3c', dirtDark: '#3a2e20', stone: '#66615a', mortar: '#221f19',
   rock: '#6f6b63', rockDark: '#35322e', blight: '#2a2530', blightGlow: '#8cff5a', mud: '#2a2419',
 };
 
@@ -270,6 +270,9 @@ vec3 stone = mix(uStone * vec3(0.78, 0.8, 0.84), uStone * vec3(1.08, 1.02, 0.94)
 stone *= 0.82 + 0.3 * nF.g;
 stone = mix(stone, stone * vec3(0.72, 0.84, 0.62), smoothstep(0.55, 0.8, nM.b + tint * 0.2) * 0.55);
 vec3 mortar = mix(uMortar, uMortar * vec3(0.9, 1.25, 0.8), nF.r);
+// Filth: soot, spilt ale, what the carts leave; the stones are not clean.
+float filth = smoothstep(0.5, 0.85, nM.r * 0.7 + nF.b * 0.5);
+stone = mix(stone, stone * vec3(0.55, 0.52, 0.46), filth * 0.7);
 stone = mix(stone, mortar, mortarW);
 float stoneBump = smoothstep(0.0, 0.3, edgeD) * (0.7 + 0.3 * tint) + nX.a * 0.12;
 

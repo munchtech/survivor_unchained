@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { CharacterModel } from './assets';
+import { grimePixel, PEOPLE_GRIME } from './grime';
 
 /* Dyeing a character's clothes.
  *
@@ -80,6 +81,8 @@ export function paintedAtlas(base: THREE.Texture, model: CharacterModel, paint: 
         const i = (y * W + x) * 4;
         const k = (lum(i) / means[si]) * rel;
         px[i] = Math.min(255, tr * k); px[i + 1] = Math.min(255, tg * k); px[i + 2] = Math.min(255, tb * k);
+        // The atlas it paints into is already worn (grime.ts); so is the dye.
+        grimePixel(px, i, PEOPLE_GRIME);
       }
       void mean;
     });

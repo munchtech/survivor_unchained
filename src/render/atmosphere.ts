@@ -43,7 +43,7 @@ const NIGHT: AtmospherePreset = {
   grade: {
     lift: [0.015, 0.025, 0.04], gamma: [1.0, 1.0, 1.02], gain: [1.03, 1.0, 0.97],
     shadowTint: '#35646e', highlightTint: '#e6a25a', tintStrength: 0.2,
-    saturation: 1.1, vibrance: 0.35, contrast: 1.14,
+    saturation: 1.0, vibrance: 0.14, contrast: 1.18,
   },
 };
 
@@ -59,7 +59,7 @@ const NIGHT_TOWN: AtmospherePreset = {
   grade: {
     ...NIGHT.grade,
     lift: [0.01, 0.018, 0.035], shadowTint: '#2a4a66', highlightTint: '#ffa34e', tintStrength: 0.3,
-    saturation: 1.08, vibrance: 0.4, contrast: 1.18,
+    saturation: 0.98, vibrance: 0.16, contrast: 1.22,
   },
 };
 
@@ -71,7 +71,7 @@ const DUSK: AtmospherePreset = {
   grade: {
     lift: [0.03, 0.02, 0.05], gamma: [1.0, 1.0, 1.02], gain: [1.05, 1.0, 0.95],
     shadowTint: '#4a4a8a', highlightTint: '#ffb070', tintStrength: 0.2,
-    saturation: 1.1, vibrance: 0.3, contrast: 1.12,
+    saturation: 1.0, vibrance: 0.12, contrast: 1.16,
   },
 };
 
@@ -83,19 +83,21 @@ const DAWN: AtmospherePreset = {
   grade: {
     lift: [0.02, 0.02, 0.04], gamma: [1.0, 1.0, 1.0], gain: [1.04, 1.01, 0.97],
     shadowTint: '#56709a', highlightTint: '#ffc88a', tintStrength: 0.16,
-    saturation: 1.06, vibrance: 0.3, contrast: 1.1,
+    saturation: 0.96, vibrance: 0.12, contrast: 1.14,
   },
 };
 
+/** Day in a hard country: a thin sun through high cloud, cold in the
+ *  shadows, the air never quite clear. */
 const DAY: AtmospherePreset = {
-  sky: { top: '#2f5fa8', horizon: '#b8cde0', bottom: '#3a3530', glow: '#fff1d6', glowPower: 10, stars: 0, moon: 0 },
-  keyColor: '#fff0da', keyIntensity: 3.2, keyElevation: 48, keyAzimuth: 55, shadowStrength: 0.86,
-  hemiSky: '#9ab8e6', hemiGround: '#4a3a28', hemiIntensity: 0.95, envIntensity: 0.9,
-  fogColor: '#9fb0c0', fogDensity: 0.0045, exposure: 0.95,
+  sky: { top: '#4a5a70', horizon: '#a8b0b4', bottom: '#34302c', glow: '#f0e2c8', glowPower: 8, stars: 0, moon: 0 },
+  keyColor: '#f4e6cc', keyIntensity: 2.7, keyElevation: 44, keyAzimuth: 55, shadowStrength: 0.8,
+  hemiSky: '#8a9aac', hemiGround: '#3e3226', hemiIntensity: 0.9, envIntensity: 0.8,
+  fogColor: '#8e969a', fogDensity: 0.0062, exposure: 0.9,
   grade: {
-    lift: [0.01, 0.015, 0.03], gamma: [1.0, 1.0, 1.0], gain: [1.02, 1.01, 0.99],
-    shadowTint: '#4a6a9a', highlightTint: '#ffe0b0', tintStrength: 0.12,
-    saturation: 1.05, vibrance: 0.25, contrast: 1.08,
+    lift: [0.012, 0.014, 0.022], gamma: [1.0, 1.0, 1.0], gain: [1.02, 1.0, 0.97],
+    shadowTint: '#3e5462', highlightTint: '#f0d8b0', tintStrength: 0.16,
+    saturation: 0.95, vibrance: 0.1, contrast: 1.12,
   },
 };
 
