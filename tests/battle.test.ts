@@ -151,14 +151,16 @@ describe('neutral creatures', () => {
 });
 
 describe('the level-up draft', () => {
-  it('offers only skills when the ember rises', () => {
+  it('never offers a blessing when the ember rises, and always a combat skill', async () => {
+    const { BOONS } = await import('@/content/boons');
     const b = arena(11);
     for (let i = 0; i < 20; i++) {
       b.gainEmber(b.ember.next - b.ember.xp + 0.01);
       while (b.draftOwed) {
         const offers = draft(b, 3);
         expect(offers.length).toBe(3);
-        expect(offers.every((o) => o.kind === 'weapon' || o.kind === 'rank' || o.kind === 'evolve'), offers.map((o) => o.kind).join()).toBe(true);
+        expect(offers.some((o) => o.kind === 'boon' && BOONS[o.id].kind === 'blessing')).toBe(false);
+        expect(offers.some((o) => o.kind === 'weapon' || o.kind === 'rank' || o.kind === 'evolve')).toBe(true);
         choose(b, offers[0]);
       }
     }
@@ -174,27 +176,28 @@ describe('the level-up draft', () => {
     expect(b.pendingLevels).toBe(1);
     expect(b.pendingBlessings).toEqual([MILESTONE_EVERY]);
     const skill = draft(b, 3);
-    expect(skill.every((o) => o.kind !== 'boon')).toBe(true);
+    expect(skill.every((o) => !o.blessing)).toBe(true);
     choose(b, skill[0]);
     expect(b.draftOwed).toBe(true);
     const blessing = draft(b, 3);
     expect(blessing.length).toBe(3);
     expect(blessing.every((o) => o.kind === 'boon' && o.blessing)).toBe(true);
+    const { BOONS } = await import('@/content/boons');
+    expect(blessing.every((o) => BOONS[o.id].kind === 'blessing')).toBe(true);
     const before = Object.values(b.boons).reduce((n, r) => n + r, 0);
     choose(b, blessing[0]);
     expect(Object.values(b.boons).reduce((n, r) => n + r, 0)).toBe(before + 1);
     expect(b.draftOwed).toBe(false);
   });
 
-  it('fills with blessings once every skill is taken and ranked', async () => {
+  it('fills with passive skills once every combat skill is taken and ranked', async () => {
     const { WEAPON_POOL, WEAPON_MAX_RANK, MAX_WEAPONS } = await import('@/content/weapons');
     const b = arena(12, WEAPON_POOL.slice(0, MAX_WEAPONS).map((id) => ({ id, rank: WEAPON_MAX_RANK })));
     b.ember.level = 3; b.pendingLevels = 1;
-    // Evolve them all first; then there is nothing left to learn, and a
-    // level's draft falls back to blessings.
+    // Evolve them all first; then only passive skills are left to learn.
     for (const w of b.weapons) b.evolve(w.id, w.def.evolutions[0].id);
     const offers = draft(b, 3);
-    expect(offers.every((o) => o.kind === 'boon')).toBe(true);
+    expect(offers.every((o) => o.kind === 'boon' && !o.blessing)).toBe(true);
     expect(offers.length).toBe(3);
   });
 
@@ -219,30 +222,66 @@ describe('the level-up draft', () => {
 });
 
 describe('evolutions', () => {
-  it('never need a blessing: every branch is offered, a fitting one is marked', async () => {
+  it('need the weapon at rank 8 and one rank of its passive skill', async () => {
     const { WEAPON_MAX_RANK } = await import('@/content/weapons');
-    const { earnedBranches, fittingBranches } = await import('@/sim/levelup');
-    // Seeking Motes' branches were catalysed only by blessings.
+    const { earnedBranches } = await import('@/sim/levelup');
     const b = arena(14, [{ id: 'seeking_motes', rank: WEAPON_MAX_RANK }]);
-    expect(earnedBranches(b, 'seeking_motes').map((e) => e.id).sort()).toEqual(['mote_cascade', 'starseeker']);
-    expect(fittingBranches(b, 'seeking_motes')).toEqual([]);
-    b.addBoon('duplicity');
-    // A blessing marks a branch; it never takes the other away.
-    expect(earnedBranches(b, 'seeking_motes').length).toBe(2);
-    expect(fittingBranches(b, 'seeking_motes').map((e) => e.id)).toEqual(['mote_cascade']);
+    // Rank 8 alone is not enough.
+    expect(earnedBranches(b, 'seeking_motes')).toEqual([]);
     b.ember.level = 3; b.pendingLevels = 1;
+    expect(draft(b, 3).some((o) => o.kind === 'evolve')).toBe(false);
+    // One rank of Duplicity opens Mote Cascade.
+    b.addBoon('duplicity');
+    expect(earnedBranches(b, 'seeking_motes').map((e) => e.id)).toEqual(['mote_cascade']);
     const offers = draft(b, 3);
-    expect(offers.filter((o) => o.kind === 'evolve').length).toBe(2);
-    expect(offers.find((o) => o.branch === 'mote_cascade')?.fits).toBe(true);
+    expect(offers.filter((o) => o.kind === 'evolve').map((o) => o.branch)).toEqual(['mote_cascade']);
+    // With both passives, both branches: the choice is the player's.
+    b.addBoon('precision');
+    expect(earnedBranches(b, 'seeking_motes').length).toBe(2);
+  });
+
+  it('every branch names a passive skill that can be drafted', async () => {
+    const { WEAPONS } = await import('@/content/weapons');
+    const { BOONS } = await import('@/content/boons');
+    for (const w of Object.values(WEAPONS)) for (const e of w.evolutions) {
+      expect(e.catalysts.length, e.id).toBeGreaterThan(0);
+      for (const c of e.catalysts) expect(BOONS[c.boon]?.kind, `${e.id}: ${c.boon}`).toBe('passive');
+    }
   });
 
   it('come one weapon at a time', async () => {
     const { WEAPON_POOL, WEAPON_MAX_RANK, MAX_WEAPONS } = await import('@/content/weapons');
     const b = arena(15, WEAPON_POOL.slice(0, MAX_WEAPONS).map((id) => ({ id, rank: WEAPON_MAX_RANK })));
+    for (const id of ['duplicity', 'precision', 'expanse', 'perennial', 'haste', 'velocity']) b.addBoon(id);
     b.ember.level = 3; b.pendingLevels = 1;
     const offers = draft(b, 3);
     const evos = offers.filter((o) => o.kind === 'evolve');
+    expect(evos.length).toBeGreaterThan(0);
     expect(new Set(evos.map((o) => o.id)).size).toBe(1);
-    expect(offers.length).toBe(3);
+  });
+});
+
+describe('passive skills', () => {
+  it('are ordinary picks beside combat skills, up to six held', async () => {
+    const { BOONS, MAX_PASSIVES } = await import('@/content/boons');
+    const { passivesHeld } = await import('@/sim/levelup');
+    const b = arena(16);
+    let combat = 0, passive = 0;
+    for (let i = 0; i < 40; i++) {
+      b.gainEmber(b.ember.next - b.ember.xp + 0.01);
+      while (b.draftOwed) {
+        const offers = draft(b, 3);
+        for (const o of offers) {
+          if (o.kind === 'weapon' || o.kind === 'rank') combat++;
+          if (o.kind === 'boon') { passive++; expect(BOONS[o.id].kind).toBe('passive'); }
+        }
+        // Take passives when offered, to fill the slots.
+        choose(b, offers.find((o) => o.kind === 'boon') ?? offers[0]);
+        expect(passivesHeld(b)).toBeLessThanOrEqual(MAX_PASSIVES);
+      }
+    }
+    expect(combat).toBeGreaterThan(0);
+    expect(passive).toBeGreaterThan(0);
+    expect(passivesHeld(b)).toBe(MAX_PASSIVES);
   });
 });

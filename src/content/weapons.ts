@@ -10,8 +10,8 @@ import type { School, Tag, StatusKind } from '@/sim/types';
  *     projectiles" or "your fire" and mean it.
  *   - Evolution BRANCHES. A rank-8 weapon does not have one destiny; it
  *     becomes whatever the rest of the build pulls it toward. Each branch
- *     names its catalyst - a boon, a synergy, a status the build applies -
- *     and a weapon with two catalysts met asks which it should become.
+ *     names the passive skill that evolves it (a rank or more of it is
+ *     enough), and a weapon with both passives asks which it should become.
  *
  * Rank growth (applied by the runtime): +20% damage per rank, +4% area per
  * rank, +6% duration per rank, one more projectile at ranks 4 and 7. */
@@ -66,8 +66,9 @@ export interface Evolution {
   id: string;
   name: string;
   description: string;
-  /** Any of these unlocks this branch. */
-  catalysts: Array<{ boon?: string; synergy?: string; status?: StatusKind; school?: School; item?: string }>;
+  /** The passive skills that evolve it: a weapon at rank 8 with at least
+   *  one rank in any of these can become this. */
+  catalysts: Array<{ boon: string }>;
   /** Multiplicative on damage/cooldown/area/speed/duration; additive on counts. */
   mods: Partial<Record<'damage' | 'cooldown' | 'area' | 'speed' | 'duration', number>> &
     Partial<Record<'projectiles' | 'pierce' | 'bounces' | 'chains' | 'strikes', number>>;
@@ -104,9 +105,9 @@ export const WEAPONS: Record<string, WeaponDef> = {
     description: 'Your blade swings on its own at whatever is nearest, cutting everything in a wide arc in front of you.',
     evolutions: [
       { id: 'oathkeeper', name: 'Oathkeeper', description: 'Every swing throws a crescent of holy light that carries on through the crowd.',
-        catalysts: [{ boon: 'ironhide' }, { school: 'holy' }], mods: { damage: 1.5, cooldown: 0.85, area: 1.2 }, addTags: ['holy', 'projectile'], art: 'slash_holy' },
+        catalysts: [{ boon: 'ironhide' }], mods: { damage: 1.5, cooldown: 0.85, area: 1.2 }, addTags: ['holy', 'projectile'], art: 'slash_holy' },
       { id: 'graveedge', name: 'Grave-Edge', description: 'The edge drinks: every cut bleeds, and anything bleeding below a sixth of its life is simply finished.',
-        catalysts: [{ boon: 'serration' }, { status: 'bleed' }], mods: { damage: 1.6, cooldown: 0.9 },
+        catalysts: [{ boon: 'serration' }], mods: { damage: 1.6, cooldown: 0.9 },
         set: { status: { kind: 'bleed', chance: 1, power: 0.35, duration: 3 } }, art: 'slash_blood' },
     ],
   }),
@@ -119,7 +120,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
       { id: 'whirlwind', name: 'Whirlwind', description: 'The chop becomes a full turn: everything around you, every time.',
         catalysts: [{ boon: 'fleetfoot' }, { boon: 'ferocity' }], mods: { damage: 1.4, cooldown: 0.8 }, set: { arc: 6.283 }, art: 'slash_spin' },
       { id: 'bonesplitter', name: 'Bonesplitter', description: 'Each chop sends a shockwave ahead of it that shatters the frozen and staggers the rest.',
-        catalysts: [{ status: 'chill' }, { boon: 'might' }], mods: { damage: 1.7, area: 1.25 }, set: { knockback: 2.2 }, addTags: ['explosion'], art: 'slash_quake' },
+        catalysts: [{ boon: 'might' }], mods: { damage: 1.7, area: 1.25 }, set: { knockback: 2.2 }, addTags: ['explosion'], art: 'slash_quake' },
     ],
   }),
   seeking_motes: W({
@@ -131,7 +132,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
       { id: 'mote_cascade', name: 'Mote Cascade', description: 'The motes multiply beyond counting, and each one splits in two when it strikes.',
         catalysts: [{ boon: 'duplicity' }], mods: { damage: 1.4, projectiles: 3 }, set: { splitOnHit: 2 }, art: 'mote_cascade' },
       { id: 'starseeker', name: 'Starseeker', description: 'Motes hunt the strongest thing on the field, and they bite deeper for every critical strike.',
-        catalysts: [{ boon: 'precision' }, { synergy: 'hunters_mark' }], mods: { damage: 1.9, cooldown: 0.85 }, set: { homing: 9 }, art: 'mote_star' },
+        catalysts: [{ boon: 'precision' }], mods: { damage: 1.9, cooldown: 0.85 }, set: { homing: 9 }, art: 'mote_star' },
     ],
   }),
   cinderfall: W({
@@ -144,7 +145,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
       { id: 'fallen_star', name: 'Fallen Star', description: 'The cinder becomes a falling star: a huge blast that leaves the ground burning.',
         catalysts: [{ boon: 'expanse' }], mods: { damage: 1.5, area: 1.45 }, set: { groundOnHit: { radius: 2.2, duration: 3, dpsPct: 0.25 } }, art: 'star' },
       { id: 'living_flame', name: 'Living Flame', description: 'Cinders burst into three seeking flames that hunt on after the blast.',
-        catalysts: [{ synergy: 'kindling' }, { synergy: 'pyre_burst' }, { status: 'burn' }], mods: { damage: 1.35, cooldown: 0.85 },
+        catalysts: [{ boon: 'perennial' }], mods: { damage: 1.35, cooldown: 0.85 },
         set: { splitOnHit: 3, homing: 4 }, art: 'living_flame' },
     ],
   }),
@@ -156,7 +157,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
     description: 'Bitter cold that pierces and chills. Enough chill and a thing freezes solid.',
     evolutions: [
       { id: 'deepwinter', name: 'Deepwinter', description: 'Winter takes the field: shards burst into a ring of smaller shards on the frozen.',
-        catalysts: [{ boon: 'haste' }, { synergy: 'shatter' }], mods: { damage: 1.5, cooldown: 0.8, projectiles: 1 }, set: { splitOnHit: 4 }, art: 'shard_deep' },
+        catalysts: [{ boon: 'haste' }], mods: { damage: 1.5, cooldown: 0.8, projectiles: 1 }, set: { splitOnHit: 4 }, art: 'shard_deep' },
       { id: 'glacier_spear', name: 'Glacier Spear', description: 'One enormous lance of ice that runs the length of the field and freezes all it passes.',
         catalysts: [{ boon: 'velocity' }], mods: { damage: 2.1, speed: 1.4, pierce: 20 },
         set: { radius: 0.5, status: { kind: 'chill', chance: 1, power: 3, duration: 3 } }, art: 'spear_ice' },
@@ -171,7 +172,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
       { id: 'skybreak', name: 'Skybreak', description: 'The sky answers every call: each leap also brings a bolt straight down.',
         catalysts: [{ boon: 'precision' }], mods: { damage: 1.5, chains: 2 }, addTags: ['storm'], art: 'arc_sky' },
       { id: 'tempest_coil', name: 'Tempest Coil', description: 'The lightning forks at every leap. A crowd becomes a web.',
-        catalysts: [{ boon: 'expanse' }, { synergy: 'static_charge' }], mods: { damage: 1.25 }, set: { fork: true }, art: 'arc_fork' },
+        catalysts: [{ boon: 'expanse' }], mods: { damage: 1.25 }, set: { fork: true }, art: 'arc_fork' },
     ],
   }),
   dawnpulse: W({
@@ -183,7 +184,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
       { id: 'circle_of_dawn', name: 'Circle of Dawn', description: 'Each dawn mends you as it burns them.',
         catalysts: [{ boon: 'vitality' }, { boon: 'recovery' }], mods: { damage: 1.5, area: 1.2 }, set: { heal: 4 }, art: 'nova_dawn' },
       { id: 'sunbreak', name: 'Sunbreak', description: 'The pulse leaves a ring of daylight on the ground that goes on burning.',
-        catalysts: [{ boon: 'might' }, { synergy: 'consecration' }], mods: { damage: 1.4 }, set: { groundOnHit: { radius: 3.5, duration: 2.5, dpsPct: 0.3 } }, art: 'nova_sun' },
+        catalysts: [{ boon: 'might' }], mods: { damage: 1.4 }, set: { groundOnHit: { radius: 3.5, duration: 2.5, dpsPct: 0.3 } }, art: 'nova_sun' },
     ],
   }),
   hallowed_ring: W({
@@ -195,7 +196,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
       { id: 'sanctified_earth', name: 'Sanctified Earth', description: 'Sacred ground that shelters as it burns: stand in it and blows glance off you.',
         catalysts: [{ boon: 'ironhide' }], mods: { damage: 1.5, area: 1.25, duration: 1.3 }, art: 'zone_sanct' },
       { id: 'pyre_of_faith', name: 'Pyre of Faith', description: 'The ground catches fire as well as light. Everything in it burns twice.',
-        catalysts: [{ school: 'fire' }, { status: 'burn' }], mods: { damage: 1.4 }, school: 'fire',
+        catalysts: [{ boon: 'searing' }], mods: { damage: 1.4 }, school: 'fire',
         set: { status: { kind: 'burn', chance: 0.6, power: 0.3, duration: 3 } }, addTags: ['fire'], art: 'zone_pyre' },
     ],
   }),
@@ -208,7 +209,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
       { id: 'ruin_bolt', name: 'Ruin Bolt', description: 'Ruin that nothing can stop: the bolt passes through everything and tears a wound behind it.',
         catalysts: [{ boon: 'might' }], mods: { damage: 1.6, pierce: 20, speed: 1.2 }, art: 'ruin' },
       { id: 'soul_siphon', name: 'Soul Siphon', description: 'Each bolt drinks a little of whatever it passes through and gives it to you.',
-        catalysts: [{ boon: 'recovery' }, { synergy: 'soul_harvest' }], mods: { damage: 1.4, projectiles: 1 }, set: { heal: 0.6 }, art: 'siphon' },
+        catalysts: [{ boon: 'recovery' }], mods: { damage: 1.4, projectiles: 1 }, set: { heal: 0.6 }, art: 'siphon' },
     ],
   }),
   knifestorm: W({
@@ -221,7 +222,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
       { id: 'steel_flurry', name: 'Steel Flurry', description: 'The steel never stops moving: twice the knives, twice as often.',
         catalysts: [{ boon: 'fleetfoot' }], mods: { damage: 1.3, cooldown: 0.65, projectiles: 4 }, art: 'dagger_flurry' },
       { id: 'thousand_cuts', name: 'A Thousand Cuts', description: 'Every knife opens a wound, and wounds on the same body stack.',
-        catalysts: [{ boon: 'serration' }, { status: 'bleed' }], mods: { damage: 1.4, projectiles: 2 },
+        catalysts: [{ boon: 'serration' }], mods: { damage: 1.4, projectiles: 2 },
         set: { status: { kind: 'bleed', chance: 1, power: 0.4, duration: 3.5 } }, art: 'dagger_blood' },
     ],
   }),
@@ -234,7 +235,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
       { id: 'gyrestorm', name: 'Gyrestorm', description: 'Become the storm of blades: more axes, spinning faster, never stopping.',
         catalysts: [{ boon: 'ferocity' }], mods: { damage: 1.5, projectiles: 3, duration: 1.8 }, set: { orbitSpeed: 5.2 }, art: 'axe_storm' },
       { id: 'reavers_wheel', name: 'Reaver\'s Wheel', description: 'The axes bite and stay bitten: every cut bleeds, and a bleeding kill flings the axe outward.',
-        catalysts: [{ boon: 'serration' }, { status: 'bleed' }], mods: { damage: 1.5 },
+        catalysts: [{ boon: 'serration' }], mods: { damage: 1.5 },
         set: { status: { kind: 'bleed', chance: 1, power: 0.35, duration: 3 }, orbitRadius: 2.8 }, art: 'axe_blood' },
     ],
   }),
@@ -247,7 +248,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
       { id: 'arrowfall', name: 'Arrowfall', description: 'The sky darkens with arrows: each volley also rains down on the thickest part of the crowd.',
         catalysts: [{ boon: 'velocity' }], mods: { damage: 1.4, projectiles: 2 }, set: { strikes: 6, stormRadius: 5 }, art: 'arrow_rain' },
       { id: 'predators_volley', name: 'Predator\'s Volley', description: 'Arrows fly straight to the marked and the wounded, and every one leaves its own mark.',
-        catalysts: [{ synergy: 'hunters_mark' }, { boon: 'precision' }], mods: { damage: 1.6 },
+        catalysts: [{ boon: 'precision' }], mods: { damage: 1.6 },
         set: { homing: 3, status: { kind: 'mark', chance: 0.35, power: 1, duration: 4 } }, art: 'arrow_mark' },
     ],
   }),
@@ -261,7 +262,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
       { id: 'moonfall', name: 'Moonfall', description: 'Moons fall wherever the enemy gathers.',
         catalysts: [{ boon: 'greed' }, { boon: 'expanse' }], mods: { damage: 1.5 }, behavior: 'storm', set: { strikes: 5, stormRadius: 5.75, splash: 1.5 }, art: 'moonfall' },
       { id: 'lunar_brand', name: 'Lunar Brand', description: 'Every moon marks, and a marked thing that dies throws the mark to its neighbours.',
-        catalysts: [{ synergy: 'hunters_mark' }], mods: { damage: 1.5, projectiles: 1 }, set: { status: { kind: 'mark', chance: 1, power: 1, duration: 6 } }, art: 'moon_brand' },
+        catalysts: [{ boon: 'fortune' }], mods: { damage: 1.5, projectiles: 1 }, set: { status: { kind: 'mark', chance: 1, power: 1, duration: 6 } }, art: 'moon_brand' },
     ],
   }),
   judgement_disc: W({
@@ -286,7 +287,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
       { id: 'blighted_earth', name: 'Blighted Earth', description: 'The blight spreads wider the longer it feeds, and holds what it feeds on.',
         catalysts: [{ boon: 'chilling' }], mods: { damage: 1.4, area: 1.3, duration: 1.3 }, set: { slow: 0.5 }, art: 'zone_blight2' },
       { id: 'plaguebloom', name: 'Plaguebloom', description: 'Whatever dies in the blight bursts, and the blight goes on with them.',
-        catalysts: [{ synergy: 'plague_bearer' }, { status: 'poison' }], mods: { damage: 1.4 }, set: { groundOnHit: { radius: 2, duration: 3, dpsPct: 0.3 } }, art: 'zone_plague' },
+        catalysts: [{ boon: 'perennial' }], mods: { damage: 1.4 }, set: { groundOnHit: { radius: 2, duration: 3, dpsPct: 0.3 } }, art: 'zone_plague' },
     ],
   }),
   reaving_arc: W({
@@ -298,7 +299,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
       { id: 'rend_and_mend', name: 'Rend and Mend', description: 'The blade drinks deeper than any wound can hold.',
         catalysts: [{ boon: 'recovery' }, { boon: 'vitality' }], mods: { damage: 1.5, area: 1.15 }, set: { heal: 6 }, art: 'nova_rend' },
       { id: 'harrowing', name: 'The Harrowing', description: 'What the arc kills gets up again, briefly, on your side.',
-        catalysts: [{ synergy: 'soul_harvest' }], mods: { damage: 1.4 }, addTags: ['summon'], art: 'nova_harrow' },
+        catalysts: [{ boon: 'expanse' }], mods: { damage: 1.4 }, addTags: ['summon'], art: 'nova_harrow' },
     ],
   }),
   grave_tether: W({
@@ -310,7 +311,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
       { id: 'tether_of_anguish', name: 'Tether of Anguish', description: 'The tether takes more, and gives more back.',
         catalysts: [{ boon: 'wisdom' }, { boon: 'recovery' }], mods: { damage: 1.5, projectiles: 1 }, set: { heal: 3 }, art: 'tether2' },
       { id: 'deathcoil', name: 'Deathcoil', description: 'Each coil leaves the struck marked for the grave: they take more from everything.',
-        catalysts: [{ synergy: 'hunters_mark' }, { status: 'mark' }], mods: { damage: 1.4 }, set: { status: { kind: 'mark', chance: 1, power: 1, duration: 4 } }, art: 'tether_mark' },
+        catalysts: [{ boon: 'duplicity' }], mods: { damage: 1.4 }, set: { status: { kind: 'mark', chance: 1, power: 1, duration: 4 } }, art: 'tether_mark' },
     ],
   }),
   iron_palms: W({
@@ -322,7 +323,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
       { id: 'temple_breaker', name: 'Temple Breaker', description: 'Every palm lands like the temple bell.',
         catalysts: [{ boon: 'evasion' }], mods: { damage: 1.6, area: 1.2 }, set: { knockback: 0.9 }, art: 'palm_temple' },
       { id: 'thunder_palm', name: 'Thunder Palm', description: 'The palms carry the storm into whatever they strike.',
-        catalysts: [{ school: 'storm' }, { status: 'shock' }], mods: { damage: 1.45 }, school: 'storm',
+        catalysts: [{ boon: 'haste' }], mods: { damage: 1.45 }, school: 'storm',
         set: { status: { kind: 'shock', chance: 0.6, power: 1, duration: 3 } }, addTags: ['storm'], art: 'palm_storm' },
     ],
   }),
@@ -335,7 +336,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
       { id: 'great_herd', name: 'The Great Herd', description: 'The herd does not end. It only thins.',
         catalysts: [{ boon: 'perennial' }], mods: { damage: 1.4, projectiles: 3, duration: 1.3 }, art: 'herd_great' },
       { id: 'wild_hunt', name: 'The Wild Hunt', description: 'The herd runs in green fire, and each beast goes up in it at the end of its run.',
-        catalysts: [{ school: 'fire' }, { synergy: 'pack_leader' }], mods: { damage: 1.4 }, set: { splash: 1.9 }, addTags: ['explosion'], art: 'herd_hunt' },
+        catalysts: [{ boon: 'fleetfoot' }], mods: { damage: 1.4 }, set: { splash: 1.9 }, addTags: ['explosion'], art: 'herd_hunt' },
     ],
   }),
   thornbloom: W({
@@ -347,7 +348,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
       { id: 'everbloom', name: 'Everbloom', description: 'The brambles flower, and the flowers have thorns too.',
         catalysts: [{ boon: 'thorns' }], mods: { damage: 1.4, area: 1.3, duration: 1.3 }, art: 'zone_bloom' },
       { id: 'strangleroot', name: 'Strangleroot', description: 'The roots do not let go: what they hold is held still.',
-        catalysts: [{ status: 'chill' }, { boon: 'chilling' }], mods: { damage: 1.3 }, set: { slow: 0.15, status: { kind: 'stun', chance: 0.25, power: 1, duration: 1 } }, art: 'zone_root' },
+        catalysts: [{ boon: 'chilling' }], mods: { damage: 1.3 }, set: { slow: 0.15, status: { kind: 'stun', chance: 0.25, power: 1, duration: 1 } }, art: 'zone_root' },
     ],
   }),
   gale_chakram: W({
@@ -359,7 +360,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
       { id: 'razorgale', name: 'Razorgale', description: 'The ring splits the wind in two and comes back sharper.',
         catalysts: [{ boon: 'serration' }], mods: { damage: 1.5, projectiles: 1 }, set: { status: { kind: 'bleed', chance: 0.5, power: 0.3, duration: 3 } }, art: 'chakram_razor' },
       { id: 'hailwheel', name: 'Hailwheel', description: 'A spinning edge through a hailstorm comes back cold.',
-        catalysts: [{ school: 'frost' }, { status: 'chill' }], mods: { damage: 1.4, projectiles: 1 }, school: 'frost',
+        catalysts: [{ boon: 'chilling' }], mods: { damage: 1.4, projectiles: 1 }, school: 'frost',
         set: { status: { kind: 'chill', chance: 1, power: 1, duration: 2.5 } }, addTags: ['frost'], art: 'chakram_hail' },
     ],
   }),
@@ -372,7 +373,7 @@ export const WEAPONS: Record<string, WeaponDef> = {
       { id: 'verdant_gaze', name: 'Verdant Gaze', description: 'The gaze widens until the world is a line of green fire.',
         catalysts: [{ boon: 'evasion' }, { boon: 'expanse' }], mods: { damage: 1.5, area: 1.8 }, art: 'beam_gaze' },
       { id: 'sunlance', name: 'Sunlance', description: 'The lance turns gold, and holy, and sears the dead to ash.',
-        catalysts: [{ school: 'holy' }, { status: 'sear' }], mods: { damage: 1.5 }, school: 'holy',
+        catalysts: [{ boon: 'searing' }], mods: { damage: 1.5 }, school: 'holy',
         set: { status: { kind: 'sear', chance: 1, power: 1, duration: 3 } }, addTags: ['holy'], art: 'beam_sun' },
     ],
   }),

@@ -1,5 +1,6 @@
 import type { CharacterData } from '@/rpg/character';
 import type { WorldState } from './state';
+import { BOONS, START_BLESSINGS } from '@/content/boons';
 
 /* Persistence: the proof that this is not a run.
  *
@@ -48,6 +49,10 @@ function migrate(d: SaveData): SaveData {
   if (!d.world.legacy) d.world.legacy = [];
   if (!d.world.shops) d.world.shops = {};
   if (!d.world.groundItems) d.world.groundItems = [];
+  // The starting pick is a blessing now; a survivor who began with a passive
+  // skill (from before passives and blessings were told apart) is given the
+  // first blessing in its place.
+  if (d.character.startBoon && BOONS[d.character.startBoon]?.kind !== 'blessing') d.character.startBoon = START_BLESSINGS[0];
   d.version = SAVE_VERSION;
   return d;
 }

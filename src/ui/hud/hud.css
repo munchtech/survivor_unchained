@@ -168,20 +168,20 @@
 @keyframes spinBorder { to { --spin: 360deg; } }
 
 .boons { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; max-width: 420px; }
-.boon {
+.boon-chip {
   position: relative; width: 28px; height: 28px; border-radius: 50%;
   display: grid; place-items: center; color: var(--rc, #c8c0b0);
   background: radial-gradient(circle at 50% 35%, #26222c, #0e0c11);
   box-shadow: 0 0 0 1px #000, inset 0 0 0 1px color-mix(in srgb, var(--rc, #c8c0b0) 55%, transparent), 0 3px 8px rgba(0, 0, 0, 0.5);
 }
-.boon.syn { border-radius: 6px; transform: rotate(45deg); width: 24px; height: 24px; margin: 2px; }
-.boon.syn .glyph { transform: rotate(-45deg); }
+.boon-chip.syn { border-radius: 6px; transform: rotate(45deg); width: 24px; height: 24px; margin: 2px; }
+.boon-chip.syn .glyph { transform: rotate(-45deg); }
 .boon-rank {
   position: absolute; right: -4px; bottom: -4px; min-width: 13px; height: 13px; padding: 0 2px; border-radius: 7px;
   font: 800 9px/13px var(--font-ui); text-align: center; color: #fff;
   background: #0b0a0d; box-shadow: 0 0 0 1px color-mix(in srgb, var(--rc, #c8c0b0) 70%, transparent);
 }
-.boon.syn .boon-rank { transform: rotate(-45deg); }
+.boon-chip.syn .boon-rank { transform: rotate(-45deg); }
 
 /* ---------------------------------------------------------------- hands -- */
 

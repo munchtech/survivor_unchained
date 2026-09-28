@@ -101,8 +101,6 @@ export interface Offer {
   kind: 'weapon' | 'rank' | 'boon' | 'evolve' | 'heal' | 'gold';
   /** Offered as a milestone's blessing (settles the blessing, not a level). */
   blessing?: boolean;
-  /** An evolution branch the build already points toward. */
-  fits?: boolean;
   id: string;
   /** For evolve: which branch. */
   branch?: string;

@@ -155,7 +155,7 @@ export class Game {
   newJourney() {
     this.mode = 'create';
     const draft: CreationDraft = {
-      step: 0, name: '', archetype: 'warden', weaponItem: 'worn_oathblade', ability: 'shield_bash', startBoon: 'might',
+      step: 0, name: '', archetype: 'warden', weaponItem: 'worn_oathblade', ability: 'shield_bash', startBoon: 'hunters_mark',
       background: 'hunter', palette: 'steel', model: 'knight', headgear: true, cloak: 'calling', skin: 'fair', hair: 'as_is',
     };
     creation.value = draft;

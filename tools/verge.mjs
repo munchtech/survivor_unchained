@@ -167,9 +167,15 @@ const scenarios = {
     check('the fall', /fell/i.test(res.caption), res.caption);
     check('a corpse with gold on it', !!res.corpse && res.corpse.gold > 0, JSON.stringify(res.corpse && { gold: res.corpse.gold, zone: res.corpse.zone }));
     check('a nemesis', !!res.nemesis, res.nemesis);
-    await page.waitForTimeout(5200);
+    // The wake is a chain of real-time beats (fade, rebuild the town, fade in,
+    // Chid speaks): wait for it rather than guessing how long it takes.
+    let woke = false;
+    for (let i = 0; i < 40 && !woke; i++) {
+      await page.waitForTimeout(500);
+      woke = await page.evaluate(() => window.__game.game.talkNpc === 'chid');
+    }
     await T('T.adv(1.5)');
-    check('Chid is there when you wake', await page.evaluate(() => window.__game.game.talkNpc === 'chid'));
+    check('Chid is there when you wake', woke);
     await snap();
     const after = await page.evaluate(() => { const g = window.__game.game; return { zone: g.zone?.id, gold: g.ch.gold, traits: g.ch.traits, wounded: g.ch.conditions.some((c) => c.id === 'wounded') }; });
     check('wakes somewhere safe', after.zone === 'waystation', after.zone);

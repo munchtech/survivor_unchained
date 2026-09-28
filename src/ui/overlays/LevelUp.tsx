@@ -107,13 +107,12 @@ function schoolOf(o: Offer): School | null {
 
 function kicker(o: Offer): string {
   switch (o.kind) {
-    case 'weapon': return 'New skill';
-    case 'rank': return `Skill · rank ${o.from} → ${o.to}`;
-    case 'evolve': return 'Skill evolves';
+    case 'weapon': return 'New combat skill';
+    case 'rank': return `Combat skill · rank ${o.from} → ${o.to}`;
+    case 'evolve': return 'Evolution';
     case 'boon': {
-      const syn = BOONS[o.id]?.kind === 'synergy';
-      if (!o.from) return syn ? 'Blessing · combo' : 'Blessing';
-      return `Blessing · rank ${o.from} → ${o.to}`;
+      if (BOONS[o.id]?.kind === 'blessing') return o.from ? `Blessing · rank ${o.from} → ${o.to}` : 'Blessing';
+      return o.from ? `Passive skill · rank ${o.from} → ${o.to}` : 'New passive skill';
     }
     default: return 'Respite';
   }
@@ -126,7 +125,7 @@ function Card({ o, i, fits, focused, chosen, dimmed, armed, onPick, onHover }: {
   const r = RARITY_UI[o.rarity] ?? 0;
   const school = schoolOf(o);
   const color = o.kind === 'evolve' ? '#ffd88a' : school ? SCHOOL_UI[school] : `var(--r${r})`;
-  const syn = o.kind === 'boon' && BOONS[o.id]?.kind === 'synergy';
+  const syn = o.kind === 'boon' && BOONS[o.id]?.kind === 'blessing';
   const max = o.kind === 'rank' ? 8 : o.kind === 'boon' ? BOONS[o.id]?.max ?? 1 : 0;
   const cls = ['card', `rb-${r}`, `k-${o.kind}`, syn ? 'syn' : '', focused ? 'focus' : '', chosen ? 'chosen' : '', dimmed ? 'dimmed' : '', armed ? 'armed' : ''].filter(Boolean).join(' ');
   const evoFrom = o.kind === 'evolve' ? WEAPONS[o.id]?.name : null;

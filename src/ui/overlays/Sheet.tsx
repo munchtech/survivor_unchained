@@ -74,7 +74,7 @@ export function Sheet() {
             <div class="sub-label">Traits {ch.traitPicks > 0 && <span class="pts">choose {ch.traitPicks}</span>}</div>
             {ch.traits.length === 0 && ch.traitPicks === 0 && <p class="sheet-empty">None yet. Traits come with levels, and with what you do.</p>}
             {ch.traits.map((t) => (
-              <div key={t} class={`trait ${TRAITS[t]?.source}`}>
+              <div key={t} class={`trait src-${TRAITS[t]?.source ?? 'levelup'}`}>
                 <div class="trait-name">{TRAITS[t]?.name ?? t}{TRAITS[t]?.source === 'world' && <span> · earned</span>}</div>
                 <div class="trait-text">{TRAITS[t]?.text}</div>
               </div>

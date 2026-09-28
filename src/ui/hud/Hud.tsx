@@ -98,7 +98,7 @@ function Arsenal({ h }: { h: HudState }) {
       {h.boons.length > 0 && (
         <div class="boons">
           {h.boons.map((b) => (
-            <div key={b.id} class={`boon rb-${rarityIndex(b.rarity)}${b.synergy ? ' syn' : ''}`} title={b.name}>
+            <div key={b.id} class={`boon-chip rb-${rarityIndex(b.rarity)}${b.synergy ? ' syn' : ''}`} title={b.name}>
               <Glyph k={b.glyph} size={17} />
               {b.max > 1 && <span class="boon-rank">{b.rank}</span>}
             </div>

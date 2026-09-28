@@ -78,7 +78,7 @@ export class HudBridge {
       })),
       boons: Object.entries(b.boons).filter(([, r]) => r > 0).map(([id, r]) => {
         const d = BOONS[id];
-        return { id, name: d?.name ?? id, glyph: d?.icon ?? 'arcane', rank: r, max: d?.max ?? 1, synergy: d?.kind === 'synergy', rarity: d?.rarity ?? 'common' };
+        return { id, name: d?.name ?? id, glyph: d?.icon ?? 'arcane', rank: r, max: d?.max ?? 1, synergy: d?.kind === 'blessing', rarity: d?.rarity ?? 'common' };
       }),
       dash: { charges: p.dashCharges, max: maxDash, recharge: Math.min(1, p.dashRecharge / DASH.recharge) },
       ability: ab ? { id: ab.id, name: ab.name, glyph: ab.icon, ready: 1 - p.abilityCd / Math.max(0.01, abCd), left: p.abilityCd, active: p.bulwarkT > 0 || p.invisibleT > 0 || !!p.leap } : null,
@@ -111,7 +111,7 @@ export class HudBridge {
       level: draftLevel(b),
       milestone: blessingNext(b),
       offers,
-      fits: offers.map((o) => o.kind === 'evolve' ? (o.fits ? ['your build'] : []) : o.kind === 'rank' ? [] : o.tags.filter((t) => tags.has(t))),
+      fits: offers.map((o) => o.kind === 'rank' || o.kind === 'evolve' ? [] : o.tags.filter((t) => tags.has(t))),
       rerolls: b.rerolls,
       banishes: b.banishes,
       queued: b.pendingLevels + b.pendingBlessings.length - 1,

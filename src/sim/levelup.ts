@@ -1,22 +1,27 @@
 import type { Battle, Offer } from './battle';
 import { WEAPONS, WEAPON_POOL, MAX_WEAPONS, WEAPON_MAX_RANK, type Evolution } from '@/content/weapons';
-import { BOONS, MILESTONE_EVERY, isMilestone, type BoonRequirement, type Rarity } from '@/content/boons';
-import { statOf, tagsOf, schoolOf } from './weapons';
+import { BOONS, MILESTONE_EVERY, MAX_PASSIVES, isMilestone, type BoonRequirement, type Rarity } from '@/content/boons';
+import { statOf, tagsOf } from './weapons';
 import type { StatusKind, Tag } from './types';
 
 /* The ember draft: three cards (four, with the right gear) each time the
- * survivor's ember rises a level, all skills: a new one, or a rank in one
- * you carry; anyone can take any skill (a calling leans a little toward its
- * own). Blessings (boons, and the combos that make things interact) are
- * milestones: one at the start of every expedition, and one more when the
- * ember reaches a multiple of MILESTONE_EVERY, after that level's skill.
+ * survivor's ember rises a level, from two kinds of skill:
+ *
+ *   - combat skills (the weapons, up to six): a new one, or a rank in one
+ *     you carry, to rank 8. Anyone can take any; a calling leans a little
+ *     toward its own style.
+ *   - passive skills (up to six), ranked the same way. Each weapon's
+ *     evolutions name a passive: at rank 8 with one rank of it, the weapon
+ *     is offered what it can become (the choice is always the player's).
+ *
+ * Blessings are not in it: they change how the fight works, and come as
+ * milestones (one at the start of every expedition, one more at every
+ * MILESTONE_EVERY ember levels, after that level's own draft).
  *
  * It leans, never forces. Cards that share tags with what the build already
- * does are likelier; synergies wait until the build has something for them
- * to work on; rarer cards get likelier with luck. Evolutions are never
- * random: a weapon at rank 8 whose catalyst is met is always offered, with
- * one card per branch the build has earned, so the choice of what a weapon
- * becomes is always the player's. */
+ * does are likelier; a passive that would evolve a weapon you carry is
+ * likelier still (much more so once that weapon is at rank 8); rarer cards
+ * get likelier with luck. */
 
 const RARITY_WEIGHT: Record<Rarity, number> = { common: 10, uncommon: 6.5, rare: 3.6, epic: 1.7, legendary: 0.7 };
 
@@ -59,32 +64,28 @@ function meets(b: Battle, req: BoonRequirement | undefined, statuses: Set<Status
   return true;
 }
 
-/** What a weapon at full rank can become: every branch, always. Nothing is
- *  needed to evolve; what the build already has (a blessing, a status,
- *  another school, a piece of gear) only marks a branch as fitting it. */
+/** What a weapon at full rank can become now: each branch whose passive
+ *  skill the survivor holds (a rank of it is enough). With both, the
+ *  choice is theirs. */
 export function earnedBranches(b: Battle, weaponId: string): Evolution[] {
   const w = b.weapons.find((x) => x.id === weaponId);
   if (!w || w.evolution || w.rank < WEAPON_MAX_RANK) return [];
-  return [...w.def.evolutions];
+  return w.def.evolutions.filter((evo) => evo.catalysts.some((c) => (b.boons[c.boon] ?? 0) > 0));
 }
 
-/** The branches the build already points toward. */
-export function fittingBranches(b: Battle, weaponId: string): Evolution[] {
-  const w = b.weapons.find((x) => x.id === weaponId);
-  return w ? catalysed(b, w) : [];
+/** The passive skills that would evolve a weapon, by branch. */
+export function evolvesWith(weaponId: string): Array<{ branch: Evolution; passives: string[] }> {
+  const d = WEAPONS[weaponId];
+  return d ? d.evolutions.map((e) => ({ branch: e, passives: e.catalysts.map((c) => c.boon) })) : [];
 }
 
-function catalysed(b: Battle, w: Battle['weapons'][number]): Evolution[] {
-  const statuses = buildStatuses(b);
-  return w.def.evolutions.filter((evo) => evo.catalysts.some((c) => {
-    if (c.boon && (b.boons[c.boon] ?? 0) > 0) return true;
-    if (c.synergy && (b.boons[c.synergy] ?? 0) > 0) return true;
-    if (c.status && statuses.has(c.status)) return true;
-    if (c.school && b.weapons.some((o) => o !== w && schoolOf(o) === c.school)) return true;
-    if (c.item && b.gearIds.has(c.item)) return true;
-    return false;
-  }));
-}
+/** Passive skills held (blessings are not passives). */
+export const passivesHeld = (b: Battle) => Object.entries(b.boons).filter(([id, r]) => r > 0 && BOONS[id]?.kind === 'passive').length;
+
+const names = (ids: string[]) => {
+  const n = ids.map((id) => BOONS[id]?.name ?? id);
+  return n.length > 1 ? `${n.slice(0, -1).join(', ')} or ${n[n.length - 1]}` : n[0];
+};
 
 function affinity(cardTags: readonly string[], build: Set<Tag>) {
   let n = 0;
@@ -114,31 +115,41 @@ export function draft(b: Battle, count = 3): Offer[] {
   const tags = buildTags(b);
   const luck = b.stats.get('luck');
   const offers: Offer[] = [];
-  // Skills are the weapons: new ones and ranks in the ones you have.
-  // Blessings (boons and combos) are for milestones.
-  const skills: Array<{ o: Offer; w: number }> = [];
-  const passives: Array<{ o: Offer; w: number }> = [];
+  const rarityWeight = (r: Rarity) => RARITY_WEIGHT[r] * (r !== 'common' ? 1 + (luck - 1) * 0.6 : 1);
+
+  // A milestone's blessing: game-changers only.
+  if (blessingNext(b)) {
+    const pool: Array<{ o: Offer; w: number }> = [];
+    for (const d of Object.values(BOONS)) {
+      if (d.kind !== 'blessing') continue;
+      const r = b.boons[d.id] ?? 0;
+      if (r >= d.max || b.bannedCards.has(d.id) || !meets(b, d.requires, statuses, tags)) continue;
+      pool.push({ o: { kind: 'boon', id: d.id, rarity: d.rarity, title: d.name, text: d.text, from: r, to: r + 1, icon: d.icon, tags: d.tags, blessing: true }, w: rarityWeight(d.rarity) * affinity(d.tags, tags) });
+    }
+    for (let i = 0; i < count; i++) { const o = takeFrom(b, pool); if (o) offers.push(o); }
+    return offers;
+  }
 
   // Evolutions come first and are not left to chance: one weapon at a time,
-  // every branch of it (the next weapon ready waits for the next draft).
+  // every branch it has earned (the next weapon ready waits for the next draft).
   const ready = b.weapons.find((w) => earnedBranches(b, w.id).length > 0);
-  if (ready && !blessingNext(b)) {
-    const fit = new Set(fittingBranches(b, ready.id).map((e) => e.id));
+  if (ready) {
     for (const evo of earnedBranches(b, ready.id)) {
       offers.push({
         kind: 'evolve', id: ready.id, branch: evo.id, rarity: 'legendary', title: evo.name,
         text: `${ready.def.name} becomes ${evo.name}. ${evo.description}`, icon: evo.art ?? ready.def.art, tags: [...tagsOf(ready)],
-        fits: fit.has(evo.id),
       });
     }
   }
 
+  // Combat skills: new weapons, and ranks in the ones you carry.
+  const combat: Array<{ o: Offer; w: number }> = [];
   for (const w of b.weapons) {
     if (w.rank >= WEAPON_MAX_RANK) continue;
     const next = w.rank + 1;
     const extra = next === 4 || next === 7 ? ' One more projectile.' : '';
-    const hint = next === WEAPON_MAX_RANK && !w.evolution ? ' At rank 8 it can evolve.' : '';
-    skills.push({ o: { kind: 'rank', id: w.id, rarity: 'common', title: w.evolution?.name ?? w.def.name, text: `+20% damage (+${(next - 1) * 20}% in all).${extra}${hint}`, from: w.rank, to: next, icon: w.evolution?.art ?? w.def.art, tags: tagsOf(w) }, w: 9 * affinity(tagsOf(w), tags) });
+    const hint = next === WEAPON_MAX_RANK && !w.evolution ? ` At rank 8, with ${names([...new Set(evolvesWith(w.id).flatMap((e) => e.passives))])}, it evolves.` : '';
+    combat.push({ o: { kind: 'rank', id: w.id, rarity: 'common', title: w.evolution?.name ?? w.def.name, text: `+20% damage (+${(next - 1) * 20}% in all).${extra}${hint}`, from: w.rank, to: next, icon: w.evolution?.art ?? w.def.art, tags: tagsOf(w) }, w: 9 * affinity(tagsOf(w), tags) });
   }
   if (b.weapons.length < MAX_WEAPONS) {
     // A small arsenal wants new weapons more than a full one does.
@@ -148,30 +159,32 @@ export function draft(b: Battle, count = 3): Offer[] {
       const d = WEAPONS[id];
       // A slight lean toward the calling's own style; anyone can take anything.
       const lean = b.favours.size && d.tags.some((t) => b.favours.has(t)) ? 1.35 : 1;
-      skills.push({ o: { kind: 'weapon', id, rarity: 'uncommon', title: d.name, text: d.description, icon: d.art, tags: d.tags }, w: 3.2 * want * lean * affinity(d.tags, tags) });
+      combat.push({ o: { kind: 'weapon', id, rarity: 'uncommon', title: d.name, text: d.description, icon: d.art, tags: d.tags }, w: 3.2 * want * lean * affinity(d.tags, tags) });
     }
   }
+
+  // Passive skills: new ones while there is room, and ranks in the ones held.
+  const passive: Array<{ o: Offer; w: number }> = [];
+  const room = passivesHeld(b) < MAX_PASSIVES;
   for (const d of Object.values(BOONS)) {
+    if (d.kind !== 'passive') continue;
     const r = b.boons[d.id] ?? 0;
-    if (r >= d.max || b.bannedCards.has(d.id)) continue;
-    if (!meets(b, d.requires, statuses, tags)) continue;
-    let w = RARITY_WEIGHT[d.rarity];
-    if (d.rarity !== 'common') w *= 1 + (luck - 1) * 0.6;
-    w *= affinity(d.tags, tags);
+    if (r >= d.max || b.bannedCards.has(d.id) || (!r && !room) || !meets(b, d.requires, statuses, tags)) continue;
+    // Name what it would evolve among the weapons carried.
+    const evolves = b.weapons.filter((w) => !w.evolution && evolvesWith(w.id).some((e) => e.passives.includes(d.id)));
+    const ready8 = evolves.some((w) => w.rank >= WEAPON_MAX_RANK);
+    const note = !r && evolves.length ? ` Evolves ${evolves.map((w) => w.def.name).join(' and ')} at rank 8.` : '';
+    let w = rarityWeight(d.rarity) * 0.75 * affinity(d.tags, tags);
     if (r > 0) w *= 1.35;
-    if (d.kind === 'synergy') w *= 1.4;
-    passives.push({ o: { kind: 'boon', id: d.id, rarity: d.rarity, title: d.name, text: d.text, from: r, to: r + 1, icon: d.icon, tags: d.tags }, w });
+    if (!r && evolves.length) w *= ready8 ? 4 : 1.6;
+    passive.push({ o: { kind: 'boon', id: d.id, rarity: d.rarity, title: d.name, text: d.text + note, from: r, to: r + 1, icon: d.icon, tags: d.tags }, w });
   }
 
-  // A level's draft is skills; a milestone's blessing is boons and combos.
-  // When skills have run out, blessings fill a level's draft instead.
-  if (blessingNext(b)) {
-    offers.length = 0;
-    for (let i = 0; i < count; i++) { const o = takeFrom(b, passives); if (o) offers.push({ ...o, blessing: true }); }
-    return offers;
-  }
+  // At least one combat skill when there is one to offer; the rest from both.
   const open = Math.max(0, count - offers.length);
-  for (let i = 0; i < open; i++) { const o = takeFrom(b, skills) ?? takeFrom(b, passives); if (o) offers.push(o); }
+  if (open > 0) { const o = takeFrom(b, combat) ?? takeFrom(b, passive); if (o) offers.push(o); }
+  const both = [...combat, ...passive];
+  for (let i = offers.length; i < Math.max(count, offers.length); i++) { const o = takeFrom(b, both); if (o) offers.push(o); else break; }
   if (offers.length === 0) {
     offers.push({ kind: 'heal', id: 'heal', rarity: 'common', title: 'Second Wind', text: 'Recover 35% of your health.', icon: 'heart', tags: [] });
     offers.push({ kind: 'gold', id: 'gold', rarity: 'common', title: 'Scavenged Coin', text: '+25 gold.', icon: 'coin', tags: [] });

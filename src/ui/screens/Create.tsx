@@ -5,7 +5,7 @@ import { ARCHETYPES, BACKGROUNDS, type ArchetypeId, type BackgroundId } from '@/
 import { ITEMS } from '@/content/items';
 import { WEAPONS } from '@/content/weapons';
 import { ABILITIES, type AbilityKind } from '@/content/abilities';
-import { BOONS } from '@/content/boons';
+import { BOONS, START_BLESSINGS } from '@/content/boons';
 import { Glyph, Icon } from '../components/Icon';
 import { SCHOOL_UI } from '../palette';
 import { CLOAK_DYES, SKINS, HAIRS } from '@/content/looks';
@@ -25,7 +25,6 @@ import './create.css';
 
 const STEPS = ['Calling', 'Arms', 'Origin', 'Name'];
 const NUMERALS = ['I', 'II', 'III', 'IV'];
-const START_BOONS = ['might', 'haste', 'vitality', 'fleetfoot', 'precision'];
 const CLASS_GLYPH: Record<ArchetypeId, string> = { warden: 'shield', reaver: 'axe', arcanist: 'staff', stalker: 'bow' };
 const BG_GLYPH: Record<BackgroundId, string> = { hunter: 'claw', scholar: 'book', outcast: 'mask', devout: 'sun' };
 const KNOW_NAMES: Record<string, string> = { beastlore: 'Beastlore', arcana: 'Arcana', underworld: 'The Underworld', faith: 'The Faith' };
@@ -161,7 +160,7 @@ function Arms({ d }: { d: CreationDraft }) {
       </div>
       <div class="sub-head">Starting blessing <span class="sub-note">yours at the start of every expedition</span></div>
       <div class="boon-row">
-        {START_BOONS.map((id) => (
+        {START_BLESSINGS.map((id) => (
           <button key={id} class={`boon-pick${d.startBoon === id ? ' on' : ''}`} onClick={() => set({ startBoon: id })} title={BOONS[id].text}>
             <Glyph k={BOONS[id].icon} size={22} />
             <span>{BOONS[id].name}</span>
@@ -304,7 +303,7 @@ function ArmsDetail({ d }: { d: CreationDraft }) {
       </div>
       <p class="dt-text">{it.description}</p>
       {it.lore && <p class="dt-lore">{it.lore}</p>}
-      {w && <div class="dt-line"><b>Grows into</b> {w.evolutions.map((e) => e.name).join(' or ')}</div>}
+      {w && <div class="dt-line"><b>At rank 8</b> {w.evolutions.map((e) => `${e.name} (with ${e.catalysts.map((c) => BOONS[c.boon]?.name ?? c.boon).join(' or ')})`).join(', or ')}</div>}
       <div class="rule" />
       <div class="dt-ab">
         <div class="dt-ab-icon"><Glyph k={ab.icon} size={30} color="#ffe2b0" /></div>
