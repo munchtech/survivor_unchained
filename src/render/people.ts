@@ -46,10 +46,17 @@ export const HAIRSTYLES = ['Hair_SimpleParted', 'Hair_Long', 'Hair_Buns', 'Hair_
 
 const loader = new GLTFLoader();
 const cache = new Map<string, Promise<GLTF>>();
+const loaded = new Map<string, GLTF>();
 const load = (url: string) => {
   let p = cache.get(url);
-  if (!p) { p = loader.loadAsync(encodeURI(url)); cache.set(url, p); }
+  if (!p) { p = loader.loadAsync(encodeURI(url)).then((g) => { loaded.set(url, g); return g; }); cache.set(url, p); }
   return p;
+};
+/** A part already loaded (preloadPeople), for building people on the spot. */
+const got = (url: string) => {
+  const g = loaded.get(url);
+  if (!g) throw new Error(`person part not preloaded: ${url}`);
+  return g;
 };
 
 let clips: Map<string, THREE.AnimationClip> | null = null;
@@ -123,29 +130,46 @@ const sstep = (a: number, b: number, x: number) => { const t = Math.min(1, Math.
 
 /** A woman's figure, in the rig's bind space (metres, Y up, +Z forward): a
  *  fuller chest, a narrower waist, rounder hips. Applied alike to the body
- *  and to the clothes over it, so a shirt follows what it covers. The
- *  normals are tilted by the shape's slope so light falls on it rightly. */
+ *  and to the clothes over it, so a shirt follows what it covers.
+ *
+ *  Each breast is a rounded dome, not a peak: a sphere-cap profile (round
+ *  on top, eased into the chest at its base), teardrop-shaped (more of it
+ *  below its centre than above, as weight sits), set a little apart and
+ *  lifting forward and slightly outward. Normals follow the new surface
+ *  (from the shape's own slope) so the light rounds it. */
+const BUST = { cx: 0.086, cy: 1.318, ax: 0.098, up: 0.105, down: 0.08, lift: 0.052 };
+
+function domeAt(x: number, y: number, side: number) {
+  const ex = (x - side * BUST.cx) / BUST.ax;
+  const dy = y - BUST.cy;
+  const ey = dy / (dy > 0 ? BUST.up : BUST.down);
+  const r = Math.sqrt(ex * ex + ey * ey);
+  if (r >= 1) return 0;
+  // Round on top, eased in at the base.
+  return Math.sqrt(1 - r * r) * sstep(1.0, 0.62, r);
+}
+
 function shapeFigure(g: THREE.BufferGeometry, bust: number) {
   const pos = g.getAttribute('position') as THREE.BufferAttribute;
   const nor = g.getAttribute('normal') as THREE.BufferAttribute | undefined;
   const n = new THREE.Vector3();
+  const H = BUST.lift * bust, d = 0.003;
+  const height = (x: number, y: number) => domeAt(x, y, -1) + domeAt(x, y, 1);
   for (let i = 0; i < pos.count; i++) {
     let x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+    // Only the front of the chest (not the back, not arms held out).
+    const front = sstep(-0.01, 0.075, z) * (Math.abs(x) < 0.22 ? 1 : 0);
+    const k = height(x, y) * front;
     let gx = 0, gy = 0;
-    // The chest: a soft rise over each breast, a little out and down.
-    for (const side of [-1, 1]) {
-      const ax = 0.105, ay = 0.095;
-      const ex = (x - side * 0.088) / ax, ey = (y - 1.335) / ay;
-      const r2 = ex * ex + ey * ey;
-      if (r2 >= 1 || z < -0.02) continue;
-      const front = sstep(-0.02, 0.07, z);
-      const f = (1 - r2) * (1 - r2) * front;
-      const h = bust * 0.06;
-      z += h * f; y -= bust * 0.012 * f; x += side * bust * 0.008 * f;
-      const k = h * front * 2 * (1 - r2);
-      gx += k * (-2 * ex / ax); gy += k * (-2 * ey / ay);
+    if (k > 0) {
+      const side = x < 0 ? -1 : 1;
+      z += H * k;
+      x += side * H * 0.22 * k;
+      y -= H * 0.12 * k;
+      gx = H * front * (height(x + d, y) - height(x - d, y)) / (2 * d);
+      gy = H * front * (height(x, y + d) - height(x, y - d)) / (2 * d);
     }
-    // Waist in, hips out (the torso only, not arms held out).
+    // Waist in, hips out (the torso only).
     if (Math.abs(x) < 0.3) {
       const waist = Math.exp(-(((y - 1.12) / 0.07) ** 2)), hips = Math.exp(-(((y - 0.93) / 0.08) ** 2));
       const t = Math.min(1, bust);
@@ -163,9 +187,11 @@ function shapeFigure(g: THREE.BufferGeometry, bust: number) {
   g.computeBoundingSphere();
 }
 
-export async function assemble(spec: PersonSpec): Promise<{ root: THREE.Group; bones: Map<string, THREE.Bone> }> {
+/** Put a person together: a Group holding the rig and every part, bones
+ *  shared. Height is left as authored (metres). */
+function build(spec: PersonSpec, get: (url: string) => GLTF): { root: THREE.Group; bones: Map<string, THREE.Bone> } {
   const P = PARTS[spec.sex];
-  const body = SkeletonUtils.clone((await load(`${BASE}/${P.body}.gltf`)).scene) as THREE.Group;
+  const body = SkeletonUtils.clone(get(`${BASE}/${P.body}.gltf`).scene) as THREE.Group;
   const bones = new Map<string, THREE.Bone>();
   body.traverse((o) => { if ((o as THREE.Bone).isBone) bones.set(o.name, o as THREE.Bone); });
   const figure = spec.sex === 'female' ? spec.figure ?? 0.9 : 0;
@@ -173,6 +199,10 @@ export async function assemble(spec: PersonSpec): Promise<{ root: THREE.Group; b
     if (figure > 0) m.geometry = variant(m.geometry, `figure:${figure}`, (g) => shapeFigure(g, figure));
   };
   const covered = COVER.filter(([part]) => (spec.outfit ?? []).some((p) => part.test(p))).map(([, bonesRe]) => bonesRe);
+  // Top and trousers together cover the hips too (trousers alone sit lower,
+  // and a bare-chested figure keeps its hips).
+  const has = (re: RegExp) => (spec.outfit ?? []).some((p) => re.test(p));
+  if (has(/_Body/) && has(/_Legs/)) covered.push(/^pelvis$/);
   body.traverse((o) => {
     const m = o as THREE.SkinnedMesh;
     if (!m.isSkinnedMesh) return;
@@ -182,8 +212,8 @@ export async function assemble(spec: PersonSpec): Promise<{ root: THREE.Group; b
       if (covered.length) maskCovered(m, covered);
     }
   });
-  const attach = async (url: string) => {
-    const part = SkeletonUtils.clone((await load(url)).scene);
+  const attach = (url: string) => {
+    const part = SkeletonUtils.clone(get(url).scene);
     const meshes: THREE.SkinnedMesh[] = [];
     part.traverse((o) => { if ((o as THREE.SkinnedMesh).isSkinnedMesh) meshes.push(o as THREE.SkinnedMesh); });
     for (const m of meshes) {
@@ -195,9 +225,9 @@ export async function assemble(spec: PersonSpec): Promise<{ root: THREE.Group; b
       body.add(m);
     }
   };
-  for (const p of spec.outfit ?? []) await attach(`${OUTFITS}/${p}.gltf`);
-  if (spec.hair) await attach(`${HAIR}/${spec.hair}.gltf`);
-  if (spec.beard) await attach(`${HAIR}/Hair_Beard.gltf`);
+  for (const p of spec.outfit ?? []) attach(`${OUTFITS}/${p}.gltf`);
+  if (spec.hair) attach(`${HAIR}/${spec.hair}.gltf`);
+  if (spec.beard) attach(`${HAIR}/Hair_Beard.gltf`);
   // Hair, beard and brows take the chosen colour (their texture is grey).
   const tint = new THREE.Color(spec.hairColor ?? '#3a2a1e');
   body.traverse((o) => {
@@ -210,3 +240,35 @@ export async function assemble(spec: PersonSpec): Promise<{ root: THREE.Group; b
   root.add(body);
   return { root, bones };
 }
+
+/** Put a person together, loading what it needs. */
+export async function assemble(spec: PersonSpec) {
+  const P = PARTS[spec.sex];
+  const urls = [`${BASE}/${P.body}.gltf`, ...(spec.outfit ?? []).map((n) => `${OUTFITS}/${n}.gltf`), ...(spec.hair ? [`${HAIR}/${spec.hair}.gltf`] : []), ...(spec.beard ? [`${HAIR}/Hair_Beard.gltf`] : [])];
+  await Promise.all(urls.map(load));
+  return build(spec, got);
+}
+
+/** Put a person together from preloaded parts (preloadPeople). */
+export const assembleSync = (spec: PersonSpec) => build(spec, got);
+
+const partUrls = () => [
+  ...(['male', 'female'] as const).flatMap((sx) => {
+    const P = PARTS[sx];
+    return [`${BASE}/${P.body}.gltf`, ...[...P.peasant, ...P.ranger, P.hood, P.pauldron].map((n) => `${OUTFITS}/${n}.gltf`)];
+  }),
+  ...HAIRSTYLES.map((h) => `${HAIR}/${h}.gltf`),
+];
+
+/** Load every body, outfit piece, hairstyle and clip, so people can be put
+ *  together synchronously (the game builds its figures on the spot). */
+export async function preloadPeople(onProgress?: (done: number, total: number) => void) {
+  const urls = [...partUrls(), ...ANIMS];
+  let done = 0;
+  await Promise.all(urls.map((u) => load(u).then(() => onProgress?.(++done, urls.length))));
+  await peopleClips();
+}
+
+/** A clip, once preloaded. */
+export const clipSync = (name: string) => clips?.get(name);
+export const peopleReady = () => !!clips;
