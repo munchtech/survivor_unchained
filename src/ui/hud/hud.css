@@ -17,7 +17,8 @@
   background: radial-gradient(circle at 50% 35%, #4a2a14, #1a0f08 70%);
   box-shadow: 0 0 0 1.5px #000, 0 0 0 3px var(--gold-dim), 0 0 0 4px #000, 0 0 18px rgba(255, 140, 50, 0.45), inset 0 0 10px rgba(255, 150, 60, 0.35);
 }
-.ember-lv { font: 700 17px var(--font-display); color: var(--ember-hi); text-shadow: 0 0 8px rgba(255, 150, 50, 0.9), 0 1px 0 #000; }
+.ember-lv { font: 700 17px var(--font-display); color: var(--ember-hi); text-shadow: 0 0 8px rgba(255, 150, 50, 0.9), 0 1px 0 #000; animation: lvPop 0.6s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+@keyframes lvPop { from { transform: scale(1.9); filter: brightness(2.2); } to { transform: scale(1); filter: brightness(1); } }
 .ember-track {
   position: relative; flex: 1; height: 10px; border-radius: 0 5px 5px 0;
   background: linear-gradient(180deg, #0c0908, #1a1210);

@@ -59,8 +59,11 @@ export function sharedLoader() {
         p = own(index, imageLoaderOf);
         const copy = def?.extras?.readable;
         if (copy) {
-          p = Promise.all([p, imageLoader.loadAsync(new URL(copy, base).href)]).then(([t, img]) => {
-            readable.set(t.source, img);
+          // Without its readable copy a sheet still draws; only the crowd
+          // bake goes without its colours (and says so).
+          const img = imageLoader.loadAsync(new URL(copy, base).href).catch((e) => { console.warn(`no readable copy ${copy}`, e); return null; });
+          p = Promise.all([p, img]).then(([t, im]) => {
+            if (im) readable.set(t.source, im);
             return t;
           });
         }

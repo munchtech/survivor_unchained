@@ -42,10 +42,12 @@ function EmberBar({ h }: { h: HudState }) {
   return (
     <div class="ember">
       <div class="ember-medal">
-        <span class="ember-lv">{h.level}</span>
+        {/* Keyed by level: a new level pops the number, and the bar starts
+            again from empty instead of draining backwards. */}
+        <span key={h.level} class="ember-lv">{h.level}</span>
       </div>
       <div class="ember-track">
-        <div class="ember-fill" style={{ width: `${k * 100}%` }}>
+        <div key={h.level} class="ember-fill" style={{ width: `${k * 100}%` }}>
           <div class="ember-head" />
         </div>
         <div class="ember-ticks" />
