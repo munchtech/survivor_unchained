@@ -26,6 +26,7 @@ export function Title() {
   const [panel, setPanel] = useState<'none' | 'load' | 'settings' | 'controls' | 'credits'>('none');
   const [quality, setQuality] = useState(() => actions.quality());
   const [sound, setSound] = useState(() => actions.soundLevel());
+  const [gore, setGore] = useState(() => actions.gore());
   const items: Array<{ id: string; label: string; sub?: string; act: () => void; primary?: boolean }> = [];
   if (latest) items.push({ id: 'continue', label: 'Continue', sub: `${latest.name} · ${ARCHETYPES[latest.archetype as keyof typeof ARCHETYPES]?.name ?? ''} ${latest.level} · Day ${latest.day}`, act: () => actions.continueJourney(latest.slot), primary: true });
   items.push({ id: 'new', label: 'New Journey', act: () => actions.newJourney(), primary: !latest });
@@ -98,7 +99,13 @@ export function Title() {
               {(['on', 'quiet', 'off'] as const).map((l) => <button key={l} class={`btn small${sound === l ? ' on' : ''}`} onClick={() => { actions.setSound(l); setSound(l); }}>{l}</button>)}
             </div>
           </div>
-          <div class="tp-note">Lower settings trade shadow detail, grass and ambient occlusion for speed.</div>
+          <div class="tp-row">
+            <span>Gore</span>
+            <div class="seg">
+              {(['full', 'reduced', 'off'] as const).map((g) => <button key={g} class={`btn small${gore === g ? ' on' : ''}`} onClick={() => { actions.setGore(g); setGore(g); }}>{g}</button>)}
+            </div>
+          </div>
+          <div class="tp-note">Lower settings trade shadow detail, grass and ambient occlusion for speed. Reduced gore keeps a little blood and throws nothing.</div>
         </div>
       )}
       {panel === 'controls' && (

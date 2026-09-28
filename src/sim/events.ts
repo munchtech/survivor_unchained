@@ -6,8 +6,10 @@ import type { School, StatusKind, Family } from './types';
  * The simulation never waits on a consumer; events are a one-way stream. */
 
 export type CombatEvent =
-  | { t: 'hit'; x: number; z: number; amount: number; crit: boolean; school: School; target: number; dot?: boolean; blocked?: boolean }
-  | { t: 'kill'; x: number; z: number; enemy: number; def: string; family: Family; school: School; elite: boolean; boss: boolean; byPlayer: boolean }
+  | { t: 'hit'; x: number; z: number; amount: number; crit: boolean; school: School; target: number; dot?: boolean; blocked?: boolean; family?: Family; def?: string; maxHp?: number; dx?: number; dz?: number }
+  /** burst: the killing blow was far more than it had left (the body comes
+   *  apart); dx, dz: which way it was going; scale: the creature's size. */
+  | { t: 'kill'; x: number; z: number; enemy: number; def: string; family: Family; school: School; elite: boolean; boss: boolean; byPlayer: boolean; burst?: boolean; dx?: number; dz?: number; scale?: number }
   | { t: 'playerHit'; x: number; z: number; amount: number; school: School; source: string; dodged?: boolean; blocked?: boolean }
   | { t: 'playerHeal'; amount: number }
   | { t: 'playerDeath'; x: number; z: number; killer: string; killerId: number }

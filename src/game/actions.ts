@@ -1,3 +1,4 @@
+import type { GoreSetting } from '@/render/gore';
 import type { CreationChoice } from '@/rpg/character';
 import type { Quality } from '@/render/renderer';
 
@@ -19,6 +20,9 @@ export interface GameActions {
   setSound(level: 'on' | 'quiet' | 'off'): void;
   quality(): 'low' | 'medium' | 'high';
   soundLevel(): 'on' | 'quiet' | 'off';
+  /** Blood and bodies: full, reduced (a little blood) or off. */
+  gore(): GoreSetting;
+  setGore(v: GoreSetting): void;
   openOverlay(o: 'inventory' | 'character' | 'journal' | 'pause' | 'map'): void;
   closeOverlay(): void;
   /** Death screen: get up again. */

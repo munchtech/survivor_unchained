@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { ParticleSystem } from '../particles';
 import { DecalLayer } from './decals';
+import { Gore, bloodOf } from './gore';
+import { goreLevel } from '../gore';
 import { RibbonLayer } from './ribbons';
 import { ProjectileRenderer } from './projectiles';
 import { PickupRenderer } from './pickups';
@@ -34,6 +36,7 @@ export class CombatFx {
   readonly projectiles: ProjectileRenderer;
   readonly pickups: PickupRenderer;
   readonly numbers = new DamageNumbers();
+  readonly gore: Gore;
   private flashes: Flash[] = [];
   private zoneDecals = new Map<number, ReturnType<DecalLayer['circle']>>();
   private auraT = 0;
@@ -48,6 +51,9 @@ export class CombatFx {
     this.decals = new DecalLayer(heightAt);
     this.projectiles = new ProjectileRenderer(this.sparks, this.smoke);
     this.pickups = new PickupRenderer(this.sparks);
+    this.gore = new Gore(heightAt, this.smoke);
+    this.gore.level = goreLevel();
+    this.group.add(this.gore.group);
     this.group.add(this.sparks.mesh, this.smoke.mesh, this.decals.group, this.ribbons.group, this.projectiles.group, this.pickups.group, this.numbers.mesh);
     for (let i = 0; i < 8; i++) {
       const l = new THREE.PointLight(0xffffff, 0, 10, 1.6);
@@ -94,6 +100,7 @@ export class CombatFx {
           this.numbers.spawn(ev.x + (Math.random() - 0.5) * 0.3, y, ev.z, ev.amount, ev.blocked ? 'blocked' : ev.crit ? 'crit' : 'hit', this.time);
           if (ev.blocked) { this.burst(ev.x, y, ev.z, 'physical', 5, 3, { up: 2, size: 0.06 }); break; }
           this.burst(ev.x, y, ev.z, ev.school, ev.crit ? 10 : 4, ev.crit ? 5 : 3, { size: ev.crit ? 0.12 : 0.08 });
+          if (ev.family) this.gore.hit(ev.x, y - 0.1, ev.z, ev.amount, ev.maxHp ?? ev.amount, bloodOf(ev.family, ev.def), ev.family === 'undead', ev.dx, ev.dz, ev.crit);
           if (ev.crit) {
             this.sparks.spawn({ x: ev.x, y, z: ev.z, life: 0.2, size: 0.55, sizeEnd: 0.15, color: SCHOOL[ev.school].core, shape: 3 });
             this.cam?.addTrauma(0.04);
@@ -103,6 +110,7 @@ export class CombatFx {
         case 'kill': {
           const gy = this.y(ev.x, ev.z);
           const school = ev.school;
+          this.gore.kill(ev.x, gy + 0.7 * (ev.scale ?? 1), ev.z, ev.scale ?? 1, bloodOf(ev.family, ev.def), ev.family === 'undead', !!ev.burst, ev.dx, ev.dz);
           this.burst(ev.x, gy + 0.9, ev.z, school, ev.elite ? 40 : 10, ev.elite ? 7 : 4, { up: 3, life: 0.6 });
           // Something of it goes back up: the light the stone keeps.
           for (let i = 0; i < (ev.elite ? 14 : 4); i++) {
@@ -308,6 +316,7 @@ export class CombatFx {
     this.sparks.update(time);
     this.smoke.update(time);
     this.decals.update(dt, time);
+    this.gore.update(dt);
     this.ribbons.update(dt, time, camera);
     this.projectiles.update(b, dt, time, this.heightAt);
     this.pickups.update(b, dt, time, this.heightAt);

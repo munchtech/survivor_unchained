@@ -49,6 +49,14 @@ export interface Enemy {
   animT: number;
   lastSchool: School;
   lastWeapon: string | null;
+  /** The last blow: how hard, whether it crit, which way it was going
+   *  (what the gore makes of a death). */
+  lastBlow: number;
+  lastCrit: boolean;
+  lastDx: number;
+  lastDz: number;
+  /** Its death burst it apart: nothing left to lie there. */
+  burst: boolean;
   dieT: number;
   /** A named creature: promoted when it killed the survivor, carrying what
    *  it took. */
@@ -165,7 +173,7 @@ export function blankEnemy(id: number): Enemy {
     radius: 0.5, mass: 1, hp: 1, maxHp: 1, damage: 1, speed: 1, faction: 'dead', disposition: 'hostile',
     elite: false, boss: false, state: 'active', stateT: 0, attackT: 0, rangedT: 0, raiseT: 0, target: -1, retargetT: 0,
     slot: 0, seed: 0, lungeX: 0, lungeZ: 0, status: {}, flash: 0, anim: 'move', animT: 0, lastSchool: 'physical',
-    lastWeapon: null, dieT: 0, lifeT: 0, credit: false, provoked: false, homeX: 0, homeZ: 0, leash: 0, takenMul: 1,
+    lastWeapon: null, lastBlow: 0, lastCrit: false, lastDx: 0, lastDz: 0, burst: false, dieT: 0, lifeT: 0, credit: false, provoked: false, homeX: 0, homeZ: 0, leash: 0, takenMul: 1,
   };
 }
 

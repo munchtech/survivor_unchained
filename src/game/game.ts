@@ -21,6 +21,7 @@ import {
   character, worldView, touch, dialogue, shopView, restView, subtitle, mapView, hint, type CreationDraft, type NoticeKind,
   overlayBack,
 } from '@/ui/store';
+import { goreSetting, setGoreSetting, goreLevel, type GoreSetting } from '@/render/gore';
 import { SHOPS, type ShopDef } from '@/content/shops';
 import { RULES, SOCIAL } from '@/content/rules';
 import { advanceDay } from '@/world/simulation';
@@ -1218,6 +1219,8 @@ export class Game {
       setSound: (l: 'on' | 'quiet' | 'off') => this.sound.set(l),
       quality: () => this.r.quality,
       soundLevel: () => this.sound.level,
+      gore: () => goreSetting(),
+      setGore: (v: GoreSetting) => { setGoreSetting(v); if (this.scene.fx) this.scene.fx.gore.level = goreLevel(v); },
       quitToTitle: () => { this.save('quit'); fade.value = { to: 1, seconds: 0.6 }; setTimeout(() => this.showTitle(), 650); },
       openOverlay: (o: 'inventory' | 'character' | 'journal' | 'pause' | 'map') => (o === 'map' ? this.openMap() : this.openOverlay(o)),
       closeOverlay: () => this.closeOverlay(),

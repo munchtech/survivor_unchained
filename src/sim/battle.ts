@@ -598,6 +598,13 @@ export class Battle {
     e.hp -= dmg;
     e.flash = 1;
     e.lastSchool = school;
+    // Which way the blow was going: its own, or away from the survivor.
+    let dx = o.dirX ?? 0, dz = o.dirZ ?? 0;
+    if (!dx && !dz) { dx = e.x - this.player.x; dz = e.z - this.player.z; }
+    const dl = Math.hypot(dx, dz) || 1;
+    e.lastBlow = before > 0 ? dmg / Math.max(1, before) : 0;
+    e.lastCrit = crit;
+    e.lastDx = dx / dl; e.lastDz = dz / dl;
     e.lastWeapon = o.weapon?.id ?? null;
     if (e.disposition === 'neutral') this.provoke(e);
     if (o.weapon) o.weapon.damageDealt += Math.min(dmg, before);
@@ -607,7 +614,7 @@ export class Battle {
     else if (tags.includes('melee')) this.profile.melee += dmg;
     else this.profile.area += dmg;
 
-    this.events.emit({ t: 'hit', x: e.x, z: e.z, amount: dmg, crit, school, target: e.id, dot: o.dot, blocked });
+    this.events.emit({ t: 'hit', x: e.x, z: e.z, amount: dmg, crit, school, target: e.id, dot: o.dot, blocked, family: e.def.family, def: e.def.id, maxHp: e.maxHp, dx: e.lastDx, dz: e.lastDz });
 
     // Lifesteal.
     const ls = st.get('lifesteal');
@@ -665,7 +672,11 @@ export class Battle {
       this.killCount++;
       this.killsByFamily[e.def.family] = (this.killsByFamily[e.def.family] ?? 0) + 1;
     }
-    this.events.emit({ t: 'kill', x: e.x, z: e.z, enemy: e.id, def: e.def.id, family: e.def.family, school: e.lastSchool, elite: e.elite, boss: e.boss, byPlayer: credited });
+    // A body comes apart under a blow of three times what it had left, or
+    // twice on a critical; fire and blight do it their own way (no burst).
+    const burst = !e.boss && e.lastSchool !== 'fire' && (e.lastBlow >= 3 || (e.lastCrit && e.lastBlow >= 2));
+    e.burst = burst;
+    this.events.emit({ t: 'kill', x: e.x, z: e.z, enemy: e.id, def: e.def.id, family: e.def.family, school: e.lastSchool, elite: e.elite, boss: e.boss, byPlayer: credited, burst, dx: e.lastDx, dz: e.lastDz, scale: e.def.scale ?? 1 });
     this.graves.push({ x: e.x, z: e.z, def: e.def.id, t: this.time });
 
     if (e.disposition !== 'ally') {
@@ -903,6 +914,7 @@ export class Battle {
     e.retargetT = this.rng.next() * 0.5;
     e.slot = this.rng.next() * TAU;
     e.seed = this.rng.next();
+    e.burst = false; e.lastBlow = 0; e.lastCrit = false;
     e.status = {};
     e.flash = 0;
     e.anim = o.style === 'rise' ? 'rise' : 'move';

@@ -10,6 +10,8 @@ import './menus.css';
 export function Pause() {
   const [sound, setSound] = useState(() => actions.soundLevel());
   const [quality, setQuality] = useState(() => actions.quality());
+  const [gore, setGore] = useState(() => actions.gore());
+  const GORES = ['full', 'reduced', 'off'] as const;
   const [showControls, setShow] = useState(false);
   // Set at once, not in an effect: effects run after paint, and a quick
   // second Escape would find the old value.
@@ -20,6 +22,7 @@ export function Pause() {
     { label: 'Save', act: () => actions.saveNow() },
     { label: `Sound: ${{ on: 'On', quiet: 'Quiet', off: 'Off' }[sound]}`, act: () => setSound(actions.cycleSound()) },
     { label: `Graphics: ${quality[0].toUpperCase()}${quality.slice(1)}`, act: () => { const q = QUALITIES[(QUALITIES.indexOf(quality) + 1) % QUALITIES.length]; actions.setQuality(q); setQuality(q); } },
+    { label: `Gore: ${gore[0].toUpperCase()}${gore.slice(1)}`, act: () => { const g = GORES[(GORES.indexOf(gore) + 1) % GORES.length]; actions.setGore(g); setGore(g); } },
     { label: 'Controls', act: () => setShowControls(true) },
     { label: 'Pack', act: () => actions.openOverlay('inventory') },
     { label: 'Self', act: () => actions.openOverlay('character') },
