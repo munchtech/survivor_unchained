@@ -10,7 +10,8 @@ import { Input } from '@/core/input';
 import { mountUi } from '@/ui/App';
 import { renderItemIcons } from '@/ui/itemIcons';
 import { Game } from '@/game/game';
-import { screen, fade } from '@/ui/store';
+import { screen, fade, overlay, toast } from '@/ui/store';
+import { actions } from '@/game/actions';
 import * as uiStore from '@/ui/store';
 
 /* Boot. The renderer and assets come up first; then the game shell takes
@@ -98,12 +99,39 @@ async function boot() {
     renderer.render(1 / fps);
     return performance.now() - t0;
   };
+  // First run on this machine (no picture setting chosen yet): if play
+  // cannot keep up, step down a level rather than stutter, and say so. The
+  // step is saved, and Settings can undo it.
+  let autoQuality = !manual && !params.get('quality') && !saved && !params.get('dev');
+  // Measured in real time (a frame's dt is clamped, and a slow machine is
+  // exactly the one whose frames are long).
+  let since = 0, frames = 0, slowFrames = 0;
+  const watchSpeed = (now: number, raw: number) => {
+    if (!autoQuality) return;
+    if (screen.value !== 'play' || overlay.value || document.hidden) { since = 0; frames = 0; slowFrames = 0; return; }
+    if (!since) since = now;
+    const age = (now - since) / 1000;
+    if (age < 5) return; // shaders compiling, the zone settling
+    frames++;
+    if (raw > 1 / 42) slowFrames++;
+    if (age < 11 || frames < 12) return;
+    const q = renderer.quality;
+    if (slowFrames / frames > 0.5 && q !== 'low') {
+      const next = q === 'high' ? 'medium' : 'low';
+      actions.setQuality(next);
+      toast('world', `Graphics set to ${next[0].toUpperCase()}${next.slice(1)} for smoother play`, { sub: 'Change it any time in the pause menu' });
+      since = 0; frames = 0; slowFrames = 0;
+      if (next === 'low') autoQuality = false;
+    } else autoQuality = false;
+  };
   const frame = (now: number) => {
-    const dt = Math.min(0.1, (now - last) / 1000);
+    const raw = (now - last) / 1000;
+    const dt = Math.min(0.1, raw);
     last = now;
     t += dt;
     tick(dt, t);
     renderer.render(dt);
+    watchSpeed(now, raw);
     requestAnimationFrame(frame);
   };
   if (!manual) requestAnimationFrame(frame);
