@@ -130,7 +130,15 @@ export class Game {
       this.openOverlay('pause');
     };
     window.addEventListener('blur', away);
-    document.addEventListener('visibilitychange', () => { if (document.hidden) away(); });
+    // Closing the tab, a refresh, or the page going to the background keeps
+    // what happened since the last autosave (not while fallen: the fall
+    // saves itself once it has decided what you lost).
+    const keep = () => {
+      if (!this.pauseWhenAway || this.mode !== 'play' || !this.scene.battle?.player.alive || overlay.value === 'death') return;
+      this.save('leave');
+    };
+    window.addEventListener('pagehide', keep);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) { away(); keep(); } });
     // The creation screen edits a draft; the figure by the fire follows it.
     effect(() => {
       const d = creation.value;
