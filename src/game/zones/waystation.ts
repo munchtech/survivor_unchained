@@ -260,7 +260,9 @@ export function waystation(g: Game): ZoneRuntime {
     arrival: (from) => {
       if (from === 'verge') return { x: WAY.east.x - 5, z: WAY.east.z, facing: -Math.PI / 2 };
       if (from === 'death') return { x: WAY.shrine.x + 6, z: WAY.shrine.z + 6, facing: Math.PI * 0.25 };
-      return { x: WAY.south.x, z: WAY.south.z - 8, facing: Math.PI };
+      // Far enough through the south gate that the wall is behind the camera,
+      // not a brown slab across the bottom of the picture.
+      return { x: WAY.south.x, z: WAY.south.z - 15, facing: Math.PI };
     },
     timeOf: (w) => w.time,
     atmosphereFor,

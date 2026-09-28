@@ -391,7 +391,7 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
   const zone: ZoneBuild = {
     id: 'waystation', terrain, grass, collision: col, root, atmosphere: PRESETS.day,
     map: { flora: kit.flora.marks, extent: 120, buildings: footprints },
-    start: { x: W.south.x, z: W.south.z - 4, facing: Math.PI },
+    start: { x: W.south.x, z: W.south.z - 15, facing: Math.PI },
     tick: (dt, t, fx, fz) => {
       waterUniforms.uTime.value = t;
       kit.tick(dt, fx, fz);

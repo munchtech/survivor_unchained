@@ -11,6 +11,7 @@ import { mountUi } from '@/ui/App';
 import { renderItemIcons } from '@/ui/itemIcons';
 import { Game } from '@/game/game';
 import { screen, fade } from '@/ui/store';
+import * as uiStore from '@/ui/store';
 
 /* Boot. The renderer and assets come up first; then the game shell takes
  * over. `?dev=` routes to development views used by the screenshot tools. */
@@ -48,6 +49,8 @@ async function boot() {
   else {
     const game = new Game(renderer);
     (window as unknown as { __game: unknown }).__game = { renderer, game };
+    // For tools: the interface's state (which overlay is open, the draft...).
+    (window as unknown as { __ui: unknown }).__ui = uiStore;
     fade.value = { to: 1, seconds: 0 };
     const quick = params.get('quick');
     if (quick) {

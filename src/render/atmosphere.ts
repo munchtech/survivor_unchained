@@ -21,6 +21,10 @@ export interface AtmospherePreset {
   keyIntensity: number;
   keyElevation: number; // degrees above horizon
   keyAzimuth: number; // degrees, 0 = +x, 90 = +z
+  /** How much of the key light a shadow takes away (1 = all of it). Under a
+   *  moon a full shadow is a hole in the picture; the sky fill alone cannot
+   *  lift it, so night shadows keep some of the light. */
+  shadowStrength: number;
   hemiSky: string;
   hemiGround: string;
   hemiIntensity: number;
@@ -33,7 +37,7 @@ export interface AtmospherePreset {
 
 const NIGHT: AtmospherePreset = {
   sky: { top: '#03050d', horizon: '#18203a', bottom: '#07080c', glow: '#3c5a8c', glowPower: 24, stars: 1, moon: 1 },
-  keyColor: '#b8cbf2', keyIntensity: 2.2, keyElevation: 52, keyAzimuth: 128,
+  keyColor: '#b8cbf2', keyIntensity: 2.2, keyElevation: 52, keyAzimuth: 128, shadowStrength: 0.6,
   hemiSky: '#3f5780', hemiGround: '#241e16', hemiIntensity: 0.95, envIntensity: 0.6,
   fogColor: '#101a24', fogDensity: 0.0095, exposure: 1.42,
   grade: {
@@ -49,7 +53,7 @@ const NIGHT: AtmospherePreset = {
 const NIGHT_TOWN: AtmospherePreset = {
   ...NIGHT,
   sky: { ...NIGHT.sky, glow: '#2c4470' },
-  keyColor: '#9fb6e6', keyIntensity: 1.35, keyElevation: 48,
+  keyColor: '#9fb6e6', keyIntensity: 1.35, keyElevation: 48, shadowStrength: 0.55,
   hemiSky: '#2c3e62', hemiGround: '#1a150f', hemiIntensity: 0.58, envIntensity: 0.4,
   fogColor: '#0b121c', fogDensity: 0.011, exposure: 1.32,
   grade: {
@@ -61,7 +65,7 @@ const NIGHT_TOWN: AtmospherePreset = {
 
 const DUSK: AtmospherePreset = {
   sky: { top: '#141a36', horizon: '#b0583a', bottom: '#120c0c', glow: '#ff8a4a', glowPower: 7, stars: 0.25, moon: 0 },
-  keyColor: '#ffae70', keyIntensity: 2.3, keyElevation: 18, keyAzimuth: 200,
+  keyColor: '#ffae70', keyIntensity: 2.3, keyElevation: 18, keyAzimuth: 200, shadowStrength: 0.78,
   hemiSky: '#5a5a90', hemiGround: '#2a1a10', hemiIntensity: 0.7, envIntensity: 0.7,
   fogColor: '#3a2a34', fogDensity: 0.0085, exposure: 1.05,
   grade: {
@@ -73,7 +77,7 @@ const DUSK: AtmospherePreset = {
 
 const DAWN: AtmospherePreset = {
   sky: { top: '#3b5a8f', horizon: '#f2b48a', bottom: '#2a2220', glow: '#ffd2a0', glowPower: 6, stars: 0, moon: 0 },
-  keyColor: '#ffd1a0', keyIntensity: 2.8, keyElevation: 22, keyAzimuth: 20,
+  keyColor: '#ffd1a0', keyIntensity: 2.8, keyElevation: 22, keyAzimuth: 20, shadowStrength: 0.8,
   hemiSky: '#8aa0d0', hemiGround: '#3a2a1a', hemiIntensity: 0.85, envIntensity: 0.85,
   fogColor: '#a89aa0', fogDensity: 0.0065, exposure: 1.0,
   grade: {
@@ -85,7 +89,7 @@ const DAWN: AtmospherePreset = {
 
 const DAY: AtmospherePreset = {
   sky: { top: '#2f5fa8', horizon: '#b8cde0', bottom: '#3a3530', glow: '#fff1d6', glowPower: 10, stars: 0, moon: 0 },
-  keyColor: '#fff0da', keyIntensity: 3.2, keyElevation: 48, keyAzimuth: 55,
+  keyColor: '#fff0da', keyIntensity: 3.2, keyElevation: 48, keyAzimuth: 55, shadowStrength: 0.86,
   hemiSky: '#9ab8e6', hemiGround: '#4a3a28', hemiIntensity: 0.95, envIntensity: 0.9,
   fogColor: '#9fb0c0', fogDensity: 0.0045, exposure: 0.95,
   grade: {
@@ -115,6 +119,7 @@ export function blendPresets(a: AtmospherePreset, b: AtmospherePreset, t: number
     },
     keyColor: mixHex(a.keyColor, b.keyColor, t), keyIntensity: lerp(a.keyIntensity, b.keyIntensity, t),
     keyElevation: lerp(a.keyElevation, b.keyElevation, t), keyAzimuth: lerp(a.keyAzimuth, b.keyAzimuth, t),
+    shadowStrength: lerp(a.shadowStrength, b.shadowStrength, t),
     hemiSky: mixHex(a.hemiSky, b.hemiSky, t), hemiGround: mixHex(a.hemiGround, b.hemiGround, t),
     hemiIntensity: lerp(a.hemiIntensity, b.hemiIntensity, t), envIntensity: lerp(a.envIntensity, b.envIntensity, t),
     fogColor: mixHex(a.fogColor, b.fogColor, t), fogDensity: lerp(a.fogDensity, b.fogDensity, t),
@@ -180,6 +185,7 @@ export class Atmosphere {
     this.lightDir.set(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az)).normalize();
     this.key.color.set(p.keyColor);
     this.key.intensity = p.keyIntensity;
+    this.key.shadow.intensity = p.shadowStrength;
     this.hemi.color.set(p.hemiSky);
     this.hemi.groundColor.set(p.hemiGround);
     this.hemi.intensity = p.hemiIntensity;

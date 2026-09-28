@@ -71,9 +71,11 @@ void main() {
     if (ax > 1.0) discard;
     float edge = smoothstep(0.82, 0.96, ax);
     float t = (p.y + 1.0) * 0.5;
-    float fill = step(t, uProgress) * 0.4;
-    float chev = step(0.5, fract(t * 6.0 - uTime * 2.0 - ax * 0.6)) * 0.12;
-    alpha = max(edge * 0.9, fill + chev) * smoothstep(1.0, 0.94, abs(p.y));
+    // A quieter body than a circle's: lanes are long, and several at once
+    // should read as warnings, not as a floor painted red.
+    float fill = step(t, uProgress) * 0.24;
+    float chev = step(0.5, fract(t * 6.0 - uTime * 2.0 - ax * 0.6)) * 0.1;
+    alpha = max(edge * 0.8, fill + chev) * smoothstep(1.0, 0.94, abs(p.y));
     col = mix(uColor * 0.7, uColor * 1.5, edge);
   } else if (uKind == 8) {
     if (r > 1.0) discard;

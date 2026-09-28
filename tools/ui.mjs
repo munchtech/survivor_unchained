@@ -61,6 +61,11 @@ const SCREENS = {
   journal_people: (g) => g.openOverlay('journal'),
   journal_deeds: (g) => g.openOverlay('journal'),
   journal_codex: (g) => g.openOverlay('journal'),
+  chapter: (g) => {
+    g.apply([{ set: { 'beasts.outcome': 'cured', 'caravan.survivors': 'rescued', 'caravan.cargo': 'returned' } }, { quest: { id: 'beasts', status: 'resolved', outcome: 'cured' } }, { quest: { id: 'caravan', status: 'resolved', outcome: 'returned' } }]);
+    g.openOverlay('chapter');
+  },
+  rest_report: (g) => { g.openRest(); document.querySelector('.rest button.primary, .rest .btn')?.click(); },
   shop_pick: (g) => g.openShop('brannoc'),
   pack_pick: (g) => g.openOverlay('inventory'),
 };
@@ -80,7 +85,7 @@ for (const [name, open] of Object.entries(SCREENS)) {
   if (THEN[name]) { await pg.evaluate(THEN[name]); await pg.waitForTimeout(100); }
   await pg.evaluate(() => window.__advance(0.3));
   const file = `.shots/ui_${W}${rich ? 'r' : ''}_${name}.png`;
-  await pg.screenshot({ path: file });
+  await pg.screenshot({ path: file, timeout: 180000 });
   console.log(`saved ${file}`);
   await pg.evaluate(() => { const g = window.__game.game; if (g.dialogue) g.endDialogue?.(); g.closeOverlay(); window.__advance(0.3); });
 }

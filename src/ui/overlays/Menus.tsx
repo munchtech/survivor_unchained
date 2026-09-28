@@ -7,10 +7,13 @@ import './menus.css';
 
 export function Pause() {
   const [sound, setSound] = useState(() => actions.soundLevel());
+  const [quality, setQuality] = useState(() => actions.quality());
+  const QUALITIES = ['high', 'medium', 'low'] as const;
   const items = [
     { label: 'Resume', act: () => actions.resume() },
     { label: 'Save', act: () => actions.saveNow() },
     { label: `Sound: ${{ on: 'On', quiet: 'Quiet', off: 'Off' }[sound]}`, act: () => setSound(actions.cycleSound()) },
+    { label: `Graphics: ${quality[0].toUpperCase()}${quality.slice(1)}`, act: () => { const q = QUALITIES[(QUALITIES.indexOf(quality) + 1) % QUALITIES.length]; actions.setQuality(q); setQuality(q); } },
     { label: 'Pack', act: () => actions.openOverlay('inventory') },
     { label: 'Journal', act: () => actions.openOverlay('journal') },
     { label: 'Leave to the title', act: () => actions.quitToTitle() },

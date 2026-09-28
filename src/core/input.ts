@@ -69,9 +69,14 @@ class InputState {
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
       this.down.add(e.code);
       this.usingPad = false;
+      // One key can mean several actions (Escape is pause and cancel): the
+      // first one something handles is the one it meant. Offering the rest
+      // too would let Escape open the pause menu and close it again.
+      let handled = false;
       for (const a of this.actionsFor(e.code)) {
         this.latched.add(a);
-        for (const l of this.listeners) if (l(a, e) === true) { e.preventDefault(); break; }
+        if (handled) continue;
+        for (const l of this.listeners) if (l(a, e) === true) { e.preventDefault(); handled = true; break; }
       }
       if (e.code === 'Tab' || e.code === 'Space') e.preventDefault();
     });
@@ -144,18 +149,22 @@ class InputState {
         z += az * s;
         this.usingPad = true;
       }
+      // As with keys: a button that means several actions is taken as the
+      // first one something handles.
+      const handled = new Set<number>(), pressed = new Set<number>();
       for (const [a, buttons] of Object.entries(PAD) as [Action, number[]][]) {
         for (const b of buttons) {
-          const now = !!pad.buttons[b]?.pressed;
           const key = pad.index * 100 + b;
-          if (now && !this.padPrev.get(key)) {
+          const now = !!pad.buttons[b]?.pressed;
+          if (now && (!this.padPrev.get(key) || pressed.has(key))) {
+            pressed.add(key);
             this.latched.add(a);
             this.usingPad = true;
-            for (const l of this.listeners) if (l(a) === true) break;
+            if (!handled.has(key)) for (const l of this.listeners) if (l(a) === true) { handled.add(key); break; }
           }
-          this.padPrev.set(key, now);
         }
       }
+      for (const buttons of Object.values(PAD)) for (const b of buttons) this.padPrev.set(pad.index * 100 + b, !!pad.buttons[b]?.pressed);
     }
     const m = Math.hypot(x, z);
     if (m > 1) { x /= m; z /= m; }
