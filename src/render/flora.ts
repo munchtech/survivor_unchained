@@ -395,24 +395,63 @@ if (uOccluder.w > 0.0 && (-vViewPosition.z < uOccluder.z - 1.2 || vOccO.w < uOcc
 
 export function floraMaterial(opts: { wind?: number; rim?: number; occlude?: boolean; flatShading?: boolean } = {}) {
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.88, metalness: 0, flatShading: !!opts.flatShading });
+  return floraShading(mat, opts);
+}
+
+/** For a textured kit material (render/scatter.ts): weathered like the rest
+ *  of the kits, the foliage recoloured (autumn, sickness, bramble; two
+ *  colours, one chosen per tree), moss on whatever faces up, and every
+ *  copy a little lighter or darker than its neighbours. */
+export interface FloraKitLook {
+  sat: number;
+  tint: [number, number, number];
+  recolor?: { a: string; b: string; amount: number };
+  moss?: number;
+  jitter?: number;
+}
+
+/** Wind, the rim light and the occlusion cut-out, on any standard material. */
+export function floraShading<M extends THREE.MeshStandardMaterial>(mat: M, opts: { wind?: number; rim?: number; occlude?: boolean; flatShading?: boolean; kit?: FloraKitLook } = {}): M {
   const wind = opts.wind ?? 0;
   const rim = opts.rim ?? 0.35;
   const occlude = opts.occlude ?? true;
+  const kit = opts.kit;
+  if (kit) mat.defines = { ...mat.defines, FLORA_KIT: '' };
   mat.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, floraUniforms);
+    if (kit) {
+      const rc = kit.recolor;
+      const a = new THREE.Color(rc?.a ?? '#ffffff'), b = new THREE.Color(rc?.b ?? rc?.a ?? '#ffffff');
+      shader.uniforms.uFSat = { value: kit.sat };
+      shader.uniforms.uFTint = { value: new THREE.Vector3(...kit.tint) };
+      shader.uniforms.uFRecA = { value: new THREE.Vector4(a.r, a.g, a.b, rc?.amount ?? 0) };
+      shader.uniforms.uFRecB = { value: new THREE.Vector3(b.r, b.g, b.b) };
+      shader.uniforms.uFMoss = { value: new THREE.Vector4(0.2, 0.3, 0.12, kit.moss ?? 0) };
+      shader.uniforms.uFJitter = { value: kit.jitter ?? 0.1 };
+    }
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', `#include <common>
 uniform float uTime;
 uniform vec4 uFocus;
 uniform vec2 uCamXZ;
 varying float vLane;
+#ifdef FLORA_KIT
+varying float vFUp;
+varying float vFJit;
+#endif
 ${OCCLUDE_VERT_PARS}`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>
 {
   vec3 ip = vec3(0.0);
   vLane = 0.0;
+  #ifdef FLORA_KIT
+  vec3 upN = objectNormal;
+  #endif
   #ifdef USE_INSTANCING
   ip = vec3(instanceMatrix[3][0], instanceMatrix[3][1], instanceMatrix[3][2]);
+  #ifdef FLORA_KIT
+  upN = mat3(instanceMatrix) * upN;
+  #endif
   ${occlude ? `{
     // Standing between the survivor and the camera: thin the whole tree.
     vec2 d = ip.xz - uFocus.xz;
@@ -428,6 +467,10 @@ ${OCCLUDE_VERT_PARS}`)
                        * smoothstep(2.2, 3.6, position.y * reach));
   }` : ''}
   #endif
+  #ifdef FLORA_KIT
+  vFUp = normalize(mat3(modelMatrix) * upN).y;
+  vFJit = fract(sin(dot(ip.xz, vec2(12.9898, 78.233))) * 43758.5453);
+  #endif
   float h = max(position.y, 0.0);
   float ph = uTime * 1.1 + ip.x * 0.23 + ip.z * 0.19;
   float sway = (sin(ph) * 0.65 + sin(ph * 2.3 + 1.7) * 0.25 + sin(ph * 5.1 + ip.x) * 0.1) * ${wind.toFixed(4)} * h * h * 0.02;
@@ -440,7 +483,31 @@ ${OCCLUDE_VERT}`);
       .replace('#include <common>', `#include <common>
 uniform vec3 uRim;
 varying float vLane;
+#ifdef FLORA_KIT
+uniform float uFSat;
+uniform vec3 uFTint;
+uniform vec4 uFRecA;
+uniform vec3 uFRecB;
+uniform vec4 uFMoss;
+uniform float uFJitter;
+varying float vFUp;
+varying float vFJit;
+#endif
 ${OCCLUDE_PARS}`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+#ifdef FLORA_KIT
+{
+  const vec3 LW = vec3(0.2126, 0.7152, 0.0722);
+  float l = dot(diffuseColor.rgb, LW);
+  diffuseColor.rgb = mix(vec3(l), diffuseColor.rgb, uFSat) * uFTint;
+  // Recoloured at the texel's own brightness, so the leaf keeps its shading.
+  vec3 rc = mix(uFRecA.rgb, uFRecB, vFJit);
+  float lt = dot(diffuseColor.rgb, LW);
+  diffuseColor.rgb = mix(diffuseColor.rgb, rc * (lt / max(dot(rc, LW), 0.05)), uFRecA.a);
+  diffuseColor.rgb = mix(diffuseColor.rgb, uFMoss.rgb * (0.55 + lt), uFMoss.a * smoothstep(0.45, 0.85, vFUp));
+  diffuseColor.rgb *= 1.0 - uFJitter + 2.0 * uFJitter * vFJit;
+}
+#endif`)
       .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
 ${occlude ? OCCLUDE_FRAG : ''}
 ${occlude ? 'if (occCut(vLane)) discard;' : ''}`)
@@ -451,6 +518,6 @@ ${occlude ? 'if (occCut(vLane)) discard;' : ''}`)
   totalEmissiveRadiance += uRim * rimT * ${rim.toFixed(3)} * diffuseColor.rgb * 2.0;
 }`);
   };
-  mat.customProgramCacheKey = () => `flora3-${wind}-${rim}-${occlude}-${!!opts.flatShading}`;
+  mat.customProgramCacheKey = () => `flora4-${wind}-${rim}-${occlude}-${!!opts.flatShading}-${kit ? 'kit' : ''}`;
   return mat;
 }

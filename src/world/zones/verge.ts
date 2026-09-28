@@ -471,7 +471,7 @@ export function buildVerge(grassDensity = 1, state: VergeState = { cleanDays: 0 
 
   /* ------------------------------------------------------------ the Dig -- */
   const D = V.dig;
-  kit.prop('hex_buildings', 'building_mine_blue', D.x + 4, D.z - 4, { rot: -Math.PI * 0.75, scale: 7.5, r: 6 });
+  kit.prop('hex_buildings', 'building_mine_blue', D.x + 4, D.z - 4, { rot: -Math.PI * 0.75, scale: 7.5, r: 6, clay: true });
   kit.prop('hex_buildings', 'building_scaffolding', D.x - 8, D.z - 6, { rot: 0.4, scale: 6, r: 4 });
   kit.prop('dungeon', 'crates_stacked', D.x - 3, D.z + 8, { rot: 0.2, scale: 0.8, r: 1.2 });
   kit.prop('dungeon', 'barrel_large', D.x + 7, D.z + 5, { scale: 0.7, r: 0.7, tag: 'powder' });

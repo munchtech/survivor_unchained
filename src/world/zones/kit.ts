@@ -54,6 +54,38 @@ function spillTexture() {
 
 const POOL_SIZE = 6;
 
+/* KayKit's mills and well come only with blue roofs. Their blue is repainted
+ * as the village kit's weathered clay, at the same brightness, so they sit
+ * with the town's houses. One copy of each material, shared. */
+const clayMats = new Map<string, THREE.Material>();
+function clayRoofs(obj: THREE.Object3D) {
+  obj.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh) return;
+    const src = m.material as THREE.MeshStandardMaterial;
+    let mat = clayMats.get(src.uuid);
+    if (!mat) {
+      const c = src.clone();
+      const prev = src.onBeforeCompile, key = src.customProgramCacheKey();
+      c.onBeforeCompile = (sh, r) => {
+        prev.call(c, sh, r);
+        sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', `#include <map_fragment>
+        {
+          vec3 c = diffuseColor.rgb;
+          float blue = smoothstep(1.1, 1.35, c.b / max(max(c.r, c.g), 0.002));
+          const vec3 CLAY = vec3(0.30, 0.11, 0.09);
+          float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+          diffuseColor.rgb = mix(c, CLAY * (l / 0.149), blue);
+        }`);
+      };
+      c.customProgramCacheKey = () => `${key}|clay`;
+      c.userData.shared = true;
+      clayMats.set(src.uuid, mat = c);
+    }
+    m.material = mat;
+  });
+}
+
 export class ZoneKit {
   readonly root = new THREE.Group();
   readonly sources: LightSource[] = [];
@@ -89,8 +121,11 @@ export class ZoneKit {
   /** A prop on the ground. `r` adds a round collider, `box` an oriented one. */
   prop(pack: PropPack, name: string, x: number, z: number, o: {
     rot?: number; scale?: number; r?: number; box?: [number, number]; y?: number; tag?: string; soft?: boolean; tilt?: [number, number]; sink?: number;
+    /** Blue roofs repainted as clay. */
+    clay?: boolean;
   } = {}) {
     const obj = Assets.prop(pack, name);
+    if (o.clay) clayRoofs(obj);
     obj.position.set(x, (o.y ?? this.y(x, z)) - (o.sink ?? 0), z);
     obj.rotation.set(o.tilt?.[0] ?? 0, o.rot ?? 0, o.tilt?.[1] ?? 0);
     obj.scale.setScalar(o.scale ?? 1);

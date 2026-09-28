@@ -1,4 +1,5 @@
 import type { EnvKit } from '@/render/env';
+import { floraPieces } from '@/render/scatter';
 import { housePieces, WALL_PIECES } from './houses';
 
 /* Every piece of the world's kits a zone builds with, loaded at boot (the
@@ -19,5 +20,6 @@ export function envUsed(): Array<[EnvKit, string]> {
     ...housePieces(), ...WALL_PIECES,
     ...PROPS.map((n) => ['props', n] as [EnvKit, string]),
     ...VILLAGE.map((n) => ['village', n] as [EnvKit, string]),
+    ...floraPieces().map((n) => ['nature', n] as [EnvKit, string]),
   ];
 }

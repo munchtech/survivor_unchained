@@ -103,11 +103,17 @@ const WEATHER: Array<[RegExp, number, [number, number, number]]> = [
   [/./, 0.82, [0.88, 0.87, 0.85]],
 ];
 
+/** How a kit material is weathered: saturation kept, colour multiply. */
+export function weatherOf(name: string): [number, [number, number, number]] {
+  const [, sat, tint] = WEATHER.find(([re]) => re.test(name))!;
+  return [sat, tint];
+}
+
 function weather(mat: THREE.MeshStandardMaterial, kit: EnvKit) {
   // A material is shared by the meshes of a piece: weather it once.
   if (mat.userData.weathered) return;
   mat.userData.weathered = true;
-  const [, sat, tint] = WEATHER.find(([re]) => re.test(mat.name))!;
+  const [sat, tint] = weatherOf(mat.name);
   const foot = kit === 'village';
   const prev = mat.onBeforeCompile;
   mat.onBeforeCompile = (sh, r) => {

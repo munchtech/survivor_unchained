@@ -145,7 +145,7 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
       if (runStart < 0) return;
       // One collider per unbroken stretch of wall.
       const a = runStart * 2, b = to * 2, c = (a + b) / 2 - len / 2;
-      col.addBox(mx + ux * c, mz + uz * c, (b - a) / 2, 0.45, -Math.atan2(-uz, ux));
+      col.addBox(mx + ux * c - fx * 0.2, mz + uz * c - fz * 0.2, (b - a) / 2, 0.45, -Math.atan2(-uz, ux));
       runStart = -1;
     };
     for (let i = 0; i < n; i++) {
@@ -154,7 +154,12 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
       if (runStart < 0) runStart = i;
       const x = mx + ux * s, z = mz + uz * s;
       const y = kit.y(x, z) - 0.3 - baseY;
-      for (let f = 0; f < 2; f++) asm.put('Wall_UnevenBrick_Straight', x - mx, y + f * STOREY, z - mz, rot);
+      // A panel is dressed on one face only: a second, back to back and
+      // overlapping it, faces the country (the plaster of both inside).
+      for (let f = 0; f < 2; f++) {
+        asm.put('Wall_UnevenBrick_Straight', x - mx, y + f * STOREY, z - mz, rot);
+        asm.put('Wall_UnevenBrick_Straight', x - mx - fx * 0.45, y + f * STOREY, z - mz - fz * 0.45, rot + Math.PI);
+      }
       // A buttress at every fourth joint, on the town side.
       if (i % 4 === 0) for (let f = 0; f < 2; f++) asm.put('Corner_Exterior_Brick', x - mx - ux, y + f * STOREY, z - mz - uz, rot);
     }
@@ -263,14 +268,14 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
     kit.env('props', junk, bx + Math.cos(rot) * 1.5, bz - Math.sin(rot) * 1.5 + 0.8, { rot: i, scale: junk === 'Crate_Wooden' ? 0.8 : 1, r: 0.45 });
   });
   // Outside the walls: a windmill and fields, for the skyline.
-  kit.prop('hex_buildings', 'building_windmill_blue', -58, 50, { rot: 0.4, scale: 8 });
-  kit.prop('hex_buildings', 'building_watermill_blue', 24, 50, { rot: Math.PI, scale: 7 });
+  kit.prop('hex_buildings', 'building_windmill_blue', -58, 50, { rot: 0.4, scale: 8, clay: true });
+  kit.prop('hex_buildings', 'building_watermill_blue', 24, 50, { rot: Math.PI, scale: 7, clay: true });
   kit.prop('hex_buildings', 'building_grain', -30, 52, { rot: 0.2, scale: 8 });
   kit.prop('hex_buildings', 'building_grain', -42, 60, { rot: -0.3, scale: 8 });
   footprints.push({ x: -58, z: 50, r: 5, rot: 0.4 }, { x: 24, z: 50, r: 4.5, rot: Math.PI }, { x: -30, z: 52, r: 3.5, rot: 0.2 }, { x: -42, z: 60, r: 3.5, rot: -0.3 });
 
   /* ------------------------------------------------------------ square -- */
-  kit.prop('hex_buildings', 'building_well_blue', 0, 0, { scale: 5, r: 2 });
+  kit.prop('hex_buildings', 'building_well_blue', 0, 0, { scale: 5, r: 2, clay: true });
   // The notice board: posts and a plank with papers pinned to it.
   {
     const b = new THREE.Group();

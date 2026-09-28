@@ -338,7 +338,7 @@ export function buildLowFord(grassDensity = 1): LowFordBuild {
     for (let k = 1; k <= 5; k++) {
       kit.prop('hex_buildings', 'wall_straight', G.x + side * k * 2 * ws, G.z, { scale: ws });
     }
-    kit.prop('hex_buildings', 'building_tower_base_blue', G.x + side * 6.4, G.z + 0.8, { scale: ws * 0.9, r: 3.6 });
+    kit.prop('hex_buildings', 'building_tower_base_blue', G.x + side * 6.4, G.z + 0.8, { scale: ws * 0.9, r: 3.6, clay: true });
   }
   col.addBox(G.x - 34, G.z, 30, 2.2, 0);
   col.addBox(G.x + 34, G.z, 30, 2.2, 0);

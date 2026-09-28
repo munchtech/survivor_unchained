@@ -142,8 +142,10 @@ weapons are CC BY models from Sketchfab (credited in the game and in
 `public/assets/CREDITS.md`). Houses are put together from Quaternius's
 Medieval Village MegaKit on its 2 m grid (`src/world/zones/houses.ts`), with
 the Fantasy Props and Stylized Nature kits (CC0), each material weathered in
-its shader to suit a darker world; older props are KayKit (CC0, Kay
-Lousberg); with generated terrain, vegetation, water and sky; N8AO, bloom, AgX and
+its shader to suit a darker world. Trees, bushes and stone are the nature
+kit's, instanced by the thousand in culled cells, the foliage recoloured for
+autumn and blight and the stone mossed (`src/render/scatter.ts`); older props
+are KayKit (CC0, Kay Lousberg); with generated terrain, grass, water and sky; N8AO, bloom, AgX and
 a grade pass; VAT crowds and GPU particles for the hordes. Trees between the
 camera and the survivor thin out; streams meander and know how deep they
 are. Sound is procedural, with no samples: a score composed as it plays
@@ -181,6 +183,7 @@ All expect `npm run dev` running.
 | `node tools/flow.mjs` | Toll, both roads out of town and back, a night at the inn |
 | `node tools/field.mjs [--fresh]` | Balance: a survivor who played the prologue, in the Verge by day and night, playing or idle |
 | `node tools/folk.mjs [day\|night]` | The townsfolk: lanes checked against colliders, three minutes of errands, anyone stuck |
+| `node tools/probe.mjs "<query>" "<expression>"` | Load the game somewhere and print what an expression gives there |
 | `node tools/leaks.mjs [rounds]` | Back and forth between the zones: GPU geometries and textures must not climb |
 | `node tools/tour.mjs verge [day\|night]` | One picture per landmark of a zone, empty of people |
 | `node tools/looks.mjs [calling...]` | Every colour, cloak, skin and hair option of creation, photographed |
@@ -196,4 +199,4 @@ All expect `npm run dev` running.
 survives edits to the source. Useful URLs: `?quick=warden&bg=hunter&zone=verge&at=-60,-80` (start
 anywhere as anyone), `?screen=create`, `?dev=zone&zone=verge&x=..&z=..`,
 `?dev=sandbox`, `?dev=combat`, `?dev=icons`, `?dev=gallery`, `?dev=people&view=1`
-(people, `&spec=`/`&arms=`/`&boss=idle`), `?dev=armory` (weapons), `?dev=env&kit=village` (a kit's pieces, labelled), `?dev=house` (houses), `&quality=low`.
+(people, `&spec=`/`&arms=`/`&boss=idle`), `?dev=armory` (weapons), `?dev=env&kit=village` (a kit's pieces, labelled), `?dev=house` (houses), `&flora=gen` (the generated trees, to compare), `&quality=low`.

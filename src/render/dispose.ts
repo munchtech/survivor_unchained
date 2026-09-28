@@ -33,6 +33,8 @@ function texturesOf(mat: THREE.Material): THREE.Texture[] {
 export function disposeTree(root: THREE.Object3D) {
   const geos = new Set<THREE.BufferGeometry>(), mats = new Set<THREE.Material>(), texs = new Set<THREE.Texture>();
   root.traverse((o) => {
+    // An instanced mesh's own buffer (where its copies stand) goes with it.
+    if ((o as THREE.InstancedMesh).isInstancedMesh) (o as THREE.InstancedMesh).dispose();
     const m = o as THREE.Mesh;
     if (!m.geometry && !m.material) return;
     if (m.geometry && !m.geometry.userData.shared) geos.add(m.geometry);
