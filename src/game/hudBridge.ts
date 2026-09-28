@@ -1,6 +1,6 @@
 import type { Battle } from '@/sim/battle';
 import type { CombatEvent } from '@/sim/events';
-import { draft, choose, earnedBranches, buildTags } from '@/sim/levelup';
+import { draft, choose, earnedBranches, buildTags, draftLevel, blessingNext } from '@/sim/levelup';
 import { schoolOf, artOf } from '@/sim/weapons';
 import { WEAPON_MAX_RANK } from '@/content/weapons';
 import { BOONS } from '@/content/boons';
@@ -46,7 +46,7 @@ export class HudBridge {
       hud.value = this.snapshot(b);
     }
     // The draft: a short beat after the level flare, then time stops.
-    if (this.draftsEnabled && b.pendingLevels > 0 && !levelUp.value && overlay.value === null && b.player.alive) {
+    if (this.draftsEnabled && b.draftOwed && !levelUp.value && overlay.value === null && b.player.alive) {
       this.pendingT += dt;
       if (this.pendingT > 0.35) { this.pendingT = 0; this.openDraft(); }
     } else this.pendingT = 0;
@@ -108,18 +108,19 @@ export class HudBridge {
     this.draftTip = null;
     levelUp.value = {
       tip,
-      level: b.ember.level - b.pendingLevels + 1,
+      level: draftLevel(b),
+      milestone: blessingNext(b),
       offers,
-      fits: offers.map((o) => o.kind === 'rank' || o.kind === 'evolve' ? [] : o.tags.filter((t) => tags.has(t))),
+      fits: offers.map((o) => o.kind === 'evolve' ? (o.fits ? ['your build'] : []) : o.kind === 'rank' ? [] : o.tags.filter((t) => tags.has(t))),
       rerolls: b.rerolls,
       banishes: b.banishes,
-      queued: b.pendingLevels - 1,
+      queued: b.pendingLevels + b.pendingBlessings.length - 1,
       pick: (i) => {
         const o = offers[i];
         if (!o) return;
         choose(b, o);
         if (o.kind === 'weapon') toast('level', `${o.title} joins your arsenal`);
-        if (b.pendingLevels > 0) this.present(draft(b, offers.length));
+        if (b.draftOwed) this.present(draft(b, offers.length));
         else this.closeDraft();
       },
       reroll: () => {

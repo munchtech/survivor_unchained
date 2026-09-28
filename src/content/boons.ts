@@ -14,6 +14,12 @@ import type { Tag } from '@/sim/types';
  * Every entry says what it touches with `tags`, so the level-up draft can
  * lean toward what the build is already doing without ever forcing it. */
 
+/** Blessings (boons and combos) are milestones, not ordinary picks: one is
+ *  chosen at the start of every expedition, and another each time the
+ *  ember reaches a multiple of this, on top of that level's skill. */
+export const MILESTONE_EVERY = 85;
+export const isMilestone = (level: number) => level > 0 && level % MILESTONE_EVERY === 0;
+
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
 
 export interface BoonDef {

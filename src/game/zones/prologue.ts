@@ -650,7 +650,7 @@ export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number 
     timeOf: () => (stage === 'dawn' || stage === 'exit' ? 'dawn' : 'night'),
     begin: (battle) => {
       b = battle;
-      g.bridge.draftTip = 'Each time the ember rises, choose one: a new skill, a rank in one you have, or a passive. Skills fire on their own; you choose where to stand.';
+      g.bridge.draftTip = 'Each time the ember rises, choose a skill: a new one, or a rank in one you have. Skills fire on their own; you choose where to stand.';
       if (g.world?.facts['prologue.done']) {
         // Loaded after the prologue: the road at dawn, the dead at rest.
         stage = 'exit'; stageT = 0; dawnK = 1;

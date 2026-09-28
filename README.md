@@ -25,8 +25,13 @@ npm run build      # typecheck + production build
 | Level-up draft | 1–4 to pick, X reroll, B banish |
 | Pause (save, sound) | Esc / P |
 
-Weapons fire on their own. You choose where to stand, when to dash, what to
-take from each level-up, and, out of combat, what to say and to whom.
+Skills (weapons) fire on their own. You choose where to stand, when to
+dash, which skill to take or rank up each time the ember rises (anyone can
+take any skill; a calling leans a little toward its own style), what each
+skill evolves into at rank 8, and, out of combat, what to say and to whom.
+Blessings are milestones: one chosen at creation and given at the start of
+every expedition, and one more every 85 ember levels, on top of that
+level's skill.
 
 ## What is in the slice
 

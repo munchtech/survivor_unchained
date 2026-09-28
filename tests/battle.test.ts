@@ -35,7 +35,7 @@ function simulate(b: Battle, seconds: number, spawnEvery = 1.2, def = 'risen') {
     // Drift slowly, the way a player holding ground does, rather than fleeing.
     const mx = Math.cos(t * 0.35) * 0.35, mz = Math.sin(t * 0.35) * 0.35;
     b.tick(dt, mx, mz);
-    while (b.pendingLevels > 0) {
+    while (b.draftOwed) {
       const offers = draft(b, 3);
       choose(b, offers[0]);
     }
@@ -151,29 +151,98 @@ describe('neutral creatures', () => {
 });
 
 describe('the level-up draft', () => {
-  it('is mostly skills: weapons and their ranks, with one passive', () => {
+  it('offers only skills when the ember rises', () => {
     const b = arena(11);
-    let skills = 0, passives = 0, draftsWithSkill = 0, drafts = 0;
-    for (let i = 0; i < 40; i++) {
-      const offers = draft(b, 3);
-      drafts++;
-      const s = offers.filter((o) => o.kind === 'weapon' || o.kind === 'rank' || o.kind === 'evolve').length;
-      const p = offers.filter((o) => o.kind === 'boon').length;
-      skills += s; passives += p;
-      if (s > 0) draftsWithSkill++;
-      expect(p).toBeLessThanOrEqual(1);
-      // Take a skill when there is one, the way the build grows.
-      choose(b, offers.find((o) => o.kind !== 'boon') ?? offers[0]);
+    for (let i = 0; i < 20; i++) {
+      b.gainEmber(b.ember.next - b.ember.xp + 0.01);
+      while (b.draftOwed) {
+        const offers = draft(b, 3);
+        expect(offers.length).toBe(3);
+        expect(offers.every((o) => o.kind === 'weapon' || o.kind === 'rank' || o.kind === 'evolve'), offers.map((o) => o.kind).join()).toBe(true);
+        choose(b, offers[0]);
+      }
     }
-    expect(draftsWithSkill).toBe(drafts);
-    expect(skills).toBeGreaterThan(passives * 1.8);
+    expect(b.ember.level).toBe(21);
   });
 
-  it('fills with passives once every weapon is full and ranked', async () => {
+  it('gives a blessing at the milestone, after that level\'s skill, not instead of it', async () => {
+    const { MILESTONE_EVERY } = await import('@/content/boons');
+    const b = arena(13);
+    b.ember.level = MILESTONE_EVERY - 1;
+    b.gainEmber(b.ember.next - b.ember.xp + 0.01);
+    expect(b.ember.level).toBe(MILESTONE_EVERY);
+    expect(b.pendingLevels).toBe(1);
+    expect(b.pendingBlessings).toEqual([MILESTONE_EVERY]);
+    const skill = draft(b, 3);
+    expect(skill.every((o) => o.kind !== 'boon')).toBe(true);
+    choose(b, skill[0]);
+    expect(b.draftOwed).toBe(true);
+    const blessing = draft(b, 3);
+    expect(blessing.length).toBe(3);
+    expect(blessing.every((o) => o.kind === 'boon' && o.blessing)).toBe(true);
+    const before = Object.values(b.boons).reduce((n, r) => n + r, 0);
+    choose(b, blessing[0]);
+    expect(Object.values(b.boons).reduce((n, r) => n + r, 0)).toBe(before + 1);
+    expect(b.draftOwed).toBe(false);
+  });
+
+  it('fills with blessings once every skill is taken and ranked', async () => {
     const { WEAPON_POOL, WEAPON_MAX_RANK, MAX_WEAPONS } = await import('@/content/weapons');
     const b = arena(12, WEAPON_POOL.slice(0, MAX_WEAPONS).map((id) => ({ id, rank: WEAPON_MAX_RANK })));
+    b.ember.level = 3; b.pendingLevels = 1;
+    // Evolve them all first; then there is nothing left to learn, and a
+    // level's draft falls back to blessings.
+    for (const w of b.weapons) b.evolve(w.id, w.def.evolutions[0].id);
     const offers = draft(b, 3);
-    expect(offers.every((o) => o.kind === 'boon' || o.kind === 'evolve')).toBe(true);
+    expect(offers.every((o) => o.kind === 'boon')).toBe(true);
+    expect(offers.length).toBe(3);
+  });
+
+  it('leans a little toward the calling, and never locks anything out', async () => {
+    const { WEAPONS } = await import('@/content/weapons');
+    const seen = new Set<string>();
+    const spellShare = (lean: boolean) => {
+      let spell = 0, total = 0;
+      for (let seed = 1; seed <= 120; seed++) {
+        const b = arena(seed);
+        if (lean) b.favours = new Set(['spell']);
+        b.ember.level = 2; b.pendingLevels = 1;
+        for (const o of draft(b, 3)) if (o.kind === 'weapon') { seen.add(o.id); total++; if (WEAPONS[o.id].tags.includes('spell')) spell++; }
+      }
+      return spell / total;
+    };
+    // The same draws, with and without the lean: spells come up more with it.
+    expect(spellShare(true)).toBeGreaterThan(spellShare(false));
+    const pool = Object.values(WEAPONS).filter((w) => w.findable);
+    expect(seen.size).toBeGreaterThan(pool.length * 0.8);
+  });
+});
+
+describe('evolutions', () => {
+  it('never need a blessing: every branch is offered, a fitting one is marked', async () => {
+    const { WEAPON_MAX_RANK } = await import('@/content/weapons');
+    const { earnedBranches, fittingBranches } = await import('@/sim/levelup');
+    // Seeking Motes' branches were catalysed only by blessings.
+    const b = arena(14, [{ id: 'seeking_motes', rank: WEAPON_MAX_RANK }]);
+    expect(earnedBranches(b, 'seeking_motes').map((e) => e.id).sort()).toEqual(['mote_cascade', 'starseeker']);
+    expect(fittingBranches(b, 'seeking_motes')).toEqual([]);
+    b.addBoon('duplicity');
+    // A blessing marks a branch; it never takes the other away.
+    expect(earnedBranches(b, 'seeking_motes').length).toBe(2);
+    expect(fittingBranches(b, 'seeking_motes').map((e) => e.id)).toEqual(['mote_cascade']);
+    b.ember.level = 3; b.pendingLevels = 1;
+    const offers = draft(b, 3);
+    expect(offers.filter((o) => o.kind === 'evolve').length).toBe(2);
+    expect(offers.find((o) => o.branch === 'mote_cascade')?.fits).toBe(true);
+  });
+
+  it('come one weapon at a time', async () => {
+    const { WEAPON_POOL, WEAPON_MAX_RANK, MAX_WEAPONS } = await import('@/content/weapons');
+    const b = arena(15, WEAPON_POOL.slice(0, MAX_WEAPONS).map((id) => ({ id, rank: WEAPON_MAX_RANK })));
+    b.ember.level = 3; b.pendingLevels = 1;
+    const offers = draft(b, 3);
+    const evos = offers.filter((o) => o.kind === 'evolve');
+    expect(new Set(evos.map((o) => o.id)).size).toBe(1);
     expect(offers.length).toBe(3);
   });
 });

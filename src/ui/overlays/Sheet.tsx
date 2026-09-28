@@ -7,7 +7,7 @@ import { deriveKit, xpForLevel, type Attributes } from '@/rpg/character';
 import { armorReduction } from '@/sim/stats';
 import { Glyph } from '../components/Icon';
 import { renderPortrait } from '../portrait';
-import { loadoutFor } from '@/game/loadout';
+import { lookOf } from '@/game/loadout';
 import './sheet.css';
 
 /* Who the survivor has become: level, attributes to spend, traits chosen
@@ -25,7 +25,7 @@ const COND: Record<string, string> = { wounded: 'Wounded: 20% less health until 
 export function Sheet() {
   void rev.value;
   const ch = character.value;
-  const portrait = useMemo(() => ch && renderPortrait(loadoutFor({ archetype: ch.archetype, weaponItem: ch.equipment.weapon?.def ?? ARCHETYPES[ch.archetype].weapons[0], model: ch.model, palette: ch.palette, headgear: ch.headgear }), 260, 360), [ch?.equipment.weapon?.def]);
+  const portrait = useMemo(() => ch && renderPortrait(lookOf(ch), 260, 360), [ch?.equipment.weapon?.def]);
   const offer = useMemo(() => {
     if (!ch) return [];
     const pool = LEVELUP_TRAITS.filter((t) => !ch.traits.includes(t));

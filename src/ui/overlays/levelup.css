@@ -25,6 +25,11 @@
 .lu-orn.r { background: linear-gradient(270deg, transparent, var(--gold-hi)); }
 .lu-orn.r::after { right: auto; left: -4px; }
 .lu-queued { font: 600 13px var(--font-ui); color: var(--ink-dim); margin-top: 2px; }
+.lu-next { font: italic 400 13px var(--font-text); color: #a89878; margin-top: 4px; letter-spacing: 0.04em; }
+/* A milestone: brighter, golder, the rays turning faster. */
+.levelup.milestone .lu-rays { background: repeating-conic-gradient(from 0deg, rgba(255, 210, 120, 0.12) 0 5deg, transparent 5deg 15deg); animation: luRays 30s linear infinite, fadeIn 0.8s ease-out both; }
+.levelup.milestone .lu-level { color: #fff2cc; text-shadow: 0 2px 0 #000, 0 0 30px rgba(255, 200, 90, 0.9), 0 0 60px rgba(255, 160, 60, 0.5); }
+.levelup.milestone .lu-kicker { color: #ffd88a; }
 
 .lu-cards { position: relative; display: flex; gap: 22px; align-items: stretch; }
 

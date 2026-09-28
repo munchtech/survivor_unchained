@@ -8,7 +8,7 @@ import { armorReduction } from '@/sim/stats';
 import { Glyph, Icon } from '../components/Icon';
 import { ItemCard } from '../components/ItemCard';
 import { renderPortrait } from '../portrait';
-import { loadoutFor } from '@/game/loadout';
+import { lookOf } from '@/game/loadout';
 import './inventory.css';
 
 /* The pack. On the left, the survivor as they stand, with what they wear
@@ -26,7 +26,7 @@ export function Inventory() {
   const [hover, setHover] = useState<{ it: ItemInstance; x: number; y: number } | null>(null);
   const [sel, setSel] = useState<string | null>(null);
   const portraitKey = ch ? `${ch.archetype}|${ch.model}|${ch.equipment.weapon?.def}|${ch.palette}|${ch.headgear}` : '';
-  const portrait = useMemo(() => ch && renderPortrait(loadoutFor({ archetype: ch.archetype, weaponItem: ch.equipment.weapon?.def ?? ARCHETYPES[ch.archetype].weapons[0], model: ch.model, palette: ch.palette, headgear: ch.headgear })), [portraitKey]);
+  const portrait = useMemo(() => ch && renderPortrait(lookOf(ch)), [portraitKey]);
   if (!ch) return null;
   const selected = sel ? findAny(ch, sel) : null;
 

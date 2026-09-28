@@ -159,7 +159,7 @@ function Arms({ d }: { d: CreationDraft }) {
           );
         })}
       </div>
-      <div class="sub-head">A gift of the first ember</div>
+      <div class="sub-head">Starting blessing <span class="sub-note">yours at the start of every expedition</span></div>
       <div class="boon-row">
         {START_BOONS.map((id) => (
           <button key={id} class={`boon-pick${d.startBoon === id ? ' on' : ''}`} onClick={() => set({ startBoon: id })} title={BOONS[id].text}>
@@ -353,7 +353,7 @@ function Summary({ d }: { d: CreationDraft }) {
       <div class="rule" />
       <div class="dt-line"><b>Carries</b> {ITEMS[d.weaponItem].name}{bg.items.map((i) => `, ${ITEMS[i].name}`).join('')}</div>
       <div class="dt-line"><b>Hands</b> {ABILITIES[d.ability as AbilityKind].name}</div>
-      <div class="dt-line"><b>First ember</b> {BOONS[d.startBoon].name}</div>
+      <div class="dt-line"><b>Blessing</b> {BOONS[d.startBoon].name}</div>
       <div class="dt-line"><b>Knows</b> {bg.knowledge.map((k) => KNOW_NAMES[k] ?? k).join(', ')}</div>
       <div class="rule" />
       <p class="dt-text small">Night is falling on the Low Ford road. The fire is low. What you do from here, the world will remember.</p>

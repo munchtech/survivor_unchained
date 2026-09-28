@@ -45,3 +45,12 @@ export function loadoutFor(c: LookChoice): Loadout {
     paint: { body: { ...pal.paint, skin, hair }, cloak: { cloak: dye } },
   };
 }
+
+/** A survivor's own look, from their character: one place, so the figure in
+ *  play, the pack, the sheet and every portrait always agree. */
+export function lookOf(ch: { archetype: ArchetypeId; model?: CharacterModel; palette?: string; headgear?: boolean; cloak?: string; skin?: string; hair?: string; equipment: { weapon?: { def: string } | null } }): Loadout {
+  return loadoutFor({
+    archetype: ch.archetype, weaponItem: ch.equipment.weapon?.def ?? ARCHETYPES[ch.archetype].weapons[0],
+    model: ch.model, palette: ch.palette, headgear: ch.headgear, cloak: ch.cloak, skin: ch.skin, hair: ch.hair,
+  });
+}

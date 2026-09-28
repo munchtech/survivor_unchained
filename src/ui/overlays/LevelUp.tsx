@@ -67,14 +67,14 @@ function Draft({ v }: { v: LevelUpView }) {
   }), [v, focus, armed, chosen, banishing]);
 
   return (
-    <div class={`levelup${banishing ? ' banishing' : ''}${chosen !== null ? ' leaving' : ''}`}>
+    <div class={`levelup${v.milestone ? ' milestone' : ''}${banishing ? ' banishing' : ''}${chosen !== null ? ' leaving' : ''}`}>
       <div class="lu-scrim" />
       <div class="lu-rays" />
       <div class="lu-head">
-        <div class="lu-kicker">The ember rises</div>
+        <div class="lu-kicker">{v.milestone ? `Ember ${v.level}: a milestone` : 'The ember rises'}</div>
         <div class="lu-level">
           <span class="lu-orn" />
-          <span>Ember {v.level}</span>
+          <span>{v.milestone ? 'A Blessing' : `Ember ${v.level}`}</span>
           <span class="lu-orn r" />
         </div>
         {v.queued > 0 && <div class="lu-queued">{v.queued} more to choose</div>}
@@ -112,8 +112,8 @@ function kicker(o: Offer): string {
     case 'evolve': return 'Skill evolves';
     case 'boon': {
       const syn = BOONS[o.id]?.kind === 'synergy';
-      if (!o.from) return syn ? 'Passive · combo' : 'Passive';
-      return `Passive · rank ${o.from} → ${o.to}`;
+      if (!o.from) return syn ? 'Blessing · combo' : 'Blessing';
+      return `Blessing · rank ${o.from} → ${o.to}`;
     }
     default: return 'Respite';
   }

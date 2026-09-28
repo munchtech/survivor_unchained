@@ -6,7 +6,7 @@ import { CLOTH, applyLook, type Loadout } from '@/render/playerView';
 import type { CharacterModel } from '@/render/assets';
 import { WorldScene } from './scene';
 import { HudBridge } from './hudBridge';
-import { loadoutFor } from './loadout';
+import { loadoutFor, lookOf } from './loadout';
 import { actions } from './actions';
 import type { ZoneRuntime, Interactable } from './zone';
 import { ZONES } from './zones';
@@ -757,7 +757,7 @@ export class Game {
 
   loadout() {
     const ch = this.ch!;
-    return loadoutFor({ archetype: ch.archetype, weaponItem: ch.equipment.weapon?.def ?? ARCHETYPES[ch.archetype].weapons[0], model: ch.model, palette: ch.palette, headgear: ch.headgear, cloak: ch.cloak, skin: ch.skin, hair: ch.hair });
+    return lookOf(ch);
   }
 
   /* ======================================================= dialogue == */

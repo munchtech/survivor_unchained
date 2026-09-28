@@ -17,6 +17,7 @@ import { makeWeapon, tickWeapon, schoolOf, tagsOf, cooldownOf, type WeaponInst }
 import type { TriggerDef, TriggerEvent, TriggerInstance, Effect, TriggerCond } from './procs';
 import type { School, Tag, FactionId, StatusKind } from './types';
 import { updateEnemy } from './ai';
+import { isMilestone } from '@/content/boons';
 import { chainFrom } from './weapons';
 
 /* One fight, from the first creature to the last: the survivor, the horde,
@@ -98,6 +99,10 @@ export interface BattleSetup {
 
 export interface Offer {
   kind: 'weapon' | 'rank' | 'boon' | 'evolve' | 'heal' | 'gold';
+  /** Offered as a milestone's blessing (settles the blessing, not a level). */
+  blessing?: boolean;
+  /** An evolution branch the build already points toward. */
+  fits?: boolean;
   id: string;
   /** For evolve: which branch. */
   branch?: string;
@@ -169,6 +174,9 @@ export class Battle {
   buffs = new Map<string, Buff>();
   ember = { level: 1, xp: 0, next: 12 };
   pendingLevels = 0;
+  /** Milestone levels whose blessing is still to be chosen (a blessing comes
+   *  on top of that level's skill, after it). */
+  pendingBlessings: number[] = [];
   discoveries = new Set<string>();
   /** Where the fight is coming from, for the adaptive director. */
   profile = { projectile: 0, area: 0, melee: 0, summon: 0, still: 0, moving: 0 };
@@ -187,7 +195,9 @@ export class Battle {
   gearIds = new Set<string>();
   gearStatuses = new Set<StatusKind>();
   bannedCards = new Set<string>();
-  /** What the survivor's calling favours (skill tags), for the draft. */
+  /** Anything still to choose: a skill for a level, or a milestone's blessing. */
+  get draftOwed() { return this.pendingLevels > 0 || this.pendingBlessings.length > 0; }
+  /** Skill tags the survivor's calling leans toward, for the draft. */
   favours = new Set<string>();
   rerolls = 2;
   banishes = 1;
@@ -1256,6 +1266,7 @@ export class Battle {
       this.ember.level++;
       this.ember.next = emberNeed(this.ember.level);
       this.pendingLevels++;
+      if (isMilestone(this.ember.level)) this.pendingBlessings.push(this.ember.level);
       this.events.emit({ t: 'levelUp', level: this.ember.level });
       this.fire('levelUp', { x: this.player.x, z: this.player.z });
     }

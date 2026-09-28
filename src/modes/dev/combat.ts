@@ -64,7 +64,7 @@ export function combatDev(r: Renderer, params: URLSearchParams) {
         b.spawnEnemy(f, x, z, { style: f.startsWith('risen') || f === 'grave_caller' ? 'rise' : 'walk', level: 1 + Math.floor(t / 40) });
       }
     }
-    if (autopick) while (b.pendingLevels > 0) choose(b, draft(b, 3)[0]);
+    if (autopick) while (b.draftOwed) choose(b, draft(b, 3)[0]);
   };
 
   const bridge = new HudBridge(scene, new BarkLayer(document.getElementById('stage')!));

@@ -27,8 +27,8 @@ export interface Archetype {
   /** Items that grant each starting weapon choice. */
   weapons: string[];
   abilities: AbilityKind[];
-  /** The kinds of skill the calling takes to (tags): the level-up draft
-   *  offers these far more often than others, though never only these. */
+  /** The kinds of skill the calling leans toward (tags): the level-up draft
+   *  offers them a little more often. Anyone can take any skill. */
   favours: string[];
   /** Their colours: which of the model's cloth swatches become what (see
    *  render/recolor.ts). The first is the model as it came. `ui` is the

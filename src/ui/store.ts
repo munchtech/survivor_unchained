@@ -134,6 +134,8 @@ export function say(text: string, speaker?: string, life = Math.max(2.5, text.le
 
 export interface LevelUpView {
   level: number;
+  /** A milestone level: its cards are blessings, not skills. */
+  milestone: boolean;
   tip?: string;
   offers: Offer[];
   /** Per offer: which of its tags the build already has. */
