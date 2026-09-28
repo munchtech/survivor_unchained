@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { withBodyRim } from './bodyRim';
 import { floraUniforms, OCCLUDE_PARS, OCCLUDE_FRAG, OCCLUDE_VERT_PARS, OCCLUDE_VERT } from './flora';
 import { grimeTexture, grimeColor, WORLD_GRIME, PEOPLE_GRIME } from './grime';
 import { markShared } from './dispose';
@@ -154,7 +155,6 @@ export function occludable(mat: THREE.MeshStandardMaterial) {
   mat.userData.occludable = true;
   mat.onBeforeCompile = (shader) => {
     shader.uniforms.uOccluder = floraUniforms.uOccluder;
-    shader.uniforms.uOccView = floraUniforms.uOccView;
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', `#include <common>\n${OCCLUDE_VERT_PARS}`)
       .replace('#include <project_vertex>', `#include <project_vertex>\n${OCCLUDE_VERT}`);
@@ -177,6 +177,7 @@ function prepareCharacter(root: THREE.Object3D) {
       s.roughness = Math.max(s.roughness, 0.7);
       s.metalness = Math.min(s.metalness, 0.2);
       if (s.map) { s.map.colorSpace = THREE.SRGBColorSpace; s.map = grimeTexture(s.map, PEOPLE_GRIME); }
+      withBodyRim(s);
     }
   });
 }

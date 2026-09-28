@@ -318,8 +318,6 @@ export const floraUniforms = {
   uTime: { value: 0 },
   // Survivor on screen: pixel x, pixel y, view depth, radius in pixels.
   uOccluder: { value: new THREE.Vector4(0, 0, 0, 0) },
-  // The drawing buffer's size in pixels, for the cut-out's pattern.
-  uOccView: { value: new THREE.Vector2(1, 1) },
   // Survivor in the world (xyz, w = on) and the way to the camera across
   // the ground: whole trees standing in that lane thin out.
   uFocus: { value: new THREE.Vector4(0, 0, 0, 0) },
@@ -330,9 +328,8 @@ export const floraUniforms = {
 /** Per frame: where the survivor is on screen (in drawing-buffer pixels) and
  *  how far from the camera, so whatever stands in front of them can be
  *  dithered away. */
-export function setOccluder(px: number, py: number, viewDepth: number, radiusPx: number, bufW = 1, bufH = 1) {
+export function setOccluder(px: number, py: number, viewDepth: number, radiusPx: number) {
   floraUniforms.uOccluder.value.set(px, py, viewDepth, radiusPx);
-  floraUniforms.uOccView.value.set(bufW, bufH);
 }
 
 /** Per frame: the survivor's feet and the camera, for the tree lane. */
@@ -344,12 +341,12 @@ export function setFocus(x: number, y: number, z: number, camX: number, camZ: nu
 
 /** Shared shader code for the occlusion cut-out; buildings use it too.
  *
- *  What stands between the camera and the survivor is eaten away in soft,
- *  leaf-sized pieces rather than screen-doored with a fine dither (which
- *  reads as a mesh laid over the picture). The pattern is drawn on the
- *  screen, so every layer of a canopy is cut in the same places and you see
- *  through to the ground, not into the tree; and it is pinned to each
- *  object's own origin, so it moves with the tree instead of swimming. */
+ *  What stands between the camera and the survivor is cut away in a clean
+ *  hole round them, and trees in the lane to the camera fade. Fading is an
+ *  ordered dither at the pixel: the picture is drawn at twice the screen's
+ *  resolution or more on the better settings, so it resolves on screen into
+ *  real translucency, a ghost of the tree, rather than the ragged holes a
+ *  coarse pattern makes. */
 export const OCCLUDE_VERT_PARS = /* glsl */ `
 varying vec4 vOccO;`;
 export const OCCLUDE_VERT = /* glsl */ `
@@ -362,35 +359,28 @@ export const OCCLUDE_VERT = /* glsl */ `
 }`;
 export const OCCLUDE_PARS = /* glsl */ `
 uniform vec4 uOccluder;
-uniform vec2 uOccView;
 varying vec4 vOccO;
-float occHash(vec2 p) {
-  vec3 q = fract(vec3(p.xyx) * 0.1031);
-  q += dot(q, q.yzx + 33.33);
-  return fract((q.x + q.y) * q.z);
-}
-float occNoise(vec2 x) {
-  vec2 i = floor(x), f = fract(x);
-  f = f * f * (3.0 - 2.0 * f);
-  return mix(mix(occHash(i), occHash(i + vec2(1.0, 0.0)), f.x), mix(occHash(i + vec2(0.0, 1.0)), occHash(i + vec2(1.0, 1.0)), f.x), f.y);
-}
-/* True where a surface faded this far (0 none, 1 all) is cut away. Value
- * noise crowds the middle; stretching it keeps the fade close to linear. */
+/* True where a surface faded this far (0 none, 1 all) is cut away: a 4x4
+ * Bayer threshold at the pixel. */
 bool occCut(float fade) {
   if (fade <= 0.0) return false;
   if (fade >= 0.999) return true;
-  vec2 o = (vOccO.xy / max(vOccO.w, 0.001) * 0.5 + 0.5) * uOccView;
-  vec2 p = (gl_FragCoord.xy - o) / (uOccView.y * 0.013);
-  float n = occNoise(p) * 0.78 + occNoise(p * 2.3 + 5.1) * 0.22;
-  return clamp((n - 0.2) / 0.6, 0.0, 1.0) < fade;
+  ivec2 q = ivec2(gl_FragCoord.xy) & 3;
+  int i = q.x + q.y * 4;
+  float t = float(
+    i == 0 ? 0 : i == 1 ? 8 : i == 2 ? 2 : i == 3 ? 10 :
+    i == 4 ? 12 : i == 5 ? 4 : i == 6 ? 14 : i == 7 ? 6 :
+    i == 8 ? 3 : i == 9 ? 11 : i == 10 ? 1 : i == 11 ? 9 :
+    i == 12 ? 15 : i == 13 ? 7 : i == 14 ? 13 : 5) + 0.5;
+  return t / 16.0 < fade;
 }`;
 export const OCCLUDE_FRAG = /* glsl */ `
 // In front of the survivor: this part of the surface, or the object as a
 // whole (so the inner lumps of a boulder in the way are cut with its face).
 if (uOccluder.w > 0.0 && (-vViewPosition.z < uOccluder.z - 1.2 || vOccO.w < uOccluder.z - 1.5)) {
-  // A clean hole around the survivor, ragged at its edge.
+  // A clean hole around the survivor, its edge a short fade.
   float dd = length(gl_FragCoord.xy - uOccluder.xy) / uOccluder.w;
-  if (occCut(1.0 - smoothstep(0.45, 1.0, dd))) discard;
+  if (occCut(1.0 - smoothstep(0.72, 1.0, dd))) discard;
 }`;
 
 export function floraMaterial(opts: { wind?: number; rim?: number; occlude?: boolean; flatShading?: boolean } = {}) {
@@ -458,7 +448,7 @@ ${OCCLUDE_VERT_PARS}`)
     float along = dot(d, uCamXZ);
     float lat = length(d - along * uCamXZ);
     float reach = length(instanceMatrix[0].xyz);
-    vLane = uFocus.w * smoothstep(-2.5 * reach, 0.5, along) * (1.0 - smoothstep(13.0, 18.0, along))
+    vLane = uFocus.w * 0.78 * smoothstep(-2.5 * reach, 0.5, along) * (1.0 - smoothstep(13.0, 18.0, along))
           * (1.0 - smoothstep(4.0 * reach, 6.5 * reach, lat));
     // Canopies close around the survivor thin a little too, so the ground
     // the fight is on stays readable; only what is overhead (a bush, a

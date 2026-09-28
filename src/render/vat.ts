@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { bodyRim, BODY_RIM, BODY_RIM_PARS } from './bodyRim';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { Assets, type CharacterModel, type PropPack } from './assets';
 import { applyProportions, legLift } from './proportions';
@@ -321,6 +322,7 @@ function patchVat(mat: THREE.Material, asset: VatAsset, depthOnly: boolean) {
     uVatRows: { value: asset.rows },
     uVatTime: { value: 0 },
     uGlowColor: { value: asset.glowColor.clone().multiplyScalar(2.2) },
+    uBodyRim: bodyRim,
   };
   mat.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
@@ -348,6 +350,7 @@ if (vFx.y > 0.0) {
     }
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>
+${BODY_RIM_PARS}
 uniform vec3 uGlowColor;
 uniform float uVatTime;
 varying vec4 vFx;
@@ -363,6 +366,7 @@ diffuseColor.rgb *= vTint.rgb;
 // Frozen: pale, icy, a little translucent-looking.
 diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.62, 0.82, 1.0) * (0.55 + dot(diffuseColor.rgb, vec3(0.33))), vFx.z * 0.75);`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+${BODY_RIM}
 totalEmissiveRadiance += uGlowColor * vGlow;
 // A struck creature flares warm at the rim rather than going white.
 float rimF = 1.0 - clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0);
@@ -372,7 +376,7 @@ totalEmissiveRadiance += diffuseColor.rgb * vTint.a;
 // Ember at the dissolve's edge.
 if (vFx.y > 0.0) totalEmissiveRadiance += vec3(1.0, 0.45, 0.12) * smoothstep(vFx.y + 0.12, vFx.y, dn) * 3.0;`);
   };
-  mat.customProgramCacheKey = () => `vat-${depthOnly ? 'd' : 'c'}`;
+  mat.customProgramCacheKey = () => `vat-${depthOnly ? 'd' : 'c'}-rim`;
   return uniforms;
 }
 

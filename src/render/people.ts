@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { withBodyRim } from './bodyRim';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { sharedLoader } from './gltfShared';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
@@ -272,6 +273,7 @@ function build(spec: PersonSpec, get: (url: string) => GLTF): { root: THREE.Grou
       // (One dye per material: trousers with a colour of their own take it.)
       if (d?.under && under && legs) dyeMaterial(mat, d.under, under);
       else if (d?.cloth && cloth) dyeMaterial(mat, d.cloth, cloth);
+      withBodyRim(mat);
       own.set(k, mat);
     }
     m.material = mat;

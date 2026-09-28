@@ -6,8 +6,8 @@ import { shakeScale } from './motion';
  *
  *   - it leads a little in the direction of travel, so you see more of what
  *     you are running into than what you are running from;
- *   - it pulls back as the fight around you grows, and settles in when it is
- *     quiet (the `zoom` target is set by the game from threat);
+ *   - it eases to a new distance when the game asks (in close for a
+ *     conversation: `targetDistance`);
  *   - shake uses a trauma model (shake = trauma^2) with smooth noise, so a big
  *     hit is felt and a stream of small ones is not a blur;
  *   - `focusOverride` lets a cutscene or a boss intro frame something else. */

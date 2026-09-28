@@ -3,6 +3,7 @@ import { Sky, type SkySettings } from './sky';
 import type { GradeSettings } from './grade';
 import type { Renderer } from './renderer';
 import { lerp } from '@/core/math';
+import { bodyRim } from './bodyRim';
 
 /* Light, air and colour for a moment of the day.
  *
@@ -32,6 +33,9 @@ export interface AtmospherePreset {
   fogColor: string;
   fogDensity: number;
   exposure: number;
+  /** The rim of light on bodies (render/bodyRim.ts): colour and strength. */
+  rim: string;
+  rimStrength: number;
   grade: GradeSettings;
 }
 
@@ -39,7 +43,7 @@ const NIGHT: AtmospherePreset = {
   sky: { top: '#03050d', horizon: '#18203a', bottom: '#07080c', glow: '#3c5a8c', glowPower: 24, stars: 1, moon: 1 },
   keyColor: '#b8cbf2', keyIntensity: 2.2, keyElevation: 52, keyAzimuth: 128, shadowStrength: 0.6,
   hemiSky: '#3f5780', hemiGround: '#241e16', hemiIntensity: 0.95, envIntensity: 0.6,
-  fogColor: '#101a24', fogDensity: 0.0095, exposure: 1.42,
+  fogColor: '#101a24', fogDensity: 0.0095, exposure: 1.42, rim: '#8fb2ff', rimStrength: 0.55,
   grade: {
     lift: [0.015, 0.025, 0.04], gamma: [1.0, 1.0, 1.02], gain: [1.03, 1.0, 0.97],
     shadowTint: '#35646e', highlightTint: '#e6a25a', tintStrength: 0.2,
@@ -55,7 +59,7 @@ const NIGHT_TOWN: AtmospherePreset = {
   sky: { ...NIGHT.sky, glow: '#2c4470' },
   keyColor: '#9fb6e6', keyIntensity: 1.35, keyElevation: 48, shadowStrength: 0.55,
   hemiSky: '#2c3e62', hemiGround: '#1a150f', hemiIntensity: 0.58, envIntensity: 0.4,
-  fogColor: '#0b121c', fogDensity: 0.011, exposure: 1.32,
+  fogColor: '#0b121c', fogDensity: 0.011, exposure: 1.32, rim: '#86a4e8', rimStrength: 0.42,
   grade: {
     ...NIGHT.grade,
     lift: [0.01, 0.018, 0.035], shadowTint: '#2a4a66', highlightTint: '#ffa34e', tintStrength: 0.3,
@@ -67,7 +71,7 @@ const DUSK: AtmospherePreset = {
   sky: { top: '#141a36', horizon: '#b0583a', bottom: '#120c0c', glow: '#ff8a4a', glowPower: 7, stars: 0.25, moon: 0 },
   keyColor: '#ffae70', keyIntensity: 2.3, keyElevation: 18, keyAzimuth: 200, shadowStrength: 0.78,
   hemiSky: '#5a5a90', hemiGround: '#2a1a10', hemiIntensity: 0.7, envIntensity: 0.7,
-  fogColor: '#3a2a34', fogDensity: 0.0085, exposure: 1.05,
+  fogColor: '#3a2a34', fogDensity: 0.0085, exposure: 1.05, rim: '#ffb884', rimStrength: 0.32,
   grade: {
     lift: [0.03, 0.02, 0.05], gamma: [1.0, 1.0, 1.02], gain: [1.05, 1.0, 0.95],
     shadowTint: '#4a4a8a', highlightTint: '#ffb070', tintStrength: 0.2,
@@ -79,7 +83,7 @@ const DAWN: AtmospherePreset = {
   sky: { top: '#3b5a8f', horizon: '#f2b48a', bottom: '#2a2220', glow: '#ffd2a0', glowPower: 6, stars: 0, moon: 0 },
   keyColor: '#ffd1a0', keyIntensity: 2.8, keyElevation: 22, keyAzimuth: 20, shadowStrength: 0.8,
   hemiSky: '#8aa0d0', hemiGround: '#3a2a1a', hemiIntensity: 0.85, envIntensity: 0.85,
-  fogColor: '#a89aa0', fogDensity: 0.0065, exposure: 1.0,
+  fogColor: '#a89aa0', fogDensity: 0.0065, exposure: 1.0, rim: '#ffd8b0', rimStrength: 0.2,
   grade: {
     lift: [0.02, 0.02, 0.04], gamma: [1.0, 1.0, 1.0], gain: [1.04, 1.01, 0.97],
     shadowTint: '#56709a', highlightTint: '#ffc88a', tintStrength: 0.16,
@@ -93,7 +97,7 @@ const DAY: AtmospherePreset = {
   sky: { top: '#4a5a70', horizon: '#a8b0b4', bottom: '#34302c', glow: '#f0e2c8', glowPower: 8, stars: 0, moon: 0 },
   keyColor: '#f4e6cc', keyIntensity: 2.7, keyElevation: 44, keyAzimuth: 55, shadowStrength: 0.8,
   hemiSky: '#8a9aac', hemiGround: '#3e3226', hemiIntensity: 0.9, envIntensity: 0.8,
-  fogColor: '#8e969a', fogDensity: 0.0062, exposure: 0.9,
+  fogColor: '#8e969a', fogDensity: 0.0062, exposure: 0.9, rim: '#dfe8f4', rimStrength: 0.16,
   grade: {
     lift: [0.012, 0.014, 0.022], gamma: [1.0, 1.0, 1.0], gain: [1.02, 1.0, 0.97],
     shadowTint: '#3e5462', highlightTint: '#f0d8b0', tintStrength: 0.16,
@@ -126,6 +130,7 @@ export function blendPresets(a: AtmospherePreset, b: AtmospherePreset, t: number
     hemiIntensity: lerp(a.hemiIntensity, b.hemiIntensity, t), envIntensity: lerp(a.envIntensity, b.envIntensity, t),
     fogColor: mixHex(a.fogColor, b.fogColor, t), fogDensity: lerp(a.fogDensity, b.fogDensity, t),
     exposure: lerp(a.exposure, b.exposure, t),
+    rim: mixHex(a.rim, b.rim, t), rimStrength: lerp(a.rimStrength, b.rimStrength, t),
     grade: {
       lift: mixTriple(a.grade.lift, b.grade.lift, t), gamma: mixTriple(a.grade.gamma, b.grade.gamma, t),
       gain: mixTriple(a.grade.gain, b.grade.gain, t),
@@ -194,6 +199,8 @@ export class Atmosphere {
     this.fog.color.set(p.fogColor);
     this.fog.density = p.fogDensity;
     this.r.exposure = p.exposure;
+    const rim = new THREE.Color(p.rim);
+    bodyRim.value.set(rim.r, rim.g, rim.b, p.rimStrength);
     this.r.grade.apply(p.grade);
     this.sky.apply(p.sky, this.lightDir);
     this.r.scene.environmentIntensity = p.envIntensity;
