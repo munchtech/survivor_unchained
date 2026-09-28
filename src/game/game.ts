@@ -19,6 +19,7 @@ const FOG_N = 48;
 import {
   screen, overlay, prompt, toast, zoneInfo, slots, creation, fade, hud, levelUp, boss, objectives, announce,
   character, worldView, touch, dialogue, shopView, restView, subtitle, mapView, hint, type CreationDraft, type NoticeKind,
+  overlayBack,
 } from '@/ui/store';
 import { SHOPS, type ShopDef } from '@/content/shops';
 import { RULES, SOCIAL } from '@/content/rules';
@@ -574,6 +575,7 @@ export class Game {
     if (levelUp.value) return;
     const ov = overlay.value;
     if (a === 'pause' && !ov) { this.openOverlay('pause'); return true; }
+    if ((a === 'cancel' || a === 'pause') && ov && overlayBack.value) { overlayBack.value(); return true; }
     if ((a === 'cancel' || a === 'pause') && ov && ov !== 'death' && ov !== 'dialogue' && ov !== 'chapter') { this.closeOverlay(); return true; }
     if (ov) {
       if ((a === 'inventory' && ov === 'inventory') || (a === 'character' && ov === 'character') || (a === 'journal' && ov === 'journal') || (a === 'map' && ov === 'map')) { this.closeOverlay(); return true; }
@@ -1199,7 +1201,7 @@ export class Game {
       quality: () => this.r.quality,
       soundLevel: () => this.sound.level,
       quitToTitle: () => { this.save('quit'); fade.value = { to: 1, seconds: 0.6 }; setTimeout(() => this.showTitle(), 650); },
-      openOverlay: (o: 'inventory' | 'character' | 'journal' | 'pause') => this.openOverlay(o),
+      openOverlay: (o: 'inventory' | 'character' | 'journal' | 'pause' | 'map') => (o === 'map' ? this.openMap() : this.openOverlay(o)),
       closeOverlay: () => this.closeOverlay(),
       rise: () => this.zone && this.enterZone(this.zone.id, null),
       equipItem: (uid: string, slot?: string) => this.equipItem(uid, slot),

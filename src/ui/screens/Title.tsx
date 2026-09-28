@@ -4,6 +4,7 @@ import { actions } from '@/game/actions';
 import { Input } from '@/core/input';
 import { ARCHETYPES } from '@/content/archetypes';
 import { Glyph } from '../components/Icon';
+import { Controls } from '../components/Controls';
 import './title.css';
 
 /* The title: a fire on the Low Ford road, someone sitting by it, and the
@@ -22,7 +23,7 @@ function ago(t: number) {
 export function Title() {
   const list = slots.value;
   const latest = [...list].sort((a, b) => b.savedAt - a.savedAt)[0] as SlotView | undefined;
-  const [panel, setPanel] = useState<'none' | 'load' | 'settings' | 'credits'>('none');
+  const [panel, setPanel] = useState<'none' | 'load' | 'settings' | 'controls' | 'credits'>('none');
   const [quality, setQuality] = useState(() => actions.quality());
   const [sound, setSound] = useState(() => actions.soundLevel());
   const items: Array<{ id: string; label: string; sub?: string; act: () => void; primary?: boolean }> = [];
@@ -30,6 +31,7 @@ export function Title() {
   items.push({ id: 'new', label: 'New Journey', act: () => actions.newJourney(), primary: !latest });
   if (list.length) items.push({ id: 'load', label: 'Journeys', act: () => setPanel(panel === 'load' ? 'none' : 'load') });
   items.push({ id: 'settings', label: 'Settings', act: () => setPanel(panel === 'settings' ? 'none' : 'settings') });
+  items.push({ id: 'controls', label: 'Controls', act: () => setPanel(panel === 'controls' ? 'none' : 'controls') });
   items.push({ id: 'credits', label: 'Credits', act: () => setPanel(panel === 'credits' ? 'none' : 'credits') });
   const [focus, setFocus] = useState(0);
 
@@ -97,6 +99,12 @@ export function Title() {
             </div>
           </div>
           <div class="tp-note">Lower settings trade shadow detail, grass and ambient occlusion for speed.</div>
+        </div>
+      )}
+      {panel === 'controls' && (
+        <div class="title-panel panel fade-in">
+          <div class="tp-head title-cap">Controls</div>
+          <Controls />
         </div>
       )}
       {panel === 'credits' && (

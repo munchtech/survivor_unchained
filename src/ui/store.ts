@@ -18,6 +18,9 @@ export type Overlay =
 
 export const screen = signal<Screen>('boot');
 export const overlay = signal<Overlay>(null);
+/** Set while an overlay shows a page within itself (the pause menu's
+ *  controls): Escape goes back to it instead of closing the overlay. */
+export const overlayBack = signal<(() => void) | null>(null);
 
 /* ------------------------------------------------------------------ HUD -- */
 

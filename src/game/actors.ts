@@ -143,7 +143,12 @@ export class PlateLayer {
       p.el.style.transform = `translate(${sx}px, ${sy}px) translate(-50%, -100%)`;
       // Someone speaking keeps their bubble; the plate steps aside.
       const speaking = hush.some((q) => Math.hypot(q.x - it.x, q.z - it.z) < 1.6);
-      p.el.style.opacity = String(speaking ? 0 : fadeIn);
+      // Names give way to the interface: out near the top and bottom edges,
+      // and under the zone's name in the corner.
+      const clamp01 = (t: number) => Math.max(0, Math.min(1, t));
+      const edge = clamp01((sy - 70) / 50) * clamp01((h - 130 - sy) / 50) * clamp01((sx - 30) / 40) * clamp01((w - 30 - sx) / 40);
+      const corner = 1 - clamp01((sx - (w - 380)) / 60) * clamp01((190 - sy) / 50);
+      p.el.style.opacity = String(speaking ? 0 : fadeIn * edge * corner);
       p.el.classList.toggle('near', d < 5);
     }
     for (const [id, p] of this.plates) if (!seen.has(id)) { p.el.remove(); this.plates.delete(id); }

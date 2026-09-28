@@ -15,15 +15,18 @@ npm run build      # typecheck + production build
 
 ## Playing
 
-| | |
-|---|---|
-| Move | WASD / arrows / left stick |
-| Dash | Space / Shift |
-| Ability | Q / right mouse |
-| Interact, talk | E / F |
-| Pack · Self · Journal · Map | I (Tab) · C · J · M |
-| Level-up draft | 1–4 to pick, X reroll, B banish |
-| Pause (save, sound) | Esc / P |
+| | Keyboard and mouse | Pad |
+|---|---|---|
+| Move | WASD / arrows | left stick |
+| Dash | Space / Shift | A |
+| Ability | Q / right mouse | X |
+| Draught | R | Y |
+| Interact, talk | E / F | B |
+| Pack · Self · Journal · Map | I (Tab) · C · J · M | View · then Menu |
+| Level-up draft | 1–4 to pick, X reroll, B banish | D-pad and A, X, Y |
+| Pause (save, sound, graphics, controls) | Esc / P | Menu |
+
+The full list is under Controls, on the title and in the pause menu.
 
 Skills (weapons) fire on their own. You choose where to stand, when to
 dash, which skill to take or rank up each time the ember rises (anyone can
@@ -145,6 +148,9 @@ All expect `npm run dev` running.
 | `node tools/play.mjs "quick=warden&auto" name secs` | Autopilot through the prologue |
 | `node tools/verge.mjs [hollow roost dig death]` | Drive the Verge routes and check the world's answer |
 | `node tools/saveload.mjs` | Save mid-expedition, reload, continue, compare |
+| `node tools/newgame.mjs [calling] [--continue]` | A new player's first hour, clicked: title, creation, prologue, town, Continue, out the gate |
+| `node tools/monkey.mjs [zone] [steps] [seed]` | Random keys and clicks, checking nothing ever gets stuck |
+| `node tools/console.mjs` | Every warning and error in the console, zone by zone, day and night |
 | `node tools/flow.mjs` | Toll, both roads out of town and back, a night at the inn |
 | `node tools/field.mjs [--fresh]` | Balance: a survivor who played the prologue, in the Verge by day and night, playing or idle |
 | `node tools/folk.mjs [day\|night]` | The townsfolk: lanes checked against colliders, three minutes of errands, anyone stuck |
@@ -155,6 +161,7 @@ All expect `npm run dev` running.
 | `node tools/ui.mjs [w h] [screen...]` | Every overlay (shops, stash, pack, self, journal, map, rest, pause, talk) at one size |
 | `node tools/listen.mjs "<query>" name secs` | Record the mix as a spectrogram with loudness |
 
-Useful URLs: `?quick=warden&bg=hunter&zone=verge&at=-60,-80` (start
+`NO_HMR=1 npm run dev` serves without hot reload, so a long tool run
+survives edits to the source. Useful URLs: `?quick=warden&bg=hunter&zone=verge&at=-60,-80` (start
 anywhere as anyone), `?screen=create`, `?dev=zone&zone=verge&x=..&z=..`,
 `?dev=sandbox`, `?dev=combat`, `?dev=icons`, `?dev=gallery`, `&quality=low`.

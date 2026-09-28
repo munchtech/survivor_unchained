@@ -419,9 +419,11 @@ ${OCCLUDE_VERT_PARS}`)
     float reach = length(instanceMatrix[0].xyz);
     vLane = uFocus.w * smoothstep(-2.5 * reach, 0.5, along) * (1.0 - smoothstep(13.0, 18.0, along))
           * (1.0 - smoothstep(4.0 * reach, 6.5 * reach, lat));
-    // Anything standing close around the survivor thins a little too, so
-    // the ground the fight is on stays readable.
-    vLane = max(vLane, uFocus.w * 0.45 * (1.0 - smoothstep(5.0 * reach, 8.5 * reach, length(d))));
+    // Canopies close around the survivor thin a little too, so the ground
+    // the fight is on stays readable; only what is overhead (a bush, a
+    // trunk, the lower branches hide nothing from up here).
+    vLane = max(vLane, uFocus.w * 0.45 * (1.0 - smoothstep(5.0 * reach, 8.5 * reach, length(d)))
+                       * smoothstep(2.2, 3.6, position.y * reach));
   }` : ''}
   #endif
   float h = max(position.y, 0.0);

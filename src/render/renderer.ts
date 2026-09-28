@@ -25,12 +25,15 @@ export interface QualitySpec {
   aoHalfRes: boolean;
   bloom: boolean;
   grassDensity: number;
+  /** Without ambient occlusion the picture reads lighter and flatter; a
+   *  touch less exposure keeps the mood. */
+  exposureScale: number;
 }
 
 export const QUALITY: Record<Quality, QualitySpec> = {
-  low: { pixelRatio: 1, shadowMapSize: 1024, ao: false, aoHalfRes: true, bloom: true, grassDensity: 0.35 },
-  medium: { pixelRatio: 1.5, shadowMapSize: 2048, ao: true, aoHalfRes: true, bloom: true, grassDensity: 0.7 },
-  high: { pixelRatio: 2, shadowMapSize: 4096, ao: true, aoHalfRes: false, bloom: true, grassDensity: 1 },
+  low: { pixelRatio: 1, shadowMapSize: 1024, ao: false, aoHalfRes: true, bloom: true, grassDensity: 0.35, exposureScale: 0.88 },
+  medium: { pixelRatio: 1.5, shadowMapSize: 2048, ao: true, aoHalfRes: true, bloom: true, grassDensity: 0.7, exposureScale: 1 },
+  high: { pixelRatio: 2, shadowMapSize: 4096, ao: true, aoHalfRes: false, bloom: true, grassDensity: 1, exposureScale: 1 },
 };
 
 export class Renderer {
@@ -98,6 +101,7 @@ export class Renderer {
     this.quality = q;
     this.spec = QUALITY[q];
     this.applyQuality();
+    this.exposure = this.baseExposure;
     this.resize();
   }
 
@@ -142,8 +146,10 @@ export class Renderer {
     this.composer.render(dt);
   }
 
+  private baseExposure = 1;
   set exposure(v: number) {
     // The AgX operator reads the renderer's exposure.
-    this.gl.toneMappingExposure = v;
+    this.baseExposure = v;
+    this.gl.toneMappingExposure = v * this.spec.exposureScale;
   }
 }

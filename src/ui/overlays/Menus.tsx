@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'preact/hooks';
 import { actions } from '@/game/actions';
 import { Input } from '@/core/input';
+import { Controls } from '../components/Controls';
+import { overlayBack } from '../store';
 import './menus.css';
 
 /* The small overlays: the pause menu and the fall. */
@@ -8,24 +10,49 @@ import './menus.css';
 export function Pause() {
   const [sound, setSound] = useState(() => actions.soundLevel());
   const [quality, setQuality] = useState(() => actions.quality());
+  const [showControls, setShow] = useState(false);
+  // Set at once, not in an effect: effects run after paint, and a quick
+  // second Escape would find the old value.
+  const setShowControls = (on: boolean) => { overlayBack.value = on ? () => setShowControls(false) : null; setShow(on); };
   const QUALITIES = ['high', 'medium', 'low'] as const;
   const items = [
     { label: 'Resume', act: () => actions.resume() },
     { label: 'Save', act: () => actions.saveNow() },
     { label: `Sound: ${{ on: 'On', quiet: 'Quiet', off: 'Off' }[sound]}`, act: () => setSound(actions.cycleSound()) },
     { label: `Graphics: ${quality[0].toUpperCase()}${quality.slice(1)}`, act: () => { const q = QUALITIES[(QUALITIES.indexOf(quality) + 1) % QUALITIES.length]; actions.setQuality(q); setQuality(q); } },
+    { label: 'Controls', act: () => setShowControls(true) },
     { label: 'Pack', act: () => actions.openOverlay('inventory') },
+    { label: 'Self', act: () => actions.openOverlay('character') },
     { label: 'Journal', act: () => actions.openOverlay('journal') },
+    { label: 'Map', act: () => actions.openOverlay('map') },
     { label: 'Leave to the title', act: () => actions.quitToTitle() },
   ];
   const [focus, setFocus] = useState(0);
   useEffect(() => Input.on((a) => {
+    // The controls list is read, not navigated: confirm goes back (and
+    // Escape, through overlayBack, which the game checks first).
+    if (showControls) {
+      if (a === 'confirm') { setShowControls(false); return true; }
+      return;
+    }
     if (a === 'up') setFocus((f) => (f + items.length - 1) % items.length);
     else if (a === 'down') setFocus((f) => (f + 1) % items.length);
     else if (a === 'confirm') items[focus].act();
     else return;
     return true;
-  }), [focus]);
+  }), [focus, showControls]);
+  useEffect(() => () => { overlayBack.value = null; }, []);
+  if (showControls) return (
+    <div class="menu-overlay">
+      <div class="scrim fade-in" onClick={() => setShowControls(false)} />
+      <div class="pause panel rise-in controls-panel">
+        <div class="pause-title title-cap">Controls</div>
+        <div class="rule" />
+        <Controls />
+        <button class="btn" onClick={() => setShowControls(false)}>Back</button>
+      </div>
+    </div>
+  );
   return (
     <div class="menu-overlay">
       <div class="scrim fade-in" onClick={() => actions.resume()} />

@@ -355,7 +355,7 @@
 .subtitle {
   position: absolute; left: 50%; bottom: 190px; transform: translateX(-50%); max-width: min(760px, 80%);
   padding: 8px 18px; text-align: center; border-radius: 4px;
-  background: radial-gradient(ellipse at center, rgba(6, 5, 8, 0.72), rgba(6, 5, 8, 0) 75%);
+  background: radial-gradient(ellipse at center, rgba(6, 5, 8, 0.8), rgba(6, 5, 8, 0.35) 55%, rgba(6, 5, 8, 0) 80%);
 }
 .sub-speaker { display: block; font: 700 13px var(--font-display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); text-shadow: 0 1px 2px #000; }
 .sub-text { font: 400 20px/1.35 var(--font-text); color: #f4ecdc; text-shadow: 0 1px 2px #000, 0 0 10px #000; }

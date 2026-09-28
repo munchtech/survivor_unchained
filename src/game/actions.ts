@@ -19,7 +19,7 @@ export interface GameActions {
   setSound(level: 'on' | 'quiet' | 'off'): void;
   quality(): 'low' | 'medium' | 'high';
   soundLevel(): 'on' | 'quiet' | 'off';
-  openOverlay(o: 'inventory' | 'character' | 'journal' | 'pause'): void;
+  openOverlay(o: 'inventory' | 'character' | 'journal' | 'pause' | 'map'): void;
   closeOverlay(): void;
   /** Death screen: get up again. */
   rise(): void;

@@ -37,10 +37,11 @@ export const DEFAULT_BINDINGS: Record<Action, string[]> = {
   tabPrev: ['BracketLeft'],
 };
 
-// Standard gamepad mapping.
+// Standard gamepad mapping. View opens the pack; the self, journal and map
+// are in the pause menu (Menu), so a pad reaches everything.
 const PAD: Partial<Record<Action, number[]>> = {
   dash: [0], ability: [2], ultimate: [3], interact: [1], confirm: [0], cancel: [1],
-  inventory: [8], pause: [9], journal: [8], up: [12], down: [13], left: [14], right: [15],
+  inventory: [8], pause: [9], up: [12], down: [13], left: [14], right: [15],
   tabNext: [5], tabPrev: [4], reroll: [2], banish: [3],
 };
 
@@ -173,9 +174,28 @@ class InputState {
   }
 
   keyLabel(a: Action) {
-    const c = this.bindings[a][0] ?? '';
-    return c.replace(/^Key/, '').replace(/^Digit/, '').replace('Mouse2', 'RMB').replace('Mouse0', 'LMB').replace('ShiftLeft', 'Shift');
+    return codeLabel(this.bindings[a][0] ?? '');
   }
+
+  /** Every key bound to an action, as the player would name them. */
+  keyLabels(a: Action) {
+    return this.bindings[a].map(codeLabel);
+  }
+
+  /** The pad buttons bound to an action (standard mapping). */
+  padLabels(a: Action) {
+    return (PAD[a] ?? []).map((b) => PAD_NAMES[b] ?? `B${b}`);
+  }
+}
+
+const PAD_NAMES: Record<number, string> = { 0: 'A', 1: 'B', 2: 'X', 3: 'Y', 4: 'LB', 5: 'RB', 8: 'View', 9: 'Menu', 12: 'D-pad up', 13: 'D-pad down', 14: 'D-pad left', 15: 'D-pad right' };
+
+function codeLabel(c: string) {
+  const named: Record<string, string> = {
+    Mouse0: 'LMB', Mouse2: 'RMB', ShiftLeft: 'Shift', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→',
+    BracketLeft: '[', BracketRight: ']', NumpadEnter: 'Enter', Escape: 'Esc', Backspace: 'Backspace',
+  };
+  return named[c] ?? c.replace(/^Key/, '').replace(/^Digit/, '');
 }
 
 export const Input = new InputState();
