@@ -24,7 +24,7 @@ export type FolkKind = 'door' | 'stall' | 'well' | 'board' | 'gate' | 'path';
 export interface FolkNode { id: string; x: number; z: number; kind: FolkKind; face?: { x: number; z: number }; square?: boolean; tavern?: boolean }
 export interface FolkPlan { adults: number; children: number; watch: boolean }
 
-type Role = 'adult' | 'child' | 'watch';
+export type Role = 'adult' | 'child' | 'watch';
 
 interface Walker {
   id: number;
@@ -62,7 +62,7 @@ const rnd = (a: number, b: number) => a + Math.random() * (b - a);
  *  clothes of a look (its colours dye them), with skin, hair and a beard of
  *  their own. The watch wear leathers, a pauldron and a hood; children are
  *  small, with a child's larger head and no figure. */
-function folkPerson(role: Role, l: FolkLook): PersonSpec {
+export function folkPerson(role: Role, l: FolkLook): PersonSpec {
   const child = role === 'child';
   const sex = Math.random() < (role === 'watch' ? 0.3 : 0.5) ? 'female' : 'male';
   const hood = role === 'watch' || (!child && l.model === 'rogue_hooded');

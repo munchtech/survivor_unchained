@@ -177,6 +177,31 @@ describe('the Missing Caravan', () => {
   });
 });
 
+describe('the blue room', () => {
+  it('a night with Sella is paid for up front and leaves you warmed', () => {
+    const { c, ch, world } = setup('hunter');
+    ch.gold = 20;
+    talk(CONVOS.sella, c, 'how much', '15 gold');
+    expect(ch.gold).toBe(5);
+    expect(ch.conditions.map((x) => x.id)).toContain('warmed');
+    expect(world.facts['sella.nights']).toBe(1);
+  });
+
+  it('without the coin, the offer is there but closed', () => {
+    const { c, ch } = setup('hunter');
+    ch.gold = 10;
+    expect(() => talk(CONVOS.sella, c, 'how much', '15 gold')).toThrow(/locked/);
+  });
+
+  it('what men say after is a lead on the caravan, once', () => {
+    const { c, world } = setup('hunter');
+    world.quests.caravan = { status: 'active', entries: [] } as unknown as typeof world.quests.caravan;
+    talk(CONVOS.sella, c, 'what do you hear');
+    talk(CONVOS.sella, c, 'what do you hear');
+    expect(world.quests.caravan.entries.filter((e) => e === 'sella_clerk')).toHaveLength(1);
+  });
+});
+
 describe('being found out', () => {
   it('Holloway confronts a liar, and a debt paid softens it', () => {
     const { c, ch, world } = setup('outcast');

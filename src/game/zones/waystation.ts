@@ -11,8 +11,8 @@ import { test, type Cond } from '@/world/logic';
 import { QUESTS } from '@/content/quests';
 import { objectives, say, toast, type Objective } from '@/ui/store';
 import { hist } from '@/content/dialogue/town';
-import { Folk, type FolkNode } from '../folk';
-import { FOLK_LINES, FOLK_LOOKS } from '@/content/folk';
+import { Folk, folkPerson, type FolkNode } from '../folk';
+import { FOLK_LINES, FOLK_LOOKS, WATCH_LOOK } from '@/content/folk';
 
 /* The Waystation, lived in.
  *
@@ -25,8 +25,10 @@ import { FOLK_LINES, FOLK_LOOKS } from '@/content/folk';
 
 const GUARD_DEF = (i: number): NpcDef => ({
   id: `guard${i}`, name: 'Watchman', title: 'The Waystation Watch', role: 'Watch',
-  model: 'knight', show: ['Knight_Helmet', '1H_Sword', 'Rectangle_Shield'], tint: '#8a98b0', idle: 'Idle',
+  model: 'knight', show: ['Knight_Helmet', '1H_Sword', 'Rectangle_Shield'], tint: '#8a98b0', idle: 'Idle_Shield_Loop',
   spot: GUARDS[i], barks: [GUARDS[i].line],
+  // The Watch's leathers and hood, a sword and shield.
+  person: folkPerson('watch', WATCH_LOOK), arms: { right: 'viking_sword', forearm: 'shield_round' },
 });
 
 /** What the stall-keepers shout. */
@@ -80,7 +82,8 @@ export function waystation(g: Game): ZoneRuntime {
   const keepers = built.stalls.map((st, i) => {
     const look = FOLK_LOOKS[(i * 3 + 1) % FOLK_LOOKS.length];
     return new NpcActor({
-      id: `keeper${i}`, name: 'Stall-keeper', title: '', role: '', model: look.model, show: look.show, tint: look.tint, scale: look.scale, idle: i % 2 ? 'Idle_B' : 'Idle',
+      id: `keeper${i}`, name: 'Stall-keeper', title: '', role: '', model: look.model, show: look.show, tint: look.tint, scale: look.scale, idle: i % 2 ? 'Idle_Talking_Loop' : 'Idle_FoldArms_Loop',
+      person: folkPerson('adult', look),
       spot: { x: st.x - Math.sin(st.rot) * 0.35, z: st.z - Math.cos(st.rot) * 0.35, facing: st.rot }, barks: STALL_CALLS[st.kind] ?? ['Come and look!'],
     }, root, heightAt, g.barks);
   });

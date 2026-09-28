@@ -80,7 +80,7 @@ export const ROOK: Conversation = {
     },
     town: {
       id: 'town',
-      text: 'Three roads meet here. South to the Low Ford, east to the Old Road and the Verge, and north... north is shut, and a boy in shiny armour will tell you why at length. Vonnra takes the toll, Holloway keeps the peace, Brannoc keeps the steel, Chid keeps the shrine, badly. Harlan and Pell keep each other honest. Mostly.',
+      text: 'Three roads meet here. South to the Low Ford, east to the Old Road and the Verge, and north... north is shut, and a boy in shiny armour will tell you why at length. Vonnra takes the toll, Holloway keeps the peace, Brannoc keeps the steel, Chid keeps the shrine, badly. Harlan and Pell keep each other honest. Mostly. And Sella keeps the blue room upstairs, and my third of it, and her mouth shut when it matters.',
       choices: [back()],
     },
     firstlamp: {
@@ -1017,7 +1017,107 @@ export const BOARD: Conversation = {
   },
 };
 
+/* =============================================================== Sella == */
+
+/* She keeps the blue room at the top of Rook's stairs, by Rook's leave and
+ * for Rook's cut. Frank, funny, nobody's fool; she hears what men say when
+ * they think it does not matter. A night with her is paid for, agreed to,
+ * and nobody's business: the scene fades, and what is left is the morning. */
+
+const SELLA_PRICE = 15;
+const sellaHub: DChoice[] = [
+  { text: 'What do you hear, up there?', goto: 'hear' },
+  { text: 'How much for the night?', goto: 'price' },
+  { text: 'Does Rook mind?', once: 'rook', goto: 'rook' },
+  bye('Not tonight.'),
+];
+
+export const SELLA: Conversation = {
+  npc: 'sella',
+  entry: [
+    { when: notMet('sella'), node: 'first' },
+    { when: { fact: 'sella.nights', gte: 1 }, node: 'again' },
+    { node: 'hub' },
+  ],
+  marker: [{ when: notMet('sella'), mark: '!' }],
+  nodes: {
+    first: {
+      id: 'first',
+      text: [
+        { when: { history: 'ford_warden_slain' }, text: 'So you\'re the one who put the big dead bastard at the ford back in the ground. Half the tavern\'s been drinking to you, and the other half\'s been drinking to them. I\'m Sella. I keep the blue room at the top of Rook\'s stairs. Talk\'s free. The rest isn\'t.' },
+        { text: 'You\'ve got the look of someone who\'s been sleeping in ditches, love. Sella. I keep the blue room at the top of Rook\'s stairs. Talk\'s free. The rest isn\'t.' },
+      ],
+      choices: sellaHub,
+    },
+    hub: {
+      id: 'hub',
+      text: [
+        { when: { time: 'night' }, text: 'Evening, {name}. The lamp\'s lit upstairs, if you\'re asking. You look like you\'re asking.' },
+        { text: 'Back again. People will talk. Let them; it\'s good for business.' },
+      ],
+      choices: sellaHub,
+    },
+    again: {
+      id: 'again',
+      text: [
+        { when: { time: 'night' }, text: 'There you are. I was starting to think you\'d found someone cheaper. You\'d have been robbed.' },
+        { text: '{name}. Still walking straight, I see. I\'ll take that as a compliment.' },
+      ],
+      choices: sellaHub,
+    },
+    hear: {
+      id: 'hear',
+      text: [
+        { when: { quest: { id: 'caravan', status: 'active' } }, text: 'Men talk after. God, do they talk. There\'s a toll clerk who\'s been flush all month, paying me in new silver with the Varrow mark stamped on it. Last time he was pleased with himself: said he\'d "sent some wagons down the wrong road" and got paid twice for it. Then he fell asleep on my arm. Charming.' },
+        { when: { fact: 'beasts.outcome', exists: true }, text: 'That the wolves are quiet, and Holloway\'s drinking more than he\'s paying. That Pell sleeps with his ledgers. That Harlan cries when he\'s had three. Same as ever.' },
+        { text: 'That the wolves are sick and Holloway\'s a prick, and that nobody who goes up the north road comes back to tell me about it. Same as ever.' },
+      ],
+      // (Heard once is enough for the journal.)
+      effects: [{ if: { all: [{ quest: { id: 'caravan', status: 'active' } }, { not: { fact: 'sella.told_clerk', eq: true } }] }, then: [{ quest: { id: 'caravan', entry: 'sella_clerk' } }, { set: { 'sella.told_clerk': true } }] }],
+      choices: [back()],
+    },
+    rook: {
+      id: 'rook',
+      text: 'Rook minds everything. She also takes a third, keeps the drunks off the stairs, and once put a Kerchief through the front door for not paying. I\'ve had worse landladies. I\'ve had worse mothers.',
+      effects: [{ rel: { npc: 'sella', affection: 5 } }],
+      choices: [back()],
+    },
+    price: {
+      id: 'price',
+      text: `${SELLA_PRICE} gold, and I'll want it up front. For that you get the blue room, a bath that's mostly warm, and me, until morning. Anything you'd rather I didn't do, say so. Anything you'd rather I did, say that too.`,
+      choices: [
+        { text: `${SELLA_PRICE} gold, then. Lead the way.`, when: { gold: { gte: SELLA_PRICE } }, locked: `You would need ${SELLA_PRICE} gold`, goto: 'night' },
+        { text: 'Just the talk, for now.', goto: 'hub' },
+      ],
+    },
+    night: {
+      id: 'night',
+      speaker: 'narrator',
+      text: 'She takes the coins first and your hand second, and leads you up Rook\'s narrow stairs. The blue room smells of lavender and lamp oil, and the bath is, as promised, mostly warm. What follows is nobody\'s business but yours: slow, and warm, and unhurried, and for a few hours the road and the dead on it are a long way off. You wake with her hair across you and the sun already up. She is dressed, and counting.',
+      effects: [
+        { gold: -SELLA_PRICE },
+        { add: { 'sella.nights': 1 } },
+        { rel: { npc: 'sella', affection: 8, trust: 4 } },
+        { condition: { id: 'warmed', days: 1, note: 'A night in the blue room' } },
+        { notice: 'You feel good. Better than good. (Warmed: +8% damage, +5% speed, one day)' },
+      ],
+      next: 'morning',
+    },
+    morning: {
+      id: 'morning',
+      text: [
+        { when: { fact: 'sella.nights', gte: 3 }, text: 'You\'re getting to be a habit, {name}. I don\'t mind. Rook does; she says you\'re wearing out the stairs. Go on, the day\'s wasting, and somebody out there needs killing.' },
+        { text: 'You snore, by the way. Not badly. Go on, then. Come back in one piece; the pieces are what I like.' },
+      ],
+      choices: [
+        { text: 'Sleep a little longer first.', action: 'rest' },
+        bye('Until next time.'),
+      ],
+    },
+  },
+};
+
 export const TOWN_CONVOS: Record<string, Conversation> = {
   rook: ROOK, holloway: HOLLOWAY, maeca: MAECA, wenna: WENNA, tam: TAM, brannoc: BRANNOC, harlan: HARLAN, pell: PELL,
-  rav: RAV, chid: CHID, vonnra: VONNRA, keegan: KEEGAN, board: BOARD,
+  rav: RAV, chid: CHID, vonnra: VONNRA, keegan: KEEGAN, board: BOARD, sella: SELLA,
 };

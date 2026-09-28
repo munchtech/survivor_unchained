@@ -66,6 +66,7 @@ export const QUESTS: Record<string, QuestDef> = {
       ruts: 'Wheel ruts turn off the road into the forest. Someone drove the wagons away, loaded.',
       guard_says: 'The east-gate guard swears the Old Road was never closed that day.',
       clerk_turned: 'In the tavern: a toll clerk told Coyle\'s teamsters the road was closed and sent them down the forest track.',
+      sella_clerk: 'Sella, upstairs at the Last Lamp: the toll clerk paid her in new silver with the Varrow mark on it, and bragged in bed that he had "sent some wagons down the wrong road".',
       toll_ledger: 'Vonnra\'s toll ledger: the Coyle caravan never paid the toll. It never came through the gate at all.',
       pell_ledger: 'Pell Varrow\'s ledger: a payment to "R." the night the caravan vanished, and another to the toll clerk.',
       clerks_key: 'The toll clerk had a key to Pell\'s warehouse. He should not have.',

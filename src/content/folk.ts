@@ -72,6 +72,20 @@ export const FOLK_LINES: FolkLine[] = [
   { text: 'Nothing good walks about after dark.', night: true },
   { text: 'Lamps are lit. Stay where they reach.', night: true },
   { text: 'Is that the watch? Oh. You.', night: true },
+  // (Grown-ups talking.)
+  { text: 'Shit weather, shit road, shit luck. Morning.', night: false },
+  { text: 'Bloody wolves. Bloody Watch. Bloody bread.' },
+  { text: 'Holloway couldn\'t find his own arse with a lantern and a map.' },
+  { text: 'Pell counts his coin in bed. Alone, obviously.' },
+  { text: 'If the wolves don\'t get you, Rook\'s stew will.' },
+  { text: 'My husband went out to the Verge a month back. Some days I hope he stays out.' },
+  { text: 'Sella took three coppers off me for a smile. Worth four.' },
+  { text: 'Rook\'s upstairs rooms go by the hour now. Don\'t ask how I know.' },
+  { text: 'Somebody\'s having a better night than me. Rook\'s walls are thin.', night: true },
+  { text: 'Buried two this week. The ground\'s full and the priest\'s a boy.' },
+  { text: 'They found the Aldo lad in the ditch. What was left of him.', night: true },
+  { text: 'Keep walking, hero. I\'ve had my fill of heroes.' },
+  { text: 'You smell like the dead. No offence. Everybody does, lately.' },
 
   // --- The Low Ford, the first thing anybody knows about you.
   { text: 'Came up the Low Ford at night? You\'re brave or daft.', when: { day: { lte: 2 } } },
@@ -130,5 +144,7 @@ export const FOLK_LINES: FolkLine[] = [
   { text: 'All quiet. Keep it that way.', watch: true },
   { text: 'Gates are shut till dawn.', watch: true },
   { text: 'Walk on, traveller.', watch: true },
+  { text: 'Piss off home. It\'s past curfew.', watch: true },
+  { text: 'Keep that blade sheathed or I\'ll sheathe it for you.', watch: true },
   { text: 'Captain\'s doubled the gate. Wolves.', watch: true, when: { fact: 'wolves.at_gate', eq: true } },
 ];

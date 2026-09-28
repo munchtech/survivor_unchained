@@ -41,7 +41,7 @@ export const NPCS: Record<string, NpcDef> = {
     model: 'barbarian', show: ['Mug'], tint: '#8a5a6a', scale: 0.95, idle: 'Idle_FoldArms_Loop',
     person: { sex: 'female', outfit: outfitFor('female', 'peasant'), hair: 'Hair_Buns', hairColor: '#7a746e', skin: '#e0a47c', figure: 1.2, dye: { cloth: '#8a5a6a', under: '#3a2a2a' } },
     spot: { x: -11.2, z: 12.6, facing: Math.PI / 2 },
-    barks: ['Beds are dry and the stew is hot. That is more than most can say.', 'Wipe your boots.', 'If you are bleeding, bleed outside.'],
+    barks: ['Beds are dry and the stew is hot. That is more than most can say.', 'Wipe your boots.', 'If you are bleeding, bleed outside.', 'Rooms upstairs by the night. By the hour, ask Sella.'],
     nightBarks: ['Lamps stay lit till the last one\'s in.', 'Bed\'s warm if you want it. Stew\'s gone.', 'Quietly, now. People are sleeping.'],
   },
   holloway: {
@@ -50,7 +50,7 @@ export const NPCS: Record<string, NpcDef> = {
     person: { sex: 'male', outfit: outfitFor('male', 'ranger', { pauldron: true }), hair: 'Hair_Buzzed', hairColor: '#4a4038', beard: true, skin: '#e0a47c', dye: { cloth: '#56627e' } },
     spot: { x: -3.6, z: -9.5, facing: 0.6 },
     barks: ['Five gold a pelt. Fifty for the old grey one.', 'Keep to the road, and keep your blade where I can see it.', 'Three caravans this month. Three.'],
-    nightBarks: ['Curfew\'s not law. Yet.', 'Two on the walls, one on each gate. It is not enough.', 'Go to bed, traveller.'],
+    nightBarks: ['Curfew\'s not law. Yet.', 'Two on the walls, one on each gate. It is not enough.', 'Go to bed, traveller.', 'Every night I bury somebody\'s son. Go home.'],
   },
   maeca: {
     id: 'maeca', name: 'Maeca Barefoot', title: 'Last of the Ashford Garrison', role: 'Hunter',
@@ -74,7 +74,7 @@ export const NPCS: Record<string, NpcDef> = {
     person: { sex: 'male', outfit: outfitFor('male', 'peasant', { hood: true }), hair: null, beard: true, hairColor: '#5a4a3a', skin: '#e0a47c', dye: { cloth: '#8a3a34', under: '#2a1a18' } },
     arms: { right: 'dagger_b' },
     spot: { x: -11.4, z: -7.6, facing: Math.PI / 2 },
-    barks: ['I am a doctor. Mostly.', 'Red cloth is a hard habit to break.', 'Buy me a drink and I will tell you a lie worth hearing.'],
+    barks: ['I am a doctor. Mostly.', 'Red cloth is a hard habit to break.', 'Buy me a drink and I will tell you a lie worth hearing.', 'Drop your trousers or don\'t. The leeches aren\'t fussy.', 'Half my patients die. The other half pay.'],
     nightBarks: ['Night surgery costs double. Night anything costs double.', 'The best stories come after the third cup.', 'Pull up a stool. Mind the blood.'],
   },
   harlan: {
@@ -115,7 +115,7 @@ export const NPCS: Record<string, NpcDef> = {
     person: { sex: 'male', outfit: outfitFor('male', 'bare'), hair: 'Hair_Buzzed', hairColor: '#2a2422', beard: true, skin: '#946040', dye: { under: '#3a3028' } },
     arms: { right: 'mace' },
     spot: { x: 11.6, z: 14.6, facing: -Math.PI / 2 },
-    barks: ['Good steel does not come cheap. Neither do good pelts.', 'Mind the sparks.', 'Bring me hides, and I will make you something worth wearing.'],
+    barks: ['Good steel does not come cheap. Neither do good pelts.', 'Mind the sparks.', 'Bring me hides, and I will make you something worth wearing.', 'Hit a man with this and he stays hit.'],
     nightBarks: ['Forge is banked. Come back at first light.', 'My arm aches worse at night. Old iron does.', 'The fire keeps me company.'],
   },
   vonnra: {
@@ -134,6 +134,14 @@ export const NPCS: Record<string, NpcDef> = {
     spot: { x: 0, z: -33, facing: 0 },
     barks: ['None pass north. Not yet.', 'You are not ready for what is beyond there.', 'Probationary. It is a real title.'],
     nightBarks: ['Night watch. Probationary night watch.', 'Something moved out there. Probably.', 'Stand back from the gate, please.'],
+  },
+  sella: {
+    id: 'sella', name: 'Sella', title: 'Of the blue room, upstairs at the Last Lamp', role: 'Company, for a price',
+    model: 'rogue', show: [], tint: '#3a5a8a', idle: 'Idle',
+    person: { sex: 'female', outfit: outfitFor('female', 'bare'), hair: 'Hair_Long', hairColor: '#8e3e20', skin: '#e0a47c', figure: 1.35, dye: { under: '#1e2a3e' } },
+    spot: { x: -11.2, z: 7.9, facing: 0.9 },
+    barks: ['Buy a girl a drink? No? Buy yourself one, then. You look like you need it.', 'You\'ve got road on you. I can smell it from here.', 'Rook\'s stew or my company. Only one of them\'s warm.'],
+    nightBarks: ['Cold night to sleep alone, love.', 'Rook\'s walls are thin. Just so you know.', 'The blue room\'s got a lamp lit. Guess who\'s in it.'],
   },
 };
 

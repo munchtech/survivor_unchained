@@ -24,7 +24,7 @@ export interface ItemInstance {
 }
 
 export interface Condition {
-  id: 'wounded' | 'blightsick' | 'poisoned' | 'blessed' | 'rested' | 'wolfscent' | 'hunted';
+  id: 'wounded' | 'blightsick' | 'poisoned' | 'blessed' | 'rested' | 'wolfscent' | 'hunted' | 'warmed';
   days: number;
   note?: string;
 }
@@ -370,6 +370,10 @@ export function deriveKit(ch: CharacterData): CombatKit {
     if (c.id === 'blightsick') st.add({ stat: 'regen', kind: 'flat', value: -0.8, source: 'cond:blightsick' });
     if (c.id === 'blessed') st.add({ stat: 'damage.holy', kind: 'inc', value: 0.15, source: 'cond:blessed' });
     if (c.id === 'rested') st.add({ stat: 'maxHealth', kind: 'inc', value: 0.05, source: 'cond:rested' });
+    if (c.id === 'warmed') {
+      st.add({ stat: 'damage', kind: 'inc', value: 0.08, source: 'cond:warmed' });
+      st.add({ stat: 'moveSpeed', kind: 'inc', value: 0.05, source: 'cond:warmed' });
+    }
   }
   return { stats: st, weapons, triggers, ability: ch.ability, gearIds, gearStatuses, startLevels, revives, rerolls };
 }

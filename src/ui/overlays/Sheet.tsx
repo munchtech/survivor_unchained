@@ -20,7 +20,7 @@ const ATTRS: Array<{ id: keyof Attributes; name: string; text: string }> = [
   { id: 'resolve', name: 'Resolve', text: '+3 health, +0.5 armour, +0.08 regeneration per point' },
 ];
 const KNOW: Record<string, string> = { beastlore: 'Beastlore', arcana: 'Arcana', underworld: 'The Underworld', faith: 'The Faith' };
-const COND: Record<string, string> = { wounded: 'Wounded: 20% less health until it heals', blightsick: 'Blight-sick: your wounds close slowly', poisoned: 'Poisoned', blessed: 'Blessed: +15% holy damage', rested: 'Rested: +5% health', wolfscent: 'Wolf-scented', hunted: 'Hunted' };
+const COND: Record<string, string> = { wounded: 'Wounded: 20% less health until it heals', blightsick: 'Blight-sick: your wounds close slowly', poisoned: 'Poisoned', blessed: 'Blessed: +15% holy damage', rested: 'Rested: +5% health', warmed: 'Warmed: +8% damage, +5% speed', wolfscent: 'Wolf-scented', hunted: 'Hunted' };
 
 export function Sheet() {
   void rev.value;
@@ -86,7 +86,7 @@ export function Sheet() {
               </button>
             ))}
             {ch.conditions.length > 0 && <div class="sub-label" style={{ marginTop: '16px' }}>Conditions</div>}
-            {ch.conditions.map((c) => <div key={c.id} class={`cond ${c.id === 'blessed' || c.id === 'rested' ? 'good' : 'bad'}`}>{COND[c.id] ?? c.id} <span>{c.days} day{c.days === 1 ? '' : 's'}</span></div>)}
+            {ch.conditions.map((c) => <div key={c.id} class={`cond ${c.id === 'blessed' || c.id === 'rested' || c.id === 'warmed' ? 'good' : 'bad'}`}>{COND[c.id] ?? c.id} <span>{c.days} day{c.days === 1 ? '' : 's'}</span></div>)}
           </section>
         </div>
       </div>
