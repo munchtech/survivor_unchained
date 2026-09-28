@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { readableImage } from './gltfShared';
 import { MeshoptSimplifier } from 'meshoptimizer';
 import { assembleSync, type DyeMask, type PersonSpec } from './people';
 import { HUMAN_SOCKETS, heldArm, type Socket } from './characterView';
@@ -162,7 +163,8 @@ function paintAtlas(mats: THREE.MeshStandardMaterial[]) {
   const pad = 2;
   mats.forEach((mat, i) => {
     const cx = (i % grid) * size, cy = Math.floor(i / grid) * size;
-    const img = mat.map?.image as CanvasImageSource | undefined;
+    // (A compressed sheet cannot be drawn: its small readable copy is.)
+    const img = readableImage(mat.map);
     if (img) ctx.drawImage(img, cx, cy, size, size);
     else { ctx.fillStyle = '#ffffff'; ctx.fillRect(cx, cy, size, size); }
     const data = ctx.getImageData(cx, cy, size, size);

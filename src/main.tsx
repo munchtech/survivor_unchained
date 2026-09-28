@@ -27,6 +27,8 @@ async function boot() {
   if (desktop && !params.has('manual')) void desktop.fullscreen(wantsFullscreen());
   const renderer = new Renderer(stage, wantQ === 'low' || wantQ === 'medium' || wantQ === 'high' ? wantQ : 'high');
   (window as unknown as { __game: unknown }).__game = { renderer };
+  // Compressed textures: what this GPU takes (render/gltfShared.ts).
+  (await import('@/render/gltfShared')).initTextures(renderer.gl);
   // The KayKit set, the people (bodies, outfits, hair, the animation
   // libraries) and the weapons, together.
   const [{ preloadPeople }, { preloadArms }, { bakeReady }, { preloadEnv }, { envUsed }] = await Promise.all([

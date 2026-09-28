@@ -7,6 +7,10 @@ Third-party art in this folder, with its licence. CC-BY works are used with cred
 - Universal Base Characters, Modular Character Outfits - Fantasy, Universal Animation Library and Universal Animation Library 2, by Quaternius (https://quaternius.com), CC0 -> public/assets/people (gathered by tools/assets/people.py)
 - Medieval Village MegaKit, Fantasy Props MegaKit and Stylized Nature MegaKit, by Quaternius (https://quaternius.com), CC0 -> public/assets/env/{village,props,nature} (gathered by tools/assets/env.py)
 
+## Basis Universal (Apache-2.0)
+
+- basis_transcoder.js / .wasm, from three.js's examples (Binomial LLC, Apache License 2.0) -> public/assets/basis, for the KTX2 textures
+
 ## Sketchfab
 
 - "Chevalier Sword" by rubenve (https://sketchfab.com/rubenve), CC Attribution: https://sketchfab.com/3d-models/chevalier-sword-b2662f2666a844e8a1bd0e7c4a7672d8 -> public/assets/weapons/chevalier_sword.glb
