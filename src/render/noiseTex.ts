@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { keep } from './dispose';
 
 /* One tiling texture of value noise, four octaves in four channels, shared by
  * every procedural material (terrain, grass tint, rock breakup, water). A
@@ -57,6 +58,6 @@ export function noiseTexture(): THREE.DataTexture {
   t.generateMipmaps = true;
   t.anisotropy = 8;
   t.needsUpdate = true;
-  cached = t;
+  cached = keep(t); // shared by every zone's ground, grass and water
   return t;
 }

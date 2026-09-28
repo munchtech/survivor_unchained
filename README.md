@@ -188,6 +188,7 @@ All expect `npm run dev` running.
 | `node tools/folk.mjs [day\|night]` | The townsfolk: lanes checked against colliders, three minutes of errands, anyone stuck |
 | `node tools/probe.mjs "<query>" "<expression>"` | Load the game somewhere and print what an expression gives there |
 | `node tools/leaks.mjs [rounds]` | Back and forth between the zones: GPU geometries and textures must not climb |
+| `node tools/leakhunt.mjs [geo\|tex] [rounds]` | When leaks.mjs climbs: what is alive after each round, by kind, and which kind keeps growing |
 | `node tools/tour.mjs verge [day\|night]` | One picture per landmark of a zone, empty of people |
 | `node tools/looks.mjs [calling...]` | Every colour, cloak, skin and hair option of creation, photographed |
 | `node tools/drafts.mjs [calling] [levels]` | A run of level-up drafts, photographed, taking a skill each time |

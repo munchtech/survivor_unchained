@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { keep } from './dispose';
 
 /* Taking the shine off the KayKit colours.
  *
@@ -51,7 +52,7 @@ export function grimeTexture(tex: THREE.Texture, g: Grime): THREE.Texture {
   t.magFilter = tex.magFilter; t.minFilter = tex.minFilter;
   t.anisotropy = tex.anisotropy;
   t.userData.grimed = true;
-  t.userData.shared = true; // lives in the cache, not in any one zone
+  keep(t); // lives in the cache, not in any one zone
   cache.set(key, t);
   return t;
 }

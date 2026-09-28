@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { CharacterModel } from './assets';
 import { grimePixel, PEOPLE_GRIME } from './grime';
+import { keep } from './dispose';
 
 /* Dyeing a character's clothes.
  *
@@ -96,7 +97,7 @@ export function paintedAtlas(base: THREE.Texture, model: CharacterModel, paint: 
   t.wrapS = base.wrapS; t.wrapT = base.wrapT;
   t.magFilter = base.magFilter; t.minFilter = base.minFilter;
   t.anisotropy = base.anisotropy;
-  t.userData.shared = true; // lives in the cache, not in any one zone
+  keep(t); // lives in the cache, not in any one zone
   cache.set(key, t);
   return t;
 }

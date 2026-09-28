@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { noiseTexture } from './noiseTex';
+import { ownTextures } from './dispose';
 import { clamp } from '@/core/math';
 
 /* The ground, which from a top-down camera is most of every frame.
@@ -331,6 +332,7 @@ diffuseColor.rgb *= albedo;
         .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += gEmissive;');
     };
     mat.customProgramCacheKey = () => 'terrain-v1';
+    ownTextures(mat, this.heightTex, this.splatTex);
     return mat;
   }
 }

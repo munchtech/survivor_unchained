@@ -3,6 +3,7 @@ import {
   pineGeometry, broadleafGeometry, deadTreeGeometry, bushGeometry, rockGeometry, floraMaterial, floraShading, type FloraKitLook,
 } from './flora';
 import { envBounds, envLoaded, envTemplate, weatherOf } from './env';
+import { keep } from './dispose';
 
 /* A field of vegetation and stone, placed by the zone builder.
  *
@@ -122,7 +123,7 @@ function kitPartsOf(kind: FloraKind, v: number): Part[] {
     if (set.squash) geo.computeVertexNormals();
     geo.computeBoundingBox();
     geo.computeBoundingSphere();
-    geo.userData.shared = true;
+    keep(geo);
     parts!.push({ geo, mat: kitMaterial(kind, m.material as THREE.MeshStandardMaterial) });
   });
   kitParts.set(key, parts);
@@ -135,7 +136,8 @@ function kitMaterial(kind: FloraKind, src: THREE.MeshStandardMaterial) {
   if (mat) return mat;
   const spec = KINDS[kind], set = spec.kit!;
   mat = src.clone();
-  mat.userData = { shared: true };
+  mat.userData = {};
+  keep(mat);
   const [sat, tint] = weatherOf(src.name);
   const foliage = /Leaf|Leaves|Flower/i.test(src.name);
   const look: FloraKitLook = {

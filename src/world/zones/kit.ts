@@ -6,6 +6,7 @@ import { FloraField } from '@/render/scatter';
 import type { Terrain } from '@/render/terrain';
 import type { CollisionWorld } from '@/sim/collision';
 import { hash1, hash2 } from '@/core/math';
+import { keep } from '@/render/dispose';
 
 /* The toolbox every zone is built with.
  *
@@ -79,7 +80,7 @@ function clayRoofs(obj: THREE.Object3D) {
         }`);
       };
       c.customProgramCacheKey = () => `${key}|clay`;
-      c.userData.shared = true;
+      keep(c);
       clayMats.set(src.uuid, mat = c);
     }
     m.material = mat;
