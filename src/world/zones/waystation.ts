@@ -129,7 +129,7 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
     col.addBox(x, z, 2.2, 2.2, -rot);
     footprints.push({ x, z, r: 2.6, rot });
   };
-  const wallRun = (x0: number, z0: number, x1: number, z1: number, gate?: number) => {
+  const wallRun = (x0: number, z0: number, x1: number, z1: number, gate?: number, shut = false) => {
     const len = Math.hypot(x1 - x0, z1 - z0);
     const ux = (x1 - x0) / len, uz = (z1 - z0) / len;
     const mx = (x0 + x1) / 2, mz = (z0 + z1) / 2;
@@ -164,6 +164,26 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
       if (i % 4 === 0) for (let f = 0; f < 2; f++) asm.put('Corner_Exterior_Brick', x - mx - ux, y + f * STOREY, z - mz - uz, rot);
     }
     closeRun(n);
+    if (gate !== undefined && shut) {
+      // Shut: the opening walled up between its towers, stone both sides,
+      // with one arched door in the middle that nobody opens.
+      const turn = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
+      for (const k of [-1, 0, 1]) {
+        const s = gate + k * 2, x = mx + ux * s, z = mz + uz * s;
+        const y = kit.y(x, z) - 0.3 - baseY;
+        for (const [dx, dz, r] of [[0, 0, rot], [-fx * 0.45, -fz * 0.45, rot + Math.PI]]) {
+          for (let f = 0; f < 2; f++) {
+            const door = f === 0 && k === 0;
+            asm.put(door ? 'Wall_UnevenBrick_Door_Round' : 'Wall_UnevenBrick_Straight', x - mx + dx, y + f * STOREY, z - mz + dz, r);
+            if (!door) continue;
+            asm.put('DoorFrame_Round_WoodDark', x - mx + dx, y, z - mz + dz, r);
+            turn.set(-0.53, 0, 0).applyAxisAngle(up, r);
+            asm.put('Door_1_Round', x - mx + dx + turn.x, y, z - mz + dz + turn.z, r);
+          }
+        }
+      }
+      col.addBox(mx + ux * gate - fx * 0.2, mz + uz * gate - fz * 0.2, 3, 0.45, -Math.atan2(-uz, ux));
+    }
     const g = asm.build();
     g.position.set(mx, baseY, mz);
     kit.root.add(g);
@@ -183,7 +203,7 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
   };
   // Gates sit on the roads: south and north at x = 0, east at z = 0.
   wallRun(-X, Z, X, Z, 0); // south: the Low Ford road
-  wallRun(X, -Z, -X, -Z, 0); // north, shut
+  wallRun(X, -Z, -X, -Z, 0, true); // north: shut
   wallRun(-X, -Z, -X, Z); // west
   wallRun(X, Z, X, -Z, 0); // east: the Old Road
   for (const [x, z] of [[-X, -Z], [X, -Z], [-X, Z], [X, Z]] as const) tower(x, z, Math.atan2(-x, -z), Math.round(x * 3 + z));

@@ -8,11 +8,11 @@ import { NPCS, OUTSIDERS, GUARDS, type NpcDef } from '@/content/npcs';
 import { CONVOS } from '@/content/dialogue';
 import { markerOf } from '@/world/dialogue';
 import { test, type Cond } from '@/world/logic';
-import { QUESTS } from '@/content/quests';
 import { objectives, say, toast, type Objective } from '@/ui/store';
 import { hist } from '@/content/dialogue/town';
 import { Folk, folkPerson, type FolkNode } from '../folk';
 import { FOLK_LINES, FOLK_LOOKS, WATCH_LOOK } from '@/content/folk';
+import { objectives as nextSteps } from '@/content/objectives';
 
 /* The Waystation, lived in.
  *
@@ -244,16 +244,8 @@ export function waystation(g: Game): ZoneRuntime {
   let nightNow = false;
 
   const tracker = (): Objective[] => {
-    const w = g.world;
-    if (!w) return [];
-    const out: Objective[] = [];
-    for (const id of ['beasts', 'caravan']) {
-      const q = w.quests[id];
-      if (!q || q.status !== 'active') continue;
-      const last = q.entries.slice(-2).map((e) => QUESTS[id].entries[e]).filter(Boolean);
-      out.push({ id, title: QUESTS[id].name, tone: 'main', steps: last.map((t) => ({ text: t.length > 90 ? `${t.slice(0, 88)}…` : t })) });
-    }
-    return out;
+    const c = ctx();
+    return c ? nextSteps(c) : [];
   };
 
   let trackT = 0;

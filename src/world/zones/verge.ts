@@ -422,6 +422,22 @@ export function buildVerge(grassDensity = 1, state: VergeState = { cleanDays: 0 
     root.add(arrow);
   }
 
+  /* ------------------------------------------------------ the old fence -- */
+  // A farm's old fence between the road and the green water, the one Tam
+  // gives as the way there ("past the old fence where Pa lost the goat"):
+  // half its panels down, and a gap the goat went through. It keeps nothing
+  // in now, and nothing out.
+  for (let i = 0; i < 9; i++) {
+    if (i === 4 || i === 5) continue; // the gap
+    const x = V.sample.x - 8 + i * 2.05, z = V.sample.z + 8.5 - i * 0.35;
+    const down = hash1(i, 61) < 0.35;
+    kit.env('village', i % 3 ? 'Prop_WoodenFence_Extension1' : 'Prop_WoodenFence_Single', x, z, {
+      rot: -0.17 + (hash1(i, 62) - 0.5) * 0.12,
+      tilt: down ? [1.35, 0.1] : [(hash1(i, 63) - 0.5) * 0.3, (hash1(i, 64) - 0.5) * 0.2],
+      y: kit.y(x, z) + (down ? 0.12 : -0.05),
+    });
+  }
+
   /* -------------------------------------------------------- watch-post -- */
   const P = V.post;
   kit.prop('dungeon', 'wall_broken', P.x, P.z - 4.2, { scale: 0.85, box: [1.8, 0.45] });

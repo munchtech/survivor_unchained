@@ -13,8 +13,11 @@ import type { School } from '@/sim/types';
 import { test } from '@/world/logic';
 import { boss, say, toast, announce, objectives, hint, type Objective } from '@/ui/store';
 import { Input } from '@/core/input';
-import { QUESTS } from '@/content/quests';
 import { hist } from '@/content/dialogue/town';
+import { objectives as nextSteps } from '@/content/objectives';
+
+/** Where the Coyle wagons' ruts leave the road for the ravine. */
+const RUTS_AT = { x: -52, z: 40 };
 
 /* Thornhollow Verge, alive.
  *
@@ -283,7 +286,7 @@ export function verge(g: Game): ZoneRuntime {
       },
     },
     {
-      id: 'ruts', x: -52, z: 40, r: 3.5, verb: 'Examine', name: 'Wheel Ruts',
+      id: 'ruts', x: RUTS_AT.x, z: RUTS_AT.z, r: 3.5, verb: 'Examine', name: 'Wheel Ruts',
       when: () => !test({ quest: { id: 'caravan', entry: 'ruts' } }, ctx()),
       act: () => { g.apply([{ quest: { id: 'caravan', status: 'active', entry: 'ruts' } }, { learn: 'hint.roost' }]); say('Deep ruts, heavy wagons, driven south-east into the trees. Toward the ravine.', undefined, 4); },
     },
@@ -561,16 +564,7 @@ export function verge(g: Game): ZoneRuntime {
 
   /* ------------------------------------------------------------ runtime -- */
 
-  const tracker = (): Objective[] => {
-    const out: Objective[] = [];
-    for (const id of ['beasts', 'caravan']) {
-      const q = w().quests[id];
-      if (!q || q.status !== 'active') continue;
-      const last = q.entries.slice(-1).map((e) => QUESTS[id].entries[e]).filter(Boolean);
-      out.push({ id, title: QUESTS[id].name, tone: 'main', steps: last.map((t) => ({ text: t.length > 90 ? `${t.slice(0, 88)}…` : t })) });
-    }
-    return out;
-  };
+  const tracker = (): Objective[] => nextSteps(ctx());
 
   let trackT = 0;
   return {
@@ -681,22 +675,30 @@ export function verge(g: Game): ZoneRuntime {
       const c = ctx();
       const q = (id: string, entry: string) => test({ quest: { id, entry } }, c);
       const known = (k: string) => test({ knows: k }, c);
+      // Where the tracker (content/objectives.ts) sends you is gold, and shows
+      // through the fog: you were told of it, so you know roughly where.
+      const pumping = !F('dig.pump') || F('dig.pump') === 'running';
+      const toDig = known('root_cause') && pumping;
+      const toHollow = known('hint.greymuzzle') && !q('beasts', 'greymuzzle_met') && F('greymuzzle') !== 'dead';
+      const toWreck = q('caravan', 'harlan_plea') && !q('caravan', 'wreck');
       const marks: MapMark[] = [
         { x: V.entry.x - 2, z: V.entry.z, label: 'The Waystation', kind: 'exit' },
         { x: V.exitEast.x - 8, z: V.exitEast.z, label: 'Road washed out', kind: 'place' },
         { x: V.post.x, z: V.post.z, label: 'Old Watch Fire', kind: 'place' },
-        { x: V.wreck.x, z: V.wreck.z, label: 'Coyle Wagons', kind: q('caravan', 'wreck') ? 'place' : 'turn' },
-        { x: V.blind.x, z: V.blind.z, label: 'Hunter\'s Blind', kind: 'place' },
-        { x: V.hollow.x, z: V.hollow.z, label: 'Wolf Hollow', kind: wolvesFriendly() ? 'place' : 'danger' },
-        { x: V.dig.x, z: V.dig.z, label: 'The Dig', kind: F('dig.hostile') ? 'danger' : 'place' },
+        { x: V.wreck.x, z: V.wreck.z, label: 'Coyle Wagons', kind: toWreck ? 'quest' : q('caravan', 'wreck') ? 'place' : 'turn' },
+        { x: V.blind.x, z: V.blind.z, label: 'Hunters\' Blind', kind: 'place' },
+        { x: V.hollow.x, z: V.hollow.z, label: 'Wolf Hollow', kind: toHollow ? 'quest' : wolvesFriendly() ? 'place' : 'danger' },
+        { x: V.dig.x, z: V.dig.z, label: 'The Dig', kind: toDig ? 'quest' : F('dig.hostile') ? 'danger' : 'place' },
         { x: V.roost.x, z: V.roost.z, label: 'Redcowl\'s Roost', kind: kerchiefsFriendly() || F('redcowl') === 'tricked' ? 'place' : 'danger' },
         { x: V.vault.x, z: V.vault.z, label: 'Sealed Door', kind: 'mystery' },
         { x: V.sinkhole.x, z: V.sinkhole.z, label: 'The Sinkhole', kind: 'mystery' },
         { x: V.grove.x, z: V.grove.z, label: 'Moon Grove', kind: 'place' },
       ];
       if (!known('clue.sick_wolf')) marks.push({ x: V.carcass.x, z: V.carcass.z, label: 'Something dead', kind: 'turn' });
-      if (!known('clue.green_stream')) marks.push({ x: V.sample.x, z: V.sample.z, label: 'The green water', kind: 'turn' });
-      if (!known('clue.pipe')) marks.push({ x: V.pipe.x, z: V.pipe.z, label: 'The pipe', kind: 'turn' });
+      const toWater = !test({ hasItem: 'stream_sample' }, c) && !known('clue.analysis') && (known('hint.stream') || q('beasts', 'wenna_request'));
+      if (!known('clue.green_stream') || toWater) marks.push({ x: V.sample.x, z: V.sample.z, label: 'The green water', kind: toWater ? 'quest' : 'turn' });
+      if (!known('clue.pipe')) marks.push({ x: V.pipe.x, z: V.pipe.z, label: 'The pipe', kind: known('clue.analysis') ? 'quest' : 'turn' });
+      if (q('caravan', 'wreck') && !q('caravan', 'ruts') && !q('caravan', 'roost_found')) marks.push({ x: RUTS_AT.x, z: RUTS_AT.z, label: 'Wheel ruts', kind: 'quest' });
       if (F('caravan.survivors') !== 'rescued' && F('caravan.survivors') !== 'dead' && (known('hint.roost') || q('caravan', 'roost_found'))) marks.push({ x: V.cages.x, z: V.cages.z, label: 'The cages', kind: 'quest' });
       return marks;
     },

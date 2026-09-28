@@ -30,7 +30,7 @@ const rookHub: DChoice[] = [
   { text: 'What is the talk in town?', goto: 'rumours' },
   { text: 'Tell me about the Waystation.', goto: 'town' },
   { text: 'That lamp over the door — it is from the Chapel of the Morning Light.', when: { bg: 'devout' }, badge: 'Faith', once: 'lamp', goto: 'lamp' },
-  { text: 'There is a grave in the garden behind the walls. A captain, with his lamp.', when: { knows: 'lore.firstlamp' }, badge: 'Found', once: 'firstlamp', goto: 'firstlamp' },
+  { text: 'There is a grave in the garden behind the shrine. A captain, with his lamp.', when: { knows: 'lore.firstlamp' }, badge: 'Found', once: 'firstlamp', goto: 'firstlamp' },
   bye('Another time.'),
 ];
 

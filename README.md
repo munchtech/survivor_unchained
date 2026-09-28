@@ -187,6 +187,7 @@ All expect `npm run dev` running.
 | `node tools/field.mjs [--fresh]` | Balance: a survivor who played the prologue, in the Verge by day and night, playing or idle |
 | `node tools/folk.mjs [day\|night]` | The townsfolk: lanes checked against colliders, three minutes of errands, anyone stuck |
 | `node tools/probe.mjs "<query>" "<expression>"` | Load the game somewhere and print what an expression gives there |
+| `node tools/reach.mjs [zone] [day\|night]` | Every door, person, clue and way in, checked for a walkable route from where you stand (and a map of it) |
 | `node tools/leaks.mjs [rounds]` | Back and forth between the zones: GPU geometries and textures must not climb |
 | `node tools/leakhunt.mjs [geo\|tex] [rounds]` | When leaks.mjs climbs: what is alive after each round, by kind, and which kind keeps growing |
 | `node tools/tour.mjs verge [day\|night]` | One picture per landmark of a zone, empty of people |
