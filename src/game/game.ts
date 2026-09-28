@@ -34,6 +34,7 @@ import { CONVOS } from '@/content/dialogue';
 import { NPCS, OUTSIDERS, SPEAKERS } from '@/content/npcs';
 import { QUESTS } from '@/content/quests';
 import { renderPortrait } from '@/ui/portrait';
+import { desktop } from '@/core/desktop';
 import { Input } from '@/core/input';
 import { damp } from '@/core/math';
 import {
@@ -1228,6 +1229,7 @@ export class Game {
       gore: () => goreSetting(),
       setGore: (v: GoreSetting) => { setGoreSetting(v); if (this.scene.fx) this.scene.fx.gore.level = goreLevel(v); },
       quitToTitle: () => { this.save('quit'); fade.value = { to: 1, seconds: 0.6 }; setTimeout(() => this.showTitle(), 650); },
+      quitGame: () => { if (this.ch) this.save('quit'); fade.value = { to: 1, seconds: 0.4 }; setTimeout(() => void desktop?.quit(), 450); },
       openOverlay: (o: 'inventory' | 'character' | 'journal' | 'pause' | 'map') => (o === 'map' ? this.openMap() : this.openOverlay(o)),
       closeOverlay: () => this.closeOverlay(),
       rise: () => this.zone && this.enterZone(this.zone.id, null),

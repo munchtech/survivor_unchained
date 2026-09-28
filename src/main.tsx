@@ -7,6 +7,7 @@ import { sandbox } from '@/modes/dev/sandbox';
 import { combatDev } from '@/modes/dev/combat';
 import { zoneDev } from '@/modes/dev/zone';
 import { Input } from '@/core/input';
+import { desktop, wantsFullscreen } from '@/core/desktop';
 import { mountUi } from '@/ui/App';
 import { renderItemIcons } from '@/ui/itemIcons';
 import { Game } from '@/game/game';
@@ -22,6 +23,8 @@ async function boot() {
   const stage = document.getElementById('stage')!;
   const saved = (() => { try { return localStorage.getItem('survivor-unchained.quality'); } catch { return null; } })();
   const wantQ = params.get('quality') ?? saved;
+  // The desktop build opens fullscreen unless the player chose a window.
+  if (desktop && !params.has('manual')) void desktop.fullscreen(wantsFullscreen());
   const renderer = new Renderer(stage, wantQ === 'low' || wantQ === 'medium' || wantQ === 'high' ? wantQ : 'high');
   (window as unknown as { __game: unknown }).__game = { renderer };
   // The KayKit set, the people (bodies, outfits, hair, the animation

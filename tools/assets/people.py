@@ -19,7 +19,7 @@ import sys
 
 from PIL import Image
 
-ROOT = sys.argv[1] if len(sys.argv) > 1 else 'public/_q'
+ROOT = sys.argv[1] if len(sys.argv) > 1 else '.packs'
 OUT = 'public/assets/people'
 
 BASE = 'Universal Base Characters/Universal Base Characters[Standard]/Base Characters/Godot - UE'

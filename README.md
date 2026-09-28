@@ -37,6 +37,25 @@ Blessings are milestones: one chosen at creation and given at the start of
 every expedition, and one more every 85 ember levels, on top of that
 level's skill.
 
+## On the desktop
+
+The game is a desktop game first: an Electron window around the build, so
+it runs full-screen with the full-size (4K and 2K) textures.
+
+| | |
+|---|---|
+| `npm run desktop` | Build, then play in the desktop window |
+| `npm run desktop:dev` | The window around the dev server (`npm run dev` running) |
+| `npm run dist` | Linux release in `release/` (tarball; AppImage where its tools run) |
+| `npm run dist:win` | Windows zip (from any OS); `dist:win-installer` builds the installer on Windows |
+| `npm run dist:mac` | macOS disk image (on a Mac) |
+
+The Desktop builds workflow (Actions tab, run by hand) builds the Windows
+installer, the macOS image and the Linux AppImage on their own systems.
+F11 or Alt+Enter toggles full-screen; Settings remembers a window or
+full-screen; saves live in the app's own data folder. As root (containers),
+Electron needs `--no-sandbox`.
+
 ## What is in the slice
 
 - **Character creation**: name, look (the calling's colours repainting
@@ -116,8 +135,12 @@ the journal, the tests and the chapter's end read back.
 
 ## Look and sound
 
-Stylized dark fantasy: KayKit characters and props (CC0, Kay Lousberg) with
-generated terrain, vegetation, water and sky; N8AO, bloom, AgX and
+Dark fantasy. People are Quaternius's Universal Base Characters, outfits
+and animation libraries (CC0), with a woman's figure shaped offline
+(`tools/assets/figure.py`) and crowd figures baked from the same people;
+weapons are CC BY models from Sketchfab (credited in the game and in
+`public/assets/CREDITS.md`). Buildings and props are KayKit (CC0, Kay
+Lousberg), with generated terrain, vegetation, water and sky; N8AO, bloom, AgX and
 a grade pass; VAT crowds and GPU particles for the hordes. Trees between the
 camera and the survivor thin out; streams meander and know how deep they
 are. Sound is procedural, with no samples: a score composed as it plays
@@ -161,8 +184,12 @@ All expect `npm run dev` running.
 | `node tools/drafts.mjs [calling] [levels]` | A run of level-up drafts, photographed, taking a skill each time |
 | `node tools/ui.mjs [w h] [screen...]` | Every overlay (shops, stash, pack, self, journal, map, rest, pause, talk) at one size |
 | `node tools/listen.mjs "<query>" name secs` | Record the mix as a spectrogram with loudness |
+| `python3 tools/assets/people.py [.packs]` | Gather the people from the unpacked Quaternius packs (textures to WebP) |
+| `python tools/assets/figure.py` | Then shape the women (bust and hips morph targets; needs numpy) |
+| `node tools/assets/sketchfab.mjs search\|get ...` | Find and fetch CC0/CC BY models, writing their credit (`SKETCHFAB_TOKEN`) |
 
 `NO_HMR=1 npm run dev` serves without hot reload, so a long tool run
 survives edits to the source. Useful URLs: `?quick=warden&bg=hunter&zone=verge&at=-60,-80` (start
 anywhere as anyone), `?screen=create`, `?dev=zone&zone=verge&x=..&z=..`,
-`?dev=sandbox`, `?dev=combat`, `?dev=icons`, `?dev=gallery`, `&quality=low`.
+`?dev=sandbox`, `?dev=combat`, `?dev=icons`, `?dev=gallery`, `?dev=people&view=1`
+(people, `&spec=`/`&arms=`/`&boss=idle`), `?dev=armory` (weapons), `&quality=low`.

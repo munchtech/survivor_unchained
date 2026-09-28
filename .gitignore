@@ -3,4 +3,5 @@ dist/
 .shots/
 *.log
 .DS_Store
-public/_q
+.packs
+release/

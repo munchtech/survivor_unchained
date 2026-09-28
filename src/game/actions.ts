@@ -16,6 +16,8 @@ export interface GameActions {
   resume(): void;
   saveNow(): void;
   quitToTitle(): void;
+  /** Save and close the game (the desktop build). */
+  quitGame(): void;
   cycleSound(): 'on' | 'quiet' | 'off';
   setSound(level: 'on' | 'quiet' | 'off'): void;
   quality(): 'low' | 'medium' | 'high';

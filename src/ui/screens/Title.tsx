@@ -5,6 +5,7 @@ import { Input } from '@/core/input';
 import { ARCHETYPES } from '@/content/archetypes';
 import { Glyph } from '../components/Icon';
 import { Controls } from '../components/Controls';
+import { desktop, setFullscreen, wantsFullscreen } from '@/core/desktop';
 import './title.css';
 
 /* The title: a fire on the Low Ford road, someone sitting by it, and the
@@ -66,6 +67,7 @@ function TitleMenu() {
   const [quality, setQuality] = useState(() => actions.quality());
   const [sound, setSound] = useState(() => actions.soundLevel());
   const [gore, setGore] = useState(() => actions.gore());
+  const [full, setFull] = useState(wantsFullscreen);
   const items: Array<{ id: string; label: string; sub?: string; act: () => void; primary?: boolean }> = [];
   if (latest) items.push({ id: 'continue', label: 'Continue', sub: `${latest.name} · ${ARCHETYPES[latest.archetype as keyof typeof ARCHETYPES]?.name ?? ''} ${latest.level} · Day ${latest.day}`, act: () => actions.continueJourney(latest.slot), primary: true });
   items.push({ id: 'new', label: 'New Journey', act: () => actions.newJourney(), primary: !latest });
@@ -73,6 +75,7 @@ function TitleMenu() {
   items.push({ id: 'settings', label: 'Settings', act: () => setPanel(panel === 'settings' ? 'none' : 'settings') });
   items.push({ id: 'controls', label: 'Controls', act: () => setPanel(panel === 'controls' ? 'none' : 'controls') });
   items.push({ id: 'credits', label: 'Credits', act: () => setPanel(panel === 'credits' ? 'none' : 'credits') });
+  if (desktop) items.push({ id: 'quit', label: 'Quit', act: () => actions.quitGame() });
   const [focus, setFocus] = useState(0);
 
   useEffect(() => Input.on((a) => {
@@ -138,6 +141,14 @@ function TitleMenu() {
               {(['on', 'quiet', 'off'] as const).map((l) => <button key={l} class={`btn small${sound === l ? ' on' : ''}`} onClick={() => { actions.setSound(l); setSound(l); }}>{l}</button>)}
             </div>
           </div>
+          {desktop && (
+            <div class="tp-row">
+              <span>Display</span>
+              <div class="seg">
+                {([['window', false], ['fullscreen', true]] as const).map(([label, on]) => <button key={label} class={`btn small${full === on ? ' on' : ''}`} onClick={() => { void setFullscreen(on); setFull(on); }}>{label}</button>)}
+              </div>
+            </div>
+          )}
           <div class="tp-row">
             <span>Gore</span>
             <div class="seg">

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { actions } from '@/game/actions';
+import { desktop } from '@/core/desktop';
 import { Input } from '@/core/input';
 import { Controls } from '../components/Controls';
 import { overlayBack } from '../store';
@@ -29,6 +30,7 @@ export function Pause() {
     { label: 'Journal', act: () => actions.openOverlay('journal') },
     { label: 'Map', act: () => actions.openOverlay('map') },
     { label: 'Leave to the title', act: () => actions.quitToTitle() },
+    ...(desktop ? [{ label: 'Quit the game', act: () => actions.quitGame() }] : []),
   ];
   const [focus, setFocus] = useState(0);
   useEffect(() => Input.on((a) => {
