@@ -1,6 +1,5 @@
 import * as THREE from 'three';
-import { CharacterView } from '@/render/characterView';
-import { applyLook, type Loadout } from '@/render/playerView';
+import { dressedView, type Loadout } from '@/render/playerView';
 
 /* A portrait of the survivor for the pack and the character sheet: the
  * real model in its real gear, lit like the item photographs, standing in
@@ -35,11 +34,9 @@ export function renderPortrait(lo: Loadout, w = 300, h = 420, framing: 'full' | 
   rim.position.set(2.5, 2.5, -3.5);
   const fill = new THREE.HemisphereLight(0xb8c4e0, 0x3a2a1a, 1.0);
   scene.add(key, rim, fill);
-  const v = new CharacterView(lo.model, { scale: 0.8 * scale });
-  v.showOnly(lo.show);
-  applyLook(v, lo);
+  const v = dressedView(lo, { scale: 0.8 * scale });
   v.face(0.35, true);
-  v.loop(lo.model === 'mage' || lo.model === 'knight' ? 'Idle' : 'Idle_B', 0);
+  v.loop(lo.person ? v.idleClip : lo.model === 'mage' || lo.model === 'knight' ? 'Idle' : 'Idle_B', 0);
   v.update(0.8);
   scene.add(v.root);
   gl.render(scene, cam);

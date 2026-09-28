@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CharacterView } from './characterView';
 import type { Paint } from './recolor';
 import type { CharacterModel } from './assets';
+import type { PersonSpec } from './people';
 import type { Battle } from '@/sim/battle';
 import { damp } from '@/core/math';
 
@@ -26,6 +27,29 @@ export interface Loadout {
   /** The survivor's look: swatches of the atlas repainted (render/recolor.ts);
    *  the cloak's own on top of the body's. */
   paint?: { body: Paint; cloak: Paint };
+  /** A person (render/people.ts) rather than the KayKit model: the body,
+   *  outfit and hair, the weapons in hand (render/arms.ts) and the stance
+   *  they stand in. */
+  person?: PersonSpec;
+  wield?: { right?: string; left?: string; forearm?: string };
+  idle?: string;
+}
+
+/** The figure a loadout makes, dressed and armed (the survivor, portraits,
+ *  the figure by the title's fire). */
+export function dressedView(lo: Loadout, opts: { scale?: number } = {}) {
+  const v = new CharacterView(lo.person ?? lo.model, opts);
+  if (lo.person) {
+    if (lo.wield?.right) v.wield('handslot.r', lo.wield.right);
+    if (lo.wield?.left) v.wield('handslot.l', lo.wield.left);
+    if (lo.wield?.forearm) v.wield('forearm.l', lo.wield.forearm);
+  } else {
+    v.showOnly(lo.show);
+    applyLook(v, lo);
+  }
+  if (lo.idle) v.idleClip = lo.idle;
+  else if (lo.model === 'mage' || lo.model === 'knight') v.idleClip = 'Idle';
+  return v;
 }
 
 /** Apply a loadout's colours to a character view (the survivor, portraits). */
@@ -57,10 +81,7 @@ export class PlayerView {
   private castT = 0;
 
   constructor(readonly loadout: Loadout, scene: THREE.Object3D) {
-    this.view = new CharacterView(loadout.model);
-    this.view.showOnly(loadout.show);
-    applyLook(this.view, loadout);
-    if (loadout.model === 'mage' || loadout.model === 'knight') this.view.idleClip = 'Idle';
+    this.view = dressedView(loadout);
     scene.add(this.view.root);
     this.light = new THREE.PointLight(0xffb070, this.lightBase, 11, 1.4);
     this.light.castShadow = false;

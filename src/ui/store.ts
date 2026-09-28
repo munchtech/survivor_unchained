@@ -177,6 +177,11 @@ export interface CreationDraft {
   cloak: string;
   skin: string;
   hair: string;
+  /** The body: see CharacterData. */
+  sex: 'male' | 'female';
+  hairStyle: string;
+  beard: boolean;
+  figure: number;
 }
 export const creation = signal<CreationDraft | null>(null);
 

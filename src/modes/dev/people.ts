@@ -26,6 +26,8 @@ export async function peopleDev(r: Renderer, params: URLSearchParams) {
     { sex: 'male', outfit: [PARTS.male.peasant[2], PARTS.male.peasant[3]], hair: 'Hair_Buzzed', beard: true, hairColor: '#8a5a2a' },
     { sex: 'female', outfit: [PARTS.female.peasant[2], PARTS.female.peasant[3]], hair: 'Hair_Long', hairColor: '#2a1a12', figure: Number(new URLSearchParams(location.search).get('figure') ?? 1) },
   ];
+  // ?spec={...}: this one person instead (a PersonSpec as JSON).
+  if (params.get('spec')) specs.splice(0, specs.length, JSON.parse(params.get('spec')!));
   // ?pick=3: only that one (quicker shots).
   if (params.get('pick')) specs.splice(0, specs.length, specs[Number(params.get('pick'))]);
   const mixers: THREE.AnimationMixer[] = [];

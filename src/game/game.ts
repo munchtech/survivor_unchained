@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { effect } from '@preact/signals';
 import type { Renderer, Quality } from '@/render/renderer';
 import { CharacterView } from '@/render/characterView';
-import { CLOTH, applyLook, type Loadout } from '@/render/playerView';
+import { dressedView, type Loadout } from '@/render/playerView';
 import type { CharacterModel } from '@/render/assets';
 import { WorldScene } from './scene';
 import { HudBridge } from './hudBridge';
@@ -161,7 +161,7 @@ export class Game {
     this.zone = z;
     this.scene.setZone(z.build);
     this.scene.atmo.set(z.build.atmosphere);
-    this.placeFigure('rogue_hooded', { sit: true });
+    this.placeFigure(this.stranger(), { sit: true });
     this.poseCamera('title', true);
     screen.value = 'title';
     overlay.value = null;
@@ -177,6 +177,7 @@ export class Game {
     const draft: CreationDraft = {
       step: 0, name: '', archetype: 'warden', weaponItem: 'worn_oathblade', ability: 'shield_bash', startBoon: 'hunters_mark',
       background: 'hunter', palette: 'steel', model: 'knight', headgear: true, cloak: 'calling', skin: 'fair', hair: 'as_is',
+      sex: 'male', hairStyle: 'Hair_SimpleParted', beard: true, figure: 0.9,
     };
     creation.value = draft;
     screen.value = 'create';
@@ -187,20 +188,18 @@ export class Game {
     this.mode = 'title';
     creation.value = null;
     screen.value = 'title';
-    this.placeFigure('rogue_hooded', { sit: true });
+    this.placeFigure(this.stranger(), { sit: true });
     this.poseCamera('title');
   }
 
-  /** Put someone by the fire. */
-  private placeFigure(model: CharacterModel, o: { sit?: boolean; show?: string[]; tint?: string; look?: Loadout } = {}) {
+  /** Put someone by the fire: the survivor being made, or (at the title) a
+   *  hooded stranger. */
+  private placeFigure(lo: Loadout, o: { sit?: boolean } = {}) {
     this.figure?.dispose();
-    const f = new CharacterView(model);
+    const f = dressedView(lo);
     const fire = this.fireSpot();
     const y = this.scene.heightAt(fire.x + 1.4, fire.z + 1.0);
     f.root.position.set(fire.x + 1.4, y, fire.z + 1.0);
-    f.showOnly(o.show ?? ['Rogue_Cape']);
-    if (o.look) applyLook(f, o.look);
-    else if (o.tint) f.tintParts(o.tint, CLOTH);
     if (o.sit) {
       // On the log beside the fire, facing into it.
       const sx = fire.x + 2.05, sz = fire.z - 0.1;
@@ -209,22 +208,29 @@ export class Game {
       f.loop('Sit_Chair_Idle', 0);
     } else {
       f.face(Math.PI * 0.08, true);
-      f.loop('Idle', 0);
+      f.loop(f.idleClip, 0);
     }
     this.r.scene.add(f.root);
     this.figure = f;
   }
 
+  /** The stranger at the title's fire: a hooded ranger, unarmed. */
+  private stranger(): Loadout {
+    const lo = loadoutFor({ archetype: 'stalker', weaponItem: 'hunting_bow', model: 'rogue_hooded', sex: 'female' });
+    return { ...lo, wield: {} };
+  }
+
   private dressFigure(d: CreationDraft) {
-    const key = `${d.archetype}|${d.model}|${d.weaponItem}|${d.palette}|${d.headgear}|${d.cloak}|${d.skin}|${d.hair}`;
+    const key = `${d.archetype}|${d.model}|${d.weaponItem}|${d.palette}|${d.headgear}|${d.cloak}|${d.skin}|${d.hair}|${d.sex}|${d.hairStyle}|${d.beard}|${d.figure}`;
     if (key === this.figureKey && this.figure) return;
-    const changedBody = !this.figureKey.startsWith(`${d.archetype}|${d.model}|`);
+    const was = this.figureKey.split('|');
+    const changedBody = was[0] !== d.archetype || was[1] !== d.model || was[8] !== d.sex;
     // A new cloak is worth turning round to show.
     const changedCloak = !changedBody && this.figureKey.split('|')[5] !== d.cloak && d.cloak !== 'none';
     this.figureKey = key;
-    const lo = loadoutFor({ archetype: d.archetype, weaponItem: d.weaponItem, model: d.model as CharacterModel, palette: d.palette, headgear: d.headgear, cloak: d.cloak, skin: d.skin, hair: d.hair });
-    this.placeFigure(lo.model, { show: lo.show, look: lo });
-    if (changedBody && this.figure) this.figure.act(d.archetype === 'arcanist' ? 'Spellcast_Raise' : d.archetype === 'reaver' ? 'Taunt' : 'Cheer', { speed: 1 });
+    const lo = loadoutFor({ archetype: d.archetype, weaponItem: d.weaponItem, model: d.model as CharacterModel, palette: d.palette, headgear: d.headgear, cloak: d.cloak, skin: d.skin, hair: d.hair, sex: d.sex, hairStyle: d.hairStyle, beard: d.beard, figure: d.figure });
+    this.placeFigure(lo);
+    if (changedBody && this.figure) this.figure.act(d.archetype === 'arcanist' ? 'Spell_Simple_Enter' : d.archetype === 'reaver' ? 'Sword_Regular_A' : d.archetype === 'warden' ? 'Sword_Block' : 'Pistol_Shoot', { speed: 1 });
     if (changedCloak && this.figure) { this.figure.face(Math.PI * 0.08 + Math.PI * 0.85); this.figureTurnT = 1.8; }
   }
   private figureTurnT = 0;

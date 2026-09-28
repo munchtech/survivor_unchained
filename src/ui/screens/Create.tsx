@@ -50,6 +50,7 @@ export function Create() {
     actions.beginJourney({
       name: d.name.trim(), archetype: d.archetype, background: d.background, palette: d.palette, model: d.model as CharacterModel,
       weaponItem: d.weaponItem, ability: d.ability as AbilityKind, startBoon: d.startBoon, headgear: d.headgear, cloak: d.cloak, skin: d.skin, hair: d.hair,
+      sex: d.sex, hairStyle: d.hairStyle, beard: d.beard, figure: d.figure,
     });
   };
   useEffect(() => Input.on((act, e) => {

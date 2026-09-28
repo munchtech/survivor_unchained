@@ -2,11 +2,15 @@ import type { Loadout } from '@/render/playerView';
 import type { CharacterModel } from '@/render/assets';
 import { ARCHETYPES, type ArchetypeId } from '@/content/archetypes';
 import { CLOAK_DYES, SKINS, HAIRS } from '@/content/looks';
+import { PARTS, type PersonSpec, type Sex } from '@/render/people';
 
-/* What the survivor visibly carries. The KayKit models ship with every
- * weapon and hat attached; this picks the ones that match the weapon in
- * hand, the archetype's cloak and (if worn) its headgear, and the swings
- * the arm makes when the blade fires. */
+/* What the survivor looks like and visibly carries: a person (a man or a
+ * woman in their calling's clothes, render/people.ts) with the weapon in
+ * hand as a real model (render/arms.ts), the stance they hold it in, and
+ * the swings the arm makes when the blade fires.
+ *
+ * The KayKit figures (a model with every weapon and hat attached, shown
+ * or hidden) remain for anything that asks for one by name. */
 
 interface Arms { show: string[]; attack: string[]; heavy: string; cast?: string }
 
@@ -22,10 +26,52 @@ const ARMS: Record<string, Arms> = {
   knife_belt: { show: ['Knife', 'Knife_Offhand'], attack: ['Throw'], heavy: 'Dualwield_Melee_Attack_Slice' },
 };
 
+/** A person's weapons, by the item in hand: what each hand holds, the
+ *  stance, and library clips (Universal Animation Libraries). */
+interface Held { right: string; left?: string; forearm?: string; idle: string; attack: string[]; heavy: string; cast?: string }
+const SWORD = ['Sword_Regular_A', 'Sword_Regular_B', 'Sword_Regular_C'];
+const SPELL = { attack: ['Spell_Simple_Shoot'], heavy: 'Spell_Simple_Enter', cast: 'Spell_Simple_Shoot' };
+const HELD: Record<string, Held> = {
+  worn_oathblade: { right: 'chevalier_sword', forearm: 'shield_round', idle: 'Sword_Idle', attack: SWORD, heavy: 'Sword_Attack' },
+  judgement_disc_item: { right: 'viking_sword', forearm: 'shield_round', idle: 'Sword_Idle', attack: ['OverhandThrow'], heavy: 'Sword_Attack' },
+  butchers_cleaver: { right: 'viking_axe', idle: 'Sword_Idle', attack: ['Sword_Attack', 'Sword_Regular_B'], heavy: 'Sword_Heavy_Combo' },
+  gyre_axes: { right: 'viking_axe', left: 'viking_axe', idle: 'Sword_Idle', attack: ['Sword_Regular_A', 'Sword_Regular_C'], heavy: 'Sword_Heavy_Combo' },
+  apprentice_wand: { right: 'short_staff', idle: 'Idle_Loop', ...SPELL },
+  // A staff stands upright in both hands.
+  ember_staff: { right: 'mage_staff', idle: 'Pistol_Idle_Loop', ...SPELL },
+  rime_rod: { right: 'mage_staff', idle: 'Pistol_Idle_Loop', ...SPELL },
+  hunting_bow: { right: 'crossbow', idle: 'Pistol_Idle_Loop', attack: ['Pistol_Shoot'], heavy: 'Pistol_Shoot' },
+  knife_belt: { right: 'daggers', left: 'dagger_b', idle: 'Sword_Idle', attack: ['OverhandThrow'], heavy: 'Sword_Regular_Combo' },
+};
+
+/** Each calling's clothes. The Reaver goes bare-chested (a woman keeps the
+ *  band the body is painted with). A hood, where worn, covers the hair. */
+function outfitOf(archetype: ArchetypeId, sex: Sex, hood: boolean): string[] {
+  const P = PARTS[sex];
+  const out: string[] = archetype === 'reaver' ? [P.peasant[2], P.peasant[3]]
+    : archetype === 'arcanist' ? [...P.peasant]
+    : [...P.ranger];
+  if (archetype === 'warden') out.push(P.pauldron);
+  if (hood) out.push(P.hood);
+  return out;
+}
+
+export const HAIR_STYLES: Record<Sex, string[]> = {
+  male: ['Hair_SimpleParted', 'Hair_Buzzed', 'Hair_Long'],
+  female: ['Hair_Long', 'Hair_Buns', 'Hair_BuzzedFemale'],
+};
+
 const CAPE: Record<ArchetypeId, string> = { warden: 'Knight_Cape', reaver: 'Barbarian_Cape', arcanist: 'Mage_Cape', stalker: 'Rogue_Cape' };
 const HEAD: Partial<Record<ArchetypeId, string>> = { warden: 'Knight_Helmet', reaver: 'Barbarian_Hat', arcanist: 'Mage_Hat' };
 
-export interface LookChoice { archetype: ArchetypeId; weaponItem: string; model?: CharacterModel; palette?: string; headgear?: boolean; cloak?: string; skin?: string; hair?: string }
+export interface LookChoice {
+  archetype: ArchetypeId; weaponItem: string; model?: CharacterModel; palette?: string; headgear?: boolean; cloak?: string; skin?: string; hair?: string;
+  sex?: Sex; hairStyle?: string; beard?: boolean; figure?: number;
+}
+
+/** Whether the calling's hood is up: the Stalker's by their model (hood up
+ *  or down), the Warden's and Arcanist's as their headgear. */
+const hooded = (c: LookChoice) => c.archetype === 'stalker' ? (c.model ?? 'rogue_hooded') === 'rogue_hooded' : c.archetype !== 'reaver' && (c.headgear ?? true);
 
 export function loadoutFor(c: LookChoice): Loadout {
   const a = ARCHETYPES[c.archetype];
@@ -38,19 +84,30 @@ export function loadoutFor(c: LookChoice): Loadout {
   const head = HEAD[c.archetype];
   if (head && c.headgear) show.push(head);
   const pal = a.palettes.find((p) => p.id === c.palette) ?? a.palettes[0];
+  const held = HELD[c.weaponItem] ?? HELD[a.weapons[0]];
+  const sex = c.sex ?? 'male';
+  const hood = hooded(c);
+  const person: PersonSpec = {
+    sex, outfit: outfitOf(c.archetype, sex, hood),
+    hair: hood ? null : c.hairStyle ?? HAIR_STYLES[sex][0],
+    beard: sex === 'male' && (c.beard ?? true),
+    hairColor: hair || undefined, skin: skin || undefined, figure: c.figure,
+  };
   return {
-    model: c.model ?? a.model, show, attackClips: arms.attack, heavyClip: arms.heavy, castClip: arms.cast,
+    model: c.model ?? a.model, show, attackClips: held.attack, heavyClip: held.heavy, castClip: held.cast,
     // The calling's colours on the cloth, the chosen skin and hair; the
     // cloak takes a dye of its own, or follows the calling.
     paint: { body: { ...pal.paint, skin, hair }, cloak: { cloak: dye } },
+    person, wield: { right: held.right, left: held.left, forearm: held.forearm }, idle: held.idle,
   };
 }
 
 /** A survivor's own look, from their character: one place, so the figure in
  *  play, the pack, the sheet and every portrait always agree. */
-export function lookOf(ch: { archetype: ArchetypeId; model?: CharacterModel; palette?: string; headgear?: boolean; cloak?: string; skin?: string; hair?: string; equipment: { weapon?: { def: string } | null } }): Loadout {
+export function lookOf(ch: Omit<LookChoice, 'weaponItem'> & { equipment: { weapon?: { def: string } | null } }): Loadout {
   return loadoutFor({
     archetype: ch.archetype, weaponItem: ch.equipment.weapon?.def ?? ARCHETYPES[ch.archetype].weapons[0],
     model: ch.model, palette: ch.palette, headgear: ch.headgear, cloak: ch.cloak, skin: ch.skin, hair: ch.hair,
+    sex: ch.sex, hairStyle: ch.hairStyle, beard: ch.beard, figure: ch.figure,
   });
 }

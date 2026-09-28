@@ -45,6 +45,12 @@ export interface CharacterData {
   cloak?: string;
   skin?: string;
   hair?: string;
+  /** The body (a person, render/people.ts): a man or a woman (older saves:
+   *  a man), their hair's cut, a beard, a woman's figure. */
+  sex?: 'male' | 'female';
+  hairStyle?: string;
+  beard?: boolean;
+  figure?: number;
   level: number;
   xp: number;
   attributes: Attributes;
@@ -89,6 +95,10 @@ export interface CreationChoice {
   cloak?: string;
   skin?: string;
   hair?: string;
+  sex?: 'male' | 'female';
+  hairStyle?: string;
+  beard?: boolean;
+  figure?: number;
 }
 
 export function createCharacter(c: CreationChoice, day = 1, seed = Date.now()): CharacterData {
@@ -96,7 +106,8 @@ export function createCharacter(c: CreationChoice, day = 1, seed = Date.now()): 
   const bg = BACKGROUNDS[c.background];
   const ch: CharacterData = {
     version: 1, id: `hero-${seed.toString(36)}`, name: c.name.trim() || 'Nameless', archetype: c.archetype, background: c.background,
-    model: c.model ?? a.model, palette: c.palette, headgear: c.headgear ?? true, cloak: c.cloak, skin: c.skin, hair: c.hair, level: 1, xp: 0, attributes: { ...START_ATTRS[c.archetype] }, points: 0,
+    model: c.model ?? a.model, palette: c.palette, headgear: c.headgear ?? true, cloak: c.cloak, skin: c.skin, hair: c.hair,
+    sex: c.sex, hairStyle: c.hairStyle, beard: c.beard, figure: c.figure, level: 1, xp: 0, attributes: { ...START_ATTRS[c.archetype] }, points: 0,
     traits: [], traitPicks: 0, knowledge: [...bg.knowledge],
     equipment: Object.fromEntries(EQUIP_SLOTS.map((s) => [s, null])) as Record<EquipSlot, ItemInstance | null>,
     pack: new Array(PACK_SIZE).fill(null), gold: 25, ability: c.ability, startBoon: c.startBoon, conditions: [],

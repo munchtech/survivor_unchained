@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { markShared } from './dispose';
 
 /* Weapons worth holding: third-party models (Sketchfab, CC-BY and CC0; see
  * public/assets/CREDITS.md), each turned and scaled on load to one
@@ -44,8 +45,9 @@ export const ARMS: Record<string, ArmSpec> = {
   viking_axe: { file: 'viking_axe', length: 0.8, grip: 0.15, roll: Math.PI },
   snake_axe: { file: 'snake_axe', length: 1.3, grip: 0.22 },
   mage_staff: { file: 'mage_staff', length: 1.75, grip: 0.45 },
+  short_staff: { file: 'mage_staff', length: 1.1, grip: 0.3 },
   crossbow: { file: 'crossbow', length: 0.85, grip: 0.3, swap: true, hold: 'pistol' },
-  shield_round: { file: 'shield_round', length: 0.75, grip: 0.5 },
+  shield_round: { file: 'shield_round', length: 0.66, grip: 0.5 },
   daggers: { file: 'daggers', length: 0.4, grip: 0.2, node: 'Cube004' },
   dagger_b: { file: 'daggers', length: 0.4, grip: 0.2, node: 'Cube00401' },
 };
@@ -55,9 +57,12 @@ const templates = new Map<string, THREE.Object3D>();
 
 /** Load every weapon model and normalise it (once, at boot). */
 export async function preloadArms() {
+  const files = new Map<string, Promise<THREE.Group>>();
   await Promise.all(Object.entries(ARMS).map(async ([id, spec]) => {
-    const gltf = await loader.loadAsync(`/assets/weapons/${spec.file}.glb`);
-    templates.set(id, normalise(gltf.scene, spec));
+    let f = files.get(spec.file);
+    if (!f) { f = loader.loadAsync(`/assets/weapons/${spec.file}.glb`).then((g) => g.scene); files.set(spec.file, f); }
+    // Each weapon normalises its own copy (a file can hold several).
+    templates.set(id, normalise((await f).clone(true), spec));
   }));
 }
 
@@ -182,5 +187,7 @@ function normalise(scene: THREE.Object3D, spec: ArmSpec) {
     m.receiveShadow = true;
   });
   holder.name = `arm:${spec.file}`;
+  // Copies share all of it, past any zone (dispose.ts).
+  markShared(holder, true);
   return holder;
 }

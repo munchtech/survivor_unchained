@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { markShared } from './dispose';
 
 /* People: Quaternius's Universal Base Characters, dressed in the Modular
  * Character Outfits and moved by the Universal Animation Library (all CC0,
@@ -62,7 +63,12 @@ const cache = new Map<string, Promise<GLTF>>();
 const loaded = new Map<string, GLTF>();
 const load = (url: string) => {
   let p = cache.get(url);
-  if (!p) { p = loader.loadAsync(encodeURI(url)).then((g) => { loaded.set(url, g); return g; }); cache.set(url, p); }
+  if (!p) {
+    // Every person made from a part shares its geometry and textures, which
+    // outlive any zone (dispose.ts); their materials are their own.
+    p = loader.loadAsync(encodeURI(url)).then((g) => { markShared(g.scene, false); loaded.set(url, g); return g; });
+    cache.set(url, p);
+  }
   return p;
 };
 /** A part already loaded (preloadPeople), for building people on the spot. */
@@ -92,7 +98,15 @@ export interface PersonSpec {
   beard?: boolean;
   /** A woman's figure, 0 (as modelled) to 1.5; see shapeFigure. */
   figure?: number;
+  /** Skin tone (a CSS colour), as it would look on fair skin; none leaves
+   *  the skin as painted. */
+  skin?: string;
 }
+
+/** The fair tone the skin choices are measured from (render/recolor.ts's
+ *  palette): a choice becomes a multiply over the painted skin. */
+const FAIR = new THREE.Color('#f2c4a8');
+const SKIN_MAT = /^MI_(Superhero|Regular)_/;
 
 /** What each outfit piece covers, as the body's bones under it: the body
  *  is hidden there (the piece brings any skin it shows, forearms, hands). */
@@ -244,13 +258,28 @@ function build(spec: PersonSpec, get: (url: string) => GLTF): { root: THREE.Grou
   for (const p of spec.outfit ?? []) attach(`${OUTFITS}/${p}.gltf`);
   if (spec.hair) attach(`${HAIR}/${spec.hair}.gltf`);
   if (spec.beard) attach(`${HAIR}/Hair_Beard.gltf`);
-  // Hair, beard and brows take the chosen colour (their texture is grey).
-  const tint = new THREE.Color(spec.hairColor ?? '#3a2a1e');
+  // Each person has materials of their own (a hit flashes one person, not
+  // everyone in the same shirt; textures stay shared). Hair, beard and brows
+  // take the chosen colour (their texture is grey), skin the chosen tone.
+  const hair = new THREE.Color(spec.hairColor ?? '#3a2a1e');
+  const skin = spec.skin ? new THREE.Color(spec.skin) : null;
+  if (skin) { skin.r /= FAIR.r; skin.g /= FAIR.g; skin.b /= FAIR.b; }
+  const own = new Map<THREE.Material, THREE.MeshStandardMaterial>();
   body.traverse((o) => {
     const m = o as THREE.Mesh;
     if (!m.isMesh) return;
-    const mat = m.material as THREE.MeshStandardMaterial;
-    if (/Hair/i.test(mat.name)) { m.material = mat.clone(); (m.material as THREE.MeshStandardMaterial).color.copy(tint); }
+    const src = m.material as THREE.MeshStandardMaterial;
+    let mat = own.get(src);
+    if (!mat) {
+      mat = src.clone();
+      // (A clone leaves shader changes behind: the body's cover mask.)
+      mat.onBeforeCompile = src.onBeforeCompile;
+      mat.customProgramCacheKey = src.customProgramCacheKey;
+      if (/Hair/i.test(mat.name)) mat.color.copy(hair);
+      else if (skin && SKIN_MAT.test(mat.name)) mat.color.copy(skin);
+      own.set(src, mat);
+    }
+    m.material = mat;
   });
   const root = new THREE.Group();
   root.add(body);

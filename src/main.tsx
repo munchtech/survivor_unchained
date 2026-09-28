@@ -24,7 +24,10 @@ async function boot() {
   const wantQ = params.get('quality') ?? saved;
   const renderer = new Renderer(stage, wantQ === 'low' || wantQ === 'medium' || wantQ === 'high' ? wantQ : 'high');
   (window as unknown as { __game: unknown }).__game = { renderer };
-  await Assets.loadAll();
+  // The KayKit set, the people (bodies, outfits, hair, the animation
+  // libraries) and the weapons, together.
+  const [{ preloadPeople }, { preloadArms }] = await Promise.all([import('@/render/people'), import('@/render/arms')]);
+  await Promise.all([Assets.loadAll(), preloadPeople(), preloadArms()]);
   renderItemIcons();
   mountUi(document.getElementById('ui')!);
 
