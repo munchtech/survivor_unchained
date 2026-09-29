@@ -122,12 +122,14 @@ public static class Campfire
             ScaleMin = 0.45f * size, ScaleMax = 0.8f * size,
             ScaleCurve = Curve((0, 0.5f), (0.25f, 1f), (1, 0.2f)),
             AngleMin = -12, AngleMax = 12,
-            ColorRamp = Ramp((0, new Color(1.3f, 0.75f, 0.3f, 0)), (0.15f, new Color(1.25f, 0.5f, 0.12f, 0.5f)), (0.6f, new Color(0.8f, 0.2f, 0.04f, 0.3f)), (1, new Color(0.25f, 0.04f, 0.01f, 0))),
+            // Orange, not white: many tongues add up, and what adds past white
+            // is only a blob.
+            ColorRamp = Ramp((0, new Color(0.9f, 0.42f, 0.1f, 0)), (0.15f, new Color(0.85f, 0.3f, 0.05f, 0.32f)), (0.6f, new Color(0.55f, 0.12f, 0.02f, 0.2f)), (1, new Color(0.15f, 0.02f, 0.01f, 0))),
             TurbulenceEnabled = true, TurbulenceNoiseStrength = 0.6f, TurbulenceNoiseScale = 2.5f, TurbulenceInfluenceMin = 0.05f, TurbulenceInfluenceMax = 0.15f,
         };
         return new GpuParticles3D
         {
-            Name = "Flames", Amount = 64, Lifetime = 0.75, ProcessMaterial = p, Position = new Vector3(0, 0.15f, 0),
+            Name = "Flames", Amount = 30, Lifetime = 0.75, ProcessMaterial = p, Position = new Vector3(0, 0.15f, 0),
             DrawPass1 = new QuadMesh { Size = new Vector2(0.4f, 0.8f), Material = Sprite(FlameTongue(), true) },
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Preprocess = 1.0,
         };

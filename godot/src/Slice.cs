@@ -79,7 +79,7 @@ public partial class Slice : Node3D
             AmbientLightColor = new Color("#3f5780"),
             AmbientLightEnergy = 0.42f,
             TonemapMode = Environment.ToneMapper.Agx,
-            TonemapExposure = 1.0f,
+            TonemapExposure = 1.9f,
             // Soft: a field of thin blades turns strong SSAO into black specks.
             SsaoEnabled = true, SsaoRadius = 1.0f, SsaoIntensity = 1.1f, SsaoDetail = 0.3f,
             GlowEnabled = true, GlowIntensity = 0.7f, GlowBloom = 0.04f, GlowHdrThreshold = 1.1f,
@@ -88,6 +88,9 @@ public partial class Slice : Node3D
             VolumetricFogLength = 90, VolumetricFogAnisotropy = 0.3f,
             AdjustmentEnabled = true, AdjustmentContrast = 1.1f, AdjustmentSaturation = 0.95f,
         };
+        // Debug switches, for telling artefacts apart.
+        if (Args.Has("nossao")) env.SsaoEnabled = false;
+        if (Args.Has("notaa")) GetViewport().UseTaa = false;
         AddChild(new WorldEnvironment { Environment = env });
         // The moon, where the web game's night puts it: 52 degrees up, from
         // azimuth 128 (0 = +x, 90 = +z).

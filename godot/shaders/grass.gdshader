@@ -61,8 +61,11 @@ void vertex() {
 }
 
 void fragment() {
-	vec3 gb = v_tint * mix(0.62, 1.12, pow(v_t, 0.8));
-	gb = mix(gb, gb * vec3(1.12, 1.08, 0.78), smoothstep(0.7, 1.0, v_t) * 0.5);
+	// (Clamped: interpolation leaves the root a hair below zero, and pow of
+	// a negative is NaN, which draws black.)
+	float t = clamp(v_t, 0.0, 1.0);
+	vec3 gb = v_tint * mix(0.62, 1.12, pow(t, 0.8));
+	gb = mix(gb, gb * vec3(1.12, 1.08, 0.78), smoothstep(0.7, 1.0, t) * 0.5);
 	ALBEDO = gb;
 	// Both faces of a blade take the ground's normal: lit as the meadow is,
 	// not half of it from below.
