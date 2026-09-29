@@ -171,4 +171,58 @@ public static class Made
         return root;
     }
 
+    /* -------------------------------------------------------------- wands -- */
+
+    /// <summary>An apprentice's wand: turned ash, a brass collar, a clear
+    /// crystal held at its tip.</summary>
+    public static Node3D Wand()
+    {
+        var root = new Node3D();
+        var wood = new Build();
+        Lathe(wood, Pts(0, -0.6f, 0.04f, -0.6f, 0.046f, -0.56f, 0.04f, -0.5f, 0.05f, -0.44f, 0.044f, -0.3f, 0.037f, -0.26f, 0.033f, 0.1f, 0.025f, 0.4f, 0.021f, 0.48f, 0, 0.5f), 16, textured: true);
+        Add(root, wood, Grain("#8a6a48", "#4a3018"));
+        var brass = new Build();
+        Lathe(brass, Pts(0.044f, -0.31f, 0.049f, -0.29f, 0.049f, -0.26f, 0.04f, -0.24f), 16);
+        for (int k = 0; k < 3; k++)
+        {
+            float a = k * Mathf.Tau / 3;
+            var d = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+            Tube(brass, new List<Vector3> { d * 0.02f + Vector3.Up * 0.46f, d * 0.045f + Vector3.Up * 0.53f, d * 0.02f + Vector3.Up * 0.6f }, 0.007f, 4);
+        }
+        Add(root, brass, Brass());
+        var crystal = new Build();
+        Lathe(crystal, Pts(0, 0, 0.05f, 0.04f, 0.045f, 0.14f, 0, 0.22f), 6, At(0, 0.47f, 0));
+        Add(root, crystal.Faceted(), Gem("#7ac0ff", 1.1f));
+        return root;
+    }
+
+    /// <summary>The Grave Tether: blackwood, a claw of bone at its head
+    /// clutching a dark light, a coil of it winding down the shaft.</summary>
+    public static Node3D DarkWand()
+    {
+        var root = new Node3D();
+        var shaft = new Build();
+        Tube(shaft, Path(24, t => new Vector3(0.02f * Mathf.Sin(t * 11), Mathf.Lerp(-0.62f, 0.4f, t), 0.015f * Mathf.Cos(t * 7))),
+            t => Mathf.Lerp(0.04f, 0.022f, t) + 0.005f * Mathf.Sin(t * 70), 8);
+        Add(root, shaft, Mat("#1e1a18", 0, 0.5f));
+        var bone = new Build();
+        for (int k = 0; k < 3; k++)
+        {
+            float a = k * Mathf.Tau / 3;
+            var d = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+            Tube(bone, new List<Vector3> { d * 0.02f + Vector3.Up * 0.38f, d * 0.08f + Vector3.Up * 0.45f, d * 0.075f + Vector3.Up * 0.55f, d * 0.03f + Vector3.Up * 0.6f }, t => 0.016f * (1 - 0.7f * t), 5);
+        }
+        Lathe(bone, Pts(0.03f, 0.34f, 0.04f, 0.36f, 0.035f, 0.4f, 0.02f, 0.41f), 12);
+        Add(root, bone, Bone());
+        Add(root, Ball(0.065f), Glow("#8a4aff", 1.6f, "#4a2a8a"), At(0, 0.5f, 0));
+        var coil = new Build();
+        Tube(coil, Path(60, t =>
+        {
+            float y = Mathf.Lerp(0.4f, -0.3f, t), a = t * Mathf.Tau * 3.5f, r = Mathf.Lerp(0.035f, 0.05f, t) + 0.01f;
+            return new Vector3(r * Mathf.Cos(a), y, r * Mathf.Sin(a));
+        }), t => 0.009f * (1 - t) + 0.002f, 4);
+        Add(root, coil, Glow("#8a4aff", 0.9f, "#3a1a6a"));
+        return root;
+    }
+
 }

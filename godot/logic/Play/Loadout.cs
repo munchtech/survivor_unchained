@@ -28,7 +28,7 @@ public static class Loadouts
         ["judgement_disc_item"] = new("viking_sword", null, "shield_round", "Sword_Idle", ["OverhandThrow"], "Sword_Attack"),
         ["butchers_cleaver"] = new("viking_axe", null, null, "Sword_Idle", ["Sword_Attack", "Sword_Regular_B"], "Sword_Heavy_Combo"),
         ["gyre_axes"] = new("viking_axe", "viking_axe", null, "Sword_Idle", ["Sword_Regular_A", "Sword_Regular_C"], "Sword_Heavy_Combo"),
-        ["apprentice_wand"] = new("short_staff", null, null, "Idle_Loop", ["Spell_Simple_Shoot"], "Spell_Simple_Enter", "Spell_Simple_Shoot"),
+        ["apprentice_wand"] = new("wand", null, null, "Idle_Loop", ["Spell_Simple_Shoot"], "Spell_Simple_Enter", "Spell_Simple_Shoot"),
         // A staff stands upright in both hands.
         ["ember_staff"] = new("mage_staff", null, null, "Pistol_Idle_Loop", ["Spell_Simple_Shoot"], "Spell_Simple_Enter", "Spell_Simple_Shoot"),
         ["rime_rod"] = new("mage_staff", null, null, "Pistol_Idle_Loop", ["Spell_Simple_Shoot"], "Spell_Simple_Enter", "Spell_Simple_Shoot"),

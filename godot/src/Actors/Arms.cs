@@ -18,7 +18,8 @@ public static class Arms
     /// <summary>A weapon: its file (and the node in it, where a file holds
     /// several), its length in life, where along it the hand grips (0 the
     /// butt, 1 the tip); held pistol-fashion (a crossbow) or not.</summary>
-    public sealed record Spec(string File, float Length, float Grip, bool Flip = false, float Roll = 0, string? Node = null, bool Pistol = false);
+    /// Or made in code (Build), not read from a file.
+    public sealed record Spec(string File, float Length, float Grip, bool Flip = false, float Roll = 0, string? Node = null, bool Pistol = false, Func<Node3D>? Build = null);
 
     public static readonly Dictionary<string, Spec> All = new()
     {
@@ -32,6 +33,7 @@ public static class Arms
         ["mage_staff"] = new("mage_staff", 1.75f, 0.45f),
         ["short_staff"] = new("mage_staff", 1.1f, 0.3f),
         ["crossbow"] = new("crossbow", 0.85f, 0.3f, Pistol: true),
+        ["wand"] = new("", 0.38f, 0.12f, Build: Made.Wand),
         ["shield_round"] = new("shield_round", 0.66f, 0.5f),
         ["daggers"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004"),
         ["dagger_b"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004_01"),
@@ -41,7 +43,7 @@ public static class Arms
     public static Node3D Make(string id)
     {
         var spec = All[id];
-        var model = GD.Load<PackedScene>($"res://assets/weapons/{spec.File}.glb").Instantiate<Node3D>();
+        var model = spec.Build?.Invoke() ?? GD.Load<PackedScene>($"res://assets/weapons/{spec.File}.glb").Instantiate<Node3D>();
         if (spec.Node != null)
         {
             // One weapon of several in the file: the rest go (the meshes
