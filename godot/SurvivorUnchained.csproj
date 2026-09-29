@@ -6,4 +6,8 @@
     <LangVersion>12</LangVersion>
     <RootNamespace>SurvivorUnchained</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- The logic's tests are their own project (tests/Tests.csproj). -->
+    <Compile Remove="tests/**" />
+  </ItemGroup>
 </Project>

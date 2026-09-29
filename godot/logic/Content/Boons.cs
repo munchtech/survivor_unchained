@@ -1,0 +1,192 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using SurvivorUnchained.Sim;
+using static SurvivorUnchained.Sim.StatusKind;
+
+namespace SurvivorUnchained.Content;
+
+/* What an ember level can buy besides combat skills (the weapons).
+ *
+ * PASSIVE skills are ordinary picks, ranked like weapons: numbers a build
+ * is shaped around. Each weapon's evolutions name the passive that evolves
+ * them: a weapon at rank 8 with one rank of it can become something else.
+ *
+ * BLESSINGS change how the fight works: each adds a rule to the machine
+ * (marks, companions, chain reactions, bargains). They are milestones, not
+ * picks: one chosen at creation and given at the start of every expedition,
+ * and another each time the ember reaches a multiple of MilestoneEvery. Some
+ * wait until the build has something for them to act on.
+ *
+ * Every entry says what it touches with Tags, so the level-up draft can lean
+ * toward what the build is already doing without ever forcing it. */
+
+public enum Rarity { Common, Uncommon, Rare, Epic, Legendary }
+public enum BoonKind { Passive, Blessing }
+
+/// <summary>What a build must have for a card to be offered.</summary>
+public sealed record Requirement(StatusKind? Status = null, Tag? Tag = null, string? Boon = null, Requirement[]? Any = null);
+
+public sealed class BoonDef
+{
+    public string Id = "", Name = "", Icon = "";
+    public Rarity Rarity;
+    public int Max;
+    public BoonKind Kind;
+    /// <summary>Plain-language summary.</summary>
+    public string Text = "";
+    public string? Detail;
+    public Func<int, StatMod[]>? Mods;
+    public TriggerDef[]? Triggers;
+    /// <summary>Offered only when the build meets this.</summary>
+    public Requirement? Requires;
+    public Tag[] Tags = Array.Empty<Tag>();
+}
+
+public static class Boons
+{
+    public const int MilestoneEvery = 85;
+    /// <summary>The blessings a survivor can start with (chosen at creation):
+    /// each works from the first minute, whatever the build.</summary>
+    public static readonly string[] StartBlessings = ["hunters_mark", "momentum", "bloodthirst", "spirit_companion", "arcane_overflow", "glass_cannon"];
+    /// <summary>Passive skills a survivor can hold at once.</summary>
+    public const int MaxPassives = 6;
+    public static bool IsMilestone(int level) => level > 0 && level % MilestoneEvery == 0;
+
+    static StatMod Inc(string stat, double v, string source) => new(stat, ModKind.Inc, v, source);
+    static StatMod Flat(string stat, double v, string source) => new(stat, ModKind.Flat, v, source);
+    static StatMod More(string stat, double v, string source) => new(stat, ModKind.More, v, source);
+    static StatusPayload P(StatusKind k, double chance, double power, double duration) => new(k, chance, power, duration);
+    static TriggerDef T(TriggerEvent on, Effect[] effects, TriggerCond? when = null, double? chance = null, double? icd = null, string? text = null) =>
+        new() { On = on, Effects = effects, When = when, Chance = chance, Icd = icd, Text = text };
+
+    public static readonly Dictionary<string, BoonDef> All = new BoonDef[]
+    {
+        /* -------------------------------------------------- passive skills -- */
+        new() { Id = "might", Name = "Might", Icon = "fist", Rarity = Rarity.Common, Max = 5, Kind = BoonKind.Passive,
+            Text = "+10% damage with everything.", Mods = r => [Inc(Stat.Damage, 0.1 * r, "boon:might")] },
+        new() { Id = "haste", Name = "Haste", Icon = "wing", Rarity = Rarity.Common, Max = 5, Kind = BoonKind.Passive,
+            Text = "Every weapon fires 8% more often.", Mods = r => [More(Stat.Cooldown, Math.Pow(0.92, r) - 1, "boon:haste")] },
+        new() { Id = "fleetfoot", Name = "Fleetfoot", Icon = "boot", Rarity = Rarity.Common, Max = 5, Kind = BoonKind.Passive,
+            Text = "+10% movement speed.", Mods = r => [Inc(Stat.MoveSpeed, 0.1 * r, "boon:fleetfoot")] },
+        new() { Id = "greed", Name = "Greed's Pull", Icon = "magnet", Rarity = Rarity.Common, Max = 5, Kind = BoonKind.Passive,
+            Text = "Ember, gold and potions fly to you from 1.2 m farther.", Mods = r => [Flat(Stat.PickupRadius, 1.2 * r, "boon:greed")] },
+        new() { Id = "vitality", Name = "Vitality", Icon = "heart", Rarity = Rarity.Common, Max = 5, Kind = BoonKind.Passive, Tags = [Tag.Heal],
+            Text = "+25 maximum health, and a heal when taken.", Mods = r => [Flat(Stat.MaxHealth, 25 * r, "boon:vitality")] },
+        new() { Id = "ironhide", Name = "Ironhide", Icon = "shield", Rarity = Rarity.Common, Max = 5, Kind = BoonKind.Passive,
+            Text = "+3 armour. Each point helps a little less than the last.", Mods = r => [Flat(Stat.Armor, 3 * r, "boon:ironhide")] },
+        new() { Id = "precision", Name = "Precision", Icon = "crosshair", Rarity = Rarity.Uncommon, Max = 5, Kind = BoonKind.Passive,
+            Text = "+7% critical strike chance.", Mods = r => [Flat(Stat.CritChance, 0.07 * r, "boon:precision")] },
+        new() { Id = "ferocity", Name = "Ferocity", Icon = "claw", Rarity = Rarity.Uncommon, Max = 4, Kind = BoonKind.Passive,
+            Text = "+25% critical strike damage.", Mods = r => [Flat(Stat.CritDamage, 0.25 * r, "boon:ferocity")] },
+        new() { Id = "expanse", Name = "Expanse", Icon = "expand", Rarity = Rarity.Uncommon, Max = 5, Kind = BoonKind.Passive, Tags = [Tag.Area],
+            Text = "+12% area: novas, fields, orbits, storms and auras are bigger; chains, beams and blades reach farther.",
+            Mods = r => [Inc(Stat.Area, 0.12 * r, "boon:expanse")] },
+        new() { Id = "duplicity", Name = "Duplicity", Icon = "triple", Rarity = Rarity.Rare, Max = 3, Kind = BoonKind.Passive, Tags = [Tag.Projectile],
+            Text = "+1 projectile on everything that sends things out.", Mods = r => [Flat(Stat.Projectiles, r, "boon:duplicity")] },
+        new() { Id = "fortune", Name = "Fortune", Icon = "coin", Rarity = Rarity.Uncommon, Max = 4, Kind = BoonKind.Passive,
+            Text = "+10% luck: more and better drops, and rarer cards.", Mods = r => [Flat(Stat.Luck, 0.1 * r, "boon:fortune")] },
+        new() { Id = "wisdom", Name = "Wisdom", Icon = "book", Rarity = Rarity.Uncommon, Max = 4, Kind = BoonKind.Passive,
+            Text = "+10% ember from every stone.", Mods = r => [Inc(Stat.XpGain, 0.1 * r, "boon:wisdom")] },
+        new() { Id = "recovery", Name = "Recovery", Icon = "leaf", Rarity = Rarity.Common, Max = 4, Kind = BoonKind.Passive, Tags = [Tag.Heal],
+            Text = "+0.6 health regenerated per second.", Mods = r => [Flat(Stat.Regen, 0.6 * r, "boon:recovery")] },
+        new() { Id = "velocity", Name = "Velocity", Icon = "spear", Rarity = Rarity.Common, Max = 3, Kind = BoonKind.Passive, Tags = [Tag.Projectile],
+            Text = "+15% projectile speed.", Mods = r => [Inc(Stat.ProjectileSpeed, 0.15 * r, "boon:velocity")] },
+        new() { Id = "perennial", Name = "Perennial", Icon = "perennial", Rarity = Rarity.Common, Max = 5, Kind = BoonKind.Passive, Tags = [Tag.Zone, Tag.Orbit, Tag.Summon],
+            Text = "+10% duration: fields, gyres, beasts and ground effects last longer.", Mods = r => [Inc(Stat.Duration, 0.1 * r, "boon:perennial")] },
+        new() { Id = "evasion", Name = "Evasion", Icon = "feint", Rarity = Rarity.Uncommon, Max = 4, Kind = BoonKind.Passive,
+            Text = "+7% chance to avoid a blow entirely.", Mods = r => [Flat(Stat.Dodge, 0.07 * r, "boon:evasion")] },
+        new() { Id = "thorns", Name = "Thorns", Icon = "thorn", Rarity = Rarity.Uncommon, Max = 5, Kind = BoonKind.Passive,
+            Text = "Whatever strikes you takes 4 + 20% of the blow back.", Mods = r => [Flat(Stat.Thorns, r, "boon:thorns")] },
+        new() { Id = "serration", Name = "Serration", Icon = "bleed", Rarity = Rarity.Uncommon, Max = 4, Kind = BoonKind.Passive, Tags = [Tag.Physical, Tag.Dot],
+            Text = "Critical strikes open a wound that bleeds 30% of the blow over 3 s.",
+            Detail = "Bleeding hurts more while the victim moves. A fresh crit reopens the wound at whichever bleed is worse.",
+            Mods = r => [Flat(Stat.CritChance, 0.02 * r, "boon:serration")],
+            Triggers = [T(TriggerEvent.Crit, [new Effect.Apply(P(Bleed, 1, 0.3, 3), OnHit: true)], text: "Crits bleed.")] },
+        new() { Id = "chilling", Name = "Chilling Presence", Icon = "frostaura", Rarity = Rarity.Rare, Max = 3, Kind = BoonKind.Passive, Tags = [Tag.Frost, Tag.Aura],
+            Text = "Creatures near you are slowed by the cold, more as they come closer.", Mods = _ => [] },
+        new() { Id = "searing", Name = "Searing Aura", Icon = "retaura", Rarity = Rarity.Rare, Max = 4, Kind = BoonKind.Passive, Tags = [Tag.Holy, Tag.Aura, Tag.Area],
+            Text = "A holy aura sears everything near you twice a second.", Mods = _ => [] },
+        new() { Id = "spirit_companion", Name = "Spirit Companion", Icon = "spiritwolf", Rarity = Rarity.Rare, Max = 3, Kind = BoonKind.Blessing, Tags = [Tag.Summon],
+            Text = "Call a spirit wolf that hunts beside you. Each rank calls another.", Mods = _ => [] },
+        new() { Id = "grave_call", Name = "Grave Call", Icon = "risen", Rarity = Rarity.Rare, Max = 3, Kind = BoonKind.Blessing, Tags = [Tag.Summon, Tag.Shadow],
+            Text = "Raise a ghoul to shamble after the horde. Slow, and it hits very hard.", Mods = _ => [] },
+        new() { Id = "dread_command", Name = "Dread Command", Icon = "command", Rarity = Rarity.Epic, Max = 5, Kind = BoonKind.Blessing, Tags = [Tag.Summon],
+            Text = "+30% damage and +10% attack speed for everything you have summoned.", Requires = new(Tag: Tag.Summon),
+            Mods = r => [Inc(Stat.SummonDamage, 0.3 * r, "boon:dread_command"), Inc(Stat.SummonHaste, 0.1 * r, "boon:dread_command")] },
+        new() { Id = "dark_bargain", Name = "Dark Bargain", Icon = "skull", Rarity = Rarity.Epic, Max = 3, Kind = BoonKind.Blessing,
+            Text = "The dark grows: more of them, and faster. You grow too: +15% ember and gold.",
+            Detail = "A curse you choose. More creatures means more ember, more gold, and more danger. Stacks.",
+            Mods = r => [Inc(Stat.XpGain, 0.15 * r, "boon:dark_bargain"), Inc(Stat.GoldGain, 0.15 * r, "boon:dark_bargain")] },
+        new() { Id = "warding", Name = "Warding Light", Icon = "aegis", Rarity = Rarity.Rare, Max = 3, Kind = BoonKind.Passive, Tags = [Tag.Holy],
+            Text = "Blocks one blow completely, then recharges (12 / 9 / 6 s).", Mods = r => [Flat(Stat.Block, r, "boon:warding")] },
+
+        /* ------------------------------------------------------- blessings -- */
+        new() { Id = "kindling", Name = "Kindling", Icon = "kindling", Rarity = Rarity.Rare, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Fire, Tag.Dot],
+            Text = "Anything that dies burning hands its fire to two neighbours.", Requires = new(Status: Burn),
+            Triggers = [T(TriggerEvent.Kill, [new Effect.Spread(Burn, 3.2, 2, 2)], new() { TargetStatus = Burn })] },
+        new() { Id = "pyre_burst", Name = "Pyre Burst", Icon = "pyre", Rarity = Rarity.Rare, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Fire, Tag.Explosion],
+            Text = "Burning creatures have a 30% chance to explode when they die.", Requires = new(Status: Burn),
+            Triggers = [T(TriggerEvent.Kill, [new Effect.Explode(2.4, 0.35, Basis.MaxHp, School.Fire, P(Burn, 0.7, 0.25, 3))], new() { TargetStatus = Burn }, chance: 0.3)] },
+        new() { Id = "emberseekers", Name = "Emberseekers", Icon = "embers", Rarity = Rarity.Epic, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Fire, Tag.Projectile],
+            Text = "Every explosion throws out two embers that seek the strongest creature near you.", Requires = new(Tag: Tag.Explosion),
+            Triggers = [T(TriggerEvent.Explode, [new Effect.Missiles(2, 18, Basis.Flat, School.Fire, Seek.Strongest, 9, "ember_seeker")], icd: 0.12)] },
+        new() { Id = "shatter", Name = "Shatter", Icon = "shatter", Rarity = Rarity.Rare, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Frost, Tag.Explosion],
+            Text = "Frozen creatures shatter when they die, spraying frost that chills everything nearby.", Requires = new(Status: Chill),
+            Triggers = [T(TriggerEvent.Kill, [new Effect.Explode(2.6, 0.45, Basis.MaxHp, School.Frost, P(Chill, 1, 2, 2.5))], new() { TargetStatus = Frozen })] },
+        new() { Id = "deep_chill", Name = "Deep Chill", Icon = "frostaura", Rarity = Rarity.Uncommon, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Frost],
+            Text = "Chill builds twice as fast. Frozen creatures take 35% more from everything.", Requires = new(Status: Chill),
+            Mods = _ => [Inc(Stat.StatusDamage, 0.15, "syn:deep_chill")] },
+        new() { Id = "static_charge", Name = "Static Charge", Icon = "static", Rarity = Rarity.Rare, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Storm, Tag.Chain],
+            Text = "Hitting a shocked creature sends a spark leaping to two more.", Requires = new(Status: Shock),
+            Triggers = [T(TriggerEvent.Hit, [new Effect.Chain(2, 5, 0.5, Basis.Hit, School.Storm)], new() { TargetStatus = Shock }, icd: 0.08)] },
+        new() { Id = "butchers_mark", Name = "Butcher's Mercy", Icon = "execute", Rarity = Rarity.Epic, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Physical],
+            Text = "Critical strikes on bleeding creatures finish anything below 15% health.", Requires = new(Status: Bleed),
+            Triggers = [T(TriggerEvent.Crit, [new Effect.Execute(0.15)], new() { TargetStatus = Bleed, HpBelow = 0.15 })] },
+        new() { Id = "blood_scent", Name = "Blood Scent", Icon = "scent", Rarity = Rarity.Uncommon, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Physical],
+            Text = "Killing something that bleeds quickens you: +8% speed and attack rate for 3 s, stacking three times.", Requires = new(Status: Bleed),
+            Triggers = [T(TriggerEvent.Kill, [new Effect.Buff("blood_scent", Stat.MoveSpeed, 0.08, ModKind.Inc, 3, 3), new Effect.Buff("blood_scent_cd", Stat.Cooldown, -0.06, ModKind.More, 3, 3)], new() { TargetStatus = Bleed })] },
+        new() { Id = "hunters_mark", Name = "Hunter's Mark", Icon = "mark", Rarity = Rarity.Rare, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Ranged],
+            Text = "Every 5 s the toughest thing near you is marked: it takes 30% more from everything, and its death eases your cooldowns.",
+            Triggers = [T(TriggerEvent.Tick, [new Effect.Apply(P(Mark, 1, 1, 5), OnHit: false, Radius: 12, Count: 1)], icd: 5),
+                T(TriggerEvent.Kill, [new Effect.Cooldown(0.6, Effect.CooldownScope.All)], new() { TargetStatus = Mark })] },
+        new() { Id = "plague_bearer", Name = "Plague Bearer", Icon = "plague", Rarity = Rarity.Rare, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Dot, Tag.Shadow, Tag.Nature],
+            Text = "Poisoned creatures pass their poison to three neighbours when they die.", Requires = new(Status: Poison),
+            Triggers = [T(TriggerEvent.Kill, [new Effect.Spread(Poison, 3, 3, 3)], new() { TargetStatus = Poison })] },
+        new() { Id = "sanctify", Name = "Sanctify", Icon = "sanctify", Rarity = Rarity.Uncommon, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Holy],
+            Text = "Holy damage is 40% stronger, and the seared burn with it.", Requires = new(Status: Sear),
+            Mods = _ => [Inc(Stat.DamageOf(School.Holy), 0.4, "syn:sanctify")] },
+        new() { Id = "consecration", Name = "Consecration", Icon = "consecrate", Rarity = Rarity.Rare, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Holy, Tag.Zone],
+            Text = "The seared leave hallowed ground where they fall.", Requires = new(Status: Sear),
+            Triggers = [T(TriggerEvent.Kill, [new Effect.Zone(1.8, 3, 8, Basis.Flat, School.Holy, "zone_holy")], new() { TargetStatus = Sear }, chance: 0.35)] },
+        new() { Id = "soul_harvest", Name = "Soul Harvest", Icon = "risen", Rarity = Rarity.Epic, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Summon, Tag.Shadow],
+            Text = "Kills have a 6% chance to rise again on your side for 14 s (up to six at once).",
+            Triggers = [T(TriggerEvent.Kill, [new Effect.Raise(Effect.RaiseKind.Ghoul, 14, 6)], chance: 0.06)] },
+        new() { Id = "pack_leader", Name = "Pack Leader", Icon = "howl", Rarity = Rarity.Rare, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Summon, Tag.Nature],
+            Text = "Your dash howls: every ally near you strikes 40% harder for 4 s, and a spirit wolf answers.", Requires = new(Tag: Tag.Summon),
+            Triggers = [T(TriggerEvent.Dash, [new Effect.Buff("pack", Stat.SummonDamage, 0.4, ModKind.Inc, 4), new Effect.Raise(Effect.RaiseKind.SpiritWolf, 8, 3)], icd: 3)] },
+        new() { Id = "momentum", Name = "Momentum", Icon = "boot", Rarity = Rarity.Legendary, Max = 1, Kind = BoonKind.Blessing,
+            Text = "While you are moving your weapons fire 25% faster. Never stand still.",
+            Mods = _ => [new StatMod(Stat.Cooldown, ModKind.More, -0.2, "syn:momentum", ModWhen.Moving)] },
+        new() { Id = "bloodthirst", Name = "Bloodthirst", Icon = "drain", Rarity = Rarity.Legendary, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Heal],
+            Text = "Every 25 kills restore 6% of your health. The horde is your medicine.",
+            Triggers = [T(TriggerEvent.Kill, [new Effect.Heal(0.0024, Basis.MaxHp)], icd: 0)] },
+        new() { Id = "arcane_overflow", Name = "Arcane Overflow", Icon = "arcane", Rarity = Rarity.Legendary, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Spell],
+            Text = "Each ember stone has an 8% chance to fire every weapon at once.",
+            Triggers = [T(TriggerEvent.Ember, [new Effect.Cooldown(99, Effect.CooldownScope.All)], chance: 0.08, icd: 0.4)] },
+        new() { Id = "glass_cannon", Name = "Glass Cannon", Icon = "flame", Rarity = Rarity.Legendary, Max = 1, Kind = BoonKind.Blessing,
+            Text = "45% more damage, and 35% less health. Live fast.",
+            Mods = _ => [More(Stat.Damage, 0.45, "syn:glass"), More(Stat.MaxHealth, -0.35, "syn:glass")] },
+        new() { Id = "storm_caller", Name = "Storm Caller", Icon = "bolt", Rarity = Rarity.Epic, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Storm],
+            Text = "Every 12th kill calls lightning down on the thickest knot of creatures near you.", Requires = new(Tag: Tag.Storm),
+            Triggers = [T(TriggerEvent.Kill, [new Effect.Strike(3, 1.6, 40, Basis.Flat, School.Storm, 6)], chance: 1.0 / 12)] },
+        new() { Id = "fracture", Name = "Fracture", Icon = "shatter", Rarity = Rarity.Epic, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Frost, Tag.Fire],
+            Text = "Fire on the frozen is a violent thing: burning a frozen creature makes it explode.", Requires = new(Any: [new(Status: Chill)]),
+            Triggers = [T(TriggerEvent.Hit, [new Effect.Explode(2.6, 1.2, Basis.Hit, School.Frost)], new() { School = School.Fire, TargetStatus = Frozen }, icd: 0.05)] },
+    }.ToDictionary(b => b.Id);
+
+    /// <summary>The order the boons were written in (the draft walks them in it).</summary>
+    public static readonly string[] Order = All.Keys.ToArray();
+
+    public static BoonDef? Find(string id) => All.TryGetValue(id, out var d) ? d : null;
+}
