@@ -144,6 +144,7 @@ for (const zone of wanted) {
     if (zone === 'waystation') {
       refs.doors = build.doors;
       refs.stalls = build.stalls;
+      refs.braziers = build.braziers.map(srcIndex);
     }
 
     /* --------------------------------------------------------- terrain -- */

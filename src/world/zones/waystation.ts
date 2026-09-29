@@ -6,7 +6,7 @@ import { createWater, waterUniforms } from '@/render/water';
 import { CollisionWorld } from '@/sim/collision';
 import { Noise2D, distToSegment, smoothstep, hash1 } from '@/core/math';
 import type { ZoneBuild } from '@/game/scene';
-import { ZoneKit } from './kit';
+import { ZoneKit, type LightSource } from './kit';
 import { Assembly, buildHouse, putDoor, STOREY, type HouseSpec, type WallKind } from './houses';
 
 /* The Waystation: where the last three roads meet under Vonnra's toll.
@@ -48,6 +48,8 @@ export interface WaystationBuild {
   setNight: (on: boolean) => void;
   /** The market stalls: where they stand, which way the counter faces, what they sell. */
   stalls: Array<{ x: number; z: number; rot: number; kind: string }>;
+  /** The braziers lit after dark (tools/godot/export_zone.mjs reads them). */
+  braziers: LightSource[];
 }
 
 export function buildWaystation(grassDensity = 1): WaystationBuild {
@@ -484,7 +486,7 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
     kit.setNight(on);
     for (const b of braziers) kit.setLit(b, on);
   };
-  return { zone, kit, doors, setNight, stalls: stalls.map(([x, z, rot, , kind]) => ({ x, z, rot, kind })) };
+  return { zone, kit, doors, setNight, braziers, stalls: stalls.map(([x, z, rot, , kind]) => ({ x, z, rot, kind })) };
 }
 
 function flora(kit: ZoneKit, kind: 'pine' | 'broadleaf' | 'autumn', x: number, z: number, rot: number, s: number) {

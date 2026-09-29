@@ -44,7 +44,7 @@ public sealed record Hint(string Id, string Title, string Text, List<string> Key
 /// <summary>What the place sounds like where the survivor is (0..1 each).</summary>
 public sealed class AmbienceMix
 {
-    public double Wind, Leaves, Fire, Water, Hum, Birds, Crickets, Owl, Town, Crowd, Drip;
+    public double Wind, Leaves, Fire, Water, Hum, Birds, Crickets, Owl, Town, Crowd, Drip, Smithy;
 }
 
 /// <summary>The game, as a zone sees it.</summary>
@@ -100,6 +100,10 @@ public interface IZoneLook
     int AddLight(double x, double y, double z, string color, double intensity, double distance, double flicker = 0.12, double glowSize = 0.08, string glowColor = "#ffb35a");
     /// <summary>A person standing in the world.</summary>
     INpcView Person(NpcDef def, Spot spot);
+    /// <summary>Someone from the town, made up (Folk): a person as a spec.</summary>
+    INpcView Walker(PersonSpec spec, double scale);
+    /// <summary>A light that goes where something carries it (a torch).</summary>
+    void MoveLight(int light, double x, double y, double z);
     /// <summary>The ground's height.</summary>
     double HeightAt(double x, double z);
     /// <summary>After dark or not (night-only pieces, moths, smoke).</summary>
@@ -120,6 +124,10 @@ public interface INpcView
     void Loop(string clip, double blend = 0.3, double speed = 1);
     /// <summary>A gesture once, then back to the loop.</summary>
     void Act(string clip, double speed = 1);
+    /// <summary>Walking, at this speed (m/s): idle, walk or run, blended.</summary>
+    void Locomotion(double speed) { }
+    /// <summary>Something in a hand ('handslot.r'): a kit piece, or nothing.</summary>
+    void Hold(string slot, string? pack, string? piece) { }
     void Dispose();
 }
 

@@ -91,6 +91,9 @@ sealed class FakeLook : IZoneLook
         return lit.Count - 1;
     }
     public INpcView Person(NpcDef def, Spot spot) => new FakeView();
+    public INpcView Walker(PersonSpec spec, double scale) { Walkers++; return new FakeView(); }
+    public int Walkers;
+    public void MoveLight(int light, double x, double y, double z) { }
     public double HeightAt(double x, double z) => ground.HeightAt(x, z);
     public void SetNight(bool on) => Night = on;
     public void Plates(List<Plate> plates) => LastPlates = plates;
