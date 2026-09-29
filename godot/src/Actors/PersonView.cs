@@ -154,5 +154,6 @@ public partial class PersonView : Node3D, INpcView
         }
     }
 
-    public void Dispose() => QueueFree();
+    // Explicit, so it does not shadow Godot's own Dispose().
+    void INpcView.Dispose() => QueueFree();
 }

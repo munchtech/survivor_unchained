@@ -79,14 +79,27 @@ game at the same place and hour; needs the dev server), then
   grass, water, fires, the landmarks, the lights, the sky and grade
   (`Atmosphere.cs`).
 - `src/Actors/`: people from Quaternius parts on one skeleton with the
-  Universal Animation Libraries (`People.cs`), weapons in hand (`Arms.cs`),
-  the survivor (`PlayerView.cs`: an AnimationTree, the swing on the upper
-  body over the run), people in the world (`PersonView.cs`), the crowd
-  (`CrowdView.cs`; each creature's look in `Visuals.cs`), the Ford-Warden
-  (`BossViews.cs`).
+  Universal Animation Libraries (`People.cs`: the body hidden under the
+  clothes, a woman's figure from two shape keys, skin tone, cloth dyed by
+  `shaders/person.gdshader`), weapons in hand (`Arms.cs`), the survivor
+  (`PlayerView.cs`: an AnimationTree, the swing on the upper body over the
+  run), people in the world (`PersonView.cs`), the beasts built in code
+  (`Creatures.cs`: wolves, boars, lamplings, lofted and posed as the web game
+  makes them), the crowd (`CrowdView.cs`; each creature's look in
+  `Visuals.cs`), the Ford-Warden (`BossViews.cs`).
+- The crowd is vertex animation (`Vat.cs`, `shaders/vat.gdshader`): each
+  kind of creature is played through its clips once and every vertex's pose
+  written into two textures; a kind is then one MultiMesh, however many
+  there are (people slimmed to about 4,000 vertices with meshoptimizer
+  first). Bakes are kept in Godot's user folder (`vat/`) between runs;
+  `--vat-fresh` bakes again, and bump `Vat.Version` when what a bake holds
+  changes. `--horde 40:wolf,20:risen` puts a crowd round the survivor, and
+  `--cam D` brings the camera in, for pictures and timing.
 - `src/Fx/`: the fight made visible (`BattleFx.cs`: sparks, marks on the
-  ground, what is in the air and on the ground, lights), blood and numbers
-  (`Hits.cs`), the colours of each school (`Palette.cs`).
+  ground, what is in the air and on the ground, lights), blood (`Gore.cs`:
+  sprays, pools that spread and dry, a burst body's pieces thrown, bleeding
+  where they land, sinking), sprays, numbers and blade arcs (`Hits.cs`), the
+  colours of each school (`Palette.cs`).
 - `src/Ui/`: the look shared by every screen (`Style.cs`, the icons in
   `Glyphs.cs`), the HUD (`GameHud.cs`), the level-up draft and the
   conversation panel (`Panels.cs`), the screens over the game (`Overlay.cs`;
@@ -104,9 +117,8 @@ game at the same place and hour; needs the dev server), then
   `Music.cs` (the score, composed as it plays) and `SoundBridge.cs` (what
   happens, turned into all of that).
 
-Stand-ins still to be replaced: the wolves and boars (shapes, until the real
-creatures), the KayKit props (a torch, a bucket, a grave marker), and the
-items' pictures (icons for now).
+Stand-ins still to be replaced: the KayKit props (a torch, a bucket, a grave
+marker), and the items' pictures (icons for now).
 
 ## Desktop builds
 

@@ -478,7 +478,7 @@ public partial class GameHud : CanvasLayer
             double cd = def.Cooldown * b.Stats.Get(Stat.AbilityCooldown);
             double ready = 1 - p.AbilityCd / Math.Max(0.01, cd);
             abilityRing.Progress = (float)Math.Clamp(ready, 0, 1);
-            abilityRing.Ready = ready >= 1;
+            abilityRing.Charged = ready >= 1;
             abilityGlyph.Texture = Glyphs.Texture(def.Icon, 82, ready >= 1 ? Hex("#ffe6b0") : Hex("#8a7f70"));
             abilityCd.Text = ready >= 1 ? "" : p.AbilityCd >= 1 ? $"{Math.Ceiling(p.AbilityCd)}" : $"{p.AbilityCd:0.0}";
             abilityName.Text = def.Name;
@@ -768,7 +768,7 @@ public partial class Ring : Control
     float progress = 1;
     bool ready = true;
     public float Progress { get => progress; set { if (Math.Abs(progress - value) > 0.002f) { progress = value; QueueRedraw(); } } }
-    public bool Ready { get => ready; set { if (ready != value) { ready = value; QueueRedraw(); } } }
+    public bool Charged { get => ready; set { if (ready != value) { ready = value; QueueRedraw(); } } }
 
     public override void _Draw()
     {

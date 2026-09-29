@@ -67,11 +67,15 @@ public partial class Game : Node, IZoneHost
 
     public override void _Ready()
     {
+        // The colour sheets as Godot should have them, before any model loads.
+        SurvivorUnchained.View.Textures.Mend();
         controls = new Controls();
         AddChild(controls);
         camera = new Camera3D { Fov = 34, Near = 0.5f, Far = 1400, Current = true };
         AddChild(camera);
         cam = new FollowCamera(camera);
+        // --cam D: the camera this far off (closer pictures of the crowd).
+        if (Args.Has("cam")) cam.Distance = cam.TargetDistance = (float)Args.Num("cam", 23);
         air = new Atmosphere();
         AddChild(air);
         hud = new GameHud();
@@ -156,7 +160,7 @@ public partial class Game : Node, IZoneHost
         var s = Settings.Current;
         s.ApplyWindow();
         cam.ShakeScale = s.ShakeLevel;
-        if (scene != null) { scene.Fx.Gore = s.GoreLevel; scene.Hitstop = s.Hitstop; }
+        if (scene != null) { scene.Fx.Gore.Level = s.GoreLevel; scene.Hitstop = s.Hitstop; }
         air.Quality(s.Quality);
         AudioServer.SetBusVolumeDb(0, s.Volume <= 0 ? -80 : Mathf.LinearToDb(s.Volume));
     }
@@ -484,9 +488,26 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
+    bool hordeDone;
+
     void Tour(double dt)
     {
         if (Args.Has("bare") && scene != null) scene.Visible = false;
+        // --horde N[:KIND][,N[:KIND]...]: that many of them round the survivor at once (a stress test, a picture).
+        if (!hordeDone && Args.Get("horde") is string h && Battle is { } hb)
+        {
+            hordeDone = true;
+            foreach (var group in h.Split(','))
+            {
+                var parts = group.Split(':');
+                int n = int.TryParse(parts[0], out var v) ? v : 100;
+                for (int i = 0; i < n; i++)
+                {
+                    double a = Rng.NextDouble() * Math.Tau, d = Args.Num("dist", 9) + Rng.NextDouble() * Args.Num("spread", 20);
+                    hb.SpawnEnemy(parts.Length > 1 ? parts[1] : "risen", hb.Player.X + Math.Cos(a) * d, hb.Player.Z + Math.Sin(a) * d);
+                }
+            }
+        }
         if (Args.Get("open") is not string want) return;
         tourT -= dt;
         if (tourT > 0) return;
@@ -505,8 +526,23 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--log S: a line every S seconds of how it is going (for runs
     /// without a screen: Godot's --headless, --quit-after).</summary>
+    ulong costFrom;
+    int costFrames;
+
+    /// <summary>Average wall time per frame since the last report (a headless
+    /// run's frames follow each other at once: this is what a frame costs).</summary>
+    string FrameCost()
+    {
+        ulong now = Time.GetTicksUsec();
+        string s = costFrames > 0 ? $" | frame {(now - costFrom) / 1000.0 / costFrames:0.0}ms" : "";
+        costFrom = now;
+        costFrames = 0;
+        return s;
+    }
+
     void Report(double dt)
     {
+        costFrames++;
         if (!Args.Has("log")) return;
         reportT -= dt;
         if (reportT > 0) return;
@@ -516,7 +552,8 @@ public partial class Game : Node, IZoneHost
         int foes = b?.Enemies.Count ?? 0;
         var dbg = zone?.Debug() is { Count: > 0 } d ? string.Join(" ", d.Take(4).Select(kv => $"{kv.Key}={kv.Value}")) : "";
         var (drawn, dead) = scene!.Crowd.Counts;
-        GD.Print($"[{scene.Time,6:0.0}s] {zone?.Id} hp {p?.Hp:0}/{b?.MaxHp:0} ember {b?.EmberLevel} kills {b?.KillCount} foes {foes} (drawn {drawn}, lying {dead}) at {p?.X:0},{p?.Z:0} {Overlay} {dbg}{(synth.Ready ? $" | sound {sound.Music.Mood} voices {synth.Voices} mix {synth.MixCost / Math.Max(1e-9, synth.Mixed) * 100:0}% heard {synth.Mixed:0}s skips {synth.Skips} queue {synth.Queue / synth.Rate * 1000:0}ms" : "")}");
+        var (gibs, splats) = scene.Fx.Gore.Counts;
+        GD.Print($"[{scene.Time,6:0.0}s] {zone?.Id} hp {p?.Hp:0}/{b?.MaxHp:0} ember {b?.EmberLevel} kills {b?.KillCount} foes {foes} (drawn {drawn}, lying {dead}, gibs {gibs}, blood {splats}) at {p?.X:0},{p?.Z:0} {Overlay} {dbg}{FrameCost()}{(synth.Live ? $" | sound {sound.Music.Mood} voices {synth.Voices} mix {synth.MixCost / Math.Max(1e-9, synth.Mixed) * 100:0}% heard {synth.Mixed:0}s skips {synth.Skips} queue {synth.Queue / synth.Rate * 1000:0}ms" : "")}");
     }
 
     /// <summary>What was put off, in game time: it waits while a menu, a

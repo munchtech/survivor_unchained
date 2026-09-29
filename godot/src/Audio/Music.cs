@@ -68,7 +68,7 @@ public sealed class Music
 
     public void Update(double dt)
     {
-        if (!a.Ready) return;
+        if (!a.Live) return;
         double want = style is { Drums: > 0 } ? Math.Min(1, Intensity) : 0;
         drumLevel += (want - drumLevel) * Math.Min(1, dt * 0.8);
         var s = style;

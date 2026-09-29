@@ -1,0 +1,766 @@
+using System;
+using System.Collections.Generic;
+using Godot;
+
+namespace SurvivorUnchained.View;
+
+/// <summary>
+/// Vertex animation textures: how a horde costs one draw per kind (the web
+/// game's render/vat.ts).
+///
+/// A kind of creature is sampled once: every clip it needs (walk, strike,
+/// fall, rise from the grave) is played through its real skeleton, and the
+/// posed position and normal of every vertex at every frame is written into
+/// two textures. The crowd is then a MultiMesh of the rest geometry whose
+/// vertex shader (shaders/vat.gdshader) reads its pose from the textures,
+/// each instance at its own frame, so five hundred creatures animate as
+/// independently as five for the price of one mesh.
+///
+/// People (the Risen, the Kerchiefs) are baked from a real PersonView: its
+/// skeleton played by its AnimationPlayer, the weapons in its hands carried
+/// rigidly with their bones. Beasts are baked from Creatures' bones and
+/// pose functions.
+/// </summary>
+public sealed class VatAsset
+{
+    public sealed record Clip(int Start, int Frames, double Fps, double Duration, bool Loop);
+
+    public required string Key;
+    public required ArrayMesh Mesh;
+    public required int Width, Rows;
+    public required Dictionary<string, Clip> Clips;
+    public float Height;
+
+    public Clip For(string role) =>
+        Clips.TryGetValue(role, out var c) ? c : Clips.TryGetValue("move", out var m) ? m : Clips["idle"];
+
+    public double Duration(string role) => Clips.TryGetValue(role, out var c) ? c.Duration : 1;
+
+    /// <summary>The two frames (absolute rows of frames) and the blend between them, `t` seconds into a role.</summary>
+    public (int F0, int F1, float K) Frame(string role, double t)
+    {
+        var c = For(role);
+        double f = t * c.Fps;
+        if (c.Loop) { f %= c.Frames - 1; if (f < 0) f += c.Frames - 1; }
+        else f = Math.Clamp(f, 0, c.Frames - 1);
+        int f0 = (int)Math.Floor(f);
+        int f1 = Math.Min(f0 + 1, c.Frames - 1);
+        return (c.Start + f0, c.Start + f1, (float)(f - f0));
+    }
+}
+
+public static class Vat
+{
+    const int MaxFrames = 48;
+    static readonly Dictionary<string, VatAsset> cache = new();
+    static Shader? shader;
+
+    /// <summary>The roles every crowd kind plays, and which loop.</summary>
+    static bool Loops(string role) => role is "move" or "idle" or "burrow" or "cast";
+
+    /// <summary>A kind of creature, baked (once a session). `host` lends the
+    /// scene tree to a person's animation player while it is sampled.</summary>
+    public static VatAsset Of(Visuals.Spec spec, Node host)
+    {
+        if (cache.TryGetValue(spec.Key, out var hit)) return hit;
+        ulong t0 = Time.GetTicksMsec();
+        var creature = Creature.Of(spec.Key);
+        var kept = Load(spec.Key);
+        var asset = kept != null ? Build(kept) : creature != null ? BakeCreature(spec, creature) : BakePerson(spec, host);
+        cache[spec.Key] = asset;
+        if (Args.Has("log"))
+        {
+            int frames = 0; foreach (var c in asset.Clips.Values) frames += c.Frames;
+            GD.Print($"{(kept != null ? "read" : "baked")} {spec.Key}: {asset.Width * asset.Rows} vertices x {frames} frames, {asset.Mesh.GetSurfaceCount()} surfaces, {Time.GetTicksMsec() - t0} ms");
+        }
+        return asset;
+    }
+
+    /* --------------------------------------------------------------- data -- */
+
+    /// <summary>One surface of the bake: its rest arrays, where its vertices
+    /// start among all of them, and what it is painted with.</summary>
+    sealed class Surf
+    {
+        public required Vector2[] Uv;
+        public Color[]? Color;
+        public required int[] Index;
+        public required int Count;
+        public int Offset;
+        public Vector3[] V = Array.Empty<Vector3>(), N = Array.Empty<Vector3>();
+        public Texture2D? Tex;
+        public Color Albedo = Colors.White;
+        public float Roughness = 0.8f, Metallic;
+        public Color Glow = Colors.Black;
+        /// <summary>The cloth's dye (the person shader's), if dyed: colour (linear), bands (lo, hi, soft), brightness.</summary>
+        public bool Dyed;
+        public Vector3 DyeColor, DyeH, DyeS, DyeV;
+        public float DyeLum = 1;
+    }
+
+    /// <summary>Poses every vertex of every surface (concatenated) for a role at t.</summary>
+    delegate void Sampler(string role, double t, Vector3[] pos, Vector3[] nor);
+
+    /* ------------------------------------------------------------- people -- */
+
+    sealed class Skinned
+    {
+        public Surf Surf = null!;
+        public required Vector3[] V, N;
+        public required Vector2[] Uv;
+        public required int[] Index;
+        public Material? Mat;
+        public int[]? Bones;
+        public float[]? Weights;
+        public int Stride;
+        public int[]? BindBone;
+        public Transform3D[]? BindPose;
+        public Transform3D[]? BindNow;
+        /// <summary>A rigid part (a weapon): the bone it rides, and where it sits from it.</summary>
+        public int Rigid = -1;
+        public Transform3D Rel;
+        /// <summary>The simplified versions of its triangles the importer made (index lists, finest first).</summary>
+        public List<int[]> Lods = new();
+    }
+
+    /// <summary>Vertices a crowd figure may have in all (the web game's budget).</summary>
+    const int Budget = 4000;
+
+    static VatAsset BakePerson(Visuals.Spec spec, Node host)
+    {
+        ulong t0 = Time.GetTicksMsec();
+        var pv = new PersonView(spec.Person!, spec.Arms, 0.8 * spec.Scale);
+        host.AddChild(pv);
+        ulong tBuilt = Time.GetTicksMsec();
+        var person = pv.Person;
+        var skel = person.Skeleton;
+        var anim = person.Anim;
+        var parts = new List<Skinned>();
+
+        foreach (var mi in person.Meshes)
+        {
+            var skin = mi.Skin ?? skel.CreateSkinFromRestTransforms();
+            int binds = skin.GetBindCount();
+            var bindBone = new int[binds];
+            var bindPose = new Transform3D[binds];
+            for (int i = 0; i < binds; i++)
+            {
+                string name = skin.GetBindName(i);
+                bindBone[i] = name != "" ? skel.FindBone(name) : skin.GetBindBone(i);
+                bindPose[i] = skin.GetBindPose(i);
+            }
+            for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+            {
+                var p = Part(mi, s);
+                p.BindBone = bindBone;
+                p.BindPose = bindPose;
+                p.BindNow = new Transform3D[binds];
+                parts.Add(p);
+            }
+        }
+        // What is held: rigid with the bone of the hand (or forearm) it hangs from.
+        foreach (var node in skel.GetChildren())
+        {
+            if (node is not BoneAttachment3D att) continue;
+            int bone = skel.FindBone(att.BoneName);
+            foreach (var mi in Meshes(att))
+            {
+                // Where it sits from the bone: the chain of its parents below the attachment.
+                var rel = Transform3D.Identity;
+                for (Node? n = mi; n != null && n != att; n = n.GetParent()) if (n is Node3D n3) rel = n3.Transform * rel;
+                for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+                {
+                    var p = Part(mi, s);
+                    p.Rigid = bone;
+                    p.Rel = rel;
+                    parts.Add(p);
+                }
+            }
+        }
+        ulong tParts = Time.GetTicksMsec();
+        Slim(parts);
+        ulong tSlim = Time.GetTicksMsec();
+        int total = 0;
+        foreach (var p in parts)
+        {
+            p.Surf = Surface(p.Uv, p.Index, p.V.Length, p.Mat);
+            p.Surf.Offset = total;
+            total += p.V.Length;
+        }
+
+        var toView = pv.GlobalTransform.AffineInverse() * skel.GlobalTransform;
+        var global = new Transform3D[skel.GetBoneCount()];
+        var roles = new List<(string Role, string Clip)>();
+        var c = spec.Clips;
+        foreach (var (role, clip) in new[] { ("move", c.Move), ("idle", c.Idle), ("attack", c.Attack), ("windup", c.Windup), ("die", c.Die), ("rise", c.Rise), ("hit", c.Hit), ("cast", c.Cast) })
+            if (clip != null) roles.Add((role, People.Resolve(clip)));
+        var lib = People.Clips();
+
+        void Sample(string role, double t, Vector3[] pos, Vector3[] nor)
+        {
+            var name = roles.Find(r => r.Role == role).Clip;
+            if (anim.CurrentAnimation != name) anim.Play(name, 0);
+            anim.Seek(t, true);
+            for (int b = 0; b < global.Length; b++) global[b] = toView * skel.GetBoneGlobalPose(b);
+            foreach (var p in parts)
+            {
+                int o = p.Surf.Offset;
+                if (p.Rigid >= 0)
+                {
+                    var m = global[p.Rigid] * p.Rel;
+                    for (int i = 0; i < p.V.Length; i++) { pos[o + i] = m * p.V[i]; nor[o + i] = (m.Basis * p.N[i]).Normalized(); }
+                    continue;
+                }
+                // Each bind's matrix once a frame, not once a vertex.
+                var now = p.BindNow!;
+                for (int k = 0; k < now.Length; k++) now[k] = p.BindBone![k] >= 0 ? global[p.BindBone[k]] * p.BindPose![k] : toView;
+                var bones = p.Bones!; var weights = p.Weights!;
+                for (int i = 0; i < p.V.Length; i++)
+                {
+                    Vector3 v = p.V[i], n = p.N[i], sp = Vector3.Zero, sn = Vector3.Zero;
+                    float wsum = 0;
+                    for (int k = 0; k < p.Stride; k++)
+                    {
+                        float w = weights[i * p.Stride + k];
+                        if (w <= 0) continue;
+                        ref var m = ref now[bones[i * p.Stride + k]];
+                        sp += (m * v) * w;
+                        sn += (m.Basis * n) * w;
+                        wsum += w;
+                    }
+                    pos[o + i] = wsum > 0 ? sp / wsum : toView * v;
+                    nor[o + i] = sn.LengthSquared() > 0 ? sn.Normalized() : n;
+                }
+            }
+        }
+
+        var list = new List<(string Role, double Duration)>();
+        foreach (var (role, name) in roles) list.Add((role, lib.HasAnimation(name) ? lib.GetAnimation(name).Length : 1));
+        var surfs = parts.ConvertAll(p => p.Surf);
+        var asset = Write(spec.Key, surfs, total, list, 15, Sample);
+        if (Args.Has("vat-probe")) GD.Print($"  {spec.Key}: figure {tBuilt - t0} ms, parts+lods {tParts - tBuilt} ms, slim {tSlim - tParts} ms, frames {Time.GetTicksMsec() - tSlim} ms");
+        host.RemoveChild(pv);
+        pv.QueueFree();
+        return asset;
+    }
+
+    static readonly Dictionary<(Mesh, int, string), ImporterMesh> simpler = new();
+
+    /// <summary>A mesh's surface as the baker takes it: its arrays, its
+    /// material, and simplified versions of its triangles (meshoptimizer,
+    /// through Godot's ImporterMesh: they share its vertices).</summary>
+    static Skinned Part(MeshInstance3D mi, int s)
+    {
+        // The figure's shape keys, as set on this one.
+        var am = mi.Mesh as ArrayMesh;
+        int shapes = am?.GetBlendShapeCount() ?? 0;
+        var weights = new float[shapes];
+        for (int k = 0; k < shapes; k++) weights[k] = mi.GetBlendShapeValue(k);
+        var shapeKey = string.Join(",", weights);
+        if (!simpler.TryGetValue((mi.Mesh, s, shapeKey), out var im))
+        {
+            var src = mi.Mesh.SurfaceGetArrays(s);
+            if (am != null && shapes > 0 && DisplayServer.GetName() != "headless")
+            {
+                var basis = src[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+                var shaped = (Vector3[])basis.Clone();
+                var sets = am.SurfaceGetBlendShapeArrays(s);
+                for (int k = 0; k < shapes && k < sets.Count; k++)
+                {
+                    if (weights[k] == 0) continue;
+                    var sv = sets[k][(int)Mesh.ArrayType.Vertex].AsVector3Array();
+                    bool relative = am.BlendShapeMode == Mesh.BlendShapeMode.Relative;
+                    for (int i = 0; i < shaped.Length && i < sv.Length; i++) shaped[i] += (relative ? sv[i] : sv[i] - basis[i]) * weights[k];
+                }
+                src[(int)Mesh.ArrayType.Vertex] = shaped;
+            }
+            var b = src[(int)Mesh.ArrayType.Bones];
+            var vc = src[(int)Mesh.ArrayType.Vertex].AsVector3Array().Length;
+            bool eight = b.VariantType != Variant.Type.Nil && vc > 0 && b.AsInt32Array().Length / vc == 8;
+            im = new ImporterMesh();
+            im.AddSurface(Mesh.PrimitiveType.Triangles, src, flags: eight ? (ulong)Mesh.ArrayFormat.FlagUse8BoneWeights : 0);
+            im.GenerateLods(60, 25, new Godot.Collections.Array());
+            simpler[(mi.Mesh, s, shapeKey)] = im;
+        }
+        var arr = im.GetSurfaceArrays(0);
+        var v = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+        var uvV = arr[(int)Mesh.ArrayType.TexUV];
+        var idxV = arr[(int)Mesh.ArrayType.Index];
+        var uv = uvV.VariantType == Variant.Type.Nil ? new Vector2[v.Length] : uvV.AsVector2Array();
+        var idx = idxV.VariantType == Variant.Type.Nil ? Seq(v.Length) : idxV.AsInt32Array();
+        var p = new Skinned
+        {
+            V = v, N = Normals(arr, v.Length), Uv = uv.Length == v.Length ? uv : new Vector2[v.Length], Index = idx,
+            Mat = mi.GetSurfaceOverrideMaterial(s) ?? mi.MaterialOverride ?? mi.Mesh.SurfaceGetMaterial(s),
+        };
+        var bonesV = arr[(int)Mesh.ArrayType.Bones];
+        if (bonesV.VariantType != Variant.Type.Nil)
+        {
+            p.Bones = bonesV.AsInt32Array();
+            p.Weights = arr[(int)Mesh.ArrayType.Weights].AsFloat32Array();
+            p.Stride = v.Length > 0 ? p.Bones.Length / v.Length : 4;
+        }
+        for (int i = 0; i < im.GetSurfaceLodCount(0); i++)
+        {
+            var li = im.GetSurfaceLodIndices(0, i);
+            if (li.Length >= 3) p.Lods.Add(li);
+        }
+        p.Lods.Sort((x, y) => y.Length.CompareTo(x.Length));
+        return p;
+    }
+
+    /// <summary>A figure light enough for a crowd: each part down to one of
+    /// its simpler versions, alike in proportion, until all of them together
+    /// are within the budget; then only the vertices still used are kept.</summary>
+    static void Slim(List<Skinned> parts)
+    {
+        int Used(int[] idx) { var seen = new HashSet<int>(idx); return seen.Count; }
+        int all = 0;
+        foreach (var p in parts) all += p.V.Length;
+        if (all <= Budget) return;
+        double ratio = Budget * 1.2 / all;
+        var pick = new int[]?[parts.Count];
+        for (int tries = 0; tries < 8; tries++)
+        {
+            int verts = 0;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                var p = parts[i];
+                // Every part keeps a few percent of itself: a figure a little
+                // over budget beats one whose body has been simplified away.
+                int floor = Math.Min(p.Index.Length, Math.Max(90, p.Index.Length / 25 / 3 * 3));
+                int want = Math.Max(floor, (int)(p.Index.Length * ratio));
+                // Finest first: the last that still has what was asked for is the coarsest that does.
+                var best = p.Index;
+                foreach (var lod in p.Lods) if (lod.Length >= want) best = lod;
+                pick[i] = best;
+                verts += Used(best);
+            }
+            if (verts <= Budget) break;
+            ratio *= (double)Budget / verts * 0.9;
+        }
+        for (int i = 0; i < parts.Count; i++)
+        {
+            Compact(parts[i], pick[i]!);
+        }
+    }
+
+    /// <summary>Keep only the vertices a triangle list uses, renumbered.</summary>
+    static void Compact(Skinned p, int[] idx)
+    {
+        var map = new Dictionary<int, int>();
+        var order = new List<int>();
+        var ni = new int[idx.Length];
+        for (int k = 0; k < idx.Length; k++)
+        {
+            if (!map.TryGetValue(idx[k], out var to)) { to = order.Count; map[idx[k]] = to; order.Add(idx[k]); }
+            ni[k] = to;
+        }
+        T[] Take<T>(T[] src, int stride = 1)
+        {
+            var o = new T[order.Count * stride];
+            for (int i = 0; i < order.Count; i++) Array.Copy(src, order[i] * stride, o, i * stride, stride);
+            return o;
+        }
+        p.V = Take(p.V);
+        p.N = Take(p.N);
+        p.Uv = Take(p.Uv);
+        if (p.Bones != null) p.Bones = Take(p.Bones, p.Stride);
+        if (p.Weights != null) p.Weights = Take(p.Weights, p.Stride);
+        p.Index = ni;
+    }
+
+    static IEnumerable<MeshInstance3D> Meshes(Node n)
+    {
+        foreach (var c in n.GetChildren())
+        {
+            if (c is MeshInstance3D mi && mi.Mesh != null) yield return mi;
+            foreach (var d in Meshes(c)) yield return d;
+        }
+    }
+
+    static Vector3[] Normals(Godot.Collections.Array arr, int n)
+    {
+        var v = arr[(int)Mesh.ArrayType.Normal];
+        var a = v.VariantType == Variant.Type.Nil ? Array.Empty<Vector3>() : v.AsVector3Array();
+        return a.Length == n ? a : new Vector3[n];
+    }
+
+    /// <summary>A surface's rest arrays and its paint, from the material it had.</summary>
+    static Surf Surface(Vector2[] uv, int[] idx, int n, Material? mat)
+    {
+        var s = new Surf { Uv = uv, Index = idx, Count = n };
+        if (mat is ShaderMaterial sm)
+        {
+            s.Tex = sm.GetShaderParameter("albedo_tex").As<Texture2D>();
+            s.Albedo = sm.GetShaderParameter("albedo").AsColor();
+            s.Roughness = sm.GetShaderParameter("roughness").AsSingle();
+            // Metal where a texture says so is detail a crowd figure cannot show: matte.
+            s.Metallic = sm.GetShaderParameter("use_metal").AsBool() ? 0 : sm.GetShaderParameter("metallic").AsSingle();
+            if (sm.GetShaderParameter("use_dye").AsBool())
+            {
+                s.Dyed = true;
+                s.DyeColor = sm.GetShaderParameter("dye_color").AsVector3();
+                s.DyeH = sm.GetShaderParameter("dye_h").AsVector3();
+                s.DyeS = sm.GetShaderParameter("dye_s").AsVector3();
+                s.DyeV = sm.GetShaderParameter("dye_v").AsVector3();
+                s.DyeLum = sm.GetShaderParameter("dye_lum").AsSingle();
+            }
+        }
+        if (mat is BaseMaterial3D bm)
+        {
+            s.Tex = bm.AlbedoTexture;
+            s.Albedo = bm.AlbedoColor;
+            s.Roughness = bm.Roughness;
+            s.Metallic = bm.MetallicTexture != null ? 0 : bm.Metallic;
+            if (bm.EmissionEnabled) s.Glow = bm.Emission * bm.EmissionEnergyMultiplier;
+        }
+        return s;
+    }
+
+    static int[] Seq(int n) { var a = new int[n]; for (int i = 0; i < n; i++) a[i] = i; return a; }
+
+    /* ------------------------------------------------------------ beasts -- */
+
+    static VatAsset BakeCreature(Visuals.Spec spec, Creature cr)
+    {
+        var offset = spec.Offset ?? Vector3.Zero;
+        float scale = (float)spec.Scale;
+        var surfs = new List<Surf>();
+        int total = 0;
+        var partList = new List<Creature.Part>();
+        foreach (var (part, glow) in new[] { (cr.Body, false), (cr.Glow, true) })
+        {
+            if (part.Count == 0) continue;
+            // Godot's front faces wind the other way from three.js's: each
+            // triangle is turned (its second and third corners swapped).
+            var idx = new int[part.Count];
+            for (int f = 0; f < part.Count; f += 3) { idx[f] = f; idx[f + 1] = f + 2; idx[f + 2] = f + 1; }
+            var s = new Surf { Uv = new Vector2[part.Count], Color = part.Col.ToArray(), Index = idx, Count = part.Count, Offset = total, Roughness = 0.85f };
+            if (glow) { s.Glow = cr.GlowColor * 2.2f; s.Albedo = Colors.White; }
+            surfs.Add(s);
+            partList.Add(part);
+            total += part.Count;
+        }
+        var buf = new Vector3[total];
+
+        void Sample(string role, double t, Vector3[] pos, Vector3[] nor)
+        {
+            var skin = cr.Skinning(ClipOf(cr, role), t);
+            int o = 0;
+            foreach (var part in partList)
+            {
+                Creature.Pose(part, skin, buf.AsSpan(o, part.Count));
+                for (int i = 0; i < part.Count; i++) pos[o + i] = (buf[o + i] + offset) * scale;
+                // Flat: a face's normal on all three of its corners.
+                for (int f = 0; f < part.Count; f += 3)
+                {
+                    Vector3 a = pos[o + f], b = pos[o + f + 1], c = pos[o + f + 2];
+                    var n = (c - b).Cross(a - b).Normalized();
+                    nor[o + f] = nor[o + f + 1] = nor[o + f + 2] = n;
+                }
+                o += part.Count;
+            }
+        }
+
+        var roles = new List<(string Role, double Duration)>();
+        foreach (var role in new[] { "move", "idle", "attack", "windup", "die", "rise", "hit", "burrow" })
+        {
+            var name = ClipOf(cr, role);
+            if (role == "burrow" && name != "burrow") continue;
+            roles.Add((role, cr.Clips[name].Duration));
+        }
+        return Write(spec.Key, surfs, total, roles, 20, Sample);
+    }
+
+    /// <summary>The creature's own clip for a crowd role.</summary>
+    static string ClipOf(Creature cr, string role) => role switch
+    {
+        "move" => "run",
+        "rise" => cr.Clips.ContainsKey("rise") ? "rise" : "idle",
+        "windup" => cr.Clips.ContainsKey("windup") ? "windup" : "idle",
+        "burrow" => cr.Clips.ContainsKey("burrow") ? "burrow" : "idle",
+        _ => cr.Clips.ContainsKey(role) ? role : "idle",
+    };
+
+    /* -------------------------------------------------------------- write -- */
+
+    /// <summary>A bake as data: what the cache keeps, and what the mesh and textures are made from.</summary>
+    sealed class Baked
+    {
+        public required string Key;
+        public int Width, Rows, FrameCount;
+        public float Height;
+        public required Dictionary<string, VatAsset.Clip> Clips;
+        public required byte[] Pos, Nor;
+        public required List<Surf> Surfs;
+    }
+
+    static VatAsset Write(string key, List<Surf> surfs, int total, List<(string Role, double Duration)> roles, double fps, Sampler sample)
+    {
+        var clips = new Dictionary<string, VatAsset.Clip>();
+        int frameCount = 0;
+        foreach (var (role, dur) in roles)
+        {
+            int frames = Math.Min(MaxFrames, Math.Max(2, (int)Math.Round(dur * fps) + 1));
+            clips[role] = new VatAsset.Clip(frameCount, frames, (frames - 1) / Math.Max(1e-3, dur), dur, Loops(role));
+            frameCount += frames;
+        }
+        int width = Math.Min(4096, Math.Max(1, total));
+        int rows = (total + width - 1) / width;
+        int texH = rows * frameCount;
+        var posBytes = new byte[width * texH * 8];
+        var norBytes = new byte[width * texH * 4];
+        var pos = new Vector3[total];
+        var nor = new Vector3[total];
+        float height = 0;
+        int frameIndex = 0;
+        foreach (var (role, dur) in roles)
+        {
+            var c = clips[role];
+            for (int f = 0; f < c.Frames; f++)
+            {
+                sample(role, (double)f / (c.Frames - 1) * dur * 0.999, pos, nor);
+                for (int i = 0; i < total; i++)
+                {
+                    int row = frameIndex * rows + i / width, col = i % width;
+                    int tk = row * width + col;
+                    Half(posBytes, tk * 8, pos[i].X); Half(posBytes, tk * 8 + 2, pos[i].Y); Half(posBytes, tk * 8 + 4, pos[i].Z); Half(posBytes, tk * 8 + 6, 1);
+                    var n = nor[i];
+                    norBytes[tk * 4] = (byte)Math.Round((n.X * 0.5f + 0.5f) * 255);
+                    norBytes[tk * 4 + 1] = (byte)Math.Round((n.Y * 0.5f + 0.5f) * 255);
+                    norBytes[tk * 4 + 2] = (byte)Math.Round((n.Z * 0.5f + 0.5f) * 255);
+                    norBytes[tk * 4 + 3] = 255;
+                    if (pos[i].Y > height) height = pos[i].Y;
+                }
+                // The rest geometry is the first frame.
+                if (frameIndex == 0)
+                    foreach (var s in surfs) { s.V = pos[s.Offset..(s.Offset + s.Count)]; s.N = nor[s.Offset..(s.Offset + s.Count)]; }
+                frameIndex++;
+            }
+        }
+        var baked = new Baked { Key = key, Width = width, Rows = rows, FrameCount = frameCount, Height = height, Clips = clips, Pos = posBytes, Nor = norBytes, Surfs = surfs };
+        Save(baked);
+        return Build(baked);
+    }
+
+    static VatAsset Build(Baked b)
+    {
+        int texH = b.Rows * b.FrameCount;
+        var posTex = ImageTexture.CreateFromImage(Image.CreateFromData(b.Width, texH, false, Image.Format.Rgbah, b.Pos));
+        var norTex = ImageTexture.CreateFromImage(Image.CreateFromData(b.Width, texH, false, Image.Format.Rgba8, b.Nor));
+        shader ??= GD.Load<Shader>("res://shaders/vat.gdshader");
+        var mesh = new ArrayMesh();
+        foreach (var s in b.Surfs)
+        {
+            var arrays = new Godot.Collections.Array();
+            arrays.Resize((int)Mesh.ArrayType.Max);
+            arrays[(int)Mesh.ArrayType.Vertex] = s.V;
+            arrays[(int)Mesh.ArrayType.Normal] = s.N;
+            arrays[(int)Mesh.ArrayType.TexUV] = s.Uv;
+            // White where the model has no colours of its own: the instance's tint multiplies it.
+            if (s.Color == null) { s.Color = new Color[s.Count]; Array.Fill(s.Color, Colors.White); }
+            arrays[(int)Mesh.ArrayType.Color] = s.Color;
+            arrays[(int)Mesh.ArrayType.Index] = s.Index;
+            mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
+            var m = new ShaderMaterial { Shader = shader };
+            m.SetShaderParameter("vat_pos", posTex);
+            m.SetShaderParameter("vat_nor", norTex);
+            m.SetShaderParameter("vat_width", b.Width);
+            m.SetShaderParameter("vat_rows", b.Rows);
+            m.SetShaderParameter("vat_offset", s.Offset);
+            m.SetShaderParameter("use_tex", s.Tex != null);
+            if (s.Tex != null) m.SetShaderParameter("albedo_tex", s.Tex);
+            m.SetShaderParameter("albedo", s.Albedo);
+            m.SetShaderParameter("roughness", s.Roughness);
+            m.SetShaderParameter("metallic", s.Metallic);
+            m.SetShaderParameter("glow_color", new Vector3(s.Glow.R, s.Glow.G, s.Glow.B));
+            if (s.Dyed)
+            {
+                m.SetShaderParameter("use_dye", true);
+                m.SetShaderParameter("dye_color", s.DyeColor);
+                m.SetShaderParameter("dye_h", s.DyeH);
+                m.SetShaderParameter("dye_s", s.DyeS);
+                m.SetShaderParameter("dye_v", s.DyeV);
+                m.SetShaderParameter("dye_lum", s.DyeLum);
+            }
+            mesh.SurfaceSetMaterial(mesh.GetSurfaceCount() - 1, m);
+        }
+        // The posed bodies reach beyond the rest pose (a lunge, a fall): a generous box.
+        mesh.CustomAabb = new Aabb(new Vector3(-2.5f, -1.5f, -2.5f), new Vector3(5, Math.Max(3, b.Height + 2), 5));
+        return new VatAsset { Key = b.Key, Mesh = mesh, Width = b.Width, Rows = b.Rows, Clips = b.Clips, Height = b.Height };
+    }
+
+    /* -------------------------------------------------------------- cache -- */
+
+    // Bakes are kept on disk between runs (a kind costs its figure's models,
+    // its clips and seconds of sampling; read back, a few milliseconds). Bump
+    // Version whenever what a bake holds or how it is made changes (Visuals,
+    // Creatures, this file).
+    const int Version = 5;
+    static string CachePath(string key) => $"user://vat/{key}.v{Version}.bin";
+
+    static byte[] Bytes<T>(T[] a) where T : struct => System.Runtime.InteropServices.MemoryMarshal.AsBytes(a.AsSpan()).ToArray();
+    static T[] Of<T>(byte[] b) where T : struct => System.Runtime.InteropServices.MemoryMarshal.Cast<byte, T>(b).ToArray();
+
+    static void Save(Baked b)
+    {
+        // A run without a screen keeps no texture data to write down.
+        if (DisplayServer.GetName() == "headless") return;
+        DirAccess.MakeDirRecursiveAbsolute("user://vat");
+        using var f = FileAccess.Open(CachePath(b.Key), FileAccess.ModeFlags.Write);
+        if (f == null) return;
+        void Blob(byte[] data) { f.Store32((uint)data.Length); f.StoreBuffer(data); }
+        f.Store32(Version);
+        f.Store32((uint)b.Width); f.Store32((uint)b.Rows); f.Store32((uint)b.FrameCount); f.StoreFloat(b.Height);
+        f.Store32((uint)b.Clips.Count);
+        foreach (var (role, c) in b.Clips)
+        {
+            f.StorePascalString(role);
+            f.Store32((uint)c.Start); f.Store32((uint)c.Frames); f.StoreDouble(c.Fps); f.StoreDouble(c.Duration); f.Store8((byte)(c.Loop ? 1 : 0));
+        }
+        Blob(b.Pos);
+        Blob(b.Nor);
+        f.Store32((uint)b.Surfs.Count);
+        foreach (var s in b.Surfs)
+        {
+            f.Store32((uint)s.Count); f.Store32((uint)s.Offset);
+            Blob(Bytes(s.V)); Blob(Bytes(s.N)); Blob(Bytes(s.Uv)); Blob(s.Color != null ? Bytes(s.Color) : Array.Empty<byte>()); Blob(Bytes(s.Index));
+            // A texture by its file, or (one inside a model's file) by its pixels.
+            var tp = s.Tex?.ResourcePath ?? "";
+            if (s.Tex == null) f.Store8(0);
+            else if (tp != "" && !tp.Contains("::")) { f.Store8(1); f.StorePascalString(tp); }
+            else
+            {
+                var img = s.Tex.GetImage();
+                if (img == null || img.IsEmpty()) { f.Close(); DirAccess.RemoveAbsolute(CachePath(b.Key)); return; }
+                f.Store8(2);
+                f.Store32((uint)img.GetWidth()); f.Store32((uint)img.GetHeight()); f.Store32((uint)img.GetFormat()); f.Store8((byte)(img.HasMipmaps() ? 1 : 0));
+                Blob(img.GetData());
+            }
+            foreach (var c in new[] { s.Albedo, s.Glow }) { f.StoreFloat(c.R); f.StoreFloat(c.G); f.StoreFloat(c.B); f.StoreFloat(c.A); }
+            f.StoreFloat(s.Roughness); f.StoreFloat(s.Metallic);
+            f.Store8((byte)(s.Dyed ? 1 : 0));
+            foreach (var v3 in new[] { s.DyeColor, s.DyeH, s.DyeS, s.DyeV }) { f.StoreFloat(v3.X); f.StoreFloat(v3.Y); f.StoreFloat(v3.Z); }
+            f.StoreFloat(s.DyeLum);
+        }
+    }
+
+    static Baked? Load(string key)
+    {
+        var path = CachePath(key);
+        if (Args.Has("vat-fresh") || !FileAccess.FileExists(path)) return null;
+        using var f = FileAccess.Open(path, FileAccess.ModeFlags.Read);
+        if (f == null || f.Get32() != Version) return null;
+        byte[] Blob() => f.GetBuffer(f.Get32());
+        int width = (int)f.Get32(), rows = (int)f.Get32(), frames = (int)f.Get32();
+        float height = f.GetFloat();
+        var clips = new Dictionary<string, VatAsset.Clip>();
+        for (int n = (int)f.Get32(), i = 0; i < n; i++)
+        {
+            var role = f.GetPascalString();
+            clips[role] = new VatAsset.Clip((int)f.Get32(), (int)f.Get32(), f.GetDouble(), f.GetDouble(), f.Get8() == 1);
+        }
+        var pos = Blob();
+        var nor = Blob();
+        var surfs = new List<Surf>();
+        for (int n = (int)f.Get32(), i = 0; i < n; i++)
+        {
+            int count = (int)f.Get32(), offset = (int)f.Get32();
+            var v = Of<Vector3>(Blob()); var nn = Of<Vector3>(Blob()); var uv = Of<Vector2>(Blob()); var col = Blob(); var idx = Of<int>(Blob());
+            Texture2D? tex = null;
+            switch (f.Get8())
+            {
+                case 1: tex = GD.Load<Texture2D>(f.GetPascalString()); break;
+                case 2:
+                {
+                    int w = (int)f.Get32(), h = (int)f.Get32();
+                    var fmt = (Image.Format)f.Get32();
+                    bool mips = f.Get8() == 1;
+                    tex = ImageTexture.CreateFromImage(Image.CreateFromData(w, h, mips, fmt, Blob()));
+                    break;
+                }
+            }
+            Color C() => new(f.GetFloat(), f.GetFloat(), f.GetFloat(), f.GetFloat());
+            var albedo = C(); var glow = C();
+            var s = new Surf
+            {
+                Uv = uv, Index = idx, Count = count, Offset = offset, V = v, N = nn, Color = col.Length > 0 ? Of<Color>(col) : null,
+                Tex = tex, Albedo = albedo, Glow = glow, Roughness = f.GetFloat(), Metallic = f.GetFloat(),
+            };
+            s.Dyed = f.Get8() == 1;
+            Vector3 V3() => new(f.GetFloat(), f.GetFloat(), f.GetFloat());
+            s.DyeColor = V3(); s.DyeH = V3(); s.DyeS = V3(); s.DyeV = V3();
+            s.DyeLum = f.GetFloat();
+            surfs.Add(s);
+        }
+        if (f.GetError() != Error.Ok && f.GetError() != Error.FileEof) return null;
+        return new Baked { Key = key, Width = width, Rows = rows, FrameCount = frames, Height = height, Clips = clips, Pos = pos, Nor = nor, Surfs = surfs };
+    }
+
+    static void Half(byte[] b, int at, float v)
+    {
+        ushort h = BitConverter.HalfToUInt16Bits((System.Half)v);
+        b[at] = (byte)(h & 0xff);
+        b[at + 1] = (byte)(h >> 8);
+    }
+}
+
+/// <summary>
+/// One kind of creature, drawn as many times as there are of it this frame:
+/// a MultiMesh of its bake, filled from scratch every frame.
+/// </summary>
+public partial class VatCrowd : MultiMeshInstance3D
+{
+    public readonly VatAsset Asset;
+    int count, capacity;
+
+    public VatCrowd(VatAsset asset)
+    {
+        Asset = asset;
+        Name = $"crowd:{asset.Key}";
+        Layers = 2;
+        CastShadow = ShadowCastingSetting.On;
+        // They go everywhere: never culled as a whole (each is small; the GPU is not the limit here).
+        CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f));
+        Grow(64);
+    }
+
+    void Grow(int n)
+    {
+        capacity = n;
+        Multimesh = new MultiMesh
+        {
+            TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseColors = true, UseCustomData = true,
+            InstanceCount = n, VisibleInstanceCount = 0, Mesh = Asset.Mesh,
+        };
+    }
+
+    public void Begin() => count = 0;
+
+    /// <summary>One body this frame, `t` seconds into its role's clip.</summary>
+    public void Push(Transform3D at, string role, double t, float flash, float dissolve, float frozen, float burning, Color tint, float glow)
+    {
+        if (count >= capacity)
+        {
+            // Keep what is already placed this frame when growing.
+            var old = Multimesh;
+            Grow(capacity * 2);
+            for (int i = 0; i < count; i++)
+            {
+                Multimesh.SetInstanceTransform(i, old.GetInstanceTransform(i));
+                Multimesh.SetInstanceColor(i, old.GetInstanceColor(i));
+                Multimesh.SetInstanceCustomData(i, old.GetInstanceCustomData(i));
+            }
+        }
+        int k = count++;
+        var (f0, f1, blend) = Asset.Frame(role, t);
+        static int Q(float v, int max) => (int)Math.Round(Math.Clamp(v, 0, 1) * max);
+        int word = Q(flash, 255) | Q(dissolve, 255) << 8 | Q(frozen, 15) << 16 | Q(burning, 15) << 20;
+        Multimesh.SetInstanceTransform(k, at);
+        Multimesh.SetInstanceColor(k, new Color(tint.R, tint.G, tint.B, glow));
+        Multimesh.SetInstanceCustomData(k, new Color(f0, f1, blend, word));
+    }
+
+    public void End() => Multimesh.VisibleInstanceCount = count;
+}

@@ -4,18 +4,16 @@ using Godot;
 namespace SurvivorUnchained.View;
 
 /// <summary>
-/// What a hit looks like: a spray of blood (GPU particles), blood laid on
-/// the ground where it lands (projected decals, on the grass and stones as
-/// much as the earth), the number, and the blade's arc. Pools, reused
-/// oldest first.
+/// What a hit looks like: a spray of blood (GPU particles), the number, and
+/// the blade's arc (blood on the ground is Gore's). Pools, reused oldest
+/// first.
 /// </summary>
 public partial class Hits : Node3D
 {
     readonly List<GpuParticles3D> sprays = new();
-    readonly List<Decal> stains = new();
     readonly List<(Label3D Label, float T)> numbers = new();
     readonly List<(MeshInstance3D Mesh, ShaderMaterial Mat, float T, float Life)> arcs = new();
-    int nextSpray, nextStain, nextNumber, nextArc;
+    int nextSpray, nextNumber, nextArc;
     readonly RandomNumberGenerator rng = new() { Seed = 5 };
 
     public override void _Ready()
@@ -39,13 +37,6 @@ public partial class Hits : Node3D
             AddChild(g);
             sprays.Add(g);
         }
-        var splat = SplatTexture();
-        for (int i = 0; i < 48; i++)
-        {
-            var d = new Decal { CullMask = 1, TextureAlbedo = splat, Size = new Vector3(1.4f, 1.2f, 1.4f), Visible = false, UpperFade = 0.2f, LowerFade = 0.4f, AlbedoMix = 0.92f, Modulate = new Color(0.55f, 0.06f, 0.05f) };
-            AddChild(d);
-            stains.Add(d);
-        }
         for (int i = 0; i < 48; i++)
         {
             var l = new Label3D
@@ -65,29 +56,6 @@ public partial class Hits : Node3D
             AddChild(m);
             arcs.Add((m, mat, 1, 1));
         }
-    }
-
-    /// <summary>A splat: a ragged blot with droplets thrown round it.</summary>
-    static ImageTexture SplatTexture()
-    {
-        const int N = 256;
-        var img = Image.CreateEmpty(N, N, true, Image.Format.Rgba8);
-        var noise = new FastNoiseLite { Seed = 9, Frequency = 0.03f, FractalOctaves = 4 };
-        var rng = new RandomNumberGenerator { Seed = 13 };
-        var drops = new List<(Vector2 P, float R)>();
-        for (int i = 0; i < 22; i++) { float a = rng.Randf() * Mathf.Tau, d = 0.35f + rng.Randf() * 0.55f; drops.Add((new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * d, 0.015f + rng.Randf() * 0.04f)); }
-        for (int y = 0; y < N; y++)
-            for (int x = 0; x < N; x++)
-            {
-                var p = new Vector2(x, y) / N * 2 - Vector2.One;
-                float r = p.Length() + noise.GetNoise2D(x, y) * 0.45f;
-                float a = 1 - Mathf.SmoothStep(0.32f, 0.42f, r);
-                foreach (var (dp, dr) in drops) a = Mathf.Max(a, 1 - Mathf.SmoothStep(dr * 0.6f, dr, (p - dp).Length()));
-                float wet = 0.75f + 0.25f * noise.GetNoise2D(x * 3, y * 3);
-                img.SetPixel(x, y, new Color(wet, wet, wet, a));
-            }
-        img.GenerateMipmaps();
-        return ImageTexture.CreateFromImage(img);
     }
 
     /// <summary>A flat band round a quarter circle and more, in XZ, facing +Z
@@ -127,15 +95,6 @@ public partial class Hits : Node3D
         g.AmountRatio = Mathf.Clamp(amount, 0.2f, 1);
         g.Restart();
         g.Emitting = true;
-    }
-
-    public void Stain(Vector3 at, float size)
-    {
-        var d = stains[nextStain++ % stains.Count];
-        d.GlobalPosition = at + Vector3.Up * 0.3f;
-        d.Rotation = new Vector3(0, rng.Randf() * Mathf.Tau, 0);
-        d.Size = new Vector3(size, 1.2f, size * (0.8f + rng.Randf() * 0.4f));
-        d.Visible = true;
     }
 
     public void Number(Vector3 at, int amount, bool crit) =>

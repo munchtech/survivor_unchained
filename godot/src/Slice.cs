@@ -31,6 +31,8 @@ public partial class Slice : Node3D
 
     public override void _Ready()
     {
+        // The colour sheets as Godot should have them, before any model loads.
+        SurvivorUnchained.View.Textures.Mend();
         AddChild(new Shots());
         var id = Args.Get("zone") ?? "verge";
         zone = new ZoneData(id);

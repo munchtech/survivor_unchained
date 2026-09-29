@@ -21,12 +21,12 @@ public partial class BattleFx : Node3D
     readonly Func<double, double, double> heightAt;
     public readonly Sparks Sparks = new(6000, true), Smoke = new(2500, false);
     public readonly Hits Hits = new();
+    /// <summary>Blood, pools and what a burst body throws (its Level: the settings' gore).</summary>
+    public readonly Gore Gore;
     public FollowCamera? Cam;
     /// <summary>A blow landed on the survivor: how hard (0..1), for the edges of the picture.</summary>
     public Action<float> OnDamageFlash = _ => { };
     public Vector3 PlayerPos;
-    /// <summary>How much blood (the settings' gore: 1, 0.35, 0).</summary>
-    public float Gore = 1;
     double time;
 
     readonly List<(OmniLight3D Light, float T, float Life, float Peak)> flashes = new();
@@ -57,6 +57,7 @@ public partial class BattleFx : Node3D
     {
         this.heightAt = heightAt;
         Name = "BattleFx";
+        Gore = new Gore(heightAt, Smoke, Hits);
     }
 
     public override void _Ready()
@@ -64,6 +65,7 @@ public partial class BattleFx : Node3D
         AddChild(Sparks);
         AddChild(Smoke);
         AddChild(Hits);
+        AddChild(Gore);
         for (int i = 0; i < 8; i++)
         {
             var l = new OmniLight3D { LightEnergy = 0, OmniRange = 10, OmniAttenuation = 1.6f, ShadowEnabled = false, Visible = false };
@@ -107,12 +109,7 @@ public partial class BattleFx : Node3D
 
     void Spray(Vector3 at, Vector3 away, Color? color, float amount)
     {
-        if (Gore > 0) Hits.Spray(at, away, color, amount * Gore);
-    }
-
-    void Stain(Vector3 at, float size)
-    {
-        if (Gore >= 0.5f || (Gore > 0 && R() < Gore)) Hits.Stain(at, size);
+        if (Gore.Level > 0) Hits.Spray(at, away, color, amount * Gore.Level);
     }
 
     float Y(double x, double z) => (float)heightAt(x, z);
@@ -263,15 +260,6 @@ public partial class BattleFx : Node3D
 
     /* ------------------------------------------------------------- events -- */
 
-    static Color BloodOf(Family? f) => f switch
-    {
-        Family.Undead => new Color("#2a2016"),
-        Family.Blighted => new Color("#2a3a14"),
-        Family.Construct or Family.Elemental => new Color("#4a4640"),
-        Family.Lampling => new Color("#3a1a08"),
-        _ => new Color("#6a0c0a"),
-    };
-
     public void Handle(IReadOnlyList<CombatEvent> events, Battle b)
     {
         foreach (var ev in events)
@@ -293,9 +281,7 @@ public partial class BattleFx : Node3D
                     {
                         var away = new Vector3((float)e.Dx, 0, (float)e.Dz);
                         if (away.LengthSquared() < 0.01f) away = Vector3.Forward;
-                        float hurt = (float)Math.Min(1, e.Amount / Math.Max(1, e.MaxHp) * 3);
-                        Spray(at + Vector3.Up * 0.2f, away.Normalized(), BloodOf(e.Family), 0.3f + hurt);
-                        if (hurt > 0.3f && R() < 0.5f) Stain(at with { Y = Y(e.X, e.Z) } + away.Normalized() * (0.4f + R() * 0.8f), 0.6f + R() * 0.6f);
+                        Gore.Hit(at + Vector3.Up * 0.2f, e.Amount, e.MaxHp, View.Gore.Of(e.Family, e.Def ?? ""), e.Family == Family.Undead, away.Normalized(), e.Crit);
                     }
                     if (e.Crit)
                     {
@@ -311,9 +297,7 @@ public partial class BattleFx : Node3D
                     var at = V(e.X, gy + 0.9, e.Z);
                     var away = new Vector3((float)e.Dx, 0, (float)e.Dz);
                     if (away.LengthSquared() < 0.01f) away = Vector3.Forward;
-                    Spray(V(e.X, gy + 0.7 * e.Scale, e.Z), away.Normalized(), BloodOf(e.Family), 1);
-                    if (e.Burst) { Spray(V(e.X, gy + 1.0 * e.Scale, e.Z), -away.Normalized(), BloodOf(e.Family), 1); Stain(V(e.X, gy, e.Z), 2.2f); }
-                    Stain(V(e.X, gy, e.Z) + away.Normalized() * 0.8f, 1.2f + R() * 0.8f);
+                    Gore.Kill(V(e.X, gy + 0.7 * e.Scale, e.Z), (float)e.Scale, View.Gore.Of(e.Family, e.Def), e.Family == Family.Undead, e.Burst, away.Normalized());
                     Burst(at, e.School, e.Elite ? 40 : 10, e.Elite ? 7 : 4, 3, life: 0.6f);
                     for (int i = 0; i < (e.Elite ? 14 : 4); i++)
                         Sparks.Spawn(V(e.X + (R() - 0.5) * 0.6, gy + 0.5, e.Z + (R() - 0.5) * 0.6), new Vector3(0, 1.4f + R() * 1.5f, 0), 1 + R() * 0.6f, 0.07f,
@@ -572,6 +556,7 @@ public partial class BattleFx : Node3D
         Pickups(b, now);
         Sparks.Step(fdt);
         Smoke.Step(fdt);
+        Gore.Step(fdt);
     }
 
     /// <summary>Ground left burning, blighted, hallowed: a disc for each while it lasts.</summary>

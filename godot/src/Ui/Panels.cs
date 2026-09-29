@@ -42,7 +42,7 @@ public partial class DraftPanel : Control
         MouseFilter = MouseFilterEnum.Stop;
     }
 
-    static readonly Dictionary<School, Tag> SchoolTags = new() { [School.Physical] = Tag.Physical, [School.Fire] = Tag.Fire, [School.Frost] = Tag.Frost, [School.Nature] = Tag.Nature, [School.Arcane] = Tag.Arcane, [School.Holy] = Tag.Holy, [School.Shadow] = Tag.Shadow };
+    static readonly Dictionary<School, Tag> SchoolTags = new() { [School.Physical] = Tag.Physical, [School.Fire] = Tag.Fire, [School.Frost] = Tag.Frost, [School.Storm] = Tag.Storm, [School.Nature] = Tag.Nature, [School.Arcane] = Tag.Arcane, [School.Holy] = Tag.Holy, [School.Shadow] = Tag.Shadow };
 
     static School? SchoolOf(Offer o)
     {
@@ -131,7 +131,7 @@ public partial class DraftPanel : Control
         var tags = Style.H(5);
         tags.Alignment = BoxContainer.AlignmentMode.Center;
         bool fits = false;
-        foreach (var tg in o.Tags.Where(x => school == null || x != SchoolTags[school.Value]).Take(4))
+        foreach (var tg in o.Tags.Where(x => school == null || !(SchoolTags.TryGetValue(school.Value, out var st) && x == st)).Take(4))
         {
             bool fit = o.Kind is not (OfferKind.Rank or OfferKind.Evolve) && v.Build.Contains(tg);
             fits |= fit;

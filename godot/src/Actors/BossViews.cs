@@ -108,8 +108,9 @@ public partial class WardenView : Node3D, IBossView
         lamp.Visible = pose != "dead" || g > 0.01;
     }
 
-    public void Hide() => Visible = false;
-    public void Dispose() => QueueFree();
+    // Explicit, so they do not shadow Godot's own Hide() and Dispose().
+    void IBossView.Hide() => Visible = false;
+    void IBossView.Dispose() => QueueFree();
 }
 
 /// <summary>A bright thing with a light of its own (the Warden's heart).</summary>
@@ -143,5 +144,5 @@ public partial class OrbView : Node3D, IOrb
     }
 
     public double Light { set => light.LightEnergy = (float)(value / Math.PI); }
-    public void Dispose() => QueueFree();
+    void IOrb.Dispose() => QueueFree();
 }

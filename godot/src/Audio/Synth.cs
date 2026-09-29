@@ -66,7 +66,7 @@ public partial class Synth : Node
     readonly Dictionary<string, Queue<ulong>> gates = new();
     public static readonly float[] White = NoiseBuffer(false), Brown = NoiseBuffer(true);
     static readonly Random rng = new();
-    public bool Ready => dry != null || tape != null;
+    public bool Live => dry != null || tape != null;
     /// <summary>--wav PATH: no speakers; what would be heard is written to a file on exit.</summary>
     List<Vector2>? tape;
     string? tapePath;
@@ -172,9 +172,9 @@ public partial class Synth : Node
 
     public static double R(double a, double b) => a + rng.NextDouble() * (b - a);
 
-    public void Play(Tone o) { if (Ready) incoming.Enqueue(new ToneVoice(this, o)); }
-    public void Play(Hiss o) { if (Ready) incoming.Enqueue(new NoiseVoice(this, o)); }
-    public void Play(Fm o) { if (Ready) incoming.Enqueue(new FmVoice(this, o)); }
+    public void Play(Tone o) { if (Live) incoming.Enqueue(new ToneVoice(this, o)); }
+    public void Play(Hiss o) { if (Live) incoming.Enqueue(new NoiseVoice(this, o)); }
+    public void Play(Fm o) { if (Live) incoming.Enqueue(new FmVoice(this, o)); }
     public void Add(Bed b) => bedsIn.Enqueue(b);
 
     /// <summary>Sounds asked for since the mixer last looked (the mixer runs on its own thread).</summary>

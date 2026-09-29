@@ -37,7 +37,7 @@ public sealed class SoundBridge
     /// <summary>Combat events, panned and attenuated from the survivor's position.</summary>
     public void Events(IReadOnlyList<CombatEvent> evs, Battle? b)
     {
-        if (!a.Ready) return;
+        if (!a.Live) return;
         double px = b?.Player.X ?? 0, pz = b?.Player.Z ?? 0;
         Sfx.Where At(double x, double z)
         {

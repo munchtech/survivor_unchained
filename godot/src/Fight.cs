@@ -1,3 +1,4 @@
+using System;
 using Godot;
 using SurvivorUnchained.View;
 
@@ -16,6 +17,8 @@ public partial class Fight : Node3D
     Survivor you = null!;
     Horde horde = null!;
     Hits hits = null!;
+    Gore gore = null!;
+    Action<float> stepGore = _ => { };
     Camera3D cam = null!;
     OmniLight3D lantern = null!;
     Hud hud = null!;
@@ -44,6 +47,11 @@ public partial class Fight : Node3D
         horde.Fill((int)Args.Num("risen", 18));
         hits = new Hits();
         AddChild(hits);
+        var matter = new Sparks(800, false);
+        AddChild(matter);
+        gore = new Gore((x, z) => zone.HeightAt((float)x, (float)z), matter, hits);
+        AddChild(gore);
+        stepGore = dt => { matter.Step(dt); gore.Step(dt); };
         hud = new Hud();
         AddChild(hud);
         // The survivor carries a light (the web game's lantern glow).
@@ -67,6 +75,7 @@ public partial class Fight : Node3D
     public override void _Process(double delta)
     {
         float dt = (float)delta;
+        stepGore(dt);
         MoveSurvivor(dt);
         UpdateHorde(dt);
         Attack(dt);
@@ -208,7 +217,7 @@ public partial class Fight : Node3D
             var chest = r.Pos + Vector3.Up * 1.25f;
             hits.Spray(chest, away);
             hits.Number(r.Pos + Vector3.Up * 2.1f, dmg, crit);
-            if (rng.Randf() < 0.6f) hits.Stain(r.Pos + away * rng.RandfRange(0.4f, 1.2f), rng.RandfRange(0.7f, 1.3f));
+            gore.Hit(chest, dmg, 60, Gore.Of(SurvivorUnchained.Sim.Family.Human), false, away, crit);
             landed++;
             if (r.Hp <= 0)
             {
@@ -218,7 +227,7 @@ public partial class Fight : Node3D
                 if (++ember >= 4 + level * 2) { ember = 0; level++; }
                 r.Person.Anim.Pause();
                 r.Body.Fall(away * (crit ? 5.5f : 3.5f) + Vector3.Up * 1.5f);
-                hits.Stain(r.Pos + away * 0.8f, rng.RandfRange(1.6f, 2.2f));
+                gore.Kill(r.Pos + Vector3.Up * 0.9f, 1, Gore.Of(SurvivorUnchained.Sim.Family.Human), false, crit && rng.Randf() < 0.3f, away);
             }
             else if (r.State != "rising") { horde.Play(r, "Hit_Chest", 0.05f); r.Person.Anim.Queue("Zombie_Walk_Fwd"); r.State = "walk"; r.StateT = 0; }
         }

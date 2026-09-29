@@ -12,7 +12,7 @@ namespace SurvivorUnchained.Sound;
 /// </summary>
 public static class Sfx
 {
-    static Synth? A => Synth.Instance is { Ready: true } s ? s : null;
+    static Synth? A => Synth.Instance is { Live: true } s ? s : null;
     static double R(double a, double b) => Synth.R(a, b);
     static double Semis(double n) => Math.Pow(2, n / 12);
     static double Now => Synth.Instance?.Now ?? 0;

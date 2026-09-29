@@ -1,4 +1,7 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using Godot;
 
 namespace SurvivorUnchained.View;
@@ -13,7 +16,7 @@ public static class People
 {
     public sealed record Look(
         string Sex, string[] Outfit, string? Hair = null, bool Beard = false,
-        Color? HairColor = null, Color? Skin = null, Color? Cloth = null, Color? Under = null);
+        Color? HairColor = null, Color? Skin = null, Color? Cloth = null, Color? Under = null, double Figure = 0);
 
     public static readonly string[] MaleRanger = { "Male_Ranger_Arms", "Male_Ranger_Body", "Male_Ranger_Legs", "Male_Ranger_Feet_Boots" };
     public static readonly string[] MalePeasant = { "Male_Peasant_Arms", "Male_Peasant_Body", "Male_Peasant_Legs", "Male_Peasant_Feet" };
@@ -82,7 +85,8 @@ public static class People
         static Color? C(string? hex) => string.IsNullOrEmpty(hex) ? null : new Color(hex);
         var sex = spec.Sex == SurvivorUnchained.Rpg.Sex.Female ? "female" : "male";
         var outfit = spec.Outfit?.ToArray() ?? (sex == "female" ? FemalePeasant : MalePeasant);
-        var p = Build(new Look(sex, outfit, spec.Hair, spec.Beard == true, C(spec.HairColor), C(spec.Skin), C(spec.Dye?.Cloth), C(spec.Dye?.Under)));
+        var p = Build(new Look(sex, outfit, spec.Hair, spec.Beard == true, C(spec.HairColor), C(spec.Skin), C(spec.Dye?.Cloth), C(spec.Dye?.Under),
+            sex == "female" ? spec.Figure ?? 1 : 0));
         // A child's larger head.
         if (spec.Head is double h && h != 1)
         {
@@ -110,6 +114,14 @@ public static class People
         var bodyName = look.Sex == "female" ? "Superhero_Female_FullBody" : "Superhero_Male_FullBody";
         var root = GD.Load<PackedScene>($"{Dir}/{bodyName}.gltf").Instantiate<Node3D>();
         var skel = root.GetNode<Skeleton3D>("Armature/Skeleton3D");
+        // The body is hidden where the clothes cover it (the web game's cover mask).
+        var covered = Cover.Where(c => look.Outfit.Any(p => c.Part.IsMatch(p))).Select(c => c.Bones).ToList();
+        // Top and trousers together cover the hips too (trousers alone sit
+        // lower, and a bare-chested figure keeps its hips).
+        if (look.Outfit.Any(p => p.Contains("_Body")) && look.Outfit.Any(p => p.Contains("_Legs"))) covered.Add(new Regex("^pelvis$"));
+        if (covered.Count > 0)
+            foreach (var c in skel.GetChildren())
+                if (c is MeshInstance3D body) Mask(body, skel, covered);
         var parts = new List<string>(look.Outfit);
         if (look.Hair != null) parts.Add(look.Hair);
         if (look.Beard) parts.Add("Hair_Beard");
@@ -132,6 +144,7 @@ public static class People
             if (c is MeshInstance3D mi)
             {
                 person.Meshes.Add(mi);
+                Shape(mi, look.Figure);
                 Dress(mi, look);
                 // Bodies are on a layer of their own: blood and the marks on
                 // the ground are not painted on them.
@@ -142,6 +155,148 @@ public static class People
         person.Anim.AddAnimationLibrary("", Clips());
         return person;
     }
+
+    /// <summary>What each outfit piece covers, as the body's bones under it:
+    /// the body is hidden there (the piece brings any skin it shows).</summary>
+    static readonly (Regex Part, Regex Bones)[] Cover =
+    {
+        (new("_Arms"), new("^(clavicle|upperarm|lowerarm|hand|index|middle|pinky|ring|thumb)_")),
+        (new("_Body"), new("^spine_0[123]$")),
+        (new("_Legs"), new("^(thigh|calf)")),
+        (new("_Feet"), new("^(foot|ball)")),
+    };
+
+    static readonly Dictionary<(Mesh, string), ArrayMesh> masked = new();
+
+    /// <summary>The body without the triangles that lie mostly on covered
+    /// bones: a copy of its mesh per set of bones, shared by everyone
+    /// dressed alike.</summary>
+    static void Mask(MeshInstance3D mi, Skeleton3D skel, List<Regex> covered)
+    {
+        if (mi.Mesh is not ArrayMesh am) return;
+        var bones = new HashSet<int>();
+        for (int b = 0; b < skel.GetBoneCount(); b++) if (covered.Any(re => re.IsMatch(skel.GetBoneName(b)))) bones.Add(b);
+        var key = string.Join(",", bones.OrderBy(b => b));
+        if (!masked.TryGetValue((am, key), out var mesh))
+        {
+            var skin = mi.Skin ?? skel.CreateSkinFromRestTransforms();
+            var bindCovered = new bool[skin.GetBindCount()];
+            for (int i = 0; i < bindCovered.Length; i++)
+            {
+                var name = skin.GetBindName(i);
+                int bone = name != "" ? skel.FindBone(name) : skin.GetBindBone(i);
+                bindCovered[i] = bones.Contains(bone);
+            }
+            mesh = new ArrayMesh { BlendShapeMode = am.BlendShapeMode };
+            // (A run without a screen cannot read shape keys back from a mesh: it goes without.)
+            bool shapes = am.GetBlendShapeCount() > 0 && DisplayServer.GetName() != "headless";
+            if (shapes) for (int k = 0; k < am.GetBlendShapeCount(); k++) mesh.AddBlendShape(am.GetBlendShapeName(k));
+            for (int s = 0; s < am.GetSurfaceCount(); s++)
+            {
+                var arr = am.SurfaceGetArrays(s);
+                var vb = arr[(int)Mesh.ArrayType.Bones];
+                var idxV = arr[(int)Mesh.ArrayType.Index];
+                int n = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array().Length;
+                var idx = idxV.VariantType == Variant.Type.Nil ? Enumerable.Range(0, n).ToArray() : idxV.AsInt32Array();
+                if (vb.VariantType != Variant.Type.Nil && n > 0)
+                {
+                    var bi = vb.AsInt32Array();
+                    var bw = arr[(int)Mesh.ArrayType.Weights].AsFloat32Array();
+                    int stride = bi.Length / n;
+                    var keep = new float[n];
+                    for (int v = 0; v < n; v++)
+                    {
+                        float w = 0;
+                        for (int k = 0; k < stride; k++) if (bi[v * stride + k] < bindCovered.Length && bindCovered[bi[v * stride + k]]) w += bw[v * stride + k];
+                        keep[v] = 1 - w;
+                    }
+                    var kept = new List<int>(idx.Length);
+                    for (int t = 0; t + 2 < idx.Length; t += 3)
+                        if (keep[idx[t]] + keep[idx[t + 1]] + keep[idx[t + 2]] >= 1.5f) { kept.Add(idx[t]); kept.Add(idx[t + 1]); kept.Add(idx[t + 2]); }
+                    // Nothing of it shows: a single thin triangle keeps the surface (and its material's place).
+                    if (kept.Count == 0) kept.AddRange(new[] { idx[0], idx[0], idx[0] });
+                    arr[(int)Mesh.ArrayType.Index] = kept.ToArray();
+                }
+                var flags = (Mesh.ArrayFormat)((long)am.SurfaceGetFormat(s) & (long)Mesh.ArrayFormat.FlagUse8BoneWeights);
+                mesh.AddSurfaceFromArrays(am.SurfaceGetPrimitiveType(s), arr, shapes ? am.SurfaceGetBlendShapeArrays(s) : new Godot.Collections.Array<Godot.Collections.Array>(), null, flags);
+                mesh.SurfaceSetMaterial(s, am.SurfaceGetMaterial(s));
+                mesh.SurfaceSetName(s, am.SurfaceGetName(s));
+            }
+            masked[(am, key)] = mesh;
+        }
+        mi.Mesh = mesh;
+    }
+
+    /// <summary>A woman's figure: the body and the clothes over it carry two
+    /// shape keys made offline (tools/assets/figure.py): 'bust', a fuller
+    /// chest set into the body with a soft join, tops hanging from it; and
+    /// 'hips', a narrower waist and wider hips. The figure blends both in.</summary>
+    static void Shape(MeshInstance3D mi, double figure)
+    {
+        if (figure <= 0 || mi.Mesh == null) return;
+        int bust = mi.FindBlendShapeByName("bust"), hips = mi.FindBlendShapeByName("hips");
+        if (bust >= 0) mi.SetBlendShapeValue(bust, (float)figure);
+        if (hips >= 0) mi.SetBlendShapeValue(hips, (float)Math.Min(1.25, figure));
+    }
+
+    /// <summary>Where in a material's paint the cloth is (hue, saturation and
+    /// value bands, 0..1), and how bright that paint is: the dye takes the
+    /// cloth and leaves the leather and buckles (the web game's DYES).</summary>
+    public sealed record DyeMask(Vector2 H, Vector2 S, Vector2 V, float Lum);
+
+    static readonly Dictionary<string, (DyeMask? Cloth, DyeMask? Under)> Dyes = new()
+    {
+        ["MI_Ranger"] = (new(new(0.17f, 0.45f), new(0.25f, 1), new(0.03f, 1), 0.037f), null),
+        ["MI_Peasant"] = (new(new(0.04f, 0.2f), new(0, 0.35f), new(0.5f, 1), 0.25f), new(new(0, 0.14f), new(0.3f, 1), new(0, 0.3f), 0.008f)),
+    };
+
+    static Shader? personShader;
+
+    /// <summary>A material as the person shader draws it, the cloth dyed.</summary>
+    static ShaderMaterial Dyed(StandardMaterial3D src, DyeMask mask, Color color)
+    {
+        personShader ??= GD.Load<Shader>("res://shaders/person.gdshader");
+        var m = new ShaderMaterial { Shader = personShader, ResourceName = src.ResourceName };
+        m.SetShaderParameter("albedo", src.AlbedoColor);
+        m.SetShaderParameter("albedo_tex", src.AlbedoTexture);
+        m.SetShaderParameter("use_normal", src.NormalEnabled && src.NormalTexture != null);
+        if (src.NormalTexture != null) m.SetShaderParameter("normal_tex", src.NormalTexture);
+        m.SetShaderParameter("normal_scale", src.NormalScale);
+        m.SetShaderParameter("use_rough", src.RoughnessTexture != null);
+        if (src.RoughnessTexture != null) m.SetShaderParameter("rough_tex", src.RoughnessTexture);
+        m.SetShaderParameter("rough_channel", Channel(src.RoughnessTextureChannel));
+        m.SetShaderParameter("roughness", src.Roughness);
+        m.SetShaderParameter("metallic", src.Metallic);
+        m.SetShaderParameter("use_metal", src.MetallicTexture != null);
+        if (src.MetallicTexture != null) m.SetShaderParameter("metal_tex", src.MetallicTexture);
+        m.SetShaderParameter("metal_channel", Channel(src.MetallicTextureChannel));
+        m.SetShaderParameter("rim_amount", 0.45f);
+        m.SetShaderParameter("rim_tint", 0.35f);
+        SetDye(m, mask, color);
+        return m;
+    }
+
+    static Vector4 Channel(BaseMaterial3D.TextureChannel c) => c switch
+    {
+        BaseMaterial3D.TextureChannel.Red => new Vector4(1, 0, 0, 0), BaseMaterial3D.TextureChannel.Green => new Vector4(0, 1, 0, 0),
+        BaseMaterial3D.TextureChannel.Blue => new Vector4(0, 0, 1, 0), BaseMaterial3D.TextureChannel.Alpha => new Vector4(0, 0, 0, 1), _ => new Vector4(0.33f, 0.33f, 0.33f, 0),
+    };
+
+    /// <summary>A dye's uniforms (shared by the person and crowd shaders).</summary>
+    public static void SetDye(ShaderMaterial m, DyeMask mask, Color color)
+    {
+        var lin = color.SrgbToLinear();
+        m.SetShaderParameter("use_dye", true);
+        m.SetShaderParameter("dye_color", new Vector3(lin.R, lin.G, lin.B));
+        m.SetShaderParameter("dye_h", new Vector3(mask.H.X, mask.H.Y, 0.05f));
+        m.SetShaderParameter("dye_s", new Vector3(mask.S.X, mask.S.Y, 0.05f));
+        m.SetShaderParameter("dye_v", new Vector3(mask.V.X, mask.V.Y, 0.05f));
+        m.SetShaderParameter("dye_lum", mask.Lum);
+    }
+
+    /// <summary>The fair tone the skin choices are measured from: a choice
+    /// becomes a multiply over the painted skin (the web game's FAIR).</summary>
+    static readonly Color Fair = new("#f2c4a8");
 
     /// <summary>Hair takes its colour (its texture is grey); skin its tone;
     /// cloth a dye, multiplied over the painted colour. Each person has
@@ -159,9 +314,14 @@ public static class People
             mat.RimTint = 0.35f;
             var n = src.ResourceName;
             if (n.Contains("Hair") || mi.Name.ToString().Contains("Eyebrows")) { if (look.HairColor is Color h) mat.AlbedoColor = h; }
-            else if (look.Skin is Color skin && (n.Contains("Superhero") || n.Contains("Regular"))) mat.AlbedoColor = skin;
-            else if (look.Under is Color under && mi.Name.ToString().Contains("Legs") && (n.Contains("Peasant") || n.Contains("Ranger"))) mat.AlbedoColor = under;
-            else if (look.Cloth is Color cloth && (n.Contains("Peasant") || n.Contains("Ranger"))) mat.AlbedoColor = cloth;
+            else if (look.Skin is Color skin && (n.Contains("Superhero") || n.Contains("Regular"))) mat.AlbedoColor = new Color(skin.R / Fair.R, skin.G / Fair.G, skin.B / Fair.B);
+            else if (Dyes.TryGetValue(n, out var d))
+            {
+                // (One dye per material: trousers with a colour of their own take it.)
+                bool legs = mi.Name.ToString().Contains("_Legs");
+                var (mask, color) = d.Under is { } um && legs && look.Under is Color under ? (um, under) : d.Cloth is { } cm && look.Cloth is Color cloth ? (cm, cloth) : (null, default(Color));
+                if (mask != null) { mi.SetSurfaceOverrideMaterial(s, Dyed(mat, mask, color)); continue; }
+            }
             mi.SetSurfaceOverrideMaterial(s, mat);
         }
     }

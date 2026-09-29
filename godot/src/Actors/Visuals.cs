@@ -9,14 +9,16 @@ namespace SurvivorUnchained.View;
 /// <summary>
 /// What each creature looks like (the web game's render/visuals.ts), keyed
 /// by EnemyDef.Visual: people (the Risen, the Kerchiefs) dressed and armed,
-/// with a clip for each thing they do; beasts (wolves, boars, lamplings) as
-/// stand-in figures until the real creatures are made.
+/// with a clip for each thing they do; beasts (wolves, boars, lamplings)
+/// built in code (Creatures.cs). The crowd bakes each (Vat.cs).
 /// </summary>
 public static class Visuals
 {
     public sealed record Clips(string Move, string Idle, string Attack, string Windup, string Die = "Death01", string Rise = "Idle_Loop", string Hit = "Hit_Chest", string? Cast = null);
 
-    public sealed record Spec(string Key, PersonSpec? Person, Held? Arms, Clips Clips, double Scale = 1, Color? Beast = null, bool Small = false);
+    /// <summary>A kind of creature. Offset: moved in its own space before
+    /// scaling (a long beast centred on its collision circle).</summary>
+    public sealed record Spec(string Key, PersonSpec? Person, Held? Arms, Clips Clips, double Scale = 1, Vector3? Offset = null);
 
     const string Kerchief = "#7a1a18", KerchiefDark = "#3a1412";
     const string Rot = "#8e9680", Grave = "#4a4638", GraveDark = "#24221c";
@@ -64,22 +66,27 @@ public static class Visuals
             // An enforcer: a big man in a red hood with a greataxe.
             "kerchief_enforcer" => new(visual, P(Sex.Male, "bare", hood: true, beard: true, hairColor: "#1a1410", skin: "#e0a47c", cloth: Kerchief, under: KerchiefDark),
                 new Held { Right = "snake_axe" }, Fight("Jog_Fwd_Loop", "Sword_Idle", "Sword_Attack", "Sword_Idle"), 1.15),
-            // The diggers: small, grubby, a lamp in the fist. (Stand-ins: the
-            // real lamplings come with the creatures.)
-            "lampling" or "lampling_sapper" => new(visual, P(Sex.Male, "peasant", hair: "Hair_Buzzed", hairColor: "#3a3020", skin: "#b8a060",
-                cloth: visual == "lampling_sapper" ? "#6a3a20" : "#5a5030", under: "#2a2418"), null,
-                Fight("Jog_Fwd_Loop", "Idle_Loop", "Punch_Jab", "Idle_Loop"), 0.55, Small: true),
-            "wolf" => Beast(visual, "#6a6660", 0.82),
-            "wolf_alpha" => Beast(visual, "#8a8a86", 0.92),
-            "wolf_blighted" => Beast(visual, "#5a6a48", 0.82),
-            "wolf_spirit" => Beast(visual, "#b8d0ff", 0.82),
-            "boar" => Beast(visual, "#4a3628", 0.95),
-            _ => Beast(visual, "#808080", 1),
+            // Long bodies read as spiders when a pack closes on you: smaller,
+            // and centred on the body so the head does not reach through the survivor.
+            "wolf" or "wolf_blighted" or "wolf_spirit" => Beast(visual, 0.82, new Vector3(0, 0, -0.22f)),
+            "wolf_alpha" => Beast(visual, 0.92, new Vector3(0, 0, -0.22f)),
+            "boar" => Beast(visual, 0.95, new Vector3(0, 0, -0.12f)),
+            // The diggers: small, round, a lamp on the hat.
+            "lampling" or "lampling_sapper" => Beast(visual, 1, null),
+            _ => Of("skeleton_minion") with { Key = visual },
         };
         cache[visual] = s;
         return s;
     }
 
-    static Spec Beast(string key, string color, double scale) =>
-        new(key, null, null, new Clips("run", "idle", "attack", "idle"), scale, new Color(color));
+    static Spec Beast(string key, double scale, Vector3? offset) =>
+        new(key, null, null, new Clips("run", "idle", "attack", "windup", "die", "rise", "hit"), scale, offset);
+
+    /// <summary>Colour and glow a creature is drawn with, beyond its model.</summary>
+    public static (Color Tint, float Glow) Tint(string visual) => visual switch
+    {
+        "risen_ally" => (new Color(0.7f, 1.1f, 0.8f), 0.12f),
+        "wolf_spirit" => (new Color(0.9f, 1.0f, 1.3f), 0.7f),
+        _ => (Colors.White, 0),
+    };
 }
