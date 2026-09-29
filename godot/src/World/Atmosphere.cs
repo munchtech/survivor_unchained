@@ -80,7 +80,8 @@ public partial class Atmosphere : Node3D
 
     static Color C(string hex) => new(hex);
 
-    public void Set(AtmospherePreset p)
+    /// <param name="grade">Rebuild the colour grade too (not every frame of a blend).</param>
+    public void Set(AtmospherePreset p, bool grade = true)
     {
         Current = p;
         float el = Mathf.DegToRad((float)p.KeyElevation), az = Mathf.DegToRad((float)p.KeyAzimuth);
@@ -110,7 +111,7 @@ public partial class Atmosphere : Node3D
         Env.TonemapExposure = (float)p.Exposure * ExposureScale;
         var rim = C(p.Rim).SrgbToLinear();
         RenderingServer.GlobalShaderParameterSet("body_rim", new Vector4(rim.R, rim.G, rim.B, (float)p.RimStrength));
-        Env.AdjustmentColorCorrection = GradeLut(p.Grade, Mute);
+        if (grade) Env.AdjustmentColorCorrection = GradeLut(p.Grade, Mute);
     }
 
     /* -------------------------------------------------------------- grade -- */

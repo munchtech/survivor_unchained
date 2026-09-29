@@ -4,8 +4,8 @@ config_version=5
 
 [application]
 
-config/name="Survivor Unchained (slice)"
-run/main_scene="res://scenes/slice.tscn"
+config/name="Survivor Unchained"
+run/main_scene="res://scenes/game.tscn"
 config/features=PackedStringArray("4.5", "C#", "Forward Plus")
 
 [display]

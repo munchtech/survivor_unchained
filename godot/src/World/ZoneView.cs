@@ -20,9 +20,14 @@ public partial class ZoneView : Node3D
 {
     public readonly ZoneData Data;
     public readonly Landmarks Landmarks;
-    readonly OmniLight3D[] lights;
-    readonly float[] phases;
-    readonly bool[] lit;
+    readonly List<OmniLight3D> lights = new();
+    readonly List<float> phases = new();
+    readonly List<bool> lit = new();
+    /// <summary>Every light's spec: the zone's, then those the runtime set down.</summary>
+    readonly List<ZoneData.LightSpec> specs;
+    readonly Dictionary<int, MeshInstance3D> flames = new();
+    readonly Node3D lightRoot;
+    readonly HashSet<string> stopped = new();
     readonly List<(int Light, Node3D Fire)> fires = new();
     readonly List<GpuParticles3D> chimneys = new();
     readonly List<(int Light, GpuParticles3D Moths)> moths = new();
@@ -48,27 +53,10 @@ public partial class ZoneView : Node3D
         if (grassAround is Vector2 at) GrowGrass(at, grassRadius);
 
         var meta = z.Meta;
-        lights = new OmniLight3D[meta.Lights.Count];
-        phases = new float[meta.Lights.Count];
-        lit = new bool[meta.Lights.Count];
-        var lightRoot = new Node3D { Name = "Lights" };
+        specs = new List<ZoneData.LightSpec>(z.Lights);
+        lightRoot = new Node3D { Name = "Lights" };
         AddChild(lightRoot);
-        for (int i = 0; i < meta.Lights.Count; i++)
-        {
-            var l = z.Lights[i];
-            phases[i] = (float)(MathX.Hash1(i, 7) * 100);
-            lights[i] = new OmniLight3D
-            {
-                Name = $"Light{i}", Position = l.At, LightColor = l.Color,
-                // three.js's intensity I lights to I/pi what Godot's energy E lights to E.
-                LightEnergy = l.Intensity / Mathf.Pi,
-                OmniRange = l.Distance > 0 ? l.Distance : 60, OmniAttenuation = 1.7f,
-                // The big lights (fires, lanterns) cast shadows near the camera.
-                ShadowEnabled = l.Intensity >= 8, DistanceFadeShadow = 28, DistanceFadeEnabled = true,
-                DistanceFadeBegin = 45, DistanceFadeLength = 20, LightVolumetricFogEnergy = 1.2f,
-            };
-            lightRoot.AddChild(lights[i]);
-        }
+        for (int i = 0; i < meta.Lights.Count; i++) MakeLight(z.Lights[i]);
         var fx = new Node3D { Name = "Fires" };
         AddChild(fx);
         foreach (var f in meta.Fires)
@@ -91,9 +79,64 @@ public partial class ZoneView : Node3D
             fx.AddChild(p);
             moths.Add((m, p));
         }
-        for (int i = 0; i < lights.Length; i++) SetLit(i, z.Lights[i].On);
+        for (int i = 0; i < lights.Count; i++) SetLit(i, z.Lights[i].On);
         SetNight(false);
     }
+
+    OmniLight3D MakeLight(ZoneData.LightSpec l)
+    {
+        int i = lights.Count;
+        phases.Add((float)(MathX.Hash1(i, 7) * 100));
+        lit.Add(false);
+        var light = new OmniLight3D
+        {
+            Name = $"Light{i}", Position = l.At, LightColor = l.Color,
+            // three.js's intensity I lights to I/pi what Godot's energy E lights to E.
+            LightEnergy = l.Intensity / Mathf.Pi,
+            OmniRange = l.Distance > 0 ? l.Distance : 60, OmniAttenuation = 1.7f,
+            // The big lights (fires, lanterns) cast shadows near the camera.
+            ShadowEnabled = l.Intensity >= 8, DistanceFadeShadow = 28, DistanceFadeEnabled = true,
+            DistanceFadeBegin = 45, DistanceFadeLength = 20, LightVolumetricFogEnergy = 1.2f,
+        };
+        lights.Add(light);
+        lightRoot.AddChild(light);
+        return light;
+    }
+
+    /// <summary>A light set down now (a torch, a lamp lit in play), with a
+    /// small flame that glows while it is on. Returns its index.</summary>
+    public int AddLight(Vector3 at, Color color, float intensity, float distance, float flicker, float glowSize, Color glowColor)
+    {
+        var spec = new ZoneData.LightSpec(at, color, intensity, distance, flicker, true);
+        int i = lights.Count;
+        specs.Add(spec);
+        MakeLight(spec);
+        if (glowSize > 0)
+        {
+            var c = glowColor.SrgbToLinear() * 3;
+            var flame = new MeshInstance3D
+            {
+                Mesh = new SphereMesh { Radius = glowSize, Height = glowSize * 2.4f, RadialSegments = 8, Rings = 4 },
+                MaterialOverride = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(c.R, c.G, c.B) },
+                Position = at, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            };
+            lightRoot.AddChild(flame);
+            flames[i] = flame;
+        }
+        SetLit(i, true);
+        return i;
+    }
+
+    /// <summary>A light that goes where something carries it.</summary>
+    public void MoveLight(int light, Vector3 at)
+    {
+        specs[light] = specs[light] with { At = at };
+        lights[light].Position = at;
+        if (flames.TryGetValue(light, out var f)) f.Position = at;
+    }
+
+    /// <summary>A turning piece (the pump's wheel) stops.</summary>
+    public void Stop(string node) => stopped.Add(node);
 
     /// <summary>A node of the landmarks the runtime reaches for, by name.</summary>
     public Node3D? Node(string name) => Landmarks.Nodes.TryGetValue(name, out var n) ? n : null;
@@ -105,7 +148,9 @@ public partial class ZoneView : Node3D
     {
         lit[light] = on;
         lights[light].Visible = on;
-        foreach (var g in Data.Meta.Lights[light].Glow) if (Node(g) is Node3D n) n.Visible = on;
+        if (flames.TryGetValue(light, out var flame)) flame.Visible = on;
+        if (light < Data.Meta.Lights.Count)
+            foreach (var g in Data.Meta.Lights[light].Glow) if (Node(g) is Node3D n) n.Visible = on;
         foreach (var (l, fire) in fires) if (l == light) Burn(fire, on);
         foreach (var (l, p) in moths) if (l == light) p.Emitting = on && Night;
     }
@@ -146,11 +191,13 @@ public partial class ZoneView : Node3D
     {
         time += delta;
         float t = (float)time;
+        // The pump's wheel turns while the pump runs.
+        if (!stopped.Contains("pump_wheel") && Node("pump_wheel") is Node3D wheel) wheel.RotateObjectLocal(Vector3.Right, (float)delta * 0.8f);
         // Every lit light's own flicker (the web game's formula).
-        for (int i = 0; i < lights.Length; i++)
+        for (int i = 0; i < lights.Count; i++)
         {
             if (!lit[i]) continue;
-            var l = Data.Lights[i];
+            var l = specs[i];
             if (l.Flicker <= 0) continue;
             float ph = phases[i];
             float f = 1 + (Mathf.Sin(t * 8.3f + ph) * 0.5f + Mathf.Sin(t * 19.7f + ph * 1.7f) * 0.3f + Mathf.Sin(t * 3.1f + ph) * 0.2f) * l.Flicker;

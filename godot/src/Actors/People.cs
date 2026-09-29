@@ -13,7 +13,7 @@ public static class People
 {
     public sealed record Look(
         string Sex, string[] Outfit, string? Hair = null, bool Beard = false,
-        Color? HairColor = null, Color? Skin = null, Color? Cloth = null);
+        Color? HairColor = null, Color? Skin = null, Color? Cloth = null, Color? Under = null);
 
     public static readonly string[] MaleRanger = { "Male_Ranger_Arms", "Male_Ranger_Body", "Male_Ranger_Legs", "Male_Ranger_Feet_Boots" };
     public static readonly string[] MalePeasant = { "Male_Peasant_Arms", "Male_Peasant_Body", "Male_Peasant_Legs", "Male_Peasant_Feet" };
@@ -44,6 +44,52 @@ public static class People
             if (IsCycle(name)) all.GetAnimation(name).LoopMode = Animation.LoopModeEnum.Linear;
         libraries.Add(all);
         return all;
+    }
+
+    /// <summary>The game names clips in KayKit's words; a person plays the
+    /// library clip that does the same thing (the web game's HUMAN_CLIPS).</summary>
+    static readonly Dictionary<string, string> Aliases = new()
+    {
+        ["Idle"] = "Idle_Loop", ["Idle_B"] = "Idle_Loop", ["Idle_Combat"] = "Sword_Idle", ["2H_Melee_Idle"] = "Sword_Idle", ["Unarmed_Idle"] = "Idle_Loop",
+        ["Walking_A"] = "Walk_Loop", ["Walking_B"] = "Walk_Loop", ["Walking_C"] = "Walk_Formal_Loop", ["Walking_D_Skeletons"] = "Zombie_Walk_Fwd_Loop",
+        ["Running_A"] = "Jog_Fwd_Loop", ["Running_B"] = "Sprint_Loop",
+        ["1H_Melee_Attack_Chop"] = "Sword_Regular_A", ["1H_Melee_Attack_Slice_Diagonal"] = "Sword_Regular_B", ["1H_Melee_Attack_Slice_Horizontal"] = "Sword_Regular_C",
+        ["1H_Melee_Attack_Stab"] = "Sword_Regular_A", ["2H_Melee_Attack_Chop"] = "Sword_Attack", ["2H_Melee_Attack_Slice"] = "Sword_Attack",
+        ["2H_Melee_Attack_Spin"] = "Sword_Heavy_Combo", ["Dualwield_Melee_Attack_Slice"] = "Sword_Regular_Combo", ["Unarmed_Melee_Attack_Punch_A"] = "Punch_Jab",
+        ["Spellcast_Shoot"] = "Spell_Simple_Shoot", ["Spellcast_Raise"] = "Spell_Simple_Enter", ["Spellcast_Summon"] = "Spell_Simple_Enter", ["Spellcasting"] = "Spell_Simple_Idle_Loop",
+        ["Throw"] = "OverhandThrow", ["1H_Ranged_Shoot"] = "Pistol_Shoot", ["2H_Ranged_Shoot"] = "Pistol_Shoot",
+        ["Sit_Floor_Idle"] = "Crouch_Idle_Loop", ["Sit_Chair_Idle"] = "Sitting_Idle_Loop", ["Interact"] = "Interact", ["PickUp"] = "PickUp_Table", ["Use_Item"] = "Consume",
+        ["Death_A"] = "Death01", ["Death_B"] = "Death01", ["Death_A_Pose"] = "Death01", ["Death_C_Skeletons"] = "Death01",
+        ["Hit_A"] = "Hit_Chest", ["Hit_B"] = "Hit_Head", ["Cheer"] = "Yes", ["Taunt"] = "Punch_Cross", ["Block"] = "Sword_Block", ["Blocking"] = "Idle_Shield_Loop",
+        ["Lie_StandUp"] = "LayToIdle", ["Dodge_Forward"] = "Roll", ["Jump_Full_Short"] = "NinjaJump_Start", ["Wave"] = "Yes",
+    };
+
+    /// <summary>A clip as the library has it in Godot: the game's name, its
+    /// alias, and without the '_Loop' the importer takes off (it loops them).</summary>
+    public static string Resolve(string name)
+    {
+        var lib = Clips();
+        if (Aliases.TryGetValue(name, out var a)) name = a;
+        if (lib.HasAnimation(name)) return name;
+        if (name.EndsWith("_Loop") && lib.HasAnimation(name[..^5])) return name[..^5];
+        return lib.HasAnimation("Idle") ? "Idle" : name;
+    }
+
+    /// <summary>A person as the game specifies one (World.PersonSpec): the
+    /// body, the outfit, hair and beard, skin, and the dye on the cloth.</summary>
+    public static Person Build(SurvivorUnchained.World.PersonSpec spec)
+    {
+        static Color? C(string? hex) => string.IsNullOrEmpty(hex) ? null : new Color(hex);
+        var sex = spec.Sex == SurvivorUnchained.Rpg.Sex.Female ? "female" : "male";
+        var outfit = spec.Outfit?.ToArray() ?? (sex == "female" ? FemalePeasant : MalePeasant);
+        var p = Build(new Look(sex, outfit, spec.Hair, spec.Beard == true, C(spec.HairColor), C(spec.Skin), C(spec.Dye?.Cloth), C(spec.Dye?.Under)));
+        // A child's larger head.
+        if (spec.Head is double h && h != 1)
+        {
+            int head = p.Skeleton.FindBone("Head");
+            if (head >= 0) p.Skeleton.SetBonePoseScale(head, Vector3.One * (float)h);
+        }
+        return p;
     }
 
     static bool IsCycle(string n) =>
@@ -87,6 +133,9 @@ public static class People
             {
                 person.Meshes.Add(mi);
                 Dress(mi, look);
+                // Bodies are on a layer of their own: blood and the marks on
+                // the ground are not painted on them.
+                mi.Layers = 2;
             }
         root.AddChild(person.Anim);
         person.Anim.RootNode = "..";
@@ -111,6 +160,7 @@ public static class People
             var n = src.ResourceName;
             if (n.Contains("Hair") || mi.Name.ToString().Contains("Eyebrows")) { if (look.HairColor is Color h) mat.AlbedoColor = h; }
             else if (look.Skin is Color skin && (n.Contains("Superhero") || n.Contains("Regular"))) mat.AlbedoColor = skin;
+            else if (look.Under is Color under && mi.Name.ToString().Contains("Legs") && (n.Contains("Peasant") || n.Contains("Ranger"))) mat.AlbedoColor = under;
             else if (look.Cloth is Color cloth && (n.Contains("Peasant") || n.Contains("Ranger"))) mat.AlbedoColor = cloth;
             mi.SetSurfaceOverrideMaterial(s, mat);
         }

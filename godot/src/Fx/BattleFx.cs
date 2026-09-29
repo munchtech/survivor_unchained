@@ -1,0 +1,699 @@
+using System;
+using System.Collections.Generic;
+using Godot;
+using SurvivorUnchained.Play;
+using SurvivorUnchained.Sim;
+
+namespace SurvivorUnchained.View;
+
+/// <summary>
+/// The fight made visible (the web game's fx/combatFx.ts). The simulation
+/// says what happened; this decides what it looks like, in the colour of
+/// its school and scaled by how much it matters: a tick of poison is a
+/// whisper, a critical a shower of sparks and a gold number, an elite's
+/// death a burst of light on the ground round it, a charge a lane on the
+/// floor to read the timing off. Also draws what is in the air and what
+/// lies on the ground to be taken. Lights are few: a pool of them goes to
+/// the brightest recent moments and fades.
+/// </summary>
+public partial class BattleFx : Node3D
+{
+    readonly Func<double, double, double> heightAt;
+    public readonly Sparks Sparks = new(6000, true), Smoke = new(2500, false);
+    public readonly Hits Hits = new();
+    public FollowCamera? Cam;
+    /// <summary>A blow landed on the survivor: how hard (0..1), for the edges of the picture.</summary>
+    public Action<float> OnDamageFlash = _ => { };
+    public Vector3 PlayerPos;
+    double time;
+
+    readonly List<(OmniLight3D Light, float T, float Life, float Peak)> flashes = new();
+    readonly List<Mark> marks = new();
+    readonly Dictionary<int, Mark> keyed = new();
+    readonly Dictionary<int, Mark> zoneMarks = new();
+    readonly List<(MeshInstance3D Mesh, ShaderMaterial Mat, float T, float Life)> beams = new();
+    readonly List<(double At, Action Fn)> pending = new();
+    int nextBeam;
+    bool mirror;
+
+    // What is in the air, and what lies on the ground.
+    Batch orbs = null!, steel = null!, shards = null!, rings = null!, embers = null!, coins = null!, flasks = null!, bags = null!, lootBeams = null!;
+    readonly Dictionary<int, float> trailAcc = new();
+
+    static Texture2D? ringTex, discTex, laneTex;
+
+    sealed class Mark
+    {
+        public required Decal Decal;
+        public float T, Life, Radius;
+        public bool Progress, Grow, Active;
+        public Color Color;
+        public Decal? Fill;
+    }
+
+    public BattleFx(Func<double, double, double> heightAt)
+    {
+        this.heightAt = heightAt;
+        Name = "BattleFx";
+    }
+
+    public override void _Ready()
+    {
+        AddChild(Sparks);
+        AddChild(Smoke);
+        AddChild(Hits);
+        for (int i = 0; i < 8; i++)
+        {
+            var l = new OmniLight3D { LightEnergy = 0, OmniRange = 10, OmniAttenuation = 1.6f, ShadowEnabled = false, Visible = false };
+            AddChild(l);
+            flashes.Add((l, 1, 1, 0));
+        }
+        ringTex ??= GroundTexture(0);
+        discTex ??= GroundTexture(1);
+        laneTex ??= GroundTexture(2);
+        var beamShader = GD.Load<Shader>("res://shaders/beam.gdshader");
+        for (int i = 0; i < 20; i++)
+        {
+            var mat = new ShaderMaterial { Shader = beamShader };
+            var m = new MeshInstance3D { Mesh = new CylinderMesh { TopRadius = 1, BottomRadius = 1, Height = 1, RadialSegments = 16, CapTop = false, CapBottom = false }, MaterialOverride = mat, Visible = false, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+            AddChild(m);
+            beams.Add((m, mat, 1, 1));
+        }
+        var spark = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/spark.gdshader") };
+        Material Glowing(float emit, float rough = 0.35f, float metal = 0)
+        {
+            var m = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/glowing.gdshader") };
+            m.SetShaderParameter("emit", emit);
+            m.SetShaderParameter("roughness", rough);
+            m.SetShaderParameter("metallic", metal);
+            return m;
+        }
+        var beam = new ShaderMaterial { Shader = beamShader };
+        beam.SetShaderParameter("energy", 1.6f);
+        orbs = Add(new Batch(new QuadMesh { Size = Vector2.One }, 1400, spark));
+        steel = Add(new Batch(new BoxMesh { Size = new Vector3(0.06f, 0.04f, 0.6f) }, 600, Glowing(0.25f, 0.3f, 0.7f)));
+        shards = Add(new Batch(new PrismMesh { Size = new Vector3(0.14f, 0.7f, 0.14f) }, 600, Glowing(1.8f, 0.1f)));
+        rings = Add(new Batch(new TorusMesh { InnerRadius = 0.36f, OuterRadius = 0.5f, Rings = 16, RingSegments = 6 }, 200, Glowing(1.2f, 0.2f, 0.8f)));
+        embers = Add(new Batch(new SphereMesh { Radius = 0.5f, Height = 1.2f, RadialSegments = 4, Rings = 2 }, 1400, Glowing(2.6f, 0.25f)));
+        coins = Add(new Batch(new CylinderMesh { TopRadius = 0.16f, BottomRadius = 0.16f, Height = 0.04f, RadialSegments = 12 }, 600, Glowing(0.6f, 0.3f, 0.9f)));
+        flasks = Add(new Batch(new SphereMesh { Radius = 0.14f, Height = 0.3f, RadialSegments = 10, Rings = 6 }, 200, Glowing(1.2f, 0.15f)));
+        bags = Add(new Batch(new BoxMesh { Size = new Vector3(0.36f, 0.28f, 0.3f) }, 200, Glowing(0.15f, 0.8f), true));
+        lootBeams = Add(new Batch(new CylinderMesh { TopRadius = 0.12f, BottomRadius = 0.18f, Height = 1, RadialSegments = 10, CapTop = false, CapBottom = false }, 200, beam));
+    }
+
+    Batch Add(Batch b) { AddChild(b); return b; }
+
+    float Y(double x, double z) => (float)heightAt(x, z);
+    static Vector3 V(double x, double y, double z) => new((float)x, (float)y, (float)z);
+    static float R() => Sparks.R();
+
+    /* --------------------------------------------------------- primitives -- */
+
+    public void Flash(Vector3 at, Color color, float peak, float life, float range = 9)
+    {
+        int best = 0;
+        for (int i = 1; i < flashes.Count; i++) if (flashes[i].Light.LightEnergy < flashes[best].Light.LightEnergy) best = i;
+        var l = flashes[best].Light;
+        l.Position = at;
+        l.LightColor = color;
+        l.OmniRange = range;
+        l.Visible = true;
+        flashes[best] = (l, 0, life, peak);
+    }
+
+    public void Burst(Vector3 at, School school, int n, float speed, float up = 1.5f, float size = 0.09f, float life = 0.45f, float gravity = 6)
+    {
+        var pal = Palette.Of(school);
+        for (int i = 0; i < n; i++)
+        {
+            float a = R() * Mathf.Tau, v = speed * (0.4f + R() * 0.8f);
+            Sparks.Spawn(at, new Vector3(Mathf.Cos(a) * v, up * (0.5f + R()), Mathf.Sin(a) * v), life * (0.7f + R() * 0.6f), size, pal.Core, pal.Glow, 0.01f, gravity, 3);
+        }
+    }
+
+    Mark Ground(double x, double z, float radius, Texture2D tex, Color color, float life, float energy = 2.5f)
+    {
+        Mark? m = null;
+        foreach (var k in marks) if (!k.Active) { m = k; break; }
+        if (m == null)
+        {
+            m = new Mark { Decal = new Decal { UpperFade = 0.3f, LowerFade = 0.3f, CullMask = 1 } };
+            AddChild(m.Decal);
+            marks.Add(m);
+        }
+        m.Active = true;
+        m.T = 0;
+        m.Life = life;
+        m.Radius = radius;
+        m.Color = color;
+        m.Progress = m.Grow = false;
+        var d = m.Decal;
+        d.TextureEmission = tex;
+        d.TextureAlbedo = null;
+        d.EmissionEnergy = energy;
+        d.Modulate = color;
+        d.AlbedoMix = 0;
+        d.Position = V(x, heightAt(x, z), z);
+        d.Rotation = Vector3.Zero;
+        d.Size = new Vector3(radius * 2, 4, radius * 2);
+        d.Visible = true;
+        if (m.Fill != null) m.Fill.Visible = false;
+        return m;
+    }
+
+    void Ring(double x, double z, float radius, Color color, float life, bool progress = false, int? key = null)
+    {
+        if (key is int k && keyed.TryGetValue(k, out var old)) { old.Active = false; old.Decal.Visible = false; if (old.Fill != null) old.Fill.Visible = false; }
+        var m = Ground(x, z, radius, ringTex!, color, life);
+        if (progress)
+        {
+            m.Progress = true;
+            if (m.Fill == null) { m.Fill = new Decal { UpperFade = 0.3f, LowerFade = 0.3f, CullMask = 1, TextureEmission = discTex }; AddChild(m.Fill); }
+            m.Fill.Position = m.Decal.Position;
+            m.Fill.Modulate = color with { A = 0.55f };
+            m.Fill.EmissionEnergy = 2;
+            m.Fill.Size = new Vector3(0.01f, 4, 0.01f);
+            m.Fill.Visible = true;
+        }
+        if (key is int k2) keyed[k2] = m;
+    }
+
+    void Lane(double x0, double z0, double x1, double z1, float width, Color color, float life, int? key = null)
+    {
+        if (key is int k && keyed.TryGetValue(k, out var old)) { old.Active = false; old.Decal.Visible = false; }
+        double dx = x1 - x0, dz = z1 - z0, len = Math.Max(0.5, Math.Sqrt(dx * dx + dz * dz));
+        var m = Ground((x0 + x1) / 2, (z0 + z1) / 2, 1, laneTex!, color, life);
+        m.Decal.Size = new Vector3(width, 4, (float)len);
+        m.Decal.Rotation = new Vector3(0, (float)Math.Atan2(dx, dz), 0);
+        if (key is int k2) keyed[k2] = m;
+    }
+
+    /// <summary>A ring that races out from a point and fades.</summary>
+    void Nova(double x, double z, float radius, Color color, float life)
+    {
+        var m = Ground(x, z, radius, ringTex!, color, life, 3);
+        m.Grow = true;
+    }
+
+    /// <summary>A column of light from the ground (a strike from the sky, a level gained).</summary>
+    void Pillar(Vector3 at, float height, float radius, Color color, float life)
+    {
+        var (m, mat, _, _) = beams[nextBeam];
+        m.Position = at + Vector3.Up * height / 2;
+        m.Rotation = Vector3.Zero;
+        m.Scale = new Vector3(radius, height, radius);
+        m.Visible = true;
+        mat.SetShaderParameter("color", new Vector3(color.R, color.G, color.B));
+        mat.SetShaderParameter("energy", 1f);
+        mat.SetShaderParameter("taper", 1f);
+        beams[nextBeam] = (m, mat, 0, life);
+        nextBeam = (nextBeam + 1) % beams.Count;
+    }
+
+    /// <summary>A band of light between two points (a beam, a bolt of lightning's leg).</summary>
+    void Band(Vector3 a, Vector3 b, float width, Color color, float life)
+    {
+        var (m, mat, _, _) = beams[nextBeam];
+        var d = b - a;
+        float len = Mathf.Max(0.05f, d.Length());
+        m.Position = (a + b) / 2;
+        // The cylinder's axis (Y) along the band.
+        var y = d / len;
+        var x = Mathf.Abs(y.Y) < 0.99f ? y.Cross(Vector3.Up).Normalized() : Vector3.Right;
+        var z = x.Cross(y);
+        m.Basis = new Godot.Basis(x * width, y * len, z * width);
+        m.Visible = true;
+        mat.SetShaderParameter("color", new Vector3(color.R, color.G, color.B));
+        mat.SetShaderParameter("energy", 1f);
+        mat.SetShaderParameter("taper", 0f);
+        beams[nextBeam] = (m, mat, 0, life);
+        nextBeam = (nextBeam + 1) % beams.Count;
+    }
+
+    /// <summary>Soft round shapes for the ground: a ring, a disc, a lane.</summary>
+    static Texture2D GroundTexture(int kind)
+    {
+        const int N = 128;
+        var img = Image.CreateEmpty(N, N, false, Image.Format.Rgba8);
+        for (int y = 0; y < N; y++)
+            for (int x = 0; x < N; x++)
+            {
+                float u = (x + 0.5f) / N * 2 - 1, v = (y + 0.5f) / N * 2 - 1;
+                float r = Mathf.Sqrt(u * u + v * v), a;
+                if (kind == 0) a = Mathf.Clamp(1 - Mathf.Abs(r - 0.9f) / 0.07f, 0, 1) + Mathf.Clamp(1 - r, 0, 1) * 0.12f * (r < 0.93f ? 1 : 0);
+                else if (kind == 1) a = r < 0.97f ? 0.35f + 0.65f * Mathf.SmoothStep(0.6f, 0.95f, r) : Mathf.Clamp((1 - r) / 0.03f, 0, 1);
+                else { float e = Mathf.Abs(u); a = (Mathf.Clamp(1 - Mathf.Abs(e - 0.88f) / 0.1f, 0, 1) + 0.22f) * Mathf.Clamp((1 - Mathf.Abs(v)) / 0.05f, 0, 1); }
+                a = Mathf.Clamp(a, 0, 1);
+                img.SetPixel(x, y, new Color(a, a, a, a));
+            }
+        return ImageTexture.CreateFromImage(img);
+    }
+
+    /* ------------------------------------------------------------- events -- */
+
+    static Color BloodOf(Family? f) => f switch
+    {
+        Family.Undead => new Color("#2a2016"),
+        Family.Blighted => new Color("#2a3a14"),
+        Family.Construct or Family.Elemental => new Color("#4a4640"),
+        Family.Lampling => new Color("#3a1a08"),
+        _ => new Color("#6a0c0a"),
+    };
+
+    public void Handle(IReadOnlyList<CombatEvent> events, Battle b)
+    {
+        foreach (var ev in events)
+        {
+            switch (ev)
+            {
+                case Ev.Hit e:
+                {
+                    var at = V(e.X, Y(e.X, e.Z) + 1.0, e.Z);
+                    if (e.Dot)
+                    {
+                        if (R() < 0.35f) Hits.Text(at, ((int)Math.Round(e.Amount)).ToString(), new Color(0.85f, 0.8f, 0.72f, 0.85f), 40);
+                        break;
+                    }
+                    if (e.Blocked) { Hits.Text(at, "blocked", new Color(0.7f, 0.75f, 0.8f), 44); Burst(at, School.Physical, 5, 3, 2, 0.06f); break; }
+                    Hits.Number(at, (int)Math.Round(e.Amount), e.Crit);
+                    Burst(at, e.School, e.Crit ? 10 : 4, e.Crit ? 5 : 3, size: e.Crit ? 0.12f : 0.08f);
+                    if (e.Family != null)
+                    {
+                        var away = new Vector3((float)e.Dx, 0, (float)e.Dz);
+                        if (away.LengthSquared() < 0.01f) away = Vector3.Forward;
+                        float hurt = (float)Math.Min(1, e.Amount / Math.Max(1, e.MaxHp) * 3);
+                        Hits.Spray(at + Vector3.Up * 0.2f, away.Normalized(), BloodOf(e.Family), 0.3f + hurt);
+                        if (hurt > 0.3f && R() < 0.5f) Hits.Stain(at with { Y = Y(e.X, e.Z) } + away.Normalized() * (0.4f + R() * 0.8f), 0.6f + R() * 0.6f);
+                    }
+                    if (e.Crit)
+                    {
+                        Sparks.Spawn(at, Vector3.Zero, 0.2f, 0.55f, Palette.Of(e.School).Core, sizeEnd: 0.15f);
+                        Cam?.AddTrauma(0.04f);
+                    }
+                    break;
+                }
+                case Ev.Kill e:
+                {
+                    float gy = Y(e.X, e.Z);
+                    var pal = Palette.Of(e.School);
+                    var at = V(e.X, gy + 0.9, e.Z);
+                    var away = new Vector3((float)e.Dx, 0, (float)e.Dz);
+                    if (away.LengthSquared() < 0.01f) away = Vector3.Forward;
+                    Hits.Spray(V(e.X, gy + 0.7 * e.Scale, e.Z), away.Normalized(), BloodOf(e.Family), 1);
+                    if (e.Burst) { Hits.Spray(V(e.X, gy + 1.0 * e.Scale, e.Z), -away.Normalized(), BloodOf(e.Family), 1); Hits.Stain(V(e.X, gy, e.Z), 2.2f); }
+                    Hits.Stain(V(e.X, gy, e.Z) + away.Normalized() * 0.8f, 1.2f + R() * 0.8f);
+                    Burst(at, e.School, e.Elite ? 40 : 10, e.Elite ? 7 : 4, 3, life: 0.6f);
+                    for (int i = 0; i < (e.Elite ? 14 : 4); i++)
+                        Sparks.Spawn(V(e.X + (R() - 0.5) * 0.6, gy + 0.5, e.Z + (R() - 0.5) * 0.6), new Vector3(0, 1.4f + R() * 1.5f, 0), 1 + R() * 0.6f, 0.07f,
+                            new Color(2.4f, 1.1f, 0.3f), new Color(1.6f, 0.3f, 0.05f), 0.02f, 0, 0.8f);
+                    if (e.Family == Family.Undead)
+                        for (int i = 0; i < 6; i++) Smoke.Spawn(V(e.X, gy + 0.6, e.Z), new Vector3((R() - 0.5f) * 3, 2 + R() * 2, (R() - 0.5f) * 3), 0.9f, 0.07f, new Color("#d8d2c0"), gravity: 9);
+                    Smoke.Spawn(V(e.X, gy + 0.3, e.Z), new Vector3(0, 0.5f, 0), 0.9f, 0.5f, new Color("#3a3430"), new Color("#1a1816"), 1.3f, alpha: 0.35f);
+                    if (e.Elite || e.Boss)
+                    {
+                        Flash(V(e.X, gy + 1.5, e.Z), pal.Light, 16, 0.6f, 12);
+                        Nova(e.X, e.Z, 5, pal.Glow, 0.45f);
+                        Cam?.AddTrauma(0.35f);
+                    }
+                    break;
+                }
+                case Ev.PlayerHit e:
+                {
+                    var at = V(e.X, Y(e.X, e.Z) + 1.2, e.Z);
+                    if (e.Dodged || e.Blocked)
+                    {
+                        Hits.Text(at, e.Dodged ? "dodged" : "blocked", new Color(0.8f, 0.85f, 0.95f), 44);
+                        Burst(at, e.Blocked ? School.Holy : School.Physical, 12, 4);
+                        break;
+                    }
+                    Hits.Text(at + Vector3.Up * 0.2f, ((int)Math.Round(e.Amount)).ToString(), new Color(2f, 0.35f, 0.3f), 58);
+                    Hits.Spray(at, Vector3.Up, null, 0.4f);
+                    Cam?.AddTrauma((float)Math.Min(0.5, 0.12 + e.Amount / 60));
+                    OnDamageFlash((float)Math.Min(1, 0.35 + e.Amount / 40));
+                    break;
+                }
+                case Ev.ShieldHit e:
+                {
+                    var at = V(e.X, Y(e.X, e.Z) + 1.1, e.Z);
+                    Hits.Text(at + Vector3.Up * 0.3f, ((int)Math.Round(e.Absorbed)).ToString(), new Color(1.4f, 1.3f, 0.9f), 44);
+                    Burst(at, School.Holy, e.Broke ? 26 : 8, e.Broke ? 6 : 3, size: e.Broke ? 0.1f : 0.07f);
+                    Flash(at, Palette.Of(School.Holy).Light, e.Broke ? 8 : 3, e.Broke ? 0.4f : 0.2f, 7);
+                    if (e.Broke) { Nova(e.X, e.Z, 2.2f, Palette.Of(School.Holy).Glow, 0.3f); Cam?.AddTrauma(0.12f); }
+                    break;
+                }
+                case Ev.PlayerHeal e:
+                    if (e.Amount >= 3) Hits.Text(PlayerPos + Vector3.Up * 1.6f, $"+{(int)Math.Round(e.Amount)}", new Color(0.5f, 1.8f, 0.6f), 50);
+                    break;
+                case Ev.Nova e:
+                {
+                    var pal = Palette.Of(e.School);
+                    Nova(e.X, e.Z, (float)e.Radius, pal.Glow, (float)Math.Max(0.25, e.Duration));
+                    if ((e.Rings ?? 1) > 0) Flash(V(e.X, Y(e.X, e.Z) + 1.3, e.Z), pal.Light, 6, 0.35f, (float)e.Radius * 2);
+                    break;
+                }
+                case Ev.Explosion e:
+                {
+                    float gy = Y(e.X, e.Z), r = (float)e.Radius;
+                    var pal = Palette.Of(e.School);
+                    Flash(V(e.X, gy + 1.2, e.Z), pal.Light, 10 + (float)e.Power * 10, 0.35f, r * 3 + 3);
+                    Nova(e.X, e.Z, r * 1.15f, pal.Glow, 0.3f);
+                    int n = Math.Min(40, 10 + (int)Math.Round(r * 8));
+                    for (int i = 0; i < n; i++)
+                    {
+                        float a = R() * Mathf.Tau, v = r * (2 + R() * 3);
+                        Sparks.Spawn(V(e.X, gy + 0.6, e.Z), new Vector3(Mathf.Cos(a) * v, 2 + R() * 4, Mathf.Sin(a) * v), 0.4f + R() * 0.4f, 0.1f + R() * 0.08f, pal.Core, pal.Glow, 0.01f, 8, 2.5f);
+                    }
+                    Sparks.Spawn(V(e.X, gy + 0.8, e.Z), Vector3.Zero, 0.25f, r * 1.3f, pal.Core, pal.Glow, r * 1.8f, alpha: 0.9f);
+                    if (e.School is School.Fire or School.Shadow or School.Physical)
+                        for (int i = 0; i < 6; i++) Smoke.Spawn(V(e.X + (R() - 0.5) * r, gy + 0.5, e.Z + (R() - 0.5) * r), new Vector3(0, 1 + R(), 0), 1.2f, r * 0.4f, new Color("#2a2420"), new Color("#121010"), r * 0.9f, drag: 1.2f, alpha: 0.45f);
+                    Cam?.AddTrauma((float)Math.Min(0.3, 0.05 + e.Power * 0.1));
+                    break;
+                }
+                case Ev.Chain e:
+                {
+                    var pal = Palette.Of(e.School);
+                    var p = e.Points;
+                    if (p.Length < 4) break;
+                    float y = Y(p[0], p[1]) + 1.0f;
+                    for (int k = 0; k + 3 < p.Length; k += 2)
+                    {
+                        var a = V(p[k], y, p[k + 1]);
+                        var bb = V(p[k + 2], y, p[k + 3]);
+                        // A jag in the middle of each leg.
+                        var mid = (a + bb) / 2 + new Vector3((R() - 0.5f) * 0.8f, (R() - 0.5f) * 0.5f, (R() - 0.5f) * 0.8f);
+                        Band(a, mid, 0.05f, pal.Core, 0.24f);
+                        Band(mid, bb, 0.05f, pal.Core, 0.24f);
+                        Burst(bb, e.School, 4, 3, size: 0.06f);
+                    }
+                    if (e.School == School.Storm) Flash(V(p[^2], y + 1, p[^1]), pal.Light, 6, 0.2f, 8);
+                    break;
+                }
+                case Ev.Beam e:
+                {
+                    var pal = Palette.Of(e.School);
+                    float y = Y(e.X0, e.Z0) + 1.0f;
+                    Band(V(e.X0, y, e.Z0), V(e.X1, y, e.Z1), (float)e.Width * 0.3f, pal.Glow, (float)Math.Max(0.15, e.Duration));
+                    Flash(V((e.X0 + e.X1) / 2, y, (e.Z0 + e.Z1) / 2), pal.Light, 6, (float)e.Duration, 12);
+                    break;
+                }
+                case Ev.Strike e:
+                {
+                    float gy = Y(e.X, e.Z);
+                    var pal = Palette.Of(e.School);
+                    var at = V(e.X, gy, e.Z);
+                    float r = (float)e.Radius;
+                    if (e.Delay > 0.05)
+                    {
+                        Ring(e.X, e.Z, r, pal.Glow * 0.6f, (float)e.Delay, true);
+                        pending.Add((time + e.Delay, () => { Pillar(at, 16, 0.35f + r * 0.1f, pal.Core, 0.3f); Flash(at + Vector3.Up * 2, pal.Light, 8, 0.25f, 10); }));
+                    }
+                    else { Pillar(at, 16, 0.35f, pal.Core, 0.3f); Flash(at + Vector3.Up * 2, pal.Light, 8, 0.25f, 10); }
+                    break;
+                }
+                case Ev.Slash e:
+                {
+                    var pal = Palette.Of(e.School);
+                    mirror = !mirror;
+                    Hits.Arc(V(e.X, Y(e.X, e.Z) + 1.0, e.Z), (float)(Math.PI / 2 - e.Angle), (float)e.Reach, 0.22f, mirror, pal.Core, pal.Glow);
+                    break;
+                }
+                case Ev.Telegraph e:
+                {
+                    var col = e.Hostile ? Palette.HostileDanger : Palette.Of(School.Holy).Glow;
+                    if (e.Shape == TelegraphShape.Line) Lane(e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1), col, (float)e.Duration, e.Id);
+                    else if (e.Shape == TelegraphShape.Ring) Ring(e.X, e.Z, (float)e.Radius, col, (float)e.Duration, false, e.Id);
+                    else Ring(e.X, e.Z, (float)e.Radius, col, (float)e.Duration, true, e.Id);
+                    break;
+                }
+                case Ev.Spawn e:
+                {
+                    float gy = Y(e.X, e.Z);
+                    if (e.Style == SpawnStyle.Rise)
+                    {
+                        for (int i = 0; i < 10; i++) Smoke.Spawn(V(e.X + (R() - 0.5) * 0.8, gy + 0.1, e.Z + (R() - 0.5) * 0.8), new Vector3((R() - 0.5f) * 2, 1 + R() * 2, (R() - 0.5f) * 2), 0.7f, 0.08f, new Color("#3a2e22"), gravity: 6);
+                        Smoke.Spawn(V(e.X, gy + 0.2, e.Z), new Vector3(0, 0.3f, 0), 1, 0.6f, new Color("#2e2620"), sizeEnd: 1.2f, alpha: 0.4f);
+                        Sparks.Spawn(V(e.X, gy + 0.3, e.Z), new Vector3(0, 0.6f, 0), 0.8f, 0.5f, new Color(0.3f, 0.5f, 1.2f), sizeEnd: 0.1f, alpha: 0.35f);
+                    }
+                    else if (e.Style == SpawnStyle.Burrow)
+                        for (int i = 0; i < 8; i++) Smoke.Spawn(V(e.X, gy + 0.1, e.Z), new Vector3((R() - 0.5f) * 3, 1.5f + R() * 2, (R() - 0.5f) * 3), 0.6f, 0.07f, new Color("#4a3a28"), gravity: 8);
+                    break;
+                }
+                case Ev.Pickup e:
+                    if (e.Kind is PickupKind.Ember or PickupKind.Gold)
+                        Sparks.Spawn(PlayerPos + Vector3.Up, new Vector3(0, 1, 0), 0.3f, 0.25f, e.Kind == PickupKind.Gold ? new Color(2f, 1.5f, 0.5f) : new Color(2.2f, 1f, 0.35f), sizeEnd: 0.05f, alpha: 0.6f);
+                    break;
+                case Ev.LevelUp:
+                {
+                    var p = PlayerPos;
+                    Nova(p.X, p.Z, 3.6f, Palette.Of(School.Fire).Glow, 0.5f);
+                    Pillar(p, 7, 0.55f, Palette.Of(School.Holy).Core * 0.6f, 0.55f);
+                    Flash(p + Vector3.Up * 2, new Color("#ffc070"), 10, 0.7f, 9);
+                    for (int i = 0; i < 30; i++)
+                    {
+                        float a = R() * Mathf.Tau;
+                        Sparks.Spawn(p + new Vector3(Mathf.Cos(a) * 0.8f, 0.2f, Mathf.Sin(a) * 0.8f), new Vector3(Mathf.Cos(a) * 0.5f, 3 + R() * 4, Mathf.Sin(a) * 0.5f), 1.2f, 0.1f, new Color(2.4f, 1.9f, 1.1f), new Color(2.2f, 0.6f, 0.1f), 0.02f, 0, 1.5f);
+                    }
+                    break;
+                }
+                case Ev.Evolve or Ev.Discovery:
+                {
+                    var p = PlayerPos;
+                    Nova(p.X, p.Z, 9, Palette.Of(School.Arcane).Glow, 0.8f);
+                    Flash(p + Vector3.Up * 2, new Color("#ffe0ff"), 30, 1.2f, 18);
+                    Cam?.AddTrauma(0.3f);
+                    break;
+                }
+                case Ev.Dash e:
+                    for (int i = 0; i < 14; i++)
+                    {
+                        float t = i / 14f;
+                        double x = e.X0 + (e.X1 - e.X0) * t, z = e.Z0 + (e.Z1 - e.Z0) * t;
+                        Sparks.Spawn(V(x, Y(x, z) + 0.9, z), Vector3.Zero, 0.35f, 0.5f, new Color(0.5f, 0.65f, 1.3f), new Color(0.1f, 0.14f, 0.4f), 0.1f, alpha: 0.35f);
+                        Smoke.Spawn(V(x, Y(x, z) + 0.15, z), new Vector3(0, 0.4f, 0), 0.6f, 0.3f, new Color("#4a4038"), sizeEnd: 0.7f, alpha: 0.35f);
+                    }
+                    break;
+                case Ev.Ability e:
+                    Ability(e);
+                    break;
+                case Ev.Status e:
+                    if (e.Kind == StatusKind.Frozen)
+                        for (int i = 0; i < 8; i++) Sparks.Spawn(V(e.X, Y(e.X, e.Z) + 0.8, e.Z), new Vector3((R() - 0.5f) * 2, R() * 2, (R() - 0.5f) * 2), 0.5f, 0.1f, new Color(1.6f, 2.2f, 2.6f), drag: 3);
+                    break;
+                case Ev.Shake e:
+                    Cam?.AddTrauma((float)e.Amount);
+                    break;
+            }
+        }
+    }
+
+    void Ability(Ev.Ability e)
+    {
+        float gy = Y(e.X, e.Z);
+        var at = V(e.X, gy, e.Z);
+        switch (e.Id)
+        {
+            case "shield_bash":
+                Hits.Arc(at + Vector3.Up * 0.9f, (float)(Math.PI / 2 - e.Angle), (float)e.Radius, 0.25f, false, Palette.Of(School.Holy).Core, Palette.Of(School.Physical).Glow);
+                Burst(at + new Vector3((float)Math.Cos(e.Angle) * 1.5f, 1, (float)Math.Sin(e.Angle) * 1.5f), School.Physical, 20, 6);
+                Flash(at + Vector3.Up * 1.2f, new Color("#fff0d0"), 10, 0.3f);
+                break;
+            case "leap":
+                Ring(e.X, e.Z, (float)e.Radius, Palette.HostileRim * 0.3f + Palette.Of(School.Physical).Glow, 0.42f, true);
+                break;
+            default:
+            {
+                // A war cry, a ward, a vanishing: a ring from where they stand.
+                var school = e.Id switch { "bulwark" => School.Holy, "shadowstep" or "vanish" => School.Shadow, "frost_nova" => School.Frost, "warcry" => School.Fire, _ => School.Arcane };
+                Nova(e.X, e.Z, (float)Math.Max(2.4, e.Radius), Palette.Of(school).Glow, 0.4f);
+                Flash(at + Vector3.Up * 1.4f, Palette.Of(school).Light, 6, 0.35f);
+                break;
+            }
+        }
+    }
+
+    /* -------------------------------------------------------------- frame -- */
+
+    public void Update(Battle b, double dt, double now)
+    {
+        time = now;
+        float fdt = (float)dt;
+        for (int i = pending.Count - 1; i >= 0; i--)
+            if (pending[i].At <= now) { var fn = pending[i].Fn; pending.RemoveAt(i); fn(); }
+        for (int i = 0; i < flashes.Count; i++)
+        {
+            var (l, t, life, peak) = flashes[i];
+            if (t >= 1) continue;
+            t = Mathf.Min(1, t + fdt / life);
+            l.LightEnergy = peak / Mathf.Pi * (1 - t) * (1 - t);
+            if (t >= 1) l.Visible = false;
+            flashes[i] = (l, t, life, peak);
+        }
+        foreach (var m in marks)
+        {
+            if (!m.Active) continue;
+            m.T += fdt / Mathf.Max(0.05f, m.Life);
+            if (m.T >= 1) { m.Active = false; m.Decal.Visible = false; if (m.Fill != null) m.Fill.Visible = false; continue; }
+            if (m.Grow)
+            {
+                float r = m.Radius * (0.25f + 0.75f * Mathf.Sqrt(m.T));
+                m.Decal.Size = new Vector3(r * 2, 4, r * 2);
+                m.Decal.Modulate = m.Color with { A = 1 - m.T };
+            }
+            else
+            {
+                // Telegraphs: steady, a quick flare at the end.
+                m.Decal.Modulate = m.Color with { A = m.T > 0.85f ? 1 : 0.75f + 0.1f * Mathf.Sin((float)now * 12) };
+                if (m.Progress && m.Fill != null) { float r = m.Radius * m.T; m.Fill.Size = new Vector3(r * 2, 4, r * 2); }
+            }
+        }
+        for (int i = 0; i < beams.Count; i++)
+        {
+            var (m, mat, t, life) = beams[i];
+            if (t >= 1) continue;
+            t += fdt / life;
+            mat.SetShaderParameter("alpha", Mathf.Max(0, 1 - t));
+            if (t >= 1) m.Visible = false;
+            beams[i] = (m, mat, t, life);
+        }
+        Zones(b, now);
+        Projectiles(b, fdt, now);
+        Pickups(b, now);
+        Sparks.Step(fdt);
+        Smoke.Step(fdt);
+    }
+
+    /// <summary>Ground left burning, blighted, hallowed: a disc for each while it lasts.</summary>
+    void Zones(Battle b, double now)
+    {
+        var alive = new HashSet<int>();
+        foreach (var z in b.Zones.Living())
+        {
+            alive.Add(z.Id);
+            var school = Palette.OfArt(z.Art);
+            var col = z.Owner == Sim.Side.Enemy ? Palette.HostileDanger * 0.6f : Palette.Of(school).Glow * 0.5f;
+            if (!zoneMarks.TryGetValue(z.Id, out var m) || !m.Active)
+            {
+                m = Ground(z.X, z.Z, (float)z.Radius, discTex!, col, 1e6f, 1.2f);
+                zoneMarks[z.Id] = m;
+            }
+            m.T = 0;
+            m.Decal.Position = V(z.X, heightAt(z.X, z.Z), z.Z);
+            m.Decal.Size = new Vector3((float)z.Radius * 2, 4, (float)z.Radius * 2);
+            float fade = (float)Math.Min(1, Math.Min(z.Age / 0.2, (z.Life - z.Age) / 0.4));
+            m.Decal.Modulate = col with { A = Mathf.Max(0, fade) * (0.55f + 0.15f * Mathf.Sin((float)now * 3 + z.Id)) };
+            if (R() < 0.3f)
+            {
+                float a = R() * Mathf.Tau, d = (float)z.Radius * Mathf.Sqrt(R());
+                var pal = Palette.Of(school);
+                double x = z.X + Mathf.Cos(a) * d, zz = z.Z + Mathf.Sin(a) * d;
+                Sparks.Spawn(V(x, Y(x, zz) + 0.1, zz), new Vector3(0, 0.8f + R(), 0), 0.8f, 0.07f, z.Owner == Sim.Side.Enemy ? Palette.HostileRim : pal.Glow, pal.Dim, 0.01f, drag: 1);
+            }
+        }
+        var gone = new List<int>();
+        foreach (var (id, m) in zoneMarks) if (!alive.Contains(id)) { m.Active = false; m.Decal.Visible = false; gone.Add(id); }
+        foreach (var id in gone) zoneMarks.Remove(id);
+    }
+
+    void Projectiles(Battle b, float dt, double now)
+    {
+        orbs.Begin(); steel.Begin(); shards.Begin(); rings.Begin();
+        foreach (var p in b.Projectiles.Living())
+        {
+            var art = p.Art;
+            var school = p.School == School.Physical ? Palette.OfArt(art) : p.School;
+            var pal = Palette.Of(school);
+            bool hostile = p.Owner == Sim.Side.Enemy;
+            float gy = Y(p.X, p.Z);
+            var at = V(p.X, gy + p.Y, p.Z);
+            float heading = Mathf.Atan2((float)p.Vx, (float)p.Vz);
+            float trail = 1;
+            if (art.StartsWith("dagger") || art.StartsWith("arrow") || art == "bolt_bone" || art.StartsWith("axe"))
+            {
+                var basis = new Godot.Basis(Vector3.Up, heading);
+                if (art.StartsWith("dagger")) basis = basis * new Godot.Basis(Vector3.Right, (float)(now * 18 + p.Id));
+                if (art.StartsWith("axe")) basis = new Godot.Basis(Vector3.Up, (float)(now * 14 + p.Id)) * Godot.Basis.FromScale(new Vector3(3, 1.5f, 1.2f));
+                steel.Add(new Transform3D(basis, at), hostile ? new Color(0.5f, 0.42f, 0.36f) : new Color(0.75f, 0.72f, 0.68f));
+                trail = 0.3f;
+            }
+            else if (art.StartsWith("disc") || art.StartsWith("chakram"))
+            {
+                float s = art.StartsWith("disc") ? 1.1f : 0.8f;
+                rings.Add(new Transform3D(new Godot.Basis(Vector3.Up, (float)(now * 16)).Scaled(Vector3.One * s), at), pal.Glow * 0.5f);
+                trail = 0.5f;
+            }
+            else if (art.StartsWith("shard") || art == "spear_ice")
+            {
+                float s = art == "spear_ice" ? 2.4f : 1;
+                var basis = new Godot.Basis(Vector3.Up, heading) * new Godot.Basis(Vector3.Right, Mathf.Pi / 2);
+                shards.Add(new Transform3D(basis.Scaled(Vector3.One * s), at), pal.Glow * 0.6f);
+                trail = 0.6f;
+            }
+            else if (art == "firepot")
+            {
+                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * 0.45f), at), new Color(1.6f, 0.7f, 0.2f));
+                trail = 0.6f;
+            }
+            else
+            {
+                float size = art is "mote" or "mote_cascade" or "mote_star" or "ember_seeker" ? 0.34f : art is "star" ? 1.0f : art is "cinder" or "living_flame" ? 0.7f : art.StartsWith("herd") ? 1.3f : art.StartsWith("crescent") ? 1.6f : 0.5f;
+                var core = hostile ? Palette.HostileRim : pal.Core;
+                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * size), at), core);
+                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * size * 2.2f), at), (hostile ? Palette.HostileDanger : pal.Glow) * 0.35f);
+            }
+            // A trail of its own light behind it.
+            trailAcc.TryGetValue(p.Id, out var acc);
+            acc += dt * 40 * trail;
+            while (acc >= 1)
+            {
+                acc -= 1;
+                Sparks.Spawn(at + new Vector3((R() - 0.5f) * 0.08f, (R() - 0.5f) * 0.08f, (R() - 0.5f) * 0.08f), Vector3.Zero, 0.25f + 0.2f * trail, 0.12f * (0.5f + trail), hostile ? Palette.HostileRim : pal.Glow, pal.Dim, 0.01f);
+            }
+            trailAcc[p.Id] = acc;
+        }
+        if (trailAcc.Count > 2000) trailAcc.Clear();
+        orbs.End(); steel.End(); shards.End(); rings.End();
+    }
+
+    static readonly Color[] EmberTiers = { new(2.4f, 1.0f, 0.25f), new(2.6f, 1.7f, 0.45f), new(2.8f, 2.6f, 1.6f), new(1.6f, 2.2f, 2.8f) };
+
+    void Pickups(Battle b, double now)
+    {
+        embers.Begin(); coins.Begin(); flasks.Begin(); bags.Begin(); lootBeams.Begin();
+        foreach (var p in b.Pickups.Living())
+        {
+            float gy = Y(p.X, p.Z);
+            float bob = Mathf.Sin((float)(now * 3 + p.Id)) * 0.08f;
+            var spin = new Godot.Basis(Vector3.Up, (float)(now * 2.2 + p.Id));
+            switch (p.Kind)
+            {
+                case PickupKind.Ember:
+                {
+                    int tier = Math.Clamp(p.Tier, 0, 3);
+                    float s = new[] { 0.16f, 0.21f, 0.27f, 0.34f }[tier];
+                    embers.Add(new Transform3D(spin.Scaled(Vector3.One * s), V(p.X, gy + 0.45 + bob, p.Z)), EmberTiers[tier] * 0.5f);
+                    break;
+                }
+                case PickupKind.Gold:
+                    coins.Add(new Transform3D(spin * new Godot.Basis(Vector3.Right, Mathf.Pi / 2), V(p.X, gy + 0.35 + bob, p.Z)), new Color(1.0f, 0.75f, 0.3f));
+                    break;
+                case PickupKind.Heal:
+                    flasks.Add(new Transform3D(spin, V(p.X, gy + 0.35 + bob, p.Z)), new Color(1.2f, 0.12f, 0.1f));
+                    break;
+                case PickupKind.Magnet:
+                    flasks.Add(new Transform3D(spin.Scaled(Vector3.One * 1.3f), V(p.X, gy + 0.5 + bob, p.Z)), new Color(0.4f, 0.8f, 1.8f));
+                    break;
+                default:
+                {
+                    // Gear and what else is worth carrying: a light to find it by.
+                    var col = Palette.Rarity[Math.Clamp(p.Tier, 0, Palette.Rarity.Length - 1)];
+                    if (p.Kind == PickupKind.Quest) col = new Color("#ffd46a");
+                    bags.Add(new Transform3D(spin, V(p.X, gy + 0.16, p.Z)), p.Kind == PickupKind.Chest ? new Color(0.5f, 0.32f, 0.16f) : new Color(0.42f, 0.34f, 0.26f));
+                    float h = p.Kind is PickupKind.Material ? 1.4f : 3.2f;
+                    lootBeams.Add(new Transform3D(Godot.Basis.Identity.Scaled(new Vector3(1, h, 1)), V(p.X, gy + h / 2, p.Z)), col);
+                    break;
+                }
+            }
+        }
+        embers.End(); coins.End(); flasks.End(); bags.End(); lootBeams.End();
+    }
+}

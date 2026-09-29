@@ -15,16 +15,26 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public static class Arms
 {
-    public sealed record Spec(string File, float Length, float Grip, bool Flip = false, float Roll = 0);
+    /// <summary>A weapon: its file (and the node in it, where a file holds
+    /// several), its length in life, where along it the hand grips (0 the
+    /// butt, 1 the tip); held pistol-fashion (a crossbow) or not.</summary>
+    public sealed record Spec(string File, float Length, float Grip, bool Flip = false, float Roll = 0, string? Node = null, bool Pistol = false);
 
     public static readonly Dictionary<string, Spec> All = new()
     {
+        ["chevalier_sword"] = new("chevalier_sword", 1.0f, 0.1f),
         ["viking_sword"] = new("viking_sword", 0.92f, 0.13f),
         ["longsword"] = new("longsword", 1.05f, 0.22f, Flip: true),
         ["zweihander"] = new("zweihander", 1.6f, 0.2f),
         ["mace"] = new("mace", 0.75f, 0.12f),
         ["viking_axe"] = new("viking_axe", 0.8f, 0.15f, Roll: Mathf.Pi),
-        ["shield_round"] = new("shield_round", 0.52f, 0.5f),
+        ["snake_axe"] = new("snake_axe", 1.3f, 0.22f),
+        ["mage_staff"] = new("mage_staff", 1.75f, 0.45f),
+        ["short_staff"] = new("mage_staff", 1.1f, 0.3f),
+        ["crossbow"] = new("crossbow", 0.85f, 0.3f, Pistol: true),
+        ["shield_round"] = new("shield_round", 0.66f, 0.5f),
+        ["daggers"] = new("daggers", 0.4f, 0.2f, Node: "Cube004"),
+        ["dagger_b"] = new("daggers", 0.4f, 0.2f, Node: "Cube00401"),
     };
 
     /// <summary>A weapon, normalised (a new node each call).</summary>
@@ -32,6 +42,19 @@ public static class Arms
     {
         var spec = All[id];
         var model = GD.Load<PackedScene>($"res://assets/weapons/{spec.File}.glb").Instantiate<Node3D>();
+        if (spec.Node != null)
+        {
+            // One weapon of several in the file: the rest go.
+            void Keep(Node n)
+            {
+                foreach (var c in n.GetChildren())
+                {
+                    if (c is MeshInstance3D m && m.Name != spec.Node) { m.QueueFree(); m.GetParent().RemoveChild(m); continue; }
+                    Keep(c);
+                }
+            }
+            Keep(model);
+        }
         var pts = new List<Vector3>();
         void Walk(Node n, Transform3D at)
         {
@@ -139,6 +162,13 @@ public static class Arms
         mount.Basis = new Basis(x, y, x.Cross(y));
         mount.Position = forearm ? new Vector3(0, 0.14f, 0) : new Vector3(-0.025f, 0.075f, 0);
         var w = Make(id);
+        if (All[id].Pistol)
+        {
+            // Held pistol-fashion: the stock along the fingers, its top out
+            // of the thumb side, sitting on the fist rather than through it.
+            w.Basis = new Basis(new Vector3(0, 0, 1), new Vector3(1, 0, 0), new Vector3(0, 1, 0));
+            w.Position = new Vector3(0, 0.05f, 0);
+        }
         mount.AddChild(w);
         return mount;
     }

@@ -42,11 +42,11 @@ public partial class Hits : Node3D
         var splat = SplatTexture();
         for (int i = 0; i < 48; i++)
         {
-            var d = new Decal { TextureAlbedo = splat, Size = new Vector3(1.4f, 1.2f, 1.4f), Visible = false, UpperFade = 0.2f, LowerFade = 0.4f, AlbedoMix = 0.92f, Modulate = new Color(0.55f, 0.06f, 0.05f) };
+            var d = new Decal { CullMask = 1, TextureAlbedo = splat, Size = new Vector3(1.4f, 1.2f, 1.4f), Visible = false, UpperFade = 0.2f, LowerFade = 0.4f, AlbedoMix = 0.92f, Modulate = new Color(0.55f, 0.06f, 0.05f) };
             AddChild(d);
             stains.Add(d);
         }
-        for (int i = 0; i < 24; i++)
+        for (int i = 0; i < 48; i++)
         {
             var l = new Label3D
             {
@@ -58,7 +58,7 @@ public partial class Hits : Node3D
             numbers.Add((l, 1));
         }
         var shader = GD.Load<Shader>("res://shaders/slash.gdshader");
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 10; i++)
         {
             var mat = new ShaderMaterial { Shader = shader };
             var m = new MeshInstance3D { Mesh = ArcMesh(1.6f), MaterialOverride = mat, Visible = false, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
@@ -114,11 +114,17 @@ public partial class Hits : Node3D
         return m;
     }
 
-    public void Spray(Vector3 at, Vector3 away)
+    static readonly Color Blood = new("#6a0c0a");
+
+    /// <summary>Blood thrown from a wound (dust from the dry dead: `color`).</summary>
+    public void Spray(Vector3 at, Vector3 away, Color? color = null, float amount = 1)
     {
         var g = sprays[nextSpray++ % sprays.Count];
         g.GlobalPosition = at;
-        ((ParticleProcessMaterial)g.ProcessMaterial).Direction = (away + Vector3.Up * 1.2f).Normalized();
+        var pm = (ParticleProcessMaterial)g.ProcessMaterial;
+        pm.Direction = (away + Vector3.Up * 1.2f).Normalized();
+        pm.Color = color ?? Blood;
+        g.AmountRatio = Mathf.Clamp(amount, 0.2f, 1);
         g.Restart();
         g.Emitting = true;
     }
@@ -132,13 +138,17 @@ public partial class Hits : Node3D
         d.Visible = true;
     }
 
-    public void Number(Vector3 at, int amount, bool crit)
+    public void Number(Vector3 at, int amount, bool crit) =>
+        Text(at, crit ? $"{amount}!" : amount.ToString(), crit ? new Color(1.6f, 1.15f, 0.4f) : new Color(1, 0.94f, 0.86f), crit ? 88 : 60);
+
+    /// <summary>A word or number that rises from where something happened and fades.</summary>
+    public void Text(Vector3 at, string text, Color color, int size = 60)
     {
         int i = nextNumber++ % numbers.Count;
         var l = numbers[i].Label;
-        l.Text = crit ? $"{amount}!" : amount.ToString();
-        l.FontSize = crit ? 88 : 60;
-        l.Modulate = crit ? new Color(1.6f, 1.15f, 0.4f) : new Color(1, 0.94f, 0.86f);
+        l.Text = text;
+        l.FontSize = size;
+        l.Modulate = color;
         l.GlobalPosition = at + new Vector3(rng.RandfRange(-0.3f, 0.3f), 0, 0);
         l.Visible = true;
         numbers[i] = (l, 0);
@@ -146,10 +156,13 @@ public partial class Hits : Node3D
 
     /// <summary>The blade's arc round `at`, facing `facing`, sweeping over
     /// `life` seconds.</summary>
-    public void Arc(Vector3 at, float facing, float reach, float life = 0.22f, bool mirror = false)
+    public void Arc(Vector3 at, float facing, float reach, float life = 0.22f, bool mirror = false, Color? core = null, Color? glow = null)
     {
         int i = nextArc++ % arcs.Count;
         var (m, mat, _, _) = arcs[i];
+        static Vector3 V(Color c) => new(c.R, c.G, c.B);
+        mat.SetShaderParameter("core", V(core ?? new Color(2.2f, 2.03f, 1.72f)));
+        mat.SetShaderParameter("glow", V(glow ?? new Color(1.4f, 0.97f, 0.49f)));
         m.GlobalPosition = at;
         m.Basis = new Basis(Vector3.Up, facing).Scaled(new Vector3(mirror ? -reach : reach, reach, reach));
         m.Visible = true;

@@ -104,4 +104,17 @@ public static class Dressing
         return root;
     }
 
+    /// <summary>One kit piece as a node of its own (set down in play), or
+    /// null if its kit is not in the Godot game.</summary>
+    public static Node3D? Piece(string id)
+    {
+        int slash = id.IndexOf('/');
+        if (slash < 0) return null;
+        string kit = id[..slash], piece = id[(slash + 1)..];
+        if (!ResourceLoader.Exists($"res://assets/env/{kit}/{piece}.gltf")) return null;
+        var root = new Node3D { Name = piece };
+        bool foot = kit is "village" or "custom";
+        foreach (var (mesh, local) in PartsOf(kit, piece)) root.AddChild(new MeshInstance3D { Mesh = Looked(mesh, KitLook.Look.Plain, foot), Transform = local });
+        return root;
+    }
 }
