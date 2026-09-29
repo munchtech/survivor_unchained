@@ -73,12 +73,14 @@ public static class Campfire
         };
     }
 
+    /// <summary>A colour over a particle's life; HDR, so a flame can be
+    /// brighter than white and bloom.</summary>
     static GradientTexture1D Ramp(params (float At, Color C)[] stops)
     {
         var g = new Gradient();
         g.Offsets = System.Array.ConvertAll(stops, s => s.At);
         g.Colors = System.Array.ConvertAll(stops, s => s.C);
-        return new GradientTexture1D { Gradient = g };
+        return new GradientTexture1D { Gradient = g, UseHdr = true };
     }
 
     static CurveTexture Curve(params (float At, float V)[] pts)
@@ -97,7 +99,7 @@ public static class Campfire
             Gravity = new Vector3(0, 0.6f, 0), DampingMin = 0.5f, DampingMax = 1f,
             ScaleMin = 0.3f * size, ScaleMax = 0.55f * size,
             ScaleCurve = Curve((0, 0.7f), (0.2f, 1f), (1, 0.05f)),
-            ColorRamp = Ramp((0, new Color(2.4f, 1.5f, 0.6f, 0)), (0.12f, new Color(2.2f, 1.0f, 0.3f, 0.8f)), (0.55f, new Color(1.5f, 0.42f, 0.08f, 0.5f)), (1, new Color(0.4f, 0.08f, 0.02f, 0))),
+            ColorRamp = Ramp((0, new Color(1.9f, 1.1f, 0.45f, 0)), (0.12f, new Color(1.7f, 0.72f, 0.18f, 0.55f)), (0.55f, new Color(1.1f, 0.28f, 0.05f, 0.35f)), (1, new Color(0.3f, 0.05f, 0.01f, 0))),
             TurbulenceEnabled = true, TurbulenceNoiseStrength = 0.6f, TurbulenceNoiseScale = 2.5f, TurbulenceInfluenceMin = 0.05f, TurbulenceInfluenceMax = 0.15f,
         };
         return new GpuParticles3D
@@ -135,7 +137,9 @@ public static class Campfire
             Gravity = new Vector3(0.25f, 0.15f, 0), ScaleMin = 0.8f, ScaleMax = 1.4f,
             ScaleCurve = Curve((0, 0.5f), (1, 2.6f)),
             AngleMin = -180, AngleMax = 180, AngularVelocityMin = -20, AngularVelocityMax = 20,
-            ColorRamp = Ramp((0, new Color(0.12f, 0.11f, 0.1f, 0)), (0.2f, new Color(0.14f, 0.13f, 0.12f, 0.35f)), (1, new Color(0.2f, 0.2f, 0.22f, 0))),
+            // Dark: night smoke is barely lit (these are linear values; 0.14
+            // would show as a pale grey).
+            ColorRamp = Ramp((0, new Color(0.03f, 0.028f, 0.025f, 0)), (0.2f, new Color(0.035f, 0.032f, 0.03f, 0.45f)), (1, new Color(0.045f, 0.045f, 0.05f, 0))),
         };
         return new GpuParticles3D
         {

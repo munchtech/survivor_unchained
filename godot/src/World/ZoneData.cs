@@ -21,7 +21,7 @@ public sealed class ZoneData
     public readonly List<(string Id, Transform3D At)> Props = new();
     public readonly List<LightSpec> Lights = new();
 
-    public sealed record FloraGroup(string Kind, string Piece, Transform3D[] At);
+    public sealed record FloraGroup(string Kind, string Piece, Transform3D[] At, KitLook.Look Look);
     public sealed record LightSpec(Vector3 At, Color Color, float Intensity, float Distance, float Flicker, bool On);
 
     public float Half => Size / 2;
@@ -50,7 +50,20 @@ public sealed class ZoneData
             int n = g.GetProperty("count").GetInt32();
             var list = new Transform3D[n];
             for (int i = 0; i < n; i++, at += 12) list[i] = Read(floats, at);
-            Flora.Add(new FloraGroup(g.GetProperty("kind").GetString()!, g.GetProperty("piece").GetString()!, list));
+            // The kind's look: wind, its leaves' colours (sRGB hex, as the web
+            // game writes them; linear here, as three.js makes them) and moss.
+            Color? la = null, lb = null;
+            float amount = 0;
+            if (g.TryGetProperty("leaves", out var lv) && lv.ValueKind == JsonValueKind.Object)
+            {
+                la = new Color(lv.GetProperty("a").GetString()!).SrgbToLinear();
+                lb = new Color(lv.GetProperty("b").GetString()!).SrgbToLinear();
+                amount = lv.GetProperty("amount").GetSingle();
+            }
+            var look = new KitLook.Look(
+                g.TryGetProperty("wind", out var w) ? w.GetSingle() : 0, la, lb, amount,
+                g.TryGetProperty("moss", out var mo) && mo.ValueKind == JsonValueKind.Number ? mo.GetSingle() : 0);
+            Flora.Add(new FloraGroup(g.GetProperty("kind").GetString()!, g.GetProperty("piece").GetString()!, list, look));
         }
         using var props = JsonDocument.Parse(FileAccess.GetFileAsString($"{dir}/props.json"));
         foreach (var p in props.RootElement.EnumerateArray())

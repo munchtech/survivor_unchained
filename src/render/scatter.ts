@@ -125,7 +125,7 @@ function kitPartsOf(kind: FloraKind, v: number): Part[] {
     geo.computeBoundingSphere();
     // Which piece, at what scale (tools/godot/export_zone.mjs reads it). A
     // clone shares its source's userData object: this one gets its own.
-    geo.userData = { flora: { kind, piece: set.pieces[v], sx: k, sy: k * (set.squash ?? 1) } };
+    geo.userData = { flora: { kind, piece: set.pieces[v], sx: k, sy: k * (set.squash ?? 1), wind: spec.wind, leaves: set.leaves, moss: set.moss } };
     keep(geo);
     parts!.push({ geo, mat: kitMaterial(kind, m.material as THREE.MeshStandardMaterial) });
   });

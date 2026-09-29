@@ -8,7 +8,8 @@
  *   terrain.json   size, resolution, splat resolution, forest-floor share
  *   heights.bin    float32 heights, row by row from -z, -x
  *   splat.png      the paint: r dirt, g stone, b blight, a mud
- *   flora.json     per kit piece: kind, scale baked into it, instance count
+ *   flora.json     per kit piece: kind, scale baked into it, wind, leaf
+ *                  recolour and moss (the kind's look), instance count
  *   flora.bin      float32 transforms, 12 per instance (basis x, y, z, origin),
  *                  in flora.json's order
  *   props.json     kit pieces placed one by one: kit, name, transform
@@ -58,7 +59,7 @@ const data = await pg.evaluate(async () => {
       s.makeScale(fl.sx, fl.sy, fl.sx);
       const list = [];
       for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, m); m.premultiply(o.matrixWorld).multiply(s); list.push(...tf(m)); }
-      flora.set(k, { mesh: o.name, kind: fl.kind, piece: fl.piece, sx: fl.sx, sy: fl.sy, count: o.count, t: list });
+      flora.set(k, { mesh: o.name, kind: fl.kind, piece: fl.piece, sx: fl.sx, sy: fl.sy, wind: fl.wind, leaves: fl.leaves ?? null, moss: fl.moss ?? 0, count: o.count, t: list });
       return;
     }
     if (o.userData?.env) props.push({ id: o.userData.env, t: tf(o.matrixWorld) });
@@ -76,7 +77,7 @@ const data = await pg.evaluate(async () => {
 fs.writeFileSync(`${out}/terrain.json`, JSON.stringify(data.terrain, null, 1) + '\n');
 fs.writeFileSync(`${out}/heights.bin`, Buffer.from(data.heights, 'base64'));
 fs.writeFileSync(`${out}/splat.png`, Buffer.from(data.splat, 'base64'));
-const floraMeta = data.flora.map(({ kind, piece, sx, sy, count }) => ({ kind, piece, sx, sy, count }));
+const floraMeta = data.flora.map(({ kind, piece, sx, sy, wind, leaves, moss, count }) => ({ kind, piece, sx, sy, wind, leaves, moss, count }));
 const all = new Float32Array(data.flora.reduce((n, f) => n + f.t.length, 0));
 let at = 0;
 for (const f of data.flora) { all.set(f.t, at); at += f.t.length; }

@@ -75,6 +75,7 @@ public static class People
                 if (c is MeshInstance3D mi)
                 {
                     from.RemoveChild(mi);
+                    mi.Owner = null;
                     skel.AddChild(mi);
                     mi.Skeleton = "..";
                 }

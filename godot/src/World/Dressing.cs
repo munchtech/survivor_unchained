@@ -38,6 +38,21 @@ public static class Dressing
         return list;
     }
 
+    static readonly Dictionary<string, Mesh> looked = new();
+
+    /// <summary>A piece's mesh with its kind's look (KitLook): one copy per
+    /// mesh and look, its surfaces' materials swapped.</summary>
+    static Mesh Looked(Mesh mesh, KitLook.Look look)
+    {
+        var key = $"{mesh.GetInstanceId()}|{look}";
+        if (looked.TryGetValue(key, out var m)) return m;
+        m = (Mesh)mesh.Duplicate();
+        for (int i = 0; i < m.GetSurfaceCount(); i++)
+            if (m.SurfaceGetMaterial(i) is Material mat) m.SurfaceSetMaterial(i, KitLook.For(mat, look));
+        looked[key] = m;
+        return m;
+    }
+
     public static Node3D Flora(ZoneData z)
     {
         var root = new Node3D { Name = "Flora" };
@@ -46,7 +61,7 @@ public static class Dressing
             var low = Low.Contains(g.Kind);
             foreach (var (mesh, local) in PartsOf("nature", g.Piece))
             {
-                var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = mesh, InstanceCount = g.At.Length };
+                var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = Looked(mesh, g.Look), InstanceCount = g.At.Length };
                 for (int i = 0; i < g.At.Length; i++) mm.SetInstanceTransform(i, g.At[i] * local);
                 root.AddChild(new MultiMeshInstance3D
                 {

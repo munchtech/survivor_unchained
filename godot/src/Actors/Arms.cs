@@ -24,7 +24,7 @@ public static class Arms
         ["zweihander"] = new("zweihander", 1.6f, 0.2f),
         ["mace"] = new("mace", 0.75f, 0.12f),
         ["viking_axe"] = new("viking_axe", 0.8f, 0.15f, Roll: Mathf.Pi),
-        ["shield_round"] = new("shield_round", 0.66f, 0.5f),
+        ["shield_round"] = new("shield_round", 0.52f, 0.5f),
     };
 
     /// <summary>A weapon, normalised (a new node each call).</summary>
