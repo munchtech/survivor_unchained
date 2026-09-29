@@ -53,7 +53,7 @@ public static class Vat
 {
     const int MaxFrames = 48;
     static readonly Dictionary<string, VatAsset> cache = new();
-    static Shader? shader;
+    static Shader? shader, cutShader;
 
     /// <summary>The roles every crowd kind plays, and which loop.</summary>
     static bool Loops(string role) => role is "move" or "idle" or "burrow" or "cast";
@@ -64,9 +64,14 @@ public static class Vat
     {
         if (cache.TryGetValue(spec.Key, out var hit)) return hit;
         ulong t0 = Time.GetTicksMsec();
-        var creature = Creature.Of(spec.Key);
-        var kept = Load(spec.Key);
-        var asset = kept != null ? Build(kept) : creature != null ? BakeCreature(spec, creature) : BakePerson(spec, host);
+        // Wolves of every kind share one bake: their tints and sizes are the crowd's.
+        var beast = Beasts.Of(spec.Key);
+        var key = beast?.Key ?? spec.Key;
+        if (cache.TryGetValue(key, out var shared)) { cache[spec.Key] = shared; return shared; }
+        var creature = beast == null ? Creature.Of(spec.Key) : null;
+        var kept = Load(key);
+        var asset = kept != null ? Build(kept) : beast != null ? BakeBeast(beast, host) : creature != null ? BakeCreature(spec, creature) : BakePerson(spec, host);
+        cache[key] = asset;
         cache[spec.Key] = asset;
         if (Args.Has("log"))
         {
@@ -96,6 +101,8 @@ public static class Vat
         public bool Dyed;
         public Vector3 DyeColor, DyeH, DyeS, DyeV;
         public float DyeLum = 1;
+        /// <summary>Fur and hair cards: cut where the texture's alpha falls below this (-1: solid).</summary>
+        public float Cut = -1;
     }
 
     /// <summary>Poses every vertex of every surface (concatenated) for a role at t.</summary>
@@ -123,21 +130,97 @@ public static class Vat
         public List<int[]> Lods = new();
     }
 
-    /// <summary>Vertices a crowd figure may have in all (the web game's budget).</summary>
-    const int Budget = 4000;
+    /// <summary>Vertices a crowd person may have in all. (The web game held
+    /// them to 4,000 for WebGL; a desktop can give a figure more shape.)</summary>
+    const int Budget = 6000;
+
+    /// <summary>What a rigged thing plays for a crowd role: a stretch of a
+    /// clip (or one moment of it, held), and moves composed over it (a lunge,
+    /// a fall) where the model has no clip for the role. Seam: a looped
+    /// stretch of a longer clip, its end eased into its start.</summary>
+    public sealed record Role(string Name, string Clip, double From, double Length, Func<double, Moves>? Over = null, bool Hold = false, bool Seam = false);
+
+    /// <summary>Moves over a pose, in the model's own space (+Z forward, +Y up,
+    /// +X its left): bones turned about their own origins (Euler XYZ, radians)
+    /// and moved, and the whole body turned and moved.</summary>
+    public sealed class Moves
+    {
+        public readonly Dictionary<string, (Vector3 Turn, Vector3 Move)> Bones = new();
+        public Vector3 Turn, Move;
+        public Moves Bone(string name, double x, double y = 0, double z = 0) { var o = Bones.GetValueOrDefault(name); Bones[name] = (new Vector3((float)x, (float)y, (float)z), o.Move); return this; }
+        public Moves Shift(string name, double x, double y, double z) { var o = Bones.GetValueOrDefault(name); Bones[name] = (o.Turn, new Vector3((float)x, (float)y, (float)z)); return this; }
+    }
+
+    static Godot.Basis Euler(Vector3 r) => new Godot.Basis(Vector3.Right, r.X) * new Godot.Basis(Vector3.Up, r.Y) * new Godot.Basis(new Vector3(0, 0, 1), r.Z);
 
     static VatAsset BakePerson(Visuals.Spec spec, Node host)
     {
-        ulong t0 = Time.GetTicksMsec();
         var pv = new PersonView(spec.Person!, spec.Arms, 0.8 * spec.Scale);
         host.AddChild(pv);
-        ulong tBuilt = Time.GetTicksMsec();
         var person = pv.Person;
-        var skel = person.Skeleton;
-        var anim = person.Anim;
-        var parts = new List<Skinned>();
+        var roles = new List<Role>();
+        var c = spec.Clips;
+        var lib = People.Clips();
+        foreach (var (role, clip) in new[] { ("move", c.Move), ("idle", c.Idle), ("attack", c.Attack), ("windup", c.Windup), ("die", c.Die), ("rise", c.Rise), ("hit", c.Hit), ("cast", c.Cast) })
+        {
+            if (clip == null) continue;
+            var name = People.Resolve(clip);
+            roles.Add(new Role(role, name, 0, lib.HasAnimation(name) ? lib.GetAnimation(name).Length : 1));
+        }
+        var asset = BakeRig(spec.Key, pv, person.Skeleton, person.Anim, person.Meshes, roles, 15, Budget, null);
+        host.RemoveChild(pv);
+        pv.QueueFree();
+        return asset;
+    }
 
-        foreach (var mi in person.Meshes)
+    /// <summary>A modelled beast (Beasts.cs): its glTF, normalised to face +Z
+    /// with its feet at 0 and its body over the origin, at its height.</summary>
+    static VatAsset BakeBeast(Beasts.Def def, Node host)
+    {
+        var view = new Node3D { Name = $"bake:{def.Key}" };
+        var model = GD.Load<PackedScene>(def.Path).Instantiate<Node3D>();
+        view.AddChild(model);
+        host.AddChild(view);
+        var skel = FindSkeleton(model)!;
+        var anim = (AnimationPlayer)model.FindChild("AnimationPlayer", true, false)!;
+        var meshes = new List<MeshInstance3D>();
+        foreach (var mi in Meshes(model)) if (mi.Skin != null || mi.Skeleton != "") meshes.Add(mi);
+        // Where it stands: from its bones in its first idle pose.
+        var idle = def.Roles.Find(r => r.Name == "idle")!;
+        anim.Play(idle.Clip, 0);
+        anim.Seek(idle.From, true);
+        var toView = view.GlobalTransform.AffineInverse() * skel.GlobalTransform;
+        Vector3 At(string bone) => toView * skel.GetBoneGlobalPose(skel.FindBone(bone)).Origin;
+        Vector3 pelvis = At(def.Pelvis), head = At(def.Head);
+        float low = float.MaxValue, high = float.MinValue;
+        for (int b = 0; b < skel.GetBoneCount(); b++) { var y = (toView * skel.GetBoneGlobalPose(b).Origin).Y; low = Math.Min(low, y); high = Math.Max(high, y); }
+        var fwd = new Vector3(head.X - pelvis.X, 0, head.Z - pelvis.Z).Normalized();
+        float yaw = Mathf.Atan2(fwd.X, fwd.Z);
+        float scale = def.Height / Math.Max(1e-3f, high - low);
+        var mid = (pelvis + head) / 2;
+        var norm = new Transform3D(Godot.Basis.FromScale(Vector3.One * scale), Vector3.Zero)
+            * new Transform3D(new Godot.Basis(Vector3.Up, -yaw), Vector3.Zero)
+            * new Transform3D(Godot.Basis.Identity, new Vector3(-mid.X, -low, -mid.Z));
+        var asset = BakeRig(def.Key, view, skel, anim, meshes, def.Roles, 20, def.Budget, norm);
+        host.RemoveChild(view);
+        view.QueueFree();
+        return asset;
+    }
+
+    static Skeleton3D? FindSkeleton(Node n)
+    {
+        foreach (var c in n.GetChildren()) { if (c is Skeleton3D s) return s; if (FindSkeleton(c) is { } d) return d; }
+        return null;
+    }
+
+    /// <summary>Anything with a skeleton, an animation player and skinned
+    /// meshes (and weapons on bone attachments), baked role by role. `norm`
+    /// takes the view's space to the model's own (+Z forward), or none.</summary>
+    static VatAsset BakeRig(string key, Node3D view, Skeleton3D skel, AnimationPlayer anim, List<MeshInstance3D> meshes, List<Role> roles, double fps, int budget, Transform3D? norm)
+    {
+        ulong t0 = Time.GetTicksMsec();
+        List<Skinned> parts = new();
+        foreach (var mi in meshes)
         {
             var skin = mi.Skin ?? skel.CreateSkinFromRestTransforms();
             int binds = skin.GetBindCount();
@@ -178,8 +261,7 @@ public static class Vat
             }
         }
         ulong tParts = Time.GetTicksMsec();
-        Slim(parts);
-        ulong tSlim = Time.GetTicksMsec();
+        Slim(parts, budget);
         int total = 0;
         foreach (var p in parts)
         {
@@ -188,32 +270,57 @@ public static class Vat
             total += p.V.Length;
         }
 
-        var toView = pv.GlobalTransform.AffineInverse() * skel.GlobalTransform;
-        var global = new Transform3D[skel.GetBoneCount()];
-        var roles = new List<(string Role, string Clip)>();
-        var c = spec.Clips;
-        foreach (var (role, clip) in new[] { ("move", c.Move), ("idle", c.Idle), ("attack", c.Attack), ("windup", c.Windup), ("die", c.Die), ("rise", c.Rise), ("hit", c.Hit), ("cast", c.Cast) })
-            if (clip != null) roles.Add((role, People.Resolve(clip)));
-        var lib = People.Clips();
+        var toModel = (norm ?? Transform3D.Identity) * view.GlobalTransform.AffineInverse() * skel.GlobalTransform;
+        var toSkel = toModel.AffineInverse();
+        Transform3D[] poses = new Transform3D[skel.GetBoneCount()];
+        var scratch = (new Vector3[total], new Vector3[total]);
 
-        void Sample(string role, double t, Vector3[] pos, Vector3[] nor)
+        // Poses the skeleton for a role at t: the clip, then the moves over it.
+        Transform3D Pose(Role r, double t)
         {
-            var name = roles.Find(r => r.Role == role).Clip;
-            if (anim.CurrentAnimation != name) anim.Play(name, 0);
-            anim.Seek(t, true);
-            for (int b = 0; b < global.Length; b++) global[b] = toView * skel.GetBoneGlobalPose(b);
+            double at = r.Hold ? r.From : r.From + t;
+            // From rest each time: a bone the clip does not move must not keep the last frame's turn.
+            skel.ResetBonePoses();
+            if (anim.CurrentAnimation != r.Clip) anim.Play(r.Clip, 0);
+            anim.Seek(at, true);
+            var root = Transform3D.Identity;
+            if (r.Over?.Invoke(Math.Clamp(t / Math.Max(1e-6, r.Length), 0, 1)) is { } mv)
+            {
+                for (int b = 0; b < skel.GetBoneCount(); b++)
+                {
+                    if (!mv.Bones.TryGetValue(skel.GetBoneName(b), out var m)) continue;
+                    // Turned about its own origin in the model's space, then moved.
+                    var g = toModel * skel.GetBoneGlobalPose(b);
+                    var o = g.Origin;
+                    var turned = new Transform3D(Euler(m.Turn), o + m.Move) * new Transform3D(Godot.Basis.Identity, -o) * g;
+                    int parent = skel.GetBoneParent(b);
+                    var parentG = parent >= 0 ? skel.GetBoneGlobalPose(parent) : Transform3D.Identity;
+                    var local = parentG.AffineInverse() * (toSkel * turned);
+                    skel.SetBonePosePosition(b, local.Origin);
+                    skel.SetBonePoseRotation(b, local.Basis.Orthonormalized().GetRotationQuaternion());
+                    skel.SetBonePoseScale(b, local.Basis.Scale);
+                }
+                root = new Transform3D(Euler(mv.Turn), mv.Move);
+            }
+            return root;
+        }
+
+        void Skin(Transform3D root, Vector3[] pos, Vector3[] nor)
+        {
+            var m0 = root * toModel;
+            for (int b = 0; b < poses.Length; b++) poses[b] = m0 * skel.GetBoneGlobalPose(b);
             foreach (var p in parts)
             {
                 int o = p.Surf.Offset;
                 if (p.Rigid >= 0)
                 {
-                    var m = global[p.Rigid] * p.Rel;
+                    var m = poses[p.Rigid] * p.Rel;
                     for (int i = 0; i < p.V.Length; i++) { pos[o + i] = m * p.V[i]; nor[o + i] = (m.Basis * p.N[i]).Normalized(); }
                     continue;
                 }
                 // Each bind's matrix once a frame, not once a vertex.
                 var now = p.BindNow!;
-                for (int k = 0; k < now.Length; k++) now[k] = p.BindBone![k] >= 0 ? global[p.BindBone[k]] * p.BindPose![k] : toView;
+                for (int k = 0; k < now.Length; k++) now[k] = p.BindBone![k] >= 0 ? poses[p.BindBone[k]] * p.BindPose![k] : m0;
                 var bones = p.Bones!; var weights = p.Weights!;
                 for (int i = 0; i < p.V.Length; i++)
                 {
@@ -228,19 +335,30 @@ public static class Vat
                         sn += (m.Basis * n) * w;
                         wsum += w;
                     }
-                    pos[o + i] = wsum > 0 ? sp / wsum : toView * v;
+                    pos[o + i] = wsum > 0 ? sp / wsum : m0 * v;
                     nor[o + i] = sn.LengthSquared() > 0 ? sn.Normalized() : n;
                 }
             }
         }
 
+        void Sample(string role, double t, Vector3[] pos, Vector3[] nor)
+        {
+            var r = roles.Find(x => x.Name == role)!;
+            Skin(Pose(r, t), pos, nor);
+            // A looped stretch of a longer clip: its last third eased into what
+            // came before its start, so its end is its beginning.
+            double w = r.Seam ? Math.Clamp((t / r.Length - 0.66) / 0.34, 0, 1) : 0;
+            if (w <= 0 || r.From < r.Length * 0.34) return;
+            var (bp, bn) = scratch;
+            Skin(Pose(r, t - r.Length), bp, bn);
+            float k = (float)(w * w * (3 - 2 * w));
+            for (int i = 0; i < pos.Length; i++) { pos[i] = pos[i].Lerp(bp[i], k); nor[i] = nor[i].Lerp(bn[i], k).Normalized(); }
+        }
+
         var list = new List<(string Role, double Duration)>();
-        foreach (var (role, name) in roles) list.Add((role, lib.HasAnimation(name) ? lib.GetAnimation(name).Length : 1));
-        var surfs = parts.ConvertAll(p => p.Surf);
-        var asset = Write(spec.Key, surfs, total, list, 15, Sample);
-        if (Args.Has("vat-probe")) GD.Print($"  {spec.Key}: figure {tBuilt - t0} ms, parts+lods {tParts - tBuilt} ms, slim {tSlim - tParts} ms, frames {Time.GetTicksMsec() - tSlim} ms");
-        host.RemoveChild(pv);
-        pv.QueueFree();
+        foreach (var r in roles) list.Add((r.Name, r.Length));
+        var asset = Write(key, parts.ConvertAll(p => p.Surf), total, list, fps, Sample);
+        if (Args.Has("vat-probe")) GD.Print($"  {key}: parts+lods {tParts - t0} ms, frames {Time.GetTicksMsec() - tParts} ms, {total} vertices");
         return asset;
     }
 
@@ -312,8 +430,9 @@ public static class Vat
     /// <summary>A figure light enough for a crowd: each part down to one of
     /// its simpler versions, alike in proportion, until all of them together
     /// are within the budget; then only the vertices still used are kept.</summary>
-    static void Slim(List<Skinned> parts)
+    static void Slim(List<Skinned> parts, int budget)
     {
+        int Budget = budget;
         int Used(int[] idx) { var seen = new HashSet<int>(idx); return seen.Count; }
         int all = 0;
         foreach (var p in parts) all += p.V.Length;
@@ -409,6 +528,8 @@ public static class Vat
         }
         if (mat is BaseMaterial3D bm)
         {
+            if (bm.Transparency != BaseMaterial3D.TransparencyEnum.Disabled)
+                s.Cut = bm.Transparency == BaseMaterial3D.TransparencyEnum.AlphaScissor ? bm.AlphaScissorThreshold : 0.4f;
             s.Tex = bm.AlbedoTexture;
             s.Albedo = bm.AlbedoColor;
             s.Roughness = bm.Roughness;
@@ -550,6 +671,7 @@ public static class Vat
         var posTex = ImageTexture.CreateFromImage(Image.CreateFromData(b.Width, texH, false, Image.Format.Rgbah, b.Pos));
         var norTex = ImageTexture.CreateFromImage(Image.CreateFromData(b.Width, texH, false, Image.Format.Rgba8, b.Nor));
         shader ??= GD.Load<Shader>("res://shaders/vat.gdshader");
+        cutShader ??= GD.Load<Shader>("res://shaders/vat_cut.gdshader");
         var mesh = new ArrayMesh();
         foreach (var s in b.Surfs)
         {
@@ -563,7 +685,8 @@ public static class Vat
             arrays[(int)Mesh.ArrayType.Color] = s.Color;
             arrays[(int)Mesh.ArrayType.Index] = s.Index;
             mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
-            var m = new ShaderMaterial { Shader = shader };
+            var m = new ShaderMaterial { Shader = s.Cut >= 0 ? cutShader : shader };
+            if (s.Cut >= 0) m.SetShaderParameter("alpha_cut", s.Cut);
             m.SetShaderParameter("vat_pos", posTex);
             m.SetShaderParameter("vat_nor", norTex);
             m.SetShaderParameter("vat_width", b.Width);
@@ -597,7 +720,7 @@ public static class Vat
     // its clips and seconds of sampling; read back, a few milliseconds). Bump
     // Version whenever what a bake holds or how it is made changes (Visuals,
     // Creatures, this file).
-    const int Version = 5;
+    const int Version = 6;
     static string CachePath(string key) => $"user://vat/{key}.v{Version}.bin";
 
     static byte[] Bytes<T>(T[] a) where T : struct => System.Runtime.InteropServices.MemoryMarshal.AsBytes(a.AsSpan()).ToArray();
@@ -643,6 +766,7 @@ public static class Vat
             f.Store8((byte)(s.Dyed ? 1 : 0));
             foreach (var v3 in new[] { s.DyeColor, s.DyeH, s.DyeS, s.DyeV }) { f.StoreFloat(v3.X); f.StoreFloat(v3.Y); f.StoreFloat(v3.Z); }
             f.StoreFloat(s.DyeLum);
+            f.StoreFloat(s.Cut);
         }
     }
 
@@ -692,6 +816,7 @@ public static class Vat
             Vector3 V3() => new(f.GetFloat(), f.GetFloat(), f.GetFloat());
             s.DyeColor = V3(); s.DyeH = V3(); s.DyeS = V3(); s.DyeV = V3();
             s.DyeLum = f.GetFloat();
+            s.Cut = f.GetFloat();
             surfs.Add(s);
         }
         if (f.GetError() != Error.Ok && f.GetError() != Error.FileEof) return null;

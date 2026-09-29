@@ -1,7 +1,7 @@
 /* Search and fetch Sketchfab models (CC-BY and CC0 only, so they can ship
  * with credit).
  *
- *   SKETCHFAB_TOKEN=... node tools/assets/sketchfab.mjs search "<query>" [maxFaces] [--sheet name]
+ *   SKETCHFAB_TOKEN=... node tools/assets/sketchfab.mjs search "<query>" [maxFaces] [--sheet name] [--animated]
  *   SKETCHFAB_TOKEN=... node tools/assets/sketchfab.mjs get <uid> <out.glb>
  *
  * search prints uid, name, licence, faces, likes and author, and with
@@ -26,12 +26,13 @@ if (cmd === 'search') {
   const max = Number(b) || 40000;
   const out = [];
   for (const lic of ['cc0', 'by']) {
-    const d = await api(`/search?type=models&q=${encodeURIComponent(a)}&downloadable=true&license=${lic}&max_face_count=${max}&sort_by=-likeCount&count=24`);
+    const animated = process.argv.includes('--animated') ? '&animated=true' : '';
+    const d = await api(`/search?type=models&q=${encodeURIComponent(a)}&downloadable=true&license=${lic}&max_face_count=${max}&sort_by=-likeCount&count=24${animated}`);
     for (const m of d.results) out.push(m);
   }
   out.sort((x, y) => y.likeCount - x.likeCount);
   const top = out.slice(0, 24);
-  top.forEach((m, i) => console.log(`${String(i).padStart(2)} ${m.uid} | ${m.name.slice(0, 44)} | ${m.license?.label ?? m.license} | ${m.faceCount} faces | ${m.likeCount} likes | ${m.user.username}`));
+  top.forEach((m, i) => console.log(`${String(i).padStart(2)} ${m.uid} | ${m.name.slice(0, 44)} | ${m.license?.label ?? m.license} | ${m.faceCount} faces | ${m.animationCount ?? 0} anims | ${m.likeCount} likes | ${m.user.username}`));
   const si = rest.indexOf('--sheet');
   const sheet = process.argv.includes('--sheet') ? process.argv[process.argv.indexOf('--sheet') + 1] : null;
   if (sheet) {

@@ -165,7 +165,7 @@ public partial class CrowdView : Node3D
             double turn = Math.Atan2(Math.Sin(aim - g.Facing), Math.Cos(aim - g.Facing));
             g.Facing += turn * Math.Min(1, dt * (free ? 9 : 18));
         }
-        float sc = (float)(e.Def.Scale ?? 1);
+        float sc = (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual);
         // Struck: a squash, and a flinch along the blow, gone with the flash.
         float f = e.State == EnemyState.Dying ? 0 : (float)e.Flash;
         var at = new Vector3((float)(e.X + e.LastDx * f * 0.14), (float)y, (float)(e.Z + e.LastDz * f * 0.14));
@@ -191,7 +191,7 @@ public partial class CrowdView : Node3D
     {
         if (!laidOut.Add((e.Id, e.Seed))) return;
         var (tint, glow) = Visuals.Tint(e.Def.Visual);
-        corpses.Add(new Corpse(e.Def.Visual, (float)e.X, (float)e.Z, (float)facing, (float)(e.Def.Scale ?? 1), tint, glow * 0.3f, time));
+        corpses.Add(new Corpse(e.Def.Visual, (float)e.X, (float)e.Z, (float)facing, (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time));
         if (corpses.Count > CorpseMax) corpses.RemoveAt(0);
     }
 

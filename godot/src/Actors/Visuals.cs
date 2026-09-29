@@ -86,7 +86,11 @@ public static class Visuals
     public static (Color Tint, float Glow) Tint(string visual) => visual switch
     {
         "risen_ally" => (new Color(0.7f, 1.1f, 0.8f), 0.12f),
-        "wolf_spirit" => (new Color(0.9f, 1.0f, 1.3f), 0.7f),
+        // One wolf model for all: the alpha's coat dark, the blighted one gone
+        // sick and green, the spirit pale and lit from within.
+        "wolf_alpha" => (new Color(0.55f, 0.53f, 0.52f), 0),
+        "wolf_blighted" => (new Color(0.78f, 0.9f, 0.58f), 0.04f),
+        "wolf_spirit" => (new Color(0.85f, 1.0f, 1.35f), 0.7f),
         _ => (Colors.White, 0),
     };
 }
