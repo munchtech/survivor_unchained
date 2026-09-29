@@ -29,6 +29,7 @@ public partial class ZoneView : Node3D
     readonly Node3D lightRoot;
     readonly HashSet<string> stopped = new();
     readonly List<(int Light, Node3D Fire)> fires = new();
+    readonly HashSet<string> fireGlow = new();
     readonly List<GpuParticles3D> chimneys = new();
     readonly List<(int Light, GpuParticles3D Moths)> moths = new();
     readonly ShaderMaterial ground;
@@ -64,6 +65,10 @@ public partial class ZoneView : Node3D
             var fire = Campfire.Build(new Vector3((float)f.X, (float)f.Y, (float)f.Z), (float)f.Size, ring: false);
             fx.AddChild(fire);
             fires.Add((f.Light, fire));
+            // The web game marks a fire's flame with a glowing ball; here the
+            // fire has flames of its own, and the ball would only bloom white.
+            if (f.Light >= 0 && f.Light < meta.Lights.Count)
+                foreach (var glow in meta.Lights[f.Light].Glow) { fireGlow.Add(glow); if (Node(glow) is Node3D ball) ball.Visible = false; }
         }
         foreach (var c in meta.Chimneys)
         {
@@ -150,7 +155,7 @@ public partial class ZoneView : Node3D
         lights[light].Visible = on;
         if (flames.TryGetValue(light, out var flame)) flame.Visible = on;
         if (light < Data.Meta.Lights.Count)
-            foreach (var g in Data.Meta.Lights[light].Glow) if (Node(g) is Node3D n) n.Visible = on;
+            foreach (var g in Data.Meta.Lights[light].Glow) if (Node(g) is Node3D n) n.Visible = on && !fireGlow.Contains(g);
         foreach (var (l, fire) in fires) if (l == light) Burn(fire, on);
         foreach (var (l, p) in moths) if (l == light) p.Emitting = on && Night;
     }

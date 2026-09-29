@@ -99,28 +99,6 @@ public static class Campfire
         return new CurveTexture { Curve = c };
     }
 
-    /// <summary>A tongue of flame: a teardrop, broad and bright at the root,
-    /// narrowing to a ragged tip, its edge broken by noise.</summary>
-    static Texture2D FlameTongue()
-    {
-        const int W = 64, H = 128;
-        var img = Image.CreateEmpty(W, H, false, Image.Format.Rgba8);
-        var noise = new FastNoiseLite { Seed = 4, Frequency = 0.08f };
-        for (int y = 0; y < H; y++)
-            for (int x = 0; x < W; x++)
-            {
-                float v = 1 - (float)y / H;          // 0 at the root, 1 at the tip
-                float half = 0.46f * Mathf.Pow(1 - v, 0.55f) * (1 + 0.25f * Mathf.Sin(v * 3)) + 0.02f;
-                float u = Mathf.Abs((x + 0.5f) / W - 0.5f) / Mathf.Max(half, 0.001f);
-                float n = noise.GetNoise2D(x * 1.5f, y) * 0.35f;
-                float a = (1 - Mathf.SmoothStep(0.55f, 1f, u + n)) * Mathf.SmoothStep(0f, 0.12f, v) * (1 - Mathf.SmoothStep(0.75f, 1f, v + n * 0.5f));
-                float hot = 1 - Mathf.SmoothStep(0f, 0.7f, u);
-                img.SetPixel(x, y, new Color(1, 0.85f + 0.15f * hot, 0.7f + 0.3f * hot, Mathf.Clamp(a, 0, 1)));
-            }
-        img.GenerateMipmaps();
-        return ImageTexture.CreateFromImage(img);
-    }
-
     static GpuParticles3D Flames(float size)
     {
         var p = new ParticleProcessMaterial
@@ -136,7 +114,10 @@ public static class Campfire
         // The colour, the licking edge and how much light it adds are the
         // flame shader's (shaders/flame.gdshader).
         var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/flame.gdshader") };
-        mat.SetShaderParameter("shape_tex", FlameTongue());
+        var (first, count) = Sprites.Range("muzzle");
+        mat.SetShaderParameter("sprites", Sprites.Array);
+        mat.SetShaderParameter("first_tongue", (float)first);
+        mat.SetShaderParameter("tongues", (float)count);
         mat.SetShaderParameter("noise_tex", NoiseTex.Get());
         mat.SetShaderParameter("glow", 0.55f);
         return new GpuParticles3D
@@ -183,7 +164,7 @@ public static class Campfire
         return new GpuParticles3D
         {
             Name = "Smoke", Amount = 20, Lifetime = 4.5, ProcessMaterial = p, Position = new Vector3(0, 1.1f, 0),
-            DrawPass1 = new QuadMesh { Size = new Vector2(1, 1), Material = Sprite(Blob(Colors.White, new Color(1, 1, 1, 0)), false) },
+            DrawPass1 = new QuadMesh { Size = new Vector2(1, 1), Material = Sprite(Sprites.Puff, false) },
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Preprocess = 4.0,
         };
     }
@@ -203,7 +184,7 @@ public static class Campfire
         var smoke = new GpuParticles3D
         {
             Name = "Chimney", Amount = 15, Lifetime = 4.5, ProcessMaterial = p, Preprocess = 4.5,
-            DrawPass1 = new QuadMesh { Size = new Vector2(1, 1), Material = Sprite(Blob(Colors.White, new Color(1, 1, 1, 0)), false) },
+            DrawPass1 = new QuadMesh { Size = new Vector2(1, 1), Material = Sprite(Sprites.Puff, false) },
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
         };
         ChimneyLook(smoke, false);

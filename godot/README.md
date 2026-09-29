@@ -99,7 +99,9 @@ game at the same place and hour; needs the dev server), then
   changes. `--horde 40:wolf,20:risen` puts a crowd round the survivor, and
   `--cam D` brings the camera in, for pictures and timing.
 - `src/Fx/`: the fight made visible (`BattleFx.cs`: sparks, marks on the
-  ground, what is in the air and on the ground, lights), blood (`Gore.cs`:
+  ground, what is in the air and on the ground, lights; its particles drawn
+  from Kenney's CC0 sprites, `Sprites.cs`, art/fx: puffs of smoke, glints,
+  spattered earth, bursts of fire, rune circles on hallowed ground), blood (`Gore.cs`:
   sprays, pools that spread and dry, a burst body's pieces thrown, bleeding
   where they land, sinking), sprays, numbers and blade arcs (`Hits.cs`), the
   colours of each school (`Palette.cs`).
@@ -114,10 +116,13 @@ game at the same place and hour; needs the dev server), then
   rest and the chapter's end in `Menus.cs`), the title and making a survivor
   (`Front.cs`), a person drawn live in a frame (`Portrait.cs`), names and
   words over heads (`Voices.cs`).
-- `src/Audio/`: the web game's sound, still made without a single sample:
-  `Synth.cs` (tones, filtered noise and FM bells, four buses into one dark
-  room and a compressor, mixed on its own thread into Godot's audio streams,
-  keeping a little sound queued and more when the machine stalls),
+- `src/Audio/`: the web game's sound, made on the spot, with recordings laid
+  under it where a real thing sounds best: `Synth.cs` (tones, filtered noise,
+  FM bells and recorded takes, four buses into one dark room and a
+  compressor, mixed on its own thread into Godot's audio streams, keeping a
+  little sound queued and more when the machine stalls), `Recordings.cs`
+  (art/sound, Kenney's CC0 packs: blows, bodies falling, footsteps by
+  ground, coins, doors, pages, the interface's clicks),
   `Sfx.cs` (every sound the game makes), `Ambience.cs` (wind, leaves, water,
   a town, a fire, the blight's hum, crickets; birds, owls, the smith),
   `Music.cs` (the score, composed as it plays) and `SoundBridge.cs` (what

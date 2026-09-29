@@ -6,7 +6,9 @@ namespace SurvivorUnchained.Sound;
 /// <summary>
 /// Every one-shot the game makes, by name (the web game's audio/sfx.ts).
 /// Each is a little recipe: a thump, a hiss through a filter, a struck bell,
-/// layered and pitched a bit differently every time so that the
+/// a recording where a real thing sounds best (Recordings: a blow, a body
+/// falling, coins, a door, a footstep, the interface's clicks), layered and
+/// pitched a bit differently every time so that the
 /// two-hundredth sword hit does not sound like the first played again. Pan
 /// and near (0..1, how close to the survivor) come from where it happened.
 /// </summary>
@@ -51,8 +53,10 @@ public static class Sfx
                 a.Play(new Hiss { D = 0.06, G = 0.05 * g, Bp = 1400, Pan = pan });
                 break;
             default:
-                a.Play(new Hiss { D = R(0.05, 0.08), G = 0.14 * g, Bp = R(1500, 2200), Bp2 = 600, Q = 1.2, Pan = pan });
-                a.Play(new Tone { F = R(130, 160), F2 = 65, D = 0.08, G = 0.16 * g, Pan = pan });
+                // Steel into something that bleeds: a recorded blow under the made crack.
+                a.Play(new Clip { Of = crit ? "impactPunch_heavy" : "impactPunch_medium", G = 0.4 * g, Pitch = R(0.85, 1.15), Pan = pan });
+                a.Play(new Hiss { D = R(0.05, 0.08), G = 0.1 * g, Bp = R(1500, 2200), Bp2 = 600, Q = 1.2, Pan = pan });
+                a.Play(new Tone { F = R(130, 160), F2 = 65, D = 0.08, G = 0.1 * g, Pan = pan });
                 break;
         }
         if (crit && a.Gate("crit", 3, 90)) a.Play(new Fm { F = R(1100, 1400), Ratio = 2.71, Index = 2.5, D = 0.28, G = 0.05 * g, Pan = pan, Verb = 0.25 });
@@ -61,13 +65,15 @@ public static class Sfx
     public static void Blocked(Where w = default)
     {
         if (A is not { } a || !a.Gate("block", 2, 90)) return;
-        a.Play(new Fm { F = R(520, 640), Ratio = 1.41, Index = 3.5, D = 0.35, G = 0.06, Pan = w.Pan, Verb = 0.3 });
+        a.Play(new Clip { Of = "impactMetal_medium", G = 0.35, Pitch = R(0.9, 1.1), Pan = w.Pan, Verb = 0.2 });
+        a.Play(new Fm { F = R(520, 640), Ratio = 1.41, Index = 3.5, D = 0.35, G = 0.04, Pan = w.Pan, Verb = 0.3 });
     }
 
     /// <summary>A ward giving way: a bright crack, and glass going everywhere.</summary>
     public static void Shatter()
     {
         if (A is not { } a || !a.Gate("shatter", 1, 250)) return;
+        a.Play(new Clip { Of = "impactGlass_light", G = 0.35, Pitch = R(0.9, 1.1), Verb = 0.3 });
         a.Play(new Fm { F = R(1700, 1900), Ratio = 2.76, Index = 4, D = 0.5, G = 0.05, Verb = 0.45 });
         a.Play(new Fm { T = Now + 0.03, F = R(2500, 2800), Ratio = 3.41, Index = 3, D = 0.6, G = 0.035, Verb = 0.5 });
         a.Play(new Hiss { A = 0.002, D = 0.35, G = 0.05, Hp = 3500, Verb = 0.3 });
@@ -86,8 +92,12 @@ public static class Sfx
     {
         if (A is not { } a || !a.Gate("kill", 5, 90)) return;
         double pan = w.Pan, g = 0.5 + 0.5 * w.Near;
-        a.Play(new Tone { F = R(95, 115), F2 = 38, D = 0.2, G = 0.2 * g, Pan = pan });
-        a.Play(new Hiss { D = 0.14, G = 0.07 * g, Lp = 1100, Lp2 = 200, Pan = pan });
+        a.Play(new Tone { F = R(95, 115), F2 = 38, D = 0.2, G = 0.14 * g, Pan = pan });
+        a.Play(new Hiss { D = 0.14, G = 0.05 * g, Lp = 1100, Lp2 = 200, Pan = pan });
+        // What falls: dry bones clattering, or a body.
+        a.Play(family == Family.Undead
+            ? new Clip { Of = "impactWood_medium", G = 0.3 * g, Pitch = R(1.2, 1.5), Pan = pan }
+            : new Clip { Of = "impactSoft_heavy", G = 0.45 * g, Pitch = R(0.8, 1.0) * (elite || boss ? 0.8 : 1), Pan = pan });
         if (family == Family.Undead)
         {
             // Bones: two dry cracks.
@@ -185,6 +195,7 @@ public static class Sfx
     public static void Gold()
     {
         if (A is not { } a || !a.Gate("gold", 3, 80)) return;
+        if (a.Gate("coins", 1, 180)) a.Play(new Clip { Of = "handleCoins", G = 0.22, Pitch = R(0.95, 1.25) });
         a.Play(new Fm { F = R(2400, 2700), Ratio = 1.93, Index = 1.5, D = 0.12, G = 0.035 });
         a.Play(new Fm { T = Now + 0.045, F = R(3100, 3500), Ratio = 1.93, Index = 1.5, D = 0.14, G = 0.03 });
     }
@@ -196,6 +207,7 @@ public static class Sfx
         a.Play(new Fm { T = Now + 0.06, F = 1980, Ratio = 2.01, Index = 0.9, D = 0.8, G = 0.035, Verb = 0.4 });
         if (rare) a.Play(new Fm { T = Now + 0.14, F = 2640, Ratio = 3.01, Index = 0.7, D = 1.2, G = 0.03, Verb = 0.6 });
         a.Play(new Hiss { A = 0.05, D = 0.5, G = 0.02, Hp = 6000 });
+        a.Play(new Clip { Of = "handleSmallLeather", G = 0.2, Pitch = R(0.9, 1.1) });
     }
 
     public static void Heal()
@@ -296,31 +308,37 @@ public static class Sfx
     public static void Door()
     {
         if (A is not { } a) return;
-        a.Play(new Tone { F = 90, F2 = 60, D = 0.3, G = 0.12 });
-        a.Play(new Hiss { A = 0.08, D = 0.4, G = 0.05, Bp = 400, Bp2 = 200, Q = 2, Brown = true });
+        a.Play(new Clip { Of = "doorOpen", G = 0.4, Pitch = R(0.9, 1.05), Verb = 0.2 });
+        a.Play(new Clip { Of = "creak", T = Now + 0.05, G = 0.18, Pitch = R(0.9, 1.1), Verb = 0.2 });
+    }
+
+    /// <summary>A footstep, on grass, dirt, stone or boards.</summary>
+    public static void Step(string surface, double g = 1)
+    {
+        if (A is not { } a) return;
+        a.Play(new Clip { Of = $"footstep_{surface}", G = 0.16 * g, Pitch = R(0.9, 1.1), Lp = surface == "grass" ? 2600 : null });
     }
 
     /* -------------------------------------------------------- interface --- */
 
-    public static void Hover() { if (A is { } a && a.Gate("hover", 1, 45)) a.Play(new Tone { F = 2100, D = 0.025, G = 0.008, Bus = Bus.Ui }); }
+    public static void Hover() { if (A is { } a && a.Gate("hover", 1, 45)) a.Play(new Clip { Of = "tick", G = 0.05, Pitch = R(1.1, 1.25), Bus = Bus.Ui }); }
 
     public static void Click()
     {
         if (A is not { } a || !a.Gate("click", 2, 60)) return;
-        a.Play(new Hiss { D = 0.02, G = 0.03, Hp = 2600, Bus = Bus.Ui });
-        a.Play(new Tone { F = 820, F2 = 700, D = 0.04, G = 0.03, Bus = Bus.Ui });
+        a.Play(new Clip { Of = "click", G = 0.2, Pitch = R(0.95, 1.05), Bus = Bus.Ui });
     }
 
     public static void Open()
     {
         if (A is not { } a) return;
-        a.Play(new Hiss { A = 0.03, D = 0.2, G = 0.04, Bp = 1600, Bp2 = 900, Q = 0.7, Bus = Bus.Ui });
-        a.Play(new Tone { F = 160, F2 = 110, D = 0.12, G = 0.05, Bus = Bus.Ui });
+        a.Play(new Clip { Of = "open", G = 0.18, Bus = Bus.Ui });
+        a.Play(new Hiss { A = 0.03, D = 0.2, G = 0.025, Bp = 1600, Bp2 = 900, Q = 0.7, Bus = Bus.Ui });
     }
 
-    public static void Close() => A?.Play(new Hiss { A = 0.01, D = 0.12, G = 0.03, Bp = 900, Bp2 = 1800, Q = 0.7, Bus = Bus.Ui });
+    public static void Close() => A?.Play(new Clip { Of = "close", G = 0.16, Bus = Bus.Ui });
 
-    public static void Page() { if (A is { } a && a.Gate("page", 1, 120)) a.Play(new Hiss { A = 0.01, D = 0.07, G = 0.025, Bp = R(2600, 3200), Q = 0.9, Bus = Bus.Ui }); }
+    public static void Page() { if (A is { } a && a.Gate("page", 1, 120)) a.Play(new Clip { Of = "bookFlip", G = 0.2, Pitch = R(0.95, 1.1), Bus = Bus.Ui }); }
 
     public static void Pick()
     {
@@ -332,6 +350,7 @@ public static class Sfx
     public static void Equip()
     {
         if (A is not { } a) return;
+        a.Play(new Clip { Of = "cloth", G = 0.25, Pitch = R(0.95, 1.05), Bus = Bus.Ui });
         a.Play(new Fm { F = R(380, 460), Ratio = 1.41, Index = 2.2, D = 0.22, G = 0.04, Bus = Bus.Ui });
         a.Play(new Hiss { D = 0.06, G = 0.03, Bp = 1800, Bus = Bus.Ui });
     }
@@ -339,7 +358,6 @@ public static class Sfx
     public static void Deny()
     {
         if (A is not { } a) return;
-        a.Play(new Tone { F = 180, Type = Wave.Square, D = 0.08, G = 0.02, Lp = 900, Bus = Bus.Ui });
-        a.Play(new Tone { T = Now + 0.09, F = 150, Type = Wave.Square, D = 0.1, G = 0.02, Lp = 900, Bus = Bus.Ui });
+        a.Play(new Clip { Of = "error", G = 0.18, Pitch = 0.9, Bus = Bus.Ui });
     }
 }

@@ -39,10 +39,21 @@ public struct Fm
     public double Pan;
 }
 
+/// <summary>A recording (Recordings): a take of a family, at a pitch, dulled by a low-pass if asked.</summary>
+public struct Clip
+{
+    public string Of;
+    public double G;
+    public double? T, Pitch, Lp, Verb;
+    public Bus Bus;
+    public double Pan;
+}
+
 /// <summary>
-/// The sound of the world, made on the spot (the web game's audio/engine.ts).
-/// No samples: every sound is built from oscillators and noise when it is
-/// needed, through four buses (music, ambience, effects, interface) that
+/// The sound of the world, made on the spot (the web game's audio/engine.ts):
+/// built from oscillators and noise when it is needed, with a few
+/// recordings (Recordings) laid under it where a real thing sounds best,
+/// flesh struck, a footstep, coins; through four buses (music, ambience, effects, interface) that
 /// share one room, a long dark reverb, so a sword ring in the Verge and a
 /// bell in the Waystation sound like they happen in the same place; a
 /// compressor on the way out keeps a hundred hits in a second from turning
@@ -95,10 +106,12 @@ public partial class Synth : Node
         {
             tapePath = path;
             tape = new List<Vector2>();
+            Recordings.Load();
             return;
         }
         // Runs without a screen (tools) take no sound, unless asked (--sound).
         if ((DisplayServer.GetName() == "headless" && !Args.Has("sound")) || Args.Has("shot")) return;
+        Recordings.Load();
         Rate = AudioServer.GetMixRate();
         int room = AudioServer.GetBusIndex("Room");
         if (room < 0)
@@ -175,6 +188,7 @@ public partial class Synth : Node
     public void Play(Tone o) { if (Live) incoming.Enqueue(new ToneVoice(this, o)); }
     public void Play(Hiss o) { if (Live) incoming.Enqueue(new NoiseVoice(this, o)); }
     public void Play(Fm o) { if (Live) incoming.Enqueue(new FmVoice(this, o)); }
+    public void Play(Clip o) { if (Live && Recordings.Pick(o.Of) is { } take) incoming.Enqueue(new ClipVoice(this, o, take)); }
     public void Add(Bed b) => bedsIn.Enqueue(b);
 
     /// <summary>Sounds asked for since the mixer last looked (the mixer runs on its own thread).</summary>
@@ -463,6 +477,38 @@ public partial class Synth : Node
             if (lp != null) x = lp.Run(x, lpf.Next());
             if (hp != null) x = hp.Run(x, hpf);
             return x * env.Next();
+        }
+    }
+
+    sealed class ClipVoice : Voice
+    {
+        readonly float[] data;
+        readonly double step;
+        readonly float gain;
+        readonly Biquad? lp;
+        readonly double lpf;
+        double pos;
+
+        public ClipVoice(Synth s, Clip o, Recordings.Take take)
+        {
+            data = take.Data;
+            double pitch = o.Pitch ?? 1;
+            step = take.Rate / s.Rate * pitch;
+            Start = o.T ?? s.Now;
+            End = Start + data.Length / (take.Rate * pitch) + 0.01;
+            gain = (float)o.G;
+            if (o.Lp is double f) { lp = new Biquad(Biquad.Kind.Low, 0.707, s.Rate); lpf = f; }
+            Place(o.Bus, o.Pan, o.Verb);
+        }
+
+        public override float Sample(double t, float dt)
+        {
+            int i = (int)pos;
+            if (i >= data.Length - 1) return 0;
+            float k = (float)(pos - i), x = data[i] + (data[i + 1] - data[i]) * k;
+            pos += step;
+            if (lp != null) x = lp.Run(x, lpf);
+            return x * gain;
         }
     }
 

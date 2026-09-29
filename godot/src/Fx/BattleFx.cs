@@ -136,7 +136,10 @@ public partial class BattleFx : Node3D
         for (int i = 0; i < n; i++)
         {
             float a = R() * Mathf.Tau, v = speed * (0.4f + R() * 0.8f);
-            Sparks.Spawn(at, new Vector3(Mathf.Cos(a) * v, up * (0.5f + R()), Mathf.Sin(a) * v), life * (0.7f + R() * 0.6f), size, pal.Core, pal.Glow, 0.01f, gravity, 3);
+            // Among the specks, a few catch the light as glints.
+            bool glint = R() < 0.3f;
+            Sparks.Spawn(at, new Vector3(Mathf.Cos(a) * v, up * (0.5f + R()), Mathf.Sin(a) * v), life * (0.7f + R() * 0.6f), glint ? size * 2.2f : size, pal.Core, pal.Glow, 0.01f, gravity, 3,
+                sprite: glint ? Sprites.Of("star") : 0, spinV: glint ? 6 : 0);
         }
     }
 
@@ -285,7 +288,7 @@ public partial class BattleFx : Node3D
                     }
                     if (e.Crit)
                     {
-                        Sparks.Spawn(at, Vector3.Zero, 0.2f, 0.55f, Palette.Of(e.School).Core, sizeEnd: 0.15f);
+                        Sparks.Spawn(at, Vector3.Zero, 0.22f, 1.1f, Palette.Of(e.School).Core, sizeEnd: 0.25f, sprite: Sprites.Of("star"), spinV: 4);
                         Cam?.AddTrauma(0.04f);
                     }
                     break;
@@ -303,7 +306,7 @@ public partial class BattleFx : Node3D
                         Sparks.Spawn(V(e.X + (R() - 0.5) * 0.6, gy + 0.5, e.Z + (R() - 0.5) * 0.6), new Vector3(0, 1.4f + R() * 1.5f, 0), 1 + R() * 0.6f, 0.07f,
                             new Color(2.4f, 1.1f, 0.3f), new Color(1.6f, 0.3f, 0.05f), 0.02f, 0, 0.8f);
                     if (e.Family == Family.Undead)
-                        for (int i = 0; i < 6; i++) Smoke.Spawn(V(e.X, gy + 0.6, e.Z), new Vector3((R() - 0.5f) * 3, 2 + R() * 2, (R() - 0.5f) * 3), 0.9f, 0.07f, new Color("#d8d2c0"), gravity: 9);
+                        for (int i = 0; i < 6; i++) Smoke.Spawn(V(e.X, gy + 0.6, e.Z), new Vector3((R() - 0.5f) * 3, 2 + R() * 2, (R() - 0.5f) * 3), 0.9f, 0.2f, new Color("#d8d2c0"), gravity: 9, sprite: Sprites.Of("dirt"), spinV: 3);
                     Smoke.Spawn(V(e.X, gy + 0.3, e.Z), new Vector3(0, 0.5f, 0), 0.9f, 0.5f, new Color("#3a3430"), new Color("#1a1816"), 1.3f, alpha: 0.35f);
                     if (e.Elite || e.Boss)
                     {
@@ -359,7 +362,7 @@ public partial class BattleFx : Node3D
                         float a = R() * Mathf.Tau, v = r * (2 + R() * 3);
                         Sparks.Spawn(V(e.X, gy + 0.6, e.Z), new Vector3(Mathf.Cos(a) * v, 2 + R() * 4, Mathf.Sin(a) * v), 0.4f + R() * 0.4f, 0.1f + R() * 0.08f, pal.Core, pal.Glow, 0.01f, 8, 2.5f);
                     }
-                    Sparks.Spawn(V(e.X, gy + 0.8, e.Z), Vector3.Zero, 0.25f, r * 1.3f, pal.Core, pal.Glow, r * 1.8f, alpha: 0.9f);
+                    Sparks.Spawn(V(e.X, gy + 0.8, e.Z), Vector3.Zero, 0.3f, r * 1.3f, pal.Core, pal.Glow, r * 2.2f, alpha: 0.9f, sprite: Sprites.Of("fire"), spinV: 1.5f);
                     if (e.School is School.Fire or School.Shadow or School.Physical)
                         for (int i = 0; i < 6; i++) Smoke.Spawn(V(e.X + (R() - 0.5) * r, gy + 0.5, e.Z + (R() - 0.5) * r), new Vector3(0, 1 + R(), 0), 1.2f, r * 0.4f, new Color("#2a2420"), new Color("#121010"), r * 0.9f, drag: 1.2f, alpha: 0.45f);
                     Cam?.AddTrauma((float)Math.Min(0.3, 0.05 + e.Power * 0.1));
@@ -426,12 +429,12 @@ public partial class BattleFx : Node3D
                     float gy = Y(e.X, e.Z);
                     if (e.Style == SpawnStyle.Rise)
                     {
-                        for (int i = 0; i < 10; i++) Smoke.Spawn(V(e.X + (R() - 0.5) * 0.8, gy + 0.1, e.Z + (R() - 0.5) * 0.8), new Vector3((R() - 0.5f) * 2, 1 + R() * 2, (R() - 0.5f) * 2), 0.7f, 0.08f, new Color("#3a2e22"), gravity: 6);
+                        for (int i = 0; i < 10; i++) Smoke.Spawn(V(e.X + (R() - 0.5) * 0.8, gy + 0.1, e.Z + (R() - 0.5) * 0.8), new Vector3((R() - 0.5f) * 2, 1 + R() * 2, (R() - 0.5f) * 2), 0.7f, 0.2f, new Color("#3a2e22"), gravity: 6, sprite: Sprites.Of("dirt"), spinV: 2);
                         Smoke.Spawn(V(e.X, gy + 0.2, e.Z), new Vector3(0, 0.3f, 0), 1, 0.6f, new Color("#2e2620"), sizeEnd: 1.2f, alpha: 0.4f);
                         Sparks.Spawn(V(e.X, gy + 0.3, e.Z), new Vector3(0, 0.6f, 0), 0.8f, 0.5f, new Color(0.3f, 0.5f, 1.2f), sizeEnd: 0.1f, alpha: 0.35f);
                     }
                     else if (e.Style == SpawnStyle.Burrow)
-                        for (int i = 0; i < 8; i++) Smoke.Spawn(V(e.X, gy + 0.1, e.Z), new Vector3((R() - 0.5f) * 3, 1.5f + R() * 2, (R() - 0.5f) * 3), 0.6f, 0.07f, new Color("#4a3a28"), gravity: 8);
+                        for (int i = 0; i < 8; i++) Smoke.Spawn(V(e.X, gy + 0.1, e.Z), new Vector3((R() - 0.5f) * 3, 1.5f + R() * 2, (R() - 0.5f) * 3), 0.6f, 0.18f, new Color("#4a3a28"), gravity: 8, sprite: Sprites.Of("dirt"), spinV: 2);
                     break;
                 }
                 case Ev.Pickup e:
@@ -447,7 +450,9 @@ public partial class BattleFx : Node3D
                     for (int i = 0; i < 30; i++)
                     {
                         float a = R() * Mathf.Tau;
-                        Sparks.Spawn(p + new Vector3(Mathf.Cos(a) * 0.8f, 0.2f, Mathf.Sin(a) * 0.8f), new Vector3(Mathf.Cos(a) * 0.5f, 3 + R() * 4, Mathf.Sin(a) * 0.5f), 1.2f, 0.1f, new Color(2.4f, 1.9f, 1.1f), new Color(2.2f, 0.6f, 0.1f), 0.02f, 0, 1.5f);
+                        bool glint = i % 3 == 0;
+                        Sparks.Spawn(p + new Vector3(Mathf.Cos(a) * 0.8f, 0.2f, Mathf.Sin(a) * 0.8f), new Vector3(Mathf.Cos(a) * 0.5f, 3 + R() * 4, Mathf.Sin(a) * 0.5f), 1.2f, glint ? 0.3f : 0.1f, new Color(2.4f, 1.9f, 1.1f), new Color(2.2f, 0.6f, 0.1f), 0.02f, 0, 1.5f,
+                            sprite: glint ? Sprites.Of("star") : 0, spinV: 3);
                     }
                     break;
                 }
@@ -473,7 +478,7 @@ public partial class BattleFx : Node3D
                     break;
                 case Ev.Status e:
                     if (e.Kind == StatusKind.Frozen)
-                        for (int i = 0; i < 8; i++) Sparks.Spawn(V(e.X, Y(e.X, e.Z) + 0.8, e.Z), new Vector3((R() - 0.5f) * 2, R() * 2, (R() - 0.5f) * 2), 0.5f, 0.1f, new Color(1.6f, 2.2f, 2.6f), drag: 3);
+                        for (int i = 0; i < 8; i++) Sparks.Spawn(V(e.X, Y(e.X, e.Z) + 0.8, e.Z), new Vector3((R() - 0.5f) * 2, R() * 2, (R() - 0.5f) * 2), 0.5f, 0.25f, new Color(1.6f, 2.2f, 2.6f), drag: 3, sprite: Sprites.Of("star"), spinV: 2);
                     break;
                 case Ev.Shake e:
                     Cam?.AddTrauma((float)e.Amount);
@@ -568,12 +573,17 @@ public partial class BattleFx : Node3D
             alive.Add(z.Id);
             var school = Palette.OfArt(z.Art);
             var col = z.Owner == Sim.Side.Enemy ? Palette.HostileDanger * 0.6f : Palette.Of(school).Glow * 0.5f;
+            // Hallowed and arcane ground is a turning circle of runes, burning
+            // ground a spread of fire; the rest, and the enemy's, a glow.
+            bool mine = z.Owner != Sim.Side.Enemy, runes = mine && school is School.Holy or School.Arcane;
             if (!zoneMarks.TryGetValue(z.Id, out var m) || !m.Active)
             {
-                m = Ground(z.X, z.Z, (float)z.Radius, discTex!, col, 1e6f, 1.2f);
+                var tex = !mine ? discTex! : school switch { School.Holy => Sprites.Runes(1), School.Arcane => Sprites.Runes(0), School.Fire => Sprites.Burning, _ => discTex! };
+                m = Ground(z.X, z.Z, (float)z.Radius, tex, col, 1e6f, runes ? 2.2f : 1.2f);
                 zoneMarks[z.Id] = m;
             }
             m.T = 0;
+            if (runes) m.Decal.Rotation = new Vector3(0, (float)(now * 0.3 + z.Id), 0);
             m.Decal.Position = V(z.X, heightAt(z.X, z.Z), z.Z);
             m.Decal.Size = new Vector3((float)z.Radius * 2, 4, (float)z.Radius * 2);
             float fade = (float)Math.Min(1, Math.Min(z.Age / 0.2, (z.Life - z.Age) / 0.4));

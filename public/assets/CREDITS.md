@@ -24,6 +24,11 @@ Third-party art in this folder, with its licence. CC-BY works are used with cred
 - "rough_wood" (posts, crosses, timber), Poly Haven (https://polyhaven.com/a/rough_wood), CC0 -> godot/art/materials (1k)
 - godot/art/materials/forest_ground_04 is the ground's dirt layer above, cut out of the atlas for graves
 
+## Kenney (CC0)
+
+- Particle Pack, by Kenney (https://kenney.nl/assets/particle-pack), CC0 -> godot/art/fx (the effects' sprites: smoke, sparks, flames, magic, slashes; packed into a texture array)
+- Impact Sounds, RPG Audio and Interface Sounds, by Kenney (https://kenney.nl/assets/impact-sounds, /rpg-audio, /interface-sounds), CC0 -> godot/art/sound (as mono 16-bit WAV)
+
 ## Basis Universal (Apache-2.0)
 
 - basis_transcoder.js / .wasm, from three.js's examples (Binomial LLC, Apache License 2.0) -> public/assets/basis, for the KTX2 textures

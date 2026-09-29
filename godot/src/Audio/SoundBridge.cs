@@ -112,8 +112,21 @@ public sealed class SoundBridge
     /// <summary>A new line of a conversation: a page turned.</summary>
     public void Line() => Sfx.Page();
 
+    double stepX, stepZ, strode;
+
+    /// <summary>What the survivor's feet fall on, zone by zone.</summary>
+    static string Ground(string? zone) => zone switch { "waystation" => "concrete", "lowford" => "dirt", _ => "grass" };
+
     public void Update(double dt, SoundState s)
     {
+        // Footsteps: one a stride, while walking in the world.
+        double moved = Math.Sqrt((s.Px - stepX) * (s.Px - stepX) + (s.Pz - stepZ) * (s.Pz - stepZ));
+        stepX = s.Px; stepZ = s.Pz;
+        if (s.Mode == "play" && s.Overlay == null && moved < 3)
+        {
+            strode += moved;
+            if (strode > 1.7) { strode = 0; Sfx.Step(Ground(s.Zone)); }
+        }
         xpT -= dt;
         if (xpT <= 0) xpStreak = 0;
         // Screens opening and closing.

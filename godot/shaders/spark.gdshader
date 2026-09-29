@@ -1,20 +1,28 @@
-// A spark, a mote, a puff: a soft round sprite facing the camera, its size
-// the instance's scale and its colour the instance's (above 1 to bloom).
-// The additive kind for light (sparks, cores, trails); the mixed kind for
-// smoke and dust (spark_smoke.gdshader includes this with blend_mix).
+// A spark, a mote, a flare: a sprite facing the camera (a layer of the
+// effects' sprites, turned; or a soft round spot), its size the instance's
+// scale and its colour the instance's (above 1 to bloom). The additive kind,
+// for light (sparks, cores, trails); smoke.gdshader is its mixed twin.
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, cull_disabled, shadows_disabled, fog_disabled;
 
+uniform sampler2DArray sprites : filter_linear_mipmap;
+
 varying vec4 tint;
+varying float sprite;
 
 void vertex() {
 	tint = COLOR;
+	sprite = INSTANCE_CUSTOM.x;
 	float s = length(MODEL_MATRIX[0].xyz);
-	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0] * s, INV_VIEW_MATRIX[1] * s, INV_VIEW_MATRIX[2] * s, MODEL_MATRIX[3]);
+	float a = INSTANCE_CUSTOM.y;
+	vec3 right = INV_VIEW_MATRIX[0].xyz * cos(a) + INV_VIEW_MATRIX[1].xyz * sin(a);
+	vec3 up = -INV_VIEW_MATRIX[0].xyz * sin(a) + INV_VIEW_MATRIX[1].xyz * cos(a);
+	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(vec4(right * s, 0.0), vec4(up * s, 0.0), vec4(INV_VIEW_MATRIX[2].xyz * s, 0.0), MODEL_MATRIX[3]);
 }
 
 void fragment() {
-	float d = length(UV * 2.0 - 1.0);
-	float a = pow(max(0.0, 1.0 - d), 1.6);
+	float a;
+	if (sprite < 0.5) a = pow(max(0.0, 1.0 - length(UV * 2.0 - 1.0)), 1.6);
+	else { vec4 t = texture(sprites, vec3(UV, sprite - 1.0)); a = t.r * t.a; }
 	ALBEDO = tint.rgb * a * tint.a;
 }
