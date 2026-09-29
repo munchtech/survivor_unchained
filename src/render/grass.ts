@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { noiseTexture } from './noiseTex';
-import type { Terrain, TerrainPalette } from './terrain';
-import { DEFAULT_PALETTE } from './terrain';
+import type { Terrain } from './terrain';
+import { groundTextures } from './ground';
 
 /* Grass, placed entirely on the GPU.
  *
@@ -16,7 +16,10 @@ import { DEFAULT_PALETTE } from './terrain';
  * The blades lean with a travelling wind and part around the survivor (and
  * anything else passed in as a pusher), which is what makes a meadow feel
  * like it is being walked through. Lit with the terrain's up-facing normal so
- * the field shades as a surface, not as a thousand little cards. */
+ * the field shades as a surface, not as a thousand little cards. Each blade
+ * takes its colour from the meadow's photograph where it stands (render/
+ * ground.ts), so the roots vanish into the ground; it thins where the
+ * meadow gives way to forest floor, as the terrain does. */
 
 const MAX_PUSHERS = 8;
 
@@ -27,8 +30,8 @@ export class Grass {
   readonly grid: number;
   readonly cell: number;
 
-  constructor(terrain: Terrain, opts: { density?: number; cell?: number; grid?: number; palette?: Partial<TerrainPalette> } = {}) {
-    const pal = { ...DEFAULT_PALETTE, ...opts.palette };
+  constructor(terrain: Terrain, opts: { density?: number; cell?: number; grid?: number } = {}) {
+    const ground = groundTextures();
     this.cell = opts.cell ?? 0.21;
     this.grid = opts.grid ?? 270;
     for (let i = 0; i < MAX_PUSHERS; i++) this.pushers.push(new THREE.Vector4(1e5, 1e5, 0, 0));
@@ -54,7 +57,6 @@ export class Grass {
     geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e6);
 
     const mat = new THREE.MeshStandardMaterial({ roughness: 0.92, metalness: 0, side: THREE.DoubleSide });
-    const col = (h: string) => new THREE.Color(h);
     this.uniforms = {
       uNoise: { value: noiseTexture() },
       uHeight: { value: terrain.heightTex },
@@ -70,9 +72,9 @@ export class Grass {
       uDensity: { value: opts.density ?? 1 },
       uWind: { value: new THREE.Vector3(1, 0.35, 1) },
       uPush: { value: this.pushers },
-      uGrassDark: { value: col(pal.grassDark) },
-      uGrassLight: { value: col(pal.grassLight) },
-      uGrassDry: { value: col(pal.grassDry) },
+      uGAlb: { value: ground.albedo },
+      uGScale: { value: 1 / ground.metres[0] },
+      uLeaves: { value: terrain.leaves },
     };
     const u = this.uniforms;
     mat.onBeforeCompile = (shader) => {
@@ -84,7 +86,8 @@ uniform float uHRes, uHalf, uStep, uSize, uCell, uGrid, uTime, uDensity;
 uniform vec2 uFocus;
 uniform vec3 uWind;
 uniform vec4 uPush[${MAX_PUSHERS}];
-uniform vec3 uGrassDark, uGrassLight, uGrassDry;
+uniform sampler2DArray uGAlb;
+uniform float uGScale, uLeaves;
 varying float vT;
 varying vec3 vTint;
 float gh(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
@@ -111,10 +114,12 @@ vec2 wp = cw + (vec2(h1, h2) - 0.5) * uCell * 1.3;
 
 vec4 sp = texture(uSplat, (wp + uHalf) / uSize);
 vec4 nz = texture(uNoise, wp * 0.035);
-vec4 nm = texture(uNoise, wp * 0.011 + 0.37);
 float bare = max(max(sp.r, sp.g), max(sp.b, sp.a));
 float dens = 1.0 - smoothstep(0.12, 0.45, bare + (nz.g - 0.5) * 0.35);
 dens *= smoothstep(0.18, 0.5, nz.r + 0.22);
+// Forest floor (the terrain's drifts of leaves): sparser there.
+float leafy = smoothstep(0.42, 0.78, texture(uNoise, wp * 0.011).g * 0.7 + texture(uNoise, wp * 0.061 + 0.37).a * 0.3 + uLeaves - 0.5);
+dens *= 1.0 - leafy * 0.5;
 float d = length(wp - uFocus);
 float span = uGrid * uCell * 0.5;
 float fade = 1.0 - smoothstep(span * 0.62, span * 0.96, d);
@@ -146,12 +151,12 @@ p.y -= bl * tt * hgt * 0.38;
 
 vec3 transformed = p + vec3(wp.x, terrainH(wp) - 0.02, wp.y);
 
-// Colour follows the same field the terrain uses, so the blade roots vanish
-// into the ground and the tips carry the meadow's variation.
-float gc = nm.r * 0.55 + texture(uNoise, wp * 0.061 + 0.37).g * 0.45;
-vec3 gcol = mix(uGrassDark, uGrassLight, smoothstep(0.32, 0.72, gc));
-gcol = mix(gcol, uGrassDry, smoothstep(0.58, 0.78, nm.b) * 0.6);
-vTint = gcol * (0.85 + 0.3 * h4);
+// Colour: the meadow's own, averaged over a hand's breadth where the blade
+// stands, greener at the tip (render/ground.ts; the terrain's slow
+// variation too, so blades and ground change together).
+vec3 gcol = textureLod(uGAlb, vec3(wp * uGScale, 0.0), 5.0).rgb;
+gcol *= 0.8 + 0.2 * texture(uNoise, wp * 0.011).r;
+vTint = gcol * vec3(0.9, 1.2, 0.72) * (0.9 + 0.3 * h4);
 `)
         .replace('#include <project_vertex>', `
 vec4 mvPosition = modelViewMatrix * vec4(transformed, 1.0);
@@ -169,7 +174,7 @@ vec3 gb = vTint * mix(0.62, 1.12, pow(vT, 0.8));
 gb = mix(gb, gb * vec3(1.12, 1.08, 0.78), smoothstep(0.7, 1.0, vT) * 0.5);
 diffuseColor.rgb *= gb;`);
     };
-    mat.customProgramCacheKey = () => 'grass-v1';
+    mat.customProgramCacheKey = () => 'grass-v2';
     this.mesh = new THREE.Mesh(geo, mat);
     this.mesh.frustumCulled = false;
     this.mesh.receiveShadow = true;

@@ -163,7 +163,7 @@ export function buildVerge(grassDensity = 1, state: VergeState = { cleanDays: 0 
   const blightNow = (x: number, z: number) => blightAt(x, z) * (1 - heal * 0.85);
 
   const terrain = new Terrain({
-    size: 290, resolution: 291, height,
+    size: 290, resolution: 291, height, leaves: 0.35,
     paint: (x: number, z: number, o: TerrainPaint) => {
       const n = noise.noise(x * 0.3, z * 0.3);
       const rd = roadDist(x, z);

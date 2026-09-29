@@ -69,7 +69,7 @@ export function buildWaystation(grassDensity = 1): WaystationBuild {
   const stream = (x: number) => 52 + Math.sin(x * 0.05) * 4;
 
   const terrain = new Terrain({
-    size: 180, resolution: 181,
+    size: 180, resolution: 181, leaves: 0.12,
     height: (x, z) => {
       let h = noise.fbm(x * 0.02, z * 0.02, 3) * 1.6;
       // The town sits on a levelled rise; the land falls away outside the walls.

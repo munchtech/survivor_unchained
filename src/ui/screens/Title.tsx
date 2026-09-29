@@ -177,6 +177,7 @@ function TitleMenu() {
           <p>People and their clothes, hair and movement: <b>Quaternius</b> (Universal Base Characters, Modular Character Outfits, Universal Animation Libraries 1 and 2; CC0).</p>
           <p>Weapons, from Sketchfab (CC BY 4.0): <i>Chevalier Sword</i> by rubenve; <i>Viking Sword</i> by Michael Makivic; <i>medieval sword</i> by LowSeb; <i>Zweihander</i> by Siesta; <i>Medieval Mace</i> by Kama Modeling; <i>Viking battle axe</i> by Mikhail Antonov; <i>Snake Axe</i> by Ashley Jay Thornton; <i>Mage Staff</i> by RMBehan; <i>Medieval Crossbow</i> by iedalton; <i>Medieval Shield</i> by Artem Mykhailov; <i>Silver Bladed weapons</i> by Peter Nox.</p>
           <p>Houses, walls and props: <b>Quaternius</b> (Medieval Village MegaKit, Fantasy Props MegaKit, Stylized Nature MegaKit; CC0).</p>
+          <p>The ground: <b>Poly Haven</b> (photoscanned materials; CC0).</p>
           <p>Creatures and more props: <b>KayKit</b> by Kay Lousberg (CC0).</p>
           <p>World, lore and combat roots: <b>The Ember Watch</b>.</p>
           <p>Typefaces: Cinzel, Alegreya, Alegreya Sans (OFL).</p>

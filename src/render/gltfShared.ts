@@ -23,6 +23,11 @@ export function initTextures(renderer: THREE.WebGLRenderer) {
   ktx2Loader().detectSupport(renderer);
 }
 
+/** A KTX2 file on its own (not through a glTF): the terrain's arrays. */
+export function loadKtx2(url: string) {
+  return ktx2Loader().loadAsync(url);
+}
+
 function ktx2Loader() {
   // One loader, so one pool of transcoding workers.
   if (!ktx2) ktx2 = new KTX2Loader().setTranscoderPath(BASIS).setWorkerLimit(4);

@@ -31,11 +31,13 @@ async function boot() {
   (await import('@/render/gltfShared')).initTextures(renderer.gl);
   // The KayKit set, the people (bodies, outfits, hair, the animation
   // libraries) and the weapons, together.
-  const [{ preloadPeople }, { preloadArms }, { bakeReady }, { preloadEnv }, { envUsed }] = await Promise.all([
+  const [{ preloadPeople }, { preloadArms }, { bakeReady }, { preloadEnv }, { envUsed }, { preloadGround }] = await Promise.all([
     import('@/render/people'), import('@/render/arms'), import('@/render/bakePerson'), import('@/render/env'), import('@/world/zones/envUse'),
+    import('@/render/ground'),
   ]);
-  // ...and the world's kits: what the zones build with (render/env.ts).
-  await Promise.all([Assets.loadAll(), preloadPeople(), preloadArms(), bakeReady(), preloadEnv(envUsed())]);
+  // ...and the world's kits and the ground's materials: what the zones
+  // build with (render/env.ts, render/ground.ts).
+  await Promise.all([Assets.loadAll(), preloadPeople(), preloadArms(), bakeReady(), preloadEnv(envUsed()), preloadGround()]);
   renderItemIcons();
   mountUi(document.getElementById('ui')!);
 

@@ -89,7 +89,7 @@ export function buildLowFord(grassDensity = 1): LowFordBuild {
     return THREE.MathUtils.lerp(h, bed, k);
   };
   const terrain = new Terrain({
-    size: 260, resolution: 261,
+    size: 260, resolution: 261, leaves: 0.4,
     height,
     paint: (x: number, z: number, o: TerrainPaint) => {
       const rd = roadDist(x, z);

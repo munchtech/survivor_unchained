@@ -7,6 +7,16 @@ Third-party art in this folder, with its licence. CC-BY works are used with cred
 - Universal Base Characters, Modular Character Outfits - Fantasy, Universal Animation Library and Universal Animation Library 2, by Quaternius (https://quaternius.com), CC0 -> public/assets/people (gathered by tools/assets/people.py)
 - Medieval Village MegaKit, Fantasy Props MegaKit and Stylized Nature MegaKit, by Quaternius (https://quaternius.com), CC0 -> public/assets/env/{village,props,nature} (gathered by tools/assets/env.py)
 
+
+## Poly Haven (CC0)
+
+- "sparse_grass" (the ground's grass), Poly Haven (https://polyhaven.com/a/sparse_grass), CC0 -> public/assets/ground (gathered by tools/assets/ground.py)
+- "forest_leaves_02" (the ground's leaves), Poly Haven (https://polyhaven.com/a/forest_leaves_02), CC0 -> public/assets/ground (gathered by tools/assets/ground.py)
+- "forest_ground_04" (the ground's dirt), Poly Haven (https://polyhaven.com/a/forest_ground_04), CC0 -> public/assets/ground (gathered by tools/assets/ground.py)
+- "mud_forest" (the ground's mud), Poly Haven (https://polyhaven.com/a/mud_forest), CC0 -> public/assets/ground (gathered by tools/assets/ground.py)
+- "cobblestone_05" (the ground's stone), Poly Haven (https://polyhaven.com/a/cobblestone_05), CC0 -> public/assets/ground (gathered by tools/assets/ground.py)
+- "mossy_rock" (the ground's rock), Poly Haven (https://polyhaven.com/a/mossy_rock), CC0 -> public/assets/ground (gathered by tools/assets/ground.py)
+- "burned_ground_01" (the ground's blight), Poly Haven (https://polyhaven.com/a/burned_ground_01), CC0 -> public/assets/ground (gathered by tools/assets/ground.py)
 ## Basis Universal (Apache-2.0)
 
 - basis_transcoder.js / .wasm, from three.js's examples (Binomial LLC, Apache License 2.0) -> public/assets/basis, for the KTX2 textures

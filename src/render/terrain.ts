@@ -2,38 +2,35 @@ import * as THREE from 'three';
 import { noiseTexture } from './noiseTex';
 import { ownTextures } from './dispose';
 import { clamp } from '@/core/math';
+import { groundTextures, GROUND_LAYERS } from './ground';
 
 /* The ground, which from a top-down camera is most of every frame.
  *
  * A heightfield sampled from the zone's height function, painted from its
  * paint function into a splat texture (dirt, flagstone, blight, mud), and
- * shaded by one extended MeshStandardMaterial:
+ * shaded by one extended MeshStandardMaterial with photoscanned materials
+ * (render/ground.ts: meadow, forest floor, dirt, mud, setts, rock, burnt
+ * ground; colour, normals, occlusion, roughness and height for each):
  *
- *   - grass is two greens and a dry straw broken up by noise at three scales,
- *     so no two metres of meadow are the same colour;
- *   - splat edges are pushed around by noise before they are thresholded, so
- *     a road frays into the grass instead of ending on a smooth gradient;
- *   - steep faces turn to layered rock whatever the paint says;
- *   - flagstone is laid in offset courses with mortar lines;
- *   - blight glows along ridged veins (it feeds the bloom pass);
- *   - a bump from fine noise gives every surface grain under a low light.
+ *   - the paint says how much of each material, its edges frayed by noise;
+ *     then heights decide, so setts stand out of the mud between them and
+ *     a path's stones show through its dust, instead of two photographs
+ *     cross-fading;
+ *   - meadow gives way to forest floor in drifts (more of it in a wood);
+ *   - steep faces turn to rock whatever the paint says, the rock laid on
+ *     the face rather than stretched down it from above;
+ *   - every material is sampled twice, as laid and turned, and the two
+ *     meet along a slow noise, so no tile repeats across the screen;
+ *   - blight glows along ridged veins (it feeds the bloom pass).
  *
  * heightAt() is the authority for where the ground is, for the simulation as
  * much as for rendering. */
 
 export interface TerrainPaint { dirt: number; stone: number; blight: number; mud: number }
 
-export interface TerrainPalette {
-  grassDark: string; grassLight: string; grassDry: string;
-  dirt: string; dirtDark: string; stone: string; mortar: string;
-  rock: string; rockDark: string; blight: string; blightGlow: string; mud: string;
-}
+export interface TerrainPalette { blightGlow: string }
 
-export const DEFAULT_PALETTE: TerrainPalette = {
-  grassDark: '#2a4a1f', grassLight: '#4f7a2e', grassDry: '#8a8a42',
-  dirt: '#6e5a3c', dirtDark: '#3a2e20', stone: '#66615a', mortar: '#221f19',
-  rock: '#6f6b63', rockDark: '#35322e', blight: '#2a2530', blightGlow: '#8cff5a', mud: '#2a2419',
-};
+export const DEFAULT_PALETTE: TerrainPalette = { blightGlow: '#8cff5a' };
 
 export interface TerrainSource {
   size: number; // metres per side, centred on the origin
@@ -41,6 +38,8 @@ export interface TerrainSource {
   height(x: number, z: number): number;
   paint(x: number, z: number, out: TerrainPaint): void;
   palette?: Partial<TerrainPalette>;
+  /** How much of the meadow is forest floor instead (0..1; about 0.3). */
+  leaves?: number;
   splatResolution?: number;
 }
 
@@ -56,6 +55,8 @@ export class Terrain {
   readonly splatTex: THREE.DataTexture;
   readonly splatData: Uint8Array;
   readonly splatRes: number;
+  /** The forest floor's share of the meadow (the grass thins there too). */
+  readonly leaves: number;
   private uniforms: Record<string, THREE.IUniform> = {};
 
   constructor(src: TerrainSource) {
@@ -133,6 +134,7 @@ export class Terrain {
     this.splatTex.generateMipmaps = true;
     this.splatTex.needsUpdate = true;
 
+    this.leaves = src.leaves ?? 0.3;
     this.material = this.buildMaterial({ ...DEFAULT_PALETTE, ...src.palette });
     this.mesh = new THREE.Mesh(geo, this.material);
     this.mesh.receiveShadow = true;
@@ -190,18 +192,19 @@ export class Terrain {
 
   private buildMaterial(pal: TerrainPalette) {
     const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, metalness: 0 });
-    const col = (h: string) => new THREE.Color(h);
+    const g = groundTextures();
     const uniforms = this.uniforms = {
       uNoise: { value: noiseTexture() },
       uSplat: { value: this.splatTex },
       uSize: { value: this.size },
       uHalf: { value: this.half },
       uTime: { value: 0 },
-      uGrassDark: { value: col(pal.grassDark) }, uGrassLight: { value: col(pal.grassLight) },
-      uGrassDry: { value: col(pal.grassDry) }, uDirt: { value: col(pal.dirt) }, uDirtDark: { value: col(pal.dirtDark) },
-      uStone: { value: col(pal.stone) }, uMortar: { value: col(pal.mortar) }, uRock: { value: col(pal.rock) },
-      uRockDark: { value: col(pal.rockDark) }, uBlight: { value: col(pal.blight) },
-      uBlightGlow: { value: col(pal.blightGlow) }, uMud: { value: col(pal.mud) },
+      uLeaves: { value: this.leaves },
+      uBlightGlow: { value: new THREE.Color(pal.blightGlow) },
+      uGAlb: { value: g.albedo },
+      uGNor: { value: g.normal },
+      uGArh: { value: g.arh },
+      uGScale: { value: g.metres.map((m) => 1 / m) },
     };
     mat.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, uniforms);
@@ -214,124 +217,132 @@ varying vec3 vWorldP;
 varying vec3 vWorldN;
 uniform sampler2D uNoise;
 uniform sampler2D uSplat;
-uniform float uSize;
-uniform float uHalf;
-uniform float uTime;
-uniform vec3 uGrassDark, uGrassLight, uGrassDry, uDirt, uDirtDark, uStone, uMortar, uRock, uRockDark, uBlight, uBlightGlow, uMud;
-float gBump = 0.0;
+uniform sampler2DArray uGAlb, uGNor, uGArh;
+uniform float uGScale[${GROUND_LAYERS.length}];
+uniform float uSize, uHalf, uTime, uLeaves;
+uniform vec3 uBlightGlow;
+#define NL ${GROUND_LAYERS.length}
+#define ROCK ${GROUND_LAYERS.indexOf('rock')}
 float gRough = 0.95;
+float gAO = 1.0;
+vec3 gNormalW = vec3(0.0, 1.0, 0.0);
 vec3 gEmissive = vec3(0.0);
-float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
+float gTile = 0.0;
+// Each photograph brought into the same light: the setts were shot clean
+// and pale in the sun; this town's are not.
+const float G_TONE[NL] = float[](1.0, 1.0, 1.0, 1.0, 0.72, 0.95, 1.0);
+// The second, turned sampling (see the header).
+const mat2 G_TURN = mat2(0.8, -0.6, 0.6, 0.8);
+vec2 gUv(int i, vec3 p, vec3 n, out mat3 tbn) {
+  if (i == ROCK) {
+    // On the face: across it horizontally, and up it.
+    vec2 h = normalize(n.xz + vec2(1e-4, 0.0));
+    vec3 t = vec3(-h.y, 0.0, h.x);
+    tbn = mat3(t, vec3(0.0, -1.0, 0.0), n);
+    return vec2(dot(p.xz, vec2(-h.y, h.x)), p.y) * uGScale[i];
+  }
+  // Laid flat: u along +x, the image's top toward -z.
+  vec3 t = normalize(vec3(1.0, 0.0, 0.0) - n * n.x);
+  tbn = mat3(t, cross(n, t), n);
+  return p.xz * uGScale[i];
+}
+vec4 gTex(sampler2DArray s, vec2 uv, int i) {
+  vec4 a = texture(s, vec3(uv, float(i)));
+  if (gTile <= 0.0) return a;
+  vec4 b = texture(s, vec3(G_TURN * uv * 0.87 + vec2(0.37, 0.71), float(i)));
+  return mix(a, b, gTile);
+}
+vec3 gNor(vec2 uv, int i) {
+  vec3 a = texture(uGNor, vec3(uv, float(i))).xyz * 2.0 - 1.0;
+  if (gTile <= 0.0) return a;
+  vec3 b = texture(uGNor, vec3(G_TURN * uv * 0.87 + vec2(0.37, 0.71), float(i))).xyz * 2.0 - 1.0;
+  b.xy = transpose(G_TURN) * b.xy;
+  return normalize(mix(a, b, gTile));
+}
+void gOver(inout float w[NL], int i, float a) {
+  for (int k = 0; k < NL; k++) w[k] *= 1.0 - a;
+  w[i] += a;
+}
 `)
         .replace('#include <map_fragment>', `
 vec2 w = vWorldP.xz;
 vec4 nL = texture2D(uNoise, w * 0.011);
 vec4 nM = texture2D(uNoise, w * 0.061 + 0.37);
 vec4 nF = texture2D(uNoise, w * 0.29 + 0.71);
-vec4 nX = texture2D(uNoise, w * 1.37);
 vec4 sp = texture2D(uSplat, (w + uHalf) / uSize);
+vec3 nGeo = normalize(vWorldN);
+gTile = smoothstep(0.46, 0.54, nL.b * 0.6 + nM.r * 0.4);
 
-// Meadow.
-float g = nL.r * 0.55 + nM.g * 0.45;
-vec3 grass = mix(uGrassDark, uGrassLight, smoothstep(0.32, 0.72, g));
-grass = mix(grass, uGrassDry, smoothstep(0.58, 0.78, nL.b) * 0.55);
-grass *= 0.82 + 0.36 * nF.a;
-grass = mix(grass, grass * vec3(0.78, 0.86, 0.7), smoothstep(0.55, 0.75, nX.r) * 0.35);
-float grassBump = nF.a * 0.6 + nX.g * 0.4;
-
-// Dirt, with pebbles.
-vec3 dirt = mix(uDirtDark, uDirt, smoothstep(0.25, 0.8, nM.r * 0.7 + nF.b * 0.3));
-float pebble = smoothstep(0.78, 0.84, nX.a) * smoothstep(0.4, 0.6, nF.r);
-dirt = mix(dirt, uStone * 0.85, pebble * 0.7);
-dirt *= 0.9 + 0.2 * nX.b;
-float dirtBump = nF.b * 0.5 + pebble * 0.8 + nX.b * 0.3;
-
-// Cobbles: jittered Voronoi cells, each a rounded stone set in dark,
-// mossy mortar. Distance to the nearest cell border gives both the mortar
-// line and a domed bump, so each stone catches the light on its crown.
-vec2 cp = w * 1.3;
-vec2 ci = floor(cp);
-vec2 cf = fract(cp);
-float d1 = 8.0, d2 = 8.0;
-vec2 id1 = vec2(0.0);
-for (int yy = -1; yy <= 1; yy++) {
-  for (int xx = -1; xx <= 1; xx++) {
-    vec2 o = vec2(float(xx), float(yy));
-    vec2 hh = vec2(hash12(ci + o), hash12(ci + o + 19.19));
-    vec2 rr = o + 0.12 + hh * 0.76 - cf;
-    float dd = dot(rr, rr);
-    if (dd < d1) { d2 = d1; d1 = dd; id1 = ci + o; }
-    else if (dd < d2) { d2 = dd; }
-  }
-}
-float edgeD = sqrt(d2) - sqrt(d1);
-float mortarW = 1.0 - smoothstep(0.05, 0.17, edgeD + (nX.r - 0.5) * 0.08);
-float tint = hash12(id1);
-vec3 stone = mix(uStone * vec3(0.78, 0.8, 0.84), uStone * vec3(1.08, 1.02, 0.94), tint);
-stone *= 0.82 + 0.3 * nF.g;
-stone = mix(stone, stone * vec3(0.72, 0.84, 0.62), smoothstep(0.55, 0.8, nM.b + tint * 0.2) * 0.55);
-vec3 mortar = mix(uMortar, uMortar * vec3(0.9, 1.25, 0.8), nF.r);
-// Filth: soot, spilt ale, what the carts leave; the stones are not clean.
-float filth = smoothstep(0.5, 0.85, nM.r * 0.7 + nF.b * 0.5);
-stone = mix(stone, stone * vec3(0.55, 0.52, 0.46), filth * 0.7);
-stone = mix(stone, mortar, mortarW);
-float stoneBump = smoothstep(0.0, 0.3, edgeD) * (0.7 + 0.3 * tint) + nX.a * 0.12;
-
-// Rock on steep faces.
-float slope = 1.0 - clamp(vWorldN.y, 0.0, 1.0);
-float strata = sin(vWorldP.y * 3.1 + nM.r * 4.0) * 0.5 + 0.5;
-vec3 rock = mix(uRockDark, uRock, strata * 0.6 + nF.r * 0.4);
-float rockBump = strata * 0.7 + nX.r * 0.4;
-
-// Blight: dead ground veined with sick light.
-float vein = 1.0 - abs(nM.g * 2.0 - 1.0);
-vein = pow(vein, 10.0) + pow(1.0 - abs(nF.r * 2.0 - 1.0), 16.0) * 0.6;
-vec3 blight = uBlight * (0.75 + 0.5 * nF.g);
-
-// Mud: dark, wet, glossy.
-vec3 mud = uMud * (0.8 + 0.4 * nF.b);
-
-// Noise-frayed weights.
-float wd = smoothstep(0.35, 0.65, sp.r + (nM.b - 0.5) * 0.45 + (nX.g - 0.5) * 0.12);
-float ws = smoothstep(0.35, 0.65, sp.g + (nM.g - 0.5) * 0.35 + (nX.b - 0.5) * 0.15);
+// How much of each material the paint asks for, edges frayed by noise.
+float wd = smoothstep(0.35, 0.65, sp.r + (nM.b - 0.5) * 0.45 + (nF.g - 0.5) * 0.12);
+float ws = smoothstep(0.35, 0.65, sp.g + (nM.g - 0.5) * 0.35 + (nF.b - 0.5) * 0.15);
 float wb = smoothstep(0.3, 0.7, sp.b + (nM.r - 0.5) * 0.5);
 float wm = smoothstep(0.35, 0.65, sp.a + (nM.g - 0.5) * 0.4);
+float slope = 1.0 - clamp(nGeo.y, 0.0, 1.0);
 float wr = smoothstep(0.32, 0.5, slope + (nM.b - 0.5) * 0.15);
+float leafy = smoothstep(0.42, 0.78, nL.g * 0.7 + nM.a * 0.3 + uLeaves - 0.5);
+float gw[NL];
+for (int k = 0; k < NL; k++) gw[k] = 0.0;
+gw[0] = 1.0 - leafy; gw[1] = leafy;
+gOver(gw, 2, wd); gOver(gw, 3, wm); gOver(gw, 4, ws); gOver(gw, 6, wb); gOver(gw, ROCK, wr);
 
-vec3 albedo = grass;
-float bump = grassBump;
-float rough = 0.96;
-albedo = mix(albedo, dirt, wd); bump = mix(bump, dirtBump, wd); rough = mix(rough, 0.92, wd);
-albedo = mix(albedo, mud, wm); bump = mix(bump, nF.b * 0.3, wm); rough = mix(rough, 0.38, wm);
-albedo = mix(albedo, stone, ws); bump = mix(bump, stoneBump, ws); rough = mix(rough, 0.86, ws);
-albedo = mix(albedo, blight, wb); bump = mix(bump, vein * 0.6 + nF.r * 0.3, wb);
-albedo = mix(albedo, rock, wr); bump = mix(bump, rockBump, wr); rough = mix(rough, 0.9, wr);
+// Heights decide at the edges: the taller material shows.
+const float DEPTH = 0.22;
+float hs[NL];
+float best = 0.0;
+for (int k = 0; k < NL; k++) {
+  hs[k] = -1.0;
+  if (gw[k] < 0.003) continue;
+  mat3 tbn;
+  vec2 uv = gUv(k, vWorldP, nGeo, tbn);
+  hs[k] = gw[k] + gTex(uGArh, uv, k).b * DEPTH;
+  best = max(best, hs[k]);
+}
+float tot = 0.0;
+for (int k = 0; k < NL; k++) { gw[k] = hs[k] < 0.0 ? 0.0 : max(hs[k] - best + DEPTH, 0.0); tot += gw[k]; }
 
-// Soft contact darkening in hollows reads as ambient occlusion from above.
-albedo *= 0.88 + 0.24 * smoothstep(0.2, 0.8, nL.g);
+vec3 albedo = vec3(0.0);
+vec3 nW = vec3(0.0);
+float rough = 0.0, ao = 0.0;
+for (int k = 0; k < NL; k++) {
+  float wk = gw[k] / tot;
+  if (wk < 0.004) continue;
+  mat3 tbn;
+  vec2 uv = gUv(k, vWorldP, nGeo, tbn);
+  vec4 arh = gTex(uGArh, uv, k);
+  albedo += gTex(uGAlb, uv, k).rgb * G_TONE[k] * wk;
+  nW += tbn * gNor(uv, k) * wk;
+  rough += arh.g * wk;
+  ao += arh.r * wk;
+}
+float wetMud = gw[3] / tot;
+rough *= 1.0 - wetMud * 0.45;
 
-gEmissive = uBlightGlow * vein * wb * (0.55 + 0.45 * sin(uTime * 1.3 + nL.r * 12.0)) * 1.6;
-gBump = bump;
-gRough = rough;
+// The photographs are of lighter country than this: a little darker, and
+// slow variation over tens of metres, so a field is not one colour.
+albedo *= 0.8 + 0.2 * nL.r;
+albedo = mix(albedo, albedo * vec3(1.05, 1.0, 0.86), smoothstep(0.55, 0.8, nL.b) * 0.35);
+
+// Blight: dead ground veined with sick light.
+float wbl = gw[6] / tot;
+float vein = 1.0 - abs(nM.g * 2.0 - 1.0);
+vein = pow(vein, 10.0) + pow(1.0 - abs(nF.r * 2.0 - 1.0), 16.0) * 0.6;
+gEmissive = uBlightGlow * vein * wbl * (0.55 + 0.45 * sin(uTime * 1.3 + nL.r * 12.0)) * 1.6;
+
+gNormalW = normalize(nW);
+gRough = clamp(rough, 0.3, 1.0);
+gAO = mix(1.0, ao, 0.85);
 diffuseColor.rgb *= albedo;
 `)
         .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = gRough;')
         .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
-{
-  vec3 dpdx = dFdx(-vViewPosition);
-  vec3 dpdy = dFdy(-vViewPosition);
-  float bh = gBump * 0.06;
-  float dhdx = dFdx(bh);
-  float dhdy = dFdy(bh);
-  vec3 r1 = cross(dpdy, normal);
-  vec3 r2 = cross(normal, dpdx);
-  float det = dot(dpdx, r1);
-  vec3 grad = sign(det) * (dhdx * r1 + dhdy * r2);
-  normal = normalize(abs(det) * normal - grad);
-}`)
+normal = normalize((viewMatrix * vec4(gNormalW, 0.0)).xyz);`)
+        .replace('#include <aomap_fragment>', `
+reflectedLight.indirectDiffuse *= gAO;
+reflectedLight.indirectSpecular *= gAO;`)
         .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += gEmissive;');
     };
-    mat.customProgramCacheKey = () => 'terrain-v1';
+    mat.customProgramCacheKey = () => 'terrain-v2';
     ownTextures(mat, this.heightTex, this.splatTex);
     return mat;
   }
