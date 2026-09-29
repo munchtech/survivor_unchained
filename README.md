@@ -191,6 +191,7 @@ All expect `npm run dev` running.
 | `node tools/probe.mjs "<query>" "<expression>"` | Load the game somewhere and print what an expression gives there |
 | `node tools/reach.mjs [zone] [day\|night]` | Every door, person, clue and way in, checked for a walkable route from where you stand (and a map of it) |
 | `node tools/leaks.mjs [rounds]` | Back and forth between the zones: GPU geometries and textures must not climb |
+| `node tools/hitch.mjs [zone] [quality]` | Walk into each place and time the frame it comes alive on: shader programs compiled and creatures baked there (should be none: `WorldScene.warm` does it behind the fade; play tools print any `mid-play` warning) |
 | `node tools/leakhunt.mjs [geo\|tex] [rounds]` | When leaks.mjs climbs: what is alive after each round, by kind, and which kind keeps growing |
 | `node tools/tour.mjs verge [day\|night]` | One picture per landmark of a zone, empty of people |
 | `node tools/looks.mjs [calling...]` | Every colour, cloak, skin and hair option of creation, photographed |

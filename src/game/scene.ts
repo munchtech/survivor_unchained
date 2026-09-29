@@ -91,7 +91,84 @@ export class WorldScene {
     this.r.scene.add(this.fx.group);
   }
 
+  /** Ready what the zone will draw before anyone sees it (called behind the
+   *  travel fade): its creatures' crowds baked, and every shader it uses
+   *  compiled, the shadows' too. A shader otherwise compiles the first time
+   *  its material is drawn, which on some drivers stalls the frame for a
+   *  good part of a second: a hitch every time a new place comes into view.
+   *
+   *  What is hidden (night-only props, a broken cart's pieces) is shown for
+   *  the moment the compile starts, lights excepted; compiling runs on the driver's
+   *  threads where it can (KHR_parallel_shader_compile) and is awaited. */
+  async warm(visuals: string[]) {
+    if (!this.zone) return;
+    this.crowd?.prepare(visuals);
+    const { gl, scene, camera } = this.r;
+    // Lights stay as they are: how many there are is part of every lit
+    // shader, and a count the game never draws with would be wasted work.
+    const lit = new Set<THREE.Object3D>();
+    scene.traverseVisible((o) => { if ((o as THREE.Light).isLight) lit.add(o); });
+    const hidden: THREE.Object3D[] = [];
+    scene.traverse((o) => { if (!o.visible) { hidden.push(o); o.visible = true; } });
+    const dark: THREE.Object3D[] = [];
+    scene.traverse((o) => { if ((o as THREE.Light).isLight && !lit.has(o) && o.visible) { dark.push(o); o.visible = false; } });
+    // Into a target, as the frame is drawn (the post-processing chain's
+    // buffers): a shader drawn to the screen has other output settings.
+    const target = new THREE.WebGLRenderTarget(4, 4);
+    const was = gl.getRenderTarget();
+    let compiling: Promise<unknown> = Promise.resolve();
+    try {
+      gl.setRenderTarget(target);
+      compiling = gl.compileAsync(scene, camera);
+      this.atmo.wideShadow(this.zone.terrain.half, () => {
+        gl.shadowMap.needsUpdate = true;
+        gl.render(scene, camera);
+      });
+    } finally {
+      gl.setRenderTarget(was);
+      target.dispose();
+      for (const o of dark) o.visible = true;
+      for (const o of hidden) o.visible = false;
+    }
+    // And one whole frame, for the post-processing chain's own shaders.
+    this.r.render(0);
+    await compiling.catch((e) => console.warn('shader warm-up failed; compiling on first draw', e));
+    // A program's first use checks it and reads its uniforms, and waits for
+    // the driver to finish it: do that now, while it is dark, not on the
+    // frame it is first drawn (where the driver cannot compile in parallel,
+    // this is where the compile itself happens).
+    for (const p of gl.info.programs ?? []) p.getUniforms();
+    this.warmPrograms = new Set(gl.info.programs ?? []);
+  }
+
+  /** The programs a warmed zone started with: one more in play is a stall
+   *  somebody should hear about (tools/hitch.mjs, the play tools' logs). */
+  private warmPrograms: Set<object> | null = null;
+  private watchPrograms() {
+    const ps = this.r.gl.info.programs;
+    if (!this.warmPrograms || !ps || ps.length === this.warmPrograms.size) return;
+    for (const p of ps) {
+      if (this.warmPrograms.has(p)) continue;
+      // Against its nearest sibling already compiled: what in its key
+      // differs (a light count, an output setting, a define).
+      const key = p.cacheKey.split(',');
+      let near: string[] | null = null, best = -1;
+      for (const o of this.warmPrograms as Set<THREE.WebGLProgram>) {
+        const k = o.cacheKey.split(',');
+        if (k.length !== key.length) continue;
+        const same = k.reduce((n, v, i) => n + (v === key[i] ? 1 : 0), 0);
+        if (same > best) { best = same; near = k; }
+      }
+      const diff = near ? key.map((v, i) => (v === near![i] ? '' : `#${i} ${near![i].slice(0, 24)} -> ${v.slice(0, 24)}`)).filter(Boolean).slice(0, 4).join('; ') : 'nothing like it';
+      this.warmPrograms.add(p);
+      let lights = 0;
+      this.r.scene.traverseVisible((o) => { if ((o as THREE.Light).isLight) lights++; });
+      console.warn(`shader compiled mid-play: ${p.name || '(unnamed)'} ${(p as unknown as { type: string }).type} (not warmed: WorldScene.warm) [${diff}] with ${lights} lights`);
+    }
+  }
+
   clearZone() {
+    this.warmPrograms = null;
     if (!this.zone) return;
     this.r.scene.remove(this.zone.root);
     this.zone.dispose?.();
@@ -125,6 +202,7 @@ export class WorldScene {
   }
 
   update(dt: number) {
+    this.watchPrograms();
     const b = this.battle;
     this.time += dt;
     this.hitstopCd = Math.max(0, this.hitstopCd - dt);

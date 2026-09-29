@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import type { ParticleSystem } from '../particles';
 import type { Family } from '@/sim/types';
 
+const WHITE = new THREE.Color(1, 1, 1);
+
 /* Gore: what a blade and a fire do to the things they kill.
  *
  *   - sprays: a hit on anything that bleeds throws blood (streaks and
@@ -164,6 +166,9 @@ class GibLayer {
       return im;
     };
     this.meshes = { meat: mk(chunk, meat, GIB_MAX), bone: mk(bone, boneM, GIB_MAX / 2), skull: mk(skull, boneM, 48) };
+    // Meat takes the colour of what it came from: the colours exist from the
+    // start (made on first use, they would change the shader mid-fight).
+    for (let i = 0; i < GIB_MAX; i++) this.meshes.meat.setColorAt(i, WHITE);
     this.free = { meat: [...Array(GIB_MAX).keys()], bone: [...Array(GIB_MAX / 2).keys()], skull: [...Array(48).keys()] };
   }
 
@@ -176,7 +181,10 @@ class GibLayer {
       this.retire(old);
       slot = this.free[kind].pop()!;
     }
-    if (tint && kind === 'meat') this.meshes.meat.setColorAt(slot, tint);
+    if (kind === 'meat') {
+      this.meshes.meat.setColorAt(slot, tint ?? WHITE);
+      this.meshes.meat.instanceColor!.needsUpdate = true;
+    }
     this.live.push({
       kind, slot, x, y, z, vx, vy, vz, ax: new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize(),
       ang: Math.random() * 6, spin: 6 + Math.random() * 10, r: size * 0.4, age: 0, life: 16 + Math.random() * 6, resting: false, bled: false, blood, size,

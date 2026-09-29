@@ -75,6 +75,7 @@ export class PickupRenderer {
     const beamGeo = new THREE.CylinderGeometry(0.28, 0.4, 7, 12, 1, true);
     beamGeo.translate(0, 3.5, 0);
     const beamMat = new THREE.ShaderMaterial({
+      name: 'fx:beam',
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
       uniforms: { uTime: { value: 0 } },
       vertexShader: `attribute vec3 aColor; varying vec3 vC; varying float vY; varying vec3 vN; varying vec3 vV;

@@ -1,3 +1,4 @@
+import { crowdVisuals } from '@/content/enemies';
 import * as THREE from 'three';
 import { effect } from '@preact/signals';
 import type { Renderer, Quality } from '@/render/renderer';
@@ -168,6 +169,9 @@ export class Game {
     this.zone = z;
     this.scene.setZone(z.build);
     this.scene.atmo.set(z.build.atmosphere);
+    // A new journey starts here, at this fire, with no fade to hide behind:
+    // ready the prologue while the title sits (once it has drawn).
+    setTimeout(() => { if (this.zone === z) this.warm(z); }, 400);
     this.placeFigure(this.stranger(), { sit: true });
     this.poseCamera('title', true);
     screen.value = 'title';
@@ -369,9 +373,11 @@ export class Game {
     this.scene.simPaused = true;
     Input.captured = true;
     fade.value = { to: 1, seconds: 0.8, caption, sub };
-    setTimeout(() => {
+    setTimeout(async () => {
       this.enterZone(to, from);
       this.save('travel');
+      // Everything the new place will draw, made ready while it is dark.
+      await this.warmZone;
       setTimeout(() => {
         fade.value = { to: 0, seconds: 1.4 };
         Input.captured = false;
@@ -389,6 +395,16 @@ export class Game {
     this.scene.setZone(z.build);
     this.enterPlay(z, from, at);
   }
+
+  /** Ready a zone's creatures and shaders (WorldScene.warm), once. Travel
+   *  waits on it behind the fade; the title does it while it sits. */
+  private warm(z: ZoneRuntime) {
+    if (this.warmedFor === z) return;
+    this.warmedFor = z;
+    this.warmZone = this.scene.warm(z.combat ? crowdVisuals(z.creatures ?? []) : []);
+  }
+  private warmedFor: ZoneRuntime | null = null;
+  private warmZone: Promise<void> = Promise.resolve();
 
   private enterPlay(z: ZoneRuntime, from: string | null, at?: { x: number; z: number; facing?: number }) {
     const ch = this.ch!;
@@ -421,6 +437,7 @@ export class Game {
     }
     this.hookBattle(b);
     z.begin(b);
+    this.warm(z);
     zoneInfo.value = { name: z.name, region: z.region, day: this.world!.day, time: z.timeOf?.(this.world!) ?? this.world!.time };
     this.bridge.extra.gold = ch.gold;
     this.world!.facts['player.zone'] = z.id;

@@ -6,6 +6,9 @@ import type { Battle } from '@/sim/battle';
 import type { Projectile } from '@/sim/entities';
 import { bakeVat, VatCrowd } from '../vat';
 import { visualSpec } from '../visuals';
+import { WEAPONS } from '@/content/weapons';
+import { BOONS } from '@/content/boons';
+import { ENEMIES } from '@/content/enemies';
 
 /* Everything in the air, drawn from the simulation's projectile pool.
  *
@@ -46,6 +49,21 @@ interface Batch {
   color?: THREE.Color;
 }
 
+/** Every projectile art in the game's content (weapons and their
+ *  evolutions, blessings' effects, creatures' missiles). */
+const ARTS = (() => {
+  const out = new Set<string>();
+  const walk = (v: unknown) => {
+    if (!v || typeof v !== 'object') return;
+    for (const [k, x] of Object.entries(v)) {
+      if (k === 'art' && typeof x === 'string') out.add(x);
+      else walk(x);
+    }
+  };
+  walk(WEAPONS); walk(BOONS); walk(ENEMIES);
+  return [...out];
+})();
+
 export class ProjectileRenderer {
   readonly group = new THREE.Group();
   private batches = new Map<string, Batch>();
@@ -59,7 +77,22 @@ export class ProjectileRenderer {
   private c = new THREE.Color();
   private trailAcc = new Map<number, number>();
 
-  constructor(private sparks: ParticleSystem, private smoke: ParticleSystem) { this.group.name = 'projectiles'; }
+  constructor(private sparks: ParticleSystem, private smoke: ParticleSystem) {
+    this.group.name = 'projectiles';
+    // Every kind of missile the game has, made now (empty) rather than the
+    // first time one is thrown: a new weapon from a level-up would otherwise
+    // compile its shaders mid-fight. One per look is enough; arts that look
+    // alike share their shaders.
+    const looks = new Set<string>();
+    for (const art of ARTS) {
+      const st = styleOf(art);
+      if (st.kind === 'herd') continue;
+      const look = JSON.stringify(st.kind === 'prop' ? [st.kind, st.pack, st.prop] : [st.kind]);
+      if (looks.has(look)) continue;
+      looks.add(look);
+      this.batch(art, 'physical');
+    }
+  }
 
   private batch(art: string, school: string): Batch {
     const key = `${art}`;

@@ -105,6 +105,7 @@ export class DamageNumbers {
     geo.setAttribute('aColor', this.aColor);
     geo.instanceCount = capacity;
     this.mat = new THREE.ShaderMaterial({
+      name: 'fx:numbers',
       vertexShader: vertex, fragmentShader: fragment, transparent: true, depthWrite: false, depthTest: false,
       uniforms: { uTime: { value: 0 }, uScale: { value: 1 }, uViewport: { value: new THREE.Vector2(1600, 900) }, uAtlas: { value: atlas() } },
     });

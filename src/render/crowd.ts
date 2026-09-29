@@ -44,14 +44,18 @@ export class CrowdRenderer {
 
   constructor() { this.group.name = 'crowd'; }
 
-  /** Bake ahead of time so the first wolf does not hitch the frame. */
+  /** Bake ahead of time (behind the fade) so the first wolf does not hitch
+   *  the frame. Bakes are kept for the session (render/vat.ts), so a zone
+   *  visited again costs nothing. */
   prepare(visuals: Iterable<string>) {
-    for (const v of visuals) this.crowd(v);
+    for (const v of visuals) this.crowd(v, true);
   }
 
-  private crowd(visual: string) {
+  private crowd(visual: string, ahead = false) {
     let c = this.crowds.get(visual);
     if (!c) {
+      // A bake in play stalls the frame: the zone should have listed it.
+      if (!ahead) console.warn(`crowd: ${visual} baked mid-play (list its creature in the zone's creatures)`);
       const t0 = performance.now();
       const asset = bakeVat(visualSpec(visual));
       c = new VatCrowd(asset, visual.startsWith('wolf') || visual === 'skeleton_minion' ? 400 : 200);

@@ -567,6 +567,7 @@ export function verge(g: Game): ZoneRuntime {
   let trackT = 0;
   return {
     id: 'verge', name: 'Thornhollow Verge', region: 'East of the Waystation', build: built.zone, combat: true,
+    creatures: ['wolf', 'wolf_blighted', 'wolf_alpha', 'boar', 'lampling', 'lampling_sapper', 'footpad', 'pillager', 'bruiser', 'enforcer', 'risen', 'risen_warrior', 'risen_archer'],
     actors,
     arrival: (from) => (from === 'waystation' || !from ? { x: V.entry.x + 4, z: V.entry.z, facing: Math.PI / 2 } : { x: V.entry.x + 4, z: V.entry.z }),
     timeOf: (wd) => wd.time,

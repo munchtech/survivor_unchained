@@ -217,3 +217,23 @@ export function scaleFor(level: number) {
     xp: 1 + l * 0.12,
   };
 }
+
+/** The crowd visuals a zone needs ready before play: its creatures, what
+ *  they raise and split into, and the survivor's own summons (any build may
+ *  bring them). Boss views (`view:`) are drawn otherwise and not listed. */
+export function crowdVisuals(ids: Iterable<string>): string[] {
+  const seen = new Set<string>();
+  const out = new Set<string>();
+  const visit = (id: string) => {
+    if (seen.has(id)) return;
+    seen.add(id);
+    const d = ENEMIES[id];
+    if (!d) throw new Error(`no creature ${id}`);
+    if (!d.visual.startsWith('view:')) out.add(d.visual);
+    if (d.raise) visit(d.raise.into);
+    if (d.split) visit(d.split.into);
+  };
+  for (const id of ids) visit(id);
+  for (const id of Object.values(ENEMIES).filter((d) => d.faction === 'ally').map((d) => d.id)) visit(id);
+  return [...out];
+}

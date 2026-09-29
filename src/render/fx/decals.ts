@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { anchor, ANCHOR_PLANE } from './anchor';
 import { noiseTexture } from '../noiseTex';
 
 /* Things painted on the ground: telegraphs (where it is about to hurt) and
@@ -144,7 +145,11 @@ export class DecalLayer {
   private noise = noiseTexture();
   time = 0;
 
-  constructor(private heightAt: (x: number, z: number) => number) { this.group.name = 'decals'; }
+  constructor(private heightAt: (x: number, z: number) => number) {
+    this.group.name = 'decals';
+    const c = new THREE.Color();
+    anchor(this.group, 'decal', () => this.material(0, c, c, THREE.NormalBlending), ANCHOR_PLANE);
+  }
 
   private grid(cx: number, cz: number, hw: number, hd: number, rot: number, seg: number) {
     const g = new THREE.PlaneGeometry(hw * 2, hd * 2, seg, Math.max(2, Math.round(seg * (hd / hw))));
@@ -160,8 +165,9 @@ export class DecalLayer {
     return g;
   }
 
-  private make(geo: THREE.BufferGeometry, kind: number, color: THREE.Color, color2: THREE.Color, blending: THREE.Blending) {
-    const mat = new THREE.ShaderMaterial({
+  private material(kind: number, color: THREE.Color, color2: THREE.Color, blending: THREE.Blending) {
+    return new THREE.ShaderMaterial({
+      name: `fx:decal${kind}`,
       vertexShader: vertex, fragmentShader: fragment, transparent: true, depthWrite: false, blending,
       polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
       uniforms: {
@@ -170,6 +176,10 @@ export class DecalLayer {
         uSeed: { value: Math.random() }, uNoise: { value: this.noise },
       },
     });
+  }
+
+  private make(geo: THREE.BufferGeometry, kind: number, color: THREE.Color, color2: THREE.Color, blending: THREE.Blending) {
+    const mat = this.material(kind, color, color2, blending);
     const mesh = new THREE.Mesh(geo, mat);
     mesh.renderOrder = 5;
     mesh.frustumCulled = false;

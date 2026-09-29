@@ -42,6 +42,10 @@ export interface ZoneRuntime {
   region?: string;
   build: ZoneBuild;
   combat: boolean;
+  /** Every creature that can appear here (content/enemies.ts ids): their
+   *  crowds are baked and their shaders compiled behind the fade, not the
+   *  first time one walks on. */
+  creatures?: string[];
   /** Where you stand arriving from another zone (null: a fresh load). */
   arrival(from: string | null): Arrival;
   /** The Battle exists; set hooks, spawn residents. */

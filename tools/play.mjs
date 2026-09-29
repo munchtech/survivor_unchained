@@ -10,7 +10,7 @@ const [query = 'quick=warden&auto', name = 'play', secs = '300', every = '60'] =
 fs.mkdirSync('.shots', { recursive: true });
 const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'] });
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
-page.on('console', (m) => { if (m.type() === 'error') console.log('[error]', m.text().slice(0, 300)); });
+page.on('console', (m) => { if (m.type() === 'error' || /mid-play/.test(m.text())) console.log(`[${m.type()}]`, m.text().slice(0, 300)); });
 page.on('pageerror', (e) => console.log('[pageerror]', e.message, e.stack?.split('\n').slice(0, 3).join(' | ')));
 await page.goto(`http://localhost:5173/?${query}&manual`, { waitUntil: 'load' });
 await page.waitForFunction(() => document.body.dataset.ready === '1' || document.body.dataset.error, null, { timeout: 120000 });

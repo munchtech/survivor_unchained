@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { anchor, ANCHOR_PLANE } from './anchor';
 
 /* Shaped light: lightning, beams, sword arcs, novas and bolts from the sky.
  *
@@ -101,15 +102,30 @@ interface Fx {
   expand?: number;
 }
 
+function novaMaterial(core: THREE.Color, glow: THREE.Color, rings: number) {
+  return new THREE.ShaderMaterial({
+    name: 'fx:nova',
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: novaFrag, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    uniforms: { uCore: { value: core.clone() }, uGlow: { value: glow.clone() }, uFront: { value: 0 }, uAlpha: { value: 1 }, uRings: { value: rings } },
+  });
+}
+
 export class RibbonLayer {
   readonly group = new THREE.Group();
   private list: Fx[] = [];
   private camPos = new THREE.Vector3();
 
-  constructor() { this.group.name = 'ribbons'; }
+  constructor() {
+    this.group.name = 'ribbons';
+    const c = new THREE.Color();
+    anchor(this.group, 'ribbon', () => this.material(0, c, c));
+    anchor(this.group, 'nova', () => novaMaterial(c, c, 1), ANCHOR_PLANE);
+  }
 
   private material(kind: number, core: THREE.Color, glow: THREE.Color) {
     return new THREE.ShaderMaterial({
+      name: `fx:ribbon${kind}`,
       vertexShader: ribbonVert, fragmentShader: ribbonFrag, transparent: true, depthWrite: false,
       blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
       uniforms: { uCore: { value: core.clone() }, uGlow: { value: glow.clone() }, uAlpha: { value: 1 }, uTime: { value: 0 }, uKind: { value: kind }, uHead: { value: 0 } },
@@ -233,11 +249,7 @@ export class RibbonLayer {
   }
 
   nova(x: number, y: number, z: number, radius: number, core: THREE.Color, glow: THREE.Color, life: number, rings = 1) {
-    const mat = new THREE.ShaderMaterial({
-      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
-      fragmentShader: novaFrag, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-      uniforms: { uCore: { value: core.clone() }, uGlow: { value: glow.clone() }, uFront: { value: 0 }, uAlpha: { value: 1 }, uRings: { value: rings } },
-    });
+    const mat = novaMaterial(core, glow, rings);
     const g = new THREE.PlaneGeometry(radius * 2, radius * 2);
     g.rotateX(-Math.PI / 2);
     const mesh = new THREE.Mesh(g, mat);

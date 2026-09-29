@@ -145,6 +145,7 @@ export class ParticleSystem {
     this.geo.setAttribute('aSpin', this.aSpin);
     this.geo.instanceCount = capacity;
     this.material = new THREE.ShaderMaterial({
+      name: 'fx:particles',
       vertexShader: vertex, fragmentShader: fragment,
       uniforms: { uTime: { value: 0 }, uPixelScale: { value: 1 } },
       transparent: true, depthWrite: false,

@@ -221,6 +221,26 @@ export class Atmosphere {
     old?.dispose();
   }
 
+  /** Run `fn` with the shadow camera taking in a whole zone (half its width
+   *  either side of the origin): a shadow pass then draws every caster, so
+   *  each one's shadow shader is compiled (WorldScene.warm). */
+  wideShadow(half: number, fn: () => void) {
+    const cam = this.key.shadow.camera as THREE.OrthographicCamera;
+    const keep = { e: this.shadowExtent, far: cam.far, focus: this.focus.clone() };
+    const e = half * 1.5;
+    cam.left = -e; cam.right = e; cam.top = e; cam.bottom = -e; cam.far = 600;
+    cam.updateProjectionMatrix();
+    this.focus.set(0, 0, 0);
+    this.key.target.position.set(0, 0, 0);
+    this.key.position.copy(this.lightDir).multiplyScalar(300);
+    this.key.target.updateMatrixWorld();
+    try { fn(); } finally {
+      cam.left = -keep.e; cam.right = keep.e; cam.top = keep.e; cam.bottom = -keep.e; cam.far = keep.far;
+      cam.updateProjectionMatrix();
+      this.follow(keep.focus.x, keep.focus.y, keep.focus.z);
+    }
+  }
+
   /** Keep the shadow frustum centred on what matters, snapped to texels so
    *  shadow edges do not shimmer as the survivor walks. */
   follow(x: number, y: number, z: number) {

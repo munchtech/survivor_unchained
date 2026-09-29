@@ -3,6 +3,7 @@ import { bodyRim, BODY_RIM, BODY_RIM_PARS } from './bodyRim';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { Assets, type CharacterModel, type PropPack } from './assets';
 import { applyProportions, legLift } from './proportions';
+import { keep } from './dispose';
 
 /* Vertex animation textures: how a horde of animated skeletons costs one draw.
  *
@@ -260,6 +261,9 @@ export function bakeVat(spec: VatSpec): VatAsset {
   if (map && spec.recolor) finalMap = recolorTexture(map, spec.key, spec.recolor);
 
   const asset: VatAsset = { key: spec.key, geometry, posTex, norTex, width, rows, clips: clipInfo, map: finalMap, glowColor, height, vertexCount: total };
+  // Kept for the session: a zone's teardown must not free what the next
+  // visit would bake again (the crowds' own materials and copies do go).
+  if (finalMap) keep(finalMap);
   cache.set(spec.key, asset);
   return asset;
 }

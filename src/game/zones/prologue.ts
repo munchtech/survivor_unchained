@@ -70,8 +70,15 @@ export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number 
   let caller: Enemy | null = null;
   let knight: Enemy | null = null;
   let cutT = 0;
-  let core: THREE.Mesh | null = null;
-  let coreLight: THREE.PointLight | null = null;
+  // The heart, made now and hidden (its shader compiles with the zone).
+  const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42, 1), new THREE.MeshBasicMaterial({ color: new THREE.Color('#bfe6ff').multiplyScalar(6) }));
+  core.visible = false;
+  built.zone.root.add(core);
+  let coreShown = false;
+  // The heart's light is there from the start, dark: a light added or taken
+  // away changes every lit shader, which would stall the frame it happens.
+  const coreLight = new THREE.PointLight(0x9ad8ff, 0, 14, 1.5);
+  built.zone.root.add(coreLight);
   let grim: Enemy | null = null;
   let dawnK = 0;
   let envT = 0;
@@ -537,23 +544,23 @@ export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number 
     cutT += dt;
     const cx = wardenPos.x, cz = wardenPos.z;
     const cy = Math.max(kit.y(cx, cz), WATER_Y);
-    if (cutT > 1.6 && !core) {
-      core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42, 1), new THREE.MeshBasicMaterial({ color: new THREE.Color('#bfe6ff').multiplyScalar(6) }));
+    if (cutT > 1.6 && !coreShown) {
+      coreShown = true;
+      core.visible = true;
       core.position.set(cx, cy + 0.8, cz);
-      built.zone.root.add(core);
-      coreLight = new THREE.PointLight(0x9ad8ff, 18, 14, 1.5);
+      coreLight.intensity = 18;
       coreLight.position.copy(core.position);
-      built.zone.root.add(coreLight);
       say('Where the Warden fell, its heart is still burning: a stone the size of a fist, full of cold light.', undefined, 5);
       g.poseShowcase(new THREE.Vector3(cx + 6, cy + 6, cz + 11), new THREE.Vector3(cx, cy + 1, cz));
       Input.captured = true;
     }
-    if (core) {
+    if (core.visible) {
       core.rotation.y += dt * 1.4;
       const pulse = 1 + Math.sin(cutT * 5) * 0.08;
       core.scale.setScalar(pulse);
       if (!grim) core.position.y = Math.min(cy + 1.6, core.position.y + dt * 0.3);
-      if (coreLight) { coreLight.position.copy(core.position); coreLight.intensity = 16 + Math.sin(cutT * 7) * 3; }
+      coreLight.position.copy(core.position);
+      coreLight.intensity = 16 + Math.sin(cutT * 7) * 3;
     }
     if (cutT > 4.2 && !grim) {
       b.events.emit({ t: 'shake', amount: 0.7 });
@@ -567,15 +574,15 @@ export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number 
     }
     if (cutT > 5.4 && !shown.has('grim1')) { shown.add('grim1'); b.events.emit({ t: 'bark', x: cx + 2.2, z: cz + 1.2, text: 'Oho! A Warden\'s heart, still warm! Nobody\'s, is it? Nobody\'s!', speaker: 'Grimtunnel' }); }
     if (cutT > 8.4 && !shown.has('grim2')) { shown.add('grim2'); b.events.emit({ t: 'bark', x: cx + 2.2, z: cz + 1.2, text: 'Finders keepers, surface-meat. The Deep Dig thanks you!', speaker: 'Grimtunnel' }); }
-    if (core && grim && cutT > 9.6) {
+    if (core.visible && grim && cutT > 9.6) {
       core.position.lerp(new THREE.Vector3(grim.x, cy + 1.2, grim.z), Math.min(1, dt * 4));
     }
     if (cutT > 11 && grim && grim.alive && grim.state !== 'burrowed') {
       grim.state = 'burrowed';
       b.events.emit({ t: 'spawn', enemy: grim.id, x: grim.x, z: grim.z, def: 'grimtunnel', style: 'burrow' });
       b.events.emit({ t: 'shake', amount: 0.4 });
-      if (core) { core.removeFromParent(); core = null; }
-      if (coreLight) { coreLight.removeFromParent(); coreLight = null; }
+      core.visible = false;
+      coreLight.intensity = 0;
     }
     if (cutT > 12 && grim) {
       if (grim.alive) b.enemies.release(grim);
@@ -645,6 +652,7 @@ export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number 
 
   return {
     id: 'lowford', name: 'The Low Ford Road', region: 'Thornhollow, south', build: built.zone, combat: true, fire: L.fire,
+    creatures: ['risen', 'risen_warrior', 'risen_archer', 'barrow_knight', 'grave_caller', 'grimtunnel', 'ford_warden'],
     // Back down the road from the Waystation: arrive at the north end, by the gate.
     arrival: (from) => (from === 'waystation' ? { x: L.gate.x + 0.5, z: L.exitZ + 9, facing: 0 } : { x: L.camp.x + 1.5, z: L.camp.z - 1.5, facing: Math.PI }),
     timeOf: () => (stage === 'dawn' || stage === 'exit' ? 'dawn' : 'night'),
