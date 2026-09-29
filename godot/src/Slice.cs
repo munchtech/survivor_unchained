@@ -77,10 +77,11 @@ public partial class Slice : Node3D
             Sky = new Sky { SkyMaterial = sky },
             AmbientLightSource = Environment.AmbientSource.Color,
             AmbientLightColor = new Color("#3f5780"),
-            AmbientLightEnergy = 0.32f,
+            AmbientLightEnergy = 0.42f,
             TonemapMode = Environment.ToneMapper.Agx,
             TonemapExposure = 1.0f,
-            SsaoEnabled = true, SsaoRadius = 1.6f, SsaoIntensity = 2.2f,
+            // Soft: a field of thin blades turns strong SSAO into black specks.
+            SsaoEnabled = true, SsaoRadius = 1.0f, SsaoIntensity = 1.1f, SsaoDetail = 0.3f,
             GlowEnabled = true, GlowIntensity = 0.7f, GlowBloom = 0.04f, GlowHdrThreshold = 1.1f,
             FogEnabled = true, FogLightColor = new Color("#101a24"), FogDensity = 0.006f, FogSkyAffect = 0.6f,
             VolumetricFogEnabled = true, VolumetricFogDensity = 0.012f, VolumetricFogAlbedo = new Color("#8fa0c0"),
@@ -94,7 +95,7 @@ public partial class Slice : Node3D
         var dir = new Vector3(Mathf.Cos(el) * Mathf.Cos(az), Mathf.Sin(el), Mathf.Cos(el) * Mathf.Sin(az));
         var moon = new DirectionalLight3D
         {
-            LightColor = new Color("#b8cbf2"), LightEnergy = 0.3f, ShadowEnabled = true,
+            LightColor = new Color("#b8cbf2"), LightEnergy = 0.42f, ShadowEnabled = true,
             DirectionalShadowMaxDistance = 70, ShadowBlur = 1.5f, LightVolumetricFogEnergy = 0.6f,
         };
         AddChild(moon);

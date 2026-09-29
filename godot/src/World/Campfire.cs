@@ -90,6 +90,28 @@ public static class Campfire
         return new CurveTexture { Curve = c };
     }
 
+    /// <summary>A tongue of flame: a teardrop, broad and bright at the root,
+    /// narrowing to a ragged tip, its edge broken by noise.</summary>
+    static Texture2D FlameTongue()
+    {
+        const int W = 64, H = 128;
+        var img = Image.CreateEmpty(W, H, false, Image.Format.Rgba8);
+        var noise = new FastNoiseLite { Seed = 4, Frequency = 0.08f };
+        for (int y = 0; y < H; y++)
+            for (int x = 0; x < W; x++)
+            {
+                float v = 1 - (float)y / H;          // 0 at the root, 1 at the tip
+                float half = 0.46f * Mathf.Pow(1 - v, 0.55f) * (1 + 0.25f * Mathf.Sin(v * 3)) + 0.02f;
+                float u = Mathf.Abs((x + 0.5f) / W - 0.5f) / Mathf.Max(half, 0.001f);
+                float n = noise.GetNoise2D(x * 1.5f, y) * 0.35f;
+                float a = (1 - Mathf.SmoothStep(0.55f, 1f, u + n)) * Mathf.SmoothStep(0f, 0.12f, v) * (1 - Mathf.SmoothStep(0.75f, 1f, v + n * 0.5f));
+                float hot = 1 - Mathf.SmoothStep(0f, 0.7f, u);
+                img.SetPixel(x, y, new Color(1, 0.85f + 0.15f * hot, 0.7f + 0.3f * hot, Mathf.Clamp(a, 0, 1)));
+            }
+        img.GenerateMipmaps();
+        return ImageTexture.CreateFromImage(img);
+    }
+
     static GpuParticles3D Flames(float size)
     {
         var p = new ParticleProcessMaterial
@@ -97,15 +119,16 @@ public static class Campfire
             EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Sphere, EmissionSphereRadius = 0.2f * size,
             Direction = Vector3.Up, Spread = 12, InitialVelocityMin = 0.9f * size, InitialVelocityMax = 1.6f * size,
             Gravity = new Vector3(0, 0.6f, 0), DampingMin = 0.5f, DampingMax = 1f,
-            ScaleMin = 0.3f * size, ScaleMax = 0.55f * size,
-            ScaleCurve = Curve((0, 0.7f), (0.2f, 1f), (1, 0.05f)),
-            ColorRamp = Ramp((0, new Color(1.9f, 1.1f, 0.45f, 0)), (0.12f, new Color(1.7f, 0.72f, 0.18f, 0.55f)), (0.55f, new Color(1.1f, 0.28f, 0.05f, 0.35f)), (1, new Color(0.3f, 0.05f, 0.01f, 0))),
+            ScaleMin = 0.45f * size, ScaleMax = 0.8f * size,
+            ScaleCurve = Curve((0, 0.5f), (0.25f, 1f), (1, 0.2f)),
+            AngleMin = -12, AngleMax = 12,
+            ColorRamp = Ramp((0, new Color(1.3f, 0.75f, 0.3f, 0)), (0.15f, new Color(1.25f, 0.5f, 0.12f, 0.5f)), (0.6f, new Color(0.8f, 0.2f, 0.04f, 0.3f)), (1, new Color(0.25f, 0.04f, 0.01f, 0))),
             TurbulenceEnabled = true, TurbulenceNoiseStrength = 0.6f, TurbulenceNoiseScale = 2.5f, TurbulenceInfluenceMin = 0.05f, TurbulenceInfluenceMax = 0.15f,
         };
         return new GpuParticles3D
         {
             Name = "Flames", Amount = 64, Lifetime = 0.75, ProcessMaterial = p, Position = new Vector3(0, 0.15f, 0),
-            DrawPass1 = new QuadMesh { Size = new Vector2(0.45f, 0.8f), Material = Sprite(Blob(new Color(1, 1, 1, 0.9f), new Color(1, 1, 1, 0)), true) },
+            DrawPass1 = new QuadMesh { Size = new Vector2(0.4f, 0.8f), Material = Sprite(FlameTongue(), true) },
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Preprocess = 1.0,
         };
     }

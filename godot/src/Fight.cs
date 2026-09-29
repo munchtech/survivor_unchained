@@ -107,6 +107,7 @@ public partial class Fight : Node3D
         you.Position = pos;
         you.Rotation = new Vector3(0, facing, 0);
         lantern.Position = pos + new Vector3(0, 2.4f, 0.4f);
+        RenderingServer.GlobalShaderParameterSet("survivor", new Vector4(pos.X, pos.Y + 1.1f, pos.Z, 1));
     }
 
     void UpdateHorde(float dt)

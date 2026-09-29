@@ -38,3 +38,10 @@ environment/defaults/default_clear_color=Color(0.04, 0.05, 0.07, 1)
 scene={
 "gltf/embedded_image_handling": 3
 }
+
+[shader_globals]
+
+survivor={
+"type": "vec4",
+"value": Vector4(0, 0, 0, 0)
+}

@@ -21,8 +21,20 @@ uniform vec3 recolor_b = vec3(0.0);
 uniform float moss = 0.0;
 uniform float jitter = 0.08;
 
+// Where the survivor is (xyz; w = 1 when there is one): what stands between
+// them and the camera is cut away (Fight.cs sets it each frame).
+global uniform vec4 survivor;
+
 varying float v_up;
 varying float v_jit;
+
+// 4x4 ordered dither: a fade the temporal AA resolves to translucency.
+float bayer(vec2 p) {
+	ivec2 q = ivec2(mod(floor(p), 4.0));
+	int i = q.x + q.y * 4;
+	int[16] m = int[](0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5);
+	return (float(m[i]) + 0.5) / 16.0;
+}
 
 const vec3 LW = vec3(0.2126, 0.7152, 0.0722);
 
@@ -38,6 +50,21 @@ void vertex() {
 }
 
 void fragment() {
+	if (survivor.w > 0.0) {
+		// A tunnel from the camera to the survivor, wider at their end.
+		vec3 wp = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+		vec3 cam = CAMERA_POSITION_WORLD;
+		vec3 d = survivor.xyz - cam;
+		float len = length(d);
+		vec3 dir = d / len;
+		float t = dot(wp - cam, dir);
+		if (t < len - 1.0) {
+			float r = length((wp - cam) - dir * t);
+			float radius = mix(1.2, 3.4, clamp(t / len, 0.0, 1.0));
+			float fade = (1.0 - smoothstep(radius * 0.7, radius, r)) * 0.94;
+			if (bayer(FRAGCOORD.xy) < fade) discard;
+		}
+	}
 	vec4 c = texture(albedo_tex, UV) * albedo_color;
 	if (use_vcolor) c *= COLOR;
 	if (alpha_scissor > 0.0) {
