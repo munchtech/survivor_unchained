@@ -10,9 +10,22 @@ namespace SurvivorUnchained.World;
 /// </summary>
 public static class Campfire
 {
-    public static Node3D Build(Vector3 at, float size = 1)
+    /// <param name="ring">Lay its own stones and logs (not where the web
+    /// game's are already laid).</param>
+    /// <param name="parts">Which of flames, embers, smoke (for telling
+    /// them apart).</param>
+    public static Node3D Build(Vector3 at, float size = 1, bool ring = true, string parts = "flames,embers,smoke")
     {
         var root = new Node3D { Name = "Campfire", Position = at };
+        if (ring) Ring(root, size);
+        if (parts.Contains("flames")) root.AddChild(Flames(size));
+        if (parts.Contains("embers")) root.AddChild(Embers(size));
+        if (parts.Contains("smoke")) root.AddChild(Smoke(size));
+        return root;
+    }
+
+    static void Ring(Node3D root, float size)
+    {
         // The ring: kit pebbles, turned and sized a little differently each.
         var rng = new RandomNumberGenerator { Seed = 11 };
         for (int i = 0; i < 9; i++)
@@ -39,10 +52,6 @@ public static class Campfire
             log.Basis = new Basis(new Vector3(-Mathf.Sin(a), 0, Mathf.Cos(a)), Mathf.DegToRad(72)) ;
             root.AddChild(log);
         }
-        root.AddChild(Flames(size));
-        root.AddChild(Embers(size));
-        root.AddChild(Smoke(size));
-        return root;
     }
 
     /// <summary>A soft round sprite: bright middle, nothing at the edge.</summary>
@@ -116,21 +125,24 @@ public static class Campfire
     {
         var p = new ParticleProcessMaterial
         {
-            EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Sphere, EmissionSphereRadius = 0.2f * size,
-            Direction = Vector3.Up, Spread = 12, InitialVelocityMin = 0.9f * size, InitialVelocityMax = 1.6f * size,
-            Gravity = new Vector3(0, 0.6f, 0), DampingMin = 0.5f, DampingMax = 1f,
-            ScaleMin = 0.45f * size, ScaleMax = 0.8f * size,
-            ScaleCurve = Curve((0, 0.5f), (0.25f, 1f), (1, 0.2f)),
-            AngleMin = -12, AngleMax = 12,
-            // Orange, not white: many tongues add up, and what adds past white
-            // is only a blob.
-            ColorRamp = Ramp((0, new Color(0.9f, 0.42f, 0.1f, 0)), (0.15f, new Color(0.85f, 0.3f, 0.05f, 0.32f)), (0.6f, new Color(0.55f, 0.12f, 0.02f, 0.2f)), (1, new Color(0.15f, 0.02f, 0.01f, 0))),
-            TurbulenceEnabled = true, TurbulenceNoiseStrength = 0.6f, TurbulenceNoiseScale = 2.5f, TurbulenceInfluenceMin = 0.05f, TurbulenceInfluenceMax = 0.15f,
+            EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Sphere, EmissionSphereRadius = 0.18f * size,
+            Direction = Vector3.Up, Spread = 10, InitialVelocityMin = 0.7f * size, InitialVelocityMax = 1.3f * size,
+            Gravity = new Vector3(0, 0.8f, 0), DampingMin = 0.5f, DampingMax = 1f,
+            ScaleMin = 0.55f * size, ScaleMax = 0.95f * size,
+            ScaleCurve = Curve((0, 0.6f), (0.3f, 1f), (1, 0.35f)),
+            AngleMin = -10, AngleMax = 10,
+            TurbulenceEnabled = true, TurbulenceNoiseStrength = 0.6f, TurbulenceNoiseScale = 2.5f, TurbulenceInfluenceMin = 0.05f, TurbulenceInfluenceMax = 0.12f,
         };
+        // The colour, the licking edge and how much light it adds are the
+        // flame shader's (shaders/flame.gdshader).
+        var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/flame.gdshader") };
+        mat.SetShaderParameter("shape_tex", FlameTongue());
+        mat.SetShaderParameter("noise_tex", NoiseTex.Get());
+        mat.SetShaderParameter("glow", 0.55f);
         return new GpuParticles3D
         {
-            Name = "Flames", Amount = 30, Lifetime = 0.75, ProcessMaterial = p, Position = new Vector3(0, 0.15f, 0),
-            DrawPass1 = new QuadMesh { Size = new Vector2(0.4f, 0.8f), Material = Sprite(FlameTongue(), true) },
+            Name = "Flames", Amount = 16, Lifetime = 0.8, ProcessMaterial = p, Position = new Vector3(0, 0.1f, 0),
+            DrawPass1 = new QuadMesh { Size = new Vector2(0.45f, 0.9f), CenterOffset = new Vector3(0, 0.3f, 0), Material = mat },
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Preprocess = 1.0,
         };
     }
@@ -142,7 +154,9 @@ public static class Campfire
             EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Sphere, EmissionSphereRadius = 0.25f * size,
             Direction = Vector3.Up, Spread = 25, InitialVelocityMin = 1.5f, InitialVelocityMax = 3.2f,
             Gravity = new Vector3(0, 0.4f, 0), ScaleMin = 0.03f, ScaleMax = 0.06f,
-            ColorRamp = Ramp((0, new Color(5f, 2.5f, 0.8f, 1)), (0.7f, new Color(3f, 0.9f, 0.2f, 1)), (1, new Color(1f, 0.2f, 0.05f, 0))),
+            // Hot, not blinding: a speck many times white is spread by the
+            // glow into a ball.
+            ColorRamp = Ramp((0, new Color(1.8f, 0.9f, 0.3f, 1)), (0.7f, new Color(1.2f, 0.4f, 0.08f, 1)), (1, new Color(0.6f, 0.1f, 0.02f, 0))),
             TurbulenceEnabled = true, TurbulenceNoiseStrength = 2f, TurbulenceNoiseScale = 1.5f, TurbulenceInfluenceMin = 0.2f, TurbulenceInfluenceMax = 0.4f,
         };
         return new GpuParticles3D

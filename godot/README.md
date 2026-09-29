@@ -8,7 +8,8 @@ game's own assets and the Verge as the web game builds it:
   Godot imports them in place, KTX2 textures included);
 - `data/verge` is the zone exported from the running web game by
   `tools/godot/export_zone.mjs` (the ground's heights and paint, where every
-  tree, rock and prop stands, the lights);
+  tree, rock and prop stands, the lights, the stream, and everything else it
+  stands up, the camps, the Hunters' Blind and ruins, as one glTF);
 - `art/ground` is the same photoscanned Poly Haven ground, stacked into
   texture arrays by `tools/godot/ground_atlas.py`.
 
@@ -22,8 +23,12 @@ game's own assets and the Verge as the web game builds it:
 Slice options go after `--`: `--shot NAME --seconds S [--every T --count N]`
 (screenshots, `src/Shots.cs`), `--at X,Z` (where to stand), `--still` (the
 place without the fight), `--risen N`, `--start N`, `--grass R`, `--pitch`,
-`--dist`. Headless runs use Mesa's software Vulkan: seconds per frame, so
+`--dist`, `--firetest` (the fire's flames, embers and smoke apart). Headless runs use Mesa's software Vulkan: seconds per frame, so
 keep shots short; on a real GPU it runs in real time.
+
+To set the two side by side: `node tools/godot/web_shot.mjs` (the web game
+at the same place and hour, 1080p; needs the dev server), then
+`python3 tools/godot/compare.py web.png godot.png out.jpg`.
 
 ## What is where
 
@@ -32,7 +37,9 @@ keep shots short; on a real GPU it runs in real time.
   game's terrain shader ported, with the terrain as a physics heightmap),
   flora and props (`shaders/kit.gdshader`: the web game's weathering, each
   kind's leaf colours and moss, wind), grass (`shaders/grass.gdshader`), the
-  campfire (GPU particles).
+  campfire (GPU particles; `shaders/flame.gdshader`), the stream
+  (`shaders/water.gdshader`: the web game's water, with the bed seen through
+  it and the murk by its real depth), the landmarks.
 - `src/Actors/`: people from Quaternius parts on one skeleton, with the
   Universal Animation Libraries (`People.cs`); weapons normalised to one grip
   (`Arms.cs`, the web game's `arms.ts`); the survivor (an AnimationTree: the

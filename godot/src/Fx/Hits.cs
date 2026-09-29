@@ -99,8 +99,8 @@ public partial class Hits : Node3D
         for (int i = 0; i <= Segs; i++)
         {
             float u = (float)i / Segs, a = -arc / 2 + arc * u;
-            float lift = Mathf.Sin(u * Mathf.Pi) * 0.12f;
-            verts.Add(new Vector3(Mathf.Sin(a) * 0.55f, lift * 0.5f, Mathf.Cos(a) * 0.55f)); uvs.Add(new Vector2(u, 0));
+            float lift = Mathf.Sin(u * Mathf.Pi) * 0.25f;
+            verts.Add(new Vector3(Mathf.Sin(a) * 0.58f, lift * 0.4f, Mathf.Cos(a) * 0.58f)); uvs.Add(new Vector2(u, 0));
             verts.Add(new Vector3(Mathf.Sin(a) * 1.02f, lift, Mathf.Cos(a) * 1.02f)); uvs.Add(new Vector2(u, 1));
             if (i < Segs) { int b = i * 2; idx.AddRange(new[] { b, b + 1, b + 2, b + 1, b + 3, b + 2 }); }
         }
@@ -174,11 +174,11 @@ public partial class Hits : Node3D
         for (int i = 0; i < arcs.Count; i++)
         {
             var (m, mat, t, life) = arcs[i];
-            if (t >= 1.6f) continue;
+            if (t >= 1) continue;
             t += dt / life;
             mat.SetShaderParameter("head", Mathf.Min(1.1f, t / 0.55f));
-            mat.SetShaderParameter("alpha", 1 - Mathf.Max(0, (t - 0.6f) * 1.0f));
-            if (t >= 1.6f) m.Visible = false;
+            mat.SetShaderParameter("alpha", 1 - Mathf.Max(0, (t - 0.5f) * 2));
+            if (t >= 1) m.Visible = false;
             arcs[i] = (m, mat, t, life);
         }
     }

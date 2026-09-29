@@ -25,6 +25,8 @@ public partial class Slice : Node3D
         AddChild(Ground.Build(zone));
         AddChild(Dressing.Flora(zone));
         AddChild(Dressing.Props(zone));
+        AddChild(Dressing.Landmarks(zone));
+        AddChild(Water.Build(zone));
         Night();
 
         // Where the fight is: by the Hunters' Blind, its fire lit.
@@ -34,13 +36,25 @@ public partial class Slice : Node3D
         focus = new Vector3(x, zone.HeightAt(x, z) + 0.8f, z);
         AddChild(Dressing.Lights(zone, focus));
         AddChild(Grass.Build(zone, new Vector2(x, z), Args.Num("grass", 22)));
-        // The Hunters' Blind's fire, where the web game lights it.
+        // The Hunters' Blind's fire, where the web game lights it (its stones
+        // and logs came with the landmarks; the fire itself is Godot's).
         var fire = focus;
         foreach (var l in zone.Lights)
             if (l.On && new Vector2(l.At.X - x, l.At.Z - z).Length() < 12 && l.Color.R > l.Color.B)
             {
                 fire = new Vector3(l.At.X, zone.HeightAt(l.At.X, l.At.Z), l.At.Z);
-                AddChild(Campfire.Build(fire));
+                if (Args.Has("firetest"))
+                {
+                    // Each part of the fire alone, side by side: flames,
+                    // embers, smoke.
+                    string[] parts = { "flames", "embers", "smoke" };
+                    for (int i = 0; i < 3; i++)
+                    {
+                        var p = fire + new Vector3((i - 1) * 2.2f, 0, 3);
+                        AddChild(Campfire.Build(p with { Y = zone.HeightAt(p.X, p.Z) }, ring: false, parts: parts[i]));
+                    }
+                }
+                else AddChild(Campfire.Build(fire, ring: false));
             }
         if (Args.Has("still"))
         {
@@ -88,6 +102,10 @@ public partial class Slice : Node3D
             VolumetricFogLength = 90, VolumetricFogAnisotropy = 0.3f,
             AdjustmentEnabled = true, AdjustmentContrast = 1.1f, AdjustmentSaturation = 0.95f,
         };
+        // The glow's tighter levels only: the wide ones spread every bright
+        // speck (an ember, a blade's edge) into a ball of light.
+        float[] glow = { 0, 0.6f, 1, 0.5f, 0.15f, 0, 0 };
+        for (int i = 0; i < glow.Length; i++) env.SetGlowLevel(i, glow[i]);
         // Debug switches, for telling artefacts apart.
         if (Args.Has("nossao")) env.SsaoEnabled = false;
         if (Args.Has("notaa")) GetViewport().UseTaa = false;

@@ -88,6 +88,27 @@ public static class Dressing
         return root;
     }
 
+    /// <summary>Everything else the web game stands up in the zone (its
+    /// camps, the Hunters' Blind, ruins, the KayKit props), exported where
+    /// it stands (tools/godot/export_zone.mjs). Shadows from the big pieces
+    /// only.</summary>
+    public static Node3D Landmarks(ZoneData z)
+    {
+        var root = GD.Load<PackedScene>($"res://data/{z.Id}/landmarks.glb").Instantiate<Node3D>();
+        root.Name = "Landmarks";
+        void Walk(Node n)
+        {
+            foreach (var c in n.GetChildren())
+            {
+                if (c is MeshInstance3D m && m.GetAabb().Size.Length() < 0.8f)
+                    m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
+                Walk(c);
+            }
+        }
+        Walk(root);
+        return root;
+    }
+
     /// <summary>The zone's lamps and fires, lit ones only; flicker is the
     /// fire's own (Flicker).</summary>
     public static Node3D Lights(ZoneData z, Vector3 near)
