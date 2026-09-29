@@ -1,6 +1,6 @@
 using Godot;
 
-namespace SurvivorUnchained.World;
+namespace SurvivorUnchained.View;
 
 /// <summary>
 /// A campfire: a ring of the nature kit's stones, logs in the kit's bark,

@@ -1,0 +1,125 @@
+{
+ "cloaks": [
+  {
+   "id": "calling",
+   "name": "Their calling's",
+   "color": ""
+  },
+  {
+   "id": "watch",
+   "name": "Watch Blue",
+   "color": "#34508c"
+  },
+  {
+   "id": "crimson",
+   "name": "Crimson",
+   "color": "#9c1e24"
+  },
+  {
+   "id": "forest",
+   "name": "Forest",
+   "color": "#2e5c34"
+  },
+  {
+   "id": "ochre",
+   "name": "Ochre",
+   "color": "#c89030"
+  },
+  {
+   "id": "violet",
+   "name": "Violet",
+   "color": "#5c3a86"
+  },
+  {
+   "id": "bone",
+   "name": "Bone",
+   "color": "#dcd4c0"
+  },
+  {
+   "id": "soot",
+   "name": "Soot",
+   "color": "#34302e"
+  },
+  {
+   "id": "none",
+   "name": "No cloak",
+   "color": ""
+  }
+ ],
+ "skins": [
+  {
+   "id": "fair",
+   "name": "Fair",
+   "color": ""
+  },
+  {
+   "id": "rose",
+   "name": "Rose",
+   "color": "#f0b8a0"
+  },
+  {
+   "id": "warm",
+   "name": "Warm",
+   "color": "#e0a47c"
+  },
+  {
+   "id": "olive",
+   "name": "Olive",
+   "color": "#c4945e"
+  },
+  {
+   "id": "brown",
+   "name": "Brown",
+   "color": "#946040"
+  },
+  {
+   "id": "deep",
+   "name": "Deep",
+   "color": "#5e3c2a"
+  }
+ ],
+ "hairs": [
+  {
+   "id": "as_is",
+   "name": "As it grew",
+   "color": ""
+  },
+  {
+   "id": "black",
+   "name": "Black",
+   "color": "#2a2422"
+  },
+  {
+   "id": "brown",
+   "name": "Brown",
+   "color": "#5e3e28"
+  },
+  {
+   "id": "auburn",
+   "name": "Auburn",
+   "color": "#8e3e20"
+  },
+  {
+   "id": "fair",
+   "name": "Fair",
+   "color": "#d8b870"
+  },
+  {
+   "id": "grey",
+   "name": "Grey",
+   "color": "#a8a4a0"
+  }
+ ],
+ "hairStyles": {
+  "male": [
+   "Hair_SimpleParted",
+   "Hair_Buzzed",
+   "Hair_Long"
+  ],
+  "female": [
+   "Hair_Long",
+   "Hair_Buns",
+   "Hair_BuzzedFemale"
+  ]
+ }
+}

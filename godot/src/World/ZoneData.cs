@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using Godot;
 
-namespace SurvivorUnchained.World;
+namespace SurvivorUnchained.View;
 
 /// <summary>
 /// A zone as the web game builds it, exported by tools/godot/export_zone.mjs

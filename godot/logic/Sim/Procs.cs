@@ -39,6 +39,7 @@ public sealed class TriggerCond
 }
 
 /// <summary>What a trigger does. The kinds are nested: Effect.Explode, Effect.Chain...</summary>
+[System.Text.Json.Serialization.JsonConverter(typeof(EffectConverter))]
 public abstract record Effect
 {
     public sealed record Explode(double Radius, double Damage, Basis Basis, School School, StatusPayload? Status = null) : Effect;

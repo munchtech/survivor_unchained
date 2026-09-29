@@ -1,5 +1,5 @@
 using Godot;
-using SurvivorUnchained.World;
+using SurvivorUnchained.View;
 
 namespace SurvivorUnchained;
 

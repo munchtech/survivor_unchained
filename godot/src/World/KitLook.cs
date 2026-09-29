@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Godot;
 
-namespace SurvivorUnchained.World;
+namespace SurvivorUnchained.View;
 
 /// <summary>
 /// The kits' materials as the web game weathers them (src/render/env.ts's

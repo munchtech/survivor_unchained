@@ -1,7 +1,7 @@
 using System;
 using Godot;
 
-namespace SurvivorUnchained.World;
+namespace SurvivorUnchained.View;
 
 /// <summary>
 /// The web game's tiling noise (src/render/noiseTex.ts), made the same way,

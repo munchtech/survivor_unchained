@@ -1,6 +1,6 @@
 using Godot;
 
-namespace SurvivorUnchained.Actors;
+namespace SurvivorUnchained.View;
 
 /// <summary>
 /// The survivor: a Quaternius person in the Warden's ranger leathers, a

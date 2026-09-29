@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Godot;
 
-namespace SurvivorUnchained.Actors;
+namespace SurvivorUnchained.View;
 
 /// <summary>
 /// A body that falls as a body: physical bones (capsules from each bone to

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Godot;
 
-namespace SurvivorUnchained.Actors;
+namespace SurvivorUnchained.View;
 
 /// <summary>
 /// The Risen: the dead of the Verge got up again, Quaternius people with

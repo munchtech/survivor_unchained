@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Godot;
 
-namespace SurvivorUnchained.Actors;
+namespace SurvivorUnchained.View;
 
 /// <summary>
 /// Weapons worth holding (res://assets/weapons: Sketchfab CC-BY/CC0, see

@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Godot;
 
-namespace SurvivorUnchained.World;
+namespace SurvivorUnchained.View;
 
 /// <summary>
 /// A meadow around the fight: blades on a jittered grid of cells, as the web

@@ -1,7 +1,7 @@
 using Godot;
-using SurvivorUnchained.Actors;
-using SurvivorUnchained.Fx;
-using SurvivorUnchained.World;
+using SurvivorUnchained.View;
+using SurvivorUnchained.View;
+using SurvivorUnchained.View;
 
 namespace SurvivorUnchained;
 

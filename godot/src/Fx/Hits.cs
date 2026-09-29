@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Godot;
 
-namespace SurvivorUnchained.Fx;
+namespace SurvivorUnchained.View;
 
 /// <summary>
 /// What a hit looks like: a spray of blood (GPU particles), blood laid on

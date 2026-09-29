@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Godot;
 
-namespace SurvivorUnchained.Actors;
+namespace SurvivorUnchained.View;
 
 /// <summary>
 /// People from the Quaternius parts the web game uses (res://assets/people):

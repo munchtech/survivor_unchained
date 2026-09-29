@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Godot;
 
-namespace SurvivorUnchained.World;
+namespace SurvivorUnchained.View;
 
 /// <summary>
 /// The zone's water, as the web game lays it (src/render/water.ts): a ribbon

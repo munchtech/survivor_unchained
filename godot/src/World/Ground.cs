@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Godot;
 
-namespace SurvivorUnchained.World;
+namespace SurvivorUnchained.View;
 
 /// <summary>
 /// The zone's ground: a heightfield mesh from the exported heights, shaded by

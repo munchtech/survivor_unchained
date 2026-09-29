@@ -1,0 +1,438 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using SurvivorUnchained.Content;
+using SurvivorUnchained.Core;
+using SurvivorUnchained.Sim;
+
+namespace SurvivorUnchained.Rpg;
+
+/* The persistent character: everything about the survivor that outlives an
+ * expedition. The ember build (weapon ranks, boons, evolutions) belongs to
+ * the Battle and fades when you rest; this is what is left when it does.
+ * Shaped as the web game's save is, field for field. */
+
+public sealed class AffixRoll { public string Id = ""; public int Tier; }
+
+public sealed class ItemInstance
+{
+    public string Uid = "", Def = "";
+    public int Qty = 1, Rarity;
+    public List<AffixRoll> Affixes = new();
+    /// <summary>Given name for storied items ("Maeca's Last Arrow").</summary>
+    public string? Name;
+    /// <summary>Where it came from, one line per owner.</summary>
+    public List<string>? History;
+}
+
+public enum ConditionId { Wounded, Blightsick, Poisoned, Blessed, Rested, Wolfscent, Hunted, Warmed }
+
+public sealed class Condition { public ConditionId Id; public int Days; public string? Note; }
+
+public sealed class Attributes { public int Might, Finesse, Wits, Resolve; }
+
+public enum Sex { Male, Female }
+
+/// <summary>What is worn and held, slot by slot.</summary>
+public sealed class Equipment
+{
+    public ItemInstance? Weapon, Offhand, Head, Body, Cloak, Amulet, Ring1, Ring2, Relic;
+
+    public ItemInstance? this[EquipSlot s]
+    {
+        get => s switch
+        {
+            EquipSlot.Weapon => Weapon, EquipSlot.Offhand => Offhand, EquipSlot.Head => Head, EquipSlot.Body => Body,
+            EquipSlot.Cloak => Cloak, EquipSlot.Amulet => Amulet, EquipSlot.Ring1 => Ring1, EquipSlot.Ring2 => Ring2, _ => Relic,
+        };
+        set
+        {
+            switch (s)
+            {
+                case EquipSlot.Weapon: Weapon = value; break;
+                case EquipSlot.Offhand: Offhand = value; break;
+                case EquipSlot.Head: Head = value; break;
+                case EquipSlot.Body: Body = value; break;
+                case EquipSlot.Cloak: Cloak = value; break;
+                case EquipSlot.Amulet: Amulet = value; break;
+                case EquipSlot.Ring1: Ring1 = value; break;
+                case EquipSlot.Ring2: Ring2 = value; break;
+                default: Relic = value; break;
+            }
+        }
+    }
+}
+
+public sealed class LifeStats
+{
+    public int Kills, Deaths, Expeditions, BossesSlain;
+    public double GoldEarned;
+    public List<string> Evolutions = new();
+}
+
+public sealed class CharacterData
+{
+    public int Version = 1;
+    public string Id = "", Name = "", Archetype = "", Background = "", Model = "", Palette = "";
+    /// <summary>Wears the calling's helm or hat.</summary>
+    public bool? Headgear;
+    /// <summary>Look: a dyed cloak (or none), skin, hair.</summary>
+    public string? Cloak, Skin, Hair;
+    /// <summary>The body: a man or a woman, their hair's cut, a beard, a woman's figure.</summary>
+    public Sex? Sex;
+    public string? HairStyle;
+    public bool? Beard;
+    public double? Figure;
+    public int Level = 1;
+    public double Xp;
+    public Attributes Attributes = new();
+    public int Points;
+    public List<string> Traits = new();
+    /// <summary>Trait picks owed from levels gained.</summary>
+    public int TraitPicks;
+    public List<string> Knowledge = new();
+    public Equipment Equipment = new();
+    public List<ItemInstance?> Pack = Inventory.NewPack();
+    public double Gold;
+    /// <summary>The ability chosen at creation (the web game's id, 'shield_bash').</summary>
+    public string Ability = "";
+    public string StartBoon = "";
+    public List<Condition> Conditions = new();
+    /// <summary>Kills with each weapon, across every expedition.</summary>
+    public Dictionary<string, int> Mastery = new();
+    public LifeStats Stats = new();
+    public bool Alive = true;
+    public int CreatedDay = 1;
+    public int NextUid = 1;
+
+    public AbilityKind AbilityKind => Abilities.ById(Ability).Kind;
+}
+
+public sealed class CreationChoice
+{
+    public string Name = "", Archetype = "warden", Background = "hunter", Palette = "", WeaponItem = "", Ability = "", StartBoon = "";
+    public string? Model, Cloak, Skin, Hair, HairStyle;
+    public bool? Headgear, Beard;
+    public Sex? Sex;
+    public double? Figure;
+}
+
+public static class Inventory
+{
+    public const int PackSize = 24;
+
+    public static List<ItemInstance?> NewPack()
+    {
+        var p = new List<ItemInstance?>(PackSize);
+        for (int i = 0; i < PackSize; i++) p.Add(null);
+        return p;
+    }
+
+    static readonly Random loose = new();
+
+    /// <summary>A new item; plain gear rolls its affixes.</summary>
+    public static ItemInstance Make(CharacterData? ch, string defId, int qty = 1, int? rarity = null, uint? seed = null, List<AffixRoll>? affixes = null)
+    {
+        var def = Items.Get(defId);
+        string uid = ch != null ? $"i{ch.NextUid++}" : $"i{loose.Next(1_000_000_000):x}";
+        var it = new ItemInstance { Uid = uid, Def = defId, Qty = qty, Rarity = rarity ?? def.Rarity, Affixes = affixes ?? new() };
+        if (def.Base && affixes == null)
+        {
+            var rng = new Rng(seed ?? (uint)loose.Next(1_000_000_000));
+            int n = Math.Min(3, it.Rarity);
+            var pool = Items.Affixes.Where(a => a.Slots.Contains(def.Kind)).ToList();
+            var picked = new HashSet<string>();
+            bool hasPrefix = false, hasSuffix = false;
+            for (int k = 0; k < n && pool.Count > 0; k++)
+            {
+                var cands = pool.Where(a => !picked.Contains(a.Id) && (a.Prefix ? !hasPrefix || n > 2 : !hasSuffix || n > 2)).ToList();
+                if (cands.Count == 0) break;
+                var a = rng.Pick(cands);
+                picked.Add(a.Id);
+                if (a.Prefix) hasPrefix = true; else hasSuffix = true;
+                it.Affixes.Add(new AffixRoll { Id = a.Id, Tier = Math.Max(0, Math.Min(3, it.Rarity - 1 + rng.Int(0, 1))) });
+            }
+        }
+        return it;
+    }
+
+    public static string Name(ItemInstance it)
+    {
+        if (it.Name != null) return it.Name;
+        var def = Items.Get(it.Def);
+        var affs = it.Affixes.Select(a => Items.Affix(a.Id)).Where(a => a != null).ToList();
+        var pre = affs.FirstOrDefault(a => a!.Prefix);
+        var suf = affs.FirstOrDefault(a => !a!.Prefix);
+        return string.Join(" ", new[] { pre?.Name, def.Name, suf?.Name }.Where(s => !string.IsNullOrEmpty(s)));
+    }
+
+    public static string RarityName(ItemInstance it) => Items.RarityNames[Math.Min(Items.RarityNames.Count - 1, it.Rarity)];
+
+    public static List<StatMod> Mods(ItemInstance it)
+    {
+        var def = Items.Get(it.Def);
+        string src = $"item:{it.Uid}";
+        var o = (def.Mods ?? new()).Select(m => m with { Source = src }).ToList();
+        foreach (var a in it.Affixes)
+            if (Items.Affix(a.Id) is { } ad) o.AddRange(ad.Mods(a.Tier).Select(m => m with { Source = src }));
+        return o;
+    }
+
+    public static List<string> Lines(ItemInstance it) => it.Affixes.Select(a => Items.Affix(a.Id)?.Text(a.Tier) ?? "").ToList();
+
+    public static bool AddToPack(CharacterData ch, ItemInstance it)
+    {
+        var def = Items.Get(it.Def);
+        if (def.Stack is { } stack)
+            foreach (var p in ch.Pack)
+            {
+                if (p == null || p.Def != it.Def || p.Qty >= stack) continue;
+                int take = Math.Min(stack - p.Qty, it.Qty);
+                p.Qty += take;
+                it.Qty -= take;
+                if (it.Qty <= 0) return true;
+            }
+        int i = ch.Pack.IndexOf(null);
+        if (i < 0) return false;
+        ch.Pack[i] = it;
+        return true;
+    }
+
+    public static int Free(CharacterData ch) => ch.Pack.Count(p => p == null);
+
+    public static int Count(CharacterData ch, string defId)
+    {
+        int n = 0;
+        foreach (var p in ch.Pack) if (p?.Def == defId) n += p.Qty;
+        foreach (var s in Items.EquipSlots) if (ch.Equipment[s]?.Def == defId) n++;
+        return n;
+    }
+
+    /// <summary>Take up to qty of an item from the pack; how many were taken.</summary>
+    public static int Take(CharacterData ch, string defId, int qty = 1)
+    {
+        int left = qty;
+        for (int i = 0; i < ch.Pack.Count && left > 0; i++)
+        {
+            var p = ch.Pack[i];
+            if (p == null || p.Def != defId) continue;
+            int t = Math.Min(left, p.Qty);
+            p.Qty -= t;
+            left -= t;
+            if (p.Qty <= 0) ch.Pack[i] = null;
+        }
+        return qty - left;
+    }
+
+    public sealed record Where(bool InPack, int Index, EquipSlot Slot, ItemInstance Item);
+
+    public static Where? Find(CharacterData ch, string uid)
+    {
+        int i = ch.Pack.FindIndex(p => p?.Uid == uid);
+        if (i >= 0) return new Where(true, i, default, ch.Pack[i]!);
+        foreach (var s in Items.EquipSlots) if (ch.Equipment[s]?.Uid == uid) return new Where(false, -1, s, ch.Equipment[s]!);
+        return null;
+    }
+
+    /// <summary>Equip an item into a slot; whatever was there goes to the pack.</summary>
+    public static bool Equip(CharacterData ch, ItemInstance it, EquipSlot slot)
+    {
+        var def = Items.Get(it.Def);
+        if (!Items.Fits(def, slot)) return false;
+        var loc = Find(ch, it.Uid);
+        if (loc is { InPack: true }) ch.Pack[loc.Index] = null;
+        if (loc is { InPack: false }) ch.Equipment[loc.Slot] = null;
+        var prev = ch.Equipment[slot];
+        ch.Equipment[slot] = it;
+        if (prev != null)
+        {
+            if (loc is { InPack: true }) ch.Pack[loc.Index] = prev;
+            else if (!AddToPack(ch, prev)) { ch.Equipment[slot] = prev; return false; }
+        }
+        return true;
+    }
+
+    public static bool Unequip(CharacterData ch, EquipSlot slot)
+    {
+        var it = ch.Equipment[slot];
+        if (it == null || !AddToPack(ch, it)) return false;
+        ch.Equipment[slot] = null;
+        return true;
+    }
+
+    /// <summary>Everything the survivor has on them that the world can see.</summary>
+    public static HashSet<string> WorldTags(CharacterData ch)
+    {
+        var tags = new HashSet<string>();
+        foreach (var s in Items.EquipSlots)
+            if (ch.Equipment[s] is { } it && Items.Find(it.Def)?.Tags is { } t) tags.UnionWith(t);
+        foreach (var p in ch.Pack)
+            if (p != null && Items.Find(p.Def) is { Kind: ItemKind.Tool, Tags: { } t }) tags.UnionWith(t);
+        foreach (var tr in ch.Traits) if (Callings.Trait(tr)?.Tags is { } t) tags.UnionWith(t);
+        foreach (var k in ch.Knowledge) tags.Add($"knows:{k}");
+        tags.Add($"bg:{ch.Background}");
+        tags.Add($"class:{ch.Archetype}");
+        return tags;
+    }
+}
+
+/// <summary>The survivor as a fight needs them.</summary>
+public sealed class CombatKit
+{
+    public StatBlock Stats = new();
+    public List<(string Id, int Rank)> Weapons = new();
+    public List<(TriggerDef Def, string Source)> Triggers = new();
+    public AbilityKind Ability;
+    public HashSet<string> GearIds = new();
+    public HashSet<StatusKind> GearStatuses = new();
+    public int StartLevels, Revives, Rerolls = 2;
+}
+
+public static class Character
+{
+    public static CharacterData Create(CreationChoice c, int day = 1, long? seed = null)
+    {
+        var a = Callings.Archetype(c.Archetype);
+        var bg = Callings.Background(c.Background);
+        long s = seed ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var ch = new CharacterData
+        {
+            Id = $"hero-{ToBase36(s)}", Name = string.IsNullOrWhiteSpace(c.Name) ? "Nameless" : c.Name.Trim(),
+            Archetype = c.Archetype, Background = c.Background, Model = c.Model ?? a.Model, Palette = c.Palette,
+            Headgear = c.Headgear ?? true, Cloak = c.Cloak, Skin = c.Skin, Hair = c.Hair, Sex = c.Sex, HairStyle = c.HairStyle,
+            Beard = c.Beard, Figure = c.Figure, Attributes = Callings.StartAttributes(c.Archetype),
+            Knowledge = new(bg.Knowledge), Gold = 25, Ability = c.Ability, StartBoon = c.StartBoon, CreatedDay = day,
+        };
+        Inventory.Equip(ch, Inventory.Make(ch, c.WeaponItem), EquipSlot.Weapon);
+        foreach (var id in bg.Items)
+        {
+            var it = Inventory.Make(ch, id);
+            var slot = Items.SlotFor(Items.Get(id));
+            if (slot is { } sl && ch.Equipment[sl] == null) Inventory.Equip(ch, it, sl);
+            else Inventory.AddToPack(ch, it);
+        }
+        Inventory.AddToPack(ch, Inventory.Make(ch, "health_draught", qty: 2));
+        return ch;
+    }
+
+    static string ToBase36(long v)
+    {
+        const string digits = "0123456789abcdefghijklmnopqrstuvwxyz";
+        if (v == 0) return "0";
+        var sb = new System.Text.StringBuilder();
+        for (ulong u = (ulong)Math.Abs(v); u > 0; u /= 36) sb.Insert(0, digits[(int)(u % 36)]);
+        return sb.ToString();
+    }
+
+    public static double XpForLevel(int level) => MathX.Round(120 * Math.Pow(level, 1.55));
+
+    /// <summary>Character experience from the fight; the levels gained.</summary>
+    public static int GainXp(CharacterData ch, double xp)
+    {
+        ch.Xp += xp;
+        int gained = 0;
+        while (ch.Xp >= XpForLevel(ch.Level))
+        {
+            ch.Xp -= XpForLevel(ch.Level);
+            ch.Level++;
+            ch.Points += 2;
+            if (ch.Level % 2 == 0) ch.TraitPicks++;
+            gained++;
+        }
+        return gained;
+    }
+
+    /// <summary>The survivor as the Battle needs them: stats with every source folded in.</summary>
+    public static CombatKit Kit(CharacterData ch)
+    {
+        var a = Callings.Archetype(ch.Archetype);
+        var kit = new CombatKit { Ability = ch.AbilityKind };
+        var st = kit.Stats;
+        var at = ch.Attributes;
+        st.SetBase(new Dictionary<string, double>
+        {
+            [Stat.MaxHealth] = a.Base.MaxHealth + (ch.Level - 1) * 8, [Stat.Regen] = a.Base.Regen, [Stat.Armor] = a.Base.Armor,
+            [Stat.MoveSpeed] = a.Base.MoveSpeed, [Stat.PickupRadius] = a.Base.PickupRadius, [Stat.CritChance] = a.Base.CritChance,
+            [Stat.CritDamage] = 1.5, [Stat.Luck] = 1,
+        });
+        const string src = "attributes";
+        st.AddAll([
+            new(Stat.Damage, ModKind.Inc, at.Might * 0.025, src),
+            new(Stat.MaxHealth, ModKind.Flat, at.Might * 4 + at.Resolve * 3, src),
+            new(Stat.CritChance, ModKind.Flat, at.Finesse * 0.006, src),
+            new(Stat.MoveSpeed, ModKind.Inc, at.Finesse * 0.01, src),
+            new(Stat.ProjectileSpeed, ModKind.Inc, at.Finesse * 0.02, src),
+            new(Stat.Cooldown, ModKind.More, -Math.Min(0.3, at.Wits * 0.01), src),
+            new(Stat.Area, ModKind.Inc, at.Wits * 0.02, src),
+            new(Stat.XpGain, ModKind.Inc, at.Wits * 0.02, src),
+            new(Stat.Armor, ModKind.Flat, at.Resolve * 0.5, src),
+            new(Stat.Regen, ModKind.Flat, at.Resolve * 0.08, src),
+            new(Stat.Healing, ModKind.Inc, at.Resolve * 0.03, src),
+        ]);
+        foreach (var s in Items.EquipSlots)
+        {
+            var it = ch.Equipment[s];
+            if (it == null) continue;
+            var def = Items.Get(it.Def);
+            kit.GearIds.Add(def.Id);
+            st.AddAll(Inventory.Mods(it));
+            foreach (var t in def.Triggers ?? new()) kit.Triggers.Add((t, $"item:{it.Uid}"));
+            foreach (var k in def.Statuses ?? new()) kit.GearStatuses.Add(k);
+            if (def.Weapon != null && s is EquipSlot.Weapon or EquipSlot.Offhand)
+            {
+                // Mastery: every 60 kills with a weapon starts it a rank higher, to +2.
+                int bonus = Math.Min(2, ch.Mastery.GetValueOrDefault(def.Weapon.Id) / 60);
+                kit.Weapons.Add((def.Weapon.Id, def.Weapon.Rank + bonus + Math.Max(0, it.Rarity - def.Rarity)));
+            }
+        }
+        foreach (var t in ch.Traits)
+        {
+            var td = Callings.Trait(t);
+            if (td == null) continue;
+            if (td.Mods != null) st.AddAll(td.Mods.Select(m => m with { Source = $"trait:{t}" }));
+            foreach (var tr in td.Triggers ?? new()) kit.Triggers.Add((tr, $"trait:{t}"));
+            if (td.Tags?.Contains("ember_start") == true) kit.StartLevels++;
+            if (td.Tags?.Contains("revive") == true) kit.Revives++;
+            if (td.Tags?.Contains("reroll") == true) kit.Rerolls++;
+        }
+        foreach (var c in ch.Conditions)
+        {
+            switch (c.Id)
+            {
+                case ConditionId.Wounded: st.Add(new(Stat.MaxHealth, ModKind.More, -0.2, "cond:wounded")); break;
+                case ConditionId.Blightsick: st.Add(new(Stat.Regen, ModKind.Flat, -0.8, "cond:blightsick")); break;
+                case ConditionId.Blessed: st.Add(new(Stat.DamageOf(School.Holy), ModKind.Inc, 0.15, "cond:blessed")); break;
+                case ConditionId.Rested: st.Add(new(Stat.MaxHealth, ModKind.Inc, 0.05, "cond:rested")); break;
+                case ConditionId.Warmed:
+                    st.Add(new(Stat.Damage, ModKind.Inc, 0.08, "cond:warmed"));
+                    st.Add(new(Stat.MoveSpeed, ModKind.Inc, 0.05, "cond:warmed"));
+                    break;
+            }
+        }
+        return kit;
+    }
+
+    static readonly string[] CompareKeys =
+    [
+        Stat.MaxHealth, Stat.Armor, Stat.Damage, Stat.Cooldown, Stat.Area, Stat.CritChance, Stat.MoveSpeed, Stat.Regen,
+        Stat.DamageOf(School.Fire), Stat.DamageOf(School.Frost), Stat.DamageOf(School.Holy), Stat.DamageOf(School.Physical),
+        Stat.ResistOf(School.Fire), Stat.ResistOf(School.Nature),
+    ];
+
+    /// <summary>Stat differences if `it` replaced what is in `slot`, for the compare view.</summary>
+    public static List<(string Key, double Before, double After)> Compare(CharacterData ch, ItemInstance it, EquipSlot slot)
+    {
+        var before = Kit(ch).Stats;
+        var clone = Json.Clone(ch);
+        clone.Equipment[slot] = Json.Clone(it);
+        var after = Kit(clone).Stats;
+        var o = new List<(string, double, double)>();
+        foreach (var k in CompareKeys)
+        {
+            bool raw = k.StartsWith("resist");
+            double b = raw ? before.GetRaw(k) : before.Get(k), a = raw ? after.GetRaw(k) : after.Get(k);
+            if (Math.Abs(a - b) > 1e-4) o.Add((k, b, a));
+        }
+        return o;
+    }
+}

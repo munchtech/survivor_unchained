@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Godot;
 
-namespace SurvivorUnchained.World;
+namespace SurvivorUnchained.View;
 
 /// <summary>
 /// What stands on the ground: the nature kit's trees, rocks and undergrowth
