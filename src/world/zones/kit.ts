@@ -115,6 +115,8 @@ export class ZoneKit {
       this.pool.push(l);
     }
     this.root.add(this.flames.mesh, this.smoke.mesh);
+    // The zone's lights, for tools that read a zone (tools/godot/export_zone.mjs).
+    this.root.userData.sources = this.sources;
   }
 
   y(x: number, z: number) { return this.terrain.heightAt(x, z); }

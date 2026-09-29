@@ -48,7 +48,10 @@ export const envLoaded = (kit: EnvKit, name: string) => templates.has(key(kit, n
 export function envModel(kit: EnvKit, name: string): THREE.Object3D {
   const t = templates.get(key(kit, name));
   if (!t) throw new Error(`env piece not preloaded: ${kit}/${name}`);
-  return t.clone(true);
+  const c = t.clone(true);
+  // Which piece this is (tools/godot/export_zone.mjs reads it).
+  c.userData.env = key(kit, name);
+  return c;
 }
 
 /** A piece's bounds as authored (metres). */

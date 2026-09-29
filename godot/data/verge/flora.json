@@ -1,0 +1,7632 @@
+[
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 18
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 7
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 27
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 22
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 9
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 19
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 6
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 4
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 9
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 8
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 7
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 4
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 4
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 13
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 5
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 6
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_1",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 4
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 24
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 3
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 13
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 7
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 46
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 16
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_4",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 6
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 35
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 4
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 8
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_3",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 13
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_4_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 3
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 13
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 14
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 8
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_3",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_2",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 5
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_5",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 4
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 22
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 41
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 16
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 20
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 6
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_2",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 4
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 6
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 17
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 24
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 13
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 3
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_4",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 6
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 18
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 17
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 4
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_4_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 11
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 3
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 23
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 2
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 6
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 11
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 18
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 5
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 9
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 19
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 7
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 6
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_2",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 5
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 5
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 7
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 18
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 13
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 16
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 10
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 32
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 7
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 22
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 7
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 5
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 24
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 6
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 8
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 5
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 15
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 4
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_3",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 6
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 17
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 10
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 7
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 7
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 5
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_3",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 4
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 7
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 5
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_2",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 3
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 14
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 5
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 13
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 4
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_5",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 4
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_2",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 4
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 6
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 4
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_2",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 6
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 13
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 4
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 5
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 3
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 5
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 3
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 12
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_1",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 3
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 5
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 4
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 4
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_5",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_2",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_2",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 4
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 6
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_2",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 2
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_4",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 3
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_2",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 3
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_3",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_3",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 3
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 6
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_3",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_2",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 2
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_1",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 2
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_3",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_2",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 30
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 17
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 18
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 14
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 18
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 35
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 4
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_3",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 5
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 24
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 4
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 2
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_1",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 2
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 42
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 13
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 10
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 9
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 5
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 6
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 10
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 5
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_2",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 12
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 9
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 4
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 7
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 6
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 5
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 35
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 3
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 4
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 3
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 5
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 5
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 7
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 21
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 9
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 5
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_5",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 5
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 22
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 4
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 3
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 5
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 6
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 9
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 8
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_3",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 8
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 4
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 9
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 4
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 2
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 9
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 8
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 36
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 15
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 4
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 7
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_2",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 4
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 6
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 4
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_3",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_4_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 6
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 19
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 4
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 4
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 4
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_2",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 1
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_1",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_2",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 7
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 6
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 11
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 3
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 3
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 4
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 2
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_1",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_4_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 6
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 2
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_4_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 4
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 4
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_2",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 4
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_3",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 4
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 4
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 5
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 1
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 2
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_3",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 4
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_4_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 2
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_2",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_2",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_4",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_4",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_4_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 3
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_4",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 1
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_1",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 5
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 10
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 19
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 4
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 12
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 3
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_1",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 11
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 8
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_3",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 4
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 46
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 4
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 20
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 4
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_4_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 2
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 2
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 8
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 32
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 5
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 39
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 8
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 10
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 30
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 6
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 10
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 16
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 13
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 32
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 5
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 8
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 15
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 20
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 3
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 6
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 9
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_2",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 2
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 7
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 32
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 5
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 4
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 9
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 9
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_2",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 4
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 5
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 4
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_2",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 10
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 8
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 6
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 4
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 5
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 14
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 7
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 4
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 7
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 4
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 5
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_4",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 4
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 5
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 5
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_3",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 4
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 11
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_3",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 4
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_3",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 3
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 17
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 3
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_2",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 4
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 3
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 3
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 7
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_3",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 4
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_3",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 6
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 6
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 1
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 3
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 4
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_4_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 3
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 3
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_2",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_4",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 1
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_2",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 1
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_2",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 1
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_2",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_4_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_2",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 1
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_4_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_4",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 27
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 8
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 13
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 17
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 2
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_4_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 5
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 3
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 5
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 19
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 1
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 7
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_2",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 2
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 31
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 3
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 10
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 4
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 5
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 3
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 4
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 6
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 4
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 33
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 5
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 5
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 8
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 13
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 7
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 9
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 5
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 8
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 6
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 8
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 7
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 9
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 5
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 1
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 5
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_4_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 20
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 4
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 10
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 7
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 8
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 4
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 6
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 5
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_2",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 6
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 4
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 10
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_3",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 13
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 10
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 13
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 8
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 4
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_5",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 5
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 7
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 4
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_3",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 3
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 6
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 7
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 6
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 4
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_3",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 4
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_3",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 3
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 5
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 2
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_5",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 2
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 4
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 3
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 4
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_5",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_5",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 3
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_4",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 3
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 1
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_3",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 3
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_2",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_1",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_2",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_5",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 4
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 2
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 5
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_4",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 7
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 19
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 9
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 8
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 34
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 4
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 13
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 7
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 8
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 30
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 10
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_2",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 3
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 5
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 22
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 8
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 5
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 8
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 12
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 14
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 11
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 14
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 6
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 11
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 5
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 11
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 13
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 8
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 5
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 28
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 5
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 2
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_5",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 10
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 14
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 5
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 12
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 9
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 9
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 6
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 5
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_4",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 9
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 14
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 8
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 11
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 17
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 6
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_5",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 6
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 4
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 4
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 6
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 11
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 7
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 4
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 4
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_4_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 3
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 4
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 6
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_2",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_2",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 2
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 7
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 6
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 3
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_3",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 2
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 6
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 4
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_4_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 2
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 7
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 4
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 6
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 7
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 12
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 3
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 7
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_1",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 2
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_4_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 5
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_3",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_3",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 3
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 6
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 5
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 2
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_2",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 1
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_2",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_3",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_2",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 1
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_3",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 6
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 44
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 4
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_4_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 9
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 37
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 18
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 26
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 13
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 9
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 11
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 10
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 41
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 8
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_2",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 3
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_1",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 36
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 20
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 17
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 16
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 26
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 5
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 18
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 4
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 18
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 11
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 11
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 3
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 21
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 3
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 18
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 7
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 5
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 13
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 5
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_4_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 3
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 6
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 7
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 6
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_2",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 3
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 5
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 17
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 12
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 25
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 9
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_1",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 5
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 6
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_4_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 2
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 8
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 15
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 6
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 5
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 4
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 8
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 3
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "fern",
+  "piece": "Fern_1",
+  "sx": 0.5735354362965998,
+  "sy": 0.5735354362965998,
+  "count": 26
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 7
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 6
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 4
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 5
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 5
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 5
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 26
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 4
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_2",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 28
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 7
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_2",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 6
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 15
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 14
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 6
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 22
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_3",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 3
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 21
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_2",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 10
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 4
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 6
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_3",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 5
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "bramble",
+  "piece": "Bush_Common",
+  "sx": 0.9651076466221233,
+  "sy": 0.9651076466221233,
+  "count": 7
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 4
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_2",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 16
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 18
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 18
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_5",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "mushroom",
+  "piece": "Mushroom_Common",
+  "sx": 0.8968609865470852,
+  "sy": 0.8968609865470852,
+  "count": 6
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_4_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 3
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 6
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 4
+ },
+ {
+  "kind": "plant",
+  "piece": "Plant_1_Big",
+  "sx": 0.2972972972972973,
+  "sy": 0.2972972972972973,
+  "count": 4
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 4
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 4
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_1",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 17
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_3",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 18
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_1",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_3",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 15
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_4",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 6
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 7
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_5",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_2",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_1",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 6
+ },
+ {
+  "kind": "bush",
+  "piece": "Bush_Common",
+  "sx": 1.0393466963622866,
+  "sy": 1.0393466963622866,
+  "count": 8
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_5",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 14
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 4
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 4
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_4",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_3",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 2
+ },
+ {
+  "kind": "pine",
+  "piece": "Pine_4",
+  "sx": 1.128668171557562,
+  "sy": 1.128668171557562,
+  "count": 13
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 5
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 7
+ },
+ {
+  "kind": "clover",
+  "piece": "Clover_1",
+  "sx": 0.459674049310489,
+  "sy": 0.459674049310489,
+  "count": 3
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 6
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_4",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_2",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 4
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 6
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_5",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 4
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_2",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_3",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_1",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_5",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 6
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_1",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 4
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 2
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_3",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_5",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_2",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_5",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_2",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "berry",
+  "piece": "Bush_Common_Flowers",
+  "sx": 0.8908685968819599,
+  "sy": 0.8908685968819599,
+  "count": 2
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_4",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 3
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_3",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 4
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_4",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 6
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "autumn",
+  "piece": "CommonTree_3",
+  "sx": 0.8846649647397822,
+  "sy": 0.8846649647397822,
+  "count": 6
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_4",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 1
+ },
+ {
+  "kind": "broadleaf",
+  "piece": "CommonTree_2",
+  "sx": 0.9478553193640523,
+  "sy": 0.9478553193640523,
+  "count": 2
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_2",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 2
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_1",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 2
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_5",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "dead",
+  "piece": "DeadTree_3",
+  "sx": 0.6473015616150174,
+  "sy": 0.6473015616150174,
+  "count": 1
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_4_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "flowers",
+  "piece": "Flower_3_Group",
+  "sx": 0.42696629213483145,
+  "sy": 0.42696629213483145,
+  "count": 1
+ },
+ {
+  "kind": "cliff",
+  "piece": "Rock_Medium_1",
+  "sx": 3.6923076923076925,
+  "sy": 2.953846153846154,
+  "count": 3
+ },
+ {
+  "kind": "cliff",
+  "piece": "Rock_Medium_3",
+  "sx": 3.6923076923076925,
+  "sy": 2.953846153846154,
+  "count": 2
+ },
+ {
+  "kind": "cliff",
+  "piece": "Rock_Medium_2",
+  "sx": 3.6923076923076925,
+  "sy": 2.953846153846154,
+  "count": 4
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_2",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 2
+ },
+ {
+  "kind": "cliff",
+  "piece": "Rock_Medium_2",
+  "sx": 3.6923076923076925,
+  "sy": 2.953846153846154,
+  "count": 2
+ },
+ {
+  "kind": "cliff",
+  "piece": "Rock_Medium_3",
+  "sx": 3.6923076923076925,
+  "sy": 2.953846153846154,
+  "count": 2
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_3",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "cliff",
+  "piece": "Rock_Medium_2",
+  "sx": 3.6923076923076925,
+  "sy": 2.953846153846154,
+  "count": 1
+ },
+ {
+  "kind": "cliff",
+  "piece": "Rock_Medium_1",
+  "sx": 3.6923076923076925,
+  "sy": 2.953846153846154,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_1",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 13
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_3",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 17
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_2",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 10
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_5",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_3",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 14
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_2",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_5",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 14
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_5",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 14
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_3",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 13
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_1",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_1",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 16
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_2",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 8
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_3",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 2
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_3",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 12
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_2",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 12
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_3",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 11
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_5",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 14
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_2",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 13
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_1",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 12
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_3",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 11
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_4",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 10
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_4",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 11
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_5",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 11
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_1",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 8
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_5",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 11
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_3",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 10
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_3",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 11
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_3",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 2
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_2",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 20
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_4",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 14
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_2",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 8
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_2",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 11
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_1",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 16
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_4",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 15
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_4",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_1",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_2",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 15
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_3",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 10
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_1",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 9
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_1",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 9
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_2",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 7
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_4",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 5
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_1",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 16
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_1",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 11
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_3",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 12
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_2",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 12
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_3",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 10
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_1",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 13
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_2",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 10
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_2",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 3
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_1",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 12
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_5",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 11
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_3",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_1",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 15
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_2",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 8
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_4",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 11
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_3",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 8
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_3",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_4",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_1",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_3",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_1",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_4",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_1",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_2",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_4",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_1",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_5",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_2",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_1",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_5",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Square_2",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_3",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "pebble",
+  "piece": "Pebble_Round_1",
+  "sx": 1.5954415954415953,
+  "sy": 1.5954415954415953,
+  "count": 1
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_1",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_3",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 2
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_3",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 4
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_2",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 4
+ },
+ {
+  "kind": "rock",
+  "piece": "Rock_Medium_2",
+  "sx": 0.6153846153846154,
+  "sy": 0.36923076923076925,
+  "count": 3
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_1",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 6
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_2",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 3
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_3",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 5
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_1",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ },
+ {
+  "kind": "boulder",
+  "piece": "Rock_Medium_2",
+  "sx": 1.6,
+  "sy": 0.96,
+  "count": 1
+ }
+]

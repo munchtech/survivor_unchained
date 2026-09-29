@@ -6,3 +6,7 @@ dist/
 .packs
 release/
 __pycache__/
+
+# Godot imports the game's assets in place (godot/assets links here).
+public/assets/**/*.import
+public/assets/**/*.uid
