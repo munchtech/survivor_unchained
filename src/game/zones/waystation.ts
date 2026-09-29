@@ -64,6 +64,8 @@ const ROUTINE: Record<string, Array<{ when: Cond; spot?: { x: number; z: number;
 
 export function waystation(g: Game): ZoneRuntime {
   const built = buildWaystation(g.r.spec.grassDensity);
+  // For tools that read a zone as built (tools/godot/export_zone.mjs).
+  built.zone.root.userData.build = built;
   const root = built.zone.root;
   const heightAt = (x: number, z: number) => built.kit.y(x, z);
   const actors = new Map<string, NpcActor>();

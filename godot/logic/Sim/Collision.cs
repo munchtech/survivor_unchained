@@ -83,6 +83,15 @@ public sealed class CollisionWorld
     public Collider AddBox(double x, double z, double hw, double hd, double rot = 0, ColliderOpts o = default) =>
         Insert(new Collider { Id = nextId++, Kind = ColliderKind.Box, X = x, Z = z, R = Math.Sqrt(hw * hw + hd * hd), Hw = hw, Hd = hd, Rot = rot, Tag = o.Tag, Soft = o.Soft, PlayerOnly = o.PlayerOnly });
 
+    /// <summary>A collider as another world had it, its id kept (a zone
+    /// loaded from data: the runtime refers to some colliders by id).</summary>
+    public Collider Restore(Collider c)
+    {
+        if (colliders.ContainsKey(c.Id)) throw new ArgumentException($"collider {c.Id} is already there");
+        nextId = Math.Max(nextId, c.Id + 1);
+        return Insert(c);
+    }
+
     Collider Insert(Collider c)
     {
         colliders[c.Id] = c;

@@ -20,6 +20,8 @@ uniform vec4 recolor_a = vec4(0.0);  // rgb, amount
 uniform vec3 recolor_b = vec3(0.0);
 uniform float moss = 0.0;
 uniform float jitter = 0.08;
+// The village kit's walls darken toward their foot (splash, damp, dirt).
+uniform bool foot = false;
 
 // Where the survivor is (xyz; w = 1 when there is one): what stands between
 // them and the camera is cut away (Fight.cs sets it each frame).
@@ -27,6 +29,7 @@ global uniform vec4 survivor;
 
 varying float v_up;
 varying float v_jit;
+varying float v_y;
 
 // 4x4 ordered dither: a fade the temporal AA resolves to translucency.
 float bayer(vec2 p) {
@@ -42,6 +45,7 @@ void vertex() {
 	vec3 ip = MODEL_MATRIX[3].xyz;
 	v_up = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz).y;
 	v_jit = fract(sin(dot(ip.xz, vec2(12.9898, 78.233))) * 43758.5453);
+	v_y = VERTEX.y;
 	float h = max(VERTEX.y, 0.0);
 	float ph = TIME * 1.1 + ip.x * 0.23 + ip.z * 0.19;
 	float sway = (sin(ph) * 0.65 + sin(ph * 2.3 + 1.7) * 0.25 + sin(ph * 5.1 + ip.x) * 0.1) * wind * h * h * 0.02;
@@ -78,6 +82,7 @@ void fragment() {
 	col = mix(col, rc * (lt / max(dot(rc, LW), 0.05)), recolor_a.a);
 	col = mix(col, vec3(0.2, 0.3, 0.12) * (0.55 + lt), moss * smoothstep(0.45, 0.85, v_up));
 	col *= 1.0 - jitter + 2.0 * jitter * v_jit;
+	if (foot) col *= mix(0.6, 1.0, smoothstep(0.0, 1.3, v_y));
 	ALBEDO = col;
 	ROUGHNESS = roughness;
 	if (use_normal) NORMAL_MAP = texture(normal_tex, UV).rgb;

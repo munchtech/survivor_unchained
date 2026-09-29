@@ -187,4 +187,56 @@ public static class Campfire
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Preprocess = 4.0,
         };
     }
+
+    /// <summary>A chimney's smoke: a thin grey thread leaning with the wind
+    /// (the web game's ZoneKit.chimney), grey by day, dark after it.</summary>
+    public static GpuParticles3D ChimneySmoke()
+    {
+        var p = new ParticleProcessMaterial
+        {
+            EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Sphere, EmissionSphereRadius = 0.12f,
+            Direction = new Vector3(0.4f, 1, 0.1f).Normalized(), Spread = 8, InitialVelocityMin = 0.9f, InitialVelocityMax = 1.2f,
+            DampingMin = 0.2f, DampingMax = 0.3f, Gravity = new Vector3(0.12f, 0, 0.03f),
+            ScaleMin = 0.5f, ScaleMax = 0.6f, ScaleCurve = Curve((0, 1f), (1, 5.2f)),
+            AngleMin = -180, AngleMax = 180, AngularVelocityMin = -15, AngularVelocityMax = 15,
+        };
+        var smoke = new GpuParticles3D
+        {
+            Name = "Chimney", Amount = 15, Lifetime = 4.5, ProcessMaterial = p, Preprocess = 4.5,
+            DrawPass1 = new QuadMesh { Size = new Vector2(1, 1), Material = Sprite(Blob(Colors.White, new Color(1, 1, 1, 0)), false) },
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+        };
+        ChimneyLook(smoke, false);
+        return smoke;
+    }
+
+    public static void ChimneyLook(GpuParticles3D smoke, bool night)
+    {
+        // The web game's colours (linear here, its alpha along the life).
+        Color a = new Color(night ? "#2a2c34" : "#8a8680").SrgbToLinear(), b = new Color(night ? "#14161c" : "#6a6864").SrgbToLinear();
+        float alpha = night ? 0.3f : 0.22f;
+        ((ParticleProcessMaterial)smoke.ProcessMaterial).ColorRamp =
+            Ramp((0, a with { A = 0 }), (0.15f, a with { A = alpha }), (1, b with { A = 0 }));
+    }
+
+    /// <summary>Moths about a lamp after dark: pale specks that dart and
+    /// circle (the web game's ZoneKit.moths).</summary>
+    public static GpuParticles3D Moths()
+    {
+        var p = new ParticleProcessMaterial
+        {
+            EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Ring, EmissionRingRadius = 0.5f, EmissionRingInnerRadius = 0.3f,
+            EmissionRingHeight = 0.6f, EmissionRingAxis = Vector3.Up,
+            Direction = Vector3.Right, Spread = 180, InitialVelocityMin = 0.8f, InitialVelocityMax = 1.4f,
+            Gravity = Vector3.Zero, DampingMin = 0.3f, DampingMax = 0.5f, ScaleMin = 0.05f, ScaleMax = 0.06f,
+            TurbulenceEnabled = true, TurbulenceNoiseStrength = 3f, TurbulenceNoiseScale = 0.8f, TurbulenceInfluenceMin = 0.3f, TurbulenceInfluenceMax = 0.6f,
+            ColorRamp = Ramp((0, new Color(1.6f, 1.45f, 1.1f, 0)), (0.1f, new Color(1.6f, 1.45f, 1.1f, 0.9f)), (1, new Color(1.3f, 1.05f, 0.6f, 0))),
+        };
+        return new GpuParticles3D
+        {
+            Name = "Moths", Amount = 7, Lifetime = 2.1, ProcessMaterial = p, Emitting = false,
+            DrawPass1 = new QuadMesh { Size = new Vector2(1, 1), Material = Sprite(Blob(Colors.White, new Color(1, 1, 1, 0)), true) },
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+        };
+    }
 }

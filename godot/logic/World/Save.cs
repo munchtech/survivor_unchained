@@ -28,6 +28,10 @@ public sealed class EmberCarry
     public double Xp;
     public List<CarriedWeapon> Weapons = new();
     public Dictionary<string, int> Boons = new();
+    /// <summary>What was left of the draft's rerolls and banishes, and of the
+    /// survivor's health (absent in a save from before they were kept).</summary>
+    public int? Rerolls, Banishes;
+    public double? Hp;
 }
 
 public sealed class SaveData

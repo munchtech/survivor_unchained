@@ -25,16 +25,23 @@ public static class KitLook
     };
     static readonly Regex Foliage = new("Leaf|Leaves|Flower|Petal|Grass|Clover|Fern|Plant|Bush", RegexOptions.IgnoreCase);
 
-    public sealed record Look(float Wind, Color? LeafA, Color? LeafB, float LeafAmount, float Moss);
+    public sealed record Look(float Wind, Color? LeafA, Color? LeafB, float LeafAmount, float Moss)
+    {
+        /// <summary>A piece as it comes: still, its own colours.</summary>
+        public static readonly Look Plain = new(0, null, null, 0, 0);
+    }
 
     static Shader? solid, twoSided;
     static readonly Dictionary<string, ShaderMaterial> cache = new();
 
-    public static Material For(Material src, Look look)
+    /// <summary>A kit material as the web game shades it.</summary>
+    /// <param name="foot">Darker toward the piece's foot (the village kit
+    /// and the game's own models).</param>
+    public static Material For(Material src, Look look, bool foot = false)
     {
         if (src is not StandardMaterial3D s) return src;
         var foliage = Foliage.IsMatch(s.ResourceName);
-        var key = $"{s.GetInstanceId()}|{look}";
+        var key = $"{s.GetInstanceId()}|{look}|{foot}";
         if (cache.TryGetValue(key, out var m)) return m;
         solid ??= GD.Load<Shader>("res://shaders/kit.gdshader");
         twoSided ??= new Shader { Code = solid.Code.Replace("render_mode diffuse_burley", "render_mode cull_disabled, diffuse_burley") };
@@ -56,6 +63,7 @@ public static class KitLook
         }
         m.SetShaderParameter("moss", foliage ? 0f : look.Moss);
         m.SetShaderParameter("jitter", foliage ? 0.14f : 0.08f);
+        m.SetShaderParameter("foot", foot);
         cache[key] = m;
         return m;
     }

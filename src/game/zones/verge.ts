@@ -36,6 +36,8 @@ type Pickup = { kind: PickupKind; ref: string | null; value: number; persistent?
 
 export function verge(g: Game): ZoneRuntime {
   const built = buildVerge(g.r.spec.grassDensity, { cleanDays: Number(g.world?.facts['blight.days_clean'] ?? 0) });
+  // For tools that read a zone as built (tools/godot/export_zone.mjs).
+  built.zone.root.userData.build = built;
   const kit = built.kit;
   const root = built.zone.root;
   const heightAt = (x: number, z: number) => kit.y(x, z);

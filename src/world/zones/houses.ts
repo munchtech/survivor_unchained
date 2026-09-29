@@ -165,6 +165,8 @@ function merge(placed: Placed[]) {
     });
   }
   const group = new THREE.Group();
+  // The pieces as placed (tools/godot/export_zone.mjs places them one by one).
+  group.userData.pieces = placed.map((p) => ({ name: p.name, m: p.m.elements.slice() }));
   for (const [mat, geos] of byMat) {
     const keys = ['position', 'normal', 'uv'];
     const colored = geos.some((g) => g.getAttribute('color'));
@@ -185,6 +187,7 @@ function merge(placed: Placed[]) {
     const mesh = new THREE.Mesh(merged, mat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
+    mesh.userData.merged = true;
     group.add(mesh);
   }
   return group;

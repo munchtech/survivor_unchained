@@ -7,17 +7,17 @@ namespace SurvivorUnchained.View;
 /// The zone's water, as the web game lays it (src/render/water.ts): a ribbon
 /// down the stream's carved bed, each vertex knowing where it is across and
 /// along the stream and how deep the water is over the bed there
-/// (data/ZONE/water.*, from tools/godot/export_zone.mjs). The look is
-/// shaders/water.gdshader: the web game's poisoned stream, with what an
-/// engine adds (the bed seen through it, bent by the ripples; how murky by
-/// how deep it really is).
+/// (data/zones/ZONE/water.*, from tools/godot/export_zone.mjs); still water
+/// (a river ford) as a plane. The look is shaders/water.gdshader, coloured
+/// as the zone colours it, with what an engine adds (the bed seen through
+/// it, bent by the ripples; how murky by how deep it really is).
 /// </summary>
 public static class Water
 {
     public static Node3D Build(ZoneData z)
     {
         var root = new Node3D { Name = "Water" };
-        var dir = $"res://data/{z.Id}";
+        var dir = z.Dir;
         if (!FileAccess.FileExists($"{dir}/water.json")) return root;
         using var meta = JsonDocument.Parse(FileAccess.GetFileAsString($"{dir}/water.json"));
         var bin = FileAccess.GetFileAsBytes($"{dir}/water.bin");
@@ -58,8 +58,25 @@ public static class Water
             var mat = new ShaderMaterial { Shader = shader };
             mat.SetShaderParameter("noise_tex", NoiseTex.Get());
             mat.SetShaderParameter("stream", w.GetProperty("stream").GetBoolean());
+            Look(mat, w.GetProperty("look"));
             root.AddChild(new MeshInstance3D { Mesh = mesh, MaterialOverride = mat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
         }
         return root;
+    }
+
+    /// <summary>The water's colours as the zone gives them (WaterOpts: sRGB
+    /// hex), any it leaves out as the web game's water has them.</summary>
+    public static void Look(ShaderMaterial mat, JsonElement look)
+    {
+        string Hex(string key, string fallback) => look.TryGetProperty(key, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString()! : fallback;
+        mat.SetShaderParameter("color", new Color(Hex("color", "#0e1c20")));
+        mat.SetShaderParameter("murk", new Color(Hex("murk", "#061012")));
+        mat.SetShaderParameter("shallow", new Color(Hex("shallow", "#4a4230")));
+        mat.SetShaderParameter("foam_color", new Color(Hex("foam", "#cfd8d4")));
+        mat.SetShaderParameter("sky", new Color(Hex("sky", "#1c2c3c")));
+        mat.SetShaderParameter("glow", look.TryGetProperty("glow", out var g) && g.ValueKind == JsonValueKind.Number ? g.GetSingle() : 0f);
+        var flow = new Vector2(0.02f, 0.35f);
+        if (look.TryGetProperty("flow", out var f) && f.ValueKind == JsonValueKind.Array) flow = new Vector2(f[0].GetSingle(), f[1].GetSingle());
+        mat.SetShaderParameter("flow", flow);
     }
 }

@@ -45,3 +45,11 @@ survivor={
 "type": "vec4",
 "value": Vector4(0, 0, 0, 0)
 }
+sky_time={
+"type": "float",
+"value": 0.0
+}
+body_rim={
+"type": "vec4",
+"value": Vector4(0.56, 0.7, 1, 0.55)
+}

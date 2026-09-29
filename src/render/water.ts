@@ -31,7 +31,10 @@ export const waterUniforms = { uTime: { value: 0 } };
 export function createWater(o: WaterOpts): THREE.Mesh {
   const geo = new THREE.PlaneGeometry(o.width, o.depth, 1, 1);
   geo.rotateX(-Math.PI / 2);
-  return finish(new THREE.Mesh(geo, waterMaterial(o)));
+  const m = finish(new THREE.Mesh(geo, waterMaterial(o)));
+  // Its colours, for tools that read a zone (tools/godot/export_zone.mjs).
+  m.userData.water = o;
+  return m;
 }
 
 function finish(m: THREE.Mesh) {
@@ -95,7 +98,9 @@ export function createStream(
   geo.setAttribute('aDepth', new THREE.Float32BufferAttribute(depth, 1));
   geo.setIndex(idx);
   geo.computeVertexNormals();
-  return finish(new THREE.Mesh(geo, waterMaterial({ ...o, width, depth: run }, true)));
+  const m = finish(new THREE.Mesh(geo, waterMaterial({ ...o, width, depth: run }, true)));
+  m.userData.water = o;
+  return m;
 }
 
 function waterMaterial(o: WaterOpts, stream = false) {

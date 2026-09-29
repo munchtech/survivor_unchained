@@ -42,13 +42,13 @@ public static class Dressing
 
     /// <summary>A piece's mesh with its kind's look (KitLook): one copy per
     /// mesh and look, its surfaces' materials swapped.</summary>
-    static Mesh Looked(Mesh mesh, KitLook.Look look)
+    static Mesh Looked(Mesh mesh, KitLook.Look look, bool foot = false)
     {
-        var key = $"{mesh.GetInstanceId()}|{look}";
+        var key = $"{mesh.GetInstanceId()}|{look}|{foot}";
         if (looked.TryGetValue(key, out var m)) return m;
         m = (Mesh)mesh.Duplicate();
         for (int i = 0; i < m.GetSurfaceCount(); i++)
-            if (m.SurfaceGetMaterial(i) is Material mat) m.SurfaceSetMaterial(i, KitLook.For(mat, look));
+            if (m.SurfaceGetMaterial(i) is Material mat) m.SurfaceSetMaterial(i, KitLook.For(mat, look, foot));
         looked[key] = m;
         return m;
     }
@@ -76,89 +76,32 @@ public static class Dressing
         return root;
     }
 
+    /// <summary>The world kits' pieces, placed one by one in the web game
+    /// (the houses and walls too, which it merges): here each piece's parts
+    /// as MultiMeshes, one per 32 m bucket so what is off screen is culled.</summary>
     public static Node3D Props(ZoneData z)
     {
         var root = new Node3D { Name = "Props" };
+        var groups = new Dictionary<(string, int, int), List<Transform3D>>();
         foreach (var (id, at) in z.Props)
         {
-            var node = GD.Load<PackedScene>($"res://assets/env/{id}.gltf").Instantiate<Node3D>();
-            node.Transform = at;
-            root.AddChild(node);
+            var k = (id, Mathf.FloorToInt(at.Origin.X / 32), Mathf.FloorToInt(at.Origin.Z / 32));
+            if (!groups.TryGetValue(k, out var list)) groups[k] = list = new();
+            list.Add(at);
         }
-        return root;
-    }
-
-    /// <summary>Everything else the web game stands up in the zone (its
-    /// camps, the Hunters' Blind, ruins, the KayKit props), exported where
-    /// it stands (tools/godot/export_zone.mjs). Shadows from the big pieces
-    /// only.</summary>
-    public static Node3D Landmarks(ZoneData z)
-    {
-        var root = GD.Load<PackedScene>($"res://data/{z.Id}/landmarks.glb").Instantiate<Node3D>();
-        root.Name = "Landmarks";
-        void Walk(Node n)
+        foreach (var ((id, _, _), list) in groups)
         {
-            foreach (var c in n.GetChildren())
+            int slash = id.IndexOf('/');
+            string kit = id[..slash], piece = id[(slash + 1)..];
+            bool foot = kit is "village" or "custom";
+            foreach (var (mesh, local) in PartsOf(kit, piece))
             {
-                if (c is MeshInstance3D m && m.GetAabb().Size.Length() < 0.8f)
-                    m.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
-                Walk(c);
+                var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = Looked(mesh, KitLook.Look.Plain, foot), InstanceCount = list.Count };
+                for (int i = 0; i < list.Count; i++) mm.SetInstanceTransform(i, list[i] * local);
+                root.AddChild(new MultiMeshInstance3D { Multimesh = mm, Name = piece });
             }
         }
-        Walk(root);
         return root;
     }
 
-    /// <summary>The zone's lamps and fires, lit ones only; flicker is the
-    /// fire's own (Flicker).</summary>
-    public static Node3D Lights(ZoneData z, Vector3 near)
-    {
-        var root = new Node3D { Name = "Lights" };
-        foreach (var l in z.Lights)
-        {
-            if (!l.On) continue;
-            // Shadows from the lights near the fight only: each is six
-            // renders of everything around it.
-            bool shadow = l.At.DistanceTo(near) < 30;
-            var o = new OmniLight3D
-            {
-                Position = l.At,
-                LightColor = l.Color,
-                // The web game's candela-like intensities, into Godot's energy.
-                LightEnergy = l.Intensity * 0.22f,
-                OmniRange = l.Distance * 1.3f,
-                OmniAttenuation = 1.4f,
-                ShadowEnabled = shadow,
-                LightVolumetricFogEnergy = 1.5f,
-            };
-            root.AddChild(o);
-            if (l.Flicker > 0) o.AddChild(new Flicker(o, l.Flicker));
-        }
-        return root;
-    }
-}
-
-/// <summary>A fire's light: never still, never steady.</summary>
-public partial class Flicker : Node
-{
-    readonly OmniLight3D light;
-    readonly float amount, base_;
-    readonly float phase;
-    double t;
-
-    public Flicker() { light = null!; }
-    public Flicker(OmniLight3D light, float amount)
-    {
-        this.light = light;
-        this.amount = amount;
-        base_ = light.LightEnergy;
-        phase = (float)GD.RandRange(0, 100);
-    }
-
-    public override void _Process(double delta)
-    {
-        t += delta;
-        float f = 1 + (Mathf.Sin((float)t * 8.3f + phase) * 0.5f + Mathf.Sin((float)t * 19.7f + phase * 1.7f) * 0.3f + Mathf.Sin((float)t * 3.1f + phase) * 0.2f) * amount;
-        light.LightEnergy = base_ * f;
-    }
 }

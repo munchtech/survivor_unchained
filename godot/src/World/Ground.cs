@@ -53,6 +53,7 @@ public static class Ground
         mat.SetShaderParameter("g_arh", GD.Load<TextureLayered>("res://art/ground/arh.jpg"));
         mat.SetShaderParameter("zone_size", z.Size);
         mat.SetShaderParameter("leaves", z.Leaves);
+        mat.SetShaderParameter("blight_glow", new Color(z.Meta.BlightGlow));
         using var meta = JsonDocument.Parse(FileAccess.GetFileAsString("res://art/ground/ground.json"));
         var scales = new Godot.Collections.Array<float>();
         foreach (var l in meta.RootElement.GetProperty("layers").EnumerateArray()) scales.Add(1f / l.GetProperty("metres").GetSingle());

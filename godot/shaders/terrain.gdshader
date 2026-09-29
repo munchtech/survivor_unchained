@@ -20,6 +20,9 @@ uniform float g_scale[NL];
 uniform float zone_size = 290.0;
 uniform float leaves = 0.3;
 uniform vec3 blight_glow : source_color = vec3(0.55, 1.0, 0.35);
+// How far the blight has drawn back (the Verge once the poison stops): the
+// paint's blight at 1 - heal * 0.85, as the web game paints it.
+uniform float heal = 0.0;
 
 varying vec3 w_pos;
 varying vec3 w_nrm;
@@ -76,6 +79,7 @@ void fragment() {
 	vec4 nM = texture(noise_tex, w * 0.061 + 0.37);
 	vec4 nF = texture(noise_tex, w * 0.29 + 0.71);
 	vec4 sp = texture(splat, (w + zone_size * 0.5) / zone_size);
+	sp.b *= 1.0 - heal * 0.85;
 	vec3 n_geo = normalize(w_nrm);
 	float tile = smoothstep(0.46, 0.54, nL.b * 0.6 + nM.r * 0.4);
 

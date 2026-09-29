@@ -39,34 +39,8 @@ public static class Json
     /// <summary>A deep copy, through JSON (the way the web game clones saves).</summary>
     public static T Clone<T>(T value) => Parse<T>(Write(value));
 
-    /* ------------------------------------------------ where content lives -- */
-
-    /// <summary>Reads a content file by name ('items.json'). The game points
-    /// this at res://data/content (Godot's own file access, which works
-    /// inside an exported pack); by default it finds godot/data/content on
-    /// disk, for the tests.</summary>
-    public static Func<string, string> ReadContent = DefaultRead;
-
-    static string? contentDir;
-
-    static string DefaultRead(string name)
-    {
-        contentDir ??= FindContentDir() ?? throw new DirectoryNotFoundException("data/content not found above " + AppContext.BaseDirectory);
-        return File.ReadAllText(Path.Combine(contentDir, name));
-    }
-
-    static string? FindContentDir()
-    {
-        foreach (var start in new[] { AppContext.BaseDirectory, Directory.GetCurrentDirectory() })
-            for (var d = new DirectoryInfo(start); d != null; d = d.Parent)
-            {
-                var a = Path.Combine(d.FullName, "data", "content");
-                if (Directory.Exists(a)) return a;
-                var b = Path.Combine(d.FullName, "godot", "data", "content");
-                if (Directory.Exists(b)) return b;
-            }
-        return null;
-    }
+    /// <summary>A content file by name ('items.json').</summary>
+    public static string ReadContent(string name) => DataFiles.Text("content/" + name);
 }
 
 /// <summary>A value written either alone or as a list ('lore.x' or ['a', 'b']);

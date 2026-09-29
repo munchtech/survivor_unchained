@@ -12,6 +12,7 @@ uniform sampler2DArray g_alb : source_color, filter_linear_mipmap, repeat_enable
 uniform float meadow_scale = 0.5;
 uniform float zone_size = 290.0;
 uniform float leaves = 0.3;
+uniform float heal = 0.0;
 uniform float density = 1.0;
 uniform vec3 wind = vec3(1.0, 0.35, 1.0);
 uniform vec4 pusher = vec4(0.0, 0.0, 0.0, 0.0);
@@ -25,6 +26,7 @@ void vertex() {
 	vec2 wp = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xz;
 	float h1 = gh(wp * 7.1), h3 = gh(wp * 3.3 + 11.0), h4 = gh(wp * 5.7 + 4.0);
 	vec4 sp = texture(splat, (wp + zone_size * 0.5) / zone_size);
+	sp.b *= 1.0 - heal * 0.85;
 	vec4 nz = texture(noise_tex, wp * 0.035);
 	float bare = max(max(sp.r, sp.g), max(sp.b, sp.a));
 	float dens = 1.0 - smoothstep(0.12, 0.45, bare + (nz.g - 0.5) * 0.35);

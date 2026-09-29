@@ -50,6 +50,8 @@ interface WardenAI {
 
 export function prologue(g: Game): ZoneRuntime & { fire: { x: number; z: number } } {
   const built = buildLowFord(g.r.spec.grassDensity);
+  // For tools that read a zone as built (tools/godot/export_zone.mjs).
+  built.zone.root.userData.build = built;
   const L = LOWFORD;
   const kit = built.kit;
   const col = built.zone.collision;

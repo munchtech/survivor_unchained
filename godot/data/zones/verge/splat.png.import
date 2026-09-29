@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bcrppbexsna2d"
-path="res://.godot/imported/splat.png-5a7faaa13c1590fa004dd875a49edcf1.ctex"
+uid="uid://crmpfi6srbo0c"
+path="res://.godot/imported/splat.png-8bc78ac81a423fc4a8f4250858907f8e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://data/verge/splat.png"
-dest_files=["res://.godot/imported/splat.png-5a7faaa13c1590fa004dd875a49edcf1.ctex"]
+source_file="res://data/zones/verge/splat.png"
+dest_files=["res://.godot/imported/splat.png-8bc78ac81a423fc4a8f4250858907f8e.ctex"]
 
 [params]
 

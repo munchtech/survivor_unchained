@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://b0oqvnx0nigg0"
-path="res://.godot/imported/landmarks.glb-1df9514aea96f22698a8fb9326c085e2.scn"
+uid="uid://h1p3mcaes31d"
+path="res://.godot/imported/landmarks.glb-61c24a59f57982fce6e97e25c5909c99.scn"
 
 [deps]
 
-source_file="res://data/verge/landmarks.glb"
-dest_files=["res://.godot/imported/landmarks.glb-1df9514aea96f22698a8fb9326c085e2.scn"]
+source_file="res://data/zones/lowford/landmarks.glb"
+dest_files=["res://.godot/imported/landmarks.glb-61c24a59f57982fce6e97e25c5909c99.scn"]
 
 [params]
 
