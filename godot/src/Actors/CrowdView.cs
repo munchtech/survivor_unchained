@@ -51,6 +51,9 @@ public partial class CrowdView : Node3D
 
     public CrowdView() { Name = "Crowd"; }
 
+    /// <summary>How many bodies are standing, and lying (for the log).</summary>
+    public (int Living, int Dead) Counts => (byEnemy.Count, corpses.Count);
+
     /// <summary>Build a few of each kind ahead (behind the fade), so the
     /// first wolf does not hitch the frame.</summary>
     public void Prepare(IEnumerable<string> visuals)

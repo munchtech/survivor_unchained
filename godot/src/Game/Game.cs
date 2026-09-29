@@ -17,16 +17,16 @@ namespace SurvivorUnchained.Play;
 /// which place is loaded and starts its fight from the survivor's gear, sends
 /// what the fight says to the interface and to the world's memory, runs the
 /// prompt for what is near, the conversations and the level-up draft, the
-/// fade between places and the fall, and saves.
+/// screens over the game, the fade between places and the fall, and saves.
 ///
-/// Until the title and creation screens come over, it starts a journey
-/// straight away (or continues the last one):
-///   --quick warden|reaver|arcanist|stalker   a new survivor of that calling
-///   --zone lowford|waystation|verge          where (past the prologue: it counts as done)
-///   --time day|night|dusk|dawn               the hour, past the prologue
-///   --at X,Z                                 where in it
-///   --continue                               the last journey saved
-///   --auto                                   a crude player drives (Autopilot.cs)
+/// Modes: the title (a fire on the Low Ford road, a stranger by it), making
+/// a survivor by the same fire, and play. This file is the host the zones
+/// talk to and the frame; GameFront.cs the title and creation, GameMenus.cs
+/// the screens, the draft and conversations.
+///
+/// Options (after `--`): --quick CALLING [--zone ID --time T --at X,Z]
+/// starts a stock survivor straight away; --continue the last journey;
+/// --auto a crude player (Autopilot.cs); --log S a line every S seconds.
 /// </summary>
 public partial class Game : Node, IZoneHost
 {
@@ -38,12 +38,15 @@ public partial class Game : Node, IZoneHost
     public ZoneRuntime? Zone => zone;
     public WorldScene? Scene => scene;
     public GameHud Hud => hud;
+    public Saves Saves => saves;
     public bool InTransit => inTransit;
-    /// <summary>A menu, a conversation or the draft has the screen.</summary>
-    public string? Overlay { get; private set; }
+    /// <summary>What has the screen: the draft, a conversation, or an overlay (null: play).</summary>
+    public string? Overlay => hudMode ?? screens.Current?.Kind;
+    public string Mode { get; private set; } = "title";
 
     Controls controls = null!;
     GameHud hud = null!;
+    Screens screens = null!;
     Atmosphere air = null!;
     Camera3D camera = null!;
     FollowCamera cam = null!;
@@ -51,12 +54,11 @@ public partial class Game : Node, IZoneHost
     ZoneRuntime? zone;
     Saves saves = null!;
     Interactable? near;
-    string? promptShown;
+    string? promptShown, hudMode;
     readonly List<(double T, Action Fn)> later = new();
     bool inTransit;
-    double autosaveT, fogT, hudT, draftWait;
+    double autosaveT, fogT, hudT, draftWait, reportT;
     Autopilot? auto;
-    public Autopilot? Pilot => auto;
 
     public override void _Ready()
     {
@@ -69,34 +71,29 @@ public partial class Game : Node, IZoneHost
         AddChild(air);
         hud = new GameHud();
         AddChild(hud);
+        screens = new Screens();
+        AddChild(screens);
         AddChild(new Shots());
         saves = new Saves(ProjectSettings.GlobalizePath("user://saves"));
         controls.On(OnAction);
         if (Args.Has("auto")) auto = new Autopilot(this) { Idle = Args.Get("auto") == "idle" };
-        Start();
+        Settings.Current.ApplyWindow();
+        ApplySettings();
+        if (Args.Has("continue") && saves.LastSlot() is int slot) Continue(slot);
+        else if (Args.Has("quick") || Args.Has("zone")) Quick();
+        else ShowTitle();
     }
 
-    /* ------------------------------------------------------------ start -- */
-
-    void Start()
+    /// <summary>A stock survivor straight into the game (tools and tests).</summary>
+    void Quick()
     {
-        if (Args.Has("continue") && saves.LastSlot() is int slot && saves.Read(slot) is SaveData d)
-        {
-            Journey = Journey.From(d, slot);
-            Hook();
-            EnterZone(d.Location.Zone, null, new Arrival(d.Location.X, d.Location.Z, d.Location.Facing));
-            hud.Fade(0, 1.2);
-            return;
-        }
         var arch = Args.Get("quick") is string q && q is "warden" or "reaver" or "arcanist" or "stalker" ? q : "warden";
         var a = Callings.Archetype(arch);
-        Journey = Journey.Begin(new CreationChoice
+        Begin(new CreationChoice
         {
             Name = Args.Get("name") ?? "Ashe", Archetype = arch, Background = Args.Get("bg") ?? "hunter", Palette = a.Palettes[0].Id,
             WeaponItem = Args.Get("weapon") ?? a.Weapons[0], Ability = a.Abilities[0], StartBoon = Args.Get("blessing") ?? Content.Boons.StartBlessings[0],
-        }, (uint)Rng.Next());
-        Journey.Slot = FreeSlot();
-        Hook();
+        });
         var z = Args.Get("zone") ?? "lowford";
         Arrival? at = null;
         if (Args.Get("at") is string s)
@@ -116,6 +113,14 @@ public partial class Game : Node, IZoneHost
         Save("new");
     }
 
+    /// <summary>A journey begun: the character, the world, a slot to keep it in.</summary>
+    void Begin(CreationChoice c)
+    {
+        Journey = Journey.Begin(c, (uint)Rng.Next());
+        Journey.Slot = FreeSlot();
+        Hook();
+    }
+
     int FreeSlot()
     {
         var used = saves.Slots().Select(s => s.Slot).ToHashSet();
@@ -127,7 +132,21 @@ public partial class Game : Node, IZoneHost
     {
         Journey.OnToast = t => hud.Toast(t);
         Journey.OnAnnounce = a => hud.Announce(a);
+        Journey.OnTouch = () => screens.Current?.Refresh();
     }
+
+    /// <summary>What the player has set, applied now.</summary>
+    public void ApplySettings()
+    {
+        var s = Settings.Current;
+        s.ApplyWindow();
+        cam.ShakeScale = s.ShakeLevel;
+        if (scene != null) { scene.Fx.Gore = s.GoreLevel; scene.Hitstop = s.Hitstop; }
+        air.Quality(s.Quality);
+        AudioServer.SetBusVolumeDb(0, s.Volume <= 0 ? -80 : Mathf.LinearToDb(s.Volume));
+    }
+
+    public string Key(Act a) => controls.KeyLabel(a);
 
     /* ------------------------------------------------------------ zones -- */
 
@@ -146,14 +165,17 @@ public partial class Game : Node, IZoneHost
         zone = null;
         if (scene != null) { scene.QueueFree(); RemoveChild(scene); }
         scene = null;
+        figure = null;
         near = null;
         hud.Prompt(promptShown = null);
         hud.Boss(null);
         hud.Hint(CurrentHint = null);
+        hud.Objectives(new());
         cam.FocusOverride = null;
     }
 
-    public void EnterZone(string id, string? from, Arrival? at = null)
+    /// <summary>A place to look at (the title's fire), with nothing happening in it yet.</summary>
+    WorldScene Stage(string id)
     {
         LeaveZone();
         var data = new ZoneData(id);
@@ -163,7 +185,16 @@ public partial class Game : Node, IZoneHost
         scene.Pressed = a => (auto?.Take(a) ?? false) || (!controls.Captured && controls.Pressed(a));
         scene.OnStep = dt => zone?.Step(dt);
         scene.OnEvents = OnEvents;
-        zone = Make(id, data.Meta);
+        ApplySettings();
+        return scene;
+    }
+
+    public void EnterZone(string id, string? from, Arrival? at = null)
+    {
+        // The title's stage is the prologue's place: begun there, it is kept.
+        if (scene == null || scene.Data.Id != id || scene.Battle != null) Stage(id);
+        else RemoveFigure();
+        zone = Make(id, scene!.Data.Meta);
         var time = zone.TimeOf(World);
         air.Set(zone.AtmosphereFor(time));
         scene.View.SetNight(time == TimeOfDay.Night);
@@ -172,8 +203,13 @@ public partial class Game : Node, IZoneHost
 
     void EnterPlay(ZoneRuntime z, string? from, Arrival? at)
     {
-        Overlay = null;
+        Mode = "play";
+        hudMode = null;
+        screens.Close();
+        hud.ShowPlay(true);
         scene!.SimPaused = false;
+        showing = false;
+        scene.Showcase = null;
         var start = at ?? z.ArrivalFrom(from);
         var meta = scene.Data.Meta;
         var b = Journey.StartBattle(z.Combat, meta.Collision(), scene.HeightAt, start.X, start.Z, start.Facing, (uint)Rng.Next());
@@ -221,6 +257,7 @@ public partial class Game : Node, IZoneHost
             {
                 hud.Fade(0, 1.4);
                 controls.Captured = false;
+                controls.ClearLatches();
                 inTransit = false;
             });
         });
@@ -278,7 +315,7 @@ public partial class Game : Node, IZoneHost
     }
 
     public string KeyLabel(string action) =>
-        Enum.TryParse<Act>(action, true, out var a) ? controls.KeyLabel(a) : action == "ultimate" ? controls.KeyLabel(Act.Ultimate) : action.ToUpperInvariant();
+        Enum.TryParse<Act>(action, true, out var a) ? controls.KeyLabel(a) : action.ToUpperInvariant();
 
     (Vector3 Pos, Vector3 Look) showT, showNow;
     bool showing;
@@ -287,14 +324,22 @@ public partial class Game : Node, IZoneHost
     {
         if (scene == null) return;
         if (pos is not var (x, y, z)) { showing = false; scene.Showcase = null; return; }
-        showT = (new Vector3((float)x, (float)y, (float)z), new Vector3((float)look.X, (float)look.Y, (float)look.Z));
-        if (!showing) showNow = (camera.GlobalPosition, showT.Look);
+        Pose(new Vector3((float)x, (float)y, (float)z), new Vector3((float)look.X, (float)look.Y, (float)look.Z));
+    }
+
+    /// <summary>A held camera, drifting to its mark (snap: there at once).</summary>
+    void Pose(Vector3 pos, Vector3 look, bool snap = false)
+    {
+        showT = (pos, look);
+        if (snap) showNow = showT;
+        else if (!showing) showNow = (camera.GlobalPosition, look);
         showing = true;
+        if (scene != null) scene.Showcase = showNow;
     }
 
     public void Save(string reason)
     {
-        if (zone == null) return;
+        if (zone == null || Mode != "play") return;
         var b = Battle;
         if (b != null) Journey.Capture(b);
         var p = b?.Player;
@@ -332,257 +377,6 @@ public partial class Game : Node, IZoneHost
         if (text != promptShown) hud.Prompt(promptShown = text);
     }
 
-    bool OnAction(Act a)
-    {
-        if (scene == null || inTransit) return false;
-        if (Overlay == "draft") return DraftKey(a);
-        if (Overlay == "dialogue") return DialogueKey(a);
-        if (Overlay == "pause")
-        {
-            if (a is Act.Pause or Act.Cancel or Act.Confirm) { ClosePause(); return true; }
-            return false;
-        }
-        if (a == Act.Pause) { OpenPause(); return true; }
-        if (a == Act.Interact && near != null)
-        {
-            var locked = near.Locked?.Invoke();
-            if (locked != null) hud.Toast(new Toast(ToastKind.Warning, locked));
-            else near.Act();
-            return true;
-        }
-        if (a == Act.Ultimate) { Journey.Quaff(Battle); return true; }
-        return false;
-    }
-
-    void OpenPause()
-    {
-        Overlay = "pause";
-        scene!.SimPaused = true;
-        hud.Fade(0.55f, 0.2, "Paused", $"{Journey.Ch.Name}  ·  Day {World.Day}  ·  {Journey.Ch.Stats.Kills} slain   [Esc] to go on");
-    }
-
-    void ClosePause()
-    {
-        Overlay = null;
-        scene!.SimPaused = false;
-        hud.Fade(0, 0.2);
-        Save("pause");
-    }
-
-    /* ------------------------------------------------------------ draft -- */
-
-    List<Offer> offers = new();
-    bool banishing;
-
-    void UpdateDraft(double dt)
-    {
-        var b = Battle;
-        if (b != null && b.DraftOwed && Overlay == null && b.Player.Alive && !inTransit)
-        {
-            // A beat after the flare, then time stops.
-            draftWait += dt;
-            if (draftWait > 0.35) { draftWait = 0; OpenDraft(); }
-        }
-        else draftWait = 0;
-    }
-
-    void OpenDraft()
-    {
-        var b = Battle!;
-        scene!.SimPaused = true;
-        Overlay = "draft";
-        Present(LevelUp.Draft(b, b.Stats.Get(Stat.Luck) >= 1.5 ? 4 : 3));
-    }
-
-    void Present(List<Offer> list)
-    {
-        var b = Battle!;
-        offers = list;
-        banishing = false;
-        var tip = draftTip;
-        draftTip = null;
-        hud.Draft(new DraftView(LevelUp.DraftLevel(b), LevelUp.BlessingNext(b), list, b.Rerolls, b.Banishes, b.PendingLevels + b.PendingBlessings.Count - 1, tip,
-            Pick, Reroll, Banish));
-    }
-
-    public void Pick(int i)
-    {
-        var b = Battle;
-        if (b == null || Overlay != "draft" || i < 0 || i >= offers.Count) return;
-        var o = offers[i];
-        LevelUp.Choose(b, o);
-        if (o.Kind == OfferKind.Weapon) hud.Toast(new Toast(ToastKind.Level, $"{o.Title} joins your arsenal"));
-        if (b.DraftOwed) Present(LevelUp.Draft(b, offers.Count));
-        else CloseDraft();
-    }
-
-    void Reroll()
-    {
-        var b = Battle!;
-        if (b.Rerolls <= 0) return;
-        b.Rerolls--;
-        Present(LevelUp.Draft(b, offers.Count));
-    }
-
-    void Banish(int i)
-    {
-        var b = Battle!;
-        if (i < 0 || i >= offers.Count || b.Banishes <= 0 || offers[i].Kind == OfferKind.Evolve) return;
-        b.Banishes--;
-        b.BannedCards.Add(offers[i].Id);
-        Present(LevelUp.Draft(b, offers.Count));
-    }
-
-    void CloseDraft()
-    {
-        hud.Draft(null);
-        Overlay = null;
-        scene!.SimPaused = false;
-        controls.ClearLatches();
-    }
-
-    bool DraftKey(Act a)
-    {
-        int pick = a switch { Act.Pick1 => 0, Act.Pick2 => 1, Act.Pick3 => 2, Act.Pick4 => 3, _ => -1 };
-        if (pick >= 0)
-        {
-            if (banishing) Banish(pick); else Pick(pick);
-            return true;
-        }
-        if (a == Act.Reroll) { Reroll(); return true; }
-        if (a == Act.Banish) { banishing = !banishing; if (banishing) hud.Toast(new Toast(ToastKind.Warning, "Banish which? (1-4)")); return true; }
-        return a is Act.Confirm or Act.Cancel or Act.Pause;
-    }
-
-    /* --------------------------------------------------------- dialogue -- */
-
-    DialogueRunner? runner;
-    string? talkNpc;
-    float? camSaved;
-    Presented? shown;
-
-    public void Talk(string id)
-    {
-        var convo = SurvivorUnchained.World.Dialogue.Find(id);
-        if (convo == null || scene == null) return;
-        var r = new DialogueRunner(convo, Journey.Ctx);
-        var p = r.Start();
-        if (p == null) return;
-        runner = r;
-        talkNpc = id;
-        var b = Battle;
-        if (zone!.Actors.TryGetValue(id, out var actor) && b != null)
-        {
-            actor.Talking = true;
-            actor.Gesture();
-            var y = (float)scene.HeightAt(actor.X, actor.Z);
-            cam.FocusOverride = new Vector3((float)(actor.X + b.Player.X) / 2, y + 1, (float)(actor.Z + b.Player.Z) / 2);
-            camSaved = cam.TargetDistance;
-            cam.TargetDistance = 12.5f;
-            b.Player.Facing = Math.Atan2(actor.X - b.Player.X, actor.Z - b.Player.Z);
-        }
-        Overlay = "dialogue";
-        scene.SimPaused = true;
-        scene.Voices.Quiet = true;
-        hud.Prompt(promptShown = null);
-        ShowLine(p);
-    }
-
-    void ShowLine(Presented p)
-    {
-        shown = p;
-        var id = talkNpc!;
-        var d = Lore.Person(id);
-        Lore.Speakers.TryGetValue(id, out var sp);
-        var s = World.Npc(id);
-        hud.Dialogue(new DialogueView(d?.Name ?? sp?.Name ?? id, d?.Title ?? sp?.Title ?? "", d != null ? Rules.Attitude(s) : "",
-            p.Speaker == "player" ? "player" : p.Speaker == "narrator" ? "narrator" : "npc", p.Text, p.Choices, p.Choices.Count == 0, Choose, Advance));
-    }
-
-    public void Choose(int index)
-    {
-        var r = runner;
-        if (r == null) return;
-        var (next, action) = r.Choose(index);
-        Journey.OnTouch();
-        if (action != null && !DialogueAction(action)) { EndDialogue(); return; }
-        if (next != null) ShowLine(next);
-        else if (action == null) EndDialogue();
-        else if (r.Node != null && r.Present() is Presented again) ShowLine(again);
-        else EndDialogue();
-    }
-
-    public void Advance()
-    {
-        var r = runner;
-        if (r == null) return;
-        var p = r.Advance();
-        if (p != null) ShowLine(p); else EndDialogue();
-    }
-
-    void EndDialogue()
-    {
-        if (talkNpc != null && zone?.Actors.TryGetValue(talkNpc, out var actor) == true) actor.Talking = false;
-        cam.FocusOverride = null;
-        if (camSaved is float d) { cam.TargetDistance = d; camSaved = null; }
-        runner = null;
-        talkNpc = null;
-        shown = null;
-        hud.Dialogue(null);
-        if (Overlay == "dialogue") Overlay = null;
-        if (scene != null) { scene.SimPaused = false; scene.Voices.Quiet = false; }
-        controls.ClearLatches();
-        Save("talk");
-    }
-
-    bool DialogueKey(Act a)
-    {
-        if (shown == null) return false;
-        int pick = a switch { Act.Pick1 => 0, Act.Pick2 => 1, Act.Pick3 => 2, Act.Pick4 => 3, _ => -1 };
-        if (shown.Choices.Count == 0)
-        {
-            if (a is Act.Confirm or Act.Interact or Act.Dash || pick == 0) { Advance(); return true; }
-            return true;
-        }
-        if (pick >= 0 && pick < shown.Choices.Count && shown.Choices[pick].Enabled) { Choose(shown.Choices[pick].Index); return true; }
-        return true;
-    }
-
-    /// <summary>What a conversation opens. True to stay in it.</summary>
-    bool DialogueAction(string a)
-    {
-        switch (a)
-        {
-            case "trade": case "sell": case "stash": case "fortune":
-                // The shop, the storeroom and the chapter's end come with the rest of the interface.
-                hud.Toast(new Toast(ToastKind.World, a == "fortune" ? "Vonnra's fortune is not in this build yet" : "Trading is not in this build yet", "It comes with the rest of the interface"));
-                return false;
-            case "rest":
-                Rest();
-                return false;
-        }
-        return Journey.Service(a, Battle);
-    }
-
-    /// <summary>A night's sleep at the inn: the world moves on a day.</summary>
-    void Rest()
-    {
-        var b = Battle;
-        bool hadEmber = Journey.Expedition != null || (b?.EmberLevel ?? 1) > 1;
-        var lines = Journey.Sleep(b, hadEmber, Rng.NextDouble);
-        if (lines == null) { hud.Toast(new Toast(ToastKind.Warning, $"A bed costs {Journey.RestCost} gold")); return; }
-        hud.Fade(1, 0.9, $"Day {World.Day}", "You sleep");
-        Wait(1.2, () =>
-        {
-            air.Set(zone!.AtmosphereFor(TimeOfDay.Day));
-            scene?.View.SetNight(false);
-            hud.ZoneInfo(zone.Name, zone.Region, World.Day, TimeOfDay.Day);
-            foreach (var l in lines) hud.Toast(new Toast(ToastKind.World, l, null, null, null, 10));
-            Save("rest");
-            hud.Fade(0, 1.4);
-        });
-    }
-
     /* ------------------------------------------------------------ frame -- */
 
     void OnEvents(List<CombatEvent> evs)
@@ -613,22 +407,28 @@ public partial class Game : Node, IZoneHost
 
     public override void _Process(double delta)
     {
-        if (scene == null || zone == null) return;
+        if (scene == null) return;
         double dt = Math.Min(delta, 0.1);
-        auto?.Drive(dt);
-        Journey.Playtime += dt;
-        UpdateInteraction();
-        // The ground walked, on the map's fog.
-        fogT -= dt;
-        if (fogT <= 0 && Battle is { } fb)
+        if (Mode == "play" && zone != null)
         {
-            fogT = 0.4;
-            double extent = scene.Data.Meta.Map?.Extent is { ValueKind: System.Text.Json.JsonValueKind.Number } ex ? ex.GetDouble() : scene.Data.Meta.Bound * 2;
-            Journey.Walk(zone.Id, extent, fb.Player.X, fb.Player.Z);
-            foreach (var k in zone.MapKnown) Journey.Walk(zone.Id, extent, k.X, k.Z, k.R);
+            auto?.Drive(dt);
+            Journey.Playtime += dt;
+            UpdateInteraction();
+            // The ground walked, on the map's fog.
+            fogT -= dt;
+            if (fogT <= 0 && Battle is { } fb)
+            {
+                fogT = 0.4;
+                double extent = scene.Data.Meta.Map?.Extent is { ValueKind: System.Text.Json.JsonValueKind.Number } ex ? ex.GetDouble() : scene.Data.Meta.Bound * 2;
+                Journey.Walk(zone.Id, extent, fb.Player.X, fb.Player.Z);
+                foreach (var k in zone.MapKnown) Journey.Walk(zone.Id, extent, k.X, k.Z, k.R);
+            }
+            autosaveT += dt;
+            if (autosaveT > 90 && Overlay == null && !inTransit) { autosaveT = 0; Save("auto"); }
+            zone.Frame(dt);
+            RunLater(dt);
         }
-        autosaveT += dt;
-        if (autosaveT > 90 && Overlay == null && !inTransit) { autosaveT = 0; Save("auto"); }
+        else if (auto != null && Mode != "play") AutoFront();
         // A held camera drifts toward its mark, breathing a little.
         if (showing)
         {
@@ -638,9 +438,8 @@ public partial class Game : Node, IZoneHost
             showNow = (showNow.Pos.Lerp(target, k1), showNow.Look.Lerp(showT.Look, k2));
             scene.Showcase = showNow;
         }
-        zone.Frame(dt);
-        RunLater(dt);
         scene.Update(dt);
+        if (Mode != "play") return;
         UpdateDraft(dt);
         hudT -= dt;
         if (hudT <= 0)
@@ -649,12 +448,33 @@ public partial class Game : Node, IZoneHost
             hud.Bars(Battle, Journey.Ch.Gold, Inventory.Count(Journey.Ch, "health_draught"));
         }
         hud.SetBruise(scene.Bruise);
-        Report(dt);
+        scene.Voices.Quiet = hudMode == "dialogue" || screens.Current != null;
         // Fallen: the world loses its colour.
         air.Env.AdjustmentSaturation = Mathf.Lerp(air.Env.AdjustmentSaturation, Battle?.Player.Alive == false ? 0.2f : 1f, 1 - Mathf.Exp(-2 * (float)dt));
+        Report(dt);
+        Tour(dt);
     }
 
-    double reportT;
+    double tourT = 2;
+    int tourI;
+
+    /// <summary>--open KIND (or 'all'): the screens opened in turn, for
+    /// pictures and for runs that check each builds (--bare hides the world).</summary>
+    void Tour(double dt)
+    {
+        if (Args.Get("open") is not string want) return;
+        if (Args.Has("bare") && scene != null) scene.Visible = false;
+        tourT -= dt;
+        if (tourT > 0) return;
+        string[] all = { "inventory", "character", "journal", "map", "pause", "rest", "stash", "shop:harlan", "chapter" };
+        var list = want == "all" ? all : want.Split(',');
+        if (tourI >= list.Length) return;
+        tourT = Args.Num("every", 1.5f);
+        if (list[tourI].StartsWith("shop:")) Journey.OpenShop(list[tourI][5..], Rng);
+        GD.Print($"open {list[tourI]}");
+        CloseOverlay();
+        Open(list[tourI++]);
+    }
 
     /// <summary>--log S: a line every S seconds of how it is going (for runs
     /// without a screen: Godot's --headless, --quit-after).</summary>
@@ -668,7 +488,8 @@ public partial class Game : Node, IZoneHost
         var p = b?.Player;
         int foes = b?.Enemies.Count ?? 0;
         var dbg = zone?.Debug() is { Count: > 0 } d ? string.Join(" ", d.Take(4).Select(kv => $"{kv.Key}={kv.Value}")) : "";
-        GD.Print($"[{scene!.Time,6:0.0}s] {zone?.Id} hp {p?.Hp:0}/{b?.MaxHp:0} ember {b?.EmberLevel} kills {b?.KillCount} foes {foes} at {p?.X:0},{p?.Z:0} {Overlay} {dbg}");
+        var (drawn, dead) = scene!.Crowd.Counts;
+        GD.Print($"[{scene.Time,6:0.0}s] {zone?.Id} hp {p?.Hp:0}/{b?.MaxHp:0} ember {b?.EmberLevel} kills {b?.KillCount} foes {foes} (drawn {drawn}, lying {dead}) at {p?.X:0},{p?.Z:0} {Overlay} {dbg}");
     }
 
     /// <summary>What was put off, in game time: it waits while a menu, a

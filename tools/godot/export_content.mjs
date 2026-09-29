@@ -1,6 +1,7 @@
 /* The web game's written content, as JSON for the Godot game: every
  * conversation, quest, person, shop, item, calling, background and trait,
- * the daily rules, who talks to whom, the town's folk and the looks. Loaded
+ * the daily rules, who talks to whom, the town's folk and the looks, and
+ * the interface's line glyphs. Loaded
  * from the real TypeScript through Vite (so what the web game runs is what
  * is exported); functions are not data and are ported by hand (item
  * affixes, objectives, standings, the chapter's summary).
@@ -46,4 +47,6 @@ const arche = await load('/src/content/archetypes.ts');
 write('archetypes', { archetypes: arche.ARCHETYPES, backgrounds: arche.BACKGROUNDS, traits: arche.TRAITS });
 const items = await load('/src/content/items.ts');
 write('items', { items: items.ITEMS, raritynames: items.RARITY_NAMES, slots: items.EQUIP_SLOTS });
+const glyphs = await load('/src/ui/glyphs.ts');
+write('glyphs', glyphs.GLYPHS);
 await server.close();

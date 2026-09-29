@@ -39,6 +39,7 @@ public sealed class Autopilot
         Move = (0, 0);
         if (g.Overlay == "draft") { g.Pick(0); return; }
         if (g.Overlay == "dialogue") { g.Advance(); return; }
+        if (g.Overlay != null) { g.CloseOverlay(); return; }
         var b = g.Battle;
         var z = g.Zone;
         if (b == null || z == null || !b.Player.Alive || g.InTransit || Idle) return;

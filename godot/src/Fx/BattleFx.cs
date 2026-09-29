@@ -25,6 +25,8 @@ public partial class BattleFx : Node3D
     /// <summary>A blow landed on the survivor: how hard (0..1), for the edges of the picture.</summary>
     public Action<float> OnDamageFlash = _ => { };
     public Vector3 PlayerPos;
+    /// <summary>How much blood (the settings' gore: 1, 0.35, 0).</summary>
+    public float Gore = 1;
     double time;
 
     readonly List<(OmniLight3D Light, float T, float Life, float Peak)> flashes = new();
@@ -102,6 +104,16 @@ public partial class BattleFx : Node3D
     }
 
     Batch Add(Batch b) { AddChild(b); return b; }
+
+    void Spray(Vector3 at, Vector3 away, Color? color, float amount)
+    {
+        if (Gore > 0) Hits.Spray(at, away, color, amount * Gore);
+    }
+
+    void Stain(Vector3 at, float size)
+    {
+        if (Gore >= 0.5f || (Gore > 0 && R() < Gore)) Hits.Stain(at, size);
+    }
 
     float Y(double x, double z) => (float)heightAt(x, z);
     static Vector3 V(double x, double y, double z) => new((float)x, (float)y, (float)z);
@@ -282,8 +294,8 @@ public partial class BattleFx : Node3D
                         var away = new Vector3((float)e.Dx, 0, (float)e.Dz);
                         if (away.LengthSquared() < 0.01f) away = Vector3.Forward;
                         float hurt = (float)Math.Min(1, e.Amount / Math.Max(1, e.MaxHp) * 3);
-                        Hits.Spray(at + Vector3.Up * 0.2f, away.Normalized(), BloodOf(e.Family), 0.3f + hurt);
-                        if (hurt > 0.3f && R() < 0.5f) Hits.Stain(at with { Y = Y(e.X, e.Z) } + away.Normalized() * (0.4f + R() * 0.8f), 0.6f + R() * 0.6f);
+                        Spray(at + Vector3.Up * 0.2f, away.Normalized(), BloodOf(e.Family), 0.3f + hurt);
+                        if (hurt > 0.3f && R() < 0.5f) Stain(at with { Y = Y(e.X, e.Z) } + away.Normalized() * (0.4f + R() * 0.8f), 0.6f + R() * 0.6f);
                     }
                     if (e.Crit)
                     {
@@ -299,9 +311,9 @@ public partial class BattleFx : Node3D
                     var at = V(e.X, gy + 0.9, e.Z);
                     var away = new Vector3((float)e.Dx, 0, (float)e.Dz);
                     if (away.LengthSquared() < 0.01f) away = Vector3.Forward;
-                    Hits.Spray(V(e.X, gy + 0.7 * e.Scale, e.Z), away.Normalized(), BloodOf(e.Family), 1);
-                    if (e.Burst) { Hits.Spray(V(e.X, gy + 1.0 * e.Scale, e.Z), -away.Normalized(), BloodOf(e.Family), 1); Hits.Stain(V(e.X, gy, e.Z), 2.2f); }
-                    Hits.Stain(V(e.X, gy, e.Z) + away.Normalized() * 0.8f, 1.2f + R() * 0.8f);
+                    Spray(V(e.X, gy + 0.7 * e.Scale, e.Z), away.Normalized(), BloodOf(e.Family), 1);
+                    if (e.Burst) { Spray(V(e.X, gy + 1.0 * e.Scale, e.Z), -away.Normalized(), BloodOf(e.Family), 1); Stain(V(e.X, gy, e.Z), 2.2f); }
+                    Stain(V(e.X, gy, e.Z) + away.Normalized() * 0.8f, 1.2f + R() * 0.8f);
                     Burst(at, e.School, e.Elite ? 40 : 10, e.Elite ? 7 : 4, 3, life: 0.6f);
                     for (int i = 0; i < (e.Elite ? 14 : 4); i++)
                         Sparks.Spawn(V(e.X + (R() - 0.5) * 0.6, gy + 0.5, e.Z + (R() - 0.5) * 0.6), new Vector3(0, 1.4f + R() * 1.5f, 0), 1 + R() * 0.6f, 0.07f,
@@ -327,7 +339,7 @@ public partial class BattleFx : Node3D
                         break;
                     }
                     Hits.Text(at + Vector3.Up * 0.2f, ((int)Math.Round(e.Amount)).ToString(), new Color(2f, 0.35f, 0.3f), 58);
-                    Hits.Spray(at, Vector3.Up, null, 0.4f);
+                    Spray(at, Vector3.Up, null, 0.4f);
                     Cam?.AddTrauma((float)Math.Min(0.5, 0.12 + e.Amount / 60));
                     OnDamageFlash((float)Math.Min(1, 0.35 + e.Amount / 40));
                     break;

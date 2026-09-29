@@ -38,6 +38,8 @@ public partial class WorldScene : Node3D, IZoneLook
     public Action<List<CombatEvent>> OnEvents = _ => { };
     /// <summary>A blow landed (0..1) and how low the survivor is: the edges of the picture.</summary>
     public float Bruise { get; private set; }
+    /// <summary>Heavy blows hold the fight still for a moment (off with the screen's shake).</summary>
+    public bool Hitstop = true;
     public double Time { get; private set; }
     double acc, hitstop, hitstopCd, fightTime, damageFlash;
     List<CombatEvent> frameEvents = new();
@@ -126,7 +128,7 @@ public partial class WorldScene : Node3D, IZoneLook
     /// quick succession, so a crowd going down does not stutter.</summary>
     void Weigh(List<CombatEvent> evs, Battle b)
     {
-        if (hitstopCd > 0) return;
+        if (hitstopCd > 0 || !Hitstop) return;
         double s = 0;
         foreach (var e in evs)
         {
