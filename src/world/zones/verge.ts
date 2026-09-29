@@ -28,10 +28,11 @@ import { bushGeometry, floraMaterial, colorize } from '@/render/flora';
  *
  * Everything the story touches is returned by name. */
 
-/* Key points; the paths wander between them (see meander). */
-const ROAD_KEYS: Pt[] = [[-150, 8], [-105, 10], [-72, 6], [-40, 14], [-8, 10], [22, 0], [52, -6], [84, -4], [118, 4], [150, 8]];
-const RUT_KEYS: Pt[] = [[-70, 26], [-46, 44], [-14, 58], [16, 66], [34, 72]];
-const STREAM_KEYS: Pt[] = [[102, -104], [84, -84], [66, -68], [40, -54], [12, -40], [-18, -26], [-40, -8], [-52, 10], [-72, 34], [-96, 58], [-130, 88], [-150, 104]];
+/* Key points; the paths wander between them (see meander). Exported for
+ * tools that read a zone (tools/godot/export_zone.mjs). */
+export const ROAD_KEYS: Pt[] = [[-150, 8], [-105, 10], [-72, 6], [-40, 14], [-8, 10], [22, 0], [52, -6], [84, -4], [118, 4], [150, 8]];
+export const RUT_KEYS: Pt[] = [[-70, 26], [-46, 44], [-14, 58], [16, 66], [34, 72]];
+export const STREAM_KEYS: Pt[] = [[102, -104], [84, -84], [66, -68], [40, -54], [12, -40], [-18, -26], [-40, -8], [-52, 10], [-72, 34], [-96, 58], [-130, 88], [-150, 104]];
 export const VROAD = meander(ROAD_KEYS, 1.6, 3, 4.1);
 export const RUTS = meander(RUT_KEYS, 1.1, 2.5, 0.6);
 export const STREAM = meander(STREAM_KEYS, 2.6, 2.2, 1.7);
