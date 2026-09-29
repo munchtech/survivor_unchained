@@ -123,9 +123,15 @@ game at the same place and hour; needs the dev server), then
   `Music.cs` (the score, composed as it plays) and `SoundBridge.cs` (what
   happens, turned into all of that).
 
-Stand-ins still to be replaced: the KayKit props (a torch, a bucket, a grave
-marker). The KayKit packs themselves do not load in Godot (they are
-meshopt-compressed); nothing in the Godot game uses them.
+The web game's KayKit props (graves, a crypt, ruins, fences, lamp posts, the
+Lowford gate, the farm's mills) come through the export tagged (each a node
+`kk-PACK-NAME-N` in `landmarks.glb`, its size in `data/zones/kaykit.json`) and
+are replaced where they stand (`src/World/Pieces.cs`): by a piece of the
+world's kits where one fits, otherwise made in code to the same size in
+photographed stone, wood and earth (`art/materials`, Poly Haven, CC0;
+`src/World/Made.cs`). `--icons kk:halloween/crypt` photographs one alone,
+`--icons kit:props/Torch_Metal` a kit piece. The KayKit packs themselves do
+not load in Godot (they are meshopt-compressed).
 
 ## Desktop builds
 

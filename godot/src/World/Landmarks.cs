@@ -15,7 +15,8 @@ namespace SurvivorUnchained.View;
 ///   hdr=R,G,B    an unlit colour brighter than white (linear)
 ///   add          drawn additively
 /// The pieces the runtime reaches for (a glowing bit, a gate, a wheel) are
-/// nodes of their own, found by name (Nodes).
+/// nodes of their own, found by name (Nodes). The KayKit props are nodes of
+/// their own too (kk-PACK-NAME-N), swapped for better pieces (Pieces).
 /// </summary>
 public sealed class Landmarks
 {
@@ -23,8 +24,11 @@ public sealed class Landmarks
     /// <summary>Every node by name (the runtime's are unique).</summary>
     public readonly Dictionary<string, Node3D> Nodes = new();
 
+    readonly ZoneData zone;
+
     public Landmarks(ZoneData z)
     {
+        zone = z;
         Root = GD.Load<PackedScene>($"{z.Dir}/landmarks.glb").Instantiate<Node3D>();
         Root.Name = "Landmarks";
         Walk(Root);
@@ -35,6 +39,8 @@ public sealed class Landmarks
     {
         foreach (var c in n.GetChildren())
         {
+            // A KayKit piece (kk-PACK-NAME-N): a better one in its place, where there is one.
+            if (c is Node3D kk && kk.Name.ToString().StartsWith("kk-") && Swap(kk)) continue;
             if (c is Node3D n3 && !Nodes.ContainsKey(n3.Name)) Nodes[n3.Name] = n3;
             if (c is MeshInstance3D m && m.Mesh != null)
             {
@@ -45,6 +51,19 @@ public sealed class Landmarks
             }
             Walk(c);
         }
+    }
+
+    bool Swap(Node3D kk)
+    {
+        var part = kk.Name.ToString().Split('-');
+        // The ground under a point of the piece, in its frame (the landmarks stand at the world's origin).
+        var at = kk.Transform;
+        var back = at.AffineInverse();
+        float Ground(Vector3 p) { var w = at * p; return (back * new Vector3(w.X, zone.HeightAt(w.X, w.Z), w.Z)).Y; }
+        if (part.Length < 4 || Pieces.For(part[1], part[2], int.TryParse(part[3], out var i) ? i : 0, at.Basis.Scale.Y, Ground) is not Node3D piece) return false;
+        foreach (var c in kk.GetChildren()) { kk.RemoveChild(c); c.QueueFree(); }
+        kk.AddChild(piece);
+        return true;
     }
 
     static readonly Dictionary<ulong, Material?> remade = new();

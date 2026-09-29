@@ -18,6 +18,11 @@ Third-party art in this folder, with its licence. CC-BY works are used with cred
 - "mossy_rock" (the ground's rock), Poly Haven (https://polyhaven.com/a/mossy_rock), CC0 -> public/assets/ground (gathered by tools/assets/ground.py)
 - "burned_ground_01" (the ground's blight), Poly Haven (https://polyhaven.com/a/burned_ground_01), CC0 -> public/assets/ground (gathered by tools/assets/ground.py)
 - "studio_small_08" (the light the items are photographed in), Poly Haven (https://polyhaven.com/a/studio_small_08), CC0 -> godot/art/studio (1k HDR)
+- "medieval_blocks_03" (dressed stone: walls, the gate, towers, the crypt, pillars), Poly Haven (https://polyhaven.com/a/medieval_blocks_03), CC0 -> godot/art/materials (1k)
+- "castle_wall_slates" (slate roofs, clay tiles), Poly Haven (https://polyhaven.com/a/castle_wall_slates), CC0 -> godot/art/materials (1k)
+- "rock_boulder_dry" (headstones, rock), Poly Haven (https://polyhaven.com/a/rock_boulder_dry), CC0 -> godot/art/materials (1k)
+- "rough_wood" (posts, crosses, timber), Poly Haven (https://polyhaven.com/a/rough_wood), CC0 -> godot/art/materials (1k)
+- godot/art/materials/forest_ground_04 is the ground's dirt layer above, cut out of the atlas for graves
 
 ## Basis Universal (Apache-2.0)
 

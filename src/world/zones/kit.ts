@@ -144,6 +144,8 @@ export class ZoneKit {
     clay?: boolean;
   } = {}) {
     const obj = Assets.prop(pack, name);
+    // Which piece it is, for the Godot game to put a better one in its place.
+    obj.userData.kaykit = `${pack}/${name}`;
     if (o.clay) clayRoofs(obj);
     obj.position.set(x, (o.y ?? this.y(x, z)) - (o.sink ?? 0), z);
     obj.rotation.set(o.tilt?.[0] ?? 0, o.rot ?? 0, o.tilt?.[1] ?? 0);

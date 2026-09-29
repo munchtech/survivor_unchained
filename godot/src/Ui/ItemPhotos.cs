@@ -38,7 +38,7 @@ public partial class ItemPhotos : Node
     string? taking;
     int wait;
 
-    static string PathOf(string key) => $"user://icons/{key}.v{Version}.png";
+    static string PathOf(string key) => $"user://icons/{key.Replace(':', '_').Replace('/', '_')}.v{Version}.png";
 
     /// <summary>Reads back the photographs already taken and sets up the
     /// studio to take the rest, a frame or two each. Quitting after: every
@@ -49,9 +49,8 @@ public partial class ItemPhotos : Node
         var todo = new List<string>();
         // --icons a,b: only those taken again.
         var only = quitAfter && Args.Get("icons") is { } list && list != "1" ? new HashSet<string>(list.Split(',')) : null;
-        foreach (var key in ItemModels.Keys)
+        foreach (var key in only ?? ItemModels.Keys)
         {
-            if (only != null && !only.Contains(key)) continue;
             if (photos.ContainsKey(key)) continue;
             if (!quitAfter && !Args.Has("icons-fresh") && FileAccess.FileExists(PathOf(key)) && Image.LoadFromFile(PathOf(key)) is { } img && !img.IsEmpty())
             {

@@ -22,7 +22,8 @@
  *   props.json     the world kits' pieces, placed one by one (the houses
  *                  and walls too, which the web game merges)
  *   landmarks.glb  everything else the zone stands up (the camps, the
- *                  Blind, ruins, the KayKit props), world placed; the pieces
+ *                  Blind, ruins, the KayKit props, each a node named
+ *                  kk-PACK-NAME-N), world placed; the pieces
  *                  the runtime reaches for (glowing bits, night-only ones,
  *                  a gate, a wheel) as nodes of their own, which zone.json
  *                  names
@@ -72,6 +73,10 @@ const ZONES = {
 }
 
 const wanted = process.argv.slice(2).length ? process.argv.slice(2) : Object.keys(ZONES);
+/* Every KayKit piece a zone uses, with its bounds as authored
+ * (godot/data/zones/kaykit.json), merged over the zones exported. */
+const kaykitPath = 'godot/data/zones/kaykit.json';
+const kaykit = fs.existsSync(kaykitPath) ? JSON.parse(fs.readFileSync(kaykitPath, 'utf8')) : {};
 const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--enable-webgl'] });
 
 for (const zone of wanted) {
@@ -247,6 +252,7 @@ for (const zone of wanted) {
     };
     const inv = new THREE.Matrix4();
     const hidden = [];
+    let kaykit = 0;
     const walk = (o, parent, frame) => {
       // People and creatures are actors, not the place (a hat or a lantern
       // held in a hand hangs from a bone).
@@ -263,6 +269,16 @@ for (const zone of wanted) {
         parent.add(g);
         into = g; f = o.matrixWorld.clone();
       }
+      // A KayKit piece: a node of its own, named for what it is
+      // (kk-PACK-NAME-N), so the Godot game can put a better one there.
+      if (o.userData?.kaykit) {
+        const g = new THREE.Group();
+        g.name = `kk-${o.userData.kaykit.replace('/', '-')}-${kaykit++}`;
+        g.matrixAutoUpdate = false;
+        g.matrix.copy(f ? inv.copy(f).invert().multiply(o.matrixWorld) : o.matrixWorld);
+        into.add(g);
+        into = g; f = o.matrixWorld.clone();
+      }
       const local = (mw) => (f ? new THREE.Matrix4().copy(f).invert().multiply(mw) : mw.clone());
       if (o.isInstancedMesh) {
         if (!o.geometry.userData?.flora && drawn(o.material))
@@ -273,6 +289,17 @@ for (const zone of wanted) {
       for (const c of o.children) walk(c, into, f);
     };
     walk(root, scene, null);
+    // Each KayKit piece's own bounds (unplaced), for fitting what replaces it.
+    const kaykitBounds = {};
+    root.traverse((o) => {
+      const id = o.userData?.kaykit;
+      if (!id || kaykitBounds[id]) return;
+      const c = o.clone();
+      c.position.set(0, 0, 0); c.rotation.set(0, 0, 0); c.scale.setScalar(1);
+      c.updateMatrixWorld(true);
+      const b = new THREE.Box3().setFromObject(c, true);
+      kaykitBounds[id] = [b.min.x, b.min.y, b.min.z, b.max.x, b.max.y, b.max.z].map((v) => +v.toFixed(3));
+    });
     const exporter = new GLTFExporter().setTextureUtils({ decompress: (t, max) => decompress(t, max, window.__game.renderer.gl) });
     const glb = await exporter.parseAsync(scene, { binary: true, maxTextureSize: 2048, onlyVisible: false });
     // Too big for one string on a big zone: left on the page, read in pieces.
@@ -319,7 +346,7 @@ for (const zone of wanted) {
         atmosphere: zb.atmosphere, lights, fires, chimneys, moths, nightNodes, hiddenNodes: hidden, colliders, refs, places, paths, map, waterMask,
         landmarkMeshes: meshes,
       },
-      heights, splat, flora: [...flora.values()], props, landmarks, water,
+      heights, splat, flora: [...flora.values()], props, landmarks, water, kaykitBounds,
     };
   }, { zone, module: spec.module });
 
@@ -342,6 +369,7 @@ for (const zone of wanted) {
   fs.writeFileSync(`${out}/flora.json`, JSON.stringify(floraMeta, null, 1) + '\n');
   fs.writeFileSync(`${out}/flora.bin`, Buffer.from(all.buffer));
   fs.writeFileSync(`${out}/props.json`, JSON.stringify(data.props) + '\n');
+  Object.assign(kaykit, data.kaykitBounds);
   fs.writeFileSync(`${out}/landmarks.glb`, Buffer.concat(glbParts));
   const wmeta = [], wbufs = [];
   for (const w of data.water) {
@@ -353,4 +381,5 @@ for (const zone of wanted) {
   console.log(`${zone}: terrain ${meta.res}² over ${meta.size} m; ${floraMeta.length} flora pieces, ${floraMeta.reduce((n, f) => n + f.count, 0)} placed; ${data.props.length} props; ${meta.landmarkMeshes} landmark meshes; ${data.water.length} waters; ${meta.lights.length} lights, ${meta.fires.length} fires; ${meta.colliders.length} colliders`);
   await pg.close();
 }
+fs.writeFileSync(kaykitPath, JSON.stringify(Object.fromEntries(Object.entries(kaykit).sort()), null, 1) + '\n');
 await browser.close();
