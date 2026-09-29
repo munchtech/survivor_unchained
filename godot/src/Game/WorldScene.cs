@@ -183,7 +183,7 @@ public partial class WorldScene : Node3D, IZoneLook
         // The ground under a point of the piece, in its frame.
         float Ground(Vector3 p)
         {
-            var w = new Basis(Vector3.Up, (float)rot) * (p * (float)scale);
+            var w = new Godot.Basis(Vector3.Up, (float)rot) * (p * (float)scale);
             return (float)((HeightAt(x + w.X, z + w.Z) - HeightAt(x, z)) / scale);
         }
         // A KayKit piece (PACK/NAME) is made anew (Pieces).
