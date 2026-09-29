@@ -10,7 +10,8 @@ namespace SurvivorUnchained.Ui;
 /// data/content/glyphs.json): blessings, schools, skills, statuses, the
 /// kinds of gear. One system: a 24-unit square, a 1.6 stroke, round caps, so
 /// a row of them reads as a set. Drawn from their SVG paths at the size and
-/// colour asked for. Items the web game photographs are glyphs here for now.
+/// colour asked for. An item's glyph stands in until its photograph
+/// (ItemPhotos) is taken.
 /// </summary>
 public static class Glyphs
 {

@@ -33,8 +33,8 @@ public static class Arms
         ["short_staff"] = new("mage_staff", 1.1f, 0.3f),
         ["crossbow"] = new("crossbow", 0.85f, 0.3f, Pistol: true),
         ["shield_round"] = new("shield_round", 0.66f, 0.5f),
-        ["daggers"] = new("daggers", 0.4f, 0.2f, Node: "Cube004"),
-        ["dagger_b"] = new("daggers", 0.4f, 0.2f, Node: "Cube00401"),
+        ["daggers"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004"),
+        ["dagger_b"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004_01"),
     };
 
     /// <summary>A weapon, normalised (a new node each call).</summary>
@@ -44,16 +44,18 @@ public static class Arms
         var model = GD.Load<PackedScene>($"res://assets/weapons/{spec.File}.glb").Instantiate<Node3D>();
         if (spec.Node != null)
         {
-            // One weapon of several in the file: the rest go.
-            void Keep(Node n)
+            // One weapon of several in the file: the rest go (the meshes
+            // not under the node named, however deep).
+            void Keep(Node n, bool wanted)
             {
                 foreach (var c in n.GetChildren())
                 {
-                    if (c is MeshInstance3D m && m.Name != spec.Node) { m.QueueFree(); m.GetParent().RemoveChild(m); continue; }
-                    Keep(c);
+                    bool mine = wanted || c.Name == spec.Node;
+                    if (c is MeshInstance3D m && !mine) { m.QueueFree(); m.GetParent().RemoveChild(m); continue; }
+                    Keep(c, mine);
                 }
             }
-            Keep(model);
+            Keep(model, false);
         }
         var pts = new List<Vector3>();
         void Walk(Node n, Transform3D at)

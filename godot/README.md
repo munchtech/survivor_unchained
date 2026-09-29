@@ -41,6 +41,9 @@ Options go after `--`:
 - `--shot NAME --seconds S [--every T --count N]`: screenshots
   (`src/Shots.cs`);
 - `--log S`: a line every S seconds (the fight, the zone, the sound);
+- `--icons [a,b]`: the items photographed afresh (all, or those named), then
+  quit (they are kept in the user folder's `icons/`; `--icons-fresh` retakes
+  them as the game starts);
 - `--wav PATH`: no speakers; the game's sound is written to a WAV on exit
   (with `--fixed-fps 60` it is exactly as long as the run); `--sound`: sound
   even in a headless run (for timing the mixer against Godot's dummy driver).
@@ -101,7 +104,10 @@ game at the same place and hour; needs the dev server), then
   where they land, sinking), sprays, numbers and blade arcs (`Hits.cs`), the
   colours of each school (`Palette.cs`).
 - `src/Ui/`: the look shared by every screen (`Style.cs`, the icons in
-  `Glyphs.cs`), the HUD (`GameHud.cs`), the level-up draft and the
+  `Glyphs.cs`), the items' pictures (`ItemPhotos.cs`: each item photographed
+  once in a little studio of its own, lit by a studio HDRI, and kept; what is
+  photographed is in `ItemModels.cs`: the weapons in hand, and the rest made
+  in code with `src/World/Shapes.cs`, turned, swept, cut out and draped), the HUD (`GameHud.cs`), the level-up draft and the
   conversation panel (`Panels.cs`), the screens over the game (`Overlay.cs`;
   the pack, a shop, the storeroom in `Pack.cs`, the self and the journal in
   `Book.cs`, `MapScreen.cs`, the pause menu, settings, controls, a night's
@@ -118,7 +124,8 @@ game at the same place and hour; needs the dev server), then
   happens, turned into all of that).
 
 Stand-ins still to be replaced: the KayKit props (a torch, a bucket, a grave
-marker), and the items' pictures (icons for now).
+marker). The KayKit packs themselves do not load in Godot (they are
+meshopt-compressed); nothing in the Godot game uses them.
 
 ## Desktop builds
 

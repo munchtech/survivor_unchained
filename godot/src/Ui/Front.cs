@@ -415,7 +415,7 @@ public partial class CreateScreen : Overlay
         var it = Items.Get(d.WeaponItem);
         var w = it.Weapon != null ? Weapons.All.GetValueOrDefault(it.Weapon.Id) : null;
         var ab = Abilities.ById(d.Ability);
-        var v = Style.V(8, Style.H(12, Glyphs.Icon(it.Icon, 64, Style.GoldHi), Style.V(2, Style.Cap(it.Name, 20),
+        var v = Style.V(8, Style.H(12, ItemPhotos.Icon(it.Icon, 72, Style.GoldHi), Style.V(2, Style.Cap(it.Name, 20),
             w != null ? Style.Label($"{w.Name} · {w.School.ToString().ToLowerInvariant()}", Style.UiBold, 15, ItemViews.SchoolColors[w.School]) : new Control())));
         v.AddChild(Style.Label(it.Description, Style.Text, 16, Style.Ink, true));
         if (it.Lore != null) v.AddChild(Style.Label(it.Lore, Style.TextItalic, 15, Style.InkDim, true));
@@ -438,7 +438,7 @@ public partial class CreateScreen : Overlay
         foreach (var i in bg.Items)
         {
             var it = Items.Get(i);
-            v.AddChild(Style.H(10, Glyphs.Icon(it.Icon, 34, Style.RarityOf(it.Rarity)), Style.V(0, Style.Label(it.Name, Style.UiBold, 15, Style.RarityOf(it.Rarity)), Style.Label(it.Description, Style.Ui, 13, Style.InkDim, true))));
+            v.AddChild(Style.H(10, ItemPhotos.Icon(it.Icon, 40, Style.RarityOf(it.Rarity)), Style.V(0, Style.Label(it.Name, Style.UiBold, 15, Style.RarityOf(it.Rarity)), Style.Label(it.Description, Style.Ui, 13, Style.InkDim, true))));
         }
         v.AddChild(Style.Rule());
         v.AddChild(Style.SubLabel("What it opens"));

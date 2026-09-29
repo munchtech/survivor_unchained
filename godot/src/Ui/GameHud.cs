@@ -230,8 +230,8 @@ public partial class GameHud : CanvasLayer
         Hand(dashPips, Act.Dash, "Dash", out _);
         var q = new Panel { CustomMinimumSize = new Vector2(60, 60), MouseFilter = Control.MouseFilterEnum.Ignore };
         q.AddThemeStyleboxOverride("panel", Style.Box(Hex("#1a1620"), Style.Line, 1, 9, 0));
-        var qi = Glyphs.Icon("potion", 40, Hex("#ff8a80"));
-        qi.Position = new Vector2(10, 10); qi.Size = new Vector2(40, 40);
+        var qi = ItemPhotos.Icon("potion", 50, Hex("#ff8a80"));
+        qi.Position = new Vector2(5, 3); qi.Size = new Vector2(50, 50);
         q.AddChild(qi);
         quickQty = Style.Label("", Style.UiHeavy, 14, Colors.White);
         quickQty.Position = new Vector2(44, 40);
@@ -552,7 +552,7 @@ public partial class GameHud : CanvasLayer
         var s = Style.Box(new Color(0.047f, 0.04f, 0.055f, 0.82f), color, 0, 4, 8);
         s.BorderWidthLeft = 3;
         box.AddThemeStyleboxOverride("panel", s);
-        var row = Style.H(10, Glyphs.Icon(t.Icon ?? glyph, t.Icon != null ? 34 : 22, color));
+        var row = Style.H(10, t.Icon != null ? ItemPhotos.Icon(t.Icon, 40, color) : Glyphs.Icon(glyph, 22, color));
         var words = Style.V(0, Style.Label(t.Text, t.Kind == ToastKind.Quest ? Style.Display : Style.UiBold, 17, t.Kind == ToastKind.Quest ? Style.GoldHi : t.Rarity != null ? color : Hex("#f0e6d2"), true));
         if (!string.IsNullOrEmpty(t.Sub)) words.AddChild(Style.Label(t.Sub, Style.TextItalic, 15, Hex("#b8ab96"), true));
         words.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;

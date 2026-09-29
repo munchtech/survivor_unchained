@@ -17,6 +17,8 @@ Third-party art in this folder, with its licence. CC-BY works are used with cred
 - "cobblestone_05" (the ground's stone), Poly Haven (https://polyhaven.com/a/cobblestone_05), CC0 -> public/assets/ground (gathered by tools/assets/ground.py)
 - "mossy_rock" (the ground's rock), Poly Haven (https://polyhaven.com/a/mossy_rock), CC0 -> public/assets/ground (gathered by tools/assets/ground.py)
 - "burned_ground_01" (the ground's blight), Poly Haven (https://polyhaven.com/a/burned_ground_01), CC0 -> public/assets/ground (gathered by tools/assets/ground.py)
+- "studio_small_08" (the light the items are photographed in), Poly Haven (https://polyhaven.com/a/studio_small_08), CC0 -> godot/art/studio (1k HDR)
+
 ## Basis Universal (Apache-2.0)
 
 - basis_transcoder.js / .wasm, from three.js's examples (Binomial LLC, Apache License 2.0) -> public/assets/basis, for the KTX2 textures

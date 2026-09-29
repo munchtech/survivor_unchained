@@ -66,6 +66,13 @@ public static class ItemViews
         return ($"{(p > 0 ? "+" : "")}{p}% {name}", d > 0);
     }
 
+    /// <summary>A soft pool of light, brightest in the middle.</summary>
+    static readonly GradientTexture2D Halo = new()
+    {
+        Width = 64, Height = 64, Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1f, 0.5f),
+        Gradient = new Gradient { Colors = new[] { Colors.White, Colors.White with { A = 0 } }, Offsets = new[] { 0f, 1f } },
+    };
+
     /// <summary>One slot of a grid: empty, or an item rimmed in its rarity.</summary>
     public static Control Slot(ItemInstance? it, int size, bool selected = false, int? price = null, bool refused = false,
         Action? onClick = null, Action? onDouble = null, Action<Control?>? onHover = null, string? emptyGlyph = null, string? caption = null)
@@ -77,9 +84,21 @@ public static class ItemViews
         if (it != null)
         {
             var def = Items.Get(it.Def);
-            var icon = Glyphs.Icon(def.Icon, (int)(size * 0.62f), Style.RarityOf(it.Rarity).Lightened(0.25f));
-            icon.Position = new Vector2(size * 0.19f, size * 0.16f);
-            icon.Size = new Vector2(size * 0.62f, size * 0.62f);
+            // The finer the thing, the more light it sits in.
+            if (it.Rarity > 0)
+            {
+                var halo = new TextureRect
+                {
+                    Texture = Halo, Position = new Vector2(1, 1), Size = new Vector2(size - 2, size - 2), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                    Modulate = Style.RarityOf(it.Rarity) with { A = 0.12f + 0.07f * it.Rarity }, MouseFilter = Control.MouseFilterEnum.Ignore,
+                };
+                box.AddChild(halo);
+            }
+            // Smaller over a caption, which stays readable under it.
+            float k = caption != null ? 0.72f : 0.86f;
+            var icon = ItemPhotos.Icon(def.Icon, (int)(size * k), Style.RarityOf(it.Rarity).Lightened(0.25f));
+            icon.Position = new Vector2(size * (1 - k) / 2, caption != null ? size * 0.02f : size * 0.05f);
+            icon.Size = new Vector2(size * k, size * k);
             box.AddChild(icon);
             if (it.Qty > 1)
             {
@@ -154,7 +173,7 @@ public static class ItemViews
         var v = Style.V(6);
         card.AddChild(v);
         var head = Style.H(10);
-        var photo = Style.Panel(Style.Box(new Color(0.03f, 0.03f, 0.04f), col with { A = 0.35f }, 1, 4, 4), Glyphs.Icon(def.Icon, 46, col.Lightened(0.25f)));
+        var photo = Style.Panel(Style.Box(new Color(0.03f, 0.03f, 0.04f), col with { A = 0.35f }, 1, 4, 4), ItemPhotos.Icon(def.Icon, 64, col.Lightened(0.25f)));
         head.AddChild(photo);
         var names = Style.V(2);
         names.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;

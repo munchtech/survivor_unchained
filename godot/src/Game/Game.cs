@@ -69,6 +69,14 @@ public partial class Game : Node, IZoneHost
     {
         // The colour sheets as Godot should have them, before any model loads.
         SurvivorUnchained.View.Textures.Mend();
+        // --icons: every item photographed afresh (user://icons), then quit.
+        if (Args.Has("icons"))
+        {
+            SetProcess(false);
+            ItemPhotos.Open(this, quitAfter: true);
+            return;
+        }
+        ItemPhotos.Open(this);
         controls = new Controls();
         AddChild(controls);
         camera = new Camera3D { Fov = 34, Near = 0.5f, Far = 1400, Current = true };
