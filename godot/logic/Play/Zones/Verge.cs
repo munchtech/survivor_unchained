@@ -858,21 +858,6 @@ public sealed class Verge : ZoneRuntime
         };
     }
 
-    /// <summary>How close a lit fire is, 0..1: for the crackle in the ambience.</summary>
-    double Warmth(double x, double z, double reach = 13)
-    {
-        double k = 0;
-        for (int i = 0; i < Meta.Lights.Count; i++)
-        {
-            var s = Meta.Lights[i];
-            var (r, _, b) = Atmospheres.Linear(s.Color);
-            if (!G.Look.IsLit(i) || s.Flicker < 0.18 || r < b) continue;
-            double d = Dist(s.X, s.Z, x, z);
-            if (d < reach) k = Math.Max(k, Math.Pow(1 - d / reach, 2) * Math.Min(1, s.Intensity / 6));
-        }
-        return k;
-    }
-
     public override Dictionary<string, object?> Debug() => new()
     {
         ["roostHostile"] = F("roost.hostile").Truthy, ["digHostile"] = F("dig.hostile").Truthy, ["pop"] = F("beasts.population").Number,

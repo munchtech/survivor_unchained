@@ -47,7 +47,15 @@ sealed class FakeHost : IZoneHost
     public void SetBoss(BossBar? bar) => Boss = bar;
     public void SetObjectives(List<Tracked> list) => Tracked = list;
     public void SetHint(Hint? hint) => CurrentHint = hint;
-    public void SetAtmosphere(AtmospherePreset p) => Air = p;
+    public void SetAtmosphere(AtmospherePreset p, bool rebuild = true) => Air = p;
+    public bool Captured;
+    public (double X, double Y, double Z)? Held;
+    public string? DraftTip;
+    public (double X, double Z)? Revival;
+    public void Showcase((double X, double Y, double Z)? pos, (double X, double Y, double Z) look = default) => Held = pos;
+    public void Capture(bool on) => Captured = on;
+    public void SetDraftTip(string tip) => DraftTip = tip;
+    public void Revived(double x, double z) => Revival = (x, z);
     public string KeyLabel(string action) => action.ToUpperInvariant()[..1];
     public void AnnounceZone() => Announced.Add(new Announcement("zone", null, "zone", 1));
 
@@ -98,6 +106,28 @@ sealed class FakeLook : IZoneLook
     public void SetNight(bool on) => Night = on;
     public void Plates(List<Plate> plates) => LastPlates = plates;
     public void Bark(string text, double x, double y, double z, string? speaker = null) => Barks.Add(text);
+    public readonly List<string> BossPoses = new();
+    public IBossView BossView(string kind) => new FakeBoss(BossPoses);
+    public INpcView Fallen(PersonSpec spec, Held? arms, double x, double z, double facing, string clip) => new FakeView();
+    public IOrb Orb(string color, double size) => new FakeOrb();
+
+    sealed class FakeBoss(List<string> poses) : IBossView
+    {
+        public void SetPose(string pose) => poses.Add(pose);
+        public void Release() => poses.Add("release");
+        public double Glow { set { } }
+        public void Update(Enemy? e, double x, double y, double z, double facing, double dt) { }
+        public void Hide() => poses.Add("hidden");
+        public void Dispose() { }
+    }
+
+    sealed class FakeOrb : IOrb
+    {
+        public bool Visible { get; set; }
+        public void Place(double x, double y, double z, double spin, double scale) { }
+        public double Light { set { } }
+        public void Dispose() { }
+    }
 
     sealed class FakeView : INpcView
     {

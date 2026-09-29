@@ -344,7 +344,7 @@ public sealed class Waystation : ZoneRuntime
         double forge = Math.Max(0, 1 - Dist(x, z, sm.X, sm.Z) / 26);
         return new AmbienceMix
         {
-            Wind = 0.3, Leaves = 0.2, Town = (dark ? 0.25 : 0.85) * (1 - Math.Min(1, Math.Sqrt(x * x + z * z) / 60) * 0.6),
+            Wind = 0.3, Leaves = 0.2, Fire = Warmth(x, z), Town = (dark ? 0.25 : 0.85) * (1 - Math.Min(1, Math.Sqrt(x * x + z * z) / 60) * 0.6),
             Smithy = day ? forge : 0, Birds = day ? 0.45 : 0, Crickets = dark ? 0.55 : t == TimeOfDay.Dusk ? 0.25 : 0, Owl = dark ? 0.3 : 0,
         };
     }

@@ -35,8 +35,10 @@ public readonly record struct Arrival(double X, double Z, double Facing = 0);
 public enum MarkKind { Place, Quest, Turn, Exit, Danger, Person, Mystery }
 public sealed record MapMark(double X, double Z, string Label, MarkKind Kind);
 
-/// <summary>The bar over a fight worth one.</summary>
-public sealed record BossBar(string Name, string Title, double Hp, double MaxHp);
+/// <summary>The bar over a fight worth one: where its phases turn, what it
+/// is calling up (break it!), whether something is shielding it.</summary>
+public sealed record BossBar(string Name, string Title, double Hp, double MaxHp, double[]? Phases = null,
+    (string Label, double Progress)? Channel = null, bool Shielded = false);
 
 /// <summary>A tip on screen: its keys, as the player has them bound.</summary>
 public sealed record Hint(string Id, string Title, string Text, List<string> Keys);
@@ -76,7 +78,16 @@ public interface IZoneHost
     void SetObjectives(List<Tracked> list);
     void SetHint(Hint? hint);
     Hint? CurrentHint { get; }
-    void SetAtmosphere(AtmospherePreset p);
+    /// <summary>The air (rebuild: the sky's lighting too; not every frame of a blend).</summary>
+    void SetAtmosphere(AtmospherePreset p, bool rebuild = true);
+    /// <summary>A held camera (a cutscene), or null to go back to the survivor.</summary>
+    void Showcase((double X, double Y, double Z)? pos, (double X, double Y, double Z) look = default);
+    /// <summary>The survivor's controls held (a cutscene), or given back.</summary>
+    void Capture(bool on);
+    /// <summary>What the level-up draft says, the first times it opens.</summary>
+    void SetDraftTip(string tip);
+    /// <summary>The survivor is up again here (the prologue's forgiveness).</summary>
+    void Revived(double x, double z);
     /// <summary>The key or button bound to an action, as the player would name it.</summary>
     string KeyLabel(string action);
     void AnnounceZone();
@@ -112,6 +123,33 @@ public interface IZoneLook
     void Plates(List<Plate> plates);
     /// <summary>Words said to the air, over someone's head.</summary>
     void Bark(string text, double x, double y, double z, string? speaker = null);
+    /// <summary>A boss drawn by its own view (the Ford-Warden), not the crowd's.</summary>
+    IBossView BossView(string kind);
+    /// <summary>A body lying where it fell: a person, a clip played out and held.</summary>
+    INpcView Fallen(PersonSpec spec, Held? arms, double x, double z, double facing, string clip);
+    /// <summary>A bright thing with a light of its own (the Warden's heart).</summary>
+    IOrb Orb(string color, double size);
+}
+
+/// <summary>A boss's own view: a pose (sleep, wake, walk, windup, cleave,
+/// charge-windup, charge, stunned, channel, dead), released back to its
+/// walk; how brightly its lamp burns; where it is.</summary>
+public interface IBossView
+{
+    void SetPose(string pose);
+    void Release();
+    double Glow { set; }
+    void Update(Enemy? e, double x, double y, double z, double facing, double dt);
+    void Hide();
+    void Dispose();
+}
+
+public interface IOrb
+{
+    bool Visible { get; set; }
+    void Place(double x, double y, double z, double spin, double scale);
+    double Light { set; }
+    void Dispose();
 }
 
 public sealed record Plate(string Id, double X, double Y, double Z, string Name, string? Role = null, char? Marker = null);
@@ -284,6 +322,21 @@ public abstract class ZoneRuntime
     {
         foreach (var a in Actors.Values) a.Dispose();
         Actors.Clear();
+    }
+
+    /// <summary>How close a lit fire is, 0..1: for the crackle in the ambience.</summary>
+    protected double Warmth(double x, double z, double reach = 13)
+    {
+        double k = 0;
+        for (int i = 0; i < Meta.Lights.Count; i++)
+        {
+            var s = Meta.Lights[i];
+            var (r, _, b) = Atmospheres.Linear(s.Color);
+            if (!G.Look.IsLit(i) || s.Flicker < 0.18 || r < b) continue;
+            double d = Dist(s.X, s.Z, x, z);
+            if (d < reach) k = Math.Max(k, Math.Pow(1 - d / reach, 2) * Math.Min(1, s.Intensity / 6));
+        }
+        return k;
     }
 
     /// <summary>A history change, as the web game's hist() writes one.</summary>
