@@ -180,15 +180,22 @@ public partial class WorldScene : Node3D, IZoneLook
 
     public void AddProp(string id, double x, double z, double rot = 0, double scale = 1)
     {
-        var piece = Dressing.Piece(id) ?? Stand(id);
+        // The ground under a point of the piece, in its frame.
+        float Ground(Vector3 p)
+        {
+            var w = new Basis(Vector3.Up, (float)rot) * (p * (float)scale);
+            return (float)((HeightAt(x + w.X, z + w.Z) - HeightAt(x, z)) / scale);
+        }
+        // A KayKit piece (PACK/NAME) is made anew (Pieces).
+        var piece = Dressing.Piece(id) ?? (id.Split('/') is [var pack, var name] ? Pieces.For(pack, name, (int)(x * 7 + z * 13), (float)scale, Ground) : null) ?? Stand(id);
         piece.Position = new Vector3((float)x, (float)HeightAt(x, z), (float)z);
         piece.Rotation = new Vector3(0, (float)rot, 0);
         piece.Scale = Vector3.One * (float)scale;
         View.AddChild(piece);
     }
 
-    /// <summary>A piece from a pack not yet in the Godot game (the KayKit
-    /// packs): a plain shape of about its size.</summary>
+    /// <summary>A piece from a pack not in the Godot game with nothing made
+    /// for it yet (Pieces): a plain shape of about its size.</summary>
     static Node3D Stand(string id)
     {
         var root = new Node3D { Name = id.Replace('/', '_') };
