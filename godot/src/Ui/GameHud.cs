@@ -9,196 +9,347 @@ using SurvivorUnchained.World;
 
 namespace SurvivorUnchained.Ui;
 
-/// <summary>What the level-up draft shows, and what picking does.</summary>
-public sealed record DraftView(int Level, bool Blessing, List<Offer> Offers, int Rerolls, int Banishes, int Queued, string? Tip,
-    Action<int> Pick, Action Reroll, Action<int> Banish);
-
-/// <summary>A conversation as the panel shows it.</summary>
-public sealed record DialogueView(string Name, string Title, string Mood, string Speaker, string Text, List<PresentedChoice> Choices,
-    bool CanContinue, Action<int> Choose, Action Advance);
+/// <summary>What is near and can be used, as the prompt shows it.</summary>
+public sealed record PromptView(string Key, string Verb, string Target, string? Hint, string? Locked);
 
 /// <summary>
-/// The interface over the game (the web game's ui/hud, in its hand):
-/// health low on the left, the ember bar with the level on its medallion
-/// across the top, the place top right with what to do next under it, the
-/// prompt for what is near, words said, the feed of what was found and
-/// learned, the title cards, a boss's bar, the level-up draft and the
-/// conversation panel, and the fade between places. Cinzel for names,
-/// Alegreya Sans for the rest; the web game's golds, embers and blood.
+/// The heads-up display (the web game's ui/hud): arranged so the eye never
+/// has to hunt. What can kill you (health, the boss) is where the eye
+/// already rests; what you choose (ember, the next level) at the top edge;
+/// what fires by itself (the weapons) a quiet row at the bottom that lights
+/// up when something happens to it; what your hands do (dash, the skill,
+/// a draught) under your right thumb. Everything else (the place, the
+/// quest, the loot) comes and goes at the edges. The web game's sizes are
+/// for a 900-pixel-tall screen; here they are for 1080 (×1.2).
 /// </summary>
 public partial class GameHud : CanvasLayer
 {
-    public static readonly Color Gold = new("#d9b56a"), GoldHi = new("#f3d9a0"), GoldDim = new("#8a6f3e");
-    public static readonly Color Ember = new("#ff8a3a"), EmberHi = new("#ffd07a"), Blood = new("#c8323a"), Ink = new("#e8dcc4"), InkDim = new("#a89c88");
-    static readonly Color PanelBg = new(0.05f, 0.04f, 0.06f, 0.78f);
-    static readonly Dictionary<Rarity, Color> RarityColors = new()
-    {
-        [Rarity.Common] = new("#c8c0b0"), [Rarity.Uncommon] = new("#6fd46a"), [Rarity.Rare] = new("#5aa8ff"), [Rarity.Epic] = new("#c070ff"), [Rarity.Legendary] = new("#ffb040"),
-    };
-
-    public static Font Display = null!, UiFont = null!, UiBold = null!;
-    Control root = null!, play = null!;
-    ColorRect hpFill = null!, shieldFill = null!, emberFill = null!, bruise = null!, fade = null!;
-    Label hpText = null!, level = null!, gold = null!, kills = null!, zoneName = null!, zoneSub = null!, dash = null!, ability = null!, weapons = null!;
-    Label promptLabel = null!, sayLabel = null!, announceTitle = null!, announceSub = null!, announceKicker = null!, fadeCaption = null!, fadeSub = null!;
-    Panel promptPanel = null!, bossPanel = null!, hintPanel = null!;
-    ColorRect bossFill = null!;
-    Label bossName = null!, bossTitle = null!, bossChannel = null!, hintTitle = null!, hintText = null!;
-    VBoxContainer toasts = null!, objectives = null!;
-    Control draft = null!, dialogue = null!;
-    double sayT, announceT, announceLife, fadeFrom, fadeTo, fadeT, fadeDur = 1, hudAcc;
-    public bool Fading => fadeT < fadeDur;
+    const float K = 1.2f;
+    Control root = null!, play = null!, combat = null!;
+    ColorRect bruise = null!;
+    TextureRect emberFill = null!;
+    Label emberLevel = null!, tallyTime = null!, tallyKills = null!, tallyGold = null!;
+    int shownLevel;
+    double levelPop;
+    TextureRect hpFill = null!;
+    ColorRect hpTrail = null!, hpShield = null!, hpLow = null!;
+    Label hpText = null!;
+    HBoxContainer statuses = null!;
+    Control heart = null!;
+    float hpShown = 1, trailShown = 1, trailWait;
+    HBoxContainer boons = null!, weapons = null!;
+    readonly Dictionary<string, WeaponSlot> slots = new();
+    HBoxContainer dashPips = null!;
+    static readonly StyleBoxFlat PipOn = Style.Box(new Color("#7ab0ff"), new Color("#cfe4ff"), 1, 3, 0), PipOff = Style.Box(new Color("#14121a"), Style.Line, 1, 3, 0);
+    Control quick = null!;
+    Label quickQty = null!;
+    Ring abilityRing = null!;
+    TextureRect abilityGlyph = null!;
+    Label abilityCd = null!, abilityName = null!;
+    Label zoneName = null!;
+    HBoxContainer zoneSub = null!;
+    VBoxContainer objectives = null!, toasts = null!;
+    PanelContainer promptBox = null!, hintBox = null!;
+    Control subtitle = null!, announce = null!, bossBox = null!;
+    Label sayWho = null!, sayText = null!, annKicker = null!, annTitle = null!, annSub = null!;
+    Label bossName = null!, bossTitle = null!, bossChannel = null!;
+    ColorRect bossFill = null!, bossTrail = null!, bossChannelFill = null!;
+    Control bossTrack = null!, bossChannelBox = null!;
+    double sayT, annT, annLife;
+    ColorRect fade = null!;
+    Label fadeCaption = null!, fadeSub = null!;
+    double fadeFrom = 1, fadeTo = 1, fadeT = 1, fadeDur = 1;
+    DraftPanel? draft;
+    TalkPanel? talk;
     public float FadeAmount => fade.Color.A;
+
+    static Color Hex(string h) => new(h);
 
     public override void _Ready()
     {
         Layer = 10;
-        Display = GD.Load<Font>("res://art/fonts/cinzel-600.woff2");
-        UiFont = GD.Load<Font>("res://art/fonts/alegreya-sans-500.woff2");
-        UiBold = GD.Load<Font>("res://art/fonts/alegreya-sans-700.woff2");
-        root = Full(this);
-        root.MouseFilter = Control.MouseFilterEnum.Ignore;
-
-        // The picture's edges bruise when the survivor is hurt.
+        root = new Control { MouseFilter = Control.MouseFilterEnum.Ignore };
+        Style.Fill(root);
+        AddChild(root);
         bruise = new ColorRect { MouseFilter = Control.MouseFilterEnum.Ignore, Material = VignetteMaterial() };
-        Fill(bruise);
+        Style.Fill(bruise);
         root.AddChild(bruise);
-
-        play = Full(root);
-        // The ember bar across the top, the level on its medallion.
-        var bar = Frame(play, new Rect2(640, 26, 860, 16));
-        emberFill = new ColorRect { Color = Ember, Size = new Vector2(0, 12), Position = new Vector2(2, 2) };
-        bar.AddChild(emberFill);
-        var medal = new Panel { Position = new Vector2(606, 14), Size = new Vector2(44, 44) };
-        medal.AddThemeStyleboxOverride("panel", Box(new Color("#2a1a12"), Gold, 2, 22));
-        play.AddChild(medal);
-        level = Text(medal, "1", Display, 20, GoldHi, new Rect2(0, 6, 44, 30), HorizontalAlignment.Center);
-        kills = Text(play, "", UiFont, 18, InkDim, new Rect2(900, 46, 120, 26), HorizontalAlignment.Center);
-        weapons = Text(play, "", UiFont, 17, Ink with { A = 0.85f }, new Rect2(640, 66, 860, 24), HorizontalAlignment.Center);
-
-        // Health, low on the left; gold, the dash and the skill beside it.
-        var hp = Frame(play, new Rect2(30, 1020, 400, 28));
-        hpFill = new ColorRect { Color = Blood, Size = new Vector2(396, 24), Position = new Vector2(2, 2) };
-        hp.AddChild(hpFill);
-        shieldFill = new ColorRect { Color = new Color(0.9f, 0.85f, 0.6f, 0.55f), Size = new Vector2(0, 8), Position = new Vector2(2, 2) };
-        hp.AddChild(shieldFill);
-        hpText = Text(hp, "", UiBold, 17, Ink, new Rect2(0, 1, 400, 26), HorizontalAlignment.Center);
-        gold = Text(play, "", UiBold, 19, GoldHi, new Rect2(30, 986, 200, 28), HorizontalAlignment.Left);
-        dash = Text(play, "", UiFont, 17, Ink, new Rect2(446, 1022, 200, 26), HorizontalAlignment.Left);
-        ability = Text(play, "", UiFont, 17, Ink, new Rect2(446, 994, 300, 26), HorizontalAlignment.Left);
-
-        // The place, top right, and what to do next under it.
-        zoneName = Text(play, "", Display, 26, GoldHi, new Rect2(1380, 18, 510, 36), HorizontalAlignment.Right);
-        zoneSub = Text(play, "", UiFont, 18, Ink with { A = 0.8f }, new Rect2(1380, 54, 510, 26), HorizontalAlignment.Right);
-        objectives = new VBoxContainer { Position = new Vector2(1480, 96), Size = new Vector2(410, 300), MouseFilter = Control.MouseFilterEnum.Ignore };
-        objectives.AddThemeConstantOverride("separation", 2);
-        play.AddChild(objectives);
-
-        // The feed, lower right.
-        toasts = new VBoxContainer { Position = new Vector2(1480, 560), Size = new Vector2(410, 420), Alignment = BoxContainer.AlignmentMode.End, MouseFilter = Control.MouseFilterEnum.Ignore };
-        toasts.AddThemeConstantOverride("separation", 6);
-        play.AddChild(toasts);
-
-        // What is near, low in the middle; words said above it.
-        promptPanel = Frame(play, new Rect2(760, 900, 400, 44));
-        promptLabel = Text(promptPanel, "", UiBold, 20, Ink, new Rect2(0, 0, 400, 44), HorizontalAlignment.Center);
-        promptPanel.Visible = false;
-        sayLabel = Text(play, "", UiFont, 26, Ink, new Rect2(360, 800, 1200, 80), HorizontalAlignment.Center);
-        sayLabel.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-
-        // A tip, left.
-        hintPanel = Frame(play, new Rect2(30, 380, 380, 130));
-        hintTitle = Text(hintPanel, "", Display, 18, GoldHi, new Rect2(14, 8, 352, 26), HorizontalAlignment.Left);
-        hintText = Text(hintPanel, "", UiFont, 17, Ink, new Rect2(14, 36, 352, 90), HorizontalAlignment.Left);
-        hintText.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        hintText.VerticalAlignment = VerticalAlignment.Top;
-        hintPanel.Visible = false;
-
-        // A boss's bar, top middle under the ember.
-        bossPanel = new Panel { Position = new Vector2(560, 110), Size = new Vector2(800, 64), MouseFilter = Control.MouseFilterEnum.Ignore };
-        bossPanel.AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
-        play.AddChild(bossPanel);
-        bossName = Text(bossPanel, "", Display, 24, GoldHi, new Rect2(0, 0, 800, 30), HorizontalAlignment.Center);
-        var bb = Frame(bossPanel, new Rect2(0, 32, 800, 16));
-        bossFill = new ColorRect { Color = new Color("#9a2a24"), Size = new Vector2(796, 12), Position = new Vector2(2, 2) };
-        bb.AddChild(bossFill);
-        bossTitle = Text(bossPanel, "", UiFont, 16, InkDim, new Rect2(0, 48, 800, 20), HorizontalAlignment.Center);
-        bossChannel = Text(bossPanel, "", UiBold, 18, EmberHi, new Rect2(0, 68, 800, 24), HorizontalAlignment.Center);
-        bossPanel.Visible = false;
-
-        // Title cards, in the middle.
-        announceKicker = Text(root, "", UiBold, 20, Gold, new Rect2(0, 300, 1920, 30), HorizontalAlignment.Center);
-        announceTitle = Text(root, "", Display, 64, GoldHi, new Rect2(0, 330, 1920, 90), HorizontalAlignment.Center);
-        announceSub = Text(root, "", UiFont, 26, Ink, new Rect2(0, 420, 1920, 40), HorizontalAlignment.Center);
-
-        draft = Full(root);
-        draft.Visible = false;
-        dialogue = Full(root);
-        dialogue.Visible = false;
-
-        // The fade between places, over everything.
+        play = new Control { MouseFilter = Control.MouseFilterEnum.Ignore };
+        Style.Fill(play);
+        root.AddChild(play);
+        combat = new Control { MouseFilter = Control.MouseFilterEnum.Ignore };
+        Style.Fill(combat);
+        play.AddChild(combat);
+        BuildEmber();
+        BuildVitals();
+        BuildArsenal();
+        BuildHands();
+        BuildCorner();
+        BuildEdges();
+        BuildBoss();
+        var top = new CanvasLayer { Layer = 30 };
+        AddChild(top);
         fade = new ColorRect { Color = new Color(0, 0, 0, 1), MouseFilter = Control.MouseFilterEnum.Ignore };
-        Fill(fade);
-        root.AddChild(fade);
-        fadeCaption = Text(root, "", Display, 54, GoldHi, new Rect2(0, 470, 1920, 80), HorizontalAlignment.Center);
-        fadeSub = Text(root, "", UiFont, 24, Ink, new Rect2(0, 550, 1920, 40), HorizontalAlignment.Center);
-        fadeT = fadeDur = 1;
-        fadeFrom = fadeTo = 1;
+        Style.Fill(fade);
+        top.AddChild(fade);
+        fadeCaption = Style.Label("", Style.Display, 54, Style.GoldHi, false, HorizontalAlignment.Center);
+        fadeCaption.Position = new Vector2(0, 470); fadeCaption.Size = new Vector2(1920, 80);
+        top.AddChild(fadeCaption);
+        fadeSub = Style.Label("", Style.TextItalic, 24, Style.Ink, false, HorizontalAlignment.Center);
+        fadeSub.Position = new Vector2(0, 550); fadeSub.Size = new Vector2(1920, 40);
+        top.AddChild(fadeSub);
     }
 
-    /* ----------------------------------------------------------- helpers -- */
-
-    static Control Full(Node parent)
+    static Control Box(Control parent, float x, float y, float w, float h)
     {
-        var c = new Control { MouseFilter = Control.MouseFilterEnum.Ignore };
-        Fill(c);
+        var c = new Control { Position = new Vector2(x, y), Size = new Vector2(w, h), MouseFilter = Control.MouseFilterEnum.Ignore };
         parent.AddChild(c);
         return c;
     }
 
-    static void Fill(Control c)
+    static TextureRect GradientRect(Color[] colors, float[]? stops = null, bool vertical = false)
     {
-        c.AnchorRight = 1;
-        c.AnchorBottom = 1;
-        c.OffsetLeft = c.OffsetTop = c.OffsetRight = c.OffsetBottom = 0;
+        var g = new Gradient { Colors = colors, Offsets = stops ?? Enumerable.Range(0, colors.Length).Select(i => i / (float)(colors.Length - 1)).ToArray() };
+        return new TextureRect
+        {
+            Texture = new GradientTexture2D { Gradient = g, Width = vertical ? 4 : 256, Height = vertical ? 256 : 4, FillTo = vertical ? new Vector2(0, 1) : new Vector2(1, 0) },
+            StretchMode = TextureRect.StretchModeEnum.Scale, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
     }
 
-    public static StyleBoxFlat Box(Color bg, Color border, int width = 1, int radius = 3) => new()
+    /// <summary>A round medallion rimmed in gold (the ember's, the heart's).</summary>
+    static Panel Medal(Control parent, Vector2 at, float size, Color inner)
     {
-        BgColor = bg, BorderColor = border, BorderWidthLeft = width, BorderWidthRight = width, BorderWidthTop = width, BorderWidthBottom = width,
-        CornerRadiusTopLeft = radius, CornerRadiusTopRight = radius, CornerRadiusBottomLeft = radius, CornerRadiusBottomRight = radius,
-        ContentMarginLeft = 12, ContentMarginRight = 12, ContentMarginTop = 8, ContentMarginBottom = 8,
-    };
-
-    static Panel Frame(Control parent, Rect2 at)
-    {
-        var p = new Panel { Position = at.Position, Size = at.Size, MouseFilter = Control.MouseFilterEnum.Ignore };
-        p.AddThemeStyleboxOverride("panel", Box(PanelBg, GoldDim));
+        var p = new Panel { Position = at, Size = new Vector2(size, size), MouseFilter = Control.MouseFilterEnum.Ignore };
+        var s = Style.Box(inner, Style.GoldDim, 3, (int)(size / 2), 0);
+        s.ShadowColor = new Color(1f, 0.55f, 0.2f, 0.35f);
+        s.ShadowSize = 10;
+        p.AddThemeStyleboxOverride("panel", s);
         parent.AddChild(p);
         return p;
     }
 
-    public static Label Text(Control parent, string s, Font font, int size, Color color, Rect2 at, HorizontalAlignment align)
+    void BuildEmber()
     {
-        var l = new Label { Text = s, Position = at.Position, Size = at.Size, HorizontalAlignment = align, VerticalAlignment = VerticalAlignment.Center, MouseFilter = Control.MouseFilterEnum.Ignore };
-        Style(l, font, size, color);
-        parent.AddChild(l);
-        return l;
+        float w = 760 * K, x = (1920 - w) / 2;
+        var track = new Panel { Position = new Vector2(x + 30, 23), Size = new Vector2(w - 30, 12), MouseFilter = Control.MouseFilterEnum.Ignore, ClipContents = true };
+        track.AddThemeStyleboxOverride("panel", Style.Box(Hex("#120c0a"), new Color(0.85f, 0.71f, 0.42f, 0.28f), 1, 5, 0));
+        combat.AddChild(track);
+        emberFill = GradientRect([Hex("#6a1e04"), Hex("#c24a0a"), Hex("#ff8a2a"), Hex("#ffd070")], [0, 0.45f, 0.85f, 1]);
+        emberFill.Position = new Vector2(1, 1);
+        emberFill.Size = new Vector2(0, 10);
+        track.AddChild(emberFill);
+        for (int i = 1; i < 10; i++) track.AddChild(new ColorRect { Color = new Color(0, 0, 0, 0.55f), Position = new Vector2((w - 30) * i / 10f, 0), Size = new Vector2(1, 12), MouseFilter = Control.MouseFilterEnum.Ignore });
+        var medal = Medal(combat, new Vector2(x, 6), 46, Hex("#3a2210"));
+        emberLevel = Style.Label("1", Style.Display, 20, Style.EmberHi, false, HorizontalAlignment.Center);
+        emberLevel.Size = new Vector2(46, 46);
+        emberLevel.PivotOffset = new Vector2(23, 23);
+        emberLevel.VerticalAlignment = VerticalAlignment.Center;
+        medal.AddChild(emberLevel);
+        tallyTime = Style.Label("0:00", Style.Display, 23, Hex("#efe3c8"), false, HorizontalAlignment.Center);
+        tallyTime.Position = new Vector2(860, 50); tallyTime.Size = new Vector2(200, 28);
+        combat.AddChild(tallyTime);
+        var row = Style.H(16);
+        tallyKills = Style.Label("0", Style.UiBold, 16, Hex("#cfc3ad"));
+        tallyGold = Style.Label("0", Style.UiBold, 16, Style.GoldHi);
+        row.AddChild(Style.H(4, Glyphs.Icon("skull", 16, Hex("#cfc3ad")), tallyKills));
+        row.AddChild(Style.H(4, Glyphs.Icon("coin", 16, Style.GoldHi), tallyGold));
+        row.Alignment = BoxContainer.AlignmentMode.Center;
+        row.Position = new Vector2(860, 80); row.Size = new Vector2(200, 20);
+        combat.AddChild(row);
     }
 
-    public static void Style(Control l, Font font, int size, Color color)
+    void BuildVitals()
     {
-        l.AddThemeFontOverride("font", font);
-        l.AddThemeFontSizeOverride("font_size", size);
-        l.AddThemeColorOverride("font_color", color);
-        l.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 0.85f));
-        l.AddThemeConstantOverride("shadow_offset_y", 2);
-        l.AddThemeConstantOverride("shadow_offset_x", 1);
+        var v = Box(play, 34, 1080 - 36 - 70, 396, 70);
+        statuses = Style.H(6);
+        statuses.Position = new Vector2(43, 0);
+        v.AddChild(statuses);
+        var bar = new Panel { Position = new Vector2(34, 38), Size = new Vector2(362, 26), ClipContents = true, MouseFilter = Control.MouseFilterEnum.Ignore };
+        bar.AddThemeStyleboxOverride("panel", Style.Box(Hex("#160a0a"), new Color(0.85f, 0.71f, 0.42f, 0.32f), 1, 4, 0));
+        v.AddChild(bar);
+        hpTrail = new ColorRect { Color = Hex("#e8c07a") with { A = 0.85f }, Position = new Vector2(1, 1), Size = new Vector2(360, 24), MouseFilter = Control.MouseFilterEnum.Ignore };
+        bar.AddChild(hpTrail);
+        hpFill = GradientRect([Hex("#ff6a5a"), Hex("#d2262c"), Hex("#8a0e16")], [0, 0.35f, 1], true);
+        hpFill.Position = new Vector2(1, 1); hpFill.Size = new Vector2(360, 24);
+        bar.AddChild(hpFill);
+        hpShield = new ColorRect { Color = Hex("#9ad4ff"), Position = new Vector2(1, 1), Size = new Vector2(0, 7), MouseFilter = Control.MouseFilterEnum.Ignore };
+        bar.AddChild(hpShield);
+        for (int i = 1; i < 4; i++) bar.AddChild(new ColorRect { Color = new Color(0, 0, 0, 0.4f), Position = new Vector2(362 * i / 4f, 0), Size = new Vector2(1, 26), MouseFilter = Control.MouseFilterEnum.Ignore });
+        hpLow = new ColorRect { Color = new Color(1, 0.24f, 0.24f, 0), Size = new Vector2(362, 26), MouseFilter = Control.MouseFilterEnum.Ignore };
+        bar.AddChild(hpLow);
+        hpText = Style.Label("", Style.UiHeavy, 16, Hex("#fff4ea"), false, HorizontalAlignment.Center);
+        hpText.Size = new Vector2(362, 26);
+        hpText.VerticalAlignment = VerticalAlignment.Center;
+        bar.AddChild(hpText);
+        var h = Medal(v, new Vector2(0, 30), 41, Hex("#3a0c10"));
+        heart = h;
+        h.PivotOffset = new Vector2(20.5f, 20.5f);
+        var g = Glyphs.Icon("heart", 22, Hex("#ffb0a8"));
+        g.Position = new Vector2(9.5f, 9.5f); g.Size = new Vector2(22, 22);
+        h.AddChild(g);
     }
 
-    static ShaderMaterial VignetteMaterial()
+    void BuildArsenal()
     {
-        var sh = new Shader
+        var col = Style.V(12);
+        col.Alignment = BoxContainer.AlignmentMode.End;
+        col.Position = new Vector2(460, 1080 - 26 - 140);
+        col.Size = new Vector2(1000, 140);
+        combat.AddChild(col);
+        boons = Style.H(5);
+        boons.Alignment = BoxContainer.AlignmentMode.Center;
+        col.AddChild(boons);
+        weapons = Style.H(10);
+        weapons.Alignment = BoxContainer.AlignmentMode.Center;
+        col.AddChild(weapons);
+    }
+
+    void BuildHands()
+    {
+        var h = Style.H(19);
+        h.Alignment = BoxContainer.AlignmentMode.End;
+        h.Position = new Vector2(1920 - 36 - 420, 1080 - 19 - 130);
+        h.Size = new Vector2(420, 130);
+        combat.AddChild(h);
+        Control Hand(Control art, Act key, string label, out Label name)
+        {
+            var v = Style.V(8);
+            v.Alignment = BoxContainer.AlignmentMode.End;
+            var c = new CenterContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+            c.AddChild(art);
+            v.AddChild(c);
+            name = Style.Label(label, Style.UiBold, 14, Style.Ink);
+            var row = Style.H(5, Style.Key(Controls.Instance.KeyLabel(key)), name);
+            row.Alignment = BoxContainer.AlignmentMode.Center;
+            v.AddChild(row);
+            h.AddChild(v);
+            return v;
+        }
+        dashPips = Style.H(5);
+        Hand(dashPips, Act.Dash, "Dash", out _);
+        var q = new Panel { CustomMinimumSize = new Vector2(60, 60), MouseFilter = Control.MouseFilterEnum.Ignore };
+        q.AddThemeStyleboxOverride("panel", Style.Box(Hex("#1a1620"), Style.Line, 1, 9, 0));
+        var qi = Glyphs.Icon("potion", 40, Hex("#ff8a80"));
+        qi.Position = new Vector2(10, 10); qi.Size = new Vector2(40, 40);
+        q.AddChild(qi);
+        quickQty = Style.Label("", Style.UiHeavy, 14, Colors.White);
+        quickQty.Position = new Vector2(44, 40);
+        q.AddChild(quickQty);
+        quick = Hand(q, Act.Ultimate, "Draught", out _);
+        var ab = new Control { CustomMinimumSize = new Vector2(89, 89), MouseFilter = Control.MouseFilterEnum.Ignore };
+        abilityRing = new Ring { Size = new Vector2(89, 89), MouseFilter = Control.MouseFilterEnum.Ignore };
+        ab.AddChild(abilityRing);
+        abilityGlyph = Glyphs.Icon("shield", 41);
+        abilityGlyph.Position = new Vector2(24, 24); abilityGlyph.Size = new Vector2(41, 41);
+        ab.AddChild(abilityGlyph);
+        abilityCd = Style.Label("", Style.Display, 22, Colors.White, false, HorizontalAlignment.Center);
+        abilityCd.Size = new Vector2(89, 89);
+        abilityCd.VerticalAlignment = VerticalAlignment.Center;
+        ab.AddChild(abilityCd);
+        Hand(ab, Act.Ability, "", out abilityName);
+    }
+
+    void BuildCorner()
+    {
+        var c = Style.V(3);
+        c.Position = new Vector2(1920 - 31 - 400, 22);
+        c.Size = new Vector2(400, 0);
+        play.AddChild(c);
+        zoneName = Style.Label("", Style.Display, 29, Style.GoldHi, false, HorizontalAlignment.Right);
+        c.AddChild(zoneName);
+        zoneSub = Style.H(6);
+        zoneSub.Alignment = BoxContainer.AlignmentMode.End;
+        c.AddChild(zoneSub);
+        c.AddChild(Style.Gap(10));
+        objectives = Style.V(3);
+        c.AddChild(objectives);
+    }
+
+    void BuildEdges()
+    {
+        toasts = Style.V(7);
+        toasts.Position = new Vector2(31, 1080 * 0.34f);
+        toasts.Size = new Vector2(408, 0);
+        play.AddChild(toasts);
+        hintBox = Style.Panel(Style.Box(Hex("#e6d6b0"), new Color(0.35f, 0.24f, 0.08f, 0.45f), 1, 4, 14));
+        // Pinned by its foot above the vitals; grows upward with its words.
+        hintBox.AnchorTop = hintBox.AnchorBottom = 1;
+        hintBox.OffsetLeft = 34; hintBox.OffsetBottom = -134;
+        hintBox.GrowVertical = Control.GrowDirection.Begin;
+        hintBox.CustomMinimumSize = new Vector2(396, 0);
+        hintBox.Visible = false;
+        play.AddChild(hintBox);
+        subtitle = Style.V(2);
+        subtitle.Position = new Vector2(504, 1080 - 228 - 90);
+        subtitle.Size = new Vector2(912, 90);
+        ((VBoxContainer)subtitle).Alignment = BoxContainer.AlignmentMode.End;
+        sayWho = Style.Label("", Style.Display, 16, Style.Gold, false, HorizontalAlignment.Center);
+        sayText = Style.Label("", Style.Text, 24, Hex("#f4ecdc"), true, HorizontalAlignment.Center);
+        subtitle.AddChild(sayWho);
+        subtitle.AddChild(sayText);
+        subtitle.Modulate = Colors.Transparent;
+        play.AddChild(subtitle);
+        promptBox = Style.Panel(Style.Box(new Color(0.08f, 0.07f, 0.09f, 0.92f), Style.Line, 1, 24, 10));
+        promptBox.Visible = false;
+        play.AddChild(promptBox);
+        var ann = Style.V(4);
+        ann.Position = new Vector2(360, 1080 * 0.2f);
+        ann.Size = new Vector2(1200, 200);
+        annKicker = Style.Label("", Style.UiHeavy, 16, Hex("#ffcf8a"), false, HorizontalAlignment.Center);
+        annTitle = Style.Label("", Style.Display, 50, Hex("#f0c878"), true, HorizontalAlignment.Center);
+        annSub = Style.Label("", Style.TextItalic, 24, Hex("#e8dcc6"), true, HorizontalAlignment.Center);
+        ann.AddChild(annKicker);
+        ann.AddChild(Rule());
+        ann.AddChild(annTitle);
+        ann.AddChild(annSub);
+        ann.AddChild(Rule());
+        ann.Modulate = Colors.Transparent;
+        announce = ann;
+        root.AddChild(announce);
+    }
+
+    static Control Rule()
+    {
+        var r = GradientRect([new Color(0.95f, 0.85f, 0.63f, 0), new Color(0.95f, 0.85f, 0.63f, 0.8f), new Color(0.95f, 0.85f, 0.63f, 0)]);
+        r.CustomMinimumSize = new Vector2(720, 1);
+        r.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
+        return r;
+    }
+
+    void BuildBoss()
+    {
+        float w = 744, x = (1920 - w) / 2;
+        bossBox = Box(play, x, 115, w, 110);
+        bossBox.Visible = false;
+        bossName = Style.Label("", Style.Display, 26, Hex("#ffe0c0"), false, HorizontalAlignment.Center);
+        bossName.Size = new Vector2(w, 32);
+        bossBox.AddChild(bossName);
+        bossTitle = Style.Label("", Style.TextItalic, 16, Style.InkDim, false, HorizontalAlignment.Center);
+        bossTitle.Position = new Vector2(0, 32); bossTitle.Size = new Vector2(w, 20);
+        bossBox.AddChild(bossTitle);
+        var track = new Panel { Position = new Vector2(0, 58), Size = new Vector2(w, 16), ClipContents = true, MouseFilter = Control.MouseFilterEnum.Ignore };
+        track.AddThemeStyleboxOverride("panel", Style.Box(Hex("#140808"), Style.GoldDim, 1, 3, 0));
+        bossBox.AddChild(track);
+        bossTrack = track;
+        bossTrail = new ColorRect { Color = Hex("#e8c07a"), Position = new Vector2(1, 1), Size = new Vector2(w - 2, 14), MouseFilter = Control.MouseFilterEnum.Ignore };
+        track.AddChild(bossTrail);
+        bossFill = new ColorRect { Color = Hex("#b0222a"), Position = new Vector2(1, 1), Size = new Vector2(w - 2, 14), MouseFilter = Control.MouseFilterEnum.Ignore };
+        track.AddChild(bossFill);
+        bossChannelBox = new Panel { Position = new Vector2(w * 0.2f, 82), Size = new Vector2(w * 0.6f, 20), ClipContents = true, MouseFilter = Control.MouseFilterEnum.Ignore };
+        bossChannelBox.AddThemeStyleboxOverride("panel", Style.Box(Hex("#0e0c12"), Hex("#ffcf8a") with { A = 0.6f }, 1, 3, 0));
+        bossBox.AddChild(bossChannelBox);
+        bossChannelFill = new ColorRect { Color = Hex("#ffb050") with { A = 0.6f }, Size = new Vector2(0, 20), MouseFilter = Control.MouseFilterEnum.Ignore };
+        bossChannelBox.AddChild(bossChannelFill);
+        bossChannel = Style.Label("", Style.UiHeavy, 13, Colors.White, false, HorizontalAlignment.Center);
+        bossChannel.Size = new Vector2(w * 0.6f, 20);
+        bossChannel.VerticalAlignment = VerticalAlignment.Center;
+        bossChannelBox.AddChild(bossChannel);
+    }
+
+    static ShaderMaterial VignetteMaterial() => new()
+    {
+        Shader = new Shader
         {
             Code = """
                 shader_type canvas_item;
@@ -209,117 +360,137 @@ public partial class GameHud : CanvasLayer
                     COLOR = vec4(0.45, 0.02, 0.02, smoothstep(0.55, 1.1, r) * amount * 0.85);
                 }
                 """,
-        };
-        return new ShaderMaterial { Shader = sh };
-    }
+        },
+    };
 
     /* ------------------------------------------------------------- state -- */
 
-    /// <summary>The play HUD (bars, feed, names) shown or not (the title has none).</summary>
+    /// <summary>The play HUD shown or not (the title and creation have none).</summary>
     public void ShowPlay(bool on) => play.Visible = on;
 
-    public void Bars(Battle? b, double gold, int draughts)
+    public void SetBruise(float v) => ((ShaderMaterial)bruise.Material).SetShaderParameter("amount", v);
+
+    static readonly Dictionary<ToastKind, (string Glyph, Color Color)> ToastLook = new()
+    {
+        [ToastKind.Quest] = ("quest", Hex("#f3d9a0")), [ToastKind.World] = ("eye", Hex("#9ab0d8")), [ToastKind.Relation] = ("talk", Hex("#d89ab0")),
+        [ToastKind.Warning] = ("skull", Hex("#ff5a5a")), [ToastKind.Lore] = ("scroll", Hex("#c8b890")), [ToastKind.Level] = ("arcane", Hex("#ffd07a")),
+        [ToastKind.Gold] = ("coin", Hex("#f3d9a0")), [ToastKind.Loot] = ("hand", Hex("#d9b56a")),
+    };
+
+    /// <summary>The fight, as the HUD shows it (a dozen times a second).</summary>
+    public void Frame(Battle? b, double gold, int draughts)
     {
         if (b == null) return;
+        combat.Visible = b.Combat;
         var p = b.Player;
         double max = b.MaxHp;
-        hpFill.Size = new Vector2(396 * (float)Math.Clamp(p.Hp / max, 0, 1), 24);
-        shieldFill.Size = new Vector2(396 * (float)Math.Clamp(p.Shield / max, 0, 1), 8);
-        hpText.Text = $"{Math.Ceiling(Math.Max(p.Hp, 0))} / {Math.Round(max)}";
-        float ember = (float)Math.Clamp(b.EmberXp / Math.Max(1, b.EmberNext), 0, 1);
-        emberFill.Size = new Vector2(856 * ember, 12);
-        emberFill.Color = ember > 0.9f ? EmberHi : Ember;
-        level.Text = b.EmberLevel.ToString();
-        kills.Text = b.KillCount > 0 ? $"{b.KillCount} fallen" : "";
-        this.gold.Text = $"{Math.Floor(gold + b.GoldGained)} gold" + (draughts > 0 ? $"    {draughts} draught{(draughts == 1 ? "" : "s")} (R)" : "");
-        int charges = p.DashCharges, maxDash = (int)Math.Round(b.Stats.Get(Stat.DashCharges));
-        dash.Text = $"Dash {new string('●', Math.Max(0, charges))}{new string('○', Math.Max(0, maxDash - charges))}";
+        float k = (float)Math.Clamp(p.Hp / max, 0, 1);
+        hpShown = k;
+        hpFill.Size = new Vector2(360 * k, 24);
+        hpShield.Size = new Vector2(360 * (float)Math.Clamp(p.Shield / max, 0, 1), 7);
+        hpText.Text = $"{Math.Ceiling(Math.Max(p.Hp, 0))}  /  {Math.Round(max)}";
+        foreach (var c in statuses.GetChildren()) c.QueueFree();
+        void Status(string glyph, double left, bool good)
+        {
+            var col = good ? Hex("#9ad4ff") : Hex("#ff8a6a");
+            var chip = Style.Panel(Style.Box(new Color(0.04f, 0.03f, 0.05f, 0.8f), col, 1, 13, 5), Style.H(3, Glyphs.Icon(glyph, 17, col), Style.Label($"{Math.Ceiling(left)}", Style.UiBold, 13, col)));
+            chip.MouseFilter = Control.MouseFilterEnum.Ignore;
+            statuses.AddChild(chip);
+        }
+        if (p.BurnT > 0) Status("flame", p.BurnT, false);
+        if (p.PoisonT > 0) Status("plague", p.PoisonT, false);
+        if (p.SlowT > 0 && p.SlowF < 1) Status("boot", p.SlowT, false);
+        if (p.Shield > 0) Status("aegis", p.ShieldT, true);
+        if (p.BulwarkT > 0) Status("shield", p.BulwarkT, true);
+        if (p.InvisibleT > 0) Status("smoke", p.InvisibleT, true);
+        if (b.WorldRate < 1) Status("hourglass", b.WorldRateT, true);
+        foreach (var (id, bf) in b.Buffs) Status(id == "warcry" ? "howl" : "arcane", bf.T, true);
+        if (!b.Combat) return;
+
+        float e = (float)Math.Clamp(b.EmberXp / Math.Max(1, b.EmberNext), 0, 1);
+        emberFill.Size = new Vector2((760 * K - 32) * e, 10);
+        if (b.EmberLevel != shownLevel) { shownLevel = b.EmberLevel; emberLevel.Text = shownLevel.ToString(); levelPop = 1; }
+        int m = (int)(b.Time / 60), s = (int)(b.Time % 60);
+        tallyTime.Text = $"{m}:{s:00}";
+        tallyKills.Text = b.KillCount.ToString();
+        tallyGold.Text = $"{Math.Floor(gold + b.GoldGained)}";
+
+        var alive = new HashSet<string>();
+        int i = 0;
+        foreach (var w in b.Weapons)
+        {
+            alive.Add(w.Id);
+            if (!slots.TryGetValue(w.Id, out var slot)) { slot = new WeaponSlot(); slots[w.Id] = slot; weapons.AddChild(slot); }
+            weapons.MoveChild(slot, i++);
+            bool canEvolve = w.Evolution == null && w.Rank >= Weapons.MaxRank && LevelUp.EarnedBranches(b, w.Id).Count > 0;
+            slot.Show(w.Art, ItemViews.SchoolColors[w.School], b.WeaponReady(w), w.Rank, Weapons.MaxRank, w.Evolution != null, canEvolve);
+        }
+        foreach (var id in slots.Keys.Where(x => !alive.Contains(x)).ToList()) { slots[id].QueueFree(); slots.Remove(id); }
+        int empties = weapons.GetChildren().OfType<EmptySlot>().Count(), want = Math.Max(0, 6 - b.Weapons.Count);
+        for (int j = empties; j < want; j++) weapons.AddChild(new EmptySlot());
+        foreach (var c in weapons.GetChildren().OfType<EmptySlot>().Skip(want)) c.QueueFree();
+
+        foreach (var c in boons.GetChildren()) c.QueueFree();
+        foreach (var (id, rank) in b.Boons)
+        {
+            if (rank <= 0 || Boons.Find(id) is not { } bd) continue;
+            var col = Style.RarityOf((int)bd.Rarity);
+            var chip = new Panel { CustomMinimumSize = new Vector2(34, 34), MouseFilter = Control.MouseFilterEnum.Ignore };
+            chip.AddThemeStyleboxOverride("panel", Style.Box(Hex("#1a1720"), col with { A = 0.55f }, 1, bd.Kind == BoonKind.Blessing ? 6 : 17, 0));
+            var gl = Glyphs.Icon(bd.Icon, 20, col);
+            gl.Position = new Vector2(7, 7); gl.Size = new Vector2(20, 20);
+            chip.AddChild(gl);
+            if (bd.Max > 1)
+            {
+                var r = Style.Label($"{rank}", Style.UiHeavy, 11, Colors.White);
+                r.Position = new Vector2(24, 20);
+                chip.AddChild(r);
+            }
+            boons.AddChild(chip);
+        }
+
+        int maxDash = (int)Math.Round(b.Stats.Get(Stat.DashCharges));
+        if (dashPips.GetChildCount() != maxDash)
+        {
+            foreach (var c in dashPips.GetChildren()) { dashPips.RemoveChild(c); c.QueueFree(); }
+            for (int j = 0; j < maxDash; j++)
+            {
+                var pip = new Panel { CustomMinimumSize = new Vector2(14, 34), MouseFilter = Control.MouseFilterEnum.Ignore, ClipContents = true };
+                pip.AddChild(new ColorRect { Color = new Color(0.47f, 0.67f, 1f, 0.35f), MouseFilter = Control.MouseFilterEnum.Ignore });
+                dashPips.AddChild(pip);
+            }
+        }
+        for (int j = 0; j < maxDash; j++)
+        {
+            bool on = j < p.DashCharges;
+            var pip = dashPips.GetChild<Panel>(j);
+            pip.AddThemeStyleboxOverride("panel", on ? PipOn : PipOff);
+            var fillRect = pip.GetChild<ColorRect>(0);
+            float fill = j == p.DashCharges ? (float)Math.Clamp(p.DashRecharge / Abilities.Dash.Recharge, 0, 1) : 0;
+            fillRect.Position = new Vector2(0, 34 * (1 - fill));
+            fillRect.Size = new Vector2(14, 34 * fill);
+        }
+        quick.Visible = draughts > 0;
+        quickQty.Text = draughts.ToString();
         if (b.Ability is AbilityKind ak)
         {
-            var def = Content.Abilities.All[ak];
-            ability.Text = p.AbilityCd > 0 ? $"{def.Name}  {Math.Ceiling(p.AbilityCd)}s" : $"{def.Name}  ready (Q)";
+            var def = Abilities.All[ak];
+            double cd = def.Cooldown * b.Stats.Get(Stat.AbilityCooldown);
+            double ready = 1 - p.AbilityCd / Math.Max(0.01, cd);
+            abilityRing.Progress = (float)Math.Clamp(ready, 0, 1);
+            abilityRing.Ready = ready >= 1;
+            abilityGlyph.Texture = Glyphs.Texture(def.Icon, 82, ready >= 1 ? Hex("#ffe6b0") : Hex("#8a7f70"));
+            abilityCd.Text = ready >= 1 ? "" : p.AbilityCd >= 1 ? $"{Math.Ceiling(p.AbilityCd)}" : $"{p.AbilityCd:0.0}";
+            abilityName.Text = def.Name;
         }
-        else ability.Text = "";
-        weapons.Text = string.Join("   ·   ", b.Weapons.Select(w => $"{w.Evolution?.Name ?? w.Def.Name} {Roman(w.Rank)}"));
-        bruise.Visible = b.Combat;
     }
-
-    static string Roman(int n) => n switch { 1 => "I", 2 => "II", 3 => "III", 4 => "IV", 5 => "V", 6 => "VI", 7 => "VII", 8 => "VIII", _ => n.ToString() };
-
-    public void SetBruise(float v) => ((ShaderMaterial)bruise.Material).SetShaderParameter("amount", v);
 
     public void ZoneInfo(string name, string? region, int day, TimeOfDay time)
     {
         zoneName.Text = name.ToUpperInvariant();
-        zoneSub.Text = $"{time.ToString()}  ·  Day {day}" + (region != null ? $"  ·  {region}" : "");
-    }
-
-    public void Prompt(string? text)
-    {
-        promptPanel.Visible = text != null;
-        if (text == null) return;
-        promptLabel.Text = text;
-        var w = UiBold.GetStringSize(text, HorizontalAlignment.Left, -1, 20).X + 48;
-        promptPanel.Size = new Vector2(w, 44);
-        promptPanel.Position = new Vector2(960 - w / 2, 900);
-        promptLabel.Size = promptPanel.Size;
-    }
-
-    public void Say(string text, string? who, double seconds)
-    {
-        sayLabel.Text = who != null ? $"{who}: {text}" : text;
-        sayT = seconds;
-        sayLabel.Modulate = Colors.White;
-    }
-
-    public void Toast(Toast t)
-    {
-        var box = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(410, 0) };
-        var accent = t.Kind switch
-        {
-            ToastKind.Loot => t.Rarity is int r ? new[] { "#c8c0b0", "#6fd46a", "#5aa8ff", "#c070ff", "#ffb040", "#ff6a3a" }[Math.Clamp(r, 0, 5)] : "#c8c0b0",
-            ToastKind.Gold => "#f3d9a0", ToastKind.Quest => "#d9b56a", ToastKind.Warning => "#c8323a", ToastKind.Level => "#ffd07a", ToastKind.Relation => "#c890b0",
-            _ => "#8a9aa8",
-        };
-        var style = Box(PanelBg, new Color(accent) with { A = 0.7f });
-        style.BorderWidthLeft = 4;
-        box.AddThemeStyleboxOverride("panel", style);
-        var v = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-        box.AddChild(v);
-        var title = new Label { Text = t.Text, AutowrapMode = TextServer.AutowrapMode.WordSmart };
-        Style(title, UiBold, 19, new Color(accent).Lightened(0.2f));
-        v.AddChild(title);
-        if (!string.IsNullOrEmpty(t.Sub))
-        {
-            var sub = new Label { Text = t.Sub, AutowrapMode = TextServer.AutowrapMode.WordSmart };
-            Style(sub, UiFont, 16, InkDim);
-            v.AddChild(sub);
-        }
-        box.SetMeta("life", t.Life ?? 5);
-        box.SetMeta("t", 0.0);
-        toasts.AddChild(box);
-        while (toasts.GetChildCount() > 6) toasts.GetChild(0).Free();
-    }
-
-    public void Announce(Announcement a)
-    {
-        announceTitle.Text = a.Title;
-        announceSub.Text = a.Sub ?? "";
-        announceKicker.Text = a.Kicker?.ToUpperInvariant() ?? "";
-        announceTitle.AddThemeColorOverride("font_color", a.Kind switch { "danger" => new Color("#ff8a6a"), "boon" => EmberHi, _ => GoldHi });
-        announceT = 0;
-        announceLife = a.Seconds;
-    }
-
-    public void Boss(BossBar? bar)
-    {
-        bossPanel.Visible = bar != null;
-        if (bar == null) return;
-        bossName.Text = bar.Name;
-        bossTitle.Text = bar.Title + (bar.Shielded ? "  ·  shielded" : "");
-        bossFill.Size = new Vector2(796 * (float)Math.Clamp(bar.Hp / Math.Max(1, bar.MaxHp), 0, 1), 12);
-        bossFill.Color = bar.Shielded ? new Color("#8a8a9a") : new Color("#9a2a24");
-        bossChannel.Text = bar.Channel is var (label, prog) ? $"{label}  {Math.Round(prog * 100)}%" : "";
+        foreach (var c in zoneSub.GetChildren()) c.QueueFree();
+        zoneSub.AddChild(Glyphs.Icon(time == TimeOfDay.Night ? "moon" : "sun", 15, time == TimeOfDay.Night ? Hex("#b8ccff") : Hex("#ffd890")));
+        zoneSub.AddChild(Style.Label($"{time}  ·  Day {day}" + (region != null ? $"  ·  {region}" : ""), Style.Ui, 17, Style.Ink with { A = 0.85f }));
     }
 
     public void Objectives(List<Tracked> list)
@@ -327,24 +498,124 @@ public partial class GameHud : CanvasLayer
         foreach (var c in objectives.GetChildren()) c.QueueFree();
         foreach (var t in list)
         {
-            var title = new Label { Text = t.Title, HorizontalAlignment = HorizontalAlignment.Right };
-            Style(title, Display, 18, t.Tone == TrackTone.Tutorial ? Ink : GoldHi);
-            objectives.AddChild(title);
+            var head = Style.H(6, Style.Label(t.Title, Style.Display, 18, t.Tone == TrackTone.Tutorial ? Style.Ink : Style.GoldHi));
+            head.Alignment = BoxContainer.AlignmentMode.End;
+            objectives.AddChild(head);
             foreach (var s in t.Steps)
             {
-                var l = new Label { Text = (s.Done ? "✓ " : s.Optional ? "◦ " : "• ") + s.Text, HorizontalAlignment = HorizontalAlignment.Right, AutowrapMode = TextServer.AutowrapMode.WordSmart, CustomMinimumSize = new Vector2(410, 0) };
-                Style(l, UiFont, 16, s.Done ? InkDim with { A = 0.6f } : s.Optional ? InkDim : Ink);
-                objectives.AddChild(l);
+                var col = s.Done ? Style.InkDim with { A = 0.6f } : s.Optional ? Style.InkDim : Style.Ink;
+                var box = new Panel { CustomMinimumSize = new Vector2(10, 10), MouseFilter = Control.MouseFilterEnum.Ignore };
+                box.AddThemeStyleboxOverride("panel", Style.Box(s.Done ? Style.Gold : new Color(0, 0, 0, 0.4f), col, 1, s.Optional ? 5 : 1, 0));
+                var l = Style.Label(s.Text, s.Optional ? Style.TextItalic : Style.Ui, 16, col, true, HorizontalAlignment.Right);
+                l.CustomMinimumSize = new Vector2(370, 0);
+                var mark = new CenterContainer { CustomMinimumSize = new Vector2(12, 20), MouseFilter = Control.MouseFilterEnum.Ignore };
+                mark.AddChild(box);
+                var row = Style.H(7, l, mark);
+                row.Alignment = BoxContainer.AlignmentMode.End;
+                objectives.AddChild(row);
             }
+            objectives.AddChild(Style.Gap(6));
+        }
+    }
+
+    public void Prompt(PromptView? p)
+    {
+        promptBox.Visible = p != null;
+        if (p == null) return;
+        foreach (var c in promptBox.GetChildren()) { promptBox.RemoveChild(c); c.QueueFree(); }
+        var key = Style.Panel(Style.Box(Hex("#0d0c10"), Style.GoldDim, 1, 17, 0), Style.Label(p.Key, Style.UiBold, 16, Style.GoldHi, false, HorizontalAlignment.Center));
+        key.CustomMinimumSize = new Vector2(34, 34);
+        bool locked = p.Locked != null;
+        var row = Style.H(11, key, Style.Label(p.Verb, Style.UiHeavy, 18, locked ? Colors.White with { A = 0.55f } : Colors.White),
+            Style.Label(p.Target, Style.Display, 18, locked ? Style.GoldHi with { A = 0.55f } : Style.GoldHi));
+        if (locked) row.AddChild(Style.Label(p.Locked!, Style.UiBold, 16, Hex("#ff9a80")));
+        else if (p.Hint != null) row.AddChild(Style.Label(p.Hint, Style.TextItalic, 16, Style.InkDim));
+        promptBox.AddChild(row);
+        promptBox.ResetSize();
+        var size = promptBox.GetCombinedMinimumSize();
+        promptBox.Position = new Vector2((1920 - size.X) / 2, 1080 - 180 - size.Y);
+    }
+
+    public void Say(string text, string? who, double seconds)
+    {
+        sayWho.Text = who?.ToUpperInvariant() ?? "";
+        sayWho.Visible = who != null;
+        sayText.Text = text;
+        sayT = seconds;
+    }
+
+    public void Toast(Toast t)
+    {
+        var (glyph, color) = ToastLook.GetValueOrDefault(t.Kind, ("arcane", Style.Gold));
+        if (t.Rarity is int r) color = Style.RarityOf(r);
+        var box = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(408, 0) };
+        var s = Style.Box(new Color(0.047f, 0.04f, 0.055f, 0.82f), color, 0, 4, 8);
+        s.BorderWidthLeft = 3;
+        box.AddThemeStyleboxOverride("panel", s);
+        var row = Style.H(10, Glyphs.Icon(t.Icon ?? glyph, t.Icon != null ? 34 : 22, color));
+        var words = Style.V(0, Style.Label(t.Text, t.Kind == ToastKind.Quest ? Style.Display : Style.UiBold, 17, t.Kind == ToastKind.Quest ? Style.GoldHi : t.Rarity != null ? color : Hex("#f0e6d2"), true));
+        if (!string.IsNullOrEmpty(t.Sub)) words.AddChild(Style.Label(t.Sub, Style.TextItalic, 15, Hex("#b8ab96"), true));
+        words.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        row.AddChild(words);
+        box.AddChild(row);
+        box.SetMeta("t", 0.0);
+        box.SetMeta("life", t.Life ?? 5.0);
+        toasts.AddChild(box);
+        while (toasts.GetChildCount() > 6) toasts.GetChild(0).Free();
+    }
+
+    public void Announce(Announcement a)
+    {
+        annKicker.Text = a.Kicker?.ToUpperInvariant() ?? "";
+        annKicker.Visible = a.Kicker != null;
+        annTitle.Text = a.Title.ToUpperInvariant();
+        annTitle.AddThemeFontSizeOverride("font_size", a.Kind == "zone" ? 60 : a.Title.Length > 30 ? 31 : a.Title.Length > 20 ? 38 : a.Kind == "story" ? 41 : 50);
+        annTitle.AddThemeColorOverride("font_color", a.Kind switch { "danger" => Hex("#ff7a5a"), "boon" => Hex("#ffd46a"), "story" => Hex("#e2dac8"), _ => Hex("#f0c878") });
+        annSub.Text = a.Sub ?? "";
+        announce.Position = new Vector2(360, 1080 * (a.Kind == "zone" ? 0.16f : 0.2f));
+        annT = 0;
+        annLife = a.Seconds;
+    }
+
+    public void Boss(BossBar? bar)
+    {
+        bossBox.Visible = bar != null;
+        if (bar == null) return;
+        bossName.Text = bar.Name.ToUpperInvariant();
+        bossTitle.Text = bar.Title;
+        float w = 742;
+        float k = (float)Math.Clamp(bar.Hp / Math.Max(1, bar.MaxHp), 0, 1);
+        bossFill.Size = new Vector2(w * k, 14);
+        bossFill.Color = bar.Shielded ? Hex("#8a8a9a") : Hex("#b0222a");
+        bossTrail.Size = new Vector2(Math.Max(bossTrail.Size.X - 2, w * k), 14);
+        foreach (var c in bossTrack.GetChildren()) if (c.HasMeta("phase")) c.QueueFree();
+        foreach (var ph in bar.Phases ?? Array.Empty<double>())
+        {
+            var mark = new ColorRect { Color = Style.GoldHi, Position = new Vector2(w * (float)ph, 0), Size = new Vector2(2, 16), MouseFilter = Control.MouseFilterEnum.Ignore };
+            mark.SetMeta("phase", true);
+            bossTrack.AddChild(mark);
+        }
+        bossChannelBox.Visible = bar.Channel != null;
+        if (bar.Channel is var (label, prog))
+        {
+            bossChannelFill.Size = new Vector2(bossChannelBox.Size.X * (float)Math.Clamp(prog, 0, 1), 20);
+            bossChannel.Text = label;
         }
     }
 
     public void Hint(Hint? h)
     {
-        hintPanel.Visible = h != null;
+        hintBox.Visible = h != null;
+        foreach (var c in hintBox.GetChildren()) { hintBox.RemoveChild(c); c.QueueFree(); }
         if (h == null) return;
-        hintTitle.Text = h.Title;
-        hintText.Text = h.Text + (h.Keys.Count > 0 ? $"\n[{string.Join("] [", h.Keys)}]" : "");
+        var ink = Style.ParchmentInk;
+        var v = Style.V(5, Style.H(6, Glyphs.Icon("scroll", 17, Hex("#6a3a14")), Style.Label(h.Title.ToUpperInvariant(), Style.Display, 15, Hex("#6a3a14"), false, HorizontalAlignment.Left, false)),
+            Style.Label(h.Text, Style.Text, 19, ink, true, HorizontalAlignment.Left, false));
+        // A known width, so the words wrap before the box is measured.
+        v.GetChild<Control>(1).CustomMinimumSize = new Vector2(396 - 28, 0);
+        if (h.Keys.Count > 0) v.AddChild(Style.H(6, h.Keys.Select(Style.Key).ToArray()));
+        hintBox.AddChild(v);
+        hintBox.OffsetTop = hintBox.OffsetBottom;
     }
 
     /// <summary>Fade to black (1) or back (0) over some seconds, with words over the black.</summary>
@@ -354,127 +625,73 @@ public partial class GameHud : CanvasLayer
         fadeTo = to;
         fadeT = 0;
         fadeDur = Math.Max(0.01, seconds);
-        if (to > 0.5f)
-        {
-            fadeCaption.Text = caption ?? "";
-            fadeSub.Text = sub ?? "";
-        }
+        if (to > 0.5f) { fadeCaption.Text = caption ?? ""; fadeSub.Text = sub ?? ""; }
     }
 
-    /* -------------------------------------------------------------- draft -- */
+    /* ------------------------------------------------- the draft, a talk -- */
 
     public void Draft(DraftView? d)
     {
-        foreach (var c in draft.GetChildren()) c.QueueFree();
-        draft.Visible = d != null;
+        draft?.QueueFree();
+        draft = null;
         if (d == null) return;
-        var dim = new ColorRect { Color = new Color(0, 0, 0, 0.55f), MouseFilter = Control.MouseFilterEnum.Stop };
-        Fill(dim);
-        draft.AddChild(dim);
-        Text(draft, d.Blessing ? "A BLESSING" : "THE EMBER RISES", UiBold, 20, Gold, new Rect2(0, 190, 1920, 30), HorizontalAlignment.Center);
-        Text(draft, d.Blessing ? "Choose what the light keeps" : $"Level {d.Level}", Display, 52, GoldHi, new Rect2(0, 220, 1920, 70), HorizontalAlignment.Center);
-        if (d.Tip != null) Text(draft, d.Tip, UiFont, 20, Ink, new Rect2(360, 290, 1200, 40), HorizontalAlignment.Center);
-        int n = d.Offers.Count;
-        float w = 340, gap = 30, x0 = 960 - (n * w + (n - 1) * gap) / 2;
-        for (int i = 0; i < n; i++)
-        {
-            var o = d.Offers[i];
-            int index = i;
-            var card = new Button { Position = new Vector2(x0 + i * (w + gap), 340), Size = new Vector2(w, 420), FocusMode = Control.FocusModeEnum.None };
-            var col = RarityColors.GetValueOrDefault(o.Rarity, Ink);
-            card.AddThemeStyleboxOverride("normal", Box(new Color(0.07f, 0.055f, 0.07f, 0.95f), col with { A = 0.8f }, 2, 6));
-            card.AddThemeStyleboxOverride("hover", Box(new Color(0.12f, 0.09f, 0.08f, 0.97f), col, 3, 6));
-            card.AddThemeStyleboxOverride("pressed", Box(new Color(0.16f, 0.11f, 0.08f, 0.97f), col, 3, 6));
-            card.Pressed += () => d.Pick(index);
-            draft.AddChild(card);
-            var kind = o.Kind switch { OfferKind.Weapon => "New weapon", OfferKind.Rank => $"Rank {o.From} → {o.To}", OfferKind.Evolve => "Evolution", OfferKind.Heal => "Mend", OfferKind.Gold => "Gold", _ => o.Blessing ? "Blessing" : "Skill" };
-            Text(card, $"{i + 1}", Display, 22, GoldDim, new Rect2(16, 10, 40, 30), HorizontalAlignment.Left);
-            Text(card, kind.ToUpperInvariant(), UiBold, 15, col, new Rect2(0, 18, w, 22), HorizontalAlignment.Center);
-            var title = Text(card, o.Title, Display, 26, GoldHi, new Rect2(16, 50, w - 32, 80), HorizontalAlignment.Center);
-            title.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-            var body = Text(card, o.Text, UiFont, 19, Ink, new Rect2(22, 140, w - 44, 230), HorizontalAlignment.Center);
-            body.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-            body.VerticalAlignment = VerticalAlignment.Top;
-            Text(card, o.Rarity.ToString(), UiFont, 15, col with { A = 0.8f }, new Rect2(0, 384, w, 24), HorizontalAlignment.Center);
-        }
-        var foot = $"[1-{n}] choose     [X] reroll ({d.Rerolls})     [B] then a number: banish ({d.Banishes})" + (d.Queued > 0 ? $"     {d.Queued} more to come" : "");
-        Text(draft, foot, UiFont, 19, InkDim, new Rect2(0, 790, 1920, 30), HorizontalAlignment.Center);
+        draft = new DraftPanel(d);
+        root.AddChild(draft);
     }
-
-    /* ---------------------------------------------------------- dialogue -- */
 
     public void Dialogue(DialogueView? d)
     {
-        foreach (var c in dialogue.GetChildren()) c.QueueFree();
-        dialogue.Visible = d != null;
+        talk?.QueueFree();
+        talk = null;
+        play.Modulate = d == null ? Colors.White : new Color(1, 1, 1, 0.35f);
         if (d == null) return;
-        var panel = new Panel { Position = new Vector2(360, 640), Size = new Vector2(1200, 400) };
-        panel.AddThemeStyleboxOverride("panel", Box(new Color(0.045f, 0.036f, 0.05f, 0.93f), GoldDim, 1, 6));
-        dialogue.AddChild(panel);
-        bool player = d.Speaker == "player", narrator = d.Speaker == "narrator";
-        Text(panel, d.Name, Display, 28, GoldHi, new Rect2(28, 14, 800, 36), HorizontalAlignment.Left);
-        Text(panel, d.Title + (d.Mood != "" ? $"  ·  {d.Mood}" : ""), UiFont, 17, InkDim, new Rect2(28, 48, 800, 24), HorizontalAlignment.Left);
-        var text = Text(panel, d.Text, narrator ? UiFont : UiFont, 22, player ? new Color("#c8d8e8") : narrator ? InkDim : Ink, new Rect2(28, 82, 1144, 120), HorizontalAlignment.Left);
-        text.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        text.VerticalAlignment = VerticalAlignment.Top;
-        if (d.CanContinue)
-        {
-            var go = Choice(panel, "Continue", 0, 1, true, null);
-            go.Pressed += d.Advance;
-            return;
-        }
-        for (int i = 0; i < d.Choices.Count; i++)
-        {
-            var c = d.Choices[i];
-            var b = Choice(panel, $"{i + 1}.  {c.Text}" + (c.Badge != null ? $"   [{c.Badge}]" : "") + (c.Locked != null ? $"   ({c.Locked})" : ""), i, d.Choices.Count, c.Enabled, c.Ends ? "ends" : null);
-            int index = c.Index;
-            if (c.Enabled) b.Pressed += () => d.Choose(index);
-        }
+        talk = new TalkPanel(d);
+        root.AddChild(talk);
     }
 
-    static Button Choice(Panel panel, string text, int i, int n, bool enabled, string? tag)
-    {
-        var b = new Button { Text = text, Position = new Vector2(28, 212 + i * 42), Size = new Vector2(1144, 38), Alignment = HorizontalAlignment.Left, Disabled = !enabled, FocusMode = Control.FocusModeEnum.None };
-        Style(b, UiBold, 19, enabled ? GoldHi : InkDim);
-        b.AddThemeColorOverride("font_hover_color", EmberHi);
-        b.AddThemeColorOverride("font_disabled_color", InkDim with { A = 0.6f });
-        b.AddThemeStyleboxOverride("normal", new StyleBoxEmpty());
-        b.AddThemeStyleboxOverride("hover", Box(new Color(1, 0.8f, 0.5f, 0.07f), new Color(0, 0, 0, 0), 0));
-        b.AddThemeStyleboxOverride("pressed", Box(new Color(1, 0.8f, 0.5f, 0.12f), new Color(0, 0, 0, 0), 0));
-        b.AddThemeStyleboxOverride("disabled", new StyleBoxEmpty());
-        panel.AddChild(b);
-        return b;
-    }
+    /// <summary>A key for the draft or the conversation, if one is up.</summary>
+    public bool Key(Act a) => draft?.Key(a) ?? talk?.Key(a) ?? false;
 
     /* ------------------------------------------------------------- frame -- */
 
     public override void _Process(double delta)
     {
-        // Words said fade after their time.
+        float dt = (float)delta;
         if (sayT > 0)
         {
             sayT -= delta;
-            sayLabel.Modulate = Colors.White with { A = (float)Math.Clamp(sayT / 0.6, 0, 1) };
-            if (sayT <= 0) sayLabel.Text = "";
+            subtitle.Modulate = Colors.White with { A = (float)Math.Clamp(sayT / 0.6, 0, 1) };
         }
-        // Title cards: in, held, out.
-        if (announceT < announceLife)
+        else subtitle.Modulate = Colors.Transparent;
+        if (annT < annLife)
         {
-            announceT += delta;
-            float a = (float)Math.Clamp(Math.Min(announceT / 0.4, (announceLife - announceT) / 0.8), 0, 1);
-            foreach (var l in new[] { announceTitle, announceSub, announceKicker }) l.Modulate = Colors.White with { A = a };
+            annT += delta;
+            float a = (float)Math.Clamp(Math.Min(annT / (annLife * 0.1), (annLife - annT) / (annLife * 0.2)), 0, 1);
+            announce.Modulate = Colors.White with { A = a };
         }
-        else foreach (var l in new[] { announceTitle, announceSub, announceKicker }) l.Modulate = Colors.White with { A = 0 };
-        // The feed: each goes after its life.
+        else announce.Modulate = Colors.Transparent;
+        // Nothing big over a choice being made.
+        if (draft != null || talk != null) { announce.Modulate = Colors.Transparent; subtitle.Modulate = Colors.Transparent; }
         foreach (var c in toasts.GetChildren())
         {
             if (c is not Control box) continue;
             double t = (double)box.GetMeta("t") + delta, life = (double)box.GetMeta("life");
             box.SetMeta("t", t);
-            box.Modulate = Colors.White with { A = (float)Math.Clamp(Math.Min(t / 0.25, (life - t) / 0.6), 0, 1) };
+            float k = (float)(t / life);
+            box.Modulate = Colors.White with { A = k < 0.05f ? k / 0.05f : k > 0.88f ? (1 - k) / 0.12f : 1 };
             if (t >= life) box.QueueFree();
         }
-        // The fade.
+        // The trail behind health catches up after a moment.
+        float trail = hpTrail.Size.X / 360;
+        if (trail > hpShown) { trailWait += dt; trailShown = trailWait > 0.35f ? Mathf.MoveToward(trail, hpShown, dt * 1.6f) : trail; }
+        else { trailWait = 0; trailShown = hpShown; }
+        hpTrail.Size = new Vector2(360 * trailShown, 24);
+        bool low = hpShown < 0.35f && combat.Visible;
+        float now = Time.GetTicksMsec() / 1000f;
+        float beat = low ? 1 + 0.12f * Mathf.Max(0, Mathf.Sin(now * 7)) : 1;
+        heart.Scale = new Vector2(beat, beat);
+        hpLow.Color = new Color(1, 0.24f, 0.24f, low ? 0.15f + 0.15f * Mathf.Sin(now * 7) : 0);
+        if (levelPop > 0) { levelPop = Math.Max(0, levelPop - delta / 0.6); float sc = 1 + 0.9f * (float)(levelPop * levelPop); emberLevel.Scale = new Vector2(sc, sc); }
         if (fadeT < fadeDur)
         {
             fadeT += delta;
@@ -485,5 +702,81 @@ public partial class GameHud : CanvasLayer
         float cap = Mathf.Clamp((fade.Color.A - 0.6f) / 0.4f, 0, 1);
         fadeCaption.Modulate = Colors.White with { A = cap };
         fadeSub.Modulate = Colors.White with { A = cap };
+    }
+}
+
+/// <summary>A weapon on the HUD: its glyph in its school's colour, a shade
+/// that sweeps off as it readies, a flash when it fires, rank as pips.</summary>
+public partial class WeaponSlot : Panel
+{
+    readonly TextureRect art;
+    readonly ColorRect sweep;
+    readonly HBoxContainer pips;
+    double lastReady = 1, flash;
+    string key = "";
+
+    public WeaponSlot()
+    {
+        CustomMinimumSize = new Vector2(67, 67);
+        MouseFilter = MouseFilterEnum.Ignore;
+        art = new TextureRect { Position = new Vector2(15, 15), Size = new Vector2(37, 37), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered, MouseFilter = MouseFilterEnum.Ignore };
+        AddChild(art);
+        sweep = new ColorRect { Color = new Color(0.016f, 0.012f, 0.03f, 0.62f), Position = new Vector2(1, 1), Size = new Vector2(65, 0), MouseFilter = MouseFilterEnum.Ignore };
+        AddChild(sweep);
+        pips = Style.H(3);
+        pips.Alignment = BoxContainer.AlignmentMode.Center;
+        pips.Position = new Vector2(0, 62);
+        pips.Size = new Vector2(67, 7);
+        AddChild(pips);
+    }
+
+    public void Show(string glyph, Color school, double ready, int rank, int max, bool evolved, bool canEvolve)
+    {
+        var k = $"{glyph}|{school.ToHtml()}|{rank}|{evolved}|{canEvolve}";
+        if (k != key)
+        {
+            key = k;
+            art.Texture = Glyphs.Texture(glyph, 74, school);
+            foreach (var c in pips.GetChildren()) c.QueueFree();
+            for (int i = 0; i < max; i++)
+                pips.AddChild(new ColorRect { Color = i < rank ? school : new Color("#15121a"), CustomMinimumSize = new Vector2(5, 5), MouseFilter = MouseFilterEnum.Ignore });
+            AddThemeStyleboxOverride("panel", Style.Box(new Color(0.1f, 0.09f, 0.12f).Lerp(school, 0.1f), evolved ? Style.Gold : canEvolve ? Style.GoldHi : Style.Line, evolved || canEvolve ? 2 : 1, 7, 0));
+        }
+        if (ready < lastReady - 0.4) flash = 1;
+        lastReady = ready;
+        sweep.Size = new Vector2(65, ready < 0.98 ? 65 * (float)(1 - ready) : 0);
+        art.Modulate = ready >= 0.98 ? new Color(1.3f, 1.3f, 1.3f) : Colors.White;
+        flash = Math.Max(0, flash - 0.05);
+        SelfModulate = Colors.White.Lerp(new Color(1.6f, 1.4f, 1.1f), (float)flash);
+    }
+}
+
+/// <summary>An empty place for a weapon yet to come.</summary>
+public partial class EmptySlot : Panel
+{
+    public EmptySlot()
+    {
+        CustomMinimumSize = new Vector2(67, 67);
+        MouseFilter = MouseFilterEnum.Ignore;
+        AddThemeStyleboxOverride("panel", Style.Box(new Color(0.08f, 0.07f, 0.09f, 0.55f), Style.Line with { A = 0.12f }, 1, 7, 0));
+    }
+}
+
+/// <summary>The skill's ring: gold round as far as it has readied.</summary>
+public partial class Ring : Control
+{
+    float progress = 1;
+    bool ready = true;
+    public float Progress { get => progress; set { if (Math.Abs(progress - value) > 0.002f) { progress = value; QueueRedraw(); } } }
+    public bool Ready { get => ready; set { if (ready != value) { ready = value; QueueRedraw(); } } }
+
+    public override void _Draw()
+    {
+        var c = Size / 2;
+        float r = Size.X / 2 - 4;
+        DrawCircle(c, r + 3, new Color("#0e0c11"));
+        DrawArc(c, r, 0, Mathf.Tau, 64, new Color(1, 1, 1, 0.06f), 5, true);
+        DrawArc(c, r, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * progress, 64, ready ? new Color("#f3d9a0") : new Color("#d9b56a"), 5, true);
+        DrawCircle(c, r - 6, ready ? new Color("#2a1a10") : new Color("#16131a"));
     }
 }

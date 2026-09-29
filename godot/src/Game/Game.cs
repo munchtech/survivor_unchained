@@ -5,6 +5,7 @@ using Godot;
 using SurvivorUnchained.Play.Zones;
 using SurvivorUnchained.Rpg;
 using SurvivorUnchained.Sim;
+using SurvivorUnchained.Sound;
 using SurvivorUnchained.Ui;
 using SurvivorUnchained.View;
 using SurvivorUnchained.World;
@@ -47,6 +48,9 @@ public partial class Game : Node, IZoneHost
     Controls controls = null!;
     GameHud hud = null!;
     Screens screens = null!;
+    Synth synth = null!;
+    SoundBridge sound = null!;
+    bool bossUp;
     Atmosphere air = null!;
     Camera3D camera = null!;
     FollowCamera cam = null!;
@@ -54,7 +58,8 @@ public partial class Game : Node, IZoneHost
     ZoneRuntime? zone;
     Saves saves = null!;
     Interactable? near;
-    string? promptShown, hudMode;
+    PromptView? promptShown;
+    string? hudMode;
     readonly List<(double T, Action Fn)> later = new();
     bool inTransit;
     double autosaveT, fogT, hudT, draftWait, reportT;
@@ -74,6 +79,11 @@ public partial class Game : Node, IZoneHost
         screens = new Screens();
         AddChild(screens);
         AddChild(new Shots());
+        synth = new Synth();
+        AddChild(synth);
+        sound = new SoundBridge(synth);
+        // The interface: every button ticks under the pointer and clicks.
+        GetTree().NodeAdded += n => { if (n is BaseButton bb) Sounded(bb); };
         saves = new Saves(ProjectSettings.GlobalizePath("user://saves"));
         controls.On(OnAction);
         if (Args.Has("auto")) auto = new Autopilot(this) { Idle = Args.Get("auto") == "idle" };
@@ -81,7 +91,12 @@ public partial class Game : Node, IZoneHost
         ApplySettings();
         if (Args.Has("continue") && saves.LastSlot() is int slot) Continue(slot);
         else if (Args.Has("quick") || Args.Has("zone")) Quick();
-        else ShowTitle();
+        else
+        {
+            ShowTitle();
+            // --new: straight to making a survivor (pictures of it).
+            if (Args.Has("new")) NewJourney();
+        }
     }
 
     /// <summary>A stock survivor straight into the game (tools and tests).</summary>
@@ -130,8 +145,8 @@ public partial class Game : Node, IZoneHost
 
     void Hook()
     {
-        Journey.OnToast = t => hud.Toast(t);
-        Journey.OnAnnounce = a => hud.Announce(a);
+        Journey.OnToast = Toast;
+        Journey.OnAnnounce = Announce;
         Journey.OnTouch = () => screens.Current?.Refresh();
     }
 
@@ -147,6 +162,13 @@ public partial class Game : Node, IZoneHost
     }
 
     public string Key(Act a) => controls.KeyLabel(a);
+
+    static void Sounded(BaseButton b)
+    {
+        b.MouseEntered += () => { if (!b.Disabled) Sfx.Hover(); };
+        b.Pressed += Sfx.Click;
+        b.GuiInput += e => { if (b.Disabled && e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) Sfx.Deny(); };
+    }
 
     /* ------------------------------------------------------------ zones -- */
 
@@ -168,7 +190,7 @@ public partial class Game : Node, IZoneHost
         figure = null;
         near = null;
         hud.Prompt(promptShown = null);
-        hud.Boss(null);
+        SetBoss(null);
         hud.Hint(CurrentHint = null);
         hud.Objectives(new());
         cam.FocusOverride = null;
@@ -294,19 +316,19 @@ public partial class Game : Node, IZoneHost
 
     public void Apply(IEnumerable<Change> changes) => Journey.Apply(changes);
     public void Say(string text, string? who = null, double seconds = 4) => hud.Say(text, who, seconds);
-    public void Toast(Toast t) => hud.Toast(t);
-    public void Announce(Announcement a) => hud.Announce(a);
+    public void Toast(Toast t) { hud.Toast(t); sound.Toast(t); }
+    public void Announce(Announcement a) { hud.Announce(a); sound.Announce(a, bossUp); }
     public void After(double seconds, Action fn) => later.Add((seconds, fn));
     public bool GiveItem(string def, int qty = 1, int? rarity = null) => Journey.GiveItem(def, qty, rarity);
     public void ReturnItem(ItemInstance it) => Journey.ReturnItem(it);
-    public void SetBoss(BossBar? bar) => hud.Boss(bar);
+    public void SetBoss(BossBar? bar) { hud.Boss(bar); bossUp = bar != null; }
     public void SetObjectives(List<Tracked> list) => hud.Objectives(list);
     public void SetHint(Hint? hint) => hud.Hint(CurrentHint = hint);
     public void SetAtmosphere(AtmospherePreset p, bool rebuild = true) => air.Set(p, rebuild);
     public void Capture(bool on) => controls.Captured = on;
     string? draftTip;
     public void SetDraftTip(string tip) => draftTip = tip;
-    public void AnnounceZone() { if (zone != null) hud.Announce(new Announcement(zone.Name, zone.Region, "zone", 4.2)); }
+    public void AnnounceZone() { if (zone != null) Announce(new Announcement(zone.Name, zone.Region, "zone", 4.2)); }
 
     public void Revived(double x, double z)
     {
@@ -367,31 +389,26 @@ public partial class Game : Node, IZoneHost
             if (d < it.R && d < bd) { bd = d; best = it; }
         }
         near = best;
-        string? text = null;
-        if (best != null)
-        {
-            var locked = best.Locked?.Invoke();
-            var hint = best.Hint?.Invoke();
-            text = $"[{controls.KeyLabel(Act.Interact)}]  {best.Verb}  {best.Name}" + (hint != null ? $"  ·  {hint}" : "") + (locked != null ? $"  ({locked})" : "");
-        }
-        if (text != promptShown) hud.Prompt(promptShown = text);
+        var view = best != null ? new PromptView(controls.KeyLabel(Act.Interact), best.Verb, best.Name, best.Hint?.Invoke(), best.Locked?.Invoke()) : null;
+        if (view != promptShown) hud.Prompt(promptShown = view);
     }
 
     /* ------------------------------------------------------------ frame -- */
 
     void OnEvents(List<CombatEvent> evs)
     {
+        sound.Events(evs, Battle);
         zone?.Events(evs);
         foreach (var e in evs)
         {
             switch (e)
             {
                 case Ev.Announce an:
-                    hud.Announce(new Announcement(an.Title, an.Subtitle, an.Tone?.ToString().ToLowerInvariant() ?? "info", an.Subtitle is { Length: > 60 } ? 5 : 3.6, an.Kicker));
+                    Announce(new Announcement(an.Title, an.Subtitle, an.Tone?.ToString().ToLowerInvariant() ?? "info", an.Subtitle is { Length: > 60 } ? 5 : 3.6, an.Kicker));
                     break;
                 case Ev.Discovery d:
                     if (!World.Codex.Contains(d.Id)) World.Codex.Add(d.Id);
-                    if (Content.Discoveries.All.FirstOrDefault(x => x.Id == d.Id) is { } pair) hud.Toast(new Toast(ToastKind.Lore, pair.Name, "A new discovery, remembered in the codex", null, null, 9));
+                    if (Content.Discoveries.All.FirstOrDefault(x => x.Id == d.Id) is { } pair) Toast(new Toast(ToastKind.Lore, pair.Name, "A new discovery, remembered in the codex", null, null, 9));
                     break;
                 case Ev.Bark bk:
                     scene?.Voices.Bark(bk.Text, new Vector3((float)bk.X, (float)scene.HeightAt(bk.X, bk.Z), (float)bk.Z), bk.Speaker, bk.Speaker == null);
@@ -439,13 +456,20 @@ public partial class Game : Node, IZoneHost
             scene.Showcase = showNow;
         }
         scene.Update(dt);
+        {
+            var sb = Battle;
+            var at = sb != null ? new Vector3((float)sb.Player.X, 0, (float)sb.Player.Z) : showNow.Look;
+            var time = Journey is { } jn ? zone?.TimeOf(jn.World) ?? jn.World.Time : TimeOfDay.Night;
+            sound.Update(dt, new SoundState(Mode, zone?.Id, time, at.X, at.Z, sb, bossUp, Mode == "play" ? Overlay : screens.Current?.Kind,
+                zone != null ? zone.Ambience : null, zone != null ? zone.MusicMood : null));
+        }
         if (Mode != "play") return;
         UpdateDraft(dt);
         hudT -= dt;
         if (hudT <= 0)
         {
             hudT = 1.0 / 12;
-            hud.Bars(Battle, Journey.Ch.Gold, Inventory.Count(Journey.Ch, "health_draught"));
+            hud.Frame(Battle, Journey.Ch.Gold, Inventory.Count(Journey.Ch, "health_draught"));
         }
         hud.SetBruise(scene.Bruise);
         scene.Voices.Quiet = hudMode == "dialogue" || screens.Current != null;
@@ -462,8 +486,8 @@ public partial class Game : Node, IZoneHost
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
     void Tour(double dt)
     {
-        if (Args.Get("open") is not string want) return;
         if (Args.Has("bare") && scene != null) scene.Visible = false;
+        if (Args.Get("open") is not string want) return;
         tourT -= dt;
         if (tourT > 0) return;
         string[] all = { "inventory", "character", "journal", "map", "pause", "rest", "stash", "shop:harlan", "chapter" };
@@ -473,7 +497,10 @@ public partial class Game : Node, IZoneHost
         if (list[tourI].StartsWith("shop:")) Journey.OpenShop(list[tourI][5..], Rng);
         GD.Print($"open {list[tourI]}");
         CloseOverlay();
-        Open(list[tourI++]);
+        var next = list[tourI++];
+        if (next.StartsWith("talk:")) Talk(next[5..]);
+        else if (next == "draft" && Battle is { } b) { b.GainEmber(b.EmberNext); }
+        else Open(next);
     }
 
     /// <summary>--log S: a line every S seconds of how it is going (for runs
@@ -489,7 +516,7 @@ public partial class Game : Node, IZoneHost
         int foes = b?.Enemies.Count ?? 0;
         var dbg = zone?.Debug() is { Count: > 0 } d ? string.Join(" ", d.Take(4).Select(kv => $"{kv.Key}={kv.Value}")) : "";
         var (drawn, dead) = scene!.Crowd.Counts;
-        GD.Print($"[{scene.Time,6:0.0}s] {zone?.Id} hp {p?.Hp:0}/{b?.MaxHp:0} ember {b?.EmberLevel} kills {b?.KillCount} foes {foes} (drawn {drawn}, lying {dead}) at {p?.X:0},{p?.Z:0} {Overlay} {dbg}");
+        GD.Print($"[{scene.Time,6:0.0}s] {zone?.Id} hp {p?.Hp:0}/{b?.MaxHp:0} ember {b?.EmberLevel} kills {b?.KillCount} foes {foes} (drawn {drawn}, lying {dead}) at {p?.X:0},{p?.Z:0} {Overlay} {dbg}{(synth.Ready ? $" | sound {sound.Music.Mood} voices {synth.Voices} mix {synth.MixCost / Math.Max(1e-9, synth.Mixed) * 100:0}% heard {synth.Mixed:0}s skips {synth.Skips} queue {synth.Queue / synth.Rate * 1000:0}ms" : "")}");
     }
 
     /// <summary>What was put off, in game time: it waits while a menu, a

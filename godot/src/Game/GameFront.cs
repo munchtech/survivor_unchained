@@ -126,7 +126,7 @@ public partial class Game
     public void Continue(int slot)
     {
         var d = saves.Read(slot);
-        if (d == null) { hud.Toast(new Toast(ToastKind.Warning, "That journey could not be read.")); return; }
+        if (d == null) { Toast(new Toast(ToastKind.Warning, "That journey could not be read.")); return; }
         screens.Close();
         hud.Fade(1, 0.5, d.Character.Name, $"Day {d.World.Day}");
         Wait(0.55, () =>

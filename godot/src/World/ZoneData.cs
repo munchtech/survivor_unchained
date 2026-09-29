@@ -48,7 +48,9 @@ public sealed class ZoneData
         Meta = ZoneMeta.Load(id);
         Ground = Heightfield.Load(Meta);
         // Straight from the file (not an imported texture: the paint is data).
-        Splat = Image.LoadFromFile(ProjectSettings.GlobalizePath($"{Dir}/splat.png"));
+        // Kept as the file it is (not imported), so a packed build reads the same bytes.
+        Splat = new Image();
+        Splat.LoadPngFromBuffer(FileAccess.GetFileAsBytes($"{Dir}/splat.png"));
 
         var tf = FileAccess.GetFileAsBytes($"{Dir}/flora.bin");
         var floats = new float[tf.Length / 4];

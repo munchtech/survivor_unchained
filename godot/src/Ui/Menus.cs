@@ -174,7 +174,7 @@ public partial class PauseScreen : Overlay
         }
         menu.Items.Clear();
         menu.Add("Resume", G.CloseOverlay);
-        menu.Add("Save", () => { G.Save("manual"); G.Hud.Toast(new Toast(ToastKind.World, "Journey saved")); });
+        menu.Add("Save", () => { G.Save("manual"); G.Toast(new Toast(ToastKind.World, "Journey saved")); });
         menu.Add("Settings", () => { panel = "settings"; Refresh(); });
         menu.Add("Controls", () => { panel = "controls"; Refresh(); });
         menu.Add("Pack", () => G.Open("inventory"));

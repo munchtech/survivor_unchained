@@ -4,15 +4,16 @@ importer="2d_array_texture"
 type="CompressedTexture2DArray"
 uid="uid://bh088ep08675e"
 path.bptc="res://.godot/imported/normal.jpg-9629507adbfc6354cae510a727d65112.bptc.ctexarray"
+path.astc="res://.godot/imported/normal.jpg-9629507adbfc6354cae510a727d65112.astc.ctexarray"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/ground/normal.jpg"
-dest_files=["res://.godot/imported/normal.jpg-9629507adbfc6354cae510a727d65112.bptc.ctexarray"]
+dest_files=["res://.godot/imported/normal.jpg-9629507adbfc6354cae510a727d65112.bptc.ctexarray", "res://.godot/imported/normal.jpg-9629507adbfc6354cae510a727d65112.astc.ctexarray"]
 
 [params]
 

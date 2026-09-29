@@ -28,8 +28,7 @@ public partial class Game
             return true;
         }
         if (inTransit || Mode != "play") return false;
-        if (hudMode == "draft") return DraftKey(a);
-        if (hudMode == "dialogue") return DialogueKey(a);
+        if (hudMode is "draft" or "dialogue") return hud.Key(a);
         switch (a)
         {
             case Act.Pause: Open("pause"); return true;
@@ -39,7 +38,7 @@ public partial class Game
             case Act.Map: Open("map"); return true;
             case Act.Interact when near != null:
                 var locked = near.Locked?.Invoke();
-                if (locked != null) hud.Toast(new Toast(ToastKind.Warning, locked));
+                if (locked != null) Toast(new Toast(ToastKind.Warning, locked));
                 else near.Act();
                 return true;
             case Act.Ultimate: Journey.Quaff(Battle); return true;
@@ -141,7 +140,6 @@ public partial class Game
     /* ------------------------------------------------------------ draft -- */
 
     List<Offer> offers = new();
-    bool banishing;
 
     void UpdateDraft(double dt)
     {
@@ -167,11 +165,10 @@ public partial class Game
     {
         var b = Battle!;
         offers = list;
-        banishing = false;
         var tip = draftTip;
         draftTip = null;
         hud.Draft(new DraftView(LevelUp.DraftLevel(b), LevelUp.BlessingNext(b), list, b.Rerolls, b.Banishes, b.PendingLevels + b.PendingBlessings.Count - 1, tip,
-            Pick, Reroll, Banish));
+            LevelUp.BuildTags(b), Pick, Reroll, Banish));
     }
 
     public void Pick(int i)
@@ -180,7 +177,7 @@ public partial class Game
         if (b == null || hudMode != "draft" || i < 0 || i >= offers.Count) return;
         var o = offers[i];
         LevelUp.Choose(b, o);
-        if (o.Kind == OfferKind.Weapon) hud.Toast(new Toast(ToastKind.Level, $"{o.Title} joins your arsenal"));
+        if (o.Kind == OfferKind.Weapon) Toast(new Toast(ToastKind.Level, $"{o.Title} joins your arsenal"));
         if (b.DraftOwed) Present(LevelUp.Draft(b, offers.Count));
         else CloseDraft();
     }
@@ -210,25 +207,12 @@ public partial class Game
         controls.ClearLatches();
     }
 
-    bool DraftKey(Act a)
-    {
-        int pick = a switch { Act.Pick1 => 0, Act.Pick2 => 1, Act.Pick3 => 2, Act.Pick4 => 3, _ => -1 };
-        if (pick >= 0)
-        {
-            if (banishing) Banish(pick); else Pick(pick);
-            return true;
-        }
-        if (a == Act.Reroll) { Reroll(); return true; }
-        if (a == Act.Banish) { banishing = !banishing; if (banishing) hud.Toast(new Toast(ToastKind.Warning, "Banish which? (1-4)")); return true; }
-        return true;
-    }
 
     /* --------------------------------------------------------- dialogue -- */
 
     DialogueRunner? runner;
     string? talkNpc;
     float? camSaved;
-    Presented? shown;
 
     public void Talk(string id)
     {
@@ -258,13 +242,14 @@ public partial class Game
 
     void ShowLine(Presented p)
     {
-        shown = p;
+        sound.Line();
         var id = talkNpc!;
         var d = Lore.Person(id);
         Lore.Speakers.TryGetValue(id, out var sp);
         var s = World.Npc(id);
-        hud.Dialogue(new DialogueView(d?.Name ?? sp?.Name ?? id, d?.Title ?? sp?.Title ?? "", d != null ? Rules.Attitude(s) : "",
-            p.Speaker == "player" ? "player" : p.Speaker == "narrator" ? "narrator" : "npc", p.Text, p.Choices, p.Choices.Count == 0, Choose, Advance));
+        hud.Dialogue(new DialogueView(d?.Name ?? sp?.Name ?? id, d?.Title ?? sp?.Title ?? "", d != null || id is "greymuzzle" or "snib" ? Rules.Attitude(s) : "",
+            p.Speaker == "player" ? "player" : p.Speaker == "narrator" ? "narrator" : "npc", p.Text, p.Choices, p.Choices.Count == 0,
+            d?.Person, d?.Arms, d?.Scale ?? 1, sp?.Glyph, Journey.Ch.Name, Choose, Advance));
     }
 
     public void Choose(int index)
@@ -297,7 +282,6 @@ public partial class Game
         if (camSaved is float d) { cam.TargetDistance = d; camSaved = null; }
         runner = null;
         talkNpc = null;
-        shown = null;
         hud.Dialogue(null);
         hudMode = null;
         if (scene != null) scene.SimPaused = false;
@@ -307,18 +291,6 @@ public partial class Game
         if (afterTalk is string next) { afterTalk = null; Open(next); }
     }
 
-    bool DialogueKey(Act a)
-    {
-        if (shown == null) return false;
-        int pick = a switch { Act.Pick1 => 0, Act.Pick2 => 1, Act.Pick3 => 2, Act.Pick4 => 3, _ => -1 };
-        if (shown.Choices.Count == 0)
-        {
-            if (a is Act.Confirm or Act.Interact or Act.Dash || pick == 0) Advance();
-            return true;
-        }
-        if (pick >= 0 && pick < shown.Choices.Count && shown.Choices[pick].Enabled) Choose(shown.Choices[pick].Index);
-        return true;
-    }
 
     /// <summary>What a conversation opens. True to stay in it.</summary>
     bool DialogueAction(string a)
@@ -327,7 +299,7 @@ public partial class Game
         {
             case "trade": case "sell":
                 if (talkNpc is string npc && Journey.OpenShop(npc, Rng) != null) afterTalk = $"shop:{npc}";
-                else hud.Toast(new Toast(ToastKind.World, "They have nothing to sell you"));
+                else Toast(new Toast(ToastKind.World, "They have nothing to sell you"));
                 return false;
             case "stash": afterTalk = "stash"; return false;
             case "rest": afterTalk = "rest"; return false;

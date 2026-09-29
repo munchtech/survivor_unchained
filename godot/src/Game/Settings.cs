@@ -23,6 +23,14 @@ public sealed class Settings
 
     static Settings Load()
     {
+        var s = Read();
+        // Tools taking pictures are taken as having agreed (the web game's ?manual).
+        if (Args.Has("shot")) s.Mature = true;
+        return s;
+    }
+
+    static Settings Read()
+    {
         try
         {
             if (!FileAccess.FileExists(File)) return new Settings();

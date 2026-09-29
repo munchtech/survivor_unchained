@@ -23,18 +23,27 @@ game builds them:
                                          # headless: a screenshot in godot/.shots/
     cd godot/tests && dotnet test        # the game's logic, without a screen
 
-Until the title and creation screens are ported, the game starts a journey
-straight away. Options go after `--`:
+The game opens on its title (a stranger by a fire on the Low Ford road).
+Options go after `--`:
 
-- `--quick warden|reaver|arcanist|stalker`: a new survivor of that calling
-  (with `--name`, `--bg`, `--weapon`, `--blessing`);
+- `--new`: straight to making a survivor;
+- `--quick warden|reaver|arcanist|stalker`: a new survivor of that calling,
+  no title (with `--name`, `--bg`, `--weapon`, `--blessing`);
 - `--zone lowford|waystation|verge`: where to start (past the prologue, which
   then counts as done), `--time day|night|dusk|dawn`, `--at X,Z`;
 - `--continue`: the last journey saved (saves are in Godot's user folder);
-- `--auto`: a crude player drives (`src/Game/Autopilot.cs`); `--auto idle`
-  only takes the level-up cards;
+- `--auto`: a crude player drives (`src/Game/Autopilot.cs`), from the title
+  on; `--auto idle` only takes the level-up cards;
+- `--open inventory|character|journal|map|pause|rest|stash|shop:ID|chapter|all`,
+  `--open talk:ID`, `--open draft`: a screen, a conversation or the level-up
+  draft opened a moment in (`--every T` between several); `--bare` hides the
+  world, for quick pictures of the interface;
 - `--shot NAME --seconds S [--every T --count N]`: screenshots
-  (`src/Shots.cs`).
+  (`src/Shots.cs`);
+- `--log S`: a line every S seconds (the fight, the zone, the sound);
+- `--wav PATH`: no speakers; the game's sound is written to a WAV on exit
+  (with `--fixed-fps 60` it is exactly as long as the run); `--sound`: sound
+  even in a headless run (for timing the mixer against Godot's dummy driver).
 
 Keys: WASD to move, Space to dash, Q for the calling's skill, E to use or
 talk, R to drink a draught, 1-4 to pick a card or an answer (X rerolls the
@@ -78,12 +87,37 @@ game at the same place and hour; needs the dev server), then
 - `src/Fx/`: the fight made visible (`BattleFx.cs`: sparks, marks on the
   ground, what is in the air and on the ground, lights), blood and numbers
   (`Hits.cs`), the colours of each school (`Palette.cs`).
-- `src/Ui/`: the HUD, the draft and the conversation panel (`GameHud.cs`),
-  names and words over heads (`Voices.cs`).
+- `src/Ui/`: the look shared by every screen (`Style.cs`, the icons in
+  `Glyphs.cs`), the HUD (`GameHud.cs`), the level-up draft and the
+  conversation panel (`Panels.cs`), the screens over the game (`Overlay.cs`;
+  the pack, a shop, the storeroom in `Pack.cs`, the self and the journal in
+  `Book.cs`, `MapScreen.cs`, the pause menu, settings, controls, a night's
+  rest and the chapter's end in `Menus.cs`), the title and making a survivor
+  (`Front.cs`), a person drawn live in a frame (`Portrait.cs`), names and
+  words over heads (`Voices.cs`).
+- `src/Audio/`: the web game's sound, still made without a single sample:
+  `Synth.cs` (tones, filtered noise and FM bells, four buses into one dark
+  room and a compressor, mixed on its own thread into Godot's audio streams,
+  keeping a little sound queued and more when the machine stalls),
+  `Sfx.cs` (every sound the game makes), `Ambience.cs` (wind, leaves, water,
+  a town, a fire, the blight's hum, crickets; birds, owls, the smith),
+  `Music.cs` (the score, composed as it plays) and `SoundBridge.cs` (what
+  happens, turned into all of that).
 
 Stand-ins still to be replaced: the wolves and boars (shapes, until the real
 creatures), the KayKit props (a torch, a bucket, a grave marker), and the
-shop, storeroom, map, journal and menus (with the rest of the interface).
+items' pictures (icons for now).
 
-Fonts: Cinzel and Alegreya Sans (SIL Open Font License, `art/fonts`), as the
-web game uses them.
+## Desktop builds
+
+    tools/godot/setup.sh --templates     # once: Godot's export templates
+    tools/godot/export.sh [windows|linux|macos|all]
+
+Builds land in `release/godot/<platform>/` (a `.pck` beside the executable
+and a `data_SurvivorUnchained_*` folder of .NET assemblies; ship the folder
+whole). The presets are in `export_presets.cfg`. The macOS build is
+ad-hoc signed, not notarised: on a Mac, right-click and Open the first time
+(or `xattr -cr "Survivor Unchained.app"`).
+
+Fonts: Cinzel, Alegreya and Alegreya Sans (SIL Open Font License,
+`art/fonts`), as the web game uses them.
