@@ -103,6 +103,11 @@ public static class People
         {
             if (mi.Mesh.SurfaceGetMaterial(s) is not StandardMaterial3D src) continue;
             var mat = (StandardMaterial3D)src.Duplicate();
+            // A rim of light at the edge turned from the camera, so a figure
+            // reads against dark ground (the web game's body rim).
+            mat.RimEnabled = true;
+            mat.Rim = 0.45f;
+            mat.RimTint = 0.35f;
             var n = src.ResourceName;
             if (n.Contains("Hair") || mi.Name.ToString().Contains("Eyebrows")) { if (look.HairColor is Color h) mat.AlbedoColor = h; }
             else if (look.Skin is Color skin && (n.Contains("Superhero") || n.Contains("Regular"))) mat.AlbedoColor = skin;

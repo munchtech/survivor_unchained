@@ -13,6 +13,7 @@ namespace SurvivorUnchained.Actors;
 public sealed class Risen
 {
     public required People.Person Person;
+    public required Ragdoll Body;
     public Vector3 Pos;
     public Vector3 Push;
     public float Facing, Hp, HitFlash, AttackCd, StateT;
@@ -41,7 +42,7 @@ public partial class Horde : Node3D
             p.Root.Scale = Vector3.One * (0.98f + rng.Randf() * 0.1f);
             p.Root.Visible = false;
             AddChild(p.Root);
-            var r = new Risen { Person = p };
+            var r = new Risen { Person = p, Body = new Ragdoll(p.Skeleton) };
             foreach (var mi in p.Meshes)
                 for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                     if (mi.GetSurfaceOverrideMaterial(s) is StandardMaterial3D m) { r.Mats.Add(m); m.EmissionEnabled = true; m.Emission = Colors.Black; }
@@ -56,6 +57,8 @@ public partial class Horde : Node3D
         foreach (var r in All)
         {
             if (r.State is not ("down" or "dead")) continue;
+            r.Body.Stop();
+            r.Person.Anim.Play();
             r.Pos = at; r.Facing = facing; r.Hp = 34; r.State = "rising"; r.StateT = 0; r.Push = Vector3.Zero; r.AttackCd = 1;
             r.Person.Root.Visible = true;
             r.Person.Anim.Play("LayToIdle");

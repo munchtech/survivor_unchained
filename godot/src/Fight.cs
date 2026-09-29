@@ -20,6 +20,8 @@ public partial class Fight : Node3D
     Hits hits = null!;
     Camera3D cam = null!;
     OmniLight3D lantern = null!;
+    Hud hud = null!;
+    int killed, level = 1, ember;
     Vector3 pos, look;
     float facing, swingCd, impactT = -1, spawnT, trauma, shakeT, hp = 200, autoT;
     bool mirror;
@@ -44,6 +46,8 @@ public partial class Fight : Node3D
         horde.Fill((int)Args.Num("risen", 18));
         hits = new Hits();
         AddChild(hits);
+        hud = new Hud();
+        AddChild(hud);
         // The survivor carries a light (the web game's lantern glow).
         lantern = new OmniLight3D { LightColor = new Color("#ffb070"), LightEnergy = 1.2f, OmniRange = 9, OmniAttenuation = 1.3f, ShadowEnabled = false };
         AddChild(lantern);
@@ -73,6 +77,7 @@ public partial class Fight : Node3D
         foreach (var r in horde.All) if (r.Alive) alive++;
         if (spawnT <= 0 && alive < horde.All.Count - 2) { SpawnNear(10, 15); spawnT = 0.7f; }
         PlaceCamera(dt);
+        hud.Show(hp, ember / (4f + level * 2), level, killed);
     }
 
     void MoveSurvivor(float dt)
@@ -144,9 +149,9 @@ public partial class Fight : Node3D
                     if (r.StateT > 1.5f) { r.State = "walk"; r.StateT = 0.4f; r.AttackCd = 1.4f; horde.Play(r, "Zombie_Walk_Fwd", 0.25f); }
                     break;
                 case "dying":
-                    if (r.StateT > 9) { r.State = "dead"; r.Person.Root.Visible = false; }
-                    else if (r.StateT > 7) r.Pos.Y -= dt * 0.5f; // the ground takes them back
-                    break;
+                    // The body lies where it fell, then the ground has it back.
+                    if (r.StateT > 9) { r.State = "dead"; r.Body.Stop(); r.Person.Root.Visible = false; }
+                    continue;
             }
             r.Pos += r.Push * dt;
             r.Push *= Mathf.Exp(-9 * dt);
@@ -208,9 +213,13 @@ public partial class Fight : Node3D
             landed++;
             if (r.Hp <= 0)
             {
+                // A body now: it falls the way the blow sent it.
                 r.State = "dying"; r.StateT = 0;
-                horde.Play(r, "Death01", 0.08f);
-                hits.Stain(r.Pos, rng.RandfRange(1.6f, 2.2f));
+                killed++;
+                if (++ember >= 4 + level * 2) { ember = 0; level++; }
+                r.Person.Anim.Pause();
+                r.Body.Fall(away * (crit ? 5.5f : 3.5f) + Vector3.Up * 1.5f);
+                hits.Stain(r.Pos + away * 0.8f, rng.RandfRange(1.6f, 2.2f));
             }
             else if (r.State != "rising") { horde.Play(r, "Hit_Chest", 0.05f); r.Person.Anim.Queue("Zombie_Walk_Fwd"); r.State = "walk"; r.StateT = 0; }
         }

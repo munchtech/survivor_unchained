@@ -29,11 +29,18 @@ keep shots short; on a real GPU it runs in real time.
 
 - `src/Slice.cs` puts it together: the zone, night, the fire, the fight.
 - `src/World/`: the zone data, ground (`shaders/terrain.gdshader`, the web
-  game's terrain shader ported), flora and props, grass
-  (`shaders/grass.gdshader`), the campfire (GPU particles).
+  game's terrain shader ported, with the terrain as a physics heightmap),
+  flora and props (`shaders/kit.gdshader`: the web game's weathering, each
+  kind's leaf colours and moss, wind), grass (`shaders/grass.gdshader`), the
+  campfire (GPU particles).
 - `src/Actors/`: people from Quaternius parts on one skeleton, with the
   Universal Animation Libraries (`People.cs`); weapons normalised to one grip
   (`Arms.cs`, the web game's `arms.ts`); the survivor (an AnimationTree: the
-  swing on the upper body over the run); the Risen.
+  swing on the upper body over the run); the Risen, who fall as ragdolls
+  (`Ragdoll.cs`: physical bones, Jolt physics).
 - `src/Fight.cs`: the fight (autopilot for screenshots), hitstop, shake, the
-  follow camera; `src/Fx/Hits.cs`: blood, decals, numbers, the blade's arc.
+  follow camera; `src/Fx/Hits.cs`: blood, decals, numbers, the blade's arc;
+  `src/Hud.cs`: the HUD in the web game's style.
+
+Fonts: Cinzel and Alegreya Sans (SIL Open Font License, `art/fonts`), as the
+web game uses them.

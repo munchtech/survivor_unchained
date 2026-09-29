@@ -58,7 +58,14 @@ public static class Ground
         foreach (var l in meta.RootElement.GetProperty("layers").EnumerateArray()) scales.Add(1f / l.GetProperty("metres").GetSingle());
         mat.SetShaderParameter("g_scale", scales);
         mesh.SurfaceSetMaterial(0, mat);
-        return new MeshInstance3D { Mesh = mesh, Name = "Ground", CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+        var ground = new MeshInstance3D { Mesh = mesh, Name = "Ground", CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+        // What falls lands on it: the same heights as a physics heightmap
+        // (one sample a metre here, as the zone's grid is).
+        var body = new StaticBody3D { Name = "GroundBody", CollisionLayer = 1 };
+        var shape = new HeightMapShape3D { MapWidth = n, MapDepth = n, MapData = z.Heights };
+        body.AddChild(new CollisionShape3D { Shape = shape, Scale = new Vector3(z.Step, 1, z.Step) });
+        ground.AddChild(body);
+        return ground;
     }
 
     static Image WithMips(Image img)
