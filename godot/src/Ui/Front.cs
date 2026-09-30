@@ -304,7 +304,7 @@ public partial class CreateScreen : Overlay
             string kind = ab.Movement ? "a way of moving" : "the calling's own";
             v.AddChild(Choice(ab.Icon, ab.Name, $"{kind} · {ab.Cooldown} s{(ab.Interrupts ? " · breaks channels" : "")}", d.Ability == id, () => Set(() => d.Ability = id)));
         }
-        v.AddChild(Style.H(8, Style.SubLabel("Starting blessing"), Style.Label("yours at the start of every expedition", Style.TextItalic, 13, Style.InkDim)));
+        v.AddChild(Style.H(8, Style.SubLabel("Starting blessing"), Style.Label("yours at the start of every expedition; the ember deepens it", Style.TextItalic, 13, Style.InkDim)));
         var grid = new GridContainer { Columns = 3 };
         grid.AddThemeConstantOverride("h_separation", 6);
         grid.AddThemeConstantOverride("v_separation", 6);
@@ -434,8 +434,13 @@ public partial class CreateScreen : Overlay
         v.AddChild(Style.H(10, Glyphs.Icon(ab.Icon, 30, new Color("#ffe2b0")), Style.V(2, Style.H(6, Style.Label(ab.Name, Style.UiBold, 16, Style.GoldHi), Style.Key(G.Key(Act.Ability))),
             Style.Label(ab.Description, Style.Text, 14, Style.Ink, true))));
         v.AddChild(Style.Rule());
+        // The blessing, and what it deepens into as the ember brings more.
         var boon = Boons.Find(d.StartBoon)!;
-        v.AddChild(Line(boon.Name, boon.Text));
+        v.AddChild(Style.H(10, Glyphs.Icon(boon.Icon, 30, new Color("#ffe2b0")), Style.V(2, Style.Label(boon.Name, Style.UiBold, 16, Style.GoldHi),
+            Style.Label(boon.Text, Style.Text, 14, Style.Ink, true))));
+        if (boon.DeeperText is { } deeper)
+            for (int i = 0; i < deeper.Length; i++)
+                v.AddChild(Style.Label($"{Numerals[i + 1]}   {deeper[i]}", Style.Ui, 13, Style.InkDim, true));
         return v;
     }
 

@@ -205,7 +205,7 @@ public class BattleTests
 public class DraftTests
 {
     [Fact]
-    public void Never_a_blessing_when_the_ember_rises_and_always_a_combat_skill()
+    public void A_levels_own_draft_is_never_a_blessing_and_always_has_a_combat_skill()
     {
         var b = BattleTests.Arena(11);
         for (int i = 0; i < 20; i++)
@@ -215,6 +215,13 @@ public class DraftTests
             {
                 var offers = LevelUp.Draft(b, 3);
                 Assert.Equal(3, offers.Count);
+                if (LevelUp.BlessingNext(b))
+                {
+                    // A milestone's draft is blessings only.
+                    Assert.All(offers, o => Assert.True(o.Blessing && Boons.All[o.Id].Kind == BoonKind.Blessing));
+                    LevelUp.Choose(b, offers[0]);
+                    continue;
+                }
                 Assert.DoesNotContain(offers, o => o.Kind == OfferKind.Boon && Boons.All[o.Id].Kind == BoonKind.Blessing);
                 Assert.Contains(offers, o => o.Kind is OfferKind.Weapon or OfferKind.Rank or OfferKind.Evolve);
                 LevelUp.Choose(b, offers[0]);
@@ -227,11 +234,12 @@ public class DraftTests
     public void A_blessing_at_the_milestone_after_that_levels_skill()
     {
         var b = BattleTests.Arena(13);
-        b.EmberLevel = Boons.MilestoneEvery - 1;
+        int milestone = Boons.Milestones[1];
+        b.EmberLevel = milestone - 1;
         b.GainEmber(b.EmberNext - b.EmberXp + 0.01);
-        Assert.Equal(Boons.MilestoneEvery, b.EmberLevel);
+        Assert.Equal(milestone, b.EmberLevel);
         Assert.Equal(1, b.PendingLevels);
-        Assert.Equal(new[] { Boons.MilestoneEvery }, b.PendingBlessings);
+        Assert.Equal(new[] { milestone }, b.PendingBlessings);
         var skill = LevelUp.Draft(b, 3);
         Assert.All(skill, o => Assert.False(o.Blessing));
         LevelUp.Choose(b, skill[0]);
@@ -329,6 +337,7 @@ public class DraftTests
             while (b.DraftOwed)
             {
                 var offers = LevelUp.Draft(b, 3);
+                if (LevelUp.BlessingNext(b)) { LevelUp.Choose(b, offers[0]); continue; }
                 foreach (var o in offers)
                 {
                     if (o.Kind is OfferKind.Weapon or OfferKind.Rank) combat++;

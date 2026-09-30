@@ -674,6 +674,19 @@ public partial class BattleFx : Node3D
                 Flash(at + Vector3.Up * 1.2f, new Color(0.75f, 0.55f, 1f), 10, 0.4f);
                 Burst(at + Vector3.Up * 1, School.Arcane, 22, 3, 1.5f, 0.08f, 0.6f, 1);
                 break;
+            case "iron_vow":
+            {
+                // The vow renewed: a ring of pale gold closing round you.
+                var h = Palette.Of(School.Holy);
+                Nova(e.X, e.Z, 1.6f, h.Glow * 0.6f, 0.45f);
+                for (int i = 0; i < 12; i++)
+                {
+                    float a = i * Mathf.Tau / 12;
+                    var from = at + new Vector3(Mathf.Cos(a) * 1.3f, 0.3f + R() * 1.4f, Mathf.Sin(a) * 1.3f);
+                    Sparks.Spawn(from, (at + Vector3.Up * 1.1f - from) * 2.2f, 0.4f, 0.07f, h.Core, h.Glow, 0.02f, drag: 1);
+                }
+                break;
+            }
             case "vault":
                 Dust(e.X, e.Z, 16, 4);
                 Burst(at + Vector3.Up * 0.3f, School.Physical, 10, 3, 0.6f, 0.06f, 0.4f);

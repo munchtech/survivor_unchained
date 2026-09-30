@@ -15,8 +15,10 @@ namespace SurvivorUnchained.Content;
  * BLESSINGS change how the fight works: each adds a rule to the machine
  * (marks, companions, chain reactions, bargains). They are milestones, not
  * picks: one chosen at creation and given at the start of every expedition,
- * and another each time the ember reaches a multiple of MilestoneEvery. Some
- * wait until the build has something for them to act on.
+ * and another at each of the Milestones (early, then further apart). Some
+ * wait until the build has something for them to act on. The blessings a
+ * survivor can start with deepen: a milestone may offer a second or third
+ * rank of one held instead of a new one (Deeper: what each rank adds).
  *
  * Every entry says what it touches with Tags, so the level-up draft can lean
  * toward what the build is already doing without ever forcing it. */
@@ -41,17 +43,34 @@ public sealed class BoonDef
     /// <summary>Offered only when the build meets this.</summary>
     public Requirement? Requires;
     public Tag[] Tags = Array.Empty<Tag>();
+    /// <summary>What ranks 2 and 3 add: the words, and any triggers of their own.</summary>
+    public string[]? DeeperText;
+    public TriggerDef[][]? Deeper;
 }
 
 public static class Boons
 {
-    public const int MilestoneEvery = 85;
+    /// <summary>The ember levels that bring a blessing: the first a minute or
+    /// two in, then further apart (4, 10, 18, 28, 40 ...).</summary>
+    public static readonly int[] Milestones = MakeMilestones();
+
+    static int[] MakeMilestones()
+    {
+        var o = new List<int>();
+        for (int l = 4, gap = 6; l < 400; l += gap, gap += 2) o.Add(l);
+        return o.ToArray();
+    }
+
     /// <summary>The blessings a survivor can start with (chosen at creation):
-    /// each works from the first minute, whatever the build.</summary>
-    public static readonly string[] StartBlessings = ["hunters_mark", "momentum", "bloodthirst", "spirit_companion", "arcane_overflow", "glass_cannon"];
+    /// each works from the first minute, whatever the build, and deepens.</summary>
+    public static readonly string[] StartBlessings =
+    [
+        "hunters_mark", "momentum", "bloodthirst", "spirit_companion", "arcane_overflow", "glass_cannon",
+        "duelists_grace", "restless_hands", "cinderwake", "iron_vow", "ember_tithe", "stormborn",
+    ];
     /// <summary>Passive skills a survivor can hold at once.</summary>
     public const int MaxPassives = 6;
-    public static bool IsMilestone(int level) => level > 0 && level % MilestoneEvery == 0;
+    public static bool IsMilestone(int level) => Array.BinarySearch(Milestones, level) >= 0;
 
     static StatMod Inc(string stat, double v, string source) => new(stat, ModKind.Inc, v, source);
     static StatMod Flat(string stat, double v, string source) => new(stat, ModKind.Flat, v, source);
@@ -108,7 +127,8 @@ public static class Boons
         new() { Id = "searing", Name = "Searing Aura", Icon = "retaura", Rarity = Rarity.Rare, Max = 4, Kind = BoonKind.Passive, Tags = [Tag.Holy, Tag.Aura, Tag.Area],
             Text = "A holy aura sears everything near you twice a second.", Mods = _ => [] },
         new() { Id = "spirit_companion", Name = "Spirit Companion", Icon = "spiritwolf", Rarity = Rarity.Rare, Max = 3, Kind = BoonKind.Blessing, Tags = [Tag.Summon],
-            Text = "Call a spirit wolf that hunts beside you. Each rank calls another.", Mods = _ => [] },
+            Text = "Call a spirit wolf that hunts beside you. Each rank calls another.", Mods = _ => [],
+            DeeperText = ["A second wolf answers.", "A third wolf: a pack of your own."] },
         new() { Id = "grave_call", Name = "Grave Call", Icon = "risen", Rarity = Rarity.Rare, Max = 3, Kind = BoonKind.Blessing, Tags = [Tag.Summon, Tag.Shadow],
             Text = "Raise a ghoul to shamble after the horde. Slow, and it hits very hard.", Mods = _ => [] },
         new() { Id = "dread_command", Name = "Dread Command", Icon = "command", Rarity = Rarity.Epic, Max = 5, Kind = BoonKind.Blessing, Tags = [Tag.Summon],
@@ -146,10 +166,13 @@ public static class Boons
         new() { Id = "blood_scent", Name = "Blood Scent", Icon = "scent", Rarity = Rarity.Uncommon, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Physical],
             Text = "Killing something that bleeds quickens you: +8% speed and attack rate for 3 s, stacking three times.", Requires = new(Status: Bleed),
             Triggers = [T(TriggerEvent.Kill, [new Effect.Buff("blood_scent", Stat.MoveSpeed, 0.08, ModKind.Inc, 3, 3), new Effect.Buff("blood_scent_cd", Stat.Cooldown, -0.06, ModKind.More, 3, 3)], new() { TargetStatus = Bleed })] },
-        new() { Id = "hunters_mark", Name = "Hunter's Mark", Icon = "mark", Rarity = Rarity.Rare, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Ranged],
+        new() { Id = "hunters_mark", Name = "Hunter's Mark", Icon = "mark", Rarity = Rarity.Rare, Max = 3, Kind = BoonKind.Blessing, Tags = [Tag.Ranged],
             Text = "Every 5 s the toughest thing near you is marked: it takes 30% more from everything, and its death eases your cooldowns.",
             Triggers = [T(TriggerEvent.Tick, [new Effect.Apply(P(Mark, 1, 1, 5), OnHit: false, Radius: 12, Count: 1)], icd: 5),
-                T(TriggerEvent.Kill, [new Effect.Cooldown(0.6, Effect.CooldownScope.All)], new() { TargetStatus = Mark })] },
+                T(TriggerEvent.Kill, [new Effect.Cooldown(0.6, Effect.CooldownScope.All)], new() { TargetStatus = Mark })],
+            DeeperText = ["The two toughest are marked.", "A marked death passes the mark to the toughest thing near it."],
+            Deeper = [[T(TriggerEvent.Tick, [new Effect.Apply(P(Mark, 1, 1, 5), OnHit: false, Radius: 12, Count: 2)], icd: 5)],
+                [T(TriggerEvent.Kill, [new Effect.Apply(P(Mark, 1, 1, 5), OnHit: false, Radius: 8, Count: 1)], new() { TargetStatus = Mark })]] },
         new() { Id = "plague_bearer", Name = "Plague Bearer", Icon = "plague", Rarity = Rarity.Rare, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Dot, Tag.Shadow, Tag.Nature],
             Text = "Poisoned creatures pass their poison to three neighbours when they die.", Requires = new(Status: Poison),
             Triggers = [T(TriggerEvent.Kill, [new Effect.Spread(Poison, 3, 3, 3)], new() { TargetStatus = Poison })] },
@@ -165,18 +188,64 @@ public static class Boons
         new() { Id = "pack_leader", Name = "Pack Leader", Icon = "howl", Rarity = Rarity.Rare, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Summon, Tag.Nature],
             Text = "Your dash howls: every ally near you strikes 40% harder for 4 s, and a spirit wolf answers.", Requires = new(Tag: Tag.Summon),
             Triggers = [T(TriggerEvent.Dash, [new Effect.Buff("pack", Stat.SummonDamage, 0.4, ModKind.Inc, 4), new Effect.Raise(Effect.RaiseKind.SpiritWolf, 8, 3)], icd: 3)] },
-        new() { Id = "momentum", Name = "Momentum", Icon = "boot", Rarity = Rarity.Legendary, Max = 1, Kind = BoonKind.Blessing,
+        new() { Id = "momentum", Name = "Momentum", Icon = "boot", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing,
             Text = "While you are moving your weapons fire 25% faster. Never stand still.",
-            Mods = _ => [new StatMod(Stat.Cooldown, ModKind.More, -0.2, "syn:momentum", ModWhen.Moving)] },
-        new() { Id = "bloodthirst", Name = "Bloodthirst", Icon = "drain", Rarity = Rarity.Legendary, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Heal],
+            Mods = r => r >= 2
+                ? [new StatMod(Stat.Cooldown, ModKind.More, -0.2, "syn:momentum", ModWhen.Moving), new StatMod(Stat.MoveSpeed, ModKind.Inc, 0.1, "syn:momentum", ModWhen.Moving)]
+                : [new StatMod(Stat.Cooldown, ModKind.More, -0.2, "syn:momentum", ModWhen.Moving)],
+            DeeperText = ["And 10% faster on your feet while you keep them moving.", "Every dash fires every weapon at once (once in 3 s)."],
+            Deeper = [[], [T(TriggerEvent.Dash, [new Effect.Cooldown(99, Effect.CooldownScope.All)], icd: 3)]] },
+        new() { Id = "bloodthirst", Name = "Bloodthirst", Icon = "drain", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing, Tags = [Tag.Heal],
             Text = "Every 25 kills restore 6% of your health. The horde is your medicine.",
-            Triggers = [T(TriggerEvent.Kill, [new Effect.Heal(0.0024, Basis.MaxHp)], icd: 0)] },
-        new() { Id = "arcane_overflow", Name = "Arcane Overflow", Icon = "arcane", Rarity = Rarity.Legendary, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Spell],
+            Triggers = [T(TriggerEvent.Kill, [new Effect.Heal(0.0024, Basis.MaxHp)], icd: 0)],
+            DeeperText = ["A champion's death mends 8% of your health.", "Below a third of your health, every kill mends twice as much."],
+            Deeper = [[T(TriggerEvent.Kill, [new Effect.Heal(0.08, Basis.MaxHp)], new() { Elite = true })],
+                [T(TriggerEvent.Kill, [new Effect.Heal(0.0024, Basis.MaxHp)], new() { SelfHpBelow = 0.34 })]] },
+        new() { Id = "arcane_overflow", Name = "Arcane Overflow", Icon = "arcane", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing, Tags = [Tag.Spell],
             Text = "Each ember stone has an 8% chance to fire every weapon at once.",
-            Triggers = [T(TriggerEvent.Ember, [new Effect.Cooldown(99, Effect.CooldownScope.All)], chance: 0.08, icd: 0.4)] },
-        new() { Id = "glass_cannon", Name = "Glass Cannon", Icon = "flame", Rarity = Rarity.Legendary, Max = 1, Kind = BoonKind.Blessing,
+            Triggers = [T(TriggerEvent.Ember, [new Effect.Cooldown(99, Effect.CooldownScope.All)], chance: 0.08, icd: 0.4)],
+            DeeperText = ["And a 10% chance to hand back a dash.", "And a 4% chance to bring your art back at once."],
+            Deeper = [[T(TriggerEvent.Ember, [new Effect.Cooldown(Abilities.Dash.Recharge, Effect.CooldownScope.Dash)], chance: 0.1, icd: 0.4)],
+                [T(TriggerEvent.Ember, [new Effect.Cooldown(99, Effect.CooldownScope.Ability)], chance: 0.04, icd: 1)]] },
+        new() { Id = "glass_cannon", Name = "Glass Cannon", Icon = "flame", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing,
             Text = "45% more damage, and 35% less health. Live fast.",
-            Mods = _ => [More(Stat.Damage, 0.45, "syn:glass"), More(Stat.MaxHealth, -0.35, "syn:glass")] },
+            Mods = r => r >= 2
+                ? [More(Stat.Damage, 0.45, "syn:glass"), More(Stat.MaxHealth, -0.35, "syn:glass"), More(Stat.CritDamage, 0.3, "syn:glass")]
+                : [More(Stat.Damage, 0.45, "syn:glass"), More(Stat.MaxHealth, -0.35, "syn:glass")],
+            DeeperText = ["Critical strikes land 30% harder.", "A perfect dodge mends 8% of your health."],
+            Deeper = [[], [T(TriggerEvent.PerfectDodge, [new Effect.Heal(0.08, Basis.MaxHp)])]] },
+
+        /* ---------------------------------------- blessings to start with -- */
+        new() { Id = "duelists_grace", Name = "Duelist's Grace", Icon = "feint", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing,
+            Text = "A perfect dodge fires every weapon at once, and its sure strikes last a second longer.",
+            Detail = "Slip a telegraphed blow in the first moments of a dash.",
+            Triggers = [T(TriggerEvent.PerfectDodge, [new Effect.Cooldown(99, Effect.CooldownScope.All)])],
+            DeeperText = ["The moment to slip a blow is half again as long.", "A perfect dodge takes 3 s off your art's wait."],
+            Deeper = [[], [T(TriggerEvent.PerfectDodge, [new Effect.Cooldown(3, Effect.CooldownScope.Ability)])]] },
+        new() { Id = "restless_hands", Name = "Restless Hands", Icon = "hand", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing,
+            Text = "Your art is ready 25% sooner, and every use of it hands back a dash.",
+            Mods = _ => [More(Stat.AbilityCooldown, -0.25, "syn:restless_hands")],
+            Triggers = [T(TriggerEvent.Ability, [new Effect.Cooldown(Abilities.Dash.Recharge, Effect.CooldownScope.Dash)])],
+            DeeperText = ["Every use of your art fires every weapon at once.", "Every kill takes a tenth of a second off your art's wait."],
+            Deeper = [[T(TriggerEvent.Ability, [new Effect.Cooldown(99, Effect.CooldownScope.All)])],
+                [T(TriggerEvent.Kill, [new Effect.Cooldown(0.1, Effect.CooldownScope.Ability)])]] },
+        new() { Id = "cinderwake", Name = "Cinderwake", Icon = "embers", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing, Tags = [Tag.Fire, Tag.Zone],
+            Text = "Your dash leaves a line of fire behind it.",
+            DeeperText = ["The fire is wider and burns longer.", "What stands in it is slowed, and set burning."] },
+        new() { Id = "iron_vow", Name = "Iron Vow", Icon = "aegis", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing,
+            Text = "A barrier of 12% of your health, back whenever you go 5 s unstruck.",
+            DeeperText = ["18% of your health, back after 4 s.", "24%, and when it breaks it throws back everything near you."] },
+        new() { Id = "ember_tithe", Name = "Ember Tithe", Icon = "coin", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing,
+            Text = "25% more ember, and ember stones come to you from twice as far.",
+            Mods = r => [Inc(Stat.XpGain, r >= 2 ? 0.45 : 0.25, "syn:ember_tithe"), Inc(Stat.PickupRadius, 1, "syn:ember_tithe")],
+            DeeperText = ["45% more ember.", "Every ember level mends 10% of your health."],
+            Deeper = [[], [T(TriggerEvent.LevelUp, [new Effect.Heal(0.1, Basis.MaxHp)])]] },
+        new() { Id = "stormborn", Name = "Stormborn", Icon = "bolt", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing, Tags = [Tag.Storm],
+            Text = "Every 3 s lightning finds something near you.",
+            Triggers = [T(TriggerEvent.Tick, [new Effect.Strike(1, 1.5, 24, Basis.Flat, School.Storm, 9)], icd: 3)],
+            DeeperText = ["Half again as often.", "Twice as often as it began."],
+            Deeper = [[T(TriggerEvent.Tick, [new Effect.Strike(1, 1.5, 24, Basis.Flat, School.Storm, 9)], icd: 6)],
+                [T(TriggerEvent.Tick, [new Effect.Strike(1, 1.5, 24, Basis.Flat, School.Storm, 9)], icd: 6)]] },
         new() { Id = "storm_caller", Name = "Storm Caller", Icon = "bolt", Rarity = Rarity.Epic, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Storm],
             Text = "Every 12th kill calls lightning down on the thickest knot of creatures near you.", Requires = new(Tag: Tag.Storm),
             Triggers = [T(TriggerEvent.Kill, [new Effect.Strike(3, 1.6, 40, Basis.Flat, School.Storm, 6)], chance: 1.0 / 12)] },

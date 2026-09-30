@@ -17,7 +17,7 @@ namespace SurvivorUnchained.Sim;
 ///
 /// Blessings are not in it: they change how the fight works, and come as
 /// milestones (one at the start of every expedition, one more at every
-/// Boons.MilestoneEvery ember levels, after that level's own draft).
+/// Boons.Milestones ember levels, after that level's own draft).
 ///
 /// It leans, never forces. Cards that share tags with what the build already
 /// does are likelier; a passive that would evolve a weapon you carry is
@@ -138,8 +138,11 @@ public static class LevelUp
                 if (d.Kind != BoonKind.Blessing) continue;
                 int r = b.Boons.GetValueOrDefault(d.Id);
                 if (r >= d.Max || b.BannedCards.Contains(d.Id) || !Meets(b, d.Requires, statuses, tags)) continue;
-                pool.Add((new Offer { Kind = OfferKind.Boon, Id = d.Id, Rarity = d.Rarity, Title = d.Name, Text = d.Text, From = r, To = r + 1, Icon = d.Icon, Tags = d.Tags, Blessing = true },
-                    Weight(d.Rarity) * Affinity(d.Tags, tags)));
+                // A blessing held can be deepened instead: what its next rank adds.
+                bool deeper = r > 0 && d.DeeperText is { } dt && r - 1 < dt.Length;
+                string text = deeper ? $"Rank {r + 1}: {d.DeeperText![r - 1]}" : d.Text;
+                pool.Add((new Offer { Kind = OfferKind.Boon, Id = d.Id, Rarity = d.Rarity, Title = d.Name, Text = text, From = r, To = r + 1, Icon = d.Icon, Tags = d.Tags, Blessing = true },
+                    Weight(d.Rarity) * Affinity(d.Tags, tags) * (deeper ? 2.5 : 1)));
             }
             for (int i = 0; i < count; i++) if (TakeFrom(b, pool) is { } o) offers.Add(o);
             return offers;

@@ -257,6 +257,10 @@ public static class Sfx
                 a.Play(new Hiss { A = 0.01, D = 0.22, G = 0.06, Bp = 700, Bp2 = 2400, Q = 1.1 });
                 a.Play(new Clip { T = Now + 0.05, Of = "impactWood_medium", G = 0.12, Pitch = 1.4 });
                 break;
+            case "iron_vow":
+                a.Play(new Fm { F = 523.3, Ratio = 2, Index = 0.8, D = 0.9, G = 0.035, Verb = 0.6 });
+                a.Play(new Fm { T = Now + 0.06, F = 784, Ratio = 2, Index = 0.6, D = 0.8, G = 0.025, Verb = 0.6 });
+                break;
             case "blink":
                 a.Play(new Fm { F = 1800, Ratio = 3.1, Index = 1, D = 0.5, G = 0.04, Verb = 0.4 });
                 a.Play(new Hiss { A = 0.005, D = 0.25, G = 0.06, Bp = 3000, Bp2 = 800, Q = 1 });

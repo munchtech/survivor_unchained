@@ -34,9 +34,11 @@ Skills (weapons) fire on their own. You choose where to stand, when to
 dash, which skill to take or rank up each time the ember rises (anyone can
 take any skill; a calling leans a little toward its own style), what each
 skill evolves into at rank 8, and, out of combat, what to say and to whom.
-Blessings are milestones: one chosen at creation and given at the start of
-every expedition, and one more every 85 ember levels, on top of that
-level's skill.
+Blessings are milestones: one chosen at creation (twelve to choose from)
+and given at the start of every expedition, then one more at ember levels
+4, 10, 18, 28, 40 and on, further apart as it goes, on top of that level's
+skill. A milestone can deepen a blessing you hold instead: every starting
+blessing has three ranks, each adding something of its own.
 
 ## On the desktop
 

@@ -39,6 +39,9 @@ public sealed class PlayerState
     public double BurnT, BurnDps, PoisonT, PoisonDps;
     public int Revives;
     public Enemy? LastKiller;
+    /// <summary>Since a blow last reached the survivor; where a burning dash last left fire.</summary>
+    public double UnstruckT, WakeX, WakeZ;
+    public bool VowUp;
 }
 
 /// <summary>A drop a creature leaves besides ember and gold. Rarity colours
@@ -287,6 +290,8 @@ public sealed partial class Battle
         p.SlowT = Math.Max(0, p.SlowT - dt);
         if (p.SlowT <= 0) p.SlowF = 1;
         if (p.ShieldT > 0) { p.ShieldT -= dt; if (p.ShieldT <= 0) p.Shield = 0; }
+        p.UnstruckT += dt;
+        if (Boons.TryGetValue("iron_vow", out int vow)) Vow(vow);
         if (p.AttackAnim != null && Time - p.AttackAnim.T > 0.6) p.AttackAnim = null;
 
         // Dash charges come back one at a time.
@@ -330,6 +335,7 @@ public sealed partial class Battle
             p.X += p.DashDX * dsp * dt;
             p.Z += p.DashDZ * dsp * dt;
             Collision.Resolve(ref p.X, ref p.Z, p.Radius, true);
+            if (Boons.TryGetValue("cinderwake", out int wake) && Dist(p.X, p.Z, p.WakeX, p.WakeZ) > 0.9) Wake(wake);
             // Out of a dash with your feet under you: a burst of pace, so dashes chain.
             if (p.DashT <= 0)
             {
@@ -384,7 +390,8 @@ public sealed partial class Battle
         p.DashDX = dx / m; p.DashDZ = dz / m;
         p.DashT = Abilities.Dash.Time;
         p.Iframes = Math.Max(p.Iframes, Abilities.Dash.Iframes);
-        p.DodgeWindow = Abilities.Dash.Perfect;
+        p.DodgeWindow = Abilities.Dash.Perfect * (Boons.GetValueOrDefault("duelists_grace") >= 2 ? 1.5 : 1);
+        p.WakeX = p.X; p.WakeZ = p.Z;
         p.PerfectThisDash = false;
         p.DashCharges--;
         double x0 = p.X, z0 = p.Z;
@@ -835,7 +842,7 @@ public sealed partial class Battle
         p.DodgeWindow = 0;
         p.DashCharges = Math.Min(RoundInt(Stats.Get(Stat.DashCharges)), p.DashCharges + 1);
         p.Iframes = Math.Max(p.Iframes, 0.35);
-        p.SureCritT = Math.Max(p.SureCritT, Abilities.Dash.Riposte);
+        p.SureCritT = Math.Max(p.SureCritT, Abilities.Dash.Riposte + (Boons.ContainsKey("duelists_grace") ? 1 : 0));
         AddBuff("riposte", Stat.Damage, 0.3, ModKind.Inc, Abilities.Dash.Riposte + 0.5, 1);
         double power = Stats.Get(Stat.AbilityPower);
         ForEachHostileInRadius(p.X, p.Z, Abilities.Dash.Crack, (e, d) =>
@@ -849,6 +856,47 @@ public sealed partial class Battle
         Fire(TriggerEvent.PerfectDodge, new ProcCtx { X = p.X, Z = p.Z });
     }
 
+    /// <summary>Cinderwake: fire where the dash has been.</summary>
+    void Wake(int rank)
+    {
+        var p = Player;
+        var zn = SpawnZone(Side.Player, p.X, p.Z, rank >= 2 ? 1.4 : 1.0, rank >= 2 ? 3.5 : 2.2, 8 + EmberLevel * 0.6, School.Fire);
+        p.WakeX = p.X; p.WakeZ = p.Z;
+        if (zn == null) return;
+        zn.Tags = [Tag.Fire, Tag.Zone, Tag.Area];
+        zn.Art = "cinder";
+        zn.Tick = 0.4;
+        if (rank >= 3) { zn.Slow = 0.3; zn.Status = new StatusPayload(StatusKind.Burn, 0.5, 0.5, 2.5); }
+    }
+
+    /// <summary>Iron Vow: a barrier that comes back while nothing reaches you.</summary>
+    void Vow(int rank)
+    {
+        var p = Player;
+        double amount = MaxHp * (rank >= 3 ? 0.24 : rank >= 2 ? 0.18 : 0.12), after = rank >= 2 ? 4 : 5;
+        if (p.VowUp && p.Shield <= 0)
+        {
+            // Broken: at the third rank, it goes out with a shove.
+            p.VowUp = false;
+            if (rank >= 3)
+            {
+                Events.Emit(new Ev.Nova { X = p.X, Z = p.Z, Radius = 3.5, School = School.Holy });
+                ForEachHostileInRadius(p.X, p.Z, 3.5, (e, d) =>
+                {
+                    double dd = d == 0 ? 1 : d;
+                    HitEnemy(e, 10 + EmberLevel, School.Holy, [Tag.Holy, Tag.Area], new HitOpts { Knockback = 2.4, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, NoProcs = true });
+                });
+            }
+        }
+        if (p.UnstruckT >= after && p.Shield < amount - 0.5)
+        {
+            p.Shield = amount;
+            p.ShieldT = 1e9;
+            p.VowUp = true;
+            Events.Emit(new Ev.Ability { Id = "iron_vow", X = p.X, Z = p.Z, Radius = 1.4 });
+        }
+    }
+
     public double HurtPlayerRaw(double dmg, School school, string source, Enemy? from, bool silent = false)
     {
         var p = Player;
@@ -860,6 +908,7 @@ public sealed partial class Battle
             dmg -= a;
             if (!silent && a > 0) Events.Emit(new Ev.ShieldHit { X = p.X, Z = p.Z, Absorbed = a, Broke = p.Shield <= 0 });
         }
+        if (!silent) p.UnstruckT = 0;
         if (dmg <= 0) return 0;
         p.Hp -= dmg;
         DamageTaken += dmg;
@@ -1456,6 +1505,8 @@ public sealed partial class Battle
         Stats.RemoveSource($"syn:{id}");
         if (def.Mods != null) Stats.AddAll(def.Mods(r).Select(m => m.Source == "" ? m with { Source = $"boon:{id}" } : m));
         if (r == 1 && def.Triggers != null) foreach (var t in def.Triggers) AddTrigger(t, $"boon:{id}");
+        // A blessing deepened: what the new rank adds.
+        if (r >= 2 && def.Deeper is { } deeper && r - 2 < deeper.Length) foreach (var t in deeper[r - 2]) AddTrigger(t, $"boon:{id}", r);
         if (id == "vitality") HealPlayer(25, "vitality");
         if (id == "spirit_companion") Summon("spirit_wolf", 0, 99);
         if (id == "grave_call") Summon("ghoul_ally", 0, 99);
