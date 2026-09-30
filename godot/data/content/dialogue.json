@@ -8276,5 +8276,152 @@
     ]
    }
   }
+ },
+ "wayfinder": {
+  "npc": "wayfinder",
+  "entry": [
+   {
+    "when": {
+     "not": {
+      "met": "wayfinder"
+     }
+    },
+    "node": "first"
+   },
+   {
+    "node": "hub"
+   }
+  ],
+  "marker": [
+   {
+    "when": {
+     "not": {
+      "met": "wayfinder"
+     }
+    },
+    "mark": "!"
+   }
+  ],
+  "nodes": {
+   "first": {
+    "id": "first",
+    "text": "You have the look of someone who walks toward trouble on purpose. Good. I am Ysolde Marrow, and I draw maps of the places the road forgets: woods that eat their own paths, barrows that open after dark, ravines the Kerchiefs think are theirs. Each one sworn under oaths. Each one ruled by something that will not want you there.",
+    "choices": [
+     {
+      "text": "Show me your maps.",
+      "action": "maps"
+     },
+     {
+      "text": "What are the oaths?",
+      "goto": "oaths"
+     },
+     {
+      "text": "What will I find out there?",
+      "goto": "places"
+     },
+     {
+      "text": "Who draws these?",
+      "once": "drawn",
+      "goto": "drawn"
+     },
+     {
+      "text": "Another time.",
+      "end": true
+     }
+    ]
+   },
+   "hub": {
+    "id": "hub",
+    "text": [
+     {
+      "when": {
+       "fact": "map.done",
+       "gte": 1
+      },
+      "text": "Back from the edges, {name}, and in one piece. The places you took are quieter for it. I have new ones."
+     },
+     {
+      "text": "Maps, {name}. Places the road forgets. Pick one."
+     }
+    ],
+    "choices": [
+     {
+      "text": "Show me your maps.",
+      "action": "maps"
+     },
+     {
+      "text": "What are the oaths?",
+      "goto": "oaths"
+     },
+     {
+      "text": "What will I find out there?",
+      "goto": "places"
+     },
+     {
+      "text": "Who draws these?",
+      "once": "drawn",
+      "goto": "drawn"
+     },
+     {
+      "text": "Another time.",
+      "end": true
+     }
+    ]
+   },
+   "oaths": {
+    "id": "oaths",
+    "text": "Every map is sworn under something, written in the margin. The Long Winter, and their blows chill you to a crawl. The Blight, and nothing mends right. Iron, and only a clean critical cuts them. An oath asks something of you and pays for it in ember or in gear. Read what answers it: a cloak lined for the cold, a slayer's edge for the Pack. And what you find out there leans toward what the place wants of you. Run the Winter long enough and you will be dressed for it.",
+    "choices": [
+     {
+      "text": "Show me your maps.",
+      "action": "maps"
+     },
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Another time.",
+      "end": true
+     }
+    ]
+   },
+   "places": {
+    "id": "places",
+    "text": "Sixteen clearings, give or take, strung along a way that doubles back on itself. The packs sleep where they stand until you are close, then wake together. Three altars in every map: wake one and hold its clearing while it calls, and it pays out when it is spent. And at the heart of the last clearing, whatever rules the place. Kill it and the map is yours, and the way home opens where it fell.",
+    "choices": [
+     {
+      "text": "Show me your maps.",
+      "action": "maps"
+     },
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Another time.",
+      "end": true
+     }
+    ]
+   },
+   "drawn": {
+    "id": "drawn",
+    "text": "People like you. They walk in, and some of them walk out, and I buy what they remember before the drink takes it. The ones who do not walk out, I draw from where their light went out. You can see it from the road, if you know how to look.",
+    "choices": [
+     {
+      "text": "Show me your maps.",
+      "action": "maps"
+     },
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Another time.",
+      "end": true
+     }
+    ]
+   }
+  }
  }
 }

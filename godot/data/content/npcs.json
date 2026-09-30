@@ -659,6 +659,52 @@
     "I thought I would die in that cage.",
     "Uncle keeps hugging me. It is a lot."
    ]
+  },
+  "wayfinder": {
+   "id": "wayfinder",
+   "name": "Ysolde Marrow",
+   "title": "The Wayfinder",
+   "role": "Cartographer",
+   "model": "mage",
+   "show": [
+    "Spellbook_open"
+   ],
+   "tint": "#4a5668",
+   "scale": 0.95,
+   "idle": "Idle_Talking_Loop",
+   "person": {
+    "sex": "female",
+    "outfit": [
+     "Female_Ranger_Arms",
+     "Female_Ranger_Body",
+     "Female_Ranger_Legs",
+     "Female_Ranger_Feet",
+     "Female_Ranger_Head_Hood"
+    ],
+    "hair": null,
+    "hairColor": "#9a948c",
+    "skin": "#d8a07a",
+    "figure": 0.9,
+    "dye": {
+     "cloth": "#4a5668",
+     "under": "#2a2622"
+    }
+   },
+   "spot": {
+    "x": 19.0,
+    "z": 6.35,
+    "facing": 3.141592653589793
+   },
+   "barks": [
+    "Maps! Places the road forgets. Some of them it forgot on purpose.",
+    "Every map on this table was drawn by someone who came back. Mostly.",
+    "Read the oaths in the margins before you go. They are not decoration.",
+    "Sixteen clearings and a way that doubles back. Mind the altars."
+   ],
+   "nightBarks": [
+    "The ink is still wet on this one. So is the blood.",
+    "Night maps cost the same. They just feel dearer."
+   ]
   }
  },
  "speakers": {

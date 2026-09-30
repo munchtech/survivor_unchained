@@ -106,8 +106,8 @@ public interface IZoneLook
     bool Shown(string node);
     /// <summary>A named piece that turns (a pump's wheel) stops.</summary>
     void Stop(string node);
-    /// <summary>A kit piece set down now (a grave marker).</summary>
-    void AddProp(string id, double x, double z, double rot = 0, double scale = 1);
+    /// <summary>A kit piece set down now (a grave marker); lift raises it off the ground (onto a table).</summary>
+    void AddProp(string id, double x, double z, double rot = 0, double scale = 1, double lift = 0);
     /// <summary>A light set down now, with a small flame that glows with it.
     /// Returns its index (for SetLit).</summary>
     int AddLight(double x, double y, double z, string color, double intensity, double distance, double flicker = 0.12, double glowSize = 0.08, string glowColor = "#ffb35a");

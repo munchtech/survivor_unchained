@@ -75,6 +75,43 @@ public sealed class Waystation : ZoneRuntime
     double trackT;
 
     XZ Way(string place) => P("WAY", place);
+
+    /// <summary>Where the Wayfinder keeps her stall: the south side of the Old
+    /// Road, between the square and the east gate, facing the road.</summary>
+    static readonly XZ Stall = new(19.0, 5.3);
+
+    /// <summary>The stall itself: a counter under an awning, maps and a lamp on
+    /// it, a table of charts beside, a lectern with the great atlas open.</summary>
+    void DressStall()
+    {
+        var look = G.Look;
+        double x = Stall.X, z = Stall.Z;
+        look.AddProp("props/Stall_Empty", x, z, Math.PI, 1.15);
+        const double counter = 1.02;
+        look.AddProp("props/Scroll_1", x - 0.5, z - 0.1, 0.35, 1.7, counter);
+        look.AddProp("props/Scroll_2", x + 0.35, z - 0.05, -0.4, 1.7, counter);
+        look.AddProp("props/Book_Stack_1", x + 0.8, z + 0.1, 0.2, 1.1, counter);
+        look.AddProp("props/CandleStick_Triple", x - 0.85, z + 0.1, 0, 1, counter);
+        look.AddProp("props/Table_Large", x - 3.8, z - 0.7, 0, 0.75);
+        const double table = 0.61;
+        look.AddProp("props/Scroll_1", x - 4.2, z - 0.8, 1.2, 1.6, table);
+        look.AddProp("props/Scroll_2", x - 3.3, z - 0.6, -0.2, 1.6, table);
+        look.AddProp("props/Book_Stack_2", x - 4.6, z - 0.5, 0.5, 1, table);
+        look.AddProp("props/Stool", x - 3.8, z + 0.3, 0, 1);
+        look.AddProp("props/BookStand", x + 2.6, z - 1.0, Math.PI + 0.3, 1);
+        look.AddProp("props/Chest_Wood", x + 2.5, z + 0.3, Math.PI, 0.75);
+        // A lamp that can be seen from the square, and the candles' glow.
+        double y = look.HeightAt(x, z);
+        look.AddLight(x, y + 2.3, z - 0.3, "#ffc27a", 9, 12, 0.1, 0.1, "#ffd08a");
+        look.AddLight(x - 0.85, y + counter + 0.5, z + 0.1, "#ffb060", 3, 5, 0.25, 0.05, "#ffd890");
+        if (B != null)
+        {
+            B.Collision.AddBox(x, z, 1.1, 0.55);
+            B.Collision.AddBox(x - 3.8, z - 0.7, 1.1, 0.45);
+            B.Collision.AddCircle(x + 2.6, z - 1.0, 0.3);
+            B.Collision.AddCircle(x + 2.5, z + 0.3, 0.45);
+        }
+    }
     bool Dark => W.Time is TimeOfDay.Night or TimeOfDay.Dusk;
 
     public Waystation(IZoneHost host, ZoneMeta meta) : base(host, meta)
@@ -88,7 +125,7 @@ public sealed class Waystation : ZoneRuntime
     void People()
     {
         var look = G.Look;
-        foreach (var def in Lore.Npcs.Values.Append(Lore.Outsiders["jory"]))
+        foreach (var def in Lore.Npcs.Values.Append(Lore.Outsiders["jory"]).Append(Lore.Outsiders["wayfinder"]))
             Actors[def.Id] = new NpcActor(def, look, G.Rng);
         for (int i = 0; i < Lore.Guards.Count; i++)
         {
@@ -220,10 +257,10 @@ public sealed class Waystation : ZoneRuntime
                 G.Travel("verge", "Thornhollow Verge", "East along the Old Road");
             },
         });
-        // The Wayfinder's table: maps to places the road forgets (MapRun).
+        // The Wayfinder's stall on the Old Road: maps to places the road forgets (MapRun).
         I.Add(new()
         {
-            Id = "maps", X = east.X - 4, Z = east.Z + 4.5, R = 2.6, Verb = "Choose a map", Name = "The Wayfinder's Table",
+            Id = "maps", X = Stall.X, Z = Stall.Z - 1.6, R = 2.2, Verb = "Choose a map", Name = "The Wayfinder's Table",
             Hint = () => $"Tier {Math.Max(1, (int)F("map.best").Number)} taken",
             Act = () => G.Open("maps"),
         });
@@ -328,6 +365,7 @@ public sealed class Waystation : ZoneRuntime
             new(at("warehouse").X, at("warehouse").Z, "Warehouse", MarkKind.Place), new(at("shrine").X, at("shrine").Z, "Shrine", MarkKind.Place),
             new(at("wenna").X, at("wenna").Z, "Wenna's", MarkKind.Place), new(at("barracks").X, at("barracks").Z, "The Watch", MarkKind.Place),
             new(0, 0, "The Square", MarkKind.Place), new(at("south").X, at("south").Z + 4, "To the Low Ford", MarkKind.Exit),
+            new(Stall.X, Stall.Z, "The Wayfinder's Maps", MarkKind.Place),
             new(at("east").X + 4, at("east").Z, "The Old Road, east", MarkKind.Exit), new(at("north").X, at("north").Z - 4, "North (barred)", MarkKind.Exit),
         };
         if (W.Zones.TryGetValue("waystation", out var zs) && zs.TryGetValue("garden", out var g) && g.Truthy) marks.Add(new(at("garden").X, at("garden").Z, "Quiet Garden", MarkKind.Place));
@@ -360,6 +398,7 @@ public sealed class Waystation : ZoneRuntime
     {
         base.Begin(b);
         People();
+        DressStall();
         G.SetAtmosphere(AtmosphereFor(W.Time));
         nightNow = Dark;
         SetNight(nightNow);
@@ -370,6 +409,12 @@ public sealed class Waystation : ZoneRuntime
         {
             W.Facts["waystation.visited"] = true;
             G.After(2.5, () => G.Say("The Waystation: walls, smoke, the smell of bread. People stop to look at you. News travels fast here.", null, 5));
+        }
+        else if (!F("maps.told").Truthy && F("prologue.done").Truthy)
+        {
+            // Once the town knows you: someone new on the Old Road, selling maps.
+            W.Facts["maps.told"] = true;
+            G.After(2.5, () => G.Say("A cartographer has set up a stall on the Old Road, by the east gate: maps to places the road forgets.", null, 5));
         }
     }
 

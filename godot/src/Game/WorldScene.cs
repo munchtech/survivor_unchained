@@ -189,7 +189,7 @@ public partial class WorldScene : Node3D, IZoneLook
     public bool Shown(string node) => View.Node(node)?.Visible ?? false;
     public void Stop(string node) => View.Stop(node);
 
-    public void AddProp(string id, double x, double z, double rot = 0, double scale = 1)
+    public void AddProp(string id, double x, double z, double rot = 0, double scale = 1, double lift = 0)
     {
         // The ground under a point of the piece, in its frame.
         float Ground(Vector3 p)
@@ -199,7 +199,7 @@ public partial class WorldScene : Node3D, IZoneLook
         }
         // A KayKit piece (PACK/NAME) is made anew (Pieces).
         var piece = Dressing.Piece(id) ?? (id.Split('/') is [var pack, var name] ? Pieces.For(pack, name, (int)(x * 7 + z * 13), (float)scale, Ground) : null) ?? Stand(id);
-        piece.Position = new Vector3((float)x, (float)HeightAt(x, z), (float)z);
+        piece.Position = new Vector3((float)x, (float)(HeightAt(x, z) + lift), (float)z);
         piece.Rotation = new Vector3(0, (float)rot, 0);
         piece.Scale = Vector3.One * (float)scale;
         View.AddChild(piece);

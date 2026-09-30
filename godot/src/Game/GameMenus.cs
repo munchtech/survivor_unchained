@@ -305,6 +305,7 @@ public partial class Game
                 else Toast(new Toast(ToastKind.World, "They have nothing to sell you"));
                 return false;
             case "stash": afterTalk = "stash"; return false;
+            case "maps": afterTalk = "maps"; return false;
             case "rest": afterTalk = "rest"; return false;
             case "fortune": Save("chapter"); afterTalk = "chapter"; return false;
         }
