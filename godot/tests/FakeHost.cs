@@ -42,6 +42,8 @@ sealed class FakeHost : IZoneHost
     public void Travel(string zone, string? caption = null, string? sub = null) => Travelled = (zone, caption);
     public Arena.ArenaResult? ArenaResult;
     public void ArenaOver(Arena.ArenaResult r) => ArenaResult = r;
+    public Arena.ArenaSpec? Entered;
+    public void EnterArena(Arena.ArenaSpec spec) => Entered = spec;
     public void After(double seconds, Action fn) => later.Add((seconds, fn));
     public void Save(string reason) => Saved.Add(reason);
     public bool GiveItem(string def, int qty = 1, int? rarity = null) => Journey.GiveItem(def, qty, rarity);

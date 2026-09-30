@@ -25,6 +25,11 @@ namespace SurvivorUnchained.Play.Zones;
  * wakes. What you put down stays down until you leave and come back. The
  * ember sleeps here; every fight teaches the survivor instead.
  *
+ * After dark the ember wakes in the wood too: here and there it has burned
+ * through the ground (an ember scar, marked on the map, red and pulsing),
+ * and whoever steps into one is pulled into an arena held by those who
+ * keep to that part of the wood. Won, the scar goes out for the night.
+ *
  * The places the quests need are here too, each with the handful of things
  * a clever player might try. */
 public sealed class Verge : ZoneRuntime
@@ -133,6 +138,66 @@ public sealed class Verge : ZoneRuntime
     }
 
     bool KerchiefsOut() => !KerchiefsFriendly() && F("redcowl").Str is not ("tricked" or "dead") && !F("roost.cleared").Truthy;
+
+    /* ------------------------------------------------------ ember scars -- */
+
+    sealed record Scar(int Index, double X, double Z, string People, string Name);
+    readonly List<Scar> scars = new();
+    double scarPulse;
+
+    /// <summary>The night's ember scars: up to four, where each people keeps to
+    /// (the same all night; one won goes out until the next).</summary>
+    void OpenScars()
+    {
+        if (B == null || W.Time != TimeOfDay.Night) return;
+        var rng = new Core.Rng((uint)(W.Day * 104729 + 7));
+        var where = new List<(string People, XZ At, string Name)>();
+        if (!WolvesFriendly() && (F("beasts.population").IsNull || F("beasts.population").Number > 10)) where.Add(("pack", V("sample"), "The Scar by the Stream"));
+        where.Add(("dead", V("vault"), "The Scar at the Sealed Door"));
+        if (KerchiefsOut()) where.Add(("kerchiefs", RutsAt, "The Scar in the Ruts"));
+        if (!DiggersFriendly()) where.Add(("lamplings", V("sinkhole"), "The Scar by the Pit"));
+        int i = 0;
+        foreach (var (people, at, name) in where)
+        {
+            int k = i++;
+            if (F($"scar.{W.Day}.{k}").Str == "won") continue;
+            // A little way off the landmark, on open ground.
+            double x = at.X, z = at.Z;
+            for (int t = 0; t < 30; t++)
+            {
+                double a = rng.Range(0, Math.PI * 2), d = rng.Range(10, 18);
+                if (OpenGround(at.X + Math.Cos(a) * d, at.Z + Math.Sin(a) * d)) { x = at.X + Math.Cos(a) * d; z = at.Z + Math.Sin(a) * d; break; }
+            }
+            var scar = new Scar(k, x, z, people, name);
+            scars.Add(scar);
+            G.Look.AddLight(x, G.Look.HeightAt(x, z) + 1.4, z, "#ff5a1e", 7, 13, 0.22, 0.16, "#ff9a48");
+            int tier = Math.Max(1, (int)F("arena.best").Number + (W.Day >= 4 ? 1 : 0));
+            Interactables.Add(new Interactable
+            {
+                Id = $"scar:{k}", X = x, Z = z, R = 3.2, Verb = "Step into the ember", Name = name,
+                Hint = () => $"Tier {tier} · held by {Maps.MapOffers.People(people).Name} · an ember arena",
+                Act = () => G.EnterArena(ScarArena(scar, tier)),
+            });
+        }
+        if (scars.Count > 0 && !F("tip.scars").Truthy)
+        {
+            W.Facts["tip.scars"] = true;
+            G.After(4, () => G.SetHint(new Hint("scars", "Ember scars", "After dark the ember burns through the ground here and there, marked red on your map. Step into one and it pulls you in: an arena, until you win or fall.", [G.KeyLabel("map")])));
+        }
+    }
+
+    Arena.ArenaSpec ScarArena(Scar s, int tier)
+    {
+        var p = B!.Player;
+        var people = Maps.MapOffers.People(s.People);
+        return new Arena.ArenaSpec
+        {
+            Id = $"scar:{W.Day}:{s.Index}", Name = s.Name, Sub = $"Tier {tier} · held by {people.Name}",
+            Seed = W.Day * 131 + s.Index * 17 + 3, Tier = tier, People = s.People, Theme = s.People == "dead" ? "blight" : "wood",
+            ReturnZone = "verge", ReturnX = p.X, ReturnZ = p.Z, ReturnFacing = p.Facing,
+            OnWin = $$"""[{ "set": { "scar.{{W.Day}}.{{s.Index}}": "won" } }]""",
+        };
+    }
 
     /// <summary>The wood's packs, laid out as the survivor comes in: where each
     /// people keeps to, as many as the world has left of them, resting.</summary>
@@ -703,6 +768,7 @@ public sealed class Verge : ZoneRuntime
             if (nemesis != null) nemesis.Named = new Named { Title = n.Title, Carries = n.Carries.Select(i => i.Def).ToList(), SourceHero = n.HeroName };
         }
         PlacePacks();
+        OpenScars();
         G.AnnounceZone();
         // The first time out here: the wood is big, and there is a map.
         if (!wd.Fact("tip.verge_map").Truthy)
@@ -746,6 +812,12 @@ public sealed class Verge : ZoneRuntime
     {
         if (B == null) return;
         var p = B.Player;
+        // The scars pulse on the ground, red.
+        if (scars.Count > 0 && (scarPulse -= dt) <= 0)
+        {
+            scarPulse = 1.1;
+            foreach (var s in scars) B.Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = s.X, Z = s.Z, Radius = 2.8, Duration = 1.0, Hostile = true });
+        }
         foreach (var a in Actors.Values) a.Update(dt, p.X, p.Z);
         // Named creatures carry their names over their heads; the one you are
         // fighting gets a bar.
@@ -801,6 +873,7 @@ public sealed class Verge : ZoneRuntime
         if (Q("caravan", "wreck") && !Q("caravan", "ruts") && !Q("caravan", "roost_found")) marks.Add(new(RutsAt.X, RutsAt.Z, "Wheel ruts", MarkKind.Quest));
         if (F("caravan.survivors").Str is not ("rescued" or "dead") && (Knows("hint.roost") || Q("caravan", "roost_found")))
             marks.Add(new(at("cages").X, at("cages").Z, "The cages", MarkKind.Quest));
+        foreach (var s in scars) marks.Add(new(s.X, s.Z, s.Name, MarkKind.Danger));
         return marks;
     }
 

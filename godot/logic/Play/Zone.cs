@@ -95,6 +95,8 @@ public interface IZoneHost
     void Open(string overlay) { }
     /// <summary>An ember arena is over: its reckoning on screen, then back to the story.</summary>
     void ArenaOver(Arena.ArenaResult result) { }
+    /// <summary>Pulled into an ember arena (saved first, where the survivor stands).</summary>
+    void EnterArena(Arena.ArenaSpec spec) { }
 }
 
 /// <summary>The zone's look, as a runtime reaches into it.</summary>

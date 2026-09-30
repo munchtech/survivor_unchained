@@ -102,7 +102,10 @@ Verge by day is a place of packs, not a tide (`logic/Play/Zones/Verge.cs`,
 wolves by the water while they are sick, the Kerchiefs on the road, boars
 in the thickets, the dead round the vault after dark), each resting until
 you come close and rousing its fellows, a leader among them now and then
-from the second day. The ember burns only at night: on the Low Ford road
+from the second day. After dark the ember burns through the Verge's ground
+here and there (ember scars, red on the map and pulsing): step into one and
+it pulls you into an arena held by that part of the wood's people; won, it
+goes out for the night. The ember burns only at night: on the Low Ford road
 (the prologue, where it is learned, a great blessing at its first rise),
 until the dawn puts it out and everything it built with it; and in the
 arenas.

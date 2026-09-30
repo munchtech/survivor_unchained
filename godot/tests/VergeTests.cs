@@ -14,10 +14,10 @@ public class VergeTests
 {
     sealed record Setup(Journey J, FakeHost Host, Verge Zone, Battle B, ZoneMeta Meta);
 
-    static Setup Make(TimeOfDay time = TimeOfDay.Day)
+    static Setup Make(TimeOfDay time = TimeOfDay.Day, Journey? j = null)
     {
         var a = Callings.Archetype("warden");
-        var j = Journey.Begin(new CreationChoice
+        j ??= Journey.Begin(new CreationChoice
         {
             Name = "Ashe", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0],
             Ability = a.Abilities[0],
@@ -81,6 +81,29 @@ public class VergeTests
         double xp = s.J.Ch.Xp;
         s.J.Killed(one, true);
         Assert.True(s.J.Ch.Xp > xp);
+    }
+
+    [Fact]
+    public void After_dark_the_ember_burns_through_and_pulls_you_into_an_arena()
+    {
+        // None by day.
+        Assert.DoesNotContain(Make().Zone.Interactables, i => i.Id.StartsWith("scar:"));
+        var s = Make(TimeOfDay.Night);
+        var scars = s.Zone.Interactables.Where(i => i.Id.StartsWith("scar:")).ToList();
+        Assert.InRange(scars.Count, 2, 4);
+        Assert.Contains(s.Zone.MapMarks(), m => m.Kind == MarkKind.Danger && m.Label.StartsWith("The Scar"));
+        // Stepping in pulls you into an arena held by that part of the wood's people, and brings you back where you stood.
+        var dead = scars.Single(i => i.Name == "The Scar at the Sealed Door");
+        s.B.Player.X = dead.X; s.B.Player.Z = dead.Z;
+        dead.Act();
+        var spec = s.Host.Entered!;
+        Assert.Equal("dead", spec.People);
+        Assert.Equal("verge", spec.ReturnZone);
+        Assert.Equal(dead.X, spec.ReturnX, 3);
+        // Won, it is out for the rest of the night.
+        s.J.Apply(spec.OnWin!);
+        var again = Make(TimeOfDay.Night, s.J);
+        Assert.DoesNotContain(again.Zone.Interactables, i => i.Name == "The Scar at the Sealed Door");
     }
 
     [Fact]
