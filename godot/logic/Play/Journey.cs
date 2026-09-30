@@ -192,9 +192,10 @@ public sealed class Journey
         if (e.LastWeapon != null) Ch.Mastery[e.LastWeapon] = Ch.Mastery.GetValueOrDefault(e.LastWeapon) + 1;
         World.Bestiary[e.Def.Id] = World.Bestiary.GetValueOrDefault(e.Def.Id) + 1;
         if (e.Boss) Ch.Stats.BossesSlain++;
-        // An arena pays its experience at the end, for the time survived.
+        // An arena pays its experience at the end, for the time survived; a
+        // fight in the story teaches as it goes, the more the stronger the foe.
         if (InArena) return;
-        int levels = Character.GainXp(Ch, e.Def.Xp * (e.Boss ? 3 : e.Elite ? 2 : 1));
+        int levels = Character.GainXp(Ch, 2 * e.Def.Xp * Content.Enemies.ScaleFor(e.Level).Xp * (e.Boss ? 3 : e.Elite ? 2 : 1));
         if (levels > 0)
         {
             OnAnnounce(new Announcement($"Level {Ch.Level}", Ch.TraitPicks > 0 ? "A new trait can be chosen (C)" : "Attribute points to spend (C)", "boon", 3.2, "You grow stronger"));

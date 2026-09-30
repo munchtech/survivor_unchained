@@ -18,6 +18,13 @@ namespace SurvivorUnchained.Play.Zones;
  * same wolf is an enemy, a stranger or a friend depending on what you did
  * last week.
  *
+ * By day the wood is a place of packs, not a tide: they lie where they lie
+ * (the wolves by the water while the sickness is on them, the Kerchiefs on
+ * the road, the boars in the thickets, the dead round the vault after
+ * dark), each resting until you come close and rousing its fellows when it
+ * wakes. What you put down stays down until you leave and come back. The
+ * ember sleeps here; every fight teaches the survivor instead.
+ *
  * The places the quests need are here too, each with the handful of things
  * a clever player might try. */
 public sealed class Verge : ZoneRuntime
@@ -39,7 +46,7 @@ public sealed class Verge : ZoneRuntime
     readonly int postFire, blindFire, pumpLight;
     readonly List<(double X, double Z, int Collider, string Node)> brambles = new();
     readonly string[] cageNodes;
-    double spawnT = 4, surgeT = 70, dispT, stayT, chargeT = -1, trackT;
+    double dispT, chargeT = -1, trackT;
     readonly HashSet<string> seen = new();
     readonly bool[] cagesOpen = new bool[3];
     readonly double[] brambleHp;
@@ -100,9 +107,8 @@ public sealed class Verge : ZoneRuntime
         if (text != null) G.Announce(new Announcement(text, null, "danger", 2.4));
     }
 
-    // What comes at you grows with the days, with your ember, and with how
-    // long you have stayed out: the wood keeps up with you.
-    int Level() => 2 + W.Day / 2 + (B?.EmberLevel ?? 1) / 4 + (int)Math.Floor(stayT / 120);
+    // What lives out here grows with the days, and keeps pace with you.
+    int Level() => Math.Max(1, 1 + (G.Journey.Ch.Level + W.Day) / 2);
 
     /* ------------------------------------------------------------ spawns -- */
 
@@ -110,7 +116,7 @@ public sealed class Verge : ZoneRuntime
 
     double R() => G.Rng.NextDouble();
 
-    List<Enemy> SpawnGroup(string def, int n, double cx, double cz, double spread, string? tag = null, double? home = null, SpawnStyle style = SpawnStyle.Walk)
+    List<Enemy> SpawnGroup(string def, int n, double cx, double cz, double spread, string? tag = null, double? home = null, SpawnStyle style = SpawnStyle.Walk, double wake = 0)
     {
         var out_ = new List<Enemy>();
         for (int i = 0; i < n; i++)
@@ -119,7 +125,7 @@ public sealed class Verge : ZoneRuntime
                 double a = R() * Math.PI * 2, d = R() * spread;
                 double x = cx + Math.Cos(a) * d, z = cz + Math.Sin(a) * d;
                 if (!OpenGround(x, z)) continue;
-                var e = B!.SpawnEnemy(def, x, z, new Battle.SpawnOpts { Level = Level(), Style = style, Tag = tag, Home = home is double h ? (cx, cz, h) : null });
+                var e = B!.SpawnEnemy(def, x, z, new Battle.SpawnOpts { Level = Level(), Style = style, Tag = tag, Home = home is double h ? (cx, cz, h) : null, Wake = wake });
                 if (e != null) { SetDisposition(e); out_.Add(e); }
                 break;
             }
@@ -128,104 +134,66 @@ public sealed class Verge : ZoneRuntime
 
     bool KerchiefsOut() => !KerchiefsFriendly() && F("redcowl").Str is not ("tricked" or "dead") && !F("roost.cleared").Truthy;
 
-    /// <summary>The wood's own pressure: what comes at you depends on where
-    /// you are, what you have made peace with, the hour, how bright your
-    /// ember burns and how long you have been out here.</summary>
-    void Director(double dt)
+    /// <summary>The wood's packs, laid out as the survivor comes in: where each
+    /// people keeps to, as many as the world has left of them, resting.</summary>
+    void PlacePacks()
     {
         if (B == null) return;
-        var p = B.Player;
-        spawnT -= dt; surgeT -= dt; stayT += dt;
-        // Quiet near the gate and around a lit fire.
-        var post = V("post");
-        if (p.X < -112 || (Dist(p.X, p.Z, post.X, post.Z) < 16 && G.Look.IsLit(postFire))) return;
-        int hostile = B.Enemies.Living().Count(e => e.Disposition == Disposition.Hostile);
-        bool night = W.Time == TimeOfDay.Night;
-        int ember = B.EmberLevel;
-        // The longer you stay, the more of the wood knows you are here.
-        double tension = Math.Min(1, stayT / 300);
-        double cap = (night ? 48 : 34) + Math.Min(42, ember * 2.6) + tension * 12;
-        if (spawnT <= 0 && hostile < cap)
+        var taken = new List<(double X, double Z)>();
+        var keep = new[] { V("post"), V("hollow"), V("roost"), V("dig"), V("sinkhole"), V("entry") };
+        (double X, double Z)? Spot(Func<double, double, bool> where)
         {
-            spawnT = (night ? 2.0 : 2.7) * Math.Max(0.5, 1 - ember * 0.03) * (1 - tension * 0.2);
-            // Some come from where you are heading: running is not a way out of the wood.
-            bool moving = Math.Sqrt(p.Vx * p.Vx + p.Vz * p.Vz) > 1;
-            double a = moving && R() < 0.45 ? Math.Atan2(p.Vz, p.Vx) + (R() - 0.5) * 1.6 : R() * Math.PI * 2;
-            double d = 17 + R() * 5;
-            double x = p.X + Math.Cos(a) * d, z = p.Z + Math.Sin(a) * d;
-            double pop = F("beasts.population").IsNull ? 60 : F("beasts.population").Number;
-            var roost = V("roost"); var dig = V("dig"); var vault = V("vault"); var sink = V("sinkhole");
-            bool nearRoost = Dist(x, z, roost.X, roost.Z) < 60 || (x > 30 && Math.Abs(z) < 20);
-            bool nearDig = Dist(x, z, dig.X, dig.Z) < 60;
-            bool nearVault = Dist(x, z, vault.X, vault.Z) < 45;
-            bool nearSink = Dist(x, z, sink.X, sink.Z) < 45;
-            bool onRoad = RoadDist(x, z) < 14;
-            int extra = ember / 3;
-            double r = R();
-            int Few() => 3 + (int)Math.Floor(R() * 3) + extra;
-            // Place first, then the wood at large.
-            if (night && nearVault) SpawnGroup(r < 0.3 ? "risen_warrior" : "risen", Few(), x, z, 4, style: SpawnStyle.Rise);
-            else if (nearRoost && KerchiefsOut()) SpawnGroup(r < 0.25 ? "pillager" : r < 0.35 ? "bruiser" : "footpad", 2 + (int)Math.Floor(R() * 3) + extra / 2, x, z, 4);
-            // The diggers mind their pump unless given a reason; then they come up out of the ground.
-            else if (nearDig && !DiggersFriendly() && R() < 0.7) SpawnGroup("lampling", Few(), x, z, 4, "dig:crew", style: SpawnStyle.Burrow);
-            // Near the pit, since the tremor: lamplings that went down and came back wrong.
-            else if (nearSink && F("tremor.felt").Truthy && R() < 0.5) SpawnGroup("lampling", Few(), x, z, 4, "feral", style: SpawnStyle.Burrow);
-            else
+            for (int t = 0; t < 80; t++)
             {
-                // The wood at large: a weighted pick of whatever is still out here.
-                var pool = new List<(double W, Action Fn)>();
-                if (!WolvesFriendly() && pop > 5)
-                {
-                    bool sick = F("beasts.outcome").Str != "cured" && StreamDist(x, z) < 30;
-                    pool.Add((3 * (pop / 60), () => SpawnGroup(sick && r < 0.35 ? "wolf_blighted" : "wolf", 3 + (int)Math.Floor(R() * 3 * (pop / 60)) + extra, x, z, 4)));
-                }
-                // Every night the dark climbs out of the ground; the Verge is no different.
-                if (night) pool.Add((2.2, () => SpawnGroup(r < 0.2 ? "risen_warrior" : r < 0.42 ? "risen_archer" : "risen", Few(), x, z, 4, style: SpawnStyle.Rise)));
-                if (onRoad && KerchiefsOut() && W.Day >= 2) pool.Add((1, () => SpawnGroup("footpad", 2 + (int)Math.Floor(R() * 2) + extra / 2, x, z, 3)));
-                pool.Add((1, () => SpawnGroup("boar", 1 + (int)Math.Floor(R() * 2) + extra / 3, x, z, 3)));
-                double pick = R() * pool.Sum(q => q.W);
-                foreach (var (wt, fn) in pool) { pick -= wt; if (pick <= 0) { fn(); break; } }
+                double x = R() * 250 - 125, z = R() * 250 - 125;
+                if (x < -96 || !OpenGround(x, z) || !where(x, z)) continue;
+                if (taken.Any(o => Dist(o.X, o.Z, x, z) < 26) || keep.Any(k => Dist(k.X, k.Z, x, z) < 30)) continue;
+                taken.Add((x, z));
+                return (x, z);
             }
+            return null;
         }
-        // Now and then, a surge: the wood noticing you.
-        if (surgeT <= 0)
+        const double Wake = 14, Leash = 22;
+        void Pack(string def, int n, (double X, double Z) at, SpawnStyle style = SpawnStyle.Walk, string? mix = null, double mixK = 0)
         {
-            surgeT = (night ? 40 : 52) + R() * 25 - tension * 10;
-            double a = R() * Math.PI * 2;
-            double sx = p.X + Math.Cos(a) * 18, sz = p.Z + Math.Sin(a) * 18;
-            int size = 9 + Math.Min(16, (int)Math.Floor(ember * 1.3)) + (int)Math.Floor(tension * 6);
-            // A closing ring: every way out has something in it.
-            List<Enemy> Ring(string def, int n, SpawnStyle style = SpawnStyle.Walk)
+            var e = SpawnGroup(def, n, at.X, at.Z, 4, home: Leash, style: style, wake: Wake);
+            if (mix != null) e.AddRange(SpawnGroup(mix, Math.Max(1, (int)Math.Round(n * mixK)), at.X, at.Z, 4, home: Leash, style: style, wake: Wake));
+            // Now and then one of them leads: bigger, and carrying something.
+            if (W.Day >= 2 && e.Count > 0 && R() < 0.25)
             {
-                var out_ = new List<Enemy>();
-                for (int i = 0; i < n; i++)
-                {
-                    double t = (double)i / n * Math.PI * 2 + R() * 0.2, rr = 14 + R() * 3;
-                    out_.AddRange(SpawnGroup(def, 1, p.X + Math.Cos(t) * rr, p.Z + Math.Sin(t) * rr, 1.5, style: style));
-                }
-                return out_;
-            }
-            var group = new List<Enemy>();
-            string shout = "";
-            bool big = ember >= 5 && R() < 0.5;
-            double pop = F("beasts.population").IsNull ? 60 : F("beasts.population").Number;
-            if (!WolvesFriendly() && pop > 20) { group = big ? Ring("wolf", size) : SpawnGroup("wolf", size, sx, sz, 5); shout = big ? "Wolves — all around!" : "Howling — close!"; }
-            else if (night) { group = big ? Ring("risen", size + 4, SpawnStyle.Rise) : SpawnGroup("risen", size, sx, sz, 5, style: SpawnStyle.Rise); shout = "The ground is moving."; }
-            else if (KerchiefsOut()) { group = SpawnGroup("footpad", (int)Math.Ceiling(size * 0.6), sx, sz, 4); shout = "Red kerchiefs in the trees!"; }
-            // A brighter ember draws something bigger with the crowd.
-            if (group.Count > 0 && ember >= 6)
-            {
-                var lead = B.SpawnEnemy(group[0].Def.Id, sx, sz, new Battle.SpawnOpts
-                {
-                    Level = Level() + 1, Elite = true, Style = night && group[0].Def.Id == "risen" ? SpawnStyle.Rise : SpawnStyle.Walk,
-                });
+                var lead = B!.SpawnEnemy(def, at.X, at.Z, new Battle.SpawnOpts { Level = Level() + 1, Elite = true, Style = style, Home = (at.X, at.Z, Leash), Wake = Wake });
                 if (lead != null) SetDisposition(lead);
             }
-            if (shout != "")
-            {
-                B.Events.Emit(new Ev.Bark { X = p.X + Math.Cos(a) * 14, Z = p.Z + Math.Sin(a) * 14, Text = shout });
-                B.Events.Emit(new Ev.Shake { Amount = 0.2 });
-            }
+        }
+        bool night = W.Time == TimeOfDay.Night;
+        double pop = F("beasts.population").IsNull ? 60 : F("beasts.population").Number;
+        bool sick = F("beasts.outcome").Str != "cured";
+        // The Pack, by the water while the sickness is on them.
+        if (!WolvesFriendly() && pop > 5)
+            for (int k = (int)Math.Round(5 * pop / 60); k > 0; k--)
+                if (Spot((x, z) => !sick || StreamDist(x, z) < 34) is { } at)
+                    Pack("wolf", 3 + (int)(R() * 3), at, mix: sick && StreamDist(at.X, at.Z) < 30 ? "wolf_blighted" : null, mixK: 0.4);
+        // Boars in the thickets, alone or in twos.
+        for (int k = 0; k < 3; k++)
+            if (Spot((x, z) => RoadDist(x, z) > 12) is { } at) Pack("boar", 1 + (int)(R() * 2), at);
+        // The Kerchiefs keep to the road, once they have had a day to hear of you.
+        if (KerchiefsOut() && W.Day >= 2)
+            for (int k = 0; k < 2; k++)
+                if (Spot((x, z) => RoadDist(x, z) < 8) is { } at) Pack("footpad", 2 + (int)(R() * 2), at, mix: "pillager", mixK: 0.3);
+        // What came back wrong from the pit, since the tremor.
+        if (F("tremor.felt").Truthy)
+        {
+            var sink = V("sinkhole");
+            for (int k = 0; k < 2; k++)
+                if (Spot((x, z) => Dist(x, z, sink.X, sink.Z) < 60) is { } at) Pack("lampling", 4, at, SpawnStyle.Burrow);
+        }
+        // After dark the dead are up, thickest round the vault.
+        if (night)
+        {
+            var vault = V("vault");
+            for (int k = 0; k < 5; k++)
+                if (Spot((x, z) => k < 2 ? Dist(x, z, vault.X, vault.Z) < 50 : true) is { } at)
+                    Pack(k % 3 == 2 ? "risen_warrior" : "risen", 4 + (int)(R() * 3), at, SpawnStyle.Rise, mix: "risen_archer", mixK: 0.25);
         }
     }
 
@@ -661,11 +629,11 @@ public sealed class Verge : ZoneRuntime
         if (e.Def.Family == Family.Undead && r < 0.25) out_.Add(new Loot(PickupKind.Material, "bone_dust", 1));
         if (e.Elite && loot == "elite")
         {
-            // Gear, rolled where it falls: the deeper into the night's ember,
-            // the better the odds. The column of light over it says how good.
-            int ember = B?.EmberLevel ?? 1;
+            // Gear, rolled where it falls: better the stronger it was. The
+            // column of light over it says how good.
+            int lv = e.Level;
             double roll = R();
-            int rarity = roll < 0.03 + ember * 0.006 ? 3 : roll < 0.16 + ember * 0.012 ? 2 : roll < 0.62 ? 1 : 0;
+            int rarity = roll < 0.03 + lv * 0.008 ? 3 : roll < 0.16 + lv * 0.015 ? 2 : roll < 0.62 ? 1 : 0;
             out_.Add(new Loot(PickupKind.Item, PlainGear[(int)Math.Floor(R() * PlainGear.Length)], 1, true, rarity));
         }
         // Named things keep the light of what they are.
@@ -734,6 +702,7 @@ public sealed class Verge : ZoneRuntime
             nemesis = battle.SpawnEnemy(n.Def, ax + 6, az + 6, new Battle.SpawnOpts { Level = n.Level, Elite = true, Tag = "nemesis", Home = (ax, az, 30) });
             if (nemesis != null) nemesis.Named = new Named { Title = n.Title, Carries = n.Carries.Select(i => i.Def).ToList(), SourceHero = n.HeroName };
         }
+        PlacePacks();
         G.AnnounceZone();
         // The first time out here: the wood is big, and there is a map.
         if (!wd.Fact("tip.verge_map").Truthy)
@@ -750,7 +719,6 @@ public sealed class Verge : ZoneRuntime
 
     public override void Step(double dt)
     {
-        Director(dt);
         Approach();
         // Peace made in a conversation reaches everyone already out there;
         // anyone you have struck stays angry.

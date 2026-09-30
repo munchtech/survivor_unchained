@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using SurvivorUnchained.Play;
 using SurvivorUnchained.Play.Zones;
@@ -53,18 +54,33 @@ public class VergeTests
         var s = Make();
         Assert.Same(Atmospheres.Day, s.Host.Air);
         Assert.Contains(s.Host.Announced, a => a.Title == "zone");
-        // Quiet at the gate.
+        // Quiet at the gate: nothing near it, and nothing coming.
         Run(s, 10);
-        Assert.Equal(0, s.B.Enemies.Living().Count(e => e.Disposition == Disposition.Hostile));
+        var p = s.B.Player;
+        Assert.DoesNotContain(s.B.Enemies.Living(), e => e.Disposition == Disposition.Hostile && (e.Roused || Math.Sqrt((e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z)) < 25));
     }
 
     [Fact]
-    public void Out_in_the_wood_things_come_at_you()
+    public void By_day_the_wood_keeps_its_packs_where_they_lie_until_you_come()
     {
         var s = Make();
-        s.B.Player.X = 10; s.B.Player.Z = 20;
+        Assert.False(s.B.EmberOn);
+        var packs = s.B.Enemies.Living().Where(e => e.Disposition == Disposition.Hostile && e.Wake > 0).ToList();
+        Assert.True(packs.Count > 12, $"{packs.Count} resting");
+        // Nothing comes looking for you while you keep your distance.
         Run(s, 20);
-        Assert.True(s.B.Enemies.Living().Count(e => e.Disposition == Disposition.Hostile) > 3);
+        Assert.All(packs.Where(e => e.Alive), e => Assert.False(e.Roused));
+        Assert.Equal(packs.Count, s.B.Enemies.Living().Count(e => e.Disposition == Disposition.Hostile && e.Wake > 0));
+        // Go close to one, and it wakes, and its fellows with it.
+        var one = packs.First(e => e.Def.Id == "wolf");
+        s.B.Player.X = one.X + 6; s.B.Player.Z = one.Z;
+        Run(s, 1);
+        Assert.True(one.Roused);
+        Assert.All(packs.Where(o => o.HomeX == one.HomeX && o.HomeZ == one.HomeZ), o => Assert.True(o.Roused));
+        // Putting them down teaches the survivor.
+        double xp = s.J.Ch.Xp;
+        s.J.Killed(one, true);
+        Assert.True(s.J.Ch.Xp > xp);
     }
 
     [Fact]

@@ -51,6 +51,11 @@ Options go after `--`:
   `--open talk:ID`, `--open draft`: a screen, a conversation or the level-up
   draft opened a moment in (`--every T` between several); `--bare` hides the
   world, for quick pictures of the interface;
+- `STORY_PLAY=1 dotnet test tests/Tests.csproj --filter StoryPlay` (with
+  `--logger "console;verbosity=detailed"`): the Verge walked by day by a
+  plain-minded bot with only what it carries, pack to pack, with what it
+  put down, what it learned and what hurt it (`STORY_TRACE=1` for a line
+  every twenty seconds); for tuning the wood's packs;
 - `ARENA_PLAY=1 dotnet test tests/Tests.csproj --filter ArenaPlay` (with
   `--logger "console;verbosity=detailed"`): arenas played headless by a
   plain-minded bot that stays past the win (up to an hour), with when it
@@ -87,6 +92,20 @@ an echo to step back into, a vault that leaves snares, a crashing leap, a
 blink). A survivor knows four at the start; manuals (an arena's boss drops
 one) teach the rest (`logic/Rpg/ArtBook.cs`). Arts rank up with use; ranks 2 and 4 open a
 facet each, chosen from four per art.
+
+Day and night are the game's two halves. By day (the story: the Waystation,
+the Verge) the ember sleeps: kills leave no stones and bring no cards, the
+survivor fights with their gear's skills, the art and the dash, and every
+fight teaches them (character experience, more the stronger the foe). The
+Verge by day is a place of packs, not a tide (`logic/Play/Zones/Verge.cs`,
+`PlacePacks`): laid out as you come in where each people keeps to (the
+wolves by the water while they are sick, the Kerchiefs on the road, boars
+in the thickets, the dead round the vault after dark), each resting until
+you come close and rousing its fellows, a leader among them now and then
+from the second day. The ember burns only at night: on the Low Ford road
+(the prologue, where it is learned, a great blessing at its first rise),
+until the dawn puts it out and everything it built with it; and in the
+arenas.
 
 The ember arenas (`logic/Arena/Arena.cs`, run in `logic/Play/Zones/
 ArenaRun.cs`, the ground from `logic/Maps/MapGen.cs`): a great clearing with
