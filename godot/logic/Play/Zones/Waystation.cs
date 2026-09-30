@@ -86,7 +86,8 @@ public sealed class Waystation : ZoneRuntime
     {
         var look = G.Look;
         double x = Stall.X, z = Stall.Z;
-        look.AddProp("props/Stall_Empty", x, z, Math.PI, 1.15);
+        // The awning hangs low over the side that serves (the piece's -z): toward the road.
+        look.AddProp("props/Stall_Empty", x, z, 0, 1.15);
         const double counter = 1.02;
         look.AddProp("props/Scroll_1", x - 0.5, z - 0.1, 0.35, 1.7, counter);
         look.AddProp("props/Scroll_2", x + 0.35, z - 0.05, -0.4, 1.7, counter);
