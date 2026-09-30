@@ -56,7 +56,9 @@ public partial class GameHud : CanvasLayer
     ColorRect bossFill = null!, bossTrail = null!, bossChannelFill = null!;
     Control bossTrack = null!, bossChannelBox = null!;
     double sayT, annT, annLife;
-    ColorRect fade = null!;
+    ColorRect fade = null!, pull = null!;
+    ShaderMaterial pullMat = null!;
+    double pullT = -1, pullDur = 1;
     Label fadeCaption = null!, fadeSub = null!;
     double fadeFrom = 1, fadeTo = 1, fadeT = 1, fadeDur = 1;
     DraftPanel? draft;
@@ -89,6 +91,10 @@ public partial class GameHud : CanvasLayer
         BuildBoss();
         var top = new CanvasLayer { Layer = 30 };
         AddChild(top);
+        pullMat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/pull.gdshader") };
+        pull = new ColorRect { Material = pullMat, Visible = false, MouseFilter = Control.MouseFilterEnum.Ignore };
+        Style.Fill(pull);
+        top.AddChild(pull);
         fade = new ColorRect { Color = new Color(0, 0, 0, 1), MouseFilter = Control.MouseFilterEnum.Ignore };
         Style.Fill(fade);
         top.AddChild(fade);
@@ -631,6 +637,18 @@ public partial class GameHud : CanvasLayer
     }
 
     /// <summary>Fade to black (1) or back (0) over some seconds, with words over the black.</summary>
+    /// <summary>Pulled into an arena: the world swirls in and burns away to the
+    /// dark, where the caption comes up (shaders/pull.gdshader).</summary>
+    public void Pull(double seconds, string? caption = null, string? sub = null)
+    {
+        pullT = 0;
+        pullDur = Math.Max(0.1, seconds);
+        pull.Visible = true;
+        pullMat.SetShaderParameter("progress", 0f);
+        fadeCaption.Text = caption ?? "";
+        fadeSub.Text = sub ?? "";
+    }
+
     public void Fade(float to, double seconds, string? caption = null, string? sub = null)
     {
         fadeFrom = fade.Color.A;
@@ -704,6 +722,22 @@ public partial class GameHud : CanvasLayer
         heart.Scale = new Vector2(beat, beat);
         hpLow.Color = new Color(1, 0.24f, 0.24f, low ? 0.15f + 0.15f * Mathf.Sin(now * 7) : 0);
         if (levelPop > 0) { levelPop = Math.Max(0, levelPop - delta / 0.6); float sc = 1 + 0.9f * (float)(levelPop * levelPop); emberLevel.Scale = new Vector2(sc, sc); }
+        if (pullT >= 0)
+        {
+            pullT += delta;
+            var vs = GetViewport().GetVisibleRect().Size;
+            pullMat.SetShaderParameter("aspect", vs.X / Math.Max(1, vs.Y));
+            pullMat.SetShaderParameter("progress", (float)(pullT / pullDur));
+            if (pullT >= pullDur)
+            {
+                // Burned through: the dark holds, and the caption with it.
+                pullT = -1;
+                pull.Visible = false;
+                fadeFrom = fadeTo = 1;
+                fadeT = fadeDur = 1;
+                fade.Color = new Color(0, 0, 0, 1);
+            }
+        }
         if (fadeT < fadeDur)
         {
             fadeT += delta;

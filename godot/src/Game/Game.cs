@@ -167,6 +167,8 @@ public partial class Game : Node, IZoneHost
         else EnterZone(z, null, at);
         hud.Fade(0, 0.5);
         Save("new");
+        // --pull T: the table's first arena taken T seconds in (pictures of the pull).
+        if (Args.Has("pull")) Wait(Args.Num("pull", 1), () => SetOut(SurvivorUnchained.Maps.MapOffers.Today(World.Day, 1, 0)[0]));
     }
 
     /// <summary>A journey begun: the character, the world, a slot to keep it in.</summary>
@@ -240,7 +242,7 @@ public partial class Game : Node, IZoneHost
         CloseOverlay();
         Save("arena");
         Arenas.Begin(World, spec);
-        Travel("arena", spec.Name, spec.Sub != "" ? spec.Sub : "Ember arena");
+        Travel("arena", spec.Name, spec.Sub != "" ? spec.Sub : "Ember arena", null, pull: true);
     }
 
     /// <summary>The arena is over: what came of it, and then back to the story.</summary>
@@ -365,7 +367,9 @@ public partial class Game : Node, IZoneHost
     /// <summary>Travel: fade, build the next place, arrive.</summary>
     public void Travel(string to, string? caption = null, string? sub = null) => Travel(to, caption, sub, null);
 
-    void Travel(string to, string? caption, string? sub, Arrival? at)
+    /// <summary>Travel; pulled (into an arena), the world swirls in and burns
+    /// away instead of fading.</summary>
+    void Travel(string to, string? caption, string? sub, Arrival? at, bool pull = false)
     {
         // One journey, one new place, one save: a second press at the gate waits.
         if (inTransit) return;
@@ -374,8 +378,9 @@ public partial class Game : Node, IZoneHost
         Journey.Capture(Battle);
         if (scene != null) scene.SimPaused = true;
         controls.Captured = true;
-        hud.Fade(1, 0.8, caption, sub);
-        Wait(0.85, () =>
+        if (pull) { hud.Pull(1.1, caption, sub); Sfx.Stinger("pull"); }
+        else hud.Fade(1, 0.8, caption, sub);
+        Wait(pull ? 1.15 : 0.85, () =>
         {
             EnterZone(to, from, at);
             Save("travel");

@@ -367,6 +367,16 @@ public static class Sfx
                 for (int i = 0; i < s.Length; i++) a.Play(new Fm { T = t + i * 0.22, F = 440 * Semis(s[i]), Ratio = 2.01, Index = 0.6, D = 1.8, G = 0.04, Verb = 0.7, Bus = Bus.Ui });
                 break;
             }
+            case "pull":
+            {
+                // Pulled into an arena: a rush that climbs, a chord under it, and a blow as it lands.
+                a.Play(new Hiss { T = t, D = 1.1, G = 0.16, Lp = 300, Lp2 = 3500, Brown = true });
+                foreach (var f in new[] { 55.0, 82.4, 110 })
+                    a.Play(new Tone { T = t, F = f, F2 = f * 1.5, Type = Wave.Saw, A = 0.7, D = 0.9, G = 0.05, Lp = 300, Lp2 = 1600, Detune = R(-6, 6), Bus = Bus.Music, Verb = 0.5 });
+                a.Play(new Tone { T = t + 1.05, F = 70, F2 = 28, D = 1.4, G = 0.45 });
+                a.Play(new Hiss { T = t + 1.05, D = 0.8, G = 0.1, Lp = 900, Lp2 = 120, Brown = true });
+                break;
+            }
             case "zone":
                 a.Play(new Tone { T = t, F = 146.8, Type = Wave.Triangle, A = 0.6, D = 2.8, G = 0.05, Bus = Bus.Music, Verb = 0.8 });
                 a.Play(new Tone { T = t + 0.3, F = 220, Type = Wave.Triangle, A = 0.6, D = 2.6, G = 0.04, Bus = Bus.Music, Verb = 0.8 });

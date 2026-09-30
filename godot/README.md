@@ -39,7 +39,8 @@ Options go after `--`:
   which then counts as done), `--time day|night|dusk|dawn`, `--at X,Z`;
   `arena` goes straight into one of the Wayfinder's arenas (`--offer 0|1|2`,
   `--people pack|dead|lamplings|kerchiefs`, `--oaths winter,iron`,
-  `--tier T`), and back to the table after;
+  `--tier T`), and back to the table after; `--pull T` takes the table's
+  first arena T seconds in (for pictures of being pulled in);
 - `--art ID[:FACET+FACET]`: that art in hand (learned; with facets, at full
   rank and with them chosen), `--cast T`: used once, T seconds in (for a
   picture of it);
