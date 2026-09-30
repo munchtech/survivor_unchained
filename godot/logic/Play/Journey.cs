@@ -165,7 +165,7 @@ public sealed class Journey
         b.Rerolls = exp?.Rerolls ?? kit.Rerolls;
         b.Banishes = exp?.Banishes ?? 1;
         b.Player.Revives = kit.Revives;
-        if (exp != null) Restore(b, exp);
+        if (exp != null) Restore(b, exp, GearWeapons);
         else if (combat)
         {
             // A fresh expedition starts with the blessing chosen at creation.
@@ -175,10 +175,12 @@ public sealed class Journey
         return b;
     }
 
-    static void Restore(Battle b, Expedition e)
+    static void Restore(Battle b, Expedition e, HashSet<string> gear)
     {
         foreach (var w in e.Weapons)
         {
+            // A skill the gear gave, and the gear is off: it goes with it.
+            if (w.Gear && !gear.Contains(w.Id)) continue;
             var have = b.Weapons.FirstOrDefault(x => x.Id == w.Id);
             if (have == null) b.AddWeapon(w.Id, w.Rank);
             else have.Rank = Math.Max(have.Rank, w.Rank);
@@ -196,7 +198,7 @@ public sealed class Journey
         Expedition = new Expedition
         {
             Level = b.EmberLevel, Xp = b.EmberXp,
-            Weapons = b.Weapons.Select(w => new CarriedWeapon { Id = w.Id, Rank = w.Rank, Evolution = w.Evolution?.Id }).ToList(),
+            Weapons = b.Weapons.Select(w => new CarriedWeapon { Id = w.Id, Rank = w.Rank, Evolution = w.Evolution?.Id, Gear = GearWeapons.Contains(w.Id) }).ToList(),
             Boons = new Dictionary<string, int>(b.Boons), Rerolls = b.Rerolls, Banishes = b.Banishes, Hp = b.Player.Hp,
         };
     }
@@ -226,15 +228,15 @@ public sealed class Journey
         {
             // Gear on the ground was rolled when it fell; its light said how good it is.
             int? rolled = p.Kind == PickupKind.Item && Items.Find(p.Ref)?.Base != null ? p.Tier : null;
-            return GiveItem(p.Ref, Math.Max(1, MathX.RoundInt(p.Value)), rolled);
+            return GiveItem(p.Ref, Math.Max(1, MathX.RoundInt(p.Value)), rolled, p.Lean);
         }
         return true;
     }
 
     /// <summary>Something found in the field. False if there is no room.</summary>
-    public bool GiveItem(string defId, int qty = 1, int? rarity = null)
+    public bool GiveItem(string defId, int qty = 1, int? rarity = null, IReadOnlyCollection<string>? lean = null)
     {
-        var it = Inventory.Make(Ch, defId, qty, rarity);
+        var it = Inventory.Make(Ch, defId, qty, rarity, lean: lean);
         var def = Items.Get(defId);
         if (!Inventory.AddToPack(Ch, it)) { OnToast(new Toast(ToastKind.Warning, "Your pack is full", def.Name)); return false; }
         OnToast(new Toast(ToastKind.Loot, $"{Inventory.Name(it)}{(qty > 1 ? $" ×{qty}" : "")}",

@@ -225,7 +225,8 @@ public partial class PlayerView : Node3D
         flare = Mathf.Max(0, flare - dt * 0.8);
         double flicker = Mathf.Sin((float)(time * 7.3)) * 0.25 + Mathf.Sin((float)(time * 17.1)) * 0.15 + (hp < 0.35 ? Mathf.Sin((float)(time * 31)) * 0.6 : 0);
         Light.LightEnergy = (float)((LightBase * (0.7 + 0.3 * hp) + flicker + flare * 20) / Mathf.Pi);
-        Light.OmniRange = (float)(11 + flare * 6);
+        // A lantern carries further; under the Oath of the Moonless, not far at all.
+        Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light);
         Light.Position = new Vector3(0, 2.4f, 0.4f);
         // Unseen: a ghost, flickering.
         Visible = !(p.InvisibleT > 0 && (int)(time * 12) % 3 == 0);

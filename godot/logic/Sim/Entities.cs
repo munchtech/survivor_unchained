@@ -207,6 +207,8 @@ public sealed class Pickup : Pooled
     /// <summary>Stays on the ground forever (a corpse's gear, a quest item).</summary>
     public bool Persistent;
     public int Tier;
+    /// <summary>Gear: affixes it is likelier to roll when it is picked up.</summary>
+    public string[]? Lean;
 
     public Pickup(int id) { Id = id; }
 }

@@ -19,7 +19,8 @@ namespace SurvivorUnchained.World;
 
 public sealed class SaveLocation { public string Zone = ""; public double X, Z, Facing; }
 
-public sealed class CarriedWeapon { public string Id = ""; public int Rank; public string? Evolution; }
+/// <summary>Gear: the worn gear gave it (it goes when the gear does).</summary>
+public sealed class CarriedWeapon { public string Id = ""; public int Rank; public string? Evolution; public bool Gear; }
 
 /// <summary>Mid-expedition ember, if saved at a field camp.</summary>
 public sealed class EmberCarry

@@ -57,6 +57,10 @@ public sealed class AffixDef
     public ItemKind[] Slots = Array.Empty<ItemKind>();
     public Func<int, StatMod[]> Mods = _ => Array.Empty<StatMod>();
     public Func<int, string> Text = _ => "";
+    /// <summary>A skill (weapon) the gear grants while worn.</summary>
+    public string? Grants;
+    /// <summary>The least rarity it rolls on (skills come only on fine gear).</summary>
+    public int MinRarity;
 }
 
 public static class Items
@@ -115,6 +119,49 @@ public static class Items
         new() { Id = "of_the_grave", Name = "of the Grave", Prefix = false, Slots = [ItemKind.Cloak, ItemKind.Body, ItemKind.Amulet],
             Mods = t => [M(Stat.ResistOf(School.Shadow), ModKind.Flat, 0.08 + t * 0.05), M(Stat.FromOf(Family.Undead), ModKind.Flat, 0.05 + t * 0.03)],
             Text = t => $"+{Pct(0.08 + t * 0.05)} shadow resistance; less from the dead" },
+
+        /* What answers a map: slayers of a people, resistances, sure footing, light. */
+        new() { Id = "wolfbane", Name = "Wolfbane", Prefix = true, Slots = [ItemKind.Weapon, ItemKind.Ring, ItemKind.Amulet, ItemKind.Offhand],
+            Mods = t => [M(Stat.VsOf(Family.Wolf), ModKind.Flat, 0.15 + t * 0.08), M(Stat.VsOf(Family.Beast), ModKind.Flat, 0.15 + t * 0.08), M(Stat.VsOf(Family.Boar), ModKind.Flat, 0.15 + t * 0.08)],
+            Text = t => $"+{Pct(0.15 + t * 0.08)} damage to wolves and beasts" },
+        new() { Id = "gravebane", Name = "Gravebane", Prefix = true, Slots = [ItemKind.Weapon, ItemKind.Ring, ItemKind.Amulet, ItemKind.Offhand],
+            Mods = t => [M(Stat.VsOf(Family.Undead), ModKind.Flat, 0.15 + t * 0.08)], Text = t => $"+{Pct(0.15 + t * 0.08)} damage to the dead" },
+        new() { Id = "lampsnuffer", Name = "Lampsnuffer's", Prefix = true, Slots = [ItemKind.Weapon, ItemKind.Ring, ItemKind.Amulet, ItemKind.Offhand],
+            Mods = t => [M(Stat.VsOf(Family.Lampling), ModKind.Flat, 0.15 + t * 0.08), M(Stat.FromOf(Family.Lampling), ModKind.Flat, 0.05 + t * 0.03)],
+            Text = t => $"+{Pct(0.15 + t * 0.08)} damage to lamplings, and less from them" },
+        new() { Id = "watchmans", Name = "Watchman's", Prefix = true, Slots = [ItemKind.Weapon, ItemKind.Ring, ItemKind.Amulet, ItemKind.Offhand],
+            Mods = t => [M(Stat.VsOf(Family.Kerchief), ModKind.Flat, 0.15 + t * 0.08), M(Stat.VsOf(Family.Human), ModKind.Flat, 0.1 + t * 0.05)],
+            Text = t => $"+{Pct(0.15 + t * 0.08)} damage to Kerchiefs and outlaws" },
+        new() { Id = "cruel", Name = "Cruel", Prefix = true, Slots = [ItemKind.Weapon, ItemKind.Ring, ItemKind.Amulet],
+            Mods = t => [M(Stat.CritDamage, ModKind.Flat, 0.15 + t * 0.1)], Text = t => $"+{Pct(0.15 + t * 0.1)} critical damage" },
+        new() { Id = "surefooted", Name = "Surefooted", Prefix = true, Slots = [ItemKind.Cloak, ItemKind.Body, ItemKind.Ring],
+            Mods = t => [M(Stat.Tenacity, ModKind.Flat, 0.15 + t * 0.1)], Text = t => $"Slows on you {Pct(0.15 + t * 0.1)} shorter and weaker" },
+        new() { Id = "of_the_hearth", Name = "of the Hearth", Prefix = false, Slots = [ItemKind.Cloak, ItemKind.Body, ItemKind.Head, ItemKind.Amulet],
+            Mods = t => [M(Stat.ResistOf(School.Frost), ModKind.Flat, 0.1 + t * 0.06), M(Stat.Tenacity, ModKind.Flat, 0.08 + t * 0.04)],
+            Text = t => $"+{Pct(0.1 + t * 0.06)} frost resistance; the cold slows you less" },
+        new() { Id = "of_the_salamander", Name = "of the Salamander", Prefix = false, Slots = [ItemKind.Cloak, ItemKind.Body, ItemKind.Head, ItemKind.Ring],
+            Mods = t => [M(Stat.ResistOf(School.Fire), ModKind.Flat, 0.12 + t * 0.07)], Text = t => $"+{Pct(0.12 + t * 0.07)} fire resistance" },
+        new() { Id = "of_the_physician", Name = "of the Physician", Prefix = false, Slots = [ItemKind.Body, ItemKind.Amulet, ItemKind.Ring],
+            Mods = t => [M(Stat.ResistOf(School.Nature), ModKind.Flat, 0.12 + t * 0.07), M(Stat.Healing, ModKind.Inc, 0.05 + t * 0.04)],
+            Text = t => $"+{Pct(0.12 + t * 0.07)} poison resistance; +{Pct(0.05 + t * 0.04)} mending" },
+        new() { Id = "of_the_lantern", Name = "of the Lantern", Prefix = false, Slots = [ItemKind.Head, ItemKind.Amulet, ItemKind.Relic],
+            Mods = t => [M(Stat.LightRadius, ModKind.Inc, 0.15 + t * 0.1)], Text = t => $"Your light carries {Pct(0.15 + t * 0.1)} further" },
+        new() { Id = "of_the_art", Name = "of the Art", Prefix = false, Slots = [ItemKind.Ring, ItemKind.Amulet, ItemKind.Head, ItemKind.Relic],
+            Mods = t => [M(Stat.AbilityCooldown, ModKind.More, -(0.05 + t * 0.03)), M(Stat.AbilityPower, ModKind.Inc, 0.05 + t * 0.05)],
+            Text = t => $"Your art {Pct(0.05 + t * 0.03)} sooner and {Pct(0.05 + t * 0.05)} stronger" },
+
+        /* Skills worn: fine gear that fights for you. */
+        new() { Id = "of_motes", Name = "of Seeking Motes", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Relic, ItemKind.Ring], Grants = "seeking_motes", MinRarity = 2,
+            Text = _ => "Grants the skill Seeking Motes" },
+        new() { Id = "of_the_gyre", Name = "of the Gyre", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Relic, ItemKind.Ring], Grants = "axe_gyre", MinRarity = 2,
+            Text = _ => "Grants the skill Axe Gyre" },
+        new() { Id = "of_cinders", Name = "of Cinders", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Relic, ItemKind.Ring], Grants = "cinderfall", MinRarity = 2,
+            Text = _ => "Grants the skill Cinderfall" },
+        new() { Id = "of_dawn", Name = "of Dawn", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Relic, ItemKind.Ring], Grants = "dawnpulse", MinRarity = 2,
+            Text = _ => "Grants the skill Dawnpulse" },
+        new() { Id = "of_knives", Name = "of Knives", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Relic, ItemKind.Ring], Grants = "knifestorm", MinRarity = 2,
+            Text = _ => "Grants the skill Knifestorm" },
+
         new() { Id = "of_greed", Name = "of Greed", Prefix = false, Slots = [ItemKind.Ring, ItemKind.Amulet],
             Mods = t => [M(Stat.GoldGain, ModKind.Inc, 0.1 + t * 0.08), M(Stat.PickupRadius, ModKind.Flat, 0.5 + t * 0.3)],
             Text = t => $"+{Pct(0.1 + t * 0.08)} gold, longer reach for pickups" },

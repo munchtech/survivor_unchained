@@ -135,7 +135,8 @@ public static class Inventory
     static readonly Random loose = new();
 
     /// <summary>A new item; plain gear rolls its affixes.</summary>
-    public static ItemInstance Make(CharacterData? ch, string defId, int qty = 1, int? rarity = null, uint? seed = null, List<AffixRoll>? affixes = null)
+    /// <param name="lean">Affixes it is likelier to roll (what answers the map it fell in).</param>
+    public static ItemInstance Make(CharacterData? ch, string defId, int qty = 1, int? rarity = null, uint? seed = null, List<AffixRoll>? affixes = null, IReadOnlyCollection<string>? lean = null)
     {
         var def = Items.Get(defId);
         string uid = ch != null ? $"i{ch.NextUid++}" : $"i{loose.Next(1_000_000_000):x}";
@@ -144,14 +145,18 @@ public static class Inventory
         {
             var rng = new Rng(seed ?? (uint)loose.Next(1_000_000_000));
             int n = Math.Min(3, it.Rarity);
-            var pool = Items.Affixes.Where(a => a.Slots.Contains(def.Kind)).ToList();
+            var pool = Items.Affixes.Where(a => a.Slots.Contains(def.Kind) && it.Rarity >= a.MinRarity).ToList();
             var picked = new HashSet<string>();
             bool hasPrefix = false, hasSuffix = false;
             for (int k = 0; k < n && pool.Count > 0; k++)
             {
                 var cands = pool.Where(a => !picked.Contains(a.Id) && (a.Prefix ? !hasPrefix || n > 2 : !hasSuffix || n > 2)).ToList();
                 if (cands.Count == 0) break;
-                var a = rng.Pick(cands);
+                // What answers the map comes four times as often; a skill worn is rare.
+                double W(AffixDef x) => (lean?.Contains(x.Id) == true ? 4 : 1) * (x.Grants != null ? 0.35 : 1);
+                double total = cands.Sum(W), roll = rng.Next() * total;
+                var a = cands[^1];
+                foreach (var c in cands) { roll -= W(c); if (roll <= 0) { a = c; break; } }
                 picked.Add(a.Id);
                 if (a.Prefix) hasPrefix = true; else hasSuffix = true;
                 it.Affixes.Add(new AffixRoll { Id = a.Id, Tier = Math.Max(0, Math.Min(3, it.Rarity - 1 + rng.Int(0, 1))) });
@@ -386,6 +391,10 @@ public static class Character
             st.AddAll(Inventory.Mods(it));
             foreach (var t in def.Triggers ?? new()) kit.Triggers.Add((t, $"item:{it.Uid}"));
             foreach (var k in def.Statuses ?? new()) kit.GearStatuses.Add(k);
+            // Skills the gear grants, while there is room for them.
+            foreach (var ar in it.Affixes)
+                if (Items.Affix(ar.Id)?.Grants is { } g && kit.Weapons.All(w => w.Id != g) && kit.Weapons.Count < Content.Weapons.MaxWeapons)
+                    kit.Weapons.Add((g, 1 + ar.Tier / 2));
             if (def.Weapon != null && s is EquipSlot.Weapon or EquipSlot.Offhand)
             {
                 // Mastery: every 60 kills with a weapon starts it a rank higher, to +2.

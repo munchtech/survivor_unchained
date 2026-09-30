@@ -35,7 +35,9 @@ public static class Stat
         SummonDamage = "summonDamage", SummonHaste = "summonHaste", StatusChance = "statusChance",
         StatusDamage = "statusDamage", Knockback = "knockback", DashCharges = "dashCharges",
         DashCooldown = "dashCooldown", AbilityCooldown = "abilityCooldown", AbilityPower = "abilityPower",
-        UltCharge = "ultCharge", LightRadius = "lightRadius", ExecuteThreshold = "executeThreshold";
+        UltCharge = "ultCharge", LightRadius = "lightRadius", ExecuteThreshold = "executeThreshold",
+        /// <summary>Slows and chills on the survivor are this much shorter and weaker (0..0.8).</summary>
+        Tenacity = "tenacity";
 
     static readonly string[] damageSchool = Build<School>("damage.");
     static readonly string[] damageTag = Build<Tag>("damage.");

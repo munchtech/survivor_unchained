@@ -46,7 +46,25 @@ public sealed class PlayerState
 
 /// <summary>A drop a creature leaves besides ember and gold. Rarity colours
 /// an item's beam of light (and, for gear, is the rarity it is made at).</summary>
-public sealed record Loot(PickupKind Kind, string? Ref, double Value, bool Persistent = false, int? Rarity = null);
+/// <summary>Lean: affixes the gear is likelier to roll (what answers a map's oaths).</summary>
+public sealed record Loot(PickupKind Kind, string? Ref, double Value, bool Persistent = false, int? Rarity = null, string[]? Lean = null);
+
+/// <summary>A map's oaths as rules of the fight (Maps/MapOffers.cs).</summary>
+public sealed class MapRules
+{
+    /// <summary>How much faster the hostile are.</summary>
+    public double FoeSpeed = 1;
+    /// <summary>Their blows chill you (a slow) or poison you.</summary>
+    public bool HitChill, HitPoison;
+    /// <summary>Less mending, of every kind.</summary>
+    public double HealCut;
+    /// <summary>Their dead leave burning ground; their dead burst.</summary>
+    public bool DeathFire, DeathBurst;
+    /// <summary>Taken off every blow on them that is not a critical.</summary>
+    public double IronSkin;
+    /// <summary>How far the survivor's light carries (for the view).</summary>
+    public double Light = 1;
+}
 
 public sealed class BattleHooks
 {
@@ -164,6 +182,7 @@ public sealed partial class Battle
     public readonly List<(double X, double Z, string Def, double T)> Graves = new();
     readonly List<StrikeSpec> strikes = new();
     public readonly Dictionary<string, Buff> Buffs = new();
+    public MapRules Rules = new();
     public int EmberLevel = 1;
     public double EmberXp, EmberNext = 12;
     public int PendingLevels;
@@ -537,6 +556,7 @@ public sealed partial class Battle
             crit = Rng.Next() < chance;
         }
         if (crit) dmg *= st.Get(Stat.CritDamage);
+        else if (Rules.IronSkin > 0 && e.Disposition == Disposition.Hostile) { dmg *= 1 - Rules.IronSkin; blocked = true; }
         dmg = Math.Max(0.5, dmg);
 
         double before = e.Hp;
@@ -656,10 +676,25 @@ public sealed partial class Battle
                         var pk = SpawnPickup(d.Kind, e.X, e.Z, d.Value, d.Ref);
                         if (pk != null && d.Persistent) pk.Persistent = true;
                         if (pk != null && d.Rarity is { } r) pk.Tier = r;
+                        if (pk != null) pk.Lean = d.Lean;
                     }
             }
         }
         // Death verbs.
+        if (e.Disposition == Disposition.Hostile && !e.Boss)
+        {
+            // The map's oath: the dead burn, or burst.
+            if (Rules.DeathFire && Rng.Next() < 0.3)
+            {
+                var zn = SpawnZone(Side.Enemy, e.X, e.Z, 1.4, 3.5, e.Damage * 0.35, School.Fire);
+                if (zn != null) { zn.Tags = [Tag.Zone]; zn.Art = "zone_fire_enemy"; }
+            }
+            if (Rules.DeathBurst && Rng.Next() < 0.22)
+            {
+                Events.Emit(new Ev.Telegraph { Id = e.Id, Shape = TelegraphShape.Circle, X = e.X, Z = e.Z, Radius = 1.8, Duration = 0.7, Hostile = true });
+                strikes.Add(new StrikeSpec(e.X, e.Z, 1.8, e.Damage * 0.9, School.Shadow, [Tag.Explosion], 0.7, null, Side.Enemy, 0));
+            }
+        }
         if (e.Def.Burst is { } b)
         {
             Events.Emit(new Ev.Telegraph { Id = e.Id, Shape = TelegraphShape.Circle, X = e.X, Z = e.Z, Radius = b.Radius, Duration = b.Fuse, Hostile = true });
@@ -897,6 +932,16 @@ public sealed partial class Battle
         }
     }
 
+    /// <summary>Slowed: by `factor` of pace for a while, less for the tenacious.</summary>
+    public void SlowPlayer(double factor, double seconds)
+    {
+        var p = Player;
+        if (Art.SprintT > 0 || Art.Rush != null) return;
+        double ten = Clamp(Stats.Get(Stat.Tenacity), 0, 0.8);
+        p.SlowT = Math.Max(p.SlowT, seconds * (1 - ten));
+        p.SlowF = Math.Min(p.SlowF, 1 - (1 - factor) * (1 - ten));
+    }
+
     public double HurtPlayerRaw(double dmg, School school, string source, Enemy? from, bool silent = false)
     {
         var p = Player;
@@ -922,7 +967,13 @@ public sealed partial class Battle
             Events.Emit(new Ev.PlayerHit { X = p.X, Z = p.Z, Amount = dmg, School = school, Source = source });
             Fire(TriggerEvent.Hurt, new ProcCtx { X = p.X, Z = p.Z, Damage = dmg });
         }
-        if (from != null) p.LastKiller = from;
+        if (from != null)
+        {
+            p.LastKiller = from;
+            // The map's oath rides their blows.
+            if (!silent && Rules.HitChill) SlowPlayer(0.65, 1.4);
+            if (!silent && Rules.HitPoison) { p.PoisonT = Math.Max(p.PoisonT, 3); p.PoisonDps = Math.Max(p.PoisonDps, from.Damage * 0.12); }
+        }
         if (p.Hp <= 0)
         {
             if (p.Revives > 0)
@@ -949,7 +1000,7 @@ public sealed partial class Battle
     {
         var p = Player;
         if (!p.Alive) return;
-        double h = amount * Stats.Get(Stat.Healing);
+        double h = amount * Stats.Get(Stat.Healing) * (1 - Rules.HealCut);
         double before = p.Hp;
         p.Hp = Math.Min(MaxHp, p.Hp + h);
         if (!silent && p.Hp - before > 0.5) Events.Emit(new Ev.PlayerHeal { Amount = p.Hp - before });
@@ -984,9 +1035,9 @@ public sealed partial class Battle
         e.Mass = def.Mass ?? 1;
         e.MaxHp = e.Hp = def.Health * sc.Health * (o.Elite && !def.Elite ? 3 : 1);
         e.Damage = def.Damage * sc.Damage;
-        e.Speed = def.Speed * (0.92 + Rng.Next() * 0.16);
         e.Faction = o.Faction ?? def.Faction;
         e.Disposition = o.Disposition ?? (def.Faction == Faction.Ally ? Disposition.Ally : Disposition.Hostile);
+        e.Speed = def.Speed * (0.92 + Rng.Next() * 0.16) * (e.Disposition == Disposition.Ally ? 1 : Rules.FoeSpeed);
         e.Elite = def.Elite || o.Elite;
         e.Boss = def.Boss;
         e.State = o.Style == SpawnStyle.Rise ? EnemyState.Rising : o.Style == SpawnStyle.Burrow ? EnemyState.Burrowed : EnemyState.Active;
@@ -1045,7 +1096,7 @@ public sealed partial class Battle
         if (p == null) return null;
         double a = Rng.Next() * Tau, v = 1.5 + Rng.Next() * 2;
         p.Kind = kind; p.X = x; p.Z = z; p.Vx = Math.Cos(a) * v; p.Vz = Math.Sin(a) * v; p.Value = value; p.Ref = reference;
-        p.Age = 0; p.Pulled = false; p.PullT = 0; p.Persistent = false; p.Tier = 0;
+        p.Age = 0; p.Pulled = false; p.PullT = 0; p.Persistent = false; p.Tier = 0; p.Lean = null;
         if (kind == PickupKind.Ember) p.Tier = value >= 40 ? 3 : value >= 12 ? 2 : value >= 4 ? 1 : 0;
         return p;
     }
@@ -1160,7 +1211,7 @@ public sealed partial class Battle
                     }
                     var src = pr.OwnerId >= 0 ? Enemies.Items[pr.OwnerId] : null;
                     HurtPlayer(pr.Damage, pr.School, pr.Art, src is { Alive: true } ? src : null, true);
-                    if (pr.Status?.Kind == StatusKind.Chill) { p.SlowT = pr.Status.Duration; p.SlowF = 0.6; }
+                    if (pr.Status?.Kind == StatusKind.Chill) SlowPlayer(0.6, pr.Status.Duration);
                     Projectiles.Release(pr);
                 }
                 continue;

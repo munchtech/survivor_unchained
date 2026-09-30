@@ -25,6 +25,8 @@ public sealed class MapRun : ZoneRuntime
     readonly List<OathDef> oaths;
     readonly double packSize, elites, ember, gear;
     readonly int levels, extraWaves;
+    /// <summary>What the map's gear leans toward: what answers its oaths and people.</summary>
+    readonly string[] lean;
 
     enum AltarState { Asleep, Waves, Spent }
     sealed class Altar
@@ -62,6 +64,7 @@ public sealed class MapRun : ZoneRuntime
         gear = oaths.Aggregate(1.0, (a, o) => a * o.Gear);
         levels = oaths.Sum(o => o.Levels);
         extraWaves = oaths.Sum(o => o.Waves);
+        lean = MapOffers.Lean(map.Spec, peopleId);
         packUp = new bool[map.Packs.Count];
         total = map.Packs.Sum(p => PackCount(p));
         int li = 0;
@@ -111,6 +114,7 @@ public sealed class MapRun : ZoneRuntime
     public override void Begin(Battle b)
     {
         base.Begin(b);
+        b.Rules = MapOffers.Rules(Map.Spec);
         G.Announce(new Announcement(Map.Spec.Name, Region, "zone", 3.2, "Map"));
         Objectives();
     }
@@ -244,7 +248,11 @@ public sealed class MapRun : ZoneRuntime
         for (int k = 0; k < pieces; k++)
         {
             double a = k * 2.4, r = 1.5 + k * 0.4;
-            B.SpawnPickup(PickupKind.Item, x + Math.Cos(a) * r, z + Math.Sin(a) * r, 1, PlainGear[(int)Math.Floor(R() * PlainGear.Length)]);
+            if (B.SpawnPickup(PickupKind.Item, x + Math.Cos(a) * r, z + Math.Sin(a) * r, 1, PlainGear[(int)Math.Floor(R() * PlainGear.Length)]) is { } pk)
+            {
+                pk.Tier = Rarity(gear * size);
+                pk.Lean = lean;
+            }
         }
         for (int k = 0; k < 8; k++)
         {
@@ -285,12 +293,12 @@ public sealed class MapRun : ZoneRuntime
         if (e.Def.Family == Family.Undead && r < 0.2) out_.Add(new Loot(PickupKind.Material, "bone_dust", 1));
         // Champions carry gear, rolled where it falls.
         if (e.Elite && e != boss && R() < 0.55 * gear)
-            out_.Add(new Loot(PickupKind.Item, PlainGear[(int)Math.Floor(R() * PlainGear.Length)], 1, true, Rarity(gear)));
+            out_.Add(new Loot(PickupKind.Item, PlainGear[(int)Math.Floor(R() * PlainGear.Length)], 1, true, Rarity(gear), lean));
         if (e.Elite && e != boss && R() < 0.04 * gear)
             out_.Add(new Loot(PickupKind.Item, Manual(), 1, true, 2));
         if (e == boss)
             for (int k = 0; k < 2 + Tier / 2; k++)
-                out_.Add(new Loot(PickupKind.Item, PlainGear[(int)Math.Floor(R() * PlainGear.Length)], 1, true, Math.Max(1, Rarity(gear * 1.5))));
+                out_.Add(new Loot(PickupKind.Item, PlainGear[(int)Math.Floor(R() * PlainGear.Length)], 1, true, Math.Max(1, Rarity(gear * 1.5)), lean));
         return out_;
     }
 
