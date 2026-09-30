@@ -105,7 +105,13 @@ you come close and rousing its fellows, a leader among them now and then
 from the second day. After dark the ember burns through the Verge's ground
 here and there (ember scars, red on the map and pulsing): step into one and
 it pulls you into an arena held by that part of the wood's people; won, it
-goes out for the night. The ember burns only at night: on the Low Ford road
+goes out for the night. The story's great fights are the night's too, and
+arenas (`MakeStoryFights`): the Pack hunted in its own Hollow (Greymuzzle),
+the Roost raided (Redcowl), the Dig boiling over once it has turned on you
+(Grimtunnel, come up out of the dark), the sealed door opened with the
+sigil's fragment (the Barrow Lord). Each can be taken only after dark; won
+or lost, the quest is told how it went, and a lost one waits at the
+Wayfinder's table. The ember burns only at night: on the Low Ford road
 (the prologue, where it is learned, a great blessing at its first rise),
 until the dawn puts it out and everything it built with it; and in the
 arenas.

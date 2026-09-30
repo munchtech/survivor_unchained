@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using SurvivorUnchained.Core;
 using SurvivorUnchained.Play;
 using SurvivorUnchained.Play.Zones;
 using SurvivorUnchained.Rpg;
@@ -105,6 +107,52 @@ public class VergeTests
         var again = Make(TimeOfDay.Night, s.J);
         Assert.DoesNotContain(again.Zone.Interactables, i => i.Name == "The Scar at the Sealed Door");
     }
+
+    [Fact]
+    public void The_storys_great_fights_are_the_nights_and_the_story_remembers_how_they_went()
+    {
+        var s = Make();
+        // The Pack hostile, the Kerchiefs out, the Dig turned, the sigil's fragment in hand.
+        s.J.World.Facts["hollow.hostile"] = true;
+        s.J.World.Facts["dig.hostile"] = true;
+        s.J.Apply("""[{ "quest": { "id": "vault", "status": "active", "entry": "fragment" } }]""");
+        var day = Make(TimeOfDay.Day, s.J);
+        var fights = day.Zone.Interactables.Where(i => i.Id.StartsWith("night:")).ToList();
+        Assert.Equal(["night:hollow", "night:roost", "night:dig", "night:vault"], fights.Select(f => f.Id));
+        // By day: the place says so.
+        Assert.All(fights.Where(f => f.When!()), f => Assert.NotNull(f.Locked!()));
+        var night = Make(TimeOfDay.Night, s.J);
+        foreach (var f in night.Zone.Interactables.Where(i => i.Id.StartsWith("night:")))
+        {
+            Assert.True(f.When!(), f.Id);
+            Assert.Null(f.Locked!());
+            f.Act();
+            var spec = night.Host.Entered!;
+            Assert.True(spec.Story);
+            Assert.NotNull(spec.BossName);
+            // Both outcomes are real changes, with real quest entries.
+            foreach (var change in new[] { spec.OnWin!, spec.OnLose! })
+                foreach (var c in Json.Parse<List<Change>>(change).Where(c => c.Quest?.Entry != null))
+                    Assert.True(Lore.Quests[c.Quest!.Id].Entries.ContainsKey(c.Quest.Entry!), $"{spec.Id}: {c.Quest.Id}.{c.Quest.Entry}");
+        }
+        // The hunt won: Greymuzzle is dead, and there is no hunt left.
+        night.Zone.Interactables.Single(i => i.Id == "night:hollow").Act();
+        s.J.Apply(night.Host.Entered!.OnWin!);
+        Assert.Equal("dead", s.J.World.Fact("greymuzzle").Str);
+        Assert.True(s.J.World.Fact("beasts.population").Number <= 30);
+        Assert.False(Make(TimeOfDay.Night, s.J).Zone.Interactables.Single(i => i.Id == "night:hollow").When!());
+        // The raid lost: the story is told so, and it waits at the table.
+        var raid = Make(TimeOfDay.Night, s.J);
+        raid.Zone.Interactables.Single(i => i.Id == "night:roost").Act();
+        var spec2 = raid.Host.Entered!;
+        SurvivorUnchained.Arena.Arenas.Begin(s.J.World, spec2);
+        var b2 = s.J.StartBattle(true, new CollisionWorld(60), (_, _) => 0, 0, 0, 0, 3, arena: true);
+        SurvivorUnchained.Arena.Arenas.Finish(s.J, b2, spec2, won: false);
+        Assert.Contains(s.J.World.Rematches, r => r.Id == "roost_raid");
+        Assert.True(Quest(s.J, "caravan", "roost_repelled"));
+    }
+
+    static bool Quest(Journey j, string id, string entry) => j.World.Quests.TryGetValue(id, out var q) && q.Entries.Contains(entry);
 
     [Fact]
     public void The_wreck_gives_up_the_manifest_once()

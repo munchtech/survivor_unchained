@@ -47,6 +47,9 @@ public sealed class ArenaSpec
     public string? OnWin, OnLose;
     /// <summary>A story fight (lost, it waits at the table to be taken again).</summary>
     public bool Story;
+    /// <summary>Who comes at the half hour, if not what rules the people (a named
+    /// foe of the story: Greymuzzle, Redcowl).</summary>
+    public string? Boss, BossName, BossTitle;
 
     /// <summary>The ground (always by night: the ember burns only in the dark).</summary>
     public MapSpec Map => new() { Seed = Seed, Tier = Tier, Theme = Theme, Night = true, Oaths = Oaths, Name = Name, Arena = true, People = People };
@@ -80,6 +83,7 @@ public static class Arenas
     {
         Id = lost.Id, Name = lost.Name, Sub = lost.Sub, Seed = lost.Seed + 1, Tier = lost.Tier, Theme = lost.Theme,
         People = lost.People, Oaths = lost.Oaths.ToList(), Minutes = lost.Minutes, Story = true, OnWin = lost.OnWin, OnLose = null,
+        Boss = lost.Boss, BossName = lost.BossName, BossTitle = lost.BossTitle,
         ReturnZone = zone, ReturnX = x, ReturnZ = z, ReturnFacing = facing,
     };
 

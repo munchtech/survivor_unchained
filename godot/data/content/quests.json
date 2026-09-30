@@ -34,6 +34,9 @@
    "pump_moved": "You talked the diggers' foreman into moving the outflow away from the stream.",
    "pump_blown": "You blew the Dig's powder. The pump, the pipe and a good part of the hillside are gone.",
    "alpha_dead": "Greymuzzle is dead.",
+   "hollow_lost": "You went into the Hollow after dark to finish the Pack, and the Pack finished with you. Greymuzzle is still out there, and bolder for it.",
+   "dig_overrun": "The Dig boiled over in the dark and you held its edge until nothing more came up. Grimtunnel went back down, bleeding. The pump is dead.",
+   "dig_held": "The lamplings poured up out of the Dig in the dark and you could not hold them. The pump runs on.",
    "pack_led": "You led the Pack onto the Kerchief camp.",
    "told_holloway": "You told Holloway the beasts were dealt with.",
    "dig_sold": "You sold the Dig's location to Pell Varrow."
@@ -62,6 +65,8 @@
    "pell_ledger": "Pell Varrow's ledger: a payment to \"R.\" the night the caravan vanished, and another to the toll clerk.",
    "clerks_key": "The toll clerk had a key to Pell's warehouse. He should not have.",
    "roost_found": "Redcowl's Roost: the Kerchief camp in the ravine. The Coyle cargo is there. So are three survivors, in cages.",
+   "roost_raided": "You took Redcowl's Roost by night. Redcowl is dead, and the camp is yours to go through.",
+   "roost_repelled": "You went at the Roost by night and were thrown back. The Kerchiefs are awake to you now.",
    "manifest": "A torn manifest: salt, cloth, iron, and six crates marked only \"B.E.\" for a buyer called G.",
    "blasting_ember": "The \"B.E.\" crates are blasting ember. Bound for the Dig.",
    "redcowl_met": "Redcowl, who leads the Kerchiefs, would rather talk than bleed. He says so, anyway.",
@@ -94,7 +99,9 @@
    "bootprints": "Fresh bootprints in the mud at the door, going in, not coming out. Someone got inside.",
    "vonnra_refuses": "Vonnra will not talk about the vault. Not for money, which is how you know it matters.",
    "chid_empire": "Chid says the old empire \"did something here\" before the Watch was founded, and the Watch was founded to keep it done.",
-   "whisper": "The bones at the door spoke, to you and no one else: \"It was never locked from the outside.\""
+   "whisper": "The bones at the door spoke, to you and no one else: \"It was never locked from the outside.\"",
+   "opened": "After dark the sigil woke under your hand and the door let you in, and the Seventh Legion's dead let you out again. Behind it: a stair going down, older than the door.",
+   "shut": "The door took the sigil after dark, and the dead came up out of it. You fell back, and it shut behind them."
   }
  },
  "below": {

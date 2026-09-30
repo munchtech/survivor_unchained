@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SurvivorUnchained.Arena;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Rpg;
 using SurvivorUnchained.Sim;
@@ -139,6 +140,71 @@ public sealed class Verge : ZoneRuntime
 
     bool KerchiefsOut() => !KerchiefsFriendly() && F("redcowl").Str is not ("tricked" or "dead") && !F("roost.cleared").Truthy;
 
+    /* ---------------------------------------------------- the night's fights -- */
+
+    /* The story's great fights are the night's, and they are arenas: the
+     * Pack hunted in its own Hollow, the Roost raided, the Dig boiling over,
+     * the sealed door opened. Each is there to be taken only after dark (by
+     * day the place says so); won or lost, the story is told how it went,
+     * and a lost one waits at the Wayfinder's table to be taken again. */
+
+    void StoryFight(string id, XZ at, double r, string verb, string name, Func<bool> when, Func<ArenaSpec> spec)
+    {
+        Interactables.Add(new Interactable
+        {
+            Id = $"night:{id}", X = at.X, Z = at.Z, R = r, Verb = verb, Name = name, When = when,
+            Hint = () => W.Time == TimeOfDay.Night ? "An ember arena: the story remembers how it goes" : "Only after dark",
+            Locked = () => W.Time == TimeOfDay.Night ? null : "It is the night's fight. Come back after dark.",
+            Act = () => G.EnterArena(spec()),
+        });
+    }
+
+    ArenaSpec Story(string id, string name, string people, int seed, string boss, string bossName, string bossTitle, string onWin, string onLose)
+    {
+        var p = B!.Player;
+        int tier = Math.Max(1, Math.Min(4, 1 + (W.Day - 1) / 2 + (int)F("arena.best").Number / 2));
+        return new ArenaSpec
+        {
+            Id = id, Name = name, Sub = $"Tier {tier} · held by {Maps.MapOffers.People(people).Name}", Seed = seed, Tier = tier, People = people,
+            Theme = people == "dead" ? "blight" : "wood", Story = true, Boss = boss, BossName = bossName, BossTitle = bossTitle,
+            ReturnZone = "verge", ReturnX = p.X, ReturnZ = p.Z, ReturnFacing = p.Facing, OnWin = onWin, OnLose = onLose,
+        };
+    }
+
+    void MakeStoryFights()
+    {
+        var hollow = V("hollow"); var roost = V("roost"); var dig = V("dig"); var vault = V("vault");
+        // The Beast Problem, settled with blood: the Pack hunted in its own Hollow.
+        StoryFight("hollow", hollow, 6.5, "Hunt the Pack", "Wolf Hollow",
+            () => !WolvesFriendly() && !HollowCalm() && F("greymuzzle").Str != "dead",
+            () => Story("hollow_by_night", "The Hollow by Night", "pack", 311, "wolf_alpha", "Greymuzzle", "The Old Alpha",
+                $$"""[{ "set": { "greymuzzle": "dead", "hollow.hostile": true } }, { "add": { "beasts.population": -30 } }, { "quest": { "id": "beasts", "entry": "alpha_dead" } }, {{Hist("killed_greymuzzle", "killed Greymuzzle, the old alpha of the Pack, in his own Hollow by night", ["beasts", "wolves"], 2, null, """{ "maeca": { "affection": -50, "respect": -20 }, "holloway": { "respect": 20 } }""")}}]""",
+                """[{ "add": { "beasts.population": 10 } }, { "set": { "hollow.hostile": true } }, { "quest": { "id": "beasts", "entry": "hollow_lost" } }]"""));
+        // The Missing Caravan, by force: Redcowl's camp taken in the dark.
+        StoryFight("roost", roost, 7, "Raid the Roost", "Redcowl's Roost",
+            () => !KerchiefsFriendly() && F("redcowl").Str is not ("dead" or "tricked") && !F("roost.cleared").Truthy,
+            () => Story("roost_raid", "Raid on the Roost", "kerchiefs", 523, "enforcer", "Redcowl", "Of the Kerchiefs",
+                $$"""[{ "set": { "redcowl": "dead", "roost.cleared": true, "roost.hostile": true } }, { "quest": { "id": "caravan", "entry": "roost_raided" } }, {{Hist("killed_redcowl", "took Redcowl's Roost by night and killed him in it", ["kerchief", "caravan"], 2, """{ "fear": 10 }""", """{ "holloway": { "respect": 25 }, "rav": { "affection": -20 } }""")}}]""",
+                """[{ "set": { "roost.hostile": true } }, { "quest": { "id": "caravan", "entry": "roost_repelled" } }]"""));
+        // When the Dig turns on you, it boils over after dark.
+        StoryFight("dig", dig, 7, "Hold the Dig's edge", "The Dig",
+            () => F("dig.hostile").Truthy && !F("dig.broken").Truthy,
+            () =>
+            {
+                bool running = F("dig.pump").Str is not ("broken" or "blown" or "moved");
+                string pump = running ? """{ "set": { "dig.pump": "blown" } }, { "quest": { "id": "beasts", "entry": "pump_blown" } }, """ : "";
+                return Story("dig_boils", "The Dig Boils Over", "lamplings", 739, "grimtunnel_roused", "Grimtunnel", "Come Up Out of the Dark",
+                    $$"""[{ "set": { "dig.broken": true } }, {{pump}}{ "quest": { "id": "beasts", "entry": "dig_overrun" } }, {{Hist("broke_dig", "held the Dig's edge by night until nothing more came up, and drove Grimtunnel back down", ["beasts", "lampling"], 2, """{ "respect": 10 }""", """{ "wenna": { "respect": 20 }, "maeca": { "respect": 20 } }""")}}]""",
+                    """[{ "quest": { "id": "beasts", "entry": "dig_held" } }]""");
+            });
+        // The Sealed Vault: with the sigil's fragment, the door wakes after dark.
+        StoryFight("vault", vault, 5, "Set the sigil in the door", "The Sealed Door",
+            () => Quest("vault", "fragment") && !F("vault.opened").Truthy,
+            () => Story("vault_opened", "Behind the Sealed Door", "dead", 947, "barrow_knight", "The Barrow Lord", "Of the Seventh Legion",
+                $$"""[{ "set": { "vault.opened": true } }, { "quest": { "id": "vault", "entry": "opened" } }, {{Hist("opened_vault", "opened the old empire's door in the Verge and came back out of it", ["vault", "mystery"], 3, """{ "fear": 5, "respect": 10 }""", """{ "vonnra": { "trust": -10 }, "chid": { "respect": 15 } }""")}}]""",
+                """[{ "quest": { "id": "vault", "entry": "shut" } }]"""));
+    }
+
     /* ------------------------------------------------------ ember scars -- */
 
     sealed record Scar(int Index, double X, double Z, string People, string Name);
@@ -274,8 +340,13 @@ public sealed class Verge : ZoneRuntime
         if (!hollowSpawned && Near(hollow, 38) && F("greymuzzle").Str != "dead")
         {
             hollowSpawned = true;
-            greymuzzle = B.SpawnEnemy("wolf_alpha", hollow.X, hollow.Z, new Battle.SpawnOpts { Level = Level(), Tag = "greymuzzle", Home = (hollow.X, hollow.Z, 14) });
-            if (greymuzzle != null) SetDisposition(greymuzzle);
+            // By day the old alpha keeps to his den unless the Pack is calm with you
+            // (then he comes out to look); he is fought only in the night's hunt.
+            if (HollowCalm())
+            {
+                greymuzzle = B.SpawnEnemy("wolf_alpha", hollow.X, hollow.Z, new Battle.SpawnOpts { Level = Level(), Tag = "greymuzzle", Home = (hollow.X, hollow.Z, 14) });
+                if (greymuzzle != null) SetDisposition(greymuzzle);
+            }
             SpawnGroup("wolf", 5, hollow.X, hollow.Z, 9, "hollow", 14);
             if (F("beasts.outcome").Str != "cured") SpawnGroup("wolf_blighted", 3, hollow.X, hollow.Z, 6, "hollow", 8);
             if (HollowCalm()) G.Say("The wolves watch you come. None of them move to stop you.", null, 4);
@@ -769,6 +840,7 @@ public sealed class Verge : ZoneRuntime
         }
         PlacePacks();
         OpenScars();
+        MakeStoryFights();
         G.AnnounceZone();
         // The first time out here: the wood is big, and there is a map.
         if (!wd.Fact("tip.verge_map").Truthy)

@@ -49,11 +49,15 @@ public sealed class ArenaRun : ZoneRuntime
     public override string Name => Spec.Name;
     public override string? Region => Spec.Sub != "" ? Spec.Sub : $"Tier {Spec.Tier} · {people.Name}";
     public override bool Combat => true;
-    public override IReadOnlyList<string> Creatures => people.Arena.Select(h => h.Def).Append(people.Champion).Append(people.Boss).Distinct().ToList();
+    public override IReadOnlyList<string> Creatures => people.Arena.Select(h => h.Def).Append(people.Champion).Append(BossDef).Distinct().ToList();
     /// <summary>Higher and further out: the whole of the fight in view.</summary>
     public override (double Pitch, double Distance)? Camera => (64, 31);
     public override bool Ember => true;
     public bool Over => over;
+    /// <summary>What comes at the half hour: the story's named foe, or what rules the people.</summary>
+    string BossDef => Spec.Boss ?? people.Boss;
+    string BossName => Spec.BossName ?? people.BossName;
+    string BossTitle => Spec.BossTitle ?? people.BossTitle;
     /// <summary>What rules the horde is dead: the fight is won, and the way out open.</summary>
     public bool Won => won;
     double Seconds => B?.Time ?? 0;
@@ -147,7 +151,7 @@ public sealed class ArenaRun : ZoneRuntime
     {
         if (B == null) return null;
         // One thrower too many is one of the crowd instead.
-        if (Enemies.Get(def).Ranged != null && !elite && def != people.Boss)
+        if (Enemies.Get(def).Ranged != null && !elite && def != BossDef)
         {
             if (rangedAlive >= RangedCap())
             {
@@ -317,7 +321,8 @@ public sealed class ArenaRun : ZoneRuntime
         bossUp = true;
         var p = B!.Player;
         var at = Around(R() * Math.PI * 2, 18) ?? (p.X + 8, p.Z);
-        boss = Spawn(people.Boss, at.X, at.Z, true, SpawnStyle.Walk);
+        boss = Spawn(BossDef, at.X, at.Z, true, SpawnStyle.Walk);
+        if (boss != null && Spec.BossName != null) boss.Named = new Named { Title = Spec.BossName };
         if (boss != null)
         {
             boss.MaxHp = boss.Hp = boss.MaxHp * (6 + Spec.Tier * 2);
@@ -330,7 +335,7 @@ public sealed class ArenaRun : ZoneRuntime
             if (map.CanStand(x, z)) Spawn(Pick(), x, z);
         }
         B.Events.Emit(new Ev.Shake { Amount = 0.45 });
-        G.Announce(new Announcement(people.BossName, people.BossTitle, "danger", 3, "The half hour"));
+        G.Announce(new Announcement(BossName, BossTitle, "danger", 3, "The half hour"));
         Objectives();
     }
 
@@ -435,7 +440,7 @@ public sealed class ArenaRun : ZoneRuntime
             pulseT = 1.3;
             B.Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = wx, Z = wz, Radius = 2.4, Duration = 1.2, Hostile = false });
         }
-        if (boss is { Alive: true } b && b.State != EnemyState.Dying) G.SetBoss(new BossBar(people.BossName, people.BossTitle, b.Hp, b.MaxHp));
+        if (boss is { Alive: true } b && b.State != EnemyState.Dying) G.SetBoss(new BossBar(BossName, BossTitle, b.Hp, b.MaxHp));
         else if (herald is { Alive: true } h && h.State != EnemyState.Dying) G.SetBoss(new BossBar(h.Named?.Title ?? $"Herald of {people.Name}", people.Name, h.Hp, h.MaxHp));
         else G.SetBoss(null);
         // The clock on the objectives, each second.
@@ -449,9 +454,9 @@ public sealed class ArenaRun : ZoneRuntime
         int left = (int)Math.Max(0, End - Seconds);
         var steps = new List<Step>
         {
-            won ? new Step($"{people.BossName} is dead: the arena is won", Done: true)
-            : bossUp ? new Step($"{people.BossName} has come: kill it")
-            : new Step($"Survive: {left / 60}:{left % 60:00} until {people.BossName} comes"),
+            won ? new Step($"{BossName} is dead: the arena is won", Done: true)
+            : bossUp ? new Step($"{BossName} has come: kill it")
+            : new Step($"Survive: {left / 60}:{left % 60:00} until {BossName} comes"),
         };
         if (won) steps.Add(new Step($"Stay as long as you dare: {Clock(Seconds - End)} past the half hour", Optional: true));
         foreach (var o in oaths) steps.Add(new Step($"{o.Name}: {o.Asks.ToLowerInvariant()}", Optional: true));
