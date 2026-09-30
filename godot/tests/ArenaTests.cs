@@ -73,17 +73,18 @@ public class ArenaTests
         {
             Name = "Ashe", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
         }, 42);
-        j.Expedition = new Expedition { Level = 12, Xp = 3, Weapons = [new CarriedWeapon { Id = "cinderfall", Rank = 5 }], Boons = new() { ["stormborn"] = 2 }, Hp = 50 };
+        j.Expedition = new Expedition { Hp = 50 };
         var s = Make(Spec(), j);
+        Assert.True(s.B.EmberOn);
         Assert.Equal(1, s.B.EmberLevel);
-        Assert.DoesNotContain(s.B.Weapons, w => w.Id == "cinderfall");
         Assert.DoesNotContain(s.B.Boons, kv => kv.Value > 0 && Boons.IsGreat(kv.Key));
+        // Whole, whatever the road took out of the survivor.
         Assert.Equal(s.B.MaxHp, s.B.Player.Hp);
-        // And what is built in it stays in it.
+        // And what is built in it stays in it (the wounds taken outside are still waiting).
         s.B.AddWeapon("knifestorm", 3);
+        s.B.Player.Hp = 10;
         j.Capture(s.B);
-        Assert.Equal(12, j.Expedition!.Level);
-        Assert.DoesNotContain(j.Expedition.Weapons, w => w.Id == "knifestorm");
+        Assert.Equal(50, j.Expedition!.Hp);
     }
 
     [Fact]

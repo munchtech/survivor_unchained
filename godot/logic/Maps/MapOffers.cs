@@ -101,7 +101,7 @@ public static class MapOffers
             string theme = people.Id == "dead" ? (rng.Chance(0.5) ? "blight" : "wood") : rng.Chance(0.3) ? "autumn" : "wood";
             var spec = new MapSpec
             {
-                Seed = rng.Int(1, int.MaxValue - 1), Tier = t, Theme = theme, Oaths = oaths, Night = people.Id == "dead" || rng.Chance(0.6),
+                Seed = rng.Int(1, int.MaxValue - 1), Tier = t, Theme = theme, Oaths = oaths, Night = true,
                 Name = $"The {rng.Pick(Adjectives)} {rng.Pick(Places)}",
             };
             list.Add(new MapOffer(spec, people.Id));

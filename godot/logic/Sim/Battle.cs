@@ -187,6 +187,10 @@ public sealed partial class Battle
     public MapRules Rules = new();
     public int EmberLevel = 1;
     public double EmberXp, EmberNext = 12;
+    /// <summary>The ember burns here (it is night: an arena, the prologue): the
+    /// dead leave its stones and it rises, card by card. By day, in the story,
+    /// it does not; the survivor grows instead.</summary>
+    public bool EmberOn = true;
     public int PendingLevels;
     /// <summary>Milestone levels whose blessing is still to be chosen (it comes
     /// on top of that level's skill, after it).</summary>
@@ -684,7 +688,7 @@ public sealed partial class Battle
         {
             // The dead leave a stone with light still in it.
             double xp = e.Def.Xp * Content.Enemies.ScaleFor(e.Level).Xp;
-            if (xp > 0) DropEmber(e.X, e.Z, xp);
+            if (xp > 0 && EmberOn) DropEmber(e.X, e.Z, xp);
             if (credited)
             {
                 double luck = Stats.Get(Stat.Luck);
@@ -1520,6 +1524,7 @@ public sealed partial class Battle
 
     public void GainEmber(double v)
     {
+        if (!EmberOn) return;
         EmberXp += v * Stats.Get(Stat.XpGain);
         while (EmberXp >= EmberNext)
         {
@@ -1586,6 +1591,31 @@ public sealed partial class Battle
         if (id == "vitality") HealPlayer(25, "vitality");
         if (id == "spirit_companion") Summon("spirit_wolf", 0, 99);
         if (id == "grave_call") Summon("ghoul_ally", 0, 99);
+    }
+
+    /// <summary>The ember goes out (the dawn): everything it built goes with it,
+    /// the cards, the blessings, whatever they called up; the survivor is left
+    /// with what they carry (their gear's skills, at the gear's ranks).</summary>
+    public void Douse(IEnumerable<(string Id, int Rank)> kit)
+    {
+        foreach (var id in Boons.Keys.ToList())
+        {
+            Stats.RemoveSource($"boon:{id}");
+            Stats.RemoveSource($"syn:{id}");
+            RemoveTriggers($"boon:{id}");
+        }
+        Boons.Clear();
+        Weapons.Clear();
+        foreach (var (id, rank) in kit) AddWeapon(id, rank);
+        foreach (var e in Enemies.Living().Where(e => e.Disposition == Disposition.Ally).ToList()) Enemies.Release(e);
+        EmberLevel = 1;
+        EmberXp = 0;
+        EmberNext = EmberNeed(1);
+        PendingLevels = 0;
+        PendingBlessings.Clear();
+        GreatOwed = 0;
+        EmberOn = false;
+        Player.Hp = Math.Min(Player.Hp, MaxHp);
     }
 
     public void AddTrigger(TriggerDef def, string source, int rank = 1) =>

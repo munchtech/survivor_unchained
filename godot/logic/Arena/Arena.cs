@@ -36,7 +36,6 @@ public sealed class ArenaSpec
     public int Seed = 1;
     public int Tier = 1;
     public string Theme = "wood";
-    public bool Night = true;
     /// <summary>Who fills it (Maps/MapOffers.Peoples).</summary>
     public string People = "pack";
     public List<string> Oaths = new();
@@ -49,7 +48,8 @@ public sealed class ArenaSpec
     /// <summary>A story fight (lost, it waits at the table to be taken again).</summary>
     public bool Story;
 
-    public MapSpec Map => new() { Seed = Seed, Tier = Tier, Theme = Theme, Night = Night, Oaths = Oaths, Name = Name, Arena = true, People = People };
+    /// <summary>The ground (always by night: the ember burns only in the dark).</summary>
+    public MapSpec Map => new() { Seed = Seed, Tier = Tier, Theme = Theme, Night = true, Oaths = Oaths, Name = Name, Arena = true, People = People };
 }
 
 /// <summary>How an arena ended, and what came out of it.</summary>
@@ -69,7 +69,7 @@ public static class Arenas
     public static ArenaSpec FromTable(MapOffer o, string zone, double x, double z, double facing) => new()
     {
         Id = $"table:{o.Spec.Seed}", Name = o.Spec.Name, Sub = $"Tier {o.Spec.Tier} · held by {MapOffers.People(o.People).Name}",
-        Seed = o.Spec.Seed, Tier = o.Spec.Tier, Theme = o.Spec.Theme, Night = o.Spec.Night, People = o.People, Oaths = o.Spec.Oaths.ToList(),
+        Seed = o.Spec.Seed, Tier = o.Spec.Tier, Theme = o.Spec.Theme, People = o.People, Oaths = o.Spec.Oaths.ToList(),
         ReturnZone = zone, ReturnX = x, ReturnZ = z, ReturnFacing = facing,
     };
 
@@ -78,7 +78,7 @@ public static class Arenas
     /// second loss tells it nothing; a win still counts.</summary>
     public static ArenaSpec Again(ArenaSpec lost, string zone, double x, double z, double facing) => new()
     {
-        Id = lost.Id, Name = lost.Name, Sub = lost.Sub, Seed = lost.Seed + 1, Tier = lost.Tier, Theme = lost.Theme, Night = lost.Night,
+        Id = lost.Id, Name = lost.Name, Sub = lost.Sub, Seed = lost.Seed + 1, Tier = lost.Tier, Theme = lost.Theme,
         People = lost.People, Oaths = lost.Oaths.ToList(), Minutes = lost.Minutes, Story = true, OnWin = lost.OnWin, OnLose = null,
         ReturnZone = zone, ReturnX = x, ReturnZ = z, ReturnFacing = facing,
     };

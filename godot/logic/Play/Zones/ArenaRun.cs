@@ -52,6 +52,7 @@ public sealed class ArenaRun : ZoneRuntime
     public override IReadOnlyList<string> Creatures => people.Arena.Select(h => h.Def).Append(people.Champion).Append(people.Boss).Distinct().ToList();
     /// <summary>Higher and further out: the whole of the fight in view.</summary>
     public override (double Pitch, double Distance)? Camera => (64, 31);
+    public override bool Ember => true;
     public bool Over => over;
     /// <summary>What rules the horde is dead: the fight is won, and the way out open.</summary>
     public bool Won => won;
@@ -75,7 +76,8 @@ public sealed class ArenaRun : ZoneRuntime
         Hooks = new BattleHooks { OnKill = OnKill, OnLoot = OnLoot, OnPickup = OnPickup };
     }
 
-    public override TimeOfDay TimeOf(WorldState w) => Spec.Night ? TimeOfDay.Night : TimeOfDay.Day;
+    /// <summary>Always night: the ember burns only in the dark.</summary>
+    public override TimeOfDay TimeOf(WorldState w) => TimeOfDay.Night;
 
     /// <summary>An arena's night is brighter than the wood's: the fight is seen
     /// from high up, and has to read out to the edges of the picture.</summary>
@@ -456,7 +458,7 @@ public sealed class ArenaRun : ZoneRuntime
         G.SetObjectives([new Tracked("arena", Spec.Name, TrackTone.Main, steps)]);
     }
 
-    public override AmbienceMix Ambience(double x, double z) => new() { Wind = 0.4, Leaves = Spec.Theme == "blight" ? 0.1 : 0.35, Crickets = Spec.Night ? 0.3 : 0, Owl = Spec.Night ? 0.2 : 0, Fire = Warmth(x, z) };
+    public override AmbienceMix Ambience(double x, double z) => new() { Wind = 0.4, Leaves = Spec.Theme == "blight" ? 0.1 : 0.35, Crickets = 0.3, Owl = 0.2, Fire = Warmth(x, z) };
 
     public override Dictionary<string, object?> Debug() => new()
     {

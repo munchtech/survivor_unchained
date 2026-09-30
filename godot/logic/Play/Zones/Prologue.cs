@@ -21,7 +21,10 @@ namespace SurvivorUnchained.Play.Zones;
  *   post      a Barrow Knight over a dead watchman's chest (elites, equipment)
  *   barrow    a Grave-Caller raising the dead                     (ability)
  *   ford      the Ford-Warden                                        (boss)
- *   dawn      what took the Warden's heart; the gate opens      (the world)
+ *   dawn      what took the Warden's heart; the sun comes up and the ember
+ *             goes out, and all it built with it: it burns only in the dark
+ *             (the story is walked by day; the ember is for the night's
+ *             arenas); the gate opens                               (the world)
  *
  * Dying here is forgiven: the ember is not done with you, and you get up
  * again at the last place you were safe. That is the only place in the game
@@ -34,6 +37,8 @@ public sealed class Prologue : ZoneRuntime
     public override string Name => "The Low Ford Road";
     public override string? Region => "Thornhollow, south";
     public override bool Combat => true;
+    /// <summary>The night's: the ember burns until the dawn puts it out.</summary>
+    public override bool Ember => !F("prologue.done").Truthy;
     public override IReadOnlyList<string> Creatures { get; } = ["risen", "risen_warrior", "risen_archer", "barrow_knight", "grave_caller", "grimtunnel", "ford_warden"];
 
     sealed class WardenAI
@@ -54,7 +59,7 @@ public sealed class Prologue : ZoneRuntime
     readonly bool[] litPylons;
     readonly double[] pylonHp;
     Enemy? warden, caller, knight, grim;
-    bool wardenGone, chestOpened, finished, coreShown;
+    bool wardenGone, chestOpened, finished, coreShown, doused;
     readonly XZ wardenHome;
     (double X, double Z, double Facing) wardenPos;
     readonly WardenAI ai = new();
@@ -105,7 +110,7 @@ public sealed class Prologue : ZoneRuntime
                 chestOpened = true;
                 G.Apply("""[{ "give": "padded_jerkin", "rarity": 1 }, { "give": "health_draught", "qty": 2 }, { "gold": 15 }]""");
                 G.SetHint(null);
-                G.After(0.6, () => Tip("pack", "Your pack", "What you find, you keep. Ember fades when you rest; gear, gold and what you learn do not. Open your pack to wear the jerkin.", [Key("inventory")], 14));
+                G.After(0.6, () => Tip("pack", "Your pack", "What you find, you keep. The ember will not outlast the night; gear, gold and what you learn will. Open your pack to wear the jerkin.", [Key("inventory")], 14));
                 Objective([("Search the old Watch-post", true, false), ("Wear what you found", false, true), ("Follow the road north", false, false)]);
             },
         });
@@ -399,6 +404,12 @@ public sealed class Prologue : ZoneRuntime
                 // Keep the clearing full: more of them the longer it goes on.
                 double want = Math.Min(40, 16 + stageT * 0.3);
                 if (spawnT <= 0 && n < want) { SpawnAround("risen", 2 + (stageT > 40 ? 1 : 0), 9, 14); spawnT = stageT > 30 ? 0.8 : 1.1; }
+                // The first rise of the ember brings a great blessing, before its first card.
+                if (B.EmberLevel >= 2 && shown.Add("great"))
+                {
+                    B.GreatOwed++;
+                    G.SetDraftTip("A great blessing, first: it changes how the fight works, from now until the ember goes out. Anyone can take any of them.");
+                }
                 if (stageT > 14) Tip("dash", "Dash", $"{Key("dash")}: a quick roll that nothing can touch. It has two charges, and they come back.", [Key("dash")]);
                 if ((B.EmberLevel >= 4 && stageT > 70) || stageT > 110)
                 {
@@ -520,6 +531,8 @@ public sealed class Prologue : ZoneRuntime
             case Stage.Dawn:
             {
                 dawnK = Math.Min(1, dawnK + dt / 10);
+                // The sun clears the trees, and the ember goes out.
+                if (!doused && dawnK > 0.3) { doused = true; Douse(); }
                 envT -= dt;
                 G.SetAtmosphere(Atmospheres.Blend(Atmospheres.Night, Atmospheres.Dawn, dawnK * dawnK * (3 - 2 * dawnK)), envT <= 0);
                 if (envT <= 0) envT = 1.2;
@@ -692,6 +705,20 @@ public sealed class Prologue : ZoneRuntime
         }
     }
 
+    /// <summary>The dawn puts the ember out: the cards, the blessing, all it
+    /// built. What the survivor carries, and what they learned, stay.</summary>
+    void Douse()
+    {
+        if (B == null) return;
+        var p = B.Player;
+        B.Events.Emit(new Ev.Nova { X = p.X, Z = p.Z, Radius = 3.4, School = School.Fire, Duration = 1.4 });
+        B.Events.Emit(new Ev.Shake { Amount = 0.25 });
+        G.Journey.Douse(B);
+        G.Announce(new Announcement("The ember goes out", "It burns only in the dark", "zone", 4.2, "Dawn"));
+        G.After(1.2, () => G.Say("As the sun clears the trees, the ember in you gutters and goes out, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again, from nothing.", null, 10));
+        G.After(11.5, () => Tip("day", "By day", $"By day the ember sleeps: you fight with what you carry, your art and your feet, and every fight teaches you ({Key("character")}). The ember is for the night.", [Key("character")], 14));
+    }
+
     void Finish()
     {
         G.Apply("""[{ "set": { "prologue.done": true } }, { "quest": { "id": "prologue", "status": "resolved", "outcome": "resolved" } }]""");
@@ -744,7 +771,7 @@ public sealed class Prologue : ZoneRuntime
         if (F("prologue.done").Truthy)
         {
             // Loaded after the prologue: the road at dawn, the dead at rest.
-            Now = Stage.Exit; stageT = 0; dawnK = 1;
+            Now = Stage.Exit; stageT = 0; dawnK = 1; doused = true;
             G.SetAtmosphere(Atmospheres.Dawn);
             b.Collision.RemoveTagged("gate");
             foreach (var p in pylons) G.Look.SetLit(p.Light, false);

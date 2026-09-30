@@ -116,8 +116,7 @@ public partial class Game
             return;
         }
         var b = Battle;
-        bool hadEmber = Journey.Expedition != null || (b?.EmberLevel ?? 1) > 1;
-        var lines = Journey.Sleep(b, hadEmber, Rng.NextDouble);
+        var lines = Journey.Sleep(b, Rng.NextDouble);
         if (lines == null) return;
         var screen = screens.Current as RestScreen;
         hud.Fade(1, 0.9);

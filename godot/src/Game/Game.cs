@@ -334,7 +334,7 @@ public partial class Game : Node, IZoneHost
         scene.Showcase = null;
         var start = at ?? z.ArrivalFrom(from);
         var meta = scene.Data.Meta;
-        var b = Journey.StartBattle(z.Combat, meta.Collision(), scene.HeightAt, start.X, start.Z, start.Facing, (uint)Rng.Next(), arena: z is ArenaRun);
+        var b = Journey.StartBattle(z.Combat, meta.Collision(), scene.HeightAt, start.X, start.Z, start.Facing, (uint)Rng.Next(), arena: z is ArenaRun, ember: z.Ember);
         // An arena is seen from higher and further out: the whole of the fight.
         var (pitch, dist) = z.Camera is var (cp, cd) ? (Mathf.DegToRad((float)cp), (float)cd) : camHome;
         cam.Pitch = pitch;
@@ -581,7 +581,8 @@ public partial class Game : Node, IZoneHost
         if (hudT <= 0)
         {
             hudT = 1.0 / 12;
-            hud.Frame(Battle, Journey.Ch.Gold, Inventory.Count(Journey.Ch, "health_draught"));
+            var ch = Journey.Ch;
+            hud.Frame(Battle, ch.Gold, Inventory.Count(ch, "health_draught"), (ch.Level, ch.Xp / Character.XpForLevel(ch.Level)));
         }
         hud.SetBruise(scene.Bruise);
         scene.Voices.Quiet = hudMode == "dialogue" || screens.Current != null;

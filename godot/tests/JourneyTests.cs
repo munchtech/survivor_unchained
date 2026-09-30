@@ -53,35 +53,39 @@ public class JourneyTests
         var (j, _) = Make();
         j.Ch.Gold = 37;
         var b = Fight(j);
-        b.GainEmber(b.EmberNext * 3);
+        b.Player.Hp -= 30;
         j.Capture(b);
         var text = Json.Write(j.ToSave(new SaveLocation { Zone = "verge", X = 3, Z = 4 }));
         var back = Journey.From(Json.Parse<SaveData>(text), 1);
         Assert.Equal(37, back.Ch.Gold);
         Assert.Equal(j.Ch.Name, back.Ch.Name);
-        Assert.Equal(j.Expedition!.Level, back.Expedition!.Level);
-        Assert.Equal(j.Expedition.Hp, back.Expedition.Hp);
+        Assert.Equal(j.Expedition!.Hp, back.Expedition!.Hp);
     }
 
     [Fact]
-    public void The_ember_is_carried_into_the_next_zone_and_not_into_town()
+    public void In_the_story_the_ember_does_not_burn_and_the_survivor_grows_instead()
     {
         var (j, _) = Make();
         var b = Fight(j);
-        // Blessings are the arenas' own: nothing is given for the road.
+        // Blessings and the ember are the arenas' own: nothing of them on the road.
+        Assert.False(b.EmberOn);
         Assert.DoesNotContain(b.Boons.Keys, Content.Boons.IsGreat);
-        for (int i = 0; i < 4; i++) b.GainEmber(b.EmberNext);
-        var extra = Content.Weapons.All.Keys.First(id => !b.Weapons.Any(w => w.Id == id));
-        b.AddWeapon(extra, 2);
+        var wolf = b.SpawnEnemy("wolf", 3, 3)!;
+        b.HitEnemy(wolf, 1e9, School.Physical, [Tag.Physical]);
+        Assert.DoesNotContain(b.Pickups.Living(), k => k.Kind == PickupKind.Ember);
+        b.GainEmber(1000);
+        Assert.Equal(1, b.EmberLevel);
+        Assert.False(b.DraftOwed);
+        // Kills teach the survivor instead.
+        double xp = j.Ch.Xp;
+        j.Killed(wolf, true);
+        Assert.True(j.Ch.Xp > xp);
+        // The wounds are carried to the next place (not into town, where they are tended).
+        b.Player.Hp = 40;
         j.Capture(b);
-        var next = Fight(j);
-        Assert.Equal(b.EmberLevel, next.EmberLevel);
-        Assert.Contains(next.Weapons, w => w.Id == extra && w.Rank == 2);
-        // A town is not an expedition: no ember there, and none captured.
+        Assert.Equal(40, Fight(j).Player.Hp);
         var town = Fight(j, combat: false);
-        Assert.Equal(1, town.EmberLevel);
-        j.Capture(town);
-        Assert.Equal(b.EmberLevel, j.Expedition!.Level);
+        Assert.Equal(town.MaxHp, town.Player.Hp);
     }
 
     [Fact]
@@ -170,19 +174,18 @@ public class JourneyTests
         j.Capture(b);
         b.Player.Hp = 1;
         int day = j.World.Day;
-        var lines = j.Sleep(b, hadEmber: true, H.Lcg(0.3))!;
+        var lines = j.Sleep(b, H.Lcg(0.3))!;
         Assert.Equal(day + 1, j.World.Day);
         Assert.Equal(TimeOfDay.Day, j.World.Time);
         Assert.Equal(15, j.Ch.Gold);
         Assert.Null(j.Expedition);
         Assert.Equal(b.MaxHp, b.Player.Hp);
-        Assert.Contains(lines, l => l.Contains("ember went out"));
         // Rook's friends sleep free; nobody sleeps on credit.
         j.World.Npc("rook").Affection = 40;
         Assert.Equal(0, j.RestCost);
         j.World.Npc("rook").Affection = 0;
         j.Ch.Gold = 2;
-        Assert.Null(j.Sleep(b, false, H.Lcg(0.1)));
+        Assert.Null(j.Sleep(b, H.Lcg(0.1)));
     }
 
     [Fact]

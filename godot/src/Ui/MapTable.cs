@@ -43,7 +43,7 @@ public partial class MapTableScreen : Overlay
             var card = Style.V(8,
                 Style.Label($"TIER {o.Spec.Tier}", Style.UiHeavy, 13, Style.Gold),
                 Style.Label(o.Spec.Name, Style.Display, 26, Style.GoldHi, true),
-                Style.Label($"Held by {people.Name}{(o.Spec.Night ? ", by night" : "")}", Style.TextItalic, 16, Style.Ink, true),
+                Style.Label($"Held by {people.Name}", Style.TextItalic, 16, Style.Ink, true),
                 Style.Label($"Ruled by {people.BossName}", Style.Text, 15, Style.InkDim, true),
                 Style.Label($"Their bane: {string.Join(", ", people.Lean.Select(a => SurvivorUnchained.Rpg.Items.Affix(a)?.Name ?? a))} gear", Style.TextItalic, 13, new Color("#b8a8d8"), true),
                 Style.Rule());

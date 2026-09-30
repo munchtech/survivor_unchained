@@ -25,7 +25,7 @@ public class PrologueTests
         var host = new FakeHost(j, meta);
         var zone = new Prologue(host, meta);
         var at = zone.ArrivalFrom(null);
-        var b = j.StartBattle(true, meta.Collision(), Heightfield.Load(meta).HeightAt, at.X, at.Z, at.Facing, 5);
+        var b = j.StartBattle(true, meta.Collision(), Heightfield.Load(meta).HeightAt, at.X, at.Z, at.Facing, 5, ember: zone.Ember);
         b.Hooks = zone.Hooks;
         host.Battle = b;
         zone.Begin(b);
@@ -53,11 +53,17 @@ public class PrologueTests
         var s = Make();
         Assert.Same(Atmospheres.Night, s.Host.Air);
         Assert.Equal("Survive the night", s.Host.Tracked.Single().Steps[0].Text);
-        Assert.NotNull(s.Host.DraftTip);
+        // The night's: the ember burns here.
+        Assert.True(s.B.EmberOn);
         Run(s, 12);
         Assert.Equal(Prologue.Stage.Rising, s.Zone.Now);
         Assert.True(s.B.Enemies.Living().Count() > 6);
         Assert.Equal("move", s.Host.CurrentHint?.Id ?? "move");
+        // The first rise of the ember brings a great blessing before its card.
+        s.B.GainEmber(s.B.EmberNext);
+        Run(s, 0.1);
+        Assert.True(LevelUp.GreatNext(s.B));
+        Assert.NotNull(s.Host.DraftTip);
     }
 
     [Fact]
@@ -107,6 +113,10 @@ public class PrologueTests
         Assert.Equal(Prologue.Stage.Boss, s.Zone.Now);
         Assert.False(s.Host.Captured);
         var warden = s.B.Enemies.Living().Single(e => e.Tag == "warden");
+        // What the night built: a card or two, a blessing.
+        s.B.AddWeapon("knifestorm", 4);
+        s.B.AddBoon("stormborn");
+        s.B.GainEmber(s.B.EmberNext * 2);
         Run(s, 0.5);
         // Three lamps: most of every blow goes to them.
         Assert.Equal(0.4, warden.TakenMul, 3);
@@ -123,7 +133,16 @@ public class PrologueTests
         Assert.Equal(TimeOfDay.Dawn, s.J.World.Time);
         Assert.Contains(s.J.World.History, h => h.Id == "ford_warden_slain");
         Assert.DoesNotContain(s.B.Collision.All(), c => c.Tag == "gate");
-        Run(s, 11);
+        // The sun comes up and the ember goes out, and all it built: the survivor
+        // has what they carry.
+        Assert.True(s.B.EmberOn);
+        Run(s, 4);
+        Assert.False(s.B.EmberOn);
+        Assert.Equal(1, s.B.EmberLevel);
+        Assert.Empty(s.B.Boons);
+        Assert.Equal(Character.Kit(s.J.Ch).Weapons.Select(w => w.Id), s.B.Weapons.Select(w => w.Id));
+        Assert.Contains(s.Host.Announced, a => a.Title == "The ember goes out");
+        Run(s, 7);
         Assert.Equal(Prologue.Stage.Exit, s.Zone.Now);
         var gate = s.Meta.Place("LOWFORD", "gate");
         Stand(s, gate.X, gate.Z + 6);

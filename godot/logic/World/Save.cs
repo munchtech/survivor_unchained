@@ -19,19 +19,10 @@ namespace SurvivorUnchained.World;
 
 public sealed class SaveLocation { public string Zone = ""; public double X, Z, Facing; }
 
-/// <summary>Gear: the worn gear gave it (it goes when the gear does).</summary>
-public sealed class CarriedWeapon { public string Id = ""; public int Rank; public string? Evolution; public bool Gear; }
-
-/// <summary>Mid-expedition ember, if saved at a field camp.</summary>
+/// <summary>The wounds carried from zone to zone until the survivor rests
+/// (named for when it carried the ember too; a save from then still reads).</summary>
 public sealed class EmberCarry
 {
-    public int Level;
-    public double Xp;
-    public List<CarriedWeapon> Weapons = new();
-    public Dictionary<string, int> Boons = new();
-    /// <summary>What was left of the draft's rerolls and banishes, and of the
-    /// survivor's health (absent in a save from before they were kept).</summary>
-    public int? Rerolls, Banishes;
     public double? Hp;
 }
 

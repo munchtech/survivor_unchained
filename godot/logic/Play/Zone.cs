@@ -264,6 +264,8 @@ public abstract class ZoneRuntime
     public abstract bool Combat { get; }
     /// <summary>The camera's pitch (degrees) and distance here, if not the road's own.</summary>
     public virtual (double Pitch, double Distance)? Camera => null;
+    /// <summary>The ember burns here (it is the night's: the prologue, the arenas).</summary>
+    public virtual bool Ember => false;
     /// <summary>Every creature that can appear here (their looks are readied
     /// behind the fade, not the first time one walks on).</summary>
     public virtual IReadOnlyList<string> Creatures => Array.Empty<string>();

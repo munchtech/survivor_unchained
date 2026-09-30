@@ -24,14 +24,10 @@ public sealed record Toast(ToastKind Kind, string Text, string? Sub = null, stri
 /// <summary>A heading for the interface: a new level, a place.</summary>
 public sealed record Announcement(string Title, string? Sub, string Kind, double Seconds, string? Kicker = null);
 
-/// <summary>The ember build, carried between zones until the survivor rests.</summary>
+/// <summary>What the road has taken out of the survivor, carried between
+/// zones until they rest (the ember is an arena's, and stays in it).</summary>
 public sealed class Expedition
 {
-    public int Level;
-    public double Xp;
-    public List<CarriedWeapon> Weapons = new();
-    public Dictionary<string, int> Boons = new();
-    public int Rerolls, Banishes;
     public double Hp;
 }
 
@@ -91,20 +87,13 @@ public sealed class Journey
     public static Journey From(SaveData d, int slot) => new(d.Character, d.World)
     {
         Slot = slot, Playtime = d.Playtime,
-        Expedition = d.Ember is { } e ? new Expedition
-        {
-            Level = e.Level, Xp = e.Xp, Weapons = e.Weapons, Boons = e.Boons,
-            Rerolls = e.Rerolls ?? 2, Banishes = e.Banishes ?? 1, Hp = e.Hp ?? double.MaxValue,
-        } : null,
+        Expedition = d.Ember is { } e ? new Expedition { Hp = e.Hp ?? double.MaxValue } : null,
     };
 
     public SaveData ToSave(SaveLocation at) => new()
     {
         Playtime = Playtime, Character = Ch, World = World, Location = at,
-        Ember = Expedition is { } e ? new EmberCarry
-        {
-            Level = e.Level, Xp = e.Xp, Weapons = e.Weapons, Boons = e.Boons, Rerolls = e.Rerolls, Banishes = e.Banishes, Hp = e.Hp,
-        } : null,
+        Ember = Expedition is { } e ? new EmberCarry { Hp = e.Hp } : null,
     };
 
     /* ----------------------------------------------------------- notices -- */
@@ -146,10 +135,13 @@ public sealed class Journey
 
     /* ------------------------------------------------------------ battle -- */
 
-    /// <summary>A fight (or a walk) in a zone, from the survivor's gear and
-    /// the ember they carry.</summary>
-    /// <param name="arena">An ember arena: the ember starts from nothing, whatever is carried.</param>
-    public Battle StartBattle(bool combat, CollisionWorld col, Func<double, double, double> heightAt, double x, double z, double facing, uint seed, bool arena = false)
+    /// <summary>A fight (or a walk) in a zone, from the survivor's gear, level
+    /// and the wounds they carry. By day, in the story, the ember does not
+    /// burn: the survivor fights with what they are (their gear's skills, the
+    /// art, the dash) and grows by experience.</summary>
+    /// <param name="arena">An ember arena: the ember burns, from nothing, whatever is carried.</param>
+    /// <param name="ember">The ember burns here (the night: the prologue, an arena).</param>
+    public Battle StartBattle(bool combat, CollisionWorld col, Func<double, double, double> heightAt, double x, double z, double facing, uint seed, bool arena = false, bool ember = false)
     {
         var kit = Character.Kit(Ch);
         InArena = arena;
@@ -159,50 +151,36 @@ public sealed class Journey
             Seed = seed, Combat = combat, Collision = col, HeightAt = heightAt, Stats = kit.Stats,
             StartX = x, StartZ = z, StartFacing = facing, Weapons = kit.Weapons, Triggers = kit.Triggers, Ability = kit.Ability,
             ArtRank = kit.ArtRank, Facets = kit.Facets,
-            Ember = exp != null ? (exp.Level, exp.Xp) : null,
             Hp = exp != null ? Math.Min(exp.Hp, kit.Stats.Get(Stat.MaxHealth)) : null,
         });
+        b.EmberOn = combat && (arena || ember);
         GearWeapons = kit.Weapons.Select(w => w.Id).ToHashSet();
         b.Favours.UnionWith(Callings.Archetype(Ch.Archetype).Favours);
         b.GearIds.UnionWith(kit.GearIds);
         b.GearStatuses.UnionWith(kit.GearStatuses);
-        b.Rerolls = exp?.Rerolls ?? kit.Rerolls;
-        b.Banishes = exp?.Banishes ?? 1;
+        b.Rerolls = kit.Rerolls;
+        b.Banishes = 1;
         b.Player.Revives = kit.Revives;
-        if (exp != null) Restore(b, exp, GearWeapons);
-        else if (combat)
+        if (b.EmberOn)
             for (int i = 0; i < kit.StartLevels; i++) b.GainEmber(b.EmberNext);
         return b;
     }
 
-    static void Restore(Battle b, Expedition e, HashSet<string> gear)
+    /// <summary>The dawn: the ember goes out, and what it built with it.</summary>
+    public void Douse(Battle b)
     {
-        foreach (var w in e.Weapons)
-        {
-            // A skill the gear gave, and the gear is off: it goes with it.
-            if (w.Gear && !gear.Contains(w.Id)) continue;
-            var have = b.Weapons.FirstOrDefault(x => x.Id == w.Id);
-            if (have == null) b.AddWeapon(w.Id, w.Rank);
-            else have.Rank = Math.Max(have.Rank, w.Rank);
-            if (w.Evolution != null) b.Evolve(w.Id, w.Evolution);
-        }
-        foreach (var (id, r) in e.Boons) for (int i = 0; i < r; i++) b.AddBoon(id);
-        b.Events.Drain();
+        var kit = Character.Kit(Ch);
+        b.Douse(kit.Weapons);
+        GearWeapons = kit.Weapons.Select(w => w.Id).ToHashSet();
     }
 
-    /// <summary>The ember build as it stands, to carry into the next zone.</summary>
+    /// <summary>Leaving a zone: the wounds come along (an arena's are left in it).</summary>
     public void Capture(Battle? b)
     {
         BankArt(b);
         BankGold(b);
-        // What is built in an arena stays there.
         if (b == null || !b.Combat || InArena) return;
-        Expedition = new Expedition
-        {
-            Level = b.EmberLevel, Xp = b.EmberXp,
-            Weapons = b.Weapons.Select(w => new CarriedWeapon { Id = w.Id, Rank = w.Rank, Evolution = w.Evolution?.Id, Gear = GearWeapons.Contains(w.Id) }).ToList(),
-            Boons = new Dictionary<string, int>(b.Boons), Rerolls = b.Rerolls, Banishes = b.Banishes, Hp = b.Player.Hp,
-        };
+        Expedition = new Expedition { Hp = b.Player.Hp };
     }
 
     /// <summary>A kill: the survivor grows too, more slowly than the ember;
@@ -692,7 +670,7 @@ public sealed class Journey
 
     /// <summary>Sleep the night: the world moves on a day, the ember goes
     /// out, wounds close. What happened overnight, as lines to read.</summary>
-    public List<string>? Sleep(Battle? b, bool hadEmber, Func<double> rng)
+    public List<string>? Sleep(Battle? b, Func<double> rng)
     {
         int cost = RestCost;
         if (Ch.Gold < cost) return null;
@@ -719,7 +697,6 @@ public sealed class Journey
             var names = who.Count == 1 ? who[0] : $"{string.Join(", ", who.Take(who.Count - 1))} and {who[^1]}";
             lines.Add($"By breakfast, {names} had heard that you {ev.Text}.");
         }
-        if (hadEmber) lines.Add("The ember went out while you slept. Whatever you became out there, you will have to become again.");
         if (lines.Count == 0) lines.Add("A quiet night. Rook's bread is hot, and nobody died.");
         OnTouch();
         return lines;

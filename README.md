@@ -34,11 +34,17 @@ Skills (weapons) fire on their own. You choose where to stand, when to
 dash, which skill to take or rank up each time the ember rises (anyone can
 take any skill; a calling leans a little toward its own style), what each
 skill evolves into at rank 8, and, out of combat, what to say and to whom.
-The game has two halves. The story is walked and talked through, and its
-fights teach the survivor (character levels). At its turns, and where
-danger is marked, the survivor is pulled into an **ember arena**: seen from
-higher and further out, the ember starting again from nothing, a horde
-that thickens by the minute, cards coming often. At the half hour what
+The game has two halves, the day's and the night's. The story is walked
+and talked through by day: the ember sleeps, the survivor fights with what
+they carry (their gear's skills, the art in hand, the dash) and every fight
+teaches them (character levels). The ember burns only in the dark. The
+first night, on the Low Ford road, is where you learn it: the dead leave
+its stones, it rises, you choose skills and blessings, and at dawn it goes
+out and everything it built goes with it. After that the night belongs to
+the **ember arenas**: at the story's turns, and where danger is marked, the
+survivor is pulled into one, seen from higher and further out, the ember
+starting again from nothing, a horde that thickens by the minute, cards
+coming often. At the half hour what
 rules the horde comes; kill it and the fight is won. The arena goes on
 after that, harder by the minute, for as long as you care to see how far
 your build goes: leave by the way out that opens where the boss fell, or
@@ -48,8 +54,8 @@ skills discovered (to be learned in the world) and how the story goes on.
 Lose a story fight and the story goes on without the win; the Wayfinder's
 table lets you take it again, and offers arenas of its own.
 
-Blessings are the arenas' too. A great blessing is chosen as an arena
-begins and another at its fifteenth minute, from all twelve, whoever the
+Blessings are the night's too. A great blessing is chosen as an arena
+begins (and at the prologue's first ember) and another at its fifteenth minute, from all twelve, whoever the
 survivor is; each has three ranks, and the second may deepen the first.
 Build-shaped blessings come at ember levels 4, 10, 18, 28, 40 and on, on top
 of that level's skill (a milestone may deepen a great blessing held).

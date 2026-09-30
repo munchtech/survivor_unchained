@@ -27,9 +27,10 @@ public partial class GameHud : CanvasLayer
     const float K = 1.2f;
     Control root = null!, play = null!, combat = null!;
     ColorRect bruise = null!;
-    TextureRect emberFill = null!;
+    TextureRect emberFill = null!, growFill = null!;
     Label emberLevel = null!, tallyTime = null!, tallyKills = null!, tallyGold = null!;
     int shownLevel;
+    bool shownEmber = true;
     double levelPop;
     TextureRect hpFill = null!;
     ColorRect hpTrail = null!, hpShield = null!, hpLow = null!;
@@ -145,6 +146,11 @@ public partial class GameHud : CanvasLayer
         emberFill.Position = new Vector2(1, 1);
         emberFill.Size = new Vector2(0, 10);
         track.AddChild(emberFill);
+        // By day the same bar is the survivor's own experience, cooler and slower.
+        growFill = GradientRect([Hex("#16222e"), Hex("#34587a"), Hex("#86b0d8"), Hex("#e6f2ff")], [0, 0.45f, 0.85f, 1]);
+        growFill.Position = new Vector2(1, 1);
+        growFill.Size = new Vector2(0, 10);
+        track.AddChild(growFill);
         for (int i = 1; i < 10; i++) track.AddChild(new ColorRect { Color = new Color(0, 0, 0, 0.55f), Position = new Vector2((w - 30) * i / 10f, 0), Size = new Vector2(1, 12), MouseFilter = Control.MouseFilterEnum.Ignore });
         var medal = Medal(combat, new Vector2(x, 6), 46, Hex("#3a2210"));
         emberLevel = Style.Label("1", Style.Display, 20, Style.EmberHi, false, HorizontalAlignment.Center);
@@ -386,7 +392,8 @@ public partial class GameHud : CanvasLayer
     };
 
     /// <summary>The fight, as the HUD shows it (a dozen times a second).</summary>
-    public void Frame(Battle? b, double gold, int draughts)
+    /// <param name="level">The survivor's own level, and how far into it (shown when the ember is out).</param>
+    public void Frame(Battle? b, double gold, int draughts, (int Level, double K) level = default)
     {
         if (b == null) return;
         combat.Visible = b.Combat;
@@ -415,9 +422,20 @@ public partial class GameHud : CanvasLayer
         foreach (var (id, bf) in b.Buffs) Status(id == "warcry" ? "howl" : "arcane", bf.T, true);
         if (!b.Combat) return;
 
-        float e = (float)Math.Clamp(b.EmberXp / Math.Max(1, b.EmberNext), 0, 1);
-        emberFill.Size = new Vector2((760 * K - 32) * e, 10);
-        if (b.EmberLevel != shownLevel) { shownLevel = b.EmberLevel; emberLevel.Text = shownLevel.ToString(); levelPop = 1; }
+        // The ember while it burns; by day, the survivor's own growing.
+        bool ember = b.EmberOn;
+        float e = (float)Math.Clamp(ember ? b.EmberXp / Math.Max(1, b.EmberNext) : level.K, 0, 1);
+        emberFill.Visible = ember;
+        growFill.Visible = !ember;
+        (ember ? emberFill : growFill).Size = new Vector2((760 * K - 32) * e, 10);
+        int lv = ember ? b.EmberLevel : Math.Max(1, level.Level);
+        if (lv != shownLevel || ember != shownEmber)
+        {
+            if (lv > shownLevel && ember == shownEmber) levelPop = 1;
+            shownLevel = lv; shownEmber = ember;
+            emberLevel.Text = lv.ToString();
+            emberLevel.AddThemeColorOverride("font_color", ember ? Style.EmberHi : Hex("#d8ecff"));
+        }
         int m = (int)(b.Time / 60), s = (int)(b.Time % 60);
         tallyTime.Text = $"{m}:{s:00}";
         tallyKills.Text = b.KillCount.ToString();
