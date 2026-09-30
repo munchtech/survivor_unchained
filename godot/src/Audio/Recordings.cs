@@ -6,10 +6,11 @@ namespace SurvivorUnchained.Sound;
 
 /// <summary>
 /// Sounds recorded, not made (art/sound: Kenney's Impact Sounds, RPG Audio
-/// and Interface Sounds, CC0, as mono 16-bit PCM): footsteps on grass,
-/// earth, stone and boards; flesh struck, metal and plate rung, bodies
-/// falling; coins, cloth, a knife drawn, a book's pages, doors; the clicks
-/// of the interface. Each family has a few takes (sounds.json); a take is
+/// and Interface Sounds, and field recordings from OpenGameArt, all CC0, as
+/// mono 16-bit PCM): footsteps on grass, earth, stone and boards; flesh
+/// struck, metal and plate rung, bodies falling; coins, cloth, a knife
+/// drawn, a book's pages, doors; the clicks of the interface; an anvil; and
+/// the ambience's long beds (bed_*: a river, a fire, crickets, birdsong). Each family has a few takes (sounds.json); a take is
 /// never played twice running. Read once, on the main thread, and handed to
 /// the mixer as plain samples.
 /// </summary>

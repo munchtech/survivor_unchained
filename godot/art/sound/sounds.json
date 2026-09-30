@@ -1,5 +1,10 @@
 {
+ "anvil": 1,
  "back": 4,
+ "bed_birds": 1,
+ "bed_crickets": 1,
+ "bed_fire": 1,
+ "bed_water": 1,
  "beltHandle": 2,
  "bookFlip": 3,
  "bookPlace": 3,

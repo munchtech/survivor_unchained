@@ -122,9 +122,11 @@ game at the same place and hour; needs the dev server), then
   compressor, mixed on its own thread into Godot's audio streams, keeping a
   little sound queued and more when the machine stalls), `Recordings.cs`
   (art/sound, Kenney's CC0 packs: blows, bodies falling, footsteps by
-  ground, coins, doors, pages, the interface's clicks),
-  `Sfx.cs` (every sound the game makes), `Ambience.cs` (wind, leaves, water,
-  a town, a fire, the blight's hum, crickets; birds, owls, the smith),
+  ground, coins, doors, pages, the interface's clicks; CC0 field recordings
+  from OpenGameArt: a river, a fire, crickets, birdsong, an anvil),
+  `Sfx.cs` (every sound the game makes), `Ambience.cs` (recorded water,
+  fire, crickets and birds, each looped and played wide; made wind, leaves,
+  a town and the blight's hum; owls, creaking boughs, the smith),
   `Music.cs` (the score, composed as it plays) and `SoundBridge.cs` (what
   happens, turned into all of that).
 

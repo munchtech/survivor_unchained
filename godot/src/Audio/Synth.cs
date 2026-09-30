@@ -245,11 +245,11 @@ public partial class Synth : Node
             }
             foreach (var b in beds)
             {
-                float s = b.Sample(t, dt);
-                if (s == 0) continue;
-                float l = s * Level[(int)Bus.Amb];
-                dl += l; dr += l;
-                wl += l * Send[(int)Bus.Amb]; wr += l * Send[(int)Bus.Amb];
+                float s = b.Sample(t, dt), s2 = b.Wide ? b.Right : s;
+                if (s == 0 && s2 == 0) continue;
+                float amb = Level[(int)Bus.Amb], l = s * amb, r = s2 * amb;
+                dl += l; dr += r;
+                wl += l * Send[(int)Bus.Amb]; wr += r * Send[(int)Bus.Amb];
             }
             outDry[i] = new Vector2(dl, dr) * masterNow;
             outWet[i] = new Vector2(wl, wr) * masterNow;
@@ -544,6 +544,10 @@ public partial class Synth : Node
     public abstract class Bed
     {
         public float Target, Level;
+        /// <summary>A wide bed's right side, set by each Sample (which gives its
+        /// left); a narrow one sounds the same on both.</summary>
+        public bool Wide;
+        public float Right;
         public abstract float Sample(double t, float dt);
     }
 }

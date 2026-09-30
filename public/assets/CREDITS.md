@@ -29,6 +29,15 @@ Third-party art in this folder, with its licence. CC-BY works are used with cred
 - Particle Pack, by Kenney (https://kenney.nl/assets/particle-pack), CC0 -> godot/art/fx (the effects' sprites: smoke, sparks, flames, magic, slashes; packed into a texture array)
 - Impact Sounds, RPG Audio and Interface Sounds, by Kenney (https://kenney.nl/assets/impact-sounds, /rpg-audio, /interface-sounds), CC0 -> godot/art/sound (as mono 16-bit WAV)
 
+## OpenGameArt field recordings (CC0)
+
+Cut to loop and made mono at 24 kHz (the game plays each wide, its right side half the take along), in godot/art/sound:
+
+- "Park ambiences" by thimras (https://opengameart.org/content/park-ambiences), CC0 -> bed_birds_0.wav (birdsong by a copse, traffic under it filtered out) and bed_water_0.wav (a small river over a low step)
+- "Fireplace Sound loop" by PagDev (https://opengameart.org/content/fireplace-sound-loop), CC0 -> bed_fire_0.wav
+- "Crickets Ambient Noise - loopable" by Ted Kerr (wolfgang) (https://opengameart.org/content/crickets-ambient-noise-loopable), CC0 -> bed_crickets_0.wav
+- "Blacksmith's Hammer" by vishwajai (https://opengameart.org/content/blacksmiths-hammer), CC0 -> anvil_0.wav
+
 ## Basis Universal (Apache-2.0)
 
 - basis_transcoder.js / .wasm, from three.js's examples (Binomial LLC, Apache License 2.0) -> public/assets/basis, for the KTX2 textures

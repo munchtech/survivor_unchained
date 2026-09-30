@@ -6,11 +6,14 @@ namespace SurvivorUnchained.Sound;
 
 /// <summary>
 /// The world's own noise, underneath everything (the web game's
-/// audio/ambience.ts): beds that run as long as the game does (wind in the
-/// trees, water, a town's murmur, a fire, the blight's hum, crickets), each
-/// noise shaped by filters and slow wobbles, each at a level the zone sets
-/// every frame from where the survivor stands. On top, the things that
-/// happen now and then: a bird, an owl, a crackle, the smith's hammer.
+/// audio/ambience.ts): beds that run as long as the game does, each at a
+/// level the zone sets every frame from where the survivor stands. Water, a
+/// fire, crickets and birdsong are recorded (art/sound/bed_*: CC0 field
+/// recordings from OpenGameArt, cut to loop, credits in
+/// public/assets/CREDITS.md); wind in the trees, a town's murmur and the
+/// blight's hum are noise shaped by filters and slow wobbles. On top, the
+/// things that happen now and then: an owl, the creak of a bough, the
+/// smith's hammer on his anvil.
 /// </summary>
 public sealed class Ambience
 {
@@ -25,13 +28,18 @@ public sealed class Ambience
         this.a = a;
         double rate = a.Rate;
         const double Tau = Math.Tau;
+        Recordings.Load();
+        // Recorded where there is a recording (levels set by ear against the
+        // made beds they replaced), made where there is not.
+        Synth.Bed? Taken(string family, float gain) => Recordings.Pick(family) is { } take ? new TakeBed(take, rate, gain) : null;
         Add("wind", new NoiseBed(true, rate, 0.2f, Synth.Biquad.Kind.Low, 0.8, t => (420 + 220 * Math.Sin(t * 0.06 * Tau), 0, 0.7 + 0.3 * Math.Sin(t * 0.11 * Tau))));
         Add("leaves", new NoiseBed(false, rate, 0.018f, Synth.Biquad.Kind.Band, 0.5, t => (3800, 0, 0.6 + 0.45 * Math.Sin(t * 0.09 * Tau))));
-        Add("water", new NoiseBed(false, rate, 0.09f, Synth.Biquad.Kind.Band, 0.8, t => (650 + 180 * Math.Sin(t * 3.1 * Tau), 1900 + 400 * Math.Sin(t * 5.3 * Tau), 1), band2Q: 1.6));
+        Add("water", Taken("bed_water", 0.35f) ?? new NoiseBed(false, rate, 0.09f, Synth.Biquad.Kind.Band, 0.8, t => (650 + 180 * Math.Sin(t * 3.1 * Tau), 1900 + 400 * Math.Sin(t * 5.3 * Tau), 1), band2Q: 1.6));
         Add("town", new NoiseBed(true, rate, 0.12f, Synth.Biquad.Kind.Band, 1.2, t => (380 + 90 * Math.Sin(t * 0.37 * Tau), 0, 0.7 + 0.3 * Math.Sin(t * 0.23 * Tau))));
-        Add("fire", new NoiseBed(true, rate, 0.1f, Synth.Biquad.Kind.Low, 0.8, t => (260, 0, 0.8 + 0.25 * Math.Sin(t * 1.7 * Tau))));
+        Add("fire", Taken("bed_fire", 0.13f) ?? new NoiseBed(true, rate, 0.1f, Synth.Biquad.Kind.Low, 0.8, t => (260, 0, 0.8 + 0.25 * Math.Sin(t * 1.7 * Tau))));
         Add("hum", new HumBed(rate));
-        Add("crickets", new CricketBed());
+        Add("crickets", Taken("bed_crickets", 0.08f) ?? new CricketBed());
+        if (Taken("bed_birds", 0.1f) is { } birds) Add("birds", birds);
     }
 
     void Add(string key, Synth.Bed b) { beds[key] = b; a.Add(b); }
@@ -62,8 +70,9 @@ public sealed class Ambience
             next[key] = (next.TryGetValue(key, out var n) ? n : rng.NextDouble() * hi) - dt * lvl;
             if (next[key] <= 0) { next[key] = lo + rng.NextDouble() * (hi - lo); fn(); }
         }
-        Every("crackle", level["fire"], 0.05, 0.35, () => a.Play(new Hiss { D = 0.01 + rng.NextDouble() * 0.03, G = 0.03 + rng.NextDouble() * 0.05, Bp = 1800 + rng.NextDouble() * 4000, Q = 2, Bus = Bus.Amb, Pan = rng.NextDouble() - 0.5 }));
-        Every("bird", level["birds"], 2.5, 7, Bird);
+        // A made fire crackles on top; a recorded one has its own.
+        if (beds["fire"] is NoiseBed) Every("crackle", level["fire"], 0.05, 0.35, () => a.Play(new Hiss { D = 0.01 + rng.NextDouble() * 0.03, G = 0.03 + rng.NextDouble() * 0.05, Bp = 1800 + rng.NextDouble() * 4000, Q = 2, Bus = Bus.Amb, Pan = rng.NextDouble() - 0.5 }));
+        if (!beds.ContainsKey("birds")) Every("bird", level["birds"], 2.5, 7, Bird);
         Every("owl", level["owl"], 18, 40, Owl);
         Every("smithy", level["smithy"], 1.8, 4.5, Hammer);
         Every("creak", level["wind"] * level["leaves"], 8, 20, () => a.Play(new Tone { F = 180 + rng.NextDouble() * 80, F2 = 150, Type = Wave.Saw, A = 0.3, D = 0.6, G = 0.008, Lp = 700, Bus = Bus.Amb, Pan = rng.NextDouble() - 0.5 }));
@@ -92,7 +101,10 @@ public sealed class Ambience
     void Hammer()
     {
         int n = 2 + rng.Next(4);
-        for (int i = 0; i < n; i++) a.Play(new Fm { T = a.Now + i * 0.42, F = 1650 + rng.NextDouble() * 120, Ratio = 2.76, Index = 2.2, D = 0.5, G = 0.02 * level["smithy"], Bus = Bus.Amb, Pan = 0.3, Verb = 0.5 });
+        bool anvil = Recordings.Pick("anvil") != null;
+        for (int i = 0; i < n; i++)
+            if (anvil) a.Play(new Clip { Of = "anvil", T = a.Now + i * 0.42, G = 0.035 * level["smithy"], Pitch = 0.96 + rng.NextDouble() * 0.08, Lp = 5000, Bus = Bus.Amb, Pan = 0.3, Verb = 0.5 });
+            else a.Play(new Fm { T = a.Now + i * 0.42, F = 1650 + rng.NextDouble() * 120, Ratio = 2.76, Index = 2.2, D = 0.5, G = 0.02 * level["smithy"], Bus = Bus.Amb, Pan = 0.3, Verb = 0.5 });
     }
 
     /// <summary>A bed of noise through a filter (and, for water, a second band
@@ -140,6 +152,45 @@ public sealed class Ambience
             float x = f1.Run(n, fr1);
             if (f2 != null) x += f2.Run(n, fr2);
             return x * gain * Level * scale;
+        }
+    }
+
+    /// <summary>A recorded bed: its take looped (cut to meet itself), and wide
+    /// from one mono take, the right side half the take along from the left,
+    /// so the two never say the same thing at once.</summary>
+    sealed class TakeBed : Synth.Bed
+    {
+        readonly float[] data;
+        readonly double step;
+        readonly float gain;
+        double pos;
+
+        public TakeBed(Recordings.Take take, double rate, float gain)
+        {
+            data = take.Data;
+            step = take.Rate / rate;
+            this.gain = gain;
+            pos = rng.NextDouble() * data.Length;
+            Wide = true;
+        }
+
+        float At(double p)
+        {
+            if (p >= data.Length) p -= data.Length;
+            int i = (int)p;
+            float k = (float)(p - i), x0 = data[i], x1 = data[i + 1 < data.Length ? i + 1 : 0];
+            return x0 + (x1 - x0) * k;
+        }
+
+        public override float Sample(double t, float dt)
+        {
+            Level += (Target - Level) * 0.0002f;
+            if (Level < 1e-4f) { Right = 0; return 0; }
+            pos += step;
+            if (pos >= data.Length) pos -= data.Length;
+            float g = gain * Level;
+            Right = At(pos + data.Length / 2) * g;
+            return At(pos) * g;
         }
     }
 
