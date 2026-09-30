@@ -15,6 +15,7 @@ namespace SurvivorUnchained;
 ///
 /// Options (after `--`, see Shots.cs):
 ///   --zone lowford|waystation|verge   (default verge)
+///   --map SEED [--theme wood|autumn|blight]  a map made for a run instead
 ///   --time day|night|dusk|dawn        (default night)
 ///   --at X,Z        where to look (default: the Verge's Hunters' Blind, or
 ///                   the zone's start)
@@ -39,7 +40,11 @@ public partial class Slice : Node3D
         SurvivorUnchained.View.Textures.Mend();
         AddChild(new Shots());
         var id = Args.Get("zone") ?? "verge";
-        zone = new ZoneData(id);
+        // --map SEED: a map made for a run, instead of a zone (Maps/MapGen.cs).
+        zone = Args.Get("map") is string seed
+            ? new ZoneData(SurvivorUnchained.Maps.MapGen.Generate(new SurvivorUnchained.Maps.MapSpec { Seed = int.Parse(seed), Theme = Args.Get("theme") ?? "wood" }))
+            : new ZoneData(id);
+        if (Args.Has("map")) id = "map";
         var meta = zone.Meta;
 
         float x, z;

@@ -91,6 +91,8 @@ public interface IZoneHost
     /// <summary>The key or button bound to an action, as the player would name it.</summary>
     string KeyLabel(string action);
     void AnnounceZone();
+    /// <summary>A screen over the game ('maps': the Wayfinder's table).</summary>
+    void Open(string overlay) { }
 }
 
 /// <summary>The zone's look, as a runtime reaches into it.</summary>

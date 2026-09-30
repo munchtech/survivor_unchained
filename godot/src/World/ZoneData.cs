@@ -90,6 +90,37 @@ public sealed class ZoneData
                 (float)l.Intensity, (float)l.Distance, (float)l.Flicker, l.On));
     }
 
+    /// <summary>A map made for a run (Maps/MapGen.cs): the same, from memory.
+    /// Its flora in 40 m buckets, one group per kind and piece in each, so
+    /// what is off screen is culled.</summary>
+    public ZoneData(SurvivorUnchained.Maps.MapBuild m)
+    {
+        UseGodotFiles();
+        Id = m.Meta.Id;
+        Meta = m.Meta;
+        Ground = m.Ground;
+        Splat = Image.CreateFromData(m.SplatRes, m.SplatRes, false, Image.Format.Rgba8, m.Splat);
+        var groups = new Dictionary<(string Kind, string Piece, int Bx, int Bz), List<Transform3D>>();
+        foreach (var f in m.Flora)
+        {
+            var key = (f.Kind, f.Piece, Mathf.FloorToInt((float)f.X / 40), Mathf.FloorToInt((float)f.Z / 40));
+            if (!groups.TryGetValue(key, out var list)) groups[key] = list = new();
+            list.Add(new Transform3D(new Basis(Vector3.Up, (float)f.Rot).Scaled(Vector3.One * (float)f.Scale), new Vector3((float)f.X, (float)f.Y, (float)f.Z)));
+        }
+        foreach (var (key, list) in groups)
+        {
+            var k = m.Kinds[key.Kind];
+            var look = new KitLook.Look((float)k.Wind, k.LeavesA is string a ? new Color(a).SrgbToLinear() : null,
+                k.LeavesB is string b ? new Color(b).SrgbToLinear() : null, (float)k.LeavesAmount, (float)k.Moss);
+            Flora.Add(new FloraGroup(key.Kind, key.Piece, list.ToArray(), look));
+        }
+        foreach (var p in m.Props)
+            Props.Add((p.Id, new Transform3D(new Basis(Vector3.Up, (float)p.Rot).Scaled(Vector3.One * (float)p.Scale), new Vector3((float)p.X, (float)p.Y, (float)p.Z))));
+        foreach (var l in Meta.Lights)
+            Lights.Add(new LightSpec(new Vector3((float)l.X, (float)l.Y, (float)l.Z), new Color(l.Color),
+                (float)l.Intensity, (float)l.Distance, (float)l.Flicker, l.On));
+    }
+
     /// <summary>A transform as the exporter writes it: basis x, y, z, origin.</summary>
     static Transform3D Read(float[] f, int i) => new(
         new Basis(new Vector3(f[i], f[i + 1], f[i + 2]), new Vector3(f[i + 3], f[i + 4], f[i + 5]), new Vector3(f[i + 6], f[i + 7], f[i + 8])),

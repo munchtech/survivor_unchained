@@ -29,7 +29,9 @@ public sealed class Landmarks
     public Landmarks(ZoneData z)
     {
         zone = z;
-        Root = GD.Load<PackedScene>($"{z.Dir}/landmarks.glb").Instantiate<Node3D>();
+        // (A map made for a run has none: its pieces are all flora and fires.)
+        var file = $"{z.Dir}/landmarks.glb";
+        Root = ResourceLoader.Exists(file) ? GD.Load<PackedScene>(file).Instantiate<Node3D>() : new Node3D();
         Root.Name = "Landmarks";
         Walk(Root);
         foreach (var n in z.Meta.HiddenNodes) if (Nodes.TryGetValue(n, out var h)) h.Visible = false;

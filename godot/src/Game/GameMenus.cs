@@ -58,6 +58,7 @@ public partial class Game
             "map" => new MapScreen(this),
             "stash" => new StashScreen(this),
             "rest" => new RestScreen(this),
+            "maps" => new MapTableScreen(this),
             "chapter" => new ChapterScreen(this),
             _ when kind.StartsWith("shop:") => new ShopScreen(this, kind[5..]),
             _ => new PauseScreen(this),

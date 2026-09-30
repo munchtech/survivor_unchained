@@ -220,6 +220,13 @@ public sealed class Waystation : ZoneRuntime
                 G.Travel("verge", "Thornhollow Verge", "East along the Old Road");
             },
         });
+        // The Wayfinder's table: maps to places the road forgets (MapRun).
+        I.Add(new()
+        {
+            Id = "maps", X = east.X - 4, Z = east.Z + 4.5, R = 2.6, Verb = "Choose a map", Name = "The Wayfinder's Table",
+            Hint = () => $"Tier {Math.Max(1, (int)F("map.best").Number)} taken",
+            Act = () => G.Open("maps"),
+        });
         I.Add(new() { Id = "gate:north", X = north.X, Z = north.Z + 3, R = 3.2, Verb = "Pass", Name = "The North Gate", Locked = () => "Professor Keegan bars the way" });
         I.Add(new()
         {
@@ -298,7 +305,7 @@ public sealed class Waystation : ZoneRuntime
     public override Arrival ArrivalFrom(string? from)
     {
         var east = Way("east"); var shrine = Way("shrine"); var south = Way("south");
-        if (from == "verge") return new(east.X - 5, east.Z, -Math.PI / 2);
+        if (from is "verge" or "map") return new(east.X - 5, east.Z, -Math.PI / 2);
         if (from == "death") return new(shrine.X + 6, shrine.Z + 6, Math.PI * 0.25);
         // Far enough through the south gate that the wall is behind the
         // camera, not a brown slab across the bottom of the picture.

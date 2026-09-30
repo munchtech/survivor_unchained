@@ -131,6 +131,9 @@ public partial class Game : Node, IZoneHost
             var p = s.Split(',');
             at = new Arrival(double.Parse(p[0], System.Globalization.CultureInfo.InvariantCulture), double.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture));
         }
+        // --zone map [--offer 0|1|2]: straight onto one of today's maps.
+        if (z == "map")
+            SurvivorUnchained.Maps.MapOffers.Remember(World, SurvivorUnchained.Maps.MapOffers.Today(World.Day, 1, 0)[(int)Args.Num("offer", 0)]);
         if (z != "lowford")
         {
             // Skipping ahead: the prologue counts as done.
@@ -187,11 +190,25 @@ public partial class Game : Node, IZoneHost
 
     /* ------------------------------------------------------------ zones -- */
 
+    SurvivorUnchained.Maps.MapBuild? currentMap;
+
+    /// <summary>Out through the east gate to a map from the Wayfinder's table.</summary>
+    public void SetOut(SurvivorUnchained.Maps.MapOffer o)
+    {
+        SurvivorUnchained.Maps.MapOffers.Remember(World, o);
+        // The table draws fresh maps once one is taken.
+        World.Facts["map.drawn"] = World.Fact("map.drawn").Number + 1;
+        CloseOverlay();
+        var people = SurvivorUnchained.Maps.MapOffers.People(o.People);
+        Travel("map", o.Spec.Name, $"Tier {o.Spec.Tier} · held by {people.Name}");
+    }
+
     ZoneRuntime Make(string id, ZoneMeta meta) => id switch
     {
         "lowford" => new Prologue(this, meta),
         "waystation" => new Waystation(this, meta),
         "verge" => new Verge(this, meta),
+        "map" => new MapRun(this, currentMap!, SurvivorUnchained.Maps.MapOffers.Current(World)!.People),
         _ => throw new ArgumentException($"no zone {id}"),
     };
 
@@ -215,7 +232,10 @@ public partial class Game : Node, IZoneHost
     WorldScene Stage(string id)
     {
         LeaveZone();
-        var data = new ZoneData(id);
+        // A map is made again from its seed each time it is entered.
+        ZoneData data;
+        if (id == "map") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(SurvivorUnchained.Maps.MapOffers.Current(World)!.Spec); data = new ZoneData(currentMap); }
+        else data = new ZoneData(id);
         scene = new WorldScene(data, cam);
         AddChild(scene);
         scene.Move = () => auto?.Move ?? (controls.Captured ? (0, 0) : (controls.MoveX, controls.MoveZ));

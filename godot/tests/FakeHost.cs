@@ -27,11 +27,11 @@ sealed class FakeHost : IZoneHost
     public AtmospherePreset? Air;
     readonly List<(double T, Action Fn)> later = new();
 
-    public FakeHost(Journey j, ZoneMeta meta)
+    public FakeHost(Journey j, ZoneMeta meta, Heightfield? ground = null)
     {
         Journey = j;
         j.OnToast = Toasts.Add;
-        FakeLook = new FakeLook(meta);
+        FakeLook = new FakeLook(meta, ground);
     }
 
     public void Apply(IEnumerable<Change> changes) => Journey.Apply(changes);
@@ -79,10 +79,10 @@ sealed class FakeLook : IZoneLook
     public List<Plate> LastPlates = new();
     public bool Night;
 
-    public FakeLook(ZoneMeta meta)
+    public FakeLook(ZoneMeta meta, Heightfield? ground = null)
     {
         this.meta = meta;
-        ground = Heightfield.Load(meta);
+        this.ground = ground ?? Heightfield.Load(meta);
         lit = meta.Lights.Select(l => l.On).ToList();
         Hidden.UnionWith(meta.HiddenNodes);
     }
