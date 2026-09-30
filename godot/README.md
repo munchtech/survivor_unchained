@@ -23,6 +23,12 @@ game builds them:
                                          # headless: a screenshot in godot/.shots/
     cd godot/tests && dotnet test        # the game's logic, without a screen
 
+In the Godot editor on your own computer: install Godot 4.5.1 (.NET) and the
+.NET 8 SDK, import `godot/project.godot`, and press F5 (the C# builds from
+nuget.org). On Windows, `godot/assets` arrives as a small file rather than
+a link unless git makes symlinks (`git clone -c core.symlinks=true` with
+Developer Mode on): delete it and copy `public/assets` in its place.
+
 The game opens on its title (a stranger by a fire on the Low Ford road).
 Options go after `--`:
 

@@ -8,8 +8,11 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 GODOT="${GODOT:-$("$ROOT/tools/godot/setup.sh")}"
-# Godot's own SDK packages, for the C# build (see godot/nuget.config).
 export GODOT_NUPKGS="$(dirname "$GODOT")/GodotSharp/Tools/nupkgs"
+# Godot's SDK packages ship with the engine: a package source for this
+# machine (the project asks nuget.org alone, so it builds anywhere, the
+# Godot editor on another computer included).
+dotnet nuget list source 2>/dev/null | grep -qF "$GODOT_NUPKGS" || dotnet nuget add source "$GODOT_NUPKGS" --name godot-sdk >/dev/null
 cd "$ROOT/godot"
 want="${1:-all}"
 build() {
