@@ -160,9 +160,9 @@ public static class Abilities
             ] },
         new() { Kind = AbilityKind.WraithWalk, Id = "wraith_walk", Name = "Wraith Walk", Icon = "wraith", Cooldown = 14, Aim = AbilityAim.Self,
             Movement = true, Role = ArtRole.Healing,
-            Description = "For 2.5 s you are half a ghost: 25% faster, missiles pass through you, blows land at half. Everything you pass through is drained, and it mends you.",
+            Description = "For 2.5 s you are half a ghost: 25% faster, missiles pass through you, blows land at half. Everything you pass through is drained, and the first ten mend you.",
             Facets = [
-                new("hunger", "Hunger", "Each drain mends twice as much."),
+                new("hunger", "Hunger", "Each drain mends almost twice as much."),
                 new("long_night", "The Long Night", "You walk as a wraith for 4 s."),
                 new("grave_chill", "Grave Chill", "What you drain flees in terror."),
                 new("soul_tithe", "Soul Tithe", "What dies drained mends 5% of your health."),

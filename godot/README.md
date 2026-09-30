@@ -35,8 +35,12 @@ Options go after `--`:
 - `--new`: straight to making a survivor;
 - `--quick warden|reaver|arcanist|stalker`: a new survivor of that calling,
   no title (with `--name`, `--bg`, `--weapon`, `--blessing`);
-- `--zone lowford|waystation|verge`: where to start (past the prologue, which
-  then counts as done), `--time day|night|dusk|dawn`, `--at X,Z`;
+- `--zone lowford|waystation|verge|map`: where to start (past the prologue,
+  which then counts as done), `--time day|night|dusk|dawn`, `--at X,Z`;
+  `map` goes straight onto one of today's maps (`--offer 0|1|2`);
+- `--art ID[:FACET+FACET]`: that art in hand (learned; with facets, at full
+  rank and with them chosen), `--cast T`: used once, T seconds in (for a
+  picture of it);
 - `--continue`: the last journey saved (saves are in Godot's user folder);
 - `--auto`: a crude player drives (`src/Game/Autopilot.cs`), from the title
   on; `--auto idle` only takes the level-up cards;
@@ -54,9 +58,25 @@ Options go after `--`:
   (with `--fixed-fps 60` it is exactly as long as the run); `--sound`: sound
   even in a headless run (for timing the mixer against Godot's dummy driver).
 
-Keys: WASD to move, Space to dash, Q for the calling's skill, E to use or
-talk, R to drink a draught, 1-4 to pick a card or an answer (X rerolls the
-cards, B then a number banishes one), Escape to pause.
+Keys: WASD to move, Space to dash, Q for the art in hand, K for the arts
+(which is in hand, its rank and facets), E to use or talk, R to drink a
+draught, 1-4 to pick a card or an answer (X rerolls the cards, B then a
+number banishes one), Escape to pause.
+
+The dash is everyone's and is where timing lives: two charges; a blow that
+was telegraphed (a lunge after its wind-up, a missile, a marked blast)
+slipped in its first moments is a perfect dodge (the charge back, sure
+crits, the air round you cracking); out of every dash, a burst of pace.
+
+The art in hand is the other half. Sixteen of them (`logic/Content/
+Abilities.cs`, run in `logic/Sim/Arts.cs`): each calling's two, and ten ways
+of moving anyone can learn, each a different way to live (a sprint, mirror
+images the horde turns on, a charge behind a barrier, a wraith's walk that
+drains what it passes through, a trail of fire, a chain that hauls you in,
+an echo to step back into, a vault that leaves snares, a crashing leap, a
+blink). A survivor knows four at the start; manuals found in maps teach the
+rest (`logic/Rpg/ArtBook.cs`). Arts rank up with use; ranks 2 and 4 open a
+facet each, chosen from four per art.
 
 Headless runs use Mesa's software Vulkan: seconds per frame, so keep shots
 short; on a real GPU it runs in real time.

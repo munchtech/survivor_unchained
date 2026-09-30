@@ -19,7 +19,8 @@ npm run build      # typecheck + production build
 |---|---|---|
 | Move | WASD / arrows | left stick |
 | Dash | Space / Shift | A |
-| Ability | Q / right mouse | X |
+| Art in hand | Q / right mouse | X |
+| Arts (which, rank, facets) | K | Menu |
 | Draught | R | Y |
 | Interact, talk | E / F | B |
 | Pack · Self · Journal · Map | I (Tab) · C · J · M | View · then Menu |

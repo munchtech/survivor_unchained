@@ -20,7 +20,7 @@ public sealed class ArtRun
     public double CdFull = 1;
     /// <summary>Fresh: kills in this window grow the art.</summary>
     public double HotT;
-    public int HotKills;
+    public int HotKills, Drains;
     public double CinderLastX, CinderLastZ, ImageStrikeT;
     public bool BulwarkUp;
     public readonly HashSet<int> Struck = new();
@@ -343,6 +343,7 @@ public sealed partial class Battle
     {
         var p = Player;
         Art.WraithT = Has("long_night") ? 4 : 2.5;
+        Art.Drains = 0;
         AddBuff("wraith", Stat.MoveSpeed, 0.25, ModKind.Inc, Art.WraithT, 1);
         Events.Emit(new Ev.Ability { Id = def.Id, X = p.X, Z = p.Z, Angle = angle, Radius = 2.4 });
         return true;
@@ -577,7 +578,8 @@ public sealed partial class Battle
                 if (!a.Struck.Add(e.Id)) return;
                 e.DrainedAt = Time;
                 HitEnemy(e, 12 * power, School.Shadow, ShadowTags, new HitOpts { NoProcs = true });
-                HealPlayer(MaxHp * (Has("hunger") ? 0.04 : 0.02), "wraith walk", true);
+                // A crowd feeds a wraith, but only so far: ten drains mend, the rest only hurt.
+                if (a.Drains++ < 10) HealPlayer(MaxHp * (Has("hunger") ? 0.035 : 0.02), "wraith walk", true);
                 if (Has("grave_chill") && !e.Elite && !e.Boss) ApplyStatus(e, new StatusPayload(StatusKind.Fear, 1, 1, 1.5), 0);
                 Events.Emit(new Ev.Ability { Id = "drain", X = e.X, Z = e.Z, X1 = p.X, Z1 = p.Z, Radius = 0.6 });
             });
