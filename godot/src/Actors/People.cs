@@ -85,8 +85,9 @@ public static class People
         static Color? C(string? hex) => string.IsNullOrEmpty(hex) ? null : new Color(hex);
         var sex = spec.Sex == SurvivorUnchained.Rpg.Sex.Female ? "female" : "male";
         var outfit = spec.Outfit?.ToArray() ?? (sex == "female" ? FemalePeasant : MalePeasant);
-        var p = Build(new Look(sex, outfit, spec.Hair, spec.Beard == true, C(spec.HairColor), C(spec.Skin), C(spec.Dye?.Cloth), C(spec.Dye?.Under),
-            sex == "female" ? spec.Figure ?? 1 : 0));
+        var look = new Look(sex, outfit, spec.Hair, spec.Beard == true, C(spec.HairColor), C(spec.Skin), C(spec.Dye?.Cloth), C(spec.Dye?.Under),
+            sex == "female" ? spec.Figure ?? 1 : 0);
+        var p = spec.Body == SurvivorUnchained.Play.Loadouts.HerBody ? Her(look) : Build(look);
         // A child's larger head.
         if (spec.Head is double h && h != 1)
         {
@@ -154,6 +155,95 @@ public static class People
         person.Anim.RootNode = "..";
         person.Anim.AddAnimationLibrary("", Clips());
         return person;
+    }
+
+    /// <summary>A woman in her own body: donizaki's anime base (Sketchfab,
+    /// CC BY), rigged to the same skeleton by tools/assets/anime_female.py so
+    /// every clip plays on her. Her own shape keys give the figure, her
+    /// painted skin takes the tone chosen, and one of our hairstyles sits on
+    /// her head. Bare: the Quaternius clothes are cut for other bodies.</summary>
+    public static Person Her(Look look)
+    {
+        var root = GD.Load<PackedScene>("res://art/people/anime_female.glb").Instantiate<Node3D>();
+        var skel = root.GetNode<Skeleton3D>("Armature/Skeleton3D");
+        var person = new Person { Root = root, Skeleton = skel, Anim = new AnimationPlayer() };
+        skinShader ??= GD.Load<Shader>("res://shaders/anime_skin.gdshader");
+        var tone = look.Skin ?? Fair;
+        foreach (var c in skel.GetChildren())
+            if (c is MeshInstance3D mi)
+            {
+                person.Meshes.Add(mi);
+                HerFigure(mi, look.Figure);
+                for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+                    if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D src && src.AlbedoTexture != null)
+                    {
+                        var m = new ShaderMaterial { Shader = skinShader, ResourceName = src.ResourceName };
+                        m.SetShaderParameter("tex", src.AlbedoTexture);
+                        m.SetShaderParameter("skin", tone);
+                        mi.SetSurfaceOverrideMaterial(s, m);
+                    }
+                mi.Layers = 2;
+            }
+        if (look.Hair != null)
+            foreach (var hair in HairOn(skel, look.Hair))
+            {
+                person.Meshes.Add(hair);
+                Dress(hair, look);
+                hair.Layers = 2;
+            }
+        root.AddChild(person.Anim);
+        person.Anim.RootNode = "..";
+        person.Anim.AddAnimationLibrary("", Clips());
+        return person;
+    }
+
+    static Shader? skinShader;
+
+    /// <summary>Her figure from her own shape keys, kept within the range
+    /// she was made for: at 0 slighter than she was made, at 1 a fuller bust,
+    /// the waist in and the hips out a little, at 1.5 fuller still.</summary>
+    static void HerFigure(MeshInstance3D mi, double f)
+    {
+        void Key(string name, double v) { int i = mi.FindBlendShapeByName(name); if (i >= 0) mi.SetBlendShapeValue(i, (float)v); }
+        Key("Breast Size", -0.4 + f * 0.933);
+        Key("Hip Width", -0.2 + f * 0.55);
+        Key("Waist Width", 0.2 - f * 0.5);
+    }
+
+    /// <summary>How our hair sits on her head, which is larger than the
+    /// Quaternius head it is rigged to and sits further forward (by eye).</summary>
+    const float HairScale = 1.15f;
+    static readonly Vector3 HairOffset = new(0, 0.005f, -0.032f);
+
+    /// <summary>One of our hairstyles, bound to her head bone: its meshes
+    /// moved onto her skeleton, every bind the head's, the hair scaled about
+    /// the Quaternius head and set on hers.</summary>
+    static List<MeshInstance3D> HairOn(Skeleton3D skel, string style)
+    {
+        var rest = skel.GetBoneGlobalRest(skel.FindBone("Head"));
+        var scene = GD.Load<PackedScene>($"{Dir}/{style}.gltf").Instantiate<Node3D>();
+        var from = scene.GetNode<Skeleton3D>("Armature/Skeleton3D");
+        var qHead = from.GetBoneGlobalRest(from.FindBone("Head")).Origin;
+        var fit = new Transform3D(Basis.Identity.Scaled(Vector3.One * HairScale), rest.Origin + HairOffset - HairScale * qHead);
+        var meshes = new List<MeshInstance3D>();
+        foreach (var c in from.GetChildren())
+            if (c is MeshInstance3D mi)
+            {
+                from.RemoveChild(mi);
+                mi.Owner = null;
+                var skin = (Skin)mi.Skin.Duplicate();
+                for (int b = 0; b < skin.GetBindCount(); b++)
+                {
+                    skin.SetBindName(b, "Head");
+                    skin.SetBindPose(b, rest.AffineInverse() * fit);
+                }
+                mi.Skin = skin;
+                skel.AddChild(mi);
+                mi.Skeleton = "..";
+                meshes.Add(mi);
+            }
+        scene.Free();
+        return meshes;
     }
 
     /// <summary>What each outfit piece covers, as the body's bones under it:

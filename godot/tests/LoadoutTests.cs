@@ -41,4 +41,25 @@ public class LoadoutTests
         var hooded = Character.Create(new CreationChoice { Name = "C", Archetype = "stalker", Background = "hunter", Palette = s.Palettes[0].Id, WeaponItem = s.Weapons[0], Ability = s.Abilities[0], Model = "rogue_hooded" }, 1, 7);
         Assert.Null(Loadouts.Of(hooded).Person.Hair);
     }
+
+    [Theory]
+    [InlineData("warden")]
+    [InlineData("reaver")]
+    [InlineData("stalker")]
+    public void A_woman_goes_in_her_own_body_bare_with_her_hair(string archetype)
+    {
+        var a = Callings.Archetype(archetype);
+        var ch = Character.Create(new CreationChoice
+        {
+            Name = "D", Archetype = archetype, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
+            Sex = Sex.Female, HairStyle = "Hair_Buns", Figure = 1.2, Model = "rogue_hooded",
+        }, 1, 7);
+        var p = Loadouts.Of(ch).Person;
+        Assert.Equal(Loadouts.HerBody, p.Body);
+        Assert.Empty(p.Outfit!);
+        Assert.Equal("Hair_Buns", p.Hair);
+        Assert.False(p.Beard);
+        Assert.Equal(1.2, p.Figure);
+        Assert.False(string.IsNullOrEmpty(Loadouts.Of(ch).Arms.Right));
+    }
 }

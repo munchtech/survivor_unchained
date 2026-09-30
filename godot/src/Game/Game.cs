@@ -120,6 +120,9 @@ public partial class Game : Node, IZoneHost
         {
             Name = Args.Get("name") ?? "Ashe", Archetype = arch, Background = Args.Get("bg") ?? "hunter", Palette = a.Palettes[0].Id,
             WeaponItem = Args.Get("weapon") ?? a.Weapons[0], Ability = a.Abilities[0], StartBoon = Args.Get("blessing") ?? Content.Boons.StartBlessings[0],
+            // --sex female [--hair STYLE --figure F --skin ID]: a woman survivor.
+            Sex = Args.Get("sex") == "female" ? Sex.Female : null, HairStyle = Args.Get("hair"), Skin = Args.Get("skin"),
+            Figure = Args.Has("figure") ? Args.Num("figure", 1) : null,
         });
         var z = Args.Get("zone") ?? "lowford";
         Arrival? at = null;

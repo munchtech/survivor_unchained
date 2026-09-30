@@ -48,6 +48,12 @@ public static class Loadouts
         return $"#{C(16):x2}{C(8):x2}{C(0):x2}";
     }
 
+    /// <summary>A woman survivor's own body (People: donizaki's, rigged to
+    /// the same skeleton). The Quaternius clothes are cut for the Quaternius
+    /// bodies, so she goes bare until her gear is made to fit her: no hood
+    /// over her hair.</summary>
+    public const string HerBody = "anime";
+
     /// <summary>The survivor as their character sheet has them.</summary>
     public static Loadout Of(CharacterData ch)
     {
@@ -56,14 +62,15 @@ public static class Loadouts
         var held = Held.TryGetValue(item, out var h) ? h : Held[a.Weapons[0]];
         var sex = ch.Sex ?? Sex.Male;
         // The Stalker's hood by their model; the Warden's and Arcanist's as their headgear.
-        bool hood = ch.Archetype == "stalker" ? (ch.Model == "" ? "rogue_hooded" : ch.Model) == "rogue_hooded" : ch.Archetype != "reaver" && (ch.Headgear ?? true);
+        bool her = sex == Sex.Female;
+        bool hood = !her && (ch.Archetype == "stalker" ? (ch.Model == "" ? "rogue_hooded" : ch.Model) == "rogue_hooded" : ch.Archetype != "reaver" && (ch.Headgear ?? true));
         var pal = a.Palettes.FirstOrDefault(p => p.Id == ch.Palette) ?? a.Palettes[0];
         string? skin = Lore.Skins.FirstOrDefault(s => s.Id == ch.Skin)?.Color;
         string? hair = Lore.Hairs.FirstOrDefault(x => x.Id == ch.Hair)?.Color;
         string? cloak = ch.Cloak == "none" ? null : Lore.CloakDyes.FirstOrDefault(d => d.Id == ch.Cloak)?.Color;
         var person = new PersonSpec
         {
-            Sex = sex, Outfit = OutfitOf(ch.Archetype, sex, hood),
+            Sex = sex, Body = her ? HerBody : null, Outfit = her ? new List<string>() : OutfitOf(ch.Archetype, sex, hood),
             Hair = hood || ch.HairStyle == "none" ? null : ch.HairStyle ?? Lore.HairStyles(sex)[0],
             Beard = sex == Sex.Male && (ch.Beard ?? true),
             HairColor = string.IsNullOrEmpty(hair) ? null : hair, Skin = string.IsNullOrEmpty(skin) ? null : skin, Figure = ch.Figure,

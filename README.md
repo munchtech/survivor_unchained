@@ -137,8 +137,11 @@ the journal, the tests and the chapter's end read back.
 
 Dark fantasy. People are Quaternius's Universal Base Characters, outfits
 and animation libraries (CC0), with a woman's figure shaped offline
-(`tools/assets/figure.py`) and crowd figures baked from the same people;
-weapons are CC BY models from Sketchfab (credited in the game and in
+(`tools/assets/figure.py`) and crowd figures baked from the same people. In
+the Godot game a woman survivor has a body of her own, donizaki's anime base
+(CC BY) rigged to the same skeleton so every clip plays on her
+(`tools/assets/anime_female.py`); she goes bare until gear is made to fit
+her. Weapons are CC BY models from Sketchfab (credited in the game and in
 `public/assets/CREDITS.md`). Houses are put together from Quaternius's
 Medieval Village MegaKit on its 2 m grid (`src/world/zones/houses.ts`), with
 the Fantasy Props and Stylized Nature kits (CC0), each material weathered in
@@ -200,6 +203,7 @@ All expect `npm run dev` running.
 | `node tools/listen.mjs "<query>" name secs` | Record the mix as a spectrogram with loudness |
 | `python3 tools/assets/people.py [.packs]` | Gather the people from the unpacked Quaternius packs (textures to WebP) |
 | `python tools/assets/figure.py` | Then shape the women (bust and hips morph targets; needs numpy) |
+| `<bpy venv>/bin/python tools/assets/anime_female.py <blend> <gltf> <textures> godot/art/people/anime_female.glb` | Rig the woman survivor's own body to the Quaternius skeleton: joints to her body, arms to its T, hands fitted and weighted (`anime_hands.py`) |
 | `python3 tools/assets/env.py [.packs]` | Gather the world's kits (village, props, nature) with their bounds |
 | `python3 tools/assets/ground.py` | The ground's photoscanned materials from Poly Haven (CC0), packed into KTX2 arrays (needs `toktx`) |
 | `python3 tools/assets/ktx2.py [--keep]` | Then compress every sheet to KTX2 (UASTC, mipmapped; needs `toktx` from KTX-Software) |

@@ -118,6 +118,7 @@ public partial class TitleScreen : Overlay
     static readonly string[] Credits =
     {
         "People and their clothes, hair and movement: Quaternius (Universal Base Characters, Modular Character Outfits, Universal Animation Libraries 1 and 2; CC0).",
+        "A woman survivor's body: Genshin Style Anime Female Base Mesh by donizaki (Sketchfab, CC BY 4.0).",
         "Weapons, from Sketchfab (CC BY 4.0): Chevalier Sword by rubenve; Viking Sword by Michael Makivic; medieval sword by LowSeb; Zweihander by Siesta; Medieval Mace by Kama Modeling; Viking battle axe by Mikhail Antonov; Snake Axe by Ashley Jay Thornton; Mage Staff by RMBehan; Medieval Crossbow by iedalton; Medieval Shield by Artem Mykhailov; Silver Bladed weapons by Peter Nox.",
         "Houses, walls and props: Quaternius (Medieval Village MegaKit, Fantasy Props MegaKit, Stylized Nature MegaKit; CC0).",
         "The ground: Poly Haven (photoscanned materials; CC0).",
@@ -360,20 +361,26 @@ public partial class CreateScreen : Overlay
             string Word(double f) => f < 0.45 ? "Slender" : f < 0.95 ? "Shapely" : f < 1.25 ? "Full" : "Buxom";
             v.AddChild(Style.H(10, Style.Label("Figure", Style.UiBold, 14, Style.Ink), slider, Style.Label(Word(d.Figure), Style.Ui, 14, Style.InkDim)));
         }
-        v.AddChild(Style.SubLabel("Colours"));
-        var pal = new GridContainer { Columns = 2 };
-        foreach (var p in a.Palettes) pal.AddChild(Style.Segment(p.Name, d.Palette == p.Id, () => Set(() => d.Palette = p.Id)));
-        v.AddChild(pal);
+        // A woman goes bare in a body of her own (Loadouts.HerBody): no
+        // clothes to colour, no hood over her hair.
+        bool her = d.Sex == Sex.Female;
+        if (!her)
+        {
+            v.AddChild(Style.SubLabel("Colours"));
+            var pal = new GridContainer { Columns = 2 };
+            foreach (var p in a.Palettes) pal.AddChild(Style.Segment(p.Name, d.Palette == p.Id, () => Set(() => d.Palette = p.Id)));
+            v.AddChild(pal);
+        }
         v.AddChild(Style.SubLabel("Skin"));
         v.AddChild(Swatches(Lore.Skins, d.Skin, id => d.Skin = id, "#f6c4a0"));
-        bool hairHidden = d.Archetype == "stalker" ? d.Model == "rogue_hooded" : d.Headgear && d.Archetype != "reaver";
+        bool hairHidden = !her && (d.Archetype == "stalker" ? d.Model == "rogue_hooded" : d.Headgear && d.Archetype != "reaver");
         v.AddChild(Style.H(8, Style.SubLabel("Hair"), hairHidden ? Style.Label("under the hood", Style.TextItalic, 13, Style.InkDim) : new Control()));
         var cuts = Style.H(4);
         foreach (var h in Lore.HairStyles(d.Sex).Append("none")) cuts.AddChild(Style.Segment(HairNames.GetValueOrDefault(h, h), d.HairStyle == h, () => Set(() => d.HairStyle = h)));
         if (hairHidden) cuts.Modulate = new Color(1, 1, 1, 0.5f);
         v.AddChild(cuts);
         v.AddChild(Swatches(Lore.Hairs, d.Hair, id => d.Hair = id, "#6a5a48"));
-        if (d.Archetype != "reaver")
+        if (d.Archetype != "reaver" && !her)
         {
             v.AddChild(Style.SubLabel("Hood"));
             if (a.AltModel != null) v.AddChild(Style.Button(d.Model == a.Model ? "Hood up" : "Hood down", () => Set(() => d.Model = d.Model == a.Model ? a.AltModel! : a.Model), false, true));

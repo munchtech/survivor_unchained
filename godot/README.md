@@ -84,7 +84,11 @@ game at the same place and hour; needs the dev server), then
 - `src/Actors/`: people from Quaternius parts on one skeleton with the
   Universal Animation Libraries (`People.cs`: the body hidden under the
   clothes, a woman's figure from two shape keys, skin tone, cloth dyed by
-  `shaders/person.gdshader`), weapons in hand (`Arms.cs`), the survivor
+  `shaders/person.gdshader`; a woman survivor in a body of her own,
+  donizaki's anime base in `art/people`, rigged to the same skeleton by
+  `tools/assets/anime_female.py`, her figure from her own shape keys and her
+  skin toned by `shaders/anime_skin.gdshader`, bare until gear is made to
+  fit her), weapons in hand (`Arms.cs`), the survivor
   (`PlayerView.cs`: an AnimationTree, the swing on the upper body over the
   run), people in the world (`PersonView.cs`), the beasts (`Beasts.cs`:
   modelled, rigged and animated wolves, boars and lamplings from

@@ -30,6 +30,10 @@ public sealed class Dye { public string? Cloth, Under; }
 public sealed class PersonSpec
 {
     public Sex Sex;
+    /// <summary>Whose body: null for the Quaternius base of their sex (and
+    /// its clothes); "anime" for donizaki's woman, a body of her own, bare
+    /// until gear is made to fit her.</summary>
+    public string? Body;
     public string? HairColor, Hair, Skin;
     public List<string>? Outfit;
     public bool? Beard;
