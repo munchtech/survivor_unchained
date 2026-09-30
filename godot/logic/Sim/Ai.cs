@@ -41,6 +41,8 @@ public static class Ai
         }
         b.TickStatus(e, dt);
         if (!e.Alive || e.State == EnemyState.Dying) return;
+        // A reflection stands where it was left, until it breaks.
+        if (e.Decoy) { e.Vx = e.Vz = 0; e.Anim = EnemyAnim.Idle; return; }
 
         // Knockback slides, then settles.
         if (e.Kbx != 0 || e.Kbz != 0)
@@ -347,6 +349,19 @@ public static class Ai
         int best = -2;
         double bd = double.PositiveInfinity;
         bool hostileToPlayer = e.Disposition == Disposition.Hostile || e.Provoked;
+        // A reflection of the survivor is the first thing anything hunting them goes for.
+        if (hostileToPlayer && b.Decoys.Count > 0)
+        {
+            Enemy? decoy = null;
+            double dd = 14;
+            foreach (var d in b.Decoys)
+            {
+                if (!d.Alive || d.State == EnemyState.Dying) continue;
+                double dist = Dist(d.X, d.Z, e.X, e.Z);
+                if (dist < dd) { dd = dist; decoy = d; }
+            }
+            if (decoy != null) return decoy.Id;
+        }
         if (hostileToPlayer && p.Alive && p.InvisibleT <= 0)
         {
             double d = Dist(p.X, p.Z, e.X, e.Z);

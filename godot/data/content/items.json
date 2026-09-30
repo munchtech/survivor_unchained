@@ -1001,6 +1001,146 @@
    "tags": [
     "explosive"
    ]
+  },
+  "manual_sprint": {
+   "id": "manual_sprint",
+   "name": "Manual: Sprint",
+   "kind": "consumable",
+   "rarity": 1,
+   "icon": "book",
+   "value": 100,
+   "stack": 3,
+   "description": "Read it to learn Sprint, an art to carry. Read again, it comes more easily.",
+   "consumable": {
+    "teaches": "sprint"
+   },
+   "lore": "A courier's book of the road, all of it about getting away. The margins are full of routes that end at a door."
+  },
+  "manual_leap": {
+   "id": "manual_leap",
+   "name": "Manual: Crashing Leap",
+   "kind": "consumable",
+   "rarity": 2,
+   "icon": "book",
+   "value": 140,
+   "stack": 3,
+   "description": "Read it to learn Crashing Leap, an art to carry. Read again, it comes more easily.",
+   "consumable": {
+    "teaches": "leap"
+   },
+   "lore": "A reaver's primer, mostly pictures. The pictures are of people landing on other people."
+  },
+  "manual_blink": {
+   "id": "manual_blink",
+   "name": "Manual: Blink",
+   "kind": "consumable",
+   "rarity": 2,
+   "icon": "book",
+   "value": 140,
+   "stack": 3,
+   "description": "Read it to learn Blink, an art to carry. Read again, it comes more easily.",
+   "consumable": {
+    "teaches": "blink"
+   },
+   "lore": "A folded page of the Collegium's, the one they tell apprentices not to read. The ink moves when you do not look at it."
+  },
+  "manual_mirror_step": {
+   "id": "manual_mirror_step",
+   "name": "Manual: Mirror Step",
+   "kind": "consumable",
+   "rarity": 2,
+   "icon": "book",
+   "value": 140,
+   "stack": 3,
+   "description": "Read it to learn Mirror Step, an art to carry. Read again, it comes more easily.",
+   "consumable": {
+    "teaches": "mirror_step"
+   },
+   "lore": "Glass-sworn doctrine: that a thing seen twice is a thing that cannot be hit. The last page is a mirror, cracked."
+  },
+  "manual_bull_rush": {
+   "id": "manual_bull_rush",
+   "name": "Manual: Bull Rush",
+   "kind": "consumable",
+   "rarity": 2,
+   "icon": "book",
+   "value": 140,
+   "stack": 3,
+   "description": "Read it to learn Bull Rush, an art to carry. Read again, it comes more easily.",
+   "consumable": {
+    "teaches": "bull_rush"
+   },
+   "lore": "A Watch drill-book on breaking a line. Someone has underlined 'do not stop' three times."
+  },
+  "manual_wraith_walk": {
+   "id": "manual_wraith_walk",
+   "name": "Manual: Wraith Walk",
+   "kind": "consumable",
+   "rarity": 3,
+   "icon": "book",
+   "value": 180,
+   "stack": 3,
+   "description": "Read it to learn Wraith Walk, an art to carry. Read again, it comes more easily.",
+   "consumable": {
+    "teaches": "wraith_walk"
+   },
+   "lore": "Written by someone who died partway through writing it, and finished it anyway."
+  },
+  "manual_cinder_trail": {
+   "id": "manual_cinder_trail",
+   "name": "Manual: Cinder Trail",
+   "kind": "consumable",
+   "rarity": 3,
+   "icon": "book",
+   "value": 180,
+   "stack": 3,
+   "description": "Read it to learn Cinder Trail, an art to carry. Read again, it comes more easily.",
+   "consumable": {
+    "teaches": "cinder_trail"
+   },
+   "lore": "The pages are scorched from the back. Whoever wrote it ran while they wrote it."
+  },
+  "manual_grapple": {
+   "id": "manual_grapple",
+   "name": "Manual: Grapple Chain",
+   "kind": "consumable",
+   "rarity": 2,
+   "icon": "book",
+   "value": 140,
+   "stack": 3,
+   "description": "Read it to learn Grapple Chain, an art to carry. Read again, it comes more easily.",
+   "consumable": {
+    "teaches": "grapple"
+   },
+   "lore": "A ravine-raider's notes on chain and hook, with a length of the chain still sewn into the spine."
+  },
+  "manual_echo_step": {
+   "id": "manual_echo_step",
+   "name": "Manual: Echo Step",
+   "kind": "consumable",
+   "rarity": 3,
+   "icon": "book",
+   "value": 180,
+   "stack": 3,
+   "description": "Read it to learn Echo Step, an art to carry. Read again, it comes more easily.",
+   "consumable": {
+    "teaches": "echo_step"
+   },
+   "lore": "A treatise on the moment just gone. It reads the same forward and back, and it says so."
+  },
+  "manual_vault": {
+   "id": "manual_vault",
+   "name": "Manual: Vault",
+   "kind": "consumable",
+   "rarity": 2,
+   "icon": "book",
+   "value": 140,
+   "stack": 3,
+   "description": "Read it to learn Vault, an art to carry. Read again, it comes more easily.",
+   "consumable": {
+    "teaches": "vault"
+   },
+   "lore": "A stalker's hand-sewn book of snares and the art of not being there when they close."
   }
  },
  "raritynames": [

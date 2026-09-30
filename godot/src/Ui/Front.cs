@@ -297,11 +297,12 @@ public partial class CreateScreen : Overlay
             v.AddChild(Choice(it.Icon, it.Name, w != null ? $"{w.Name} · {w.School.ToString().ToLowerInvariant()}" : "", d.WeaponItem == id, () => Set(() => d.WeaponItem = id),
                 w != null ? ItemViews.SchoolColors[w.School] : null));
         }
-        v.AddChild(Style.SubLabel("Ability"));
-        foreach (var id in a.Abilities)
+        v.AddChild(Style.H(8, Style.SubLabel("Art in hand"), Style.Label("you know all four; more are learned on the road", Style.TextItalic, 13, Style.InkDim)));
+        foreach (var id in ArtBook.Starting(a.Id))
         {
             var ab = Abilities.ById(id);
-            v.AddChild(Choice(ab.Icon, ab.Name, $"{ab.Cooldown} s{(ab.Interrupts ? " · breaks channels" : "")}", d.Ability == id, () => Set(() => d.Ability = id)));
+            string kind = ab.Movement ? "a way of moving" : "the calling's own";
+            v.AddChild(Choice(ab.Icon, ab.Name, $"{kind} · {ab.Cooldown} s{(ab.Interrupts ? " · breaks channels" : "")}", d.Ability == id, () => Set(() => d.Ability = id)));
         }
         v.AddChild(Style.H(8, Style.SubLabel("Starting blessing"), Style.Label("yours at the start of every expedition", Style.TextItalic, 13, Style.InkDim)));
         var grid = new GridContainer { Columns = 3 };

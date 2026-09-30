@@ -220,6 +220,7 @@ public sealed class MapRun : ZoneRuntime
             a.State = AltarState.Spent;
             if (a.Light >= 0) G.Look.SetLit(a.Light, false);
             Hoard(a.Area.X, a.Area.Z, 1.0 * gear);
+            if (R() < 0.35 * gear) DropManual(a.Area.X, a.Area.Z);
             G.Announce(new Announcement("The altar is spent", "Its hoard is yours", "reward", 2.4));
             Objectives();
         }
@@ -252,6 +253,26 @@ public sealed class MapRun : ZoneRuntime
         }
     }
 
+    /// <summary>A manual: an art the survivor has yet to learn if there is
+    /// one, else the art in hand (read again, it comes more easily).</summary>
+    string Manual()
+    {
+        var ch = G.Journey.Ch;
+        var pool = Abilities.All.Values.Where(a => a.Movement && ArtBook.CanLearn(ch, a.Id)).Select(a => a.Id).ToList();
+        if (pool.Count > 0) return ArtBook.Manual(pool[(int)Math.Floor(R() * pool.Count)]);
+        var held = Abilities.Find(ch.Ability);
+        return ArtBook.Manual(held is { Movement: true } ? held.Id : "sprint");
+    }
+
+    void DropManual(double x, double z)
+    {
+        var id = Manual();
+        var pk = B?.SpawnPickup(PickupKind.Item, x, z, 1, id);
+        if (pk == null) return;
+        pk.Persistent = true;
+        pk.Tier = Items.Find(id)?.Rarity ?? 2;
+    }
+
     IEnumerable<Loot> OnLoot(Enemy e)
     {
         var out_ = new List<Loot>();
@@ -265,6 +286,8 @@ public sealed class MapRun : ZoneRuntime
         // Champions carry gear, rolled where it falls.
         if (e.Elite && e != boss && R() < 0.55 * gear)
             out_.Add(new Loot(PickupKind.Item, PlainGear[(int)Math.Floor(R() * PlainGear.Length)], 1, true, Rarity(gear)));
+        if (e.Elite && e != boss && R() < 0.04 * gear)
+            out_.Add(new Loot(PickupKind.Item, Manual(), 1, true, 2));
         if (e == boss)
             for (int k = 0; k < 2 + Tier / 2; k++)
                 out_.Add(new Loot(PickupKind.Item, PlainGear[(int)Math.Floor(R() * PlainGear.Length)], 1, true, Math.Max(1, Rarity(gear * 1.5))));
@@ -280,6 +303,7 @@ public sealed class MapRun : ZoneRuntime
             done = true;
             G.SetBoss(null);
             Hoard(e.X, e.Z, 2 * gear);
+            DropManual(e.X + 1.2, e.Z);
             G.Announce(new Announcement($"{Map.Spec.Name} is taken", "The way home is open at the heart of the clearing", "reward", 3.5, "Map complete"));
             int tier = (int)Math.Max(W.Fact("map.best").Number, Tier);
             W.Facts["map.best"] = tier;

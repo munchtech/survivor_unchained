@@ -10,7 +10,7 @@ namespace SurvivorUnchained.Play;
 public enum Act
 {
     Up, Down, Left, Right, Dash, Ability, Ultimate, Interact, Inventory, Character, Journal, Map,
-    Pause, Confirm, Cancel, Reroll, Banish, Pick1, Pick2, Pick3, Pick4, TabNext, TabPrev,
+    Pause, Confirm, Cancel, Reroll, Banish, Pick1, Pick2, Pick3, Pick4, TabNext, TabPrev, Arts,
 }
 
 /// <summary>
@@ -34,10 +34,10 @@ public partial class Controls : Node
         [Act.Inventory] = ["KeyI", "Tab"], [Act.Character] = ["KeyC"], [Act.Journal] = ["KeyJ"], [Act.Map] = ["KeyM"],
         [Act.Pause] = ["Escape", "KeyP"], [Act.Confirm] = ["Enter", "NumpadEnter"], [Act.Cancel] = ["Escape", "Backspace"],
         [Act.Reroll] = ["KeyX"], [Act.Banish] = ["KeyB"], [Act.Pick1] = ["Digit1"], [Act.Pick2] = ["Digit2"], [Act.Pick3] = ["Digit3"], [Act.Pick4] = ["Digit4"],
-        [Act.TabNext] = ["BracketRight"], [Act.TabPrev] = ["BracketLeft"],
+        [Act.TabNext] = ["BracketRight"], [Act.TabPrev] = ["BracketLeft"], [Act.Arts] = ["KeyK"],
     };
 
-    public static readonly Act[] Rebindable = [Act.Up, Act.Left, Act.Down, Act.Right, Act.Dash, Act.Ability, Act.Ultimate, Act.Interact, Act.Inventory, Act.Character, Act.Journal, Act.Map, Act.Reroll, Act.Banish];
+    public static readonly Act[] Rebindable = [Act.Up, Act.Left, Act.Down, Act.Right, Act.Dash, Act.Ability, Act.Ultimate, Act.Interact, Act.Inventory, Act.Character, Act.Arts, Act.Journal, Act.Map, Act.Reroll, Act.Banish];
     static readonly string[] Reserved = ["Escape", "Enter", "NumpadEnter", "Backspace", "Digit1", "Digit2", "Digit3", "Digit4", "BracketLeft", "BracketRight"];
 
     /// <summary>The standard pad layout: View opens the pack; the self, the

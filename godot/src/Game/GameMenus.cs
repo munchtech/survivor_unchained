@@ -34,6 +34,7 @@ public partial class Game
             case Act.Pause: Open("pause"); return true;
             case Act.Inventory: Open("inventory"); return true;
             case Act.Character: Open("character"); return true;
+            case Act.Arts: Open("arts"); return true;
             case Act.Journal: Open("journal"); return true;
             case Act.Map: Open("map"); return true;
             case Act.Interact when near != null:
@@ -59,6 +60,7 @@ public partial class Game
             "stash" => new StashScreen(this),
             "rest" => new RestScreen(this),
             "maps" => new MapTableScreen(this),
+            "arts" => new ArtsScreen(this),
             "chapter" => new ChapterScreen(this),
             _ when kind.StartsWith("shop:") => new ShopScreen(this, kind[5..]),
             _ => new PauseScreen(this),

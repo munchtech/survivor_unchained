@@ -112,7 +112,15 @@ public partial class WorldScene : Node3D, IZoneLook
                 Fx.Handle(evs, b);
                 Weigh(evs, b);
                 frameEvents.AddRange(evs);
-                foreach (var e in evs) if (e is Ev.LevelUp) { Player?.LevelFlare(); break; }
+                foreach (var e in evs)
+                {
+                    if (e is Ev.LevelUp) Player?.LevelFlare();
+                    else if (e is Ev.Ability ab)
+                    {
+                        if (ab.Id == "mirror_strike") Player?.Reflections.Strike(ab.Who);
+                        else Player?.OnAbility(ab.Id);
+                    }
+                }
             }
         }
         Draw(dt, fightDt);

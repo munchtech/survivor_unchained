@@ -17,7 +17,7 @@ namespace SurvivorUnchained.Sim;
  * camera are one system everywhere. */
 
 public sealed record AttackAnim(string Weapon, double Angle, double T, bool Heavy);
-public sealed class Leap { public double T, Dur, X0, Z0, X1, Z1; }
+public sealed class Leap { public double T, Dur, X0, Z0, X1, Z1; public AbilityKind Kind = AbilityKind.Leap; }
 
 public sealed class PlayerState
 {
@@ -73,6 +73,9 @@ public sealed class BattleSetup
     public List<(string Id, int Rank)> Weapons = new();
     public List<(TriggerDef Def, string Source)> Triggers = new();
     public AbilityKind? Ability;
+    /// <summary>The art's rank and the facets chosen for it.</summary>
+    public int ArtRank = 1;
+    public List<string> Facets = new();
     public Dictionary<Faction, Faction[]>? Hostility;
     /// <summary>Carried ember from an expedition that did not end.</summary>
     public (int Level, double Xp)? Ember;
@@ -132,7 +135,7 @@ public struct ProcCtx
     public int? Depth;
 }
 
-public sealed class Battle
+public sealed partial class Battle
 {
     public double Time;
     public readonly Rng Rng;
@@ -209,7 +212,7 @@ public sealed class Battle
         HeightAt = s.HeightAt;
         Combat = s.Combat;
         Stats = s.Stats;
-        Ability = s.Ability;
+        SetArt(s.Ability, s.ArtRank, s.Facets);
         War = s.Hostility ?? DefaultWar;
         Spatial = new SpatialHash(s.Collision.Size, 3, 900);
         Flow = new FlowField(s.Collision, 44);
@@ -290,7 +293,7 @@ public sealed class Battle
         int maxCharges = RoundInt(st.Get(Stat.DashCharges));
         if (p.DashCharges < maxCharges)
         {
-            p.DashRecharge += dt / st.Get(Stat.DashCooldown);
+            p.DashRecharge += dt * DashHaste() / st.Get(Stat.DashCooldown);
             if (p.DashRecharge >= Abilities.Dash.Recharge) { p.DashRecharge = 0; p.DashCharges++; }
         }
 
@@ -304,6 +307,7 @@ public sealed class Battle
         if (p.BurnT > 0) { p.BurnT -= dt; HurtPlayerRaw(p.BurnDps * dt, School.Fire, "burning", null, true); }
         if (p.PoisonT > 0) { p.PoisonT -= dt; HurtPlayerRaw(p.PoisonDps * dt, School.Nature, "poison", null, true); }
         if (!p.Alive) return;
+        if (TickArt(dt)) return;
 
         // Leaping: an arc through the air, untouchable until landing.
         if (p.Leap is { } leap)
@@ -313,7 +317,7 @@ public sealed class Battle
             p.X = leap.X0 + (leap.X1 - leap.X0) * k;
             p.Z = leap.Z0 + (leap.Z1 - leap.Z0) * k;
             p.Iframes = Math.Max(p.Iframes, 0.05);
-            if (k >= 1) { LandLeap(); p.Leap = null; }
+            if (k >= 1) { p.Leap = null; LandLeap(leap); }
             Collision.Resolve(ref p.X, ref p.Z, p.Radius, true);
             return;
         }
@@ -337,7 +341,7 @@ public sealed class Battle
         }
 
         double speed = st.Get(Stat.MoveSpeed) * p.SlowF;
-        if (p.BulwarkT > 0) speed *= 0.45;
+        if (p.BulwarkT > 0 && !Has("marching_wall")) speed *= 0.45;
         double targetVX = mx * speed, targetVZ = mz * speed;
         double accel = 1 - Math.Exp(-dt * 14);
         p.Vx += (targetVX - p.Vx) * accel;
@@ -373,7 +377,7 @@ public sealed class Battle
     public bool Dash(double dirX, double dirZ)
     {
         var p = Player;
-        if (!p.Alive || p.DashCharges <= 0 || p.DashT > 0 || p.Leap != null) return false;
+        if (!p.Alive || p.DashCharges <= 0 || p.DashT > 0 || p.Leap != null || Art.Rush != null) return false;
         double dx = dirX, dz = dirZ;
         if (Len(dx, dz) < 0.1) { dx = Math.Sin(p.Facing); dz = Math.Cos(p.Facing); }
         double m = Len(dx, dz);
@@ -387,117 +391,6 @@ public sealed class Battle
         Events.Emit(new Ev.Dash { X0 = x0, Z0 = z0, X1 = x0 + p.DashDX * Abilities.Dash.Distance, Z1 = z0 + p.DashDZ * Abilities.Dash.Distance });
         Fire(TriggerEvent.Dash, new ProcCtx { X = p.X, Z = p.Z });
         return true;
-    }
-
-    /// <summary>Q: the ability chosen at creation.</summary>
-    public bool UseAbility(double dirX, double dirZ)
-    {
-        var p = Player;
-        if (!Combat || !p.Alive || Ability is not { } kind || p.AbilityCd > 0 || p.Leap != null) return false;
-        var def = Abilities.All[kind];
-        double ax = dirX, az = dirZ;
-        if (Aim is { } aim) { ax = aim.X - p.X; az = aim.Z - p.Z; }
-        if (Len(ax, az) < 0.1) { ax = Math.Sin(p.Facing); az = Math.Cos(p.Facing); }
-        double m = Len(ax, az);
-        ax /= m; az /= m;
-        double angle = Math.Atan2(az, ax);
-        double power = Stats.Get(Stat.AbilityPower);
-        p.AbilityCd = def.Cooldown * Stats.Get(Stat.AbilityCooldown);
-        switch (kind)
-        {
-            case AbilityKind.ShieldBash:
-                Events.Emit(new Ev.Ability { Id = def.Id, X = p.X, Z = p.Z, Angle = angle, Radius = 3.4 });
-                ForEachHostileInRadius(p.X, p.Z, 3.4, (e, d) =>
-                {
-                    double da = Wrap(Math.Atan2(e.Z - p.Z, e.X - p.X) - angle);
-                    if (Math.Abs(da) > 1.2) return;
-                    double dd = d == 0 ? 1 : d;
-                    HitEnemy(e, 22 * power, School.Physical, [Tag.Melee, Tag.Physical], new HitOpts { Knockback = 2.4, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd });
-                    ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, e.Boss ? 0.6 : 1.5), 0);
-                    Interrupt(e);
-                });
-                Events.Emit(new Ev.Shake { Amount = 0.35 });
-                break;
-            case AbilityKind.Bulwark:
-                p.BulwarkT = 3;
-                Events.Emit(new Ev.Ability { Id = def.Id, X = p.X, Z = p.Z, Angle = angle, Radius = 2 });
-                break;
-            case AbilityKind.Leap:
-            {
-                double dist = Math.Min(7, Aim is { } a ? Dist(a.X, a.Z, p.X, p.Z) : 7);
-                double x1 = p.X + ax * dist, z1 = p.Z + az * dist;
-                p.Leap = new Leap { T = 0, Dur = 0.42, X0 = p.X, Z0 = p.Z, X1 = x1, Z1 = z1 };
-                Events.Emit(new Ev.Ability { Id = def.Id, X = x1, Z = z1, Angle = angle, Radius = 3 });
-                break;
-            }
-            case AbilityKind.Warcry:
-                Events.Emit(new Ev.Ability { Id = def.Id, X = p.X, Z = p.Z, Angle = angle, Radius = 8 });
-                ForEachHostileInRadius(p.X, p.Z, 8, (e, _) =>
-                {
-                    if (!e.Elite && !e.Boss) ApplyStatus(e, new StatusPayload(StatusKind.Fear, 1, 1, 2.5), 0);
-                    Interrupt(e);
-                });
-                AddBuff("warcry", Stat.Damage, 0.25 * power, ModKind.Inc, 6, 1);
-                break;
-            case AbilityKind.Blink:
-            {
-                double x0 = p.X, z0 = p.Z;
-                double tx = p.X + ax * 6, tz = p.Z + az * 6;
-                // Blink as far along the line as is open ground.
-                int best = 0;
-                for (int k = 1; k <= 12; k++)
-                {
-                    double x = x0 + (tx - x0) * (k / 12.0), z = z0 + (tz - z0) * (k / 12.0);
-                    if (!Collision.Blocked(x, z, p.Radius)) best = k;
-                }
-                p.X = x0 + (tx - x0) * (best / 12.0);
-                p.Z = z0 + (tz - z0) * (best / 12.0);
-                p.Iframes = Math.Max(p.Iframes, 0.3);
-                Events.Emit(new Ev.Ability { Id = def.Id, X = x0, Z = z0, Angle = angle, Radius = 3 });
-                Events.Emit(new Ev.Dash { X0 = x0, Z0 = z0, X1 = p.X, Z1 = p.Z });
-                ForEachHostileInRadius(x0, z0, 3.2, (e, _) =>
-                    HitEnemy(e, 14 * power, School.Frost, [Tag.Spell, Tag.Frost, Tag.Area], new HitOpts { Status = new StatusPayload(StatusKind.Chill, 1, 3, 3) }));
-                break;
-            }
-            case AbilityKind.TimeSlip:
-                WorldRate = 1.0 / 3;
-                WorldRateT = 3.5 * power;
-                Events.Emit(new Ev.Ability { Id = def.Id, X = p.X, Z = p.Z, Angle = angle, Radius = 30 });
-                foreach (var e in Enemies.Items) if (e.Alive) Interrupt(e);
-                break;
-            case AbilityKind.MarkPrey:
-            {
-                Enemy? best = null;
-                ForEachHostileInRadius(p.X, p.Z, 16, (e, _) => { if (best == null || e.MaxHp > best.MaxHp) best = e; });
-                if (best == null) { p.AbilityCd = 0.5; return false; }
-                ApplyStatus(best, new StatusPayload(StatusKind.Mark, 1, 2, 8), 0);
-                best.Tag ??= "prey";
-                Events.Emit(new Ev.Ability { Id = def.Id, X = best.X, Z = best.Z, Angle = angle, Radius = 1 });
-                break;
-            }
-            case AbilityKind.SmokeBomb:
-                p.InvisibleT = 3;
-                p.SureCritT = 3.5;
-                Events.Emit(new Ev.Ability { Id = def.Id, X = p.X, Z = p.Z, Angle = angle, Radius = 4 });
-                foreach (var e in Enemies.Items) if (e.Alive && e.Target == -1) { e.Target = -2; e.RetargetT = 3; }
-                break;
-        }
-        Fire(TriggerEvent.Ability, new ProcCtx { X = p.X, Z = p.Z });
-        return true;
-    }
-
-    void LandLeap()
-    {
-        var p = Player;
-        double power = Stats.Get(Stat.AbilityPower);
-        Events.Emit(new Ev.Explosion { X = p.X, Z = p.Z, Radius = 3, School = School.Physical, Power = 1 });
-        Events.Emit(new Ev.Shake { Amount = 0.5 });
-        ForEachHostileInRadius(p.X, p.Z, 3, (e, d) =>
-        {
-            double dd = d == 0 ? 1 : d;
-            HitEnemy(e, 34 * power, School.Physical, [Tag.Melee, Tag.Area, Tag.Physical], new HitOpts { Knockback = 2, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd });
-            Interrupt(e);
-        });
     }
 
     /// <summary>Stop a channel or cast in progress.</summary>
@@ -690,6 +583,7 @@ public sealed class Battle
         }
 
         if (e.Hp <= 0 && e.Alive && e.State != EnemyState.Dying) KillEnemy(e, true, o.Weapon, depth);
+        else ArtOnHit(e);
         return dmg;
     }
 
@@ -772,6 +666,7 @@ public sealed class Battle
             }
         if (credited && depth < 3)
             Fire(TriggerEvent.Kill, new ProcCtx { Target = e, X = e.X, Z = e.Z, Damage = e.MaxHp, School = e.LastSchool, Tags = Array.Empty<Tag>(), Weapon = weapon, Depth = depth + 1 });
+        ArtOnKill(e, credited);
         Hooks.OnKill?.Invoke(e, credited);
     }
 
@@ -924,7 +819,9 @@ public sealed class Battle
         dmg *= 1 - StatBlock.ArmorReduction(armor);
         dmg *= 1 - Clamp(st.GetRaw(Stat.ResistOf(school)), -1, 0.8);
         if (from != null) dmg *= 1 - Clamp(st.GetRaw(Stat.FromOf(from.Def.Family)), -1, 0.8);
-        if (p.BulwarkT > 0) dmg *= 0.35;
+        if (p.BulwarkT > 0) dmg *= Has("unmoving") ? 0.2 : 0.35;
+        // Half a ghost: blows land at half.
+        if (Art.WraithT > 0) dmg *= 0.5;
         return HurtPlayerRaw(dmg, school, source, from);
     }
 
@@ -1067,6 +964,8 @@ public sealed class Battle
         e.LastWeapon = null;
         e.TakenMul = 1;
         e.LungeX = e.LungeZ = 0;
+        e.Decoy = e.Prey = false;
+        e.DrainedAt = -99;
         Events.Emit(new Ev.Spawn { Enemy = e.Id, X = x, Z = z, Def = defId, Style = o.Style ?? SpawnStyle.Walk });
         return e;
     }
@@ -1201,7 +1100,7 @@ public sealed class Battle
 
             if (pr.Owner == Side.Enemy)
             {
-                if (p.Alive && Dist(p.X, p.Z, pr.X, pr.Z) < pr.Radius + p.Radius)
+                if (p.Alive && Art.WraithT <= 0 && Dist(p.X, p.Z, pr.X, pr.Z) < pr.Radius + p.Radius)
                 {
                     if (p.BulwarkT > 0)
                     {
@@ -1399,6 +1298,8 @@ public sealed class Battle
             ForEachHostileInRadius(z.X, z.Z, z.Radius, (e, _) =>
             {
                 HitEnemy(e, z.Dps * z.Tick, z.School, z.Tags, new HitOpts { Weapon = weapon, Status = z.Status, BossDamage = z.BossDamage });
+                if (z.Art == "cinder" && e.State == EnemyState.Dying && Has("pyre_walker")) HealPlayer(MaxHp * 0.015, "pyre-walker", true);
+                if (z.Art == "snare_hold" && e.Alive && Art.Struck.Add(e.Id)) ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, e.Boss ? 0.3 : 1.5), 0);
                 if (z.Slow > 0)
                 {
                     var c = e.Status.Ensure(StatusKind.Chill, 0, 0, 0, 0);

@@ -95,7 +95,7 @@ public partial class ControlsPanel : VBoxContainer
     {
         ("Move", [Act.Up, Act.Left, Act.Down, Act.Right], "Left stick"), ("Dash", [Act.Dash], null), ("Ability", [Act.Ability], null),
         ("Draught", [Act.Ultimate], null), ("Talk, use, pick up", [Act.Interact], null), ("Pack", [Act.Inventory], null),
-        ("Self", [Act.Character], "Menu"), ("Journal", [Act.Journal], "Menu"), ("Map", [Act.Map], "Menu"), ("Pause", [Act.Pause], null),
+        ("Self", [Act.Character], "Menu"), ("Arts", [Act.Arts], "Menu"), ("Journal", [Act.Journal], "Menu"), ("Map", [Act.Map], "Menu"), ("Pause", [Act.Pause], null),
         ("Draft: take a card", [Act.Pick1], "D-pad, A"), ("Draft: reroll", [Act.Reroll], null), ("Draft: banish", [Act.Banish], null),
     };
 
@@ -179,6 +179,7 @@ public partial class PauseScreen : Overlay
         menu.Add("Controls", () => { panel = "controls"; Refresh(); });
         menu.Add("Pack", () => G.Open("inventory"));
         menu.Add("Self", () => G.Open("character"));
+        menu.Add("Arts", () => G.Open("arts"));
         menu.Add("Journal", () => G.Open("journal"));
         menu.Add("Map", () => G.Open("map"));
         menu.Add("Leave to the title", G.QuitToTitle);
@@ -187,7 +188,7 @@ public partial class PauseScreen : Overlay
         AddChild(plate);
         var col = Style.V(6, Style.Label("PAUSED", Style.Display, 26, Style.GoldHi, false, HorizontalAlignment.Center), Style.Rule(), menu.Build());
         var keys = Style.H(10);
-        foreach (var (a, name) in new[] { (Act.Inventory, "Pack"), (Act.Character, "Self"), (Act.Journal, "Journal"), (Act.Map, "Map") })
+        foreach (var (a, name) in new[] { (Act.Inventory, "Pack"), (Act.Character, "Self"), (Act.Arts, "Arts"), (Act.Journal, "Journal"), (Act.Map, "Map") })
             keys.AddChild(Style.H(4, Style.Key(G.Key(a)), Style.Label(name, Style.Ui, 13, Style.InkDim)));
         col.AddChild(keys);
         plate.AddChild(col);

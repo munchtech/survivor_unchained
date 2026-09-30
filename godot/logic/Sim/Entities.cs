@@ -101,6 +101,12 @@ public sealed class Enemy : Pooled
     public double HomeX, HomeZ, Leash;
     /// <summary>Multiplier on damage taken (a ward, a vulnerable moment).</summary>
     public double TakenMul = 1;
+    /// <summary>A reflection of the survivor: the horde turns on it.</summary>
+    public bool Decoy;
+    /// <summary>Marked as prey: below the line it dies outright.</summary>
+    public bool Prey;
+    /// <summary>When a wraith last drained it.</summary>
+    public double DrainedAt = -99;
 
     public Enemy(int id) { Id = id; }
 }

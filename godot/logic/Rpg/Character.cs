@@ -94,8 +94,12 @@ public sealed class CharacterData
     public Equipment Equipment = new();
     public List<ItemInstance?> Pack = Inventory.NewPack();
     public double Gold;
-    /// <summary>The ability chosen at creation (the web game's id, 'shield_bash').</summary>
+    /// <summary>The art in hand (the web game's id, 'shield_bash').</summary>
     public string Ability = "";
+    /// <summary>Every art the survivor knows (Rpg/ArtBook.cs).</summary>
+    public List<string> Known = new();
+    /// <summary>How far each art has come, and its facets.</summary>
+    public Dictionary<string, ArtState> Arts = new();
     public string StartBoon = "";
     public List<Condition> Conditions = new();
     /// <summary>Kills with each weapon, across every expedition.</summary>
@@ -283,6 +287,8 @@ public sealed class CombatKit
     public List<(string Id, int Rank)> Weapons = new();
     public List<(TriggerDef Def, string Source)> Triggers = new();
     public AbilityKind Ability;
+    public int ArtRank = 1;
+    public List<string> Facets = new();
     public HashSet<string> GearIds = new();
     public HashSet<StatusKind> GearStatuses = new();
     public int StartLevels, Revives, Rerolls = 2;
@@ -303,6 +309,8 @@ public static class Character
             Beard = c.Beard, Figure = c.Figure, Attributes = Callings.StartAttributes(c.Archetype),
             Knowledge = new(bg.Knowledge), Gold = 25, Ability = c.Ability, StartBoon = c.StartBoon, CreatedDay = day,
         };
+        ch.Known = ArtBook.Starting(c.Archetype);
+        if (c.Ability != "" && !ch.Known.Contains(c.Ability)) ch.Known.Add(c.Ability);
         Inventory.Equip(ch, Inventory.Make(ch, c.WeaponItem), EquipSlot.Weapon);
         foreach (var id in bg.Items)
         {
@@ -346,7 +354,7 @@ public static class Character
     public static CombatKit Kit(CharacterData ch)
     {
         var a = Callings.Archetype(ch.Archetype);
-        var kit = new CombatKit { Ability = ch.AbilityKind };
+        var kit = new CombatKit { Ability = ch.AbilityKind, ArtRank = ArtBook.Rank(ch, ch.Ability), Facets = ArtBook.Facets(ch, ch.Ability) };
         var st = kit.Stats;
         var at = ch.Attributes;
         st.SetBase(new Dictionary<string, double>

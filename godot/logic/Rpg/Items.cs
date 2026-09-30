@@ -22,7 +22,14 @@ public enum ItemKind { Weapon, Offhand, Head, Body, Cloak, Amulet, Ring, Relic, 
 public enum EquipSlot { Weapon, Offhand, Head, Body, Cloak, Amulet, Ring1, Ring2, Relic }
 
 public sealed class ItemWeapon { public string Id = ""; public int Rank = 1; }
-public sealed class Consumable { public double? Heal; public List<string>? Cure; public string? Buff; }
+public sealed class Consumable
+{
+    public double? Heal;
+    public List<string>? Cure;
+    public string? Buff;
+    /// <summary>A manual: the art it teaches.</summary>
+    public string? Teaches;
+}
 
 public sealed class ItemDef
 {

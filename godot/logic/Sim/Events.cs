@@ -61,7 +61,9 @@ public static class Ev
     public sealed class Dash : CombatEvent { public double X0, Z0, X1, Z1; }
     /// <summary>A telegraphed blow slipped at the last moment (Battle.PerfectDodge).</summary>
     public sealed class PerfectDodge : CombatEvent { public double X, Z; }
-    public sealed class Ability : CombatEvent { public string Id = ""; public double X, Z, Angle, Radius; }
+    /// <summary>An art used, or a moment of one. X1, Z1: its other end (a
+    /// chain's bite, a step's landing, a drain's thread).</summary>
+    public sealed class Ability : CombatEvent { public string Id = ""; public double X, Z, X1, Z1, Angle, Radius; public bool Wide; public int Who = -1; }
     public sealed class Bark : CombatEvent { public double X, Z; public string Text = ""; public string? Speaker; }
     public sealed class Announce : CombatEvent { public string Title = ""; public string? Subtitle, Kicker; public Tone? Tone; }
     public sealed class Shake : CombatEvent { public double Amount; }

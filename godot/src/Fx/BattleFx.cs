@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Godot;
 using SurvivorUnchained.Play;
+using SurvivorUnchained.Content;
 using SurvivorUnchained.Sim;
 using SurvivorUnchained.Ui;
 using static SurvivorUnchained.View.Shapes;
@@ -355,6 +356,8 @@ public partial class BattleFx : Node3D
                 }
                 case Ev.Kill e:
                 {
+                    // A reflection breaking is glass, not a body (Ability: mirror_break).
+                    if (e.Def == "mirror") break;
                     float gy = Y(e.X, e.Z);
                     var pal = Palette.Of(e.School);
                     var at = V(e.X, gy + 0.9, e.Z);
@@ -551,7 +554,7 @@ public partial class BattleFx : Node3D
                     }
                     break;
                 case Ev.Ability e:
-                    Ability(e);
+                    Ability(e, b);
                     break;
                 case Ev.Status e:
                     if (e.Kind == StatusKind.Frozen)
@@ -564,29 +567,158 @@ public partial class BattleFx : Node3D
         }
     }
 
-    void Ability(Ev.Ability e)
+    static readonly Color GlassCore = new(1.6f, 2.2f, 2.8f), GlassGlow = new(0.6f, 1.3f, 2.2f), EchoGlow = new(1.3f, 0.8f, 2.6f), WraithGlow = new(0.9f, 0.5f, 2.2f), Chain = new(1.5f, 1.35f, 1.1f);
+    const int EchoKey = -7771;
+
+    void Ability(Ev.Ability e, Battle b)
     {
         float gy = Y(e.X, e.Z);
         var at = V(e.X, gy, e.Z);
+        var to = V(e.X1, Y(e.X1, e.Z1), e.Z1);
         switch (e.Id)
         {
             case "shield_bash":
                 Hits.Arc(at + Vector3.Up * 0.9f, (float)(Math.PI / 2 - e.Angle), (float)e.Radius, 0.25f, false, Palette.Of(School.Holy).Core, Palette.Of(School.Physical).Glow);
+                if (e.Wide)
+                {
+                    Hits.Arc(at + Vector3.Up * 0.9f, (float)(Math.PI / 2 - e.Angle + Math.PI), (float)e.Radius, 0.25f, true, Palette.Of(School.Holy).Core, Palette.Of(School.Physical).Glow);
+                    Nova(e.X, e.Z, (float)e.Radius, Palette.Of(School.Holy).Glow, 0.35f);
+                }
                 Burst(at + new Vector3((float)Math.Cos(e.Angle) * 1.5f, 1, (float)Math.Sin(e.Angle) * 1.5f), School.Physical, 20, 6);
                 Flash(at + Vector3.Up * 1.2f, new Color("#fff0d0"), 10, 0.3f);
                 break;
             case "leap":
                 Ring(e.X, e.Z, (float)e.Radius, Palette.HostileRim * 0.3f + Palette.Of(School.Physical).Glow, 0.42f, true);
                 break;
+            case "blink":
+            {
+                var f = Palette.Of(School.Frost);
+                Nova(e.X, e.Z, 3.2f, f.Glow, 0.45f);
+                Burst(at + Vector3.Up * 0.6f, School.Frost, 26, 5, 1.2f, 0.08f, 0.6f, 3);
+                Flash(at + Vector3.Up * 1.2f, f.Light, 8, 0.35f);
+                break;
+            }
+            case "sprint":
+                Nova(e.X, e.Z, 2.2f, new Color(1.2f, 1.15f, 1.0f), 0.3f);
+                Dust(e.X, e.Z, 14, 3.5f);
+                break;
+            case "mirror_step":
+                // The glass forms where you stood.
+                Flash(at + Vector3.Up * 1.2f, new Color(0.6f, 0.85f, 1f), 9, 0.4f);
+                Shards(at + Vector3.Up * 1.1f, 18, 3.5f);
+                Band(at + Vector3.Up * 1.1f, to + Vector3.Up * 1.1f, 0.06f, GlassGlow, 0.25f);
+                break;
+            case "mirror_break":
+                Flash(at + Vector3.Up * 1.1f, new Color(0.6f, 0.85f, 1f), 10, 0.35f);
+                Shards(at + Vector3.Up * 1.1f, 34, 6.5f);
+                Nova(e.X, e.Z, (float)e.Radius, GlassGlow, 0.35f);
+                break;
+            case "mirror_strike":
+                Hits.Arc(at + Vector3.Up * 0.9f, (float)(Math.PI / 2 - e.Angle), (float)e.Radius, 0.2f, false, GlassCore, GlassGlow);
+                break;
+            case "bull_rush":
+            {
+                var h = Palette.Of(School.Holy);
+                Flash(at + Vector3.Up * 1.2f, h.Light, 7, 0.3f);
+                Nova(e.X, e.Z, 1.8f, h.Glow * 0.8f, 0.3f);
+                Dust(e.X, e.Z, 18, 4.5f);
+                break;
+            }
+            case "wraith_walk":
+                Nova(e.X, e.Z, (float)e.Radius, WraithGlow, 0.45f);
+                Flash(at + Vector3.Up * 1.2f, new Color(0.6f, 0.4f, 1f), 7, 0.4f);
+                Burst(at + Vector3.Up * 1, School.Shadow, 20, 2.5f, 2.5f, 0.1f, 0.8f, -1);
+                break;
+            case "drain":
+            {
+                // A thread from what is drained into the ghost.
+                Band(at + Vector3.Up * 1.0f, to + Vector3.Up * 1.1f, 0.05f, WraithGlow, 0.3f);
+                var sh = Palette.Of(School.Shadow);
+                for (int i = 0; i < 6; i++)
+                {
+                    float k = R();
+                    Sparks.Spawn(at.Lerp(to, k) + Vector3.Up * (1 + R() * 0.3f), (to - at).Normalized() * 3 + Vector3.Up * 0.5f, 0.35f, 0.07f, sh.Core, sh.Glow, 0.01f, drag: 2);
+                }
+                break;
+            }
+            case "cinder_trail":
+                Nova(e.X, e.Z, 2.4f, Palette.Of(School.Fire).Glow, 0.4f);
+                Burst(at + Vector3.Up * 0.4f, School.Fire, 24, 3.5f, 2.2f, 0.09f, 0.7f, -0.5f);
+                Flash(at + Vector3.Up * 1, Palette.Of(School.Fire).Light, 8, 0.35f);
+                break;
+            case "grapple" or "grapple_miss":
+            {
+                bool miss = e.Id == "grapple_miss";
+                var from = at + Vector3.Up * 1.3f;
+                var end = to + Vector3.Up * (miss ? 0.4f : 1.0f);
+                Band(from, end, 0.035f, Chain, miss ? 0.2f : 0.3f);
+                Links(from, end);
+                if (!miss) { Burst(end, School.Physical, 14, 4, 1, 0.07f, 0.35f); Flash(end, new Color("#ffe0b0"), 5, 0.2f); }
+                break;
+            }
+            case "chain_whirl":
+                Hits.Arc(at + Vector3.Up * 0.9f, 0, (float)e.Radius, 0.28f, false, Chain, Palette.Of(School.Physical).Glow);
+                Hits.Arc(at + Vector3.Up * 0.9f, Mathf.Pi, (float)e.Radius, 0.28f, true, Chain, Palette.Of(School.Physical).Glow);
+                Nova(e.X, e.Z, (float)e.Radius, Palette.Of(School.Physical).Glow, 0.3f);
+                break;
+            case "echo_step":
+                Nova(e.X, e.Z, 1.6f, EchoGlow, 0.4f);
+                Flash(at + Vector3.Up * 1.2f, new Color(0.75f, 0.55f, 1f), 6, 0.35f);
+                Ring(e.X, e.Z, 1.1f, EchoGlow * 0.7f, (float)Math.Max(0.1, b.Art.EchoT), true, EchoKey);
+                break;
+            case "echo_recall":
+                Ring(e.X, e.Z, 0.01f, EchoGlow, 0.01f, false, EchoKey);
+                Band(to + Vector3.Up * 1.1f, at + Vector3.Up * 1.1f, 0.08f, EchoGlow, 0.3f);
+                Nova(e.X, e.Z, (float)e.Radius, EchoGlow, 0.4f);
+                Nova(e.X1, e.Z1, 2f, EchoGlow * 0.7f, 0.35f);
+                Flash(at + Vector3.Up * 1.2f, new Color(0.75f, 0.55f, 1f), 10, 0.4f);
+                Burst(at + Vector3.Up * 1, School.Arcane, 22, 3, 1.5f, 0.08f, 0.6f, 1);
+                break;
+            case "vault":
+                Dust(e.X, e.Z, 16, 4);
+                Burst(at + Vector3.Up * 0.3f, School.Physical, 10, 3, 0.6f, 0.06f, 0.4f);
+                break;
             default:
             {
                 // A war cry, a ward, a vanishing: a ring from where they stand.
-                var school = e.Id switch { "bulwark" => School.Holy, "shadowstep" or "vanish" => School.Shadow, "frost_nova" => School.Frost, "warcry" => School.Fire, _ => School.Arcane };
+                var school = e.Id switch { "bulwark" => School.Holy, "smoke_bomb" => School.Shadow, "warcry" => School.Fire, _ => School.Arcane };
                 Nova(e.X, e.Z, (float)Math.Max(2.4, e.Radius), Palette.Of(school).Glow, 0.4f);
                 Flash(at + Vector3.Up * 1.4f, Palette.Of(school).Light, 6, 0.35f);
                 break;
             }
         }
+    }
+
+    /// <summary>Glass flying: bright glints that tumble and fall.</summary>
+    void Shards(Vector3 at, int n, float speed)
+    {
+        for (int i = 0; i < n; i++)
+        {
+            float a = R() * Mathf.Tau, v = speed * (0.3f + R() * 0.9f);
+            Sparks.Spawn(at + new Vector3(R() - 0.5f, R() - 0.5f, R() - 0.5f) * 0.6f, new Vector3(Mathf.Cos(a) * v, 1 + R() * 3, Mathf.Sin(a) * v), 0.5f + R() * 0.4f,
+                0.09f + R() * 0.08f, GlassCore, GlassGlow, 0.02f, 9, 1.5f, sprite: Sprites.Of("star"), spinV: 10);
+        }
+    }
+
+    /// <summary>Kicked-up earth at the feet.</summary>
+    void Dust(double x, double z, int n, float speed)
+    {
+        var at = V(x, Y(x, z) + 0.15, z);
+        var pal = Palette.Of(School.Physical);
+        for (int i = 0; i < n; i++)
+        {
+            float a = R() * Mathf.Tau, v = speed * (0.3f + R() * 0.7f);
+            Smoke.Spawn(at, new Vector3(Mathf.Cos(a) * v, 0.4f + R() * 0.8f, Mathf.Sin(a) * v), 0.6f + R() * 0.4f, 0.35f, pal.Dim * 0.5f, pal.Dim * 0.2f, 1.1f, 0, 3, 0.5f);
+        }
+    }
+
+    /// <summary>Links of a chain glinting along a line.</summary>
+    void Links(Vector3 a, Vector3 b)
+    {
+        float len = a.DistanceTo(b);
+        int n = Math.Min(24, (int)(len / 0.45f));
+        for (int i = 1; i <= n; i++)
+            Sparks.Spawn(a.Lerp(b, i / (float)(n + 1)), Vector3.Zero, 0.22f, 0.06f, Chain, Chain * 0.5f, 0.04f);
     }
 
     /* -------------------------------------------------------------- frame -- */
@@ -634,11 +766,60 @@ public partial class BattleFx : Node3D
             beams[i] = (m, mat, t, life);
         }
         Zones(b, now);
+        ArtTrails(b, fdt);
         Projectiles(b, fdt, now);
         Pickups(b, now);
         Sparks.Step(fdt);
         Smoke.Step(fdt);
         Gore.Step(fdt);
+    }
+
+    float artT;
+
+    /// <summary>An art while it runs: wind off a sprint, wisps off a wraith,
+    /// embers off a cinder run, dust before a charge, the chain on a haul.</summary>
+    void ArtTrails(Battle b, float dt)
+    {
+        var p = b.Player;
+        var a = b.Art;
+        if (!p.Alive) return;
+        artT -= dt;
+        bool tick = artT <= 0;
+        if (tick) artT = 1 / 30f;
+        float gy = Y(p.X, p.Z);
+        var feet = V(p.X, gy + 0.15, p.Z);
+        float sp = (float)Math.Sqrt(p.Vx * p.Vx + p.Vz * p.Vz);
+        var back = sp > 0.3f ? new Vector3((float)-p.Vx, 0, (float)-p.Vz) / sp : Vector3.Zero;
+        if (a.SprintT > 0 && tick && sp > 1)
+        {
+            // Streaks of air peeling off behind.
+            var side = new Vector3(back.Z, 0, -back.X) * (R() - 0.5f) * 0.9f;
+            Sparks.Spawn(feet + Vector3.Up * (0.3f + R() * 1.3f) + side, back * (4 + R() * 3), 0.25f, 0.05f, new Color(1.1f, 1.1f, 1.05f), new Color(0.4f, 0.45f, 0.5f), 0.01f, drag: 3, alpha: 0.6f);
+            if (R() < 0.35f) Dust(p.X, p.Z, 1, 1.2f);
+        }
+        if (a.WraithT > 0 && tick)
+        {
+            var sh = Palette.Of(School.Shadow);
+            for (int i = 0; i < 2; i++)
+                Sparks.Spawn(feet + new Vector3((R() - 0.5f) * 0.7f, 0.2f + R() * 1.6f, (R() - 0.5f) * 0.7f), back * 1.5f + Vector3.Up * (0.8f + R()), 0.7f, 0.1f, sh.Core, sh.Dim, 0.02f, -0.5f, 1.5f);
+        }
+        if (a.CinderT > 0 && tick)
+        {
+            var f = Palette.Of(School.Fire);
+            for (int i = 0; i < 2; i++)
+                Sparks.Spawn(feet + new Vector3((R() - 0.5f) * 0.5f, R() * 0.4f, (R() - 0.5f) * 0.5f), back * 1.2f + Vector3.Up * (1.2f + R() * 1.5f), 0.6f + R() * 0.4f, 0.07f, f.Core, f.Glow, 0.01f, -1.2f, 1.2f);
+        }
+        if (a.Rush == AbilityKind.BullRush && tick)
+        {
+            Dust(p.X, p.Z, 2, 2.5f);
+            Sparks.Spawn(feet + Vector3.Up * 1.1f + new Vector3((float)a.RushDX, 0, (float)a.RushDZ) * 0.6f, Vector3.Up * 0.2f, 0.12f, 0.5f, Palette.Of(School.Holy).Glow * 0.5f, Palette.Of(School.Holy).Dim * 0.1f, 0.9f);
+        }
+        if (a.Rush == AbilityKind.Grapple && a.Hooked is { Alive: true } h)
+        {
+            var from = feet + Vector3.Up * 1.15f;
+            var to = V(h.X, Y(h.X, h.Z) + 1.0, h.Z);
+            if (tick) { Band(from, to, 0.03f, Chain, 0.06f); Links(from, to); }
+        }
     }
 
     /// <summary>Ground left burning, blighted, hallowed: a disc for each while it lasts.</summary>

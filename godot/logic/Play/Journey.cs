@@ -154,6 +154,7 @@ public sealed class Journey
         {
             Seed = seed, Combat = combat, Collision = col, HeightAt = heightAt, Stats = kit.Stats,
             StartX = x, StartZ = z, StartFacing = facing, Weapons = kit.Weapons, Triggers = kit.Triggers, Ability = kit.Ability,
+            ArtRank = kit.ArtRank, Facets = kit.Facets,
             Ember = exp != null ? (exp.Level, exp.Xp) : null,
             Hp = exp != null ? Math.Min(exp.Hp, kit.Stats.Get(Stat.MaxHealth)) : null,
         });
@@ -190,6 +191,7 @@ public sealed class Journey
     /// <summary>The ember build as it stands, to carry into the next zone.</summary>
     public void Capture(Battle? b)
     {
+        BankArt(b);
         if (b == null || !b.Combat) return;
         Expedition = new Expedition
         {
@@ -363,6 +365,18 @@ public sealed class Journey
             if (b.Player.Hp >= b.MaxHp - 0.5) { Warn("You are unhurt"); return; }
             b.HealPlayer(b.MaxHp * heal, "draught");
         }
+        if (c.Teaches is { } art)
+        {
+            var ad = Abilities.ById(art);
+            if (ArtBook.Knows(Ch, art))
+            {
+                // Read again: the art is surer for it.
+                ArtBook.Grow(Ch, art, 20);
+                OnToast(new Toast(ToastKind.Level, $"{ad.Name}: you know it better", "Read again, the art comes more easily", ad.Icon));
+            }
+            else if (!ArtBook.Learn(Ch, art)) { Warn($"{ad.Name} is not a {Callings.Archetype(Ch.Archetype).Name}'s art"); return; }
+            else OnAnnounce(new Announcement(ad.Name, "Learned. Take it in hand at the Waystation (K)", "boon", 3.6, "A new art"));
+        }
         foreach (var cure in c.Cure ?? new())
         {
             if (cure == "poisoned" && b != null) b.Player.PoisonT = 0;
@@ -402,6 +416,45 @@ public sealed class Journey
         b.GearIds.Clear(); b.GearIds.UnionWith(kit.GearIds);
         b.GearStatuses.Clear(); b.GearStatuses.UnionWith(kit.GearStatuses);
         b.Player.Hp = Math.Min(b.Player.Hp, b.MaxHp);
+    }
+
+    /* -------------------------------------------------------------- arts -- */
+
+    /// <summary>What the art in hand grew by in the fight, written to the
+    /// survivor; a new rank strengthens it at once and may open a facet.</summary>
+    public void BankArt(Battle? b)
+    {
+        if (b == null || b.ArtXp <= 0 || Ch.Ability == "") return;
+        double xp = b.ArtXp;
+        b.ArtXp = 0;
+        int rank = ArtBook.Grow(Ch, Ch.Ability, xp);
+        if (rank == 0) return;
+        b.ArtRank = rank;
+        var def = Abilities.ById(Ch.Ability);
+        bool open = ArtBook.OpenSlots(Ch, Ch.Ability) > 0;
+        OnAnnounce(new Announcement($"{def.Name}, rank {rank}", open ? "A facet can be chosen (K)" : "Stronger, and sooner ready", "boon", 3.2, "Your art grows"));
+        OnTouch();
+    }
+
+    /// <summary>Carry another known art (somewhere safe).</summary>
+    public void HoldArt(string id, Battle? b)
+    {
+        BankArt(b);
+        if (!ArtBook.Hold(Ch, id)) return;
+        var def = Abilities.ById(id);
+        b?.SetArt(def.Kind, ArtBook.Rank(Ch, id), ArtBook.Facets(Ch, id));
+        if (b != null) { b.Art.Clear(); b.Player.AbilityCd = 0; }
+        OnToast(new Toast(ToastKind.Level, $"In hand: {def.Name}", Icon: def.Icon));
+        OnTouch();
+    }
+
+    /// <summary>Choose a facet newly opened, or change one (somewhere safe).</summary>
+    public void ChooseFacet(string id, string facet, bool on, Battle? b)
+    {
+        bool changed = on ? ArtBook.Choose(Ch, id, facet) : ArtBook.Unchoose(Ch, id, facet);
+        if (!changed) return;
+        if (id == Ch.Ability && b != null) b.SetArt(Abilities.ById(id).Kind, ArtBook.Rank(Ch, id), ArtBook.Facets(Ch, id));
+        OnTouch();
     }
 
     public void SpendPoint(string attr, Battle? b)

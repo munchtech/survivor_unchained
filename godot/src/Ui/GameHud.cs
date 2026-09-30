@@ -250,6 +250,8 @@ public partial class GameHud : CanvasLayer
         Hand(ab, Act.Ability, "", out abilityName);
     }
 
+    static readonly string[] Numerals = ["I", "II", "III", "IV", "V"];
+
     void BuildCorner()
     {
         var c = Style.V(3);
@@ -475,13 +477,23 @@ public partial class GameHud : CanvasLayer
         if (b.Ability is AbilityKind ak)
         {
             var def = Abilities.All[ak];
-            double cd = def.Cooldown * b.Stats.Get(Stat.AbilityCooldown);
-            double ready = 1 - p.AbilityCd / Math.Max(0.01, cd);
+            string rank = b.ArtRank > 1 ? $"  {Numerals[Math.Min(b.ArtRank, Numerals.Length) - 1]}" : "";
+            if (b.Art.EchoT > 0)
+            {
+                // An echo waits: the art is the way back into it.
+                abilityRing.Progress = (float)Math.Clamp(b.Art.EchoT / (b.Has("long_echo") ? 7 : 4), 0, 1);
+                abilityRing.Charged = true;
+                abilityGlyph.Texture = Glyphs.Texture(def.Icon, 82, Hex("#d8b8ff"));
+                abilityCd.Text = "";
+                abilityName.Text = "Step back";
+                return;
+            }
+            double ready = 1 - p.AbilityCd / Math.Max(Math.Max(0.01, b.Art.CdFull), p.AbilityCd);
             abilityRing.Progress = (float)Math.Clamp(ready, 0, 1);
             abilityRing.Charged = ready >= 1;
             abilityGlyph.Texture = Glyphs.Texture(def.Icon, 82, ready >= 1 ? Hex("#ffe6b0") : Hex("#8a7f70"));
             abilityCd.Text = ready >= 1 ? "" : p.AbilityCd >= 1 ? $"{Math.Ceiling(p.AbilityCd)}" : $"{p.AbilityCd:0.0}";
-            abilityName.Text = def.Name;
+            abilityName.Text = def.Name + rank;
         }
     }
 

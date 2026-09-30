@@ -54,7 +54,14 @@ public partial class SheetScreen : Overlay
         double need = Character.XpForLevel(ch.Level);
         left.AddChild(Bar(ch.Xp / need, $"{Math.Floor(ch.Xp)} / {need}", Style.Ember));
         var ab = Abilities.ById(ch.Ability);
-        left.AddChild(Style.H(6, Glyphs.Icon(ab.Icon, 18), Style.Label(ab.Name, Style.UiBold, 15, Style.GoldHi)));
+        var arts = Style.Button("", () => G.Open("arts"), false, true);
+        var artRow = Style.H(6, Glyphs.Icon(ab.Icon, 18), Style.Label($"{ab.Name}  ·  rank {ArtBook.Rank(ch, ch.Ability)}", Style.UiBold, 15, Style.GoldHi), Style.Key(G.Key(Act.Arts)));
+        artRow.Position = new Vector2(8, 4);
+        artRow.MouseFilter = MouseFilterEnum.Ignore;
+        arts.AddChild(artRow);
+        arts.CustomMinimumSize = new Vector2(260, 30);
+        arts.TooltipText = "Your arts: the one in hand, its rank and facets";
+        left.AddChild(arts);
         var knows = string.Join(", ", ch.Knowledge.Where(Know.ContainsKey).Select(k => Know[k]));
         left.AddChild(Style.Label($"Knows: {(knows == "" ? "little" : knows)}", Style.TextItalic, 14, Style.InkDim, true));
         row.AddChild(left);

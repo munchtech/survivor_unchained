@@ -187,6 +187,84 @@ public static class Sfx
         a.Play(new Hiss { D = 0.18, G = 0.1, Lp = 1800, Lp2 = 300 });
     }
 
+    /// <summary>The art in hand: each has a voice of its own.</summary>
+    public static void Art(string id)
+    {
+        if (A is not { } a) return;
+        switch (id)
+        {
+            case "shield_bash": Bash(); break;
+            case "sprint":
+                // A gust, and the breath taken for it.
+                a.Play(new Hiss { A = 0.05, D = 0.5, G = 0.09, Bp = 600, Bp2 = 2400, Q = 0.9 });
+                a.Play(new Hiss { A = 0.01, D = 0.15, G = 0.05, Hp = 2500 });
+                break;
+            case "mirror_step":
+                a.Play(new Fm { F = 1760, Ratio = 1.5, Index = 1.2, D = 0.7, G = 0.04, Verb = 0.6 });
+                a.Play(new Fm { T = Now + 0.03, F = 2349, Ratio = 1.5, Index = 1, D = 0.6, G = 0.03, Verb = 0.6 });
+                a.Play(new Hiss { A = 0.01, D = 0.2, G = 0.05, Bp = 3000, Bp2 = 5000, Q = 1.5 });
+                break;
+            case "mirror_break":
+                if (!a.Gate("glass", 2, 90)) return;
+                a.Play(new Clip { Of = "impactGlass_light", G = 0.35, Pitch = R(0.9, 1.15) });
+                a.Play(new Fm { F = R(2200, 2800), Ratio = 2.76, Index = 2, D = 0.5, G = 0.03, Verb = 0.5 });
+                break;
+            case "mirror_strike":
+                if (!a.Gate("mstrike", 3, 80)) return;
+                a.Play(new Hiss { A = 0.01, D = 0.1, G = 0.035, Bp = R(2600, 3400), Bp2 = 1200, Q = 2 });
+                break;
+            case "bull_rush":
+                a.Play(new Tone { F = 90, F2 = 45, Type = Wave.Saw, D = 0.4, G = 0.12, Lp = 400 });
+                a.Play(new Clip { Of = "impactSoft_heavy", G = 0.4, Pitch = 0.8 });
+                a.Play(new Hiss { A = 0.02, D = 0.4, G = 0.08, Lp = 900, Lp2 = 200, Brown = true });
+                break;
+            case "wraith_walk":
+                // A low, wrong chord.
+                a.Play(new Fm { F = 110, Ratio = 1.007, Index = 3, D = 1.2, G = 0.07, Verb = 0.6 });
+                a.Play(new Fm { F = 164.8, Ratio = 0.993, Index = 2, D = 1.1, G = 0.05, Verb = 0.6 });
+                a.Play(new Hiss { A = 0.1, D = 0.8, G = 0.05, Bp = 400, Bp2 = 1200, Q = 2 });
+                break;
+            case "drain":
+                if (!a.Gate("drain", 3, 70)) return;
+                a.Play(new Tone { F = R(300, 360), F2 = 120, D = 0.18, G = 0.03, Type = Wave.Triangle });
+                break;
+            case "cinder_trail":
+                a.Play(new Hiss { A = 0.05, D = 0.7, G = 0.12, Lp = 2400, Lp2 = 500, Brown = true });
+                a.Play(new Tone { F = 70, F2 = 110, D = 0.5, G = 0.08 });
+                break;
+            case "grapple":
+                a.Play(new Clip { Of = "impactMetal_medium", G = 0.3, Pitch = R(1.1, 1.3) });
+                a.Play(new Hiss { A = 0.01, D = 0.25, G = 0.06, Bp = 1800, Bp2 = 900, Q = 3 });
+                break;
+            case "grapple_miss":
+                a.Play(new Hiss { A = 0.01, D = 0.25, G = 0.05, Bp = 1800, Bp2 = 700, Q = 3 });
+                break;
+            case "chain_whirl":
+                a.Play(new Hiss { A = 0.02, D = 0.35, G = 0.08, Bp = 1400, Bp2 = 2600, Q = 2.5 });
+                a.Play(new Clip { Of = "impactMetal_medium", G = 0.25, Pitch = 0.9 });
+                break;
+            case "echo_step":
+                a.Play(new Fm { F = 880, Ratio = 1.5, Index = 1.5, D = 1.0, G = 0.04, Verb = 0.7 });
+                a.Play(new Fm { T = Now + 0.25, F = 880, Ratio = 1.5, Index = 1.5, D = 0.8, G = 0.02, Verb = 0.7 });
+                break;
+            case "echo_recall":
+                a.Play(new Fm { F = 440, Ratio = 2, Index = 2, D = 0.6, G = 0.06, Verb = 0.6 });
+                a.Play(new Tone { F = 200, F2 = 900, D = 0.25, G = 0.05 });
+                a.Play(new Hiss { A = 0.02, D = 0.3, G = 0.06, Bp = 1500, Bp2 = 4000, Q = 1.2 });
+                break;
+            case "vault":
+                a.Play(new Clip { Of = "cloth", G = 0.3, Pitch = R(0.9, 1.1) });
+                a.Play(new Hiss { A = 0.01, D = 0.22, G = 0.06, Bp = 700, Bp2 = 2400, Q = 1.1 });
+                a.Play(new Clip { T = Now + 0.05, Of = "impactWood_medium", G = 0.12, Pitch = 1.4 });
+                break;
+            case "blink":
+                a.Play(new Fm { F = 1800, Ratio = 3.1, Index = 1, D = 0.5, G = 0.04, Verb = 0.4 });
+                a.Play(new Hiss { A = 0.005, D = 0.25, G = 0.06, Bp = 3000, Bp2 = 800, Q = 1 });
+                break;
+            default: Bash(); break;
+        }
+    }
+
     public static void Spawn(SpawnStyle style, Where w = default)
     {
         if (A is not { } a || w.Near < 0.2 || !a.Gate("spawn", 2, 250)) return;

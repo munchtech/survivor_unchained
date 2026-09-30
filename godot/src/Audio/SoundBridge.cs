@@ -51,7 +51,7 @@ public sealed class SoundBridge
                 case Ev.Hit h when !h.Dot:
                     if (h.Blocked) Sfx.Blocked(At(h.X, h.Z)); else Sfx.Hit(h.School, h.Crit, At(h.X, h.Z));
                     break;
-                case Ev.Kill k: Sfx.Kill(k.Family, k.Elite, k.Boss, At(k.X, k.Z)); break;
+                case Ev.Kill k when k.Def != "mirror": Sfx.Kill(k.Family, k.Elite, k.Boss, At(k.X, k.Z)); break;
                 case Ev.PlayerHit ph:
                     if (ph.Dodged) Sfx.Dodge(); else if (ph.Blocked) Sfx.Blocked(); else Sfx.Hurt(ph.Amount);
                     break;
@@ -64,7 +64,7 @@ public sealed class SoundBridge
                 case Ev.Muzzle m: Sfx.Shoot(m.School, At(m.X, m.Z)); break;
                 case Ev.Dash: Sfx.Dash(); break;
                 case Ev.PerfectDodge: Sfx.Perfect(); break;
-                case Ev.Ability: Sfx.Bash(); break;
+                case Ev.Ability ab: Sfx.Art(ab.Id); break;
                 case Ev.Spawn sp: Sfx.Spawn(sp.Style, At(sp.X, sp.Z)); break;
                 case Ev.LevelUp: Sfx.LevelUp(); break;
                 case Ev.Evolve: Sfx.Evolve(); break;

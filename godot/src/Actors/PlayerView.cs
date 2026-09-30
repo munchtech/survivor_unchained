@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 using SurvivorUnchained.Play;
 using SurvivorUnchained.Sim;
@@ -21,6 +22,12 @@ public partial class PlayerView : Node3D
     readonly AnimationTree tree;
     readonly AnimationNodeAnimation upper, full;
     public readonly OmniLight3D Light;
+    /// <summary>The survivor in glass: reflections and echoes left behind.</summary>
+    public readonly Reflections Reflections;
+    readonly List<GeometryInstance3D> skin = new();
+    readonly ShaderMaterial wraith = new() { Shader = GD.Load<Shader>("res://shaders/ghost.gdshader") };
+    bool ghostly;
+    Content.AbilityKind? rushSeen;
     double lastAttack = -1, hurtSeen, flare, castT, time;
     int swing;
     bool dashing, dead;
@@ -74,6 +81,31 @@ public partial class PlayerView : Node3D
         person.Root.AddChild(tree);
         Light = new OmniLight3D { LightColor = new Color("#ffb070"), LightEnergy = LightBase / Mathf.Pi, OmniRange = 11, OmniAttenuation = 1.4f, ShadowEnabled = false };
         AddChild(Light);
+        Reflections = new Reflections(lo);
+        AddChild(Reflections);
+        Gather(this);
+        wraith.SetShaderParameter("tint", new Color(0.5f, 0.42f, 0.9f));
+        wraith.SetShaderParameter("body", 0.05f);
+        wraith.SetShaderParameter("rim", 0.9f);
+    }
+
+    void Gather(Node n)
+    {
+        if (n is GeometryInstance3D g && n is not global::SurvivorUnchained.View.Reflections) skin.Add(g);
+        foreach (var c in n.GetChildren()) if (c is not global::SurvivorUnchained.View.Reflections) Gather(c);
+    }
+
+    /// <summary>Half a ghost (a wraith's walk): see-through, rimmed in cold light.</summary>
+    void Ghostly(bool on)
+    {
+        if (on == ghostly) return;
+        ghostly = on;
+        foreach (var g in skin)
+        {
+            if (!IsInstanceValid(g)) continue;
+            g.Transparency = on ? 0.55f : 0;
+            g.MaterialOverlay = on ? wraith : null;
+        }
     }
 
     public Vector3 FigurePosition => person.Root.GlobalPosition;
@@ -96,6 +128,23 @@ public partial class PlayerView : Node3D
 
     public void LevelFlare() => flare = 1;
 
+    /// <summary>An art used: the hands that go with it.</summary>
+    public void OnAbility(string id)
+    {
+        switch (id)
+        {
+            case "mirror_step" or "echo_step" or "echo_recall" or "time_slip" or "blink":
+                Upper("Spell_Simple_Shoot", 1.8);
+                break;
+            case "grapple" or "grapple_miss":
+                Upper("OverhandThrow", 2.2);
+                break;
+            case "warcry" or "sprint" or "cinder_trail" or "wraith_walk":
+                if (!Busy) Upper("Punch_Cross", 1.4);
+                break;
+        }
+    }
+
     /// <summary>Up again after a fall (the prologue's second chances).</summary>
     public void Revive()
     {
@@ -111,6 +160,8 @@ public partial class PlayerView : Node3D
         double y = heightAt(p.X, p.Z);
         if (p.Leap is { } leap) y += Mathf.Sin((float)(Mathf.Min(1, leap.T / leap.Dur) * Mathf.Pi)) * 2.2;
         Position = new Vector3((float)p.X, (float)y, (float)p.Z);
+        Reflections.Update(b, dt, heightAt);
+        Ghostly(p.Alive && b.Art.WraithT > 0);
         if (!p.Alive)
         {
             if (!dead)
@@ -135,7 +186,17 @@ public partial class PlayerView : Node3D
             Full("Dodge_Forward", 1.9);
         }
         else if (p.DashT <= 0) dashing = false;
-        if (p.Leap is { } l2 && l2.T < dt * 2) Full("Jump_Full_Short", 1.3);
+        if (p.Leap is { } l2 && l2.T < dt * 2) Full(l2.Kind == Content.AbilityKind.Vault ? "Jump_Start" : "Jump_Full_Short", l2.Kind == Content.AbilityKind.Vault ? 1.8 : 1.3);
+        // A charge behind the shield; a haul on the chain, blade first.
+        if (b.Art.Rush != rushSeen)
+        {
+            rushSeen = b.Art.Rush;
+            if (rushSeen is { } rk)
+            {
+                Rotation = new Vector3(0, Mathf.Atan2((float)b.Art.RushDX, (float)b.Art.RushDZ), 0);
+                Full(rk == Content.AbilityKind.BullRush ? "Shield_Dash" : "Sword_Dash", rk == Content.AbilityKind.BullRush ? 1.5 : 2.2);
+            }
+        }
         // Weapon swings: the blade drives the arm.
         if (p.AttackAnim is { } a && a.T != lastAttack)
         {

@@ -199,6 +199,10 @@ public class MapRunTests
         s.B.HitEnemy(lord, 1e7, SurvivorUnchained.Sim.School.Holy, [SurvivorUnchained.Sim.Tag.Physical]);
         Run(s, 3);
         Assert.Contains(s.Host.Announced, a => a.Kicker == "Map complete");
+        // What rules a map keeps a manual: an art the survivor has not learned.
+        var manual = s.B.Pickups.Living().FirstOrDefault(p => p.Ref?.StartsWith("manual_") == true);
+        Assert.NotNull(manual);
+        Assert.False(SurvivorUnchained.Rpg.ArtBook.Knows(s.J.Ch, manual!.Ref![7..]));
         Assert.True(exit.When!());
         Assert.Equal(1, s.J.World.Fact("map.best").Number);
         exit.Act();

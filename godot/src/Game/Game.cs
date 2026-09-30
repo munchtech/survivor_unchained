@@ -124,6 +124,19 @@ public partial class Game : Node, IZoneHost
             Sex = Args.Get("sex") == "female" ? Sex.Female : null, HairStyle = Args.Get("hair"), Skin = Args.Get("skin"),
             Figure = Args.Has("figure") ? Args.Num("figure", 1) : null,
         });
+        // --art ID[:FACET+FACET]: that art in hand, learned and (with facets) mastered.
+        if (Args.Get("art") is string art)
+        {
+            var parts = art.Split(':');
+            var ch = Journey.Ch;
+            ArtBook.Learn(ch, parts[0]);
+            ArtBook.Hold(ch, parts[0]);
+            if (parts.Length > 1)
+            {
+                ArtBook.Grow(ch, parts[0], Content.Abilities.RankXp[^1]);
+                foreach (var f in parts[1].Split('+')) ArtBook.Choose(ch, parts[0], f);
+            }
+        }
         var z = Args.Get("zone") ?? "lowford";
         Arrival? at = null;
         if (Args.Get("at") is string s)
@@ -432,6 +445,7 @@ public partial class Game : Node, IZoneHost
 
     void OnEvents(List<CombatEvent> evs)
     {
+        Journey.BankArt(Battle);
         sound.Events(evs, Battle);
         zone?.Events(evs);
         foreach (var e in evs)
@@ -519,7 +533,7 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
-    bool hordeDone, dropsDone;
+    bool hordeDone, dropsDone, castDone;
 
     void Tour(double dt)
     {
@@ -551,6 +565,13 @@ public partial class Game : Node, IZoneHost
                 var k = db.SpawnPickup(kinds[i], db.Player.X + Math.Cos(a) * 2.2, db.Player.Z + Math.Sin(a) * 2.2, 0.01);
                 if (k != null) { k.Tier = kinds[i] == PickupKind.Ember ? i : 2; k.Vx = k.Vz = 0; k.Age = -600; }
             }
+        }
+        // --cast T: the art in hand used once, T seconds in (a picture of it).
+        if (!castDone && Args.Has("cast") && Battle is { } cb && Journey.Playtime >= Args.Num("cast", 1))
+        {
+            castDone = true;
+            cb.Aim = null;
+            cb.UseAbility(1, 0);
         }
         if (Args.Get("open") is not string want) return;
         tourT -= dt;
