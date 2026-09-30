@@ -180,6 +180,7 @@ public static class People
                         var m = new ShaderMaterial { Shader = skinShader, ResourceName = src.ResourceName };
                         m.SetShaderParameter("tex", src.AlbedoTexture);
                         m.SetShaderParameter("skin", tone);
+                        m.SetShaderParameter("whole", src.ResourceName.Contains("Body"));
                         mi.SetSurfaceOverrideMaterial(s, m);
                     }
                 mi.Layers = 2;
