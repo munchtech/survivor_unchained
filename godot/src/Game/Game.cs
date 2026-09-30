@@ -496,7 +496,7 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
-    bool hordeDone;
+    bool hordeDone, dropsDone;
 
     void Tour(double dt)
     {
@@ -514,6 +514,19 @@ public partial class Game : Node, IZoneHost
                     double a = Rng.NextDouble() * Math.Tau, d = Args.Num("dist", 9) + Rng.NextDouble() * Args.Num("spread", 20);
                     hb.SpawnEnemy(parts.Length > 1 ? parts[1] : "risen", hb.Player.X + Math.Cos(a) * d, hb.Player.Z + Math.Sin(a) * d);
                 }
+            }
+        }
+        // --drops: one of every kind of thing that lies on the ground, in a ring round the survivor, left
+        // where they lie (a pickup is not drawn in until it has settled) and worth next to nothing (a picture).
+        if (!dropsDone && Args.Has("drops") && Battle is { } db)
+        {
+            dropsDone = true;
+            var kinds = new[] { PickupKind.Ember, PickupKind.Ember, PickupKind.Ember, PickupKind.Gold, PickupKind.Heal, PickupKind.Magnet, PickupKind.Item, PickupKind.Chest, PickupKind.Material, PickupKind.Quest };
+            for (int i = 0; i < kinds.Length; i++)
+            {
+                double a = i * Math.Tau / kinds.Length;
+                var k = db.SpawnPickup(kinds[i], db.Player.X + Math.Cos(a) * 2.2, db.Player.Z + Math.Sin(a) * 2.2, 0.01);
+                if (k != null) { k.Tier = kinds[i] == PickupKind.Ember ? i : 2; k.Vx = k.Vz = 0; k.Age = -600; }
             }
         }
         if (Args.Get("open") is not string want) return;

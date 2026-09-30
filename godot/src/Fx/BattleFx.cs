@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using Godot;
 using SurvivorUnchained.Play;
 using SurvivorUnchained.Sim;
+using SurvivorUnchained.Ui;
+using static SurvivorUnchained.View.Shapes;
 
 namespace SurvivorUnchained.View;
 
@@ -39,7 +41,9 @@ public partial class BattleFx : Node3D
     bool mirror;
 
     // What is in the air, and what lies on the ground.
-    Batch orbs = null!, steel = null!, shards = null!, rings = null!, embers = null!, coins = null!, flasks = null!, bags = null!, lootBeams = null!;
+    Batch orbs = null!, steel = null!, shards = null!, rings = null!, embers = null!, coins = null!, flasks = null!, lodestones = null!, sacks = null!, chests = null!, kegs = null!, lootBeams = null!;
+    /// <summary>How far above the ground the middle of a sack and a chest sits.</summary>
+    float sackUp, chestUp;
     readonly Dictionary<int, float> trailAcc = new();
 
     static Texture2D? ringTex, discTex, laneTex;
@@ -98,14 +102,70 @@ public partial class BattleFx : Node3D
         steel = Add(new Batch(new BoxMesh { Size = new Vector3(0.06f, 0.04f, 0.6f) }, 600, Glowing(0.25f, 0.3f, 0.7f)));
         shards = Add(new Batch(new PrismMesh { Size = new Vector3(0.14f, 0.7f, 0.14f) }, 600, Glowing(1.8f, 0.1f)));
         rings = Add(new Batch(new TorusMesh { InnerRadius = 0.36f, OuterRadius = 0.5f, Rings = 16, RingSegments = 6 }, 200, Glowing(1.2f, 0.2f, 0.8f)));
-        embers = Add(new Batch(new SphereMesh { Radius = 0.5f, Height = 1.2f, RadialSegments = 4, Rings = 2 }, 1400, Glowing(2.6f, 0.25f)));
-        coins = Add(new Batch(new CylinderMesh { TopRadius = 0.16f, BottomRadius = 0.16f, Height = 0.04f, RadialSegments = 12 }, 600, Glowing(0.6f, 0.3f, 0.9f)));
-        flasks = Add(new Batch(new SphereMesh { Radius = 0.14f, Height = 0.3f, RadialSegments = 10, Rings = 6 }, 200, Glowing(1.2f, 0.15f)));
-        bags = Add(new Batch(new BoxMesh { Size = new Vector3(0.36f, 0.28f, 0.3f) }, 200, Glowing(0.15f, 0.8f), true));
+        // What lies on the ground is what the pack shows (the photographs'
+        // models): an ember is the ember's crystals, lit the colour of its
+        // worth; a draught, a lodestone, a sack of what was carried, a chest.
+        embers = Add(new Batch(Pickup("ember", 1.25f, m => m is BaseMaterial3D { EmissionEnabled: true }), 1400, Glowing(2.6f, 0.25f)));
+        var coin = new Build();
+        Lathe(coin, Pts(0, -0.012f, 0.12f, -0.012f, 0.15f, -0.02f, 0.16f, -0.012f, 0.16f, 0.012f, 0.15f, 0.02f, 0.12f, 0.012f, 0, 0.012f), 16);
+        coins = Add(new Batch(coin.Mesh(), 600, Glowing(0.6f, 0.3f, 0.9f)));
+        flasks = Add(new Batch(Pickup("potion", 0.36f), 200, null));
+        lodestones = Add(new Batch(Pickup("sigil", 0.42f), 60, null));
+        var sack = Pickup("seed", 0.38f);
+        sackUp = sack.GetAabb().Size.Y / 2;
+        sacks = Add(new Batch(sack, 200, null, true));
+        var chest = Pickup("chest", 0.55f);
+        chestUp = chest.GetAabb().Size.Y / 2;
+        chests = Add(new Batch(chest, 60, null, true));
+        // A sapper's firepot: a keg of powder, thrown.
+        kegs = Add(new Batch(Pickup("bomb", 0.34f), 60, null));
         lootBeams = Add(new Batch(new CylinderMesh { TopRadius = 0.12f, BottomRadius = 0.18f, Height = 1, RadialSegments = 10, CapTop = false, CapBottom = false }, 200, beam));
     }
 
     Batch Add(Batch b) { AddChild(b); return b; }
+
+    /// <summary>An item's own model (the photographs', Ui/ItemModels) as one
+    /// mesh to draw many of: its parts merged, each keeping its material (or
+    /// only the parts whose material `keep` wants), centred, `size` across at
+    /// its largest.</summary>
+    static Mesh Pickup(string key, float size, Func<Material, bool>? keep = null)
+    {
+        var model = ItemModels.Make(key)?.Model;
+        if (model == null) return new SphereMesh { Radius = size / 2, Height = size };
+        var parts = new List<(Mesh Mesh, int Surface, Transform3D At, Material? Mat)>();
+        void Walk(Node n, Transform3D at)
+        {
+            foreach (var c in n.GetChildren())
+            {
+                var t = c is Node3D n3 ? at * n3.Transform : at;
+                if (c is MeshInstance3D { Mesh: { } mesh } mi)
+                    for (int s = 0; s < mesh.GetSurfaceCount(); s++)
+                    {
+                        var mat = mi.GetSurfaceOverrideMaterial(s) ?? mi.MaterialOverride ?? mesh.SurfaceGetMaterial(s);
+                        if (keep == null || (mat != null && keep(mat))) parts.Add((mesh, s, t, mat));
+                    }
+                Walk(c, t);
+            }
+        }
+        Walk(model, Transform3D.Identity);
+        Aabb? box = null;
+        foreach (var p in parts) { var b = p.At * p.Mesh.GetAabb(); box = box?.Merge(b) ?? b; }
+        var merged = new ArrayMesh();
+        if (box is { } bx)
+        {
+            float scale = size / Mathf.Max(1e-3f, Mathf.Max(bx.Size.X, Mathf.Max(bx.Size.Y, bx.Size.Z)));
+            var fit = new Transform3D(Godot.Basis.FromScale(Vector3.One * scale), -bx.GetCenter() * scale);
+            foreach (var p in parts)
+            {
+                var st = new SurfaceTool();
+                st.AppendFrom(p.Mesh, p.Surface, fit * p.At);
+                if (p.Mat != null) st.SetMaterial(p.Mat);
+                st.Commit(merged);
+            }
+        }
+        model.Free();
+        return merged;
+    }
 
     void Spray(Vector3 at, Vector3 away, Color? color, float amount)
     {
@@ -603,7 +663,7 @@ public partial class BattleFx : Node3D
 
     void Projectiles(Battle b, float dt, double now)
     {
-        orbs.Begin(); steel.Begin(); shards.Begin(); rings.Begin();
+        orbs.Begin(); steel.Begin(); shards.Begin(); rings.Begin(); kegs.Begin();
         foreach (var p in b.Projectiles.Living())
         {
             var art = p.Art;
@@ -637,7 +697,10 @@ public partial class BattleFx : Node3D
             }
             else if (art == "firepot")
             {
-                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * 0.45f), at), new Color(1.6f, 0.7f, 0.2f));
+                // Tumbling end over end, its fuse alight.
+                var tumble = new Godot.Basis(Vector3.Up, heading) * new Godot.Basis(Vector3.Right, (float)(now * 9 + p.Id));
+                kegs.Add(new Transform3D(tumble, at), Colors.White);
+                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * 0.22f), at + tumble.Y * 0.2f), new Color(1.8f, 0.8f, 0.25f));
                 trail = 0.6f;
             }
             else
@@ -658,14 +721,14 @@ public partial class BattleFx : Node3D
             trailAcc[p.Id] = acc;
         }
         if (trailAcc.Count > 2000) trailAcc.Clear();
-        orbs.End(); steel.End(); shards.End(); rings.End();
+        orbs.End(); steel.End(); shards.End(); rings.End(); kegs.End();
     }
 
     static readonly Color[] EmberTiers = { new(2.4f, 1.0f, 0.25f), new(2.6f, 1.7f, 0.45f), new(2.8f, 2.6f, 1.6f), new(1.6f, 2.2f, 2.8f) };
 
     void Pickups(Battle b, double now)
     {
-        embers.Begin(); coins.Begin(); flasks.Begin(); bags.Begin(); lootBeams.Begin();
+        embers.Begin(); coins.Begin(); flasks.Begin(); lodestones.Begin(); sacks.Begin(); chests.Begin(); lootBeams.Begin();
         foreach (var p in b.Pickups.Living())
         {
             float gy = Y(p.X, p.Z);
@@ -684,23 +747,26 @@ public partial class BattleFx : Node3D
                     coins.Add(new Transform3D(spin * new Godot.Basis(Vector3.Right, Mathf.Pi / 2), V(p.X, gy + 0.35 + bob, p.Z)), new Color(1.0f, 0.75f, 0.3f));
                     break;
                 case PickupKind.Heal:
-                    flasks.Add(new Transform3D(spin, V(p.X, gy + 0.35 + bob, p.Z)), new Color(1.2f, 0.12f, 0.1f));
+                    flasks.Add(new Transform3D(spin, V(p.X, gy + 0.35 + bob, p.Z)), Colors.White);
                     break;
                 case PickupKind.Magnet:
-                    flasks.Add(new Transform3D(spin.Scaled(Vector3.One * 1.3f), V(p.X, gy + 0.5 + bob, p.Z)), new Color(0.4f, 0.8f, 1.8f));
+                    lodestones.Add(new Transform3D(spin, V(p.X, gy + 0.5 + bob, p.Z)), Colors.White);
                     break;
                 default:
                 {
-                    // Gear and what else is worth carrying: a light to find it by.
+                    // Gear and what else is worth carrying, set down where it
+                    // fell (not spun), and a light to find it by.
                     var col = Palette.Rarity[Math.Clamp(p.Tier, 0, Palette.Rarity.Length - 1)];
                     if (p.Kind == PickupKind.Quest) col = new Color("#ffd46a");
-                    bags.Add(new Transform3D(spin, V(p.X, gy + 0.16, p.Z)), p.Kind == PickupKind.Chest ? new Color(0.5f, 0.32f, 0.16f) : new Color(0.42f, 0.34f, 0.26f));
+                    var lie = new Godot.Basis(Vector3.Up, p.Id * 2.4f);
+                    if (p.Kind == PickupKind.Chest) chests.Add(new Transform3D(lie, V(p.X, gy + chestUp, p.Z)), Colors.White);
+                    else sacks.Add(new Transform3D(lie, V(p.X, gy + sackUp, p.Z)), Colors.White);
                     float h = p.Kind is PickupKind.Material ? 1.4f : 3.2f;
                     lootBeams.Add(new Transform3D(Godot.Basis.Identity.Scaled(new Vector3(1, h, 1)), V(p.X, gy + h / 2, p.Z)), col);
                     break;
                 }
             }
         }
-        embers.End(); coins.End(); flasks.End(); bags.End(); lootBeams.End();
+        embers.End(); coins.End(); flasks.End(); lodestones.End(); sacks.End(); chests.End(); lootBeams.End();
     }
 }

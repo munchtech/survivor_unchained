@@ -111,7 +111,9 @@ public partial class Batch : MultiMeshInstance3D
     readonly float[] buffer;
     int count;
 
-    public Batch(Mesh mesh, int capacity, Material mat, bool shadow = false)
+    /// <summary>`mat`: what all of them are drawn with (their colour the
+    /// instance's), or none, for a mesh whose surfaces have their own.</summary>
+    public Batch(Mesh mesh, int capacity, Material? mat, bool shadow = false)
     {
         buffer = new float[capacity * 16];
         MaterialOverride = mat;
