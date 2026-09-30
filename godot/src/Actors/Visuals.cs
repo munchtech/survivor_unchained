@@ -10,7 +10,7 @@ namespace SurvivorUnchained.View;
 /// What each creature looks like (the web game's render/visuals.ts), keyed
 /// by EnemyDef.Visual: people (the Risen, the Kerchiefs) dressed and armed,
 /// with a clip for each thing they do; beasts (wolves, boars, lamplings)
-/// built in code (Creatures.cs). The crowd bakes each (Vat.cs).
+/// from their own models (Beasts.cs). The crowd bakes each (Vat.cs).
 /// </summary>
 public static class Visuals
 {
@@ -71,8 +71,8 @@ public static class Visuals
             "wolf" or "wolf_blighted" or "wolf_spirit" => Beast(visual, 0.82, new Vector3(0, 0, -0.22f)),
             "wolf_alpha" => Beast(visual, 0.92, new Vector3(0, 0, -0.22f)),
             "boar" => Beast(visual, 0.95, new Vector3(0, 0, -0.12f)),
-            // The diggers: small, round, a lamp on the hat.
-            "lampling" or "lampling_sapper" => Beast(visual, 1, null),
+            // The diggers: small, pale, hunched, a lamp hung before each face.
+            "lampling" or "lampling_sapper" or "grimtunnel" => Beast(visual, 1, null),
             _ => Of("skeleton_minion") with { Key = visual },
         };
         cache[visual] = s;

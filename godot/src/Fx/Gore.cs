@@ -27,14 +27,15 @@ public partial class Gore : Node3D
 
     static readonly Blood Red = new(new Color("#8e0c0c"), new Color("#4a0404"));
     static readonly Blood Ichor = new(new Color("#3a4a10"), new Color("#1c240a"));
-    static readonly Blood Tar = new(new Color("#2a1a10"), new Color("#140c08"));
+    /// <summary>The lamplings': thick and dark, from a long way under.</summary>
+    static readonly Blood Deep = new(new Color("#6a1a0c"), new Color("#2c0906"));
 
     /// <summary>What a family bleeds (null: it does not).</summary>
     public static Blood? Of(Family? family, string def = "") => family switch
     {
         null or Family.Undead or Family.Elemental or Family.Construct => null,
         Family.Blighted => Ichor,
-        Family.Lampling => Tar,
+        Family.Lampling => Deep,
         _ when def.Contains("blight") => Ichor,
         _ => Red,
     };
@@ -271,7 +272,7 @@ public partial class Gore : Node3D
                 {
                     At = at, V = new Vector3(dir.X * sp + Mathf.Cos(a) * sp * 0.45f, 1.5f + R() * 3.5f, dir.Z * sp + Mathf.Sin(a) * sp * 0.45f),
                     Gravity = 16, Drag = 0.6f, Life = 0.35f + R() * 0.35f, Size = 0.05f + R() * 0.07f, SizeEnd = 0.03f,
-                    Color = blood.Spray, ColorEnd = blood.Pool, Alpha = 0.95f,
+                    Color = blood.Spray, ColorEnd = blood.Pool, Alpha = 0.95f, Sprite = -1,
                 });
             }
             // Some of it reaches the ground.
@@ -288,7 +289,7 @@ public partial class Gore : Node3D
             for (int i = 0; i < Math.Ceiling(n * 0.6); i++)
             {
                 float a = R() * Mathf.Tau, sp = 2 + R() * 3;
-                matter.Spawn(new Sparks.P { At = at, V = new Vector3(dir.X * sp + Mathf.Cos(a) * 1.5f, 2 + R() * 3, dir.Z * sp + Mathf.Sin(a) * 1.5f), Gravity = 14, Drag = 0.4f, Life = 0.5f, Size = 0.06f, SizeEnd = 0.04f, Color = new Color("#d8cdb4"), ColorEnd = new Color("#8a8070"), Alpha = 1 });
+                matter.Spawn(new Sparks.P { At = at, V = new Vector3(dir.X * sp + Mathf.Cos(a) * 1.5f, 2 + R() * 3, dir.Z * sp + Mathf.Sin(a) * 1.5f), Gravity = 14, Drag = 0.4f, Life = 0.5f, Size = 0.06f, SizeEnd = 0.04f, Color = new Color("#d8cdb4"), ColorEnd = new Color("#8a8070"), Alpha = 1, Sprite = -1 });
             }
         }
     }
@@ -323,7 +324,7 @@ public partial class Gore : Node3D
             for (int i = 0; i < 26 * Level; i++)
             {
                 float a = R() * Mathf.Tau, sp = 3 + R() * 7;
-                matter.Spawn(new Sparks.P { At = at + Vector3.Up * 0.3f, V = new Vector3(Mathf.Cos(a) * sp + dir.X * 3, 2 + R() * 6, Mathf.Sin(a) * sp + dir.Z * 3), Gravity = 18, Drag = 0.5f, Life = 0.5f + R() * 0.4f, Size = 0.08f + R() * 0.1f, SizeEnd = 0.04f, Color = blood.Spray, ColorEnd = blood.Pool, Alpha = 0.95f });
+                matter.Spawn(new Sparks.P { At = at + Vector3.Up * 0.3f, V = new Vector3(Mathf.Cos(a) * sp + dir.X * 3, 2 + R() * 6, Mathf.Sin(a) * sp + dir.Z * 3), Gravity = 18, Drag = 0.5f, Life = 0.5f + R() * 0.4f, Size = 0.08f + R() * 0.1f, SizeEnd = 0.04f, Color = blood.Spray, ColorEnd = blood.Pool, Alpha = 0.95f, Sprite = -1 });
             }
             for (int i = 0; i < 3; i++)
             {

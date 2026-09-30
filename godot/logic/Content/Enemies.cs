@@ -123,7 +123,7 @@ public static class Enemies
         new() { Id = "lampling", Name = "Lampling Tunneler", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "lampling",
             Health = 16, Speed = 3.6, Damage = 7, Radius = 0.38, Xp = 2, Behavior = Behavior.Tunneler, Resists = new() { [School.Fire] = 0.3, [School.Frost] = -0.3 },
             Note = "They dig toward light the way moths fly at it. A lampling will chew through a cellar wall to sit beside your candle, and then through you to keep it." },
-        new() { Id = "grimtunnel", Name = "Grimtunnel", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "lampling", Scale = 1.9,
+        new() { Id = "grimtunnel", Name = "Grimtunnel", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "grimtunnel", Scale = 1.9,
             Health = 400, Speed = 5, Damage = 10, Radius = 0.7, Xp = 0, Behavior = Behavior.Stationary, Resists = new() { [School.Fire] = 0.5 },
             Note = "Foreman of the diggers. Wears three lamps and a grudge. Took the Ford-Warden's heart out from under you and went back down the hole with it." },
         new() { Id = "lampling_sapper", Name = "Lampling Sapper", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "lampling_sapper",

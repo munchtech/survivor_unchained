@@ -18,8 +18,8 @@ namespace SurvivorUnchained.View;
 ///
 /// People (the Risen, the Kerchiefs) are baked from a real PersonView: its
 /// skeleton played by its AnimationPlayer, the weapons in its hands carried
-/// rigidly with their bones. Beasts are baked from Creatures' bones and
-/// pose functions.
+/// rigidly with their bones. Beasts are baked the same way from their own
+/// models (Beasts.cs), with what their clips lack composed over their poses.
 /// </summary>
 public sealed class VatAsset
 {
@@ -68,9 +68,8 @@ public static class Vat
         var beast = Beasts.Of(spec.Key);
         var key = beast?.Key ?? spec.Key;
         if (cache.TryGetValue(key, out var shared)) { cache[spec.Key] = shared; return shared; }
-        var creature = beast == null ? Creature.Of(spec.Key) : null;
         var kept = Load(key);
-        var asset = kept != null ? Build(kept) : beast != null ? BakeBeast(beast, host) : creature != null ? BakeCreature(spec, creature) : BakePerson(spec, host);
+        var asset = kept != null ? Build(kept) : beast != null ? BakeBeast(beast, host) : BakePerson(spec, host);
         cache[key] = asset;
         cache[spec.Key] = asset;
         if (Args.Has("log"))
@@ -137,8 +136,9 @@ public static class Vat
     /// <summary>What a rigged thing plays for a crowd role: a stretch of a
     /// clip (or one moment of it, held), and moves composed over it (a lunge,
     /// a fall) where the model has no clip for the role. Seam: a looped
-    /// stretch of a longer clip, its end eased into its start.</summary>
-    public sealed record Role(string Name, string Clip, double From, double Length, Func<double, Moves>? Over = null, bool Hold = false, bool Seam = false);
+    /// stretch of a longer clip, its end eased into its start. Rate: how fast
+    /// the clip is played (Length is how long the role lasts).</summary>
+    public sealed record Role(string Name, string Clip, double From, double Length, Func<double, Moves>? Over = null, bool Hold = false, bool Seam = false, double Rate = 1);
 
     /// <summary>Moves over a pose, in the model's own space (+Z forward, +Y up,
     /// +X its left): bones turned about their own origins (Euler XYZ, radians)
@@ -194,14 +194,35 @@ public static class Vat
         Vector3 pelvis = At(def.Pelvis), head = At(def.Head);
         float low = float.MaxValue, high = float.MinValue;
         for (int b = 0; b < skel.GetBoneCount(); b++) { var y = (toView * skel.GetBoneGlobalPose(b).Origin).Y; low = Math.Min(low, y); high = Math.Max(high, y); }
-        var fwd = new Vector3(head.X - pelvis.X, 0, head.Z - pelvis.Z).Normalized();
+        // Its front: across its hips if it walks upright (a hunched one's head
+        // leans anywhere), from pelvis to head if it goes on four legs.
+        var fwd = def.Legs is var (left, right) ? (At(left) - At(right)).Cross(Vector3.Up) : head - pelvis;
+        fwd = new Vector3(fwd.X, 0, fwd.Z).Normalized();
         float yaw = Mathf.Atan2(fwd.X, fwd.Z);
         float scale = def.Height / Math.Max(1e-3f, high - low);
-        var mid = (pelvis + head) / 2;
+        // Centred over its feet if upright, along its body if not.
+        var mid = def.Legs != null ? pelvis : (pelvis + head) / 2;
         var norm = new Transform3D(Godot.Basis.FromScale(Vector3.One * scale), Vector3.Zero)
             * new Transform3D(new Godot.Basis(Vector3.Up, -yaw), Vector3.Zero)
             * new Transform3D(Godot.Basis.Identity, new Vector3(-mid.X, -low, -mid.Z));
-        var asset = BakeRig(def.Key, view, skel, anim, meshes, def.Roles, 20, def.Budget, norm);
+        // What it wears, put on as it stands: on bone attachments, which the
+        // bake carries rigidly with their bones.
+        var toModel = norm * toView;
+        foreach (var prop in def.Props ?? new())
+        {
+            int bone = skel.FindBone(prop.Bone);
+            var from = toModel * skel.GetBoneGlobalPose(bone);
+            var tip = toModel * skel.GetBoneGlobalPose(skel.FindBone(prop.Tip)).Origin;
+            var up = (tip - from.Origin).Normalized();
+            var front = (new Vector3(0, 0, 1) - up * up.Z).Normalized();
+            var frame = new Godot.Basis(up.Cross(front), up, front);
+            var att = new BoneAttachment3D { BoneName = skel.GetBoneName(bone) };
+            skel.AddChild(att);
+            var worn = prop.Make();
+            worn.Transform = from.AffineInverse() * new Transform3D(frame, tip + frame * prop.Offset);
+            att.AddChild(worn);
+        }
+        var asset = BakeRig(def.Key, view, skel, anim, meshes, def.Roles, 20, def.Budget, norm, def.Root);
         host.RemoveChild(view);
         view.QueueFree();
         return asset;
@@ -215,8 +236,10 @@ public static class Vat
 
     /// <summary>Anything with a skeleton, an animation player and skinned
     /// meshes (and weapons on bone attachments), baked role by role. `norm`
-    /// takes the view's space to the model's own (+Z forward), or none.</summary>
-    static VatAsset BakeRig(string key, Node3D view, Skeleton3D skel, AnimationPlayer anim, List<MeshInstance3D> meshes, List<Role> roles, double fps, int budget, Transform3D? norm)
+    /// takes the view's space to the model's own (+Z forward), or none.
+    /// `walker`: the bone its clips carry off across the ground (root
+    /// motion), which the crowd does not want (it moves them itself).</summary>
+    static VatAsset BakeRig(string key, Node3D view, Skeleton3D skel, AnimationPlayer anim, List<MeshInstance3D> meshes, List<Role> roles, double fps, int budget, Transform3D? norm, string? walker = null)
     {
         ulong t0 = Time.GetTicksMsec();
         List<Skinned> parts = new();
@@ -275,14 +298,40 @@ public static class Vat
         Transform3D[] poses = new Transform3D[skel.GetBoneCount()];
         var scratch = (new Vector3[total], new Vector3[total]);
 
+        // A clip that walks off: where its root bone is at each end of the
+        // stretch a role plays, to be taken out again (a loop's travel spread
+        // evenly over it, so its sway stays and its end meets its start).
+        int still = walker != null ? skel.FindBone(walker) : -1;
+        var travel = new Dictionary<string, (Vector3 From, Vector3 To)>();
+        Vector3 Travel(string clip, double at)
+        {
+            skel.ResetBonePoses();
+            if (anim.CurrentAnimation != clip) anim.Play(clip, 0);
+            anim.Seek(at, true);
+            return toModel * skel.GetBoneGlobalPose(still).Origin;
+        }
+        var spot = Vector3.Zero;
+        if (still >= 0 && roles.Find(x => x.Name == "idle") is { } rest) spot = Travel(rest.Clip, rest.From);
+
         // Poses the skeleton for a role at t: the clip, then the moves over it.
         Transform3D Pose(Role r, double t)
         {
-            double at = r.Hold ? r.From : r.From + t;
+            double at = r.Hold ? r.From : r.From + t * r.Rate;
+            if (still >= 0 && !travel.ContainsKey(r.Name)) travel[r.Name] = (Travel(r.Clip, r.From), Travel(r.Clip, r.From + r.Length * r.Rate));
             // From rest each time: a bone the clip does not move must not keep the last frame's turn.
             skel.ResetBonePoses();
             if (anim.CurrentAnimation != r.Clip) anim.Play(r.Clip, 0);
             anim.Seek(at, true);
+            if (still >= 0)
+            {
+                var (a, b) = travel[r.Name];
+                var off = Loops(r.Name) && !r.Hold ? a.Lerp(b, (float)((at - r.From) / (r.Length * r.Rate))) : a;
+                var now = toModel * skel.GetBoneGlobalPose(still).Origin;
+                var want = new Vector3(now.X - off.X + spot.X, now.Y, now.Z - off.Z + spot.Z);
+                int parent = skel.GetBoneParent(still);
+                var parentG = parent >= 0 ? skel.GetBoneGlobalPose(parent) : Transform3D.Identity;
+                skel.SetBonePosePosition(still, parentG.AffineInverse() * (toSkel * want));
+            }
             var root = Transform3D.Identity;
             if (r.Over?.Invoke(Math.Clamp(t / Math.Max(1e-6, r.Length), 0, 1)) is { } mv)
             {
@@ -348,7 +397,7 @@ public static class Vat
             // A looped stretch of a longer clip: its last third eased into what
             // came before its start, so its end is its beginning.
             double w = r.Seam ? Math.Clamp((t / r.Length - 0.66) / 0.34, 0, 1) : 0;
-            if (w <= 0 || r.From < r.Length * 0.34) return;
+            if (w <= 0 || r.From < r.Length * r.Rate * 0.34) return;
             var (bp, bn) = scratch;
             Skin(Pose(r, t - r.Length), bp, bn);
             float k = (float)(w * w * (3 - 2 * w));
@@ -541,69 +590,6 @@ public static class Vat
 
     static int[] Seq(int n) { var a = new int[n]; for (int i = 0; i < n; i++) a[i] = i; return a; }
 
-    /* ------------------------------------------------------------ beasts -- */
-
-    static VatAsset BakeCreature(Visuals.Spec spec, Creature cr)
-    {
-        var offset = spec.Offset ?? Vector3.Zero;
-        float scale = (float)spec.Scale;
-        var surfs = new List<Surf>();
-        int total = 0;
-        var partList = new List<Creature.Part>();
-        foreach (var (part, glow) in new[] { (cr.Body, false), (cr.Glow, true) })
-        {
-            if (part.Count == 0) continue;
-            // Godot's front faces wind the other way from three.js's: each
-            // triangle is turned (its second and third corners swapped).
-            var idx = new int[part.Count];
-            for (int f = 0; f < part.Count; f += 3) { idx[f] = f; idx[f + 1] = f + 2; idx[f + 2] = f + 1; }
-            var s = new Surf { Uv = new Vector2[part.Count], Color = part.Col.ToArray(), Index = idx, Count = part.Count, Offset = total, Roughness = 0.85f };
-            if (glow) { s.Glow = cr.GlowColor * 2.2f; s.Albedo = Colors.White; }
-            surfs.Add(s);
-            partList.Add(part);
-            total += part.Count;
-        }
-        var buf = new Vector3[total];
-
-        void Sample(string role, double t, Vector3[] pos, Vector3[] nor)
-        {
-            var skin = cr.Skinning(ClipOf(cr, role), t);
-            int o = 0;
-            foreach (var part in partList)
-            {
-                Creature.Pose(part, skin, buf.AsSpan(o, part.Count));
-                for (int i = 0; i < part.Count; i++) pos[o + i] = (buf[o + i] + offset) * scale;
-                // Flat: a face's normal on all three of its corners.
-                for (int f = 0; f < part.Count; f += 3)
-                {
-                    Vector3 a = pos[o + f], b = pos[o + f + 1], c = pos[o + f + 2];
-                    var n = (c - b).Cross(a - b).Normalized();
-                    nor[o + f] = nor[o + f + 1] = nor[o + f + 2] = n;
-                }
-                o += part.Count;
-            }
-        }
-
-        var roles = new List<(string Role, double Duration)>();
-        foreach (var role in new[] { "move", "idle", "attack", "windup", "die", "rise", "hit", "burrow" })
-        {
-            var name = ClipOf(cr, role);
-            if (role == "burrow" && name != "burrow") continue;
-            roles.Add((role, cr.Clips[name].Duration));
-        }
-        return Write(spec.Key, surfs, total, roles, 20, Sample);
-    }
-
-    /// <summary>The creature's own clip for a crowd role.</summary>
-    static string ClipOf(Creature cr, string role) => role switch
-    {
-        "move" => "run",
-        "rise" => cr.Clips.ContainsKey("rise") ? "rise" : "idle",
-        "windup" => cr.Clips.ContainsKey("windup") ? "windup" : "idle",
-        "burrow" => cr.Clips.ContainsKey("burrow") ? "burrow" : "idle",
-        _ => cr.Clips.ContainsKey(role) ? role : "idle",
-    };
-
     /* -------------------------------------------------------------- write -- */
 
     /// <summary>A bake as data: what the cache keeps, and what the mesh and textures are made from.</summary>
@@ -719,8 +705,8 @@ public static class Vat
     // Bakes are kept on disk between runs (a kind costs its figure's models,
     // its clips and seconds of sampling; read back, a few milliseconds). Bump
     // Version whenever what a bake holds or how it is made changes (Visuals,
-    // Creatures, this file).
-    const int Version = 6;
+    // Beasts, this file).
+    const int Version = 7;
     static string CachePath(string key) => $"user://vat/{key}.v{Version}.bin";
 
     static byte[] Bytes<T>(T[] a) where T : struct => System.Runtime.InteropServices.MemoryMarshal.AsBytes(a.AsSpan()).ToArray();

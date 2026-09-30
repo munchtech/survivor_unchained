@@ -86,18 +86,22 @@ game at the same place and hour; needs the dev server), then
   clothes, a woman's figure from two shape keys, skin tone, cloth dyed by
   `shaders/person.gdshader`), weapons in hand (`Arms.cs`), the survivor
   (`PlayerView.cs`: an AnimationTree, the swing on the upper body over the
-  run), people in the world (`PersonView.cs`), the beasts built in code
-  (`Creatures.cs`: wolves, boars, lamplings, lofted and posed as the web game
-  makes them), the crowd (`CrowdView.cs`; each creature's look in
-  `Visuals.cs`), the Ford-Warden (`BossViews.cs`).
+  run), people in the world (`PersonView.cs`), the beasts (`Beasts.cs`:
+  modelled, rigged and animated wolves, boars and lamplings from
+  `art/beasts`, the moves their clips lack composed over their poses, a
+  lampling's hat and lamp made in code and worn on its head), the crowd
+  (`CrowdView.cs`; each creature's look in `Visuals.cs`), the Ford-Warden
+  (`BossViews.cs`).
 - The crowd is vertex animation (`Vat.cs`, `shaders/vat.gdshader`): each
   kind of creature is played through its clips once and every vertex's pose
   written into two textures; a kind is then one MultiMesh, however many
   there are (people slimmed to about 4,000 vertices with meshoptimizer
   first). Bakes are kept in Godot's user folder (`vat/`) between runs;
   `--vat-fresh` bakes again, and bump `Vat.Version` when what a bake holds
-  changes. `--horde 40:wolf,20:risen` puts a crowd round the survivor, and
-  `--cam D` brings the camera in, for pictures and timing.
+  changes. `--horde 40:wolf,20:risen` puts a crowd round the survivor,
+  `--drops` one of everything that lies on the ground (embers of three
+  worths, gold, a draught, a lodestone, gear, a chest), and `--cam D`
+  brings the camera in, for pictures and timing.
 - `src/Fx/`: the fight made visible (`BattleFx.cs`: sparks, marks on the
   ground, what is in the air and on the ground, lights; its particles drawn
   from Kenney's CC0 sprites, `Sprites.cs`, art/fx: puffs of smoke, glints,
