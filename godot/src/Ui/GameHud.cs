@@ -415,7 +415,7 @@ public partial class GameHud : CanvasLayer
         int m = (int)(b.Time / 60), s = (int)(b.Time % 60);
         tallyTime.Text = $"{m}:{s:00}";
         tallyKills.Text = b.KillCount.ToString();
-        tallyGold.Text = $"{Math.Floor(gold + b.GoldGained)}";
+        tallyGold.Text = $"{Math.Floor(gold + b.GoldGained - b.GoldBanked)}";
 
         var alive = new HashSet<string>();
         int i = 0;

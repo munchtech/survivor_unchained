@@ -79,6 +79,8 @@ public sealed class Waystation : ZoneRuntime
     /// <summary>Where the Wayfinder keeps her stall: the south side of the Old
     /// Road, between the square and the east gate, facing the road.</summary>
     static readonly XZ Stall = new(19.0, 5.3);
+    /// <summary>Before the Wayfinder's table, facing it (where an arena from it gives the survivor back).</summary>
+    public static readonly Arrival AtTable = new(Stall.X, Stall.Z - 2.6, 0);
 
     /// <summary>The stall itself: a counter under an awning, maps and a lamp on
     /// it, a table of charts beside, a lectern with the great atlas open.</summary>
@@ -258,11 +260,11 @@ public sealed class Waystation : ZoneRuntime
                 G.Travel("verge", "Thornhollow Verge", "East along the Old Road");
             },
         });
-        // The Wayfinder's stall on the Old Road: maps to places the road forgets (MapRun).
+        // The Wayfinder's stall on the Old Road: maps to places the road forgets, each an arena.
         I.Add(new()
         {
             Id = "maps", X = Stall.X, Z = Stall.Z - 1.6, R = 2.2, Verb = "Choose a map", Name = "The Wayfinder's Table",
-            Hint = () => $"Tier {Math.Max(1, (int)F("map.best").Number)} taken",
+            Hint = () => W.Rematches.Count > 0 ? $"{W.Rematches.Count} fight{(W.Rematches.Count == 1 ? "" : "s")} to take again" : F("arena.best").Number > 0 ? $"Tier {(int)F("arena.best").Number} won" : null,
             Act = () => G.Open("maps"),
         });
         I.Add(new() { Id = "gate:north", X = north.X, Z = north.Z + 3, R = 3.2, Verb = "Pass", Name = "The North Gate", Locked = () => "Professor Keegan bars the way" });
@@ -343,7 +345,8 @@ public sealed class Waystation : ZoneRuntime
     public override Arrival ArrivalFrom(string? from)
     {
         var east = Way("east"); var shrine = Way("shrine"); var south = Way("south");
-        if (from is "verge" or "map") return new(east.X - 5, east.Z, -Math.PI / 2);
+        if (from == "verge") return new(east.X - 5, east.Z, -Math.PI / 2);
+        if (from == "arena") return AtTable;
         if (from == "death") return new(shrine.X + 6, shrine.Z + 6, Math.PI * 0.25);
         // Far enough through the south gate that the wall is behind the
         // camera, not a brown slab across the bottom of the picture.

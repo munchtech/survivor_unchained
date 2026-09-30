@@ -44,6 +44,41 @@ public class MapGenTests
         if (Environment.GetEnvironmentVariable("MAP_DUMP") is { } dir) Dump(m, $"{dir}/map_{seed}.ppm");
     }
 
+    [Theory]
+    [InlineData(3)]
+    [InlineData(77)]
+    public void An_arena_is_one_great_clearing_with_cover(int seed)
+    {
+        var sw = Stopwatch.StartNew();
+        var m = MapGen.Generate(new MapSpec { Seed = seed, Arena = true });
+        Assert.True(sw.ElapsedMilliseconds < 4000, $"made in {sw.ElapsedMilliseconds} ms");
+        Assert.Equal("arena", m.Meta.Id);
+        Assert.Single(m.Areas);
+        Assert.Empty(m.Packs);
+        Assert.True(m.CanStand(0, 0));
+        // Wide: open ground a long way out in every direction.
+        for (int k = 0; k < 8; k++)
+        {
+            double a = k * Math.PI / 4;
+            Assert.True(m.CanStand(Math.Cos(a) * 60, Math.Sin(a) * 60), $"closed at 60 m, {k * 45} degrees");
+        }
+        Assert.False(m.CanStand(140, 0));
+        // Cover inside, and every bit of open ground reached from the middle.
+        var col = m.Meta.Collision();
+        int inside = m.Meta.Colliders.Count(c => c.Tag != "wall" && Math.Sqrt(c.X * c.X + c.Z * c.Z) < MapGen.ArenaR - 12);
+        Assert.InRange(inside, 20, 120);
+        var reached = NavFlood(col, 0, 0);
+        int open = 0, cut = 0;
+        for (int z = -70; z <= 70; z += 5)
+            for (int x = -70; x <= 70; x += 5)
+            {
+                if (!m.CanStand(x, z) || col.Blocked(x, z, 0.5)) continue;
+                open++;
+                if (!reached.Contains(NavCell(col, x, z))) cut++;
+            }
+        Assert.True(cut <= open / 50, $"{cut} of {open} cut off");
+    }
+
     [Fact]
     public void The_same_seed_makes_the_same_map()
     {
@@ -135,105 +170,5 @@ public class MapGenTests
         var head = System.Text.Encoding.ASCII.GetBytes($"P6\n{res} {res}\n255\n");
         f.Write(head);
         f.Write(px);
-    }
-}
-
-/// <summary>A map, run without a screen (Play/Zones/MapRun.cs).</summary>
-public class MapRunTests
-{
-    sealed record Setup(SurvivorUnchained.Play.Journey J, FakeHost Host, SurvivorUnchained.Play.Zones.MapRun Zone, SurvivorUnchained.Sim.Battle B, MapBuild Map);
-
-    static Setup Make(string people = "pack", params string[] oaths)
-    {
-        var a = SurvivorUnchained.Rpg.Callings.Archetype("warden");
-        var j = SurvivorUnchained.Play.Journey.Begin(new SurvivorUnchained.Rpg.CreationChoice
-        {
-            Name = "Ashe", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0],
-            Ability = a.Abilities[0], StartBoon = SurvivorUnchained.Content.Boons.StartBlessings[0],
-        }, 42);
-        var offer = new MapOffer(new MapSpec { Seed = 42, Tier = 1, Name = "The Test Wood", Oaths = oaths.ToList() }, people);
-        MapOffers.Remember(j.World, offer);
-        var map = MapGen.Generate(offer.Spec);
-        var host = new FakeHost(j, map.Meta, map.Ground);
-        var zone = new SurvivorUnchained.Play.Zones.MapRun(host, map, people);
-        var at = zone.ArrivalFrom("waystation");
-        var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, 11);
-        b.Hooks = zone.Hooks;
-        host.Battle = b;
-        zone.Begin(b);
-        return new Setup(j, host, zone, b, map);
-    }
-
-    static void Run(Setup s, double seconds)
-    {
-        for (double t = 0; t < seconds; t += 1 / 60.0)
-        {
-            s.Zone.Step(1 / 60.0);
-            s.Zone.Frame(1 / 60.0);
-            s.B.Tick(1 / 60.0, 0, 0);
-            s.B.Events.Drain();
-            s.Host.Pass(1 / 60.0);
-        }
-    }
-
-    [Fact]
-    public void Packs_wait_until_you_come_to_them()
-    {
-        var s = Make();
-        Assert.Contains(s.Host.Tracked, t => t.Id == "map");
-        Run(s, 1);
-        int near = s.B.Enemies.Living().Count();
-        // Walk to the far clearing (the boss's): what was there is waiting, and more woke on the way.
-        var mid = s.Map.Areas[7];
-        s.B.Player.X = mid.X; s.B.Player.Z = mid.Z;
-        Run(s, 1);
-        Assert.True(s.B.Enemies.Living().Count() > near, $"{near} -> {s.B.Enemies.Living().Count()}");
-    }
-
-    [Fact]
-    public void An_altar_calls_waves_and_its_hoard_is_yours_when_they_are_spent()
-    {
-        var s = Make();
-        var altar = s.Map.Altars.First();
-        s.B.Player.X = altar.X; s.B.Player.Z = altar.Z;
-        s.B.Player.Iframes = 1e9;
-        var wake = s.Zone.Interactables.First(i => i.Id == $"altar{altar.Index}");
-        Assert.True(wake.When!());
-        wake.Act();
-        Assert.False(wake.When!());
-        Run(s, 3);
-        Assert.Contains(s.Host.Announced, a => a.Title.StartsWith("Wave 1"));
-        // Everything it calls, struck down, wave after wave.
-        for (int k = 0; k < 40 && !s.Host.Announced.Any(a => a.Title == "The altar is spent"); k++)
-        {
-            foreach (var e in s.B.Enemies.Living().ToList()) s.B.HitEnemy(e, 1e6, SurvivorUnchained.Sim.School.Physical, [SurvivorUnchained.Sim.Tag.Physical]);
-            Run(s, 2);
-        }
-        Assert.Contains(s.Host.Announced, a => a.Title == "The altar is spent");
-    }
-
-    [Fact]
-    public void Killing_what_rules_the_map_takes_it_and_opens_the_way_home()
-    {
-        var s = Make("dead");
-        var boss = s.Map.Boss;
-        s.B.Player.X = boss.X; s.B.Player.Z = boss.Z + boss.R;
-        s.B.Player.Iframes = 1e9;
-        Run(s, 1);
-        Assert.NotNull(s.Host.Boss);
-        var exit = s.Zone.Interactables.Single(i => i.Id == "exit");
-        Assert.False(exit.When!());
-        var lord = s.B.Enemies.Living().Single(e => e.Def.Id == "barrow_knight");
-        s.B.HitEnemy(lord, 1e7, SurvivorUnchained.Sim.School.Holy, [SurvivorUnchained.Sim.Tag.Physical]);
-        Run(s, 3);
-        Assert.Contains(s.Host.Announced, a => a.Kicker == "Map complete");
-        // What rules a map keeps a manual: an art the survivor has not learned.
-        var manual = s.B.Pickups.Living().FirstOrDefault(p => p.Ref?.StartsWith("manual_") == true);
-        Assert.NotNull(manual);
-        Assert.False(SurvivorUnchained.Rpg.ArtBook.Knows(s.J.Ch, manual!.Ref![7..]));
-        Assert.True(exit.When!());
-        Assert.Equal(1, s.J.World.Fact("map.best").Number);
-        exit.Act();
-        Assert.Equal("waystation", s.Host.Travelled?.Zone);
     }
 }

@@ -72,10 +72,6 @@ public sealed class Saves
         d.World.Legacy ??= new();
         d.World.Shops ??= new();
         d.World.GroundItems ??= new();
-        // The starting pick is a blessing; a survivor who began with a passive
-        // skill is given the first blessing in its place.
-        if (d.Character.StartBoon != "" && Boons.Find(d.Character.StartBoon)?.Kind != BoonKind.Blessing)
-            d.Character.StartBoon = Boons.StartBlessings[0];
         d.Version = Version;
         return d;
     }

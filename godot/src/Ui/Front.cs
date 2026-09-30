@@ -170,7 +170,7 @@ public partial class TitleScreen : Overlay
 public sealed class CreationDraft
 {
     public int Step;
-    public string Name = "", Archetype = "warden", WeaponItem = "worn_oathblade", Ability = "shield_bash", StartBoon = "hunters_mark", Background = "hunter";
+    public string Name = "", Archetype = "warden", WeaponItem = "worn_oathblade", Ability = "shield_bash", Background = "hunter";
     public string Palette = "steel", Model = "knight", Cloak = "calling", Skin = "fair", Hair = "as_is", HairStyle = "Hair_SimpleParted";
     public bool Headgear = true, Beard = true;
     public Sex Sex = Sex.Male;
@@ -178,7 +178,7 @@ public sealed class CreationDraft
 
     public CreationChoice Choice() => new()
     {
-        Name = Name.Trim(), Archetype = Archetype, Background = Background, Palette = Palette, Model = Model, WeaponItem = WeaponItem, Ability = Ability, StartBoon = StartBoon,
+        Name = Name.Trim(), Archetype = Archetype, Background = Background, Palette = Palette, Model = Model, WeaponItem = WeaponItem, Ability = Ability,
         Headgear = Headgear, Cloak = Cloak, Skin = Skin, Hair = Hair, Sex = Sex, HairStyle = HairStyle, Beard = Beard, Figure = Figure,
     };
 
@@ -304,18 +304,6 @@ public partial class CreateScreen : Overlay
             string kind = ab.Movement ? "a way of moving" : "the calling's own";
             v.AddChild(Choice(ab.Icon, ab.Name, $"{kind} · {ab.Cooldown} s{(ab.Interrupts ? " · breaks channels" : "")}", d.Ability == id, () => Set(() => d.Ability = id)));
         }
-        v.AddChild(Style.H(8, Style.SubLabel("Starting blessing"), Style.Label("yours at the start of every expedition; the ember deepens it", Style.TextItalic, 13, Style.InkDim)));
-        var grid = new GridContainer { Columns = 3 };
-        grid.AddThemeConstantOverride("h_separation", 6);
-        grid.AddThemeConstantOverride("v_separation", 6);
-        foreach (var id in Boons.StartBlessings)
-        {
-            var bd = Boons.Find(id)!;
-            var b = Style.Segment(bd.Name, d.StartBoon == id, () => Set(() => d.StartBoon = id));
-            b.TooltipText = bd.Text;
-            grid.AddChild(b);
-        }
-        v.AddChild(grid);
         return v;
     }
 
@@ -433,14 +421,6 @@ public partial class CreateScreen : Overlay
         v.AddChild(Style.Rule());
         v.AddChild(Style.H(10, Glyphs.Icon(ab.Icon, 30, new Color("#ffe2b0")), Style.V(2, Style.H(6, Style.Label(ab.Name, Style.UiBold, 16, Style.GoldHi), Style.Key(G.Key(Act.Ability))),
             Style.Label(ab.Description, Style.Text, 14, Style.Ink, true))));
-        v.AddChild(Style.Rule());
-        // The blessing, and what it deepens into as the ember brings more.
-        var boon = Boons.Find(d.StartBoon)!;
-        v.AddChild(Style.H(10, Glyphs.Icon(boon.Icon, 30, new Color("#ffe2b0")), Style.V(2, Style.Label(boon.Name, Style.UiBold, 16, Style.GoldHi),
-            Style.Label(boon.Text, Style.Text, 14, Style.Ink, true))));
-        if (boon.DeeperText is { } deeper)
-            for (int i = 0; i < deeper.Length; i++)
-                v.AddChild(Style.Label($"{Numerals[i + 1]}   {deeper[i]}", Style.Ui, 13, Style.InkDim, true));
         return v;
     }
 
@@ -466,7 +446,7 @@ public partial class CreateScreen : Overlay
         return Style.V(8, Style.Cap(d.Name.Trim() == "" ? "Nameless" : d.Name.Trim(), 24), Style.Label($"{bg.Name} {a.Name}", Style.TextItalic, 17, new Color("#c8a878")),
             Style.Label(bg.Story, Style.TextItalic, 15, Style.Ink, true), Style.Rule(),
             Line("Carries", Items.Get(d.WeaponItem).Name + string.Concat(bg.Items.Select(i => $", {Items.Get(i).Name}"))),
-            Line("Hands", Abilities.ById(d.Ability).Name), Line("Blessing", Boons.Find(d.StartBoon)!.Name),
+            Line("Hands", Abilities.ById(d.Ability).Name),
             Line("Knows", string.Join(", ", bg.Knowledge.Select(k => SheetScreen.Know.GetValueOrDefault(k, k)))), Style.Rule(),
             Style.Label("Night is falling on the Low Ford road. The fire is low. What you do from here, the world will remember.", Style.TextItalic, 15, Style.InkDim, true));
     }

@@ -23,7 +23,8 @@ public sealed record OathDef(string Id, string Name, string Asks, string Gives,
 
 /// <summary>Who lives in a map: the rank and file (weighted), the boss, and
 /// the gear that answers them (slayers, resistances).</summary>
-public sealed record Denizens(string Id, string Name, (string Def, double Weight)[] Horde, string Boss, string BossName, string BossTitle, string[] Lean);
+public sealed record Denizens(string Id, string Name, (string Def, double Weight)[] Horde, string Boss, string BossName, string BossTitle, string[] Lean,
+    (string Def, double Weight, double From)[] Arena, string Champion);
 
 public static class MapOffers
 {
@@ -35,7 +36,7 @@ public static class MapOffers
             Answer: "critical strikes, a mark", Lean: ["keen", "cruel"]),
         new("deep", "Oath of the Deep Dark", "Foes two levels stronger", "Better gear", Levels: 2, Gear: 1.4, Ember: 1.2,
             Answer: "health and armour", Lean: ["hale", "sturdy"]),
-        new("vigil", "Oath of the Long Vigil", "Every altar calls a fourth wave", "An altar's hoard doubled", Waves: 1, Gear: 1.3,
+        new("vigil", "Oath of the Long Vigil", "The horde's turns come twice as often", "More champions, and finer gear", Waves: 1, Gear: 1.3,
             Answer: "area and mending", Lean: ["of_reach", "of_mending"]),
         new("winter", "Oath of the Long Winter", "Their blows chill you to a crawl", "Gear half again as fine", Gear: 1.5,
             Answer: "frost resistance, sure footing, a sprint or a charge", Lean: ["of_the_hearth", "surefooted"], Rule: r => r.HitChill = true),
@@ -57,10 +58,14 @@ public static class MapOffers
 
     public static readonly Denizens[] Peoples =
     {
-        new("pack", "the Pack", new[] { ("wolf", 5.0), ("wolf_blighted", 2.0), ("boar", 1.0) }, "wolf_alpha", "The Pack-Mother", "Alpha of the Deep Wood", ["wolfbane", "of_the_wolf"]),
-        new("dead", "the Risen", new[] { ("risen", 5.0), ("risen_warrior", 2.0), ("risen_archer", 2.0), ("grave_caller", 0.4) }, "barrow_knight", "The Barrow Lord", "Who Would Not Lie Down", ["gravebane", "of_the_grave", "hallowed"]),
-        new("lamplings", "the Lamplings", new[] { ("lampling", 5.0), ("lampling_sapper", 1.5) }, "grimtunnel", "Grimtunnel's Get", "Foreman of the Under-Road", ["lampsnuffer", "of_the_salamander"]),
-        new("kerchiefs", "the Kerchiefs", new[] { ("footpad", 5.0), ("pillager", 2.0), ("bruiser", 1.2) }, "enforcer", "The Red Hand", "Warlord of the Ravine", ["watchmans", "sturdy"]),
+        new("pack", "the Pack", new[] { ("wolf", 5.0), ("wolf_blighted", 2.0), ("boar", 1.0) }, "wolf_alpha", "The Pack-Mother", "Alpha of the Deep Wood", ["wolfbane", "of_the_wolf"],
+            [("wolf", 5, 0), ("boar", 2, 4), ("wolf_blighted", 3, 9)], "wolf_alpha"),
+        new("dead", "the Risen", new[] { ("risen", 5.0), ("risen_warrior", 2.0), ("risen_archer", 2.0), ("grave_caller", 0.4) }, "barrow_knight", "The Barrow Lord", "Who Would Not Lie Down", ["gravebane", "of_the_grave", "hallowed"],
+            [("risen", 5, 0), ("risen_archer", 2, 3), ("risen_warrior", 3, 7), ("grave_caller", 0.6, 13)], "barrow_knight"),
+        new("lamplings", "the Lamplings", new[] { ("lampling", 5.0), ("lampling_sapper", 1.5) }, "grimtunnel_roused", "Grimtunnel, Roused", "Foreman of the Under-Road", ["lampsnuffer", "of_the_salamander"],
+            [("lampling", 5, 0), ("lampling_sapper", 2.5, 5)], "lampling_sapper"),
+        new("kerchiefs", "the Kerchiefs", new[] { ("footpad", 5.0), ("pillager", 2.0), ("bruiser", 1.2) }, "enforcer", "The Red Hand", "Warlord of the Ravine", ["watchmans", "sturdy"],
+            [("footpad", 5, 0), ("pillager", 2.5, 4), ("bruiser", 2, 9)], "enforcer"),
     };
 
     public static Denizens People(string id) => Peoples.First(p => p.Id == id);
@@ -102,33 +107,6 @@ public static class MapOffers
             list.Add(new MapOffer(spec, people.Id));
         }
         return list;
-    }
-
-    /* The map in play lives in the world's facts, so a save made in it comes
-     * back to the same map (made again from its seed). */
-
-    public static void Remember(WorldState w, MapOffer o)
-    {
-        w.Facts["map.seed"] = o.Spec.Seed;
-        w.Facts["map.tier"] = o.Spec.Tier;
-        w.Facts["map.theme"] = o.Spec.Theme;
-        w.Facts["map.night"] = o.Spec.Night;
-        w.Facts["map.name"] = o.Spec.Name;
-        w.Facts["map.oaths"] = string.Join(",", o.Spec.Oaths);
-        w.Facts["map.people"] = o.People;
-    }
-
-    public static MapOffer? Current(WorldState w)
-    {
-        var seed = w.Fact("map.seed");
-        if (seed.IsNull) return null;
-        var oaths = w.Fact("map.oaths").Str;
-        return new MapOffer(new MapSpec
-        {
-            Seed = (int)seed.Number, Tier = (int)w.Fact("map.tier").Number, Theme = w.Fact("map.theme").Str ?? "wood",
-            Night = w.Fact("map.night").Truthy, Name = w.Fact("map.name").Str ?? "The Wood",
-            Oaths = string.IsNullOrEmpty(oaths) ? new() : oaths.Split(',').ToList(),
-        }, w.Fact("map.people").Str ?? "pack");
     }
 }
 

@@ -110,6 +110,8 @@ public sealed class Offer
     public OfferKind Kind;
     /// <summary>Offered as a milestone's blessing (settles the blessing, not a level).</summary>
     public bool Blessing;
+    /// <summary>A great blessing (an arena's own), not a milestone's.</summary>
+    public bool Great;
     public string Id = "";
     /// <summary>For Evolve: which branch.</summary>
     public string? Branch;
@@ -189,12 +191,17 @@ public sealed partial class Battle
     /// <summary>Milestone levels whose blessing is still to be chosen (it comes
     /// on top of that level's skill, after it).</summary>
     public readonly List<int> PendingBlessings = new();
+    /// <summary>Great blessings owed (an arena's first, its fifteenth minute's).</summary>
+    public int GreatOwed;
     public readonly HashSet<string> Discoveries = new();
     /// <summary>Where the fight is coming from, for the adaptive director.</summary>
     public readonly DamageProfile Profile = new();
     public int KillCount;
     public readonly Dictionary<Family, int> KillsByFamily = new();
     public double DamageTaken, GoldGained;
+    /// <summary>How much of GoldGained is already in the survivor's purse.</summary>
+    public double GoldBanked;
+    public double GoldTotal => GoldGained;
     /// <summary>Aim point for directional abilities (the pointer on the ground).</summary>
     public (double X, double Z)? Aim;
     /// <summary>Time-slip: everything but the survivor runs at this rate.</summary>
@@ -216,7 +223,7 @@ public sealed partial class Battle
     internal readonly List<int> AiScratch = new();
     double auraT;
 
-    public bool DraftOwed => PendingLevels > 0 || PendingBlessings.Count > 0;
+    public bool DraftOwed => PendingLevels > 0 || PendingBlessings.Count > 0 || GreatOwed > 0;
 
     static readonly Dictionary<Faction, Faction[]> DefaultWar = new()
     {

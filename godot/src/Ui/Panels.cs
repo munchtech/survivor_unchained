@@ -11,7 +11,7 @@ namespace SurvivorUnchained.Ui;
 
 /// <summary>What the level-up draft shows, and what picking does.</summary>
 public sealed record DraftView(int Level, bool Blessing, List<Offer> Offers, int Rerolls, int Banishes, int Queued, string? Tip, HashSet<Tag> Build,
-    Action<int> Pick, Action Reroll, Action<int> Banish);
+    Action<int> Pick, Action Reroll, Action<int> Banish, string? Great = null);
 
 /// <summary>A conversation as the panel shows it: who, and what they look like.</summary>
 public sealed record DialogueView(string Name, string Title, string Mood, string Speaker, string Text, List<PresentedChoice> Choices,
@@ -56,6 +56,7 @@ public partial class DraftPanel : Control
         OfferKind.Weapon => "New combat skill",
         OfferKind.Rank => $"Combat skill · rank {o.From} to {o.To}",
         OfferKind.Evolve => "Evolution",
+        OfferKind.Boon when o.Great => o.From is int g && g > 0 ? $"Great blessing · rank {g} to {o.To}" : "Great blessing",
         OfferKind.Boon when Boons.Find(o.Id)?.Kind == BoonKind.Blessing => o.From is int f && f > 0 ? $"Blessing · rank {f} to {o.To}" : "Blessing",
         OfferKind.Boon => o.From is int f2 && f2 > 0 ? $"Passive skill · rank {f2} to {o.To}" : "New passive skill",
         _ => "Respite",
@@ -68,8 +69,10 @@ public partial class DraftPanel : Control
         col.Position = new Vector2(0, 150);
         col.Size = new Vector2(1920, 780);
         AddChild(col);
-        col.AddChild(Style.Label(v.Blessing ? $"Ember {v.Level}: a milestone" : "The ember rises", Style.TextItalic, 17, v.Blessing ? new Color("#ffd88a") : new Color("#e8b878"), false, HorizontalAlignment.Center));
-        col.AddChild(Style.Label((v.Blessing ? "A Blessing" : $"Ember {v.Level}").ToUpperInvariant(), Style.Display, 48, new Color("#ffe6b8"), false, HorizontalAlignment.Center));
+        string kicker = v.Great ?? (v.Blessing ? $"Ember {v.Level}: a milestone" : "The ember rises");
+        string head = v.Great != null ? "A Great Blessing" : v.Blessing ? "A Blessing" : $"Ember {v.Level}";
+        col.AddChild(Style.Label(kicker, Style.TextItalic, 17, v.Great != null || v.Blessing ? new Color("#ffd88a") : new Color("#e8b878"), false, HorizontalAlignment.Center));
+        col.AddChild(Style.Label(head.ToUpperInvariant(), Style.Display, 48, new Color("#ffe6b8"), false, HorizontalAlignment.Center));
         if (v.Queued > 0) col.AddChild(Style.Label($"{v.Queued} more to choose", Style.UiBold, 16, Style.InkDim, false, HorizontalAlignment.Center));
         if (v.Tip != null) col.AddChild(Style.Label(v.Tip, Style.TextItalic, 18, Style.Ink, true, HorizontalAlignment.Center));
         col.AddChild(Style.Gap(20));

@@ -177,6 +177,10 @@ public sealed class WorldState
     public List<LegacyEntry> Legacy = new();
     /// <summary>Shop stock and prices, by shop.</summary>
     public Dictionary<string, ShopState> Shops = new();
+    /// <summary>The ember arena begun (Arena/Arena.cs), until it is over.</summary>
+    public Arena.ArenaSpec? Arena;
+    /// <summary>Story fights lost, waiting at the Wayfinder's table to be taken again.</summary>
+    public List<Arena.ArenaSpec> Rematches = new();
 
     public const int StashSize = 48;
     static List<ItemInstance?> NewStash() { var s = new List<ItemInstance?>(StashSize); for (int i = 0; i < StashSize; i++) s.Add(null); return s; }

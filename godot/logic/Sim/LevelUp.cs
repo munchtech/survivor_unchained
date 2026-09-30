@@ -16,8 +16,9 @@ namespace SurvivorUnchained.Sim;
 ///     is offered what it can become (the choice is always the player's).
 ///
 /// Blessings are not in it: they change how the fight works, and come as
-/// milestones (one at the start of every expedition, one more at every
-/// Boons.Milestones ember levels, after that level's own draft).
+/// milestones (a great blessing as an arena begins and at its fifteenth
+/// minute, first of all; one more at every Boons.Milestones ember level,
+/// after that level's own draft).
 ///
 /// It leans, never forces. Cards that share tags with what the build already
 /// does are likelier; a passive that would evolve a weapon you carry is
@@ -99,11 +100,17 @@ public static class LevelUp
         return 1 + n * 0.6;
     }
 
+    /// <summary>Is the next draft a great blessing? (Before anything else.)</summary>
+    public static bool GreatNext(Battle b) => b.GreatOwed > 0;
+
     /// <summary>Is the next draft a milestone's blessing? (Skills owed come first.)</summary>
-    public static bool BlessingNext(Battle b) => b.PendingLevels == 0 && b.PendingBlessings.Count > 0;
+    public static bool BlessingNext(Battle b) => !GreatNext(b) && b.PendingLevels == 0 && b.PendingBlessings.Count > 0;
 
     /// <summary>The level the next draft is for (several can be owed at once).</summary>
-    public static int DraftLevel(Battle b) => BlessingNext(b) ? b.PendingBlessings[0] : b.EmberLevel - b.PendingLevels + 1;
+    public static int DraftLevel(Battle b) => GreatNext(b) ? b.EmberLevel : BlessingNext(b) ? b.PendingBlessings[0] : b.EmberLevel - b.PendingLevels + 1;
+
+    /// <summary>Drafts still owed after this one.</summary>
+    public static int Queued(Battle b) => b.GreatOwed + b.PendingLevels + b.PendingBlessings.Count - 1;
 
     /// <summary>Weighted pick without replacement.</summary>
     static Offer? TakeFrom(Battle b, List<(Offer O, double W)> pool)
@@ -128,6 +135,25 @@ public static class LevelUp
         var offers = new List<Offer>();
         double Weight(Rarity r) => RarityWeight(r) * (r != Rarity.Common ? 1 + (luck - 1) * 0.6 : 1);
 
+        // A great blessing: any of them, whoever the survivor is, or the next
+        // rank of one held.
+        if (GreatNext(b))
+        {
+            var pool = new List<(Offer, double)>();
+            foreach (var id in Boons.Great)
+            {
+                var d = Boons.All[id];
+                int r = b.Boons.GetValueOrDefault(id);
+                if (r >= d.Max || b.BannedCards.Contains(id)) continue;
+                bool deeper = r > 0 && d.DeeperText is { } dt && r - 1 < dt.Length;
+                string text = deeper ? $"Rank {r + 1}: {d.DeeperText![r - 1]}" : d.Text;
+                pool.Add((new Offer { Kind = OfferKind.Boon, Id = id, Rarity = d.Rarity, Title = d.Name, Text = text, From = r, To = r + 1, Icon = d.Icon, Tags = d.Tags, Blessing = true, Great = true },
+                    deeper ? 3 : 1));
+            }
+            for (int i = 0; i < count; i++) if (TakeFrom(b, pool) is { } o) offers.Add(o);
+            return offers.Count > 0 ? offers : Respite(blessing: true, great: GreatNext(b));
+        }
+
         // A milestone's blessing: game-changers only.
         if (BlessingNext(b))
         {
@@ -138,6 +164,8 @@ public static class LevelUp
                 if (d.Kind != BoonKind.Blessing) continue;
                 int r = b.Boons.GetValueOrDefault(d.Id);
                 if (r >= d.Max || b.BannedCards.Contains(d.Id) || !Meets(b, d.Requires, statuses, tags)) continue;
+                // The great blessings are an arena's own gift: a milestone only deepens one held.
+                if (r == 0 && Boons.IsGreat(d.Id)) continue;
                 // A blessing held can be deepened instead: what its next rank adds.
                 bool deeper = r > 0 && d.DeeperText is { } dt && r - 1 < dt.Length;
                 string text = deeper ? $"Rank {r + 1}: {d.DeeperText![r - 1]}" : d.Text;
@@ -145,7 +173,7 @@ public static class LevelUp
                     Weight(d.Rarity) * Affinity(d.Tags, tags) * (deeper ? 2.5 : 1)));
             }
             for (int i = 0; i < count; i++) if (TakeFrom(b, pool) is { } o) offers.Add(o);
-            return offers;
+            return offers.Count > 0 ? offers : Respite(blessing: true, great: GreatNext(b));
         }
 
         // Evolutions come first and are not left to chance: one weapon at a
@@ -217,12 +245,42 @@ public static class LevelUp
             if (TakeFrom(b, both) is { } o) offers.Add(o);
             else break;
         }
-        if (offers.Count == 0)
-        {
-            offers.Add(new Offer { Kind = OfferKind.Heal, Id = "heal", Rarity = Rarity.Common, Title = "Second Wind", Text = "Recover 35% of your health.", Icon = "heart" });
-            offers.Add(new Offer { Kind = OfferKind.Gold, Id = "gold", Rarity = Rarity.Common, Title = "Scavenged Coin", Text = "+25 gold.", Icon = "coin" });
-        }
+        if (offers.Count == 0) offers = Respite(blessing: false, great: false);
         return offers.Take(System.Math.Max(count, offers.Count(o => o.Kind == OfferKind.Evolve))).ToList();
+    }
+
+    /// <summary>When there is nothing left to offer: a breath, or coin (standing in
+    /// for whatever draft was owed).</summary>
+    static List<Offer> Respite(bool blessing, bool great) =>
+    [
+        new Offer { Kind = OfferKind.Heal, Id = "heal", Rarity = Rarity.Common, Title = "Second Wind", Text = "Recover 35% of your health.", Icon = "heart", Blessing = blessing, Great = great },
+        new Offer { Kind = OfferKind.Gold, Id = "gold", Rarity = Rarity.Common, Title = "Scavenged Coin", Text = "+25 gold.", Icon = "coin", Blessing = blessing, Great = great },
+    ];
+
+    /// <summary>A chest opened in an arena: an evolution earned comes out
+    /// first, then ranks in what the survivor carries. What it gave, by name.</summary>
+    public static List<string> OpenChest(Battle b, int count)
+    {
+        var got = new List<string>();
+        var ready = b.Weapons.Find(w => EarnedBranches(b, w.Id).Count > 0);
+        if (ready != null)
+        {
+            var evo = EarnedBranches(b, ready.Id)[0];
+            b.Evolve(ready.Id, evo.Id);
+            got.Add(evo.Name);
+            count--;
+        }
+        for (int i = 0; i < count; i++)
+        {
+            var ranks = b.Weapons.Where(w => w.Rank < Content.Weapons.MaxRank).Select(w => (w.Id, Name: w.Evolution?.Name ?? w.Def.Name, Weapon: true))
+                .Concat(b.Boons.Where(kv => Boons.All.TryGetValue(kv.Key, out var d) && d.Kind == BoonKind.Passive && kv.Value < d.Max)
+                    .Select(kv => (Id: kv.Key, Name: Boons.All[kv.Key].Name, Weapon: false))).ToList();
+            if (ranks.Count == 0) { b.HealPlayer(b.MaxHp * 0.3, "chest"); b.GoldGained += 25; got.Add("gold and a draught"); break; }
+            var pick = ranks[b.Rng.Int(0, ranks.Count - 1)];
+            if (pick.Weapon) b.RankWeapon(pick.Id); else b.AddBoon(pick.Id);
+            got.Add(pick.Name);
+        }
+        return got;
     }
 
     public static void Choose(Battle b, Offer o)
@@ -236,7 +294,8 @@ public static class LevelUp
             case OfferKind.Heal: b.HealPlayer(b.MaxHp * 0.35, "draft"); break;
             case OfferKind.Gold: b.GoldGained += 25; break;
         }
-        if (o.Blessing) { if (b.PendingBlessings.Count > 0) b.PendingBlessings.RemoveAt(0); }
+        if (o.Great) b.GreatOwed = System.Math.Max(0, b.GreatOwed - 1);
+        else if (o.Blessing) { if (b.PendingBlessings.Count > 0) b.PendingBlessings.RemoveAt(0); }
         else b.PendingLevels = System.Math.Max(0, b.PendingLevels - 1);
     }
 }

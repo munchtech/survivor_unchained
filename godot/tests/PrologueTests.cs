@@ -19,7 +19,7 @@ public class PrologueTests
         var j = Journey.Begin(new CreationChoice
         {
             Name = "Ashe", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0],
-            Ability = a.Abilities[0], StartBoon = Content.Boons.StartBlessings[0],
+            Ability = a.Abilities[0],
         }, 42);
         var meta = ZoneMeta.Load("lowford");
         var host = new FakeHost(j, meta);

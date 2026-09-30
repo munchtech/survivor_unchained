@@ -170,8 +170,9 @@ public partial class Game
         offers = list;
         var tip = draftTip;
         draftTip = null;
-        hud.Draft(new DraftView(LevelUp.DraftLevel(b), LevelUp.BlessingNext(b), list, b.Rerolls, b.Banishes, b.PendingLevels + b.PendingBlessings.Count - 1, tip,
-            LevelUp.BuildTags(b), Pick, Reroll, Banish));
+        string? great = LevelUp.GreatNext(b) ? b.Time < 60 ? "The arena begins: anyone can take any of them" : "The fifteenth minute: a second, or the first deepened" : null;
+        hud.Draft(new DraftView(LevelUp.DraftLevel(b), LevelUp.BlessingNext(b), list, b.Rerolls, b.Banishes, LevelUp.Queued(b), tip,
+            LevelUp.BuildTags(b), Pick, Reroll, Banish, great));
     }
 
     public void Pick(int i)

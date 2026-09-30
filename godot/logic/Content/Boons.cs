@@ -14,11 +14,13 @@ namespace SurvivorUnchained.Content;
  *
  * BLESSINGS change how the fight works: each adds a rule to the machine
  * (marks, companions, chain reactions, bargains). They are milestones, not
- * picks: one chosen at creation and given at the start of every expedition,
- * and another at each of the Milestones (early, then further apart). Some
- * wait until the build has something for them to act on. The blessings a
- * survivor can start with deepen: a milestone may offer a second or third
- * rank of one held instead of a new one (Deeper: what each rank adds).
+ * picks. The GREAT blessings are an arena's own: one chosen as it begins and
+ * another at its fifteenth minute, from all of them, whoever the survivor is
+ * (anyone can do anything in the ember). Each works from the first second,
+ * whatever the build, and deepens: the second may be a rank of the first
+ * (Deeper: what each rank adds). The rest come at the Milestones (early,
+ * then further apart), and wait until the build has something for them to
+ * act on; a milestone may deepen a great blessing held, never give a new one.
  *
  * Every entry says what it touches with Tags, so the level-up draft can lean
  * toward what the build is already doing without ever forcing it. */
@@ -61,9 +63,9 @@ public static class Boons
         return o.ToArray();
     }
 
-    /// <summary>The blessings a survivor can start with (chosen at creation):
-    /// each works from the first minute, whatever the build, and deepens.</summary>
-    public static readonly string[] StartBlessings =
+    /// <summary>The great blessings, an arena's first choice and its fifteenth
+    /// minute's: each works from the first second, whatever the build, and deepens.</summary>
+    public static readonly string[] Great =
     [
         "hunters_mark", "momentum", "bloodthirst", "spirit_companion", "arcane_overflow", "glass_cannon",
         "duelists_grace", "restless_hands", "cinderwake", "iron_vow", "ember_tithe", "stormborn",
@@ -71,6 +73,7 @@ public static class Boons
     /// <summary>Passive skills a survivor can hold at once.</summary>
     public const int MaxPassives = 6;
     public static bool IsMilestone(int level) => Array.BinarySearch(Milestones, level) >= 0;
+    public static bool IsGreat(string id) => Array.IndexOf(Great, id) >= 0;
 
     static StatMod Inc(string stat, double v, string source) => new(stat, ModKind.Inc, v, source);
     static StatMod Flat(string stat, double v, string source) => new(stat, ModKind.Flat, v, source);

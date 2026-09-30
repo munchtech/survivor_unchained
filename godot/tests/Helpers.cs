@@ -31,13 +31,13 @@ static class H
     public static List<Change> Es(string lit) => Json.Parse<List<Change>>(Js(lit));
     public static DailyRule Rule(string lit) => Json.Parse<DailyRule>(Js(lit));
 
-    public static CharacterData Survivor(string bg = "hunter", string name = "Ashe", long seed = 42, string startBoon = "might")
+    public static CharacterData Survivor(string bg = "hunter", string name = "Ashe", long seed = 42)
     {
         var a = Callings.Archetype("warden");
         return Character.Create(new CreationChoice
         {
             Name = name, Archetype = "warden", Background = bg, Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0],
-            Ability = a.Abilities[0], StartBoon = startBoon,
+            Ability = a.Abilities[0],
         }, 1, seed);
     }
 

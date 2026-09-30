@@ -45,6 +45,8 @@ public sealed class Journey
     public Expedition? Expedition;
     /// <summary>The weapons the gear gives (they come and go with it).</summary>
     public HashSet<string> GearWeapons = new();
+    /// <summary>The fight running is an ember arena's.</summary>
+    public bool InArena;
 
     /// <summary>Notices for the interface (the game shows them).</summary>
     public Action<Toast> OnToast = _ => { };
@@ -146,10 +148,12 @@ public sealed class Journey
 
     /// <summary>A fight (or a walk) in a zone, from the survivor's gear and
     /// the ember they carry.</summary>
-    public Battle StartBattle(bool combat, CollisionWorld col, Func<double, double, double> heightAt, double x, double z, double facing, uint seed)
+    /// <param name="arena">An ember arena: the ember starts from nothing, whatever is carried.</param>
+    public Battle StartBattle(bool combat, CollisionWorld col, Func<double, double, double> heightAt, double x, double z, double facing, uint seed, bool arena = false)
     {
         var kit = Character.Kit(Ch);
-        var exp = combat ? Expedition : null;
+        InArena = arena;
+        var exp = combat && !arena ? Expedition : null;
         var b = new Battle(new BattleSetup
         {
             Seed = seed, Combat = combat, Collision = col, HeightAt = heightAt, Stats = kit.Stats,
@@ -167,11 +171,7 @@ public sealed class Journey
         b.Player.Revives = kit.Revives;
         if (exp != null) Restore(b, exp, GearWeapons);
         else if (combat)
-        {
-            // A fresh expedition starts with the blessing chosen at creation.
-            if (Ch.StartBoon != "") b.AddBoon(Ch.StartBoon);
             for (int i = 0; i < kit.StartLevels; i++) b.GainEmber(b.EmberNext);
-        }
         return b;
     }
 
@@ -194,7 +194,9 @@ public sealed class Journey
     public void Capture(Battle? b)
     {
         BankArt(b);
-        if (b == null || !b.Combat) return;
+        BankGold(b);
+        // What is built in an arena stays there.
+        if (b == null || !b.Combat || InArena) return;
         Expedition = new Expedition
         {
             Level = b.EmberLevel, Xp = b.EmberXp,
@@ -210,14 +212,16 @@ public sealed class Journey
         if (!byPlayer) return;
         Ch.Stats.Kills++;
         if (e.LastWeapon != null) Ch.Mastery[e.LastWeapon] = Ch.Mastery.GetValueOrDefault(e.LastWeapon) + 1;
+        World.Bestiary[e.Def.Id] = World.Bestiary.GetValueOrDefault(e.Def.Id) + 1;
+        if (e.Boss) Ch.Stats.BossesSlain++;
+        // An arena pays its experience at the end, for the time survived.
+        if (InArena) return;
         int levels = Character.GainXp(Ch, e.Def.Xp * (e.Boss ? 3 : e.Elite ? 2 : 1));
         if (levels > 0)
         {
             OnAnnounce(new Announcement($"Level {Ch.Level}", Ch.TraitPicks > 0 ? "A new trait can be chosen (C)" : "Attribute points to spend (C)", "boon", 3.2, "You grow stronger"));
             OnTouch();
         }
-        World.Bestiary[e.Def.Id] = World.Bestiary.GetValueOrDefault(e.Def.Id) + 1;
-        if (e.Boss) Ch.Stats.BossesSlain++;
     }
 
     /// <summary>A pickup reached the survivor: gear, materials and quest
@@ -421,6 +425,17 @@ public sealed class Journey
     }
 
     /* -------------------------------------------------------------- arts -- */
+
+    /// <summary>Gold picked up in the fight, into the purse as it comes.</summary>
+    public void BankGold(Battle? b)
+    {
+        if (b == null) return;
+        double d = b.GoldGained - b.GoldBanked;
+        if (d <= 0) return;
+        b.GoldBanked = b.GoldGained;
+        Ch.Gold += d;
+        Ch.Stats.GoldEarned += d;
+    }
 
     /// <summary>What the art in hand grew by in the fight, written to the
     /// survivor; a new rank strengthens it at once and may open a facet.</summary>

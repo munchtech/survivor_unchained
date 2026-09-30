@@ -27,6 +27,9 @@ public sealed class MapSpec
     public List<string> Oaths = new();
     public bool Night = true;
     public string Name = "";
+    /// <summary>An arena rather than a map: one great clearing ringed by
+    /// forest, cover scattered through it, for a survivors fight.</summary>
+    public bool Arena;
 }
 
 public enum AreaKind { Start, Clearing, Altar, Boss }
@@ -84,6 +87,8 @@ public static class MapGen
     const int Grid = 4;
     const int SplatRes = 512;
     const double Margin = 16;
+    /// <summary>An arena's clearing, metres from its middle to its edge (give or take the edge's wander).</summary>
+    public const double ArenaR = 84;
 
     public static MapBuild Generate(MapSpec spec)
     {
@@ -93,10 +98,12 @@ public static class MapGen
 
         // ---------------------------------------------------------- layout --
         // A snake through a grid of cells: the way crosses the whole square
-        // and back, and back again, so the map is long for its size.
-        var order = Snake(rng);
+        // and back, and back again, so the map is long for its size. An
+        // arena is one clearing, as wide as the square allows.
+        var order = spec.Arena ? new List<(int, int)>() : Snake(rng);
         double cell = (Size - Margin * 2) / Grid;
         var areas = new List<Area>();
+        if (spec.Arena) areas.Add(new Area(0, AreaKind.Start, 0, 0, ArenaR));
         for (int k = 0; k < order.Count; k++)
         {
             var (ci, cj) = order[k];
@@ -108,7 +115,7 @@ public static class MapGen
         }
         // Three of the clearings between hold altars: early, midway, late.
         int na = areas.Count;
-        foreach (int k in new[] { rng.Int((int)(na * 0.15), (int)(na * 0.25)), rng.Int((int)(na * 0.4), (int)(na * 0.5)), rng.Int((int)(na * 0.65), (int)(na * 0.75)) })
+        if (!spec.Arena) foreach (int k in new[] { rng.Int((int)(na * 0.15), (int)(na * 0.25)), rng.Int((int)(na * 0.4), (int)(na * 0.5)), rng.Int((int)(na * 0.65), (int)(na * 0.75)) })
             areas[k] = areas[k] with { Kind = AreaKind.Altar, R = Math.Max(areas[k].R, 17) };
 
         // The ways between: a curve from each clearing to the next, bowed to one side.
@@ -279,6 +286,48 @@ public static class MapGen
         // A few boulders to fight round in the bigger clearings (not the start).
         var colliders = new List<ColliderDef>();
         int cid = 1;
+        if (spec.Arena)
+        {
+            // Islands of cover across the arena: stands of trees, outcrops,
+            // fallen stones. Places to be cornered by, and to lose a crowd round.
+            var islands = new List<(double X, double Z)>();
+            for (int t = 0; t < 400 && islands.Count < 18; t++)
+            {
+                double ang = rng.Range(0, Math.PI * 2), rr = rng.Range(16, ArenaR - 14);
+                double x = Math.Cos(ang) * rr, z = Math.Sin(ang) * rr;
+                if (islands.Any(o => MathX.Dist(o.X, o.Z, x, z) < 19)) continue;
+                islands.Add((x, z));
+                int kind = rng.Int(0, 2);
+                if (kind == 0)
+                {
+                    // A stand of trees, undergrowth between.
+                    for (int n = rng.Int(3, 5); n > 0; n--)
+                    {
+                        double tx = x + rng.Range(-3, 3), tz = z + rng.Range(-3, 3);
+                        Put(rng.Pick(trees), tx, tz, 0.9);
+                        colliders.Add(new ColliderDef { Id = cid++, Kind = ColliderKind.Circle, X = tx, Z = tz, R = 0.7, Hw = 0.7, Hd = 0.7 });
+                    }
+                    for (int n = 0; n < 5; n++) Put(rng.Pick(new[] { "fern", "bush", "bramble" }), x + rng.Range(-4, 4), z + rng.Range(-4, 4));
+                }
+                else
+                {
+                    // An outcrop: a boulder or two and a tooth of rock.
+                    for (int n = rng.Int(1, 2); n > 0; n--)
+                    {
+                        double bx = x + rng.Range(-2, 2), bz = z + rng.Range(-2, 2), sc = rng.Range(1.0, 1.5);
+                        Put("boulder", bx, bz, sc, 0.2);
+                        colliders.Add(new ColliderDef { Id = cid++, Kind = ColliderKind.Circle, X = bx, Z = bz, R = 1.1 * sc, Hw = 1.1 * sc, Hd = 1.1 * sc });
+                    }
+                    if (kind == 2)
+                    {
+                        double cx = x + rng.Range(-2.5, 2.5), cz = z + rng.Range(-2.5, 2.5);
+                        Put("cliff", cx, cz, 0.4, 0.4);
+                        colliders.Add(new ColliderDef { Id = cid++, Kind = ColliderKind.Circle, X = cx, Z = cz, R = 1.0, Hw = 1.0, Hd = 1.0 });
+                    }
+                    for (int n = 0; n < 3; n++) Put(rng.Pick(new[] { "rock", "fern", "mushroom" }), x + rng.Range(-3.5, 3.5), z + rng.Range(-3.5, 3.5));
+                }
+            }
+        }
         foreach (var a in areas.Where(a => a.Kind is AreaKind.Clearing))
             for (int n = rng.Int(1, 3); n > 0; n--)
             {
@@ -298,9 +347,9 @@ public static class MapGen
             lights.Add(new LightDef { X = x, Y = y + 1.1, Z = z, Color = color, Intensity = intensity, Distance = intensity, Flicker = 0.28, On = true });
             fires.Add(new FireDef { X = x, Y = y + 0.1, Z = z, Size = size, Light = lights.Count - 1 });
         }
-        // Where you come in: a fire someone left.
+        // Where you come in: a fire someone left (in an arena, the fires are round the edge).
         var st = areas[0];
-        Fire(st.X + 2.5, st.Z + 1.5, 0.8, 12);
+        if (!spec.Arena) Fire(st.X + 2.5, st.Z + 1.5, 0.8, 12);
         foreach (var a in areas.Where(a => a.Kind == AreaKind.Altar))
         {
             // A ring of standing stones round a cold hearth (lit when the altar is woken).
@@ -315,13 +364,15 @@ public static class MapGen
             lights[^1].On = false;
         }
         var boss = areas[^1];
-        for (int n = 0; n < 8; n++)
+        // Standing stones round the last clearing (an arena's edge), fires between.
+        int stones = spec.Arena ? 12 : 8;
+        for (int n = 0; n < stones; n++)
         {
-            double ang = n * Math.PI / 4;
+            double ang = n * Math.PI * 2 / stones;
             double x = boss.X + Math.Cos(ang) * (boss.R - 2.5), z = boss.Z + Math.Sin(ang) * (boss.R - 2.5);
             Put("cliff", x, z, 0.45, 0.5);
             colliders.Add(new ColliderDef { Id = cid++, Kind = ColliderKind.Circle, X = x, Z = z, R = 1.1, Hw = 1.1, Hd = 1.1 });
-            if (n % 2 == 0) Fire(boss.X + Math.Cos(ang + 0.39) * (boss.R - 4), boss.Z + Math.Sin(ang + 0.39) * (boss.R - 4), 0.7, 11, "#ff6a3a");
+            if (n % 2 == 0) Fire(boss.X + Math.Cos(ang + Math.PI / stones) * (boss.R - 4), boss.Z + Math.Sin(ang + Math.PI / stones) * (boss.R - 4), 0.7, 11, "#ff6a3a");
         }
 
         // ----------------------------------------------------- the walls --
@@ -368,9 +419,9 @@ public static class MapGen
         foreach (var a in areas) placesJson[$"area{a.Index}"] = new { x = a.X, z = a.Z };
         var meta = new ZoneMeta
         {
-            Id = "map", Size = Size, Res = Res, SplatRes = SplatRes, Leaves = spec.Theme == "autumn" ? 0.6 : 0.42, BlightGlow = "#9aff4a",
+            Id = spec.Arena ? "arena" : "map", Size = Size, Res = Res, SplatRes = SplatRes, Leaves = spec.Theme == "autumn" ? 0.6 : 0.42, BlightGlow = "#9aff4a",
             Bound = half - 4,
-            Start = new Start { X = st.X, Z = st.Z, Facing = Math.Atan2(areas[1].X - st.X, areas[1].Z - st.Z) },
+            Start = new Start { X = st.X, Z = st.Z, Facing = areas.Count > 1 ? Math.Atan2(areas[1].X - st.X, areas[1].Z - st.Z) : 0 },
             Atmosphere = spec.Night ? Atmospheres.Night : Atmospheres.Day,
             Lights = lights, Fires = fires, Colliders = colliders,
             Refs = JsonSerializer.SerializeToElement(new { }),

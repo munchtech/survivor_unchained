@@ -115,7 +115,7 @@ public class OathTests
         var j = Play.Journey.Begin(new CreationChoice
         {
             Name = "Ashe", Archetype = "warden", Background = "hunter", Palette = Callings.Archetype("warden").Palettes[0].Id,
-            WeaponItem = Callings.Archetype("warden").Weapons[0], Ability = "shield_bash", StartBoon = Boons.StartBlessings[0],
+            WeaponItem = Callings.Archetype("warden").Weapons[0], Ability = "shield_bash",
         }, 7);
         var ring = Inventory.Make(j.Ch, "silver_ring", 1, 3, affixes: [new AffixRoll { Id = "of_the_gyre", Tier = 2 }]);
         Assert.True(Inventory.AddToPack(j.Ch, ring));
@@ -134,20 +134,20 @@ public class OathTests
     }
 
     [Fact]
-    public void A_map_sworn_under_winter_puts_its_rule_on_the_fight()
+    public void An_arena_sworn_under_winter_puts_its_rule_on_the_fight()
     {
-        var offer = new MapOffer(new MapSpec { Seed = 42, Tier = 1, Name = "The Test Wood", Oaths = ["winter", "moonless"] }, "pack");
-        var map = MapGen.Generate(offer.Spec);
+        var spec = ArenaTests.Spec("pack", false, "winter", "moonless");
+        var map = MapGen.Generate(spec.Map);
         var j = Play.Journey.Begin(new CreationChoice
         {
             Name = "Ashe", Archetype = "warden", Background = "hunter", Palette = Callings.Archetype("warden").Palettes[0].Id,
-            WeaponItem = Callings.Archetype("warden").Weapons[0], Ability = "shield_bash", StartBoon = Boons.StartBlessings[0],
+            WeaponItem = Callings.Archetype("warden").Weapons[0], Ability = "shield_bash",
         }, 42);
-        MapOffers.Remember(j.World, offer);
+        SurvivorUnchained.Arena.Arenas.Begin(j.World, spec);
         var host = new FakeHost(j, map.Meta, map.Ground);
-        var zone = new Play.Zones.MapRun(host, map, "pack");
-        var at = zone.ArrivalFrom("waystation");
-        var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, 11);
+        var zone = new Play.Zones.ArenaRun(host, map, spec);
+        var at = zone.ArrivalFrom(null);
+        var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, 11, arena: true);
         zone.Begin(b);
         Assert.True(b.Rules.HitChill);
         Assert.Equal(0.5, b.Rules.Light);

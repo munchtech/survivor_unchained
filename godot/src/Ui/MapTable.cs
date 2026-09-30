@@ -6,8 +6,9 @@ using SurvivorUnchained.Play;
 namespace SurvivorUnchained.Ui;
 
 /// <summary>The Wayfinder's table by the east gate: today's maps, three of
-/// them, each a place, a people, a tier and the oaths it is sworn under.
-/// Choose one and set out (Maps/MapOffers.cs).</summary>
+/// them, each an ember arena (a place, a people, a tier and the oaths it is
+/// sworn under), and the story's fights that were lost, to be taken again
+/// (Maps/MapOffers.cs, Arena/Arena.cs).</summary>
 public partial class MapTableScreen : Overlay
 {
     public override string Kind => "maps";
@@ -17,9 +18,24 @@ public partial class MapTableScreen : Overlay
     protected override void Build()
     {
         var w = G.Journey.World;
-        int best = (int)System.Math.Max(1, w.Fact("map.best").Number);
-        var offers = MapOffers.Today(w.Day, best, (int)w.Fact("map.drawn").Number);
-        var v = Frame("The Wayfinder's Table", new Vector2(1180, 700), "Esc", $"Maps to places the road forgets. You have taken tier {best}. A map's spoils lean toward what answers it.");
+        int won = (int)w.Fact("arena.best").Number;
+        var offers = MapOffers.Today(w.Day, System.Math.Max(1, won), (int)w.Fact("map.drawn").Number);
+        var v = Frame("The Wayfinder's Table", new Vector2(1180, w.Rematches.Count > 0 ? 820 : 700), "Esc",
+            $"Maps to places the road forgets: each an ember arena, half an hour and what rules it at the end. {(won > 0 ? $"You have won tier {won}." : "You have won none yet.")} Spoils lean toward what answers the map.");
+        if (w.Rematches.Count > 0)
+        {
+            var again = Style.V(6, Style.SubLabel("Fights to take again"));
+            foreach (var r in w.Rematches)
+            {
+                var spec = r;
+                var line = Style.H(12,
+                    Style.V(0, Style.Label(r.Name, Style.UiBold, 17, Style.GoldHi), Style.Label(r.Sub != "" ? r.Sub : $"Tier {r.Tier}", Style.TextItalic, 14, Style.InkDim)),
+                    new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill },
+                    Style.Button("Take it again", () => G.Rematch(spec), false, true));
+                again.AddChild(line);
+            }
+            v.AddChild(Style.Panel(Style.Plate(12), again));
+        }
         var row = Style.H(16);
         foreach (var o in offers)
         {
@@ -43,7 +59,8 @@ public partial class MapTableScreen : Overlay
             }
             card.AddChild(Style.Gap(6));
             var pick = o;
-            card.AddChild(Style.Button("Set out", () => G.SetOut(pick), true));
+            card.AddChild(Style.Label("Half an hour; the ember from nothing", Style.TextItalic, 13, Style.InkDim, true));
+            card.AddChild(Style.Button("Enter the arena", () => G.SetOut(pick), true));
             var panel = Style.Panel(Style.Plate(16), card);
             panel.CustomMinimumSize = new Vector2(360, 480);
             row.AddChild(panel);

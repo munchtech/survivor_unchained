@@ -34,10 +34,12 @@ Options go after `--`:
 
 - `--new`: straight to making a survivor;
 - `--quick warden|reaver|arcanist|stalker`: a new survivor of that calling,
-  no title (with `--name`, `--bg`, `--weapon`, `--blessing`);
-- `--zone lowford|waystation|verge|map`: where to start (past the prologue,
+  no title (with `--name`, `--bg`, `--weapon`);
+- `--zone lowford|waystation|verge|arena`: where to start (past the prologue,
   which then counts as done), `--time day|night|dusk|dawn`, `--at X,Z`;
-  `map` goes straight onto one of today's maps (`--offer 0|1|2`);
+  `arena` goes straight into one of the Wayfinder's arenas (`--offer 0|1|2`,
+  `--people pack|dead|lamplings|kerchiefs`, `--oaths winter,iron`,
+  `--tier T`), and back to the table after;
 - `--art ID[:FACET+FACET]`: that art in hand (learned; with facets, at full
   rank and with them chosen), `--cast T`: used once, T seconds in (for a
   picture of it);
@@ -48,11 +50,13 @@ Options go after `--`:
   `--open talk:ID`, `--open draft`: a screen, a conversation or the level-up
   draft opened a moment in (`--every T` between several); `--bare` hides the
   world, for quick pictures of the interface;
-- `MAP_PLAY=1 dotnet test tests/Tests.csproj --filter MapPlay` (with
-  `--logger "console;verbosity=detailed"`): maps played through headless by
-  a plain-minded bot, with how long each took, what died and what hurt
-  (`MAP_TRACE=1` for where it was every ten seconds); for tuning density,
-  length and danger;
+- `ARENA_PLAY=1 dotnet test tests/Tests.csproj --filter ArenaPlay` (with
+  `--logger "console;verbosity=detailed"`): arenas played headless by a
+  plain-minded bot that stays past the win (up to an hour), with when it
+  won, how long it lived, the ember by the minute, the build it ended with
+  and what hurt it (`ARENA_TRACE=1` for a line a minute,
+  `ARENA_CASE=seed,calling,tier,people` for one case); for tuning the horde
+  and how often the cards come;
 - `--shot NAME --seconds S [--every T --count N]`: screenshots
   (`src/Shots.cs`);
 - `--log S`: a line every S seconds (the fight, the zone, the sound);
@@ -79,9 +83,23 @@ of moving anyone can learn, each a different way to live (a sprint, mirror
 images the horde turns on, a charge behind a barrier, a wraith's walk that
 drains what it passes through, a trail of fire, a chain that hauls you in,
 an echo to step back into, a vault that leaves snares, a crashing leap, a
-blink). A survivor knows four at the start; manuals found in maps teach the
-rest (`logic/Rpg/ArtBook.cs`). Arts rank up with use; ranks 2 and 4 open a
+blink). A survivor knows four at the start; manuals (an arena's boss drops
+one) teach the rest (`logic/Rpg/ArtBook.cs`). Arts rank up with use; ranks 2 and 4 open a
 facet each, chosen from four per art.
+
+The ember arenas (`logic/Arena/Arena.cs`, run in `logic/Play/Zones/
+ArenaRun.cs`, the ground from `logic/Maps/MapGen.cs`): a great clearing with
+cover, seen from higher (64°) and further out (31 m). The horde is kept at a
+number that climbs by the minute, a people's kinds joining as it goes (a
+few throwers behind the crowd, never a battery); every minute or so an
+event (a closing ring, champions with chests, a stampede, a swarm);
+heralds at ten and twenty minutes; the boss at thirty. Killing it wins
+(the story is told at once) and opens the way out; after that the arena
+hardens by the minute, a herald every five. A great blessing is drafted
+as it begins and at the fifteenth minute. The oaths are its rules (chill,
+poison, burning dead, iron skin, a shorter light ...) and its spoils lean
+toward gear that answers them. Nothing is saved in an arena: the journey
+is saved on the way in, and quitting is as if it was never begun.
 
 Headless runs use Mesa's software Vulkan: seconds per frame, so keep shots
 short; on a real GPU it runs in real time.
@@ -100,8 +118,10 @@ game at the same place and hour; needs the dev server), then
   creatures' minds, weapons, collision, stats, the level-up draft), `Rpg`
   (the character, items, callings), `Content` (weapons, blessings,
   creatures), `World` (the world's state and memory, rules, dialogue, quests,
-  saves, the zones' exported data) and `Play` (the journey, the zones'
-  runtimes: the prologue, the Waystation and its townsfolk, the Verge).
+  saves, the zones' exported data), `Maps` (arena ground made from a seed,
+  the Wayfinder's offers, peoples and oaths), `Arena` (an arena's spec, its
+  outcome, rematches) and `Play` (the journey, the zones' runtimes: the
+  prologue, the Waystation and its townsfolk, the Verge, an arena).
   Zone runtimes reach the game through `IZoneHost` and the view through
   `IZoneLook`, so the tests run them end to end with fakes (`tests/FakeHost.cs`).
 - `src/Game/`: `Game.cs` (the host: zones, travel, saves, the prompt, the

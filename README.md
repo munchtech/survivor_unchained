@@ -34,11 +34,25 @@ Skills (weapons) fire on their own. You choose where to stand, when to
 dash, which skill to take or rank up each time the ember rises (anyone can
 take any skill; a calling leans a little toward its own style), what each
 skill evolves into at rank 8, and, out of combat, what to say and to whom.
-Blessings are milestones: one chosen at creation (twelve to choose from)
-and given at the start of every expedition, then one more at ember levels
-4, 10, 18, 28, 40 and on, further apart as it goes, on top of that level's
-skill. A milestone can deepen a blessing you hold instead: every starting
-blessing has three ranks, each adding something of its own.
+The game has two halves. The story is walked and talked through, and its
+fights teach the survivor (character levels). At its turns, and where
+danger is marked, the survivor is pulled into an **ember arena**: seen from
+higher and further out, the ember starting again from nothing, a horde
+that thickens by the minute, cards coming often. At the half hour what
+rules the horde comes; kill it and the fight is won. The arena goes on
+after that, harder by the minute, for as long as you care to see how far
+your build goes: leave by the way out that opens where the boss fell, or
+fall (fallen after the win, it is still won). The cards stay in the arena;
+what comes out is experience for the time survived, gold and gear, the
+skills discovered (to be learned in the world) and how the story goes on.
+Lose a story fight and the story goes on without the win; the Wayfinder's
+table lets you take it again, and offers arenas of its own.
+
+Blessings are the arenas' too. A great blessing is chosen as an arena
+begins and another at its fifteenth minute, from all twelve, whoever the
+survivor is; each has three ranks, and the second may deepen the first.
+Build-shaped blessings come at ember levels 4, 10, 18, 28, 40 and on, on top
+of that level's skill (a milestone may deepen a great blessing held).
 
 ## On the desktop
 
@@ -63,7 +77,7 @@ Electron needs `--no-sandbox`.
 
 - **Character creation**: name, look (the calling's colours repainting
   armour and cloth, a dyed cloak or none, skin, hair, headgear), archetype
-  (Warden, Reaver, Arcanist, Stalker), starting weapon, ability, a boon, and
+  (Warden, Reaver, Arcanist, Stalker), starting weapon, the art in hand, and
   a background (hunter, scholar, devout or outcast). Backgrounds are
   knowledge: they open dialogue options, routes and readings of the world
   that other survivors never see.

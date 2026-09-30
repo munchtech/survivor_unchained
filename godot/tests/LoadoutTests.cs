@@ -20,7 +20,7 @@ public class LoadoutTests
             var ch = Character.Create(new CreationChoice
             {
                 Name = "Ashe", Archetype = archetype, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = weapon,
-                Ability = a.Abilities[0], StartBoon = Content.Boons.StartBlessings[0],
+                Ability = a.Abilities[0],
             }, 1, 7);
             var lo = Loadouts.Of(ch);
             Assert.NotEmpty(lo.Person.Outfit!);

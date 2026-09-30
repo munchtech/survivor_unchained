@@ -35,7 +35,7 @@ public class ArtTests
         return new CreationChoice
         {
             Name = "Ashe", Archetype = calling, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0],
-            Ability = a.Abilities[0], StartBoon = Boons.StartBlessings[0],
+            Ability = a.Abilities[0],
         };
     }
 

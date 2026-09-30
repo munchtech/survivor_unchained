@@ -30,7 +30,7 @@ public class BlessingTests
     [Fact]
     public void Every_starting_blessing_deepens_twice_and_says_how()
     {
-        foreach (var id in Boons.StartBlessings)
+        foreach (var id in Boons.Great)
         {
             var d = Boons.All[id];
             Assert.Equal(3, d.Max);
@@ -131,5 +131,18 @@ public class BlessingTests
         r.AttackT = 99;
         Tick(b, 1.2);
         Assert.True(r.Hp < r.MaxHp);
+    }
+
+    [Fact]
+    public void A_milestone_with_nothing_left_to_give_is_a_respite_not_an_empty_draft()
+    {
+        var b = BattleTests.Arena(8);
+        foreach (var id in Boons.Order) if (Boons.All[id].Kind == BoonKind.Blessing && !Boons.IsGreat(id)) b.BannedCards.Add(id);
+        b.PendingBlessings.Add(4);
+        var offers = LevelUp.Draft(b, 3);
+        Assert.NotEmpty(offers);
+        Assert.All(offers, o => Assert.True(o.Blessing));
+        LevelUp.Choose(b, offers[0]);
+        Assert.Empty(b.PendingBlessings);
     }
 }

@@ -20,7 +20,7 @@ public class JourneyTests
         return new CreationChoice
         {
             Name = "Ashe", Archetype = "warden", Background = bg, Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0],
-            Ability = a.Abilities[0], StartBoon = Content.Boons.StartBlessings[0],
+            Ability = a.Abilities[0],
         };
     }
 
@@ -68,7 +68,8 @@ public class JourneyTests
     {
         var (j, _) = Make();
         var b = Fight(j);
-        Assert.Contains(j.Ch.StartBoon, b.Boons.Keys);
+        // Blessings are the arenas' own: nothing is given for the road.
+        Assert.DoesNotContain(b.Boons.Keys, Content.Boons.IsGreat);
         for (int i = 0; i < 4; i++) b.GainEmber(b.EmberNext);
         var extra = Content.Weapons.All.Keys.First(id => !b.Weapons.Any(w => w.Id == id));
         b.AddWeapon(extra, 2);

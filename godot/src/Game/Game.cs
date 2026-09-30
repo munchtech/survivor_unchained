@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
+using SurvivorUnchained.Arena;
 using SurvivorUnchained.Play.Zones;
 using SurvivorUnchained.Rpg;
 using SurvivorUnchained.Sim;
@@ -25,7 +26,7 @@ namespace SurvivorUnchained.Play;
 /// talk to and the frame; GameFront.cs the title and creation, GameMenus.cs
 /// the screens, the draft and conversations.
 ///
-/// Options (after `--`): --quick CALLING [--zone ID --time T --at X,Z]
+/// Options (after `--`): --quick CALLING [--zone ID --time T --at X,Z] (--zone arena: one of the Wayfinder's)
 /// starts a stock survivor straight away; --continue the last journey;
 /// --auto a crude player (Autopilot.cs); --log S a line every S seconds.
 /// </summary>
@@ -84,6 +85,7 @@ public partial class Game : Node, IZoneHost
         cam = new FollowCamera(camera);
         // --cam D: the camera this far off (closer pictures of the crowd).
         if (Args.Has("cam")) cam.Distance = cam.TargetDistance = (float)Args.Num("cam", 23);
+        camHome = (cam.Pitch, cam.TargetDistance);
         air = new Atmosphere();
         AddChild(air);
         hud = new GameHud();
@@ -119,7 +121,7 @@ public partial class Game : Node, IZoneHost
         Begin(new CreationChoice
         {
             Name = Args.Get("name") ?? "Ashe", Archetype = arch, Background = Args.Get("bg") ?? "hunter", Palette = a.Palettes[0].Id,
-            WeaponItem = Args.Get("weapon") ?? a.Weapons[0], Ability = a.Abilities[0], StartBoon = Args.Get("blessing") ?? Content.Boons.StartBlessings[0],
+            WeaponItem = Args.Get("weapon") ?? a.Weapons[0], Ability = a.Abilities[0],
             // --sex female [--hair STYLE --figure F --skin ID]: a woman survivor.
             Sex = Args.Get("sex") == "female" ? Sex.Female : null, HairStyle = Args.Get("hair"), Skin = Args.Get("skin"),
             Figure = Args.Has("figure") ? Args.Num("figure", 1) : null,
@@ -144,9 +146,17 @@ public partial class Game : Node, IZoneHost
             var p = s.Split(',');
             at = new Arrival(double.Parse(p[0], System.Globalization.CultureInfo.InvariantCulture), double.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture));
         }
-        // --zone map [--offer 0|1|2]: straight onto one of today's maps.
-        if (z == "map")
-            SurvivorUnchained.Maps.MapOffers.Remember(World, SurvivorUnchained.Maps.MapOffers.Today(World.Day, 1, 0)[(int)Args.Num("offer", 0)]);
+        // --zone arena [--offer 0|1|2 --people ID --oaths A,B --tier T]: straight into one of the
+        // Wayfinder's arenas (and back to the table after).
+        if (z == "arena")
+        {
+            var o = SurvivorUnchained.Maps.MapOffers.Today(World.Day, 1, 0)[(int)Args.Num("offer", 0)];
+            if (Args.Get("people") is string pe) o = o with { People = pe };
+            if (Args.Get("oaths") is string oa) o.Spec.Oaths = oa.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+            if (Args.Has("tier")) o.Spec.Tier = (int)Args.Num("tier", 1);
+            var at0 = Waystation.AtTable;
+            Arenas.Begin(World, Arenas.FromTable(o, "waystation", at0.X, at0.Z, at0.Facing));
+        }
         if (z != "lowford")
         {
             // Skipping ahead: the prologue counts as done.
@@ -204,16 +214,53 @@ public partial class Game : Node, IZoneHost
     /* ------------------------------------------------------------ zones -- */
 
     SurvivorUnchained.Maps.MapBuild? currentMap;
+    (float Pitch, float Distance) camHome;
 
-    /// <summary>Out through the east gate to a map from the Wayfinder's table.</summary>
+    /// <summary>One of the Wayfinder's maps taken: its arena, and back to the table after.</summary>
     public void SetOut(SurvivorUnchained.Maps.MapOffer o)
     {
-        SurvivorUnchained.Maps.MapOffers.Remember(World, o);
         // The table draws fresh maps once one is taken.
         World.Facts["map.drawn"] = World.Fact("map.drawn").Number + 1;
+        var p = Battle?.Player;
+        EnterArena(Arenas.FromTable(o, zone?.Id ?? "waystation", p?.X ?? 0, p?.Z ?? 0, p?.Facing ?? 0));
+    }
+
+    /// <summary>A lost story fight, taken again from the table.</summary>
+    public void Rematch(ArenaSpec spec)
+    {
+        var p = Battle?.Player;
+        EnterArena(Arenas.Again(spec, zone?.Id ?? "waystation", p?.X ?? 0, p?.Z ?? 0, p?.Facing ?? 0));
+    }
+
+    /// <summary>Pulled into an ember arena. The journey is saved first, where
+    /// the survivor stands: an arena left by quitting is as if never begun.</summary>
+    public void EnterArena(ArenaSpec spec)
+    {
+        if (inTransit || zone is ArenaRun) return;
         CloseOverlay();
-        var people = SurvivorUnchained.Maps.MapOffers.People(o.People);
-        Travel("map", o.Spec.Name, $"Tier {o.Spec.Tier} · held by {people.Name}");
+        Save("arena");
+        Arenas.Begin(World, spec);
+        Travel("arena", spec.Name, spec.Sub != "" ? spec.Sub : "Ember arena");
+    }
+
+    /// <summary>The arena is over: what came of it, and then back to the story.</summary>
+    public void ArenaOver(ArenaResult result)
+    {
+        if (scene == null) return;
+        hudMode = null;
+        hud.Draft(null);
+        screens.Show(new ArenaResultScreen(this, result));
+        scene.SimPaused = true;
+        controls.Captured = true;
+        hud.Prompt(promptShown = null);
+    }
+
+    /// <summary>Out of the arena, to where the story left off.</summary>
+    public void LeaveArena(ArenaResult result)
+    {
+        var s = result.Spec;
+        screens.Close();
+        Travel(s.ReturnZone, null, null, new Arrival(s.ReturnX, s.ReturnZ, s.ReturnFacing));
     }
 
     ZoneRuntime Make(string id, ZoneMeta meta) => id switch
@@ -221,7 +268,7 @@ public partial class Game : Node, IZoneHost
         "lowford" => new Prologue(this, meta),
         "waystation" => new Waystation(this, meta),
         "verge" => new Verge(this, meta),
-        "map" => new MapRun(this, currentMap!, SurvivorUnchained.Maps.MapOffers.Current(World)!.People),
+        "arena" => new ArenaRun(this, currentMap!, World.Arena!),
         _ => throw new ArgumentException($"no zone {id}"),
     };
 
@@ -245,10 +292,10 @@ public partial class Game : Node, IZoneHost
     WorldScene Stage(string id)
     {
         LeaveZone();
-        // A map is made again from its seed each time it is entered.
+        // An arena is made from its seed each time it is entered.
         ZoneData data;
-        if (id == "map") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(SurvivorUnchained.Maps.MapOffers.Current(World)!.Spec); data = new ZoneData(currentMap); }
-        else data = new ZoneData(id);
+        if (id == "arena") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(World.Arena!.Map); data = new ZoneData(currentMap); }
+        else { currentMap = null; data = new ZoneData(id); }
         scene = new WorldScene(data, cam);
         AddChild(scene);
         scene.Move = () => auto?.Move ?? (controls.Captured ? (0, 0) : (controls.MoveX, controls.MoveZ));
@@ -262,6 +309,9 @@ public partial class Game : Node, IZoneHost
     public void EnterZone(string id, string? from, Arrival? at = null)
     {
         // The title's stage is the prologue's place: begun there, it is kept.
+        // An arena is only ever entered from the story: one left behind is over.
+        if (id != "arena") World.Arena = null;
+        else if (World.Arena == null) { id = "waystation"; at = Waystation.AtTable; }
         if (scene == null || scene.Data.Id != id || scene.Battle != null) Stage(id);
         else RemoveFigure();
         zone = Make(id, scene!.Data.Meta);
@@ -282,7 +332,11 @@ public partial class Game : Node, IZoneHost
         scene.Showcase = null;
         var start = at ?? z.ArrivalFrom(from);
         var meta = scene.Data.Meta;
-        var b = Journey.StartBattle(z.Combat, meta.Collision(), scene.HeightAt, start.X, start.Z, start.Facing, (uint)Rng.Next());
+        var b = Journey.StartBattle(z.Combat, meta.Collision(), scene.HeightAt, start.X, start.Z, start.Facing, (uint)Rng.Next(), arena: z is ArenaRun);
+        // An arena is seen from higher and further out: the whole of the fight.
+        var (pitch, dist) = z.Camera is var (cp, cd) ? (Mathf.DegToRad((float)cp), (float)cd) : camHome;
+        cam.Pitch = pitch;
+        cam.Distance = cam.TargetDistance = dist;
         scene.StartBattle(b, Loadouts.Of(Journey.Ch));
         HookBattle(b);
         z.Begin(b);
@@ -309,7 +363,9 @@ public partial class Game : Node, IZoneHost
     }
 
     /// <summary>Travel: fade, build the next place, arrive.</summary>
-    public void Travel(string to, string? caption = null, string? sub = null)
+    public void Travel(string to, string? caption = null, string? sub = null) => Travel(to, caption, sub, null);
+
+    void Travel(string to, string? caption, string? sub, Arrival? at)
     {
         // One journey, one new place, one save: a second press at the gate waits.
         if (inTransit) return;
@@ -321,7 +377,7 @@ public partial class Game : Node, IZoneHost
         hud.Fade(1, 0.8, caption, sub);
         Wait(0.85, () =>
         {
-            EnterZone(to, from);
+            EnterZone(to, from, at);
             Save("travel");
             Wait(caption != null ? 1.4 : 0.2, () =>
             {
@@ -409,7 +465,8 @@ public partial class Game : Node, IZoneHost
 
     public void Save(string reason)
     {
-        if (zone == null || Mode != "play") return;
+        // Nothing is kept of an arena until it is over (the save made on the way in stands).
+        if (zone == null || Mode != "play" || zone is ArenaRun) return;
         var b = Battle;
         if (b != null) Journey.Capture(b);
         var p = b?.Player;
@@ -446,6 +503,7 @@ public partial class Game : Node, IZoneHost
     void OnEvents(List<CombatEvent> evs)
     {
         Journey.BankArt(Battle);
+        Journey.BankGold(Battle);
         sound.Events(evs, Battle);
         zone?.Events(evs);
         foreach (var e in evs)

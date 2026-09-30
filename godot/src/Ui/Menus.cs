@@ -174,7 +174,9 @@ public partial class PauseScreen : Overlay
         }
         menu.Items.Clear();
         menu.Add("Resume", G.CloseOverlay);
-        menu.Add("Save", () => { G.Save("manual"); G.Toast(new Toast(ToastKind.World, "Journey saved")); });
+        // Nothing is kept of an arena until it is over; once won, it can be left.
+        if (G.Zone is Play.Zones.ArenaRun ar) { if (ar.Won) menu.Add("Leave the arena", () => { G.CloseOverlay(); ar.Leave(); }); }
+        else menu.Add("Save", () => { G.Save("manual"); G.Toast(new Toast(ToastKind.World, "Journey saved")); });
         menu.Add("Settings", () => { panel = "settings"; Refresh(); });
         menu.Add("Controls", () => { panel = "controls"; Refresh(); });
         menu.Add("Pack", () => G.Open("inventory"));

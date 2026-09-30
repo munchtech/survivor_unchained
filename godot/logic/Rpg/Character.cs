@@ -96,11 +96,13 @@ public sealed class CharacterData
     public double Gold;
     /// <summary>The art in hand (the web game's id, 'shield_bash').</summary>
     public string Ability = "";
+    /// <summary>Skills found in the arenas (taken as cards there): only these
+    /// can be learned for the world.</summary>
+    public List<string> Discovered = new();
     /// <summary>Every art the survivor knows (Rpg/ArtBook.cs).</summary>
     public List<string> Known = new();
     /// <summary>How far each art has come, and its facets.</summary>
     public Dictionary<string, ArtState> Arts = new();
-    public string StartBoon = "";
     public List<Condition> Conditions = new();
     /// <summary>Kills with each weapon, across every expedition.</summary>
     public Dictionary<string, int> Mastery = new();
@@ -114,7 +116,7 @@ public sealed class CharacterData
 
 public sealed class CreationChoice
 {
-    public string Name = "", Archetype = "warden", Background = "hunter", Palette = "", WeaponItem = "", Ability = "", StartBoon = "";
+    public string Name = "", Archetype = "warden", Background = "hunter", Palette = "", WeaponItem = "", Ability = "";
     public string? Model, Cloak, Skin, Hair, HairStyle;
     public bool? Headgear, Beard;
     public Sex? Sex;
@@ -312,7 +314,7 @@ public static class Character
             Archetype = c.Archetype, Background = c.Background, Model = c.Model ?? a.Model, Palette = c.Palette,
             Headgear = c.Headgear ?? true, Cloak = c.Cloak, Skin = c.Skin, Hair = c.Hair, Sex = c.Sex, HairStyle = c.HairStyle,
             Beard = c.Beard, Figure = c.Figure, Attributes = Callings.StartAttributes(c.Archetype),
-            Knowledge = new(bg.Knowledge), Gold = 25, Ability = c.Ability, StartBoon = c.StartBoon, CreatedDay = day,
+            Knowledge = new(bg.Knowledge), Gold = 25, Ability = c.Ability, CreatedDay = day,
         };
         ch.Known = ArtBook.Starting(c.Archetype);
         if (c.Ability != "" && !ch.Known.Contains(c.Ability)) ch.Known.Add(c.Ability);

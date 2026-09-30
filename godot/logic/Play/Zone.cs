@@ -93,6 +93,8 @@ public interface IZoneHost
     void AnnounceZone();
     /// <summary>A screen over the game ('maps': the Wayfinder's table).</summary>
     void Open(string overlay) { }
+    /// <summary>An ember arena is over: its reckoning on screen, then back to the story.</summary>
+    void ArenaOver(Arena.ArenaResult result) { }
 }
 
 /// <summary>The zone's look, as a runtime reaches into it.</summary>
@@ -260,6 +262,8 @@ public abstract class ZoneRuntime
     public abstract string Name { get; }
     public virtual string? Region => null;
     public abstract bool Combat { get; }
+    /// <summary>The camera's pitch (degrees) and distance here, if not the road's own.</summary>
+    public virtual (double Pitch, double Distance)? Camera => null;
     /// <summary>Every creature that can appear here (their looks are readied
     /// behind the fade, not the first time one walks on).</summary>
     public virtual IReadOnlyList<string> Creatures => Array.Empty<string>();
