@@ -49,7 +49,7 @@ public sealed class ArenaSpec
     /// <summary>A story fight (lost, it waits at the table to be taken again).</summary>
     public bool Story;
 
-    public MapSpec Map => new() { Seed = Seed, Tier = Tier, Theme = Theme, Night = Night, Oaths = Oaths, Name = Name, Arena = true };
+    public MapSpec Map => new() { Seed = Seed, Tier = Tier, Theme = Theme, Night = Night, Oaths = Oaths, Name = Name, Arena = true, People = People };
 }
 
 /// <summary>How an arena ended, and what came out of it.</summary>

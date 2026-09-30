@@ -79,6 +79,22 @@ public class MapGenTests
         Assert.True(cut <= open / 50, $"{cut} of {open} cut off");
     }
 
+    [Theory]
+    [InlineData("dead", "halloween/grave")]
+    [InlineData("kerchiefs", "props/")]
+    [InlineData("lamplings", "halloween/lantern_standing")]
+    public void An_arena_is_dressed_as_its_people_keep_it(string people, string piece)
+    {
+        var m = MapGen.Generate(new MapSpec { Seed = 5, Arena = true, People = people });
+        Assert.Contains(m.Pieces, p => p.Id.StartsWith(piece));
+        // Lit where they keep a light, and every piece stands on open ground inside.
+        if (people != "kerchiefs") Assert.True(m.Meta.Lights.Count > 12);
+        Assert.All(m.Pieces, p => Assert.True(Math.Sqrt(p.X * p.X + p.Z * p.Z) < MapGen.ArenaR));
+        // The Pack's wood has bare trees for cover, not full crowns.
+        var wood = MapGen.Generate(new MapSpec { Seed = 5, Arena = true, People = "pack" });
+        Assert.DoesNotContain(wood.Flora, f => f.Kind is "pine" or "broadleaf" or "autumn" && Math.Sqrt(f.X * f.X + f.Z * f.Z) < MapGen.ArenaR - 14);
+    }
+
     [Fact]
     public void The_same_seed_makes_the_same_map()
     {

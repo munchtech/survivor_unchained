@@ -76,12 +76,24 @@ public sealed class ArenaRun : ZoneRuntime
     }
 
     public override TimeOfDay TimeOf(WorldState w) => Spec.Night ? TimeOfDay.Night : TimeOfDay.Day;
+
+    /// <summary>An arena's night is brighter than the wood's: the fight is seen
+    /// from high up, and has to read out to the edges of the picture.</summary>
+    static readonly AtmospherePreset Night = Atmospheres.Night with
+    {
+        KeyIntensity = 3.2, HemiIntensity = 1.4, EnvIntensity = 0.85, FogDensity = 0.0045, Exposure = 1.62, RimStrength = 0.7,
+    };
+    public override AtmospherePreset AtmosphereFor(TimeOfDay t) => t == TimeOfDay.Night ? Night : base.AtmosphereFor(t);
     public override Arrival ArrivalFrom(string? from) => new(0, 0, 0);
 
     public override void Begin(Battle b)
     {
         base.Begin(b);
+        // The people's own cover: graves, walls, rubble, lanterns.
+        foreach (var pc in map.Pieces) G.Look.AddProp(pc.Id, pc.X, pc.Z, pc.Rot, pc.Scale);
         b.Rules = MapOffers.Rules(Spec.Map);
+        // The survivor's light reaches further here (the camera is further out); a moonless oath still halves it.
+        b.Rules.Light *= 1.6;
         b.InBounds = map.CanStand;
         // The first great blessing, before anything moves.
         b.GreatOwed = 1;

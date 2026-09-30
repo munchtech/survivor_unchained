@@ -150,6 +150,7 @@ public class OathTests
         var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, 11, arena: true);
         zone.Begin(b);
         Assert.True(b.Rules.HitChill);
-        Assert.Equal(0.5, b.Rules.Light);
+        // Half the arena's light (which reaches further than the wood's).
+        Assert.Equal(0.5 * 1.6, b.Rules.Light, 3);
     }
 }

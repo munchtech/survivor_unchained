@@ -30,6 +30,9 @@ public sealed class MapSpec
     /// <summary>An arena rather than a map: one great clearing ringed by
     /// forest, cover scattered through it, for a survivors fight.</summary>
     public bool Arena;
+    /// <summary>Who holds it (an arena's cover is theirs: the Risen's barrow
+    /// field, the Kerchiefs' raided camp, the Lamplings' dig, the Pack's dead wood).</summary>
+    public string People = "pack";
 }
 
 public enum AreaKind { Start, Clearing, Altar, Boss }
@@ -61,6 +64,9 @@ public sealed class MapBuild
     public required byte[] Splat;
     public required List<FloraPlace> Flora;
     public required List<PropPlace> Props;
+    /// <summary>Pieces the zone sets down as it begins (KayKit and props, made
+    /// in play): an arena's graves, walls, rubble, lanterns.</summary>
+    public List<PropPlace> Pieces = new();
     public required Dictionary<string, FloraKind> Kinds;
     public required List<Area> Areas;
     public required List<PackSpot> Packs;
@@ -286,11 +292,21 @@ public static class MapGen
         // A few boulders to fight round in the bigger clearings (not the start).
         var colliders = new List<ColliderDef>();
         int cid = 1;
+        var pieces = new List<PropPlace>();
+        var glows = new List<(double X, double Z, string Color, double Intensity, bool Fire)>();
         if (spec.Arena)
         {
-            // Islands of cover across the arena: stands of trees, outcrops,
-            // fallen stones. Places to be cornered by, and to lose a crowd round.
+            // Islands of cover across the arena, low enough to read from the
+            // arena's high camera and the people's own: places to be cornered
+            // by, and to lose a crowd round.
             var islands = new List<(double X, double Z)>();
+            int crypts = 0;
+            void Piece(string id, double px, double pz, double rot, double scale = 1) => pieces.Add(new PropPlace(id, px, ground.HeightAt(px, pz), pz, rot, scale));
+            void Block(double bx, double bz, double r) => colliders.Add(new ColliderDef { Id = cid++, Kind = ColliderKind.Circle, X = bx, Z = bz, R = r, Hw = r, Hd = r });
+            void Slab(double bx, double bz, double hw, double hd, double rot) => colliders.Add(new ColliderDef { Id = cid++, Kind = ColliderKind.Box, X = bx, Z = bz, Hw = hw, Hd = hd, Rot = rot, R = Math.Sqrt(hw * hw + hd * hd) });
+            // A piece's own x axis, turned: where a row of them runs.
+            (double X, double Z) Along(double rot) => (Math.Cos(rot), -Math.Sin(rot));
+            double Square() => rng.Int(0, 3) * Math.PI / 2;
             for (int t = 0; t < 400 && islands.Count < 18; t++)
             {
                 double ang = rng.Range(0, Math.PI * 2), rr = rng.Range(16, ArenaR - 14);
@@ -298,13 +314,141 @@ public static class MapGen
                 if (islands.Any(o => MathX.Dist(o.X, o.Z, x, z) < 19)) continue;
                 islands.Add((x, z));
                 int kind = rng.Int(0, 2);
+                if (spec.People == "dead")
+                {
+                    // The barrow field: rows of graves, a crypt or two, pillars fallen among rubble.
+                    if (kind == 1 && crypts < 2)
+                    {
+                        crypts++;
+                        double rot = Square();
+                        Piece("halloween/crypt", x, z, rot, 0.8);
+                        Slab(x, z, 2.5, 3.3, rot);
+                        var (ux, uz) = Along(rot);
+                        // Its door faces the crypt's +z: a lantern either side of it.
+                        double fx = Math.Sin(rot), fz = Math.Cos(rot);
+                        foreach (int side in new[] { -1, 1 })
+                        {
+                            double lx = x + fx * 4.2 + ux * side * 1.8, lz = z + fz * 4.2 + uz * side * 1.8;
+                            Piece("halloween/lantern_standing", lx, lz, rot);
+                            glows.Add((lx, lz, "#ffc27a", 7, false));
+                        }
+                    }
+                    else if (kind == 2)
+                    {
+                        double rot = rng.Range(0, Math.PI * 2);
+                        var (ux, uz) = Along(rot);
+                        foreach (int side in new[] { -1, 1 })
+                        {
+                            Piece("halloween/pillar", x + ux * side * 2.4, z + uz * side * 2.4, rng.Range(0, Math.PI * 2), rng.Range(0.6, 0.9));
+                            Block(x + ux * side * 2.4, z + uz * side * 2.4, 0.55);
+                        }
+                        Piece("dungeon/rubble_half", x - 1.2, z, rot, 0.55);
+                        Block(x, z, 1.3);
+                        Piece("halloween/skull_candle", x + uz * 1.6, z - ux * 1.6, rng.Range(0, Math.PI * 2));
+                        glows.Add((x + uz * 1.6, z - ux * 1.6, "#9fe0c8", 5, false));
+                    }
+                    else
+                    {
+                        double rot = rng.Range(0, Math.PI * 2);
+                        var (ux, uz) = Along(rot);
+                        int n = rng.Int(3, 5);
+                        string[] graves = ["halloween/grave_A", "halloween/grave_B", "halloween/grave_A_destroyed", "halloween/gravestone"];
+                        for (int g = 0; g < n; g++)
+                        {
+                            double o = (g - (n - 1) / 2.0) * 2.5;
+                            double gx = x + ux * o, gz = z + uz * o;
+                            Piece(rng.Pick(graves), gx, gz, rot + rng.Range(-0.12, 0.12), rng.Range(0.8, 0.95));
+                            Block(gx, gz, 0.9);
+                        }
+                        Piece("halloween/bone_A", x + uz * 2, z - ux * 2, rng.Range(0, Math.PI * 2));
+                        Piece("halloween/ribcage", x - uz * 2.2, z + ux * 2.2, rng.Range(0, Math.PI * 2));
+                    }
+                    continue;
+                }
+                if (spec.People == "kerchiefs")
+                {
+                    // The raided camp: a broken wall's corner, its stores broken open, a fire still going.
+                    if (kind == 0)
+                    {
+                        double rot = Square();
+                        var (ux, uz) = Along(rot);
+                        Piece("dungeon/wall_broken", x, z, rot, 0.8);
+                        Slab(x, z, 1.6, 0.4, rot);
+                        double cx = x + ux * 1.6 + uz * 1.6, cz = z + uz * 1.6 - ux * 1.6;
+                        Piece("dungeon/wall_broken", cx, cz, rot + Math.PI / 2, 0.7);
+                        Slab(cx, cz, 1.4, 0.35, rot + Math.PI / 2);
+                        for (int n = 0; n < 3; n++)
+                        {
+                            double bx = x - uz * rng.Range(1.2, 2.2) + ux * rng.Range(-1.5, 1.5), bz = z + ux * rng.Range(1.2, 2.2) + uz * rng.Range(-1.5, 1.5);
+                            Piece(rng.Pick(new[] { "props/Barrel", "props/Crate_Wooden" }), bx, bz, rng.Range(0, Math.PI * 2), rng.Range(0.9, 1.2));
+                            Block(bx, bz, 0.55);
+                        }
+                    }
+                    else if (kind == 1)
+                    {
+                        foreach (var (id, dx, dz, r) in new[] { ("props/Crate_Wooden", -1.6, 0.0, 0.6), ("props/Crate_Wooden", -1.4, 1.1, 0.6), ("props/Barrel_Holder", 1.6, -0.6, 0.9), ("props/Chest_Wood", 0.2, 1.8, 0.6), ("props/Barrel", 1.3, 1.4, 0.55) })
+                        {
+                            Piece(id, x + dx, z + dz, rng.Range(0, Math.PI * 2));
+                            Block(x + dx, z + dz, r);
+                        }
+                        glows.Add((x + 0.2, z - 2.4, "#ff9a48", 11, true));
+                    }
+                    else
+                    {
+                        double rot = rng.Range(0, Math.PI * 2);
+                        var (ux, uz) = Along(rot);
+                        foreach (int side in new[] { -1, 1 })
+                        {
+                            Piece(side < 0 ? "halloween/fence_broken" : "halloween/fence", x + ux * side * 2, z + uz * side * 2, rot, 0.9);
+                            Slab(x + ux * side * 2, z + uz * side * 2, 1.8, 0.25, rot);
+                        }
+                        Put("boulder", x - uz * 2, z + ux * 2, 1.0, 0.2);
+                        Block(x - uz * 2, z + ux * 2, 1.1);
+                    }
+                    continue;
+                }
+                if (spec.People == "lamplings")
+                {
+                    // The dig: spoil heaps and broken stone, lamps on poles, the blasting ember kept in barrels.
+                    if (kind == 0)
+                    {
+                        double rot = Square();
+                        Piece("dungeon/rubble_large", x, z, rot, 0.7);
+                        Slab(x, z, 2.6, 1.0, rot);
+                    }
+                    else if (kind == 1)
+                    {
+                        Piece("dungeon/pillar", x, z, rng.Range(0, Math.PI * 2), 0.7);
+                        Block(x, z, 0.6);
+                        for (int n = 0; n < 2; n++)
+                        {
+                            double bx = x + rng.Range(-2.5, 2.5), bz = z + rng.Range(-2.5, 2.5);
+                            Put("boulder", bx, bz, rng.Range(0.8, 1.1), 0.2);
+                            Block(bx, bz, 1.0);
+                        }
+                    }
+                    else
+                    {
+                        for (int n = 0; n < 3; n++)
+                        {
+                            double bx = x + rng.Range(-1.8, 1.8), bz = z + rng.Range(-1.8, 1.8);
+                            Piece("props/Barrel", bx, bz, rng.Range(0, Math.PI * 2), 1.1);
+                            Block(bx, bz, 0.55);
+                        }
+                    }
+                    double lx = x + rng.Range(-3.5, 3.5), lz = z + rng.Range(3, 4);
+                    Piece("halloween/lantern_standing", lx, lz, rng.Range(0, Math.PI * 2), 1.2);
+                    glows.Add((lx, lz, "#ffcf7a", 8, false));
+                    continue;
+                }
+                // The Pack's wood: bare trees (they read from above; full crowns do not) and stone.
                 if (kind == 0)
                 {
                     // A stand of trees, undergrowth between.
                     for (int n = rng.Int(3, 5); n > 0; n--)
                     {
                         double tx = x + rng.Range(-3, 3), tz = z + rng.Range(-3, 3);
-                        Put(rng.Pick(trees), tx, tz, 0.9);
+                        Put("dead", tx, tz, 0.9);
                         colliders.Add(new ColliderDef { Id = cid++, Kind = ColliderKind.Circle, X = tx, Z = tz, R = 0.7, Hw = 0.7, Hd = 0.7 });
                     }
                     for (int n = 0; n < 5; n++) Put(rng.Pick(new[] { "fern", "bush", "bramble" }), x + rng.Range(-4, 4), z + rng.Range(-4, 4));
@@ -346,6 +490,12 @@ public static class MapGen
             double y = ground.HeightAt(x, z);
             lights.Add(new LightDef { X = x, Y = y + 1.1, Z = z, Color = color, Intensity = intensity, Distance = intensity, Flicker = 0.28, On = true });
             fires.Add(new FireDef { X = x, Y = y + 0.1, Z = z, Size = size, Light = lights.Count - 1 });
+        }
+        // An arena's lanterns and camp fires.
+        foreach (var (gx, gz, color, intensity, fire) in glows)
+        {
+            if (fire) { Fire(gx, gz, 0.7, intensity, color); continue; }
+            lights.Add(new LightDef { X = gx, Y = ground.HeightAt(gx, gz) + 1.1, Z = gz, Color = color, Intensity = intensity, Distance = intensity, Flicker = 0.14, On = true });
         }
         // Where you come in: a fire someone left (in an arena, the fires are round the edge).
         var st = areas[0];
@@ -435,7 +585,7 @@ public static class MapGen
         };
         return new MapBuild
         {
-            Spec = spec, Meta = meta, Ground = ground, SplatRes = SplatRes, Splat = splat, Flora = flora, Props = props,
+            Spec = spec, Meta = meta, Ground = ground, SplatRes = SplatRes, Splat = splat, Flora = flora, Props = props, Pieces = pieces,
             Kinds = kinds, Areas = areas, Packs = packs, Walkable = walk,
         };
     }
