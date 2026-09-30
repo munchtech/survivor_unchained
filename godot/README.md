@@ -48,6 +48,11 @@ Options go after `--`:
   `--open talk:ID`, `--open draft`: a screen, a conversation or the level-up
   draft opened a moment in (`--every T` between several); `--bare` hides the
   world, for quick pictures of the interface;
+- `MAP_PLAY=1 dotnet test tests/Tests.csproj --filter MapPlay` (with
+  `--logger "console;verbosity=detailed"`): maps played through headless by
+  a plain-minded bot, with how long each took, what died and what hurt
+  (`MAP_TRACE=1` for where it was every ten seconds); for tuning density,
+  length and danger;
 - `--shot NAME --seconds S [--every T --count N]`: screenshots
   (`src/Shots.cs`);
 - `--log S`: a line every S seconds (the fight, the zone, the sound);

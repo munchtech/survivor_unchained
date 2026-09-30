@@ -366,7 +366,11 @@ public static class Ai
         {
             double d = Dist(p.X, p.Z, e.X, e.Z);
             double aggro = e.Def.AggroRange ?? 60;
-            if (d < aggro && (e.Leash == 0 || Dist(p.X, p.Z, e.HomeX, e.HomeZ) < e.Leash * 1.6)) { best = -1; bd = d * 0.8; }
+            // A pack at rest notices the survivor only close by; once roused it
+            // hunts them as far as its leash, and rouses its own.
+            if (e.Wake > 0 && !e.Roused && d < e.Wake) b.Rouse(e);
+            bool resting = e.Wake > 0 && !e.Roused;
+            if (!resting && d < aggro && (e.Leash == 0 || Dist(p.X, p.Z, e.HomeX, e.HomeZ) < e.Leash * 1.6)) { best = -1; bd = d * 0.8; }
         }
         // Rivals and the survivor's allies nearby.
         b.Spatial.Query(e.X, e.Z, 9, b.AiScratch);

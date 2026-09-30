@@ -22,15 +22,19 @@ public class MapGenTests
         var m = MapGen.Generate(new MapSpec { Seed = seed, Tier = 1 });
         sw.Stop();
         Assert.True(sw.ElapsedMilliseconds < 4000, $"made in {sw.ElapsedMilliseconds} ms");
-        Assert.Equal(9, m.Areas.Count);
+        Assert.Equal(16, m.Areas.Count);
         Assert.Equal(AreaKind.Start, m.Start.Kind);
         Assert.Equal(AreaKind.Boss, m.Boss.Kind);
-        Assert.Equal(2, m.Altars.Count());
+        Assert.Equal(3, m.Altars.Count());
         Assert.True(m.CanStand(m.Start.X, m.Start.Z));
         Assert.True(m.CanStand(m.Boss.X, m.Boss.Z));
         // Every clearing is reached from the start, on foot.
         var reached = Flood(m);
         foreach (var a in m.Areas) Assert.True(reached.Contains(Cell(m, a.X, a.Z)), $"area {a.Index} ({a.Kind}) cut off");
+        // And for the fight's own paths (trees, boulders and walls as the creatures meet them).
+        var col = m.Meta.Collision();
+        var navReached = NavFlood(col, m.Start.X, m.Start.Z);
+        foreach (var a in m.Areas) Assert.True(navReached.Contains(NavCell(col, a.X, a.Z)), $"area {a.Index} ({a.Kind}) cut off for the fight's paths");
         // Packs stand where they can be reached, many of them.
         Assert.True(m.Packs.Count >= 30, $"{m.Packs.Count} packs");
         foreach (var p in m.Packs) Assert.True(m.CanStand(p.X, p.Z), $"a pack at {p.X:0},{p.Z:0} in the trees");
@@ -48,6 +52,30 @@ public class MapGenTests
         Assert.Equal(a.Areas, b.Areas);
         Assert.Equal(a.Packs, b.Packs);
         Assert.Equal(a.Ground.Heights, b.Ground.Heights);
+    }
+
+    static int NavCell(SurvivorUnchained.Sim.CollisionWorld c, double x, double z) =>
+        (int)Math.Floor(z + c.Half) * c.NavSize + (int)Math.Floor(x + c.Half);
+
+    static HashSet<int> NavFlood(SurvivorUnchained.Sim.CollisionWorld c, double x, double z)
+    {
+        int n = c.NavSize;
+        var seen = new HashSet<int>();
+        var todo = new Queue<int>();
+        int s0 = NavCell(c, x, z);
+        seen.Add(s0); todo.Enqueue(s0);
+        while (todo.Count > 0)
+        {
+            int k = todo.Dequeue();
+            int i = k % n, j = k / n;
+            foreach (var (di, dj) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
+            {
+                int ni = i + di, nj = j + dj;
+                if (c.IsNavBlocked(ni, nj)) continue;
+                if (seen.Add(nj * n + ni)) todo.Enqueue(nj * n + ni);
+            }
+        }
+        return seen;
     }
 
     static int Cell(MapBuild m, double x, double z) =>
@@ -156,7 +184,7 @@ public class MapRunTests
         Run(s, 1);
         int near = s.B.Enemies.Living().Count();
         // Walk to the far clearing (the boss's): what was there is waiting, and more woke on the way.
-        var mid = s.Map.Areas[4];
+        var mid = s.Map.Areas[7];
         s.B.Player.X = mid.X; s.B.Player.Z = mid.Z;
         Run(s, 1);
         Assert.True(s.B.Enemies.Living().Count() > near, $"{near} -> {s.B.Enemies.Living().Count()}");

@@ -78,8 +78,10 @@ public sealed class MapBuild
 public static class MapGen
 {
     /// <summary>The square of country a map is cut from, metres across.</summary>
-    public const double Size = 240;
-    const int Res = 241;
+    public const double Size = 300;
+    const int Res = 301;
+    /// <summary>The clearings stand in a Grid by Grid square, walked as a snake.</summary>
+    const int Grid = 4;
     const int SplatRes = 512;
     const double Margin = 16;
 
@@ -90,10 +92,10 @@ public static class MapGen
         double half = Size / 2;
 
         // ---------------------------------------------------------- layout --
-        // A snake through a 3 by 3 grid of cells: the way crosses the whole
-        // square and back, so the map is long for its size.
+        // A snake through a grid of cells: the way crosses the whole square
+        // and back, and back again, so the map is long for its size.
         var order = Snake(rng);
-        double cell = (Size - Margin * 2) / 3;
+        double cell = (Size - Margin * 2) / Grid;
         var areas = new List<Area>();
         for (int k = 0; k < order.Count; k++)
         {
@@ -104,8 +106,9 @@ public static class MapGen
             double r = kind switch { AreaKind.Start => 11, AreaKind.Boss => 24, _ => rng.Range(14, 20) };
             areas.Add(new Area(k, kind, cx, cz, r));
         }
-        // Two of the clearings between hold altars: one early, one late.
-        foreach (int k in new[] { rng.Int(2, 3), rng.Int(5, 6) })
+        // Three of the clearings between hold altars: early, midway, late.
+        int na = areas.Count;
+        foreach (int k in new[] { rng.Int((int)(na * 0.15), (int)(na * 0.25)), rng.Int((int)(na * 0.4), (int)(na * 0.5)), rng.Int((int)(na * 0.65), (int)(na * 0.75)) })
             areas[k] = areas[k] with { Kind = AreaKind.Altar, R = Math.Max(areas[k].R, 17) };
 
         // The ways between: a curve from each clearing to the next, bowed to one side.
@@ -412,13 +415,14 @@ public static class MapGen
     static List<(int, int)> Snake(Rng rng)
     {
         var path = new List<(int, int)>();
-        for (int j = 0; j < 3; j++)
-            for (int k = 0; k < 3; k++) path.Add((j % 2 == 0 ? k : 2 - k, j));
+        const int n = Grid - 1;
+        for (int j = 0; j < Grid; j++)
+            for (int k = 0; k < Grid; k++) path.Add((j % 2 == 0 ? k : n - k, j));
         bool swap = rng.Chance(0.5), fx = rng.Chance(0.5), fz = rng.Chance(0.5);
         return path.Select(p =>
         {
             var (i, j) = swap ? (p.Item2, p.Item1) : p;
-            return (fx ? 2 - i : i, fz ? 2 - j : j);
+            return (fx ? n - i : i, fz ? n - j : j);
         }).ToList();
     }
 

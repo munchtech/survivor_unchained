@@ -47,6 +47,26 @@ public sealed partial class Battle
     public readonly List<Enemy> Decoys = new();
 
     public bool Has(string facet) => Facets.Contains(facet);
+
+    /// <summary>The ground a fight may be had on (a map's ways and clearings);
+    /// null: any open ground. No art carries the survivor past it.</summary>
+    public Func<double, double, bool>? InBounds;
+
+    /// <summary>Along a line from the survivor: the farthest open ground
+    /// before the line leaves the fight's ground (over a log, not a wall).</summary>
+    (double X, double Z) Reach(double dx, double dz, double dist)
+    {
+        var p = Player;
+        double bx = p.X, bz = p.Z;
+        int n = Math.Max(1, (int)Math.Ceiling(dist / 0.5));
+        for (int k = 1; k <= n; k++)
+        {
+            double x = p.X + dx * dist * k / n, z = p.Z + dz * dist * k / n;
+            if (InBounds != null && !InBounds(x, z)) break;
+            if (!Collision.Blocked(x, z, p.Radius)) { bx = x; bz = z; }
+        }
+        return (bx, bz);
+    }
     double ArtPower => Stats.Get(Stat.AbilityPower) * Abilities.RankPower(ArtRank);
 
     static readonly Tag[] RushTags = [Tag.Melee, Tag.Physical], FrostTags = [Tag.Spell, Tag.Frost, Tag.Area],
@@ -148,7 +168,7 @@ public sealed partial class Battle
         var p = Player;
         double reach = Has("long_leap") ? 11 : 7;
         double dist = Math.Min(reach, Aim is { } a ? Dist(a.X, a.Z, p.X, p.Z) : reach);
-        double x1 = p.X + ax * dist, z1 = p.Z + az * dist;
+        var (x1, z1) = Reach(ax, az, dist);
         p.Leap = new Leap { T = 0, Dur = 0.42, X0 = p.X, Z0 = p.Z, X1 = x1, Z1 = z1 };
         Events.Emit(new Ev.Ability { Id = def.Id, X = x1, Z = z1, Angle = angle, Radius = 3 });
         return true;
@@ -176,8 +196,7 @@ public sealed partial class Battle
     {
         var p = Player;
         double x0 = p.X, z0 = p.Z;
-        double reach = Has("far_step") ? 9 : 6;
-        StepTo(x0 + ax * reach, z0 + az * reach);
+        (p.X, p.Z) = Reach(ax, az, Has("far_step") ? 9 : 6);
         p.Iframes = Math.Max(p.Iframes, 0.3);
         Events.Emit(new Ev.Ability { Id = def.Id, X = x0, Z = z0, X1 = p.X, Z1 = p.Z, Angle = angle, Radius = 3 });
         Events.Emit(new Ev.Dash { X0 = x0, Z0 = z0, X1 = p.X, Z1 = p.Z });
@@ -272,7 +291,7 @@ public sealed partial class Battle
     {
         var p = Player;
         double x0 = p.X, z0 = p.Z;
-        StepTo(x0 + ax * 5, z0 + az * 5);
+        (p.X, p.Z) = Reach(ax, az, 5);
         p.Iframes = Math.Max(p.Iframes, 0.25);
         int n = Has("three_mirrors") ? 3 : 2;
         // Side by side across the way you went, facing what you left.
@@ -291,7 +310,7 @@ public sealed partial class Battle
     /// <summary>A reflection of the survivor that draws the horde, and breaks.</summary>
     Enemy? Reflect(double x, double z, double life, double facing)
     {
-        if (Collision.Blocked(x, z, 0.4)) { x = Player.X; z = Player.Z; }
+        if (Collision.Blocked(x, z, 0.4) || InBounds?.Invoke(x, z) == false) { x = Player.X; z = Player.Z; }
         var e = SpawnEnemy("mirror", x, z, new SpawnOpts { Disposition = Disposition.Ally, Faction = Faction.Ally });
         if (e == null) return null;
         e.MaxHp = e.Hp = MaxHp * 0.25;
@@ -478,7 +497,12 @@ public sealed partial class Battle
         if (Aim == null && Len(mx, mz) > 0.1) { double l = Len(mx, mz); vx = mx / l; vz = mz / l; }
         double x0 = p.X, z0 = p.Z;
         double dist = 0;
-        for (int k = 1; k <= 12; k++) if (!Collision.Blocked(x0 + vx * 0.5 * k, z0 + vz * 0.5 * k, p.Radius)) dist = 0.5 * k; else break;
+        for (int k = 1; k <= 12; k++)
+        {
+            double x = x0 + vx * 0.5 * k, z = z0 + vz * 0.5 * k;
+            if (Collision.Blocked(x, z, p.Radius) || InBounds?.Invoke(x, z) == false) break;
+            dist = 0.5 * k;
+        }
         p.Leap = new Leap { T = 0, Dur = 0.32, X0 = x0, Z0 = z0, X1 = x0 + vx * dist, Z1 = z0 + vz * dist, Kind = AbilityKind.Vault };
         if (Has("nimble")) p.AbilityCd *= 0.67;
         var zn = SpawnZone(Side.Player, x0, z0, 2.4, 4, 5 * power, School.Physical);
@@ -736,21 +760,6 @@ public sealed partial class Battle
         var p = Player;
         p.Shield = Math.Min(MaxHp, Math.Max(p.Shield, 0) + amount);
         p.ShieldT = Math.Max(p.ShieldT, seconds);
-    }
-
-    /// <summary>Step along a line as far as the ground is open.</summary>
-    void StepTo(double tx, double tz)
-    {
-        var p = Player;
-        double x0 = p.X, z0 = p.Z;
-        int best = 0;
-        for (int k = 1; k <= 12; k++)
-        {
-            double x = x0 + (tx - x0) * (k / 12.0), z = z0 + (tz - z0) * (k / 12.0);
-            if (!Collision.Blocked(x, z, p.Radius)) best = k;
-        }
-        p.X = x0 + (tx - x0) * (best / 12.0);
-        p.Z = z0 + (tz - z0) * (best / 12.0);
     }
 
     /* ------------------------------------------------ what the art sees -- */

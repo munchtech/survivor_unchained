@@ -573,6 +573,7 @@ public sealed partial class Battle
         e.LastDx = dx / dl; e.LastDz = dz / dl;
         e.LastWeapon = o.Weapon?.Id;
         if (e.Disposition == Disposition.Neutral) Provoke(e);
+        if (e.Wake > 0 && !e.Roused) Rouse(e);
         if (o.Weapon != null) o.Weapon.DamageDealt += Math.Min(dmg, before);
         // Where the damage is coming from, for the director.
         if (tags.Has(Tag.Summon) || o.Summon) Profile.Summon += dmg;
@@ -612,6 +613,19 @@ public sealed partial class Battle
         if (e.Hp <= 0 && e.Alive && e.State != EnemyState.Dying) KillEnemy(e, true, o.Weapon, depth);
         else ArtOnHit(e);
         return dmg;
+    }
+
+    /// <summary>A resting pack wakes: this one, and its own round it.</summary>
+    public void Rouse(Enemy e)
+    {
+        e.Roused = true;
+        e.RetargetT = 0;
+        ForEachEnemyNear(e.X, e.Z, 10, o =>
+        {
+            if (o.Roused || o.Wake <= 0 || o.Faction != e.Faction || Math.Abs(o.HomeX - e.HomeX) + Math.Abs(o.HomeZ - e.HomeZ) > 1) return;
+            o.Roused = true;
+            o.RetargetT = Rng.Next() * 0.4;
+        });
     }
 
     public void Provoke(Enemy e)
@@ -1017,6 +1031,8 @@ public sealed partial class Battle
         public bool Elite;
         public string? Tag;
         public (double X, double Z, double Leash)? Home;
+        /// <summary>A resting pack's waking distance (0: it hunts from afar).</summary>
+        public double Wake;
     }
 
     public Enemy? SpawnEnemy(string defId, double x, double z, SpawnOpts? o = null)
@@ -1065,6 +1081,8 @@ public sealed partial class Battle
         e.TakenMul = 1;
         e.LungeX = e.LungeZ = 0;
         e.Decoy = e.Prey = false;
+        e.Wake = o.Wake;
+        e.Roused = false;
         e.DrainedAt = -99;
         Events.Emit(new Ev.Spawn { Enemy = e.Id, X = x, Z = z, Def = defId, Style = o.Style ?? SpawnStyle.Walk });
         return e;

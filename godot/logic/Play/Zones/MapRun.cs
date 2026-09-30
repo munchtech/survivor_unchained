@@ -82,9 +82,14 @@ public sealed class MapRun : ZoneRuntime
     /* ------------------------------------------------------------ levels -- */
 
     int Tier => Map.Spec.Tier;
-    // Harder with the tier and the oaths, and with the ember you carry in.
-    int Level() => 1 + Tier * 2 + levels + (B?.EmberLevel ?? 1) / 5;
-    int PackCount(PackSpot p) => Math.Max(3, (int)Math.Round((5 + Tier * 1.2) * p.Size * packSize));
+    /* A map ramps: the ember build starts from nothing, so the first
+     * clearings are thinner and weaker and the boss's are at full weight.
+     * Depth is how far along the map an area is, 0 at the start, 1 at the boss. */
+    double Depth(int area) => area / (double)Math.Max(1, Map.Areas.Count - 1);
+
+    // Harder with the tier, the depth, the oaths, and the ember you carry in.
+    int Level(double depth) => Math.Max(1, Tier * 2 - 1 + (int)Math.Round(depth * 2) + levels + (B?.EmberLevel ?? 1) / 5);
+    int PackCount(PackSpot p) => Math.Max(2, (int)Math.Round((5 + Tier * 1.2) * p.Size * packSize * (0.55 + 0.75 * Depth(p.Area))));
     double R() => G.Rng.NextDouble();
 
     string Pick()
@@ -94,7 +99,7 @@ public sealed class MapRun : ZoneRuntime
         return people.Horde[0].Def;
     }
 
-    Enemy? Spawn(string def, double x, double z, bool elite = false, (double, double, double)? home = null, SpawnStyle style = SpawnStyle.Walk)
+    Enemy? Spawn(string def, double x, double z, double depth, bool elite = false, (double, double, double)? home = null, SpawnStyle style = SpawnStyle.Walk, bool rest = false)
     {
         if (B == null) return null;
         for (int t = 0; t < 8; t++)
@@ -102,7 +107,8 @@ public sealed class MapRun : ZoneRuntime
             double a = R() * Math.PI * 2, d = t == 0 ? 0 : R() * 2.5;
             double sx = x + Math.Cos(a) * d, sz = z + Math.Sin(a) * d;
             if (!Map.CanStand(sx, sz) || B.Collision.Blocked(sx, sz, 0.6)) continue;
-            return B.SpawnEnemy(def, sx, sz, new Battle.SpawnOpts { Level = Level() + (elite ? 1 : 0), Elite = elite, Home = home, Style = style });
+            // Packs rest where they stand until the survivor comes close; what an altar or a boss calls hunts at once.
+            return B.SpawnEnemy(def, sx, sz, new Battle.SpawnOpts { Level = Level(depth) + (elite ? 1 : 0), Elite = elite, Home = home, Style = style, Wake = home != null && style == SpawnStyle.Walk && rest ? 15 : 0 });
         }
         return null;
     }
@@ -115,6 +121,7 @@ public sealed class MapRun : ZoneRuntime
     {
         base.Begin(b);
         b.Rules = MapOffers.Rules(Map.Spec);
+        b.InBounds = Map.CanStand;
         G.Announce(new Announcement(Map.Spec.Name, Region, "zone", 3.2, "Map"));
         Objectives();
     }
@@ -135,7 +142,7 @@ public sealed class MapRun : ZoneRuntime
             // A champion leads one pack in five (more under the Oath of Champions).
             bool champ = R() < 0.2 * elites;
             for (int k = 0; k < n; k++)
-                if (Spawn(k == 0 && champ ? people.Horde[0].Def : Pick(), s.X, s.Z, k == 0 && champ, (s.X, s.Z, 26)) is Enemy e) packFolk.Add(e);
+                if (Spawn(k == 0 && champ ? people.Horde[0].Def : Pick(), s.X, s.Z, Depth(s.Area), k == 0 && champ, (s.X, s.Z, 26), rest: true) is Enemy e) packFolk.Add(e);
         }
         foreach (var a in altars) Waves(a, dt);
         // The last clearing: what rules the place is waiting.
@@ -143,7 +150,7 @@ public sealed class MapRun : ZoneRuntime
         if (!bossUp && Dist(p.X, p.Z, bz.X, bz.Z) < bz.R + 6)
         {
             bossUp = true;
-            boss = Spawn(people.Boss, bz.X, bz.Z, true, (bz.X, bz.Z, bz.R + 10));
+            boss = Spawn(people.Boss, bz.X, bz.Z, 1, true, (bz.X, bz.Z, bz.R + 10));
             if (boss != null)
             {
                 boss.MaxHp *= 3 + Tier; boss.Hp = boss.MaxHp;
@@ -152,7 +159,7 @@ public sealed class MapRun : ZoneRuntime
             for (int k = 0; k < 10 + Tier * 2; k++)
             {
                 double ang = k * Math.PI * 2 / (10 + Tier * 2);
-                Spawn(Pick(), bz.X + Math.Cos(ang) * (bz.R - 5), bz.Z + Math.Sin(ang) * (bz.R - 5), false, (bz.X, bz.Z, bz.R + 10));
+                Spawn(Pick(), bz.X + Math.Cos(ang) * (bz.R - 5), bz.Z + Math.Sin(ang) * (bz.R - 5), 1, false, (bz.X, bz.Z, bz.R + 10));
             }
             B.Events.Emit(new Ev.Shake { Amount = 0.35 });
             G.Announce(new Announcement(people.BossName, people.BossTitle, "danger", 2.6));
@@ -207,13 +214,13 @@ public sealed class MapRun : ZoneRuntime
         {
             a.Wave++;
             a.WaveT = 24;
-            int n = (int)Math.Round((14 + Tier * 4 + a.Wave * 6) * packSize);
+            int n = (int)Math.Round((14 + Tier * 4 + a.Wave * 6) * packSize * (0.7 + 0.5 * Depth(a.Area.Index)));
             var ar = a.Area;
             for (int k = 0; k < n; k++)
             {
                 // From every side of the clearing at once, out of the ground.
                 double ang = R() * Math.PI * 2, rr = ar.R - 2 - R() * 3;
-                if (Spawn(Pick(), ar.X + Math.Cos(ang) * rr, ar.Z + Math.Sin(ang) * rr, k == 0 && a.Wave == a.Waves, null, SpawnStyle.Rise) is Enemy e)
+                if (Spawn(Pick(), ar.X + Math.Cos(ang) * rr, ar.Z + Math.Sin(ang) * rr, Depth(ar.Index), k == 0 && a.Wave == a.Waves, null, SpawnStyle.Rise) is Enemy e)
                     a.Called.Add(e);
             }
             G.Announce(new Announcement($"Wave {a.Wave} of {a.Waves}", null, "danger", 1.4));

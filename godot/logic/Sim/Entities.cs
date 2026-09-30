@@ -101,6 +101,10 @@ public sealed class Enemy : Pooled
     public double HomeX, HomeZ, Leash;
     /// <summary>Multiplier on damage taken (a ward, a vulnerable moment).</summary>
     public double TakenMul = 1;
+    /// <summary>At rest, it notices the survivor only this close (0: from afar);
+    /// roused, it hunts as far as its leash.</summary>
+    public double Wake;
+    public bool Roused;
     /// <summary>A reflection of the survivor: the horde turns on it.</summary>
     public bool Decoy;
     /// <summary>Marked as prey: below the line it dies outright.</summary>

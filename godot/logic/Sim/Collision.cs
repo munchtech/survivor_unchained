@@ -357,7 +357,8 @@ public sealed class FlowField
         int W = Win;
         if (li < 1 || lj < 1 || li >= W - 1 || lj >= W - 1) return false;
         int here = dist[lj * W + li];
-        if (here == ushort.MaxValue) return false;
+        // Pressed against a tree or a wall, the cell underfoot can read as
+        // blocked: step toward the nearest open one that leads there.
         int best = here, bx = 0, bz = 0;
         for (int dj = -1; dj <= 1; dj++)
             for (int di = -1; di <= 1; di++)

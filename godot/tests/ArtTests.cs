@@ -229,6 +229,21 @@ public class ArtTests
         Assert.Equal(1, b.Player.DashCharges);
     }
 
+    [Theory]
+    [InlineData(AbilityKind.Leap)]
+    [InlineData(AbilityKind.Blink)]
+    [InlineData(AbilityKind.MirrorStep)]
+    [InlineData(AbilityKind.Vault)]
+    public void No_art_carries_you_off_the_fights_ground(AbilityKind art)
+    {
+        var b = Arena(art);
+        b.InBounds = (x, z) => Math.Abs(x) < 3;
+        b.Aim = art == AbilityKind.Vault ? (-8, 0) : (8, 0);
+        Assert.True(b.UseAbility(1, 0));
+        Tick(b, 0.6);
+        Assert.InRange(b.Player.X, -3, 3);
+    }
+
     [Fact]
     public void Marked_prey_dies_outright_below_the_line()
     {
