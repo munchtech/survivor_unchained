@@ -1588,6 +1588,8 @@ public sealed partial class Battle
         if (r == 1 && def.Triggers != null) foreach (var t in def.Triggers) AddTrigger(t, $"boon:{id}");
         // A blessing deepened: what the new rank adds.
         if (r >= 2 && def.Deeper is { } deeper && r - 2 < deeper.Length) foreach (var t in deeper[r - 2]) AddTrigger(t, $"boon:{id}", r);
+        // Less to live on (a glass cannon): what is left of it, no more than all of it.
+        Player.Hp = Math.Min(Player.Hp, MaxHp);
         if (id == "vitality") HealPlayer(25, "vitality");
         if (id == "spirit_companion") Summon("spirit_wolf", 0, 99);
         if (id == "grave_call") Summon("ghoul_ally", 0, 99);

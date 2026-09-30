@@ -242,7 +242,11 @@ public static class MapGen
                         mud = Math.Max(mud, (1 - MathX.Smoothstep(3, 9, d)) * 0.8);
                     }
                 }
-                mud = Math.Max(mud, MathX.Smoothstep(0.55, 0.8, noise.Noise(x * 0.05 - 9, z * 0.05)) * MathX.Smoothstep(-1, 2, inn) * 0.9);
+                double wet = MathX.Smoothstep(0.55, 0.8, noise.Noise(x * 0.05 - 9, z * 0.05)) * MathX.Smoothstep(-1, 2, inn);
+                // An arena is seen from high up, where wet black mud reads as a hole
+                // in the ground: there the same patches are trodden earth.
+                if (spec.Arena) { dirt = Math.Max(dirt, wet * 0.75); mud = Math.Max(mud, wet * 0.15); }
+                else mud = Math.Max(mud, wet * 0.9);
                 int o = (j * SplatRes + i) * 4;
                 splat[o] = B(dirt); splat[o + 1] = B(setts); splat[o + 2] = B(blight); splat[o + 3] = B(mud);
             }
