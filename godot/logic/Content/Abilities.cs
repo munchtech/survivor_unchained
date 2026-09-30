@@ -53,8 +53,13 @@ public static class Abilities
 
     public static AbilityDef ById(string id) => All.Values.First(a => a.Id == id);
 
+    /// <summary>The dash everyone has: a short, invulnerable burst. Its first
+    /// moments are the perfect window (a telegraphed blow slipped there gives
+    /// the dash back, cracks the air round you and makes the next strikes
+    /// sure); out of it, a burst of pace so dashes chain.</summary>
     public static class Dash
     {
         public const double Distance = 5.5, Time = 0.2, Recharge = 2.6, Iframes = 0.3;
+        public const double Perfect = 0.18, Riposte = 1.5, Crack = 3.2, Momentum = 0.8, MomentumSpeed = 0.25;
     }
 }

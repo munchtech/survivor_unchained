@@ -127,7 +127,7 @@ public static class Ai
                 var p = b.Player;
                 if (tgt.Player && Dist(p.X, p.Z, e.X, e.Z) < e.Radius + p.Radius + 0.2 && e.AttackT <= 0)
                 {
-                    b.HurtPlayer(e.Damage * 1.5, School.Physical, def.Name, e);
+                    b.HurtPlayer(e.Damage * 1.5, School.Physical, def.Name, e, true);
                     e.AttackT = 0.8;
                 }
                 else if (tgt.Enemy is { } te && Dist(te.X, te.Z, e.X, e.Z) < e.Radius + te.Radius + 0.2 && e.AttackT <= 0)
@@ -562,7 +562,7 @@ public static class Ai
             e.Anim = EnemyAnim.Attack;
             e.AnimT = 0;
             e.RangedT = 4 + b.Rng.Next() * 3;
-            if (Dist(p.X, p.Z, e.X, e.Z) < 1.3) b.HurtPlayer(e.Damage * 1.2, School.Physical, e.Def.Name, e);
+            if (Dist(p.X, p.Z, e.X, e.Z) < 1.3) b.HurtPlayer(e.Damage * 1.2, School.Physical, e.Def.Name, e, true);
             b.Events.Emit(new Ev.Spawn { Enemy = e.Id, X = e.X, Z = e.Z, Def = e.Def.Id, Style = SpawnStyle.Rise });
         }
     }

@@ -15,7 +15,7 @@ namespace SurvivorUnchained.Sim;
  * inside those two limits a build is allowed to become absurd. That is the
  * reward. Items, boons, evolutions, traits and shrines all speak this. */
 
-public enum TriggerEvent { Hit, Crit, Kill, Status, Explode, Freeze, Shatter, Hurt, Dash, Ability, Ember, Tick, LevelUp, Block, Dodge }
+public enum TriggerEvent { Hit, Crit, Kill, Status, Explode, Freeze, Shatter, Hurt, Dash, Ability, Ember, Tick, LevelUp, Block, Dodge, PerfectDodge }
 
 /// <summary>What an effect's damage is a fraction of.</summary>
 public enum Basis { Hit, MaxHp, Flat }

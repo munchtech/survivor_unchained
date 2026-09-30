@@ -524,6 +524,23 @@ public partial class BattleFx : Node3D
                     Cam?.AddTrauma(0.3f);
                     break;
                 }
+                case Ev.PerfectDodge e:
+                {
+                    // A blow slipped at the last moment: a ring of cold light
+                    // cracks out from you, glints spin in the air, the word.
+                    var at = V(e.X, Y(e.X, e.Z) + 1.0, e.Z);
+                    Nova(e.X, e.Z, (float)SurvivorUnchained.Content.Abilities.Dash.Crack, new Color(0.9f, 1.3f, 2.2f), 0.35f);
+                    Flash(at + Vector3.Up * 0.6f, new Color("#cfe4ff"), 14, 0.3f, 9);
+                    for (int i = 0; i < 8; i++)
+                    {
+                        float a = i / 8f * Mathf.Tau;
+                        Sparks.Spawn(at + new Vector3(Mathf.Cos(a) * 0.6f, 0.2f, Mathf.Sin(a) * 0.6f), new Vector3(Mathf.Cos(a) * 3, 1.2f, Mathf.Sin(a) * 3), 0.4f, 0.22f,
+                            new Color(2.4f, 2.6f, 3.2f), new Color(0.4f, 0.6f, 1.6f), 0.05f, 0, 1.5f, sprite: Sprites.Of("star"), spinV: 6);
+                    }
+                    Hits.Text(at + Vector3.Up * 1.1f, "PERFECT", new Color(1.6f, 1.8f, 2.4f), 70);
+                    Cam?.AddTrauma(0.12f);
+                    break;
+                }
                 case Ev.Dash e:
                     for (int i = 0; i < 14; i++)
                     {

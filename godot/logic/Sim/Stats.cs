@@ -69,7 +69,7 @@ public sealed class StatBlock
         {
             [Stat.Damage] = 1, [Stat.Cooldown] = 1, [Stat.Area] = 1, [Stat.ProjectileSpeed] = 1, [Stat.Duration] = 1,
             [Stat.XpGain] = 1, [Stat.GoldGain] = 1, [Stat.Healing] = 1, [Stat.SummonDamage] = 1, [Stat.SummonHaste] = 1,
-            [Stat.StatusChance] = 0, [Stat.StatusDamage] = 1, [Stat.Knockback] = 1, [Stat.DashCharges] = 1,
+            [Stat.StatusChance] = 0, [Stat.StatusDamage] = 1, [Stat.Knockback] = 1, [Stat.DashCharges] = 2,
             [Stat.DashCooldown] = 1, [Stat.AbilityCooldown] = 1, [Stat.AbilityPower] = 1, [Stat.UltCharge] = 1,
             [Stat.LightRadius] = 1, [Stat.Projectiles] = 0, [Stat.Pierce] = 0, [Stat.Dodge] = 0, [Stat.Block] = 0,
             [Stat.Lifesteal] = 0, [Stat.Thorns] = 0, [Stat.ExecuteThreshold] = 0,

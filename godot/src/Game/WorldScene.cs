@@ -41,7 +41,7 @@ public partial class WorldScene : Node3D, IZoneLook
     /// <summary>Heavy blows hold the fight still for a moment (off with the screen's shake).</summary>
     public bool Hitstop = true;
     public double Time { get; private set; }
-    double acc, hitstop, hitstopCd, fightTime, damageFlash;
+    double acc, hitstop, hitstopCd, fightTime, damageFlash, slowmo;
     List<CombatEvent> frameEvents = new();
     Vector2 grassAt;
     public const double Step = 1.0 / 60;
@@ -92,7 +92,9 @@ public partial class WorldScene : Node3D, IZoneLook
         hitstopCd = Math.Max(0, hitstopCd - dt);
         bool held = hitstop > 0;
         if (held) hitstop -= dt;
-        double fightDt = held ? dt * 0.08 : dt;
+        // A perfect dodge: the world slows round you for a breath.
+        if (slowmo > 0) slowmo -= dt;
+        double fightDt = held ? dt * 0.08 : slowmo > 0 ? dt * 0.3 : dt;
         fightTime += fightDt;
         if (b != null && !SimPaused)
         {
@@ -128,6 +130,7 @@ public partial class WorldScene : Node3D, IZoneLook
     /// quick succession, so a crowd going down does not stutter.</summary>
     void Weigh(List<CombatEvent> evs, Battle b)
     {
+        foreach (var e in evs) if (e is Ev.PerfectDodge && Hitstop) slowmo = 0.38;
         if (hitstopCd > 0 || !Hitstop) return;
         double s = 0;
         foreach (var e in evs)

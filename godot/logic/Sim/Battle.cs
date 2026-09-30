@@ -26,6 +26,10 @@ public sealed class PlayerState
     public double Iframes, HurtT;
     public int DashCharges;
     public double DashRecharge, DashT, DashDX, DashDZ;
+    /// <summary>The first moments of a dash, when slipping a blow is a
+    /// perfect dodge (once a dash).</summary>
+    public double DodgeWindow;
+    public bool PerfectThisDash;
     public double AbilityCd, AbilityActive;
     public bool Moving;
     public double StillT, SlowT, SlowF = 1, BlockT, Shield, ShieldT, InvisibleT, SureCritT, BulwarkT;
@@ -271,6 +275,7 @@ public sealed class Battle
         if (!p.Alive) return;
         var st = Stats;
         p.Iframes = Math.Max(0, p.Iframes - dt);
+        p.DodgeWindow = Math.Max(0, p.DodgeWindow - dt);
         p.HurtT = Math.Max(0, p.HurtT - dt);
         p.AbilityCd = Math.Max(0, p.AbilityCd - dt);
         p.InvisibleT = Math.Max(0, p.InvisibleT - dt);
@@ -321,6 +326,13 @@ public sealed class Battle
             p.X += p.DashDX * dsp * dt;
             p.Z += p.DashDZ * dsp * dt;
             Collision.Resolve(ref p.X, ref p.Z, p.Radius, true);
+            // Out of a dash with your feet under you: a burst of pace, so dashes chain.
+            if (p.DashT <= 0)
+            {
+                AddBuff("momentum", Stat.MoveSpeed, Abilities.Dash.MomentumSpeed, ModKind.Inc, Abilities.Dash.Momentum, 1);
+                p.Vx = p.DashDX * Stats.Get(Stat.MoveSpeed);
+                p.Vz = p.DashDZ * Stats.Get(Stat.MoveSpeed);
+            }
             return;
         }
 
@@ -368,6 +380,8 @@ public sealed class Battle
         p.DashDX = dx / m; p.DashDZ = dz / m;
         p.DashT = Abilities.Dash.Time;
         p.Iframes = Math.Max(p.Iframes, Abilities.Dash.Iframes);
+        p.DodgeWindow = Abilities.Dash.Perfect;
+        p.PerfectThisDash = false;
         p.DashCharges--;
         double x0 = p.X, z0 = p.Z;
         Events.Emit(new Ev.Dash { X0 = x0, Z0 = z0, X1 = x0 + p.DashDX * Abilities.Dash.Distance, Z1 = z0 + p.DashDZ * Abilities.Dash.Distance });
@@ -869,12 +883,19 @@ public sealed class Battle
 
     /* ========================================================= damage out == */
 
-    /// <summary>A creature's blow on the survivor, after dodge, block and armour.</summary>
-    public double HurtPlayer(double amount, School school, string source, Enemy? from)
+    /// <summary>A creature's blow on the survivor, after dodge, block and
+    /// armour. A telegraphed blow (a lunge after its wind-up, a missile, a
+    /// blast that marked its ground) slipped in the first moments of a dash
+    /// is a perfect dodge.</summary>
+    public double HurtPlayer(double amount, School school, string source, Enemy? from, bool telegraphed = false)
     {
         var p = Player;
         if (!p.Alive || !Combat) return 0;
-        if (p.Iframes > 0 || p.Leap != null) return 0;
+        if (p.Iframes > 0 || p.Leap != null)
+        {
+            if (telegraphed && p.DodgeWindow > 0 && !p.PerfectThisDash) PerfectDodge(from);
+            return 0;
+        }
         var st = Stats;
         // Dodge.
         if (Rng.Next() < Math.Min(0.75, st.Get(Stat.Dodge)))
@@ -905,6 +926,30 @@ public sealed class Battle
         if (from != null) dmg *= 1 - Clamp(st.GetRaw(Stat.FromOf(from.Def.Family)), -1, 0.8);
         if (p.BulwarkT > 0) dmg *= 0.35;
         return HurtPlayerRaw(dmg, school, source, from);
+    }
+
+    /// <summary>A blow slipped at the last moment: the dash comes back, the
+    /// air round you cracks (what is close is staggered), and for a moment
+    /// every strike finds its mark.</summary>
+    void PerfectDodge(Enemy? from)
+    {
+        var p = Player;
+        p.PerfectThisDash = true;
+        p.DodgeWindow = 0;
+        p.DashCharges = Math.Min(RoundInt(Stats.Get(Stat.DashCharges)), p.DashCharges + 1);
+        p.Iframes = Math.Max(p.Iframes, 0.35);
+        p.SureCritT = Math.Max(p.SureCritT, Abilities.Dash.Riposte);
+        AddBuff("riposte", Stat.Damage, 0.3, ModKind.Inc, Abilities.Dash.Riposte + 0.5, 1);
+        double power = Stats.Get(Stat.AbilityPower);
+        ForEachHostileInRadius(p.X, p.Z, Abilities.Dash.Crack, (e, d) =>
+        {
+            double dd = d == 0 ? 1 : d;
+            HitEnemy(e, 12 * power, School.Physical, [Tag.Physical, Tag.Area], new HitOpts { Knockback = 1.6, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, NoProcs = true });
+            ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, e.Boss ? 0.2 : 0.6), 0);
+        });
+        if (from is { Alive: true }) Interrupt(from);
+        Events.Emit(new Ev.PerfectDodge { X = p.X, Z = p.Z });
+        Fire(TriggerEvent.PerfectDodge, new ProcCtx { X = p.X, Z = p.Z });
     }
 
     public double HurtPlayerRaw(double dmg, School school, string source, Enemy? from, bool silent = false)
@@ -1166,7 +1211,7 @@ public sealed class Battle
                         continue;
                     }
                     var src = pr.OwnerId >= 0 ? Enemies.Items[pr.OwnerId] : null;
-                    HurtPlayer(pr.Damage, pr.School, pr.Art, src is { Alive: true } ? src : null);
+                    HurtPlayer(pr.Damage, pr.School, pr.Art, src is { Alive: true } ? src : null, true);
                     if (pr.Status?.Kind == StatusKind.Chill) { p.SlowT = pr.Status.Duration; p.SlowF = 0.6; }
                     Projectiles.Release(pr);
                 }
@@ -1290,7 +1335,7 @@ public sealed class Battle
                 if (Dist(p.X, p.Z, pr.X, pr.Z) < r + p.Radius)
                 {
                     var src = pr.OwnerId >= 0 ? Enemies.Items[pr.OwnerId] : null;
-                    HurtPlayer(pr.Damage, pr.School, pr.Art, src is { Alive: true } ? src : null);
+                    HurtPlayer(pr.Damage, pr.School, pr.Art, src is { Alive: true } ? src : null, true);
                 }
                 if (pr.GroundOnHit is { } g)
                 {
@@ -1376,7 +1421,7 @@ public sealed class Battle
             {
                 var p = Player;
                 Events.Emit(new Ev.Explosion { X = s.X, Z = s.Z, Radius = s.R, School = s.School, Power = 1 });
-                if (Dist(p.X, p.Z, s.X, s.Z) < s.R + p.Radius * 0.5) HurtPlayer(s.Dmg, s.School, "blast", null);
+                if (Dist(p.X, p.Z, s.X, s.Z) < s.R + p.Radius * 0.5) HurtPlayer(s.Dmg, s.School, "blast", null, true);
                 // Death bursts hurt anything standing in them, which is the
                 // point of killing a sapper next to its friends.
                 ForEachEnemyNear(s.X, s.Z, s.R, e =>

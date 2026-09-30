@@ -126,6 +126,17 @@ public static class Sfx
 
     public static void Dodge() => A?.Play(new Hiss { A = 0.02, D = 0.18, G = 0.08, Bp = 900, Bp2 = 3200, Q = 1.4 });
 
+    /// <summary>A blow slipped at the last moment: a bright ring, like a
+    /// blade drawn across a bell, over a low whoomph.</summary>
+    public static void Perfect()
+    {
+        if (A is not { } a || !a.Gate("perfect", 1, 200)) return;
+        a.Play(new Fm { F = 1318.5, Ratio = 2.76, Index = 2.5, D = 0.9, G = 0.06, Verb = 0.55 });
+        a.Play(new Fm { T = Now + 0.04, F = 1975.5, Ratio = 3.01, Index = 1.8, D = 0.8, G = 0.04, Verb = 0.6 });
+        a.Play(new Tone { F = 110, F2 = 55, D = 0.35, G = 0.12 });
+        a.Play(new Hiss { A = 0.005, D = 0.3, G = 0.06, Bp = 2400, Bp2 = 6000, Q = 1.2, Verb = 0.3 });
+    }
+
     public static void Dash()
     {
         if (A is not { } a) return;
