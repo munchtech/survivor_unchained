@@ -181,6 +181,7 @@ public static class People
                         m.SetShaderParameter("tex", src.AlbedoTexture);
                         m.SetShaderParameter("skin", tone);
                         m.SetShaderParameter("whole", src.ResourceName.Contains("Body"));
+                        if (look.HairColor is Color brow) { m.SetShaderParameter("dye_brows", true); m.SetShaderParameter("brow", brow); }
                         mi.SetSurfaceOverrideMaterial(s, m);
                     }
                 mi.Layers = 2;
@@ -211,22 +212,45 @@ public static class People
         Key("Waist Width", 0.2 - f * 0.5);
     }
 
-    /// <summary>How our hair sits on her head, which is larger than the
-    /// Quaternius head it is rigged to and sits further forward (by eye).</summary>
+    /// <summary>How our hair sits on her head, scaled whole, for a style not
+    /// fitted to her: her head is larger than the Quaternius head the hair is
+    /// rigged to, and sits further forward (by eye).</summary>
     const float HairScale = 1.15f;
     static readonly Vector3 HairOffset = new(0, 0.005f, -0.032f);
 
-    /// <summary>One of our hairstyles, bound to her head bone: its meshes
-    /// moved onto her skeleton, every bind the head's, the hair scaled about
-    /// the Quaternius head and set on hers.</summary>
+    /// <summary>One of our hairstyles on her head. Fitted to her scalp
+    /// offline where it has been (tools/assets/anime_hair.py: art/people/
+    /// her_STYLE.glb, bound to her head bone already) and dressed in the
+    /// Quaternius hair's own material; otherwise the Quaternius hair itself,
+    /// every bind the head's, scaled about its head and set on hers.</summary>
     static List<MeshInstance3D> HairOn(Skeleton3D skel, string style)
     {
-        var rest = skel.GetBoneGlobalRest(skel.FindBone("Head"));
         var scene = GD.Load<PackedScene>($"{Dir}/{style}.gltf").Instantiate<Node3D>();
         var from = scene.GetNode<Skeleton3D>("Armature/Skeleton3D");
+        var meshes = new List<MeshInstance3D>();
+        var fitted = $"res://art/people/her_{style}.glb";
+        if (ResourceLoader.Exists(fitted))
+        {
+            var dress = from.GetChildren().OfType<MeshInstance3D>().First().Mesh;
+            var hers = GD.Load<PackedScene>(fitted).Instantiate<Node3D>();
+            var hs = (Skeleton3D)hers.FindChildren("*", "Skeleton3D", true, false)[0];
+            foreach (var mi in hs.GetChildren().OfType<MeshInstance3D>().ToList())
+            {
+                hs.RemoveChild(mi);
+                mi.Owner = null;
+                if (mi.Mesh is ArrayMesh am)
+                    for (int s = 0; s < am.GetSurfaceCount() && s < dress.GetSurfaceCount(); s++) am.SurfaceSetMaterial(s, dress.SurfaceGetMaterial(s));
+                skel.AddChild(mi);
+                mi.Skeleton = "..";
+                meshes.Add(mi);
+            }
+            hers.Free();
+            scene.Free();
+            return meshes;
+        }
+        var rest = skel.GetBoneGlobalRest(skel.FindBone("Head"));
         var qHead = from.GetBoneGlobalRest(from.FindBone("Head")).Origin;
         var fit = new Transform3D(Basis.Identity.Scaled(Vector3.One * HairScale), rest.Origin + HairOffset - HairScale * qHead);
-        var meshes = new List<MeshInstance3D>();
         foreach (var c in from.GetChildren())
             if (c is MeshInstance3D mi)
             {

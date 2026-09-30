@@ -204,6 +204,7 @@ All expect `npm run dev` running.
 | `python3 tools/assets/people.py [.packs]` | Gather the people from the unpacked Quaternius packs (textures to WebP) |
 | `python tools/assets/figure.py` | Then shape the women (bust and hips morph targets; needs numpy) |
 | `<bpy venv>/bin/python tools/assets/anime_female.py <blend> <gltf> <textures> godot/art/people/anime_female.glb` | Rig the woman survivor's own body to the Quaternius skeleton: joints to her body, arms to its T, hands fitted and weighted (`anime_hands.py`) |
+| `<bpy venv>/bin/python tools/assets/anime_hair.py <her glb> <gltf> <hair dir> godot/art/people` | Then fit the women's hairstyles to her scalp (`her_<style>.glb`) |
 | `python3 tools/assets/env.py [.packs]` | Gather the world's kits (village, props, nature) with their bounds |
 | `python3 tools/assets/ground.py` | The ground's photoscanned materials from Poly Haven (CC0), packed into KTX2 arrays (needs `toktx`) |
 | `python3 tools/assets/ktx2.py [--keep]` | Then compress every sheet to KTX2 (UASTC, mipmapped; needs `toktx` from KTX-Software) |

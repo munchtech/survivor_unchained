@@ -87,7 +87,8 @@ game at the same place and hour; needs the dev server), then
   `shaders/person.gdshader`; a woman survivor in a body of her own,
   donizaki's anime base in `art/people`, rigged to the same skeleton by
   `tools/assets/anime_female.py`, her figure from her own shape keys and her
-  skin toned by `shaders/anime_skin.gdshader`, bare until gear is made to
+  skin toned by `shaders/anime_skin.gdshader`, our hairstyles fitted to
+  her scalp by `tools/assets/anime_hair.py`, bare until gear is made to
   fit her), weapons in hand (`Arms.cs`), the survivor
   (`PlayerView.cs`: an AnimationTree, the swing on the upper body over the
   run), people in the world (`PersonView.cs`), the beasts (`Beasts.cs`:
