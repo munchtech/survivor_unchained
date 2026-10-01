@@ -99,6 +99,8 @@ public sealed class CharacterData
     /// <summary>Skills found in the arenas (taken as cards there): only these
     /// can be learned for the world.</summary>
     public List<string> Discovered = new();
+    /// <summary>Combat skills learned for the day (Rpg/SkillBook.cs), and those carried.</summary>
+    public List<string> Skills = new(), Slotted = new();
     /// <summary>Every art the survivor knows (Rpg/ArtBook.cs).</summary>
     public List<string> Known = new();
     /// <summary>How far each art has come, and its facets.</summary>
@@ -292,6 +294,8 @@ public sealed class CombatKit
 {
     public StatBlock Stats = new();
     public List<(string Id, int Rank)> Weapons = new();
+    /// <summary>Learned skills carried by day (not into the night's arenas: the ember starts from nothing).</summary>
+    public List<(string Id, int Rank)> Learned = new();
     public List<(TriggerDef Def, string Source)> Triggers = new();
     public AbilityKind Ability;
     public int ArtRank = 1;
@@ -404,6 +408,8 @@ public static class Character
                 kit.Weapons.Add((def.Weapon.Id, def.Weapon.Rank + bonus + Math.Max(0, it.Rarity - def.Rarity)));
             }
         }
+        foreach (var (id, rank) in SkillBook.Carried(ch))
+            if (kit.Weapons.All(w => w.Id != id)) kit.Learned.Add((id, rank));
         foreach (var t in ch.Traits)
         {
             var td = Callings.Trait(t);

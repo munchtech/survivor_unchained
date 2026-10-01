@@ -163,6 +163,9 @@ public sealed class Journey
         b.Player.Revives = kit.Revives;
         if (b.EmberOn)
             for (int i = 0; i < kit.StartLevels; i++) b.GainEmber(b.EmberNext);
+        // By day, the skills learned for it.
+        else if (combat)
+            foreach (var (id, rank) in kit.Learned) b.AddWeapon(id, rank);
         return b;
     }
 
@@ -199,8 +202,19 @@ public sealed class Journey
         if (levels > 0)
         {
             OnAnnounce(new Announcement($"Level {Ch.Level}", Ch.TraitPicks > 0 ? "A new trait can be chosen (C)" : "Attribute points to spend (C)", "boon", 3.2, "You grow stronger"));
+            Grew();
             OnTouch();
         }
+    }
+
+    /// <summary>The survivor has grown: their calling may teach them a skill
+    /// they have seen burn (every third level). What it taught, or null.</summary>
+    public string? Grew()
+    {
+        if (SkillBook.Calling(Ch) is not { } id) return null;
+        var wd = Content.Weapons.All[id];
+        OnAnnounce(new Announcement(wd.Name, $"Your calling teaches it to you. Carry it by day (K)", "boon", 3.8, "A new skill"));
+        return id;
     }
 
     /// <summary>A pickup reached the survivor: gear, materials and quest
@@ -361,6 +375,13 @@ public sealed class Journey
             }
             else if (!ArtBook.Learn(Ch, art)) { Warn($"{ad.Name} is not a {Callings.Archetype(Ch.Archetype).Name}'s art"); return; }
             else OnAnnounce(new Announcement(ad.Name, "Learned. Take it in hand at the Waystation (K)", "boon", 3.6, "A new art"));
+        }
+        if (c.Skill is { } skill)
+        {
+            var wd = Content.Weapons.All[skill];
+            if (SkillBook.Knows(Ch, skill)) { Warn($"You already know {wd.Name}"); return; }
+            if (!SkillBook.Learn(Ch, skill)) { Warn($"The words mean nothing yet: {wd.Name} has to be seen burning in an arena first"); return; }
+            OnAnnounce(new Announcement(wd.Name, SkillBook.Meets(Ch, skill) ? "Learned for the day. Carry it from your skills (K)" : $"Learned, but it asks {SkillBook.Need} {SkillBook.Attribute(skill)} of you", "boon", 3.6, "A new skill"));
         }
         foreach (var cure in c.Cure ?? new())
         {
@@ -561,6 +582,10 @@ public sealed class Journey
             if (Items.Find(l.Id) == null) continue;
             out_.Add(Inventory.Make(Ch, l.Id, l.Qty ?? 1, l.Rarity));
         }
+        // Vonnra's curiosities: a tome or two of what the survivor has seen burn.
+        if (def.Id == "vonnra")
+            foreach (var id in Ch.Discovered.Where(id => SkillBook.CanLearn(Ch, id)).OrderBy(_ => rng.Next()).Take(2))
+                out_.Add(Inventory.Make(Ch, SkillBook.Tome(id), 1));
         return out_;
     }
 

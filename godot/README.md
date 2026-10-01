@@ -116,6 +116,17 @@ Wayfinder's table. The ember burns only at night: on the Low Ford road
 until the dawn puts it out and everything it built with it; and in the
 arenas.
 
+What burned in the arenas can be learned for the day (`logic/Rpg/SkillBook.cs`,
+the Arts screen's second page, K): a combat skill seen there is learned from
+a tome (a story fight won gives one, a table's now and then, Vonnra's
+Curiosities sell them) or from the survivor's calling, which teaches one of
+its own kind every third level. Learned skills are carried by day in a few
+slots (one, two from the fourth level, three from the eighth) at a rank that
+grows with the survivor; each asks something of them (a spell wits, a blade
+might, a thrown or shot thing finesse, a prayer or a living thing resolve),
+and one they no longer measure up to lies idle. None of it goes into the
+night's arenas: there the ember starts from nothing.
+
 The ember arenas (`logic/Arena/Arena.cs`, run in `logic/Play/Zones/
 ArenaRun.cs`, the ground from `logic/Maps/MapGen.cs`): a great clearing with
 cover, seen from higher (64°) and further out (31 m). The horde is kept at a

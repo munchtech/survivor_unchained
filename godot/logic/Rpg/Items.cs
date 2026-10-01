@@ -29,6 +29,8 @@ public sealed class Consumable
     public string? Buff;
     /// <summary>A manual: the art it teaches.</summary>
     public string? Teaches;
+    /// <summary>A tome: the combat skill it teaches (one seen burning in an arena).</summary>
+    public string? Skill;
 }
 
 public sealed class ItemDef
@@ -75,6 +77,19 @@ public static class Items
         var f = Json.Parse<File>(Json.ReadContent("items.json"));
         all = f.Items;
         rarityNames = f.Raritynames;
+        // A tome for every skill the ember can give: what was taken as a card in
+        // an arena, written down to be learned by day.
+        foreach (var id in Content.Weapons.Pool)
+        {
+            var w = Content.Weapons.All[id];
+            all[SkillBook.Tome(id)] = new ItemDef
+            {
+                Id = SkillBook.Tome(id), Name = $"Tome: {w.Name}", Kind = ItemKind.Consumable, Rarity = 2, Icon = "book", Value = 140, Stack = 1,
+                Description = $"Read it to learn {w.Name} for the day, if you have seen it burn in an arena. {w.Description}",
+                Lore = "Someone came out of the dark knowing this, and wrote it down before it went.",
+                Consumable = new Consumable { Skill = id },
+            };
+        }
     }
 
     public static Dictionary<string, ItemDef> All { get { if (all == null) Load(); return all!; } }

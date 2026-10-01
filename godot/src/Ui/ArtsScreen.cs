@@ -10,7 +10,9 @@ namespace SurvivorUnchained.Ui;
 /// The arts the survivor knows (Rpg/ArtBook.cs): which is in hand, how far
 /// each has come, and its facets. An art is taken in hand, and a chosen
 /// facet changed, only where it is safe (out of a fight); a facet newly
-/// opened by rank can be chosen anywhere.
+/// opened by rank can be chosen anywhere. And, on its second page, the
+/// skills learned for the day (Rpg/SkillBook.cs): which are carried, what
+/// each asks of the survivor, and what the arenas have shown them.
 /// </summary>
 public partial class ArtsScreen : Overlay
 {
@@ -26,6 +28,7 @@ public partial class ArtsScreen : Overlay
     };
 
     string? sel;
+    bool skills;
 
     public ArtsScreen(Game g) : base(g) { }
 
@@ -36,8 +39,12 @@ public partial class ArtsScreen : Overlay
         var ch = G.Journey.Ch;
         var known = ArtBook.Known(ch);
         sel ??= ch.Ability != "" ? ch.Ability : known.FirstOrDefault();
-        var v = Frame("Arts", new Vector2(1340, 760), G.Key(Act.Arts),
-            Safe ? "One art in hand. Each grows with use, and its ranks open facets." : "Out here you can choose a facet a rank has opened. Change your art where it is safe.");
+        var v = Frame(skills ? "Skills by Day" : "Arts", new Vector2(1340, 800), G.Key(Act.Arts),
+            skills ? "What the arenas showed you, learned for the day. Each asks something of you."
+            : Safe ? "One art in hand. Each grows with use, and its ranks open facets." : "Out here you can choose a facet a rank has opened. Change your art where it is safe.");
+        var tabs = Style.H(8, Style.Segment("The art in hand", !skills, () => { skills = false; Refresh(); }), Style.Segment("Skills by day", skills, () => { skills = true; Refresh(); }));
+        v.AddChild(tabs);
+        if (skills) { BuildSkills(v); return; }
         var row = Style.H(26);
         v.AddChild(row);
 
@@ -96,7 +103,7 @@ public partial class ArtsScreen : Overlay
         if (!known)
         {
             d.AddChild(Style.Gap(8));
-            d.AddChild(Style.Label($"Not yet learned. A manual teaches it: they are found in map hoards, altars' caches and the packs of the dead.", Style.TextItalic, 15, Style.InkDim, true));
+            d.AddChild(Style.Label($"Not yet learned. A manual teaches it: the thing that rules an arena carries one, and they turn up in the packs of the dead.", Style.TextItalic, 15, Style.InkDim, true));
             d.AddChild(Facets(ch, a, false));
             return d;
         }
@@ -150,5 +157,86 @@ public partial class ArtsScreen : Overlay
         }
         v.AddChild(grid);
         return v;
+    }
+
+    /* ------------------------------------------------------ skills by day -- */
+
+    static readonly string[] Ranks = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
+    string? selSkill;
+
+    void BuildSkills(VBoxContainer v)
+    {
+        var ch = G.Journey.Ch;
+        var seen = ch.Discovered.Where(id => Weapons.All.TryGetValue(id, out var w) && w.Findable && !SkillBook.Knows(ch, id)).ToList();
+        selSkill ??= ch.Slotted.FirstOrDefault() ?? ch.Skills.FirstOrDefault() ?? seen.FirstOrDefault();
+        var row = Style.H(26);
+        v.AddChild(row);
+        var list = Style.V(6);
+        list.CustomMinimumSize = new Vector2(430, 0);
+        list.AddChild(Style.SubLabel($"Learned  ·  carrying {SkillBook.Carried(ch).Count()} of {SkillBook.Slots(ch)}"));
+        if (ch.Skills.Count == 0) list.AddChild(Style.Label("None yet. What burns in the arenas can be learned by day.", Style.TextItalic, 14, Style.InkDim, true));
+        foreach (var id in ch.Skills) list.AddChild(SkillEntry(ch, id, true));
+        if (seen.Count > 0)
+        {
+            list.AddChild(Style.Gap(6));
+            list.AddChild(Style.SubLabel("Seen in the arenas  ·  not yet learned"));
+            foreach (var id in seen) list.AddChild(SkillEntry(ch, id, false));
+        }
+        int unseen = Weapons.Pool.Count(id => !ch.Discovered.Contains(id));
+        if (unseen > 0) list.AddChild(Style.Label($"{unseen} more the arenas have not shown you yet.", Style.TextItalic, 13, Style.InkDim, true));
+        var scroll = Style.Scroll(list);
+        scroll.CustomMinimumSize = new Vector2(450, 600);
+        row.AddChild(scroll);
+        if (selSkill != null && Weapons.All.TryGetValue(selSkill, out var def)) row.AddChild(SkillDetail(ch, def));
+    }
+
+    Control SkillEntry(CharacterData ch, string id, bool known)
+    {
+        var w = Weapons.All[id];
+        bool carried = ch.Slotted.Contains(id), meets = SkillBook.Meets(ch, id), on = selSkill == id;
+        var b = Style.Button("", () => { selSkill = id; Refresh(); });
+        b.CustomMinimumSize = new Vector2(420, 62);
+        if (on) b.AddThemeStyleboxOverride("normal", Style.Box(new Color("#3a2614"), Style.LineHi, 2, 4));
+        var col = ItemViews.SchoolColors[w.School];
+        var r = Style.H(12, Glyphs.Icon(w.Art, 28, known ? col : col with { A = 0.45f }));
+        string attr = SkillBook.Attribute(id);
+        string tag = $"asks {SkillBook.Need} {attr}  ·  you have {SkillBook.Have(ch, attr)}";
+        var words = Style.V(0, Style.Label(w.Name + (carried ? (meets ? "  ·  carried" : "  ·  idle") : ""), Style.Display, 17, known ? (carried ? Colors.White : Style.GoldHi) : Style.InkDim),
+            Style.Label(tag, Style.Ui, 13, meets ? Style.Good : Style.Bad));
+        words.CustomMinimumSize = new Vector2(340, 0);
+        r.AddChild(words);
+        r.Position = new Vector2(12, 8);
+        r.MouseFilter = MouseFilterEnum.Ignore;
+        b.AddChild(r);
+        return b;
+    }
+
+    Control SkillDetail(CharacterData ch, WeaponDef w)
+    {
+        var d = Style.V(10);
+        d.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        bool known = SkillBook.Knows(ch, w.Id), carried = ch.Slotted.Contains(w.Id), meets = SkillBook.Meets(ch, w.Id);
+        var col = ItemViews.SchoolColors[w.School];
+        var head = Style.H(16, Glyphs.Icon(w.Art, 64, col));
+        head.AddChild(Style.V(2, Style.Label(w.Name, Style.Display, 32, Style.GoldHi),
+            Style.Label($"{w.School.ToString().ToLowerInvariant()}  ·  {string.Join(", ", w.Tags.Select(t => t.ToString().ToLowerInvariant()))}", Style.UiBold, 14, col)));
+        d.AddChild(head);
+        d.AddChild(Style.Label(w.Description, Style.Text, 17, Style.Ink, true));
+        string attr = SkillBook.Attribute(w.Id);
+        d.AddChild(Style.Label($"It asks {SkillBook.Need} {attr} of whoever uses it. You have {SkillBook.Have(ch, attr)}.{(meets ? "" : " Until you measure up (points, a respec), it lies idle.")}",
+            Style.UiBold, 15, meets ? Style.Good : Style.Bad, true));
+        d.AddChild(Style.Label($"By day it is rank {Ranks[SkillBook.Rank(ch)]}, and grows with you (every third level). In the night's arenas the ember starts from nothing, whatever you know.", Style.Ui, 14, Style.InkDim, true));
+        d.AddChild(Style.Gap(6));
+        if (!known)
+            d.AddChild(Style.Label("You have seen it burn. Learn it from a tome (a story fight won, Vonnra's Curiosities), or your calling may teach it as you grow.", Style.TextItalic, 15, Style.InkDim, true));
+        else if (!Safe)
+            d.AddChild(Style.Label(carried ? "Carried. Change what you carry somewhere safe." : "Change what you carry somewhere safe: the Waystation, a quiet road.", Style.TextItalic, 14, Style.InkDim, true));
+        else if (carried)
+            d.AddChild(Style.Button($"Put {w.Name} down", () => G.Gear((j, _) => SkillBook.Unslot(j.Ch, w.Id))));
+        else if (ch.Slotted.Count < SkillBook.Slots(ch))
+            d.AddChild(Style.Button($"Carry {w.Name}", () => G.Gear((j, _) => SkillBook.Slot(j.Ch, w.Id)), true));
+        else
+            d.AddChild(Style.Label("Your hands are full: put one down first. More room comes at the fourth level and the eighth.", Style.TextItalic, 14, Style.InkDim, true));
+        return d;
     }
 }

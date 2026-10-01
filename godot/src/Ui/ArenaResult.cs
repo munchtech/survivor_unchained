@@ -46,11 +46,13 @@ public partial class ArenaResultScreen : Overlay
         var outv = Style.V(8, Style.SubLabel("What you take out"));
         outv.AddChild(Line("book", $"{r.Xp:N0} experience" + (r.LevelsGained > 0 ? $"  ·  level {G.Journey.Ch.Level}" : ""), r.LevelsGained > 0 ? Style.Good : Style.Ink));
         if (r.Gold > 0) outv.AddChild(Line("coin", $"{r.Gold:N0} gold", Style.GoldHi));
+        if (r.Tome is { } tome) outv.AddChild(Line("book", $"A tome: {Weapons.All[tome].Name}", new Color("#b8a8d8")));
+        if (r.Taught is { } taught) outv.AddChild(Line("book", $"Your calling taught you {Weapons.All[taught].Name}", Style.Good));
         outv.AddChild(Style.Rule());
         outv.AddChild(Style.SubLabel(r.Discovered.Count > 0 ? "Discovered" : "Nothing new discovered"));
         foreach (var id in r.Discovered) outv.AddChild(Skill(id, true));
         if (r.Discovered.Count > 0)
-            outv.AddChild(Style.Label("What was discovered here can be learned in the world: from books, teachers and gear.", Style.TextItalic, 14, Style.InkDim, true));
+            outv.AddChild(Style.Label("What was discovered here can be learned for the day: from tomes, and from your calling as you grow.", Style.TextItalic, 14, Style.InkDim, true));
         two.AddChild(Card(outv));
 
         // What stays.

@@ -57,7 +57,7 @@ public sealed class ArenaSpec
 
 /// <summary>How an arena ended, and what came out of it.</summary>
 public sealed record ArenaResult(ArenaSpec Spec, bool Won, double Seconds, int Kills, int EmberLevel, double Xp, double Gold,
-    List<string> Discovered, int LevelsGained, bool Longest = false);
+    List<string> Discovered, int LevelsGained, bool Longest = false, string? Tome = null, string? Taught = null);
 
 public static class Arenas
 {
@@ -116,10 +116,22 @@ public static class Arenas
     {
         var ch = j.Ch;
         double xp = XpFor(spec, b.Time, won);
-        int levels = Character.GainXp(ch, xp);
         var fresh = new List<string>();
         foreach (var id in Skills(b))
             if (!ch.Discovered.Contains(id)) { ch.Discovered.Add(id); fresh.Add(id); }
+        int levels = Character.GainXp(ch, xp);
+        string? taught = levels > 0 ? j.Grew() : null;
+        // A story fight won gives a tome of something found in it (a table's, now and then).
+        string? tome = null;
+        if (won && (spec.Story || b.Rng.Next() < 0.35))
+        {
+            var learnable = Skills(b).Where(id => SkillBook.CanLearn(ch, id)).ToList();
+            if (learnable.Count > 0)
+            {
+                tome = learnable[(int)(b.Rng.Next() * learnable.Count)];
+                j.GiveItem(SkillBook.Tome(tome), 1);
+            }
+        }
         j.BankGold(b);
         var w = j.World;
         if (!won)
@@ -132,6 +144,6 @@ public static class Arenas
         bool longest = b.Time / 60 > w.Fact("arena.longest").Number;
         if (longest) w.Facts["arena.longest"] = Math.Round(b.Time / 60, 2);
         w.Arena = null;
-        return new ArenaResult(spec, won, b.Time, b.KillCount, b.EmberLevel, xp, b.GoldTotal, fresh, levels, longest);
+        return new ArenaResult(spec, won, b.Time, b.KillCount, b.EmberLevel, xp, b.GoldTotal, fresh, levels, longest, tome, taught);
     }
 }
