@@ -62,14 +62,21 @@ hi.name = 'Figure'
 only(hi)
 hi.parent = None
 bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-# Face the way the rig does (+Y), stand on the ground, as tall as the anime body.
+# Face the way the rig does, stand on the ground, as tall as the anime body.
+# (The rig's front is where its toes point: -Y for the Quaternius skeleton,
+# the glTF's +Z. A figure set the other way round on it bends against every
+# clip: knees back, arms behind.)
+def bone_end(name, end):
+    b = arm.data.bones[name]
+    return np.array(arm.matrix_world @ (b.head_local if end == 'head' else b.tail_local))
+FRONT = np.sign(bone_end('ball_l', 'tail')[1] - bone_end('foot_l', 'head')[1])
 V = world_verts(hi)
 facing = np.sign(V[:, 1].max() + V[:, 1].min() - 2 * V[:, 1].mean())  # the bust is the front's furthest reach
 lo_z, hi_z = V[:, 2].min(), V[:, 2].max()
 s = (OV[:, 2].max() - OV[:, 2].min()) / (hi_z - lo_z)
 cx = (V[:, 0].max() + V[:, 0].min()) / 2
 M = Matrix.Scale(s, 4) @ Matrix.Translation((-cx, 0, -lo_z))
-if facing < 0: M = Matrix.Rotation(math.pi, 4, 'Z') @ M
+if facing != FRONT: M = Matrix.Rotation(math.pi, 4, 'Z') @ M
 hi.data.transform(M)
 NV = world_verts(hi)
 # Depth: the body's middle where the anime body's is, at the hips.
@@ -79,7 +86,7 @@ zh = 0.55 * NV[:, 2].max()
 dy = section(OV, zh, 0.01, -0.12, 0.12)[:, 1].mean() - section(NV, zh, 0.01, -0.12, 0.12)[:, 1].mean()
 hi.data.transform(Matrix.Translation((0, dy, 0)))
 NV = world_verts(hi)
-print(f'figure: {len(NV)} verts, scaled {s:.3f}, {"turned" if facing < 0 else "facing"}')
+print(f'figure: {len(NV)} verts, scaled {s:.3f}, {"turned" if facing != FRONT else "facing"} the rig\'s way ({"+" if FRONT > 0 else "-"}Y)')
 
 # ------------------------------------------------------------ landmarks --
 def marks(V):
@@ -315,7 +322,7 @@ suit = (blue > -0.01) | ((lum < 0.22) & (blue > -0.05))  # (its sheen is bright,
 # her suit's collar) is hair; below it, hair hanging over the shoulders is told
 # from them by its colour (yellower than her skin).
 fx, fz = LV[:, 0] / 0.056, (LV[:, 2] - (head.z + 0.083)) / 0.08
-face = (fx ** 2 + fz ** 2 < 1) & (LV[:, 1] > head.y + 0.03)
+face = (fx ** 2 + fz ** 2 < 1) & ((LV[:, 1] - head.y) * FRONT > 0.03)
 above_chin = LV[:, 2] > head.z + 0.02
 suit &= ~above_chin
 about_head = (LV[:, 2] > neck_z - 0.14) & (np.abs(LV[:, 0]) < 0.16)  # (the arms are held out at that height)
@@ -360,23 +367,59 @@ print('baked the mask')
 
 # ------------------------------------------------------------- weights --
 # Through a watertight copy: bone heat on the sculpt's own surface fails on
-# its open seams and loose shells.
-only(low)
-bpy.ops.object.duplicate()
-proxy = bpy.context.object; proxy.name = 'Proxy'
-rm = proxy.modifiers.new('rm', 'REMESH'); rm.mode = 'VOXEL'; rm.voxel_size = 0.006
-bpy.ops.object.modifier_apply(modifier='rm')
-print(f'proxy {len(proxy.data.vertices)} verts')
-bpy.ops.object.select_all(action='DESELECT')
-proxy.select_set(True); arm.select_set(True); bpy.context.view_layer.objects.active = arm
-bpy.ops.object.parent_set(type='ARMATURE_AUTO')
-print('proxy groups', len([g for g in proxy.vertex_groups]))
+# its open seams and loose shells. The copy's holes are closed before it is
+# made of voxels (through an open seam the outside floods in, and what is left
+# is a hollow skin, inner and outer, that bone heat cannot solve), and only
+# its outermost shell is kept. Should bone heat still fail, a coarser or
+# finer grid is tried.
+def make_proxy(voxel):
+    only(low)
+    bpy.ops.object.duplicate()
+    proxy = bpy.context.object; proxy.name = 'Proxy'
+    bpy.ops.object.mode_set(mode='EDIT'); bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.mesh.remove_doubles(threshold=0.0005); bpy.ops.mesh.fill_holes(sides=0)
+    bpy.ops.object.mode_set(mode='OBJECT')
+    rm = proxy.modifiers.new('rm', 'REMESH'); rm.mode = 'VOXEL'; rm.voxel_size = voxel
+    bpy.ops.object.modifier_apply(modifier='rm')
+    before = set(bpy.data.objects)
+    bpy.ops.object.mode_set(mode='EDIT'); bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.mesh.separate(type='LOOSE'); bpy.ops.object.mode_set(mode='OBJECT')
+    parts = [proxy] + [o for o in bpy.data.objects if o not in before]
+    keep = max(parts, key=lambda o: np.ptp(world_verts(o), axis=0).prod())
+    for o in parts:
+        if o is not keep: bpy.data.objects.remove(o, do_unlink=True)
+    keep.name = 'Proxy'
+    bpy.ops.object.select_all(action='DESELECT')
+    keep.select_set(True); arm.select_set(True); bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.parent_set(type='ARMATURE_AUTO')
+    got = sum(1 for v in keep.data.vertices if v.groups) / max(1, len(keep.data.vertices))
+    print(f'proxy at {voxel * 1000:.0f} mm: {len(keep.data.vertices)} verts in {len(parts)} shells, {got:.0%} weighted')
+    return keep, got
+for voxel in (0.006, 0.007, 0.005, 0.008, 0.01):
+    proxy, got = make_proxy(voxel)
+    if got > 0.98: break
+    bpy.data.objects.remove(proxy, do_unlink=True)
+else:
+    sys.exit('bone heat failed on every proxy')
 only(low)
 for b in arm.data.bones: low.vertex_groups.new(name=b.name)
 dt = low.modifiers.new('dt', 'DATA_TRANSFER'); dt.object = proxy
 dt.use_vert_data = True; dt.data_types_verts = {'VGROUP_WEIGHTS'}
 dt.vert_mapping = 'POLYINTERP_NEAREST'; dt.layers_vgroup_select_src = 'ALL'; dt.layers_vgroup_select_dst = 'NAME'
 bpy.ops.object.modifier_apply(modifier='dt')
+# Her thighs touch, and the watertight copy is joined there: below the crotch
+# each leg is moved by its own bones only, or the inner thigh is dragged along
+# by the other leg (a web between them as she walks or sits).
+LW = world_verts(low)
+left_x = np.sign(bone_end('thigh_l', 'head')[0])
+below = LW[:, 2] < nm['crotch'] + 0.02
+for side, other, sx in (('l', 'r', left_x), ('r', 'l', -left_x)):
+    on = np.nonzero(below & (LW[:, 0] * sx > 0.004))[0].tolist()
+    for g in low.vertex_groups:
+        if g.name.startswith(LEG) and g.name.endswith('_' + other): g.remove(on)
+    # (what is left with nothing goes with its own thigh)
+    bare = [i for i in on if not low.data.vertices[i].groups]
+    if bare: low.vertex_groups['thigh_' + side].add(bare, 1.0, 'REPLACE')
 bpy.ops.object.vertex_group_limit_total(group_select_mode='ALL', limit=4)
 bpy.ops.object.vertex_group_normalize_all(group_select_mode='ALL', lock_active=False)
 bpy.data.objects.remove(proxy, do_unlink=True)
@@ -385,6 +428,7 @@ low.parent = arm
 mod = low.modifiers.new('Armature', 'ARMATURE'); mod.object = arm
 unweighted = sum(1 for v in low.data.vertices if not v.groups)
 print(f'weighted: {len(low.data.vertices) - unweighted} of {len(low.data.vertices)}')
+if unweighted: sys.exit(f'{unweighted} vertices without weights')
 
 # -------------------------------------------------------------- figure --
 # One shape key for the figure slider: at 1 fuller (the bust rounder and
@@ -395,13 +439,16 @@ key = low.shape_key_add(name='Figure', from_mix=False)
 key.slider_min = -1
 # (Worked in the world's frame, where the joints were measured: she hangs
 # from the armature now, and her own frame may be turned.)
+# (And turned, if need be, so that her front is +Y here.)
 Mw = np.array(low.matrix_world); Mi = np.linalg.inv(Mw)
-P = world_verts(low)
+F = np.array([1, FRONT, 1])
+P = world_verts(low) * F
+rest_f = {k: np.array(v) * F for k, v in rest.items()}
 D = np.zeros_like(P)
 # The chest wall: the front of the torso just under the bust.
-under = (np.abs(P[:, 2] - (rest['spine_02'][2] + 0.02)) < 0.015) & (np.abs(P[:, 0]) < 0.08)
+under = (np.abs(P[:, 2] - (rest_f['spine_02'][2] + 0.02)) < 0.015) & (np.abs(P[:, 0]) < 0.08)
 wall = np.percentile(P[under][:, 1], 90)
-chest = (P[:, 2] > rest['spine_02'][2]) & (P[:, 2] < rest['neck_01'][2] - 0.04) & (np.abs(P[:, 0]) < 0.17)
+chest = (P[:, 2] > rest_f['spine_02'][2]) & (P[:, 2] < rest_f['neck_01'][2] - 0.04) & (np.abs(P[:, 0]) < 0.17)
 for side in (1, -1):
     pts = P[chest & (P[:, 0] * side > 0.02)]
     tip = pts[np.argmax(pts[:, 1])]
@@ -415,17 +462,17 @@ for side in (1, -1):
     # and settled a touch lower, as a fuller bust sits
     D[:, 2] -= 0.008 * fall
 # Hips and seat fuller, the waist in.
-hips_z = rest['thigh_l'][2]
+hips_z = rest_f['thigh_l'][2]
 fh = np.clip(1 - np.abs(P[:, 2] - hips_z) / 0.2, 0, 1) ** 2 * (np.abs(P[:, 0]) < 0.3)
 D[:, 0] += P[:, 0] * 0.11 * fh
-mid_y = rest['pelvis'][1]
+mid_y = rest_f['pelvis'][1]
 seat = fh * (P[:, 1] < mid_y) * (np.abs(P[:, 0]) < 0.2)
 D[:, 1] += (P[:, 1] - mid_y) * 0.12 * seat
-waist_z = rest['spine_01'][2] + 0.04
+waist_z = rest_f['spine_01'][2] + 0.04
 fw = np.clip(1 - np.abs(P[:, 2] - waist_z) / 0.1, 0, 1) ** 2 * (np.abs(P[:, 0]) < 0.25)
 D[:, 0] -= P[:, 0] * 0.09 * fw
 D[:, 1] -= (P[:, 1] - mid_y) * 0.05 * fw
-Q = P + D
+Q = (P + D) * F
 key.data.foreach_set('co', (Q @ Mi[:3, :3].T + Mi[:3, 3]).reshape(-1))
 low.data.update()
 print(f'figure key made: moves {np.count_nonzero(np.linalg.norm(D, axis=1) > 0.001)} vertices, at most {np.linalg.norm(D, axis=1).max() * 100:.1f} cm')
