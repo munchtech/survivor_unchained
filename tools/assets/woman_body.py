@@ -11,7 +11,11 @@ proportions, tools/assets/anime_female.py): every joint is moved onto the
 new figure by landmarks found in it (the ground, ankle, knee, crotch,
 waist, the arms' line, neck, crown; along each arm the shoulder, elbow,
 wrist and fingertips) while every bone keeps its orientation, so a pose
-means the same on her. The figure is brought down to a game's weight,
+means the same on her. Her hands are made the skeleton's: palm down, a
+woman's size, each finger laid as its fingers lie, and each digit's joints
+down its middle (a sculpt's hands are often splayed, palm forward and
+large: every clip's curl then bends them sideways into sausages). The
+figure is brought down to a game's weight (the hands less than the rest),
 its paint baked onto a clean sheet from the full figure (colour and the
 fine shape as a normal map), and it is weighted to the skeleton through a
 watertight copy of itself (bone heat fails on a sculpt's open seams and
@@ -197,6 +201,274 @@ for b in eb:
 bpy.ops.object.mode_set(mode='OBJECT')
 print('joints moved:', {n: tuple(np.round(new[n][0], 3)) for n in ('pelvis', 'neck_01', 'Head', 'upperarm_l', 'lowerarm_l', 'hand_l', 'thigh_l', 'calf_l', 'foot_l')})
 
+# --------------------------------------------------------------- hands --
+# Her hands as the skeleton's are. A sculpt's T often holds them palm
+# forward, fingers splayed and fanned up and down, and larger than life,
+# while the skeleton's lie palm down, fingers side by side; then every
+# clip's curl bends her fingers sideways into one another, thick as sausages.
+# So, on the full figure (the bake then takes the hands as they are made
+# here): her digits are found over the hand's surface, each hand turned
+# palm down (the forearm taking the twist, as a wrist does), brought to a
+# woman's size and laid along the skeleton's, and each finger swung about
+# its knuckle to lie as the skeleton's does.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import anime_hands as handfit
+import heapq
+HP = {b.name: np.array(arm.matrix_world @ b.head_local) for b in arm.data.bones}
+def bone_dir(name):
+    b = arm.data.bones[name]
+    d = np.array(arm.matrix_world.to_3x3() @ (b.tail_local - b.head_local))
+    return d / np.linalg.norm(d)
+
+def arm_frame(V, side):
+    E0, W0 = HP[f'lowerarm_{side}'], HP[f'hand_{side}']
+    ax = (W0 - E0) / np.linalg.norm(W0 - E0)
+    d = V - W0
+    a = d @ ax
+    near = np.linalg.norm(d - np.outer(a, ax), axis=1) < 0.15
+    return E0, W0, ax, a, near
+
+FE = np.empty(len(hi.data.edges) * 2, np.int64); hi.data.edges.foreach_get('vertices', FE); FE = FE.reshape(-1, 2)
+
+class Surface:
+    """The surface within a region as a graph over its distinct points (a
+    sculpt's seams split one point into several vertices), for distances
+    along it."""
+    def __init__(self, V, inside, weld=0.0004):
+        # (points closer than weld are one: a sculpt's halves meet at a seam
+        # whose two edges lie close, not on each other)
+        from mathutils.kdtree import KDTree
+        idx = np.nonzero(inside)[0]
+        kd = KDTree(len(idx))
+        for j, i in enumerate(idx.tolist()): kd.insert(V[i], j)
+        kd.balance()
+        parent = np.arange(len(idx))
+        def root(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]; x = parent[x]
+            return x
+        for j, i in enumerate(idx.tolist()):
+            for _, k, _ in kd.find_range(V[i], weld):
+                rj, rk = root(j), root(k)
+                if rj != rk: parent[max(rj, rk)] = min(rj, rk)
+        roots = np.array([root(j) for j in range(len(idx))])
+        _, first, inv = np.unique(roots, return_index=True, return_inverse=True)
+        self.node = -np.ones(len(V), np.int64); self.node[idx] = inv.reshape(-1)
+        self.rep = idx[first]                         # a vertex for each point
+        self.n = len(first)
+        e = FE[inside[FE[:, 0]] & inside[FE[:, 1]]]
+        a_, b_ = self.node[e[:, 0]], self.node[e[:, 1]]
+        k = a_ != b_
+        a_, b_ = a_[k], b_[k]
+        L = np.linalg.norm(V[self.rep[a_]] - V[self.rep[b_]], axis=1)
+        self.nb = [[] for _ in range(self.n)]
+        for x, y, l in zip(a_.tolist(), b_.tolist(), L.tolist()):
+            self.nb[x].append((y, l)); self.nb[y].append((x, l))
+        # A sculpt may be walled twice (a skin, and a shell a little inside
+        # it): distances are taken over the outer skin, its largest piece, and
+        # each point of any other piece goes with the skin's point nearest it.
+        comp = -np.ones(self.n, int); nc = 0
+        for s0 in range(self.n):
+            if comp[s0] >= 0: continue
+            st = [s0]; comp[s0] = nc
+            while st:
+                u = st.pop()
+                for v, _ in self.nb[u]:
+                    if comp[v] < 0: comp[v] = nc; st.append(v)
+            nc += 1
+        self.outer = comp == np.argmax(np.bincount(comp))
+        self.alias = np.arange(self.n)
+        on = np.nonzero(self.outer)[0]
+        kd2 = KDTree(len(on))
+        for j, u in enumerate(on.tolist()): kd2.insert(V[self.rep[u]], j)
+        kd2.balance()
+        for u in np.nonzero(~self.outer)[0].tolist():
+            self.alias[u] = on[kd2.find(V[self.rep[u]])[1]]
+        self.pieces = nc
+    def dist(self, sources):
+        d = np.full(self.n, np.inf)
+        h = [(0.0, int(s_)) for s_ in sources]
+        for _, s_ in h: d[s_] = 0.0
+        heapq.heapify(h)
+        while h:
+            du, u = heapq.heappop(h)
+            if du > d[u]: continue
+            for v, l in self.nb[u]:
+                if du + l < d[v]:
+                    d[v] = du + l; heapq.heappush(h, (du + l, v))
+        return d
+
+def digits(V, side):
+    """Her five digits, found over the hand's skin from the wrist. Each is a
+    peak of the distance along the skin from the wrist: going down from the
+    furthest points, a digit is a peak that stands at least 2.5 cm above
+    where it joins a higher one (its web), and its own region is what is
+    above that. The thumb is the digit whose web lies nearest the wrist; the
+    fingers follow across the hand from it. Each finger: its vertices (how
+    fully each is the finger's, fading in over its web), its tip, and the
+    ring of it at its web."""
+    E0, W0, ax, a, near = arm_frame(V, side)
+    inside = near & (a > -0.005)
+    S_ = Surface(V, inside)
+    ar = a[S_.rep]
+    gw = S_.dist(np.nonzero((ar < 0.004) & S_.outer)[0])
+    ok = np.isfinite(gw)
+    order = np.nonzero(ok)[0][np.argsort(-gw[ok])]
+    up = np.arange(S_.n)                              # each region named by its peak
+    def find(x):
+        while up[x] != x:
+            up[x] = up[up[x]]; x = up[x]
+        return x
+    seen = np.zeros(S_.n, bool)
+    members, own, found = {}, {}, []
+    for u in order.tolist():
+        cs = {find(v) for v, _ in S_.nb[u] if seen[v]}
+        seen[u] = True
+        if not cs:
+            members[u] = [u]; continue
+        cs = sorted(cs, key=lambda c: -gw[c])
+        top = cs[0]
+        for c in cs[1:]:
+            if gw[c] - gw[u] > 0.025:                 # a digit, joining at its web
+                found.append((c, gw[u], own.get(c, (gw[u], list(members[c])))))
+                own.setdefault(top, (gw[u], list(members[top])))
+            up[c] = top; members[top].extend(members.pop(c))
+        up[u] = top; members[top].append(u)
+    peak = max(members, key=lambda c: gw[c])
+    found.append((peak, np.inf, own.get(peak, (0.0, list(members[peak])))))    # (the longest joins nothing)
+    if len(found) != 5:
+        print(f'{side} hand: {len(found)} digits found, not 5: the hand left as it is')
+        return None
+    # the thumb joins nearest the wrist
+    found.sort(key=lambda d: d[1])
+    thumb, rest = found[0], found[1:]
+    tp = V[S_.rep[thumb[0]]]
+    rest.sort(key=lambda d: np.linalg.norm(V[S_.rep[d[0]]] - tp))
+    tw, treg = thumb[2]
+    tn = np.array(treg)
+    out = {'thumb': S_.rep[thumb[0]], 'thumb_pts': S_.rep[tn], 'thumb_g': gw[tn]}
+    names = ('index', 'middle', 'ring', 'pinky')
+    al = S_.alias[S_.node[inside]]
+    for f, (t, joins, (web, region)) in zip(names, rest):
+        reg = np.zeros(S_.n, bool); reg[region] = True
+        w = handfit.smooth01((gw - web) / 0.015) * reg
+        vw = np.zeros(len(V)); vw[inside] = w[al]
+        ring_n = np.nonzero(reg & (gw < web + 0.006))[0]
+        out[f] = dict(tip=S_.rep[t], idx=np.nonzero(vw > 0)[0], w=vw[vw > 0], ring=S_.rep[ring_n], web=web, tipg=gw[t],
+                      pts=S_.rep[np.array(region)])
+    print(f'{side} hand: {S_.n} points in {S_.pieces} pieces; thumb {gw[thumb[0]]:.3f} from the wrist, joining at {thumb[1]:.3f}; ' +
+          ', '.join(f'{f} {out[f]["tipg"]:.3f} (web {out[f]["web"]:.3f})' for f in names))
+    return out
+
+def palm_down(V, side, thumb):
+    """Her hand turned about her forearm until it lies palm down (its fingers
+    fanned front to back across the arm, the thumb in front), the turn
+    growing from nothing at the elbow to all of it at the wrist."""
+    E0, W0, ax, a, near = arm_frame(V, side)
+    e1 = np.array([0.0, 1.0, 0.0]); e1 -= (e1 @ ax) * ax; e1 /= np.linalg.norm(e1)
+    e2 = np.cross(ax, e1)
+    reach = a[near].max()
+    F = V[near & (a > 0.5 * reach)] - W0
+    F = F - np.outer(F @ ax, ax); F = F - F.mean(0)
+    uv = np.stack([F @ e1, F @ e2], 1)
+    w, vec = np.linalg.eigh(uv.T @ uv)
+    phi = np.arctan2(vec[1, 1], vec[0, 1])          # the fan's direction across the arm
+    part = near & (a > (E0 - W0) @ ax - 0.02)
+    ramp = handfit.smooth01((a - (E0 - W0) @ ax) / (-(E0 - W0) @ ax))
+    best = None
+    for ang in (-phi, np.pi - phi):
+        X = V.copy()
+        X[part] = handfit.rotate(V[part], W0, ax, np.full(part.sum(), ang) * ramp[part])
+        front = (X[thumb] - W0) @ e1                  # the thumb's way across: in front is -Y
+        if best is None or front < best[0]: best = (front, ang, X)
+    print(f'{side} hand turned {np.degrees(best[1]):.0f} deg about the forearm, palm down')
+    return best[2]
+
+def resize(V, side):
+    """A sculpt's hands run large: hers brought to a woman's, about a tenth
+    of her height and a little more from wrist to fingertip, the change
+    tapering in over the wrist."""
+    E0, W0, ax, a, near = arm_frame(V, side)
+    reach = a[near].max()
+    want = 0.106 * nm['H']
+    k = min(1.0, want / reach)
+    part = near & (a > -0.03)
+    f = 1 + (k - 1) * handfit.smooth01((a[part] + 0.02) / 0.035)
+    V = V.copy(); V[part] = W0 + (V[part] - W0) * f[:, None]
+    print(f'{side} hand {reach * 100:.1f} cm from the wrist, made {want * 100:.1f}')
+    return V
+
+def lay_fingers(V, side, dig):
+    """Each finger swung about its knuckle to lie as the skeleton's does (a
+    sculpt's fingers splay; the clips curl them as the skeleton holds them)."""
+    for f in ('index', 'middle', 'ring', 'pinky'):
+        d = dig[f]
+        if len(d['ring']) < 3:
+            print(f'{side} {f}: no knuckle found, left as it is'); continue
+        K = V[d['ring']].mean(0)
+        tip = V[d['tip']]
+        have = (tip - K) / np.linalg.norm(tip - K)
+        want = bone_dir(f'{f}_01_{side}')
+        axis = np.cross(have, want); sn = np.linalg.norm(axis)
+        if sn < 1e-6: continue
+        ang = np.arctan2(sn, have @ want)
+        V[d['idx']] = handfit.rotate(V[d['idx']], K, axis / sn, ang * d['w'])
+        print(f'{side} {f} laid {np.degrees(ang):.0f} deg')
+    return V
+
+def section_centre(X, p, u, half=0.003):
+    """The middle of a digit where it crosses p (its points within half
+    of p along the digit's line u)."""
+    m = np.abs((X - p) @ u) < half
+    return X[m].mean(0) if m.sum() >= 4 else p
+
+def digit_joints(V, side, dig):
+    """Each digit's joints down its middle, from its own skin: a finger's
+    knuckle a little before its web (as a fifth of its length again into
+    the palm), its middle joints at a human finger's proportions; the
+    thumb's from its root by the palm to its tip."""
+    J = {}
+    for f in ('index', 'middle', 'ring', 'pinky'):
+        d = dig[f]
+        X = V[d['pts']]
+        T, K = V[d['tip']], (V[d['ring']].mean(0) if len(d['ring']) else X.mean(0))
+        L = np.linalg.norm(T - K); u = (T - K) / L
+        kn = K - 0.22 * L * u
+        tip = section_centre(X, T - 0.004 * u, u)
+        span = np.linalg.norm(tip - kn)
+        p2, p3 = handfit.PHALANX[f]
+        J[f'{f}_01_{side}'] = kn
+        J[f'{f}_02_{side}'] = section_centre(X, kn + p2 * span * u, u)
+        J[f'{f}_03_{side}'] = section_centre(X, kn + p3 * span * u, u)
+        J[f'{f}_04_leaf_{side}'] = tip
+    X, g = V[dig['thumb_pts']], dig['thumb_g']
+    T = V[dig['thumb']]
+    base = X[g < np.quantile(g, 0.2)].mean(0)
+    u = (T - base) / np.linalg.norm(T - base)
+    for c, t in zip(('01', '02', '03', '04_leaf'), (0.0, 0.45, 0.76, 0.94)):
+        p_ = base + (T - base) * t
+        J[f'thumb_{c}_{side}'] = p_ if t == 0 else section_centre(X, p_, u)
+    return J
+
+FINGER_JOINTS = {}
+V = world_verts(hi)
+for side, sx in (('l', 1), ('r', -1)):
+    dig = digits(V, side)
+    if dig is None: continue
+    V = palm_down(V, side, dig['thumb'])
+    V = resize(V, side)
+    o, axis, ang = handfit.straighten_forearm(V, HP, bone_dir(f'lowerarm_{side}'), side, sx)
+    V = handfit.rotate(V, o, axis, ang)
+    o, axis, ang = handfit.straighten(V, HP, bone_dir(f'middle_01_{side}'), side, sx)
+    V = handfit.rotate(V, o, axis, ang)
+    V = lay_fingers(V, side, dig)
+    FINGER_JOINTS.update(digit_joints(V, side, dig))
+hi.data.vertices.foreach_set('co', V.reshape(-1)); hi.data.update()
+if os.environ.get('WOMAN_DEBUG_HANDS'): sys.exit(0)    # (to see the hands found and laid, and stop)
+# (normals that came with the figure would still point where the hands were)
+if hi.data.has_custom_normals:
+    only(hi); bpy.ops.mesh.customdata_custom_splitnormals_clear(); bpy.ops.object.shade_smooth()
+
 if preview:
     # The figure, with a bead on every joint, from the front.
     mat = bpy.data.materials.new('bead'); mat.diffuse_color = (1, 0.2, 0.1, 1)
@@ -224,10 +496,35 @@ only(low)
 bpy.ops.object.mode_set(mode='EDIT'); bpy.ops.mesh.select_all(action='SELECT')
 bpy.ops.mesh.remove_doubles(threshold=0.0004)
 bpy.ops.object.mode_set(mode='OBJECT')
-dec = low.modifiers.new('dec', 'DECIMATE'); dec.ratio = min(1.0, FACES / max(1, len(low.data.polygons)))
-bpy.ops.object.modifier_apply(modifier='dec')
+# Her hands brought down on their own, keeping more of them than of the
+# rest (fingers brought down with the body come out as stubby prisms): the
+# body to what is left of the faces, each hand to WOMAN_HAND_FACES.
+HAND_FACES = int(os.environ.get('WOMAN_HAND_FACES', '2400'))
+def hand_faces():
+    LK = world_verts(low)
+    hv = np.zeros(len(LK), bool)
+    for side in ('l', 'r'):
+        E0, W0, ax, a_, near = arm_frame(LK, side)
+        hv |= near & (a_ > -0.01)
+    PV = np.empty(len(low.data.loops), np.int64); low.data.loops.foreach_get('vertex_index', PV)
+    starts = np.empty(len(low.data.polygons), np.int64); low.data.polygons.foreach_get('loop_start', starts)
+    inhand = np.logical_and.reduceat(hv[PV], starts)
+    return inhand
+def decimate_where(sel, ratio):
+    bpy.ops.object.mode_set(mode='EDIT'); bpy.ops.mesh.select_mode(type='FACE')
+    bm = bmesh.from_edit_mesh(low.data); bm.faces.ensure_lookup_table()
+    for f in bm.faces: f.select_set(False)
+    for i in np.nonzero(sel)[0].tolist(): bm.faces[i].select_set(True)
+    bm.select_flush_mode(); bmesh.update_edit_mesh(low.data)
+    bpy.ops.mesh.decimate(ratio=min(1.0, ratio))
+    bpy.ops.object.mode_set(mode='OBJECT')
+inhand = hand_faces()
+decimate_where(~inhand, (FACES - 2 * HAND_FACES) / max(1, (~inhand).sum()))
+inhand = hand_faces()
+decimate_where(inhand, 2 * HAND_FACES / max(1, inhand.sum()))
 bpy.ops.object.shade_smooth()
-print(f'down to {len(low.data.polygons)} faces')
+LK = world_verts(low)
+print(f'down to {len(low.data.polygons)} faces, {int(hand_faces().sum())} of them the hands; each hand ' + ', '.join(str(int((arm_frame(LK, sd)[4] & (arm_frame(LK, sd)[3] > 0)).sum())) for sd in ('l', 'r')) + ' vertices')
 
 # A clean sheet, and the full figure's paint and fine shape baked onto it.
 while low.data.uv_layers: low.data.uv_layers.remove(low.data.uv_layers[0])
@@ -365,6 +662,48 @@ low.data.color_attributes.remove(low.data.color_attributes['mask'])
 masker.filepath_raw = os.path.splitext(out_glb)[0] + '_mask.png'; masker.file_format = 'PNG'; masker.save()
 print('baked the mask')
 
+# --------------------------------------------------------- finger joints --
+# Her hands, laid as the skeleton's (above), now get their joints: the
+# elbow and wrist in the middle of her arm (anime_hands.py), each digit's
+# joints down its middle as found with it above (or, for a hand whose
+# digits were not found, by the hand tool's sections across it).
+Mlow = np.array(low.matrix_world); Milow = np.linalg.inv(Mlow)
+def low_get():
+    return world_verts(low)
+def low_put(V):
+    low.data.vertices.foreach_set('co', (V @ Milow[:3, :3].T + Milow[:3, 3]).reshape(-1)); low.data.update()
+EI = np.array([e.vertices[:] for e in low.data.edges])
+ek = {tuple(sorted(e.vertices[:])): i for i, e in enumerate(low.data.edges)}
+HM = (EI, np.array([(p.index, ek[tuple(sorted(k))]) for p in low.data.polygons for k in p.edge_keys]))
+HP = {b.name: np.array(arm.matrix_world @ b.head_local) for b in arm.data.bones}
+
+V = low_get()
+for side, sx in (('l', 1), ('r', -1)):
+    handfit.centre_arm(V, HM, HP, side, sx)
+    mine = {k: v for k, v in FINGER_JOINTS.items() if k.endswith('_' + side)}
+    if len(mine) == 20:
+        HP.update(mine)
+    else:
+        handfit.fit_fingers(V, HM, HP, side, sx)
+        handfit.fit_thumb(V, HP, side, sx)
+# The skeleton's hand joints where they now are, each bone keeping its way.
+only(arm)
+bpy.ops.object.mode_set(mode='EDIT')
+eb = arm.data.edit_bones
+Ai = np.linalg.inv(np.array(arm.matrix_world))
+DIGITS = ('index', 'middle', 'ring', 'pinky', 'thumb')
+for side in ('l', 'r'):
+    names = [f'lowerarm_{side}', f'hand_{side}'] + [f'{f}_0{i}_{side}' for f in DIGITS for i in (1, 2, 3)] + [f'{f}_04_leaf_{side}' for f in DIGITS]
+    for c in names:
+        eb[c].translate(Vector(HP[c] @ Ai[:3, :3].T + Ai[:3, 3]) - eb[c].head)
+    pairs = [(f'upperarm_{side}', f'lowerarm_{side}'), (f'lowerarm_{side}', f'hand_{side}'), (f'hand_{side}', f'middle_01_{side}')]
+    for f in DIGITS:
+        pairs += [(f'{f}_01_{side}', f'{f}_02_{side}'), (f'{f}_02_{side}', f'{f}_03_{side}'), (f'{f}_03_{side}', f'{f}_04_leaf_{side}')]
+    for a_, b_ in pairs:
+        L = (eb[b_].head - eb[a_].head).length
+        if L > 1e-4: eb[a_].length = L
+bpy.ops.object.mode_set(mode='OBJECT')
+
 # ------------------------------------------------------------- weights --
 # Through a watertight copy: bone heat on the sculpt's own surface fails on
 # its open seams and loose shells. The copy's holes are closed before it is
@@ -420,6 +759,24 @@ for side, other, sx in (('l', 'r', left_x), ('r', 'l', -left_x)):
     # (what is left with nothing goes with its own thigh)
     bare = [i for i in on if not low.data.vertices[i].groups]
     if bare: low.vertex_groups['thigh_' + side].add(bare, 1.0, 'REPLACE')
+# The hands from their joint lines (anime_hands.py): through the watertight
+# copy her fingers are fused, and bone heat gives each the next one's bones.
+VH = low_get()
+for side, sx in (('l', 1), ('r', -1)):
+    idx, blend, Wn = handfit.hand_weights(VH, HP, side, sx)
+    for j, vi in enumerate(idx.tolist()):
+        v = low.data.vertices[vi]
+        new = {n: blend[j] * w[j] for n, w in Wn.items()}
+        for g in v.groups:
+            n = low.vertex_groups[g.group].name
+            new[n] = new.get(n, 0) + (1 - blend[j]) * g.weight
+        for gi in [g.group for g in v.groups]:
+            low.vertex_groups[gi].remove([vi])
+        tot = sum(new.values())
+        for n, w in new.items():
+            if w / tot > 1e-3:
+                low.vertex_groups[n].add([vi], w / tot, 'REPLACE')
+    print(side, 'hand weights from its joints:', len(idx), 'vertices')
 bpy.ops.object.vertex_group_limit_total(group_select_mode='ALL', limit=4)
 bpy.ops.object.vertex_group_normalize_all(group_select_mode='ALL', lock_active=False)
 bpy.data.objects.remove(proxy, do_unlink=True)
