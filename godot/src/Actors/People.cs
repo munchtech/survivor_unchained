@@ -87,7 +87,7 @@ public static class People
         var outfit = spec.Outfit?.ToArray() ?? (sex == "female" ? FemalePeasant : MalePeasant);
         var look = new Look(sex, outfit, spec.Hair, spec.Beard == true, C(spec.HairColor), C(spec.Skin), C(spec.Dye?.Cloth), C(spec.Dye?.Under),
             sex == "female" ? spec.Figure ?? 1 : 0);
-        var p = spec.Body == SurvivorUnchained.Play.Loadouts.HerBody ? Her(look) : Build(look);
+        var p = spec.Body switch { SurvivorUnchained.Play.Loadouts.HerBody => Woman(look), "anime" => Her(look), _ => Build(look) };
         // A child's larger head.
         if (spec.Head is double h && h != 1)
         {
@@ -156,6 +156,56 @@ public static class People
         person.Anim.AddAnimationLibrary("", Clips());
         return person;
     }
+
+    /// <summary>The woman survivor's body (tools/assets/woman_body.py: a
+    /// figure made for the game, rigged to the same skeleton so every clip
+    /// plays on her). One mesh, her own hair and close-fitting suit painted
+    /// on: her skin takes the tone chosen, her hair its colour and her suit
+    /// the calling's cloth (shaders/woman_skin.gdshader), and her figure is
+    /// her own shape key.</summary>
+    public static Person Woman(Look look)
+    {
+        var root = GD.Load<PackedScene>("res://art/people/woman.glb").Instantiate<Node3D>();
+        var skel = (Skeleton3D)root.FindChildren("*", "Skeleton3D", true, false)[0];
+        var person = new Person { Root = root, Skeleton = skel, Anim = new AnimationPlayer() };
+        womanShader ??= GD.Load<Shader>("res://shaders/woman_skin.gdshader");
+        womanMask ??= GD.Load<Texture2D>("res://art/people/woman_mask.png");
+        foreach (var mi in skel.GetChildren().OfType<MeshInstance3D>())
+        {
+            person.Meshes.Add(mi);
+            // The figure slider: 1 as she was made, 0 slighter, 1.5 fuller still.
+            int key = mi.FindBlendShapeByName("Figure");
+            if (key >= 0) mi.SetBlendShapeValue(key, (float)(look.Figure < 1 ? look.Figure - 1 : (look.Figure - 1) * 2));
+            for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D src)
+                {
+                    var m = new ShaderMaterial { Shader = womanShader, ResourceName = src.ResourceName };
+                    m.SetShaderParameter("tex", src.AlbedoTexture);
+                    m.SetShaderParameter("normal_tex", src.NormalTexture);
+                    m.SetShaderParameter("mask", womanMask);
+                    m.SetShaderParameter("paint_skin", WomanPaint.Skin);
+                    m.SetShaderParameter("paint_hair", WomanPaint.Hair);
+                    m.SetShaderParameter("paint_suit", WomanPaint.Suit);
+                    m.SetShaderParameter("skin", look.Skin ?? WomanPaint.Skin);
+                    if (look.HairColor is Color hair) { m.SetShaderParameter("dye_hair", true); m.SetShaderParameter("hair", hair); }
+                    if (look.Cloth is Color cloth) { m.SetShaderParameter("dye_suit", true); m.SetShaderParameter("cloth", cloth); }
+                    mi.SetSurfaceOverrideMaterial(s, m);
+                }
+            mi.Layers = 2;
+        }
+        root.AddChild(person.Anim);
+        person.Anim.RootNode = "..";
+        person.Anim.AddAnimationLibrary("", Clips());
+        return person;
+    }
+
+    static Shader? womanShader;
+    static Texture2D? womanMask;
+
+    /// <summary>Her paint's own skin (lit, not in its shadows), hair and suit,
+    /// which the choices are made against (tools/assets/woman_body.py prints
+    /// them).</summary>
+    static readonly (Color Skin, Color Hair, Color Suit) WomanPaint = (new("#ddad9f"), new("#8d735a"), new("#272d35"));
 
     /// <summary>A woman in her own body: donizaki's anime base (Sketchfab,
     /// CC BY), rigged to the same skeleton by tools/assets/anime_female.py so

@@ -120,7 +120,9 @@ public partial class Game : Node, IZoneHost
         var a = Callings.Archetype(arch);
         Begin(new CreationChoice
         {
-            Name = Args.Get("name") ?? "Ashe", Archetype = arch, Background = Args.Get("bg") ?? "hunter", Palette = a.Palettes[0].Id,
+            // --palette ID: the calling's colours (its first, undyed, by default).
+            Name = Args.Get("name") ?? "Ashe", Archetype = arch, Background = Args.Get("bg") ?? "hunter",
+            Palette = a.Palettes.Any(p => p.Id == Args.Get("palette")) ? Args.Get("palette")! : a.Palettes[0].Id,
             WeaponItem = Args.Get("weapon") ?? a.Weapons[0], Ability = a.Abilities[0],
             // --sex female [--hair STYLE --figure F --skin ID]: a woman survivor.
             Sex = Args.Get("sex") == "female" ? Sex.Female : null, HairStyle = Args.Get("hair"), Skin = Args.Get("skin"),

@@ -46,7 +46,7 @@ public class LoadoutTests
     [InlineData("warden")]
     [InlineData("reaver")]
     [InlineData("stalker")]
-    public void A_woman_goes_in_her_own_body_bare_with_her_hair(string archetype)
+    public void A_woman_goes_in_her_own_body_with_her_own_hair(string archetype)
     {
         var a = Callings.Archetype(archetype);
         var ch = Character.Create(new CreationChoice
@@ -57,7 +57,10 @@ public class LoadoutTests
         var p = Loadouts.Of(ch).Person;
         Assert.Equal(Loadouts.HerBody, p.Body);
         Assert.Empty(p.Outfit!);
-        Assert.Equal("Hair_Buns", p.Hair);
+        // Her hair is her own: no hairstyle goes over it (its colour still dyes it).
+        Assert.Null(p.Hair);
+        // The calling's first colours are its own, undyed: her suit as it was made.
+        Assert.Null(p.Dye);
         Assert.False(p.Beard);
         Assert.Equal(1.2, p.Figure);
         Assert.False(string.IsNullOrEmpty(Loadouts.Of(ch).Arms.Right));

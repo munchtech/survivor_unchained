@@ -48,11 +48,11 @@ public static class Loadouts
         return $"#{C(16):x2}{C(8):x2}{C(0):x2}";
     }
 
-    /// <summary>A woman survivor's own body (People: donizaki's, rigged to
-    /// the same skeleton). The Quaternius clothes are cut for the Quaternius
-    /// bodies, so she goes bare until her gear is made to fit her: no hood
-    /// over her hair.</summary>
-    public const string HerBody = "anime";
+    /// <summary>A woman survivor's own body (People.Woman, rigged to the same
+    /// skeleton): her hair and her close-fitting suit are her own, the suit
+    /// dyed the calling's cloth. The Quaternius clothes are cut for the
+    /// Quaternius bodies, so nothing goes over it: no hood, no hairstyle.</summary>
+    public const string HerBody = "woman";
 
     /// <summary>The survivor as their character sheet has them.</summary>
     public static Loadout Of(CharacterData ch)
@@ -71,7 +71,7 @@ public static class Loadouts
         var person = new PersonSpec
         {
             Sex = sex, Body = her ? HerBody : null, Outfit = her ? new List<string>() : OutfitOf(ch.Archetype, sex, hood),
-            Hair = hood || ch.HairStyle == "none" ? null : ch.HairStyle ?? Lore.HairStyles(sex)[0],
+            Hair = her || hood || ch.HairStyle == "none" ? null : ch.HairStyle ?? Lore.HairStyles(sex)[0],
             Beard = sex == Sex.Male && (ch.Beard ?? true),
             HairColor = string.IsNullOrEmpty(hair) ? null : hair, Skin = string.IsNullOrEmpty(skin) ? null : skin, Figure = ch.Figure,
             // The calling's colours dye the cloth; trousers take the darker

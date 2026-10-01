@@ -34,7 +34,8 @@ Options go after `--`:
 
 - `--new`: straight to making a survivor;
 - `--quick warden|reaver|arcanist|stalker`: a new survivor of that calling,
-  no title (with `--name`, `--bg`, `--weapon`);
+  no title (with `--name`, `--bg`, `--weapon`, `--palette`; a woman with
+  `--sex female`, `--figure F`, `--skin ID`);
 - `--zone lowford|waystation|verge|arena`: where to start (past the prologue,
   which then counts as done), `--time day|night|dusk|dawn`, `--at X,Z`;
   `arena` goes straight into one of the Wayfinder's arenas (`--offer 0|1|2`,
@@ -176,11 +177,12 @@ game at the same place and hour; needs the dev server), then
   Universal Animation Libraries (`People.cs`: the body hidden under the
   clothes, a woman's figure from two shape keys, skin tone, cloth dyed by
   `shaders/person.gdshader`; a woman survivor in a body of her own,
-  donizaki's anime base in `art/people`, rigged to the same skeleton by
-  `tools/assets/anime_female.py`, her figure from her own shape keys and her
-  skin toned by `shaders/anime_skin.gdshader`, our hairstyles fitted to
-  her scalp by `tools/assets/anime_hair.py`, bare until gear is made to
-  fit her), weapons in hand (`Arms.cs`), the survivor
+  `art/people/woman.glb`, a figure made in ComfyUI for the game and rigged
+  to the same skeleton by `tools/assets/woman_body.py`: her figure from her
+  own shape key, and through her mask her skin toned, her hair coloured and
+  her suit dyed the calling's cloth by `shaders/woman_skin.gdshader`;
+  donizaki's anime base, `People.Her`, is the skeleton she is fitted from),
+  weapons in hand (`Arms.cs`), the survivor
   (`PlayerView.cs`: an AnimationTree, the swing on the upper body over the
   run), people in the world (`PersonView.cs`), the beasts (`Beasts.cs`:
   modelled, rigged and animated wolves, boars and lamplings from

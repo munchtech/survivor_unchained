@@ -31,8 +31,8 @@ public sealed class PersonSpec
 {
     public Sex Sex;
     /// <summary>Whose body: null for the Quaternius base of their sex (and
-    /// its clothes); "anime" for donizaki's woman, a body of her own, bare
-    /// until gear is made to fit her.</summary>
+    /// its clothes); "woman" for the woman survivor's own body (her hair and
+    /// suit her own: Loadouts.HerBody), "anime" for donizaki's, bare.</summary>
     public string? Body;
     public string? HairColor, Hair, Skin;
     public List<string>? Outfit;

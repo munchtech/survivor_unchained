@@ -161,10 +161,11 @@ the journal, the tests and the chapter's end read back.
 Dark fantasy. People are Quaternius's Universal Base Characters, outfits
 and animation libraries (CC0), with a woman's figure shaped offline
 (`tools/assets/figure.py`) and crowd figures baked from the same people. In
-the Godot game a woman survivor has a body of her own, donizaki's anime base
-(CC BY) rigged to the same skeleton so every clip plays on her
-(`tools/assets/anime_female.py`); she goes bare until gear is made to fit
-her. Weapons are CC BY models from Sketchfab (credited in the game and in
+the Godot game a woman survivor has a body of her own, a figure made in
+ComfyUI for the game, rigged to the same skeleton so every clip plays on her
+(`tools/assets/woman_body.py`, fitted from donizaki's anime base, CC BY,
+`tools/assets/anime_female.py`); her hair and close-fitting suit are her
+own, the suit dyed the calling's colours. Weapons are CC BY models from Sketchfab (credited in the game and in
 `public/assets/CREDITS.md`). Houses are put together from Quaternius's
 Medieval Village MegaKit on its 2 m grid (`src/world/zones/houses.ts`), with
 the Fantasy Props and Stylized Nature kits (CC0), each material weathered in
@@ -228,6 +229,7 @@ All expect `npm run dev` running.
 | `python tools/assets/figure.py` | Then shape the women (bust and hips morph targets; needs numpy) |
 | `<bpy venv>/bin/python tools/assets/anime_female.py <blend> <gltf> <textures> godot/art/people/anime_female.glb` | Rig the woman survivor's own body to the Quaternius skeleton: joints to her body, arms to its T, hands fitted and weighted (`anime_hands.py`) |
 | `<bpy venv>/bin/python tools/assets/anime_hair.py <her glb> <gltf> <hair dir> godot/art/people` | Then fit the women's hairstyles to her scalp (`her_<style>.glb`) |
+| `<bpy venv>/bin/python tools/assets/woman_body.py <figure.glb> godot/art/people/anime_female.glb godot/art/people/woman.glb` | The woman survivor's body from a sculpted, painted figure (one T-posed mesh, e.g. from ComfyUI): rigged by landmarks to the anime body's skeleton, brought down to 32k faces, paint and fine shape baked, a mask of skin, hair and suit (`woman_mask.png`), weights through a watertight copy, a Figure shape key |
 | `python3 tools/assets/env.py [.packs]` | Gather the world's kits (village, props, nature) with their bounds |
 | `python3 tools/assets/ground.py` | The ground's photoscanned materials from Poly Haven (CC0), packed into KTX2 arrays (needs `toktx`) |
 | `python3 tools/assets/ktx2.py [--keep]` | Then compress every sheet to KTX2 (UASTC, mipmapped; needs `toktx` from KTX-Software) |
