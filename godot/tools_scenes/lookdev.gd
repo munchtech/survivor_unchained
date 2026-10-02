@@ -43,11 +43,12 @@ func _init():
 					mi.owner = null
 					skel.add_child(mi)
 					mi.skeleton = NodePath("..")
+					fur(mi)
 			o.free()
 			# Her skin under the outfit's fitted pieces is not drawn (its
 			# channel in her vertex colours: warden red, arcanist green).
 			var ch = ["warden", "arcanist", "reaver", "ranger"].find(outfit.trim_suffix("_").split(".")[0].split("_")[0])
-			if ch >= 0:
+			if ch >= 0 and OS.get_environment("NOHIDE") == "":
 				for bm in skel.get_children():
 					if bm is MeshInstance3D and not String(bm.name).contains("."):
 						hide_skin(bm, ch)
@@ -103,6 +104,29 @@ func _init():
 	rim.rotation_degrees = Vector3(-20, 200, 0)
 	rim.light_energy = 0.0 if OS.get_environment("NORIM") != "" else 1.2
 	root.add_child(rim)
+
+# As People.Fur: a fur piece drawn again in shells, each further out.
+func fur(mi, shells = 20):
+	for si in mi.mesh.get_surface_count():
+		var src = mi.mesh.surface_get_material(si)
+		if src != null and src.resource_name == "stocking":
+			var sm = ShaderMaterial.new()
+			sm.shader = load("res://shaders/sheer.gdshader")
+			mi.set_surface_override_material(si, sm)
+			continue
+		if src == null or src.resource_name != "fur": continue
+		var first = null
+		var last = null
+		for i in shells + 1:
+			var m = ShaderMaterial.new()
+			m.shader = load("res://shaders/fur_shell.gdshader")
+			m.set_shader_parameter("albedo_tex", src.albedo_texture)
+			m.set_shader_parameter("tint", src.albedo_color)
+			m.set_shader_parameter("layer", float(i) / shells)
+			if last: last.next_pass = m
+			else: first = m
+			last = m
+		mi.set_surface_override_material(si, first)
 
 func hide_skin(mi, ch):
 	var src = mi.mesh

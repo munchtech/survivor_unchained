@@ -109,3 +109,4 @@ Cut to loop and made mono at 24 kHz (the game plays each wide, its right side ha
 - Leather014: ambientCG (https://ambientcg.com/view?id=Leather014), CC0
 - Leather026: ambientCG (https://ambientcg.com/view?id=Leather026), CC0
 - Leather021: ambientCG (https://ambientcg.com/view?id=Leather021), CC0
+- "Curly Teddy Natural" texture, Poly Haven (https://polyhaven.com/a/curly_teddy_natural), CC0 -> godot/art/outfit

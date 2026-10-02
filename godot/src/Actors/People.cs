@@ -254,6 +254,7 @@ public static class People
             mi.Skeleton = "..";
             mi.Layers = 2;
             p.Meshes.Add(mi);
+            Fur(mi);
         }
         scene.Free();
         // Her skin under the outfit's fitted pieces is not drawn: each
@@ -262,6 +263,38 @@ public static class People
         if (ch >= 0)
             foreach (var mi in p.Skeleton.GetChildren().OfType<MeshInstance3D>())
                 if (!mi.Name.ToString().Contains('.') && !mi.Name.ToString().Contains('_')) HideSkin(mi, ch);
+    }
+
+    static Shader? furShader, sheerShader;
+
+    /// <summary>A piece made of fur grows a pile: its surface drawn again in
+    /// shells (shaders/fur_shell.gdshader), each further out, keeping only
+    /// the strands that reach so far.</summary>
+    public static void Fur(MeshInstance3D mi, int shells = 20)
+    {
+        for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+        {
+            if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D sheer && sheer.ResourceName == "stocking")
+            {
+                // Sheer: clear face on, denser at the edges (shaders/sheer.gdshader).
+                sheerShader ??= GD.Load<Shader>("res://shaders/sheer.gdshader");
+                mi.SetSurfaceOverrideMaterial(s, new ShaderMaterial { Shader = sheerShader });
+                continue;
+            }
+            if (mi.Mesh.SurfaceGetMaterial(s) is not BaseMaterial3D src || src.ResourceName != "fur") continue;
+            furShader ??= GD.Load<Shader>("res://shaders/fur_shell.gdshader");
+            ShaderMaterial? first = null, last = null;
+            for (int i = 0; i <= shells; i++)
+            {
+                var m = new ShaderMaterial { Shader = furShader };
+                m.SetShaderParameter("albedo_tex", src.AlbedoTexture);
+                m.SetShaderParameter("tint", src.AlbedoColor);
+                m.SetShaderParameter("layer", (float)i / shells);
+                if (last != null) last.NextPass = m; else first = m;
+                last = m;
+            }
+            mi.SetSurfaceOverrideMaterial(s, first);
+        }
     }
 
     /// <summary>Her outfits, in the order of their channels in her vertex
