@@ -1131,7 +1131,7 @@
        "fact": "wolves.at_gate",
        "eq": true
       },
-      "text": "You heard. Aldo. He had a wife at Low Kiln and a bad knee, and they took him at my gate. Five a pelt, still. What do you want?"
+      "text": "You heard. Aldo. Wife at Low Kiln, a bad knee, and a habit of humming on the wall that I told him twice to stop. They took him off it by the bad leg. I'd give a month's pay to hear him hum. Five a pelt, still. What do you want?"
      },
      {
       "when": {
@@ -4816,7 +4816,7 @@
        "fact": "caravan.survivors",
        "eq": "dead"
       },
-      "text": "I heard. I heard. You needn't say it. What do you want?"
+      "text": "I heard. I heard. ...They'd not been fed for a week, Holloway says. Jory used to sulk if supper was late. You needn't say anything. What do you want?"
      },
      {
       "when": {
@@ -4891,6 +4891,15 @@
       },
       "once": "be",
       "goto": "be"
+     },
+     {
+      "text": "How's Jory?",
+      "show": {
+       "fact": "caravan.survivors",
+       "eq": "rescued"
+      },
+      "once": "jory_now",
+      "goto": "jory_now"
      },
      {
       "text": "Goodbye.",
@@ -5192,7 +5201,7 @@
    },
    "ash": {
     "id": "ash",
-    "text": "They said there was screaming. Was there screaming? ...No. Don't tell me. Just don't come to my stall again.",
+    "text": "They said there was screaming. Was there screaming? ...They said you could smell it from the wall. No. Don't tell me. Just don't come to my stall again. Don't come to the funeral. There's nothing to bury.",
     "choices": [
      {
       "text": "...",
@@ -5283,6 +5292,20 @@
      }
     ],
     "next": "hub"
+   },
+   "jory_now": {
+    "id": "jory_now",
+    "text": "Sleeps with the lamp lit. Eats like a horse. Asked me last night what was in the crates. I told him salt. He believed me; he always does. ...That's the worst of it, friend. He always does.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -6807,6 +6830,30 @@
     "node": "say_calling"
    },
    {
+    "when": {
+     "all": [
+      {
+       "met": "chid"
+      },
+      {
+       "day": {
+        "gte": 3
+       }
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "chid",
+         "key": "say:names",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "names"
+   },
+   {
     "node": "hub"
    }
   ],
@@ -7412,6 +7459,20 @@
      }
     ],
     "next": "hub"
+   },
+   "names": {
+    "id": "names",
+    "text": "Can I ask you something? Your mother's name. ...No, don't tell me. You had to think. I saw you think. Write the names down, somewhere you'll find them. It always takes the names first. Then the faces. I'm sorry. I'll stop. Sit, sit.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "chid",
+       "key": "say:names",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -7535,6 +7596,28 @@
      ]
     },
     "node": "say_calling"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "vonnra"
+      },
+      {
+       "trait": "risen_once"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "vonnra",
+         "key": "say:risen",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "risen"
    },
    {
     "node": "hub"
@@ -7692,6 +7775,12 @@
      },
      {
       "when": {
+       "time": "night"
+      },
+      "text": "(Her lamp is lit, and she is looking south, toward the ford.) Traveller. The road was quiet tonight. It will not always be. Payment, always."
+     },
+     {
+      "when": {
        "fact": "kerchief.raids",
        "gte": 2
       },
@@ -7788,6 +7877,11 @@
        "eq": true
       },
       "goto": "fortune"
+     },
+     {
+      "text": "That coin on the cord at your throat?",
+      "once": "coin",
+      "goto": "coin"
      },
      {
       "text": "Goodbye.",
@@ -8668,6 +8762,34 @@
      }
     ],
     "next": "hub"
+   },
+   "coin": {
+    "id": "coin",
+    "text": "Old-empire. Square. My grandmother's, and hers before. I have never spent it. One day I shall, and it will buy something that cannot be bought twice. ...That was free. Do not grow used to it.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "risen": {
+    "id": "risen",
+    "text": "You came back. Most do not, the first time. ...Do not thank Chid. Do not thank anyone. Payment, always, traveller, and for that above all; you will find out who holds the note.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "vonnra",
+       "key": "say:risen",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -9186,6 +9308,14 @@
        "eq": "ignored"
       },
       "text": "CURFEW. East gate closed at dusk until further notice. One of ours did not come home. The Watch."
+     },
+     {
+      "when": {
+       "fact": "wolves.at_gate",
+       "eq": true
+      },
+      "add": true,
+      "text": "AT REST: Aldo Penn, of the Watch, twenty-two years on the walls. A collection for his widow at the Watch House. (Underneath: \"he hummed\")"
      },
      {
       "add": true,
@@ -10837,6 +10967,11 @@
       "end": true
      },
      {
+      "text": "What happens to the pipe-lads?",
+      "once": "pipelads",
+      "goto": "pipelads"
+     },
+     {
       "text": "Leave.",
       "end": true
      }
@@ -11086,6 +11221,16 @@
       "end": true
      }
     ]
+   },
+   "pipelads": {
+    "id": "pipelads",
+    "text": "Pipe-lads go blind by spring. Then deaf. Then they go in the slurry, because it is warm, and they do not come out. Snib was a pipe-lad. Snib got promoted. ...Snib does not want to talk about pipe-lads. Snib wants you to LEAVE.",
+    "choices": [
+     {
+      "text": "Leave.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -11122,7 +11267,7 @@
    },
    "what": {
     "id": "what",
-    "text": "Down there. Under the one that is dead. There is another. There is always another. Take the map, take it, I do not want to know where the tunnels go any more.",
+    "text": "Down there. Under the one that is dead. There is another. There is always another. Kell went down to see. Kell's lamp came back up on its own, still lit. Still lit. Take the map, take it, I do not want to know where the tunnels go any more.",
     "effects": [
      {
       "if": {

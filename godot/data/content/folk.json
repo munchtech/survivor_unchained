@@ -688,6 +688,26 @@
    },
    "night": true,
    "text": "Evening. Please don't hit me. Evening."
+  },
+  {
+   "when": {
+    "history": "burned_roost"
+   },
+   "text": "They say you could hear them from the ridge. The ones in the cages. They say it went on a while."
+  },
+  {
+   "when": {
+    "history": "prisoners_died"
+   },
+   "text": "Harlan stood at the graves the whole afternoon. Didn't say a word. Didn't take his hat off, either. Forgot he had it on."
+  },
+  {
+   "when": {
+    "fact": "dig.pump",
+    "eq": "blown"
+   },
+   "night": true,
+   "text": "You can still see their lamps up on the hill at night. Fewer every night."
   }
  ]
 }

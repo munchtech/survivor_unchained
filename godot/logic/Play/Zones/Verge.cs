@@ -643,7 +643,7 @@ public sealed class Verge : ZoneRuntime
 
     static readonly string[] CageLines =
     [
-        "A teamster, thin and grey, stumbles out and grips your arm.",
+        "A teamster, thin and grey, stumbles out and grips your arm. His nails are broken to the quick from the bars.",
         "A woman who will not stop saying thank you.",
         "A young man: \"Jory. Jory Coyle. Is my uncle —? Is he —?\"",
     ];
@@ -675,6 +675,8 @@ public sealed class Verge : ZoneRuntime
             ]
             """);
         if (!blown) G.Say("Something snaps inside the pump with a sound like a bone. The wheel stops. The slurry stops.", null, 4);
+        // The Dig's people pay for it too: blasting the hill buries the ones working inside it.
+        else G.After(3, () => G.Say("When the dust comes down, the hillside is a wound. Small shapes crawl out of it with their lamps still lit. Some of them are on fire. Most of them do not crawl far.", null, 7));
     }
 
     void Explode(double x, double z, double r)
@@ -703,7 +705,7 @@ public sealed class Verge : ZoneRuntime
                         [{ "set": { "caravan.survivors": "dead" } }, { "quest": { "id": "caravan", "entry": "survivors_dead" } },
                          {{Hist("burned_roost", "set the Roost burning with the prisoners still in their cages", ["caravan"], 2, """{ "trust": -10 }""", """{ "harlan": { "trust": -60, "affection": -60 } }""")}}]
                         """);
-                    G.Say("The fire takes the tents, and the cages with them. There is screaming, and then there is not.", null, 6);
+                    G.Say("The fire takes the tents, and then the cages. There is screaming, and the smell, and hands through the bars; and then there is only the fire.", null, 7);
                 }
                 // Whatever of the Coyle cargo was still in the camp goes up with it.
                 if (!F("caravan.box_taken").Truthy && !F("caravan.cargo").Truthy)
