@@ -19,3 +19,7 @@ public/assets/**/*.uid
 
 # Raw clips and stills made on the local ComfyUI (only the cut atlases ship)
 /tools/comfy/out/
+
+# Poly Haven scans as fetched (tools/assets/polyhaven.py); the game ships the
+# simplified copies in godot/art/world (tools/assets/game_ready.py)
+/public/assets/env/polyhaven/

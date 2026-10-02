@@ -63,3 +63,39 @@ Cut to loop and made mono at 24 kHz (the game plays each wide, its right side ha
 ## Made for the game
 
 - The woman survivor's body: a figure made in ComfyUI and given to the game by its owner -> godot/art/people/woman.glb (rigged to the Quaternius skeleton, brought down to a game's weight and its paint baked from the full figure by tools/assets/woman_body.py, with a mask of her skin, hair and suit, godot/art/people/woman_mask.png)
+
+## Poly Haven models (CC0)
+
+- "Rock Moss Set 01" by Kless Gyzen, Poly Haven (https://polyhaven.com/a/rock_moss_set_01), CC0 -> public/assets/env/polyhaven/rock_moss_set_01
+- "Rock Moss Set 02" by Kless Gyzen, Poly Haven (https://polyhaven.com/a/rock_moss_set_02), CC0 -> public/assets/env/polyhaven/rock_moss_set_02
+- "Boulder 01" by Rico Cilliers, Poly Haven (https://polyhaven.com/a/boulder_01), CC0 -> public/assets/env/polyhaven/boulder_01
+- "Rock 07" by Jenelle van Heerden, Poly Haven (https://polyhaven.com/a/rock_07), CC0 -> public/assets/env/polyhaven/rock_07
+- "Rock 09" by Jenelle van Heerden, Poly Haven (https://polyhaven.com/a/rock_09), CC0 -> public/assets/env/polyhaven/rock_09
+- "Stone 01" by Dario Barresi, Rico Cilliers, Poly Haven (https://polyhaven.com/a/stone_01), CC0 -> public/assets/env/polyhaven/stone_01
+- "Namaqualand Stones 01" by Greg Zaal, Jenelle van Heerden, Poly Haven (https://polyhaven.com/a/namaqualand_stones_01), CC0 -> public/assets/env/polyhaven/namaqualand_stones_01
+- "Root Cluster 01" by Jenelle van Heerden, Rico Cilliers, Poly Haven (https://polyhaven.com/a/root_cluster_01), CC0 -> public/assets/env/polyhaven/root_cluster_01
+- "Root Cluster 02" by Jenelle van Heerden, Poly Haven (https://polyhaven.com/a/root_cluster_02), CC0 -> public/assets/env/polyhaven/root_cluster_02
+- "Single Root" by Jenelle van Heerden, Poly Haven (https://polyhaven.com/a/single_root), CC0 -> public/assets/env/polyhaven/single_root
+- "Pine Roots" by Rob Tuytel, Poly Haven (https://polyhaven.com/a/pine_roots), CC0 -> public/assets/env/polyhaven/pine_roots
+- "Tree Stump 01" by Rob Tuytel, Poly Haven (https://polyhaven.com/a/tree_stump_01), CC0 -> public/assets/env/polyhaven/tree_stump_01
+- "Tree Stump 02" by Rob Tuytel, Poly Haven (https://polyhaven.com/a/tree_stump_02), CC0 -> public/assets/env/polyhaven/tree_stump_02
+- "Dead Tree Trunk" by Rob Tuytel, Poly Haven (https://polyhaven.com/a/dead_tree_trunk), CC0 -> public/assets/env/polyhaven/dead_tree_trunk
+- "Dead Tree Trunk 02" by Jenelle van Heerden, Rico Cilliers, Poly Haven (https://polyhaven.com/a/dead_tree_trunk_02), CC0 -> public/assets/env/polyhaven/dead_tree_trunk_02
+- "Dry Branches Medium 01" by Rico Cilliers, Poly Haven (https://polyhaven.com/a/dry_branches_medium_01), CC0 -> public/assets/env/polyhaven/dry_branches_medium_01
+- "Bark Debris 01" by Greg Zaal, Jenelle van Heerden, Poly Haven (https://polyhaven.com/a/bark_debris_01), CC0 -> public/assets/env/polyhaven/bark_debris_01
+- "Moss 01" by Rob Tuytel, Poly Haven (https://polyhaven.com/a/moss_01), CC0 -> public/assets/env/polyhaven/moss_01
+- "Fern 02" by Rob Tuytel, Rico Cilliers, Poly Haven (https://polyhaven.com/a/fern_02), CC0 -> public/assets/env/polyhaven/fern_02
+- "Nettle Plant" by Rob Tuytel, Rico Cilliers, Poly Haven (https://polyhaven.com/a/nettle_plant), CC0 -> public/assets/env/polyhaven/nettle_plant
+- "Weed Plant 02" by Rob Tuytel, Rico Cilliers, Poly Haven (https://polyhaven.com/a/weed_plant_02), CC0 -> public/assets/env/polyhaven/weed_plant_02
+- "Shrub 01" by Rico Cilliers, Poly Haven (https://polyhaven.com/a/shrub_01), CC0 -> public/assets/env/polyhaven/shrub_01
+- "Shrub 02" by Rico Cilliers, Poly Haven (https://polyhaven.com/a/shrub_02), CC0 -> public/assets/env/polyhaven/shrub_02
+- "Shrub 03" by Rico Cilliers, Poly Haven (https://polyhaven.com/a/shrub_03), CC0 -> public/assets/env/polyhaven/shrub_03
+- "Shrub 04" by Rico Cilliers, Poly Haven (https://polyhaven.com/a/shrub_04), CC0 -> public/assets/env/polyhaven/shrub_04
+- "Grass Medium 01" by Rob Tuytel, Rico Cilliers, Poly Haven (https://polyhaven.com/a/grass_medium_01), CC0 -> public/assets/env/polyhaven/grass_medium_01
+- "Grass Medium 02" by Rico Cilliers, Poly Haven (https://polyhaven.com/a/grass_medium_02), CC0 -> public/assets/env/polyhaven/grass_medium_02
+- "Stone Fire Pit" by Sebastian Platen, Poly Haven (https://polyhaven.com/a/stone_fire_pit), CC0 -> public/assets/env/polyhaven/stone_fire_pit
+- "Gothic Statue" by Benny Weimer, Poly Haven (https://polyhaven.com/a/gothic_statue), CC0 -> public/assets/env/polyhaven/gothic_statue
+- "Kite Shield" by Ulan Cabanilla, Poly Haven (https://polyhaven.com/a/kite_shield), CC0 -> public/assets/env/polyhaven/kite_shield
+- "Wooden Lantern 01" by James Ray Cock, Poly Haven (https://polyhaven.com/a/wooden_lantern_01), CC0 -> public/assets/env/polyhaven/wooden_lantern_01
+- "Old Military Crate" by Jack Mava, Poly Haven (https://polyhaven.com/a/old_military_crate), CC0 -> public/assets/env/polyhaven/old_military_crate
+- "Wooden Barrels 01" by James Ray Cock, Poly Haven (https://polyhaven.com/a/wooden_barrels_01), CC0 -> public/assets/env/polyhaven/wooden_barrels_01

@@ -11,20 +11,48 @@ namespace SurvivorUnchained.View;
 /// </summary>
 public static class Grass
 {
-    public static MultiMeshInstance3D Build(ZoneData z, Vector2 centre, float radius, float cell = 0.21f)
+    public static MultiMeshInstance3D Build(ZoneData z, Vector2 centre, float radius, float cell = 0.3f)
     {
-        // A tapered, three-segment blade: x across, y up (0..1).
+        // A tuft: seven thin tapered blades fanned out from one root, each
+        // three segments, leaning outward by its own amount; x across a
+        // blade, y up (0..1). Its colour for the shader rides in UV2: the
+        // blade's own shade (x) and how far out it leans (y). Thin blades in
+        // tufts read as grass from thirty metres up; wide single blades read
+        // as paper.
         var blade = new ArrayMesh();
+        var verts = new System.Collections.Generic.List<Vector3>();
+        var uv2 = new System.Collections.Generic.List<Vector2>();
+        var idx = new System.Collections.Generic.List<int>();
+        var trng = new RandomNumberGenerator { Seed = 13 };
+        for (int b = 0; b < 7; b++)
+        {
+            float ang = b * Mathf.Tau / 7 + trng.Randf() * 0.6f, lean = 0.1f + trng.Randf() * 0.35f, h = 0.7f + trng.Randf() * 0.5f;
+            var dir = new Vector3(Mathf.Cos(ang), 0, Mathf.Sin(ang));
+            var across = new Vector3(-dir.Z, 0, dir.X);
+            float shade = trng.Randf();
+            int o = verts.Count;
+            float[] ws = { 0.5f, 0.38f, 0.22f, 0f };
+            for (int k = 0; k < 4; k++)
+            {
+                float t = k / 3f;
+                var mid = dir * lean * t * t + Vector3.Up * t * h;
+                if (k < 3)
+                {
+                    verts.Add(mid - across * ws[k] * 0.04f); verts.Add(mid + across * ws[k] * 0.04f);
+                    uv2.Add(new Vector2(shade, lean)); uv2.Add(new Vector2(shade, lean));
+                }
+                else { verts.Add(mid); uv2.Add(new Vector2(shade, lean)); }
+            }
+            idx.AddRange(new[] { o, o + 2, o + 1, o + 2, o + 3, o + 1, o + 2, o + 4, o + 3, o + 4, o + 5, o + 3, o + 4, o + 6, o + 5 });
+        }
         var arrays = new Godot.Collections.Array();
         arrays.Resize((int)Mesh.ArrayType.Max);
-        arrays[(int)Mesh.ArrayType.Vertex] = new Vector3[]
-        {
-            new(-0.5f, 0, 0), new(0.5f, 0, 0), new(-0.4f, 0.34f, 0), new(0.4f, 0.34f, 0),
-            new(-0.26f, 0.68f, 0), new(0.26f, 0.68f, 0), new(0, 1, 0),
-        };
-        var up = Vector3.Up;
-        arrays[(int)Mesh.ArrayType.Normal] = new[] { up, up, up, up, up, up, up };
-        arrays[(int)Mesh.ArrayType.Index] = new[] { 0, 2, 1, 2, 3, 1, 2, 4, 3, 4, 5, 3, 4, 6, 5 };
+        arrays[(int)Mesh.ArrayType.Vertex] = verts.ToArray();
+        var ups = new Vector3[verts.Count];
+        for (int i = 0; i < ups.Length; i++) ups[i] = Vector3.Up;
+        arrays[(int)Mesh.ArrayType.Normal] = ups;
+        arrays[(int)Mesh.ArrayType.TexUV2] = uv2.ToArray();
+        arrays[(int)Mesh.ArrayType.Index] = idx.ToArray();
         blade.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
 
         int n = (int)(radius * 2 / cell);

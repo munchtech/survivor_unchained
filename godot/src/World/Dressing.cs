@@ -12,7 +12,7 @@ namespace SurvivorUnchained.View;
 public static class Dressing
 {
     /// Undergrowth: walked through, no shadow of its own.
-    static readonly HashSet<string> Low = new() { "fern", "flowers", "plant", "clover", "mushroom", "pebble" };
+    static readonly HashSet<string> Low = new() { "fern", "flowers", "plant", "clover", "mushroom", "pebble", "scan_grass", "scan_stones", "scan_moss", "scan_bark", "scan_fern" };
 
     static readonly Dictionary<string, List<(Mesh Mesh, Transform3D Local)>> parts = new();
 
@@ -22,7 +22,9 @@ public static class Dressing
         var key = $"{kit}/{piece}";
         if (parts.TryGetValue(key, out var list)) return list;
         list = new();
-        var scene = GD.Load<PackedScene>($"res://assets/env/{key}.gltf").Instantiate<Node3D>();
+        // A photoscan (art/world) or a kit piece.
+        var path = piece.StartsWith("scan:") ? $"res://art/world/{piece[5..]}.glb" : $"res://assets/env/{key}.gltf";
+        var scene = GD.Load<PackedScene>(path).Instantiate<Node3D>();
         void Walk(Node n, Transform3D at)
         {
             foreach (var c in n.GetChildren())
@@ -53,12 +55,75 @@ public static class Dressing
         return m;
     }
 
+    /// <summary>How big each scan is drawn, against its true size: the arena
+    /// is seen from thirty metres up, where a real pebble is nothing, so small
+    /// things are drawn large (as the genre does) and large ones near true.</summary>
+    static readonly Dictionary<string, float> ScanScale = new()
+    {
+        ["grass_medium_01"] = 3.2f, ["grass_medium_02"] = 2.4f, ["weed_plant_02"] = 2.6f,
+        ["stone_01"] = 6f, ["namaqualand_stones_01"] = 5f, ["moss_01"] = 5f, ["bark_debris_01"] = 1.4f,
+        ["fern_02"] = 1.4f, ["nettle_plant"] = 3f, ["shrub_03"] = 2.6f, ["shrub_01"] = 1.2f, ["shrub_02"] = 1f, ["shrub_04"] = 2.4f,
+        ["root_cluster_01"] = 1f, ["root_cluster_02"] = 1.2f, ["single_root"] = 1.3f, ["pine_roots"] = 1.3f,
+        ["tree_stump_01"] = 1.2f, ["tree_stump_02"] = 1.2f, ["dry_branches_medium_01"] = 1.4f,
+        ["rock_07"] = 6f, ["rock_09"] = 12f, ["rock_moss_set_01"] = 1.5f, ["rock_moss_set_02"] = 1.5f,
+        ["dead_tree_trunk"] = 1.1f, ["dead_tree_trunk_02"] = 1f, ["boulder_01"] = 1.5f,
+    };
+
+    static readonly Dictionary<string, List<(Mesh Mesh, Transform3D Local)>> variants = new();
+
+    /// <summary>A scan's variants: Poly Haven lays several takes of a thing
+    /// out in a row in one file (tufts, stones, the rocks of a set); each is
+    /// one variant here, set on its own middle, at its drawn size.</summary>
+    static List<(Mesh Mesh, Transform3D Local)> VariantsOf(string id)
+    {
+        if (variants.TryGetValue(id, out var list)) return list;
+        list = new();
+        float k = ScanScale.TryGetValue(id, out var sc) ? sc : 1;
+        foreach (var (mesh, local) in PartsOf("nature", "scan:" + id))
+        {
+            var box = local * mesh.GetAabb();
+            var mid = box.GetCenter();
+            // Its foot on the ground and its middle on the spot.
+            var at = new Transform3D(local.Basis, local.Origin - new Vector3(mid.X, box.Position.Y, mid.Z));
+            list.Add((mesh, new Transform3D(Basis.FromScale(Vector3.One * k), Vector3.Zero) * at));
+        }
+        variants[id] = list;
+        return list;
+    }
+
     public static Node3D Flora(ZoneData z)
     {
         var root = new Node3D { Name = "Flora" };
         foreach (var g in z.Flora)
         {
             var low = Low.Contains(g.Kind);
+            if (g.Piece.StartsWith("scan:"))
+            {
+                // Each instance takes one of the scan's variants; each keeps
+                // its own photographed materials.
+                var vs = VariantsOf(g.Piece[5..]);
+                var by = new List<Transform3D>[vs.Count];
+                for (int i = 0; i < vs.Count; i++) by[i] = new();
+                for (int i = 0; i < g.At.Length; i++)
+                {
+                    var o = g.At[i].Origin;
+                    int v = (int)((uint)(Mathf.FloorToInt(o.X * 7.3f) * 73856093 ^ Mathf.FloorToInt(o.Z * 5.1f) * 19349663) % (uint)vs.Count);
+                    by[v].Add(g.At[i]);
+                }
+                for (int v = 0; v < vs.Count; v++)
+                {
+                    if (by[v].Count == 0) continue;
+                    var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = vs[v].Mesh, InstanceCount = by[v].Count };
+                    for (int i = 0; i < by[v].Count; i++) mm.SetInstanceTransform(i, by[v][i] * vs[v].Local);
+                    root.AddChild(new MultiMeshInstance3D
+                    {
+                        Multimesh = mm, Name = $"{g.Kind}:{g.Piece}:{v}",
+                        CastShadow = low ? GeometryInstance3D.ShadowCastingSetting.Off : GeometryInstance3D.ShadowCastingSetting.On,
+                        VisibilityRangeEnd = low ? 90 : 0,
+                    });
+                }
+                continue;
+            }
             foreach (var (mesh, local) in PartsOf("nature", g.Piece))
             {
                 var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = Looked(mesh, g.Look), InstanceCount = g.At.Length };

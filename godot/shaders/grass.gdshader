@@ -19,6 +19,7 @@ uniform vec4 pusher = vec4(0.0, 0.0, 0.0, 0.0);
 
 varying float v_t;
 varying vec3 v_tint;
+varying float v_dry;
 
 float gh(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 
@@ -34,11 +35,12 @@ void vertex() {
 	float leafy = smoothstep(0.42, 0.78, texture(noise_tex, wp * 0.011).g * 0.7 + texture(noise_tex, wp * 0.061 + 0.37).a * 0.3 + leaves - 0.5);
 	dens *= 1.0 - leafy * 0.5;
 	float keep = step(h3, dens * density);
-	float hgt = mix(0.32, 0.78, nz.b) * (0.65 + 0.7 * h4) * keep;
-	float wid = 0.12 * (0.8 + 0.5 * h1) * keep;
-	float t = VERTEX.y;
+	// Shorter than a meadow: the fight is read through it from above.
+	float hgt = mix(0.22, 0.5, nz.b) * (0.75 + 0.5 * h4) * keep;
+	float wid = (0.85 + 0.4 * h1) * keep;
+	float t = clamp(VERTEX.y / 1.2, 0.0, 1.0);
 	v_t = t;
-	vec3 p = vec3(VERTEX.x * wid, t * hgt, 0.0);
+	vec3 p = vec3(VERTEX.x * wid, VERTEX.y * hgt, VERTEX.z * wid);
 	// Wind: a slow travelling swell and gusts; the survivor parts it.
 	float swell = sin(TIME * 1.6 + dot(wp, wind.xy) * 0.55 + nz.a * 5.0) * 0.5 + 0.5;
 	float gust = texture(noise_tex, wp * 0.018 - TIME * vec2(0.035, 0.012)).r;
@@ -59,15 +61,20 @@ void vertex() {
 	// The meadow's colour, averaged over a hand's breadth, greener at the tip.
 	vec3 g = textureLod(g_alb, vec3(wp * meadow_scale, 0.0), 5.0).rgb;
 	g *= 0.8 + 0.2 * texture(noise_tex, wp * 0.011).r;
-	v_tint = g * vec3(0.9, 1.2, 0.72) * (0.9 + 0.3 * h4);
+	// Each blade its own shade; patches gone to straw over tens of metres.
+	v_tint = g * vec3(0.9, 1.2, 0.72) * (0.78 + 0.4 * UV2.x) * (0.9 + 0.25 * h4);
+	v_dry = smoothstep(0.45, 0.75, texture(noise_tex, wp * 0.02 + 5.3).g) * (0.6 + 0.4 * h1);
 }
 
 void fragment() {
 	// (Clamped: interpolation leaves the root a hair below zero, and pow of
 	// a negative is NaN, which draws black.)
 	float t = clamp(v_t, 0.0, 1.0);
-	vec3 gb = v_tint * mix(0.62, 1.12, pow(t, 0.8));
+	vec3 gb = v_tint * mix(0.32, 1.15, pow(t, 0.7));
 	gb = mix(gb, gb * vec3(1.12, 1.08, 0.78), smoothstep(0.7, 1.0, t) * 0.5);
+	// Straw: dry grass, paler and warmer, toward the tip most.
+	vec3 straw = vec3(0.24, 0.21, 0.11) * mix(0.4, 1.0, t);
+	gb = mix(gb, straw, v_dry * 0.5);
 	ALBEDO = gb;
 	// Both faces of a blade take the ground's normal: lit as the meadow is,
 	// not half of it from below.

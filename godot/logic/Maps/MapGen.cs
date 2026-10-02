@@ -281,11 +281,34 @@ public static class MapGen
                     if (rng.Chance(keep)) Put(rng.Pick(trees), x, z, 1 + Math.Min(0.4, d * 0.012));
                     if (d < 12 && rng.Chance(0.45)) Put(rng.Pick(new[] { "bush", "fern", "bramble", "fern" }), x + rng.Range(-1, 1), z + rng.Range(-1, 1));
                     if (d < 8 && rng.Chance(0.12)) Put(rng.Pick(new[] { "boulder", "rock", "cliff" }), x, z, 1, 0.3);
+                    // An arena's wall, seen from high up: roots, stumps and fallen
+                    // trunks between the trees, mossed rock, the floor of a wood.
+                    if (spec.Arena && d < 14)
+                    {
+                        if (rng.Chance(0.35)) Put(rng.Pick(new[] { "scan_fern", "scan_shrub", "scan_grass", "scan_bark" }), x + rng.Range(-1, 1), z + rng.Range(-1, 1), rng.Range(0.9, 1.3));
+                        if (rng.Chance(0.1)) Put(rng.Pick(new[] { "scan_root", "scan_stump", "scan_trunk", "scan_mossrock", "scan_branches" }), x, z, rng.Range(0.8, 1.2), 0.15);
+                    }
                 }
                 else if (inn < 2.2)
                 {
                     // The edge of the way: undergrowth and stones you brush past.
-                    if (rng.Chance(0.4)) Put(rng.Pick(new[] { "fern", "bush", "rock", "plant", "mushroom" }), x, z);
+                    if (spec.Arena)
+                    {
+                        if (rng.Chance(0.45)) Put(rng.Pick(new[] { "scan_fern", "scan_fern", "scan_shrub", "scan_grass" }), x, z, rng.Range(0.8, 1.2));
+                        if (rng.Chance(0.12)) Put(rng.Pick(new[] { "scan_root", "scan_stump", "scan_branches", "scan_rock" }), x, z, rng.Range(0.8, 1.2), 0.1);
+                    }
+                    else if (rng.Chance(0.4)) Put(rng.Pick(new[] { "fern", "bush", "rock", "plant", "mushroom" }), x, z);
+                }
+                else if (spec.Arena)
+                {
+                    // Out in the open, in patches as ground grows: thick where
+                    // the noise says, a little anywhere, never a lawn.
+                    double patch = noise.Noise(x * 0.07 + 31, z * 0.07 - 17), rough = noise.Noise(x * 0.19 - 5, z * 0.19 + 8);
+                    if (patch > 0.15 && rng.Chance(0.55)) Put("scan_grass", x, z, rng.Range(0.8, 1.3));
+                    else if (rng.Chance(0.09)) Put("scan_grass", x, z, rng.Range(0.7, 1.1));
+                    if (rough > 0.3 && rng.Chance(0.3)) Put("scan_stones", x + rng.Range(-1, 1), z + rng.Range(-1, 1), rng.Range(0.7, 1.3), 0.05);
+                    if (patch < -0.25 && rng.Chance(0.25)) Put(rng.Chance(0.6) ? "scan_bark" : "scan_moss", x, z, rng.Range(0.8, 1.2), 0.02);
+                    if (rng.Chance(0.025)) Put(rng.Pick(new[] { "flowers", "clover", "mushroom" }), x, z);
                 }
                 else
                 {
@@ -689,6 +712,27 @@ public static class MapGen
 
     static Dictionary<string, FloraKind>? catalog;
 
+    /// <summary>The photoscanned kinds (Poly Haven, CC0, brought to a game's
+    /// weight in art/world by tools/assets/game_ready.py), at their own size
+    /// in metres: what makes a clearing seen from high up read as ground
+    /// rather than paint.</summary>
+    public static readonly Dictionary<string, string[]> ScanKinds = new()
+    {
+        ["scan_grass"] = ["grass_medium_01", "grass_medium_02", "weed_plant_02"],
+        ["scan_stones"] = ["stone_01", "namaqualand_stones_01"],
+        ["scan_moss"] = ["moss_01"],
+        ["scan_bark"] = ["bark_debris_01"],
+        ["scan_fern"] = ["fern_02", "nettle_plant", "shrub_03"],
+        ["scan_shrub"] = ["shrub_01", "shrub_02", "shrub_04"],
+        ["scan_root"] = ["root_cluster_01", "root_cluster_02", "single_root", "pine_roots"],
+        ["scan_stump"] = ["tree_stump_01", "tree_stump_02"],
+        ["scan_branches"] = ["dry_branches_medium_01"],
+        ["scan_rock"] = ["rock_07", "rock_09"],
+        ["scan_mossrock"] = ["rock_moss_set_01", "rock_moss_set_02"],
+        ["scan_trunk"] = ["dead_tree_trunk", "dead_tree_trunk_02"],
+        ["scan_boulder"] = ["boulder_01"],
+    };
+
     /// <summary>The kinds of flora, as the Verge has them (its flora.json):
     /// each kind's pieces, scale and look.</summary>
     public static Dictionary<string, FloraKind> Catalog()
@@ -702,7 +746,7 @@ public static class MapGen
             if (!by.TryGetValue(kind, out var e)) by[kind] = e = (new HashSet<string>(), g.Clone());
             e.Pieces.Add(g.GetProperty("piece").GetString()!);
         }
-        catalog = by.ToDictionary(kv => kv.Key, kv =>
+        var made = by.ToDictionary(kv => kv.Key, kv =>
         {
             var g = kv.Value.First;
             string? la = null, lb = null;
@@ -715,6 +759,9 @@ public static class MapGen
                 g.TryGetProperty("wind", out var w) && w.ValueKind == JsonValueKind.Number ? w.GetDouble() : 0, la, lb, amount,
                 g.TryGetProperty("moss", out var m) && m.ValueKind == JsonValueKind.Number ? m.GetDouble() : 0);
         });
+        foreach (var (kind, pieces) in ScanKinds)
+            made[kind] = new FloraKind(kind, pieces.Select(p => "scan:" + p).ToArray(), 1, 0, null, null, 0, 0);
+        catalog = made;
         return catalog;
     }
 }

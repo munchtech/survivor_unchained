@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Collections.Generic;
 using System.Text.Json;
 using Godot;
@@ -107,6 +108,8 @@ public sealed class ZoneData
             if (!groups.TryGetValue(key, out var list)) groups[key] = list = new();
             list.Add(new Transform3D(new Basis(Vector3.Up, (float)f.Rot).Scaled(Vector3.One * (float)f.Scale), new Vector3((float)f.X, (float)f.Y, (float)f.Z)));
         }
+        if (System.Environment.GetEnvironmentVariable("FLORA_COUNT") != null)
+            foreach (var g in m.Flora.GroupBy(f => f.Kind).OrderBy(g => g.Key)) GD.Print($"flora {g.Key}: {g.Count()}");
         foreach (var (key, list) in groups)
         {
             var k = m.Kinds[key.Kind];
