@@ -467,6 +467,17 @@ def taubin(pos, tris, rounds=40):
     return pos
 
 
+def fuller(pos, f, tris, most=0.004, reach=0.03):
+    """A cup filled out where it runs toward the cleavage (her skin goes a
+    little flat there, which in plate reads as pinched): lifted along its
+    normal by up to `most`, nothing at its edge, the full amount `reach`
+    inside it, and more toward the middle of her chest than the outside."""
+    inward = np.clip(1 - np.abs(pos[:, 0]) / 0.14, 0, 1)
+    t = np.clip(f / reach, 0, 1)
+    lift = most * (t * t * (3 - 2 * t)) * (0.35 + 0.65 * inward)
+    return pos + vertex_normals(pos, tris) * lift[:, None]
+
+
 # Each bone's opposite number, for mirroring a piece's weights.
 SWAP = np.array([BI.get(n[:-2] + {"_l": "_r", "_r": "_l"}[n[-2:]], i) if n[-2:] in ("_l", "_r") else i
                  for i, n in enumerate(BONES)])
@@ -521,6 +532,7 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     pos = relax(pos, tris, interior=smooth)
     if dome:
         pos = taubin(pos, tris)
+        pos = fuller(pos, at[:, -1], tris)
         pos, at, tris = mirrored(pos, at, tris)
     pos = clear_of_skin(pos, lift if clear is None else clear)
     made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, bevel)]
