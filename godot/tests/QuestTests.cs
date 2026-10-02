@@ -380,7 +380,7 @@ public class QuestTests
         var r = new DialogueRunner(Convo("rav"), s.C);
         Assert.Matches("he RAN", r.Start()!.Text);
         Assert.Equal("hub", r.Advance()!.Node.Id);
-        Assert.Equal("hub", new DialogueRunner(Convo("rav"), s.C).Start()!.Node.Id);
+        Assert.DoesNotMatch("he RAN", Greet(Convo("rav"), s.C).Text);
 
         Talk(Convo("harlan"), s.C, "goodbye");
         Rules.Apply(E("{ history: { id: 'burned_roost', text: 'set the Roost burning', tags: ['caravan'], spread: 2 } }"), s.C);
@@ -388,10 +388,52 @@ public class QuestTests
     }
 
     [Fact]
+    public void People_see_who_you_are()
+    {
+        var s = Q("hunter");
+        s.Ch.Sex = Sex.Female;
+        Assert.True(Rules.Test(C("{ sex: 'female' }"), s.C));
+        Assert.False(Rules.Test(C("{ sex: 'male' }"), s.C));
+        s.Ch.Stats.Kills = 2000;
+        Assert.True(Rules.Test(C("{ kills: { gte: 1500 } }"), s.C));
+        Talk(Convo("sella"), s.C, "not tonight");
+        var said = new List<string>();
+        for (int i = 0; i < 3; i++)
+        {
+            var r = new DialogueRunner(Convo("sella"), s.C);
+            var p = r.Start();
+            while (p != null && p.Choices.Count == 0) { said.Add(p.Text); p = r.Advance(); }
+        }
+        Assert.Contains(said, t => t.Contains("first woman up those stairs"));
+        Assert.Contains(said, t => t.Contains("charge by the hour"));
+    }
+
+    [Fact]
+    public void Maeca_asks_once_the_Pack_is_settled_and_the_scene_cuts_away_unless_asked_not_to()
+    {
+        var s = Q("hunter");
+        Talk(Convo("maeca"), s.C, "goodbye");
+        var m = s.World.Npc("maeca");
+        m.Respect = 30; m.Affection = 10;
+        m.Flags["thanked"] = true; m.Flags["say:calling"] = true;
+        s.World.Facts["beasts.outcome"] = "cured";
+        Assert.NotEqual("invite", new DialogueRunner(Convo("maeca"), s.C).Start()!.Node.Id);
+        s.World.Time = TimeOfDay.Night;
+        var p = Talk(Convo("maeca"), s.C, "keep quiet");
+        Assert.Equal("blind", p!.Node.Id);
+        Assert.DoesNotContain("[explicit scene", p.Text);
+        Assert.True(s.World.Fact("maeca.lover").Truthy);
+        Assert.Contains(s.Ch.Conditions, c => c.Id == ConditionId.Warmed);
+        s.World.Facts["settings.intimacy"] = "full";
+        p = Talk(Convo("maeca"), s.C, "big enough for two");
+        Assert.StartsWith("[explicit scene", p!.Text);
+    }
+
+    [Fact]
     public void Choices_that_no_longer_apply_go()
     {
         var s = Q("hunter");
-        List<string> Offered(string id) => new DialogueRunner(Convo(id), s.C).Start()!.Choices.Select(x => x.Text).ToList();
+        List<string> Offered(string id) => Greet(Convo(id), s.C).Choices.Select(x => x.Text).ToList();
         s.World.Npc("vonnra").Flags["met"] = true;
         Assert.Contains(Offered("vonnra"), t => Regex.IsMatch(t, "pay the toll", RegexOptions.IgnoreCase));
         s.World.Facts["toll.paid"] = true;

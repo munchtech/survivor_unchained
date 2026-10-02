@@ -128,6 +128,63 @@
     "node": "cb_opened_vault"
    },
    {
+    "when": {
+     "all": [
+      {
+       "met": "rook"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rook",
+         "key": "say:calling",
+         "eq": true
+        }
+       }
+      },
+      {
+       "any": [
+        {
+         "archetype": "warden"
+        },
+        {
+         "archetype": "reaver"
+        },
+        {
+         "archetype": "arcanist"
+        },
+        {
+         "archetype": "stalker"
+        }
+       ]
+      }
+     ]
+    },
+    "node": "say_calling"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "rook"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rook",
+         "key": "say:woman",
+         "eq": true
+        }
+       }
+      },
+      {
+       "sex": "female"
+      }
+     ]
+    },
+    "node": "say_woman"
+   },
+   {
     "node": "hub"
    }
   ],
@@ -575,6 +632,62 @@
      }
     ],
     "next": "hub"
+   },
+   "say_calling": {
+    "id": "say_calling",
+    "text": [
+     {
+      "when": {
+       "archetype": "warden"
+      },
+      "text": "You sit like you're expecting the door to come in. Watch, were you? Or wanted to be."
+     },
+     {
+      "when": {
+       "archetype": "reaver"
+      },
+      "text": "Mind the bench. The last one your size broke it, and I made him pay for it twice."
+     },
+     {
+      "when": {
+       "archetype": "arcanist"
+      },
+      "text": "If you're going to set anything on fire, pet, do it outside. Sella's got the only warm room in the house and she charges."
+     },
+     {
+      "when": {
+       "archetype": "stalker"
+      },
+      "text": "You came in without the door making a sound. That door always makes a sound. Do it again and I'll put a bell on you."
+     },
+     {
+      "text": "You came in without the door making a sound. That door always makes a sound. Do it again and I'll put a bell on you."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "rook",
+       "key": "say:calling",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "say_woman": {
+    "id": "say_woman",
+    "text": "There's a bolt on the inside of your door. Use it. Not for the men; for their wives. They come up the stairs looking for Sella and they're not particular.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "rook",
+       "key": "say:woman",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -787,6 +900,63 @@
     "node": "cb_core_stolen"
    },
    {
+    "when": {
+     "all": [
+      {
+       "met": "holloway"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "holloway",
+         "key": "say:calling",
+         "eq": true
+        }
+       }
+      },
+      {
+       "any": [
+        {
+         "archetype": "warden"
+        },
+        {
+         "archetype": "reaver"
+        },
+        {
+         "archetype": "arcanist"
+        },
+        {
+         "archetype": "stalker"
+        }
+       ]
+      }
+     ]
+    },
+    "node": "say_calling"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "holloway"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "holloway",
+         "key": "say:woman",
+         "eq": true
+        }
+       }
+      },
+      {
+       "sex": "female"
+      }
+     ]
+    },
+    "node": "say_woman"
+   },
+   {
     "node": "hub"
    }
   ],
@@ -962,6 +1132,22 @@
        }
       },
       "text": "You. Keep your hands where I can see them."
+     },
+     {
+      "when": {
+       "level": {
+        "gte": 8
+       }
+      },
+      "text": "(He straightens when you come in, and then looks annoyed that he did.) You. What is it?"
+     },
+     {
+      "when": {
+       "kills": {
+        "gte": 1500
+       }
+      },
+      "text": "They say you've put down more things than the fever year. Try not to put any down in my square."
      },
      {
       "when": {
@@ -1964,6 +2150,62 @@
      }
     ],
     "next": "hub"
+   },
+   "say_calling": {
+    "id": "say_calling",
+    "text": [
+     {
+      "when": {
+       "archetype": "warden"
+      },
+      "text": "You stand like Watch. Who trained you? ...Never mind. I can't afford you either way."
+     },
+     {
+      "when": {
+       "archetype": "reaver"
+      },
+      "text": "I've seen men built like you on both sides of a gate. Make sure I always know which side you're on."
+     },
+     {
+      "when": {
+       "archetype": "arcanist"
+      },
+      "text": "Spark-thrower. The last one we had set the barracks roof alight trying to light a pipe. Do your tricks outside my walls."
+     },
+     {
+      "when": {
+       "archetype": "stalker"
+      },
+      "text": "You count the ways out when you walk into a room. So do I. One of us should be paid for it."
+     },
+     {
+      "text": "You count the ways out when you walk into a room. So do I. One of us should be paid for it."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "holloway",
+       "key": "say:calling",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "say_woman": {
+    "id": "say_woman",
+    "text": "I'd tell you it's no place for a woman out there. The last three people I said that to were men, and they're dead. So I'll say: it's no place.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "holloway",
+       "key": "say:woman",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -2041,6 +2283,98 @@
      ]
     },
     "node": "cb_burned_roost"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "maeca"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "say:calling",
+         "eq": true
+        }
+       }
+      },
+      {
+       "any": [
+        {
+         "archetype": "warden"
+        },
+        {
+         "archetype": "reaver"
+        },
+        {
+         "archetype": "arcanist"
+        },
+        {
+         "archetype": "stalker"
+        }
+       ]
+      }
+     ]
+    },
+    "node": "say_calling"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "maeca"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "invited",
+         "eq": true
+        }
+       }
+      },
+      {
+       "all": [
+        {
+         "time": "night"
+        },
+        {
+         "rel": {
+          "npc": "maeca",
+          "axis": "respect",
+          "gte": 30
+         }
+        },
+        {
+         "rel": {
+          "npc": "maeca",
+          "axis": "affection",
+          "gte": 10
+         }
+        },
+        {
+         "any": [
+          {
+           "fact": "beasts.outcome",
+           "eq": "cured"
+          },
+          {
+           "fact": "beasts.outcome",
+           "eq": "allied"
+          }
+         ]
+        },
+        {
+         "not": {
+          "history": "killed_greymuzzle"
+         }
+        }
+       ]
+      }
+     ]
+    },
+    "node": "invite"
    },
    {
     "node": "hub"
@@ -2226,6 +2560,68 @@
       "goto": "barefoot"
      },
      {
+      "text": "Is the fire at the Blind still big enough for two?",
+      "show": {
+       "all": [
+        {
+         "time": "night"
+        },
+        {
+         "npcFlag": {
+          "npc": "maeca",
+          "key": "invited",
+          "eq": true
+         }
+        },
+        {
+         "not": {
+          "history": "killed_greymuzzle"
+         }
+        }
+       ]
+      },
+      "when": {
+       "all": [
+        {
+         "time": "night"
+        },
+        {
+         "rel": {
+          "npc": "maeca",
+          "axis": "respect",
+          "gte": 30
+         }
+        },
+        {
+         "rel": {
+          "npc": "maeca",
+          "axis": "affection",
+          "gte": 10
+         }
+        },
+        {
+         "any": [
+          {
+           "fact": "beasts.outcome",
+           "eq": "cured"
+          },
+          {
+           "fact": "beasts.outcome",
+           "eq": "allied"
+          }
+         ]
+        },
+        {
+         "not": {
+          "history": "killed_greymuzzle"
+         }
+        }
+       ]
+      },
+      "locked": "Not tonight. Not like this.",
+      "goto": "blind"
+     },
+     {
       "text": "Goodbye.",
       "end": true
      }
@@ -2408,7 +2804,18 @@
    },
    "gone": {
     "id": "gone",
-    "text": "You went to his house. In the dark. Get out of my light.",
+    "text": [
+     {
+      "when": {
+       "fact": "maeca.lover",
+       "eq": true
+      },
+      "text": "You went to his house. In the dark. After I told you what he was to me. Get out of my light, and don't come to the Blind again."
+     },
+     {
+      "text": "You went to his house. In the dark. Get out of my light."
+     }
+    ],
     "choices": [
      {
       "text": "...",
@@ -2429,6 +2836,146 @@
      }
     ],
     "next": "hub"
+   },
+   "say_calling": {
+    "id": "say_calling",
+    "text": [
+     {
+      "when": {
+       "archetype": "warden"
+      },
+      "text": "A shield. Good. Don't raise it in the Hollow. To a wolf a raised arm's a raised arm."
+     },
+     {
+      "when": {
+       "archetype": "reaver"
+      },
+      "text": "Leave the big blade at the Blind if you go near the Hollow. They can smell iron that's been used."
+     },
+     {
+      "when": {
+       "archetype": "arcanist"
+      },
+      "text": "Whatever it is you burn with, don't burn it in the Hollow. Fire's the one thing they all remember."
+     },
+     {
+      "when": {
+       "archetype": "stalker"
+      },
+      "text": "You move like you've done this. Quiet feet. ...Pity about the boots."
+     },
+     {
+      "text": "You move like you've done this. Quiet feet. ...Pity about the boots."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "maeca",
+       "key": "say:calling",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "invite": {
+    "id": "invite",
+    "text": "(She finishes her cup and stands.) I'm going out to the Blind. The fire's big enough for two, if you can keep quiet. Most can't.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "maeca",
+       "key": "invited",
+       "value": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "I can keep quiet.",
+      "goto": "blind"
+     },
+     {
+      "text": "Not tonight.",
+      "goto": "hub"
+     }
+    ]
+   },
+   "blind": {
+    "id": "blind",
+    "speaker": "narrator",
+    "text": [
+     {
+      "when": {
+       "fact": "settings.intimacy",
+       "eq": "full"
+      },
+      "text": "[explicit scene: Maeca and {name}, the Hunters' Blind in the Verge at night, a lean-to of hides and a fire the size of a hat; wordless, wary, careful hands that become sure ones, frost outside and the Pack audible far off; her trust given like a held breath let go — to be written]"
+     },
+     {
+      "text": "The Hunters' Blind is a lean-to of hides and a fire the size of a hat. She feeds it one stick at a time and doesn't talk, and then neither of you needs to. Her hands are hard and careful, the way they are with a snare. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you."
+     }
+    ],
+    "effects": [
+     {
+      "set": {
+       "maeca.lover": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "maeca",
+       "affection": 15,
+       "trust": 10
+      },
+      "quiet": true
+     },
+     {
+      "condition": {
+       "id": "warmed",
+       "days": 1,
+       "note": "A night at the Hunters' Blind"
+      }
+     },
+     {
+      "notice": "You slept well, for once. (Warmed: +8% damage, +5% speed, one day)"
+     }
+    ],
+    "next": "blind_morning"
+   },
+   "blind_morning": {
+    "id": "blind_morning",
+    "text": [
+     {
+      "when": {
+       "npcFlag": {
+        "npc": "maeca",
+        "key": "told_ashford",
+        "eq": true
+       }
+      },
+      "text": "(Grey light. She's already up, barefoot in the frost, listening.) Go on, then. The wood's awake, and so's Holloway, and he'll count us both."
+     },
+     {
+      "text": "(Grey light. She's already up, barefoot in the frost, listening to the wood.) The Pack found me, after Ashford. Three days in a cave mouth with the garrison dead round me, and the old grey one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "maeca",
+       "key": "told_ashford",
+       "value": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "I won't.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -2518,6 +3065,63 @@
      ]
     },
     "node": "cb_shrine_lit"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "wenna"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "wenna",
+         "key": "say:calling",
+         "eq": true
+        }
+       }
+      },
+      {
+       "any": [
+        {
+         "archetype": "warden"
+        },
+        {
+         "archetype": "reaver"
+        },
+        {
+         "archetype": "arcanist"
+        },
+        {
+         "archetype": "stalker"
+        }
+       ]
+      }
+     ]
+    },
+    "node": "say_calling"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "wenna"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "wenna",
+         "key": "say:woman",
+         "eq": true
+        }
+       }
+      },
+      {
+       "sex": "female"
+      }
+     ]
+    },
+    "node": "say_woman"
    },
    {
     "node": "hub"
@@ -3080,6 +3684,62 @@
      }
     ],
     "next": "hub"
+   },
+   "say_calling": {
+    "id": "say_calling",
+    "text": [
+     {
+      "when": {
+       "archetype": "warden"
+      },
+      "text": "Steel all over and not a scrap of sense in your diet. When did you last eat a green thing? Don't lie; I can see your gums."
+     },
+     {
+      "when": {
+       "archetype": "reaver"
+      },
+      "text": "You've had that shoulder put back by somebody who didn't know what they were doing. Twice. Sit, I'll— no, you won't sit. Fine. Limp, then."
+     },
+     {
+      "when": {
+       "archetype": "arcanist"
+      },
+      "text": "Spark-hands. Don't touch the drying racks; the last one of you set my sage alight and I smelled like a funeral for a week."
+     },
+     {
+      "when": {
+       "archetype": "stalker"
+      },
+      "text": "You're the sort that eats standing up. It shows in the skin. Here. Chew this. Don't ask what it is."
+     },
+     {
+      "text": "You're the sort that eats standing up. It shows in the skin. Here. Chew this. Don't ask what it is."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "wenna",
+       "key": "say:calling",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "say_woman": {
+    "id": "say_woman",
+    "text": "If you're ever carrying, child, there's a tea for keeping it and a tea for not. I don't ask which, and I don't tell Chid.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "wenna",
+       "key": "say:woman",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -3485,6 +4145,41 @@
     "node": "cb_wolf_slaughter"
    },
    {
+    "when": {
+     "all": [
+      {
+       "met": "brannoc"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "brannoc",
+         "key": "say:calling",
+         "eq": true
+        }
+       }
+      },
+      {
+       "any": [
+        {
+         "archetype": "warden"
+        },
+        {
+         "archetype": "reaver"
+        },
+        {
+         "archetype": "arcanist"
+        },
+        {
+         "archetype": "stalker"
+        }
+       ]
+      }
+     ]
+    },
+    "node": "say_calling"
+   },
+   {
     "node": "hub"
    }
   ],
@@ -3753,6 +4448,48 @@
      }
     ],
     "next": "hub"
+   },
+   "say_calling": {
+    "id": "say_calling",
+    "text": [
+     {
+      "when": {
+       "archetype": "warden"
+      },
+      "text": "Shield's warped. Bring it. No charge for looking."
+     },
+     {
+      "when": {
+       "archetype": "reaver"
+      },
+      "text": "Edge is chewed. You hit things. Good."
+     },
+     {
+      "when": {
+       "archetype": "arcanist"
+      },
+      "text": "Staff. Wood. Not my trade. ...Ferrule's loose. That is."
+     },
+     {
+      "when": {
+       "archetype": "stalker"
+      },
+      "text": "Knives. Light. Still. Sharp."
+     },
+     {
+      "text": "Knives. Light. Still. Sharp."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "brannoc",
+       "key": "say:calling",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -3868,6 +4605,41 @@
      ]
     },
     "node": "cb_killed_greymuzzle"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "harlan"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "harlan",
+         "key": "say:calling",
+         "eq": true
+        }
+       }
+      },
+      {
+       "any": [
+        {
+         "archetype": "warden"
+        },
+        {
+         "archetype": "reaver"
+        },
+        {
+         "archetype": "arcanist"
+        },
+        {
+         "archetype": "stalker"
+        }
+       ]
+      }
+     ]
+    },
+    "node": "say_calling"
    },
    {
     "node": "hub"
@@ -4418,6 +5190,48 @@
      }
     ],
     "next": "hub"
+   },
+   "say_calling": {
+    "id": "say_calling",
+    "text": [
+     {
+      "when": {
+       "archetype": "warden"
+      },
+      "text": "You've the look of a caravan guard. Good ones are rarer than salt, friend. When this is over, if Jory— when this is over, come and see me about work."
+     },
+     {
+      "when": {
+       "archetype": "reaver"
+      },
+      "text": "Big. Good. If you find the men who took my wagons, I'll not ask you to be gentle."
+     },
+     {
+      "when": {
+       "archetype": "arcanist"
+      },
+      "text": "A mage! There's a thing I've never sold. Can it find a lost wagon? No? Then what's it for?"
+     },
+     {
+      "when": {
+       "archetype": "stalker"
+      },
+      "text": "You've quiet feet. My nephew's somewhere quiet. ...Forgive me. Everything makes me think of him."
+     },
+     {
+      "text": "You've quiet feet. My nephew's somewhere quiet. ...Forgive me. Everything makes me think of him."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "harlan",
+       "key": "say:calling",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -4460,6 +5274,63 @@
      ]
     },
     "node": "cb_tricked_redcowl"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "pell"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "pell",
+         "key": "say:calling",
+         "eq": true
+        }
+       }
+      },
+      {
+       "any": [
+        {
+         "archetype": "warden"
+        },
+        {
+         "archetype": "reaver"
+        },
+        {
+         "archetype": "arcanist"
+        },
+        {
+         "archetype": "stalker"
+        }
+       ]
+      }
+     ]
+    },
+    "node": "say_calling"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "pell"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "pell",
+         "key": "say:woman",
+         "eq": true
+        }
+       }
+      },
+      {
+       "sex": "female"
+      }
+     ]
+    },
+    "node": "say_woman"
    },
    {
     "node": "hub"
@@ -5012,6 +5883,62 @@
      }
     ],
     "next": "hub"
+   },
+   "say_calling": {
+    "id": "say_calling",
+    "text": [
+     {
+      "when": {
+       "archetype": "warden"
+      },
+      "text": "Armour like that costs more than most of this street. Whoever paid for it, I'd very much like to meet them."
+     },
+     {
+      "when": {
+       "archetype": "reaver"
+      },
+      "text": "I do prefer to deal with people who could break my arm. It keeps the terms so simple."
+     },
+     {
+      "when": {
+       "archetype": "arcanist"
+      },
+      "text": "A scholar of the burning arts. Do you know, I've never once sold an arcanist anything at a profit? You people read the labels."
+     },
+     {
+      "when": {
+       "archetype": "stalker"
+      },
+      "text": "You've been standing there longer than I noticed. I don't care for that. I'll remember it."
+     },
+     {
+      "text": "You've been standing there longer than I noticed. I don't care for that. I'll remember it."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "pell",
+       "key": "say:calling",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "say_woman": {
+    "id": "say_woman",
+    "text": "I find women drive the harder bargain. I've a theory it's because you're used to being underpaid. Do prove me right; it's so rare that I am wrong.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "pell",
+       "key": "say:woman",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -5113,6 +6040,65 @@
      ]
     },
     "node": "cb_exposed_pell"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "rav"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rav",
+         "key": "say:calling",
+         "eq": true
+        }
+       }
+      },
+      {
+       "any": [
+        {
+         "archetype": "warden"
+        },
+        {
+         "archetype": "reaver"
+        },
+        {
+         "archetype": "arcanist"
+        },
+        {
+         "archetype": "stalker"
+        }
+       ]
+      }
+     ]
+    },
+    "node": "say_calling"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "rav"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rav",
+         "key": "say:sella",
+         "eq": true
+        }
+       }
+      },
+      {
+       "day": {
+        "gte": 2
+       }
+      }
+     ]
+    },
+    "node": "say_sella"
    },
    {
     "node": "hub"
@@ -5545,6 +6531,72 @@
      }
     ],
     "next": "hub"
+   },
+   "say_calling": {
+    "id": "say_calling",
+    "text": [
+     {
+      "when": {
+       "archetype": "warden"
+      },
+      "text": "Shield arm's longer than the other. Comes of holding a door shut. Holloway'd love you, pal; don't let him."
+     },
+     {
+      "when": {
+       "archetype": "reaver"
+      },
+      "text": "You've broken a few noses. Your knuckles are a medical history."
+     },
+     {
+      "when": {
+       "archetype": "arcanist"
+      },
+      "text": "Spell-scorched fingertips. You'll want goose fat for that. And to stop doing it, but you won't."
+     },
+     {
+      "when": {
+       "archetype": "stalker"
+      },
+      "text": "You counted the doors when you sat down. Old Kerchief habit. Who taught you?"
+     },
+     {
+      "text": "You counted the doors when you sat down. Old Kerchief habit. Who taught you?"
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "rav",
+       "key": "say:calling",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "say_sella": {
+    "id": "say_sella",
+    "text": [
+     {
+      "when": {
+       "sex": "female"
+      },
+      "text": "A word to the wise: Sella charges ladies the gentleman's rate, to see if they'll notice. Notice."
+     },
+     {
+      "text": "A word to the wise: Sella's charging the gentleman's rate this week. It's the same as the lady's rate. She just says it slower."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "rav",
+       "key": "say:sella",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -5631,6 +6683,41 @@
      ]
     },
     "node": "cb_nemesis_slain"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "chid"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "chid",
+         "key": "say:calling",
+         "eq": true
+        }
+       }
+      },
+      {
+       "any": [
+        {
+         "archetype": "warden"
+        },
+        {
+         "archetype": "reaver"
+        },
+        {
+         "archetype": "arcanist"
+        },
+        {
+         "archetype": "stalker"
+        }
+       ]
+      }
+     ]
+    },
+    "node": "say_calling"
    },
    {
     "node": "hub"
@@ -6196,6 +7283,48 @@
      }
     ],
     "next": "hub"
+   },
+   "say_calling": {
+    "id": "say_calling",
+    "text": [
+     {
+      "when": {
+       "archetype": "warden"
+      },
+      "text": "A shield! The Order's knights carried shields with the morning painted on them. Yours has... dents. Dents are good. Dents mean it worked."
+     },
+     {
+      "when": {
+       "archetype": "reaver"
+      },
+      "text": "There's a lot of anger in you. That's all right. The light doesn't mind anger. It's only fire with manners."
+     },
+     {
+      "when": {
+       "archetype": "arcanist"
+      },
+      "text": "You burn, don't you? Not like a candle. Like... oh. Like you. Sorry. I'll stop staring. I won't, but I'll try."
+     },
+     {
+      "when": {
+       "archetype": "stalker"
+      },
+      "text": "You came in from the side. Nobody comes in from the side. The side's where I keep the spiders."
+     },
+     {
+      "text": "You came in from the side. Nobody comes in from the side. The side's where I keep the spiders."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "chid",
+       "key": "say:calling",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -6284,6 +7413,41 @@
      ]
     },
     "node": "cb_exposed_pell"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "vonnra"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "vonnra",
+         "key": "say:calling",
+         "eq": true
+        }
+       }
+      },
+      {
+       "any": [
+        {
+         "archetype": "warden"
+        },
+        {
+         "archetype": "reaver"
+        },
+        {
+         "archetype": "arcanist"
+        },
+        {
+         "archetype": "stalker"
+        }
+       ]
+      }
+     ]
+    },
+    "node": "say_calling"
    },
    {
     "node": "hub"
@@ -7358,6 +8522,48 @@
      }
     ],
     "next": "hub"
+   },
+   "say_calling": {
+    "id": "say_calling",
+    "text": [
+     {
+      "when": {
+       "archetype": "warden"
+      },
+      "text": "Shields. Gates. Walls. You believe things can be kept out, traveller. It is a lovely belief."
+     },
+     {
+      "when": {
+       "archetype": "reaver"
+      },
+      "text": "You will break a great many things before the end. Try to choose them."
+     },
+     {
+      "when": {
+       "archetype": "arcanist"
+      },
+      "text": "You carry a fire you did not buy. Be careful whom you show it to. Some of them keep ledgers."
+     },
+     {
+      "when": {
+       "archetype": "stalker"
+      },
+      "text": "You came to my window from the side the light does not reach. Few think to. I noticed."
+     },
+     {
+      "text": "You came to my window from the side the light does not reach. Few think to. I noticed."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "vonnra",
+       "key": "say:calling",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -7422,6 +8628,41 @@
      ]
     },
     "node": "cb_core_stolen"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "keegan"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "keegan",
+         "key": "say:calling",
+         "eq": true
+        }
+       }
+      },
+      {
+       "any": [
+        {
+         "archetype": "warden"
+        },
+        {
+         "archetype": "reaver"
+        },
+        {
+         "archetype": "arcanist"
+        },
+        {
+         "archetype": "stalker"
+        }
+       ]
+      }
+     ]
+    },
+    "node": "say_calling"
    },
    {
     "node": "hub"
@@ -7521,6 +8762,18 @@
       "text": "How will you know when I'm ready?",
       "once": "ready",
       "goto": "ready"
+     },
+     {
+      "text": "Does the handbook say anything about dinner?",
+      "show": {
+       "rel": {
+        "npc": "keegan",
+        "axis": "respect",
+        "gte": 10
+       }
+      },
+      "once": "dinner",
+      "goto": "dinner"
      },
      {
       "text": "Goodbye.",
@@ -7684,6 +8937,67 @@
      }
     ],
     "next": "hub"
+   },
+   "say_calling": {
+    "id": "say_calling",
+    "text": [
+     {
+      "when": {
+       "archetype": "warden"
+      },
+      "text": "A fellow shield! Which order? None? A free lance. The handbook has a chapter on free lances. It is very rude about them."
+     },
+     {
+      "when": {
+       "archetype": "reaver"
+      },
+      "text": "That is a great deal of weapon. Please do not swing it near the gate. The gate is older than both of us and considerably less forgiving."
+     },
+     {
+      "when": {
+       "archetype": "arcanist"
+      },
+      "text": "Arcanist. The Vigil kept a ledger of— never mind. Good morning. It is a good morning, is it not."
+     },
+     {
+      "when": {
+       "archetype": "stalker"
+      },
+      "text": "You have been standing there for some time. I knew. I was merely being polite. ...I did not know."
+     },
+     {
+      "text": "You have been standing there for some time. I knew. I was merely being polite. ...I did not know."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "keegan",
+       "key": "say:calling",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "dinner": {
+    "id": "dinner",
+    "text": "Chapter eleven. Fraternisation. I have not read it. ...That is a lie. I have read it four times. The answer is no. The answer is very nearly no. Good day.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "keegan",
+       "affection": 10
+      },
+      "quiet": true
+     }
+    ],
+    "choices": [
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -7901,6 +9215,86 @@
      }
     },
     "node": "first"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "sella"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "sella",
+         "key": "say:maeca",
+         "eq": true
+        }
+       }
+      },
+      {
+       "fact": "maeca.lover",
+       "eq": true
+      }
+     ]
+    },
+    "node": "say_maeca"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "sella"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "sella",
+         "key": "say:woman",
+         "eq": true
+        }
+       }
+      },
+      {
+       "sex": "female"
+      }
+     ]
+    },
+    "node": "say_woman"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "sella"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "sella",
+         "key": "say:calling",
+         "eq": true
+        }
+       }
+      },
+      {
+       "any": [
+        {
+         "archetype": "warden"
+        },
+        {
+         "archetype": "reaver"
+        },
+        {
+         "archetype": "arcanist"
+        },
+        {
+         "archetype": "stalker"
+        }
+       ]
+      }
+     ]
+    },
+    "node": "say_calling"
    },
    {
     "when": {
@@ -8394,6 +9788,76 @@
      }
     ],
     "next": "hub"
+   },
+   "say_calling": {
+    "id": "say_calling",
+    "text": [
+     {
+      "when": {
+       "archetype": "warden"
+      },
+      "text": "All that steel. Takes an age to get off, I expect. I charge by the hour, love, not by the buckle."
+     },
+     {
+      "when": {
+       "archetype": "reaver"
+      },
+      "text": "Big hands. Be gentle with them upstairs, or you'll be paying for the furniture."
+     },
+     {
+      "when": {
+       "archetype": "arcanist"
+      },
+      "text": "You're warm. Not in a nice way. Are you on fire? You're a little bit on fire."
+     },
+     {
+      "when": {
+       "archetype": "stalker"
+      },
+      "text": "You came up behind me without a sound. Do that upstairs and you'll get a candlestick in the ear."
+     },
+     {
+      "text": "You came up behind me without a sound. Do that upstairs and you'll get a candlestick in the ear."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "sella",
+       "key": "say:calling",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "say_woman": {
+    "id": "say_woman",
+    "text": "Don't look so surprised, love. You're not the first woman up those stairs and you won't be the last. Half my regulars are lonelier than you.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "sella",
+       "key": "say:woman",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "say_maeca": {
+    "id": "say_maeca",
+    "text": "Maeca Barefoot came in this morning humming. Maeca. Humming. I've a professional interest, love: who's my competition?",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "sella",
+       "key": "say:maeca",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -8640,9 +10104,37 @@
     "text": [
      {
       "when": {
+       "any": [
+        {
+         "level": {
+          "gte": 8
+         }
+        },
+        {
+         "fact": "verge.kerchief_kills",
+         "gte": 12
+        }
+       ]
+      },
+      "text": "(Every crossbow in the camp is on you, and nobody's laughing.) You're the one who's been putting my lads in the ground. Redcowl. Talk, and talk slow."
+     },
+     {
+      "when": {
        "hasTag": "kerchief_colors"
       },
       "text": "Look at the colours on you. You're not one of mine, and you're not daft enough to be one of Holloway's. Redcowl. You're standing in my Roost. Talk."
+     },
+     {
+      "when": {
+       "archetype": "arcanist"
+      },
+      "text": "Keep your hands where I can see them, and keep them cold. The last spark-thrower in here set fire to my tent. Redcowl. You're in my camp. Talk."
+     },
+     {
+      "when": {
+       "archetype": "reaver"
+      },
+      "text": "Ha! Look at the size of you. I've a dozen lads would follow you for the fun of it; don't make me find out which dozen. Redcowl. You're in my camp. Talk."
      },
      {
       "text": "Redcowl. You're standing in my camp, which means my sentries are drunk or you're interesting. Which is it?"
@@ -9637,6 +11129,41 @@
     "node": "cb_opened_vault"
    },
    {
+    "when": {
+     "all": [
+      {
+       "met": "wayfinder"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "wayfinder",
+         "key": "say:calling",
+         "eq": true
+        }
+       }
+      },
+      {
+       "any": [
+        {
+         "archetype": "warden"
+        },
+        {
+         "archetype": "reaver"
+        },
+        {
+         "archetype": "arcanist"
+        },
+        {
+         "archetype": "stalker"
+        }
+       ]
+      }
+     ]
+    },
+    "node": "say_calling"
+   },
+   {
     "node": "hub"
    }
   ],
@@ -9834,6 +11361,48 @@
       "npcFlag": {
        "npc": "wayfinder",
        "key": "cb:opened_vault",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "say_calling": {
+    "id": "say_calling",
+    "text": [
+     {
+      "when": {
+       "archetype": "warden"
+      },
+      "text": "A warden. You'll hold a clearing longer than most. Mind you don't hold it after it's stopped being worth holding."
+     },
+     {
+      "when": {
+       "archetype": "reaver"
+      },
+      "text": "A reaver. You'll go in at the front and come out the back. The maps don't care which, but I do; I sell more of them to the living."
+     },
+     {
+      "when": {
+       "archetype": "arcanist"
+      },
+      "text": "An arcanist. You'll burn brighter than most in there, and faster. I've a margin for people like you."
+     },
+     {
+      "when": {
+       "archetype": "stalker"
+      },
+      "text": "A stalker. You'll want the maps with cover. Here, and here. Don't tell the reavers; they'll only stand in it."
+     },
+     {
+      "text": "A stalker. You'll want the maps with cover. Here, and here. Don't tell the reavers; they'll only stand in it."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "wayfinder",
+       "key": "say:calling",
        "value": true
       }
      }
