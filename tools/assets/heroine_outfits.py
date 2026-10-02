@@ -32,6 +32,7 @@ import numpy as np
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 from scipy import sparse
+import scipy.sparse.csgraph
 from scipy.spatial import cKDTree
 
 ARGS = sys.argv[sys.argv.index("--") + 1:]
@@ -341,6 +342,10 @@ def filled_nipples(radius=0.03, rounds=4000):
     if len(lumps):
         d, _ = cKDTree(lumps).query(P)
         inside |= breast & (d < 0.02)
+    # And her crotch, where the sculpt's skin between her thighs is
+    # crumpled: a garment lies on it smooth.
+    crotch = np.array([0.0, CROTCH_Y, CROTCH])
+    inside |= (np.linalg.norm(P - crotch, axis=1) < 0.045) & (np.abs(X) < 0.04)
     print("FILLED", int(inside.sum()), "vertices of skin under cups")
     for _ in range(60):
         out = np.where(inside[:, None], ADJ @ out, out)
@@ -987,11 +992,26 @@ def rivets(name, pos, at, tris, thick, mkey, spacing=0.028, inset=0.011, r=0.003
     return [finish(name + "_rivets", pp, ww, tt, mkey, 0.0002, 0.0, 10 ** 7)]
 
 
+def islands(pos, tris, keep_frac=0.02):
+    """Triangles of a sheet in pieces too small to be meant (scraps a cut
+    leaves): only pieces with at least keep_frac of the sheet are kept."""
+    n = len(pos)
+    e = np.vstack([tris[:, [0, 1]], tris[:, [1, 2]]])
+    g = sparse.coo_matrix((np.ones(len(e)), (e[:, 0], e[:, 1])), shape=(n, n))
+    k, lab = sparse.csgraph.connected_components(g, directed=False)
+    if k == 1:
+        return tris
+    size = np.bincount(lab[tris[:, 0]], minlength=k)
+    good = size >= keep_frac * len(tris)
+    return tris[good[lab[tris[:, 0]]]]
+
+
 def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000):
     """A sheet made a piece: her weights, its texture laid out at true size,
     a thickness and a rounded edge, bound to her skeleton. The sheet is
     first thinned to `budget` triangles (cut from a finely divided skin,
     it carries far more than its shape needs)."""
+    tris = islands(pos, tris)
     me = bpy.data.meshes.new(name)
     me.from_pydata([tuple(p) for p in pos], [], tris.tolist())
     me.update()
@@ -1554,7 +1574,7 @@ def arcanist():
     # her waist at the sides, front and back.
     # A narrow V in front rising steeply to her hip bones; a thong behind
     # widening into a V above her cheeks.
-    w = (0.011 + 0.42 * np.maximum(Z - CROTCH, 0)) * FRONT + (0.013 + 1.5 * np.maximum(Z - CROTCH - 0.15, 0)) * (1 - FRONT)
+    w = (0.02 + 0.4 * np.maximum(Z - CROTCH, 0)) * FRONT + (-0.01 + 1.5 * np.maximum(Z - CROTCH - 0.13, 0)) * (1 - FRONT)
     leotard = AND(Z - (CROTCH - 0.03), w - ax)
     # A bodysuit: over her breasts and up to a high neck.
     neck_top = head("neck_01")[2] + 0.07 - 0.035 * (1 - FRONT)
@@ -1580,6 +1600,8 @@ def arcanist():
     global GARTER_Z
     GARTER_Z = CROTCH + 0.2
     out = [
+        *ribbon("arcanist.thong", back_string(CROTCH + 0.155, CROTCH - 0.03), 0.016, "plumleather", lift=0.003, thick=0.003,
+               trim=gold(0.004), snap=False),
         *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80),
         *piece("arcanist.choker", choker, "blackleather", lift=0.002, soften=0, keep_off=("Head",)),
         *witch_hat("arcanist.hat", "plumleather", "darkpurple"),
@@ -1941,10 +1963,15 @@ if BODY_OUT:
             fs += [[base + i for i in p.vertices] for p in o.data.polygons]
         tree = BVHTree.FromPolygons(vs, fs)
         hid = 0
+        # Where pieces were shaped over her smoothed skin (nipples, lumps
+        # filled), her own skin may stand proud of them: hidden from behind too.
+        _, jj = cKDTree(P).query(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices]))
+        smoothed = np.linalg.norm(P_FILLED - P, axis=1)[jj] > 1e-4
         for v in me.vertices:
             co = body.matrix_world @ v.co
             n = (mw3 @ v.normal).normalized()
-            if tree.ray_cast(co + n * 0.0005, n, 0.02)[0] is not None:
+            if tree.ray_cast(co + n * 0.0005, n, 0.012)[0] is not None or (
+                    smoothed[v.index] and tree.ray_cast(co + n * 0.0005, -n, 0.015)[0] is not None):
                 vals[v.index, k] = 1
                 hid += 1
         if name in BALD:
