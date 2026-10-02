@@ -323,6 +323,55 @@ public class QuestTests
     }
 
     [Fact]
+    public void A_fine_paid_clears_the_name()
+    {
+        var s = Q("outcast");
+        s.World.Facts["player.wanted"] = true;
+        s.Ch.Gold = 120;
+        Talk(Convo("holloway"), s.C, "pay the hundred");
+        Assert.False(s.World.Fact("player.wanted").Truthy);
+        Assert.True(s.World.Fact("player.fined").Truthy);
+        Assert.NotEqual("wanted", new DialogueRunner(Convo("rook"), s.C).Start()!.Node.Id);
+    }
+
+    [Fact]
+    public void A_captain_shown_the_cause_stops_paying_for_wolves()
+    {
+        var s = Q("hunter");
+        Items(s, "wolf_pelt", 2);
+        Talk(Convo("holloway"), s.C, "sick, not bold");
+        s.Ch.Knowledge.Add("root_cause");
+        Talk(Convo("holloway"), s.C, "poisoned");
+        Assert.True(s.World.Fact("bounty.stopped").Truthy);
+        var offered = new DialogueRunner(Convo("holloway"), s.C).Start()!.Choices.Select(x => x.Text);
+        Assert.DoesNotContain(offered, t => t.Contains("bounty", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Running_with_the_Pack_outlasts_a_clean_stream()
+    {
+        var s = Q("hunter");
+        s.World.Facts["beasts.outcome"] = "allied";
+        s.World.Facts["dig.pump"] = "broken";
+        for (int d = 0; d < 3; d++) Day(s, 0.5);
+        Assert.Equal("allied", s.World.Fact("beasts.outcome").Str);
+        Assert.True(s.World.Fact("stream.clear").Truthy);
+    }
+
+    [Fact]
+    public void Fetching_Tams_father_in_saves_a_man_not_a_farm()
+    {
+        var s = Q("hunter");
+        Talk(Convo("tam"), s.C, "where is your farm");
+        Day(s, 0.5);
+        Day(s, 0.5);
+        Talk(Convo("tam"), s.C, "fetch your pa");
+        for (int d = 0; d < 4; d++) Day(s, 0.5);
+        Assert.Equal("emptied", s.World.Fact("tam.farm").Str);
+        Assert.Contains(s.World.History, h => h.Id == "farm_saved");
+    }
+
+    [Fact]
     public void Choices_that_no_longer_apply_go()
     {
         var s = Q("hunter");

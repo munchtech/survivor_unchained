@@ -250,6 +250,13 @@
   },
   {
    "when": {
+    "fact": "tam.farm",
+    "eq": "emptied"
+   },
+   "text": "The Pack wrecked his family's farm. His Pa slept in town that night, and is alive to complain about it."
+  },
+  {
+   "when": {
     "fact": "beasts.outcome",
     "eq": "cured"
    },
@@ -302,7 +309,7 @@
    "text": "Has found in you someone who has read the old books. Or at least looked at the pictures."
   },
   {
-   "text": "Guards the north gate against something only he can see."
+   "text": "Guards the north gate against something only she can see."
   }
  ],
  "jory": [

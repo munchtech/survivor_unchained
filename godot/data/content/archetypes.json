@@ -446,7 +446,7 @@
    "id": "ember_touched",
    "name": "Ember-Touched",
    "source": "levelup",
-   "text": "Every expedition begins with one free ember level.",
+   "text": "Every night and every arena, the ember wakes in you a level higher.",
    "tags": [
     "ember_start"
    ]
@@ -512,7 +512,7 @@
    "id": "second_wind",
    "name": "Second Wind",
    "source": "levelup",
-   "text": "Once per expedition, a killing blow leaves you standing at half health instead.",
+   "text": "Once a night, or once an arena, a killing blow leaves you standing at half health instead.",
    "tags": [
     "revive"
    ]
@@ -668,7 +668,7 @@
    "id": "kerchief_marked",
    "name": "Kerchief-Marked",
    "source": "world",
-   "text": "The Kerchiefs count you as one of theirs. The Watch counts you as one of theirs, too.",
+   "text": "The Kerchiefs count you as one of theirs. So does the Watch, on its list of faces to look out for.",
    "tags": [
     "kerchief_friend",
     "wanted"

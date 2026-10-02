@@ -208,11 +208,14 @@
    "night": true
   },
   {
-   "text": "Buried two this week. The ground's full and the priest's a boy."
+   "text": "Buried two this week. The ground's full and the priest's a fool. Says so himself."
   },
   {
-   "text": "They found the Aldo lad in the ditch. What was left of him.",
-   "night": true
+   "text": "They buried Aldo this morning. The Captain carried the front of the coffin himself.",
+   "when": {
+    "fact": "wolves.at_gate",
+    "eq": true
+   }
   },
   {
    "text": "Keep walking, hero. I've had my fill of heroes."
@@ -397,7 +400,7 @@
    }
   },
   {
-   "text": "The Coyle wagons had the Aldo boy's wedding cloth on them.",
+   "text": "The Coyle wagons had the Oswin girl's wedding cloth on them.",
    "when": {
     "all": [
      {
@@ -463,7 +466,7 @@
    }
   },
   {
-   "text": "Kerchiefs hit the Aldo farm again. Prices'll climb, you watch.",
+   "text": "Kerchiefs hit the Penhale farm again. Prices'll climb, you watch.",
    "when": {
     "fact": "kerchief.raids",
     "gte": 1
@@ -614,6 +617,13 @@
     "fact": "wolves.at_gate",
     "eq": true
    }
+  },
+  {
+   "when": {
+    "fact": "tam.farm",
+    "eq": "emptied"
+   },
+   "text": "Pack tore Tam's farm to bits. His Pa was in town, thank God. Somebody fetched him in."
   }
  ]
 }

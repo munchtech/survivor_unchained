@@ -218,7 +218,7 @@
    },
    "firstlamp": {
     "id": "firstlamp",
-    "text": "You found old Ashe. Captain of the first Watch, when it was forty lamps and not four. This inn is named for his: the Last Lamp, because it was the last one lit on the night they closed the north road. We light the hearth from it every winter. Nobody goes out there now. ...Thank you for not digging him up.",
+    "text": "You found old Ashe, and his trunk. Captain of the first Watch, when it was forty lamps and not four. This inn is named for his: the Last Lamp, because it was the last one lit on the night they closed the north road. We light the hearth from it every winter. Keep what was in the trunk; he'd have wanted it used. Just leave him where he lies.",
     "effects": [
      {
       "rel": {
@@ -410,6 +410,12 @@
      },
      {
       "text": "I have come about the bounty.",
+      "show": {
+       "not": {
+        "fact": "bounty.stopped",
+        "eq": true
+       }
+      },
       "when": {
        "any": [
         {
@@ -552,6 +558,12 @@
      },
      {
       "text": "I have come about the bounty.",
+      "show": {
+       "not": {
+        "fact": "bounty.stopped",
+        "eq": true
+       }
+      },
       "when": {
        "any": [
         {
@@ -747,6 +759,12 @@
     "choices": [
      {
       "text": "Hand over the fang.",
+      "show": {
+       "not": {
+        "fact": "bounty.stopped",
+        "eq": true
+       }
+      },
       "when": {
        "hasItem": "greymuzzle_fang"
       },
@@ -804,6 +822,12 @@
      },
      {
       "text": "Hand over the pelts.",
+      "show": {
+       "not": {
+        "fact": "bounty.stopped",
+        "eq": true
+       }
+      },
       "when": {
        "hasItem": "wolf_pelt"
       },
@@ -1289,7 +1313,21 @@
    },
    "cause": {
     "id": "cause",
-    "text": "The lamplings. Of course it is the lamplings. Deal with the pump, and I will stop paying for pelts. I will not stop watching the road.",
+    "text": [
+     {
+      "when": {
+       "npcFlag": {
+        "npc": "holloway",
+        "key": "open_to_cure",
+        "eq": true
+       }
+      },
+      "text": "The lamplings. Of course it's the lamplings. Then I'm done paying for pelts: I'll not pay men to put down sick dogs. Deal with the pump. I'll keep watching the road."
+     },
+     {
+      "text": "The lamplings. Of course it is the lamplings. Deal with the pump, and I will stop paying for pelts. I will not stop watching the road."
+     }
+    ],
     "effects": [
      {
       "rel": {
@@ -1297,6 +1335,22 @@
        "trust": 15,
        "respect": 10
       }
+     },
+     {
+      "if": {
+       "npcFlag": {
+        "npc": "holloway",
+        "key": "open_to_cure",
+        "eq": true
+       }
+      },
+      "then": [
+       {
+        "set": {
+         "bounty.stopped": true
+        }
+       }
+      ]
      }
     ],
     "choices": [
@@ -1501,7 +1555,7 @@
    },
    "arrest": {
     "id": "arrest",
-    "text": "You kept the Coyle cargo. Everyone in the Waystation knows it, and so do I. A hundred gold to the Watch and we will say no more about it. Or you can leave my town.",
+    "text": "You sold the Coyle cargo to a fence. Everyone in the Waystation knows it, and so do I. A hundred gold to the Watch and we'll say no more about it. Or you can leave my town.",
     "choices": [
      {
       "text": "Pay the hundred.",
@@ -1517,7 +1571,8 @@
        },
        {
         "set": {
-         "player.fined": true
+         "player.fined": true,
+         "player.wanted": false
         }
        },
        {
@@ -1535,6 +1590,13 @@
        "hasItem": "pell_ledger"
       },
       "badge": "Evidence",
+      "effects": [
+       {
+        "set": {
+         "player.wanted": false
+        }
+       }
+      ],
       "goto": "expose"
      },
      {
@@ -2862,6 +2924,43 @@
       "goto": "story"
      },
      {
+      "text": "Your farm's past the Old Road, you said. I'll fetch your Pa in before dark.",
+      "show": {
+       "all": [
+        {
+         "npcFlag": {
+          "npc": "tam",
+          "key": "farm_told",
+          "eq": true
+         }
+        },
+        {
+         "fact": "beasts.severity",
+         "gte": 2
+        },
+        {
+         "not": {
+          "fact": "tam.farm",
+          "exists": true
+         }
+        },
+        {
+         "not": {
+          "fact": "beasts.outcome",
+          "exists": true
+         }
+        },
+        {
+         "not": {
+          "fact": "tam.pa_in",
+          "eq": true
+         }
+        }
+       ]
+      },
+      "goto": "fetch"
+     },
+     {
       "text": "Not yet.",
       "end": true
      }
@@ -2893,6 +2992,31 @@
         }
        }
       ],
+      "end": true
+     }
+    ]
+   },
+   "fetch": {
+    "id": "fetch",
+    "speaker": "narrator",
+    "text": "You walk the boy as far as the fence where his Pa lost the goat, and his Pa out of the trees on the other side. He calls you several things on the way, and one of them is a fool. He comes.",
+    "effects": [
+     {
+      "set": {
+       "tam.pa_in": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "tam",
+       "trust": 20,
+       "affection": 15
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Stay by the well, Tam.",
       "end": true
      }
     ]
@@ -3198,7 +3322,7 @@
       "goto": "notwolves"
      },
      {
-      "text": "Jory is alive. He is on his way.",
+      "text": "Jory's alive. He's home.",
       "when": {
        "fact": "caravan.survivors",
        "eq": "rescued"
@@ -3247,7 +3371,7 @@
        "fact": "caravan.survivors",
        "eq": "rescued"
       },
-      "text": "Jory is sleeping upstairs at Rook's. Sleeping! What can I do for you, friend?"
+      "text": "Jory's round the back, pretending to count crates. Pretending! What can I do for you, friend?"
      },
      {
       "when": {
@@ -3295,7 +3419,7 @@
       "goto": "notwolves"
      },
      {
-      "text": "Jory is alive. He is on his way.",
+      "text": "Jory's alive. He's home.",
       "when": {
        "fact": "caravan.survivors",
        "eq": "rescued"
@@ -3360,7 +3484,7 @@
       "goto": "notwolves"
      },
      {
-      "text": "Jory is alive. He is on his way.",
+      "text": "Jory's alive. He's home.",
       "when": {
        "fact": "caravan.survivors",
        "eq": "rescued"
@@ -3425,7 +3549,7 @@
       "goto": "notwolves"
      },
      {
-      "text": "Jory is alive. He is on his way.",
+      "text": "Jory's alive. He's home.",
       "when": {
        "fact": "caravan.survivors",
        "eq": "rescued"
@@ -3498,7 +3622,7 @@
       "goto": "notwolves"
      },
      {
-      "text": "Jory is alive. He is on his way.",
+      "text": "Jory's alive. He's home.",
       "when": {
        "fact": "caravan.survivors",
        "eq": "rescued"
@@ -3582,7 +3706,7 @@
       "goto": "notwolves"
      },
      {
-      "text": "Jory is alive. He is on his way.",
+      "text": "Jory's alive. He's home.",
       "when": {
        "fact": "caravan.survivors",
        "eq": "rescued"
@@ -3711,7 +3835,7 @@
       "goto": "notwolves"
      },
      {
-      "text": "Jory is alive. He is on his way.",
+      "text": "Jory's alive. He's home.",
       "when": {
        "fact": "caravan.survivors",
        "eq": "rescued"
@@ -3824,7 +3948,7 @@
       "goto": "notwolves"
      },
      {
-      "text": "Jory is alive. He is on his way.",
+      "text": "Jory's alive. He's home.",
       "when": {
        "fact": "caravan.survivors",
        "eq": "rescued"
@@ -3900,7 +4024,7 @@
       "goto": "notwolves"
      },
      {
-      "text": "Jory is alive. He is on his way.",
+      "text": "Jory's alive. He's home.",
       "when": {
        "fact": "caravan.survivors",
        "eq": "rescued"
@@ -4283,7 +4407,6 @@
      },
      {
       "text": "Holloway will want to see this.",
-      "end": true,
       "effects": [
        {
         "rel": {
@@ -4291,7 +4414,8 @@
          "fear": 30
         }
        }
-      ]
+      ],
+      "end": true
      }
     ]
    },
@@ -6700,7 +6824,7 @@
    },
    "ashe": {
     "id": "ashe",
-    "text": "Know him? The Vigil buried him. He closed the north road with forty lamps and walked back through it with one. What he saw up there is why I am standing here telling you no. When you are ready, he would have told you himself.",
+    "text": "Know him? The Vigil buried him. He closed the north road with forty lamps and walked back through it with one. What he saw up there is why I am standing here telling you no. Were he here, he would tell you himself, once you were ready.",
     "effects": [
      {
       "rel": {
@@ -6761,12 +6885,40 @@
      {
       "add": true,
       "when": {
-       "not": {
-        "fact": "beasts.outcome",
-        "exists": true
-       }
+       "all": [
+        {
+         "not": {
+          "fact": "beasts.outcome",
+          "exists": true
+         }
+        },
+        {
+         "not": {
+          "fact": "bounty.stopped",
+          "eq": true
+         }
+        }
+       ]
       },
       "text": "WOLF BOUNTY — five gold the pelt, fifty for the grey alpha. Capt. Holloway, the Watch."
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "not": {
+          "fact": "beasts.outcome",
+          "exists": true
+         }
+        },
+        {
+         "fact": "bounty.stopped",
+         "eq": true
+        }
+       ]
+      },
+      "add": true,
+      "text": "The wolf bounty is SUSPENDED. The Watch will not pay for pelts. Capt. Holloway. (Underneath, in another hand: \"why??\")"
      },
      {
       "add": true,
@@ -8335,7 +8487,7 @@
     "text": [
      {
       "when": {
-       "fact": "map.done",
+       "fact": "arena.won",
        "gte": 1
       },
       "text": "Back from the edges, {name}, and in one piece. The places you took are quieter for it. I have new ones."
@@ -8370,7 +8522,7 @@
    },
    "oaths": {
     "id": "oaths",
-    "text": "Every map is sworn under something, written in the margin. The Long Winter, and their blows chill you to a crawl. The Blight, and nothing mends right. Iron, and only a clean critical cuts them. An oath asks something of you and pays for it in ember or in gear. Read what answers it: a cloak lined for the cold, a slayer's edge for the Pack. And what you find out there leans toward what the place wants of you. Run the Winter long enough and you will be dressed for it.",
+    "text": "Every map is sworn under something, written in the margin: the Long Winter, the Blight, Iron, a shorter light. The place keeps its oath, and so will you, whether you read it or not. A cold place pays out in things that keep the cold off. Go in dressed for it, or come out dressed for it. Those are the choices.",
     "choices": [
      {
       "text": "Show me your maps.",
@@ -8388,7 +8540,7 @@
    },
    "places": {
     "id": "places",
-    "text": "Sixteen clearings, give or take, strung along a way that doubles back on itself. The packs sleep where they stand until you are close, then wake together. Three altars in every map: wake one and hold its clearing while it calls, and it pays out when it is spent. And at the heart of the last clearing, whatever rules the place. Kill it and the map is yours, and the way home opens where it fell.",
+    "text": "Half an hour, give or take, and it only gets worse. The ember in you starts from nothing in there, same as every night. Last the half hour and whatever rules the place comes out to see who's been killing its people. Kill it and the way out opens where it fell. Stay past that if you like. Some do. I sell them fewer maps.",
     "choices": [
      {
       "text": "Show me your maps.",

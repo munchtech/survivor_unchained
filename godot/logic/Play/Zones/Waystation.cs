@@ -24,7 +24,7 @@ public sealed class Waystation : ZoneRuntime
     /// <summary>What the stall-keepers shout.</summary>
     static readonly Dictionary<string, string[]> StallCalls = new()
     {
-        ["produce"] = ["Apples! Aldo apples, crisp as frost!", "Turnips, onions, the last of the beans!", "Two for a copper, and I'm robbing myself!"],
+        ["produce"] = ["Apples! Morrow pippins, crisp as frost!", "Turnips, onions, the last of the beans!", "Two for a copper, and I'm robbing myself!"],
         ["cloth"] = ["Wool from the south, warm as a bed!", "Mend your cloak, traveller? It needs it.", "Dyed in the Morrow, never fades!"],
         ["herbs"] = ["Feverfew, woundwort, sleep-easy!", "Wenna's not the only one who knows a leaf.", "Something for the cough? Everyone's got the cough."],
         ["pots"] = ["Pots! Pans! Things to put things in!", "Fired in Low Kiln, sound as a bell. Hear that?", "You look like someone who needs a pot."],
@@ -267,7 +267,7 @@ public sealed class Waystation : ZoneRuntime
             Hint = () => W.Rematches.Count > 0 ? $"{W.Rematches.Count} fight{(W.Rematches.Count == 1 ? "" : "s")} to take again" : F("arena.best").Number > 0 ? $"Tier {(int)F("arena.best").Number} won" : null,
             Act = () => G.Open("maps"),
         });
-        I.Add(new() { Id = "gate:north", X = north.X, Z = north.Z + 3, R = 3.2, Verb = "Pass", Name = "The North Gate", Locked = () => "Professor Keegan bars the way" });
+        I.Add(new() { Id = "gate:north", X = north.X, Z = north.Z + 3, R = 3.2, Verb = "Pass", Name = "The North Gate", Locked = () => "Dame Keegan bars the way" });
         I.Add(new()
         {
             Id = "warehouse", X = warehouse.X, Z = warehouse.Z, R = 2.4, Verb = "Enter", Name = "Pell's Warehouse",
@@ -301,7 +301,7 @@ public sealed class Waystation : ZoneRuntime
                     [{ "zone": { "id": "waystation", "key": "garden", "value": true } }, { "give": "ember_shard", "qty": 2 }, { "gold": 25 },
                      { "learn": "lore.firstlamp", "text": "The Quiet Garden: where the first Watch-captain is buried, with his lamp." }]
                     """);
-                G.Say("Under the old captain's stone, a trunk the Watch forgot: ember shards, a purse, and a note: \"Keep the lights lit. — C.\"", null, 6);
+                G.Say("Beside the old captain's stone, sunk in the nettles, a trunk the Watch forgot: ember shards, a purse, and a note: \"Keep the lights lit. — C.\"", null, 6);
             },
         });
     }

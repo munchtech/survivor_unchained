@@ -687,10 +687,11 @@ public sealed class Prologue : ZoneRuntime
                 [
                   { "learn": "grimtunnel", "text": "You have seen Grimtunnel. The lamplings are digging for something." },
                   { "history": { "id": "ford_warden_slain", "text": "put down the Ford-Warden at the Low Ford", "tags": ["deed", "undead"], "spread": 2, "sentiment": { "respect": 10 } } },
-                  { "history": { "id": "core_stolen", "text": "let a lampling steal the Warden's heart", "tags": ["lampling"], "spread": 1 } }
+                  { "history": { "id": "core_stolen", "text": "let a lampling steal the Warden's heart", "tags": ["lampling"], "spread": 1 } },
+                  { "give": "grimtunnels_lamp" }
                 ]
                 """);
-            G.Toast(new Toast(ToastKind.Lore, "Grimtunnel took the Warden's heart", "Whatever the diggers want it for, they went down, not away.", Life: 8));
+            G.Toast(new Toast(ToastKind.Lore, "Grimtunnel took the Warden's heart", "They went down, not away. In the churned mud where he went: a lamp on a snapped strap, still warm. His.", Life: 8));
         }
         if (cutT > 13)
         {

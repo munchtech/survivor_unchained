@@ -548,7 +548,7 @@ public sealed class Journey
                 Ch.Gold -= cost;
                 wpn.Rarity++;
                 (wpn.History ??= new()).Add($"Reforged by Brannoc, day {w.Day}");
-                OnToast(new Toast(ToastKind.Loot, $"{Inventory.Name(wpn)} reforged", "It starts every expedition a rank higher.", Items.Get(wpn.Def).Icon, wpn.Rarity));
+                OnToast(new Toast(ToastKind.Loot, $"{Inventory.Name(wpn)} reforged", "A grade truer, by day and by night.", Items.Get(wpn.Def).Icon, wpn.Rarity));
                 RefreshKit(b);
                 return true;
             }

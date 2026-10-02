@@ -310,7 +310,7 @@ public partial class ChapterScreen : Overlay
         var acts = Style.H(12, Style.Button("Keep walking", G.CloseOverlay), Style.Button("Return to the fire", G.QuitToTitle, true));
         acts.Alignment = BoxContainer.AlignmentMode.Center;
         wrap.AddChild(acts);
-        wrap.AddChild(Style.Label("Your journey is saved. The second chapter begins where this one leaves off.", Style.TextItalic, 14, Style.InkDim, false, HorizontalAlignment.Center));
+        wrap.AddChild(Style.Label("Your journey is saved. The chapter ends here, but the road does not: the Waystation, the Verge and the Wayfinder's table are still yours to walk. What lies north is not written yet.", Style.TextItalic, 14, Style.InkDim, false, HorizontalAlignment.Center));
     }
 
     public override bool Key(Act a)
