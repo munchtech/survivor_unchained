@@ -1,18 +1,23 @@
-; Survivor Unchained: the Godot test slice (see README.md here).
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
 
 config_version=5
 
 [application]
 
 config/name="Survivor Unchained"
+config/version="0.1.0"
 run/main_scene="res://scenes/game.tscn"
 config/features=PackedStringArray("4.5", "C#", "Forward Plus")
-config/version="0.1.0"
-config/icon="res://icon.png"
 boot_splash/bg_color=Color(0.035, 0.03, 0.045, 1)
-boot_splash/image="res://icon.png"
 boot_splash/fullsize=false
-boot_splash/use_filter=true
+boot_splash/image="res://icon.png"
+config/icon="res://icon.png"
 
 [display]
 
@@ -24,27 +29,25 @@ window/stretch/mode="canvas_items"
 
 project/assembly_name="SurvivorUnchained"
 
+[importer_defaults]
+
+scene={
+"gltf/embedded_image_handling": 3
+}
+
 [physics]
 
 3d/physics_engine="Jolt Physics"
 
 [rendering]
 
-renderer/rendering_method="forward_plus"
+textures/vram_compression/import_etc2_astc=true
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=3
+textures/default_filters/anisotropic_filtering_level=3
 anti_aliasing/quality/msaa_3d=2
+environment/defaults/default_clear_color=Color(0.04, 0.05, 0.07, 1)
 anti_aliasing/quality/screen_space_aa=1
 anti_aliasing/quality/use_taa=true
-textures/default_filters/anisotropic_filtering_level=3
-textures/vram_compression/import_etc2_astc=true
-lights_and_shadows/directional_shadow/size=4096
-lights_and_shadows/directional_shadow/soft_shadow_filter_quality=3
-environment/defaults/default_clear_color=Color(0.04, 0.05, 0.07, 1)
-
-[importer_defaults]
-
-scene={
-"gltf/embedded_image_handling": 3
-}
 
 [shader_globals]
 
