@@ -1589,7 +1589,8 @@ def zigzag_band(sd, s0, legs=True, width=0.014, amp=0.014, teeth=6):
 
 
 def reaver():
-    """The reaver: a loincloth on a belt slung low on her hips, a strip of leather
+    """The reaver: a loincloth panel in front on a belt slung low on her hips, a
+    thong string behind, a strip of leather
     across her breasts, a fur half cape over her left shoulder, fur-topped
     boots and fur cuffs at her wrists, leather bracers, and tattoos: zigzag
     bands round her right arm and left thigh."""
@@ -1611,7 +1612,11 @@ def reaver():
         *piece("reaver.belt", belt, "oldleather", lift=0.012, thick=0.004, smooth=3, soften=10),
         *piece("reaver.buckle", AND(0.022 - np.linalg.norm(P - front_point(0.0, bz0), axis=1), belt + 0.004), "rust", lift=0.017, thick=0.003, smooth=4, soften=1),
         *hanging("reaver.loin_front", -0.33, 0.33, bz0, lambda u: 0.52 + 0.07 * u * u, "oldleather", flare=0.06, lift=0.016, trim=edge(0.01)),
-        *hanging("reaver.loin_back", np.pi - 0.42, np.pi + 0.42, bz0, lambda u: 0.55 + 0.07 * u * u, "oldleather", flare=0.1, lift=0.016, trim=edge(0.01)),
+        # Beneath it a thong: a small pouch over her crotch, hidden by the
+        # front panel, and from it a string up between her cheeks to the belt.
+        *piece("reaver.thong", OR(
+            AND(FRONT - 0.3, (0.018 + 0.45 * np.maximum(Z - CROTCH, 0)) - np.abs(X), (CROTCH + 0.06) - Z, Z - (CROTCH - 0.03)),
+            AND(0.5 - FRONT, 0.006 - np.abs(X), (belt_z + 0.005) - Z, Z - (CROTCH - 0.03))), "darkleather", lift=0.002, smooth=2, soften=1),
         *piece("reaver.cape", cape, "fur", lift=0.02, thick=0.014, smooth=12, soften=10, keep_off=("Head",)),
         *piece("reaver.tattoo_arm", OR(zigzag_band("r", ELBOW_S - 0.12, legs=False), zigzag_band("r", ELBOW_S - 0.06, legs=False, amp=0.01, width=0.009)), "ink", lift=0.0006, thick=0.0002, bevel=0.0, soften=0),
         *piece("reaver.tattoo_thigh", OR(zigzag_band("l", 0.15), zigzag_band("l", 0.22, amp=0.01, width=0.009)), "ink", lift=0.0006, thick=0.0002, bevel=0.0, soften=0),
