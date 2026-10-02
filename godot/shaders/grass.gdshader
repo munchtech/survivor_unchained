@@ -45,8 +45,11 @@ void vertex() {
 	sp.b *= 1.0 - heal * 0.85;
 	vec4 nz = texture(noise_tex, wp * 0.035);
 	float bare = max(max(sp.r, sp.g), max(sp.b, sp.a));
-	// Thinning over trodden earth rather than stopping at its edge.
-	float dens = 1.0 - smoothstep(0.15, 0.8, bare + (nz.g - 0.5) * 0.35) * 0.85;
+	// None on setts, mud or blight; over trodden earth it thins rather than
+	// stopping at the edge.
+	float hard = max(sp.g, max(sp.b, sp.a));
+	float dens = (1.0 - smoothstep(0.12, 0.45, hard + (nz.g - 0.5) * 0.35))
+		* (1.0 - smoothstep(0.15, 0.8, sp.r + (nz.g - 0.5) * 0.35) * 0.85);
 	dens *= smoothstep(0.18, 0.5, nz.r + 0.22);
 	float leafy = smoothstep(0.42, 0.78, texture(noise_tex, wp * 0.011).g * 0.7 + texture(noise_tex, wp * 0.061 + 0.37).a * 0.3 + leaves - 0.5);
 	dens *= 1.0 - leafy * 0.5;
