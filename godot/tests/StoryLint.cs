@@ -225,5 +225,26 @@ public class StoryLint
         Assert.Empty(problems);
     }
 
+    [Fact]
+    public void Every_explicit_slot_waits_behind_the_setting_with_a_cut_away_beside_it()
+    {
+        // Explicit scenes are the owner's writer's: the content holds a marked
+        // slot, shown only when the player asked for intimate scenes in full,
+        // and a cut-away for everyone else.
+        var problems = new List<string>();
+        int slots = 0;
+        foreach (var (id, c) in Dialogue.All)
+            foreach (var (nid, n) in c.Nodes)
+            {
+                var marked = n.Text.Where(v => v.Text.StartsWith("[explicit scene:")).ToList();
+                slots += marked.Count;
+                foreach (var v in marked)
+                    if (v.When?.FactKey != "settings.intimacy" || v.When.Eq?.Str != "full") problems.Add($"{id}.{nid}: a slot not behind settings.intimacy = full");
+                if (marked.Count > 0 && !n.Text.Any(v => v.When == null && !v.Text.StartsWith("[explicit scene:"))) problems.Add($"{id}.{nid}: no cut-away");
+            }
+        Assert.Empty(problems);
+        Assert.True(slots >= 3, $"{slots} slots");
+    }
+
     static Ctx Ctx() => Lore.Context(WorldState.Fresh(1), H.Survivor());
 }

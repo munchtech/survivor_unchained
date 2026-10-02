@@ -1460,7 +1460,7 @@
    },
    "liar": {
     "id": "liar",
-    "text": "Dealt with. That's what you said. I paid you thirty of the Watch's gold for \"dealt with\", and this morning I had a drover bleeding on my gate. So. Tell me why you shouldn't spend the night in the cells.",
+    "text": "Dealt with. That's what you said. I paid you thirty of the Watch's gold for \"dealt with\", and this morning I had a drover bleeding on my gate. So. Tell me why you shouldn't spend the night in the fucking cells.",
     "choices": [
      {
       "text": "Pay back the thirty. [30 gold]",
@@ -1734,7 +1734,7 @@
    },
    "defied": {
     "id": "defied",
-    "text": "Out of my sight. And if I see you near my gate with a blade out, you'll find out how the cells feel on a cold night.",
+    "text": "Out of my sight. And if I see you near my gate with a blade out, you'll find out how the cells feel on a cold night, and how the cell-rats feel about fresh meat.",
     "choices": [
      {
       "text": "Go.",
@@ -6473,7 +6473,7 @@
       "when": {
        "time": "night"
       },
-      "text": "Night surgery's double. Night drinking's the same price; I checked."
+      "text": "Night surgery's double. Night drinking's the same price; I checked. And if you're here for Sella, she's busy: you can hear the bed from the cellar."
      },
      {
       "text": "What'll it be? Advice is free, and worth it."
@@ -6530,6 +6530,25 @@
       "text": "Ever think of going back to the Kerchiefs?",
       "once": "t_rav",
       "goto": "t_rav"
+     },
+     {
+      "text": "Doctor, I've a pain.",
+      "show": {
+       "all": [
+        {
+         "time": "night"
+        },
+        {
+         "rel": {
+          "npc": "rav",
+          "axis": "trust",
+          "gte": 20
+         }
+        }
+       ]
+      },
+      "once": "pain",
+      "goto": "pain"
      },
      {
       "text": "Goodbye.",
@@ -6878,6 +6897,29 @@
     "choices": [
      {
       "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "pain": {
+    "id": "pain",
+    "text": "Where? ...No, don't point, pal, we're in company. Come round the back after closing and I'll take a look. Largely professionally. Bring a bottle; it's an anaesthetic for one of us.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "rav",
+       "affection": 5
+      },
+      "quiet": true
+     }
+    ],
+    "choices": [
+     {
+      "text": "Another night, Doctor.",
       "goto": "hub"
      },
      {
@@ -9673,6 +9715,39 @@
        "met": "sella"
       },
       {
+       "time": "night"
+      },
+      {
+       "fact": "sella.nights",
+       "gte": 3
+      },
+      {
+       "rel": {
+        "npc": "sella",
+        "axis": "affection",
+        "gte": 25
+       }
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "sella",
+         "key": "say:free",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "free"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "sella"
+      },
+      {
        "not": {
         "npcFlag": {
          "npc": "sella",
@@ -9908,7 +9983,7 @@
       "when": {
        "time": "night"
       },
-      "text": "Evening, {name}. The lamp's lit upstairs, if you're asking. You look like you're asking."
+      "text": "Evening, {name}. The lamp's lit upstairs, if you're asking. You look like you're asking. You look like you've been asking all day."
      },
      {
       "text": "Back again. People'll talk. Let them; it's good for business."
@@ -10327,6 +10402,78 @@
       "end": true
      }
     ]
+   },
+   "free": {
+    "id": "free",
+    "text": "Put your purse away, {name}. Tonight I'm not working. ...Don't look at me like that. Don't make it strange.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "sella",
+       "key": "say:free",
+       "value": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Then lead the way.",
+      "goto": "free_night"
+     },
+     {
+      "text": "Not tonight, Sella.",
+      "goto": "hub"
+     }
+    ]
+   },
+   "free_night": {
+    "id": "free_night",
+    "speaker": "narrator",
+    "text": [
+     {
+      "when": {
+       "fact": "settings.intimacy",
+       "eq": "full"
+      },
+      "text": "[explicit scene: Sella and {name}, the blue room, not for money for the first time; slower and less sure than her working nights, the professional's patter dropping away, laughter and then none; a door she locks herself — to be written]"
+     },
+     {
+      "text": "The blue room, and the lamp, and the bolt, which she shoots herself, which she has never done. She doesn't talk the way she talks for money. For a while neither of you talks at all. Later she lies awake and you can feel her deciding something, and then she sleeps."
+     }
+    ],
+    "effects": [
+     {
+      "set": {
+       "sella.free": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "sella",
+       "affection": 10,
+       "trust": 10
+      },
+      "quiet": true
+     },
+     {
+      "condition": {
+       "id": "warmed",
+       "days": 1,
+       "note": "A night in the blue room, off the clock"
+      }
+     }
+    ],
+    "next": "free_morning"
+   },
+   "free_morning": {
+    "id": "free_morning",
+    "text": "(She's still there when you wake, which she never is.) Don't tell Rook; she'll want a third of nothing, on principle. ...And don't tell me anything up here you'd not want Vonnra to hear. I mean that kindly. It's the kindest thing I've said to anyone in a year.",
+    "choices": [
+     {
+      "text": "Until next time.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -10633,6 +10780,12 @@
       "text": "Ha! Look at the size of you. I've a dozen lads would follow you for the fun of it; don't make me find out which dozen. Redcowl. You're in my camp. Talk."
      },
      {
+      "when": {
+       "sex": "female"
+      },
+      "text": "Well. My lads haven't seen a woman who wasn't their mother in a month, nor a bath in a year. Walk straight and they'll keep their hands where I've told them. Redcowl. You're in my camp. Talk."
+     },
+     {
       "text": "Redcowl. You're standing in my camp, which means my sentries are drunk or you're interesting. Which is it?"
      }
     ],
@@ -10736,6 +10889,11 @@
       "text": "Who are all these people?",
       "once": "who",
       "goto": "who"
+     },
+     {
+      "text": "Why keep them in cages?",
+      "once": "cages",
+      "goto": "cages"
      },
      {
       "text": "Nothing.",
@@ -11067,6 +11225,20 @@
     "choices": [
      {
       "text": "Watch them run.",
+      "end": true
+     }
+    ]
+   },
+   "cages": {
+    "id": "cages",
+    "text": "Because a man in a cage is worth something to somebody, and a man in a ditch is worth nothing to anybody. I've buried enough worth-nothings for one life, lad. ...And I feed them. Ask them. I feed them before I feed my own.",
+    "choices": [
+     {
+      "text": "About the Coyle wagons.",
+      "goto": "goods"
+     },
+     {
+      "text": "Nothing.",
       "end": true
      }
     ]
