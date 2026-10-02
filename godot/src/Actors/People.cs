@@ -219,11 +219,32 @@ public static class People
         {
             person.Meshes.Add(mi);
             mi.Layers = 2;
+            for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D src)
+                    mi.SetSurfaceOverrideMaterial(s, Skin(src, look));
         }
         root.AddChild(person.Anim);
         person.Anim.RootNode = "..";
         person.Anim.AddAnimationLibrary("", Clips());
         return person;
+    }
+
+    /// <summary>Her paint as skin: light carried under it (subsurface
+    /// scattering, reddened as through flesh), a soft sheen rather than
+    /// plastic, and warmed toward a sun-browned tone, or the tone chosen.</summary>
+    static StandardMaterial3D Skin(BaseMaterial3D src, Look look)
+    {
+        var m = (StandardMaterial3D)src.Duplicate();
+        m.AlbedoColor = look.Skin is Color tone ? tone.Lerp(Colors.White, 0.35f) : new Color(1.0f, 0.86f, 0.74f);
+        m.SubsurfScatterEnabled = true;
+        m.SubsurfScatterStrength = 0.35f;
+        m.SubsurfScatterSkinMode = true;
+        m.Roughness = 0.52f;
+        m.MetallicSpecular = 0.42f;
+        m.RimEnabled = true;
+        m.Rim = 0.25f;
+        m.RimTint = 0.6f;
+        return m;
     }
 
     /// <summary>Her paint's own skin (lit, not in its shadows), hair and suit,
