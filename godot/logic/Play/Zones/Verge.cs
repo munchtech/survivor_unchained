@@ -494,6 +494,19 @@ public sealed class Verge : ZoneRuntime
                 G.Say("The water is warm, and faintly green, and smells like a chapel lamp.", null, 4);
             },
         });
+        // Bitterroot grows where the water is bad, and Wenna always wants more:
+        // a few clumps on the green stretch each visit, while the poison lasts.
+        (double X, double Z)[] roots = [(-5, 3), (4, -4.5), (7.5, 4)];
+        for (int i = 0; i < roots.Length; i++)
+        {
+            int k = i;
+            I.Add(new()
+            {
+                Id = $"root{k}", X = sample.X + roots[k].X, Z = sample.Z + roots[k].Z, R = 2, Verb = "Dig up", Name = "Bitterroot",
+                When = () => !seen.Contains($"root{k}") && F("beasts.outcome").Str != "cured" && !F("stream.clear").Truthy,
+                Act = () => { seen.Add($"root{k}"); G.Apply("""[{ "give": "bitterroot" }]"""); },
+            });
+        }
         I.Add(new()
         {
             Id = "pipe", X = pipe.X, Z = pipe.Z, R = 3.2, Verb = "Examine", Name = "An Iron Pipe",
