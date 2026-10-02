@@ -322,6 +322,11 @@
       "goto": "ford"
      },
      {
+      "text": "Was there ever a Mister Rook?",
+      "once": "t_rook",
+      "goto": "t_rook"
+     },
+     {
       "text": "Another time.",
       "end": true
      }
@@ -688,6 +693,20 @@
      }
     ],
     "next": "hub"
+   },
+   "t_rook": {
+    "id": "t_rook",
+    "text": "There was. Drank with the Watch, sang flat, and went up the north road with the last lot that went. I kept his chair by the hearth. I sit in it now. It's a good chair; that's the only reason.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -1275,6 +1294,11 @@
       },
       "once": "expose",
       "goto": "expose"
+     },
+     {
+      "text": "What do you want, Captain? For yourself.",
+      "once": "t_holloway",
+      "goto": "t_holloway"
      },
      {
       "text": "That's all.",
@@ -2216,6 +2240,20 @@
      }
     ],
     "next": "hub"
+   },
+   "t_holloway": {
+    "id": "t_holloway",
+    "text": "A posting with walls somebody else has to count. A dog. Eight hours' sleep in one go. In that order. ...Don't tell the men about the dog.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -2654,6 +2692,11 @@
       "goto": "blind"
      },
      {
+      "text": "What did you hunt, before the wolves?",
+      "once": "t_maeca",
+      "goto": "t_maeca"
+     },
+     {
       "text": "Goodbye.",
       "end": true
      }
@@ -3024,6 +3067,20 @@
     "choices": [
      {
       "text": "...",
+      "end": true
+     }
+    ]
+   },
+   "t_maeca": {
+    "id": "t_maeca",
+    "text": "Men, for the garrison. Deer, for me. Men are easier. They keep to paths and they talk while they walk.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
       "end": true
      }
     ]
@@ -3437,6 +3494,11 @@
       "action": "trade"
      },
      {
+      "text": "Is there anyone, Wenna? Family?",
+      "once": "t_wenna",
+      "goto": "t_wenna"
+     },
+     {
       "text": "Goodbye.",
       "end": true
      }
@@ -3791,6 +3853,20 @@
      }
     ],
     "next": "hub"
+   },
+   "t_wenna": {
+    "id": "t_wenna",
+    "text": "Three husbands. Buried two, lost one at cards. The one I lost at cards was the best of them, and I've never forgiven the man who won him.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -4036,6 +4112,11 @@
       "goto": "fetch"
      },
      {
+      "text": "Did your Pa ever find the goat?",
+      "once": "t_tam",
+      "goto": "t_tam"
+     },
+     {
       "text": "Not yet.",
       "end": true
      }
@@ -4134,6 +4215,20 @@
     "choices": [
      {
       "text": "Stay by the well, Tam.",
+      "end": true
+     }
+    ]
+   },
+   "t_tam": {
+    "id": "t_tam",
+    "text": "No. Her name was Clover and she ate a whole hat once. Pa says the wolves got her. I think she ran off to be a wild goat. I think she's happy.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "again"
+     },
+     {
+      "text": "Goodbye.",
       "end": true
      }
     ]
@@ -4392,6 +4487,11 @@
       "goto": "irons"
      },
      {
+      "text": "Who taught you iron?",
+      "once": "t_brannoc",
+      "goto": "t_brannoc"
+     },
+     {
       "text": "Goodbye.",
       "end": true
      }
@@ -4541,6 +4641,20 @@
      }
     ],
     "next": "hub"
+   },
+   "t_brannoc": {
+    "id": "t_brannoc",
+    "text": "Mother. Better smith than me. Worse temper. Hammer's hers.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -4900,6 +5014,11 @@
       },
       "once": "jory_now",
       "goto": "jory_now"
+     },
+     {
+      "text": "How did Jory come to drive for you?",
+      "once": "t_harlan",
+      "goto": "t_harlan"
      },
      {
       "text": "Goodbye.",
@@ -5306,6 +5425,20 @@
       "end": true
      }
     ]
+   },
+   "t_harlan": {
+    "id": "t_harlan",
+    "text": "His mother was my sister. She went with the fever year, and he came to me at eight with a bundle and a cough, and the first thing he ever said to me was \"Do you have a horse?\" ...I had six. He named all of them wrong.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -5614,6 +5747,18 @@
       },
       "once": "books",
       "goto": "books"
+     },
+     {
+      "text": "Why do you count everything?",
+      "show": {
+       "npcFlag": {
+        "npc": "pell",
+        "key": "once:books",
+        "eq": true
+       }
+      },
+      "once": "t_pell",
+      "goto": "t_pell"
      },
      {
       "text": "Goodbye.",
@@ -6049,6 +6194,20 @@
      }
     ],
     "next": "hub"
+   },
+   "t_pell": {
+    "id": "t_pell",
+    "text": "My sister kept the books in Ashford. I came up to collect them, after. There wasn't an Ashford to collect them from. So I count. Somebody ought to know what things cost.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -6366,6 +6525,11 @@
      {
       "text": "What have you got for sale?",
       "action": "trade"
+     },
+     {
+      "text": "Ever think of going back to the Kerchiefs?",
+      "once": "t_rav",
+      "goto": "t_rav"
      },
      {
       "text": "Goodbye.",
@@ -6707,6 +6871,20 @@
      }
     ],
     "next": "hub"
+   },
+   "t_rav": {
+    "id": "t_rav",
+    "text": "Every night, round the fourth cup. Then I remember the latrines, and the lice, and the man who sharpened his teeth for a joke and then couldn't stop, and I have a fifth.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -7054,6 +7232,11 @@
       "text": "How long have you kept the shrine?",
       "once": "long",
       "goto": "long"
+     },
+     {
+      "text": "What was the Order like?",
+      "once": "t_chid",
+      "goto": "t_chid"
      },
      {
       "text": "Goodbye.",
@@ -7473,6 +7656,20 @@
      }
     ],
     "next": "hub"
+   },
+   "t_chid": {
+    "id": "t_chid",
+    "text": "Loud! Everybody thinks priests are quiet. We sang at breakfast. Brother Aumery could sing bread warm. ...They're all gone now. I keep thinking I'll get used to that. I keep not.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -9002,6 +9199,11 @@
       "goto": "dinner"
      },
      {
+      "text": "What do you want, Dame Keegan?",
+      "once": "t_keegan",
+      "goto": "t_keegan"
+     },
+     {
       "text": "Goodbye.",
       "end": true
      }
@@ -9219,6 +9421,20 @@
      }
     ],
     "choices": [
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "t_keegan": {
+    "id": "t_keegan",
+    "text": "To be confirmed. To kneel, and have a knight I respect touch my shoulder with a sword and say \"Dame Keegan\" without the bracket. ...And a bath. The Vigil frowns on baths. Chapter nine. I have underlined it in protest.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
      {
       "text": "Goodbye.",
       "end": true
@@ -9725,6 +9941,11 @@
       "goto": "buyers"
      },
      {
+      "text": "What do you want, Sella? For yourself.",
+      "once": "t_sella",
+      "goto": "t_sella"
+     },
+     {
       "text": "Not tonight.",
       "end": true
      }
@@ -10092,6 +10313,20 @@
      }
     ],
     "next": "hub"
+   },
+   "t_sella": {
+    "id": "t_sella",
+    "text": "A house in the south with a door that locks from the inside, and somebody who knocks. Man, woman, I'm not fussy. Just somebody who knocks.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -11560,6 +11795,11 @@
       "goto": "notes"
      },
      {
+      "text": "Do you ever go in yourself?",
+      "once": "t_wayfinder",
+      "goto": "t_wayfinder"
+     },
+     {
       "text": "Another time.",
       "end": true
      }
@@ -11706,6 +11946,20 @@
      }
     ],
     "next": "hub"
+   },
+   "t_wayfinder": {
+    "id": "t_wayfinder",
+    "text": "Once. A barrow in the Morrow hills, twelve years back. I came out. My brother didn't. I've drawn it eleven times since and I still can't get the corners right.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  }
