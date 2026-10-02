@@ -89,8 +89,11 @@ void fragment() {
 	RIM_TINT = rim_tint;
 	float rim = 1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0);
 	vec3 e = glow_color;
-	// A struck creature flares warm at the rim rather than going white.
-	e += vec3(1.0, 0.78, 0.55) * fx.x * (0.18 + rim * rim * 1.1);
+	// Struck: the whole body goes white-hot for the first instant of the
+	// flash (the blow is felt from thirty metres up), then it settles to a
+	// warm flare at the rim as the flash runs out.
+	float hot = fx.x * fx.x;
+	e += vec3(1.0, 0.86, 0.72) * (hot * hot * 2.2 + fx.x * (0.2 + rim * rim * 1.3));
 	e += vec3(1.0, 0.42, 0.1) * fx.w * (0.45 + 0.35 * sin(vat_local.y * 9.0 + TIME * 11.0));
 	e += c * COLOR.a;
 	// Ember at the dissolve's edge.

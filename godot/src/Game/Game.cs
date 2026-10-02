@@ -339,6 +339,8 @@ public partial class Game : Node, IZoneHost
         var b = Journey.StartBattle(z.Combat, meta.Collision(), scene.HeightAt, start.X, start.Z, start.Facing, (uint)Rng.Next(), arena: z is ArenaRun, ember: z.Ember);
         // An arena is seen from higher and further out: the whole of the fight.
         var (pitch, dist) = z.Camera is var (cp, cd) ? (Mathf.DegToRad((float)cp), (float)cd) : camHome;
+        // --cam still wins: it is for close pictures, arenas included.
+        if (Args.Has("cam")) dist = (float)Args.Num("cam", dist);
         cam.Pitch = pitch;
         cam.Distance = cam.TargetDistance = dist;
         scene.StartBattle(b, Loadouts.Of(Journey.Ch));
@@ -599,7 +601,7 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
-    bool hordeDone, dropsDone, castDone;
+    bool hordeDone, dropsDone, castDone, giveDone;
 
     void Tour(double dt)
     {
@@ -630,6 +632,16 @@ public partial class Game : Node, IZoneHost
                 double a = i * Math.Tau / kinds.Length;
                 var k = db.SpawnPickup(kinds[i], db.Player.X + Math.Cos(a) * 2.2, db.Player.Z + Math.Sin(a) * 2.2, 0.01);
                 if (k != null) { k.Tier = kinds[i] == PickupKind.Ember ? i : 2; k.Vx = k.Vz = 0; k.Age = -600; }
+            }
+        }
+        // --give A,B[:RANK]: those ember weapons in hand from the start (pictures of them).
+        if (!giveDone && Args.Get("give") is string give && Battle is { } gb)
+        {
+            giveDone = true;
+            foreach (var w in give.Split(','))
+            {
+                var parts = w.Split(':');
+                gb.AddWeapon(parts[0], parts.Length > 1 && int.TryParse(parts[1], out var r) ? r : 1);
             }
         }
         // --cast T: the art in hand used once, T seconds in (a picture of it).

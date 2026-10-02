@@ -68,7 +68,7 @@ public partial class Hits : Node3D
         {
             float u = (float)i / Segs, a = -arc / 2 + arc * u;
             float lift = Mathf.Sin(u * Mathf.Pi) * 0.25f;
-            verts.Add(new Vector3(Mathf.Sin(a) * 0.58f, lift * 0.4f, Mathf.Cos(a) * 0.58f)); uvs.Add(new Vector2(u, 0));
+            verts.Add(new Vector3(Mathf.Sin(a) * 0.4f, lift * 0.4f, Mathf.Cos(a) * 0.4f)); uvs.Add(new Vector2(u, 0));
             verts.Add(new Vector3(Mathf.Sin(a) * 1.02f, lift, Mathf.Cos(a) * 1.02f)); uvs.Add(new Vector2(u, 1));
             if (i < Segs) { int b = i * 2; idx.AddRange(new[] { b, b + 1, b + 2, b + 1, b + 3, b + 2 }); }
         }
@@ -126,6 +126,7 @@ public partial class Hits : Node3D
         m.Basis = new Basis(Vector3.Up, facing).Scaled(new Vector3(mirror ? -reach : reach, reach, reach));
         m.Visible = true;
         mat.SetShaderParameter("head", 0f);
+        mat.SetShaderParameter("seed", rng.Randf() * 100);
         arcs[i] = (m, mat, 0, life);
     }
 

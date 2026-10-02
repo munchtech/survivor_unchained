@@ -42,7 +42,7 @@ public partial class BattleFx : Node3D
     bool mirror;
 
     // What is in the air, and what lies on the ground.
-    Batch orbs = null!, steel = null!, shards = null!, rings = null!, embers = null!, coins = null!, flasks = null!, lodestones = null!, sacks = null!, chests = null!, kegs = null!, lootBeams = null!;
+    Batch orbs = null!, steel = null!, axes = null!, daggers = null!, shards = null!, rings = null!, embers = null!, coins = null!, flasks = null!, lodestones = null!, sacks = null!, chests = null!, kegs = null!, lootBeams = null!;
     /// <summary>How far above the ground the middle of a sack and a chest sits.</summary>
     float sackUp, chestUp;
     readonly Dictionary<int, float> trailAcc = new();
@@ -101,6 +101,9 @@ public partial class BattleFx : Node3D
         beam.SetShaderParameter("energy", 1.6f);
         orbs = Add(new Batch(new QuadMesh { Size = Vector2.One }, 1400, spark));
         steel = Add(new Batch(new BoxMesh { Size = new Vector3(0.06f, 0.04f, 0.6f) }, 600, Glowing(0.25f, 0.3f, 0.7f)));
+        // What is thrown is the weapon in hand (Arms), not a stick of light.
+        axes = Add(new Batch(Weapon("viking_axe", 0.85f), 400, null));
+        daggers = Add(new Batch(Weapon("dagger_b", 0.5f), 600, null));
         shards = Add(new Batch(new PrismMesh { Size = new Vector3(0.14f, 0.7f, 0.14f) }, 600, Glowing(1.8f, 0.1f)));
         rings = Add(new Batch(new TorusMesh { InnerRadius = 0.36f, OuterRadius = 0.5f, Rings = 16, RingSegments = 6 }, 200, Glowing(1.2f, 0.2f, 0.8f)));
         // What lies on the ground is what the pack shows (the photographs'
@@ -129,9 +132,14 @@ public partial class BattleFx : Node3D
     /// mesh to draw many of: its parts merged, each keeping its material (or
     /// only the parts whose material `keep` wants), centred, `size` across at
     /// its largest.</summary>
-    static Mesh Pickup(string key, float size, Func<Material, bool>? keep = null)
+    static Mesh Pickup(string key, float size, Func<Material, bool>? keep = null) => Merge(ItemModels.Make(key)?.Model, size, keep);
+
+    /// <summary>A weapon as the survivor holds it (Arms), as one mesh, its
+    /// length along +Y.</summary>
+    static Mesh Weapon(string id, float size) => Merge(Arms.Make(id), size, null);
+
+    static Mesh Merge(Node3D? model, float size, Func<Material, bool>? keep)
     {
-        var model = ItemModels.Make(key)?.Model;
         if (model == null) return new SphereMesh { Radius = size / 2, Height = size };
         var parts = new List<(Mesh Mesh, int Surface, Transform3D At, Material? Mat)>();
         void Walk(Node n, Transform3D at)
@@ -874,7 +882,7 @@ public partial class BattleFx : Node3D
 
     void Projectiles(Battle b, float dt, double now)
     {
-        orbs.Begin(); steel.Begin(); shards.Begin(); rings.Begin(); kegs.Begin();
+        orbs.Begin(); steel.Begin(); axes.Begin(); daggers.Begin(); shards.Begin(); rings.Begin(); kegs.Begin();
         foreach (var p in b.Projectiles.Living())
         {
             var art = p.Art;
@@ -885,11 +893,23 @@ public partial class BattleFx : Node3D
             var at = V(p.X, gy + p.Y, p.Z);
             float heading = Mathf.Atan2((float)p.Vx, (float)p.Vz);
             float trail = 1;
-            if (art.StartsWith("dagger") || art.StartsWith("arrow") || art == "bolt_bone" || art.StartsWith("axe"))
+            if (art.StartsWith("axe"))
+            {
+                // Laid flat and whirling about its middle, as an axe thrown to spin.
+                var basis = new Godot.Basis(Vector3.Up, -(float)(now * 16 + p.Id)) * new Godot.Basis(Vector3.Right, Mathf.Pi / 2) * Godot.Basis.FromScale(Vector3.One * 1.3f);
+                axes.Add(new Transform3D(basis, at), hostile ? new Color(0.6f, 0.5f, 0.45f) : Colors.White);
+                trail = 0.45f;
+            }
+            else if (art.StartsWith("dagger"))
+            {
+                // Point first along its flight, turning a little about its length.
+                var basis = new Godot.Basis(Vector3.Up, heading) * new Godot.Basis(Vector3.Right, Mathf.Pi / 2) * new Godot.Basis(Vector3.Up, (float)(now * 9 + p.Id));
+                daggers.Add(new Transform3D(basis, at), hostile ? new Color(0.6f, 0.5f, 0.45f) : Colors.White);
+                trail = 0.35f;
+            }
+            else if (art.StartsWith("arrow") || art == "bolt_bone")
             {
                 var basis = new Godot.Basis(Vector3.Up, heading);
-                if (art.StartsWith("dagger")) basis = basis * new Godot.Basis(Vector3.Right, (float)(now * 18 + p.Id));
-                if (art.StartsWith("axe")) basis = new Godot.Basis(Vector3.Up, (float)(now * 14 + p.Id)) * Godot.Basis.FromScale(new Vector3(3, 1.5f, 1.2f));
                 steel.Add(new Transform3D(basis, at), hostile ? new Color(0.5f, 0.42f, 0.36f) : new Color(0.75f, 0.72f, 0.68f));
                 trail = 0.3f;
             }
@@ -916,10 +936,12 @@ public partial class BattleFx : Node3D
             }
             else
             {
-                float size = art is "mote" or "mote_cascade" or "mote_star" or "ember_seeker" ? 0.34f : art is "star" ? 1.0f : art is "cinder" or "living_flame" ? 0.7f : art.StartsWith("herd") ? 1.3f : art.StartsWith("crescent") ? 1.6f : 0.5f;
+                float size = art is "mote" or "mote_cascade" or "mote_star" or "ember_seeker" ? 0.34f : art is "star" ? 1.0f : art is "cinder" or "living_flame" ? 0.7f : art.StartsWith("herd") ? 0.6f : art.StartsWith("crescent") ? 1.0f : 0.5f;
                 var core = hostile ? Palette.HostileRim : pal.Core;
-                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * size), at), core);
-                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * size * 2.2f), at), (hostile ? Palette.HostileDanger : pal.Glow) * 0.35f);
+                // A small hot core in a wider, faint halo: a big bright core
+                // only blooms into a featureless disc that hides the fight.
+                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * size * 0.6f), at), core);
+                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * size * 2f), at), (hostile ? Palette.HostileDanger : pal.Glow) * 0.18f);
             }
             // A trail of its own light behind it.
             trailAcc.TryGetValue(p.Id, out var acc);
@@ -932,7 +954,7 @@ public partial class BattleFx : Node3D
             trailAcc[p.Id] = acc;
         }
         if (trailAcc.Count > 2000) trailAcc.Clear();
-        orbs.End(); steel.End(); shards.End(); rings.End(); kegs.End();
+        orbs.End(); steel.End(); axes.End(); daggers.End(); shards.End(); rings.End(); kegs.End();
     }
 
     static readonly Color[] EmberTiers = { new(2.4f, 1.0f, 0.25f), new(2.6f, 1.7f, 0.45f), new(2.8f, 2.6f, 1.6f), new(1.6f, 2.2f, 2.8f) };
