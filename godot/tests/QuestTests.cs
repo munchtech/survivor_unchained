@@ -430,6 +430,41 @@ public class QuestTests
     }
 
     [Fact]
+    public void Maecas_rule_is_the_Hollows_rule()
+    {
+        var s = Q("hunter");
+        Assert.True(Standings.HollowCalm(s.C));
+        s.World.Facts["wolf.blood"] = 2;
+        Assert.False(Standings.HollowCalm(s.C));
+        Day(s, 0.5);
+        Assert.True(Standings.HollowCalm(s.C));
+        s.Ch.Equipment.Cloak = Inventory.Make(s.Ch, "wolfhide_cloak");
+        Assert.False(Standings.HollowCalm(s.C));
+        s.World.Facts["pack.allied"] = true;
+        Assert.True(Standings.HollowCalm(s.C));
+    }
+
+    [Fact]
+    public void A_promise_to_the_Pack_is_kept_or_remembered_broken()
+    {
+        var s = Q("hunter");
+        Talk(Convo("greymuzzle"), s.C, "kneel", "stop whatever");
+        Assert.True(s.World.Fact("promise.pack").Truthy);
+        s.World.Facts["promise.broken"] = true;
+        Assert.Matches("back to you", Talk(Convo("greymuzzle"), s.C)!.Text);
+    }
+
+    [Fact]
+    public void Snibs_bribe_is_a_deed()
+    {
+        var s = Q("outcast");
+        s.Ch.Gold = 50;
+        Talk(Convo("snib"), s.C, "how much", "forty gold");
+        Assert.Equal("moved", s.World.Fact("dig.pump").Str);
+        Assert.Contains(s.World.History, h => h.Id == "bribed_snib");
+    }
+
+    [Fact]
     public void Choices_that_no_longer_apply_go()
     {
         var s = Q("hunter");

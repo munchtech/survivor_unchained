@@ -863,6 +863,30 @@
     }
    ],
    "report": "The cups rattled on Rook's shelves in the night. Nobody could say why. Chid says the ground turned over in its sleep."
+  },
+  {
+   "id": "wolf.blood.washes",
+   "when": {
+    "fact": "wolf.blood",
+    "gt": 0
+   },
+   "effect": {
+    "set": {
+     "wolf.blood": 0
+    }
+   }
+  },
+  {
+   "id": "wolf.blood.washes",
+   "when": {
+    "fact": "wolf.blood",
+    "gt": 0
+   },
+   "effect": {
+    "set": {
+     "wolf.blood": 0
+    }
+   }
   }
  ],
  "social": {

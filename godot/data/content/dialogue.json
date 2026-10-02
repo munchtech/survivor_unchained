@@ -2377,6 +2377,28 @@
     "node": "invite"
    },
    {
+    "when": {
+     "all": [
+      {
+       "met": "maeca"
+      },
+      {
+       "history": "broke_promise"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "cb:broke_promise",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_broke_promise"
+   },
+   {
     "node": "hub"
    }
   ],
@@ -2973,6 +2995,25 @@
     "choices": [
      {
       "text": "I won't.",
+      "end": true
+     }
+    ]
+   },
+   "cb_broke_promise": {
+    "id": "cb_broke_promise",
+    "text": "You knelt to him. You held out your hand and he let you in. Then you killed his. ...I've nothing to say to you that I'd want to have said.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "maeca",
+       "key": "cb:broke_promise",
+       "value": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "...",
       "end": true
      }
     ]
@@ -5333,6 +5374,28 @@
     "node": "say_woman"
    },
    {
+    "when": {
+     "all": [
+      {
+       "met": "pell"
+      },
+      {
+       "history": "bribed_snib"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "pell",
+         "key": "cb:bribed_snib",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_bribed_snib"
+   },
+   {
     "node": "hub"
    }
   ],
@@ -5934,6 +5997,20 @@
       "npcFlag": {
        "npc": "pell",
        "key": "say:woman",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_bribed_snib": {
+    "id": "cb_bribed_snib",
+    "text": "I hear the Dig's pump broke. Pumps do. And I hear a very small foreman is forty gold richer. You might have come to me; I'd have done it for thirty-five, and kept it quieter.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "pell",
+       "key": "cb:bribed_snib",
        "value": true
       }
      }
@@ -8250,6 +8327,23 @@
     "text": [
      {
       "when": {
+       "all": [
+        {
+         "fact": "promise.broken",
+         "eq": true
+        },
+        {
+         "not": {
+          "fact": "beasts.outcome",
+          "eq": "slaughtered"
+         }
+        }
+       ]
+      },
+      "text": "I see an old wolf who let you into his house, and you, coming back to it with his children's blood on your hands. Whatever else you did about the wolves, he will remember that first. So will I."
+     },
+     {
+      "when": {
        "fact": "beasts.outcome",
        "eq": "cured"
       },
@@ -9966,6 +10060,11 @@
       "effects": [
        {
         "trait": "wolf_friend"
+       },
+       {
+        "set": {
+         "promise.pack": true
+        }
        }
       ],
       "end": true
@@ -10065,6 +10164,28 @@
     "id": "again",
     "speaker": "narrator",
     "text": [
+     {
+      "when": {
+       "fact": "promise.broken",
+       "eq": true
+      },
+      "text": "Greymuzzle comes out of the rocks, looks at you for a long moment, and lies down with his back to you. Behind him, the others do the same."
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "promise.pack",
+         "eq": true
+        },
+        {
+         "fact": "beasts.outcome",
+         "eq": "ignored"
+        }
+       ]
+      },
+      "text": "Greymuzzle doesn't come out. Two of the wolves you saw lying in the dirt are not there any more. The others watch you the way they watch weather."
+     },
      {
       "when": {
        "fact": "beasts.outcome",
@@ -10914,6 +11035,28 @@
          "id": "beasts",
          "entry": "pump_moved"
         }
+       },
+       {
+        "history": {
+         "id": "bribed_snib",
+         "text": "paid the Dig's foreman to break his own pump",
+         "tags": [
+          "beasts",
+          "corrupt"
+         ],
+         "spread": 1,
+         "reactions": {
+          "wenna": {
+           "respect": 5
+          },
+          "pell": {
+           "respect": 10
+          }
+         }
+        },
+        "witnesses": [
+         "snib"
+        ]
        }
       ],
       "goto": "bribed"

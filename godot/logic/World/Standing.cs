@@ -29,9 +29,17 @@ public static class Standings
     /// <summary>The Dig's crew leaves you be, until you give them a reason.</summary>
     public static bool DiggersFriendly(Ctx c) => !F(c, "dig.hostile").Truthy;
 
-    /// <summary>At their own den the Pack holds off for someone who knows how to come to it.</summary>
-    public static bool HollowCalm(Ctx c) => WolvesFriendly(c) || (!F(c, "hollow.hostile").Truthy &&
-        Rules.Test(new Cond { Any = [new() { Knows = "beastlore" }, new() { Knows = "hint.greymuzzle" }, new() { HasTag = "wolf_fang" }] }, c));
+    /// <summary>At their own den the Pack holds off for someone who knows how to come to it,
+    /// as Maeca tells it: no wolf blood on you since you last slept, and none of
+    /// their skins on your back. Their kin worn into the Hollow undoes any peace
+    /// short of running with them.</summary>
+    public static bool HollowCalm(Ctx c)
+    {
+        if (F(c, "hollow.hostile").Truthy) return false;
+        if (Rules.Test(new Cond { HasTag = "wolf_pelts" }, c) && !F(c, "pack.allied").Truthy) return false;
+        return WolvesFriendly(c) || (!F(c, "wolf.blood").Truthy &&
+            Rules.Test(new Cond { Any = [new() { Knows = "beastlore" }, new() { Knows = "hint.greymuzzle" }, new() { HasTag = "wolf_fang" }] }, c));
+    }
 
     /// <summary>Every power you have met, and where you stand with it.</summary>
     public static List<StandingEntry> Of(Ctx c)
