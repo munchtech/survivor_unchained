@@ -453,9 +453,10 @@ NB = len(BONES)
 
 
 def taubin(pos, tris, rounds=40):
-    """Small creases and lumps taken out of a sheet without shrinking it
-    (Taubin's smoothing: a step in, a slightly larger step back out), so the
-    shape at the scale of a breast is kept exactly. The edge stays put."""
+    """Creases, lumps and uneven patches taken out of a sheet without
+    shrinking it (Taubin's smoothing: a step in, a slightly larger step back
+    out); the more rounds, the larger the unevenness ironed out, while the
+    size and fit stay. The edge stays put."""
     e = np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
     uk, c = np.unique(np.sort(e, 1), axis=0, return_counts=True)
     onb = np.zeros(len(pos), bool)
@@ -501,6 +502,7 @@ def mirrored(pos, at, tris):
 
 def clear_of_skin(pos, lift):
     """At least `lift` off her skin everywhere."""
+    moved = 0
     for i in range(len(pos)):
         q, n, _, _ = BVH.find_nearest(Vector(pos[i]))
         if q is None:
@@ -508,6 +510,9 @@ def clear_of_skin(pos, lift):
         d = (Vector(pos[i]) - q).dot(n)
         if d < lift:
             pos[i] = (Vector(pos[i]) + n * (lift - d))[:]
+            moved += 1
+    if moved:
+        print("CLEAR pushed", moved, "of", len(pos))
     return pos
 
 
@@ -531,7 +536,7 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     pos = pos + nor * lift
     pos = relax(pos, tris, interior=smooth)
     if dome:
-        pos = taubin(pos, tris)
+        pos = taubin(pos, tris, rounds=300)
         pos = fuller(pos, at[:, -1], tris)
         pos, at, tris = mirrored(pos, at, tris)
     pos = clear_of_skin(pos, lift if clear is None else clear)
@@ -689,7 +694,7 @@ def shoulder(sd):
 # ---------------------------------------------------------------- outfits --
 def warden():
     """The oath-knight: polished plate over quilted leather, edged in gold."""
-    cup, band = cups(cover=0.7, plunge=0.012)
+    cup, band = cups(cover=0.6, plunge=0.012)
     bot = bottom("cheeky")
     plate = AND(bot, FRONT - 0.5, (CROTCH + 0.13) - Z)
 
