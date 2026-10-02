@@ -306,6 +306,81 @@ for i in range(len(S)):
     for (j, _), ww in zip(got, w):
         W[i] += RW[j] * ww
 print("WEIGHTS", len(S), "verts,", fallback, "by fallback")
+if "--heat" in ARGS:
+    # Bone heat (Baran and Popovic), solved here: each vertex is tied to the
+    # nearest bone it can see through the body, with a strength that falls
+    # with the square of the distance, and every bone's weight is the heat
+    # that spreads from those ties over the surface: (L + H) w = H p, one
+    # sparse solve per bone, one factorisation for all. An inner thigh
+    # cannot see the other leg's bone, so it never takes its weight.
+    import scipy.sparse as sp
+    import scipy.sparse.linalg as spl
+    _k = np.round(S / 1e-5).astype(np.int64)
+    _u, _tw = np.unique(_k, axis=0, return_index=False, return_inverse=True)
+    _tw = _tw.ravel()
+    m_ = _tw.max() + 1
+    V = np.zeros((m_, 3))
+    V[_tw] = S
+    F = [[_tw[i] for i in p.vertices] for p in model.data.polygons]
+    # The skeleton as segments, in the model's pose.
+    bpy.context.view_layer.update()
+    segs, segb = [], []
+    for b in bones:
+        if b == "root" or b.endswith("leaf_l") or b.endswith("leaf_r"):
+            continue
+        pb = rig.pose.bones[b]
+        segs.append((np.array((rig.matrix_world @ pb.head)[:]), np.array((rig.matrix_world @ pb.tail)[:])))
+        segb.append(bi[b])
+    A = np.array([s_[0] for s_ in segs]); Bv = np.array([s_[1] for s_ in segs])
+    AB = Bv - A
+    L2 = np.maximum((AB ** 2).sum(1), 1e-12)
+    tri = BVHTree.FromPolygons([Vector(p) for p in V], F)
+    tie = np.full(m_, -1)
+    dist = np.zeros(m_)
+    for i in range(m_):
+        t = np.clip(((V[i] - A) * AB).sum(1) / L2, 0, 1)
+        C = A + AB * t[:, None]
+        d = np.linalg.norm(C - V[i], axis=1)
+        for j in np.argsort(d)[:6]:
+            dirv = Vector(C[j] - V[i])
+            ln = dirv.length
+            if ln < 1e-6:
+                tie[i], dist[i] = j, 1e-3
+                break
+            # Started a little inside, so the vertex's own faces do not count.
+            hit = tri.ray_cast(Vector(V[i]) + dirv.normalized() * 0.004, dirv.normalized(), max(ln - 0.006, 1e-4))
+            if hit[0] is None:
+                tie[i], dist[i] = j, ln
+                break
+        if tie[i] < 0:
+            j = int(np.argmin(d))
+            tie[i], dist[i] = j, max(d[j], 1e-3) * 1.5
+    print("HEAT ties", int((tie >= 0).sum()), "of", m_)
+    # Laplacian with edge weights 1/length (a graph stand-in for cotangent).
+    rows, cols, vals = [], [], []
+    for f in F:
+        for a_, b_ in zip(f, f[1:] + f[:1]):
+            w = 1.0 / max(np.linalg.norm(V[a_] - V[b_]), 1e-5)
+            rows += [a_, b_]; cols += [b_, a_]; vals += [-w, -w]
+    Lm = sp.coo_matrix((vals, (rows, cols)), shape=(m_, m_)).tocsr()
+    Lm = Lm - sp.diags(np.asarray(Lm.sum(1)).ravel())
+    # Scale so the ties and the spreading balance (as in the paper, c = 1).
+    scale = np.median(-Lm.diagonal()) if False else 1.0
+    Hd = np.where(tie >= 0, 1.0 / np.maximum(dist, 0.01) ** 2, 0.0)
+    Hd *= np.median(Lm.diagonal()) / max(np.median(Hd[Hd > 0]), 1e-9) * 0.05
+    M_ = (Lm + sp.diags(Hd + np.median(Hd[Hd > 0]) * 1e-6)).tocsc()
+    solve = spl.factorized(M_)
+    Hh = np.zeros((m_, len(bones)))
+    for j, bidx in enumerate(segb):
+        rhs = Hd * (tie == j)
+        if not rhs.any():
+            continue
+        Hh[:, bidx] = np.clip(solve(rhs), 0, None)
+    Hh /= np.maximum(Hh.sum(1, keepdims=True), 1e-9)
+    H = Hh[_tw]
+    got = (H.sum(1) > 1e-3) & (S[:, 2] < z0 + (z1 - z0) * 0.8)
+    print("HEAT", int(got.sum()), "of", len(S), "verts weighted")
+    W[got] = H[got]
 # Copies of one point: glTF splits a vertex along every UV seam, and copies
 # weighted even slightly differently tear the seam open when she moves.
 key = np.round(S / 1e-5).astype(np.int64)

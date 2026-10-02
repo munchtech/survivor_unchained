@@ -87,45 +87,26 @@ out[::-1, :, :3] = fixed
 img.pixels[:] = out.ravel()
 img.pack()
 
-# The contact patch. Where the thighs pressed together the generator left a
-# flattened, crinkled surface; spread, it shows as a crumpled flap below the
-# crotch. Its faces are those just below the crotch that look across at the
-# other leg and touch it (within 1.5 cm along their own normal): they are cut
-# out and the holes closed with fresh surface, relaxed smooth.
-from mathutils.bvhtree import BVHTree
+# Close the body's openings at the crotch (the sculpt left one): every
+# hole whose edge lies within a few centimetres of the crotch is filled
+# and the new surface relaxed into its surroundings.
 bm2 = bmesh.new()
 bm2.from_mesh(me)
-bm2.faces.ensure_lookup_table()
-tree = BVHTree.FromBMesh(bm2)
-patch = []
-for f in bm2.faces:
-    c = f.calc_center_median()
-    if not (crotch - 0.14 < c[up] < crotch + 0.012) or abs(c.x) > 0.06:
-        continue
-    nrm = f.normal
-    # Looking across at the other leg: its normal points toward the midline.
-    if nrm.x * c.x >= -0.2 * abs(c.x) / max(abs(c.x), 1e-6):
-        continue
-    hit = tree.ray_cast(c + nrm * 0.0005, nrm, 0.015)
-    if hit[0] is not None:
-        patch.append(f)
-print("CONTACT", len(patch), "faces")
-bmesh.ops.delete(bm2, geom=patch, context="FACES")
-bmesh.ops.delete(bm2, geom=[v for v in bm2.verts if not v.link_faces], context="VERTS")
-edges = [e for e in bm2.edges if e.is_boundary and e.verts[0].co[up] < crotch + 0.03 and abs(e.verts[0].co.x) < 0.08]
+bmesh.ops.remove_doubles(bm2, verts=bm2.verts, dist=1e-6)
+edges = [e for e in bm2.edges if e.is_boundary and abs(e.verts[0].co[up] - crotch) < 0.06 and abs(e.verts[0].co.x) < 0.06]
 filled = bmesh.ops.holes_fill(bm2, edges=edges, sides=0)
 newf = filled["faces"]
-bmesh.ops.triangulate(bm2, faces=newf)
-ring = set(v for f in newf for v in f.verts)
-for _ in range(2):
-    ring |= set(n.other_vert(v) for v in list(ring) for n in v.link_edges)
-bmesh.ops.smooth_vert(bm2, verts=list(ring), factor=0.6, use_axis_x=True, use_axis_y=True, use_axis_z=True)
-for _ in range(10):
-    bmesh.ops.smooth_vert(bm2, verts=list(ring), factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+if newf:
+    bmesh.ops.triangulate(bm2, faces=newf)
+    ring = set(v for f in newf for v in f.verts)
+    for _ in range(3):
+        ring |= set(e.other_vert(v) for v in list(ring) for e in v.link_edges)
+    for _ in range(12):
+        bmesh.ops.smooth_vert(bm2, verts=list(ring), factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
 bm2.to_mesh(me)
 bm2.free()
 me.update()
-print("FILLED", len(newf), "faces")
+print("HOLES", len(edges), "edges closed with", len(newf), "faces")
 # The faces are numbered afresh: the hair is found again.
 co = np.array([v.co[:] for v in me.vertices])
 n = len(co)
