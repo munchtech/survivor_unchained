@@ -201,6 +201,20 @@ def strap(pts, width):
     return width / 2 - d
 
 
+def front_point(x, z):
+    """Her skin straight in front at (x, z), as a ray from ahead finds it."""
+    hit = BVH.ray_cast(Vector((x, -0.6, z)), Vector((0, 1, 0)), 1.2)
+    return np.array(hit[0][:]) if hit[0] is not None else np.array([x, -0.1, z])
+
+
+def front_line(x0, z0, x1, z1, width, n=80):
+    """A line down her front from (x0, z0) to (x1, z1), on her skin as seen
+    from ahead (not wandering onto her breasts, as the nearest skin would)."""
+    pts = np.array([front_point(x0 + (x1 - x0) * t, z0 + (z1 - z0) * t) for t in np.linspace(0, 1, n)])
+    d, _ = cKDTree(pts).query(P)
+    return width / 2 - d
+
+
 def skin_point(p):
     return np.array(SKIN_BVH.find_nearest(Vector(p))[0][:])
 
@@ -426,7 +440,7 @@ SPEC = {
     "arcvelvet": ("velour_velvet", (0.3, 0.3, 1.0), 66, 5, 0.0, None),
     "plumleather": ("Leather026", (0.5, 0.4, 0.75), 44, 3, 0.0, None),
     "blackleather": ("Leather026", (1, 1, 1), 26, 3, 0.0, None),
-    "brownleather": ("Leather037", (1, 0.85, 0.75), 42, 3, 0.0, None),
+    "brownleather": ("Leather037", (1, 0.8, 0.68), 30, 3, 0.0, None),
     "lace": ("velour_velvet", (0.3, 0.3, 0.32), 14, 8, 0.0, 0.5),
     "stocking": ("rough_linen", (0.4, 0.38, 0.42), 18, 14, 0.0, 0.45, 0.62),
 }
@@ -485,6 +499,26 @@ def mat(key):
 
 # ----------------------------------------------------------------- pieces --
 NB = len(BONES)
+
+
+def hulled(pos, where, tris, blend=0.02):
+    """Where `where` > 0 (a boot's foot), the piece laid on the convex hull
+    of itself there: toes become one rounded toe box, as leather over them
+    is; it eases back to its own shape over `blend` of `where`."""
+    from scipy.spatial import ConvexHull
+    m = where > -blend
+    if m.sum() < 10:
+        return pos
+    h = ConvexHull(pos[m])
+    hv = pos[m]
+    bvh = BVHTree.FromPolygons([tuple(p) for p in hv], h.simplices.tolist())
+    out = pos.copy()
+    t = np.clip((where + blend) / blend, 0, 1)
+    for i in np.where(m)[0]:
+        q = bvh.find_nearest(Vector(pos[i]))[0]
+        if q is not None:
+            out[i] = pos[i] * (1 - t[i]) + np.array(q[:]) * t[i]
+    return out
 
 
 def bubble(pos, tris, clear, out):
@@ -606,7 +640,7 @@ def clear_of_skin(pos, lift):
     return pos
 
 
-def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None):
+def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None):
     """A region of her skin made into a piece of her outfit. `trim`, as
     (material, width, height, thickness), edges it with a band laid on the
     piece itself, so the two can never part. `clear` is how close to the
@@ -618,7 +652,8 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     f = smooth_field(np.minimum.reduce([field, (0.3 - wsum(*keep_off)) * 0.1, (0.5 - HAIR) * 0.1]), soften)
     # `cut`, a second field, trims the piece after it is shaped: a cup
     # keeps the shape of the full cup however low it is cut.
-    attr = np.hstack([N, W, (cut if cut is not None else np.ones(len(P)))[:, None], f[:, None]])
+    attr = np.hstack([N, W, (hull if hull is not None else -np.ones(len(P)))[:, None],
+                      (cut if cut is not None else np.ones(len(P)))[:, None], f[:, None]])
     pos, at, tris = clip(f, P_FILLED if dome else P, attr, TRI)
     if len(tris) == 0:
         print("EMPTY", name)
@@ -626,7 +661,11 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     pos, at, tris = weld(pos, at, tris)
     nor = at[:, :3] / (np.linalg.norm(at[:, :3], axis=1)[:, None] + 1e-12)
     pos = pos + nor * lift
+    if hull is not None:
+        pos = hulled(pos, at[:, -3], tris)
     pos = relax(pos, tris, interior=smooth)
+    if iron:
+        pos = taubin(pos, tris, rounds=iron)
     if dome:
         pos = bubble(pos, tris, lift if clear is None else clear, at[:, :3])
         pos, at, tris = mirrored(pos, at, tris)
@@ -870,6 +909,11 @@ def hanging(name, a0, a1, z_top, hem, mkey, flare=0.15, lift=0.01, gap=0.012, th
     wt[:, BI["pelvis"]] = 1 - leg
     wt[:, BI["thigh_l"]] = leg * side
     wt[:, BI["thigh_r"]] = leg * (1 - side)
+    # Where it lies close over her (her seat, her hips) it moves exactly as
+    # her skin there does, springs and all, so she cannot slide through it.
+    d, j = cKDTree(P[body]).query(pos)
+    near = 1 - ramp(d, gap + 0.004, 0.06)
+    wt = wt * (1 - near[:, None]) + W[body][j] * near[:, None]
     attr = np.hstack([nor, wt, f[:, None]])
     pos, at, tris = clip(f, pos, attr, tris)
     pos, at, tris = weld(pos, at, tris)
@@ -1008,7 +1052,7 @@ def arcanist():
     corset = AND(ctop - Z, Z - cbot, 0.35 - arms)
     belt_z = 1.0 + 0.035 * X / 0.18
     belt = AND(0.016 - np.abs(Z - belt_z), 0.3 - arms)
-    bones = OR(*[strap([np.array([x, -0.25, UNDERBUST - 0.004]), np.array([x * 0.85, -0.25, 1.02 - 0.02 * (abs(x) < 0.05)])], 0.005)
+    bones = OR(*[front_line(x, UNDERBUST - 0.022, x * 0.8, 1.025 - 0.025 * (abs(x) < 0.05), 0.009)
                  for x in (-0.085, -0.04, 0.04, 0.085)])
     bones = AND(bones, corset - 0.004)
     nz = head("neck_01")[2]
@@ -1018,12 +1062,12 @@ def arcanist():
     out = [
         *piece("arcanist.cups", cup, "arcvelvet", lift=0.009, thick=0.0025, clear=0.0015, dome=True, trim=gold(), cut=low),
         *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=6, trim=gold(0.007)),
-        *piece("arcanist.boning", bones, "gold", lift=0.0095, thick=0.0012, smooth=6, soften=0),
+        *piece("arcanist.boning", bones, "gold", lift=0.0095, thick=0.0015, smooth=6, soften=1),
         *piece("arcanist.briefs", bottom("full"), "arcvelvet", lift=0.0025, smooth=2),
-        *piece("arcanist.mantle", mantle, "arcvelvet", lift=0.016, thick=0.004, smooth=12, trim=gold(0.01)),
+        *piece("arcanist.mantle", mantle, "arcvelvet", lift=0.016, thick=0.004, smooth=12, soften=10, trim=gold(0.01)),
         *piece("arcanist.choker", choker, "blackleather", lift=0.002, soften=0, keep_off=("Head",)),
         *piece("arcanist.belt", belt, "brownleather", lift=0.017, thick=0.004, smooth=3),
-        *piece("arcanist.buckle", AND(cap(np.array([0.0, -0.2, 1.0]), 0.02), belt), "gold", lift=0.021, thick=0.003, soften=0),
+        *piece("arcanist.buckle", AND(0.026 - np.linalg.norm(P - front_point(0.0, 1.0), axis=1), belt + 0.004), "gold", lift=0.022, thick=0.003, smooth=4, soften=1),
         *hanging("arcanist.apron", -0.3, 0.3, 1.0, lambda u: 0.56 + 0.07 * abs(u), "arcvelvet", flare=0.12, lift=0.012, trim=gold(0.012)),
         *hanging("arcanist.coat", 1.2, 2 * np.pi - 1.2, 1.0, lambda u: 0.3 + 0.16 * abs(u) ** 1.5, "arcvelvet", flare=0.1, lift=0.012, trim=gold(0.014)),
         *witch_hat("arcanist.hat", "arcvelvet", "gold"),
@@ -1034,7 +1078,7 @@ def arcanist():
             *piece(f"arcanist.glove_{sd}", limb(sd, WRIST_S - 0.08, 9.9, legs=False), "blackleather", lift=0.0012, thick=0.001, bevel=0.0004),
             *piece(f"arcanist.stocking_{sd}", limb(sd, KNEE_S - 0.2, 9.9), "stocking", lift=0.001, thick=0.0006, bevel=0.0),
             *piece(f"arcanist.lace_{sd}", limb(sd, KNEE_S - 0.2, KNEE_S - 0.165), "lace", lift=0.0022, thick=0.001, soften=1),
-            *piece(f"arcanist.boot_{sd}", limb(sd, KNEE_S - 0.05, 9.9, front_dip=-0.03), "brownleather", lift=0.005, smooth=30),
+            *piece(f"arcanist.boot_{sd}", limb(sd, KNEE_S - 0.05, 9.9, front_dip=-0.03), "brownleather", lift=0.005, smooth=8, iron=300, hull=LEG_S[sd] - ANKLE_S - 0.03),
             *piece(f"arcanist.cuff_{sd}", limb(sd, KNEE_S - 0.065, KNEE_S - 0.015), "brownleather", lift=0.009, thick=0.003, smooth=6, trim=gold(0.005)),
         ]
     return out
