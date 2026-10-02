@@ -18,6 +18,116 @@
     "node": "wanted"
    },
    {
+    "when": {
+     "all": [
+      {
+       "history": "shrine_lit"
+      },
+      {
+       "met": "rook"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rook",
+         "key": "cb:shrine_lit",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_shrine_lit"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "freed_teamsters"
+      },
+      {
+       "met": "rook"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rook",
+         "key": "cb:freed_teamsters",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_freed_teamsters"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "burned_roost"
+      },
+      {
+       "met": "rook"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rook",
+         "key": "cb:burned_roost",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_burned_roost"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "nemesis_slain"
+      },
+      {
+       "met": "rook"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rook",
+         "key": "cb:nemesis_slain",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_nemesis_slain"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "opened_vault"
+      },
+      {
+       "met": "rook"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rook",
+         "key": "cb:opened_vault",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_opened_vault"
+   },
+   {
     "node": "hub"
    }
   ],
@@ -388,6 +498,83 @@
       "end": true
      }
     ]
+   },
+   "cb_shrine_lit": {
+    "id": "cb_shrine_lit",
+    "text": "Chid came running in this morning without his shoes on. The shrine lamp, he says. My mother's lamp's got a sister again. ...Your bowl's on the house tonight. Don't make a habit of it.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "rook",
+       "key": "cb:shrine_lit",
+       "value": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "rook",
+       "affection": 5
+      },
+      "quiet": true
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_freed_teamsters": {
+    "id": "cb_freed_teamsters",
+    "text": "Jory Coyle's in my good room, and Harlan's tried to pay me for it twice. You've a lot to answer for, pet, bringing that much crying into one house.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "rook",
+       "key": "cb:freed_teamsters",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_burned_roost": {
+    "id": "cb_burned_roost",
+    "text": "There were people in those cages. ...I'll take your money. I'll not have you in my kitchen.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "rook",
+       "key": "cb:burned_roost",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_nemesis_slain": {
+    "id": "cb_nemesis_slain",
+    "text": "You went back for your things. Good. Never let anything keep what's yours; it only teaches it to take more.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "rook",
+       "key": "cb:nemesis_slain",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_opened_vault": {
+    "id": "cb_opened_vault",
+    "text": "You smell of cold stone. Don't tell me where you've been. Chid'll tell me anyway, and get it wrong.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "rook",
+       "key": "cb:opened_vault",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -435,6 +622,169 @@
      }
     },
     "node": "first"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "killed_greymuzzle"
+      },
+      {
+       "met": "holloway"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "holloway",
+         "key": "cb:killed_greymuzzle",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_killed_greymuzzle"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "burned_roost"
+      },
+      {
+       "met": "holloway"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "holloway",
+         "key": "cb:burned_roost",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_burned_roost"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "freed_teamsters"
+      },
+      {
+       "met": "holloway"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "holloway",
+         "key": "cb:freed_teamsters",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_freed_teamsters"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "tricked_redcowl"
+      },
+      {
+       "met": "holloway"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "holloway",
+         "key": "cb:tricked_redcowl",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_tricked_redcowl"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "opened_vault"
+      },
+      {
+       "met": "holloway"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "holloway",
+         "key": "cb:opened_vault",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_opened_vault"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "nemesis_slain"
+      },
+      {
+       "met": "holloway"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "holloway",
+         "key": "cb:nemesis_slain",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_nemesis_slain"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "all": [
+        {
+         "history": "core_stolen"
+        },
+        {
+         "day": {
+          "gte": 2
+         }
+        }
+       ]
+      },
+      {
+       "met": "holloway"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "holloway",
+         "key": "cb:core_stolen",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_core_stolen"
    },
    {
     "node": "hub"
@@ -1475,6 +1825,145 @@
       "end": true
      }
     ]
+   },
+   "cb_killed_greymuzzle": {
+    "id": "cb_killed_greymuzzle",
+    "text": [
+     {
+      "when": {
+       "fact": "bounty.stopped",
+       "eq": true
+      },
+      "text": "I hear you put the old grey one down. I'd stopped paying for it. You did it anyway. I'm trying to work out what that makes you."
+     },
+     {
+      "text": "Greymuzzle's dead, they tell me. Maeca won't speak to me for a month and I've slept better for it already. ...Twenty years that wolf's had the run of this valley. Odd, missing a thing you hated."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "holloway",
+       "key": "cb:killed_greymuzzle",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_burned_roost": {
+    "id": "cb_burned_roost",
+    "text": "The Roost burned with the cages full. I've hanged men for less. I can't prove you lit it, and you know I can't, and I'd like you to know that I know that.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "holloway",
+       "key": "cb:burned_roost",
+       "value": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "holloway",
+       "trust": -10
+      },
+      "quiet": true
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_freed_teamsters": {
+    "id": "cb_freed_teamsters",
+    "text": "Three teamsters walked in through my gate, thin as rakes and alive. You did what eleven Watchmen couldn't. Don't let it go to your head; eleven Watchmen can't do much.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "holloway",
+       "key": "cb:freed_teamsters",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_tricked_redcowl": {
+    "id": "cb_tricked_redcowl",
+    "text": "Somebody told Redcowl the Watch was coming, and he ran. The Watch was in bed. ...I'd ask you not to use my name in vain. But it worked. Did it work? It worked.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "holloway",
+       "key": "cb:tricked_redcowl",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_opened_vault": {
+    "id": "cb_opened_vault",
+    "text": "You went through the black door. The Watch was founded on the promise that nobody would. My predecessors would've hanged you for it. I'm too tired. What's down there?",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "holloway",
+       "key": "cb:opened_vault",
+       "value": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "A stair. Going down.",
+      "goto": "cb_vault2"
+     },
+     {
+      "text": "Nothing you'd want.",
+      "goto": "cb_vault2"
+     }
+    ]
+   },
+   "cb_vault2": {
+    "id": "cb_vault2",
+    "text": "Course it is. Keep it to yourself. I've enough to count.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "That's all.",
+      "end": true
+     }
+    ]
+   },
+   "cb_nemesis_slain": {
+    "id": "cb_nemesis_slain",
+    "text": "Heard you went back for whatever killed you and took your things off it. I've known men who wouldn't go back for their own boots.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "holloway",
+       "key": "cb:nemesis_slain",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_core_stolen": {
+    "id": "cb_core_stolen",
+    "text": "They say a lampling walked off with the Warden's heart while you stood there. Don't tell me why you let it. I've a feeling I'd not like either answer.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "holloway",
+       "key": "cb:core_stolen",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -1496,6 +1985,12 @@
      }
     },
     "node": "cold"
+   },
+   {
+    "when": {
+     "history": "killed_greymuzzle"
+    },
+    "node": "gone"
    },
    {
     "when": {
@@ -1524,6 +2019,28 @@
      ]
     },
     "node": "thanks"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "burned_roost"
+      },
+      {
+       "met": "maeca"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "cb:burned_roost",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_burned_roost"
    },
    {
     "node": "hub"
@@ -1888,6 +2405,30 @@
       "end": true
      }
     ]
+   },
+   "gone": {
+    "id": "gone",
+    "text": "You went to his house. In the dark. Get out of my light.",
+    "choices": [
+     {
+      "text": "...",
+      "end": true
+     }
+    ]
+   },
+   "cb_burned_roost": {
+    "id": "cb_burned_roost",
+    "text": "You burned the Roost with them still in the cages. I know what fire does in a ravine. I was at Ashford.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "maeca",
+       "key": "cb:burned_roost",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -1901,6 +2442,82 @@
      }
     },
     "node": "first"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "npcKnows": {
+        "npc": "wenna",
+        "event": "sold_dig"
+       }
+      },
+      {
+       "met": "wenna"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "wenna",
+         "key": "cb:sold_dig",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_sold_dig"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "any": [
+        {
+         "history": "broke_pump"
+        },
+        {
+         "history": "blew_dig"
+        }
+       ]
+      },
+      {
+       "met": "wenna"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "wenna",
+         "key": "cb:broke_pump",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_broke_pump"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "shrine_lit"
+      },
+      {
+       "met": "wenna"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "wenna",
+         "key": "cb:shrine_lit",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_shrine_lit"
    },
    {
     "node": "hub"
@@ -2421,6 +3038,48 @@
       "end": true
      }
     ]
+   },
+   "cb_sold_dig": {
+    "id": "cb_sold_dig",
+    "text": "You sold it. The stream, the Pack, all of it, to Pell, for forty. I tested that water for you, child. ...I'll still sell you an antidote. I'll charge you double, and I'll enjoy it.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "wenna",
+       "key": "cb:sold_dig",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_broke_pump": {
+    "id": "cb_broke_pump",
+    "text": "You stopped their pump. I can smell the difference already. Don't argue; I can.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "wenna",
+       "key": "cb:broke_pump",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_shrine_lit": {
+    "id": "cb_shrine_lit",
+    "text": "Chid's lamp's lit. He came to tell me with his shoes on the wrong feet.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "wenna",
+       "key": "cb:shrine_lit",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -2462,6 +3121,28 @@
      }
     },
     "node": "first"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "killed_greymuzzle"
+      },
+      {
+       "met": "tam"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "tam",
+         "key": "cb:killed_greymuzzle",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_killed_greymuzzle"
    },
    {
     "node": "again"
@@ -2712,6 +3393,39 @@
       "end": true
      }
     ]
+   },
+   "cb_killed_greymuzzle": {
+    "id": "cb_killed_greymuzzle",
+    "text": "Did you kill the big grey one? ...Was he sick too?",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "tam",
+       "key": "cb:killed_greymuzzle",
+       "value": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "He was sick.",
+      "goto": "cb_grey2"
+     },
+     {
+      "text": "He was dangerous.",
+      "goto": "cb_grey2"
+     }
+    ]
+   },
+   "cb_grey2": {
+    "id": "cb_grey2",
+    "text": "Oh. ...Pa says you have to, sometimes. Pa says a lot of things.",
+    "choices": [
+     {
+      "text": "Stay by the well, Tam.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -2725,6 +3439,50 @@
      }
     },
     "node": "first"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "killed_greymuzzle"
+      },
+      {
+       "met": "brannoc"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "brannoc",
+         "key": "cb:killed_greymuzzle",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_killed_greymuzzle"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "wolf_slaughter"
+      },
+      {
+       "met": "brannoc"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "brannoc",
+         "key": "cb:wolf_slaughter",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_wolf_slaughter"
    },
    {
     "node": "hub"
@@ -2967,12 +3725,46 @@
       "end": true
      }
     ]
+   },
+   "cb_killed_greymuzzle": {
+    "id": "cb_killed_greymuzzle",
+    "text": "Grey one's dead. Should've brought him here. Fang like that.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "brannoc",
+       "key": "cb:killed_greymuzzle",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_wolf_slaughter": {
+    "id": "cb_wolf_slaughter",
+    "text": "Lot of pelts. Lot of wolves. Wood'll be quiet.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "brannoc",
+       "key": "cb:wolf_slaughter",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
  "harlan": {
   "npc": "harlan",
   "entry": [
+   {
+    "when": {
+     "history": "burned_roost"
+    },
+    "node": "ash"
+   },
    {
     "when": {
      "fact": "caravan.cargo",
@@ -2994,6 +3786,88 @@
      }
     },
     "node": "first"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "all": [
+        {
+         "history": "exposed_pell"
+        },
+        {
+         "not": {
+          "npcFlag": {
+           "npc": "harlan",
+           "key": "once:pell",
+           "eq": true
+          }
+         }
+        }
+       ]
+      },
+      {
+       "met": "harlan"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "harlan",
+         "key": "cb:exposed_pell",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_exposed_pell"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "npcKnows": {
+        "npc": "harlan",
+        "event": "sold_dig"
+       }
+      },
+      {
+       "met": "harlan"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "harlan",
+         "key": "cb:sold_dig",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_sold_dig"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "killed_greymuzzle"
+      },
+      {
+       "met": "harlan"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "harlan",
+         "key": "cb:killed_greymuzzle",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_killed_greymuzzle"
    },
    {
     "node": "hub"
@@ -3492,6 +4366,58 @@
       "end": true
      }
     ]
+   },
+   "ash": {
+    "id": "ash",
+    "text": "They said there was screaming. Was there screaming? ...No. Don't tell me. Just don't come to my stall again.",
+    "choices": [
+     {
+      "text": "...",
+      "end": true
+     }
+    ]
+   },
+   "cb_exposed_pell": {
+    "id": "cb_exposed_pell",
+    "text": "Holloway showed me Pell's book. Payments to \"R.\", on the night. I sat at that man's table at midsummer and let him pour my wine. ...Thank you. I think. I'll know when I've stopped feeling sick.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "harlan",
+       "key": "cb:exposed_pell",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_sold_dig": {
+    "id": "cb_sold_dig",
+    "text": "Word is you sold Pell what the Dig was doing to the stream, and he sold it on. ...Well. I've sold worse, to worse. Don't look at me like that, friend; I'm agreeing with you.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "harlan",
+       "key": "cb:sold_dig",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_killed_greymuzzle": {
+    "id": "cb_killed_greymuzzle",
+    "text": "They say the old grey wolf's dead. It wasn't wolves that took my wagons, I know that now. But it was wolves on that road every other night, and I'll not pretend to weep.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "harlan",
+       "key": "cb:killed_greymuzzle",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -3512,6 +4438,28 @@
      "eq": "ally"
     },
     "node": "ally"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "tricked_redcowl"
+      },
+      {
+       "met": "pell"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "pell",
+         "key": "cb:tricked_redcowl",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_tricked_redcowl"
    },
    {
     "node": "hub"
@@ -4050,6 +4998,20 @@
       "end": true
      }
     ]
+   },
+   "cb_tricked_redcowl": {
+    "id": "cb_tricked_redcowl",
+    "text": "I hear the Kerchiefs left their camp in rather a hurry. On your word. How very... efficient.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "pell",
+       "key": "cb:tricked_redcowl",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -4063,6 +5025,94 @@
      }
     },
     "node": "first"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "tricked_redcowl"
+      },
+      {
+       "met": "rav"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rav",
+         "key": "cb:tricked_redcowl",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_tricked_redcowl"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "killed_redcowl"
+      },
+      {
+       "met": "rav"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rav",
+         "key": "cb:killed_redcowl",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_killed_redcowl"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "burned_roost"
+      },
+      {
+       "met": "rav"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rav",
+         "key": "cb:burned_roost",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_burned_roost"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "exposed_pell"
+      },
+      {
+       "met": "rav"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rav",
+         "key": "cb:exposed_pell",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_exposed_pell"
    },
    {
     "node": "hub"
@@ -4427,6 +5477,74 @@
       "end": true
      }
     ]
+   },
+   "cb_tricked_redcowl": {
+    "id": "cb_tricked_redcowl",
+    "text": "You told Redcowl the Watch was coming, and he RAN. I've waited eleven years to see that man run. Sit. This one's on me, and so's the next.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "rav",
+       "key": "cb:tricked_redcowl",
+       "value": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "rav",
+       "affection": 5
+      },
+      "quiet": true
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_killed_redcowl": {
+    "id": "cb_killed_redcowl",
+    "text": "(He doesn't look up.) You killed him. ...No. He'd have said it was the job. It was always the job, with him. Get out of my light for a bit, pal. Come back tomorrow. I'll be a doctor again tomorrow.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "rav",
+       "key": "cb:killed_redcowl",
+       "value": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "...",
+      "end": true
+     }
+    ]
+   },
+   "cb_burned_roost": {
+    "id": "cb_burned_roost",
+    "text": "The Roost burned. With the cages full, they're saying. ...He'll have got out. He always gets out. The ones in the cages didn't.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "rav",
+       "key": "cb:burned_roost",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_exposed_pell": {
+    "id": "cb_exposed_pell",
+    "text": "Pell in irons! I'll drink to that. I'll drink to anything, but I'll drink to that twice.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "rav",
+       "key": "cb:exposed_pell",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -4447,6 +5565,72 @@
      }
     },
     "node": "first"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "opened_vault"
+      },
+      {
+       "met": "chid"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "chid",
+         "key": "cb:opened_vault",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_opened_vault"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "core_stolen"
+      },
+      {
+       "met": "chid"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "chid",
+         "key": "cb:core_stolen",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_core_stolen"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "nemesis_slain"
+      },
+      {
+       "met": "chid"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "chid",
+         "key": "cb:nemesis_slain",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_nemesis_slain"
    },
    {
     "node": "hub"
@@ -4947,6 +6131,71 @@
       "end": true
      }
     ]
+   },
+   "cb_opened_vault": {
+    "id": "cb_opened_vault",
+    "text": "You went through the door! You went through— what was on the stair? No, don't tell me. Yes, tell me. No.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "chid",
+       "key": "cb:opened_vault",
+       "value": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "A stair going down. And the dead, coming up it.",
+      "goto": "cb_vault2"
+     },
+     {
+      "text": "I'd rather not say.",
+      "goto": "hub"
+     }
+    ]
+   },
+   "cb_vault2": {
+    "id": "cb_vault2",
+    "text": "Then they're still keeping it. Good. Good, I think. ...I'm going to light every candle I've got.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "cb_core_stolen": {
+    "id": "cb_core_stolen",
+    "text": "The Warden's heart. Rook says a lampling took it at the ford. ...Oh, dear. Oh, dear, dear. That was one of the old ones. They're not meant to be carried about.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "chid",
+       "key": "cb:core_stolen",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_nemesis_slain": {
+    "id": "cb_nemesis_slain",
+    "text": "You got your things back! From the thing! Was it horrible? It was horrible. Sit down. Not there. There.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "chid",
+       "key": "cb:nemesis_slain",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -4960,6 +6209,81 @@
      }
     },
     "node": "first"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "opened_vault"
+      },
+      {
+       "met": "vonnra"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "vonnra",
+         "key": "cb:opened_vault",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_opened_vault"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "all": [
+        {
+         "history": "core_stolen"
+        },
+        {
+         "day": {
+          "gte": 2
+         }
+        }
+       ]
+      },
+      {
+       "met": "vonnra"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "vonnra",
+         "key": "cb:core_stolen",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_core_stolen"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "exposed_pell"
+      },
+      {
+       "met": "vonnra"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "vonnra",
+         "key": "cb:exposed_pell",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_exposed_pell"
    },
    {
     "node": "hub"
@@ -5963,6 +7287,77 @@
       "action": "fortune"
      }
     ]
+   },
+   "cb_opened_vault": {
+    "id": "cb_opened_vault",
+    "text": "You opened it. ...Do not sit, traveller. I would rather you stood. What did you see on the stair?",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "vonnra",
+       "key": "cb:opened_vault",
+       "value": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "A stair going down. The dead coming up it.",
+      "goto": "cb_vault2"
+     },
+     {
+      "text": "That's mine to know.",
+      "goto": "cb_vault3"
+     }
+    ]
+   },
+   "cb_vault2": {
+    "id": "cb_vault2",
+    "text": "Then it is still there. That is all. I will say it again, because it bears repeating: that is all.",
+    "choices": [
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "cb_vault3": {
+    "id": "cb_vault3",
+    "text": "It is. For now. Payment, always, traveller; even for silence. You will find I collect.",
+    "choices": [
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "cb_core_stolen": {
+    "id": "cb_core_stolen",
+    "text": "A heart went into the ground at the Low Ford, and you watched it go. I am not angry. I am arranging.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "vonnra",
+       "key": "cb:core_stolen",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_exposed_pell": {
+    "id": "cb_exposed_pell",
+    "text": "Pell Varrow in irons. He owed me a great deal. I shall have to find another way to be paid.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "vonnra",
+       "key": "cb:exposed_pell",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -5976,6 +7371,57 @@
      }
     },
     "node": "first"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "opened_vault"
+      },
+      {
+       "met": "keegan"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "keegan",
+         "key": "cb:opened_vault",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_opened_vault"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "all": [
+        {
+         "history": "core_stolen"
+        },
+        {
+         "knows": "lore.warden"
+        }
+       ]
+      },
+      {
+       "met": "keegan"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "keegan",
+         "key": "cb:core_stolen",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_core_stolen"
    },
    {
     "node": "hub"
@@ -6210,6 +7656,34 @@
       "end": true
      }
     ]
+   },
+   "cb_opened_vault": {
+    "id": "cb_opened_vault",
+    "text": "You opened the black door. The handbook has a chapter on that. It is a short chapter. It is the word \"don't\", in several sizes.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "keegan",
+       "key": "cb:opened_vault",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_core_stolen": {
+    "id": "cb_core_stolen",
+    "text": "The Warden's heart, taken at the ford. ...I am going to write to the chapterhouse. Again. Twice, perhaps. In capitals.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "keegan",
+       "key": "cb:core_stolen",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -6427,6 +7901,94 @@
      }
     },
     "node": "first"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "freed_teamsters"
+      },
+      {
+       "met": "sella"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "sella",
+         "key": "cb:freed_teamsters",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_freed_teamsters"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "burned_roost"
+      },
+      {
+       "met": "sella"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "sella",
+         "key": "cb:burned_roost",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_burned_roost"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "exposed_pell"
+      },
+      {
+       "met": "sella"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "sella",
+         "key": "cb:exposed_pell",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_exposed_pell"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "tricked_redcowl"
+      },
+      {
+       "met": "sella"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "sella",
+         "key": "cb:tricked_redcowl",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_tricked_redcowl"
    },
    {
     "when": {
@@ -6776,6 +8338,62 @@
       "end": true
      }
     ]
+   },
+   "cb_tricked_redcowl": {
+    "id": "cb_tricked_redcowl",
+    "text": "Heard you sent Redcowl running with nothing but a lie and a straight face. You'd do well upstairs, love.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "sella",
+       "key": "cb:tricked_redcowl",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_exposed_pell": {
+    "id": "cb_exposed_pell",
+    "text": "Pell's in the cells. One less customer. I'll miss his money and not one other thing about him.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "sella",
+       "key": "cb:exposed_pell",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_burned_roost": {
+    "id": "cb_burned_roost",
+    "text": "They're saying you burned the Roost with folk still in it. ...I don't judge, love; it's bad for business. But I heard.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "sella",
+       "key": "cb:burned_roost",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_freed_teamsters": {
+    "id": "cb_freed_teamsters",
+    "text": "Jory Coyle came up the stairs to say thank you to somebody, and it wasn't me, and he went red as a radish. Sweet. Go easy on him; he thinks you're a story.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "sella",
+       "key": "cb:freed_teamsters",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -7975,6 +9593,50 @@
     "node": "first"
    },
    {
+    "when": {
+     "all": [
+      {
+       "history": "nemesis_slain"
+      },
+      {
+       "met": "wayfinder"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "wayfinder",
+         "key": "cb:nemesis_slain",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_nemesis_slain"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "opened_vault"
+      },
+      {
+       "met": "wayfinder"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "wayfinder",
+         "key": "cb:opened_vault",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_opened_vault"
+   },
+   {
     "node": "hub"
    }
   ],
@@ -8149,6 +9811,34 @@
       "end": true
      }
     ]
+   },
+   "cb_nemesis_slain": {
+    "id": "cb_nemesis_slain",
+    "text": "You went back for whatever killed you, and took your things off it. That's going in a margin. People like reading about that.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "wayfinder",
+       "key": "cb:nemesis_slain",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_opened_vault": {
+    "id": "cb_opened_vault",
+    "text": "You've been under the black door. Don't tell me what's on the stair; I'd only have to draw it, and I don't draw that far down.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "wayfinder",
+       "key": "cb:opened_vault",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  }

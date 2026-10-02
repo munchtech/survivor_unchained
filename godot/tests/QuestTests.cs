@@ -372,6 +372,22 @@ public class QuestTests
     }
 
     [Fact]
+    public void Deeds_are_quoted_back_once_and_some_close_a_door()
+    {
+        var s = Q("outcast");
+        Talk(Convo("rav"), s.C, "goodbye");
+        Rules.Apply(E("{ history: { id: 'tricked_redcowl', text: 'bluffed the Kerchiefs out of their own camp', tags: ['kerchief'], spread: 2 } }"), s.C);
+        var r = new DialogueRunner(Convo("rav"), s.C);
+        Assert.Matches("he RAN", r.Start()!.Text);
+        Assert.Equal("hub", r.Advance()!.Node.Id);
+        Assert.Equal("hub", new DialogueRunner(Convo("rav"), s.C).Start()!.Node.Id);
+
+        Talk(Convo("harlan"), s.C, "goodbye");
+        Rules.Apply(E("{ history: { id: 'burned_roost', text: 'set the Roost burning', tags: ['caravan'], spread: 2 } }"), s.C);
+        for (int i = 0; i < 2; i++) Assert.Matches("screaming", new DialogueRunner(Convo("harlan"), s.C).Start()!.Text);
+    }
+
+    [Fact]
     public void Choices_that_no_longer_apply_go()
     {
         var s = Q("hunter");
