@@ -10,3 +10,9 @@ __pycache__/
 # Godot imports the game's assets in place (godot/assets links here).
 public/assets/**/*.import
 public/assets/**/*.uid
+
+# ModelGen CLI default output
+/models/
+
+# make3d results (next to make3d.bat)
+/tools/make3d/output/
