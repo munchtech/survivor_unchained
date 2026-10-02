@@ -1587,9 +1587,9 @@ def arcanist():
     for sd in "lr":
         out += [
             *piece(f"arcanist.glove_{sd}", limb(sd, WRIST_S - 0.08, 9.9, legs=False), "blackleather", lift=0.0012, thick=0.001, bevel=0.0004, trim=gold(0.008), edge=30, soften=12),
-            *piece(f"arcanist.stocking_{sd}", AND(LEGW[sd] - 0.5, stock_top(sd) - Z), "stocking", lift=0.0012, thick=0.0, bevel=0.0, soften=10),
+            *piece(f"arcanist.stocking_{sd}", AND(LEGW[sd] - 0.5, stock_top(sd) - Z, (X * (1 if sd == "l" else -1) - 0.004) * 0.3), "stocking", lift=0.0012, thick=0.0, bevel=0.0, soften=10),
             *girdle(f"arcanist.lace_{sd}", stock_band, 0.03, "satin", lift=0.003, thick=0.0018,
-                    trim=("satin", 0.0035, 0.0006, 0.0012), mask=(LEGW[sd] > 0.6) & (Z < CROTCH + 0.02)),
+                    trim=("satin", 0.0035, 0.0006, 0.0012), mask=(LEGW[sd] > 0.6) & (Z < CROTCH + 0.02) & (X * (1 if sd == "l" else -1) > 0.002)),
             *piece(f"arcanist.boot_{sd}", limb(sd, KNEE_S - 0.05, 9.9, front_dip=-0.03), "blackleather", lift=0.005, smooth=8, iron=300, hull=LEG_S[sd] - ANKLE_S - 0.03, trim=gold(0.008), edge=30),
             *piece(f"arcanist.cuff_{sd}", limb(sd, KNEE_S - 0.065, KNEE_S - 0.015), "blackleather", lift=0.009, thick=0.003, smooth=6, trim=gold(0.005)),
         ]
@@ -1772,7 +1772,9 @@ def girdle(name, zfun, width, mkey, lift=0.004, thick=0.004, trim=None, rows=9, 
     if (nor[:, :2] * (pos[:, :2] - cxy)).sum(1).mean() < 0:
         tris = tris[:, ::-1]
         nor = -nor
-    _, j = cKDTree(P).query(pos)
+    src = np.where(mask)[0] if mask is not None else np.arange(len(P))
+    _, j = cKDTree(P[src]).query(pos)
+    j = src[j]
     edge = np.repeat(width / 2 - np.abs(off), nu)
     at = np.hstack([nor, W[j].astype(float), edge[:, None]])
     made = trimmed(name, pos, at, tris, mkey, thick, 0.0008, trim, budget=10 ** 7)
@@ -1942,7 +1944,7 @@ if BODY_OUT:
         for v in me.vertices:
             co = body.matrix_world @ v.co
             n = (mw3 @ v.normal).normalized()
-            if tree.ray_cast(co + n * 0.0005, n, 0.03)[0] is not None or tree.ray_cast(co + n * 0.0005, -n, 0.012)[0] is not None:
+            if tree.ray_cast(co + n * 0.0005, n, 0.02)[0] is not None:
                 vals[v.index, k] = 1
                 hid += 1
         if name in BALD:
