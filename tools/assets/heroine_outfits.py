@@ -467,6 +467,27 @@ def taubin(pos, tris, rounds=40):
     return pos
 
 
+# Each bone's opposite number, for mirroring a piece's weights.
+SWAP = np.array([BI.get(n[:-2] + {"_l": "_r", "_r": "_l"}[n[-2:]], i) if n[-2:] in ("_l", "_r") else i
+                 for i, n in enumerate(BONES)])
+
+
+def mirrored(pos, at, tris):
+    """A pair made of its right half and that half's mirror image (her
+    breasts are not quite each other's; the cups should be)."""
+    keep = (pos[tris][:, :, 0] < 0).all(1)
+    t = tris[keep]
+    used = np.unique(t)
+    re = -np.ones(len(pos), int)
+    re[used] = np.arange(len(used))
+    p, a, t = pos[used], at[used], re[t]
+    mp = p * np.array([-1, 1, 1])
+    ma = a.copy()
+    ma[:, 0] *= -1                                   # the normal
+    ma[:, 3:3 + NB] = a[:, 3:3 + NB][:, SWAP]        # the weights
+    return np.vstack([p, mp]), np.vstack([a, ma]), np.vstack([t, t[:, ::-1] + len(p)])
+
+
 def clear_of_skin(pos, lift):
     """At least `lift` off her skin everywhere."""
     for i in range(len(pos)):
@@ -500,6 +521,7 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     pos = relax(pos, tris, interior=smooth)
     if dome:
         pos = taubin(pos, tris)
+        pos, at, tris = mirrored(pos, at, tris)
     pos = clear_of_skin(pos, lift if clear is None else clear)
     made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, bevel)]
     if trim:
