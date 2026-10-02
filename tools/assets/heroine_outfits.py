@@ -574,7 +574,114 @@ def hulled(pos, where, tris, blend=0.02):
     return out
 
 
-def bubble(pos, tris, clear, out):
+def rim_loops(pos, tris):
+    """The edge of a sheet as closed loops, in order. Spurs (where the cut
+    left a stray edge) are pruned; at a branch the walk takes the
+    straightest way on, and backs up from a dead end, until it is home."""
+    e = np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
+    uk, c = np.unique(np.sort(e, 1), axis=0, return_counts=True)
+    nbr = {}
+    # An edge on the rim is used by an odd number of triangles (once, or
+    # three times where the cut pinched the sheet).
+    for a, b in uk[c % 2 == 1]:
+        nbr.setdefault(int(a), set()).add(int(b))
+        nbr.setdefault(int(b), set()).add(int(a))
+    changed = True
+    while changed:
+        changed = False
+        for v in [v for v, n in nbr.items() if len(n) < 2]:
+            for w in nbr.pop(v):
+                nbr.get(w, set()).discard(v)
+            changed = True
+    left = set(nbr)
+    loops = []
+    while left:
+        start = max(left, key=lambda v: (len(nbr[v]) == 2, -v))
+        path, onpath = [start], {start}
+        tried = {start: set()}
+        found = False
+        while path and not found:
+            v = path[-1]
+            prev = path[-2] if len(path) > 1 else None
+            d0 = pos[v] - pos[prev] if prev is not None else None
+            cands = [w for w in nbr[v] if w != prev and w not in tried[v] and (w not in onpath or (w == start and len(path) > 8))]
+            if not cands:
+                path.pop()
+                onpath.discard(v)
+                continue
+            if d0 is not None:
+                cands.sort(key=lambda w: -np.dot(d0, pos[w] - pos[v]) / (np.linalg.norm(pos[w] - pos[v]) + 1e-12))
+            w = cands[0]
+            tried[v].add(w)
+            if w == start:
+                found = True
+                break
+            path.append(w)
+            onpath.add(w)
+            tried[w] = set()
+        if found and len(path) > 20:
+            loops.append(path)
+        left -= set(path) | {start}
+        left -= {v for v in list(left) if not (nbr[v] & left)}
+    return loops
+
+
+ROUND_RIM = 60      # rounds of smoothing a cup's outline gets
+FULLER = 0.012      # a cup stands this much prouder than her breast
+
+
+def even_cup(pos, at, tris, h=0.004):
+    """Each cup's sheet made again on an even grid of triangles spanning
+    its rim (the cut leaves slivers and the filled areola is crumpled, and
+    a membrane solved on uneven triangles folds where their size changes).
+    The rim is kept exactly; inside, points on a grid in the rim's own
+    plane, the membrane then solved from the rim alone; everything else
+    (weights, the field) from the nearest old point."""
+    from matplotlib.path import Path as MPath
+    from scipy.spatial import Delaunay
+    tree = cKDTree(pos)
+    P2, A2, T2 = [], [], []
+    # (Twice-made triangles out, which would hide an edge.)
+    _, first = np.unique(np.sort(tris, 1), axis=0, return_index=True)
+    tris = tris[np.sort(first)]
+    loops = rim_loops(pos, tris)
+    print("CUP RIMS", [len(l) for l in loops])
+    for loop in sorted(loops, key=len, reverse=True)[:2]:
+        # The outline itself made a smooth curve (it follows her skin's cut
+        # exactly, corners and all, and the bowl takes its shape from it).
+        rimp = pos[loop].copy()
+        for _ in range(ROUND_RIM):
+            rimp = 0.5 * rimp + 0.25 * (np.roll(rimp, 1, 0) + np.roll(rimp, -1, 0))
+        m = rimp.mean(0)
+        _, _, R = np.linalg.svd(rimp - m)
+        u, v = R[0], R[1]
+        r2 = np.c_[(rimp - m) @ u, (rimp - m) @ v]
+        path = MPath(r2)
+        lo, hi = r2.min(0), r2.max(0)
+        gx, gy = np.meshgrid(np.arange(lo[0], hi[0], h), np.arange(lo[1], hi[1], h * 0.866))
+        gx[1::2] += h / 2
+        g = np.c_[gx.ravel(), gy.ravel()]
+        g = g[path.contains_points(g)]
+        if len(g):
+            d, _ = cKDTree(r2).query(g)
+            g = g[d > 0.6 * h]
+        pts2 = np.vstack([r2, g])
+        tri = Delaunay(pts2).simplices
+        tri = tri[path.contains_points(pts2[tri].mean(1))]
+        p3 = np.vstack([rimp, m + g[:, :1] * u + g[:, 1:] * v])
+        _, j = tree.query(p3)
+        a3 = at[j].copy()
+        # How far in from the edge (what the trim follows), measured across
+        # the rim's plane.
+        a3[:, -1] = np.r_[np.zeros(len(rimp)), cKDTree(r2).query(g)[0] if len(g) else []]
+        base = sum(len(x) for x in P2)
+        P2.append(p3)
+        A2.append(a3)
+        T2.append(tri + base)
+    return np.vstack(P2), np.vstack(A2), np.vstack(T2)
+
+
+def bubble(pos, tris, clear, out, ref=None):
     """A cup as a soap bubble blown in its rim, like a bra cup: nothing of
     her skin is kept but the rim, where the cup meets her. Across it, a
     membrane under even pressure: each point at its neighbours' middle,
@@ -597,7 +704,7 @@ def bubble(pos, tris, clear, out):
 
     def blow(p):
         x = pos.copy()
-        for _ in range(6):
+        for _ in range(12):
             n = sign * vertex_normals(x, tris)
             rhs = -(Lib @ xb) + p * h * h * n[inner]
             x[inner] = np.column_stack([Lii.solve(rhs[:, k]) for k in range(3)])
@@ -614,7 +721,8 @@ def bubble(pos, tris, clear, out):
     def height(x):
         return ((x[right] - base) @ up).max()
 
-    target = height(pos) + 0.003
+    # Her breast's own height, from the sheet as it was cut from her.
+    target = (((ref[ref[:, 0] < 0] - base) @ up).max() if ref is not None else height(pos)) + FULLER
     lo, hi = 0.0, 0.05
     while height(blow(hi)) < target and hi < 1e4:
         lo, hi = hi, hi * 2
@@ -625,7 +733,7 @@ def bubble(pos, tris, clear, out):
         else:
             hi = mid
     x = blow(hi)
-    print("BUBBLE pressure %.3f, height %.4f (her breast %.4f)" % (hi, height(x), target - 0.003))
+    print("BUBBLE pressure %.3f, height %.4f (her breast %.4f)" % (hi, height(x), target - FULLER))
     return x
 
 
@@ -720,7 +828,15 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     if iron:
         pos = taubin(pos, tris, rounds=iron)
     if dome:
-        pos = bubble(pos, tris, lift if clear is None else clear, at[:, :3])
+        cut_from, cut_at = pos.copy(), at.copy()
+        pos, at, tris = even_cup(pos, at, tris)
+        pos = bubble(pos, tris, lift if clear is None else clear, at[:, :3], ref=cut_from)
+        # Weights, normals and any cut, from where each point of the bowl
+        # now stands over the sheet it replaced.
+        _, j = cKDTree(cut_from).query(pos)
+        edge = at[:, -1].copy()
+        at = cut_at[j].copy()
+        at[:, -1] = edge
         pos, at, tris = mirrored(pos, at, tris)
     if cut is not None:
         at[:, -1] = np.minimum(at[:, -1], at[:, -2])
