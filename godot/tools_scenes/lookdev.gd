@@ -25,6 +25,7 @@ func _init():
 				var m = mi.mesh.surface_get_material(s).duplicate()
 				m.albedo_color = Color(1.0, 0.86, 0.74)
 				if OS.get_environment("NOTEX") != "": m.albedo_texture = null; m.albedo_color = Color(0.85, 0.62, 0.5)
+				m.vertex_color_use_as_albedo = false
 				m.subsurf_scatter_enabled = true
 				m.subsurf_scatter_strength = 0.35
 				m.subsurf_scatter_skin_mode = true
@@ -43,6 +44,13 @@ func _init():
 					skel.add_child(mi)
 					mi.skeleton = NodePath("..")
 			o.free()
+			# Her skin under the outfit's fitted pieces is not drawn (its
+			# channel in her vertex colours: warden red, arcanist green).
+			var ch = ["warden", "arcanist", "reaver", "ranger"].find(outfit.trim_suffix("_").split(".")[0].split("_")[0])
+			if ch >= 0:
+				for bm in skel.get_children():
+					if bm is MeshInstance3D and not String(bm.name).contains("."):
+						hide_skin(bm, ch)
 		if OS.get_environment("NOHERPOSE") == "":
 			skel.add_child(load("res://src/Actors/HerPose.cs").new())
 		if OS.get_environment("NOJIGGLE") == "":
@@ -95,6 +103,27 @@ func _init():
 	rim.rotation_degrees = Vector3(-20, 200, 0)
 	rim.light_energy = 0.0 if OS.get_environment("NORIM") != "" else 1.2
 	root.add_child(rim)
+
+func hide_skin(mi, ch):
+	var src = mi.mesh
+	var out = ArrayMesh.new()
+	for si in src.get_surface_count():
+		var arr = src.surface_get_arrays(si)
+		var col = arr[Mesh.ARRAY_COLOR]
+		if col != null and col.size() > 0:
+			var idx = arr[Mesh.ARRAY_INDEX]
+			var kept = PackedInt32Array()
+			for t in range(0, idx.size(), 3):
+				var a = col[idx[t]][ch]; var b = col[idx[t + 1]][ch]; var c = col[idx[t + 2]][ch]
+				if a < 0.5 or b < 0.5 or c < 0.5:
+					kept.append(idx[t]); kept.append(idx[t + 1]); kept.append(idx[t + 2])
+			arr[Mesh.ARRAY_INDEX] = kept
+		out.add_surface_from_arrays(src.surface_get_primitive_type(si), arr)
+		out.surface_set_material(si, src.surface_get_material(si))
+	var overrides = []
+	for si in src.get_surface_count(): overrides.append(mi.get_surface_override_material(si))
+	mi.mesh = out
+	for si in overrides.size(): mi.set_surface_override_material(si, overrides[si])
 
 func _process(delta):
 	t += delta

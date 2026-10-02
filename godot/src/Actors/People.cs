@@ -254,6 +254,49 @@ public static class People
             p.Meshes.Add(mi);
         }
         scene.Free();
+        // Her skin under the outfit's fitted pieces is not drawn: each
+        // outfit marks it in one channel of her vertex colours.
+        int ch = System.Array.IndexOf(OutfitChannels, set);
+        if (ch >= 0)
+            foreach (var mi in p.Skeleton.GetChildren().OfType<MeshInstance3D>())
+                if (!mi.Name.ToString().Contains('.') && !mi.Name.ToString().Contains('_')) HideSkin(mi, ch);
+    }
+
+    /// <summary>Her outfits, in the order of their channels in her vertex
+    /// colours (tools/assets/heroine_outfits.py's OUTFITS).</summary>
+    static readonly string[] OutfitChannels = { "warden", "arcanist", "reaver", "ranger" };
+
+    static readonly Dictionary<(Mesh, int), ArrayMesh> hidden = new();
+
+    static void HideSkin(MeshInstance3D mi, int ch)
+    {
+        if (mi.Mesh is not ArrayMesh am) return;
+        if (!hidden.TryGetValue((am, ch), out var mesh))
+        {
+            mesh = new ArrayMesh();
+            for (int s = 0; s < am.GetSurfaceCount(); s++)
+            {
+                var arr = am.SurfaceGetArrays(s);
+                var colV = arr[(int)Mesh.ArrayType.Color];
+                if (colV.VariantType != Variant.Type.Nil)
+                {
+                    var col = colV.AsColorArray();
+                    var idx = arr[(int)Mesh.ArrayType.Index].AsInt32Array();
+                    var kept = new List<int>(idx.Length);
+                    for (int t = 0; t + 2 < idx.Length; t += 3)
+                        if (col[idx[t]][ch] < 0.5f || col[idx[t + 1]][ch] < 0.5f || col[idx[t + 2]][ch] < 0.5f)
+                        { kept.Add(idx[t]); kept.Add(idx[t + 1]); kept.Add(idx[t + 2]); }
+                    arr[(int)Mesh.ArrayType.Index] = kept.ToArray();
+                }
+                var flags = (Mesh.ArrayFormat)((long)am.SurfaceGetFormat(s) & (long)Mesh.ArrayFormat.FlagUse8BoneWeights);
+                mesh.AddSurfaceFromArrays(am.SurfaceGetPrimitiveType(s), arr, new Godot.Collections.Array<Godot.Collections.Array>(), null, flags);
+                mesh.SurfaceSetMaterial(s, am.SurfaceGetMaterial(s));
+            }
+            hidden[(am, ch)] = mesh;
+        }
+        var over = Enumerable.Range(0, mi.Mesh.GetSurfaceCount()).Select(mi.GetSurfaceOverrideMaterial).ToList();
+        mi.Mesh = mesh;
+        for (int s = 0; s < over.Count; s++) mi.SetSurfaceOverrideMaterial(s, over[s]);
     }
 
     /// <summary>Her paint as skin: light carried under it (subsurface
@@ -262,6 +305,8 @@ public static class People
     static StandardMaterial3D Skin(BaseMaterial3D src, Look look)
     {
         var m = (StandardMaterial3D)src.Duplicate();
+        // Her vertex colours mark what each outfit hides, not her paint.
+        m.VertexColorUseAsAlbedo = false;
         m.AlbedoColor = look.Skin is Color tone ? tone.Lerp(Colors.White, 0.35f) : new Color(1.0f, 0.86f, 0.74f);
         m.SubsurfScatterEnabled = true;
         m.SubsurfScatterStrength = 0.35f;

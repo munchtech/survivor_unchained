@@ -107,3 +107,5 @@ Cut to loop and made mono at 24 kHz (the game plays each wide, its right side ha
 - Leather034C: ambientCG (https://ambientcg.com/view?id=Leather034C), CC0
 - Leather024: ambientCG (https://ambientcg.com/view?id=Leather024), CC0
 - Leather014: ambientCG (https://ambientcg.com/view?id=Leather014), CC0
+- Leather026: ambientCG (https://ambientcg.com/view?id=Leather026), CC0
+- Leather021: ambientCG (https://ambientcg.com/view?id=Leather021), CC0

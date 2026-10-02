@@ -1,6 +1,8 @@
 """The heroine's outfits, one for each calling, cut from her own body.
 
-    blender -b tools/comfy/out/heroes/heroine_built.blend --python tools/assets/heroine_outfits.py -- <out.glb> [--only warden]
+    blender -b tools/comfy/out/heroes/heroine_built.blend --python tools/assets/heroine_outfits.py -- <out.glb> [--body <heroine.glb>] [--only warden]
+
+With --body her body is written again, marked where each outfit hides her.
 
 The scene is the one build_heroine.py saved, so every piece is exported
 from the very skeleton her body was and binds to hers exactly.
@@ -32,6 +34,7 @@ from scipy.spatial import cKDTree
 ARGS = sys.argv[sys.argv.index("--") + 1:]
 OUT = ARGS[0]
 ONLY = ARGS[ARGS.index("--only") + 1] if "--only" in ARGS else None
+BODY_OUT = ARGS[ARGS.index("--body") + 1] if "--body" in ARGS else None
 TEX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "godot", "art", "outfit")
 
 arm = next(o for o in bpy.data.objects if o.type == "ARMATURE")
@@ -82,6 +85,28 @@ def subdivide(P, N, W, TRI):
 
 P, N, W, TRI = subdivide(P, N, W, TRI)
 BVH = BVHTree.FromPolygons([tuple(p) for p in P], TRI.tolist())
+# Her hair, by its paint (it is part of her mesh, and some strands are
+# weighted to her neck and back, not her head): red, above her shoulders.
+def _hair():
+    me = body.data
+    img = next(n.image for n in me.materials[0].node_tree.nodes if n.type == "TEX_IMAGE" and n.image)
+    w, h = img.size
+    px = np.array(img.pixels[:]).reshape(h, w, 4)[:, :, :3]
+    uv = np.zeros((len(me.vertices), 2))
+    cnt = np.zeros(len(me.vertices))
+    for l in me.loops:
+        uv[l.vertex_index] += me.uv_layers.active.data[l.index].uv
+        cnt[l.vertex_index] += 1
+    uv /= np.maximum(cnt, 1)[:, None]
+    col = px[np.clip((uv[:, 1] * h).astype(int), 0, h - 1), np.clip((uv[:, 0] * w).astype(int), 0, w - 1)]
+    co = np.array([(body.matrix_world @ v.co)[:] for v in me.vertices])
+    red = (col[:, 0] > 0.25) & (col[:, 0] > col[:, 1] * 1.7) & (col[:, 0] > col[:, 2] * 1.7) & (co[:, 2] > 1.4)
+    _, j = cKDTree(co).query(P)
+    return red[j].astype(float)
+
+
+HAIR = _hair()
+print("HAIR", int(HAIR.sum()), "surface points")
 # Her skin without her hair, for laying curves on.
 _hair = (W[:, [BI[n] for n in ("Head", "neck_01") if n in BI]].sum(1) > 0.5)
 _skin = ~_hair[TRI].any(1)
@@ -398,6 +423,12 @@ SPEC = {
     "velvet": ("velour_velvet", (0.32, 0.1, 0.45), None, 5, 0.0, None),
     "linen": ("rough_linen", (0.3, 0.4, 0.25), None, 5, 0.0, None),
     "fur": ("faux_fur_geometric", (0.6, 0.48, 0.36), None, 4, 0.0, None),
+    "arcvelvet": ("velour_velvet", (0.3, 0.3, 1.0), 66, 5, 0.0, None),
+    "plumleather": ("Leather026", (0.5, 0.4, 0.75), 44, 3, 0.0, None),
+    "blackleather": ("Leather026", (1, 1, 1), 26, 3, 0.0, None),
+    "brownleather": ("Leather037", (1, 0.85, 0.75), 42, 3, 0.0, None),
+    "lace": ("velour_velvet", (0.3, 0.3, 0.32), 14, 8, 0.0, 0.5),
+    "stocking": ("rough_linen", (0.4, 0.38, 0.42), 18, 14, 0.0, 0.45, 0.62),
 }
 MATS = {}
 
@@ -405,7 +436,8 @@ MATS = {}
 def mat(key):
     if key in MATS:
         return MATS[key]
-    src, tint, mean, _, metal, rough = SPEC[key]
+    src, tint, mean, _, metal, rough = SPEC[key][:6]
+    alpha = SPEC[key][6] if len(SPEC[key]) > 6 else 1.0
     from PIL import Image
     col = np.asarray(Image.open(os.path.join(TEX, f"{src}_diff.jpg")).convert("RGB"), np.float32)
     col = col * np.array(tint)
@@ -444,12 +476,70 @@ def mat(key):
         nm = nt.nodes.new("ShaderNodeNormalMap")
         nt.links.new(n.outputs["Color"], nm.inputs["Color"])
         nt.links.new(nm.outputs["Normal"], bsdf.inputs["Normal"])
+    if alpha < 1:
+        bsdf.inputs["Alpha"].default_value = alpha
+        m.surface_render_method = "BLENDED"
     MATS[key] = m
     return m
 
 
 # ----------------------------------------------------------------- pieces --
 NB = len(BONES)
+
+
+def bubble(pos, tris, clear, out):
+    """A cup as a soap bubble blown in its rim, like a bra cup: nothing of
+    her skin is kept but the rim, where the cup meets her. Across it, a
+    membrane under even pressure: each point at its neighbours' middle,
+    less the pressure along its normal (solved directly, the normals
+    updated a few times), which settles perfectly smooth and round. The
+    pressure is set, by halving, so the cup stands as high as her breast."""
+    from scipy.sparse.linalg import splu
+    e = np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
+    uk, c = np.unique(np.sort(e, 1), axis=0, return_counts=True)
+    rim = np.zeros(len(pos), bool)
+    rim[uk[c == 1].ravel()] = True
+    inner = np.where(~rim)[0]
+    A = adjacency(len(pos), tris).tocsr()
+    L = (sparse.identity(len(pos)) - A).tocsr()
+    Lii = splu(L[inner][:, inner].tocsc())
+    Lib = L[inner][:, np.where(rim)[0]]
+    xb = pos[rim]
+    h = np.linalg.norm(pos[uk[:, 0]] - pos[uk[:, 1]], axis=1).mean()
+    sign = 1.0 if (vertex_normals(pos, tris) * out).sum(1).mean() > 0 else -1.0
+
+    def blow(p):
+        x = pos.copy()
+        for _ in range(6):
+            n = sign * vertex_normals(x, tris)
+            rhs = -(Lib @ xb) + p * h * h * n[inner]
+            x[inner] = np.column_stack([Lii.solve(rhs[:, k]) for k in range(3)])
+        return x
+
+    # Sized to her: the cup stands as high off its rim as her breast does
+    # under it, and a few millimetres more (her skin under a cup is not
+    # drawn, so no small bump of hers needs clearing).
+    right = (pos[:, 0] < 0) & ~rim
+    up = out[right].mean(0)
+    up /= np.linalg.norm(up)
+    base = pos[rim & (pos[:, 0] < 0)].mean(0)
+
+    def height(x):
+        return ((x[right] - base) @ up).max()
+
+    target = height(pos) + 0.003
+    lo, hi = 0.0, 0.05
+    while height(blow(hi)) < target and hi < 1e4:
+        lo, hi = hi, hi * 2
+    for _ in range(14):
+        mid = (lo + hi) / 2
+        if height(blow(mid)) < target:
+            lo = mid
+        else:
+            hi = mid
+    x = blow(hi)
+    print("BUBBLE pressure %.3f, height %.4f (her breast %.4f)" % (hi, height(x), target - 0.003))
+    return x
 
 
 def taubin(pos, tris, rounds=40):
@@ -516,7 +606,7 @@ def clear_of_skin(pos, lift):
     return pos
 
 
-def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False):
+def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None):
     """A region of her skin made into a piece of her outfit. `trim`, as
     (material, width, height, thickness), edges it with a band laid on the
     piece itself, so the two can never part. `clear` is how close to the
@@ -525,8 +615,10 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     cast of it. `soften` eases the field first; a strap, narrower than
     some of her triangles, is not eased (easing would wear it through)."""
     # Never her head or hair (the hair is part of her mesh).
-    f = smooth_field(np.minimum(field, (0.3 - wsum("Head", "neck_01")) * 0.1), soften)
-    attr = np.hstack([N, W, f[:, None]])
+    f = smooth_field(np.minimum.reduce([field, (0.3 - wsum(*keep_off)) * 0.1, (0.5 - HAIR) * 0.1]), soften)
+    # `cut`, a second field, trims the piece after it is shaped: a cup
+    # keeps the shape of the full cup however low it is cut.
+    attr = np.hstack([N, W, (cut if cut is not None else np.ones(len(P)))[:, None], f[:, None]])
     pos, at, tris = clip(f, P_FILLED if dome else P, attr, TRI)
     if len(tris) == 0:
         print("EMPTY", name)
@@ -536,10 +628,16 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     pos = pos + nor * lift
     pos = relax(pos, tris, interior=smooth)
     if dome:
-        pos = taubin(pos, tris, rounds=300)
-        pos = fuller(pos, at[:, -1], tris)
+        pos = bubble(pos, tris, lift if clear is None else clear, at[:, :3])
         pos, at, tris = mirrored(pos, at, tris)
-    pos = clear_of_skin(pos, lift if clear is None else clear)
+    if cut is not None:
+        at[:, -1] = np.minimum(at[:, -1], at[:, -2])
+        cut_done = True
+        pos, at, tris = clip(at[:, -2], pos, at, tris)
+        pos, at, tris = weld(pos, at, tris)
+        pos = relax(pos, tris, interior=0)
+    if not dome:
+        pos = clear_of_skin(pos, lift if clear is None else clear)
     made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, bevel)]
     if trim:
         tkey, w, h, tt = trim
@@ -548,6 +646,8 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
             tp, ta, tr = weld(tp, ta, tr)
             tp = relax(tp + vertex_normals(tp, tr) * (thick + h), tr)
             made.append(finish(name + "_trim", tp, ta[:, 3:3 + NB], tr, tkey, tt, bevel))
+    for o in made:
+        o["hides"] = len(SPEC[mkey]) < 7
     return made
 
 
@@ -658,6 +758,10 @@ def cups(cover=0.62, plunge=0.02, band=0.03):
         c = n + np.array([0, 0.035, -0.012])
         r = np.linalg.norm(P - c, axis=1)
         top = n[2] + 0.075 * cover - np.maximum(0, (n[0] - X) * s) * 0.35   # the inner top dips toward the middle
+        # Never below 3.5 cm over the nipple itself (hers sit high and to
+        # the outside, above the breast's most forward point).
+        nip = NIPPLE[sd]
+        top = np.maximum(top, nip[2] + 0.035 - 0.5 * np.maximum(0, abs(nip[0]) - np.abs(X)) - 0.8 * np.maximum(0, np.abs(X) - abs(nip[0]) - 0.03))
         parts.append(AND(0.098 - r, top - Z, X * s - plunge, -(Y - 0.02)))
     ub = AND(Z - (UNDERBUST - band), UNDERBUST + 0.006 - Z, 0.4 - ARMW["l"] - ARMW["r"])
     return OR(*parts), ub
@@ -691,10 +795,175 @@ def shoulder(sd):
     return head(f"upperarm_{sd}") + np.array([0.02 * (1 if sd == "l" else -1), 0, 0.06])
 
 
+def trimmed(name, pos, at, tris, mkey, thick, bevel, trim):
+    """A sheet and, if asked, the gold along its edge (the field in `at`'s
+    last column is the distance in from the edge)."""
+    made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, bevel)]
+    if trim:
+        tkey, w, h, tt = trim
+        tp, ta, tr = clip(w - at[:, -1], pos, at, tris)
+        if len(tr):
+            tp, ta, tr = weld(tp, ta, tr)
+            tp = relax(tp + vertex_normals(tp, tr) * (thick + h), tr)
+            made.append(finish(name + "_trim", tp, ta[:, 3:3 + NB], tr, tkey, tt, bevel))
+    return made
+
+
+def grid(nu, nv):
+    i = np.arange(nu - 1)[:, None] * nv + np.arange(nv - 1)[None, :]
+    i = i.ravel()
+    return np.vstack([np.c_[i, i + nv, i + 1], np.c_[i + 1, i + nv, i + nv + 1]])
+
+
+def hanging(name, a0, a1, z_top, hem, mkey, flare=0.15, lift=0.01, gap=0.012, thick=0.0025, trim=None, nu=56):
+    """Cloth hanging from her hips, all round her between the angles a0 and
+    a1 (radians; 0 her front, rising toward her left): at each angle it
+    falls from the hips, flaring out by `flare` a metre of fall, and never
+    nearer her than `gap` (so it goes over her thighs, not into them). Its
+    hem is `hem(u)`, u from -1 at a0 to 1 at a1. It is weighted to the
+    pelvis at the top and more and more to the thigh on its side below the
+    hip, so it swings with her stride."""
+    ring = (np.abs(Z - z_top) < 0.008) & (ARMW["l"] + ARMW["r"] < 0.3)
+    cy = (Y[ring].min() + Y[ring].max()) / 2
+    zs = np.arange(z_top, min(hem(u) for u in np.linspace(-1, 1, 41)) - 0.03, -0.006)
+    a = np.linspace(a0, a1, nu)
+    body = (ARMW["l"] + ARMW["r"] < 0.3) & (wsum("Head") < 0.3)
+    ang = np.arctan2(X, -(Y - cy))
+    rad = np.hypot(X, Y - cy)
+    R = np.full((len(zs), nu), np.nan)
+    for k, z in enumerate(zs):
+        m = body & (np.abs(Z - z) < 0.006)
+        if not m.any():
+            continue
+        for j, aj in enumerate(a):
+            d = np.abs((ang[m] - aj + np.pi) % (2 * np.pi) - np.pi)
+            w = d < 0.12
+            if w.any():
+                R[k, j] = rad[m][w].max()
+    R[0] = np.where(np.isnan(R[0]), np.nanmax(R[0]), R[0])
+    for k in range(1, len(zs)):
+        R[k] = np.where(np.isnan(R[k]), 0, R[k])
+    hang = (R[0] + lift)[None, :] + flare * (z_top - zs)[:, None]
+    r = np.maximum(hang, R + gap)
+    r = np.maximum.accumulate(r, axis=0)
+    for _ in range(6):
+        r[1:-1] = (r[:-2] + 2 * r[1:-1] + r[2:]) / 4
+        r[:, 1:-1] = (r[:, :-2] + 2 * r[:, 1:-1] + r[:, 2:]) / 4
+        r = np.maximum(r, R + gap)
+    zz = np.repeat(zs[:, None], nu, 1)
+    aa = np.repeat(a[None, :], len(zs), 0)
+    pos = np.stack([r * np.sin(aa), cy - r * np.cos(aa), zz], -1).reshape(-1, 3)
+    tris = grid(len(zs), nu)
+    nor = vertex_normals(pos, tris)
+    out = np.c_[np.sin(aa).ravel(), -np.cos(aa).ravel()]
+    if ((nor[:, :2] * out).sum(1)).mean() < 0:
+        tris = tris[:, ::-1]
+        nor = -nor
+    u = (aa.ravel() - a0) / (a1 - a0) * 2 - 1
+    zb = np.array([hem(x) for x in u])
+    arc = np.minimum(aa.ravel() - a0, a1 - aa.ravel()) * r.ravel()
+    f = np.minimum.reduce([pos[:, 2] - zb, z_top - pos[:, 2] + 0.002, arc])
+    hip = head("thigh_l")[2]
+    leg = 0.85 * ramp(hip - pos[:, 2], 0.0, 0.45)
+    side = 1 / (1 + np.exp(-pos[:, 0] / 0.035))
+    wt = np.zeros((len(pos), NB))
+    wt[:, BI["pelvis"]] = 1 - leg
+    wt[:, BI["thigh_l"]] = leg * side
+    wt[:, BI["thigh_r"]] = leg * (1 - side)
+    attr = np.hstack([nor, wt, f[:, None]])
+    pos, at, tris = clip(f, pos, attr, tris)
+    pos, at, tris = weld(pos, at, tris)
+    pos = relax(pos, tris)
+    return trimmed(name, pos, at, tris, mkey, thick, 0.0008, trim)
+
+
+def witch_hat(name, mkey, band_key, brim=0.21, height=0.34, droop=0.09):
+    """A wide-brimmed hat with a tall crown that bends back and droops at
+    the tip, set on her hair: its crown is as wide as her hair at the brim
+    and never nearer it than a centimetre above. All of it is her head's."""
+    hd = wsum("Head") > 0.5
+    top = Z[hd].max()
+    upper = hd & (Z > top - 0.1)
+    cx, cy = X[upper].mean(), Y[upper].mean()
+    zb = top - 0.07
+    ang = np.arctan2(X[hd] - cx, -(Y[hd] - cy))
+    rad = np.hypot(X[hd] - cx, Y[hd] - cy)
+    nu = 64
+    a = np.linspace(0, 2 * np.pi, nu, endpoint=False)
+
+    def hair_r(z, dz=0.008):
+        m = np.abs(Z[hd] - z) < dz
+        out = np.zeros(nu)
+        for j, aj in enumerate(a):
+            d = np.abs((ang[m] - aj + np.pi) % (2 * np.pi) - np.pi) < 0.15
+            if d.any():
+                out[j] = rad[m][d].max()
+        return out
+
+    base = hair_r(zb) + 0.012
+    base = np.maximum(base, np.percentile(base, 60) * 0.92)
+    for _ in range(4):
+        base = (np.roll(base, 1) + 2 * base + np.roll(base, -1)) / 4
+    # The crown, ring by ring.
+    K = 36
+    rings = []
+    for k in range(K + 1):
+        t = k / K
+        z = zb + height * t
+        bend = max(0.0, t - 0.45) / 0.55
+        ccy = cy + 0.13 * bend ** 2
+        cz = z - droop * bend ** 3
+        scale = (1 - t) ** 1.15
+        rr = base * scale + 0.004 * (1 - t)
+        need = hair_r(z) + 0.01
+        rr = np.maximum(rr, need * (need > 0.01))
+        rings.append(np.stack([cx + rr * np.sin(a), ccy - rr * np.cos(a), np.full(nu, cz)], -1))
+    crown = np.array(rings).reshape(-1, 3)
+    ct = grid(K + 1, nu + 1)
+    # Close the seam: wrap the angle.
+    idx = np.arange((K + 1) * nu).reshape(K + 1, nu)
+    idx = np.c_[idx, idx[:, :1]].ravel()
+    ct = idx[ct]
+    # The brim: from the crown's base out, sagging a little, its sides
+    # turned up and front and back down (the witch's wave).
+    M = 14
+    br = []
+    for k in range(M + 1):
+        t = k / M
+        rr = base + brim * t
+        z = zb - 0.012 * t * t + 0.03 * t * t * (np.cos(2 * a) * -1 + 1) / 2 - 0.015 * t * t
+        br.append(np.stack([cx + rr * np.sin(a), cy - rr * np.cos(a), z], -1))
+    brimp = np.array(br).reshape(-1, 3)
+    idx = np.arange((M + 1) * nu).reshape(M + 1, nu)
+    idx = np.c_[idx, idx[:, :1]].ravel()
+    bt = idx[grid(M + 1, nu + 1)]
+    # A band round the crown's foot.
+    bandp = np.array(rings[:4]).reshape(-1, 3)
+    bandp[:, :2] = (bandp[:, :2] - [cx, cy]) * 1.03 + [cx, cy]
+    bandt = np.arange(4 * nu).reshape(4, nu)
+    bandt = np.c_[bandt, bandt[:, :1]].ravel()[grid(4, nu + 1)]
+    out = []
+    for nm, pp, tt, key, th in ((name + "_crown", crown, ct, mkey, 0.003), (name + "_brim", brimp, bt, mkey, 0.004),
+                                (name + "_band", bandp, bandt, band_key, 0.002)):
+        n = vertex_normals(pp, tt)
+        rad_out = pp[:, :2] - [cx, cy]
+        if (n[:, :2] * rad_out).sum(1).mean() < 0 and nm.endswith(("crown", "band")):
+            tt = tt[:, ::-1]
+        if nm.endswith("brim") and n[:, 2].mean() < 0:
+            tt = tt[:, ::-1]
+        wt = np.zeros((len(pp), NB))
+        wt[:, BI["Head"]] = 1
+        out.append(finish(nm, pp, wt, tt, key, th, 0.001))
+    print("HAT brim at %.3f, crown base %.3f-%.3f m" % (zb, base.min(), base.max()))
+    return out
+
+
 # ---------------------------------------------------------------- outfits --
 def warden():
     """The oath-knight: polished plate over quilted leather, edged in gold."""
     cup, band = cups(cover=0.6, plunge=0.012)
+    for sd in "lr":
+        print("NIPPLE COVER warden", sd, "cup field %.4f" % cup[np.argmin(np.linalg.norm(P - NIPPLE[sd], axis=1))])
     bot = bottom("cheeky")
     plate = AND(bot, FRONT - 0.5, (CROTCH + 0.13) - Z)
 
@@ -719,13 +988,103 @@ def warden():
     return out
 
 
-OUTFITS = {"warden": warden}
+def arcanist():
+    """The arcanist: a velvet capelet and sleeves, a plum leather corset
+    with gold boning under low velvet half-cups, an open coat that bares
+    her thighs, sheer stockings, thigh boots and a witch's hat."""
+    def gold(w=0.006):
+        return ("gold", w, 0.0004, 0.0013)
+
+    # The warden's cups (their shape is the one), cut lower toward the
+    # middle so the inner and upper breast show; at the outside the cut is
+    # above the nipple, so the full cup's edge stands there.
+    cup, _ = cups(cover=0.6, plunge=0.012)
+    low = np.min([NIPPLE[sd][2] + 0.035 - 0.5 * np.maximum(0, abs(NIPPLE[sd][0]) - np.abs(X)) for sd in "lr"], axis=0) - Z
+    for sd in "lr":
+        print("NIPPLE COVER arcanist", sd, "cup field %.4f" % cup[np.argmin(np.linalg.norm(P - NIPPLE[sd], axis=1))])
+    arms = ARMW["l"] + ARMW["r"]
+    ctop = UNDERBUST + 0.012 + 0.07 * (1 - FRONT)
+    cbot = 1.012 - 0.04 * np.exp(-(X / 0.04) ** 2) * FRONT
+    corset = AND(ctop - Z, Z - cbot, 0.35 - arms)
+    belt_z = 1.0 + 0.035 * X / 0.18
+    belt = AND(0.016 - np.abs(Z - belt_z), 0.3 - arms)
+    bones = OR(*[strap([np.array([x, -0.25, UNDERBUST - 0.004]), np.array([x * 0.85, -0.25, 1.02 - 0.02 * (abs(x) < 0.05)])], 0.005)
+                 for x in (-0.085, -0.04, 0.04, 0.085)])
+    bones = AND(bones, corset - 0.004)
+    nz = head("neck_01")[2]
+    choker = AND(0.009 - np.abs(Z - (nz + 0.035)), wsum("neck_01", "Head") - 0.4, 0.3 - wsum("Head") + wsum("neck_01") * 0, 0.3 - arms)
+    mantle = OR(cap(shoulder("l"), 0.14), cap(shoulder("r"), 0.14),
+                AND(Z - 1.43, (Y - 0.0), 0.3 - arms))
+    out = [
+        *piece("arcanist.cups", cup, "arcvelvet", lift=0.009, thick=0.0025, clear=0.0015, dome=True, trim=gold(), cut=low),
+        *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=6, trim=gold(0.007)),
+        *piece("arcanist.boning", bones, "gold", lift=0.0095, thick=0.0012, smooth=6, soften=0),
+        *piece("arcanist.briefs", bottom("full"), "arcvelvet", lift=0.0025, smooth=2),
+        *piece("arcanist.mantle", mantle, "arcvelvet", lift=0.016, thick=0.004, smooth=12, trim=gold(0.01)),
+        *piece("arcanist.choker", choker, "blackleather", lift=0.002, soften=0, keep_off=("Head",)),
+        *piece("arcanist.belt", belt, "brownleather", lift=0.017, thick=0.004, smooth=3),
+        *piece("arcanist.buckle", AND(cap(np.array([0.0, -0.2, 1.0]), 0.02), belt), "gold", lift=0.021, thick=0.003, soften=0),
+        *hanging("arcanist.apron", -0.3, 0.3, 1.0, lambda u: 0.56 + 0.07 * abs(u), "arcvelvet", flare=0.12, lift=0.012, trim=gold(0.012)),
+        *hanging("arcanist.coat", 1.2, 2 * np.pi - 1.2, 1.0, lambda u: 0.3 + 0.16 * abs(u) ** 1.5, "arcvelvet", flare=0.1, lift=0.012, trim=gold(0.014)),
+        *witch_hat("arcanist.hat", "arcvelvet", "gold"),
+    ]
+    for sd in "lr":
+        out += [
+            *piece(f"arcanist.sleeve_{sd}", limb(sd, 0.17, WRIST_S - 0.03, legs=False), "arcvelvet", lift=0.005, smooth=4, trim=gold(0.01)),
+            *piece(f"arcanist.glove_{sd}", limb(sd, WRIST_S - 0.08, 9.9, legs=False), "blackleather", lift=0.0012, thick=0.001, bevel=0.0004),
+            *piece(f"arcanist.stocking_{sd}", limb(sd, KNEE_S - 0.2, 9.9), "stocking", lift=0.001, thick=0.0006, bevel=0.0),
+            *piece(f"arcanist.lace_{sd}", limb(sd, KNEE_S - 0.2, KNEE_S - 0.165), "lace", lift=0.0022, thick=0.001, soften=1),
+            *piece(f"arcanist.boot_{sd}", limb(sd, KNEE_S - 0.05, 9.9, front_dip=-0.03), "brownleather", lift=0.005, smooth=30),
+            *piece(f"arcanist.cuff_{sd}", limb(sd, KNEE_S - 0.065, KNEE_S - 0.015), "brownleather", lift=0.009, thick=0.003, smooth=6, trim=gold(0.005)),
+        ]
+    return out
+
+
+OUTFITS = {"warden": warden, "arcanist": arcanist}
 
 made = []
 for name, build in OUTFITS.items():
     if ONLY and name != ONLY:
         continue
     made += [o for o in build() if o]
+
+# Her skin under each outfit's fitted pieces is marked, one colour channel
+# an outfit (in OUTFITS' order), for the game to leave undrawn: a smooth
+# cup need not clear every bump of hers, and nothing of her shows through.
+# Loose things (a coat, a hat) and sheer ones hide nothing.
+if BODY_OUT:
+    me = body.data
+    col = me.color_attributes.get("hide") or me.color_attributes.new("hide", "BYTE_COLOR", "POINT")
+    vals = np.zeros((len(me.vertices), 4))
+    vals[:, 3] = 0
+    mw3 = body.matrix_world.to_3x3()
+    for k, name in enumerate(OUTFITS):
+        objs = [o for o in made if o.name.startswith(name + ".") and o.get("hides")]
+        if not objs or k > 3:
+            continue
+        vs, fs = [], []
+        for o in objs:
+            base = len(vs)
+            vs += [tuple(o.matrix_world @ v.co) for v in o.data.vertices]
+            fs += [[base + i for i in p.vertices] for p in o.data.polygons]
+        tree = BVHTree.FromPolygons(vs, fs)
+        hid = 0
+        for v in me.vertices:
+            co = body.matrix_world @ v.co
+            n = (mw3 @ v.normal).normalized()
+            if tree.ray_cast(co + n * 0.0005, n, 0.03)[0] is not None:
+                vals[v.index, k] = 1
+                hid += 1
+        print("HIDES", name, hid, "of", len(me.vertices), "vertices of her skin")
+    col.data.foreach_set("color", vals.ravel())
+    me.color_attributes.active_color = col
+    bpy.ops.object.select_all(action="DESELECT")
+    arm.select_set(True)
+    body.select_set(True)
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.export_scene.gltf(filepath=BODY_OUT, export_format="GLB", use_selection=True, export_skins=True, export_animations=False,
+                              export_yup=True, export_vertex_color="ACTIVE")
+    print("BODY", BODY_OUT)
 
 # Nothing else rides along (the scene may hold strays).
 for o in [o for o in bpy.data.objects if o not in made and o not in (arm, body)]:
