@@ -54,6 +54,11 @@ public static class Loadouts
     /// Quaternius bodies, so nothing goes over it: no hood, no hairstyle.</summary>
     public const string HerBody = "woman";
 
+    /// <summary>A woman survivor's outfit for her calling, as the view knows
+    /// it ("her:" and its name: People.HerOutfit; the stalker wears the
+    /// ranger's).</summary>
+    public static string HerOutfit(string archetype) => "her:" + (archetype == "stalker" ? "ranger" : archetype);
+
     /// <summary>The survivor as their character sheet has them.</summary>
     public static Loadout Of(CharacterData ch)
     {
@@ -70,7 +75,7 @@ public static class Loadouts
         string? cloak = ch.Cloak == "none" ? null : Lore.CloakDyes.FirstOrDefault(d => d.Id == ch.Cloak)?.Color;
         var person = new PersonSpec
         {
-            Sex = sex, Body = her ? HerBody : null, Outfit = her ? new List<string>() : OutfitOf(ch.Archetype, sex, hood),
+            Sex = sex, Body = her ? HerBody : null, Outfit = her ? new List<string> { HerOutfit(ch.Archetype) } : OutfitOf(ch.Archetype, sex, hood),
             Hair = her || hood || ch.HairStyle == "none" ? null : ch.HairStyle ?? Lore.HairStyles(sex)[0],
             Beard = sex == Sex.Male && (ch.Beard ?? true),
             HairColor = string.IsNullOrEmpty(hair) ? null : hair, Skin = string.IsNullOrEmpty(skin) ? null : skin, Figure = ch.Figure,

@@ -56,7 +56,8 @@ public class LoadoutTests
         }, 1, 7);
         var p = Loadouts.Of(ch).Person;
         Assert.Equal(Loadouts.HerBody, p.Body);
-        Assert.Empty(p.Outfit!);
+        // Her own outfit for her calling, not the Quaternius clothes.
+        Assert.Equal(new[] { Loadouts.HerOutfit(archetype) }, p.Outfit!);
         // Her hair is her own: no hairstyle goes over it (its colour still dyes it).
         Assert.Null(p.Hair);
         // The calling's first colours are its own, undyed: her suit as it was made.

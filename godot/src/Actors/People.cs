@@ -92,6 +92,8 @@ public static class People
         // reference pictures (tools/assets/bind_scan.py), for trying it.
         if (body == SurvivorUnchained.Play.Loadouts.HerBody && Args.Get("body") == "heroine" && ResourceLoader.Exists("res://art/people/heroine.glb")) body = "heroine";
         var p = body switch { SurvivorUnchained.Play.Loadouts.HerBody => Woman(look), "heroine" => Heroine(look), "anime" => Her(look), _ => Build(look) };
+        // Her body wears her calling's outfit, cut from it.
+        if (body == "heroine" && look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string her) HerOutfit(p, her[4..]);
         // A child's larger head.
         if (spec.Head is double h && h != 1)
         {
