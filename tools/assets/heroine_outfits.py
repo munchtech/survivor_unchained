@@ -626,8 +626,80 @@ def rim_loops(pos, tris):
     return loops
 
 
-ROUND_RIM = 60      # rounds of smoothing a cup's outline gets
-FULLER = 0.012      # a cup stands this much prouder than her breast
+ROUND_RIM = 20      # rounds of smoothing a cup's outline gets
+FILLED_BVH = None
+
+
+def bra_cup(pos, tris, edge, skin, skin_n, lift, blend=0.0):
+    """A cup shaped as a bra's is: an ellipsoid (a sphere stretched along
+    the breast's own axes) fitted to the front of her breast under it (not
+    the fold beneath, which faces down), as large as her breast and `lift`
+    more, the even grid laid on it straight out from its centre; only its
+    last `blend` toward the edge eases onto the edge itself. Her skin under
+    it is not drawn, so it need not clear any bump of hers."""
+    out = pos.copy()
+    for side in (pos[:, 0] < 0, pos[:, 0] >= 0):
+        sk = skin[(skin[:, 0] < 0) == (side[0] if False else bool(pos[side][0, 0] < 0))] if side.any() else None
+        if sk is None:
+            continue
+        sn = skin_n[(skin[:, 0] < 0) == bool(pos[side][0, 0] < 0)]
+        front = sk[(sn[:, 1] < -0.25)]
+        if len(front) < 30:
+            continue
+        m = front.mean(0)
+        _, _, R = np.linalg.svd(front - m)
+        q = (front - m) @ R.T
+        k, *_ = np.linalg.lstsq(np.c_[q ** 2, q], np.ones(len(q)), rcond=None)
+        A, B, C, D, E, F = k
+        if min(A, B, C) <= 0:
+            print("BRA CUP fit not an ellipsoid", (A, B, C))
+            continue
+        cl = -np.array([D / (2 * A), E / (2 * B), F / (2 * C)])
+        g = 1 + A * cl[0] ** 2 + B * cl[1] ** 2 + C * cl[2] ** 2
+        ax = np.sqrt(g / np.array([A, B, C])) + lift
+        c = m + cl @ R
+        v = pos[side]
+        loc = (v - c) @ R.T
+        on = c + (loc / np.sqrt(((loc / ax) ** 2).sum(1))[:, None]) @ R
+        t = np.clip(edge[side] / blend, 0, 1)[:, None] if blend > 0 else np.ones((side.sum(), 1))
+        t = t * t * (3 - 2 * t)
+        out[side] = v * (1 - t) + on * t
+        print("BRA CUP axes", (ax * 100).round(1), "cm")
+    return out
+
+
+def onto_breast(pos, tris, lift, rounds=150):
+    """A cup's even grid laid on her breast as it is (the areola filled in,
+    nothing else changed): each point sent straight in or out to her skin,
+    lifted, then ironed smooth without shrinking, so the cup has her own
+    round shape, close-fitting, with no crease or bump in it."""
+    global FILLED_BVH
+    if FILLED_BVH is None:
+        FILLED_BVH = BVHTree.FromPolygons([tuple(p) for p in P_FILLED], TRI.tolist())
+    e = np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
+    uk, c = np.unique(np.sort(e, 1), axis=0, return_counts=True)
+    rim = np.zeros(len(pos), bool)
+    rim[uk[c == 1].ravel()] = True
+    out = pos.copy()
+    for side in (pos[:, 0] < 0, pos[:, 0] >= 0):
+        q = pos[side & rim]
+        if len(q) < 10:
+            continue
+        _, _, R = np.linalg.svd(q - q.mean(0))
+        n = R[2]
+        if n[1] > 0:
+            n = -n            # out of her front
+        for i in np.where(side & ~rim)[0]:
+            best = None
+            for d in (n, -n):
+                hit = FILLED_BVH.ray_cast(Vector(pos[i] - d * 0.002), Vector(d), 0.2)
+                if hit[0] is not None and (best is None or hit[3] < best[1]):
+                    best = (np.array(hit[0][:]), hit[3], np.array(hit[1][:]))
+            if best is not None:
+                out[i] = best[0] + best[2] * lift
+    out = taubin(out, tris, rounds=rounds)
+    return out
+FULLER = 0.005      # how far a cup stands off her skin
 
 
 def even_cup(pos, at, tris, h=0.004):
@@ -830,7 +902,7 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     if dome:
         cut_from, cut_at = pos.copy(), at.copy()
         pos, at, tris = even_cup(pos, at, tris)
-        pos = bubble(pos, tris, lift if clear is None else clear, at[:, :3], ref=cut_from)
+        pos = bra_cup(pos, tris, at[:, -1], cut_from, cut_at[:, :3], FULLER)
         # Weights, normals and any cut, from where each point of the bowl
         # now stands over the sheet it replaced.
         _, j = cKDTree(cut_from).query(pos)
@@ -964,22 +1036,26 @@ def bottom(style, top=0.075, side_rise=0.05, gusset=0.022):
     return OR(panel, band)
 
 
-def cups(cover=0.62, plunge=0.02, band=0.03):
-    """A cup over each breast and the band under them: the cup takes the
-    breast to `cover` of its height above the nipple, and its inner edge
-    leaves `plunge` of the cleavage bare."""
+# Nothing but a cup on her breasts (a band or corset running up under one
+# would stand off it as a shelf): positive off them, in metres-ish.
+OFF_BREAST = (0.04 - wsum("breast_l", "breast_r")) * 0.3
+
+
+def cups(cover=0.62, plunge=0.02, band=0.03, over=0.022, reach=0.088):
+    """A half-cup under each breast and the band under them: the cup holds
+    the breast from below, its top edge `over` above the nipple and dipping
+    toward the middle, so the upper breast shows; `reach` is how far round
+    the breast it comes; its inner edge leaves `plunge` of the cleavage
+    bare. (`cover` is kept for callers; the nipple sets the line.)"""
     parts = []
     for sd, s in (("l", 1), ("r", -1)):
         n = NIP[sd]
+        nip = NIPPLE[sd]
         c = n + np.array([0, 0.035, -0.012])
         r = np.linalg.norm(P - c, axis=1)
-        top = n[2] + 0.075 * cover - np.maximum(0, (n[0] - X) * s) * 0.35   # the inner top dips toward the middle
-        # Never below 3.5 cm over the nipple itself (hers sit high and to
-        # the outside, above the breast's most forward point).
-        nip = NIPPLE[sd]
-        top = np.maximum(top, nip[2] + 0.035 - 0.5 * np.maximum(0, abs(nip[0]) - np.abs(X)) - 0.8 * np.maximum(0, np.abs(X) - abs(nip[0]) - 0.03))
-        parts.append(AND(0.098 - r, top - Z, X * s - plunge, -(Y - 0.02)))
-    ub = AND(Z - (UNDERBUST - band), UNDERBUST + 0.006 - Z, 0.4 - ARMW["l"] - ARMW["r"])
+        top = nip[2] + over - 0.45 * np.maximum(0, abs(nip[0]) - np.abs(X)) - 0.3 * np.maximum(0, np.abs(X) - abs(nip[0]) - 0.02)
+        parts.append(AND(reach - r, top - Z, X * s - plunge, -(Y - 0.02)))
+    ub = AND(Z - (UNDERBUST - band), UNDERBUST + 0.006 - Z, 0.4 - ARMW["l"] - ARMW["r"], OFF_BREAST)
     return OR(*parts), ub
 
 
@@ -1009,6 +1085,92 @@ def cap(center, radius):
 
 def shoulder(sd):
     return head(f"upperarm_{sd}") + np.array([0.02 * (1 if sd == "l" else -1), 0, 0.06])
+
+
+def smooth_cups(name, mkey, size=1.0, lift=0.005, thick=0.003, trim=None):
+    """A pair of cups made as smooth domes, not cut from her skin: an
+    ellipsoid fitted to the front of her right breast (the areola filled),
+    a patch of it round the nipple with a clean rounded outline (round
+    below, rising a little toward the top inner corner), lifted `lift` off
+    her, and the same mirrored onto her left. `size` scales the patch.
+    Weights from the nearest point of her skin, so the cups move (and
+    jiggle) with her breasts; the skin under them is hidden."""
+    sd, s_ = "r", -1
+    nip = NIPPLE[sd]
+    near = (np.linalg.norm(P_FILLED - nip, axis=1) < 0.075) & (N[:, 1] < -0.3) & (P[:, 0] * s_ > 0.01)
+    q0 = P_FILLED[near]
+    m = q0.mean(0)
+    _, _, R = np.linalg.svd(q0 - m)
+    q = (q0 - m) @ R.T
+    k, *_ = np.linalg.lstsq(np.c_[q ** 2, q], np.ones(len(q)), rcond=None)
+    A, B, C, D, E, F = k
+    cl = -np.array([D / (2 * A), E / (2 * B), F / (2 * C)])
+    g = 1 + A * cl[0] ** 2 + B * cl[1] ** 2 + C * cl[2] ** 2
+    ax = np.sqrt(g / np.array([A, B, C]))
+    c = m + cl @ R
+    # Grown just enough to clear her front under it, then lifted.
+    loc = (q0 - c) @ R.T
+    ax = ax * np.sqrt(((loc / ax) ** 2).sum(1)).max() + lift
+    print("CUP ellipsoid axes", (ax * 100).round(1), "cm")
+
+    def on(d):
+        l = d @ R.T
+        return c + (l / np.sqrt(((l / ax) ** 2).sum(1))[:, None]) @ R
+
+    # The patch: directions round the one through the nipple; its outline
+    # in angle, round with a lift toward up-and-in.
+    z = nip - c
+    z /= np.linalg.norm(z)
+    up = np.array([0.0, 0.0, 1.0]) - z[2] * z
+    up /= np.linalg.norm(up)
+    side = np.cross(z, up)
+    inward = np.array([-s_, 0, 0])
+    if side @ inward < 0:
+        side = -side
+    peak = 0.75 * up + 0.35 * side
+    peak /= np.linalg.norm(peak)
+    base = math.radians(42) * size
+    nr, na = 40, 120
+    phi = np.linspace(0, 2 * np.pi, na, endpoint=False)
+    dirc = np.cos(phi)[:, None] * up + np.sin(phi)[:, None] * side
+    lobe = np.clip(dirc @ peak, 0, 1) ** 3
+    tmax = base * (1 + 0.35 * lobe) * (1 - 0.12 * np.clip(-(dirc @ up), 0, 1))
+    tmax = (np.roll(tmax, 1) + 2 * tmax + np.roll(tmax, -1)) / 4
+    pts, edge = [z[None]], [np.array([tmax.min()])]
+    for i in range(1, nr + 1):
+        t = tmax * i / nr
+        d = np.cos(t)[:, None] * z + np.sin(t)[:, None] * dirc
+        pts.append(d)
+        edge.append(tmax - t)
+    dirs = np.vstack(pts)
+    pos = on(dirs)
+    # Edge distance in metres (for the trim): angle left times the radius.
+    rad = np.linalg.norm(pos - c, axis=1)
+    edge = np.concatenate(edge) * rad
+    tris = [(0, 1 + j, 1 + (j + 1) % na) for j in range(na)]
+    for i in range(nr - 1):
+        a0, b0 = 1 + i * na, 1 + (i + 1) * na
+        for j in range(na):
+            j1 = (j + 1) % na
+            tris += [(a0 + j, b0 + j, b0 + j1), (a0 + j, b0 + j1, a0 + j1)]
+    tris = np.array(tris)
+    nor = vertex_normals(pos, tris)
+    if (nor * (pos - c)).sum(1).mean() < 0:
+        tris = tris[:, ::-1]
+        nor = -nor
+    _, j = cKDTree(P).query(pos)
+    wt = W[j].astype(float)
+    # Mirrored: her left is her right's image.
+    mp = pos * np.array([-1, 1, 1])
+    pos2 = np.vstack([pos, mp])
+    wt2 = np.vstack([wt, wt[:, SWAP]])
+    nor2 = np.vstack([nor, nor * np.array([-1, 1, 1])])
+    tris2 = np.vstack([tris, tris[:, ::-1] + len(pos)])
+    at = np.hstack([nor2, wt2, np.r_[edge, edge][:, None]])
+    made = trimmed(name, pos2, at, tris2, mkey, thick, 0.0012, trim)
+    for o in made:
+        o["hides"] = True
+    return made
 
 
 def trimmed(name, pos, at, tris, mkey, thick, bevel, trim):
@@ -1192,7 +1354,7 @@ def warden():
         return ("gold", w, 0.0004, 0.0015)
 
     out = [
-        *piece("warden.cups", cup, "steel", lift=0.009, thick=0.003, clear=0.0015, dome=True, trim=gold()),
+        *smooth_cups("warden.cups", "steel", trim=gold()),
         *piece("warden.band", band, "darkleather", lift=0.003, smooth=3),
         *piece("warden.straps", shoulder_straps(), "darkleather", lift=0.0035, soften=0),
         *piece("warden.bottom", bot, "darkleather", lift=0.003, smooth=2),
@@ -1226,7 +1388,7 @@ def arcanist():
     arms = ARMW["l"] + ARMW["r"]
     ctop = UNDERBUST + 0.012 + 0.07 * (1 - FRONT)
     cbot = 1.012 - 0.04 * np.exp(-(X / 0.04) ** 2) * FRONT
-    corset = AND(ctop - Z, Z - cbot, 0.35 - arms)
+    corset = AND(ctop - Z, Z - cbot, 0.35 - arms, OFF_BREAST)
     belt_z = 1.0 + 0.035 * X / 0.18
     belt = AND(0.016 - np.abs(Z - belt_z), 0.3 - arms)
     bones = OR(*[front_line(x, UNDERBUST - 0.022, x * 0.8, 1.025 - 0.025 * (abs(x) < 0.05), 0.009)
@@ -1237,7 +1399,7 @@ def arcanist():
     mantle = OR(cap(shoulder("l"), 0.14), cap(shoulder("r"), 0.14),
                 AND(Z - 1.43, (Y - 0.0), 0.3 - arms))
     out = [
-        *piece("arcanist.cups", cup, "arcvelvet", lift=0.009, thick=0.0025, clear=0.0015, dome=True, trim=gold(), cut=low),
+        *smooth_cups("arcanist.cups", "arcvelvet", thick=0.0025, trim=gold()),
         *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=6, trim=gold(0.007)),
         *piece("arcanist.boning", bones, "gold", lift=0.0095, thick=0.0015, smooth=6, soften=1),
         *piece("arcanist.briefs", bottom("full"), "arcvelvet", lift=0.0025, smooth=2),
@@ -1287,7 +1449,7 @@ def ranger():
     hips = AND(1.06 - Z, Z - (CROTCH - 0.03), 0.3 - arms)
     lower = OR(AND(hips, OR(X + 0.01, bottom("full", top=0.11, side_rise=0.09))), limb("l", 0.0, KNEE_S + 0.05))
     ctop = UNDERBUST + 0.008 + 0.05 * (1 - FRONT)
-    corset = AND(ctop - Z, Z - (1.03 - 0.03 * np.exp(-(X / 0.05) ** 2) * FRONT), 0.35 - arms)
+    corset = AND(ctop - Z, Z - (1.03 - 0.03 * np.exp(-(X / 0.05) ** 2) * FRONT), 0.35 - arms, OFF_BREAST)
     lz = np.linspace(UNDERBUST - 0.03, 1.05, 9)
     lacing = AND(front_poly([((0.02 if i % 2 else -0.02), z) for i, z in enumerate(lz)], 0.011), corset - 0.003)
     belt_z = 1.0 - 0.035 * X / 0.18
@@ -1295,7 +1457,7 @@ def ranger():
     thigh = limb("r", 0.13, 0.165)
     fingers = wsum(*[n for n in BONES if n.split("_")[0] in ("index", "middle", "ring", "pinky", "thumb") and n.split("_")[1] in ("02", "03")])
     out = [
-        *piece("ranger.cups", cup, "greenleather", lift=0.009, thick=0.0025, clear=0.0015, dome=True, trim=gold(0.006, "brownleather")),
+        *smooth_cups("ranger.cups", "greenleather", thick=0.0025, trim=gold(0.006, "brownleather")),
         *piece("ranger.upper", upper_l, "greenleather", lift=0.003, smooth=4),
         *piece("ranger.collar", collar, "greenleather", lift=0.004, smooth=4, keep_off=("Head",), trim=gold(0.006, "brownleather")),
         *piece("ranger.halter", halter, "brownleather", lift=0.005, soften=0),
