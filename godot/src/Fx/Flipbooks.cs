@@ -16,10 +16,12 @@ public partial class Flipbooks : Node3D
     /// over the world) and how softly it meets the ground.</summary>
     static readonly Dictionary<string, (float Add, float Soft)> Looks = new()
     {
-        ["fire_blast"] = (0.45f, 0.5f), ["fire_loop"] = (0.85f, 0.4f), ["frost_burst"] = (0.7f, 0.5f),
-        ["storm_strike"] = (1f, 0.3f), ["holy_burst"] = (0.95f, 0.5f), ["shadow_burst"] = (0.35f, 0.5f),
-        ["nature_burst"] = (0.85f, 0.5f), ["blood_burst"] = (0f, 0.3f), ["dust_ring"] = (0f, 0.6f),
-        ["smoke_puff"] = (0f, 0.8f), ["sparks"] = (1f, 0.2f), ["ember_motes"] = (1f, 0.3f), ["arcane_burst"] = (0.9f, 0.5f),
+        // The pale schools are drawn less as light and more as colour laid
+        // over the ground: added, their bright clips burn to white in the bloom.
+        ["fire_blast"] = (0.45f, 0.5f), ["fire_loop"] = (0.85f, 0.4f), ["frost_burst"] = (0.3f, 0.5f),
+        ["storm_strike"] = (0.7f, 0.3f), ["holy_burst"] = (0.55f, 0.5f), ["shadow_burst"] = (0.3f, 0.5f),
+        ["nature_burst"] = (0.6f, 0.5f), ["blood_burst"] = (0f, 0.3f), ["blood_splat"] = (0f, 0.3f), ["blood_spray"] = (0f, 0.3f),
+        ["dust_ring"] = (0f, 0.6f), ["smoke_puff"] = (0f, 0.8f), ["sparks"] = (1f, 0.2f), ["ember_motes"] = (1f, 0.3f), ["arcane_burst"] = (0.6f, 0.5f),
     };
 
     struct Play

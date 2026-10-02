@@ -18,23 +18,25 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # still, so it cuts cleanly into a flipbook and sits on any ground.
 FRAME = ("Visual effects element for a video game, isolated on a pure black background, "
          "locked-off camera, seen from high above looking down at a steep angle, "
-         "high contrast, nothing else in frame, no ground, no scenery, no text. ")
+         "high contrast, nothing else in frame, no ground, no scenery, no text. "
+         "The effect stays small and contained in the middle of the frame, with wide empty black space "
+         "all around it; it never reaches the edges of the frame. ")
 
 CLIPS = {
     "fire_blast": ("A violent burst of orange fire explodes outward in a ring from a single point at the centre, "
                    "roiling flames and glowing embers flung outward, then it curls into dark smoke and fades to black.", 3, 11),
     "fire_loop": ("A steady campfire flame seen from above, tongues of yellow and orange fire licking upward and "
-                  "flickering continuously, sparks drifting up, the flame never changes size.", 4, 12),
+                  "flickering continuously, sparks drifting up, the flame never changes size.", 4, 212),
     "frost_burst": ("A burst of pale blue ice and frost explodes outward from the centre, sharp ice crystals and "
-                    "glittering cold mist spray out in a ring, then the frost vapour drifts and fades to black.", 3, 13),
+                    "glittering cold mist spray out in a ring, then the frost vapour drifts and fades to black.", 3, 213),
     "storm_strike": ("A bolt of bright blue-white lightning strikes down into the centre, a blinding flash, branching "
                      "electric arcs crackle outward along the ground in every direction, then flicker out to black.", 2, 14),
     "holy_burst": ("A radiant burst of warm golden holy light blooms from the centre, soft rays and glowing motes "
-                   "spread outward in a ring, shimmering, then the light gently fades to black.", 3, 15),
+                   "spread outward in a ring, shimmering, then the light gently fades to black.", 3, 215),
     "shadow_burst": ("A burst of dark violet shadow magic erupts from the centre, writhing smoky tendrils and purple "
-                     "sparks lash outward, then the dark wisps dissolve and fade to black.", 3, 16),
+                     "sparks lash outward, then the dark wisps dissolve and fade to black.", 3, 216),
     "nature_burst": ("A burst of vivid green spectral nature magic erupts from the centre, swirling glowing green "
-                     "wisps, leaves of light and spores spiral outward, then fade to black.", 3, 17),
+                     "wisps, leaves of light and spores spiral outward, then fade to black.", 3, 217),
     "blood_splat": ("Top-down overhead shot of a single gush of thick dark red blood splashing onto a black floor: a "
                     "heavy central splash with long radial streaks, spatter and droplets thrown outward, glossy and wet, "
                     "realistic, cinematic horror film gore, the splash spreads and settles.", 2, 31),
@@ -45,11 +47,11 @@ CLIPS = {
     "dust_ring": ("A heavy ground impact seen from above: a ring of brown dust and dirt and small stones blasts "
                   "outward from the centre in a shockwave, then the dust cloud settles and thins to black.", 3, 19),
     "smoke_puff": ("A thick puff of grey smoke billows outward and upward from the centre, soft and rolling, "
-                   "then slowly thins and fades to black.", 3, 20),
+                   "then slowly thins and fades to black.", 3, 220),
     "sparks": ("A shower of bright orange-white sparks bursts from the centre, hot metal sparks flying outward "
-               "in every direction with short glowing trails, then they cool and vanish.", 2, 21),
+               "in every direction with short glowing trails, then they cool and vanish.", 2, 221),
     "ember_motes": ("Glowing orange embers and tiny sparks float and swirl gently upward through the frame, "
-                    "drifting, flickering, continuous, no flames.", 4, 22),
+                    "drifting, flickering, continuous, no flames.", 4, 222),
     "arcane_burst": ("A burst of bright magenta and violet arcane energy erupts from the centre, a ring of crackling "
                      "glowing runes and light shards spreads outward, then it shimmers and fades to black.", 3, 23),
 }
@@ -71,6 +73,10 @@ def main():
                         "--set", f"405:376.value={json.dumps(FRAME + text)}",
                         "--set", f"405:362.value={seconds}",
                         "--set", f"405:339.noise_seed={seed}",
+                        # Square, so a burst has room to finish in every
+                        # direction: in 16:9 it ran into the top and bottom of
+                        # the frame and was cut off in straight lines.
+                        "--set", "409.aspect_ratio=\"1:1 (Square)\"",
                         "--out", tmp], check=True)
         made = [f for f in os.listdir(tmp) if f.endswith(".mp4")]
         os.replace(os.path.join(tmp, made[0]), dst)

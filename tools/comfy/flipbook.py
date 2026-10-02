@@ -43,7 +43,7 @@ def main():
     # (frost, lightning) is cut off there in straight lines, and the square
     # crop reaches past the frame's top and bottom, so those lines would show.
     fh, fw = frames.shape[1:3]
-    band = 0.12 * min(fh, fw)
+    band = 0.25 * min(fh, fw)
     yy = np.minimum(np.arange(fh), fh - 1 - np.arange(fh))[:, None]
     xx = np.minimum(np.arange(fw), fw - 1 - np.arange(fw))[None, :]
     border = np.clip(np.minimum(yy, xx) / band, 0, 1)
@@ -68,6 +68,12 @@ def main():
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
     side = max(x1 - x0, y1 - y0) * (1 + a.pad * 2)
     h, w = peak.shape
+    # Never past the clip's own frame: its edge inside the cell would show as
+    # a straight line however softly the cell fades. The round fade of the
+    # cell then takes whatever reaches the frame's edge away to nothing.
+    side = min(side, w, h)
+    cx = min(max(cx, side / 2), w - side / 2)
+    cy = min(max(cy, side / 2), h - side / 2)
     half = side / 2
     box = (int(cx - half), int(cy - half), int(cx + half), int(cy + half))
 
@@ -95,7 +101,19 @@ def main():
         rgb = np.clip(c, 0, 1) * edge[..., None]
         y, x = divmod(k, a.grid)
         atlas[y * a.cell:(y + 1) * a.cell, x * a.cell:(x + 1) * a.cell] = np.dstack([rgb, alpha])
+    # No frame may carry light out to the edge of its cell: that shows in the
+    # game as the square of the cell. The share of each frame's alpha in the
+    # outer band of its cell (past nine tenths of the way out), the worst of
+    # them reported (and flagged above 1%).
+    ring = (r > 0.9).astype(np.float32)
+    worst = 0.0
+    for k in range(count):
+        y, x = divmod(k, a.grid)
+        al = atlas[y * a.cell:(y + 1) * a.cell, x * a.cell:(x + 1) * a.cell, 3]
+        if al.sum() > 1:
+            worst = max(worst, float((al * ring).sum() / al.sum()))
     Image.fromarray((atlas * 255 + 0.5).astype(np.uint8), "RGBA").save(a.out)
+    print(f"edge share {worst * 100:.2f}%" + ("  TOO MUCH AT THE EDGE" if worst > 0.01 else ""))
     meta = {"grid": a.grid, "frames": count, "fps": round(count / max(1e-3, (i1 - i0) / 24), 2), "source": a.clip.replace("\\", "/").split("/")[-1]}
     with open(a.out.rsplit(".", 1)[0] + ".json", "w") as fh:
         json.dump(meta, fh)

@@ -26,6 +26,9 @@ public partial class BattleFx : Node3D
     public readonly Hits Hits = new();
     /// <summary>Filmed effects cut into atlases: blasts, flame, smoke, magic.</summary>
     public readonly Flipbooks Books = new();
+    /// <summary>What blows leave on the ground: scorch, frost, cracks, sigils.</summary>
+    public readonly Scars Scars = new();
+    public readonly Shockwaves Waves = new();
     /// <summary>Blood, pools and what a burst body throws (its Level: the settings' gore).</summary>
     public readonly Gore Gore;
     public FollowCamera? Cam;
@@ -72,6 +75,8 @@ public partial class BattleFx : Node3D
         AddChild(Sparks);
         AddChild(Smoke);
         AddChild(Books);
+        AddChild(Scars);
+        AddChild(Waves);
         AddChild(Hits);
         AddChild(Gore);
         for (int i = 0; i < 8; i++)
@@ -289,19 +294,113 @@ public partial class BattleFx : Node3D
     static float GlowOf(School s) => s switch
     {
         School.Fire => 1.8f, School.Shadow => 1.6f, School.Nature => 1.35f, School.Arcane => 1.35f,
-        School.Frost => 1.05f, School.Storm => 1.15f, School.Holy => 1.05f, _ => 1f,
+        School.Frost => 0.7f, School.Storm => 1.15f, School.Holy => 1.05f, _ => 1f,
     };
 
-    public bool Blast(double x, double z, School school, float radius, float life = 0.9f, float glow = -1)
+    /// <summary>What each school leaves on the ground, and for how long.</summary>
+    static (string Mark, float Size, float Life, float Spin) ScarOf(School s) => s switch
     {
+        School.Fire => ("scorch", 0.7f, 9, 0), School.Frost => ("frost", 0.55f, 6, 0), School.Storm => ("scorch", 0.45f, 6, 0),
+        School.Holy => ("sigil", 0.75f, 1.6f, 0.5f), School.Shadow => ("blight", 0.55f, 6, 0), School.Nature => ("roots", 0.75f, 3, 0),
+        School.Arcane => ("runes", 0.75f, 1.6f, -0.7f), _ => ("crack", 0.65f, 9, 0),
+    };
+
+    /// <summary>A school's blow landing on the ground, in the layers a blast
+    /// is made of: a white-hot flash for a few frames, the air thrown out
+    /// (a ring that bends the picture), the burst itself (filmed), what it
+    /// throws (embers, shards, sparks, motes, clods), smoke or mist rising
+    /// after, its light, and the mark it leaves. `radius` is the reach of the
+    /// blow. A light blast (a weapon's pulse, every few seconds) is the burst
+    /// and what it throws only: the flash, the light and the mark are for the
+    /// blows that should stop the eye. False if the school has no filmed
+    /// burst yet (the caller draws what it drew before).</summary>
+    /// <summary>For finding which layer of a blast draws what: FX_LAYERS, a
+    /// set of letters (f flash, w wave, b burst, d debris, s smoke, l light,
+    /// m mark); unset, all of them.</summary>
+    static readonly string FxLayers = System.Environment.GetEnvironmentVariable("FX_LAYERS") ?? "fwbdslm";
+    static bool On(char layer) => FxLayers.Contains(layer);
+
+    public bool Blast(double x, double z, School school, float radius, float life = 0.9f, float glow = -1, bool light = false)
+    {
+        if (!Flipbooks.Has(BlastOf(school))) return false;
         if (glow < 0) glow = GlowOf(school);
-        float gy = Y(x, z);
-        var tint = new Color(glow, glow, glow, 1);
-        // Flat, but above the grass: under it the blades cut through the fire.
-        if (!Books.Spawn(BlastOf(school), V(x, gy + 0.55, z), radius * 1.2f, life, tint, flat: true, sizeEnd: radius * 2.4f)) return false;
-        // Standing up out of it, toward the camera: the same burst, smaller, so it has height.
-        Books.Spawn(BlastOf(school), V(x, gy + radius * 0.35, z), radius * 0.9f, life * 0.8f, tint * new Color(0.8f, 0.8f, 0.8f, 0.7f), sizeEnd: radius * 1.6f);
+        float gy = Y(x, z), r = radius;
+        var pal = Palette.Of(school);
+        var ground = V(x, gy, z);
+
+        if (light)
+        {
+            Books.Spawn(BlastOf(school), ground + Vector3.Up * 0.55f, r * 1.1f, life * 0.8f, new Color(glow * 0.7f, glow * 0.7f, glow * 0.7f, 0.8f), flat: true, sizeEnd: r * 2.1f);
+            for (int i = 0; i < 6; i++)
+            {
+                float a = R() * Mathf.Tau, v = r * (1 + R() * 2);
+                Sparks.Spawn(ground + Vector3.Up * 0.5f, new Vector3(Mathf.Cos(a) * v, 1 + R() * 2, Mathf.Sin(a) * v), 0.4f + R() * 0.3f, 0.06f, pal.Core, pal.Glow, 0.02f, 2, 2);
+            }
+            return true;
+        }
+        // The instant: brighter than anything else in the frame, gone in a breath.
+        if (On('f')) Sparks.Spawn(ground + Vector3.Up * 0.9f, Vector3.Zero, 0.07f, r * 0.5f, new Color(1.8f, 1.7f, 1.6f), pal.Core * 0.5f, r * 1.1f, alpha: 0.8f);
+        // The air thrown out.
+        if (On('w')) Waves.Add(ground + Vector3.Up * 0.35f, r * 1.7f, 0.35f, pal.Glow, school == School.Holy ? 0.6f : 1);
+        // The burst, flat on the ground and above the grass.
+        var tint = school == School.Frost ? new Color(glow * 0.8f, glow * 0.92f, glow * 1.15f, 1) : new Color(glow, glow, glow, 1);
+        if (On('b')) Books.Spawn(BlastOf(school), ground + Vector3.Up * 0.55f, r * 1.2f, life, tint, flat: true, sizeEnd: r * 2.4f);
+        // What it throws.
+        int n = On('d') ? Math.Min(48, 12 + (int)(r * 8)) : 0;
+        for (int i = 0; i < n; i++)
+        {
+            float a = R() * Mathf.Tau, v = r * (1.5f + R() * 3.5f);
+            var out_ = new Vector3(Mathf.Cos(a) * v, 0, Mathf.Sin(a) * v);
+            var from = ground + Vector3.Up * 0.5f;
+            switch (school)
+            {
+                case School.Fire:
+                    Sparks.Spawn(from, out_ + Vector3.Up * (3 + R() * 5), 0.5f + R() * 0.7f, 0.06f + R() * 0.06f, new Color(2.6f, 1.2f, 0.3f), new Color(1.4f, 0.25f, 0.05f), 0.02f, 9, 1.5f);
+                    break;
+                case School.Frost:
+                    Sparks.Spawn(from, out_ + Vector3.Up * (2 + R() * 4), 0.45f + R() * 0.4f, 0.07f + R() * 0.07f, new Color(1.3f, 1.7f, 2.2f), new Color(0.5f, 0.8f, 1.4f), 0.03f, 14, 1.2f, sprite: Sprites.Of("star"), spinV: 6);
+                    break;
+                case School.Storm:
+                    Sparks.Spawn(from, out_ * 1.8f + Vector3.Up * (1 + R() * 3), 0.18f + R() * 0.2f, 0.05f, new Color(1.6f, 2f, 2.8f), new Color(0.6f, 0.9f, 2f), 0.01f, 4, 3);
+                    break;
+                case School.Holy or School.Nature or School.Arcane:
+                    Sparks.Spawn(from + out_ * 0.1f, out_ * 0.25f + Vector3.Up * (1.5f + R() * 2.5f), 0.9f + R() * 0.8f, 0.07f + R() * 0.06f, pal.Core, pal.Glow, 0.02f, -0.6f, 1.6f);
+                    break;
+                case School.Shadow:
+                    Sparks.Spawn(from, out_ * 0.6f + Vector3.Up * (1 + R() * 2), 0.6f + R() * 0.5f, 0.07f, pal.Core, pal.Dim, 0.02f, 2, 2);
+                    break;
+                default:
+                    Smoke.Spawn(from, out_ * 0.8f + Vector3.Up * (3 + R() * 4), 0.7f + R() * 0.3f, 0.12f + R() * 0.12f, new Color("#4a3a2a"), gravity: 14, sprite: Sprites.Of("dirt"), spinV: 4);
+                    break;
+            }
+        }
+        // What hangs in the air after.
+        if (!On('s')) { }
+        else if (school is School.Fire or School.Physical or School.Shadow)
+        {
+            // Thin and soon gone: smoke that lingers hides the next fight.
+            var smoke = school == School.Shadow ? new Color(0.5f, 0.35f, 0.7f, 0.5f) : school == School.Physical ? new Color(0.75f, 0.62f, 0.5f, 0.45f) : new Color(0.45f, 0.42f, 0.4f, 0.42f);
+            for (int i = 0; i < 4; i++)
+                Smoke.Spawn(ground + new Vector3((R() - 0.5f) * r * 0.6f, 0.6f + R() * 0.4f, (R() - 0.5f) * r * 0.6f), new Vector3((R() - 0.5f) * 0.6f, 0.8f + R() * 0.6f, (R() - 0.5f) * 0.6f), 1.2f + R() * 0.6f, r * 0.35f, smoke, smoke * 0.6f, r * 0.8f, drag: 1.2f, alpha: smoke.A);
+        }
+        else if (school == School.Frost)
+            for (int i = 0; i < 3; i++)
+                Smoke.Spawn(ground + new Vector3((R() - 0.5f) * r * 0.8f, 0.4f, (R() - 0.5f) * r * 0.8f), new Vector3(0, 0.25f, 0), 1.4f, r * 0.4f, new Color(0.75f, 0.85f, 1f), new Color(0.6f, 0.7f, 0.9f), r * 0.9f, drag: 1.5f, alpha: 0.18f);
+        // Its light.
+        if (On('l')) Flash(ground + Vector3.Up * 1.4f, pal.Light, 12 * glow, 0.3f + r * 0.04f, r * 3 + 4);
+        // And what it leaves behind.
+        var (mark, size, last, spin) = ScarOf(school);
+        if (On('m')) Scars.Add(mark, ground, r * size, last, spin);
         return true;
+    }
+
+    /// <summary>A strike from the sky arriving: a thin hot pillar, its
+    /// school's burst on the ground, and the light of it.</summary>
+    void Land(double x, double z, School school, Vector3 at, float r, Palette.Hues pal)
+    {
+        Pillar(at, 16, 0.18f + r * 0.05f, pal.Core, 0.18f);
+        Blast(x, z, school, Mathf.Max(1.2f, r), 0.6f);
+        Flash(at + Vector3.Up * 2, pal.Light, 8, 0.25f, 10);
     }
 
     void Nova(double x, double z, float radius, Color color, float life)
@@ -391,7 +490,8 @@ public partial class BattleFx : Node3D
                     }
                     if (e.Crit)
                     {
-                        Sparks.Spawn(at, Vector3.Zero, 0.22f, 1.1f, Palette.Of(e.School).Core, sizeEnd: 0.25f, sprite: Sprites.Of("star"), spinV: 4);
+                        if (!Books.Spawn("sparks", at, 0.9f, 0.35f, new Color(1.4f, 1.3f, 1.2f), sizeEnd: 1.6f))
+                            Sparks.Spawn(at, Vector3.Zero, 0.22f, 1.1f, Palette.Of(e.School).Core, sizeEnd: 0.25f, sprite: Sprites.Of("star"), spinV: 4);
                         Cam?.AddTrauma(0.04f);
                     }
                     break;
@@ -451,7 +551,7 @@ public partial class BattleFx : Node3D
                 case Ev.Nova e:
                 {
                     var pal = Palette.Of(e.School);
-                    if (!Blast(e.X, e.Z, e.School, (float)e.Radius * 0.9f, (float)Math.Max(0.5, e.Duration * 1.5), 1f)) Nova(e.X, e.Z, (float)e.Radius, pal.Glow, (float)Math.Max(0.25, e.Duration));
+                    if (!Blast(e.X, e.Z, e.School, (float)e.Radius * 0.9f, (float)Math.Max(0.5, e.Duration * 1.5), 1f, light: true)) Nova(e.X, e.Z, (float)e.Radius, pal.Glow, (float)Math.Max(0.25, e.Duration));
                     if ((e.Rings ?? 1) > 0) Flash(V(e.X, Y(e.X, e.Z) + 1.3, e.Z), pal.Light, 6, 0.35f, (float)e.Radius * 2);
                     break;
                 }
@@ -459,8 +559,10 @@ public partial class BattleFx : Node3D
                 {
                     float gy = Y(e.X, e.Z), r = (float)e.Radius;
                     var pal = Palette.Of(e.School);
+                    Cam?.AddTrauma((float)Math.Min(0.3, 0.05 + e.Power * 0.1));
+                    if (Blast(e.X, e.Z, e.School, r, 0.8f + r * 0.08f)) break;
                     Flash(V(e.X, gy + 1.2, e.Z), pal.Light, 10 + (float)e.Power * 10, 0.35f, r * 3 + 3);
-                    if (!Blast(e.X, e.Z, e.School, r, 0.8f + r * 0.08f)) Nova(e.X, e.Z, r * 1.15f, pal.Glow, 0.3f);
+                    Nova(e.X, e.Z, r * 1.15f, pal.Glow, 0.3f);
                     int n = Math.Min(40, 10 + (int)Math.Round(r * 8));
                     for (int i = 0; i < n; i++)
                     {
@@ -470,7 +572,6 @@ public partial class BattleFx : Node3D
                     if (!Flipbooks.Has(BlastOf(e.School))) Sparks.Spawn(V(e.X, gy + 0.8, e.Z), Vector3.Zero, 0.3f, r * 1.3f, pal.Core, pal.Glow, r * 2.2f, alpha: 0.9f, sprite: Sprites.Of("fire"), spinV: 1.5f);
                     if (e.School is School.Fire or School.Shadow or School.Physical)
                         for (int i = 0; i < 6; i++) Smoke.Spawn(V(e.X + (R() - 0.5) * r, gy + 0.5, e.Z + (R() - 0.5) * r), new Vector3(0, 1 + R(), 0), 1.2f, r * 0.4f, new Color("#2a2420"), new Color("#121010"), r * 0.9f, drag: 1.2f, alpha: 0.45f);
-                    Cam?.AddTrauma((float)Math.Min(0.3, 0.05 + e.Power * 0.1));
                     break;
                 }
                 case Ev.Chain e:
@@ -509,9 +610,9 @@ public partial class BattleFx : Node3D
                     if (e.Delay > 0.05)
                     {
                         Ring(e.X, e.Z, r, pal.Glow * 0.6f, (float)e.Delay, true);
-                        pending.Add((time + e.Delay, () => { Pillar(at, 16, 0.35f + r * 0.1f, pal.Core, 0.3f); Flash(at + Vector3.Up * 2, pal.Light, 8, 0.25f, 10); }));
+                        pending.Add((time + e.Delay, () => Land(e.X, e.Z, e.School, at, r, pal)));
                     }
-                    else { Pillar(at, 16, 0.35f, pal.Core, 0.3f); Flash(at + Vector3.Up * 2, pal.Light, 8, 0.25f, 10); }
+                    else Land(e.X, e.Z, e.School, at, r, pal);
                     break;
                 }
                 case Ev.Slash e:
@@ -549,8 +650,8 @@ public partial class BattleFx : Node3D
                 case Ev.LevelUp:
                 {
                     var p = PlayerPos;
-                    Nova(p.X, p.Z, 3.6f, Palette.Of(School.Fire).Glow, 0.5f);
-                    Pillar(p, 7, 0.55f, Palette.Of(School.Holy).Core * 0.6f, 0.55f);
+                    if (!Blast(p.X, p.Z, School.Holy, 2.2f, 1.1f, 0.9f)) Nova(p.X, p.Z, 3.6f, Palette.Of(School.Fire).Glow, 0.5f);
+                    Pillar(p, 7, 0.3f, Palette.Of(School.Holy).Core * 0.6f, 0.45f);
                     Flash(p + Vector3.Up * 2, new Color("#ffc070"), 10, 0.7f, 9);
                     for (int i = 0; i < 30; i++)
                     {
@@ -826,6 +927,8 @@ public partial class BattleFx : Node3D
         Pickups(b, now);
         Sparks.Step(fdt);
         Books.Step(fdt);
+        Scars.Step(fdt);
+        Waves.Step(fdt);
         Smoke.Step(fdt);
         Gore.Step(fdt);
     }
