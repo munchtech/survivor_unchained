@@ -401,6 +401,67 @@ print("CROTCH knot ironed:", len(idx_), "points round", knot.round(3))
 body["crotch"] = [float(c) for c in knot]
 
 
+# Below her crotch each side of her moves with its own leg. AccuRIG gave the
+# skin of each inner thigh down to 8 cm below the crotch up to a third of
+# its weight on the other leg; when her legs part, that skin is dragged into
+# the gap between them (two lumps under the crotch). Right under the crotch
+# the sharing is kept (that skin does stretch between her legs); below and
+# outward it goes to her own thigh.
+gi_ = {g.name: g.index for g in body.vertex_groups}
+cz, cx = knot[2], 0.0
+fixed_ = 0
+for v in body.data.vertices:
+    p_ = co[v.index]
+    if p_[2] > cz + 0.02 or abs(p_[0]) > 0.12:
+        continue
+    own, oth = ("l", "r") if p_[0] > 0 else ("r", "l")
+    w = {body.vertex_groups[g.group].name: g.weight for g in v.groups}
+    other = sum(w.get(f"{b}_{oth}", 0.0) for b in ("thigh", "calf", "foot", "ball", "glute"))
+    if other < 1e-4:
+        continue
+    # Shared between her legs only right under the crotch (as skin there is):
+    # all of it at the crotch and at her middle, none 3 cm below or 2 cm out.
+    keep = (1 - _ease((cz - p_[2]) / 0.03)) * (1 - _ease((abs(p_[0]) - 0.008) / 0.02))
+    move = other * (1 - keep)
+    if move < 1e-4:
+        continue
+    w2 = dict(w)
+    for b in ("thigh", "calf", "foot", "ball", "glute"):
+        if f"{b}_{oth}" in w2:
+            w2[f"{b}_{oth}"] *= keep
+    w2[f"thigh_{own}"] = w2.get(f"thigh_{own}", 0.0) + move
+    for n, x in w2.items():
+        if x > 1e-5:
+            body.vertex_groups[n].add([v.index], x, "REPLACE")
+        else:
+            body.vertex_groups[n].remove([v.index])
+    fixed_ += 1
+print("CROTCH weights: other leg's share moved off", fixed_, "points")
+
+# Triangles joining one of her legs to the other below the crotch (her
+# thighs touch at rest, and the sculpt stitched them together there):
+# stretched across the gap when her legs part, so cut.
+legw = {}
+for v in body.data.vertices:
+    w = {body.vertex_groups[g.group].name: g.weight for g in v.groups}
+    l_ = sum(w.get(f"{b}_l", 0.0) for b in ("thigh", "calf", "glute"))
+    r_ = sum(w.get(f"{b}_r", 0.0) for b in ("thigh", "calf", "glute"))
+    legw[v.index] = 1 if l_ > r_ + 0.3 else (-1 if r_ > l_ + 0.3 else 0)
+import bmesh as _bm2
+bm_ = _bm2.new()
+bm_.from_mesh(body.data)
+bm_.faces.ensure_lookup_table()
+cut_ = [f for f in bm_.faces
+        if max(co[v.index][2] for v in f.verts) < cz - 0.004
+        and {legw[v.index] for v in f.verts} >= {1, -1}]
+print("CROTCH web: cut", len(cut_), "triangles joining her legs")
+_bm2.ops.delete(bm_, geom=cut_, context="FACES_ONLY")
+bm_.to_mesh(body.data)
+bm_.free()
+body.data.update()
+co = np.array([(body.matrix_world @ v.co)[:] for v in body.data.vertices])
+
+
 # Her paint, from the sculpt.
 before = set(bpy.data.objects)
 bpy.ops.import_scene.gltf(filepath=TEXSRC)

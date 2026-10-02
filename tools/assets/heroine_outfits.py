@@ -189,7 +189,90 @@ KNEE_S = np.linalg.norm(LEG["l"][1] - LEG["l"][0])
 ANKLE_S = KNEE_S + np.linalg.norm(LEG["l"][2] - LEG["l"][1])
 ELBOW_S = np.linalg.norm(ARM["l"][0] - head("clavicle_l")) + np.linalg.norm(ARM["l"][1] - ARM["l"][0])
 WRIST_S = ELBOW_S + np.linalg.norm(ARM["l"][2] - ARM["l"][1])
-FRONT = ramp(-(Y - CROTCH_Y), -0.03, 0.03)          # 1 in front of the body's middle, 0 behind
+FRONT = ramp(-(Y - CROTCH_Y), -0.03, 0.03)
+# The slot between her thighs under the crotch (they press together there):
+# its two walls face each other across a gap of a centimetre or two.
+# Garments span it, as cloth does, and never dive in; below the stocking
+# tops it is just her inner thighs.
+SLOT = ((np.abs(X) < 0.022) & (Z < CROTCH - 0.004) & (Z > CROTCH - 0.06) & (np.abs(Y - CROTCH_Y) < 0.07)
+        & (N[:, 0] * np.sign(X + 1e-9) < -0.55))
+print("SLOT", int(SLOT.sum()), "points of her inner thighs under the crotch")
+# The box a crossing garment is cut out of: from in front of the slot to
+# behind it, below just over the crotch.
+GAP_F, GAP_B, GAP_Z = CROTCH_Y - 0.03, CROTCH_Y + 0.04, CROTCH + 0.012
+
+
+def thong_path(z_top, y_front=None):
+    """A thong's line: down the cleft behind from z_top, then forward
+    under her along the top of the slot, to tuck under the front."""
+    back = back_string(z_top, CROTCH + 0.012)
+    y0 = back[-1][1] - 0.004
+    y1 = (GAP_F - 0.006) if y_front is None else y_front
+    return back + roof_path(y0, y1, 10)
+
+
+def roof_z(x, y):
+    """Height of her skin straight above a point under her crotch (the top
+    of the slot between her thighs), seen from below."""
+    hit = BVH.ray_cast(Vector((x, y, CROTCH - 0.3)), Vector((0, 0, 1)), 0.6)
+    return hit[0].z if hit[0] is not None else CROTCH
+
+
+def roof_path(y0, y1, n=12, x=0.0, lift=0.003):
+    """Points along the top of the slot, under her, from y0 to y1."""
+    return [np.array([x, y, roof_z(x, y) - lift]) for y in np.linspace(y0, y1, n)]
+
+
+def crotch_bridge(name, pos, tris, gap_at, mkey, thick, bevel, trim, lift, rows=18, cols=13):
+    """The strip that carries a garment across her crotch: from its front
+    cut edge to its back one, each row straight across, its middle along
+    the top of the slot (so it spans the gap as cloth does, never dipping
+    in), its edges running into her thighs either side."""
+    e = np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
+    uk, c = np.unique(np.sort(e, 1), axis=0, return_counts=True)
+    bv = np.unique(uk[c == 1])
+    cutv = bv[(np.abs(gap_at[bv]) < 0.0025) & (pos[bv, 2] < GAP_Z + 0.004)]
+    front = cutv[pos[cutv, 1] < CROTCH_Y]
+    back = cutv[pos[cutv, 1] >= CROTCH_Y]
+    if len(front) < 2 or len(back) < 2:
+        print("BRIDGE", name, "no edges to join", len(front), len(back))
+        return []
+
+    def resample(ids):
+        q = pos[ids][np.argsort(pos[ids, 0])]
+        d = np.r_[0, np.cumsum(np.linalg.norm(np.diff(q, axis=0), axis=1))]
+        t = np.linspace(0, d[-1], cols)
+        return np.stack([np.interp(t, d, q[:, k]) for k in range(3)], 1)
+
+    fr, bk = resample(front), resample(back)
+    g = np.zeros((rows, cols, 3))
+    for i in range(rows):
+        t = i / (rows - 1)
+        g[i] = fr * (1 - t) + bk * t
+    # The middle of each row along the roof of the slot; the whole row
+    # lowered with it, so it stays straight across.
+    for i in range(1, rows - 1):
+        mid = g[i, cols // 2]
+        target = min(mid[2], roof_z(mid[0], mid[1]) - lift)
+        g[i, :, 2] += target - mid[2]
+    for _ in range(6):
+        g[1:-1] = (g[:-2] + 2 * g[1:-1] + g[2:]) / 4
+    pts = g.reshape(-1, 3)
+    tt = grid(rows, cols)
+    nor = vertex_normals(pts, tt)
+    if nor[:, 2].mean() > 0:            # facing down, out of her
+        tt = tt[:, ::-1]
+        nor = -nor
+    _, j = cKDTree(P).query(pts)
+    width = np.linalg.norm(g[:, -1] - g[:, 0], axis=1)
+    col = np.tile(np.arange(cols), rows)
+    edge = np.minimum(col, cols - 1 - col) / (cols - 1) * np.repeat(width, cols)
+    at = np.hstack([nor, W[j].astype(float), edge[:, None]])
+    made = trimmed(name + "_bridge", pts, at, tt, mkey, thick, bevel, trim, budget=10 ** 7)
+    for o in made:
+        o["hides"] = True
+    print("BRIDGE", name, "%.1f cm wide in front, %.1f behind" % (width[0] * 100, width[-1] * 100))
+    return made          # 1 in front of the body's middle, 0 behind
 
 
 def on_surface(pts, step=0.004):
@@ -888,7 +971,7 @@ def clear_of_skin(pos, lift):
     return pos
 
 
-def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30):
+def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, trim=None, clear=None, soften=3, dome=False, keep_off=("Head", "neck_01"), cut=None, iron=0, hull=None, studs=None, budget=None, filled=False, edge=30, slot=True, bridge=False):
     """A region of her skin made into a piece of her outfit. `trim`, as
     (material, width, height, thickness), edges it with a band laid on the
     piece itself, so the two can never part. `clear` is how close to the
@@ -897,16 +980,23 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     cast of it. `soften` eases the field first; a strap, narrower than
     some of her triangles, is not eased (easing would wear it through)."""
     # Never her head or hair (the hair is part of her mesh).
-    f = smooth_field(np.minimum.reduce([field, (0.3 - wsum(*keep_off)) * 0.1, (0.5 - HAIR) * 0.1]), soften)
+    slot_m = SLOT if slot is True else (SLOT & (X < 0) if slot == "right" else (SLOT & (X > 0) if slot == "left" else np.zeros(len(P), bool)))
+    f = smooth_field(np.minimum.reduce([field, (0.3 - wsum(*keep_off)) * 0.1, (0.5 - HAIR) * 0.1,
+                                        np.where(slot_m, -0.004, 1.0)]), soften)
     # `cut`, a second field, trims the piece after it is shaped: a cup
     # keeps the shape of the full cup however low it is cut.
     attr = np.hstack([N, W, (hull if hull is not None else -np.ones(len(P)))[:, None],
                       (cut if cut is not None else np.ones(len(P)))[:, None], f[:, None]])
-    pos, at, tris = clip(f, P_FILLED if (dome or filled) else P, attr, TRI)
+    # A garment crossing her crotch is cut off just in front of and just
+    # behind the slot between her thighs (`gap` is how far a point is out
+    # of that box), and the two cut edges joined by a strip under her.
+    gap = np.maximum.reduce([GAP_F - Y, Y - GAP_B, Z - GAP_Z, np.abs(X) - 0.07]) if bridge else np.ones(len(P))
+    pos, at, tris = clip(np.minimum(f, gap), P_FILLED if (dome or filled) else P, np.hstack([attr, gap[:, None]]), TRI)
     if len(tris) == 0:
         print("EMPTY", name)
         return []
     pos, at, tris = weld(pos, at, tris)
+    gap_at, at = at[:, -1], at[:, :-1]
     nor = at[:, :3] / (np.linalg.norm(at[:, :3], axis=1)[:, None] + 1e-12)
     pos = pos + nor * lift
     if hull is not None:
@@ -934,6 +1024,8 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     if not dome and not filled:
         pos = clear_of_skin(pos, lift if clear is None else clear)
     made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, bevel, budget or (8000 if dome else 3000))]
+    if bridge:
+        made += crotch_bridge(name, pos, tris, gap_at, mkey, thick, bevel, trim, lift)
     if studs:
         made += rivets(name, pos, at, tris, thick, studs)
     if trim:
@@ -1539,7 +1631,7 @@ def warden():
         *smooth_cups("warden.cups", "steel", thick=0.0022),
         *piece("warden.band", band, "darkleather", lift=0.003, smooth=3, soften=25, trim=gold(0.006)),
         *[o for k, cv in enumerate(shoulder_strap_curves()) for o in ribbon(f"warden.strap{k}", cv, 0.016, "darkleather")],
-        *piece("warden.bottom", bot, "darkleather", lift=0.003, smooth=2),
+        *piece("warden.bottom", bot, "darkleather", lift=0.003, smooth=2, bridge=True),
         *piece("warden.plate", plate, "steel", lift=0.006, thick=0.003, smooth=6, trim=gold(0.006), studs="gold"),
     ]
     for sd in "lr":
@@ -1577,7 +1669,7 @@ def arcanist():
     # her waist at the sides, front and back.
     # A narrow V in front rising steeply to her hip bones; a thong behind
     # widening into a V above her cheeks.
-    w = (0.02 + 0.4 * np.maximum(Z - CROTCH, 0)) * FRONT + (-0.01 + 1.5 * np.maximum(Z - CROTCH - 0.13, 0)) * (1 - FRONT)
+    w = (0.0095 + 0.42 * np.maximum(Z - CROTCH, 0)) * FRONT + (-0.01 + 1.5 * np.maximum(Z - CROTCH - 0.13, 0)) * (1 - FRONT)
     leotard = AND(Z - (CROTCH - 0.03), w - ax)
     # A bodysuit: over her breasts and up to a high neck.
     neck_top = head("neck_01")[2] + 0.07 - 0.035 * (1 - FRONT)
@@ -1603,7 +1695,7 @@ def arcanist():
     global GARTER_Z
     GARTER_Z = CROTCH + 0.2
     out = [
-        *ribbon("arcanist.thong", back_string(CROTCH + 0.155, CROTCH - 0.03), 0.016, "plumleather", lift=0.003, thick=0.003,
+        *ribbon("arcanist.thong", thong_path(CROTCH + 0.155), 0.016, "plumleather", lift=0.003, thick=0.003,
                trim=gold(0.004), snap=False),
         *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80),
         *piece("arcanist.choker", choker, "blackleather", lift=0.002, soften=0, keep_off=("Head",)),
@@ -1659,7 +1751,7 @@ def ranger():
         *piece("ranger.upper", upper_l, "greenleather", lift=0.003, smooth=4),
         *piece("ranger.collar", collar, "greenleather", lift=0.004, smooth=4, keep_off=("Head",), trim=gold(0.006, "brownleather")),
         *ribbon("ranger.halter", halter_curve, 0.024, "brownleather", lift=0.005),
-        *piece("ranger.suit", lower, "greenleather", lift=0.0025, smooth=3),
+        *piece("ranger.suit", lower, "greenleather", lift=0.0025, smooth=3, slot="right"),
         *piece("ranger.corset", corset, "brownleather", lift=0.0055, smooth=6, soften=25, trim=gold(0.006, "darkleather")),
         *piece("ranger.lacing", lacing, "darkleather", lift=0.013, thick=0.0018, smooth=6, soften=1),
         *piece("ranger.belt", belt, "brownleather", lift=0.014, thick=0.004, smooth=3),
