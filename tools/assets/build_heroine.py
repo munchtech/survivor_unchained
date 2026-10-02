@@ -317,6 +317,50 @@ for i, v in enumerate(body.data.vertices):
 
 print("SOFT TISSUE bones 4")
 
+# The inside of her left breast made its right twin's mirror image, shape
+# and paint (the sculpt left lumps and a dark smudge there): toward the
+# cleavage and below the nipple, fully in the middle of that patch and
+# easing to nothing at its edge. The paint is done once her material is on.
+from mathutils.bvhtree import BVHTree
+import bmesh as _bm
+_b = _bm.new()
+_b.from_mesh(body.data)
+_bm.ops.triangulate(_b, faces=_b.faces)
+_b.to_mesh(body.data)
+_b.free()
+body.data.update()
+gl, gr = body.vertex_groups["breast_l"].index, body.vertex_groups["breast_r"].index
+wl = np.zeros(len(co))
+wr = np.zeros(len(co))
+for v in body.data.vertices:
+    for g in v.groups:
+        if g.group == gl:
+            wl[v.index] = g.weight
+        elif g.group == gr:
+            wr[v.index] = g.weight
+
+
+def _ease(x):
+    x = np.clip(x, 0, 1)
+    return x * x * (3 - 2 * x)
+
+
+nip_l = SOFT["l"][0]
+T = _ease((wl - 0.005) / 0.25) * _ease((nip_l[0] - co[:, 0]) / 0.03) * _ease((nip_l[2] + 0.03 - co[:, 2]) / 0.03)
+CO0 = co.copy()
+RIGHT = [p.index for p in body.data.polygons if (wr[list(p.vertices)] > 0.005).any()]
+MIR = co * np.array([-1, 1, 1])
+RBVH = BVHTree.FromPolygons([tuple(x) for x in MIR], [list(body.data.polygons[k].vertices)[::-1] for k in RIGHT])
+moved = 0
+for i in np.where(T > 0.001)[0]:
+    hit = RBVH.find_nearest(Vector(co[i]))[0]
+    if hit is None:
+        continue
+    body.data.vertices[i].co = Vector(co[i] * (1 - T[i]) + np.array(hit[:]) * T[i])
+    moved += 1
+co = np.array([(body.matrix_world @ v.co)[:] for v in body.data.vertices])
+print("LEFT BREAST inner patch from the right,", moved, "points")
+
 # Her paint, from the sculpt.
 before = set(bpy.data.objects)
 bpy.ops.import_scene.gltf(filepath=TEXSRC)
@@ -328,6 +372,69 @@ for o in [o for o in bpy.data.objects if o not in before]:
 for p in body.data.polygons:
     p.use_smooth = True
 body.name = "Heroine"
+
+# The patch's paint, from the right breast: each texel of it found on her
+# skin, reflected, found again on the right breast, and painted with what
+# is there, blended as the shape was.
+img = next(n.image for n in body.data.materials[0].node_tree.nodes if n.type == "TEX_IMAGE" and n.image)
+IW, IH = img.size
+px = np.array(img.pixels[:], np.float32).reshape(IH, IW, 4)
+src = px.copy()
+uvl = body.data.uv_layers.active.data
+polys = body.data.polygons
+
+
+def tri_uv(k):
+    return np.array([uvl[li].uv[:] for li in polys[k].loop_indices]), list(polys[k].vertices)
+
+
+painted = 0
+for p in polys:
+    vs = list(p.vertices)
+    if T[vs].max() < 0.001:
+        continue
+    uv, _ = tri_uv(p.index)
+    pp = uv * [IW, IH]
+    x0, y0 = np.floor(pp.min(0)).astype(int)
+    x1, y1 = np.ceil(pp.max(0)).astype(int)
+    xs, ys = np.meshgrid(np.arange(x0, x1 + 1), np.arange(y0, y1 + 1))
+    pts = np.c_[xs.ravel() + 0.5, ys.ravel() + 0.5]
+    a, b, c = pp
+    m = np.array([[b[0] - a[0], c[0] - a[0]], [b[1] - a[1], c[1] - a[1]]])
+    if abs(np.linalg.det(m)) < 1e-9:
+        continue
+    l = np.linalg.solve(m, (pts - a).T).T
+    bc = np.c_[1 - l.sum(1), l]
+    inside = (bc >= -1e-4).all(1)
+    for (tx, ty), w in zip(pts[inside].astype(int), bc[inside]):
+        if not (0 <= tx < IW and 0 <= ty < IH):
+            continue
+        t = float(w @ T[vs])
+        if t < 0.001:
+            continue
+        p3 = (w @ CO0[vs]) * np.array([-1, 1, 1])
+        hit, _, idx, _ = RBVH.find_nearest(Vector(p3 * np.array([-1, 1, 1]) * np.array([-1, 1, 1])))
+        if hit is None:
+            continue
+        k = RIGHT[idx]
+        ruv, rvs = tri_uv(k)
+        A, B, C = MIR[rvs[::-1]]
+        ruv = ruv[::-1]
+        v0, v1, v2 = B - A, C - A, np.array(hit[:]) - A
+        d00, d01, d11, d20, d21 = v0 @ v0, v0 @ v1, v1 @ v1, v2 @ v0, v2 @ v1
+        den = d00 * d11 - d01 * d01
+        if abs(den) < 1e-14:
+            continue
+        bb = (d11 * d20 - d01 * d21) / den
+        cc = (d00 * d21 - d01 * d20) / den
+        u = (1 - bb - cc) * ruv[0] + bb * ruv[1] + cc * ruv[2]
+        sx, sy = int(np.clip(u[0] * IW, 0, IW - 1)), int(np.clip(u[1] * IH, 0, IH - 1))
+        px[ty, tx, :3] = src[ty, tx, :3] * (1 - t) + src[sy, sx, :3] * t
+        painted += 1
+img.pixels[:] = px.ravel()
+img.update()
+img.pack()
+print("LEFT BREAST paint:", painted, "texels from the right")
 
 active(q)
 body.select_set(True)

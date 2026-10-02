@@ -1038,7 +1038,22 @@ def bottom(style, top=0.075, side_rise=0.05, gusset=0.022):
 
 # Nothing but a cup on her breasts (a band or corset running up under one
 # would stand off it as a shelf): positive off them, in metres-ish.
-OFF_BREAST = (0.04 - wsum("breast_l", "breast_r")) * 0.3
+# Off her breasts and out from under them (where a breast hangs over her
+# ribs, a band or corset would stand off it as a shelf), so torso pieces
+# end flush on her ribs, short of the breast.
+def _off_breast():
+    wb = wsum("breast_l", "breast_r")
+    bp = P[wb > 0.02]
+    tree = cKDTree(bp[:, :2])
+    under = np.zeros(len(P), bool)
+    for i, nb in enumerate(tree.query_ball_point(P[:, :2], 0.015)):
+        if nb:
+            dz = bp[nb, 2] - P[i, 2]
+            under[i] = ((dz > 0.002) & (dz < 0.011)).any()
+    return np.where(under | (wb > 0.003), -0.01, 1.0)
+
+
+OFF_BREAST = _off_breast()
 
 
 def cups(cover=0.62, plunge=0.02, band=0.03, over=0.022, reach=0.088):
@@ -1055,7 +1070,7 @@ def cups(cover=0.62, plunge=0.02, band=0.03, over=0.022, reach=0.088):
         r = np.linalg.norm(P - c, axis=1)
         top = nip[2] + over - 0.45 * np.maximum(0, abs(nip[0]) - np.abs(X)) - 0.3 * np.maximum(0, np.abs(X) - abs(nip[0]) - 0.02)
         parts.append(AND(reach - r, top - Z, X * s - plunge, -(Y - 0.02)))
-    ub = AND(Z - (UNDERBUST - band), UNDERBUST + 0.006 - Z, 0.4 - ARMW["l"] - ARMW["r"], OFF_BREAST)
+    ub = AND(Z - (UNDERBUST - band - 0.03), UNDERBUST + 0.006 - Z, 0.4 - ARMW["l"] - ARMW["r"], OFF_BREAST)
     return OR(*parts), ub
 
 
