@@ -98,6 +98,13 @@ public partial class Game
     {
         Mode = "create";
         draft = new CreationDraft();
+        // --new --sex female: creation opens on a woman (pictures of her).
+        if (Args.Get("sex") == "female") draft.Sex = Sex.Female;
+        if (Args.Get("archetype") is string arch)
+        {
+            var a = SurvivorUnchained.Rpg.Callings.Archetype(arch);
+            draft.Archetype = arch; draft.WeaponItem = a.Weapons[0]; draft.Ability = a.Abilities[0]; draft.Palette = a.Palettes[0].Id; draft.Model = a.Model;
+        }
         DressFigure(draft);
         PoseCreate();
         screens.Show(new CreateScreen(this, draft));
