@@ -1049,8 +1049,13 @@ def _off_breast():
     for i, nb in enumerate(tree.query_ball_point(P[:, :2], 0.015)):
         if nb:
             dz = bp[nb, 2] - P[i, 2]
-            under[i] = ((dz > 0.002) & (dz < 0.011)).any()
-    return np.where(under | (wb > 0.003), -0.01, 1.0)
+            under[i] = ((dz > 0.002) & (dz < 0.009)).any()
+    # In or out, eased over her surface into a smooth slope, so the line
+    # where a piece ends is one even curve, not the triangles' steps.
+    f = np.where(under | (wb > 0.003), -1.0, 1.0)
+    for _ in range(60):
+        f = 0.5 * f + 0.5 * (ADJ @ f)
+    return np.where(f > 0.6, 1.0, f * 0.03)
 
 
 OFF_BREAST = _off_breast()
@@ -1370,7 +1375,7 @@ def warden():
 
     out = [
         *smooth_cups("warden.cups", "steel", trim=gold()),
-        *piece("warden.band", band, "darkleather", lift=0.003, smooth=3),
+        *piece("warden.band", band, "darkleather", lift=0.003, smooth=3, soften=25, trim=gold(0.006)),
         *piece("warden.straps", shoulder_straps(), "darkleather", lift=0.0035, soften=0),
         *piece("warden.bottom", bot, "darkleather", lift=0.003, smooth=2),
         *piece("warden.plate", plate, "steel", lift=0.006, thick=0.003, smooth=6, trim=gold(0.006)),
@@ -1415,7 +1420,7 @@ def arcanist():
                 AND(Z - 1.43, (Y - 0.0), 0.3 - arms))
     out = [
         *smooth_cups("arcanist.cups", "arcvelvet", thick=0.0025, trim=gold()),
-        *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=6, trim=gold(0.007)),
+        *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=6, soften=25, trim=gold(0.007)),
         *piece("arcanist.boning", bones, "gold", lift=0.0095, thick=0.0015, smooth=6, soften=1),
         *piece("arcanist.briefs", bottom("full"), "arcvelvet", lift=0.0025, smooth=2),
         *piece("arcanist.mantle", mantle, "arcvelvet", lift=0.016, thick=0.004, smooth=12, soften=10, trim=gold(0.01)),
@@ -1477,7 +1482,7 @@ def ranger():
         *piece("ranger.collar", collar, "greenleather", lift=0.004, smooth=4, keep_off=("Head",), trim=gold(0.006, "brownleather")),
         *piece("ranger.halter", halter, "brownleather", lift=0.005, soften=0),
         *piece("ranger.suit", lower, "greenleather", lift=0.0025, smooth=3),
-        *piece("ranger.corset", corset, "brownleather", lift=0.0055, smooth=6, trim=gold(0.006, "darkleather")),
+        *piece("ranger.corset", corset, "brownleather", lift=0.0055, smooth=6, soften=25, trim=gold(0.006, "darkleather")),
         *piece("ranger.lacing", lacing, "darkleather", lift=0.013, thick=0.0018, smooth=6, soften=1),
         *piece("ranger.belt", belt, "brownleather", lift=0.014, thick=0.004, smooth=3),
         *piece("ranger.buckle", AND(0.024 - np.linalg.norm(P - front_point(0.03, 1.0 - 0.035 * 0.03 / 0.18), axis=1), belt + 0.004), "bronze", lift=0.019, thick=0.003, smooth=4, soften=1),
