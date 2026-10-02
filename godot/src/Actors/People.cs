@@ -219,6 +219,7 @@ public static class People
         var skel = (Skeleton3D)root.FindChildren("*", "Skeleton3D", true, false)[0];
         var person = new Person { Root = root, Skeleton = skel, Anim = new AnimationPlayer(), Body = "heroine" };
         skel.AddChild(new HerPose());
+        skel.AddChild(new HerJiggle());
         foreach (var mi in skel.GetChildren().OfType<MeshInstance3D>())
         {
             person.Meshes.Add(mi);
@@ -231,6 +232,28 @@ public static class People
         person.Anim.RootNode = "..";
         person.Anim.AddAnimationLibrary("", Clips());
         return person;
+    }
+
+    /// <summary>One of her outfits (tools/assets/heroine_outfits.py: a set
+    /// for each calling, cut from her own body and exported from her own
+    /// skeleton), its pieces moved onto her skeleton.</summary>
+    public static void HerOutfit(Person p, string set)
+    {
+        const string file = "res://art/people/heroine_outfits.glb";
+        if (!ResourceLoader.Exists(file)) return;
+        var scene = GD.Load<PackedScene>(file).Instantiate<Node3D>();
+        var from = (Skeleton3D)scene.FindChildren("*", "Skeleton3D", true, false)[0];
+        foreach (var mi in from.GetChildren().OfType<MeshInstance3D>().ToList())
+        {
+            if (!mi.Name.ToString().StartsWith(set + "_")) continue;
+            from.RemoveChild(mi);
+            mi.Owner = null;
+            p.Skeleton.AddChild(mi);
+            mi.Skeleton = "..";
+            mi.Layers = 2;
+            p.Meshes.Add(mi);
+        }
+        scene.Free();
     }
 
     /// <summary>Her paint as skin: light carried under it (subsurface

@@ -1,6 +1,9 @@
 """The heroine from AccuRIG's rig of her sculpt, on the game's own skeleton.
 
-    blender -b --python tools/assets/build_heroine.py -- <accurig.fbx> <ual.glb> <texture source.glb> <out.glb>
+    blender -b --python tools/assets/build_heroine.py -- <accurig.fbx> <ual.glb> <texture source.glb> <out.glb> [<scene.blend>]
+
+The scene is saved too when asked, for heroine_outfits.py: her clothes are
+exported from the very skeleton she was, so they bind to hers exactly.
 
 AccuRIG (Reallusion, free) rigs a sculpt in its own pose with a full
 Character Creator skeleton: twist bones, corrective share bones, weights
@@ -26,6 +29,7 @@ from mathutils import Vector
 
 ARGS = sys.argv[sys.argv.index("--") + 1:]
 CC_FBX, UAL, TEXSRC, OUT = ARGS[:4]
+BLEND = ARGS[4] if len(ARGS) > 4 else None
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 
@@ -224,6 +228,95 @@ bpy.data.objects.remove(cc)
 # the clips address "Armature/Skeleton3D".
 q.name = "Armature"
 
+# 4. Soft tissue: a bone for each breast and each buttock, for the game to
+# swing on springs (HerJiggle.cs).
+# Placed from her own landmarks: the nipple is the most forward point of
+# each side of the chest, the buttock the most rearward of each side of the
+# hips; the fold under each is where the surface steps back toward the ribs
+# (or the thigh).
+import numpy as np
+co = np.array([(body.matrix_world @ v.co)[:] for v in body.data.vertices])
+z0, z1 = co[:, 2].min(), co[:, 2].max()
+H = z1 - z0
+SOFT = {}
+for s, sd in ((1, "l"), (-1, "r")):
+    m = (co[:, 2] > z0 + 0.62 * H) & (co[:, 2] < z0 + 0.8 * H) & (co[:, 0] * s > 0.03) & (co[:, 0] * s < 0.2)
+    nip = co[np.where(m)[0][np.argmin(co[m, 1])]]
+    m = (co[:, 2] > z0 + 0.4 * H) & (co[:, 2] < z0 + 0.58 * H) & (co[:, 0] * s > 0.02)
+    glu = co[np.where(m)[0][np.argmax(co[m, 1])]]
+    SOFT[sd] = (nip, glu)
+    print("SOFT", sd, "nipple", nip.round(3), "buttock", glu.round(3))
+
+
+def falloff(p, c, rx, ry, up, down):
+    """1 at the centre of a soft mass, easing to 0 at its edge (an egg:
+    taller above its centre than below, where the fold is)."""
+    d = p - c
+    rz = np.where(d[:, 2] > 0, up, down)
+    r = np.sqrt((d[:, 0] / rx) ** 2 + (d[:, 1] / ry) ** 2 + (d[:, 2] / rz) ** 2)
+    t = np.clip((1.0 - r) / 0.65, 0, 1)
+    return t * t * (3 - 2 * t)
+
+
+def ramp(x, a, b):
+    """0 at a, 1 at b, smooth between (a hard cut makes a crease)."""
+    t = np.clip((x - a) / (b - a), 0, 1)
+    return t * t * (3 - 2 * t)
+
+
+bpy.ops.object.mode_set(mode="OBJECT")
+active(q)
+bpy.ops.object.mode_set(mode="EDIT")
+eb = q.data.edit_bones
+for sd, (nip, glu) in SOFT.items():
+    b = eb.new(f"breast_{sd}")
+    b.head = Vector((nip[0], nip[1] + 0.075, nip[2] + 0.005))     # on the chest wall behind it
+    b.tail = Vector((nip[0], nip[1] - 0.01, nip[2]))
+    b.parent = eb["spine_03"]
+    b = eb.new(f"glute_{sd}")
+    b.head = Vector((glu[0], glu[1] - 0.09, glu[2] + 0.02))
+    b.tail = Vector((glu[0], glu[1] + 0.01, glu[2] - 0.01))
+    b.parent = eb["pelvis"]
+bpy.ops.object.mode_set(mode="OBJECT")
+
+# Each mass's weight: the share of its own bone, the rest of the vertex's
+# weights scaled down to make room. A breast is all chest, so it may take
+# the whole of a vertex; a buttock is also moved by the thigh, so it takes
+# at most half, and the leg still pulls it when she strides.
+gi = {g.name: g.index for g in body.vertex_groups}
+for b in ("breast_l", "breast_r", "glute_l", "glute_r"):
+    body.vertex_groups.new(name=b)
+    gi[b] = body.vertex_groups[b].index
+names = [g.name for g in body.vertex_groups]
+share = {}
+for sd, (nip, glu) in SOFT.items():
+    c = nip + np.array([0, 0.035, -0.005])
+    w = falloff(co, c, 0.085, 0.09, 0.105, 0.07) * ramp(-co[:, 1], 0.02, 0.06)
+    share[f"breast_{sd}"] = w
+    c = glu + np.array([0, -0.04, 0.0])
+    w = 0.5 * falloff(co, c, 0.095, 0.11, 0.11, 0.1) * ramp(co[:, 1], 0.0, 0.05)
+    share[f"glute_{sd}"] = w
+for i, v in enumerate(body.data.vertices):
+    soft = [(b, w[i]) for b, w in share.items() if w[i] > 0.005]
+    if not soft:
+        continue
+    total = sum(x for _, x in soft)
+    if total > 1:
+        soft = [(b, x / total) for b, x in soft]
+        total = 1.0
+    old = [(names[g.group], g.weight) for g in v.groups if g.weight > 0]
+    ws = {n: x * (1 - total) for n, x in old}
+    for b, x in soft:
+        ws[b] = ws.get(b, 0) + x
+    top = sorted(ws.items(), key=lambda kv: -kv[1])[:4]
+    t4 = sum(x for _, x in top) or 1
+    for n, _ in old:
+        body.vertex_groups[n].remove([i])
+    for n, x in top:
+        body.vertex_groups[n].add([i], x / t4, "REPLACE")
+
+print("SOFT TISSUE bones 4")
+
 # Her paint, from the sculpt.
 before = set(bpy.data.objects)
 bpy.ops.import_scene.gltf(filepath=TEXSRC)
@@ -240,3 +333,6 @@ active(q)
 body.select_set(True)
 bpy.ops.export_scene.gltf(filepath=OUT, export_format="GLB", use_selection=True, export_skins=True, export_animations=False, export_yup=True)
 print("BUILT", OUT)
+if BLEND:
+    bpy.ops.wm.save_as_mainfile(filepath=BLEND)
+    print("SAVED", BLEND)

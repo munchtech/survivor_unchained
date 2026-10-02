@@ -99,3 +99,11 @@ Cut to loop and made mono at 24 kHz (the game plays each wide, its right side ha
 - "Wooden Lantern 01" by James Ray Cock, Poly Haven (https://polyhaven.com/a/wooden_lantern_01), CC0 -> public/assets/env/polyhaven/wooden_lantern_01
 - "Old Military Crate" by Jack Mava, Poly Haven (https://polyhaven.com/a/old_military_crate), CC0 -> public/assets/env/polyhaven/old_military_crate
 - "Wooden Barrels 01" by James Ray Cock, Poly Haven (https://polyhaven.com/a/wooden_barrels_01), CC0 -> public/assets/env/polyhaven/wooden_barrels_01
+- Metal038: ambientCG (https://ambientcg.com/view?id=Metal038), CC0
+- Metal048C: ambientCG (https://ambientcg.com/view?id=Metal048C), CC0
+- Metal046B: ambientCG (https://ambientcg.com/view?id=Metal046B), CC0
+- Metal053C: ambientCG (https://ambientcg.com/view?id=Metal053C), CC0
+- Leather037: ambientCG (https://ambientcg.com/view?id=Leather037), CC0
+- Leather034C: ambientCG (https://ambientcg.com/view?id=Leather034C), CC0
+- Leather024: ambientCG (https://ambientcg.com/view?id=Leather024), CC0
+- Leather014: ambientCG (https://ambientcg.com/view?id=Leather014), CC0

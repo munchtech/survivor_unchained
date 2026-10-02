@@ -3,6 +3,7 @@ extends SceneTree
 var clips = []
 var out = ""
 var t = 0.0
+var shot = 0
 var players = []
 func _init():
 	var args = OS.get_cmdline_user_args()
@@ -30,8 +31,22 @@ func _init():
 				m.roughness = 0.52
 				mi.set_surface_override_material(s, m)
 		var skel = h.find_children("*", "Skeleton3D", true, false)[0]
+		# OUTFIT=prefix ("warden_" a set, "warden_straps" one piece): her pieces (heroine_outfits.glb), on her skeleton.
+		var outfit = OS.get_environment("OUTFIT")
+		if outfit != "":
+			var o = load("res://art/people/heroine_outfits.glb").instantiate()
+			var os_ = o.find_children("*", "Skeleton3D", true, false)[0]
+			for mi in os_.get_children():
+				if mi is MeshInstance3D and String(mi.name).begins_with(outfit):
+					os_.remove_child(mi)
+					mi.owner = null
+					skel.add_child(mi)
+					mi.skeleton = NodePath("..")
+			o.free()
 		if OS.get_environment("NOHERPOSE") == "":
 			skel.add_child(load("res://src/Actors/HerPose.cs").new())
+		if OS.get_environment("NOJIGGLE") == "":
+			skel.add_child(load("res://src/Actors/HerJiggle.cs").new())
 		var ap = AnimationPlayer.new()
 		h.add_child(ap)
 		var lib = AnimationLibrary.new()
@@ -61,6 +76,14 @@ func _init():
 	e.ambient_light_color = Color(0.6, 0.6, 0.65)
 	e.ambient_light_energy = 0.6
 	e.tonemap_mode = Environment.TONE_MAPPER_AGX
+	# A sky for metal to reflect (the background stays plain).
+	var sky = Sky.new()
+	var sm = ProceduralSkyMaterial.new()
+	sm.ground_bottom_color = Color(0.18, 0.16, 0.14)
+	sm.ground_horizon_color = Color(0.45, 0.42, 0.4)
+	sky.sky_material = sm
+	e.sky = sky
+	e.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	env.environment = e
 	root.add_child(env)
 	var key = DirectionalLight3D.new()
@@ -88,6 +111,15 @@ func _process(delta):
 					var b = sk.find_bone(kv[0])
 					var q = Quaternion.from_euler(Vector3(deg_to_rad(float(e[0])), deg_to_rad(float(e[1])), deg_to_rad(float(e[2]))))
 					sk.set_bone_pose_rotation(b, sk.get_bone_rest(b).basis.get_rotation_quaternion() * q)
+	# FRAMES=n: n pictures, a fifteenth of a second apart, from 1 s in (out gets _NN).
+	var frames = OS.get_environment("FRAMES")
+	if frames != "":
+		var k = int((t - 1.0) * 15.0)
+		if t > 1.0 and k > shot:
+			shot = k
+			get_root().get_texture().get_image().save_png(out.replace(".png", "_%02d.png" % k))
+			if k >= int(frames): quit()
+		return false
 	if t > 1.5:
 		var img = get_root().get_texture().get_image()
 		img.save_png(out)
