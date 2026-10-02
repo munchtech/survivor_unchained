@@ -83,10 +83,15 @@ public class ZoneTests
     [InlineData("lowford", "night")]
     [InlineData("waystation", "day")]
     [InlineData("verge", "day")]
-    public void The_presets_are_the_web_games(string id, string preset)
+    public void The_presets_light_from_where_the_web_games_did(string id, string preset)
     {
-        // The web game's own preset, as it exported it, against the port's.
-        Assert.Equal(Json.Write(ZoneMeta.Load(id).Atmosphere), Json.Write(Atmospheres.ByName(preset)));
+        // The port's presets are graded for Godot's renderer and no longer
+        // match the web game's numbers, but the light still has to come from
+        // where it did: the zones were laid out and their props placed under it.
+        var web = ZoneMeta.Load(id).Atmosphere;
+        var port = Atmospheres.ByName(preset);
+        Assert.Equal(web.KeyAzimuth, port.KeyAzimuth);
+        Assert.InRange(port.KeyElevation, web.KeyElevation - 4, web.KeyElevation + 4);
     }
 
     [Fact]
@@ -98,7 +103,7 @@ public class ZoneTests
         var a = Atmospheres.Night with { KeyColor = "#000000" };
         var b = Atmospheres.Day with { KeyColor = "#ffffff" };
         Assert.Equal("#bcbcbc", Atmospheres.Blend(a, b, 0.5).KeyColor);
-        Assert.Equal((52 + 44) / 2.0, mid.KeyElevation);
+        Assert.Equal((Atmospheres.Night.KeyElevation + Atmospheres.Day.KeyElevation) / 2, mid.KeyElevation);
         Assert.Equal(Json.Write(Atmospheres.Dawn), Json.Write(Atmospheres.Blend(Atmospheres.Night, Atmospheres.Dawn, 1)));
     }
 }
