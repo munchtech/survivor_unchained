@@ -32,10 +32,10 @@ func _init():
 				m.roughness = 0.52
 				mi.set_surface_override_material(s, m)
 		var skel = h.find_children("*", "Skeleton3D", true, false)[0]
-		# OUTFIT=prefix ("warden_" a set, "warden_straps" one piece): her pieces (heroine_outfits.glb), on her skeleton.
+		# OUTFIT=prefix ("warden_" a set, "warden_straps" one piece): her pieces (heroine_outfit_<set>.gltf), on her skeleton.
 		var outfit = OS.get_environment("OUTFIT")
 		if outfit != "":
-			var o = load("res://art/people/heroine_outfits.glb").instantiate()
+			var o = load("res://art/people/heroine_outfit_%s.gltf" % outfit.split("_")[0]).instantiate()
 			var os_ = o.find_children("*", "Skeleton3D", true, false)[0]
 			for mi in os_.get_children():
 				if mi is MeshInstance3D and String(mi.name).begins_with(outfit):

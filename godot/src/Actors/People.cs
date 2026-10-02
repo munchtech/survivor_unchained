@@ -234,12 +234,12 @@ public static class People
         return person;
     }
 
-    /// <summary>One of her outfits (tools/assets/heroine_outfits.py: a set
+    /// <summary>One of her outfits (tools/assets/heroine_outfits.py: a file
     /// for each calling, cut from her own body and exported from her own
     /// skeleton), its pieces moved onto her skeleton.</summary>
     public static void HerOutfit(Person p, string set)
     {
-        const string file = "res://art/people/heroine_outfits.glb";
+        var file = $"res://art/people/heroine_outfit_{set}.gltf";
         if (!ResourceLoader.Exists(file)) return;
         var scene = GD.Load<PackedScene>(file).Instantiate<Node3D>();
         var from = (Skeleton3D)scene.FindChildren("*", "Skeleton3D", true, false)[0];

@@ -1,6 +1,9 @@
 """The heroine's outfits, one for each calling, cut from her own body.
 
-    blender -b tools/comfy/out/heroes/heroine_built.blend --python tools/assets/heroine_outfits.py -- <out.glb> [--body <heroine.glb>] [--only warden]
+    blender -b tools/comfy/out/heroes/heroine_built.blend --python tools/assets/heroine_outfits.py -- <out dir>/x [--body <heroine.glb>] [--only warden]
+
+Each outfit is written as <out dir>/heroine_outfit_<name>.gltf (and .bin), the
+textures in <out dir>/outfit_tex.
 
 With --body her body is written again, marked where each outfit hides her.
 
@@ -677,22 +680,24 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
         pos = relax(pos, tris, interior=0)
     if not dome:
         pos = clear_of_skin(pos, lift if clear is None else clear)
-    made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, bevel)]
+    made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, bevel, 8000 if dome else 3000)]
     if trim:
         tkey, w, h, tt = trim
         tp, ta, tr = clip(w - at[:, -1], pos, at, tris)
         if len(tr):
             tp, ta, tr = weld(tp, ta, tr)
             tp = relax(tp + vertex_normals(tp, tr) * (thick + h), tr)
-            made.append(finish(name + "_trim", tp, ta[:, 3:3 + NB], tr, tkey, tt, bevel))
+            made.append(finish(name + "_trim", tp, ta[:, 3:3 + NB], tr, tkey, tt, bevel, 1500))
     for o in made:
         o["hides"] = len(SPEC[mkey]) < 7
     return made
 
 
-def finish(name, pos, wt, tris, mkey, thick, bevel):
+def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000):
     """A sheet made a piece: her weights, its texture laid out at true size,
-    a thickness and a rounded edge, bound to her skeleton."""
+    a thickness and a rounded edge, bound to her skeleton. The sheet is
+    first thinned to `budget` triangles (cut from a finely divided skin,
+    it carries far more than its shape needs)."""
     me = bpy.data.meshes.new(name)
     me.from_pydata([tuple(p) for p in pos], [], tris.tolist())
     me.update()
@@ -744,6 +749,12 @@ def finish(name, pos, wt, tris, mkey, thick, bevel):
     me.materials.append(mat(mkey))
     for p in me.polygons:
         p.use_smooth = True
+    if len(me.polygons) > budget:
+        dc = obj.modifiers.new("thin", "DECIMATE")
+        dc.decimate_type = "COLLAPSE"
+        dc.ratio = budget / len(me.polygons)
+        dc.use_symmetry = bool(abs(pos[:, 0].mean()) < 0.02)
+        dc.symmetry_axis = "X"
     so = obj.modifiers.new("thick", "SOLIDIFY")
     so.thickness = thick
     so.offset = 1
@@ -1133,10 +1144,19 @@ if BODY_OUT:
 # Nothing else rides along (the scene may hold strays).
 for o in [o for o in bpy.data.objects if o not in made and o not in (arm, body)]:
     bpy.data.objects.remove(o)
-bpy.ops.object.select_all(action="DESELECT")
-arm.select_set(True)
-for o in made:
-    o.select_set(True)
-bpy.context.view_layer.objects.active = arm
-bpy.ops.export_scene.gltf(filepath=OUT, export_format="GLB", use_selection=True, export_skins=True, export_animations=False, export_yup=True)
-print("OUTFITS", len(made), "pieces ->", OUT)
+# One file an outfit, so the game loads only what she wears.
+for name in OUTFITS:
+    mine = [o for o in made if o.name.startswith(name + ".")]
+    if not mine:
+        continue
+    bpy.ops.object.select_all(action="DESELECT")
+    arm.select_set(True)
+    for o in mine:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = arm
+    # Text and binary apart, the textures beside them in one folder that
+    # every outfit shares (embedded, each file carried its own copies).
+    path = os.path.join(os.path.dirname(OUT), f"heroine_outfit_{name}.gltf")
+    bpy.ops.export_scene.gltf(filepath=path, export_format="GLTF_SEPARATE", export_texture_dir="outfit_tex", use_selection=True,
+                              export_skins=True, export_animations=False, export_yup=True)
+    print("OUTFIT", name, len(mine), "pieces,", sum(len(o.data.polygons) for o in mine), "faces ->", path)
