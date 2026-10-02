@@ -16,3 +16,6 @@ public/assets/**/*.uid
 
 # make3d results (next to make3d.bat)
 /tools/make3d/output/
+
+# Raw clips and stills made on the local ComfyUI (only the cut atlases ship)
+/tools/comfy/out/

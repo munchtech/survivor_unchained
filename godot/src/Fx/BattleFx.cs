@@ -24,6 +24,8 @@ public partial class BattleFx : Node3D
     readonly Func<double, double, double> heightAt;
     public readonly Sparks Sparks = new(6000, true), Smoke = new(2500, false);
     public readonly Hits Hits = new();
+    /// <summary>Filmed effects cut into atlases: blasts, flame, smoke, magic.</summary>
+    public readonly Flipbooks Books = new();
     /// <summary>Blood, pools and what a burst body throws (its Level: the settings' gore).</summary>
     public readonly Gore Gore;
     public FollowCamera? Cam;
@@ -69,6 +71,7 @@ public partial class BattleFx : Node3D
     {
         AddChild(Sparks);
         AddChild(Smoke);
+        AddChild(Books);
         AddChild(Hits);
         AddChild(Gore);
         for (int i = 0; i < 8; i++)
@@ -270,6 +273,37 @@ public partial class BattleFx : Node3D
     }
 
     /// <summary>A ring that races out from a point and fades.</summary>
+    /// <summary>Each school's burst, filmed (Flipbooks).</summary>
+    static string BlastOf(School s) => s switch
+    {
+        School.Fire => "fire_blast", School.Frost => "frost_burst", School.Storm => "storm_strike", School.Nature => "nature_burst",
+        School.Arcane => "arcane_burst", School.Holy => "holy_burst", School.Shadow => "shadow_burst", _ => "dust_ring",
+    };
+
+    /// <summary>A school's burst on the ground, `radius` across at its
+    /// height, with what it throws up: false if there is no atlas for it
+    /// yet (the caller draws what it drew before).</summary>
+    /// <summary>How bright each school's burst is drawn: fire hot enough to
+    /// bloom, the pale ones (frost, lightning, light) held back so their
+    /// cores keep their detail rather than burning to white.</summary>
+    static float GlowOf(School s) => s switch
+    {
+        School.Fire => 1.8f, School.Shadow => 1.6f, School.Nature => 1.35f, School.Arcane => 1.35f,
+        School.Frost => 1.05f, School.Storm => 1.15f, School.Holy => 1.05f, _ => 1f,
+    };
+
+    public bool Blast(double x, double z, School school, float radius, float life = 0.9f, float glow = -1)
+    {
+        if (glow < 0) glow = GlowOf(school);
+        float gy = Y(x, z);
+        var tint = new Color(glow, glow, glow, 1);
+        // Flat, but above the grass: under it the blades cut through the fire.
+        if (!Books.Spawn(BlastOf(school), V(x, gy + 0.55, z), radius * 1.2f, life, tint, flat: true, sizeEnd: radius * 2.4f)) return false;
+        // Standing up out of it, toward the camera: the same burst, smaller, so it has height.
+        Books.Spawn(BlastOf(school), V(x, gy + radius * 0.35, z), radius * 0.9f, life * 0.8f, tint * new Color(0.8f, 0.8f, 0.8f, 0.7f), sizeEnd: radius * 1.6f);
+        return true;
+    }
+
     void Nova(double x, double z, float radius, Color color, float life)
     {
         var m = Ground(x, z, radius, ringTex!, color, life, 3);
@@ -382,7 +416,7 @@ public partial class BattleFx : Node3D
                     if (e.Elite || e.Boss)
                     {
                         Flash(V(e.X, gy + 1.5, e.Z), pal.Light, 16, 0.6f, 12);
-                        Nova(e.X, e.Z, 5, pal.Glow, 0.45f);
+                        if (!Blast(e.X, e.Z, e.School, e.Boss ? 6 : 3.5f, 1.1f, 1.5f)) Nova(e.X, e.Z, 5, pal.Glow, 0.45f);
                         Cam?.AddTrauma(0.35f);
                     }
                     break;
@@ -417,7 +451,7 @@ public partial class BattleFx : Node3D
                 case Ev.Nova e:
                 {
                     var pal = Palette.Of(e.School);
-                    Nova(e.X, e.Z, (float)e.Radius, pal.Glow, (float)Math.Max(0.25, e.Duration));
+                    if (!Blast(e.X, e.Z, e.School, (float)e.Radius * 0.9f, (float)Math.Max(0.5, e.Duration * 1.5), 1f)) Nova(e.X, e.Z, (float)e.Radius, pal.Glow, (float)Math.Max(0.25, e.Duration));
                     if ((e.Rings ?? 1) > 0) Flash(V(e.X, Y(e.X, e.Z) + 1.3, e.Z), pal.Light, 6, 0.35f, (float)e.Radius * 2);
                     break;
                 }
@@ -426,14 +460,14 @@ public partial class BattleFx : Node3D
                     float gy = Y(e.X, e.Z), r = (float)e.Radius;
                     var pal = Palette.Of(e.School);
                     Flash(V(e.X, gy + 1.2, e.Z), pal.Light, 10 + (float)e.Power * 10, 0.35f, r * 3 + 3);
-                    Nova(e.X, e.Z, r * 1.15f, pal.Glow, 0.3f);
+                    if (!Blast(e.X, e.Z, e.School, r, 0.8f + r * 0.08f)) Nova(e.X, e.Z, r * 1.15f, pal.Glow, 0.3f);
                     int n = Math.Min(40, 10 + (int)Math.Round(r * 8));
                     for (int i = 0; i < n; i++)
                     {
                         float a = R() * Mathf.Tau, v = r * (2 + R() * 3);
                         Sparks.Spawn(V(e.X, gy + 0.6, e.Z), new Vector3(Mathf.Cos(a) * v, 2 + R() * 4, Mathf.Sin(a) * v), 0.4f + R() * 0.4f, 0.1f + R() * 0.08f, pal.Core, pal.Glow, 0.01f, 8, 2.5f);
                     }
-                    Sparks.Spawn(V(e.X, gy + 0.8, e.Z), Vector3.Zero, 0.3f, r * 1.3f, pal.Core, pal.Glow, r * 2.2f, alpha: 0.9f, sprite: Sprites.Of("fire"), spinV: 1.5f);
+                    if (!Flipbooks.Has(BlastOf(e.School))) Sparks.Spawn(V(e.X, gy + 0.8, e.Z), Vector3.Zero, 0.3f, r * 1.3f, pal.Core, pal.Glow, r * 2.2f, alpha: 0.9f, sprite: Sprites.Of("fire"), spinV: 1.5f);
                     if (e.School is School.Fire or School.Shadow or School.Physical)
                         for (int i = 0; i < 6; i++) Smoke.Spawn(V(e.X + (R() - 0.5) * r, gy + 0.5, e.Z + (R() - 0.5) * r), new Vector3(0, 1 + R(), 0), 1.2f, r * 0.4f, new Color("#2a2420"), new Color("#121010"), r * 0.9f, drag: 1.2f, alpha: 0.45f);
                     Cam?.AddTrauma((float)Math.Min(0.3, 0.05 + e.Power * 0.1));
@@ -791,6 +825,7 @@ public partial class BattleFx : Node3D
         Projectiles(b, fdt, now);
         Pickups(b, now);
         Sparks.Step(fdt);
+        Books.Step(fdt);
         Smoke.Step(fdt);
         Gore.Step(fdt);
     }

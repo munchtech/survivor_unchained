@@ -602,6 +602,7 @@ public partial class Game : Node, IZoneHost
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
     bool hordeDone, dropsDone, castDone, giveDone;
+    double blastT = 0.5;
 
     void Tour(double dt)
     {
@@ -642,6 +643,19 @@ public partial class Game : Node, IZoneHost
             {
                 var parts = w.Split(':');
                 gb.AddWeapon(parts[0], parts.Length > 1 && int.TryParse(parts[1], out var r) ? r : 1);
+            }
+        }
+        // --blast SCHOOL[:R]: that school's burst a few paces ahead, every second and a half (pictures of it).
+        if (Args.Get("blast") is string bl && Battle is { } bb && scene != null)
+        {
+            blastT -= dt;
+            if (blastT <= 0)
+            {
+                blastT = 1.5;
+                var parts = bl.Split(':');
+                var school = Enum.Parse<School>(parts[0], true);
+                float r = parts.Length > 1 ? float.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture) : 2.5f;
+                scene.Fx.Blast(bb.Player.X + 2, bb.Player.Z - 1, school, r);
             }
         }
         // --cast T: the art in hand used once, T seconds in (a picture of it).
