@@ -57,13 +57,17 @@ public sealed class Cond : Cmp
 {
     [JsonPropertyName("fact")] public string? FactKey;
     public string? Knows, NotKnows, Bg, Archetype, HasItem, HasTag, Trait, Met, History;
+    /// <summary>"male" or "female": who people take the survivor for.</summary>
+    public string? Sex;
     public int? Qty;
     public RelCond? Rel;
     public NpcFlagCond? NpcFlag;
     public NpcKnowsCond? NpcKnows;
     public FactionCond? Faction;
     public QuestCond? Quest;
-    public Cmp? Day, Level, Gold;
+    /// <summary>Kills: everything the survivor has ever put down, day and night; how
+    /// dangerous the town thinks they are, beside their level.</summary>
+    public Cmp? Day, Level, Gold, Kills;
     [JsonConverter(typeof(OneOrMany<TimeOfDay>))] public List<TimeOfDay>? Time;
     public ZoneCond? Zone;
     public List<Cond>? All, Any;
@@ -151,6 +155,7 @@ public static class Rules
         if (c.NotKnows != null) return !ch.Knowledge.Contains(c.NotKnows);
         if (c.Bg != null) return ch.Background == c.Bg;
         if (c.Archetype != null) return ch.Archetype == c.Archetype;
+        if (c.Sex != null) return (ch.Sex ?? Rpg.Sex.Male).Key() == c.Sex;
         if (c.HasItem != null) return Inventory.Count(ch, c.HasItem) >= (c.Qty ?? 1);
         if (c.HasTag != null) return Inventory.WorldTags(ch).Contains(c.HasTag);
         if (c.Trait != null) return ch.Traits.Contains(c.Trait);
@@ -170,6 +175,7 @@ public static class Rules
         if (c.Time != null) return c.Time.Contains(w.Time);
         if (c.Level != null) return c.Level.Holds(Fact.Of(ch.Level));
         if (c.Gold != null) return c.Gold.Holds(Fact.Of(ch.Gold));
+        if (c.Kills != null) return c.Kills.Holds(Fact.Of(ch.Stats.Kills));
         if (c.History != null) return w.History.Exists(h => h.Id == c.History);
         if (c.Zone != null) return c.Zone.Holds(w.Zones.TryGetValue(c.Zone.Id, out var z) && z.TryGetValue(c.Zone.Key, out var v) ? v : Fact.Null);
         return false;

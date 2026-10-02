@@ -62,7 +62,7 @@ public static class MapOffers
             [("wolf", 5, 0), ("boar", 2, 4), ("wolf_blighted", 3, 9)], "wolf_alpha"),
         new("dead", "the Risen", new[] { ("risen", 5.0), ("risen_warrior", 2.0), ("risen_archer", 2.0), ("grave_caller", 0.4) }, "barrow_knight", "The Barrow Lord", "Who Would Not Lie Down", ["gravebane", "of_the_grave", "hallowed"],
             [("risen", 5, 0), ("risen_archer", 2, 3), ("risen_warrior", 3, 7), ("grave_caller", 0.6, 13)], "barrow_knight"),
-        new("lamplings", "the Lamplings", new[] { ("lampling", 5.0), ("lampling_sapper", 1.5) }, "grimtunnel_roused", "Grimtunnel, Roused", "Foreman of the Under-Road", ["lampsnuffer", "of_the_salamander"],
+        new("lamplings", "the Lamplings", new[] { ("lampling", 5.0), ("lampling_sapper", 1.5) }, "grimtunnel_roused", "Grimtunnel, Roused", "Boss of the Deep Dig", ["lampsnuffer", "of_the_salamander"],
             [("lampling", 5, 0), ("lampling_sapper", 2.5, 5)], "lampling_sapper"),
         new("kerchiefs", "the Kerchiefs", new[] { ("footpad", 5.0), ("pillager", 2.0), ("bruiser", 1.2) }, "enforcer", "The Red Hand", "Warlord of the Ravine", ["watchmans", "sturdy"],
             [("footpad", 5, 0), ("pillager", 2.5, 4), ("bruiser", 2, 9)], "enforcer"),

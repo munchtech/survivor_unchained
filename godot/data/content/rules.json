@@ -70,6 +70,12 @@
        "fact": "beasts.outcome",
        "exists": true
       }
+     },
+     {
+      "not": {
+       "fact": "tam.pa_in",
+       "eq": true
+      }
      }
     ]
    },
@@ -98,6 +104,62 @@
     }
    ],
    "report": "Tam's father did not come in last night. Holloway has sent two men out to the farm."
+  },
+  {
+   "id": "beasts.farm_empty",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "beasts.severity",
+      "gte": 5
+     },
+     {
+      "not": {
+       "fact": "beasts.outcome",
+       "exists": true
+      }
+     },
+     {
+      "fact": "tam.pa_in",
+      "eq": true
+     },
+     {
+      "not": {
+       "fact": "tam.farm",
+       "exists": true
+      }
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "tam.farm": "emptied"
+     }
+    },
+    {
+     "history": {
+      "id": "farm_saved",
+      "text": "fetched Tam's father in before the Pack hit his farm",
+      "tags": [
+       "beasts",
+       "deed"
+      ],
+      "spread": 1,
+      "reactions": {
+       "tam": {
+        "affection": 25,
+        "trust": 20
+       },
+       "maeca": {
+        "respect": 10
+       }
+      }
+     }
+    }
+   ],
+   "report": "The Pack hit the farm past the Old Road last night: pens open, the door in splinters. Nobody was home. Tam's Pa slept on Rook's floor and swore at you through breakfast."
   },
   {
    "id": "beasts.gate",
@@ -185,6 +247,11 @@
    "effect": [
     {
      "set": {
+      "stream.clear": true
+     }
+    },
+    {
+     "set": {
       "beasts.outcome": "exploited"
      }
     },
@@ -218,10 +285,21 @@
        "fact": "dig.pell_cut",
        "eq": true
       }
+     },
+     {
+      "not": {
+       "fact": "beasts.outcome",
+       "eq": "allied"
+      }
      }
     ]
    },
    "effect": [
+    {
+     "set": {
+      "stream.clear": true
+     }
+    },
     {
      "set": {
       "beasts.outcome": "cured"
@@ -247,6 +325,41 @@
     }
    ],
    "report": "Wenna came in at dawn, muddy to the knees: the stream is running clear. The Pack has gone back into the deep wood."
+  },
+  {
+   "id": "stream.clear_allied",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "blight.days_clean",
+      "gte": 2
+     },
+     {
+      "fact": "beasts.outcome",
+      "eq": "allied"
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "stream.clear": true
+     }
+    },
+    {
+     "history": {
+      "id": "stream_cleared",
+      "text": "stopped the poison in the Thornhollow stream",
+      "tags": [
+       "deed",
+       "beasts"
+      ],
+      "spread": 2
+     }
+    }
+   ],
+   "report": "Wenna came in at dawn, muddy to the knees: the stream is running clear. Your wolves were drinking from it when she left."
   },
   {
    "id": "lie.found",
@@ -750,6 +863,30 @@
     }
    ],
    "report": "The cups rattled on Rook's shelves in the night. Nobody could say why. Chid says the ground turned over in its sleep."
+  },
+  {
+   "id": "wolf.blood.washes",
+   "when": {
+    "fact": "wolf.blood",
+    "gt": 0
+   },
+   "effect": {
+    "set": {
+     "wolf.blood": 0
+    }
+   }
+  },
+  {
+   "id": "wolf.blood.washes",
+   "when": {
+    "fact": "wolf.blood",
+    "gt": 0
+   },
+   "effect": {
+    "set": {
+     "wolf.blood": 0
+    }
+   }
   }
  ],
  "social": {

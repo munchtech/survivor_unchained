@@ -72,7 +72,7 @@ public static class Objectives
         if (early && !h.Entry("holloway_bounty")) opt.Add(new("Captain Holloway, on the square, is paying for wolves", Optional: true));
         if (early && !h.Entry("maeca_theory")) opt.Add(new("Maeca, the hunter by the east gate, thinks the wolves are running from something", Optional: true));
         if (h.Knows("hint.greymuzzle") && !h.Entry("greymuzzle_met") && h.F("greymuzzle").Str != "dead") opt.Add(new("Greymuzzle, the old alpha, keeps to Wolf Hollow, north of the Old Road", Optional: true));
-        if (h.Entry("holloway_bounty") && !h.Entry("bounty_claimed") && (h.Has("wolf_pelt") || h.Has("greymuzzle_fang"))) opt.Add(new("Captain Holloway, on the square, pays for pelts", Optional: true));
+        if (h.Entry("holloway_bounty") && !h.Entry("bounty_claimed") && !h.F("bounty.stopped").Truthy && (h.Has("wolf_pelt") || h.Has("greymuzzle_fang"))) opt.Add(new("Captain Holloway, on the square, pays for pelts", Optional: true));
         return main.Concat(opt).ToList();
     }
 

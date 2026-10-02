@@ -68,6 +68,17 @@ static class H
         return p;
     }
 
+    /// <summary>Start a conversation and click through whatever is said
+    /// before the first question (a remark on your calling, a deed quoted
+    /// back): the greeting, with its choices.</summary>
+    public static Presented Greet(Conversation convo, Ctx c)
+    {
+        var r = new DialogueRunner(convo, c);
+        var p = r.Start();
+        while (p != null && p.Choices.Count == 0) p = r.Advance();
+        return p ?? throw new InvalidOperationException("the conversation ended before a question");
+    }
+
     /// <summary>A seeded stream for gossip.</summary>
     public static Func<double> Lcg(double start)
     {

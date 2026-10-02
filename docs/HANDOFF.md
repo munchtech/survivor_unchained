@@ -18,7 +18,11 @@ in real time.
 ## Setup
 - Godot 4.5.1 .NET and the .NET 8 SDK. Open `godot/project.godot` and
   press F5, or build with `dotnet build godot/SurvivorUnchained.csproj`.
-- Tests: `cd godot/tests && dotnet test` (all 195 pass).
+- Tests: `cd godot/tests && dotnet test` (all pass). `StoryLint.cs` reads the
+  story whole (unreachable nodes, journal lines never earned, facts asked
+  about but never set, items wanted but never obtainable, pronoun drift):
+  keep it green when writing content. Voices: `docs/VOICES.md`; the
+  story's secrets and where it goes: `docs/STORY_BIBLE.md`.
 - On Windows, `godot/assets` may arrive as a tiny text file instead of a
   symlink: clone with `-c core.symlinks=true` (Developer Mode on), or
   delete it and copy `public/assets` into its place.

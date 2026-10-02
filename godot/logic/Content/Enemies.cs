@@ -125,7 +125,7 @@ public static class Enemies
             Note = "They dig toward light the way moths fly at it. A lampling will chew through a cellar wall to sit beside your candle, and then through you to keep it." },
         new() { Id = "grimtunnel", Name = "Grimtunnel", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "grimtunnel", Scale = 1.9,
             Health = 400, Speed = 5, Damage = 10, Radius = 0.7, Xp = 0, Behavior = Behavior.Stationary, Resists = new() { [School.Fire] = 0.5 },
-            Note = "Foreman of the diggers. Wears three lamps and a grudge. Took the Ford-Warden's heart out from under you and went back down the hole with it." },
+            Note = "The Boss of the Dig. Wears three lamps and a grudge. Took the Ford-Warden's heart out from under you and went back down the hole with it." },
         new() { Id = "grimtunnel_roused", Name = "Grimtunnel, Roused", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "grimtunnel", Scale = 2.1,
             Health = 460, Speed = 3.3, Damage = 16, Radius = 0.8, Mass = 8, Xp = 40, Gold = 12, Behavior = Behavior.Chase, Resists = new() { [School.Fire] = 0.5, [School.Frost] = -0.2 },
             Ranged = new() { Range = 11, Cooldown = 4.5, Speed = 8, School = School.Fire, Lob = true, Zone = new(2.2, 3.5, 0.4), Art = "firepot" },
@@ -135,7 +135,7 @@ public static class Enemies
             Health = 24, Speed = 2.9, Damage = 8, Radius = 0.4, Xp = 4, Behavior = Behavior.Ranged, Resists = new() { [School.Fire] = 0.5, [School.Frost] = -0.3 },
             Ranged = new() { Range = 8, Cooldown = 4.4, Speed = 8, School = School.Fire, Lob = true, Zone = new(1.6, 3, 0.35), Art = "firepot" },
             Burst = new(2.2, 1.2, 0.6, School.Fire, StatusKind.Burn),
-            Note = "Carries a satchel of the foreman's blasting ember and throws it at whatever looks brightest. Dies loudly. Stand clear." },
+            Note = "Carries a satchel of the Boss's blasting ember and throws it at whatever looks brightest. Dies loudly. Stand clear." },
 
         /* --------------------------------------------------------------- beasts -- */
         new() { Id = "wolf", Name = "Longtooth Wolf", Family = Family.Wolf, Faction = Faction.Pack, Visual = "wolf",

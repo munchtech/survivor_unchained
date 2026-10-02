@@ -38,6 +38,9 @@ public sealed class Verge : ZoneRuntime
     /// <summary>Where the Coyle wagons' ruts leave the road for the ravine.</summary>
     static readonly XZ RutsAt = new(-52, 40);
 
+    /// <summary>Redcowl falls with the Pack running beside you: the ally route's payoff in the journal.</summary>
+    const string PackLed = """{ "if": { "fact": "pack.allied", "eq": true }, "then": [{ "quest": { "id": "beasts", "entry": "pack_led" } }] }""";
+
     /// <summary>The caravan quest settles once both halves of it have.</summary>
     const string CaravanSettle = """{ "if": { "all": [{ "fact": "caravan.survivors", "exists": true }, { "fact": "caravan.cargo", "exists": true }] }, "then": [{ "quest": { "id": "caravan", "status": "resolved" } }] }""";
 
@@ -178,13 +181,13 @@ public sealed class Verge : ZoneRuntime
         StoryFight("hollow", hollow, 6.5, "Hunt the Pack", "Wolf Hollow",
             () => !WolvesFriendly() && !HollowCalm() && F("greymuzzle").Str != "dead",
             () => Story("hollow_by_night", "The Hollow by Night", "pack", 311, "wolf_alpha", "Greymuzzle", "The Old Alpha",
-                $$"""[{ "set": { "greymuzzle": "dead", "hollow.hostile": true } }, { "add": { "beasts.population": -30 } }, { "quest": { "id": "beasts", "entry": "alpha_dead" } }, {{Hist("killed_greymuzzle", "killed Greymuzzle, the old alpha of the Pack, in his own Hollow by night", ["beasts", "wolves"], 2, null, """{ "maeca": { "affection": -50, "respect": -20 }, "holloway": { "respect": 20 } }""")}}]""",
+                $$"""[{ "set": { "greymuzzle": "dead", "hollow.hostile": true } }, { "add": { "beasts.population": -30 } }, { "quest": { "id": "beasts", "entry": "alpha_dead" } }, { "give": "greymuzzle_fang" }, {{Hist("killed_greymuzzle", "killed Greymuzzle, the old alpha of the Pack, in his own Hollow by night", ["beasts", "wolves"], 2, null, """{ "maeca": { "affection": -50, "respect": -20 }, "holloway": { "respect": 20 } }""")}}]""",
                 """[{ "add": { "beasts.population": 10 } }, { "set": { "hollow.hostile": true } }, { "quest": { "id": "beasts", "entry": "hollow_lost" } }]"""));
         // The Missing Caravan, by force: Redcowl's camp taken in the dark.
         StoryFight("roost", roost, 7, "Raid the Roost", "Redcowl's Roost",
             () => !KerchiefsFriendly() && F("redcowl").Str is not ("dead" or "tricked") && !F("roost.cleared").Truthy,
             () => Story("roost_raid", "Raid on the Roost", "kerchiefs", 523, "enforcer", "Redcowl", "Of the Kerchiefs",
-                $$"""[{ "set": { "redcowl": "dead", "roost.cleared": true, "roost.hostile": true } }, { "quest": { "id": "caravan", "entry": "roost_raided" } }, {{Hist("killed_redcowl", "took Redcowl's Roost by night and killed him in it", ["kerchief", "caravan"], 2, """{ "fear": 10 }""", """{ "holloway": { "respect": 25 }, "rav": { "affection": -20 } }""")}}]""",
+                $$"""[{ "set": { "redcowl": "dead", "roost.cleared": true, "roost.hostile": true } }, { "quest": { "id": "caravan", "entry": "roost_raided" } }, {{PackLed}}, {{Hist("killed_redcowl", "took Redcowl's Roost by night and killed him in it", ["kerchief", "caravan"], 2, """{ "fear": 10 }""", """{ "holloway": { "respect": 25 }, "rav": { "affection": -20 } }""")}}]""",
                 """[{ "set": { "roost.hostile": true } }, { "quest": { "id": "caravan", "entry": "roost_repelled" } }]"""));
         // When the Dig turns on you, it boils over after dark.
         StoryFight("dig", dig, 7, "Hold the Dig's edge", "The Dig",
@@ -350,6 +353,8 @@ public sealed class Verge : ZoneRuntime
             SpawnGroup("wolf", 5, hollow.X, hollow.Z, 9, "hollow", 14);
             if (F("beasts.outcome").Str != "cured") SpawnGroup("wolf_blighted", 3, hollow.X, hollow.Z, 6, "hollow", 8);
             if (HollowCalm()) G.Say("The wolves watch you come. None of them move to stop you.", null, 4);
+            else if (Test("""{ "hasTag": "wolf_pelts" }""") && !F("pack.allied").Truthy) G.Say("They smell the cloak before they see you. Every wolf in the Hollow is on its feet.", null, 4);
+            else if (F("wolf.blood").Truthy && Knows("hint.greymuzzle")) G.Say("They smell the blood on you before they see you. Maeca said none since you last slept.", null, 5);
             else G.Say("Low growling from every side of the Hollow.", null, 3);
         }
         // Redcowl's Roost.
@@ -456,7 +461,7 @@ public sealed class Verge : ZoneRuntime
         {
             Id = "postrest", X = post.X, Z = post.Z + 0.5, R = 3, Verb = "Rest", Name = "By the Fire",
             When = () => G.Look.IsLit(postFire),
-            Hint = () => restUsed ? "Once per expedition" : "Heal, and write it down",
+            Hint = () => restUsed ? "Once each trip out" : "Heal, and write it down",
             Locked = () => restUsed ? "You have rested here already" : null,
             Act = () =>
             {
@@ -489,6 +494,19 @@ public sealed class Verge : ZoneRuntime
                 G.Say("The water is warm, and faintly green, and smells like a chapel lamp.", null, 4);
             },
         });
+        // Bitterroot grows where the water is bad, and Wenna always wants more:
+        // a few clumps on the green stretch each visit, while the poison lasts.
+        (double X, double Z)[] roots = [(-5, 3), (4, -4.5), (7.5, 4)];
+        for (int i = 0; i < roots.Length; i++)
+        {
+            int k = i;
+            I.Add(new()
+            {
+                Id = $"root{k}", X = sample.X + roots[k].X, Z = sample.Z + roots[k].Z, R = 2, Verb = "Dig up", Name = "Bitterroot",
+                When = () => !seen.Contains($"root{k}") && F("beasts.outcome").Str != "cured" && !F("stream.clear").Truthy,
+                Act = () => { seen.Add($"root{k}"); G.Apply("""[{ "give": "bitterroot" }]"""); },
+            });
+        }
         I.Add(new()
         {
             Id = "pipe", X = pipe.X, Z = pipe.Z, R = 3.2, Verb = "Examine", Name = "An Iron Pipe",
@@ -565,7 +583,9 @@ public sealed class Verge : ZoneRuntime
             {
                 bool reads = Test("""{ "any": [{ "knows": "arcana" }, { "hasTag": "scholar_lens" }] }""");
                 G.Apply("""[{ "quest": { "id": "vault", "status": "active", "entry": "seen" } }, { "if": { "any": [{ "knows": "arcana" }, { "hasTag": "scholar_lens" }] }, "then": [{ "quest": { "id": "vault", "entry": "script" } }] }]""");
-                if (HasItem("sigil_fragment")) G.Say("The fragment fits one notch of the sigil. The other six are empty. The door does not care how much you want it open.", null, 6);
+                if (HasItem("sigil_fragment")) G.Say(W.Time == TimeOfDay.Night
+                    ? "The fragment fits one notch of the seven, and under your hand the whole sigil wakes, violet, like an eye opening. The door is listening."
+                    : "The fragment fits one notch of the seven, and the stone warms under it. Whatever the sigil is waiting for, it is not daylight.", null, 6);
                 else G.Say(reads ? "Old-empire script over the door: \"Here the Seventh Legion buried what it could not burn.\" Below it, a sigil with seven notches, all empty."
                     : "A door of black stone, smooth as glass, and a violet sigil you cannot read. It hums against your teeth.", null, 6);
             },
@@ -718,6 +738,11 @@ public sealed class Verge : ZoneRuntime
         {
             f["beasts.population"] = Math.Max(0, Num("beasts.population", 60) - (e.Tag == "greymuzzle" ? 20 : 1));
             f["verge.wolf_kills"] = Num("verge.wolf_kills") + 1;
+            // Blood on you until you next sleep (rules.json washes it off at dawn): the Hollow can smell it.
+            f["wolf.blood"] = Num("wolf.blood") + 1;
+            // You knelt to Greymuzzle and promised him; the Pack keeps count.
+            if (F("promise.pack").Truthy && !F("promise.broken").Truthy)
+                G.Apply($$"""[{ "set": { "promise.broken": true } }, {{Hist("broke_promise", "promised Greymuzzle a cure, and killed his wolves", ["beasts", "wolves", "betrayal"], 2, null, """{ "maeca": { "trust": -30, "affection": -20 } }""")}}]""");
             if (Num("verge.wolf_kills") == 15)
                 G.Apply($"[{Hist("wolf_slaughter", "killed a great many wolves in the Verge", ["beasts", "wolves"], 2, null, """{ "maeca": { "affection": -20 }, "brannoc": { "respect": 5 }, "holloway": { "respect": 10 } }""")}]");
             if (e.Disposition == Disposition.Neutral || e.Provoked) TurnHostile("hollow.hostile");
@@ -732,7 +757,7 @@ public sealed class Verge : ZoneRuntime
         if (e.Tag == "redcowl")
         {
             redcowl = null;
-            G.Apply($$"""[{ "set": { "redcowl": "dead" } }, {{Hist("killed_redcowl", "killed Redcowl in his own camp", ["kerchief", "caravan"], 2, """{ "fear": 10 }""", """{ "holloway": { "respect": 25 }, "rav": { "affection": -20 } }""")}}]""");
+            G.Apply($$"""[{ "set": { "redcowl": "dead" } }, {{PackLed}}, {{Hist("killed_redcowl", "killed Redcowl in his own camp", ["kerchief", "caravan"], 2, """{ "fear": 10 }""", """{ "holloway": { "respect": 25 }, "rav": { "affection": -20 } }""")}}]""");
             G.SetBoss(null);
             if (!roostCrew.Any(Up)) W.Facts["roost.cleared"] = true;
         }

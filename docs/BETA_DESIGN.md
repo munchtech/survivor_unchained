@@ -49,10 +49,10 @@ a tavern, a shrine, a smithy, a market.
 
 | NPC | Role | Wants | Notes |
 |---|---|---|---|
-| **Vonnra Hydrocheck** | Far seer, keeps the toll | Payment, always | Strange merchant. Refuses to discuss the sealed vault. Reads your fortune at chapter's end. |
+| **Vonnra Ash-of-Morrow** | Far seer, keeps the toll | Payment, always | Strange merchant. Refuses to discuss the sealed vault. Reads your fortune at chapter's end. |
 | **Maeca Barefoot** | Hunter, of the fallen Ashford Garrison | The truth about the forest | "Something is driving them out." |
 | **Chid, "the Fool"** | Priest at the broken shrine | The shrine to work again | "It used to work." Devout route. |
-| **Dr. Rav McBreathless** | Kerchief defector, in the tavern | To never go back | Knows how the Kerchiefs work. Outcast route. Fence. |
+| **Rav Cutwell** ("Doctor McBreathless" to the Watch) | Kerchief defector, in the tavern | To never go back | Knows how the Kerchiefs work. Outcast route. Fence. |
 | **Captain Holloway** | Watch captain | Roads open, beasts dead | "The beasts are bolder." Pays bounties. Arrests thieves. |
 | **Harlan Coyle** | Merchant; caravan owner | His caravan, his nephew | "They're attacking caravans." Quest B. |
 | **Pell Varrow** | Rival factor | To corner the market | Secretly paid the Kerchiefs to take Coyle's caravan. |
@@ -60,7 +60,7 @@ a tavern, a shrine, a smithy, a market.
 | **Tam** | Farm boy, frightened | His family safe | "Something is killing them." |
 | **Brannoc** | Blacksmith | Good steel, good pelts | Buys beast materials; crafts from them. |
 | **Mother Rook** | Innkeeper | Paying guests | Rest, save, storage, rumours. |
-| **Professor Keegan** | Knight of the Argent Vigil (probationary), at the north gate | Nobody through the gate | "You aren't ready for what's beyond there." Future content. |
+| **Dame Keegan Orme** | Knight of the Argent Vigil (probationary), at the north gate | Nobody through the gate | "You aren't ready for what's beyond there." Future content. |
 
 ## Factions
 

@@ -208,11 +208,14 @@
    "night": true
   },
   {
-   "text": "Buried two this week. The ground's full and the priest's a boy."
+   "text": "Buried two this week. The ground's full and the priest's a fool. Says so himself."
   },
   {
-   "text": "They found the Aldo lad in the ditch. What was left of him.",
-   "night": true
+   "text": "They buried Aldo this morning. The Captain carried the front of the coffin himself.",
+   "when": {
+    "fact": "wolves.at_gate",
+    "eq": true
+   }
   },
   {
    "text": "Keep walking, hero. I've had my fill of heroes."
@@ -397,7 +400,7 @@
    }
   },
   {
-   "text": "The Coyle wagons had the Aldo boy's wedding cloth on them.",
+   "text": "The Coyle wagons had the Oswin girl's wedding cloth on them.",
    "when": {
     "all": [
      {
@@ -456,14 +459,14 @@
    }
   },
   {
-   "text": "Pell's been generous lately. With you, mostly.",
+   "text": "Pell's been generous lately. With you, especially.",
    "when": {
     "fact": "caravan.pell",
     "eq": "ally"
    }
   },
   {
-   "text": "Kerchiefs hit the Aldo farm again. Prices'll climb, you watch.",
+   "text": "Kerchiefs hit the Penhale farm again. Prices'll climb, you watch.",
    "when": {
     "fact": "kerchief.raids",
     "gte": 1
@@ -614,6 +617,77 @@
     "fact": "wolves.at_gate",
     "eq": true
    }
+  },
+  {
+   "when": {
+    "fact": "tam.farm",
+    "eq": "emptied"
+   },
+   "text": "Pack tore Tam's farm to bits. His Pa was in town, thank God. Somebody fetched him in."
+  },
+  {
+   "text": "Chid's not aged a day since my mam was a girl. Says it's clean living. Have you SEEN where he lives?"
+  },
+  {
+   "when": {
+    "level": {
+     "gte": 8
+    }
+   },
+   "text": "That's the one. Don't look. DON'T look."
+  },
+  {
+   "when": {
+    "kills": {
+     "gte": 1500
+    }
+   },
+   "text": "They say that one's killed more than the fever year did."
+  },
+  {
+   "when": {
+    "all": [
+     {
+      "level": {
+       "gte": 8
+      }
+     },
+     {
+      "not": {
+       "fact": "player.wanted",
+       "exists": true
+      }
+     }
+    ]
+   },
+   "watch": true,
+   "text": "Captain says to let you be. Captain says it like he's not sure."
+  },
+  {
+   "when": {
+    "sex": "female"
+   },
+   "text": "Is that a woman in all that? Good for her. Good for her."
+  },
+  {
+   "when": {
+    "sex": "female"
+   },
+   "child": true,
+   "text": "Are you a lady knight? Are there lady knights?"
+  },
+  {
+   "when": {
+    "archetype": "arcanist"
+   },
+   "text": "Don't stand so near the thatch, spark-hands."
+  },
+  {
+   "when": {
+    "archetype": "reaver"
+   },
+   "night": true,
+   "text": "Evening. Please don't hit me. Evening."
   }
  ]
 }

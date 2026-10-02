@@ -18,7 +18,7 @@
    "holloway_bounty": "Captain Holloway pays five gold a pelt, and fifty for the fang of Greymuzzle, the old alpha. \"They're bolder,\" he says.",
    "maeca_theory": "Maeca Barefoot says the wolves are not hunting but running: something is driving them out of the deep wood.",
    "wenna_request": "Old Wenna says the animals were never like this. She wants a sample of the Thornhollow stream to test.",
-   "tam_plea": "Tam saw wolves drink from the stream and fall down. \"Something is killing them,\" he says. Nobody listens to him.",
+   "tam_plea": "Tam saw wolves drink from the stream and fall down. \"Something's killing them,\" he says. Nobody believes a child.",
    "harlan_view": "Harlan Coyle blames the wolves for his missing caravan. He wants them dead, all of them.",
    "clue.sick_wolf": "A dead wolf in the Verge with no wound on it: black gums, milky eyes, ribs like a washboard.",
    "clue.green_stream": "The Thornhollow stream runs green below the blight. Nothing grows at its edge.",
@@ -37,7 +37,7 @@
    "hollow_lost": "You went into the Hollow after dark to finish the Pack, and the Pack finished with you. Greymuzzle is still out there, and bolder for it.",
    "dig_overrun": "The Dig boiled over in the dark and you held its edge until nothing more came up. Grimtunnel went back down, bleeding. The pump is dead.",
    "dig_held": "The lamplings poured up out of the Dig in the dark and you could not hold them. The pump runs on.",
-   "pack_led": "You led the Pack onto the Kerchief camp.",
+   "pack_led": "The Pack ran beside you into the Roost, and the Roost fell.",
    "told_holloway": "You told Holloway the beasts were dealt with.",
    "dig_sold": "You sold the Dig's location to Pell Varrow."
   },
@@ -95,7 +95,7 @@
   "entries": {
    "seen": "A door of black stone in the hillside of the Verge, older than anything in the Waystation, sealed with a sigil nobody can read.",
    "script": "You read the script over the door: \"Here the Seventh Legion buried what it could not burn.\"",
-   "fragment": "A fragment of a sigil, from the hand of someone who did not make it out. It fits the door.",
+   "fragment": "A fragment of a sigil, from the hand of someone who did not make it out. It fits one notch of the door's seven, and after dark the whole sigil wakes to it.",
    "bootprints": "Fresh bootprints in the mud at the door, going in, not coming out. Someone got inside.",
    "vonnra_refuses": "Vonnra will not talk about the vault. Not for money, which is how you know it matters.",
    "chid_empire": "Chid says the old empire \"did something here\" before the Watch was founded, and the Watch was founded to keep it done.",
@@ -110,7 +110,7 @@
   "mystery": true,
   "summary": "Tremors under the Verge. The lamplings are digging toward something, and they took the Warden's heart with them.",
   "entries": {
-   "grimtunnel": "Grimtunnel, foreman of the lamplings, stole the Ford-Warden's heart and went down, not away.",
+   "grimtunnel": "Grimtunnel, the Boss of the Dig, stole the Ford-Warden's heart and went down, not away.",
    "tremor": "The ground shook in the Verge. Not an earthquake: something moved.",
    "sinkhole": "At the bottom of the sinkhole: something pale, eyeless and segmented, bigger than a house. Dead. Probably.",
    "survivor": "A lampling survivor, half-mad: \"It moved. The dark moved. Grimtunnel says it is ours now.\"",

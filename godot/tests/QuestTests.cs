@@ -323,10 +323,152 @@ public class QuestTests
     }
 
     [Fact]
+    public void A_fine_paid_clears_the_name()
+    {
+        var s = Q("outcast");
+        s.World.Facts["player.wanted"] = true;
+        s.Ch.Gold = 120;
+        Talk(Convo("holloway"), s.C, "pay the hundred");
+        Assert.False(s.World.Fact("player.wanted").Truthy);
+        Assert.True(s.World.Fact("player.fined").Truthy);
+        Assert.NotEqual("wanted", new DialogueRunner(Convo("rook"), s.C).Start()!.Node.Id);
+    }
+
+    [Fact]
+    public void A_captain_shown_the_cause_stops_paying_for_wolves()
+    {
+        var s = Q("hunter");
+        Items(s, "wolf_pelt", 2);
+        Talk(Convo("holloway"), s.C, "sick, not bold");
+        s.Ch.Knowledge.Add("root_cause");
+        Talk(Convo("holloway"), s.C, "poisoned");
+        Assert.True(s.World.Fact("bounty.stopped").Truthy);
+        var offered = new DialogueRunner(Convo("holloway"), s.C).Start()!.Choices.Select(x => x.Text);
+        Assert.DoesNotContain(offered, t => t.Contains("bounty", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Running_with_the_Pack_outlasts_a_clean_stream()
+    {
+        var s = Q("hunter");
+        s.World.Facts["beasts.outcome"] = "allied";
+        s.World.Facts["dig.pump"] = "broken";
+        for (int d = 0; d < 3; d++) Day(s, 0.5);
+        Assert.Equal("allied", s.World.Fact("beasts.outcome").Str);
+        Assert.True(s.World.Fact("stream.clear").Truthy);
+    }
+
+    [Fact]
+    public void Fetching_Tams_father_in_saves_a_man_not_a_farm()
+    {
+        var s = Q("hunter");
+        Talk(Convo("tam"), s.C, "where is your farm");
+        Day(s, 0.5);
+        Day(s, 0.5);
+        Talk(Convo("tam"), s.C, "fetch your pa");
+        for (int d = 0; d < 4; d++) Day(s, 0.5);
+        Assert.Equal("emptied", s.World.Fact("tam.farm").Str);
+        Assert.Contains(s.World.History, h => h.Id == "farm_saved");
+    }
+
+    [Fact]
+    public void Deeds_are_quoted_back_once_and_some_close_a_door()
+    {
+        var s = Q("outcast");
+        Talk(Convo("rav"), s.C, "goodbye");
+        Rules.Apply(E("{ history: { id: 'tricked_redcowl', text: 'bluffed the Kerchiefs out of their own camp', tags: ['kerchief'], spread: 2 } }"), s.C);
+        var r = new DialogueRunner(Convo("rav"), s.C);
+        Assert.Matches("he RAN", r.Start()!.Text);
+        Assert.Equal("hub", r.Advance()!.Node.Id);
+        Assert.DoesNotMatch("he RAN", Greet(Convo("rav"), s.C).Text);
+
+        Talk(Convo("harlan"), s.C, "goodbye");
+        Rules.Apply(E("{ history: { id: 'burned_roost', text: 'set the Roost burning', tags: ['caravan'], spread: 2 } }"), s.C);
+        for (int i = 0; i < 2; i++) Assert.Matches("screaming", new DialogueRunner(Convo("harlan"), s.C).Start()!.Text);
+    }
+
+    [Fact]
+    public void People_see_who_you_are()
+    {
+        var s = Q("hunter");
+        s.Ch.Sex = Sex.Female;
+        Assert.True(Rules.Test(C("{ sex: 'female' }"), s.C));
+        Assert.False(Rules.Test(C("{ sex: 'male' }"), s.C));
+        s.Ch.Stats.Kills = 2000;
+        Assert.True(Rules.Test(C("{ kills: { gte: 1500 } }"), s.C));
+        Talk(Convo("sella"), s.C, "not tonight");
+        var said = new List<string>();
+        for (int i = 0; i < 3; i++)
+        {
+            var r = new DialogueRunner(Convo("sella"), s.C);
+            var p = r.Start();
+            while (p != null && p.Choices.Count == 0) { said.Add(p.Text); p = r.Advance(); }
+        }
+        Assert.Contains(said, t => t.Contains("first woman up those stairs"));
+        Assert.Contains(said, t => t.Contains("charge by the hour"));
+    }
+
+    [Fact]
+    public void Maeca_asks_once_the_Pack_is_settled_and_the_scene_cuts_away_unless_asked_not_to()
+    {
+        var s = Q("hunter");
+        Talk(Convo("maeca"), s.C, "goodbye");
+        var m = s.World.Npc("maeca");
+        m.Respect = 30; m.Affection = 10;
+        m.Flags["thanked"] = true; m.Flags["say:calling"] = true;
+        s.World.Facts["beasts.outcome"] = "cured";
+        Assert.NotEqual("invite", new DialogueRunner(Convo("maeca"), s.C).Start()!.Node.Id);
+        s.World.Time = TimeOfDay.Night;
+        var p = Talk(Convo("maeca"), s.C, "keep quiet");
+        Assert.Equal("blind", p!.Node.Id);
+        Assert.DoesNotContain("[explicit scene", p.Text);
+        Assert.True(s.World.Fact("maeca.lover").Truthy);
+        Assert.Contains(s.Ch.Conditions, c => c.Id == ConditionId.Warmed);
+        s.World.Facts["settings.intimacy"] = "full";
+        p = Talk(Convo("maeca"), s.C, "big enough for two");
+        Assert.StartsWith("[explicit scene", p!.Text);
+    }
+
+    [Fact]
+    public void Maecas_rule_is_the_Hollows_rule()
+    {
+        var s = Q("hunter");
+        Assert.True(Standings.HollowCalm(s.C));
+        s.World.Facts["wolf.blood"] = 2;
+        Assert.False(Standings.HollowCalm(s.C));
+        Day(s, 0.5);
+        Assert.True(Standings.HollowCalm(s.C));
+        s.Ch.Equipment.Cloak = Inventory.Make(s.Ch, "wolfhide_cloak");
+        Assert.False(Standings.HollowCalm(s.C));
+        s.World.Facts["pack.allied"] = true;
+        Assert.True(Standings.HollowCalm(s.C));
+    }
+
+    [Fact]
+    public void A_promise_to_the_Pack_is_kept_or_remembered_broken()
+    {
+        var s = Q("hunter");
+        Talk(Convo("greymuzzle"), s.C, "kneel", "stop whatever");
+        Assert.True(s.World.Fact("promise.pack").Truthy);
+        s.World.Facts["promise.broken"] = true;
+        Assert.Matches("back to you", Talk(Convo("greymuzzle"), s.C)!.Text);
+    }
+
+    [Fact]
+    public void Snibs_bribe_is_a_deed()
+    {
+        var s = Q("outcast");
+        s.Ch.Gold = 50;
+        Talk(Convo("snib"), s.C, "how much", "forty gold");
+        Assert.Equal("moved", s.World.Fact("dig.pump").Str);
+        Assert.Contains(s.World.History, h => h.Id == "bribed_snib");
+    }
+
+    [Fact]
     public void Choices_that_no_longer_apply_go()
     {
         var s = Q("hunter");
-        List<string> Offered(string id) => new DialogueRunner(Convo(id), s.C).Start()!.Choices.Select(x => x.Text).ToList();
+        List<string> Offered(string id) => Greet(Convo(id), s.C).Choices.Select(x => x.Text).ToList();
         s.World.Npc("vonnra").Flags["met"] = true;
         Assert.Contains(Offered("vonnra"), t => Regex.IsMatch(t, "pay the toll", RegexOptions.IgnoreCase));
         s.World.Facts["toll.paid"] = true;
