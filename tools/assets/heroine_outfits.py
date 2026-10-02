@@ -139,6 +139,9 @@ zs = zs[zs < head("pelvis")[2]]
 gap = np.where(np.diff(zs) < -0.012)[0]
 CROTCH = zs[gap[0]] if len(gap) else zs[-1]
 CROTCH_Y = Y[mid][np.argmin(np.abs(Z[mid] - CROTCH))]
+if "crotch" in body.keys():
+    _cr = mw @ Vector(body["crotch"])
+    CROTCH, CROTCH_Y = _cr.z, _cr.y
 NIP = {}
 for s, sd in ((1, "l"), (-1, "r")):
     m = (Z > 1.25) & (Z < 1.5) & (X * s > 0.03) & (X * s < 0.2)

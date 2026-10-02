@@ -361,6 +361,46 @@ for i in np.where(T > 0.001)[0]:
 co = np.array([(body.matrix_world @ v.co)[:] for v in body.data.vertices])
 print("LEFT BREAST inner patch from the right,", moved, "points")
 
+# At the very bottom of her crotch the sculpt left a small crumpled knot of
+# skin (folds over itself): ironed flat, only within 2.5 cm of it.
+mid = (np.abs(co[:, 0]) < 0.008) & (co[:, 2] > 0.8) & (co[:, 2] < 1.15) & (np.abs(co[:, 1]) < 0.12)
+zs_ = np.sort(co[mid, 2])[::-1]
+zs_ = zs_[zs_ < 1.07]
+gap_ = np.where(np.diff(zs_) < -0.012)[0]
+crotch_z = zs_[gap_[0]] if len(gap_) else zs_[-1]
+crotch_y = co[mid][np.argmin(np.abs(co[mid, 2] - crotch_z)), 1]
+knot = np.array([0.0, crotch_y, crotch_z])
+wgt = _ease((0.036 - np.linalg.norm(co - knot, axis=1)) / 0.016)
+# (Her skin is split along the paint's seams: points at one place move as one.)
+_, grp = np.unique(np.round(co, 6), axis=0, return_inverse=True)
+grp = grp.ravel()
+G_ = grp.max() + 1
+gco = np.zeros((G_, 3))
+np.add.at(gco, grp, co)
+gco /= np.bincount(grp, minlength=G_)[:, None]
+gnb = [set() for _ in range(G_)]
+for e in body.data.edges:
+    a_, b_ = grp[e.vertices[0]], grp[e.vertices[1]]
+    if a_ != b_:
+        gnb[a_].add(b_)
+        gnb[b_].add(a_)
+gw = np.zeros(G_)
+np.maximum.at(gw, grp, wgt)
+gidx = np.where(gw > 0.001)[0]
+gnl = [list(gnb[g]) for g in gidx]
+x_ = gco.copy()
+for _ in range(300):
+    avg = np.array([x_[n].mean(0) if n else x_[g] for g, n in zip(gidx, gnl)])
+    x_[gidx] = x_[gidx] + 0.5 * gw[gidx, None] * (avg - x_[gidx])
+idx_ = np.where(gw[grp] > 0.001)[0]
+for i in idx_:
+    body.data.vertices[i].co = Vector(x_[grp[i]])
+co = np.array([(body.matrix_world @ v.co)[:] for v in body.data.vertices])
+print("CROTCH knot ironed:", len(idx_), "points round", knot.round(3))
+# Recorded for the outfit builder (once ironed, the crotch has no step to find).
+body["crotch"] = [float(c) for c in knot]
+
+
 # Her paint, from the sculpt.
 before = set(bpy.data.objects)
 bpy.ops.import_scene.gltf(filepath=TEXSRC)
