@@ -43,7 +43,6 @@ public partial class WorldScene : Node3D, IZoneLook
     public double Time { get; private set; }
     double acc, hitstop, hitstopCd, fightTime, damageFlash, slowmo;
     List<CombatEvent> frameEvents = new();
-    Vector2 grassAt;
     public const double Step = 1.0 / 60;
 
     public WorldScene(ZoneData data, FollowCamera cam)
@@ -52,8 +51,7 @@ public partial class WorldScene : Node3D, IZoneLook
         this.cam = cam;
         Name = $"World_{data.Id}";
         var start = new Vector2((float)data.Meta.Start.X, (float)data.Meta.Start.Z);
-        View = new ZoneView(data, start, 26);
-        grassAt = start;
+        View = new ZoneView(data, start);
         AddChild(View);
         AddChild(Crowd);
         Fx = new BattleFx((x, z) => data.HeightAt((float)x, (float)z)) { Cam = cam };
@@ -166,7 +164,7 @@ public partial class WorldScene : Node3D, IZoneLook
             RenderingServer.GlobalShaderParameterSet("survivor", new Vector4((float)p.X, y + 1.1f, (float)p.Z, 1));
             // The meadow grows round the survivor as they go.
             var at = new Vector2((float)p.X, (float)p.Z);
-            if (at.DistanceTo(grassAt) > 12) { grassAt = at; View.GrowGrass(at, 26); }
+            View.FollowGrass(at);
             // Taking a blow bruises the edges of the picture; so does being low.
             damageFlash = Math.Max(0, damageFlash - dt * 2.2);
             double low = p.Alive ? Math.Max(0, 0.35 - p.Hp / b.MaxHp) * 1.2 : 0.6;

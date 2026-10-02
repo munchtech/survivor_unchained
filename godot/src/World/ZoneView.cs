@@ -39,7 +39,7 @@ public partial class ZoneView : Node3D
 
     /// <param name="grassAround">Where to grow the meadow (the web game grows
     /// it round the survivor as they go); null for none.</param>
-    public ZoneView(ZoneData z, Vector2? grassAround = null, float grassRadius = 26)
+    public ZoneView(ZoneData z, Vector2? grassAround = null, float grassRadius = 40)
     {
         Data = z;
         Name = $"Zone_{z.Id}";
@@ -184,13 +184,16 @@ public partial class ZoneView : Node3D
         grass?.Multimesh.Mesh.SurfaceGetMaterial(0)?.Set("shader_parameter/heal", heal);
     }
 
-    /// <summary>The meadow round a place (again, as the survivor moves on).</summary>
-    public void GrowGrass(Vector2 at, float radius = 26)
+    /// <summary>The meadow round a place, built once; it follows `at` (FollowGrass).</summary>
+    public void GrowGrass(Vector2 at, float radius = 40)
     {
         grass?.QueueFree();
         grass = Grass.Build(Data, at, radius);
         AddChild(grass);
     }
+
+    /// <summary>The meadow's middle, every frame: the shader moves the tufts.</summary>
+    public void FollowGrass(Vector2 at) => grass?.Multimesh.Mesh.SurfaceGetMaterial(0)?.Set("shader_parameter/centre", at);
 
     public override void _Process(double delta)
     {

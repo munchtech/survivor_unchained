@@ -69,6 +69,14 @@ public static class Dressing
         ["dead_tree_trunk"] = 1.1f, ["dead_tree_trunk_02"] = 1f, ["boulder_01"] = 1.5f,
     };
 
+    /// <summary>Scans whose photographed colour is too pale for this country
+    /// (bright sandstone, sunlit gravel): their albedo multiplied down.</summary>
+    static readonly Dictionary<string, Color> ScanTint = new()
+    {
+        ["stone_01"] = new(0.5f, 0.47f, 0.42f), ["namaqualand_stones_01"] = new(0.45f, 0.42f, 0.38f),
+        ["rock_07"] = new(0.6f, 0.58f, 0.55f), ["rock_09"] = new(0.6f, 0.58f, 0.55f), ["bark_debris_01"] = new(0.7f, 0.65f, 0.6f),
+    };
+
     static readonly Dictionary<string, List<(Mesh Mesh, Transform3D Local)>> variants = new();
 
     /// <summary>A scan's variants: Poly Haven lays several takes of a thing
@@ -79,8 +87,20 @@ public static class Dressing
         if (variants.TryGetValue(id, out var list)) return list;
         list = new();
         float k = ScanScale.TryGetValue(id, out var sc) ? sc : 1;
-        foreach (var (mesh, local) in PartsOf("nature", "scan:" + id))
+        foreach (var (src, local) in PartsOf("nature", "scan:" + id))
         {
+            var mesh = src;
+            if (ScanTint.TryGetValue(id, out var tint))
+            {
+                mesh = (Mesh)src.Duplicate();
+                for (int i = 0; i < mesh.GetSurfaceCount(); i++)
+                    if (mesh.SurfaceGetMaterial(i) is StandardMaterial3D m)
+                    {
+                        var d = (StandardMaterial3D)m.Duplicate();
+                        d.AlbedoColor = tint;
+                        mesh.SurfaceSetMaterial(i, d);
+                    }
+            }
             var box = local * mesh.GetAabb();
             var mid = box.GetCenter();
             // Its foot on the ground and its middle on the spot.

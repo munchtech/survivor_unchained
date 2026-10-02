@@ -4,10 +4,12 @@ using Godot;
 namespace SurvivorUnchained.View;
 
 /// <summary>
-/// A meadow around the fight: blades on a jittered grid of cells, as the web
-/// game grows them, each turned at random; shaders/grass.gdshader decides
-/// from the ground's paint which grow and how tall. A patch of the zone, not
-/// all of it: the slice stays in one place.
+/// A meadow around the fight: tufts on a jittered grid of cells, each turned
+/// at random; shaders/grass.gdshader decides from the ground's paint which
+/// grow and how tall. The grid is built once and never again: the shader
+/// wraps every tuft to the copy of it nearest the survivor (`centre`), and
+/// stands it on the ground from a texture of the zone's heights, so the
+/// meadow reaches the edge of the picture and follows without a hitch.
 /// </summary>
 public static class Grass
 {
@@ -62,9 +64,8 @@ public static class Grass
             for (int i = 0; i < n; i++)
             {
                 float x = centre.X - radius + (i + rng.Randf()) * cell, zz = centre.Y - radius + (j + rng.Randf()) * cell;
-                if (new Vector2(x - centre.X, zz - centre.Y).Length() > radius) continue;
                 var basis = new Basis(Vector3.Up, rng.Randf() * Mathf.Tau);
-                at.Add(new Transform3D(basis, new Vector3(x, z.HeightAt(x, zz) - 0.02f, zz)));
+                at.Add(new Transform3D(basis, new Vector3(x, 0, zz)));
             }
         var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = blade, InstanceCount = at.Count };
         for (int i = 0; i < at.Count; i++) mm.SetInstanceTransform(i, at[i]);
@@ -77,7 +78,21 @@ public static class Grass
         mat.SetShaderParameter("meadow_scale", 1f / meta.RootElement.GetProperty("layers")[0].GetProperty("metres").GetSingle());
         mat.SetShaderParameter("zone_size", z.Size);
         mat.SetShaderParameter("leaves", z.Leaves);
+        mat.SetShaderParameter("span", radius * 2);
+        mat.SetShaderParameter("centre", centre);
+        // The ground's heights, a texel per sample, read bilinear.
+        var g = z.Ground;
+        var hb = new byte[g.Heights.Length * 4];
+        System.Buffer.BlockCopy(g.Heights, 0, hb, 0, hb.Length);
+        mat.SetShaderParameter("heights", ImageTexture.CreateFromImage(Image.CreateFromData(g.Res, g.Res, false, Image.Format.Rf, hb)));
+        mat.SetShaderParameter("h_size", (float)g.Size);
+        mat.SetShaderParameter("h_res", (float)g.Res);
         blade.SurfaceSetMaterial(0, mat);
-        return new MultiMeshInstance3D { Multimesh = mm, Name = "Grass", CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+        return new MultiMeshInstance3D
+        {
+            Multimesh = mm, Name = "Grass", CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            // It is wherever the survivor is: never culled as a whole.
+            CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f)),
+        };
     }
 }

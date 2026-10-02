@@ -29,7 +29,9 @@ varying vec3 w_nrm;
 
 // Each photograph brought into the same light: the setts were shot clean
 // and pale in the sun; this country's are not.
-const float G_TONE[NL] = float[](1.0, 1.0, 1.0, 1.0, 0.72, 0.95, 1.0);
+// The trodden earth's photograph is pale gravel, which under the moon turned
+// to lilac stone: taken down and warmed toward the soil round it.
+const float G_TONE[NL] = float[](1.0, 1.0, 0.62, 1.0, 0.72, 0.95, 1.0);
 const mat2 G_TURN = mat2(vec2(0.8, -0.6), vec2(0.6, 0.8));
 
 void vertex() {
@@ -131,7 +133,9 @@ void fragment() {
 		mat3 tbn;
 		vec2 uv = g_uv(k, w_pos, n_geo, tbn);
 		vec4 arh = g_tex_arh(uv, k, tile);
-		albedo += g_tex_alb(uv, k, tile).rgb * G_TONE[k] * wk;
+		vec3 a = g_tex_alb(uv, k, tile).rgb * G_TONE[k];
+		if (k == 2) a *= vec3(1.08, 0.98, 0.8);
+		albedo += a * wk;
 		n_w += tbn * g_nor_ts(uv, k, tile) * wk;
 		rough += arh.g * wk;
 		ao += arh.r * wk;
