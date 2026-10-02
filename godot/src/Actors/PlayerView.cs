@@ -45,7 +45,10 @@ public partial class PlayerView : Node3D
         // hips and legs stay with the run); a roll, a leap or a fall on all of it.
         var bt = new AnimationNodeBlendTree();
         var move = new AnimationNodeBlendSpace1D { MinSpace = 0, MaxSpace = 6 };
-        move.AddBlendPoint(new AnimationNodeAnimation { Animation = People.Resolve(lo.Arms.Idle) }, 0);
+        // The heroine stands as herself (HerPose finishes it), not in a
+        // calling's guard made for another body.
+        var idle = person.Body == "heroine" ? "Idle_Loop" : lo.Arms.Idle;
+        move.AddBlendPoint(new AnimationNodeAnimation { Animation = People.Resolve(idle) }, 0);
         move.AddBlendPoint(new AnimationNodeAnimation { Animation = People.Resolve("Walk_Loop") }, 1.8f);
         move.AddBlendPoint(new AnimationNodeAnimation { Animation = People.Resolve("Jog_Fwd_Loop") }, 4.4f);
         move.AddBlendPoint(new AnimationNodeAnimation { Animation = People.Resolve("Sprint_Loop") }, 6);

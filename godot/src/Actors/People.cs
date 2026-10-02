@@ -110,6 +110,9 @@ public static class People
         public required Skeleton3D Skeleton;
         public required AnimationPlayer Anim;
         public readonly List<MeshInstance3D> Meshes = new();
+        /// <summary>Which body: "" for the kit's, "heroine" for hers (her
+        /// own idle and carriage).</summary>
+        public string Body = "";
     }
 
     /// <summary>A person, put together: returns its root (add it to the
@@ -214,7 +217,8 @@ public static class People
     {
         var root = GD.Load<PackedScene>("res://art/people/heroine.glb").Instantiate<Node3D>();
         var skel = (Skeleton3D)root.FindChildren("*", "Skeleton3D", true, false)[0];
-        var person = new Person { Root = root, Skeleton = skel, Anim = new AnimationPlayer() };
+        var person = new Person { Root = root, Skeleton = skel, Anim = new AnimationPlayer(), Body = "heroine" };
+        skel.AddChild(new HerPose());
         foreach (var mi in skel.GetChildren().OfType<MeshInstance3D>())
         {
             person.Meshes.Add(mi);

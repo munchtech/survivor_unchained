@@ -187,6 +187,91 @@ for i in range(len(R)):
     l = sum(RW[i, bi[b]] for b in bones if b.endswith("_l"))
     r = sum(RW[i, bi[b]] for b in bones if b.endswith("_r"))
     side_of[i] = 1 if l > 0.5 else -1 if r > 0.5 else 0
+# The crotch: the lowest point the pelvis still carries. Below it the legs
+# are two, and nothing may belong to both.
+# (The reference's lowest point on the midline, between its own legs.)
+# Measured on the model itself: its own lowest midline point.
+mid = S[(np.abs(S[:, 0]) < 0.008) & (S[:, 2] > z0 + (z1 - z0) * 0.3) & (S[:, 2] < z0 + (z1 - z0) * 0.6)]
+CROTCH = mid[:, 2].min() - 0.005
+print("CROTCH %.3f" % CROTCH)
+# Faces bridging the legs below the crotch (a sculpt with touching thighs
+# joins them) are cut: stretched when the legs part, they are the webbing.
+import bmesh
+bm = bmesh.new()
+bm.from_mesh(model.data)
+bm.verts.ensure_lookup_table()
+cut = [f for f in bm.faces if all(v.co.z < CROTCH - 0.005 for v in f.verts)
+       and min(v.co.x for v in f.verts) < -0.001 and max(v.co.x for v in f.verts) > 0.001]
+bmesh.ops.delete(bm, geom=cut, context="FACES")
+loose = [v for v in bm.verts if not v.link_faces]
+bmesh.ops.delete(bm, geom=loose, context="VERTS")
+# Slivers: where the thighs touched, the generator left thin sheets with
+# nothing behind them. A real surface has the body behind it; a face whose
+# own back is within a few millimetres is a sheet, and goes.
+bm.faces.ensure_lookup_table()
+tree = BVHTree.FromBMesh(bm)
+thin = []
+for f in bm.faces:
+    c = f.calc_center_median()
+    if c.z > CROTCH + 0.06 or abs(c.x) > 0.09:
+        continue
+    n = f.normal
+    hit = tree.ray_cast(c - n * 0.0004, -n, 0.008)
+    if hit[0] is not None:
+        thin.append(f)
+bmesh.ops.delete(bm, geom=thin, context="FACES")
+bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context="VERTS")
+bm.to_mesh(model.data)
+bm.free()
+model.data.update()
+print("BRIDGE", len(cut), "faces cut;", len(thin), "sliver faces cut")
+S = np.array([v.co[:] for v in model.data.vertices])
+SN = np.array([v.normal[:] for v in model.data.vertices])
+leg_l = np.array([sum(RW[i, bi[b]] for b in bones if b.endswith("_l") and any(k in b for k in ("thigh", "calf", "foot", "ball"))) for i in range(len(R))])
+leg_r = np.array([sum(RW[i, bi[b]] for b in bones if b.endswith("_r") and any(k in b for k in ("thigh", "calf", "foot", "ball"))) for i in range(len(R))])
+
+# Which leg each vertex below the crotch is joined to, by the mesh itself:
+# where the thighs pressed together, an inner thigh crosses the midline,
+# and judged by position it would be given to the other leg.
+nS = len(S)
+parent = list(range(nS))
+def find(a):
+    while parent[a] != a:
+        parent[a] = parent[parent[a]]
+        a = parent[a]
+    return a
+low = S[:, 2] < CROTCH - 0.005
+for f in model.data.polygons:
+    vs = [v for v in f.vertices if low[v]]
+    for a_, b_ in zip(vs, vs[1:]):
+        ra, rb = find(a_), find(b_)
+        if ra != rb:
+            parent[ra] = rb
+# Copies of a vertex split along UV seams are one point.
+_k = np.round(S / 1e-5).astype(np.int64)
+_, _tw = np.unique(_k, axis=0, return_inverse=True)
+_first = {}
+for i, t in enumerate(_tw.ravel()):
+    if low[i]:
+        if t in _first:
+            ra, rb = find(i), find(_first[t])
+            if ra != rb:
+                parent[ra] = rb
+        else:
+            _first[t] = i
+roots = np.array([find(i) for i in range(nS)])
+leg_side = np.zeros(nS)
+comp = {}
+for i in np.nonzero(low)[0]:
+    comp.setdefault(roots[i], []).append(i)
+big = sorted(comp.values(), key=len, reverse=True)
+for members in big[:2]:
+    side = 1 if S[members, 0].mean() > 0 else -1
+    leg_side[members] = side
+for members in big[2:]:
+    leg_side[members] = 1 if S[members, 0].mean() > 0 else -1
+print("LEGS", [len(m) for m in big[:2]], "verts;", len(big) - 2, "small pieces; below", int(low.sum()), "of", nS, "z", np.round(np.percentile(S[:, 2], [0, 25, 50, 75, 100]), 3), "crotch", round(CROTCH, 3))
+
 kd = KDTree(len(R))
 for i, p in enumerate(R):
     kd.insert(p, i)
@@ -194,12 +279,21 @@ kd.balance()
 W = np.zeros((len(S), len(bones)))
 fallback = 0
 for i in range(len(S)):
-    me_side = 1 if S[i, 0] > 0.02 else -1 if S[i, 0] < -0.02 else 0
+    # The inner thigh up to a little above the crotch is leg, not torso:
+    # weighted to the pelvis it stays behind as a fin when the leg swings.
+    below = S[i, 2] < CROTCH or (S[i, 2] < CROTCH + 0.05 and abs(S[i, 0]) > 0.025)
+    if leg_side[i] != 0:
+        me_side = int(leg_side[i])
+    else:
+        me_side = (1 if S[i, 0] >= 0 else -1) if below else (1 if S[i, 0] > 0.02 else -1 if S[i, 0] < -0.02 else 0)
     got = []
-    for co, j, d in kd.find_n(S[i], 24):
+    for co, j, d in kd.find_n(S[i], 32):
         if np.dot(RN[j], SN[i]) < 0.25:
             continue
         if side_of[j] != 0 and me_side != 0 and side_of[j] != me_side:
+            continue
+        # Below the crotch: only the vertex's own leg.
+        if below and (leg_l[j] if me_side > 0 else leg_r[j]) < 0.5:
             continue
         got.append((j, d))
         if len(got) >= 4:
@@ -250,12 +344,71 @@ for _ in range(SMOOTH):
             N[i] = 0.6 * W[i] + 0.4 * W[adj[i]].mean(0)
     W = N
 W = weld(W)
+# Smoothing runs over the mesh, and through the groin it carries each leg's
+# weights onto the other: near and below the crotch, a vertex keeps nothing
+# of the other leg, and on the leg proper little of the pelvis.
+LEGB = {s_: [bi[b] for b in bones if b.endswith("_" + s_) and any(k in b for k in ("thigh", "calf", "foot", "ball"))] for s_ in ("l", "r")}
+pel_i = bi.get("pelvis")
+cleaned = 0
+for i in range(len(S)):
+    if S[i, 2] > CROTCH + 0.1 or (leg_side[i] == 0 and abs(S[i, 0]) < 0.004):
+        continue
+    sd = leg_side[i] if leg_side[i] != 0 else (1 if S[i, 0] > 0 else -1)
+    own, other = ("l", "r") if sd > 0 else ("r", "l")
+    if W[i, LEGB[other]].sum() > 1e-4:
+        cleaned += 1
+    W[i, LEGB[other]] = 0
+    if S[i, 2] < CROTCH - 0.02 and pel_i is not None:
+        W[i, pel_i] *= 0.3
+W /= np.maximum(W.sum(1, keepdims=True), 1e-9)
+print("CLEANED", cleaned, "verts of the other leg's weight")
+# No vertex is carried by both legs: at the midline above the crotch the
+# two legs' weights meet, and skin carried by both is torn between them as
+# soon as one leg moves (the flap). The lesser leg's share goes to the pelvis.
+if pel_i is not None:
+    both = 0
+    Lb, Rb = LEGB["l"], LEGB["r"]
+    for i in range(len(S)):
+        wl, wr = W[i, Lb].sum(), W[i, Rb].sum()
+        if min(wl, wr) < 0.01:
+            continue
+        both += 1
+        lesser, greater = (Lb, Rb) if wl < wr else (Rb, Lb)
+        # Below the crotch it is all the leg's own; above, the pelvis's.
+        if S[i, 2] < CROTCH + 0.01:
+            own_ = LEGB["l"] if (leg_side[i] or np.sign(S[i, 0]) or 1) > 0 else LEGB["r"]
+            oth_ = LEGB["r"] if own_ is LEGB["l"] else LEGB["l"]
+            tot = W[i, oth_].sum()
+            W[i, oth_] = 0
+            k = own_[0] if W[i, own_].sum() == 0 else own_[int(np.argmax(W[i, own_]))]
+            W[i, k] += tot
+        else:
+            W[i, pel_i] += W[i, lesser].sum()
+            W[i, lesser] = 0
+    W = weld(W)
+    # Welding can mix the two again across a seam: once more, after.
+    for i in range(len(S)):
+        wl, wr = W[i, Lb].sum(), W[i, Rb].sum()
+        if min(wl, wr) >= 0.01:
+            lesser = Lb if wl < wr else Rb
+            if S[i, 2] < CROTCH + 0.01:
+                own_ = LEGB["l"] if (leg_side[i] or np.sign(S[i, 0]) or 1) > 0 else LEGB["r"]
+                oth_ = LEGB["r"] if own_ is LEGB["l"] else LEGB["l"]
+                tot = W[i, oth_].sum(); W[i, oth_] = 0
+                W[i, own_[int(np.argmax(W[i, own_]))]] += tot
+            else:
+                W[i, pel_i] += W[i, lesser].sum()
+                W[i, lesser] = 0
+    print("BOTH LEGS", both, "verts given to the pelvis")
+
 # Four bones a vertex, as the game skins.
 top = np.argsort(-W, axis=1)[:, :4]
 W4 = np.zeros_like(W)
 rows = np.arange(len(S))[:, None]
 W4[rows, top] = W[rows, top]
 W4 /= np.maximum(W4.sum(1, keepdims=True), 1e-9)
+_sum = W4.sum(1)
+print("WEIGHTLESS", int((_sum < 0.5).sum()), "verts; one bone", int(((W4 > 0.005).sum(1) == 1).sum()))
 
 # -------------------------------------------- back to the T-pose rest --
 mats = np.array([np.array(rig.matrix_world @ rig.pose.bones[b].matrix @ rig.data.bones[b].matrix_local.inverted() @ rig.matrix_world.inverted()) for b in bones])
@@ -275,13 +428,23 @@ bpy.ops.object.mode_set(mode="POSE")
 for pb in rig.pose.bones:
     pb.rotation_euler = (0, 0, 0)
 bpy.ops.object.mode_set(mode="OBJECT")
+if "--debug-colors" in ARGS:
+    # Each vertex painted by who carries it: red the left leg, blue the
+    # right, green the pelvis and spine (for finding mis-weighted skin).
+    ca = model.data.color_attributes.new("Col", "FLOAT_COLOR", "POINT")
+    L = [bi[b] for b in bones if b.endswith("_l") and any(k in b for k in ("thigh", "calf", "foot", "ball"))]
+    Rr = [bi[b] for b in bones if b.endswith("_r") and any(k in b for k in ("thigh", "calf", "foot", "ball"))]
+    T = [bi[b] for b in ("pelvis", "spine_01", "spine_02", "spine_03") if b in bi]
+    for i in range(len(S)):
+        ca.data[i].color = (float(W4[i, L].sum()), float(W4[i, T].sum()), float(W4[i, Rr].sum()), 1)
 bpy.data.objects.remove(ref)
 model.parent = rig
 mod = model.modifiers.new("Armature", "ARMATURE")
 mod.object = rig
 active(rig)
 model.select_set(True)
-bpy.ops.export_scene.gltf(filepath=OUT, export_format="GLB", use_selection=True, export_skins=True, export_animations=False, export_yup=True)
+bpy.ops.export_scene.gltf(filepath=OUT, export_format="GLB", use_selection=True, export_skins=True, export_animations=False, export_yup=True,
+                          **({"export_vertex_color": "ACTIVE", "export_all_vertex_colors": True} if "--debug-colors" in ARGS else {}))
 print("BOUND", OUT)
 
 if CHECK:
