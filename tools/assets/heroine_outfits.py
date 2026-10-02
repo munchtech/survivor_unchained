@@ -1590,7 +1590,7 @@ def zigzag_band(sd, s0, legs=True, width=0.014, amp=0.014, teeth=6):
 
 def reaver():
     """The reaver: a loincloth panel in front on a belt slung low on her hips, a
-    thong string behind, a strip of leather
+    G-string beneath, a strip of leather
     across her breasts, a fur half cape over her left shoulder, fur-topped
     boots and fur cuffs at her wrists, leather bracers, and tattoos: zigzag
     bands round her right arm and left thigh."""
@@ -1602,8 +1602,10 @@ def reaver():
     nz = (NIPPLE["l"][2] + NIPPLE["r"][2]) / 2
     # Slung low, where a brief's waistband would run: low in front and
     # behind, rising over the hip bones.
-    bz0 = CROTCH + 0.1
-    belt_z = bz0 + 0.05 * np.clip(np.abs(X) / 0.15, 0, 1) ** 2
+    bz0 = CROTCH + 0.12
+    # Behind, it rides up over the top of her cheeks, so they stand clear
+    # of it and the string shows from the belt down.
+    belt_z = bz0 + 0.05 * np.clip(np.abs(X) / 0.15, 0, 1) ** 2 + 0.07 * (1 - FRONT)
     belt = AND(0.02 - np.abs(Z - belt_z), 0.3 - arms)
     cape = OR(cap(shoulder("l"), 0.13),
               AND(X + 0.02, Y + 0.0, Z - 1.16, 0.4 - ARMW["r"], 0.5 - ARMW["l"] + 9 * (Z > head("upperarm_l")[2] - 0.02)))
@@ -1612,11 +1614,12 @@ def reaver():
         *piece("reaver.belt", belt, "oldleather", lift=0.012, thick=0.004, smooth=3, soften=10),
         *piece("reaver.buckle", AND(0.022 - np.linalg.norm(P - front_point(0.0, bz0), axis=1), belt + 0.004), "rust", lift=0.017, thick=0.003, smooth=4, soften=1),
         *hanging("reaver.loin_front", -0.33, 0.33, bz0, lambda u: 0.52 + 0.07 * u * u, "oldleather", flare=0.06, lift=0.016, trim=edge(0.01)),
-        # Beneath it a thong: a small pouch over her crotch, hidden by the
-        # front panel, and from it a string up between her cheeks to the belt.
-        *piece("reaver.thong", OR(
-            AND(FRONT - 0.3, (0.018 + 0.45 * np.maximum(Z - CROTCH, 0)) - np.abs(X), (CROTCH + 0.06) - Z, Z - (CROTCH - 0.03)),
-            AND(0.5 - FRONT, 0.006 - np.abs(X), (belt_z + 0.005) - Z, Z - (CROTCH - 0.03))), "darkleather", lift=0.002, smooth=2, soften=1),
+        # Beneath it a G-string hung from the belt itself: a narrow front
+        # (hidden by the panel) and a string down the back, both running up
+        # into the belt, so belt and G-string are one piece of gear.
+        *piece("reaver.gstring", OR(
+            AND(FRONT - 0.3, np.minimum(0.012 + 0.42 * np.maximum(Z - CROTCH, 0), 0.034) - np.abs(X), (belt_z + 0.005) - Z, Z - (CROTCH - 0.03)),
+            AND(0.5 - FRONT, 0.007 - np.abs(X), (belt_z + 0.005) - Z, Z - (CROTCH - 0.03))), "oldleather", lift=0.002, smooth=2, soften=0),
         *piece("reaver.cape", cape, "fur", lift=0.02, thick=0.014, smooth=12, soften=10, keep_off=("Head",)),
         *piece("reaver.tattoo_arm", OR(zigzag_band("r", ELBOW_S - 0.12, legs=False), zigzag_band("r", ELBOW_S - 0.06, legs=False, amp=0.01, width=0.009)), "ink", lift=0.0006, thick=0.0002, bevel=0.0, soften=0),
         *piece("reaver.tattoo_thigh", OR(zigzag_band("l", 0.15), zigzag_band("l", 0.22, amp=0.01, width=0.009)), "ink", lift=0.0006, thick=0.0002, bevel=0.0, soften=0),
