@@ -75,14 +75,13 @@ public static class Items
     static void Load()
     {
         var f = Json.Parse<File>(Json.ReadContent("items.json"));
-        all = f.Items;
-        rarityNames = f.Raritynames;
+        var items = f.Items;
         // A tome for every skill the ember can give: what was taken as a card in
         // an arena, written down to be learned by day.
         foreach (var id in Content.Weapons.Pool)
         {
             var w = Content.Weapons.All[id];
-            all[SkillBook.Tome(id)] = new ItemDef
+            items[SkillBook.Tome(id)] = new ItemDef
             {
                 Id = SkillBook.Tome(id), Name = $"Tome: {w.Name}", Kind = ItemKind.Consumable, Rarity = 2, Icon = "book", Value = 140, Stack = 1,
                 Description = $"Read it to learn {w.Name} for the day, if you have seen it burn in an arena. {w.Description}",
@@ -90,6 +89,9 @@ public static class Items
                 Consumable = new Consumable { Skill = id },
             };
         }
+        // Published only when whole: the tests read it from several threads at once.
+        rarityNames = f.Raritynames;
+        all = items;
     }
 
     public static Dictionary<string, ItemDef> All { get { if (all == null) Load(); return all!; } }
