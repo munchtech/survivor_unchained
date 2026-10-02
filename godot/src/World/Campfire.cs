@@ -3,10 +3,10 @@ using Godot;
 namespace SurvivorUnchained.View;
 
 /// <summary>
-/// A campfire: a ring of the nature kit's stones, logs in the kit's bark,
-/// and a fire of GPU particles (flame, embers, smoke) with its own light.
-/// The web game's fires are a few meshes and a glow; this is what an engine
-/// gives for the same effort.
+/// A campfire: a photoscanned ring of stones round charred wood (Poly
+/// Haven's stone fire pit, art/world), a flame filmed and played round and
+/// round on upright cards (art/fx/fb/fire_loop, shaders/flame_loop.gdshader),
+/// embers and smoke of GPU particles, and its own light.
 /// </summary>
 public static class Campfire
 {
@@ -17,8 +17,10 @@ public static class Campfire
     public static Node3D Build(Vector3 at, float size = 1, bool ring = true, string parts = "flames,embers,smoke")
     {
         var root = new Node3D { Name = "Campfire", Position = at };
+        // CAMPFIRE_PARTS picks the layers, for pictures of each alone.
+        parts = System.Environment.GetEnvironmentVariable("CAMPFIRE_PARTS") ?? parts;
         if (ring) Ring(root, size);
-        if (parts.Contains("flames")) root.AddChild(Flames(size));
+        if (parts.Contains("flames")) root.AddChild(FilmedFlames(size) ?? Flames(size));
         if (parts.Contains("embers")) root.AddChild(Embers(size));
         if (parts.Contains("smoke")) root.AddChild(Smoke(size));
         return root;
@@ -26,6 +28,16 @@ public static class Campfire
 
     static void Ring(Node3D root, float size)
     {
+        if (ResourceLoader.Exists("res://art/world/stone_fire_pit.glb"))
+        {
+            // The scan is a metre and a half across; a fire of size 1 is about
+            // that. Sunk a little, so no stone floats on uneven ground.
+            var pit = GD.Load<PackedScene>("res://art/world/stone_fire_pit.glb").Instantiate<Node3D>();
+            pit.Scale = Vector3.One * size * 1.05f;
+            pit.Position = new Vector3(0, -0.02f * size, 0);
+            root.AddChild(pit);
+            return;
+        }
         // The ring: kit pebbles, turned and sized a little differently each.
         var rng = new RandomNumberGenerator { Seed = 11 };
         for (int i = 0; i < 9; i++)
@@ -99,6 +111,36 @@ public static class Campfire
         return new CurveTexture { Curve = c };
     }
 
+    /// <summary>The filmed flame: three cards out of step with each other,
+    /// the tallest in the middle; null if the atlas is missing.</summary>
+    static Node3D? FilmedFlames(float size)
+    {
+        if (!ResourceLoader.Exists("res://art/fx/fb/fire_loop.png")) return null;
+        var root = new Node3D { Name = "Flames" };
+        var shader = GD.Load<Shader>("res://shaders/flame_loop.gdshader");
+        var atlas = GD.Load<Texture2D>("res://art/fx/fb/fire_loop.png");
+        (Vector3 At, float W, float H, float Phase, float Glow)[] cards =
+        {
+            (new(0, 0, 0), 1.2f, 1.6f, 0f, 1.1f),
+            (new(-0.18f, 0, 0.08f), 0.9f, 1.15f, 0.37f, 0.85f),
+            (new(0.17f, 0, -0.06f), 0.95f, 1.2f, 0.71f, 0.85f),
+        };
+        foreach (var (at, w, h, phase, glow) in cards)
+        {
+            var mat = new ShaderMaterial { Shader = shader };
+            mat.SetShaderParameter("atlas", atlas);
+            mat.SetShaderParameter("phase", phase);
+            mat.SetShaderParameter("glow", glow);
+            root.AddChild(new MeshInstance3D
+            {
+                Mesh = new QuadMesh { Size = new Vector2(1, 1), CenterOffset = new Vector3(0, 0.5f, 0), Material = mat },
+                Position = at * size, Scale = new Vector3(w, h, 1) * size,
+                CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            });
+        }
+        return root;
+    }
+
     static GpuParticles3D Flames(float size)
     {
         var p = new ParticleProcessMaterial
@@ -134,16 +176,20 @@ public static class Campfire
         {
             EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Sphere, EmissionSphereRadius = 0.25f * size,
             Direction = Vector3.Up, Spread = 25, InitialVelocityMin = 1.5f, InitialVelocityMax = 3.2f,
-            Gravity = new Vector3(0, 0.4f, 0), ScaleMin = 0.03f, ScaleMax = 0.06f,
+            Gravity = new Vector3(0, 0.4f, 0), ScaleMin = 0.6f, ScaleMax = 1.2f,
             // Hot, not blinding: a speck many times white is spread by the
             // glow into a ball.
-            ColorRamp = Ramp((0, new Color(1.8f, 0.9f, 0.3f, 1)), (0.7f, new Color(1.2f, 0.4f, 0.08f, 1)), (1, new Color(0.6f, 0.1f, 0.02f, 0))),
+            // Kept just under the bloom's threshold: brighter, and the glow
+            // spreads two dozen of them into one orange ball over the fire.
+            ColorRamp = Ramp((0, new Color(1.05f, 0.62f, 0.22f, 1)), (0.7f, new Color(0.9f, 0.32f, 0.06f, 1)), (1, new Color(0.5f, 0.1f, 0.02f, 0))),
             TurbulenceEnabled = true, TurbulenceNoiseStrength = 2f, TurbulenceNoiseScale = 1.5f, TurbulenceInfluenceMin = 0.2f, TurbulenceInfluenceMax = 0.4f,
         };
         return new GpuParticles3D
         {
             Name = "Embers", Amount = 24, Lifetime = 2.2, ProcessMaterial = p, Position = new Vector3(0, 0.4f, 0),
-            DrawPass1 = new QuadMesh { Size = new Vector2(1, 1), Material = Sprite(Blob(Colors.White, new Color(1, 1, 1, 0)), true) },
+            // A speck sized in the mesh itself: billboarded particles ignored
+            // the process material's scale, and drew each ember a metre across.
+            DrawPass1 = new QuadMesh { Size = new Vector2(0.045f, 0.045f) * size, Material = Sprite(Blob(Colors.White, new Color(1, 1, 1, 0)), true) },
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off, Preprocess = 2.0,
         };
     }

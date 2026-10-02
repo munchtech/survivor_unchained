@@ -62,7 +62,10 @@ public partial class ZoneView : Node3D
         AddChild(fx);
         foreach (var f in meta.Fires)
         {
-            var fire = Campfire.Build(new Vector3((float)f.X, (float)f.Y, (float)f.Z), (float)f.Size, ring: false);
+            // The web game's ring of stones round it goes; the scanned pit takes its place.
+            var fat = new Vector3((float)f.X, (float)f.Y, (float)f.Z);
+            HideLandmarksNear(fat, 0.85f * (float)f.Size);
+            var fire = Campfire.Build(fat, (float)f.Size, ring: true);
             fx.AddChild(fire);
             fires.Add((f.Light, fire));
             // The web game marks a fire's flame with a glowing ball; here the
@@ -182,6 +185,23 @@ public partial class ZoneView : Node3D
     {
         ground.SetShaderParameter("heal", heal);
         grass?.Multimesh.Mesh.SurfaceGetMaterial(0)?.Set("shader_parameter/heal", heal);
+    }
+
+    /// <summary>Hide the low landmark pieces within `radius` of a point on
+    /// the ground (what a fire's scanned pit replaces).</summary>
+    void HideLandmarksNear(Vector3 at, float radius)
+    {
+        foreach (var n in Landmarks.Root.FindChildren("*", "MeshInstance3D", true, false))
+        {
+            if (n is not MeshInstance3D mi) continue;
+            // Not yet in the tree: its place relative to the landmarks' root (at the origin).
+            var t = Transform3D.Identity;
+            for (Node? p = mi; p != null && p != Landmarks.Root; p = p.GetParent()) if (p is Node3D p3) t = p3.Transform * t;
+            var box = t * mi.GetAabb();
+            var c = box.GetCenter();
+            // Only what lies on the ground (stones, logs), not what hangs over it (a pot).
+            if (new Vector2(c.X - at.X, c.Z - at.Z).Length() < radius && box.Size.Y < 0.7f && box.Size.X < radius * 2.2f && box.Position.Y < at.Y + 0.25f) mi.Visible = false;
+        }
     }
 
     /// <summary>The meadow round a place, built once; it follows `at` (FollowGrass).</summary>
