@@ -227,7 +227,21 @@ def convert(ui):
 
 def run(api, out_dir, timeout=3600):
     client = str(uuid.uuid4())
-    r = post("/prompt", {"prompt": api, "client_id": client})
+    body = {"prompt": api, "client_id": client}
+    # A Comfy account key for the paid API nodes (Krea 2 Large, ...), read
+    # from ~/.comfy_api_key (or .txt) and sent with the request only.
+    for name in (".comfy_api_key", ".comfy_api_key.txt"):
+        path = os.path.join(os.path.expanduser("~"), name)
+        if os.path.isdir(path):
+            # A folder holding the key's file, as the platform downloads it.
+            files = sorted(f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f)))
+            path = os.path.join(path, files[0]) if files else ""
+        if path and os.path.isfile(path):
+            key = open(path, encoding="utf-8-sig").read().strip()
+            if key:
+                body["extra_data"] = {"api_key_comfy_org": key}
+            break
+    r = post("/prompt", body)
     pid = r["prompt_id"]
     t0 = time.time()
     while True:
@@ -287,7 +301,8 @@ def main():
         while i < len(args):
             if args[i] == "--set":
                 lhs, v = args[i + 1].split("=", 1)
-                node, inp = lhs.rsplit(".", 1) if lhs.count(".") >= 1 else (lhs, "")
+                # The node id never has a dot; an input name can (model.aspect_ratio).
+                node, inp = lhs.split(".", 1) if "." in lhs else (lhs, "")
                 api[node]["inputs"][inp] = parse_value(v)
                 i += 2
             elif args[i] == "--out":
