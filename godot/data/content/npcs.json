@@ -43,7 +43,8 @@
    "nightBarks": [
     "Lamps stay lit till the last one's in.",
     "Bed's warm if you want it. Stew's gone.",
-    "Quietly, now. People are sleeping."
+    "Quietly, now. People are sleeping.",
+    "Going up to Sella's? Wipe your boots twice. She's particular about her floor and nothing else."
    ]
   },
   "holloway": {
@@ -90,7 +91,8 @@
     "Curfew's not law. Yet.",
     "Two on the walls, one on each gate. It's not enough.",
     "Go to bed, traveller.",
-    "Every night I bury somebody's son. Go home."
+    "Every night I bury somebody's son. Go home.",
+    "Quiet on the wall. I hate it quiet."
    ]
   },
   "maeca": {
@@ -134,7 +136,8 @@
    "nightBarks": [
     "Hear that? No. Neither do I. That's what worries me.",
     "One more, then I sleep.",
-    "The Pack's loud tonight."
+    "The Pack's loud tonight.",
+    "Somewhere out there an old wolf's coughing. Listen."
    ]
   },
   "chid": {
@@ -175,7 +178,8 @@
    "nightBarks": [
     "Even in the dark, the morning's on its way.",
     "I leave a candle lit. Somebody might need it.",
-    "Can't sleep either?"
+    "Can't sleep either?",
+    "The dark's only the part of the day that hasn't happened yet. ...It's taking its time tonight."
    ]
   },
   "rav": {
@@ -220,12 +224,14 @@
     "Red cloth's a hard habit to break.",
     "Buy me a drink and I'll tell you a lie worth hearing.",
     "Drop your trousers or don't. The leeches aren't fussy.",
-    "Half my patients die. The other half pay."
+    "Half my patients die. The other half pay.",
+    "Pox, piles, a pike-wound or a broken heart: I've a cure for three of them and a drink for the fourth."
    ],
    "nightBarks": [
     "Night surgery's double. Night anything's double.",
     "The best stories come after the third cup.",
-    "Pull up a stool. Mind the blood."
+    "Pull up a stool. Mind the blood.",
+    "Last orders were an hour ago. I'm the only one who heard them."
    ]
   },
   "harlan": {
@@ -267,7 +273,8 @@
    "nightBarks": [
     "I keep the books by candlelight. Helps me not think.",
     "Every wagon on that road's his, in the dark.",
-    "Can't sleep. Won't."
+    "Can't sleep. Won't.",
+    "Jory hated the dark. Hated it. Slept with a candle till he was fourteen."
    ]
   },
   "pell": {
@@ -310,7 +317,8 @@
    "nightBarks": [
     "Closed. Closed! Come back in daylight.",
     "A man can't count in peace in this town.",
-    "Who's there?"
+    "Who's there?",
+    "The numbers don't sleep. Why should I?"
    ]
   },
   "wenna": {
@@ -359,7 +367,8 @@
    "nightBarks": [
     "Moon's up. Good for picking. Bad for knees.",
     "Mind the nettles in the dark.",
-    "Night air's full of things. Some of them are herbs."
+    "Night air's full of things. Some of them are herbs.",
+    "Nightshade's out. So are the idiots."
    ]
   },
   "tam": {
@@ -442,7 +451,8 @@
    "nightBarks": [
     "Forge is banked. First light.",
     "Arm aches worse at night. Old iron does.",
-    "Fire keeps me company."
+    "Fire keeps me company.",
+    "Banked. Go away."
    ]
   },
   "vonnra": {
@@ -487,7 +497,8 @@
    "nightBarks": [
     "The toll does not sleep, and neither do I.",
     "The dark is also a customer.",
-    "Payment, even now."
+    "Payment, even now.",
+    "The ford is quiet tonight. It will not stay quiet."
    ]
   },
   "keegan": {
@@ -536,7 +547,8 @@
    "nightBarks": [
     "Night watch. Probationary night watch.",
     "Something moved out there. Probably.",
-    "Stand back from the gate, please."
+    "Stand back from the gate, please.",
+    "I am not frightened of the dark. I am merely monitoring it very closely."
    ]
   },
   "sella": {
@@ -575,7 +587,8 @@
    "nightBarks": [
     "Cold night to sleep alone, love.",
     "Rook's walls are thin. Just so you know.",
-    "The blue room's got a lamp lit. Guess who's in it."
+    "The blue room's got a lamp lit. Guess who's in it.",
+    "Rook's walls are thin and I'm not quiet. Fair warning."
    ]
   }
  },
@@ -621,7 +634,8 @@
    "barks": [
     "Keep walking.",
     "Salvage is salvage.",
-    "Talk or bleed. Your choice."
+    "Talk or bleed. Your choice.",
+    "Last man who lied to me, I nailed his tongue to a cart and let the horse decide."
    ]
   },
   "jory": {

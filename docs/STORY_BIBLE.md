@@ -230,11 +230,28 @@ unless a file is named. Deliberate inconsistencies are marked **(on purpose)**.
 - `holloway.hub` (wolves at the gate): Aldo's wife is at Low Kiln, not
   Ashford: nobody's wife is at Ashford any more.
 
+**The ember's price**
+- `Prologue.cs` dawn: the survivor reaches for their mother's face and it is
+  not quite where they left it. `chid.names` (day three): "It always takes
+  the names first. Then the faces." Chapter two should make this a cost
+  the player chooses to pay (each night's ember a little more of the past).
+
+**Vonnra's coin**
+- `vonnra.coin`: an old-empire square coin she has never spent, that "will
+  buy something that cannot be bought twice" (the survivor, in chapter
+  three). Matches `brannoc.irons`' square coin. `vonnra.risen`: "you will
+  find out who holds the note." `vonnra.hub` at night: she looks south to the
+  ford.
+
 **Harlan, Pell and the crates**
 - `harlan.be`, `harlan.g`, `harlan.knew`: "He didn't know. ...He didn't know.
   I did."
 - `jory.crates`: six crates "we weren't to open... and not to take over ruts".
 - `harlan.cb_sold_dig`: "I've sold worse, to worse."
+- `harlan.jory_now`: he told Jory the crates held salt. "He always believes me."
+- `harlan.t_harlan`: Jory's mother (Harlan's sister) went with the fever year:
+  the Coyle Company sells ember to the thing that killed her.
+- `pell.t_pell`: Pell's sister kept the books in Ashford.
 - `pell.caravan`: "someone ought to own those wagons who knows what not to
   put in them."
 - `pell.why`: "It wasn't the salt I was paying for."
@@ -262,7 +279,13 @@ unless a file is named. Deliberate inconsistencies are marked **(on purpose)**.
   fragment; the sigil wakes after dark.
 - `Verge.cs` vault bones (faith): "It was never locked from the outside."
 - `Verge.cs` sinkhole (faith): "Not breathing. Praying."
-- `survivor.first`: "Grimtunnel brought it a heart."
+- `survivor.first`: "Grimtunnel brought it a heart." `survivor.what`: Kell's
+  lamp came back up on its own, still lit.
+- `snib.pipelads`: the Dig's pipe-lads go blind, then deaf, then into the
+  warm slurry. Grimtunnel's faith is paid for by his own.
+- `rules.json` `jory.nights`: Ewan, the fourth cage, who did not last.
+- `wayfinder.t_wayfinder`: her brother did not come out of a barrow in the
+  Morrow hills; she draws it still.
 - `vonnra.f_below`: "they think it will be grateful."
 
 ## 6. Chapters two and three: twists, betrayals, reversals
@@ -329,7 +352,10 @@ All adults, all consenting; romance carries the intrigue.
   night?", fifteen gold, any survivor. *Reveals:* after `rook`, `sella.buyers`:
   she sells what is said upstairs, Vonnra above all. *Costs:* gold; what you
   say upstairs reaches Vonnra (chapter two). *Reacts:* `sella.say_maeca`
-  (when Maeca is your lover), `sella.say_woman`.
+  (when Maeca is your lover), `sella.say_woman`. *Off the clock:* after three
+  paid nights and enough warmth, one night she will not take the money
+  (`sella.free`, `sella.free_night`), and in the morning warns you not to tell
+  her anything you would not want Vonnra to hear. Fact: `sella.free`.
 - **Maeca** (earned). *How:* her respect at 30 or more and her affection at 10
   or more, the Pack's trouble settled (cured or allied), at night in the
   tavern: she asks you out to the Hunters' Blind (`maeca.invite`); after
@@ -359,6 +385,7 @@ placeholder for the owner's writer:
 |---|---|---|
 | 1 | `sella.night` | Sella and the survivor, the blue room at the top of Rook's stairs, by lamplight; warm, unhurried and funny, tenderness at the edges and quickly put away; ends with her asleep across you and the sun up. |
 | 2 | `maeca.blind` | Maeca and the survivor, the Hunters' Blind in the Verge at night; wordless, wary, careful hands that become sure ones, frost outside, the Pack far off. |
+| 3 | `sella.free_night` | Sella and the survivor, the blue room, not for money for the first time; slower and less sure than her working nights, the patter dropping away; a door she bolts herself. |
 
 Each slot's text starts `[explicit scene:` so it can be found and tested
 for; replace the whole placeholder with the scene.
@@ -371,4 +398,7 @@ heart); `tam.pa_in`, `tam.farm` = `emptied`; `stream.clear` (the stream
 healed, whatever the Pack's ending); `player.pardoned` (the strongbox
 forgiven for Pell's ledger); `maeca.lover`; per-person flags `cb:<event>`
 (a deed quoted back) and `say:<key>` (a remark made once). History events
-added: `farm_saved`, `broke_promise`, `bribed_snib`.
+added: `farm_saved`, `broke_promise`, `bribed_snib`. Second pass:
+`aldo.buried`, `caravan.bodies` (each set a day after its death, for the
+next morning's report), `sella.free`; per-person `t_<npc>` once-flags for
+each character's one question about themselves.

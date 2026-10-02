@@ -322,6 +322,11 @@
       "goto": "ford"
      },
      {
+      "text": "Was there ever a Mister Rook?",
+      "once": "t_rook",
+      "goto": "t_rook"
+     },
+     {
       "text": "Another time.",
       "end": true
      }
@@ -688,6 +693,20 @@
      }
     ],
     "next": "hub"
+   },
+   "t_rook": {
+    "id": "t_rook",
+    "text": "There was. Drank with the Watch, sang flat, and went up the north road with the last lot that went. I kept his chair by the hearth. I sit in it now. It's a good chair; that's the only reason.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -1131,7 +1150,7 @@
        "fact": "wolves.at_gate",
        "eq": true
       },
-      "text": "You heard. Aldo. He had a wife at Low Kiln and a bad knee, and they took him at my gate. Five a pelt, still. What do you want?"
+      "text": "You heard. Aldo. Wife at Low Kiln, a bad knee, and a habit of humming on the wall that I told him twice to stop. They took him off it by the bad leg. I'd give a month's pay to hear him hum. Five a pelt, still. What do you want?"
      },
      {
       "when": {
@@ -1275,6 +1294,11 @@
       },
       "once": "expose",
       "goto": "expose"
+     },
+     {
+      "text": "What do you want, Captain? For yourself.",
+      "once": "t_holloway",
+      "goto": "t_holloway"
      },
      {
       "text": "That's all.",
@@ -1436,7 +1460,7 @@
    },
    "liar": {
     "id": "liar",
-    "text": "Dealt with. That's what you said. I paid you thirty of the Watch's gold for \"dealt with\", and this morning I had a drover bleeding on my gate. So. Tell me why you shouldn't spend the night in the cells.",
+    "text": "Dealt with. That's what you said. I paid you thirty of the Watch's gold for \"dealt with\", and this morning I had a drover bleeding on my gate. So. Tell me why you shouldn't spend the night in the fucking cells.",
     "choices": [
      {
       "text": "Pay back the thirty. [30 gold]",
@@ -1710,7 +1734,7 @@
    },
    "defied": {
     "id": "defied",
-    "text": "Out of my sight. And if I see you near my gate with a blade out, you'll find out how the cells feel on a cold night.",
+    "text": "Out of my sight. And if I see you near my gate with a blade out, you'll find out how the cells feel on a cold night, and how the cell-rats feel about fresh meat.",
     "choices": [
      {
       "text": "Go.",
@@ -2216,6 +2240,20 @@
      }
     ],
     "next": "hub"
+   },
+   "t_holloway": {
+    "id": "t_holloway",
+    "text": "A posting with walls somebody else has to count. A dog. Eight hours' sleep in one go. In that order. ...Don't tell the men about the dog.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -2654,6 +2692,11 @@
       "goto": "blind"
      },
      {
+      "text": "What did you hunt, before the wolves?",
+      "once": "t_maeca",
+      "goto": "t_maeca"
+     },
+     {
       "text": "Goodbye.",
       "end": true
      }
@@ -3024,6 +3067,20 @@
     "choices": [
      {
       "text": "...",
+      "end": true
+     }
+    ]
+   },
+   "t_maeca": {
+    "id": "t_maeca",
+    "text": "Men, for the garrison. Deer, for me. Men are easier. They keep to paths and they talk while they walk.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
       "end": true
      }
     ]
@@ -3437,6 +3494,11 @@
       "action": "trade"
      },
      {
+      "text": "Is there anyone, Wenna? Family?",
+      "once": "t_wenna",
+      "goto": "t_wenna"
+     },
+     {
       "text": "Goodbye.",
       "end": true
      }
@@ -3791,6 +3853,20 @@
      }
     ],
     "next": "hub"
+   },
+   "t_wenna": {
+    "id": "t_wenna",
+    "text": "Three husbands. Buried two, lost one at cards. The one I lost at cards was the best of them, and I've never forgiven the man who won him.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -4036,6 +4112,11 @@
       "goto": "fetch"
      },
      {
+      "text": "Did your Pa ever find the goat?",
+      "once": "t_tam",
+      "goto": "t_tam"
+     },
+     {
       "text": "Not yet.",
       "end": true
      }
@@ -4134,6 +4215,20 @@
     "choices": [
      {
       "text": "Stay by the well, Tam.",
+      "end": true
+     }
+    ]
+   },
+   "t_tam": {
+    "id": "t_tam",
+    "text": "No. Her name was Clover and she ate a whole hat once. Pa says the wolves got her. I think she ran off to be a wild goat. I think she's happy.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "again"
+     },
+     {
+      "text": "Goodbye.",
       "end": true
      }
     ]
@@ -4392,6 +4487,11 @@
       "goto": "irons"
      },
      {
+      "text": "Who taught you iron?",
+      "once": "t_brannoc",
+      "goto": "t_brannoc"
+     },
+     {
       "text": "Goodbye.",
       "end": true
      }
@@ -4541,6 +4641,20 @@
      }
     ],
     "next": "hub"
+   },
+   "t_brannoc": {
+    "id": "t_brannoc",
+    "text": "Mother. Better smith than me. Worse temper. Hammer's hers.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -4816,7 +4930,7 @@
        "fact": "caravan.survivors",
        "eq": "dead"
       },
-      "text": "I heard. I heard. You needn't say it. What do you want?"
+      "text": "I heard. I heard. ...They'd not been fed for a week, Holloway says. Jory used to sulk if supper was late. You needn't say anything. What do you want?"
      },
      {
       "when": {
@@ -4891,6 +5005,20 @@
       },
       "once": "be",
       "goto": "be"
+     },
+     {
+      "text": "How's Jory?",
+      "show": {
+       "fact": "caravan.survivors",
+       "eq": "rescued"
+      },
+      "once": "jory_now",
+      "goto": "jory_now"
+     },
+     {
+      "text": "How did Jory come to drive for you?",
+      "once": "t_harlan",
+      "goto": "t_harlan"
      },
      {
       "text": "Goodbye.",
@@ -5192,7 +5320,7 @@
    },
    "ash": {
     "id": "ash",
-    "text": "They said there was screaming. Was there screaming? ...No. Don't tell me. Just don't come to my stall again.",
+    "text": "They said there was screaming. Was there screaming? ...They said you could smell it from the wall. No. Don't tell me. Just don't come to my stall again. Don't come to the funeral. There's nothing to bury.",
     "choices": [
      {
       "text": "...",
@@ -5283,6 +5411,34 @@
      }
     ],
     "next": "hub"
+   },
+   "jory_now": {
+    "id": "jory_now",
+    "text": "Sleeps with the lamp lit. Eats like a horse. Asked me last night what was in the crates. I told him salt. He believed me; he always does. ...That's the worst of it, friend. He always does.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "t_harlan": {
+    "id": "t_harlan",
+    "text": "His mother was my sister. She went with the fever year, and he came to me at eight with a bundle and a cough, and the first thing he ever said to me was \"Do you have a horse?\" ...I had six. He named all of them wrong.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -5591,6 +5747,18 @@
       },
       "once": "books",
       "goto": "books"
+     },
+     {
+      "text": "Why do you count everything?",
+      "show": {
+       "npcFlag": {
+        "npc": "pell",
+        "key": "once:books",
+        "eq": true
+       }
+      },
+      "once": "t_pell",
+      "goto": "t_pell"
      },
      {
       "text": "Goodbye.",
@@ -6026,6 +6194,20 @@
      }
     ],
     "next": "hub"
+   },
+   "t_pell": {
+    "id": "t_pell",
+    "text": "My sister kept the books in Ashford. I came up to collect them, after. There wasn't an Ashford to collect them from. So I count. Somebody ought to know what things cost.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -6291,7 +6473,7 @@
       "when": {
        "time": "night"
       },
-      "text": "Night surgery's double. Night drinking's the same price; I checked."
+      "text": "Night surgery's double. Night drinking's the same price; I checked. And if you're here for Sella, she's busy: you can hear the bed from the cellar."
      },
      {
       "text": "What'll it be? Advice is free, and worth it."
@@ -6343,6 +6525,30 @@
      {
       "text": "What have you got for sale?",
       "action": "trade"
+     },
+     {
+      "text": "Ever think of going back to the Kerchiefs?",
+      "once": "t_rav",
+      "goto": "t_rav"
+     },
+     {
+      "text": "Doctor, I've a pain.",
+      "show": {
+       "all": [
+        {
+         "time": "night"
+        },
+        {
+         "rel": {
+          "npc": "rav",
+          "axis": "trust",
+          "gte": 20
+         }
+        }
+       ]
+      },
+      "once": "pain",
+      "goto": "pain"
      },
      {
       "text": "Goodbye.",
@@ -6684,6 +6890,43 @@
      }
     ],
     "next": "hub"
+   },
+   "t_rav": {
+    "id": "t_rav",
+    "text": "Every night, round the fourth cup. Then I remember the latrines, and the lice, and the man who sharpened his teeth for a joke and then couldn't stop, and I have a fifth.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "pain": {
+    "id": "pain",
+    "text": "Where? ...No, don't point, pal, we're in company. Come round the back after closing and I'll take a look. Largely professionally. Bring a bottle; it's an anaesthetic for one of us.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "rav",
+       "affection": 5
+      },
+      "quiet": true
+     }
+    ],
+    "choices": [
+     {
+      "text": "Another night, Doctor.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -6805,6 +7048,30 @@
      ]
     },
     "node": "say_calling"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "chid"
+      },
+      {
+       "day": {
+        "gte": 3
+       }
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "chid",
+         "key": "say:names",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "names"
    },
    {
     "node": "hub"
@@ -7007,6 +7274,11 @@
       "text": "How long have you kept the shrine?",
       "once": "long",
       "goto": "long"
+     },
+     {
+      "text": "What was the Order like?",
+      "once": "t_chid",
+      "goto": "t_chid"
      },
      {
       "text": "Goodbye.",
@@ -7412,6 +7684,34 @@
      }
     ],
     "next": "hub"
+   },
+   "names": {
+    "id": "names",
+    "text": "Can I ask you something? Your mother's name. ...No, don't tell me. You had to think. I saw you think. Write the names down, somewhere you'll find them. It always takes the names first. Then the faces. I'm sorry. I'll stop. Sit, sit.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "chid",
+       "key": "say:names",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "t_chid": {
+    "id": "t_chid",
+    "text": "Loud! Everybody thinks priests are quiet. We sang at breakfast. Brother Aumery could sing bread warm. ...They're all gone now. I keep thinking I'll get used to that. I keep not.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -7535,6 +7835,28 @@
      ]
     },
     "node": "say_calling"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "vonnra"
+      },
+      {
+       "trait": "risen_once"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "vonnra",
+         "key": "say:risen",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "risen"
    },
    {
     "node": "hub"
@@ -7692,6 +8014,12 @@
      },
      {
       "when": {
+       "time": "night"
+      },
+      "text": "(Her lamp is lit, and she is looking south, toward the ford.) Traveller. The road was quiet tonight. It will not always be. Payment, always."
+     },
+     {
+      "when": {
        "fact": "kerchief.raids",
        "gte": 2
       },
@@ -7788,6 +8116,11 @@
        "eq": true
       },
       "goto": "fortune"
+     },
+     {
+      "text": "That coin on the cord at your throat?",
+      "once": "coin",
+      "goto": "coin"
      },
      {
       "text": "Goodbye.",
@@ -8668,6 +9001,34 @@
      }
     ],
     "next": "hub"
+   },
+   "coin": {
+    "id": "coin",
+    "text": "Old-empire. Square. My grandmother's, and hers before. I have never spent it. One day I shall, and it will buy something that cannot be bought twice. ...That was free. Do not grow used to it.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "risen": {
+    "id": "risen",
+    "text": "You came back. Most do not, the first time. ...Do not thank Chid. Do not thank anyone. Payment, always, traveller, and for that above all; you will find out who holds the note.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "vonnra",
+       "key": "say:risen",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -8878,6 +9239,11 @@
       },
       "once": "dinner",
       "goto": "dinner"
+     },
+     {
+      "text": "What do you want, Dame Keegan?",
+      "once": "t_keegan",
+      "goto": "t_keegan"
      },
      {
       "text": "Goodbye.",
@@ -9102,6 +9468,20 @@
       "end": true
      }
     ]
+   },
+   "t_keegan": {
+    "id": "t_keegan",
+    "text": "To be confirmed. To kneel, and have a knight I respect touch my shoulder with a sword and say \"Dame Keegan\" without the bracket. ...And a bath. The Vigil frowns on baths. Chapter nine. I have underlined it in protest.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -9186,6 +9566,14 @@
        "eq": "ignored"
       },
       "text": "CURFEW. East gate closed at dusk until further notice. One of ours did not come home. The Watch."
+     },
+     {
+      "when": {
+       "fact": "wolves.at_gate",
+       "eq": true
+      },
+      "add": true,
+      "text": "AT REST: Aldo Penn, of the Watch, twenty-two years on the walls. A collection for his widow at the Watch House. (Underneath: \"he hummed\")"
      },
      {
       "add": true,
@@ -9319,6 +9707,39 @@
      }
     },
     "node": "first"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "sella"
+      },
+      {
+       "time": "night"
+      },
+      {
+       "fact": "sella.nights",
+       "gte": 3
+      },
+      {
+       "rel": {
+        "npc": "sella",
+        "axis": "affection",
+        "gte": 25
+       }
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "sella",
+         "key": "say:free",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "free"
    },
    {
     "when": {
@@ -9562,7 +9983,7 @@
       "when": {
        "time": "night"
       },
-      "text": "Evening, {name}. The lamp's lit upstairs, if you're asking. You look like you're asking."
+      "text": "Evening, {name}. The lamp's lit upstairs, if you're asking. You look like you're asking. You look like you've been asking all day."
      },
      {
       "text": "Back again. People'll talk. Let them; it's good for business."
@@ -9593,6 +10014,11 @@
       },
       "once": "buyers",
       "goto": "buyers"
+     },
+     {
+      "text": "What do you want, Sella? For yourself.",
+      "once": "t_sella",
+      "goto": "t_sella"
      },
      {
       "text": "Not tonight.",
@@ -9962,6 +10388,92 @@
      }
     ],
     "next": "hub"
+   },
+   "t_sella": {
+    "id": "t_sella",
+    "text": "A house in the south with a door that locks from the inside, and somebody who knocks. Man, woman, I'm not fussy. Just somebody who knocks.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "free": {
+    "id": "free",
+    "text": "Put your purse away, {name}. Tonight I'm not working. ...Don't look at me like that. Don't make it strange.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "sella",
+       "key": "say:free",
+       "value": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Then lead the way.",
+      "goto": "free_night"
+     },
+     {
+      "text": "Not tonight, Sella.",
+      "goto": "hub"
+     }
+    ]
+   },
+   "free_night": {
+    "id": "free_night",
+    "speaker": "narrator",
+    "text": [
+     {
+      "when": {
+       "fact": "settings.intimacy",
+       "eq": "full"
+      },
+      "text": "[explicit scene: Sella and {name}, the blue room, not for money for the first time; slower and less sure than her working nights, the professional's patter dropping away, laughter and then none; a door she locks herself — to be written]"
+     },
+     {
+      "text": "The blue room, and the lamp, and the bolt, which she shoots herself, which she has never done. She doesn't talk the way she talks for money. For a while neither of you talks at all. Later she lies awake and you can feel her deciding something, and then she sleeps."
+     }
+    ],
+    "effects": [
+     {
+      "set": {
+       "sella.free": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "sella",
+       "affection": 10,
+       "trust": 10
+      },
+      "quiet": true
+     },
+     {
+      "condition": {
+       "id": "warmed",
+       "days": 1,
+       "note": "A night in the blue room, off the clock"
+      }
+     }
+    ],
+    "next": "free_morning"
+   },
+   "free_morning": {
+    "id": "free_morning",
+    "text": "(She's still there when you wake, which she never is.) Don't tell Rook; she'll want a third of nothing, on principle. ...And don't tell me anything up here you'd not want Vonnra to hear. I mean that kindly. It's the kindest thing I've said to anyone in a year.",
+    "choices": [
+     {
+      "text": "Until next time.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -10268,6 +10780,12 @@
       "text": "Ha! Look at the size of you. I've a dozen lads would follow you for the fun of it; don't make me find out which dozen. Redcowl. You're in my camp. Talk."
      },
      {
+      "when": {
+       "sex": "female"
+      },
+      "text": "Well. My lads haven't seen a woman who wasn't their mother in a month, nor a bath in a year. Walk straight and they'll keep their hands where I've told them. Redcowl. You're in my camp. Talk."
+     },
+     {
       "text": "Redcowl. You're standing in my camp, which means my sentries are drunk or you're interesting. Which is it?"
      }
     ],
@@ -10371,6 +10889,11 @@
       "text": "Who are all these people?",
       "once": "who",
       "goto": "who"
+     },
+     {
+      "text": "Why keep them in cages?",
+      "once": "cages",
+      "goto": "cages"
      },
      {
       "text": "Nothing.",
@@ -10705,6 +11228,20 @@
       "end": true
      }
     ]
+   },
+   "cages": {
+    "id": "cages",
+    "text": "Because a man in a cage is worth something to somebody, and a man in a ditch is worth nothing to anybody. I've buried enough worth-nothings for one life, lad. ...And I feed them. Ask them. I feed them before I feed my own.",
+    "choices": [
+     {
+      "text": "About the Coyle wagons.",
+      "goto": "goods"
+     },
+     {
+      "text": "Nothing.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -10835,6 +11372,11 @@
        }
       ],
       "end": true
+     },
+     {
+      "text": "What happens to the pipe-lads?",
+      "once": "pipelads",
+      "goto": "pipelads"
      },
      {
       "text": "Leave.",
@@ -11086,6 +11628,16 @@
       "end": true
      }
     ]
+   },
+   "pipelads": {
+    "id": "pipelads",
+    "text": "Pipe-lads go blind by spring. Then deaf. Then they go in the slurry, because it is warm, and they do not come out. Snib was a pipe-lad. Snib got promoted. ...Snib does not want to talk about pipe-lads. Snib wants you to LEAVE.",
+    "choices": [
+     {
+      "text": "Leave.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -11122,7 +11674,7 @@
    },
    "what": {
     "id": "what",
-    "text": "Down there. Under the one that is dead. There is another. There is always another. Take the map, take it, I do not want to know where the tunnels go any more.",
+    "text": "Down there. Under the one that is dead. There is another. There is always another. Kell went down to see. Kell's lamp came back up on its own, still lit. Still lit. Take the map, take it, I do not want to know where the tunnels go any more.",
     "effects": [
      {
       "if": {
@@ -11415,6 +11967,11 @@
       "goto": "notes"
      },
      {
+      "text": "Do you ever go in yourself?",
+      "once": "t_wayfinder",
+      "goto": "t_wayfinder"
+     },
+     {
       "text": "Another time.",
       "end": true
      }
@@ -11561,6 +12118,20 @@
      }
     ],
     "next": "hub"
+   },
+   "t_wayfinder": {
+    "id": "t_wayfinder",
+    "text": "Once. A barrow in the Morrow hills, twelve years back. I came out. My brother didn't. I've drawn it eleven times since and I still can't get the corners right.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  }

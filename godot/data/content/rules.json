@@ -195,9 +195,20 @@
       "status": "failed",
       "outcome": "ignored"
      }
+    },
+    {
+     "later": {
+      "days": 1,
+      "id": "aldo.buried",
+      "effect": {
+       "set": {
+        "aldo.buried": true
+       }
+      }
+     }
     }
    ],
-   "report": "Wolves at the east gate in the night, a dozen of them, sick and bold. The Watch lost a man."
+   "report": "Wolves at the east gate in the night, a dozen of them, sick and bold. They had Aldo off the wall by his bad leg before anyone heard him shout. The Watch found most of him in the morning."
   },
   {
    "id": "stream.heal",
@@ -493,9 +504,20 @@
       "affection": -20
      },
      "quiet": true
+    },
+    {
+     "later": {
+      "days": 1,
+      "id": "caravan.bodies",
+      "effect": {
+       "set": {
+        "caravan.bodies": true
+       }
+      }
+     }
     }
    ],
-   "report": "Word from the Old Road: the Kerchiefs have stopped feeding their prisoners. Harlan has not come out of his shop."
+   "report": "Word from the Old Road: the Kerchiefs have stopped feeding their prisoners. Somebody heard them through the trees, asking for water. Harlan has not come out of his shop."
   },
   {
    "id": "caravan.watch",
@@ -789,6 +811,82 @@
     }
    },
    "report": "The Kerchiefs stopped a pedlar on the Old Road and took his boots. The Watch is stretched thin."
+  },
+  {
+   "id": "aldo.buried",
+   "once": true,
+   "when": {
+    "fact": "aldo.buried",
+    "eq": true
+   },
+   "effect": [],
+   "report": "They buried Aldo in the Watch's corner of the yard. Holloway read the words himself and got two of them wrong, and nobody corrected him. His wife is coming up from Low Kiln. Somebody will have to tell her about the leg."
+  },
+  {
+   "id": "caravan.bodies",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "caravan.bodies",
+      "eq": true
+     },
+     {
+      "not": {
+       "history": "burned_roost"
+      }
+     }
+    ]
+   },
+   "effect": [],
+   "report": "Holloway's men brought the teamsters back from the ravine on a cart, under sacking. There were three. Harlan walked behind it all the way to the shrine, and when Chid lifted the sacking Harlan made a sound nobody on the square will forget."
+  },
+  {
+   "id": "roost.ash",
+   "once": true,
+   "when": {
+    "history": "burned_roost"
+   },
+   "effect": [],
+   "report": "Smoke from the ravine all night, and the smell came over the wall with it. Rook burned rosemary in every room. Harlan has nailed his shutters closed from the inside."
+  },
+  {
+   "id": "dig.burned",
+   "once": true,
+   "when": {
+    "fact": "dig.pump",
+    "eq": "blown"
+   },
+   "effect": [],
+   "report": "The Watch says the lamplings were carrying their own out of the hillside all night: small, and burned, some still holding their lamps lit. One of them sat by the pile and counted them. It got to forty and started again."
+  },
+  {
+   "id": "jory.nights",
+   "once": true,
+   "when": {
+    "history": "freed_teamsters"
+   },
+   "effect": [],
+   "report": "Jory Coyle woke the inn twice in the night, shouting for a man called Ewan. Rook sat with him until it was light. Ewan was in the fourth cage, he says. There isn't a fourth cage any more."
+  },
+  {
+   "id": "shrine.bell",
+   "once": true,
+   "when": {
+    "fact": "shrine.lit",
+    "eq": true
+   },
+   "effect": [],
+   "report": "Chid rang the shrine bell at first light, for the first time anyone can remember. Half the town came out thinking it was a fire. The other half came out because it wasn't."
+  },
+  {
+   "id": "pelts.stacked",
+   "once": true,
+   "when": {
+    "history": "wolf_slaughter"
+   },
+   "effect": [],
+   "report": "Brannoc's yard is stacked with pelts to the eaves, and the flies have found it. Maeca walked past it this morning and did not look."
   },
   {
    "id": "chapter.ready",

@@ -21,6 +21,14 @@ Rules for everyone:
   hint.
 - The player's lines are short, plain and a little dry. They never make a
   speech.
+- The game is written for adults. Swearing, crude jokes and frank talk
+  about sex belong to the mouths below that have them (Rav, Sella,
+  Redcowl, the Flagon's regulars, the Watch on a bad night); Holloway
+  swears rarely and it lands; Vonnra, Keegan, Chid and Tam never do.
+  Violence is said in one plain line, where it lands, and not dwelt on.
+  Intimate scenes are written in full before and after, with a cut-away
+  for the moment itself and an `[explicit scene: ...]` slot for the
+  owner's writer (`STORY_BIBLE.md`).
 
 ---
 

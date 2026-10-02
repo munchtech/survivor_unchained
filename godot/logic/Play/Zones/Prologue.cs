@@ -119,11 +119,11 @@ public sealed class Prologue : ZoneRuntime
             Id = "watchman", X = man.X, Z = man.Z, R = 2.4, Verb = "Examine", Name = "Dead Watchman",
             Act = () =>
             {
-                G.Say("A Watchman, a long time dead. In his belt-book, the last line: \"Lamps at the Low Ford lit again, and not by us. The Warden is walking.\"", null, 8);
+                G.Say("A Watchman, a long time dead, sitting against the post as if he had only stopped for breath. Something has had his eyes. In his belt-book, three lines in a hand that worsens as it goes: \"Lamps at the Low Ford lit again, and not by us.\" \"Sent Dannet for the captain. Dannet not back.\" \"The Warden is walking. I can hear it singing in the water.\"", null, 10);
                 G.Apply("""[{ "learn": "lore.warden", "text": "The lamps at the ford feed the Warden." }]""");
                 // The devout hear the dead, a little.
                 if (G.Journey.Ch.Knowledge.Contains("faith"))
-                    G.After(8.2, () => G.Say("...and for you alone, the dead man's jaw moves: \"It shatters its own lamps when it charges. Make it charge.\"", "The dead Watchman", 7));
+                    G.After(10.2, () => G.Say("...and for you alone, the dead man's jaw moves: \"It shatters its own lamps when it charges. Make it charge.\"", "The dead Watchman", 7));
             },
         });
         Interactables.Add(new()
@@ -436,7 +436,7 @@ public sealed class Prologue : ZoneRuntime
                 {
                     Go(Stage.Ambush);
                     checkpoint = new XZ(cart.X - 3, cart.Z + 8);
-                    G.Say("A wagon on its side, and the ditch beside it full of the drowned. They were waiting.", null, 5);
+                    G.Say("A wagon on its side, and the ditch beside it full of the drowned. One of them is still holding the reins. They were waiting.", null, 5);
                     Objective([("Follow the road north", true, false), ("Survive the ambush at the wagon", false, false)]);
                     for (int i = 0; i < 10; i++) SpawnAround(i % 4 == 0 ? "risen_warrior" : "risen", 1, 5, 9, 0, 2);
                 }
@@ -465,7 +465,7 @@ public sealed class Prologue : ZoneRuntime
                 {
                     Go(Stage.Road2);
                     checkpoint = new XZ(p.X, p.Z);
-                    G.Say("The last of them falls back into the ditch and stays there.", null, 4);
+                    G.Say("The last of them falls back into the ditch and stays there. The one with the reins was a girl, twelve at most. Her boots are new.", null, 5);
                     Objective([("Survive the ambush at the wagon", true, false), ("Follow the road north", false, false)]);
                 }
                 break;
@@ -716,7 +716,7 @@ public sealed class Prologue : ZoneRuntime
         B.Events.Emit(new Ev.Shake { Amount = 0.25 });
         G.Journey.Douse(B);
         G.Announce(new Announcement("The ember goes out", "It burns only in the dark", "zone", 4.2, "Dawn"));
-        G.After(1.2, () => G.Say("As the sun clears the trees, the ember in you gutters and goes out, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again, from nothing.", null, 10));
+        G.After(1.2, () => G.Say("As the sun clears the trees, the ember in you gutters and goes out, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again, from nothing. You try to call up your mother's face, and find it is not quite where you left it.", null, 11));
         G.After(11.5, () => Tip("day", "By day", $"By day the ember sleeps: you fight with what you carry, your art and your feet, and every fight teaches you ({Key("character")}). The ember is for the night.", [Key("character")], 14));
     }
 
