@@ -35,9 +35,9 @@
     "facing": 1.5707963267948966
    },
    "barks": [
-    "Beds are dry and the stew is hot. That is more than most can say.",
+    "Beds are dry and the stew's hot. That's more than most can say.",
     "Wipe your boots.",
-    "If you are bleeding, bleed outside.",
+    "If you're bleeding, bleed outside.",
     "Rooms upstairs by the night. By the hour, ask Sella."
    ],
    "nightBarks": [
@@ -82,13 +82,13 @@
     "facing": 0.6
    },
    "barks": [
-    "Five gold a pelt. Fifty for the old grey one.",
+    "Five a pelt. Fifty for the old grey one.",
     "Keep to the road, and keep your blade where I can see it.",
     "Three caravans this month. Three."
    ],
    "nightBarks": [
     "Curfew's not law. Yet.",
-    "Two on the walls, one on each gate. It is not enough.",
+    "Two on the walls, one on each gate. It's not enough.",
     "Go to bed, traveller.",
     "Every night I bury somebody's son. Go home."
    ]
@@ -127,14 +127,14 @@
     "facing": -1.5707963267948966
    },
    "barks": [
-    "They are not hunting. They are running.",
-    "Something has the whole wood on edge.",
+    "They're not hunting. They're running.",
+    "Something's got the whole wood on edge.",
     "Mind the east road after dark."
    ],
    "nightBarks": [
-    "Hear that? No. Neither do I. That is what worries me.",
+    "Hear that? No. Neither do I. That's what worries me.",
     "One more, then I sleep.",
-    "The Pack is loud tonight."
+    "The Pack's loud tonight."
    ]
   },
   "chid": {
@@ -169,11 +169,11 @@
    },
    "barks": [
     "It used to work, you know. The shrine.",
-    "The light is patient. I am trying to be.",
-    "Morning comes. It always has."
+    "The light's patient. I'm trying to be.",
+    "Morning comes. It always has. I should know."
    ],
    "nightBarks": [
-    "Even in the dark, the morning is on its way.",
+    "Even in the dark, the morning's on its way.",
     "I leave a candle lit. Somebody might need it.",
     "Can't sleep either?"
    ]
@@ -216,14 +216,14 @@
     "facing": 1.5707963267948966
    },
    "barks": [
-    "I am a doctor. Mostly.",
-    "Red cloth is a hard habit to break.",
-    "Buy me a drink and I will tell you a lie worth hearing.",
+    "I'm a doctor. Don't make me prove it.",
+    "Red cloth's a hard habit to break.",
+    "Buy me a drink and I'll tell you a lie worth hearing.",
     "Drop your trousers or don't. The leeches aren't fussy.",
     "Half my patients die. The other half pay."
    ],
    "nightBarks": [
-    "Night surgery costs double. Night anything costs double.",
+    "Night surgery's double. Night anything's double.",
     "The best stories come after the third cup.",
     "Pull up a stool. Mind the blood."
    ]
@@ -260,13 +260,13 @@
     "facing": -1.5707963267948966
    },
    "barks": [
-    "Three days late. Jory is never late.",
+    "Late. Jory's never late.",
     "Salt, iron, cloth. Whatever you need, when the wagons come.",
     "Somebody knows something."
    ],
    "nightBarks": [
-    "I keep the books by candlelight. It helps me not think.",
-    "Every wagon on that road is his, in the dark.",
+    "I keep the books by candlelight. Helps me not think.",
+    "Every wagon on that road's his, in the dark.",
     "Can't sleep. Won't."
    ]
   },
@@ -397,7 +397,7 @@
    "barks": [
     "They drank from the stream and fell down.",
     "Pa says stay in town.",
-    "Something is killing them. Nobody listens."
+    "I told the Watch. The Watch laughed."
    ]
   },
   "brannoc": {
@@ -434,15 +434,15 @@
     "facing": -1.5707963267948966
    },
    "barks": [
-    "Good steel does not come cheap. Neither do good pelts.",
+    "Good steel's not cheap. Nor's a good pelt.",
     "Mind the sparks.",
-    "Bring me hides, and I will make you something worth wearing.",
+    "Bring me hides. I'll make you something worth wearing.",
     "Hit a man with this and he stays hit."
    ],
    "nightBarks": [
-    "Forge is banked. Come back at first light.",
-    "My arm aches worse at night. Old iron does.",
-    "The fire keeps me company."
+    "Forge is banked. First light.",
+    "Arm aches worse at night. Old iron does.",
+    "Fire keeps me company."
    ]
   },
   "vonnra": {
@@ -656,8 +656,8 @@
     "facing": -1.5707963267948966
    },
    "barks": [
-    "I thought I would die in that cage.",
-    "Uncle keeps hugging me. It is a lot."
+    "I thought I'd die in that cage.",
+    "Uncle keeps hugging me. It's a lot."
    ]
   },
   "wayfinder": {

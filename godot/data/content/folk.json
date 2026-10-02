@@ -459,7 +459,7 @@
    }
   },
   {
-   "text": "Pell's been generous lately. With you, mostly.",
+   "text": "Pell's been generous lately. With you, especially.",
    "when": {
     "fact": "caravan.pell",
     "eq": "ally"
@@ -624,6 +624,9 @@
     "eq": "emptied"
    },
    "text": "Pack tore Tam's farm to bits. His Pa was in town, thank God. Somebody fetched him in."
+  },
+  {
+   "text": "Chid's not aged a day since my mam was a girl. Says it's clean living. Have you SEEN where he lives?"
   }
  ]
 }
