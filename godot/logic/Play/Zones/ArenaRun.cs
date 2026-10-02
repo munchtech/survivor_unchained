@@ -87,7 +87,7 @@ public sealed class ArenaRun : ZoneRuntime
     /// from high up, and has to read out to the edges of the picture.</summary>
     static readonly AtmospherePreset Night = Atmospheres.Night with
     {
-        KeyIntensity = 3.2, HemiIntensity = 1.4, EnvIntensity = 0.85, FogDensity = 0.0045, Exposure = 1.62, RimStrength = 0.7,
+        KeyIntensity = 4.4, HemiIntensity = 1.6, EnvIntensity = 0.95, FogDensity = 0.004, Exposure = 1.7, RimStrength = 0.75,
     };
     public override AtmospherePreset AtmosphereFor(TimeOfDay t) => t == TimeOfDay.Night ? Night : base.AtmosphereFor(t);
     public override Arrival ArrivalFrom(string? from) => new(0, 0, 0);

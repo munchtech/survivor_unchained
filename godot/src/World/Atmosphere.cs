@@ -30,7 +30,7 @@ public partial class Atmosphere : Node3D
     public float ExposureScale = 1;
     /// <summary>How much colour the world keeps below the brights (0 all, 1
     /// none): the grade's worn world.</summary>
-    public float Mute = 0.34f;
+    public float Mute = 0.16f;
     double clock;
 
     const float FogMatchDistance = 60;
@@ -56,8 +56,9 @@ public partial class Atmosphere : Node3D
             GlowEnabled = true, GlowHdrThreshold = 1.1f, GlowIntensity = 0.7f, GlowBloom = 0.04f,
             GlowBlendMode = Godot.Environment.GlowBlendModeEnum.Softlight,
             FogEnabled = true, FogMode = Godot.Environment.FogModeEnum.Exponential, FogSkyAffect = 0, FogSunScatter = 0,
-            // A little air the fires can be seen in (the web game has none).
-            VolumetricFogEnabled = true, VolumetricFogDensity = 0.004f, VolumetricFogLength = 64, VolumetricFogAnisotropy = 0.3f,
+            // A little air the fires can be seen in (the web game has none); thin,
+            // since the camera looks down through thirty metres of it.
+            VolumetricFogEnabled = true, VolumetricFogDensity = 0.0012f, VolumetricFogLength = 64, VolumetricFogAnisotropy = 0.3f,
             AdjustmentEnabled = true,
         };
         float[] glow = { 0, 0.6f, 1, 0.5f, 0.15f, 0, 0 };

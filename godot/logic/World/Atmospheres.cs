@@ -11,13 +11,17 @@ namespace SurvivorUnchained.World;
 /// </summary>
 public static class Atmospheres
 {
-    static readonly GradeSettings NightGrade = new([0.015, 0.025, 0.04], [1.0, 1.0, 1.02], [1.03, 1.0, 0.97],
-        "#35646e", "#e6a25a", 0.2, 1.0, 0.14, 1.18);
+    // Moonlight, not darkness: a cold blue key strong enough to throw shadows
+    // and show the ground's form from the high camera, the shadows lifted
+    // toward blue so nothing sinks to black, and the fires left as the only
+    // warmth (AgX in Godot sits darker than the web game's tone mapping).
+    static readonly GradeSettings NightGrade = new([0.02, 0.035, 0.07], [1.0, 1.0, 1.03], [1.02, 1.0, 0.98],
+        "#2f5a86", "#ffad5c", 0.24, 1.06, 0.2, 1.14);
 
     public static readonly AtmospherePreset Night = new(
-        new SkySettings("#03050d", "#18203a", "#07080c", "#3c5a8c", 24, 1, 1),
-        "#b8cbf2", 2.2, 52, 128, 0.6,
-        "#3f5780", "#241e16", 0.95, 0.6, "#101a24", 0.0095, 1.42, "#8fb2ff", 0.55, NightGrade);
+        new SkySettings("#040814", "#1c2a4c", "#07090f", "#4a6ea8", 20, 1, 1),
+        "#a9c4ff", 3.4, 50, 128, 0.7,
+        "#4a6699", "#2a241c", 1.25, 0.8, "#16243a", 0.008, 1.6, "#9fc0ff", 0.6, NightGrade);
 
     /// <summary>Night inside walls: the moon is a cold wash, and what light
     /// there is comes from lamps, doorways and braziers.</summary>
@@ -46,13 +50,13 @@ public static class Atmospheres
         "#8aa0d0", "#3a2a1a", 0.85, 0.85, "#a89aa0", 0.0065, 1.0, "#ffd8b0", 0.2,
         new([0.02, 0.02, 0.04], [1.0, 1.0, 1.0], [1.04, 1.01, 0.97], "#56709a", "#ffc88a", 0.16, 0.96, 0.12, 1.14));
 
-    /// <summary>Day in a hard country: a thin sun through high cloud, cold in
-    /// the shadows, the air never quite clear.</summary>
+    /// <summary>Day in a hard country: a low gold sun, cold in the shadows,
+    /// the air never quite clear, but light enough to be glad of.</summary>
     public static readonly AtmospherePreset Day = new(
-        new SkySettings("#4a5a70", "#a8b0b4", "#34302c", "#f0e2c8", 8, 0, 0),
-        "#f4e6cc", 2.7, 44, 55, 0.8,
-        "#8a9aac", "#3e3226", 0.9, 0.8, "#8e969a", 0.0062, 0.9, "#dfe8f4", 0.16,
-        new([0.012, 0.014, 0.022], [1.0, 1.0, 1.0], [1.02, 1.0, 0.97], "#3e5462", "#f0d8b0", 0.16, 0.95, 0.1, 1.12));
+        new SkySettings("#4f74a6", "#c4ccd0", "#34302c", "#fff0d0", 8, 0, 0),
+        "#ffeccc", 3.8, 46, 55, 0.82,
+        "#9cb2cc", "#463626", 1.0, 0.85, "#a4aeb4", 0.0055, 1.0, "#e6eef8", 0.18,
+        new([0.01, 0.014, 0.026], [1.0, 1.0, 1.0], [1.04, 1.01, 0.96], "#3a5872", "#ffd9a0", 0.2, 1.05, 0.16, 1.12));
 
     public static AtmospherePreset ByName(string name) => name switch
     {
