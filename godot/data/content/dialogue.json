@@ -4685,7 +4685,7 @@
       "when": {
        "bg": "outcast"
       },
-      "text": "Well, well. Somebody who knows how to wear a kerchief without looking like a parrot. Sit. I'm Rav. Doctor Rav, if you are bleeding. Doctor McBreathless, if you are the Watch."
+      "text": "Well, well. Somebody who knows how to wear a kerchief without looking like a parrot. Sit. I'm Rav Cutwell. Doctor Cutwell, if you are bleeding. Doctor McBreathless, if you are the Watch."
      },
      {
       "when": {
@@ -6607,7 +6607,7 @@
      {
       "history": {
        "id": "fortune_read",
-       "text": "had your fortune read by Vonnra Hydrocheck",
+       "text": "had your fortune read by Vonnra Ash-of-Morrow",
        "tags": [
         "chapter"
        ],
@@ -6739,14 +6739,14 @@
   "nodes": {
    "first": {
     "id": "first",
-    "text": "Halt! None pass north. Professor Keegan, Knight of the Argent Vigil. Probationary. It is a real title.",
+    "text": "Halt! None pass north. Dame Keegan Orme, of the Argent Vigil. Probationary. It is a real title.",
     "choices": [
      {
       "text": "What is north?",
       "goto": "north"
      },
      {
-      "text": "Why \"Professor\"?",
+      "text": "The children call you \"Professor\".",
       "goto": "prof"
      },
      {
@@ -6764,7 +6764,7 @@
       "goto": "north"
      },
      {
-      "text": "Why \"Professor\"?",
+      "text": "The children call you \"Professor\".",
       "goto": "prof"
      },
      {
@@ -6845,7 +6845,7 @@
     "text": "Things you are not ready for. When you are, I will know. It is in the probationary handbook, chapter four.",
     "choices": [
      {
-      "text": "Why \"Professor\"?",
+      "text": "The children call you \"Professor\".",
       "goto": "prof"
      },
      {
@@ -6856,7 +6856,7 @@
    },
    "prof": {
     "id": "prof",
-    "text": "I taught, before. Rhetoric. It is very useful for telling people no.",
+    "text": "I taught rhetoric at Saint Wend's before I took the oath, and somebody's mother found out. Now I am Professor to everyone under four feet. Rhetoric is very useful for telling people no.",
     "choices": [
      {
       "text": "What is north?",

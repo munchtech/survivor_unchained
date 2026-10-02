@@ -180,7 +180,7 @@
   },
   "rav": {
    "id": "rav",
-   "name": "Dr. Rav McBreathless",
+   "name": "Rav Cutwell",
    "title": "Late of the Kerchiefs",
    "role": "Physician, of a sort",
    "model": "rogue_hooded",
@@ -447,7 +447,7 @@
   },
   "vonnra": {
    "id": "vonnra",
-   "name": "Vonnra Hydrocheck",
+   "name": "Vonnra Ash-of-Morrow",
    "title": "Far Seer, Keeper of the Toll",
    "role": "Toll-keeper",
    "model": "mage",
@@ -492,8 +492,8 @@
   },
   "keegan": {
    "id": "keegan",
-   "name": "Professor Keegan",
-   "title": "Knight of the Argent Vigil (probationary)",
+   "name": "Dame Keegan Orme",
+   "title": "Of the Argent Vigil (probationary)",
    "role": "Gatekeeper",
    "model": "knight",
    "show": [
