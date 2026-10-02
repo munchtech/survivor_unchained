@@ -87,7 +87,11 @@ public static class People
         var outfit = spec.Outfit?.ToArray() ?? (sex == "female" ? FemalePeasant : MalePeasant);
         var look = new Look(sex, outfit, spec.Hair, spec.Beard == true, C(spec.HairColor), C(spec.Skin), C(spec.Dye?.Cloth), C(spec.Dye?.Under),
             sex == "female" ? spec.Figure ?? 1 : 0);
-        var p = spec.Body switch { SurvivorUnchained.Play.Loadouts.HerBody => Woman(look), "anime" => Her(look), _ => Build(look) };
+        var body = spec.Body;
+        // --body heroine: the woman survivor in the body made from the
+        // reference pictures (tools/assets/bind_scan.py), for trying it.
+        if (body == SurvivorUnchained.Play.Loadouts.HerBody && Args.Get("body") == "heroine" && ResourceLoader.Exists("res://art/people/heroine.glb")) body = "heroine";
+        var p = body switch { SurvivorUnchained.Play.Loadouts.HerBody => Woman(look), "heroine" => Heroine(look), "anime" => Her(look), _ => Build(look) };
         // A child's larger head.
         if (spec.Head is double h && h != 1)
         {
@@ -201,6 +205,26 @@ public static class People
 
     static Shader? womanShader;
     static Texture2D? womanMask;
+
+    /// <summary>The woman survivor in the body made from the reference
+    /// pictures: TRELLIS 2's model of the figure, bound to the game's own
+    /// skeleton by tools/assets/bind_scan.py, so every clip plays on her; her
+    /// skin, hair and suit are her own paint.</summary>
+    public static Person Heroine(Look look)
+    {
+        var root = GD.Load<PackedScene>("res://art/people/heroine.glb").Instantiate<Node3D>();
+        var skel = (Skeleton3D)root.FindChildren("*", "Skeleton3D", true, false)[0];
+        var person = new Person { Root = root, Skeleton = skel, Anim = new AnimationPlayer() };
+        foreach (var mi in skel.GetChildren().OfType<MeshInstance3D>())
+        {
+            person.Meshes.Add(mi);
+            mi.Layers = 2;
+        }
+        root.AddChild(person.Anim);
+        person.Anim.RootNode = "..";
+        person.Anim.AddAnimationLibrary("", Clips());
+        return person;
+    }
 
     /// <summary>Her paint's own skin (lit, not in its shadows), hair and suit,
     /// which the choices are made against (tools/assets/woman_body.py prints

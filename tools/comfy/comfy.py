@@ -242,6 +242,10 @@ def run(api, out_dir, timeout=3600):
                 body["extra_data"] = {"api_key_comfy_org": key}
             break
     r = post("/prompt", body)
+    # Nodes that failed validation are skipped silently by the server, with
+    # everything after them: say so.
+    if r.get("node_errors"):
+        print("SKIPPED NODES:", json.dumps(r["node_errors"])[:1500])
     pid = r["prompt_id"]
     t0 = time.time()
     while True:
