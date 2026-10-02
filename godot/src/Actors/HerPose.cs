@@ -21,10 +21,18 @@ public partial class HerPose : SkeletonModifier3D
 
     public HerPose() { Name = "HerPose"; }
 
+    /// <summary>The library's own pelvis at rest (UAL), against which a
+    /// clip's pelvis track is written.</summary>
+    static readonly Vector3 LibraryPelvis = new(0, 0.0501f, 0.9167f);
+
     public override void _ProcessModificationWithDelta(double delta)
     {
         var sk = GetSkeleton();
         if (sk == null) return;
+        // Clips set the pelvis where the library's stands; hers stands
+        // higher (longer legs): the clip's motion kept, measured from hers.
+        int pel = sk.FindBone("pelvis");
+        if (pel >= 0) sk.SetBonePosePosition(pel, sk.GetBonePosePosition(pel) - LibraryPelvis + sk.GetBoneRest(pel).Origin);
         int n = sk.GetBoneCount();
         for (int b = 0; b < n; b++)
         {

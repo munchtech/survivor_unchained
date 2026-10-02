@@ -491,6 +491,14 @@ M = np.einsum("nb,bij->nij", W4, mats)
 rest = np.einsum("nij,nj->ni", np.linalg.inv(M), np.hstack([S, np.ones((len(S), 1))]))[:, :3]
 for i, v in enumerate(model.data.vertices):
     v.co = Vector(rest[i])
+# The sculpt's own normals were made for its A-pose; moved to the rest
+# they point the wrong way all over the body (the faceted, blotchy look).
+# Cleared, and every face smooth, so they are made afresh from the surface.
+if model.data.has_custom_normals:
+    active(model)
+    bpy.ops.mesh.customdata_custom_splitnormals_clear()
+for p in model.data.polygons:
+    p.use_smooth = True
 model.data.update()
 for b in bones:
     model.vertex_groups.new(name=b)
@@ -516,6 +524,10 @@ bpy.data.objects.remove(ref)
 model.parent = rig
 mod = model.modifiers.new("Armature", "ARMATURE")
 mod.object = rig
+# Only her and her skeleton: nothing else the source rig brought along.
+for o in list(bpy.data.objects):
+    if o not in (rig, model):
+        bpy.data.objects.remove(o)
 active(rig)
 model.select_set(True)
 bpy.ops.export_scene.gltf(filepath=OUT, export_format="GLB", use_selection=True, export_skins=True, export_animations=False, export_yup=True,

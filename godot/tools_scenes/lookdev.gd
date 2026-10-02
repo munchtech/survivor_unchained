@@ -23,11 +23,15 @@ func _init():
 			for s in mi.mesh.get_surface_count():
 				var m = mi.mesh.surface_get_material(s).duplicate()
 				m.albedo_color = Color(1.0, 0.86, 0.74)
+				if OS.get_environment("NOTEX") != "": m.albedo_texture = null; m.albedo_color = Color(0.85, 0.62, 0.5)
 				m.subsurf_scatter_enabled = true
 				m.subsurf_scatter_strength = 0.35
 				m.subsurf_scatter_skin_mode = true
 				m.roughness = 0.52
 				mi.set_surface_override_material(s, m)
+		var skel = h.find_children("*", "Skeleton3D", true, false)[0]
+		if OS.get_environment("NOHERPOSE") == "":
+			skel.add_child(load("res://src/Actors/HerPose.cs").new())
 		var ap = AnimationPlayer.new()
 		h.add_child(ap)
 		var lib = AnimationLibrary.new()
