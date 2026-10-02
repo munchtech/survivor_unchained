@@ -88,9 +88,9 @@ public static class People
         var look = new Look(sex, outfit, spec.Hair, spec.Beard == true, C(spec.HairColor), C(spec.Skin), C(spec.Dye?.Cloth), C(spec.Dye?.Under),
             sex == "female" ? spec.Figure ?? 1 : 0);
         var body = spec.Body;
-        // --body heroine: the woman survivor in the body made from the
-        // reference pictures (tools/assets/bind_scan.py), for trying it.
-        if (body == SurvivorUnchained.Play.Loadouts.HerBody && Args.Get("body") == "heroine" && ResourceLoader.Exists("res://art/people/heroine.glb")) body = "heroine";
+        // The woman survivor is the heroine (tools/assets/build_heroine.py),
+        // in her calling's outfit; --body woman brings back the older body.
+        if (body == SurvivorUnchained.Play.Loadouts.HerBody && Args.Get("body") != "woman" && ResourceLoader.Exists("res://art/people/heroine.glb")) body = "heroine";
         var p = body switch { SurvivorUnchained.Play.Loadouts.HerBody => Woman(look), "heroine" => Heroine(look), "anime" => Her(look), _ => Build(look) };
         // Her body wears her calling's outfit, cut from it.
         if (body == "heroine" && look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string her) HerOutfit(p, her[4..]);
