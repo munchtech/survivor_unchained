@@ -971,7 +971,17 @@
    },
    {
     "when": {
-     "hasItem": "greymuzzle_fang"
+     "all": [
+      {
+       "hasItem": "greymuzzle_fang"
+      },
+      {
+       "not": {
+        "fact": "bounty.stopped",
+        "eq": true
+       }
+      }
+     ]
     },
     "mark": "?"
    },

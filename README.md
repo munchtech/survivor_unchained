@@ -129,7 +129,11 @@ Electron needs `--no-sandbox`.
   walks the rounds by torchlight, and what they mutter as you pass is what
   the town thinks of what you did; the
   notice board changes as the world does, and each morning's report says
-  who heard what about you overnight.
+  who heard what about you overnight. People quote your deeds back to you,
+  size up your calling, notice when you have become dangerous, and keep
+  the promises the text makes (Maeca's rule at the Hollow, a promise to
+  Greymuzzle); one of them, Maeca, can be more than a friend. Intimate
+  scenes cut away unless the settings ask for them in full.
 - **The journal**: what each person has on their mind, how they feel about
   you in words, what the world remembers, and where you stand with the
   Watch, the Coyle Company, the Kerchiefs, the Pack and the Dig.
