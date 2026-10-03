@@ -15,7 +15,7 @@ public sealed record DraftView(int Level, bool Blessing, List<Offer> Offers, int
 
 /// <summary>A conversation as the panel shows it: who, and what they look like.</summary>
 public sealed record DialogueView(string Name, string Title, string Mood, string Speaker, string Text, List<PresentedChoice> Choices,
-    bool CanContinue, PersonSpec? Person, Held? Arms, double Scale, string? Glyph, string PlayerName, Action<int> Choose, Action Advance);
+    bool CanContinue, PersonSpec? Person, Held? Arms, double Scale, string? Glyph, string PlayerName, Action<int> Choose, Action Advance, string? Before = null);
 
 /// <summary>
 /// The ember draft (docs/UI_DESIGN.md, "The draft"). Time stops; the cards
@@ -474,6 +474,8 @@ public partial class TalkPanel : Control
         // What is said, and what can be said back.
         var main = Style.V(10);
         main.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        // What was said just before, quietly, so the thread is never lost to the pace of speech.
+        if (d.Before != null) main.AddChild(Style.Label(d.Before, Style.TextItalic, Style.Small, Style.InkFaint, true));
         if (d.Speaker == "player") main.AddChild(Style.Label(d.PlayerName.ToUpperInvariant(), Style.Display, Style.Caption, new Color("#9ab8d8")));
         text = Style.Label("", d.Speaker == "narrator" ? Style.TextItalic : Style.Text, 23, d.Speaker == "player" ? new Color("#c8d8e8") : d.Speaker == "narrator" ? Style.InkDim : Style.Ink, true);
         text.VisibleCharactersBehavior = TextServer.VisibleCharactersBehavior.CharsAfterShaping;
