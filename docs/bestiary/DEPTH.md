@@ -196,3 +196,21 @@ contested ground), which is how the genre's opt-in dials work best
 | An oath far harder than it pays (the blight) or easier than unsworn (champions) | both | price it by measured difficulty, the Weight (`RISK_REWARD.md` §4) |
 | The relaxed player never learns why they died | relaxed | the death that teaches (§5.3) |
 | The sweaty player finds nothing to read in a people (wolves have no tell) | sweaty | the Pack's proposals (Ridge-Runner, Old Howler, the Ring event) |
+
+## 7. Failure modes to avoid
+
+The five ways a bestiary goes wrong, how each shows up in this game today,
+and how the proposals dodge it.
+
+| Failure | What it looks like | Where it is today | How the design dodges it |
+|---|---|---|---|
+| **A must-have counter** | one answer is required, so every build converges on it | the champion bruiser for projectile builds (56–99 s kills); Mirror Step against everything; Motes and Arcweb close to it | guards ≤ 80%, champions 60%; every Sign answerable two ways, one of them a build or movement; no Sign or creature that needs an art; the generalists checked in the lab (`COUNTERS.md` §9) |
+| **An unreadable death** | the survivor dies and cannot say why | **poison on the survivor ticks silently** (`Battle.Tick`: `HurtPlayerRaw(..., silent: true)`): under the oath of the blight a death by poison names whatever creature hit last; death bursts in a dense crowd (S-19 of the feel work); off-screen lobs | poison ticks emit a quiet hit and tint the health bar green, and a death by poison says so; the readability budget and telegraph caps (`HORDES.md` §3); edge pips; the death that teaches (§5.3) |
+| **A tedium monster** | a creature that makes the fight longer without making it harder | the Lamplings' thrower herald (a ×6-health creature that keeps its distance); raisers if raised dead paid ember; healers if they healed guards | a melee herald for the Lamplings; raised dead give no ember; healers never mend guards and never themselves; orbiters never shoot; no immunity phases on the horde; thieves leave after 20 s and take nothing owned |
+| **Degenerate cheese** | a trick that makes a role or the whole arena trivial and is then the only way to play | **frost can lock a creature frozen for good**: a chill that lands on a frozen creature keeps it frozen at least 0.4 s more (`ApplyStatus`, `StatusKind.Chill`), so anything chilling twice a second holds even elites and heralds still; Mirror Step's decoys | a creature unfrozen cannot be frozen again for 3 s (elites 5 s), and chill on the frozen no longer extends it; champions see through reflections; a cap of one aura so no "kill the one thing and the rest are free" lock |
+| **A counter so strong it removes the threat** | the monster stops being a question at all | holy against the dead at full set (the Argent Vigil's +30% to anything that rose, on top of the dead's −50% holy); slayers at grade VI stacked (+136% from two) | at most one slayer per item and the set's "more" kept off the people it already favours; a counter should halve a role's threat, not erase it: the probe's ●● cells run 1.6–3×, and the lab should flag any loadout above 4× |
+
+The common thread is the research's: **every counter is a slope, never a
+wall** (`RESEARCH.md`, lessons 3, 7 and 8). A good counter turns a hard
+fight into an easy one; it never turns a possible fight into an impossible
+one, or a fight into no fight.

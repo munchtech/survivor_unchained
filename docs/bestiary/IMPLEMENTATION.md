@@ -37,6 +37,8 @@ proposals is an existing model with a tint, a scale and a prop.
 | The oaths of the blight and of champions | `MapOffers.Oaths`, `blight`, `champions` | blight Gear 1 → 1.6; champions Gear 1.6 → 1.3 (or keep 1.6 once its champions bear Signs); per `RISK_REWARD.md` §4 | blight: lowest health and most falls; champions: easier than unsworn |
 | Mirror Step's reflections | `Arts` (mirror step), `Ai.ChooseTarget` | champions and heralds skip decoys, or reflections live half as long | halves or thirds the damage of every role |
 | Raised dead give no ember | `Battle.KillEnemy`: skip `DropEmber` for an enemy spawned by `Raise` (a flag set in `Ai`'s raise) | – | raising is never a farm |
+| Frost lock | `Battle.ApplyStatus`, `StatusKind.Chill` | chill on the frozen extends the freeze → it does not; a creature just thawed cannot freeze again for 3 s (elites 5 s) | anything chilled twice a second stays frozen for good (`DEPTH.md` §7) |
+| Poison on the survivor | `Battle.Tick` (`p.PoisonT`) | silent → a quiet `PlayerHit` each second with `Source = "poison"` | a death by poison is named after the last creature to hit |
 | Sapper burst | `Enemies`, `lampling_sapper` | `Burst` 1.2× → 1.0×; `Ranged.Cooldown` 4.4 → 5 | melee's worst rank-and-file matchup |
 
 ## 2. Telegraph caps (S)
