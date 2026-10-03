@@ -96,6 +96,7 @@ sealed class StoryExplorer
         foreach (var r in O.Roots)
         {
             start = Nodes.Count;
+            mine = new Coverage();
             Explore(r);
             // What only this survivor's states can say, said now; then what
             // the analysis no longer needs let go (the saves are most of it).
@@ -164,8 +165,12 @@ sealed class StoryExplorer
             }
             // The most promising first: what reached something new, then what is
             // furthest into the story, then as found.
-            layer = next.Select((x, i) => (x, i)).OrderByDescending(t => t.x.Fresh).ThenByDescending(t => t.x.N.Progress).ThenBy(t => t.i)
-                .Take(O.Beam).Select(t => t.x.N).ToList();
+            // The most promising first: what reached anything new on this road,
+            // then what is furthest into the story, then as found. (Ranking by
+            // how much was new, or counting the zone's flags as progress, sends
+            // the search round the wood instead of on through the story.)
+            var sorted = next.Select((x, i) => (x, i)).OrderByDescending(t => t.x.Fresh > 0).ThenByDescending(t => t.x.N.Progress).ThenBy(t => t.i);
+            layer = sorted.Take(O.Beam).Select(t => t.x.N).ToList();
         }
     }
 
@@ -216,7 +221,7 @@ sealed class StoryExplorer
                     var cj = Playthrough.Load(child.Save);
                     child.Quests = Quests(cj);
                     child.Held = Held(cj.Ch).Select(string.Intern).ToArray();
-                    child.Progress = ProgressOf(cj) + child.FlagsUp;
+                    child.Progress = ProgressOf(cj);
                     Seen.Pending = null;
                     n.Next.Add(child.Id);
                     output.Add((child, 0));
@@ -262,8 +267,7 @@ sealed class StoryExplorer
             Parent = n, Step = s, Depth = n.Depth + 1, Root = n.Root, Save = p.Save(), Mode = p.Mode, Npc = p.Npc,
             At = p.Mode == Mode.Talk ? p.Runner!.Node!.Id : null, Arena = p.Arena != null && p.Mode == Mode.Arena ? Json.Write(p.Arena) : null, Visit = v,
         };
-        if (p.Mode == Mode.Roam) (c.Flags, c.FlagsUp) = p.Flags();
-        else (c.Flags, c.FlagsUp) = (n.Flags, n.FlagsUp);
+        c.Flags = p.Mode == Mode.Roam ? p.Flags() : n.Flags;
         c.Hash = Hash(c, p.J);
         if (known.ContainsKey(c.Hash)) return c;
         // The zone found as fresh as a new visit would make it: the visit begins
@@ -311,13 +315,16 @@ sealed class StoryExplorer
         c.Quests = Quests(j);
         c.Progress = ProgressOf(j);
         c.Held = Held(j.Ch).Select(string.Intern).ToArray();
-        int fresh = Seen.Take(c, j);
-        // Progress kept only by the zone (a cage opened) counts as reaching something.
-        if (c.Flags != "") fresh += Seen.Add("zone", c.Flags);
-        c.Progress += c.FlagsUp;
-        if (c.Step?.Key.StartsWith("use:") == true) fresh += Seen.Add("use", $"{c.Parent!.Visit.Zone}:{c.Step.Key[4..]}");
-        if (c.Mode == Mode.Talk && c.Parent?.Mode != Mode.Talk) fresh += Seen.Add("talk", c.Npc!);
-        if (c.Step?.Key.StartsWith("say:") == true) fresh += Seen.Add("said", $"{c.Parent!.Npc}.{c.Parent.At}#{c.Step.Key[4..]}");
+        // New to this survivor's road, for the beam (each survivor explores
+        // afresh); new to anyone, for the report.
+        Seen.Take(c, j);
+        int fresh = mine.Take(c, j);
+        int Add(string kind, string key) { Seen.Add(kind, key); return mine.Add(kind, key); }
+        // Progress kept only by the zone (a cage opened) counts, flag by flag.
+        foreach (var flag in c.Flags.Split(';', StringSplitOptions.RemoveEmptyEntries)) fresh += Add("zone", flag);
+        if (c.Step?.Key.StartsWith("use:") == true) fresh += Add("use", $"{c.Parent!.Visit.Zone}:{c.Step.Key[4..]}");
+        if (c.Mode == Mode.Talk && c.Parent?.Mode != Mode.Talk) fresh += Add("talk", c.Npc!);
+        if (c.Step?.Key.StartsWith("say:") == true) fresh += Add("said", $"{c.Parent!.Npc}.{c.Parent.At}#{c.Step.Key[4..]}");
         if (c.Mode == Mode.Talk) c.Wants = Seen.WantsAt(c, j);
         if (before != null) Contradictions(before, j);
         Sane(j);
@@ -440,6 +447,8 @@ sealed class StoryExplorer
     int start;
     /// <summary>Quests seen settled, on any survivor's road so far.</summary>
     readonly HashSet<string> settles = new();
+    /// <summary>What this survivor's road has reached.</summary>
+    Coverage mine = new();
 
     IEnumerable<Node> Ours => Nodes.Skip(start);
 

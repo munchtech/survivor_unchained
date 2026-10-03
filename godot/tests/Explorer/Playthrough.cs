@@ -816,20 +816,23 @@ sealed class Playthrough
     /// a camp roused, a fire lit, who is out): two visits with the same mark
     /// and the same journey go on the same way.</summary>
     /// <summary>The zone's own progress, as flags (a cage open, a place found):
-    /// the words of them, and how many are up.</summary>
-    public (string Words, int Up) Flags()
+    /// each flag up, ';'-separated.</summary>
+    public string Flags()
     {
-        if (Zone == null) return ("", 0);
-        var sb = new StringBuilder(Zone.Id).Append(':');
-        int up = 0;
+        if (Zone == null) return "";
+        var sb = new StringBuilder();
         foreach (var f in Zone.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly))
             switch (f.GetValue(Zone))
             {
-                case bool b: if (b) { up++; sb.Append(f.Name).Append(';'); } break;
-                case bool[] a: up += a.Count(x => x); sb.Append(f.Name).Append('=').Append(string.Concat(a.Select(x => x ? '1' : '0'))).Append(';'); break;
-                case HashSet<string> h: up += h.Count; sb.Append(f.Name).Append('=').Append(string.Join(",", h.OrderBy(x => x, StringComparer.Ordinal))).Append(';'); break;
+                case bool b: if (b) { sb.Append(Zone.Id).Append(':').Append(f.Name).Append(';'); } break;
+                case bool[] a:
+                    for (int i = 0; i < a.Length; i++) if (a[i]) { sb.Append(Zone.Id).Append(':').Append(f.Name).Append(i).Append(';'); }
+                    break;
+                case HashSet<string> h:
+                    foreach (var x in h.OrderBy(x => x, StringComparer.Ordinal)) { sb.Append(Zone.Id).Append(':').Append(f.Name).Append(':').Append(x).Append(';'); }
+                    break;
             }
-        return (sb.ToString(), up);
+        return sb.ToString();
     }
 
     public string Mark()

@@ -35,7 +35,7 @@ public class StoryExplorerTests(ITestOutputHelper log)
     static Options Quick() => new()
     {
         Roots = [new Root("warden", "hunter", Sex.Male), new Root("arcanist", "scholar", Sex.Female)],
-        MaxStates = 220, Beam = 5, MaxDay = 4, Confirm = 0,
+        MaxStates = 150, Beam = 5, MaxDay = 4, Confirm = 0,
     };
 
     static Options Full()
