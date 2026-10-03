@@ -5,7 +5,7 @@
   "100STYLE": "Ian Mason et al., 100STYLE (2022), https://zenodo.org/record/8127870, CC BY 4.0: retargeted to her skeleton, feet locked, looped, arms re-keyed.",
   "UAL": "Quaternius, Universal Animation Library 1 and 2, CC0: the fallback for clips not yet made."
  },
- "made": 14,
+ "made": 33,
  "planned": 45,
  "clips": [
   {
@@ -239,14 +239,14 @@
   {
    "clip": "dash",
    "plays_for": "the dash",
-   "status": "fallback",
+   "status": "made",
    "fallback": "Roll",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 0.467,
+   "layer": "full"
   },
   {
    "clip": "sword_back",
@@ -287,206 +287,206 @@
   {
    "clip": "axe_back",
    "plays_for": "axe swing, first",
-   "status": "fallback",
+   "status": "made",
    "fallback": "Sword_Attack",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 0.867,
+   "layer": "upper"
   },
   {
    "clip": "axe_fore",
    "plays_for": "axe swing, second",
-   "status": "fallback",
+   "status": "made",
    "fallback": "Sword_Regular_B",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 0.867,
+   "layer": "upper"
   },
   {
    "clip": "axe_heavy",
    "plays_for": "axe, wide arc",
-   "status": "fallback",
+   "status": "made",
    "fallback": "Sword_Heavy_Combo",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 1.067,
+   "layer": "upper"
   },
   {
    "clip": "axes_left",
    "plays_for": "two axes, left hand (left to right)",
-   "status": "fallback",
+   "status": "made",
    "fallback": "Sword_Regular_A",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 0.8,
+   "layer": "upper"
   },
   {
    "clip": "axes_right",
    "plays_for": "two axes, right hand (right to left)",
-   "status": "fallback",
+   "status": "made",
    "fallback": "Sword_Regular_C",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 0.8,
+   "layer": "upper"
   },
   {
    "clip": "axes_heavy",
    "plays_for": "two axes, wide arc",
-   "status": "fallback",
+   "status": "made",
    "fallback": "Sword_Heavy_Combo",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 1.0,
+   "layer": "upper"
   },
   {
    "clip": "daggers_back",
    "plays_for": "daggers, first",
-   "status": "fallback",
+   "status": "made",
    "fallback": "OverhandThrow",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 0.533,
+   "layer": "upper"
   },
   {
    "clip": "daggers_fore",
    "plays_for": "daggers, second",
-   "status": "fallback",
+   "status": "made",
    "fallback": "OverhandThrow",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 0.533,
+   "layer": "upper"
   },
   {
    "clip": "daggers_heavy",
    "plays_for": "daggers, wide arc",
-   "status": "fallback",
+   "status": "made",
    "fallback": "Sword_Regular_Combo",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 0.667,
+   "layer": "upper"
   },
   {
    "clip": "throw",
    "plays_for": "a knife or the disc thrown, the chain cast",
-   "status": "fallback",
+   "status": "made",
    "fallback": "OverhandThrow",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 0.667,
+   "layer": "upper"
   },
   {
    "clip": "cast_bolt",
    "plays_for": "wand or staff loosing a spell",
-   "status": "fallback",
+   "status": "made",
    "fallback": "Spell_Simple_Shoot",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 0.667,
+   "layer": "upper"
   },
   {
    "clip": "cast_raise",
    "plays_for": "the arcanist's heavy, creation",
-   "status": "fallback",
+   "status": "made",
    "fallback": "Spell_Simple_Enter",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 0.933,
+   "layer": "upper"
   },
   {
    "clip": "crossbow_shoot",
    "plays_for": "a bolt loosed",
-   "status": "fallback",
+   "status": "made",
    "fallback": "Pistol_Shoot",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 0.6,
+   "layer": "upper"
   },
   {
    "clip": "warcry",
    "plays_for": "warcry, sprint, cinder trail, wraith walk",
-   "status": "fallback",
+   "status": "made",
    "fallback": "Punch_Cross",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 0.8,
+   "layer": "upper"
   },
   {
    "clip": "hit",
    "plays_for": "struck",
-   "status": "fallback",
+   "status": "made",
    "fallback": "Hit_Chest",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 0.6,
+   "layer": "upper"
   },
   {
    "clip": "death",
    "plays_for": "falls",
-   "status": "fallback",
+   "status": "made",
    "fallback": "Death01",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 1.133,
+   "layer": "full"
   },
   {
    "clip": "get_up",
    "plays_for": "up again",
-   "status": "fallback",
+   "status": "made",
    "fallback": "LayToIdle",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 1.467,
+   "layer": "full"
   },
   {
    "clip": "sit_log",
@@ -547,6 +547,18 @@
    "changes": "",
    "length": null,
    "layer": ""
+  },
+  {
+   "clip": "cast_flick",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 0.6,
+   "layer": "upper"
   }
  ]
 }

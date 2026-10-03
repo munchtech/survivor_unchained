@@ -1,4 +1,146 @@
 {
+	"axe_back": {
+		"contact": 0.0833333333333333,
+		"layer": "upper",
+		"length": 0.866666674613953,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": "axe"
+	},
+	"axe_fore": {
+		"contact": 0.0833333333333333,
+		"layer": "upper",
+		"length": 0.866666674613953,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": "axe"
+	},
+	"axe_heavy": {
+		"contact": 0.1,
+		"layer": "upper",
+		"length": 1.06666672229767,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": "axe"
+	},
+	"axes_heavy": {
+		"contact": 0.1,
+		"layer": "upper",
+		"length": 1.0,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": "axes"
+	},
+	"axes_left": {
+		"contact": 0.0833333333333333,
+		"layer": "upper",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": "axes"
+	},
+	"axes_right": {
+		"contact": 0.0833333333333333,
+		"layer": "upper",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": "axes"
+	},
+	"cast_bolt": {
+		"contact": 0.0,
+		"layer": "upper",
+		"length": 0.666666686534882,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"cast_flick": {
+		"contact": 0.0,
+		"layer": "upper",
+		"length": 0.600000023841858,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"cast_raise": {
+		"contact": 0.333333333333333,
+		"layer": "upper",
+		"length": 0.933333337306976,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"crossbow_shoot": {
+		"contact": 0.0,
+		"layer": "upper",
+		"length": 0.600000023841858,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"daggers_back": {
+		"contact": 0.0666666666666667,
+		"layer": "upper",
+		"length": 0.533333361148834,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": "daggers"
+	},
+	"daggers_fore": {
+		"contact": 0.0666666666666667,
+		"layer": "upper",
+		"length": 0.533333361148834,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": "daggers"
+	},
+	"daggers_heavy": {
+		"contact": 0.1,
+		"layer": "upper",
+		"length": 0.666666686534882,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": "daggers"
+	},
+	"dash": {
+		"layer": "full",
+		"length": 0.466666668653488,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"death": {
+		"hold": true,
+		"layer": "full",
+		"length": 1.13333332538605,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"get_up": {
+		"layer": "full",
+		"length": 1.46666669845581,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"hit": {
+		"layer": "upper",
+		"length": 0.600000023841858,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
 	"idle_arcanist": {
 		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
 		"layer": "full",
@@ -142,5 +284,20 @@
 		"loop": false,
 		"source": "keyed (tools/anim)",
 		"weapon": "sword+shield"
+	},
+	"throw": {
+		"contact": 0.0833333333333333,
+		"layer": "upper",
+		"length": 0.666666686534882,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"warcry": {
+		"layer": "upper",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
 	}
 }

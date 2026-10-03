@@ -214,7 +214,7 @@ public partial class PlayerView : Node3D
     public void OnMuzzle(double angle)
     {
         if (!her || dead) return;
-        var clip = person.Kind switch { "crossbow" => "crossbow_shoot", "wand" or "staff" => "cast_bolt", "daggers" => "throw", _ => "" };
+        var clip = person.Kind switch { "crossbow" => "crossbow_shoot", "wand" => "cast_flick", "staff" => "cast_bolt", "daggers" => "throw", _ => "" };
         // (Several weapons may loose at once: one gesture at a time, and
         // never over a dash or a fall.)
         if (clip == "" || time - lastMuzzle < 0.4 || (bool)tree.Get("parameters/fullShot/active")) return;
