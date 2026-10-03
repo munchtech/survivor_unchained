@@ -385,6 +385,20 @@ def barks(lines, persons):
             make(lines, f"bark.guard.{i}.{sx}", f"guard{i - 1}", voice, "bark", g["line"], ctx)
 
 
+# A passing line only one sex could say ("my husband") gets only that take;
+# a walker of the other sex says it silently.
+ONLY_WOMAN = re.compile(r"\b(my husband|my man|was a girl|as a girl|my first husband)\b", re.I)
+ONLY_MAN = re.compile(r"\b(my wife|my missus|was a boy|as a boy)\b", re.I)
+
+
+def sexes_for(text):
+    if ONLY_WOMAN.search(text):
+        return (("f", "townswoman"),)
+    if ONLY_MAN.search(text):
+        return (("m", "townsman"),)
+    return (("m", "townsman"), ("f", "townswoman"))
+
+
 def folk(lines):
     f = load("folk.json")
     for i, l in enumerate(f.get("lines", []), 1):
@@ -406,8 +420,10 @@ def folk(lines):
             for sx, voice in (("m", "watchman"), ("f", "watchwoman")):
                 make(lines, f"folk.{i}.{sx}", "folk", voice, "folk", l["text"], ctx)
         else:
-            ctx["who"] = "a townsman or townswoman (the walker's sex decides the take)"
-            for sx, voice in (("m", "townsman"), ("f", "townswoman")):
+            takes = sexes_for(l["text"])
+            ctx["who"] = "a townsman or townswoman (the walker's sex decides the take)" if len(takes) == 2 else \
+                f"a {takes[0][1]} only (the words say so); the other sex's walkers say it unvoiced"
+            for sx, voice in takes:
                 make(lines, f"folk.{i}.{sx}", "folk", voice, "folk", l["text"], ctx)
 
 
@@ -608,7 +624,7 @@ def zones(lines):
                 for k, (v, _) in enumerate(literals(arr), 1):
                     ctx = OrderedDict([("where", f"a stall-keeper calling their wares ({kind}) in the Waystation square, by day"),
                                        ("to", "anyone passing"), ("who", "the keeper's sex decides the take")])
-                    for sx, voice in (("m", "townsman"), ("f", "townswoman")):
+                    for sx, voice in sexes_for(v):
                         make(lines, f"bark.stall.{kind}.{k}.{sx}", "stall-keeper", voice, "bark", v, ctx)
 
 

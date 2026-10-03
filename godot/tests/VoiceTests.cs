@@ -96,6 +96,12 @@ public class VoiceTests(ITestOutputHelper log) : IDisposable
         Assert.NotNull(VoiceLines.ForText(line));
         Assert.Equal("bark.rook.2", VoiceLines.ForText("Wipe your boots.", "f")!.Id);
         Assert.Null(VoiceLines.ForText("Executed"));
+        // Only a wife says "my husband": a man walking past says it unvoiced.
+        const string wife = "My husband says the wolves are the Watch's problem.";
+        VoiceLines.Load(TakesJson(("folk.102.f", "townswoman", wife)));
+        Assert.Equal(["f"], VoiceLines.Sexes(wife));
+        Assert.Null(VoiceLines.ForText(wife, "m"));
+        Assert.NotNull(VoiceLines.ForText(wife, "f"));
     }
 
     [Fact]

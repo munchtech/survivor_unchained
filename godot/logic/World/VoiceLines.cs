@@ -146,8 +146,18 @@ public static class VoiceLines
         if (hint != null)
             foreach (var t in list)
                 if (t.Voice == hint || t.Id.EndsWith("." + hint, StringComparison.Ordinal)) return t;
+        // A passer-by's line recorded only in the other sex's voice ("my
+        // husband") is better unvoiced than said by the wrong mouth.
+        if (hint is "m" or "f" && list.TrueForAll(t => t.Id.EndsWith(".m", StringComparison.Ordinal) || t.Id.EndsWith(".f", StringComparison.Ordinal))) return null;
         return list[0];
     }
+
+    static readonly System.Text.RegularExpressions.Regex OnlyWoman = new(@"\b(my husband|my man|was a girl|as a girl|my first husband)\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase),
+        OnlyMan = new(@"\b(my wife|my missus|was a boy|as a boy)\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+    /// <summary>Whose takes a passing line has (sexes_for in the tool): both,
+    /// unless only one could say it.</summary>
+    public static string[] Sexes(string text) => OnlyWoman.IsMatch(text) ? ["f"] : OnlyMan.IsMatch(text) ? ["m"] : ["m", "f"];
 
     /// <summary>The manifest, if there is one.</summary>
     public static Manifest? ReadManifest()
@@ -185,7 +195,8 @@ public static class VoiceLines
         {
             var l = lines[i];
             if (l.Child == true) all[$"folk.{i + 1}"] = Hash(l.Text);
-            else foreach (var s in new[] { "m", "f" }) all[$"folk.{i + 1}.{s}"] = Hash(l.Text);
+            else if (l.Watch == true) foreach (var s in new[] { "m", "f" }) all[$"folk.{i + 1}.{s}"] = Hash(l.Text);
+            else foreach (var s in Sexes(l.Text)) all[$"folk.{i + 1}.{s}"] = Hash(l.Text);
         }
         return all;
     }
