@@ -11950,6 +11950,13 @@
      },
      {
       "when": {
+       "fact": "be.crates",
+       "eq": "sunk"
+      },
+      "text": "And six crates at the bottom of a stream, where nothing will ever buy them. That is the first thing you have thrown away that I approve of."
+     },
+     {
+      "when": {
        "history": "burned_roost"
       },
       "text": "And six crates that went up with the Roost. You will have heard it from the wall. Everyone did."

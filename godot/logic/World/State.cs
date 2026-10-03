@@ -146,6 +146,10 @@ public sealed class ShopState
     public List<ItemInstance> Stock = new();
     public int RestockDay;
     public double PriceMult = 1;
+    /// <summary>The conditional lines (by "index:item") already rolled for this
+    /// restock: a line that becomes true between restocks is put on the shelf
+    /// the next time the shop is opened, once, and not rolled again.</summary>
+    public List<string> Offered = new();
 }
 
 public sealed class WorldState

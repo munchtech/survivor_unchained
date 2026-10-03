@@ -44,7 +44,7 @@ public static class Chapter
         };
         string outcome = o != null && q.Outcomes != null && q.Outcomes.TryGetValue(o, out var t) && t != "" ? t : "The wolves are still out there, and still sick.";
         return new Thread("beasts", q.Name, verdict, tone, outcome,
-            Pick(w, "beasts", ["greymuzzle_met", "root_cause", "dig_sold", "pump_moved", "pump_broken", "pump_blown", "alpha_dead", "bounty_claimed", "told_holloway", "pelts_sold", "pack_led"]));
+            Pick(w, "beasts", ["greymuzzle_met", "root_cause", "dig_sold", "pump_moved", "pump_broken", "pump_blown", "redcowl_charge", "alpha_dead", "bounty_claimed", "told_holloway", "pelts_sold", "pack_led"]));
     }
 
     static Thread Caravan(WorldState w)
@@ -64,10 +64,12 @@ public static class Chapter
         else if (surv == "dead" && cargo is "sold" or "kept") { verdict = "Too late, and robbed"; tone = ThreadTone.Bad; outcome = "The prisoners did not come home, and the cargo went where you took it."; }
         else if (surv == "dead") { verdict = "Too late"; tone = ThreadTone.Bad; outcome = "The prisoners in the Roost did not come home."; }
         else if (cargo == "returned") { verdict = "The goods, not the men"; tone = ThreadTone.Grey; outcome = Out("returned"); }
-        var beats = Pick(w, "caravan", ["roost_found", "redcowl_met", "survivors_freed", "survivors_dead", "cargo_returned", "cargo_sold", "cargo_kept", "cargo_lost", "cargo_moved", "pell_exposed", "pell_joined"]);
+        var beats = Pick(w, "caravan", ["roost_found", "roost_told", "redcowl_met", "survivors_freed", "survivors_dead", "cargo_returned", "cargo_sold", "cargo_kept", "cargo_lost", "cargo_moved",
+            "crates_redcowl", "crates_harlan", "crates_sunk", "jory_told", "pell_exposed", "pell_joined", "pell_given", "pell_hunted"]);
         if (S(w, "redcowl") == "tricked") beats.Add("You bluffed the Kerchiefs out of their own camp.");
         if (S(w, "redcowl") == "dead") beats.Add("Redcowl is dead.");
-        if (S(w, "caravan.pell") == "fled") beats.Add("Pell Varrow fled the Waystation in the night.");
+        // Taken from his bed is not fled: the journal's own line says where Redcowl looked.
+        if (S(w, "caravan.pell") == "fled" && S(w, "pell.fate") != "taken") beats.Add("Pell Varrow fled the Waystation in the night.");
         return new Thread("caravan", q.Name, verdict, tone, outcome, beats);
     }
 
@@ -75,6 +77,7 @@ public static class Chapter
     {
         string? f(string k) => S(w, k);
         if (f("beasts.outcome") == "allied") return $"{ch.Name}, who runs with wolves";
+        if (w.Fact("vonnra.accused").Truthy) return $"{ch.Name}, who said it to Vonnra's face";
         if (f("caravan.pell") == "ally") return $"{ch.Name}, in Pell Varrow's ledger";
         if (f("beasts.outcome") == "exploited") return $"{ch.Name}, who sold the cure";
         if (f("caravan.cargo") == "sold") return $"{ch.Name}, who sold the Coyle strongbox";
@@ -89,7 +92,10 @@ public static class Chapter
 
     public static ChapterSummary Summary(CharacterData ch, WorldState w)
     {
-        var open = new[] { "vault", "below" }.Select(id =>
+        // The lamps are a thread only once the dead watchman's book (or
+        // someone's word) has opened them: a save from before may not have it.
+        bool Begun(string id) => id != "lamps" || (w.Quests.TryGetValue(id, out var q) && q.Status != QuestStatus.Unknown);
+        var open = new[] { "vault", "below", "lamps" }.Where(Begun).Select(id =>
         {
             var def = Lore.Quests[id];
             string? last = w.Quests.TryGetValue(id, out var q) && q.Entries.Count > 0 ? q.Entries[^1] : null;

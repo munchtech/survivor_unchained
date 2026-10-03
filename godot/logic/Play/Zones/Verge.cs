@@ -550,8 +550,39 @@ public sealed class Verge : ZoneRuntime
             Act = () =>
             {
                 W.Facts["caravan.box_taken"] = true;
-                G.Apply("""[{ "give": "coyle_strongbox" }]""");
+                // Found before anyone asked for it, the box still says whose it is.
+                G.Apply("""[{ "give": "coyle_strongbox" }, { "quest": { "id": "caravan", "status": "active", "entry": "strongbox_found" } }]""");
                 if (KerchiefsFriendly() && F("redcowl").Str != "bargained" && roostCrew.Any(Up)) TurnHostile("roost.hostile", "Thief!");
+            },
+        });
+        // The six "B.E." crates, once nobody keeps the camp: one charge for the
+        // Dig's pump, or the lot into the ravine's water. Only for someone who
+        // knows what B.E. is (Harlan's word, or the meaning bought from Pell);
+        // anyone else sees six crates of somebody's salt. Telling Harlan where
+        // they are stays open until they are gone.
+        bool CratesFree() => F("be.crates").IsNull && !Test("""{ "history": "burned_roost" }""") && Knows("clue.blasting_ember") &&
+            (F("redcowl").Str is "dead" or "tricked" || F("roost.cleared").Truthy);
+        string? CratesWatched() => roostCrew.Any(e => Up(e) && Dist(e.X, e.Z, cargo.X, cargo.Z) < 16) ? "Too many eyes. Deal with them first" : null;
+        I.Add(new()
+        {
+            Id = "crates_charge", X = cargo.X - 1.6, Z = cargo.Z + 1.2, R = 2.4, Verb = "Take a charge", Name = "The B.E. crates",
+            When = () => CratesFree() && !F("crates.charge_taken").Truthy,
+            Locked = CratesWatched,
+            Act = () =>
+            {
+                G.Apply("""[{ "give": "blasting_ember" }, { "set": { "crates.charge_taken": true } }]""");
+                G.Say("You prise one charge out of the straw. The rest sit there and wait, the way they have waited for everyone.", null, 5);
+            },
+        });
+        I.Add(new()
+        {
+            Id = "crates_sink", X = cargo.X - 3.4, Z = cargo.Z + 0.4, R = 2.4, Verb = "Sink them in the stream", Name = "The B.E. crates",
+            When = CratesFree,
+            Locked = CratesWatched,
+            Act = () =>
+            {
+                G.Apply("""[{ "set": { "be.crates": "sunk" } }, { "quest": { "id": "caravan", "entry": "crates_sunk" } }]""");
+                G.Say("You roll them down into the ravine's water one at a time, and listen to each one not go off.", null, 6);
             },
         });
         I.Add(new() { Id = "snib", X = pump.X + 4, Z = pump.Z + 3, R = 3.2, Verb = "Talk", Name = "Snib", When = () => Up(snib) && snib!.Disposition == Disposition.Neutral, Act = () => G.Talk("snib") });
@@ -949,7 +980,9 @@ public sealed class Verge : ZoneRuntime
         bool pumping = F("dig.pump").IsNull || F("dig.pump").Str == "running";
         bool toDig = Knows("root_cause") && pumping;
         bool toHollow = Knows("hint.greymuzzle") && !Q("beasts", "greymuzzle_met") && F("greymuzzle").Str != "dead";
-        bool toWreck = Q("caravan", "harlan_plea") && !Q("caravan", "wreck");
+        // Harlan's plea sends you to the wagons; so does a ledger read for its
+        // date, since the red fletching in their sideboards says who "R." is.
+        bool toWreck = (Q("caravan", "harlan_plea") || Q("caravan", "ledger_read")) && !Q("caravan", "wreck");
         XZ at(string k) => V(k);
         var marks = new List<MapMark>
         {
