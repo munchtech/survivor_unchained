@@ -67,7 +67,9 @@ verdict: only an ear can say whether a take sounds made.
 ## Results
 
 `listen.html` in this folder (open it in a browser) plays every file, line
-by line, best guess first; every number is in `metrics.json`. Across the
+by line, best guess first; the same page is published, private to the
+owner, at https://claude.ai/artifact/T1Bns481cT4bLCAqB6Sipx. Every number
+is in `metrics.json`. Across the
 five lines, by method (accent "heard right" is the share of the accent
 model's vote for the part's own accent; 1 is certain):
 

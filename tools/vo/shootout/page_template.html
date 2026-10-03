@@ -34,6 +34,10 @@ dl { display: flex; gap: 14px; margin: 0; font-variant-numeric: tabular-nums; }
 dl div { text-align: right; }
 dt { font-size: .66rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 dd { margin: 0; font: 500 .95rem var(--mono); }
+.verdict { margin: 1.6rem 0 0; padding: 16px 18px; background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 6px; max-width: 72ch; }
+.verdict h2 { font-size: 1.4rem; margin-bottom: .4rem; }
+.verdict p { margin: .5rem 0 0; }
+.verdict code { font: 500 .9em var(--mono); color: var(--accent); }
 footer { margin-top: 4rem; color: var(--muted); font-size: .9rem; max-width: 70ch; }
 @media (max-width: 720px) { li { grid-template-columns: minmax(0, 1fr); } dl div { text-align: left; } }
 </style>
@@ -41,6 +45,11 @@ footer { margin-top: 4rem; color: var(--muted); font-size: .9rem; max-width: 70c
   <h1>Thornhollow Voice Shoot-out</h1>
   <p class="lede">The same five hard lines from Act 1, made every way this machine can make them: local models cloning each part's designed voice, models acting the line, and acted lines converted into the part's voice. Each player is that method's best take, mixed the same way. Best guess at the most human first, by measurement; judge by ear, with headphones.</p>
   <p class="lede">"Moves like a person" scores how much the pace changes from phrase to phrase, how much the strong words stand out, how far the pitch travels and whether there is breath. "Same voice as cast" is how close the take is to the part's designed voice (1 is identical).</p>
+  <aside class="verdict">
+    <h2>What the numbers say</h2>
+    <p>Acting the line first and then converting it into the part's voice (<code>dia-vc</code>) moves most like a person: its pace changes from phrase to phrase as people's do, and it breathes. But the actor models are American, so our people come out with American vowels. What keeps the accent and the voice (<code>vox_cont</code>, <code>vox_style</code>, <code>chatterbox</code>) still reads like a reader, with one good line each; Sella's is the best English-voiced take here. No method can shout, and Redcowl's Scots is lost by all of them. My answer from the measurements is that none would pass as a person in the game; nothing ships until one passes your ear.</p>
+    <p><b>Listen first:</b> Sella's <code>vox_cont</code>; Holloway's <code>dia-vc</code> against his <code>vox_cont</code>; Rook's <code>dia-vc</code>; Brannoc's <code>chatterbox</code>.</p>
+  </aside>
   <nav><a href="#1_angry">Anger held down</a><a href="#2_intimate">Intimate</a><a href="#3_wry">Wry aside</a><a href="#4_grief">Grief</a><a href="#5_shout">Shout</a></nav>
 <!--SECTIONS-->
   <footer>Scots, Irish and Welsh accents could not be made with any commercially usable local model; Redcowl's voice here is a lucky Scots audition. If none of these sounds like a person, the routes that do are one actor's guide performance converted into each part's voice (about £2,500 to £4,000 for Act 1), a paid generator with acting tags (about $99 for a month), or a cast of actors (about £10,000 to £15,000). Details in docs/voice/samples/README.md.</footer>
