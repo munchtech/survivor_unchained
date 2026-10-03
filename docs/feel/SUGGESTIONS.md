@@ -656,8 +656,9 @@ the same shape as a loot beam, which dilutes the loot language.
 - **A beam ladder**: heights 1.4 / 2.2 / 3.2 / 5 / 8 m by tier; the beam
   shoots up over 0.25 s when the item lands; legendary pulses at 1 Hz and
   casts a light; an edge-of-screen pip for epic and above.
-- **Show the item**, not a sack: `ItemModels` already has a model for each
-  item (it photographs them for the pack).
+- **Show the item**, not a sack: `ItemModels.Make` already builds a model
+  per item icon (`helm`, `ring` …) for the pack's photographs; `BattleFx`
+  already merges such models into batches (`Pickup(...)`).
 - **Keep vertical beams for loot only**: give the level-up a ring or a
   rising spiral instead of `Pillar`.
 

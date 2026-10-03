@@ -366,4 +366,4 @@ The canonical talks are Nijman's *The Art of Screenshake* (https://www.youtube.c
 
 ### Data
 
-Steam review corpus pulled via `store.steampowered.com/appreviews/<appid>?json=1` on 2026-10-03. Raw JSON and the grep tooling are in `scratchpad/research/steam/` (`grep.py '<regex>' <n> <games>` reproduces any count or quote). All other URLs are inline above.
+Steam review corpus pulled via `store.steampowered.com/appreviews/<appid>?json=1` on 2026-10-03. The raw review JSON was kept out of the repo; the same endpoint and a regex over the review text reproduce any count or quote. All other URLs are inline above.
