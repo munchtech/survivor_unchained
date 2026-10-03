@@ -488,7 +488,7 @@ def style_long():
         # Laid on her head till behind her ears (her front's and top's), then let fall.
         lie_for = np.clip(0.04 - pts[:, 1], 0, 0.14) + np.clip(pts[:, 2] - (EYE_Z + 0.06), 0, 0.1) * 0.6
         lie_for = np.maximum(lie_for, 0.05)
-        lie_for[front] = 0.03
+        lie_for[front] = 0.05
         P = drape_lengths(start, dirs, L, off, comb=comb_long, lie_for=lie_for)
         P = wave(P, 0.007, 0.15, pts)
         # (any strand gone astray, far off her, left out)
