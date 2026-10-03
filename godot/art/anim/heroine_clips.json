@@ -1,0 +1,146 @@
+{
+	"idle_arcanist": {
+		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
+		"layer": "full",
+		"length": 5.43333339691162,
+		"licence": "CC BY 4.0",
+		"loop": true,
+		"source": "100STYLE Strutting_ID frames 1153-1479 (60 fps)",
+		"speed": 0.0,
+		"weapon": "staff"
+	},
+	"idle_reaver": {
+		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
+		"layer": "full",
+		"length": 5.0,
+		"licence": "CC BY 4.0",
+		"loop": true,
+		"source": "100STYLE Angry_ID frames 1055-1355 (60 fps)",
+		"speed": 0.0,
+		"weapon": "axe"
+	},
+	"idle_stalker": {
+		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
+		"layer": "full",
+		"length": 5.09999990463257,
+		"licence": "CC BY 4.0",
+		"loop": true,
+		"source": "100STYLE Crouched_ID frames 730-1036 (60 fps)",
+		"speed": 0.0,
+		"weapon": "crossbow"
+	},
+	"idle_warden": {
+		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
+		"layer": "full",
+		"length": 5.03333330154419,
+		"licence": "CC BY 4.0",
+		"loop": true,
+		"source": "100STYLE Heavyset_ID frames 1107-1409 (60 fps)",
+		"speed": 0.0,
+		"weapon": "sword+shield"
+	},
+	"run_arcanist": {
+		"cycle": 0.666666666666667,
+		"layer": "full",
+		"length": 0.666666686534882,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 5.1,
+		"steps": 2.0,
+		"weapon": "staff"
+	},
+	"run_arcanist_wand": {
+		"cycle": 0.666666666666667,
+		"layer": "full",
+		"length": 0.666666686534882,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 5.1,
+		"steps": 2.0,
+		"weapon": "wand"
+	},
+	"run_reaver": {
+		"cycle": 0.633333333333333,
+		"layer": "full",
+		"length": 0.633333325386047,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 5.1,
+		"steps": 2.0,
+		"weapon": "axe"
+	},
+	"run_reaver_axes": {
+		"cycle": 0.633333333333333,
+		"layer": "full",
+		"length": 0.633333325386047,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 5.1,
+		"steps": 2.0,
+		"weapon": "axes"
+	},
+	"run_stalker": {
+		"cycle": 0.666666666666667,
+		"layer": "full",
+		"length": 0.666666686534882,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 5.1,
+		"steps": 2.0,
+		"weapon": "crossbow"
+	},
+	"run_stalker_daggers": {
+		"cycle": 0.666666666666667,
+		"layer": "full",
+		"length": 0.666666686534882,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 5.1,
+		"steps": 2.0,
+		"weapon": "daggers"
+	},
+	"run_warden": {
+		"cycle": 0.7,
+		"layer": "full",
+		"length": 0.699999988079071,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 5.1,
+		"steps": 2.0,
+		"weapon": "sword+shield"
+	},
+	"sword_back": {
+		"contact": 0.0833333333333333,
+		"layer": "upper",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": "sword+shield"
+	},
+	"sword_fore": {
+		"contact": 0.0833333333333333,
+		"layer": "upper",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": "sword+shield"
+	},
+	"sword_heavy": {
+		"contact": 0.1,
+		"layer": "upper",
+		"length": 1.0,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)",
+		"weapon": "sword+shield"
+	}
+}

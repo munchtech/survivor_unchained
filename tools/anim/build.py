@@ -69,6 +69,8 @@ def main(argv):
                 print(f"  (dropped {f.stem})")
     if "--no-pack" not in argv:
         pack()
+        import manifest
+        manifest.main()
 
 
 if __name__ == "__main__":

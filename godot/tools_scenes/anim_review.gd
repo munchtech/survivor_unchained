@@ -261,19 +261,28 @@ func place_camera():
 		var sk: Skeleton3D = her.find_children("*", "Skeleton3D", true, false)[0]
 		c = sk.global_transform * sk.get_bone_global_pose(sk.find_bone(look)).origin
 	var off = {"front": Vector3(0, 0.2, 4.6), "back": Vector3(0, 0.2, -4.6), "side": Vector3(4.6, 0.2, 0), "left": Vector3(-4.6, 0.2, 0),
-		"three": Vector3(3.2, 0.6, 3.4), "top": Vector3(0.01, 6.0, 0.6), "game": Vector3(0, 9.0, 4.4)}[view]
+		"three": Vector3(3.2, 0.6, 3.4), "rthree": Vector3(-3.2, 0.6, 3.4), "top": Vector3(0.01, 6.0, 0.6), "game": Vector3(0, 9.0, 4.4),
+		# The game's own cameras (FollowCamera: 56 degrees at 23 m by day,
+		# 64 at 31 m in an arena; Fov 34 on a 1080-line screen), the cell
+		# cut from that screen at its true size. YAW turns her under it.
+		"day": Vector3(0, sin(deg_to_rad(56)) * 23, cos(deg_to_rad(56)) * 23),
+		"arena": Vector3(0, sin(deg_to_rad(64)) * 31, cos(deg_to_rad(64)) * 31)}[view]
 	if view == "game": cam.fov = 26
+	if view in ["day", "arena"]:
+		cam.fov = rad_to_deg(2 * atan(tan(deg_to_rad(17)) * vp.size.y / 1080.0))
+		her.rotation_degrees.y = float(env("YAW", "0"))
+		c = her.position + Vector3(0, 0.9, 0)
 	cam.look_at_from_position(c + off / float(env("ZOOM", "1")), c)
 
 func _process(delta):
-	her.position.z += speed * delta
+	her.position += her.basis.z.normalized() * speed * delta
 	place_camera()
 	frame += 1
 	if frame <= warm:
 		if frame == warm:
 			# The first shots after warming: from the clip's start.
 			ap.seek(start, true)
-			her.position.z = 0
+			her.position = Vector3.ZERO
 		return false
 	var k = frame - warm - 1
 	if k % step == 0:

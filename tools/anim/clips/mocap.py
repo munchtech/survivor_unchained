@@ -50,10 +50,15 @@ def idle_loop(name, rig, style, seconds=(4.0, 8.0), window=None, stance=0.8):
     return clip_from(name, rig.sk, L, P, loop=True, meta=meta)
 
 
+TRY = ["ShieldedLeft", "GracefulArms", "Angry", "Heavyset", "Swat", "Followed", "Crouched", "Akimbo", "Strutting",
+       "Teapot", "WiggleHips", "LegsApart"]
+
+
 def clips(rig, want):
     out = []
-    if not want or any("idle_neutral" in w for w in want):
-        out.append(idle_loop("idle_neutral", rig, "Neutral"))
-    if not want or any("idle_proud" in w for w in want):
-        out.append(idle_loop("idle_proud", rig, "Proud"))
+    # Takes looked at as they come (only when asked for by name).
+    for style in TRY:
+        name = f"try_{style}"
+        if any(name in w for w in want):
+            out.append(idle_loop(name, rig, style, seconds=(4.0, 4.0)))
     return out

@@ -14,6 +14,13 @@ namespace SurvivorUnchained.View;
 /// arcs) on the upper body while the legs keep running, a flinch when
 /// struck, a leap's arc, and a fall that stays down. The carried light is
 /// the ember itself: it gutters when you are hurt and flares when you level.
+///
+/// The heroine plays her own clips where she has them (HerClips): her run,
+/// its playback matched to her speed so her feet stay planted; swings that
+/// alternate as the arcs do; her own dash, flinch and fall. Her clips run on
+/// the fight's clock, so hit-stop and slow motion hold her too. She banks
+/// into turns and turns her back toward a blow while her legs keep running
+/// (HerCarriage).
 /// </summary>
 public partial class PlayerView : Node3D
 {
@@ -21,6 +28,7 @@ public partial class PlayerView : Node3D
     readonly People.Person person;
     readonly AnimationTree tree;
     readonly AnimationNodeAnimation upper, full;
+    readonly AnimationNodeAnimation? idleNode, runNode;
     public readonly OmniLight3D Light;
     /// <summary>The survivor in glass: reflections and echoes left behind.</summary>
     public readonly Reflections Reflections;
@@ -28,11 +36,17 @@ public partial class PlayerView : Node3D
     readonly ShaderMaterial wraith = new() { Shader = GD.Load<Shader>("res://shaders/ghost.gdshader") };
     bool ghostly;
     Content.AbilityKind? rushSeen;
-    double lastAttack = -1, hurtSeen, flare, castT, time;
+    double lastAttack = -1, hurtSeen, flare, castT, time, lastMuzzle = -1;
     int swing;
     bool dashing, dead;
     float speed;
     const float LightBase = 5;
+    // Hers: her own clips and carriage.
+    readonly bool her;
+    readonly HerCarriage? carriage;
+    readonly float runSpeed;
+    bool upperNative, fullNative;
+    float heading, turnRate, aim, aimHold, lastSpeed, accel;
 
     public PlayerView(Loadout lo)
     {
@@ -41,31 +55,58 @@ public partial class PlayerView : Node3D
         var v = new PersonView(lo.Person, new World.Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm }, 0.8);
         person = v.Person;
         AddChild(v);
-        // Locomotion blended by speed; a swing on the upper body alone (the
-        // hips and legs stay with the run); a roll, a leap or a fall on all of it.
+        her = person.Body == "heroine" && HerClips.Library() != null;
         var bt = new AnimationNodeBlendTree();
-        var move = new AnimationNodeBlendSpace1D { MinSpace = 0, MaxSpace = 6 };
-        // The heroine stands as herself (HerPose finishes it), not in a
-        // calling's guard made for another body.
-        var idle = person.Body == "heroine" ? "Idle_Loop" : lo.Arms.Idle;
-        move.AddBlendPoint(new AnimationNodeAnimation { Animation = People.Resolve(idle) }, 0);
-        move.AddBlendPoint(new AnimationNodeAnimation { Animation = People.Resolve("Walk_Loop") }, 1.8f);
-        move.AddBlendPoint(new AnimationNodeAnimation { Animation = People.Resolve("Jog_Fwd_Loop") }, 4.4f);
-        move.AddBlendPoint(new AnimationNodeAnimation { Animation = People.Resolve("Sprint_Loop") }, 6);
-        upper = new AnimationNodeAnimation { Animation = People.Resolve(lo.Arms.Attack[0]) };
-        full = new AnimationNodeAnimation { Animation = People.Resolve("Roll") };
+        AnimationNode moveNode;
+        if (her)
+        {
+            v.Driven = true;
+            // Standing and running blended by speed; the run played at the
+            // rate that keeps her feet where they land.
+            var idle = People.Clip(person, lo.Arms.Idle);
+            var run = People.Clip(person, "Jog_Fwd_Loop");
+            runSpeed = run.StartsWith(HerClips.Prefix) ? HerClips.Speed(run[HerClips.Prefix.Length..]) * person.Root.Scale.X : 5.3f;
+            var mv = new AnimationNodeBlendTree();
+            idleNode = new AnimationNodeAnimation { Animation = idle };
+            runNode = new AnimationNodeAnimation { Animation = run };
+            mv.AddNode("idle", idleNode, new Vector2(0, 0));
+            mv.AddNode("run", runNode, new Vector2(0, 200));
+            mv.AddNode("runScale", new AnimationNodeTimeScale(), new Vector2(200, 200));
+            mv.AddNode("blend", new AnimationNodeBlend2(), new Vector2(400, 100));
+            mv.ConnectNode("runScale", 0, "run");
+            mv.ConnectNode("blend", 0, "idle");
+            mv.ConnectNode("blend", 1, "runScale");
+            mv.ConnectNode("output", 0, "blend");
+            moveNode = mv;
+            carriage = new HerCarriage();
+            person.Skeleton.AddChild(carriage);
+            person.Skeleton.MoveChild(carriage, 0);
+        }
+        else
+        {
+            // Locomotion blended by speed; a swing on the upper body alone (the
+            // hips and legs stay with the run); a roll, a leap or a fall on all of it.
+            var move = new AnimationNodeBlendSpace1D { MinSpace = 0, MaxSpace = 6 };
+            move.AddBlendPoint(new AnimationNodeAnimation { Animation = People.Resolve(lo.Arms.Idle) }, 0);
+            move.AddBlendPoint(new AnimationNodeAnimation { Animation = People.Resolve("Walk_Loop") }, 1.8f);
+            move.AddBlendPoint(new AnimationNodeAnimation { Animation = People.Resolve("Jog_Fwd_Loop") }, 4.4f);
+            move.AddBlendPoint(new AnimationNodeAnimation { Animation = People.Resolve("Sprint_Loop") }, 6);
+            moveNode = move;
+        }
+        upper = new AnimationNodeAnimation { Animation = People.Clip(person, lo.Arms.Attack[0]) };
+        full = new AnimationNodeAnimation { Animation = People.Clip(person, "Roll") };
         var upperShot = new AnimationNodeOneShot { FadeInTime = 0.05, FadeOutTime = 0.18, FilterEnabled = true };
         var fullShot = new AnimationNodeOneShot { FadeInTime = 0.05, FadeOutTime = 0.2 };
         var skel = person.Skeleton;
         for (int b = 0; b < skel.GetBoneCount(); b++)
         {
             var name = skel.GetBoneName(b);
-            if (name is "root" or "pelvis" || name.StartsWith("thigh") || name.StartsWith("calf") || name.StartsWith("foot") || name.StartsWith("ball")) continue;
+            if (name is "root" or "pelvis" || name.StartsWith("thigh") || name.StartsWith("calf") || name.StartsWith("foot") || name.StartsWith("ball") || name.StartsWith("glute")) continue;
             upperShot.SetFilterPath($"Armature/Skeleton3D:{name}", true);
         }
         var upperScale = new AnimationNodeTimeScale();
         var fullScale = new AnimationNodeTimeScale();
-        bt.AddNode("move", move, new Vector2(0, 0));
+        bt.AddNode("move", moveNode, new Vector2(0, 0));
         bt.AddNode("upper", upper, new Vector2(0, 200));
         bt.AddNode("upperScale", upperScale, new Vector2(200, 200));
         bt.AddNode("upperShot", upperShot, new Vector2(400, 100));
@@ -81,6 +122,13 @@ public partial class PlayerView : Node3D
         bt.ConnectNode("output", 0, "fullShot");
         tree = new AnimationTree { TreeRoot = bt, RootNode = "..", Active = true };
         tree.AddAnimationLibrary("", People.Clips());
+        if (her)
+        {
+            tree.AddAnimationLibrary("her", HerClips.Library());
+            // Her clips run on the fight's clock (Update advances them), so a
+            // hit-stop or a perfect dodge's slow motion holds her as well.
+            tree.CallbackModeProcess = AnimationMixer.AnimationCallbackModeProcess.Manual;
+        }
         person.Root.AddChild(tree);
         Light = new OmniLight3D { LightColor = new Color("#ffb070"), LightEnergy = LightBase / Mathf.Pi, OmniRange = 11, OmniAttenuation = 1.4f, ShadowEnabled = false };
         AddChild(Light);
@@ -115,14 +163,27 @@ public partial class PlayerView : Node3D
 
     void Upper(string clip, double speed)
     {
-        upper.Animation = People.Resolve(clip);
+        upper.Animation = People.Clip(person, clip);
+        upperNative = upper.Animation.ToString().StartsWith(HerClips.Prefix);
         tree.Set("parameters/upperScale/scale", speed);
         tree.Set("parameters/upperShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
     }
 
+    /// <summary>One of her own clips on her upper body, by its own name.</summary>
+    bool UpperHer(string clip, double speed)
+    {
+        if (!her || !HerClips.Has(clip)) return false;
+        upper.Animation = HerClips.Prefix + clip;
+        upperNative = true;
+        tree.Set("parameters/upperScale/scale", speed);
+        tree.Set("parameters/upperShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
+        return true;
+    }
+
     void Full(string clip, double speed)
     {
-        full.Animation = People.Resolve(clip);
+        full.Animation = People.Clip(person, clip);
+        fullNative = full.Animation.ToString().StartsWith(HerClips.Prefix);
         tree.Set("parameters/fullScale/scale", speed);
         tree.Set("parameters/fullShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
     }
@@ -148,6 +209,18 @@ public partial class PlayerView : Node3D
         }
     }
 
+    /// <summary>A weapon of hers loosed (a bolt, a spell, a thrown knife), at
+    /// the angle it went: the hands that loosed it, timed to it.</summary>
+    public void OnMuzzle(double angle)
+    {
+        if (!her || dead) return;
+        var clip = person.Kind switch { "crossbow" => "crossbow_shoot", "wand" or "staff" => "cast_bolt", "daggers" => "throw", _ => "" };
+        // (Several weapons may loose at once: one gesture at a time, and
+        // never over a dash or a fall.)
+        if (clip == "" || time - lastMuzzle < 0.4 || (bool)tree.Get("parameters/fullShot/active")) return;
+        if (UpperHer(clip, 1.5)) { Strike(angle); lastMuzzle = time; }
+    }
+
     /// <summary>Up again after a fall (the prologue's second chances).</summary>
     public void Revive()
     {
@@ -156,9 +229,26 @@ public partial class PlayerView : Node3D
         Full("Lie_StandUp", 1.2);
     }
 
+    /// <summary>A blow aimed at `angle` (the fight's: atan2(z, x)): her back
+    /// turns to it if it is within reach of a turn of the waist, else she
+    /// turns whole.</summary>
+    void Strike(double angle)
+    {
+        float face = Mathf.Pi / 2 - (float)angle;
+        float d = Mathf.Wrap(face - Rotation.Y, -Mathf.Pi, Mathf.Pi);
+        if (!her || speed < 1.5f || Mathf.Abs(d) > Mathf.DegToRad(110))
+        {
+            Rotation = new Vector3(0, face, 0);
+            aim = 0;
+        }
+        else aim = Mathf.RadToDeg(d);
+        aimHold = 0.45f;
+    }
+
     public void Update(Battle b, double dt, double fightTime, System.Func<double, double, double> heightAt)
     {
         time += dt;
+        if (her) tree.Advance(dt);
         var p = b.Player;
         double y = heightAt(p.X, p.Z);
         if (p.Leap is { } leap) y += Mathf.Sin((float)(Mathf.Min(1, leap.T / leap.Dur) * Mathf.Pi)) * 2.2;
@@ -172,21 +262,27 @@ public partial class PlayerView : Node3D
                 // A fall that stays down: the clip played out and held.
                 dead = true;
                 tree.Active = false;
-                person.Anim.Play(People.Resolve("Death_A"), 0.1);
+                var death = People.Clip(person, "Death_A");
+                person.Anim.Play(death, 0.1);
+                if (person.Pose != null) person.Pose.Native = death.StartsWith(HerClips.Prefix) ? 1 : 0;
+                if (carriage != null) carriage.Aim = carriage.Bank = carriage.Tilt = 0;
             }
             Light.LightEnergy = Mathf.Lerp(Light.LightEnergy, 0.6f / Mathf.Pi, 1 - Mathf.Exp(-2 * (float)dt));
             return;
         }
         float sp = (float)Mathf.Sqrt(p.Vx * p.Vx + p.Vz * p.Vz);
-        // Face where you are going, or where you just struck.
-        if (p.AttackAnim is { } aa && fightTime - aa.T < 0.35) Rotation = new Vector3(0, (float)(Mathf.Pi / 2 - aa.Angle), 0);
+        // Face where you are going, or where you just struck (she, moving,
+        // keeps her legs' line and turns her back to the blow instead).
+        aimHold -= (float)dt;
+        if (p.AttackAnim is { } aa && fightTime - aa.T < 0.35 && !her) Rotation = new Vector3(0, (float)(Mathf.Pi / 2 - aa.Angle), 0);
         else if (sp > 0.4f) Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, Mathf.Atan2((float)p.Vx, (float)p.Vz), 1 - Mathf.Exp(-14 * (float)dt)), 0);
-        // Dash: a roll.
+        // Dash: a roll (hers: a low lunge).
         if (p.DashT > 0 && !dashing)
         {
             dashing = true;
             Rotation = new Vector3(0, Mathf.Atan2((float)p.DashDX, (float)p.DashDZ), 0);
-            Full("Dodge_Forward", 1.9);
+            aim = 0;
+            Full("Dodge_Forward", her && HerClips.Has("dash") ? 1.0 : 1.9);
         }
         else if (p.DashT <= 0) dashing = false;
         if (p.Leap is { } l2 && l2.T < dt * 2) Full(l2.Kind == Content.AbilityKind.Vault ? "Jump_Start" : "Jump_Full_Short", l2.Kind == Content.AbilityKind.Vault ? 1.8 : 1.3);
@@ -200,16 +296,27 @@ public partial class PlayerView : Node3D
                 Full(rk == Content.AbilityKind.BullRush ? "Shield_Dash" : "Sword_Dash", rk == Content.AbilityKind.BullRush ? 1.5 : 2.2);
             }
         }
-        // Weapon swings: the blade drives the arm.
+        // Weapon swings: the blade drives the arm. Hers alternate as the
+        // arcs do (the first from her left), the wide arcs her heavy cut.
         if (p.AttackAnim is { } a && a.T != lastAttack)
         {
             lastAttack = a.T;
-            var clip = a.Heavy ? loadout.Arms.Heavy : loadout.Arms.Attack[swing++ % loadout.Arms.Attack.Length];
-            Upper(clip, 1.6);
+            var swings = her ? HerClips.Swings(person.Kind) : System.Array.Empty<string>();
+            bool played = false;
+            if (swings.Length > 0)
+                played = a.Heavy ? UpperHer(HerClips.Heavy(person.Kind), 1.5) : UpperHer(swings[swing % swings.Length], 1.6);
+            if (!played)
+            {
+                var clip = a.Heavy ? loadout.Arms.Heavy : loadout.Arms.Attack[swing % loadout.Arms.Attack.Length];
+                Upper(clip, 1.6);
+            }
+            swing++;
+            if (her) Strike(a.Angle);
         }
-        // Casters raise a hand now and then as their spells go.
+        // Casters raise a hand now and then as their spells go (hers move
+        // with the spells themselves: OnMuzzle).
         castT -= dt;
-        if (loadout.Arms.Cast != null && castT <= 0 && b.Weapons.Count > 0 && !Busy && sp < 3)
+        if (loadout.Arms.Cast != null && castT <= 0 && b.Weapons.Count > 0 && !Busy && sp < 3 && !(her && HerClips.Has("cast_bolt")))
         {
             castT = 1.6;
             Upper(loadout.Arms.Cast, 1.4);
@@ -218,11 +325,12 @@ public partial class PlayerView : Node3D
         if (p.HurtT > 0.25 && hurtSeen <= 0)
         {
             hurtSeen = 0.4;
-            if (!Busy) Upper("Hit_A", 1.6);
+            if (!Busy) Upper("Hit_A", her && HerClips.Has("hit") ? 1.2 : 1.6);
         }
         hurtSeen -= dt;
         speed = Mathf.Lerp(speed, sp, 1 - Mathf.Exp(-10 * (float)dt));
-        tree.Set("parameters/move/blend_position", speed);
+        if (her) Carry((float)dt, sp);
+        else tree.Set("parameters/move/blend_position", speed);
         // The carried light: steadier at full health, guttering when hurt.
         double hp = p.Hp / b.MaxHp;
         flare = Mathf.Max(0, flare - dt * 0.8);
@@ -233,5 +341,41 @@ public partial class PlayerView : Node3D
         Light.Position = new Vector3(0, 2.4f, 0.4f);
         // Unseen: a ghost, flickering.
         Visible = !(p.InvisibleT > 0 && (int)(time * 12) % 3 == 0);
+    }
+
+    /// <summary>Her run and stand, her lean and her aim, this frame.</summary>
+    void Carry(float dt, float sp)
+    {
+        // Standing to running over the first two metres a second; the run
+        // at the rate her ground speed asks.
+        float w = Mathf.SmoothStep(0.25f, 2.2f, speed);
+        tree.Set("parameters/move/blend/blend_amount", w);
+        tree.Set("parameters/move/runScale/scale", Mathf.Clamp(speed / runSpeed, 0.55f, 1.6f));
+        // Her corrective layer stands down for whichever half plays hers.
+        bool fullOn = (bool)tree.Get("parameters/fullShot/active"), upperOn = (bool)tree.Get("parameters/upperShot/active");
+        float lowerT = fullOn ? (fullNative ? 1 : 0) : 1;
+        float upperT = fullOn ? (fullNative ? 1 : 0) : upperOn ? (upperNative ? 1 : 0) : 1;
+        if (person.Pose is HerPose hp)
+        {
+            float k = 1 - Mathf.Exp(-14 * dt);
+            hp.Lower += (lowerT - hp.Lower) * k;
+            hp.Upper += (upperT - hp.Upper) * k;
+        }
+        if (carriage == null || dt <= 0) return;
+        // Banking into turns: how fast she is turning, times how fast she
+        // is going (a runner leans into a curve, a walker hardly at all).
+        float rate = Mathf.Wrap(Rotation.Y - heading, -Mathf.Pi, Mathf.Pi) / dt;
+        heading = Rotation.Y;
+        turnRate = Mathf.Lerp(turnRate, rate, 1 - Mathf.Exp(-10 * dt));
+        float bank = Mathf.Clamp(-turnRate * speed * 1.6f, -14, 14);
+        carriage.Bank = Mathf.Lerp(carriage.Bank, bank, 1 - Mathf.Exp(-8 * dt));
+        // Into a start, back out of a stop.
+        float acc = (sp - lastSpeed) / dt;
+        lastSpeed = sp;
+        accel = Mathf.Lerp(accel, acc, 1 - Mathf.Exp(-12 * dt));
+        carriage.Tilt = Mathf.Lerp(carriage.Tilt, Mathf.Clamp(accel * 0.35f, -9, 7), 1 - Mathf.Exp(-10 * dt));
+        // Her back to the blow while it lasts, then home.
+        float aimTo = aimHold > 0 ? aim : 0;
+        carriage.Aim = Mathf.Lerp(carriage.Aim, aimTo, 1 - Mathf.Exp((aimHold > 0 ? -30 : -8) * dt));
     }
 }

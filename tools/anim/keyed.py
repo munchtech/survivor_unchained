@@ -86,42 +86,47 @@ class Rig:
         return qrot(qinv(g[j]), axis_w)
 
     # ------------------------------------------------------------- solve --
-    def solve(self, pose: dict):
-        """Local rotations [J, 4] and positions [J, 3] for one pose."""
+    def solve(self, pose: dict, base=None):
+        """Local rotations [J, 4] and positions [J, 3] for one pose. With a
+        base ((local, pos) of a frame of another clip, a capture say), the
+        controls are laid over it: turns add to its turns, and hands and feet
+        given are solved afresh while the rest of it stands."""
         sk, I = self.sk, self.I
         J = len(sk)
-        delta = np.tile(np.array([0, 0, 0, 1.0]), (J, 1))  # character-space turn from rest, per bone
+        pel = I["pelvis"]
+        if base is None:
+            delta = np.tile(np.array([0, 0, 0, 1.0]), (J, 1))  # character-space turn from rest, per bone
+            hp = np.zeros(3)
+        else:
+            bg, bp = sk.fk(base[0][None], base[1][None])
+            delta = qmul(bg[0], qinv(self.grest))
+            hp = bp[0, pel] - self.prest[pel]
         gpos = self.prest.copy()
         grot = self.grest.copy()
 
+        def turn(j, inc):
+            """Bone j (and all under it) turned by inc, in j's own turned frame."""
+            w = qmul(qmul(delta[j], inc), qinv(delta[j]))
+            for k in [j] + self._below(j):
+                delta[k] = qmul(w, delta[k])
+
         # Hips.
         hips = pose.get("hips", {})
-        pel = I["pelvis"]
-        hq = qeuler(*hips.get("rot", (0, 0, 0)))
-        delta[pel] = hq
-        hp = np.array(hips.get("pos", (0, 0, 0)), float)
-        # Spine, neck, head: each bone's turn is its parent's and its own.
+        turn(pel, qeuler(*hips.get("rot", (0, 0, 0))))
+        hp = hp + np.array(hips.get("pos", (0, 0, 0)), float)
+        # Spine, neck, head: each turned on top of the one below.
         sp = pose.get("spine", (0, 0, 0))
         for name, w in SPINE:
-            delta[I[name]] = qmul(delta[sk.parent[I[name]]], qeuler(sp[0] * w, sp[1] * w, sp[2] * w))
-        delta[I["neck_01"]] = qmul(delta[I["spine_03"]], qeuler(*pose.get("neck", (0, 0, 0))))
-        delta[I["Head"]] = qmul(delta[I["neck_01"]], qeuler(*pose.get("head", (0, 0, 0))))
+            turn(I[name], qeuler(sp[0] * w, sp[1] * w, sp[2] * w))
+        turn(I["neck_01"], qeuler(*pose.get("neck", (0, 0, 0))))
+        turn(I["Head"], qeuler(*pose.get("head", (0, 0, 0))))
         for side in "lr":
             c = I[f"clavicle_{side}"]
             raise_, fwd = pose.get(f"clav_{side}", (0, 0))
             s = 1 if side == "l" else -1
             # Raise: the shoulder's tip up, about the forward axis; forward:
             # about up. (Her left clavicle runs toward +X, her right toward -X.)
-            cq = qmul(qaxis([0, 0, 1], raise_ * s), qaxis([0, 1, 0], -fwd * s))
-            delta[c] = qmul(delta[I["spine_03"]], cq)
-        # Everything else inherits its parent's turn for now.
-        for j in range(J):
-            if j in (pel, I["spine_01"], I["spine_02"], I["spine_03"], I["neck_01"], I["Head"],
-                     I["clavicle_l"], I["clavicle_r"]):
-                continue
-            p = sk.parent[j]
-            if p >= 0:
-                delta[j] = delta[p]
+            turn(c, qmul(qaxis([0, 0, 1], raise_ * s), qaxis([0, 1, 0], -fwd * s)))
         # Globals from the deltas: rotation turned, positions by FK.
         def refresh():
             for j in range(J):
@@ -214,6 +219,8 @@ class Rig:
         # Legs.
         for side in "lr":
             spec = pose.get(f"foot_{side}", {})
+            if base is not None and not spec:
+                continue
             th, ca, fo = I[f"thigh_{side}"], I[f"calf_{side}"], I[f"foot_{side}"]
             rest_ankle = self.prest[fo]
             p = np.array(spec.get("pos", (rest_ankle[0], 0, rest_ankle[2])), float)
@@ -263,13 +270,17 @@ class Rig:
         return local, pos
 
     def _below(self, j):
-        out = []
-        stack = list(self.sk.children(j))
-        while stack:
-            k = stack.pop()
-            out.append(k)
-            stack.extend(self.sk.children(k))
-        return out
+        if not hasattr(self, "_below_cache"):
+            self._below_cache = {}
+        if j not in self._below_cache:
+            out = []
+            stack = list(self.sk.children(j))
+            while stack:
+                k = stack.pop()
+                out.append(k)
+                stack.extend(self.sk.children(k))
+            self._below_cache[j] = out
+        return self._below_cache[j]
 
     def globals(self, local, pos):
         return self.sk.fk(local[None], pos[None])
@@ -458,4 +469,6 @@ def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None) -> Cli
         if post:
             pose = post(fr, pose)
         rot[fr], pos[fr] = rig.solve(pose)
-    return Clip(name, fps, rot, pos, loop=loop, meta=meta or {})
+    m = {"source": "keyed (tools/anim)", "licence": "own work"}
+    m.update(meta or {})
+    return Clip(name, fps, rot, pos, loop=loop, meta=m)
