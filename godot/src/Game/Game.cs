@@ -151,6 +151,8 @@ public partial class Game : Node, IZoneHost
                 var parts = spec.Split(':');
                 Journey.GiveItem(parts[0], 1, parts.Length > 1 && int.TryParse(parts[1], out var r) ? r : null);
             }
+        // --xp N: that much experience at once (pictures of the self with points to spend).
+        if (Args.Has("xp")) Character.GainXp(Journey.Ch, Args.Num("xp", 0));
         var z = Args.Get("zone") ?? "lowford";
         Arrival? at = null;
         if (Args.Get("at") is string s)
