@@ -195,7 +195,7 @@ public static class Ai
                         var g = b.Graves[i];
                         if (Dist(g.X, g.Z, e.X, e.Z) > raise.Range) continue;
                         b.Graves.RemoveAt(i);
-                        b.SpawnEnemy(raise.Into, g.X, g.Z, new Battle.SpawnOpts { Level = e.Level, Style = SpawnStyle.Rise, Faction = e.Faction });
+                        if (b.SpawnEnemy(raise.Into, g.X, g.Z, new Battle.SpawnOpts { Level = e.Level, Style = SpawnStyle.Rise, Faction = e.Faction }) is { } risen) risen.Raised = true;
                         n++;
                     }
                 }
@@ -359,7 +359,8 @@ public static class Ai
         double bd = double.PositiveInfinity;
         bool hostileToPlayer = e.Disposition == Disposition.Hostile || e.Provoked;
         // A reflection of the survivor is the first thing anything hunting them goes for.
-        if (hostileToPlayer && b.Decoys.Count > 0)
+        // Champions and bosses are not fooled by a reflection: Mirror Step saves you from the crowd, not from them.
+        if (hostileToPlayer && b.Decoys.Count > 0 && !e.Elite && !e.Boss)
         {
             Enemy? decoy = null;
             double dd = 14;

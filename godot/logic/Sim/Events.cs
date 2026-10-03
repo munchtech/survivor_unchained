@@ -32,6 +32,8 @@ public static class Ev
     public sealed class PlayerHit : CombatEvent
     {
         public double X, Z, Amount; public School School; public string Source = ""; public bool Dodged, Blocked;
+        /// <summary>Damage over time (poison, burning), said once a second: quieter than a blow.</summary>
+        public bool Dot;
     }
 
     /// <summary>A ward took the blow (or some of it); Broke: and is gone.</summary>

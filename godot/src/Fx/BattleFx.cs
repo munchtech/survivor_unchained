@@ -530,6 +530,13 @@ public partial class BattleFx : Node3D
                         Burst(at, e.Blocked ? School.Holy : School.Physical, 12, 4);
                         break;
                     }
+                    // Poison or burning in the survivor: a quieter number in its own colour, no shake.
+                    if (e.Dot)
+                    {
+                        Hits.Text(at + Vector3.Up * 0.2f, ((int)Math.Round(e.Amount)).ToString(), e.School == School.Fire ? new Color(1.8f, 0.8f, 0.25f) : new Color(0.7f, 1.6f, 0.35f), 40);
+                        OnDamageFlash(0.18f);
+                        break;
+                    }
                     Hits.Text(at + Vector3.Up * 0.2f, ((int)Math.Round(e.Amount)).ToString(), new Color(2f, 0.35f, 0.3f), 58);
                     Spray(at, Vector3.Up, null, 0.4f);
                     Cam?.AddTrauma((float)Math.Min(0.5, 0.12 + e.Amount / 60));

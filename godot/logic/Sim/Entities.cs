@@ -117,6 +117,10 @@ public sealed class Enemy : Pooled
     public bool Prey;
     /// <summary>When a wraith last drained it.</summary>
     public double DrainedAt = -99;
+    /// <summary>Just thawed: it cannot freeze again until this runs out (3 s, a champion 5 s).</summary>
+    public double ThawT;
+    /// <summary>Raised from a grave by one of its own: it carries no ember (raising is never a farm).</summary>
+    public bool Raised;
 
     public Enemy(int id) { Id = id; }
 }

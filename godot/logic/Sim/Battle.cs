@@ -37,6 +37,10 @@ public sealed class PlayerState
     public AttackAnim? AttackAnim;
     /// <summary>Standing in a hazard: burning, poisoned.</summary>
     public double BurnT, BurnDps, PoisonT, PoisonDps;
+    /// <summary>What the burning and poison have taken since they last said so, and the clock for it.</summary>
+    public double BurnSum, PoisonSum, DotT;
+    /// <summary>What felled the survivor when it was not a blow (poison, burning).</summary>
+    public string? FellTo;
     public int Revives;
     /// <summary>Risings From the Ashes still owed tonight (the ember's own, lost at dawn).</summary>
     public int Ashes;
@@ -381,8 +385,8 @@ public sealed partial class Battle
         if (regen > 0 && p.Hp < MaxHp) HealPlayer(regen * dt, "regen", true);
         // Bitterroot draws it: what burns or poisons the survivor wears off twice as fast.
         double cure = Boons.ContainsKey("recovery") ? 2 : 1;
-        if (p.BurnT > 0) { p.BurnT -= dt * cure; HurtPlayerRaw(p.BurnDps * dt, School.Fire, "burning", null, true); }
-        if (p.PoisonT > 0) { p.PoisonT -= dt * cure; HurtPlayerRaw(p.PoisonDps * dt, School.Nature, "poison", null, true); }
+        if (p.BurnT > 0) { p.BurnT -= dt * cure; Dot(ref p.BurnSum, p.BurnDps * dt, School.Fire, "burning", dt); }
+        if (p.PoisonT > 0) { p.PoisonT -= dt * cure; Dot(ref p.PoisonSum, p.PoisonDps * dt, School.Nature, "poison", dt); }
         if (!p.Alive) return;
         if (TickArt(dt)) return;
 
@@ -619,7 +623,7 @@ public sealed partial class Battle
         {
             double fx = Math.Cos(e.Facing), fz = Math.Sin(e.Facing);
             double ix = -o.FromX, iz = -o.FromZ;
-            if (fx * ix + fz * iz > Math.Cos(guard.Arc / 2)) { dmg *= 1 - guard.Reduction; blocked = true; }
+            if (fx * ix + fz * iz > Math.Cos(guard.Arc / 2)) { dmg *= 1 - (e.Elite && !e.Def.Elite ? Math.Min(guard.Reduction, 0.6) : guard.Reduction); blocked = true; }
         }
         if (e.TakenMul < 0.7) blocked = true;
         // Criticals.
@@ -757,7 +761,7 @@ public sealed partial class Battle
         {
             // The dead leave a stone with light still in it.
             double xp = e.Def.Xp * Content.Enemies.ScaleFor(e.Level).Xp;
-            if (xp > 0 && EmberOn) DropEmber(e.X, e.Z, xp);
+            if (xp > 0 && EmberOn && !e.Raised) DropEmber(e.X, e.Z, xp);
             if (credited)
             {
                 double luck = Stats.Get(Stat.Luck);
@@ -852,11 +856,12 @@ public sealed partial class Battle
             }
             case StatusKind.Chill:
             {
-                if (s[StatusKind.Frozen] is { } frozen) { frozen.T = Math.Max(frozen.T, 0.4); break; }
+                // The frozen stay frozen only as long as the freeze: more cold does not lock them for good.
+                if (s.Has(StatusKind.Frozen)) break;
                 var cur = s.Ensure(StatusKind.Chill, 0, 0, 0, 0);
                 cur.Stacks += p.Power * (Boons.ContainsKey("deep_chill") ? 2 : 1) * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill));
                 cur.T = Math.Max(cur.T, dur);
-                if (cur.Stacks >= 5 && !e.Boss)
+                if (cur.Stacks >= 5 && !e.Boss && e.ThawT <= 0)
                 {
                     s.Remove(StatusKind.Chill);
                     s[StatusKind.Frozen] = new StatusSlot(e.Elite ? 0.9 : 1.7, 1, 0, 0);
@@ -920,8 +925,13 @@ public sealed partial class Battle
                     if (!e.Alive || e.State == EnemyState.Dying) return;
                 }
             }
-            if (slot.T <= 0) s.Remove(k);
+            if (slot.T <= 0)
+            {
+                s.Remove(k);
+                if (k == StatusKind.Frozen) e.ThawT = e.Elite ? 5 : 3;
+            }
         }
+        if (e.ThawT > 0) e.ThawT -= dt;
     }
 
     /* ========================================================= damage out == */
@@ -1090,7 +1100,20 @@ public sealed partial class Battle
         p.SlowF = Math.Min(p.SlowF, 1 - (1 - factor) * (1 - ten));
     }
 
-    public double HurtPlayerRaw(double dmg, School school, string source, Enemy? from, bool silent = false)
+    /// <summary>Damage over time on the survivor: taken each tick, said once a second
+    /// (a quiet blow with its own source), and a death by it named for it.</summary>
+    void Dot(ref double sum, double dmg, School school, string source, double dt)
+    {
+        var p = Player;
+        p.DotT += dt;
+        sum += HurtPlayerRaw(dmg, school, source, null, true, dot: true);
+        if (p.DotT < 1 || sum <= 0) return;
+        p.DotT = 0;
+        if (p.Alive) Events.Emit(new Ev.PlayerHit { X = p.X, Z = p.Z, Amount = sum, School = school, Source = source, Dot = true });
+        sum = 0;
+    }
+
+    public double HurtPlayerRaw(double dmg, School school, string source, Enemy? from, bool silent = false, bool dot = false)
     {
         var p = Player;
         if (!p.Alive || !Combat) return 0;
@@ -1142,7 +1165,9 @@ public sealed partial class Battle
                 p.Hp = 0;
                 p.Alive = false;
                 Over = BattleOver.Death;
-                Events.Emit(new Ev.PlayerDeath { X = p.X, Z = p.Z, Killer = p.LastKiller?.Def.Name ?? source, KillerId = p.LastKiller?.Id ?? -1 });
+                // Felled by what was in them (poison, burning), it is named so; the creature that put it there keeps the credit.
+                p.FellTo = dot ? source : null;
+                Events.Emit(new Ev.PlayerDeath { X = p.X, Z = p.Z, Killer = dot ? source : p.LastKiller?.Def.Name ?? source, KillerId = p.LastKiller?.Id ?? -1 });
             }
         }
         return dmg;
@@ -1219,6 +1244,8 @@ public sealed partial class Battle
         e.TakenMul = 1;
         e.LungeX = e.LungeZ = 0;
         e.Decoy = e.Prey = false;
+        e.ThawT = 0;
+        e.Raised = false;
         e.Wake = o.Wake;
         e.Roused = false;
         e.DrainedAt = -99;
