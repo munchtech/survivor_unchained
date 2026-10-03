@@ -179,6 +179,31 @@ public class BreadcrumbTests
     }
 
     [Fact]
+    public void Pells_charge_is_on_the_shelf_as_soon_as_you_know_what_it_is_for()
+    {
+        // B9: a line that comes true between restocks is put out once, the same day.
+        var a = Callings.Archetype("warden");
+        var j = Play.Journey.Begin(new CreationChoice
+        {
+            Name = "Wren", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0],
+            Ability = a.Abilities[0],
+        }, 42);
+        List<ItemInstance> Charges() => j.OpenShop("pell", new Random(1))!.Stock.Where(i => i.Def == "blasting_ember").ToList();
+        Assert.Empty(Charges());
+        Rules.Apply(E("{ learn: 'root_cause' }"), j.Ctx);
+        var charges = Charges();
+        Assert.Equal(2, charges.Sum(i => i.Qty));
+        j.Ch.Gold = 10000;
+        j.Buy("pell", charges[0].Uid);
+        j.Buy("pell", charges[0].Uid);
+        Assert.Equal(2, Inventory.Count(j.Ch, "blasting_ember"));
+        // Bought out, it waits for the cycle to turn like everything else.
+        Assert.Empty(Charges());
+        j.World.Day += Lore.Shops["pell"].RestockDays;
+        Assert.NotEmpty(Charges());
+    }
+
+    [Fact]
     public void Harlan_pays_for_the_boy_even_after_you_sold_his_box()
     {
         var s = Q();

@@ -565,22 +565,43 @@ public sealed class Journey
         if (!Lore.Shops.TryGetValue(id, out var def)) return null;
         if (!World.Shops.TryGetValue(id, out var st) || World.Day >= st.RestockDay)
         {
-            st = new ShopState { Stock = RollStock(def, rng), RestockDay = World.Day + def.RestockDays };
+            st = new ShopState { RestockDay = World.Day + def.RestockDays };
+            st.Stock = RollStock(def, rng, st.Offered);
             World.Shops[id] = st;
+        }
+        else
+        {
+            // Between restocks, a line that has come true since (Pell's charge
+            // for someone who has just learned what the Dig is) goes on the
+            // shelf now rather than in three days, rolled once like the rest.
+            foreach (var l in def.Lines)
+                if (l.When != null && !st.Offered.Contains(l.Id) && Rules.Test(l.When, Ctx))
+                {
+                    st.Offered.Add(l.Id);
+                    if (Roll(l, rng) is { } it) st.Stock.Add(it);
+                }
         }
         OnTouch();
         return st;
     }
 
-    List<ItemInstance> RollStock(ShopDef def, Random rng)
+    /// <summary>One line of a shop's stock, rolled: its item, or null if the
+    /// chance went against it.</summary>
+    ItemInstance? Roll(ShopLine l, Random rng)
+    {
+        if (l.Chance is double c && rng.NextDouble() > c) return null;
+        if (Items.Find(l.Id) == null) return null;
+        return Inventory.Make(Ch, l.Id, l.Qty ?? 1, l.Rarity);
+    }
+
+    List<ItemInstance> RollStock(ShopDef def, Random rng, List<string> offered)
     {
         var out_ = new List<ItemInstance>();
         foreach (var l in def.Lines)
         {
             if (l.When != null && !Rules.Test(l.When, Ctx)) continue;
-            if (l.Chance is double c && rng.NextDouble() > c) continue;
-            if (Items.Find(l.Id) == null) continue;
-            out_.Add(Inventory.Make(Ch, l.Id, l.Qty ?? 1, l.Rarity));
+            if (l.When != null) offered.Add(l.Id);
+            if (Roll(l, rng) is { } it) out_.Add(it);
         }
         // Vonnra's curiosities: a tome or two of what the survivor has seen burn.
         if (def.Id == "vonnra")

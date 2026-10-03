@@ -257,6 +257,17 @@ public class SaveTests
     }
 
     [Fact]
+    public void A_shop_saved_before_it_kept_its_offered_lines_still_opens()
+    {
+        var s = Make();
+        s.World.Shops["pell"] = new ShopState { RestockDay = 4 };
+        var raw = Json.Write(new SaveData { Character = s.Ch, World = s.World })
+            .Replace("\"offered\":[]", "\"offered\":null");
+        Assert.Contains("\"offered\":null", raw);
+        Assert.NotNull(Saves.Parse(raw)!.World.Shops["pell"].Offered);
+    }
+
+    [Fact]
     public void A_broken_save_is_set_aside_not_overwritten()
     {
         var dir = Path.Combine(Path.GetTempPath(), "su-saves-" + Guid.NewGuid().ToString("N"));

@@ -62,6 +62,7 @@ public sealed class Saves
         while (d.World.Stash.Count < WorldState.StashSize) d.World.Stash.Add(null);
         d.World.Legacy ??= new();
         d.World.Shops ??= new();
+        foreach (var shop in d.World.Shops.Values) shop.Offered ??= new();
         d.World.GroundItems ??= new();
         d.Version = Version;
         return d;

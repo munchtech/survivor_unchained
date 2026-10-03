@@ -146,6 +146,9 @@ public sealed class ShopState
     public List<ItemInstance> Stock = new();
     public int RestockDay;
     public double PriceMult = 1;
+    /// <summary>The conditional lines already rolled for this cycle, so a line
+    /// that comes true between restocks is put out once, not every visit.</summary>
+    public List<string> Offered = new();
 }
 
 public sealed class WorldState
