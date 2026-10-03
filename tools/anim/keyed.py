@@ -151,15 +151,22 @@ class Rig:
             ua, la, ha = I[f"upperarm_{side}"], I[f"lowerarm_{side}"], I[f"hand_{side}"]
             frame = chest if spec.get("frame", "char") == "chest" else np.array([0, 0, 0, 1.0])
             sh = gpos[ua]
+            arc_t = pos_t = None
             if "arc" in spec:
                 az, el, r = spec["arc"]
                 d = np.array([math.sin(math.radians(az)) * math.cos(math.radians(el)), math.sin(math.radians(el)),
                               math.cos(math.radians(az)) * math.cos(math.radians(el))])
-                target = sh + qrot(chest, d) * r
-            elif "pos" in spec:
-                target = qrot(frame, np.array(spec["pos"], float)) if spec.get("frame") == "chest" else np.array(spec["pos"], float)
-                if spec.get("frame") == "chest":
-                    target = target + gpos[I["spine_03"]]
+                arc_t = sh + qrot(chest, d) * r
+            if "pos" in spec:
+                # A point in her space (a hand on a knee, behind her ear): in
+                # her character's space, whatever frame the hand's aim uses.
+                pos_t = np.array(spec["pos"], float)
+            if arc_t is not None and pos_t is not None:
+                target = arc_t + (pos_t - arc_t) * spec.get("mix", 1.0)
+            elif arc_t is not None:
+                target = arc_t
+            elif pos_t is not None:
+                target = pos_t
             else:
                 target = gpos[ha]
             s = 1 if side == "l" else -1
@@ -431,6 +438,11 @@ def _hermite(ts, vs, eases, t):
     return h00 * v0 + h10 * m0 + h01 * v1 + h11 * m1
 
 
+def smoothstep_(x):
+    x = min(max(x, 0.0), 1.0)
+    return x * x * (3 - 2 * x)
+
+
 def _zero_default(n):
     head = n.split("#")[0]
     return head.startswith(("hips.", "spine", "neck", "head", "clav_")) or head.endswith((".rot", ".toe"))
@@ -465,6 +477,24 @@ class Track:
             else:
                 # Presets switch at the key nearest in time.
                 flat[n] = min(have, key=lambda h: abs(h[0] - fr))[1]
+        # A hand placed on an arc in one key and at a point in the next: the
+        # two targets cross-faded between them (each held from its own keys).
+        for side in "lr":
+            h = f"hand_{side}"
+            modes = [(k[0], "pos" if f"{h}.pos#0" in f else "arc") for k, f in zip(self.keys, self.flats)
+                     if f"{h}.pos#0" in f or f"{h}.arc#0" in f]
+            if not modes:
+                continue
+            before = [m for m in modes if m[0] <= fr] or modes[:1]
+            after = [m for m in modes if m[0] > fr] or modes[-1:]
+            (t0, m0), (t1, m1) = before[-1], after[0]
+            if m0 == m1 or t1 <= t0:
+                drop = "arc" if m0 == "pos" else "pos"
+                for i in range(3):
+                    flat.pop(f"{h}.{drop}#{i}", None)
+                continue
+            u = float(smoothstep_((fr - t0) / (t1 - t0)))
+            flat[f"{h}.mix"] = u if m1 == "pos" else 1 - u
         return _unflatten(flat)
 
 

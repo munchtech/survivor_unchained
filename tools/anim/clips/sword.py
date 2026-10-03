@@ -13,6 +13,9 @@ next swing may cut that short.
 - sword_fore: forehand, her right to her left.
 - sword_heavy: a full turn from the hips, low and wide, for the wide arcs.
 
+The buckler never drops: through every cut it stays up before her, riding
+the turn of her body.
+
 Hands are placed on arcs about the shoulder in the chest's frame, so the
 blade travels round her, not through her; the blade points out along the
 cut, edge leading.
@@ -98,11 +101,9 @@ def sword_fore(rig):
                    left=guard_l(-0.06), weight=0.0), "linear"),
         # Out to her left, across her: the cut ends low.
         (5, pose(16, 30, (0.26, -0.22, 0.30), _n(0.9, -0.15, 0.35), pole=(-0.9, -0.2, 0.2),
-                 left={"arc": arc_of((-0.22, -0.32, 0.06)), "pole": (1.0, -0.2, -0.6), "frame": "chest",
-                       "blade": _n(-0.6, 0.6, 0.4)}, weight=0.6, pivot=0.6), "ease"),
+                 left=guard_l(0.02), weight=0.6, pivot=0.6), "ease"),
         (8, pose(19, 36, (0.28, -0.27, 0.24), _n(0.85, -0.3, -0.2), pole=(-0.9, -0.1, 0.3),
-                 left={"arc": arc_of((-0.22, -0.32, 0.06)), "pole": (1.0, -0.2, -0.6), "frame": "chest",
-                       "blade": _n(-0.6, 0.6, 0.4)}, weight=0.7, pivot=0.7), "ease"),
+                 left=guard_l(0.02), weight=0.7, pivot=0.7), "ease"),
         (15, pose(6, 10, (0.02, -0.28, 0.24), _n(0.2, 0.5, 0.8), pole=(-0.6, -0.5, -0.4), weight=0.2, pivot=0.2),
          "auto"),
         (24, GUARD, "ease"),
@@ -121,11 +122,9 @@ def sword_heavy(rig):
                  left=guard_l(-0.1), weight=0.0, pitch=12), "linear"),
         # All the way round to her left, the whole back behind it.
         (6, pose(26, 44, (0.30, -0.16, 0.34), _n(0.95, -0.05, 0.2), pole=(-0.8, -0.6, 0.2),
-                 left={"arc": arc_of((-0.25, -0.30, -0.02)), "pole": (1.0, -0.2, -0.6), "frame": "chest",
-                       "blade": _n(-0.6, 0.6, 0.4)}, weight=0.8, pivot=1.0, pitch=10), "ease"),
+                 left=guard_l(0.02), weight=0.8, pivot=1.0, pitch=10), "ease"),
         (10, pose(30, 50, (0.30, -0.22, 0.26), _n(0.8, -0.3, -0.3), pole=(-0.8, -0.4, 0.4),
-                  left={"arc": arc_of((-0.25, -0.30, -0.02)), "pole": (1.0, -0.2, -0.6), "frame": "chest",
-                        "blade": _n(-0.6, 0.6, 0.4)}, weight=0.9, pivot=1.0, pitch=10), "ease"),
+                  left=guard_l(0.02), weight=0.9, pivot=1.0, pitch=10), "ease"),
         (19, pose(10, 14, (0.04, -0.28, 0.24), _n(0.2, 0.5, 0.8), pole=(-0.6, -0.5, -0.4), weight=0.3, pivot=0.3),
          "auto"),
         (30, GUARD, "ease"),

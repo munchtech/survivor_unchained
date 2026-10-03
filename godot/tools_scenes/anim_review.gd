@@ -75,7 +75,46 @@ func _init():
 		return
 	ap.play(clip, 0, float(env("PLAY", "1")))
 	if start > 0: ap.seek(start, true)
+	# OVER=clip: that clip laid over this one on the upper body (as the
+	# game lays a swing over her run: the spine up, filtered, at OVERSPEED,
+	# fired OVERAT seconds in).
+	if env("OVER", "") != "": overlay(env("OVER", ""))
 	stage(root)
+
+var tree: AnimationTree
+
+func overlay(over):
+	ap.stop()
+	var bt = AnimationNodeBlendTree.new()
+	var base = AnimationNodeAnimation.new()
+	base.animation = clip
+	var up = AnimationNodeAnimation.new()
+	up.animation = over
+	var sc = AnimationNodeTimeScale.new()
+	var shot = AnimationNodeOneShot.new()
+	shot.fadein_time = 0.05
+	shot.fadeout_time = 0.18
+	shot.filter_enabled = true
+	var skel: Skeleton3D = her.find_children("*", "Skeleton3D", true, false)[0]
+	for b in skel.get_bone_count():
+		var n = skel.get_bone_name(b)
+		if n in ["root", "pelvis"] or n.begins_with("thigh") or n.begins_with("calf") or n.begins_with("foot") or n.begins_with("ball") or n.begins_with("glute"): continue
+		shot.set_filter_path(NodePath("Armature/Skeleton3D:" + n), true)
+	bt.add_node("base", base)
+	bt.add_node("up", up)
+	bt.add_node("sc", sc)
+	bt.add_node("shot", shot)
+	bt.connect_node("sc", 0, "up")
+	bt.connect_node("shot", 0, "base")
+	bt.connect_node("shot", 1, "sc")
+	bt.connect_node("output", 0, "shot")
+	tree = AnimationTree.new()
+	tree.tree_root = bt
+	her.add_child(tree)
+	tree.root_node = NodePath("..")
+	for L in ap.get_animation_library_list(): tree.add_animation_library(L, ap.get_animation_library(L))
+	tree.set("parameters/sc/scale", float(env("OVERSPEED", "1.6")))
+	tree.active = true
 
 func env(k, d):
 	var v = OS.get_environment(k)
@@ -285,6 +324,8 @@ func _process(delta):
 			her.position = Vector3.ZERO
 		return false
 	var k = frame - warm - 1
+	if tree != null and k == int(float(env("OVERAT", "0")) * 30):
+		tree.set("parameters/shot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 	if k % step == 0:
 		# DEBUG=bone: print where that bone is and which way its axes point.
 		if env("DEBUG", "") != "":

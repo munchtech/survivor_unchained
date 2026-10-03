@@ -127,13 +127,13 @@ def arcanist_show(rig):
         (18, over("arcanist", spine=(0, 4, 0), head=(-10, -16, 0),
                   hand_r={"arc": arc_of((-0.16, -0.30, 0.14)), "pole": (-0.8, -0.3, -0.6), "frame": "chest",
                           "blade": _n(-0.1, 1.0, 0.12), "twist": 0.5},
-                  hand_l={"arc": arc_of((0.26, -0.02, 0.24)), "pole": (0.8, -0.6, -0.2), "frame": "chest",
-                          "knuckles": _n(0.5, 0.6, 0.6)}, fingers_l="spread"), "ease"),
+                  hand_l={"arc": arc_of((0.30, -0.16, 0.22)), "pole": (0.8, -0.6, -0.2), "frame": "chest",
+                          "knuckles": _n(0.6, 0.3, 0.75)}, fingers_l="spread"), "ease"),
         (55, over("arcanist", spine=(0, 3, 0), head=(-12, -18, 0),
                   hand_r={"arc": arc_of((-0.16, -0.30, 0.14)), "pole": (-0.8, -0.3, -0.6), "frame": "chest",
                           "blade": _n(-0.1, 1.0, 0.12), "twist": 0.5},
-                  hand_l={"arc": arc_of((0.28, 0.0, 0.24)), "pole": (0.8, -0.6, -0.2), "frame": "chest",
-                          "knuckles": _n(0.5, 0.65, 0.55)}, fingers_l="spread"), "ease"),
+                  hand_l={"arc": arc_of((0.32, -0.12, 0.22)), "pole": (0.8, -0.6, -0.2), "frame": "chest",
+                          "knuckles": _n(0.6, 0.35, 0.7)}, fingers_l="spread"), "ease"),
         (78, over("arcanist"), "ease"),
     ]
     return build("arcanist_show", rig, keys, base=base, meta={"layer": "full"})
