@@ -19,6 +19,7 @@ import json
 import os
 import shutil
 import sys
+import time
 
 import numpy as np
 import soundfile as sf
@@ -52,7 +53,12 @@ def audition(worker, name: str, v: dict, n: int) -> dict:
     for seed in range(1, n + 1):
         out = os.path.join(d, f"c{seed:02d}.wav")
         if not os.path.exists(out):
-            r = worker.ask(text=v["ref_text"], design=v["design"], seed=seed, out=out)
+            for wait in (60, 180, 0):
+                r = worker.ask(text=v["ref_text"], design=v["design"], seed=seed, out=out)
+                # The GPU is shared: when another job has the memory, wait for it.
+                if "out of memory" not in r.get("error", "") or not wait:
+                    break
+                time.sleep(wait)
             if "error" in r:
                 print(name, seed, r["error"], flush=True)
                 continue
@@ -66,8 +72,18 @@ def audition(worker, name: str, v: dict, n: int) -> dict:
               f"f0 {rep['pitch']['f0_median']:.0f} wps {rep['words_per_sec']:.1f} {bad}", flush=True)
     ok = [r for r in results if not r["bad"]]
     pool = ok or results
+    if not pool:
+        return {}
     best = max(pool, key=lambda r: r["score"])
     return {"pick": best, "clean": len(ok), "of": len(results)}
+
+
+def save_book(voice: str, entry: dict):
+    """Write one part's entry, re-reading the book first so two sessions
+    casting different parts do not undo each other."""
+    book = json.load(open(CASTING, encoding="utf-8")) if os.path.exists(CASTING) else {}
+    book[voice] = entry
+    json.dump(book, open(CASTING, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
 
 
 def ref_text(voice: str) -> str:
@@ -90,7 +106,7 @@ def adopt(book: dict, voice: str, src: str):
     book[voice] = {"seed": int(seed), "from": other, "text": text, "score": score, "utmos": rep["utmos"],
                    "accent": rep["accent_top"], "f0": rep["pitch"]["f0_median"], "wps": rep["words_per_sec"],
                    "bad": bad, "said": rep["said"]}
-    json.dump(book, open(CASTING, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+    save_book(voice, book[voice])
     print(f"cast {voice} from {other} c{int(seed):02d}: {book[voice]}")
 
 
@@ -117,12 +133,15 @@ def main(argv):
                 continue
             print(f"casting {name}", flush=True)
             res = audition(worker, name, v, a.n)
+            if not res:
+                print(f"not cast {name}: no audition was made", flush=True)
+                continue
             pick = res["pick"]
             save_ref(pick["path"], os.path.join(REFS, f"{name}.flac"))
             book[name] = {"seed": pick["seed"], "score": pick["score"], "clean": f"{res['clean']}/{res['of']}",
                           "utmos": pick["utmos"], "accent": pick["accent_top"], "f0": pick["pitch"]["f0_median"],
                           "wps": pick["words_per_sec"], "bad": pick["bad"], "said": pick["said"]}
-            json.dump(book, open(CASTING, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+            save_book(name, book[name])
             print(f"cast {name}: c{pick['seed']:02d} {book[name]}", flush=True)
     finally:
         worker.close()

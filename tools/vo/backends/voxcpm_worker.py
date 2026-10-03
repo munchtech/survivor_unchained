@@ -57,5 +57,7 @@ for line in sys.stdin:
         out.write(json.dumps({"out": r["out"], "sec": round(len(wav) / SR, 2), "took": round(time.time() - t, 1)}) + "\n")
     except Exception as e:  # keep serving; the caller decides what a failure costs
         traceback.print_exc()
+        if "out of memory" in str(e):
+            torch.cuda.empty_cache()  # give back what the failed take held
         out.write(json.dumps({"error": f"{type(e).__name__}: {e}"}) + "\n")
     out.flush()
