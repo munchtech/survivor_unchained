@@ -106,8 +106,15 @@ and never put a story arena above the tier the story's level band expects.
 A survivors game is often played half-attentively, and that has to stay a
 real way to play the first tiers. The test: **can the plain bot, with a
 fair gear set and the first card offered every time, win tiers 1 and 2
-without oaths?** The balance lab measures exactly that (`RISK_REWARD.md` §3
-has its numbers). Rules that keep the answer yes:
+without oaths?** The balance lab measured it with no gear beyond the
+starting kit (`probe/lab/plain_t1-3.md`, 96 runs cut at minute 31): the
+plain bot **fell before the half hour in 3–6% of runs** at every tier, and
+came to the boss with 37–45% of its health at its lowest. The horde is
+already a floor a half-attentive player stands on; what decides the win is
+the boss (killed within its first minute in 56% of tier 1 and 2 runs, 34% at
+tier 3), which is the `claude/cloud-bosses` session's subject. The deft bot
+at tier 2 came to the boss as low (38%) but killed it more often (66%).
+Rules that keep the horde's answer yes:
 
 1. **No creature that a build cannot hurt.** Guards cut projectiles by 75–80%
    and never 100%; resistances top out at 50%; champions' guards 60%.
@@ -186,6 +193,6 @@ contested ground), which is how the genre's opt-in dials work best
 | A drafted build meets a people that hard-counters it (projectiles against a Kerchief wall) | relaxed | guards ≤ 80%, champions 60%, other kinds beside the guards, the table names the people |
 | A sweaty trick removes a role's threat (Mirror Step against everything) | sweaty, and it bores them | shorten the reflections or let champions see through them (`COUNTERS.md` §5) |
 | A Sign that only an art answers | relaxed | every Sign has two answers, one of them a build or movement |
-| An oath that is far harder than it says (the hunt) | both | price it by measured difficulty (`RISK_REWARD.md` §4) |
+| An oath far harder than it pays (the blight) or easier than unsworn (champions) | both | price it by measured difficulty, the Weight (`RISK_REWARD.md` §4) |
 | The relaxed player never learns why they died | relaxed | the death that teaches (§5.3) |
 | The sweaty player finds nothing to read in a people (wolves have no tell) | sweaty | the Pack's proposals (Ridge-Runner, Old Howler, the Ring event) |

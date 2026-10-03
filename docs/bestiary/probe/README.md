@@ -79,3 +79,15 @@ casts interrupted, the source that hurt most and its share.
 - **Level 5 only.** Ratios between loadouts drift as levels rise (crowds
   thicken, damage grows linearly and health quadratically); run it at other
   levels by changing `Level` in `Main`.
+
+## The balance lab runs (`lab/`)
+
+Two sweeps of the balance lab (`godot/tests/BalanceLab.cs` and `ArenaPlay.cs`
+from `claude/cloud-balance-lab`, built against this branch's game code in a
+scratch worktree), whose summaries and rows are in `lab/`:
+
+    BALANCE_LAB=arena LAB_TIERS=2 LAB_OATHS=all LAB_SEEDS=2 LAB_BOT=deft LAB_MINUTES=31
+    BALANCE_LAB=arena LAB_TIERS=1,2,3 LAB_OATHS=none LAB_SEEDS=2 LAB_BOT=plain LAB_MINUTES=31
+
+Both were cut at minute 31, a minute into the boss, so their "won" is "killed
+the boss within its first minute". Cut at 35 next time.

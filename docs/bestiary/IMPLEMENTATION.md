@@ -34,7 +34,7 @@ proposals is an existing model with a tint, a scale and a prop.
 |---|---|---|---|
 | The Lamplings' champion and herald | `MapOffers.Peoples`, the `lamplings` entry, `Champion` | `lampling_sapper` → `lampling` until the Blasting-Cart exists, then `blast_cart` | a thrower herald with ×6 health is a chase (`ROSTER.md`) |
 | A champion's guard | `Battle.HitEnemy`, the guard block | `guard.Reduction` → `e.Elite && !e.Def.Elite ? Math.Min(guard.Reduction, 0.6) : guard.Reduction` | champion bruiser: 56–99 s kills for projectile builds |
-| The oath of the hunt | `MapOffers.Oaths`, `hunt` | Ember 1.25, Gear 1.2 → per `RISK_REWARD.md` §4 | wolves hurt ×2.5–4.6 |
+| The oaths of the blight and of champions | `MapOffers.Oaths`, `blight`, `champions` | blight Gear 1 → 1.6; champions Gear 1.6 → 1.3 (or keep 1.6 once its champions bear Signs); per `RISK_REWARD.md` §4 | blight: lowest health and most falls; champions: easier than unsworn |
 | Mirror Step's reflections | `Arts` (mirror step), `Ai.ChooseTarget` | champions and heralds skip decoys, or reflections live half as long | halves or thirds the damage of every role |
 | Raised dead give no ember | `Battle.KillEnemy`: skip `DropEmber` for an enemy spawned by `Raise` (a flag set in `Ai`'s raise) | – | raising is never a farm |
 | Sapper burst | `Enemies`, `lampling_sapper` | `Burst` 1.2× → 1.0×; `Ranged.Cooldown` 4.4 → 5 | melee's worst rank-and-file matchup |

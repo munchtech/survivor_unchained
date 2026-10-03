@@ -35,7 +35,8 @@ they meet the horde.
 The probe put each kind of creature (and five mixes) against fourteen
 skills, two gear variants, a generalist pair and nine arts, with the
 balance lab's plain and deft bots, 4,352 runs. The balance lab itself was
-run across every oath at tier 2. The findings that drive the
+run across every oath at tier 2 (deft bot) and across tiers 1–3 with no
+oath (plain bot), 480 full arenas (`probe/lab/`). The findings that drive the
 recommendations:
 
 1. **A crowd's danger is its biggest blow.** The 0.45 s of grace after a
@@ -54,8 +55,11 @@ recommendations:
    ahead of the field.
 7. **Mirror Step halves or thirds the damage of every role**: a must-pick
    art anyone can learn.
-8. **The oath of the hunt is by far the hardest and is paid like a mild
-   one** (`RISK_REWARD.md` has the balance lab's win rates).
+8. **Over a whole run, the oaths that feed the build pay for themselves and
+   the ones that take tools away cost lives.** The balance lab: under the
+   blight the survivor ends lowest and falls most, for ember alone; under
+   champions it wins more often than unsworn *and* gets the most gear; the
+   hunt, harsh in any single fight, is easy over a run (`RISK_REWARD.md` §3).
 9. **Reading matters against only four roles today** (ranged, lobber,
    charger, lunging elites); wolves, fodder, guards and raisers play the
    same for a reader and a non-reader.
@@ -64,7 +68,7 @@ recommendations:
 
 1. **Fix the four measured problems first** (`IMPLEMENTATION.md` §1, XS):
    champion guards at 60%, a melee champion and herald for the Lamplings,
-   the oath of the hunt repriced, Mirror Step's reflections ignored by
+   the oaths of the blight and of champions repriced, Mirror Step's reflections ignored by
    champions. Each is one number or one line.
 2. **Give champions Signs** (`COUNTERS.md` §4): twelve one-verb affixes with a
    tell and two answers each, forbidden pairs, one or two by tier. Eight of
@@ -132,7 +136,8 @@ recommendations:
 - The probe's numbers are matchups, not difficulty: one skill, no draft, a
   creature level of 5, a warden's body, lone elites fought standing. Ratios
   between loadouts are the trustworthy part (`probe/README.md`).
-- The balance lab's oath sweep is small (tier 2, two seeds a cell, the deft
-  bot); its win rates are a direction, not a table to tune from.
+- The balance lab's sweeps are small (two seeds a cell, 32 runs an oath) and
+  were cut at minute 31, so "won" means "killed the boss within its first
+  minute"; their rates are a direction, not a table to tune from.
 - Research is cited per claim in `RESEARCH.md`; claims that could not be
   confirmed are marked.

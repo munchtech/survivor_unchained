@@ -317,13 +317,13 @@ event stream and the probe could not count them; it is left out.)
 
 | Oath | Roles it amplifies | Measured | Answered by (the table) | Verdict |
 |---|---|---|---|---|
-| **the Hunt** (+20% speed) | swarmers, chargers, fodder: everything that closes | wolves: hurt ×2.5–4.6 | pace, a vault or a chain | **Under-priced.** It gives +25% ember and +20% gear and is by far the hardest oath against fast peoples (`RISK_REWARD.md`). Hades prices +20% speed at three heat; price it so. |
+| **the Hunt** (+20% speed) | swarmers, chargers, fodder: everything that closes | wolves: hurt ×2.5–4.6 | pace, a vault or a chain | **Fair over a run, harsh in the moment.** In a single fight it is the hardest oath against fast peoples; over a whole run (the balance lab) faster foes mean faster ember, and it is one of the easiest (72% won against 66% unsworn, `RISK_REWARD.md` §3). Keep its reward; make its words say how it feels. |
 | **Long Winter** (blows chill) | swarmers and fodder (many blows) | wolves: hurt ×1.5–2 | frost resistance, tenacity, a sprint | Fair, if winter stays off fast peoples at tier 1. |
 | **Iron** (−33% from non-crits) | elites, guards (the long kills) | kills −15 to −38% | crit | Fair; a pure build check, and the table says so. |
 | **Embers** (dead leave fire 30%) | melee, swarmers (fights in the crowd) | small | fire resistance, pace | Under-felt: barely measurable. Raise the chance to 50% or the ground's life. |
 | **Ruin** (dead burst 22%) | melee | small | reach, armour | Under-felt in the probe at level 5; it grows with damage. Fair. |
 | **Swarm** (packs ×1.5) | fodder, area builds love it | kills up, hurt flat or down | reach and area | **Over-paid** for area builds: it is closer to a blessing for them than a risk. Fine (an area player farms it), but its ember ×1.5 should not stack with tier rewards uncapped. |
-| **Blight**, **Deep Dark**, **Vigil**, **Moonless**, **Champions** | not probed | – | as listed | `RISK_REWARD.md` uses the balance lab's win rates for these. |
+| **Blight**, **Deep Dark**, **Vigil**, **Moonless**, **Champions** | not probed | – | as listed | `RISK_REWARD.md` §3 has the balance lab's win rates for every oath: blight is the most dangerous, champions the easiest. |
 
 ## 9. The verdicts in one place
 
@@ -338,7 +338,9 @@ event stream and the probe could not count them; it is left out.)
 | Mirror Step vs everything | **bad** | a must-pick art for anyone; shorten or let champions see through |
 | Motes and Arcweb everywhere | **watch** | generalists far ahead; check them in the balance lab |
 | Verdant Lance, Spirit Herd at rank 4 | **bad** | trap cards until evolved |
-| Oath of the Hunt | **bad** | the hardest oath, paid like a mild one |
+| Oath of the Blight | **bad** | the most dangerous oath over a run (lowest health, most falls), paid only in ember (`RISK_REWARD.md` §3) |
+| Oath of Champions | **bad** | easier than unsworn and the best-paid: a free lunch |
+| Oath of the Hunt | watch | harsh in a fight, easy over a run: its words undersell the moment |
 | Slayers on their people | good | the scouting counter; keep one per item |
 | No gear answer to guards for projectiles | **gap** | add `flanking` |
 | No Mark for melee against lobbers | **gap** | add of the Cinder-Walker |
