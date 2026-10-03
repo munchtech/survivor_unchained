@@ -90,6 +90,8 @@ public partial class ItemPhotos : Node
             MouseFilter = Control.MouseFilterEnum.Ignore, TextureFilter = CanvasItem.TextureFilterEnum.LinearWithMipmaps,
         };
         box.AddChild(r);
+        // A painted icon (art/ui/icons/item/KEY.png) wins over the photograph.
+        if (UiArt.Icon("item", key) is { } painted) { r.Texture = painted; return box; }
         if (photos.TryGetValue(key, out var t)) { r.Texture = t; return box; }
         r.Texture = Glyphs.Texture(key, size * 2, glyph);
         float inset = size * 0.14f;

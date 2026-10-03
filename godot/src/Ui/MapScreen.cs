@@ -17,7 +17,8 @@ namespace SurvivorUnchained.Ui;
 /// an ink mark where it stands, every wall and house its footprint. Fog is
 /// plain paper where you have not been; places are named once seen (the way
 /// out and what the journal told you always are). The wheel zooms, a drag
-/// pans, M or Escape puts it away.
+/// pans, M or Escape puts it away; with a pad, the stick or the D-pad pans
+/// and the triggers zoom.
 /// </summary>
 public partial class MapScreen : Overlay
 {
@@ -41,12 +42,12 @@ public partial class MapScreen : Overlay
         }
     }
 
-    static float Extent(World.ZoneMeta m) => m.Map?.Extent is { ValueKind: JsonValueKind.Number } e ? (float)e.GetDouble() : (float)m.Bound * 2;
+    public static float Extent(World.ZoneMeta m) => m.Map?.Extent is { ValueKind: JsonValueKind.Number } e ? (float)e.GetDouble() : (float)m.Bound * 2;
 
     static double Hash(double x, double y) { double s = Math.Sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.Floor(s); }
 
-    /// <summary>The zone drawn on paper, once per zone.</summary>
-    static ImageTexture Drawing(ZoneData z)
+    /// <summary>The zone drawn on paper, once per zone (the map and the corner map share it).</summary>
+    public static ImageTexture Drawing(ZoneData z)
     {
         if (drawings.TryGetValue(z.Id, out var hit)) return hit;
         var meta = z.Meta;
@@ -153,6 +154,23 @@ public partial class MapScreen : Overlay
         return ImageTexture.CreateFromImage(img);
     }
 
+    /// <summary>Pan with the D-pad or the stick, zoom with the triggers (or , and .).</summary>
+    public override bool Key(Act a)
+    {
+        const int F = 740;
+        switch (a)
+        {
+            case Act.Up or Act.Down or Act.Left or Act.Right:
+                var d = a switch { Act.Up => new Vector2(0, 1), Act.Down => new Vector2(0, -1), Act.Left => new Vector2(1, 0), _ => new Vector2(-1, 0) } * (0.06f / zoom);
+                pan = new Vector2(Math.Clamp(pan.X + d.X, -0.5f, 0.5f), Math.Clamp(pan.Y + d.Y, -0.5f, 0.5f));
+                Place(F);
+                return true;
+            case Act.SubNext: zoom = Math.Min(3.5f, zoom * 1.25f); Place(F); return true;
+            case Act.SubPrev: zoom = Math.Max(1, zoom / 1.25f); Place(F); return true;
+        }
+        return false;
+    }
+
     protected override void Build()
     {
         var scene = G.Scene!;
@@ -160,12 +178,14 @@ public partial class MapScreen : Overlay
         var meta = scene.Data.Meta;
         float extent = Extent(meta);
         AddChild(Style.Scrim(G.CloseOverlay, 0.7f));
-        var sheet = Style.Centered(Style.V(6), new Vector2(760, 860));
+        var sheet = Style.Centered(Style.V(6), new Vector2(760, 880));
         AddChild(sheet);
+        BookTabs(new Vector2((1920 - 760) / 2, (1080 - 880) / 2 - 40));
         sheet.AddChild(Style.Label(zone.Name, Style.Display, 30, Style.GoldHi, false, HorizontalAlignment.Center));
-        if (zone.Region != null) sheet.AddChild(Style.Label(zone.Region, Style.TextItalic, 16, Style.InkDim, false, HorizontalAlignment.Center));
+        if (zone.Region != null) sheet.AddChild(Style.Label(zone.Region, Style.TextItalic, Style.Small, Style.InkDim, false, HorizontalAlignment.Center));
         const int Frame = 740;
-        var frame = new Panel { CustomMinimumSize = new Vector2(Frame, Frame), ClipContents = true, MouseFilter = MouseFilterEnum.Stop };
+        // Exactly its size: a frame stretched wider shows the ink past the fog's edge.
+        var frame = new Panel { CustomMinimumSize = new Vector2(Frame, Frame), SizeFlagsHorizontal = SizeFlags.ShrinkCenter, ClipContents = true, MouseFilter = MouseFilterEnum.Stop };
         frame.AddThemeStyleboxOverride("panel", Style.Box(new Color("#d9cba8"), new Color("#5a3e24"), 2, 3, 0));
         sheet.AddChild(frame);
         world = new Control { Size = new Vector2(Frame, Frame), MouseFilter = MouseFilterEnum.Ignore };
@@ -185,47 +205,43 @@ public partial class MapScreen : Overlay
         Vector2 Px(double x, double z) => new((float)((x / extent + 0.5) * Frame), (float)((z / extent + 0.5) * Frame));
         var marks = world;
         foreach (var m in zone.MapMarks().Where(m => m.Kind is MarkKind.Exit or MarkKind.Quest || Seen(m.X, m.Z)).OrderByDescending(m => m.Kind == MarkKind.Place))
-        {
-            var (glyph, color) = m.Kind switch
-            {
-                MarkKind.Quest or MarkKind.Turn => ("quest", new Color("#a8321e")), MarkKind.Danger => ("skull", new Color("#6a1a10")),
-                MarkKind.Mystery => ("eye", new Color("#5a3a7a")), MarkKind.Exit => ("next", new Color("#2a4a3a")), MarkKind.Person => ("talk", new Color("#3a2414")),
-                _ => ("map", new Color("#3a2414")),
-            };
-            Mark(marks, Px(m.X, m.Z), m.Label, glyph, color, m.Kind == MarkKind.Place);
-        }
-        if (G.Journey.World.Corpse is { } corpse && corpse.Zone == zone.Id) Mark(marks, Px(corpse.X, corpse.Z), $"{corpse.HeroName}'s belongings", "skull", new Color("#6a1a10"), false);
+            Mark(marks, Px(m.X, m.Z), m.Label, m.Kind);
+        if (G.Journey.World.Corpse is { } corpse && corpse.Zone == zone.Id) Mark(marks, Px(corpse.X, corpse.Z), $"{corpse.HeroName}'s belongings", MarkKind.Danger);
         // You.
         if (G.Battle is { } b)
         {
             var you = new Polygon2D { Polygon = new[] { new Vector2(0, -9), new Vector2(7, 7), new Vector2(0, 3), new Vector2(-7, 7) }, Color = new Color("#b8321e"), Position = Px(b.Player.X, b.Player.Z), Rotation = (float)(Math.PI - b.Player.Facing) };
             marks.AddChild(you);
         }
+        // The legend, in the marks' own look (the corner map's too).
         var foot = Style.H(16);
-        foreach (var (glyph, text) in new[] { ("quest", "Someone needs you"), ("skull", "Hostile"), ("eye", "Unexplained"), ("next", "The way out") })
-            foot.AddChild(Style.H(4, Glyphs.Icon(glyph, 14, Style.GoldHi), Style.Label(text, Style.Ui, 14, Style.Ink)));
-        foot.AddChild(Style.Label($"{G.Key(Act.Map)} close · wheel to zoom · drag to move", Style.Ui, 13, Style.InkDim));
+        foreach (var (kind, text) in new[] { (MarkKind.Quest, "Someone needs you"), (MarkKind.Danger, "Hostile"), (MarkKind.Mystery, "Unexplained"), (MarkKind.Exit, "The way out") })
+            foot.AddChild(Style.H(5, Minimap.Mark(kind, 18), Style.Label(text, Style.Ui, Style.Caption, Style.Ink)));
         foot.Alignment = BoxContainer.AlignmentMode.Center;
         sheet.AddChild(foot);
+        sheet.AddChild(Controls.Instance.UsingPad
+            ? Footer((Act.Up, "Move"), (Act.SubNext, "Closer"), (Act.SubPrev, "Further"), (Act.Cancel, "Close"))
+            : MouseFooter($"{G.Key(Act.Map)} to close", "wheel to zoom", "drag to move"));
         frame.GuiInput += e => Input(e, Frame);
         Place(Frame);
     }
 
-    static void Mark(Control parent, Vector2 at, string label, string glyph, Color color, bool place)
+    static void Mark(Control parent, Vector2 at, string label, MarkKind kind)
     {
+        bool place = kind == MarkKind.Place;
+        var (_, color) = Minimap.Look(kind);
         var node = new Control { Position = at, MouseFilter = MouseFilterEnum.Ignore };
         if (!place)
         {
-            var icon = Glyphs.Icon(glyph, 16, color);
-            icon.Position = new Vector2(-8, -8);
-            icon.Size = new Vector2(16, 16);
+            var icon = Minimap.Mark(kind, 20);
+            icon.Position = new Vector2(-10, -10);
             node.AddChild(icon);
         }
-        var l = Style.Label(label, place ? Style.Display : Style.TextBold, place ? 14 : 13, place ? new Color("#3a2414") : color, false, HorizontalAlignment.Center, false);
+        var l = Style.Label(label, place ? Style.Display : Style.TextBold, place ? 15 : 14, place ? new Color("#3a2414") : color, false, HorizontalAlignment.Center, false);
         l.AddThemeColorOverride("font_outline_color", new Color("#e4d6b6"));
         l.AddThemeConstantOverride("outline_size", 4);
-        l.Size = new Vector2(220, 18);
-        l.Position = new Vector2(-110, place ? -9 : 9);
+        l.Size = new Vector2(220, 20);
+        l.Position = new Vector2(-110, place ? -10 : 11);
         node.AddChild(l);
         parent.AddChild(node);
     }

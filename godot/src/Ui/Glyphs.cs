@@ -50,9 +50,12 @@ public static class Glyphs
         return All["arcane"];
     }
 
-    /// <summary>A glyph as a texture, at a size in pixels.</summary>
-    public static ImageTexture Texture(string key, int size, Color color, float stroke = 1.6f)
+    /// <summary>A glyph as a texture, at a size in pixels. A painted icon
+    /// (art/ui/icons/glyph/KEY.png, white on transparent) is tinted the same
+    /// way and wins, so painted icons keep every state colour the glyphs had.</summary>
+    public static Texture2D Texture(string key, int size, Color color, float stroke = 1.6f)
     {
+        if (UiArt.Icon("glyph", key) is { } painted) return Tinted(key, painted, color);
         var ck = $"{key}|{size}|{color.ToHtml()}|{stroke}";
         if (cache.TryGetValue(ck, out var t)) return t;
         var svg = $"""<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#{color.ToHtml(false)}" stroke-opacity="{color.A:0.###}" stroke-width="{stroke:0.##}" stroke-linecap="round" stroke-linejoin="round"><path d="{PathFor(key)}"/></svg>""";
@@ -61,6 +64,25 @@ public static class Glyphs
         t = ImageTexture.CreateFromImage(img);
         cache[ck] = t;
         return t;
+    }
+
+    static readonly Dictionary<string, ImageTexture> tinted = new();
+
+    /// <summary>A painted icon multiplied by a colour: its light keeps its shape, the colour says its state.</summary>
+    static Texture2D Tinted(string key, Texture2D art, Color c)
+    {
+        var ck = $"{key}|{c.ToHtml()}";
+        if (tinted.TryGetValue(ck, out var hit)) return hit;
+        var img = art.GetImage();
+        if (img.IsCompressed()) img.Decompress();
+        img.Convert(Image.Format.Rgba8);
+        for (int y = 0; y < img.GetHeight(); y++)
+            for (int x = 0; x < img.GetWidth(); x++)
+            {
+                var p = img.GetPixel(x, y);
+                img.SetPixel(x, y, new Color(p.R * c.R, p.G * c.G, p.B * c.B, p.A * c.A));
+            }
+        return tinted[ck] = ImageTexture.CreateFromImage(img);
     }
 
     /// <summary>A glyph as a control.</summary>

@@ -13,7 +13,9 @@ namespace SurvivorUnchained.Ui;
 /// The pack (the web game's overlays/Inventory.tsx): the survivor as they
 /// stand in the middle with what they wear round them, what they carry on
 /// the right, and the chosen thing's card with what can be done with it.
-/// Hover to read and compare, click to choose, double-click to wear or use.
+/// Hover to read and compare (the worn thing beside it), click to choose,
+/// double-click or right-click to wear or use. With a pad: move over the
+/// slots, the card follows; A wears or uses (or takes off), X leaves it behind.
 /// </summary>
 public partial class InventoryScreen : Overlay
 {
@@ -29,12 +31,12 @@ public partial class InventoryScreen : Overlay
         [EquipSlot.Cloak] = ("Cloak", "cloak"), [EquipSlot.Amulet] = ("Amulet", "amulet"), [EquipSlot.Ring1] = ("Ring", "ring"), [EquipSlot.Ring2] = ("Ring", "ring"), [EquipSlot.Relic] = ("Relic", "relic"),
     };
 
-    public InventoryScreen(Game g) : base(g) { }
+    public InventoryScreen(Game g) : base(g) { Nav.Prefer = "pack:0"; }
 
     protected override void Build()
     {
         var ch = G.Journey.Ch;
-        var body = Frame("Pack", new Vector2(1320, 700), G.Key(Act.Inventory));
+        var body = Frame("Pack", new Vector2(1320, 660), G.Key(Act.Inventory));
         var row = Style.H(24);
         row.SizeFlagsVertical = SizeFlags.ExpandFill;
         body.AddChild(row);
@@ -49,11 +51,10 @@ public partial class InventoryScreen : Overlay
         // What they carry.
         var pack = Style.V(8);
         pack.AddChild(ItemViews.Grid(ch.Pack, 6, 64, it => it.Uid == sel, null, it => Select(it.Uid), Primary,
-            (it, over) => Tip(it != null && it.Uid != sel ? ItemViews.Card(it, ch, true) : null, over)));
+            (it, over) => Tip(it != null && it.Uid != sel ? ItemViews.Compare(it, ch, true) : null, over), "pack", Drop));
         pack.AddChild(Style.H(18,
-            Style.H(4, Glyphs.Icon("coin", 16, Style.GoldHi), Style.Label($"{Math.Floor(ch.Gold)}", Style.UiBold, 16, Style.GoldHi)),
-            Style.Label($"{ch.Pack.Count(p => p != null)} / {ch.Pack.Count}", Style.Ui, 15, Style.InkDim),
-            Style.Label("Double-click to wear or use", Style.TextItalic, 14, Style.InkFaint)));
+            Style.H(4, Glyphs.Icon("coin", 17, Style.GoldHi), Style.Label($"{Math.Floor(ch.Gold)}", Style.UiBold, Style.Small, Style.GoldHi)),
+            Style.Label($"{ch.Pack.Count(p => p != null)} / {ch.Pack.Count} carried", Style.Ui, Style.Caption, Style.InkDim)));
         row.AddChild(pack);
 
         // The chosen thing.
@@ -74,13 +75,24 @@ public partial class InventoryScreen : Overlay
         {
             detail.AddChild(Style.Gap(80));
             detail.AddChild(Glyphs.Icon("hand", 28, Style.GoldDim));
-            detail.AddChild(Style.Label("Choose something to look at it closely.", Style.Text, 16, Style.Ink, true, HorizontalAlignment.Center));
-            detail.AddChild(Style.Label("Gear stays with you. Ember fades when you rest; what you carry, and what you wear, does not.", Style.TextItalic, 14, Style.InkDim, true, HorizontalAlignment.Center));
+            detail.AddChild(Style.Label("Choose something to look at it closely.", Style.Text, Style.Body, Style.Ink, true, HorizontalAlignment.Center));
+            detail.AddChild(Style.Label("Gear stays with you. Ember fades when you rest; what you carry, and what you wear, does not.", Style.TextItalic, Style.Caption, Style.InkDim, true, HorizontalAlignment.Center));
         }
         row.AddChild(detail);
+        body.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
+        body.AddChild(Controls.Instance.UsingPad
+            ? Footer((Act.Confirm, "Wear, use or take off"), (Act.Alt, "Leave behind"), (Act.TabNext, "Next page"), (Act.Cancel, "Close"))
+            : MouseFooter("Click to choose", "Double-click or right-click to wear or use", "Hover to compare with what you wear"));
     }
 
     void Select(string uid) { sel = sel == uid ? null : uid; Refresh(); }
+
+    void Drop(ItemInstance it)
+    {
+        if (Items.Get(it.Def).Kind == ItemKind.Quest) { Sound.Sfx.Deny(); return; }
+        if (sel == it.Uid) sel = null;
+        G.Journey.Drop(it.Uid);
+    }
 
     void Primary(ItemInstance it)
     {
@@ -96,8 +108,10 @@ public partial class InventoryScreen : Overlay
         {
             var it = ch.Equipment[s];
             var (name, glyph) = Slots[s];
-            v.AddChild(ItemViews.Slot(it, 76, it != null && it.Uid == sel, null, false, it != null ? () => Select(it.Uid) : null, null,
-                over => Tip(it != null && it.Uid != sel ? ItemViews.Card(it, ch, false) : null, over), glyph, name));
+            var slot = s;
+            Action? off = it != null && slot != EquipSlot.Weapon ? () => G.Gear((j, b) => j.Unequip(slot, b)) : null;
+            v.AddChild(ItemViews.Slot(it, 76, it != null && it.Uid == sel, null, false, it != null ? () => Select(it.Uid) : null, off,
+                over => Tip(it != null && it.Uid != sel ? ItemViews.Card(it, ch, false) : null, over), glyph, name, $"eq:{slot}"));
         }
         return v;
     }
@@ -143,7 +157,7 @@ public partial class ShopScreen : Overlay
     readonly string shop;
     (string Uid, bool Buy)? sel;
 
-    public ShopScreen(Game g, string shop) : base(g) { this.shop = shop; }
+    public ShopScreen(Game g, string shop) : base(g) { this.shop = shop; Nav.Prefer = "shelf:0"; }
 
     protected override void Build()
     {
@@ -151,7 +165,7 @@ public partial class ShopScreen : Overlay
         var w = G.Journey.World;
         var def = Lore.Shops[shop];
         var who = Lore.Person(shop);
-        var body = Frame(def.Name, new Vector2(1380, 640), "Esc", who != null ? $"{who.Name}, {who.Role.ToLowerInvariant()}" : null);
+        var body = Frame(def.Name, new Vector2(1380, 640), "Esc", who != null ? $"{who.Name}, {who.Role.ToLowerInvariant()}" : null, fit: true);
         var row = Style.H(22);
         body.AddChild(row);
         var stock = w.Shops.GetValueOrDefault(shop)?.Stock ?? new();
@@ -159,7 +173,7 @@ public partial class ShopScreen : Overlay
         while (shelf.Count < 20) shelf.Add(null);
         var left = Style.V(8, Style.SubLabel("For sale"),
             ItemViews.Grid(shelf, 5, 64, it => sel is { Buy: true } s && s.Uid == it.Uid, it => G.Journey.PriceOf(shop, it.Uid, true),
-                it => { sel = (it.Uid, true); Refresh(); }, it => G.Journey.Buy(shop, it.Uid), (it, over) => Tip(it != null && it.Uid != sel?.Uid ? ItemViews.Card(it, ch, true) : null, over)));
+                it => { sel = (it.Uid, true); Refresh(); }, it => G.Journey.Buy(shop, it.Uid), (it, over) => Tip(it != null && it.Uid != sel?.Uid ? ItemViews.Compare(it, ch, true) : null, over), "shelf"));
         row.AddChild(left);
 
         var detail = Style.V(8);
@@ -183,17 +197,19 @@ public partial class ShopScreen : Overlay
         {
             detail.AddChild(Style.Gap(80));
             detail.AddChild(Glyphs.Icon("coin", 28, Style.GoldDim));
-            detail.AddChild(Style.Label("Choose something on the shelf, or in your pack.", Style.Text, 16, Style.Ink, true, HorizontalAlignment.Center));
-            detail.AddChild(Style.Label("Prices soften for people who like you.", Style.TextItalic, 14, Style.InkDim, true, HorizontalAlignment.Center));
+            detail.AddChild(Style.Label("Choose something on the shelf, or in your pack.", Style.Text, Style.Body, Style.Ink, true, HorizontalAlignment.Center));
+            detail.AddChild(Style.Label("Prices soften for people who like you.", Style.TextItalic, Style.Caption, Style.InkDim, true, HorizontalAlignment.Center));
         }
         row.AddChild(detail);
 
         var right = Style.V(8, Style.SubLabel("Your pack"),
             ItemViews.Grid(ch.Pack, 6, 56, it => sel is { Buy: false } s && s.Uid == it.Uid, it => G.Journey.PriceOf(shop, it.Uid, false),
-                it => { sel = (it.Uid, false); Refresh(); }, it => G.Journey.Sell(shop, it.Uid), (it, over) => Tip(it != null && it.Uid != sel?.Uid ? ItemViews.Card(it, ch, true) : null, over)),
-            Style.H(16, Style.H(4, Glyphs.Icon("coin", 16, Style.GoldHi), Style.Label($"{Math.Floor(ch.Gold)}", Style.UiBold, 16, Style.GoldHi)),
-                Style.Label("Double-click to buy or sell", Style.TextItalic, 14, Style.InkFaint)));
+                it => { sel = (it.Uid, false); Refresh(); }, it => G.Journey.Sell(shop, it.Uid), (it, over) => Tip(it != null && it.Uid != sel?.Uid ? ItemViews.Card(it, ch, true) : null, over), "mine"),
+            Style.H(16, Style.H(4, Glyphs.Icon("coin", 17, Style.GoldHi), Style.Label($"{Math.Floor(ch.Gold)}", Style.UiBold, Style.Small, Style.GoldHi))));
         row.AddChild(right);
+        body.AddChild(Controls.Instance.UsingPad
+            ? Footer((Act.Confirm, "Buy or sell"), (Act.Cancel, "Close"))
+            : MouseFooter("Click to choose", "Double-click or right-click to buy or sell"));
     }
 }
 
@@ -203,19 +219,19 @@ public partial class StashScreen : Overlay
 {
     public override string Kind => "stash";
 
-    public StashScreen(Game g) : base(g) { }
+    public StashScreen(Game g) : base(g) { Nav.Prefer = "mine:0"; }
 
     protected override void Build()
     {
         var ch = G.Journey.Ch;
         var w = G.Journey.World;
-        var body = Frame("Rook's Storeroom", new Vector2(1120, 560), "Esc", "Kept safe, whatever becomes of you.");
+        var body = Frame("Rook's Storeroom", new Vector2(1120, 560), "Esc", "Kept safe, whatever becomes of you.", fit: true);
         var row = Style.H(28);
         body.AddChild(row);
-        row.AddChild(Style.V(8, Style.SubLabel("Stored"),
-            ItemViews.Grid(w.Stash, 8, 56, null, null, it => G.Journey.FromStash(it.Uid), null, (it, over) => Tip(it != null ? ItemViews.Card(it, ch, false) : null, over))));
+        row.AddChild(Style.V(8, Style.SubLabel($"Stored  ·  {w.Stash.Count(x => x != null)} of {w.Stash.Count}"),
+            ItemViews.Grid(w.Stash, 8, 56, null, null, it => G.Journey.FromStash(it.Uid), it => G.Journey.FromStash(it.Uid), (it, over) => Tip(it != null ? ItemViews.Card(it, ch, false) : null, over), "store")));
         row.AddChild(Style.V(8, Style.SubLabel("Your pack"),
-            ItemViews.Grid(ch.Pack, 6, 56, null, null, it => G.Journey.ToStash(it.Uid), null, (it, over) => Tip(it != null ? ItemViews.Card(it, ch, false) : null, over)),
-            Style.Label("Click to move between pack and store", Style.TextItalic, 14, Style.InkFaint)));
+            ItemViews.Grid(ch.Pack, 6, 56, null, null, it => G.Journey.ToStash(it.Uid), it => G.Journey.ToStash(it.Uid), (it, over) => Tip(it != null ? ItemViews.Card(it, ch, false) : null, over), "mine")));
+        body.AddChild(Controls.Instance.UsingPad ? Footer((Act.Confirm, "Move between pack and store"), (Act.Cancel, "Close")) : MouseFooter("Click to move between pack and store"));
     }
 }

@@ -22,7 +22,7 @@ public partial class Game
         // A screen hears the keys first.
         if (screens.Current is Overlay o)
         {
-            if (o.Key(a)) return true;
+            if (o.Handle(a)) return true;
             if (inTransit) return true;
             if (o.Dismissable && (a is Act.Cancel or Act.Pause || a == o.Toggle)) { CloseOverlay(); return true; }
             return true;
@@ -171,7 +171,7 @@ public partial class Game
         draftTip = null;
         string? great = LevelUp.GreatNext(b) ? b.Time < 60 ? "The arena begins: anyone can take any of them" : "The fifteenth minute: a second, or the first deepened" : null;
         hud.Draft(new DraftView(LevelUp.DraftLevel(b), LevelUp.BlessingNext(b), list, b.Rerolls, b.Banishes, LevelUp.Queued(b), tip,
-            LevelUp.BuildTags(b), Pick, Reroll, Banish, great));
+            LevelUp.BuildTags(b), Pick, Reroll, Banish, great, b));
     }
 
     public void Pick(int i)

@@ -100,6 +100,9 @@ public partial class Game : Node, IZoneHost
         GetTree().NodeAdded += n => { if (n is BaseButton bb) Sounded(bb); };
         saves = new Saves(ProjectSettings.GlobalizePath("user://saves"));
         controls.On(OnAction);
+        // Prompts follow the device in hand: a screen, the HUD, the draft redraw with its keys.
+        controls.DeviceChanged += () => { screens.Current?.Refresh(); hud.DeviceChanged(); };
+        UiArt.Cursors();
         if (Args.Has("auto")) auto = new Autopilot(this) { Idle = Args.Get("auto") == "idle" };
         Settings.Current.ApplyWindow();
         ApplySettings();
@@ -449,8 +452,10 @@ public partial class Game : Node, IZoneHost
         cam.Snap((float)x, (float)(scene?.HeightAt(x, z) ?? 0), (float)z);
     }
 
+    /// <summary>The key for an action as the device in hand has it (a pad's button
+    /// when a pad was touched last), for hints and the words that name keys.</summary>
     public string KeyLabel(string action) =>
-        Enum.TryParse<Act>(action, true, out var a) ? controls.KeyLabel(a) : action.ToUpperInvariant();
+        Enum.TryParse<Act>(action, true, out var a) ? controls.PromptLabel(a) : action.ToUpperInvariant();
 
     (Vector3 Pos, Vector3 Look) showT, showNow;
     bool showing;
@@ -540,6 +545,10 @@ public partial class Game : Node, IZoneHost
 
     public override void _Process(double delta)
     {
+        // Something over the game has the buttons: pad buttons mean their menu meaning first.
+        controls.MenuMode = screens.Current != null || hudMode != null;
+        // --pad (pictures of pad play): the pad stays in hand whatever the window's mouse does.
+        if (Args.Has("pad") && keyI > 0) controls.UsingPad = true;
         if (scene == null) return;
         double dt = Math.Min(delta, 0.1);
         if (Mode == "play" && zone != null)
@@ -572,6 +581,12 @@ public partial class Game : Node, IZoneHost
             scene.Showcase = showNow;
         }
         scene.Update(dt);
+        // The survivor's place on screen, for the health drawn under them.
+        if (Mode == "play" && Battle is { } fb2)
+        {
+            var at = new Vector3((float)fb2.Player.X, (float)scene.HeightAt(fb2.Player.X, fb2.Player.Z), (float)fb2.Player.Z);
+            hud.Follow(camera.IsPositionBehind(at) ? null : camera.UnprojectPosition(at));
+        }
         {
             var sb = Battle;
             var at = sb != null ? new Vector3((float)sb.Player.X, 0, (float)sb.Player.Z) : showNow.Look;
@@ -587,6 +602,7 @@ public partial class Game : Node, IZoneHost
             hudT = 1.0 / 12;
             var ch = Journey.Ch;
             hud.Frame(Battle, ch.Gold, Inventory.Count(ch, "health_draught"), (ch.Level, ch.Xp / Character.XpForLevel(ch.Level)));
+            hud.MapFrame(MiniView());
         }
         hud.SetBruise(scene.Bruise);
         scene.Voices.Quiet = hudMode == "dialogue" || screens.Current != null;
@@ -596,7 +612,25 @@ public partial class Game : Node, IZoneHost
         Tour(dt);
     }
 
+    /// <summary>What the corner map shows now: by day and on the story's roads, not in an arena.</summary>
+    MinimapView? MiniView()
+    {
+        if (zone == null || scene == null || zone is ArenaRun || Battle is not { } b || inTransit) return null;
+        float extent = MapScreen.Extent(scene.Data.Meta);
+        var seen = World.Zone(zone.Id).TryGetValue("seen", out var f) && f.Str is { Length: Journey.FogN * Journey.FogN } s ? s : new string('0', Journey.FogN * Journey.FogN);
+        bool Seen(double x, double z)
+        {
+            int i = (int)Math.Floor((x / extent + 0.5) * Journey.FogN), j = (int)Math.Floor((z / extent + 0.5) * Journey.FogN);
+            return i >= 0 && j >= 0 && i < Journey.FogN && j < Journey.FogN && seen[j * Journey.FogN + i] == '1';
+        }
+        var marks = zone.MapMarks().Where(m => m.Kind != MarkKind.Place && (m.Kind is MarkKind.Exit or MarkKind.Quest || Seen(m.X, m.Z)))
+            .Select(m => new MiniMark(m.X, m.Z, m.Kind, m.Label)).ToList();
+        if (World.Corpse is { } corpse && corpse.Zone == zone.Id) marks.Add(new MiniMark(corpse.X, corpse.Z, MarkKind.Danger, "Your belongings"));
+        return new MinimapView(zone.Id, MapScreen.Drawing(scene.Data), extent, seen, Journey.FogN, marks, b.Player.X, b.Player.Z, b.Player.Facing, zone.TimeOf(World) == TimeOfDay.Night);
+    }
+
     double tourT = 2;
+    int keyI;
     int tourI;
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
@@ -670,7 +704,18 @@ public partial class Game : Node, IZoneHost
         if (tourT > 0) return;
         string[] all = { "inventory", "character", "journal", "map", "pause", "rest", "stash", "shop:harlan", "chapter" };
         var list = want == "all" ? all : want.Split(',');
-        if (tourI >= list.Length) return;
+        if (tourI >= list.Length)
+        {
+            // --keys A,B,...: actions pressed in turn once the screen is up (--pad: as from a pad), for pictures of focus.
+            if (Args.Get("keys") is string keys && keyI < keys.Split(',').Length)
+            {
+                tourT = 0.35;
+                if (Args.Has("pad")) { controls.UsingPad = true; Ui.Nav.KeyMode = true; }
+                if (Enum.TryParse<Act>(keys.Split(',')[keyI++], true, out var ka)) controls.Press(ka);
+            }
+            return;
+        }
+        if (Args.Has("pad")) { controls.UsingPad = true; Ui.Nav.KeyMode = true; }
         tourT = Args.Num("every", 1.5f);
         if (list[tourI].StartsWith("shop:")) Journey.OpenShop(list[tourI][5..], Rng);
         GD.Print($"open {list[tourI]}");
@@ -678,6 +723,9 @@ public partial class Game : Node, IZoneHost
         var next = list[tourI++];
         if (next.StartsWith("talk:")) Talk(next[5..]);
         else if (next == "draft" && Battle is { } b) { b.GainEmber(b.EmberNext); }
+        // A won arena's end, with a sample tally (pictures of the result screen; in an arena).
+        else if (next == "result" && World.Arena is { } spec && Battle is { } rb)
+            ArenaOver(new ArenaResult(spec, true, 2134, rb.KillCount + 1840, Math.Max(rb.EmberLevel, 27), 1460, 212, Content.Weapons.Pool.Take(2).ToList(), 1, true));
         else Open(next);
     }
 
