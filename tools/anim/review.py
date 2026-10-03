@@ -23,7 +23,7 @@ def sheet(clip, view="three", frames=16, step=2, speed=0.0, weapon="", outfit="w
     OUT.mkdir(parents=True, exist_ok=True)
     out = out or OUT / f"{clip.replace('/', '_')}_{view}.png"
     env = dict(os.environ, VIEW=view, FRAMES=str(frames), STEP=str(step), SPEED=str(speed), WEAPON=weapon,
-               OUTFIT=outfit, START=str(start), W=str(size[0]), H=str(size[1]), COLS=str(cols or min(8, frames)),
+               OUTFIT=outfit, START=str(start), W=str(size[0]), H=str(size[1]), COLS=str(cols or min(5, frames)),
                HAIR=hair, PLAY=str(play))
     env.update(extra or {})
     r = subprocess.run([GODOT, "--path", str(REPO / "godot"), "--fixed-fps", "30", "-s", "res://tools_scenes/anim_review.gd",

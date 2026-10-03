@@ -1,0 +1,378 @@
+"""Motion capture onto her skeleton.
+
+The source's every joint turns in the world as it did in the take; each of
+her bones takes the same turn, measured from a calibration pose: her own
+rest, each bone swung (never twisted) to lie along the source's rest line,
+so her bones keep their own frames and the take lands on her as it was
+performed. Then the clean-up a capture needs:
+
+- the pelvis's height and travel scaled by leg length (hers to the
+  performer's), her feet set where the performer's were (scaled the same,
+  their stance drawn in toward her narrower hips) by two-bone IK, the knee
+  bent the way the take bends it;
+- feet locked where the take plants them (a planted foot holds still while
+  planted, however the capture jittered);
+- resampled to the game's 30 frames a second;
+- for loops: the stretch whose ends match best, the seam spread over the
+  whole loop;
+- root motion measured (the game moves her) and taken out.
+
+100STYLE (CC BY 4.0) is the source here: tools/anim/clips/mocap.py.
+"""
+from __future__ import annotations
+
+import math
+from pathlib import Path
+
+import numpy as np
+
+import bvh as bvhlib
+from rig import Clip, Skeleton, qbetween, qinv, qmul, qnorm, qrot, qslerp, two_bone_ik
+
+MOCAP = Path(r"C:\Users\munch\Tools\mocap")
+
+# Her bones from 100STYLE's joints (and where each one's line runs to, in
+# both skeletons, for the calibration).
+MAP_100STYLE = {
+    "pelvis": ("Hips", "spine_01", "Chest"),
+    "spine_01": ("Chest", "spine_02", "Chest2"),
+    "spine_02": ("Chest2", "spine_03", "Chest3"),
+    "spine_03": ("Chest4", "neck_01", "Neck"),
+    "neck_01": ("Neck", "Head", "Head"),
+    "Head": ("Head", None, "Head:end"),
+    "clavicle_l": ("LeftCollar", "upperarm_l", "LeftShoulder"),
+    "upperarm_l": ("LeftShoulder", "lowerarm_l", "LeftElbow"),
+    "lowerarm_l": ("LeftElbow", "hand_l", "LeftWrist"),
+    "hand_l": ("LeftWrist", "middle_01_l", "LeftWrist:end"),
+    "clavicle_r": ("RightCollar", "upperarm_r", "RightShoulder"),
+    "upperarm_r": ("RightShoulder", "lowerarm_r", "RightElbow"),
+    "lowerarm_r": ("RightElbow", "hand_r", "RightWrist"),
+    "hand_r": ("RightWrist", "middle_01_r", "RightWrist:end"),
+    "thigh_l": ("LeftHip", "calf_l", "LeftKnee"),
+    "calf_l": ("LeftKnee", "foot_l", "LeftAnkle"),
+    "foot_l": ("LeftAnkle", "ball_l", "LeftToe"),
+    "ball_l": ("LeftToe", "ball_leaf_l", "LeftToe:end"),
+    "thigh_r": ("RightHip", "calf_r", "RightKnee"),
+    "calf_r": ("RightKnee", "foot_r", "RightAnkle"),
+    "foot_r": ("RightAnkle", "ball_r", "RightToe"),
+    "ball_r": ("RightToe", "ball_leaf_r", "RightToe:end"),
+}
+
+
+class Source:
+    """A take, its globals in metres at 30 frames a second."""
+
+    def __init__(self, path, start=0, stop=None, fps=30, units=0.01):
+        self.b = bvhlib.load(path)
+        g, p = self.b.globals(start, stop)
+        step = self.b.fps / fps
+        idx = np.arange(0, g.shape[0] - 1e-6, step)
+        lo = np.floor(idx).astype(int)
+        hi = np.minimum(lo + 1, g.shape[0] - 1)
+        f = (idx - lo)[:, None]
+        self.pos = (p[lo] * (1 - f[..., None]) + p[hi] * f[..., None]) * units
+        rot = np.empty((len(idx), g.shape[1], 4))
+        for j in range(g.shape[1]):
+            for k, (a, c, w) in enumerate(zip(lo, hi, f[:, 0])):
+                rot[k, j] = qslerp(g[a, j], g[c, j], w)
+        self.rot = rot
+        self.fps = fps
+        self.units = units
+        rest = self.b.rest_positions() * units
+        self.rest = rest
+        self.names = self.b.names
+
+    def joint(self, name):
+        return self.names.index(name)
+
+    def direction(self, spec):
+        """A joint's rest line: to a named child, or to its end site."""
+        if spec.endswith(":end"):
+            j = self.joint(spec[:-4])
+            return self.b.end_sites[j] * self.units
+        j = self.joint(spec)
+        return self.b.offset[j] * self.units
+
+
+POSTURE = ("pelvis", "spine_01", "spine_02", "spine_03", "neck_01", "Head")
+
+
+def heading_free(rot, hips):
+    """Rotations with the hips' heading (yaw) taken off each frame."""
+    f = qrot(rot[:, hips], [0, 0, 1])
+    yaw = np.arctan2(f[:, 0], f[:, 2])
+    h = np.stack([np.zeros_like(yaw), np.sin(-yaw / 2), np.zeros_like(yaw), np.cos(-yaw / 2)], axis=1)
+    return qmul(h[:, None, :], rot)
+
+
+def mean_rotation(qs):
+    qs = np.array(qs, float)
+    ref = qs[0]
+    qs = np.where((qs @ ref)[:, None] < 0, -qs, qs)
+    m = qs.mean(axis=0)
+    return m / np.linalg.norm(m)
+
+
+_neutral = {}
+
+
+def neutral_posture(src_like: "Source"):
+    """The performer's own way of standing (their Neutral idle), joint by
+    joint, heading taken off: what her rest is matched to for the back,
+    neck and head, so a performer's habit (100STYLE's looks at the floor)
+    is not carried over and a style's posture is measured from it."""
+    key = str(src_like.b.names)
+    if key not in _neutral:
+        from clips.mocap import take
+        path, start, stop = take("Neutral", "ID")
+        n = Source(path, start, stop)
+        hf = heading_free(n.rot, n.joint("Hips"))
+        _neutral[key] = {name: mean_rotation(hf[:, n.joint(name)]) for name in n.names}
+    return _neutral[key]
+
+
+def retarget(sk: Skeleton, src: Source, mapping=MAP_100STYLE, stance=0.8, lock=True, posture=True):
+    """Her local rotations [T, J, 4] and positions [T, J, 3] for the take,
+    root motion still in (see in_place)."""
+    grest, prest = sk.rest_globals()
+    grest, prest = grest[0], prest[0]
+    T = src.rot.shape[0]
+    J = len(sk)
+    # Calibration: her limbs swung onto the source's rest lines; her back,
+    # neck and head matched to the performer's neutral standing.
+    cal = {}
+    neutral = neutral_posture(src) if posture else None
+    for b, (s, tchild, schild) in mapping.items():
+        jb = sk.i(b)
+        if neutral is not None and b in POSTURE:
+            cal[b] = qmul(qinv(neutral[s]), grest[jb])
+            continue
+        if tchild is None:
+            dt = qrot(grest[jb], [0, 1, 0])
+        else:
+            dt = prest[sk.i(tchild)] - prest[jb]
+        ds = src.direction(schild)
+        cal[b] = qmul(qbetween(dt, ds), grest[jb])
+    g = np.tile(grest, (T, 1, 1))
+    for b, (s, _, _) in mapping.items():
+        g[:, sk.i(b)] = qmul(src.rot[:, src.joint(s)], cal[b])
+    # Bones with no source keep their rest turn on their parent.
+    for j in range(J):
+        if sk.names[j] in mapping or sk.parent[j] < 0:
+            continue
+        p = sk.parent[j]
+        g[:, j] = qmul(g[:, p], qmul(qinv(grest[p]), grest[j]))
+    # Scale: her leg length to the performer's.
+    leg_t = np.linalg.norm(prest[sk.i("calf_l")] - prest[sk.i("thigh_l")]) + np.linalg.norm(prest[sk.i("foot_l")] - prest[sk.i("calf_l")])
+    leg_s = np.linalg.norm(src.rest[src.joint("LeftKnee")] - src.rest[src.joint("LeftHip")]) + \
+        np.linalg.norm(src.rest[src.joint("LeftAnkle")] - src.rest[src.joint("LeftKnee")])
+    k = leg_t / leg_s
+    hips = src.pos[:, src.joint("Hips")] * k
+    # Heights from the ground: the performer standing straight has the hips
+    # a leg's drop above a planted ankle; hers stand where her rest does.
+    ground_s = np.percentile(src.pos[:, src.joint("LeftAnkle"), 1], 5)
+    stand_s = -src.rest[src.joint("LeftAnkle")][1] + ground_s
+    pel_off = np.array([0.0, prest[sk.i("pelvis")][1] - k * stand_s, 0.0])
+    pelvis = hips + pel_off
+    # Locals by FK order.
+    local = np.empty((T, J, 4))
+    for j in range(J):
+        p = sk.parent[j]
+        local[:, j] = g[:, j] if p < 0 else qmul(qinv(g[:, p]), g[:, j])
+    pos = np.tile(sk.rest_pos, (T, 1, 1))
+    root = sk.i("root")
+    pos[:, sk.i("pelvis")] = qrot(qinv(sk.rest_rot[root]), pelvis - prest[root])
+    # Feet: where the performer's were, scaled, stance drawn toward hers.
+    hipw_t = abs(prest[sk.i("thigh_l")][0] - prest[sk.i("thigh_r")][0]) / 2
+    hipw_s = abs(src.rest[src.joint("LeftHip")][0] - src.rest[src.joint("RightHip")][0]) / 2 * k
+    lateral = stance + (1 - stance) * (hipw_t / hipw_s)
+    ankles = {}
+    for side, sj in (("l", "LeftAnkle"), ("r", "RightAnkle")):
+        a = src.pos[:, src.joint(sj)] * k
+        # Draw the stance in about the pelvis's line, in the hips' own frame.
+        hip_fwd = qrot(src.rot[:, src.joint("Hips")], [0, 0, 1])
+        hip_fwd[:, 1] = 0
+        hip_fwd /= np.linalg.norm(hip_fwd, axis=1, keepdims=True)
+        hip_left = np.cross([0, 1, 0], hip_fwd)
+        rel = a - pelvis
+        side_amt = np.sum(rel * hip_left, axis=1, keepdims=True)
+        a = a - hip_left * side_amt * (1 - lateral)
+        # A planted ankle at her own ankle's height.
+        a[:, 1] += prest[sk.i(f"foot_{side}")][1] - k * ground_s
+        ankles[side] = a
+    contacts = {}
+    if lock:
+        for side, sj, tj in (("l", "LeftAnkle", "LeftToe"), ("r", "RightAnkle", "RightToe")):
+            c = foot_contacts(src, sj, tj)
+            contacts[side] = c
+            ankles[side] = lock_feet(ankles[side], c)
+    # Legs reach for the ankles.
+    gl, gp = sk.fk(local, pos)
+    for side in "lr":
+        th, ca, fo = sk.i(f"thigh_{side}"), sk.i(f"calf_{side}"), sk.i(f"foot_{side}")
+        for t in range(T):
+            a, b_, c_ = gp[t, th], gp[t, ca], gp[t, fo]
+            # The knee bends the way the take bends it; a straight leg's
+            # knee points the way its foot does.
+            kd = b_ - (a + c_) / 2
+            toe = gp[t, sk.i(f"ball_{side}")] - c_
+            toe[1] = 0
+            toe = toe / max(np.linalg.norm(toe), 1e-6)
+            pole = kd / max(np.linalg.norm(kd), 1e-6) * min(1.0, np.linalg.norm(kd) / 0.03) + toe * 0.3
+            nb, nc = two_bone_ik(a, b_, c_, ankles[side][t], b_ + pole)
+            r1 = qbetween(b_ - a, nb - a)
+            gth = qmul(r1, gl[t, th])
+            gca0 = qmul(r1, gl[t, ca])
+            b2 = a + (nb - a)
+            c2 = b2 + qrot(r1, c_ - b_)
+            r2 = qbetween(c2 - b2, nc - b2)
+            gca = qmul(r2, gca0)
+            pth = gl[t, sk.parent[th]]
+            local[t, th] = qmul(qinv(pth), gth)
+            local[t, ca] = qmul(qinv(gth), gca)
+            # The foot keeps its turn in the world.
+            local[t, fo] = qmul(qinv(gca), gl[t, fo])
+    return local, pos, {"scale": k, "contacts": contacts}
+
+
+def foot_contacts(src: Source, ankle, toe, h_ankle=None, v_max=0.35):
+    """Frames a foot is planted: low and still (heel or toe), with short
+    gaps closed and short contacts dropped."""
+    a = src.pos[:, src.joint(ankle)]
+    t = src.pos[:, src.joint(toe)]
+    va = np.linalg.norm(np.gradient(a, axis=0), axis=1) * src.fps
+    vt = np.linalg.norm(np.gradient(t, axis=0), axis=1) * src.fps
+    ha = a[:, 1] - np.percentile(a[:, 1], 5)
+    ht = t[:, 1] - np.percentile(t[:, 1], 5)
+    c = ((ha < 0.03) & (va < v_max)) | ((ht < 0.025) & (vt < v_max))
+    return _clean(c, 2)
+
+
+def _clean(c, n):
+    c = c.copy()
+    # Close gaps of up to n frames, then drop runs shorter than n.
+    for val, length in ((False, n), (True, n)):
+        i = 0
+        while i < len(c):
+            if c[i] == val:
+                j = i
+                while j < len(c) and c[j] == val:
+                    j += 1
+                if j - i <= length and i > 0 and j < len(c):
+                    c[i:j] = not val
+                i = j
+            else:
+                i += 1
+    return c
+
+
+def lock_feet(a, contact, blend=3):
+    """Hold a planted foot where it lands (the mean of its plant), easing in
+    and out over a few frames so the lock never pops."""
+    a = a.copy()
+    T = len(a)
+    i = 0
+    out = a.copy()
+    while i < T:
+        if contact[i]:
+            j = i
+            while j < T and contact[j]:
+                j += 1
+            hold = a[i:j].mean(axis=0)
+            hold[1] = min(a[i:j, 1].min(), hold[1])
+            for t in range(max(0, i - blend), min(T, j + blend)):
+                if i <= t < j:
+                    w = 1.0
+                elif t < i:
+                    w = 1 - (i - t) / (blend + 1)
+                else:
+                    w = 1 - (t - j + 1) / (blend + 1)
+                out[t] = a[t] * (1 - w) + hold * w
+            i = j
+        else:
+            i += 1
+    return out
+
+
+def best_loop(local, pos, sk: Skeleton, min_len, max_len, weights=None):
+    """The frames [a, b] whose poses match best (b - a between min and max),
+    for a loop: rotations of the big bones, and the pelvis's height."""
+    T = local.shape[0]
+    big = [sk.i(n) for n in ("pelvis", "spine_03", "Head", "upperarm_l", "upperarm_r", "lowerarm_l", "lowerarm_r",
+                              "thigh_l", "thigh_r", "calf_l", "calf_r", "foot_l", "foot_r")]
+    feats = np.concatenate([local[:, big].reshape(T, -1), pos[:, sk.i("pelvis")] * 3], axis=1)
+    vel = np.gradient(feats, axis=0)
+    best = (1e9, 0, min_len)
+    for a in range(0, T - min_len):
+        for b in range(a + min_len, min(T, a + max_len + 1)):
+            d = np.sum((feats[a] - feats[b]) ** 2) + 0.5 * np.sum((vel[a] - vel[b]) ** 2)
+            if d < best[0]:
+                best = (d, a, b)
+    return best
+
+
+def make_loop(local, pos, a, b):
+    """Frames a..b as a closed loop: the difference between the ends spread
+    across the clip, so the seam vanishes."""
+    L = local[a:b + 1].copy()
+    P = pos[a:b + 1].copy()
+    n = L.shape[0]
+    for j in range(L.shape[1]):
+        dq = qmul(L[0, j], qinv(L[-1, j]))
+        for t in range(n):
+            w = t / (n - 1)
+            L[t, j] = qmul(qslerp(np.array([0, 0, 0, 1.0]), dq, w), L[t, j])
+    dp = P[0] - P[-1]
+    for t in range(n):
+        P[t] += dp * (t / (n - 1))
+    L[-1] = L[0]
+    P[-1] = P[0]
+    return L, P
+
+
+def in_place(sk: Skeleton, pos, keep_height=True):
+    """Root motion out: the pelvis's straight-line travel removed (its sway
+    about that line kept). Returns the positions and the travel speed (m/s of
+    her skeleton at 30 fps) and heading."""
+    pel = sk.i("pelvis")
+    root = sk.i("root")
+    world = qrot(sk.rest_rot[root], pos[:, pel])
+    T = len(world)
+    start, end = world[0].copy(), world[-1].copy()
+    d = end - start
+    d[1] = 0
+    out = world.copy()
+    for t in range(T):
+        out[t] -= d * (t / (T - 1))
+    # Centre the sway about her rest line.
+    mean = out.mean(axis=0)
+    out[:, 0] -= mean[0]
+    out[:, 2] -= mean[2]
+    p = pos.copy()
+    p[:, pel] = qrot(qinv(sk.rest_rot[root]), out)
+    return p, np.linalg.norm(d) / ((T - 1) / 30.0), math.degrees(math.atan2(d[0], d[2])) if np.linalg.norm(d) > 1e-6 else 0.0
+
+
+def face_forward(sk: Skeleton, local, pos):
+    """The whole take turned about the vertical so her hips face +Z on
+    average (a take captured facing elsewhere)."""
+    pel = sk.i("pelvis")
+    g, _ = sk.fk(local, pos)
+    fwd = qrot(g[:, pel], qrot(qinv(sk.rest_globals()[0][0, pel]), [0, 0, 1]))
+    fwd = fwd.mean(axis=0)
+    yaw = math.atan2(fwd[0], fwd[2])
+    turn = np.array([0, math.sin(-yaw / 2), 0, math.cos(-yaw / 2)])
+    root = sk.i("root")
+    L = local.copy()
+    P = pos.copy()
+    # Turn the pelvis about the world's up (in the root's frame) and carry
+    # its position round with it.
+    rr = sk.rest_rot[root]
+    turn_root = qmul(qinv(rr), qmul(turn, rr))
+    L[:, pel] = qmul(turn_root, L[:, pel])
+    P[:, pel] = qrot(turn_root, P[:, pel])
+    return L, P
+
+
+def clip_from(name, sk, local, pos, loop=False, meta=None):
+    return Clip(name, 30, local, pos, loop=loop, meta=meta or {})

@@ -51,16 +51,22 @@ def main(argv):
     want = [a for a in argv if not a.startswith("--")]
     sk = Skeleton.load()
     rig = Rig(sk)
-    made = 0
+    made = []
     for m in modules():
         t0 = time.time()
         for clip in m.clips(rig, want):
             if want and not any(w in clip.name for w in want):
                 continue
             write_clip(clip, sk, OUT)
-            made += 1
+            made.append(clip.name)
             print(f"  {clip.name:28s} {clip.frames:4d} frames  {clip.length:5.2f} s  {m.__name__}  ({time.time() - t0:.1f} s)")
-    print(f"{made} clips written to {OUT}")
+    print(f"{len(made)} clips written to {OUT}")
+    # A full build is the whole library: clips no module makes any more go.
+    if not want:
+        for f in OUT.glob("*.json"):
+            if f.stem not in made:
+                f.unlink()
+                print(f"  (dropped {f.stem})")
     if "--no-pack" not in argv:
         pack()
 

@@ -161,10 +161,36 @@ func weapon(skel, kind):
 	steel.roughness = 0.3
 	var wood = StandardMaterial3D.new()
 	wood.albedo_color = Color(0.35, 0.22, 0.12)
+	if kind.begins_with("sword+shield") or kind == "shield":
+		# A buckler on the left forearm, as Arms.Hold mounts one: its face
+		# along the mount's +Z.
+		var fa = BoneAttachment3D.new()
+		fa.bone_name = "lowerarm_l"
+		skel.add_child(fa)
+		var fm = Node3D.new()
+		var fx = Vector3(0, 1, 0)
+		var fy = Vector3(0, 0, -1)
+		fm.basis = Basis(fx, fy, fx.cross(fy))
+		fm.position = Vector3(0, 0.14, 0)
+		fa.add_child(fm)
+		var disc = MeshInstance3D.new()
+		var cm = CylinderMesh.new()
+		cm.top_radius = 0.3
+		cm.bottom_radius = 0.3
+		cm.height = 0.04
+		var wood2 = StandardMaterial3D.new()
+		wood2.albedo_color = Color(0.45, 0.3, 0.18)
+		cm.material = wood2
+		disc.mesh = cm
+		disc.rotation_degrees = Vector3(90, 0, 0)
+		disc.position = Vector3(0, 0, 0.05)
+		fm.add_child(disc)
+		if kind == "shield": return
+		kind = "sword"
 	var hands = {"sword": [["hand_r", 0.95, 0.05, steel]], "axe": [["hand_r", 0.8, 0.07, steel]],
 		"axes": [["hand_r", 0.8, 0.07, steel], ["hand_l", 0.8, 0.07, steel]],
 		"daggers": [["hand_r", 0.4, 0.03, steel], ["hand_l", 0.4, 0.03, steel]],
-		"staff": [["hand_r", 1.75, 0.03, wood]], "wand": [["hand_r", 0.38, 0.015, wood]], "bow": [["hand_l", 0.85, 0.03, wood]]}
+		"staff": [["hand_r", 1.75, 0.03, wood]], "wand": [["hand_r", 0.38, 0.015, wood]], "crossbow": [["hand_r", 0.85, 0.05, wood]]}
 	for h in hands.get(kind, []):
 		var at = BoneAttachment3D.new()
 		at.bone_name = h[0]
@@ -176,14 +202,20 @@ func weapon(skel, kind):
 		mount.position = Vector3(-0.025, 0.075, 0)
 		at.add_child(mount)
 		var len = h[1]
-		var grip = 0.45 if kind == "staff" else 0.15
+		var grip = {"staff": 0.45, "crossbow": 0.3}.get(kind, 0.15)
 		var m = MeshInstance3D.new()
 		var bm = BoxMesh.new()
 		bm.size = Vector3(h[2] * 1.6, len, h[2] * 0.4)
 		bm.material = h[3]
 		m.mesh = bm
+		var w = Node3D.new()
+		if kind == "crossbow":
+			# Pistol-fashion, as Arms.Hold: the stock along the fingers.
+			w.basis = Basis(Vector3(0, 0, 1), Vector3(1, 0, 0), Vector3(0, 1, 0))
+			w.position = Vector3(0, 0.05, 0)
+		mount.add_child(w)
 		m.position = Vector3(0, len * (0.5 - grip), 0)
-		mount.add_child(m)
+		w.add_child(m)
 
 func stage(root):
 	# A checked floor: squares of half a metre, so a sliding foot shows.
@@ -245,6 +277,11 @@ func _process(delta):
 		return false
 	var k = frame - warm - 1
 	if k % step == 0:
+		# DEBUG=bone: print where that bone is and which way its axes point.
+		if env("DEBUG", "") != "":
+			var sk: Skeleton3D = her.find_children("*", "Skeleton3D", true, false)[0]
+			var gp = sk.get_bone_global_pose(sk.find_bone(env("DEBUG", "")))
+			print("DBG %d t=%.3f pos=%s y=%s z=%s" % [k, ap.current_animation_position, gp.origin, gp.basis.y, gp.basis.z])
 		var img = vp.get_texture().get_image()
 		shots.append(img)
 		if env("FULL", "") != "": img.save_png(out.replace(".png", "_%02d.png" % shots.size()))
