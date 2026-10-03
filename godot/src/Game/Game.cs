@@ -571,6 +571,17 @@ public partial class Game : Node, IZoneHost
             RunLater(dt);
         }
         else if (auto != null && Mode != "play") AutoFront();
+        // --keys on the title or at the fire (pictures of their focus): pressed in turn, two seconds in.
+        else if (Mode != "play" && Args.Get("keys") is string fk && keyI < fk.Split(',').Length)
+        {
+            tourT -= dt;
+            if (tourT <= 0)
+            {
+                tourT = 0.35;
+                if (Args.Has("pad")) { controls.UsingPad = true; Ui.Nav.KeyMode = true; }
+                if (Enum.TryParse<Act>(fk.Split(',')[keyI++], true, out var fa)) controls.Press(fa);
+            }
+        }
         // A held camera drifts toward its mark, breathing a little.
         if (showing)
         {

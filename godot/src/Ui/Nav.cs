@@ -45,6 +45,9 @@ public sealed class Nav
     readonly List<(Control C, string Id, NavItem? Info)> items = new();
     Panel? ring;
     double t;
+    // A screen built this frame has not been laid out: a direction waits a frame for it.
+    ulong builtFrame;
+    readonly List<Act> waiting = new();
 
     public Nav(Control host) { this.host = host; }
 
@@ -93,6 +96,7 @@ public sealed class Nav
             foreach (var ch in n.GetChildren()) Walk(ch);
         }
         Walk(Scope ?? host);
+        builtFrame = Engine.GetProcessFrames();
         if (FocusId == null || items.All(i => i.Id != FocusId))
             FocusId = Prefer != null && items.Any(i => i.Id == Prefer) ? Prefer : items.Count > 0 ? items[0].Id : null;
         ring = new Panel { MouseFilter = Control.MouseFilterEnum.Ignore, TopLevel = true, Visible = false, ZIndex = 50 };
@@ -114,6 +118,10 @@ public sealed class Nav
         if (!Enabled || items.Count == 0) return false;
         switch (a)
         {
+            case Act.Up or Act.Down or Act.Left or Act.Right when Engine.GetProcessFrames() == builtFrame:
+                // Built this very frame (the press that switched to the pad redrew it): move once it has its places.
+                waiting.Add(a);
+                return true;
             case Act.Up or Act.Down or Act.Left or Act.Right:
                 if (Current is not { } cur)
                 {
@@ -200,6 +208,12 @@ public sealed class Nav
     /// <summary>Each frame: the ring on what has focus, breathing a little.</summary>
     public void Update(double delta)
     {
+        if (waiting.Count > 0 && Engine.GetProcessFrames() > builtFrame)
+        {
+            var now = waiting.ToList();
+            waiting.Clear();
+            foreach (var a in now) Key(a);
+        }
         if (ring == null || !GodotObject.IsInstanceValid(ring)) return;
         t += delta;
         var cur = Current;

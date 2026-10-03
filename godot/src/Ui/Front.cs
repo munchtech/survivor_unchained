@@ -449,8 +449,11 @@ public partial class CreateScreen : Overlay
         if (w != null && w.Evolutions.Length > 0)
             v.AddChild(Line("At rank 8", string.Join(", or ", w.Evolutions.Select(e => $"{e.Name} (with {string.Join(" or ", e.Catalysts.Select(c => Boons.Find(c)?.Name ?? c))})"))));
         v.AddChild(Style.Rule());
-        v.AddChild(Style.H(10, Glyphs.Icon(ab.Icon, 30, new Color("#ffe2b0")), Style.V(2, Style.H(6, Style.Label(ab.Name, Style.UiBold, 16, Style.GoldHi), Style.Key(G.Key(Act.Ability))),
-            Style.Label(ab.Description, Style.Text, 14, Style.Ink, true))));
+        // The art's words take the panel's width (they were squeezed into a column).
+        var what = Style.V(2, Style.H(6, Style.Label(ab.Name, Style.UiBold, Style.Small, Style.GoldHi), Style.Prompt(Act.Ability)),
+            Style.Label(ab.Description, Style.Text, Style.Small, Style.Ink, true));
+        what.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        v.AddChild(Style.H(10, Glyphs.Icon(ab.Icon, 30, new Color("#ffe2b0")), what));
         return v;
     }
 
