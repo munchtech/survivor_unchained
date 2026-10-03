@@ -85,97 +85,141 @@ public partial class SheetScreen : Overlay
     protected override void Build()
     {
         var ch = G.Journey.Ch;
-        var body = Frame(ch.Name, new Vector2(1500, 790), G.Key(Act.Character), $"Level {ch.Level} {Callings.Background(ch.Background).Name} {Callings.Archetype(ch.Archetype).Name}");
-        var row = Style.H(30);
-        row.SizeFlagsVertical = SizeFlags.ExpandFill;
-        body.AddChild(row);
+        var page = Page(ch.Name, $"Level {ch.Level} {Callings.Background(ch.Background).Name} {Callings.Archetype(ch.Archetype).Name}");
 
-        // Who they are.
-        var left = Style.V(Style.Gap2);
-        left.CustomMinimumSize = new Vector2(290, 0);
-        left.AddChild(new Portrait(new Vector2I(270, 330)).Of(Loadouts.Of(ch)));
+        // Who they are: the figure, the way to the next level, the art in hand, what they know.
+        var who = Pane(page, new Rect2(0, 0, 536, 920));
+        var fig = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+        fig.AddChild(InventoryScreen.Figure(ch, 400, 430));
+        who.AddChild(fig);
         double need = Character.XpForLevel(ch.Level);
-        left.AddChild(Style.H(8, Style.Label($"Level {ch.Level}", Style.Display, 20, Style.GoldHi), Style.Label("experience", Style.Ui, Style.Caption, Style.Day)));
-        // Experience in the day's cool colour, as the HUD's bar has it by day.
-        left.AddChild(Bar(ch.Xp / need, $"{Math.Floor(ch.Xp)} / {need} to level {ch.Level + 1}", Style.Day, 280));
+        var lvl = new Medallion(76, $"{ch.Level}") { Arc = (float)(ch.Xp / need), ArcColor = Style.Day, Core = new Color("#1c2a3a"), Ink = Style.DayHi };
+        var lw = Style.V(4, Style.Label("Level", Style.Display, 22, Style.GoldHi), Bar(ch.Xp / need, $"{Math.Floor(ch.Xp)} / {need} to level {ch.Level + 1}", Style.Day, 380));
+        lw.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        who.AddChild(Style.H(Style.Gap3, lvl, lw));
         var ab = Abilities.ById(ch.Ability);
         var arts = Style.Button("", () => G.Open("arts"), false, true);
-        var artRow = Style.H(6, Glyphs.Icon(ab.Icon, 18), Style.Label($"{ab.Name}  ·  rank {ArtBook.Rank(ch, ch.Ability)}", Style.UiBold, Style.Small, Style.GoldHi), Style.Key(G.Key(Act.Arts)));
-        artRow.Position = new Vector2(8, 6);
+        var artRow = Style.H(8, Glyphs.Icon(ab.Icon, 20), Style.Label($"In hand: {ab.Name}  ·  rank {ArtBook.Rank(ch, ch.Ability)}", Style.UiBold, Style.Small, Style.GoldHi), Style.Key(G.Key(Act.Arts)));
+        artRow.Position = new Vector2(10, 7);
         artRow.MouseFilter = MouseFilterEnum.Ignore;
         arts.AddChild(artRow);
-        arts.CustomMinimumSize = new Vector2(280, 36);
+        arts.CustomMinimumSize = new Vector2(0, 38);
         arts.TooltipText = "Your arts: the one in hand, its rank and facets";
-        left.AddChild(Nav.Id(arts, "arts"));
+        who.AddChild(Nav.Id(arts, "arts"));
+        // The calling: how they fight and where they came from, in the game's own words.
+        var arch = Callings.Archetype(ch.Archetype);
+        var back = Callings.Background(ch.Background);
+        who.AddChild(new Section("Calling"));
+        var calling = Style.Panel(Style.Slab(14));
+        calling.MouseFilter = MouseFilterEnum.Ignore;
+        var cv = Style.V(Style.Gap2,
+            Style.V(0, Style.Label(arch.Name, Style.UiBold, Style.Body, Style.GoldHi), Style.Label(arch.Tagline, Style.TextItalic, Style.Caption, Style.InkDim, true)),
+            Style.V(0, Style.Label(back.Name, Style.UiBold, Style.Body, Style.GoldHi), Style.Label(back.Summary, Style.TextItalic, Style.Caption, Style.InkDim, true)));
+        calling.AddChild(cv);
+        who.AddChild(calling);
         var knows = ch.Knowledge.Where(Know.ContainsKey).Select(k => Know[k]).ToList();
-        left.AddChild(Style.Label(knows.Count == 0 ? "You know little yet that others do not." : $"You know {string.Join(", ", knows)}: it opens words and ways others miss.", Style.TextItalic, Style.Caption, Style.InkDim, true));
+        who.AddChild(Style.Label(knows.Count == 0 ? "You know little yet that others do not." : $"You know {string.Join(", ", knows)}: it opens words and ways others miss.", Style.TextItalic, Style.Small, Style.Ink, true));
         foreach (var c in ch.Conditions)
         {
             bool good = c.Id is ConditionId.Blessed or ConditionId.Rested or ConditionId.Warmed;
-            left.AddChild(Style.H(6, Glyphs.Icon(good ? "sun" : "skull", 15, good ? Style.Good : Style.Bad), Style.Label($"{Cond.GetValueOrDefault(c.Id, c.Id.ToString())}  ·  {c.Days} day{(c.Days == 1 ? "" : "s")}", Style.UiBold, Style.Caption, good ? Style.Good : Style.Bad, true)));
+            who.AddChild(Style.H(6, Glyphs.Icon(good ? "sun" : "skull", 16, good ? Style.Good : Style.Bad), Style.Label($"{Cond.GetValueOrDefault(c.Id, c.Id.ToString())}  ·  {c.Days} day{(c.Days == 1 ? "" : "s")}", Style.UiBold, Style.Caption, good ? Style.Good : Style.Bad, true)));
         }
-        row.AddChild(left);
 
-        // The attributes, and the traits.
-        var mid = Style.V(Style.Gap2);
-        mid.CustomMinimumSize = new Vector2(470, 0);
-        mid.AddChild(Style.H(8, Style.SubLabel("Attributes"), ch.Points > 0 ? Style.Label($"{ch.Points} to spend: each + shows what it would change", Style.UiBold, Style.Caption, Style.EmberHi) : Style.Label("more with each level", Style.TextItalic, Style.Caption, Style.InkFaint)));
-        foreach (var (id, name, text) in Attrs)
+        // The four attributes as pillars, the number the hero; traits under them as cards.
+        var mid = Pane(page, new Rect2(560, 0, 840, 920));
+        mid.AddChild(new Section("Attributes", ch.Points > 0 ? $"{ch.Points} to spend: a + shows what it would change" : "more with each level"));
+        var pillars = Style.H(16);
+        mid.AddChild(pillars);
+        for (int i = 0; i < Attrs.Length; i++)
         {
-            var r = Style.H(12);
-            var val = Style.Label($"{Attr(ch, id)}", Style.Display, 28, Style.GoldHi);
-            val.CustomMinimumSize = new Vector2(36, 0);
-            r.AddChild(val);
-            var words = Style.V(0, Style.Label(name, Style.UiBold, Style.Body, Style.Ink), Style.Label(text, Style.Ui, Style.Caption, Style.InkDim, true));
-            words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-            r.AddChild(words);
+            var (id, nm, text) = Attrs[i];
+            var box = OrnateBox.Make(OrnateBox.Kind.Card, 14, ch.Points > 0 ? Style.Ember : Style.Gold);
+            box.Crest = 90;
+            var pillar = Style.Panel(UiArt.Frame("pillar", box));
+            pillar.CustomMinimumSize = new Vector2(188, 340);
+            pillar.MouseFilter = MouseFilterEnum.Ignore;
+            pillars.AddChild(pillar);
+            var v = Style.V(Style.Gap2);
+            pillar.AddChild(v);
+            var med = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+            med.AddChild(new Medallion(120, $"{Attr(ch, id)}"));
+            v.AddChild(med);
+            v.AddChild(Style.Label(nm.ToUpperInvariant(), Style.Display, 22, Style.GoldHi, false, HorizontalAlignment.Center));
+            var words = Style.Label(text, Style.Ui, Style.Caption, Style.Ink, true, HorizontalAlignment.Center);
+            words.SizeFlagsVertical = SizeFlags.ExpandFill;
+            v.AddChild(words);
             if (ch.Points > 0)
             {
                 var attr = id;
-                var plus = Style.Button("+", () => G.Gear((j, b) => j.SpendPoint(attr, b)), true, true);
-                plus.CustomMinimumSize = new Vector2(40, 36);
+                var plus = Style.Button("+  Spend", () => G.Gear((j, b) => j.SpendPoint(attr, b)), true, false);
                 plus.MouseEntered += () => ShowStanding(attr);
                 plus.MouseExited += () => ShowStanding(null);
                 Nav.Mark(plus, $"attr:{attr}", () => G.Gear((j, b) => j.SpendPoint(attr, b)), focus: () => ShowStanding(attr), blur: () => ShowStanding(null));
-                r.AddChild(plus);
+                v.AddChild(plus);
             }
-            mid.AddChild(r);
         }
-        mid.AddChild(Style.Rule());
-        mid.AddChild(Style.H(8, Style.SubLabel("Traits"), ch.TraitPicks > 0 ? Style.Label($"choose {ch.TraitPicks}", Style.UiBold, Style.Caption, Style.EmberHi) : new Control()));
-        if (ch.Traits.Count == 0 && ch.TraitPicks == 0) mid.AddChild(Style.Label("None yet. Traits come with levels, and with what you do.", Style.TextItalic, Style.Caption, Style.InkDim, true));
+
+        mid.AddChild(Style.Gap(Style.Gap2));
+        mid.AddChild(new Section("Traits", ch.TraitPicks > 0 ? $"choose {ch.TraitPicks}: each is for good" : "chosen at levels, or given for what you do"));
+        var traits = new GridContainer { Columns = 3, MouseFilter = MouseFilterEnum.Ignore };
+        traits.AddThemeConstantOverride("h_separation", 12);
+        traits.AddThemeConstantOverride("v_separation", 12);
+        mid.AddChild(traits);
+        Control TraitCard(string name, string text, bool earned, Action? take, string? navId)
+        {
+            var box = OrnateBox.Make(OrnateBox.Kind.Slab, 14, take != null ? Style.Ember : earned ? Style.EmberHi : Style.Gold);
+            var inner = Style.V(4, Style.Label(name, Style.UiBold, Style.Body, take != null || earned ? Style.EmberHi : Style.GoldHi), Style.Label(text, Style.Ui, Style.Caption, Style.Ink, true));
+            inner.MouseFilter = MouseFilterEnum.Ignore;
+            if (take == null)
+            {
+                var p = Style.Panel(box, inner);
+                p.CustomMinimumSize = new Vector2(258, 118);
+                return p;
+            }
+            var bt = Style.Button("", take);
+            foreach (var st in new[] { "normal", "hover", "pressed" }) bt.AddThemeStyleboxOverride(st, box);
+            inner.Position = new Vector2(14, 12);
+            inner.Size = new Vector2(230, 94);
+            bt.AddChild(inner);
+            bt.CustomMinimumSize = new Vector2(258, 118);
+            if (navId != null) Nav.Id(bt, navId);
+            return bt;
+        }
         foreach (var t in ch.Traits)
         {
             var def = Callings.Trait(t);
-            mid.AddChild(Style.V(0, Style.Label((def?.Name ?? t) + (def?.Source == TraitSource.World ? "  ·  earned" : ""), Style.UiBold, Style.Small, def?.Source == TraitSource.World ? Style.EmberHi : Style.GoldHi),
-                Style.Label(def?.Text ?? "", Style.Ui, Style.Caption, Style.InkDim, true)));
+            traits.AddChild(TraitCard((def?.Name ?? t) + (def?.Source == TraitSource.World ? "  ·  earned" : ""), def?.Text ?? "", def?.Source == TraitSource.World, null, null));
         }
         if (ch.TraitPicks > 0)
             foreach (var t in Offer(ch))
             {
                 var def = Callings.Trait(t)!;
-                var b = Style.Button("", () => G.Gear((j, bt) => j.PickTrait(t, bt)));
-                var inner = Style.V(0, Style.Label(def.Name, Style.UiBold, Style.Small, Style.GoldHi), Style.Label(def.Text, Style.Ui, Style.Caption, Style.Ink, true));
-                inner.Position = new Vector2(12, 6);
-                inner.Size = new Vector2(440, 52);
-                inner.MouseFilter = MouseFilterEnum.Ignore;
-                b.CustomMinimumSize = new Vector2(460, 66);
-                b.AddChild(inner);
-                Nav.Id(b, $"trait:{t}");
-                mid.AddChild(b);
+                traits.AddChild(TraitCard(def.Name, def.Text, false, () => G.Gear((j, bt) => j.PickTrait(t, bt)), $"trait:{t}"));
             }
-        row.AddChild(mid);
+        // The places still to fill, so the page shows where a character is going.
+        int cells = traits.GetChildCount();
+        int next = ch.Level % 2 == 0 ? ch.Level + 2 : ch.Level + 1;
+        do
+        {
+            var box = OrnateBox.Make(OrnateBox.Kind.Well, 14);
+            var inner = Style.V(4, Style.H(6, Glyphs.Icon("lock", 15, Style.InkFaint), Style.Label($"A trait at level {next}", Style.UiBold, Style.Body, Style.InkDim)),
+                Style.Label("One of three, chosen when you reach it. Others come for what you do.", Style.TextItalic, Style.Caption, Style.InkFaint, true));
+            var p = Style.Panel(box, inner);
+            p.CustomMinimumSize = new Vector2(258, 118);
+            p.MouseFilter = MouseFilterEnum.Ignore;
+            traits.AddChild(p);
+            next += 2;
+            cells++;
+        } while (cells % 3 != 0 || cells < 6);
 
-        // The whole standing.
-        var right = Style.V(Style.Gap2);
-        right.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        right.AddChild(Style.H(8, Style.SubLabel("Standing"), Style.Label("hover or focus a line: where it comes from", Style.TextItalic, Style.Caption, Style.InkFaint)));
-        standing = Style.V(2);
+        // The whole standing, grouped by what it is for.
+        var right = Pane(page, new Rect2(1424, 0, 416, 920), null, Style.Gap2);
+        right.AddChild(new Section("Standing", "hover: where from"));
+        standing = Style.V(Style.Gap2);
         right.AddChild(standing);
-        row.AddChild(right);
         ShowStanding(null);
         if (Controls.Instance.UsingPad)
-            body.AddChild(Footer((Act.Confirm, ch.Points > 0 ? "Spend a point" : "Choose"), (Act.TabPrev, "Pack"), (Act.TabNext, "Arts"), (Act.Cancel, "Close")));
+            PageFooter(Footer((Act.Confirm, ch.Points > 0 ? "Spend a point" : "Choose"), (Act.TabPrev, "Pack"), (Act.TabNext, "Arts"), (Act.Cancel, "Close")));
     }
 
     /// <summary>The standing; with an attribute named, what a point in it would change.</summary>
@@ -194,16 +238,20 @@ public partial class SheetScreen : Overlay
         }
         foreach (var (group, lines) in Standing)
         {
-            standing.AddChild(Style.Gap(Style.Gap1));
-            standing.AddChild(Style.Label(group.ToUpperInvariant(), Style.UiHeavy, Style.Badge, Style.Gold));
+            // Each group on a plate of its own.
+            var plate = Style.Panel(Style.Slab(12));
+            plate.MouseFilter = MouseFilterEnum.Ignore;
+            var col = Style.V(4, Style.Label(group.ToUpperInvariant(), Style.UiHeavy, Style.Caption, Style.Gold));
+            plate.AddChild(col);
+            standing.AddChild(plate);
             foreach (var (key, name, fmt) in lines)
             {
                 double now = kit.Get(key);
-                var label = Style.Label(name, Style.Ui, Style.Small, Style.InkDim);
-                label.CustomMinimumSize = new Vector2(190, 0);
-                var line = Style.H(10, label, Style.Label(fmt(now), Style.UiBold, Style.Small, Style.Ink));
+                var label = Style.Label(name, Style.Ui, Style.Body, Style.InkDim);
+                label.CustomMinimumSize = new Vector2(150, 0);
+                var line = Style.H(10, label, Style.Label(fmt(now), Style.UiBold, Style.Body, Style.Ink));
                 if (then != null && Math.Abs(then.Get(key) - now) > 1e-6)
-                    line.AddChild(Style.Label(Change(key, now, then.Get(key)), Style.UiBold, Style.Small, Style.Good));
+                    line.AddChild(Style.Label(Change(key, now, then.Get(key)), Style.UiBold, Style.Body, Style.Good));
                 // Each line says where it comes from, hovered or focused.
                 var holder = Style.Panel(new StyleBoxEmpty(), line);
                 holder.MouseFilter = MouseFilterEnum.Stop;
@@ -211,7 +259,7 @@ public partial class SheetScreen : Overlay
                 holder.MouseEntered += () => Tip(Breakdown(k, name, fmt), holder);
                 holder.MouseExited += () => Tip(null, null);
                 Nav.Mark(holder, $"stat:{key}", null, focus: () => Tip(Breakdown(k, name, fmt), holder), blur: () => Tip(null, null));
-                standing.AddChild(holder);
+                col.AddChild(holder);
             }
         }
     }
