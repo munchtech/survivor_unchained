@@ -31,7 +31,11 @@ public static class UiArt
     /// the content keeps from the control's edge (shown pixels) where the
     /// painted border is narrower than the slice (a corner piece wider than the
     /// border it sits on); unset, three quarters of the margin inside the control.</summary>
-    public sealed record Slice(string File, int L, int T, int R, int B, bool Tile = false, int Out = 0, int Clear = -1);
+    public sealed record Slice(string File, int L, int T, int R, int B, bool Tile = false, int Out = 0, int Clear = -1, int OutY = -1)
+    {
+        /// <summary>How far past the control above and below (Out unless OutY is set).</summary>
+        public int Oy => OutY >= 0 ? OutY : Out;
+    }
 
     /// <summary>Every frame the interface can wear, by the name the code asks for.</summary>
     public static readonly Dictionary<string, Slice> Frames = new()
@@ -85,7 +89,7 @@ public static class UiArt
         ["bar_track_boss"] = new("bars/track_boss.png", 24, 8, 24, 8),
         // Casings over the bars (GameHud.Casing): iron round the groove, reaching past it.
         ["bar_casing"] = new("bars/casing.png", 16, 8, 16, 8, Tile: true, Out: 6),
-        ["bar_casing_boss"] = new("bars/casing_boss.png", 64, 14, 64, 14, Tile: true, Out: 12),
+        ["bar_casing_boss"] = new("bars/casing_boss.png", 64, 24, 64, 24, Tile: true, Out: 64, OutY: 24),
         ["map_frame"] = new("frames/map_frame.png", 20, 20, 20, 20, Tile: true),
     };
 
@@ -125,12 +129,12 @@ public static class UiArt
         {
             Texture = tex, TextureMarginLeft = s.L, TextureMarginTop = s.T, TextureMarginRight = s.R, TextureMarginBottom = s.B,
             AxisStretchHorizontal = axis, AxisStretchVertical = axis,
-            ExpandMarginLeft = s.Out, ExpandMarginTop = s.Out, ExpandMarginRight = s.Out, ExpandMarginBottom = s.Out,
+            ExpandMarginLeft = s.Out, ExpandMarginTop = s.Oy, ExpandMarginRight = s.Out, ExpandMarginBottom = s.Oy,
         };
         // What is inside keeps clear of the painted border: at least three quarters of
         // the slice margin (the border lives in the outer three quarters, by the brief),
         // less the part of the margin that lies outside the control.
-        var slice = new Dictionary<Side, int> { [Side.Left] = s.L - s.Out, [Side.Top] = s.T - s.Out, [Side.Right] = s.R - s.Out, [Side.Bottom] = s.B - s.Out };
+        var slice = new Dictionary<Side, int> { [Side.Left] = s.L - s.Out, [Side.Top] = s.T - s.Oy, [Side.Right] = s.R - s.Out, [Side.Bottom] = s.B - s.Oy };
         foreach (var side in new[] { Side.Left, Side.Top, Side.Right, Side.Bottom })
             b.SetContentMargin(side, Mathf.Max(fallback.GetContentMargin(side), s.Clear >= 0 ? s.Clear : slice[side] * 0.75f));
         return b;

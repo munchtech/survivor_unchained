@@ -206,6 +206,36 @@ def extend_fit(src, dst, size, centre=0.34, ember=0.0):
     P.save_rgba(out[..., :3], np.clip(out[..., 3], 0, 1), dst)
 
 
+def f_bosscasing():
+    """The boss's bar: a channel of black iron with red-gold trim, a horned ram's skull at
+    each end (bars/casing_boss.png, over the bar by GameHud.Casing). The painting's
+    channel interior is mapped onto the bar's 16 px; the skulls lie wholly outside it."""
+    src = raw("boss_track", "boss_track_804_2.png")
+    rgb = P.load(src)
+    m = C.birefnet_mask(src)
+    # The painting: channel interior rows 260..320, skulls from x 83 to 320 and 1040 to 1262.
+    x0, x1, y0, y1 = 80, 1280, 170, 410
+    k = 32 / 60  # interior 60 painting px -> 32 file px (16 shown)
+    crop = np.dstack([rgb[y0:y1, x0:x1], P.silhouette(m[y0:y1, x0:x1])])
+    W, H = int(round((x1 - x0) * k)), 128
+    img = cv2.resize(crop, (W, H), interpolation=cv2.INTER_AREA)
+    img = C.grade(img)
+    # The interior is open: the bar's own fill shows through.
+    top, bot = int(round((260 - y0) * k)), int(round((320 - y0) * k))
+    L = 128
+    a = img[..., 3]
+    yy, xx = np.mgrid[0:H, 0:W]
+    inside = (yy >= top + 1) & (yy < bot - 1) & (xx >= L - 4) & (xx < W - L + 4)
+    a[inside] = 0
+    img[..., 3] = a
+    # The channel between the skulls made to tile: a period from the painting's middle.
+    mid = img[:, L:W - L]
+    img = np.concatenate([img[:, :L], N.periodic_centre(mid) * 0 + mid, img[:, W - L:]], axis=1)
+    img = N.tileable(img, (L, top, L, H - bot), blend=10)
+    img[..., 3] = np.where(inside, 0, img[..., 3])
+    P.save_rgba(img[..., :3], img[..., 3], ui("bars", "casing_boss.png"))
+
+
 def f_logo():
     cut_fit(raw("logo_c", "logo_c_801_2.png"), ui("title", "logo.png"), (1400, 440), fade_x=0.06)
 
