@@ -1830,20 +1830,16 @@ def plate_cups(name, mkey, top, lift=0.003, thick=0.003, trim=None, studs=None, 
     mirror = np.array([-1.0, 1.0, 1.0])
     c, R, ax = BREAST_FORM
     ax = ax + lift
-    # The ellipsoid as a fine grid (angles round its own axes).
-    nu, nv = 220, 160
-    th = np.linspace(0.0, np.pi, nv)
-    ph = np.linspace(0.0, 2 * np.pi, nu, endpoint=False)
-    TT, PP = np.meshgrid(th, ph, indexing="ij")
-    unit = np.stack([np.sin(TT) * np.cos(PP), np.sin(TT) * np.sin(PP), np.cos(TT)], -1)
+    # The ellipsoid as an even mesh of triangles (a geodesic sphere, ~2 mm
+    # apart over it): no poles. (A grid by angles has one at the front of
+    # each breast, where its lines crowd together, were welded into a flat
+    # disc, and showed as a dent at the nipple.)
+    ico = bmesh.new()
+    bmesh.ops.create_icosphere(ico, subdivisions=6, radius=1.0)
+    unit = np.array([v.co[:] for v in ico.verts])
+    tris = np.array([[v.index for v in f.verts] for f in ico.faces])
+    ico.free()
     pos = c + (unit * ax) @ R
-    pos = pos.reshape(-1, 3)
-    idx = np.arange(nv * nu).reshape(nv, nu)
-    idx = np.c_[idx, idx[:, :1]]
-    a0, a1 = idx[:-1, :-1].ravel(), idx[1:, :-1].ravel()
-    b0, b1 = idx[:-1, 1:].ravel(), idx[1:, 1:].ravel()
-    tris = np.vstack([np.c_[a0, a1, b1], np.c_[a0, b1, b0]])
-    tris = tris[(tris[:, 0] != tris[:, 1]) & (tris[:, 1] != tris[:, 2]) & (tris[:, 0] != tris[:, 2])]
     nor = vertex_normals(pos, tris)
     if (nor * (pos - c)).sum(1).mean() < 0:
         tris = tris[:, ::-1]

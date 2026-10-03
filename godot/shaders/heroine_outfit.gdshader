@@ -93,12 +93,14 @@ void fragment() {
 		// darkened in the crevices and where it meets other pieces.
 		// (the scan's colour flattened to its mean: its stains read as dirt
 		// on plate that is kept; the plate's own story is told below)
+		// (one formed piece, not a patchwork: the scan's stains and dents
+		// kept to a whisper, a faint planishing over all of it)
 		vec3 mean_col = textureLod(albedo, UV, 10.0).rgb * tint;
-		col = mix(mean_col, col, 0.25) * (0.96 + 0.08 * macro);
+		col = mean_col * (0.97 + 0.04 * macro) * mix(1.0, texture(albedo, UV).r * tint.r / max(mean_col.r, 0.01), 0.08);
 		vec2 e = vec2(0.003, 0.0);
 		float h0 = fbm(m * 40.0), hx = fbm((m + e.xy) * 40.0), hy = fbm((m + e.yx) * 40.0);
-		vec3 dent = normalize(vec3((h0 - hx) * 1.2, (h0 - hy) * 1.2, 1.0)) * 0.5 + 0.5;
-		nrm = blend_normals(mix(vec3(0.5, 0.5, 1.0), nrm, 0.2), dent, 1.0);
+		vec3 dent = normalize(vec3((h0 - hx) * 0.35, (h0 - hy) * 0.35, 1.0)) * 0.5 + 0.5;
+		nrm = blend_normals(mix(vec3(0.5, 0.5, 1.0), nrm, 0.06), dent, 1.0);
 		float polish = max(near_edge, bulge);
 		// (brushed along one way: fine streaks in its roughness)
 		float brush = noise(vec2(m.x * 1800.0, m.y * 40.0));
