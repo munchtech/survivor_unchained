@@ -95,6 +95,40 @@ def generate(keys=None, denoise=0.5, seed=1000, n=2):
         print("item", k, flush=True)
 
 
+OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "godot", "art", "ui", "icons", "item")
+
+# Which candidate each item uses (place in the batch of seed 1000); the first if not named.
+PICKS: dict = {}
+
+
+def fit(key, j=None, size=256, fill=0.84):
+    """A painted item cut out (BiRefNet for the thing, its light for any glow), centred at
+    `fill` of the square, the house grade, saved small."""
+    import cv2
+    import cut as C
+    import forge as F
+    import icons
+    j = PICKS.get(key, 0) if j is None else j
+    src = os.path.join(krea.OUT, "items", key, f"items_1000_{j}.png")
+    rgba = C.cutout(src, mode="mask+glow")
+    # Keep only the solid thing and light near it: the mask's own region, a little grown.
+    a = rgba[..., 3]
+    x0, y0, x1, y1 = C.bbox(rgba, thr=0.35, pad=6)
+    crop = C.grade(rgba[y0:y1, x0:x1], sat=0.95, shadows=1.18)
+    h, w = crop.shape[:2]
+    side = int(max(w, h) / fill)
+    M = np.float32([[1, 0, (side - w) / 2], [0, 1, (side - h) / 2]])
+    sq = cv2.warpAffine(crop, M, (side, side), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+    out = F.downsample(sq, (size, size)) if side > size else cv2.resize(sq, (size, size), interpolation=cv2.INTER_CUBIC)
+    os.makedirs(OUT, exist_ok=True)
+    icons.save_small(F.to_pil(out), os.path.join(OUT, key + ".png"))
+
+
 if __name__ == "__main__":
     import sys
-    generate(sys.argv[1:] or None)
+    if sys.argv[1:2] == ["--fit"]:
+        for k in sys.argv[2:] or list(ITEMS):
+            fit(k)
+            print("fit", k, flush=True)
+    else:
+        generate(sys.argv[1:] or None)
