@@ -329,7 +329,7 @@ public static class Weapons
         new()
         {
             Id = "iron_palms", Name = "Iron Palms", School = School.Physical, Behavior = WeaponBehavior.Palm, Tags = [Tag.Melee, Tag.Physical, Tag.Area],
-            Base = new() { Cooldown = 0.95, Damage = 15, Projectiles = 3, Reach = 2.95, Arc = 1.25, Knockback = 0.35 },
+            Base = new() { Cooldown = 0.95, Damage = 17, Projectiles = 3, Reach = 2.95, Arc = 1.25, Knockback = 0.35 },
             Art = "palm", BossDamage = 1.15, Findable = true,
             Description = "A flurry of open-handed strikes at whatever is closest, each a short cone that hits everything in it.",
             Evolutions =
@@ -343,7 +343,7 @@ public static class Weapons
         new()
         {
             Id = "spirit_herd", Name = "Spirit Herd", School = School.Nature, Behavior = WeaponBehavior.Herd, Tags = [Tag.Summon, Tag.Nature, Tag.Area],
-            Base = new() { Cooldown = 2.6, Damage = 21, Speed = 8.25, Projectiles = 2, Pierce = 99, Range = 15.5, Life = 1.8, Radius = 0.4, Knockback = 0.55 },
+            Base = new() { Cooldown = 2.6, Damage = 24, Speed = 8.25, Projectiles = 2, Pierce = 99, Range = 15.5, Life = 1.8, Radius = 0.4, Knockback = 0.55 },
             Art = "herd", BossDamage = 1.8, Findable = true,
             Description = "Spirit beasts stampede from behind you toward the nearest foe, trampling everything in the way.",
             Evolutions =

@@ -102,7 +102,7 @@ public static class Enemies
             Note = "Buried with his shield, and he has not let go of it. Arrows and bolts glance off the face of it; take him from the side." },
         new() { Id = "risen_archer", Name = "Risen Bowman", Family = Family.Undead, Faction = Faction.Dead, Visual = "skeleton_rogue",
             Health = 22, Speed = 2.5, Damage = 7, Radius = 0.45, Xp = 4, Resists = Undead, Behavior = Behavior.Ranged,
-            Ranged = new() { Range = 9, Cooldown = 2.8, Speed = 11, School = School.Physical, Art = "bolt_bone" },
+            Ranged = new() { Range = 9, Cooldown = 3.3, Speed = 11, School = School.Physical, Art = "bolt_bone" },
             Note = "Still keeps the ford the way it was taught: from behind the others, at a distance. Close it." },
         new() { Id = "grave_caller", Name = "Grave-Caller", Family = Family.Undead, Faction = Faction.Dead, Visual = "skeleton_mage",
             Health = 34, Speed = 2.2, Damage = 9, Radius = 0.45, Xp = 7, Resists = Undead, Behavior = Behavior.Caster,
@@ -121,7 +121,7 @@ public static class Enemies
 
         /* ------------------------------------------------------------ lamplings -- */
         new() { Id = "lampling", Name = "Lampling Tunneler", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "lampling",
-            Health = 16, Speed = 3.6, Damage = 7, Radius = 0.38, Xp = 2, Behavior = Behavior.Tunneler, Resists = new() { [School.Fire] = 0.3, [School.Frost] = -0.3 },
+            Health = 20, Speed = 3.6, Damage = 7, Radius = 0.38, Xp = 2, Behavior = Behavior.Tunneler, Resists = new() { [School.Fire] = 0.3, [School.Frost] = -0.3 },
             Note = "They dig toward light the way moths fly at it. A lampling will chew through a cellar wall to sit beside your candle, and then through you to keep it." },
         new() { Id = "grimtunnel", Name = "Grimtunnel", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "grimtunnel", Scale = 1.9,
             Health = 400, Speed = 5, Damage = 10, Radius = 0.7, Xp = 0, Behavior = Behavior.Stationary, Resists = new() { [School.Fire] = 0.5 },
