@@ -6,7 +6,7 @@ The **voice design** paragraph of each is written for a model that builds a voic
 
 | Voice | Who | Takes | Shares with |
 |---|---|---|---|
-| `narrator` | The narrator | 113 | Nobody: the narrator is heard more than anyone, and must be his own voice. |
+| `narrator` | The narrator | 116 | Nobody: the narrator is heard more than anyone, and must be his own voice. |
 | `rook` | Mother Rook | 42 | Could lend her voice, lighter and quicker, to a townswoman variant if the pool needs a second woman. |
 | `holloway` | Captain Holloway | 59 | His voice, younger and less worn, can stand in for the watchman pool if needed. |
 | `maeca` | Maeca Barefoot | 36 | Nobody. |
@@ -18,12 +18,12 @@ The **voice design** paragraph of each is written for a model that builds a voic
 | `pell` | Pell Varrow | 30 | Lord-Exchequer Sallow (Act 2) is a softer, older cousin of this casting; keep them distinct. |
 | `rav` | Rav Cutwell | 35 | Redcowl is his brother: let them share a grain (both Scots) without sharing a voice. |
 | `chid` | Chid | 35 | Nobody. |
-| `vonnra` | Vonnra Ash-of-Morrow | 73 | Nobody. |
+| `vonnra` | Vonnra Ash-of-Morrow | 75 | Nobody. |
 | `keegan` | Dame Keegan Orme | 28 | Nobody. |
 | `sella` | Sella | 40 | Nobody. |
 | `redcowl` | Redcowl | 32 | Brother to Rav: both Scots, different men. |
 | `wayfinder` | Ysolde Marrow, the Wayfinder | 25 | Edric Marrow (Act 2) is her brother: the same accent, quieter. |
-| `snib` | Snib | 11 | The babbling lampling can take his voice, whispered and slower. Grimtunnel is his family: build him from Snib's design, bigger and lower. |
+| `snib` | Snib | 14 | The babbling lampling can take his voice, whispered and slower. Grimtunnel is his family: build him from Snib's design, bigger and lower. |
 | `grimtunnel` | Grimtunnel | 2 | Built from Snib's voice, pitched down; two lines in Act 1. |
 | `lampling` | The babbling lampling | 2 | Snib's voice, whispered. |
 | `ford_warden` | The Ford-Warden | 2 | Two lines: any deep male voice, processed. Could be the watchman's voice pitched down an octave. |

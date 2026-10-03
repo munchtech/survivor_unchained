@@ -2880,7 +2880,7 @@
   "notes": "No warmth in 'That is honest'. Let the full stop sit before 'It is not the same thing as good'; she knows that difference from the inside.",
   "hash": "9b616debf053"
  },
- "vonnra.f_ember.3": {
+ "vonnra.f_ember.4": {
   "emotion": "grim acknowledgement",
   "intensity": 3,
   "pace": "slow, flat",
@@ -2888,7 +2888,7 @@
   "notes": "No 'I see' here: everyone saw it. A touch of irony in 'Everyone did'.",
   "hash": "08a48d7dc15d"
  },
- "vonnra.f_ember.4": {
+ "vonnra.f_ember.6": {
   "emotion": "dark certainty",
   "intensity": 3,
   "pace": "slow, deliberate",
@@ -2896,7 +2896,7 @@
   "notes": "'Someone always does' is a law she lives by. Neither threat nor regret; a ledger fact.",
   "hash": "0b7e1d61ef25"
  },
- "vonnra.f_ember.5": {
+ "vonnra.f_ember.7": {
   "emotion": "oblique warning",
   "intensity": 3,
   "pace": "slow, a pause on 'two letters'",
@@ -3842,7 +3842,7 @@
   "notes": "No laugh. Low and deliberate; 'a smell of ink' with contempt.",
   "hash": "4bcc9812eca9"
  },
- "snib.first": {
+ "snib.first.2": {
   "emotion": "panicked bluster",
   "intensity": 5,
   "pace": "rapid, shrill, tripping",
@@ -3850,7 +3850,7 @@
   "notes": "Big shout on 'OI!', a lamp-ring on the stressed words. Then the self-introduction is proud and small. 'It does, actually' is the contradiction gag: a sudden honest deflation before 'But quick'.",
   "hash": "6408eb1ef19a"
  },
- "snib.hub": {
+ "snib.hub.3": {
   "emotion": "grudging recognition",
   "intensity": 2,
   "pace": "quick, flat",
@@ -6314,7 +6314,7 @@
   "notes": "Plain description; the prints and drag-marks said as clues.",
   "hash": "84f6c2c74004"
  },
- "verge.say.15": {
+ "verge.say.17": {
   "emotion": "urgent",
   "intensity": 4,
   "pace": "fast, clipped",
@@ -6322,7 +6322,7 @@
   "notes": "Quick and tight but not shouted; 'Run.' one hard word.",
   "hash": "769a1c759f88"
  },
- "verge.say.16.1": {
+ "verge.say.18.1": {
   "emotion": "awe, unease",
   "intensity": 3,
   "pace": "slow",
@@ -6330,7 +6330,7 @@
   "notes": "Measured; the eye image soft, 'The door is listening.' low and close.",
   "hash": "384c340b6b6d"
  },
- "verge.say.16.2": {
+ "verge.say.18.2": {
   "emotion": "uneasy",
   "intensity": 2,
   "pace": "measured",
@@ -6338,7 +6338,7 @@
   "notes": "Plain; slight weight on 'not daylight'.",
   "hash": "9757e1dab88e"
  },
- "verge.say.17.1": {
+ "verge.say.19.1": {
   "emotion": "grave",
   "intensity": 3,
   "pace": "slow",
@@ -6346,7 +6346,7 @@
   "notes": "Read the inscription in a slightly more formal, carved register; the empty notches plain.",
   "hash": "66cdbe61b828"
  },
- "verge.say.17.2": {
+ "verge.say.19.2": {
   "emotion": "unease",
   "intensity": 2,
   "pace": "measured",
@@ -6354,7 +6354,7 @@
   "notes": "Plain; 'hums against your teeth' close and quiet.",
   "hash": "99be1ad2c25a"
  },
- "verge.say.18": {
+ "verge.say.20": {
   "emotion": "plain discovery",
   "intensity": 2,
   "pace": "even",
@@ -6362,7 +6362,7 @@
   "notes": "Simple and still; no flourish.",
   "hash": "82b1e8294244"
  },
- "verge.say.19": {
+ "verge.say.21": {
   "emotion": "eerie",
   "intensity": 3,
   "pace": "slow, then a dry whisper",
@@ -6370,7 +6370,7 @@
   "notes": "Narration plain and slow; the skull's words thin, dry, close, almost no voice.",
   "hash": "18b3ef16cbee"
  },
- "verge.say.20": {
+ "verge.say.22": {
   "emotion": "dread, quiet",
   "intensity": 3,
   "pace": "slow, careful",
@@ -6378,7 +6378,7 @@
   "notes": "Plain; small beat on 'None coming away.' The token said as a clue, evenly.",
   "hash": "6e1fab16785e"
  },
- "verge.say.21": {
+ "verge.say.23": {
   "emotion": "hushed reverence",
   "intensity": 2,
   "pace": "slow",
@@ -6410,7 +6410,7 @@
   "notes": "Narration short; Jory's words given as quoted, quieter and broken off at each dash, not acted out.",
   "hash": "185a7c3f55e7"
  },
- "verge.say.23": {
+ "verge.say.25": {
   "emotion": "grim satisfaction",
   "intensity": 2,
   "pace": "measured, slowing",
@@ -6418,7 +6418,7 @@
   "notes": "Plain; 'like a bone' unemphasised. The last two stops get slower.",
   "hash": "f1bc8c3f22ed"
  },
- "verge.say.24": {
+ "verge.say.26": {
   "emotion": "horror, plain",
   "intensity": 4,
   "pace": "slow",
@@ -6426,7 +6426,7 @@
   "notes": "No relish, no pity in the voice; image after image, the last sentence quietest.",
   "hash": "a4755c96100b"
  },
- "verge.say.25": {
+ "verge.say.27": {
   "emotion": "horror",
   "intensity": 4,
   "pace": "slow, then stopping",
@@ -6434,7 +6434,7 @@
   "notes": "Said plainly and low; do not perform the screaming. A pause before 'and then there is only the fire.'",
   "hash": "26621b48a47e"
  },
- "verge.say.26.1": {
+ "verge.say.28.1": {
   "emotion": "wonder",
   "intensity": 2,
   "pace": "easy",
@@ -6442,7 +6442,7 @@
   "notes": "Quick first clause; softer for the glade.",
   "hash": "0622cbb5851c"
  },
- "verge.say.26.2": {
+ "verge.say.28.2": {
   "emotion": "effort, wonder",
   "intensity": 2,
   "pace": "even",
@@ -6450,7 +6450,7 @@
   "notes": "Workmanlike first clause; softer for the glade.",
   "hash": "005625eee2b8"
  },
- "verge.say.27": {
+ "verge.say.29": {
   "emotion": "quiet companionship",
   "intensity": 2,
   "pace": "even",
@@ -6458,7 +6458,7 @@
   "notes": "Plain and calm; let it feel like company, not triumph.",
   "hash": "cc4a3505429e"
  },
- "verge.say.28": {
+ "verge.say.30": {
   "emotion": "dry consolation",
   "intensity": 2,
   "pace": "slow",
@@ -6562,7 +6562,7 @@
   "notes": "An epithet, as in an old tale; read just the 'say' phrase, low and plain.",
   "hash": "8f9d8c294d41"
  },
- "chapter.12": {
+ "chapter.13": {
   "emotion": "dry unease",
   "intensity": 2,
   "pace": "measured",
@@ -6570,7 +6570,7 @@
   "notes": "An epithet with a sting; plain, slight weight on 'ledger'.",
   "hash": "5062f2f40b63"
  },
- "chapter.13": {
+ "chapter.14": {
   "emotion": "cool judgement",
   "intensity": 2,
   "pace": "measured",
@@ -6578,7 +6578,7 @@
   "notes": "Plain; let 'sold' carry it, no scorn added.",
   "hash": "1178bf0b01fe"
  },
- "chapter.14": {
+ "chapter.15": {
   "emotion": "cool judgement",
   "intensity": 2,
   "pace": "measured",
@@ -6586,7 +6586,7 @@
   "notes": "Plain and level, as a ledger would put it.",
   "hash": "d96683713209"
  },
- "chapter.15": {
+ "chapter.16": {
   "emotion": "dry",
   "intensity": 2,
   "pace": "measured",
@@ -6594,7 +6594,7 @@
   "notes": "Plain, faintly dry on 'kept'.",
   "hash": "84ee56edebf0"
  },
- "chapter.16": {
+ "chapter.17": {
   "emotion": "quiet warmth",
   "intensity": 2,
   "pace": "unhurried",
@@ -6602,7 +6602,7 @@
   "notes": "The kindest of the epithets; warm, still plain.",
   "hash": "771e560b2ad5"
  },
- "chapter.17": {
+ "chapter.18": {
   "emotion": "quiet respect",
   "intensity": 2,
   "pace": "measured",
@@ -6610,7 +6610,7 @@
   "notes": "Plain and gentle.",
   "hash": "0e51a97576cd"
  },
- "chapter.18": {
+ "chapter.19": {
   "emotion": "quiet respect",
   "intensity": 2,
   "pace": "measured",
@@ -6618,7 +6618,7 @@
   "notes": "Plain; a little weight on 'cages'.",
   "hash": "f87b81bb8617"
  },
- "chapter.19": {
+ "chapter.20": {
   "emotion": "cold",
   "intensity": 2,
   "pace": "short",
@@ -6626,7 +6626,7 @@
   "notes": "Flat; the name a town would mutter.",
   "hash": "99be4ee74ff2"
  },
- "chapter.20": {
+ "chapter.21": {
   "emotion": "low wonder",
   "intensity": 3,
   "pace": "slow",
@@ -6634,7 +6634,7 @@
   "notes": "Low and close, a winter's-tale cadence; the truest of the names.",
   "hash": "fa2af8a113bb"
  },
- "chapter.21": {
+ "chapter.22": {
   "emotion": "plain, wistful",
   "intensity": 2,
   "pace": "measured",
@@ -6713,5 +6713,69 @@
   "wants": "to state who won",
   "notes": "Plain, a little shrug in it.",
   "hash": "3e21e5886b36"
+ },
+ "vonnra.f_ember.3": {
+  "emotion": "cool approval",
+  "intensity": 2,
+  "pace": "very slow, a held beat before 'approve'",
+  "wants": "to let the survivor feel watched, and graded",
+  "notes": "The only praise in her fortune, and it is for waste: something nobody will ever buy. 'Approve' set down like a coin on the table. No warmth; no contractions.",
+  "hash": "a1486fa09c6e"
+ },
+ "vonnra.f_ember.5": {
+  "emotion": "quiet knowing",
+  "intensity": 2,
+  "pace": "slow, unhurried",
+  "wants": "to show she knows who bought the crates without saying it",
+  "notes": "Read the cargo's road like a ledger entry. 'I think you know who that was' is not a question: leave it lying there.",
+  "hash": "6f3f4d534105"
+ },
+ "snib.first.1": {
+  "emotion": "panic dressed as authority",
+  "intensity": 4,
+  "pace": "fast, bursts",
+  "wants": "to stop you without having to fight you",
+  "notes": "Starts at a shout and loses it by 'Snib is the foreman'. 'Snib does not know who' is a lie told to the culprit's face; 'Snib knows exactly who' blurts out a beat later. 'Quick.' is pleading.",
+  "hash": "ec0a3f2a34fb"
+ },
+ "snib.hub.1": {
+  "emotion": "aggrieved",
+  "intensity": 3,
+  "pace": "quick, sulky",
+  "wants": "to make you feel guilty about the pump",
+  "notes": "The broken pump again, with a long-suffering lean on BROKEN; the contradiction lands as before. 'Foreman is still foreman' is his last scrap of dignity.",
+  "hash": "caae0b53a6f2"
+ },
+ "snib.hub.2": {
+  "emotion": "nervous pride",
+  "intensity": 3,
+  "pace": "quick, then a stammer",
+  "wants": "to sound in charge of a change he fears",
+  "notes": "'Boss likes deeper' is brave; 'Boss has not SAID he likes it' is the panic underneath. Settle back into 'Foreman is still foreman' as reassurance to himself.",
+  "hash": "41046b2f1fb8"
+ },
+ "verge.say.15": {
+  "emotion": "wary, plain",
+  "intensity": 2,
+  "pace": "slow, careful",
+  "wants": "to make the player feel one charge's weight in the hand",
+  "notes": "Low and close, as if not to wake them. A small pause before 'the way they have waited for everyone': the crates are patient, and that is the threat.",
+  "hash": "48cdd82e6c0b"
+ },
+ "verge.say.16": {
+  "emotion": "held breath",
+  "intensity": 2,
+  "pace": "slow, a beat per crate",
+  "wants": "to let the relief arrive in the silence",
+  "notes": "'One at a time' is a held breath; 'not go off' lands flat and quiet, almost dry. No triumph.",
+  "hash": "4acad56ca838"
+ },
+ "chapter.12": {
+  "emotion": "plain, faintly admiring",
+  "intensity": 2,
+  "pace": "unhurried",
+  "wants": "to name the survivor by the one brave thing",
+  "notes": "An epithet on the chapter's last page; the name before it is not recorded, so start as if it has just been said.",
+  "hash": "e74b0dda28e3"
  }
 }

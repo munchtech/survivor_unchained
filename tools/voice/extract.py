@@ -660,30 +660,87 @@ def chapter(lines):
 # ---------------------------------------------------------- directions --
 
 def apply_directions(lines, directions):
-    """Hand direction over the automatic one; report direction written for other words."""
+    """Hand direction over the automatic one; report direction written for other words.
+
+    Line IDs from a place in a list (a zone's n-th caption) shift when a line
+    is put in before them: a direction whose words have moved follows its
+    words, by their hash, to wherever they are now."""
     stale = []
     by_id = {l["id"]: l for l in lines}
-    used = set()
+    by_hash = defaultdict(list)
     for l in lines:
+        by_hash[l["hash"]].append(l)
+    used = set()
+
+    def keys(l):
         node_key = ".".join(l["id"].split(".")[:2]) if l["kind"] in ("dialogue", "notice") else None
         # The two takes of a passer-by's line share one direction.
         take_key = re.sub(r"\.[mf]$", "", l["id"]) if l["id"].endswith((".m", ".f")) else None
+        return node_key, take_key
+
+    moved = {}
+    for key, d in directions.items():
+        if key.startswith("_") or not isinstance(d, dict) or not d.get("hash"):
+            continue
+        here = [l for l in lines if l["id"] == key or keys(l)[1] == key]
+        if here and all(l["hash"] == d["hash"] for l in here):
+            continue
+        there = by_hash.get(d["hash"], [])
+        # The same words in several voices: the one the old ID's line has, if any.
+        if here and len({l["voice"] for l in there}) > 1:
+            there = [l for l in there if l["voice"] == here[0]["voice"]] or there
+        if there:
+            for l in there:
+                moved[l["id"]] = (key, d)
+            used.add(key)
+
+    for l in lines:
+        node_key, take_key = keys(l)
+        found = []
         for key in (node_key, take_key, l["id"]):
             d = directions.get(key) if key else None
             if not d:
                 continue
-            used.add(key)
             if d.get("hash") and key in (l["id"], take_key) and d["hash"] != l["hash"]:
+                if l["id"] in moved or any(m[0] == key for m in moved.values()):
+                    continue  # the words went elsewhere, and their direction with them
                 stale.append(l["id"])
+            found.append((key, d))
+        if l["id"] in moved:
+            found.append(moved[l["id"]])
+        for key, d in found:
+            used.add(key)
             dd = l["direction"]
             for k in ("emotion", "intensity", "pace", "wants", "notes"):
                 if d.get(k) not in (None, ""):
                     dd[k] = d[k]
             dd["source"] = "hand"
-            if d.get("say") and key in (l["id"], take_key):
+            if d.get("say") and d.get("hash", l["hash"]) == l["hash"]:
                 l["say"] = d["say"]
     unknown = [k for k in directions if k not in used and k not in by_id and not k.startswith("_")]
-    return stale, unknown
+    return stale, unknown, {new: old for new, (old, _) in moved.items()}
+
+
+def rekey(directions, moved, path):
+    """Directions that followed their words are filed under the words' new IDs
+    (all at once, since one line's new ID is often another's old one)."""
+    renames = {old: new for new, old in moved.items() if not new.endswith((".m", ".f")) and old != new}
+    leaving = set(renames)
+    renames = {old: new for old, new in renames.items() if new not in directions or new in leaving}
+    if not renames:
+        return
+    out = OrderedDict()
+    for k, v in directions.items():
+        if k in renames:
+            out[renames[k]] = v
+        elif k not in out and k not in set(renames.values()):
+            out[k] = v
+        elif k not in leaving:
+            stale = k  # displaced by a direction that followed its words here
+            out["_displaced." + stale] = v
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps(out, indent=1, ensure_ascii=False) + "\n")
+    print(f"  {len(renames)} directions filed under their lines' new IDs")
 
 
 # ------------------------------------------------------------- writing --
@@ -901,7 +958,7 @@ def main():
     folk(lines)
     zones(lines)
     chapter(lines)
-    stale_dirs, unknown_dirs = apply_directions(lines.lines, directions)
+    stale_dirs, unknown_dirs, moved = apply_directions(lines.lines, directions)
     manifest = OrderedDict([("generated_by", "tools/voice/extract.py"),
                             ("about", "Every spoken line: its ID, who says it, the words, the hash of the words, where its take goes, and how to say it. "
                                       "Regenerate with python3 tools/voice/extract.py; voice with tools/voice/tts_batch.py."),
@@ -930,6 +987,7 @@ def main():
     if check:
         return
     write_json(MANIFEST, manifest)
+    rekey(directions, moved, os.path.join(HERE, "directions.json"))
     counts = defaultdict(int)
     for l in lines.lines:
         if not l.get("skip"):

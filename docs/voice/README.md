@@ -200,10 +200,10 @@ Takes to record, per voice (a passer-by's line counts once per sex; optional lin
 
 | Voice | Who | dialogue | notice | bark | folk | zone | chapter | Takes |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| `narrator` | The narrator | 12 | 18 |  |  | 53 | 30 | **113** |
+| `narrator` | The narrator | 12 | 18 |  |  | 55 | 31 | **116** |
 | `townswoman` | A townswoman |  |  | 13 | 90 |  |  | **103** |
 | `townsman` | A townsman |  |  | 13 | 87 |  |  | **100** |
-| `vonnra` | Vonnra Ash-of-Morrow | 66 |  | 7 |  |  |  | **73** |
+| `vonnra` | Vonnra Ash-of-Morrow | 68 |  | 7 |  |  |  | **75** |
 | `holloway` | Captain Holloway | 51 |  | 8 |  |  |  | **59** |
 | `harlan` | Harlan Coyle | 44 |  | 7 |  |  |  | **51** |
 | `rook` | Mother Rook | 34 |  | 8 |  |  |  | **42** |
@@ -218,9 +218,9 @@ Takes to record, per voice (a passer-by's line counts once per sex; optional lin
 | `keegan` | Dame Keegan Orme | 21 |  | 7 |  |  |  | **28** |
 | `wayfinder` | Ysolde Marrow, the Wayfinder | 19 |  | 6 |  |  |  | **25** |
 | `tam` | Tam | 13 |  | 3 |  |  |  | **16** |
+| `snib` | Snib | 13 |  | 1 |  |  |  | **14** |
 | `watchman` | A watchman |  |  | 3 | 9 |  |  | **12** |
 | `watchwoman` | A watchwoman |  |  | 3 | 9 |  |  | **12** |
-| `snib` | Snib | 10 |  | 1 |  |  |  | **11** |
 | `jory` | Jory Coyle | 8 |  | 3 |  |  |  | **11** |
 | `child` | A child |  |  |  | 7 |  |  | **7** |
 | `lampling` | The babbling lampling | 2 |  |  |  |  |  | **2** |
@@ -228,9 +228,9 @@ Takes to record, per voice (a passer-by's line counts once per sex; optional lin
 | `grimtunnel` | Grimtunnel |  |  | 2 |  |  |  | **2** |
 | `dead_watchman` | The dead Watchman |  |  |  |  | 1 |  | **1** |
 | `bones` | The bones |  |  |  |  | 1 |  | **1** |
-| | **All** | **498** | **18** | **144** | **202** | **55** | **30** | **947** |
+| | **All** | **503** | **18** | **144** | **202** | **57** | **31** | **955** |
 
-3 lines are writer's slots and are not recorded; 30 are optional.
+3 lines are writer's slots and are not recorded; 31 are optional.
 
 ## Flagged lines
 
@@ -261,15 +261,16 @@ Lines whose take cannot say exactly what the subtitle says. The proposed take is
 | `wayfinder.hub.2` | token:name | Maps. Places the road forgets. Pick one. |
 | `wayfinder.margin_name` | stage-direction, token:name | There. Now you're in the margins for good. |
 | `chapter.11` | token:name | Who runs with wolves |
-| `chapter.12` | token:name | In Pell Varrow's ledger |
-| `chapter.13` | token:name | Who sold the cure |
-| `chapter.14` | token:name | Who sold the Coyle strongbox |
-| `chapter.15` | token:name | Who kept the Coyle strongbox |
-| `chapter.16` | token:name | Who cleared the water and opened the cages |
-| `chapter.17` | token:name | Who cleared the water |
-| `chapter.18` | token:name | Who opened the cages |
-| `chapter.19` | token:name | The wolf-killer |
-| `chapter.20` | token:name | Who would not stay dead |
-| `chapter.21` | token:name | Late of the Low Ford road |
+| `chapter.12` | token:name | Who said it to Vonnra's face |
+| `chapter.13` | token:name | In Pell Varrow's ledger |
+| `chapter.14` | token:name | Who sold the cure |
+| `chapter.15` | token:name | Who sold the Coyle strongbox |
+| `chapter.16` | token:name | Who kept the Coyle strongbox |
+| `chapter.17` | token:name | Who cleared the water and opened the cages |
+| `chapter.18` | token:name | Who cleared the water |
+| `chapter.19` | token:name | Who opened the cages |
+| `chapter.20` | token:name | The wolf-killer |
+| `chapter.21` | token:name | Who would not stay dead |
+| `chapter.22` | token:name | Late of the Low Ford road |
 
 <!-- generated:end -->

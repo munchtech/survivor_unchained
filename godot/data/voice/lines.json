@@ -3712,7 +3712,7 @@
       "node": "arrest",
       "said": "You sold the Coyle cargo to a fence. Everyone in the Waystation knows it, and so do I. A hundred gold to the Watch and we'll say no more about it. Or you can leave my town.",
       "chose": "You should be asking who paid the Kerchiefs.",
-      "choice_when": "carries pell_ledger"
+      "choice_when": "carries pell_ledger and (quest caravan has entry wreck or quest caravan has entry ruts or quest caravan has entry roost_found or quest caravan has entry redcowl_met or quest caravan has entry redcowl_wagons or quest caravan has entry roost_raided or survivor knows hint.roost) and (quest caravan has entry harlan_plea or quest caravan has entry guard_says or quest caravan has entry clerk_turned or quest caravan has entry wreck or quest caravan has entry redcowl_wagons or quest caravan has entry ledger_read)"
      }
     ],
     "answers": [
@@ -3775,7 +3775,7 @@
       "node": "arrest",
       "said": "You sold the Coyle cargo to a fence. Everyone in the Waystation knows it, and so do I. A hundred gold to the Watch and we'll say no more about it. Or you can leave my town.",
       "chose": "You should be asking who paid the Kerchiefs.",
-      "choice_when": "carries pell_ledger"
+      "choice_when": "carries pell_ledger and (quest caravan has entry wreck or quest caravan has entry ruts or quest caravan has entry roost_found or quest caravan has entry redcowl_met or quest caravan has entry redcowl_wagons or quest caravan has entry roost_raided or survivor knows hint.roost) and (quest caravan has entry harlan_plea or quest caravan has entry guard_says or quest caravan has entry clerk_turned or quest caravan has entry wreck or quest caravan has entry redcowl_wagons or quest caravan has entry ledger_read)"
      }
     ],
     "answers": [
@@ -9532,12 +9532,14 @@
      {
       "node": "first",
       "said": "You. Jory says it was you at the cage with the bar in your hands, and he's told it four times since breakfast, and it gets better every time. (He takes your hand in both of his.) Harlan Coyle, of the…",
-      "chose": "What happened to the caravan?"
+      "chose": "What happened to the caravan?",
+      "choice_when": "not [fact caravan.survivors is set]"
      },
      {
       "node": "hub",
       "said": "Jory's round the back, pretending to count crates. Pretending! What can I do for you, friend?",
-      "chose": "What happened to the caravan?"
+      "chose": "What happened to the caravan?",
+      "choice_when": "not [fact caravan.survivors is set]"
      }
     ],
     "answers": [
@@ -9570,17 +9572,20 @@
      {
       "node": "first",
       "said": "You. Jory says it was you at the cage with the bar in your hands, and he's told it four times since breakfast, and it gets better every time. (He takes your hand in both of his.) Harlan Coyle, of the…",
-      "chose": "Which road were they on?"
+      "chose": "Which road were they on?",
+      "choice_when": "not [fact caravan.survivors is set]"
      },
      {
       "node": "hub",
       "said": "Jory's round the back, pretending to count crates. Pretending! What can I do for you, friend?",
-      "chose": "Which road were they on?"
+      "chose": "Which road were they on?",
+      "choice_when": "not [fact caravan.survivors is set]"
      },
      {
       "node": "what",
       "said": "The wolves, that's what. Three caravans this month. A hundred gold to whoever brings Jory home, and another hundred for my goods. Price the salt however you like. The boy, I'll pay what you ask.",
-      "chose": "Which road were they on?"
+      "chose": "Which road were they on?",
+      "choice_when": "not [fact caravan.survivors is set]"
      }
     ],
     "answers": [
@@ -9615,17 +9620,20 @@
      {
       "node": "first",
       "said": "You. Jory says it was you at the cage with the bar in your hands, and he's told it four times since breakfast, and it gets better every time. (He takes your hand in both of his.) Harlan Coyle, of the…",
-      "chose": "Which road were they on?"
+      "chose": "Which road were they on?",
+      "choice_when": "not [fact caravan.survivors is set]"
      },
      {
       "node": "hub",
       "said": "Jory's round the back, pretending to count crates. Pretending! What can I do for you, friend?",
-      "chose": "Which road were they on?"
+      "chose": "Which road were they on?",
+      "choice_when": "not [fact caravan.survivors is set]"
      },
      {
       "node": "what",
       "said": "The wolves, that's what. Three caravans this month. A hundred gold to whoever brings Jory home, and another hundred for my goods. Price the salt however you like. The boy, I'll pay what you ask.",
-      "chose": "Which road were they on?"
+      "chose": "Which road were they on?",
+      "choice_when": "not [fact caravan.survivors is set]"
      }
     ],
     "answers": [
@@ -9660,17 +9668,20 @@
      {
       "node": "first",
       "said": "You. Jory says it was you at the cage with the bar in your hands, and he's told it four times since breakfast, and it gets better every time. (He takes your hand in both of his.) Harlan Coyle, of the…",
-      "chose": "Which road were they on?"
+      "chose": "Which road were they on?",
+      "choice_when": "not [fact caravan.survivors is set]"
      },
      {
       "node": "hub",
       "said": "Jory's round the back, pretending to count crates. Pretending! What can I do for you, friend?",
-      "chose": "Which road were they on?"
+      "chose": "Which road were they on?",
+      "choice_when": "not [fact caravan.survivors is set]"
      },
      {
       "node": "what",
       "said": "The wolves, that's what. Three caravans this month. A hundred gold to whoever brings Jory home, and another hundred for my goods. Price the salt however you like. The boy, I'll pay what you ask.",
-      "chose": "Which road were they on?"
+      "chose": "Which road were they on?",
+      "choice_when": "not [fact caravan.survivors is set]"
      }
     ],
     "answers": [
@@ -9705,17 +9716,20 @@
      {
       "node": "first",
       "said": "You. Jory says it was you at the cage with the bar in your hands, and he's told it four times since breakfast, and it gets better every time. (He takes your hand in both of his.) Harlan Coyle, of the…",
-      "chose": "Which road were they on?"
+      "chose": "Which road were they on?",
+      "choice_when": "not [fact caravan.survivors is set]"
      },
      {
       "node": "hub",
       "said": "Jory's round the back, pretending to count crates. Pretending! What can I do for you, friend?",
-      "chose": "Which road were they on?"
+      "chose": "Which road were they on?",
+      "choice_when": "not [fact caravan.survivors is set]"
      },
      {
       "node": "what",
       "said": "The wolves, that's what. Three caravans this month. A hundred gold to whoever brings Jory home, and another hundred for my goods. Price the salt however you like. The boy, I'll pay what you ask.",
-      "chose": "Which road were they on?"
+      "chose": "Which road were they on?",
+      "choice_when": "not [fact caravan.survivors is set]"
      }
     ],
     "answers": [
@@ -14616,43 +14630,43 @@
       "node": "first",
       "said": "A reader. You have the look. The toll is the toll: five gold to pass east. I am Vonnra. I see a great deal and say very little. You, of all people, will find that frustrating.",
       "chose": "Read my fortune again.",
-      "choice_when": "fact chapter.ready = true"
+      "choice_when": "fact chapter.ready = true and not [fact chapter.done = true]"
      },
      {
       "node": "hub",
       "said": "{name}. Your chapter is written. The next one is not. ...Payment, always.",
       "chose": "Read my fortune again.",
-      "choice_when": "fact chapter.ready = true"
+      "choice_when": "fact chapter.ready = true and not [fact chapter.done = true]"
      },
      {
       "node": "paid",
       "said": "The east gate is yours. Try to come back through it.",
       "chose": "Read my fortune again.",
-      "choice_when": "fact chapter.ready = true"
+      "choice_when": "fact chapter.ready = true and not [fact chapter.done = true]"
      },
      {
       "node": "ledger_read",
       "said": "There. The Coyle caravan did not pay my toll. It never came through my gate. Whatever happened to it happened before it reached me.",
       "chose": "Read my fortune again.",
-      "choice_when": "fact chapter.ready = true"
+      "choice_when": "fact chapter.ready = true and not [fact chapter.done = true]"
      },
      {
       "node": "vault",
       "said": "Not for any price. That is the only thing I will ever say to you without charging for it.",
       "chose": "Read my fortune again.",
-      "choice_when": "fact chapter.ready = true"
+      "choice_when": "fact chapter.ready = true and not [fact chapter.done = true]"
      },
      {
       "node": "arcana",
       "said": "You do read. Then you know what \"Legio Septima\" means over a door, and you know better than to ask me what is behind it. Ask me something cheaper.",
       "chose": "Read my fortune again.",
-      "choice_when": "fact chapter.ready = true"
+      "choice_when": "fact chapter.ready = true and not [fact chapter.done = true]"
      },
      {
       "node": "ford",
       "said": "A light going out at the crossing. And then, a little after, another one coming on. It is not often the second thing happens. ...That would be five gold. This once, no charge.",
       "chose": "Read my fortune again.",
-      "choice_when": "fact chapter.ready = true"
+      "choice_when": "fact chapter.ready = true and not [fact chapter.done = true]"
      }
     ],
     "continues_to": "f_beasts"
@@ -15934,7 +15948,7 @@
      }
     ],
     "continues_to": "f_pell",
-    "variant": "1 of 5 (the first whose condition holds)",
+    "variant": "1 of 7 (the first whose condition holds)",
     "when": "fact be.crates = \"redcowl\""
    },
    "direction": {
@@ -15965,7 +15979,7 @@
      }
     ],
     "continues_to": "f_pell",
-    "variant": "2 of 5 (the first whose condition holds)",
+    "variant": "2 of 7 (the first whose condition holds)",
     "when": "fact be.crates = \"harlan\""
    },
    "direction": {
@@ -15982,8 +15996,8 @@
    "speaker": "vonnra",
    "voice": "vonnra",
    "kind": "dialogue",
-   "text": "And six crates that went up with the Roost. You will have heard it from the wall. Everyone did.",
-   "hash": "08a48d7dc15d",
+   "text": "And six crates at the bottom of a stream, where nothing will ever buy them. That is the first thing you have thrown away that I approve of.",
+   "hash": "a1486fa09c6e",
    "file": "res://audio/vo/vonnra/vonnra.f_ember.3.ogg",
    "context": {
     "conversation": "vonnra (Vonnra Ash-of-Morrow)",
@@ -15996,15 +16010,15 @@
      }
     ],
     "continues_to": "f_pell",
-    "variant": "3 of 5 (the first whose condition holds)",
-    "when": "has done burned_roost"
+    "variant": "3 of 7 (the first whose condition holds)",
+    "when": "fact be.crates = \"sunk\""
    },
    "direction": {
-    "emotion": "grim acknowledgement",
-    "intensity": 3,
-    "pace": "slow, flat",
-    "wants": "to note an end everyone heard",
-    "notes": "No 'I see' here: everyone saw it. A touch of irony in 'Everyone did'.",
+    "emotion": "cool approval",
+    "intensity": 2,
+    "pace": "very slow, a held beat before 'approve'",
+    "wants": "to let the survivor feel watched, and graded",
+    "notes": "The only praise in her fortune, and it is for waste: something nobody will ever buy. 'Approve' set down like a coin on the table. No warmth; no contractions.",
     "source": "hand"
    }
   },
@@ -16013,8 +16027,8 @@
    "speaker": "vonnra",
    "voice": "vonnra",
    "kind": "dialogue",
-   "text": "And six crates still waiting in a ravine to go where they were paid to go. Someone will deliver them. Someone always does.",
-   "hash": "0b7e1d61ef25",
+   "text": "And six crates that went up with the Roost. You will have heard it from the wall. Everyone did.",
+   "hash": "08a48d7dc15d",
    "file": "res://audio/vo/vonnra/vonnra.f_ember.4.ogg",
    "context": {
     "conversation": "vonnra (Vonnra Ash-of-Morrow)",
@@ -16027,15 +16041,15 @@
      }
     ],
     "continues_to": "f_pell",
-    "variant": "4 of 5 (the first whose condition holds)",
-    "when": "survivor knows clue.blasting_ember"
+    "variant": "4 of 7 (the first whose condition holds)",
+    "when": "has done burned_roost or fact be.crates = \"burned\""
    },
    "direction": {
-    "emotion": "dark certainty",
+    "emotion": "grim acknowledgement",
     "intensity": 3,
-    "pace": "slow, deliberate",
-    "wants": "to warn that the trade will finish itself",
-    "notes": "'Someone always does' is a law she lives by. Neither threat nor regret; a ledger fact.",
+    "pace": "slow, flat",
+    "wants": "to note an end everyone heard",
+    "notes": "No 'I see' here: everyone saw it. A touch of irony in 'Everyone did'.",
     "source": "hand"
    }
   },
@@ -16044,8 +16058,8 @@
    "speaker": "vonnra",
    "voice": "vonnra",
    "kind": "dialogue",
-   "text": "And six crates nobody opened, marked with two letters, waiting in a ravine to go where they were paid to go. Someone will deliver them. Someone always does.",
-   "hash": "2c684f659679",
+   "text": "And six crates gone down the south road with the rest of the cargo, sold to whoever paid for them first. I think you know who that was.",
+   "hash": "6f3f4d534105",
    "file": "res://audio/vo/vonnra/vonnra.f_ember.5.ogg",
    "context": {
     "conversation": "vonnra (Vonnra Ash-of-Morrow)",
@@ -16058,7 +16072,69 @@
      }
     ],
     "continues_to": "f_pell",
-    "variant": "5 of 5 (the first whose condition holds)",
+    "variant": "5 of 7 (the first whose condition holds)",
+    "when": "fact be.crates = \"dig\" and fact caravan.cargo = \"with_kerchiefs\""
+   },
+   "direction": {
+    "emotion": "quiet knowing",
+    "intensity": 2,
+    "pace": "slow, unhurried",
+    "wants": "to show she knows who bought the crates without saying it",
+    "notes": "Read the cargo's road like a ledger entry. 'I think you know who that was' is not a question: leave it lying there.",
+    "source": "hand"
+   }
+  },
+  {
+   "id": "vonnra.f_ember.6",
+   "speaker": "vonnra",
+   "voice": "vonnra",
+   "kind": "dialogue",
+   "text": "And six crates still waiting in a ravine to go where they were paid to go. Someone will deliver them. Someone always does.",
+   "hash": "0b7e1d61ef25",
+   "file": "res://audio/vo/vonnra/vonnra.f_ember.6.ogg",
+   "context": {
+    "conversation": "vonnra (Vonnra Ash-of-Morrow)",
+    "node": "f_ember",
+    "to": "the survivor",
+    "before": [
+     {
+      "node": "f_caravan",
+      "said": "I see a boy in a wagon, and his uncle sitting up beside him all night. The boy is not asleep. He knows what he carried now, and he is deciding what that makes his uncle."
+     }
+    ],
+    "continues_to": "f_pell",
+    "variant": "6 of 7 (the first whose condition holds)",
+    "when": "survivor knows clue.blasting_ember"
+   },
+   "direction": {
+    "emotion": "dark certainty",
+    "intensity": 3,
+    "pace": "slow, deliberate",
+    "wants": "to warn that the trade will finish itself",
+    "notes": "'Someone always does' is a law she lives by. Neither threat nor regret; a ledger fact.",
+    "source": "hand"
+   }
+  },
+  {
+   "id": "vonnra.f_ember.7",
+   "speaker": "vonnra",
+   "voice": "vonnra",
+   "kind": "dialogue",
+   "text": "And six crates nobody opened, marked with two letters, waiting in a ravine to go where they were paid to go. Someone will deliver them. Someone always does.",
+   "hash": "2c684f659679",
+   "file": "res://audio/vo/vonnra/vonnra.f_ember.7.ogg",
+   "context": {
+    "conversation": "vonnra (Vonnra Ash-of-Morrow)",
+    "node": "f_ember",
+    "to": "the survivor",
+    "before": [
+     {
+      "node": "f_caravan",
+      "said": "I see a boy in a wagon, and his uncle sitting up beside him all night. The boy is not asleep. He knows what he carried now, and he is deciding what that makes his uncle."
+     }
+    ],
+    "continues_to": "f_pell",
+    "variant": "7 of 7 (the first whose condition holds)",
     "when": "otherwise (the fallback)"
    },
    "direction": {
@@ -19106,6 +19182,12 @@
       "said": "He turns and walks into the Hollow, and you follow. The sick ones' eyes are milky; their gums are black. One of them tries to stand when it sees you, and cannot. Greymuzzle looks east, toward the str…",
       "chose": "\"The men in the ravine are no friends of yours. Run with me.\"",
       "choice_when": "survivor knows hint.roost or quest caravan has entry roost_found"
+     },
+     {
+      "node": "again",
+      "said": "Greymuzzle comes out of the rocks, looks at you for a long moment, and lies down with his back to you. Behind him, the others do the same.",
+      "chose": "\"The men in the ravine are no friends of yours. Run with me.\"",
+      "choice_when": "survivor knows hint.roost or quest caravan has entry roost_found"
      }
     ],
     "answers": [
@@ -19138,6 +19220,7 @@
      "fact greymuzzle = \"ally\""
     ],
     "answers": [
+     "\"The men in the ravine are no friends of yours. Run with me.\"",
      "Leave."
     ],
     "variant": "1 of 4 (the first whose condition holds)",
@@ -19169,6 +19252,7 @@
      "fact greymuzzle = \"ally\""
     ],
     "answers": [
+     "\"The men in the ravine are no friends of yours. Run with me.\"",
      "Leave."
     ],
     "variant": "2 of 4 (the first whose condition holds)",
@@ -19200,6 +19284,7 @@
      "fact greymuzzle = \"ally\""
     ],
     "answers": [
+     "\"The men in the ravine are no friends of yours. Run with me.\"",
      "Leave."
     ],
     "variant": "3 of 4 (the first whose condition holds)",
@@ -19231,6 +19316,7 @@
      "fact greymuzzle = \"ally\""
     ],
     "answers": [
+     "\"The men in the ravine are no friends of yours. Run with me.\"",
      "Leave."
     ],
     "variant": "4 of 4 (the first whose condition holds)",
@@ -19612,45 +19698,50 @@
      {
       "node": "first",
       "said": "(Every crossbow in the camp is on you, and nobody's laughing.) You're the one who's been putting my lads in the ground. Redcowl. Talk, and talk slow.",
-      "chose": "I've come for the Coyle wagons."
+      "chose": "I've come for the Coyle wagons.",
+      "choice_when": "not [fact caravan.box_taken = true] and not [fact caravan.cargo is set]"
      },
      {
       "node": "hub",
       "said": "Still here? Ha. Talk, then.",
       "chose": "About the Coyle wagons.",
-      "choice_when": "not [fact redcowl = \"bargained\"]"
+      "choice_when": "not [fact redcowl = \"bargained\"] and not [fact caravan.box_taken = true] and not [fact caravan.cargo is set]"
      },
      {
       "node": "who",
       "said": "Mine. Forty-one mouths, and a dozen of them can hold a blade. The rest are what's left when a town goes into the ground and the Watch counts its boots and goes home. ...Ha! Listen to me. Talk or blee…",
-      "chose": "About the Coyle wagons."
+      "chose": "About the Coyle wagons.",
+      "choice_when": "not [fact caravan.box_taken = true] and not [fact caravan.cargo is set]"
      },
      {
       "node": "rav",
       "said": "Ha! HA. That old saw-bones. He does too, and he knows it. All right. Rav's friends get to talk before they get shot. So: talk.",
-      "chose": "I've come for the Coyle wagons."
+      "chose": "I've come for the Coyle wagons.",
+      "choice_when": "not [fact caravan.box_taken = true] and not [fact caravan.cargo is set]"
      },
      {
       "node": "cages",
       "said": "Because a man in a cage is worth something to somebody, and a man in a ditch is worth nothing to anybody. I've buried enough worth-nothings for one life, lass. ...And I feed them. Ask them. I feed th…",
-      "chose": "About the Coyle wagons."
+      "chose": "About the Coyle wagons.",
+      "choice_when": "not [fact caravan.box_taken = true] and not [fact caravan.cargo is set]"
      },
      {
       "node": "wagons",
       "said": "Ha! Salvage, is what they are. Some merchant up at the Waystation painted his name on every board of them, so the road'd know who to thank. Coyle. The road knows now. ...You'll be wanting them. Every…",
-      "chose": "I've come for them."
+      "chose": "I've come for them.",
+      "choice_when": "not [fact caravan.box_taken = true] and not [fact caravan.cargo is set]"
      },
      {
       "node": "birds",
       "said": "Ha! A little bird. Sings for its drink, and sews a fair seam when it's sober. (The laugh stops.) Birds don't have names, lass. Not in my camp.",
       "chose": "About the Coyle wagons.",
-      "choice_when": "not [fact redcowl = \"bargained\"]"
+      "choice_when": "not [fact redcowl = \"bargained\"] and not [fact caravan.box_taken = true] and not [fact caravan.cargo is set]"
      },
      {
       "node": "ashford",
       "said": "(The laugh goes out of him like a lamp.) Don't. (Quiet.) You get to say that once in my camp. You've said it.",
       "chose": "About the Coyle wagons.",
-      "choice_when": "not [fact redcowl = \"bargained\"]"
+      "choice_when": "not [fact redcowl = \"bargained\"] and not [fact caravan.box_taken = true] and not [fact caravan.cargo is set]"
      }
     ],
     "answers": [
@@ -19776,25 +19867,25 @@
       "node": "first",
       "said": "(Every crossbow in the camp is on you, and nobody's laughing.) You're the one who's been putting my lads in the ground. Redcowl. Talk, and talk slow.",
       "chose": "Let the teamsters go.",
-      "choice_when": "not [fact caravan.survivors is set]"
+      "choice_when": "not [fact caravan.survivors is set] and not [fact redcowl.releases = true]"
      },
      {
       "node": "hub",
       "said": "Still here? Ha. Talk, then.",
       "chose": "Let the teamsters go.",
-      "choice_when": "not [fact caravan.survivors is set]"
+      "choice_when": "not [fact caravan.survivors is set] and not [fact redcowl.releases = true]"
      },
      {
       "node": "rav",
       "said": "Ha! HA. That old saw-bones. He does too, and he knows it. All right. Rav's friends get to talk before they get shot. So: talk.",
       "chose": "Let the teamsters go.",
-      "choice_when": "not [fact caravan.survivors is set]"
+      "choice_when": "not [fact caravan.survivors is set] and not [fact redcowl.releases = true]"
      },
      {
       "node": "wagons",
       "said": "Ha! Salvage, is what they are. Some merchant up at the Waystation painted his name on every board of them, so the road'd know who to thank. Coyle. The road knows now. ...You'll be wanting them. Every…",
       "chose": "Let the teamsters go.",
-      "choice_when": "not [fact caravan.survivors is set]"
+      "choice_when": "not [fact caravan.survivors is set] and not [fact redcowl.releases = true]"
      }
     ],
     "answers": [
@@ -20381,13 +20472,13 @@
    }
   },
   {
-   "id": "snib.first",
+   "id": "snib.first.1",
    "speaker": "snib",
    "voice": "snib",
    "kind": "dialogue",
-   "text": "Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. What do you want? Quick. The pump does not pump itself. It does, actually. But quick.",
-   "hash": "6408eb1ef19a",
-   "file": "res://audio/vo/snib/snib.first.ogg",
+   "text": "Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. Pump is BROKEN. Somebody broke it. Snib does not know who. Snib knows exactly who. What do you want? Quick.",
+   "hash": "ec0a3f2a34fb",
+   "file": "res://audio/vo/snib/snib.first.1.ogg",
    "context": {
     "conversation": "snib (Snib)",
     "node": "first",
@@ -20404,7 +20495,46 @@
      "Then I'll shut it off myself.",
      "What are you pumping?",
      "Leave."
-    ]
+    ],
+    "variant": "1 of 2 (the first whose condition holds)",
+    "when": "fact dig.pump = \"broken\""
+   },
+   "direction": {
+    "emotion": "panic dressed as authority",
+    "intensity": 4,
+    "pace": "fast, bursts",
+    "wants": "to stop you without having to fight you",
+    "notes": "Starts at a shout and loses it by 'Snib is the foreman'. 'Snib does not know who' is a lie told to the culprit's face; 'Snib knows exactly who' blurts out a beat later. 'Quick.' is pleading.",
+    "source": "hand"
+   }
+  },
+  {
+   "id": "snib.first.2",
+   "speaker": "snib",
+   "voice": "snib",
+   "kind": "dialogue",
+   "text": "Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. What do you want? Quick. The pump does not pump itself. It does, actually. But quick.",
+   "hash": "6408eb1ef19a",
+   "file": "res://audio/vo/snib/snib.first.2.ogg",
+   "context": {
+    "conversation": "snib (Snib)",
+    "node": "first",
+    "to": "the survivor",
+    "opens": [
+     "always (the fallback)"
+    ],
+    "answers": [
+     "Your pump's poisoning the stream.",
+     "Your blasting ember came off the Coyle wagons.",
+     "Pump it into the old sinkhole instead. Closer, and deeper.",
+     "Grimtunnel sent me. He wants the outflow moved.",
+     "How much to shut it off for a week?",
+     "Then I'll shut it off myself.",
+     "What are you pumping?",
+     "Leave."
+    ],
+    "variant": "2 of 2 (the first whose condition holds)",
+    "when": "otherwise (the fallback)"
    },
    "direction": {
     "emotion": "panicked bluster",
@@ -20416,13 +20546,13 @@
    }
   },
   {
-   "id": "snib.hub",
+   "id": "snib.hub.1",
    "speaker": "snib",
    "voice": "snib",
    "kind": "dialogue",
-   "text": "You again. Pump is still pumping. Foreman is still foreman.",
-   "hash": "ae754c8b119e",
-   "file": "res://audio/vo/snib/snib.hub.ogg",
+   "text": "You again. Pump is BROKEN. Somebody broke it. Snib does not know who. Snib knows exactly who. Foreman is still foreman.",
+   "hash": "caae0b53a6f2",
+   "file": "res://audio/vo/snib/snib.hub.1.ogg",
    "context": {
     "conversation": "snib (Snib)",
     "node": "hub",
@@ -20439,7 +20569,83 @@
      "What happens to the pipe-lads?",
      "What are you pumping?",
      "Leave."
-    ]
+    ],
+    "variant": "1 of 3 (the first whose condition holds)",
+    "when": "fact dig.pump = \"broken\""
+   },
+   "direction": {
+    "emotion": "aggrieved",
+    "intensity": 3,
+    "pace": "quick, sulky",
+    "wants": "to make you feel guilty about the pump",
+    "notes": "The broken pump again, with a long-suffering lean on BROKEN; the contradiction lands as before. 'Foreman is still foreman' is his last scrap of dignity.",
+    "source": "hand"
+   }
+  },
+  {
+   "id": "snib.hub.2",
+   "speaker": "snib",
+   "voice": "snib",
+   "kind": "dialogue",
+   "text": "You again. Pipe goes to the sinkhole now. Deeper. Boss likes deeper. Boss has not SAID he likes it. Foreman is still foreman.",
+   "hash": "41046b2f1fb8",
+   "file": "res://audio/vo/snib/snib.hub.2.ogg",
+   "context": {
+    "conversation": "snib (Snib)",
+    "node": "hub",
+    "to": "the survivor",
+    "opens": [
+     "has met snib"
+    ],
+    "answers": [
+     "Your blasting ember came off the Coyle wagons.",
+     "Your pump's poisoning the stream.",
+     "Pump it into the sinkhole instead.",
+     "Grimtunnel sent me. He wants the outflow moved.",
+     "Then I'll shut it off myself.",
+     "What happens to the pipe-lads?",
+     "What are you pumping?",
+     "Leave."
+    ],
+    "variant": "2 of 3 (the first whose condition holds)",
+    "when": "fact dig.pump = \"moved\""
+   },
+   "direction": {
+    "emotion": "nervous pride",
+    "intensity": 3,
+    "pace": "quick, then a stammer",
+    "wants": "to sound in charge of a change he fears",
+    "notes": "'Boss likes deeper' is brave; 'Boss has not SAID he likes it' is the panic underneath. Settle back into 'Foreman is still foreman' as reassurance to himself.",
+    "source": "hand"
+   }
+  },
+  {
+   "id": "snib.hub.3",
+   "speaker": "snib",
+   "voice": "snib",
+   "kind": "dialogue",
+   "text": "You again. Pump is still pumping. Foreman is still foreman.",
+   "hash": "ae754c8b119e",
+   "file": "res://audio/vo/snib/snib.hub.3.ogg",
+   "context": {
+    "conversation": "snib (Snib)",
+    "node": "hub",
+    "to": "the survivor",
+    "opens": [
+     "has met snib"
+    ],
+    "answers": [
+     "Your blasting ember came off the Coyle wagons.",
+     "Your pump's poisoning the stream.",
+     "Pump it into the sinkhole instead.",
+     "Grimtunnel sent me. He wants the outflow moved.",
+     "Then I'll shut it off myself.",
+     "What happens to the pipe-lads?",
+     "What are you pumping?",
+     "Leave."
+    ],
+    "variant": "3 of 3 (the first whose condition holds)",
+    "when": "otherwise (the fallback)"
    },
    "direction": {
     "emotion": "grudging recognition",
@@ -20465,13 +20671,13 @@
     "before": [
      {
       "node": "first",
-      "said": "Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. What do you want? Quick. The pump does not pump itself. It does, actually. But quick.",
+      "said": "Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. Pump is BROKEN. Somebody broke it. Snib does not know who. Snib knows exactly who. What do you wan…",
       "chose": "Your blasting ember came off the Coyle wagons.",
       "choice_when": "survivor knows clue.blasting_ember"
      },
      {
       "node": "hub",
-      "said": "You again. Pump is still pumping. Foreman is still foreman.",
+      "said": "You again. Pump is BROKEN. Somebody broke it. Snib does not know who. Snib knows exactly who. Foreman is still foreman.",
       "chose": "Your blasting ember came off the Coyle wagons.",
       "choice_when": "survivor knows clue.blasting_ember"
      },
@@ -20510,15 +20716,15 @@
     "before": [
      {
       "node": "first",
-      "said": "Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. What do you want? Quick. The pump does not pump itself. It does, actually. But quick.",
+      "said": "Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. Pump is BROKEN. Somebody broke it. Snib does not know who. Snib knows exactly who. What do you wan…",
       "chose": "Your pump's poisoning the stream.",
-      "choice_when": "survivor knows clue.green_stream or survivor knows clue.sick_wolf or survivor knows clue.analysis or survivor knows root_cause or survivor knows hint.stream"
+      "choice_when": "(survivor knows clue.green_stream or survivor knows clue.sick_wolf or survivor knows clue.analysis or survivor knows root_cause or survivor knows hint.stream) and (not [fact dig.pump is set] or fact dig.pump = \"running\")"
      },
      {
       "node": "hub",
-      "said": "You again. Pump is still pumping. Foreman is still foreman.",
+      "said": "You again. Pump is BROKEN. Somebody broke it. Snib does not know who. Snib knows exactly who. Foreman is still foreman.",
       "chose": "Your pump's poisoning the stream.",
-      "choice_when": "survivor knows clue.green_stream or survivor knows clue.sick_wolf or survivor knows clue.analysis or survivor knows root_cause or survivor knows hint.stream"
+      "choice_when": "(survivor knows clue.green_stream or survivor knows clue.sick_wolf or survivor knows clue.analysis or survivor knows root_cause or survivor knows hint.stream) and (not [fact dig.pump is set] or fact dig.pump = \"running\")"
      }
     ],
     "answers": [
@@ -20552,13 +20758,13 @@
     "before": [
      {
       "node": "first",
-      "said": "Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. What do you want? Quick. The pump does not pump itself. It does, actually. But quick.",
+      "said": "Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. Pump is BROKEN. Somebody broke it. Snib does not know who. Snib knows exactly who. What do you wan…",
       "chose": "Pump it into the old sinkhole instead. Closer, and deeper.",
       "choice_when": "survivor knows arcana"
      },
      {
       "node": "hub",
-      "said": "You again. Pump is still pumping. Foreman is still foreman.",
+      "said": "You again. Pump is BROKEN. Somebody broke it. Snib does not know who. Snib knows exactly who. Foreman is still foreman.",
       "chose": "Pump it into the sinkhole instead.",
       "choice_when": "survivor knows arcana"
      },
@@ -20597,13 +20803,13 @@
     "before": [
      {
       "node": "first",
-      "said": "Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. What do you want? Quick. The pump does not pump itself. It does, actually. But quick.",
+      "said": "Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. Pump is BROKEN. Somebody broke it. Snib does not know who. Snib knows exactly who. What do you wan…",
       "chose": "Grimtunnel sent me. He wants the outflow moved.",
       "choice_when": "carries grimtunnels_lamp or carries something tagged digger_lamp"
      },
      {
       "node": "hub",
-      "said": "You again. Pump is still pumping. Foreman is still foreman.",
+      "said": "You again. Pump is BROKEN. Somebody broke it. Snib does not know who. Snib knows exactly who. Foreman is still foreman.",
       "chose": "Grimtunnel sent me. He wants the outflow moved.",
       "choice_when": "carries grimtunnels_lamp or carries something tagged digger_lamp"
      }
@@ -20636,7 +20842,7 @@
     "before": [
      {
       "node": "first",
-      "said": "Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. What do you want? Quick. The pump does not pump itself. It does, actually. But quick.",
+      "said": "Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. Pump is BROKEN. Somebody broke it. Snib does not know who. Snib knows exactly who. What do you wan…",
       "chose": "How much to shut it off for a week?",
       "choice_when": "survivor knows underworld"
      },
@@ -20709,7 +20915,7 @@
     "before": [
      {
       "node": "hub",
-      "said": "You again. Pump is still pumping. Foreman is still foreman.",
+      "said": "You again. Pump is BROKEN. Somebody broke it. Snib does not know who. Snib knows exactly who. Foreman is still foreman.",
       "chose": "What happens to the pipe-lads?"
      }
     ],
@@ -20741,13 +20947,13 @@
     "before": [
      {
       "node": "first",
-      "said": "Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. What do you want? Quick. The pump does not pump itself. It does, actually. But quick.",
+      "said": "Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. Pump is BROKEN. Somebody broke it. Snib does not know who. Snib knows exactly who. What do you wan…",
       "chose": "What are you pumping?",
       "choice_when": "not [survivor knows clue.green_stream or survivor knows clue.sick_wolf or survivor knows clue.analysis or survivor knows root_cause or survivor knows hint.stream]"
      },
      {
       "node": "hub",
-      "said": "You again. Pump is still pumping. Foreman is still foreman.",
+      "said": "You again. Pump is BROKEN. Somebody broke it. Snib does not know who. Snib knows exactly who. Foreman is still foreman.",
       "chose": "What are you pumping?",
       "choice_when": "not [survivor knows clue.green_stream or survivor knows clue.sick_wolf or survivor knows clue.analysis or survivor knows root_cause or survivor knows hint.stream]"
      }
@@ -25351,7 +25557,7 @@
    "context": {
     "where": "a passer-by in the Waystation, as you walk past",
     "to": "the survivor, or nobody",
-    "when": "fact wolves.at_gate = true",
+    "when": "fact aldo.buried = true",
     "who": "a townsman or townswoman (the walker's sex decides the take)"
    },
    "direction": {
@@ -25374,7 +25580,7 @@
    "context": {
     "where": "a passer-by in the Waystation, as you walk past",
     "to": "the survivor, or nobody",
-    "when": "fact wolves.at_gate = true",
+    "when": "fact aldo.buried = true",
     "who": "a townsman or townswoman (the walker's sex decides the take)"
    },
    "direction": {
@@ -28614,7 +28820,7 @@
    "context": {
     "where": "a passer-by in the Waystation, as you walk past",
     "to": "the survivor, or nobody",
-    "when": "fact holloway.post_told = true",
+    "when": "fact corran.home = true",
     "who": "a townsman or townswoman (the walker's sex decides the take)"
    },
    "direction": {
@@ -28637,7 +28843,7 @@
    "context": {
     "where": "a passer-by in the Waystation, as you walk past",
     "to": "the survivor, or nobody",
-    "when": "fact holloway.post_told = true",
+    "when": "fact corran.home = true",
     "who": "a townsman or townswoman (the walker's sex decides the take)"
    },
    "direction": {
@@ -28864,7 +29070,7 @@
    "hash": "4e278cbc120f",
    "file": "res://audio/vo/dead_watchman/prologue.say.2.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Prologue.cs:126",
+    "where": "godot/logic/Play/Zones/Prologue.cs:127",
     "trigger": "the survivor chooses \"Examine\" at Dead Watchman",
     "timing": "10.2 s after the line before",
     "to": "the survivor"
@@ -28887,7 +29093,7 @@
    "hash": "3dcd3f3caa00",
    "file": "res://audio/vo/narrator/prologue.say.3.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Prologue.cs:133",
+    "where": "godot/logic/Play/Zones/Prologue.cs:134",
     "trigger": "the survivor chooses \"Warm your hands\" at Campfire",
     "to": "the player (a caption under the picture)"
    },
@@ -28909,7 +29115,7 @@
    "hash": "4d8a46e7502e",
    "file": "res://audio/vo/narrator/prologue.say.4.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Prologue.cs:418",
+    "where": "godot/logic/Play/Zones/Prologue.cs:419",
     "to": "the player (a caption under the picture)"
    },
    "direction": {
@@ -28930,7 +29136,7 @@
    "hash": "2b72fa1dd85e",
    "file": "res://audio/vo/narrator/prologue.say.5.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Prologue.cs:439",
+    "where": "godot/logic/Play/Zones/Prologue.cs:440",
     "to": "the player (a caption under the picture)"
    },
    "direction": {
@@ -28951,7 +29157,7 @@
    "hash": "77eb67f9e183",
    "file": "res://audio/vo/narrator/prologue.say.6.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Prologue.cs:449",
+    "where": "godot/logic/Play/Zones/Prologue.cs:450",
     "to": "the player (a caption under the picture)"
    },
    "direction": {
@@ -28972,7 +29178,7 @@
    "hash": "0663505a2971",
    "file": "res://audio/vo/narrator/prologue.say.7.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Prologue.cs:468",
+    "where": "godot/logic/Play/Zones/Prologue.cs:469",
     "to": "the player (a caption under the picture)"
    },
    "direction": {
@@ -28993,7 +29199,7 @@
    "hash": "1e2fc7986134",
    "file": "res://audio/vo/narrator/prologue.say.8.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Prologue.cs:503",
+    "where": "godot/logic/Play/Zones/Prologue.cs:504",
     "to": "the player (a caption under the picture)"
    },
    "direction": {
@@ -29014,7 +29220,7 @@
    "hash": "f1f67faea5fb",
    "file": "res://audio/vo/narrator/prologue.say.9.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Prologue.cs:559",
+    "where": "godot/logic/Play/Zones/Prologue.cs:560",
     "to": "the player (a caption under the picture)"
    },
    "direction": {
@@ -29035,7 +29241,7 @@
    "hash": "f67dd9f6e97c",
    "file": "res://audio/vo/narrator/prologue.say.10.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Prologue.cs:582",
+    "where": "godot/logic/Play/Zones/Prologue.cs:583",
     "when": "code: cutT > 0.8 && shown.Add(\"intro1\")",
     "to": "the player (a caption under the picture)"
    },
@@ -29057,7 +29263,7 @@
    "hash": "33579e176a7e",
    "file": "res://audio/vo/narrator/prologue.say.11.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Prologue.cs:641",
+    "where": "godot/logic/Play/Zones/Prologue.cs:642",
     "to": "the player (a caption under the picture)"
    },
    "direction": {
@@ -29078,7 +29284,7 @@
    "hash": "3eba0841cd10",
    "file": "res://audio/vo/narrator/prologue.say.12.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Prologue.cs:703",
+    "where": "godot/logic/Play/Zones/Prologue.cs:704",
     "to": "the player (a caption under the picture)"
    },
    "direction": {
@@ -29099,7 +29305,7 @@
    "hash": "656db5d6ed09",
    "file": "res://audio/vo/narrator/prologue.say.13.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Prologue.cs:719",
+    "where": "godot/logic/Play/Zones/Prologue.cs:720",
     "timing": "1.2 s after the line before",
     "to": "the player (a caption under the picture)"
    },
@@ -29121,7 +29327,7 @@
    "hash": "dc2a27b5c742",
    "file": "res://audio/vo/narrator/prologue.say.14.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Prologue.cs:785",
+    "where": "godot/logic/Play/Zones/Prologue.cs:786",
     "to": "the player (a caption under the picture)"
    },
    "direction": {
@@ -29142,7 +29348,7 @@
    "hash": "c4d495431666",
    "file": "res://audio/vo/narrator/prologue.say.15.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Prologue.cs:813",
+    "where": "godot/logic/Play/Zones/Prologue.cs:814",
     "to": "the player (a caption under the picture)"
    },
    "direction": {
@@ -29163,7 +29369,7 @@
    "hash": "345352a478c0",
    "file": "res://audio/vo/ford_warden/prologue.bark.1.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Prologue.cs:257",
+    "where": "godot/logic/Play/Zones/Prologue.cs:258",
     "to": "the survivor, over the fight"
    },
    "direction": {
@@ -29184,7 +29390,7 @@
    "hash": "a5b5efc70a27",
    "file": "res://audio/vo/ford_warden/prologue.bark.2.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Prologue.cs:592",
+    "where": "godot/logic/Play/Zones/Prologue.cs:593",
     "to": "the survivor, over the fight"
    },
    "direction": {
@@ -29205,7 +29411,7 @@
    "hash": "0f6d39685290",
    "file": "res://audio/vo/grimtunnel/prologue.bark.3.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Prologue.cs:665",
+    "where": "godot/logic/Play/Zones/Prologue.cs:666",
     "to": "the survivor, over the fight"
    },
    "direction": {
@@ -29226,7 +29432,7 @@
    "hash": "dccea938a9f4",
    "file": "res://audio/vo/grimtunnel/prologue.bark.4.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Prologue.cs:666",
+    "where": "godot/logic/Play/Zones/Prologue.cs:667",
     "to": "the survivor, over the fight"
    },
    "direction": {
@@ -29951,7 +30157,7 @@
    "hash": "ac8270282f9f",
    "file": "res://audio/vo/narrator/verge.say.1.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:355",
+    "where": "godot/logic/Play/Zones/Verge.cs:354",
     "when": "code: HollowCalm()",
     "to": "the player (a caption under the picture)"
    },
@@ -29973,7 +30179,7 @@
    "hash": "3ff82d4e2ac7",
    "file": "res://audio/vo/narrator/verge.say.2.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:356",
+    "where": "godot/logic/Play/Zones/Verge.cs:355",
     "when": "code: Test(\"\"\"{ \"hasTag\": \"wolf_pelts\" }\"\"\") && !F(\"pack.allied\").Truthy",
     "to": "the player (a caption under the picture)"
    },
@@ -29995,7 +30201,7 @@
    "hash": "3a93e764b57c",
    "file": "res://audio/vo/narrator/verge.say.3.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:357",
+    "where": "godot/logic/Play/Zones/Verge.cs:356",
     "when": "code: F(\"wolf.blood\").Truthy && Knows(\"hint.greymuzzle\")",
     "to": "the player (a caption under the picture)"
    },
@@ -30017,7 +30223,7 @@
    "hash": "6ea507a14576",
    "file": "res://audio/vo/narrator/verge.say.4.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:358",
+    "where": "godot/logic/Play/Zones/Verge.cs:357",
     "when": "code: otherwise (the else of the line above)",
     "to": "the player (a caption under the picture)"
    },
@@ -30039,7 +30245,7 @@
    "hash": "74fcfb5cdf24",
    "file": "res://audio/vo/narrator/verge.say.5.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:370",
+    "where": "godot/logic/Play/Zones/Verge.cs:369",
     "when": "code: KerchiefsFriendly()",
     "to": "the player (a caption under the picture)"
    },
@@ -30061,7 +30267,7 @@
    "hash": "31fa91331b11",
    "file": "res://audio/vo/narrator/verge.say.6.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:393",
+    "where": "godot/logic/Play/Zones/Verge.cs:392",
     "to": "the player (a caption under the picture)"
    },
    "direction": {
@@ -30082,7 +30288,7 @@
    "hash": "b76e3053dc5f",
    "file": "res://audio/vo/narrator/verge.say.7.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:397",
+    "where": "godot/logic/Play/Zones/Verge.cs:396",
     "to": "the player (a caption under the picture)"
    },
    "direction": {
@@ -30103,7 +30309,7 @@
    "hash": "0b5e75f9dfa0",
    "file": "res://audio/vo/narrator/verge.say.8.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:406",
+    "where": "godot/logic/Play/Zones/Verge.cs:405",
     "when": "code: Near(V(\"wreck\"), 14) && seen.Add(\"wreck\")",
     "to": "the player (a caption under the picture)"
    },
@@ -30125,7 +30331,7 @@
    "hash": "e6c4fb3a8998",
    "file": "res://audio/vo/narrator/verge.say.9.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:441",
+    "where": "godot/logic/Play/Zones/Verge.cs:440",
     "trigger": "the survivor chooses \"Search\" at The Coyle Wagons",
     "to": "the player (a caption under the picture)"
    },
@@ -30147,7 +30353,7 @@
    "hash": "20dc615919d1",
    "file": "res://audio/vo/narrator/verge.say.10.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:451",
+    "where": "godot/logic/Play/Zones/Verge.cs:450",
     "trigger": "the survivor chooses \"Examine\" at Wheel Ruts",
     "to": "the player (a caption under the picture)"
    },
@@ -30169,7 +30375,7 @@
    "hash": "cfa493798ba7",
    "file": "res://audio/vo/narrator/verge.say.11.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:458",
+    "where": "godot/logic/Play/Zones/Verge.cs:457",
     "trigger": "the survivor chooses \"Light\" at The Old Watch Fire",
     "to": "the player (a caption under the picture)"
    },
@@ -30191,7 +30397,7 @@
    "hash": "8e845892b699",
    "file": "res://audio/vo/narrator/verge.say.12.1.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:483",
+    "where": "godot/logic/Play/Zones/Verge.cs:482",
     "trigger": "the survivor chooses \"Examine\" at A Dead Wolf",
     "to": "the player (a caption under the picture)",
     "variant": "1 of 2 (picked by the code at the call)"
@@ -30214,7 +30420,7 @@
    "hash": "52d0f1dfa274",
    "file": "res://audio/vo/narrator/verge.say.12.2.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:483",
+    "where": "godot/logic/Play/Zones/Verge.cs:482",
     "trigger": "the survivor chooses \"Examine\" at A Dead Wolf",
     "to": "the player (a caption under the picture)",
     "variant": "2 of 2 (picked by the code at the call)"
@@ -30237,7 +30443,7 @@
    "hash": "7197a1b189a3",
    "file": "res://audio/vo/narrator/verge.say.13.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:494",
+    "where": "godot/logic/Play/Zones/Verge.cs:493",
     "trigger": "the survivor chooses \"Fill a bottle\" at The Green Water",
     "to": "the player (a caption under the picture)"
    },
@@ -30259,7 +30465,7 @@
    "hash": "84f6c2c74004",
    "file": "res://audio/vo/narrator/verge.say.14.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:525",
+    "where": "godot/logic/Play/Zones/Verge.cs:524",
     "trigger": "the survivor chooses \"Examine\" at An Iron Pipe",
     "to": "the player (a caption under the picture)"
    },
@@ -30277,11 +30483,55 @@
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "zone",
-   "text": "The fuse fizzes. You have a few seconds. Run.",
-   "hash": "769a1c759f88",
+   "text": "You prise one charge out of the straw. The rest sit there and wait, the way they have waited for everyone.",
+   "hash": "48cdd82e6c0b",
    "file": "res://audio/vo/narrator/verge.say.15.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:574",
+    "where": "godot/logic/Play/Zones/Verge.cs:575",
+    "trigger": "the survivor chooses \"Take a charge\" at The B.E. crates",
+    "to": "the player (a caption under the picture)"
+   },
+   "direction": {
+    "emotion": "wary, plain",
+    "intensity": 2,
+    "pace": "slow, careful",
+    "wants": "to make the player feel one charge's weight in the hand",
+    "notes": "Low and close, as if not to wake them. A small pause before 'the way they have waited for everyone': the crates are patient, and that is the threat.",
+    "source": "hand"
+   }
+  },
+  {
+   "id": "verge.say.16",
+   "speaker": "narrator",
+   "voice": "narrator",
+   "kind": "zone",
+   "text": "You roll them down into the ravine's water one at a time, and listen to each one not go off.",
+   "hash": "4acad56ca838",
+   "file": "res://audio/vo/narrator/verge.say.16.ogg",
+   "context": {
+    "where": "godot/logic/Play/Zones/Verge.cs:587",
+    "trigger": "the survivor chooses \"Sink them in the stream\" at The B.E. crates",
+    "to": "the player (a caption under the picture)"
+   },
+   "direction": {
+    "emotion": "held breath",
+    "intensity": 2,
+    "pace": "slow, a beat per crate",
+    "wants": "to let the relief arrive in the silence",
+    "notes": "'One at a time' is a held breath; 'not go off' lands flat and quiet, almost dry. No triumph.",
+    "source": "hand"
+   }
+  },
+  {
+   "id": "verge.say.17",
+   "speaker": "narrator",
+   "voice": "narrator",
+   "kind": "zone",
+   "text": "The fuse fizzes. You have a few seconds. Run.",
+   "hash": "769a1c759f88",
+   "file": "res://audio/vo/narrator/verge.say.17.ogg",
+   "context": {
+    "where": "godot/logic/Play/Zones/Verge.cs:607",
     "trigger": "the survivor chooses \"Set a charge\" at Blasting Ember",
     "to": "the player (a caption under the picture)"
    },
@@ -30295,15 +30545,15 @@
    }
   },
   {
-   "id": "verge.say.16.1",
+   "id": "verge.say.18.1",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "zone",
    "text": "The fragment fits one notch of the seven, and under your hand the whole sigil wakes, violet, like an eye opening. The door is listening.",
    "hash": "384c340b6b6d",
-   "file": "res://audio/vo/narrator/verge.say.16.1.ogg",
+   "file": "res://audio/vo/narrator/verge.say.18.1.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:586",
+    "where": "godot/logic/Play/Zones/Verge.cs:619",
     "trigger": "the survivor chooses \"Examine\" at The Sealed Door",
     "when": "code: HasItem(\"sigil_fragment\")",
     "to": "the player (a caption under the picture)",
@@ -30319,15 +30569,15 @@
    }
   },
   {
-   "id": "verge.say.16.2",
+   "id": "verge.say.18.2",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "zone",
    "text": "The fragment fits one notch of the seven, and the stone warms under it. Whatever the sigil is waiting for, it is not daylight.",
    "hash": "9757e1dab88e",
-   "file": "res://audio/vo/narrator/verge.say.16.2.ogg",
+   "file": "res://audio/vo/narrator/verge.say.18.2.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:586",
+    "where": "godot/logic/Play/Zones/Verge.cs:619",
     "trigger": "the survivor chooses \"Examine\" at The Sealed Door",
     "when": "code: HasItem(\"sigil_fragment\")",
     "to": "the player (a caption under the picture)",
@@ -30343,15 +30593,15 @@
    }
   },
   {
-   "id": "verge.say.17.1",
+   "id": "verge.say.19.1",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "zone",
    "text": "Old-empire script over the door: \"Here the Seventh Legion buried what it could not burn.\" Below it, a sigil with seven notches, all empty.",
    "hash": "66cdbe61b828",
-   "file": "res://audio/vo/narrator/verge.say.17.1.ogg",
+   "file": "res://audio/vo/narrator/verge.say.19.1.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:589",
+    "where": "godot/logic/Play/Zones/Verge.cs:622",
     "trigger": "the survivor chooses \"Examine\" at The Sealed Door",
     "when": "code: otherwise (the else of the line above)",
     "to": "the player (a caption under the picture)",
@@ -30367,15 +30617,15 @@
    }
   },
   {
-   "id": "verge.say.17.2",
+   "id": "verge.say.19.2",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "zone",
    "text": "A door of black stone, smooth as glass, and a violet sigil you cannot read. It hums against your teeth.",
    "hash": "99be1ad2c25a",
-   "file": "res://audio/vo/narrator/verge.say.17.2.ogg",
+   "file": "res://audio/vo/narrator/verge.say.19.2.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:589",
+    "where": "godot/logic/Play/Zones/Verge.cs:622",
     "trigger": "the survivor chooses \"Examine\" at The Sealed Door",
     "when": "code: otherwise (the else of the line above)",
     "to": "the player (a caption under the picture)",
@@ -30391,15 +30641,15 @@
    }
   },
   {
-   "id": "verge.say.18",
+   "id": "verge.say.20",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "zone",
    "text": "In the bones of one hand, a wedge of black stone cut to fit something.",
    "hash": "82b1e8294244",
-   "file": "res://audio/vo/narrator/verge.say.18.ogg",
+   "file": "res://audio/vo/narrator/verge.say.20.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:600",
+    "where": "godot/logic/Play/Zones/Verge.cs:633",
     "trigger": "the survivor chooses \"Search\" at Bones",
     "to": "the player (a caption under the picture)"
    },
@@ -30413,15 +30663,15 @@
    }
   },
   {
-   "id": "verge.say.19",
+   "id": "verge.say.21",
    "speaker": "The bones",
    "voice": "bones",
    "kind": "zone",
    "text": "The skull turns, very slightly, toward you. \"It was never locked from the outside.\"",
    "hash": "18b3ef16cbee",
-   "file": "res://audio/vo/bones/verge.say.19.ogg",
+   "file": "res://audio/vo/bones/verge.say.21.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:604",
+    "where": "godot/logic/Play/Zones/Verge.cs:637",
     "trigger": "the survivor chooses \"Search\" at Bones",
     "to": "the survivor"
    },
@@ -30435,15 +30685,15 @@
    }
   },
   {
-   "id": "verge.say.20",
+   "id": "verge.say.22",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "zone",
    "text": "Bootprints in the mud, fresh, going up to the door. None coming away. Trodden into one heel-print: a copper toll-token, stamped with three roads.",
    "hash": "6e1fab16785e",
-   "file": "res://audio/vo/narrator/verge.say.20.ogg",
+   "file": "res://audio/vo/narrator/verge.say.22.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:616",
+    "where": "godot/logic/Play/Zones/Verge.cs:649",
     "trigger": "the survivor chooses \"Look at\" at The Ground",
     "to": "the player (a caption under the picture)"
    },
@@ -30457,15 +30707,15 @@
    }
   },
   {
-   "id": "verge.say.21",
+   "id": "verge.say.23",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "zone",
    "text": "Under the brambles, where the wolves go when one of them is dying: a circlet of moonsilver, cold as snow.",
    "hash": "b40ac14379d8",
-   "file": "res://audio/vo/narrator/verge.say.21.ogg",
+   "file": "res://audio/vo/narrator/verge.say.23.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:626",
+    "where": "godot/logic/Play/Zones/Verge.cs:659",
     "trigger": "the survivor chooses \"Take\" at Something Silver",
     "to": "the player (a caption under the picture)"
    },
@@ -30487,7 +30737,7 @@
    "hash": "1a95cdeef839",
    "file": "res://audio/vo/narrator/verge.cagelines.1.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:655",
+    "where": "godot/logic/Play/Zones/Verge.cs:719",
     "to": "the player (a caption under the picture)",
     "variant": "CageLines[0]"
    },
@@ -30509,7 +30759,7 @@
    "hash": "75abd0854536",
    "file": "res://audio/vo/narrator/verge.cagelines.2.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:655",
+    "where": "godot/logic/Play/Zones/Verge.cs:719",
     "to": "the player (a caption under the picture)",
     "variant": "CageLines[1]"
    },
@@ -30531,7 +30781,7 @@
    "hash": "185a7c3f55e7",
    "file": "res://audio/vo/narrator/verge.cagelines.3.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:655",
+    "where": "godot/logic/Play/Zones/Verge.cs:719",
     "to": "the player (a caption under the picture)",
     "variant": "CageLines[2]"
    },
@@ -30545,15 +30795,15 @@
    }
   },
   {
-   "id": "verge.say.23",
+   "id": "verge.say.25",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "zone",
    "text": "Something snaps inside the pump with a sound like a bone. The wheel stops. The slurry stops.",
    "hash": "f1bc8c3f22ed",
-   "file": "res://audio/vo/narrator/verge.say.23.ogg",
+   "file": "res://audio/vo/narrator/verge.say.25.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:677",
+    "where": "godot/logic/Play/Zones/Verge.cs:741",
     "when": "code: !blown",
     "to": "the player (a caption under the picture)"
    },
@@ -30567,15 +30817,15 @@
    }
   },
   {
-   "id": "verge.say.24",
+   "id": "verge.say.26",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "zone",
    "text": "When the dust comes down, the hillside is a wound. Small shapes crawl out of it with their lamps still lit. Some of them are on fire. Most of them do not crawl far.",
    "hash": "a4755c96100b",
-   "file": "res://audio/vo/narrator/verge.say.24.ogg",
+   "file": "res://audio/vo/narrator/verge.say.26.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:679",
+    "where": "godot/logic/Play/Zones/Verge.cs:743",
     "when": "code: otherwise (the else of the line above)",
     "timing": "3 s after the line before",
     "to": "the player (a caption under the picture)"
@@ -30590,15 +30840,15 @@
    }
   },
   {
-   "id": "verge.say.25",
+   "id": "verge.say.27",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "zone",
    "text": "The fire takes the tents, and then the cages. There is screaming, and the smell, and hands through the bars; and then there is only the fire.",
    "hash": "26621b48a47e",
-   "file": "res://audio/vo/narrator/verge.say.25.ogg",
+   "file": "res://audio/vo/narrator/verge.say.27.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:708",
+    "where": "godot/logic/Play/Zones/Verge.cs:774",
     "to": "the player (a caption under the picture)"
    },
    "direction": {
@@ -30611,15 +30861,15 @@
    }
   },
   {
-   "id": "verge.say.26.1",
+   "id": "verge.say.28.1",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "zone",
    "text": "The brambles go up like paper. Beyond them, a glade full of pale light.",
    "hash": "0622cbb5851c",
-   "file": "res://audio/vo/narrator/verge.say.26.1.ogg",
+   "file": "res://audio/vo/narrator/verge.say.28.1.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:727",
+    "where": "godot/logic/Play/Zones/Verge.cs:797",
     "to": "the player (a caption under the picture)",
     "variant": "1 of 2 (picked by the code at the call)"
    },
@@ -30633,15 +30883,15 @@
    }
   },
   {
-   "id": "verge.say.26.2",
+   "id": "verge.say.28.2",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "zone",
    "text": "You hack a way through the brambles. Beyond them, a glade full of pale light.",
    "hash": "005625eee2b8",
-   "file": "res://audio/vo/narrator/verge.say.26.2.ogg",
+   "file": "res://audio/vo/narrator/verge.say.28.2.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:727",
+    "where": "godot/logic/Play/Zones/Verge.cs:797",
     "to": "the player (a caption under the picture)",
     "variant": "2 of 2 (picked by the code at the call)"
    },
@@ -30655,15 +30905,15 @@
    }
   },
   {
-   "id": "verge.say.27",
+   "id": "verge.say.29",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "zone",
    "text": "Four grey shapes fall in beside you at the edge of the wood.",
    "hash": "cc4a3505429e",
-   "file": "res://audio/vo/narrator/verge.say.27.ogg",
+   "file": "res://audio/vo/narrator/verge.say.29.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:837",
+    "where": "godot/logic/Play/Zones/Verge.cs:911",
     "trigger": "the survivor chooses \"Talk\" at Maeca Barefoot",
     "to": "the player (a caption under the picture)"
    },
@@ -30677,15 +30927,15 @@
    }
   },
   {
-   "id": "verge.say.28",
+   "id": "verge.say.30",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "zone",
    "text": "Where you fell. The ground has kept your things for you, most of them.",
    "hash": "e08ae8c1e46c",
-   "file": "res://audio/vo/narrator/verge.say.28.ogg",
+   "file": "res://audio/vo/narrator/verge.say.30.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:856",
+    "where": "godot/logic/Play/Zones/Verge.cs:930",
     "to": "the player (a caption under the picture)"
    },
    "direction": {
@@ -30706,7 +30956,7 @@
    "hash": "746d49e0a695",
    "file": "res://audio/vo/snib/verge.bark.1.ogg",
    "context": {
-    "where": "godot/logic/Play/Zones/Verge.cs:386",
+    "where": "godot/logic/Play/Zones/Verge.cs:385",
     "to": "the survivor, over the fight"
    },
    "direction": {
@@ -30882,7 +31132,7 @@
    "file": "res://audio/vo/narrator/chapter.8.ogg",
    "optional": true,
    "context": {
-    "where": "godot/logic/World/Chapter.cs:68",
+    "where": "godot/logic/World/Chapter.cs:69",
     "to": "the player, on the chapter's last page"
    },
    "direction": {
@@ -30904,7 +31154,7 @@
    "file": "res://audio/vo/narrator/chapter.9.ogg",
    "optional": true,
    "context": {
-    "where": "godot/logic/World/Chapter.cs:69",
+    "where": "godot/logic/World/Chapter.cs:70",
     "to": "the player, on the chapter's last page"
    },
    "direction": {
@@ -30926,7 +31176,7 @@
    "file": "res://audio/vo/narrator/chapter.10.ogg",
    "optional": true,
    "context": {
-    "where": "godot/logic/World/Chapter.cs:70",
+    "where": "godot/logic/World/Chapter.cs:72",
     "to": "the player, on the chapter's last page"
    },
    "direction": {
@@ -30952,7 +31202,7 @@
    ],
    "optional": true,
    "context": {
-    "where": "godot/logic/World/Chapter.cs:77",
+    "where": "godot/logic/World/Chapter.cs:79",
     "to": "the player, on the chapter's last page"
    },
    "direction": {
@@ -30969,16 +31219,42 @@
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "chapter",
-   "text": "{name}, in Pell Varrow's ledger",
-   "say": "In Pell Varrow's ledger",
-   "hash": "5062f2f40b63",
+   "text": "{name}, who said it to Vonnra's face",
+   "say": "Who said it to Vonnra's face",
+   "hash": "e74b0dda28e3",
    "file": "res://audio/vo/narrator/chapter.12.ogg",
    "flags": [
     "token:name"
    ],
    "optional": true,
    "context": {
-    "where": "godot/logic/World/Chapter.cs:78",
+    "where": "godot/logic/World/Chapter.cs:80",
+    "to": "the player, on the chapter's last page"
+   },
+   "direction": {
+    "emotion": "plain, faintly admiring",
+    "intensity": 2,
+    "pace": "unhurried",
+    "wants": "to name the survivor by the one brave thing",
+    "notes": "An epithet on the chapter's last page; the name before it is not recorded, so start as if it has just been said.",
+    "source": "hand"
+   }
+  },
+  {
+   "id": "chapter.13",
+   "speaker": "narrator",
+   "voice": "narrator",
+   "kind": "chapter",
+   "text": "{name}, in Pell Varrow's ledger",
+   "say": "In Pell Varrow's ledger",
+   "hash": "5062f2f40b63",
+   "file": "res://audio/vo/narrator/chapter.13.ogg",
+   "flags": [
+    "token:name"
+   ],
+   "optional": true,
+   "context": {
+    "where": "godot/logic/World/Chapter.cs:81",
     "to": "the player, on the chapter's last page"
    },
    "direction": {
@@ -30991,20 +31267,20 @@
    }
   },
   {
-   "id": "chapter.13",
+   "id": "chapter.14",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "chapter",
    "text": "{name}, who sold the cure",
    "say": "Who sold the cure",
    "hash": "1178bf0b01fe",
-   "file": "res://audio/vo/narrator/chapter.13.ogg",
+   "file": "res://audio/vo/narrator/chapter.14.ogg",
    "flags": [
     "token:name"
    ],
    "optional": true,
    "context": {
-    "where": "godot/logic/World/Chapter.cs:79",
+    "where": "godot/logic/World/Chapter.cs:82",
     "to": "the player, on the chapter's last page"
    },
    "direction": {
@@ -31017,20 +31293,20 @@
    }
   },
   {
-   "id": "chapter.14",
+   "id": "chapter.15",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "chapter",
    "text": "{name}, who sold the Coyle strongbox",
    "say": "Who sold the Coyle strongbox",
    "hash": "d96683713209",
-   "file": "res://audio/vo/narrator/chapter.14.ogg",
+   "file": "res://audio/vo/narrator/chapter.15.ogg",
    "flags": [
     "token:name"
    ],
    "optional": true,
    "context": {
-    "where": "godot/logic/World/Chapter.cs:80",
+    "where": "godot/logic/World/Chapter.cs:83",
     "to": "the player, on the chapter's last page"
    },
    "direction": {
@@ -31043,20 +31319,20 @@
    }
   },
   {
-   "id": "chapter.15",
+   "id": "chapter.16",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "chapter",
    "text": "{name}, who kept the Coyle strongbox",
    "say": "Who kept the Coyle strongbox",
    "hash": "84ee56edebf0",
-   "file": "res://audio/vo/narrator/chapter.15.ogg",
+   "file": "res://audio/vo/narrator/chapter.16.ogg",
    "flags": [
     "token:name"
    ],
    "optional": true,
    "context": {
-    "where": "godot/logic/World/Chapter.cs:81",
+    "where": "godot/logic/World/Chapter.cs:84",
     "to": "the player, on the chapter's last page"
    },
    "direction": {
@@ -31069,20 +31345,20 @@
    }
   },
   {
-   "id": "chapter.16",
+   "id": "chapter.17",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "chapter",
    "text": "{name}, who cleared the water and opened the cages",
    "say": "Who cleared the water and opened the cages",
    "hash": "771e560b2ad5",
-   "file": "res://audio/vo/narrator/chapter.16.ogg",
+   "file": "res://audio/vo/narrator/chapter.17.ogg",
    "flags": [
     "token:name"
    ],
    "optional": true,
    "context": {
-    "where": "godot/logic/World/Chapter.cs:82",
+    "where": "godot/logic/World/Chapter.cs:85",
     "to": "the player, on the chapter's last page"
    },
    "direction": {
@@ -31095,20 +31371,20 @@
    }
   },
   {
-   "id": "chapter.17",
+   "id": "chapter.18",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "chapter",
    "text": "{name}, who cleared the water",
    "say": "Who cleared the water",
    "hash": "0e51a97576cd",
-   "file": "res://audio/vo/narrator/chapter.17.ogg",
+   "file": "res://audio/vo/narrator/chapter.18.ogg",
    "flags": [
     "token:name"
    ],
    "optional": true,
    "context": {
-    "where": "godot/logic/World/Chapter.cs:83",
+    "where": "godot/logic/World/Chapter.cs:86",
     "to": "the player, on the chapter's last page"
    },
    "direction": {
@@ -31121,20 +31397,20 @@
    }
   },
   {
-   "id": "chapter.18",
+   "id": "chapter.19",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "chapter",
    "text": "{name}, who opened the cages",
    "say": "Who opened the cages",
    "hash": "f87b81bb8617",
-   "file": "res://audio/vo/narrator/chapter.18.ogg",
+   "file": "res://audio/vo/narrator/chapter.19.ogg",
    "flags": [
     "token:name"
    ],
    "optional": true,
    "context": {
-    "where": "godot/logic/World/Chapter.cs:84",
+    "where": "godot/logic/World/Chapter.cs:87",
     "to": "the player, on the chapter's last page"
    },
    "direction": {
@@ -31147,20 +31423,20 @@
    }
   },
   {
-   "id": "chapter.19",
+   "id": "chapter.20",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "chapter",
    "text": "{name}, the wolf-killer",
    "say": "The wolf-killer",
    "hash": "99be4ee74ff2",
-   "file": "res://audio/vo/narrator/chapter.19.ogg",
+   "file": "res://audio/vo/narrator/chapter.20.ogg",
    "flags": [
     "token:name"
    ],
    "optional": true,
    "context": {
-    "where": "godot/logic/World/Chapter.cs:85",
+    "where": "godot/logic/World/Chapter.cs:88",
     "to": "the player, on the chapter's last page"
    },
    "direction": {
@@ -31173,20 +31449,20 @@
    }
   },
   {
-   "id": "chapter.20",
+   "id": "chapter.21",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "chapter",
    "text": "{name}, who would not stay dead",
    "say": "Who would not stay dead",
    "hash": "fa2af8a113bb",
-   "file": "res://audio/vo/narrator/chapter.20.ogg",
+   "file": "res://audio/vo/narrator/chapter.21.ogg",
    "flags": [
     "token:name"
    ],
    "optional": true,
    "context": {
-    "where": "godot/logic/World/Chapter.cs:86",
+    "where": "godot/logic/World/Chapter.cs:89",
     "to": "the player, on the chapter's last page"
    },
    "direction": {
@@ -31199,20 +31475,20 @@
    }
   },
   {
-   "id": "chapter.21",
+   "id": "chapter.22",
    "speaker": "narrator",
    "voice": "narrator",
    "kind": "chapter",
    "text": "{name}, late of the Low Ford road",
    "say": "Late of the Low Ford road",
    "hash": "6c7ea9191fba",
-   "file": "res://audio/vo/narrator/chapter.21.ogg",
+   "file": "res://audio/vo/narrator/chapter.22.ogg",
    "flags": [
     "token:name"
    ],
    "optional": true,
    "context": {
-    "where": "godot/logic/World/Chapter.cs:87",
+    "where": "godot/logic/World/Chapter.cs:90",
     "to": "the player, on the chapter's last page"
    },
    "direction": {
