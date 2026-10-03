@@ -25,7 +25,7 @@ they meet the horde.
 | 4 | `COUNTERS.md` | the matrix: roles against the skills (measured), statuses, arts (measured), affixes, Marks, sets, Named items, blessings and oaths (measured); twelve champion Signs; which lopsided cells are good and which are traps |
 | 5 | `RISK_REWARD.md` | what the arena pays, the cost of a counter, generalist and specialist, the oaths' win rates from the balance lab, a Weight for each oath, champions and Signs, expected values |
 | 6 | `HORDES.md` | what mixes do (measured), the pairings that make emergent problems, a readability budget by tier, the half hour's shape, signature events, mixing from tier 1 to the top |
-| 7 | `DEPTH.md` | simple to sweaty: what reading buys (measured), every system both ways, floor and ceiling by tier, auto-pilot rules, what each player must be told |
+| 7 | `DEPTH.md` | simple to sweaty: what reading buys (measured), every system both ways, floor and ceiling by tier, auto-pilot rules, what each player must be told, and the failure modes to avoid |
 | 8 | `IMPLEMENTATION.md` | every proposal mapped onto the code, sized, in build order |
 | – | `RESEARCH.md` | the sources: survivors-likes, ARPGs, Hades, Doom, Risk of Rain, Left 4 Dead and more; 21 lessons |
 | – | `probe/` | the measuring program, its results and its limits |
@@ -63,13 +63,18 @@ recommendations:
 9. **Reading matters against only four roles today** (ranged, lobber,
    charger, lunging elites); wolves, fodder, guards and raisers play the
    same for a reader and a non-reader.
+10. **Two things in the code break the rules.** A chill on a frozen creature
+    keeps it frozen, so fast frost locks even heralds still for good; and
+    poison on the survivor ticks silently, so a death by poison is named
+    after whatever hit last (`DEPTH.md` §7).
 
 ## Top ten recommendations
 
-1. **Fix the four measured problems first** (`IMPLEMENTATION.md` §1, XS):
+1. **Fix the measured problems first** (`IMPLEMENTATION.md` §1, XS):
    champion guards at 60%, a melee champion and herald for the Lamplings,
-   the oaths of the blight and of champions repriced, Mirror Step's reflections ignored by
-   champions. Each is one number or one line.
+   the oaths of the blight and of champions repriced, Mirror Step's
+   reflections ignored by champions, no refreezing the just-thawed, and
+   poison that says it is poison. Each is one number or a few lines.
 2. **Give champions Signs** (`COUNTERS.md` §4): twelve one-verb affixes with a
    tell and two answers each, forbidden pairs, one or two by tier. Eight of
    them are built from verbs the code already has. This is the largest gap
