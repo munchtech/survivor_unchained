@@ -311,7 +311,13 @@ public partial class PlayerView : Node3D
             Full("Dodge_Forward", her && HerClips.Has("dash") ? 1.0 : 1.9);
         }
         else if (p.DashT <= 0) dashing = false;
-        if (p.Leap is { } l2 && l2.T < dt * 2) Full(l2.Kind == Content.AbilityKind.Vault ? "Jump_Start" : "Jump_Full_Short", l2.Kind == Content.AbilityKind.Vault ? 1.8 : 1.3);
+        // A leap or a vault (hers are timed to the art already).
+        if (p.Leap is { } l2 && l2.T < dt * 2)
+        {
+            var jump = l2.Kind == Content.AbilityKind.Vault ? "Jump_Start" : "Jump_Full_Short";
+            bool own = People.Clip(person, jump).StartsWith(HerClips.Prefix);
+            Full(jump, own ? 1.0 : l2.Kind == Content.AbilityKind.Vault ? 1.8 : 1.3);
+        }
         // A charge behind the shield; a haul on the chain, blade first.
         if (b.Art.Rush != rushSeen)
         {
@@ -319,7 +325,9 @@ public partial class PlayerView : Node3D
             if (rushSeen is { } rk)
             {
                 Rotation = new Vector3(0, Mathf.Atan2((float)b.Art.RushDX, (float)b.Art.RushDZ), 0);
-                Full(rk == Content.AbilityKind.BullRush ? "Shield_Dash" : "Sword_Dash", rk == Content.AbilityKind.BullRush ? 1.5 : 2.2);
+                var rush = rk == Content.AbilityKind.BullRush ? "Shield_Dash" : "Sword_Dash";
+                bool own = People.Clip(person, rush).StartsWith(HerClips.Prefix);
+                Full(rush, own ? 1.0 : rk == Content.AbilityKind.BullRush ? 1.5 : 2.2);
             }
         }
         // Weapon swings: the blade drives the arm. Hers alternate as the

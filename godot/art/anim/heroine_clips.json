@@ -223,6 +223,16 @@
 		"loop": false,
 		"source": "keyed (tools/anim)"
 	},
+	"leap": {
+		"changes": "retargeted to her skeleton, feet locked, retimed, in place",
+		"layer": "full",
+		"length": 1.10000002384186,
+		"licence": "Mixamo (Adobe)",
+		"loop": false,
+		"note": "Mixamo 'Standing Melee Run Jump Attack' (axe running jump attack), the flight retimed to the art's",
+		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: run_jump_attack.bvh",
+		"speed": 0.0
+	},
 	"reaver_show": {
 		"layer": "full",
 		"length": 2.40000009536743,
@@ -480,6 +490,26 @@
 		"loop": false,
 		"source": "keyed (tools/anim)",
 		"weapon": "sword+shield"
+	},
+	"test_kimodo_leap": {
+		"changes": "retargeted to her skeleton, feet locked",
+		"layer": "full",
+		"length": 4.96666669845581,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"loop": false,
+		"note": "Kimodo's own example: runs and leaps an obstacle (pipeline test)",
+		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: example_01_single_text_prompt.bvh",
+		"speed": 0.0
+	},
+	"test_video_pose": {
+		"changes": "retargeted to her skeleton, feet locked, in place",
+		"layer": "full",
+		"length": 11.9666662216187,
+		"licence": "SAM 3D Body (Meta, SAM License) from video",
+		"loop": false,
+		"note": "SAM 3D Body on Pexels video 6769391 (https://www.pexels.com/video/woman-wearing-denim-pants-6769391/, Pexels licence), 2-14 s: a woman posing, hands to hips and pockets (pipeline test)",
+		"source": "SAM 3D Body (Meta, SAM License) from video: pexels_6769391_pose.bvh",
+		"speed": 0.0130509631291904
 	},
 	"throw": {
 		"contact": 0.0833333333333333,

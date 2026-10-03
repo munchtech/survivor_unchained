@@ -429,11 +429,15 @@ def retarget(sk: Skeleton, src: Source, mapping=None, stance=0.8, lock=True, pos
         # Height from one camera is the least sure thing it gives: the lower
         # foot is put on the ground every frame, the body with it (smoothed,
         # so it settles rather than jitters).
+        # ("exact": no smoothing, for a jump the game flies itself.)
         rest_ank = prest[sk.i("foot_l")][1]
         low = np.minimum(ankles["l"][:, 1], ankles["r"][:, 1]) - rest_ank
-        kern = np.exp(-0.5 * (np.arange(-6, 7) / 3.0) ** 2)
-        kern /= kern.sum()
-        off = np.convolve(np.pad(low, 6, mode="edge"), kern, mode="valid")
+        if pr["ground"] == "exact":
+            off = low
+        else:
+            kern = np.exp(-0.5 * (np.arange(-6, 7) / 3.0) ** 2)
+            kern /= kern.sum()
+            off = np.convolve(np.pad(low, 6, mode="edge"), kern, mode="valid")
         for side in "lr":
             ankles[side][:, 1] -= off
         pel = sk.i("pelvis")

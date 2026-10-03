@@ -5,7 +5,7 @@
   "100STYLE": "Ian Mason et al., 100STYLE (2022), https://zenodo.org/record/8127870, CC BY 4.0: retargeted to her skeleton, feet locked, looped, arms re-keyed.",
   "UAL": "Quaternius, Universal Animation Library 1 and 2, CC0: the fallback for clips not yet made."
  },
- "made": 58,
+ "made": 61,
  "planned": 58,
  "clips": [
   {
@@ -702,6 +702,42 @@
    "licence": "own work",
    "changes": "",
    "length": 3.0,
+   "layer": "full"
+  },
+  {
+   "clip": "leap",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: run_jump_attack.bvh",
+   "licence": "Mixamo (Adobe)",
+   "changes": "retargeted to her skeleton, feet locked, retimed, in place",
+   "length": 1.1,
+   "layer": "full"
+  },
+  {
+   "clip": "test_kimodo_leap",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: example_01_single_text_prompt.bvh",
+   "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+   "changes": "retargeted to her skeleton, feet locked",
+   "length": 4.967,
+   "layer": "full"
+  },
+  {
+   "clip": "test_video_pose",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "SAM 3D Body (Meta, SAM License) from video: pexels_6769391_pose.bvh",
+   "licence": "SAM 3D Body (Meta, SAM License) from video",
+   "changes": "retargeted to her skeleton, feet locked, in place",
+   "length": 11.967,
    "layer": "full"
   }
  ]
