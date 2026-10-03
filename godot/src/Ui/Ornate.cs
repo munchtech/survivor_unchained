@@ -343,3 +343,119 @@ public partial class Backdrop : Control
         AddChild(ember);
     }
 }
+
+/// <summary>
+/// The journal as a book lying open (docs/UI_DESIGN.md, "Journal"): a
+/// tooled leather cover, two parchment pages darkening into the spine, the
+/// thickness of the leaves at their edges. Painted art at
+/// art/ui/book/open.png takes its place when it lands; either way the pages'
+/// content sits in <see cref="Left"/> and <see cref="Right"/>.
+/// </summary>
+public partial class OpenBook : Control
+{
+    public readonly Control Left = new() { MouseFilter = MouseFilterEnum.Ignore };
+    public readonly Control Right = new() { MouseFilter = MouseFilterEnum.Ignore };
+    /// <summary>The cover's margin round the pages, and the pages' margin round their words.</summary>
+    const float Cover = 26, Margin = 52, Gutter = 34;
+    static readonly Color Leather = new("#3b1d14"), LeatherDeep = new("#1e0d08"), Gold = new("#b8893a"), Paper = new("#e9ddc1"), PaperDeep = new("#c7b28a");
+
+    public OpenBook(Vector2 size)
+    {
+        CustomMinimumSize = size;
+        Size = size;
+        MouseFilter = MouseFilterEnum.Ignore;
+        float half = size.X / 2;
+        Left.Position = new Vector2(Cover + Margin, Cover + Margin * 0.8f);
+        Left.Size = new Vector2(half - Cover - Margin - Gutter, size.Y - Cover * 2 - Margin * 1.6f);
+        Right.Position = new Vector2(half + Gutter, Cover + Margin * 0.8f);
+        Right.Size = Left.Size;
+        AddChild(Left);
+        AddChild(Right);
+    }
+
+    public override void _Draw()
+    {
+        var s = Size;
+        if (UiArt.Art("book/open.png") is { } art) { DrawTextureRect(art, new Rect2(Vector2.Zero, s), false); return; }
+        // The shadow it casts on the table.
+        for (int i = 6; i >= 1; i--)
+            DrawRect(new Rect2(new Vector2(-i * 3, i * 4), s + new Vector2(i * 6, i * 2)), new Color(0, 0, 0, 0.07f));
+        // The cover: leather, lit from above, tooled with a gold line and capped at the corners.
+        DrawPolygon(new[] { Vector2.Zero, new Vector2(s.X, 0), s, new Vector2(0, s.Y) }, new[] { Leather.Lightened(0.08f), Leather.Lightened(0.08f), LeatherDeep, LeatherDeep });
+        DrawRect(new Rect2(new Vector2(9, 9), s - new Vector2(18, 18)), Gold with { A = 0.55f }, false, 1.5f);
+        DrawRect(new Rect2(new Vector2(13, 13), s - new Vector2(26, 26)), Gold with { A = 0.25f }, false, 1f);
+        foreach (var (c, dx, dy) in new[] { (Vector2.Zero, 1, 1), (new Vector2(s.X, 0), -1, 1), (s, -1, -1), (new Vector2(0, s.Y), 1, -1) })
+        {
+            DrawColoredPolygon(new[] { c, c + new Vector2(dx * 46, 0), c + new Vector2(0, dy * 46) }, Gold.Darkened(0.25f));
+            DrawPolyline(new[] { c + new Vector2(dx * 46, 0), c + new Vector2(0, dy * 46) }, Gold.Lightened(0.2f), 1.5f);
+            OrnateBox.Stone(GetCanvasItem(), c + new Vector2(dx * 14, dy * 14), 5, Style.Ember);
+        }
+        float half = s.X / 2, top = Cover, foot = s.Y - Cover;
+        // The leaves' thickness under each page, then the pages themselves.
+        for (int i = 4; i >= 1; i--)
+        {
+            var edge = Paper.Darkened(0.12f + i * 0.05f);
+            DrawRect(new Rect2(Cover - i * 2, top + i * 2, half - Cover + i * 2, foot - top), edge);
+            DrawRect(new Rect2(half, top + i * 2, half - Cover + i * 2, foot - top), edge);
+        }
+        Page(new Rect2(Cover, top, half - Cover, foot - top), true);
+        Page(new Rect2(half, top, half - Cover, foot - top), false);
+        // The spine's fold.
+        DrawPolygon(new[] { new Vector2(half - 3, top), new Vector2(half + 3, top), new Vector2(half + 3, foot), new Vector2(half - 3, foot) },
+            new[] { new Color(0.2f, 0.12f, 0.06f, 0.7f), new Color(0.2f, 0.12f, 0.06f, 0.7f), new Color(0.2f, 0.12f, 0.06f, 0.7f), new Color(0.2f, 0.12f, 0.06f, 0.7f) });
+    }
+
+    /// <summary>A page: parchment, darker into the spine and at its outer edge, with a grain.</summary>
+    void Page(Rect2 r, bool left)
+    {
+        var deep = PaperDeep;
+        var inner = left ? r.End.X : r.Position.X;
+        DrawRect(r, Paper);
+        // Into the spine: the curve of the page.
+        const float fold = 90;
+        var fx = left ? inner - fold : inner;
+        var a = left ? Paper with { A = 0 } : deep;
+        var b = left ? deep : Paper with { A = 0 };
+        DrawPolygon(new[] { new Vector2(fx, r.Position.Y), new Vector2(fx + fold, r.Position.Y), new Vector2(fx + fold, r.End.Y), new Vector2(fx, r.End.Y) }, new[] { a, b, b, a });
+        // The outer edge, aged.
+        const float age = 40;
+        var ox = left ? r.Position.X : r.End.X - age;
+        var c0 = left ? deep with { A = 0.6f } : Paper with { A = 0 };
+        var c1 = left ? Paper with { A = 0 } : deep with { A = 0.6f };
+        DrawPolygon(new[] { new Vector2(ox, r.Position.Y), new Vector2(ox + age, r.Position.Y), new Vector2(ox + age, r.End.Y), new Vector2(ox, r.End.Y) }, new[] { c0, c1, c1, c0 });
+        // Top and foot, a little darker.
+        DrawPolygon(new[] { r.Position, new Vector2(r.End.X, r.Position.Y), new Vector2(r.End.X, r.Position.Y + 24), new Vector2(r.Position.X, r.Position.Y + 24) },
+            new[] { deep with { A = 0.45f }, deep with { A = 0.45f }, deep with { A = 0 }, deep with { A = 0 } });
+        DrawPolygon(new[] { new Vector2(r.Position.X, r.End.Y - 24), new Vector2(r.End.X, r.End.Y - 24), r.End, new Vector2(r.Position.X, r.End.Y) },
+            new[] { deep with { A = 0 }, deep with { A = 0 }, deep with { A = 0.45f }, deep with { A = 0.45f } });
+        // The grain: faint flecks, fixed so the page does not shimmer.
+        var rng = new RandomNumberGenerator { Seed = left ? 11UL : 23UL };
+        for (int i = 0; i < 260; i++)
+        {
+            var p = r.Position + new Vector2(rng.Randf() * r.Size.X, rng.Randf() * r.Size.Y);
+            DrawRect(new Rect2(p, new Vector2(rng.RandfRange(1, 3), 1)), new Color(0.45f, 0.32f, 0.16f, rng.RandfRange(0.04f, 0.12f)));
+        }
+    }
+}
+
+/// <summary>A silk ribbon bookmark: a band with a notched tail, its colour its section.</summary>
+public partial class RibbonBox : StyleBox
+{
+    public Color Silk = new("#8a2a1a");
+    public bool Raised;
+
+    public RibbonBox() { ContentMarginLeft = ContentMarginRight = 10; ContentMarginTop = 6; ContentMarginBottom = 26; }
+
+    public override void _Draw(Rid ci, Rect2 r)
+    {
+        var c = Raised ? Silk.Lightened(0.12f) : Silk;
+        float notch = 12;
+        var pts = new[] { r.Position, new Vector2(r.End.X, r.Position.Y), r.End, new Vector2(r.Position.X + r.Size.X / 2, r.End.Y - notch), new Vector2(r.Position.X, r.End.Y) };
+        // A shadow on the page, then the silk with its sheen down the middle.
+        RenderingServer.CanvasItemAddPolygon(ci, Array.ConvertAll(pts, p => p + new Vector2(3, 3)), new[] { new Color(0, 0, 0, 0.3f) });
+        RenderingServer.CanvasItemAddPolygon(ci, pts, new[] { c.Lightened(0.15f), c.Lightened(0.15f), c.Darkened(0.3f), c.Darkened(0.1f), c.Darkened(0.3f) });
+        RenderingServer.CanvasItemAddLine(ci, r.Position + new Vector2(r.Size.X * 0.3f, 0), new Vector2(r.Position.X + r.Size.X * 0.3f, r.End.Y - notch * 1.4f), c.Lightened(0.35f) with { A = 0.35f }, 2);
+        RenderingServer.CanvasItemAddLine(ci, r.Position + new Vector2(3, 0), new Vector2(r.Position.X + 3, r.End.Y - 2), c.Darkened(0.4f) with { A = 0.5f }, 1);
+        RenderingServer.CanvasItemAddLine(ci, new Vector2(r.End.X - 3, r.Position.Y), new Vector2(r.End.X - 3, r.End.Y - 2), c.Darkened(0.4f) with { A = 0.5f }, 1);
+    }
+}

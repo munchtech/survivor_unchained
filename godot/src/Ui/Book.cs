@@ -377,49 +377,87 @@ public partial class JournalScreen : Overlay
 
     ScrollContainer? page;
 
+    /// <summary>Each section's ribbon: its silk, so a glance at the book's top edge finds it.</summary>
+    static readonly Dictionary<string, Color> Silk = new()
+    {
+        ["quests"] = new("#8a2418"), ["people"] = new("#2f5a32"), ["deeds"] = new("#2c3f6a"), ["codex"] = new("#8a6a1e"),
+    };
+
     protected override void Build()
     {
-        AddChild(Style.Scrim(G.CloseOverlay));
-        var wrap = Style.Centered(Style.V(0), new Vector2(1240, 720));
-        AddChild(wrap);
-        BookTabs(new Vector2((1920 - 1240) / 2, (1080 - 720) / 2 - 46));
-        // The journal's own sections: ribbons on the book's top edge, turned with LT and RT.
-        var tabs = Style.H(4);
+        var content = Page("Journal");
+        // The book lies open on the page: the list on the left leaf, what is chosen on the right.
+        var book = new OpenBook(new Vector2(1700, 852)) { Position = new Vector2(70, 52) };
+        content.AddChild(book);
+        page = null;
+        var (left, right) = tab switch { "people" => People(), "deeds" => Deeds(), "codex" => Codex(), _ => Quests() };
+        Fill(book.Left, left);
+        Fill(book.Right, right);
+        if (right.GetChildCount() == 0)
+        {
+            var mark = Glyphs.Icon(tab switch { "people" => "talk", "deeds" => "sigil", "codex" => "book", _ => "quest" }, 220, new Color(0.35f, 0.24f, 0.1f, 0.12f));
+            mark.Position = (book.Right.Size - new Vector2(220, 220)) / 2;
+            book.Right.AddChild(mark);
+        }
+        // The leaves' feet: the day on the left, whose book on the right.
+        var w = G.Journey.World;
+        Foot(book.Left, $"Day {w.Day}");
+        Foot(book.Right, $"{G.Journey.Ch.Name}'s journal");
+
+        // The sections as silk ribbons over the top edge, the open one hanging lower; LT and RT turn them.
         bool pad = Controls.Instance.UsingPad;
-        tabs.AddChild(pad ? Style.PadButton("LT") : Style.Key(G.Key(Act.SubPrev)));
+        var ribbons = Style.H(14);
+        ribbons.Position = new Vector2(70 + 120, 52 + 22 - 86);
+        ribbons.MouseFilter = MouseFilterEnum.Ignore;
+        content.AddChild(ribbons);
+        var lt = pad ? Style.PadButton("LT") : Style.Key(G.Key(Act.SubPrev));
+        lt.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        ribbons.AddChild(lt);
         foreach (var (id, name) in Sections)
         {
-            var b = Style.Button(name, () => { tab = id; Refresh(); }, tab == id);
-            Nav.Skip(b);
-            tabs.AddChild(b);
+            bool on = tab == id;
+            var b = Style.Button(name, () => { tab = id; Refresh(); Sound.Sfx.Page(); }, false, true);
+            var rb = new RibbonBox { Silk = Silk[id] };
+            var rh = new RibbonBox { Silk = Silk[id], Raised = true };
+            b.AddThemeStyleboxOverride("normal", rb);
+            b.AddThemeStyleboxOverride("pressed", rb);
+            b.AddThemeStyleboxOverride("hover", rh);
+            b.AddThemeStyleboxOverride("focus", new StyleBoxEmpty());
+            Style.Font(b, Style.UiHeavy, Style.Small, on ? Colors.White : new Color(1, 0.94f, 0.85f, 0.82f), false);
+            b.CustomMinimumSize = new Vector2(132, on ? 86 : 66);
+            b.SizeFlagsVertical = SizeFlags.ShrinkEnd;
+            ribbons.AddChild(Nav.Skip(b));
         }
-        tabs.AddChild(pad ? Style.PadButton("RT") : Style.Key(G.Key(Act.SubNext)));
-        var spacer = new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill };
-        tabs.AddChild(spacer);
-        tabs.AddChild(Nav.Skip(CloseButton(G.Key(Act.Journal), G.CloseOverlay)));
-        wrap.AddChild(tabs);
-        var book = Style.Panel(Style.Paper(26));
-        book.SizeFlagsVertical = SizeFlags.ExpandFill;
-        wrap.AddChild(book);
-        page = null;
-        book.AddChild(tab switch { "people" => People(), "deeds" => Deeds(), "codex" => Codex(), _ => Quests() });
+        var rt = pad ? Style.PadButton("RT") : Style.Key(G.Key(Act.SubNext));
+        rt.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        ribbons.AddChild(rt);
+        if (pad)
+            PageFooter(Footer((Act.SubNext, "Turn to a section"), (Act.Up, "Choose"), (Act.TabPrev, "Arts"), (Act.TabNext, "Map"), (Act.Cancel, "Close")));
+    }
+
+    /// <summary>A leaf's words, scrolled if they run long; the left leaf's scroll is the one the keys move.</summary>
+    void Fill(Control leaf, Control words)
+    {
+        var sc = words as ScrollContainer ?? Style.Scroll(words);
+        sc.Position = Vector2.Zero;
+        sc.Size = leaf.Size - new Vector2(0, 30);
+        leaf.AddChild(sc);
+        page ??= sc;
+    }
+
+    static void Foot(Control leaf, string text)
+    {
+        var l = Style.Label($"~  {text}  ~", Style.TextItalic, Style.Caption, InkSoft, false, HorizontalAlignment.Center);
+        l.Position = new Vector2(0, leaf.Size.Y - 18);
+        l.Size = new Vector2(leaf.Size.X, 20);
+        leaf.AddChild(l);
     }
 
     // Reading text on paper: body size, the ink of a hand that wrote it.
     static Label P(string text, int size = Style.Body, Font? font = null, Color? color = null) => Style.Label(text, font ?? Style.Text, size, color ?? Ink, true, HorizontalAlignment.Left, false);
     static Label H2(string text) => Style.Label(text, Style.Display, Style.Title, new Color("#3a2414"), true, HorizontalAlignment.Left, false);
 
-    HBoxContainer Two(Control a, Control b)
-    {
-        var h = Style.H(30);
-        a.SizeFlagsHorizontal = b.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        page = Style.Scroll(a);
-        h.AddChild(page);
-        h.AddChild(Style.Scroll(b));
-        return h;
-    }
-
-    Control Quests()
+    (Control, Control) Quests()
     {
         var w = G.Journey.World;
         // The troubles first, then the mysteries (the lamps open on the Low
@@ -427,12 +465,12 @@ public partial class JournalScreen : Overlay
         var list = w.Quests.Values.Where(q => q.Status != QuestStatus.Unknown && Lore.Quests.ContainsKey(q.Id)).OrderBy(q => Lore.Quests[q.Id].Mystery).ToList();
         quest ??= list.FirstOrDefault(q => q.Status == QuestStatus.Active)?.Id ?? list.FirstOrDefault()?.Id;
         var side = Style.V(4);
-        side.CustomMinimumSize = new Vector2(300, 0);
         foreach (var (st, label) in new[] { (QuestStatus.Active, "Under way"), (QuestStatus.Resolved, "Done"), (QuestStatus.Failed, "Lost") })
         {
             var qs = list.Where(x => st == QuestStatus.Failed ? x.Status is QuestStatus.Failed or QuestStatus.Abandoned : x.Status == st).ToList();
             if (qs.Count == 0) continue;
-            side.AddChild(Style.Label(label.ToUpperInvariant(), Style.UiHeavy, Style.Badge, InkSoft, false, HorizontalAlignment.Left, false));
+            if (side.GetChildCount() > 0) side.AddChild(Style.Gap(Style.Gap2));
+            side.AddChild(H2(label));
             foreach (var q in qs)
             {
                 var def = Lore.Quests[q.Id];
@@ -457,13 +495,7 @@ public partial class JournalScreen : Overlay
             if (qst.StartedDay is int d) page.AddChild(P($"Begun on day {d}", Style.Caption, Style.TextItalic, InkSoft));
         }
         else if (list.Count > 0) page.AddChild(P("Choose an entry.", Style.Body, Style.TextItalic, InkSoft));
-        var h = Style.H(30);
-        h.AddChild(Style.Scroll(side));
-        side.SizeFlagsHorizontal = SizeFlags.Fill;
-        h.GetChild<ScrollContainer>(0).CustomMinimumSize = new Vector2(310, 0);
-        h.GetChild<ScrollContainer>(0).SizeFlagsHorizontal = SizeFlags.Fill;
-        h.AddChild(Style.Scroll(page));
-        return h;
+        return (side, page);
     }
 
     /// <summary>A measure from -100 to 100 as a line with a mark: green for you, red against, the middle marked.</summary>
@@ -485,15 +517,14 @@ public partial class JournalScreen : Overlay
     /// <summary>People as the quests are: a list of those met (how each feels, in a word), and
     /// the one chosen on the page beside it, drawn as they look, with how they feel about you
     /// on four measures, what is on their mind, and what they know you did.</summary>
-    Control People()
+    (Control, Control) People()
     {
         var w = G.Journey.World;
         var ctx = G.Journey.Ctx;
         var met = Lore.Npcs.Values.Where(d => w.Npcs.TryGetValue(d.Id, out var s) && s.Flags.TryGetValue("met", out var m) && m.Truthy).ToList();
-        if (met.Count == 0) return Style.V(0, P("You have not met anyone yet. Those you speak with are written here, and how they feel about you.", Style.Body, Style.TextItalic, InkSoft));
+        if (met.Count == 0) return (Style.V(0, H2("People"), P("You have not met anyone yet. Those you speak with are written here, and how they feel about you.", Style.Body, Style.TextItalic, InkSoft)), Style.V(0));
         if (person == null || met.All(d => d.Id != person)) person = met[0].Id;
-        var side = Style.V(2);
-        side.CustomMinimumSize = new Vector2(300, 0);
+        var side = Style.V(2, H2("Those you have met"));
         foreach (var d in met)
         {
             var st = w.Npcs[d.Id];
@@ -506,7 +537,7 @@ public partial class JournalScreen : Overlay
             line.Position = new Vector2(8, 3);
             line.MouseFilter = MouseFilterEnum.Ignore;
             bt.AddChild(line);
-            bt.CustomMinimumSize = new Vector2(290, 50);
+            bt.CustomMinimumSize = new Vector2(0, 50);
             // Focus on a name shows them (a pad reads the page as it moves down the list).
             Nav.Mark(bt, $"person:{id}", () => { person = id; Refresh(); }, focus: () => { if (person != id) { person = id; Refresh(); } });
             side.AddChild(bt);
@@ -542,17 +573,10 @@ public partial class JournalScreen : Overlay
         var heard = s0.Memories.Select(m => w.History.FirstOrDefault(h => h.Id == m)).Where(h => h != null).Select(h => h!.Text).ToList();
         page.AddChild(Style.Gap(4));
         page.AddChild(P(heard.Count > 0 ? $"Knows that you {string.Join("; ", heard)}." : "Has heard nothing of what you have done.", Style.Small, Style.Text, InkSoft));
-        var h = Style.H(30);
-        var list = Style.Scroll(side);
-        list.CustomMinimumSize = new Vector2(310, 0);
-        list.SizeFlagsHorizontal = SizeFlags.Fill;
-        h.AddChild(list);
-        this.page = Style.Scroll(page);
-        h.AddChild(this.page);
-        return h;
+        return (side, page);
     }
 
-    Control Deeds()
+    (Control, Control) Deeds()
     {
         var w = G.Journey.World;
         var ch = G.Journey.Ch;
@@ -574,10 +598,10 @@ public partial class JournalScreen : Overlay
         }
         right.AddChild(Style.Rule());
         right.AddChild(P($"Days on the road: {w.Day}    Creatures slain: {ch.Stats.Kills}    Falls: {ch.Stats.Deaths}    Gold earned: {Math.Floor(ch.Stats.GoldEarned)}", Style.Caption, Style.UiBold, InkSoft));
-        return Two(left, right);
+        return (left, right);
     }
 
-    Control Codex()
+    (Control, Control) Codex()
     {
         var w = G.Journey.World;
         var left = Style.V(8, H2("Bestiary"));
@@ -613,6 +637,6 @@ public partial class JournalScreen : Overlay
             bool found = w.Codex.Contains(d.Id);
             right.AddChild(Style.V(1, P(found ? d.Name : "Not yet found", Style.Body, Style.TextBold, found ? Ink : InkSoft), P(found ? d.Description : d.Hint, Style.Caption, Style.TextItalic, InkSoft)));
         }
-        return Two(left, right);
+        return (left, right);
     }
 }
