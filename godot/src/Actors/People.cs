@@ -397,6 +397,7 @@ public static class People
             mi.Layers = 2;
             p.Meshes.Add(mi);
             Fur(mi);
+            OutfitMaterials(mi);
         }
         scene.Free();
         // Her skin under the outfit's fitted pieces is not drawn: each
@@ -407,7 +408,39 @@ public static class People
                 if (!mi.Name.ToString().Contains('.') && !mi.Name.ToString().Contains('_')) HideSkin(mi, ch);
     }
 
-    static Shader? furShader, sheerShader;
+    static Shader? furShader, sheerShader, outfitShader;
+    static Godot.Collections.Dictionary? outfitTable;
+
+    /// <summary>Her outfit's pieces drawn as what they are made of
+    /// (shaders/heroine_outfit.gdshader: leather, metal, cloth or gloss, from
+    /// art/people/outfit_materials.json, which heroine_outfits.py writes), all
+    /// but fur and sheer stockings, which have shaders of their own.</summary>
+    public static void OutfitMaterials(MeshInstance3D mi)
+    {
+        outfitTable ??= Json.ParseString(FileAccess.GetFileAsString("res://art/people/outfit_materials.json")).AsGodotDictionary();
+        outfitShader ??= GD.Load<Shader>("res://shaders/heroine_outfit.gdshader");
+        for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+        {
+            if (mi.GetSurfaceOverrideMaterial(s) != null || mi.Mesh.SurfaceGetMaterial(s) is not StandardMaterial3D src) continue;
+            // (its vertex colours are the shader's data, never its colour)
+            src.VertexColorUseAsAlbedo = false;
+            var key = src.ResourceName;
+            if (!outfitTable.ContainsKey(key)) continue;
+            var entry = outfitTable[key].AsGodotDictionary();
+            int kind = (string)entry["kind"] switch { "leather" => 0, "metal" => 1, "cloth" => 2, "gloss" => 3, _ => -1 };
+            if (kind < 0) continue;
+            var m = new ShaderMaterial { Shader = outfitShader };
+            m.SetShaderParameter("kind", kind);
+            m.SetShaderParameter("albedo", src.AlbedoTexture);
+            m.SetShaderParameter("normal_map", src.NormalTexture);
+            m.SetShaderParameter("orm", src.RoughnessTexture);
+            m.SetShaderParameter("has_orm", src.RoughnessTexture != null);
+            m.SetShaderParameter("roughness_value", src.Roughness);
+            m.SetShaderParameter("metallic_value", src.Metallic);
+            m.SetShaderParameter("repeats", (float)entry["repeats"]);
+            mi.SetSurfaceOverrideMaterial(s, m);
+        }
+    }
 
     /// <summary>A piece made of fur grows a pile: its surface drawn again in
     /// shells (shaders/fur_shell.gdshader), each further out, keeping only

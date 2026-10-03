@@ -50,10 +50,16 @@ public partial class TitleScreen : Overlay
         var brand = Style.V(2);
         brand.Position = new Vector2(134, 140);
         brand.AddChild(Style.Label("A tale of the Ember Watch", Style.TextItalic, 19, new Color("#c8a878")));
-        var b1 = Style.Label("SURVIVOR", Style.Display, 92, new Color("#f0c878"));
-        b1.AddThemeConstantOverride("outline_size", 0);
-        brand.AddChild(b1);
-        brand.AddChild(Style.Label("U N C H A I N E D", Style.Display, 54, new Color("#d8a050")));
+        // The painted logo (title/logo.png) when there is one; else the name set in Cinzel.
+        if (UiArt.Art("title/logo.png") is { } logo)
+            brand.AddChild(new TextureRect { Texture = logo, CustomMinimumSize = logo.GetSize(), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspect, MouseFilter = MouseFilterEnum.Ignore });
+        else
+        {
+            var b1 = Style.Label("SURVIVOR", Style.Display, 92, new Color("#f0c878"));
+            b1.AddThemeConstantOverride("outline_size", 0);
+            brand.AddChild(b1);
+            brand.AddChild(Style.Label("U N C H A I N E D", Style.Display, 54, new Color("#d8a050")));
+        }
         var rule = new ColorRect { Color = Style.Gold, CustomMinimumSize = new Vector2(420, 1), MouseFilter = MouseFilterEnum.Ignore };
         brand.AddChild(Style.Gap(12));
         brand.AddChild(rule);
@@ -75,12 +81,14 @@ public partial class TitleScreen : Overlay
         var list = menu.Build();
         list.Position = new Vector2(134, 560);
         AddChild(list);
+        Nav.Scope = null;
 
         if (panel != "")
         {
             var box = Style.Panel(Style.Plate(20));
-            box.Position = new Vector2(540, panel == "controls" ? 140 : 540);
-            box.CustomMinimumSize = new Vector2(panel == "controls" ? 720 : 520, 0);
+            box.Position = new Vector2(540, panel == "controls" ? 90 : panel == "credits" ? 300 : 500);
+            box.CustomMinimumSize = new Vector2(panel == "controls" ? 820 : panel == "credits" ? 760 : 560, 0);
+            Nav.Scope = box;
             var v = Style.V(8, Style.Cap(panel switch { "load" => "Journeys", "settings" => "Settings", "controls" => "Controls", _ => "Credits" }, 16));
             switch (panel)
             {
@@ -91,8 +99,8 @@ public partial class TitleScreen : Overlay
                         var row = Style.H(12);
                         row.AddChild(Glyphs.Icon(s.Archetype switch { "warden" => "shield", "reaver" => "axe", "arcanist" => "staff", _ => "bow" }, 26, Style.Gold));
                         var words = Style.V(0, Style.Label(s.Name, Style.Display, 18, s.Alive ? new Color("#f2e6cc") : new Color("#a08a80")),
-                            Style.Label($"{arch?.Name} {s.Level} · Day {s.Day} · {ZoneNames.GetValueOrDefault(s.Zone, s.Zone)}", Style.UiBold, 13, Style.InkDim),
-                            Style.Label(s.Alive ? $"Saved {Ago(s.SavedAt)}" : "Fallen", Style.TextItalic, 13, Style.InkFaint));
+                            Style.Label($"{arch?.Name} {s.Level} · Day {s.Day} · {ZoneNames.GetValueOrDefault(s.Zone, s.Zone)}", Style.UiBold, Style.Caption, Style.InkDim),
+                            Style.Label(s.Alive ? $"Saved {Ago(s.SavedAt)}" : "Fallen", Style.TextItalic, Style.Caption, Style.InkFaint));
                         words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
                         row.AddChild(words);
                         int slot = s.Slot;
@@ -104,13 +112,13 @@ public partial class TitleScreen : Overlay
                 case "settings": v.AddChild(SettingsPanel.Build(G, Refresh)); break;
                 case "controls": v.AddChild(new ControlsPanel()); break;
                 default:
-                    foreach (var line in Credits) v.AddChild(Style.Label(line, Style.Text, 15, new Color("#ddd0b8"), true));
+                    foreach (var line in Credits) v.AddChild(Style.Label(line, Style.Text, Style.Small, new Color("#ddd0b8"), true));
                     break;
             }
             box.AddChild(v);
             AddChild(box);
         }
-        var foot = Style.Label("BETA  ·  THE FIRST CHAPTER", Style.UiBold, 12, Style.InkFaint);
+        var foot = Style.Label("BETA  ·  THE FIRST CHAPTER", Style.UiBold, Style.Badge, Style.InkFaint);
         foot.Position = new Vector2(134, 1040);
         AddChild(foot);
     }
@@ -162,7 +170,12 @@ public partial class TitleScreen : Overlay
             if (a == Act.Confirm && !left) { Agree(); return true; }
             return true;
         }
-        if (a == Act.Cancel && panel != "") { panel = ""; Refresh(); return true; }
+        if (panel != "")
+        {
+            // Back closes the panel; inside it, focus moves over its rows.
+            if (a is Act.Cancel or Act.Pause) { panel = ""; Refresh(); return true; }
+            return false;
+        }
         return menu.Key(a);
     }
 }
@@ -193,6 +206,8 @@ public sealed class CreationDraft
 /// do you fight?), Arms (with what, and what do your hands do?), Origin
 /// (where are you from?), Name (who are you?). The figure by the fire
 /// changes as you choose; the panel on the right says what each choice means.
+/// Enter or A on a choice takes it; on the one already taken, it moves on
+/// (so A, A walks through); LB and RB turn the steps.
 /// </summary>
 public partial class CreateScreen : Overlay
 {
@@ -221,35 +236,45 @@ public partial class CreateScreen : Overlay
 
     void Begin()
     {
-        if (!CanBegin) { Set(() => d.Step = 3); return; }
+        if (!CanBegin)
+        {
+            // No name yet: offer one from the road (a pad cannot type), and wait for a second word.
+            Set(() => { d.Step = 3; d.Name = Names[Random.Shared.Next(Names.Length)]; });
+            Nav.FocusId = "begin";
+            return;
+        }
         G.BeginJourney(d.Choice());
     }
 
     protected override void Build()
     {
         var a = Callings.Archetype(d.Archetype);
+        // As tall as its step needs (the long Name step scrolls); never a half-empty plate.
         var left = Style.Panel(Style.Plate(20));
         left.Position = new Vector2(40, 40);
-        left.Size = new Vector2(520, 1000);
+        left.Size = new Vector2(520, d.Step == 3 ? 1000 : 0);
         AddChild(left);
         var col = Style.V(10);
         left.AddChild(col);
         col.AddChild(Style.Label("By the fire on the Low Ford road", Style.TextItalic, 16, new Color("#c8a878")));
         col.AddChild(Style.Cap("Who sits here?", 22));
         var steps = Style.H(4);
+        bool pad = Controls.Instance.UsingPad;
+        steps.AddChild(pad ? Style.PadButton("LB") : Style.Key(G.Key(Act.TabPrev)));
         for (int i = 0; i < Steps.Length; i++)
         {
             int s = i;
-            steps.AddChild(Style.Button($"{Numerals[i]}  {Steps[i]}", () => Set(() => d.Step = s), d.Step == i, true));
+            steps.AddChild(Nav.Skip(Style.Button($"{Numerals[i]}  {Steps[i]}", () => Set(() => d.Step = s), d.Step == i, true)));
         }
+        steps.AddChild(pad ? Style.PadButton("RB") : Style.Key(G.Key(Act.TabNext)));
         col.AddChild(steps);
         col.AddChild(Style.Rule());
         var body = d.Step switch { 0 => Calling(), 1 => Arms(a), 2 => Origin(), _ => NameLook(a) };
-        var scroll = Style.Scroll(body);
-        col.AddChild(scroll);
-        var foot = Style.H(10, Style.Button(d.Step > 0 ? "Back" : "Leave", () => { if (d.Step > 0) Set(() => d.Step--); else G.CancelCreation(); }));
+        col.AddChild(d.Step == 3 ? Style.Scroll(body) : body);
+        col.AddChild(Style.Gap(Style.Gap2));
+        var foot = Style.H(10, Nav.Id(Style.Button(d.Step > 0 ? "Back" : "Leave", () => { if (d.Step > 0) Set(() => d.Step--); else G.CancelCreation(); }), "back"));
         foot.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill });
-        foot.AddChild(d.Step < 3 ? Style.Button($"Next: {Steps[d.Step + 1]}", () => Set(() => d.Step++), true) : Style.Button("Begin the journey", Begin, true));
+        foot.AddChild(d.Step < 3 ? Nav.Id(Style.Button($"Next: {Steps[d.Step + 1]}", () => Set(() => d.Step++), true), "next") : Nav.Id(Style.Button("Begin the journey", Begin, true), "begin"));
         col.AddChild(foot);
 
         var right = Style.Panel(Style.Box(new Color(0.05f, 0.04f, 0.06f, 0.82f), Style.Line, 1, 6, 22));
@@ -269,13 +294,19 @@ public partial class CreateScreen : Overlay
     static Button Choice(string glyph, string name, string tag, bool on, Action act, Color? tagColor = null)
     {
         var b = Style.Button("", act);
-        b.CustomMinimumSize = new Vector2(440, 66);
-        if (on) b.AddThemeStyleboxOverride("normal", Style.Box(new Color("#3a2614"), Style.LineHi, 2, 4));
-        var row = Style.H(12, Glyphs.Icon(glyph, 28, on ? Style.EmberHi : Style.Gold));
-        var words = Style.V(0, Style.Label(name, Style.Display, 17, on ? Colors.White : Style.GoldHi), Style.Label(tag, Style.Ui, 13, tagColor ?? Style.InkDim, true));
+        b.CustomMinimumSize = new Vector2(440, 70);
+        Nav.Id(b, $"choice:{name}");
+        if (on)
+        {
+            b.AddThemeStyleboxOverride("normal", UiArt.Frame("row_on", Style.Box(new Color("#3a2614"), Style.LineHi, 2, 4)));
+            b.SetMeta("on", true);
+        }
+        var row = Style.H(12, Glyphs.Icon(glyph, 30, on ? Style.EmberHi : Style.Gold));
+        var words = Style.V(0, Style.Label(name, Style.Display, 18, on ? Colors.White : Style.GoldHi), Style.Label(tag, Style.Ui, Style.Caption, tagColor ?? Style.InkDim, true));
         words.CustomMinimumSize = new Vector2(360, 0);
         row.AddChild(words);
         row.Position = new Vector2(12, 8);
+        row.MouseFilter = MouseFilterEnum.Ignore;
         b.AddChild(row);
         return b;
     }
@@ -298,7 +329,7 @@ public partial class CreateScreen : Overlay
             v.AddChild(Choice(it.Icon, it.Name, w != null ? $"{w.Name} · {w.School.ToString().ToLowerInvariant()}" : "", d.WeaponItem == id, () => Set(() => d.WeaponItem = id),
                 w != null ? ItemViews.SchoolColors[w.School] : null));
         }
-        v.AddChild(Style.H(8, Style.SubLabel("Art in hand"), Style.Label("you know all four; more are learned on the road", Style.TextItalic, 13, Style.InkDim)));
+        v.AddChild(Style.H(8, Style.SubLabel("Art in hand"), Style.Label("you know all four; more are learned on the road", Style.TextItalic, Style.Caption, Style.InkDim)));
         foreach (var id in ArtBook.Starting(a.Id))
         {
             var ab = Abilities.ById(id);
@@ -330,8 +361,10 @@ public partial class CreateScreen : Overlay
             if (clean != t) { nameBox.Text = clean; nameBox.CaretColumn = clean.Length; }
         };
         nameBox.TextSubmitted += _ => Begin();
-        v.AddChild(Style.H(8, nameBox, Style.Button("A name from the road", () => Set(() => d.Name = Names[Random.Shared.Next(Names.Length)]), false, true)));
-        Callable.From(() => nameBox?.GrabFocus()).CallDeferred();
+        v.AddChild(Style.H(8, Nav.Skip(nameBox), Nav.Id(Style.Button("A name from the road", () => Set(() => d.Name = Names[Random.Shared.Next(Names.Length)]), false, true), "roadname")));
+        // The keyboard types at once; a pad cannot type, so it is offered names instead.
+        if (!Controls.Instance.UsingPad) Callable.From(() => nameBox?.GrabFocus()).CallDeferred();
+        else if (d.Name.Trim() == "") Nav.Prefer = "roadname";
 
         v.AddChild(Style.SubLabel("Body"));
         var body = Style.H(6);
@@ -346,8 +379,10 @@ public partial class CreateScreen : Overlay
         v.AddChild(body);
         if (d.Sex == Sex.Female)
         {
-            var slider = new HSlider { MinValue = 0, MaxValue = 1.5, Step = 0.1, Value = d.Figure, CustomMinimumSize = new Vector2(220, 24) };
+            var slider = new HSlider { MinValue = 0, MaxValue = 1.5, Step = 0.1, Value = d.Figure, CustomMinimumSize = new Vector2(220, 24), FocusMode = FocusModeEnum.None };
             slider.DragEnded += _ => Set(() => d.Figure = slider.Value);
+            // With focus, left and right move it a step.
+            Nav.Mark(slider, "figure", null, adjust: dir => Set(() => d.Figure = Math.Clamp(Math.Round((d.Figure + dir * 0.1) * 10) / 10, 0, 1.5)));
             string Word(double f) => f < 0.45 ? "Slender" : f < 0.95 ? "Shapely" : f < 1.25 ? "Full" : "Buxom";
             v.AddChild(Style.H(10, Style.Label("Figure", Style.UiBold, 14, Style.Ink), slider, Style.Label(Word(d.Figure), Style.Ui, 14, Style.InkDim)));
         }
@@ -388,7 +423,8 @@ public partial class CreateScreen : Overlay
         foreach (var c in list)
         {
             var id = c.Id;
-            var b = new Button { CustomMinimumSize = new Vector2(30, 30), FocusMode = FocusModeEnum.None, TooltipText = c.Name };
+            var b = new Button { CustomMinimumSize = new Vector2(32, 32), FocusMode = FocusModeEnum.None, TooltipText = c.Name };
+            Nav.Id(b, $"swatch:{fallback}:{id}");
             var col = string.IsNullOrEmpty(c.Color) ? new Color(fallback) : new Color(c.Color);
             b.AddThemeStyleboxOverride("normal", Style.Box(col, now == id ? Style.GoldHi : new Color(0, 0, 0, 0.8f), now == id ? 3 : 1, 15, 0));
             b.AddThemeStyleboxOverride("hover", Style.Box(col.Lightened(0.1f), Style.LineHi, 2, 15, 0));
@@ -396,7 +432,7 @@ public partial class CreateScreen : Overlay
             b.Pressed += () => Set(() => set(id));
             h.AddChild(b);
         }
-        h.AddChild(Style.Label(list.FirstOrDefault(c => c.Id == now)?.Name ?? "", Style.Ui, 14, Style.InkDim));
+        h.AddChild(Style.Label(list.FirstOrDefault(c => c.Id == now)?.Name ?? "", Style.Ui, Style.Caption, Style.InkDim));
         return h;
     }
 
@@ -421,8 +457,11 @@ public partial class CreateScreen : Overlay
         if (w != null && w.Evolutions.Length > 0)
             v.AddChild(Line("At rank 8", string.Join(", or ", w.Evolutions.Select(e => $"{e.Name} (with {string.Join(" or ", e.Catalysts.Select(c => Boons.Find(c)?.Name ?? c))})"))));
         v.AddChild(Style.Rule());
-        v.AddChild(Style.H(10, Glyphs.Icon(ab.Icon, 30, new Color("#ffe2b0")), Style.V(2, Style.H(6, Style.Label(ab.Name, Style.UiBold, 16, Style.GoldHi), Style.Key(G.Key(Act.Ability))),
-            Style.Label(ab.Description, Style.Text, 14, Style.Ink, true))));
+        // The art's words take the panel's width (they were squeezed into a column).
+        var what = Style.V(2, Style.H(6, Style.Label(ab.Name, Style.UiBold, Style.Small, Style.GoldHi), Style.Prompt(Act.Ability)),
+            Style.Label(ab.Description, Style.Text, Style.Small, Style.Ink, true));
+        what.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        v.AddChild(Style.H(10, Glyphs.Icon(ab.Icon, 30, new Color("#ffe2b0")), what));
         return v;
     }
 
@@ -455,11 +494,19 @@ public partial class CreateScreen : Overlay
 
     public override bool Key(Act a)
     {
+        // Typing a name: the letters are the name's, not the menu's.
         if (nameBox != null && nameBox.HasFocus() && a is not (Act.Cancel or Act.Confirm)) return true;
+        if (nameBox != null && nameBox.HasFocus() && a == Act.Confirm) { nameBox.ReleaseFocus(); Begin(); return true; }
         if (a == Act.TabNext) { Set(() => d.Step = Math.Min(3, d.Step + 1)); return true; }
         if (a == Act.TabPrev) { Set(() => d.Step = Math.Max(0, d.Step - 1)); return true; }
         if (a == Act.Cancel) { if (d.Step > 0) Set(() => d.Step--); else G.CancelCreation(); return true; }
-        if (a == Act.Confirm) { if (d.Step < 3) Set(() => d.Step++); else Begin(); return true; }
-        return true;
+        if (a == Act.Confirm)
+        {
+            // On a choice not yet taken, Enter or A takes it (focus does it); otherwise, onward.
+            if (Nav.KeyMode && Nav.Current is { } c && !c.C.HasMeta("on")) return false;
+            if (d.Step < 3) Set(() => d.Step++); else Begin();
+            return true;
+        }
+        return false;
     }
 }

@@ -10,84 +10,99 @@ using SurvivorUnchained.World;
 namespace SurvivorUnchained.Ui;
 
 /// <summary>
-/// The pack (the web game's overlays/Inventory.tsx): the survivor as they
-/// stand in the middle with what they wear round them, what they carry on
-/// the right, and the chosen thing's card with what can be done with it.
-/// Hover to read and compare, click to choose, double-click to wear or use.
+/// The pack (docs/UI_DESIGN.md, "Pack"): one screen for what the survivor
+/// wears and what they carry, built for the two questions it is opened to
+/// answer, "is this better?" and "what do I do with it?".
+///
+/// On the left the survivor as they stand, what they wear round them, and
+/// their standing, which shows what would change (before and after, better
+/// or worse) while a thing is hovered or focused. On the right what they
+/// carry: filters, sort, the pack, and the chosen thing read closely with
+/// what can be done with it. Mouse: hover to read and compare (the worn
+/// thing's card beside), click to choose, double-click or right-click to
+/// wear or use, drag to wear, take off or move. Pad: move over the slots,
+/// the card follows; A wears, uses or takes off, X leaves behind (twice: it
+/// cannot be undone), Y sorts, LT and RT filter.
 /// </summary>
 public partial class InventoryScreen : Overlay
 {
     public override string Kind => "inventory";
     public override Act? Toggle => Act.Inventory;
-    string? sel;
+    string? sel, leaving;
+    int filter;
+    VBoxContainer stats = null!, inspect = null!;
+    Control foot = null!;
 
     static readonly EquipSlot[] Left = { EquipSlot.Head, EquipSlot.Amulet, EquipSlot.Body, EquipSlot.Cloak };
     static readonly EquipSlot[] Right = { EquipSlot.Weapon, EquipSlot.Offhand, EquipSlot.Ring1, EquipSlot.Ring2, EquipSlot.Relic };
-    public static readonly System.Collections.Generic.Dictionary<EquipSlot, (string Name, string Glyph)> Slots = new()
+    public static readonly Dictionary<EquipSlot, (string Name, string Glyph)> Slots = new()
     {
         [EquipSlot.Weapon] = ("Weapon", "sword"), [EquipSlot.Offhand] = ("Off-hand", "shield"), [EquipSlot.Head] = ("Head", "helm"), [EquipSlot.Body] = ("Body", "armor"),
         [EquipSlot.Cloak] = ("Cloak", "cloak"), [EquipSlot.Amulet] = ("Amulet", "amulet"), [EquipSlot.Ring1] = ("Ring", "ring"), [EquipSlot.Ring2] = ("Ring", "ring"), [EquipSlot.Relic] = ("Relic", "relic"),
     };
 
-    public InventoryScreen(Game g) : base(g) { }
+    /// <summary>The filters: what each shows.</summary>
+    static readonly (string Name, Func<ItemDef, bool> Has)[] Filters =
+    {
+        ("All", _ => true),
+        ("Gear", d => Items.SlotFor(d) != null),
+        ("Draughts", d => d.Kind == ItemKind.Consumable),
+        ("Materials", d => d.Kind is ItemKind.Material or ItemKind.Trophy or ItemKind.Tool),
+        ("Quest", d => d.Kind == ItemKind.Quest),
+    };
+
+    // What has been looked at this session: anything else in the pack is marked new.
+    static readonly HashSet<string> seen = new();
+    static bool seeded;
+
+    public InventoryScreen(Game g) : base(g) { Nav.Prefer = "pack:0"; }
+
+    CharacterData Ch => G.Journey.Ch;
 
     protected override void Build()
     {
-        var ch = G.Journey.Ch;
-        var body = Frame("Pack", new Vector2(1320, 700), G.Key(Act.Inventory));
-        var row = Style.H(24);
+        var ch = Ch;
+        if (!seeded) { seeded = true; foreach (var it in Carried(ch)) seen.Add(it.Uid); }
+        var body = Frame("Pack", new Vector2(1500, 790), G.Key(Act.Inventory));
+        var row = Style.H(32);
         row.SizeFlagsVertical = SizeFlags.ExpandFill;
         body.AddChild(row);
 
-        // The survivor, with what they wear round them.
-        var doll = Style.V(10);
-        var dollRow = Style.H(12, Column(Left, ch), Figure(ch), Column(Right, ch));
-        doll.AddChild(dollRow);
-        doll.AddChild(Stats(ch));
-        row.AddChild(doll);
+        // The survivor, with what they wear round them, and their standing.
+        var you = Style.V(Style.Gap3);
+        you.CustomMinimumSize = new Vector2(600, 0);
+        var doll = Style.H(Style.Gap3, Column(Left, ch), Figure(ch), Column(Right, ch));
+        doll.Alignment = BoxContainer.AlignmentMode.Center;
+        you.AddChild(doll);
+        you.AddChild(Style.H(8, Style.SubLabel("Standing"), Style.Label("hover a thing to see what it would change", Style.TextItalic, Style.Caption, Style.InkFaint)));
+        stats = Style.V(2);
+        you.AddChild(stats);
+        ShowStats(null);
+        row.AddChild(you);
 
         // What they carry.
-        var pack = Style.V(8);
-        pack.AddChild(ItemViews.Grid(ch.Pack, 6, 64, it => it.Uid == sel, null, it => Select(it.Uid), Primary,
-            (it, over) => Tip(it != null && it.Uid != sel ? ItemViews.Card(it, ch, true) : null, over)));
-        pack.AddChild(Style.H(18,
-            Style.H(4, Glyphs.Icon("coin", 16, Style.GoldHi), Style.Label($"{Math.Floor(ch.Gold)}", Style.UiBold, 16, Style.GoldHi)),
-            Style.Label($"{ch.Pack.Count(p => p != null)} / {ch.Pack.Count}", Style.Ui, 15, Style.InkDim),
-            Style.Label("Double-click to wear or use", Style.TextItalic, 14, Style.InkFaint)));
-        row.AddChild(pack);
-
-        // The chosen thing.
-        var detail = Style.V(8);
-        detail.CustomMinimumSize = new Vector2(360, 0);
-        var found = sel != null ? Inventory.Find(ch, sel) : null;
-        if (found != null)
-        {
-            var def = Items.Get(found.Item.Def);
-            var acts = Style.H(8);
-            if (found.InPack && def.Kind == ItemKind.Consumable) acts.AddChild(Style.Button("Use", () => G.Gear((j, b) => j.Use(found.Item.Uid, b)), true, true));
-            if (found.InPack && Items.SlotFor(def) != null) acts.AddChild(Style.Button("Wear", () => G.Gear((j, b) => j.Equip(found.Item.Uid, null, b)), true, true));
-            if (!found.InPack && found.Slot != EquipSlot.Weapon) acts.AddChild(Style.Button("Take off", () => G.Gear((j, b) => j.Unequip(found.Slot, b)), false, true));
-            if (found.InPack && !G.Journey.StillNeeded(found.Item)) acts.AddChild(Style.Button("Leave behind", () => { sel = null; G.Journey.Drop(found.Item.Uid); }, false, true));
-            detail.AddChild(ItemViews.Card(found.Item, ch, found.InPack, acts, 360));
-        }
-        else
-        {
-            detail.AddChild(Style.Gap(80));
-            detail.AddChild(Glyphs.Icon("hand", 28, Style.GoldDim));
-            detail.AddChild(Style.Label("Choose something to look at it closely.", Style.Text, 16, Style.Ink, true, HorizontalAlignment.Center));
-            detail.AddChild(Style.Label("Gear stays with you. Ember fades when you rest; what you carry, and what you wear, does not.", Style.TextItalic, 14, Style.InkDim, true, HorizontalAlignment.Center));
-        }
-        row.AddChild(detail);
+        var carried = Style.V(Style.Gap3);
+        carried.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        carried.AddChild(FilterRow());
+        var grid = ItemViews.Grid(ch.Pack, 8, 82, it => it.Uid == sel, null, it => Select(it.Uid), Primary, Hover, "pack", Leave, SetupCell);
+        carried.AddChild(grid);
+        carried.AddChild(Style.H(18,
+            Style.H(4, Glyphs.Icon("coin", 17, Style.GoldHi), Style.Label($"{Math.Floor(ch.Gold)}", Style.UiBold, Style.Small, Style.GoldHi)),
+            Style.Label($"{ch.Pack.Count(p => p != null)} of {ch.Pack.Count} carried", Style.Ui, Style.Caption, Style.InkDim)));
+        inspect = Style.V(Style.Gap2);
+        inspect.SizeFlagsVertical = SizeFlags.ExpandFill;
+        carried.AddChild(inspect);
+        ShowInspect(sel != null ? Inventory.Find(ch, sel)?.Item : null);
+        row.AddChild(carried);
+        foot = new Control { CustomMinimumSize = new Vector2(0, 30), MouseFilter = MouseFilterEnum.Ignore };
+        body.AddChild(foot);
+        Footer();
     }
 
-    void Select(string uid) { sel = sel == uid ? null : uid; Refresh(); }
+    static IEnumerable<ItemInstance> Carried(CharacterData ch) =>
+        ch.Pack.Where(p => p != null).Select(p => p!).Concat(Enum.GetValues<EquipSlot>().Select(s => ch.Equipment[s]).Where(x => x != null).Select(x => x!));
 
-    void Primary(ItemInstance it)
-    {
-        var def = Items.Get(it.Def);
-        if (def.Kind == ItemKind.Consumable) G.Gear((j, b) => j.Use(it.Uid, b));
-        else if (Items.SlotFor(def) != null) G.Gear((j, b) => j.Equip(it.Uid, null, b));
-    }
+    /* --------------------------------------------------------- the doll -- */
 
     Control Column(EquipSlot[] slots, CharacterData ch)
     {
@@ -96,8 +111,15 @@ public partial class InventoryScreen : Overlay
         {
             var it = ch.Equipment[s];
             var (name, glyph) = Slots[s];
-            v.AddChild(ItemViews.Slot(it, 76, it != null && it.Uid == sel, null, false, it != null ? () => Select(it.Uid) : null, null,
-                over => Tip(it != null && it.Uid != sel ? ItemViews.Card(it, ch, false) : null, over), glyph, name));
+            var slot = s;
+            Action? off = it != null && slot != EquipSlot.Weapon ? () => G.Gear((j, b) => j.Unequip(slot, b)) : null;
+            var view = ItemViews.Slot(it, 78, it != null && it.Uid == sel, null, false, it != null ? () => Select(it.Uid) : null, off,
+                over => Hover(it, over), glyph, name, $"eq:{slot}");
+            // Dragged from the pack, a thing that fits is worn here; dragged away from here, it is taken off.
+            view.Drag = it != null && slot != EquipSlot.Weapon ? $"eq:{slot}:{it.Uid}" : null;
+            view.CanTake = d => d.StartsWith("pack:") && Inventory.Find(Ch, d[5..]) is { } w && Items.Fits(Items.Get(w.Item.Def), slot);
+            view.Take = d => { Sound.Sfx.Equip(); G.Gear((j, b) => j.Equip(d[5..], slot, b)); };
+            v.AddChild(view);
         }
         return v;
     }
@@ -105,45 +127,276 @@ public partial class InventoryScreen : Overlay
     Control Figure(CharacterData ch)
     {
         var v = Style.V(4);
-        v.AddChild(new Portrait(new Vector2I(220, 330)).Of(Loadouts.Of(ch)));
+        v.AddChild(new Portrait(new Vector2I(230, 340)).Of(Loadouts.Of(ch)));
         v.AddChild(Style.Label(ch.Name, Style.Display, 20, Style.GoldHi, false, HorizontalAlignment.Center));
-        v.AddChild(Style.Label($"Level {ch.Level} {Callings.Background(ch.Background).Name} {Callings.Archetype(ch.Archetype).Name}", Style.Ui, 14, Style.InkDim, false, HorizontalAlignment.Center));
+        v.AddChild(Style.Label($"Level {ch.Level} {Callings.Background(ch.Background).Name} {Callings.Archetype(ch.Archetype).Name}", Style.Ui, Style.Caption, Style.InkDim, false, HorizontalAlignment.Center));
         return v;
     }
 
+    /* ------------------------------------------------------- the standing -- */
+
+    static readonly (string Key, string Name)[] Shown =
+    {
+        (Stat.MaxHealth, "Health"), (Stat.Armor, "Armour"), (Stat.Damage, "Damage"), (Stat.MoveSpeed, "Speed"), (Stat.CritChance, "Critical"), (Stat.Regen, "Regeneration"),
+    };
+
+    /// <summary>The survivor's standing; with a thing that could be worn, what it would change.</summary>
+    void ShowStats(ItemInstance? preview)
+    {
+        if (!IsInstanceValid(stats)) return;
+        foreach (var c in stats.GetChildren()) { stats.RemoveChild(c); c.QueueFree(); }
+        var ch = Ch;
+        var k = Character.Kit(ch).Stats;
+        var diffs = new Dictionary<string, double>();
+        string? against = null;
+        if (preview != null && Items.SlotFor(Items.Get(preview.Def)) is EquipSlot slot && !Enum.GetValues<EquipSlot>().Any(s => ch.Equipment[s]?.Uid == preview.Uid))
+        {
+            var target = slot == EquipSlot.Ring1 && ch.Equipment.Ring1 != null && ch.Equipment.Ring2 == null ? EquipSlot.Ring2 : slot;
+            foreach (var (key, _, after) in Character.Compare(ch, preview, target)) diffs[key] = after;
+            against = ItemViews.Against(preview, ch) is { } worn ? Inventory.Name(worn) : "nothing";
+        }
+        var g = new GridContainer { Columns = 2, MouseFilter = MouseFilterEnum.Ignore };
+        g.AddThemeConstantOverride("h_separation", 26);
+        g.AddThemeConstantOverride("v_separation", 3);
+        foreach (var (key, name) in Shown)
+        {
+            double now = k.Get(key);
+            var label = Style.Label(name, Style.Ui, Style.Small, Style.InkDim);
+            label.CustomMinimumSize = new Vector2(110, 0);
+            var line = Style.H(8, label, Style.Label(Format(key, now), Style.UiBold, Style.Small, Style.Ink));
+            if (diffs.TryGetValue(key, out var then))
+            {
+                bool better = then > now;
+                line.AddChild(Style.Label($"to {Format(key, then)}", Style.UiBold, Style.Small, better ? Style.Good : Style.Bad));
+                line.AddChild(Style.Label(better ? "better" : "worse", Style.UiHeavy, Style.Badge, better ? Style.Good : Style.Bad));
+            }
+            g.AddChild(line);
+        }
+        stats.AddChild(g);
+        if (preview == null || against == null) return;
+        // What it changes that the standing does not show, in the card's words.
+        var rest = Character.Compare(ch, preview, Items.SlotFor(Items.Get(preview.Def))!.Value).Where(d => Shown.All(s => s.Key != d.Key)).ToList();
+        stats.AddChild(Style.Label(diffs.Count == 0 ? $"In place of {against}: nothing here changes." : $"In place of {against}", Style.TextItalic, Style.Caption, Style.InkDim, true));
+        foreach (var (key, before, after) in rest)
+        {
+            var (text, good) = ItemViews.Delta(key, before, after);
+            stats.AddChild(Style.H(6, Style.Label(good ? "better" : "worse", Style.UiHeavy, Style.Badge, good ? Style.Good : Style.Bad), Style.Label(text, Style.UiBold, Style.Caption, good ? Style.Good : Style.Bad)));
+        }
+    }
+
+    static string Format(string key, double v) => key switch
+    {
+        Stat.MaxHealth => $"{Math.Round(v)}",
+        Stat.Armor => $"{Math.Round(v)} ({Math.Round(StatBlock.ArmorReduction(v) * 100)}%)",
+        Stat.Damage => $"{(v >= 1 ? "+" : "")}{Math.Round((v - 1) * 100)}%",
+        Stat.MoveSpeed => $"{v:0.0}",
+        Stat.CritChance => $"{Math.Round(v * 100)}%",
+        _ => $"{v:0.0}/s",
+    };
+
+    /* ---------------------------------------------------------- the pack -- */
+
+    Control FilterRow()
+    {
+        var h = Style.H(6);
+        bool pad = Controls.Instance.UsingPad;
+        h.AddChild(pad ? Style.PadButton("LT") : Style.Key(G.Key(Act.SubPrev)));
+        for (int i = 0; i < Filters.Length; i++)
+        {
+            int f = i;
+            h.AddChild(Nav.Skip(Style.Segment(Filters[i].Name, filter == i, () => { filter = f; Sound.Sfx.Page(); Refresh(); })));
+        }
+        h.AddChild(pad ? Style.PadButton("RT") : Style.Key(G.Key(Act.SubNext)));
+        h.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
+        var sort = Style.Button("", Sort, false, true);
+        var sr = Style.H(6, pad ? Style.PadButton("Y") : Glyphs.Icon("expand", 16, Style.GoldHi), Style.Label("Sort", Style.UiBold, Style.Small, Style.GoldHi));
+        sr.MouseFilter = MouseFilterEnum.Ignore;
+        sr.Position = new Vector2(10, 5);
+        sort.AddChild(sr);
+        sort.CustomMinimumSize = new Vector2(sr.GetCombinedMinimumSize().X + 22, 32);
+        h.AddChild(Nav.Skip(sort));
+        return h;
+    }
+
+    void SetupCell(int i, ItemInstance? it, SlotView view)
+    {
+        var ch = Ch;
+        if (it != null)
+        {
+            view.Drag = $"pack:{it.Uid}";
+            if (!seen.Contains(it.Uid))
+            {
+                // Marked new until it is looked at.
+                var mark = Style.Panel(Style.Box(Style.Ember, Style.EmberHi, 1, 6, 3), Style.Label("NEW", Style.UiHeavy, 10, new Color("#2a1206"), false, HorizontalAlignment.Center, false));
+                mark.MouseFilter = MouseFilterEnum.Ignore;
+                mark.Position = new Vector2(2, 2);
+                view.AddChild(mark);
+            }
+            if (!Filters[filter].Has(Items.Get(it.Def))) view.Modulate = new Color(1, 1, 1, 0.22f);
+        }
+        // Along the pack, a thing moves (or changes places); from the body, it is taken off into this place.
+        view.CanTake = d => d.StartsWith("pack:") || d.StartsWith("eq:");
+        view.Take = d =>
+        {
+            if (d.StartsWith("pack:") && Inventory.Find(ch, d[5..]) is { InPack: true } from)
+            {
+                (ch.Pack[i], ch.Pack[from.Index]) = (ch.Pack[from.Index], ch.Pack[i]);
+                Sound.Sfx.Click();
+                Refresh();
+            }
+            else if (d.StartsWith("eq:"))
+            {
+                var parts = d.Split(':');
+                if (!Enum.TryParse<EquipSlot>(parts[1], out var slot)) return;
+                G.Gear((j, b) => j.Unequip(slot, b));
+                // Into the place it was dropped on, if that is free.
+                if (ch.Pack[i] == null && Inventory.Find(ch, parts[2]) is { InPack: true } at && at.Index != i)
+                {
+                    (ch.Pack[i], ch.Pack[at.Index]) = (ch.Pack[at.Index], null);
+                    Refresh();
+                }
+            }
+        };
+    }
+
+    /// <summary>Hovered (mouse) or focused (pad): its card, and what it would change.</summary>
+    void Hover(ItemInstance? it, Control? over)
+    {
+        if (it != null) seen.Add(it.Uid);
+        ShowStats(it);
+        if (Controls.Instance.UsingPad) { if (it != null) ShowInspect(it); Tip(null, null); return; }
+        Tip(it != null && it.Uid != sel ? ItemViews.Compare(it, Ch, InPack(it)) : null, over);
+    }
+
+    bool InPack(ItemInstance it) => Inventory.Find(Ch, it.Uid) is { InPack: true };
+
+    void Select(string uid) { sel = sel == uid ? null : uid; leaving = null; Refresh(); }
+
+    void Primary(ItemInstance it)
+    {
+        leaving = null;
+        var loc = Inventory.Find(Ch, it.Uid);
+        if (loc == null) return;
+        var def = Items.Get(it.Def);
+        if (!loc.InPack) { if (loc.Slot != EquipSlot.Weapon) G.Gear((j, b) => j.Unequip(loc.Slot, b)); else Sound.Sfx.Deny(); return; }
+        if (def.Kind == ItemKind.Consumable) G.Gear((j, b) => j.Use(it.Uid, b));
+        else if (Items.SlotFor(def) != null) { Sound.Sfx.Equip(); G.Gear((j, b) => j.Equip(it.Uid, null, b)); }
+        else Sound.Sfx.Deny();
+    }
+
+    /// <summary>Leaving a thing behind cannot be undone: the first time asks, the second does it.</summary>
+    void Leave(ItemInstance it)
+    {
+        if (G.Journey.StillNeeded(it) || !InPack(it)) { Sound.Sfx.Deny(); return; }
+        if (leaving != it.Uid) { leaving = it.Uid; Sound.Sfx.Hover(); ShowInspect(it); Footer(); return; }
+        leaving = null;
+        if (sel == it.Uid) sel = null;
+        G.Journey.Drop(it.Uid);
+    }
+
+    /// <summary>The pack in order: gear by where it is worn, then draughts, then the rest; finer first.</summary>
+    void Sort()
+    {
+        var ch = Ch;
+        static int Group(ItemDef d) => Items.SlotFor(d) is EquipSlot s ? (int)s : d.Kind switch
+        {
+            ItemKind.Consumable => 20, ItemKind.Material => 30, ItemKind.Trophy => 31, ItemKind.Tool => 32, ItemKind.Quest => 40, _ => 50,
+        };
+        var items = ch.Pack.Where(p => p != null).Select(p => p!).OrderBy(p => Group(Items.Get(p.Def))).ThenByDescending(p => p.Rarity).ThenBy(p => Inventory.Name(p)).ToList();
+        for (int i = 0; i < ch.Pack.Count; i++) ch.Pack[i] = i < items.Count ? items[i] : null;
+        Sound.Sfx.Page();
+        Refresh();
+    }
+
+    /// <summary>The thing chosen (or focused, with a pad) read closely, with what can be done with it.</summary>
+    void ShowInspect(ItemInstance? it)
+    {
+        if (!IsInstanceValid(inspect)) return;
+        foreach (var c in inspect.GetChildren()) { inspect.RemoveChild(c); c.QueueFree(); }
+        if (it == null)
+        {
+            inspect.AddChild(Style.Gap(Style.Gap4));
+            inspect.AddChild(Style.Label(Controls.Instance.UsingPad ? "Move over a thing to read it." : "Choose a thing to read it closely; drag it onto yourself to wear it.", Style.Text, Style.Body, Style.Ink, true, HorizontalAlignment.Center));
+            inspect.AddChild(Style.Label("Gear stays with you. Ember fades when you rest; what you carry, and what you wear, does not.", Style.TextItalic, Style.Caption, Style.InkDim, true, HorizontalAlignment.Center));
+            return;
+        }
+        var loc = Inventory.Find(Ch, it.Uid);
+        if (loc == null) return;
+        var def = Items.Get(it.Def);
+        var acts = Style.H(8);
+        if (!Controls.Instance.UsingPad)
+        {
+            if (loc.InPack && def.Kind == ItemKind.Consumable) acts.AddChild(Style.Button("Use", () => Primary(it), true, true));
+            if (loc.InPack && Items.SlotFor(def) != null) acts.AddChild(Style.Button("Wear", () => Primary(it), true, true));
+            if (!loc.InPack && loc.Slot != EquipSlot.Weapon) acts.AddChild(Style.Button("Take off", () => Primary(it), false, true));
+            if (loc.InPack && !G.Journey.StillNeeded(it))
+                acts.AddChild(Style.Button(leaving == it.Uid ? "Leave it behind for good" : "Leave behind", () => Leave(it), false, true));
+        }
+        var card = ItemViews.Card(it, Ch, loc.InPack, acts, 560);
+        inspect.AddChild(Style.Scroll(card));
+    }
+
+    void Footer()
+    {
+        if (!IsInstanceValid(foot)) return;
+        foreach (var c in foot.GetChildren()) { foot.RemoveChild(c); c.QueueFree(); }
+        Control f;
+        if (leaving != null && Inventory.Find(Ch, leaving) is { } l)
+            f = Style.H(Style.Gap5, Style.Hint(Act.Alt, $"again to leave {Inventory.Name(l.Item)} behind for good", Style.Bad), Style.Hint(Act.Cancel, "Keep it"));
+        else if (Controls.Instance.UsingPad)
+            f = Overlay.Footer((Act.Confirm, "Wear, use or take off"), (Act.Alt, "Leave behind"), (Act.Alt2, "Sort"), (Act.SubNext, "Filter"), (Act.TabNext, "Next page"), (Act.Cancel, "Close"));
+        else f = MouseFooter("Right-click or double-click to wear or use", "drag onto yourself to wear, off to take off", "hover to compare");
+        if (f is BoxContainer bc) bc.Alignment = BoxContainer.AlignmentMode.Center;
+        if (f is Label lb) lb.HorizontalAlignment = HorizontalAlignment.Center;
+        f.Size = new Vector2(1460, 30);
+        foot.AddChild(f);
+    }
+
+    public override bool Key(Act a)
+    {
+        switch (a)
+        {
+            case Act.SubNext: filter = (filter + 1) % Filters.Length; Sound.Sfx.Page(); Refresh(); return true;
+            case Act.SubPrev: filter = (filter + Filters.Length - 1) % Filters.Length; Sound.Sfx.Page(); Refresh(); return true;
+            case Act.Alt2: Sort(); return true;
+            case Act.Cancel when leaving != null:
+                leaving = null;
+                Footer();
+                ShowInspect(sel != null ? Inventory.Find(Ch, sel)?.Item : null);
+                return true;
+        }
+        if (a is Act.Up or Act.Down or Act.Left or Act.Right && leaving != null) { leaving = null; Footer(); }
+        return false;
+    }
+
+    /// <summary>The survivor's standing as a small table (also shown on the sheet).</summary>
     public static Control Stats(CharacterData ch)
     {
         var k = Character.Kit(ch).Stats;
-        (string, string)[] rows =
-        {
-            ("Health", $"{Math.Round(k.Get(Stat.MaxHealth))}"),
-            ("Armour", $"{Math.Round(k.Get(Stat.Armor))} ({Math.Round(StatBlock.ArmorReduction(k.Get(Stat.Armor)) * 100)}%)"),
-            ("Damage", $"{(Math.Round((k.Get(Stat.Damage) - 1) * 100) >= 0 ? "+" : "")}{Math.Round((k.Get(Stat.Damage) - 1) * 100)}%"),
-            ("Speed", $"{k.Get(Stat.MoveSpeed):0.0}"),
-            ("Critical", $"{Math.Round(k.Get(Stat.CritChance) * 100)}%"),
-            ("Regeneration", $"{k.Get(Stat.Regen):0.0}/s"),
-        };
         var g = new GridContainer { Columns = 4, MouseFilter = MouseFilterEnum.Ignore };
         g.AddThemeConstantOverride("h_separation", 14);
-        foreach (var (a, b) in rows)
+        foreach (var (key, name) in Shown)
         {
-            g.AddChild(Style.Label(a, Style.Ui, 14, Style.InkDim));
-            g.AddChild(Style.Label(b, Style.UiBold, 15, Style.Ink));
+            g.AddChild(Style.Label(name, Style.Ui, Style.Caption, Style.InkDim));
+            g.AddChild(Style.Label(Format(key, k.Get(key)), Style.UiBold, Style.Small, Style.Ink));
         }
         return g;
     }
 }
 
-/// <summary>Buying and selling (the web game's Shop): the seller's shelf on
-/// the left, your pack on the right, the price on every tag; what they
-/// will not buy is dimmed.</summary>
+/// <summary>Buying and selling (docs/UI_DESIGN.md, "Shop"): the seller's shelf
+/// on the left with its prices (red when more than you have), your pack on
+/// the right; hover to read and compare, right-click or double-click to buy
+/// or sell, or drag across; the chosen thing read closely under your pack.
+/// What they will not buy is dimmed.</summary>
 public partial class ShopScreen : Overlay
 {
     public override string Kind => "shop";
     readonly string shop;
     (string Uid, bool Buy)? sel;
+    VBoxContainer inspect = null!;
 
-    public ShopScreen(Game g, string shop) : base(g) { this.shop = shop; }
+    public ShopScreen(Game g, string shop) : base(g) { this.shop = shop; Nav.Prefer = "shelf:0"; }
 
     protected override void Build()
     {
@@ -151,71 +404,114 @@ public partial class ShopScreen : Overlay
         var w = G.Journey.World;
         var def = Lore.Shops[shop];
         var who = Lore.Person(shop);
-        var body = Frame(def.Name, new Vector2(1380, 640), "Esc", who != null ? $"{who.Name}, {who.Role.ToLowerInvariant()}" : null);
-        var row = Style.H(22);
+        var body = Frame(def.Name, new Vector2(1440, 600), "Esc", who != null ? $"{who.Name}, {who.Role.ToLowerInvariant()}  ·  prices soften for people who like you" : null, fit: true);
+        // Three columns: their shelf, the thing chosen with its price, your pack.
+        var row = Style.H(28);
         body.AddChild(row);
         var stock = w.Shops.GetValueOrDefault(shop)?.Stock ?? new();
         var shelf = stock.Cast<ItemInstance?>().ToList();
-        while (shelf.Count < 20) shelf.Add(null);
-        var left = Style.V(8, Style.SubLabel("For sale"),
-            ItemViews.Grid(shelf, 5, 64, it => sel is { Buy: true } s && s.Uid == it.Uid, it => G.Journey.PriceOf(shop, it.Uid, true),
-                it => { sel = (it.Uid, true); Refresh(); }, it => G.Journey.Buy(shop, it.Uid), (it, over) => Tip(it != null && it.Uid != sel?.Uid ? ItemViews.Card(it, ch, true) : null, over)));
-        row.AddChild(left);
+        while (shelf.Count < 24 || shelf.Count % 6 != 0) shelf.Add(null);
+        row.AddChild(Style.V(Style.Gap2, Style.SubLabel("For sale"),
+            ItemViews.Grid(shelf, 6, 70, it => sel is { Buy: true } s && s.Uid == it.Uid, it => G.Journey.PriceOf(shop, it.Uid, true),
+                it => Choose(it.Uid, true), Buy, (it, over) => Hover(it, over, true), "shelf", null, (i, it, v) =>
+                {
+                    if (it != null) v.Drag = $"shelf:{it.Uid}";
+                    v.CanTake = d => d.StartsWith("mine:");
+                    v.Take = d => Sell(d[5..]);
+                }, dear: it => G.Journey.PriceOf(shop, it.Uid, true) is int p && p > ch.Gold)));
+        inspect = Style.V(Style.Gap2);
+        inspect.CustomMinimumSize = new Vector2(420, 0);
+        row.AddChild(inspect);
+        row.AddChild(Style.V(Style.Gap2, Style.SubLabel("Your pack"),
+            ItemViews.Grid(ch.Pack, 6, 62, it => sel is { Buy: false } s && s.Uid == it.Uid, it => G.Journey.PriceOf(shop, it.Uid, false),
+                it => Choose(it.Uid, false), it => Sell(it.Uid), (it, over) => Hover(it, over, false), "mine", null, (i, it, v) =>
+                {
+                    if (it != null) v.Drag = $"mine:{it.Uid}";
+                    v.CanTake = d => d.StartsWith("shelf:");
+                    v.Take = d => Buy(d[6..]);
+                }),
+            Style.H(16, Style.H(4, Glyphs.Icon("coin", 18, Style.GoldHi), Style.Label($"{Math.Floor(ch.Gold)} gold", Style.UiBold, Style.Body, Style.GoldHi)))));
+        ShowInspect();
+        body.AddChild(Controls.Instance.UsingPad
+            ? Footer((Act.Confirm, "Buy or sell"), (Act.Cancel, "Close"))
+            : MouseFooter("Right-click or double-click to buy or sell", "or drag it across", "hover to compare"));
+    }
 
-        var detail = Style.V(8);
-        detail.CustomMinimumSize = new Vector2(360, 0);
+    void Buy(ItemInstance it) => Buy(it.Uid);
+    void Buy(string uid)
+    {
+        var p = G.Journey.PriceOf(shop, uid, true);
+        if (p == null || p > G.Journey.Ch.Gold) { Sound.Sfx.Deny(); return; }
+        G.Journey.Buy(shop, uid);
+    }
+
+    void Sell(string uid)
+    {
+        if (G.Journey.PriceOf(shop, uid, false) == null) { Sound.Sfx.Deny(); return; }
+        if (sel?.Uid == uid) sel = null;
+        G.Journey.Sell(shop, uid);
+    }
+
+    void Choose(string uid, bool buy) { sel = sel?.Uid == uid ? null : (uid, buy); Refresh(); }
+
+    void Hover(ItemInstance? it, Control? over, bool buying)
+    {
+        var ch = G.Journey.Ch;
+        if (Controls.Instance.UsingPad) { if (it != null) { sel = (it.Uid, buying); ShowInspect(); } Tip(null, null); return; }
+        Tip(it != null && it.Uid != sel?.Uid ? ItemViews.Compare(it, ch, true) : null, over);
+    }
+
+    void ShowInspect()
+    {
+        if (!IsInstanceValid(inspect)) return;
+        foreach (var c in inspect.GetChildren()) { inspect.RemoveChild(c); c.QueueFree(); }
+        var ch = G.Journey.Ch;
+        var stock = G.Journey.World.Shops.GetValueOrDefault(shop)?.Stock ?? new();
         ItemInstance? chosen = sel is var (uid, buy) ? (buy ? stock.FirstOrDefault(x => x.Uid == uid) : ch.Pack.FirstOrDefault(x => x?.Uid == uid)) : null;
-        if (chosen != null && sel is var (_, buying))
+        if (chosen == null || sel is not var (_, buying))
         {
-            var price = G.Journey.PriceOf(shop, chosen.Uid, buying);
-            Control act;
-            if (buying)
-            {
-                var b = Style.Button($"Buy · {price} gold", () => G.Journey.Buy(shop, chosen.Uid), true, true);
-                b.Disabled = price == null || ch.Gold < price;
-                act = b;
-            }
-            else if (price != null) act = Style.Button($"Sell · {price} gold", () => { sel = null; G.Journey.Sell(shop, chosen.Uid); }, true, true);
-            else act = Style.Label("They will not buy this.", Style.TextItalic, 14, Style.InkDim);
-            detail.AddChild(ItemViews.Card(chosen, ch, true, act, 360));
+            inspect.AddChild(Style.Gap(60));
+            var c = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+            c.AddChild(Glyphs.Icon("coin", 30, Style.GoldDim));
+            inspect.AddChild(c);
+            inspect.AddChild(Style.Label("Choose something on their shelf to buy, or in your pack to sell.", Style.Text, Style.Body, Style.Ink, true, HorizontalAlignment.Center));
+            inspect.AddChild(Style.Label("What they will not buy is dimmed; a price in red is more than you have.", Style.TextItalic, Style.Caption, Style.InkDim, true, HorizontalAlignment.Center));
+            return;
         }
-        else
-        {
-            detail.AddChild(Style.Gap(80));
-            detail.AddChild(Glyphs.Icon("coin", 28, Style.GoldDim));
-            detail.AddChild(Style.Label("Choose something on the shelf, or in your pack.", Style.Text, 16, Style.Ink, true, HorizontalAlignment.Center));
-            detail.AddChild(Style.Label("Prices soften for people who like you.", Style.TextItalic, 14, Style.InkDim, true, HorizontalAlignment.Center));
-        }
-        row.AddChild(detail);
-
-        var right = Style.V(8, Style.SubLabel("Your pack"),
-            ItemViews.Grid(ch.Pack, 6, 56, it => sel is { Buy: false } s && s.Uid == it.Uid, it => G.Journey.PriceOf(shop, it.Uid, false),
-                it => { sel = (it.Uid, false); Refresh(); }, it => G.Journey.Sell(shop, it.Uid), (it, over) => Tip(it != null && it.Uid != sel?.Uid ? ItemViews.Card(it, ch, true) : null, over)),
-            Style.H(16, Style.H(4, Glyphs.Icon("coin", 16, Style.GoldHi), Style.Label($"{Math.Floor(ch.Gold)}", Style.UiBold, 16, Style.GoldHi)),
-                Style.Label("Double-click to buy or sell", Style.TextItalic, 14, Style.InkFaint)));
-        row.AddChild(right);
+        var price = G.Journey.PriceOf(shop, chosen.Uid, buying);
+        bool pad = Controls.Instance.UsingPad, short_ = buying && price is int pp && ch.Gold < pp;
+        // Only what is shown is made: a pad reads a prompt, a mouse presses a button.
+        Control act;
+        if (price == null) act = Style.Label(buying ? "Not for sale." : "They will not buy this.", Style.TextItalic, Style.Caption, Style.InkDim);
+        else if (short_) act = Style.Label($"{price} gold: you have {Math.Floor(ch.Gold)}.", Style.UiBold, Style.Caption, Style.Bad);
+        else if (pad) act = Style.Hint(Act.Confirm, buying ? $"Buy for {price} gold" : $"Sell for {price} gold");
+        else act = buying ? Style.Button($"Buy  ·  {price} gold", () => Buy(chosen.Uid), true, true) : Style.Button($"Sell  ·  {price} gold", () => Sell(chosen.Uid), true, true);
+        inspect.AddChild(ItemViews.Card(chosen, ch, true, act, 420));
     }
 }
 
-/// <summary>Rook's storeroom: kept safe, whatever becomes of you. A click
-/// moves a thing between the pack and the store.</summary>
+/// <summary>Rook's storeroom: kept safe, whatever becomes of you. A click (or A,
+/// a double click, a right click, or a drag) moves a thing between the pack
+/// and the store.</summary>
 public partial class StashScreen : Overlay
 {
     public override string Kind => "stash";
 
-    public StashScreen(Game g) : base(g) { }
+    public StashScreen(Game g) : base(g) { Nav.Prefer = "mine:0"; }
 
     protected override void Build()
     {
         var ch = G.Journey.Ch;
         var w = G.Journey.World;
-        var body = Frame("Rook's Storeroom", new Vector2(1120, 560), "Esc", "Kept safe, whatever becomes of you.");
-        var row = Style.H(28);
+        var body = Frame("Rook's Storeroom", new Vector2(1240, 560), "Esc", "Kept safe, whatever becomes of you.", fit: true);
+        var row = Style.H(36);
         body.AddChild(row);
-        row.AddChild(Style.V(8, Style.SubLabel("Stored"),
-            ItemViews.Grid(w.Stash, 8, 56, null, null, it => G.Journey.FromStash(it.Uid), null, (it, over) => Tip(it != null ? ItemViews.Card(it, ch, false) : null, over))));
-        row.AddChild(Style.V(8, Style.SubLabel("Your pack"),
-            ItemViews.Grid(ch.Pack, 6, 56, null, null, it => G.Journey.ToStash(it.Uid), null, (it, over) => Tip(it != null ? ItemViews.Card(it, ch, false) : null, over)),
-            Style.Label("Click to move between pack and store", Style.TextItalic, 14, Style.InkFaint)));
+        row.AddChild(Style.V(8, Style.SubLabel($"Stored  ·  {w.Stash.Count(x => x != null)} of {w.Stash.Count}"),
+            ItemViews.Grid(w.Stash, 8, 62, null, null, it => G.Journey.FromStash(it.Uid), it => G.Journey.FromStash(it.Uid), (it, over) => Tip(it != null ? ItemViews.Card(it, ch, false) : null, over), "store", null,
+                (i, it, v) => { if (it != null) v.Drag = $"store:{it.Uid}"; v.CanTake = d => d.StartsWith("mine:"); v.Take = d => G.Journey.ToStash(d[5..]); })));
+        row.AddChild(Style.V(8, Style.SubLabel($"Your pack  ·  {ch.Pack.Count(p => p != null)} of {ch.Pack.Count}"),
+            ItemViews.Grid(ch.Pack, 6, 62, null, null, it => G.Journey.ToStash(it.Uid), it => G.Journey.ToStash(it.Uid), (it, over) => Tip(it != null ? ItemViews.Card(it, ch, false) : null, over), "mine", null,
+                (i, it, v) => { if (it != null) v.Drag = $"mine:{it.Uid}"; v.CanTake = d => d.StartsWith("store:"); v.Take = d => G.Journey.FromStash(d[6..]); })));
+        body.AddChild(Controls.Instance.UsingPad ? Footer((Act.Confirm, "Move between pack and store"), (Act.Cancel, "Close")) : MouseFooter("Click, or drag, to move between pack and store"));
     }
 }

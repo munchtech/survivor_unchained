@@ -35,9 +35,11 @@ public class BreadcrumbTests
     static List<string> Offered(Setup s, string id) => Greet(Convo(id), s.C).Choices.Select(c => c.Text).ToList();
     static void Meet(Setup s, string id) => s.World.Npc(id).Flags["met"] = true;
 
-    /// <summary>Vonnra's fortune, read through to its last question.</summary>
+    /// <summary>Vonnra's fortune, read through to its last question. She reads
+    /// only after dark (docs/cinematics/c09_fortune.md).</summary>
     static (DialogueRunner R, Presented P, string Read) Fortune(Setup s)
     {
+        s.World.Time = TimeOfDay.Night;
         var r = new DialogueRunner(Convo("vonnra"), s.C);
         var p = r.Start()!;
         p = r.Choose(p.Choices.First(c => c.Text.Contains("fortune", StringComparison.OrdinalIgnoreCase)).Index).Next!;
@@ -308,12 +310,25 @@ public class BreadcrumbTests
     {
         var s = Q("hunter");
         s.Ch.Gold = 20;
-        Talk(Convo("sella"), s.C, "how much", "15 gold", "where you come from");
+        Talk(Convo("sella"), s.C, "how much", "15 gold, then", "kiss her", "where you come from");
         Assert.True(s.World.Fact("sella.heard_past").Truthy);
+        Assert.True(s.World.Fact("sella.past_sold").Truthy);
         s.World.Facts["beasts.outcome"] = "cured";
         s.World.Facts["caravan.survivors"] = "rescued";
         s.World.Facts["chapter.ready"] = true;
         Assert.Contains("bow too big", Fortune(s).Read);
+        // Told after the night she would not take the money: she has stopped
+        // selling you, and the fortune does not have it.
+        var f = Q("hunter");
+        f.Ch.Gold = 20;
+        f.World.Facts["sella.free"] = true;
+        Talk(Convo("sella"), f.C, "how much", "15 gold, then", "kiss her", "where you come from");
+        Assert.True(f.World.Fact("sella.heard_past").Truthy);
+        Assert.False(f.World.Fact("sella.past_sold").Truthy);
+        f.World.Facts["beasts.outcome"] = "cured";
+        f.World.Facts["caravan.survivors"] = "rescued";
+        f.World.Facts["chapter.ready"] = true;
+        Assert.Contains("far bank", Fortune(f).Read);
         var k = Q("hunter");
         k.World.Facts["beasts.outcome"] = "cured";
         k.World.Facts["caravan.survivors"] = "rescued";
@@ -411,6 +426,7 @@ public class BreadcrumbTests
         Assert.Equal("watch", Settled(s => s.World.Facts["roost.cleared"] = true));
         Assert.Equal("burned", Settled(s => Rules.Apply(E("{ history: { id: 'burned_roost', text: 'set the Roost burning', tags: ['caravan'], spread: 2 } }"), s.C)));
         Assert.Equal("redcowl", Settled(s => s.World.Facts["be.crates"] = "redcowl"));
+        Assert.Equal("sunk", Settled(s => s.World.Facts["be.crates"] = "sunk"));
     }
 
     /* ------------------------------------------------- seeds for the later acts -- */
@@ -639,8 +655,13 @@ public class BreadcrumbTests
         var p = Route.New("scholar");
         p.Learn("root_cause");
         p.J.OpenShop("pell", new Random(1));
-        var text = Json.Write(p.J.ToSave(new SaveLocation { Zone = "waystation" })).Replace("\"Version\":2", "\"Version\":1");
-        var old = Saves.Parse(System.Text.RegularExpressions.Regex.Replace(text, "\"Offered\":\\[[^\\]]*\\]", "\"Offered\":[]"))!;
+        // A version 1 save knew nothing of the lines already rolled (the save's
+        // names are camelCase).
+        var text = Json.Write(p.J.ToSave(new SaveLocation { Zone = "waystation" }));
+        Assert.Contains("\"version\":2", text);
+        var v1 = System.Text.RegularExpressions.Regex.Replace(text.Replace("\"version\":2", "\"version\":1"), ",\"offered\":\\[[^\\]]*\\]", "");
+        Assert.DoesNotContain("\"offered\"", v1);
+        var old = Saves.Parse(v1)!;
         Assert.Contains(old.World.Shops["pell"].Offered, k => k.EndsWith(":blasting_ember"));
         var j = SurvivorUnchained.Play.Journey.From(old, 0);
         Assert.Single(j.OpenShop("pell", new Random(1))!.Stock, i => i.Def == "blasting_ember");

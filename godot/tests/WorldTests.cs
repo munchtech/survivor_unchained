@@ -184,6 +184,8 @@ public class WorldLogicTests
         Rules.Apply(E("{ set: { redcowl: 'bargained' } }"), s.C);
         Assert.True(Standings.KerchiefsFriendly(s.C));
         Assert.Equal("Tolerated", Find("kerchief")?.Word);
+        Rules.Apply(E("{ set: { 'be.crates': 'redcowl' } }"), s.C);
+        Assert.Equal("Redcowl keeps the Coyle crates from the Dig, on your word.", Find("kerchief")?.Why);
         Rules.Apply(E("{ set: { 'roost.hostile': true } }"), s.C);
         Assert.False(Standings.KerchiefsFriendly(s.C));
         Assert.Equal("At war", Find("kerchief")?.Word);
@@ -254,6 +256,17 @@ public class SaveTests
             Assert.Equal("Ashe", saves.Read(2)!.Character.Name);
         }
         finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
+    public void A_shop_saved_before_it_kept_its_offered_lines_still_opens()
+    {
+        var s = Make();
+        s.World.Shops["pell"] = new ShopState { RestockDay = 4 };
+        var raw = Json.Write(new SaveData { Character = s.Ch, World = s.World })
+            .Replace("\"offered\":[]", "\"offered\":null");
+        Assert.Contains("\"offered\":null", raw);
+        Assert.NotNull(Saves.Parse(raw)!.World.Shops["pell"].Offered);
     }
 
     [Fact]

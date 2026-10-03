@@ -44,10 +44,10 @@ means until Act 2 (beat 11, "What you are"):
 
 | Lover | What they notice | When | Fact | Lands |
 |---|---|---|---|---|
-| Sella | You run hot at night and you're cold as the river by morning; you say a name in your sleep (`sella.sleeptalk`, existing) | Act 1, the morning after a paid night | `sella.felt_cold` **(new)** | Act 2: what she can sell, and who to (§1.6) |
-| Maeca | The Pack lies down round the Blind when you're in it; at dawn your heart is slow "as a bear's in January" | Act 1, the Blind | `maeca.heard_heart` **(new)** | Act 2: she already knew, so the turn does not break her |
+| Sella | You are cold as the river all night and warm by breakfast; you say a name in your sleep (`sella.sleeptalk`, existing) | Act 1, the morning after a paid night | `sella.felt_cold` **(new)** | Act 2: what she can sell, and who to (§1.6) |
+| Maeca | The Pack lies down round the Blind when you're in it; all night your heart is "a bear's in January", and a hare's at dawn | Act 1, the Blind | `maeca.heard_heart` **(new)** | Act 2: she already knew, so the turn does not break her |
 | Keegan | The signs of chapter four, one by one | Act 1 (`keegan.saw_risen`, existing) and Act 2 | `keegan.asked` **(new)** | Act 2 beat 2: the question |
-| Rav | A doctor's two fingers on your wrist in the dark: no pulse for a count of eleven, then a pulse | Act 2, the back room | `rav.felt_pulse` **(new)** | Act 2 beat 11: he says it in a doctor's words |
+| Rav | A doctor's two fingers on your wrist in the dark: no pulse for a count of seven, then a pulse | Act 2, the back room | `rav.felt_pulse` **(new)** | Act 2 beat 11: he says it in a doctor's words |
 | Ysolde | Nothing. She knew before anyone, and wrote it down and sold it | Act 2, Silverstair | `wayfinder.confessed` **(new)** | Act 2 beat 10 |
 
 None of them says "Unchained" in Act 1. They talk round it, as the voices
@@ -552,7 +552,7 @@ closed until she learns otherwise, and when she does, it is closed for good.
 - In the north road night, she stops it once, armour half off, to ask a
   real question: "If I am wrong about everything, I would like to be wrong
   about this on purpose. Are you sure?" The survivor can say no, and she
-  says, with great relief and some disappointment, "Oh, thank God," and they
+  says, with great relief and some disappointment, "Oh, thank— thank you," and they
   sleep with her armour between them like a third person.
 - The survivor can refuse her altogether. Act 2's companion route still
   works without the romance.
@@ -682,7 +682,7 @@ is not an insult. He says "Aye. Fair." and pours two.
 - Rav refuses a survivor who told Holloway about the little bird. He doesn't
   make a scene of it. He buys them a drink and moves to a different stool.
 - He refuses if he's drunk past the fifth cup: "Not like this, pal. I'd like
-  to remember it. ...Christ, did I say that out loud." This is a scene beat,
+  to remember it. ...Mam— did I say that out loud." This is a scene beat,
   not a stat check (night, `rav.drunk`, from the tavern's evening clock, or
   simply a variant on the first try at `back_room2`).
 - The survivor can stop at the pulse. If they pull their wrist away he lets

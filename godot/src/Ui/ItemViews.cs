@@ -54,7 +54,8 @@ public static class ItemViews
         [Sim.School.Nature] = new("#8ae05a"), [Sim.School.Arcane] = new("#cc88ff"), [Sim.School.Holy] = new("#ffd46a"), [Sim.School.Shadow] = new("#a87aff"),
     };
 
-    static (string Text, bool Good) Delta(string key, double before, double after)
+    /// <summary>A change in words: "+5% Area", and whether it is for the better.</summary>
+    public static (string Text, bool Good) Delta(string key, double before, double after)
     {
         double d = after - before;
         string name = StatNames.GetValueOrDefault(key, key);
@@ -73,14 +74,19 @@ public static class ItemViews
         Gradient = new Gradient { Colors = new[] { Colors.White, Colors.White with { A = 0 } }, Offsets = new[] { 0f, 1f } },
     };
 
-    /// <summary>One slot of a grid: empty, or an item rimmed in its rarity.</summary>
-    public static Control Slot(ItemInstance? it, int size, bool selected = false, int? price = null, bool refused = false,
-        Action? onClick = null, Action? onDouble = null, Action<Control?>? onHover = null, string? emptyGlyph = null, string? caption = null)
+    /// <summary>One slot of a grid: empty, or an item rimmed in its rarity. A
+    /// click chooses it, a double click or a right click does its first thing
+    /// (wear, use, buy); with a name it can take focus, where A does that first
+    /// thing, X its second (onAlt), and its card shows beside it.</summary>
+    public static SlotView Slot(ItemInstance? it, int size, bool selected = false, int? price = null, bool refused = false,
+        Action? onClick = null, Action? onDouble = null, Action<Control?>? onHover = null, string? emptyGlyph = null, string? caption = null,
+        string? navId = null, Action? onAlt = null, bool fresh = false, bool dim = false, bool dear = false)
     {
-        var box = new Panel { CustomMinimumSize = new Vector2(size, size), MouseFilter = Control.MouseFilterEnum.Stop };
+        var box = new SlotView { CustomMinimumSize = new Vector2(size, size), MouseFilter = Control.MouseFilterEnum.Stop, Item = it };
         var rim = it != null ? Style.RarityOf(it.Rarity) with { A = selected ? 1 : 0.55f } : Style.Line with { A = 0.18f };
         var bg = it != null ? new Color(0.08f, 0.07f, 0.09f, 0.95f).Lerp(Style.RarityOf(it.Rarity), 0.08f) : new Color(0.05f, 0.045f, 0.06f, 0.8f);
-        box.AddThemeStyleboxOverride("panel", Style.Box(bg, rim, selected ? 2 : 1, 4, 0));
+        var flat = Style.Box(bg, rim, selected ? 2 : 1, 4, 0);
+        box.AddThemeStyleboxOverride("panel", UiArt.Frame(it != null ? $"slot_{Math.Clamp(it.Rarity, 0, 5)}" : "slot", flat));
         if (it != null)
         {
             var def = Items.Get(it.Def);
@@ -102,8 +108,11 @@ public static class ItemViews
             box.AddChild(icon);
             if (it.Qty > 1)
             {
-                var q = Style.Label(it.Qty.ToString(), Style.UiBold, 13, Style.Ink);
-                q.Position = new Vector2(size - 20, size - 20);
+                // How many, as a count (x3), never to be mistaken for a price.
+                var q = Style.Label($"×{it.Qty}", Style.UiHeavy, Style.Badge, Style.Ink);
+                q.HorizontalAlignment = HorizontalAlignment.Right;
+                q.Size = new Vector2(size - 6, 16);
+                q.Position = new Vector2(0, size - 18);
                 box.AddChild(q);
             }
             if (Items.SlotFor(def) != null)
@@ -113,11 +122,22 @@ public static class ItemViews
             }
             if (price is int p)
             {
-                var pl = Style.Label($"{p}", Style.UiBold, 12, Style.GoldHi);
-                pl.Position = new Vector2(4, size - 19);
-                box.AddChild(pl);
+                // The price on a dark tag at the top, with its coin; red when it is more than you have.
+                var pc = dear ? Style.Bad : Style.GoldHi;
+                var tag = Style.Panel(Style.Box(new Color(0.03f, 0.025f, 0.04f, 0.85f), dear ? Style.Bad with { A = 0.6f } : Style.GoldDim, 1, 3, 3), Style.H(2, Glyphs.Icon("coin", 11, pc), Style.Label($"{p}", Style.UiHeavy, Style.Badge, pc)));
+                tag.MouseFilter = Control.MouseFilterEnum.Ignore;
+                tag.Position = new Vector2(2, 2);
+                box.AddChild(tag);
             }
-            if (refused) box.Modulate = new Color(1, 1, 1, 0.4f);
+            // New since the pack was last looked at: an ember mark until it is.
+            if (fresh)
+            {
+                var mark = Style.Panel(Style.Box(Style.Ember, Style.EmberHi, 1, 6, 3), Style.Label("NEW", Style.UiHeavy, 10, new Color("#2a1206"), false, HorizontalAlignment.Center, false));
+                mark.MouseFilter = Control.MouseFilterEnum.Ignore;
+                mark.Position = new Vector2(2, 2);
+                box.AddChild(mark);
+            }
+            if (refused || dim) box.Modulate = new Color(1, 1, 1, dim ? 0.25f : 0.4f);
         }
         else if (emptyGlyph != null)
         {
@@ -135,40 +155,73 @@ public static class ItemViews
         }
         box.GuiInput += e =>
         {
-            if (e is not InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left } mb || it == null) return;
-            if (mb.DoubleClick) onDouble?.Invoke(); else onClick?.Invoke();
+            if (e is not InputEventMouseButton { Pressed: true } mb || it == null) return;
+            if (mb.ButtonIndex == MouseButton.Right) onDouble?.Invoke();
+            else if (mb.ButtonIndex == MouseButton.Left) { if (mb.DoubleClick) onDouble?.Invoke(); else onClick?.Invoke(); }
         };
         if (onHover != null)
         {
             box.MouseEntered += () => onHover(it != null ? box : null);
             box.MouseExited += () => onHover(null);
         }
+        if (navId != null)
+            Nav.Mark(box, navId, it != null ? onDouble ?? onClick ?? (() => { }) : () => { }, it != null ? onAlt : null, null,
+                () => onHover?.Invoke(it != null ? box : null), () => onHover?.Invoke(null));
         return box;
     }
 
-    /// <summary>A grid of slots (the pack, a shelf, the storeroom).</summary>
+    /// <summary>A grid of slots (the pack, a shelf, the storeroom); with a name, each slot can take focus;
+    /// setup readies each cell for dragging and dropping (its index, its item, the slot).</summary>
     public static GridContainer Grid(IEnumerable<ItemInstance?> items, int cols, int size, Func<ItemInstance, bool>? selected = null, Func<ItemInstance, int?>? price = null,
-        Action<ItemInstance>? onClick = null, Action<ItemInstance>? onDouble = null, Action<ItemInstance?, Control?>? onHover = null)
+        Action<ItemInstance>? onClick = null, Action<ItemInstance>? onDouble = null, Action<ItemInstance?, Control?>? onHover = null,
+        string? nav = null, Action<ItemInstance>? onAlt = null, Action<int, ItemInstance?, SlotView>? setup = null, Func<ItemInstance, bool>? dear = null)
     {
         var g = new GridContainer { Columns = cols, MouseFilter = Control.MouseFilterEnum.Ignore };
         g.AddThemeConstantOverride("h_separation", 5);
         g.AddThemeConstantOverride("v_separation", 5);
+        int i = 0;
         foreach (var it in items)
         {
             int? p = it != null && price != null ? price(it) : null;
-            g.AddChild(Slot(it, size, it != null && selected?.Invoke(it) == true, p, it != null && price != null && p == null,
+            var slot = Slot(it, size, it != null && selected?.Invoke(it) == true, p, it != null && price != null && p == null,
                 it != null && onClick != null ? () => onClick(it) : null, it != null && onDouble != null ? () => onDouble(it) : null,
-                onHover != null ? c => onHover(it, c) : null));
+                onHover != null ? c => onHover(it, c) : null, null, null, nav != null ? $"{nav}:{i}" : null, it != null && onAlt != null ? () => onAlt(it) : null,
+                dear: it != null && dear?.Invoke(it) == true);
+            setup?.Invoke(i, it, slot);
+            g.AddChild(slot);
+            i++;
         }
         return g;
     }
 
-    /// <summary>Everything an item is, on one card.</summary>
-    public static PanelContainer Card(ItemInstance it, CharacterData? ch, bool compare, Control? actions = null, int width = 340)
+    /// <summary>The worn thing an item would replace, if any (the second ring's place when the first is taken).</summary>
+    public static ItemInstance? Against(ItemInstance it, CharacterData ch)
+    {
+        var def = Items.Get(it.Def);
+        if (Items.SlotFor(def) is not EquipSlot slot) return null;
+        if (Enum.GetValues<EquipSlot>().Any(s => ch.Equipment[s]?.Uid == it.Uid)) return null;
+        var target = slot == EquipSlot.Ring1 && ch.Equipment.Ring1 != null && ch.Equipment.Ring2 == null ? EquipSlot.Ring2 : slot;
+        return ch.Equipment[target];
+    }
+
+    /// <summary>A hovered thing's card, with the worn one it would replace beside it
+    /// (the ARPGs' side-by-side comparison: docs/UI_RESEARCH.md 7.1).</summary>
+    public static Control Compare(ItemInstance it, CharacterData ch, bool compare)
+    {
+        var card = Card(it, ch, compare);
+        if (!compare || Against(it, ch) is not { } worn) return card;
+        var h = Style.H(Style.Gap2, card);
+        var w = Style.V(4, Style.Label("WORN NOW", Style.UiHeavy, Style.Badge, Style.InkDim), Card(worn, ch, false, null, 300, true));
+        h.AddChild(w);
+        return h;
+    }
+
+    /// <summary>Everything an item is, on one card (worn: the quieter card beside a comparison).</summary>
+    public static PanelContainer Card(ItemInstance it, CharacterData? ch, bool compare, Control? actions = null, int width = 340, bool worn = false)
     {
         var def = Items.Get(it.Def);
         var col = Style.RarityOf(it.Rarity);
-        var card = Style.Panel(Style.Box(new Color(0.07f, 0.062f, 0.08f, 0.98f), col with { A = 0.6f }, 1, 5, 14));
+        var card = Style.Panel(UiArt.Frame(worn ? "tooltip_worn" : "tooltip", Style.Box(new Color(0.07f, 0.062f, 0.08f, worn ? 0.94f : 0.98f), col with { A = worn ? 0.35f : 0.6f }, 1, 5, 14)));
         card.CustomMinimumSize = new Vector2(width, 0);
         var v = Style.V(6);
         card.AddChild(v);
@@ -178,42 +231,45 @@ public static class ItemViews
         var names = Style.V(2);
         names.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         names.AddChild(Style.Label(Inventory.Name(it), Style.TextBold, 19, col, true));
-        names.AddChild(Style.Label($"{Inventory.RarityName(it)} {KindNames.GetValueOrDefault(def.Kind, def.Kind.ToString())}{(def.Unique ? " · Unique" : "")}", Style.Ui, 13, Style.InkDim));
+        var kind = Style.H(Style.Gap2, Style.Label($"{Inventory.RarityName(it)} {KindNames.GetValueOrDefault(def.Kind, def.Kind.ToString())}{(def.Unique ? " · Unique" : "")}", Style.Ui, Style.Caption, Style.InkDim), Style.Gems(it.Rarity, 5));
+        kind.Alignment = BoxContainer.AlignmentMode.Begin;
+        names.AddChild(kind);
         head.AddChild(names);
         v.AddChild(head);
         if (def.Weapon is { } iw && Weapons.All.TryGetValue(iw.Id, out var w))
             v.AddChild(Style.H(6, Glyphs.Icon(w.Art, 15, SchoolColors[w.School]), Style.Label($"{w.Name} · rank {iw.Rank} · {w.School.ToString().ToLowerInvariant()}", Style.UiBold, 14, SchoolColors[w.School])));
-        v.AddChild(Style.Label(def.Description, Style.Text, 15, Style.Ink, true));
+        v.AddChild(Style.Label(def.Description, Style.Text, Style.Small, Style.Ink, true));
         var lines = Inventory.Lines(it).Where(l => l != "").ToList();
-        if (lines.Count > 0) v.AddChild(Style.V(1, lines.Select(l => (Control)Style.Label(l, Style.UiBold, 14, new Color("#9ad8ff"), true)).ToArray()));
-        if (def.Downside != null) v.AddChild(Style.Label(def.Downside, Style.UiBold, 14, Style.Bad, true));
+        if (lines.Count > 0) v.AddChild(Style.V(1, lines.Select(l => (Control)Style.Label(l, Style.UiBold, Style.Caption, new Color("#9ad8ff"), true)).ToArray()));
+        if (def.Downside != null) v.AddChild(Style.Label(def.Downside, Style.UiBold, Style.Caption, Style.Bad, true));
         foreach (var t in def.Tags ?? new())
-            if (TagLines.TryGetValue(t, out var tl)) v.AddChild(Style.H(6, Glyphs.Icon("eye", 13, Style.Gold), Style.Label(tl, Style.TextItalic, 14, Style.GoldHi, true)));
-        if (def.Lore != null) v.AddChild(Style.Label(def.Lore, Style.TextItalic, 14, Style.InkDim, true));
-        if (it.History is { Count: > 0 } h) v.AddChild(Style.V(1, h.Select(x => (Control)Style.Label(x, Style.TextItalic, 13, Style.InkFaint, true)).ToArray()));
+            if (TagLines.TryGetValue(t, out var tl)) v.AddChild(Style.H(6, Glyphs.Icon("eye", 14, Style.Gold), Style.Label(tl, Style.TextItalic, Style.Caption, Style.GoldHi, true)));
+        if (def.Lore != null) v.AddChild(Style.Label(def.Lore, Style.TextItalic, Style.Caption, Style.InkDim, true));
+        if (it.History is { Count: > 0 } h) v.AddChild(Style.V(1, h.Select(x => (Control)Style.Label(x, Style.TextItalic, Style.Caption, Style.InkFaint, true)).ToArray()));
         if (compare && ch != null && Items.SlotFor(def) is EquipSlot slot)
         {
             var target = slot == EquipSlot.Ring1 && ch.Equipment.Ring1 != null && ch.Equipment.Ring2 == null ? EquipSlot.Ring2 : slot;
-            bool worn = Enum.GetValues<EquipSlot>().Any(s => ch.Equipment[s]?.Uid == it.Uid);
-            if (!worn)
+            bool isWorn = Enum.GetValues<EquipSlot>().Any(s => ch.Equipment[s]?.Uid == it.Uid);
+            if (!isWorn)
             {
                 var diffs = Character.Compare(ch, it, target);
                 if (diffs.Count > 0)
                 {
                     v.AddChild(Style.Rule());
                     var against = ch.Equipment[target];
-                    v.AddChild(Style.Label($"Instead of {(against != null ? Inventory.Name(against) : "nothing")}", Style.UiBold, 13, Style.InkDim));
+                    v.AddChild(Style.Label($"Instead of {(against != null ? Inventory.Name(against) : "nothing")}", Style.UiBold, Style.Caption, Style.InkDim));
                     foreach (var (key, before, after) in diffs)
                     {
+                        // Better or worse said three ways: colour, the sign, and a word.
                         var (text, good) = Delta(key, before, after);
-                        v.AddChild(Style.Label(text, Style.UiBold, 14, good ? Style.Good : Style.Bad));
+                        v.AddChild(Style.H(6, Style.Label(good ? "better" : "worse", Style.UiHeavy, Style.Badge, good ? Style.Good : Style.Bad), Style.Label(text, Style.UiBold, Style.Small, good ? Style.Good : Style.Bad)));
                     }
                 }
             }
         }
         var foot = Style.H(12);
-        if (it.Qty > 1) foot.AddChild(Style.Label($"×{it.Qty}", Style.UiBold, 13, Style.InkDim));
-        foot.AddChild(Style.H(4, Glyphs.Icon("coin", 13, Style.GoldHi), Style.Label($"{def.Value * Math.Max(1, it.Qty)}", Style.UiBold, 13, Style.GoldHi)));
+        if (it.Qty > 1) foot.AddChild(Style.Label($"×{it.Qty}", Style.UiBold, Style.Caption, Style.InkDim));
+        foot.AddChild(Style.H(4, Glyphs.Icon("coin", 14, Style.GoldHi), Style.Label($"{def.Value * Math.Max(1, it.Qty)}", Style.UiBold, Style.Caption, Style.GoldHi)));
         v.AddChild(foot);
         if (actions != null) v.AddChild(actions);
         return card;

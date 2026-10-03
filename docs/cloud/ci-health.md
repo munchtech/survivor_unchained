@@ -70,6 +70,11 @@ No other logic bug outside story and quests turned up.
 
 ### Reported, not fixed (story and quest logic: the story session's lane)
 
+**Status (story session):** R1, R2 and R3 are fixed, each verified by a
+play-through that fails before the fix (`AuditTests.R1_...` to `R3_...`).
+R4 is kept as designed and pinned by `AuditTests.R4_...`. See
+`docs/WRITING_PASS.md`, section 15.
+
 **R1. Once the stream runs clear, an allied or exploited Pack still has
 blighted wolves in the Hollow.**
 - **Where:**

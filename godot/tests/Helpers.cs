@@ -59,7 +59,9 @@ static class H
         foreach (var pick in picks)
         {
             if (p == null) throw new InvalidOperationException($"conversation ended before \"{pick}\"");
-            if (p.Choices.Count == 0) { p = r.Advance(); if (p == null) throw new InvalidOperationException("ended"); }
+            // Click through whatever is said before the next question (a lead-in
+            // can run several narrated nodes).
+            while (p.Choices.Count == 0) { p = r.Advance(); if (p == null) throw new InvalidOperationException("ended"); }
             var choice = p.Choices.FirstOrDefault(x => x.Text.Contains(pick, StringComparison.OrdinalIgnoreCase))
                 ?? throw new InvalidOperationException($"no choice \"{pick}\" in [{string.Join(" | ", p.Choices.Select(x => x.Text))}]");
             if (!choice.Enabled) throw new InvalidOperationException($"choice \"{pick}\" is locked: {choice.Locked}");

@@ -222,6 +222,19 @@ public class VergeTests
     }
 
     [Fact]
+    public void A_ledger_read_for_its_date_sends_you_to_the_wagons()
+    {
+        // K5b, the map: the red fletching is in the wagons' sideboards.
+        var s = Make();
+        MarkKind Wagons() => s.Zone.MapMarks().Single(m => m.Label == "Coyle Wagons").Kind;
+        Assert.Equal(MarkKind.Turn, Wagons());
+        Rules.Apply(Json.Parse<Change>("""{ "quest": { "id": "caravan", "status": "active", "entry": "ledger_read" } }"""), s.J.Ctx);
+        Assert.Equal(MarkKind.Quest, Wagons());
+        I(s, "wreck").Act();
+        Assert.Equal(MarkKind.Place, Wagons());
+    }
+
+    [Fact]
     public void Every_thing_that_can_be_done_can_be_done()
     {
         // Every interactable offered and not refused runs (its effects are

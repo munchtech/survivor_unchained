@@ -39,7 +39,7 @@ sealed class Route
             Name = name, Archetype = archetype, Background = bg, Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
         }, 5);
         var p = new Route(j);
-        if (readTheBook) p.Apply("""[{ "learn": "lore.warden", "text": "The lamps at the ford feed the Warden." }, { "quest": { "id": "lamps", "status": "active", "entry": "book" } }]""");
+        if (readTheBook) p.Apply("""[{ "learn": "lore.warden", "text": "The lamps at the ford burn ember, and the Warden drinks it." }, { "quest": { "id": "lamps", "status": "active", "entry": "book" } }]""");
         p.Apply("""[{ "set": { "prologue.done": true } }, { "quest": { "id": "prologue", "status": "resolved", "outcome": "resolved" } }]""");
         j.World.Time = TimeOfDay.Day;
         j.Ch.Gold = 200;
@@ -112,9 +112,11 @@ sealed class Route
 
     public List<string> Offered(string npc) => Greet(npc).Choices;
 
-    /// <summary>Vonnra's fortune read through; the reading, and the last page's choices.</summary>
+    /// <summary>Vonnra's fortune read through; the reading, and the last page's
+    /// choices. She reads only after dark (docs/cinematics/c09_fortune.md).</summary>
     public (string Read, List<string> Choices, DialogueRunner R, Presented Last) Fortune()
     {
+        W.Time = TimeOfDay.Night;
         var r = new DialogueRunner(Convo("vonnra"), C);
         var p = r.Start()!;
         while (p.Choices.Count == 0) p = r.Advance()!;
