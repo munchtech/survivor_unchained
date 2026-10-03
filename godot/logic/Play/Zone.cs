@@ -130,8 +130,9 @@ public interface IZoneLook
     void SetNight(bool on);
     /// <summary>Names over heads (and a mark when someone has something for you).</summary>
     void Plates(List<Plate> plates);
-    /// <summary>Words said to the air, over someone's head.</summary>
-    void Bark(string text, double x, double y, double z, string? speaker = null);
+    /// <summary>Words said to the air, over someone's head. `voice` says who,
+    /// for the recording: a person's id, or "f"/"m" for a passer-by.</summary>
+    void Bark(string text, double x, double y, double z, string? speaker = null, string? voice = null);
     /// <summary>A boss drawn by its own view (the Ford-Warden), not the crowd's.</summary>
     IBossView BossView(string kind);
     /// <summary>A body lying where it fell: a person, a clip played out and held.</summary>
@@ -246,7 +247,7 @@ public sealed class NpcActor
         {
             barkT = 30 + rng.NextDouble() * 30;
             var pool = Night && Def.NightBarks is { Count: > 0 } nb ? nb : Def.Barks;
-            if (pool.Count > 0) look.Bark(pool[rng.Next(pool.Count)], X, y + (Def.Scale ?? 1) * 0.4 - 0.2, Z);
+            if (pool.Count > 0) look.Bark(pool[rng.Next(pool.Count)], X, y + (Def.Scale ?? 1) * 0.4 - 0.2, Z, voice: Def.Id);
         }
     }
 

@@ -79,6 +79,10 @@ public static class SettingsPanel
         }
         v.AddChild(Row("Picture", ["low", "medium", "high"], s.Quality, x => s.Quality = x));
         v.AddChild(Row("Sound", ["on", "quiet", "off"], s.Sound, x => s.Sound = x));
+        var voices = Row("Voices", ["on", "off"], s.Voices ? "on" : "off", x => s.Voices = x == "on");
+        voices.AddChild(new Control { CustomMinimumSize = new Vector2(10, 0), MouseFilter = Control.MouseFilterEnum.Ignore });
+        voices.AddChild(Style.Slider(s.VoiceVolume, x => { s.VoiceVolume = x; g.ApplySettings(); }, s.Save, s.Voices));
+        v.AddChild(voices);
         v.AddChild(Row("Display", ["window", "fullscreen"], s.Fullscreen ? "fullscreen" : "window", x => s.Fullscreen = x == "fullscreen"));
         v.AddChild(Row("Gore", ["full", "reduced", "off"], s.Gore, x => s.Gore = x));
         v.AddChild(Row("Screen shake", ["full", "reduced", "off"], s.Motion, x => s.Motion = x));

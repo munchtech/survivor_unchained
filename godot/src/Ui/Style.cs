@@ -174,6 +174,42 @@ public static class Style
         return b;
     }
 
+    /// <summary>A level from nothing to full (the settings' volumes): a gold
+    /// groove that fills from the left, and its value in words beside it.
+    /// `change` runs as it moves, `done` when it is let go.</summary>
+    public static Control Slider(float value, Action<float> change, Action done, bool enabled = true)
+    {
+        var s = new HSlider
+        {
+            MinValue = 0, MaxValue = 1, Step = 0.05, Value = value, CustomMinimumSize = new Vector2(200, 22),
+            SizeFlagsVertical = Control.SizeFlags.ShrinkCenter, FocusMode = Control.FocusModeEnum.None, Editable = enabled,
+            MouseDefaultCursorShape = Control.CursorShape.PointingHand,
+        };
+        var groove = Box(new Color("#0d0c10"), Line, 1, 3);
+        groove.ContentMarginTop = groove.ContentMarginBottom = 3;
+        var fill = Box(enabled ? new Color("#d0a858") : GoldDim, new Color("#6a4a14"), 1, 3);
+        fill.ContentMarginTop = fill.ContentMarginBottom = 3;
+        s.AddThemeStyleboxOverride("slider", groove);
+        s.AddThemeStyleboxOverride("grabber_area", fill);
+        s.AddThemeStyleboxOverride("grabber_area_highlight", fill);
+        var knob = new GradientTexture2D
+        {
+            Gradient = new Gradient { Offsets = new[] { 0f, 0.55f, 0.62f, 1f }, Colors = new[] { GoldHi, GoldHi, new Color("#6a4a14"), new Color("#6a4a14", 0) } },
+            Width = 16, Height = 16, Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f),
+        };
+        s.AddThemeIconOverride("grabber", knob);
+        s.AddThemeIconOverride("grabber_highlight", knob);
+        s.AddThemeIconOverride("grabber_disabled", knob);
+        var said = Label($"{Mathf.RoundToInt(value * 100)}%", UiBold, 14, enabled ? Ink : InkDim);
+        said.CustomMinimumSize = new Vector2(44, 0);
+        bool dragging = false;
+        s.DragStarted += () => dragging = true;
+        s.DragEnded += _ => { dragging = false; done(); };
+        // A click on the groove moves it without a drag: that is done at once.
+        s.ValueChanged += v => { said.Text = $"{Mathf.RoundToInt((float)v * 100)}%"; change((float)v); if (!dragging) done(); };
+        return H(8, s, said);
+    }
+
     /// <summary>A key, as a keycap.</summary>
     public static Control Key(string text)
     {

@@ -1,0 +1,468 @@
+{
+ "about": "The cast: one designed voice per speaking part (docs/VO_CAST.md says why each sounds as it does). `design` is the description a voice-design model is given; `ref_text` is what the voice reads for its reference take, chosen to show the voice at rest and cover the sounds of English; `room` is where the person usually speaks (tools/vo/post.py). No voice here is, or is modelled on, any real person.",
+ "voices": {
+  "narrator": {
+   "name": "The narrator",
+   "sex": "m",
+   "age": 55,
+   "accent": "neutral southern English (RP)",
+   "design": "A man in his mid fifties with a low, warm, slightly gravelly baritone and a neutral southern English Received Pronunciation accent. He speaks quietly and close, unhurried and even, like an old storyteller telling a winter's tale by the fire. Plain and grave, never theatrical.",
+   "ref_text": "The fire has burned low. Out in the dark, the ground is moving, and somewhere ahead there is water, and a cold blue light. You get up, because there is nothing else to do.",
+   "room": "close",
+   "tempo": [
+    2.2,
+    2.9
+   ]
+  },
+  "rook": {
+   "name": "Mother Rook",
+   "sex": "f",
+   "age": 60,
+   "accent": "Yorkshire",
+   "design": "A sixty-year-old innkeeper from Yorkshire in the north of England, with a broad, flat northern Yorkshire accent: short 'a' sounds, 'love' rhymes with 'good'. A warm, husky, lived-in alto. Dry, brisk and bossy, kind underneath, quick to a dry laugh on the out-breath.",
+   "ref_text": "Another one off the Low Ford road. I'm Rook, and this is the Last Lamp: bed, bread, a bath if you ask nicely, and a strongroom for what you'd rather not carry about.",
+   "room": "inn",
+   "tempo": [
+    3.0,
+    3.9
+   ]
+  },
+  "holloway": {
+   "name": "Captain Holloway",
+   "sex": "m",
+   "age": 45,
+   "accent": "Lancashire, flattened by the army",
+   "design": "A tired forty-five-year-old soldier from Lancashire in the north of England, an army quartermaster made captain. A hoarse, worn baritone, rough from years of shouting orders, with a flat northern English accent. Clipped and weary, anger held just below the surface.",
+   "ref_text": "Eleven men, and four of them can hold a spear the right way round. I've a wall to keep, a road to keep, and a town that thinks both keep themselves.",
+   "room": "watchhouse",
+   "tempo": [
+    2.8,
+    3.6
+   ]
+  },
+  "maeca": {
+   "name": "Maeca Barefoot",
+   "sex": "f",
+   "age": 34,
+   "accent": "Welsh borders",
+   "design": "A woman in her thirties, a hunter from the Welsh borders, with a soft lilting Welsh-English accent. A low, quiet, level half-voice with a hard edge, like someone used to not being heard in a wood. Few words, calm and steady, never raised.",
+   "ref_text": "Tracks by the stream, three days old. They drank, and they lay down where they drank. The Pack doesn't do that. Something in the water does.",
+   "room": "outdoor",
+   "tempo": [
+    2.3,
+    3.1
+   ]
+  },
+  "wenna": {
+   "name": "Old Wenna",
+   "sex": "f",
+   "age": 74,
+   "accent": "Somerset (West Country)",
+   "design": "An old woman in her seventies, a village herbalist from Somerset in the West Country of England, with a broad rural West Country accent and a rolled 'r'. A thin, cracked, creaky old voice, brisk and impatient, speeding up when she gets interested. Rude but kind.",
+   "ref_text": "Sit, child, and stop bleeding on my floor. Comfrey for the bruise, yarrow for the cut, and willow bark for the rest of you, and don't pull that face at me.",
+   "room": "hut",
+   "tempo": [
+    3.0,
+    4.0
+   ]
+  },
+  "tam": {
+   "name": "Tam",
+   "sex": "m",
+   "age": 9,
+   "accent": "Somerset (West Country)",
+   "design": "A nine-year-old farm boy from Somerset in the West Country of England, with a light, high child's voice and a soft rural West Country accent. Earnest and breathless, his words tumbling out one after another.",
+   "ref_text": "Pa says stay in town, so I stayed in town. But I saw them, I did. Three wolves, down by the green water, and they drank and they fell down.",
+   "room": "outdoor",
+   "tempo": [
+    3.2,
+    4.2
+   ]
+  },
+  "brannoc": {
+   "name": "Brannoc",
+   "sex": "m",
+   "age": 52,
+   "accent": "Cornish",
+   "design": "A fifty-two-year-old blacksmith from Cornwall with a very deep, slow, rough bass voice and a broad Cornish West Country accent with a rolled 'r'. Few words, heavy and blunt, each one set down like iron on an anvil.",
+   "ref_text": "Steel or fur? Iron's good this year. Good ore, from the north, before the road shut. Won't see the like again.",
+   "room": "forge",
+   "deep": true,
+   "tempo": [
+    1.8,
+    2.6
+   ]
+  },
+  "harlan": {
+   "name": "Harlan Coyle",
+   "sex": "m",
+   "age": 55,
+   "accent": "Bristol",
+   "design": "A fifty-five-year-old merchant from Bristol in the West Country of England, with a warm, rounded Bristolian accent. A friendly salesman's baritone, quick patter, warm and generous, with a crack of grief that breaks through when he stops talking.",
+   "ref_text": "Coyle Company, friend: salt, nails, lamp oil, good wool and better rope, at the fairest prices between here and the coast. Ask anyone. Well. Ask most people.",
+   "room": "yard",
+   "tempo": [
+    3.0,
+    3.9
+   ]
+  },
+  "pell": {
+   "name": "Pell Varrow",
+   "sex": "m",
+   "age": 40,
+   "accent": "precise London RP",
+   "design": "A forty-year-old London merchant's factor with a soft, precise, smooth tenor and a clipped upper-middle-class London accent, a little nasal. Smiling, polite and quietly calculating; every word chosen as if it will be written down.",
+   "ref_text": "Terms, friend, are what we agree they are, and I always keep to mine. Consider it a courtesy. I find courtesy is very much cheaper than the alternative.",
+   "room": "office",
+   "tempo": [
+    2.6,
+    3.4
+   ]
+  },
+  "rav": {
+   "name": "Rav Cutwell",
+   "sex": "m",
+   "age": 54,
+   "accent": "Glaswegian",
+   "design": "A fifty-four-year-old tavern doctor from Glasgow in Scotland, with a gravelly, wry baritone and a strong Glaswegian Scottish accent. Half-drunk music in his rhythm, funny and frank, with a calm bedside steadiness underneath.",
+   "ref_text": "Sit down, pal, and drop your trousers or don't. I've seen worse, and I've sewn worse, and I've drunk to forget the both of them.",
+   "room": "tavern",
+   "tempo": [
+    2.8,
+    3.6
+   ]
+  },
+  "chid": {
+   "name": "Chid",
+   "sex": "m",
+   "age": 32,
+   "accent": "Irish-tinged",
+   "design": "A man who sounds in his thirties, a gentle priest with a light, bright Irish accent. A light, breathless, delighted tenor that runs on and doubles back, catching with joy; kind, earnest and a little foolish.",
+   "ref_text": "Oh! A visitor. Hello! I'm Chid. They call me the Fool, which is fair. This is the shrine of the Morning Light. It used to work. It might again!",
+   "room": "shrine",
+   "tempo": [
+    3.2,
+    4.2
+   ]
+  },
+  "vonnra": {
+   "name": "Vonnra Ash-of-Morrow",
+   "sex": "f",
+   "age": 66,
+   "accent": "clipped, unplaceable old empire",
+   "design": "A woman in her sixties with a low, smooth alto and a little air in the voice, and a clipped, old-fashioned, upper-class English accent that is hard to place. She speaks slowly and very still, with long pauses, never hurried, every word weighed. Calm, courteous and quietly unsettling.",
+   "ref_text": "The toll is the toll: five gold to pass east. I am Vonnra. I see a great deal, traveller, and I say very little. You will find that is the arrangement.",
+   "room": "tower",
+   "tempo": [
+    1.7,
+    2.4
+   ]
+  },
+  "keegan": {
+   "name": "Dame Keegan Orme",
+   "sex": "f",
+   "age": 24,
+   "accent": "Oxbridge RP",
+   "design": "A young woman in her early twenties, a probationary knight, with a clear, bright, projecting voice and a crisp, over-articulated upper-class English Received Pronunciation accent, like a keen young lecturer. Earnest, formal and sincere, a little comic in her seriousness.",
+   "ref_text": "Dame Keegan Orme, of the Argent Vigil, probationary. The north road is closed by order of the Vigil, under chapter two of the handbook, and I am obliged to explain why at some length.",
+   "room": "outdoor",
+   "tempo": [
+    2.8,
+    3.6
+   ]
+  },
+  "sella": {
+   "name": "Sella",
+   "sex": "f",
+   "age": 28,
+   "accent": "softened Cockney (London)",
+   "design": "A woman in her late twenties from London with a soft, warm Cockney accent. A low, amused, intimate alto, relaxed and knowing, frank and unembarrassed, with warmth that is also a professional's. Never breathy.",
+   "ref_text": "Evening, love. The lamp's lit upstairs, if you're asking. Conversation's extra, mind; most people don't know they want it till they've had it.",
+   "room": "inn",
+   "tempo": [
+    2.6,
+    3.4
+   ]
+  },
+  "redcowl": {
+   "name": "Redcowl",
+   "sex": "m",
+   "age": 45,
+   "accent": "hard Scots",
+   "design": "A big, burly bandit chief in his forties with a deep, booming chest voice and a hard, broad Scottish accent. He laughs loud and easy, then turns cold and dangerous in the same breath. Commanding and rough.",
+   "ref_text": "Ha! Look at the colours on you. You're standing in my Roost, and my lot are hungry, and nobody here has ever been hungry for long. Talk.",
+   "room": "camp",
+   "deep": true,
+   "tempo": [
+    2.6,
+    3.6
+   ]
+  },
+  "snib": {
+   "name": "Snib",
+   "sex": "m",
+   "age": 0,
+   "accent": "goblinish London",
+   "design": "A small, nervous goblin-like creature with a high, thin, fast, squeaky voice and a rough London accent. Panicky and talking too fast, stressing odd words.",
+   "ref_text": "Snib is FOREMAN. Snib says who goes past the pump, and Snib says nobody! The pump does not pump itself. It does, actually. But nobody!",
+   "room": "dig",
+   "tempo": [
+    3.5,
+    4.6
+   ]
+  },
+  "grimtunnel": {
+   "name": "Grimtunnel",
+   "sex": "m",
+   "age": 0,
+   "accent": "goblinish London",
+   "design": "A big, gleeful goblin boss with a gravelly, oily, low voice and a rough London accent, cackling and greedy, savouring every word.",
+   "ref_text": "Oho! What's this, then? Nobody's, is it? Nobody's! Finders keepers, surface-meat.",
+   "room": "dig",
+   "tempo": [
+    2.6,
+    3.6
+   ]
+  },
+  "lampling": {
+   "name": "The babbling lampling",
+   "sex": "m",
+   "age": 0,
+   "accent": "goblinish",
+   "design": "A small, frightened creature whispering in a dry, rasping, close whisper, repeating itself, half mad with fear.",
+   "ref_text": "Down there. Under the one that is dead. There is another. There is always another.",
+   "room": "dig",
+   "tempo": [
+    2.6,
+    3.6
+   ]
+  },
+  "jory": {
+   "name": "Jory Coyle",
+   "sex": "m",
+   "age": 17,
+   "accent": "Bristol",
+   "design": "A seventeen-year-old boy from Bristol in the West Country of England, with a young, quiet, unsteady tenor voice and a soft Bristolian accent. Shaken, speaking in short sentences.",
+   "ref_text": "I'm all right. I'm all right. Uncle keeps asking. I keep saying. It was the dark that was the worst of it.",
+   "room": "inn",
+   "tempo": [
+    2.6,
+    3.4
+   ]
+  },
+  "ysolde": {
+   "name": "Ysolde Marrow, the Wayfinder",
+   "sex": "f",
+   "age": 55,
+   "accent": "Edinburgh",
+   "design": "A woman in her fifties, a cartographer from Edinburgh in Scotland, with a crisp, educated Edinburgh Scottish accent. Brisk, bookish and dry, with a gallows sense of humour.",
+   "ref_text": "Maps! Places the road forgets. Some of them it forgot on purpose. Read the oaths in the margins before you go; they are not decoration.",
+   "room": "outdoor",
+   "tempo": [
+    3.0,
+    3.8
+   ]
+  },
+  "warden": {
+   "name": "The Ford-Warden",
+   "sex": "m",
+   "age": 0,
+   "accent": "inhuman",
+   "design": "An enormous, ancient being with a vast, booming, very deep bass voice, slow and terrible, speaking like a tolling bell.",
+   "ref_text": "None cross after dark.",
+   "room": "ford",
+   "fx": "giant",
+   "deep": true,
+   "tempo": [
+    1.0,
+    2.0
+   ]
+  },
+  "watchman": {
+   "name": "The dead Watchman",
+   "sex": "m",
+   "age": 60,
+   "accent": "northern English",
+   "design": "An old dead soldier speaking in a dry, rasping, hollow whisper with a northern English accent, slow and broken.",
+   "ref_text": "It shatters its own lamps when it charges. Make it charge.",
+   "room": "close",
+   "fx": "dead",
+   "tempo": [
+    1.6,
+    2.4
+   ]
+  },
+  "bones": {
+   "name": "The bones",
+   "sex": "m",
+   "age": 0,
+   "accent": "neutral",
+   "design": "An ancient skeleton speaking in a dry, hollow, rasping whisper, very slow and very quiet.",
+   "ref_text": "It was never locked from the outside.",
+   "room": "close",
+   "fx": "dead",
+   "tempo": [
+    1.4,
+    2.2
+   ]
+  },
+  "guard": {
+   "name": "A Watchman at the gate",
+   "sex": "m",
+   "age": 35,
+   "accent": "northern English",
+   "design": "A tired town guard in his thirties with a plain, gruff baritone and a flat northern English accent. Bored and matter-of-fact.",
+   "ref_text": "Keep your weapon sheathed in town. East road's that way. Mind the wolves.",
+   "room": "outdoor",
+   "tempo": [
+    2.6,
+    3.6
+   ]
+  },
+  "folk_f1": {
+   "name": "Townswoman, middle-aged",
+   "sex": "f",
+   "age": 45,
+   "accent": "northern English",
+   "design": "A middle-aged townswoman from the north of England with a plain, warm, slightly nasal voice and a broad northern accent. Gossipy and tired.",
+   "ref_text": "Bread's up again. It's always up. And rain by evening, my knee says.",
+   "room": "outdoor",
+   "tempo": [
+    2.8,
+    3.6
+   ]
+  },
+  "folk_f2": {
+   "name": "Townswoman, young",
+   "sex": "f",
+   "age": 25,
+   "accent": "West Country",
+   "design": "A young woman from the West Country of England with a bright, quick voice and a rural West Country accent. Sharp-tongued and amused.",
+   "ref_text": "Two coppers for a turnip. Two! You're not from the Waystation, are you?",
+   "room": "outdoor",
+   "tempo": [
+    2.9,
+    3.8
+   ]
+  },
+  "folk_m1": {
+   "name": "Townsman, middle-aged",
+   "sex": "m",
+   "age": 50,
+   "accent": "northern English",
+   "design": "A grumpy middle-aged townsman from the north of England with a rough, gravelly baritone and a broad northern accent. Grumbling and blunt.",
+   "ref_text": "Bloody wolves. Bloody Watch. Bloody bread. Mind the cart.",
+   "room": "outdoor",
+   "tempo": [
+    2.7,
+    3.5
+   ]
+  },
+  "folk_m2": {
+   "name": "Townsman, old",
+   "sex": "m",
+   "age": 70,
+   "accent": "West Country",
+   "design": "An old countryman in his seventies from the West Country of England with a creaky, slow voice and a broad rural accent. Wry and weary.",
+   "ref_text": "My gran swore the Warden was a story to keep children off the ford. Morning.",
+   "room": "outdoor",
+   "tempo": [
+    2.3,
+    3.1
+   ]
+  },
+  "folk_child_f": {
+   "name": "A town girl",
+   "sex": "f",
+   "age": 8,
+   "accent": "northern English",
+   "design": "An eight-year-old girl from the north of England with a high, clear child's voice and a northern accent. Cheeky and excited.",
+   "ref_text": "Are you the one from the ford? Did you kill it? Was it big?",
+   "room": "outdoor",
+   "tempo": [
+    3.0,
+    4.2
+   ]
+  },
+  "folk_child_m": {
+   "name": "A town boy",
+   "sex": "m",
+   "age": 8,
+   "accent": "northern English",
+   "design": "An eight-year-old boy from the north of England with a high, bright child's voice and a northern accent. Cheeky, loud and excited.",
+   "ref_text": "Show us your sword! Go on! Did you kill a wolf? A big one?",
+   "room": "outdoor",
+   "tempo": [
+    3.0,
+    4.2
+   ]
+  },
+  "guard_f": {
+   "name": "A Watchwoman",
+   "sex": "f",
+   "age": 35,
+   "accent": "northern English",
+   "design": "A tough town guardswoman in her thirties with a firm, low, gruff voice and a flat northern English accent. Curt and unimpressed.",
+   "ref_text": "Gates are shut till dawn. Walk on, traveller, and keep that blade sheathed.",
+   "room": "outdoor",
+   "tempo": [
+    2.6,
+    3.6
+   ]
+  },
+  "heroine": {
+   "name": "The survivor (a woman)",
+   "sex": "f",
+   "age": 30,
+   "accent": "soft northern English",
+   "design": "A woman of about thirty with a low, warm, slightly husky voice and a soft northern English accent. Plain, dry and steady; tired, guarded, and quietly strong. She says little.",
+   "ref_text": "I woke by a dead fire on the Low Ford road. I don't know how I got there, and I don't know how long I was gone. Tell me what's north.",
+   "room": "close",
+   "tempo": [
+    2.5,
+    3.3
+   ]
+  },
+  "hero": {
+   "name": "The survivor (a man)",
+   "sex": "m",
+   "age": 32,
+   "accent": "soft northern English",
+   "design": "A man of about thirty with a low, quiet, slightly rough baritone and a soft northern English accent. Plain, dry and steady; tired and guarded. He says little.",
+   "ref_text": "I woke by a dead fire on the Low Ford road. I don't know how I got there, and I don't know how long I was gone. Tell me what's north.",
+   "room": "close",
+   "tempo": [
+    2.5,
+    3.3
+   ]
+  },
+  "barrow_lord": {
+   "name": "The Legion's dead, behind the door",
+   "sex": "m",
+   "age": 0,
+   "accent": "old Latin, inhuman",
+   "design": "An ancient dead soldier speaking from deep inside a stone tomb, a very low, hollow, dry voice like wind in a crypt, slow and final, each word heavy.",
+   "ref_text": "Not yet. Go back. The road is shut, and it is kept.",
+   "room": "dig",
+   "fx": "dead",
+   "tempo": [
+    1.0,
+    2.0
+   ],
+   "deep": true
+  },
+  "kerchief_woman": {
+   "name": "A Kerchief woman",
+   "sex": "f",
+   "age": 45,
+   "accent": "hard Scots",
+   "design": "A hard, weary woman in her forties with a rough Scottish accent, one of a camp of hungry refugees, low and blunt.",
+   "ref_text": "Them first. The bairns eat, then the old ones, then us. That's how it's done here.",
+   "room": "camp",
+   "tempo": [
+    2.4,
+    3.2
+   ]
+  }
+ }
+}
