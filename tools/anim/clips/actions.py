@@ -13,7 +13,7 @@ import numpy as np
 
 from clips.sword import _n
 from gait import arc_of
-from keyed import build, merge
+from keyed import STRIKE, build, merge
 
 
 def stance(crouch=0.06, l=(0.13, 0.10), r=(-0.15, -0.08), weight=0.0):
@@ -205,7 +205,7 @@ def cast_bolt(rig):
         (20, body(stance(0.06), hand_l=arm((-0.02, -0.40, -0.05), (1.0, 0.0, -0.7), knuckles=_n(0.2, -0.6, 0.6)),
                   hand_r=staff, fingers_l="relaxed", fingers_r="grip"), "ease"),
     ]
-    return build("cast_bolt", rig, keys, meta={"layer": "upper", "contact": 0.0})
+    return build("cast_bolt", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 0.0})
 
 
 def cast_raise(rig):
@@ -248,7 +248,7 @@ def cast_flick(rig):
         (18, body(stance(0.06), hand_r=arm((0.0, -0.36, 0.14), (-0.6, -0.4, -0.5), blade=_n(-0.1, 0.5, 0.85)),
                   hand_l=arm((0.0, -0.38, 0.08), (0.6, -0.4, -0.5)), fingers_r="grip", fingers_l="relaxed"), "ease"),
     ]
-    return build("cast_flick", rig, keys, meta={"layer": "upper", "contact": 0.0})
+    return build("cast_flick", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 0.0})
 
 
 def crossbow_shoot(rig):
@@ -291,7 +291,7 @@ def throw(rig):
         (20, body(stance(0.07), hand_r=arm((0.0, -0.34, 0.16), (-0.6, -0.4, -0.5)),
                   hand_l=arm((0.0, -0.36, 0.14), (0.6, -0.4, -0.5)), fingers_r="grip", fingers_l="relaxed"), "ease"),
     ]
-    return build("throw", rig, keys, meta={"layer": "upper", "contact": 2.5 / 30})
+    return build("throw", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30})
 
 
 def warcry(rig):
@@ -343,7 +343,7 @@ def daggers_back(rig):
                  (0.10, -0.22, 0.30), _n(0.3, 0.6, 0.7), (0.7, -0.5, -0.3), weight=-0.4), "auto"),
         (16, DAG_GUARD, "ease"),
     ]
-    return build("daggers_back", rig, keys, meta={"layer": "upper", "contact": 2 / 30, "weapon": "daggers"})
+    return build("daggers_back", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2 / 30, "weapon": "daggers"})
 
 
 def daggers_fore(rig):
@@ -360,7 +360,7 @@ def daggers_fore(rig):
                  (0.32, -0.20, 0.06), _n(0.85, 0.0, -0.45), (0.6, -0.6, -0.1), weight=0.4), "auto"),
         (16, DAG_GUARD, "ease"),
     ]
-    return build("daggers_fore", rig, keys, meta={"layer": "upper", "contact": 2 / 30, "weapon": "daggers"})
+    return build("daggers_fore", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2 / 30, "weapon": "daggers"})
 
 
 def daggers_heavy(rig):
@@ -376,7 +376,7 @@ def daggers_heavy(rig):
                  (0.32, -0.26, 0.20), _n(0.85, -0.4, -0.1), (0.2, -1.0, 0.3), pitch=20, weight=0.2), "auto"),
         (20, DAG_GUARD, "ease"),
     ]
-    return build("daggers_heavy", rig, keys, meta={"layer": "upper", "contact": 3 / 30, "weapon": "daggers"})
+    return build("daggers_heavy", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 3 / 30, "weapon": "daggers"})
 
 
 ALL = (("dash", dash), ("hit", hit), ("death", death), ("get_up", get_up), ("cast_bolt", cast_bolt),

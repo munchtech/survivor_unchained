@@ -25,7 +25,7 @@ from __future__ import annotations
 import numpy as np
 
 from gait import arc_of
-from keyed import build
+from keyed import STRIKE, build
 
 
 def _n(*v):
@@ -88,7 +88,7 @@ def sword_back(rig):
         (15, pose(-6, -10, (-0.15, -0.26, 0.24), _n(-0.5, 0.5, 0.7), pole=(-0.6, -0.5, -0.4), weight=-0.2), "auto"),
         (24, GUARD, "ease"),
     ]
-    return build("sword_back", rig, keys, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"})
+    return build("sword_back", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"})
 
 
 def sword_fore(rig):
@@ -108,7 +108,7 @@ def sword_fore(rig):
          "auto"),
         (24, GUARD, "ease"),
     ]
-    return build("sword_fore", rig, keys, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"})
+    return build("sword_fore", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "sword+shield"})
 
 
 def sword_heavy(rig):
@@ -129,7 +129,7 @@ def sword_heavy(rig):
          "auto"),
         (30, GUARD, "ease"),
     ]
-    return build("sword_heavy", rig, keys, meta={"layer": "upper", "contact": 3 / 30, "weapon": "sword+shield"})
+    return build("sword_heavy", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 3 / 30, "weapon": "sword+shield"})
 
 
 def clips(rig, want):

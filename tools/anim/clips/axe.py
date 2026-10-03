@@ -18,7 +18,7 @@ import numpy as np
 
 from clips.sword import _n
 from gait import arc_of
-from keyed import build, merge
+from keyed import STRIKE, build, merge
 
 
 def feet(weight=0.0, pivot=0.0, crouch=0.10):
@@ -65,7 +65,7 @@ def axe_back(rig):
         (16, pose(-8, -12, (-0.18, -0.26, 0.24), _n(-0.5, 0.55, 0.65), pole=(-0.6, -0.5, -0.4), weight=-0.2), "auto"),
         (26, GUARD, "ease"),
     ]
-    return build("axe_back", rig, keys, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "axe"})
+    return build("axe_back", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "axe"})
 
 
 def axe_fore(rig):
@@ -83,7 +83,7 @@ def axe_fore(rig):
          "auto"),
         (26, GUARD, "ease"),
     ]
-    return build("axe_fore", rig, keys, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "axe"})
+    return build("axe_fore", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "axe"})
 
 
 def axe_heavy(rig):
@@ -102,7 +102,7 @@ def axe_heavy(rig):
          "auto"),
         (32, GUARD, "ease"),
     ]
-    return build("axe_heavy", rig, keys, meta={"layer": "upper", "contact": 3 / 30, "weapon": "axe"})
+    return build("axe_heavy", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 3 / 30, "weapon": "axe"})
 
 
 # Two axes: the left hand's forehand is the right hand's mirrored.
@@ -156,7 +156,7 @@ def axes_right(rig):
                        (0.10, -0.20, 0.20), _n(0.4, 0.7, 0.55), weight=0.2, pivot=0.2), "auto"),
         (24, AXES_GUARD, "ease"),
     ]
-    return build("axes_right", rig, keys, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "axes"})
+    return build("axes_right", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "axes"})
 
 
 def axes_left(rig):
@@ -176,7 +176,7 @@ def axes_left(rig):
     ]
     # (The mirrored stance puts her right foot forward for this one: a step
     # through with the cut.)
-    return build("axes_left", rig, keys, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "axes"})
+    return build("axes_left", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 2.5 / 30, "weapon": "axes"})
 
 
 def axes_heavy(rig):
@@ -193,7 +193,7 @@ def axes_heavy(rig):
         (20, AXES_GUARD, "auto"),
         (30, AXES_GUARD, "ease"),
     ]
-    return build("axes_heavy", rig, keys, meta={"layer": "upper", "contact": 3 / 30, "weapon": "axes"})
+    return build("axes_heavy", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 3 / 30, "weapon": "axes"})
 
 
 def clips(rig, want):

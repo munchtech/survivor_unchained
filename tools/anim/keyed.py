@@ -438,6 +438,11 @@ def _hermite(ts, vs, eases, t):
     return h00 * v0 + h10 * m0 + h01 * v1 + h11 * m1
 
 
+# A blow thrown from the ground up: the feet and hips a frame and a half
+# ahead of the hands, the back nearly a frame, the shoulders a little.
+STRIKE = {"hips": 1.5, "foot_": 1.5, "spine": 0.8, "clav_": 0.4}
+
+
 def smoothstep_(x):
     x = min(max(x, 0.0), 1.0)
     return x * x * (3 - 2 * x)
@@ -466,14 +471,23 @@ class Track:
                     f[n] = 0.0
         self.frames = int(round(self.keys[-1][0])) + 1
 
-    def __call__(self, fr):
+    def __call__(self, fr, lead=None):
+        """The pose at frame fr. `lead`: frames ahead each part of her runs
+        ({"hips": 1.5, "spine": 0.8}): the body leading the hands, so a blow
+        is thrown from the hips with the blade's own timing kept."""
         flat = {}
         for n in self.names:
             have = [(k[0], f[n], k[2] if len(k) > 2 else "auto") for k, f in zip(self.keys, self.flats) if n in f]
             if not have:
                 continue
+            t = fr
+            if lead:
+                for part, ahead in lead.items():
+                    if n.startswith(part):
+                        t = min(fr + ahead, have[-1][0])
+                        break
             if isinstance(have[0][1], float):
-                flat[n] = _hermite([h[0] for h in have], [h[1] for h in have], [h[2] for h in have], fr)
+                flat[n] = _hermite([h[0] for h in have], [h[1] for h in have], [h[2] for h in have], t)
             else:
                 # Presets switch at the key nearest in time.
                 flat[n] = min(have, key=lambda h: abs(h[0] - fr))[1]
@@ -498,17 +512,17 @@ class Track:
         return _unflatten(flat)
 
 
-def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None, base=None) -> Clip:
+def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None, base=None, lead=None) -> Clip:
     """A clip from keys [(frame, pose, ease), ...]. For a loop, the last key
     should be the first again. With a base clip, the keys are laid over its
     frames (Rig.solve's base): turns add to its turns, hands and feet given
-    are solved afresh."""
+    are solved afresh. `lead`: see Track."""
     track = Track(keys)
     frames = track.frames
     rot = np.empty((frames, len(rig.sk), 4))
     pos = np.empty((frames, len(rig.sk), 3))
     for fr in range(frames):
-        pose = track(fr)
+        pose = track(fr, lead)
         if post:
             pose = post(fr, pose)
         b = None if base is None else (base.rot[min(fr, base.frames - 1)], base.pos[min(fr, base.frames - 1)])
