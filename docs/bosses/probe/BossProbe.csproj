@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- A measuring tool for docs/bosses, not part of the game: the feel probe's
+       arena bot played through the half hour's boss, with the survivor's damage
+       scaled to stand in for weak and absurd builds. Run from the repo root (the
+       logic finds godot/data from the working directory); see docs/bosses/AUDIT.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>12</LangVersion>
+    <RootNamespace>SurvivorUnchained.Tests</RootNamespace>
+    <NoWarn>CS8618;CS8602;CS8604;CS1998;CS0162;CS8600;CS8603</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../../godot/logic/**/*.cs" LinkBase="logic" />
+    <Compile Include="../../../godot/tests/FakeHost.cs" />
+  </ItemGroup>
+</Project>
