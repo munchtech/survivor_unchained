@@ -60,6 +60,20 @@ uv pip install --python ~/vo-tools/analysis/Scripts/python.exe torch torchaudio 
 uv pip install --python ~/vo-tools/analysis/Scripts/python.exe transformers accelerate speechbrain funasr librosa pyloudnorm soundfile praat-parselmouth scipy numpy modelscope
 ```
 
+For `--method perform`, Seed-VC (GPL-3.0 code; zero-shot voice conversion):
+
+```sh
+# unpack https://github.com/Plachtaa/seed-vc (main) to ~/vo-tools/seed-vc
+uv venv ~/vo-tools/seedvc --python 3.10
+uv pip install --python ~/vo-tools/seedvc/Scripts/python.exe torch torchaudio torchvision --index-url https://download.pytorch.org/whl/cu128
+uv pip install --python ~/vo-tools/seedvc/Scripts/python.exe accelerate scipy "librosa==0.10.2" munch einops descript-audio-codec pydub resemblyzer jiwer "transformers==4.46.3" soundfile modelscope funasr "numpy<2" hydra-core pyyaml python-dotenv
+```
+
+The shoot-out's other models (Chatterbox, IndexTTS-2.5, Dia, Orpheus, F5,
+Kokoro) each have a runner in `shootout/` and their own venv in
+`VO_TOOLS`; they are research, not the pipeline. A full ffmpeg build
+(with ffprobe) in `VO_TOOLS/ffmpeg/bin` is used when present.
+
 Run the scripts with the `analysis` venv's Python; they start the VoxCPM2
 worker (`backends/voxcpm_worker.py`) in its own venv. The first start
 compiles the model (several minutes; cached after). Models download on

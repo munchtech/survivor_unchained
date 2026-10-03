@@ -106,3 +106,15 @@ them. Nothing in `dialogue.json` was changed.
   locked from the outside", Jory's "Is my uncle—?". The watchman's belt-book
   is read by the narrator as written words.
 - **"M. + J."** on the well is read "M and J".
+- **Latin.** The door's inscription (HIC LEGIO SEPTIMA...) is read by the
+  narrator as slow old words; the Legion's dead say "Nondum" and "Redi"
+  with the translation left to the subtitle. "Legio Septima" in Vonnra's
+  line is respelt for the voice ("Leggio Septeema").
+- **Sung lines** (Chid's verses at Nell's grave, the Warden's call under
+  the water) are beyond any speech model here: they come out spoken, or
+  sung badly. Chid singing badly is in character ("Chid can't sing. Nobody
+  minded."); the Warden's is not. Both want a human, or music.
+- **Narration that quotes a person** inside it (Maeca's words on the walk
+  to the Blind and in the dark; Sella's in the blue room) is read by the narrator,
+  quotes and all. Splitting those quotes out to their speakers, as was done
+  for Jory and the dead, would need `segments` in the direction file.

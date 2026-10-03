@@ -15,22 +15,20 @@
   "said": "Another one off the low Ford Road. I'm Rook, and this is the last lamp. Bed, bread, a bath, if you ask nicely. And a strong room for what you'd rather not carry about."
  },
  "chid": {
-  "seed": 6,
-  "score": 4.91,
-  "clean": "0/24",
-  "utmos": 3.96,
+  "seed": 9,
+  "from": "rav",
+  "text": "Sit down, pal, and drop your trousers or don't. I've seen worse, and I've sewn worse, and I've drunk to forget the both of them.",
+  "score": 5.675,
+  "utmos": 3.35,
   "accent": {
-   "us": 0.999,
-   "southatlandtic": 0.001,
-   "canada": 0.0
+   "ireland": 0.995,
+   "scotland": 0.005,
+   "england": 0.0
   },
-  "f0": 236.6,
-  "wps": 4.1,
-  "bad": [
-   "pitch 237 Hz outside 75-150",
-   "accent heard as us (1.00), want ireland"
-  ],
-  "said": "Oh, a visitor. Hello, I'm Chid. They call me the fool, which is fair. This is the shrine of the morning light. It used to work. It might again."
+  "f0": 159.2,
+  "wps": 4.43,
+  "bad": [],
+  "said": "Sit down, pal, and drop your trousers, or don't. I've seen worse, and I've sown worse, and I've drunk to forget the both of them."
  },
  "rav": {
   "seed": 6,
@@ -129,22 +127,22 @@
   "said": "Ha! Look at the colors on you! You're standing in my roost, and my lot are hungry, and nobody here has ever been hungry for long. Talk!"
  },
  "ysolde": {
-  "seed": 10,
-  "score": 4.995,
-  "clean": "0/24",
-  "utmos": 3.82,
+  "seed": 16,
+  "from": "maeca",
+  "text": "Tracks by the stream, three days old. They drank, and they lay down where they drank. The Pack doesn't do that. Something in the water does.",
+  "score": 6.432,
+  "utmos": 4.2,
   "accent": {
-   "england": 0.96,
-   "scotland": 0.033,
-   "indian": 0.003
+   "scotland": 0.908,
+   "indian": 0.05,
+   "singapore": 0.013
   },
-  "f0": 203.5,
-  "wps": 3.2,
+  "f0": 155.8,
+  "wps": 2.49,
   "bad": [
-   "cut off at the head",
-   "accent heard as england (0.96), want scotland"
+   "words wrong: ['tracks->trask']"
   ],
-  "said": "Maps. Places the road forgets. Some of them it forgot on purpose. Read the oaths in the margins before you go. They are not decoration."
+  "said": "Trask by the stream. Three days old. They drank and they lay down where they drank. The pack doesn't do that. Something in the water does."
  },
  "maeca": {
   "seed": 16,
