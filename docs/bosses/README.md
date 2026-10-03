@@ -12,11 +12,11 @@ ceremony of the arrival and the kill) and does not repeat it.
 1. **`README.md`** (this file): the top ten and the decisions.
 2. **`AUDIT.md`**: what our bosses do today, read from the code and
    measured. Start here if you want the problem in one page: the arena
-   boss is the herald again with more health, and lives about twenty
-   seconds.
+   boss is the herald again with more health, spawned as an elite rather
+   than a boss, and lives about twenty seconds.
 3. **`SURVIVORS_BOSSES.md`**: the main designs. §0 is the contract every
    arena boss keeps (phases as gates, the budget, telegraphs, enrages,
-   banes, stagger, oaths); then the Pack-Mother, the Barrow Lord, Grimtunnel,
+   banes, stagger, oaths, a weakness named at the start); then the Pack-Mother, the Barrow Lord, Grimtunnel,
    the Red Hand, the Kiln Warden, the Silver Penitent, the Thing in the Barn
    and the Centurion; the Kindling at fifteen minutes; Echoes and the Dawn
    after the win.
@@ -45,11 +45,12 @@ ceremony of the arrival and the kill) and does not repeat it.
 
 - **Our arena boss is not a boss.** It is the people's champion (the same
   creature as the heralds at 10 and 20 for three peoples of four) with more
-  health, fourteen random escorts and one verb.
+  health, fourteen random escorts and one verb, and the code spawns it as
+  an elite: no boss hook runs, and Mark Prey executes it below 20%.
 - **Measured, it lives a median of 16–20 seconds** for any build that
-  reaches it, lands no blow in half the fights, and is outlived by the
-  herald at twenty in two wins out of three; against a weak build,
-  Grimtunnel can be kited for ever.
+  reaches it, lands no blow in 20 of 39 won fights, and is outlived by the
+  herald at twenty in 27 of the 39; against a weak build, Grimtunnel can be
+  kited for ever.
 - **The prologue's Ford-Warden is the good model**: a ward fed by lamps, a
   charge you steer into them, a channel you break or pay for, a bar that
   shows it all.
@@ -61,17 +62,21 @@ ceremony of the arrival and the kill) and does not repeat it.
 
 In order of return for the work.
 
-1. **Fix the climax's basics in a day** (`IMPLEMENTATION.md` §4, step 1). The boss
-   drops the run's best chest (today it drops none); heralds stop playing
-   the boss music; the boss arrives on camera from a bearing the player has
-   heard, with its own escort; `Cone` telegraphs draw as cones.
+1. **Fix the climax's basics in a day** (`IMPLEMENTATION.md` §4, step 1).
+   The boss is flagged as a boss, which ends Mark Prey's execute of it and
+   lets a boss script run; it drops the run's best chest (today it drops
+   none); heralds stop playing the boss music; the boss arrives on camera
+   from a bearing the player has heard, with its own escort; `Cone`
+   telegraphs draw as cones.
 2. **Govern the fight's length before adding moves** (`SURVIVORS_BOSSES.md`
-   §0.5–0.7). Phases end at a health mark or a time ceiling, never before a
-   floor; overkill becomes a loud **Break** and a better chest rather than a
-   skipped phase; thresholds crossed together queue. Boss health × (12 + 2 ×
-   tier) on the boss's own body. Target: 90–120 s at par, 45–60 s for an
-   absurd build, an enrage for a weak one.
-3. **Give every boss a soft and a hard enrage** (§0.10): a known move turned
+   §0.5–0.7, with the rules of §0.14). Phases end at a health mark or a
+   60 s ceiling, never before a floor; overkill becomes a loud **Break** and
+   a better chest rather than a skipped phase; thresholds crossed together
+   queue. Boss health × (12 + 2 × tier) on the boss's own body, set per
+   boss by the probe. Target: 90–120 s at par, 45–60 s for an absurd build,
+   an enrage for a weak one.
+3. **Give every boss a soft and a hard enrage** (`SURVIVORS_BOSSES.md`
+   §0.10): a known move turned
    up at 3:00, its signature on a loop at 5:00. Halls of Torment's lesson:
    escalate, never execute.
 4. **Port the Ford-Warden into the new framework first** (`IMPLEMENTATION.md`
@@ -84,18 +89,21 @@ In order of return for the work.
    §2): amber a blow, violet bad ground, pale blue stand here, grey this will
    be solid; each with its own edge pattern; boss telegraphs drawn above the
    survivor's effects; the survivor's effects dimmed while a boss lives.
-7. **The Kindling at fifteen minutes** (§9): a heart and the boss's
-   lieutenant, previewing one of its moves; break the heart in time and the
+7. **The Kindling at fifteen minutes** (`SURVIVORS_BOSSES.md` §9): an
+   ember-core and the boss's lieutenant, previewing one of its moves;
+   break the core in time and the
    great blessing is drawn from four. A fight where the run already wants a
    peak, and the boss's first verse before its exam.
-8. **Stagger and banes** (§0.13, §0.15): crowd control fills a stagger bar
-   instead of being refused; each boss has a bane learned by day (Maeca's
-   fed fires, Chid's standard, Grimtunnel's own lamp). The day half arms the
-   night.
-9. **The Dawn as the end of every arena** (§11): the bible's own rule (the
+8. **Stagger, banes and a named weakness** (`SURVIVORS_BOSSES.md` §0.13,
+   §0.15, §0.17): crowd control fills a stagger bar instead of being
+   refused; each boss has a bane learned by day (Maeca's fed fires, Chid's
+   standard, Grimtunnel's own lamp) and a weakness named when the arena
+   opens, so the run can draft toward it. The day half arms the night.
+9. **The Dawn as the end of every arena** (`SURVIVORS_BOSSES.md` §11): the bible's own rule (the
    ember drains at dawn) as the endless hour's hard cap, a line of daylight
    crossing the arena from 55:00.
-10. **The Barrow Lord, the Red Hand and the Pack-Mother** (§1, §2, §4), with
+10. **The Barrow Lord, the Red Hand and the Pack-Mother**
+    (`SURVIVORS_BOSSES.md` §2, §4, §1), with
     formations (N5) serving the first two and the Legion later; then the
     Slurry Engine by day; then Act 2 and 3's bosses as their content lands,
     the Silver Penitent last.
@@ -109,7 +117,7 @@ In order of return for the work.
    a fight (`RESEARCH.md` §0, §6).
 2. **Clear the horde for the boss, or thin it?** Recommended: clear a circle
    round its entrance and hold the rest at 40% while it lives, with the
-   boss commanding what remains (§0.4). Clearing everything (HoloCure,
+   boss commanding what remains (`SURVIVORS_BOSSES.md` §0.4). Clearing everything (HoloCure,
    Greater Rifts) reads best; keeping some keeps it a survivors fight.
 3. **When a boss takes ember (the Silver Ink, the Dawn, the Centurion's
    toll), do the cards go too?** Recommended: no. The bar and the level step
@@ -138,7 +146,7 @@ In order of return for the work.
 9. **Build the Silver Penitent?** It is the best "your own tools" boss and
    the most expensive (an enemy that collects ember and fires the
    survivor's weapons). Recommended: yes, last, behind a flag.
-10. **Oaths on bosses** (§0.12): each oath changes the boss as it changes
+10. **Oaths on bosses** (`SURVIVORS_BOSSES.md` §0.12): each oath changes the boss as it changes
     the horde. Confirm the table, or keep bosses oath-blind and let the
     horde carry the oath.
 

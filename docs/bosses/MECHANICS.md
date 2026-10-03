@@ -305,7 +305,7 @@ attacker (`Battle.PerfectDodge`); a boss's signature charge should glow
 for it.
 
 *Used by:* Grimtunnel's lamps, the Barrow Lord's standard, the Kiln Warden's
-irons, the Barn Thing's segments, the Kindling's heart, the Slurry Engine's
+irons, the Barn Thing's segments, the Kindling's ember-core, the Slurry Engine's
 valves; stagger on every boss (`SURVIVORS_BOSSES.md` §0.15).
 
 ## 7. Soft and hard enrages, and the floor under fight length

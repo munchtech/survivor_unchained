@@ -29,8 +29,13 @@ level (`Verge.Level()`), with no boss multiplier: a day boss is a big
 level 1 and the Ford-Warden 2,600 (with its ward taking most blows while the
 lamps burn). Fight length targets: **2–3 minutes** at the zone's expected
 level with the gear the act usually has, and no phase shorter than 25 s.
-A day DPS probe does not exist yet; `IMPLEMENTATION.md` §6 suggests one, and
-every health figure below is a starting point to be measured by it.
+Each is flagged `Boss` in its def (as `ford_warden` is), so the execute,
+fear, charm and full freeze rules that cut elites short do not end a duel
+early, and `BossTick` runs its script (`AUDIT.md` §2). Scaling is the
+zone's: `ScaleFor` at `Verge.Level()`, no tier and no ember; a survivor who
+comes back over-levelled finds it easier, as a day should. A day DPS probe
+does not exist yet; `IMPLEMENTATION.md` N12 suggests one, and every health
+figure below is a starting point to be measured by it.
 
 ## 1. The Slurry Engine
 
@@ -52,10 +57,11 @@ north, the outflow channel running south through the middle (slurry:
 violet, slows and poisons), two plank bridges over it, the gantry along the
 east wall with Snib on it, crates and spoil heaps as cover.
 
-**The engine.** `slurry_engine`, Stationary: Health 3,600 (the boiler),
-Radius 3, armoured (× 0.25 taken) while any valve holds. Three valves
-(`engine_valve`, 450 each, breakable parts on its face). The bar shows the
-boiler and three valve pips.
+**The engine.** `slurry_engine`, Stationary, Mass 99: Health 3,600 (the
+boiler), Radius 3, Damage 22, AttackEvery 5 (the sweep), armoured (× 0.25
+taken) while any valve holds. Three valves (`engine_valve`, 450 each,
+breakable parts on its face). The bar shows the boiler and three valve
+pips. Snib: `snib_gantry`, not a target, AttackEvery 5.
 
 **Phase 1, the Valves (three valves to none).**
 - **The sweep**: the outflow nozzle swings across the yard on a slow arc
@@ -64,7 +70,10 @@ boiler and three valve pips.
 - **The crew**: four lamplings at a time, and they do not attack first:
   they go to a broken valve and mend it (a channel of 6 s shown over the
   valve; interrupt it by hitting the mender). A mended valve comes back at
-  half its health. Adds with a purpose, so killing them is a choice of
+  half its health, and **each valve can be mended once**: a second break is
+  for good. After 90 s of the phase the crew stops coming (Snib: "That's
+  the shift. That's the whole shift."), so a survivor who cannot keep up
+  still gets through. Adds with a purpose, so killing them is a choice of
   priority, not a chore.
 - **Snib's spanners**: Snib lobs a spanner every 5 s (a small circle, 0.9 s).
   He shouts in his own voice ("The VALVES! Not the— Snib will fix it. Snib
@@ -74,17 +83,22 @@ boiler and three valve pips.
 - The boiler is bare and the engine **builds pressure**: a channel bar on
   the boss bar ("Pressure"), 30 s to full. Every 10 s it vents: a ring
   telegraph from the engine outward (radius 10, 1.5 s), scalding.
-- **How it ends is the survivor's choice:**
-  - **Break it**: bring the boiler to nothing before the pressure fills.
-    The pump stops, the crew runs, and `dig.pump` is set to `broken`.
-  - **Let it blow**: at full pressure the engine bursts (a circle of 12 m,
-    a 3 s telegraph with Snib screaming "DOWN! Everyone DOWN!"). The
-    survivor must be behind cover (a spoil heap, the gantry's foot) or out
-    of the circle. The engine and the mouth of the Dig go together, and
-    `dig.pump` is set to `blown`, with everything the story already does
-    with that (Act 2's breakthrough moves to the sinkhole, `STORY_BIBLE.md`
-    §7.1). The survivor who brought a blasting-ember charge can set it on
-    the boiler in this phase to make the same choice sooner.
+- The boiler cracks at a quarter of its health and stops taking damage:
+  the fight is won, and **how it ends is something the survivor does**, not
+  a number they happen to reach:
+  - **Break it**: turn the master wheel at the engine's foot (stand at it
+    for 3 s; a hit resets the turn). The pressure drains, the pump stops,
+    the crew runs, and `dig.pump` is set to `broken`.
+  - **Blow it**: set a blasting-ember charge on the boiler, or simply
+    leave the wheel alone until the pressure fills. The engine bursts (a
+    circle of 12 m, a 3 s telegraph with Snib screaming "DOWN! Everyone
+    DOWN!"); the survivor must be behind cover (a spoil heap, the gantry's
+    foot) or out of the circle. The engine and the mouth of the Dig go
+    together, and `dig.pump` is set to `blown`, with everything the story
+    already does with that (Act 2's breakthrough moves to the sinkhole,
+    `STORY_BIBLE.md` §7.1).
+  The wheel glows pale blue ("stand here") once the boiler cracks, so the
+  quiet ending is never hidden behind the loud one.
 
 Both outcomes exist in the story already; the fight lets the player choose
 between them with their feet, and makes the more drastic one the riskier
@@ -93,6 +107,12 @@ one to stand near.
 **Snib.** Never fought. When the engine goes, he is on the gantry and then
 he is not, and he turns up in Act 2 as he always does ("Snib survives
 everything", `STORY_BIBLE.md` §3).
+
+**Victory.** Broken: the wheel's last turn, a long falling hiss, the
+slurry thinning to water down the channel and the camera following it to
+the stream; birdsong comes back. Blown: a white flash, the hit-stop of the
+kill held for 0.3 s, a ring of dust, then quiet, and Snib's hat landing in
+the yard.
 
 **Drops.** The Pump-Wheel Buckler (Named, `docs/items/ACQUISITION.md` §4),
 ember shards, slurry; the journal's entry for the stream.
@@ -113,11 +133,11 @@ straight whether they died on the Low Ford road, and the answer (or the lie)
 has brought her here.
 
 **When.** The bible calls it a night duel. This design moves it to **first
-light**, and makes that her choice: chapter four says an Unchained is
-ordinary at dawn, and Keegan will not fight anyone at an advantage she did
-not earn, nor give them one. "The handbook is very clear. One does not
-return a thing to the dark while it is burning. One waits for the morning,
-and then one asks it to step outside." It keeps the duel what it is (two
+light**, because her handbook says so: chapter four, seven, "The return
+shall be made at dawn, when it is weakest, with a blade the knight has kept
+clean" (`docs/romance/scenes/keegan.md`, `keegan.ch4_read`). Keegan keeps
+the rule to the letter, and asks the survivor to step outside the gate. It
+keeps the duel what it is (two
 people, no horde, no ember) and keeps it in the day's rules. If the owner
 prefers night, the same fight runs as a small no-horde arena with the
 survivor's ember; see `README.md`, decision 6.
@@ -129,14 +149,16 @@ behind her, two braziers going out as the light comes, a well, a cart. The
 sun comes up over the east wall during the fight: the shadows shorten as
 she weakens (the arena as her health bar, Hush's lesson in `RESEARCH.md`).
 
-**Body.** `keegan_duel`: Health 2,400, Speed 4.0, Damage 24, Radius 0.55, a
-sword and an argent heater shield (`Guard`, arc 120°, 0.85 against
-projectiles from the front while she is not attacking). Human-sized.
+**Body.** `keegan_duel`, flagged `Boss`: Health 2,400, Speed 4.0, Damage
+24, Radius 0.55, Mass 2.5, AttackEvery 2.4 (1.9 in Phase 2), a sword and an
+argent heater shield (`Guard`, arc 120°, 0.85 against projectiles from the
+front while she is not attacking). Human-sized. She cannot be executed or
+feared; a stun is 0.5 s on her.
 
 **Phase 1, By the Book (100%–50%).** She names every move before she makes
 it, in full, without contractions, and the name is the telegraph (shown as
 a line of text over her as well as spoken, and the ground marked as usual):
-- "Chapter four, the first figure: the Approach." She closes behind her
+- "The first figure: the Approach." She closes behind her
   shield at a walk; projectiles glance; she cannot be staggered from the
   front. Go round her.
 - "The second figure: the Admonition." A shield bash, a 60° cone, 0.9 s,
@@ -173,8 +195,16 @@ about you. The mechanics carry her character: the textbook becomes the
 telegraph, losing her composure removes it, and the dawn makes her weapon
 useless against a person who is, by day, only a person.
 
-**Drops.** None, either way. If spared, she gives the survivor her handbook
-later (Chapter Four, Named), and its lore line changes with the ending.
+**Victory.** No flash and no fanfare. The music stops on the blow that
+takes her to 15%; the sun clears the wall; the camera comes down to the
+two of them and holds. Killed: the shield falls flat in the dust, and the
+sound of it is the last thing. Spared: the tabard folded on the well's edge.
+
+**Drops.** Killed: her sword (Named), and nothing else. Spared: nothing
+now; on the branch where she comes north with the survivor
+(`keegan.route` = `north`), she
+gives them her handbook (Chapter Four, Named), and its lore line changes
+with the ending.
 
 **Day tools.** Shield Bash interrupts the Sentence; Smoke Bomb breaks her
 Approach (she stops to listen); Mark Prey works as on anyone; arts with
@@ -184,8 +214,9 @@ knockback do not move her while her shield is up.
 
 *Act 2, beat 10, Silverstair: the chapterhouse's cage hall, by day.*
 
-**Who he is.** Sir Aldous Fane, Lord-Exchequer Sallow's keeper of the
-silver cages: a Vigil knight who stopped killing Unchained when Sallow
+**Who he is.** The Keeper, unnamed (the bible gives him no name, and he
+signs the ledger with Sallow's mark, not his own): Lord-Exchequer Sallow's
+keeper of the silver cages, a Vigil knight who stopped killing Unchained when Sallow
 started paying for them, and keeps a ledger as Sallow does. Courteous; he
 calls the caged "the stock". By day, the risen in the cages are only people,
 grey and frightened; at dusk they burn, and that is when he sells them.
@@ -195,20 +226,22 @@ in a hall full of hostages, with walls that move.
 
 **The arena.** A long hall, 36 m by 18 m: three rows of silver cages
 (colliders) running its length, with aisles between; levers on the west
-wall that slide whole rows on rails; a gallery above the east wall; the
+wall that slide whole rows on rails; a gallery above the east wall, reached
+by stairs at both ends (so a melee survivor can always follow him up); the
 ledger on a lectern at the north end. Edric Marrow is in the last cage of
 the middle row.
 
-**Body.** `cage_keeper`: Health 3,000, Speed 3.6, Damage 26, Radius 0.6; a
-crossbow with silver bolts, then a sword; two Vigil sergeants with censers
-(`vigil_sergeant`, Health 380, Guard).
+**Body.** `cage_keeper`, flagged `Boss`: Health 3,000, Speed 3.6, Damage
+26, Radius 0.6, Mass 3, AttackEvery 2.2 (bolts) then 1.8 (sword); a crossbow
+with silver bolts, then a sword; two Vigil sergeants with censers
+(`vigil_sergeant`, Health 380, Damage 14, AttackEvery 3, Guard).
 
 **Phase 1, Inventory (100%–60%).** He keeps to the gallery and the far
 aisles:
 - **Silver bolts**: a line telegraph down an aisle, 1.1 s, × 1.4. The aisles
   are lanes; standing in one is standing in his sights.
 - **The levers**: every 15 s a sergeant throws a lever and a row of cages
-  slides 4 m (its new place drawn on the floor 2 s ahead, violet: "this
+  slides 4 m (its new place drawn on the floor 2 s ahead, grey: "this
   will be solid"). Caught in the way, the survivor is pushed and hurt.
   The hall rearranges itself, and his lanes with it.
 - **Censers**: violet zones that slow, carried by the sergeants.
@@ -216,12 +249,12 @@ aisles:
 **Phase 2, Arrears (60%–25%).** He opens a row:
 - The caged come out, driven by a sergeant with a goad: six to ten frightened
   people who stumble toward the survivor because the goad is behind them.
-  They barely hurt (contact × 0.2) and they are in the way. **Hitting them
-  counts**: the story keeps a tally, and the people of Silverstair who live
-  remember (`STORY_BIBLE.md` §7.10's "free the cages" goes better). Kill the
-  goad and they scatter for the doors; area skills that cannot choose their
-  targets become a cost. The day's version of "the boss commands the
-  horde", where the horde are victims.
+  Each wears a pale-blue ring on the floor, and nothing of the survivor's
+  touches them: day skills and arts skip them as targets and pass through
+  them. They do no harm, but they are bodies in the way, and his bolts come
+  over their heads. Kill the goad and they scatter for the doors. The day's
+  version of "the boss commands the horde", where the horde are victims
+  and the cost is time and room, not a hidden score.
 - He fires over them.
 
 **Phase 3, Paid in Silver (25%–0).** He comes down with the sword:
@@ -229,17 +262,27 @@ aisles:
   1.4 s); inside it at the end, they are pulled to him and struck (× 1.6).
 - **Sum**: a three-swing combo, 0.8 s each, the last a cone.
 - At 10% he goes for Edric's cage with the key, to take his best stock out
-  the back. Stop him in 8 s (he is slowed while carrying) or he gets out of
-  the door, and the fight ends with Edric gone and the Keeper with him
-  (Ysolde's thread in the bible's harder direction).
+  the back. Stop him in 8 s (he is slowed while carrying, the door is
+  marked, every row slides clear of his path and the survivor's, and any
+  hit makes him drop Edric for 1 s) or he gets out of the door, and the
+  fight ends with Edric gone and the Keeper with him (Ysolde's thread in
+  the bible's harder direction). Escape is an outcome, not a failure: the
+  hall is still won, the cages still open, and nothing has to be replayed.
+
+**Victory.** The last blow lands as a row is mid-slide; the rails stop with
+a clank and every cage door in the hall swings an inch on its own. Silence,
+then the caged people's breathing. The camera pulls up to the gallery's
+height to show the hall whole.
 
 **Drops.** The Cage Key (Named, `docs/items/ACQUISITION.md` §4), which opens
-every cage; Sallow's Silver Pen if the ledger is taken from the lectern;
-argent scraps.
+every cage; argent scraps; the ledger itself, as a journal entry. (Sallow's
+Silver Pen stays the Silver Penitent's drop, `SURVIVORS_BOSSES.md` §6.)
 
-**Day tools.** Grapple Chain pulls him off the gallery; Vault and Blink cross
-a sliding row; Time Slip freezes a row mid-slide; skills that pierce are a
-liability in Phase 2 and an asset in Phase 1.
+**Day tools.** Grapple Chain hauls the survivor to him (up onto the
+gallery, or across an aisle to a cage bar); Vault and Blink cross a sliding
+row; Time Slip slows a sliding row to a third for its 3.5 s and breaks his
+key run's channel; skills that pierce reach him down the aisles in Phase 1
+and pass harmlessly through the caged in Phase 2.
 
 ## What the three share
 

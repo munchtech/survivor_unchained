@@ -13,10 +13,11 @@ written from.
 | A per-tick boss hook | `BattleHooks.BossTick`, called from `Ai.Update` for `e.Boss` (`Sim/Ai.cs:75`) | every boss script; today only the Prologue installs one |
 | A worked boss script | `Prologue.WardenTick` (`Play/Zones/Prologue.cs:219-385`): modes, cooldowns, telegraphs, channel, stun, ward | the template; the Kiln Warden is nearly a port of it |
 | Telegraphs | `Ev.Telegraph` (Circle, Line, Ring; Cone in the enum), drawn as ground decals with a fill (`Fx/BattleFx.cs:625`, `:910`) | every move |
-| Delayed strikes that telegraph themselves | `Battle.ScheduleStrike(..., Side.Enemy)` (`Sim/Battle.cs:1146`) | slams, bursts, lobbed charges |
+| Delayed strikes that telegraph themselves | `Battle.ScheduleStrike(..., Side.Enemy)` (`Sim/Battle.cs:1146`); the enemy side is supported but nothing calls it with an enemy owner yet, so the first boss move to use it is its first test | slams, bursts, lobbed charges |
 | Enemy ground | `Battle.SpawnZone(Side.Enemy, ...)` | slurry, bad air, burning ground, censers |
 | Enemy missiles and lobs | `RangedSpec` (Lob, Zone, Count, Spread) | volleys, pots, pilum |
-| Lunges and charges with lanes | `LungeSpec`, `Ai.cs:104-180` | the Pack-Mother, the Warden's charge |
+| Lunges with lanes | `LungeSpec`, `Ai.cs:104-180` | the Pack-Mother, the champions' lunges |
+| A scripted charge | the Warden's charge is its own mode inside `WardenTick` (`Prologue.cs:269`, `:345`), not a `LungeSpec` | the Warden's echo, the Centurion's parting |
 | Interrupts and the perfect dodge | `Battle.Interrupt`, `HurtPlayer(..., telegraphed)`, `PerfectDodge` | channels, the Toll, Duelist's Grace |
 | A damage-taken multiplier | `Enemy.TakenMul` (`Battle.cs:550`) | wards, transitions (× 0), stagger windows |
 | A boss bar with phases, a channel and a shield | `BossBar` (`Play/Zone.cs:40`), `GameHud.Boss` | every boss |
@@ -36,6 +37,16 @@ written from.
 
 An `ArenaBoss` class per boss, chosen by the boss def's id and installed by
 `ArenaRun.Boss()` as `Hooks.BossTick` (today the arena installs none).
+
+- **Flag it as a boss first.** `ArenaRun.Boss()` spawns it with
+  `elite: true` (`ArenaRun.cs:324`) and `Enemy.Boss` comes only from
+  `def.Boss`, which only `ford_warden` sets; `BossTick` runs only for
+  `e.Boss` (`Ai.cs:75`). Either add a `Boss` field to `SpawnOpts` and set
+  it there, or set `boss.Boss = true` straight after the spawn; the
+  champion defs stay unflagged, so a herald of the same def stays an
+  elite. Without this no script runs, and the execute, fear, charm, full
+  freeze and Mark Prey's kill below 20% (`Arts.cs:796`) keep cutting the
+  fight short (`AUDIT.md` §2).
 
 - **Phases**: a list of `(mark, floor, ceiling)`; the script holds health at
   the mark until the floor passes (overflow goes to `Break`), ends the phase
@@ -91,8 +102,11 @@ without special cases.
 
 - **Pits** (Grimtunnel, the barn): a collider plus an `InBounds` wrapper
   that refuses the cell; a decal. S.
-- **Moving walls and cages**: exists in the collision world; the view needs
-  `IZoneLook.RemoveProp` (only `AddProp` exists) and a slide. S.
+- **Moving walls and cages**: exists in the collision world. The view has
+  `AddProp` and `HideProps` (hide every prop of an id inside a circle,
+  `ZoneView.cs:196`), which is enough to make a wall vanish; it needs a
+  per-instance handle (`AddProp` returns nothing today; it would return a
+  handle that can be removed or moved) and a slide for rows that move. S.
 - **A rising band** (the Kiln flood): a zone of slow whose width grows; its
   creatures spawn only in it. S.
 - **Dark and light**: `Rules.Light` changed over time by a script, and an
@@ -136,9 +150,9 @@ is a `Ring` arc with a gap.
 
 ### N8. The Kindling at fifteen minutes (S–M)
 
-Replace the announcement in `ArenaRun.Step` with: the S-12 breather, a heart
-part (N3) and a lieutenant def per people with one move from its boss (N1),
-and `LevelUp.Draft(b, 4)` when the heart breaks in time.
+Replace the announcement in `ArenaRun.Step` with: the S-12 breather, an
+ember-core part (N3) and a lieutenant def per people with one move from its boss (N1),
+and `LevelUp.Draft(b, 4)` when the core breaks in time.
 
 ### N9. The endless hour (M)
 
@@ -176,28 +190,31 @@ horde, with `BossBar` and `SetBoss` as the Verge already uses them.
 |---|---|---|
 | The contract for every boss (§0) | N1 (with stagger), N7, the multiplier (one line), the taught skill (a `Discovered` entry on the kill) | M |
 | The Pack-Mother | N1, N5 (crescent), dark (N4), spectral lanes, Flee-to-point death | M |
-| The Barrow Lord | N1, N5 (March, Ring), N3 (standard), lay-down (N6), allies change side | M–L |
+| The Barrow Lord | N1, N5 (March, Ring), N3 (standard), lay-down (N6), allies stunned by his call | M–L |
 | Grimtunnel | N1, N3 (three lamps), burrow (exists), pits (N4), the crate prop, an expanding ring (N2) | M |
-| The Red Hand | N1, disable a weapon (N6), cages (N4), N5 (Levy), a fleeing thief | M |
+| The Red Hand | N1, disable a weapon for 8 s (N6), cages (N4), N5 (Levy), a fleeing thief as the auto-aim priority | M |
 | The Kiln Warden / Warden's echo | Port `WardenTick` to N1, lamps as N3, the flood (N4); a river map for the Kiln | S–M (echo), M (Kiln) |
 | The Silver Penitent | N1, N6 in full (enemy ember, rival weapons, take ember), a return mechanic | L |
 | The Thing in the Barn | N1, burrow, N3 (segments), sound-and-ring cues (N2), bad air (exists), pits | M–L |
-| The Centurion | N1, N5 (March that parts for light), take ember (N6), a prompt | M |
+| The Centurion | N1, N5 (a March that parts when the survivor stands still for 1 s), take ember (N6), a prompt | M |
 | The Kindling | N3, N8, a lieutenant per people | S–M |
 | Echoes | N9 and two or more bosses | S |
 | The Dawn | N4 (line), N6 (take ember), N9 | M |
-| The Slurry Engine | N1 in a day zone, N3 (valves), menders (adds with a task), Snib's barks | M |
+| The Slurry Engine | N1 in a day zone, N3 (valves), menders (adds with a task, one mend per valve), a master wheel to hold (an interaction), Snib's barks | M |
 | Keegan | N1 in a day zone, labels as telegraphs (N2), a two-way prompt; Act 2's gate | M |
-| The Keeper | N1 in a day zone, sliding rows (N4), hostages that count, Act 2's Silverstair | M–L |
+| The Keeper | N1 in a day zone, sliding rows (N4), hostages that targeting skips, stairs to the gallery, Act 2's Silverstair | M–L |
 
 ## 4. Build order
 
 Most for least first. Each step is playable on its own.
 
-1. **The cheap fixes (S, a day).** The boss's own chest; heralds off the
-   boss music; the boss arriving on camera from a sounded bearing with its
-   own escort; `Cone` drawn; the bar's marks built once. The climax stops
-   being the herald again, and the reward stops being missing.
+1. **The cheap fixes (S, a day).** Flag the arena boss as a boss (N1's
+   first bullet), which alone ends Mark Prey's execute of it and lets
+   `BossTick` and the boss statistics see it; the boss's own chest; heralds
+   off the boss music; the boss arriving on camera from a sounded bearing
+   with its own escort; `Cone` drawn; the bar's marks built once. The
+   climax stops being the herald again, and the reward stops being
+   missing.
 2. **The contract (N1, M).** Phases as gates with floors, ceilings and Break,
    enrages, the multiplier at × (12 + 2 × tier), applied to the four
    existing boss defs with no new moves. The probe should then show 45–60 s
