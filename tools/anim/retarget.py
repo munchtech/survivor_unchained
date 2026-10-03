@@ -59,11 +59,85 @@ MAP_100STYLE = {
 }
 
 
-class Source:
-    """A take, its globals in metres at 30 frames a second."""
+def _fingers(side, src_side, names):
+    """Her three finger joints per finger on a source's (names: the
+    source's per-finger joint names, 1 to 3, and the joint after 3)."""
+    out = {}
+    for f, sf in (("index", "Index"), ("middle", "Middle"), ("ring", "Ring"), ("pinky", "Pinky"), ("thumb", "Thumb")):
+        js = names(src_side, sf)
+        for k in range(3):
+            child = f"{f}_0{k + 2}_{side}" if k < 2 else f"{f}_04_leaf_{side}"
+            out[f"{f}_0{k + 1}_{side}"] = (js[k], child, js[k + 1])
+    return out
 
-    def __init__(self, path, start=0, stop=None, fps=30, units=0.01):
+
+# Kimodo's SOMA skeleton (its BVH: tools/anim/kimodo_bvh.py).
+MAP_SOMA = {
+    "pelvis": ("Hips", "spine_01", "Spine1"),
+    "spine_01": ("Spine1", "spine_02", "Spine2"),
+    "spine_02": ("Spine2", "spine_03", "Chest"),
+    "spine_03": ("Chest", "neck_01", "Neck1"),
+    "neck_01": ("Neck2", "Head", "Head"),
+    "Head": ("Head", None, "HeadEnd"),
+}
+for _s, _S in (("l", "Left"), ("r", "Right")):
+    MAP_SOMA.update({
+        f"clavicle_{_s}": (f"{_S}Shoulder", f"upperarm_{_s}", f"{_S}Arm"),
+        f"upperarm_{_s}": (f"{_S}Arm", f"lowerarm_{_s}", f"{_S}ForeArm"),
+        f"lowerarm_{_s}": (f"{_S}ForeArm", f"hand_{_s}", f"{_S}Hand"),
+        f"hand_{_s}": (f"{_S}Hand", f"middle_01_{_s}", f"{_S}HandMiddle1"),
+        f"thigh_{_s}": (f"{_S}Leg", f"calf_{_s}", f"{_S}Shin"),
+        f"calf_{_s}": (f"{_S}Shin", f"foot_{_s}", f"{_S}Foot"),
+        f"foot_{_s}": (f"{_S}Foot", f"ball_{_s}", f"{_S}ToeBase"),
+        f"ball_{_s}": (f"{_S}ToeBase", f"ball_leaf_{_s}", f"{_S}ToeEnd"),
+    })
+    MAP_SOMA.update(_fingers(_s, _S, lambda S, F: [f"{S}Hand{F}{i}" for i in (1, 2, 3)] +
+                             [f"{S}Hand{F}{'End' if F == 'Thumb' else 4}"]))
+
+# Mixamo's skeleton (an FBX made BVH by tools/anim/fbx_bvh.py; "mixamorig:" taken off).
+MAP_MIXAMO = {
+    "pelvis": ("Hips", "spine_01", "Spine"),
+    "spine_01": ("Spine", "spine_02", "Spine1"),
+    "spine_02": ("Spine1", "spine_03", "Spine2"),
+    "spine_03": ("Spine2", "neck_01", "Neck"),
+    "neck_01": ("Neck", "Head", "Head"),
+    "Head": ("Head", None, "HeadTop_End"),
+}
+for _s, _S in (("l", "Left"), ("r", "Right")):
+    MAP_MIXAMO.update({
+        f"clavicle_{_s}": (f"{_S}Shoulder", f"upperarm_{_s}", f"{_S}Arm"),
+        f"upperarm_{_s}": (f"{_S}Arm", f"lowerarm_{_s}", f"{_S}ForeArm"),
+        f"lowerarm_{_s}": (f"{_S}ForeArm", f"hand_{_s}", f"{_S}Hand"),
+        f"hand_{_s}": (f"{_S}Hand", f"middle_01_{_s}", f"{_S}HandMiddle1"),
+        f"thigh_{_s}": (f"{_S}UpLeg", f"calf_{_s}", f"{_S}Leg"),
+        f"calf_{_s}": (f"{_S}Leg", f"foot_{_s}", f"{_S}Foot"),
+        f"foot_{_s}": (f"{_S}Foot", f"ball_{_s}", f"{_S}ToeBase"),
+        f"ball_{_s}": (f"{_S}ToeBase", f"ball_leaf_{_s}", f"{_S}Toe_End"),
+    })
+    MAP_MIXAMO.update(_fingers(_s, _S, lambda S, F: [f"{S}Hand{F}{i}" for i in (1, 2, 3, 4)]))
+
+
+# Each source's skeleton: the mapping, the joints the clean-up reads, and
+# whether its standing is measured against 100STYLE's neutral take.
+PROFILES = {
+    "100style": {"map": MAP_100STYLE, "hips": "Hips", "hip": ("LeftHip", "RightHip"), "knee": ("LeftKnee", "RightKnee"),
+                 "ankle": ("LeftAnkle", "RightAnkle"), "toe": ("LeftToe", "RightToe"), "neutral": True},
+    "soma": {"map": MAP_SOMA, "hips": "Hips", "hip": ("LeftLeg", "RightLeg"), "knee": ("LeftShin", "RightShin"),
+             "ankle": ("LeftFoot", "RightFoot"), "toe": ("LeftToeBase", "RightToeBase"), "neutral": False},
+    "mixamo": {"map": MAP_MIXAMO, "hips": "Hips", "hip": ("LeftUpLeg", "RightUpLeg"), "knee": ("LeftLeg", "RightLeg"),
+               "ankle": ("LeftFoot", "RightFoot"), "toe": ("LeftToeBase", "RightToeBase"), "neutral": False},
+}
+
+
+class Source:
+    """A take, its globals in metres at 30 frames a second. `profile` names
+    its skeleton (PROFILES): 100style, soma (Kimodo) or mixamo."""
+
+    def __init__(self, path, start=0, stop=None, fps=30, units=0.01, profile="100style"):
+        self.profile = PROFILES[profile]
         self.b = bvhlib.load(path)
+        # (Mixamo's joints carry its rig's prefix.)
+        self.b.names = [n.split(":")[-1] for n in self.b.names]
         g, p = self.b.globals(start, stop)
         step = self.b.fps / fps
         idx = np.arange(0, g.shape[0] - 1e-6, step)
@@ -131,9 +205,14 @@ def neutral_posture(src_like: "Source"):
     return _neutral[key]
 
 
-def retarget(sk: Skeleton, src: Source, mapping=MAP_100STYLE, stance=0.8, lock=True, posture=True):
+def retarget(sk: Skeleton, src: Source, mapping=None, stance=0.8, lock=True, posture=None):
     """Her local rotations [T, J, 4] and positions [T, J, 3] for the take,
     root motion still in (see in_place)."""
+    pr = src.profile
+    mapping = mapping or pr["map"]
+    posture = pr["neutral"] if posture is None else posture
+    HIPS = pr["hips"]
+    (LHIP, RHIP), (LKNEE, _), (LANK, RANK), (LTOE, RTOE) = pr["hip"], pr["knee"], pr["ankle"], pr["toe"]
     grest, prest = sk.rest_globals()
     grest, prest = grest[0], prest[0]
     T = src.rot.shape[0]
@@ -164,14 +243,14 @@ def retarget(sk: Skeleton, src: Source, mapping=MAP_100STYLE, stance=0.8, lock=T
         g[:, j] = qmul(g[:, p], qmul(qinv(grest[p]), grest[j]))
     # Scale: her leg length to the performer's.
     leg_t = np.linalg.norm(prest[sk.i("calf_l")] - prest[sk.i("thigh_l")]) + np.linalg.norm(prest[sk.i("foot_l")] - prest[sk.i("calf_l")])
-    leg_s = np.linalg.norm(src.rest[src.joint("LeftKnee")] - src.rest[src.joint("LeftHip")]) + \
-        np.linalg.norm(src.rest[src.joint("LeftAnkle")] - src.rest[src.joint("LeftKnee")])
+    leg_s = np.linalg.norm(src.rest[src.joint(LKNEE)] - src.rest[src.joint(LHIP)]) + \
+        np.linalg.norm(src.rest[src.joint(LANK)] - src.rest[src.joint(LKNEE)])
     k = leg_t / leg_s
-    hips = src.pos[:, src.joint("Hips")] * k
+    hips = src.pos[:, src.joint(HIPS)] * k
     # Heights from the ground: the performer standing straight has the hips
     # a leg's drop above a planted ankle; hers stand where her rest does.
-    ground_s = np.percentile(src.pos[:, src.joint("LeftAnkle"), 1], 5)
-    stand_s = -src.rest[src.joint("LeftAnkle")][1] + ground_s
+    ground_s = np.percentile(src.pos[:, src.joint(LANK), 1], 5)
+    stand_s = src.rest[src.joint(HIPS)][1] - src.rest[src.joint(LANK)][1] + ground_s
     pel_off = np.array([0.0, prest[sk.i("pelvis")][1] - k * stand_s, 0.0])
     pelvis = hips + pel_off
     # Locals by FK order.
@@ -184,13 +263,13 @@ def retarget(sk: Skeleton, src: Source, mapping=MAP_100STYLE, stance=0.8, lock=T
     pos[:, sk.i("pelvis")] = qrot(qinv(sk.rest_rot[root]), pelvis - prest[root])
     # Feet: where the performer's were, scaled, stance drawn toward hers.
     hipw_t = abs(prest[sk.i("thigh_l")][0] - prest[sk.i("thigh_r")][0]) / 2
-    hipw_s = abs(src.rest[src.joint("LeftHip")][0] - src.rest[src.joint("RightHip")][0]) / 2 * k
+    hipw_s = abs(src.rest[src.joint(LHIP)][0] - src.rest[src.joint(RHIP)][0]) / 2 * k
     lateral = stance + (1 - stance) * (hipw_t / hipw_s)
     ankles = {}
-    for side, sj in (("l", "LeftAnkle"), ("r", "RightAnkle")):
+    for side, sj in (("l", LANK), ("r", RANK)):
         a = src.pos[:, src.joint(sj)] * k
         # Draw the stance in about the pelvis's line, in the hips' own frame.
-        hip_fwd = qrot(src.rot[:, src.joint("Hips")], [0, 0, 1])
+        hip_fwd = qrot(src.rot[:, src.joint(HIPS)], [0, 0, 1])
         hip_fwd[:, 1] = 0
         hip_fwd /= np.linalg.norm(hip_fwd, axis=1, keepdims=True)
         hip_left = np.cross([0, 1, 0], hip_fwd)
@@ -202,7 +281,7 @@ def retarget(sk: Skeleton, src: Source, mapping=MAP_100STYLE, stance=0.8, lock=T
         ankles[side] = a
     contacts = {}
     if lock:
-        for side, sj, tj in (("l", "LeftAnkle", "LeftToe"), ("r", "RightAnkle", "RightToe")):
+        for side, sj, tj in (("l", LANK, LTOE), ("r", RANK, RTOE)):
             c = foot_contacts(src, sj, tj)
             contacts[side] = c
             ankles[side] = lock_feet(ankles[side], c)
