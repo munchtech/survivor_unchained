@@ -44,6 +44,22 @@ def post(path, body):
 _info = None
 
 
+def upload(path):
+    """An image put in the server's input folder, for LoadImage: its name there."""
+    boundary = uuid.uuid4().hex
+    name = os.path.basename(path)
+    with open(path, "rb") as f:
+        data = f.read()
+    crlf = "\r\n"
+    head = (f"--{boundary}{crlf}Content-Disposition: form-data; name=\"image\"; filename=\"{name}\"{crlf}"
+            f"Content-Type: application/octet-stream{crlf}{crlf}")
+    tail = f"{crlf}--{boundary}{crlf}Content-Disposition: form-data; name=\"overwrite\"{crlf}{crlf}true{crlf}--{boundary}--{crlf}"
+    req = urllib.request.Request(f"{URL}/upload/image", data=head.encode() + data + tail.encode(),
+                                 headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
+    with urllib.request.urlopen(req) as r:
+        return json.load(r)["name"]
+
+
 def info():
     global _info
     if _info is None:

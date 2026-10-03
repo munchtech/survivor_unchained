@@ -47,9 +47,11 @@ DATA = os.path.join(bpy.utils.user_resource("EXTENSIONS"), ".user", "user_defaul
 
 # MakeHuman's woman: young, slim, ideal proportions; her face is fitted to
 # the heroine's after.
-MACROS = {"gender": 0.0, "age": 0.5, "muscle": 0.5, "weight": 0.5, "proportions": 1.0, "height": 0.5, "cupsize": 0.5,
+MACROS = {"gender": 0.0, "age": 0.5, "muscle": 0.75, "weight": 0.5, "proportions": 1.0, "height": 0.5, "cupsize": 0.5,
           "firmness": 0.5, "race": {"african": 0.0, "asian": 0.0, "caucasian": 1.0}}
 # Her parts, MakeHuman's own (all CC0): kind, asset.
+# (Her brows are made for heroine_face.py to paint over, and are in her
+# face's paint once it has: then not written for the game.)
 PARTS = [("eyes", "high-poly"), ("eyebrows", "eyebrow010"), ("eyelashes", "eyelashes03"), ("teeth", "teeth_base"),
          ("tongue", "tongue01")]
 EYES = "green"
@@ -57,14 +59,50 @@ SKIN = ("skins", "toigo_light_skin_female_ginger")
 # Her hairstyles: the game's name, MakeHuman's asset. The first is hers.
 HAIRS = {"long": "long01", "ponytail": "ponytail01", "braid": "braid01", "bob": "bob02", "pixie": "short03"}
 
+# Her face: MakeHuman's woman shaped by its targets (each with its weight;
+# "X-" is both sides). Every slider moves her from here.
+FACE = {"head-age-decr": 0.35, "head-fat-decr": 0.2, "X-eye-scale-incr": 0.35, "X-eye-corner2-up": 0.35, "eyebrows-angle-up": 0.3,
+        "nose-scale-horiz-decr": 0.65, "nose-point-up": 0.3, "nose-point-width-decr": 0.3, "nose-hump-decr": 0.45, "nose-scale-vert-decr": 0.3,
+        "mouth-upperlip-volume-incr": 0.75, "mouth-lowerlip-volume-incr": 0.8, "mouth-cupidsbow-incr": 0.5, "mouth-angles-up": 0.2,
+        "X-cheek-bones-incr": 0.15, "X-cheek-volume-incr": 0.5, "chin-bones-incr": 0.1, "chin-width-incr": 0.3, "chin-height-decr": 0.25,
+        "chin-triangle": 0.2, "chin-prominent-incr": 0.15}
+# Her sliders, for the game to shape her face with: each a shape key one
+# way (name+) and the other (name-), from MakeHuman's targets.
+SLIDERS = {
+    "eyes_size": ("X-eye-scale-incr", "X-eye-scale-decr"), "eyes_spacing": ("X-eye-trans-out", "X-eye-trans-in"),
+    "eyes_height": ("X-eye-trans-up", "X-eye-trans-down"), "eyes_tilt": ("X-eye-corner2-up", "X-eye-corner2-down"),
+    "eyes_open": ("X-eye-height2-incr", "X-eye-height2-decr"), "brows_height": ("eyebrows-trans-up", "eyebrows-trans-down"),
+    "brows_arch": ("eyebrows-angle-up", "eyebrows-angle-down"), "nose_width": ("nose-scale-horiz-incr", "nose-scale-horiz-decr"),
+    "nose_length": ("nose-scale-vert-incr", "nose-scale-vert-decr"), "nose_tip": ("nose-point-up", "nose-point-down"),
+    "nose_bridge": ("nose-hump-incr", "nose-hump-decr"), "nostrils": ("nose-flaring-incr", "nose-flaring-decr"),
+    "lips_upper": ("mouth-upperlip-volume-incr", "mouth-upperlip-volume-decr"),
+    "lips_lower": ("mouth-lowerlip-volume-incr", "mouth-lowerlip-volume-decr"),
+    "mouth_width": ("mouth-scale-horiz-incr", "mouth-scale-horiz-decr"), "mouth_corners": ("mouth-angles-up", "mouth-angles-down"),
+    "cupids_bow": ("mouth-cupidsbow-incr", "mouth-cupidsbow-decr"), "cheekbones": ("X-cheek-bones-incr", "X-cheek-bones-decr"),
+    "cheeks": ("X-cheek-volume-incr", "X-cheek-volume-decr"), "jaw": ("chin-bones-incr", "chin-bones-decr"),
+    "chin_width": ("chin-width-incr", "chin-width-decr"), "chin_length": ("chin-height-incr", "chin-height-decr"),
+    "chin_forward": ("chin-prominent-incr", "chin-prominent-decr"), "ears_size": ("X-ear-scale-incr", "X-ear-scale-decr"),
+    "ears_pointed": ("X-ear-shape-pointed", None),
+}
+# Her expressions (MakeHuman's expression units), for blinking, speaking and
+# her scenes: each a shape key from nothing to full.
+EXPRESSIONS = {
+    "blink_l": ["eye-left-closure"], "blink_r": ["eye-right-closure"], "eyes_wide": ["eye-left-opened-up", "eye-right-opened-up"],
+    "squint": ["eye-left-slit", "eye-right-slit"], "brows_up": ["eyebrows-left-up", "eyebrows-right-up"],
+    "brows_sad": ["eyebrows-left-inner-up", "eyebrows-right-inner-up"], "brows_angry": ["eyebrows-left-down", "eyebrows-right-down"],
+    "smile": ["mouth-corner-puller"], "mouth_open": ["mouth-open"], "pucker": ["mouth-pursing"], "snarl": ["mouth-upward-retraction"],
+    "frown": ["mouth-depression"], "nose_wrinkle": ["nose-compression"],
+}
+
 
 def cut_z(P):
     """Height of CUT under a point: low on her chest in front, lower down her
-    back, rising steeply past the tops of her shoulders, so all that the
-    sculpt's hair lay on is above it and her arms are not."""
+    back, rising over the tops of her shoulders (gently, and out past where
+    the tips of her hair lay), so all that the sculpt's hair lay on is above
+    it and her arms are not."""
     x, y = P[:, 0], P[:, 1]
-    side = np.logaddexp(0, (np.abs(x) - 0.14) / 0.01) * 0.01
-    return 1.47 - 0.35 * (y + 0.10) + 1.5 * side
+    side = np.logaddexp(0, (np.abs(x) - 0.17) / 0.015) * 0.015
+    return 1.47 - 0.35 * (y + 0.10) + 2.0 * side
 
 
 def g_cut(P):
@@ -172,22 +210,30 @@ RED = (((_pc[:, 0] > 0.25) & (_pc[:, 0] > _pc[:, 1] * 1.7) & (_pc[:, 0] > _pc[:,
 _tc = HV[HT].mean(1)
 SKIN_T = np.where(~RED[HTP] & (s_split(_tc) < -0.004))[0]
 SKIN_BVH = BVHTree.FromPolygons([tuple(p) for p in HV], HT[SKIN_T].tolist())
-# What the graft is fitted to is surer still: none of it within 1.2 cm of
-# her hair (the lighter streaks of it are not red, and stand off her skin).
-_near_hair = cKDTree(_tc[RED[HTP]]).query(_tc[SKIN_T])[0] < 0.012
+# What the graft is fitted to is surer still: none of it near her hair (the
+# lighter streaks of it are not red, and stand off her skin: one such patch,
+# taken for skin, pulled her neck into a ridge).
+# (3 cm on her neck and upper back, where her hair lay thick; on her
+# shoulders, where only its tips lay, 1.2 cm, or the graft there fits
+# nothing of hers and meets her skin at an angle.)
+_near_hair = cKDTree(_tc[RED[HTP]]).query(_tc[SKIN_T])[0] < np.where(_tc[SKIN_T, 2] > 1.52, 0.03, 0.012)
 FIT_T = SKIN_T[~_near_hair]
 FIT_BVH = BVHTree.FromPolygons([tuple(p) for p in HV], HT[FIT_T].tolist())
+# (Her build is fitted to more of her, clear of her hair by 1.2 cm: a
+# handful of targets cannot be pulled into a ridge by a stray patch.)
+NEAR_T = SKIN_T[cKDTree(_tc[RED[HTP]]).query(_tc[SKIN_T])[0] > 0.012]
+NEAR_BVH = BVHTree.FromPolygons([tuple(p) for p in HV], HT[NEAR_T].tolist())
 print("HER", len(HV), "points,", int(RED.sum()), "faces of hair")
 
 
-def on_skin(pts, maxd=0.3, sure=False):
+def on_skin(pts, maxd=0.3, sure=False, near=False):
     """For each point the nearest of her skin (with `sure`, of the skin
     well clear of her hair): where, its normal, its distance, and the
     weights and paint there."""
     n = len(pts)
     loc, nor, dist = np.zeros((n, 3)), np.zeros((n, 3)), np.full(n, np.inf)
     tri = np.zeros(n, int)
-    bvh, tris = (FIT_BVH, FIT_T) if sure else (SKIN_BVH, SKIN_T)
+    bvh, tris = (FIT_BVH, FIT_T) if sure else ((NEAR_BVH, NEAR_T) if near else (SKIN_BVH, SKIN_T))
     for i, p in enumerate(pts):
         r = bvh.find_nearest(Vector(p), maxd)
         if r[0] is not None:
@@ -222,6 +268,49 @@ def nose_chin(pts):
 # ------------------------------------------------------------ MakeHuman --
 hm = HumanService.create_human(mask_helpers=True, detailed_helpers=True, extra_vertex_groups=True, feet_on_ground=True,
                                scale=0.1, macro_detail_dict=MACROS)
+from bl_ext.user_default.mpfb.services.targetservice import TargetService  # noqa: E402
+from bl_ext.user_default.mpfb.entities.clothes.mhclo import Mhclo  # noqa: E402
+
+_TDIR = os.path.join(bpy.utils.user_resource("EXTENSIONS"), "user_default", "mpfb", "data", "targets")
+TARGET = {}
+for _root, _, _files in os.walk(_TDIR):
+    for _f in _files:
+        if _f.endswith(".target.gz") and "expression" not in _root:
+            TARGET.setdefault(_f[:-10], os.path.join(_root, _f))
+for _f in os.listdir(os.path.join(_TDIR, "expression", "units", "caucasian")):
+    TARGET["x:" + _f[:-10]] = os.path.join(_TDIR, "expression", "units", "caucasian", _f)
+
+
+def sides(names):
+    """Target names, "X-" ones as both sides."""
+    out = []
+    for n in names:
+        out += [n.replace("X-", "l-", 1), n.replace("X-", "r-", 1)] if n.startswith("X-") else [n]
+    return out
+
+
+for _t, _v in FACE.items():
+    for _n in sides([_t]):
+        TargetService.load_target(hm, TARGET[_n], weight=_v)
+# Every slider's and expression's targets too, at nothing (so they change
+# nothing yet), for what each does to her to be read off later.
+SHAPES = {}
+for _k, (_up, _down) in SLIDERS.items():
+    SHAPES[_k + "+"] = sides([_up])
+    if _down:
+        SHAPES[_k + "-"] = sides([_down])
+for _k, _ts in EXPRESSIONS.items():
+    SHAPES[_k] = ["x:" + t for t in _ts]
+# MakeHuman's woman is longer and slimmer of neck and lower of shoulder than
+# she is, and where her hair hid her skin there is nothing of hers to fit
+# to: her build set by these (her face is placed on hers, so a shorter neck
+# lifts the muscles of her shoulders toward her head).
+BUILD = {"measure-neck-height-decr": 0.9, "measure-neck-circ-incr": 0.5, "neck-back-scale-depth-incr": 0.3}
+for _t, _v in BUILD.items():
+    TargetService.load_target(hm, TARGET[_t], weight=_v)
+SK = {}
+for _t in sorted({t for ts in SHAPES.values() for t in ts}):
+    SK[_t] = TargetService.load_target(hm, TARGET[_t], weight=0.0, name="sk_" + _t.replace(":", "_")).name
 proxies = {}
 for kind, name in PARTS + [("hair", h) for h in HAIRS.values()]:
     proxies[name] = HumanService.add_mhclo_asset(os.path.join(DATA, kind, name, name + ".mhclo"), hm, asset_type=kind,
@@ -292,6 +381,9 @@ def place(V):
 MV = place(MV)
 
 
+
+
+
 # ---- the region made anew (her head, and her body above CUT), each face
 # quartered (linearly, so the surface keeps its shape and the eyes, brows
 # and lashes, fitted to it, still sit right) for the detail of her skin.
@@ -345,25 +437,50 @@ def fit(V0, F):
     deg = np.asarray(A.sum(1)).ravel()
     L = sp.identity(n) - sp.diags(1 / np.maximum(deg, 1)) @ A
     LtL = (L.T @ L).tocsc()
-    delta = L @ V0
+    delta0 = L @ V0
+    delta = delta0
+    ei, ej = sp.triu(A).nonzero()
+
+    def turned(V):
+        """Each point's own turning (the rotation that best takes the edges
+        round it as they were to as they are), and its shape turned with
+        it: so a part of her swung as a whole (MakeHuman's arms hang
+        otherwise than hers) costs nothing, and only bending it does."""
+        e0, e1 = V0[ej] - V0[ei], V[ej] - V[ei]
+        C = np.einsum("ni,nj->nij", e0, e1)
+        Cv = np.zeros((n, 3, 3))
+        np.add.at(Cv, ei, C)
+        np.add.at(Cv, ej, C)
+        U_, _, Vt_ = np.linalg.svd(Cv)
+        Rv = np.einsum("nji,nkj->nik", Vt_, U_)
+        bad = np.linalg.det(Rv) < 0
+        Vt_[bad, 2] *= -1
+        Rv[bad] = np.einsum("nji,nkj->nik", Vt_[bad], U_[bad])
+        return np.einsum("nij,nj->ni", Rv, delta0)
     s = s_split(V0)
-    fixed = np.where(s > 0.03, 1e3, 0.0)
+    # Her face held as MakeHuman's; her neck free to follow hers, her skin's
+    # pull easing to nothing over the 5 cm below SPLIT (else, her neck being
+    # thicker behind than MakeHuman's, the surface stepped out there and folded).
+    fixed = np.where(s > 0.05, 1e3, 0.0)
     data = np.where((s < -0.004) & (g_cut(V0) > -0.10))[0]
+    pull = smooth01((-s[data] - 0.005) / 0.05)
     V = V0.copy()
-    for lam, dmax in ((20, 0.06), (8, 0.05), (4, 0.035), (2, 0.025), (1, 0.02), (0.5, 0.015), (0.3, 0.012), (0.3, 0.01)):
+    for it_, (lam, dmax) in enumerate(((20, 0.06), (8, 0.05), (4, 0.035), (2, 0.025), (1, 0.02), (0.5, 0.015), (0.3, 0.012), (0.3, 0.01),
+                                       (0.3, 0.01), (0.3, 0.01))):
         nor = vertex_normals(V, F)
         loc, hn_, dist, _, _ = on_skin(V[data], dmax, sure=True)
         d = V[data] - loc
         along = (d * hn_).sum(1)
         side = np.linalg.norm(d - along[:, None] * hn_, axis=1)
-        ok = np.isfinite(dist) & ((nor[data] * hn_).sum(1) > 0.5) & (side < 0.3 * np.abs(along) + 0.002)
+        ok = np.isfinite(dist) & ((nor[data] * hn_).sum(1) > 0.7) & (side < 0.3 * np.abs(along) + 0.002)
         w = np.zeros(n)
-        w[data[ok]] = 1.0
+        w[data[ok]] = pull[ok]
         tgt = np.zeros((n, 3))
         tgt[data[ok]] = loc[ok]
         M = (sp.diags(w + fixed) + lam * LtL).tocsc()
         solve = spl.factorized(M)
         rhs = w[:, None] * tgt + fixed[:, None] * V0 + lam * (L.T @ delta)
+        delta = turned(V) if it_ > 0 else delta0
         V = np.stack([solve(rhs[:, k]) for k in range(3)], 1)
         r = np.linalg.norm(V[data[ok]] - loc[ok], axis=1)
         print("  fit: %d of %d points on her skin, %.1f mm off (stiffness %g)" % (ok.sum(), len(data), 1000 * r.mean(), lam))
@@ -371,14 +488,52 @@ def fit(V0, F):
 
 
 RV = fit(RV0, RF)
+
+
+def face_normals(V, F):
+    n = np.array([np.cross(V[f[1]] - V[f[0]], V[f[-1]] - V[f[0]]) for f in F])
+    return n / (np.linalg.norm(n, axis=1)[:, None] + 1e-12)
+
+
+# Where the fit folded the surface over (pulled on by what was left of her
+# hair), its move eased into its neighbours' till no face of it is turned.
+_e = np.array([(f[i], f[(i + 1) % len(f)]) for f in RF for i in range(len(f))])
+_A = sp.coo_matrix((np.ones(len(_e)), (_e[:, 0], _e[:, 1])), shape=(len(RV), len(RV))).tocsr()
+_A = ((_A + _A.T) > 0).astype(float)
+_A = sp.diags(1 / np.maximum(np.asarray(_A.sum(1)).ravel(), 1)) @ _A
+_fixed = s_split(RV0) > 0.05
+_fv = sp.coo_matrix((np.ones(sum(len(f) for f in RF)), ([i for i, f in enumerate(RF) for _ in f], [v for f in RF for v in f])),
+                    shape=(len(RF), len(RV))).tocsr()
+for _r in range(60):
+    # (turned: facing against the faces round it)
+    fn_ = face_normals(RV, RF)
+    vn_ = _fv.T @ fn_
+    around_ = _fv @ vn_
+    around_ /= np.linalg.norm(around_, axis=1)[:, None] + 1e-12
+    turned = np.where((fn_ * around_).sum(1) < 0.2)[0]
+    if not len(turned):
+        break
+    near = np.zeros(len(RV), bool)
+    near[[i for f in turned for i in RF[f]]] = True
+    for _ in range(2):
+        near |= (_A @ near.astype(float)) > 0
+    near &= ~_fixed
+    D = RV - RV0
+    D[near] = (_A @ D)[near]
+    RV = RV0 + D
+print("FOLDS eased in %d rounds (%d turned faces left)" % (_r, len(turned)))
 # Near CUT the graft lies on her skin exactly (some of it was fitted to
 # none, near her hair), so the two meet flush: wholly at CUT, less and
 # less to 3 cm above it.
-_near = np.where((s_split(RV) < 0) & (g_cut(RV) > -0.01) & (g_cut(RV) < 0.03))[0]
+# (Near it as the crow flies: where CUT climbs over her shoulders its height
+# above a point says little of how near the point is.)
+_seam = cKDTree(HV[np.abs(g_cut(HV)) < 0.003])
+_sd = _seam.query(RV)[0] * np.sign(g_cut(RV))
+_near = np.where((s_split(RV) < 0) & (_sd > -0.01) & (_sd < 0.03))[0]
 loc, hn_, dist, _, _ = on_skin(RV[_near], 0.02)
 _nn = vertex_normals(RV, RF)[_near]
 ok = np.isfinite(dist) & ((_nn * hn_).sum(1) > 0.6)
-w = (1 - smooth01(g_cut(RV[_near]) / 0.03))[:, None] * ok[:, None]
+w = (1 - smooth01(_sd[_near] / 0.03))[:, None] * ok[:, None]
 RV[_near] += (loc - RV[_near]) * w
 print("FLUSH: %d graft points near CUT laid on her skin (%.1f mm at most)" % (ok.sum(), 1000 * (dist[ok] * w[ok, 0]).max()))
 # Laid on her scan's faint facets the graft creased: smoothed there (its own
@@ -400,6 +555,13 @@ GRAFT_F = [i for i in range(len(RF)) if s_split(_rc[i:i + 1])[0] <= 0 and (g_cut
 print("HEAD", len(HEAD_F), "faces; GRAFT", len(GRAFT_F), "faces")
 
 if os.environ.get("HEAD_STOP") == "fit":
+    if os.environ.get("HEAD_AT"):
+        q = np.array([float(c) for c in os.environ["HEAD_AT"].split(",")])
+        near = np.linalg.norm(RV - q, axis=1) < 0.03
+        mv = np.linalg.norm(MOVE[near], axis=1)
+        print("AT", q, "%d points: moved by the fit mean %.1f mm, most %.1f mm" % (near.sum(), mv.mean() * 1000, mv.max() * 1000))
+        loc, hn_, dist, _, _ = on_skin(RV0[near], 0.06, sure=True)
+        print("   her sure skin from MakeHuman's points there: mean %.1f mm" % (np.nanmean(np.where(np.isfinite(dist), dist, np.nan)) * 1000))
     raise SystemExit
 
 
@@ -550,6 +712,8 @@ for fi in GRAFT_F:
 lower = [k for k, c in ecount.items() if c == 1 and not (k[0] in head_v and k[1] in head_v)]
 gl = loops_of(lower)
 print("GRAFT edge loops below:", [len(L) for L in gl])
+# (One, all the way round her: CUT crossing her arms would part it.)
+assert len(gl) == 1, "CUT parts the graft's edge in %d: it must pass over her arms" % len(gl)
 graft_loop = around(RV, max(gl, key=len))
 # Every point made anew takes her weights from the skin nearest it, easing
 # to her head's alone over 3 cm above SPLIT (the same for the graft and her
@@ -571,44 +735,35 @@ for fi in GRAFT_F:
     f.smooth = True
     f.material_index = 1
     f[NEW] = 1
-# The strip: each of the graft's edge points placed along her edge where
-# it is nearest (so where her edge bends sharply neither side runs ahead
-# of the other), and the two edges zipped together in that order.
+# The strip: the two edges zipped together the shortest way (of all the
+# ways to join them in order, the one whose crossings are shortest in sum,
+# by dynamic programming), from the graft's point nearest her edge's start.
 B = [gmap[i] for i in graft_loop]
 pa, pb = np.array([v.co[:] for v in A]), np.array([v.co[:] for v in B])
 n, m = len(A), len(B)
-seg_a, seg_b = pa, np.roll(pa, -1, axis=0)
-seg_len = np.linalg.norm(seg_b - seg_a, axis=1)
-s_a = np.r_[0, np.cumsum(seg_len)]
-total = s_a[-1]
-
-
-def along(p):
-    d = seg_b - seg_a
-    t = np.clip(((p - seg_a) * d).sum(1) / np.maximum((d * d).sum(1), 1e-12), 0, 1)
-    k = int(np.argmin(np.linalg.norm(seg_a + d * t[:, None] - p, axis=1)))
-    return s_a[k] + t[k] * seg_len[k]
-
-
-s_b = np.array([along(p) for p in pb])
-j0 = int(np.argmin(s_b))
-B, pb, s_b = B[j0:] + B[:j0], np.roll(pb, -j0, axis=0), np.roll(s_b, -j0)
-# (unwrapped round the loop, and never going back)
-for k in range(1, m):
-    if s_b[k] < s_b[k - 1] - total / 2:
-        s_b[k:] += total
-s_b = np.maximum.accumulate(s_b)
-s_b = np.r_[s_b, s_b[0] + total]
-s_a = np.r_[s_a[:-1], total, total + s_a[1]]
-i = j = 0
+j0 = int(np.argmin(np.linalg.norm(pb - pa[0], axis=1)))
+B, pb = B[j0:] + B[:j0], np.roll(pb, -j0, axis=0)
+qa, qb = np.r_[pa, pa[:1]], np.r_[pb, pb[:1]]          # each closed: back to its start
+dist = np.linalg.norm(qa[:, None] - qb[None], axis=2)
+cost = np.full((n + 1, m + 1), np.inf)
+step = np.zeros((n + 1, m + 1), int)
+cost[0, 0] = 0
+for i in range(n + 1):
+    for j in range(m + 1):
+        if i and cost[i - 1, j] + dist[i, j] < cost[i, j]:
+            cost[i, j], step[i, j] = cost[i - 1, j] + dist[i, j], 1
+        if j and cost[i, j - 1] + dist[i, j] < cost[i, j]:
+            cost[i, j], step[i, j] = cost[i, j - 1] + dist[i, j], 2
 strip = []
-while i < n or j < m:
-    if j >= m or (i < n and s_a[i + 1] <= s_b[j + 1]):
-        strip.append((A[i % n], A[(i + 1) % n], B[j % m]))
-        i += 1
+i, j = n, m
+while i or j:
+    if step[i, j] == 1:
+        strip.append((A[(i - 1) % n], A[i % n], B[j % m]))
+        i -= 1
     else:
-        strip.append((A[i % n], B[(j + 1) % m], B[j % m]))
-        j += 1
+        strip.append((A[i % n], B[j % m], B[(j - 1) % m]))
+        j -= 1
+strip.reverse()
 # The zipped faces all turn the same way; all turned, if need be, to run
 # along her edge against her face beside it (so they face out as hers do:
 # judged face by face, thin ones came out backwards, and showed her inside).
@@ -621,6 +776,43 @@ for t in strip:
     f.material_index = 1
     f[NEW] = 1
     strip_f.append(f)
+# Any dent or bump the join left on her back and shoulders, within 5 cm
+# above it and 2 cm below, eased out: each point drawn halfway to the plane
+# of the skin round it (2.5 cm) while it stands more than 3 mm off it. (Not
+# in front, where her collarbones are hers; not her breasts.)
+bm.normal_update()
+_seam_now = cKDTree(np.array([v.co[:] for v in A]))
+_band = [v for v in bm.verts if v.link_faces and not v.is_boundary
+         and -0.02 < _seam_now.query(v.co[:])[0] * (1 if g_cut(np.array([v.co[:]]))[0] > 0 else -1) < 0.05
+         and min(np.linalg.norm(np.array(v.co[:]) - a) for a in AREOLA) > 0.05 and v.co.y > 0.0]
+_eased = set()
+for _ in range(30):
+    _all = np.array([v.co[:] for v in bm.verts])
+    _kd = cKDTree(_all)
+    moved = {}
+    for v in _band:
+        q = _all[_kd.query_ball_point(v.co[:], 0.025)]
+        if len(q) < 6:
+            continue
+        c = q.mean(0)
+        nrm = np.linalg.svd(q - c)[2][2]
+        d = float((np.array(v.co[:]) - c) @ nrm)
+        if abs(d) > 0.003:
+            moved[v] = v.co - Vector(nrm) * (0.5 * d)
+    if not moved:
+        break
+    for v, q in moved.items():
+        v.co = q
+        _eased.add(v)
+print("EVENED: %d points of the join eased flat" % len(_eased))
+if os.environ.get("HEAD_AT"):
+    _q = np.array([float(c) for c in os.environ["HEAD_AT"].split(",")])
+    _all = np.array([v.co[:] for v in bm.verts])
+    _i = int(np.argmin(np.linalg.norm(_all - _q, axis=1)))
+    bm.verts.ensure_lookup_table()
+    _v = bm.verts[_i]
+    print("AT", np.round(_all[_i], 4), "in band:", _v in set(_band), "boundary:", _v.is_boundary, "faces:", len(_v.link_faces),
+          "seam dist %.4f" % _seam_now.query(_v.co[:])[0], "g %.4f" % g_cut(np.array([_v.co[:]]))[0])
 # The band either side of the join evened out: each point drawn toward the
 # middle of its neighbours and laid back on the surface as it was, so the
 # faces there are of even shape (thin ones bend the light, and what is cut
@@ -635,6 +827,12 @@ for _ in range(12):
         moved[v] = _ref.find_nearest(q)[0]
     for v, q in moved.items():
         v.co = q
+# Slivers of faces along the join (less than 0.7 mm across) dissolved: they
+# take a light of their own.
+_sc_kd = cKDTree(np.array([v.co[:] for v in A]))
+bmesh.ops.dissolve_degenerate(bm, dist=0.0007, edges=[e for e in bm.edges if
+                              _sc_kd.query(((e.verts[0].co + e.verts[1].co) / 2)[:])[0] < 0.01])
+bm.verts.ensure_lookup_table()
 bm.normal_update()
 print("SEWN: %d strip faces between %d of her points and %d of the graft's" % (len(strip), n, m))
 
@@ -901,11 +1099,19 @@ hme.materials[1] = textured("skin_graft", gpath)
 _mh_skin = os.path.join(DATA, *SKIN)
 _mh_png = next(os.path.join(_mh_skin, f) for f in os.listdir(_mh_skin) if f.endswith(".png") and "normal" not in f)
 MH_TEX = load_png(_mh_png)
-_all = np.concatenate(HEAD_UV)
-_lo, _hi = _all.min(0), _all.max(0)
-_sc = 0.98 / (_hi - _lo).max()
-HEAD_UV2 = [(u - _lo) * _sc + 0.01 for u in HEAD_UV]
-HSIZE = 2048
+# Her head's own texture, 4K: MakeHuman's islands for it packed to fill
+# the square (laid as MakeHuman lays them, her face had a sixth of it).
+bpy.ops.object.select_all(action="DESELECT")
+head.select_set(True)
+bpy.context.view_layer.objects.active = head
+bpy.ops.object.mode_set(mode="EDIT")
+bpy.ops.mesh.select_all(action="SELECT")
+bpy.ops.uv.select_all(action="SELECT")
+bpy.ops.uv.pack_islands(rotate=True, margin=0.003)
+bpy.ops.object.mode_set(mode="OBJECT")
+_uvd2 = head.data.uv_layers[0].data
+HEAD_UV2 = [np.array([_uvd2[li].uv[:] for li in p.loop_indices]) for p in head.data.polygons]
+HSIZE = 4096
 HT2, HTU2 = triangles(HEAD_FACES, HEAD_UV2)
 _, HTU1 = triangles(HEAD_FACES, HEAD_UV)
 r_, c_, t_, b_ = raster(HTU2, (HSIZE, HSIZE))
@@ -915,6 +1121,16 @@ col = sample(MH_TEX, (HTU1[t_] * b_[:, :, None]).sum(1))[:, :3]
 _neck = s_split(P_) < 0.04
 mh_mean, mh_std = col[_neck].mean(0), col[_neck].std(0)
 col = HER_MEAN + (col - mh_mean) * np.clip(HER_STD / (mh_std + 1e-6), 0.7, 1.4)
+# Her face as tools/assets/heroine_face.py painted it (a photograph's skin,
+# brows, lashes and lips, by the local ComfyUI), over MakeHuman's by its alpha.
+FACE_PAINT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "heroine_face", "face_paint.png")
+if os.path.exists(FACE_PAINT):
+    from PIL import Image
+    _fp = np.asarray(Image.open(FACE_PAINT).convert("RGBA"), np.float32)[::-1] / 255
+    if _fp.shape[0] == HSIZE:
+        _a = _fp[r_, c_, 3:4]
+        col = col * (1 - _a) + _fp[r_, c_, :3] * _a
+        print("FACE PAINT laid over %d%% of her head" % (100 * (_a > 0.5).mean()))
 # Over the 3 cm above SPLIT, eased into her own skin's.
 near = s_split(P_) < 0.03
 _, _, dist, _, huv = on_skin(P_[near], 0.05, sure=True)
@@ -930,7 +1146,7 @@ inside[r_, c_] = True
 himg = pad(himg, inside)
 hpath = os.path.join(TEXDIR, "heroine_head.jpg")
 save_image(himg, hpath)
-head.data.uv_layers[0].data.foreach_set("uv", np.concatenate(HEAD_UV2).ravel())
+
 head.data.materials[0] = textured("skin_head", hpath)
 print("HEAD paint from", os.path.basename(_mh_png))
 
@@ -1036,6 +1252,87 @@ if os.environ.get("HEAD_STOP") == "parts":
     bpy.ops.wm.save_as_mainfile(filepath=OUT_BLEND)
     raise SystemExit
 
+# ------------------------------------------------------------ her shapes --
+# Each slider and expression as a shape key on her head and on whichever of
+# its parts it moves (the eyes, brows and lashes follow by the way MakeHuman
+# fits them to it), none of it moving her neck at SPLIT.
+_keys = hm.data.shape_keys.key_blocks
+_basis = np.array([v.co[:] for v in hm.data.shape_keys.reference_key.data])
+_to_world = (S * R) @ np.array(hm.matrix_world)[:3, :3]
+
+
+def base_delta(targets):
+    d = np.zeros_like(_basis)
+    for t in targets:
+        kd = np.zeros(len(_basis) * 3)
+        _keys[SK[t]].data.foreach_get("co", kd)
+        d += kd.reshape(-1, 3) - _basis
+    return d @ _to_world.T
+
+
+_hold = smooth01(s_split(HEAD_V) / 0.02)[:, None]
+# MakeHuman's targets for the size and place of her eyes move their sockets
+# and not the eyes in them: for those each eye is moved and scaled as the
+# skin round it is (a best fit of its rim), so it stays in its socket.
+EYE_FOLLOW = ("eyes_size", "eyes_spacing", "eyes_height")
+_eye_obj = next(o for o, (kind, _) in zip(parts, PARTS) if kind == "eyes")
+_ev = np.array([v.co[:] for v in _eye_obj.data.vertices])
+_eyes = []
+for sd in (1, -1):
+    ids = np.where(_ev[:, 0] * sd > 0)[0]
+    c = _ev[ids].mean(0)
+    r = np.linalg.norm(_ev[ids] - c, axis=1).max()
+    rim = np.where(np.linalg.norm(HEAD_V - c, axis=1) < r * 1.6)[0]
+    _eyes.append((ids, c, rim))
+
+
+def eye_follow(dh):
+    """The eyes' moves for a change of the head's points: each scaled and
+    shifted as best fits the change of the skin round it."""
+    de = np.zeros_like(_ev)
+    for ids, c, rim in _eyes:
+        q = HEAD_V[rim] - c
+        q -= q.mean(0)
+        d = dh[rim] - dh[rim].mean(0)
+        k = 1 + (q * d).sum() / max((q * q).sum(), 1e-12)
+        t = dh[rim].mean(0) - (k - 1) * (HEAD_V[rim].mean(0) - c)
+        de[ids] = (k - 1) * (_ev[ids] - c) + t
+    return de
+
+
+_maps = {}
+for o, (kind, name) in zip(parts, PARTS):
+    m = Mhclo()
+    m.load(os.path.join(DATA, kind, name, name + ".mhclo"))
+    _maps[o] = m
+for o in [head] + parts:
+    o.shape_key_add(name="Basis", from_mix=False)
+_made = 0
+for sname, targets in SHAPES.items():
+    d = base_delta(targets)
+    dh = (SUB @ d)[hv] * _hold
+    if np.abs(dh).max() > 1e-5:
+        k = head.shape_key_add(name=sname, from_mix=False)
+        k.data.foreach_set("co", (HEAD_V + dh).ravel())
+        _made += 1
+    for o in parts:
+        if o == _eye_obj and sname.rstrip("+-") in EYE_FOLLOW:
+            dp = eye_follow(dh)
+        else:
+            mv = _maps[o].verts
+            dp = np.zeros((len(o.data.vertices), 3))
+            for i in range(len(dp)):
+                if i in mv:
+                    v3, w3 = mv[i]["verts"], mv[i]["weights"]
+                    dp[i] = w3[0] * d[v3[0]] + w3[1] * d[v3[1]] + w3[2] * d[v3[2]]
+        if np.abs(dp).max() > 1e-5:
+            base = np.zeros(len(dp) * 3)
+            o.data.vertices.foreach_get("co", base)
+            o.shape_key_add(name=sname, from_mix=False).data.foreach_set("co", (base.reshape(-1, 3) + dp).ravel())
+print("SHAPES: %d on her head, of %d sliders' and expressions' (%s)" % (_made, len(SHAPES), ", ".join(
+    "%s %d" % (o.name, len(o.data.shape_keys.key_blocks) - 1) for o in parts)))
+
+
 # ------------------------------------------------------------- her hair --
 # Each style MakeHuman's, fitted to its head (so to hers), moved as the
 # graft was where it lies on her neck and shoulders, and held clear of her
@@ -1106,7 +1403,8 @@ def export(objs, path, **kw):
     bpy.ops.export_scene.gltf(filepath=path, use_selection=True, export_skins=True, export_animations=False, export_yup=True, **kw)
 
 
-export([her, head] + parts, os.path.join(ART, "heroine.glb"), export_format="GLB")
+_game_parts = [o for o in parts if not (o.name == "HeroineBrows" and os.path.exists(FACE_PAINT))]
+export([her, head] + _game_parts, os.path.join(ART, "heroine.glb"), export_format="GLB")
 for style, o in hairs.items():
     # Text and binary apart, the textures in head_tex beside them.
     export([o], os.path.join(ART, f"heroine_hair_{style}.gltf"), export_format="GLTF_SEPARATE", export_texture_dir="head_tex")

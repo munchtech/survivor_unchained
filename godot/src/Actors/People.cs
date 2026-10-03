@@ -16,7 +16,8 @@ public static class People
 {
     public sealed record Look(
         string Sex, string[] Outfit, string? Hair = null, bool Beard = false,
-        Color? HairColor = null, Color? Skin = null, Color? Cloth = null, Color? Under = null, double Figure = 0);
+        Color? HairColor = null, Color? Skin = null, Color? Cloth = null, Color? Under = null, double Figure = 0,
+        IReadOnlyDictionary<string, float>? Face = null);
 
     public static readonly string[] MaleRanger = { "Male_Ranger_Arms", "Male_Ranger_Body", "Male_Ranger_Legs", "Male_Ranger_Feet_Boots" };
     public static readonly string[] MalePeasant = { "Male_Peasant_Arms", "Male_Peasant_Body", "Male_Peasant_Legs", "Male_Peasant_Feet" };
@@ -96,6 +97,7 @@ public static class People
         if (body == "heroine" && look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string her) HerOutfit(p, her[4..]);
         // Her hair, a mesh of its own: the style chosen if it is one of hers.
         if (body == "heroine") HerHair(p, HerHairs.Contains(look.Hair) ? look.Hair! : HerHairs[0], look.HairColor ?? HerHairColour);
+        if (body == "heroine" && look.Face != null) HerFace(p, look.Face);
         // A child's larger head.
         if (spec.Head is double h && h != 1)
         {
@@ -279,6 +281,39 @@ public static class People
         }
     }
 
+    /// <summary>Her face's sliders (tools/assets/heroine_head.py's SLIDERS),
+    /// each from -1 to 1 about her own face.</summary>
+    public static readonly string[] HerSliders =
+    {
+        "eyes_size", "eyes_spacing", "eyes_height", "eyes_tilt", "eyes_open", "brows_height", "brows_arch", "nose_width", "nose_length",
+        "nose_tip", "nose_bridge", "nostrils", "lips_upper", "lips_lower", "mouth_width", "mouth_corners", "cupids_bow", "cheekbones",
+        "cheeks", "jaw", "chin_width", "chin_length", "chin_forward", "ears_size", "ears_pointed",
+    };
+
+    /// <summary>Her face shaped: each slider (HerSliders) from -1 to 1, and
+    /// her expressions (heroine_head.py's EXPRESSIONS: blink_l, smile, ...)
+    /// from 0 to 1, on her head and on the parts of it that follow it (eyes,
+    /// brows, lashes, teeth).</summary>
+    public static void HerFace(Person p, IReadOnlyDictionary<string, float> face)
+    {
+        foreach (var mi in p.Meshes)
+        {
+            if (mi.Mesh is not ArrayMesh am || am.GetBlendShapeCount() == 0) continue;
+            foreach (var (name, v) in face)
+            {
+                Shape(mi, name + "+", Mathf.Max(v, 0));
+                Shape(mi, name + "-", Mathf.Max(-v, 0));
+                Shape(mi, name, v);
+            }
+        }
+
+        static void Shape(MeshInstance3D mi, string name, float v)
+        {
+            int i = mi.FindBlendShapeByName(name);
+            if (i >= 0) mi.SetBlendShapeValue(i, v);
+        }
+    }
+
     /// <summary>One of her hairstyles on her head, dyed: its paint is grey,
     /// light to dark, and takes the colour as it is.</summary>
     public static void HerHair(Person p, string style, Color colour)
@@ -391,7 +426,8 @@ public static class People
 
     static void HideSkin(MeshInstance3D mi, int ch)
     {
-        if (mi.Mesh is not ArrayMesh am) return;
+        // (Only her body is marked; her head is left as it is, shape keys and all.)
+        if (mi.Mesh is not ArrayMesh am || (am.SurfaceGetFormat(0) & Mesh.ArrayFormat.FormatColor) == 0) return;
         if (!hidden.TryGetValue((am, ch), out var mesh))
         {
             mesh = new ArrayMesh();

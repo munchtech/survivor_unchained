@@ -42,12 +42,16 @@ func _init():
 				m.albedo_color = Color(1.0, 0.86, 0.74)
 				if OS.get_environment("NOTEX") != "": m.albedo_texture = null; m.albedo_color = Color(0.85, 0.62, 0.5)
 				m.vertex_color_use_as_albedo = false
-				m.subsurf_scatter_enabled = true
+				m.subsurf_scatter_enabled = OS.get_environment("NOSSS") == ""
 				m.subsurf_scatter_strength = 0.35
 				m.subsurf_scatter_skin_mode = true
 				m.roughness = 0.52
 				mi.set_surface_override_material(s, m)
 		var skel = h.find_children("*", "Skeleton3D", true, false)[0]
+		# HIDE=name,...: those meshes of hers not drawn (to see what is what).
+		for hide in OS.get_environment("HIDE").split(",", false):
+			for mi in h.find_children(hide, "MeshInstance3D", true, false):
+				mi.visible = false
 		# OUTFIT=prefix ("warden_" a set, "warden_straps" one piece): her pieces (heroine_outfit_<set>.gltf), on her skeleton.
 		var outfit = OS.get_environment("OUTFIT")
 		if outfit != "":
@@ -66,7 +70,7 @@ func _init():
 			var ch = ["warden", "arcanist", "reaver", "ranger"].find(outfit.trim_suffix("_").split(".")[0].split("_")[0])
 			if ch >= 0 and OS.get_environment("NOHIDE") == "":
 				for bm in skel.get_children():
-					if bm is MeshInstance3D and not String(bm.name).contains("."):
+					if bm is MeshInstance3D and not String(bm.name).contains(".") and bm.mesh.surface_get_format(0) & Mesh.ARRAY_FORMAT_COLOR:
 						hide_skin(bm, ch)
 		# HAIR=<style> (heroine_hair_<style>.gltf; "none" for none), HAIRCOLOR=#rrggbb.
 		var style = OS.get_environment("HAIR") if OS.get_environment("HAIR") != "" else "long"
@@ -94,6 +98,16 @@ func _init():
 						m.backlight = hair_colour().darkened(0.6)
 						mi.set_surface_override_material(s, m)
 			hs.free()
+		# FACE=name=value,...: her face's sliders (-1..1) and expressions (0..1), as People.HerFace.
+		if OS.get_environment("FACE") != "":
+			for pair in OS.get_environment("FACE").split(","):
+				var kv = pair.split("=")
+				var v = float(kv[1])
+				for mi in skel.get_children():
+					if mi is MeshInstance3D and mi.mesh.get_blend_shape_count() > 0:
+						for n in [[kv[0] + "+", max(v, 0.0)], [kv[0] + "-", max(-v, 0.0)], [kv[0], v]]:
+							var bi = mi.find_blend_shape_by_name(n[0])
+							if bi >= 0: mi.set_blend_shape_value(bi, n[1])
 		if OS.get_environment("NOHERPOSE") == "":
 			skel.add_child(load("res://src/Actors/HerPose.cs").new())
 		if OS.get_environment("NOJIGGLE") == "":
