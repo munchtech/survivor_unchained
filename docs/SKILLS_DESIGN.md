@@ -411,7 +411,8 @@ Any rank card may **surge**, two ranks at once, with chance
 A great hand is **dealt by role**: a ward, a power, then an answer or a
 quickening, then (Midnight's fourth card, or Omens) anything. The card says
 its role ("GREAT BLESSING · WARD"). Every path lists a ward; the slow
-champion-killers list an answer.
+champion-killers list an answer. **The calling's own great comes once a
+night**: as Dusk's power card half the time, otherwise at Midnight.
 
 | New great | What it does | Ranks 2, 3 |
 |---|---|---|
@@ -533,6 +534,10 @@ then two or three a minute, under two late (R§9: between 0.5 and 3 a minute).
   damage `1 + 0.14l`). The arena's level is **three a tier** (`3t − 2`: 1, 4,
   7, the survivor's own pace by tier), plus a step every two and a half
   minutes, plus the oaths'. A tier also brings 15% more of the horde.
+  **Dusk**: the tier's levels (and an oath's) come in over the first three
+  minutes, so a night is not lost before the ember has given anything to
+  choose (measured: most falls before the boss came in the first eight
+  minutes, under two oaths at full strength from minute zero).
 - **Ordinary creatures soften as the night goes on**: health divided by
   `1 + 0.08 × minute` (`ArenaRun.FodderEase`). A field mown below 60% of its
   number refills twice as fast, in groups twice the size.
@@ -681,8 +686,8 @@ report; its day-story walk (`BALANCE_LAB=story`) is the lab's own.
 |---|---|
 | `OfferTests` | every guarantee over hundreds of seeded drafts; leans; pity; surge; reroll avoids; banish removes ranks; skip refund; great hands by role |
 | `RecipeTests` | every recipe and union reachable; every skill on a path; every passive and blessing wanted by two paths |
-| `BalanceTests` | every path reaches its power; none runs away; no rule over 45% of a build's damage (the probes run alone, after the rest) |
-| `BlessingTests` | great blessings deepen; each new great, each calling's own and each rider does what it says; every path has a ward |
+| `BalanceTests` | every path reaches its power; none runs away; no rule over 45% of a build's damage (six probes a path at the fifteenth minute's ember; they run alone, after the rest) |
+| `BlessingTests` | great blessings deepen; each new great, each calling's own (offered to it alone, once a night) and each rider does what it says; every path has a ward |
 | `KindledTests` | two kindlings at most; stand-ins at rank 8 and not before; a fourth card; a fourth great; the rank cap |
 | `DecisionTests` | level thirty |
 
