@@ -38,12 +38,33 @@ _NUM = {"0": "zero", "1": "one", "2": "two", "3": "three", "4": "four", "5": "fi
         "40": "forty", "41": "forty one", "50": "fifty", "100": "a hundred"}
 
 
+_CONTRACT = [(r"n't\b", " not"), (r"'ll\b", " will"), (r"'ve\b", " have"), (r"'re\b", " are"), (r"'m\b", " am"),
+             (r"'d\b", " would"), (r"\bcan not\b", "cannot"), (r"\bwo not\b", "will not"), (r"\bca not\b", "can not")]
+_lex = None
+
+
+def lexicon() -> dict:
+    global _lex
+    if _lex is None:
+        p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lexicon.json")
+        _lex = json.load(open(p, encoding="utf-8")) if os.path.exists(p) else {"say": {}, "hear": {}}
+    return _lex
+
+
 def norm_words(s: str) -> list[str]:
-    """Words as a listener hears them: no punctuation, case or stage directions."""
+    """Words as a listener hears them: no punctuation, case, stage directions
+    or contractions; names Whisper spells its own way taken as said right."""
     s = re.sub(r"\([^)]*\)", " ", s)          # stage directions are not said by the speaker
     s = s.replace("’", "'").replace("‘", "'").lower()
+    for a, b in _CONTRACT:
+        s = re.sub(a, b, s)
+    s = re.sub(r"'s\b", "s", s)
     s = re.sub(r"[—–-]", " ", s)
     s = re.sub(r"[^a-z0-9' ]+", " ", s)
+    s = " " + " ".join(s.split()) + " "
+    for canon, heard in lexicon().get("hear", {}).items():
+        for h in sorted(heard, key=len, reverse=True):
+            s = s.replace(f" {h} ", f" {canon} ").replace(f" {h}s ", f" {canon}s ")
     words = []
     for w in s.split():
         w = w.strip("'")
@@ -54,6 +75,47 @@ def norm_words(s: str) -> list[str]:
         else:
             words.append(w)
     return words
+
+
+def _near(a: str, b: str) -> bool:
+    """Two spellings of one word (Whisper's guess at a name, a dialect word)."""
+    if a == b:
+        return True
+    if min(len(a), len(b)) < 4:
+        return False
+    import difflib
+    return difflib.SequenceMatcher(None, a, b).ratio() >= 0.75
+
+
+def substantive(wrong: list[str]) -> list[str]:
+    """The errors a listener would hear: a dropped or added word, or a
+    different word; not a near-spelling of the same one, nor 'oh' and 'ha'."""
+    out = []
+    fill = {"oh", "ah", "ha", "hah", "um", "uh", "eh", "hm", "hmm", "mm", "huh", "oho", "oi"}
+    # A compound written whole on one side and as two words on the other
+    # ("saw-bones" heard as "sawbones"): '-saw' then 'bones->sawbones'.
+    wrong = list(wrong)
+    i = 0
+    while i < len(wrong) - 1:
+        a, b = wrong[i], wrong[i + 1]
+        if a.startswith("-") and "->" in b and b.split("->")[1] == a[1:] + b.split("->")[0]:
+            del wrong[i:i + 2]; continue
+        if "->" in a and b.startswith("-") and a.split("->")[1] == a.split("->")[0] + b[1:]:
+            del wrong[i:i + 2]; continue
+        if a.startswith("+") and "->" in b and b.split("->")[0] == a[1:] + b.split("->")[1]:
+            del wrong[i:i + 2]; continue
+        if "->" in a and b.startswith("+") and a.split("->")[0] == a.split("->")[1] + b[1:]:
+            del wrong[i:i + 2]; continue
+        i += 1
+    for w in wrong:
+        if "->" in w:
+            a, b = w.split("->")
+            if _near(a, b):
+                continue
+        elif w[1:] in fill:
+            continue
+        out.append(w)
+    return out
 
 
 def wer(ref: str, hyp: str) -> tuple[float, list[str]]:
@@ -249,6 +311,7 @@ class Report:
     said: str = ""
     wer: float = 0.0
     wrong: list = field(default_factory=list)
+    faults: list = field(default_factory=list)
     words_per_sec: float = 0.0
     utmos: float = 0.0
     accent: str = ""
@@ -270,10 +333,11 @@ def analyse(path: str, text: str | None = None, want=("asr", "utmos", "accent", 
         if text:
             r.wer, r.wrong = wer(text, r.said)
             r.wer = round(r.wer, 3)
+            r.faults = substantive(r.wrong)
     r.pauses = pauses(wav, sr)
     nwords = len(norm_words(text or r.said))
     if r.pauses.get("speech"):
-        r.words_per_sec = round(nwords / max(0.5, r.pauses["speech"] - sum(r.pauses["pauses"])), 2)
+        r.words_per_sec = round(float(nwords / max(0.5, r.pauses["speech"] - sum(r.pauses["pauses"]))), 2)
     r.pitch = pitch(wav, sr)
     if "utmos" in want:
         r.utmos = round(utmos(wav, sr), 2)

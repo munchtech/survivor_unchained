@@ -1,0 +1,252 @@
+{
+ "about": "How the world's words are said. `say`: what the voice model is given in place of the written word (the subtitle keeps the spelling). `hear`: what Whisper may write for a word that was said right (names it has never met, dialect), so the word check does not fail a good take.",
+ "say": {
+  "Vonnra": "Vonra",
+  "Maeca": "Mayka",
+  "Ysolde": "Ee-zolda",
+  "Brannoc": "Brannock",
+  "Aumery": "Awmery",
+  "Penhale": "Pen-hale",
+  "Penhales": "Pen-hales",
+  "Penhale's": "Pen-hale's",
+  "Redcowl": "Red-cowl",
+  "Redcowl's": "Red-cowl's",
+  "Grimtunnel": "Grim-tunnel",
+  "Thornhollow": "Thorn-hollow",
+  "Thornhollow'll": "Thorn-hollow'll",
+  "Greymuzzle": "Grey-muzzle",
+  "Legio Septima": "Leggio Septeema",
+  "B.E.": "B. E.",
+  "owt": "owt",
+  "McBreathless": "Mac-Breathless"
+ },
+ "hear": {
+  "vonnra": [
+   "vonra",
+   "vanra",
+   "vonnra",
+   "vaughn",
+   "von",
+   "vonner",
+   "vanna",
+   "vonnah"
+  ],
+  "maeca": [
+   "mayka",
+   "mika",
+   "maker",
+   "meca",
+   "micah",
+   "mecca",
+   "maica",
+   "maeka"
+  ],
+  "ysolde": [
+   "isolde",
+   "isold",
+   "ysold",
+   "esolda",
+   "izolda",
+   "isolda"
+  ],
+  "brannoc": [
+   "brannock",
+   "brannick",
+   "brannoch",
+   "brandock",
+   "brennock"
+  ],
+  "redcowl": [
+   "red cowl",
+   "redcoat",
+   "red cow",
+   "redcowl"
+  ],
+  "grimtunnel": [
+   "grim tunnel",
+   "grimtunnel"
+  ],
+  "thornhollow": [
+   "thorn hollow",
+   "thornhollow"
+  ],
+  "greymuzzle": [
+   "grey muzzle",
+   "gray muzzle",
+   "greymuzzle"
+  ],
+  "penhale": [
+   "pen hale",
+   "penhail",
+   "penhale",
+   "pennhale",
+   "penhayle"
+  ],
+  "penhales": [
+   "pen hales",
+   "penhails",
+   "penhales"
+  ],
+  "owt": [
+   "out",
+   "ought",
+   "owt",
+   "aught"
+  ],
+  "chid": [
+   "chid",
+   "chad",
+   "jid",
+   "chit"
+  ],
+  "sella": [
+   "sella",
+   "stella",
+   "sela",
+   "cella"
+  ],
+  "keegan": [
+   "keegan",
+   "kiegan"
+  ],
+  "orme": [
+   "orm",
+   "orme",
+   "ormy",
+   "warm"
+  ],
+  "holloway": [
+   "holloway",
+   "halloway"
+  ],
+  "jory": [
+   "jory",
+   "jorie",
+   "jorey",
+   "jody",
+   "joey"
+  ],
+  "coyle": [
+   "coil",
+   "coyle",
+   "kyle"
+  ],
+  "harlan": [
+   "harlan",
+   "harlen",
+   "harland"
+  ],
+  "aumery": [
+   "aumery",
+   "awmery",
+   "emery",
+   "aubrey"
+  ],
+  "snib": [
+   "snib",
+   "snip",
+   "sneb"
+  ],
+  "wenna": [
+   "wenna",
+   "wena",
+   "venna",
+   "winna"
+  ],
+  "rav": [
+   "rav",
+   "rab",
+   "rob",
+   "rafe"
+  ],
+  "cutwell": [
+   "cutwell",
+   "cut well"
+  ],
+  "pell": [
+   "pell",
+   "pel",
+   "pale",
+   "pal"
+  ],
+  "varrow": [
+   "varrow",
+   "varo",
+   "farrow",
+   "barrow",
+   "vero"
+  ],
+  "jessop": [
+   "jessop",
+   "jessup"
+  ],
+  "dannet": [
+   "dannet",
+   "danette",
+   "danet",
+   "dannett"
+  ],
+  "corran": [
+   "corran",
+   "coran",
+   "corrin"
+  ],
+  "mcbreathless": [
+   "mcbreathless",
+   "mac breathless"
+  ],
+  "aldo": [
+   "aldo",
+   "aldough"
+  ],
+  "oswin": [
+   "oswin",
+   "oswyn",
+   "oz win"
+  ],
+  "lampling": [
+   "lampling",
+   "lamplings"
+  ],
+  "legio": [
+   "leggio",
+   "legio",
+   "lejo"
+  ],
+  "septima": [
+   "septima",
+   "septeema"
+  ],
+  "wat": [
+   "wat",
+   "what",
+   "watt"
+  ],
+  "nell": [
+   "nell",
+   "nel"
+  ],
+  "kell": [
+   "kell",
+   "kel",
+   "cal"
+  ],
+  "pa": [
+   "pa",
+   "paw",
+   "par",
+   "pah"
+  ],
+  "ford": [
+   "fort",
+   "forde",
+   "fourd",
+   "ford"
+  ],
+  "kiln": [
+   "kiln",
+   "kill",
+   "killn"
+  ]
+ }
+}

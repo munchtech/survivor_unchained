@@ -19832,6 +19832,11 @@
      "text": "It used to work, you know. The shrine."
     }
    ],
+   "direction": {
+    "emo": "wistful, cheerful",
+    "pace": "measured",
+    "vol": "level"
+   },
    "status": "todo"
   },
   {
@@ -19847,6 +19852,11 @@
      "text": "The light's patient. I'm trying to be."
     }
    ],
+   "direction": {
+    "emo": "gently rueful",
+    "pace": "measured",
+    "vol": "level"
+   },
    "status": "todo"
   },
   {
@@ -19862,6 +19872,12 @@
      "text": "Morning comes. It always has. I should know."
     }
    ],
+   "direction": {
+    "emo": "cheerful, and older than he sounds",
+    "pace": "measured",
+    "vol": "level",
+    "note": "'I should know.' slips out lightly."
+   },
    "status": "todo"
   },
   {
@@ -19877,6 +19893,11 @@
      "text": "Even in the dark, the morning's on its way."
     }
    ],
+   "direction": {
+    "emo": "gentle hope",
+    "pace": "slow",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
@@ -19892,6 +19913,11 @@
      "text": "I leave a candle lit. Somebody might need it."
     }
    ],
+   "direction": {
+    "emo": "kind",
+    "pace": "slow",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
@@ -19907,6 +19933,11 @@
      "text": "Can't sleep either?"
     }
    ],
+   "direction": {
+    "emo": "friendly, sleepless",
+    "pace": "measured",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
@@ -19922,6 +19953,12 @@
      "text": "The dark's only the part of the day that hasn't happened yet. ...It's taking its time tonight."
     }
    ],
+   "direction": {
+    "emo": "reciting, then rueful",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "The Order's saying, then a little laugh at the long night."
+   },
    "status": "todo"
   },
   {

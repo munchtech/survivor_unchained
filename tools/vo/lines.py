@@ -310,6 +310,10 @@ def merge(lines: list[dict]) -> list[dict]:
         if take:
             l["take"] = take
             l["status"] = prev.get("status", "done") if take.get("hash") == l["hash"] else "stale"
+        elif prev.get("status") == "failed" and prev.get("hash") == l["hash"]:
+            # No clean take yet: stays failed (with why) until someone retries it.
+            l["status"] = "failed"
+            l["failed"] = prev.get("failed")
         else:
             l["status"] = "skip" if l.get("skip") else "todo"
         if l.get("skip"):
