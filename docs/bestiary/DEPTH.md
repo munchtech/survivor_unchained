@@ -106,7 +106,7 @@ and never put a story arena above the tier the story's level band expects.
 A survivors game is often played half-attentively, and that has to stay a
 real way to play the first tiers. The test: **can the plain bot, with a
 fair gear set and the first card offered every time, win tiers 1 and 2
-without oaths?** The balance lab measures exactly that (`RISK_REWARD.md` §2
+without oaths?** The balance lab measures exactly that (`RISK_REWARD.md` §3
 has its numbers). Rules that keep the answer yes:
 
 1. **No creature that a build cannot hurt.** Guards cut projectiles by 75–80%
