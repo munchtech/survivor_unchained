@@ -226,13 +226,14 @@ public static class People
         var person = new Person { Root = root, Skeleton = skel, Anim = new AnimationPlayer(), Body = "heroine" };
         skel.AddChild(new HerPose());
         skel.AddChild(new HerJiggle());
+        skel.AddChild(new HerFaceLife());
         foreach (var mi in skel.GetChildren().OfType<MeshInstance3D>())
         {
             person.Meshes.Add(mi);
             mi.Layers = 2;
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D src)
-                    mi.SetSurfaceOverrideMaterial(s, HerPart(src, look));
+                    mi.SetSurfaceOverrideMaterial(s, HerPart(src, look, mi.Mesh));
         }
         root.AddChild(person.Anim);
         person.Anim.RootNode = "..";
@@ -249,20 +250,20 @@ public static class People
 
     /// <summary>A material of hers by its name (heroine_head.py names
     /// them): her skin, her eyes and the rest of her head.</summary>
-    static BaseMaterial3D HerPart(BaseMaterial3D src, Look look)
+    static Material HerPart(BaseMaterial3D src, Look look, Mesh mesh)
     {
         var hair = look.HairColor ?? HerHairColour;
         var m = (StandardMaterial3D)src.Duplicate();
         switch (src.ResourceName)
         {
             case "eyes":
-                // The clear cornea cut away (its paint is empty), the eye
-                // under it wet, with a sharp highlight.
-                m.Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor;
-                m.AlphaScissorThreshold = 0.5f;
-                m.Roughness = 0.08f;
-                m.MetallicSpecular = 0.7f;
-                return m;
+                // Her eyes' own paint and shader (shaders/heroine_eye.gdshader):
+                // the iris behind the cornea, wet, the whites shaded by her lids.
+                eyeShader ??= GD.Load<Shader>("res://shaders/heroine_eye.gdshader");
+                var e = new ShaderMaterial { Shader = eyeShader };
+                e.SetShaderParameter("eye", GD.Load<Texture2D>("res://art/people/head_tex/heroine_eye.png"));
+                e.SetShaderParameter("iris", GD.Load<Texture2D>("res://art/people/head_tex/heroine_iris.png"));
+                return e;
             case "brows" or "lashes":
                 // Cards cut out by their alpha, soft at the edges; brows
                 // a shade of her hair, lashes near black.
@@ -271,13 +272,15 @@ public static class People
                 m.AlphaAntialiasingMode = BaseMaterial3D.AlphaAntiAliasing.AlphaToCoverageAndToOne;
                 m.CullMode = BaseMaterial3D.CullModeEnum.Disabled;
                 m.AlbedoColor = src.ResourceName == "brows" ? hair.Darkened(0.45f) : new Color(0.12f, 0.08f, 0.07f);
+                if (src.ResourceName == "lashes")                  // (her lower lashes finer: tools/assets/heroine_eyes.py)
+                    m.AlbedoTexture = GD.Load<Texture2D>("res://art/people/head_tex/heroine_lashes.png");
                 m.Roughness = 0.8f;
                 return m;
             case "teeth" or "tongue":
                 m.Roughness = 0.35f;
                 return m;
             default:
-                return Skin(src, look);
+                return Skin(src, look, mesh);
         }
     }
 
@@ -338,7 +341,7 @@ public static class People
         scene.Free();
     }
 
-    static Shader? hairShader;
+    static Shader? hairShader, eyeShader;
 
     /// <summary>Hair: her hair cards (tools/assets/heroine_hair.py) by
     /// shaders/heroine_hair.gdshader, dyed: the strands' atlas cut to its
@@ -457,21 +460,46 @@ public static class People
     /// <summary>Her paint as skin: light carried under it (subsurface
     /// scattering, reddened as through flesh), a soft sheen rather than
     /// plastic, and warmed toward a sun-browned tone, or the tone chosen.</summary>
-    static StandardMaterial3D Skin(BaseMaterial3D src, Look look)
+    static Material Skin(BaseMaterial3D src, Look look, Mesh mesh)
     {
-        var m = (StandardMaterial3D)src.Duplicate();
-        // Her vertex colours mark what each outfit hides, not her paint.
-        m.VertexColorUseAsAlbedo = false;
-        m.AlbedoColor = look.Skin is Color tone ? tone.Lerp(Colors.White, 0.35f) : new Color(1.0f, 0.86f, 0.74f);
-        m.SubsurfScatterEnabled = true;
-        m.SubsurfScatterStrength = 0.35f;
-        m.SubsurfScatterSkinMode = true;
-        m.Roughness = 0.52f;
-        m.MetallicSpecular = 0.42f;
-        m.RimEnabled = true;
-        m.Rim = 0.25f;
-        m.RimTint = 0.6f;
+        // shaders/heroine_skin.gdshader: pores, soft uneven sheen, light
+        // under the skin. (Her vertex colours mark what each outfit hides,
+        // not her paint: the shader never reads them.)
+        skinShader2 ??= GD.Load<Shader>("res://shaders/heroine_skin.gdshader");
+        var m = new ShaderMaterial { Shader = skinShader2 };
+        m.SetShaderParameter("paint", src.AlbedoTexture);
+        m.SetShaderParameter("tone", look.Skin is Color tone ? tone.Lerp(Colors.White, 0.35f) : new Color(1.0f, 0.86f, 0.74f));
+        m.SetShaderParameter("pores", GD.Load<Texture2D>("res://art/people/skin_pores.png"));
+        m.SetShaderParameter("pore_scale", PoreScale(mesh));
         return m;
+    }
+
+    static Shader? skinShader2;
+    static readonly Dictionary<Mesh, float> poreScales = new();
+
+    /// <summary>How many pore tiles to a UV unit on a mesh, so a tile is
+    /// 1.5 cm on her whatever its UVs' scale: the square root of its area
+    /// over its UVs' area, over 1.5 cm.</summary>
+    public static float PoreScale(Mesh mesh)
+    {
+        if (poreScales.TryGetValue(mesh, out var k)) return k;
+        double area = 0, uvArea = 0;
+        for (int s = 0; s < mesh.GetSurfaceCount(); s++)
+        {
+            var arr = mesh.SurfaceGetArrays(s);
+            if (arr[(int)Mesh.ArrayType.TexUV].VariantType == Variant.Type.Nil) continue;
+            var v = arr[(int)Mesh.ArrayType.Vertex].AsVector3Array();
+            var uv = arr[(int)Mesh.ArrayType.TexUV].AsVector2Array();
+            var idx = arr[(int)Mesh.ArrayType.Index].AsInt32Array();
+            for (int t = 0; t + 2 < idx.Length; t += 3)
+            {
+                area += (v[idx[t + 1]] - v[idx[t]]).Cross(v[idx[t + 2]] - v[idx[t]]).Length() / 2;
+                uvArea += Mathf.Abs((uv[idx[t + 1]] - uv[idx[t]]).Cross(uv[idx[t + 2]] - uv[idx[t]])) / 2;
+            }
+        }
+        k = uvArea > 0 ? (float)(Math.Sqrt(area / uvArea) / 0.015) : 30f;
+        poreScales[mesh] = k;
+        return k;
     }
 
     /// <summary>Her paint's own skin (lit, not in its shadows), hair and suit,

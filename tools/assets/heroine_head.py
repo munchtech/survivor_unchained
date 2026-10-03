@@ -1333,6 +1333,20 @@ print("SHAPES: %d on her head, of %d sliders' and expressions' (%s)" % (_made, l
     "%s %d" % (o.name, len(o.data.shape_keys.key_blocks) - 1) for o in parts)))
 
 
+# ---- her face's paint put right where it and her head disagree (lashes
+# painted on her lids, nostrils painted off her nose): heroine_face_fixes.py,
+# from the paint as made here.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import heroine_face_fixes  # noqa: E402
+shutil.copy(hpath, heroine_face_fixes.RAW)
+heroine_face_fixes.fix(head, hpath)
+for _im in bpy.data.images:
+    if bpy.path.abspath(_im.filepath) == hpath:
+        if _im.packed_file:
+            _im.unpack(method="REMOVE")
+        _im.reload()
+
+
 # ---------------------------------------------------------------- written --
 for o in [hm] + list(proxies.values()) + [o for o in bpy.data.objects if o.name.startswith("CheckCam")]:
     bpy.data.objects.remove(o, do_unlink=True)

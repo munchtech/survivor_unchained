@@ -119,8 +119,9 @@ public sealed class Prologue : ZoneRuntime
             Id = "watchman", X = man.X, Z = man.Z, R = 2.4, Verb = "Examine", Name = "Dead Watchman",
             Act = () =>
             {
-                G.Say("A Watchman, a long time dead, sitting against the post as if he had only stopped for breath. Something has had his eyes. In his belt-book, three lines in a hand that worsens as it goes: \"Lamps at the Low Ford lit again, and not by us.\" \"Sent Dannet for the captain. Dannet not back.\" \"The Warden is walking. I can hear it singing in the water.\"", null, 10);
-                G.Apply("""[{ "learn": "lore.warden", "text": "The lamps at the ford feed the Warden." }]""");
+                G.Say("A Watchman, grey-bearded and a long time dead, sitting against the post as if he had only stopped for breath. Something has had his eyes. In his belt-book, three lines in a hand that worsens as it goes: \"Lamps at the Low Ford lit again, and not by us.\" \"Sent Dannet for the captain. Dannet not back.\" \"The Warden is walking. I can hear it singing in the water.\"", null, 10);
+                // The book is the first page of the lamps' mystery.
+                G.Apply("""[{ "learn": "lore.warden", "text": "The lamps at the ford feed the Warden." }, { "quest": { "id": "lamps", "status": "active", "entry": "book" } }]""");
                 // The devout hear the dead, a little.
                 if (G.Journey.Ch.Knowledge.Contains("faith"))
                     G.After(10.2, () => G.Say("...and for you alone, the dead man's jaw moves: \"It shatters its own lamps when it charges. Make it charge.\"", "The dead Watchman", 7));
@@ -465,7 +466,7 @@ public sealed class Prologue : ZoneRuntime
                 {
                     Go(Stage.Road2);
                     checkpoint = new XZ(p.X, p.Z);
-                    G.Say("The last of them falls back into the ditch and stays there. The one with the reins was a girl, twelve at most. Her boots are new.", null, 5);
+                    G.Say("The last of them falls back into the ditch and stays there. The one with the reins was a girl, twelve at most: red hair under the weed, and new boots.", null, 5);
                     Objective([("Survive the ambush at the wagon", true, false), ("Follow the road north", false, false)]);
                 }
                 break;

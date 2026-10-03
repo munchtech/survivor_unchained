@@ -287,7 +287,7 @@ public partial class InventoryScreen : Overlay
     /// <summary>Leaving a thing behind cannot be undone: the first time asks, the second does it.</summary>
     void Leave(ItemInstance it)
     {
-        if (Items.Get(it.Def).Kind == ItemKind.Quest || !InPack(it)) { Sound.Sfx.Deny(); return; }
+        if (G.Journey.StillNeeded(it) || !InPack(it)) { Sound.Sfx.Deny(); return; }
         if (leaving != it.Uid) { leaving = it.Uid; Sound.Sfx.Hover(); ShowInspect(it); Footer(); return; }
         leaving = null;
         if (sel == it.Uid) sel = null;
@@ -329,7 +329,7 @@ public partial class InventoryScreen : Overlay
             if (loc.InPack && def.Kind == ItemKind.Consumable) acts.AddChild(Style.Button("Use", () => Primary(it), true, true));
             if (loc.InPack && Items.SlotFor(def) != null) acts.AddChild(Style.Button("Wear", () => Primary(it), true, true));
             if (!loc.InPack && loc.Slot != EquipSlot.Weapon) acts.AddChild(Style.Button("Take off", () => Primary(it), false, true));
-            if (loc.InPack && def.Kind != ItemKind.Quest)
+            if (loc.InPack && !G.Journey.StillNeeded(it))
                 acts.AddChild(Style.Button(leaving == it.Uid ? "Leave it behind for good" : "Leave behind", () => Leave(it), false, true));
         }
         var card = ItemViews.Card(it, Ch, loc.InPack, acts, 560);

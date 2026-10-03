@@ -1,0 +1,888 @@
+{
+ "keegan": {
+  "npc": "keegan",
+  "entry": [
+   {
+    "when": {
+     "not": {
+      "met": "keegan"
+     }
+    },
+    "node": "first"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "opened_vault"
+      },
+      {
+       "met": "keegan"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "keegan",
+         "key": "cb:opened_vault",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_opened_vault"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "all": [
+        {
+         "history": "core_stolen"
+        },
+        {
+         "knows": "lore.warden"
+        }
+       ]
+      },
+      {
+       "met": "keegan"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "keegan",
+         "key": "cb:core_stolen",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_core_stolen"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "keegan"
+      },
+      {
+       "trait": "risen_once"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "keegan",
+         "key": "say:risen",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "say_risen"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "keegan"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "keegan",
+         "key": "say:calling",
+         "eq": true
+        }
+       }
+      },
+      {
+       "any": [
+        {
+         "archetype": "warden"
+        },
+        {
+         "archetype": "reaver"
+        },
+        {
+         "archetype": "arcanist"
+        },
+        {
+         "archetype": "stalker"
+        }
+       ]
+      }
+     ]
+    },
+    "node": "say_calling"
+   },
+   {
+    "node": "hub"
+   }
+  ],
+  "nodes": {
+   "first": {
+    "id": "first",
+    "text": "Halt! None pass north. Dame Keegan Orme, of the Argent Vigil. Probationary. It is a real title.",
+    "choices": [
+     {
+      "text": "What's north?",
+      "goto": "north"
+     },
+     {
+      "text": "The children call you \"Professor\".",
+      "once": "prof",
+      "goto": "prof"
+     },
+     {
+      "text": "The Ford-Warden. The Watch's lamps were feeding it.",
+      "when": {
+       "knows": "lore.warden"
+      },
+      "once": "warden",
+      "goto": "warden"
+     },
+     {
+      "text": "Captain Ashe is buried in the garden. Did the Vigil know him?",
+      "when": {
+       "knows": "lore.ashe"
+      },
+      "once": "ashe",
+      "goto": "ashe"
+     },
+     {
+      "text": "Your Vigil. Where are the rest of you?",
+      "once": "vigil",
+      "goto": "vigil"
+     },
+     {
+      "text": "How will you know when I'm ready?",
+      "once": "ready",
+      "goto": "ready"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "hub": {
+    "id": "hub",
+    "text": [
+     {
+      "when": {
+       "knows": "lore.warden"
+      },
+      "text": "You again. Have you read anything since we last spoke? No? I can tell."
+     },
+     {
+      "text": "Still not ready. I would know."
+     }
+    ],
+    "choices": [
+     {
+      "text": "What's north?",
+      "goto": "north"
+     },
+     {
+      "text": "The children call you \"Professor\".",
+      "once": "prof",
+      "goto": "prof"
+     },
+     {
+      "text": "The Ford-Warden. The Watch's lamps were feeding it.",
+      "when": {
+       "knows": "lore.warden"
+      },
+      "once": "warden",
+      "goto": "warden"
+     },
+     {
+      "text": "Captain Ashe is buried in the garden. Did the Vigil know him?",
+      "when": {
+       "knows": "lore.ashe"
+      },
+      "once": "ashe",
+      "goto": "ashe"
+     },
+     {
+      "text": "Your Vigil. Where are the rest of you?",
+      "once": "vigil",
+      "goto": "vigil"
+     },
+     {
+      "text": "How will you know when I'm ready?",
+      "once": "ready",
+      "goto": "ready"
+     },
+     {
+      "text": "Does the handbook say anything about dinner?",
+      "show": {
+       "rel": {
+        "npc": "keegan",
+        "axis": "respect",
+        "gte": 10
+       }
+      },
+      "once": "dinner",
+      "goto": "dinner"
+     },
+     {
+      "text": "It's late. Have you eaten?",
+      "show": {
+       "all": [
+        {
+         "time": "night"
+        },
+        {
+         "npcFlag": {
+          "npc": "keegan",
+          "key": "once:dinner",
+          "eq": true
+         }
+        }
+       ]
+      },
+      "when": {
+       "all": [
+        {
+         "rel": {
+          "npc": "keegan",
+          "axis": "respect",
+          "gte": 30
+         }
+        },
+        {
+         "rel": {
+          "npc": "keegan",
+          "axis": "affection",
+          "gte": 15
+         }
+        }
+       ]
+      },
+      "locked": "She is on duty. She is always on duty.",
+      "once": "supper",
+      "goto": "supper"
+     },
+     {
+      "text": "What do you want, Dame Keegan?",
+      "once": "t_keegan",
+      "goto": "t_keegan"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "north": {
+    "id": "north",
+    "text": "Things you are not ready for. When you are, I will know. It is in the probationary handbook, chapter four.",
+    "choices": [
+     {
+      "text": "What's in chapter four?",
+      "goto": "ch4"
+     },
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     }
+    ]
+   },
+   "ch4": {
+    "id": "ch4",
+    "text": "That is between me and chapter four.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "prof": {
+    "id": "prof",
+    "text": "I taught rhetoric at Saint Wend's before I took the oath, and somebody's mother found out. Now I am Professor to everyone under four feet tall. Rhetoric is not without its uses when telling people no. That was litotes. You're welcome.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "warden": {
+    "id": "warden",
+    "text": "...Who told you that? The Vigil kept those lamps before the Watch did. Before the Watch was the Watch. The lamps were never to keep the dark out. They were to keep the Warden asleep. If somebody lit them again, somebody wanted it awake. Do not repeat that. I am probationary.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "keegan",
+       "respect": 15,
+       "trust": 10
+      }
+     },
+     {
+      "quest": {
+       "id": "lamps",
+       "status": "active",
+       "entry": "book"
+      }
+     },
+     {
+      "quest": {
+       "id": "lamps",
+       "entry": "keegan"
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Who'd want it awake?",
+      "goto": "who"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "who": {
+    "id": "who",
+    "text": "Someone who needed the ford closed. Someone who wanted a heart. You tell me; you were there.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "ashe": {
+    "id": "ashe",
+    "text": "Know him? The Vigil buried him. He closed the north road with forty lamps and walked back through it with one. What he saw up there is why I am standing here telling you no. Were he here, he would tell you himself, once you were ready.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "keegan",
+       "respect": 10
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "vigil": {
+    "id": "vigil",
+    "text": "At the chapterhouse, in the north. Keeping the vigil. I write every month. They are very busy. ...It is a long way, and the roads are bad, and I am sure the letters are simply waiting at a waystation somewhere, being read by nobody.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "ready": {
+    "id": "ready",
+    "text": "The handbook is very clear on the signs, and I am watching for them. You would not like it if I saw them. ...That came out wrong. I mean you would not like the paperwork.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "cb_opened_vault": {
+    "id": "cb_opened_vault",
+    "text": "You opened the black door. The handbook has a chapter on that. It is a short chapter. It is the word \"don't\", in several sizes.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "keegan",
+       "key": "cb:opened_vault",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_core_stolen": {
+    "id": "cb_core_stolen",
+    "text": "The Warden's heart, taken at the ford. ...I am going to write to the chapterhouse. Again. Twice, perhaps. In capitals.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "keegan",
+       "key": "cb:core_stolen",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "say_calling": {
+    "id": "say_calling",
+    "text": [
+     {
+      "when": {
+       "archetype": "warden"
+      },
+      "text": "A fellow shield! Which order? None? A free lance. The handbook has a chapter on free lances. It is very rude about them."
+     },
+     {
+      "when": {
+       "archetype": "reaver"
+      },
+      "text": "That is a great deal of weapon. Please do not swing it near the gate. The gate is older than both of us and considerably less forgiving."
+     },
+     {
+      "when": {
+       "archetype": "arcanist"
+      },
+      "text": "Arcanist. The Vigil kept a ledger of— never mind. Good morning. It is a good morning, is it not."
+     },
+     {
+      "when": {
+       "archetype": "stalker"
+      },
+      "text": "You have been standing there for some time. I knew. I was merely being polite. ...I did not know."
+     },
+     {
+      "text": "You have been standing there for some time. I knew. I was merely being polite. ...I did not know."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "keegan",
+       "key": "say:calling",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "dinner": {
+    "id": "dinner",
+    "text": "Chapter eleven. Fraternisation. I have not read it. ...That is a lie. I have read it four times. The answer is no. The answer is very nearly no. Good day.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "keegan",
+       "affection": 10
+      },
+      "quiet": true
+     }
+    ],
+    "choices": [
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "t_keegan": {
+    "id": "t_keegan",
+    "text": "To be confirmed. To kneel, and have a knight I respect touch my shoulder with a sword and say \"Dame Keegan\" without the bracket. ...And a bath. The Vigil frowns on baths. Chapter nine. I have underlined it in protest.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "say_risen": {
+    "id": "say_risen",
+    "text": "I am told you were carried into the shrine under a sheet. (She looks at you very carefully, from your boots upwards, and back down.) You look well. You look extremely well. ...I've got to go and read something. I— I have to go and read something. Good day.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "keegan",
+       "key": "say:risen",
+       "value": true
+      }
+     },
+     {
+      "set": {
+       "keegan.saw_risen": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Good day, Dame Keegan.",
+      "end": true
+     }
+    ]
+   },
+   "supper": {
+    "id": "supper",
+    "text": "I have not. I am on watch. (She looks at the bread in her hand, which she has evidently been holding for some time.) Chapter eleven, paragraph six permits \"a meal taken in company for the purposes of morale\". I have read it very carefully. It does not say whose morale. ...Sit. Not there; that stone is the one the gate was built on, and it is older than manners. Here.",
+    "effects": [
+     {
+      "set": {
+       "keegan.supper": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "keegan",
+       "affection": 10,
+       "trust": 5
+      },
+      "quiet": true
+     }
+    ],
+    "next": "supper_table"
+   },
+   "supper_table": {
+    "id": "supper_table",
+    "speaker": "narrator",
+    "text": "She breaks the bread and gives you the larger half without seeming to decide to. There's a heel of cheese, and a flask that turns out to be water, and the north road beyond the gate is black all the way to the hills.",
+    "choices": [
+     {
+      "text": "Saint Wend's. Tell me about it.",
+      "once": "wends",
+      "goto": "supper_wends"
+     },
+     {
+      "text": "How old are you, Keegan?",
+      "once": "age",
+      "goto": "supper_age"
+     },
+     {
+      "text": "Your letters. They're not answering because they don't want to.",
+      "once": "letters",
+      "goto": "supper_letters"
+     },
+     {
+      "text": "Read me some of the handbook.",
+      "once": "read",
+      "goto": "supper_read"
+     },
+     {
+      "text": "Read me chapter four.",
+      "show": {
+       "npcFlag": {
+        "npc": "keegan",
+        "key": "once:read",
+        "eq": true
+       }
+      },
+      "once": "read4",
+      "goto": "supper_ch4"
+     },
+     {
+      "text": "(Take her hand.)",
+      "goto": "supper_hand"
+     },
+     {
+      "text": "Goodnight, Dame Keegan.",
+      "goto": "supper_end"
+     }
+    ]
+   },
+   "supper_wends": {
+    "id": "supper_wends",
+    "text": "Rhetoric, to the sons and daughters of people who could afford it. I was very good. I was the youngest lecturer they had ever had, and they told me so every morning, in case I forgot and became the oldest. (She smiles at the road.) I taught them chiasmus. \"Ask not what the Vigil can do for you.\" They did not, and it did not. ...That was a joke. It was not a good one. It's late.",
+    "choices": [
+     {
+      "text": "Saint Wend's. Tell me about it.",
+      "once": "wends",
+      "goto": "supper_wends"
+     },
+     {
+      "text": "How old are you, Keegan?",
+      "once": "age",
+      "goto": "supper_age"
+     },
+     {
+      "text": "Your letters. They're not answering because they don't want to.",
+      "once": "letters",
+      "goto": "supper_letters"
+     },
+     {
+      "text": "Read me some of the handbook.",
+      "once": "read",
+      "goto": "supper_read"
+     },
+     {
+      "text": "Read me chapter four.",
+      "show": {
+       "npcFlag": {
+        "npc": "keegan",
+        "key": "once:read",
+        "eq": true
+       }
+      },
+      "once": "read4",
+      "goto": "supper_ch4"
+     },
+     {
+      "text": "(Take her hand.)",
+      "goto": "supper_hand"
+     },
+     {
+      "text": "Goodnight, Dame Keegan.",
+      "goto": "supper_end"
+     }
+    ]
+   },
+   "supper_age": {
+    "id": "supper_age",
+    "text": "Twenty-six. The handbook says that is old for a probationer. The handbook says a great many things. Some of them are true. (She looks at you sidelong.) How old are you? No. Do not answer. I should only write it down.",
+    "choices": [
+     {
+      "text": "Saint Wend's. Tell me about it.",
+      "once": "wends",
+      "goto": "supper_wends"
+     },
+     {
+      "text": "How old are you, Keegan?",
+      "once": "age",
+      "goto": "supper_age"
+     },
+     {
+      "text": "Your letters. They're not answering because they don't want to.",
+      "once": "letters",
+      "goto": "supper_letters"
+     },
+     {
+      "text": "Read me some of the handbook.",
+      "once": "read",
+      "goto": "supper_read"
+     },
+     {
+      "text": "Read me chapter four.",
+      "show": {
+       "npcFlag": {
+        "npc": "keegan",
+        "key": "once:read",
+        "eq": true
+       }
+      },
+      "once": "read4",
+      "goto": "supper_ch4"
+     },
+     {
+      "text": "(Take her hand.)",
+      "goto": "supper_hand"
+     },
+     {
+      "text": "Goodnight, Dame Keegan.",
+      "goto": "supper_end"
+     }
+    ]
+   },
+   "supper_letters": {
+    "id": "supper_letters",
+    "text": "(She doesn't answer for so long that you think she won't.) That is a possibility I have considered. (Very precisely.) I have considered it every month for two years, on the day the post does not come. I have written it down and crossed it out. That was an example of correctio. ...Thank you for saying it. Nobody else will. They think I am funny. I am funny. I am also not a fool.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "keegan",
+       "trust": 10,
+       "affection": -5
+      },
+      "quiet": true
+     }
+    ],
+    "choices": [
+     {
+      "text": "Saint Wend's. Tell me about it.",
+      "once": "wends",
+      "goto": "supper_wends"
+     },
+     {
+      "text": "How old are you, Keegan?",
+      "once": "age",
+      "goto": "supper_age"
+     },
+     {
+      "text": "Your letters. They're not answering because they don't want to.",
+      "once": "letters",
+      "goto": "supper_letters"
+     },
+     {
+      "text": "Read me some of the handbook.",
+      "once": "read",
+      "goto": "supper_read"
+     },
+     {
+      "text": "Read me chapter four.",
+      "show": {
+       "npcFlag": {
+        "npc": "keegan",
+        "key": "once:read",
+        "eq": true
+       }
+      },
+      "once": "read4",
+      "goto": "supper_ch4"
+     },
+     {
+      "text": "(Take her hand.)",
+      "goto": "supper_hand"
+     },
+     {
+      "text": "Goodnight, Dame Keegan.",
+      "goto": "supper_end"
+     }
+    ]
+   },
+   "supper_read": {
+    "id": "supper_read",
+    "text": "(She is very obviously delighted, and very obviously trying not to be.) Chapter nine. On bathing. \"The knight shall wash at need, and not for pleasure, the body being a lamp and not a garden.\" I have underlined \"garden\". In protest. (She reads you chapter twelve, on the care of the blade, all of it, by the light of the gate lamp, and it is beautiful, actually.) ...You did not fall asleep. Nobody has ever not fallen asleep.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "keegan",
+       "affection": 5
+      },
+      "quiet": true
+     }
+    ],
+    "choices": [
+     {
+      "text": "Saint Wend's. Tell me about it.",
+      "once": "wends",
+      "goto": "supper_wends"
+     },
+     {
+      "text": "How old are you, Keegan?",
+      "once": "age",
+      "goto": "supper_age"
+     },
+     {
+      "text": "Your letters. They're not answering because they don't want to.",
+      "once": "letters",
+      "goto": "supper_letters"
+     },
+     {
+      "text": "Read me some of the handbook.",
+      "once": "read",
+      "goto": "supper_read"
+     },
+     {
+      "text": "Read me chapter four.",
+      "show": {
+       "npcFlag": {
+        "npc": "keegan",
+        "key": "once:read",
+        "eq": true
+       }
+      },
+      "once": "read4",
+      "goto": "supper_ch4"
+     },
+     {
+      "text": "(Take her hand.)",
+      "goto": "supper_hand"
+     },
+     {
+      "text": "Goodnight, Dame Keegan.",
+      "goto": "supper_end"
+     }
+    ]
+   },
+   "supper_ch4": {
+    "id": "supper_ch4",
+    "text": "(She closes the book.) No. (She says it gently, and then she doesn't say anything else for a while, and her hand stays flat on the cover.)",
+    "choices": [
+     {
+      "text": "Saint Wend's. Tell me about it.",
+      "once": "wends",
+      "goto": "supper_wends"
+     },
+     {
+      "text": "How old are you, Keegan?",
+      "once": "age",
+      "goto": "supper_age"
+     },
+     {
+      "text": "Your letters. They're not answering because they don't want to.",
+      "once": "letters",
+      "goto": "supper_letters"
+     },
+     {
+      "text": "Read me some of the handbook.",
+      "once": "read",
+      "goto": "supper_read"
+     },
+     {
+      "text": "Read me chapter four.",
+      "show": {
+       "npcFlag": {
+        "npc": "keegan",
+        "key": "once:read",
+        "eq": true
+       }
+      },
+      "once": "read4",
+      "goto": "supper_ch4"
+     },
+     {
+      "text": "(Take her hand.)",
+      "goto": "supper_hand"
+     },
+     {
+      "text": "Goodnight, Dame Keegan.",
+      "goto": "supper_end"
+     }
+    ]
+   },
+   "supper_hand": {
+    "id": "supper_hand",
+    "text": "(You put your hand over hers on the stone. She lets it stay there for a count of three.) I am on duty. (She takes her hand back. Then, without looking, she puts it back, under yours, for another count of three.) ...That was anaphora. Doing the same thing twice, for emphasis. Goodnight.",
+    "choices": [
+     {
+      "text": "Goodnight, Dame Keegan.",
+      "end": true
+     }
+    ]
+   },
+   "supper_end": {
+    "id": "supper_end",
+    "text": "Goodnight. (As you go:) It was good for morale. Mine. I checked.",
+    "choices": [
+     {
+      "text": "Goodnight.",
+      "end": true
+     }
+    ]
+   }
+  }
+ }
+}

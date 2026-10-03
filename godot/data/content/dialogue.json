@@ -131,6 +131,28 @@
     "when": {
      "all": [
       {
+       "history": "told_brannoc"
+      },
+      {
+       "met": "rook"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rook",
+         "key": "cb:told_brannoc",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_told_brannoc"
+   },
+   {
+    "when": {
+     "all": [
+      {
        "met": "rook"
       },
       {
@@ -337,6 +359,21 @@
     "text": [
      {
       "when": {
+       "all": [
+        {
+         "fact": "beasts.outcome",
+         "exists": true
+        },
+        {
+         "fact": "caravan.survivors",
+         "exists": true
+        }
+       ]
+      },
+      "text": "Nothing you don't know already, pet; you did half of it. Holloway's counting what's left, Harlan's counting what came back, and the Penhales say their dog won't go in the barn any more. Stands at the door and whines at the floor, and won't be told."
+     },
+     {
+      "when": {
        "fact": "beasts.outcome",
        "eq": "cured"
       },
@@ -347,29 +384,76 @@
        "fact": "beasts.outcome",
        "eq": "slaughtered"
       },
-      "text": "No wolves on the road now. None. Brannoc's never seen so many pelts, and Maeca hasn't been in since. Make of that what you like."
+      "text": "No wolves on the road now. None. Brannoc's never seen so many pelts, and Maeca hasn't been in since. Make of that what you like. Harlan's still asking after his boy."
      },
      {
-      "text": "Wolves, mainly. Holloway's paying for pelts, Maeca says they're sick, Harlan says they ate his caravan, and the Coyle boy's still missing. And there's a toll clerk drinking at the Flagon like he's come into money. Pick a story."
+      "when": {
+       "fact": "beasts.outcome",
+       "exists": true
+      },
+      "text": "The wolves are settled, one way or another, and nobody's thanked anybody for it, which is how you know it's settled. Harlan's still asking after his boy, mind. And Jessop, the toll clerk, owes me for three rounds and hasn't been back to pay."
+     },
+     {
+      "when": {
+       "fact": "caravan.survivors",
+       "eq": "rescued"
+      },
+      "text": "Jory Coyle's home and sleeping in my good room with the lamp lit, and Harlan's tried to pay me for it twice. The wolves are another matter: Holloway's paying for pelts, Maeca says they're sick, and the Penhale boy says they drink from the stream and fall down. Pick one."
+     },
+     {
+      "when": {
+       "fact": "caravan.survivors",
+       "eq": "dead"
+      },
+      "text": "Harlan's shut his shutters and won't open the door, not even to me. And the wolves are still at it: Holloway's paying for pelts, Maeca says they're sick. Don't ask me which. I've stopped asking."
+     },
+     {
+      "text": "Wolves, mainly. Holloway's paying for pelts, Maeca says they're sick, Harlan says they ate his caravan, and the Coyle boy's still missing. And Jessop, the toll clerk, was buying rounds at the Flagon like he'd come into money, the night the wagons went. Pick a story."
      }
     ],
     "effects": [
      {
-      "quest": {
-       "id": "beasts",
-       "entry": "rumour"
-      }
+      "if": {
+       "not": {
+        "fact": "beasts.outcome",
+        "exists": true
+       }
+      },
+      "then": [
+       {
+        "quest": {
+         "id": "beasts",
+         "entry": "rumour"
+        }
+       }
+      ]
      },
      {
-      "quest": {
-       "id": "caravan",
-       "entry": "harlan_plea"
-      }
+      "if": {
+       "not": {
+        "fact": "caravan.survivors",
+        "exists": true
+       }
+      },
+      "then": [
+       {
+        "quest": {
+         "id": "caravan",
+         "entry": "harlan_plea"
+        }
+       }
+      ]
      }
     ],
     "choices": [
      {
-      "text": "A toll clerk with money?",
+      "text": "Jessop, the toll clerk?",
+      "show": {
+       "not": {
+        "fact": "caravan.survivors",
+        "exists": true
+       }
+      },
       "goto": "clerk"
      },
      {
@@ -380,7 +464,7 @@
    },
    "clerk": {
     "id": "clerk",
-    "text": "Clerks don't buy rounds. This one bought three, the night Coyle's wagons went missing, and kept telling the room he'd \"done somebody a favour\". Rav was there. Rav's always there.",
+    "text": "Clerks don't buy rounds. Jessop bought three, the night Coyle's wagons went missing, and kept telling the room he'd \"done somebody a favour\". Rav was there; Rav's always there. ...Jessop's not been in since. He still owes me for the third.",
     "choices": [
      {
       "text": "Something else.",
@@ -422,7 +506,7 @@
    },
    "ford": {
     "id": "ford",
-    "text": "Not many, these last years. The ford's been bad. ...Vonnra pays me to tell her who comes up that road, and when. Don't look like that, pet; she pays everyone for something. I'd told her about you before you'd finished your stew.",
+    "text": "Not many, this last year. The ford's been bad since the winter. ...Vonnra pays me to tell her who comes up that road, and when. Don't look like that, pet; she pays everyone for something. I'd told her about you before you'd finished your stew.",
     "choices": [
      {
       "text": "What did she say?",
@@ -445,6 +529,15 @@
      {
       "text": "Goodbye, Rook.",
       "end": true
+     }
+    ],
+    "effects": [
+     {
+      "quest": {
+       "id": "lamps",
+       "status": "active",
+       "entry": "rook"
+      }
      }
     ]
    },
@@ -707,6 +800,27 @@
       "end": true
      }
     ]
+   },
+   "cb_told_brannoc": {
+    "id": "cb_told_brannoc",
+    "text": "You told Brannoc about his girl. (She wipes the same bit of counter for a while.) Good. Somebody had to, and it was never going to be me. ...Sit down. You look like you want feeding, and I want something to do with my hands.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "rook",
+       "key": "cb:told_brannoc",
+       "value": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "rook",
+       "affection": 5
+      },
+      "quiet": true
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -1006,7 +1120,110 @@
    },
    {
     "when": {
-     "hasItem": "pell_ledger"
+     "all": [
+      {
+       "hasItem": "pell_ledger"
+      },
+      {
+       "any": [
+        {
+         "all": [
+          {
+           "any": [
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "wreck"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "ruts"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "roost_found"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_met"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_wagons"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "roost_raided"
+             }
+            },
+            {
+             "knows": "hint.roost"
+            }
+           ]
+          },
+          {
+           "any": [
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "harlan_plea"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "guard_says"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "clerk_turned"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "wreck"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_wagons"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "ledger_read"
+             }
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "not": {
+          "quest": {
+           "id": "caravan",
+           "entry": "ledger_read"
+          }
+         }
+        }
+       ]
+      }
+     ]
     },
     "mark": "?"
    }
@@ -1033,11 +1250,21 @@
     ],
     "effects": [
      {
-      "quest": {
-       "id": "beasts",
-       "status": "active",
-       "entry": "holloway_bounty"
-      }
+      "if": {
+       "not": {
+        "fact": "beasts.outcome",
+        "exists": true
+       }
+      },
+      "then": [
+       {
+        "quest": {
+         "id": "beasts",
+         "status": "active",
+         "entry": "holloway_bounty"
+        }
+       }
+      ]
      }
     ],
     "choices": [
@@ -1124,10 +1351,218 @@
      {
       "text": "Pell Varrow paid the Kerchiefs to take Coyle's caravan. Here's his ledger.",
       "when": {
-       "hasItem": "pell_ledger"
+       "all": [
+        {
+         "hasItem": "pell_ledger"
+        },
+        {
+         "all": [
+          {
+           "any": [
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "wreck"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "ruts"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "roost_found"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_met"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_wagons"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "roost_raided"
+             }
+            },
+            {
+             "knows": "hint.roost"
+            }
+           ]
+          },
+          {
+           "any": [
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "harlan_plea"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "guard_says"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "clerk_turned"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "wreck"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_wagons"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "ledger_read"
+             }
+            }
+           ]
+          }
+         ]
+        }
+       ]
       },
       "once": "expose",
       "goto": "expose"
+     },
+     {
+      "text": "I found this book in Pell Varrow's warehouse. Can you make sense of it?",
+      "show": {
+       "all": [
+        {
+         "hasItem": "pell_ledger"
+        },
+        {
+         "not": {
+          "all": [
+           {
+            "any": [
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "wreck"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "ruts"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "roost_found"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "redcowl_met"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "redcowl_wagons"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "roost_raided"
+              }
+             },
+             {
+              "knows": "hint.roost"
+             }
+            ]
+           },
+           {
+            "any": [
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "harlan_plea"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "guard_says"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "clerk_turned"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "wreck"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "redcowl_wagons"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "ledger_read"
+              }
+             }
+            ]
+           }
+          ]
+         }
+        },
+        {
+         "not": {
+          "quest": {
+           "id": "caravan",
+           "entry": "ledger_read"
+          }
+         }
+        }
+       ]
+      },
+      "once": "ledger_early",
+      "goto": "ledger_early"
+     },
+     {
+      "text": "Your watch-post on the Low Ford road. There's a dead man at it.",
+      "when": {
+       "knows": "lore.warden"
+      },
+      "once": "post",
+      "goto": "post"
      },
      {
       "text": "That's all.",
@@ -1151,6 +1586,21 @@
        "eq": true
       },
       "text": "You heard. Aldo. Wife at Low Kiln, a bad knee, and a habit of humming on the wall that I told him twice to stop. They took him off it by the bad leg. I'd give a month's pay to hear him hum. Five a pelt, still. What do you want?"
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "time": "night"
+        },
+        {
+         "day": {
+          "gte": 3
+         }
+        }
+       ]
+      },
+      "text": "(A letter lies open under his lamp, a silver seal broken on it. He turns it face down when you come in, and puts his cup on it.) What."
      },
      {
       "when": {
@@ -1290,10 +1740,235 @@
      {
       "text": "Pell Varrow paid the Kerchiefs to take Coyle's caravan. Here's his ledger.",
       "when": {
-       "hasItem": "pell_ledger"
+       "all": [
+        {
+         "hasItem": "pell_ledger"
+        },
+        {
+         "all": [
+          {
+           "any": [
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "wreck"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "ruts"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "roost_found"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_met"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_wagons"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "roost_raided"
+             }
+            },
+            {
+             "knows": "hint.roost"
+            }
+           ]
+          },
+          {
+           "any": [
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "harlan_plea"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "guard_says"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "clerk_turned"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "wreck"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_wagons"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "ledger_read"
+             }
+            }
+           ]
+          }
+         ]
+        }
+       ]
       },
       "once": "expose",
       "goto": "expose"
+     },
+     {
+      "text": "I found this book in Pell Varrow's warehouse. Can you make sense of it?",
+      "show": {
+       "all": [
+        {
+         "hasItem": "pell_ledger"
+        },
+        {
+         "not": {
+          "all": [
+           {
+            "any": [
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "wreck"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "ruts"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "roost_found"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "redcowl_met"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "redcowl_wagons"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "roost_raided"
+              }
+             },
+             {
+              "knows": "hint.roost"
+             }
+            ]
+           },
+           {
+            "any": [
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "harlan_plea"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "guard_says"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "clerk_turned"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "wreck"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "redcowl_wagons"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "ledger_read"
+              }
+             }
+            ]
+           }
+          ]
+         }
+        },
+        {
+         "not": {
+          "quest": {
+           "id": "caravan",
+           "entry": "ledger_read"
+          }
+         }
+        }
+       ]
+      },
+      "once": "ledger_early",
+      "goto": "ledger_early"
+     },
+     {
+      "text": "Your watch-post on the Low Ford road. There's a dead man at it.",
+      "when": {
+       "knows": "lore.warden"
+      },
+      "once": "post",
+      "goto": "post"
+     },
+     {
+      "text": "That letter. The silver seal.",
+      "show": {
+       "all": [
+        {
+         "time": "night"
+        },
+        {
+         "day": {
+          "gte": 3
+         }
+        }
+       ]
+      },
+      "once": "letter",
+      "goto": "letter"
      },
      {
       "text": "What do you want, Captain? For yourself.",
@@ -1311,11 +1986,21 @@
     "text": "They're bolder. Two nights ago they came right up to the east gate. Five a pelt, fifty for the old grey one they call Greymuzzle. Bring me proof and I'll pay. Bring me stories and I won't. I've eleven men and four of them can hold a spear the right way round; I'm not spending them on stories.",
     "effects": [
      {
-      "quest": {
-       "id": "beasts",
-       "status": "active",
-       "entry": "holloway_bounty"
-      }
+      "if": {
+       "not": {
+        "fact": "beasts.outcome",
+        "exists": true
+       }
+      },
+      "then": [
+       {
+        "quest": {
+         "id": "beasts",
+         "status": "active",
+         "entry": "holloway_bounty"
+        }
+       }
+      ]
      }
     ],
     "choices": [
@@ -1623,10 +2308,218 @@
      {
       "text": "Pell Varrow paid the Kerchiefs to take Coyle's caravan. Here's his ledger.",
       "when": {
-       "hasItem": "pell_ledger"
+       "all": [
+        {
+         "hasItem": "pell_ledger"
+        },
+        {
+         "all": [
+          {
+           "any": [
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "wreck"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "ruts"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "roost_found"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_met"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_wagons"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "roost_raided"
+             }
+            },
+            {
+             "knows": "hint.roost"
+            }
+           ]
+          },
+          {
+           "any": [
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "harlan_plea"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "guard_says"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "clerk_turned"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "wreck"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_wagons"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "ledger_read"
+             }
+            }
+           ]
+          }
+         ]
+        }
+       ]
       },
       "once": "expose",
       "goto": "expose"
+     },
+     {
+      "text": "I found this book in Pell Varrow's warehouse. Can you make sense of it?",
+      "show": {
+       "all": [
+        {
+         "hasItem": "pell_ledger"
+        },
+        {
+         "not": {
+          "all": [
+           {
+            "any": [
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "wreck"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "ruts"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "roost_found"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "redcowl_met"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "redcowl_wagons"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "roost_raided"
+              }
+             },
+             {
+              "knows": "hint.roost"
+             }
+            ]
+           },
+           {
+            "any": [
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "harlan_plea"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "guard_says"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "clerk_turned"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "wreck"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "redcowl_wagons"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "ledger_read"
+              }
+             }
+            ]
+           }
+          ]
+         }
+        },
+        {
+         "not": {
+          "quest": {
+           "id": "caravan",
+           "entry": "ledger_read"
+          }
+         }
+        }
+       ]
+      },
+      "once": "ledger_early",
+      "goto": "ledger_early"
+     },
+     {
+      "text": "Your watch-post on the Low Ford road. There's a dead man at it.",
+      "when": {
+       "knows": "lore.warden"
+      },
+      "once": "post",
+      "goto": "post"
      },
      {
       "text": "That's all.",
@@ -1721,10 +2614,218 @@
      {
       "text": "Pell Varrow paid the Kerchiefs to take Coyle's caravan. Here's his ledger.",
       "when": {
-       "hasItem": "pell_ledger"
+       "all": [
+        {
+         "hasItem": "pell_ledger"
+        },
+        {
+         "all": [
+          {
+           "any": [
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "wreck"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "ruts"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "roost_found"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_met"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_wagons"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "roost_raided"
+             }
+            },
+            {
+             "knows": "hint.roost"
+            }
+           ]
+          },
+          {
+           "any": [
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "harlan_plea"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "guard_says"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "clerk_turned"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "wreck"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_wagons"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "ledger_read"
+             }
+            }
+           ]
+          }
+         ]
+        }
+       ]
       },
       "once": "expose",
       "goto": "expose"
+     },
+     {
+      "text": "I found this book in Pell Varrow's warehouse. Can you make sense of it?",
+      "show": {
+       "all": [
+        {
+         "hasItem": "pell_ledger"
+        },
+        {
+         "not": {
+          "all": [
+           {
+            "any": [
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "wreck"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "ruts"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "roost_found"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "redcowl_met"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "redcowl_wagons"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "roost_raided"
+              }
+             },
+             {
+              "knows": "hint.roost"
+             }
+            ]
+           },
+           {
+            "any": [
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "harlan_plea"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "guard_says"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "clerk_turned"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "wreck"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "redcowl_wagons"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "ledger_read"
+              }
+             }
+            ]
+           }
+          ]
+         }
+        },
+        {
+         "not": {
+          "quest": {
+           "id": "caravan",
+           "entry": "ledger_read"
+          }
+         }
+        }
+       ]
+      },
+      "once": "ledger_early",
+      "goto": "ledger_early"
+     },
+     {
+      "text": "Your watch-post on the Low Ford road. There's a dead man at it.",
+      "when": {
+       "knows": "lore.warden"
+      },
+      "once": "post",
+      "goto": "post"
      },
      {
       "text": "That's all.",
@@ -1917,10 +3018,10 @@
        "fact": "player.pardoned",
        "eq": true
       },
-      "text": "Payments to \"R.\" Redcowl. And to my own toll clerk. On the night. Pell Varrow, you careful, greedy little man. My lads'll have him in irons before dark. ...And the strongbox you sold, we'll call that a fee for services. Once."
+      "text": "Payments to \"R.\": Redcowl. And to Jessop, at Vonnra's toll. On the night. Pell Varrow, you careful, greedy little man. My lads'll have him in irons before dark. ...And the strongbox you sold, we'll call that a fee for services. Once."
      },
      {
-      "text": "Payments to \"R.\" Redcowl. And to my own toll clerk. On the night. Pell Varrow, you careful, greedy little man. My lads'll have him in irons before dark. The Watch owes you, {name}. I don't say that lightly; I've not much to pay you with."
+      "text": "Payments to \"R.\": Redcowl. And to Jessop, at Vonnra's toll. On the night. Pell Varrow, you careful, greedy little man. My lads'll have him in irons before dark. The Watch owes you, {name}. I don't say that lightly; I've not much to pay you with."
      }
     ],
     "effects": [
@@ -2019,7 +3120,98 @@
      {
       "text": "You should be asking who paid the Kerchiefs.",
       "when": {
-       "hasItem": "pell_ledger"
+       "all": [
+        {
+         "hasItem": "pell_ledger"
+        },
+        {
+         "all": [
+          {
+           "any": [
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "wreck"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "ruts"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "roost_found"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_met"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_wagons"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "roost_raided"
+             }
+            },
+            {
+             "knows": "hint.roost"
+            }
+           ]
+          },
+          {
+           "any": [
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "harlan_plea"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "guard_says"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "clerk_turned"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "wreck"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_wagons"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "ledger_read"
+             }
+            }
+           ]
+          }
+         ]
+        }
+       ]
       },
       "badge": "Evidence",
       "effects": [
@@ -2254,6 +3446,122 @@
       "end": true
      }
     ]
+   },
+   "ledger_early": {
+    "id": "ledger_early",
+    "text": "(He reads it standing up. Then he sits down and reads it again.) Two payments, one night. Forty to \"R.\" Ten to Jessop, \"for the road\": that's Vonnra's clerk at the toll. And that's the night Harlan Coyle's wagons went off the Old Road and didn't come back. (He shuts it.) Don't tell me where you got it. If you tell me, I have to do something about it.",
+    "effects": [
+     {
+      "quest": {
+       "id": "caravan",
+       "status": "active",
+       "entry": "ledger_read"
+      }
+     },
+     {
+      "rel": {
+       "npc": "holloway",
+       "respect": 5,
+       "trust": -5
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Who's \"R.\"?",
+      "goto": "ledger_early2"
+     }
+    ]
+   },
+   "ledger_early2": {
+    "id": "ledger_early2",
+    "text": "Could be anyone. There's more thieves in this valley than letters to go round. Find me who \"R.\" is, and what Pell bought for forty, and I'll put him in irons myself. Until then it's a book with numbers in, and Pell's got a man in Low Kiln who loves numbers. ...Keep it somewhere I can't see it.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "That's all.",
+      "end": true
+     }
+    ]
+   },
+   "post": {
+    "id": "post",
+    "text": "(He says nothing for long enough that you think he hasn't heard.) Grey beard, proud of it? Bad hip? ...Corran. He had that post before I had this one. I wrote him down as a deserter in the spring. Him and his runner, Dannet. Dannet never came up the road, so I wrote him down too.",
+    "effects": [
+     {
+      "quest": {
+       "id": "lamps",
+       "status": "active",
+       "entry": "book"
+      }
+     },
+     {
+      "quest": {
+       "id": "lamps",
+       "entry": "post"
+      }
+     },
+     {
+      "set": {
+       "holloway.post_told": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "holloway",
+       "respect": 10,
+       "trust": 5
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "His book says the lamps at the ford were lit again. Not by the Watch.",
+      "goto": "post2"
+     },
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     }
+    ]
+   },
+   "post2": {
+    "id": "post2",
+    "text": "Not by us. We've not had oil for those lamps since my first winter, and nobody's asked me for any. (He writes something down, and crosses it out.) So somebody had oil. And a reason. ...I'll send two men down with a cart. I owe Corran a hole in the ground, and an apology he can't hear.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "That's all.",
+      "end": true
+     }
+    ]
+   },
+   "letter": {
+    "id": "letter",
+    "text": "Mine. From the north, about the north. (The cup doesn't move.) Read your own post, if anybody writes to you.",
+    "effects": [
+     {
+      "set": {
+       "holloway.letter_seen": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "That's all.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -2284,14 +3592,6 @@
    },
    {
     "when": {
-     "not": {
-      "met": "maeca"
-     }
-    },
-    "node": "first"
-   },
-   {
-    "when": {
      "all": [
       {
        "fact": "beasts.outcome",
@@ -2309,6 +3609,14 @@
      ]
     },
     "node": "thanks"
+   },
+   {
+    "when": {
+     "not": {
+      "met": "maeca"
+     }
+    },
+    "node": "first"
    },
    {
     "when": {
@@ -2501,11 +3809,21 @@
     ],
     "effects": [
      {
-      "quest": {
-       "id": "beasts",
-       "status": "active",
-       "entry": "maeca_theory"
-      }
+      "if": {
+       "not": {
+        "fact": "beasts.outcome",
+        "exists": true
+       }
+      },
+      "then": [
+       {
+        "quest": {
+         "id": "beasts",
+         "status": "active",
+         "entry": "maeca_theory"
+        }
+       }
+      ]
      }
     ],
     "choices": [
@@ -2548,6 +3866,33 @@
       "text": "Where can I find you?",
       "once": "where",
       "goto": "where"
+     },
+     {
+      "text": "You know them, don't you. The Kerchiefs.",
+      "show": {
+       "any": [
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "roost_found"
+         }
+        },
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "redcowl_met"
+         }
+        },
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "redcowl_wagons"
+         }
+        }
+       ]
+      },
+      "once": "kerchiefs",
+      "goto": "kerchiefs"
      },
      {
       "text": "Why \"Barefoot\"?",
@@ -2623,6 +3968,33 @@
       "text": "Where can I find you?",
       "once": "where",
       "goto": "where"
+     },
+     {
+      "text": "You know them, don't you. The Kerchiefs.",
+      "show": {
+       "any": [
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "roost_found"
+         }
+        },
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "redcowl_met"
+         }
+        },
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "redcowl_wagons"
+         }
+        }
+       ]
+      },
+      "once": "kerchiefs",
+      "goto": "kerchiefs"
      },
      {
       "text": "Why \"Barefoot\"?",
@@ -2707,10 +4079,20 @@
     "text": "Something in the deep wood. The deer are thin, the Pack's thinner, and the old alpha, Greymuzzle, has brought them closer to people than he ever would. Find out why and you'll have done more than a hundred pelts. Ask Tam, by the well. He's seen something, and nobody believes a child.",
     "effects": [
      {
-      "quest": {
-       "id": "beasts",
-       "entry": "maeca_theory"
-      }
+      "if": {
+       "not": {
+        "fact": "beasts.outcome",
+        "exists": true
+       }
+      },
+      "then": [
+       {
+        "quest": {
+         "id": "beasts",
+         "entry": "maeca_theory"
+        }
+       }
+      ]
      }
     ],
     "choices": [
@@ -3074,6 +4456,27 @@
    "t_maeca": {
     "id": "t_maeca",
     "text": "Men, for the garrison. Deer, for me. Men are easier. They keep to paths and they talk while they walk.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "kerchiefs": {
+    "id": "kerchiefs",
+    "text": "Some. (She drinks, and looks at the cup instead of you.) Fed some of them, once. Buried more. ...Ask me about wolves.",
+    "effects": [
+     {
+      "set": {
+       "maeca.kerchiefs": true
+      }
+     }
+    ],
     "choices": [
      {
       "text": "Something else.",
@@ -3509,11 +4912,30 @@
     "text": "The animals were never like this. Never. And the water's tasted wrong all year: metal, and smoke. Bring me some from the Thornhollow stream, above the blight if you can, below it if you must, and I'll tell you what's in it.",
     "effects": [
      {
-      "quest": {
-       "id": "beasts",
-       "status": "active",
-       "entry": "wenna_request"
-      }
+      "if": {
+       "all": [
+        {
+         "not": {
+          "fact": "beasts.outcome",
+          "exists": true
+         }
+        },
+        {
+         "not": {
+          "knows": "clue.analysis"
+         }
+        }
+       ]
+      },
+      "then": [
+       {
+        "quest": {
+         "id": "beasts",
+         "status": "active",
+         "entry": "wenna_request"
+        }
+       }
+      ]
      }
     ],
     "choices": [
@@ -3532,11 +4954,21 @@
     "text": "Tam. Course Tam saw it; nobody watches the ground like a boy with nothing to do. Drank and fell down. Not fought, not starved: drank. ...Bring me that water. A bottle, from where he saw them. I've been smelling metal in the well for a month and telling myself I was old.",
     "effects": [
      {
-      "quest": {
-       "id": "beasts",
-       "status": "active",
-       "entry": "wenna_request"
-      }
+      "if": {
+       "not": {
+        "fact": "beasts.outcome",
+        "exists": true
+       }
+      },
+      "then": [
+       {
+        "quest": {
+         "id": "beasts",
+         "status": "active",
+         "entry": "wenna_request"
+        }
+       }
+      ]
      },
      {
       "rel": {
@@ -3969,21 +5401,51 @@
     "text": "Down by the green water, past the old fence where Pa lost the goat. Three wolves. They drank and they lay down and they didn't get up, and their eyes went all milky like Gran's. And the water smells like the chapel lamps. Pa says stay in town. I stayed in town.",
     "effects": [
      {
-      "quest": {
-       "id": "beasts",
-       "status": "active",
-       "entry": "tam_plea"
-      }
+      "if": {
+       "not": {
+        "fact": "beasts.outcome",
+        "exists": true
+       }
+      },
+      "then": [
+       {
+        "quest": {
+         "id": "beasts",
+         "status": "active",
+         "entry": "tam_plea"
+        }
+       }
+      ]
      },
      {
       "learn": "hint.stream"
      },
      {
-      "rel": {
-       "npc": "tam",
-       "trust": 20,
-       "affection": 10
-      }
+      "if": {
+       "not": {
+        "npcFlag": {
+         "npc": "tam",
+         "key": "believed",
+         "eq": true
+        }
+       }
+      },
+      "then": [
+       {
+        "rel": {
+         "npc": "tam",
+         "trust": 20,
+         "affection": 10
+        }
+       },
+       {
+        "npcFlag": {
+         "npc": "tam",
+         "key": "believed",
+         "value": true
+        }
+       }
+      ]
      }
     ],
     "choices": [
@@ -3997,7 +5459,8 @@
         }
        }
       ],
-      "goto": "again"
+      "goto": "again",
+      "once": "did_right"
      },
      {
       "text": "Where is your farm?",
@@ -4007,7 +5470,7 @@
    },
    "farm": {
     "id": "farm",
-    "text": "Out past the Old Road, where the wood starts. Pa won't leave it. He says wolves is wolves and a farm's a farm. But these ones aren't right.",
+    "text": "Out past the Old Road, where the wood starts. Penhale's, that's us. Pa won't leave it. He says wolves is wolves and a farm's a farm. But these ones aren't right.",
     "effects": [
      {
       "npcFlag": {
@@ -4110,6 +5573,11 @@
        ]
       },
       "goto": "fetch"
+     },
+     {
+      "text": "Anything else strange out at the farm?",
+      "once": "tock",
+      "goto": "tock"
      },
      {
       "text": "Did your Pa ever find the goat?",
@@ -4232,6 +5700,34 @@
       "end": true
      }
     ]
+   },
+   "tock": {
+    "id": "tock",
+    "text": "The ground knocks. At night. Tock, and then tock, under the floor, like somebody wanting to come in, and Pa says it's moles, and I said moles don't knock, and he said go to sleep Tam, so I did, but it kept knocking.",
+    "effects": [
+     {
+      "set": {
+       "tam.tock": true
+      }
+     },
+     {
+      "quest": {
+       "id": "below",
+       "status": "active",
+       "entry": "tock"
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "again"
+     },
+     {
+      "text": "Stay by the well, Tam.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -4245,6 +5741,35 @@
      }
     },
     "node": "first"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "brannoc"
+      },
+      {
+       "day": {
+        "gte": 2
+       }
+      },
+      {
+       "not": {
+        "time": "night"
+       }
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "brannoc",
+         "key": "asked_nell",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "nell"
    },
    {
     "when": {
@@ -4406,6 +5931,14 @@
       "goto": "irons"
      },
      {
+      "text": "This was in the Warden's fist at the Low Ford.",
+      "when": {
+       "hasItem": "wardens_lampiron"
+      },
+      "once": "mark",
+      "goto": "mark"
+     },
+     {
       "text": "Goodbye.",
       "end": true
      }
@@ -4419,6 +5952,13 @@
        "time": "night"
       },
       "text": "Forge is banked. Make it quick."
+     },
+     {
+      "when": {
+       "fact": "nell.buried",
+       "eq": true
+      },
+      "text": "(He works. He doesn't stop when you come in, and he doesn't send you away.) Steel or fur?"
      },
      {
       "when": {
@@ -4487,6 +6027,23 @@
       "goto": "irons"
      },
      {
+      "text": "This was in the Warden's fist at the Low Ford.",
+      "when": {
+       "hasItem": "wardens_lampiron"
+      },
+      "once": "mark",
+      "goto": "mark"
+     },
+     {
+      "text": "Those last two irons.",
+      "show": {
+       "fact": "nell.buried",
+       "eq": true
+      },
+      "once": "irons2",
+      "goto": "irons_after"
+     },
+     {
       "text": "Who taught you iron?",
       "once": "t_brannoc",
       "goto": "t_brannoc"
@@ -4553,6 +6110,14 @@
       "goto": "irons"
      },
      {
+      "text": "This was in the Warden's fist at the Low Ford.",
+      "when": {
+       "hasItem": "wardens_lampiron"
+      },
+      "once": "mark",
+      "goto": "mark"
+     },
+     {
       "text": "Goodbye.",
       "end": true
      }
@@ -4560,7 +6125,26 @@
    },
    "irons": {
     "id": "irons",
-    "text": "Spares. Lamp-irons for the Low Ford. Twelve ordered last winter, ten collected. Collected at night; coin left on the anvil. Old coin, the square kind. Didn't ask who. ...Should've.",
+    "text": [
+     {
+      "when": {
+       "any": [
+        {
+         "fact": "nell.told",
+         "eq": "gone"
+        },
+        {
+         "fact": "nell.told",
+         "eq": "risen"
+        }
+       ]
+      },
+      "text": "(He looks at the two irons on the rack for a long time.) Twelve ordered. Ten went down to the ford, at night, square coin on the anvil. ...Buyer'll want these two. Buyer can come and ask me for them."
+     },
+     {
+      "text": "Spares. Lamp-irons for the Low Ford. Twelve ordered last winter, ten collected. Collected at night; coin left on the anvil. Old coin, the square kind. Didn't ask who. ...Should've."
+     }
+    ],
     "choices": [
      {
       "text": "Something else.",
@@ -4569,6 +6153,15 @@
      {
       "text": "Goodbye.",
       "end": true
+     }
+    ],
+    "effects": [
+     {
+      "quest": {
+       "id": "lamps",
+       "status": "active",
+       "entry": "irons"
+      }
      }
     ]
    },
@@ -4652,6 +6245,345 @@
      },
      {
       "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "mark": {
+    "id": "mark",
+    "text": [
+     {
+      "when": {
+       "any": [
+        {
+         "fact": "nell.told",
+         "eq": "gone"
+        },
+        {
+         "fact": "nell.told",
+         "eq": "risen"
+        }
+       ]
+      },
+      "text": "(He takes it. Turns it to the light. Puts his thumb under the socket, where the mark is.) Mine. (He holds it a long time.) ...Mine."
+     },
+     {
+      "text": "(He takes it. Turns it to the light. Puts his thumb under the socket.) Mine. Mark's under there. Last winter's work: twelve for the Low Ford, ten collected, at night, square coin on the anvil. (He gives it back.) Keep it. It's done what it was for."
+     }
+    ],
+    "effects": [
+     {
+      "quest": {
+       "id": "lamps",
+       "status": "active",
+       "entry": "irons"
+      }
+     },
+     {
+      "quest": {
+       "id": "lamps",
+       "entry": "mark"
+      }
+     },
+     {
+      "set": {
+       "brannoc.saw_iron": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "irons_after": {
+    "id": "irons_after",
+    "text": "(He puts his hand flat on the two irons.) Buyer'll be back for these. Buyer can come and ask me himself. Or herself. (The hammer comes down.) I'll know the coin.",
+    "effects": [
+     {
+      "set": {
+       "brannoc.waits_buyer": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "nell": {
+    "id": "nell",
+    "text": "(He doesn't look up from the anvil, and he doesn't stop.) You came up the Low Ford road. ...Carter went south a fortnight back. Wat, with the grey mare. Toll work. Said he'd be over the ford by dark. Girl with him. Twelve. Red hair. New boots. Going to her aunt at Low Kiln. (The hammer stops.) Mine. Nell. ...You pass them?",
+    "effects": [
+     {
+      "quest": {
+       "id": "lamps",
+       "status": "active",
+       "entry": "nell"
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "There was a wagon on its side, south of the ford. A girl had the reins.",
+      "effects": [
+       {
+        "npcFlag": {
+         "npc": "brannoc",
+         "key": "asked_nell",
+         "value": true
+        }
+       }
+      ],
+      "goto": "nell_ditch"
+     },
+     {
+      "text": "I passed nobody on that road.",
+      "effects": [
+       {
+        "npcFlag": {
+         "npc": "brannoc",
+         "key": "asked_nell",
+         "value": true
+        }
+       },
+       {
+        "set": {
+         "nell.told": "lie"
+        }
+       },
+       {
+        "later": {
+         "days": 2,
+         "id": "nell.asking",
+         "effect": {
+          "set": {
+           "nell.asking": true
+          }
+         }
+        }
+       },
+       {
+        "history": {
+         "id": "lied_brannoc",
+         "text": "told Brannoc they had passed nobody on the Low Ford road",
+         "tags": [
+          "nell",
+          "lie"
+         ],
+         "spread": 0
+        },
+        "witnesses": [
+         "brannoc"
+        ]
+       }
+      ],
+      "goto": "nell_lie"
+     },
+     {
+      "text": "I didn't look at the dead.",
+      "effects": [
+       {
+        "npcFlag": {
+         "npc": "brannoc",
+         "key": "asked_nell",
+         "value": true
+        }
+       },
+       {
+        "set": {
+         "nell.told": "evaded"
+        }
+       },
+       {
+        "later": {
+         "days": 2,
+         "id": "nell.asking",
+         "effect": {
+          "set": {
+           "nell.asking": true
+          }
+         }
+        }
+       }
+      ],
+      "goto": "nell_look"
+     }
+    ]
+   },
+   "nell_ditch": {
+    "id": "nell_ditch",
+    "text": [
+     {
+      "when": {
+       "fact": "brannoc.saw_iron",
+       "eq": true
+      },
+      "text": "(He puts the hammer down, and looks at the two irons still on the rack, and then he doesn't look at anything.) ...Had the reins. She'd want the reins. Always wanted the reins."
+     },
+     {
+      "text": "(He puts the hammer down. You have never seen him put the hammer down.) ...Had the reins. (A long breath, through the nose.) She'd want the reins. Always wanted the reins."
+     }
+    ],
+    "choices": [
+     {
+      "text": "She was gone before I came. The water took her.",
+      "effects": [
+       {
+        "set": {
+         "nell.told": "gone"
+        }
+       },
+       {
+        "rel": {
+         "npc": "brannoc",
+         "trust": 15,
+         "respect": 5
+        }
+       },
+       {
+        "history": {
+         "id": "told_brannoc",
+         "text": "told Brannoc his daughter drowned at the Low Ford",
+         "tags": [
+          "nell",
+          "lamps"
+         ],
+         "spread": 1,
+         "reactions": {
+          "rook": {
+           "affection": 10
+          },
+          "chid": {
+           "respect": 10
+          }
+         }
+        },
+        "witnesses": [
+         "brannoc"
+        ]
+       }
+      ],
+      "goto": "nell_gone"
+     },
+     {
+      "text": "She'd got up with the others. I put her down.",
+      "effects": [
+       {
+        "set": {
+         "nell.told": "risen"
+        }
+       },
+       {
+        "rel": {
+         "npc": "brannoc",
+         "trust": 25,
+         "respect": 15
+        }
+       },
+       {
+        "history": {
+         "id": "told_brannoc",
+         "text": "told Brannoc his daughter drowned at the Low Ford",
+         "tags": [
+          "nell",
+          "lamps"
+         ],
+         "spread": 1,
+         "reactions": {
+          "rook": {
+           "affection": 10
+          },
+          "chid": {
+           "respect": 10
+          }
+         }
+        },
+        "witnesses": [
+         "brannoc"
+        ]
+       }
+      ],
+      "goto": "nell_risen"
+     }
+    ]
+   },
+   "nell_gone": {
+    "id": "nell_gone",
+    "text": "Quick, then. Water's quick. (He picks the hammer up and holds it, and doesn't use it.) Forge is shut. Go on.",
+    "choices": [
+     {
+      "text": "I'm sorry, Brannoc.",
+      "end": true
+     },
+     {
+      "text": "(Leave him.)",
+      "end": true
+     }
+    ]
+   },
+   "nell_risen": {
+    "id": "nell_risen",
+    "text": "(He looks at you then. Properly, for the first time.) Got up. (He says it the way he tests an edge: weighing it.) Got up, and you put her down. ...Was it quick?",
+    "choices": [
+     {
+      "text": "It was quick.",
+      "goto": "nell_quick"
+     },
+     {
+      "text": "It wasn't.",
+      "goto": "nell_slow"
+     }
+    ]
+   },
+   "nell_quick": {
+    "id": "nell_quick",
+    "text": "(A long time.) ...Thank you. (The forge ticks as it cools.) Forge is shut. Go on.",
+    "choices": [
+     {
+      "text": "(Leave him.)",
+      "end": true
+     }
+    ]
+   },
+   "nell_slow": {
+    "id": "nell_slow",
+    "text": "(He nods, once, as if you've told him a price.) Forge is shut.",
+    "choices": [
+     {
+      "text": "(Leave him.)",
+      "end": true
+     }
+    ]
+   },
+   "nell_lie": {
+    "id": "nell_lie",
+    "text": "(The hammer comes down.) Low Kiln, then. Good. (And again.) Aunt'll feed her up. She's thin.",
+    "choices": [
+     {
+      "text": "Goodbye, Brannoc.",
+      "end": true
+     }
+    ]
+   },
+   "nell_look": {
+    "id": "nell_look",
+    "text": "Didn't look. (The hammer comes down.) No. ...Nobody looks.",
+    "choices": [
+     {
+      "text": "Goodbye, Brannoc.",
       "end": true
      }
     ]
@@ -4775,6 +6707,29 @@
     "when": {
      "all": [
       {
+       "fact": "jory.knows_be",
+       "eq": true
+      },
+      {
+       "met": "harlan"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "harlan",
+         "key": "cb:jory_knows",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_jory_knows"
+   },
+   {
+    "when": {
+     "all": [
+      {
        "met": "harlan"
       },
       {
@@ -4823,11 +6778,59 @@
     "when": {
      "any": [
       {
-       "hasItem": "coyle_strongbox"
+       "all": [
+        {
+         "hasItem": "coyle_strongbox"
+        },
+        {
+         "not": {
+          "fact": "caravan.cargo",
+          "exists": true
+         }
+        }
+       ]
       },
       {
-       "fact": "caravan.survivors",
-       "eq": "rescued"
+       "all": [
+        {
+         "fact": "caravan.survivors",
+         "eq": "rescued"
+        },
+        {
+         "not": {
+          "npcFlag": {
+           "npc": "harlan",
+           "key": "once:jory",
+           "eq": true
+          }
+         }
+        }
+       ]
+      },
+      {
+       "all": [
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "roost_found"
+         }
+        },
+        {
+         "not": {
+          "fact": "caravan.survivors",
+          "exists": true
+         }
+        },
+        {
+         "not": {
+          "npcFlag": {
+           "npc": "harlan",
+           "key": "once:roost",
+           "eq": true
+          }
+         }
+        }
+       ]
       }
      ]
     },
@@ -4837,30 +6840,137 @@
   "nodes": {
    "first": {
     "id": "first",
-    "text": "Harlan Coyle, of the Coyle Company: salt, iron and Morrow cloth, the best on the Old Road. You came up the south road? Then you didn't pass three wagons and a boy called Jory. No. No, of course you didn't. Forgive me. Four days. He's never four days late.",
-    "effects": [
+    "text": [
      {
-      "quest": {
-       "id": "caravan",
-       "status": "active",
-       "entry": "harlan_plea"
-      }
+      "when": {
+       "fact": "caravan.survivors",
+       "eq": "rescued"
+      },
+      "text": "You. Jory says it was you at the cage with the bar in your hands, and he's told it four times since breakfast, and it gets better every time. (He takes your hand in both of his.) Harlan Coyle, of the Coyle Company. Any other day I'd have said that first."
      },
      {
-      "quest": {
-       "id": "beasts",
-       "entry": "harlan_view"
-      }
+      "when": {
+       "fact": "caravan.survivors",
+       "eq": "dead"
+      },
+      "text": "(The shutters are half closed, and he doesn't get up.) Harlan Coyle. You'll have heard. Everyone's heard. ...Buy something, or don't."
+     },
+     {
+      "when": {
+       "hasItem": "coyle_strongbox"
+      },
+      "text": "That's my seal. That's— (He's round the counter before you can blink, hands out, and then he doesn't touch it.) Where did you get that? Where was it? Where's the boy that was driving it?"
+     },
+     {
+      "when": {
+       "quest": {
+        "id": "caravan",
+        "entry": "roost_found"
+       }
+      },
+      "text": "Harlan Coyle, of the Coyle Company: salt, iron and Morrow cloth. You've the Verge on your boots, friend; I can smell it from here. My wagons are out there somewhere. Three of them, and a boy called Jory driving the first. Tell me you've seen something."
+     },
+     {
+      "when": {
+       "fact": "caravan.days",
+       "gte": 3
+      },
+      "text": "Harlan Coyle, of the Coyle Company: salt, iron and Morrow cloth, the best on the Old Road. You'll have seen my notice. Three wagons, and a boy called Jory driving the first. A week, near enough. He's never been a week late in his life. ...Forgive me. I say that to everyone."
+     },
+     {
+      "when": {
+       "fact": "caravan.days",
+       "gte": 2
+      },
+      "text": "Harlan Coyle, of the Coyle Company: salt, iron and Morrow cloth, the best on the Old Road. You'll have seen my notice. Three wagons, and a boy called Jory driving the first. Six days. He's never six days late. ...Forgive me. I say that to everyone."
+     },
+     {
+      "when": {
+       "fact": "caravan.days",
+       "gte": 1
+      },
+      "text": "Harlan Coyle, of the Coyle Company: salt, iron and Morrow cloth, the best on the Old Road. You'll have seen my notice. Three wagons, and a boy called Jory driving the first. Five days. He's never five days late. ...Forgive me. I say that to everyone."
+     },
+     {
+      "text": "Harlan Coyle, of the Coyle Company: salt, iron and Morrow cloth, the best on the Old Road. You came up the south road? Then you didn't pass three wagons and a boy called Jory. No. No, of course you didn't. Forgive me. Four days. He's never four days late."
+     }
+    ],
+    "effects": [
+     {
+      "if": {
+       "not": {
+        "fact": "caravan.survivors",
+        "exists": true
+       }
+      },
+      "then": [
+       {
+        "quest": {
+         "id": "caravan",
+         "status": "active",
+         "entry": "harlan_plea"
+        }
+       },
+       {
+        "if": {
+         "not": {
+          "fact": "beasts.outcome",
+          "exists": true
+         }
+        },
+        "then": [
+         {
+          "quest": {
+           "id": "beasts",
+           "entry": "harlan_view"
+          }
+         }
+        ]
+       }
+      ]
      }
     ],
     "choices": [
      {
       "text": "What happened to the caravan?",
-      "goto": "what"
+      "goto": "what",
+      "show": {
+       "not": {
+        "fact": "caravan.survivors",
+        "exists": true
+       }
+      }
      },
      {
       "text": "Which road were they on?",
-      "goto": "route"
+      "goto": "route",
+      "show": {
+       "not": {
+        "fact": "caravan.survivors",
+        "exists": true
+       }
+      }
+     },
+     {
+      "text": "I've seen your wagons. The Kerchiefs have them in a ravine off the Old Road, and three men in cages.",
+      "show": {
+       "all": [
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "roost_found"
+         }
+        },
+        {
+         "not": {
+          "fact": "caravan.survivors",
+          "exists": true
+         }
+        }
+       ]
+      },
+      "once": "roost",
+      "goto": "roost"
      },
      {
       "text": "It wasn't wolves. Your wagons were driven off the road.",
@@ -4871,7 +6981,13 @@
        }
       },
       "once": "notwolves",
-      "goto": "notwolves"
+      "goto": "notwolves",
+      "show": {
+       "not": {
+        "fact": "caravan.survivors",
+        "exists": true
+       }
+      }
      },
      {
       "text": "Jory's alive. He's home.",
@@ -4892,11 +7008,211 @@
      {
       "text": "Pell Varrow paid the Kerchiefs to take your caravan.",
       "when": {
-       "hasItem": "pell_ledger"
+       "all": [
+        {
+         "hasItem": "pell_ledger"
+        },
+        {
+         "all": [
+          {
+           "any": [
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "wreck"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "ruts"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "roost_found"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_met"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_wagons"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "roost_raided"
+             }
+            },
+            {
+             "knows": "hint.roost"
+            }
+           ]
+          },
+          {
+           "any": [
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "harlan_plea"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "guard_says"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "clerk_turned"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "wreck"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_wagons"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "ledger_read"
+             }
+            }
+           ]
+          }
+         ]
+        }
+       ]
       },
       "badge": "Evidence",
       "once": "pell",
       "goto": "pell"
+     },
+     {
+      "text": "I found this book in Pell Varrow's warehouse. Do the dates mean anything to you?",
+      "show": {
+       "all": [
+        {
+         "hasItem": "pell_ledger"
+        },
+        {
+         "not": {
+          "all": [
+           {
+            "any": [
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "wreck"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "ruts"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "roost_found"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "redcowl_met"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "redcowl_wagons"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "roost_raided"
+              }
+             },
+             {
+              "knows": "hint.roost"
+             }
+            ]
+           },
+           {
+            "any": [
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "harlan_plea"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "guard_says"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "clerk_turned"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "wreck"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "redcowl_wagons"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "ledger_read"
+              }
+             }
+            ]
+           }
+          ]
+         }
+        },
+        {
+         "not": {
+          "quest": {
+           "id": "caravan",
+           "entry": "ledger_read"
+          }
+         }
+        }
+       ]
+      },
+      "once": "ledger_early",
+      "goto": "ledger_early"
      },
      {
       "text": "What were you carrying, besides salt and cloth?",
@@ -4908,6 +7224,39 @@
       },
       "once": "be",
       "goto": "be"
+     },
+     {
+      "text": "Your six crates are still in the Roost.",
+      "show": {
+       "all": [
+        {
+         "knows": "clue.blasting_ember"
+        },
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "roost_found"
+         }
+        },
+        {
+         "all": [
+          {
+           "not": {
+            "fact": "be.crates",
+            "exists": true
+           }
+          },
+          {
+           "not": {
+            "history": "burned_roost"
+           }
+          }
+         ]
+        }
+       ]
+      },
+      "once": "crates",
+      "goto": "crates"
      },
      {
       "text": "Goodbye.",
@@ -4953,11 +7302,44 @@
     "choices": [
      {
       "text": "What happened to the caravan?",
-      "goto": "what"
+      "goto": "what",
+      "show": {
+       "not": {
+        "fact": "caravan.survivors",
+        "exists": true
+       }
+      }
      },
      {
       "text": "Which road were they on?",
-      "goto": "route"
+      "goto": "route",
+      "show": {
+       "not": {
+        "fact": "caravan.survivors",
+        "exists": true
+       }
+      }
+     },
+     {
+      "text": "I've seen your wagons. The Kerchiefs have them in a ravine off the Old Road, and three men in cages.",
+      "show": {
+       "all": [
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "roost_found"
+         }
+        },
+        {
+         "not": {
+          "fact": "caravan.survivors",
+          "exists": true
+         }
+        }
+       ]
+      },
+      "once": "roost",
+      "goto": "roost"
      },
      {
       "text": "It wasn't wolves. Your wagons were driven off the road.",
@@ -4968,7 +7350,13 @@
        }
       },
       "once": "notwolves",
-      "goto": "notwolves"
+      "goto": "notwolves",
+      "show": {
+       "not": {
+        "fact": "caravan.survivors",
+        "exists": true
+       }
+      }
      },
      {
       "text": "Jory's alive. He's home.",
@@ -4989,11 +7377,211 @@
      {
       "text": "Pell Varrow paid the Kerchiefs to take your caravan.",
       "when": {
-       "hasItem": "pell_ledger"
+       "all": [
+        {
+         "hasItem": "pell_ledger"
+        },
+        {
+         "all": [
+          {
+           "any": [
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "wreck"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "ruts"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "roost_found"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_met"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_wagons"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "roost_raided"
+             }
+            },
+            {
+             "knows": "hint.roost"
+            }
+           ]
+          },
+          {
+           "any": [
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "harlan_plea"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "guard_says"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "clerk_turned"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "wreck"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_wagons"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "ledger_read"
+             }
+            }
+           ]
+          }
+         ]
+        }
+       ]
       },
       "badge": "Evidence",
       "once": "pell",
       "goto": "pell"
+     },
+     {
+      "text": "I found this book in Pell Varrow's warehouse. Do the dates mean anything to you?",
+      "show": {
+       "all": [
+        {
+         "hasItem": "pell_ledger"
+        },
+        {
+         "not": {
+          "all": [
+           {
+            "any": [
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "wreck"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "ruts"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "roost_found"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "redcowl_met"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "redcowl_wagons"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "roost_raided"
+              }
+             },
+             {
+              "knows": "hint.roost"
+             }
+            ]
+           },
+           {
+            "any": [
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "harlan_plea"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "guard_says"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "clerk_turned"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "wreck"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "redcowl_wagons"
+              }
+             },
+             {
+              "quest": {
+               "id": "caravan",
+               "entry": "ledger_read"
+              }
+             }
+            ]
+           }
+          ]
+         }
+        },
+        {
+         "not": {
+          "quest": {
+           "id": "caravan",
+           "entry": "ledger_read"
+          }
+         }
+        }
+       ]
+      },
+      "once": "ledger_early",
+      "goto": "ledger_early"
      },
      {
       "text": "What were you carrying, besides salt and cloth?",
@@ -5005,6 +7593,39 @@
       },
       "once": "be",
       "goto": "be"
+     },
+     {
+      "text": "Your six crates are still in the Roost.",
+      "show": {
+       "all": [
+        {
+         "knows": "clue.blasting_ember"
+        },
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "roost_found"
+         }
+        },
+        {
+         "all": [
+          {
+           "not": {
+            "fact": "be.crates",
+            "exists": true
+           }
+          },
+          {
+           "not": {
+            "history": "burned_roost"
+           }
+          }
+         ]
+        }
+       ]
+      },
+      "once": "crates",
+      "goto": "crates"
      },
      {
       "text": "How's Jory?",
@@ -5032,7 +7653,13 @@
     "choices": [
      {
       "text": "Which road were they on?",
-      "goto": "route"
+      "goto": "route",
+      "show": {
+       "not": {
+        "fact": "caravan.survivors",
+        "exists": true
+       }
+      }
      },
      {
       "text": "Something else.",
@@ -5042,7 +7669,32 @@
    },
    "route": {
     "id": "route",
-    "text": "The east road. The Old Road, through Thornhollow. They should've come through Vonnra's gate at dusk, four days back. Holloway had men on the road. Nobody saw them.",
+    "text": [
+     {
+      "when": {
+       "fact": "caravan.days",
+       "gte": 3
+      },
+      "text": "The east road. The Old Road, through Thornhollow. They should've come through Vonnra's gate at dusk, a week ago now. Holloway had men on the road. Nobody saw them."
+     },
+     {
+      "when": {
+       "fact": "caravan.days",
+       "gte": 2
+      },
+      "text": "The east road. The Old Road, through Thornhollow. They should've come through Vonnra's gate at dusk, six days back. Holloway had men on the road. Nobody saw them."
+     },
+     {
+      "when": {
+       "fact": "caravan.days",
+       "gte": 1
+      },
+      "text": "The east road. The Old Road, through Thornhollow. They should've come through Vonnra's gate at dusk, five days back. Holloway had men on the road. Nobody saw them."
+     },
+     {
+      "text": "The east road. The Old Road, through Thornhollow. They should've come through Vonnra's gate at dusk, four days back. Holloway had men on the road. Nobody saw them."
+     }
+    ],
     "choices": [
      {
       "text": "Something else.",
@@ -5275,6 +7927,14 @@
       "goto": "knew"
      },
      {
+      "text": "The Dig's poisoning the stream with what you sell them.",
+      "when": {
+       "knows": "root_cause"
+      },
+      "once": "poisoned",
+      "goto": "be_dig"
+     },
+     {
       "text": "Something else.",
       "goto": "hub"
      }
@@ -5310,10 +7970,123 @@
    },
    "betrayed": {
     "id": "betrayed",
-    "text": "You. You found it, and you kept it. Get away from my stall.",
+    "text": [
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "caravan.survivors",
+         "eq": "rescued"
+        },
+        {
+         "not": {
+          "npcFlag": {
+           "npc": "harlan",
+           "key": "once:jory",
+           "eq": true
+          }
+         }
+        }
+       ]
+      },
+      "text": "You brought him home. Then you sold my strongbox to a fence for the price of a good horse. (He counts a hundred onto the counter, coin by coin, and doesn't push it towards you.) For the boy. I said I would. Take it, and get away from my stall."
+     },
+     {
+      "text": "You. You found it, and you kept it. Get away from my stall."
+     }
+    ],
     "choices": [
      {
+      "text": "Take it.",
+      "show": {
+       "all": [
+        {
+         "fact": "caravan.survivors",
+         "eq": "rescued"
+        },
+        {
+         "not": {
+          "npcFlag": {
+           "npc": "harlan",
+           "key": "once:jory",
+           "eq": true
+          }
+         }
+        }
+       ]
+      },
+      "effects": [
+       {
+        "gold": 100
+       },
+       {
+        "npcFlag": {
+         "npc": "harlan",
+         "key": "once:jory",
+         "value": true
+        }
+       }
+      ],
+      "end": true
+     },
+     {
+      "text": "Leave it on the counter.",
+      "show": {
+       "all": [
+        {
+         "fact": "caravan.survivors",
+         "eq": "rescued"
+        },
+        {
+         "not": {
+          "npcFlag": {
+           "npc": "harlan",
+           "key": "once:jory",
+           "eq": true
+          }
+         }
+        }
+       ]
+      },
+      "effects": [
+       {
+        "npcFlag": {
+         "npc": "harlan",
+         "key": "once:jory",
+         "value": true
+        }
+       },
+       {
+        "rel": {
+         "npc": "harlan",
+         "respect": 10
+        },
+        "quiet": true
+       }
+      ],
+      "end": true
+     },
+     {
       "text": "...",
+      "show": {
+       "not": {
+        "all": [
+         {
+          "fact": "caravan.survivors",
+          "eq": "rescued"
+         },
+         {
+          "not": {
+           "npcFlag": {
+            "npc": "harlan",
+            "key": "once:jory",
+            "eq": true
+           }
+          }
+         }
+        ]
+       }
+      },
       "end": true
      }
     ]
@@ -5414,7 +8187,18 @@
    },
    "jory_now": {
     "id": "jory_now",
-    "text": "Sleeps with the lamp lit. Eats like a horse. Asked me last night what was in the crates. I told him salt. He believed me; he always does. ...That's the worst of it, friend. He always does.",
+    "text": [
+     {
+      "when": {
+       "fact": "jory.knows_be",
+       "eq": true
+      },
+      "text": "He asked me what was in the crates. I told him salt. (He looks at his hands.) He didn't believe me. First time in his life. ...That's the worst of it, friend. He always did."
+     },
+     {
+      "text": "Sleeps with the lamp lit. Eats like a horse. Asked me last night what was in the crates. I told him salt. He believed me; he always does. ...That's the worst of it, friend. He always does."
+     }
+    ],
     "choices": [
      {
       "text": "Something else.",
@@ -5437,6 +8221,163 @@
      {
       "text": "Goodbye.",
       "end": true
+     }
+    ]
+   },
+   "roost": {
+    "id": "roost",
+    "text": "(He sits down, which you haven't seen him do.) Three. In cages. (He's counting something on his fingers, and he stops.) Is one of them young? Fair, freckled, a mouth on him that'll get him— (He stops that too.) Get him out. Whatever it costs. Whatever they want, I'll pay it twice.",
+    "effects": [
+     {
+      "quest": {
+       "id": "caravan",
+       "entry": "roost_told"
+      }
+     },
+     {
+      "rel": {
+       "npc": "harlan",
+       "trust": 15,
+       "affection": 10
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "ledger_early": {
+    "id": "ledger_early",
+    "text": "(He reads, and his finger stops on a line.) That's the night. That's the night Jory's wagons went. Forty to \"R.\" Ten to Jessop: that's Vonnra's clerk. \"For the road.\" (He looks up.) For what road? Who's \"R.\"? ...Find out who \"R.\" is, friend. Please. Then take that to Holloway, not to me. If I knew, I'd do something I'd hang for.",
+    "effects": [
+     {
+      "quest": {
+       "id": "caravan",
+       "status": "active",
+       "entry": "ledger_read"
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "crates": {
+    "id": "crates",
+    "text": "(His face does what it does whenever anyone says those two letters.) ...Are they. With the bandit. (He's already reaching for paper.) Thank you, friend. Leave that with me. Paid for is paid for.",
+    "effects": [
+     {
+      "set": {
+       "be.crates": "harlan"
+      }
+     },
+     {
+      "quest": {
+       "id": "caravan",
+       "entry": "crates_harlan"
+      }
+     },
+     {
+      "rel": {
+       "npc": "harlan",
+       "trust": 10
+      }
+     },
+     {
+      "history": {
+       "id": "crates_harlan",
+       "text": "told Harlan Coyle where his six crates of blasting ember were",
+       "tags": [
+        "caravan",
+        "ember"
+       ],
+       "spread": 0
+      },
+      "witnesses": [
+       "harlan"
+      ]
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "be_dig": {
+    "id": "be_dig",
+    "text": "(He takes a long time to answer.) I sell salt to people who salt things. I sell iron to people who hit things. I don't ask the salt what it's for, friend. ...Is there anything else? Only I've stock to count.",
+    "effects": [
+     {
+      "set": {
+       "harlan.told_dig": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "harlan",
+       "trust": -5,
+       "respect": 5
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "cb_jory_knows": {
+    "id": "cb_jory_knows",
+    "text": "(He doesn't say good morning.) He knows. You told him. ...I'd have told him myself. One day. When it didn't matter any more.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "harlan",
+       "key": "cb:jory_knows",
+       "value": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "harlan",
+       "affection": -10,
+       "respect": 5
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "It mattered now.",
+      "goto": "hub"
+     },
+     {
+      "text": "He asked me.",
+      "goto": "hub"
      }
     ]
    }
@@ -5863,7 +8804,103 @@
    },
    "confront": {
     "id": "confront",
-    "text": "Where did you— the clerk. Of course. Let's be civilised. There's gold in this for you, a good deal of gold, if that book were to go in the fire.",
+    "text": [
+     {
+      "when": {
+       "not": {
+        "all": [
+         {
+          "any": [
+           {
+            "quest": {
+             "id": "caravan",
+             "entry": "wreck"
+            }
+           },
+           {
+            "quest": {
+             "id": "caravan",
+             "entry": "ruts"
+            }
+           },
+           {
+            "quest": {
+             "id": "caravan",
+             "entry": "roost_found"
+            }
+           },
+           {
+            "quest": {
+             "id": "caravan",
+             "entry": "redcowl_met"
+            }
+           },
+           {
+            "quest": {
+             "id": "caravan",
+             "entry": "redcowl_wagons"
+            }
+           },
+           {
+            "quest": {
+             "id": "caravan",
+             "entry": "roost_raided"
+            }
+           },
+           {
+            "knows": "hint.roost"
+           }
+          ]
+         },
+         {
+          "any": [
+           {
+            "quest": {
+             "id": "caravan",
+             "entry": "harlan_plea"
+            }
+           },
+           {
+            "quest": {
+             "id": "caravan",
+             "entry": "guard_says"
+            }
+           },
+           {
+            "quest": {
+             "id": "caravan",
+             "entry": "clerk_turned"
+            }
+           },
+           {
+            "quest": {
+             "id": "caravan",
+             "entry": "wreck"
+            }
+           },
+           {
+            "quest": {
+             "id": "caravan",
+             "entry": "redcowl_wagons"
+            }
+           },
+           {
+            "quest": {
+             "id": "caravan",
+             "entry": "ledger_read"
+            }
+           }
+          ]
+         }
+        ]
+       }
+      },
+      "text": "Where did you— the clerk. Of course. (He studies your face, and something in his own unclenches.) ...You don't know what you're holding, do you? How refreshing. Let's be civilised. There's gold in this for you, a good deal of gold, if that book were to go in the fire."
+     },
+     {
+      "text": "Where did you— the clerk. Of course. Let's be civilised. There's gold in this for you, a good deal of gold, if that book were to go in the fire."
+     }
+    ],
     "choices": [
      {
       "text": "Name a price.",
@@ -6197,7 +9234,7 @@
    },
    "t_pell": {
     "id": "t_pell",
-    "text": "My sister kept the books in Ashford. I came up to collect them, after. There wasn't an Ashford to collect them from. So I count. Somebody ought to know what things cost.",
+    "text": "My sister kept the books in Ashford. I came up to collect them, after. There wasn't an Ashford to collect them from. (He straightens a pen that was straight.) She wrote to me the week before. The garrison's boots had come in short, and somebody had signed for them full. She thought it was funny. She had a dreadful sense of humour. ...So I count. Somebody ought to know what things cost.",
     "choices": [
      {
       "text": "Something else.",
@@ -6582,10 +9619,10 @@
       "when": {
        "knows": "underworld"
       },
-      "text": "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. He'd \"done somebody a favour\": told Coyle's teamsters the road was shut and sent them down the forest track. Between us, he's also got a key he shouldn't have. Pell's warehouse. Showed it me like a boy with a frog."
+      "text": "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd \"done somebody a favour\": told Coyle's teamsters the road was shut and sent them down the forest track. Between us, he'd also a key he shouldn't have. Pell's warehouse. Showed it me like a boy with a frog. ...Not seen him since. He wasn't the type to buy rounds, either."
      },
      {
-      "text": "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. He'd \"done somebody a favour\": told Coyle's teamsters the road was shut and sent them down the forest track. Draw your own lines, pal."
+      "text": "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd \"done somebody a favour\": told Coyle's teamsters the road was shut and sent them down the forest track. Draw your own lines, pal. ...Not seen him since, now I think of it."
      }
     ],
     "effects": [
@@ -6598,7 +9635,19 @@
      },
      {
       "if": {
-       "knows": "underworld"
+       "all": [
+        {
+         "knows": "underworld"
+        },
+        {
+         "not": {
+          "quest": {
+           "id": "caravan",
+           "entry": "clerks_key"
+          }
+         }
+        }
+       ]
       },
       "then": [
        {
@@ -6759,7 +9808,7 @@
    },
    "cb_tricked_redcowl": {
     "id": "cb_tricked_redcowl",
-    "text": "You told Redcowl the Watch was coming, and he RAN. I've waited eleven years to see that man run. Sit. This one's on me, and so's the next.",
+    "text": "You told Redcowl the Watch was coming, and he RAN. I've waited my whole life to see that man run. Sit. This one's on me, and so's the next.",
     "effects": [
      {
       "npcFlag": {
@@ -6780,7 +9829,7 @@
    },
    "cb_killed_redcowl": {
     "id": "cb_killed_redcowl",
-    "text": "(He doesn't look up.) You killed him. ...No. He'd have said it was the job. It was always the job, with him. Get out of my light for a bit, pal. Come back tomorrow. I'll be a doctor again tomorrow.",
+    "text": "(He doesn't look up.) You killed him. ...Dunstan. That was his name, before the hat. Our mother's idea; he hated it. (He drinks.) No. He'd have said it was the job. It was always the job, with him. Get out of my light for a bit, pal. Come back tomorrow. I'll be a doctor again tomorrow.",
     "effects": [
      {
       "npcFlag": {
@@ -7018,6 +10067,29 @@
     "when": {
      "all": [
       {
+       "fact": "nell.buried",
+       "eq": true
+      },
+      {
+       "met": "chid"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "chid",
+         "key": "cb:nell",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_nell"
+   },
+   {
+    "when": {
+     "all": [
+      {
        "met": "chid"
       },
       {
@@ -7174,6 +10246,14 @@
       "goto": "warden"
      },
      {
+      "text": "There was a note in Ashe's trunk: \"Keep the lights lit. — C.\"",
+      "when": {
+       "knows": "lore.firstlamp"
+      },
+      "once": "note",
+      "goto": "note"
+     },
+     {
       "text": "How long have you kept the shrine?",
       "once": "long",
       "goto": "long"
@@ -7269,6 +10349,14 @@
       },
       "once": "warden",
       "goto": "warden"
+     },
+     {
+      "text": "There was a note in Ashe's trunk: \"Keep the lights lit. — C.\"",
+      "when": {
+       "knows": "lore.firstlamp"
+      },
+      "once": "note",
+      "goto": "note"
      },
      {
       "text": "How long have you kept the shrine?",
@@ -7482,6 +10570,14 @@
       "goto": "warden"
      },
      {
+      "text": "There was a note in Ashe's trunk: \"Keep the lights lit. — C.\"",
+      "when": {
+       "knows": "lore.firstlamp"
+      },
+      "once": "note",
+      "goto": "note"
+     },
+     {
       "text": "How long have you kept the shrine?",
       "once": "long",
       "goto": "long"
@@ -7514,6 +10610,13 @@
       "rel": {
        "npc": "chid",
        "respect": 10
+      }
+     },
+     {
+      "quest": {
+       "id": "lamps",
+       "status": "active",
+       "entry": "book"
       }
      }
     ],
@@ -7712,6 +10815,41 @@
       "end": true
      }
     ]
+   },
+   "note": {
+    "id": "note",
+    "text": "Was there! (He's suddenly very interested in a candle.) A C. Lovely. Lots of people start with C. Cuthbert. Cressida. There was a Cormac, once, who— (He stops.) It's a lovely old hand, whoever it was. Nobody makes a C like that any more. Nobody's made a C like that in... well. Ages.",
+    "effects": [
+     {
+      "set": {
+       "chid.note_asked": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "cb_nell": {
+    "id": "cb_nell",
+    "text": "We buried Nell behind the shrine, next to old Ashe. Brannoc made the marker himself. Iron. Of course, iron. (He is quiet, which he never is.) She was very light. ...Sit down a minute. Not there. There.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "chid",
+       "key": "cb:nell",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -7873,8 +11011,18 @@
    },
    {
     "when": {
-     "fact": "chapter.ready",
-     "eq": true
+     "all": [
+      {
+       "fact": "chapter.ready",
+       "eq": true
+      },
+      {
+       "not": {
+        "fact": "chapter.done",
+        "eq": true
+       }
+      }
+     ]
     },
     "mark": "?"
    }
@@ -7943,7 +11091,15 @@
         "status": "active"
        }
       },
-      "goto": "ledger"
+      "goto": "ledger",
+      "show": {
+       "not": {
+        "quest": {
+         "id": "caravan",
+         "entry": "toll_ledger"
+        }
+       }
+      }
      },
      {
       "text": "The sealed door in the Verge...",
@@ -7991,8 +11147,18 @@
        }
       ],
       "when": {
-       "fact": "chapter.ready",
-       "eq": true
+       "all": [
+        {
+         "fact": "chapter.ready",
+         "eq": true
+        },
+        {
+         "not": {
+          "fact": "chapter.done",
+          "eq": true
+         }
+        }
+       ]
       },
       "goto": "fortune"
      },
@@ -8005,6 +11171,21 @@
    "hub": {
     "id": "hub",
     "text": [
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "chapter.done",
+         "eq": true
+        },
+        {
+         "fact": "vonnra.accused",
+         "eq": true
+        }
+       ]
+      },
+      "text": "{name}. Your chapter is written. The next one is not. ...Payment, always."
+     },
      {
       "when": {
        "fact": "chapter.done",
@@ -8064,7 +11245,42 @@
         "status": "active"
        }
       },
-      "goto": "ledger"
+      "goto": "ledger",
+      "show": {
+       "not": {
+        "quest": {
+         "id": "caravan",
+         "entry": "toll_ledger"
+        }
+       }
+      }
+     },
+     {
+      "text": "Your clerk. Jessop. Where is he?",
+      "show": {
+       "any": [
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "clerk_turned"
+         }
+        },
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "sella_clerk"
+         }
+        },
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "ledger_read"
+         }
+        }
+       ]
+      },
+      "once": "jessop",
+      "goto": "jessop"
      },
      {
       "text": "The sealed door in the Verge...",
@@ -8112,8 +11328,18 @@
        }
       ],
       "when": {
-       "fact": "chapter.ready",
-       "eq": true
+       "all": [
+        {
+         "fact": "chapter.ready",
+         "eq": true
+        },
+        {
+         "not": {
+          "fact": "chapter.done",
+          "eq": true
+         }
+        }
+       ]
       },
       "goto": "fortune"
      },
@@ -8166,7 +11392,15 @@
         "status": "active"
        }
       },
-      "goto": "ledger"
+      "goto": "ledger",
+      "show": {
+       "not": {
+        "quest": {
+         "id": "caravan",
+         "entry": "toll_ledger"
+        }
+       }
+      }
      },
      {
       "text": "The sealed door in the Verge...",
@@ -8214,8 +11448,18 @@
        }
       ],
       "when": {
-       "fact": "chapter.ready",
-       "eq": true
+       "all": [
+        {
+         "fact": "chapter.ready",
+         "eq": true
+        },
+        {
+         "not": {
+          "fact": "chapter.done",
+          "eq": true
+         }
+        }
+       ]
       },
       "goto": "fortune"
      },
@@ -8294,7 +11538,42 @@
         "status": "active"
        }
       },
-      "goto": "ledger"
+      "goto": "ledger",
+      "show": {
+       "not": {
+        "quest": {
+         "id": "caravan",
+         "entry": "toll_ledger"
+        }
+       }
+      }
+     },
+     {
+      "text": "Your clerk. Jessop. Where is he?",
+      "show": {
+       "any": [
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "clerk_turned"
+         }
+        },
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "sella_clerk"
+         }
+        },
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "ledger_read"
+         }
+        }
+       ]
+      },
+      "once": "jessop",
+      "goto": "jessop"
      },
      {
       "text": "The sealed door in the Verge...",
@@ -8342,8 +11621,18 @@
        }
       ],
       "when": {
-       "fact": "chapter.ready",
-       "eq": true
+       "all": [
+        {
+         "fact": "chapter.ready",
+         "eq": true
+        },
+        {
+         "not": {
+          "fact": "chapter.done",
+          "eq": true
+         }
+        }
+       ]
       },
       "goto": "fortune"
      },
@@ -8355,7 +11644,7 @@
    },
    "vault": {
     "id": "vault",
-    "text": "No. Not for any price. That is the only thing I will ever say to you without charging for it.",
+    "text": "Not for any price. That is the only thing I will ever say to you without charging for it.",
     "effects": [
      {
       "quest": {
@@ -8399,7 +11688,15 @@
         "status": "active"
        }
       },
-      "goto": "ledger"
+      "goto": "ledger",
+      "show": {
+       "not": {
+        "quest": {
+         "id": "caravan",
+         "entry": "toll_ledger"
+        }
+       }
+      }
      },
      {
       "text": "The sealed door in the Verge...",
@@ -8447,8 +11744,18 @@
        }
       ],
       "when": {
-       "fact": "chapter.ready",
-       "eq": true
+       "all": [
+        {
+         "fact": "chapter.ready",
+         "eq": true
+        },
+        {
+         "not": {
+          "fact": "chapter.done",
+          "eq": true
+         }
+        }
+       ]
       },
       "goto": "fortune"
      },
@@ -8504,7 +11811,15 @@
         "status": "active"
        }
       },
-      "goto": "ledger"
+      "goto": "ledger",
+      "show": {
+       "not": {
+        "quest": {
+         "id": "caravan",
+         "entry": "toll_ledger"
+        }
+       }
+      }
      },
      {
       "text": "The sealed door in the Verge...",
@@ -8552,8 +11867,18 @@
        }
       ],
       "when": {
-       "fact": "chapter.ready",
-       "eq": true
+       "all": [
+        {
+         "fact": "chapter.ready",
+         "eq": true
+        },
+        {
+         "not": {
+          "fact": "chapter.done",
+          "eq": true
+         }
+        }
+       ]
       },
       "goto": "fortune"
      },
@@ -8601,7 +11926,15 @@
         "status": "active"
        }
       },
-      "goto": "ledger"
+      "goto": "ledger",
+      "show": {
+       "not": {
+        "quest": {
+         "id": "caravan",
+         "entry": "toll_ledger"
+        }
+       }
+      }
      },
      {
       "text": "The sealed door in the Verge...",
@@ -8649,8 +11982,18 @@
        }
       ],
       "when": {
-       "fact": "chapter.ready",
-       "eq": true
+       "all": [
+        {
+         "fact": "chapter.ready",
+         "eq": true
+        },
+        {
+         "not": {
+          "fact": "chapter.done",
+          "eq": true
+         }
+        }
+       ]
       },
       "goto": "fortune"
      },
@@ -8752,6 +12095,21 @@
          "eq": "rescued"
         },
         {
+         "fact": "jory.knows_be",
+         "eq": true
+        }
+       ]
+      },
+      "text": "I see a boy in a wagon, and his uncle sitting up beside him all night. The boy is not asleep. He knows what he carried now, and he is deciding what that makes his uncle."
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "caravan.survivors",
+         "eq": "rescued"
+        },
+        {
          "fact": "caravan.cargo",
          "eq": "returned"
         }
@@ -8792,11 +12150,18 @@
       "text": "The caravan: a cold trail, cold cages. It is not finished. Neither are you."
      }
     ],
-    "next": "f_pell"
+    "next": "f_ember"
    },
    "f_pell": {
     "id": "f_pell",
     "text": [
+     {
+      "when": {
+       "fact": "pell.fate",
+       "eq": "taken"
+      },
+      "text": "And Pell Varrow, in a cage that was built for someone else. You know which one. He is still counting. It is all he has left to do."
+     },
      {
       "when": {
        "fact": "caravan.pell",
@@ -8850,21 +12215,90 @@
       "text": "And you. You came up the Low Ford road at night, and the lamps lit for you. They have not done that for anyone in a long time."
      }
     ],
-    "next": "f_below"
+    "next": "f_past"
    },
    "f_below": {
     "id": "f_below",
-    "text": "Last. Under the Verge, something is turning over in its sleep. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside...",
+    "text": [
+     {
+      "when": {
+       "fact": "tam.tock",
+       "eq": true
+      },
+      "text": "Last. Under the Verge, something is turning over in its sleep, and under a farm past the Old Road, something is knocking to be let in. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside..."
+     },
+     {
+      "text": "Last. Under the Verge, something is turning over in its sleep. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside..."
+     }
+    ],
     "choices": [
      {
       "text": "What about the door?",
       "goto": "f_door"
+     },
+     {
+      "text": "You lit the lamps at the Low Ford.",
+      "show": {
+       "all": [
+        {
+         "any": [
+          {
+           "quest": {
+            "id": "lamps",
+            "entry": "irons"
+           }
+          },
+          {
+           "quest": {
+            "id": "lamps",
+            "entry": "mark"
+           }
+          }
+         ]
+        },
+        {
+         "any": [
+          {
+           "quest": {
+            "id": "lamps",
+            "entry": "coin"
+           }
+          },
+          {
+           "quest": {
+            "id": "lamps",
+            "entry": "rook"
+           }
+          },
+          {
+           "quest": {
+            "id": "lamps",
+            "entry": "notice"
+           }
+          }
+         ]
+        }
+       ]
+      },
+      "goto": "f_accuse",
+      "once": "accuse"
      }
     ]
    },
    "f_door": {
     "id": "f_door",
-    "text": "No. That is all. That is all I see for free. The rest you will walk into yourself, and you will, because you are the kind that does.",
+    "text": [
+     {
+      "when": {
+       "fact": "vonnra.accused",
+       "eq": true
+      },
+      "text": "The door in the hillside is listening, as I am. That is all I see for free, {name}. The rest you will walk into yourself, and you will, because you are the kind that does."
+     },
+     {
+      "text": "The door is not for sale. That is all I see for free. The rest you will walk into yourself, and you will, because you are the kind that does."
+     }
+    ],
     "effects": [
      {
       "set": {
@@ -9014,6 +12448,15 @@
       "text": "Goodbye.",
       "end": true
      }
+    ],
+    "effects": [
+     {
+      "quest": {
+       "id": "lamps",
+       "status": "active",
+       "entry": "coin"
+      }
+     }
     ]
    },
    "risen": {
@@ -9029,6 +12472,195 @@
      }
     ],
     "next": "hub"
+   },
+   "jessop": {
+    "id": "jessop",
+    "text": "Gone south. On the toll's business. (She turns a page of the ledger that does not need turning.) Clerks go south, traveller. It is the direction they fall in.",
+    "effects": [
+     {
+      "set": {
+       "vonnra.asked_jessop": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else...",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "f_ember": {
+    "id": "f_ember",
+    "text": [
+     {
+      "when": {
+       "fact": "be.crates",
+       "eq": "redcowl"
+      },
+      "text": "And six crates in a bandit's tent, guarded now by a man who knows what they are for. He will not sell them. He is saving them. I wonder for what."
+     },
+     {
+      "when": {
+       "fact": "be.crates",
+       "eq": "harlan"
+      },
+      "text": "And six crates going home to a man who knows where they go next. You told him where to find what was his. That is honest. It is not the same thing as good."
+     },
+     {
+      "when": {
+       "fact": "be.crates",
+       "eq": "sunk"
+      },
+      "text": "And six crates at the bottom of a stream, where nothing will ever buy them. That is the first thing you have thrown away that I approve of."
+     },
+     {
+      "when": {
+       "any": [
+        {
+         "history": "burned_roost"
+        },
+        {
+         "fact": "be.crates",
+         "eq": "burned"
+        }
+       ]
+      },
+      "text": "And six crates that went up with the Roost. You will have heard it from the wall. Everyone did."
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "be.crates",
+         "eq": "dig"
+        },
+        {
+         "fact": "caravan.cargo",
+         "eq": "with_kerchiefs"
+        }
+       ]
+      },
+      "text": "And six crates gone down the south road with the rest of the cargo, sold to whoever paid for them first. I think you know who that was."
+     },
+     {
+      "when": {
+       "knows": "clue.blasting_ember"
+      },
+      "text": "And six crates still waiting in a ravine to go where they were paid to go. Someone will deliver them. Someone always does."
+     },
+     {
+      "text": "And six crates nobody opened, marked with two letters, waiting in a ravine to go where they were paid to go. Someone will deliver them. Someone always does."
+     }
+    ],
+    "next": "f_pell"
+   },
+   "f_past": {
+    "id": "f_past",
+    "text": [
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "sella.heard_past",
+         "eq": true
+        },
+        {
+         "bg": "hunter"
+        }
+       ]
+      },
+      "text": "And before the ford: a child following tracks through these woods, with a bow too big for them. (She is not looking at your palm.)"
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "sella.heard_past",
+         "eq": true
+        },
+        {
+         "bg": "scholar"
+        }
+       ]
+      },
+      "text": "And before the ford: four years in a cloister cellar among dead men's letters, and a lens you were not meant to leave with. (She is not looking at your palm.)"
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "sella.heard_past",
+         "eq": true
+        },
+        {
+         "bg": "outcast"
+        }
+       ]
+      },
+      "text": "And before the ford: worse company than the Kerchiefs, and the trick of walking away from it. (She is not looking at your palm.)"
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "sella.heard_past",
+         "eq": true
+        },
+        {
+         "bg": "devout"
+        }
+       ]
+      },
+      "text": "And before the ford: chapel lamps that nobody came to see, and you, lighting them anyway. (She is not looking at your palm.)"
+     },
+     {
+      "text": "Of before the ford, I see very little. The water took it, or you left it on the far bank. Most do."
+     }
+    ],
+    "next": "f_below"
+   },
+   "f_accuse": {
+    "id": "f_accuse",
+    "text": "(For the first time she looks at your face and not at your hand. It goes on long enough that the lamp gutters.) ...Sit down, {name}. I have not finished reading.",
+    "effects": [
+     {
+      "set": {
+       "vonnra.accused": true
+      }
+     },
+     {
+      "quest": {
+       "id": "lamps",
+       "entry": "accused"
+      }
+     },
+     {
+      "rel": {
+       "npc": "vonnra",
+       "respect": 25,
+       "trust": -15
+      }
+     },
+     {
+      "history": {
+       "id": "accused_vonnra",
+       "text": "told Vonnra Ash-of-Morrow she lit the lamps at the Low Ford",
+       "tags": [
+        "lamps"
+       ],
+       "spread": 0
+      },
+      "witnesses": [
+       "vonnra"
+      ]
+     }
+    ],
+    "next": "f_door"
    }
   }
  },
@@ -9093,6 +12725,28 @@
      ]
     },
     "node": "cb_core_stolen"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "keegan"
+      },
+      {
+       "trait": "risen_once"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "keegan",
+         "key": "say:risen",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "say_risen"
    },
    {
     "when": {
@@ -9303,6 +12957,19 @@
        "respect": 15,
        "trust": 10
       }
+     },
+     {
+      "quest": {
+       "id": "lamps",
+       "status": "active",
+       "entry": "book"
+      }
+     },
+     {
+      "quest": {
+       "id": "lamps",
+       "entry": "keegan"
+      }
      }
     ],
     "choices": [
@@ -9482,6 +13149,30 @@
       "end": true
      }
     ]
+   },
+   "say_risen": {
+    "id": "say_risen",
+    "text": "I am told you were carried into the shrine under a sheet. (She looks at you very carefully, from your boots upwards, and back down.) You look well. You look extremely well. ...I've got to go and read something. I— I have to go and read something. Good day.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "keegan",
+       "key": "say:risen",
+       "value": true
+      }
+     },
+     {
+      "set": {
+       "keegan.saw_risen": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Good day, Dame Keegan.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -9635,6 +13326,10 @@
      },
      {
       "add": true,
+      "text": "CARTERS WANTED for the south road. Toll work, paid DOUBLE for a quick crossing. Apply at the Toll Tower. — V. (Underneath, in pencil: \"quick means after dark\". Under that, in another hand: \"Wat went. Wat's not back.\")"
+     },
+     {
+      "add": true,
       "text": "WANTED: bitterroot, any quantity. Wenna."
      },
      {
@@ -9686,6 +13381,30 @@
         "entry": "holloway_bounty"
        }
       }
+     },
+     {
+      "if": {
+       "any": [
+        {
+         "knows": "lore.warden"
+        },
+        {
+         "quest": {
+          "id": "lamps",
+          "entry": "irons"
+         }
+        }
+       ]
+      },
+      "then": [
+       {
+        "quest": {
+         "id": "lamps",
+         "status": "active",
+         "entry": "notice"
+        }
+       }
+      ]
      }
     ],
     "choices": [
@@ -10081,7 +13800,7 @@
         "status": "active"
        }
       },
-      "text": "Men talk after. God, do they talk. There's a toll clerk who's been flush all month, paying me in new silver with the Varrow mark stamped on it. Last time he was pleased with himself: said he'd \"sent some wagons down the wrong road\" and got paid twice for it. Then he fell asleep on my arm. Charming."
+      "text": "Men talk after. God, do they talk. There's a toll clerk, Jessop, been flush all month, paying me in new silver with the Varrow mark stamped on it. Last time he was pleased with himself: said he'd \"sent some wagons down the wrong road\" and got paid twice for it. Then he fell asleep on my arm. Charming. ...Not been up my stairs since, and he was a Tuesday man. You could set a clock by Jessop."
      },
      {
       "when": {
@@ -10253,6 +13972,16 @@
      }
     ],
     "choices": [
+     {
+      "text": "(Tell her where you come from.)",
+      "once": "past",
+      "goto": "past"
+     },
+     {
+      "text": "Did I talk in my sleep?",
+      "once": "sleeptalk",
+      "goto": "sleeptalk"
+     },
      {
       "text": "Sleep a little longer first.",
       "action": "rest"
@@ -10468,6 +14197,69 @@
    "free_morning": {
     "id": "free_morning",
     "text": "(She's still there when you wake, which she never is.) Don't tell Rook; she'll want a third of nothing, on principle. ...And don't tell me anything up here you'd not want Vonnra to hear. I mean that kindly. It's the kindest thing I've said to anyone in a year.",
+    "choices": [
+     {
+      "text": "Until next time.",
+      "end": true
+     }
+    ]
+   },
+   "past": {
+    "id": "past",
+    "text": [
+     {
+      "when": {
+       "bg": "hunter"
+      },
+      "text": "(You tell her. She listens properly, chin on her fist, the way she does everything.) A hunter. Out of these woods, with a bow too big for you, I'll bet, and mud to the knees. ...I'd not have guessed. I'd have guessed, but not that."
+     },
+     {
+      "when": {
+       "bg": "scholar"
+      },
+      "text": "(You tell her. She listens properly, chin on her fist, the way she does everything.) A cloister rat. Four years in a cellar reading dead men's letters, and you walked out with their lens in your pocket. ...Good for you, love."
+     },
+     {
+      "when": {
+       "bg": "outcast"
+      },
+      "text": "(You tell her. She listens properly, chin on her fist, the way she does everything.) Worse company than the Kerchiefs, and you walked away from it. (She laughs, low.) Takes one to know one. Don't tell Rook."
+     },
+     {
+      "text": "(You tell her. She listens properly, chin on her fist, the way she does everything.) Chapel lamps, with nobody to see them but you, and you lit them anyway. (She's quiet a moment.) That's the saddest thing anyone's told me up here, love, and they tell me some sad things."
+     }
+    ],
+    "effects": [
+     {
+      "set": {
+       "sella.heard_past": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "sella",
+       "affection": 4
+      },
+      "quiet": true
+     }
+    ],
+    "choices": [
+     {
+      "text": "Until next time.",
+      "end": true
+     }
+    ]
+   },
+   "sleeptalk": {
+    "id": "sleeptalk",
+    "text": "You said a name. Over and over, like you'd got hold of it in the dark and didn't want to let go. (She shrugs one shoulder.) Didn't catch it. I don't think you did either.",
+    "effects": [
+     {
+      "set": {
+       "sella.sleeptalk": true
+      }
+     }
+    ],
     "choices": [
      {
       "text": "Until next time.",
@@ -10721,6 +14513,58 @@
     ],
     "choices": [
      {
+      "text": "\"The men in the ravine are no friends of yours. Run with me.\"",
+      "when": {
+       "any": [
+        {
+         "knows": "hint.roost"
+        },
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "roost_found"
+         }
+        }
+       ]
+      },
+      "locked": "You would need somewhere to lead them",
+      "goto": "ally",
+      "show": {
+       "all": [
+        {
+         "fact": "greymuzzle",
+         "eq": "met"
+        },
+        {
+         "not": {
+          "fact": "promise.broken",
+          "eq": true
+         }
+        },
+        {
+         "not": {
+          "fact": "pack.allied",
+          "eq": true
+         }
+        },
+        {
+         "any": [
+          {
+           "not": {
+            "fact": "beasts.outcome",
+            "exists": true
+           }
+          },
+          {
+           "fact": "beasts.outcome",
+           "eq": "cured"
+          }
+         ]
+        }
+       ]
+      }
+     },
+     {
       "text": "Leave.",
       "end": true
      }
@@ -10800,15 +14644,94 @@
      },
      {
       "text": "I've come for the Coyle wagons.",
-      "goto": "goods"
+      "goto": "goods",
+      "when": {
+       "all": [
+        {
+         "not": {
+          "fact": "caravan.box_taken",
+          "eq": true
+         }
+        },
+        {
+         "not": {
+          "fact": "caravan.cargo",
+          "exists": true
+         }
+        }
+       ]
+      }
+     },
+     {
+      "text": "Whose wagons are those?",
+      "show": {
+       "not": {
+        "any": [
+         {
+          "quest": {
+           "id": "caravan",
+           "entry": "harlan_plea"
+          }
+         },
+         {
+          "quest": {
+           "id": "caravan",
+           "entry": "guard_says"
+          }
+         },
+         {
+          "quest": {
+           "id": "caravan",
+           "entry": "clerk_turned"
+          }
+         },
+         {
+          "quest": {
+           "id": "caravan",
+           "entry": "wreck"
+          }
+         },
+         {
+          "quest": {
+           "id": "caravan",
+           "entry": "redcowl_wagons"
+          }
+         },
+         {
+          "quest": {
+           "id": "caravan",
+           "entry": "ledger_read"
+          }
+         },
+         {
+          "quest": {
+           "id": "caravan",
+           "entry": "roost_told"
+          }
+         }
+        ]
+       }
+      },
+      "once": "wagons",
+      "goto": "wagons"
      },
      {
       "text": "Let the teamsters go.",
       "when": {
-       "not": {
-        "fact": "caravan.survivors",
-        "exists": true
-       }
+       "all": [
+        {
+         "not": {
+          "fact": "caravan.survivors",
+          "exists": true
+         }
+        },
+        {
+         "not": {
+          "fact": "redcowl.releases",
+          "eq": true
+         }
+        }
+       ]
       },
       "goto": "prisoners"
      },
@@ -10843,6 +14766,33 @@
       "goto": "trick"
      },
      {
+      "text": "Those six crates under your canvas. Know what's in them?",
+      "show": {
+       "all": [
+        {
+         "knows": "clue.blasting_ember"
+        },
+        {
+         "all": [
+          {
+           "not": {
+            "fact": "be.crates",
+            "exists": true
+           }
+          },
+          {
+           "not": {
+            "history": "burned_roost"
+           }
+          }
+         ]
+        }
+       ]
+      },
+      "once": "crates",
+      "goto": "crates"
+     },
+     {
       "text": "Who are all these people?",
       "once": "who",
       "goto": "who"
@@ -10860,20 +14810,103 @@
      {
       "text": "About the Coyle wagons.",
       "when": {
-       "not": {
-        "fact": "redcowl",
-        "eq": "bargained"
-       }
+       "all": [
+        {
+         "not": {
+          "fact": "redcowl",
+          "eq": "bargained"
+         }
+        },
+        {
+         "all": [
+          {
+           "not": {
+            "fact": "caravan.box_taken",
+            "eq": true
+           }
+          },
+          {
+           "not": {
+            "fact": "caravan.cargo",
+            "exists": true
+           }
+          }
+         ]
+        }
+       ]
       },
       "goto": "goods"
      },
      {
+      "text": "Whose wagons are those?",
+      "show": {
+       "not": {
+        "any": [
+         {
+          "quest": {
+           "id": "caravan",
+           "entry": "harlan_plea"
+          }
+         },
+         {
+          "quest": {
+           "id": "caravan",
+           "entry": "guard_says"
+          }
+         },
+         {
+          "quest": {
+           "id": "caravan",
+           "entry": "clerk_turned"
+          }
+         },
+         {
+          "quest": {
+           "id": "caravan",
+           "entry": "wreck"
+          }
+         },
+         {
+          "quest": {
+           "id": "caravan",
+           "entry": "redcowl_wagons"
+          }
+         },
+         {
+          "quest": {
+           "id": "caravan",
+           "entry": "ledger_read"
+          }
+         },
+         {
+          "quest": {
+           "id": "caravan",
+           "entry": "roost_told"
+          }
+         }
+        ]
+       }
+      },
+      "once": "wagons",
+      "goto": "wagons"
+     },
+     {
       "text": "Let the teamsters go.",
       "when": {
-       "not": {
-        "fact": "caravan.survivors",
-        "exists": true
-       }
+       "all": [
+        {
+         "not": {
+          "fact": "caravan.survivors",
+          "exists": true
+         }
+        },
+        {
+         "not": {
+          "fact": "redcowl.releases",
+          "eq": true
+         }
+        }
+       ]
       },
       "goto": "prisoners"
      },
@@ -10886,14 +14919,83 @@
       "goto": "pell"
      },
      {
+      "text": "Those six crates under your canvas. Know what's in them?",
+      "show": {
+       "all": [
+        {
+         "knows": "clue.blasting_ember"
+        },
+        {
+         "all": [
+          {
+           "not": {
+            "fact": "be.crates",
+            "exists": true
+           }
+          },
+          {
+           "not": {
+            "history": "burned_roost"
+           }
+          }
+         ]
+        }
+       ]
+      },
+      "once": "crates",
+      "goto": "crates"
+     },
+     {
       "text": "Who are all these people?",
       "once": "who",
       "goto": "who"
      },
      {
+      "text": "Who told you when the Coyle wagons were coming?",
+      "show": {
+       "quest": {
+        "id": "caravan",
+        "entry": "redcowl_met"
+       }
+      },
+      "once": "birds",
+      "goto": "birds"
+     },
+     {
       "text": "Why keep them in cages?",
       "once": "cages",
       "goto": "cages"
+     },
+     {
+      "text": "Ashford's levy. That's who you are.",
+      "show": {
+       "all": [
+        {
+         "npcFlag": {
+          "npc": "redcowl",
+          "key": "once:who",
+          "eq": true
+         }
+        },
+        {
+         "any": [
+          {
+           "npcFlag": {
+            "npc": "maeca",
+            "key": "once:barefoot",
+            "eq": true
+           }
+          },
+          {
+           "fact": "maeca.kerchiefs",
+           "eq": true
+          }
+         ]
+        }
+       ]
+      },
+      "once": "ashford",
+      "goto": "ashford"
      },
      {
       "text": "Nothing.",
@@ -10907,7 +15009,23 @@
     "choices": [
      {
       "text": "About the Coyle wagons.",
-      "goto": "goods"
+      "goto": "goods",
+      "when": {
+       "all": [
+        {
+         "not": {
+          "fact": "caravan.box_taken",
+          "eq": true
+         }
+        },
+        {
+         "not": {
+          "fact": "caravan.cargo",
+          "exists": true
+         }
+        }
+       ]
+      }
      },
      {
       "text": "Nothing.",
@@ -10935,15 +15053,41 @@
     "choices": [
      {
       "text": "I've come for the Coyle wagons.",
-      "goto": "goods"
+      "goto": "goods",
+      "when": {
+       "all": [
+        {
+         "not": {
+          "fact": "caravan.box_taken",
+          "eq": true
+         }
+        },
+        {
+         "not": {
+          "fact": "caravan.cargo",
+          "exists": true
+         }
+        }
+       ]
+      }
      },
      {
       "text": "Let the teamsters go.",
       "when": {
-       "not": {
-        "fact": "caravan.survivors",
-        "exists": true
-       }
+       "all": [
+        {
+         "not": {
+          "fact": "caravan.survivors",
+          "exists": true
+         }
+        },
+        {
+         "not": {
+          "fact": "redcowl.releases",
+          "eq": true
+         }
+        }
+       ]
       },
       "goto": "prisoners"
      },
@@ -11032,7 +15176,8 @@
     "effects": [
      {
       "set": {
-       "redcowl": "bargained"
+       "redcowl": "bargained",
+       "redcowl.releases": true
       }
      },
      {
@@ -11152,6 +15297,9 @@
     "text": "...Give me that. \"R., for the Coyle job.\" And to the clerk. And— \"tell Holloway where they camp, after.\" After! Varrow, you soft-handed little— Take your wagons. Take your teamsters. I've business in the Waystation.",
     "effects": [
      {
+      "take": "pell_ledger"
+     },
+     {
       "set": {
        "redcowl": "furious",
        "caravan.pell": "fled",
@@ -11187,8 +15335,52 @@
     ],
     "choices": [
      {
-      "text": "Leave.",
-      "end": true
+      "text": "He sleeps over his warehouse. In the loft.",
+      "effects": [
+       {
+        "set": {
+         "pell.fate": "taken"
+        }
+       },
+       {
+        "quest": {
+         "id": "caravan",
+         "entry": "pell_given"
+        }
+       },
+       {
+        "history": {
+         "id": "gave_pell",
+         "text": "told Redcowl where Pell Varrow sleeps",
+         "tags": [
+          "kerchief",
+          "caravan"
+         ],
+         "spread": 0
+        },
+        "witnesses": [
+         "redcowl"
+        ]
+       }
+      ],
+      "goto": "pell_given"
+     },
+     {
+      "text": "Find him yourself.",
+      "effects": [
+       {
+        "set": {
+         "pell.fate": "ran"
+        }
+       },
+       {
+        "quest": {
+         "id": "caravan",
+         "entry": "pell_hunted"
+        }
+       }
+      ],
+      "goto": "pell_hunt"
      }
     ]
    },
@@ -11231,14 +15423,347 @@
    },
    "cages": {
     "id": "cages",
-    "text": "Because a man in a cage is worth something to somebody, and a man in a ditch is worth nothing to anybody. I've buried enough worth-nothings for one life, lad. ...And I feed them. Ask them. I feed them before I feed my own.",
+    "text": [
+     {
+      "when": {
+       "sex": "female"
+      },
+      "text": "Because a man in a cage is worth something to somebody, and a man in a ditch is worth nothing to anybody. I've buried enough worth-nothings for one life, lass. ...And I feed them. Ask them. I feed them before I feed my own."
+     },
+     {
+      "text": "Because a man in a cage is worth something to somebody, and a man in a ditch is worth nothing to anybody. I've buried enough worth-nothings for one life, lad. ...And I feed them. Ask them. I feed them before I feed my own."
+     }
+    ],
     "choices": [
      {
       "text": "About the Coyle wagons.",
+      "goto": "goods",
+      "when": {
+       "all": [
+        {
+         "not": {
+          "fact": "caravan.box_taken",
+          "eq": true
+         }
+        },
+        {
+         "not": {
+          "fact": "caravan.cargo",
+          "exists": true
+         }
+        }
+       ]
+      }
+     },
+     {
+      "text": "Nothing.",
+      "end": true
+     }
+    ]
+   },
+   "wagons": {
+    "id": "wagons",
+    "text": "Ha! Salvage, is what they are. Some merchant up at the Waystation painted his name on every board of them, so the road'd know who to thank. Coyle. The road knows now. ...You'll be wanting them. Everyone does, once they've seen them.",
+    "effects": [
+     {
+      "quest": {
+       "id": "caravan",
+       "status": "active",
+       "entry": "redcowl_wagons"
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "I've come for them.",
+      "goto": "goods",
+      "when": {
+       "all": [
+        {
+         "not": {
+          "fact": "caravan.box_taken",
+          "eq": true
+         }
+        },
+        {
+         "not": {
+          "fact": "caravan.cargo",
+          "exists": true
+         }
+        }
+       ]
+      }
+     },
+     {
+      "text": "Let the teamsters go.",
+      "when": {
+       "all": [
+        {
+         "not": {
+          "fact": "caravan.survivors",
+          "exists": true
+         }
+        },
+        {
+         "not": {
+          "fact": "redcowl.releases",
+          "eq": true
+         }
+        }
+       ]
+      },
+      "goto": "prisoners"
+     },
+     {
+      "text": "Nothing.",
+      "end": true
+     }
+    ]
+   },
+   "crates": {
+    "id": "crates",
+    "text": "Salvage. Heavy salvage. My lads were using them for seats, till one of them dropped one and we all stood very still and listened to it think about it.",
+    "choices": [
+     {
+      "text": "Blasting ember. For the Dig: the lamp-men digging under the hill.",
+      "goto": "crates_dig"
+     },
+     {
+      "text": "Nothing you need to worry about.",
+      "goto": "hub"
+     }
+    ]
+   },
+   "crates_dig": {
+    "id": "crates_dig",
+    "text": "(He doesn't laugh.) The hill. (He looks north-east, past the ravine wall, at nothing you can see.) The one that's been knocking at night. ...How deep are they going?",
+    "choices": [
+     {
+      "text": "Deep enough to shake the ground.",
+      "goto": "crates_keep"
+     },
+     {
+      "text": "Deeper than anyone should.",
+      "goto": "crates_keep"
+     }
+    ]
+   },
+   "crates_keep": {
+    "id": "crates_keep",
+    "text": "Then nobody's having them. Not the hole in the hill. Not Holloway. Not your merchant, and not the soft-handed little man that sold them twice. They stay with me. (A laugh, but not the big one.) Guarding crates. My mother'd laugh herself sick.",
+    "effects": [
+     {
+      "set": {
+       "be.crates": "redcowl"
+      }
+     },
+     {
+      "quest": {
+       "id": "caravan",
+       "entry": "crates_redcowl"
+      }
+     },
+     {
+      "rel": {
+       "npc": "redcowl",
+       "trust": 20,
+       "respect": 10
+      }
+     },
+     {
+      "history": {
+       "id": "crates_redcowl",
+       "text": "told Redcowl what was in the Coyle crates, and who they were for",
+       "tags": [
+        "kerchief",
+        "ember"
+       ],
+       "spread": 0
+      },
+      "witnesses": [
+       "redcowl"
+      ]
+     }
+    ],
+    "choices": [
+     {
+      "text": "Give me one. For the Dig's pump.",
+      "show": {
+       "any": [
+        {
+         "not": {
+          "fact": "dig.pump",
+          "exists": true
+         }
+        },
+        {
+         "fact": "dig.pump",
+         "eq": "running"
+        }
+       ]
+      },
+      "goto": "crates_charge"
+     },
+     {
+      "text": "Keep them dry.",
+      "end": true
+     }
+    ]
+   },
+   "crates_charge": {
+    "id": "crates_charge",
+    "text": "(He looks at you a long while. Then he whistles, and a lad brings one over, walking like he's carrying a sleeping baby.) Take it. Put it where it'll do the most harm to the right people. And {name}: run.",
+    "effects": [
+     {
+      "give": "blasting_ember"
+     },
+     {
+      "set": {
+       "redcowl.gave_charge": true
+      }
+     },
+     {
+      "quest": {
+       "id": "beasts",
+       "status": "active",
+       "entry": "redcowl_charge"
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Leave.",
+      "end": true
+     }
+    ]
+   },
+   "birds": {
+    "id": "birds",
+    "text": [
+     {
+      "when": {
+       "sex": "female"
+      },
+      "text": "Ha! A little bird. Sings for its drink, and sews a fair seam when it's sober. (The laugh stops.) Birds don't have names, lass. Not in my camp."
+     },
+     {
+      "text": "Ha! A little bird. Sings for its drink, and sews a fair seam when it's sober. (The laugh stops.) Birds don't have names, lad. Not in my camp."
+     }
+    ],
+    "effects": [
+     {
+      "set": {
+       "redcowl.birds": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "About the Coyle wagons.",
+      "when": {
+       "all": [
+        {
+         "not": {
+          "fact": "redcowl",
+          "eq": "bargained"
+         }
+        },
+        {
+         "all": [
+          {
+           "not": {
+            "fact": "caravan.box_taken",
+            "eq": true
+           }
+          },
+          {
+           "not": {
+            "fact": "caravan.cargo",
+            "exists": true
+           }
+          }
+         ]
+        }
+       ]
+      },
       "goto": "goods"
      },
      {
       "text": "Nothing.",
+      "end": true
+     }
+    ]
+   },
+   "ashford": {
+    "id": "ashford",
+    "text": "(The laugh goes out of him like a lamp.) Don't. (Quiet.) You get to say that once in my camp. You've said it.",
+    "effects": [
+     {
+      "set": {
+       "redcowl.ashford_said": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "redcowl",
+       "respect": 15,
+       "trust": 5
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "About the Coyle wagons.",
+      "when": {
+       "all": [
+        {
+         "not": {
+          "fact": "redcowl",
+          "eq": "bargained"
+         }
+        },
+        {
+         "all": [
+          {
+           "not": {
+            "fact": "caravan.box_taken",
+            "eq": true
+           }
+          },
+          {
+           "not": {
+            "fact": "caravan.cargo",
+            "exists": true
+           }
+          }
+         ]
+        }
+       ]
+      },
+      "goto": "goods"
+     },
+     {
+      "text": "I'll go.",
+      "end": true
+     }
+    ]
+   },
+   "pell_given": {
+    "id": "pell_given",
+    "text": "Ha! Somebody who knows where the rats sleep. (He's already shouting for boots.) Go home, {name}. Stay off the square tonight.",
+    "choices": [
+     {
+      "text": "Leave.",
+      "end": true
+     }
+    ]
+   },
+   "pell_hunt": {
+    "id": "pell_hunt",
+    "text": "I'll find him. Men like Varrow leave a smell of ink wherever they go.",
+    "choices": [
+     {
+      "text": "Leave.",
       "end": true
      }
     ]
@@ -11261,10 +15786,58 @@
   "nodes": {
    "first": {
     "id": "first",
-    "text": "Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. What do you want? Quick. The pump does not pump itself. It does, actually. But quick.",
+    "text": [
+     {
+      "when": {
+       "fact": "dig.pump",
+       "eq": "broken"
+      },
+      "text": "Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. Pump is BROKEN. Somebody broke it. Snib does not know who. Snib knows exactly who. What do you want? Quick."
+     },
+     {
+      "text": "Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. What do you want? Quick. The pump does not pump itself. It does, actually. But quick."
+     }
+    ],
     "choices": [
      {
       "text": "Your pump's poisoning the stream.",
+      "show": {
+       "all": [
+        {
+         "any": [
+          {
+           "knows": "clue.green_stream"
+          },
+          {
+           "knows": "clue.sick_wolf"
+          },
+          {
+           "knows": "clue.analysis"
+          },
+          {
+           "knows": "root_cause"
+          },
+          {
+           "knows": "hint.stream"
+          }
+         ]
+        },
+        {
+         "any": [
+          {
+           "not": {
+            "fact": "dig.pump",
+            "exists": true
+           }
+          },
+          {
+           "fact": "dig.pump",
+           "eq": "running"
+          }
+         ]
+        }
+       ]
+      },
       "goto": "poison"
      },
      {
@@ -11277,6 +15850,43 @@
      },
      {
       "text": "Pump it into the old sinkhole instead. Closer, and deeper.",
+      "show": {
+       "all": [
+        {
+         "any": [
+          {
+           "knows": "clue.green_stream"
+          },
+          {
+           "knows": "clue.sick_wolf"
+          },
+          {
+           "knows": "clue.analysis"
+          },
+          {
+           "knows": "root_cause"
+          },
+          {
+           "knows": "hint.stream"
+          }
+         ]
+        },
+        {
+         "any": [
+          {
+           "not": {
+            "fact": "dig.pump",
+            "exists": true
+           }
+          },
+          {
+           "fact": "dig.pump",
+           "eq": "running"
+          }
+         ]
+        }
+       ]
+      },
       "when": {
        "knows": "arcana"
       },
@@ -11285,6 +15895,43 @@
      },
      {
       "text": "Grimtunnel sent me. He wants the outflow moved.",
+      "show": {
+       "all": [
+        {
+         "any": [
+          {
+           "knows": "clue.green_stream"
+          },
+          {
+           "knows": "clue.sick_wolf"
+          },
+          {
+           "knows": "clue.analysis"
+          },
+          {
+           "knows": "root_cause"
+          },
+          {
+           "knows": "hint.stream"
+          }
+         ]
+        },
+        {
+         "any": [
+          {
+           "not": {
+            "fact": "dig.pump",
+            "exists": true
+           }
+          },
+          {
+           "fact": "dig.pump",
+           "eq": "running"
+          }
+         ]
+        }
+       ]
+      },
       "when": {
        "any": [
         {
@@ -11300,6 +15947,43 @@
      },
      {
       "text": "How much to shut it off for a week?",
+      "show": {
+       "all": [
+        {
+         "any": [
+          {
+           "knows": "clue.green_stream"
+          },
+          {
+           "knows": "clue.sick_wolf"
+          },
+          {
+           "knows": "clue.analysis"
+          },
+          {
+           "knows": "root_cause"
+          },
+          {
+           "knows": "hint.stream"
+          }
+         ]
+        },
+        {
+         "any": [
+          {
+           "not": {
+            "fact": "dig.pump",
+            "exists": true
+           }
+          },
+          {
+           "fact": "dig.pump",
+           "eq": "running"
+          }
+         ]
+        }
+       ]
+      },
       "when": {
        "knows": "underworld"
       },
@@ -11308,6 +15992,43 @@
      },
      {
       "text": "Then I'll shut it off myself.",
+      "show": {
+       "all": [
+        {
+         "any": [
+          {
+           "knows": "clue.green_stream"
+          },
+          {
+           "knows": "clue.sick_wolf"
+          },
+          {
+           "knows": "clue.analysis"
+          },
+          {
+           "knows": "root_cause"
+          },
+          {
+           "knows": "hint.stream"
+          }
+         ]
+        },
+        {
+         "any": [
+          {
+           "not": {
+            "fact": "dig.pump",
+            "exists": true
+           }
+          },
+          {
+           "fact": "dig.pump",
+           "eq": "running"
+          }
+         ]
+        }
+       ]
+      },
       "effects": [
        {
         "set": {
@@ -11318,6 +16039,32 @@
       "end": true
      },
      {
+      "text": "What are you pumping?",
+      "show": {
+       "not": {
+        "any": [
+         {
+          "knows": "clue.green_stream"
+         },
+         {
+          "knows": "clue.sick_wolf"
+         },
+         {
+          "knows": "clue.analysis"
+         },
+         {
+          "knows": "root_cause"
+         },
+         {
+          "knows": "hint.stream"
+         }
+        ]
+       }
+      },
+      "once": "what",
+      "goto": "what"
+     },
+     {
       "text": "Leave.",
       "end": true
      }
@@ -11325,7 +16072,25 @@
    },
    "hub": {
     "id": "hub",
-    "text": "You again. Pump is still pumping. Foreman is still foreman.",
+    "text": [
+     {
+      "when": {
+       "fact": "dig.pump",
+       "eq": "broken"
+      },
+      "text": "You again. Pump is BROKEN. Somebody broke it. Snib does not know who. Snib knows exactly who. Foreman is still foreman."
+     },
+     {
+      "when": {
+       "fact": "dig.pump",
+       "eq": "moved"
+      },
+      "text": "You again. Pipe goes to the sinkhole now. Deeper. Boss likes deeper. Boss has not SAID he likes it. Foreman is still foreman."
+     },
+     {
+      "text": "You again. Pump is still pumping. Foreman is still foreman."
+     }
+    ],
     "choices": [
      {
       "text": "Your blasting ember came off the Coyle wagons.",
@@ -11337,10 +16102,84 @@
      },
      {
       "text": "Your pump's poisoning the stream.",
+      "show": {
+       "all": [
+        {
+         "any": [
+          {
+           "knows": "clue.green_stream"
+          },
+          {
+           "knows": "clue.sick_wolf"
+          },
+          {
+           "knows": "clue.analysis"
+          },
+          {
+           "knows": "root_cause"
+          },
+          {
+           "knows": "hint.stream"
+          }
+         ]
+        },
+        {
+         "any": [
+          {
+           "not": {
+            "fact": "dig.pump",
+            "exists": true
+           }
+          },
+          {
+           "fact": "dig.pump",
+           "eq": "running"
+          }
+         ]
+        }
+       ]
+      },
       "goto": "poison"
      },
      {
       "text": "Pump it into the sinkhole instead.",
+      "show": {
+       "all": [
+        {
+         "any": [
+          {
+           "knows": "clue.green_stream"
+          },
+          {
+           "knows": "clue.sick_wolf"
+          },
+          {
+           "knows": "clue.analysis"
+          },
+          {
+           "knows": "root_cause"
+          },
+          {
+           "knows": "hint.stream"
+          }
+         ]
+        },
+        {
+         "any": [
+          {
+           "not": {
+            "fact": "dig.pump",
+            "exists": true
+           }
+          },
+          {
+           "fact": "dig.pump",
+           "eq": "running"
+          }
+         ]
+        }
+       ]
+      },
       "when": {
        "knows": "arcana"
       },
@@ -11349,6 +16188,43 @@
      },
      {
       "text": "Grimtunnel sent me. He wants the outflow moved.",
+      "show": {
+       "all": [
+        {
+         "any": [
+          {
+           "knows": "clue.green_stream"
+          },
+          {
+           "knows": "clue.sick_wolf"
+          },
+          {
+           "knows": "clue.analysis"
+          },
+          {
+           "knows": "root_cause"
+          },
+          {
+           "knows": "hint.stream"
+          }
+         ]
+        },
+        {
+         "any": [
+          {
+           "not": {
+            "fact": "dig.pump",
+            "exists": true
+           }
+          },
+          {
+           "fact": "dig.pump",
+           "eq": "running"
+          }
+         ]
+        }
+       ]
+      },
       "when": {
        "any": [
         {
@@ -11364,6 +16240,43 @@
      },
      {
       "text": "Then I'll shut it off myself.",
+      "show": {
+       "all": [
+        {
+         "any": [
+          {
+           "knows": "clue.green_stream"
+          },
+          {
+           "knows": "clue.sick_wolf"
+          },
+          {
+           "knows": "clue.analysis"
+          },
+          {
+           "knows": "root_cause"
+          },
+          {
+           "knows": "hint.stream"
+          }
+         ]
+        },
+        {
+         "any": [
+          {
+           "not": {
+            "fact": "dig.pump",
+            "exists": true
+           }
+          },
+          {
+           "fact": "dig.pump",
+           "eq": "running"
+          }
+         ]
+        }
+       ]
+      },
       "effects": [
        {
         "set": {
@@ -11377,6 +16290,32 @@
       "text": "What happens to the pipe-lads?",
       "once": "pipelads",
       "goto": "pipelads"
+     },
+     {
+      "text": "What are you pumping?",
+      "show": {
+       "not": {
+        "any": [
+         {
+          "knows": "clue.green_stream"
+         },
+         {
+          "knows": "clue.sick_wolf"
+         },
+         {
+          "knows": "clue.analysis"
+         },
+         {
+          "knows": "root_cause"
+         },
+         {
+          "knows": "hint.stream"
+         }
+        ]
+       }
+      },
+      "once": "what",
+      "goto": "what"
      },
      {
       "text": "Leave.",
@@ -11638,6 +16577,36 @@
       "end": true
      }
     ]
+   },
+   "what": {
+    "id": "what",
+    "text": "Slurry! What is left when the stones are cooked. Pipe takes it down to the stream, stream takes it AWAY. Stream is very obliging. ...Snib does not know where the stream goes after. Snib has never needed to KNOW.",
+    "effects": [
+     {
+      "learn": "clue.pipe"
+     },
+     {
+      "quest": {
+       "id": "beasts",
+       "status": "active",
+       "entry": "snib_slurry"
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Your blasting ember came off the Coyle wagons.",
+      "when": {
+       "knows": "clue.blasting_ember"
+      },
+      "once": "ember",
+      "goto": "ember"
+     },
+     {
+      "text": "Leave.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -11722,7 +16691,7 @@
   "nodes": {
    "first": {
     "id": "first",
-    "text": "You're the one who opened the cage. I— thank you. Uncle Harlan hasn't stopped crying. It wasn't wolves, you know. A clerk at the gate said the road was shut and sent us down the forest track, and they were waiting.",
+    "text": "You're the one who opened the cage. I— thank you. Uncle Harlan hasn't stopped crying. It wasn't wolves, you know. A toll clerk met us on the road, in Vonnra's violet, and said the Old Road was shut at the Waystation and sent us down the forest track. And they were waiting.",
     "effects": [
      {
       "quest": {
@@ -11746,18 +16715,59 @@
      },
      {
       "text": "What was in the crates?",
-      "once": "crates",
+      "show": {
+       "all": [
+        {
+         "not": {
+          "fact": "jory.knows_be",
+          "exists": true
+         }
+        },
+        {
+         "not": {
+          "fact": "jory.lied_to",
+          "exists": true
+         }
+        }
+       ]
+      },
       "goto": "crates"
      }
     ]
    },
    "hub": {
     "id": "hub",
-    "text": "I'm all right. I keep saying that. Uncle keeps asking.",
+    "text": [
+     {
+      "when": {
+       "fact": "jory.knows_be",
+       "eq": true
+      },
+      "text": "I'm all right. (He isn't.) Uncle's counting crates that aren't there."
+     },
+     {
+      "text": "I'm all right. I keep saying that. Uncle keeps asking."
+     }
+    ],
     "choices": [
      {
       "text": "What was in the crates?",
-      "once": "crates",
+      "show": {
+       "all": [
+        {
+         "not": {
+          "fact": "jory.knows_be",
+          "exists": true
+         }
+        },
+        {
+         "not": {
+          "fact": "jory.lied_to",
+          "exists": true
+         }
+        }
+       ]
+      },
       "goto": "crates"
      },
      {
@@ -11769,6 +16779,108 @@
    "crates": {
     "id": "crates",
     "text": "Salt. Cloth. Iron. And six we weren't to open, Uncle said, and not to take over ruts. I took them over every rut in Thornhollow. Nothing happened. ...What was in them?",
+    "choices": [
+     {
+      "text": "Blasting ember, Jory. For the Dig, under the hill.",
+      "when": {
+       "knows": "clue.blasting_ember"
+      },
+      "goto": "truth"
+     },
+     {
+      "text": "Salt, Jory. And cloth.",
+      "effects": [
+       {
+        "set": {
+         "jory.lied_to": true
+        }
+       },
+       {
+        "quest": {
+         "id": "caravan",
+         "entry": "jory_salt"
+        }
+       }
+      ],
+      "goto": "salt"
+     },
+     {
+      "text": "Rest, Jory.",
+      "end": true
+     }
+    ]
+   },
+   "truth": {
+    "id": "truth",
+    "text": "(He laughs, once, as if you've told him a joke he didn't get.) Every rut in Thornhollow. I took them over every rut. (He stops laughing.) ...Uncle knew. Didn't he. He told me salt.",
+    "effects": [
+     {
+      "set": {
+       "jory.knows_be": true
+      }
+     },
+     {
+      "quest": {
+       "id": "caravan",
+       "entry": "jory_told"
+      }
+     },
+     {
+      "history": {
+       "id": "told_jory",
+       "text": "told Jory Coyle what his uncle's six crates were for",
+       "tags": [
+        "caravan",
+        "ember"
+       ],
+       "spread": 0
+      },
+      "witnesses": [
+       "jory"
+      ]
+     }
+    ],
+    "choices": [
+     {
+      "text": "He knew.",
+      "effects": [
+       {
+        "set": {
+         "jory.told_knew": true
+        }
+       }
+      ],
+      "goto": "truth_knew"
+     },
+     {
+      "text": "Ask him yourself.",
+      "goto": "truth_ask"
+     }
+    ]
+   },
+   "truth_knew": {
+    "id": "truth_knew",
+    "text": "(He nods. He keeps nodding.) Right. Right. ...Thank you. I think. I'll know when I've stopped feeling sick.",
+    "choices": [
+     {
+      "text": "Rest, Jory.",
+      "end": true
+     }
+    ]
+   },
+   "truth_ask": {
+    "id": "truth_ask",
+    "text": "I will. (He doesn't move.) I will.",
+    "choices": [
+     {
+      "text": "Rest, Jory.",
+      "end": true
+     }
+    ]
+   },
+   "salt": {
+    "id": "salt",
+    "text": "(He nods, and it goes out of his face at once, the way it goes out of a child's.) Salt. Right. ...Thanks.",
     "choices": [
      {
       "text": "Rest, Jory.",
@@ -11967,6 +17079,11 @@
       "goto": "notes"
      },
      {
+      "text": "What do you write in your margins?",
+      "once": "margin",
+      "goto": "margin"
+     },
+     {
       "text": "Do you ever go in yourself?",
       "once": "t_wayfinder",
       "goto": "t_wayfinder"
@@ -12130,6 +17247,87 @@
      {
       "text": "Goodbye.",
       "end": true
+     }
+    ]
+   },
+   "margin": {
+    "id": "margin",
+    "text": "Who came back, from where, how long they lasted, what they carried out. Name first; I'm a tidy woman. (She dips her pen.) Speaking of which. How do I put you down?",
+    "choices": [
+     {
+      "text": "As {name}.",
+      "effects": [
+       {
+        "set": {
+         "wayfinder.name": "given"
+        }
+       }
+      ],
+      "goto": "margin_name"
+     },
+     {
+      "text": "Put me down as nobody.",
+      "effects": [
+       {
+        "set": {
+         "wayfinder.name": "nobody"
+        }
+       }
+      ],
+      "goto": "margin_nobody"
+     },
+     {
+      "text": "Make one up.",
+      "effects": [
+       {
+        "set": {
+         "wayfinder.name": "false"
+        }
+       }
+      ],
+      "goto": "margin_lark"
+     }
+    ]
+   },
+   "margin_name": {
+    "id": "margin_name",
+    "text": "{name}. (She writes it, blots it, and blows on it.) There. Now you're in the margins for good.",
+    "choices": [
+     {
+      "text": "Show me your maps.",
+      "action": "maps"
+     },
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     }
+    ]
+   },
+   "margin_nobody": {
+    "id": "margin_nobody",
+    "text": "Nobody. (She writes it without blinking.) You'd be surprised how often Nobody comes back. More than most.",
+    "choices": [
+     {
+      "text": "Show me your maps.",
+      "action": "maps"
+     },
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     }
+    ]
+   },
+   "margin_lark": {
+    "id": "margin_lark",
+    "text": "(She looks at you over the pen for a moment, then writes.) Lark. You look like a Lark. Larks get up early and make a great deal of noise about it.",
+    "choices": [
+     {
+      "text": "Show me your maps.",
+      "action": "maps"
+     },
+     {
+      "text": "Something else.",
+      "goto": "hub"
      }
     ]
    }

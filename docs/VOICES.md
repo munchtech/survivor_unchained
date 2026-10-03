@@ -19,6 +19,13 @@ Rules for everyone:
 - Each person has something they are not saying (see `STORY_BIBLE.md`).
   They never say it. They talk around it, and the shape of the hole is the
   hint.
+- A "never" below is a rule with at most one written exception in the whole
+  game, placed where breaking it is the scene: Rav names his brother once
+  (`rav.cb_killed_redcowl`), Brannoc says thank you once
+  (`brannoc.nell_quick`). Do not spend those again.
+- Families sound alike under stress: Harlan and Jory both say "Thank you. I
+  think. I'll know when I've stopped feeling sick." Redcowl and Rav both
+  reach for their mother when something is unbearable.
 - The player's lines are short, plain and a little dry. They never make a
   speech.
 - The game is written for adults. Swearing, crude jokes and frank talk
@@ -75,8 +82,10 @@ very short lines.
 
 **Brannoc** (smith). Fewest words in town: fragments, two sentences at the
 most, the hammer under everything. Talks about iron the way other people
-talk about weather. Never small talk, never thanks anyone in words.
-*Casting:* 50, Cornish, deep and slow.
+talk about weather. Never small talk, never thanks anyone in words (once:
+when he is told his daughter's end was quick). The only question he ever
+asks is about Nell; when he stops hammering, the narrator says so, because
+it is the loudest thing he does. *Casting:* 50, Cornish, deep and slow.
 
 **Harlan Coyle** (the Coyle Company). A salesman's patter with a crack in
 it: lists of goods, prices, "friend". Over-explains, then stops dead.
@@ -93,8 +102,9 @@ polite. *Casting:* 40, precise London RP, a little nasal.
 **Rav Cutwell** (the Crooked Flagon). Gravel and cant; a doctor's frankness
 about bodies ("drop your trousers or don't"); a half-drunk music in the
 rhythm; "pal". Funny about everything except his brother, whom he never
-names. Never sentimental, never says no to a drink. *Casting:* 50s,
-Glaswegian, wry; the bedside calm under the cant.
+names (once: "Dunstan", the day he hears Redcowl is dead). Never
+sentimental, never says no to a drink. *Casting:* 50s, Glaswegian, wry; the
+bedside calm under the cant.
 
 **Chid** ("the Fool"). Light, breathless, delighted; exclamations; sentences
 that run on and double back. Theology in plain words, and now and then a
@@ -105,9 +115,12 @@ tinged; the voice catches on joy.
 **Vonnra Ash-of-Morrow** (toll-keeper, far seer). No contractions. Very
 still, long pauses, few questions. Talks of payment, of seeing, of what is
 "arranged". Never answers yes or no; never hurries; never says what she
-wants. Calls the survivor "traveller" until the fortune. *Casting:* 60s,
-clipped and unplaceable (old empire), a low alto with a little air. The
-most important casting in the game.
+wants. Calls the survivor "traveller" until the fortune; if the survivor
+tells her there that she lit the lamps, she answers with their name, and
+uses it from then on. That is the only answer she gives. Her "seeing" is
+what she has bought: say it as sight, and let the narrator notice where her
+eyes are. *Casting:* 60s, clipped and unplaceable (old empire), a low alto
+with a little air. The most important casting in the game.
 
 **Dame Keegan Orme** (the Argent Vigil, probationary). Over-articulated and
 earnest, a lecturer's projection; no contractions while she is on duty,
@@ -123,7 +136,8 @@ says so. *Casting:* late 20s, softened Cockney; warmth that is also work.
 Adult, never breathy.
 
 **Redcowl** (the Kerchiefs). A big chest voice that laughs before it
-threatens ("Ha! HA."), and goes cold on a turn. "Lad", "lass", "my lot".
+threatens ("Ha! HA."), and goes cold on a turn. "Lad" or "lass" as the
+survivor is (write both variants), "my lot".
 Talks about feeding people the way other chiefs talk about gold. Never
 says please; never says the name Ashford, and never lets anyone else say
 it twice. *Casting:* 40s, hard Scots.
@@ -151,6 +165,31 @@ vague about who buys her notes. *Casting:* 50s, Edinburgh.
 
 **Greymuzzle.** Never speaks. Everything he says is the narrator watching
 what he does.
+
+**Tam's Pa** (Penhale). Heard, not yet met: "He calls you several things on
+the way, and one of them is a fool." A farmer who swears at whoever saves
+him. When he speaks (Act 2): short, profane, grateful only by accident.
+*Casting:* 40s, Somerset like Wenna, louder.
+
+**Nell, Wat, Corran.** The dead. They never speak; they are spoken of. Nell
+is "Mine." to her father and "Brannoc's girl" to the town. Corran speaks
+only in his belt-book, three lines in a hand that worsens.
+
+**Jessop** (Act 3, on the stair, risen and kept by the Legion's dead). A
+clerk's phrases with nothing behind them: tolls, receipts, "the road is
+shut", over and over. *Casting:* 30s, thin, a clerk's careful vowels gone
+slack.
+
+**Lord-Exchequer Orrin Sallow** (Act 2). The Vigil's paymaster: courteous,
+unhurried, a collector's pleasure in completeness. Speaks of people as
+entries and arrears; never raises his voice; apologises often and means
+none of it. Contractions, unlike Keegan. *Casting:* 60s, soft RP, a little
+amused.
+
+**Edric Marrow** (Act 2, in a silver cage). Ysolde's brother, twelve years
+risen. Her bookishness without her humour; asks about the corners of the
+barrow she keeps drawing. *Casting:* 40s, Edinburgh like his sister,
+quieter.
 
 **The notice board.** Notices in notice voice: capitals for the important
 word, initials for signatures, and the town's graffiti underneath.
