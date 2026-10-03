@@ -201,6 +201,34 @@ public class BreadcrumbTests
     }
 
     [Fact]
+    public void Brannoc_does_not_ask_on_the_day_you_arrive_nor_at_a_banked_forge()
+    {
+        var s = Q();
+        Talk(Convo("brannoc"), s.C, "goodbye");
+        Assert.NotEqual("nell", new DialogueRunner(Convo("brannoc"), s.C).Start()!.Node.Id);
+        Day(s);
+        s.World.Time = TimeOfDay.Night;
+        Assert.NotEqual("nell", new DialogueRunner(Convo("brannoc"), s.C).Start()!.Node.Id);
+        s.World.Time = TimeOfDay.Day;
+        // Walking away from the question leaves it to be asked again.
+        Assert.Equal("nell", new DialogueRunner(Convo("brannoc"), s.C).Start()!.Node.Id);
+        Assert.Equal("nell", new DialogueRunner(Convo("brannoc"), s.C).Start()!.Node.Id);
+    }
+
+    [Fact]
+    public void Holloway_turns_a_letter_face_down_at_night_from_the_third_day()
+    {
+        var s = Q();
+        Talk(Convo("holloway"), s.C, "that's all");
+        Assert.DoesNotContain(Offered(s, "holloway"), t => t.Contains("silver seal"));
+        s.World.Day = 3;
+        s.World.Time = TimeOfDay.Night;
+        Assert.Contains("silver seal", Greet(Convo("holloway"), s.C).Text);
+        Talk(Convo("holloway"), s.C, "silver seal");
+        Assert.True(s.World.Fact("holloway.letter_seen").Truthy);
+    }
+
+    [Fact]
     public void A_lie_to_Brannoc_sends_him_to_the_gate_to_ask_strangers()
     {
         var s = Q();
