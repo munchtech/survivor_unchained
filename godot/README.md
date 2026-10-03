@@ -51,7 +51,18 @@ Options go after `--`:
 - `--open inventory|character|journal|map|pause|rest|stash|shop:ID|chapter|all`,
   `--open talk:ID`, `--open draft`: a screen, a conversation or the level-up
   draft opened a moment in (`--every T` between several); `--bare` hides the
-  world, for quick pictures of the interface;
+  world, for quick pictures of the interface; `--open "talk:ID>words>+"`
+  takes the choice whose words contain `words` and clicks on at each `+`
+  (a line deep in a conversation: `"talk:vonnra>fortune>+>+>+"` is the
+  fortune's fourth page);
+- `QA_SAVES=DIR dotnet test tests/Tests.csproj --filter QaSaves`: saves at
+  the Act 1 moments worth looking at (the ledger read, the Roost emptied,
+  the fortune, Harlan met with the Roost on your boots), played into by
+  the tests' `Route` harness; copy one to the game's saves as `slot0.json`
+  (with `meta.json` `{"last":0}`) and run with `--continue`. To keep them
+  out of your own saves, a `godot/override.cfg` (not committed) with
+  `config/use_custom_user_dir=true` and a `config/custom_user_dir_name`
+  gives the game a user folder of its own;
 - `STORY_PLAY=1 dotnet test tests/Tests.csproj --filter StoryPlay` (with
   `--logger "console;verbosity=detailed"`): the Verge walked by day by a
   plain-minded bot with only what it carries, pack to pack, with what it
