@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Godot;
 using SurvivorUnchained.Arena;
@@ -58,6 +59,9 @@ public partial class ArenaResultScreen : Overlay
         tally.Alignment = BoxContainer.AlignmentMode.Center;
         wrap.AddChild(tally);
         if (r.Longest && r.Seconds > 120) wrap.AddChild(Style.Label("Your longest in any arena yet", Style.TextItalic, Style.Lead, Style.EmberHi, false, HorizontalAlignment.Center));
+        // How it ended, and how near it came (docs/feel S-16: the end tells the run's story).
+        var story = Story();
+        if (story != "") wrap.AddChild(Style.Label(story, Style.TextItalic, Style.Body, r.Won ? Style.Ink : Style.BloodHi, true, HorizontalAlignment.Center));
 
         var two = Style.H(18);
         two.SizeFlagsVertical = SizeFlags.ExpandFill;
@@ -103,6 +107,21 @@ public partial class ArenaResultScreen : Overlay
         var acts = Style.H(12, go);
         acts.Alignment = BoxContainer.AlignmentMode.Center;
         wrap.AddChild(acts);
+    }
+
+    /// <summary>The run's ending in a line: who brought you down and when, and how near the end was.</summary>
+    string Story()
+    {
+        string boss = r.Spec.BossName ?? SurvivorUnchained.Maps.MapOffers.People(r.Spec.People).BossName;
+        double end = r.Spec.Minutes * 60;
+        var parts = new System.Collections.Generic.List<string>();
+        if (G.LastFall is var (killer, at) && G.Battle?.Player.Alive == false) parts.Add($"Brought down by {killer} at {Clock(at)}");
+        if (!r.Won)
+        {
+            if (r.Seconds < end) { int m = (int)Math.Ceiling((end - r.Seconds) / 60); parts.Add($"{m} minute{(m == 1 ? "" : "s")} before {boss} would have come"); }
+            else parts.Add($"{boss} still stands");
+        }
+        return string.Join(";  ", parts) + (parts.Count > 0 ? "." : "");
     }
 
     static readonly string[] Numerals = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII"];

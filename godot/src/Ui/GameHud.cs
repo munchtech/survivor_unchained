@@ -86,6 +86,12 @@ public partial class GameHud : CanvasLayer
     VBoxContainer corner = null!;
     // Discoveries in a burst become one toast that grows.
     (PanelContainer Box, ToastKind Kind, List<string> Names, double At)? lastToast;
+    // The bar eased every frame toward its true value (docs/feel S-06): shown, wanted, the level's flash.
+    float barShown, barWant, barFlash;
+    bool barEmber = true;
+    ColorRect barGlow = null!;
+    double killPop;
+    int killsShown;
     // What matters off the screen; where the prompt's thing is on it; the arena's clock and its word.
     EdgeMarks edges = null!;
     Vector2? promptAnchor;
@@ -204,6 +210,9 @@ public partial class GameHud : CanvasLayer
         // The leading edge burns brighter as the next level nears (the goal in sight).
         barTip = new ColorRect { Color = Colors.White, Size = new Vector2(4, 10), Position = new Vector2(1, 1), MouseFilter = Control.MouseFilterEnum.Ignore };
         track.AddChild(barTip);
+        // Near the level the whole bar breathes.
+        barGlow = new ColorRect { Color = Style.EmberHi with { A = 0 }, Position = new Vector2(1, 1), Size = new Vector2(0, 10), MouseFilter = Control.MouseFilterEnum.Ignore };
+        track.AddChild(barGlow);
         // What the bar is, in a word under its start: ember by night, experience by day.
         barWord = Style.Label("EMBER", Style.UiHeavy, 13, Style.Ember with { A = 0.85f });
         barWord.Position = new Vector2(x + 52, 37);
@@ -538,11 +547,9 @@ public partial class GameHud : CanvasLayer
         float e = (float)Math.Clamp(ember ? b.EmberXp / Math.Max(1, b.EmberNext) : level.K, 0, 1);
         emberFill.Visible = ember;
         growFill.Visible = !ember;
-        float fw = (760 * K - 32) * e;
-        (ember ? emberFill : growFill).Size = new Vector2(fw, 10);
-        barTip.Position = new Vector2(Math.Max(1, fw - 3), 1);
-        barTip.Color = (ember ? Style.EmberHi : Style.DayHi) with { A = 0.3f + 0.7f * Mathf.SmoothStep(0.6f, 1f, e) };
-        barTip.Visible = e > 0.01f;
+        // The fill is eased every frame (_Process); a new level fills it, flashes, and drains to what carried over.
+        if (ember != barEmber) { barEmber = ember; barShown = e; }
+        barWant = e;
         barWord.Text = ember ? "EMBER" : "EXPERIENCE";
         barWord.AddThemeColorOverride("font_color", (ember ? Style.Ember : Style.Day) with { A = 0.85f });
         // The fight's clock and its count belong to the night; by day they would only be noise.
@@ -554,7 +561,7 @@ public partial class GameHud : CanvasLayer
         int lv = ember ? b.EmberLevel : Math.Max(1, level.Level);
         if (lv != shownLevel || ember != shownEmber)
         {
-            if (lv > shownLevel && ember == shownEmber) levelPop = 1;
+            if (lv > shownLevel && ember == shownEmber) { levelPop = 1; barShown = 1; barFlash = 1; }
             shownLevel = lv; shownEmber = ember;
             emberLevel.Text = lv.ToString();
             emberLevel.AddThemeColorOverride("font_color", ember ? Style.EmberHi : Hex("#d8ecff"));
@@ -565,6 +572,9 @@ public partial class GameHud : CanvasLayer
         tallyTime.Text = arenaLeft is double l2 && l2 <= 0 ? $"+{m}:{s:00}" : $"{m}:{s:00}";
         tallyTime.AddThemeColorOverride("font_color", arenaLeft is double l3 && l3 > 0 && l3 < 60 ? Style.EmberHi : Hex("#efe3c8"));
         tallyKills.Text = b.KillCount.ToString();
+        // The count pops when it climbs, at most ten times a second.
+        if (b.KillCount > killsShown && killPop <= 0.05) killPop = 0.15;
+        killsShown = b.KillCount;
         tallyGold.Text = $"{Math.Floor(gold + b.GoldGained - b.GoldBanked)}";
 
         var alive = new HashSet<string>();
@@ -835,11 +845,14 @@ public partial class GameHud : CanvasLayer
         underWanted &= at != null;
     }
 
-    /// <summary>In an arena: seconds until what rules it comes (negative: past it), and the word for it; null elsewhere.</summary>
-    public void ArenaClock(double? left, string word)
+    /// <summary>In an arena: seconds until what rules it comes (negative: past it), the night's phase and its colour; null elsewhere.</summary>
+    public void ArenaClock(double? left, string word, Color? tone = null)
     {
         arenaLeft = left;
+        // A new phase pops in (docs/feel S-21: escalation as a story).
+        if (left != null && word != tallyWord.Text) { tallyWord.PivotOffset = new Vector2(200, 9); tallyWord.Scale = new Vector2(1.35f, 1.35f); }
         tallyWord.Text = left == null ? "" : word;
+        tallyWord.AddThemeColorOverride("font_color", tone ?? Style.Ember);
     }
 
     /// <summary>What matters off the screen, each frame.</summary>
@@ -937,6 +950,23 @@ public partial class GameHud : CanvasLayer
             box.Modulate = Colors.White with { A = k < 0.05f ? k / 0.05f : k > 0.88f ? (1 - k) / 0.12f : 1 };
             if (t >= life) box.QueueFree();
         }
+        // The bar flows toward its value; a level's flash fades over a tenth of a second.
+        barShown = barShown > barWant + 0.5f ? Mathf.MoveToward(barShown, barWant, dt * 6) : barShown + (barWant - barShown) * (1 - Mathf.Exp(-18 * dt));
+        float fw = (760 * K - 32) * Mathf.Clamp(barShown, 0, 1);
+        (barEmber ? emberFill : growFill).Size = new Vector2(fw, 10);
+        barFlash = Mathf.MoveToward(barFlash, 0, dt / 0.08f);
+        (barEmber ? emberFill : growFill).Modulate = Colors.White.Lerp(new Color(3, 3, 3), barFlash);
+        barTip.Position = new Vector2(Math.Max(1, fw - 3), 1);
+        barTip.Color = (barEmber ? Style.EmberHi : Style.DayHi) with { A = 0.3f + 0.7f * Mathf.SmoothStep(0.6f, 1f, barShown) };
+        barTip.Visible = barShown > 0.01f;
+        float t2 = Time.GetTicksMsec() / 1000f;
+        barGlow.Size = new Vector2(fw, 10);
+        barGlow.Color = (barEmber ? Style.EmberHi : Style.DayHi) with { A = barShown >= 0.85f ? 0.25f + 0.25f * Mathf.Sin(t2 * 8) : 0 };
+        killPop = Math.Max(0, killPop - delta);
+        tallyWord.Scale = tallyWord.Scale.Lerp(Vector2.One, 1 - Mathf.Exp(-8 * dt));
+        float kp = 1 + (float)(killPop / 0.15) * 0.15f;
+        killsChip.PivotOffset = killsChip.Size / 2;
+        killsChip.Scale = new Vector2(kp, kp);
         // The prompt over the thing it is for, where the eye already is; at the bottom when that is off screen.
         if (promptBox.Visible)
         {

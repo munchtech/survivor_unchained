@@ -415,6 +415,7 @@ public partial class Game : Node, IZoneHost
 
     void OnDeath(string killer)
     {
+        LastFall = (killer, Battle?.Time ?? 0);
         Journey.Ch.Stats.Deaths++;
         if (zone!.OnDeath(killer)) return;
         var b = Battle;
@@ -632,8 +633,9 @@ public partial class Game : Node, IZoneHost
             hud.MapFrame(MiniView());
             if (zone is ArenaRun ar && Battle is { } cb2)
             {
-                double left = ar.Spec.Minutes * 60 - cb2.Time;
-                hud.ArenaClock(ar.Won ? -(cb2.Time - ar.Spec.Minutes * 60) : left > 0 ? left : 0, ar.Won ? "PAST THE HALF HOUR" : left > 0 ? "BEFORE WHAT RULES IT COMES" : "IT HAS COME");
+                double end = ar.Spec.Minutes * 60, left = end - cb2.Time;
+                var (phase, tone) = Phase(cb2.Time / end, ar.Won, left);
+                hud.ArenaClock(ar.Won ? -(cb2.Time - end) : left > 0 ? left : 0, phase, tone);
             }
             else hud.ArenaClock(null, "");
         }
@@ -644,6 +646,24 @@ public partial class Game : Node, IZoneHost
         Report(dt);
         Tour(dt);
     }
+
+    /// <summary>The night's phases, named on the clock (docs/feel S-21), as shares of the arena's length.</summary>
+    static (string, Color) Phase(double k, bool won, double left)
+    {
+        if (won) return ("BEYOND  ·  PAST WHAT RULED IT", new Color("#c8b0ff"));
+        if (left <= 0) return ("IT HAS COME", Style.BloodHi);
+        return k switch
+        {
+            < 1 / 6.0 => ("DUSK  ·  BEFORE WHAT RULES IT COMES", new Color("#e8b878")),
+            < 1 / 3.0 => ("GLOAMING  ·  BEFORE WHAT RULES IT COMES", new Color("#ff9a50")),
+            < 2 / 3.0 => ("THE WITCHING  ·  BEFORE WHAT RULES IT COMES", new Color("#ff7a3a")),
+            < 28 / 30.0 => ("ASHFALL  ·  BEFORE WHAT RULES IT COMES", new Color("#ff5a3a")),
+            _ => ("THE COMING", Style.BloodHi),
+        };
+    }
+
+    /// <summary>What last brought the survivor down, and when (the arena's end tells it).</summary>
+    public (string Name, double At)? LastFall { get; private set; }
 
     /// <summary>What matters and is off the screen: what rules the fight, the nearest elites, chests.</summary>
     List<Ui.Beyond> Offscreen(Battle b)
