@@ -152,6 +152,31 @@ void WeaponsAll()
         sb.AppendLine($"| {w.Id} | {Cell(w.Id, null, "r1")} | {Cell(w.Id, null, "r4")} | {Cell(w.Id, null, "r8")} | " +
             string.Join("; ", w.Evolutions.Select(e => $"{e.Id} {Cell(w.Id, e.Id, "evo")}")) + " |");
     sb.AppendLine($"\nStage medians (crowd/champion): {string.Join(", ", medC.OrderBy(x => x.Key).Select(x => $"{x.Key} {x.Value:0}/{medB[x.Key]:0}"))}");
+    // Unions, at the twenty-fifth minute's strength, against their two halves evolved (each alone).
+    if (only == null)
+    {
+        var uj = new List<(string Id, string W, string? Evo, int Seed)>();
+        foreach (var u in Unions.All)
+            for (int s = 0; s < seeds; s++)
+            {
+                uj.Add((u.Id, u.Into, null, 1 + s));
+                uj.Add((u.Id, u.A, Weapons.All[u.A].Evolutions[0].Id, 1 + s));
+                uj.Add((u.Id, u.B, Weapons.All[u.B].Evolutions[0].Id, 1 + s));
+            }
+        var ur = new ConcurrentBag<(string Id, string W, ProbeResult R)>();
+        Parallel.ForEach(uj, new ParallelOptions { MaxDegreeOfParallelism = opt.Int("par", 16) }, j =>
+            ur.Add((j.Id, j.W, SurvivorUnchained.Balance.Probe.Weapon(j.W, Weapons.MaxRank, j.Evo, 11, j.Seed, opt.Get("people", "dead")))));
+        sb.AppendLine("\n### Unions against their halves (crowd / champion damage a second; the union should be worth a little less than both, for the slot it frees)\n");
+        sb.AppendLine("| union | union | halves together | ratio |");
+        sb.AppendLine("|---|---|---|---|");
+        foreach (var u in Unions.All)
+        {
+            double C(string w) => Report.Median(ur.Where(x => x.Id == u.Id && x.W == w).Select(x => x.R.CrowdDps));
+            double B(string w) => Report.Median(ur.Where(x => x.Id == u.Id && x.W == w).Select(x => x.R.BossDps));
+            double ratio = 0.6 * C(u.Into) / Math.Max(1, C(u.A) + C(u.B)) + 0.4 * B(u.Into) / Math.Max(1, B(u.A) + B(u.B));
+            sb.AppendLine($"| {u.Id} | {C(u.Into):0}/{B(u.Into):0} | {C(u.A) + C(u.B):0}/{B(u.A) + B(u.B):0} | {ratio:0.00} |");
+        }
+    }
     if (opt.Has("out")) File.WriteAllText(opt.Get("out", "weapons.md"), sb.ToString());
     if (opt.Has("json"))
         File.WriteAllText(opt.Get("json", "weapons.json"), JsonSerializer.Serialize(per.Select(kv => new

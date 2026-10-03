@@ -145,4 +145,98 @@ public class BlessingTests
         LevelUp.Choose(b, offers[0]);
         Assert.Empty(b.PendingBlessings);
     }
+
+    [Fact]
+    public void Every_great_blessing_has_a_role_and_every_path_a_ward()
+    {
+        foreach (var id in Boons.Great) Assert.True(Boons.GreatRoles.ContainsKey(id), $"{id} has no role");
+        foreach (var p in Paths.All)
+        {
+            Assert.Contains(p.Great, id => Boons.GreatRoles[id] == Boons.GreatRole.Ward);
+            Assert.InRange(p.Great.Length, 3, 5);
+        }
+    }
+
+    [Fact]
+    public void From_the_ashes_lifts_you_once_burning_and_the_dawn_takes_it()
+    {
+        var b = BattleTests.Arena(8);
+        b.AddBoon("from_the_ashes");
+        Assert.Equal(1, b.Player.Ashes);
+        var wolf = b.SpawnEnemy("wolf", b.Player.X + 2, b.Player.Z, new Battle.SpawnOpts { Elite = true, Style = SpawnStyle.Walk, Disposition = Disposition.Hostile })!;
+        Tick(b, 1 / 60.0);
+        b.HurtPlayer(b.MaxHp * 5, School.Physical, "wolf", wolf, telegraphed: true);
+        Assert.True(b.Player.Alive);
+        Assert.Equal(b.MaxHp * 0.5, b.Player.Hp, 1);
+        Assert.True(wolf.Status.Has(StatusKind.Burn));
+        Assert.Equal(0, b.Player.Ashes);
+        // The second rank lifts you whole; the third owes a second rising.
+        b.AddBoon("from_the_ashes");
+        Assert.Equal(0, b.Player.Ashes);
+        b.AddBoon("from_the_ashes");
+        Assert.Equal(1, b.Player.Ashes);
+        b.Player.Iframes = 0;
+        b.HurtPlayer(b.MaxHp * 5, School.Physical, "wolf", null, telegraphed: true);
+        Assert.Equal(b.MaxHp, b.Player.Hp, 1);
+        b.AddBoon("from_the_ashes");
+        b.Douse([]);
+        Assert.Equal(0, b.Player.Ashes);
+    }
+
+    [Fact]
+    public void Grounding_turns_part_of_a_blow_into_lightning()
+    {
+        double Taken(bool grounded)
+        {
+            var b = BattleTests.Arena(9);
+            if (grounded) b.AddBoon("grounding");
+            var wolf = b.SpawnEnemy("wolf", b.Player.X + 2, b.Player.Z, new Battle.SpawnOpts { Style = SpawnStyle.Walk, Disposition = Disposition.Hostile })!;
+            Tick(b, 1 / 60.0);
+            double before = b.Player.Hp;
+            b.HurtPlayer(40, School.Physical, "wolf", wolf, telegraphed: true);
+            return before - b.Player.Hp;
+        }
+        Assert.Equal(Taken(false) * 0.8, Taken(true), 1);
+        var g = BattleTests.Arena(10);
+        g.AddBoon("grounding");
+        var near = g.SpawnEnemy("wolf", g.Player.X + 3, g.Player.Z, new Battle.SpawnOpts { Style = SpawnStyle.Walk, Disposition = Disposition.Hostile })!;
+        Tick(g, 1 / 60.0);
+        double hp = near.Hp;
+        g.HurtPlayer(40, School.Physical, "wolf", near, telegraphed: true);
+        Tick(g, 0.2);
+        Assert.True(near.Hp < hp || !near.Alive, "the lightning found nothing");
+    }
+
+    [Fact]
+    public void Rootbind_holds_and_opens_the_toughest_near_you()
+    {
+        var b = BattleTests.Arena(11);
+        b.RemoveWeapon("oathblade");
+        var pup = b.SpawnEnemy("wolf", b.Player.X + 3, b.Player.Z, new Battle.SpawnOpts { Style = SpawnStyle.Walk, Disposition = Disposition.Hostile })!;
+        var alpha = b.SpawnEnemy("wolf", b.Player.X + 6, b.Player.Z, new Battle.SpawnOpts { Elite = true, Style = SpawnStyle.Walk, Disposition = Disposition.Hostile })!;
+        b.AddBoon("rootbind");
+        Tick(b, 0.2);
+        Assert.True(alpha.Status.Has(StatusKind.Stun));
+        Assert.True(alpha.Status.Has(StatusKind.Mark));
+        Assert.False(pup.Status.Has(StatusKind.Stun));
+    }
+
+    [Fact]
+    public void Go_for_the_throat_sends_the_pack_at_the_champion()
+    {
+        int TargetOf(bool throat)
+        {
+            var b = BattleTests.Arena(12);
+            b.RemoveWeapon("oathblade");
+            if (throat) b.AddBoon("go_for_the_throat");
+            b.AddBoon("spirit_companion");
+            var pup = b.SpawnEnemy("wolf", b.Player.X + 2.5, b.Player.Z, new Battle.SpawnOpts { Style = SpawnStyle.Walk, Disposition = Disposition.Hostile })!;
+            var alpha = b.SpawnEnemy("wolf", b.Player.X - 7, b.Player.Z, new Battle.SpawnOpts { Elite = true, Style = SpawnStyle.Walk, Disposition = Disposition.Hostile })!;
+            Tick(b, 1.5);
+            var ally = b.Enemies.Items.First(e => e.Alive && e.Disposition == Disposition.Ally);
+            return ally.Target == alpha.Id ? 1 : ally.Target == pup.Id ? 0 : -1;
+        }
+        Assert.Equal(0, TargetOf(false));
+        Assert.Equal(1, TargetOf(true));
+    }
 }

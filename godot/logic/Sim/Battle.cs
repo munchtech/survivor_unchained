@@ -38,6 +38,8 @@ public sealed class PlayerState
     /// <summary>Standing in a hazard: burning, poisoned.</summary>
     public double BurnT, BurnDps, PoisonT, PoisonDps;
     public int Revives;
+    /// <summary>Risings From the Ashes still owed tonight (the ember's own, lost at dawn).</summary>
+    public int Ashes;
     public Enemy? LastKiller;
     /// <summary>Since a blow last reached the survivor; where a burning dash last left fire.</summary>
     public double UnstruckT, WakeX, WakeZ;
@@ -590,7 +592,7 @@ public sealed partial class Battle
         var st = Stats;
         double dmg = baseDamage * st.DamageMult(school, tags, e.Def.Family);
         // Allies go for the throat: champions and worse take more from them.
-        if (o.Summon) dmg *= st.Get(Stat.SummonDamage) * (e.Boss || e.Elite ? 2.0 : 1);
+        if (o.Summon) dmg *= st.Get(Stat.SummonDamage) * (e.Boss || e.Elite ? (Boons.ContainsKey("go_for_the_throat") ? 2.8 : 2.0) : 1);
         if (e.Boss || e.Elite) dmg *= o.BossDamage ?? o.Weapon?.Def.BossDamage ?? 1;
         // Vulnerabilities.
         var s = e.Status;
@@ -966,6 +968,8 @@ public sealed partial class Battle
         if (p.BulwarkT > 0) dmg *= Has("unmoving") ? 0.2 : 0.35;
         // Half a ghost: blows land at half.
         if (Art.WraithT > 0) dmg *= 0.5;
+        // Grounding: part of the blow goes to earth (its lightning is the blessing's Hurt rule).
+        if (Boons.TryGetValue("grounding", out int ground)) dmg *= ground >= 2 ? 0.67 : 0.8;
         return HurtPlayerRaw(dmg, school, source, from);
     }
 
@@ -994,6 +998,19 @@ public sealed partial class Battle
         if (from is { Alive: true }) Interrupt(from);
         Events.Emit(new Ev.PerfectDodge { X = p.X, Z = p.Z });
         Fire(TriggerEvent.PerfectDodge, new ProcCtx { X = p.X, Z = p.Z });
+    }
+
+    /// <summary>From the Ashes: the survivor gets up burning, and so does everything near them.</summary>
+    void RiseBurning(int rank)
+    {
+        var p = Player;
+        var was = credit;
+        credit = "boon:from_the_ashes";
+        double r = (rank >= 2 ? 8 : 4) * Math.Sqrt(Stats.Get(Stat.Area)), dmg = 40 * (1 + 0.08 * (EmberLevel - 1));
+        Explode(p.X, p.Z, r, dmg, School.Fire, [Tag.Fire, Tag.Area], null);
+        var burn = new StatusPayload(StatusKind.Burn, 1, 1, 4);
+        ForEachHostileInRadius(p.X, p.Z, r, (e, _) => ApplyStatus(e, burn, dmg));
+        credit = was;
     }
 
     /// <summary>Cinderwake: fire where the dash has been.</summary>
@@ -1082,12 +1099,16 @@ public sealed partial class Battle
         }
         if (p.Hp <= 0)
         {
-            if (p.Revives > 0)
+            if (p.Revives > 0 || p.Ashes > 0)
             {
-                p.Revives--;
-                p.Hp = MaxHp * 0.5;
+                // The ember's rising first: the kit's keeps for a night without it.
+                bool ashes = p.Ashes > 0;
+                if (ashes) p.Ashes--; else p.Revives--;
+                int ar = Boons.GetValueOrDefault("from_the_ashes");
+                p.Hp = MaxHp * (ashes && ar >= 2 ? 1 : 0.5);
                 p.Iframes = 2;
-                Events.Emit(new Ev.Announce { Title = "You rise again", Tone = Tone.Boon });
+                if (ashes) RiseBurning(ar);
+                Events.Emit(new Ev.Announce { Title = ashes ? "From the ashes" : "You rise again", Tone = Tone.Boon });
             }
             else if (Hooks.OnPlayerDeath?.Invoke(p.LastKiller) == true)
                 p.Hp = Math.Max(p.Hp, 1);
@@ -1733,6 +1754,7 @@ public sealed partial class Battle
         // Wisdom is the draft's own passive: each rank a reroll.
         if (id == "wisdom") Rerolls++;
         if (id == "spirit_companion") Summon("spirit_wolf", 0, 99);
+        if (id == "from_the_ashes" && r != 2) Player.Ashes++;
         if (id == "grave_call") Summon("ghoul_ally", 0, 99);
     }
 
@@ -1757,6 +1779,7 @@ public sealed partial class Battle
         PendingLevels = 0;
         PendingBlessings.Clear();
         GreatOwed = 0;
+        Player.Ashes = 0;
         EmberOn = false;
         Player.Hp = Math.Min(Player.Hp, MaxHp);
     }

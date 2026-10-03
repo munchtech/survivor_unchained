@@ -11,7 +11,7 @@ public static class Targets
     /// <summary>Ember level at the end of each minute (index 0 is the end of
     /// the first), the median of the harness's tier-1 arenas.</summary>
     public static readonly int[] EmberByMinute =
-        [6, 14, 18, 21, 23, 24, 28, 30, 32, 33, 34, 36, 38, 39, 40, 42, 43, 44, 45, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58];
+        [6, 9, 11, 13, 15, 16, 18, 20, 21, 22, 24, 25, 26, 27, 29, 29, 31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 42, 43, 44, 45, 46];
 
     /// <summary>The minute an ember level is usually reached (fractional).</summary>
     public static double MinuteOf(int ember)
