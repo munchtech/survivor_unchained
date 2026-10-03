@@ -59,6 +59,49 @@ def row_on(W=512, H=96):
     return FR.frame(W, H, (12, 10, 12, 10), st, ss=3, post=post)
 
 
+def rule(W=960, H=24, ss=4, flourish=False):
+    """The divider: a bar of iron drawn out thin under the hammer, tapering to points at
+    both ends, a gold wire wound round it; at its middle the binders' square coin, its
+    hole lit by the sleeping ember (the flourish: one link of the chain pried open
+    beside it, the ember at the break)."""
+    w, h = W * ss, H * ss
+    s = F.Surface(w, h)
+    k = ss
+    cy = h / 2
+    coin = (10 if not flourish else 15) * k
+    thick0 = (5.0 if not flourish else 6.5) * k
+    for side in (-1, 1):
+        x0 = w / 2 + side * coin * 0.4
+        x1 = w / 2 + side * (w / 2 - 6 * k)
+        pts = [(x0 + (x1 - x0) * t, cy) for t in np.linspace(0, 1, 40)]
+        if flourish:
+            end = pts[-8]
+            curl = O.spiral(end[0], cy - 6 * k, 6 * k, 1.4 * k, math.pi / 2, -side * 1.1, 30)
+            pts = pts[:-8] + curl
+        O.forged_bar(s, pts, thick0, 0.7 * k, thick0 * 0.6, mat="iron", base=0, facet=0.2)
+        L = abs(x1 - x0)
+        n = int(L / (4.5 * k))
+        for i in range(n):
+            t = i / n
+            if t > 0.8:
+                break
+            x = x0 + (x1 - x0) * t
+            wd = thick0 * (1 - t) + 0.7 * k * t
+            dl = F.sd_segment(s.xx, s.yy, (x - 1.3 * k, cy - wd * 0.55), (x + 1.3 * k, cy + wd * 0.55))
+            cov = F.coverage(0.7 * k - dl, 1.0) * np.clip((0.8 - t) / 0.3, 0, 1)
+            s.height = s.height + cov * 1.0 * k
+            s.paint(cov, "gold")
+    _, hole = O.coin(s, w / 2, cy, coin * 2, mat="iron", base=1.0 * k, foil=True, sigil=False)
+    lin = s.shade(normal_strength=1.0, ao=0.4, shadow=0.3, light_elev=40) * 1.7
+    core = F.blur(hole, 1.2 * k)
+    glow = (core ** 2)[..., None] * O.EMBER_HI * 1.2 + F.blur(hole, 4 * k)[..., None] * O.EMBER * 0.5
+    lin = lin * (1 - hole[..., None] * 0.7) + glow
+    srgb = F.lin_to_srgb(np.clip(lin, 0, 1))
+    ga = np.clip(F.lin_to_srgb(np.clip(glow, 0, 1)).max(axis=2), 0, 1) * (1 - s.alpha)
+    a = np.maximum(s.alpha, ga * 0.8)
+    return F.to_pil(F.downsample(np.dstack([srgb, a]), (W, H)))
+
+
 def casing(W=128, H=48, margins=(12, 8, 12, 8)):
     """The iron round a bar (GameHud.Casing): a forged strap with the twisted wire, lying
     6 shown px outside the groove and 1 over its edge, its middle open; small end caps

@@ -72,21 +72,23 @@ def ember_fill(W=512, H=20, ss=4, seed=3):
     flow = F.fbm(h * 6, w, scale=26 * ss, octaves=5, seed=seed)[::6][:h]
     slag = F.fbm(h * 5, w, scale=16 * ss, octaves=4, seed=seed + 1)[::5][:h]
     y = (np.arange(h)[:, None] + 0.5) / h
-    channel = np.clip(1 - np.abs(y - 0.5) * 2.0, 0, 1) ** 0.5
-    crust = np.clip((slag - 0.22) * 5.0, 0, 1)            # 0 melt .. 1 slag
-    edge = np.exp(-((slag - 0.22) / 0.05) ** 2)           # the slag's glowing rim
-    heat = np.clip(0.55 + 0.45 * flow, 0, 1) * (0.6 + 0.4 * channel)
+    # A glowing channel: hottest along its middle, cooling to deep red at its walls.
+    channel = np.clip(1 - np.abs(y - 0.48) * 2.1, 0, 1) ** 0.8
+    crust = np.clip((slag - 0.38) * 4.0, 0, 1) * (1 - channel * 0.6)  # slag drifts at the walls
+    edge = np.exp(-((slag - 0.38) / 0.05) ** 2)            # the slag's glowing rim
+    heat = np.clip(0.05 + 0.9 * channel ** 1.3 + 0.25 * flow, 0, 1)
     deep = F.hexc("#3a0c04")
-    red = F.hexc("#c8301a")
-    mid = F.hexc("#ff7a1a")
-    hot = F.hexc("#ffd07a")
-    melt = np.where(heat[..., None] < 0.6, red + (mid - red) * (heat[..., None] / 0.6), mid + (hot - mid) * ((heat[..., None] - 0.6) / 0.4))
+    red = F.hexc("#a8200e")
+    mid = F.hexc("#ff6a14")
+    hot = F.hexc("#ffc860")
+    hh = heat[..., None]
+    melt = np.where(hh < 0.3, deep + (red - deep) * (hh / 0.3),
+                    np.where(hh < 0.7, red + (mid - red) * ((hh - 0.3) / 0.4), mid + (hot - mid) * ((hh - 0.7) / 0.3)))
     slag_col = deep * (0.8 + 0.6 * flow[..., None])
     lin = melt * (1 - crust[..., None]) + slag_col * crust[..., None]
     lin += edge[..., None] * hot * 0.9 * (1 - crust[..., None] * 0.5)
-    lin *= 1.1
     # The light catching the top of the melt.
-    lin += (np.exp(-y / 0.10) * 0.25)[..., None] * hot
+    lin += (np.exp(-y / 0.08) * 0.12)[..., None] * hot
     srgb = F.lin_to_srgb(np.clip(lin, 0, 1))
     img = np.dstack([srgb, np.ones((h, w))])
     return F.to_pil(F.downsample(img, (W, H)))

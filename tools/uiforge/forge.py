@@ -334,7 +334,7 @@ class Surface:
 
     def shade(self, normal_strength=1.0, ao=0.6, shadow=0.5, light_elev=40.0, shadow_len=None, exposure=1.0):
         """Lit linear RGB from the matcaps."""
-        hgt = self.height
+        hgt = self.height.astype(np.float32)
         gx = cv2.Sobel(hgt, cv2.CV_32F, 1, 0, ksize=3, borderType=cv2.BORDER_REPLICATE) / 8.0
         gy = cv2.Sobel(hgt, cv2.CV_32F, 0, 1, ksize=3, borderType=cv2.BORDER_REPLICATE) / 8.0
         nx, ny, nz = -gx * normal_strength, gy * normal_strength, np.ones_like(hgt)

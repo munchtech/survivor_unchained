@@ -180,16 +180,42 @@ def cut_fit(src, dst, size, mode="mask+glow", fade_x=0.0, ember_at=None, ember=0
     P.save_rgba(out[..., :3], out[..., 3], dst)
 
 
+def extend_fit(src, dst, size, centre=0.34, ember=0.0):
+    """A long painted ornament fitted to a wider box: cut, scaled to the box's height, its
+    middle (`centre` of its width: the coin or link) kept as painted and its two arms
+    drawn out to reach the ends, as a smith draws a bar longer."""
+    rgba = C.cutout(src, mode="mask+glow")
+    x0, y0, x1, y1 = C.bbox(rgba, thr=0.08, pad=4)
+    rgba = C.grade(rgba[y0:y1, x0:x1])
+    W, H = size
+    h, w = rgba.shape[:2]
+    k = H / h
+    big = cv2.resize(rgba, (max(1, int(w * k)), H), interpolation=cv2.INTER_AREA if k < 1 else cv2.INTER_CUBIC)
+    bw = big.shape[1]
+    c0, c1 = int(bw * (0.5 - centre / 2)), int(bw * (0.5 + centre / 2))
+    mid = big[:, c0:c1]
+    side = (W - mid.shape[1]) // 2
+    left = cv2.resize(big[:, :c0], (side, H), interpolation=cv2.INTER_CUBIC)
+    right = cv2.resize(big[:, c1:], (W - side - mid.shape[1], H), interpolation=cv2.INTER_CUBIC)
+    out = np.concatenate([left, mid, right], axis=1)
+    if ember > 0:
+        yy, xx = np.mgrid[0:H, 0:W]
+        d = np.hypot((xx - W / 2) / H, (yy - H / 2) / H)
+        lin = F.srgb_to_lin(out[..., :3]) + (np.exp(-(d / 0.35) ** 2) * ember)[..., None] * F.hexc("#ff8a3a") * out[..., 3:4]
+        out[..., :3] = F.lin_to_srgb(np.clip(lin, 0, 1))
+    P.save_rgba(out[..., :3], np.clip(out[..., 3], 0, 1), dst)
+
+
 def f_logo():
     cut_fit(raw("logo_c", "logo_c_801_2.png"), ui("title", "logo.png"), (1400, 440), fade_x=0.06)
 
 
 def f_rule():
-    cut_fit(raw("rule", "rule_803_0.png"), ui("ornaments", "rule.png"), (960, 24), ember_at=(0.5, 0.5), ember=0.9)
+    extend_fit(raw("rule", "rule_803_0.png"), ui("ornaments", "rule.png"), (960, 24), centre=0.3, ember=0.6)
 
 
 def f_flourish():
-    cut_fit(raw("divider", "divider_42.png"), ui("ornaments", "flourish.png"), (720, 64))
+    extend_fit(raw("divider", "divider_42.png"), ui("ornaments", "flourish.png"), (720, 64), centre=0.36)
 
 
 GROUPS = {n[2:]: f for n, f in globals().items() if n.startswith("f_")}
