@@ -223,6 +223,22 @@ sealed class Route
 
     public List<MapMark> Map() => Zone!.MapMarks();
 
+    /// <summary>One of the night's story fights (an interactable "night:..."),
+    /// taken, fought and won or lost; back in the Verge afterwards.</summary>
+    public Arena.ArenaSpec StoryFight(string id, bool won)
+    {
+        Use($"night:{id}");
+        var spec = Host!.Entered ?? throw new InvalidOperationException($"{id} entered no arena");
+        Leave();
+        Arena.Arenas.Begin(W, spec);
+        var b = J.StartBattle(true, new CollisionWorld(60), (_, _) => 0, 0, 0, 0, 3, arena: true);
+        // The boss down tells the story at once; the way out is taken after.
+        if (won) Arena.Arenas.Won(J, spec);
+        Arena.Arenas.Finish(J, b, spec, won);
+        Enter("verge");
+        return spec;
+    }
+
     /* ------------------------------------------------------ save and load -- */
 
     /// <summary>Saved as the game saves (to text) and loaded back as a new
@@ -235,6 +251,7 @@ sealed class Route
         var text = Json.Write(J.ToSave(new SaveLocation { Zone = zone ?? "waystation", X = x, Z = z }));
         if (Zone != null) { Zone.Dispose(); Zone = null; B = null; Host = null; Meta = null; }
         J = Journey.From(Saves.Parse(text)!, 0);
+        Loaded = Snapshot();
         if (zone != null)
         {
             Enter(zone);
@@ -242,6 +259,9 @@ sealed class Route
         }
         return this;
     }
+
+    /// <summary>The state as it came back from the last save, before any zone was stood up again.</summary>
+    public string Loaded { get; private set; } = "";
 
     /// <summary>The state that matters, as text, for "nothing changed across a save".</summary>
     public string Snapshot() => Json.Write(new { W.Facts, W.Quests, W.Day, W.Time, Knowledge = J.Ch.Knowledge.OrderBy(k => k).ToList(), Pack = J.Ch.Pack.Where(p => p != null).Select(p => p!.Def).OrderBy(d => d).ToList(), J.Ch.Gold });

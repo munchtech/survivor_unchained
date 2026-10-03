@@ -67,7 +67,7 @@ public partial class InventoryScreen : Overlay
             if (found.InPack && def.Kind == ItemKind.Consumable) acts.AddChild(Style.Button("Use", () => G.Gear((j, b) => j.Use(found.Item.Uid, b)), true, true));
             if (found.InPack && Items.SlotFor(def) != null) acts.AddChild(Style.Button("Wear", () => G.Gear((j, b) => j.Equip(found.Item.Uid, null, b)), true, true));
             if (!found.InPack && found.Slot != EquipSlot.Weapon) acts.AddChild(Style.Button("Take off", () => G.Gear((j, b) => j.Unequip(found.Slot, b)), false, true));
-            if (found.InPack && def.Kind != ItemKind.Quest) acts.AddChild(Style.Button("Leave behind", () => { sel = null; G.Journey.Drop(found.Item.Uid); }, false, true));
+            if (found.InPack && !G.Journey.StillNeeded(found.Item)) acts.AddChild(Style.Button("Leave behind", () => { sel = null; G.Journey.Drop(found.Item.Uid); }, false, true));
             detail.AddChild(ItemViews.Card(found.Item, ch, found.InPack, acts, 360));
         }
         else

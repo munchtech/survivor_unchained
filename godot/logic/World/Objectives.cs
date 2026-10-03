@@ -76,6 +76,8 @@ public static class Objectives
         var pump = h.F("dig.pump").Str;
         var main = new List<Step>();
         if (pump is "broken" or "moved" or "blown") main.Add(new("The slurry has stopped. Give the stream a few days to run clear"));
+        // Sold to Pell, the Dig is his to see to; the survivor may still beat him to it.
+        else if (h.F("dig.sold").Truthy) main.Add(new("Pell Varrow says to give it two days. Or stop the slurry at the Dig yourself"));
         else if (h.Knows("root_cause")) main.Add(new("Stop the slurry at the Dig, up the stream in the north-east of the Verge"));
         else if (h.Knows("clue.analysis")) main.Add(new("Follow the stream up into the north-east of the Verge, to whoever is dumping the slurry"));
         else if (h.Has("stream_sample")) main.Add(new("Take the bottle of green water to Wenna"));

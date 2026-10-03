@@ -557,9 +557,9 @@ public sealed class Verge : ZoneRuntime
         });
         // The six "B.E." crates, once nobody keeps the camp: one charge for the
         // Dig's pump, or the lot into the ravine's water. Only for someone who
-        // knows what B.E. is (Harlan's word, or the meaning bought from Pell);
-        // anyone else sees six crates of somebody's salt. Telling Harlan where
-        // they are stays open until they are gone.
+        // knows what B.E. is (Harlan has said it); anyone else sees six crates
+        // of somebody's salt. Telling Harlan where they are stays open until
+        // they are gone.
         bool CratesFree() => F("be.crates").IsNull && !Test("""{ "history": "burned_roost" }""") && Knows("clue.blasting_ember") &&
             (F("redcowl").Str is "dead" or "tricked" || F("roost.cleared").Truthy);
         string? CratesWatched() => roostCrew.Any(e => Up(e) && Dist(e.X, e.Z, cargo.X, cargo.Z) < 16) ? "Too many eyes. Deal with them first" : null;
@@ -936,6 +936,14 @@ public sealed class Verge : ZoneRuntime
     public override void Step(double dt)
     {
         Approach();
+        // Bluffed ("PACK IT UP!"): the camp empties into the trees, Redcowl
+        // with it, and nobody is left to call you a thief or watch the crates.
+        if (F("redcowl").Str == "tricked" && (roostCrew.Any(Up) || Actors.ContainsKey("redcowl")))
+        {
+            foreach (var e in roostCrew.Where(Up).ToList()) B?.Enemies.Release(e);
+            roostCrew.Clear();
+            if (Actors.Remove("redcowl", out var rc)) rc.Dispose();
+        }
         // Peace made in a conversation reaches everyone already out there;
         // anyone you have struck stays angry.
         dispT -= dt;

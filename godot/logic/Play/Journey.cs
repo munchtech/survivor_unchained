@@ -394,10 +394,13 @@ public sealed class Journey
         OnTouch();
     }
 
+    /// <summary>A quest thing whose part in the story is not yet played.</summary>
+    public bool StillNeeded(ItemInstance it) => Items.Get(it.Def) is { Kind: ItemKind.Quest } d && Rules.Test(d.Needed, Ctx);
+
     public void Drop(string uid)
     {
         if (Inventory.Find(Ch, uid) is not { InPack: true } loc) return;
-        if (Items.Get(loc.Item.Def).Kind == ItemKind.Quest) { Warn("You might need that"); return; }
+        if (StillNeeded(loc.Item)) { Warn("You might need that"); return; }
         Ch.Pack[loc.Index] = null;
         OnToast(new Toast(ToastKind.World, $"Left behind: {Inventory.Name(loc.Item)}"));
         OnTouch();
@@ -658,7 +661,7 @@ public sealed class Journey
         // strongbox or a ledger would vanish without anyone in the story
         // knowing. The story's own trades (Rav's fence, Pell's price for his
         // book) are made in conversation.
-        if (kind == ItemKind.Quest) return null;
+        if (StillNeeded(mine)) return null;
         return Math.Max(1, (int)Math.Floor(UnitValue(mine) * def.Pays / Math.Max(0.8, PriceMod(shop)))) * mine.Qty;
     }
 
