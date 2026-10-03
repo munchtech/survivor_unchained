@@ -13360,10 +13360,10 @@
        "fact": "tam.tock",
        "eq": true
       },
-      "text": "Last. Under the Verge, something is turning over in its sleep, and under a farm past the Old Road, something is knocking to be let in. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside..."
+      "text": "Last. Under the Verge, something is turning over in its sleep, and under a farm past the Old Road, something is knocking to be let in. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside... (The roof shivers under the table, and the glass of her lamp rings in its frame. The flame lies over toward the hill. Down in the town every dog starts at once. She looks east, into the dark, and does not finish.)"
      },
      {
-      "text": "Last. Under the Verge, something is turning over in its sleep. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside..."
+      "text": "Last. Under the Verge, something is turning over in its sleep. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside... (The roof shivers under the table, and the glass of her lamp rings in its frame. The flame lies over toward the hill. Down in the town every dog starts at once. She looks east, into the dark, and does not finish.)"
      }
     ],
     "choices": [
@@ -14122,7 +14122,7 @@
    },
    "warden": {
     "id": "warden",
-    "text": "...Who told you that? The Vigil kept those lamps before the Watch did. Before the Watch was the Watch. The lamps were never to keep the dark out. They were to keep the Warden asleep. If somebody lit them again, somebody wanted it awake. Do not repeat that. I am probationary.",
+    "text": "...Who told you that? The Vigil kept those lamps before the Watch did. Before the Watch was the Watch. Oil. The lamps at the ford were to burn oil, and nothing else; it is in the handbook, with a drawing. Oil keeps it sleeping. Ember wakes it. If somebody lit them with ember, somebody wanted it awake. Do not repeat that. I am probationary.",
     "effects": [
      {
       "rel": {

@@ -491,11 +491,12 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
   Sella about their life, with "(She is not looking at your palm.)" Her sight
   is bought; the first Act 1 twist that pays inside Act 1.
 - `Prologue.cs` (the dead watchman's book): "Lamps at the Low Ford lit again,
-  and not by us." `holloway.post`: the dead man is Corran, written down as a
+  and not by us. Not oil. Wrong colour." (Ford-lamp blue is ember; the Watch's
+  oil burned warm.) `holloway.post`: the dead man is Corran, written down as a
   deserter; his runner Dannet "never came up the road" (Act 2: Dannet's body,
   with a Toll Tower pass on it). Journal: `lamps/book`, `lamps/post`.
-- `keegan.warden`, `keegan.who`: "If somebody lit them again, somebody wanted
-  it awake." "Someone who wanted a heart. You tell me; you were there."
+- `keegan.warden`, `keegan.who`: "Oil keeps it sleeping. Ember wakes it. If
+  somebody lit them with ember, somebody wanted it awake." "Someone who wanted a heart. You tell me; you were there."
 - **(on purpose)** `concerns.json` vonnra: she "misses nothing that comes
   through the east gate", and `vonnra.ledger_read` says the caravan never came
   through it: her own clerk sent it away. `vonnra.jessop`: "Clerks go south,

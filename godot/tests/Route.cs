@@ -39,7 +39,7 @@ sealed class Route
             Name = name, Archetype = archetype, Background = bg, Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
         }, 5);
         var p = new Route(j);
-        if (readTheBook) p.Apply("""[{ "learn": "lore.warden", "text": "The lamps at the ford feed the Warden." }, { "quest": { "id": "lamps", "status": "active", "entry": "book" } }]""");
+        if (readTheBook) p.Apply("""[{ "learn": "lore.warden", "text": "The lamps at the ford burn ember, and the Warden drinks it." }, { "quest": { "id": "lamps", "status": "active", "entry": "book" } }]""");
         p.Apply("""[{ "set": { "prologue.done": true } }, { "quest": { "id": "prologue", "status": "resolved", "outcome": "resolved" } }]""");
         j.World.Time = TimeOfDay.Day;
         j.Ch.Gold = 200;

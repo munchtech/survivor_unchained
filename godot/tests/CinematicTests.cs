@@ -151,6 +151,32 @@ public class CinematicTests
     }
 
     [Fact]
+    public void The_ground_stops_Vonnra_in_the_middle_of_the_last_reading()
+    {
+        var s = Q("hunter");
+        s.World.Facts["chapter.ready"] = true;
+        s.World.Time = TimeOfDay.Night;
+        var r = new DialogueRunner(Convo("vonnra"), s.C);
+        var p = r.Start();
+        while (p!.Choices.Count == 0) p = r.Advance();
+        p = r.Choose(p.Choices.First(c => c.Text.Contains("fortune")).Index).Next;
+        while (p!.Choices.Count == 0) p = r.Advance();
+        Assert.Equal("f_below", p.Node.Id);
+        Assert.Contains("And the door in the hillside...", p.Text);
+        Assert.EndsWith("She looks east, into the dark, and does not finish.)", p.Text);
+    }
+
+    [Fact]
+    public void Keegan_says_oil_keeps_it_sleeping_and_the_book_says_not_oil()
+    {
+        var s = Q("scholar");
+        Talk(Convo("keegan"), s.C, "bye");
+        s.Ch.Knowledge.Add("lore.warden");
+        Assert.Contains("Ember wakes it.", Talk(Convo("keegan"), s.C, "ford-warden")!.Text);
+        Assert.Contains("Not oil. Wrong colour.", Lore.Quests["lamps"].Entries["book"]);
+    }
+
+    [Fact]
     public void Every_survivor_is_cold_by_night_and_Sella_says_so_by_the_third_morning()
     {
         // The body's hours (STORY_BIBLE section 1): cold as the river all night, warm

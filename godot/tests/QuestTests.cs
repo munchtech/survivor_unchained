@@ -335,7 +335,7 @@ public class QuestTests
         Talk(Convo("keegan"), s.C, "bye");
         s.Ch.Knowledge.Add("lore.warden");
         var p = Talk(Convo("keegan"), s.C, "ford-warden");
-        Assert.Matches("keep the Warden asleep", p!.Text);
+        Assert.Matches("Oil keeps it sleeping. Ember wakes it.", p!.Text);
     }
 
     [Fact]
