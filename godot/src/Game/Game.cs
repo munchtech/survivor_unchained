@@ -144,6 +144,13 @@ public partial class Game : Node, IZoneHost
                 foreach (var f in parts[1].Split('+')) ArtBook.Choose(ch, parts[0], f);
             }
         }
+        // --items A,B[:RARITY]: those things in the pack from the start (pictures of the pack, the shop).
+        if (Args.Get("items") is string items)
+            foreach (var spec in items.Split(','))
+            {
+                var parts = spec.Split(':');
+                Journey.GiveItem(parts[0], 1, parts.Length > 1 && int.TryParse(parts[1], out var r) ? r : null);
+            }
         var z = Args.Get("zone") ?? "lowford";
         Arrival? at = null;
         if (Args.Get("at") is string s)
