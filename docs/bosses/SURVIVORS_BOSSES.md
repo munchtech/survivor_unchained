@@ -364,7 +364,7 @@ burst (the colour's school). The bar shows three lamp icons.
   with holes the player must route round, and the horde routes round them
   too (the flow field re-bakes).
 - **Snib's charge** (once, at 50%): Snib shouts from the edge ("Boss! BOSS!
-  That's the good stuff!") and a crate of blasting ember lands in the
+  Not the good stuff! It IS the good stuff.") and a crate of blasting ember lands in the
   middle (a barrel prop). Hit it when Grimtunnel is within 5 m and it blows
   (× 0.1 of his health, and his armour off for the rest of the phase).
   Miss, and he hits it himself in 20 s and the blast is round the survivor.
@@ -381,7 +381,7 @@ pit's edge ("Not done! Not DONE!"), is pulled in by the lamplings below,
 and the pit collapses on top of him. The ground in a 10 m circle round it
 falls in and rises again as rubble; the run's chest is thrown up out of the
 dust a second later. Every lampling on the field dives underground and is
-gone. Snib's last line from the edge: "...I'll tell him you said hello."
+gone. Snib's last line from the edge: "Snib will tell Boss you said hello. Snib will NOT tell Boss."
 
 **Soft and hard enrage.** At 3 minutes, the pits stop filling in. At 5
 minutes, **The Fall**: the arena's floor caves from the edge inward, a ring

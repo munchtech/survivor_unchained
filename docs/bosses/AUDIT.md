@@ -17,9 +17,10 @@ branch this was written from; nothing in `godot/` was changed.
   minutes) with its health multiplied, fourteen escorts and a title. It has
   one verb (a lunge, or for Grimtunnel a lobbed pot), no phases, no
   telegraph beyond the lunge's lane, and nothing that changes the arena.
-- **The probe says the fight is a damage check, and only that**: from a
-  quarter of a minute to never, depending on the build, with the boss
-  rarely the thing that hurts (§4).
+- **The probe says the fight is a damage check, and only that** (§4): for
+  any build that reaches it the boss lives a median of 16–20 s, lands no
+  blow in half the fights, and lives less long than the herald at twenty in
+  two wins out of three; for a weak build against Grimtunnel it never ends.
 - **The story's four night fights** (Greymuzzle, Redcowl, Grimtunnel, the
   Barrow Lord) are the same four creatures with a name on the bar.
 - **The building blocks for much better are already in the code**: a boss
