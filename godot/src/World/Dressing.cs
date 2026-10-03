@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 
 namespace SurvivorUnchained.View;
@@ -183,7 +184,11 @@ public static class Dressing
             {
                 var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, Mesh = Looked(mesh, KitLook.Look.Plain, foot), InstanceCount = list.Count };
                 for (int i = 0; i < list.Count; i++) mm.SetInstanceTransform(i, list[i] * local);
-                root.AddChild(new MultiMeshInstance3D { Multimesh = mm, Name = piece });
+                var mmi = new MultiMeshInstance3D { Multimesh = mm, Name = piece };
+                // Which piece, and where each one stands, for taking one away in play (HideProps).
+                mmi.SetMeta("prop", id);
+                mmi.SetMeta("at", new Godot.Collections.Array<Vector3>(list.Select(t => t.Origin)));
+                root.AddChild(mmi);
             }
         }
         return root;

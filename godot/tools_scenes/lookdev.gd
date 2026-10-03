@@ -153,7 +153,7 @@ func _init():
 		players.append(ap)
 	var cam = Camera3D.new()
 	cam.position = Vector3(0, float(OS.get_environment("CAMY")) if OS.get_environment("CAMY") != "" else 1.0, (1.6 + clips.size() * 0.75) * (float(OS.get_environment("CAMD")) if OS.get_environment("CAMD") != "" else 1.0))
-	cam.fov = 40
+	cam.fov = float(OS.get_environment("FOV")) if OS.get_environment("FOV") != "" else 40.0
 	root.add_child(cam)
 	cam.current = true
 	# ORBIT=deg,height,dist,targety: the camera round the middle figure, looking at it.

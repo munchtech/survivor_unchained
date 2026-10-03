@@ -3,7 +3,7 @@
   "generator": "Khronos glTF Blender I/O v4.5.51",
   "version": "2.0",
   "extras": {
-   "data": "3a7bc2832cd6292a1002283e7f58fea3"
+   "data": "c5d74ae348cffbc43658ae70e9099d35"
   }
  },
  "scene": 0,
@@ -1598,7 +1598,7 @@
    "componentType": 5126,
    "count": 133152,
    "max": [
-    0.1827283352613449,
+    0.1815296858549118,
     1.8844324350357056,
     0.10342203080654144
    ],

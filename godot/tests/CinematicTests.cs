@@ -105,13 +105,21 @@ public class CinematicTests
     public void Vonnra_reads_only_after_dark_and_asks_for_the_hand_you_fight_with()
     {
         var s = Q();
-        s.World.Facts["chapter.ready"] = true;
         s.World.Time = TimeOfDay.Day;
+        // Before the chapter is ready there is no fortune to refuse: the reason
+        // "after dark" is never given for the wrong cause.
+        Assert.DoesNotContain(Greet(Convo("vonnra"), s.C).Choices, c => c.Text.Contains("fortune"));
+        s.World.Facts["chapter.ready"] = true;
         var fortune = Greet(Convo("vonnra"), s.C).Choices.Single(c => c.Text.Contains("fortune"));
         Assert.False(fortune.Enabled);
         Assert.Equal("She reads only after dark", fortune.Locked);
         s.World.Time = TimeOfDay.Night;
         Assert.Contains("the one you hold the blade with", Talk(Convo("vonnra"), s.C, "fortune")!.Text);
+        // Read once: when the book is closed it is gone, by day or night.
+        s.World.Facts["chapter.done"] = true;
+        Assert.DoesNotContain(Greet(Convo("vonnra"), s.C).Choices, c => c.Text.Contains("fortune"));
+        s.World.Time = TimeOfDay.Day;
+        Assert.DoesNotContain(Greet(Convo("vonnra"), s.C).Choices, c => c.Text.Contains("fortune"));
         // An arcanist is asked for the hand she burns with.
         var a = Make("hunter", "Wren", 5);
         a.Ch.Archetype = "arcanist";

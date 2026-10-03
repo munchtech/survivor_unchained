@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SurvivorUnchained.Core;
+using SurvivorUnchained.Play;
 using SurvivorUnchained.Rpg;
 using SurvivorUnchained.World;
 using Xunit;
@@ -33,9 +35,11 @@ public class BreadcrumbTests
     static List<string> Offered(Setup s, string id) => Greet(Convo(id), s.C).Choices.Select(c => c.Text).ToList();
     static void Meet(Setup s, string id) => s.World.Npc(id).Flags["met"] = true;
 
-    /// <summary>Vonnra's fortune, read through to its last question.</summary>
+    /// <summary>Vonnra's fortune, read through to its last question. She reads
+    /// only after dark (docs/cinematics/c09_fortune.md).</summary>
     static (DialogueRunner R, Presented P, string Read) Fortune(Setup s)
     {
+        s.World.Time = TimeOfDay.Night;
         var r = new DialogueRunner(Convo("vonnra"), s.C);
         var p = r.Start()!;
         p = r.Choose(p.Choices.First(c => c.Text.Contains("fortune", StringComparison.OrdinalIgnoreCase)).Index).Next!;
@@ -445,5 +449,216 @@ public class BreadcrumbTests
         Assert.DoesNotContain(p.Choices, c => c.Text.Contains("Jessop"));
         var k = Q();
         Assert.Contains("Jessop", Talk(Convo("rook"), k.C, "talk")!.Text);
+    }
+
+    /* ------------------------------------------- the code items (section 11) -- */
+
+    [Fact]
+    public void K4_a_strongbox_taken_before_anyone_asked_says_whose_it_is_and_where_it_goes()
+    {
+        // C1: in the Verge with the caravan unknown, the Roost found by walking into it.
+        const string Step = "Take the Coyle strongbox to Harlan Coyle, at Coyle Trading in the Waystation, or keep it";
+        var p = Route.New("outcast").Enter("verge");
+        Assert.Equal(QuestStatus.Unknown, p.Status("caravan"));
+        p.Use("strongbox");
+        Assert.Equal(1, p.Count("coyle_strongbox"));
+        Assert.Equal(QuestStatus.Active, p.Status("caravan"));
+        Assert.True(p.Has("caravan", "strongbox_found"));
+        Assert.Contains("Coyle Trading Post", Lore.EntryText("caravan", "strongbox_found"));
+        Assert.Contains(Step, p.Steps("caravan"));
+        Assert.False(p.Offers("strongbox"));
+        // And it survives a save: the step is read from the pack and the facts.
+        p.SaveAndLoad();
+        Assert.Contains(Step, p.Steps("caravan"));
+        Assert.False(p.Offers("strongbox"));
+        p.Leave();
+        Assert.Contains("That's my seal", p.Greet("harlan").Said);
+        p.Talk("harlan", "strongbox");
+        Assert.Equal("returned", p.S("caravan.cargo"));
+        Assert.DoesNotContain(p.Steps("caravan"), t => t.Contains("strongbox"));
+        // Whatever the teamsters' fate, the box's step stands while it is carried.
+        var d = Route.New("outcast").Enter("verge");
+        d.Use("strongbox");
+        d.W.Facts["caravan.survivors"] = "dead";
+        Assert.Contains(Step, d.Steps("caravan"));
+    }
+
+    [Fact]
+    public void K5b_the_ledgers_step_follows_what_the_survivor_knows()
+    {
+        // C2: burgled on the first night, before any lead.
+        var p = Route.New("outcast");
+        p.Give("pell_ledger");
+        p.Apply("""[{ "quest": { "id": "caravan", "entry": "pell_ledger" } }]""");
+        Assert.Contains("Someone who knows the dates could read Pell's ledger: Captain Holloway, or Harlan Coyle", p.Steps("caravan"));
+        Assert.DoesNotContain(p.Steps("caravan"), t => t.Contains("show it to Harlan"));
+        p.Talk("holloway", "found this book");
+        Assert.Contains("Find out who \"R.\" is. Kerchief arrows are red-fletched; Rav Cutwell, at the Flagon, knows the Kerchiefs", p.Steps("caravan"));
+        // The wreck is where the tracker's gold points: the red fletching is there.
+        p.Enter("verge");
+        Assert.Equal(MarkKind.Quest, p.Map().Single(m => m.Label == "Coyle Wagons").Kind);
+        p.Use("wreck");
+        Assert.Equal(MarkKind.Place, p.Map().Single(m => m.Label == "Coyle Wagons").Kind);
+        Assert.Contains("Pell Varrow's ledger: show it to Harlan, or to Captain Holloway", p.Steps("caravan"));
+        p.Leave();
+        p.Talk("holloway", "his ledger");
+        Assert.DoesNotContain(p.Steps("caravan"), t => t.Contains("ledger"));
+        // Rav's word on the Kerchiefs is enough to know who "R." is, too.
+        var k = Route.New("hunter");
+        k.Give("pell_ledger");
+        k.Talk("harlan", "goodbye");
+        Assert.Contains(k.Steps("caravan"), t => t.StartsWith("Someone who knows the dates"));
+        k.Talk("harlan", "found this book");
+        Assert.Contains(k.Steps("caravan"), t => t.StartsWith("Find out who"));
+        k.Talk("rav", "about the kerchiefs");
+        Assert.Contains("Pell Varrow's ledger: show it to Harlan, or to Captain Holloway", k.Steps("caravan"));
+    }
+
+    [Fact]
+    public void L1_the_dead_watchmans_book_opens_the_lamps()
+    {
+        // C3: the prologue's watchman, read.
+        var p = Route.New(readTheBook: false);
+        Assert.Equal(QuestStatus.Unknown, p.Status("lamps"));
+        p.W.Facts.Remove("prologue.done");
+        p.Enter("lowford");
+        p.Use("watchman");
+        Assert.True(p.Knows("lore.warden"));
+        Assert.Equal(QuestStatus.Active, p.Status("lamps"));
+        Assert.Equal(["book"], p.Journal("lamps"));
+        // Read twice, written once.
+        p.Use("watchman");
+        Assert.Equal(["book"], p.Journal("lamps"));
+    }
+
+    [Fact]
+    public void E2_the_chapters_page_reads_back_the_crates_Jory_and_the_accusation()
+    {
+        // C4: both quests settled, Jory told, the crates to Redcowl, Vonnra accused.
+        var p = Route.New("outcast");
+        p.Learn("clue.blasting_ember");
+        p.Talk("redcowl", "six crates", "blasting ember", "deep enough", "keep them dry");
+        p.W.Facts["caravan.survivors"] = "rescued";
+        p.Talk("jory", "what was in the crates", "blasting ember", "he knew");
+        p.W.Facts["beasts.outcome"] = "cured";
+        p.W.Facts["caravan.cargo"] = "returned";
+        p.Talk("brannoc", "lamp-irons on the rack");
+        p.Talk("vonnra", "goodbye");
+        p.Talk("vonnra", "coin on the cord");
+        p.Sleep();
+        Assert.True(p.F("chapter.ready").Truthy);
+        var (_, choices, r, last) = p.Fortune();
+        r.Choose(last.Choices.First(c => c.Text.Contains("You lit the lamps")).Index);
+        var door = r.Advance()!;
+        Assert.Equal("fortune", r.Choose(door.Choices[0].Index).Action);
+        var sum = Chapter.Summary(p.J.Ch, p.W);
+        Assert.Equal(["vault", "below", "lamps"], sum.Open.Select(o => o.Id));
+        Assert.Equal(Lore.EntryText("lamps", "accused"), sum.Open.Single(o => o.Id == "lamps").Line);
+        var beats = sum.Threads.Single(t => t.Id == "caravan").Beats;
+        Assert.Contains(Lore.EntryText("caravan", "crates_redcowl"), beats);
+        Assert.Contains(Lore.EntryText("caravan", "jory_told"), beats);
+        Assert.Equal("Wren, who said it to Vonnra's face", sum.Epithet);
+        // Running with the Pack is still the louder name.
+        p.W.Facts["beasts.outcome"] = "allied";
+        Assert.Equal("Wren, who runs with wolves", Chapter.Summary(p.J.Ch, p.W).Epithet);
+        // A save from before the lamps were a thread closes with two.
+        var old = Route.New(readTheBook: false);
+        Assert.Equal(["vault", "below"], Chapter.Summary(old.J.Ch, old.W).Open.Select(o => o.Id));
+    }
+
+    [Fact]
+    public void K14_the_crates_in_an_empty_camp_can_be_broken_into_or_sunk()
+    {
+        // C5: Redcowl tricked out of the Roost by someone who knows what B.E. is.
+        var p = Route.New("outcast").Enter("verge");
+        p.Learn("clue.blasting_ember");
+        Assert.False(p.Offers("crates_charge"));
+        p.Talk("redcowl", "watch is on its way");
+        Assert.Equal("tricked", p.S("redcowl"));
+        Assert.True(p.CanUse("crates_charge"));
+        p.Use("crates_charge");
+        Assert.Equal(1, p.Count("blasting_ember"));
+        Assert.False(p.Offers("crates_charge"));
+        Assert.True(p.CanUse("crates_sink"));
+        p.Leave();
+        p.Apply("""[{ "quest": { "id": "caravan", "entry": "roost_found" } }]""");
+        Assert.Contains(p.Offered("harlan"), t => t.Contains("six crates"));
+        p.Enter("verge");
+        // The charge taken is remembered across a visit.
+        Assert.False(p.Offers("crates_charge"));
+        p.Use("crates_sink");
+        Assert.Equal("sunk", p.S("be.crates"));
+        Assert.True(p.Has("caravan", "crates_sunk"));
+        Assert.False(p.Offers("crates_sink"));
+        p.Leave();
+        Assert.DoesNotContain(p.Offered("harlan"), t => t.Contains("six crates"));
+        p.W.Facts["beasts.outcome"] = "cured";
+        p.W.Facts["caravan.survivors"] = "rescued";
+        p.W.Facts["chapter.ready"] = true;
+        Assert.Contains("bottom of a stream", p.Fortune().Read);
+        p.W.Facts["chapter.done"] = true;
+        p.Sleep();
+        Assert.Equal("sunk", p.S("be.crates"));
+        // Someone who does not know what is in them sees somebody's salt.
+        var n = Route.New("outcast").Enter("verge");
+        n.W.Facts["redcowl"] = "tricked";
+        Assert.False(n.Offers("crates_charge"));
+        Assert.False(n.Offers("crates_sink"));
+        // Burn the Roost instead: nothing left to take or sink.
+        var b = Route.New("outcast").Enter("verge");
+        b.Learn("clue.blasting_ember");
+        b.W.Facts["redcowl"] = "dead";
+        b.Apply("""[{ "history": { "id": "burned_roost", "text": "set the Roost burning", "tags": ["caravan"], "spread": 2 } }]""");
+        Assert.False(b.Offers("crates_charge"));
+        Assert.False(b.Offers("crates_sink"));
+    }
+
+    [Fact]
+    public void B9_Pells_charge_is_on_the_shelf_as_soon_as_the_survivor_knows_the_Dig()
+    {
+        // C6: day 1, nothing to blast with; then the Dig is known, the same day.
+        var p = Route.New("scholar");
+        var rng = new Random(1);
+        Assert.DoesNotContain(p.J.OpenShop("pell", rng)!.Stock, i => i.Def == "blasting_ember");
+        p.Learn("root_cause");
+        var st = p.J.OpenShop("pell", rng)!;
+        var ember = st.Stock.Single(i => i.Def == "blasting_ember");
+        Assert.Equal(2, ember.Qty);
+        p.J.Buy("pell", ember.Uid);
+        p.J.Buy("pell", ember.Uid);
+        Assert.Equal(2, p.Count("blasting_ember"));
+        // Not put up again until the shop restocks.
+        Assert.DoesNotContain(p.J.OpenShop("pell", rng)!.Stock, i => i.Def == "blasting_ember");
+        p.SaveAndLoad();
+        Assert.DoesNotContain(p.J.OpenShop("pell", rng)!.Stock, i => i.Def == "blasting_ember");
+        p.Sleeps(3);
+        Assert.Contains(p.J.OpenShop("pell", rng)!.Stock, i => i.Def == "blasting_ember");
+    }
+
+    [Fact]
+    public void An_older_save_counts_what_its_shelf_already_holds_as_rolled()
+    {
+        var p = Route.New("scholar");
+        p.Learn("root_cause");
+        p.J.OpenShop("pell", new Random(1));
+        var text = Json.Write(p.J.ToSave(new SaveLocation { Zone = "waystation" })).Replace("\"Version\":2", "\"Version\":1");
+        var old = Saves.Parse(System.Text.RegularExpressions.Regex.Replace(text, "\"Offered\":\\[[^\\]]*\\]", "\"Offered\":[]"))!;
+        Assert.Contains(old.World.Shops["pell"].Offered, k => k.EndsWith(":blasting_ember"));
+        var j = SurvivorUnchained.Play.Journey.From(old, 0);
+        Assert.Single(j.OpenShop("pell", new Random(1))!.Stock, i => i.Def == "blasting_ember");
+    }
+
+    [Fact]
+    public void C7_the_Kerchiefs_tolerate_whoever_kept_the_crates_from_the_Dig()
+    {
+        var p = Route.New("hunter");
+        p.Learn("clue.blasting_ember");
+        p.Give("wolf_pelt", 5);
+        p.Talk("redcowl", "coyle wagons", "pelts");
+        Assert.Equal("You struck a bargain with Redcowl. It holds while it pays.", Standings.Of(p.C).Single(s => s.Id == "kerchief").Why);
+        p.Talk("redcowl", "six crates", "blasting ember", "deep enough", "keep them dry");
+        var k = Standings.Of(p.C).Single(s => s.Id == "kerchief");
+        Assert.Equal("Tolerated", k.Word);
+        Assert.Equal("Redcowl keeps the Coyle crates from the Dig, on your word.", k.Why);
     }
 }

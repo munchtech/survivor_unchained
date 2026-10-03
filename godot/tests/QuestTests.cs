@@ -243,6 +243,8 @@ public class QuestTests
         s.World.Facts["beasts.outcome"] = "cured";
         s.World.Facts["caravan.survivors"] = "rescued";
         s.World.Facts["caravan.cargo"] = "sold";
+        // The dead watchman's book opened the lamps on the Low Ford road.
+        Rules.Apply(E("{ quest: { id: 'lamps', status: 'active', entry: 'book' } }"), s.C);
         Day(s, 0.5);
         Assert.True(s.World.Fact("chapter.ready").Bool);
         // She reads only after dark (docs/cinematics/c09_fortune.md).
@@ -262,7 +264,7 @@ public class QuestTests
         var sum = Chapter.Summary(s.Ch, s.World);
         Assert.Equal("Wren, who sold the Coyle strongbox", sum.Epithet);
         Assert.Equal(new[] { "Cured at the source", "Rescued, and robbed" }, sum.Threads.Select(t => t.Verdict));
-        Assert.Equal(new[] { "vault", "below" }, sum.Open.Select(o => o.Id));
+        Assert.Equal(new[] { "vault", "below", "lamps" }, sum.Open.Select(o => o.Id));
     }
 
     [Fact]
@@ -544,6 +546,9 @@ public class ObjectiveTests
         Assert.Contains(Steps(s.C, "caravan"), t => t.Contains("Tell Harlan"));
         Assert.Contains(Steps(s.C, "caravan"), t => t.Contains("strongbox is still in the Roost"));
         Rules.Apply(Es("[{ set: { 'caravan.cargo': 'returned' } }, { quest: { id: 'caravan', status: 'resolved' } }]"), s.C);
+        // Settled, but Harlan has not heard Jory is alive: that news is still to carry.
+        Assert.Equal(["Tell Harlan Coyle that Jory is alive"], Steps(s.C, "caravan"));
+        s.World.Npc("harlan").Flags["once:jory"] = true;
         Assert.DoesNotContain(Objectives.Of(s.C), o => o.Id == "caravan");
     }
 }

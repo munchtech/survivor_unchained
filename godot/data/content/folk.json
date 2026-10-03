@@ -217,7 +217,7 @@
   {
    "text": "They buried Aldo this morning. The Captain carried the front of the coffin himself.",
    "when": {
-    "fact": "wolves.at_gate",
+    "fact": "aldo.buried",
     "eq": true
    }
   },
@@ -798,7 +798,7 @@
   {
    "text": "Watch brought old Corran home from the ford post. Wrote him down a deserter, they did. Deserted to where, I ask you.",
    "when": {
-    "fact": "holloway.post_told",
+    "fact": "corran.home",
     "eq": true
    }
   },

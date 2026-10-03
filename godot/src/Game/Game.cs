@@ -676,9 +676,26 @@ public partial class Game : Node, IZoneHost
         GD.Print($"open {list[tourI]}");
         CloseOverlay();
         var next = list[tourI++];
-        if (next.StartsWith("talk:")) Talk(next[5..]);
+        if (next.StartsWith("talk:")) TalkTo(next[5..]);
         else if (next == "draft" && Battle is { } b) { b.GainEmber(b.EmberNext); }
         else Open(next);
+    }
+
+    /// <summary>--open talk:ID>words>+: a conversation, each choice after it
+    /// taken by a fragment of its words and each + a click on (pictures of a
+    /// line deep in a conversation: the fortune's pages, a long answer).</summary>
+    void TalkTo(string what)
+    {
+        var parts = what.Split('>');
+        Talk(parts[0]);
+        foreach (var pick in parts.Skip(1))
+        {
+            if (runner?.Present() is not { } p) break;
+            if (pick == "+") { Advance(); continue; }
+            var c = p.Choices.FirstOrDefault(x => x.Enabled && x.Text.Contains(pick, StringComparison.OrdinalIgnoreCase));
+            if (c == null) { GD.Print($"talk: no choice \"{pick}\""); break; }
+            Choose(c.Index);
+        }
     }
 
     /// <summary>--log S: a line every S seconds of how it is going (for runs
