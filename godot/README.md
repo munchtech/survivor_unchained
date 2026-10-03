@@ -70,6 +70,12 @@ Options go after `--`:
   and what hurt it (`ARENA_TRACE=1` for a line a minute,
   `ARENA_CASE=seed,calling,tier,people` for one case); for tuning the horde
   and how often the cards come;
+- `HORDE_BENCH=1 dotnet test tests/Tests.csproj --filter HordeBench_Run` (with
+  `--logger "console;verbosity=detailed"`): the fight timed under a horde of
+  300, 600 and 900 (the enemy pool's whole size) on a generated arena with
+  a mid-game build: milliseconds a tick, what a tick allocates, and a
+  fingerprint of how the fight ended, which a change meant only to make
+  it faster must leave as it was (`HORDE_TICKS` for the ticks timed);
 - `--shot NAME --seconds S [--every T --count N]`: screenshots
   (`src/Shots.cs`);
 - `--log S`: a line every S seconds (the fight, the zone, the sound);
