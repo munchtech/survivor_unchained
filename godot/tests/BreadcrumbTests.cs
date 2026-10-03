@@ -411,6 +411,7 @@ public class BreadcrumbTests
         Assert.Equal("watch", Settled(s => s.World.Facts["roost.cleared"] = true));
         Assert.Equal("burned", Settled(s => Rules.Apply(E("{ history: { id: 'burned_roost', text: 'set the Roost burning', tags: ['caravan'], spread: 2 } }"), s.C)));
         Assert.Equal("redcowl", Settled(s => s.World.Facts["be.crates"] = "redcowl"));
+        Assert.Equal("sunk", Settled(s => s.World.Facts["be.crates"] = "sunk"));
     }
 
     /* ------------------------------------------------- seeds for the later acts -- */
@@ -639,8 +640,13 @@ public class BreadcrumbTests
         var p = Route.New("scholar");
         p.Learn("root_cause");
         p.J.OpenShop("pell", new Random(1));
-        var text = Json.Write(p.J.ToSave(new SaveLocation { Zone = "waystation" })).Replace("\"Version\":2", "\"Version\":1");
-        var old = Saves.Parse(System.Text.RegularExpressions.Regex.Replace(text, "\"Offered\":\\[[^\\]]*\\]", "\"Offered\":[]"))!;
+        // A version 1 save knew nothing of the lines already rolled (the save's
+        // names are camelCase).
+        var text = Json.Write(p.J.ToSave(new SaveLocation { Zone = "waystation" }));
+        Assert.Contains("\"version\":2", text);
+        var v1 = System.Text.RegularExpressions.Regex.Replace(text.Replace("\"version\":2", "\"version\":1"), ",\"offered\":\\[[^\\]]*\\]", "");
+        Assert.DoesNotContain("\"offered\"", v1);
+        var old = Saves.Parse(v1)!;
         Assert.Contains(old.World.Shops["pell"].Offered, k => k.EndsWith(":blasting_ember"));
         var j = SurvivorUnchained.Play.Journey.From(old, 0);
         Assert.Single(j.OpenShop("pell", new Random(1))!.Stock, i => i.Def == "blasting_ember");

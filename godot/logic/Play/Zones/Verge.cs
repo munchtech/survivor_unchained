@@ -140,6 +140,11 @@ public sealed class Verge : ZoneRuntime
         return out_;
     }
 
+    /// <summary>The stream runs clean again: whatever settled the Pack (cured,
+    /// allied, bought, emptied), the poison stopped two days since. Until then
+    /// the wolves by the water are sick, and bitterroot grows on the green stretch.</summary>
+    bool StreamClean() => F("stream.clear").Truthy || F("beasts.outcome").Str == "cured";
+
     bool KerchiefsOut() => !KerchiefsFriendly() && F("redcowl").Str is not ("tricked" or "dead") && !F("roost.cleared").Truthy;
 
     /* ---------------------------------------------------- the night's fights -- */
@@ -300,7 +305,7 @@ public sealed class Verge : ZoneRuntime
         }
         bool night = W.Time == TimeOfDay.Night;
         double pop = F("beasts.population").IsNull ? 60 : F("beasts.population").Number;
-        bool sick = F("beasts.outcome").Str != "cured";
+        bool sick = !StreamClean();
         // The Pack, by the water while the sickness is on them.
         if (!WolvesFriendly() && pop > 5)
             for (int k = (int)Math.Round(5 * pop / 60); k > 0; k--)
@@ -350,7 +355,7 @@ public sealed class Verge : ZoneRuntime
                 if (greymuzzle != null) SetDisposition(greymuzzle);
             }
             SpawnGroup("wolf", 5, hollow.X, hollow.Z, 9, "hollow", 14);
-            if (F("beasts.outcome").Str != "cured") SpawnGroup("wolf_blighted", 3, hollow.X, hollow.Z, 6, "hollow", 8);
+            if (!StreamClean()) SpawnGroup("wolf_blighted", 3, hollow.X, hollow.Z, 6, "hollow", 8);
             if (HollowCalm()) G.Say("The wolves watch you come. None of them move to stop you.", null, 4);
             else if (Test("""{ "hasTag": "wolf_pelts" }""") && !F("pack.allied").Truthy) G.Say("They smell the cloak before they see you. Every wolf in the Hollow is on its feet.", null, 4);
             else if (F("wolf.blood").Truthy && Knows("hint.greymuzzle")) G.Say("They smell the blood on you before they see you. Maeca said none since you last slept.", null, 5);
@@ -502,7 +507,7 @@ public sealed class Verge : ZoneRuntime
             I.Add(new()
             {
                 Id = $"root{k}", X = sample.X + roots[k].X, Z = sample.Z + roots[k].Z, R = 2, Verb = "Dig up", Name = "Bitterroot",
-                When = () => !seen.Contains($"root{k}") && F("beasts.outcome").Str != "cured" && !F("stream.clear").Truthy,
+                When = () => !seen.Contains($"root{k}") && !StreamClean(),
                 Act = () => { seen.Add($"root{k}"); G.Apply("""[{ "give": "bitterroot" }]"""); },
             });
         }
@@ -812,8 +817,10 @@ public sealed class Verge : ZoneRuntime
             f["verge.wolf_kills"] = Num("verge.wolf_kills") + 1;
             // Blood on you until you next sleep (rules.json washes it off at dawn): the Hollow can smell it.
             f["wolf.blood"] = Num("wolf.blood") + 1;
-            // You knelt to Greymuzzle and promised him; the Pack keeps count.
-            if (F("promise.pack").Truthy && !F("promise.broken").Truthy)
+            // You knelt to Greymuzzle and promised him; the Pack keeps count of
+            // the wolves you strike down that were at peace with you, not of
+            // those that came for you (wearing their kin into the Hollow, say).
+            if (F("promise.pack").Truthy && !F("promise.broken").Truthy && (e.Disposition == Disposition.Neutral || e.Provoked))
                 G.Apply($$"""[{ "set": { "promise.broken": true } }, {{Hist("broke_promise", "promised Greymuzzle a cure, and killed his wolves", ["beasts", "wolves", "betrayal"], 2, null, """{ "maeca": { "trust": -30, "affection": -20 } }""")}}]""");
             if (Num("verge.wolf_kills") == 15)
                 G.Apply($"[{Hist("wolf_slaughter", "killed a great many wolves in the Verge", ["beasts", "wolves"], 2, null, """{ "maeca": { "affection": -20 }, "brannoc": { "respect": 5 }, "holloway": { "respect": 10 } }""")}]");

@@ -373,6 +373,41 @@
    "report": "Wenna came in at dawn, muddy to the knees: the stream is running clear. Your wolves were drinking from it when she left."
   },
   {
+   "id": "stream.clear_slaughtered",
+   "when": {
+    "all": [
+     {
+      "fact": "blight.days_clean",
+      "gte": 2
+     },
+     {
+      "fact": "beasts.outcome",
+      "eq": "slaughtered"
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "stream.clear": true
+     }
+    },
+    {
+     "history": {
+      "id": "stream_cleared",
+      "text": "stopped the poison in the Thornhollow stream",
+      "tags": [
+       "deed",
+       "beasts"
+      ],
+      "spread": 2
+     }
+    }
+   ],
+   "once": true,
+   "report": "Wenna came in at dawn, muddy to the knees: the stream is running clear. There is nothing left in the wood to drink from it."
+  },
+  {
    "id": "lie.found",
    "once": true,
    "when": {
