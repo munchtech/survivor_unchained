@@ -22,15 +22,50 @@ namespace SurvivorUnchained.Tests;
 /// </summary>
 public class ArenaPlay(ITestOutputHelper log)
 {
-    sealed record Result(double? WonAt, bool Died, double Minutes, int Kills, int Ember, int Cards, double LowHp, int[] EmberAt, string Build, string Note);
+    /// <summary>One arena to play: who, against whom, how hard, and for how long
+    /// (an hour unless the sweep cuts it short). Level is the survivor's
+    /// character level, points spent on the calling's own attribute.</summary>
+    internal sealed record Case(int Seed, string Calling, int Tier, string People, string[] Oaths,
+        int Level = 1, int Weapon = 0, int Ability = 0, double MaxMinutes = 60);
 
-    static Result Play(int seed, string calling, int tier, string people, string[] oaths, ITestOutputHelper? trace = null)
+    /// <summary>A card taken: what, when, and of what kind.</summary>
+    internal sealed record Pick(string Id, string Kind, double Minute);
+
+    internal sealed record Result(double? WonAt, bool Died, double Minutes, int Kills, int Ember, int Cards, double LowHp, int[] EmberAt, string Build, string Note)
     {
+        public string Killer = "", Weapon = "", Ability = "";
+        public int KillerLevel;
+        /// <summary>Lowest health before the win (or the death, if it never came).</summary>
+        public double LowHpBefore = 1;
+        public int[] AliveAt = [], KillsAt = [], LevelAt = [];
+        public double[] HpAt = [];
+        public List<Pick> Picks = new();
+        public List<string> Greats = new();
+        public List<string> Offered = new();
+        public Dictionary<string, double> Hurt = new();
+        /// <summary>The boss: how strong it came, how long it lasted, and how much was left of it if the survivor fell to it.</summary>
+        public double BossMaxHp, BossSeconds, BossLeft = -1;
+        public int Quaffs, Heralds;
+    }
+
+    static int Primary(string calling) => calling switch { "arcanist" => 2, "stalker" => 1, _ => 0 };
+
+    internal static Result Play(int seed, string calling, int tier, string people, string[] oaths, ITestOutputHelper? trace = null) =>
+        Play(new Case(seed, calling, tier, people, oaths), trace);
+
+    internal static Result Play(Case c, ITestOutputHelper? trace = null)
+    {
+        var (seed, calling, tier, people, oaths) = (c.Seed, c.Calling, c.Tier, c.People, c.Oaths);
         var a = Callings.Archetype(calling);
         var j = global::SurvivorUnchained.Play.Journey.Begin(new CreationChoice
         {
-            Name = "Bot", Archetype = calling, Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
+            Name = "Bot", Archetype = calling, Background = "hunter", Palette = a.Palettes[0].Id,
+            WeaponItem = a.Weapons[Math.Min(c.Weapon, a.Weapons.Count - 1)], Ability = a.Abilities[Math.Min(c.Ability, a.Abilities.Count - 1)],
         }, (uint)seed);
+        // A survivor further on: the levels, and the points put into the calling's own.
+        while (j.Ch.Level < c.Level) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
+        switch (Primary(calling)) { case 2: j.Ch.Attributes.Wits += j.Ch.Points; break; case 1: j.Ch.Attributes.Finesse += j.Ch.Points; break; default: j.Ch.Attributes.Might += j.Ch.Points; break; }
+        j.Ch.Points = 0;
         var spec = new ArenaSpec { Id = "table:bot", Name = "The Test Arena", Seed = seed, Tier = tier, People = people, Oaths = oaths.ToList() };
         Arenas.Begin(j.World, spec);
         var map = MapGen.Generate(spec.Map);
@@ -43,22 +78,43 @@ public class ArenaPlay(ITestOutputHelper log)
         zone.Begin(b);
 
         const double dt = 1 / 60.0;
-        double t = 0, low = 1, ang = 0;
-        int cards = 0;
+        double t = 0, low = 1, lowBefore = 1, ang = 0, bossFrom = -1, bossMax = 0, bossLeft = -1;
+        int cards = 0, quaffs = 0, heralds = 0;
         var emberAt = new List<int>();
+        var aliveAt = new List<int>();
+        var killsAt = new List<int>();
+        var levelAt = new List<int>();
+        var hpAt = new List<double>();
+        var picks = new List<Pick>();
+        var greats = new List<string>();
+        var offered = new List<string>();
         var hurt = new Dictionary<string, double>();
         var p = b.Player;
         double? wonAt = null;
-        while (t < 60 * 60 && p.Alive && host.ArenaResult == null)
+        string? lastBar = null;
+        string bossName = MapOffers.People(people).BossName;
+        while (t < c.MaxMinutes * 60 && p.Alive && host.ArenaResult == null)
         {
             // Give ground when pressed; otherwise go to the fight (or to the ember
             // lying about when it is quiet), and keep away from the arena's edge.
             double mx, mz;
             var press = b.HostilesInRadius(p.X, p.Z, 3.4);
-            var nearest = b.Enemies.Living().Where(e => e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying)
-                .OrderBy(e => (e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z)).FirstOrDefault();
-            var stone = b.Pickups.Living().Where(k => k.Kind == PickupKind.Ember && Dist(k.X, k.Z, p.X, p.Z) < 12)
-                .OrderBy(k => Dist(k.X, k.Z, p.X, p.Z)).FirstOrDefault();
+            Enemy? nearest = null;
+            double nd = double.MaxValue;
+            foreach (var e in b.Enemies.Living())
+            {
+                if (e.Disposition != Disposition.Hostile || e.State == EnemyState.Dying) continue;
+                double d2 = (e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z);
+                if (d2 < nd) { nd = d2; nearest = e; }
+            }
+            Pickup? stone = null;
+            double sd = 12;
+            foreach (var k in b.Pickups.Living())
+            {
+                if (k.Kind != PickupKind.Ember) continue;
+                double d = Dist(k.X, k.Z, p.X, p.Z);
+                if (d < sd) { sd = d; stone = k; }
+            }
             if (press.Count >= 2)
             {
                 double cx = press.Average(e => e.X) - p.X, cz = press.Average(e => e.Z) - p.Z;
@@ -78,7 +134,7 @@ public class ArenaPlay(ITestOutputHelper log)
             var crush = b.HostilesInRadius(p.X, p.Z, 2.2);
             if (crush.Count >= 3 && p.DashCharges > 0) b.Dash(mx, mz);
             if (b.HostilesInRadius(p.X, p.Z, 6).Count >= 5) b.UseAbility(mx, mz);
-            if (p.Hp < b.MaxHp * 0.33) j.Quaff(b);
+            if (p.Hp < b.MaxHp * 0.33) { double before = p.Hp; j.Quaff(b); if (p.Hp > before) quaffs++; }
             zone.Step(dt);
             zone.Frame(dt);
             b.Tick(dt, mx, mz);
@@ -88,17 +144,37 @@ public class ArenaPlay(ITestOutputHelper log)
             j.BankArt(b);
             while (b.DraftOwed)
             {
+                bool great = LevelUp.GreatNext(b);
                 var offers = LevelUp.Draft(b, 3);
                 if (offers.Count == 0) break;
+                foreach (var o in offers) offered.Add(o.Kind == OfferKind.Evolve ? $"evolve:{o.Branch}" : o.Id);
                 LevelUp.Choose(b, offers[0]);
+                var o0 = offers[0];
+                picks.Add(new Pick(o0.Kind == OfferKind.Evolve ? o0.Branch! : o0.Id,
+                    great ? "great" : o0.Blessing ? "blessing" : o0.Kind.ToString().ToLowerInvariant(), t / 60));
+                if (great) greats.Add(o0.Id);
                 cards++;
             }
             low = Math.Min(low, p.Hp / b.MaxHp);
+            if (wonAt == null) lowBefore = low;
             t += dt;
+            // The boss's bar (a herald's says otherwise): when it came, how strong, what is left of it.
+            if (host.Boss is { } bar && bar.Name == bossName && wonAt == null && t >= 30 * 60)
+            {
+                if (bossFrom < 0) { bossFrom = t; bossMax = bar.MaxHp; }
+                bossLeft = bar.Hp / bar.MaxHp;
+            }
+            string? barName = host.Boss?.Name;
+            if (lastBar != null && lastBar.StartsWith("Herald") && barName != lastBar) heralds++;
+            lastBar = barName;
             if (wonAt == null && zone.Won) wonAt = t / 60;
             if ((int)(t / 60) != (int)((t - dt) / 60))
             {
                 emberAt.Add(b.EmberLevel);
+                aliveAt.Add(b.Enemies.Living().Count(e => e.Disposition == Disposition.Hostile));
+                killsAt.Add(b.KillCount);
+                levelAt.Add(zone.Debug()["level"] is int lv ? lv : 0);
+                hpAt.Add(Math.Round(p.Hp / b.MaxHp, 3));
                 trace?.WriteLine($"  {t / 60:0} min: ember {b.EmberLevel}, {b.Enemies.Living().Count()} alive, hp {p.Hp:0}/{b.MaxHp:0}, " +
                     $"{string.Join("+", b.Weapons.Select(w => $"{w.Id}{w.Rank}"))}");
             }
@@ -107,7 +183,15 @@ public class ArenaPlay(ITestOutputHelper log)
         string bossNote = host.Boss is { } bb ? $"boss at {bb.Hp / bb.MaxHp:P0} of {bb.MaxHp:0}; " : "";
         string note = bossNote + (!p.Alive ? $"killed by {p.LastKiller?.Def.Id ?? "?"} (lv {p.LastKiller?.Level}); hurt most by " +
             string.Join(", ", hurt.OrderByDescending(h => h.Value).Take(4).Select(h => $"{h.Key} {h.Value:0}")) : "");
-        return new Result(wonAt, !p.Alive, t / 60, b.KillCount, b.EmberLevel, cards, low, emberAt.ToArray(), build, note);
+        return new Result(wonAt, !p.Alive, t / 60, b.KillCount, b.EmberLevel, cards, low, emberAt.ToArray(), build, note)
+        {
+            Killer = !p.Alive ? p.LastKiller?.Def.Id ?? "?" : "", KillerLevel = !p.Alive ? p.LastKiller?.Level ?? 0 : 0,
+            Weapon = a.Weapons[Math.Min(c.Weapon, a.Weapons.Count - 1)], Ability = a.Abilities[Math.Min(c.Ability, a.Abilities.Count - 1)],
+            LowHpBefore = lowBefore, AliveAt = aliveAt.ToArray(), KillsAt = killsAt.ToArray(), LevelAt = levelAt.ToArray(), HpAt = hpAt.ToArray(),
+            Picks = picks, Greats = greats, Offered = offered, Hurt = hurt,
+            BossMaxHp = bossMax, BossSeconds = bossFrom < 0 ? 0 : (wonAt is double w ? w * 60 : t) - bossFrom, BossLeft = wonAt != null ? 0 : bossLeft,
+            Quaffs = quaffs, Heralds = heralds,
+        };
     }
 
     static double Dist(double ax, double az, double bx, double bz) => Math.Sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
