@@ -54,6 +54,9 @@ sealed class Node
     public int Depth;
     /// <summary>How far into the story: journal lines, things known, words the world keeps.</summary>
     public int Progress;
+    /// <summary>The zone's own progress (Playthrough.Flags), while in it.</summary>
+    public string Flags = "";
+    public int FlagsUp;
     public Root Root = null!;
     /// <summary>The journey, saved.</summary>
     public string Save = "";

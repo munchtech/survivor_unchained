@@ -44,7 +44,7 @@ public class StoryExplorerTests(ITestOutputHelper log)
         {
             MaxStates = int.Parse(Environment.GetEnvironmentVariable("STORY_STATES") ?? "6000"),
             Beam = int.Parse(Environment.GetEnvironmentVariable("STORY_BEAM") ?? "16"),
-            MaxDay = 8, Prologue = true, Confirm = 400,
+            MaxDay = 8, Prologue = true, Confirm = 1500,
         };
         foreach (var c in Callings.Archetypes.Keys)
             foreach (var b in Callings.Backgrounds.Keys)

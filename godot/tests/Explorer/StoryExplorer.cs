@@ -216,6 +216,7 @@ sealed class StoryExplorer
                     var cj = Playthrough.Load(child.Save);
                     child.Quests = Quests(cj);
                     child.Held = Held(cj.Ch).Select(string.Intern).ToArray();
+                    child.Progress = ProgressOf(cj) + child.FlagsUp;
                     Seen.Pending = null;
                     n.Next.Add(child.Id);
                     output.Add((child, 0));
@@ -261,6 +262,8 @@ sealed class StoryExplorer
             Parent = n, Step = s, Depth = n.Depth + 1, Root = n.Root, Save = p.Save(), Mode = p.Mode, Npc = p.Npc,
             At = p.Mode == Mode.Talk ? p.Runner!.Node!.Id : null, Arena = p.Arena != null && p.Mode == Mode.Arena ? Json.Write(p.Arena) : null, Visit = v,
         };
+        if (p.Mode == Mode.Roam) (c.Flags, c.FlagsUp) = p.Flags();
+        else (c.Flags, c.FlagsUp) = (n.Flags, n.FlagsUp);
         c.Hash = Hash(c, p.J);
         if (known.ContainsKey(c.Hash)) return c;
         // The zone found as fresh as a new visit would make it: the visit begins
@@ -306,10 +309,12 @@ sealed class StoryExplorer
         known[c.Hash] = c.Id;
         var w = j.World;
         c.Quests = Quests(j);
-        c.Progress = j.World.Quests.Values.Sum(q => q.Entries.Count + (q.Status == QuestStatus.Resolved ? 5 : 0)) + j.World.Knowledge.Count + j.Ch.Knowledge.Count
-            + j.World.Facts.Count(f => f.Value.Type is Fact.Kind.Str);
+        c.Progress = ProgressOf(j);
         c.Held = Held(j.Ch).Select(string.Intern).ToArray();
         int fresh = Seen.Take(c, j);
+        // Progress kept only by the zone (a cage opened) counts as reaching something.
+        if (c.Flags != "") fresh += Seen.Add("zone", c.Flags);
+        c.Progress += c.FlagsUp;
         if (c.Step?.Key.StartsWith("use:") == true) fresh += Seen.Add("use", $"{c.Parent!.Visit.Zone}:{c.Step.Key[4..]}");
         if (c.Mode == Mode.Talk && c.Parent?.Mode != Mode.Talk) fresh += Seen.Add("talk", c.Npc!);
         if (c.Step?.Key.StartsWith("say:") == true) fresh += Seen.Add("said", $"{c.Parent!.Npc}.{c.Parent.At}#{c.Step.Key[4..]}");
@@ -318,6 +323,12 @@ sealed class StoryExplorer
         Sane(j);
         return fresh;
     }
+
+    /// <summary>How far into the story: journal lines (a quest settled counts
+    /// five), things known, words the world keeps.</summary>
+    static int ProgressOf(Journey j) =>
+        j.World.Quests.Values.Sum(q => q.Entries.Count + (q.Status == QuestStatus.Resolved ? 5 : 0)) + j.World.Knowledge.Count + j.Ch.Knowledge.Count
+        + j.World.Facts.Count(f => f.Value.Type is Fact.Kind.Str);
 
     static Dictionary<string, string> Quests(Journey j) =>
         j.World.Quests.ToDictionary(q => string.Intern(q.Key), q => string.Intern($"{q.Value.Status}:{string.Join(",", q.Value.Entries)}:{q.Value.Outcome}"));
@@ -482,16 +493,19 @@ sealed class StoryExplorer
         return false;
     }
 
-    /// <summary>A search of a stuck quest's own, breadth-first and unpruned
-    /// from where it was seen stuck: does anything move it?</summary>
+    /// <summary>A search of a stuck quest's own from where it was seen stuck,
+    /// a layer at a time and keeping the most promising of each layer as the
+    /// main search does (so it can go far: waiting days for a clock to run
+    /// out is many steps): does anything move it?</summary>
     bool Unstick(Node from, string quest, string sig)
     {
         var local = new Dictionary<string, int>();
+        var mine = new Coverage();
         var layer = new List<Node> { from };
         int count = 0;
         while (layer.Count > 0 && count < O.Confirm)
         {
-            var next = new List<Node>();
+            var next = new List<(Node N, int Fresh)>();
             foreach (var n in layer)
             {
                 if (count++ >= O.Confirm) break;
@@ -499,10 +513,14 @@ sealed class StoryExplorer
                 foreach (var k in kids)
                 {
                     if (k.Quests.GetValueOrDefault(quest) != sig) return true;
-                    next.Add(k);
+                    if (k.Save == "") continue;
+                    int fresh = mine.Add("day", Playthrough.Load(k.Save).World.Day.ToString()) * 10
+                        + k.Quests.Values.Sum(v => mine.Add("quest", v)) + mine.Add("flags", k.Flags);
+                    next.Add((k, fresh));
                 }
             }
-            layer = next;
+            layer = next.Select((x, i) => (x, i)).OrderByDescending(t => t.x.Fresh).ThenByDescending(t => t.x.N.Progress).ThenBy(t => t.i)
+                .Take(Math.Max(8, O.Beam / 2)).Select(t => t.x.N).ToList();
         }
         return false;
     }
@@ -511,7 +529,8 @@ sealed class StoryExplorer
     /// (sold it, given it up), when nothing explored after gets it back.</summary>
     void Lost()
     {
-        var wanted = Playthrough.StoryItems;
+        // Quest things only: a pelt or a root can always be had again.
+        var wanted = Playthrough.StoryItems.Where(i => Items.Get(i).Kind == ItemKind.Quest).ToHashSet();
         foreach (var n in Ours.Where(n => n.Parent != null).ToList())
         {
             foreach (var item in n.Parent!.Held.Except(n.Held).Where(wanted.Contains))

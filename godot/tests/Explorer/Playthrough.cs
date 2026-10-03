@@ -815,6 +815,23 @@ sealed class Playthrough
     /// <summary>What the zone holds that the journey does not (a cage opened,
     /// a camp roused, a fire lit, who is out): two visits with the same mark
     /// and the same journey go on the same way.</summary>
+    /// <summary>The zone's own progress, as flags (a cage open, a place found):
+    /// the words of them, and how many are up.</summary>
+    public (string Words, int Up) Flags()
+    {
+        if (Zone == null) return ("", 0);
+        var sb = new StringBuilder(Zone.Id).Append(':');
+        int up = 0;
+        foreach (var f in Zone.GetType().GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly))
+            switch (f.GetValue(Zone))
+            {
+                case bool b: if (b) { up++; sb.Append(f.Name).Append(';'); } break;
+                case bool[] a: up += a.Count(x => x); sb.Append(f.Name).Append('=').Append(string.Concat(a.Select(x => x ? '1' : '0'))).Append(';'); break;
+                case HashSet<string> h: up += h.Count; sb.Append(f.Name).Append('=').Append(string.Join(",", h.OrderBy(x => x, StringComparer.Ordinal))).Append(';'); break;
+            }
+        return (sb.ToString(), up);
+    }
+
     public string Mark()
     {
         if (Zone == null) return "";
