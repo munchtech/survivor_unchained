@@ -127,7 +127,7 @@ Dark fantasy, in this world's register: plain, worn, specific, and quietly sad.
 
 - **Names are nouns people would use.** "Brannoc's Twelfth Iron", not "Blade of
   Eternal Shadowflame". Rares are named like pub signs and ballads ("Low Water",
-  "Thrice Forgiven"). Prefixes and suffixes are craft words and places
+  "Patient Wall"). Prefixes and suffixes are craft words and places
   ("Watchman's", "of the Hearth").
 - **Lore lines are one image, in a person's or the narrator's voice**
   (`VOICES.md`): present tense, plain nouns, never two adjectives where one will

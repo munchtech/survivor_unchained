@@ -122,7 +122,7 @@ sound are new (`IMPLEMENTATION.md`, phase 2).
 - *Never "identify".* Every item reads in full the moment it drops (Diablo II
   and early Diablo III's scrolls of identify were pure friction).
 - *Two-word names for Rares.* A Rare is named from two lists in the game's
-  voice ("Cold Supper", "Low Water", "Gallows Kiss", "Thrice Forgiven");
+  voice ("Cold Supper", "Low Water", "Gallows Kiss", "Patient Wall");
   Fine items keep the prefix-base-suffix name the code builds today
   ("Hale Chain Shirt of the Hearth"). Lists in `CATALOGUE.md` §5.
 
