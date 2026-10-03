@@ -205,8 +205,7 @@ public static class Ai
             if (e.RaiseT <= 0)
             {
                 e.RaiseT = raise.Every;
-                bool any = b.Graves.Exists(g => Dist(g.X, g.Z, e.X, e.Z) < raise.Range);
-                if (any)
+                if (GraveNear(b, e, raise.Range))
                 {
                     e.State = EnemyState.Casting;
                     e.StateT = 1.5;
@@ -328,6 +327,15 @@ public static class Ai
         }
     }
 
+    /// <summary>A grave within reach. A loop, not a lambda: one capturing the
+    /// creature would be allocated on every Update, for every creature.</summary>
+    static bool GraveNear(Battle b, Enemy e, double range)
+    {
+        foreach (var g in b.Graves)
+            if (Dist(g.X, g.Z, e.X, e.Z) < range) return true;
+        return false;
+    }
+
     static double SlowFactor(Enemy e)
     {
         var c = e.Status[StatusKind.Chill];
@@ -341,7 +349,8 @@ public static class Ai
         var p = b.Player;
         if (e.Disposition == Disposition.Ally)
         {
-            var t = b.NearestHostile(e.X, e.Z, 11);
+            // Go for the Throat: the toughest thing in reach, not the nearest.
+            var t = b.Boons.ContainsKey("go_for_the_throat") ? Toughest(b, e.X, e.Z, 11) : b.NearestHostile(e.X, e.Z, 11);
             // Do not wander off: only fight what is near the survivor.
             if (t != null && Dist(t.X, t.Z, p.X, p.Z) < 16) return t.Id;
             return -2;
@@ -382,6 +391,22 @@ public static class Ai
             if (!war) continue;
             double d = Dist(o.X, o.Z, e.X, e.Z);
             if (d < bd) { bd = d; best = o.Id; }
+        }
+        return best;
+    }
+
+    /// <summary>The toughest hostile within r: a boss before a champion before the rest.</summary>
+    static Enemy? Toughest(Battle b, double x, double z, double r)
+    {
+        Enemy? best = null;
+        double bv = -1;
+        b.Spatial.Query(x, z, r, b.AiScratch);
+        foreach (var id in b.AiScratch)
+        {
+            var o = b.Enemies.Items[id];
+            if (!b.Targetable(o) || Dist(o.X, o.Z, x, z) > r) continue;
+            double v = (o.Boss ? 2e6 : o.Elite ? 1e6 : 0) + o.MaxHp;
+            if (v > bv) { bv = v; best = o; }
         }
         return best;
     }
@@ -501,7 +526,8 @@ public static class Ai
     {
         if (e.Disposition == Disposition.Ally)
         {
-            b.HitEnemy(o, e.Damage * mult, School.Physical, AllyStrike, new HitOpts { Summon = true, Knockback = 0.3, DirX = Math.Cos(e.Facing), DirZ = Math.Sin(e.Facing) });
+            b.HitEnemy(o, e.Damage * mult, School.Physical, AllyStrike, new HitOpts { Summon = true, Knockback = 0.3, DirX = Math.Cos(e.Facing), DirZ = Math.Sin(e.Facing), Credit = e.SummonedBy ?? e.Def.Id,
+                BossDamage = e.SummonedBy != null && Content.Weapons.All.TryGetValue(e.SummonedBy, out var by) ? by.BossDamage : null });
             return;
         }
         // Rival factions: real damage, no credit, and it draws attention.

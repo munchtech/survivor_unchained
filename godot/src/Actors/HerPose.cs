@@ -18,6 +18,14 @@ public partial class HerPose : SkeletonModifier3D
     public float ArmsIn = 9f;
     /// <summary>Degrees of hip tilt (the shoulders answer at half).</summary>
     public float HipTilt = 3.5f;
+    /// <summary>How much of what is playing is her own (tools/anim, made on
+    /// her skeleton): 0 a library clip, wholly corrected; 1 her own, left as
+    /// made. Split in two because the body's halves can play different
+    /// clips (a swing over the run): Lower is the pelvis and hips, Upper the
+    /// arms and hands.</summary>
+    public float Lower, Upper;
+    /// <summary>Both halves at once.</summary>
+    public float Native { set { Lower = Upper = value; } }
 
     public HerPose() { Name = "HerPose"; }
 
@@ -31,23 +39,33 @@ public partial class HerPose : SkeletonModifier3D
         if (sk == null) return;
         // Clips set the pelvis where the library's stands; hers stands
         // higher (longer legs): the clip's motion kept, measured from hers.
+        // (Her own clips are made at her height already: the shift fades
+        // with them.)
+        float lib = 1 - Mathf.Clamp(Lower, 0, 1), arms = 1 - Mathf.Clamp(Upper, 0, 1);
         int pel = sk.FindBone("pelvis");
-        if (pel >= 0) sk.SetBonePosePosition(pel, sk.GetBonePosePosition(pel) - LibraryPelvis + sk.GetBoneRest(pel).Origin);
+        if (pel >= 0 && lib > 0) sk.SetBonePosePosition(pel, sk.GetBonePosePosition(pel) + (sk.GetBoneRest(pel).Origin - LibraryPelvis) * lib);
         int n = sk.GetBoneCount();
-        for (int b = 0; b < n; b++)
-        {
-            var name = sk.GetBoneName(b);
-            if (name.StartsWith("index") || name.StartsWith("middle") || name.StartsWith("ring") || name.StartsWith("pinky") || name.StartsWith("thumb_02") || name.StartsWith("thumb_03"))
+        if (arms > 0)
+            for (int b = 0; b < n; b++)
             {
-                var rest = sk.GetBoneRest(b).Basis.GetRotationQuaternion();
-                var pose = sk.GetBonePoseRotation(b);
-                sk.SetBonePoseRotation(b, pose.Slerp(rest, FingerEase));
+                var name = sk.GetBoneName(b);
+                if (name.StartsWith("index") || name.StartsWith("middle") || name.StartsWith("ring") || name.StartsWith("pinky") || name.StartsWith("thumb_02") || name.StartsWith("thumb_03"))
+                {
+                    var rest = sk.GetBoneRest(b).Basis.GetRotationQuaternion();
+                    var pose = sk.GetBonePoseRotation(b);
+                    sk.SetBonePoseRotation(b, pose.Slerp(rest, FingerEase * arms));
+                }
             }
+        if (arms > 0)
+        {
+            Turn(sk, "upperarm_l", Vector3.Forward, -ArmsIn * arms);
+            Turn(sk, "upperarm_r", Vector3.Forward, ArmsIn * arms);
         }
-        Turn(sk, "upperarm_l", Vector3.Forward, -ArmsIn);
-        Turn(sk, "upperarm_r", Vector3.Forward, ArmsIn);
-        Turn(sk, "pelvis", Vector3.Forward, HipTilt);
-        Turn(sk, "spine_03", Vector3.Forward, -HipTilt * 0.5f);
+        if (lib > 0)
+        {
+            Turn(sk, "pelvis", Vector3.Forward, HipTilt * lib);
+            Turn(sk, "spine_03", Vector3.Forward, -HipTilt * 0.5f * lib);
+        }
     }
 
     /// <summary>A bone turned about an axis of the skeleton's own space, by

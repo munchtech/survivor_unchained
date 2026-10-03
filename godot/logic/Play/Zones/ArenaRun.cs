@@ -113,8 +113,17 @@ public sealed class ArenaRun : ZoneRuntime
 
     /// <summary>Minutes past the half hour (0 before it).</summary>
     double Beyond => Math.Max(0, Seconds - End) / 60;
-    int Level() => Math.Max(1, Spec.Tier * 3 - 2 + levels + (int)(Minute / 2.5) + (int)(Beyond / 2));
-    int Target() => (int)Math.Min(won ? 380 : 320, (22 + 7.5 * Minute) * packSize * (1 + 0.12 * (Spec.Tier - 1)));
+    // A tier is three creature levels: the survivor's own pace (levels 1, 4, 7 for tiers 1 to 3),
+    // so a tier at the survivor's level is a fair night and one above it a hard one.
+    // Dusk: the tier's strength (and an oath's levels) comes in over the first three minutes,
+    // so a night is not lost before the ember has given anything to choose.
+    int Level() => Math.Max(1, Spec.Tier * 3 - 2 + levels + (int)(Minute / 2.5) + (int)(Beyond / 2) - Math.Max(0, (int)Math.Ceiling(3 - Minute)));
+    /// <summary>What an ordinary creature's health is divided by at a minute.</summary>
+    public static double FodderEase(double minute) => 1 + 0.08 * minute;
+
+    /// <summary>How many the horde is kept at (a dark bargain struck asks for more of them).</summary>
+    int Target() => (int)Math.Min(won ? 380 : 320, (22 + 7.5 * Minute) * packSize * (1 + 0.15 * (Spec.Tier - 1)) * Bargain);
+    double Bargain => 1 + 0.15 * (B?.Boons.GetValueOrDefault("dark_bargain") ?? 0);
 
     /// <summary>Throwers and shooters at once: a few behind the crowd, never a
     /// battery (hundreds of them, each lobbing fire, is not a fight but weather).</summary>
@@ -163,6 +172,10 @@ public sealed class ArenaRun : ZoneRuntime
         }
         var st = style ?? (Enemies.Get(def).Family == Family.Undead ? SpawnStyle.Rise : Enemies.Get(def).Behavior == Behavior.Tunneler ? SpawnStyle.Burrow : SpawnStyle.Walk);
         var e = B.SpawnEnemy(def, x, z, new Battle.SpawnOpts { Level = Level() + (elite ? 1 : 0), Elite = elite, Style = st });
+        // The crowd softens as the night goes on, so the survivor's growth shows
+        // as a horde that melts (docs/SKILLS_DESIGN.md, "The power curve");
+        // champions, heralds and the boss keep the steep curve and are the test.
+        if (e != null && !elite && def != BossDef) e.MaxHp = e.Hp = e.MaxHp / FodderEase(Math.Min(Minute, End / 60));
         // Past the half hour they harden by the minute, until something gives.
         if (e != null && Beyond > 0)
         {
@@ -203,8 +216,10 @@ public sealed class ArenaRun : ZoneRuntime
         spawnT -= dt;
         if (spawnT <= 0 && alive < Target() && !bossUp)
         {
-            spawnT = 0.45;
-            if (Around(R() * Math.PI * 2, 24 + R() * 5) is var (x, z)) Group(Pick(), 3 + (int)(R() * 4) + (int)(Minute / 5), x, z, 3.5);
+            // A field mown thin fills twice as fast, so a strong build mows rather than waits.
+            bool thin = alive < Target() * 0.6;
+            spawnT = thin ? 0.225 : 0.45;
+            if (Around(R() * Math.PI * 2, 24 + R() * 5) is var (x, z)) Group(Pick(), (3 + (int)(R() * 4) + (int)(Minute / 5)) * (thin ? 2 : 1), x, z, thin ? 4.5 : 3.5);
         }
         else if (bossUp && spawnT <= 0 && alive < Target() / 2)
         {
@@ -225,6 +240,8 @@ public sealed class ArenaRun : ZoneRuntime
         {
             great15 = true;
             B.GreatOwed++;
+            // And a banish with it: by now the build knows what it does not want.
+            B.Banishes++;
             G.Announce(new Announcement("The fifteenth minute", "A great blessing", "reward", 2.6));
         }
         if (!bossUp && !won && Seconds >= End) Boss();
@@ -325,7 +342,8 @@ public sealed class ArenaRun : ZoneRuntime
         if (boss != null && Spec.BossName != null) boss.Named = new Named { Title = Spec.BossName };
         if (boss != null)
         {
-            boss.MaxHp = boss.Hp = boss.MaxHp * (6 + Spec.Tier * 2);
+            // A fight of half a minute to a minute for most builds (docs/SKILLS_DESIGN.md, "Bosses").
+            boss.MaxHp = boss.Hp = boss.MaxHp * (10 + Spec.Tier * 4);
             boss.Damage *= 1.3;
         }
         for (int k = 0; k < 14; k++)

@@ -1,0 +1,94 @@
+{
+ "steel": {
+  "kind": "metal",
+  "repeats": 2.5
+ },
+ "darksteel": {
+  "kind": "metal",
+  "repeats": 2.5
+ },
+ "gold": {
+  "kind": "metal",
+  "repeats": 3
+ },
+ "rust": {
+  "kind": "metal",
+  "repeats": 2.5
+ },
+ "leather": {
+  "kind": "leather",
+  "repeats": 4
+ },
+ "darkleather": {
+  "kind": "leather",
+  "repeats": 3
+ },
+ "redleather": {
+  "kind": "leather",
+  "repeats": 4
+ },
+ "oldleather": {
+  "kind": "leather",
+  "repeats": 4
+ },
+ "velvet": {
+  "kind": "cloth",
+  "repeats": 5
+ },
+ "linen": {
+  "kind": "cloth",
+  "repeats": 5
+ },
+ "fur": {
+  "kind": "fur",
+  "repeats": 4
+ },
+ "arcvelvet": {
+  "kind": "cloth",
+  "repeats": 5
+ },
+ "plumleather": {
+  "kind": "leather",
+  "repeats": 3
+ },
+ "blackleather": {
+  "kind": "leather",
+  "repeats": 3
+ },
+ "brownleather": {
+  "kind": "leather",
+  "repeats": 3
+ },
+ "lace": {
+  "kind": "cloth",
+  "repeats": 14
+ },
+ "darkpurple": {
+  "kind": "leather",
+  "repeats": 3
+ },
+ "satin": {
+  "kind": "gloss",
+  "repeats": 10
+ },
+ "greenleather": {
+  "kind": "leather",
+  "repeats": 3
+ },
+ "bronze": {
+  "kind": "metal",
+  "repeats": 3
+ },
+ "ink": {
+  "kind": "cloth",
+  "repeats": 10
+ },
+ "stocking": {
+  "kind": "sheer",
+  "repeats": 14
+ },
+ "bone": {
+  "kind": "leather",
+  "repeats": 12
+ }
+}

@@ -203,7 +203,8 @@ public class ArenaTests
         Assert.Equal(Arenas.XpFor(s.Spec, r.Seconds, true), r.Xp);
         Assert.True(s.J.Ch.Level > level);
         Assert.Contains("seeking_motes", s.J.Ch.Discovered);
-        Assert.Contains("might", s.J.Ch.Discovered);
+        // Only combat skills are discovered (only they can be learned by day).
+        Assert.DoesNotContain("might", s.J.Ch.Discovered);
         Assert.Contains("seeking_motes", r.Discovered);
         Assert.Null(s.J.World.Arena);
         Assert.True(s.J.World.Fact("arena.longest").Number > 50);

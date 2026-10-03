@@ -199,6 +199,27 @@ public class StoryLint
         Assert.Empty(u.FactsRead.Where(f => !u.FactsWritten.Contains(f) && !Outside(f)).OrderBy(f => f).Select(f => $"read, never written: {f}"));
     }
 
+    /// <summary>Facts Act 1 records for the acts to come (docs/WRITING_PASS.md
+    /// section 9, the bible's ledger in section 10), and the game's own bookkeeping.</summary>
+    static readonly string[] Seeds =
+    [
+        "brannoc.waits_buyer", "chid.note_asked", "harlan.told_dig", "holloway.letter_seen", "jory.told_knew",
+        "redcowl.birds", "redcowl.gave_charge", "sella.sleeptalk", "vonnra.asked_jessop", "wayfinder.name",
+        // The romances' Act 1 seeds (docs/romance/ARCS.md section 7): what each lover
+        // learned of the survivor, read in Act 2 ("what you are") and Act 3.
+        "maeca.heard_heart", "maeca.heard_past", "rav.came_back", "sella.cold_sold", "sella.heard_past",
+        "player.zone", "map.drawn",
+    ];
+
+    [Fact]
+    public void Every_fact_written_is_read_or_is_a_seed_for_a_later_act()
+    {
+        var u = World.Value;
+        Assert.Empty(u.FactsWritten.Where(f => !u.FactsRead.Contains(f) && !Seeds.Contains(f)).OrderBy(f => f).Select(f => $"written, never read: {f}"));
+        // A seed that is read now is no longer only a seed: take it off the list.
+        Assert.Empty(Seeds.Where(u.FactsRead.Contains).Select(f => $"read now, still listed as a seed: {f}"));
+    }
+
     [Fact]
     public void Every_item_a_choice_wants_can_be_found()
     {

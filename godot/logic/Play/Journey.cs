@@ -154,12 +154,25 @@ public sealed class Journey
             Hp = exp != null ? Math.Min(exp.Hp, kit.Stats.Get(Stat.MaxHealth)) : null,
         });
         b.EmberOn = combat && (arena || ember);
+        b.Night = arena || ember || World.Time == TimeOfDay.Night;
         GearWeapons = kit.Weapons.Select(w => w.Id).ToHashSet();
         b.Favours.UnionWith(Callings.Archetype(Ch.Archetype).Favours);
+        b.Calling = Ch.Archetype;
+        b.CallingPaths.UnionWith(Content.Paths.All.Where(p => p.Callings.Contains(Ch.Archetype)).Select(p => p.Id));
+        // What is carried by day is attuned for the night (offered first, a
+        // rank or two up); what is only learned comes a little more often.
+        if (b.EmberOn)
+        {
+            foreach (var id in SkillBook.Attuned(Ch)) b.Attuned[id] = SkillBook.NightRank(Ch);
+            b.Familiar.UnionWith(Ch.Skills.Where(id => Content.Weapons.All.ContainsKey(id) && !b.Attuned.ContainsKey(id)));
+        }
         b.GearIds.UnionWith(kit.GearIds);
         b.GearStatuses.UnionWith(kit.GearStatuses);
         b.Rerolls = kit.Rerolls;
-        b.Banishes = 1;
+        b.Banishes = 2 + kit.Banishes;
+        b.Stands.UnionWith(kit.Stands);
+        b.Roads = kit.Roads;
+        b.Omens = kit.Omens;
         b.Player.Revives = kit.Revives;
         if (b.EmberOn)
             for (int i = 0; i < kit.StartLevels; i++) b.GainEmber(b.EmberNext);
@@ -394,10 +407,13 @@ public sealed class Journey
         OnTouch();
     }
 
+    /// <summary>A quest thing whose part in the story is not yet played.</summary>
+    public bool StillNeeded(ItemInstance it) => Items.Get(it.Def) is { Kind: ItemKind.Quest } d && Rules.Test(d.Needed, Ctx);
+
     public void Drop(string uid)
     {
         if (Inventory.Find(Ch, uid) is not { InPack: true } loc) return;
-        if (Items.Get(loc.Item.Def).Kind == ItemKind.Quest) { Warn("You might need that"); return; }
+        if (StillNeeded(loc.Item)) { Warn("You might need that"); return; }
         Ch.Pack[loc.Index] = null;
         OnToast(new Toast(ToastKind.World, $"Left behind: {Inventory.Name(loc.Item)}"));
         OnTouch();
@@ -565,19 +581,48 @@ public sealed class Journey
         if (!Lore.Shops.TryGetValue(id, out var def)) return null;
         if (!World.Shops.TryGetValue(id, out var st) || World.Day >= st.RestockDay)
         {
-            st = new ShopState { Stock = RollStock(def, rng), RestockDay = World.Day + def.RestockDays };
+            st = new ShopState { RestockDay = World.Day + def.RestockDays };
+            st.Stock = RollStock(def, rng, st.Offered);
             World.Shops[id] = st;
+        }
+        else
+        {
+            // Between restocks, a line that has become true since (Pell's
+            // blasting ember, once the survivor knows the Dig) goes on the shelf now.
+            st.Offered ??= new();
+            st.Stock.AddRange(RollLines(def, rng, st.Offered));
         }
         OnTouch();
         return st;
     }
 
-    List<ItemInstance> RollStock(ShopDef def, Random rng)
+    static string LineKey(ShopDef def, int i) => $"{i}:{def.Lines[i].Id}";
+
+    /// <summary>The conditional lines that hold now and have not been rolled
+    /// this restock: rolled (their chance as at a restock) and written down.</summary>
+    List<ItemInstance> RollLines(ShopDef def, Random rng, List<string> offered)
     {
         var out_ = new List<ItemInstance>();
-        foreach (var l in def.Lines)
+        for (int i = 0; i < def.Lines.Count; i++)
         {
+            var l = def.Lines[i];
+            if (l.When == null || offered.Contains(LineKey(def, i)) || !Rules.Test(l.When, Ctx)) continue;
+            offered.Add(LineKey(def, i));
+            if (l.Chance is double c && rng.NextDouble() > c) continue;
+            if (Items.Find(l.Id) == null) continue;
+            out_.Add(Inventory.Make(Ch, l.Id, l.Qty ?? 1, l.Rarity));
+        }
+        return out_;
+    }
+
+    List<ItemInstance> RollStock(ShopDef def, Random rng, List<string> offered)
+    {
+        var out_ = new List<ItemInstance>();
+        for (int i = 0; i < def.Lines.Count; i++)
+        {
+            var l = def.Lines[i];
             if (l.When != null && !Rules.Test(l.When, Ctx)) continue;
+            if (l.When != null) offered.Add(LineKey(def, i));
             if (l.Chance is double c && rng.NextDouble() > c) continue;
             if (Items.Find(l.Id) == null) continue;
             out_.Add(Inventory.Make(Ch, l.Id, l.Qty ?? 1, l.Rarity));
@@ -625,7 +670,11 @@ public sealed class Journey
         if (mine == null) return null;
         var kind = Items.Get(mine.Def).Kind;
         if (!def.BuysAll && !def.Buys.Contains(kind.Key())) return null;
-        if (kind == ItemKind.Quest && !def.BuysAll && shop != "vonnra") return null;
+        // Nothing the story still needs goes over a counter: sold there, a
+        // strongbox or a ledger would vanish without anyone in the story
+        // knowing. The story's own trades (Rav's fence, Pell's price for his
+        // book) are made in conversation.
+        if (StillNeeded(mine)) return null;
         return Math.Max(1, (int)Math.Floor(UnitValue(mine) * def.Pays / Math.Max(0.8, PriceMod(shop)))) * mine.Qty;
     }
 

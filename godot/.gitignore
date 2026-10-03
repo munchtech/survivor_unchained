@@ -3,4 +3,5 @@
 bin/
 obj/
 *.translation
+tests/results/
 .lab/

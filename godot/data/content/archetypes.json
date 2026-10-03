@@ -528,6 +528,12 @@
      "kind": "inc",
      "value": 0.2,
      "source": "trait"
+    },
+    {
+     "stat": "statusDuration.burn",
+     "kind": "inc",
+     "value": 0.3,
+     "source": "trait"
     }
    ]
   },
@@ -544,9 +550,9 @@
      "source": "trait"
     },
     {
-     "stat": "statusChance",
+     "stat": "statusPower.chill",
      "kind": "inc",
-     "value": 0.1,
+     "value": 0.25,
      "source": "trait"
     }
    ]
@@ -558,7 +564,7 @@
    "text": "Bleeds hurt 30% more. Kills heal 1.",
    "mods": [
     {
-     "stat": "statusDamage",
+     "stat": "statusDamage.bleed",
      "kind": "inc",
      "value": 0.3,
      "source": "trait"

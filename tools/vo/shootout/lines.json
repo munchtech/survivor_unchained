@@ -1,0 +1,50 @@
+{
+ "about": "Five hard lines, the same for every model and method in the shoot-out (docs/voice/samples). Each has its part (whose cast reference the cloning methods use), the words as a model should be given them, a short style, a performance description for voice-design methods, an IndexTTS emotion vector (happy, angry, sad, afraid, disgusted, melancholic, surprised, calm), a Chatterbox exaggeration, a Dia script with its non-verbal cues, and an Orpheus script with its tags.",
+ "lines": {
+  "1_angry": {
+   "id": "dlg.holloway.liar.0", "voice": "holloway", "room": "watchhouse", "vol": "level",
+   "text": "Dealt with. That's what you said. I paid you thirty of the Watch's gold for dealt with, and this morning I had a drover bleeding on my gate. So. Tell me why you shouldn't spend the night in the fucking cells.",
+   "style": "cold fury held just below the surface, clipped and hoarse, slow and dangerous",
+   "act": "He is furious and holding it down: low, clipped, biting each word, a dangerous pause after 'So.', and the swear at the end landing hard and quiet.",
+   "emo": [0, 0.75, 0, 0, 0.2, 0, 0, 0.05], "exag": 0.75,
+   "dia": "[S1] Dealt with. That's what you said. I paid you thirty of the Watch's gold for dealt with, and this morning I had a drover bleeding on my gate. (sighs) So. Tell me why you shouldn't spend the night in the fucking cells.",
+   "orpheus": ["leo", "Dealt with. That's what you said. I paid you thirty of the Watch's gold for dealt with, and this morning I had a drover bleeding on my gate. <sigh> So. Tell me why you shouldn't spend the night in the fucking cells."]
+  },
+  "2_intimate": {
+   "id": "dlg.sella.free.0", "voice": "sella", "room": "inn", "vol": "quiet",
+   "text": "Put your purse away. Tonight I'm not working. ...Don't look at me like that. Don't make it strange.",
+   "style": "soft and intimate, unsure of herself, close to the ear, gentle and a little shy",
+   "act": "She is close and quiet, unsure of herself for once: the first two sentences soft and warm, then a nervous little laugh before 'Don't look at me like that', and the last sentence almost a plea.",
+   "emo": [0.2, 0, 0.1, 0.1, 0, 0.2, 0, 0.4], "exag": 0.35,
+   "dia": "[S1] Put your purse away. Tonight I'm not working. (laughs) Don't look at me like that. Don't make it strange.",
+   "orpheus": ["tara", "Put your purse away. Tonight I'm not working. <chuckle> Don't look at me like that. Don't make it strange."]
+  },
+  "3_wry": {
+   "id": "dlg.rook.runs.0", "voice": "rook", "room": "inn", "vol": "level",
+   "text": "Holloway thinks he does. Vonra knows she does. Pell's got it written down in a book somewhere, with interest. And I feed all three of them, so you can draw your own conclusions.",
+   "style": "sly and dry, amused, a laugh on the out-breath at the end",
+   "act": "She is sly and amused, enjoying herself: each verdict drier than the last, a scornful lift on 'with interest', and a short laugh on the out-breath at the end.",
+   "emo": [0.45, 0, 0, 0, 0.05, 0, 0.1, 0.4], "exag": 0.55,
+   "dia": "[S1] Holloway thinks he does. Vonra knows she does. Pell's got it written down in a book somewhere, with interest. And I feed all three of them, so you can draw your own conclusions. (laughs)",
+   "orpheus": ["leah", "Holloway thinks he does. Vonra knows she does. Pell's got it written down in a book somewhere, with interest. And I feed all three of them, so you can draw your own conclusions. <chuckle>"]
+  },
+  "4_grief": {
+   "id": "dlg.brannoc.nell_ditch.1", "voice": "brannoc", "room": "forge", "vol": "quiet",
+   "text": "Had the reins. She'd want the reins. Always wanted the reins.",
+   "style": "broken with grief, barely holding together, very slow and quiet, deep",
+   "act": "He has just learned his daughter is dead. Barely voiced and very slow, a long breath before the second sentence, his voice cracking with grief on 'Always wanted the reins'.",
+   "emo": [0, 0, 0.6, 0, 0, 0.4, 0, 0], "exag": 0.45,
+   "dia": "[S1] (sighs) Had the reins. She'd want the reins. Always wanted the reins.",
+   "orpheus": ["dan", "<sigh> Had the reins. She'd want the reins. <sniffle> Always wanted the reins."]
+  },
+  "5_shout": {
+   "id": "dlg.redcowl.trick.0", "voice": "redcowl", "room": "camp", "vol": "shout",
+   "text": "Pack it up! Pack it up! Leave the heavy stuff!",
+   "style": "bellowing orders in alarm, shouting at full voice, urgent",
+   "act": "A bandit chief bellowing at his camp in sudden alarm: shouting at the top of his voice, urgent and rough.",
+   "emo": [0, 0.45, 0, 0.35, 0, 0, 0.2, 0], "exag": 0.95,
+   "dia": "[S1] Pack it up! Pack it up! Leave the heavy stuff!",
+   "orpheus": ["leo", "Pack it up! Pack it up! Leave the heavy stuff!"]
+  }
+ }
+}

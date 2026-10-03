@@ -21,12 +21,16 @@ public partial class PersonView : Node3D, INpcView
     readonly System.Collections.Generic.Dictionary<string, Node3D> held = new();
     /// <summary>What walking and running look like for this one (a shambling dead thing walks otherwise).</summary>
     public string WalkClip = "Walk_Loop", RunClip = "Jog_Fwd_Loop";
+    /// <summary>Played by something else (the survivor's AnimationTree), which
+    /// then tells her corrective layer what is hers itself.</summary>
+    public bool Driven;
 
     /// <summary>A person; the game's figures stand at 0.8 of their authored
     /// size, a touch over life size (the web game's CHARACTER_SCALE × HUMAN_SCALE).</summary>
     public PersonView(PersonSpec spec, Held? arms, double scale)
     {
         person = People.Build(spec);
+        person.Kind = HerClips.Kind(arms?.Right, arms?.Left, arms?.Forearm);
         person.Root.Scale = Vector3.One * (float)(scale / 0.8 * 1.04);
         AddChild(person.Root);
         if (arms?.Right is string r && Arms.All.ContainsKey(r)) held["handslot.r"] = Arms.Hold(person, r, "hand_r");
@@ -54,19 +58,51 @@ public partial class PersonView : Node3D, INpcView
 
     void PlayLoop(double blend)
     {
-        var name = People.Resolve(walking ? loopClip : loop);
+        var name = People.Clip(person, walking ? loopClip : loop);
         person.Anim.Play(name, blend, (float)loopSpeed);
+        Native(name);
     }
 
+    /// <summary>Her corrective layer stands down for her own clips (eased
+    /// over the blend, so her pelvis does not jump).</summary>
+    void Native(string name) => native = name.StartsWith(HerClips.Prefix) ? 1 : 0;
+    float native;
+
     public void Act(string clip, double speed = 1) => Act(clip, speed, false);
+
+    /// <summary>The flourish of her calling, as it is chosen (her own, or the
+    /// library clip given for anyone else).</summary>
+    public void Flourish(string fallback)
+    {
+        if (person.Body == "heroine" && HerClips.Has($"{person.Calling}_show")) Act(HerClips.Prefix + person.Calling + "_show");
+        else Act(fallback);
+        breakT = Mathf.Max(breakT, 6);
+    }
+
+    // Her idle breaks: standing a while, now and then she does something.
+    double breakT = 8;
+    readonly RandomNumberGenerator rng = new();
+
+    void Fidget(double delta)
+    {
+        if (person.Body != "heroine" || walking || holding || actLeft > 0 || Driven) return;
+        // Only while she stands in her calling's idle.
+        if (!People.Clip(person, loop).StartsWith(HerClips.Prefix + "idle_")) return;
+        breakT -= delta;
+        if (breakT > 0) return;
+        breakT = rng.RandfRange(9, 15);
+        var brk = $"idle_{person.Calling}_break";
+        if (HerClips.Has(brk)) Act(HerClips.Prefix + brk);
+    }
 
     /// <summary>A gesture once; held on its last frame (a fall, getting up)
     /// until the next loop or gesture, or back to the loop.</summary>
     public void Act(string clip, double speed, bool hold)
     {
-        var name = People.Resolve(clip);
-        var anim = People.Clips().GetAnimation(name);
+        var name = People.Clip(person, clip);
+        var anim = person.Anim.GetAnimation(name);
         person.Anim.Play(name, 0.15, (float)speed);
+        Native(name);
         holding = hold;
         actLeft = hold ? double.MaxValue : anim.Length / Mathf.Max(0.05, speed) - 0.2;
     }
@@ -74,11 +110,12 @@ public partial class PersonView : Node3D, INpcView
     /// <summary>A clip played out and held at its end at once (a body lying where it fell).</summary>
     public void Pose(string clip)
     {
-        var name = People.Resolve(clip);
-        var len = People.Clips().GetAnimation(name).Length;
+        var name = People.Clip(person, clip);
+        var len = person.Anim.GetAnimation(name).Length;
         person.Anim.Play(name, 0);
         person.Anim.Seek(len - 0.02, true);
         person.Anim.Pause();
+        Native(name);
         holding = true;
         actLeft = double.MaxValue;
     }
@@ -86,13 +123,17 @@ public partial class PersonView : Node3D, INpcView
     public void Locomotion(double speed)
     {
         if (holding) return;
-        // Standing, walking, jogging: the stride matched to the ground.
-        string want = speed < 0.3 ? "" : speed < 2.6 ? WalkClip : RunClip;
+        // Standing, walking, jogging: the stride matched to the ground. Her
+        // own run is played at the rate that keeps her feet planted.
+        string run = People.Clip(person, RunClip);
+        float natural = run.StartsWith(HerClips.Prefix) ? HerClips.Speed(run[HerClips.Prefix.Length..]) * person.Root.Scale.X : 0;
+        string want = speed < 0.3 ? "" : natural > 0 || speed >= 2.6 ? RunClip : WalkClip;
         bool was = walking;
         walking = want != "";
         if (walking)
         {
-            loopSpeed = want == WalkClip ? Mathf.Clamp(speed / 1.5, 0.6, 1.5) : Mathf.Clamp(speed / 3.6, 0.7, 1.5);
+            loopSpeed = natural > 0 ? Mathf.Clamp(speed / natural, 0.4, 1.6)
+                : want == WalkClip ? Mathf.Clamp(speed / 1.5, 0.6, 1.5) : Mathf.Clamp(speed / 3.6, 0.7, 1.5);
             if (want != loopClip || !was) { loopClip = want; if (actLeft <= 0) PlayLoop(0.25); }
             else if (actLeft <= 0) person.Anim.SpeedScale = (float)loopSpeed;
         }
@@ -147,11 +188,18 @@ public partial class PersonView : Node3D, INpcView
 
     public override void _Process(double delta)
     {
+        if (person.Pose is HerPose hp && !Driven)
+        {
+            float k = 1 - Mathf.Exp(-12 * (float)delta);
+            hp.Lower += (native - hp.Lower) * k;
+            hp.Upper += (native - hp.Upper) * k;
+        }
         if (actLeft > 0 && !holding)
         {
             actLeft -= delta;
             if (actLeft <= 0) PlayLoop(0.25);
         }
+        Fidget(delta);
     }
 
     // Explicit, so it does not shadow Godot's own Dispose().

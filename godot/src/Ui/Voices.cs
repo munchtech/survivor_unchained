@@ -24,8 +24,8 @@ public partial class Voices : Node3D
     {
         var l = new Label3D
         {
-            Font = font, FontSize = size, Modulate = color, OutlineSize = 10, OutlineModulate = new Color(0.02f, 0.015f, 0.01f, 0.9f),
-            Billboard = BaseMaterial3D.BillboardModeEnum.Enabled, NoDepthTest = true, FixedSize = true, PixelSize = 0.0011f,
+            Font = font, FontSize = size, Modulate = color, OutlineSize = 8, OutlineModulate = new Color(0.02f, 0.015f, 0.01f, 0.9f),
+            Billboard = BaseMaterial3D.BillboardModeEnum.Enabled, NoDepthTest = true, FixedSize = true, PixelSize = 0.0007f,
             Shaded = false, RenderPriority = 20, OutlineRenderPriority = 19, DoubleSided = true,
         };
         return l;
@@ -46,7 +46,7 @@ public partial class Voices : Node3D
             keep.Add(p.Id);
             if (!plates.TryGetValue(p.Id, out var pl))
             {
-                pl = (Label(display!, 30, new Color("#e8dcc4")), Label(display!, 44, new Color("#f3d9a0")));
+                pl = (Label(display!, 22, new Color("#e8dcc4")), Label(display!, 34, new Color("#f3d9a0")));
                 AddChild(pl.Name);
                 AddChild(pl.Mark);
                 plates[p.Id] = pl;
@@ -63,15 +63,19 @@ public partial class Voices : Node3D
     }
 
     /// <summary>Something said to the air, over someone's head.</summary>
-    public void Bark(string text, Vector3 at, string? speaker = null, bool alert = false)
+    public void Bark(string text, Vector3 at, string? speaker = null, bool alert = false, string? voice = null)
     {
-        var l = Label(ui!, alert ? 34 : 30, alert ? new Color("#ffd07a") : new Color("#f0e6d2"));
+        var l = Label(ui!, alert ? 30 : 27, alert ? new Color("#ffd07a") : new Color("#f0e6d2"));
         l.Text = speaker != null ? $"{speaker}: {text}" : text;
         l.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         l.Width = 520;
         l.Position = at + Vector3.Up * 2.1f;
         AddChild(l);
         double life = Mathf.Clamp(2.2 + text.Length * 0.05, 2.5, 6);
+        // Heard, too, from where they stand (a named voice in a fight is the
+        // game's to play, over everything; a caption is never spoken).
+        if (!alert && speaker == null && Sound.VoiceOver.Instance?.Bark(text, this, at, voice) is double said and > 0)
+            life = Mathf.Max(life, said + 0.8);
         barks.Add((l, 0, life));
         // Not too many at once: the oldest go first.
         while (barks.Count > 5) { barks[0].Label.QueueFree(); barks.RemoveAt(0); }

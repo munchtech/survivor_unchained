@@ -5,7 +5,7 @@ namespace SurvivorUnchained.Play;
 
 /// <summary>
 /// What the player has set (the web game kept these in local storage):
-/// the picture's quality, the sound, how much gore, how much the screen
+/// the picture's quality, the sound, the voices, how much gore, how much the screen
 /// shakes, a window or the whole screen, and that they are an adult. Kept in
 /// the user folder as JSON; changes apply at once.
 /// </summary>
@@ -16,7 +16,12 @@ public sealed class Settings
     public string Gore = "full";
     public string Motion = "full";
     public bool Fullscreen = true;
+    /// <summary>The survivor's health drawn under them in a night's fight.</summary>
+    public bool UnderBar = true;
     public bool Mature;
+    /// <summary>The recorded voices on (subtitles show either way), and how loud, 0..1.</summary>
+    public bool Voices = true;
+    public float VoiceVolume = 1;
 
     const string File = "user://settings.json";
     public static Settings Current { get; private set; } = Load();

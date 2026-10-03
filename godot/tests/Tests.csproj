@@ -11,6 +11,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../logic/**/*.cs" LinkBase="logic" />
+    <!-- The balance harness's bots and probes (not its command line), for the balance tests. -->
+    <Compile Include="../balance/Harness/**/*.cs" LinkBase="balance" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />

@@ -189,6 +189,9 @@ public static class Enemies
         new() { Id = "ghoul_ally", Name = "Risen Servant", Family = Family.Undead, Faction = Faction.Ally, Visual = "risen_ally",
             Health = 90, Speed = 3.0, Damage = 24, Radius = 0.5, Xp = 0, Behavior = Behavior.Chase, AttackEvery = 1.3,
             Note = "Something you killed, got up again on your side. It will not thank you." },
+        new() { Id = "knight_ally", Name = "Bone Knight", Family = Family.Undead, Faction = Faction.Ally, Visual = "skeleton_warrior_elite", Scale = 1.25,
+            Health = 240, Speed = 2.9, Damage = 34, Radius = 0.6, Mass = 3, Xp = 0, Behavior = Behavior.Chase, AttackEvery = 1.2,
+            Note = "A knight of the barrows, in the iron it was buried in, keeping a watch for you now." },
     }.ToDictionary(e => e.Id);
 
     public static EnemyDef Get(string id) => All.TryGetValue(id, out var d) ? d : throw new KeyNotFoundException($"unknown enemy {id}");

@@ -75,7 +75,7 @@ public partial class Game
         float x = Fire.X + 1.4f, z = Fire.Y + 1.0f;
         figure.Place(x, scene.HeightAt(x, z), z, Math.PI * 0.08, true);
         figure.Loop(lo.Arms.Idle, 0);
-        if (changedBody) figure.Act(d.Archetype switch { "arcanist" => "Spell_Simple_Enter", "reaver" => "Sword_Regular_A", "warden" => "Sword_Block", _ => "Pistol_Shoot" });
+        if (changedBody) figure.Flourish(d.Archetype switch { "arcanist" => "Spell_Simple_Enter", "reaver" => "Sword_Regular_A", "warden" => "Sword_Block", _ => "Pistol_Shoot" });
     }
 
     static CreationChoice WithName(CreationChoice c) { c.Name = "Nameless"; return c; }

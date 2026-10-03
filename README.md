@@ -23,7 +23,7 @@ npm run build      # typecheck + production build
 | Arts (which, rank, facets) | K | Menu |
 | Draught | R | Y |
 | Interact, talk | E / F | B |
-| Pack · Self · Journal · Map | I (Tab) · C · J · M | View · then Menu |
+| Pack · Self · Journal · Map | I (Tab) · C · J · M | View · then LB / RB |
 | Level-up draft | 1–4 to pick, X reroll, B banish | D-pad and A, X, Y |
 | Pause (save, sound, graphics, controls) | Esc / P | Menu |
 

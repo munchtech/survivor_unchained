@@ -51,6 +51,7 @@ public partial class Game : Node, IZoneHost
     Screens screens = null!;
     Synth synth = null!;
     SoundBridge sound = null!;
+    VoiceOver voice = null!;
     bool bossUp;
     Atmosphere air = null!;
     Camera3D camera = null!;
@@ -96,10 +97,15 @@ public partial class Game : Node, IZoneHost
         synth = new Synth();
         AddChild(synth);
         sound = new SoundBridge(synth);
+        voice = new VoiceOver();
+        AddChild(voice);
         // The interface: every button ticks under the pointer and clicks.
         GetTree().NodeAdded += n => { if (n is BaseButton bb) Sounded(bb); };
         saves = new Saves(ProjectSettings.GlobalizePath("user://saves"));
         controls.On(OnAction);
+        // Prompts follow the device in hand: a screen, the HUD, the draft redraw with its keys.
+        controls.DeviceChanged += () => { screens.Current?.Refresh(); hud.DeviceChanged(); };
+        UiArt.Cursors();
         if (Args.Has("auto")) auto = new Autopilot(this) { Idle = Args.Get("auto") == "idle" };
         Settings.Current.ApplyWindow();
         ApplySettings();
@@ -141,6 +147,15 @@ public partial class Game : Node, IZoneHost
                 foreach (var f in parts[1].Split('+')) ArtBook.Choose(ch, parts[0], f);
             }
         }
+        // --items A,B[:RARITY]: those things in the pack from the start (pictures of the pack, the shop).
+        if (Args.Get("items") is string items)
+            foreach (var spec in items.Split(','))
+            {
+                var parts = spec.Split(':');
+                Journey.GiveItem(parts[0], 1, parts.Length > 1 && int.TryParse(parts[1], out var r) ? r : null);
+            }
+        // --xp N: that much experience at once (pictures of the self with points to spend).
+        if (Args.Has("xp")) Character.GainXp(Journey.Ch, Args.Num("xp", 0));
         var z = Args.Get("zone") ?? "lowford";
         Arrival? at = null;
         if (Args.Get("at") is string s)
@@ -204,6 +219,7 @@ public partial class Game : Node, IZoneHost
         if (scene != null) { scene.Fx.Gore.Level = s.GoreLevel; scene.Hitstop = s.Hitstop; }
         air.Quality(s.Quality);
         AudioServer.SetBusVolumeDb(0, s.Volume <= 0 ? -80 : Mathf.LinearToDb(s.Volume));
+        voice?.Apply();
     }
 
     public string Key(Act a) => controls.KeyLabel(a);
@@ -263,6 +279,8 @@ public partial class Game : Node, IZoneHost
     public void LeaveArena(ArenaResult result)
     {
         var s = result.Spec;
+        // A tome left blank is written with the first of what it offered.
+        if (result.Inscribed == null && result.TomeChoices.Count > 0) Arenas.Inscribe(Journey, result, result.TomeChoices[0]);
         screens.Close();
         Travel(s.ReturnZone, null, null, new Arrival(s.ReturnX, s.ReturnZ, s.ReturnFacing));
     }
@@ -403,6 +421,7 @@ public partial class Game : Node, IZoneHost
 
     void OnDeath(string killer)
     {
+        LastFall = (killer, Battle?.Time ?? 0);
         Journey.Ch.Stats.Deaths++;
         if (zone!.OnDeath(killer)) return;
         var b = Battle;
@@ -428,7 +447,13 @@ public partial class Game : Node, IZoneHost
     /* --------------------------------------------------- what zones ask -- */
 
     public void Apply(IEnumerable<Change> changes) => Journey.Apply(changes);
-    public void Say(string text, string? who = null, double seconds = 4) => hud.Say(text, who, seconds);
+    /// <summary>The narrator (or a voice the zone names), read aloud where
+    /// there is a take; the words stay up at least as long as the voice.</summary>
+    public void Say(string text, string? who = null, double seconds = 4)
+    {
+        var take = voice.Narrate(text);
+        hud.Say(text, who, take != null ? Math.Max(seconds, take.Sec + 0.8) : seconds);
+    }
     public void Toast(Toast t) { hud.Toast(t); sound.Toast(t); }
     public void Announce(Announcement a) { hud.Announce(a); sound.Announce(a, bossUp); }
     public void After(double seconds, Action fn) => later.Add((seconds, fn));
@@ -449,8 +474,10 @@ public partial class Game : Node, IZoneHost
         cam.Snap((float)x, (float)(scene?.HeightAt(x, z) ?? 0), (float)z);
     }
 
+    /// <summary>The key for an action as the device in hand has it (a pad's button
+    /// when a pad was touched last), for hints and the words that name keys.</summary>
     public string KeyLabel(string action) =>
-        Enum.TryParse<Act>(action, true, out var a) ? controls.KeyLabel(a) : action.ToUpperInvariant();
+        Enum.TryParse<Act>(action, true, out var a) ? controls.PromptLabel(a) : action.ToUpperInvariant();
 
     (Vector3 Pos, Vector3 Look) showT, showNow;
     bool showing;
@@ -528,6 +555,8 @@ public partial class Game : Node, IZoneHost
                     break;
                 case Ev.Bark bk:
                     scene?.Voices.Bark(bk.Text, new Vector3((float)bk.X, (float)scene.HeightAt(bk.X, bk.Z), (float)bk.Z), bk.Speaker, bk.Speaker == null);
+                    // A named voice in a fight (the Warden, Grimtunnel) is heard over everything.
+                    if (bk.Speaker != null) voice.Shout(bk.Text);
                     break;
                 case Ev.PlayerHit ph when ph.Dodged && Battle is { } b:
                     scene?.Voices.Bark("Dodged", new Vector3((float)b.Player.X, (float)scene.HeightAt(b.Player.X, b.Player.Z), (float)b.Player.Z), null, true);
@@ -540,6 +569,10 @@ public partial class Game : Node, IZoneHost
 
     public override void _Process(double delta)
     {
+        // Something over the game has the buttons: pad buttons mean their menu meaning first.
+        controls.MenuMode = screens.Current != null || hudMode != null;
+        // --pad (pictures of pad play): the pad stays in hand whatever the window's mouse does.
+        if (Args.Has("pad") && keyI > 0) controls.UsingPad = true;
         if (scene == null) return;
         double dt = Math.Min(delta, 0.1);
         if (Mode == "play" && zone != null)
@@ -562,6 +595,17 @@ public partial class Game : Node, IZoneHost
             RunLater(dt);
         }
         else if (auto != null && Mode != "play") AutoFront();
+        // --keys on the title or at the fire (pictures of their focus): pressed in turn, two seconds in.
+        else if (Mode != "play" && Args.Get("keys") is string fk && keyI < fk.Split(',').Length)
+        {
+            tourT -= dt;
+            if (tourT <= 0)
+            {
+                tourT = 0.35;
+                if (Args.Has("pad")) { controls.UsingPad = true; Ui.Nav.KeyMode = true; }
+                if (Enum.TryParse<Act>(fk.Split(',')[keyI++], true, out var fa)) controls.Press(fa);
+            }
+        }
         // A held camera drifts toward its mark, breathing a little.
         if (showing)
         {
@@ -572,6 +616,19 @@ public partial class Game : Node, IZoneHost
             scene.Showcase = showNow;
         }
         scene.Update(dt);
+        // The survivor's place on screen, for the health drawn under them; the prompt's thing; what matters off screen.
+        if (Mode == "play" && Battle is { } fb2)
+        {
+            var at = new Vector3((float)fb2.Player.X, (float)scene.HeightAt(fb2.Player.X, fb2.Player.Z), (float)fb2.Player.Z);
+            hud.Follow(camera.IsPositionBehind(at) ? null : camera.UnprojectPosition(at));
+            if (near != null)
+            {
+                var np = new Vector3((float)near.X, (float)scene.HeightAt(near.X, near.Z) + 2.4f, (float)near.Z);
+                hud.PromptAt(camera.IsPositionBehind(np) ? null : camera.UnprojectPosition(np));
+            }
+            else hud.PromptAt(null);
+            hud.Beyond(Overlay == null ? Offscreen(fb2) : new());
+        }
         {
             var sb = Battle;
             var at = sb != null ? new Vector3((float)sb.Player.X, 0, (float)sb.Player.Z) : showNow.Look;
@@ -587,6 +644,14 @@ public partial class Game : Node, IZoneHost
             hudT = 1.0 / 12;
             var ch = Journey.Ch;
             hud.Frame(Battle, ch.Gold, Inventory.Count(ch, "health_draught"), (ch.Level, ch.Xp / Character.XpForLevel(ch.Level)));
+            hud.MapFrame(MiniView());
+            if (zone is ArenaRun ar && Battle is { } cb2)
+            {
+                double end = ar.Spec.Minutes * 60, left = end - cb2.Time;
+                var (phase, tone) = Phase(cb2.Time / end, ar.Won, left);
+                hud.ArenaClock(ar.Won ? -(cb2.Time - end) : left > 0 ? left : 0, phase, tone);
+            }
+            else hud.ArenaClock(null, "");
         }
         hud.SetBruise(scene.Bruise);
         scene.Voices.Quiet = hudMode == "dialogue" || screens.Current != null;
@@ -596,7 +661,68 @@ public partial class Game : Node, IZoneHost
         Tour(dt);
     }
 
+    /// <summary>The night's phases, named on the clock (docs/feel S-21), as shares of the arena's length.</summary>
+    static (string, Color) Phase(double k, bool won, double left)
+    {
+        if (won) return ("BEYOND  ·  PAST WHAT RULED IT", new Color("#c8b0ff"));
+        if (left <= 0) return ("IT HAS COME", Style.BloodHi);
+        return k switch
+        {
+            < 1 / 6.0 => ("DUSK  ·  BEFORE WHAT RULES IT COMES", new Color("#e8b878")),
+            < 1 / 3.0 => ("GLOAMING  ·  BEFORE WHAT RULES IT COMES", new Color("#ff9a50")),
+            < 2 / 3.0 => ("THE WITCHING  ·  BEFORE WHAT RULES IT COMES", new Color("#ff7a3a")),
+            < 28 / 30.0 => ("ASHFALL  ·  BEFORE WHAT RULES IT COMES", new Color("#ff5a3a")),
+            _ => ("THE COMING", Style.BloodHi),
+        };
+    }
+
+    /// <summary>What last brought the survivor down, and when (the arena's end tells it).</summary>
+    public (string Name, double At)? LastFall { get; private set; }
+
+    /// <summary>What matters and is off the screen: what rules the fight, the nearest elites, chests.</summary>
+    List<Ui.Beyond> Offscreen(Battle b)
+    {
+        var o = new List<Ui.Beyond>();
+        if (scene == null) return o;
+        var view = new Rect2(Vector2.Zero, GetViewport().GetVisibleRect().Size).Grow(-30);
+        double px = b.Player.X, pz = b.Player.Z;
+        void Add(double x, double z, string glyph, Color c)
+        {
+            var w = new Vector3((float)x, (float)scene.HeightAt(x, z) + 1, (float)z);
+            var sp = camera.UnprojectPosition(w);
+            bool behind = camera.IsPositionBehind(w);
+            if (!behind && view.HasPoint(sp)) return;
+            if (behind) sp = view.GetCenter() - (sp - view.GetCenter());
+            double d = Math.Sqrt((x - px) * (x - px) + (z - pz) * (z - pz));
+            o.Add(new Ui.Beyond(sp, glyph, c, (float)Math.Clamp(1 - (d - 20) / 60, 0, 1)));
+        }
+        foreach (var e in b.Enemies.Living().Where(e => e.Boss)) Add(e.X, e.Z, "horns", Style.BloodHi);
+        foreach (var e in b.Enemies.Living().Where(e => e.Elite && !e.Boss).OrderBy(e => (e.X - px) * (e.X - px) + (e.Z - pz) * (e.Z - pz)).Take(3))
+            Add(e.X, e.Z, "skull", Style.EmberHi);
+        foreach (var p in b.Pickups.Living().Where(p => p.Kind == PickupKind.Chest).OrderBy(p => (p.X - px) * (p.X - px) + (p.Z - pz) * (p.Z - pz)).Take(2))
+            Add(p.X, p.Z, "relic", Style.GoldHi);
+        return o;
+    }
+
+    /// <summary>What the corner map shows now: by day and on the story's roads, not in an arena.</summary>
+    MinimapView? MiniView()
+    {
+        if (zone == null || scene == null || zone is ArenaRun || Battle is not { } b || inTransit) return null;
+        float extent = MapScreen.Extent(scene.Data.Meta);
+        var seen = World.Zone(zone.Id).TryGetValue("seen", out var f) && f.Str is { Length: Journey.FogN * Journey.FogN } s ? s : new string('0', Journey.FogN * Journey.FogN);
+        bool Seen(double x, double z)
+        {
+            int i = (int)Math.Floor((x / extent + 0.5) * Journey.FogN), j = (int)Math.Floor((z / extent + 0.5) * Journey.FogN);
+            return i >= 0 && j >= 0 && i < Journey.FogN && j < Journey.FogN && seen[j * Journey.FogN + i] == '1';
+        }
+        var marks = zone.MapMarks().Where(m => m.Kind != MarkKind.Place && (m.Kind is MarkKind.Exit or MarkKind.Quest || Seen(m.X, m.Z)))
+            .Select(m => new MiniMark(m.X, m.Z, m.Kind, m.Label)).ToList();
+        if (World.Corpse is { } corpse && corpse.Zone == zone.Id) marks.Add(new MiniMark(corpse.X, corpse.Z, MarkKind.Danger, "Your belongings"));
+        return new MinimapView(zone.Id, MapScreen.Drawing(scene.Data), extent, seen, Journey.FogN, marks, b.Player.X, b.Player.Z, b.Player.Facing, zone.TimeOf(World) == TimeOfDay.Night);
+    }
+
     double tourT = 2;
+    int keyI;
     int tourI;
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
@@ -615,10 +741,13 @@ public partial class Game : Node, IZoneHost
             {
                 var parts = group.Split(':');
                 int n = int.TryParse(parts[0], out var v) ? v : 100;
+                // A kind ending in ! comes as elites (pictures of the edge marks, elite fights).
+                string kind = parts.Length > 1 ? parts[1].TrimEnd('!') : "risen";
+                bool elite = parts.Length > 1 && parts[1].EndsWith('!');
                 for (int i = 0; i < n; i++)
                 {
                     double a = Rng.NextDouble() * Math.Tau, d = Args.Num("dist", 9) + Rng.NextDouble() * Args.Num("spread", 20);
-                    hb.SpawnEnemy(parts.Length > 1 ? parts[1] : "risen", hb.Player.X + Math.Cos(a) * d, hb.Player.Z + Math.Sin(a) * d);
+                    hb.SpawnEnemy(kind, hb.Player.X + Math.Cos(a) * d, hb.Player.Z + Math.Sin(a) * d, elite ? new Battle.SpawnOpts { Elite = true } : null);
                 }
             }
         }
@@ -635,15 +764,21 @@ public partial class Game : Node, IZoneHost
                 if (k != null) { k.Tier = kinds[i] == PickupKind.Ember ? i : 2; k.Vx = k.Vz = 0; k.Age = -600; }
             }
         }
-        // --give A,B[:RANK]: those ember weapons in hand from the start (pictures of them).
+        // --give A,B[:RANK][@EVOLUTION],+PASSIVE[:RANK]: a build in hand from the start
+        // (pictures of weapons, of the draft with an arsenal), the arena's opening blessing passed over.
         if (!giveDone && Args.Get("give") is string give && Battle is { } gb)
         {
             giveDone = true;
             foreach (var w in give.Split(','))
             {
-                var parts = w.Split(':');
-                gb.AddWeapon(parts[0], parts.Length > 1 && int.TryParse(parts[1], out var r) ? r : 1);
+                var evo = w.Split('@');
+                var parts = evo[0].Split(':');
+                int r = parts.Length > 1 && int.TryParse(parts[1], out var rv) ? rv : 1;
+                if (parts[0].StartsWith('+')) { for (int i = 0; i < r; i++) gb.AddBoon(parts[0][1..]); continue; }
+                gb.AddWeapon(parts[0], r);
+                if (evo.Length > 1) gb.Evolve(parts[0], evo[1]);
             }
+            gb.GreatOwed = 0;
         }
         // --blast SCHOOL[:R]: that school's burst a few paces ahead, every second and a half (pictures of it).
         if (Args.Get("blast") is string bl && Battle is { } bb && scene != null)
@@ -670,15 +805,46 @@ public partial class Game : Node, IZoneHost
         if (tourT > 0) return;
         string[] all = { "inventory", "character", "journal", "map", "pause", "rest", "stash", "shop:harlan", "chapter" };
         var list = want == "all" ? all : want.Split(',');
-        if (tourI >= list.Length) return;
+        if (tourI >= list.Length)
+        {
+            // --keys A,B,...: actions pressed in turn once the screen is up (--pad: as from a pad), for pictures of focus.
+            if (Args.Get("keys") is string keys && keyI < keys.Split(',').Length)
+            {
+                tourT = 0.35;
+                if (Args.Has("pad")) { controls.UsingPad = true; Ui.Nav.KeyMode = true; }
+                if (Enum.TryParse<Act>(keys.Split(',')[keyI++], true, out var ka)) controls.Press(ka);
+            }
+            return;
+        }
+        if (Args.Has("pad")) { controls.UsingPad = true; Ui.Nav.KeyMode = true; }
         tourT = Args.Num("every", 1.5f);
         if (list[tourI].StartsWith("shop:")) Journey.OpenShop(list[tourI][5..], Rng);
         GD.Print($"open {list[tourI]}");
         CloseOverlay();
         var next = list[tourI++];
-        if (next.StartsWith("talk:")) Talk(next[5..]);
+        if (next.StartsWith("talk:")) TalkTo(next[5..]);
         else if (next == "draft" && Battle is { } b) { b.GainEmber(b.EmberNext); }
+        // A won arena's end, with a sample tally (pictures of the result screen; in an arena).
+        else if (next == "result" && World.Arena is { } spec && Battle is { } rb)
+            ArenaOver(new ArenaResult(spec, true, 2134, rb.KillCount + 1840, Math.Max(rb.EmberLevel, 27), 1460, 212, Content.Weapons.Pool.Take(2).ToList(), 1, true));
         else Open(next);
+    }
+
+    /// <summary>--open talk:ID>words>+: a conversation, each choice after it
+    /// taken by a fragment of its words and each + a click on (pictures of a
+    /// line deep in a conversation: the fortune's pages, a long answer).</summary>
+    void TalkTo(string what)
+    {
+        var parts = what.Split('>');
+        Talk(parts[0]);
+        foreach (var pick in parts.Skip(1))
+        {
+            if (runner?.Present() is not { } p) break;
+            if (pick == "+") { Advance(); continue; }
+            var c = p.Choices.FirstOrDefault(x => x.Enabled && x.Text.Contains(pick, StringComparison.OrdinalIgnoreCase));
+            if (c == null) { GD.Print($"talk: no choice \"{pick}\""); break; }
+            Choose(c.Index);
+        }
     }
 
     /// <summary>--log S: a line every S seconds of how it is going (for runs

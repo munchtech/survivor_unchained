@@ -23,6 +23,12 @@ game builds them:
                                          # headless: a screenshot in godot/.shots/
     cd godot/tests && dotnet test        # the game's logic, without a screen
 
+Every push and pull request runs `.github/workflows/godot.yml` (the
+Actions tab, "Godot"): the logic's tests, StoryLint among them, summarised
+on the run's page with any failure's message and the slowest tests
+(`tools/ci/trx_summary.py`), then a build of the whole game's C#. The bots
+and the horde benchmark below are opt-in and never run there.
+
 In the Godot editor on your own computer: install Godot 4.5.1 (.NET) and the
 .NET 8 SDK, import `godot/project.godot`, and press F5 (the C# builds from
 nuget.org). On Windows, `godot/assets` arrives as a small file rather than
@@ -48,10 +54,25 @@ Options go after `--`:
 - `--continue`: the last journey saved (saves are in Godot's user folder);
 - `--auto`: a crude player drives (`src/Game/Autopilot.cs`), from the title
   on; `--auto idle` only takes the level-up cards;
-- `--open inventory|character|journal|map|pause|rest|stash|shop:ID|chapter|all`,
-  `--open talk:ID`, `--open draft`: a screen, a conversation or the level-up
-  draft opened a moment in (`--every T` between several); `--bare` hides the
-  world, for quick pictures of the interface;
+- `--open inventory|character|arts|journal|map|maps|pause|rest|stash|shop:ID|chapter|all`,
+  `--open talk:ID`, `--open draft`, `--open result` (a won arena's end, in
+  an arena): a screen, a conversation or the level-up draft opened a moment
+  in (`--every T` between several); `--bare` hides the world, for quick
+  pictures of the interface; `--keys A,B,...` then presses those actions in
+  turn (`Right`, `Confirm`, `SubNext`...), and `--pad` as from a pad (focus
+  ring and pad prompts shown); `--items ID[:RARITY],...` and `--xp N` fill
+  the pack and give experience first; `--open "talk:ID>words>+"`
+  takes the choice whose words contain `words` and clicks on at each `+`
+  (a line deep in a conversation: `"talk:vonnra>fortune>+>+>+"` is the
+  fortune's fourth page);
+- `QA_SAVES=DIR dotnet test tests/Tests.csproj --filter QaSaves`: saves at
+  the Act 1 moments worth looking at (the ledger read, the Roost emptied,
+  the fortune, Harlan met with the Roost on your boots), played into by
+  the tests' `Route` harness; copy one to the game's saves as `slot0.json`
+  (with `meta.json` `{"last":0}`) and run with `--continue`. To keep them
+  out of your own saves, a `godot/override.cfg` (not committed) with
+  `config/use_custom_user_dir=true` and a `config/custom_user_dir_name`
+  gives the game a user folder of its own;
 - `STORY_PLAY=1 dotnet test tests/Tests.csproj --filter StoryPlay` (with
   `--logger "console;verbosity=detailed"`): the Verge walked by day by a
   plain-minded bot with only what it carries, pack to pack, with what it
@@ -64,6 +85,20 @@ Options go after `--`:
   and what hurt it (`ARENA_TRACE=1` for a line a minute,
   `ARENA_CASE=seed,calling,tier,people` for one case); for tuning the horde
   and how often the cards come;
+- `cd godot/balance && dotnet build -c Release`, then `dotnet bin/Release/net8.0/Balance.dll arena|probe|weapons|report ...`:
+  the balance tool (`docs/SKILLS_DESIGN.md` section 15): whole arenas played
+  headless by bots that draft by a policy (`first`, `random`, `greedy`,
+  `path:ID`), at a tier and level, under the oaths the table swears, with
+  plain or deft hands; build probes; every skill alone; a markdown report
+  and CSVs. `BALANCE_LAB=arena|story|all dotnet test tests/Tests.csproj
+  --filter BalanceLab` drives the same arenas (and the day-story walk) from
+  environment knobs (`tests/BalanceLab.cs`);
+- `HORDE_BENCH=1 dotnet test tests/Tests.csproj --filter HordeBench_Run` (with
+  `--logger "console;verbosity=detailed"`): the fight timed under a horde of
+  300, 600 and 900 (the enemy pool's whole size) on a generated arena with
+  a mid-game build: milliseconds a tick, what a tick allocates, and a
+  fingerprint of how the fight ended, which a change meant only to make
+  it faster must leave as it was (`HORDE_TICKS` for the ticks timed);
 - `--shot NAME --seconds S [--every T --count N]`: screenshots
   (`src/Shots.cs`);
 - `--log S`: a line every S seconds (the fight, the zone, the sound);
@@ -77,7 +112,7 @@ Options go after `--`:
 Keys: WASD to move, Space to dash, Q for the art in hand, K for the arts
 (which is in hand, its rank and facets), E to use or talk, R to drink a
 draught, 1-4 to pick a card or an answer (X rerolls the cards, B then a
-number banishes one), Escape to pause.
+number banishes one, V skips the draft for some ember back), Escape to pause.
 
 The dash is everyone's and is where timing lives: two charges; a blow that
 was telegraphed (a lunge after its wind-up, a missile, a marked blast)
@@ -182,7 +217,12 @@ game at the same place and hour; needs the dev server), then
   own shape key, and through her mask her skin toned, her hair coloured and
   her suit dyed the calling's cloth by `shaders/woman_skin.gdshader`;
   donizaki's anime base, `People.Her`, is the skeleton she is fitted from),
-  weapons in hand (`Arms.cs`), the survivor
+  the heroine's own movement (`HerClips.cs`: her library,
+  `art/anim/heroine.res`, made by `tools/anim`, chosen by her calling and
+  what she holds, the Universal Animation Libraries for anything not made;
+  `HerCarriage.cs`: banking into turns, tipping into starts and stops, her
+  back turned toward a blow while her legs run; `HerPose.cs` stands down
+  for her own clips), weapons in hand (`Arms.cs`), the survivor
   (`PlayerView.cs`: an AnimationTree, the swing on the upper body over the
   run), people in the world (`PersonView.cs`), the beasts (`Beasts.cs`:
   modelled, rigged and animated wolves, boars and lamplings from
@@ -208,7 +248,11 @@ game at the same place and hour; needs the dev server), then
   where they land, sinking), sprays, numbers and blade arcs (`Hits.cs`), the
   colours of each school (`Palette.cs`).
 - `src/Ui/`: the look shared by every screen (`Style.cs`, the icons in
-  `Glyphs.cs`), the items' pictures (`ItemPhotos.cs`: each item photographed
+  `Glyphs.cs`, painted art by name from `art/ui` in `UiArt.cs`, with the
+  drawn look as the fallback: `docs/UI_ART_BRIEF.md`), focus moved by keys
+  and pad on every screen (`Nav.cs`), the corner map (`Minimap.cs`), arrows
+  to what matters off screen (`EdgeMarks.cs`), slots that drag and drop
+  (`SlotView.cs`); the design of all of it in `docs/UI_DESIGN.md`, the items' pictures (`ItemPhotos.cs`: each item photographed
   once in a little studio of its own, lit by a studio HDRI, and kept; what is
   photographed is in `ItemModels.cs`: the weapons in hand, and the rest made
   in code with `src/World/Shapes.cs`, turned, swept, cut out and draped), the HUD (`GameHud.cs`), the level-up draft and the
@@ -241,6 +285,26 @@ photographed stone, wood and earth (`art/materials`, Poly Haven, CC0;
 `src/World/Made.cs`). `--icons kk:halloween/crypt` photographs one alone,
 `--icons kit:props/Torch_Metal` a kit piece. The KayKit packs themselves do
 not load in Godot (they are meshopt-compressed).
+
+## The heroine's animation
+
+`tools/anim` makes her clips on her own skeleton (`docs/ANIM_DESIGN.md`
+says what each is and why, `docs/ANIM_RESEARCH.md` where motion can come
+from and under what licence, `tools/anim/manifest.json` what is made):
+
+    python tools/anim/build.py [names]   # build (all, or those whose names contain these) and pack art/anim/heroine.res
+    python tools/anim/review.py her/run_warden side front --frames 10 --step 2 --speed 5.3 --weapon sword+shield
+                                         # contact sheets in tools/anim/out/sheets (views: front side left back three rthree top day arena)
+    python tools/anim/board.py out.png her/idle_warden@sword+shield@warden her/idle_reaver@axe@reaver
+                                         # several clips side by side, each with its weapon and outfit
+
+Runs are keyed by stride (`gait.py`), swings and the rest by key poses
+(`keyed.py`: hips, back, a grip on an arc about the shoulder, where the
+blade points, feet), idles from 100STYLE captures (`retarget.py`, CC BY
+4.0, kept in `C:\Users\munch\Tools\mocap`) with the arms re-keyed. The
+review sheets lay a swing over a run as the game does with `OVER=` and
+`OVERAT=`; `godot/tools_scenes/anim_skeleton.gd` writes the skeleton the
+tools build against (`tools/anim/data`).
 
 ## Desktop builds
 

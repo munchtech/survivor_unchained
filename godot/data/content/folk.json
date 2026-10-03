@@ -217,7 +217,7 @@
   {
    "text": "They buried Aldo this morning. The Captain carried the front of the coffin himself.",
    "when": {
-    "fact": "wolves.at_gate",
+    "fact": "aldo.buried",
     "eq": true
    }
   },
@@ -600,7 +600,8 @@
   },
   {
    "text": "Gates are shut till dawn.",
-   "watch": true
+   "watch": true,
+   "night": true
   },
   {
    "text": "Walk on, traveller.",
@@ -608,7 +609,8 @@
   },
   {
    "text": "Piss off home. It's past curfew.",
-   "watch": true
+   "watch": true,
+   "night": true
   },
   {
    "text": "Keep that blade sheathed or I'll sheathe it for you.",
@@ -760,7 +762,7 @@
    }
   },
   {
-   "text": "They buried Brannoc's girl behind the shrine. Chid sang. Chid can't sing. Nobody minded.",
+   "text": "They buried Brannoc's girl behind the shrine this morning. Chid sang. Chid can't sing. Nobody minded.",
    "when": {
     "fact": "nell.buried",
     "eq": true
@@ -798,7 +800,7 @@
   {
    "text": "Watch brought old Corran home from the ford post. Wrote him down a deserter, they did. Deserted to where, I ask you.",
    "when": {
-    "fact": "holloway.post_told",
+    "fact": "corran.home",
     "eq": true
    }
   },

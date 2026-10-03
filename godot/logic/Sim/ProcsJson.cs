@@ -21,7 +21,7 @@ public sealed class EffectConverter : JsonConverter<Effect>
         int I(string k, int d = 0) => e.TryGetProperty(k, out var v) ? v.GetInt32() : d;
         string S(string k, string d = "") => e.TryGetProperty(k, out var v) ? v.GetString() ?? d : d;
         School Sc() => EnumKey<School>.Parse(S("school", "physical"));
-        Basis B() => S("basis", "flat") switch { "hit" => Basis.Hit, "maxhp" => Basis.MaxHp, _ => Basis.Flat };
+        Basis B() => S("basis", "flat") switch { "hit" => Basis.Hit, "maxhp" => Basis.MaxHp, "weapon" => Basis.Weapon, _ => Basis.Flat };
         StatusPayload? P(string k = "status") => e.TryGetProperty(k, out var v) ? v.Deserialize<StatusPayload>(o) : null;
         return kind switch
         {
@@ -32,6 +32,7 @@ public sealed class EffectConverter : JsonConverter<Effect>
             "chain" => new Effect.Chain(I("count"), N("range"), N("damage"), B(), Sc()),
             "heal" => new Effect.Heal(N("amount"), B()),
             "shield" => new Effect.Shield(N("amount"), N("duration")),
+            "barrier" => new Effect.Barrier(N("fraction"), N("cap", 1), N("duration", 1e9)),
             "zone" => new Effect.Zone(N("radius"), N("duration"), N("dps"), B(), Sc(), S("art"), N("slow"), P()),
             "buff" => new Effect.Buff(S("id"), S("stat"), N("value"), EnumKey<ModKind>.Parse(S("kind")), N("duration"), I("maxStacks", 1)),
             "cooldown" => new Effect.Cooldown(N("seconds"), EnumKey<Effect.CooldownScope>.Parse(S("scope", "all"))),

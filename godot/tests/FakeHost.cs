@@ -96,6 +96,8 @@ sealed class FakeLook : IZoneLook
     public void Show(string node, bool visible) { if (visible) Hidden.Remove(node); else Hidden.Add(node); }
     public bool Shown(string node) => !Hidden.Contains(node);
     public void Stop(string node) => Stopped.Add(node);
+    public readonly List<(string Id, double X, double Z, double R)> PropsHidden = new();
+    public void HideProps(string id, double x, double z, double r) => PropsHidden.Add((id, x, z, r));
     public void AddProp(string id, double x, double z, double rot = 0, double scale = 1, double lift = 0) => Props.Add(id);
     public int AddLight(double x, double y, double z, string color, double intensity, double distance, double flicker = 0.12, double glowSize = 0.08, string glowColor = "#ffb35a")
     {
@@ -109,7 +111,7 @@ sealed class FakeLook : IZoneLook
     public double HeightAt(double x, double z) => ground.HeightAt(x, z);
     public void SetNight(bool on) => Night = on;
     public void Plates(List<Plate> plates) => LastPlates = plates;
-    public void Bark(string text, double x, double y, double z, string? speaker = null) => Barks.Add(text);
+    public void Bark(string text, double x, double y, double z, string? speaker = null, string? voice = null) => Barks.Add(text);
     public readonly List<string> BossPoses = new();
     public IBossView BossView(string kind) => new FakeBoss(BossPoses);
     public INpcView Fallen(PersonSpec spec, Held? arms, double x, double z, double facing, string clip) => new FakeView();

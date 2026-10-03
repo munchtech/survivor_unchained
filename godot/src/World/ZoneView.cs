@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 using SurvivorUnchained.Core;
 
@@ -34,6 +35,7 @@ public partial class ZoneView : Node3D
     readonly List<(int Light, GpuParticles3D Moths)> moths = new();
     readonly ShaderMaterial ground;
     MultiMeshInstance3D? grass;
+    readonly Node3D props;
     double time;
     public bool Night { get; private set; }
 
@@ -48,7 +50,8 @@ public partial class ZoneView : Node3D
         AddChild(g);
         AddChild(Water.Build(z));
         AddChild(Dressing.Flora(z));
-        AddChild(Dressing.Props(z));
+        props = Dressing.Props(z);
+        AddChild(props);
         Landmarks = new Landmarks(z);
         AddChild(Landmarks.Root);
         if (grassAround is Vector2 at) GrowGrass(at, grassRadius);
@@ -185,6 +188,21 @@ public partial class ZoneView : Node3D
     {
         ground.SetShaderParameter("heal", heal);
         grass?.Multimesh.Mesh.SurfaceGetMaterial(0)?.Set("shader_parameter/heal", heal);
+    }
+
+    /// <summary>The kit pieces of a kind within r of a point, taken away in
+    /// play (the strongbox carried off, the crates rolled into the stream):
+    /// each one's instance collapsed to nothing where it stood.</summary>
+    public void HideProps(string id, float x, float z, float r)
+    {
+        foreach (var mmi in props.GetChildren().OfType<MultiMeshInstance3D>())
+        {
+            if (!mmi.HasMeta("prop") || mmi.GetMeta("prop").AsString() != id) continue;
+            var at = mmi.GetMeta("at").AsGodotArray<Vector3>();
+            for (int i = 0; i < at.Count; i++)
+                if (new Vector2(at[i].X - x, at[i].Z - z).Length() < r)
+                    mmi.Multimesh.SetInstanceTransform(i, new Transform3D(new Basis(Vector3.Zero, Vector3.Zero, Vector3.Zero), at[i]));
+        }
     }
 
     /// <summary>Hide the low landmark pieces within `radius` of a point on

@@ -17,14 +17,14 @@ public class BlessingTests
     [Fact]
     public void The_first_blessing_comes_early_and_the_rest_further_apart()
     {
-        Assert.Equal(4, Boons.Milestones[0]);
-        Assert.True(Boons.IsMilestone(4));
-        Assert.False(Boons.IsMilestone(5));
+        Assert.Equal(5, Boons.Milestones[0]);
+        Assert.True(Boons.IsMilestone(5));
+        Assert.False(Boons.IsMilestone(6));
         for (int i = 1; i < 6; i++) Assert.True(Boons.Milestones[i] - Boons.Milestones[i - 1] > Boons.Milestones[i - 1] - (i > 1 ? Boons.Milestones[i - 2] : 0) - 1);
         var b = BattleTests.Arena(4);
-        for (int i = 0; i < 3; i++) b.GainEmber(b.EmberNext - b.EmberXp + 0.01);
-        Assert.Equal(4, b.EmberLevel);
-        Assert.Equal(new[] { 4 }, b.PendingBlessings);
+        for (int i = 0; i < 4; i++) b.GainEmber(b.EmberNext - b.EmberXp + 0.01);
+        Assert.Equal(5, b.EmberLevel);
+        Assert.Equal(new[] { 5 }, b.PendingBlessings);
     }
 
     [Fact]
@@ -144,5 +144,209 @@ public class BlessingTests
         Assert.All(offers, o => Assert.True(o.Blessing));
         LevelUp.Choose(b, offers[0]);
         Assert.Empty(b.PendingBlessings);
+    }
+
+    [Fact]
+    public void Every_great_blessing_has_a_role_and_every_path_a_ward()
+    {
+        foreach (var id in Boons.Great) Assert.True(Boons.GreatRoles.ContainsKey(id), $"{id} has no role");
+        foreach (var p in Paths.All)
+        {
+            Assert.Contains(p.Great, id => Boons.GreatRoles[id] == Boons.GreatRole.Ward);
+            Assert.InRange(p.Great.Length, 3, 7);
+        }
+    }
+
+    [Fact]
+    public void From_the_ashes_lifts_you_once_burning_and_the_dawn_takes_it()
+    {
+        var b = BattleTests.Arena(8);
+        b.AddBoon("from_the_ashes");
+        Assert.Equal(1, b.Player.Ashes);
+        var wolf = b.SpawnEnemy("wolf", b.Player.X + 2, b.Player.Z, new Battle.SpawnOpts { Elite = true, Style = SpawnStyle.Walk, Disposition = Disposition.Hostile })!;
+        Tick(b, 1 / 60.0);
+        b.HurtPlayer(b.MaxHp * 5, School.Physical, "wolf", wolf, telegraphed: true);
+        Assert.True(b.Player.Alive);
+        Assert.Equal(b.MaxHp * 0.5, b.Player.Hp, 1);
+        Assert.True(wolf.Status.Has(StatusKind.Burn));
+        Assert.Equal(0, b.Player.Ashes);
+        // The second rank lifts you whole; the third owes a second rising.
+        b.AddBoon("from_the_ashes");
+        Assert.Equal(0, b.Player.Ashes);
+        b.AddBoon("from_the_ashes");
+        Assert.Equal(1, b.Player.Ashes);
+        b.Player.Iframes = 0;
+        b.HurtPlayer(b.MaxHp * 5, School.Physical, "wolf", null, telegraphed: true);
+        Assert.Equal(b.MaxHp, b.Player.Hp, 1);
+        b.AddBoon("from_the_ashes");
+        b.Douse([]);
+        Assert.Equal(0, b.Player.Ashes);
+    }
+
+    [Fact]
+    public void Grounding_turns_part_of_a_blow_into_lightning()
+    {
+        double Taken(bool grounded)
+        {
+            var b = BattleTests.Arena(9);
+            if (grounded) b.AddBoon("grounding");
+            var wolf = b.SpawnEnemy("wolf", b.Player.X + 2, b.Player.Z, new Battle.SpawnOpts { Style = SpawnStyle.Walk, Disposition = Disposition.Hostile })!;
+            Tick(b, 1 / 60.0);
+            double before = b.Player.Hp;
+            b.HurtPlayer(40, School.Physical, "wolf", wolf, telegraphed: true);
+            return before - b.Player.Hp;
+        }
+        Assert.Equal(Taken(false) * 0.8, Taken(true), 1);
+        var g = BattleTests.Arena(10);
+        g.AddBoon("grounding");
+        var near = g.SpawnEnemy("wolf", g.Player.X + 3, g.Player.Z, new Battle.SpawnOpts { Style = SpawnStyle.Walk, Disposition = Disposition.Hostile })!;
+        Tick(g, 1 / 60.0);
+        double hp = near.Hp;
+        g.HurtPlayer(40, School.Physical, "wolf", near, telegraphed: true);
+        Tick(g, 0.2);
+        Assert.True(near.Hp < hp || !near.Alive, "the lightning found nothing");
+    }
+
+    [Fact]
+    public void Rootbind_holds_and_opens_the_toughest_near_you()
+    {
+        var b = BattleTests.Arena(11);
+        b.RemoveWeapon("oathblade");
+        var pup = b.SpawnEnemy("wolf", b.Player.X + 3, b.Player.Z, new Battle.SpawnOpts { Style = SpawnStyle.Walk, Disposition = Disposition.Hostile })!;
+        var alpha = b.SpawnEnemy("wolf", b.Player.X + 6, b.Player.Z, new Battle.SpawnOpts { Elite = true, Style = SpawnStyle.Walk, Disposition = Disposition.Hostile })!;
+        b.AddBoon("rootbind");
+        Tick(b, 0.2);
+        Assert.True(alpha.Status.Has(StatusKind.Stun));
+        Assert.True(alpha.Status.Has(StatusKind.Mark));
+        Assert.False(pup.Status.Has(StatusKind.Stun));
+    }
+
+    [Fact]
+    public void Go_for_the_throat_sends_the_pack_at_the_champion()
+    {
+        int TargetOf(bool throat)
+        {
+            var b = BattleTests.Arena(12);
+            b.RemoveWeapon("oathblade");
+            if (throat) b.AddBoon("go_for_the_throat");
+            b.AddBoon("spirit_companion");
+            var pup = b.SpawnEnemy("wolf", b.Player.X + 2.5, b.Player.Z, new Battle.SpawnOpts { Style = SpawnStyle.Walk, Disposition = Disposition.Hostile })!;
+            var alpha = b.SpawnEnemy("wolf", b.Player.X - 7, b.Player.Z, new Battle.SpawnOpts { Elite = true, Style = SpawnStyle.Walk, Disposition = Disposition.Hostile })!;
+            Tick(b, 1.5);
+            var ally = b.Enemies.Items.First(e => e.Alive && e.Disposition == Disposition.Ally);
+            return ally.Target == alpha.Id ? 1 : ally.Target == pup.Id ? 0 : -1;
+        }
+        Assert.Equal(0, TargetOf(false));
+        Assert.Equal(1, TargetOf(true));
+    }
+
+    [Fact]
+    public void What_burns_strikes_an_emberblood_weaker()
+    {
+        double Taken(int ranks, bool burning)
+        {
+            var b = BattleTests.Arena(13);
+            for (int r = 0; r < ranks; r++) b.AddBoon("emberblood");
+            var wolf = b.SpawnEnemy("wolf", b.Player.X + 2, b.Player.Z, new Battle.SpawnOpts { Elite = true, Style = SpawnStyle.Walk, Disposition = Disposition.Hostile })!;
+            Tick(b, 1 / 60.0);
+            if (burning) b.ApplyStatus(wolf, new StatusPayload(StatusKind.Burn, 1, 1, 5), 10);
+            double before = b.Player.Hp;
+            b.HurtPlayer(40, School.Physical, "wolf", wolf, telegraphed: true);
+            return before - b.Player.Hp;
+        }
+        Assert.Equal(Taken(0, true), Taken(5, false), 1);
+        Assert.Equal(Taken(0, true) * 0.7, Taken(5, true), 1);
+    }
+
+    [Fact]
+    public void Watch_mail_counts_and_turns_every_tenth_blow()
+    {
+        var b = BattleTests.Arena(14);
+        b.AddBoon("ironhide");
+        int turned = 0;
+        for (int i = 0; i < 30; i++)
+        {
+            b.Player.Iframes = 0;
+            b.Player.Hp = b.MaxHp;
+            if (b.HurtPlayer(5, School.Physical, "test", null) == 0) turned++;
+        }
+        Assert.Equal(3, turned);
+    }
+
+    [Fact]
+    public void Bitterroot_draws_burning_and_poison_out_twice_as_fast()
+    {
+        double Left(bool root)
+        {
+            var b = BattleTests.Arena(15);
+            if (root) b.AddBoon("recovery");
+            b.Player.BurnT = 2; b.Player.BurnDps = 0;
+            Tick(b, 0.5);
+            return b.Player.BurnT;
+        }
+        Assert.Equal(1.5, Left(false), 1);
+        Assert.Equal(1.0, Left(true), 1);
+    }
+
+    [Fact]
+    public void A_callings_own_great_is_offered_to_it_alone()
+    {
+        var own = Boons.Great.Where(id => Boons.All[id].Calling != null).ToDictionary(id => id, id => Boons.All[id].Calling!);
+        Assert.Equal(4, own.Count);
+        Assert.Equal(new[] { "arcanist", "reaver", "stalker", "warden" }, own.Values.OrderBy(x => x));
+        foreach (var calling in own.Values)
+        {
+            bool seen = false;
+            for (uint seed = 1; seed <= 120; seed++)
+            {
+                var b = BattleTests.Arena(seed);
+                b.Calling = calling;
+                b.GreatOwed = 1;
+                var hand = LevelUp.Draft(b);
+                Assert.DoesNotContain(hand, o => own.TryGetValue(o.Id, out var c) && c != calling);
+                seen |= hand.Any(o => own.TryGetValue(o.Id, out var c) && c == calling);
+            }
+            Assert.True(seen, $"{calling} never saw its own");
+        }
+        // Once a night: at Dusk or, failing that, at Midnight.
+        for (uint seed = 1; seed <= 60; seed++)
+        {
+            var b = BattleTests.Arena(seed);
+            b.Calling = "reaver";
+            b.GreatOwed = 1;
+            var dusk = LevelUp.Draft(b);
+            bool atDusk = dusk.Any(o => o.Id == "blood_up");
+            LevelUp.Choose(b, dusk.First(o => o.Id != "blood_up"));
+            b.GreatOwed = 1;
+            var midnight = LevelUp.Draft(b);
+            Assert.True(atDusk || midnight.Any(o => o.Id == "blood_up"), $"seed {seed}");
+        }
+    }
+
+    [Fact]
+    public void The_hunters_blind_strikes_true_on_the_unhurt()
+    {
+        var b = BattleTests.Arena(16);
+        b.RemoveWeapon("oathblade");
+        b.AddBoon("hunters_blind");
+        b.AddBoon("hunters_blind");
+        b.Stats.Add(new StatMod(Stat.CritChance, ModKind.Flat, -b.Stats.Get(Stat.CritChance), "test"));
+        var wolf = b.SpawnEnemy("wolf", b.Player.X + 3, b.Player.Z, new Battle.SpawnOpts { Elite = true, Style = SpawnStyle.Walk, Disposition = Disposition.Hostile })!;
+        Tick(b, 1 / 60.0);
+        double first = b.HitEnemy(wolf, 10, School.Physical, [Tag.Physical]);
+        double second = b.HitEnemy(wolf, 10, School.Physical, [Tag.Physical]);
+        Assert.True(first > second * 1.2, $"{first} against {second}");
+    }
+
+    [Fact]
+    public void Holding_the_crossing_hardens_you_while_you_stand()
+    {
+        var b = BattleTests.Arena(17);
+        double before = b.Stats.Get(Stat.Armor);
+        b.AddBoon("hold_the_crossing");
+        Tick(b, 0.5);
+        Assert.Equal(before + 6, b.Stats.Get(Stat.Armor), 3);
+        Tick(b, 0.5, 1, 0);
+        Assert.Equal(before, b.Stats.Get(Stat.Armor), 3);
     }
 }

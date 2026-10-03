@@ -57,7 +57,6 @@ public sealed class Verge : ZoneRuntime
     readonly string[] cageNodes;
     double dispT, chargeT = -1, trackT;
     readonly HashSet<string> seen = new();
-    readonly bool[] cagesOpen = new bool[3];
     readonly double[] brambleHp;
     Enemy? greymuzzle, redcowl, snib, nemesis;
     readonly List<Enemy> roostCrew = new(), digCrew = new();
@@ -140,6 +139,11 @@ public sealed class Verge : ZoneRuntime
             }
         return out_;
     }
+
+    /// <summary>The stream runs clean again: whatever settled the Pack (cured,
+    /// allied, bought, emptied), the poison stopped two days since. Until then
+    /// the wolves by the water are sick, and bitterroot grows on the green stretch.</summary>
+    bool StreamClean() => F("stream.clear").Truthy || F("beasts.outcome").Str == "cured";
 
     bool KerchiefsOut() => !KerchiefsFriendly() && F("redcowl").Str is not ("tricked" or "dead") && !F("roost.cleared").Truthy;
 
@@ -301,7 +305,7 @@ public sealed class Verge : ZoneRuntime
         }
         bool night = W.Time == TimeOfDay.Night;
         double pop = F("beasts.population").IsNull ? 60 : F("beasts.population").Number;
-        bool sick = F("beasts.outcome").Str != "cured";
+        bool sick = !StreamClean();
         // The Pack, by the water while the sickness is on them.
         if (!WolvesFriendly() && pop > 5)
             for (int k = (int)Math.Round(5 * pop / 60); k > 0; k--)
@@ -351,7 +355,7 @@ public sealed class Verge : ZoneRuntime
                 if (greymuzzle != null) SetDisposition(greymuzzle);
             }
             SpawnGroup("wolf", 5, hollow.X, hollow.Z, 9, "hollow", 14);
-            if (F("beasts.outcome").Str != "cured") SpawnGroup("wolf_blighted", 3, hollow.X, hollow.Z, 6, "hollow", 8);
+            if (!StreamClean()) SpawnGroup("wolf_blighted", 3, hollow.X, hollow.Z, 6, "hollow", 8);
             if (HollowCalm()) G.Say("The wolves watch you come. None of them move to stop you.", null, 4);
             else if (Test("""{ "hasTag": "wolf_pelts" }""") && !F("pack.allied").Truthy) G.Say("They smell the cloak before they see you. Every wolf in the Hollow is on its feet.", null, 4);
             else if (F("wolf.blood").Truthy && Knows("hint.greymuzzle")) G.Say("They smell the blood on you before they see you. Maeca said none since you last slept.", null, 5);
@@ -503,7 +507,7 @@ public sealed class Verge : ZoneRuntime
             I.Add(new()
             {
                 Id = $"root{k}", X = sample.X + roots[k].X, Z = sample.Z + roots[k].Z, R = 2, Verb = "Dig up", Name = "Bitterroot",
-                When = () => !seen.Contains($"root{k}") && F("beasts.outcome").Str != "cured" && !F("stream.clear").Truthy,
+                When = () => !seen.Contains($"root{k}") && !StreamClean(),
                 Act = () => { seen.Add($"root{k}"); G.Apply("""[{ "give": "bitterroot" }]"""); },
             });
         }
@@ -533,7 +537,8 @@ public sealed class Verge : ZoneRuntime
             I.Add(new()
             {
                 Id = $"cage{k}", X = cages.X + k * 3.2, Z = cages.Z - k * 0.8 - 1.6, R = 2.4, Verb = "Open", Name = "A Cage",
-                When = () => !cagesOpen[k] && F("caravan.survivors").Str != "dead",
+                // Once the teamsters' fate is known there is nobody left in them to let out.
+                When = () => !CageOpen(k) && F("caravan.survivors").IsNull,
                 Locked = () =>
                 {
                     bool watching = roostCrew.Any(e => Up(e) && Dist(e.X, e.Z, cages.X, cages.Z) < 16);
@@ -550,8 +555,41 @@ public sealed class Verge : ZoneRuntime
             Act = () =>
             {
                 W.Facts["caravan.box_taken"] = true;
-                G.Apply("""[{ "give": "coyle_strongbox" }]""");
+                // Found before anyone asked for it, the box still says whose it is.
+                G.Apply("""[{ "give": "coyle_strongbox" }, { "quest": { "id": "caravan", "status": "active", "entry": "strongbox_found" } }]""");
+                ShowCargo();
                 if (KerchiefsFriendly() && F("redcowl").Str != "bargained" && roostCrew.Any(Up)) TurnHostile("roost.hostile", "Thief!");
+            },
+        });
+        // The six "B.E." crates, once nobody keeps the camp: one charge for the
+        // Dig's pump, or the lot into the ravine's water. Only for someone who
+        // knows what B.E. is (Harlan has said it); anyone else sees six crates
+        // of somebody's salt. Telling Harlan where they are stays open until
+        // they are gone.
+        bool CratesFree() => F("be.crates").IsNull && !Test("""{ "history": "burned_roost" }""") && Knows("clue.blasting_ember") &&
+            (F("redcowl").Str is "dead" or "tricked" || F("roost.cleared").Truthy);
+        string? CratesWatched() => roostCrew.Any(e => Up(e) && Dist(e.X, e.Z, cargo.X, cargo.Z) < 16) ? "Too many eyes. Deal with them first" : null;
+        I.Add(new()
+        {
+            Id = "crates_charge", X = cargo.X - 1.6, Z = cargo.Z + 1.2, R = 2.4, Verb = "Take a charge", Name = "The B.E. crates",
+            When = () => CratesFree() && !F("crates.charge_taken").Truthy,
+            Locked = CratesWatched,
+            Act = () =>
+            {
+                G.Apply("""[{ "give": "blasting_ember" }, { "set": { "crates.charge_taken": true } }]""");
+                G.Say("You prise one charge out of the straw. The rest sit there and wait, the way they have waited for everyone.", null, 5);
+            },
+        });
+        I.Add(new()
+        {
+            Id = "crates_sink", X = cargo.X - 3.4, Z = cargo.Z + 0.4, R = 2.4, Verb = "Sink them in the stream", Name = "The B.E. crates",
+            When = CratesFree,
+            Locked = CratesWatched,
+            Act = () =>
+            {
+                G.Apply("""[{ "set": { "be.crates": "sunk" } }, { "quest": { "id": "caravan", "entry": "crates_sunk" } }]""");
+                ShowCargo();
+                G.Say("You roll them down into the ravine's water one at a time, and listen to each one not go off.", null, 6);
             },
         });
         I.Add(new() { Id = "snib", X = pump.X + 4, Z = pump.Z + 3, R = 3.2, Verb = "Talk", Name = "Snib", When = () => Up(snib) && snib!.Disposition == Disposition.Neutral, Act = () => G.Talk("snib") });
@@ -587,7 +625,7 @@ public sealed class Verge : ZoneRuntime
                     ? "The fragment fits one notch of the seven, and under your hand the whole sigil wakes, violet, like an eye opening. The door is listening."
                     : "The fragment fits one notch of the seven, and the stone warms under it. Whatever the sigil is waiting for, it is not daylight.", null, 6);
                 else G.Say(reads ? "Old-empire script over the door: \"Here the Seventh Legion buried what it could not burn.\" Below it, a sigil with seven notches, all empty."
-                    : "A door of black stone, smooth as glass, and a violet sigil you cannot read. It hums against your teeth.", null, 6);
+                    : "A door of black stone, smooth as glass. Cut over it, words in a dead tongue: HIC LEGIO SEPTIMA SEPELIVIT QUOD URERE NON POTUIT. Under them, a violet sigil you cannot read. It hums against your teeth.", null, 7);
             },
         });
         I.Add(new()
@@ -601,7 +639,8 @@ public sealed class Verge : ZoneRuntime
                 if (Knows("faith"))
                     G.After(4.5, () =>
                     {
-                        G.Say("The skull turns, very slightly, toward you. \"It was never locked from the outside.\"", "The bones", 6);
+                        G.Say("The skull turns, very slightly, toward you.", null, 3);
+                        G.After(3.2, () => G.Say("It was never locked from the outside.", "The bones", 4));
                         G.Apply("""[{ "quest": { "id": "vault", "entry": "whisper" } }]""");
                     });
             },
@@ -645,15 +684,47 @@ public sealed class Verge : ZoneRuntime
     [
         "A teamster, thin and grey, stumbles out and grips your arm. His nails are broken to the quick from the bars.",
         "A woman who will not stop saying thank you.",
-        "A young man: \"Jory. Jory Coyle. Is my uncle —? Is he —?\"",
+        "A young man, freckled, still holding the bars after the door is open.",
     ];
+
+    /// <summary>A cage opened stays open: on the next visit, and in a save
+    /// made before the last of them was (the zone's own memory, not this visit's).</summary>
+    bool CageOpen(int k) => W.Zones.TryGetValue("verge", out var z) && z.TryGetValue($"cage{k}", out var f) && f.Truthy;
+
+    /// <summary>The cages as the world left them: the open ones empty, and all
+    /// of them once the teamsters walked out.</summary>
+    void ShowCages()
+    {
+        for (int k = 0; k < cageNodes.Length; k++)
+            if (CageOpen(k) || F("caravan.survivors").Str == "rescued") G.Look.Show(cageNodes[k], false);
+    }
+
+    /// <summary>What is left of the Coyle cargo at the Roost: the strongbox
+    /// until someone carries it off (or it is sold on, or burns), the six
+    /// crates until they are sunk, fetched, sold on or burned.</summary>
+    void ShowCargo()
+    {
+        var cargo = V("cargo");
+        if (F("caravan.box_taken").Truthy || F("caravan.cargo").Truthy)
+        {
+            G.Look.HideProps("props/Chest_Wood", cargo.X + 2.2, cargo.Z - 1.4, 1.2);
+            B?.Collision.RemoveTagged("strongbox");
+        }
+        if (F("be.crates").Str is "sunk" or "burned" or "harlan" or "dig" or "watch")
+        {
+            double cx = cargo.X - 1.5, cz = cargo.Z + 0.75;
+            G.Look.HideProps("props/Crate_Wooden", cx, cz, 2.5);
+            if (B != null) foreach (var c in B.Collision.All().Where(c => c.Tag == null && Dist(c.X, c.Z, cx, cz) < 2.5).ToList()) B.Collision.Remove(c.Id);
+        }
+    }
 
     void OpenCage(int i)
     {
-        cagesOpen[i] = true;
+        W.Zone("verge")[$"cage{i}"] = true;
         G.Look.Show(cageNodes[i], false);
         G.Say(CageLines[i], null, 4);
-        if (cagesOpen.All(o => o))
+        if (i == 2) G.After(2.5, () => G.Say("Jory. Jory Coyle. Is my uncle—? Is he—?", "Jory Coyle", 4));
+        if (Enumerable.Range(0, cageNodes.Length).All(CageOpen))
             G.Apply($$"""
                 [
                   { "set": { "caravan.survivors": "rescued" } }, { "quest": { "id": "caravan", "entry": "survivors_freed" } }, {{CaravanSettle}},
@@ -699,7 +770,9 @@ public sealed class Verge : ZoneRuntime
             if (Dist(x, z, roost.X, roost.Z) < 30)
             {
                 TurnHostile("roost.hostile");
-                if (!cagesOpen.All(o => o) && F("caravan.survivors").Str != "rescued")
+                // Only the living burn: teamsters already freed, or already
+                // starved in their cages, are not put in the fire by it.
+                if (!Enumerable.Range(0, cageNodes.Length).All(CageOpen) && F("caravan.survivors").IsNull)
                 {
                     G.Apply($$"""
                         [{ "set": { "caravan.survivors": "dead" } }, { "quest": { "id": "caravan", "entry": "survivors_dead" } },
@@ -707,9 +780,13 @@ public sealed class Verge : ZoneRuntime
                         """);
                     G.Say("The fire takes the tents, and then the cages. There is screaming, and the smell, and hands through the bars; and then there is only the fire.", null, 7);
                 }
-                // Whatever of the Coyle cargo was still in the camp goes up with it.
+                // Whatever of the Coyle cargo was still in the camp goes up with
+                // it: the strongbox, and the six crates, Redcowl's or nobody's yet.
                 if (!F("caravan.box_taken").Truthy && !F("caravan.cargo").Truthy)
                     G.Apply("""[{ "set": { "caravan.cargo": "lost" } }, { "quest": { "id": "caravan", "entry": "cargo_lost", "outcome": "lost" } }]""");
+                if (F("be.crates").IsNull || F("be.crates").Str == "redcowl")
+                    G.Apply("""[{ "set": { "be.crates": "burned" } }]""");
+                ShowCargo();
                 G.Apply($"[{CaravanSettle}]");
             }
             return;
@@ -742,8 +819,10 @@ public sealed class Verge : ZoneRuntime
             f["verge.wolf_kills"] = Num("verge.wolf_kills") + 1;
             // Blood on you until you next sleep (rules.json washes it off at dawn): the Hollow can smell it.
             f["wolf.blood"] = Num("wolf.blood") + 1;
-            // You knelt to Greymuzzle and promised him; the Pack keeps count.
-            if (F("promise.pack").Truthy && !F("promise.broken").Truthy)
+            // You knelt to Greymuzzle and promised him; the Pack keeps count of
+            // the wolves you strike down that were at peace with you, not of
+            // those that came for you (wearing their kin into the Hollow, say).
+            if (F("promise.pack").Truthy && !F("promise.broken").Truthy && (e.Disposition == Disposition.Neutral || e.Provoked))
                 G.Apply($$"""[{ "set": { "promise.broken": true } }, {{Hist("broke_promise", "promised Greymuzzle a cure, and killed his wolves", ["beasts", "wolves", "betrayal"], 2, null, """{ "maeca": { "trust": -30, "affection": -20 } }""")}}]""");
             if (Num("verge.wolf_kills") == 15)
                 G.Apply($"[{Hist("wolf_slaughter", "killed a great many wolves in the Verge", ["beasts", "wolves"], 2, null, """{ "maeca": { "affection": -20 }, "brannoc": { "respect": 5 }, "holloway": { "respect": 10 } }""")}]");
@@ -763,6 +842,8 @@ public sealed class Verge : ZoneRuntime
             G.SetBoss(null);
             if (!roostCrew.Any(Up)) W.Facts["roost.cleared"] = true;
         }
+        // Redcowl first and his crew after: the camp is empty when the last of them falls.
+        if (e.Tag == "roost" && F("redcowl").Str == "dead" && !roostCrew.Any(Up)) W.Facts["roost.cleared"] = true;
         if (e.Tag == "dig:snib") { snib = null; W.Facts["snib.dead"] = true; TurnHostile("dig.hostile"); }
         if (e.Tag?.StartsWith("dig") == true) TurnHostile("dig.hostile");
         if (e.Tag == "roost" && e.Disposition != Disposition.Hostile) TurnHostile("roost.hostile");
@@ -825,6 +906,8 @@ public sealed class Verge : ZoneRuntime
             Interactables.Add(new() { Id = "talk:maeca", X = a.X, Z = a.Z, R = 2.8, Verb = "Talk", Name = "Maeca Barefoot", Act = () => G.Talk("maeca") });
         }
         if (!F("dig.pump").IsNull && F("dig.pump").Str != "running") G.Look.Stop("pump_wheel");
+        ShowCages();
+        ShowCargo();
         // Your wolves, if the Pack runs with you.
         if (F("pack.allied").Truthy)
         {
@@ -885,6 +968,14 @@ public sealed class Verge : ZoneRuntime
     public override void Step(double dt)
     {
         Approach();
+        // Bluffed ("PACK IT UP!"): the camp empties into the trees, Redcowl
+        // with it, and nobody is left to call you a thief or watch the crates.
+        if (F("redcowl").Str == "tricked" && (roostCrew.Any(Up) || Actors.ContainsKey("redcowl")))
+        {
+            foreach (var e in roostCrew.Where(Up).ToList()) B?.Enemies.Release(e);
+            roostCrew.Clear();
+            if (Actors.Remove("redcowl", out var rc)) rc.Dispose();
+        }
         // Peace made in a conversation reaches everyone already out there;
         // anyone you have struck stays angry.
         dispT -= dt;
@@ -949,7 +1040,9 @@ public sealed class Verge : ZoneRuntime
         bool pumping = F("dig.pump").IsNull || F("dig.pump").Str == "running";
         bool toDig = Knows("root_cause") && pumping;
         bool toHollow = Knows("hint.greymuzzle") && !Q("beasts", "greymuzzle_met") && F("greymuzzle").Str != "dead";
-        bool toWreck = Q("caravan", "harlan_plea") && !Q("caravan", "wreck");
+        // Harlan's plea sends you to the wagons; so does a ledger read for its
+        // date, since the red fletching in their sideboards says who "R." is.
+        bool toWreck = (Q("caravan", "harlan_plea") || Q("caravan", "ledger_read")) && !Q("caravan", "wreck");
         XZ at(string k) => V(k);
         var marks = new List<MapMark>
         {
