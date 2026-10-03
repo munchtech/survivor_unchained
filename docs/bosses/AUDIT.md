@@ -102,7 +102,66 @@ means they healed through it) and the lowest point. Run with:
 
     dotnet run --project docs/bosses/probe -c Release -- 0.25,0.5,1,2,4,10 1,2,4
 
-PROBE_TABLE
+Seventy-two runs: four callings (each against one people), tiers 1, 2 and
+4, power × 0.25 to × 10. Each cell is how long the boss lived, or what
+happened instead ("fell 24.8": the survivor died at 24:48; "in the fight":
+after the boss came; "alive at 40:00": the probe stopped with the boss
+still up).
+
+| Tier | Power | Warden / Pack | Stalker / Risen | Arcanist / Kerchiefs | Reaver / Lamplings |
+|---|---|---|---|---|---|
+| 1 | ×0.25 | fell 30.8 (in the fight) | fell 25.4 | fell 22.5 | fell 39.6 (in the fight) |
+| 1 | ×0.5 | 243 s | 106 s | fell 34.1 (in the fight) | 276 s |
+| 1 | ×1 | 30 s | 39 s | fell 30.6 (in the fight) | 23 s |
+| 1 | ×2 | 22 s | 39 s | 16 s | 18 s |
+| 1 | ×4 | 9 s | 13 s | fell 18.7 | 11 s |
+| 1 | ×10 | 5 s | 8 s | fell 15.8 | 4 s |
+| 2 | ×0.25 | fell 24.8 | fell 17.7 | fell 16.3 | alive at 40:00 |
+| 2 | ×0.5 | 128 s | fell 24.5 | fell 11.3 | alive at 40:00 |
+| 2 | ×1 | 17 s | fell 9.7 | fell 30.4 (in the fight) | 29 s |
+| 2 | ×2 | 13 s | 35 s | 32 s | 34 s |
+| 2 | ×4 | fell 30.2 (in the fight) | 7 s | fell 20.2 | 16 s |
+| 2 | ×10 | 8 s | 7 s | fell 8.9 | 10 s |
+| 4 | ×0.25 | fell 8.5 | fell 19.8 | fell 6.9 | alive at 40:00 |
+| 4 | ×0.5 | fell 30.5 (in the fight) | fell 21.6 | fell 13.6 | alive at 40:00 |
+| 4 | ×1 | 119 s | fell 29.3 | fell 7.1 | 41 s |
+| 4 | ×2 | 20 s | 13 s | fell 21.3 | 44 s |
+| 4 | ×4 | 16 s | 26 s | fell 10.2 | 27 s |
+| 4 | ×10 | 10 s | fell 20.1 | 14 s | 7 s |
+
+Boss health at the half hour: 40,000–49,000 at tier 1, 61,000–76,000 at
+tier 2, 123,000–152,000 at tier 4 (the four peoples differ by their
+champion's base health).
+
+What it says:
+
+- **The boss lives about twenty seconds.** In the 39 runs that killed it,
+  the median was 16–20 s at every tier; 34 of the 39 were under 45 s. Only
+  the weakest winning builds (× 0.5, or × 1 at tier 4) took two to four
+  minutes. A fight a strong build ends in 4–10 s cannot show a phase, a
+  telegraph or an arena change, so whatever the boss is given, its length
+  has to be governed first (`MECHANICS.md` §3, §7; the gates and floors of
+  `SURVIVORS_BOSSES.md` §0.5).
+- **The boss is rarely what hurts.** In 20 of the 39 won fights the boss
+  landed no blow at all, and the median was none. Its worst single blow was
+  13–40% of the survivor's health (once 64%). The danger at the half hour is the
+  escort and the horde: seven of the 29 deaths came after the boss arrived,
+  and they were the weak and middling builds being crowded, not out-read.
+- **The herald is a longer fight than the boss.** In 27 of the 39 wins the
+  herald at twenty lived longer than the boss did (it comes alone into a
+  full horde; the boss walks in beside the survivor and is mobbed). With the same body
+  and verbs (§2), the climax is indistinguishable from the minute-20 event.
+- **Nothing ends a stalemate.** Four runs, all Grimtunnel against a weak
+  reaver, were still going at 40:00 with the boss alive: he lobs pots from
+  range, the bot cannot close, and there is no enrage.
+- **Power changes time, not experience.** From × 1 to × 10 the fight goes
+  from about 30 s to about 7 s; nothing about it changes but its length.
+
+Caveats: the bot is the feel probe's (it moves by simple rules, drafts the
+first card and has no gear or day levels), so absolute survival is noisy
+(some ×4 and ×10 runs died early to the horde, since power multiplies only
+the survivor's damage). The boss rows are what matter, and their direction
+held for all four callings.
 
 ## 5. Against the catalogue
 
@@ -118,7 +177,7 @@ does with it today, and what the Ford-Warden does.
 | Arena shaping (§4) | None | The lamps, the river, walls that stop a charge | An arena is one round clearing of radius 84 m, ringed at its edge by twelve standing stones and six fires (`MapGen.cs:112`, `:543-553`); the boss is spawned beside the survivor wherever they are, and nothing in the fight uses the stones, the fires or the people's cover |
 | Adds and the horde (§5) | 14 escorts; the horde held at half | Raises the drowned | The boss neither commands, feeds on nor reshapes the horde |
 | Shields and parts (§6) | None | Lamps, the shield bar | — |
-| Enrage (§7) | None | None (the channel heals) | A strong build kills it in seconds; a weak one can kite it forever while the horde stays at half (the probe's "boss alive" rows) |
+| Enrage (§7) | None | None (the channel heals) | A strong build kills it in seconds; a weak one can be kited by it forever while the horde stays at half (the probe's "alive at 40:00" rows) |
 | Stealing or turning the survivor's tools (§8) | None | Its own charge turned against its lamps | — |
 | Pacing at 30 and after (§9) | No run-up; after the win, heralds and a steepening curve with no end | — | No 28-minute valley, no endless boss, no natural end |
 | Reward and victory (§10) | Won at once; items and a manual as sacks; no chest | The heart, Grimtunnel's theft (a story beat) | `docs/feel` S-11 covers the ceremony; the boss should also drop the run's best chest |
