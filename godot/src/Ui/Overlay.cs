@@ -270,14 +270,24 @@ public abstract partial class Overlay : Control
         tip.MouseFilter = MouseFilterEnum.Ignore;
         tip.ZIndex = 40;
         AddChild(tip);
-        var r = over.GetGlobalRect();
-        var vp = GetViewportRect().Size;
-        tip.ResetSize();
-        var size = tip.GetCombinedMinimumSize();
-        float x = r.End.X + 10, y = r.Position.Y;
-        if (x + size.X > vp.X - 8) x = r.Position.X - size.X - 10;
-        if (y + size.Y > vp.Y - 8) y = vp.Y - size.Y - 8;
-        tip.GlobalPosition = new Vector2(Mathf.Max(8, x), Mathf.Max(8, y));
+        // Placed now and again once laid out: wrapped words only know their height after a frame,
+        // and a card measured before that stands as tall as the screen.
+        tip.Modulate = Colors.Transparent;
+        var shown = tip;
+        void Place()
+        {
+            if (!IsInstanceValid(shown) || shown != tip || !IsInstanceValid(over)) return;
+            var r = over.GetGlobalRect();
+            var vp = GetViewportRect().Size;
+            shown.ResetSize();
+            var size = shown.Size;
+            float x = r.End.X + 10, y = r.Position.Y;
+            if (x + size.X > vp.X - 8) x = r.Position.X - size.X - 10;
+            if (y + size.Y > vp.Y - 8) y = vp.Y - size.Y - 8;
+            shown.GlobalPosition = new Vector2(Mathf.Max(8, x), Mathf.Max(8, y));
+        }
+        Place();
+        Callable.From(() => { Place(); if (IsInstanceValid(shown)) shown.Modulate = Colors.White; }).CallDeferred();
     }
 }
 
