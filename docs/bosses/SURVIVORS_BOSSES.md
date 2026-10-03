@@ -115,8 +115,38 @@ same direction it changes the horde, and says so on the name card:
 | Embers | Its telegraphed blows leave burning ground. |
 | Hunt | A fifth faster, and its wind-ups a tenth shorter (never under 0.7 s). |
 | Iron | Its Break bar fills a third slower from anything but criticals. |
-| Moonless | Its telegraphs are drawn only inside your light; the sound cues double. |
+| Moonless | The boss keeps to the dark at the edge of your light; its telegraphs still draw everywhere (hiding them is the one remix players reject, `RESEARCH.md` §5.2), and its sound cues are louder. |
 | Ruin | Its adds burst; it bursts once, at each phase change. |
+
+**0.13 Banes: the day's knowledge against the night's boss.** Halls of
+Torment hides a "Lord Hex" in every hall, an optional secret that weakens
+its Lord (halves its health, disarms its adds, removes its invulnerability,
+simplifies its patterns); it gives weak builds a route to victory through
+knowledge, and players love finding them (`RESEARCH.md` §1.3). Each of our
+bosses has a **bane**, and the day half is where it is learned: a line of
+lore, a person's advice, an item carried in. Each design below names its
+bane. A bane is never needed and never a secret the game hides for ever:
+the bestiary records it once seen.
+
+**0.14 Rules from the research.** Every boss keeps these:
+- **Thresholds crossed together queue.** A survivors build will cross two
+  phase marks in one hit; Diablo IV once left Uber Lilith stuck
+  invulnerable that way (`RESEARCH.md` §4.1). Each phase still plays.
+- **Nothing it summons soaks auto-aim.** Its adds and hazards are either
+  ordinary targets the survivor wants to hit, or not targets at all.
+- **Every weapon family can win.** Check each boss against melee rings,
+  thrown blades, spells, zones, beams and summons; no boss may be out of
+  reach of one of them (Polyphemus against melee, Vampire Hunters'
+  statue the flamethrower could not reach, `RESEARCH.md` §5.2, §6).
+- **Arena changes end with the fight**, and every lingering hazard has a
+  lifetime (Soulstone's littered arenas, `RESEARCH.md` §3.4).
+- **No soft-lock.** Every heal or shield weakens with time (Rogue:
+  Genesia's unkillable Vampire Queen, `RESEARCH.md` §6).
+- **The stage is cleared for it.** The horde's share drops when the boss
+  arrives and the field near its entrance is cleared; the boss arrives
+  "encased" for 2–3 s (a statue, an ember gate, rising from the ground) so
+  the player has a moment to see it, as Soulstone's Lords now do
+  (`RESEARCH.md` §3.4).
 
 ## 1. The Pack-Mother, Alpha of the Deep Wood
 
@@ -152,9 +182,12 @@ the survivor's light (light radius + 2 m), and the wolves do the work:
   ordinary; a dash or an area skill breaks them), never into the gap.
 - **Hamstring** (when within 6 m): a single bite, 0.8 s wind-up, × 1.5 and a
   2 s slow. Perfect-dodgeable.
-- She can be hit only when she lunges or in the survivor's light; she
-  flees the light after 3 s in it. Ranged builds and a lantern's reach
-  shine here; melee builds catch her at the end of every lunge.
+- In the dark beyond the survivor's light she takes half damage (her
+  outline drawn faintly, never hidden); in the light she takes full and
+  flees it after 3 s. Long untargetable spells are what players hate most
+  in ARPG bosses (`RESEARCH.md` §4.1), so she is never out of reach, only
+  harder to hurt. Ranged builds and a lantern's reach shine here; melee
+  builds catch her at the end of every lunge.
 
 **Phase 2, the Moon (65%–30%).** The sky clears; the arena brightens
 (`AtmosphereFor`, a moon key light) and her shadow is long. She stops
@@ -195,6 +228,11 @@ her darkness; the Hunt oath makes her lunges faster.
 
 **Scaling.** Tier raises health and damage only. The phase floors (15 s,
 20 s, 15 s) hold a ×10 build to about 55 s.
+
+**Bane.** The six fires at the arena's edge (the standing stones' fires the
+map already lays, `MapGen.cs:543-553`). Stand by one for 3 s to feed it and
+for 20 s she will not cross its light, and no Drive can close across it.
+Learned by day from Maeca: "They won't come near a fire that's fed."
 
 **The death.** She does not fall where she stands: she runs, hurt, to the
 arena's edge, and lies down at the foot of a standing stone. The Pack stops.
@@ -255,8 +293,12 @@ bearing splits along a line, and he rises with his standard.
 - He is behind his men; ranged builds must go round, melee must go through.
 
 **Phase 2, the Testudo (70%–40%).** He joins the line:
-- **Testudo**: twelve shields form a ring round him (radius 4 m); he is
-  untouchable from outside, and the ring turns slowly to face the survivor.
+- **Testudo**: twelve shields form a ring round him (radius 4 m); blows
+  from outside glance off the shields, and the ring turns slowly to face
+  the survivor. The shields are **not targets**: auto-aim and seeking
+  weapons go for the standard inside, so nothing the survivor fires is
+  wasted on them (the lesson of Halls of Torment's Lord of Regret and Army
+  of Ruin's saw, `RESEARCH.md` §1.2, §3.11).
   A lit **standard** stands in the ring's centre. Counter: break the
   standard (a breakable part, 6% of his health, holy and fire half again),
   which drops the ring and stuns him 3 s; or wait 12 s for him to open it
@@ -301,6 +343,12 @@ interrupt already exists). Grave Call's servants and Risen Servants fight
 for the survivor in Phase 1, but in Phase 3 **he calls them back**: "Rise,
 and to me" (any raised ally within 10 m changes side for 6 s): the boss who
 steals the survivor's own dead.
+
+**Bane.** His standard. When it breaks in Phase 2 it falls; pick it up
+(a prompt) and carry it, and for the rest of the fight his century does not
+form lines: they follow the standard, not him. Learned from Chid, who has
+seen the Legion before: "They never followed a man. They followed the
+pole."
 
 **The death.** He sinks into the ground standing, a hand raised in a
 salute that is not to the survivor but to something below. Every risen on
@@ -375,6 +423,11 @@ burst (the colour's school). The bar shows three lamp icons.
 - Every 15 s the Dig **boils**: violet slurry wells up in a ring that
   expands from the arena's centre (a ring telegraph that moves outward at
   4 m/s; jump it, dash through it, or stand on a pit's rim where it breaks).
+
+**Bane.** Grimtunnel's Spare Lamp, the one he dropped in the prologue
+(`grimtunnels_lamp`). Carried in, it can be set down (a prompt), and his
+next two Unders surface under it instead of under the survivor, dazed for
+twice as long: he cannot resist his own light.
 
 **Victory: back down the hole.** At 0 he does not die. He grabs the nearest
 pit's edge ("Not done! Not DONE!"), is pulled in by the lamplings below,
@@ -467,6 +520,11 @@ miss. Time Slip freezes the thief. Iron Vow's barrier makes the touch miss
 (the barrier takes it). The Oath of Champions brings his lieutenant (the
 Enforcer) back beside him.
 
+**Bane.** The Kerchiefs' whistle. A survivor who has worked out how word
+reaches the Roost (`redcowl.birds`) hears the toll-taker's signal early:
+the red ring comes half a second sooner, and the thief's route to the edge
+is drawn on the ground.
+
 **The death.** He goes down on one knee and takes off the brigandine's red
 hood, and under it is a face, middle-aged, Ashford's; the bell drops and
 rolls, ringing, and every Kerchief on the field stops, takes off their red
@@ -545,6 +603,13 @@ later, the lamps are his work. At the table, the Warden's echo uses the
 Ford-Warden (three lamps, the Low Ford's river, a man) with the Kiln
 Ford's flood.
 
+**Bane.** Brannoc's mark. If the survivor has had the irons conversation
+with Brannoc (`brannoc.irons` in `dialogue.json`; it would need a fact to
+remember it by), he tells them where he always leaves the weld soft: the
+Kiln irons break at half their health. For the echo of the Low Ford, the
+dead watchman's line for the devout ("It shatters its own lamps when it
+charges. Make it charge.") is the bane, as it was in the prologue.
+
 **The death.** The water goes down all at once, back into its band, and she
 sits in it, the two lamps going out one after another. On her: the second
 heart, if the story wants one; for the table's echo, the Warden's Lamp
@@ -622,6 +687,11 @@ story beat played as mechanics.
 **Soft and hard enrage.** At 3 minutes, his rate goes to two thirds. At 5
 minutes, **Paid in Full**: every stone in the arena is his, wherever it lies.
 
+**Bane.** His name. Ysolde's notes (Act 2) have the entry before it was
+scratched out. A survivor who has read it can say it over him when he
+falls (a prompt in place of the 3 s channel), and he lies down at once,
+and stays down.
+
 **The death.** He kneels and takes off the helm. Under it, a young man,
 grey with the dawn that is not here; he says one plain line ("Was I in the
 book long?") and is gone. The survivor's journal: his scratched-out name,
@@ -683,6 +753,10 @@ line 16 m, 1.2 s, poison ground).
 **Soft and hard enrage.** At 3 minutes, it surfaces every 7 s. At 5
 minutes, **Ashford Again**: the ground goes, from the barn outward.
 
+**Bane.** Tam. A survivor who listened to him in Act 1 (`tam.tock`)
+knows the knocking's count: the third knock's ring appears a second
+sooner. Wenna's blightward mask, worn in, halves the bad air.
+
 **The death.** The segments go slack and slide back down, and the ground
 closes over them, too fast, like something being pulled; the knocking
 stops, then, very far below, knocks **once**. (The Morrow is not dead. It
@@ -728,6 +802,9 @@ them at the door.
 **Phase 3, the Door (25%–0).** He fights at the door with the Legion's whole
 drill (all of the Barrow Lord's moves, and the Close Up's lines twice as
 long).
+
+**Bane.** Vonnra's coin, as above: the toll paid without spending the
+survivor's ember.
 
 **The death.** He does not die; he steps aside, and the door opens. "Paid."
 If the survivor carries Vonnra's coin, he takes it in Phase 2 instead of
