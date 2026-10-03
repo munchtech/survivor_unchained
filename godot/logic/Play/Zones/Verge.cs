@@ -57,7 +57,6 @@ public sealed class Verge : ZoneRuntime
     readonly string[] cageNodes;
     double dispT, chargeT = -1, trackT;
     readonly HashSet<string> seen = new();
-    readonly bool[] cagesOpen = new bool[3];
     readonly double[] brambleHp;
     Enemy? greymuzzle, redcowl, snib, nemesis;
     readonly List<Enemy> roostCrew = new(), digCrew = new();
@@ -533,7 +532,8 @@ public sealed class Verge : ZoneRuntime
             I.Add(new()
             {
                 Id = $"cage{k}", X = cages.X + k * 3.2, Z = cages.Z - k * 0.8 - 1.6, R = 2.4, Verb = "Open", Name = "A Cage",
-                When = () => !cagesOpen[k] && F("caravan.survivors").Str != "dead",
+                // Once the teamsters' fate is known there is nobody left in them to let out.
+                When = () => !CageOpen(k) && F("caravan.survivors").IsNull,
                 Locked = () =>
                 {
                     bool watching = roostCrew.Any(e => Up(e) && Dist(e.X, e.Z, cages.X, cages.Z) < 16);
@@ -679,12 +679,24 @@ public sealed class Verge : ZoneRuntime
         "A young man: \"Jory. Jory Coyle. Is my uncle —? Is he —?\"",
     ];
 
+    /// <summary>A cage opened stays open: on the next visit, and in a save
+    /// made before the last of them was (the zone's own memory, not this visit's).</summary>
+    bool CageOpen(int k) => W.Zones.TryGetValue("verge", out var z) && z.TryGetValue($"cage{k}", out var f) && f.Truthy;
+
+    /// <summary>The cages as the world left them: the open ones empty, and all
+    /// of them once the teamsters walked out.</summary>
+    void ShowCages()
+    {
+        for (int k = 0; k < cageNodes.Length; k++)
+            if (CageOpen(k) || F("caravan.survivors").Str == "rescued") G.Look.Show(cageNodes[k], false);
+    }
+
     void OpenCage(int i)
     {
-        cagesOpen[i] = true;
+        W.Zone("verge")[$"cage{i}"] = true;
         G.Look.Show(cageNodes[i], false);
         G.Say(CageLines[i], null, 4);
-        if (cagesOpen.All(o => o))
+        if (Enumerable.Range(0, cageNodes.Length).All(CageOpen))
             G.Apply($$"""
                 [
                   { "set": { "caravan.survivors": "rescued" } }, { "quest": { "id": "caravan", "entry": "survivors_freed" } }, {{CaravanSettle}},
@@ -730,7 +742,9 @@ public sealed class Verge : ZoneRuntime
             if (Dist(x, z, roost.X, roost.Z) < 30)
             {
                 TurnHostile("roost.hostile");
-                if (!cagesOpen.All(o => o) && F("caravan.survivors").Str != "rescued")
+                // Only the living burn: teamsters already freed, or already
+                // starved in their cages, are not put in the fire by it.
+                if (!Enumerable.Range(0, cageNodes.Length).All(CageOpen) && F("caravan.survivors").IsNull)
                 {
                     G.Apply($$"""
                         [{ "set": { "caravan.survivors": "dead" } }, { "quest": { "id": "caravan", "entry": "survivors_dead" } },
@@ -738,9 +752,12 @@ public sealed class Verge : ZoneRuntime
                         """);
                     G.Say("The fire takes the tents, and then the cages. There is screaming, and the smell, and hands through the bars; and then there is only the fire.", null, 7);
                 }
-                // Whatever of the Coyle cargo was still in the camp goes up with it.
+                // Whatever of the Coyle cargo was still in the camp goes up with
+                // it: the strongbox, and the six crates, Redcowl's or nobody's yet.
                 if (!F("caravan.box_taken").Truthy && !F("caravan.cargo").Truthy)
                     G.Apply("""[{ "set": { "caravan.cargo": "lost" } }, { "quest": { "id": "caravan", "entry": "cargo_lost", "outcome": "lost" } }]""");
+                if (F("be.crates").IsNull || F("be.crates").Str == "redcowl")
+                    G.Apply("""[{ "set": { "be.crates": "burned" } }]""");
                 G.Apply($"[{CaravanSettle}]");
             }
             return;
@@ -794,6 +811,8 @@ public sealed class Verge : ZoneRuntime
             G.SetBoss(null);
             if (!roostCrew.Any(Up)) W.Facts["roost.cleared"] = true;
         }
+        // Redcowl first and his crew after: the camp is empty when the last of them falls.
+        if (e.Tag == "roost" && F("redcowl").Str == "dead" && !roostCrew.Any(Up)) W.Facts["roost.cleared"] = true;
         if (e.Tag == "dig:snib") { snib = null; W.Facts["snib.dead"] = true; TurnHostile("dig.hostile"); }
         if (e.Tag?.StartsWith("dig") == true) TurnHostile("dig.hostile");
         if (e.Tag == "roost" && e.Disposition != Disposition.Hostile) TurnHostile("roost.hostile");
@@ -856,6 +875,7 @@ public sealed class Verge : ZoneRuntime
             Interactables.Add(new() { Id = "talk:maeca", X = a.X, Z = a.Z, R = 2.8, Verb = "Talk", Name = "Maeca Barefoot", Act = () => G.Talk("maeca") });
         }
         if (!F("dig.pump").IsNull && F("dig.pump").Str != "running") G.Look.Stop("pump_wheel");
+        ShowCages();
         // Your wolves, if the Pack runs with you.
         if (F("pack.allied").Truthy)
         {

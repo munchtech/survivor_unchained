@@ -413,16 +413,36 @@
     ],
     "effects": [
      {
-      "quest": {
-       "id": "beasts",
-       "entry": "rumour"
-      }
+      "if": {
+       "not": {
+        "fact": "beasts.outcome",
+        "exists": true
+       }
+      },
+      "then": [
+       {
+        "quest": {
+         "id": "beasts",
+         "entry": "rumour"
+        }
+       }
+      ]
      },
      {
-      "quest": {
-       "id": "caravan",
-       "entry": "harlan_plea"
-      }
+      "if": {
+       "not": {
+        "fact": "caravan.survivors",
+        "exists": true
+       }
+      },
+      "then": [
+       {
+        "quest": {
+         "id": "caravan",
+         "entry": "harlan_plea"
+        }
+       }
+      ]
      }
     ],
     "choices": [
@@ -1100,7 +1120,110 @@
    },
    {
     "when": {
-     "hasItem": "pell_ledger"
+     "all": [
+      {
+       "hasItem": "pell_ledger"
+      },
+      {
+       "any": [
+        {
+         "all": [
+          {
+           "any": [
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "wreck"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "ruts"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "roost_found"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_met"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_wagons"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "roost_raided"
+             }
+            },
+            {
+             "knows": "hint.roost"
+            }
+           ]
+          },
+          {
+           "any": [
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "harlan_plea"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "guard_says"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "clerk_turned"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "wreck"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_wagons"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "ledger_read"
+             }
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "not": {
+          "quest": {
+           "id": "caravan",
+           "entry": "ledger_read"
+          }
+         }
+        }
+       ]
+      }
+     ]
     },
     "mark": "?"
    }
@@ -1127,11 +1250,21 @@
     ],
     "effects": [
      {
-      "quest": {
-       "id": "beasts",
-       "status": "active",
-       "entry": "holloway_bounty"
-      }
+      "if": {
+       "not": {
+        "fact": "beasts.outcome",
+        "exists": true
+       }
+      },
+      "then": [
+       {
+        "quest": {
+         "id": "beasts",
+         "status": "active",
+         "entry": "holloway_bounty"
+        }
+       }
+      ]
      }
     ],
     "choices": [
@@ -1853,11 +1986,21 @@
     "text": "They're bolder. Two nights ago they came right up to the east gate. Five a pelt, fifty for the old grey one they call Greymuzzle. Bring me proof and I'll pay. Bring me stories and I won't. I've eleven men and four of them can hold a spear the right way round; I'm not spending them on stories.",
     "effects": [
      {
-      "quest": {
-       "id": "beasts",
-       "status": "active",
-       "entry": "holloway_bounty"
-      }
+      "if": {
+       "not": {
+        "fact": "beasts.outcome",
+        "exists": true
+       }
+      },
+      "then": [
+       {
+        "quest": {
+         "id": "beasts",
+         "status": "active",
+         "entry": "holloway_bounty"
+        }
+       }
+      ]
      }
     ],
     "choices": [
@@ -2977,7 +3120,98 @@
      {
       "text": "You should be asking who paid the Kerchiefs.",
       "when": {
-       "hasItem": "pell_ledger"
+       "all": [
+        {
+         "hasItem": "pell_ledger"
+        },
+        {
+         "all": [
+          {
+           "any": [
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "wreck"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "ruts"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "roost_found"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_met"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_wagons"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "roost_raided"
+             }
+            },
+            {
+             "knows": "hint.roost"
+            }
+           ]
+          },
+          {
+           "any": [
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "harlan_plea"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "guard_says"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "clerk_turned"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "wreck"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "redcowl_wagons"
+             }
+            },
+            {
+             "quest": {
+              "id": "caravan",
+              "entry": "ledger_read"
+             }
+            }
+           ]
+          }
+         ]
+        }
+       ]
       },
       "badge": "Evidence",
       "effects": [
@@ -3358,14 +3592,6 @@
    },
    {
     "when": {
-     "not": {
-      "met": "maeca"
-     }
-    },
-    "node": "first"
-   },
-   {
-    "when": {
      "all": [
       {
        "fact": "beasts.outcome",
@@ -3383,6 +3609,14 @@
      ]
     },
     "node": "thanks"
+   },
+   {
+    "when": {
+     "not": {
+      "met": "maeca"
+     }
+    },
+    "node": "first"
    },
    {
     "when": {
@@ -3575,11 +3809,21 @@
     ],
     "effects": [
      {
-      "quest": {
-       "id": "beasts",
-       "status": "active",
-       "entry": "maeca_theory"
-      }
+      "if": {
+       "not": {
+        "fact": "beasts.outcome",
+        "exists": true
+       }
+      },
+      "then": [
+       {
+        "quest": {
+         "id": "beasts",
+         "status": "active",
+         "entry": "maeca_theory"
+        }
+       }
+      ]
      }
     ],
     "choices": [
@@ -3835,10 +4079,20 @@
     "text": "Something in the deep wood. The deer are thin, the Pack's thinner, and the old alpha, Greymuzzle, has brought them closer to people than he ever would. Find out why and you'll have done more than a hundred pelts. Ask Tam, by the well. He's seen something, and nobody believes a child.",
     "effects": [
      {
-      "quest": {
-       "id": "beasts",
-       "entry": "maeca_theory"
-      }
+      "if": {
+       "not": {
+        "fact": "beasts.outcome",
+        "exists": true
+       }
+      },
+      "then": [
+       {
+        "quest": {
+         "id": "beasts",
+         "entry": "maeca_theory"
+        }
+       }
+      ]
      }
     ],
     "choices": [
@@ -4658,11 +4912,30 @@
     "text": "The animals were never like this. Never. And the water's tasted wrong all year: metal, and smoke. Bring me some from the Thornhollow stream, above the blight if you can, below it if you must, and I'll tell you what's in it.",
     "effects": [
      {
-      "quest": {
-       "id": "beasts",
-       "status": "active",
-       "entry": "wenna_request"
-      }
+      "if": {
+       "all": [
+        {
+         "not": {
+          "fact": "beasts.outcome",
+          "exists": true
+         }
+        },
+        {
+         "not": {
+          "knows": "clue.analysis"
+         }
+        }
+       ]
+      },
+      "then": [
+       {
+        "quest": {
+         "id": "beasts",
+         "status": "active",
+         "entry": "wenna_request"
+        }
+       }
+      ]
      }
     ],
     "choices": [
@@ -4681,11 +4954,21 @@
     "text": "Tam. Course Tam saw it; nobody watches the ground like a boy with nothing to do. Drank and fell down. Not fought, not starved: drank. ...Bring me that water. A bottle, from where he saw them. I've been smelling metal in the well for a month and telling myself I was old.",
     "effects": [
      {
-      "quest": {
-       "id": "beasts",
-       "status": "active",
-       "entry": "wenna_request"
-      }
+      "if": {
+       "not": {
+        "fact": "beasts.outcome",
+        "exists": true
+       }
+      },
+      "then": [
+       {
+        "quest": {
+         "id": "beasts",
+         "status": "active",
+         "entry": "wenna_request"
+        }
+       }
+      ]
      },
      {
       "rel": {
@@ -5118,11 +5401,21 @@
     "text": "Down by the green water, past the old fence where Pa lost the goat. Three wolves. They drank and they lay down and they didn't get up, and their eyes went all milky like Gran's. And the water smells like the chapel lamps. Pa says stay in town. I stayed in town.",
     "effects": [
      {
-      "quest": {
-       "id": "beasts",
-       "status": "active",
-       "entry": "tam_plea"
-      }
+      "if": {
+       "not": {
+        "fact": "beasts.outcome",
+        "exists": true
+       }
+      },
+      "then": [
+       {
+        "quest": {
+         "id": "beasts",
+         "status": "active",
+         "entry": "tam_plea"
+        }
+       }
+      ]
      },
      {
       "learn": "hint.stream"
@@ -6464,11 +6757,59 @@
     "when": {
      "any": [
       {
-       "hasItem": "coyle_strongbox"
+       "all": [
+        {
+         "hasItem": "coyle_strongbox"
+        },
+        {
+         "not": {
+          "fact": "caravan.cargo",
+          "exists": true
+         }
+        }
+       ]
       },
       {
-       "fact": "caravan.survivors",
-       "eq": "rescued"
+       "all": [
+        {
+         "fact": "caravan.survivors",
+         "eq": "rescued"
+        },
+        {
+         "not": {
+          "npcFlag": {
+           "npc": "harlan",
+           "key": "once:jory",
+           "eq": true
+          }
+         }
+        }
+       ]
+      },
+      {
+       "all": [
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "roost_found"
+         }
+        },
+        {
+         "not": {
+          "fact": "caravan.survivors",
+          "exists": true
+         }
+        },
+        {
+         "not": {
+          "npcFlag": {
+           "npc": "harlan",
+           "key": "once:roost",
+           "eq": true
+          }
+         }
+        }
+       ]
       }
      ]
     },
@@ -6550,10 +6891,20 @@
         }
        },
        {
-        "quest": {
-         "id": "beasts",
-         "entry": "harlan_view"
-        }
+        "if": {
+         "not": {
+          "fact": "beasts.outcome",
+          "exists": true
+         }
+        },
+        "then": [
+         {
+          "quest": {
+           "id": "beasts",
+           "entry": "harlan_view"
+          }
+         }
+        ]
        }
       ]
      }
@@ -6561,11 +6912,23 @@
     "choices": [
      {
       "text": "What happened to the caravan?",
-      "goto": "what"
+      "goto": "what",
+      "show": {
+       "not": {
+        "fact": "caravan.survivors",
+        "exists": true
+       }
+      }
      },
      {
       "text": "Which road were they on?",
-      "goto": "route"
+      "goto": "route",
+      "show": {
+       "not": {
+        "fact": "caravan.survivors",
+        "exists": true
+       }
+      }
      },
      {
       "text": "I've seen your wagons. The Kerchiefs have them in a ravine off the Old Road, and three men in cages.",
@@ -6597,7 +6960,13 @@
        }
       },
       "once": "notwolves",
-      "goto": "notwolves"
+      "goto": "notwolves",
+      "show": {
+       "not": {
+        "fact": "caravan.survivors",
+        "exists": true
+       }
+      }
      },
      {
       "text": "Jory's alive. He's home.",
@@ -6912,11 +7281,23 @@
     "choices": [
      {
       "text": "What happened to the caravan?",
-      "goto": "what"
+      "goto": "what",
+      "show": {
+       "not": {
+        "fact": "caravan.survivors",
+        "exists": true
+       }
+      }
      },
      {
       "text": "Which road were they on?",
-      "goto": "route"
+      "goto": "route",
+      "show": {
+       "not": {
+        "fact": "caravan.survivors",
+        "exists": true
+       }
+      }
      },
      {
       "text": "I've seen your wagons. The Kerchiefs have them in a ravine off the Old Road, and three men in cages.",
@@ -6948,7 +7329,13 @@
        }
       },
       "once": "notwolves",
-      "goto": "notwolves"
+      "goto": "notwolves",
+      "show": {
+       "not": {
+        "fact": "caravan.survivors",
+        "exists": true
+       }
+      }
      },
      {
       "text": "Jory's alive. He's home.",
@@ -7245,7 +7632,13 @@
     "choices": [
      {
       "text": "Which road were they on?",
-      "goto": "route"
+      "goto": "route",
+      "show": {
+       "not": {
+        "fact": "caravan.survivors",
+        "exists": true
+       }
+      }
      },
      {
       "text": "Something else.",
@@ -9221,7 +9614,19 @@
      },
      {
       "if": {
-       "knows": "underworld"
+       "all": [
+        {
+         "knows": "underworld"
+        },
+        {
+         "not": {
+          "quest": {
+           "id": "caravan",
+           "entry": "clerks_key"
+          }
+         }
+        }
+       ]
       },
       "then": [
        {
@@ -10585,8 +10990,18 @@
    },
    {
     "when": {
-     "fact": "chapter.ready",
-     "eq": true
+     "all": [
+      {
+       "fact": "chapter.ready",
+       "eq": true
+      },
+      {
+       "not": {
+        "fact": "chapter.done",
+        "eq": true
+       }
+      }
+     ]
     },
     "mark": "?"
    }
@@ -10655,7 +11070,15 @@
         "status": "active"
        }
       },
-      "goto": "ledger"
+      "goto": "ledger",
+      "show": {
+       "not": {
+        "quest": {
+         "id": "caravan",
+         "entry": "toll_ledger"
+        }
+       }
+      }
      },
      {
       "text": "The sealed door in the Verge...",
@@ -10791,7 +11214,15 @@
         "status": "active"
        }
       },
-      "goto": "ledger"
+      "goto": "ledger",
+      "show": {
+       "not": {
+        "quest": {
+         "id": "caravan",
+         "entry": "toll_ledger"
+        }
+       }
+      }
      },
      {
       "text": "Your clerk. Jessop. Where is he?",
@@ -10920,7 +11351,15 @@
         "status": "active"
        }
       },
-      "goto": "ledger"
+      "goto": "ledger",
+      "show": {
+       "not": {
+        "quest": {
+         "id": "caravan",
+         "entry": "toll_ledger"
+        }
+       }
+      }
      },
      {
       "text": "The sealed door in the Verge...",
@@ -11048,7 +11487,15 @@
         "status": "active"
        }
       },
-      "goto": "ledger"
+      "goto": "ledger",
+      "show": {
+       "not": {
+        "quest": {
+         "id": "caravan",
+         "entry": "toll_ledger"
+        }
+       }
+      }
      },
      {
       "text": "Your clerk. Jessop. Where is he?",
@@ -11180,7 +11627,15 @@
         "status": "active"
        }
       },
-      "goto": "ledger"
+      "goto": "ledger",
+      "show": {
+       "not": {
+        "quest": {
+         "id": "caravan",
+         "entry": "toll_ledger"
+        }
+       }
+      }
      },
      {
       "text": "The sealed door in the Verge...",
@@ -11285,7 +11740,15 @@
         "status": "active"
        }
       },
-      "goto": "ledger"
+      "goto": "ledger",
+      "show": {
+       "not": {
+        "quest": {
+         "id": "caravan",
+         "entry": "toll_ledger"
+        }
+       }
+      }
      },
      {
       "text": "The sealed door in the Verge...",
@@ -11382,7 +11845,15 @@
         "status": "active"
        }
       },
-      "goto": "ledger"
+      "goto": "ledger",
+      "show": {
+       "not": {
+        "quest": {
+         "id": "caravan",
+         "entry": "toll_ledger"
+        }
+       }
+      }
      },
      {
       "text": "The sealed door in the Verge...",
@@ -11718,7 +12189,8 @@
         }
        ]
       },
-      "goto": "f_accuse"
+      "goto": "f_accuse",
+      "once": "accuse"
      }
     ]
    },
@@ -11957,7 +12429,15 @@
      },
      {
       "when": {
-       "history": "burned_roost"
+       "any": [
+        {
+         "history": "burned_roost"
+        },
+        {
+         "fact": "be.crates",
+         "eq": "burned"
+        }
+       ]
       },
       "text": "And six crates that went up with the Roost. You will have heard it from the wall. Everyone did."
      },
@@ -13927,6 +14407,58 @@
     ],
     "choices": [
      {
+      "text": "\"The men in the ravine are no friends of yours. Run with me.\"",
+      "when": {
+       "any": [
+        {
+         "knows": "hint.roost"
+        },
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "roost_found"
+         }
+        }
+       ]
+      },
+      "locked": "You would need somewhere to lead them",
+      "goto": "ally",
+      "show": {
+       "all": [
+        {
+         "fact": "greymuzzle",
+         "eq": "met"
+        },
+        {
+         "not": {
+          "fact": "promise.broken",
+          "eq": true
+         }
+        },
+        {
+         "not": {
+          "fact": "pack.allied",
+          "eq": true
+         }
+        },
+        {
+         "any": [
+          {
+           "not": {
+            "fact": "beasts.outcome",
+            "exists": true
+           }
+          },
+          {
+           "fact": "beasts.outcome",
+           "eq": "cured"
+          }
+         ]
+        }
+       ]
+      }
+     },
+     {
       "text": "Leave.",
       "end": true
      }
@@ -14006,7 +14538,23 @@
      },
      {
       "text": "I've come for the Coyle wagons.",
-      "goto": "goods"
+      "goto": "goods",
+      "when": {
+       "all": [
+        {
+         "not": {
+          "fact": "caravan.box_taken",
+          "eq": true
+         }
+        },
+        {
+         "not": {
+          "fact": "caravan.cargo",
+          "exists": true
+         }
+        }
+       ]
+      }
      },
      {
       "text": "Whose wagons are those?",
@@ -14064,10 +14612,20 @@
      {
       "text": "Let the teamsters go.",
       "when": {
-       "not": {
-        "fact": "caravan.survivors",
-        "exists": true
-       }
+       "all": [
+        {
+         "not": {
+          "fact": "caravan.survivors",
+          "exists": true
+         }
+        },
+        {
+         "not": {
+          "fact": "redcowl.releases",
+          "eq": true
+         }
+        }
+       ]
       },
       "goto": "prisoners"
      },
@@ -14146,10 +14704,30 @@
      {
       "text": "About the Coyle wagons.",
       "when": {
-       "not": {
-        "fact": "redcowl",
-        "eq": "bargained"
-       }
+       "all": [
+        {
+         "not": {
+          "fact": "redcowl",
+          "eq": "bargained"
+         }
+        },
+        {
+         "all": [
+          {
+           "not": {
+            "fact": "caravan.box_taken",
+            "eq": true
+           }
+          },
+          {
+           "not": {
+            "fact": "caravan.cargo",
+            "exists": true
+           }
+          }
+         ]
+        }
+       ]
       },
       "goto": "goods"
      },
@@ -14209,10 +14787,20 @@
      {
       "text": "Let the teamsters go.",
       "when": {
-       "not": {
-        "fact": "caravan.survivors",
-        "exists": true
-       }
+       "all": [
+        {
+         "not": {
+          "fact": "caravan.survivors",
+          "exists": true
+         }
+        },
+        {
+         "not": {
+          "fact": "redcowl.releases",
+          "eq": true
+         }
+        }
+       ]
       },
       "goto": "prisoners"
      },
@@ -14315,7 +14903,23 @@
     "choices": [
      {
       "text": "About the Coyle wagons.",
-      "goto": "goods"
+      "goto": "goods",
+      "when": {
+       "all": [
+        {
+         "not": {
+          "fact": "caravan.box_taken",
+          "eq": true
+         }
+        },
+        {
+         "not": {
+          "fact": "caravan.cargo",
+          "exists": true
+         }
+        }
+       ]
+      }
      },
      {
       "text": "Nothing.",
@@ -14343,15 +14947,41 @@
     "choices": [
      {
       "text": "I've come for the Coyle wagons.",
-      "goto": "goods"
+      "goto": "goods",
+      "when": {
+       "all": [
+        {
+         "not": {
+          "fact": "caravan.box_taken",
+          "eq": true
+         }
+        },
+        {
+         "not": {
+          "fact": "caravan.cargo",
+          "exists": true
+         }
+        }
+       ]
+      }
      },
      {
       "text": "Let the teamsters go.",
       "when": {
-       "not": {
-        "fact": "caravan.survivors",
-        "exists": true
-       }
+       "all": [
+        {
+         "not": {
+          "fact": "caravan.survivors",
+          "exists": true
+         }
+        },
+        {
+         "not": {
+          "fact": "redcowl.releases",
+          "eq": true
+         }
+        }
+       ]
       },
       "goto": "prisoners"
      },
@@ -14440,7 +15070,8 @@
     "effects": [
      {
       "set": {
-       "redcowl": "bargained"
+       "redcowl": "bargained",
+       "redcowl.releases": true
       }
      },
      {
@@ -14559,6 +15190,9 @@
     "id": "pell",
     "text": "...Give me that. \"R., for the Coyle job.\" And to the clerk. And— \"tell Holloway where they camp, after.\" After! Varrow, you soft-handed little— Take your wagons. Take your teamsters. I've business in the Waystation.",
     "effects": [
+     {
+      "take": "pell_ledger"
+     },
      {
       "set": {
        "redcowl": "furious",
@@ -14697,7 +15331,23 @@
     "choices": [
      {
       "text": "About the Coyle wagons.",
-      "goto": "goods"
+      "goto": "goods",
+      "when": {
+       "all": [
+        {
+         "not": {
+          "fact": "caravan.box_taken",
+          "eq": true
+         }
+        },
+        {
+         "not": {
+          "fact": "caravan.cargo",
+          "exists": true
+         }
+        }
+       ]
+      }
      },
      {
       "text": "Nothing.",
@@ -14720,15 +15370,41 @@
     "choices": [
      {
       "text": "I've come for them.",
-      "goto": "goods"
+      "goto": "goods",
+      "when": {
+       "all": [
+        {
+         "not": {
+          "fact": "caravan.box_taken",
+          "eq": true
+         }
+        },
+        {
+         "not": {
+          "fact": "caravan.cargo",
+          "exists": true
+         }
+        }
+       ]
+      }
      },
      {
       "text": "Let the teamsters go.",
       "when": {
-       "not": {
-        "fact": "caravan.survivors",
-        "exists": true
-       }
+       "all": [
+        {
+         "not": {
+          "fact": "caravan.survivors",
+          "exists": true
+         }
+        },
+        {
+         "not": {
+          "fact": "redcowl.releases",
+          "eq": true
+         }
+        }
+       ]
       },
       "goto": "prisoners"
      },
@@ -14879,10 +15555,30 @@
      {
       "text": "About the Coyle wagons.",
       "when": {
-       "not": {
-        "fact": "redcowl",
-        "eq": "bargained"
-       }
+       "all": [
+        {
+         "not": {
+          "fact": "redcowl",
+          "eq": "bargained"
+         }
+        },
+        {
+         "all": [
+          {
+           "not": {
+            "fact": "caravan.box_taken",
+            "eq": true
+           }
+          },
+          {
+           "not": {
+            "fact": "caravan.cargo",
+            "exists": true
+           }
+          }
+         ]
+        }
+       ]
       },
       "goto": "goods"
      },
@@ -14913,10 +15609,30 @@
      {
       "text": "About the Coyle wagons.",
       "when": {
-       "not": {
-        "fact": "redcowl",
-        "eq": "bargained"
-       }
+       "all": [
+        {
+         "not": {
+          "fact": "redcowl",
+          "eq": "bargained"
+         }
+        },
+        {
+         "all": [
+          {
+           "not": {
+            "fact": "caravan.box_taken",
+            "eq": true
+           }
+          },
+          {
+           "not": {
+            "fact": "caravan.cargo",
+            "exists": true
+           }
+          }
+         ]
+        }
+       ]
       },
       "goto": "goods"
      },
@@ -14964,26 +15680,55 @@
   "nodes": {
    "first": {
     "id": "first",
-    "text": "Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. What do you want? Quick. The pump does not pump itself. It does, actually. But quick.",
+    "text": [
+     {
+      "when": {
+       "fact": "dig.pump",
+       "eq": "broken"
+      },
+      "text": "Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. Pump is BROKEN. Somebody broke it. Snib does not know who. Snib knows exactly who. What do you want? Quick."
+     },
+     {
+      "text": "Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. What do you want? Quick. The pump does not pump itself. It does, actually. But quick."
+     }
+    ],
     "choices": [
      {
       "text": "Your pump's poisoning the stream.",
       "show": {
-       "any": [
+       "all": [
         {
-         "knows": "clue.green_stream"
+         "any": [
+          {
+           "knows": "clue.green_stream"
+          },
+          {
+           "knows": "clue.sick_wolf"
+          },
+          {
+           "knows": "clue.analysis"
+          },
+          {
+           "knows": "root_cause"
+          },
+          {
+           "knows": "hint.stream"
+          }
+         ]
         },
         {
-         "knows": "clue.sick_wolf"
-        },
-        {
-         "knows": "clue.analysis"
-        },
-        {
-         "knows": "root_cause"
-        },
-        {
-         "knows": "hint.stream"
+         "any": [
+          {
+           "not": {
+            "fact": "dig.pump",
+            "exists": true
+           }
+          },
+          {
+           "fact": "dig.pump",
+           "eq": "running"
+          }
+         ]
         }
        ]
       },
@@ -15000,21 +15745,39 @@
      {
       "text": "Pump it into the old sinkhole instead. Closer, and deeper.",
       "show": {
-       "any": [
+       "all": [
         {
-         "knows": "clue.green_stream"
+         "any": [
+          {
+           "knows": "clue.green_stream"
+          },
+          {
+           "knows": "clue.sick_wolf"
+          },
+          {
+           "knows": "clue.analysis"
+          },
+          {
+           "knows": "root_cause"
+          },
+          {
+           "knows": "hint.stream"
+          }
+         ]
         },
         {
-         "knows": "clue.sick_wolf"
-        },
-        {
-         "knows": "clue.analysis"
-        },
-        {
-         "knows": "root_cause"
-        },
-        {
-         "knows": "hint.stream"
+         "any": [
+          {
+           "not": {
+            "fact": "dig.pump",
+            "exists": true
+           }
+          },
+          {
+           "fact": "dig.pump",
+           "eq": "running"
+          }
+         ]
         }
        ]
       },
@@ -15027,21 +15790,39 @@
      {
       "text": "Grimtunnel sent me. He wants the outflow moved.",
       "show": {
-       "any": [
+       "all": [
         {
-         "knows": "clue.green_stream"
+         "any": [
+          {
+           "knows": "clue.green_stream"
+          },
+          {
+           "knows": "clue.sick_wolf"
+          },
+          {
+           "knows": "clue.analysis"
+          },
+          {
+           "knows": "root_cause"
+          },
+          {
+           "knows": "hint.stream"
+          }
+         ]
         },
         {
-         "knows": "clue.sick_wolf"
-        },
-        {
-         "knows": "clue.analysis"
-        },
-        {
-         "knows": "root_cause"
-        },
-        {
-         "knows": "hint.stream"
+         "any": [
+          {
+           "not": {
+            "fact": "dig.pump",
+            "exists": true
+           }
+          },
+          {
+           "fact": "dig.pump",
+           "eq": "running"
+          }
+         ]
         }
        ]
       },
@@ -15061,21 +15842,39 @@
      {
       "text": "How much to shut it off for a week?",
       "show": {
-       "any": [
+       "all": [
         {
-         "knows": "clue.green_stream"
+         "any": [
+          {
+           "knows": "clue.green_stream"
+          },
+          {
+           "knows": "clue.sick_wolf"
+          },
+          {
+           "knows": "clue.analysis"
+          },
+          {
+           "knows": "root_cause"
+          },
+          {
+           "knows": "hint.stream"
+          }
+         ]
         },
         {
-         "knows": "clue.sick_wolf"
-        },
-        {
-         "knows": "clue.analysis"
-        },
-        {
-         "knows": "root_cause"
-        },
-        {
-         "knows": "hint.stream"
+         "any": [
+          {
+           "not": {
+            "fact": "dig.pump",
+            "exists": true
+           }
+          },
+          {
+           "fact": "dig.pump",
+           "eq": "running"
+          }
+         ]
         }
        ]
       },
@@ -15088,21 +15887,39 @@
      {
       "text": "Then I'll shut it off myself.",
       "show": {
-       "any": [
+       "all": [
         {
-         "knows": "clue.green_stream"
+         "any": [
+          {
+           "knows": "clue.green_stream"
+          },
+          {
+           "knows": "clue.sick_wolf"
+          },
+          {
+           "knows": "clue.analysis"
+          },
+          {
+           "knows": "root_cause"
+          },
+          {
+           "knows": "hint.stream"
+          }
+         ]
         },
         {
-         "knows": "clue.sick_wolf"
-        },
-        {
-         "knows": "clue.analysis"
-        },
-        {
-         "knows": "root_cause"
-        },
-        {
-         "knows": "hint.stream"
+         "any": [
+          {
+           "not": {
+            "fact": "dig.pump",
+            "exists": true
+           }
+          },
+          {
+           "fact": "dig.pump",
+           "eq": "running"
+          }
+         ]
         }
        ]
       },
@@ -15149,7 +15966,25 @@
    },
    "hub": {
     "id": "hub",
-    "text": "You again. Pump is still pumping. Foreman is still foreman.",
+    "text": [
+     {
+      "when": {
+       "fact": "dig.pump",
+       "eq": "broken"
+      },
+      "text": "You again. Pump is BROKEN. Somebody broke it. Snib does not know who. Snib knows exactly who. Foreman is still foreman."
+     },
+     {
+      "when": {
+       "fact": "dig.pump",
+       "eq": "moved"
+      },
+      "text": "You again. Pipe goes to the sinkhole now. Deeper. Boss likes deeper. Boss has not SAID he likes it. Foreman is still foreman."
+     },
+     {
+      "text": "You again. Pump is still pumping. Foreman is still foreman."
+     }
+    ],
     "choices": [
      {
       "text": "Your blasting ember came off the Coyle wagons.",
@@ -15162,21 +15997,39 @@
      {
       "text": "Your pump's poisoning the stream.",
       "show": {
-       "any": [
+       "all": [
         {
-         "knows": "clue.green_stream"
+         "any": [
+          {
+           "knows": "clue.green_stream"
+          },
+          {
+           "knows": "clue.sick_wolf"
+          },
+          {
+           "knows": "clue.analysis"
+          },
+          {
+           "knows": "root_cause"
+          },
+          {
+           "knows": "hint.stream"
+          }
+         ]
         },
         {
-         "knows": "clue.sick_wolf"
-        },
-        {
-         "knows": "clue.analysis"
-        },
-        {
-         "knows": "root_cause"
-        },
-        {
-         "knows": "hint.stream"
+         "any": [
+          {
+           "not": {
+            "fact": "dig.pump",
+            "exists": true
+           }
+          },
+          {
+           "fact": "dig.pump",
+           "eq": "running"
+          }
+         ]
         }
        ]
       },
@@ -15185,21 +16038,39 @@
      {
       "text": "Pump it into the sinkhole instead.",
       "show": {
-       "any": [
+       "all": [
         {
-         "knows": "clue.green_stream"
+         "any": [
+          {
+           "knows": "clue.green_stream"
+          },
+          {
+           "knows": "clue.sick_wolf"
+          },
+          {
+           "knows": "clue.analysis"
+          },
+          {
+           "knows": "root_cause"
+          },
+          {
+           "knows": "hint.stream"
+          }
+         ]
         },
         {
-         "knows": "clue.sick_wolf"
-        },
-        {
-         "knows": "clue.analysis"
-        },
-        {
-         "knows": "root_cause"
-        },
-        {
-         "knows": "hint.stream"
+         "any": [
+          {
+           "not": {
+            "fact": "dig.pump",
+            "exists": true
+           }
+          },
+          {
+           "fact": "dig.pump",
+           "eq": "running"
+          }
+         ]
         }
        ]
       },
@@ -15212,21 +16083,39 @@
      {
       "text": "Grimtunnel sent me. He wants the outflow moved.",
       "show": {
-       "any": [
+       "all": [
         {
-         "knows": "clue.green_stream"
+         "any": [
+          {
+           "knows": "clue.green_stream"
+          },
+          {
+           "knows": "clue.sick_wolf"
+          },
+          {
+           "knows": "clue.analysis"
+          },
+          {
+           "knows": "root_cause"
+          },
+          {
+           "knows": "hint.stream"
+          }
+         ]
         },
         {
-         "knows": "clue.sick_wolf"
-        },
-        {
-         "knows": "clue.analysis"
-        },
-        {
-         "knows": "root_cause"
-        },
-        {
-         "knows": "hint.stream"
+         "any": [
+          {
+           "not": {
+            "fact": "dig.pump",
+            "exists": true
+           }
+          },
+          {
+           "fact": "dig.pump",
+           "eq": "running"
+          }
+         ]
         }
        ]
       },
@@ -15246,21 +16135,39 @@
      {
       "text": "Then I'll shut it off myself.",
       "show": {
-       "any": [
+       "all": [
         {
-         "knows": "clue.green_stream"
+         "any": [
+          {
+           "knows": "clue.green_stream"
+          },
+          {
+           "knows": "clue.sick_wolf"
+          },
+          {
+           "knows": "clue.analysis"
+          },
+          {
+           "knows": "root_cause"
+          },
+          {
+           "knows": "hint.stream"
+          }
+         ]
         },
         {
-         "knows": "clue.sick_wolf"
-        },
-        {
-         "knows": "clue.analysis"
-        },
-        {
-         "knows": "root_cause"
-        },
-        {
-         "knows": "hint.stream"
+         "any": [
+          {
+           "not": {
+            "fact": "dig.pump",
+            "exists": true
+           }
+          },
+          {
+           "fact": "dig.pump",
+           "eq": "running"
+          }
+         ]
         }
        ]
       },

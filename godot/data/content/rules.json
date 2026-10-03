@@ -967,7 +967,13 @@
     "fact": "holloway.post_told",
     "eq": true
    },
-   "effect": [],
+   "effect": [
+    {
+     "set": {
+      "corran.home": true
+     }
+    }
+   ],
    "report": "Two of the Watch went down the Low Ford road yesterday with a handcart and a spade, and came back at dusk with the cart covered. Holloway met them at the gate and walked beside it to the Watch's corner of the yard."
   },
   {

@@ -60,7 +60,7 @@
   {
    "text": "Has brought Corran home from the Low Ford post, and crossed out a word in his book.",
    "when": {
-    "fact": "holloway.post_told",
+    "fact": "corran.home",
     "eq": true
    }
   },
