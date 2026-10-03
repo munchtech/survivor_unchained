@@ -337,23 +337,19 @@ public static class People
         scene.Free();
     }
 
-    /// <summary>Hair: cards cut out by their alpha (soft-edged where the
-    /// screen is multisampled), seen from both sides, with the long
-    /// highlight that runs across strands.</summary>
-    static StandardMaterial3D Hair(BaseMaterial3D src, Color colour)
+    static Shader? hairShader;
+
+    /// <summary>Hair: her hair cards (tools/assets/heroine_hair.py) by
+    /// shaders/heroine_hair.gdshader, dyed: the strands' atlas cut to its
+    /// strands, darker at the roots and deep in, with the long highlight
+    /// across them.</summary>
+    static Material Hair(BaseMaterial3D src, Color colour)
     {
-        var m = (StandardMaterial3D)src.Duplicate();
-        m.AlbedoColor = colour;
-        m.Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor;
-        m.AlphaScissorThreshold = 0.4f;
-        m.AlphaAntialiasingMode = BaseMaterial3D.AlphaAntiAliasing.AlphaToCoverageAndToOne;
-        m.CullMode = BaseMaterial3D.CullModeEnum.Disabled;
-        m.Roughness = 0.42f;
-        m.MetallicSpecular = 0.35f;
-        m.AnisotropyEnabled = true;
-        m.Anisotropy = 0.7f;
-        m.BacklightEnabled = true;
-        m.Backlight = colour.Darkened(0.6f);
+        hairShader ??= GD.Load<Shader>("res://shaders/heroine_hair.gdshader");
+        var m = new ShaderMaterial { Shader = hairShader };
+        m.SetShaderParameter("strands", src.AlbedoTexture);
+        m.SetShaderParameter("colour", colour);
+        m.SetShaderParameter("cap", src.ResourceName == "hair_cap");
         return m;
     }
 

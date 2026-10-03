@@ -84,19 +84,21 @@ func _init():
 					skel.add_child(mi)
 					mi.skeleton = NodePath("..")
 					for s in mi.mesh.get_surface_count():
-						var m = mi.mesh.surface_get_material(s).duplicate()
-						m.albedo_color = hair_colour()
-						m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-						m.alpha_scissor_threshold = 0.4
-						m.alpha_antialiasing_mode = BaseMaterial3D.ALPHA_ANTIALIASING_ALPHA_TO_COVERAGE_AND_TO_ONE
-						m.cull_mode = BaseMaterial3D.CULL_DISABLED
-						m.roughness = 0.42
-						m.metallic_specular = 0.35
-						m.anisotropy_enabled = true
-						m.anisotropy = 0.7
-						m.backlight_enabled = true
-						m.backlight = hair_colour().darkened(0.6)
+						# As People.Hair: shaders/heroine_hair.gdshader, dyed.
+						var m = ShaderMaterial.new()
+						m.shader = load("res://shaders/heroine_hair.gdshader")
+						m.set_shader_parameter("strands", mi.mesh.surface_get_material(s).albedo_texture)
+						m.set_shader_parameter("colour", hair_colour())
+						var is_cap = mi.mesh.surface_get_material(s).resource_name == "hair_cap"
+						m.set_shader_parameter("cap", is_cap)
 						mi.set_surface_override_material(s, m)
+						# HAIRONLY=cap|cards: only that part shown (to look at each alone).
+						var only = OS.get_environment("HAIRONLY")
+						if only != "" and (only == "cap") != is_cap:
+							var none = StandardMaterial3D.new()
+							none.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+							none.albedo_color = Color(0, 0, 0, 0)
+							mi.set_surface_override_material(s, none)
 			hs.free()
 		# FACE=name=value,...: her face's sliders (-1..1) and expressions (0..1), as People.HerFace.
 		if OS.get_environment("FACE") != "":

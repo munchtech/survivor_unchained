@@ -57,7 +57,9 @@ PARTS = [("eyes", "high-poly"), ("eyebrows", "eyebrow010"), ("eyelashes", "eyela
 EYES = "green"
 SKIN = ("skins", "toigo_light_skin_female_ginger")
 # Her hairstyles: the game's name, MakeHuman's asset. The first is hers.
-HAIRS = {"long": "long01", "ponytail": "ponytail01", "braid": "braid01", "bob": "bob02", "pixie": "short03"}
+# (Her long hair is cards, tools/assets/heroine_hair.py's; these MakeHuman's
+# until it makes them too.)
+HAIRS = {"ponytail": "ponytail01", "braid": "braid01", "bob": "bob02", "pixie": "short03"}
 
 # Her face: MakeHuman's woman shaped by its targets (each with its weight;
 # "X-" is both sides). Every slider moves her from here.
