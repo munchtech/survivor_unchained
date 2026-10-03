@@ -23,6 +23,12 @@ game builds them:
                                          # headless: a screenshot in godot/.shots/
     cd godot/tests && dotnet test        # the game's logic, without a screen
 
+Every push and pull request runs `.github/workflows/godot.yml` (the
+Actions tab, "Godot"): the logic's tests, StoryLint among them, summarised
+on the run's page with any failure's message and the slowest tests
+(`tools/ci/trx_summary.py`), then a build of the whole game's C#. The bots
+and the horde benchmark below are opt-in and never run there.
+
 In the Godot editor on your own computer: install Godot 4.5.1 (.NET) and the
 .NET 8 SDK, import `godot/project.godot`, and press F5 (the C# builds from
 nuget.org). On Windows, `godot/assets` arrives as a small file rather than
