@@ -61,7 +61,36 @@ def broken_chain(s, cx, cy, k, link_len, link_w, thick, top, count=3, ember=1.0)
     return light
 
 
-def card_guide(out=14, body=(320, 452), strap=14, seed=3, crest=True, wire=True, top_coin=58, top_arm=88, top_scroll=15,
+def plate_guide(W=512, H=512, out=12, margin=28, strap=16, scale=2, seed=4, top_coin=30, top_arm=40, top_scroll=8,
+                low_coin=22):
+    """A screen's plate (frames/plate.png) at `scale` times its file size, for the Krea to
+    paint over: hung from two brackets at the top (coins, scrolls), nailed at the foot by
+    two coins, all inside margin + out; the strap inside the outer three quarters of the
+    margin. Sizes in shown px."""
+    k = 2 * scale  # shown px -> canvas px
+    Wc, Hc = W * scale, H * scale
+    st = FR.Style(out=out * scale, strap=strap * k, strap_h=7 * scale, bevel_out=3.5 * scale, bevel_in=3 * scale,
+                  wire=strap * k * 0.55, wire_w=2.0 * k, twist=3.0 * k, facet_cell=8 * k, facet_tilt=0.06,
+                  centre_facets=0.0, rivets=0, seed=seed, radius=3 * k, centre_tone="#16131a")
+
+    def post(s, m, st_, kk, tx):
+        top = st_.strap_h
+        inset = out * k
+        light = np.zeros((s.h, s.w, 3), np.float32)
+        holes = np.zeros((s.h, s.w), np.float32)
+        mid = strap * k * 0.45
+        for (cx, cy, sx, sy) in ((inset, inset, 1, 1), (s.w - inset, inset, -1, 1)):
+            holes = np.maximum(holes, bracket(s, cx, cy, sx, sy, scale, top_coin * k, top_arm * k, top_scroll * k, mid, top))
+        for (cx, cy, sx, sy) in ((inset, s.h - inset, 1, -1), (s.w - inset, s.h - inset, -1, -1)):
+            _, hole = O.coin(s, cx, cy, low_coin * k, mat="iron", base=top + 1.0 * scale, foil=True, sigil=False)
+            holes = np.maximum(holes, hole)
+        light += holes[..., None] * (O.EMBER_DEEP * 0.9 + O.EMBER * 0.25)
+        return light
+
+    return FR.frame(Wc, Hc, ((margin + out) * scale,) * 4, st, ss=1, post=post)
+
+
+def card_guide(out=24, body=(320, 452), strap=14, seed=3, crest=True, wire=True, top_coin=58, top_arm=88, top_scroll=15,
                low_coin=34, low_arm=40, low_scroll=8):
     """The draft card's frame: a forged strap round the card; at the top two big lamp-iron
     brackets (the card hangs from them, as the Waystation's signs hang) with the broken
@@ -82,10 +111,13 @@ def card_guide(out=14, body=(320, 452), strap=14, seed=3, crest=True, wire=True,
         for (cx, cy, sx, sy) in ((inset, inset, 1, 1), (s.w - inset, inset, -1, 1)):
             holes = np.maximum(holes, bracket(s, cx, cy, sx, sy, k, top_coin * k, top_arm * k, top_scroll * k, mid, top))
         for (cx, cy, sx, sy) in ((inset, s.h - inset, 1, -1), (s.w - inset, s.h - inset, -1, -1)):
-            holes = np.maximum(holes, bracket(s, cx, cy, sx, sy, k, low_coin * k, low_arm * k, low_scroll * k, mid, top))
+            # The foot: a small coin nailed on the very corner, nothing reaching in.
+            _, hole = O.coin(s, cx, cy, low_coin * k, mat="iron", base=top + 1.0 * k, foil=True, sigil=False)
+            holes = np.maximum(holes, hole)
         light += holes[..., None] * (O.EMBER_DEEP * 0.9 + O.EMBER * 0.25)
         if crest:
-            light += broken_chain(s, s.w / 2, inset + 3 * k, k, 52 * k, 28 * k, 9 * k, top + 1 * k)
+            # Over the top edge, riding above it: clear of the ribbon the code puts at the top.
+            light += broken_chain(s, s.w / 2, inset - 14 * k, k, 58 * k, 30 * k, 10 * k, top + 1 * k)
         return light
 
     return FR.frame(W, H, (out + strap + 4,) * 4, st, ss=ss, post=post)

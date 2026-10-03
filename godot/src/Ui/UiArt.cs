@@ -27,14 +27,19 @@ public static class UiArt
     /// Out is how far the painted frame reaches past the control on each side
     /// (shown pixels, part of the margins), so corner pieces can be bold without
     /// crowding what is inside: the content still keeps clear of the border
-    /// only, so nothing moves when the art arrives.</summary>
-    public sealed record Slice(string File, int L, int T, int R, int B, bool Tile = false, int Out = 0);
+    /// only, so nothing moves when the art arrives. Clear, when set, is how far
+    /// the content keeps from the control's edge (shown pixels) where the
+    /// painted border is narrower than the slice (a corner piece wider than the
+    /// border it sits on); unset, three quarters of the margin inside the control.</summary>
+    public sealed record Slice(string File, int L, int T, int R, int B, bool Tile = false, int Out = 0, int Clear = -1);
 
     /// <summary>Every frame the interface can wear, by the name the code asks for.</summary>
     public static readonly Dictionary<string, Slice> Frames = new()
     {
         // Plates and paper: the screens' backs.
-        ["plate"] = new("frames/plate.png", 28, 28, 28, 28),
+        // The strap repeats along a plate of any size; the coins at the corners reach
+        // 12 past it; what is inside keeps 21 from the edge, as before the art.
+        ["plate"] = new("frames/plate.png", 64, 64, 64, 64, Tile: true, Out: 12, Clear: 21),
         ["paper"] = new("frames/paper.png", 32, 32, 32, 32),
         ["tooltip"] = new("frames/tooltip.png", 16, 16, 16, 16),
         ["tooltip_worn"] = new("frames/tooltip_worn.png", 16, 16, 16, 16),
@@ -61,12 +66,14 @@ public static class UiArt
         ["slot_4"] = new("frames/slot_legendary.png", 10, 10, 10, 10),
         ["slot_5"] = new("frames/slot_relic.png", 10, 10, 10, 10),
         // The draft's cards, by rarity, and the evolution's.
-        ["card_0"] = new("frames/card_common.png", 40, 56, 40, 40),
-        ["card_1"] = new("frames/card_uncommon.png", 40, 56, 40, 40),
-        ["card_2"] = new("frames/card_rare.png", 40, 56, 40, 40),
-        ["card_3"] = new("frames/card_epic.png", 40, 56, 40, 40),
-        ["card_4"] = new("frames/card_legendary.png", 40, 56, 40, 40),
-        ["card_evolve"] = new("frames/card_evolution.png", 40, 56, 40, 40),
+        // Drawn one to one (368 by 500 with the 24 that may reach past the card): the
+        // brackets the card hangs from and the coins at its foot overhang it.
+        ["card_0"] = new("frames/card_common.png", 64, 80, 64, 64, Out: 24),
+        ["card_1"] = new("frames/card_uncommon.png", 64, 80, 64, 64, Out: 24),
+        ["card_2"] = new("frames/card_rare.png", 64, 80, 64, 64, Out: 24),
+        ["card_3"] = new("frames/card_epic.png", 64, 80, 64, 64, Out: 24),
+        ["card_4"] = new("frames/card_legendary.png", 64, 80, 64, 64, Out: 24),
+        ["card_evolve"] = new("frames/card_evolution.png", 64, 80, 64, 64, Out: 24),
         // What comes and goes on the HUD.
         ["toast"] = new("frames/toast.png", 14, 10, 10, 10),
         ["prompt"] = new("frames/prompt.png", 22, 12, 22, 12),
@@ -121,7 +128,7 @@ public static class UiArt
         // less the part of the margin that lies outside the control.
         var slice = new Dictionary<Side, int> { [Side.Left] = s.L - s.Out, [Side.Top] = s.T - s.Out, [Side.Right] = s.R - s.Out, [Side.Bottom] = s.B - s.Out };
         foreach (var side in new[] { Side.Left, Side.Top, Side.Right, Side.Bottom })
-            b.SetContentMargin(side, Mathf.Max(fallback.GetContentMargin(side), slice[side] * 0.75f));
+            b.SetContentMargin(side, Mathf.Max(fallback.GetContentMargin(side), s.Clear >= 0 ? s.Clear : slice[side] * 0.75f));
         return b;
     }
 
