@@ -869,6 +869,13 @@ two of its phases only. Each echo killed drops a chest and gives the
 **chain** a link on the HUD (one of seven). At seven links the next echo is
 the Ford-Warden itself, and its death is the arena's highest score.
 
+**Let it ride.** An echo's chest may be left unopened (walk past it and it
+goes dark): the next echo comes harder (a third phase, its health × 1.3)
+and its chest carries both, with the Named chance doubled. Titan Quest's
+Tartarus does exactly this with his orb (`RESEARCH.md` §4.3); it turns the
+endless hour into a wager the player sets, the opt-in density players
+like best (§6 there).
+
 Scaling after the win already hardens the horde; echoes harden with it (×
 (1 + 0.1 × minutes past) health). They give the endless hour a goal (the
 chain) and a gallery (every boss the survivor has met), and they make each

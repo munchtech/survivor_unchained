@@ -460,7 +460,55 @@ The lesser half of the brief. Full notes: `notes/E1_diablo.md`,
 
 ### 4.3 Grim Dawn, Titan Quest, Torchlight, Lost Ark and the Souls games
 
-E3_PLACEHOLDER
+- **Titan Quest** publishes a flat boss contract: immune to crowd control
+  ("1000% resistance"), 85–95% resistant to percentage-health damage,
+  behind an ornate door that locks, guarding the best chest. It stops
+  control builds trivialising bosses, and makes them useless at the
+  climax. **Tartarus** is the closest ARPG analogue to an ember arena:
+  timed waves at the player's exact level under a stacking curse, and
+  every fifth battle the boss himself; his orb can be left untouched to
+  make the next five battles harder and **double the chance of a unique**,
+  a press-your-luck reward ([wiki](https://titanquest.fandom.com/wiki/Tartarus_~_Lord_of_the_Abyss)).
+- **Torchlight III**'s early-access notes are a frank tuning record: boss
+  health more than doubled after bosses died "in sub-30 seconds on multiple
+  characters and builds"; hazards made "intentionally smaller than visual
+  suggests"; the long, well-telegraphed slam given 200% damage and the fast
+  claw 75%; the camera pulled out for a big boss; loot made to land a beat
+  after the death.
+- **Grim Dawn** turned invisible attrition into one readable blow. Its
+  Celestial superbosses were felt as gear checks ("AFKed more than I was
+  fighting"); version 1.2 added **Sunder**, a slow, named, dodgeable attack
+  that leaves the player taking more damage for a while, slowed the
+  animations of such attacks, and stopped them tracking the player late.
+  Its Crucible (150–200 waves; cash out every ten; Celestial blessings
+  bought between waves, our great blessings' nearest cousin) adds seconds
+  to the bonus timer for every boss killed. Players there accept "a big
+  telegraph ability that's meant for you to avoid", and hate the deaths
+  that are coincidences of horde, projectile and a boss's death blast
+  ("getting punished for killing stuff").
+- **Lost Ark** has the clearest shared boss vocabulary in the genre, learnt
+  once and reused: a **stagger** bar (empty it and the boss is held, and on
+  Guardians each stagger permanently raises the damage it takes); a
+  **counter** window (the boss glows blue before a charge; a counter skill
+  landed then staggers it); **destruction** of armour and parts; phases
+  keyed to a visible **bar count** ("x160"). Valtan destroys the arena's
+  outer rings at bars 85 and 35 with a red decal on what will fall, and
+  its earlier mechanics hand the player the tools for later ones (the
+  towers' orbs survive the one-shot axe). Players hate shared wipes and
+  colours reused for routine attacks ("imagine if someone had any sort of
+  color blindness?"); Akkan was designed "significantly less punishing"
+  after the backlash against Brelshaza.
+- **Elden Ring and the Souls games**, where they transfer: posture as a
+  hidden stagger bar, with weak points as posture multipliers; a delayed
+  attack works from above only if the delay is drawn (a filling decal),
+  otherwise it reads as random; a named signature move at a fixed moment
+  with a universal answer (Malenia's Scarlet Aeonia opens her second phase
+  every time and is dodged by moving sideways) becomes the story players
+  tell; Radahn's meteor reads from above as a growing shadow.
+
+Full notes and sources: `notes/E3_other_arpgs.md`. Elden Ring Nightreign,
+the closest commercial analogue to a day-and-night run with a boss at
+night's end, is in `notes/F1_nightreign.md` and §4.5.
 
 ### 4.4 What works from a top-down camera
 
