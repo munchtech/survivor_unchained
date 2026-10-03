@@ -24,9 +24,13 @@ public class ArenaPlay(ITestOutputHelper log)
 {
     /// <summary>One arena to play: who, against whom, how hard, and for how long
     /// (an hour unless the sweep cuts it short). Level is the survivor's
-    /// character level, points spent on the calling's own attribute.</summary>
+    /// character level, points spent on the calling's own attribute. A deft
+    /// survivor also reads the fight as a player who has learned it does:
+    /// off the line of a lunge (a dash through it if it is late), out from
+    /// under a lobbed pot and off burning ground, and in on the throwers when
+    /// nothing else presses.</summary>
     internal sealed record Case(int Seed, string Calling, int Tier, string People, string[] Oaths,
-        int Level = 1, int Weapon = 0, int Ability = 0, double MaxMinutes = 60);
+        int Level = 1, int Weapon = 0, int Ability = 0, double MaxMinutes = 60, bool Deft = false);
 
     /// <summary>A card taken: what, when, and of what kind.</summary>
     internal sealed record Pick(string Id, string Kind, double Minute);
@@ -126,6 +130,7 @@ public class ArenaPlay(ITestOutputHelper log)
             else if (nearest != null && Dist(nearest.X, nearest.Z, p.X, p.Z) > 6) { mx = nearest.X - p.X; mz = nearest.Z - p.Z; }
             else if (nearest != null) { ang += dt; mx = -(nearest.Z - p.Z); mz = nearest.X - p.X; }
             else { mx = -p.X; mz = -p.Z; }
+            if (c.Deft) Read(b, press.Count >= 2 || stone != null, ref mx, ref mz);
             double far = Math.Sqrt(p.X * p.X + p.Z * p.Z);
             if (far > 60) { mx = mx * 0.3 - p.X / far; mz = mz * 0.3 - p.Z / far; }
             if (b.Collision.Blocked(p.X + mx * 0.1, p.Z + mz * 0.1, p.Radius)) { (mx, mz) = (-mz, mx); }
@@ -192,6 +197,54 @@ public class ArenaPlay(ITestOutputHelper log)
             BossMaxHp = bossMax, BossSeconds = bossFrom < 0 ? 0 : (wonAt is double w ? w * 60 : t) - bossFrom, BossLeft = wonAt != null ? 0 : bossLeft,
             Quaffs = quaffs, Heralds = heralds,
         };
+    }
+
+    /// <summary>What a player who knows the fight does over the plain bot's
+    /// choice: the worst danger first.</summary>
+    static void Read(Battle b, bool busy, ref double mx, ref double mz)
+    {
+        var p = b.Player;
+        // A lunge marked through where the survivor stands: off its line, across it.
+        foreach (var e in b.Enemies.Living())
+        {
+            if (e.State != EnemyState.Windup || e.Disposition != Disposition.Hostile) continue;
+            var lunge = e.Def.Charge ?? e.Def.Lunge;
+            if (lunge == null) continue;
+            double reach = lunge.Speed * lunge.Time + e.Radius + 1;
+            double rx = p.X - e.X, rz = p.Z - e.Z;
+            double along = rx * e.LungeX + rz * e.LungeZ;
+            double across = rx * -e.LungeZ + rz * e.LungeX;
+            if (along < -1 || along > reach || Math.Abs(across) > e.Radius * 1.1 + p.Radius + 0.9) continue;
+            double side = across >= 0 ? 1 : -1;
+            mx = -e.LungeZ * side; mz = e.LungeX * side;
+            // Late, and still on the line: dash across it (a slipped blow, if the timing is kind).
+            if (e.StateT < 0.3 && p.DashCharges > 0) b.Dash(mx, mz);
+            return;
+        }
+        // A pot coming down, or burning ground underfoot: out of it.
+        foreach (var pr in b.Projectiles.Living())
+        {
+            if (!pr.Lob || pr.Owner != Side.Enemy) continue;
+            double d = Dist(pr.LandX, pr.LandZ, p.X, p.Z);
+            if (d < 2.2) { mx = (p.X - pr.LandX) / Math.Max(0.1, d); mz = (p.Z - pr.LandZ) / Math.Max(0.1, d); return; }
+        }
+        foreach (var z in b.Zones.Living())
+        {
+            if (z.Owner is not (Side.Enemy or Side.World)) continue;
+            double d = Dist(z.X, z.Z, p.X, p.Z);
+            if (d < z.Radius + p.Radius) { mx = (p.X - z.X) / Math.Max(0.1, d); mz = (p.Z - z.Z) / Math.Max(0.1, d); return; }
+        }
+        // Nothing pressing and no ember to gather: close on the nearest thrower in reach.
+        if (busy) return;
+        Enemy? shooter = null;
+        double sd = 11;
+        foreach (var e in b.Enemies.Living())
+        {
+            if (e.Def.Ranged == null || e.Elite || e.Disposition != Disposition.Hostile || e.State == EnemyState.Dying) continue;
+            double d = Dist(e.X, e.Z, p.X, p.Z);
+            if (d < sd) { sd = d; shooter = e; }
+        }
+        if (shooter != null && sd > 1.8 && b.HostilesInRadius(p.X, p.Z, 4.5).Count < 3) { mx = shooter.X - p.X; mz = shooter.Z - p.Z; }
     }
 
     static double Dist(double ax, double az, double bx, double bz) => Math.Sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));

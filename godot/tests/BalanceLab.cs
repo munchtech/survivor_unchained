@@ -30,6 +30,8 @@ namespace SurvivorUnchained.Tests;
 ///                 The seed also turns the starting kit: weapon by seed, art by seed/weapons.
 ///   LAB_LEVEL     the survivor's level: a number, or 'tier' (default) for 1, 4, 7 by tier
 ///   LAB_MINUTES   where an arena is cut short (default 45: fifteen minutes of the endless)
+///   LAB_BOT       'plain' (default: the arena bot as it was) or 'deft' (it also dodges
+///                 lunges and pots and closes on the throwers: nearer a player who knows the game)
 ///   LAB_DAYS, LAB_LEVELS  the day-story walk's days and levels (default 1-4 and 1-5)
 ///   LAB_OUT       where the CSVs and summary go (default ../.lab/LABEL), LAB_LABEL its name
 ///   LAB_THREADS   how many at once (default: every core)
@@ -109,6 +111,7 @@ public class BalanceLab(ITestOutputHelper log)
         int seeds = int.Parse(Env("LAB_SEEDS", "4")), seed0 = int.Parse(Env("LAB_SEED0", "1000"));
         string level = Env("LAB_LEVEL", "tier");
         double minutes = double.Parse(Env("LAB_MINUTES", "45"), Inv);
+        bool deft = Env("LAB_BOT", "plain") == "deft";
         var cases = new List<ArenaPlay.Case>();
         foreach (var c in callings)
         {
@@ -117,9 +120,9 @@ public class BalanceLab(ITestOutputHelper log)
                 foreach (var people in peoples)
                     foreach (var oath in oathList)
                         for (int s = 0; s < seeds; s++)
-                            cases.Add(new ArenaPlay.Case(seed0 + s * 7919 + tier * 31 + Array.IndexOf(peoples, people) * 3, c, tier, people,
+                            cases.Add(new ArenaPlay.Case(seed0 + s * 7919 + tier * 31 + Array.FindIndex(MapOffers.Peoples, d => d.Id == people) * 3, c, tier, people,
                                 oath == "none" ? [] : oath.Split('+'), level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level),
-                                s % weapons, s / weapons % 2, minutes));
+                                s % weapons, s / weapons % 2, minutes, deft));
         }
         // Everything the bots touch read in once, before the threads share it.
         ArenaPlay.Play(cases[0] with { MaxMinutes = 0.05 });
@@ -132,7 +135,7 @@ public class BalanceLab(ITestOutputHelper log)
 
     static void WriteArenaCsv(string dir, List<Row> rows)
     {
-        var o = new StringBuilder("run,seed,calling,weapon,ability,tier,people,oath,level,won,win_min,died,minutes,death_cause,killer_level,kills,ember,cards,cards_per_min," +
+        var o = new StringBuilder("run,bot,seed,calling,weapon,ability,tier,people,oath,level,won,win_min,died,minutes,death_cause,killer_level,kills,ember,cards,cards_per_min," +
             "low_hp,low_hp_before_win,boss_max_hp,boss_seconds,boss_left,quaffs,heralds,greats,top_hurt,ember_curve,alive_curve,hp_curve,build\n");
         var cards = new StringBuilder("run,calling,tier,people,won,minutes,card,kind,minute\n");
         for (int i = 0; i < rows.Count; i++)
@@ -140,7 +143,7 @@ public class BalanceLab(ITestOutputHelper log)
             var (c, r) = (rows[i].Case, rows[i].R);
             o.Append(string.Join(",", new[]
             {
-                i.ToString(), c.Seed.ToString(), c.Calling, r.Weapon, r.Ability, c.Tier.ToString(), c.People, rows[i].Oath, c.Level.ToString(),
+                i.ToString(), c.Deft ? "deft" : "plain", c.Seed.ToString(), c.Calling, r.Weapon, r.Ability, c.Tier.ToString(), c.People, rows[i].Oath, c.Level.ToString(),
                 rows[i].Won ? "1" : "0", r.WonAt is double w ? F(w, "0.00") : "", r.Died ? "1" : "0", F(r.Minutes, "0.00"), r.Killer, r.KillerLevel.ToString(),
                 r.Kills.ToString(), r.Ember.ToString(), r.Cards.ToString(), F(r.Cards / Math.Max(1, r.Minutes)),
                 F(r.LowHp, "0.000"), F(r.LowHpBefore, "0.000"), F(r.BossMaxHp, "0"), F(r.BossSeconds, "0.0"), r.BossLeft < 0 ? "" : F(r.BossLeft, "0.000"),
@@ -240,18 +243,22 @@ public class BalanceLab(ITestOutputHelper log)
             sum.AppendLine($"| {g.Key} | {g.Count()} | {Pct(g.Count(r => r.Won), g.Count())} | {Pct(g.Count(r => r.Lost), g.Count())} | {M(Median(g.Where(r => r.Lost).Select(r => r.R.Minutes)))} |");
         sum.AppendLine();
 
-        // Every card: how often offered, how often taken, and how the runs that took it went.
-        sum.AppendLine("### Cards (offered, taken, and the runs that took one)").AppendLine();
-        sum.AppendLine("| card | offered | taken in runs | won when taken | won when not |").AppendLine("|---|---|---|---|---|");
+        // Every card: how often offered, how often taken, and how the runs that took
+        // it in the first quarter hour went (nearly every run lives that long, so
+        // the comparison is not flattered by the long runs taking more cards).
+        sum.AppendLine("### Cards (offered, taken, and how the runs that took one early went)").AppendLine();
+        sum.AppendLine("| card | offered | taken (runs) | median minute first taken | taken by minute 15 | won when taken by 15 | won when not |").AppendLine("|---|---|---|---|---|---|---|");
         var offered = rows.SelectMany(r => r.R.Offered).GroupBy(x => x).ToDictionary(g => g.Key, g => g.Count());
         var ids = rows.SelectMany(r => r.R.Picks.Select(p => p.Id)).Concat(offered.Keys.Where(k => !k.StartsWith("evolve:"))).Distinct()
             .Concat(Content.Weapons.Pool).Concat(Content.Boons.All.Keys).Distinct().OrderBy(x => x).ToList();
         foreach (var id in ids)
         {
             var took = rows.Where(r => r.R.Picks.Any(p => p.Id == id)).ToList();
-            var not = rows.Where(r => r.R.Picks.All(p => p.Id != id)).ToList();
+            var early = rows.Where(r => r.R.Picks.Any(p => p.Id == id && p.Minute < 15)).ToList();
+            var not = rows.Where(r => r.R.Picks.All(p => p.Id != id || p.Minute >= 15)).ToList();
             int off = offered.GetValueOrDefault(id) + offered.GetValueOrDefault($"evolve:{id}");
-            sum.AppendLine($"| {id} | {off} | {took.Count} | {Pct(took.Count(r => r.Won), took.Count)} | {Pct(not.Count(r => r.Won), not.Count)} |");
+            sum.AppendLine($"| {id} | {off} | {took.Count} | {M(Median(took.Select(r => r.R.Picks.First(p => p.Id == id).Minute)))} | {early.Count} | " +
+                $"{Pct(early.Count(r => r.Won), early.Count)} | {Pct(not.Count(r => r.Won), not.Count)} |");
         }
         sum.AppendLine();
     }
