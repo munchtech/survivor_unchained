@@ -501,7 +501,7 @@ public static class Ai
     {
         if (e.Disposition == Disposition.Ally)
         {
-            b.HitEnemy(o, e.Damage * mult, School.Physical, AllyStrike, new HitOpts { Summon = true, Knockback = 0.3, DirX = Math.Cos(e.Facing), DirZ = Math.Sin(e.Facing) });
+            b.HitEnemy(o, e.Damage * mult, School.Physical, AllyStrike, new HitOpts { Summon = true, Knockback = 0.3, DirX = Math.Cos(e.Facing), DirZ = Math.Sin(e.Facing), Credit = e.Def.Id });
             return;
         }
         // Rival factions: real damage, no credit, and it draws attention.

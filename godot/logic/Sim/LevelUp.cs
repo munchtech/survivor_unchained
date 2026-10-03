@@ -100,6 +100,9 @@ public static class LevelUp
         return 1 + n * 0.6;
     }
 
+    /// <summary>How many cards a draft shows: three, four with luck enough.</summary>
+    public static int Count(Battle b) => b.Stats.Get(Stat.Luck) >= 1.5 ? 4 : 3;
+
     /// <summary>Is the next draft a great blessing? (Before anything else.)</summary>
     public static bool GreatNext(Battle b) => b.GreatOwed > 0;
 

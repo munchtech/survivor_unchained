@@ -160,7 +160,7 @@ public partial class Game
         var b = Battle!;
         scene!.SimPaused = true;
         hudMode = "draft";
-        Present(LevelUp.Draft(b, b.Stats.Get(Stat.Luck) >= 1.5 ? 4 : 3));
+        Present(LevelUp.Draft(b, LevelUp.Count(b)));
     }
 
     void Present(List<Offer> list)

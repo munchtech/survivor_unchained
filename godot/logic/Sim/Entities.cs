@@ -25,6 +25,8 @@ public enum PickupKind { Ember, Gold, Heal, Magnet, Item, Material, Chest, Quest
 public sealed class StatusSlot
 {
     public double T, Stacks, Power, Tick;
+    /// <summary>Whose it is (Battle.DamageBy's key): what its damage is credited to.</summary>
+    public string? From;
     public StatusSlot(double t, double stacks, double power, double tick) { T = t; Stacks = stacks; Power = power; Tick = tick; }
 }
 
@@ -152,6 +154,8 @@ public sealed class Projectile : Pooled
     public double BossDamage = 1;
     /// <summary>Which way it is going (frontal guards).</summary>
     public double DirX, DirZ = 1;
+    /// <summary>What its damage is credited to when no weapon threw it (a blessing's missiles).</summary>
+    public string? Credit;
 
     public Projectile(int id) { Id = id; }
 
@@ -162,7 +166,7 @@ public sealed class Projectile : Pooled
         Homing = 0; Seek = null; Target = -2; Weapon = null; Art = "bolt"; Status = null; Splash = 0; SplitOnHit = 0;
         Heal = 0; Knockback = 0; Chakram = false; Returning = false; Lob = false; LandX = LandZ = 0; GroundOnHit = null;
         Hits.Clear(); HitTimes.Clear(); Rehit = 0; HitCount = 0; OrbitR = OrbitW = OrbitA = 0; SlotId = -1; Rank = 1;
-        Depth = 0; BossDamage = 1; DirX = 0; DirZ = 1;
+        Depth = 0; BossDamage = 1; DirX = 0; DirZ = 1; Credit = null;
     }
 
     /// <summary>Point DirX, DirZ along its velocity.</summary>
@@ -187,6 +191,8 @@ public sealed class GroundZone : Pooled
     /// <summary>Armour for the player standing in it (Sanctified Earth).</summary>
     public double Armor;
     public double BossDamage = 1;
+    /// <summary>What its damage is credited to when no weapon laid it.</summary>
+    public string? Credit;
 
     public GroundZone(int id) { Id = id; }
 
@@ -194,7 +200,7 @@ public sealed class GroundZone : Pooled
     {
         Owner = Side.Player; X = Z = 0; Radius = 1; Life = 1; Age = 0; Tick = 0.5; TickT = 0; Dps = 0;
         School = School.Physical; Tags = Array.Empty<Tag>(); Slow = 0; Status = null; Art = "zone"; Weapon = null;
-        Follow = false; Armor = 0; BossDamage = 1;
+        Follow = false; Armor = 0; BossDamage = 1; Credit = null;
     }
 }
 
