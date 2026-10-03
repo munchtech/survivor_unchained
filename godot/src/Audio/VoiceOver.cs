@@ -191,8 +191,9 @@ public partial class VoiceOver : Node
         bool talking = Speaking;
         if (!talking && Current != null) { Current = null; CurrentId = null; }
         bool barking = barks.Any(b => IsInstanceValid(b) && b.Playing);
-        // Music under speech as a mixer would ride it: well down under a
-        // conversation or the narrator, a little down under a passer-by.
-        Synth.Instance?.DuckForVoice(talking ? 0.42f : barking ? 0.78f : 1, talking ? 0.62f : barking ? 0.88f : 1);
+        // Music under speech as a mixer would ride it: down under a
+        // conversation or the narrator (with the conversation's own dip,
+        // about 10 dB in all, measured with --record), a little under a passer-by.
+        Synth.Instance?.DuckForVoice(talking ? 0.6f : barking ? 0.8f : 1, talking ? 0.72f : barking ? 0.88f : 1);
     }
 }

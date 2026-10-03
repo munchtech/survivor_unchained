@@ -175,6 +175,36 @@ this is the model, not the ear. Rav, Redcowl and Ysolde (Scots), Chid
 - **Kokoro, Orpheus, Dia, CSM, Zonos, StyleTTS 2, F5**: fixed voices,
   non-commercial weights, or quality well below the shortlist.
 
+## The owner's ear: "way too AI"
+
+An early sample was judged too obviously generated. The tells, measured
+on the same angry line (`tools/vo/tells.py`):
+
+| | Pace change from phrase to phrase | Stress spread | Pitch moves word to word | Breaths |
+|---|---|---|---|---|
+| VoxCPM2 continuation (the first pipeline) | 0.04 | 3.0 dB | 3.1 st | 1 |
+| Kokoro (a stock reader) | 0.02 | 1.8 dB | 1.8 st | 1 |
+| Orpheus (trained on expressive speech) | 0.18 | 7.4 dB | 3.4 st | 2 |
+
+Continuation reads at a metronome's pace with every word stressed alike:
+the "audiobook narrator" tell. The same voice designed per line with the
+performance written into the description moves more, but is a slightly
+different person each time. Hence the shoot-out (`docs/voice/samples`):
+every local model and method on the same five hard lines, including the
+performance-first route (act the line, then convert its timbre to the cast
+voice with Seed-VC), for the owner to judge by ear.
+
+## Against the cloud voice pass
+
+A cloud session built a parallel voice pass (branch `claude/cloud-voice`:
+`tools/voice`, `godot/data/voice/lines.json`, its own `VoiceOver`/`VoiceLines`
+and tests) without a TTS behind it. Its hand direction is excellent and is
+hashed the same way, so `tools/vo/import_directions.py` takes it for any
+line not directed here. Its code is not merged: the game keeps one voice
+system (`godot/src/Audio/VoiceOver.cs`, `godot/logic/World/VoiceLines.cs`,
+`godot/data/vo/index.json`), the one with takes, mixing and in-game
+verification behind it.
+
 ## Speed on this machine
 
 The card and the CPU are shared with other agents' work (ComfyUI image jobs,
