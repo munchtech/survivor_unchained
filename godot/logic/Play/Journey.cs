@@ -157,6 +157,7 @@ public sealed class Journey
         b.Night = arena || ember || World.Time == TimeOfDay.Night;
         GearWeapons = kit.Weapons.Select(w => w.Id).ToHashSet();
         b.Favours.UnionWith(Callings.Archetype(Ch.Archetype).Favours);
+        b.Calling = Ch.Archetype;
         b.CallingPaths.UnionWith(Content.Paths.All.Where(p => p.Callings.Contains(Ch.Archetype)).Select(p => p.Id));
         // What is carried by day is attuned for the night (offered first, a
         // rank or two up); what is only learned comes a little more often.

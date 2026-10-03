@@ -263,7 +263,7 @@ public static class Weapons
             Description = "A rapid volley of small seeking motes that curve through the crowd on their own.",
             Evolutions =
             [
-                new() { Id = "mote_cascade", Name = "Mote Cascade", Description = "The motes multiply beyond counting, and each one splits in two when it strikes.",
+                new() { Id = "mote_cascade", Name = "Fen Lights", Description = "The motes multiply like the lights over the fen that lead travellers off the road, and each one splits in two when it strikes.",
                     Catalysts = ["duplicity"], Mods = new() { Damage = 1.06, Projectiles = 3 }, Set = new() { SplitOnHit = 2 }, Art = "mote_cascade" },
                 new() { Id = "starseeker", Name = "Starseeker", Description = "Motes hunt the strongest thing on the field, and one in four strikes true.",
                     Catalysts = ["precision"], Mods = new() { Damage = 1.73, Cooldown = 0.85 }, Set = new() { Homing = 9, Seek = Seek.Strongest, Crit = 0.25 }, Art = "mote_star" },
@@ -308,7 +308,7 @@ public static class Weapons
             [
                 new() { Id = "deepwinter", Name = "Deepwinter", Description = "Winter takes the field: every shard bursts into a ring of smaller shards where it strikes.",
                     Catalysts = ["haste"], Mods = new() { Damage = 0.58, Cooldown = 0.8, Projectiles = 1 }, Set = new() { SplitOnHit = 4 }, Art = "shard_deep" },
-                new() { Id = "glacier_spear", Name = "Glacier Spear", Description = "One enormous lance of ice that runs the length of the field and freezes all it passes.",
+                new() { Id = "glacier_spear", Name = "Ford Ice", Description = "A lance of black ice off the ford in midwinter, that runs the length of the field and freezes all it passes.",
                     Catalysts = ["velocity"], Mods = new() { Damage = 1.09, Speed = 1.4, Pierce = 20 }, Set = new() { Radius = 0.5, Status = S(Chill, 1, 3, 3) }, Art = "spear_ice" },
             ],
         },
@@ -350,7 +350,7 @@ public static class Weapons
             Description = "A cloud follows you and breaks: lightning falls among whatever crowds you.",
             Evolutions =
             [
-                new() { Id = "eye_of_the_storm", Name = "Eye of the Storm", Description = "The cloud never stops breaking: more bolts, and faster, and each that finds a shocked thing leaps on to two more.",
+                new() { Id = "eye_of_the_storm", Name = "Split Oak", Description = "The storm that splits the oaks on the hill: more bolts, and faster, and each that finds a shocked thing leaps on to two more.",
                     Catalysts = ["conduit"], Mods = new() { Damage = 1.43, Cooldown = 0.75, Strikes = 2 }, Art = "storm_eye",
                     Triggers = [T(TriggerEvent.Hit, [new Effect.Chain(2, 5, 0.5, Basis.Hit, School.Storm)], new() { Weapon = "thunderhead", TargetStatus = Shock }, icd: 0.05)] },
                 new() { Id = "thunderclap", Name = "Thunderclap", Description = "Fewer bolts, and each one a thunderclap: a wide blast that leaves what it strikes reeling.",

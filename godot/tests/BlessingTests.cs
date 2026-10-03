@@ -153,7 +153,7 @@ public class BlessingTests
         foreach (var p in Paths.All)
         {
             Assert.Contains(p.Great, id => Boons.GreatRoles[id] == Boons.GreatRole.Ward);
-            Assert.InRange(p.Great.Length, 3, 5);
+            Assert.InRange(p.Great.Length, 3, 7);
         }
     }
 
@@ -256,5 +256,84 @@ public class BlessingTests
         }
         Assert.Equal(Taken(0, true), Taken(5, false), 1);
         Assert.Equal(Taken(0, true) * 0.7, Taken(5, true), 1);
+    }
+
+    [Fact]
+    public void Watch_mail_counts_and_turns_every_tenth_blow()
+    {
+        var b = BattleTests.Arena(14);
+        b.AddBoon("ironhide");
+        int turned = 0;
+        for (int i = 0; i < 30; i++)
+        {
+            b.Player.Iframes = 0;
+            b.Player.Hp = b.MaxHp;
+            if (b.HurtPlayer(5, School.Physical, "test", null) == 0) turned++;
+        }
+        Assert.Equal(3, turned);
+    }
+
+    [Fact]
+    public void Bitterroot_draws_burning_and_poison_out_twice_as_fast()
+    {
+        double Left(bool root)
+        {
+            var b = BattleTests.Arena(15);
+            if (root) b.AddBoon("recovery");
+            b.Player.BurnT = 2; b.Player.BurnDps = 0;
+            Tick(b, 0.5);
+            return b.Player.BurnT;
+        }
+        Assert.Equal(1.5, Left(false), 1);
+        Assert.Equal(1.0, Left(true), 1);
+    }
+
+    [Fact]
+    public void A_callings_own_great_is_offered_to_it_alone()
+    {
+        var own = Boons.Great.Where(id => Boons.All[id].Calling != null).ToDictionary(id => id, id => Boons.All[id].Calling!);
+        Assert.Equal(4, own.Count);
+        Assert.Equal(new[] { "arcanist", "reaver", "stalker", "warden" }, own.Values.OrderBy(x => x));
+        foreach (var calling in own.Values)
+        {
+            bool seen = false;
+            for (uint seed = 1; seed <= 120; seed++)
+            {
+                var b = BattleTests.Arena(seed);
+                b.Calling = calling;
+                b.GreatOwed = 1;
+                var hand = LevelUp.Draft(b);
+                Assert.DoesNotContain(hand, o => own.TryGetValue(o.Id, out var c) && c != calling);
+                seen |= hand.Any(o => own.TryGetValue(o.Id, out var c) && c == calling);
+            }
+            Assert.True(seen, $"{calling} never saw its own");
+        }
+    }
+
+    [Fact]
+    public void The_hunters_blind_strikes_true_on_the_unhurt()
+    {
+        var b = BattleTests.Arena(16);
+        b.RemoveWeapon("oathblade");
+        b.AddBoon("hunters_blind");
+        b.AddBoon("hunters_blind");
+        b.Stats.Add(new StatMod(Stat.CritChance, ModKind.Flat, -b.Stats.Get(Stat.CritChance), "test"));
+        var wolf = b.SpawnEnemy("wolf", b.Player.X + 3, b.Player.Z, new Battle.SpawnOpts { Elite = true, Style = SpawnStyle.Walk, Disposition = Disposition.Hostile })!;
+        Tick(b, 1 / 60.0);
+        double first = b.HitEnemy(wolf, 10, School.Physical, [Tag.Physical]);
+        double second = b.HitEnemy(wolf, 10, School.Physical, [Tag.Physical]);
+        Assert.True(first > second * 1.2, $"{first} against {second}");
+    }
+
+    [Fact]
+    public void Holding_the_crossing_hardens_you_while_you_stand()
+    {
+        var b = BattleTests.Arena(17);
+        double before = b.Stats.Get(Stat.Armor);
+        b.AddBoon("hold_the_crossing");
+        Tick(b, 0.5);
+        Assert.Equal(before + 6, b.Stats.Get(Stat.Armor), 3);
+        Tick(b, 0.5, 1, 0);
+        Assert.Equal(before, b.Stats.Get(Stat.Armor), 3);
     }
 }

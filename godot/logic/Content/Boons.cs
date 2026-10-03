@@ -50,6 +50,8 @@ public sealed class BoonDef
     /// <summary>What ranks 2 and 3 add: the words, and any triggers of their own.</summary>
     public string[]? DeeperText;
     public TriggerDef[][]? Deeper;
+    /// <summary>A calling's own great blessing: offered to that calling alone.</summary>
+    public string? Calling;
 }
 
 public static class Boons
@@ -74,6 +76,7 @@ public static class Boons
         "hunters_mark", "momentum", "bloodthirst", "spirit_companion", "arcane_overflow", "glass_cannon",
         "duelists_grace", "restless_hands", "cinderwake", "iron_vow", "ember_tithe", "stormborn",
         "from_the_ashes", "grounding", "rootbind", "go_for_the_throat",
+        "hold_the_crossing", "blood_up", "second_reading", "hunters_blind",
     ];
 
     /// <summary>What each great blessing is for (docs/SKILLS_DESIGN.md, "Great
@@ -89,6 +92,7 @@ public static class Boons
         ["bloodthirst"] = GreatRole.Ward, ["iron_vow"] = GreatRole.Ward, ["from_the_ashes"] = GreatRole.Ward, ["grounding"] = GreatRole.Ward,
         ["hunters_mark"] = GreatRole.Answer, ["rootbind"] = GreatRole.Answer, ["go_for_the_throat"] = GreatRole.Answer,
         ["restless_hands"] = GreatRole.Tempo, ["ember_tithe"] = GreatRole.Tempo,
+        ["hold_the_crossing"] = GreatRole.Power, ["blood_up"] = GreatRole.Power, ["second_reading"] = GreatRole.Power, ["hunters_blind"] = GreatRole.Power,
     };
     /// <summary>Passive skills a survivor can hold at once.</summary>
     public const int MaxPassives = 6;
@@ -106,22 +110,24 @@ public static class Boons
     {
         /* -------------------------------------------------- passive skills -- */
         new() { Id = "might", Name = "Legion Bronze", Icon = "fist", Rarity = Rarity.Common, Max = 5, Kind = BoonKind.Passive,
-            Text = "Old-empire bronze, green at the edges and still the hardest thing in the valley: +10% damage with everything.", Mods = r => [Inc(Stat.Damage, 0.1 * r, "boon:might")] },
+            Text = "Old-empire bronze, green at the edges and still the hardest thing in the valley: +10% damage with everything, and your blows land 10% heavier.",
+            Mods = r => [Inc(Stat.Damage, 0.1 * r, "boon:might"), Inc(Stat.Knockback, 0.1 * r, "boon:might")] },
         new() { Id = "haste", Name = "Trimmed Wick", Icon = "wing", Rarity = Rarity.Common, Max = 5, Kind = BoonKind.Passive,
             Text = "A wick trimmed short burns quick: every weapon fires 8% more often.", Mods = r => [More(Stat.Cooldown, Math.Pow(0.92, r) - 1, "boon:haste")] },
         new() { Id = "fleetfoot", Name = "Toll-Runner's Boots", Icon = "boot", Rarity = Rarity.Common, Max = 5, Kind = BoonKind.Passive,
-            Text = "Worn thin on the toll road: +10% movement speed.", Mods = r => [Inc(Stat.MoveSpeed, 0.1 * r, "boon:fleetfoot")] },
+            Text = "Worn thin on the toll road: +10% movement speed, and on the run ember comes to you from 10% farther.",
+            Mods = r => [Inc(Stat.MoveSpeed, 0.1 * r, "boon:fleetfoot"), new StatMod(Stat.PickupRadius, ModKind.Inc, 0.1 * r, "boon:fleetfoot", ModWhen.Moving)] },
         new() { Id = "greed", Name = "Lampling's Scoop", Icon = "magnet", Rarity = Rarity.Common, Max = 5, Kind = BoonKind.Passive,
             Text = "Ember, gold and draughts fly to you from 1.2 m farther, and every stone holds 4% more ember. The Dig will want it back.",
             Mods = r => [Flat(Stat.PickupRadius, 1.2 * r, "boon:greed"), Inc(Stat.XpGain, 0.04 * r, "boon:greed")] },
         new() { Id = "vitality", Name = "Morrow Pippins", Icon = "heart", Rarity = Rarity.Common, Max = 5, Kind = BoonKind.Passive, Tags = [Tag.Heal],
             Text = "A pocketful of the valley's apples: +25 maximum health, and a heal when taken.", Mods = r => [Flat(Stat.MaxHealth, 25 * r, "boon:vitality")] },
         new() { Id = "ironhide", Name = "Watch Mail", Icon = "shield", Rarity = Rarity.Common, Max = 5, Kind = BoonKind.Passive,
-            Text = "From the Watch's stores, never paid for: +3 armour. Each point helps a little less than the last.", Mods = r => [Flat(Stat.Armor, 3 * r, "boon:ironhide")] },
+            Text = "From the Watch's stores, never paid for: +3 armour, and it counts: every tenth blow that reaches you glances off.", Mods = r => [Flat(Stat.Armor, 3 * r, "boon:ironhide")] },
         new() { Id = "precision", Name = "Night-Eyes", Icon = "crosshair", Rarity = Rarity.Uncommon, Max = 5, Kind = BoonKind.Passive,
-            Text = "You see the weak places better in the dark: +7% critical strike chance.", Mods = r => [Flat(Stat.CritChance, 0.07 * r, "boon:precision")] },
+            Text = "You see the weak places better in the dark: +7% critical strike chance, and 3% more against anything beyond six paces.", Mods = r => [Flat(Stat.CritChance, 0.07 * r, "boon:precision")] },
         new() { Id = "ferocity", Name = "Wolf-Tooth", Icon = "claw", Rarity = Rarity.Uncommon, Max = 4, Kind = BoonKind.Passive,
-            Text = "It bites deeper than it should: +25% critical strike damage.", Mods = r => [Flat(Stat.CritDamage, 0.25 * r, "boon:ferocity")] },
+            Text = "It bites deeper than it should: +25% critical strike damage, and the wounded (below half) feel 12% more of it.", Mods = r => [Flat(Stat.CritDamage, 0.25 * r, "boon:ferocity")] },
         new() { Id = "expanse", Name = "Ford Lamp", Icon = "expand", Rarity = Rarity.Uncommon, Max = 5, Kind = BoonKind.Passive, Tags = [Tag.Area],
             Text = "Light thrown wide, like the lamps at the ford: +12% area. Novas, fields, orbits, storms and auras are bigger; chains, beams and blades reach farther.",
             Mods = r => [Inc(Stat.Area, 0.12 * r, "boon:expanse")] },
@@ -132,14 +138,15 @@ public static class Boons
         new() { Id = "wisdom", Name = "Wayfinder's Chart", Icon = "book", Rarity = Rarity.Uncommon, Max = 4, Kind = BoonKind.Passive,
             Text = "Every road on it, and some that aren't there yet: +6% ember from every stone, and a redraw with every rank.", Mods = r => [Inc(Stat.XpGain, 0.06 * r, "boon:wisdom")] },
         new() { Id = "recovery", Name = "Bitterroot", Icon = "leaf", Rarity = Rarity.Common, Max = 4, Kind = BoonKind.Passive, Tags = [Tag.Heal],
-            Text = "Chewed slowly, as the hunters do: +0.6 health regenerated per second.", Mods = r => [Flat(Stat.Regen, 0.6 * r, "boon:recovery")] },
+            Text = "Chewed slowly, as the hunters do: +0.6 health regenerated per second, and burning or poison on you wears off twice as fast.", Mods = r => [Flat(Stat.Regen, 0.6 * r, "boon:recovery")] },
         new() { Id = "velocity", Name = "Grey Fletching", Icon = "spear", Rarity = Rarity.Common, Max = 5, Kind = BoonKind.Passive, Tags = [Tag.Projectile],
             Text = "Goose-grey and cut close: projectiles fly 12% faster and land 5% harder.",
             Mods = r => [Inc(Stat.ProjectileSpeed, 0.12 * r, "boon:velocity"), Inc(Stat.DamageOf(Tag.Projectile), 0.05 * r, "boon:velocity")] },
         new() { Id = "perennial", Name = "Evergreen", Icon = "perennial", Rarity = Rarity.Common, Max = 5, Kind = BoonKind.Passive, Tags = [Tag.Zone, Tag.Orbit, Tag.Summon],
             Text = "+10% duration: fields, gyres, beasts and ground effects last longer.", Mods = r => [Inc(Stat.Duration, 0.1 * r, "boon:perennial")] },
         new() { Id = "evasion", Name = "Fen Step", Icon = "feint", Rarity = Rarity.Uncommon, Max = 4, Kind = BoonKind.Passive,
-            Text = "Light on soft ground: +7% chance to avoid a blow entirely.", Mods = r => [Flat(Stat.Dodge, 0.07 * r, "boon:evasion")] },
+            Text = "Light on soft ground: +7% chance to avoid a blow entirely, and a blow avoided leaves you 20% quicker for a moment.", Mods = r => [Flat(Stat.Dodge, 0.07 * r, "boon:evasion")],
+            Triggers = [T(TriggerEvent.Dodge, [new Effect.Buff("fen_step", Stat.MoveSpeed, 0.2, ModKind.Inc, 1.5)], icd: 0.5)] },
         new() { Id = "thorns", Name = "Bramble Coat", Icon = "thorn", Rarity = Rarity.Uncommon, Max = 5, Kind = BoonKind.Passive, Tags = [Tag.Nature, Tag.Aura],
             Text = "Struck, you burst with thorns: everything close takes a blow that grows with the ember, and what struck you takes a fifth of its blow back.",
             Mods = r => [Flat(Stat.Thorns, r, "boon:thorns")] },
@@ -295,6 +302,29 @@ public static class Boons
             Mods = r => r >= 2 ? [Inc(Stat.SummonHaste, 0.2, "syn:go_for_the_throat")] : [],
             DeeperText = ["They strike 20% faster.", "Each champion that falls calls up a spirit wolf that stays the night."],
             Deeper = [[], [T(TriggerEvent.Kill, [new Effect.Raise(Effect.RaiseKind.SpiritWolf, 0, 6)], new() { Elite = true })]] },
+        // Each calling's own: the way it fights, and no one else's.
+        new() { Id = "hold_the_crossing", Name = "Hold the Crossing", Icon = "aegis", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing, Calling = "warden",
+            Text = "Stand your ground and you are a crossing nothing passes: while you stand still, +6 armour and your weapons fire 20% faster.",
+            Mods = r => [new StatMod(Stat.Armor, ModKind.Flat, r >= 2 ? 10 : 6, "syn:hold_the_crossing", ModWhen.Still),
+                new StatMod(Stat.Cooldown, ModKind.More, r >= 2 ? -0.25 : -0.2, "syn:hold_the_crossing", ModWhen.Still),
+                .. (r >= 3 ? new[] { new StatMod(Stat.Regen, ModKind.Flat, 3, "syn:hold_the_crossing", ModWhen.Still) } : [])],
+            DeeperText = ["+10 armour, and 25% faster.", "And you mend 3 health a second while you hold."] },
+        new() { Id = "blood_up", Name = "Blood Up", Icon = "drain", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing, Calling = "reaver",
+            Text = "Below a third of your health your blows land 40% harder, and every kill mends 1% of it.",
+            Mods = r => [new StatMod(Stat.Damage, ModKind.More, r >= 2 ? 0.6 : 0.4, "syn:blood_up", ModWhen.LowHealth)],
+            Triggers = [T(TriggerEvent.Kill, [new Effect.Heal(0.01, Basis.MaxHp)], new() { SelfHpBelow = 0.35 })],
+            DeeperText = ["60% harder.", "Each kill mends 2%."],
+            Deeper = [[], [T(TriggerEvent.Kill, [new Effect.Heal(0.01, Basis.MaxHp)], new() { SelfHpBelow = 0.35 })]] },
+        new() { Id = "second_reading", Name = "Second Reading", Icon = "arcane", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing, Tags = [Tag.Spell], Calling = "arcanist",
+            Text = "A spell read twice is cast twice: every 8 s, everything you carry fires at once.",
+            Triggers = [T(TriggerEvent.Tick, [new Effect.Cooldown(99, Effect.CooldownScope.All)], icd: 8)],
+            DeeperText = ["Every 6 s.", "Every 4 s."],
+            Deeper = [[T(TriggerEvent.Tick, [new Effect.Cooldown(99, Effect.CooldownScope.All)], icd: 24)],
+                [T(TriggerEvent.Tick, [new Effect.Cooldown(99, Effect.CooldownScope.All)], icd: 12)]] },
+        new() { Id = "hunters_blind", Name = "The Hunters' Blind", Icon = "mark", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing, Tags = [Tag.Ranged], Calling = "stalker",
+            Text = "From cover, the first blow is the one that counts: half your blows on anything unhurt are critical strikes.",
+            Mods = r => r >= 3 ? [Flat(Stat.CritDamage, 0.25, "syn:hunters_blind")] : [],
+            DeeperText = ["All of them.", "+25% critical strike damage."] },
         new() { Id = "ember_tithe", Name = "Ember Tithe", Icon = "coin", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing,
             Text = "25% more ember, and ember stones come to you from twice as far.",
             Mods = r => [Inc(Stat.XpGain, r >= 2 ? 0.45 : 0.25, "syn:ember_tithe"), Inc(Stat.PickupRadius, 1, "syn:ember_tithe")],

@@ -40,6 +40,8 @@ public sealed class PlayerState
     public int Revives;
     /// <summary>Risings From the Ashes still owed tonight (the ember's own, lost at dawn).</summary>
     public int Ashes;
+    /// <summary>Blows that have reached the survivor since Watch Mail last turned one.</summary>
+    public int MailCount;
     public Enemy? LastKiller;
     /// <summary>Since a blow last reached the survivor; where a burning dash last left fire.</summary>
     public double UnstruckT, WakeX, WakeZ;
@@ -240,6 +242,8 @@ public sealed partial class Battle
     /// card in every skill draft; a fourth great choice (CombatKit).</summary>
     public readonly HashSet<string> Stands = new();
     public bool Roads, Omens;
+    /// <summary>The survivor's calling (its own great blessing is offered to it alone).</summary>
+    public string? Calling;
     public readonly HashSet<string> BannedCards = new();
     /// <summary>Skill tags the survivor's calling leans toward, for the draft.</summary>
     public readonly HashSet<Tag> Favours = new();
@@ -375,8 +379,10 @@ public sealed partial class Battle
         // Regeneration and hazards on the survivor.
         double regen = st.Get(Stat.Regen);
         if (regen > 0 && p.Hp < MaxHp) HealPlayer(regen * dt, "regen", true);
-        if (p.BurnT > 0) { p.BurnT -= dt; HurtPlayerRaw(p.BurnDps * dt, School.Fire, "burning", null, true); }
-        if (p.PoisonT > 0) { p.PoisonT -= dt; HurtPlayerRaw(p.PoisonDps * dt, School.Nature, "poison", null, true); }
+        // Bitterroot draws it: what burns or poisons the survivor wears off twice as fast.
+        double cure = Boons.ContainsKey("recovery") ? 2 : 1;
+        if (p.BurnT > 0) { p.BurnT -= dt * cure; HurtPlayerRaw(p.BurnDps * dt, School.Fire, "burning", null, true); }
+        if (p.PoisonT > 0) { p.PoisonT -= dt * cure; HurtPlayerRaw(p.PoisonDps * dt, School.Nature, "poison", null, true); }
         if (!p.Alive) return;
         if (TickArt(dt)) return;
 
@@ -621,9 +627,13 @@ public sealed partial class Battle
         if (!crit && !o.NoCrit && !o.Dot)
         {
             double chance = st.Get(Stat.CritChance) + (Player.SureCritT > 0 ? 1 : 0) + (o.Weapon?.CritBonus ?? 0);
+            // The Hunters' Blind: the first blow on anything unhurt.
+            if (e.Hp >= e.MaxHp && Boons.TryGetValue("hunters_blind", out int blind)) chance += blind >= 2 ? 1 : 0.5;
+            // Night-Eyes: the far ones, in the dark, are seen best.
+            if (Boons.TryGetValue("precision", out int eyes) && Dist(e.X, e.Z, Player.X, Player.Z) > 6) chance += 0.03 * eyes;
             crit = Rng.Next() < chance;
         }
-        if (crit) dmg *= st.Get(Stat.CritDamage);
+        if (crit) dmg *= st.Get(Stat.CritDamage) * (e.Hp < e.MaxHp * 0.5 && Boons.TryGetValue("ferocity", out int tooth) ? 1 + 0.12 * tooth : 1);
         else if (Rules.IronSkin > 0 && e.Disposition == Disposition.Hostile) { dmg *= 1 - Rules.IronSkin; blocked = true; }
         dmg = Math.Max(0.5, dmg);
 
@@ -943,6 +953,15 @@ public sealed partial class Battle
         {
             p.BlockT = new[] { 12.0, 9, 6 }[Math.Min(3, blockRank) - 1];
             p.Iframes = 0.25;
+            Events.Emit(new Ev.PlayerHit { X = p.X, Z = p.Z, Amount = 0, School = school, Source = source, Blocked = true });
+            Fire(TriggerEvent.Block, new ProcCtx { X = p.X, Z = p.Z });
+            return 0;
+        }
+        // Watch Mail counts: every tenth blow that reaches the survivor glances off.
+        if (Boons.ContainsKey("ironhide") && ++p.MailCount >= 10)
+        {
+            p.MailCount = 0;
+            p.Iframes = Math.Max(p.Iframes, 0.25);
             Events.Emit(new Ev.PlayerHit { X = p.X, Z = p.Z, Amount = 0, School = school, Source = source, Blocked = true });
             Fire(TriggerEvent.Block, new ProcCtx { X = p.X, Z = p.Z });
             return 0;

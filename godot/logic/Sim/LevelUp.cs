@@ -262,13 +262,14 @@ public static class LevelUp
             {
                 var d = Boons.All[id];
                 int r = b.Boons.GetValueOrDefault(id);
-                if (r >= d.Max || b.BannedCards.Contains(id)) continue;
+                if (r >= d.Max || b.BannedCards.Contains(id) || (d.Calling != null && d.Calling != b.Calling)) continue;
                 bool deeper = r > 0 && d.DeeperText is { } dt && r - 1 < dt.Length;
                 string text = deeper ? $"Rank {r + 1}: {d.DeeperText![r - 1]}" : d.Text;
                 var o = new Offer { Kind = OfferKind.Boon, Id = id, Rarity = d.Rarity, Title = d.Name, Text = text, From = r, To = r + 1, Icon = d.Icon, Tags = d.Tags, Blessing = true, Great = true };
                 bool suits = OnPath(id, p => p.Great);
-                if (suits) o.Why.Add("Suits your path");
-                pool.Add(new Cand { O = o, W = (deeper ? 3 : 1) * (suits ? 1.5 : 1) * Again(o) });
+                if (d.Calling != null) o.Why.Add("Your calling's own");
+                else if (suits) o.Why.Add("Suits your path");
+                pool.Add(new Cand { O = o, W = (deeper ? 3 : 1) * (suits || d.Calling != null ? 1.5 : 1) * Again(o) });
             }
             // Dealt by role: a ward and a power in every hand, then an answer to
             // champions or a quickening, then (a fourth card) anything.
