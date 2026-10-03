@@ -837,7 +837,7 @@ The bible does not say what the last arena is. Every big beat is a night
 arena; the ending must be too. Options:
 
 - **The descent.** The stair as a thirty-minute arena that goes *down*
-  (Diablo I's structure, §8: each level a step deeper; the geography is
+  (Diablo I's structure, §4.6: each level a step deeper; the geography is
   the plot), with the Legion's dead parting or barring by what the
   survivor is carrying.
 - **The boss is the choice.** Who stands in front of the heart depends on
