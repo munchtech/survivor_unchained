@@ -68,6 +68,23 @@ public class BreadcrumbTests
     }
 
     [Fact]
+    public void The_ledgers_next_step_follows_what_the_survivor_knows()
+    {
+        // K5b: never "show Holloway" a book that can only be read for its date.
+        static List<string> Steps(Setup s) => Objectives.Of(s.C).Find(o => o.Id == "caravan")?.Steps.Select(t => t.Text).ToList() ?? new();
+        var s = Q("outcast");
+        Give(s, "pell_ledger");
+        Entries(s, "caravan", "harlan_plea");
+        Assert.Contains(Steps(s), t => t.Contains("Someone who knows the dates could read Pell's ledger"));
+        Talk(Convo("holloway"), s.C, "found this book");
+        Assert.Contains(Steps(s), t => t.Contains("Find out who \"R.\" is"));
+        Assert.DoesNotContain(Steps(s), t => t.Contains("show it to Harlan"));
+        Entries(s, "caravan", "wreck");
+        Assert.Contains(Steps(s), t => t.Contains("Pell Varrow's ledger: show it to Harlan, or to Captain Holloway"));
+        Assert.DoesNotContain(Steps(s), t => t.Contains("Find out who"));
+    }
+
+    [Fact]
     public void Harlan_reads_the_ledger_too_and_sends_you_to_find_who_R_is()
     {
         var s = Q();

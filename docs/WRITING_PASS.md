@@ -57,7 +57,7 @@ records the choices whose weight lands later (section 9).
 
 | Thread | What is new | Status |
 |---|---|---|
-| Found early | Pell's ledger, the strongbox, the Roost, the cages and the Dig, each found before its quest, now start their story rather than finish it; people react to a survivor who arrives already knowing | [DATA, done] (dialogue gates and reactions); [CODE, to do] C1, C2 (the strongbox's journal line, ledger objectives) |
+| Found early | Pell's ledger, the strongbox, the Roost, the cages and the Dig, each found before its quest, now start their story rather than finish it; people react to a survivor who arrives already knowing | [DATA, done] (dialogue gates and reactions); [CODE, done] C1, C2 (the strongbox's journal line, ledger objectives) |
 | The Beast Problem | Snib explains his pump to a stranger, and will not move it for someone with no reason to care; Redcowl's charge as a way to blow the pump; Pell sells the charge only to someone who knows the Dig | [DATA, done]; [CODE, to do] C6 |
 | The Missing Caravan | Jessop named and missing; Harlan's greeting follows the days and the news; telling Harlan where the Roost is; the ledger read for its date; the six crates' fate; Jory told or lied to; who tells Redcowl where Pell sleeps; Harlan pays for the boy even after you sold his box | [DATA, done]; [CODE, to do] C5 (the crates in an empty camp) |
 | The Lamps at the Low Ford | A new mystery: the dead watchman's book, Corran and Dannet, Keegan, Brannoc's irons and his mark, Rook's money, the carters' notice, the square coin, Nell; the accusation at the fortune | [DATA, done]; [CODE, done] C3 (the prologue writes the first line) |
@@ -271,8 +271,8 @@ flowchart TD
 | "Those six crates..." | Redcowl, `clue.blasting_ember` and `CRATES_FREE` | `be.crates` `redcowl`, `crates_redcowl` | [DATA, done] |
 | "Your six crates are still in the Roost." | Harlan, `clue.blasting_ember`, `roost_found`, `CRATES_FREE` | `be.crates` `harlan`, `crates_harlan` | [DATA, done] |
 | "What was in the crates?" | Jory, until answered | `jory.knows_be` or `jory.lied_to` | [DATA, done] |
-| Picking up the strongbox | the Roost | journal line and tracker step | [CODE, to do] C1 |
-| The ledger's next step | tracker | by context | [CODE, to do] C2 |
+| Picking up the strongbox | the Roost | journal line and tracker step | [CODE, done] C1 |
+| The ledger's next step | tracker | by context | [CODE, done] C2 |
 
 ### 5.3 Order constraints
 

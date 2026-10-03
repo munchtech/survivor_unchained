@@ -550,7 +550,7 @@ public sealed class Verge : ZoneRuntime
             Act = () =>
             {
                 W.Facts["caravan.box_taken"] = true;
-                G.Apply("""[{ "give": "coyle_strongbox" }]""");
+                G.Apply("""[{ "give": "coyle_strongbox" }, { "quest": { "id": "caravan", "status": "active", "entry": "strongbox_found" } }]""");
                 if (KerchiefsFriendly() && F("redcowl").Str != "bargained" && roostCrew.Any(Up)) TurnHostile("roost.hostile", "Thief!");
             },
         });
@@ -949,7 +949,9 @@ public sealed class Verge : ZoneRuntime
         bool pumping = F("dig.pump").IsNull || F("dig.pump").Str == "running";
         bool toDig = Knows("root_cause") && pumping;
         bool toHollow = Knows("hint.greymuzzle") && !Q("beasts", "greymuzzle_met") && F("greymuzzle").Str != "dead";
-        bool toWreck = Q("caravan", "harlan_plea") && !Q("caravan", "wreck");
+        // A ledger read for its date sends you looking for "R.": the red
+        // fletching in the wagons' sideboards is the answer.
+        bool toWreck = (Q("caravan", "harlan_plea") || Q("caravan", "ledger_read")) && !Q("caravan", "wreck");
         XZ at(string k) => V(k);
         var marks = new List<MapMark>
         {

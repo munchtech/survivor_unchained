@@ -222,6 +222,32 @@ public class VergeTests
     }
 
     [Fact]
+    public void A_strongbox_taken_before_anyone_asked_says_whose_it_is_and_where_it_goes()
+    {
+        // K4: the caravan unknown, the box in hand.
+        var s = Make();
+        Assert.False(s.J.World.Quests.ContainsKey("caravan"));
+        I(s, "strongbox").Act();
+        Assert.Equal(QuestStatus.Active, s.J.World.Quests["caravan"].Status);
+        Assert.Contains("strongbox_found", s.J.World.Quests["caravan"].Entries);
+        var steps = Objectives.Of(s.J.Ctx).Single(o => o.Id == "caravan").Steps.Select(t => t.Text);
+        Assert.Contains(steps, t => t.StartsWith("Take the Coyle strongbox to Harlan Coyle, at Coyle Trading"));
+    }
+
+    [Fact]
+    public void A_ledger_read_for_its_date_sends_you_to_the_wagons()
+    {
+        // K5b, the map: the red fletching is in the wagons' sideboards.
+        var s = Make();
+        MarkKind Wagons() => s.Zone.MapMarks().Single(m => m.Label == "Coyle Wagons").Kind;
+        Assert.Equal(MarkKind.Turn, Wagons());
+        Rules.Apply(Json.Parse<Change>("""{ "quest": { "id": "caravan", "status": "active", "entry": "ledger_read" } }"""), s.J.Ctx);
+        Assert.Equal(MarkKind.Quest, Wagons());
+        I(s, "wreck").Act();
+        Assert.Equal(MarkKind.Place, Wagons());
+    }
+
+    [Fact]
     public void Every_thing_that_can_be_done_can_be_done()
     {
         // Every interactable offered and not refused runs (its effects are

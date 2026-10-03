@@ -52,6 +52,7 @@ public static class Objectives
         public bool Knows(string k) => Rules.Test(new Cond { Knows = k }, c);
         public bool Has(string item) => Rules.Test(new Cond { HasItem = item }, c);
         public bool Entry(string e) => Rules.Test(new Cond { Quest = new QuestCond { Id = quest, Entry = e } }, c);
+        public bool Any(params string[] entries) => entries.Any(Entry);
         public Fact F(string key) => c.World.Fact(key);
     }
 
@@ -93,14 +94,24 @@ public static class Objectives
         }
         else if (survivors.Str == "rescued" && !Rules.Test(new Cond { NpcFlag = new NpcFlagCond { Npc = "harlan", Key = "once:jory", Eq = true } }, c))
             main.Add(new("Tell Harlan Coyle that Jory is alive"));
-        if (!cargo.Truthy && survivors.Truthy)
-        {
-            if (h.Has("coyle_strongbox")) main.Add(new("Take the Coyle strongbox back to Harlan, or keep it"));
-            else if (!h.F("caravan.box_taken").Truthy) main.Add(new("The Coyle strongbox is still in the Roost, with the rest of the cargo"));
-        }
+        // A box carried out of the Roost always says where it goes, even
+        // before anyone has asked for it or the cages are settled.
+        if (!cargo.Truthy && h.Has("coyle_strongbox")) main.Add(new("Take the Coyle strongbox to Harlan Coyle, at Coyle Trading in the Waystation, or keep it"));
+        else if (!cargo.Truthy && survivors.Truthy && !h.F("caravan.box_taken").Truthy) main.Add(new("The Coyle strongbox is still in the Roost, with the rest of the cargo"));
         var opt = new List<Step>();
         if (!Rules.Test(new Cond { Met = "harlan" }, c)) opt.Add(new("Harlan Coyle, outside Coyle Trading, is offering a reward", Optional: true));
-        if (h.Has("pell_ledger") && !h.Entry("pell_exposed") && !h.Entry("pell_joined")) opt.Add(new("Pell Varrow's ledger: show it to Harlan, or to Captain Holloway", Optional: true));
+        // The ledger proves something only to a survivor who knows both whose
+        // wagons went missing that night and that "R." wears red
+        // (WRITING_PASS.md, CTX_KERCHIEF and CTX_COYLE); until then the step
+        // is whatever would teach them the half they lack.
+        bool kerchief = h.Any("wreck", "ruts", "roost_found", "redcowl_met", "redcowl_wagons", "roost_raided") || h.Knows("hint.roost");
+        bool coyle = h.Any("harlan_plea", "guard_says", "clerk_turned", "wreck", "redcowl_wagons", "ledger_read");
+        if (h.Has("pell_ledger") && !h.Entry("pell_exposed") && !h.Entry("pell_joined"))
+        {
+            if (kerchief && coyle) opt.Add(new("Pell Varrow's ledger: show it to Harlan, or to Captain Holloway", Optional: true));
+            else if (!h.Entry("ledger_read")) opt.Add(new("Someone who knows the dates could read Pell's ledger: Captain Holloway, or Harlan Coyle", Optional: true));
+            else opt.Add(new("Find out who \"R.\" is. Kerchief arrows are red-fletched; Rav Cutwell, at the Flagon, knows the Kerchiefs", Optional: true));
+        }
         else if (h.Entry("clerk_turned") && !h.Entry("pell_ledger")) opt.Add(new("Someone paid the toll clerk. Pell Varrow's warehouse may say who", Optional: true));
         else if (h.Entry("wreck") && !h.Entry("clerk_turned")) opt.Add(new("Who sent the wagons off the road? Try the east-gate guard, or the tavern", Optional: true));
         if (h.Entry("manifest") && !h.Entry("blasting_ember")) opt.Add(new("Ask Harlan about the crates marked \"B.E.\" in the manifest", Optional: true));
