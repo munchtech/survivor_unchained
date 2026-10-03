@@ -243,6 +243,8 @@ public partial class Medallion : Control
             var f = Style.Display;
             int fs = (int)(size * (Text.Length > 2 ? 0.32f : 0.44f));
             var ts = f.GetStringSize(Text, HorizontalAlignment.Left, -1, fs);
+            // A long number shrinks to stay inside the ring.
+            while (ts.X > size * 0.7f && fs > 8) { fs--; ts = f.GetStringSize(Text, HorizontalAlignment.Left, -1, fs); }
             DrawString(f, c + new Vector2(-ts.X / 2 + 1, fs * 0.36f + 1), Text, HorizontalAlignment.Left, -1, fs, new Color(0, 0, 0, 0.8f));
             DrawString(f, c + new Vector2(-ts.X / 2, fs * 0.36f), Text, HorizontalAlignment.Left, -1, fs, Ink);
         }

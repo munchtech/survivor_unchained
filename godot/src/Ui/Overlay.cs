@@ -135,6 +135,15 @@ public abstract partial class Overlay : Control
 
     bool hidHud;
 
+    /// <summary>A screen that has the whole screen: the HUD steps away while it is open and comes back with the world.</summary>
+    protected void HideHud()
+    {
+        if (hidHud) return;
+        hidHud = true;
+        G.Hud.ShowPlay(false);
+        TreeExiting += () => { if (G.Mode == "play") G.Hud.ShowPlay(true); };
+    }
+
     /// <summary>
     /// A full-screen page (docs/UI_DESIGN.md, "The page"): the world dark
     /// behind, a header band across the top with the book's tabs at the left,
@@ -144,13 +153,7 @@ public abstract partial class Overlay : Control
     /// </summary>
     protected Control Page(string title, string? sub = null, Action? close = null, string? closeKey = null)
     {
-        // A page has the whole screen: the HUD steps away while it is open and comes back with the world.
-        if (!hidHud)
-        {
-            hidHud = true;
-            G.Hud.ShowPlay(false);
-            TreeExiting += () => { if (G.Mode == "play") G.Hud.ShowPlay(true); };
-        }
+        HideHud();
         AddChild(new Backdrop());
         var band = Style.Panel(UiArt.Frame("header", OrnateBox.Make(OrnateBox.Kind.Slab, 0)));
         band.Position = new Vector2(-4, -4);
