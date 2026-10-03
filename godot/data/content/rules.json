@@ -958,7 +958,7 @@
     "eq": "harlan"
    },
    "effect": [],
-   "report": "Two of Harlan's teamsters took an empty wagon out of the east gate at first light, with the Coyle purse. They came back after dark with the wagon full and covered, and wouldn't say from where. Harlan unloaded it himself."
+   "report": "Two of Harlan's teamsters took an empty wagon out of the east gate yesterday afternoon, with the Coyle purse, and came back after dark with it full and covered. They wouldn't say from where. Harlan unloaded it himself."
   },
   {
    "id": "holloway.corran",
@@ -968,7 +968,7 @@
     "eq": true
    },
    "effect": [],
-   "report": "Two of the Watch went down the Low Ford road at first light with a handcart and a spade, and came back at dusk with the cart covered. Holloway met them at the gate and walked beside it to the Watch's corner of the yard."
+   "report": "Two of the Watch went down the Low Ford road yesterday with a handcart and a spade, and came back at dusk with the cart covered. Holloway met them at the gate and walked beside it to the Watch's corner of the yard."
   },
   {
    "id": "chapter.ready",
@@ -999,6 +999,66 @@
     }
    },
    "report": "A note under your door, in violet ink: \"Come and have your fortune read. No charge, this once. — V.\""
+  },
+  {
+   "id": "crates.settle",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "chapter.done",
+      "eq": true
+     },
+     {
+      "not": {
+       "fact": "be.crates",
+       "exists": true
+      }
+     }
+    ]
+   },
+   "effect": {
+    "if": {
+     "history": "burned_roost"
+    },
+    "then": [
+     {
+      "set": {
+       "be.crates": "burned"
+      }
+     }
+    ],
+    "else": [
+     {
+      "if": {
+       "any": [
+        {
+         "fact": "redcowl",
+         "eq": "dead"
+        },
+        {
+         "fact": "roost.cleared",
+         "eq": true
+        }
+       ]
+      },
+      "then": [
+       {
+        "set": {
+         "be.crates": "watch"
+        }
+       }
+      ],
+      "else": [
+       {
+        "set": {
+         "be.crates": "dig"
+        }
+       }
+      ]
+     }
+    ]
+   }
   },
   {
    "id": "dig.deeper",

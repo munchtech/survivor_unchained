@@ -5441,6 +5441,11 @@
       },
       {
        "not": {
+        "time": "night"
+       }
+      },
+      {
+       "not": {
         "npcFlag": {
          "npc": "brannoc",
          "key": "asked_nell",
@@ -5630,16 +5635,16 @@
     "text": [
      {
       "when": {
+       "time": "night"
+      },
+      "text": "Forge is banked. Make it quick."
+     },
+     {
+      "when": {
        "fact": "nell.buried",
        "eq": true
       },
       "text": "(He works. He doesn't stop when you come in, and he doesn't send you away.) Steel or fur?"
-     },
-     {
-      "when": {
-       "time": "night"
-      },
-      "text": "Forge is banked. Make it quick."
      },
      {
       "when": {
@@ -10408,7 +10413,7 @@
    },
    "cb_nell": {
     "id": "cb_nell",
-    "text": "We buried Nell this morning, behind the shrine, next to old Ashe. Brannoc made the marker himself. Iron. Of course, iron. (He is quiet, which he never is.) She was very light. ...Sit down a minute. Not there. There.",
+    "text": "We buried Nell behind the shrine, next to old Ashe. Brannoc made the marker himself. Iron. Of course, iron. (He is quiet, which he never is.) She was very light. ...Sit down a minute. Not there. There.",
     "effects": [
      {
       "npcFlag": {

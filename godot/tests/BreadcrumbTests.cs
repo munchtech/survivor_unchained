@@ -365,6 +365,24 @@ public class BreadcrumbTests
         Assert.Contains("fast horse", string.Join(" ", Day(k)));
     }
 
+    [Fact]
+    public void When_the_chapter_closes_the_crates_go_wherever_nobody_stopped_them()
+    {
+        string Settled(Action<Setup> before)
+        {
+            var s = Q();
+            before(s);
+            s.World.Facts["chapter.done"] = true;
+            Day(s);
+            return s.World.Fact("be.crates").Str!;
+        }
+        Assert.Equal("dig", Settled(_ => { }));
+        Assert.Equal("dig", Settled(s => s.World.Facts["redcowl"] = "tricked"));
+        Assert.Equal("watch", Settled(s => s.World.Facts["roost.cleared"] = true));
+        Assert.Equal("burned", Settled(s => Rules.Apply(E("{ history: { id: 'burned_roost', text: 'set the Roost burning', tags: ['caravan'], spread: 2 } }"), s.C)));
+        Assert.Equal("redcowl", Settled(s => s.World.Facts["be.crates"] = "redcowl"));
+    }
+
     /* ------------------------------------------------- seeds for the later acts -- */
 
     [Fact]
