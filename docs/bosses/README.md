@@ -29,11 +29,13 @@ ceremony of the arrival and the kill) and does not repeat it.
    scaling, and a one-page checklist for any new boss.
 7. **`RESEARCH.md`**: the game-by-game teardown (Halls of Torment, Vampire
    Survivors, a dozen survivors-likes, Diablo, Path of Exile, Last Epoch and
-   other ARPGs, Risk of Rain 2, Hades, Gungeon, Isaac and others), with its
-   ten findings at the top.
-8. **`notes/`**: the eleven research strands in full (about 80,000 words,
-   every claim with its URL, each strand adversarially fact-checked at its
-   end).
+   other ARPGs, Elden Ring Nightreign, Risk of Rain 2, Hades, Gungeon, Isaac
+   and others, developer talks and Reddit), with its ten findings at the
+   top.
+8. **`notes/`**: the fifteen research strands in full (about 120,000
+   words, every claim with its URL, each strand adversarially fact-checked
+   at its end), including Elden Ring Nightreign, developer talks and Reddit
+   read through archives.
 9. **`probe/`**: the measuring program behind `AUDIT.md` §4. From the repo
    root, with the .NET 8 SDK:
 
@@ -145,8 +147,9 @@ In order of return for the work.
 - The code reading is direct, with file and line references; the probe's
   numbers come from a bot with no gear that drafts blindly, so absolute
   survival is noisy, but the boss's lifetime held for all four callings.
-- The research cites a source for every claim in `notes/`. Some wikis and
-  Reddit could not be fetched; those claims are marked "(secondary)". Each
+- The research cites a source for every claim in `notes/`. Some wikis
+  could not be fetched, and Reddit only through archives; claims seen only
+  in a search summary are marked "(secondary)". Each
   strand was fact-checked by a second agent; its corrections are at the
   end of each notes file and were applied here.
 - Every number in the designs is a starting point for the balance lab, not

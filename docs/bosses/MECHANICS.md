@@ -186,7 +186,7 @@ the game. A shrinking arena is also a soft enrage the player can see.
   vortices; Halls of Torment's Lord of Regret's mines.
 - *The arena as part of the boss*: the Ford-Warden's lamps; Nuclear
   Throne's generators (destroy all four and the Throne loses half its
-  health); Halls of Torment's hidden "Lord Hexes" [§1.3].
+  remaining health, on the first pass); Halls of Torment's hidden "Lord Hexes" [§1.3].
 - *Light and dark*: 20 Minutes Till Dawn's dark around a small light;
   Ravenswatch flipping every chapter boss to night at half health [§3.7].
 

@@ -99,7 +99,9 @@ ordinary build.
 dying in rings). Add: **the boss drops the run's best chest** (3 items at
 least, 5 at tier 3 and up, evolutions first), its Named roll and its people's
 signature item (`docs/items/ACQUISITION.md` §4), and a per-boss death that
-says who it was (below). The way out opens where it fell, as now.
+says who it was (below). The way out opens where it fell, as now. The
+victory card shows the fight's time and its Break: strong builds'
+"deletion" clips are a genre of their own on Reddit (`RESEARCH.md` §6).
 
 **0.12 What the oaths do to a boss.** Each oath changes the boss in the
 same direction it changes the horde, and says so on the name card:
@@ -165,6 +167,30 @@ Spirit Herd, the Barrow Lord's Grave Tether, Grimtunnel's Cinderfall, the
 Red Hand's Knifestorm, the Kiln Warden's Rimeshard, the Penitent's Moonbrand,
 the Barn Thing's Blightfield, the Centurion's Judgement Disc), so the night's
 fight leaves the day something to learn.
+
+**0.17 Named at the start, with its weakness.** Elden Ring Nightreign names
+each run's boss and its weakness before the run, and makes the weakness a
+scripted interrupt rather than a multiplier (a little lightning breaks
+Maris's sleep channel), so the whole run becomes preparation
+(`RESEARCH.md` §4.5). The arena's opening card says who rules it ("Held by
+the Pack. At the half hour: the Pack-Mother") and its weakness, the
+bestiary keeps it, and one card in the fifteenth minute's great blessing
+draft always answers it. Each boss has one channel or move that a single
+hit of its school breaks at once:
+
+| Boss | Weakness | What one hit of it does |
+|---|---|---|
+| The Pack-Mother | Fire | Breaks the moon-howl |
+| The Barrow Lord | Holy | Breaks "Rise": the dead stay down |
+| Grimtunnel | Frost | Surfaces him from an Under, dazed |
+| The Red Hand | Storm | The thief drops the stolen weapon |
+| The Kiln Warden | Fire | Breaks the call of the drowned |
+| The Silver Penitent | Holy | Stops his pull on the ember for 5 s |
+| The Thing in the Barn | Fire | A surfaced segment recoils and stays up |
+| The Centurion | Storm | Stops the drum: no line forms |
+
+The interrupt is an auto-firing game's version of the counter: the build
+the player drafted toward the boss answers it without the player aiming.
 
 ## 1. The Pack-Mother, Alpha of the Deep Wood
 

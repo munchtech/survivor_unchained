@@ -3,7 +3,7 @@
 How other games build their bosses, and why players love or hate them, for
 Survivor Unchained's night arenas (most of it) and its day story (less).
 Each section is a teardown with the sources that matter; the full research
-notes behind it (about 80,000 words, every claim with its URL, each strand
+notes behind it (about 120,000 words, every claim with its URL, each strand
 fact-checked) are in `notes/`. "(secondary)" marks a claim seen only in a
 search summary. Where a number could not be found, it says so.
 
@@ -530,6 +530,58 @@ night's end, is in `notes/F1_nightreign.md` and §4.5.
 | Long untargetable spells | "an Action-RPG without the action" | Uber Lilith; old Diablo IV immunity |
 | Clones identical to the boss | tiny from above; which is real? | Baal's Vile Effigy |
 
+### 4.5 Elden Ring Nightreign (FromSoftware, 2025)
+
+The closest commercial analogue to our structure: a run that names its
+final boss before it starts, two 15-minute days each closed by a shrinking
+ring that herds the party into a night boss's arena, and a third day that
+is the Nightlord fight. Full notes: `notes/F1_nightreign.md`.
+
+- **The circle is the clock and the arena builder.** The Night's Tide
+  appears at 4:30, shrinks for three minutes, holds, then shrinks again at
+  11:00 to the boss's ground; in the rain the player takes escalating
+  damage that becomes lethal after about two minutes (the wikis disagree
+  on 100 s or 120 s) ([wiki.gg](https://eldenring.wiki.gg/wiki/Nightreign:Night%27s_Tide)).
+- **The boss is known, so the run is preparation.** Each Nightlord's
+  weakness is shown before the expedition. Before each night boss, "a short
+  gauntlet of enemies spawns ... thematically related to the boss and
+  therefore indicate its identity to allow for some preparation".
+- **Weaknesses are scripted interrupts, not just multipliers**: a little
+  lightning breaks Maris's arena-wide sleep channel; poison staggers Adel
+  (in his first phase only); fire breaks Caligo's armour. Raids during the
+  day preview the Nightlord's mechanics.
+- **Everdark remixes** skip the teaching phase, start at the escalated one,
+  and add one phase that changes the rules (a tornado safe zone for Adel, a
+  possessing third entity for Gnoster, a weapon handed to the player for
+  Maris), with +25–50% health. Players loved them; Everdark Libra's
+  re-healed adds, clones and hexes made it the most hated.
+- **The launch controversy**: boss health scaled with the number of players
+  while survivability did not; solo players were punished and duos were
+  "overlooked"; FromSoftware added an auto-revive per boss on day two, then
+  solo buffs, then a duo mode two months later. Reception rose from Mixed
+  to Very Positive as Everdarks and new Nightlords arrived. Losing a 40-
+  minute run in seconds at the boss is the recurring complaint; rewards are
+  paid win or lose, scaled to how far the run got.
+
+### 4.6 ARPG horde arenas with bosses
+
+The ARPG modes nearest an ember arena (`notes/F3_horde_arenas_and_missing_bosses.md`):
+
+- **Path of Exile's Simulacrum**: waves started by the player, rising
+  Delirium, bosses possible from one wave and guaranteed by a later one.
+  GGG's data on 813,604 runs: waves 1–9 completed 99.9% of the time, wave 15
+  96.35%, wave 20 76.25%, the sharpest drops at the boss guarantees: "the
+  boss arrival *is* the difficulty curve" ([forum](https://www.pathofexile.com/forum/view-thread/2828348)).
+- **Ultimatum's Trialmaster** carries every modifier the player accepted
+  into his arena: the boss inherits the run's bargains. **Diablo IV's
+  Infernal Hordes** end at the Fell Council (three of five, chosen at
+  random), or, for 666 of the run's Burning Aether, at Bartuc instead: the
+  boss as a purchase. Players there "go for Hellborne every time", the
+  lesson against a dominant bargain.
+- **Softening all-or-nothing loss**: Path of Exile 2 loosened its trials
+  (retries, leave at any time); Blight keeps the chests of lanes already
+  cleared; Gungeon's Resourceful Rat leaves his drops if you lose.
+
 ## 5. Roguelites that teach readable bosses
 
 ### 5.1 Risk of Rain 2 (Hopoo)
@@ -608,8 +660,8 @@ survival puzzle between safe circles
 Big Bandit opens a secret area if killed in under 10 s (speed rewarded,
 not punished); his charge triggers on spacing rules (too close, or hiding).
 Lil' Hunter's landing is shown by a shadow, and his health-gated summons
-punish burst without a cap. Destroying the Throne's four generators halves
-its health (`notes/D` §2).
+punish burst without a cap. Destroying the Throne's four generators takes
+half its remaining health (on the first pass only) (`notes/D` §2).
 
 ### 5.5 The Binding of Isaac (McMillen)
 
@@ -633,11 +685,38 @@ Silksong's bosses move into position before acting. Slay the Spire's Heart
 takes at most 300 a turn. The Game Accessibility Guidelines: never colour
 alone, never sound alone (`notes/D` §4–8).
 
+### 5.7 What developers have said
+
+From `notes/F2_dev_talks.md` (many talks exist only as video; where no
+transcript could be read, the notes say so):
+
+- **Wyatt Cheng** (BlizzCon 2014) on Greater Rift guardians: "we don't want
+  randomness to dictate your success or failure"; a random boss should
+  change how you play, not whether you win.
+- **Grinding Gear Games** (Path of Exile 2, May 2025): two Ritual types and
+  the Volatile Plants modifier were "responsible for over half of all player
+  deaths in the endgame"; logging the cause of every death is how they
+  found it. For the Arbiter of Divinity (July 2026) they made its voice
+  lines "guaranteed for his notable skills" and widened the gaps inside
+  combos.
+- **Mega Crit** (Slay the Spire 2) removed a boss, the Doormaker, for being
+  "a bit more complex than what we want"; its composer: at the boss "that
+  threat level needs to feel amped up", by restating the act's motifs.
+- **Studio MDHR** designs a Cuphead boss's patterns before its look (Game
+  Informer, 2022).
+- **Jan Willem Nijman** (Vlambeer): screenshake that "degenerates quickly",
+  a freeze of "about 10-20 milliseconds whenever you hit something". With
+  hundreds of creatures on screen, the heavy versions belong to boss hits,
+  phase breaks and the kill (`docs/feel` makes the same point).
+- **Supergiant** patched telegraphs to be clearer as attacks got harder
+  under Extreme Measures, and tracks losing streaks so bosses can comment
+  on them.
+
 ## 6. Player sentiment across the genre, and the also-rans
 
 From `notes/X_sentiment_and_others.md` §14, which ranks complaints and
 praise by how often they recur across games and sources (Steam threads and
-reviews; Reddit could be read only through search summaries).
+reviews; Reddit through archives, §6 below).
 
 **Complaints, most common first**: (1) the HP sponge ("Bosses are real HP
 sponge", I Am Legion; "boss fights feel like chores", Nordic Ashes); (2)
@@ -665,6 +744,17 @@ when the boss comes (Boneraiser Minions' extra waves).
 Picayune Dreams shipped the most transferable small fix: "all bosses ...
 automatically reduce your weapon visibility".
 
+**Reddit** (read through archives; `notes/F4_reddit_sentiment.md`, with
+thread scores): Vampire Survivors' Reaper still produces "did I win?"
+threads, and players call the level-scaled fight "a waste of time... just
+quit"; survivors players now expect an effect-opacity slider; Halls of
+Torment players called an easier, longer second phase "a chore" and
+defended dread over "epic" music; celebrated "deletion" clips of strong
+builds are a genre of their own (show the time to kill on the victory
+card); Deep Rock Galactic: Survivor's 30-second escape after the boss is a
+top complaint, because "actually killing the boss" should be the optimal
+play. Reddit and Steam agree with each other on every ranking above.
+
 ## Sources
 
 Every claim above has its source in the notes, with inline URLs:
@@ -682,6 +772,10 @@ Every claim above has its source in the notes, with inline URLs:
 | `notes/E1_diablo.md` | Diablo II, III and IV |
 | `notes/E2_poe_le.md` | Path of Exile 1 and 2, Last Epoch |
 | `notes/E3_other_arpgs.md` | Grim Dawn, Lost Ark, Titan Quest, Torchlight, Souls lessons |
+| `notes/F1_nightreign.md` | Elden Ring Nightreign |
+| `notes/F2_dev_talks.md` | Developer talks, interviews and patch-note statements |
+| `notes/F3_horde_arenas_and_missing_bosses.md` | Simulacrum, Ultimatum, Infernal Hordes; Gungeon's Rat, Isaac's Mother and others |
+| `notes/F4_reddit_sentiment.md` | Reddit, read through archives |
 
 Each notes file ends with a "Verification" section: a second agent re-opened
 the strand's most load-bearing claims and tried to refute them; corrections

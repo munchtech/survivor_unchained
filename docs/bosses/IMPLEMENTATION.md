@@ -51,6 +51,10 @@ An `ArenaBoss` class per boss, chosen by the boss def's id and installed by
   where a boss's status is refused today (`Battle.cs:794`), shown under the
   health bar (`BossBar` gains `Stagger`); full, a 3 s hold with
   `TakenMul` × 1.25 and `Interrupt`, then 15 s of resistance.
+- **Weakness** (§0.17): a hook from `Battle.HitEnemy` to the script when
+  a boss is hit by its weakness's school during a named channel; the
+  arena's opening card and the great blessing draft read the boss's
+  weakness (one guaranteed answering card at 15:00).
 - **Enrage**: timers from the bar going up (3:00 soft, 5:00 hard) that call
   the script's `Soft()` and `Hard()`.
 - **The boss contract** in `ArenaRun`: the run-up at 28:00 (a sign at a
