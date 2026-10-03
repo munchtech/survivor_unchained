@@ -346,9 +346,10 @@ closes).
 
 ### Act 3 and the endings (outlines, `act3_outline.md`)
 
-C40 The Stair · C41 Vonnra's Truth · C42 Chid's Truth · C43 The Bottom · C44 The
-Inner Door · C45 What It Prays For · C50 Re-forge the Chain (five variants) · C51
-Break the Chain · C52 Take the Light · C53 The Epilogue.
+C40 The Stair · C41 Vonnra's Truth · C42 Chid's Truth · C43 The Names (the bottom
+of the stair; the reveal: ember is the dead) · C44 The Inner Door · C50 Re-forge
+the Chain (five variants) · C51 Break the Chain · C52 Take the Light · C53 The
+Epilogue.
 
 ## 8. Storyboard frames
 
