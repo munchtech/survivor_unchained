@@ -12,7 +12,7 @@ Code: `godot/tests/Explorer/` (the engine) and `godot/tests/StoryExplorerTests.c
 
 ```
 cd godot/tests
-dotnet test                                    # the quick run goes with everything (about 7 s)
+dotnet test                                    # the quick run goes with everything (about 8 s)
 dotnet test --filter StoryExplorerTests        # only the explorer's tests
 STORY_EXPLORE=full STORY_EXPLORE_OUT=/tmp/explore.md \
   dotnet test --filter The_whole_story         # the whole of it (about half an hour); report to /tmp/explore.md
@@ -28,7 +28,7 @@ Three tests:
 
 - **A quick play of the story finds nothing new** (every `dotnet test`): two
   survivors (warden/hunter/male, arcanist/scholar/female), past the prologue
-  the way the game's `--zone` skips it, 220 states each, to day 4. It also
+  the way the game's `--zone` skips it, 150 states each, to day 4. It also
   checks that the bot is still really playing: it must start at least 10
   conversations, reach 60 dialogue nodes and write 15 journal lines.
 - **What the explorer reaches is what playing the steps reaches**: the
