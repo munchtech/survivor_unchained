@@ -923,7 +923,12 @@
    "rarity": 1,
    "icon": "vial",
    "value": 0,
-   "description": "A stoppered bottle of green water from the Thornhollow stream."
+   "description": "A stoppered bottle of green water from the Thornhollow stream.",
+   "needed": {
+    "not": {
+     "knows": "clue.analysis"
+    }
+   }
   },
   "slurry_sample": {
    "id": "slurry_sample",
@@ -932,7 +937,12 @@
    "rarity": 1,
    "icon": "vial_orange",
    "value": 0,
-   "description": "Warm, faintly glowing sludge scraped from a pipe."
+   "description": "Warm, faintly glowing sludge scraped from a pipe.",
+   "needed": {
+    "not": {
+     "knows": "root_cause"
+    }
+   }
   },
   "caravan_manifest": {
    "id": "caravan_manifest",
@@ -941,7 +951,12 @@
    "rarity": 1,
    "icon": "scroll",
    "value": 0,
-   "description": "A Coyle Company manifest: salt, cloth, iron... and six crates marked only \"B.E.\", for a buyer named G."
+   "description": "A Coyle Company manifest: salt, cloth, iron... and six crates marked only \"B.E.\", for a buyer named G.",
+   "needed": {
+    "not": {
+     "knows": "clue.blasting_ember"
+    }
+   }
   },
   "coyle_strongbox": {
    "id": "coyle_strongbox",
@@ -970,7 +985,13 @@
    "rarity": 1,
    "icon": "key",
    "value": 0,
-   "description": "A key to Pell Varrow's warehouse, which Jessop the toll clerk should not have had."
+   "description": "A key to Pell Varrow's warehouse, which Jessop the toll clerk should not have had.",
+   "needed": {
+    "not": {
+     "fact": "warehouse.searched",
+     "eq": true
+    }
+   }
   },
   "sigil_fragment": {
    "id": "sigil_fragment",
@@ -980,7 +1001,13 @@
    "icon": "sigil",
    "value": 0,
    "description": "Black stone, cut in a shape that fits the sealed door. It hums against your teeth.",
-   "lore": "Found in the hand of someone who did not make it out."
+   "lore": "Found in the hand of someone who did not make it out.",
+   "needed": {
+    "not": {
+     "fact": "vault.opened",
+     "eq": true
+    }
+   }
   },
   "map_fragment": {
    "id": "map_fragment",
