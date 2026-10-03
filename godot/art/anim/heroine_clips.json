@@ -314,9 +314,142 @@
 		"loop": true,
 		"source": "keyed (tools/anim)"
 	},
+	"sprint_arcanist": {
+		"cycle": 0.666666666666667,
+		"layer": "full",
+		"length": 0.666666686534882,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 7.395,
+		"steps": 2.0,
+		"weapon": "staff"
+	},
+	"sprint_arcanist_wand": {
+		"cycle": 0.666666666666667,
+		"layer": "full",
+		"length": 0.666666686534882,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 7.395,
+		"steps": 2.0,
+		"weapon": "wand"
+	},
+	"sprint_reaver": {
+		"cycle": 0.633333333333333,
+		"layer": "full",
+		"length": 0.633333325386047,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 7.395,
+		"steps": 2.0,
+		"weapon": "axe"
+	},
+	"sprint_reaver_axes": {
+		"cycle": 0.633333333333333,
+		"layer": "full",
+		"length": 0.633333325386047,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 7.395,
+		"steps": 2.0,
+		"weapon": "axes"
+	},
+	"sprint_stalker": {
+		"cycle": 0.666666666666667,
+		"layer": "full",
+		"length": 0.666666686534882,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 7.395,
+		"steps": 2.0,
+		"weapon": "crossbow"
+	},
+	"sprint_stalker_daggers": {
+		"cycle": 0.666666666666667,
+		"layer": "full",
+		"length": 0.666666686534882,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 7.395,
+		"steps": 2.0,
+		"weapon": "daggers"
+	},
+	"sprint_warden": {
+		"cycle": 0.7,
+		"layer": "full",
+		"length": 0.699999988079071,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim/gait.py)",
+		"speed": 7.395,
+		"steps": 2.0,
+		"weapon": "sword+shield"
+	},
 	"stalker_show": {
 		"layer": "full",
 		"length": 3.0,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"stop_arcanist_l": {
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"stop_arcanist_r": {
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"stop_reaver_l": {
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"stop_reaver_r": {
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"stop_stalker_l": {
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"stop_stalker_r": {
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"stop_warden_l": {
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"stop_warden_r": {
+		"layer": "full",
+		"length": 0.800000011920929,
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)"

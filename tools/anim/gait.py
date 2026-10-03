@@ -143,6 +143,9 @@ def pose_at(g: Gait, rig: Rig, ph):
         if side in g.arms:
             hand = g.arms[side](ph, k, hand)
         pose[f"hand_{side}"] = hand
+        # The shoulder goes with its arm: forward as the arm drives through,
+        # drawn back and a touch higher behind.
+        pose[f"clav_{side}"] = (g.shoulders[0] + 2.5 * (1 - k), g.shoulders[1] + 9 * (k - 0.5))
     return pose
 
 

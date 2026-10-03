@@ -5,8 +5,8 @@
   "100STYLE": "Ian Mason et al., 100STYLE (2022), https://zenodo.org/record/8127870, CC BY 4.0: retargeted to her skeleton, feet locked, looped, arms re-keyed.",
   "UAL": "Quaternius, Universal Animation Library 1 and 2, CC0: the fallback for clips not yet made."
  },
- "made": 43,
- "planned": 45,
+ "made": 58,
+ "planned": 58,
  "clips": [
   {
    "clip": "idle_warden",
@@ -201,40 +201,184 @@
    "layer": "full"
   },
   {
-   "clip": "sprint",
-   "plays_for": "sprint art, momentum",
-   "status": "fallback",
+   "clip": "sprint_warden",
+   "plays_for": "sprint art, momentum: warden",
+   "status": "made",
    "fallback": "Sprint",
-   "made_by": "keyed by stride",
-   "source": "",
-   "licence": "",
+   "made_by": "keyed by stride, in step with the run",
+   "source": "keyed (tools/anim/gait.py)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 0.7,
+   "layer": "full"
   },
   {
-   "clip": "run_stop_l",
-   "plays_for": "stopping, left foot down",
-   "status": "fallback",
+   "clip": "stop_warden_l",
+   "plays_for": "stopping, left foot down: warden",
+   "status": "made",
    "fallback": "-",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 0.8,
+   "layer": "full"
   },
   {
-   "clip": "run_stop_r",
-   "plays_for": "stopping, right foot down",
-   "status": "fallback",
+   "clip": "stop_warden_r",
+   "plays_for": "stopping, right foot down: warden",
+   "status": "made",
    "fallback": "-",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 0.8,
+   "layer": "full"
+  },
+  {
+   "clip": "sprint_arcanist",
+   "plays_for": "sprint art, momentum: arcanist",
+   "status": "made",
+   "fallback": "Sprint",
+   "made_by": "keyed by stride, in step with the run",
+   "source": "keyed (tools/anim/gait.py)",
+   "licence": "own work",
+   "changes": "",
+   "length": 0.667,
+   "layer": "full"
+  },
+  {
+   "clip": "sprint_arcanist_wand",
+   "plays_for": "sprint art, momentum: arcanist with wand",
+   "status": "made",
+   "fallback": "Sprint",
+   "made_by": "keyed by stride, in step with the run",
+   "source": "keyed (tools/anim/gait.py)",
+   "licence": "own work",
+   "changes": "",
+   "length": 0.667,
+   "layer": "full"
+  },
+  {
+   "clip": "stop_arcanist_l",
+   "plays_for": "stopping, left foot down: arcanist",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "keyed",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 0.8,
+   "layer": "full"
+  },
+  {
+   "clip": "stop_arcanist_r",
+   "plays_for": "stopping, right foot down: arcanist",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "keyed",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 0.8,
+   "layer": "full"
+  },
+  {
+   "clip": "sprint_reaver",
+   "plays_for": "sprint art, momentum: reaver",
+   "status": "made",
+   "fallback": "Sprint",
+   "made_by": "keyed by stride, in step with the run",
+   "source": "keyed (tools/anim/gait.py)",
+   "licence": "own work",
+   "changes": "",
+   "length": 0.633,
+   "layer": "full"
+  },
+  {
+   "clip": "sprint_reaver_axes",
+   "plays_for": "sprint art, momentum: reaver with axes",
+   "status": "made",
+   "fallback": "Sprint",
+   "made_by": "keyed by stride, in step with the run",
+   "source": "keyed (tools/anim/gait.py)",
+   "licence": "own work",
+   "changes": "",
+   "length": 0.633,
+   "layer": "full"
+  },
+  {
+   "clip": "stop_reaver_l",
+   "plays_for": "stopping, left foot down: reaver",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "keyed",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 0.8,
+   "layer": "full"
+  },
+  {
+   "clip": "stop_reaver_r",
+   "plays_for": "stopping, right foot down: reaver",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "keyed",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 0.8,
+   "layer": "full"
+  },
+  {
+   "clip": "sprint_stalker",
+   "plays_for": "sprint art, momentum: stalker",
+   "status": "made",
+   "fallback": "Sprint",
+   "made_by": "keyed by stride, in step with the run",
+   "source": "keyed (tools/anim/gait.py)",
+   "licence": "own work",
+   "changes": "",
+   "length": 0.667,
+   "layer": "full"
+  },
+  {
+   "clip": "sprint_stalker_daggers",
+   "plays_for": "sprint art, momentum: stalker with daggers",
+   "status": "made",
+   "fallback": "Sprint",
+   "made_by": "keyed by stride, in step with the run",
+   "source": "keyed (tools/anim/gait.py)",
+   "licence": "own work",
+   "changes": "",
+   "length": 0.667,
+   "layer": "full"
+  },
+  {
+   "clip": "stop_stalker_l",
+   "plays_for": "stopping, left foot down: stalker",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "keyed",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 0.8,
+   "layer": "full"
+  },
+  {
+   "clip": "stop_stalker_r",
+   "plays_for": "stopping, right foot down: stalker",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "keyed",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 0.8,
+   "layer": "full"
   },
   {
    "clip": "dash",
@@ -406,7 +550,7 @@
   },
   {
    "clip": "cast_bolt",
-   "plays_for": "wand or staff loosing a spell",
+   "plays_for": "the staff's spell loosed",
    "status": "made",
    "fallback": "Spell_Simple_Shoot",
    "made_by": "keyed",
@@ -414,6 +558,18 @@
    "licence": "own work",
    "changes": "",
    "length": 0.667,
+   "layer": "upper"
+  },
+  {
+   "clip": "cast_flick",
+   "plays_for": "the wand's spell loosed",
+   "status": "made",
+   "fallback": "Spell_Simple_Shoot",
+   "made_by": "keyed",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 0.6,
    "layer": "upper"
   },
   {
@@ -547,18 +703,6 @@
    "changes": "",
    "length": 3.0,
    "layer": "full"
-  },
-  {
-   "clip": "cast_flick",
-   "plays_for": "(not in the plan)",
-   "status": "made",
-   "fallback": "-",
-   "made_by": "",
-   "source": "keyed (tools/anim)",
-   "licence": "own work",
-   "changes": "",
-   "length": 0.6,
-   "layer": "upper"
   }
  ]
 }

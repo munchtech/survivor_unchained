@@ -44,7 +44,7 @@ public partial class PlayerView : Node3D
     // Hers: her own clips and carriage.
     readonly bool her;
     readonly HerCarriage? carriage;
-    readonly float runSpeed;
+    readonly float runSpeed, sprintSpeed;
     bool upperNative, fullNative, fullSoft;
     float heading, turnRate, aim, aimHold, lastSpeed, accel;
     // Standing and running, for her breaks and her breath.
@@ -69,14 +69,23 @@ public partial class PlayerView : Node3D
             var idle = People.Clip(person, lo.Arms.Idle);
             var run = People.Clip(person, "Jog_Fwd_Loop");
             runSpeed = run.StartsWith(HerClips.Prefix) ? HerClips.Speed(run[HerClips.Prefix.Length..]) * person.Root.Scale.X : 5.3f;
+            // Her sprint is her run pushed, in step with it (the same frames,
+            // the left foot down at the start of both), so the two blend by
+            // speed with the legs together; both keep running unseen.
+            var sprint = run.StartsWith(HerClips.Prefix + "run_") ? "sprint" + run[(HerClips.Prefix.Length + 3)..] : "";
+            sprintSpeed = HerClips.Has(sprint) ? HerClips.Speed(sprint) * person.Root.Scale.X : runSpeed;
             var mv = new AnimationNodeBlendTree();
             idleNode = new AnimationNodeAnimation { Animation = idle };
             runNode = new AnimationNodeAnimation { Animation = run };
             mv.AddNode("idle", idleNode, new Vector2(0, 0));
             mv.AddNode("run", runNode, new Vector2(0, 200));
-            mv.AddNode("runScale", new AnimationNodeTimeScale(), new Vector2(200, 200));
-            mv.AddNode("blend", new AnimationNodeBlend2(), new Vector2(400, 100));
-            mv.ConnectNode("runScale", 0, "run");
+            mv.AddNode("sprint", new AnimationNodeAnimation { Animation = HerClips.Has(sprint) ? HerClips.Prefix + sprint : run }, new Vector2(0, 400));
+            mv.AddNode("fast", new AnimationNodeBlend2 { Sync = true }, new Vector2(200, 300));
+            mv.AddNode("runScale", new AnimationNodeTimeScale(), new Vector2(400, 300));
+            mv.AddNode("blend", new AnimationNodeBlend2(), new Vector2(600, 100));
+            mv.ConnectNode("fast", 0, "run");
+            mv.ConnectNode("fast", 1, "sprint");
+            mv.ConnectNode("runScale", 0, "fast");
             mv.ConnectNode("blend", 0, "idle");
             mv.ConnectNode("blend", 1, "runScale");
             mv.ConnectNode("output", 0, "blend");
@@ -374,13 +383,22 @@ public partial class PlayerView : Node3D
         }
         if (sp > 3) { runT += dt; stillT = 0; ranFor = runT; return; }
         if (sp > 0.3) { stillT = 0; return; }
+        // Pulling up out of a run: onto whichever foot was coming down.
+        if (runT > 0.4 && !(bool)tree.Get("parameters/fullShot/active"))
+        {
+            var pos = tree.Get("parameters/move/run/current_position");
+            var len = tree.Get("parameters/move/run/current_length");
+            float phase = pos.VariantType != Variant.Type.Nil && len.VariantType != Variant.Type.Nil && (float)len > 0
+                ? (float)pos / (float)len : rng.Randf();
+            FullHer($"stop_{person.Calling}_{(phase >= 0.25f && phase < 0.75f ? "r" : "l")}", 1, true);
+        }
         runT = 0;
         stillT += dt;
         // (A breath is caught on stopping, or not at all.)
         if (stillT > 1.0) ranFor = 0;
-        bool calm = b.NearestHostile(p.X, p.Z, 14) == null && !Busy;
+        bool calm = b.NearestHostile(p.X, p.Z, 14) == null && (!Busy || fullSoft);
         if (!calm) { breakAt = Mathf.Max((float)breakAt, (float)stillT + 4); return; }
-        if (ranFor > 6 && stillT > 0.2)
+        if (ranFor > 6 && stillT > 0.75)
         {
             ranFor = 0;
             FullHer("catch_breath", 1, true);
@@ -402,7 +420,12 @@ public partial class PlayerView : Node3D
         // at the rate her ground speed asks.
         float w = Mathf.SmoothStep(0.25f, 2.2f, speed);
         tree.Set("parameters/move/blend/blend_amount", w);
-        tree.Set("parameters/move/runScale/scale", Mathf.Clamp(speed / runSpeed, 0.55f, 1.6f));
+        // Into the sprint as she goes past her run's own speed; the pair
+        // played at the rate the blend of their speeds asks.
+        float fast = sprintSpeed > runSpeed ? Mathf.SmoothStep(runSpeed * 1.1f, sprintSpeed * 0.95f, speed) : 0;
+        tree.Set("parameters/move/fast/blend_amount", fast);
+        float natural = Mathf.Lerp(runSpeed, sprintSpeed, fast);
+        tree.Set("parameters/move/runScale/scale", Mathf.Clamp(speed / natural, 0.55f, 1.5f));
         // Her corrective layer stands down for whichever half plays hers.
         bool fullOn = (bool)tree.Get("parameters/fullShot/active"), upperOn = (bool)tree.Get("parameters/upperShot/active");
         float lowerT = fullOn ? (fullNative ? 1 : 0) : 1;
