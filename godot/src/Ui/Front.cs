@@ -119,6 +119,7 @@ public partial class TitleScreen : Overlay
     {
         "People and their clothes, hair and movement: Quaternius (Universal Base Characters, Modular Character Outfits, Universal Animation Libraries 1 and 2; CC0).",
         "A woman survivor's body: a figure made for the game in ComfyUI, rigged from the Genshin Style Anime Female Base Mesh by donizaki (Sketchfab, CC BY 4.0).",
+        "The heroine's movement: keyed for the game; her ways of standing from the 100STYLE dataset by Ian Mason et al. (CC BY 4.0), retargeted and re-keyed.",
         "Weapons, from Sketchfab (CC BY 4.0): Chevalier Sword by rubenve; Viking Sword by Michael Makivic; medieval sword by LowSeb; Zweihander by Siesta; Medieval Mace by Kama Modeling; Viking battle axe by Mikhail Antonov; Snake Axe by Ashley Jay Thornton; Mage Staff by RMBehan; Medieval Crossbow by iedalton; Medieval Shield by Artem Mykhailov; Silver Bladed weapons by Peter Nox.",
         "Houses, walls and props: Quaternius (Medieval Village MegaKit, Fantasy Props MegaKit, Stylized Nature MegaKit; CC0).",
         "The ground: Poly Haven (photoscanned materials; CC0).",
