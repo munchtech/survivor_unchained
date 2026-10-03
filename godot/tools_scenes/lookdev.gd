@@ -84,6 +84,7 @@ func _init():
 					skel.add_child(mi)
 					mi.skeleton = NodePath("..")
 					for s in mi.mesh.get_surface_count():
+						if mi.mesh.surface_get_material(s).resource_name == "hair_tie": continue
 						# As People.Hair: shaders/heroine_hair.gdshader, dyed.
 						var m = ShaderMaterial.new()
 						m.shader = load("res://shaders/heroine_hair.gdshader")

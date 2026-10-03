@@ -1,8 +1,9 @@
 """Her head, made anew. The sculpt's (tools/assets/build_heroine.py) had her
 hair fused into it and its eyes painted on, so nothing about it could be
 changed. In its place a MakeHuman head (CC0, made by MPFB), bald, with eyes,
-brows, lashes, teeth and tongue of its own, fitted to her face; and her
-hairstyles as meshes apart, a file each, for the game to swap and dye.
+brows, lashes, teeth and tongue of its own, fitted to her face. Her
+hairstyles are made on it after (tools/assets/heroine_hair.py), a file each,
+for the game to swap and dye.
 
     blender -b tools/comfy/out/heroes/heroine_body.blend --python tools/assets/heroine_head.py -- \
         tools/comfy/out/heroes/heroine_built.blend godot/art/people
@@ -56,10 +57,7 @@ PARTS = [("eyes", "high-poly"), ("eyebrows", "eyebrow010"), ("eyelashes", "eyela
          ("tongue", "tongue01")]
 EYES = "green"
 SKIN = ("skins", "toigo_light_skin_female_ginger")
-# Her hairstyles: the game's name, MakeHuman's asset. The first is hers.
-# (Her long hair is cards, tools/assets/heroine_hair.py's; these MakeHuman's
-# until it makes them too.)
-HAIRS = {"ponytail": "ponytail01", "braid": "braid01", "bob": "bob02", "pixie": "short03"}
+# (Her hairstyles are tools/assets/heroine_hair.py's, made on this head.)
 
 # Her face: MakeHuman's woman shaped by its targets (each with its weight;
 # "X-" is both sides). Every slider moves her from here.
@@ -314,7 +312,7 @@ SK = {}
 for _t in sorted({t for ts in SHAPES.values() for t in ts}):
     SK[_t] = TargetService.load_target(hm, TARGET[_t], weight=0.0, name="sk_" + _t.replace(":", "_")).name
 proxies = {}
-for kind, name in PARTS + [("hair", h) for h in HAIRS.values()]:
+for kind, name in PARTS:
     proxies[name] = HumanService.add_mhclo_asset(os.path.join(DATA, kind, name, name + ".mhclo"), hm, asset_type=kind,
                                                  subdiv_levels=0, material_type="NONE", set_up_rigging=False,
                                                  interpolate_weights=False, import_subrig=False, import_weights=False)
@@ -1335,58 +1333,6 @@ print("SHAPES: %d on her head, of %d sliders' and expressions' (%s)" % (_made, l
     "%s %d" % (o.name, len(o.data.shape_keys.key_blocks) - 1) for o in parts)))
 
 
-# ------------------------------------------------------------- her hair --
-# Each style MakeHuman's, fitted to its head (so to hers), moved as the
-# graft was where it lies on her neck and shoulders, and held clear of her
-# skin. Its paint is made grey, light to dark, for the game to dye.
-_moved = cKDTree(RV0)
-_skin_now = BVHTree.FromPolygons([tuple(p) for p in np.vstack([BV, HEAD_V])],
-                                 BF + [[i + len(BV) for i in f] for f in HEAD_FACES])
-
-
-def hair_paint(src, dst):
-    from PIL import Image
-    im = np.asarray(Image.open(src).convert("RGBA"), np.float32) / 255
-    lum = im[..., :3] @ np.array([0.3, 0.59, 0.11])
-    solid = im[..., 3] > 0.5
-    lum = np.clip(lum / np.percentile(lum[solid], 90), 0, 1)
-    out = np.dstack([lum, lum, lum, im[..., 3]])
-    Image.fromarray((out * 255 + 0.5).astype(np.uint8)).save(dst)
-    return dst
-
-
-hairs = {}
-for style, name in HAIRS.items():
-    V, F, U = grab(proxies[name])
-    P = place(V)
-    d, j = _moved.query(P, k=8)
-    w = 1 / (d ** 2 + 1e-6)
-    P += (MOVE[j] * w[:, :, None]).sum(1) / w.sum(1)[:, None]
-    pushed = 0
-    for i in np.nonzero(s_split(P) < 0.03)[0]:
-        r = _skin_now.find_nearest(Vector(P[i]), 0.05)
-        if r[0] is not None:
-            off = (P[i] - np.array(r[0][:])) @ np.array(r[1][:])
-            if off < 0.004:
-                P[i] = np.array(r[0][:]) + np.array(r[1][:]) * 0.004
-                pushed += 1
-    folder = os.path.join(DATA, "hair", name)
-    mhmat = asset_mhmat("hair", name)
-    src = os.path.join(folder, next(ln.split()[1] for ln in open(mhmat, encoding="utf-8") if ln.startswith("diffuseTexture")))
-    tex = hair_paint(src, os.path.join(TEXDIR, f"hair_{style}.png"))
-    o = mesh_object(f"hair_{style}", P, F, U, [textured("hair", tex, True, 0.45)])
-    # Over her head, her head's; where it lies on her, as her skin there moves.
-    _, _, _, sw, _ = on_skin(P)
-    sw /= sw.sum(1, keepdims=True) + 1e-12
-    t = smooth01((s_split(P) + 0.06) / 0.08)[:, None]
-    W = sw * (1 - t)
-    W[:, BI["Head"]] += t[:, 0]
-    rig(o, W)
-    hairs[style] = o
-    print("HAIR", style, len(P), "points,", pushed, "held clear of her skin")
-check("hair", [her, head] + parts + [hairs[next(iter(HAIRS))]], views=(("front", 0, 0.0), ("q", 35, 0.05), ("back", 180, 0.1)),
-      tgt=(0, 0.03, 1.55), dist=1.0)
-
 # ---------------------------------------------------------------- written --
 for o in [hm] + list(proxies.values()) + [o for o in bpy.data.objects if o.name.startswith("CheckCam")]:
     bpy.data.objects.remove(o, do_unlink=True)
@@ -1407,7 +1353,4 @@ def export(objs, path, **kw):
 
 _game_parts = [o for o in parts if not (o.name == "HeroineBrows" and os.path.exists(FACE_PAINT))]
 export([her, head] + _game_parts, os.path.join(ART, "heroine.glb"), export_format="GLB")
-for style, o in hairs.items():
-    # Text and binary apart, the textures in head_tex beside them.
-    export([o], os.path.join(ART, f"heroine_hair_{style}.gltf"), export_format="GLTF_SEPARATE", export_texture_dir="head_tex")
 print("WRITTEN", OUT_BLEND, "and", ART)

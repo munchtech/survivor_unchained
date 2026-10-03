@@ -331,7 +331,7 @@ public static class People
             mi.Layers = 2;
             p.Meshes.Add(mi);
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
-                if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D src)
+                if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D src && src.ResourceName != "hair_tie")
                     mi.SetSurfaceOverrideMaterial(s, Hair(src, colour));
         }
         scene.Free();

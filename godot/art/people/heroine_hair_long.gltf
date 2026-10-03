@@ -3,7 +3,7 @@
   "generator": "Khronos glTF Blender I/O v4.5.51",
   "version": "2.0",
   "extras": {
-   "data": "ecf2d50c7e11e2d7cb46416aadedc7fc"
+   "data": "b54ba48f424de03c322152954234cc8c"
   }
  },
  "scene": 0,
@@ -1594,60 +1594,60 @@
   {
    "bufferView": 0,
    "componentType": 5126,
-   "count": 130584,
+   "count": 133152,
    "max": [
-    0.18212248384952545,
-    1.884254813194275,
-    0.1662966012954712
+    0.1827283352613449,
+    1.8844324350357056,
+    0.10342203080654144
    ],
    "min": [
-    -0.1921766847372055,
-    1.1206899881362915,
-    -0.14441485702991486
+    -0.17905224859714508,
+    1.118834376335144,
+    -0.14452803134918213
    ],
    "type": "VEC3"
   },
   {
    "bufferView": 1,
    "componentType": 5126,
-   "count": 130584,
+   "count": 133152,
    "type": "VEC3"
   },
   {
    "bufferView": 2,
    "componentType": 5126,
-   "count": 130584,
+   "count": 133152,
    "type": "VEC2"
   },
   {
    "bufferView": 3,
    "componentType": 5126,
-   "count": 130584,
+   "count": 133152,
    "type": "VEC4"
   },
   {
    "bufferView": 4,
    "componentType": 5123,
-   "count": 130584,
+   "count": 133152,
    "normalized": true,
    "type": "VEC4"
   },
   {
    "bufferView": 5,
    "componentType": 5121,
-   "count": 130584,
+   "count": 133152,
    "type": "VEC4"
   },
   {
    "bufferView": 6,
    "componentType": 5126,
-   "count": 130584,
+   "count": 133152,
    "type": "VEC4"
   },
   {
    "bufferView": 7,
    "componentType": 5125,
-   "count": 498996,
+   "count": 508944,
    "type": "SCALAR"
   },
   {
@@ -1719,104 +1719,104 @@
  "bufferViews": [
   {
    "buffer": 0,
-   "byteLength": 1567008,
+   "byteLength": 1597824,
    "byteOffset": 0,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 1567008,
-   "byteOffset": 1567008,
+   "byteLength": 1597824,
+   "byteOffset": 1597824,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 1044672,
-   "byteOffset": 3134016,
+   "byteLength": 1065216,
+   "byteOffset": 3195648,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 2089344,
-   "byteOffset": 4178688,
+   "byteLength": 2130432,
+   "byteOffset": 4260864,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 1044672,
-   "byteOffset": 6268032,
+   "byteLength": 1065216,
+   "byteOffset": 6391296,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 522336,
-   "byteOffset": 7312704,
+   "byteLength": 532608,
+   "byteOffset": 7456512,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 2089344,
-   "byteOffset": 7835040,
+   "byteLength": 2130432,
+   "byteOffset": 7989120,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 1995984,
-   "byteOffset": 9924384,
+   "byteLength": 2035776,
+   "byteOffset": 10119552,
    "target": 34963
   },
   {
    "buffer": 0,
    "byteLength": 20100,
-   "byteOffset": 11920368,
+   "byteOffset": 12155328,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 20100,
-   "byteOffset": 11940468,
+   "byteOffset": 12175428,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 13400,
-   "byteOffset": 11960568,
+   "byteOffset": 12195528,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 26800,
-   "byteOffset": 11973968,
+   "byteOffset": 12208928,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 13400,
-   "byteOffset": 12000768,
+   "byteOffset": 12235728,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 6700,
-   "byteOffset": 12014168,
+   "byteOffset": 12249128,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 26800,
-   "byteOffset": 12020868,
+   "byteOffset": 12255828,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 18012,
-   "byteOffset": 12047668,
+   "byteOffset": 12282628,
    "target": 34963
   },
   {
    "buffer": 0,
    "byteLength": 4416,
-   "byteOffset": 12065680
+   "byteOffset": 12300640
   }
  ],
  "samplers": [
@@ -1827,7 +1827,7 @@
  ],
  "buffers": [
   {
-   "byteLength": 12070096,
+   "byteLength": 12305056,
    "uri": "heroine_hair_long.bin"
   }
  ]

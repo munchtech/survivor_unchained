@@ -23,7 +23,7 @@ uniform float shift2 = -0.1;
 uniform float through = 0.5;
 // Her scalp under the hair (its cap): fine strands lying the way her hair is
 // combed, dark (under the hair), thinning out at her hairline (its vertex
-// alpha) to bare skin.
+// alpha) to bare skin. A braid's strands are drawn so too.
 uniform bool cap = false;
 
 varying vec3 strand;
@@ -46,7 +46,9 @@ void fragment() {
 	if (cap) {
 		// (at her hairline, where its strands are seen, as bright as hair; dark under the cards)
 		float fade = COLOR.a;
-		ALBEDO = tint * t.r * mix(0.85, 0.5, smoothstep(0.4, 1.0, fade));
+		// (a rope of hair, a braid's strand (its blue), as bright as hair, deep in it darker)
+		float rope = COLOR.b;
+		ALBEDO = tint * t.r * mix(0.85, 0.5, smoothstep(0.4, 1.0, fade) * (1.0 - rope)) * mix(1.0, mix(0.55, 1.0, depth), rope);
 		ALPHA = max(fade * fade, t.a * smoothstep(0.0, 0.7, fade));
 	} else {
 		float along = UV.y;                                       // 0 at the root, 1 at the tip
