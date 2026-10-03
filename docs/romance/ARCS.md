@@ -129,6 +129,12 @@ language the game already speaks. Only the items marked **System** need code.
   `{"not":{"fact":"night.spent","eq":true}}`. Each love scene already ends
   in the morning, so in practice this only matters for scenes that end
   early. Flagged, not required.
+- **System: asking about a condition (new, small, optional).** The
+  language can give a condition (`{"condition":{"id":"warmed",...}}`) but
+  can't ask whether the survivor has one. Rav's back room has a variant for
+  a wounded survivor (he stitches them) that needs a `Cond` such as
+  `{"condition":"wounded"}`. The data draft leaves that variant out; the
+  scene file keeps it.
 - **The Keegan companion route** (Act 2 beat 2, "she steps aside and comes
   north") is the bible's own Act 2 system. The romance only reads it
   (`keegan.route` = `north`).
@@ -851,13 +857,22 @@ the nodes or beats that read it.
 | `keegan.supper` | `true` | `keegan.supper` | Act 2 beat 2 (her question comes in private) |
 | `rav.back_room` | `true` | `rav.back_room` | Act 2 `back_room2` |
 | `rav.came_back` | `true` | `rav.came_back` | Act 2 route B |
-| `night.spent` | `true`, cleared at dawn | every love scene | every invitation (**System**, optional) |
+| `sella.cold_sold` | `true` | `sella.morning` / `rest_morning` (when `felt_cold` is set before `sella.free`) | Act 3: `vonnra.knew_early` (a line on the stair) |
+| npc flags `sella` `say:cold_bath`, `say:rest`, `say:keegan`, `say:rav` | | `stairs_rules`, `rest_dark`, `say_keegan`, `say_rav` | once-only lines |
+| `night.spent` | `true`, cleared at dawn | every love scene | every invitation (**System**, optional; not in the data drafts, because nothing clears it yet) |
 
 ### Act 2 and 3 (for the Act 2 writer)
 
 | Fact | Values | Writer | Readers |
 |---|---|---|---|
-| `sella.confronted` | `forgave`, `hired`, `ended` | `sella.fortune` | every Act 2 Sella scene |
+| `survivor.knows_risen` | `true` | Act 2 beat 11 (the turn: "what you are") | every lover's `what` scene |
+| `sella.confronted` | `forgave`, `hired`, `ended`, `silent` | `sella.fortune` | every Act 2 Sella scene |
+| `sella.lie` | `refuse`, `gone`, `lark` | `sella.lie_ask` | what Vonnra hears (Act 2 beat 9); Act 3 |
+| `kiln.known` | `true` | when the survivor learns the Kiln Ford is lit | `sella.cart` (the warning) |
+| `boots.known_by_survivor` | `true` | Act 2 beat 4, when the survivor learns who signed | `maeca.boots_tell`; `maeca.boots_hid` (a dawn passing) |
+| `keegan.route` | `north`, `behind` | `keegan.ch4_nine`, `ask_truth`, `ask_silence` | `keegan.north_camp`; the companion route |
+| `rav.hat` | `true` | `rav.hat` | the army at the gate |
+| `wayfinder.fate` | `left_together`, `left` | `wayfinder.leaving` | epilogue |
 | `sella.asked_what` | `told`, `lied` | `sella.what` | `silver` |
 | `sella.sold_sallow` | `true` | `sella.silver` (if not off the clock) | Holloway's letter ambush (beat 3) variant at the Last Lamp |
 | `sella.lied` | `true` | `sella.lie_*` | beats 8, 9 |
