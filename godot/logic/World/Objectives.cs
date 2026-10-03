@@ -38,6 +38,10 @@ public static class Objectives
             List<Step> steps = news ? [new Step("Tell Harlan Coyle that Jory is alive")] : id == "beasts" ? Beasts(c) : Caravan(c);
             if (steps.Count > 0) o.Add(new Tracked(id, Lore.Quests[id].Name, TrackTone.Main, steps.Take(3).ToList()));
         }
+        // Both troubles settled: Vonnra's note under the door is the chapter's last step.
+        if (c.World.Fact("chapter.ready").Truthy && !c.World.Fact("chapter.done").Truthy)
+            o.Insert(0, new Tracked("fortune", "A Note in Violet Ink", TrackTone.Main,
+                [new("Vonnra has sent for you, to read your fortune: the Toll Tower, by the east gate")]));
         // Just arrived, and nobody has told you anything yet.
         if (o.Count == 0 && c.World.Fact("prologue.done").Truthy && TrackedQuests.All(id => !c.World.Quests.ContainsKey(id)))
             o.Add(new Tracked("arrival", "The Waystation", TrackTone.Tutorial,

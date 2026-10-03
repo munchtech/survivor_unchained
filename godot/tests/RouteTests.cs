@@ -597,12 +597,14 @@ public class RouteTests
         var morning = p.Sleeps(3);
         Assert.Contains("violet ink", morning);
         Assert.NotNull(p.Marker("vonnra"));
+        Assert.Equal(["Vonnra has sent for you, to read your fortune: the Toll Tower, by the east gate"], p.Steps("fortune"));
         var (read, choices, r, last) = p.Fortune();
         Assert.Contains("water running clear", read);
         Assert.Contains("boy asleep in a wagon", read);
         Assert.DoesNotContain(choices, c => c.Contains("You lit the lamps"));
         var door = r.Choose(last.Choices.First(c => c.Text.Contains("door")).Index).Next!;
         Assert.Equal("fortune", r.Choose(door.Choices[0].Index).Action);
+        Assert.Empty(p.Steps("fortune"));
         var sum = Chapter.Summary(p.J.Ch, p.W);
         Assert.Equal(["Cured at the source", "Brought home"], sum.Threads.Select(t => t.Verdict));
         Assert.Equal("Wren, who cleared the water and opened the cages", sum.Epithet);

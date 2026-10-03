@@ -5421,11 +5421,31 @@
       "learn": "hint.stream"
      },
      {
-      "rel": {
-       "npc": "tam",
-       "trust": 20,
-       "affection": 10
-      }
+      "if": {
+       "not": {
+        "npcFlag": {
+         "npc": "tam",
+         "key": "believed",
+         "eq": true
+        }
+       }
+      },
+      "then": [
+       {
+        "rel": {
+         "npc": "tam",
+         "trust": 20,
+         "affection": 10
+        }
+       },
+       {
+        "npcFlag": {
+         "npc": "tam",
+         "key": "believed",
+         "value": true
+        }
+       }
+      ]
      }
     ],
     "choices": [
@@ -5439,7 +5459,8 @@
         }
        }
       ],
-      "goto": "again"
+      "goto": "again",
+      "once": "did_right"
      },
      {
       "text": "Where is your farm?",
@@ -11126,8 +11147,18 @@
        }
       ],
       "when": {
-       "fact": "chapter.ready",
-       "eq": true
+       "all": [
+        {
+         "fact": "chapter.ready",
+         "eq": true
+        },
+        {
+         "not": {
+          "fact": "chapter.done",
+          "eq": true
+         }
+        }
+       ]
       },
       "goto": "fortune"
      },
@@ -11297,8 +11328,18 @@
        }
       ],
       "when": {
-       "fact": "chapter.ready",
-       "eq": true
+       "all": [
+        {
+         "fact": "chapter.ready",
+         "eq": true
+        },
+        {
+         "not": {
+          "fact": "chapter.done",
+          "eq": true
+         }
+        }
+       ]
       },
       "goto": "fortune"
      },
@@ -11407,8 +11448,18 @@
        }
       ],
       "when": {
-       "fact": "chapter.ready",
-       "eq": true
+       "all": [
+        {
+         "fact": "chapter.ready",
+         "eq": true
+        },
+        {
+         "not": {
+          "fact": "chapter.done",
+          "eq": true
+         }
+        }
+       ]
       },
       "goto": "fortune"
      },
@@ -11570,8 +11621,18 @@
        }
       ],
       "when": {
-       "fact": "chapter.ready",
-       "eq": true
+       "all": [
+        {
+         "fact": "chapter.ready",
+         "eq": true
+        },
+        {
+         "not": {
+          "fact": "chapter.done",
+          "eq": true
+         }
+        }
+       ]
       },
       "goto": "fortune"
      },
@@ -11683,8 +11744,18 @@
        }
       ],
       "when": {
-       "fact": "chapter.ready",
-       "eq": true
+       "all": [
+        {
+         "fact": "chapter.ready",
+         "eq": true
+        },
+        {
+         "not": {
+          "fact": "chapter.done",
+          "eq": true
+         }
+        }
+       ]
       },
       "goto": "fortune"
      },
@@ -11796,8 +11867,18 @@
        }
       ],
       "when": {
-       "fact": "chapter.ready",
-       "eq": true
+       "all": [
+        {
+         "fact": "chapter.ready",
+         "eq": true
+        },
+        {
+         "not": {
+          "fact": "chapter.done",
+          "eq": true
+         }
+        }
+       ]
       },
       "goto": "fortune"
      },
@@ -11901,8 +11982,18 @@
        }
       ],
       "when": {
-       "fact": "chapter.ready",
-       "eq": true
+       "all": [
+        {
+         "fact": "chapter.ready",
+         "eq": true
+        },
+        {
+         "not": {
+          "fact": "chapter.done",
+          "eq": true
+         }
+        }
+       ]
       },
       "goto": "fortune"
      },
@@ -12440,6 +12531,21 @@
        ]
       },
       "text": "And six crates that went up with the Roost. You will have heard it from the wall. Everyone did."
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "be.crates",
+         "eq": "dig"
+        },
+        {
+         "fact": "caravan.cargo",
+         "eq": "with_kerchiefs"
+        }
+       ]
+      },
+      "text": "And six crates gone down the south road with the rest of the cargo, sold to whoever paid for them first. I think you know who that was."
      },
      {
       "when": {

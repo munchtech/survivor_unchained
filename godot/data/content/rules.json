@@ -734,6 +734,21 @@
       "entry": "cargo_moved",
       "outcome": "with_kerchiefs"
      }
+    },
+    {
+     "if": {
+      "not": {
+       "fact": "be.crates",
+       "exists": true
+      }
+     },
+     "then": [
+      {
+       "set": {
+        "be.crates": "dig"
+       }
+      }
+     ]
     }
    ],
    "report": "A pedlar off the south road was selling Coyle cloth at half its price. Harlan bought a bolt of his own goods back and did not say a word."

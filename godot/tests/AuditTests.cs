@@ -80,15 +80,19 @@ public class AuditTests
         Assert.Equal("?", p.Marker("vonnra"));
         var (_, choices, r, last) = p.Fortune();
         Assert.Contains(choices, c => c.Contains("You lit the lamps"));
+        // Said, and the conversation left before the door: the chapter is not closed yet.
         r.Choose(last.Choices.First(c => c.Text.Contains("You lit the lamps")).Index);
-        var door = r.Advance()!;
-        r.Choose(door.Choices[0].Index);
         var v = p.W.Npc("vonnra");
         (double trust, double respect) = (v.Trust, v.Respect);
+        Assert.False(p.F("chapter.done").Truthy);
         // Read again: the accusation was made; it is not offered, nor paid for, twice.
-        Assert.DoesNotContain(p.Fortune().Choices, c => c.Contains("You lit the lamps"));
+        var again = p.Fortune();
+        Assert.DoesNotContain(again.Choices, c => c.Contains("You lit the lamps"));
         Assert.Equal((trust, respect), (v.Trust, v.Respect));
-        // And with the chapter closed, she is no longer waiting on you.
+        var door = again.R.Choose(again.Last.Choices.First(c => c.Text.Contains("door")).Index).Next!;
+        Assert.Equal("fortune", again.R.Choose(door.Choices[0].Index).Action);
+        // The book closed: "Your chapter is written". She reads it no more, and is no longer waiting on you.
+        Assert.DoesNotContain(p.Offered("vonnra"), c => c.Contains("fortune"));
         Assert.Null(p.Marker("vonnra"));
     }
 
@@ -210,6 +214,19 @@ public class AuditTests
         Assert.Equal("?", h.Marker("holloway"));
     }
 
+    [Fact]
+    public void Tam_warms_to_being_believed_once_not_every_time_he_tells_it()
+    {
+        var p = Route.New("hunter");
+        p.Talk("tam", "listening", "did right");
+        var tam = p.W.Npc("tam");
+        (double t, double a) = (tam.Trust, tam.Affection);
+        p.Talk("tam", "tell me again");
+        p.Talk("tam", "tell me again");
+        Assert.Equal((t, a), (tam.Trust, tam.Affection));
+        Assert.DoesNotContain(p.Talk("tam", "tell me again").Last!.Choices, c => c.Text.Contains("You did right"));
+    }
+
     /* --------------------------------------------- the journal, kept honest -- */
 
     [Fact]
@@ -320,6 +337,25 @@ public class AuditTests
         s.Learn("clue.blasting_ember");
         s.Apply("""[{ "quest": { "id": "caravan", "entry": "roost_found" } }]""");
         Assert.DoesNotContain(s.Offered("harlan"), t => t.Contains("six crates"));
+    }
+
+    [Fact]
+    public void Cargo_sold_down_the_south_road_takes_the_crates_with_it()
+    {
+        // The teamsters freed, the box left in the Roost three days: the Kerchiefs sell the lot on.
+        var p = Route.New("hunter");
+        p.Learn("clue.blasting_ember");
+        p.Apply("""[{ "quest": { "id": "caravan", "entry": "roost_found" } }]""");
+        p.W.Facts["caravan.survivors"] = "rescued";
+        Assert.Contains(p.Offered("harlan"), t => t.Contains("six crates"));
+        Assert.Contains("Coyle cloth at half its price", p.Sleeps(3));
+        Assert.Equal("with_kerchiefs", p.S("caravan.cargo"));
+        Assert.Equal("dig", p.S("be.crates"));
+        Assert.DoesNotContain(p.Offered("harlan"), t => t.Contains("six crates"));
+        Assert.DoesNotContain(p.Offered("redcowl"), t => t.Contains("six crates"));
+        p.W.Facts["beasts.outcome"] = "cured";
+        p.W.Facts["chapter.ready"] = true;
+        Assert.Contains("gone down the south road", p.Fortune().Read);
     }
 
     [Fact]
