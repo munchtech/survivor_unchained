@@ -121,7 +121,11 @@ carry the story's meaning and should always read as themselves:
   to the survivor's face to see who she is (C02); Grimtunnel swings his
   head-lamp into it to smell her (C03); Vonnra lifts hers only if the survivor
   tells her she lit the lamps (C09), and it is the first time she has looked at
-  the survivor's face at all. Three in Act 1; do not add a fourth.
+  the survivor's face at all. Three in Act 1; do not add a fourth. What a keeper
+  looks for, holding a lamp to a face at night, is breath. In the lamp's light,
+  the survivor's does not show (C02 shot 8; C09 shot 14a, beside Vonnra's, which
+  does). Nobody ever says so: it is the reason for the gesture, and the player
+  who notices has the whole motif.
 - *A lamp that never touches the water,* until it does (C02, C03); *a lamp
   burning in daylight*: Vonnra's in the tower window, kept lit past dawn for
   one arrival (C04), and Rook's at Nell's grave (C08).
@@ -147,8 +151,8 @@ person's id, `ford_warden`, `grimtunnel`). A line's VO id is
 `<conversation>.<node>`; where a node has text variants (by calling, by
 facts), each variant's id adds `#<index>` in the order written
 (`cin_raid_on_the_roost.last#1`). A variant whose text is empty is no line:
-nothing plays and no subtitle shows (`cin_heart_goes_down.answer#1`, for
-everyone who is not devout). Lines a cinematic stages from an existing
+nothing plays and no subtitle shows. (Use one where a beat is spoken for some
+survivors and silent for the rest; none of the Act 1 scripts needs one now.) Lines a cinematic stages from an existing
 conversation (Greymuzzle, Brannoc, Vonnra's fortune) keep their own ids
 (`brannoc.nell_ditch`). A cinematic's chain ends on a node whose only choice is
 `(Continue.)`: the player of cinematics does not show it; it is there so the
@@ -212,17 +216,23 @@ in the order to build it.
 7. **Wetness** on hair, skin and cloth (darker, glossier, clumped hair), set by
    a value that dries over time (C01).
 8. **Breath-smoke** on people in the cold at night, absent on the survivor
-   while the ember burns (C01, C04, and every night after).
+   while the ember burns (C01, C04, and every night after); a breath that a
+   lamp's flame leans from (C09).
 9. **Ground decals**: wet footprints (C01), frost on grass, blood.
-10. **Sets**: a roof on the toll tower to stand on (C09); Brannoc's anvil and
-    the rack with two lamp-irons by the smithy (C07, and all of Act 1); the
-    Roost's people (women, the old, children, cooking fires) and an old red
-    standard with Ashford's arms (C06); Nell's iron marker by Ashe's grave in
-    the Quiet Garden (C08).
+10. **Sets**: a roof on the toll tower to stand on (C09), with a backdrop of
+    the valley whose lights follow the world's facts; Brannoc's anvil and the
+    rack with two lamp-irons by the smithy (C07, and all of Act 1); the Roost's
+    people (women, the old, children, cooking fires) and an old red standard
+    with Ashford's arms (C06); Nell's iron marker by Ashe's grave in the Quiet
+    Garden, and the empty hook over the Last Lamp's door (C08); a den's mouth at
+    the edge of the Pack's arena (C10). Props with writing: the ledger page,
+    twenty-seven lines in a small violet hand, twenty-six ruled through (C09);
+    the marker's plate, NELL punched with a nail (C08).
 11. **Music cues**: the mood system driven from a timeline (a mood, an
     intensity ramp, a swell, a hit, a cut to silence), and a handful of
-    composed motifs named in the scripts (the Warden's song, the lamp motif,
-    Chid's hymn).
+    composed motifs named in the scripts (the Warden's song, which is the
+    Order's evening call; the lamp motif; the burial hymn "Lie Down", sung by
+    Chid and a crowd, C08).
 
 **Should have**
 12. Ember VFX: the ember draining out of the survivor at dawn (down her body
@@ -253,16 +263,16 @@ in the order to build it.
 | C01 | The Drowned Fire | Prologue, the camp | The opening | 1 | 46 s | `c01_drowned_fire.md` |
 | C02 | None Cross After Dark | Prologue, the ford | Boss arrival (the Ford-Warden) | 1 | 44 s | `c02_none_cross.md` |
 | C03 | The Heart Goes Down | Prologue, the ford | Boss death; Grimtunnel | 1 | 45 s | `c03_heart_goes_down.md` |
-| C04 | First Light | The north bank; the Waystation | The ember goes out; chapter one opens | 1 | 40 s + 25 s | `c04_first_light.md` |
+| C04 | First Light | The north bank; the Waystation | The ember goes out; chapter one opens | 1 | 40 s + 26 s | `c04_first_light.md` |
 | C05 | The Kneeling | The Verge, Wolf Hollow | Choice, with endings | 2 | 55 to 75 s + choices | `c05_kneeling.md` |
 | C06 | Forty-One Mouths | The Verge, the Roost | A reveal; into Redcowl's talk | 2 | 33 s, then the talk | `c06_forty_one_mouths.md` |
 | C07 | The Hammer Stops | The Waystation, the smithy | Choice, with endings | 1 | 45 to 80 s + choices | `c07_hammer_stops.md` |
-| C08 | The Iron Marker | The Waystation, the Quiet Garden | Conditional payoff (Nell's burial) | 2 | 68 s | `c08_iron_marker.md` |
-| C09 | The Fortune | The toll tower's roof | Act 1 closes; choice | 1 | about 2 min | `c09_fortune.md` |
-| C10 | The Hollow by Night | Arena | Boss arrival and death (Greymuzzle) | 3 | 9 s + 14 s | `c10_hollow_by_night.md` |
-| C11 | Raid on the Roost | Arena | Boss arrival and death (Redcowl) | 3 | 10 s + 16 s | `c11_raid_on_the_roost.md` |
+| C08 | The Iron Marker | The Waystation, the Quiet Garden | Conditional payoff (Nell's burial) | 2 | 72 s | `c08_iron_marker.md` |
+| C09 | The Fortune | The toll tower's roof | Act 1 closes; choice | 1 | 1 min 55 s to 2 min 10 s | `c09_fortune.md` |
+| C10 | The Hollow by Night | Arena | Boss arrival and death (Greymuzzle) | 3 | 9 s + 16 s | `c10_hollow_by_night.md` |
+| C11 | Raid on the Roost | Arena | Boss arrival and death (Redcowl) | 3 | 10 s + 17 s | `c11_raid_on_the_roost.md` |
 | C12 | The Dig Boils Over | Arena | Boss arrival and retreat (Grimtunnel) | 3 | 9 s + 11 s | `c12_dig_boils_over.md` |
-| C13 | Behind the Sealed Door | The Verge's door; arena | The door; boss arrival and kneel (the Barrow Lord) | 3 | 12 s + 8 s + 16 s | `c13_behind_the_door.md` |
+| C13 | Behind the Sealed Door | The Verge's door; arena | The door; boss arrival and kneel (the Barrow Lord) | 3 | 12.5 s + 8 s + 16 s | `c13_behind_the_door.md` |
 
 ### Act 2 (outlines, `act2_outline.md`)
 
@@ -278,3 +288,20 @@ closes).
 C40 The Stair · C41 Vonnra's Truth · C42 Chid's Truth · C43 The Bottom · C44 The
 Inner Door · C45 What It Prays For · C50 Re-forge the Chain (five variants) · C51
 Break the Chain · C52 Take the Light · C53 The Epilogue.
+
+## 8. Storyboard frames
+
+Six frames in `boards/`, made on this machine with the local Krea 2 model, at
+2.39:1. They are references for mood, light and framing only. The survivor in
+them is a stand-in: in the game she is the player's face, hair and calling, so
+build to the script, not to her. Nor are their costumes, props or architecture
+canon (the script and the zone are).
+
+| Frame | Script, shot | What it is for |
+|---|---|---|
+| `c01_s08_no_breath.jpg` | C01, shot 8 | The waking close-up: frost, wet hair, night, and no breath in the cold. |
+| `c02_s07_lamp_to_face.jpg` | C02, shot 7 | The Warden bending to lift the lamp to her face; the drowned standing in the pool; the blue posts. |
+| `c03_s08_heart.jpg` | C03, shot 8 | The heart's cold light reaching toward her hand over the water. |
+| `c04_a5_first_breath.jpg` | C04, shot A5 | Dawn through the trees, and her first breath smoking. |
+| `c07_s04_hammer_raised.jpg` | C07, shot 4 | Brannoc at the anvil, the hammer coming up for a stroke that will not come; the two lamp-irons by the door; the forge's light against the daylit lane. |
+| `c09_s01_tower_roof.jpg` | C09, shot 1 | The roof, the lamp on the table, the town below and the dark valley. (Made before C09 was restaged: in the script Vonnra sits with her back to the town, facing the Verge.) |
