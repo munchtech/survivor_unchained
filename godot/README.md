@@ -205,7 +205,12 @@ game at the same place and hour; needs the dev server), then
   own shape key, and through her mask her skin toned, her hair coloured and
   her suit dyed the calling's cloth by `shaders/woman_skin.gdshader`;
   donizaki's anime base, `People.Her`, is the skeleton she is fitted from),
-  weapons in hand (`Arms.cs`), the survivor
+  the heroine's own movement (`HerClips.cs`: her library,
+  `art/anim/heroine.res`, made by `tools/anim`, chosen by her calling and
+  what she holds, the Universal Animation Libraries for anything not made;
+  `HerCarriage.cs`: banking into turns, tipping into starts and stops, her
+  back turned toward a blow while her legs run; `HerPose.cs` stands down
+  for her own clips), weapons in hand (`Arms.cs`), the survivor
   (`PlayerView.cs`: an AnimationTree, the swing on the upper body over the
   run), people in the world (`PersonView.cs`), the beasts (`Beasts.cs`:
   modelled, rigged and animated wolves, boars and lamplings from
@@ -264,6 +269,26 @@ photographed stone, wood and earth (`art/materials`, Poly Haven, CC0;
 `src/World/Made.cs`). `--icons kk:halloween/crypt` photographs one alone,
 `--icons kit:props/Torch_Metal` a kit piece. The KayKit packs themselves do
 not load in Godot (they are meshopt-compressed).
+
+## The heroine's animation
+
+`tools/anim` makes her clips on her own skeleton (`docs/ANIM_DESIGN.md`
+says what each is and why, `docs/ANIM_RESEARCH.md` where motion can come
+from and under what licence, `tools/anim/manifest.json` what is made):
+
+    python tools/anim/build.py [names]   # build (all, or those whose names contain these) and pack art/anim/heroine.res
+    python tools/anim/review.py her/run_warden side front --frames 10 --step 2 --speed 5.3 --weapon sword+shield
+                                         # contact sheets in tools/anim/out/sheets (views: front side left back three rthree top day arena)
+    python tools/anim/board.py out.png her/idle_warden@sword+shield@warden her/idle_reaver@axe@reaver
+                                         # several clips side by side, each with its weapon and outfit
+
+Runs are keyed by stride (`gait.py`), swings and the rest by key poses
+(`keyed.py`: hips, back, a grip on an arc about the shoulder, where the
+blade points, feet), idles from 100STYLE captures (`retarget.py`, CC BY
+4.0, kept in `C:\Users\munch\Tools\mocap`) with the arms re-keyed. The
+review sheets lay a swing over a run as the game does with `OVER=` and
+`OVERAT=`; `godot/tools_scenes/anim_skeleton.gd` writes the skeleton the
+tools build against (`tools/anim/data`).
 
 ## Desktop builds
 
