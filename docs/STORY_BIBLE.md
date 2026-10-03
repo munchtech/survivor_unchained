@@ -851,7 +851,7 @@ lamps to stay lit. That is all I ever wanted. I wanted it to be morning." If
 Brannoc made the heart's cage, he is on the stair, and has heard his daughter,
 and says nothing: he looks at the survivor's hands for a long time, the way he
 looks at iron to see what is in it, and picks up the cage. Nobody says "you
-burned her". The player says it. (`docs/cinematics/act3_outline.md`, C45.)
+burned her". The player says it. (`docs/cinematics/act3_outline.md`, C43.)
 
 **The endings.** Three, all defensible; each with variants.
 - **A. Re-forge the chain** (Vonnra's way). An Unchained lies down in the chain

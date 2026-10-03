@@ -106,13 +106,19 @@ polite. *Casting:* 40, precise London RP, a little nasal.
 about bodies ("drop your trousers or don't"); a half-drunk music in the
 rhythm; "pal". Funny about everything except his brother, whom he never
 names (once: "Dunstan", the day he hears Redcowl is dead). Never
-sentimental, never says no to a drink. *Casting:* 50s, Glaswegian, wry; the
+sentimental, never says no to a drink (once: "No. ...No, I'll keep this one.",
+the morning after his night with the survivor, `rav.sober`, Act 2). No
+oaths from anyone's scripture: when something is unbearable he reaches for
+his mother ("Oh, Mam."), as his brother does. *Casting:* 50s, Glaswegian, wry; the
 bedside calm under the cant.
 
 **Chid** ("the Fool"). Light, breathless, delighted; exclamations; sentences
 that run on and double back. Theology in plain words, and now and then a
 line that is far older than he looks, which he does not notice saying.
-Never cynical; never says how old he is. *Casting:* sounds 30s, Irish-
+Never cynical; never says how old he is (once, in Act 3, and only if asked who
+else knew what the lamps were for, the plainest thing he ever says: "I go when
+the lamps are lit. I couldn't have stopped it. I didn't try. I wanted to see one
+get up."). *Casting:* sounds 30s, Irish-
 tinged; the voice catches on joy.
 
 **Vonnra Ash-of-Morrow** (toll-keeper, far seer). No contractions. Very
@@ -120,7 +126,10 @@ still, long pauses, few questions. Talks of payment, of seeing, of what is
 "arranged". Never answers yes or no; never hurries; never says what she
 wants. Calls the survivor "traveller" until the fortune; if the survivor
 tells her there that she lit the lamps, she answers with their name, and
-uses it from then on. That is the only answer she gives. Her "seeing" is
+uses it from then on. That is the only answer she gives, until the bottom of
+the stair (Act 3, C43), where she breaks both halves of her rule once, if the
+survivor tells her what the Morrow is saying: "...No. I wanted the lamps to stay
+lit. That is all I ever wanted. I wanted it to be morning." Her "seeing" is
 what she has bought: say it as sight, and let the narrator notice where her
 eyes are. *Casting:* 60s, clipped and unplaceable (old empire), a low alto
 with a little air. The most important casting in the game.
@@ -196,7 +205,9 @@ the way, and one of them is a fool." A farmer who swears at whoever saves
 him. When he speaks (Act 2): short, profane, grateful only by accident.
 *Casting:* 40s, Somerset like Wenna, louder.
 
-**Nell, Wat, Corran.** The dead. They never speak; they are spoken of. Nell
+**Nell, Wat, Corran.** The dead. They never speak; they are spoken of. (The
+one place the dead are heard is the bottom of the stair, C43, where the Morrow's
+voices are only names, and Nell's is one word: "Da".) Nell
 is "Mine." to her father and "Brannoc's girl" to the town. Corran speaks
 only in his belt-book, three lines in a hand that worsens.
 
