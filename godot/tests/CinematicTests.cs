@@ -167,6 +167,21 @@ public class CinematicTests
     }
 
     [Fact]
+    public void The_voices_keep_their_rules_once_heard_aloud()
+    {
+        // VOICES.md: Jory has the cage in everything he says, and never says "cage".
+        foreach (var n in Convo("jory").Nodes.Values.Where(n => (n.Speaker ?? "jory") == "jory"))
+            foreach (var v in n.Text) Assert.DoesNotContain("cage", v.Text, StringComparison.OrdinalIgnoreCase);
+        Assert.All(Lore.Person("jory")!.Barks, b => Assert.DoesNotContain("cage", b, StringComparison.OrdinalIgnoreCase));
+        // Vonnra never answers yes or no.
+        Assert.DoesNotContain("It is.", Convo("vonnra").Nodes["cb_vault3"].Text[0].Text);
+        // The curfew is heard only after dark.
+        var curfew = Lore.FolkLines.Where(l => l.Text.Contains("curfew") || l.Text.Contains("shut till dawn")).ToList();
+        Assert.Equal(2, curfew.Count);
+        Assert.All(curfew, l => Assert.True(l.Night));
+    }
+
+    [Fact]
     public void Keegan_says_oil_keeps_it_sleeping_and_the_book_says_not_oil()
     {
         var s = Q("scholar");

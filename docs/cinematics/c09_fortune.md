@@ -267,13 +267,22 @@ the first line, which this pass added:
 conversation ("For the first time she looks at your face... the lamp gutters."):
 that is shots 13a to 14b, and it is not spoken.
 
-**The name.** `{name}` in a VO line is the survivor's name. Render the line two
-ways:
-- once with "traveller" in its place, for the subtitle-only fallback;
-- once as two recordings spliced round a gap, with the name read into it by TTS at
-  play time (or rendered per save).
+**The name.** `{name}` in a VO line is the survivor's name, and saying it is the
+only answer Vonnra gives (`VOICES.md`). Three lines carry it: `vonnra.f_accuse`
+("...Sit down, {name}. I have not finished reading."), `vonnra.f_door#0` ("That
+is all I see for free, {name}. The rest...") and `vonnra.hub#0` ("{name}. Your
+chapter is written."). Each is written so the name stands alone at a pause, and
+is recorded so:
+- **two takes, split at the name**, each ending or starting on the pause;
+- **the name as its own take**, in her voice: one for each name the creation
+  screen suggests, recorded with the cast; a name the player typed is read by
+  the TTS voice at play time, or rendered per save;
+- **the subtitle always carries the name.**
 
-A name in a voiced line is needed only here, and it is worth it.
+If there is no take for the name, the pause plays empty and the subtitle carries
+it. Never substitute "traveller": she has stopped calling her that, and the
+change is the point. (The voice-prep pass found the name lost in the plain
+takes; this is the decision.)
 
 *Casting:* Vonnra is in her 60s, clipped and unplaceable: a low alto with a little
 air. It is the most important casting in the game.

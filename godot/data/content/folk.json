@@ -600,7 +600,8 @@
   },
   {
    "text": "Gates are shut till dawn.",
-   "watch": true
+   "watch": true,
+   "night": true
   },
   {
    "text": "Walk on, traveller.",
@@ -608,7 +609,8 @@
   },
   {
    "text": "Piss off home. It's past curfew.",
-   "watch": true
+   "watch": true,
+   "night": true
   },
   {
    "text": "Keep that blade sheathed or I'll sheathe it for you.",

@@ -634,7 +634,8 @@ public sealed class Verge : ZoneRuntime
                 if (Knows("faith"))
                     G.After(4.5, () =>
                     {
-                        G.Say("The skull turns, very slightly, toward you. \"It was never locked from the outside.\"", "The bones", 6);
+                        G.Say("The skull turns, very slightly, toward you.", null, 3);
+                        G.After(3.2, () => G.Say("It was never locked from the outside.", "The bones", 4));
                         G.Apply("""[{ "quest": { "id": "vault", "entry": "whisper" } }]""");
                     });
             },
@@ -678,7 +679,7 @@ public sealed class Verge : ZoneRuntime
     [
         "A teamster, thin and grey, stumbles out and grips your arm. His nails are broken to the quick from the bars.",
         "A woman who will not stop saying thank you.",
-        "A young man: \"Jory. Jory Coyle. Is my uncle —? Is he —?\"",
+        "A young man, freckled, still holding the bars after the door is open.",
     ];
 
     /// <summary>A cage opened stays open: on the next visit, and in a save
@@ -717,6 +718,7 @@ public sealed class Verge : ZoneRuntime
         W.Zone("verge")[$"cage{i}"] = true;
         G.Look.Show(cageNodes[i], false);
         G.Say(CageLines[i], null, 4);
+        if (i == 2) G.After(2.5, () => G.Say("Jory. Jory Coyle. Is my uncle—? Is he—?", "Jory Coyle", 4));
         if (Enumerable.Range(0, cageNodes.Length).All(CageOpen))
             G.Apply($$"""
                 [

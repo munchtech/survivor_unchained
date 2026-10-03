@@ -13316,7 +13316,7 @@
        "fact": "caravan.pell",
        "eq": "fled"
       },
-      "text": "And an empty warehouse, and a man on a fast horse who will not stop until he is somewhere that has never heard of the Coyle Company. He will not forget you."
+      "text": "And an empty warehouse, and a man on a fast horse who will not stop until he is somewhere that has never heard of the Coyle Company. He took his books with him. You are in them."
      },
      {
       "text": "And Pell Varrow, counting. He is always counting. One day he will count you."
@@ -13493,7 +13493,7 @@
    },
    "cb_vault3": {
     "id": "cb_vault3",
-    "text": "It is. For now. Payment, always, traveller; even for silence. You will find I collect.",
+    "text": "Yours, for now. Payment, always, traveller; even for silence. You will find I collect.",
     "choices": [
      {
       "text": "Goodbye.",
@@ -19486,7 +19486,7 @@
   "nodes": {
    "first": {
     "id": "first",
-    "text": "You're the one who opened the cage. I— thank you. Uncle Harlan hasn't stopped crying. It wasn't wolves, you know. A toll clerk met us on the road, in Vonnra's violet, and said the Old Road was shut at the Waystation and sent us down the forest track. And they were waiting.",
+    "text": "You're the one with the bar. I— thank you. Uncle Harlan hasn't stopped crying. It wasn't wolves, you know. A toll clerk met us on the road, in Vonnra's violet, and said the Old Road was shut at the Waystation and sent us down the forest track. And they were waiting.",
     "effects": [
      {
       "quest": {

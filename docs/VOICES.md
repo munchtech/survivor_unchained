@@ -126,7 +126,9 @@ still, long pauses, few questions. Talks of payment, of seeing, of what is
 "arranged". Never answers yes or no; never hurries; never says what she
 wants. Calls the survivor "traveller" until the fortune; if the survivor
 tells her there that she lit the lamps, she answers with their name, and
-uses it from then on. That is the only answer she gives, until the bottom of
+uses it from then on. (Every such line puts the name alone at a pause, so it can be
+recorded as its own take and spliced; the subtitle always carries it. See
+`docs/cinematics/c09_fortune.md`, Lines.) That is the only answer she gives, until the bottom of
 the stair (Act 3, C43), where she breaks both halves of her rule once, if the
 survivor tells her what the Morrow is saying: "...No. I wanted the lamps to stay
 lit. That is all I ever wanted. I wanted it to be morning." Her "seeing" is

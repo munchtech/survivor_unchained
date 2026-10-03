@@ -124,7 +124,10 @@ public sealed class Prologue : ZoneRuntime
                 G.Apply("""[{ "learn": "lore.warden", "text": "The lamps at the ford burn ember, and the Warden drinks it." }, { "quest": { "id": "lamps", "status": "active", "entry": "book" } }]""");
                 // The devout hear the dead, a little.
                 if (G.Journey.Ch.Knowledge.Contains("faith"))
-                    G.After(10.2, () => G.Say("...and for you alone, the dead man's jaw moves: \"It shatters its own lamps when it charges. Make it charge.\"", "The dead Watchman", 7));
+                {
+                    G.After(10.2, () => G.Say("...and for you alone, the dead man's jaw moves.", null, 3));
+                    G.After(13.4, () => G.Say("It broke its own lamps, coming for me. Twice.", "The dead Watchman", 5));
+                }
             },
         });
         Interactables.Add(new()
