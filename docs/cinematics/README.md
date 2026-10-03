@@ -10,7 +10,10 @@ routes are `docs/WRITING_PASS.md`.
 
 ## 1. Index
 
-(Filled in below as the scripts land; see section 7.)
+The full table is section 7. In short: thirteen Act 1 scripts, ready to build
+(C01 to C13); the Act 2 and Act 3 cinematics and the endings outlined
+(`act2_outline.md`, `act3_outline.md`). Build in priority order: 1 (the opening
+and the act's turns), then 2 (the choices), then 3 (the optional night fights).
 
 ## 2. What a cinematic is for, here
 
@@ -80,7 +83,9 @@ horizontal), which the bars do not change:
   faces and for what is far and wrong. 50 is the default for two people.
 - The camera stays at eye height, or below it for anything that should feel
   bigger than the survivor. It goes above her only to hand back to play (the
-  game's own camera is high) and for the valley from the toll tower.
+  game's own camera is high), for the first establishing shot of a place (C04's
+  crane into the Waystation), for the valley from the toll tower, and for one
+  shot a scene that must show how small she is (C03's groan).
 - Moves are slow and motivated: pushes on a realisation, drifts with a walk,
   one crane a scene at most. Handheld is reserved for the night fights' boss
   arrivals (a light shake, 0.3 to 0.6 of the game's camera shake). No
@@ -109,11 +114,17 @@ carry the story's meaning and should always read as themselves:
   first breath smokes (C04). This needs a breath-smoke effect on people in
   the cold, and its absence on her, every night of the game.
 - *Prints.* Hers in the frost come up from the river and none go down
-  (C01). Jessop's at the sealed door go in and none come out (Act 1 find,
-  Act 3 payoff).
-- *Lamps held up to faces.* A watchman's habit: the Ford-Warden holds his
-  lamp up to the survivor's face before he speaks (C02); Vonnra lifts hers
-  the same way at the fortune (C09).
+  (C01); at dawn new ones come up out of the river and go on (C04). Jessop's at
+  the sealed door go in and none come out (Act 1 find; C13 glimpses him; Act 3
+  pays).
+- *Lamps held up to faces.* The keeper's habit: the Ford-Warden lifts his lamp
+  to the survivor's face to see who she is (C02); Grimtunnel swings his
+  head-lamp into it to smell her (C03); Vonnra lifts hers only if the survivor
+  tells her she lit the lamps (C09), and it is the first time she has looked at
+  the survivor's face at all. Three in Act 1; do not add a fourth.
+- *A lamp that never touches the water,* until it does (C02, C03); *a lamp
+  burning in daylight*: Vonnra's in the tower window, kept lit past dawn for
+  one arrival (C04), and Rook's at Nell's grave (C08).
 - *The hammer.* Brannoc's hammer is the town's clock. When it stops, the
   town hears it stop.
 
@@ -135,7 +146,9 @@ line, chained with `next`; the node's `speaker` says who (`narrator`, a
 person's id, `ford_warden`, `grimtunnel`). A line's VO id is
 `<conversation>.<node>`; where a node has text variants (by calling, by
 facts), each variant's id adds `#<index>` in the order written
-(`cin_fortune_ledger.close#1`). Lines a cinematic stages from an existing
+(`cin_raid_on_the_roost.last#1`). A variant whose text is empty is no line:
+nothing plays and no subtitle shows (`cin_heart_goes_down.answer#1`, for
+everyone who is not devout). Lines a cinematic stages from an existing
 conversation (Greymuzzle, Brannoc, Vonnra's fortune) keep their own ids
 (`brannoc.nell_ditch`). A cinematic's chain ends on a node whose only choice is
 `(Continue.)`: the player of cinematics does not show it; it is there so the
@@ -233,6 +246,35 @@ in the order to build it.
 
 ## 7. Index of scripts
 
-| Id | Title | Act | Kind | Priority | Length | File |
+### Act 1 (scripts)
+
+| Id | Title | Where | Kind | Priority | Length | File |
 |---|---|---|---|---|---|---|
-| (filled as written) | | | | | | |
+| C01 | The Drowned Fire | Prologue, the camp | The opening | 1 | 46 s | `c01_drowned_fire.md` |
+| C02 | None Cross After Dark | Prologue, the ford | Boss arrival (the Ford-Warden) | 1 | 44 s | `c02_none_cross.md` |
+| C03 | The Heart Goes Down | Prologue, the ford | Boss death; Grimtunnel | 1 | 45 s | `c03_heart_goes_down.md` |
+| C04 | First Light | The north bank; the Waystation | The ember goes out; chapter one opens | 1 | 40 s + 25 s | `c04_first_light.md` |
+| C05 | The Kneeling | The Verge, Wolf Hollow | Choice, with endings | 2 | 55 to 75 s + choices | `c05_kneeling.md` |
+| C06 | Forty-One Mouths | The Verge, the Roost | A reveal; into Redcowl's talk | 2 | 33 s, then the talk | `c06_forty_one_mouths.md` |
+| C07 | The Hammer Stops | The Waystation, the smithy | Choice, with endings | 1 | 45 to 80 s + choices | `c07_hammer_stops.md` |
+| C08 | The Iron Marker | The Waystation, the Quiet Garden | Conditional payoff (Nell's burial) | 2 | 68 s | `c08_iron_marker.md` |
+| C09 | The Fortune | The toll tower's roof | Act 1 closes; choice | 1 | about 2 min | `c09_fortune.md` |
+| C10 | The Hollow by Night | Arena | Boss arrival and death (Greymuzzle) | 3 | 9 s + 14 s | `c10_hollow_by_night.md` |
+| C11 | Raid on the Roost | Arena | Boss arrival and death (Redcowl) | 3 | 10 s + 16 s | `c11_raid_on_the_roost.md` |
+| C12 | The Dig Boils Over | Arena | Boss arrival and retreat (Grimtunnel) | 3 | 9 s + 11 s | `c12_dig_boils_over.md` |
+| C13 | Behind the Sealed Door | The Verge's door; arena | The door; boss arrival and kneel (the Barrow Lord) | 3 | 12 s + 8 s + 16 s | `c13_behind_the_door.md` |
+
+### Act 2 (outlines, `act2_outline.md`)
+
+C20 The Ground Opens (Act 2 opens) · C21 Chapter Four (Keegan) · C22 The Letter
+(Holloway) · C23 Barefoot (the boots) · C24 What He Carried (Harlan) · C25 The
+Numbers (Pell) · C26 The Bandits Are the Army · C27 The Hooded Buyer (Brannoc)
+· C28 The Kiln Ford (the second Unchained) · C29 Silverstair · C30 What You Are
+(the turn) · C31 The War at the Gate (the climax) · C32 Come Down With Me (Act 2
+closes).
+
+### Act 3 and the endings (outlines, `act3_outline.md`)
+
+C40 The Stair · C41 Vonnra's Truth · C42 Chid's Truth · C43 The Bottom · C44 The
+Inner Door · C45 What It Prays For · C50 Re-forge the Chain (five variants) · C51
+Break the Chain · C52 Take the Light · C53 The Epilogue.

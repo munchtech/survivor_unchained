@@ -22,7 +22,14 @@ the Seventh Legion buried what it could not burn"). The chain is seven links.
 Each link is anchored in a **heart**, a great stone cut with a sigil, and each
 heart was given a keeper: the **Wardens**, made by the Order of the Morning
 Light to stand at seven crossings and kill anything that came near. The
-Ford-Warden at the Low Ford was one. The valley still calls its hills "the
+Ford-Warden at the Low Ford was one: a man once, the Order's keeper of that
+crossing before the Watch was the Watch, raised and bound after his death to
+keep it forever, with a lamp he must never let touch the water. He sings the
+Order's evening call ("Lamps are lit. Stay where they reach."), which the
+Waystation still says at dusk without knowing whose it was; he orders the
+drowned to rise, and the living who come at night to lie down; and when he
+dies he asks, in a tired man's voice, whether it is morning. ("Morning" was the
+Order's word for its light: the thing under the ground.) The valley still calls its hills "the
 Morrow" without knowing why: Morrow pippins, Morrow cloth, Vonnra
 Ash-of-Morrow.
 
@@ -45,11 +52,14 @@ Morrow walking about, a link coming loose. The title means both things: the
 survivor is unchained from death, and through people like them the Morrow is
 coming unchained.
 
-**The survivor.** A traveller (who they were is their background) who tried
-the Low Ford at dusk, was drowned by the Warden, was carried back to the south
-bank, and woke by a dying fire not knowing they had died. That night the
-Morrow's light in them let them do what no living traveller had: kill the
-Warden. They do not know they are dead. The town half suspects ("You were
+**The survivor.** A traveller (who they were is their background) who made
+camp on the Low Ford road at dusk, went down to the water to fill a flask, and
+was drowned by the Warden; who rose with their mind, walked back up the road to
+their own fire without knowing they had (their prints in the frost come up from
+the river and none go down to it), and woke beside it soaked, not knowing they
+had died. The title screen's hooded stranger by that fire is the survivor at
+dusk, before the water; creation gives them a face. That night the Morrow's
+light in them let them do what no living traveller had: kill the Warden. They do not know they are dead. The town half suspects ("You were
 cold when they brought you in... Then you weren't"); the old orders would know
 at a glance; one person arranged it.
 

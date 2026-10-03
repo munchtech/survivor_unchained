@@ -22,7 +22,10 @@ Rules for everyone:
 - A "never" below is a rule with at most one written exception in the whole
   game, placed where breaking it is the scene: Rav names his brother once
   (`rav.cb_killed_redcowl`), Brannoc says thank you once
-  (`brannoc.nell_quick`). Do not spend those again.
+  (`brannoc.nell_quick`), Redcowl says "Ashford" once, dying, to the one who
+  said it to him (`cin_raid_on_the_roost.last`), and Holloway's one "sorry" is
+  kept for Act 2, said to his own counting as he hands the survivor over
+  (`docs/cinematics/act2_outline.md`, C22). Do not spend those again.
 - Families sound alike under stress: Harlan and Jory both say "Thank you. I
   think. I'll know when I've stopped feeling sick." Redcowl and Rav both
   reach for their mother when something is unbearable.
@@ -149,8 +152,30 @@ breath ("The pump does not pump itself. It does, actually."). Loyal to
 lamp ring on stressed words.
 
 **Grimtunnel** (Boss of the Dig). Oily, gleeful, possessive: "Nobody's!",
-"surface-meat". *Casting:* Snib's family, bigger, lower, a cackle, a cave
-reverb.
+"surface-meat", "downstairs" for the deep. Under the greed, faith: he is
+carrying a god its heart, and when anything touches that he goes toad-still
+and very nearly bows, then covers it with a grin. He believes the thing below
+will be grateful, and says so. *Casting:* Snib's family, bigger, lower, a
+cackle, a cave reverb that gets wetter as he goes down.
+
+**The Ford-Warden.** The Order's keeper of the Low Ford, older than the Watch.
+Speaks rarely, in capitals and orders: the dead are told to rise, the living to
+lie down, nobody to cross. Sings the Order's evening call under the water. His
+last line is in another voice: the tired man under him, asking if it is morning.
+*Casting:* a very low bass with no age and no accent that belongs to the valley
+now, a long cave reverb with water in it; the last line a plain man of sixty,
+dry, no reverb.
+
+**The Barrow Lord** (the Seventh Legion). Speaks only the old empire's tongue,
+one word at a time, like orders given a thousand times ("Nondum", "Redi").
+Translated in the subtitles only for a survivor who can read it. *Casting:* a
+dry, enormous whisper, close to the ear.
+
+**The Waystation's watchmen.** Tired men with colds; they say to each other what
+they always say and watch the survivor too long after.
+
+**The Kerchiefs.** Scots like their chief, rougher; few words to strangers, and
+those flat.
 
 **The babbling lampling.** Repetition, broken grammar, the same three
 facts in a different order. *Casting:* whispered, dry, close.
