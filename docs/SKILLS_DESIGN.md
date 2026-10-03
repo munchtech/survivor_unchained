@@ -586,7 +586,7 @@ swears (none or one at tier 1, two at tiers 2 and 3).
 | Measure | Target | Measured |
 |---|---|---|
 | Win at the survivor's tier (planning drafts: greedy, first) | tier 1 ≥ 95%, tiers 2–3 ≥ 85% | tier 1: 96%, 96%; tier 2: 96%, 94%; tier 3: 92%, 88% |
-| Win drafting at random | below planning drafts, so the draft matters | tier 1 98%, tier 2 85%, tier 3 90%; the boss takes half as long again or longer (49 / 77 / 81 s against 35 / 36 / 48 s) |
+| Win drafting at random | below planning drafts, so the draft matters | tier 1 98% (tier 1 forgives any draft: not met, and meant to be gentle), tier 2 85%, tier 3 90%; random drafts take half as long again or longer over the boss (49 / 77 / 81 s against 35 / 36 / 48 s) and evolve half as often |
 | A tier above the survivor's level (level 10: tier 3 is the band's top) | each tier above a real step; three above mostly lost | tier 3: 92% won; tier 4: 79% (16% fell before the boss); tier 5: 80% (18%); tier 6: 49% (41%) |
 | Every path at tier 2, its own bot | ≥ 80% | 82% (the Host) to 100% (the Hunt, the Long Winter, the Storm, the Weave) |
 | Boss fight, median | 30–90 s (R§9) | tier 1: 42 s, tier 2: 57 s, tier 3: 57 s; by path at tier 2: 20 s (the Hunt, the Weave) to 78 s (Dawn) |
