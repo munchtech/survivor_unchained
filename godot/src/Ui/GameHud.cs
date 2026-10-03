@@ -1110,7 +1110,9 @@ public partial class EmptySlot : Panel
     {
         CustomMinimumSize = new Vector2(67, 67);
         MouseFilter = MouseFilterEnum.Ignore;
-        AddThemeStyleboxOverride("panel", Style.Box(new Color(0.08f, 0.07f, 0.09f, 0.55f), Style.Line with { A = 0.12f }, 1, 7, 0));
+        // A place to come: the empty well (frames/slot.png) when painted, quieter than a held skill.
+        AddThemeStyleboxOverride("panel", UiArt.Frame("slot", Style.Box(new Color(0.08f, 0.07f, 0.09f, 0.55f), Style.Line with { A = 0.12f }, 1, 7, 0)));
+        if (UiArt.Has("slot")) SelfModulate = new Color(1, 1, 1, 0.7f);
     }
 }
 

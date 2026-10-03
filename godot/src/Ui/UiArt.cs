@@ -90,7 +90,7 @@ public static class UiArt
         // Casings over the bars (GameHud.Casing): iron round the groove, reaching past it.
         ["bar_casing"] = new("bars/casing.png", 16, 8, 16, 8, Tile: true, Out: 6),
         ["bar_casing_boss"] = new("bars/casing_boss.png", 64, 24, 64, 24, Tile: true, Out: 64, OutY: 24),
-        ["map_frame"] = new("frames/map_frame.png", 20, 20, 20, 20, Tile: true),
+        ["map_frame"] = new("frames/map_frame.png", 20, 20, 20, 20, Tile: true, Out: 8),
     };
 
     static readonly Dictionary<string, Texture2D?> cache = new();

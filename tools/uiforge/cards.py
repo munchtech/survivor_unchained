@@ -7,6 +7,8 @@ its overhang (UiArt Out = 24): 736 by 1000, drawn one to one.
 """
 from __future__ import annotations
 
+import os
+
 import numpy as np
 
 import cut as C
@@ -24,6 +26,28 @@ BASE = dict(
     crest=(250, 0, 490, 170),         # the broken link and the light it throws on the card
     holes=[(34, 24, 106, 96), (630, 24, 702, 96), (38, 886, 112, 962), (622, 886, 698, 962)],
 )
+
+
+RAW = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "tools", "comfy", "out", "uiforge")
+CORNER_L, CORNER_R = (56, 944), (680, 944)
+# Each card's painting (batch.py: the common over guides.card_guide, the rest over the common)
+# and the coins its painting set inside the foot, moved out to the corners.
+PICKS = {
+    "common": ("card_v3/card_v3_401_3.png", ()),
+    "uncommon": ("card_uncommon/card_uncommon_600_1.png", ()),
+    "rare": ("card2_rare/card2_rare_650_1.png", ()),
+    "epic": ("card_epic/card_epic_602_0.png", (((98, 852, 150, 902), (-1000, -1000)), ((606, 852, 658, 902), (-1000, -1000)))),
+    "legendary": ("card2_legendary/card2_legendary_651_0.png", (((76, 866, 154, 952), CORNER_L), ((598, 866, 677, 952), CORNER_R))),
+    "evolution": ("card2_evolution/card2_evolution_652_2.png", ()),
+}
+
+
+def build_all(out_dir):
+    import batch
+    for kind, (src, coins) in PICKS.items():
+        fit(os.path.join(RAW, *src.split("/")), os.path.join(out_dir, f"card_{kind}.png"), kind=kind,
+            hole_light=0.35 if kind != "common" else 0.55, coins=coins,
+            heal_prompt=(batch.RARITY.get(kind, "") + ". " + batch.S) if coins else None)
 
 
 # The light in the coins' holes, by what the card is (deep, hot).

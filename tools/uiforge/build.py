@@ -1,12 +1,27 @@
-"""Build the interface's art into godot/art/ui/ (docs/UI_ART_BRIEF.md).
+"""Build the interface's art into godot/art/ui/ (docs/UI_ART_BRIEF.md, section 2.6 for the
+look and how each family is made).
 
     python tools/uiforge/build.py [GROUP ...]     # all groups if none named
     python tools/uiforge/build.py --list
 
-Groups are the families of docs/UI_ART_BRIEF.md section 4 and 5. Forged and
-light pieces are made here from scratch; painted pieces are fitted from the
-picks recorded in picks.json (each a raw Krea result in tools/comfy/out/,
-remade exactly from its recorded prompt and seed if it is missing).
+Each group writes its files from scratch. Forged pieces are made here; Blender pieces
+render on the local Blender; painted pieces read their picks from the raw results in
+tools/comfy/out/uiforge/ (ignored by git) and remake any that are missing on the local
+ComfyUI with the prompt and seed recorded beside them.
+
+  chrome     Blender-modelled metal, painted over: plate, buttons, slots, socket, tooltips,
+             toast, prompt pill, tabs, row, segment, keycap, chip, bar groove and casing
+  paper      the ledger paper and the hint note
+  cards      the draft's cards, painted over forged guides
+  painted    the minimap rim, medallions, the art's ring, the boss's casing, logo, ornaments
+  light      the focus ring and the bars' fills
+  prompts    the pad's buttons, forged
+  mapmarks   the map's marks, in ink on parchment
+  glyphs     the interface's own marks as value art
+  icons      the skills', arts', blessings' and evolutions' painted icons
+  items      the items' painted icons
+  cursors    the pointer, the hand, the refusal
+  arrow      the survivor's arrow on the minimap
 """
 from __future__ import annotations
 
@@ -26,14 +41,26 @@ def out(rel):
     return os.path.join(UI, rel)
 
 
-def g_prompts():
-    import padprompts
-    padprompts.build(out("icons/prompt"))
+def g_chrome():
+    import chrome
+    for name, fn in chrome.GROUPS.items():
+        fn()
 
 
-def g_mapmarks():
-    import mapmarks
-    mapmarks.build(out("icons/map"))
+def g_paper():
+    import paper
+    paper.build(UI)
+
+
+def g_cards():
+    import cards
+    cards.build_all(out("frames"))
+
+
+def g_painted():
+    import fitall
+    for n in ("mapframe", "minimap", "medals", "bosscasing", "logo", "rule", "flourish"):
+        fitall.GROUPS[n]()
 
 
 def g_light():
@@ -44,14 +71,40 @@ def g_light():
     F.save(L.health_fill(), out("bars/health_fill.png"))
 
 
-def g_buttons():
-    import buttons as B
-    for primary in (False, True):
-        for state in ("normal", "hover", "pressed", "disabled"):
-            if primary and state == "disabled":
-                continue
-            name = ("button_primary" if primary else "button") + ("" if state == "normal" else "_" + state)
-            F.save(B.button(state, primary), out(f"frames/{name}.png"))
+def g_prompts():
+    import padprompts
+    padprompts.build(out("icons/prompt"))
+
+
+def g_mapmarks():
+    import mapmarks
+    mapmarks.build(out("icons/map"))
+
+
+def g_glyphs():
+    import valueglyphs
+    valueglyphs.build(out("icons/glyph"))
+
+
+def g_icons():
+    import iconpicks
+    iconpicks.main()
+
+
+def g_items():
+    import items
+    for k in items.ITEMS:
+        items.fit(k)
+
+
+def g_cursors():
+    import cursors
+    cursors.build(out("cursors"))
+
+
+def g_arrow():
+    import smallforge
+    F.save(smallforge.you_arrow(), out("minimap/you.png"))
 
 
 GROUPS = {name[2:]: fn for name, fn in globals().items() if name.startswith("g_")}

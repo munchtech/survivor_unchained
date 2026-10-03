@@ -1,4 +1,5 @@
-"""Every painted pick fitted into godot/art/ui/ (see picks below: each a raw
+"""Every painted pick fitted into godot/art/ui/ (the metal chrome is chrome.py; paper is
+paper.py, called from here) (see picks below: each a raw
 Krea result named by its batch, seed and place, remade by batch.py, icons.py
 or items.py if missing).
 
@@ -39,104 +40,21 @@ def ui(*p):
 # ------------------------------------------------------------------ frames --
 
 def f_paper():
-    smalls.fit(raw("small_paper", "small_paper_708_1.png"), ui("frames", "paper.png"), (1024, 1024), (32, 32, 32, 32), 28,
-               tone="#e4d6b6", tile=True, keep=0.55, darken=1.0, sigma=14)
-
-
-def f_hint():
-    smalls.fit(raw("small_hint", "small_hint_709_1.png"), ui("frames", "hint.png"), (512, 256), (40, 40, 40, 40), 30,
-               tone="#e6d6b0", tile=True, keep=0.55, sigma=10)
-
-
-def f_tooltip():
-    for name, src, worn in (("tooltip", "small_tooltip_706_0.png", False), ("tooltip_worn", "small_tooltip_706_0.png", True)):
-        img = smalls.fit(raw("small_tooltip", src), ui("frames", name + ".png"), (256, 256), (16, 16, 16, 16), 13,
-                         tone="#100e13", tile=True, keep=0.35, darken=0.75)
-        if worn:
-            # The worn thing's card: the same, quieter: its gold become pewter.
-            rgb, a = img[..., :3], img[..., 3]
-            grey = rgb.mean(axis=2, keepdims=True)
-            warm = np.clip((rgb[..., 0:1] - rgb[..., 2:3]) * 4, 0, 1)
-            rgb = rgb * (1 - warm) + (grey * np.array([0.92, 0.94, 1.0])) * warm * 0.85
-            P.save_rgba(rgb, a, ui("frames", name + ".png"))
-
-
-def f_toast():
-    smalls.fit(raw("small_toast", "small_toast_703_1.png"), ui("frames", "toast.png"), (256, 96), (14, 10, 10, 10), 9,
-               tone="#121016", tile=True, keep=0.35, darken=0.8)
-
-
-def f_prompt():
-    smalls.fit(raw("small_prompt", "small_prompt_704_1.png"), ui("frames", "prompt.png"), (256, 80), (22, 12, 22, 12), 8,
-               tone="#141117", tile=True, keep=0.3, darken=0.8)
-
-
-def f_chip():
-    smalls.fit(raw("small_chip", "small_chip_702_0.png"), ui("frames", "chip.png"), (64, 64), (8, 8, 8, 8), 6,
-               tone="#0f0d12", tile=False, keep=0.3, darken=0.75)
-
-
-def f_wslot():
-    smalls.fit(raw("small_wslot", "small_wslot_701_1.png"), ui("frames", "weapon_slot.png"), (134, 134), (12, 12, 12, 12), 10,
-               tone="#121016", tile=False, keep=0.35, darken=0.75)
+    """Paper and the hint note: made in paper.py (laid paper, foxing, a hand-torn deckle,
+    iron caps, a nail and wax), painted over, calmed, tiled."""
+    import paper
+    paper.build(UI)
 
 
 def f_mapframe():
-    smalls.fit(raw("map_frame", "map_frame_805_0.png"), ui("frames", "map_frame.png"), (256, 256), (20, 20, 20, 20), 26,
-               tone=None, tile=True, darken=0.9, crop=True)
-
-
-def f_buttons():
-    """Seven states from one painted plate, changed as metal changes."""
-    src = raw("small_button", "small_button_705_1.png")
-    W, H = 192, 64
-    base = smalls.fit(src, ui("frames", "button.png"), (W, H), (12, 10, 12, 10), 7, tone="#221e28", tile=True, keep=0.3, darken=0.85)
-    rgb0, a = base[..., :3].copy(), base[..., 3].copy()
-    yy, xx = np.mgrid[0:H, 0:W]
-    edge = np.minimum(np.minimum(xx, W - 1 - xx), np.minimum(yy, H - 1 - yy)).astype(np.float32)
-    rim = np.clip(1 - (edge - 10) / 4, 0, 1)                    # the strap
-    inner = np.clip(1 - np.abs(edge - 15) / 3, 0, 1)            # just inside it
-    warm = np.clip((rgb0[..., 0] - rgb0[..., 2]) * 5, 0, 1) * rim  # the gold wire
-    lin0 = F.srgb_to_lin(rgb0)
-
-    def save(name, lin, alpha=a):
-        img = np.dstack([F.lin_to_srgb(np.clip(lin, 0, 1)), alpha])
-        img = N.tileable(img, (24, 20, 24, 20), blend=6)
-        P.save_rgba(img[..., :3], img[..., 3], ui("frames", name + ".png"))
-
-    def tone(lin, hexcol, amount=1.0):
-        t = F.hexc(hexcol)
-        c = 1 - rim
-        cur = np.median(lin[c > 0.9], axis=0)
-        return lin * (1 - c[..., None]) + lin * (t / np.maximum(cur, 1e-4)) * c[..., None]
-
-    ember = F.hexc("#ff8a3a")
-    hot = F.hexc("#ffd07a")
-    save("button", lin0)
-    save("button_hover", tone(lin0 * (1 + rim[..., None] * 0.45), "#2c2732") + inner[..., None] * ember * 0.10 + warm[..., None] * hot * 0.25)
-    top_shadow = np.clip(1 - (yy - 14) / 14, 0, 1) * (1 - rim)
-    save("button_pressed", tone(lin0 * (1 + rim[..., None] * 0.2), "#19161d") * (1 - top_shadow[..., None] * 0.5) + warm[..., None] * hot * 0.2)
-    grey = lin0.mean(axis=2, keepdims=True)
-    save("button_disabled", tone(grey * 0.55 + lin0 * 0.15, "#16141a"))
-    bronze = np.array([1.25, 0.82, 0.5], np.float32)
-    pl = lin0 * (1 + rim[..., None] * (bronze - 1) * 0.9)
-    save("button_primary", tone(pl, "#3a230e") + warm[..., None] * ember * 0.5 + inner[..., None] * ember * 0.10)
-    save("button_primary_hover", tone(pl * (1 + rim[..., None] * 0.35), "#4a2c12") + warm[..., None] * hot * 0.9 + inner[..., None] * ember * 0.22)
-    save("button_primary_pressed", tone(pl * 1.1, "#3e2410") * (1 - top_shadow[..., None] * 0.45) + warm[..., None] * hot * 1.2 + inner[..., None] * ember * 0.3)
-
-
-def f_tabs():
-    """The book's tabs: the Waystation ledger's stitched leather; the open page's lit."""
-    src = raw("tab", "tab_806_1.png")
-    img = smalls.fit(src, ui("frames", "tab.png"), (160, 72), (14, 10, 14, 6), 8, tone="#24160f", tile=False, keep=0.5,
-                     darken=0.8, crop=True)
-    rgb, a = img[..., :3], img[..., 3]
-    lin = F.srgb_to_lin(rgb)
-    H, W = a.shape
-    yy, xx = np.mgrid[0:H, 0:W]
-    glow = np.clip(1 - yy / (H * 0.9), 0, 1) ** 2
-    lin_on = lin * np.array([1.5, 1.25, 1.0]) + glow[..., None] * F.hexc("#ff8a3a") * 0.08
-    P.save_rgba(F.lin_to_srgb(np.clip(lin_on, 0, 1)), a, ui("frames", "tab_on.png"))
+    """The atlas's wooden frame, laid over the map (MapScreen): its middle open."""
+    img = smalls.fit(raw("map_frame", "map_frame_805_0.png"), ui("frames", "map_frame.png"), (256, 256), (20, 20, 20, 20), 26,
+                     tone=None, tile=True, darken=0.9, crop=True)
+    a = img[..., 3].copy()
+    yy, xx = np.mgrid[0:256, 0:256]
+    edge = np.minimum(np.minimum(xx, 255 - xx), np.minimum(yy, 255 - yy)).astype(np.float32)
+    a *= np.clip((38 - edge) / 2.0, 0, 1)
+    P.save_rgba(img[..., :3], a, ui("frames", "map_frame.png"))
 
 
 # ------------------------------------------------------------- round, cut --

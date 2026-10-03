@@ -20,13 +20,28 @@ def _ramp(n):
     return t * t * (3 - 2 * t)
 
 
-def periodic_centre(c):
+def offset_blend(c):
+    """A texture made periodic: blended with itself shifted half a period through a
+    window that is one in the middle (for patches with no edge features)."""
     h, w = c.shape[:2]
     shifted = np.roll(np.roll(c, h // 2, axis=0), w // 2, axis=1)
     wy = np.sin(np.linspace(0, np.pi, h, dtype=np.float32)) ** 2
     wx = np.sin(np.linspace(0, np.pi, w, dtype=np.float32)) ** 2
     win = (wy[:, None] * wx[None, :])[..., None]
     return c * win + shifted * (1 - win)
+
+
+def periodic_centre(c):
+    """The centre made to repeat both ways: its own middle (away from the border's shading,
+    which would otherwise be wrapped into the middle as a cross) made periodic and laid
+    two by two."""
+    h, w = c.shape[:2]
+    ph, pw = (h + 1) // 2, (w + 1) // 2
+    y0, x0 = (h - ph) // 2, (w - pw) // 2
+    patch = offset_blend(c[y0:y0 + ph, x0:x0 + pw])
+    big = np.tile(patch, (2, 2, 1))
+    # Phase it so the patch starts where the centre starts.
+    return big[:h, :w]
 
 
 def tileable(img, margins, blend=None):

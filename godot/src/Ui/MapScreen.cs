@@ -228,8 +228,15 @@ public partial class MapScreen : Overlay
         BookTabs(new Vector2(80, 26));
         // The map, as large as the screen allows.
         var frame = new Panel { Position = new Vector2(80, 80), Size = new Vector2(F, F), ClipContents = true, MouseFilter = MouseFilterEnum.Stop };
-        frame.AddThemeStyleboxOverride("panel", UiArt.Frame("map_frame", Style.Box(new Color("#d9cba8"), new Color("#5a3e24"), 2, 3, 0)));
+        frame.AddThemeStyleboxOverride("panel", Style.Box(new Color("#d9cba8"), new Color("#5a3e24"), 2, 3, 0));
         AddChild(frame);
+        // The painted frame (frames/map_frame.png, its middle open) laid over the map's edge, reaching a little past it.
+        if (UiArt.Has("map_frame"))
+        {
+            var rim = new Panel { Position = frame.Position, Size = frame.Size, MouseFilter = MouseFilterEnum.Ignore, ZIndex = 1 };
+            rim.AddThemeStyleboxOverride("panel", UiArt.Frame("map_frame", new StyleBoxEmpty()));
+            AddChild(rim);
+        }
         world = new Control { Size = new Vector2(F, F), MouseFilter = MouseFilterEnum.Ignore };
         frame.AddChild(world);
         world.AddChild(new TextureRect { Texture = Drawing(scene.Data), Size = new Vector2(F, F), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore });
