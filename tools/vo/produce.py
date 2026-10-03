@@ -303,9 +303,10 @@ def finish(line: dict, picks: list[dict], log) -> dict:
     for seg, pick in zip(line["segments"], picks):
         v = voices[seg["voice"]]
         room = "close" if seg["voice"] == "narrator" else d.get("room", v.get("room", "close"))
-        x = post.master(pick["path"], room, v.get("sex", "m"), v.get("fx"))
+        vol = "level" if seg["voice"] == "narrator" and line["voice"] != "narrator" else d.get("vol", "level")
+        x = post.master(pick["path"], room, v.get("sex", "m"), v.get("fx"), vol=vol)
         parts.append((x, room))
-    audio, marks = post.assemble(parts)
+    audio, marks = post.assemble(parts, vol=d.get("vol", "level"))
     target = -17.0 if line["voice"] == "narrator" else VOL_LUFS.get(d.get("vol", "level"), -16.0)
     audio = post.loudness(audio, target)
     rel = f"{line['voice']}/{line['id']}.ogg"

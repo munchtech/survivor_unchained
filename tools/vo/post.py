@@ -158,11 +158,18 @@ def edit(x: np.ndarray, head: float = 0.06, tail: float = 0.22, max_gap: float =
 
 # ---------------------------------------------------------------- tone --
 
-def tone(x: np.ndarray, sex: str = "m") -> np.ndarray:
+# How close the mic is, by how loud the read is: a whisper is close (the
+# chest's warmth comes up, the room falls away), a shout is further off.
+NEAR = {"hushed": (2.5, -6.0), "quiet": (1.2, -3.0), "level": (0.0, 0.0), "raised": (-0.5, 2.0), "shout": (-1.0, 4.0)}
+
+
+def tone(x: np.ndarray, sex: str = "m", vol: str = "level") -> np.ndarray:
+    warmth = NEAR.get(vol, (0.0, 0.0))[0]
     sos = np.vstack([
         biquad("peak", 280 if sex == "m" else 350, 1.0, -1.5),     # mud
         biquad("peak", 3400, 0.8, 1.5),                            # presence
         biquad("highshelf", 10000, 0.7, 1.0),                      # air
+        biquad("lowshelf", 180, 0.7, warmth),                      # proximity
     ])
     x = signal.sosfilt(sos, x)
     x = deess(x)
@@ -245,8 +252,9 @@ def room_tone(n: int, colour: str, level_db: float, seed: int) -> np.ndarray:
     return w * 10 ** (level_db / 20)
 
 
-def place(x: np.ndarray, room: str, seed: int = 7) -> np.ndarray:
+def place(x: np.ndarray, room: str, seed: int = 7, vol: str = "level") -> np.ndarray:
     rt60, wet_db, pre, colour, tone_db = ROOMS.get(room, ROOMS["close"])
+    wet_db += NEAR.get(vol, (0.0, 0.0))[1]
     if rt60 > 0:
         wet = signal.fftconvolve(x, impulse(rt60, pre, seed))[: len(x) + int(rt60 * SR)]
         y = np.zeros(len(wet))
@@ -313,22 +321,23 @@ def limit(x: np.ndarray, ceiling_db: float) -> np.ndarray:
 
 # ------------------------------------------------------------ the whole --
 
-def master(path: str, room: str = "close", sex: str = "m", kind: str | None = None, seed: int = 7) -> np.ndarray:
+def master(path: str, room: str = "close", sex: str = "m", kind: str | None = None, seed: int = 7, vol: str = "level") -> np.ndarray:
     """One take, edited and toned, before it is placed and levelled with its line."""
     x = load(path)
     x = clean(x)
     x = edit(x)
-    x = tone(x, sex)
+    x = tone(x, sex, vol)
     x = fx(x, kind)
     return x
 
 
-def assemble(parts: list[tuple[np.ndarray, str]], gap: float = 0.38, seed: int = 7) -> tuple[np.ndarray, list[list[float]]]:
+def assemble(parts: list[tuple[np.ndarray, str]], gap: float = 0.38, seed: int = 7, vol: str = "level") -> tuple[np.ndarray, list[list[float]]]:
     """The parts of a line in order, each in its room, the pause between
-    them; returns the line and where each part starts and ends (seconds)."""
+    them; returns the line and where each part starts and ends (seconds).
+    `vol` is the speaker's (the narrator's asides stay at his distance)."""
     out, marks, t = [], [], 0.0
     for i, (x, room) in enumerate(parts):
-        y = place(x, room, seed + i)
+        y = place(x, room, seed + i, vol if room != "close" else "level")
         if out:
             g = np.zeros(int(gap * SR))
             out.append(g)

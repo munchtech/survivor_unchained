@@ -4,7 +4,13 @@ no acting control: it copies the manner of its reference clip."""
 import json
 import os
 
-from f5_tts.api import F5TTS
+import soundfile as sf
+import torch
+import torchaudio
+
+# torchaudio's loader wants torchcodec's DLLs (a shared ffmpeg build); read with soundfile.
+torchaudio.load = lambda p, *a, **k: (lambda x: (torch.from_numpy(x[0].T if x[0].ndim > 1 else x[0][None]).float(), x[1]))(sf.read(p, dtype="float32"))
+from f5_tts.api import F5TTS  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RAW = os.path.join(os.environ.get("VO_TOOLS", os.path.expanduser("~/vo-tools")), "shootout", "raw")

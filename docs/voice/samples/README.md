@@ -18,7 +18,30 @@ line's volume. Nothing in this folder is in the game. File names are
 
 ## The methods
 
-<!-- METHODS -->
+Each part's voice was designed (VoxCPM2 voice design from a written
+description, auditioned and chosen by measurement: `docs/VO_CAST.md`).
+Methods that clone use that voice; the others say so.
+
+| Method | What it is | Licence to ship |
+|---|---|---|
+| `kokoro` | Kokoro-82M's stock British voices. Clean, in accent, not acted, and not our people: the yardstick for a read | Apache 2.0 |
+| `vox_cont` | VoxCPM2 carrying on from a take of the cast voice (the pipeline as first built). Keeps the person; delivery follows the reference take | Apache 2.0 |
+| `vox_style` | VoxCPM2 cloning the cast voice with the line's direction as a style instruction | Apache 2.0 |
+| `vox_design` | VoxCPM2 voice design per line: the part's description plus how this line is played. The most acted VoxCPM2 mode, but each take is a slightly different person | Apache 2.0 |
+| `vox_design-vc` | `vox_design`'s performance turned into the cast voice by Seed-VC (speech model, 22 kHz): the performance keeps its timing and stress, the timbre becomes the part's | Apache 2.0 + GPL-3.0 tool |
+| `vox_design-vcf0` | The same through Seed-VC's 44 kHz model, which also follows the performance's pitch | Apache 2.0 + GPL-3.0 tool |
+| `chatterbox` | Chatterbox (Resemble AI) cloning the cast voice, exaggeration set from the direction | MIT |
+| `indextts` | IndexTTS-2.5 cloning the cast voice, emotion from an eight-number vector | bilibili licence (free under 100M users) |
+| `dia` | Dia 1.6B with non-verbal cues ("(sighs)", "(laughs)") and the cast voice as audio prompt; three lines only (very slow here) | Apache 2.0 |
+| `orpheus` | Orpheus 3B's stock American voices with emotive tags: a performance, not our voice | Apache 2.0 (Llama base) |
+| `orpheus-vc`, `orpheus-vcf0` | Orpheus's performance turned into the cast voice by Seed-VC (the accent stays American) | as above |
+| `f5` | F5-TTS cloning the cast voice | weights CC BY-NC: comparison only, cannot ship |
+
+Not run here: Higgs Audio v2 (needs about 24 GB of VRAM), VibeVoice 7B
+(too large; the 1.5B was not set up in time), CosyVoice 3 (its Windows
+install needs pynini), Fish/OpenAudio S1 (non-commercial weights), and a
+human performance converted the same way (the route this pack points to;
+see below).
 
 ## How the takes were measured
 

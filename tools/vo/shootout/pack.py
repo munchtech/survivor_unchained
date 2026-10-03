@@ -58,12 +58,18 @@ def main():
             for p in paths:
                 k = os.path.relpath(p, RAW)
                 if k not in heard:
-                    r = asdict(analyse.analyse(p, L["text"]))
+                    # One Whisper pass (with word times, for the tells) serves the word check too.
+                    r = asdict(analyse.analyse(p, None, want=("utmos", "accent")))
+                    tl = tells.tells(p)
+                    r["said"] = tl["said"]
+                    r["wer"], r["wrong"] = analyse.wer(L["text"], tl["said"])
+                    r["wer"] = round(float(r["wer"]), 3)
+                    r["faults"] = analyse.substantive(r["wrong"])
                     x, sr = sf.read(p, dtype="float32")
                     if x.ndim > 1:
                         x = x.mean(1)
                     r["similarity"] = float(np.dot(analyse.speaker_embedding(x, sr), eref))
-                    r["tells"] = tells.tells(p)
+                    r["tells"] = tl
                     heard[k] = r
                     json.dump(heard, open(CACHE, "w", encoding="utf-8"), indent=1)
                 r = heard[k]
@@ -73,8 +79,8 @@ def main():
                 if best is None or score > best[0]:
                     best = (score, p, r, ok, acc)
             score, p, r, ok, acc = best
-            x = post.master(p, L["room"], voices[v].get("sex", "m"), None)
-            line, _ = post.assemble([(x, L["room"])])
+            x = post.master(p, L["room"], voices[v].get("sex", "m"), None, vol=L["vol"])
+            line, _ = post.assemble([(x, L["room"])], vol=L["vol"])
             line = post.loudness(line, LUFS.get(L["vol"], -16.0))
             dst = os.path.join(OUT, f"{key}__{method}.ogg")
             post.write_ogg(line, dst, FFMPEG)
@@ -88,6 +94,28 @@ def main():
             print(f"{key:12s} {method:18s} {'ok ' if ok else 'BAD'} human {human(r['tells']):.2f} mos {r['utmos']:.2f} "
                   f"acc {r['accent']}({acc:.2f}) sim {r['similarity']:.2f} {r['faults'][:3]}", flush=True)
     json.dump(metrics, open(os.path.join(OUT, "metrics.json"), "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+    listen_page(metrics)
+
+
+def listen_page(metrics: dict):
+    """listen.html beside the files: every line, every method, a player
+    each, in the order to try them (open it in a browser)."""
+    rows = []
+    for key, L in LINES.items():
+        rows.append(f"<h2>{key.split('_', 1)[1].title()}: {L['voice'].title()}</h2><p class=line>{L['text']}</p><table>")
+        mine = sorted(((k, r) for k, r in metrics.items() if k.startswith(key + "__")), key=lambda kr: -kr[1]["human"])
+        for k, r in mine:
+            method = k.split("__")[1]
+            flag = "" if r["words_right"] else " (words wrong)"
+            rows.append(f"<tr><td class=m>{method}{flag}</td><td><audio controls preload=none src='{k}.ogg'></audio></td>"
+                        f"<td class=n>moves like a person {r['human']:.1f} · heard as {r['accent']} · same voice {r['similarity_to_cast_voice']:.2f}</td></tr>")
+        rows.append("</table>")
+    html = ("<!doctype html><meta charset=utf-8><title>Voice shoot-out</title><style>body{font:15px/1.5 system-ui;margin:2em;"
+            "max-width:1100px;background:#141218;color:#e8dcc4}h2{margin-top:2em;color:#f3d9a0}.line{font-style:italic;color:#bfb29c}"
+            "td{padding:4px 10px}.m{font-family:monospace}.n{color:#9a907e;font-size:13px}audio{height:32px}</style>"
+            "<h1>Voice shoot-out</h1><p>Same five lines, every method. Listen with headphones; judge by ear. Notes in README.md.</p>"
+            + "".join(rows))
+    open(os.path.join(OUT, "listen.html"), "w", encoding="utf-8").write(html)
 
 
 if __name__ == "__main__":
