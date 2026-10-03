@@ -147,8 +147,8 @@ public void An_allied_pack_by_a_clear_stream_is_not_sick()
 {
     var s = Make(j =>
     {
-        foreach (var (k, v) in new (string, object)[] { ("prologue.done", true), ("beasts.outcome", "allied"),
-            ("pack.allied", true), ("greymuzzle", "ally"), ("dig.pump", "broken") }) j.World.Facts[k] = v;
+        j.World.Facts["prologue.done"] = true; j.World.Facts["beasts.outcome"] = "allied"; j.World.Facts["pack.allied"] = true;
+        j.World.Facts["greymuzzle"] = "ally"; j.World.Facts["dig.pump"] = "broken";
         var c = new Ctx(j.World, j.Ch);
         for (int d = 0; d < 3; d++) Simulation.AdvanceDay(c, () => 0.5);
         j.World.Time = TimeOfDay.Day;
@@ -309,5 +309,6 @@ frame, so CPU work isn't needed. Two things were tried and left alone:
   wasn't touched.
 
 If the pool is ever raised past 900, look at `FinishMove` first. Its
-query of a 3 m cell grid gathers whole crowded cells; a 1.5 m cell for
-separation alone would cut the candidates without changing any result.
+query of a 3 m cell grid gathers whole crowded cells; a finer cell for
+separation alone would cut the candidates. The push order would change
+with it, so prove it with the fingerprints and take a new baseline.
