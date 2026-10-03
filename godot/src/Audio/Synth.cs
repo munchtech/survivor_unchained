@@ -171,6 +171,11 @@ public partial class Synth : Node
     /// <summary>Lower the music under a conversation or a menu.</summary>
     public void DuckMusic(float k) => duck = k;
 
+    float voiceMusic = 1, voiceAmb = 1, voiceMusicNow = 1, voiceAmbNow = 1;
+    /// <summary>Lower the music and the world's noise while someone speaks
+    /// (VoiceOver): quickly down when a line starts, slowly back after.</summary>
+    public void DuckForVoice(float music, float amb) { voiceMusic = music; voiceAmb = amb; }
+
     /// <summary>At most `max` of this sound per `ms`: a hundred hits a second
     /// must not become a hundred sounds.</summary>
     public bool Gate(string key, int max, int ms)
@@ -230,6 +235,9 @@ public partial class Synth : Node
             double t = (clock + i) / Rate;
             duckNow += (duck - duckNow) * 0.00006f;
             masterNow += (Master - masterNow) * 0.0002f;
+            // About 0.12 s down, 0.6 s back up.
+            voiceMusicNow += (voiceMusic - voiceMusicNow) * (voiceMusic < voiceMusicNow ? 0.00019f : 0.000038f);
+            voiceAmbNow += (voiceAmb - voiceAmbNow) * (voiceAmb < voiceAmbNow ? 0.00019f : 0.000038f);
             float dl = 0, dr = 0, wl = 0, wr = 0;
             for (int v = voices.Count - 1; v >= 0; v--)
             {
@@ -237,7 +245,7 @@ public partial class Synth : Node
                 if (t < voice.Start) continue;
                 if (t > voice.End) { voices.RemoveAt(v); continue; }
                 float s = voice.Sample(t, dt);
-                float bus = Level[(int)voice.Bus] * (voice.Bus == Bus.Music ? duckNow : 1);
+                float bus = Level[(int)voice.Bus] * (voice.Bus == Bus.Music ? duckNow * voiceMusicNow : voice.Bus == Bus.Amb ? voiceAmbNow : 1);
                 float l = s * voice.L * bus, r = s * voice.R * bus;
                 dl += l; dr += r;
                 float send = Send[(int)voice.Bus] + voice.Verb;
@@ -247,7 +255,7 @@ public partial class Synth : Node
             {
                 float s = b.Sample(t, dt), s2 = b.Wide ? b.Right : s;
                 if (s == 0 && s2 == 0) continue;
-                float amb = Level[(int)Bus.Amb], l = s * amb, r = s2 * amb;
+                float amb = Level[(int)Bus.Amb] * voiceAmbNow, l = s * amb, r = s2 * amb;
                 dl += l; dr += r;
                 wl += l * Send[(int)Bus.Amb]; wr += r * Send[(int)Bus.Amb];
             }

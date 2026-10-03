@@ -15,7 +15,11 @@ public sealed record DraftView(int Level, bool Blessing, List<Offer> Offers, int
 
 /// <summary>A conversation as the panel shows it: who, and what they look like.</summary>
 public sealed record DialogueView(string Name, string Title, string Mood, string Speaker, string Text, List<PresentedChoice> Choices,
-    bool CanContinue, PersonSpec? Person, Held? Arms, double Scale, string? Glyph, string PlayerName, Action<int> Choose, Action Advance);
+    bool CanContinue, PersonSpec? Person, Held? Arms, double Scale, string? Glyph, string PlayerName, Action<int> Choose, Action Advance)
+{
+    /// <summary>The recording reading this line, if there is one: the words follow it.</summary>
+    public VoTake? Voice { get; init; }
+}
 
 /// <summary>
 /// The ember draft (the web game's overlays/LevelUp.tsx). Time stops; the
@@ -363,8 +367,15 @@ public partial class TalkPanel : Control
     public override void _Process(double delta)
     {
         if (Full) return;
-        tick += delta;
-        while (tick >= 0.022 && !Full) { tick -= 0.022; shown = Math.Min(d.Text.Length, shown + 2); }
+        // A line read aloud shows its words as they are said; the rest arrive
+        // at the pace of reading.
+        if (d.Voice != null && Sound.VoiceOver.Instance?.Reveal(d.Voice) is double f)
+            shown = Math.Max(shown, (int)Math.Round(f * d.Text.Length));
+        else
+        {
+            tick += delta;
+            while (tick >= 0.022 && !Full) { tick -= 0.022; shown = Math.Min(d.Text.Length, shown + 2); }
+        }
         text.VisibleCharacters = shown;
         if (Full) Finish();
     }

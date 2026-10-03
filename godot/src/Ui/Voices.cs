@@ -72,6 +72,10 @@ public partial class Voices : Node3D
         l.Position = at + Vector3.Up * 2.1f;
         AddChild(l);
         double life = Mathf.Clamp(2.2 + text.Length * 0.05, 2.5, 6);
+        // Heard, too, from where they stand (a named voice in a fight is the
+        // game's to play, over everything; a caption is never spoken).
+        if (!alert && speaker == null && Sound.VoiceOver.Instance?.Bark(text, this, at) is double said and > 0)
+            life = Mathf.Max(life, said + 0.8);
         barks.Add((l, 0, life));
         // Not too many at once: the oldest go first.
         while (barks.Count > 5) { barks[0].Label.QueueFree(); barks.RemoveAt(0); }

@@ -51,6 +51,7 @@ public partial class Game : Node, IZoneHost
     Screens screens = null!;
     Synth synth = null!;
     SoundBridge sound = null!;
+    VoiceOver voice = null!;
     bool bossUp;
     Atmosphere air = null!;
     Camera3D camera = null!;
@@ -96,6 +97,8 @@ public partial class Game : Node, IZoneHost
         synth = new Synth();
         AddChild(synth);
         sound = new SoundBridge(synth);
+        voice = new VoiceOver();
+        AddChild(voice);
         // The interface: every button ticks under the pointer and clicks.
         GetTree().NodeAdded += n => { if (n is BaseButton bb) Sounded(bb); };
         saves = new Saves(ProjectSettings.GlobalizePath("user://saves"));
@@ -204,6 +207,7 @@ public partial class Game : Node, IZoneHost
         if (scene != null) { scene.Fx.Gore.Level = s.GoreLevel; scene.Hitstop = s.Hitstop; }
         air.Quality(s.Quality);
         AudioServer.SetBusVolumeDb(0, s.Volume <= 0 ? -80 : Mathf.LinearToDb(s.Volume));
+        voice?.Apply();
     }
 
     public string Key(Act a) => controls.KeyLabel(a);
@@ -428,7 +432,13 @@ public partial class Game : Node, IZoneHost
     /* --------------------------------------------------- what zones ask -- */
 
     public void Apply(IEnumerable<Change> changes) => Journey.Apply(changes);
-    public void Say(string text, string? who = null, double seconds = 4) => hud.Say(text, who, seconds);
+    /// <summary>The narrator (or a voice the zone names), read aloud where
+    /// there is a take; the words stay up at least as long as the voice.</summary>
+    public void Say(string text, string? who = null, double seconds = 4)
+    {
+        var take = voice.Narrate(text);
+        hud.Say(text, who, take != null ? Math.Max(seconds, take.Sec + 0.8) : seconds);
+    }
     public void Toast(Toast t) { hud.Toast(t); sound.Toast(t); }
     public void Announce(Announcement a) { hud.Announce(a); sound.Announce(a, bossUp); }
     public void After(double seconds, Action fn) => later.Add((seconds, fn));
@@ -528,6 +538,8 @@ public partial class Game : Node, IZoneHost
                     break;
                 case Ev.Bark bk:
                     scene?.Voices.Bark(bk.Text, new Vector3((float)bk.X, (float)scene.HeightAt(bk.X, bk.Z), (float)bk.Z), bk.Speaker, bk.Speaker == null);
+                    // A named voice in a fight (the Warden, Grimtunnel) is heard over everything.
+                    if (bk.Speaker != null) voice.Shout(bk.Text);
                     break;
                 case Ev.PlayerHit ph when ph.Dodged && Battle is { } b:
                     scene?.Voices.Bark("Dodged", new Vector3((float)b.Player.X, (float)scene.HeightAt(b.Player.X, b.Player.Z), (float)b.Player.Z), null, true);

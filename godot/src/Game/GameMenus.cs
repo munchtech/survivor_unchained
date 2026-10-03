@@ -250,9 +250,11 @@ public partial class Game
         var d = Lore.Person(id);
         Lore.Speakers.TryGetValue(id, out var sp);
         var s = World.Npc(id);
+        // Read aloud, where the line has been recorded (the last line stops).
+        var take = voice.Say(p.Line, p.Raw);
         hud.Dialogue(new DialogueView(d?.Name ?? sp?.Name ?? id, d?.Title ?? sp?.Title ?? "", d != null || id is "greymuzzle" or "snib" ? Rules.Attitude(s) : "",
             p.Speaker == "player" ? "player" : p.Speaker == "narrator" ? "narrator" : "npc", p.Text, p.Choices, p.Choices.Count == 0,
-            d?.Person, d?.Arms, d?.Scale ?? 1, sp?.Glyph, Journey.Ch.Name, Choose, Advance));
+            d?.Person, d?.Arms, d?.Scale ?? 1, sp?.Glyph, Journey.Ch.Name, Choose, Advance) { Voice = take });
     }
 
     public void Choose(int index)
@@ -285,6 +287,7 @@ public partial class Game
         if (camSaved is float d) { cam.TargetDistance = d; camSaved = null; }
         runner = null;
         talkNpc = null;
+        voice.Stop();
         hud.Dialogue(null);
         hudMode = null;
         if (scene != null) scene.SimPaused = false;
