@@ -84,7 +84,6 @@ func _init():
 					skel.add_child(mi)
 					mi.skeleton = NodePath("..")
 					for s in mi.mesh.get_surface_count():
-						if mi.mesh.surface_get_material(s).resource_name == "hair_tie": continue
 						# As People.Hair: shaders/heroine_hair.gdshader, dyed.
 						var m = ShaderMaterial.new()
 						m.shader = load("res://shaders/heroine_hair.gdshader")
@@ -92,6 +91,7 @@ func _init():
 						m.set_shader_parameter("colour", hair_colour())
 						var is_cap = mi.mesh.surface_get_material(s).resource_name == "hair_cap"
 						m.set_shader_parameter("cap", is_cap)
+						m.set_shader_parameter("tie", mi.mesh.surface_get_material(s).resource_name == "hair_tie")
 						mi.set_surface_override_material(s, m)
 						# HAIRONLY=cap|cards: only that part shown (to look at each alone).
 						var only = OS.get_environment("HAIRONLY")
@@ -100,6 +100,10 @@ func _init():
 							none.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 							none.albedo_color = Color(0, 0, 0, 0)
 							mi.set_surface_override_material(s, none)
+					if OS.get_environment("NOJIGGLE") == "":
+						var sw = load("res://src/Actors/HairSway.cs").new()
+						sw.Style = style
+						mi.add_child(sw)
 			hs.free()
 		# FACE=name=value,...: her face's sliders (-1..1) and expressions (0..1), as People.HerFace.
 		if OS.get_environment("FACE") != "":
@@ -213,6 +217,13 @@ func hide_skin(mi, ch):
 
 func _process(delta):
 	t += delta
+	# MOVE=metres: each figure carried forward and back that far, about one
+	# return a second and a half (to see her hair swing and stream).
+	if OS.get_environment("MOVE") != "":
+		var a = float(OS.get_environment("MOVE"))
+		for h in get_root().get_child(0).get_children():
+			if h is Node3D and not h is Camera3D and not h is Light3D and h.has_method("find_children"):
+				h.position.z = a * sin(t * TAU / 1.5)
 	# POSE=bone:x,y,z degrees;...  applied on top of rest, no clip.
 	var pose = OS.get_environment("POSE")
 	if pose != "":

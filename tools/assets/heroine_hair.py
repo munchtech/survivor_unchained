@@ -500,6 +500,18 @@ def style_long():
         layers.append(cards(P, RNG.uniform(*width, len(pts)), list(cols), off, root=near))
         print("  layer: %d cards" % len(pts))
     layers.append(hairline_hairs(comb_long))
+    # Its chain: down the middle of what hangs behind her, from her nape.
+    hang = np.vstack([c["at"] for c in layers])
+    hang = hang[(hang[:, 1] > 0.03) & (hang[:, 2] < EYE_Z - 0.06)]
+    top, bottom = EYE_Z - 0.06, np.percentile(hang[:, 2], 3)
+    zs = np.linspace(top, bottom, 8)
+    pts = []
+    for z in zs:
+        m = np.abs(hang[:, 2] - z) < 0.03
+        pts.append([np.median(hang[m, 0]), np.percentile(hang[m, 1], 60), z] if m.sum() > 20 else [0.0, pts[-1][1] if pts else 0.1, z])
+    global CHAIN
+    CHAIN = {"points": np.array(pts), "bone": "spine_03", "stiff": 0.05,
+             "weight": lambda at: np.clip((top + 0.02 - at[:, 2]) / 0.08, 0, 1) * np.clip(at[:, 1] / 0.05, 0, 1)}
     return layers
 
 
@@ -561,6 +573,44 @@ def drape_lengths(start, dirs, L, off, points=24, comb=None, lie_for=None):
             # (lying flatter than it hangs: combed hair lies close on the head)
             pinned = (lie(start[m], dirs[m], comb, np.full(m.sum(), seg), steps, 0.003 + (off - 0.003) * 0.75), steps)
         out[m] = drape(start[m], dirs[m], Lm, points=points, offset=off, pinned=pinned, extra=off_face)
+    return out
+
+
+# The chain a style swings on in the game (src/Actors/HairSway.cs): a line of
+# points down the middle of what hangs, its bone (the one it hangs from), and
+# which of the style's points move with it (a weight for each: by its parts'
+# "swing", or a function of where its strand is). Set by the style.
+CHAIN = None
+
+
+def along_chain(at, pts):
+    """Each point's place along a chain (0 its root, 1 its end): the nearest
+    point of it to its own."""
+    best_t, best_d = np.zeros(len(at)), np.full(len(at), np.inf)
+    for i in range(len(pts) - 1):
+        a, ab = pts[i], pts[i + 1] - pts[i]
+        u = np.clip(((at - a) @ ab) / (ab @ ab), 0, 1)
+        d = np.linalg.norm(at - (a + u[:, None] * ab), axis=1)
+        m = d < best_d
+        best_d[m], best_t[m] = d[m], (i + u[m]) / (len(pts) - 1)
+    return best_t
+
+
+def chain_spheres():
+    """What the chain is kept out of: the back of her head, and her neck and
+    back, a ball every 5 cm down her spine (each moving with the spine bone
+    nearest it), reaching to the skin of her back there."""
+    back = (np.abs(HP[:, 0]) < 0.02) & (np.abs(HP[:, 2] - CENTRE[2]) < 0.02) & (HP[:, 1] > CENTRE[1])
+    out = [{"bone": "Head", "at": CENTRE, "r": float(HP[back, 1].max() - CENTRE[1]) + 0.004}]
+    mw = arm.matrix_world
+    bones = [(n, np.array((mw @ arm.data.bones[n].head_local)[:])) for n in ("neck_01", "spine_03", "spine_02", "spine_01")]
+    top, bottom = bones[0][1][2] + 0.04, bones[-1][1][2]
+    for z in np.arange(top, bottom, -0.05):
+        name, c = min(bones, key=lambda nb: abs(nb[1][2] - z) if nb[1][2] <= z + 0.02 else 1e9)
+        c = np.array([0.0, np.interp(z, [bb[1][2] for bb in bones][::-1], [bb[1][1] for bb in bones][::-1]), z])
+        near = (np.abs(BP[:, 2] - z) < 0.025) & (np.abs(BP[:, 0]) < 0.03) & (BP[:, 1] > c[1])
+        r = float(BP[near, 1].max() - c[1]) if near.any() else 0.08
+        out.append({"bone": name, "at": c, "r": r + 0.008})
     return out
 
 
@@ -692,14 +742,17 @@ def tail(T, axis, layers, length, spread=0.014, fan=3.0, points=24):
         off_face(P, step)
     L = length * RNG.uniform(0.82, 1.05, n)
     P = drape(T + disc, dirs, L.max(), points=points, offset=0.006, extra=extra)
+    middle = resample(P.mean(0)[None], 8)[0]                     # (the chain it swings on)
     P = np.array([resample(trim(P[i], L[i])[None], points)[0] for i in range(n)])
     P = wave(P, 0.004, 0.13, T + disc * 40)
     out, at = [], 0
     for k, width, cols, off in layers:
-        out.append(cards(P[at:at + k], RNG.uniform(*width, k), list(cols), off, root=np.full(k, 0.3), narrow=0.3))
+        c = cards(P[at:at + k], RNG.uniform(*width, k), list(cols), off, root=np.full(k, 0.3), narrow=0.3)
+        c["swing"] = True
+        out.append(c)
         at += k
     print("  tail: %d cards" % n)
-    return out
+    return out, middle
 
 
 def style_ponytail():
@@ -710,10 +763,13 @@ def style_ponytail():
     parts = gathered(T, ((0.009, (0.024, 0.032), range(0, 6), 0.003),
                          (0.008, (0.016, 0.024), range(0, 9), 0.006),
                          (0.008, (0.012, 0.018), range(3, 12), 0.009)), lift=0.003)
-    parts += tail(T + axis * 0.006, axis, ((120, (0.028, 0.038), range(0, 6), 0.004),
-                                           (150, (0.018, 0.028), range(0, 11), 0.008),
-                                           (90, (0.010, 0.016), range(6, 16), 0.012)), 0.46)
+    hang, middle = tail(T + axis * 0.006, axis, ((120, (0.028, 0.038), range(0, 6), 0.004),
+                                                 (150, (0.018, 0.028), range(0, 11), 0.008),
+                                                 (90, (0.010, 0.016), range(6, 16), 0.012)), 0.46)
+    parts += hang
     parts.append(band(T + axis * 0.004, axis, 0.0135))
+    global CHAIN
+    CHAIN = {"points": middle, "bone": "Head", "stiff": 0.01}
     return parts
 
 
@@ -755,6 +811,10 @@ def style_braid():
     P = drape_lengths(C[end] + disc, np.repeat(t[end][None], n, 0), np.full(n, 0.075), 0.01, points=10)
     parts.append(cards(P, RNG.uniform(0.012, 0.02, n), list(range(6, 14)), 0.01, root=np.full(n, 0.4)))
     print("  braid: %.2f m, tail %d cards" % (arc[end], n))
+    for c in parts[3 + 1:]:                                      # (all after what is gathered to the tie)
+        c["swing"] = True
+    global CHAIN
+    CHAIN = {"points": resample(np.vstack([C[:end + 1], P.mean(0)])[None], 8)[0], "bone": "Head", "stiff": 0.012}
     return parts
 
 
@@ -899,8 +959,9 @@ def cap(comb, sides=part_side):
 
 
 def build(style):
-    global RNG
+    global RNG, CHAIN
     import zlib
+    CHAIN = None
     RNG = np.random.default_rng(zlib.crc32(style.encode()))  # (each style the same however many are made)
     old = bpy.data.objects.get(f"hair_{style}")             # (from a run before, saved in the blend)
     if old:
@@ -958,6 +1019,26 @@ def build(style):
     o.data.materials.append(hair_material("hair", ATLAS))
     o.data.materials.append(hair_material("hair_cap", SCALP))
     o.data.materials.append(tie_material())
+    # Its chain: each point's place along it and how much it moves with it
+    # (a second UV); and the chain, its bone and what it is kept out of, in a
+    # file beside it (in the game's axes: x, up, toward her front).
+    cw = np.zeros((len(V), 2))
+    if CHAIN is not None:
+        swing = np.concatenate([np.full(len(c["V"]), bool(c.get("swing"))) for c in layers] + [np.zeros(len(cp["V"]), bool)])
+        cw[:, 0] = along_chain(at, CHAIN["points"])
+        cw[:, 1] = CHAIN["weight"](at) if "weight" in CHAIN else swing
+        cw[len(V) - len(cp["V"]):, 1] = 0                       # (never the cap on her scalp)
+        import json
+        g = lambda v: [float(v[0]), float(v[2]), float(-v[1])]
+        with open(os.path.join(ART, f"heroine_hair_{style}.chain.json"), "w", encoding="utf-8") as fh:
+            json.dump({"bone": CHAIN["bone"], "stiff": CHAIN["stiff"], "points": [g(q) for q in CHAIN["points"]],
+                       "spheres": [{"bone": sp["bone"], "at": g(sp["at"]), "r": sp["r"]} for sp in chain_spheres()]}, fh, indent=1)
+        # (what swings on a chain from her head is her head's alone: the chain moves it)
+        if CHAIN["bone"] == "Head":
+            at = np.where((cw[:, 1] > 0)[:, None], CENTRE, at)
+    uv2 = me.uv_layers.new(name="chain")
+    uv2.data.foreach_set("uv", cw[loops].astype(np.float32).ravel())
+    me.uv_layers.active_index = 0
     rig(o, V, at)
     print("STYLE", style, len(V), "points,", len(F), "faces")
     return o

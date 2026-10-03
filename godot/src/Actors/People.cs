@@ -331,8 +331,9 @@ public static class People
             mi.Layers = 2;
             p.Meshes.Add(mi);
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
-                if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D src && src.ResourceName != "hair_tie")
+                if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D src)
                     mi.SetSurfaceOverrideMaterial(s, Hair(src, colour));
+            mi.AddChild(new HairSway { Style = style });
         }
         scene.Free();
     }
@@ -350,6 +351,7 @@ public static class People
         m.SetShaderParameter("strands", src.AlbedoTexture);
         m.SetShaderParameter("colour", colour);
         m.SetShaderParameter("cap", src.ResourceName == "hair_cap");
+        m.SetShaderParameter("tie", src.ResourceName == "hair_tie");
         return m;
     }
 
