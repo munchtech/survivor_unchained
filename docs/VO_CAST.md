@@ -15,39 +15,41 @@ below, plainly.
 <!-- CAST TABLE -->
 | Part | Wanted | Cast take | Heard as | Pitch | Pace | Moods | Lines (parts) | Recorded | Failed | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
-| The narrator (`narrator`) | 55 m, neutral southern English (RP) | c11 | england 1.00 | 101 Hz | 3.1 w/s | - | 292 | 0 | 0 |  |
+| The narrator (`narrator`) | 55 m, neutral southern English (RP) | c11 | england 1.00 | 101 Hz | 3.1 w/s | - | 287 | 0 | 0 |  |
 | Mother Rook (`rook`) | 60 f, Yorkshire | c06 | england 1.00 | 208 Hz | 4.3 w/s | - | 43 | 0 | 0 |  |
 | Captain Holloway (`holloway`) | 45 m, Lancashire, flattened by the army | c08 | england 0.99 | 127 Hz | 3.4 w/s | - | 62 | 0 | 0 |  |
 | Maeca Barefoot (`maeca`) | 34 f, Welsh borders | c16 | scotland 0.91 | 156 Hz | 2.5 w/s | - | 65 | 0 | 0 | words wrong: ['tracks->trask']; cut off at the head; accent heard as scotland (0.91), want wales |
-| Old Wenna (`wenna`) | 74 f, Somerset (West Country) | not cast |  |  |  | - | 30 | 0 | 0 |  |
-| Tam (`tam`) | 9 m, Somerset (West Country) | not cast |  |  |  | - | 16 | 0 | 0 |  |
-| Brannoc (`brannoc`) | 52 m, Cornish | c02 | england 0.77 | 106 Hz | 2.2 w/s | - | 48 | 0 | 0 |  |
-| Harlan Coyle (`harlan`) | 55 m, Bristol | not cast |  |  |  | - | 59 | 0 | 0 |  |
-| Pell Varrow (`pell`) | 40 m, precise London RP | not cast |  |  |  | - | 32 | 0 | 0 |  |
+| Old Wenna (`wenna`) | 74 f, Somerset (West Country) | c02 | england 1.00 | 225 Hz | 4.0 w/s | - | 30 | 0 | 0 |  |
+| Tam (`tam`) | 9 m, Somerset (West Country) | c08 | canada 0.71 | 236 Hz | 3.3 w/s | - | 16 | 0 | 0 | accent heard as canada (0.71), want england |
+| Brannoc (`brannoc`) | 52 m, Cornish | c02 | england 0.77 | 106 Hz | 2.2 w/s | - | 50 | 0 | 0 |  |
+| Harlan Coyle (`harlan`) | 55 m, Bristol | c03 | england 0.97 | 111 Hz | 3.1 w/s | - | 59 | 0 | 0 |  |
+| Pell Varrow (`pell`) | 40 m, precise London RP | c08 | england 0.99 | 107 Hz | 3.7 w/s | - | 32 | 0 | 0 |  |
 | Rav Cutwell (`rav`) | 54 m, Glaswegian | c06 | scotland 0.73 | 194 Hz | 4.2 w/s | - | 52 | 0 | 0 | pitch 194 Hz outside 75-150 |
-| Chid (`chid`) | 32 m, Irish-tinged | c06 | us 1.00 | 237 Hz | 4.1 w/s | - | 38 | 0 | 0 | pitch 237 Hz outside 75-150; accent heard as us (1.00), want ireland |
+| Chid (`chid`) | 32 m, Irish-tinged | c09 (from rav) | ireland 0.99 | 159 Hz | 4.4 w/s | - | 40 | 0 | 0 |  |
 | Vonnra Ash-of-Morrow (`vonnra`) | 66 f, clipped, unplaceable old empire | c05 | england 0.99 | 158 Hz | 2.2 w/s | - | 78 | 0 | 0 | cut off at the head |
-| Dame Keegan Orme (`keegan`) | 24 f, Oxbridge RP | not cast |  |  |  | - | 44 | 0 | 0 |  |
+| Dame Keegan Orme (`keegan`) | 24 f, Oxbridge RP | c04 | england 1.00 | 197 Hz | 3.5 w/s | - | 44 | 0 | 0 |  |
 | Sella (`sella`) | 28 f, softened Cockney (London) | c04 | england 1.00 | 170 Hz | 3.6 w/s | - | 95 | 0 | 0 |  |
-| Redcowl (`redcowl`) | 45 m, hard Scots | c04 | scotland 0.98 | 208 Hz | 3.5 w/s | - | 38 | 0 | 0 | pitch 208 Hz outside 65-120 |
-| Snib (`snib`) | m, goblinish London | not cast |  |  |  | - | 14 | 0 | 0 |  |
-| Grimtunnel (`grimtunnel`) | m, goblinish London | not cast |  |  |  | - | 2 | 0 | 0 |  |
-| The babbling lampling (`lampling`) | m, goblinish | not cast |  |  |  | - | 2 | 0 | 0 |  |
-| Jory Coyle (`jory`) | 17 m, Bristol | not cast |  |  |  | - | 14 | 0 | 0 |  |
-| Ysolde Marrow, the Wayfinder (`ysolde`) | 55 f, Edinburgh | c10 | england 0.96 | 204 Hz | 3.2 w/s | - | 27 | 0 | 0 | cut off at the head; accent heard as england (0.96), want scotland |
-| The Ford-Warden (`warden`) | m, inhuman | not cast |  |  |  | - | 2 | 0 | 0 |  |
-| The dead Watchman (`watchman`) | 60 m, northern English | not cast |  |  |  | - | 0 | 0 | 0 |  |
-| The bones (`bones`) | m, neutral | not cast |  |  |  | - | 0 | 0 | 0 |  |
-| A Watchman at the gate (`guard`) | 35 m, northern English | not cast |  |  |  | - | 12 | 0 | 0 |  |
-| Townswoman, middle-aged (`folk_f1`) | 45 f, northern English | not cast |  |  |  | - | 44 | 0 | 0 |  |
-| Townswoman, young (`folk_f2`) | 25 f, West Country | not cast |  |  |  | - | 46 | 0 | 0 |  |
-| Townsman, middle-aged (`folk_m1`) | 50 m, northern English | not cast |  |  |  | - | 45 | 0 | 0 |  |
-| Townsman, old (`folk_m2`) | 70 m, West Country | not cast |  |  |  | - | 42 | 0 | 0 |  |
-| A town girl (`folk_child_f`) | 8 f, northern English | not cast |  |  |  | - | 7 | 0 | 0 |  |
-| A town boy (`folk_child_m`) | 8 m, northern English | not cast |  |  |  | - | 7 | 0 | 0 |  |
-| A Watchwoman (`guard_f`) | 35 f, northern English | not cast |  |  |  | - | 9 | 0 | 0 |  |
-| The survivor (a woman) (`heroine`) | 30 f, soft northern English | not cast |  |  |  | - | 0 | 0 | 0 |  |
-| The survivor (a man) (`hero`) | 32 m, soft northern English | not cast |  |  |  | - | 0 | 0 | 0 |  |
+| Redcowl (`redcowl`) | 45 m, hard Scots | c04 | scotland 0.98 | 208 Hz | 3.5 w/s | - | 43 | 0 | 0 | pitch 208 Hz outside 65-120 |
+| Snib (`snib`) | m, goblinish London | c01 | us 0.94 | 169 Hz | 3.2 w/s | - | 14 | 0 | 0 |  |
+| Grimtunnel (`grimtunnel`) | m, goblinish London | c10 | us 0.64 | 231 Hz | 2.6 w/s | - | 9 | 0 | 0 | words wrong: ['oho->oh']; pitch 231 Hz outside 95-165 |
+| The babbling lampling (`lampling`) | m, goblinish | c05 | us 1.00 | 165 Hz | 2.9 w/s | - | 2 | 0 | 0 |  |
+| Jory Coyle (`jory`) | 17 m, Bristol | c05 | england 0.99 | 129 Hz | 3.2 w/s | - | 15 | 0 | 0 | words wrong: ['-all', '-all'] |
+| Ysolde Marrow, the Wayfinder (`ysolde`) | 55 f, Edinburgh | c16 (from maeca) | scotland 0.91 | 156 Hz | 2.5 w/s | - | 27 | 0 | 0 | words wrong: ['tracks->trask'] |
+| The Ford-Warden (`warden`) | m, inhuman | c07 | england 0.99 | 139 Hz | 1.9 w/s | - | 6 | 0 | 0 |  |
+| The dead Watchman (`watchman`) | 60 m, northern English | c10 | england 1.00 | 112 Hz | 1.7 w/s | - | 1 | 0 | 0 |  |
+| The bones (`bones`) | m, neutral | c06 | us 1.00 | 143 Hz | 2.3 w/s | - | 1 | 0 | 0 |  |
+| A Watchman at the gate (`guard`) | 35 m, northern English | c08 | england 1.00 | 97 Hz | 2.3 w/s | - | 13 | 0 | 0 |  |
+| Townswoman, middle-aged (`folk_f1`) | 45 f, northern English | c09 | england 0.98 | 195 Hz | 2.5 w/s | - | 44 | 0 | 0 |  |
+| Townswoman, young (`folk_f2`) | 25 f, West Country | c03 | england 0.99 | 282 Hz | 5.4 w/s | - | 46 | 0 | 0 | words wrong: ['+weigh']; pitch 282 Hz outside 150-235; pace 5.4 words/s, want 2.9-3.8 |
+| Townsman, middle-aged (`folk_m1`) | 50 m, northern English | c04 | england 0.68 | 85 Hz | 2.3 w/s | - | 45 | 0 | 0 |  |
+| Townsman, old (`folk_m2`) | 70 m, West Country | c09 | england 1.00 | 121 Hz | 2.4 w/s | - | 42 | 0 | 0 |  |
+| A town girl (`folk_child_f`) | 8 f, northern English | c06 | england 0.90 | 246 Hz | 3.0 w/s | - | 7 | 0 | 0 |  |
+| A town boy (`folk_child_m`) | 8 m, northern English | c03 | england 1.00 | 263 Hz | 2.9 w/s | - | 7 | 0 | 0 |  |
+| A Watchwoman (`guard_f`) | 35 f, northern English | c01 | england 0.88 | 194 Hz | 3.1 w/s | - | 9 | 0 | 0 |  |
+| The survivor (a woman) (`heroine`) | 30 f, soft northern English | c07 | england 1.00 | 160 Hz | 3.7 w/s | - | 0 | 0 | 0 |  |
+| The survivor (a man) (`hero`) | 32 m, soft northern English | c05 | england 1.00 | 94 Hz | 3.8 w/s | - | 0 | 0 | 0 |  |
+| The Legion's dead, behind the door (`barrow_lord`) | m, old Latin, inhuman | c01 | us 1.00 | 108 Hz | 2.2 w/s | - | 4 | 0 | 0 |  |
+| A Kerchief woman (`kerchief_woman`) | 45 f, hard Scots | c02 | scotland 0.92 | 186 Hz | 2.9 w/s | - | 1 | 0 | 0 |  |
 <!-- /CAST TABLE -->
 
 ## Where the cast stands
@@ -73,6 +75,19 @@ below, plainly.
 - **Brannoc** is the weakest English casting (naturalness 2.1, England
   0.77) and the most important to get right after Vonnra; his grief scenes
   are the game's heart.
+- **Every part now has a voice**, but some are placeholders, not castings:
+  - **Tam**: none of twelve auditions was heard as English (the best,
+    kept, is heard as Canadian). A nine-year-old Somerset boy is beyond the
+    model; a child actor, or an adult actor playing young, is needed.
+  - **Snib, Grimtunnel, the lampling, the bones and the Legion's dead** are
+    heard as American. For the dead that matters less (their voices are
+    processed); for the goblins, who should be London, it is wrong.
+  - **The young townswoman** reads too fast and high (5.4 words a second),
+    and the **middle-aged townsman** is the least natural voice in the cast
+    (naturalness 1.9). Both are heard in passing, but often.
+  - **The Kerchief woman** is a lucky Scots take (0.92), like Redcowl's.
+- **The survivor's two voices** (heroine and hero) are cast and unused
+  until the choices are voiced.
 
 ## Notes for the writer
 
