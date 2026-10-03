@@ -284,7 +284,7 @@ Choices:
   isn't entirely alive.
 - **What the survivor wants.** Him, and the quiet he finds.
 - **Consent, on the page.** He states it plainly at the start, a doctor's
-  consent ("Tell me if anything's no. I'll stop. I'm good at stopping; I've
+  consent ("Tell me if anything's no. I'll stop. I'm fifty-three, pal; I'm good at stopping. I've
   stopped drinking four times."), and means it. He checks in, in his voice,
   as part of the patter, and the patter stopping isn't a lapse: he's
   listening instead.
