@@ -148,6 +148,24 @@ the bestiary records it once seen.
   the player has a moment to see it, as Soulstone's Lords now do
   (`RESEARCH.md` §3.4).
 
+**0.15 Stagger.** Bosses ignore fear, freeze and knockback and shorten
+stuns, as now (`AUDIT.md` §2), but every crowd-control effect that lands
+also fills a **stagger bar** under the health bar (Diablo IV's, `RESEARCH.md`
+§4.1). Full, the boss is held for 3 s and takes 25% more, then resists
+stagger for 15 s. Frost, storm and control builds, which lose their verbs
+against a boss today, earn the fight's damage windows instead. A stagger also breaks whatever the boss
+is channelling (the moon-howl, the flood's call, the Toll), as an interrupt
+does today.
+
+**0.16 What the boss teaches.** A skill seen burning in an arena is
+discovered and can be learned by day. HoloCure gives each boss's attack to
+the player as a weapon (Fubuzilla's beam becomes Fan Beam, `RESEARCH.md`
+§3.3). Each boss's kill discovers one skill in its image (the Pack-Mother's
+Spirit Herd, the Barrow Lord's Grave Tether, Grimtunnel's Cinderfall, the
+Red Hand's Knifestorm, the Kiln Warden's Rimeshard, the Penitent's Moonbrand,
+the Barn Thing's Blightfield, the Centurion's Judgement Disc), so the night's
+fight leaves the day something to learn.
+
 ## 1. The Pack-Mother, Alpha of the Deep Wood
 
 *The Pack. Table tiers I–IV. In the story, **Greymuzzle, the Old Alpha**

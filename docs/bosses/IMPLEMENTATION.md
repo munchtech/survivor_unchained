@@ -47,6 +47,10 @@ An `ArenaBoss` class per boss, chosen by the boss def's id and installed by
   (shape, size, wind-up), Effect)`, picked by a small scheduler; effects are
   calls into what exists (`ScheduleStrike`, `SpawnZone`, a lunge, a spawn).
   Keep the Warden's string modes for the odd ones.
+- **Stagger** (§0.15): a meter on `Enemy`, filled in `Battle.ApplyStatus`
+  where a boss's status is refused today (`Battle.cs:794`), shown under the
+  health bar (`BossBar` gains `Stagger`); full, a 3 s hold with
+  `TakenMul` × 1.25 and `Interrupt`, then 15 s of resistance.
 - **Enrage**: timers from the bar going up (3:00 soft, 5:00 hard) that call
   the script's `Soft()` and `Hard()`.
 - **The boss contract** in `ArenaRun`: the run-up at 28:00 (a sign at a
@@ -166,7 +170,7 @@ horde, with `BossBar` and `SetBoss` as the Verge already uses them.
 
 | Design | Needs | Size |
 |---|---|---|
-| The contract for every boss (§0) | N1, N7, the multiplier (one line) | M |
+| The contract for every boss (§0) | N1 (with stagger), N7, the multiplier (one line), the taught skill (a `Discovered` entry on the kill) | M |
 | The Pack-Mother | N1, N5 (crescent), dark (N4), spectral lanes, Flee-to-point death | M |
 | The Barrow Lord | N1, N5 (March, Ring), N3 (standard), lay-down (N6), allies change side | M–L |
 | Grimtunnel | N1, N3 (three lamps), burrow (exists), pits (N4), the crate prop, an expanding ring (N2) | M |

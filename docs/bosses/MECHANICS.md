@@ -287,9 +287,18 @@ special-cased (`IMPLEMENTATION.md` N3).
 seconds; the reward should be something the player can see (a verb gone, a
 stagger), not a number.
 
+**Stagger.** Diablo IV gives every boss a stagger bar under its health,
+filled by every kind of crowd control (chill, slow, stun, knock-back, fear,
+freeze); when full the boss is held for a few seconds, then resists for a
+while, so control builds earn a damage window without locking the boss
+for ever [§4.1]. It turns the exemptions a boss needs into a currency the
+build spends. Ravenswatch's bosses and elites have stagger bars too, and
+their resistance rises by chapter because players' ability to stagger
+grows [§3.7].
+
 *Used by:* Grimtunnel's lamps, the Barrow Lord's standard, the Kiln Warden's
 irons, the Barn Thing's segments, the Kindling's heart, the Slurry Engine's
-valves.
+valves; stagger on every boss (`SURVIVORS_BOSSES.md` §0.15).
 
 ## 7. Soft and hard enrages, and the floor under fight length
 
@@ -363,7 +372,10 @@ phase one that "punishes you for doing well" [§5]. Denying a build's core
 verb outright (Death Must Die's Frog King could not be dashed through,
 breaking dash builds; the Lady's charm on summons was hotfixed from 20% to
 7%) [§3.6]. A boss that invalidates a weapon family (Polyphemus against
-melee; Vampire Hunters' statue the flamethrower could not reach) [§5, §6].
+melee; Vampire Hunters' statue the flamethrower could not reach) [§5.2, §6].
+A move that punishes the player for attacking (Polyphemus's "Where Are
+You?" counter, triggered even by familiars and boon effects) [§5.2]: our
+weapons fire on their own, so no boss may ever punish being hit.
 
 **The rules.** Proportional, visible, time-limited, and always returned,
 ideally with a bonus. Never take the dash. Never let the counter scale
