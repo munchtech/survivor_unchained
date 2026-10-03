@@ -241,7 +241,10 @@ were Halls of Torment's angriest feedback (the Lord of Regret's orbs, made
 untargetable) [§1.2] and the developers' own explanation of Army of Ruin's deadliest fight (a
 saw that, they guessed, blocked shots while the minion ramp peaked)
 [§3.11]. Filler adds that only feed an
-area build (Diablo IV) [§4.1]. Late, a bigger horde helps an evolved build
+area build (Diablo IV) [§4.1]. Death blasts that punish the player for
+killing, landing together with the horde and a projectile: Grim Dawn's
+Crucible players' main complaint ("getting punished for killing stuff")
+[§4.3]. Late, a bigger horde helps an evolved build
 rather than threatening it [§3.11].
 
 **Readability.** Adds a boss uses should be its own kind, look different
@@ -295,7 +298,11 @@ while, so control builds earn a damage window without locking the boss
 for ever [§4.1]. It turns the exemptions a boss needs into a currency the
 build spends. Ravenswatch's bosses and elites have stagger bars too, and
 their resistance rises by chapter because players' ability to stagger
-grows [§3.7].
+grows [§3.7]. Lost Ark adds the **counter window**: the boss glows blue
+before a charge, and a counter landed then staggers it [§4.3]. We have the
+counter already: a perfect dodge through a telegraphed blow interrupts the
+attacker (`Battle.PerfectDodge`); a boss's signature charge should glow
+for it.
 
 *Used by:* Grimtunnel's lamps, the Barrow Lord's standard, the Kiln Warden's
 irons, the Barn Thing's segments, the Kindling's heart, the Slurry Engine's
