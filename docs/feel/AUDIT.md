@@ -75,7 +75,7 @@ four: the tick, the hit, the *kill*, the *big kill*, the *chain*.
 Normal kills are, as far as the code says, quiet to the camera and to the
 time base: a burst of 10 sparks, 4 rising embers, a smoke puff and the kill
 sound. In a survivors-like the kill, not the hit, is the unit of
-satisfaction (see RESEARCH §1.6 and §8); hits are the means.
+satisfaction (see RESEARCH §1.6 and §8.2); hits are the means.
 
 ---
 
@@ -108,8 +108,11 @@ satisfaction (see RESEARCH §1.6 and §8); hits are the means.
   threat is volume, elites and the Reaper). Here, if ordinary creatures
   take as many hits at minute 25 as at minute 5, the run will feel like
   keeping pace, not ascending. **This is the single most important number
-  to measure** (see SUGGESTIONS S-01). Inferred, not measured: the headless
-  bot reports ember by the minute but not hits-to-kill.
+  to measure**, and it has now been measured (§9): **it does not fall, it
+  rises.** An ordinary creature takes ~1.5 blows at minute 5 and ~4 at
+  minute 30 in every case run; one-hit kills fall from 25–75% of kills to
+  about 5%. Survivor Unchained currently sits where players put Deep Rock
+  Galactic: Survivor: "You're rarely ahead of the power curve".
 - **Strong:** overkill gibs, evolutions with real behaviour changes
   ("Whirlwind", "Glacier Spear", "Tempest Coil" fork the web), rank pips on
   the HUD and on cards, "Fits your build" on draft cards, a draft that leans
@@ -146,7 +149,7 @@ satisfaction (see RESEARCH §1.6 and §8); hits are the means.
 The game's reward *data* is rich (tiered ember, chests that can evolve,
 rarity, manuals, tomes for the day) but its reward *presentation* is
 uniform. The research is blunt that anticipation, not receipt, is where the
-dopamine is (RESEARCH §4.1), and that the best games stage a delay with
+dopamine is (RESEARCH §3.1), and that the best games stage a delay with
 escalating cues before the reveal (VS's chest, Diablo's drop sounds, PoE's
 filter sounds, Hades' door icons). Survivor Unchained reveals everything
 instantly.
@@ -158,7 +161,15 @@ instantly.
 - **Horde size climbs linearly** (`22 + 7.5·min`) with events every 60–85 s
   (ring, champion, stampede, swarm, in fixed rotation), heralds at 10 and
   20, the boss at 30. **Strong skeleton.**
-- **Off: no breathing.** The curve has no designed valleys. The research's
+- **Off: no breathing.** The curve has no designed valleys. Compare Vampire
+  Survivors' 30-minute stage (RESEARCH §4.3): its kept-alive count swings
+  from 10 to 300 *within the same few minutes* (a quiet 10 at minute 10, a
+  flood of 300 at minute 11), a boss or chest every 1–2 minutes and almost
+  every minute after 10:00, and evolutions unlocked at 10:00 just before
+  the first great spike. Here the target count is a straight line from 22
+  to ~247 and the 60–85 s events are the only texture; the champion
+  chests (the only chests) come once every four events, i.e. every 4–6
+  minutes. The research's
   interest-curve and tension/release findings (RESEARCH §4) favour waves
   that swell and break (a crush, then a brief clearing in which to collect,
   then a bigger crush). Here the population target only rises; the events
@@ -287,7 +298,7 @@ release).
 - **Loot beams have one shape.** See §3.
 - **The HUD updates at 12 Hz** (`Game.cs:587`): the ember bar, the health
   bar and the kill count step in 83 ms jumps. A bar that *flows* and
-  *flashes when nearly full* is a known anticipation cue (RESEARCH §4.3).
+  *flashes when nearly full* is a known anticipation cue (RESEARCH §3.1).
   The kill counter does not pop.
 - **No screen-level response to your power**: no hue, bloom or vignette
   shift as the ember rises; the arena looks the same at level 3 and 40.
