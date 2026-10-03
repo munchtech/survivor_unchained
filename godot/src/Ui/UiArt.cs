@@ -30,7 +30,6 @@ public static class UiArt
     {
         // Plates and paper: the screens' backs.
         ["plate"] = new("frames/plate.png", 28, 28, 28, 28),
-        ["plate_header"] = new("frames/plate_header.png", 40, 20, 40, 20),
         ["paper"] = new("frames/paper.png", 32, 32, 32, 32),
         ["tooltip"] = new("frames/tooltip.png", 16, 16, 16, 16),
         ["tooltip_worn"] = new("frames/tooltip_worn.png", 16, 16, 16, 16),
@@ -71,7 +70,7 @@ public static class UiArt
         ["weapon_slot"] = new("frames/weapon_slot.png", 12, 12, 12, 12),
         ["bar_track"] = new("bars/track.png", 8, 6, 8, 6),
         ["bar_track_boss"] = new("bars/track_boss.png", 24, 8, 24, 8),
-        ["minimap_frame"] = new("minimap/frame.png", 0, 0, 0, 0),
+        ["map_frame"] = new("frames/map_frame.png", 20, 20, 20, 20),
     };
 
     static readonly Dictionary<string, Texture2D?> cache = new();

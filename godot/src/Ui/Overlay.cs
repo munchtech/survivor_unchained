@@ -164,6 +164,7 @@ public abstract partial class Overlay : Control
             b.AddChild(row);
             b.CustomMinimumSize = new Vector2(row.GetCombinedMinimumSize().X + 24, 36);
             if (on) b.AddThemeStyleboxOverride("normal", UiArt.Frame("tab_on", Style.Box(new Color("#3a2614"), Style.LineHi, 1, 4)));
+            else if (UiArt.Has("tab")) b.AddThemeStyleboxOverride("normal", UiArt.Frame("tab", new StyleBoxEmpty()));
             // The tabs are reached with LB and RB, not by walking focus up to them.
             Nav.Skip(b);
             bar.AddChild(b);

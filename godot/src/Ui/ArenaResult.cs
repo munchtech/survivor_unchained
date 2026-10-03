@@ -47,6 +47,7 @@ public partial class ArenaResultScreen : Overlay
         bool fell = G.Battle?.Player.Alive == false;
         wrap.AddChild(Style.Label(!r.Won ? "THE EMBER GUTTERS" : fell ? "WON, AND HELD TO THE LAST" : "THE ARENA IS WON", Style.UiHeavy, 15, tone, false, HorizontalAlignment.Center));
         wrap.AddChild(Style.Label(r.Spec.Name, Style.Display, 48, Style.GoldHi, false, HorizontalAlignment.Center));
+        wrap.AddChild(Style.Flourish());
         double beyond = r.Seconds - r.Spec.Minutes * 60;
         counts.Clear();
         var tally = Style.H(36,

@@ -95,7 +95,7 @@ public partial class ArtsScreen : Overlay
         var b = Style.Button("", () => { sel = a.Id; Refresh(); });
         Nav.Id(b, $"art:{a.Id}");
         b.CustomMinimumSize = new Vector2(420, 64);
-        if (on) b.AddThemeStyleboxOverride("normal", Style.Box(new Color("#3a2614"), Style.LineHi, 2, 4));
+        if (on) b.AddThemeStyleboxOverride("normal", UiArt.Frame("row_on", Style.Box(new Color("#3a2614"), Style.LineHi, 2, 4)));
         var tint = !known ? Style.InkDim with { A = 0.5f } : held ? Style.EmberHi : Style.Gold;
         var r = Style.H(12, Glyphs.Icon(a.Icon, 28, tint));
         var role = Roles[a.Role];
@@ -167,7 +167,7 @@ public partial class ArtsScreen : Overlay
             var b = Style.Button("", canPick ? () => G.Gear((j, bt) => j.ChooseFacet(a.Id, f.Id, true, bt)) : canDrop ? () => G.Gear((j, bt) => j.ChooseFacet(a.Id, f.Id, false, bt)) : null);
             b.CustomMinimumSize = new Vector2(390, 88);
             Nav.Id(b, $"facet:{f.Id}");
-            if (on) b.AddThemeStyleboxOverride("normal", Style.Box(new Color("#3a2614"), Style.EmberHi, 2, 4));
+            if (on) b.AddThemeStyleboxOverride("normal", UiArt.Frame("row_on", Style.Box(new Color("#3a2614"), Style.EmberHi, 2, 4)));
             b.Disabled = !canPick && !canDrop;
             var words = Style.V(2, Style.Label(f.Name + (on ? "  ·  chosen" : ""), Style.UiBold, 16, on ? Style.EmberHi : canPick ? Style.GoldHi : Style.Ink),
                 Style.Label(f.Text, Style.Ui, Style.Caption, on || canPick ? Style.Ink : Style.InkDim, true));
@@ -220,7 +220,7 @@ public partial class ArtsScreen : Overlay
         var b = Style.Button("", () => { selSkill = id; Refresh(); });
         Nav.Id(b, $"skill:{id}");
         b.CustomMinimumSize = new Vector2(420, 64);
-        if (on) b.AddThemeStyleboxOverride("normal", Style.Box(new Color("#3a2614"), Style.LineHi, 2, 4));
+        if (on) b.AddThemeStyleboxOverride("normal", UiArt.Frame("row_on", Style.Box(new Color("#3a2614"), Style.LineHi, 2, 4)));
         var col = ItemViews.SchoolColors[w.School];
         var r = Style.H(12, Glyphs.Icon(w.Art, 28, known ? col : col with { A = 0.45f }));
         string attr = SkillBook.Attribute(id);

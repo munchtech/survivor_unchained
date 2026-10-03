@@ -45,6 +45,14 @@ public partial class Minimap : Control
             Color = new Color("#b8321e"), Position = new Vector2(Diameter / 2, Diameter / 2),
         };
         AddChild(you);
+        // A painted arrow (minimap/you.png, pointing up, 24 by 24 shown) in place of the drawn one.
+        if (UiArt.Art("minimap/you.png") is { } arrow)
+        {
+            you.Color = Colors.Transparent;
+            var a = new TextureRect { Texture = arrow, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = MouseFilterEnum.Ignore, Size = arrow.GetSize() };
+            a.Position = -a.Size / 2;
+            you.AddChild(a);
+        }
         // The rim: painted (minimap/frame.png, a ring wider than the disc) or a gold hairline.
         if (UiArt.Art("minimap/frame.png") is { } frame)
         {

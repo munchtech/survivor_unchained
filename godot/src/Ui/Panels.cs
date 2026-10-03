@@ -83,6 +83,7 @@ public partial class DraftPanel : Control
         string head = v.Great != null ? "A Great Blessing" : v.Blessing ? "A Blessing" : $"Ember {v.Level}";
         col.AddChild(Style.Label(kicker, Style.TextItalic, Style.Lead, v.Great != null || v.Blessing ? new Color("#ffd88a") : new Color("#e8b878"), false, HorizontalAlignment.Center));
         col.AddChild(Style.Label(head.ToUpperInvariant(), Style.Display, 48, new Color("#ffe6b8"), false, HorizontalAlignment.Center));
+        col.AddChild(Style.Flourish());
         if (v.Queued > 0) col.AddChild(Style.Label($"{v.Queued} more to choose after this", Style.UiBold, Style.Small, Style.InkDim, false, HorizontalAlignment.Center));
         if (v.Tip != null)
         {

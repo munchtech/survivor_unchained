@@ -294,6 +294,7 @@ public partial class ChapterScreen : Overlay
         AddChild(wrap);
         wrap.AddChild(Style.Label("THE END OF THE FIRST CHAPTER", Style.UiHeavy, 15, Style.Gold, false, HorizontalAlignment.Center));
         wrap.AddChild(Style.Label("The Waystation", Style.Display, 52, Style.GoldHi, false, HorizontalAlignment.Center));
+        wrap.AddChild(Style.Flourish());
         wrap.AddChild(Style.Label(sum.Epithet, Style.TextItalic, 20, Style.Ink, false, HorizontalAlignment.Center));
         var book = Style.Panel(Style.Paper(28));
         book.SizeFlagsVertical = SizeFlags.ExpandFill;

@@ -283,6 +283,13 @@ public static class Style
         return m;
     }
 
+    /// <summary>The ornament under a great heading (ornaments/flourish.png), or nothing.</summary>
+    public static Control Flourish()
+    {
+        if (UiArt.Art("ornaments/flourish.png") is not { } art) return Gap(0);
+        return new TextureRect { Texture = art, CustomMinimumSize = art.GetSize(), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered, MouseFilter = Control.MouseFilterEnum.Ignore, SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter };
+    }
+
     /// <summary>A darkening over the game behind an overlay; a click on it closes.</summary>
     public static ColorRect Scrim(Action? onClick = null, float alpha = 0.55f)
     {

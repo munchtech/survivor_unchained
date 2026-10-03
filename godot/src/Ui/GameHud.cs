@@ -147,30 +147,47 @@ public partial class GameHud : CanvasLayer
         };
     }
 
-    /// <summary>A round medallion rimmed in gold (the ember's, the heart's).</summary>
-    static Panel Medal(Control parent, Vector2 at, float size, Color inner)
+    /// <summary>A round medallion rimmed in gold (the ember's, the heart's);
+    /// painted (hud/NAME.png, drawn larger than the medallion, centred on it) when there is art.</summary>
+    static Panel Medal(Control parent, Vector2 at, float size, Color inner, string? art = null)
     {
         var p = new Panel { Position = at, Size = new Vector2(size, size), MouseFilter = Control.MouseFilterEnum.Ignore };
         var s = Style.Box(inner, Style.GoldDim, 3, (int)(size / 2), 0);
         s.ShadowColor = new Color(1f, 0.55f, 0.2f, 0.35f);
         s.ShadowSize = 10;
-        p.AddThemeStyleboxOverride("panel", s);
+        if (art != null && UiArt.Art($"hud/{art}.png") is { } tex)
+        {
+            p.AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
+            var r = new TextureRect { Texture = tex, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = Control.MouseFilterEnum.Ignore, ShowBehindParent = true };
+            r.Size = tex.GetSize();
+            r.Position = (new Vector2(size, size) - r.Size) / 2;
+            p.AddChild(r);
+        }
+        else p.AddThemeStyleboxOverride("panel", s);
         parent.AddChild(p);
         return p;
+    }
+
+    /// <summary>A bar's fill: painted (bars/NAME.png, stretched along the bar) or the drawn gradient.</summary>
+    static TextureRect Fill(string art, Color[] colors, float[] stops, bool vertical = false)
+    {
+        var r = GradientRect(colors, stops, vertical);
+        if (UiArt.Art($"bars/{art}.png") is { } tex) r.Texture = tex;
+        return r;
     }
 
     void BuildEmber()
     {
         float w = 760 * K, x = (1920 - w) / 2;
         var track = new Panel { Position = new Vector2(x + 30, 23), Size = new Vector2(w - 30, 12), MouseFilter = Control.MouseFilterEnum.Ignore, ClipContents = true };
-        track.AddThemeStyleboxOverride("panel", Style.Box(Hex("#120c0a"), new Color(0.85f, 0.71f, 0.42f, 0.28f), 1, 5, 0));
+        track.AddThemeStyleboxOverride("panel", UiArt.Frame("bar_track", Style.Box(Hex("#120c0a"), new Color(0.85f, 0.71f, 0.42f, 0.28f), 1, 5, 0)));
         combat.AddChild(track);
-        emberFill = GradientRect([Hex("#6a1e04"), Hex("#c24a0a"), Hex("#ff8a2a"), Hex("#ffd070")], [0, 0.45f, 0.85f, 1]);
+        emberFill = Fill("ember_fill", [Hex("#6a1e04"), Hex("#c24a0a"), Hex("#ff8a2a"), Hex("#ffd070")], [0, 0.45f, 0.85f, 1]);
         emberFill.Position = new Vector2(1, 1);
         emberFill.Size = new Vector2(0, 10);
         track.AddChild(emberFill);
         // By day the same bar is the survivor's own experience, cooler and slower.
-        growFill = GradientRect([Hex("#16222e"), Hex("#34587a"), Hex("#86b0d8"), Hex("#e6f2ff")], [0, 0.45f, 0.85f, 1]);
+        growFill = Fill("experience_fill", [Hex("#16222e"), Hex("#34587a"), Hex("#86b0d8"), Hex("#e6f2ff")], [0, 0.45f, 0.85f, 1]);
         growFill.Position = new Vector2(1, 1);
         growFill.Size = new Vector2(0, 10);
         track.AddChild(growFill);
@@ -182,7 +199,7 @@ public partial class GameHud : CanvasLayer
         barWord = Style.Label("EMBER", Style.UiHeavy, 13, Style.Ember with { A = 0.85f });
         barWord.Position = new Vector2(x + 52, 37);
         combat.AddChild(barWord);
-        var medal = Medal(combat, new Vector2(x, 6), 46, Hex("#3a2210"));
+        var medal = Medal(combat, new Vector2(x, 6), 46, Hex("#3a2210"), "medal_level");
         emberLevel = Style.Label("1", Style.Display, 20, Style.EmberHi, false, HorizontalAlignment.Center);
         emberLevel.Size = new Vector2(46, 46);
         emberLevel.PivotOffset = new Vector2(23, 23);
@@ -209,11 +226,11 @@ public partial class GameHud : CanvasLayer
         statuses.Position = new Vector2(43, 0);
         v.AddChild(statuses);
         var bar = new Panel { Position = new Vector2(34, 38), Size = new Vector2(362, 26), ClipContents = true, MouseFilter = Control.MouseFilterEnum.Ignore };
-        bar.AddThemeStyleboxOverride("panel", Style.Box(Hex("#160a0a"), new Color(0.85f, 0.71f, 0.42f, 0.32f), 1, 4, 0));
+        bar.AddThemeStyleboxOverride("panel", UiArt.Frame("bar_track", Style.Box(Hex("#160a0a"), new Color(0.85f, 0.71f, 0.42f, 0.32f), 1, 4, 0)));
         v.AddChild(bar);
         hpTrail = new ColorRect { Color = Hex("#e8c07a") with { A = 0.85f }, Position = new Vector2(1, 1), Size = new Vector2(360, 24), MouseFilter = Control.MouseFilterEnum.Ignore };
         bar.AddChild(hpTrail);
-        hpFill = GradientRect([Hex("#ff6a5a"), Hex("#d2262c"), Hex("#8a0e16")], [0, 0.35f, 1], true);
+        hpFill = Fill("health_fill", [Hex("#ff6a5a"), Hex("#d2262c"), Hex("#8a0e16")], [0, 0.35f, 1], true);
         hpFill.Position = new Vector2(1, 1); hpFill.Size = new Vector2(360, 24);
         bar.AddChild(hpFill);
         hpShield = new ColorRect { Color = Hex("#9ad4ff"), Position = new Vector2(1, 1), Size = new Vector2(0, 7), MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -225,7 +242,7 @@ public partial class GameHud : CanvasLayer
         hpText.Size = new Vector2(362, 26);
         hpText.VerticalAlignment = VerticalAlignment.Center;
         bar.AddChild(hpText);
-        var h = Medal(v, new Vector2(0, 30), 41, Hex("#3a0c10"));
+        var h = Medal(v, new Vector2(0, 30), 41, Hex("#3a0c10"), "medal_heart");
         heart = h;
         h.PivotOffset = new Vector2(20.5f, 20.5f);
         var g = Glyphs.Icon("heart", 22, Hex("#ffb0a8"));
@@ -284,6 +301,13 @@ public partial class GameHud : CanvasLayer
         var ab = new Control { CustomMinimumSize = new Vector2(89, 89), MouseFilter = Control.MouseFilterEnum.Ignore };
         abilityRing = new Ring { Size = new Vector2(89, 89), MouseFilter = Control.MouseFilterEnum.Ignore };
         ab.AddChild(abilityRing);
+        // The art's ring painted over the drawn one (hud/ring_art.png, a ring with an empty middle).
+        if (UiArt.Art("hud/ring_art.png") is { } ringArt)
+        {
+            var rr = new TextureRect { Texture = ringArt, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = Control.MouseFilterEnum.Ignore, Size = ringArt.GetSize() };
+            rr.Position = (new Vector2(89, 89) - rr.Size) / 2;
+            ab.AddChild(rr);
+        }
         abilityGlyph = Glyphs.Icon("shield", 41);
         abilityGlyph.Position = new Vector2(24, 24); abilityGlyph.Size = new Vector2(41, 41);
         ab.AddChild(abilityGlyph);
@@ -359,7 +383,7 @@ public partial class GameHud : CanvasLayer
         toasts.Position = new Vector2(31, 1080 * 0.34f);
         toasts.Size = new Vector2(408, 0);
         play.AddChild(toasts);
-        hintBox = Style.Panel(Style.Box(Hex("#e6d6b0"), new Color(0.35f, 0.24f, 0.08f, 0.45f), 1, 4, 14));
+        hintBox = Style.Panel(UiArt.Frame("hint", Style.Box(Hex("#e6d6b0"), new Color(0.35f, 0.24f, 0.08f, 0.45f), 1, 4, 14)));
         // Pinned by its foot above the vitals; grows upward with its words.
         hintBox.AnchorTop = hintBox.AnchorBottom = 1;
         hintBox.OffsetLeft = 34; hintBox.OffsetBottom = -134;
@@ -377,7 +401,7 @@ public partial class GameHud : CanvasLayer
         subtitle.AddChild(sayText);
         subtitle.Modulate = Colors.Transparent;
         play.AddChild(subtitle);
-        promptBox = Style.Panel(Style.Box(new Color(0.08f, 0.07f, 0.09f, 0.92f), Style.Line, 1, 24, 10));
+        promptBox = Style.Panel(UiArt.Frame("prompt", Style.Box(new Color(0.08f, 0.07f, 0.09f, 0.92f), Style.Line, 1, 24, 10)));
         promptBox.Visible = false;
         play.AddChild(promptBox);
         var ann = Style.V(4);
@@ -416,7 +440,7 @@ public partial class GameHud : CanvasLayer
         bossTitle.Position = new Vector2(0, 32); bossTitle.Size = new Vector2(w, 20);
         bossBox.AddChild(bossTitle);
         var track = new Panel { Position = new Vector2(0, 58), Size = new Vector2(w, 16), ClipContents = true, MouseFilter = Control.MouseFilterEnum.Ignore };
-        track.AddThemeStyleboxOverride("panel", Style.Box(Hex("#140808"), Style.GoldDim, 1, 3, 0));
+        track.AddThemeStyleboxOverride("panel", UiArt.Frame("bar_track_boss", Style.Box(Hex("#140808"), Style.GoldDim, 1, 3, 0)));
         bossBox.AddChild(track);
         bossTrack = track;
         bossTrail = new ColorRect { Color = Hex("#e8c07a"), Position = new Vector2(1, 1), Size = new Vector2(w - 2, 14), MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -481,7 +505,7 @@ public partial class GameHud : CanvasLayer
         void Status(string glyph, double left, bool good)
         {
             var col = good ? Hex("#9ad4ff") : Hex("#ff8a6a");
-            var chip = Style.Panel(Style.Box(new Color(0.04f, 0.03f, 0.05f, 0.8f), col, 1, 13, 5), Style.H(3, Glyphs.Icon(glyph, 17, col), Style.Label($"{Math.Ceiling(left)}", Style.UiBold, 13, col)));
+            var chip = Style.Panel(UiArt.Frame("chip", Style.Box(new Color(0.04f, 0.03f, 0.05f, 0.8f), col, 1, 13, 5)), Style.H(3, Glyphs.Icon(glyph, 17, col), Style.Label($"{Math.Ceiling(left)}", Style.UiBold, Style.Badge, col)));
             chip.MouseFilter = Control.MouseFilterEnum.Ignore;
             statuses.AddChild(chip);
         }
@@ -549,7 +573,7 @@ public partial class GameHud : CanvasLayer
             if (rank <= 0 || Boons.Find(id) is not { } bd) continue;
             var col = Style.RarityOf((int)bd.Rarity);
             var chip = new Panel { CustomMinimumSize = new Vector2(34, 34), MouseFilter = Control.MouseFilterEnum.Ignore };
-            chip.AddThemeStyleboxOverride("panel", Style.Box(Hex("#1a1720"), col with { A = 0.55f }, 1, bd.Kind == BoonKind.Blessing ? 6 : 17, 0));
+            chip.AddThemeStyleboxOverride("panel", UiArt.Frame("chip", Style.Box(Hex("#1a1720"), col with { A = 0.55f }, 1, bd.Kind == BoonKind.Blessing ? 6 : 17, 0)));
             var gl = Glyphs.Icon(bd.Icon, 20, col);
             gl.Position = new Vector2(7, 7); gl.Size = new Vector2(20, 20);
             chip.AddChild(gl);

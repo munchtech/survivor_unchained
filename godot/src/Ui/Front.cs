@@ -50,10 +50,16 @@ public partial class TitleScreen : Overlay
         var brand = Style.V(2);
         brand.Position = new Vector2(134, 140);
         brand.AddChild(Style.Label("A tale of the Ember Watch", Style.TextItalic, 19, new Color("#c8a878")));
-        var b1 = Style.Label("SURVIVOR", Style.Display, 92, new Color("#f0c878"));
-        b1.AddThemeConstantOverride("outline_size", 0);
-        brand.AddChild(b1);
-        brand.AddChild(Style.Label("U N C H A I N E D", Style.Display, 54, new Color("#d8a050")));
+        // The painted logo (title/logo.png) when there is one; else the name set in Cinzel.
+        if (UiArt.Art("title/logo.png") is { } logo)
+            brand.AddChild(new TextureRect { Texture = logo, CustomMinimumSize = logo.GetSize(), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspect, MouseFilter = MouseFilterEnum.Ignore });
+        else
+        {
+            var b1 = Style.Label("SURVIVOR", Style.Display, 92, new Color("#f0c878"));
+            b1.AddThemeConstantOverride("outline_size", 0);
+            brand.AddChild(b1);
+            brand.AddChild(Style.Label("U N C H A I N E D", Style.Display, 54, new Color("#d8a050")));
+        }
         var rule = new ColorRect { Color = Style.Gold, CustomMinimumSize = new Vector2(420, 1), MouseFilter = MouseFilterEnum.Ignore };
         brand.AddChild(Style.Gap(12));
         brand.AddChild(rule);

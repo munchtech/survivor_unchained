@@ -186,7 +186,7 @@ public partial class MapScreen : Overlay
         const int Frame = 740;
         // Exactly its size: a frame stretched wider shows the ink past the fog's edge.
         var frame = new Panel { CustomMinimumSize = new Vector2(Frame, Frame), SizeFlagsHorizontal = SizeFlags.ShrinkCenter, ClipContents = true, MouseFilter = MouseFilterEnum.Stop };
-        frame.AddThemeStyleboxOverride("panel", Style.Box(new Color("#d9cba8"), new Color("#5a3e24"), 2, 3, 0));
+        frame.AddThemeStyleboxOverride("panel", UiArt.Frame("map_frame", Style.Box(new Color("#d9cba8"), new Color("#5a3e24"), 2, 3, 0)));
         sheet.AddChild(frame);
         world = new Control { Size = new Vector2(Frame, Frame), MouseFilter = MouseFilterEnum.Ignore };
         frame.AddChild(world);
