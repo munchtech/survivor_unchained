@@ -184,6 +184,8 @@ public class WorldLogicTests
         Rules.Apply(E("{ set: { redcowl: 'bargained' } }"), s.C);
         Assert.True(Standings.KerchiefsFriendly(s.C));
         Assert.Equal("Tolerated", Find("kerchief")?.Word);
+        Rules.Apply(E("{ set: { 'be.crates': 'redcowl' } }"), s.C);
+        Assert.Equal("Redcowl keeps the Coyle crates from the Dig, on your word.", Find("kerchief")?.Why);
         Rules.Apply(E("{ set: { 'roost.hostile': true } }"), s.C);
         Assert.False(Standings.KerchiefsFriendly(s.C));
         Assert.Equal("At war", Find("kerchief")?.Word);
