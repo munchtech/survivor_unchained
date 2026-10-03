@@ -64,7 +64,7 @@ public static class Chapter
         else if (surv == "dead" && cargo is "sold" or "kept") { verdict = "Too late, and robbed"; tone = ThreadTone.Bad; outcome = "The prisoners did not come home, and the cargo went where you took it."; }
         else if (surv == "dead") { verdict = "Too late"; tone = ThreadTone.Bad; outcome = "The prisoners in the Roost did not come home."; }
         else if (cargo == "returned") { verdict = "The goods, not the men"; tone = ThreadTone.Grey; outcome = Out("returned"); }
-        var beats = Pick(w, "caravan", ["roost_found", "roost_told", "redcowl_met", "survivors_freed", "survivors_dead", "cargo_returned", "cargo_sold", "cargo_kept", "cargo_lost", "cargo_moved", "crates_redcowl", "crates_harlan", "jory_told", "pell_exposed", "pell_joined", "pell_given", "pell_hunted"]);
+        var beats = Pick(w, "caravan", ["roost_found", "roost_told", "redcowl_met", "survivors_freed", "survivors_dead", "cargo_returned", "cargo_sold", "cargo_kept", "cargo_lost", "cargo_moved", "crates_redcowl", "crates_harlan", "crates_sunk", "jory_told", "pell_exposed", "pell_joined", "pell_given", "pell_hunted"]);
         if (S(w, "redcowl") == "tricked") beats.Add("You bluffed the Kerchiefs out of their own camp.");
         if (S(w, "redcowl") == "dead") beats.Add("Redcowl is dead.");
         if (S(w, "caravan.pell") == "fled") beats.Add("Pell Varrow fled the Waystation in the night.");

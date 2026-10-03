@@ -554,6 +554,30 @@ public sealed class Verge : ZoneRuntime
                 if (KerchiefsFriendly() && F("redcowl").Str != "bargained" && roostCrew.Any(Up)) TurnHostile("roost.hostile", "Thief!");
             },
         });
+        // The six crates marked "B.E.", in a camp with nobody left to keep
+        // them: one charge for the taking, or the lot into the stream.
+        bool CratesLeft() => (F("redcowl").Str is "dead" or "tricked" || F("roost.cleared").Truthy)
+            && F("be.crates").IsNull && !Test("""{ "history": "burned_roost" }""");
+        I.Add(new()
+        {
+            Id = "crates_charge", X = cargo.X - 2.4, Z = cargo.Z + 1.2, R = 2.4, Verb = "Take a charge", Name = "The B.E. crates",
+            When = () => CratesLeft() && !F("crates.charge_taken").Truthy,
+            Act = () =>
+            {
+                G.Apply("""[{ "give": "blasting_ember" }, { "set": { "crates.charge_taken": true } }]""");
+                G.Say("You prise one charge out of the straw. The rest sit there and wait, the way they have waited for everyone.", null, 5);
+            },
+        });
+        I.Add(new()
+        {
+            Id = "crates_sink", X = cargo.X - 3.4, Z = cargo.Z + 3.4, R = 2.4, Verb = "Sink them in the stream", Name = "The B.E. crates",
+            When = CratesLeft,
+            Act = () =>
+            {
+                G.Apply("""[{ "set": { "be.crates": "sunk" } }, { "quest": { "id": "caravan", "entry": "crates_sunk" } }]""");
+                G.Say("You roll them down into the ravine's water one at a time, and listen to each one not go off.", null, 5);
+            },
+        });
         I.Add(new() { Id = "snib", X = pump.X + 4, Z = pump.Z + 3, R = 3.2, Verb = "Talk", Name = "Snib", When = () => Up(snib) && snib!.Disposition == Disposition.Neutral, Act = () => G.Talk("snib") });
         bool Pumping() => F("dig.pump").IsNull || F("dig.pump").Str == "running";
         I.Add(new()

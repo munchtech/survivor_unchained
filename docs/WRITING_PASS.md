@@ -59,7 +59,7 @@ records the choices whose weight lands later (section 9).
 |---|---|---|
 | Found early | Pell's ledger, the strongbox, the Roost, the cages and the Dig, each found before its quest, now start their story rather than finish it; people react to a survivor who arrives already knowing | [DATA, done] (dialogue gates and reactions); [CODE, done] C1, C2 (the strongbox's journal line, ledger objectives) |
 | The Beast Problem | Snib explains his pump to a stranger, and will not move it for someone with no reason to care; Redcowl's charge as a way to blow the pump; Pell sells the charge only to someone who knows the Dig | [DATA, done]; [CODE, to do] C6 |
-| The Missing Caravan | Jessop named and missing; Harlan's greeting follows the days and the news; telling Harlan where the Roost is; the ledger read for its date; the six crates' fate; Jory told or lied to; who tells Redcowl where Pell sleeps; Harlan pays for the boy even after you sold his box | [DATA, done]; [CODE, to do] C5 (the crates in an empty camp) |
+| The Missing Caravan | Jessop named and missing; Harlan's greeting follows the days and the news; telling Harlan where the Roost is; the ledger read for its date; the six crates' fate; Jory told or lied to; who tells Redcowl where Pell sleeps; Harlan pays for the boy even after you sold his box | [DATA, done]; [CODE, done] C5 (the crates in an empty camp) |
 | The Lamps at the Low Ford | A new mystery: the dead watchman's book, Corran and Dannet, Keegan, Brannoc's irons and his mark, Rook's money, the carters' notice, the square coin, Nell; the accusation at the fortune | [DATA, done]; [CODE, done] C3 (the prologue writes the first line) |
 | Nell | Brannoc asks after his daughter; the truth buries her, a lie sends him to the gate | [DATA, done] |
 | Seeds | Holloway's letter; Sella's pillow talk (quoted in the fortune); the Wayfinder's margin; Keegan after a death; Chid's "C"; Tam's knocking; Maeca and the Kerchiefs; Redcowl's "little bird" and "Ashford"; Rav names his brother | [DATA, done] |
@@ -297,7 +297,7 @@ flowchart TD
 | The strongbox sold, then the boy brought home | Harlan's reward | he pays for the boy anyway, once, and refuses you after | [DATA, done] |
 | The wagons, by name | Harlan | Redcowl names Coyle (`redcowl_wagons`) | [DATA, done] |
 | Jory, before Harlan | Harlan | Jory's `clerk_turned`; Harlan's greeting as above | [DATA, done] |
-| The crates in an empty camp | Redcowl gone | Harlan can still be told; take a charge or sink them | [CODE, to do] C5 |
+| The crates in an empty camp | Redcowl gone | Harlan can still be told; take a charge or sink them | [CODE, done] C5 |
 
 ### 5.5 Facts
 

@@ -248,6 +248,31 @@ public class VergeTests
     }
 
     [Fact]
+    public void With_the_Kerchiefs_gone_the_six_crates_can_be_robbed_once_or_sunk()
+    {
+        // K14: nobody left in the Roost to keep them.
+        var s = Make();
+        Assert.False(I(s, "crates_charge").When!());
+        Assert.False(I(s, "crates_sink").When!());
+        s.J.World.Facts["redcowl"] = "tricked";
+        I(s, "crates_charge").Act();
+        Assert.Equal(1, Inventory.Count(s.J.Ch, "blasting_ember"));
+        Assert.False(I(s, "crates_charge").When!());
+        Assert.True(I(s, "crates_sink").When!());
+        I(s, "crates_sink").Act();
+        Assert.Equal("sunk", s.J.World.Fact("be.crates").Str);
+        Assert.Contains("crates_sunk", s.J.World.Quests["caravan"].Entries);
+        Assert.False(I(s, "crates_sink").When!());
+        // A Roost burned with the prisoners in it took the crates with it.
+        var b = Make();
+        b.J.World.Facts["roost.cleared"] = true;
+        Assert.True(I(b, "crates_sink").When!());
+        Rules.Apply(Json.Parse<Change>("""{ "history": { "id": "burned_roost", "text": "set the Roost burning", "tags": ["caravan"], "spread": 2 } }"""), b.J.Ctx);
+        Assert.False(I(b, "crates_charge").When!());
+        Assert.False(I(b, "crates_sink").When!());
+    }
+
+    [Fact]
     public void Every_thing_that_can_be_done_can_be_done()
     {
         // Every interactable offered and not refused runs (its effects are

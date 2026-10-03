@@ -456,6 +456,23 @@ public class BreadcrumbTests
         Assert.Equal("watch", Settled(s => s.World.Facts["roost.cleared"] = true));
         Assert.Equal("burned", Settled(s => Rules.Apply(E("{ history: { id: 'burned_roost', text: 'set the Roost burning', tags: ['caravan'], spread: 2 } }"), s.C)));
         Assert.Equal("redcowl", Settled(s => s.World.Facts["be.crates"] = "redcowl"));
+        Assert.Equal("sunk", Settled(s => s.World.Facts["be.crates"] = "sunk"));
+    }
+
+    [Fact]
+    public void Crates_sunk_in_the_stream_are_the_one_thing_Vonnra_approves_of_throwing_away()
+    {
+        // K14, at the fortune and at Harlan's: the crates' fate is settled.
+        var s = Q();
+        s.Ch.Knowledge.Add("clue.blasting_ember");
+        Entries(s, "caravan", "harlan_plea", "roost_found");
+        Assert.Contains(Offered(s, "harlan"), t => t.Contains("Your six crates"));
+        s.World.Facts["be.crates"] = "sunk";
+        Assert.DoesNotContain(Offered(s, "harlan"), t => t.Contains("Your six crates"));
+        s.World.Facts["beasts.outcome"] = "cured";
+        s.World.Facts["caravan.survivors"] = "rescued";
+        s.World.Facts["chapter.ready"] = true;
+        Assert.Contains("at the bottom of a stream", Fortune(s).Read);
     }
 
     /* ------------------------------------------------- seeds for the later acts -- */

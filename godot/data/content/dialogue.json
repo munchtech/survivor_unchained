@@ -11956,6 +11956,13 @@
      },
      {
       "when": {
+       "fact": "be.crates",
+       "eq": "sunk"
+      },
+      "text": "And six crates at the bottom of a stream, where nothing will ever buy them. That is the first thing you have thrown away that I approve of."
+     },
+     {
+      "when": {
        "knows": "clue.blasting_ember"
       },
       "text": "And six crates still waiting in a ravine to go where they were paid to go. Someone will deliver them. Someone always does."
