@@ -44,7 +44,10 @@ the hammer stops.
   side of the south road: the anvil at (11.6, 14.6) with Brannoc behind it facing
   west across it (heading -pi/2); the forge's hearth glowing behind him at
   (13.4, 14.2); on the wall left of the door (12.3, 12) a rack with two black
-  lamp-irons hanging from hooks.
+  lamp-irons hanging from hooks, and on a nail beside the rack a pair of small
+  boots, worn through at the toes, hung up by their laces. Never mentioned, never
+  framed for: they are Nell's old boots, the ones the new boots replaced (Act 2's
+  major turn: he bought the new ones with the irons money).
 - **Time:** day, morning or afternoon (the forge is lit).
 - **Light:** daylight from the road (west) on his front; the hearth's orange
   from behind him rimming his shoulders and his cropped head; sparks on

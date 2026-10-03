@@ -21,7 +21,9 @@ him to run with her, or leaves them be.
   price (Maeca's regard, the Watch's), or a walk away.
 - **Plants:** the wolf's lip at her face (Act 2: the Pack, and every animal,
   know the Unchained; Keegan's signs); the promise (broken if she kills a wolf
-  after it, `promise.broken`, quoted back by Vonnra's fortune).
+  after it, `promise.broken`, quoted back by Vonnra's fortune); Maeca on the
+  ridge (shot 13), which her line afterwards pays (`maeca.cb_knelt`: "I was on
+  the ridge. He let you. ...He doesn't let me, and he's known me ten years.").
 - **Pays:** Maeca's advice to each calling (`maeca.say_calling`: "Don't raise it
   in the Hollow", "Leave the big blade", "Fire's the one thing they all
   remember", "Quiet feet") and to everyone (`maeca.speak`: "no wolf blood on

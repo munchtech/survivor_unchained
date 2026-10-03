@@ -189,4 +189,7 @@ a crouch); wetness on hair, skin and cloth, drying over the first minutes of pla
 a weed strand on the head (and the collar); wet-footprint decals in the frost;
 frost on grass that can crack in a line; the breath system (none on her); a
 bedroll prop with a folded blanket; the hare, the lens on a book, the kerchief on
-a strap, the lantern; water-closing and drip sounds.
+a strap, the lantern; water-closing and drip sounds. The title screen's hooded
+stranger by this fire is the survivor at dusk, before the water, and must read as
+any survivor: hood up, back to the camera, no calling's silhouette. (Today it is a
+female stalker model, which reads as one survivor in particular.)

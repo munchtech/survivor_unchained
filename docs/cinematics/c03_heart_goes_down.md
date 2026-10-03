@@ -84,7 +84,7 @@ groans, and every lamp along the road dips at once.
 | 9 | MS | 35 | Static; a hard shake (0.6) on the burst | The mud bursts up under her hand: Grimtunnel, up to the waist, snatches the heart out of the air and hugs it to his chest. Line G1. | 3.0 |
 | 10 | MS | 50 | Static, from her eye height, down at him | In his arms the heart's light goes on straining out toward her. He looks down at it; up at her; down at it. His head-lamp swings up into her face (a lamp to the face again, small and orange this time) and his head jerks twice: sniffing. Then he goes still, toad-still, and his head dips: a small duck, very nearly a bow. Line G2. Then his whole body shakes once with a laugh and he is grinning again. | 5.0 |
 | 11 | MS | 35 | Static | Line G3, broken in the middle. He dives head first, still clutching the heart; the hole folds in behind him; through the churned mud the heart's light shows for a moment going down, then is gone. | 3.5 |
-| 12 | ELS | 24 | Static, 10 m up over the north bank, 60 m east of the ford, looking west along the river | The ford small in the middle of the frame, her in it; the road's lamps either side of the river (lights 12, 13 and 14). Silence. Then, from under everything, a groan: long, deep, felt in the ground. The river shivers in rings. Every lamp in the frame dips at once, and comes back. The sky's lowest edge has gone grey. She looks down at her feet. | 5.0 |
+| 12 | ELS | 24 | Static, 10 m up over the north bank, 60 m east of the ford, looking west along the river | The ford small in the middle of the frame, her in it; the road's lamps either side of the river (lights 12, 13 and 14: more of Brannoc's ten irons, hung along the road to the ford, burning ember-blue). Silence. Then, from under everything, a groan: long, deep, felt in the ground. The river shivers in rings. Every lamp in the frame dips at once, and comes back. The sky's lowest edge has gone grey. She looks down at her feet. | 5.0 |
 | 13 | MS to play | 35 to play | Pull back and up into the follow camera | She stands in the ford with the dawn coming. Bars out. Control. | 2.0 |
 
 Total: 45.0 s.
@@ -165,7 +165,7 @@ a cave reverb that gets wetter as he goes down.
   shot 10.
 - The burst (mud, gravel, river spray); his head-lamp; the heart's glow through the
   mud going down.
-- Shot 12: lights 12, 13 and 14 dip together for 0.6 s; the river's rings.
+- Shot 12: lights 12, 13 and 14 dip together for 0.6 s; the river's rings. (They are ember in Brannoc's irons, so the dip is the chain's: everything burning the Morrow's light flinches at once. A Watch lamp burning oil would not.)
 - The grey edge of the sky (the `Dawn` blend starting).
 
 ## In, out, skip, subtitles

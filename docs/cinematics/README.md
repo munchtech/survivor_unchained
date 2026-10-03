@@ -268,7 +268,7 @@ in the order to build it.
 | C06 | Forty-One Mouths | The Verge, the Roost | A reveal; into Redcowl's talk | 2 | 33 s, then the talk | `c06_forty_one_mouths.md` |
 | C07 | The Hammer Stops | The Waystation, the smithy | Choice, with endings | 1 | 45 to 80 s + choices | `c07_hammer_stops.md` |
 | C08 | The Iron Marker | The Waystation, the Quiet Garden | Conditional payoff (Nell's burial) | 2 | 72 s | `c08_iron_marker.md` |
-| C09 | The Fortune | The toll tower's roof | Act 1 closes; choice | 1 | 1 min 55 s to 2 min 10 s | `c09_fortune.md` |
+| C09 | The Fortune | The toll tower's roof | Act 1 closes; choice | 1 | 2 min to 2 min 17 s | `c09_fortune.md` |
 | C10 | The Hollow by Night | Arena | Boss arrival and death (Greymuzzle) | 3 | 9 s + 16 s | `c10_hollow_by_night.md` |
 | C11 | Raid on the Roost | Arena | Boss arrival and death (Redcowl) | 3 | 10 s + 17 s | `c11_raid_on_the_roost.md` |
 | C12 | The Dig Boils Over | Arena | Boss arrival and retreat (Grimtunnel) | 3 | 9 s + 11 s | `c12_dig_boils_over.md` |

@@ -125,7 +125,9 @@ half-said Chid is also true to him.
 What it means at the grave: the lamps are kept, the dark is guarded, morning is
 only just under the hill, the road is over and paid for, and she will wake. What
 it means to the player who has been paying attention: the Order's "morning" is
-the thing under the ground; Nell was on toll work; and she did wake. Nobody in the
+the thing under the ground; Nell was on toll work; and she did wake. And in Act 3
+it is true a third time: the morning under the ground keeps every one of the
+valley's dead, and at the bottom of the stair Nell is there, saying "Da". Nobody in the
 garden knows that but the survivor, Brannoc if she told him so, and the woman in
 violet who is not bowing her head.
 

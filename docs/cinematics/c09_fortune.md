@@ -44,7 +44,10 @@ through, and one that is not.
 - **Pays:**
   - the whole of Act 1, reading by reading;
   - Sella's buyers ("Vonnra pays for all of it"), paid in the reading of her past
-    if she told Sella that past;
+    if she told Sella that past while Sella was still selling her
+    (`sella.past_sold`: not after the night Sella would not take the money);
+  - the tremors (rule `tremor`, "the ground turned over in its sleep"), which stop
+    Vonnra in the middle of a sentence;
   - the lamp in the tower window (C04), now on the table;
   - the Warden's lamp to her face (C02) and Grimtunnel's (C03), now Vonnra's. The
     breath in the lamplight explains, without a word, why the keepers hold one up;
@@ -73,7 +76,7 @@ through, and one that is not.
     clue.blasting_ember`;
   - Pell: `caravan.pell`, `pell.fate`;
   - the survivor: trait `risen_once`, `player.wanted`, trait `wolf_friend`,
-    `sella.heard_past`, background;
+    `sella.past_sold`, background;
   - below: `tam.tock`;
   - the accusation: `LAMPS_CTX` and `vonnra.accused`;
   - the calling (which hand she asks for);
@@ -159,7 +162,8 @@ silence between readings. The narrator never speaks; Vonnra carries all of it.
 | 8 | `f_pell` | A. Her eyes on the palm. On "One day he will count you." (the fallback) her thumb presses once in the palm (D). | None. Pell is in the town, behind her: she does not need to look. |
 | 9 | `f_self` | CU, 85, on the survivor's face for the whole line (Vonnra off). *Risen once:* "I would very much like to know what." is said to the hand. *Wanted:* Vonnra's head tilts on "It is not flattering." *Wolf-friend:* below, a dog barks once in the town. *Fallback ("the lamps lit for you"):* hold on the survivor and let the player hear it. | None. |
 | 10 | `f_past` | B, then a MS at 50 from behind the survivor, the lamp in the foreground. Vonnra's head turns to her right, south, and stays there. Her thumb rests, forgotten, in the survivor's palm. *Sella's variant:* she says all of it to the south (the data's parenthesis, "She is not looking at your palm.", is this picture). *Fallback:* the same; "Most do." is the only line in the reading she says gently. | A 135 mm vista on her eyeline, south: the Low Ford road going away into the dark, and at its end the pale line of the river under the moon, where the posts stand unlit. No movement. Back to the MS: she turns back to the palm as if she had never left it. |
-| 11 | `f_below` | A. On "Last." she looks down: not at the palm, at the table, as if through it. "And the door in the hillside..." She stops. The choices come up. Hold the 2S, the lamp between them. | A slow tilt down on her eyeline: past the parapet's lip, down the tower's face to the dark at its foot, where the wall meets the Verge, and on down to black as if the camera could look into the ground. *(Tam's knocking known:)* under the line, once, a deep dull knock, felt rather than heard. |
+| 11 | `f_below` | A. On "Last." she looks down: not at the palm, at the table, as if through it. She goes on to "And the door in the hillside..." | A slow tilt down on her eyeline: past the parapet's lip, down the tower's face to the dark at its foot, where the wall meets the Verge, and on down to black as if the camera could look into the ground. *(Tam's knocking known:)* under the line, once, a deep dull knock, felt rather than heard. |
+| 11a | The interruption | **The turn.** On "hillside" the roof shivers under the table. The lamp's glass rings in its frame. The flame lies over sideways, toward the east, though there is no wind. From under the town comes C03's groan, long and low, and down in the streets every dog starts barking at once. Vonnra stops in the middle of the sentence. B, then a MCU at 85: her head comes up and turns east, past the survivor, and stays there. Her thumb has come off the palm. | A 200 mm vista on her eyeline, east: the Verge, black, nothing to see. Then the groan stops, and the dogs one by one. Back on the MCU: she is still looking east, and she does not finish. The choices come up while she is looking away. Hold the 2S, the lamp's flame standing up straight again between them. (The accusation, if the survivor makes it now, lands on her off balance.) |
 
 ### The door, or the accusation
 
@@ -190,7 +194,8 @@ silence between readings. The narrator never speaks; Vonnra carries all of it.
 | 19 | MCU | 85 | Static, profile against the south | She closes the book. She looks south, to the dark ford. Her fingers find the square coin at her throat and turn it once. | 4.0 |
 | 20 | Black | | | Fade to black over 1.5 s; the chapter's page (`Chapter.Summary`) comes up out of it. | 1.5 |
 
-Total, unaccused: about 1 minute 55 s; accused, about 2 minutes 10 s (each
+Total, unaccused: about 2 minutes 2 s; accused, about 2 minutes 17 s (the
+interruption, 11a, runs about 7 s; each
 reading's line runs 6 to 12 s).
 
 ## Performance
@@ -206,7 +211,12 @@ lamp. No contractions; long pauses; never hurried; she never answers yes or no
   - the look east on the crates (shot 7), the first time her eyes leave the hand,
     and how easily they come back;
   - turning south for what came before the ford (shot 10). There she is reciting,
-    not reading, and she does not notice that her thumb has stopped.
+    not reading, and she does not notice that her thumb has stopped;
+  - the interruption (shot 11a): in forty years nobody has seen her not finish a
+    sentence, and nobody says so. She does not startle. She stops, the way a clerk
+    stops when a figure will not add up, and looks at the hill as if it owed her
+    money. That is the only fear she shows in Act 1, and it is not for herself:
+    it is for her arrangement.
   - The player who notices sees where she looks. Nobody in the scene says so.
 - **If accused**, the stillness becomes a different stillness: someone listening
   very hard. She lifts the lamp slowly. She breathes on its flame without meaning
@@ -273,6 +283,10 @@ air. It is the most important casting in the game.
 - **Music.** The `Mystery` mood, very low, from the hatch opening: its bell, slow,
   and a held pad.
   - The first two readings have no bell: only the pad, and the valley.
+  - The interruption (11a): the pad cut dead on "hillside"; the lamp's glass
+    ringing; the groan (C03's, the same recording, deeper and further off); the
+    town's dogs; then their silence one by one; then the pad back, a semitone
+    lower, under the choices.
   - From the turn (shot 7), each vista brings one bell note, and the table brings
     the pad back.
   - Under the accusation, everything goes but a single held low note; then nothing

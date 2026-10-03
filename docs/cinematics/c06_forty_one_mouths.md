@@ -71,8 +71,12 @@ drumming his heels on the one marked in chalk "B.E.". He looks up.
   (50, 80); an old man mending a kerchief on a stool at (48, 84); a woman
   hanging washing on a line between two tent poles at (56, 76); five more at the
   fires; two more sentries by the cargo.
-- **The prisoners:** three in the cages (62, 84) and the two beside it: a grey
-  teamster, a woman, and Jory (fair, freckled, seventeen) in the end cage.
+- **The prisoners:** three in three cages at (62, 84): a grey teamster, a woman,
+  and Jory (fair, freckled, seventeen) in the end cage. Beyond Jory's, a fourth
+  cage, empty, its door standing open. Nobody looks at it, and no shot is built on
+  it: it is at the edge of shot 4, and in the background of the conversation's
+  wides. (Ewan, who "did not last"; and where the ones nobody would pay for went.
+  Act 2.)
 - **The standard:** an old red banner on two poles over Redcowl's crates for an
   awning: Ashford's arms (a white tower over two crossed picks), the edge
   burned, the cloth patched with kerchiefs.
@@ -84,7 +88,7 @@ drumming his heels on the one marked in chalk "B.E.". He looks up.
 | 1 | LS | 28 | High, on the ravine's lip behind a sentry's shoulder (his crossbow in the foreground) | She comes down the cut path below, slow, hands empty and away from her weapon. The sentry's crossbow follows her down. | 4.0 |
 | 2 | MLS | 35 | Tracking with her, at her shoulder, down into the camp | Into the camp: smoke, red cloth, the washing line, a fire with a pot on it. Nobody runs. Everybody looks. | 5.0 |
 | 3 | MS | 50 | Static, low, among the children | Two children with a wooden sword stop fighting and stare at her. One of them points the sword at her, very seriously. | 3.0 |
-| 4 | MS | 85 | Static, across the camp to the cages | The woman at the cages ladles stew into a bowl and passes it in through the bars to the grey teamster; then the next. Her own child holds up a bowl beside her. She doesn't look down. Line K1. The child lowers the bowl and waits. In the end cage, Jory watches the survivor through the bars. | 5.0 |
+| 4 | MS | 85 | Static, across the camp to the cages | The woman at the cages ladles stew into a bowl and passes it in through the bars to the grey teamster; then the next. Her own child holds up a bowl beside her. She doesn't look down. Line K1. The child lowers the bowl and waits. In the end cage, Jory watches the survivor through the bars. Past him, at the frame's edge, the fourth cage stands open and empty. | 5.0 |
 | 5 | INSERT | 100 | Static | An old man's hands stitching a red kerchief closed over a tear, with a sail-needle. | 2.0 |
 | 6 | LS | 35 | Static, from behind the survivor, looking up the camp to its head | Under the old red standard, on a bench of six crates, a big man sitting with a cup, watching her come. Behind him two sentries. The standard moves in the draught; the tower on it shows, then folds. | 4.0 |
 | 7 | INSERT | 65 | Static, low | His heels drumming on the crate below him: the chalked letters **B.E.** under his boot. He stops drumming. | 2.0 |
