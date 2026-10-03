@@ -64,7 +64,76 @@ voice):
 no one measure can win it). It is a guide to where to listen first, not a
 verdict: only an ear can say whether a take sounds made.
 
-<!-- RESULTS -->
+## Results
+
+`listen.html` in this folder (open it in a browser) plays every file, line
+by line, best guess first; every number is in `metrics.json`. Across the
+five lines, by method (accent "heard right" is the share of the accent
+model's vote for the part's own accent; 1 is certain):
+
+| Method | Lines | Words right | Accent heard right | Same voice as cast | Naturalness (UTMOS) | Moves like a person | Pace changes | Stress spread dB | Breaths |
+|---|---|---|---|---|---|---|---|---|---|
+| dia-vc | 3 | 3/3 | 0.33 | 0.77 | 2.96 | 4.16 | 0.29 | 3.5 | 2.7 |
+| dia-vcf0 | 3 | 3/3 | 0.00 | 0.65 | 2.84 | 3.80 | 0.25 | 3.5 | 2.3 |
+| orpheus-vcf0 | 5 | 5/5 | 0.19 | 0.63 | 2.86 | 3.06 | 0.13 | 3.8 | 0.6 |
+| orpheus | 5 | 5/5 | 0.20 | 0.14 | 4.13 | 2.99 | 0.11 | 4.3 | 0.6 |
+| chatterbox | 5 | 5/5 | 0.35 | 0.74 | 3.78 | 2.85 | 0.12 | 3.5 | 0.6 |
+| vox_style | 5 | 5/5 | 0.46 | 0.74 | 3.33 | 2.84 | 0.15 | 2.7 | 0.6 |
+| orpheus-vc | 5 | 5/5 | 0.03 | 0.69 | 2.81 | 2.82 | 0.07 | 3.6 | 0.4 |
+| vox_cont | 5 | 5/5 | 0.59 | 0.81 | 3.48 | 2.81 | 0.11 | 4.0 | 0.2 |
+| vox_design | 5 | 5/5 | 0.60 | 0.19 | 3.19 | 2.79 | 0.09 | 3.6 | 0.0 |
+| vox_design-vc | 5 | 5/5 | 0.40 | 0.73 | 3.00 | 2.74 | 0.12 | 3.2 | 0.4 |
+| dia | 3 | 3/3 | 0.33 | 0.25 | 2.79 | 2.68 | 0.09 | 3.0 | 0.3 |
+| vox_design-vcf0 | 5 | 5/5 | 0.42 | 0.74 | 2.69 | 2.65 | 0.05 | 3.6 | 0.4 |
+| indextts | 5 | 4/5 | 0.00 | 0.66 | 2.93 | 2.30 | 0.12 | 2.6 | 0.2 |
+| f5 | 5 | 5/5 | 0.78 | 0.80 | 3.18 | 2.16 | 0.00 | 3.7 | 0.2 |
+| kokoro | 5 | 5/5 | 0.80 | 0.11 | 4.21 | 1.66 | 0.05 | 2.5 | 0.2 |
+
+"Words right" forgives a near-spelling, so a few slips pass it: listen
+for "Weave the heavy stuff" (Orpheus, `5_shout`) and "Calloway" and
+"Cal's" for Holloway and Pell (Orpheus, `3_wry`).
+
+### What the numbers say
+
+- **Acting first, then converting the voice moves most like a person.**
+  Dia's performances turned into the cast voice (`dia-vc`) change pace
+  from phrase to phrase about as much as people do (0.29) and breathe
+  (2.7 breaths a line); nothing that reads the line directly in the cast
+  voice comes close (0.11 to 0.15). The route works: the performance's
+  timing and breath survive the conversion.
+- **But the performer here is American, so the accent goes.** Dia and
+  Orpheus were trained on American speech; converted, they keep their
+  American vowels in our people's voices (accent heard right 0.0 to 0.3),
+  and conversion costs clarity (naturalness about 2.9 against 3.5 to 4.2).
+  VoxCPM2 acting in an English accent (`vox_design`) keeps the accent but
+  moves no more than a reader once converted.
+- **Of what keeps both the accent and the person**, `vox_cont` (the first
+  pipeline) and `vox_style` (the same model, direction as a style note) are
+  the strongest, and Chatterbox is close; each has one good line (Sella's
+  `2_intimate` in `vox_cont`, 4.55, the best English-voiced take in the
+  pack; Brannoc's grief in `chatterbox`). Their pace is still a reader's.
+- **The shout fails everywhere.** No model bellows; Redcowl's Scots, which
+  his cast voice has, is lost by every method. Kokoro's stock British
+  reader is clean and dead, as expected, and F5 (which cannot ship) is the
+  most even of all.
+- **Nothing scores like a person on every count.** The best take of each
+  line is the best of what this machine can make, not a human performance.
+
+### Listen first
+
+1. `2_intimate__vox_cont.ogg`: the best English take; Sella in her own voice.
+2. `1_angry__dia-vc.ogg` against `1_angry__vox_cont.ogg`: the performance
+   route against the reader, the same words and the same voice.
+3. `3_wry__dia-vc.ogg` and `3_wry__vox_design.ogg`: Rook's laugh, acted.
+4. `4_grief__chatterbox.ogg`: Brannoc.
+5. `5_shout__orpheus.ogg` and `5_shout__vox_cont.ogg`: how far the shout is
+   from a shout.
+
+The question for the ear is not which is best, but whether any of them
+would pass as a person in the game. My answer, from the numbers, is no:
+the generated lines that move like people lose the accent, and the ones
+that keep the accent move like readers. Nothing has shipped into the game,
+and nothing will until a take passes your ear.
 
 ## If none of these is good enough
 
