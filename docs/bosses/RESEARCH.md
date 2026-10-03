@@ -27,7 +27,7 @@ by game.
    (Rogue: Genesia, §6).
 3. **Clear the stage for the boss.** HoloCure wipes the field and sends a
    themed escort; Bounty of One's hunters retreat; 20 Minutes Till Dawn's
-   developer later stopped spawns during bosses; Vampire Survivors fades to
+   developer announced the same for its beta; Vampire Survivors fades to
    black before the Ender (§2–§3).
 4. **Draw the boss's telegraphs above the player's own effects.** The
    second commonest complaint is not seeing the attack; every game that
@@ -100,12 +100,12 @@ full detail in `notes/A1_halls_of_torment.md`.
 Sources per row in `notes/A1_halls_of_torment.md` §2.
 
 - **The death timer and its removal.** The Lord of Pain's curse killed
-  the player after 40 s; the community manager explained it had been meant
-  as 6 s with a counter that did not make the launch, and that "having only
+  the player after 40 s; a developer explained on the forum that it had been
+  meant as 6 s with a counter that did not make the launch, and that "having only
   one valid way of finishing something is not it ... we swapped the
-  mechanic to the boss getting gradually faster over time". Patch of 9 Jun
-  2023: "Death timer has been removed. The Lord of Pain will now get
-  stronger over time." By 31 Aug 2023 every Lord had "lower health but
+  mechanic to the boss getting gradually faster over time". Beta notes of
+  6 Jun 2023, live on 9 Jun: "Death timer has been removed. The Lord of
+  Pain will now get stronger over time." By 31 Aug 2023 every Lord had "lower health but
   they increase in difficulty over time" (Steam news). The single clearest
   lesson in the strand: escalation, not execution.
 - **The Lord of Regret's orbs.** "All of the bubbles soak up all of your
@@ -178,7 +178,7 @@ Full detail in `notes/A2_vampire_survivors.md`.
 
 Most bosses are big, effect-resistant enemies that drop a chest; their
 health is base × the player's level at spawn ("HP x Level"). They pace the
-run: evolutions come only from boss chests after 10:00, and Arcanas from
+run: evolutions come from boss chests, usually from 10:00 on, and Arcanas from
 the 11:00 and 21:00 bosses ([wiki: Treasure Chest](https://vampire.survivors.wiki/w/Treasure_Chest),
 [Arcana](https://vampire.survivors.wiki/w/Arcana)). Reviewers: bosses
 "have far more health, but otherwise behave the same" (KeenGamer). A
@@ -251,8 +251,9 @@ mutation triggers at a health mark or a time, whichever first** (Predator:
 50% or 45 s; Invoker: 60% or 30 s, then 40% or 60 s). **The wave ending
 counts as a win**: kill the bosses or outlast 90 s
 ([wiki: Predator](https://brotato.wiki.spellsandguns.com/Predator),
-[Invoker](https://brotato.wiki.spellsandguns.com/Invoker)). Percentage
-effects are cut tenfold against bosses. A patch fixed delayed attacks that
+[Invoker](https://brotato.wiki.spellsandguns.com/Invoker)). Two items'
+percentage effects (Giant Belt's critical, Greek Fire's burn) are cut
+tenfold against bosses and elites. A patch fixed delayed attacks that
 "could deal damage during the initial frame that they were spawned": a
 telegraph must be harmless until it completes. Elite waves 11–12 are "run
 killers" in players' words. `notes/B1_brotato_20mtd_holocure.md` §1.
@@ -267,9 +268,9 @@ lines first; Hastur's Sploders can be shot to damage him; a secret boss is
 summoned by killing Mysterious Trees, one at the end for each tree killed
 ([wiki: Boss](https://20-minutes-till-dawn.fandom.com/wiki/Boss)). Its
 Darkness levels raise boss health, then damage, and last of all attack
-frequency (D15: "Bosses attack 80% more often"). The developer: "Normal
-enemies will not spawn during boss fights anymore to prevent too much
-clutter". `notes/B1` §2.
+frequency (D15: "Bosses attack 80% more often"). The developer announced for the beta branch (Oct 2024): "Normal enemies
+will not spawn during boss fights anymore to prevent too much clutter"
+(whether it reached the live game is unconfirmed). `notes/B1` §2.
 
 ### 3.3 HoloCure (Kay Yu)
 

@@ -218,8 +218,8 @@ do together is the genre's own design space.
 - *The horde clears for the duel*: HoloCure wipes the field and sends a
   themed escort; Bounty of One's hunters "retreat"; Diablo III's Greater
   Rift kills everything within 100 yards when the guardian spawns; 20
-  Minutes Till Dawn's developer later stopped spawns during bosses "to
-  prevent too much clutter". The most-praised readability fix.
+  Minutes Till Dawn's developer announced, for its beta, that spawns would
+  stop during bosses "to prevent too much clutter". The most-praised readability fix.
 - *The boss on top of the horde*: Risk of Rain 2's teleporter boss ignores
   the monster cap and fights inside a charging circle; spawns stop at 99%.
 - *The horde as a resource the boss uses*: Sketamari absorbs enemies and
