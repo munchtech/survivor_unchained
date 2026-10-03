@@ -24,7 +24,7 @@ public class BalanceTests(ITestOutputHelper log)
     {
         var specs = new List<ProbeSpec>();
         foreach (var p in Paths.All)
-            for (int s = 1; s <= 4; s++)
+            for (int s = 1; s <= 6; s++)
                 specs.Add(new ProbeSpec(s, p.Callings[0], $"path:{p.Id}", Targets.LevelAt(15)));
         var o = new ConcurrentBag<ProbeResult>();
         Parallel.ForEach(specs, spec => o.Add(Probe.Run(spec)));

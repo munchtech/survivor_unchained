@@ -308,6 +308,19 @@ public class BlessingTests
             }
             Assert.True(seen, $"{calling} never saw its own");
         }
+        // Once a night: at Dusk or, failing that, at Midnight.
+        for (uint seed = 1; seed <= 60; seed++)
+        {
+            var b = BattleTests.Arena(seed);
+            b.Calling = "reaver";
+            b.GreatOwed = 1;
+            var dusk = LevelUp.Draft(b);
+            bool atDusk = dusk.Any(o => o.Id == "blood_up");
+            LevelUp.Choose(b, dusk.First(o => o.Id != "blood_up"));
+            b.GreatOwed = 1;
+            var midnight = LevelUp.Draft(b);
+            Assert.True(atDusk || midnight.Any(o => o.Id == "blood_up"), $"seed {seed}");
+        }
     }
 
     [Fact]

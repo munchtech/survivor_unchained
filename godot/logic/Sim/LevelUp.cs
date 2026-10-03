@@ -22,6 +22,8 @@ public sealed class DraftMemory
     public int Skipped, Greats;
     /// <summary>Skill drafts dealt this arena (a reroll is the same draft).</summary>
     public int SkillDrafts;
+    /// <summary>The calling's own great blessing has been in a hand this night.</summary>
+    public bool OwnShown;
 }
 
 /// <summary>
@@ -279,8 +281,13 @@ public static class LevelUp
                 c => Role(c) == Boons.GreatRole.Ward, c => Role(c) == Boons.GreatRole.Power,
                 c => Role(c) is Boons.GreatRole.Answer or Boons.GreatRole.Tempo, null,
             ];
-            for (int i = 0; i < count; i++)
+            // The calling's own comes once a night: as Dusk's power half the time, else at Midnight.
+            var own = pool.FirstOrDefault(c => Boons.All[c.O.Id].Calling != null && c.O.From == 0);
+            bool ownNow = own != null && !mem.OwnShown && (mem.Greats >= 1 || b.Rng.Next() < 0.5);
+            if (ownNow) { pool.Remove(own!); mem.OwnShown = true; order = [order[0], order[2], null]; }
+            for (int i = 0; i < count - (ownNow ? 1 : 0); i++)
                 if ((TakeFrom(b, pool, order[System.Math.Min(i, order.Length - 1)]) ?? TakeFrom(b, pool)) is { } c) offers.Add(c.O);
+            if (ownNow) offers.Insert(System.Math.Min(1, offers.Count), own!.O);
             return Shown(b, offers.Count > 0 ? offers : Respite(blessing: true, great: GreatNext(b)));
         }
 
