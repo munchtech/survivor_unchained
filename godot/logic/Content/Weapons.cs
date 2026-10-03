@@ -331,7 +331,7 @@ public static class Weapons
         {
             Id = "arcweb", Name = "Arcweb", School = School.Storm, Behavior = WeaponBehavior.Chain, Tags = [Tag.Chain, Tag.Spell, Tag.Storm],
             Base = new() { Cooldown = 1.65, Damage = 20.3, Chains = 5, ChainRange = 6.25, Range = 11, Status = S(Shock, 0.5, 1, 3) },
-            Art = "arc", BossDamage = 2.4, Findable = true, Growth = 0.4,
+            Art = "arc", BossDamage = 2.0, Findable = true, Growth = 0.4,
             Description = "Lightning that leaps from foe to foe.",
             Evolutions =
             [
@@ -546,14 +546,14 @@ public static class Weapons
         {
             Id = "soul_lantern", Name = "Soul Lantern", School = School.Shadow, Behavior = WeaponBehavior.Aimed, Tags = [Tag.Projectile, Tag.Spell, Tag.Shadow, Tag.Heal],
             Base = new() { Cooldown = 1.0, Damage = 72.2, Speed = 10, Projectiles = 2, Pierce = 6, Range = 16, Homing = 3, Life = 2.4, Radius = 0.3, Heal = 1.0, Status = S(Mark, 1, 1, 4) },
-            Art = "siphon", BossDamage = 1.4,
+            Art = "siphon", BossDamage = 1.2,
             Description = "Shadow that passes through everything, marks it for the grave, and brings a little of it back to you.",
         },
         new()
         {
             Id = "starfall", Name = "Starfall", School = School.Arcane, Behavior = WeaponBehavior.Storm, Tags = [Tag.Spell, Tag.Arcane, Tag.Area, Tag.Projectile],
             Base = new() { Cooldown = 1.5, Damage = 35.2, Strikes = 5, StormRadius = 6.5, Splash = 1.7, Status = S(Mark, 0.5, 1, 4) },
-            Art = "moonfall", BossDamage = 1.8,
+            Art = "moonfall", BossDamage = 1.5,
             Description = "Moons fall among them and break into motes that hunt the strongest.",
             Triggers = [T(TriggerEvent.Hit, [new Effect.Missiles(2, 0.35, Basis.Hit, School.Arcane, Seek.Strongest, 10, "mote")], new() { Weapon = "starfall" }, icd: 0.06)],
         },

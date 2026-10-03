@@ -115,7 +115,9 @@ public sealed class ArenaRun : ZoneRuntime
     double Beyond => Math.Max(0, Seconds - End) / 60;
     // A tier is three creature levels: the survivor's own pace (levels 1, 4, 7 for tiers 1 to 3),
     // so a tier at the survivor's level is a fair night and one above it a hard one.
-    int Level() => Math.Max(1, Spec.Tier * 3 - 2 + levels + (int)(Minute / 2.5) + (int)(Beyond / 2));
+    // Dusk: the tier's strength (and an oath's levels) comes in over the first three minutes,
+    // so a night is not lost before the ember has given anything to choose.
+    int Level() => Math.Max(1, Spec.Tier * 3 - 2 + levels + (int)(Minute / 2.5) + (int)(Beyond / 2) - Math.Max(0, (int)Math.Ceiling(3 - Minute)));
     /// <summary>What an ordinary creature's health is divided by at a minute.</summary>
     public static double FodderEase(double minute) => 1 + 0.08 * minute;
 
