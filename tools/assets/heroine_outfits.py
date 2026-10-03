@@ -1949,9 +1949,14 @@ def hanging(name, a0, a1, z_top, hem, mkey, flare=0.15, lift=0.01, gap=0.012, th
     near = 1 - ramp(d, gap + 0.004, 0.06)
     wt = wt * (1 - near[:, None]) + W[body][j] * near[:, None]
     attr = np.hstack([nor, wt, f[:, None]])
+    if os.environ.get("HANGDEBUG"):
+        print("HANGDEBUG", name, "grid z %.3f..%.3f" % (pos[:, 2].min(), pos[:, 2].max()), "kept pts", int((f >= 0).sum()), "of", len(f),
+              "zb %.3f..%.3f" % (zb.min(), zb.max()), "kept z %.3f..%.3f" % (pos[f >= 0, 2].min(), pos[f >= 0, 2].max()) if (f >= 0).any() else "")
     pos, at, tris = clip(f, pos, attr, tris)
     pos, at, tris = weld(pos, at, tris)
     pos = relax(pos, tris)
+    if os.environ.get("HANGDEBUG"):
+        print("HANGDEBUG", name, "after clip", len(pos), "pts z %.3f..%.3f" % (pos[:, 2].min(), pos[:, 2].max()), len(tris), "tris")
     return trimmed(name, pos, at, tris, mkey, thick, 0.0008, trim)
 
 
@@ -2626,8 +2631,9 @@ def reaver():
         *frame("reaver.buckle", buckle_at + buckle_n * 0.017, buckle_n, np.array([0, 0, 1.0]), 0.05, 0.042, "rust", r=0.0034,
                corner=0.006),
         # The panel's hem cut into a fringe: strips with V-notches between.
-        *hanging("reaver.loin_front", -0.33, 0.33, bz0, fringe(lambda u: 0.52 + 0.07 * u * u, 11, 0.075), "oldleather",
-                 flare=0.06, lift=0.016, trim=edge(0.01), nu=200),
+        # (columns ~1 mm apart: any closer and the weld merges them)
+        *hanging("reaver.loin_front", -0.33, 0.33, bz0, fringe(lambda u: 0.52 + 0.07 * u * u, 11, 0.075, notch=0.26), "oldleather",
+                 flare=0.06, lift=0.016, trim=edge(0.01), nu=120),
         # Wolf fangs on a cord round her neck, hanging into her cleavage:
         # trophies of the Verge's wolves.
         *ribbon("reaver.cord", cord, 0.004, "blackleather", lift=0.0025, thick=0.003),
