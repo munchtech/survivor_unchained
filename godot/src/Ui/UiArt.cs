@@ -21,9 +21,14 @@ public static class UiArt
     public const string Root = "res://art/ui/";
 
     /// <summary>A nine-slice frame: the file under art/ui/ and its margins
-    /// (left, top, right, bottom) in shown pixels; Tile repeats the edges
-    /// instead of stretching them (for patterned borders).</summary>
-    public sealed record Slice(string File, int L, int T, int R, int B, bool Tile = false);
+    /// (left, top, right, bottom) in shown pixels; Tile repeats the edges and
+    /// the centre instead of stretching them (for textured iron: hammer work
+    /// stretched four times over looks smeared, repeated it looks forged);
+    /// Out is how far the painted frame reaches past the control on each side
+    /// (shown pixels, part of the margins), so corner pieces can be bold without
+    /// crowding what is inside: the content still keeps clear of the border
+    /// only, so nothing moves when the art arrives.</summary>
+    public sealed record Slice(string File, int L, int T, int R, int B, bool Tile = false, int Out = 0);
 
     /// <summary>Every frame the interface can wear, by the name the code asks for.</summary>
     public static readonly Dictionary<string, Slice> Frames = new()
@@ -109,10 +114,12 @@ public static class UiArt
         {
             Texture = tex, TextureMarginLeft = s.L, TextureMarginTop = s.T, TextureMarginRight = s.R, TextureMarginBottom = s.B,
             AxisStretchHorizontal = axis, AxisStretchVertical = axis,
+            ExpandMarginLeft = s.Out, ExpandMarginTop = s.Out, ExpandMarginRight = s.Out, ExpandMarginBottom = s.Out,
         };
         // What is inside keeps clear of the painted border: at least three quarters of
-        // the slice margin (the border lives in the outer three quarters, by the brief).
-        var slice = new Dictionary<Side, int> { [Side.Left] = s.L, [Side.Top] = s.T, [Side.Right] = s.R, [Side.Bottom] = s.B };
+        // the slice margin (the border lives in the outer three quarters, by the brief),
+        // less the part of the margin that lies outside the control.
+        var slice = new Dictionary<Side, int> { [Side.Left] = s.L - s.Out, [Side.Top] = s.T - s.Out, [Side.Right] = s.R - s.Out, [Side.Bottom] = s.B - s.Out };
         foreach (var side in new[] { Side.Left, Side.Top, Side.Right, Side.Bottom })
             b.SetContentMargin(side, Mathf.Max(fallback.GetContentMargin(side), slice[side] * 0.75f));
         return b;
