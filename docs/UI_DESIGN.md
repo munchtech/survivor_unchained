@@ -220,9 +220,9 @@ the one thing that must be at the centre: health (4.3).
 ### 4.1 The bar: ember by night, experience by day (top centre)
 **Done**: a medallion with the level; the bar; the word under it, **EMBER**
 (ember) or **EXPERIENCE** (day blue); a leading edge that brightens as the
-level nears. **Next** (from the feel work, S-06): the fill eased every frame
-rather than stepped at 12 Hz; a pulse from 85%; a white flash and a visible
-overflow on the level.
+level nears; the fill eased every frame (not stepped at 12 Hz), breathing
+from 85%, and on a level it fills, flashes white and drains to what carried
+over; the kill count pops as it climbs (the feel work's S-06).
 **Why**: one place answers "how far to the next" in both halves, so the
 player maps it once; the word says which half's growth it is; the goal in
 sight (goal-gradient) is the strongest pull in the loop.
@@ -231,8 +231,9 @@ sight (goal-gradient) is the strongest pull in the loop.
 **Done**: in an arena the clock **counts down** to what rules it ("29:30
 BEFORE WHAT RULES IT COMES"), then counts up past the half hour; under a
 minute it burns ember. By day the clock and kills are gone (they mean
-nothing in a town); gold stays. **Next** (S-21): the night's phases named
-on the clock (Dusk, Gloaming, the Witching, Ashfall, the Coming, Beyond).
+nothing in a town); gold stays. The night's phases are named under the
+clock, each in its colour, popping in as they turn: Dusk, Gloaming, the
+Witching, Ashfall, the Coming, Beyond (S-21).
 **Why**: a countdown makes the half hour a goal the player is approaching,
 not time passing; one number replaces the objective line repeating it.
 
@@ -456,9 +457,10 @@ foot. The plate fits.
 ### 7.9 The arena's end
 The verdict, the name, the tally **counting up** one after another (time,
 slain, ember, past the half hour), "your longest yet", what comes out
-against what stays. **Next** (S-16): the cause ("slain by a Kerchief
-cutthroat at 24:13"), the near miss ("6 minutes from Redcowl"), the run's
-peak. **Why**: the end of half an hour is what the player remembers of it
+against what stays; how it ended in a line: who brought you down and when,
+and how near what ruled it was ("6 minutes before the Pack-Mother would have
+come"; S-16). **Next**: the run's peak (the biggest blow, the evolution's
+minute), which needs the fight to keep them. **Why**: the end of half an hour is what the player remembers of it
 (peak-end).
 
 ### 7.10 The chapter's end
@@ -488,9 +490,9 @@ Weighed against the research, taken where it makes the interface better.
 
 | Proposal | Source | Decision |
 |---|---|---|
-| Bars that flow; glow from 85%; flash on the level | feel S-06 | Adopt (4.1): presentation only |
-| The night's phases named on the clock | feel S-21 | Adopt (4.2) with the countdown |
-| An end screen that tells the run's story | feel S-16 | Adopt (7.9); the cause needs the killer recorded in `ArenaResult` |
+| Bars that flow; glow from 85%; flash on the level | feel S-06 | **Done** (4.1) |
+| The night's phases named on the clock | feel S-21 | **Done** (4.2), with the countdown |
+| An end screen that tells the run's story | feel S-16 | **Done** for the cause and the near miss (7.9); the run's peak is next |
 | The chest as a sequence | feel S-09 | Adopt as a panel like the draft; needs `ArenaRun.OnPickup` to hand the chest to the host (logic owner) |
 | The evolution's name card | feel S-10 | Adopt the HUD's part (the slot flares, the name card); the slow motion is FX |
 | Off-screen warnings for charges and missiles | feel S-19 | Extends 4.7's edge marks; needs the telegraph data |
@@ -505,7 +507,7 @@ Weighed against the research, taken where it makes the interface better.
 ## 10. What is next, in order
 
 1. The art (`UI_ART_BRIEF.md`); every plug-in point loads by name.
-2. The feel work's interface pieces (section 9), bars that flow first.
+2. The feel work's remaining interface pieces (section 9): the chest panel, the evolution's name card.
 3. Text size setting (needs the HUD anchored rather than placed at 1080p).
 4. Hold-to-read detail on cards and items (pad Y, keyboard Alt).
 5. The remaining accessibility settings (section 8).
