@@ -194,7 +194,11 @@ Every clip was rendered as contact sheets (`tools/anim/review.py`,
 checked floor) from the side, the front, three-quarters and the game's
 own camera at its true size, frame by frame, and checked in the running
 game. What the sheets showed and what changed is in the commit history;
-what is still short of the bar is in §7.
+what is still short of the bar is in §7. The latest boards are in
+`docs/anim/`: `runs.jpg` (the four carriages and a sprint, from the
+side), `idles.jpg`, `swings.jpg`, `actions.jpg` (dash, flinch, fall and
+rise, war cry, throw, crossbow, casts) and `soul.jpg` (the seat by the
+fire, the flourishes, the breaks, the caught breath, a stop).
 
 ## 7. Still short of the bar
 
