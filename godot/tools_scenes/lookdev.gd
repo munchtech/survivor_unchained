@@ -23,6 +23,22 @@ func _init():
 		for mi in h.find_children("*", "MeshInstance3D", true, false):
 			for s in mi.mesh.get_surface_count():
 				var m = mi.mesh.surface_get_material(s).duplicate()
+				# Her head's parts as People.HerPart has them; the rest is skin.
+				var part = String(mi.mesh.surface_get_material(s).resource_name)
+				if part in ["eyes", "brows", "lashes", "teeth", "tongue"]:
+					if part == "eyes":
+						m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+						m.alpha_scissor_threshold = 0.5
+						m.roughness = 0.08
+						m.metallic_specular = 0.7
+					if part in ["brows", "lashes"]:
+						m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+						m.alpha_scissor_threshold = 0.35
+						m.alpha_antialiasing_mode = BaseMaterial3D.ALPHA_ANTIALIASING_ALPHA_TO_COVERAGE_AND_TO_ONE
+						m.cull_mode = BaseMaterial3D.CULL_DISABLED
+						m.albedo_color = hair_colour().darkened(0.45) if part == "brows" else Color(0.12, 0.08, 0.07)
+					mi.set_surface_override_material(s, m)
+					continue
 				m.albedo_color = Color(1.0, 0.86, 0.74)
 				if OS.get_environment("NOTEX") != "": m.albedo_texture = null; m.albedo_color = Color(0.85, 0.62, 0.5)
 				m.vertex_color_use_as_albedo = false
@@ -52,6 +68,32 @@ func _init():
 				for bm in skel.get_children():
 					if bm is MeshInstance3D and not String(bm.name).contains("."):
 						hide_skin(bm, ch)
+		# HAIR=<style> (heroine_hair_<style>.gltf; "none" for none), HAIRCOLOR=#rrggbb.
+		var style = OS.get_environment("HAIR") if OS.get_environment("HAIR") != "" else "long"
+		if style != "none" and ResourceLoader.exists("res://art/people/heroine_hair_%s.gltf" % style):
+			var hs = load("res://art/people/heroine_hair_%s.gltf" % style).instantiate()
+			var hsk = hs.find_children("*", "Skeleton3D", true, false)[0]
+			for mi in hsk.get_children():
+				if mi is MeshInstance3D:
+					hsk.remove_child(mi)
+					mi.owner = null
+					skel.add_child(mi)
+					mi.skeleton = NodePath("..")
+					for s in mi.mesh.get_surface_count():
+						var m = mi.mesh.surface_get_material(s).duplicate()
+						m.albedo_color = hair_colour()
+						m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+						m.alpha_scissor_threshold = 0.4
+						m.alpha_antialiasing_mode = BaseMaterial3D.ALPHA_ANTIALIASING_ALPHA_TO_COVERAGE_AND_TO_ONE
+						m.cull_mode = BaseMaterial3D.CULL_DISABLED
+						m.roughness = 0.42
+						m.metallic_specular = 0.35
+						m.anisotropy_enabled = true
+						m.anisotropy = 0.7
+						m.backlight_enabled = true
+						m.backlight = hair_colour().darkened(0.6)
+						mi.set_surface_override_material(s, m)
+			hs.free()
 		if OS.get_environment("NOHERPOSE") == "":
 			skel.add_child(load("res://src/Actors/HerPose.cs").new())
 		if OS.get_environment("NOJIGGLE") == "":
@@ -104,6 +146,9 @@ func _init():
 	rim.rotation_degrees = Vector3(-20, 200, 0)
 	rim.light_energy = 0.0 if OS.get_environment("NORIM") != "" else 1.2
 	root.add_child(rim)
+
+func hair_colour():
+	return Color(OS.get_environment("HAIRCOLOR")) if OS.get_environment("HAIRCOLOR") != "" else Color("#8f2d14")
 
 # As People.Fur: a fur piece drawn again in shells, each further out.
 func fur(mi, shells = 20):

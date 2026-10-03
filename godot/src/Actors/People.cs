@@ -94,6 +94,8 @@ public static class People
         var p = body switch { SurvivorUnchained.Play.Loadouts.HerBody => Woman(look), "heroine" => Heroine(look), "anime" => Her(look), _ => Build(look) };
         // Her body wears her calling's outfit, cut from it.
         if (body == "heroine" && look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string her) HerOutfit(p, her[4..]);
+        // Her hair, a mesh of its own: the style chosen if it is one of hers.
+        if (body == "heroine") HerHair(p, HerHairs.Contains(look.Hair) ? look.Hair! : HerHairs[0], look.HairColor ?? HerHairColour);
         // A child's larger head.
         if (spec.Head is double h && h != 1)
         {
@@ -228,12 +230,96 @@ public static class People
             mi.Layers = 2;
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D src)
-                    mi.SetSurfaceOverrideMaterial(s, Skin(src, look));
+                    mi.SetSurfaceOverrideMaterial(s, HerPart(src, look));
         }
         root.AddChild(person.Anim);
         person.Anim.RootNode = "..";
         person.Anim.AddAnimationLibrary("", Clips());
         return person;
+    }
+
+    /// <summary>Her hairstyles (tools/assets/heroine_head.py: a file each,
+    /// fitted to her head), the first hers unless another is chosen.</summary>
+    public static readonly string[] HerHairs = { "long", "ponytail", "braid", "bob", "pixie" };
+
+    /// <summary>Her own hair colour, a deep copper red.</summary>
+    public static readonly Color HerHairColour = new("#8f2d14");
+
+    /// <summary>A material of hers by its name (heroine_head.py names
+    /// them): her skin, her eyes and the rest of her head.</summary>
+    static BaseMaterial3D HerPart(BaseMaterial3D src, Look look)
+    {
+        var hair = look.HairColor ?? HerHairColour;
+        var m = (StandardMaterial3D)src.Duplicate();
+        switch (src.ResourceName)
+        {
+            case "eyes":
+                // The clear cornea cut away (its paint is empty), the eye
+                // under it wet, with a sharp highlight.
+                m.Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor;
+                m.AlphaScissorThreshold = 0.5f;
+                m.Roughness = 0.08f;
+                m.MetallicSpecular = 0.7f;
+                return m;
+            case "brows" or "lashes":
+                // Cards cut out by their alpha, soft at the edges; brows
+                // a shade of her hair, lashes near black.
+                m.Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor;
+                m.AlphaScissorThreshold = 0.35f;
+                m.AlphaAntialiasingMode = BaseMaterial3D.AlphaAntiAliasing.AlphaToCoverageAndToOne;
+                m.CullMode = BaseMaterial3D.CullModeEnum.Disabled;
+                m.AlbedoColor = src.ResourceName == "brows" ? hair.Darkened(0.45f) : new Color(0.12f, 0.08f, 0.07f);
+                m.Roughness = 0.8f;
+                return m;
+            case "teeth" or "tongue":
+                m.Roughness = 0.35f;
+                return m;
+            default:
+                return Skin(src, look);
+        }
+    }
+
+    /// <summary>One of her hairstyles on her head, dyed: its paint is grey,
+    /// light to dark, and takes the colour as it is.</summary>
+    public static void HerHair(Person p, string style, Color colour)
+    {
+        var file = $"res://art/people/heroine_hair_{style}.gltf";
+        if (!ResourceLoader.Exists(file)) return;
+        var scene = GD.Load<PackedScene>(file).Instantiate<Node3D>();
+        var from = (Skeleton3D)scene.FindChildren("*", "Skeleton3D", true, false)[0];
+        foreach (var mi in from.GetChildren().OfType<MeshInstance3D>().ToList())
+        {
+            from.RemoveChild(mi);
+            mi.Owner = null;
+            p.Skeleton.AddChild(mi);
+            mi.Skeleton = "..";
+            mi.Layers = 2;
+            p.Meshes.Add(mi);
+            for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D src)
+                    mi.SetSurfaceOverrideMaterial(s, Hair(src, colour));
+        }
+        scene.Free();
+    }
+
+    /// <summary>Hair: cards cut out by their alpha (soft-edged where the
+    /// screen is multisampled), seen from both sides, with the long
+    /// highlight that runs across strands.</summary>
+    static StandardMaterial3D Hair(BaseMaterial3D src, Color colour)
+    {
+        var m = (StandardMaterial3D)src.Duplicate();
+        m.AlbedoColor = colour;
+        m.Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor;
+        m.AlphaScissorThreshold = 0.4f;
+        m.AlphaAntialiasingMode = BaseMaterial3D.AlphaAntiAliasing.AlphaToCoverageAndToOne;
+        m.CullMode = BaseMaterial3D.CullModeEnum.Disabled;
+        m.Roughness = 0.42f;
+        m.MetallicSpecular = 0.35f;
+        m.AnisotropyEnabled = true;
+        m.Anisotropy = 0.7f;
+        m.BacklightEnabled = true;
+        m.Backlight = colour.Darkened(0.6f);
+        return m;
     }
 
     /// <summary>One of her outfits (tools/assets/heroine_outfits.py: a file

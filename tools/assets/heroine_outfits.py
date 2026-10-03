@@ -7,7 +7,7 @@ textures in <out dir>/outfit_tex.
 
 With --body her body is written again, marked where each outfit hides her.
 
-The scene is the one build_heroine.py saved, so every piece is exported
+The scene is the one heroine_head.py saved, so every piece is exported
 from the very skeleton her body was and binds to hers exactly.
 
 A piece is a region of her skin, bounded by a smooth curve: each region is
@@ -44,7 +44,12 @@ BODY_OUT = ARGS[ARGS.index("--body") + 1] if "--body" in ARGS else None
 TEX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "godot", "art", "outfit")
 
 arm = next(o for o in bpy.data.objects if o.type == "ARMATURE")
-body = next(o for o in bpy.data.objects if o.type == "MESH" and o.parent == arm)
+body = bpy.data.objects["Heroine"]
+# Her head is a mesh of its own (heroine_head.py), with its parts and her
+# hairstyles beside it.
+HEAD = bpy.data.objects.get("HeroineHead")
+HEAD_PARTS = [o for o in bpy.data.objects if o.type == "MESH" and o.parent == arm and o.name.startswith("Heroine") and o != body]
+HAIR_DEFAULT = bpy.data.objects.get("hair_long")
 BONES = [b.name for b in arm.data.bones]
 BI = {n: i for i, n in enumerate(BONES)}
 
@@ -69,6 +74,31 @@ for v in bm.verts:
         if n in BI:
             W[v.index, BI[n]] = w
 bm.free()
+# Her head's surface joined on (it shares her points along her neck), so
+# collars and hats are fitted to her as she is.
+if HEAD:
+    hb = bmesh.new()
+    hb.from_mesh(HEAD.data)
+    bmesh.ops.triangulate(hb, faces=hb.faces)
+    hb.verts.ensure_lookup_table()
+    hb.normal_update()
+    hP = np.array([(HEAD.matrix_world @ v.co)[:] for v in hb.verts])
+    hN = np.array([(HEAD.matrix_world.to_3x3() @ v.normal).normalized()[:] for v in hb.verts])
+    hT = np.array([[v.index for v in f.verts] for f in hb.faces])
+    hW = np.zeros((len(hP), len(BONES)), np.float32)
+    hl = hb.verts.layers.deform.active
+    hname = {g.index: g.name for g in HEAD.vertex_groups}
+    for v in hb.verts:
+        for g, w in v[hl].items():
+            if hname.get(g) in BI:
+                hW[v.index, BI[hname[g]]] = w
+    hb.free()
+    d, j = cKDTree(P).query(hP)
+    shared = d < 1e-5
+    idx = np.where(shared, j, len(P) + np.cumsum(~shared) - 1)
+    P, N, W = np.vstack([P, hP[~shared]]), np.vstack([N, hN[~shared]]), np.vstack([W, hW[~shared]])
+    TRI = np.vstack([TRI, idx[hT]])
+    print("HEAD joined on:", int(shared.sum()), "points shared,", int((~shared).sum()), "of its own")
 
 
 def subdivide(P, N, W, TRI):
@@ -111,7 +141,8 @@ def _hair():
     return red[j].astype(float)
 
 
-HAIR = _hair()
+# (With a head of her own her hair is apart from her body: none of it on her.)
+HAIR = np.zeros(len(P)) if HEAD else _hair()
 print("HAIR", int(HAIR.sum()), "surface points")
 # Her skin without her hair, for laying curves on.
 _hair = (W[:, [BI[n] for n in ("Head", "neck_01") if n in BI]].sum(1) > 0.5)
@@ -339,6 +370,19 @@ def adjacency(n, tris):
 ADJ = adjacency(len(P), TRI)
 
 
+# Within 4 cm of the skin heroine_head.py made anew over her shoulders
+# (where her own skin meets coarser, the smoothing that finds bumps finds
+# them all along the join): no nipple sought there, no lump filled.
+_ga = body.data.attributes.get("graft")
+if _ga:
+    _gv = np.zeros(len(body.data.vertices), int)
+    _ga.data.foreach_get("value", _gv)
+    _gp = np.array([(body.matrix_world @ body.data.vertices[i].co)[:] for i in np.nonzero(_gv)[0]])
+    NEAR_GRAFT = cKDTree(_gp).query(P)[0] < 0.04
+else:
+    NEAR_GRAFT = np.zeros(len(P), bool)
+
+
 def nipples():
     """Each nipple: the most proud small bump on the breast (proud of her
     skin smoothed over a centimetre or so, so the breast's own curve does
@@ -351,12 +395,12 @@ def nipples():
     # The strongest such bump on either breast; the other nipple is sought
     # near its mirror image (they are level), so a lump elsewhere on one
     # breast cannot be taken for it.
-    m = (np.abs(P[:, 0]) > 0.07) & (P[:, 2] > 1.3) & (P[:, 2] < 1.5) & (P[:, 1] < -0.05)
+    m = (np.abs(P[:, 0]) > 0.07) & (P[:, 2] > 1.3) & (P[:, 2] < 1.5) & (P[:, 1] < -0.05) & ~NEAR_GRAFT
     first = P[np.where(m)[0][np.argmax(proud[m])]]
     out = {}
     for s, sd in ((1, "l"), (-1, "r")):
         guess = np.array([abs(first[0]) * s, first[1], first[2]])
-        near = np.where(np.linalg.norm(P - guess, axis=1) < 0.02)[0]
+        near = np.where((np.linalg.norm(P - guess, axis=1) < 0.02) & ~NEAR_GRAFT)[0]
         out[sd] = P[near[np.argmax(proud[near])]]
         print("NIPPLE", sd, out[sd].round(3), "proud %.4f" % proud[near].max())
     return out
@@ -383,7 +427,7 @@ def filled_nipples(radius=0.03, rounds=4000):
     proud = ((P - S) * N).sum(1)
     breast = (np.abs(P[:, 0]) > 0.03) & (P[:, 2] > 1.28) & (P[:, 2] < 1.5) & (P[:, 1] < -0.05)
     # Dents as well as lumps (a crease at the top of her left breast).
-    lumps = P[breast & (np.abs(proud) > 0.0018)]
+    lumps = P[breast & (np.abs(proud) > 0.0018) & ~NEAR_GRAFT]
     if len(lumps):
         d, _ = cKDTree(lumps).query(P)
         inside |= breast & (d < 0.02)
@@ -1745,17 +1789,22 @@ def witch_hat(name, mkey, band_key, brim=0.21, height=0.34, droop=0.09, bald=Fal
     the tip, set on her hair: its crown is as wide as her hair at the brim
     and never nearer it than a centimetre above. All of it is her head's."""
     hd = (wsum("Head") > 0.5) & ((HAIR < 0.5) if bald else True)
-    top = Z[hd].max()
-    upper = hd & (Z > top - 0.1)
-    cx, cy = X[upper].mean(), Y[upper].mean()
+    # Her head, and her own hairstyle over it (a mesh apart).
+    pts = np.c_[X[hd], Y[hd], Z[hd]]
+    if HAIR_DEFAULT and not bald:
+        pts = np.vstack([pts, [(HAIR_DEFAULT.matrix_world @ v.co)[:] for v in HAIR_DEFAULT.data.vertices]])
+    hx, hy, hz = pts.T
+    top = hz.max()
+    upper = hz > top - 0.1
+    cx, cy = hx[upper].mean(), hy[upper].mean()
     zb = top - 0.07
-    ang = np.arctan2(X[hd] - cx, -(Y[hd] - cy))
-    rad = np.hypot(X[hd] - cx, Y[hd] - cy)
+    ang = np.arctan2(hx - cx, -(hy - cy))
+    rad = np.hypot(hx - cx, hy - cy)
     nu = 64
     a = np.linspace(0, 2 * np.pi, nu, endpoint=False)
 
     def hair_r(z, dz=0.008):
-        m = np.abs(Z[hd] - z) < dz
+        m = np.abs(hz - z) < dz
         out = np.zeros(nu)
         for j, aj in enumerate(a):
             d = np.abs((ang[m] - aj + np.pi) % (2 * np.pi) - np.pi) < 0.15
@@ -2388,7 +2437,8 @@ if BODY_OUT:
     me.color_attributes.active_color = col
     bpy.ops.object.select_all(action="DESELECT")
     arm.select_set(True)
-    body.select_set(True)
+    for o in [body] + HEAD_PARTS:
+        o.select_set(True)
     bpy.context.view_layer.objects.active = arm
     bpy.ops.export_scene.gltf(filepath=BODY_OUT, export_format="GLB", use_selection=True, export_skins=True, export_animations=False,
                               export_yup=True, export_vertex_color="ACTIVE")
