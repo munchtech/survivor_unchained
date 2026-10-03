@@ -28,14 +28,15 @@ by game.
 3. **Clear the stage for the boss.** HoloCure wipes the field and sends a
    themed escort; Bounty of One's hunters retreat; 20 Minutes Till Dawn's
    developer announced the same for its beta; Vampire Survivors fades to
-   black before the Ender (§2–§3).
+   black before the Ender (§2–§3, §6).
 4. **Draw the boss's telegraphs above the player's own effects.** The
    second commonest complaint is not seeing the attack; every game that
    shipped a fix (Halls of Torment, Soulstone, Picayune Dreams) ended up
    layering or dimming the player's effects (§1.4, §3.4, §6).
 5. **Adds must never soak the player's auto-aim.** Halls of Torment's
    angriest feedback came from adds that absorbed shots, and Army of Ruin's
-   developers blamed its deadliest fight on an attack that did the same
+   developers guessed that its deadliest fight came from an attack that did
+   the same
    (§1.2, §3.11).
 6. **Use the horde.** Bosses that feed on it (Sketamari), are hurt by it
    (Nova Drift's Dweller loses health when a minion dies), are armoured by
@@ -55,7 +56,8 @@ by game.
    ends the run (Halls of Torment's crystal) beats a banner (§1.3).
 10. **Endless needs new mechanics, not more health.** Opt-in boss density
     for more loot (Risk of Rain 2's Shrine of the Mountain, Vampire
-    Hunters' constellations) is the best-liked answer (§5.1, §6).
+    Hunters' constellations, which make bosses come twice as often for twice
+    the score) is the best-liked answer (§5.1, §6).
 
 ## 1. Halls of Torment (Chasing Carrots, 2023–)
 
@@ -134,8 +136,9 @@ Sources per row in `notes/A1_halls_of_torment.md` §2.
 - **Victory is a pickup.** The Lord drops a crystal; picking it up ends the
   run. At 1.0 the well "teleport[s] close to the player after defeating the
   lord" so the victory lap is not a walk through a live horde (Steam news,
-  24 Sep 2024). In the endless Vault the run goes on until the player
-  chooses to collect.
+  24 Sep 2024). The developers say the endless Vault's run lasts as long as its
+  Lord lives; players report that it really ends only when his shard is
+  picked up (player-reported).
 
 ### 1.4 Readability
 
@@ -249,7 +252,7 @@ fights, which also removes their effects from the screen.
 Bosses only on wave 20 (a 90-second wave); one of Predator or Invoker,
 both at Danger 5 with 75% health; boss health 15,000 + 750 a wave. **Each
 mutation triggers at a health mark or a time, whichever first** (Predator:
-50% or 45 s; Invoker: 60% or 30 s, then 40% or 60 s). **The wave ending
+50% or 45 s; Invoker: 75% (60% on its older wiki page) or 30 s, then 40% or 60 s). **The wave ending
 counts as a win**: kill the bosses or outlast 90 s
 ([wiki: Predator](https://brotato.wiki.spellsandguns.com/Predator),
 [Invoker](https://brotato.wiki.spellsandguns.com/Invoker)). Two items'
@@ -409,7 +412,7 @@ The lesser half of the brief. Full notes: `notes/E1_diablo.md`,
   100 yards die and despawn"; all loot is moved onto it
   ([Diablo Wiki: Rift Guardian](https://diablo.fandom.com/wiki/Rift_Guardian)).
 - **Diablo IV's Uber Lilith** is the series' cautionary tale: one-shots,
-  patterns that cannot be learnt, no damage windows ("when is my turn to
+  patterns that cannot be learned, no damage windows ("when is my turn to
   attack again?"; "an Action-RPG without the action"), hitboxes larger than
   the visuals, a platform that breaks three times. Season 4 replaced the
   one-shots with "heavily ramping damage" and matched the hitbox to the
@@ -486,7 +489,7 @@ The lesser half of the brief. Full notes: `notes/E1_diablo.md`,
   telegraph ability that's meant for you to avoid", and hate the deaths
   that are coincidences of horde, projectile and a boss's death blast
   ("getting punished for killing stuff").
-- **Lost Ark** has the clearest shared boss vocabulary in the genre, learnt
+- **Lost Ark** has the clearest shared boss vocabulary in the genre, learned
   once and reused: a **stagger** bar (empty it and the boss is held, and on
   Guardians each stagger permanently raises the damage it takes); a
   **counter** window (the boss glows blue before a charge; a counter skill
@@ -526,7 +529,7 @@ night's end, is in `notes/F1_nightreign.md` and §4.5.
 |---|---|---|
 | An always-on slow or aura with no counter | removes the only verb | Duriel's Holy Freeze |
 | A hitbox larger than its decal | the decal lies | Belial; launch Lilith |
-| One-shots layered with randomness | survived, never learnt | launch Uber Lilith |
+| One-shots layered with randomness | survived, never learned | launch Uber Lilith |
 | Long untargetable spells | "an Action-RPG without the action" | Uber Lilith; old Diablo IV immunity |
 | Clones identical to the boss | tiny from above; which is real? | Baal's Vile Effigy |
 
@@ -546,11 +549,13 @@ is the Nightlord fight. Full notes: `notes/F1_nightreign.md`.
   weakness is shown before the expedition. Before each night boss, "a short
   gauntlet of enemies spawns ... thematically related to the boss and
   therefore indicate its identity to allow for some preparation".
-- **Weaknesses are scripted interrupts, not just multipliers**: a little
-  lightning breaks Maris's arena-wide sleep channel; poison staggers Adel
+- **Weaknesses are scripted interrupts, not just multipliers**: lightning
+  breaks Maris's arena-wide sleep channel (secondary for "a little"; one wiki
+  says only that lightning stops it "much faster"); poison staggers Adel
   (in his first phase only); fire breaks Caligo's armour. Raids during the
   day preview the Nightlord's mechanics.
-- **Everdark remixes** skip the teaching phase, start at the escalated one,
+- **Everdark remixes** mostly skip the teaching phase and start at the
+  escalated one (Maris and Gladius open differently),
   and add one phase that changes the rules (a tornado safe zone for Adel, a
   possessing third entity for Gnoster, a weapon handed to the player for
   Maris), with +25–50% health. Players loved them; Everdark Libra's
@@ -679,7 +684,9 @@ Hyper Light Drifter teaches without words: strict faction colours, size as
 threat, first-frame direction tells (Judgement's crouch shows the side of
 its sweep), the Emperor stunned by its own exploding adds. Touhou names
 every pattern and gives it a timer and a capture bonus; "survival" cards are
-DPS-proof. Returnal keeps one colour per rule (purple: cannot dash through).
+DPS-proof. Returnal keeps one colour per rule (purple: cannot dash through;
+the general rule is secondary, though its purple shockwaves must be
+jumped).
 Cuphead teaches one skill per boss and shows progress on the death screen.
 Silksong's bosses move into position before acting. Slay the Spire's Heart
 takes at most 300 a turn. The Game Accessibility Guidelines: never colour
@@ -752,8 +759,9 @@ Torment players called an easier, longer second phase "a chore" and
 defended dread over "epic" music; celebrated "deletion" clips of strong
 builds are a genre of their own (show the time to kill on the victory
 card); Deep Rock Galactic: Survivor's 30-second escape after the boss is a
-top complaint, because "actually killing the boss" should be the optimal
-play. Reddit and Steam agree with each other on every ranking above.
+recurring complaint (one well-supported thread), because "actually killing
+the boss" should be the optimal play. Nothing on Reddit contradicts the
+Steam rankings above.
 
 ## Sources
 

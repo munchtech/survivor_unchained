@@ -60,7 +60,11 @@ static class Probe
         var champs = new Dictionary<int, (double Born, string Kind, double MaxHp)>();
         var lived = new List<(string Kind, double Secs)>();
         int? bossId = null;
-        double bossBorn = 0, bossHp = 0, bossDealt = 0, hpAtBoss = 0, minHp = 1, lostInFight = 0, bossBlows = 0, worstBlow = 0;
+        double bossBorn = 0, bossHp = 0, bossDealt = 0, hpAtBoss = 0, minHp = 1, lostInFight = 0, bossBlows = 0, worstBlow = 0, bossDamage = 0;
+        // The boss's lobbed pots in flight (last seen position), and where its pots have landed lately:
+        // a pot's hit and its burning ground are reported by the art's name, not the boss's.
+        var potsInFlight = new Dictionary<int, (double X, double Z)>();
+        var potLandings = new List<(double X, double Z, double Until)>();
         int hitsOnBoss = 0;
         string bossDef = MapOffers.People(people).Boss, bossName = "?";
         var seen = new HashSet<int>();
@@ -94,6 +98,8 @@ static class Probe
             if (b.HostilesInRadius(p.X, p.Z, 6).Count >= 5) b.UseAbility(mx, mz);
             if (p.Hp < b.MaxHp * 0.33) j.Quaff(b);
             double hpBefore = p.Hp;
+            var potsBefore = new Dictionary<int, (double X, double Z)>(potsInFlight);
+            Enemy? bossNow = bossId is int bid ? b.Enemies.Living().FirstOrDefault(x => x.Id == bid) : null;
             zone.Step(dt);
             zone.Frame(dt);
             b.Tick(dt, mx, mz);
@@ -113,9 +119,18 @@ static class Probe
                         if (!h.Dot) hitsOnBoss++;
                         bossDealt += h.Amount;
                         break;
-                    case Ev.PlayerHit ph when bossId != null && !ph.Dodged:
-                        if (ph.Source == bossName) { bossBlows++; worstBlow = Math.Max(worstBlow, ph.Amount / b.MaxHp); }
+                    case Ev.PlayerHit ph when bossId != null && bossTtk == null && !ph.Dodged && !ph.Blocked && ph.Amount > 0:
+                    {
+                        // Its own blow: named for it, and it is close enough to have struck (a herald of the
+                        // same kind elsewhere does not count).
+                        bool melee = ph.Source == bossName && bossNow != null && Dist(bossNow.X, bossNow.Z, p.X, p.Z) < bossNow.Radius + p.Radius + 2.5;
+                        // Its pot: one of its pots was in flight near here a moment ago and has landed.
+                        bool pot = !melee && ph.Source != "burning ground" && potsBefore.Any(kv => !b.Projectiles.Living().Any(x => x.Id == kv.Key && x.Owner == Side.Enemy && x.OwnerId == bossId) && Dist(kv.Value.X, kv.Value.Z, p.X, p.Z) < 3.5);
+                        bool ground = ph.Source == "burning ground" && potLandings.Any(l => l.Until > t && Dist(l.X, l.Z, p.X, p.Z) < 3);
+                        if (melee || pot) { bossBlows++; worstBlow = Math.Max(worstBlow, ph.Amount / b.MaxHp); }
+                        if (melee || pot || ground) bossDamage += ph.Amount / b.MaxHp;
                         break;
+                    }
                     case Ev.Kill k:
                         if (champs.TryGetValue(k.Enemy, out var c))
                         {
@@ -138,6 +153,13 @@ static class Probe
                 minHp = Math.Min(minHp, p.Hp / b.MaxHp);
                 if (p.Hp < hpBefore) lostInFight += (hpBefore - p.Hp) / b.MaxHp;
             }
+            // The boss's pots now in flight; those gone since last tick have landed.
+            if (bossId is int bid2)
+            {
+                var now = b.Projectiles.Living().Where(x => x.Owner == Side.Enemy && x.OwnerId == bid2).ToDictionary(x => x.Id, x => (x.X, x.Z));
+                foreach (var kv in potsInFlight) if (!now.ContainsKey(kv.Key)) potLandings.Add((kv.Value.X, kv.Value.Z, t + 4));
+                potsInFlight = now;
+            }
             host.Pass(dt);
             j.BankArt(b);
             while (b.DraftOwed)
@@ -154,6 +176,6 @@ static class Probe
         string ttk = bossTtk is double s ? $"{s,6:0.0}" : "     -";
         string dps = bossTtk is double s2 && s2 > 0 ? $"{bossHp / s2,7:0}" : bossId != null ? $"{bossDealt / Math.Max(1, t - bossBorn),7:0}" : "      -";
         string end = bossTtk != null ? "won" : p.Alive ? (bossId != null ? "boss alive" : "no boss") : $"fell {t / 60:0.0}";
-        Console.WriteLine($"{calling,-8} {people,-10} {tier,4} {power,5} | {(h10.Kind != null ? $"{h10.Secs,4:0}" : "   -")} {"",3} {(h20.Kind != null ? $"{h20.Secs,4:0}" : "   -")} {"",3} | {bossHp,7:0} {ttk} {dps} {hitsOnBoss,10} {100 * lostInFight,8:0} {100 * minHp,7:0} {bossBlows,5:0} (worst {100 * worstBlow:0}%) | {end}; ember {b.EmberLevel}");
+        Console.WriteLine($"{calling,-8} {people,-10} {tier,4} {power,5} | {(h10.Kind != null ? $"{h10.Secs,4:0}" : "   -")} {"",3} {(h20.Kind != null ? $"{h20.Secs,4:0}" : "   -")} {"",3} | {bossHp,7:0} {ttk} {dps} {hitsOnBoss,10} {100 * lostInFight,8:0} {100 * minHp,7:0} {bossBlows,5:0} (worst {100 * worstBlow:0}%, all {100 * bossDamage:0}%) | {end}; ember {b.EmberLevel}");
     }
 }

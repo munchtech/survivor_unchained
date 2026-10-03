@@ -11,20 +11,24 @@ branch this was written from; nothing in `godot/` was changed.
   by three lamps, a charge you can steer into a lamp, a channel you break or
   pay for, two phase thresholds, a bar that shows all of it, and a dead
   man's hint for the devout. It is the template the arenas should grow from.
-- **The arena boss is not a boss.** At the half hour the arena spawns its
-  people's champion (the same creature as the champion events and, for three
-  of the four peoples, the same creature as the heralds at ten and twenty
-  minutes) with its health multiplied, fourteen escorts and a title. It has
+- **The arena boss is not a boss**, in the code as well as in play. At the
+  half hour the arena spawns its people's champion (the same creature as the
+  champion events and, for three of the four peoples, the same creature as
+  the heralds at ten and twenty minutes) with its health multiplied,
+  fourteen escorts and a title. It is spawned as an *elite*: `Enemy.Boss` is
+  false (only the Ford-Warden's def sets it), so no boss rule, boss hook or
+  boss statistic ever applies to it (§2). It has
   one verb (a lunge, or for Grimtunnel a lobbed pot), no phases, no
   telegraph beyond the lunge's lane, and nothing that changes the arena.
 - **The probe says the fight is a damage check, and only that** (§4): for
-  any build that reaches it the boss lives a median of 16–20 s, lands no
-  blow in half the fights, and lives less long than the herald at twenty in
-  two wins out of three; for a weak build against Grimtunnel it never ends.
+  any build that reaches it the boss lives a median of 16–20 seconds at every tier, lands
+  no blow in 20 of the 39 won fights, and lives less long than the herald
+  at twenty in 27 of the 39; for a weak
+  build against Grimtunnel it never ends.
 - **The story's four night fights** (Greymuzzle, Redcowl, Grimtunnel, the
   Barrow Lord) are the same four creatures with a name on the bar.
 - **The building blocks for much better are already in the code**: a boss
-  hook (`BattleHooks.BossTick`), delayed strikes that telegraph themselves,
+  hook (`BattleHooks.BossTick`, once the boss is flagged as one), delayed strikes that telegraph themselves,
   enemy ground, interrupts, the perfect dodge, a damage-taken multiplier, a
   bar with phase marks, a channel and a shield state, a boss view with poses.
   Most of the designs in `SURVIVORS_BOSSES.md` are new data and new tick
@@ -36,12 +40,12 @@ Code: `godot/logic/Play/Zones/ArenaRun.cs`.
 
 | Moment | What happens | Where |
 |---|---|---|
-| Before | The heralds come at 10 and 20 (`people.Champion`, health × (4 + tier), × 1.6 at 20, damage × 1.2, a chest). A herald later than 29:00 is skipped. Nothing announces the half hour coming. | `Step`, `Herald` |
-| 30:00 | `Boss()`: the boss def (`Spec.Boss ?? people.Boss`) spawns 18 m away at a random bearing, walking in, elite, health × (6 + 2 × tier), damage × 1.3, with 14 of the horde in a ring 5 m round it. Shake 0.45, a "danger" announcement titled "The half hour". | `Boss` |
-| The fight | Events stop. The horde is kept at half its target, in groups of 4 every 0.9 s. The boss runs its ordinary creature AI: no `BossTick` is installed in the arena. | `Step` |
+| Before | The heralds come at 10 and 20 (`people.Champion`, health × (4 + tier), × 1.6 at 20, damage × 1.2, a chest). A herald later than 29:00 is skipped. Only the objective's countdown ("Survive: m:ss until ... comes", `Objectives`) announces the half hour: no sign in the world, no run-up at 28–29 minutes. | `Step`, `Herald` |
+| 30:00 | `Boss()`: the boss def (`Spec.Boss ?? people.Boss`) spawns 18 m away at a random bearing, walking in, elite, health × (6 + 2 × tier), damage × 1.3, with 14 of the horde in a ring 5 m round it. It is spawned as an elite (`Spawn(..., elite: true)`); nothing sets `Enemy.Boss`. Shake 0.45, a "danger" announcement titled "The half hour". | `Boss` |
+| The fight | Events stop. The horde is kept at half its target, in groups of 4 every 0.9 s. The boss runs its ordinary creature AI: no `BossTick` is installed in the arena, and one would not run anyway, since `Ai.Update` calls it only for `e.Boss` (`Ai.cs:75`). | `Step` |
 | The bar | Name, title, health. No phase marks, no channel, never shielded (the bar supports all three). | `Frame` |
 | The kill | Won at once: the story told (`Arenas.Won`), a blue light and the way out where it fell, shake 0.35, "Victory" announcement. Loot: 2 + tier/2 plain items at rarity 1 or better, and a movement art's manual. **No chest.** | `Victory`, `OnLoot` |
-| After | Heralds every five minutes; creatures harden by the minute (health × (1 + 0.1m + 0.006m²), damage × (1 + 0.035m), a level per two minutes). No boss returns, no end, no dawn. | `Spawn`, `Step` |
+| After | Heralds every five minutes; creatures harden by the minute (health × (1 + 0.1m + 0.006m²), damage × (1 + 0.035m); the level keeps rising a level per 2.5 minutes, plus one more per two minutes past the half hour, about 0.9 a minute, `Level`). No boss returns, no end, no dawn. | `Spawn`, `Step` |
 
 ### Who the bosses are
 
@@ -52,23 +56,42 @@ Code: `godot/logic/Play/Zones/ArenaRun.cs`.
 | The Lamplings | `grimtunnel_roused` | chase; a lobbed firepot (burning ground) every 4.5 s | `lampling_sapper` | no |
 | The Kerchiefs | `enforcer` (the Red Hand; Redcowl in the story) | chase; lunge 8.5 m, 0.7 s, every 5 s | `enforcer` | **yes** |
 
-At tier 1 the herald at twenty has health × 8 (5 × 1.6) of its level, and
-the boss × 8 of a slightly higher level: **the half hour's boss is the
-twentieth minute's herald again**, without the chest. At higher tiers the
-boss pulls ahead (tier 4: × 14 against × 12.8), but it is still the herald's
-body, verbs and bar. A player meets the boss three times before it comes.
+At tier 1 the herald at twenty has health × 8 (5 × 1.6) at level 10, and
+the boss × 8 at level 14: four levels higher, so about 1.6 times the
+herald's health and 1.35 times its damage, but **the twentieth minute's
+herald again**: the same body, verbs and bar, without the chest. At tier 4
+the gap is about the same (about 1.56 times the health). A player meets the
+boss's creature three times before it comes. (The Lamplings are the
+exception: their herald is a sapper made elite, three times a sapper's
+health, not Grimtunnel.)
 
-### What a boss is exempt from
+### Elite, not boss: what the arena boss is and is not exempt from
 
-Bosses take no knockback (`Battle.cs:606`), shorter stuns (0.2–0.6 s for
-1–1.5 s), no fear, no freeze, no execute, no marked-prey kill, no status
-other than stun past five stacks (`Battle.cs:794`), and a weapon's
-`BossDamage` multiplier applies to them and to elites alike (`Battle.cs:543`).
-This is the right instinct (a boss must not be locked down), but every
-exemption is a removal: nothing is *added* in its place, so crowd-control
-builds simply lose their verbs at the climax. `MECHANICS.md` §6 and §7
-suggest turning the exemptions into the boss's own currency (stagger,
-breaks).
+The code has a full set of boss rules, all keyed on `Enemy.Boss`, which is
+set only from the def (`Battle.cs:1069`), and only the Ford-Warden's def has
+it (`Enemies.cs:119`). The arena boss is spawned with `elite: true`, so it
+gets the **elite** rules instead:
+
+| Rule | A boss (`e.Boss`) | The arena boss today (an elite) |
+|---|---|---|
+| Knockback | none (`Battle.cs:606`) | × 0.35, divided by mass (`:608`) |
+| Five chill stacks | no freeze (`:781`) | frozen 0.9 s (`:783`) |
+| Fear, charm | refused (`:794`) | applied |
+| Stuns from arts | 0.2–0.6 s | the elite length, often the full 0.6–1.5 s |
+| Freeze (`Arts.cs:229`), pull (`Battle.cs:1692`) | refused | applied |
+| Execute effects (`Battle.cs:1855`) | refused | applied below their threshold |
+| Mark Prey's kill below 20% (30% with Executioner) (`Arts.cs:796`) | refused | **applied: a marked boss dies outright** |
+| `BossTick` (`Ai.cs:75`) | called | never called |
+| Slain statistics (`Journey.cs:197`), boss music | counted | not counted (the music comes from the bar instead) |
+
+So the half hour's boss can be frozen, feared, pulled, executed, and killed
+outright by Mark Prey's execute once under a fifth of its health. That
+cheapens the climax in a different way from the one the boss rules would:
+the boss rules remove crowd control entirely, so control builds lose their
+verbs; the elite rules let control builds lock and execute it. Neither is
+right. `SURVIVORS_BOSSES.md` §0.15 proposes the middle: the boss is
+flagged as one (immune to locks and executes), and every control effect
+fills a stagger bar instead.
 
 ## 3. The Ford-Warden, the boss we already have
 
@@ -78,11 +101,11 @@ Code: `godot/logic/Play/Zones/Prologue.cs:187-385`, view
 | Feature | How it works | In the catalogue |
 |---|---|---|
 | The ward | Three lamp pylons; damage taken × `Ward[LitCount]` (most blows absorbed while all burn). The bar greys (`Shielded`). | Shields and breakable parts (§6) |
-| Breaking it | Hit a lamp (260 health) or **lure its charge into one**: the charge snuffs the lamp and stuns the Warden for 4 s. | Arena as a weapon (§4); the boss's own verb turned (§8) |
+| Breaking it | Shoot or blast a lamp (260 health; 200 once relit; melee sweeps and ground effects do not reach the lamps, which are props, not creatures) or **lure its charge into one**: the charge snuffs the lamp and stuns the Warden for 4 s. | Arena as a weapon (§4); the boss's own verb turned (§8) |
 | Cleave | Circle 3.4 m, 1.05 s fill telegraph, then 1.5 × damage, shake. | Telegraph language (§2) |
 | Charge | Line up to 24 m, 1.3 s telegraph, "It lowers its head...", 17 m/s; a wall stops it short and stuns it. | Telegraph language; movement check (§1) |
 | Channel | At 70% and 40% (and every 34 s): "RISE, YOU WHO DROWNED HERE." Raises two risen every 0.9 s for 6 s; a 9% health burst or any interrupt breaks it (stunned, takes × 1.5); finished, it heals 6% and relights a lamp. The bar shows the channel's progress. | Phases (§3); adds (§5); damage check with a stake (§1) |
-| Telling | The watchman's book; for the devout, the dead man's whisper: "It shatters its own lamps when it charges. Make it charge." Tips on the lamps and the channel. | Teaching (§2.6) |
+| Telling | The watchman's book; for the devout, the dead man's whisper: "It shatters its own lamps when it charges. Make it charge." Tips on the lamps and the channel. | Teaching (§2) |
 | Its view | A skeleton with hand-picked clips per pose, a lamp in its fist, a light whose glow follows the lamps lit. | Readability (§2) |
 
 It is a by-day-sized fight (one boss, a few adds) in the prologue's night,
@@ -97,9 +120,13 @@ than a ceremony.
 with the survivor's damage multiplied by a "power" factor from the first
 second (a stand-in for builds from weak to absurd; the bot drafts the first
 card offered and has no gear, so ×1 is a weak player at tier 1, not an
-average one). Columns: the heralds' and the boss's lifetimes, the boss's
-health, the fraction of the survivor's health lost (summed, so above 100%
-means they healed through it) and the lowest point. Run with:
+average one). The probe prints, per run, the heralds' and the boss's
+lifetimes, the boss's health, its damage per second taken, the fraction of
+the survivor's health lost during the fight (summed, so above 100% means
+they healed through it), the lowest point, and the boss's own blows (its
+lunge or pot hits, and its pots' burning ground, told apart from the
+escort's by source and position). The table below shows only the boss's
+lifetime. Run with:
 
     dotnet run --project docs/bosses/probe -c Release -- 0.25,0.5,1,2,4,10 1,2,4
 
@@ -143,11 +170,15 @@ What it says:
   telegraph or an arena change, so whatever the boss is given, its length
   has to be governed first (`MECHANICS.md` §3, §7; the gates and floors of
   `SURVIVORS_BOSSES.md` §0.5).
-- **The boss is rarely what hurts.** In 20 of the 39 won fights the boss
-  landed no blow at all, and the median was none. Its worst single blow was
-  13–40% of the survivor's health (once 64%). The danger at the half hour is the
-  escort and the horde: seven of the 29 deaths came after the boss arrived,
-  and they were the weak and middling builds being crowded, not out-read.
+- **The boss is rarely what hurts a build that wins.** In 20 of the 39
+  won fights the boss landed no blow at all, and the median was none; in
+  the 19 where it did, its worst single blow was 13–40% of the survivor's
+  health (once 64%), and the median share of all the survivor's lost health
+  that came from the boss was 13%. Where the survivor died in the fight
+  (seven runs) the boss mattered more: it landed 5–10 blows in six of
+  them, with single blows up to 70%. That is a damage race being lost, not
+  a pattern being misread: none of its blows is telegraphed beyond the
+  lunge's lane.
 - **The herald is a longer fight than the boss.** In 27 of the 39 wins the
   herald at twenty lived longer than the boss did (it comes alone into a
   full horde; the boss walks in beside the survivor and is mobbed). With the same body
@@ -173,7 +204,7 @@ does with it today, and what the Ford-Warden does.
 |---|---|---|---|
 | Movement check (§1) | A lunge lane (Pack, Risen, Kerchiefs); a pot's ring (Lamplings) | Cleave circle, charge lane, walls | Only one, and the same as the herald's |
 | Damage check (§1) | The whole fight is one | The channel (9% in 6 s) | No stake beyond "it takes longer" |
-| Telegraph language (§2) | Line from the lunge; circle from a pot or a `ScheduleStrike` | Circle, line, bark, pose | One hostile colour for everything; `Cone` exists in the enum but draws as a circle and nothing uses it; no audio cue tied to a telegraph |
+| Telegraph language (§2) | Line from the lunge; the pot's landing (no arena boss uses `ScheduleStrike`, which no enemy calls today) | Circle, line, bark, pose | One hostile colour for everything; `Cone` exists in the enum but draws as a circle and nothing uses it; no audio cue tied to a telegraph |
 | Phases (§3) | None | Two thresholds (channel) | No phase marks on the arena bar; no change of behaviour, music or arena |
 | Arena shaping (§4) | None | The lamps, the river, walls that stop a charge | An arena is one round clearing of radius 84 m, ringed at its edge by twelve standing stones and six fires (`MapGen.cs:112`, `:543-553`); the boss is spawned beside the survivor wherever they are, and nothing in the fight uses the stones, the fires or the people's cover |
 | Adds and the horde (§5) | 14 escorts; the horde held at half | Raises the drowned | The boss neither commands, feeds on nor reshapes the horde |
@@ -194,8 +225,9 @@ does with it today, and what the Ford-Warden does.
 - **The boss walks in from a random bearing 18 m away**, usually off the
   high camera's picture (31 m away at 64°), so the first the player sees of
   it is the bar.
-- **A boss's escorts are drawn from the horde at random**, so they are
-  never the boss's own (a Pack-Mother's wolves may be boars).
+- **A boss's escorts are a random weighted draw from its people's horde**,
+  not chosen for the boss (the Pack-Mother may come with boars rather than
+  her wolves).
 - **The boss drops no chest.** Every herald and champion does; the run's
   climax is the one fight without the genre's signature reward, while the
   arena carries on afterwards and the build could still use it.

@@ -76,7 +76,7 @@ The genre's best practice is all of them at once.
   STILL!") [§4.2]; Azmodan announces his adds [§4.1]; HoloCure pairs a
   "!!" icon with an audio cue [§3.3].
 - **One colour per rule, not per attack.** Returnal's purple means "cannot
-  be dashed through"; Path of Exile 2's red flash means "cannot be blocked"
+  be dashed through" (secondary as a general rule); Path of Exile 2's red flash means "cannot be blocked"
   [§4.2, §5]. Proposed for us: **amber** a blow is coming here, **violet**
   this ground stays bad, **pale blue** stand here (a safe spot or the
   boss's open moment), **grey** this will be solid.
@@ -88,7 +88,7 @@ The genre's best practice is all of them at once.
   and a capture bonus [§5]; a name on screen makes a move learnable and
   quotable. Keegan's duel in `ARPG_BOSSES.md` makes the name the telegraph.
 
-**Teaching (2.6).** Teach one attack at a time, then combine (Cuphead's
+**Teaching.** Teach one attack at a time, then combine (Cuphead's
 Root Pack, Bullet King) [§5]; preview the boss in the run before it comes
 (Vampire Survivors' Cappella Magna parades the Ender's five parts in turn
 before it [§2]; Halls of Torment's mid-run bosses [§1.1]). Our Kindling at
@@ -386,9 +386,10 @@ You?" counter, triggered even by familiars and boon effects) [§5.2]: our
 weapons fire on their own, so no boss may ever punish being hit.
 
 **The rules.** Proportional, visible, time-limited, and always returned,
-ideally with a bonus. Never take the dash. Never let the counter scale
-with how good the build is (the Penitent grows from stones *left on the
-ground*, not from the survivor's power).
+ideally with a bonus. Never take the dash. Let the counter scale only with what
+the player controls, never with how good the build is: the Penitent grows
+from stones *left on the ground*, and copies the survivor's weapons at a
+fixed low rank, not at the build's strength.
 
 *Used by:* the Red Hand (the Toll), the Silver Penitent (a rival from the
 survivor's own build), the Barrow Lord (raised allies called back), the
@@ -415,7 +416,7 @@ the time after it feel like.
   never let it soft-lock.
 - **Power can shorten the night.** Halls of Torment's Boglands summons its
   Lord after 20,000 kills; the Vault's Lord is unsealed by the player;
-  Ravenswatch's Hourglass rewards summoning the boss early [§1.3, §3.7].
+  Ravenswatch's Hourglass rewards summoning the boss early [§1.2, §3.7].
 - **Endless.** Vampire Survivors re-runs the whole boss schedule with +100%
   health a cycle; Halls of Torment's Vault scales until its run "starts
   breaking" at about 95 minutes; Megabonk's endless swarm produced
@@ -457,7 +458,8 @@ turn surplus power and clean play into something, rather than cancelling
 them.
 
 **Failure modes.** A reward that can be lost to the horde (Halls of
-Torment's orbs covering the Lord's drop) [§1.2]; a win that is only a
+Torment's orbs covering the Lord's drop, `notes/A1_halls_of_torment.md`
+§2.2); a win that is only a
 banner; loot dropped as sacks in a field still full of enemies (our boss
 today, `AUDIT.md` §2).
 
