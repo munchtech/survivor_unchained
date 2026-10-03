@@ -1,7 +1,7 @@
 # C11 · Raid on the Roost
 
 **Redcowl: arrival and death.** Priority 3 · Act 1, optional (the Missing
-Caravan by force) · arrival 10 s, death 16 s · skippable
+Caravan by force) · arrival 10 s, death 17 s · skippable
 
 ## What it does
 
@@ -9,16 +9,17 @@ The night raid on the Roost (`roost_raid`). At the half hour Redcowl comes out
 of the dark himself, hood back, the greataxe over his shoulder, laughing, and
 tells her that his children are asleep behind him. When he falls he goes down
 on one knee and laughs again, wet, and says one last thing. If she ever said
-"Ashford" to his face, it is that word: the name he never let anyone say twice.
-If not, it is a message for his brother, about a leg.
+"Ashford" to his face, it is that word, and a laugh: he told her she could say it
+once in his camp, and now he has said it too, and they are square. If not, it is
+a message for his brother, about a leg.
 
 - **Redcowl wants** to stand between her and forty-one mouths, and to die
   laughing if he has to. **He hides** Ashford to the end, unless she already
   said it. **He reveals**, with his last breath, either the town or the brother.
 - **She wants** the cages open and the camp broken. **She pays** Rav (his
   brother), and the children asleep behind the line.
-- **Pays:** C06 (the children, the standard); `redcowl.ashford` (she said it
-  once); Rav's "Redcowl owes Rav a leg" (`rav.roost`) and the sewn-on leg
+- **Pays:** C06 (the children, the standard); `redcowl.ashford` ("You get to say
+  that once in my camp. You've said it."); Rav's "Redcowl owes Rav a leg" (`rav.roost`) and the sewn-on leg
   (`rav.redcowl`). **Plants:** the message carried to Rav
   (`rav.cb_killed_redcowl`, a new choice: "He said to tell you the leg held.").
 
@@ -50,7 +51,7 @@ cold above.
 |---|---|---|---|---|---|
 | 1 | MS | 50 | Static, low; `WorldRate` 0.2 on the blow | The blow; he goes down on one knee, the axe-head in the dirt, both hands on its haft. The Kerchiefs still standing lower their weapons and step back. | 3.5 |
 | 2 | MCU | 50 | Static, at his kneeling eye-height | He laughs, and it costs him; blood at his mouth (a dark line on the beard). He looks up at her. | 3.0 |
-| 3 | CU | 85 | Static | His last line (R2 or R3). | 4.0 |
+| 3 | MS | 50 | Static, at his kneeling eye-height, a little closer than 2 | His last line (R2 or R3), said up at her. (A medium shot: he has no face rig, so the line is carried by the head, the shoulders and the hands on the haft.) | 4.5 |
 | 4 | MS | 50 | Static | He lets go of the axe's haft and sits back on his heels and is still. The hood has fallen; there is grey in the beard. A torch burns down beside him. | 4.0 |
 | 5 | to the reckoning | | | Into the reckoning. | 1.5 |
 
@@ -63,7 +64,7 @@ Scots, a big chest voice that laughs before it threatens.
 |---|---|---|---|
 | `cin_raid_on_the_roost.bairns#0` (to a woman) | Arrival, shot 2 | Ha! HA. At night, lass. With my bairns asleep behind me. ...Mind where you swing. | Laugh, then cold on the last four words. |
 | `cin_raid_on_the_roost.bairns#1` | Arrival, shot 2 | Ha! HA. At night, lad. With my bairns asleep behind me. ...Mind where you swing. | |
-| `cin_raid_on_the_roost.last#0` (`redcowl.ashford_said`) | Death, shot 3 | ...Ashford. | The word he never says, once, to the one who said it to him. Not a cry; a name, quietly, like a man telling you where he's from. |
+| `cin_raid_on_the_roost.last#0` (`redcowl.ashford_said`) | Death, shot 3 | ...Ashford. *(a laugh)* There. Now we've both said it. | The word he never says, once, to the one who said it to him: quietly, like a man telling you where he's from. Then the laugh, which costs him, and the rest as a joke between equals. It pays "You get to say that once in my camp." |
 | `cin_raid_on_the_roost.last#1` | Death, shot 3 | Tell the saw-bones... the leg held. | A joke, nearly. He means more than the leg. |
 
 And Rav, afterwards (`rav.cb_killed_redcowl`, new choice, shown when

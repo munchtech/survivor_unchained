@@ -72,7 +72,7 @@ him to run with her, or leaves them be.
 | 1 | LS | 35 | Static, low, behind her right shoulder | The Hollow opening out: the rock shelf, the dark den, wolves on the rocks above, watching. Nothing moves but dust. | 3.5 |
 | 2 | MS | 85 | Static, low, from the den's side | Greymuzzle comes out of the shadow alone, slowly, and stops. | 4.0 |
 | 3 | CU | 100 | Static | His face: grey to the eyes, the eyes yellow and clouding at the rims; he does not growl. He looks at her for a long time. | 3.5 |
-| 4 | MLS | 35 | Static, side-on, both of them in frame at the two edges | She holds still. Behind him, in the shadow of the stones, wolves lying in the dirt that do not get up. **Choice 1** comes up in the lower bar; the shot holds, breathing (the wolves' flanks, the dust), for as long as the player takes. | 4.0 + choice |
+| 4 | MLS | 35 | Static, side-on, both of them in frame at the two edges | She holds still. He looks back once, over his shoulder, at the den: in the shadow of the stones, wolves lying in the dirt that do not get up. Then at her again. (C10 pays this look.) **Choice 1** comes up in the lower bar; the shot holds, breathing (the wolves' flanks, the dust), for as long as the player takes. | 4.0 + choice |
 | 5 | MS | 50 | Static, frontal on her | *Kneel:* she disarms (see Calling) and kneels on one knee, then lowers the other, side-on to him, eyes down, and holds out an empty hand, palm up, low. | 5.0 |
 | 6 | 2S | 65 | Static, profile, ground level | He comes to her. Stops a nose from her hand. Smells it. | 3.5 |
 | 7 | CU | 85 | Static, over his shoulder onto her face | He lifts his head to her face, close, and breathes her in. His lip lifts off his teeth: not a snarl, a flinch. She does not move. | 3.5 |

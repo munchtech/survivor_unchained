@@ -9,12 +9,16 @@ At the half hour of the night fight at the Dig's edge (`dig_boils`), the ground
 splits and Grimtunnel climbs up out of it, bigger than at the ford, and changed:
 a cold blue light shows through the cracks of his hide where the Warden's heart
 has been keeping him company in the dark. He does not die. He goes back down,
-bleeding and delighted, shouting up the hole after her.
+bleeding and delighted, shouting up the hole after her that he has told
+downstairs about her, and it went quiet.
 
-- **Grimtunnel wants** her to stop interrupting the work. **He reveals**, gloating,
-  that the thing below knows her (paying C03's "You smell like downstairs").
-- **Plants:** the heart's light in him (Act 3: he carries it to the bottom);
-  "It knows you" (Act 2's turn; Act 3).
+- **Grimtunnel wants** her to stop interrupting the work. **He believes**:
+  downstairs is patient, downstairs will be grateful, and he talks to it. **He
+  reveals**, as a believer shares good news, that he told it about her and it went
+  quiet (paying C03's "You smell like downstairs").
+- **Plants:** the heart's light in him (Act 3: he carries it to the bottom); the
+  Morrow going quiet at her name (the fortune has it "turning over in its sleep";
+  Act 3 answers why it listened).
 
 ## Trigger and facts
 
@@ -42,7 +46,7 @@ light cold blue through his hide.
 | # | Shot | Lens | Camera | Framing and action | Dur. |
 |---|---|---|---|---|---|
 | 1 | MS | 35 | Static; `WorldRate` 0.25 on the blow | The blow; he reels, bleeding light as much as blood, and tumbles backward into the crack he came out of, clutching the edge. | 3.5 |
-| 2 | CU | 50 | Static, at the crack's lip, down at him | Hanging by his claws, grinning up at her. Line G5. | 4.0 |
+| 2 | MS | 35 | Static, at the crack's lip, down at him | Hanging by his claws, grinning up at her, the blue in his seams and his head-lamp lighting the rock round him. Line G5. (A medium shot: he has no face rig; the line is in the whole body, swinging from the claws.) | 4.0 |
 | 3 | LS | 24 | Static, down the crack | He lets go and drops into the dark, still laughing; his head-lamp goes down and down, a spark, and the blue with it, then nothing. The crack grinds shut. | 3.5 |
 
 ## Lines
@@ -52,15 +56,16 @@ family, bigger and lower, a cackle, a cave reverb).
 
 | VO id | When | Line | Note |
 |---|---|---|---|
-| `cin_dig_boils_over.pump#0` (pump broken, blown or moved) | Arrival | Surface-meat! You broke my PUMP. ...Doesn't matter. The heart doesn't mind. The heart is PATIENT. | Outrage, then the oily pleasure of a secret. |
-| `cin_dig_boils_over.pump#1` | Arrival | Surface-meat! Killing my lads, are we? ...Doesn't matter. The heart doesn't mind. The heart is PATIENT. | |
-| `cin_dig_boils_over.knows` | Retreat | It knows you! Downstairs! It KNOWS you! | Delighted, as if he has a present for her. Shouted up the hole as he falls. |
+| `cin_dig_boils_over.pump#0` (pump broken, blown or moved) | Arrival | Surface-meat! You broke my PUMP. ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT. | Outrage, then calm: a believer remembering his faith. |
+| `cin_dig_boils_over.pump#1` | Arrival | Surface-meat! Killing my lads, are we? ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT. | |
+| `cin_dig_boils_over.quiet` | Retreat | I told it about you! It went ever so QUIET! | Delighted, as if he has a present for her; homely ("ever so", as in C03). Shouted up the hole as he falls. |
 
 ## Performance
 
 **Grimtunnel.** Toad-still, then quick. He is not angry for long about
-anything: the heart is with him, and everything is going to be wonderful. The
-retreat is not a defeat to him: he is going home.
+anything: the heart is with him, downstairs is patient, and everything is going
+to be wonderful. The retreat is not a defeat to him: he is going home. "Ever so
+QUIET" is said with awe, as a churchgoer tells you the bishop knew his name.
 
 **The survivor.** *Arrival:* `brows_angry` 0.35, `squint` 0.2 at the blue. *On
 G5:* `brows_angry` eases, `brows_sad` 0.2; she looks down the crack after him

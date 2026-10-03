@@ -1,7 +1,7 @@
 # C13 · Behind the Sealed Door
 
 **The Barrow Lord: arrival and the kneel.** Priority 3 · Act 1, optional (the
-vault, with the sigil's fragment, after dark) · door 12 s, arrival 8 s, kneel
+vault, with the sigil's fragment, after dark) · door 12.5 s, arrival 8 s, kneel
 16 s · skippable
 
 ## What it does
@@ -24,7 +24,13 @@ He does not turn round.
   down there was expecting her.
 - **Pays:** the bones at the door ("It was never locked from the outside"); the
   bootprints going in and none coming out, and the toll-token in one (Jessop);
-  Vonnra's "you know better than to ask me what is behind it" (`vonnra.arcana`).
+  Vonnra's "you know better than to ask me what is behind it" (`vonnra.arcana`);
+  the words over the door. By day, in `Verge.cs` (`vaultdoor`), the door is
+  inscribed in the old empire's tongue: HIC LEGIO SEPTIMA SEPELIVIT QUOD URERE
+  NON POTUIT. A reader (arcana, or the scholar's lens) sees it translated ("Here
+  the Seventh Legion buried what it could not burn."); anyone else sees only the
+  dead tongue. So the language is on the page before he speaks it, and his two
+  words are a reward for the reader and a sound for everyone else.
 - **Plants:** "Nondum" and "Redi" (Act 3: the dead part for the Morrow's own light);
   Jessop on the stair (Act 3, the stair); the violet glass in his lantern
   (Vonnra's colour).
@@ -54,7 +60,7 @@ He does not turn round.
 | # | Shot | Lens | Camera | Framing and action | Dur. |
 |---|---|---|---|---|---|
 | 1 | INSERT | 85 | Static | Her hand sets the black wedge into the empty notch. It fits. | 2.0 |
-| 2 | CU | 50 | Static, on the sigil | Under her hand the whole sigil wakes, violet, from the notch outward along the seven arms, like an eye opening. *(Faith: the bones at the door whisper, very low: "It was never locked from the outside.")* | 4.0 |
+| 2 | CU | 50 | Static, on the sigil, then a slow tilt up | Under her hand the whole sigil wakes, violet, from the notch outward along the seven arms, like an eye opening; its light climbs the stone and finds the cut letters over the door, HIC LEGIO SEPTIMA..., one by one. *(Faith: the bones at the door whisper, very low: "It was never locked from the outside.")* | 4.5 |
 | 3 | LS | 35 | Static, low, behind her | The door does not swing: it sinks into the ground. Behind it, a stair cut in black stone going down into the dark. Coming up it, slowly, shapes with points of light for eyes. | 6.0 |
 
 ## Arrival
