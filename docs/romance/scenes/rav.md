@@ -170,7 +170,7 @@ he only sings on his fifth.
 
 **RAV:** You came back round. (He tries to stand up and thinks better of
 it.) No. Not like this, pal. I'd like to remember it. (A pause, horrified.)
-...Christ, did I say that out loud.
+...Mam— did I say that out loud.
 
 Sets npc flag `said:remember`. → end. (The next time, it goes on.)
 
@@ -197,14 +197,10 @@ inside of your wrist, out of habit.
 
 **NARRATOR:** He stops talking.
 
-**NARRATOR:** You can see him counting. His lips move. Four. Seven. Nine.
-Nothing under his fingers. Eleven. Then there it is, a single slow beat,
-like somebody knocking on a door very far away, and then another, faster,
-and then your pulse is going like a hare's.
+**NARRATOR:** You can see him counting. His lips move. Three. Five. Nothing under his fingers. Seven. Then there it is, a single slow beat, like somebody knocking on a door very far away, and then another.
 
 **RAV:** (Very quietly, in a voice you've never heard him use, the bedside
-voice under the cant.) ...Your heart stopped, pal. (He doesn't let go.) For
-a count of eleven. And now it's going again. (He looks up at you.) Christ.
+voice under the cant.) ...Your heart stopped, pal. (He doesn't let go.) For a count of seven. And now it's going again. (He looks up at you.) ...Oh, Mam.
 
 Choices:
 - "(Let him hold it.)" → `back_room2_hold`
@@ -294,7 +290,7 @@ Choices:
   (Grieving variant: the forehead on the shoulder.)
 - **Callbacks.** "Drop your trousers or don't." The sail-needle. The jar
   that moves. "Largely professionally." "I'd like to remember it." The
-  count of eleven.
+  count of seven.
 - **Sex variants.** Same beats either way. Rav is an equal-opportunity
   doctor and says so ("I've seen everything. Twice. Under worse lamps.").
 - **Ends on.** Him on his back on the camphor blanket, the survivor's wrist
@@ -365,8 +361,7 @@ size.) Later, in the cells, Rav comes down the stairs with a bottle.
 
 **RAV:** You stupid— (He's white with fury. His hands are shaking, and they
 never shake.) You stupid, stupid— Who asked you? Who *asked* you? (He sits
-down on the floor outside the bars, hard.) ...Our mother'd have liked you.
-God help you. (He uncorks the bottle with his teeth, and passes it through
+down on the floor outside the bars, hard.) ...Mam'd have liked you. Poor sod. (He uncorks the bottle with his teeth, and passes it through
 the bars, and doesn't take any himself.)
 
 > The Act 2 writer decides what it costs the survivor (a night in the cells;

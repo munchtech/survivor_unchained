@@ -19,7 +19,7 @@ animals; level, quiet, present tense; the Pack is "the Pack" or "them";
 **Effects:** set npc flag `cb:knelt`; rel `maeca` respect +10.
 
 **MAECA:** You went into the Hollow with nothing on your hands and knelt to
-him. (She looks at your knees, which are still muddy.) He let you. ...He
+him. I was on the ridge. (She looks at your knees.) He let you. ...He
 doesn't let me, and he's known me ten years.
 
 → `hub`
@@ -60,7 +60,7 @@ npc flag `thanked`, `history broke_promise`.
   and the white of the frost. She walks barefoot on ground that would cut
   you through your boots, and doesn't make a sound. Once she stops, and
   you stop, and somewhere off in the Hollow a wolf calls and is answered.
-  "Him," she says. "And the bitch with the torn ear. Eating." She walks on.
+  "Him," she says. "And the bitch with the white foot. Eating." She walks on.
 - `[otherwise]` The Old Road, the wreck, the frost. You know the way now,
   and she lets you walk in front, which she has never done.
 
@@ -206,8 +206,7 @@ Choices *(existing)*: "I won't." → end.
 `maeca.blind_nights +1`.
 
 **NARRATOR:** Afterwards, in the dark under the hides, she puts her feet
-against your legs, and you flinch: they're cold as stones in a stream. She
-starts to take them back.
+against your legs, and flinches: you're colder than they are. She starts to take them back.
 
 Choices:
 - "(Hold them.)" → `blind2_feet`
@@ -219,10 +218,11 @@ Choices:
 and scarred: old white lines across the ball of the foot, a ridge along the
 heel where something cut it to the bone a long time ago and it healed badly
 in the cold. She lets you hold it. She lets you hold the other. She lies very
-still, the way she lay still when the Pack called, and doesn't say anything,
-and after a long time her feet are warm.
+still, the way she lay still when the Pack called, and doesn't say anything
+for a long time.
 
-**MAECA:** (Into the dark, very low.) Nobody's held those.
+**MAECA:** (Into the dark, very low.) Your hands are colder than my feet. (A
+pause.) Hold them anyway. ...Nobody's held those.
 
 **Effects:** rel `maeca` trust +10.
 
@@ -292,8 +292,7 @@ keep mine.
 **NARRATOR:** Grey light. She's awake before you, as always, but she hasn't
 got up. Her head is still on your chest. Her face is very still.
 
-**MAECA:** Your heart's slow. (She doesn't lift her head.) Slow as a bear's
-in January. It was going like a hare's last night. ...I've lain with my ear
+**MAECA:** Your heart's going like a hare's. (She doesn't lift her head.) All night it was a bear's in January. I counted between. ...I've lain with my ear
 to a lot of things to see if they'd live, {name}. (She gets up, then, and
 goes out barefoot into the frost, and stands there listening to the wood
 with her back to you.) Go on. Holloway'll count us.
@@ -548,10 +547,9 @@ the cold off. (She doesn't turn round.) ...Your turn.
 **Entry:** `survivor.knows_risen`; `maeca.lover`.
 
 - `[when maeca.heard_heart]`
-  **MAECA:** I know. (Before you've said anything.) A hare at night and a
-  bear at dawn. And the Pack lay down for you. They lie down for their own.
+  **MAECA:** I know. (Before you've said anything.) A bear at night and a hare at dawn. And the Pack lay down for you. They lie down for their own.
   ...I lay three days in a cave with dead men, {name}. I know what they
-  smell like. You smell like the river, at dawn. I've known since the third
+  smell like. You smell like the river, at night. I've known since the third
   night.
   - "You never said." → **MAECA:** You never asked. (A pause.) I've loved
     worse things than a dead one. Lain three days with a wolf's breath on

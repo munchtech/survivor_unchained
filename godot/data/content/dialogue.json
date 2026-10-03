@@ -3682,6 +3682,29 @@
        "met": "maeca"
       },
       {
+       "fact": "promise.pack",
+       "eq": true
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "cb:knelt",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_knelt"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "maeca"
+      },
+      {
        "not": {
         "npcFlag": {
          "npc": "maeca",
@@ -3727,10 +3750,42 @@
          }
         }
        ]
+      },
+      {
+       "not": {
+        "hasTag": "wolf_pelts"
+       }
       }
      ]
     },
     "node": "invite"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "maeca"
+      },
+      {
+       "fact": "maeca.lover",
+       "eq": true
+      },
+      {
+       "fact": "sella.nights",
+       "gte": 1
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "say:sella",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "say_sella"
    },
    {
     "when": {
@@ -4006,18 +4061,28 @@
       "show": {
        "all": [
         {
-         "time": "night"
-        },
-        {
-         "npcFlag": {
-          "npc": "maeca",
-          "key": "invited",
-          "eq": true
-         }
+         "all": [
+          {
+           "time": "night"
+          },
+          {
+           "npcFlag": {
+            "npc": "maeca",
+            "key": "invited",
+            "eq": true
+           }
+          },
+          {
+           "not": {
+            "history": "killed_greymuzzle"
+           }
+          }
+         ]
         },
         {
          "not": {
-          "history": "killed_greymuzzle"
+          "fact": "wolf.blood",
+          "gt": 0
          }
         }
        ]
@@ -4061,7 +4126,77 @@
        ]
       },
       "locked": "Not tonight. Not like this.",
-      "goto": "blind"
+      "goto": "blind_walk"
+     },
+     {
+      "text": "Is the fire at the Blind still big enough for two?",
+      "show": {
+       "all": [
+        {
+         "all": [
+          {
+           "time": "night"
+          },
+          {
+           "npcFlag": {
+            "npc": "maeca",
+            "key": "invited",
+            "eq": true
+           }
+          },
+          {
+           "not": {
+            "history": "killed_greymuzzle"
+           }
+          }
+         ]
+        },
+        {
+         "fact": "wolf.blood",
+         "gt": 0
+        }
+       ]
+      },
+      "when": {
+       "all": [
+        {
+         "time": "night"
+        },
+        {
+         "rel": {
+          "npc": "maeca",
+          "axis": "respect",
+          "gte": 30
+         }
+        },
+        {
+         "rel": {
+          "npc": "maeca",
+          "axis": "affection",
+          "gte": 10
+         }
+        },
+        {
+         "any": [
+          {
+           "fact": "beasts.outcome",
+           "eq": "cured"
+          },
+          {
+           "fact": "beasts.outcome",
+           "eq": "allied"
+          }
+         ]
+        },
+        {
+         "not": {
+          "history": "killed_greymuzzle"
+         }
+        }
+       ]
+      },
+      "locked": "Not tonight. Not like this.",
+      "goto": "blood"
      },
      {
       "text": "What did you hunt, before the wolves?",
@@ -4290,6 +4425,13 @@
        "key": "cb:burned_roost",
        "value": true
       }
+     },
+     {
+      "rel": {
+       "npc": "maeca",
+       "respect": -15
+      },
+      "quiet": true
      }
     ],
     "next": "hub"
@@ -4351,7 +4493,21 @@
     "choices": [
      {
       "text": "I can keep quiet.",
-      "goto": "blind"
+      "show": {
+       "not": {
+        "fact": "wolf.blood",
+        "gt": 0
+       }
+      },
+      "goto": "blind_walk"
+     },
+     {
+      "text": "I can keep quiet.",
+      "show": {
+       "fact": "wolf.blood",
+       "gt": 0
+      },
+      "goto": "blood"
      },
      {
       "text": "Not tonight.",
@@ -4371,22 +4527,62 @@
       "text": "[explicit scene: Maeca and {name}, the Hunters' Blind in the Verge at night, a lean-to of hides and a fire the size of a hat; wordless, wary, careful hands that become sure ones, frost outside and the Pack audible far off; her trust given like a held breath let go — to be written]"
      },
      {
-      "text": "The Hunters' Blind is a lean-to of hides and a fire the size of a hat. She feeds it one stick at a time and doesn't talk, and then neither of you needs to. Her hands are hard and careful, the way they are with a snare. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you."
+      "when": {
+       "all": [
+        {
+         "fact": "maeca.blind_nights",
+         "lte": 1
+        },
+        {
+         "npcFlag": {
+          "npc": "maeca",
+          "key": "thanked",
+          "eq": true
+         }
+        },
+        {
+         "fact": "beasts.outcome",
+         "eq": "cured"
+        }
+       ]
+      },
+      "text": "Off in the Hollow the Pack is loud, a long tangle of voices, and she stops with her hands on your buckle and listens, and then she laughs: a short surprised sound, as if she'd trodden on something. \"They're eating,\" she says, and pulls you down onto the hides. Her hands are hard and careful, the way they are with a snare, and then they're not careful. The fire goes down to embers. Neither of you feeds it. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you."
+     },
+     {
+      "text": "She doesn't talk, and then neither of you needs to. She undoes your boots before anything else, and sets them side by side outside the hides, and that seems to be a decision. Her hands are hard and careful, the way they are with a snare: slow, listening, ready to stop. They become sure. Once, far off, the Pack calls, and she goes still against you until it's done. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you."
      }
     ],
     "effects": [
+     {
+      "add": {
+       "maeca.blind_nights": 1
+      }
+     },
      {
       "set": {
        "maeca.lover": true
       }
      },
      {
-      "rel": {
-       "npc": "maeca",
-       "affection": 15,
-       "trust": 10
+      "if": {
+       "fact": "maeca.blind_nights",
+       "lte": 1
       },
-      "quiet": true
+      "then": {
+       "rel": {
+        "npc": "maeca",
+        "affection": 15,
+        "trust": 10
+       },
+       "quiet": true
+      },
+      "else": {
+       "rel": {
+        "npc": "maeca",
+        "affection": 5
+       },
+       "quiet": true
+      }
      },
      {
       "condition": {
@@ -4399,7 +4595,7 @@
       "notice": "You slept well, for once. (Warmed: +8% damage, +5% speed, one day)"
      }
     ],
-    "next": "blind_morning"
+    "next": "blind_dark"
    },
    "blind_morning": {
     "id": "blind_morning",
@@ -4487,6 +4683,658 @@
       "end": true
      }
     ]
+   },
+   "cb_knelt": {
+    "id": "cb_knelt",
+    "text": "You went into the Hollow with nothing on your hands and knelt to him. I was on the ridge. (She looks at your knees.) He let you. ...He doesn't let me, and he's known me ten years.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "maeca",
+       "key": "cb:knelt",
+       "value": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "maeca",
+       "respect": 10
+      },
+      "quiet": true
+     }
+    ],
+    "next": "hub"
+   },
+   "blood": {
+    "id": "blood",
+    "text": "(At the edge of the Hollow she stops, and sniffs, once, and turns round.) Not with that on you. Wash. River's that way. ...Or sleep, and come tomorrow. The night takes it off. It took it off me.",
+    "choices": [
+     {
+      "text": "...",
+      "end": true
+     }
+    ]
+   },
+   "blind_walk": {
+    "id": "blind_walk",
+    "speaker": "narrator",
+    "text": [
+     {
+      "when": {
+       "not": {
+        "fact": "maeca.blind_nights",
+        "gte": 1
+       }
+      },
+      "text": "She goes out by the east gate without a lamp, and you follow her along the Old Road past the wreck, by starlight and the white of the frost. She walks barefoot on ground that would cut you through your boots, and doesn't make a sound. Once she stops, and you stop, and somewhere off in the Hollow a wolf calls and is answered. \"Him,\" she says. \"And the bitch with the white foot. Eating.\" She walks on."
+     },
+     {
+      "text": "The Old Road, the wreck, the frost. You know the way now, and she lets you walk in front, which she has never done."
+     }
+    ],
+    "next": "blind_fire"
+   },
+   "blind_fire": {
+    "id": "blind_fire",
+    "speaker": "narrator",
+    "text": "The Hunters' Blind is a lean-to of hides against a fallen oak, with a fire the size of a hat. She feeds it one stick at a time. She doesn't talk. After a while she takes the crossbow off her back, and checks it, and lays it down by her right hand, and turns and looks at you across the fire as if you were a track she has been following for days.",
+    "next": "blind_ask"
+   },
+   "blind_ask": {
+    "id": "blind_ask",
+    "text": [
+     {
+      "when": {
+       "not": {
+        "fact": "maeca.blind_nights",
+        "gte": 1
+       }
+      },
+      "text": "If you're going to talk after, don't."
+     },
+     {
+      "text": "(She holds out her hand. That's all.)"
+     }
+    ],
+    "choices": [
+     {
+      "text": "I won't.",
+      "show": {
+       "not": {
+        "fact": "maeca.blind_nights",
+        "gte": 1
+       }
+      },
+      "goto": "blind"
+     },
+     {
+      "text": "(Take her hand.)",
+      "show": {
+       "fact": "maeca.blind_nights",
+       "gte": 1
+      },
+      "goto": "blind"
+     },
+     {
+      "text": "Then not tonight. I'll keep the fire.",
+      "goto": "watch_only"
+     },
+     {
+      "text": "(Stop here. Go back to town.)",
+      "goto": "blind_leave"
+     }
+    ]
+   },
+   "blind_leave": {
+    "id": "blind_leave",
+    "text": "(She nods at the fire.) Mind the frost on the Old Road. It's worse by the wreck.",
+    "choices": [
+     {
+      "text": "Goodnight.",
+      "end": true
+     }
+    ]
+   },
+   "watch_only": {
+    "id": "watch_only",
+    "speaker": "narrator",
+    "text": "You keep the fire. She keeps the dark. Some time after midnight she comes in from the edge of the light and sits down with her back against yours, and you can feel her breathing, slow, and listening. You sleep like that, sitting up. In the morning the frost is on both your shoulders and not between them.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "maeca",
+       "trust": 10,
+       "affection": 5
+      },
+      "quiet": true
+     },
+     {
+      "condition": {
+       "id": "rested",
+       "days": 1,
+       "note": "A night keeping Maeca's fire"
+      }
+     }
+    ],
+    "next": "watch_morning"
+   },
+   "watch_morning": {
+    "id": "watch_morning",
+    "text": "You kept quiet. (She stands, and stretches, and looks at the Hollow, not you.) Most can't.",
+    "choices": [
+     {
+      "text": "Morning.",
+      "end": true
+     }
+    ]
+   },
+   "blind_dark": {
+    "id": "blind_dark",
+    "speaker": "narrator",
+    "text": [
+     {
+      "when": {
+       "fact": "maeca.blind_nights",
+       "eq": 2
+      },
+      "text": "Afterwards, in the dark under the hides, she puts her feet against your legs, and flinches: you're colder than they are. She starts to take them back."
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "all": [
+          {
+           "fact": "maeca.blind_nights",
+           "gte": 3
+          },
+          {
+           "not": {
+            "npcFlag": {
+             "npc": "maeca",
+             "key": "say:asked",
+             "eq": true
+            }
+           }
+          }
+         ]
+        },
+        {
+         "fact": "beasts.outcome",
+         "eq": "allied"
+        }
+       ]
+      },
+      "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. Outside, in the frost, you hear them come: soft feet, a long way round, and then a sigh, and then another. The Pack, lying down round the Blind in the dark. She lifts her head. \"They don't do that,\" she says. \"Not for me. Not for anyone.\" She lies back down. \"You walk quiet. You came into my Hollow and knelt to him and he let you. You never talk about before.\" A pause. \"What were you?\""
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "maeca.blind_nights",
+         "gte": 3
+        },
+        {
+         "not": {
+          "npcFlag": {
+           "npc": "maeca",
+           "key": "say:asked",
+           "eq": true
+          }
+         }
+        }
+       ]
+      },
+      "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. \"You walk quiet,\" she says. \"You never talk about before.\" A pause. \"What were you?\""
+     },
+     {
+      "text": "The fire's down to embers. Far off, the Pack is quiet."
+     }
+    ],
+    "choices": [
+     {
+      "text": "(Sleep.)",
+      "show": {
+       "any": [
+        {
+         "fact": "maeca.blind_nights",
+         "lte": 1
+        },
+        {
+         "all": [
+          {
+           "fact": "maeca.blind_nights",
+           "gte": 3
+          },
+          {
+           "npcFlag": {
+            "npc": "maeca",
+            "key": "say:asked",
+            "eq": true
+           }
+          }
+         ]
+        }
+       ]
+      },
+      "goto": "blind_morning"
+     },
+     {
+      "text": "(Hold them.)",
+      "show": {
+       "fact": "maeca.blind_nights",
+       "eq": 2
+      },
+      "effects": [
+       {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "say:feet",
+         "value": true
+        }
+       }
+      ],
+      "goto": "blind2_feet"
+     },
+     {
+      "text": "(Let her.)",
+      "show": {
+       "fact": "maeca.blind_nights",
+       "eq": 2
+      },
+      "effects": [
+       {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "say:feet",
+         "value": true
+        }
+       }
+      ],
+      "goto": "blind2_let"
+     },
+     {
+      "text": "A hunter. Out of these woods, once.",
+      "show": {
+       "all": [
+        {
+         "all": [
+          {
+           "fact": "maeca.blind_nights",
+           "gte": 3
+          },
+          {
+           "not": {
+            "npcFlag": {
+             "npc": "maeca",
+             "key": "say:asked",
+             "eq": true
+            }
+           }
+          }
+         ]
+        },
+        {
+         "bg": "hunter"
+        }
+       ]
+      },
+      "effects": [
+       {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "say:asked",
+         "value": true
+        }
+       }
+      ],
+      "goto": "told_true"
+     },
+     {
+      "text": "A clerk of dead men's letters, in a cloister cellar.",
+      "show": {
+       "all": [
+        {
+         "all": [
+          {
+           "fact": "maeca.blind_nights",
+           "gte": 3
+          },
+          {
+           "not": {
+            "npcFlag": {
+             "npc": "maeca",
+             "key": "say:asked",
+             "eq": true
+            }
+           }
+          }
+         ]
+        },
+        {
+         "bg": "scholar"
+        }
+       ]
+      },
+      "effects": [
+       {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "say:asked",
+         "value": true
+        }
+       }
+      ],
+      "goto": "told_true"
+     },
+     {
+      "text": "Worse company than the Kerchiefs. I walked away.",
+      "show": {
+       "all": [
+        {
+         "all": [
+          {
+           "fact": "maeca.blind_nights",
+           "gte": 3
+          },
+          {
+           "not": {
+            "npcFlag": {
+             "npc": "maeca",
+             "key": "say:asked",
+             "eq": true
+            }
+           }
+          }
+         ]
+        },
+        {
+         "bg": "outcast"
+        }
+       ]
+      },
+      "effects": [
+       {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "say:asked",
+         "value": true
+        }
+       }
+      ],
+      "goto": "told_true"
+     },
+     {
+      "text": "I lit chapel lamps nobody came to see.",
+      "show": {
+       "all": [
+        {
+         "all": [
+          {
+           "fact": "maeca.blind_nights",
+           "gte": 3
+          },
+          {
+           "not": {
+            "npcFlag": {
+             "npc": "maeca",
+             "key": "say:asked",
+             "eq": true
+            }
+           }
+          }
+         ]
+        },
+        {
+         "not": {
+          "bg": "hunter"
+         }
+        },
+        {
+         "not": {
+          "bg": "scholar"
+         }
+        },
+        {
+         "not": {
+          "bg": "outcast"
+         }
+        }
+       ]
+      },
+      "effects": [
+       {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "say:asked",
+         "value": true
+        }
+       }
+      ],
+      "goto": "told_true"
+     },
+     {
+      "text": "Not much. Nobody you'd have heard of.",
+      "show": {
+       "all": [
+        {
+         "fact": "maeca.blind_nights",
+         "gte": 3
+        },
+        {
+         "not": {
+          "npcFlag": {
+           "npc": "maeca",
+           "key": "say:asked",
+           "eq": true
+          }
+         }
+        }
+       ]
+      },
+      "effects": [
+       {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "say:asked",
+         "value": true
+        }
+       }
+      ],
+      "goto": "told_little"
+     }
+    ]
+   },
+   "blind2_feet": {
+    "id": "blind2_feet",
+    "speaker": "narrator",
+    "text": "You take one in your hands. The sole is hard as boot leather, and scarred: old white lines across the ball of the foot, a ridge along the heel where something cut it to the bone a long time ago and it healed badly in the cold. She lets you hold it. She lets you hold the other. She lies very still, the way she lay still when the Pack called, and doesn't say anything for a long time. (Into the dark, very low:) \"Your hands are colder than my feet.\" (A pause.) \"Hold them anyway. ...Nobody's held those.\"",
+    "effects": [
+     {
+      "rel": {
+       "npc": "maeca",
+       "trust": 10
+      },
+      "quiet": true
+     }
+    ],
+    "next": "blind_morning"
+   },
+   "blind2_let": {
+    "id": "blind2_let",
+    "speaker": "narrator",
+    "text": "She tucks them up under her instead, the way a dog curls its nose under its tail, and goes to sleep. In the night, half awake, you feel her put them back against you, slowly, as if she was trying it out.",
+    "next": "blind_morning"
+   },
+   "told_true": {
+    "id": "told_true",
+    "text": [
+     {
+      "when": {
+       "bg": "hunter"
+      },
+      "text": "Thought so. You put your feet down like you're asking the ground first. (She almost smiles.) I'd have liked you, then. Probably would have shot you for poaching."
+     },
+     {
+      "when": {
+       "bg": "scholar"
+      },
+      "text": "Letters. (She thinks about it.) Tracks for people who sit still. ...Read me something, one day. Not now."
+     },
+     {
+      "when": {
+       "bg": "outcast"
+      },
+      "text": "Walking away's a skill. Most never learn it. They stay till it's too late, out of pride."
+     },
+     {
+      "text": "Lamps. Nobody coming. (A long breath.) I held a cave mouth three days for nobody coming. We'd have got on."
+     }
+    ],
+    "effects": [
+     {
+      "set": {
+       "maeca.heard_past": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "maeca",
+       "trust": 10
+      },
+      "quiet": true
+     }
+    ],
+    "next": "blind3_morning"
+   },
+   "told_little": {
+    "id": "told_little",
+    "text": "(She doesn't push.) All right. (And it is.) ...Keep it, then. I keep mine.",
+    "next": "blind3_morning"
+   },
+   "blind3_morning": {
+    "id": "blind3_morning",
+    "text": "(Grey light. She's awake before you, as always, but she hasn't got up. Her head is still on your chest. Her face is very still.) Your heart's going like a hare's. (She doesn't lift her head.) All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live, {name}. (She gets up, then, and goes out barefoot into the frost, and stands there listening to the wood with her back to you.) Go on. Holloway'll count us.",
+    "effects": [
+     {
+      "set": {
+       "maeca.heard_heart": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Maeca—",
+      "goto": "blind3_m_no"
+     },
+     {
+      "text": "(Go.)",
+      "end": true
+     }
+    ]
+   },
+   "blind3_m_no": {
+    "id": "blind3_m_no",
+    "text": "No. (Not unkind.) Don't make it a story. Not yet.",
+    "choices": [
+     {
+      "text": "(Go.)",
+      "end": true
+     }
+    ]
+   },
+   "say_sella": {
+    "id": "say_sella",
+    "text": [
+     {
+      "when": {
+       "fact": "sella.free",
+       "eq": true
+      },
+      "text": "You go up Sella's stairs. (She doesn't look up from her cup.) Not for money, now. Rook talks. ...Is it her, or me, or both? I don't mind which. I mind not knowing."
+     },
+     {
+      "text": "You go up Sella's stairs. Rook talks. (A shrug.) She's honest about what she charges. That's more than most."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "maeca",
+       "key": "say:sella",
+       "value": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Both.",
+      "show": {
+       "fact": "sella.free",
+       "eq": true
+      },
+      "goto": "say_sella_both"
+     },
+     {
+      "text": "You.",
+      "show": {
+       "fact": "sella.free",
+       "eq": true
+      },
+      "goto": "say_sella_you"
+     },
+     {
+      "text": "I don't know yet.",
+      "show": {
+       "fact": "sella.free",
+       "eq": true
+      },
+      "goto": "say_sella_dunno"
+     },
+     {
+      "text": "Something else.",
+      "show": {
+       "not": {
+        "fact": "sella.free",
+        "eq": true
+       }
+      },
+      "goto": "hub"
+     }
+    ]
+   },
+   "say_sella_both": {
+    "id": "say_sella_both",
+    "text": "(A nod.) Good. Now I know.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "maeca",
+       "trust": 5
+      },
+      "quiet": true
+     }
+    ],
+    "next": "hub"
+   },
+   "say_sella_you": {
+    "id": "say_sella_you",
+    "text": "(She looks at you, long, the way she looks at a track that might be lying.) We'll see.",
+    "next": "hub"
+   },
+   "say_sella_dunno": {
+    "id": "say_sella_dunno",
+    "text": "That's an answer.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "maeca",
+       "trust": 5
+      },
+      "quiet": true
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -9307,6 +10155,32 @@
     "when": {
      "all": [
       {
+       "met": "rav"
+      },
+      {
+       "npcFlag": {
+        "npc": "rav",
+        "key": "cb:killed_redcowl",
+        "eq": true
+       }
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rav",
+         "key": "came_back",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "came_back"
+   },
+   {
+    "when": {
+     "all": [
+      {
        "history": "burned_roost"
       },
       {
@@ -9588,6 +10462,33 @@
       "goto": "pain"
      },
      {
+      "text": "(Go round the back after closing.)",
+      "show": {
+       "all": [
+        {
+         "time": "night"
+        },
+        {
+         "npcFlag": {
+          "npc": "rav",
+          "key": "once:pain",
+          "eq": true
+         }
+        }
+       ]
+      },
+      "when": {
+       "rel": {
+        "npc": "rav",
+        "axis": "trust",
+        "gte": 20
+       }
+      },
+      "locked": "He'd buy you a drink. That's all, yet.",
+      "once": "back_room",
+      "goto": "back_room"
+     },
+     {
       "text": "Goodbye.",
       "end": true
      }
@@ -9841,6 +10742,14 @@
     ],
     "choices": [
      {
+      "text": "He said to tell you: the leg held.",
+      "show": {
+       "fact": "redcowl.last_words",
+       "eq": "leg"
+      },
+      "goto": "leg_held"
+     },
+     {
       "text": "...",
       "end": true
      }
@@ -9976,6 +10885,139 @@
       "end": true
      }
     ]
+   },
+   "leg_held": {
+    "id": "leg_held",
+    "text": "(He puts the cup down, very carefully, as if it were full.) ...Did he. (A long time.) Course it held. I'm a good doctor. ...Go on, pal. Come back tomorrow.",
+    "choices": [
+     {
+      "text": "...",
+      "end": true
+     }
+    ]
+   },
+   "back_room": {
+    "id": "back_room",
+    "speaker": "narrator",
+    "text": "Behind the Crooked Flagon there's a lean-to with a lamp, a scrubbed table, a shelf of jars (one of them moving), and a sail-needle stuck in a cork like a trophy. Rav is sitting on the table with his feet on a stool and two cups already poured.",
+    "effects": [
+     {
+      "set": {
+       "rav.back_room": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "rav",
+       "affection": 5,
+       "trust": 5
+      },
+      "quiet": true
+     }
+    ],
+    "next": "back_room_look"
+   },
+   "back_room_look": {
+    "id": "back_room_look",
+    "text": "You came. (He looks faintly alarmed about it.) Right. Up on the table. Breathe in. Out. Don't flatter yourself, that's medical. (He looks at your eyes, and your tongue, and your hands, turning them over the way Sella does, but for different reasons. He listens at your back with his ear flat against it, and tells you to cough. He's quiet a moment.) You're cold, pal. Cold as a cellar step. (He frowns at your wrist, then lets it go.) ...There's nothing wrong with you. That's the worrying part. Nobody's got nothing wrong with them. Have a drink, before I find something.",
+    "choices": [
+     {
+      "text": "Is this the anaesthetic?",
+      "goto": "back_room_drink"
+     },
+     {
+      "text": "(Kiss him.)",
+      "goto": "back_room_kiss"
+     },
+     {
+      "text": "Thank you, Doctor.",
+      "goto": "back_room_end"
+     }
+    ]
+   },
+   "back_room_drink": {
+    "id": "back_room_drink",
+    "text": "For one of us. (He drinks his, then looks at yours.) Both of us, evidently. ...Go home, pal. You've got a job up the Old Road, and I've got a bad habit of liking folk who've jobs up the Old Road.",
+    "choices": [
+     {
+      "text": "Goodnight, Rav.",
+      "end": true
+     }
+    ]
+   },
+   "back_room_kiss": {
+    "id": "back_room_kiss",
+    "text": "(He lets you, for a moment. He tastes of the Flagon's piss and something under it, cloves. Then he puts a hand flat on your chest and moves you back a foot, gently, the way he'd move a patient.) Not yet, pal. Not three cups down, and not while you're still needing things off me: keys, ways in, who's who up the Old Road. (He picks up his cup.) Ask me again when you've stopped needing anything. I'll be here. I'm always here. That's the other worrying part.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "rav",
+       "affection": 5
+      },
+      "quiet": true
+     }
+    ],
+    "choices": [
+     {
+      "text": "Goodnight, Rav.",
+      "end": true
+     }
+    ]
+   },
+   "back_room_end": {
+    "id": "back_room_end",
+    "text": "\"Doctor.\" (He snorts.) Get out of my surgery.",
+    "choices": [
+     {
+      "text": "Goodnight.",
+      "end": true
+     }
+    ]
+   },
+   "came_back": {
+    "id": "came_back",
+    "text": "(He's at his table. He's sober, or near it. He's shaved.) You came back. (He looks at you for a long time.) Most folk wouldn't. Most folk would drink at Rook's for a month and hope I'd died of it. ...Sit. I'll not talk about it if you don't. I'm a doctor today. What's wrong with you?",
+    "effects": [
+     {
+      "set": {
+       "rav.came_back": true
+      }
+     },
+     {
+      "npcFlag": {
+       "npc": "rav",
+       "key": "came_back",
+       "value": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "rav",
+       "trust": 15
+      },
+      "quiet": true
+     }
+    ],
+    "choices": [
+     {
+      "text": "Nothing. I came to sit.",
+      "goto": "came_back_sit"
+     },
+     {
+      "text": "I'm sorry.",
+      "goto": "came_back_sorry"
+     }
+    ]
+   },
+   "came_back_sit": {
+    "id": "came_back_sit",
+    "text": "(A breath out through his nose.) Aye. Well. Sit, then.",
+    "next": "hub"
+   },
+   "came_back_sorry": {
+    "id": "came_back_sorry",
+    "text": "No. You're not, and you shouldn't be; he'd have said it was the job. Don't say it again, pal. I'll not be able to hear it twice.",
+    "next": "hub"
    }
   }
  },
@@ -11146,7 +12188,7 @@
         "text": "Tell me my fortune."
        }
       ],
-      "when": {
+      "show": {
        "all": [
         {
          "fact": "chapter.ready",
@@ -11160,6 +12202,17 @@
         }
        ]
       },
+      "when": {
+       "any": [
+        {
+         "time": "night"
+        },
+        {
+         "time": "dusk"
+        }
+       ]
+      },
+      "locked": "She reads only after dark",
       "goto": "fortune"
      },
      {
@@ -11327,7 +12380,7 @@
         "text": "Tell me my fortune."
        }
       ],
-      "when": {
+      "show": {
        "all": [
         {
          "fact": "chapter.ready",
@@ -11341,6 +12394,17 @@
         }
        ]
       },
+      "when": {
+       "any": [
+        {
+         "time": "night"
+        },
+        {
+         "time": "dusk"
+        }
+       ]
+      },
+      "locked": "She reads only after dark",
       "goto": "fortune"
      },
      {
@@ -11447,7 +12511,7 @@
         "text": "Tell me my fortune."
        }
       ],
-      "when": {
+      "show": {
        "all": [
         {
          "fact": "chapter.ready",
@@ -11461,6 +12525,17 @@
         }
        ]
       },
+      "when": {
+       "any": [
+        {
+         "time": "night"
+        },
+        {
+         "time": "dusk"
+        }
+       ]
+      },
+      "locked": "She reads only after dark",
       "goto": "fortune"
      },
      {
@@ -11620,7 +12695,7 @@
         "text": "Tell me my fortune."
        }
       ],
-      "when": {
+      "show": {
        "all": [
         {
          "fact": "chapter.ready",
@@ -11634,6 +12709,17 @@
         }
        ]
       },
+      "when": {
+       "any": [
+        {
+         "time": "night"
+        },
+        {
+         "time": "dusk"
+        }
+       ]
+      },
+      "locked": "She reads only after dark",
       "goto": "fortune"
      },
      {
@@ -11743,7 +12829,7 @@
         "text": "Tell me my fortune."
        }
       ],
-      "when": {
+      "show": {
        "all": [
         {
          "fact": "chapter.ready",
@@ -11757,6 +12843,17 @@
         }
        ]
       },
+      "when": {
+       "any": [
+        {
+         "time": "night"
+        },
+        {
+         "time": "dusk"
+        }
+       ]
+      },
+      "locked": "She reads only after dark",
       "goto": "fortune"
      },
      {
@@ -11866,7 +12963,7 @@
         "text": "Tell me my fortune."
        }
       ],
-      "when": {
+      "show": {
        "all": [
         {
          "fact": "chapter.ready",
@@ -11880,6 +12977,17 @@
         }
        ]
       },
+      "when": {
+       "any": [
+        {
+         "time": "night"
+        },
+        {
+         "time": "dusk"
+        }
+       ]
+      },
+      "locked": "She reads only after dark",
       "goto": "fortune"
      },
      {
@@ -11981,7 +13089,7 @@
         "text": "Tell me my fortune."
        }
       ],
-      "when": {
+      "show": {
        "all": [
         {
          "fact": "chapter.ready",
@@ -11995,6 +13103,17 @@
         }
        ]
       },
+      "when": {
+       "any": [
+        {
+         "time": "night"
+        },
+        {
+         "time": "dusk"
+        }
+       ]
+      },
+      "locked": "She reads only after dark",
       "goto": "fortune"
      },
      {
@@ -12005,7 +13124,23 @@
    },
    "fortune": {
     "id": "fortune",
-    "text": "Sit. Give me your hand. No, the other one: the one you hold the blade with. No charge, this once. I have been waiting to see how it came out.",
+    "text": [
+     {
+      "when": {
+       "archetype": "arcanist"
+      },
+      "text": "Sit. Give me your hand. No, the other one: the one you burn with. No charge, this once. I have been waiting to see how it came out."
+     },
+     {
+      "when": {
+       "archetype": "stalker"
+      },
+      "text": "Sit. Give me your hand. No, the other one: the one you draw with. No charge, this once. I have been waiting to see how it came out."
+     },
+     {
+      "text": "Sit. Give me your hand. No, the other one: the one you hold the blade with. No charge, this once. I have been waiting to see how it came out."
+     }
+    ],
     "next": "f_beasts"
    },
    "f_beasts": {
@@ -12181,7 +13316,7 @@
        "fact": "caravan.pell",
        "eq": "fled"
       },
-      "text": "And an empty warehouse, and a man on a fast horse who will not stop until he is somewhere that has never heard of the Coyle Company. He will not forget you."
+      "text": "And an empty warehouse, and a man on a fast horse who will not stop until he is somewhere that has never heard of the Coyle Company. He took his books with him. You are in them."
      },
      {
       "text": "And Pell Varrow, counting. He is always counting. One day he will count you."
@@ -12225,10 +13360,10 @@
        "fact": "tam.tock",
        "eq": true
       },
-      "text": "Last. Under the Verge, something is turning over in its sleep, and under a farm past the Old Road, something is knocking to be let in. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside..."
+      "text": "Last. Under the Verge, something is turning over in its sleep, and under a farm past the Old Road, something is knocking to be let in. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside... (The roof shivers under the table, and the glass of her lamp rings in its frame. The flame lies over toward the hill. Down in the town every lamp dips at once, and comes back; the braziers on the wall do not. She looks east, into the dark, and does not finish.)"
      },
      {
-      "text": "Last. Under the Verge, something is turning over in its sleep. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside..."
+      "text": "Last. Under the Verge, something is turning over in its sleep. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside... (The roof shivers under the table, and the glass of her lamp rings in its frame. The flame lies over toward the hill. Down in the town every lamp dips at once, and comes back; the braziers on the wall do not. She looks east, into the dark, and does not finish.)"
      }
     ],
     "choices": [
@@ -12358,7 +13493,7 @@
    },
    "cb_vault3": {
     "id": "cb_vault3",
-    "text": "It is. For now. Payment, always, traveller; even for silence. You will find I collect.",
+    "text": "Yours, for now. Payment, always, traveller; even for silence. You will find I collect.",
     "choices": [
      {
       "text": "Goodbye.",
@@ -12566,7 +13701,7 @@
       "when": {
        "all": [
         {
-         "fact": "sella.heard_past",
+         "fact": "sella.past_sold",
          "eq": true
         },
         {
@@ -12580,7 +13715,7 @@
       "when": {
        "all": [
         {
-         "fact": "sella.heard_past",
+         "fact": "sella.past_sold",
          "eq": true
         },
         {
@@ -12594,7 +13729,7 @@
       "when": {
        "all": [
         {
-         "fact": "sella.heard_past",
+         "fact": "sella.past_sold",
          "eq": true
         },
         {
@@ -12608,7 +13743,7 @@
       "when": {
        "all": [
         {
-         "fact": "sella.heard_past",
+         "fact": "sella.past_sold",
          "eq": true
         },
         {
@@ -12895,6 +14030,44 @@
       "goto": "dinner"
      },
      {
+      "text": "It's late. Have you eaten?",
+      "show": {
+       "all": [
+        {
+         "time": "night"
+        },
+        {
+         "npcFlag": {
+          "npc": "keegan",
+          "key": "once:dinner",
+          "eq": true
+         }
+        }
+       ]
+      },
+      "when": {
+       "all": [
+        {
+         "rel": {
+          "npc": "keegan",
+          "axis": "respect",
+          "gte": 30
+         }
+        },
+        {
+         "rel": {
+          "npc": "keegan",
+          "axis": "affection",
+          "gte": 15
+         }
+        }
+       ]
+      },
+      "locked": "She is on duty. She is always on duty.",
+      "once": "supper",
+      "goto": "supper"
+     },
+     {
       "text": "What do you want, Dame Keegan?",
       "once": "t_keegan",
       "goto": "t_keegan"
@@ -12949,7 +14122,7 @@
    },
    "warden": {
     "id": "warden",
-    "text": "...Who told you that? The Vigil kept those lamps before the Watch did. Before the Watch was the Watch. The lamps were never to keep the dark out. They were to keep the Warden asleep. If somebody lit them again, somebody wanted it awake. Do not repeat that. I am probationary.",
+    "text": "...Who told you that? The Vigil kept those lamps before the Watch did. Before the Watch was the Watch. Oil. The lamps at the ford were to burn oil, and nothing else; it is in the handbook, with a drawing. Oil keeps it sleeping. Ember wakes it. If somebody lit them with ember, somebody wanted it awake. Do not repeat that. I am probationary.",
     "effects": [
      {
       "rel": {
@@ -13170,6 +14343,342 @@
     "choices": [
      {
       "text": "Good day, Dame Keegan.",
+      "end": true
+     }
+    ]
+   },
+   "supper": {
+    "id": "supper",
+    "text": "I have not. I am on watch. (She looks at the bread in her hand, which she has evidently been holding for some time.) Chapter eleven, paragraph six permits \"a meal taken in company for the purposes of morale\". I have read it very carefully. It does not say whose morale. ...Sit. Not there; that stone is the one the gate was built on, and it is older than manners. Here.",
+    "effects": [
+     {
+      "set": {
+       "keegan.supper": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "keegan",
+       "affection": 10,
+       "trust": 5
+      },
+      "quiet": true
+     }
+    ],
+    "next": "supper_table"
+   },
+   "supper_table": {
+    "id": "supper_table",
+    "speaker": "narrator",
+    "text": "She breaks the bread and gives you the larger half without seeming to decide to. There's a heel of cheese, and a flask that turns out to be water, and the north road beyond the gate is black all the way to the hills.",
+    "choices": [
+     {
+      "text": "Saint Wend's. Tell me about it.",
+      "once": "wends",
+      "goto": "supper_wends"
+     },
+     {
+      "text": "How old are you, Keegan?",
+      "once": "age",
+      "goto": "supper_age"
+     },
+     {
+      "text": "Your letters. They're not answering because they don't want to.",
+      "once": "letters",
+      "goto": "supper_letters"
+     },
+     {
+      "text": "Read me some of the handbook.",
+      "once": "read",
+      "goto": "supper_read"
+     },
+     {
+      "text": "Read me chapter four.",
+      "show": {
+       "npcFlag": {
+        "npc": "keegan",
+        "key": "once:read",
+        "eq": true
+       }
+      },
+      "once": "read4",
+      "goto": "supper_ch4"
+     },
+     {
+      "text": "(Take her hand.)",
+      "goto": "supper_hand"
+     },
+     {
+      "text": "Goodnight, Dame Keegan.",
+      "goto": "supper_end"
+     }
+    ]
+   },
+   "supper_wends": {
+    "id": "supper_wends",
+    "text": "Rhetoric, to the sons and daughters of people who could afford it. I was very good. I was the youngest lecturer they had ever had, and they told me so every morning, in case I forgot and became the oldest. (She smiles at the road.) I taught them chiasmus. \"The Vigil keeps the gate, and the gate keeps the Vigil.\" It has kept neither. ...That was a joke. It was not a good one. It's late.",
+    "choices": [
+     {
+      "text": "Saint Wend's. Tell me about it.",
+      "once": "wends",
+      "goto": "supper_wends"
+     },
+     {
+      "text": "How old are you, Keegan?",
+      "once": "age",
+      "goto": "supper_age"
+     },
+     {
+      "text": "Your letters. They're not answering because they don't want to.",
+      "once": "letters",
+      "goto": "supper_letters"
+     },
+     {
+      "text": "Read me some of the handbook.",
+      "once": "read",
+      "goto": "supper_read"
+     },
+     {
+      "text": "Read me chapter four.",
+      "show": {
+       "npcFlag": {
+        "npc": "keegan",
+        "key": "once:read",
+        "eq": true
+       }
+      },
+      "once": "read4",
+      "goto": "supper_ch4"
+     },
+     {
+      "text": "(Take her hand.)",
+      "goto": "supper_hand"
+     },
+     {
+      "text": "Goodnight, Dame Keegan.",
+      "goto": "supper_end"
+     }
+    ]
+   },
+   "supper_age": {
+    "id": "supper_age",
+    "text": "Twenty-six. The handbook says that is old for a probationer. The handbook says a great many things. Some of them are true. (She looks at you sidelong.) How old are you? No. Do not answer. I should only write it down.",
+    "choices": [
+     {
+      "text": "Saint Wend's. Tell me about it.",
+      "once": "wends",
+      "goto": "supper_wends"
+     },
+     {
+      "text": "How old are you, Keegan?",
+      "once": "age",
+      "goto": "supper_age"
+     },
+     {
+      "text": "Your letters. They're not answering because they don't want to.",
+      "once": "letters",
+      "goto": "supper_letters"
+     },
+     {
+      "text": "Read me some of the handbook.",
+      "once": "read",
+      "goto": "supper_read"
+     },
+     {
+      "text": "Read me chapter four.",
+      "show": {
+       "npcFlag": {
+        "npc": "keegan",
+        "key": "once:read",
+        "eq": true
+       }
+      },
+      "once": "read4",
+      "goto": "supper_ch4"
+     },
+     {
+      "text": "(Take her hand.)",
+      "goto": "supper_hand"
+     },
+     {
+      "text": "Goodnight, Dame Keegan.",
+      "goto": "supper_end"
+     }
+    ]
+   },
+   "supper_letters": {
+    "id": "supper_letters",
+    "text": "(She doesn't answer for so long that you think she won't.) That is a possibility I have considered. (Very precisely.) I have considered it every month for two years, on the day the post does not come. I have written it down and crossed it out. That was an example of correctio. ...Thank you for saying it. Nobody else will. They think I am funny. I am funny. I am also not a fool.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "keegan",
+       "trust": 10,
+       "affection": -5
+      },
+      "quiet": true
+     }
+    ],
+    "choices": [
+     {
+      "text": "Saint Wend's. Tell me about it.",
+      "once": "wends",
+      "goto": "supper_wends"
+     },
+     {
+      "text": "How old are you, Keegan?",
+      "once": "age",
+      "goto": "supper_age"
+     },
+     {
+      "text": "Your letters. They're not answering because they don't want to.",
+      "once": "letters",
+      "goto": "supper_letters"
+     },
+     {
+      "text": "Read me some of the handbook.",
+      "once": "read",
+      "goto": "supper_read"
+     },
+     {
+      "text": "Read me chapter four.",
+      "show": {
+       "npcFlag": {
+        "npc": "keegan",
+        "key": "once:read",
+        "eq": true
+       }
+      },
+      "once": "read4",
+      "goto": "supper_ch4"
+     },
+     {
+      "text": "(Take her hand.)",
+      "goto": "supper_hand"
+     },
+     {
+      "text": "Goodnight, Dame Keegan.",
+      "goto": "supper_end"
+     }
+    ]
+   },
+   "supper_read": {
+    "id": "supper_read",
+    "text": "(She is very obviously delighted, and very obviously trying not to be.) Chapter nine. On bathing. \"The knight shall wash at need, and not for pleasure, the body being a lamp and not a garden.\" I have underlined \"garden\". In protest. (She reads you chapter twelve, on the care of the blade, all of it, by the light of the gate lamp, and it is beautiful, actually.) ...You did not fall asleep. Nobody has ever not fallen asleep.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "keegan",
+       "affection": 5
+      },
+      "quiet": true
+     }
+    ],
+    "choices": [
+     {
+      "text": "Saint Wend's. Tell me about it.",
+      "once": "wends",
+      "goto": "supper_wends"
+     },
+     {
+      "text": "How old are you, Keegan?",
+      "once": "age",
+      "goto": "supper_age"
+     },
+     {
+      "text": "Your letters. They're not answering because they don't want to.",
+      "once": "letters",
+      "goto": "supper_letters"
+     },
+     {
+      "text": "Read me some of the handbook.",
+      "once": "read",
+      "goto": "supper_read"
+     },
+     {
+      "text": "Read me chapter four.",
+      "show": {
+       "npcFlag": {
+        "npc": "keegan",
+        "key": "once:read",
+        "eq": true
+       }
+      },
+      "once": "read4",
+      "goto": "supper_ch4"
+     },
+     {
+      "text": "(Take her hand.)",
+      "goto": "supper_hand"
+     },
+     {
+      "text": "Goodnight, Dame Keegan.",
+      "goto": "supper_end"
+     }
+    ]
+   },
+   "supper_ch4": {
+    "id": "supper_ch4",
+    "text": "(She closes the book.) No. (She says it gently, and then she doesn't say anything else for a while, and her hand stays flat on the cover.)",
+    "choices": [
+     {
+      "text": "Saint Wend's. Tell me about it.",
+      "once": "wends",
+      "goto": "supper_wends"
+     },
+     {
+      "text": "How old are you, Keegan?",
+      "once": "age",
+      "goto": "supper_age"
+     },
+     {
+      "text": "Your letters. They're not answering because they don't want to.",
+      "once": "letters",
+      "goto": "supper_letters"
+     },
+     {
+      "text": "Read me some of the handbook.",
+      "once": "read",
+      "goto": "supper_read"
+     },
+     {
+      "text": "Read me chapter four.",
+      "show": {
+       "npcFlag": {
+        "npc": "keegan",
+        "key": "once:read",
+        "eq": true
+       }
+      },
+      "once": "read4",
+      "goto": "supper_ch4"
+     },
+     {
+      "text": "(Take her hand.)",
+      "goto": "supper_hand"
+     },
+     {
+      "text": "Goodnight, Dame Keegan.",
+      "goto": "supper_end"
+     }
+    ]
+   },
+   "supper_hand": {
+    "id": "supper_hand",
+    "text": "(You put your hand over hers on the stone. She lets it stay there for a count of three.) I am on duty. (She takes her hand back. Then, without looking, she puts it back, under yours, for another count of three.) ...That was epizeuxis. The same thing, twice, at once, for emphasis. Goodnight.",
+    "choices": [
+     {
+      "text": "Goodnight, Dame Keegan.",
+      "end": true
+     }
+    ]
+   },
+   "supper_end": {
+    "id": "supper_end",
+    "text": "Goodnight. (As you go:) It was good for morale. Mine. I checked.",
+    "choices": [
+     {
+      "text": "Goodnight.",
       "end": true
      }
     ]
@@ -13448,6 +14957,13 @@
        }
       },
       {
+       "rel": {
+        "npc": "sella",
+        "axis": "trust",
+        "gte": 15
+       }
+      },
+      {
        "not": {
         "npcFlag": {
          "npc": "sella",
@@ -13482,6 +14998,52 @@
      ]
     },
     "node": "say_maeca"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "sella"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "sella",
+         "key": "say:keegan",
+         "eq": true
+        }
+       }
+      },
+      {
+       "fact": "keegan.supper",
+       "eq": true
+      }
+     ]
+    },
+    "node": "say_keegan"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "sella"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "sella",
+         "key": "say:rav",
+         "eq": true
+        }
+       }
+      },
+      {
+       "fact": "rav.back_room",
+       "eq": true
+      }
+     ]
+    },
+    "node": "say_rav"
    },
    {
     "when": {
@@ -13740,6 +15302,36 @@
       "goto": "t_sella"
      },
      {
+      "text": "The other night. What you offered. Does it stand?",
+      "show": {
+       "all": [
+        {
+         "fact": "sella.free_declined",
+         "eq": true
+        },
+        {
+         "not": {
+          "fact": "sella.free",
+          "eq": true
+         }
+        },
+        {
+         "time": "night"
+        }
+       ]
+      },
+      "when": {
+       "rel": {
+        "npc": "sella",
+        "axis": "trust",
+        "gte": 15
+       }
+      },
+      "locked": "Not now. Not like this.",
+      "once": "free_ask",
+      "goto": "free_ask"
+     },
+     {
       "text": "Not tonight.",
       "end": true
      }
@@ -13783,6 +15375,36 @@
       },
       "once": "buyers",
       "goto": "buyers"
+     },
+     {
+      "text": "The other night. What you offered. Does it stand?",
+      "show": {
+       "all": [
+        {
+         "fact": "sella.free_declined",
+         "eq": true
+        },
+        {
+         "not": {
+          "fact": "sella.free",
+          "eq": true
+         }
+        },
+        {
+         "time": "night"
+        }
+       ]
+      },
+      "when": {
+       "rel": {
+        "npc": "sella",
+        "axis": "trust",
+        "gte": 15
+       }
+      },
+      "locked": "Not now. Not like this.",
+      "once": "free_ask",
+      "goto": "free_ask"
      },
      {
       "text": "Not tonight.",
@@ -13899,13 +15521,67 @@
     "choices": [
      {
       "text": "15 gold, then. Lead the way.",
+      "show": {
+       "not": {
+        "all": [
+         {
+          "history": "burned_roost"
+         },
+         {
+          "not": {
+           "npcFlag": {
+            "npc": "sella",
+            "key": "cb:burned_roost",
+            "eq": true
+           }
+          }
+         }
+        ]
+       }
+      },
       "when": {
        "gold": {
         "gte": 15
        }
       },
       "locked": "You would need 15 gold",
-      "goto": "night"
+      "goto": "stairs"
+     },
+     {
+      "text": "15 gold, then. Lead the way.",
+      "show": {
+       "all": [
+        {
+         "history": "burned_roost"
+        },
+        {
+         "not": {
+          "npcFlag": {
+           "npc": "sella",
+           "key": "cb:burned_roost",
+           "eq": true
+          }
+         }
+        }
+       ]
+      },
+      "when": {
+       "gold": {
+        "gte": 15
+       }
+      },
+      "locked": "You would need 15 gold",
+      "goto": "refuse_roost"
+     },
+     {
+      "text": "15 gold. But I only want to sleep.",
+      "when": {
+       "gold": {
+        "gte": 15
+       }
+      },
+      "locked": "You would need 15 gold",
+      "goto": "rest_night"
      },
      {
       "text": "Just the talk, for now.",
@@ -13925,13 +15601,35 @@
       "text": "[explicit scene: Sella and {name}, the blue room at the top of Rook's stairs, by lamplight; warm, unhurried and funny, a professional who enjoys her work, tenderness showing at the edges and quickly put away; ends with her asleep across you and the sun up — to be written]"
      },
      {
-      "text": "She takes the coins first and your hand second, and leads you up Rook's narrow stairs. The blue room smells of lavender and lamp oil, and the bath is warm, at least to begin with. She undoes your buckles as if she has done a great many of them, and laughs at the last one. After that the door is shut, and what happens behind it is slow, and warm, and nobody's business but yours. For a few hours the road and the dead on it are a long way off. You wake with her hair across your chest and the sun already up. She is dressed, and counting."
+      "when": {
+       "all": [
+        {
+         "npcFlag": {
+          "npc": "sella",
+          "key": "say:cold_bath",
+          "eq": true
+         }
+        },
+        {
+         "fact": "sella.nights",
+         "gte": 2
+        }
+       ]
+      },
+      "text": "The water's gone cool by the time either of you notices, and she drags the quilt off the bed and onto the floor rather than walk three steps. She is slower tonight. She keeps a hand flat on you the whole time, the way you'd keep a hand on a horse you'd been told was skittish, and when you look at her she says, \"Don't,\" and kisses you so you can't. After, you lie on the floor of the blue room with the lamp turned down to a bead, and she doesn't get up to dress, and you don't ask why. You wake with her hair across your chest and the sun already up. She is dressed, and counting, and she counts it twice."
+     },
+     {
+      "when": {
+       "fact": "sella.nights",
+       "gte": 3
+      },
+      "text": "She laughs when the water slops over the side, and again when you try to mop it with her shift. Then the lamp is down to a bead, and the blue room is a small warm place with the whole night outside it. She talks the way she always talks, low against your ear, telling you exactly what she means to do next and then doing it, and she's good at it and likes it and makes no secret of either. But there are gaps, tonight. Places where she stops mid-sentence and doesn't finish, and you don't need her to. You wake with her hair across your chest and the sun already up. She is dressed, and counting."
+     },
+     {
+      "text": "The blue room smells of lavender and lamp oil, and the bath is warm, at least to begin with. After that the door is shut, and what happens behind it is slow, and warm, and funny, and nobody's business but yours: her hair coming down, her mouth at your ear, her hands everywhere they're welcome and nowhere they're not. For a few hours the road and the dead on it are a long way off. You wake with her hair across your chest and the sun already up. She is dressed, and counting."
      }
     ],
     "effects": [
-     {
-      "gold": -15
-     },
      {
       "add": {
        "sella.nights": 1
@@ -13962,10 +15660,34 @@
     "text": [
      {
       "when": {
+       "all": [
+        {
+         "fact": "sella.nights",
+         "gte": 3
+        },
+        {
+         "not": {
+          "fact": "sella.felt_cold",
+          "eq": true
+         }
+        }
+       ]
+      },
+      "text": "(She's sitting on the edge of the bed, frowning, with her palm flat on your breastbone.) You were cold as the river all night, love. Like sleeping next to a stone. And now look at you: warm as toast. ...Rook's got a word for that. It's not a nice word. Get up and eat something."
+     },
+     {
+      "when": {
        "fact": "sella.nights",
        "gte": 3
       },
-      "text": "You're getting to be a habit, {name}. I don't mind. Rook does; she says you're wearing out the stairs. Go on, the day's wasting, and somebody out there needs killing."
+      "text": "You're getting to be a habit, {name}. I don't mind. Rook does; she says you're wearing out the stairs. Go on, the day's wasting, and somebody out there owes you money, or the other way round."
+     },
+     {
+      "when": {
+       "fact": "sella.nights",
+       "eq": 2
+      },
+      "text": "Two nights. ...You make a noise in your sleep, you know. Like you're arguing with somebody. You lose. Every time."
      },
      {
       "text": "You snore, by the way. Not badly. Go on, then. Come back in one piece; the pieces are what I like."
@@ -13975,19 +15697,218 @@
      {
       "text": "(Tell her where you come from.)",
       "once": "past",
+      "effects": [
+       {
+        "if": {
+         "all": [
+          {
+           "fact": "sella.nights",
+           "gte": 3
+          },
+          {
+           "not": {
+            "fact": "sella.felt_cold",
+            "eq": true
+           }
+          }
+         ]
+        },
+        "then": [
+         {
+          "set": {
+           "sella.felt_cold": true
+          }
+         },
+         {
+          "if": {
+           "not": {
+            "fact": "sella.free",
+            "eq": true
+           }
+          },
+          "then": {
+           "set": {
+            "sella.cold_sold": true
+           }
+          }
+         }
+        ]
+       }
+      ],
       "goto": "past"
      },
      {
       "text": "Did I talk in my sleep?",
       "once": "sleeptalk",
+      "effects": [
+       {
+        "if": {
+         "all": [
+          {
+           "fact": "sella.nights",
+           "gte": 3
+          },
+          {
+           "not": {
+            "fact": "sella.felt_cold",
+            "eq": true
+           }
+          }
+         ]
+        },
+        "then": [
+         {
+          "set": {
+           "sella.felt_cold": true
+          }
+         },
+         {
+          "if": {
+           "not": {
+            "fact": "sella.free",
+            "eq": true
+           }
+          },
+          "then": {
+           "set": {
+            "sella.cold_sold": true
+           }
+          }
+         }
+        ]
+       }
+      ],
       "goto": "sleeptalk"
      },
      {
+      "text": "The bolt on the door. You never shoot it.",
+      "show": {
+       "fact": "sella.nights",
+       "gte": 2
+      },
+      "once": "door",
+      "effects": [
+       {
+        "if": {
+         "all": [
+          {
+           "fact": "sella.nights",
+           "gte": 3
+          },
+          {
+           "not": {
+            "fact": "sella.felt_cold",
+            "eq": true
+           }
+          }
+         ]
+        },
+        "then": [
+         {
+          "set": {
+           "sella.felt_cold": true
+          }
+         },
+         {
+          "if": {
+           "not": {
+            "fact": "sella.free",
+            "eq": true
+           }
+          },
+          "then": {
+           "set": {
+            "sella.cold_sold": true
+           }
+          }
+         }
+        ]
+       }
+      ],
+      "goto": "door"
+     },
+     {
       "text": "Sleep a little longer first.",
-      "action": "rest"
+      "action": "rest",
+      "effects": [
+       {
+        "if": {
+         "all": [
+          {
+           "fact": "sella.nights",
+           "gte": 3
+          },
+          {
+           "not": {
+            "fact": "sella.felt_cold",
+            "eq": true
+           }
+          }
+         ]
+        },
+        "then": [
+         {
+          "set": {
+           "sella.felt_cold": true
+          }
+         },
+         {
+          "if": {
+           "not": {
+            "fact": "sella.free",
+            "eq": true
+           }
+          },
+          "then": {
+           "set": {
+            "sella.cold_sold": true
+           }
+          }
+         }
+        ]
+       }
+      ]
      },
      {
       "text": "Until next time.",
+      "effects": [
+       {
+        "if": {
+         "all": [
+          {
+           "fact": "sella.nights",
+           "gte": 3
+          },
+          {
+           "not": {
+            "fact": "sella.felt_cold",
+            "eq": true
+           }
+          }
+         ]
+        },
+        "then": [
+         {
+          "set": {
+           "sella.felt_cold": true
+          }
+         },
+         {
+          "if": {
+           "not": {
+            "fact": "sella.free",
+            "eq": true
+           }
+          },
+          "then": {
+           "set": {
+            "sella.cold_sold": true
+           }
+          }
+         }
+        ]
+       }
+      ],
       "end": true
      }
     ]
@@ -14067,7 +15988,7 @@
       "when": {
        "archetype": "arcanist"
       },
-      "text": "You're warm. Not in a nice way. Are you on fire? You're a little bit on fire."
+      "text": "Your hands are warm. Not in a nice way. Are you on fire? Your hands are a little bit on fire."
      },
      {
       "when": {
@@ -14147,11 +16068,11 @@
     "choices": [
      {
       "text": "Then lead the way.",
-      "goto": "free_night"
+      "goto": "free_stairs"
      },
      {
       "text": "Not tonight, Sella.",
-      "goto": "hub"
+      "goto": "free_decline"
      }
     ]
    },
@@ -14167,7 +16088,14 @@
       "text": "[explicit scene: Sella and {name}, the blue room, not for money for the first time; slower and less sure than her working nights, the professional's patter dropping away, laughter and then none; a door she locks herself — to be written]"
      },
      {
-      "text": "The blue room, and the lamp, and the bolt, which she shoots herself, which she has never done. She doesn't talk the way she talks for money. For a while neither of you talks at all. Later she lies awake and you can feel her deciding something, and then she sleeps."
+      "when": {
+       "fact": "sella.told_knowing",
+       "eq": true
+      },
+      "text": "She doesn't talk the way she talks for money. She doesn't talk at all, at first. She undresses you as if she's never done it before, which is absurd, and she knows it's absurd, and halfway through she laughs into your neck and can't stop. Then she does stop, and the laugh goes somewhere else. She's slower than on her working nights, and less sure, and once she stops altogether with her forehead against yours and just breathes, and you wait, and she goes on. The lamp burns down on its own. Nobody turns it. In the dark, much later, she says into your shoulder, \"You told me anyway,\" and nothing else, and then she sleeps."
+     },
+     {
+      "text": "The blue room, and the lamp, and the bolt, which she shot herself, which she has never done. She doesn't talk the way she talks for money. For a while neither of you talks at all. She is slower than you have known her, and less sure, and there is a moment when she stops with her hands on your face and just looks, as if she is learning it, and doesn't make a joke of it. Later she lies awake, and you can feel her deciding something, and then she sleeps."
      }
     ],
     "effects": [
@@ -14199,6 +16127,18 @@
     "text": "(She's still there when you wake, which she never is.) Don't tell Rook; she'll want a third of nothing, on principle. ...And don't tell me anything up here you'd not want Vonnra to hear. I mean that kindly. It's the kindest thing I've said to anyone in a year.",
     "choices": [
      {
+      "text": "Then I'll tell you things downstairs.",
+      "goto": "free_m_downstairs"
+     },
+     {
+      "text": "Who'd you sell it to? If I did?",
+      "goto": "free_m_who"
+     },
+     {
+      "text": "(Kiss her.)",
+      "goto": "free_m_kiss"
+     },
+     {
       "text": "Until next time.",
       "end": true
      }
@@ -14207,6 +16147,67 @@
    "past": {
     "id": "past",
     "text": [
+     {
+      "when": {
+       "all": [
+        {
+         "npcFlag": {
+          "npc": "sella",
+          "key": "once:buyers",
+          "eq": true
+         }
+        },
+        {
+         "bg": "hunter"
+        }
+       ]
+      },
+      "text": "(She goes still when you start. You know who buys what's said up here; she knows you know. You tell her anyway. She listens properly, chin on her fist, the way she does everything.) A hunter. Out of these woods, with a bow too big for you, I'll bet, and mud to the knees. ...I'd not have guessed. I'd have guessed, but not that. ...You know where that goes, love. You know exactly where. (She doesn't say anything else for a while. Then:) Go on. Out. Before I start charging you for the sentiment."
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "npcFlag": {
+          "npc": "sella",
+          "key": "once:buyers",
+          "eq": true
+         }
+        },
+        {
+         "bg": "scholar"
+        }
+       ]
+      },
+      "text": "(She goes still when you start. You know who buys what's said up here; she knows you know. You tell her anyway. She listens properly, chin on her fist, the way she does everything.) A cloister rat. Four years in a cellar reading dead men's letters, and you walked out with their lens in your pocket. ...Good for you, love. ...You know where that goes, love. You know exactly where. (She doesn't say anything else for a while. Then:) Go on. Out. Before I start charging you for the sentiment."
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "npcFlag": {
+          "npc": "sella",
+          "key": "once:buyers",
+          "eq": true
+         }
+        },
+        {
+         "bg": "outcast"
+        }
+       ]
+      },
+      "text": "(She goes still when you start. You know who buys what's said up here; she knows you know. You tell her anyway. She listens properly, chin on her fist, the way she does everything.) Worse company than the Kerchiefs, and you walked away from it. (She laughs, low.) Takes one to know one. Don't tell Rook. ...You know where that goes, love. You know exactly where. (She doesn't say anything else for a while. Then:) Go on. Out. Before I start charging you for the sentiment."
+     },
+     {
+      "when": {
+       "npcFlag": {
+        "npc": "sella",
+        "key": "once:buyers",
+        "eq": true
+       }
+      },
+      "text": "(She goes still when you start. You know who buys what's said up here; she knows you know. You tell her anyway. She listens properly, chin on her fist, the way she does everything.) Chapel lamps, with nobody to see them but you, and you lit them anyway. (She's quiet a moment.) That's the saddest thing anyone's told me up here, love, and they tell me some sad things. ...You know where that goes, love. You know exactly where. (She doesn't say anything else for a while. Then:) Go on. Out. Before I start charging you for the sentiment."
+     },
      {
       "when": {
        "bg": "hunter"
@@ -14241,6 +16242,42 @@
        "affection": 4
       },
       "quiet": true
+     },
+     {
+      "if": {
+       "npcFlag": {
+        "npc": "sella",
+        "key": "once:buyers",
+        "eq": true
+       }
+      },
+      "then": [
+       {
+        "set": {
+         "sella.told_knowing": true
+        }
+       },
+       {
+        "rel": {
+         "npc": "sella",
+         "trust": 10
+        },
+        "quiet": true
+       }
+      ]
+     },
+     {
+      "if": {
+       "not": {
+        "fact": "sella.free",
+        "eq": true
+       }
+      },
+      "then": {
+       "set": {
+        "sella.past_sold": true
+       }
+      }
      }
     ],
     "choices": [
@@ -14266,6 +16303,759 @@
       "end": true
      }
     ]
+   },
+   "stairs": {
+    "id": "stairs",
+    "speaker": "narrator",
+    "text": [
+     {
+      "when": {
+       "fact": "sella.nights",
+       "gte": 3
+      },
+      "text": "She doesn't take your hand any more; she takes your sleeve, the way you'd take a regular's. Rook's stairs creak on the fourth step and the ninth. On the fourth she looks back, to check you're stepping over it. You are."
+     },
+     {
+      "when": {
+       "fact": "sella.nights",
+       "lte": 0
+      },
+      "text": "She takes the coins first and your hand second, and leads you up Rook's narrow stairs. They creak on the fourth step and the ninth, and she steps over both without looking."
+     },
+     {
+      "text": "Coins, then your hand, then the stairs. Fourth step, ninth step. You're learning."
+     }
+    ],
+    "effects": [
+     {
+      "gold": -15
+     }
+    ],
+    "next": "stairs_say"
+   },
+   "stairs_say": {
+    "id": "stairs_say",
+    "text": [
+     {
+      "when": {
+       "fact": "sella.nights",
+       "gte": 3
+      },
+      "text": "You're getting good at my stairs, love. Careful. People'll think you live here."
+     },
+     {
+      "when": {
+       "fact": "sella.nights",
+       "lte": 0
+      },
+      "text": "Mind the fourth. And the ninth. Rook says they're for the drunks. I say they're for the wives."
+     },
+     {
+      "text": "In you go. Bath's run. It's warm, I promise. For a bit."
+     }
+    ],
+    "next": "stairs_room"
+   },
+   "stairs_room": {
+    "id": "stairs_room",
+    "speaker": "narrator",
+    "text": [
+     {
+      "when": {
+       "all": [
+        {
+         "archetype": "warden"
+        },
+        {
+         "fact": "sella.nights",
+         "gte": 1
+        }
+       ]
+      },
+      "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. Your buckles take an age. She undoes them as if she has done a great many, and laughs at the last one, which is stuck. \"All that steel, and under it, look. A person.\""
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "archetype": "reaver"
+        },
+        {
+         "fact": "sella.nights",
+         "gte": 1
+        }
+       ]
+      },
+      "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. She takes your hands, one and then the other, and turns them over, and looks at the knuckles. \"Gently, upstairs. I mean it. I like this jug.\""
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "archetype": "arcanist"
+        },
+        {
+         "fact": "sella.nights",
+         "gte": 1
+        }
+       ]
+      },
+      "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. She lays her palm flat on your chest and takes it away again, fast, then puts it back, slower. \"Your hands are hot and the rest of you's a cellar floor. Pick one, love.\""
+     },
+     {
+      "when": {
+       "fact": "sella.nights",
+       "gte": 1
+      },
+      "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. She comes round behind you to start on the laces, and says into your ear, \"There. Now you know what it's like,\" and you jump. She's delighted."
+     },
+     {
+      "when": {
+       "archetype": "warden"
+      },
+      "text": "The blue room is blue because the lamp glass is, and everything in it takes the colour: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. Your buckles take an age. She undoes them as if she has done a great many, and laughs at the last one, which is stuck. \"All that steel, and under it, look. A person.\""
+     },
+     {
+      "when": {
+       "archetype": "reaver"
+      },
+      "text": "The blue room is blue because the lamp glass is, and everything in it takes the colour: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She takes your hands, one and then the other, and turns them over, and looks at the knuckles. \"Gently, upstairs. I mean it. I like this jug.\""
+     },
+     {
+      "when": {
+       "archetype": "arcanist"
+      },
+      "text": "The blue room is blue because the lamp glass is, and everything in it takes the colour: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She lays her palm flat on your chest and takes it away again, fast, then puts it back, slower. \"Your hands are hot and the rest of you's a cellar floor. Pick one, love.\""
+     },
+     {
+      "text": "The blue room is blue because the lamp glass is, and everything in it takes the colour: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She comes round behind you to start on the laces, and says into your ear, \"There. Now you know what it's like,\" and you jump. She's delighted."
+     }
+    ],
+    "next": "stairs_rules"
+   },
+   "stairs_rules": {
+    "id": "stairs_rules",
+    "text": [
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "sella.nights",
+         "gte": 1
+        },
+        {
+         "not": {
+          "npcFlag": {
+           "npc": "sella",
+           "key": "say:cold_bath",
+           "eq": true
+          }
+         }
+        }
+       ]
+      },
+      "text": "(In the bath she slides her hands down your arms, and stops. Under the warm water you are cold: not chilled, cold, like something brought up off the riverbed. She doesn't make a joke of it. She keeps her hands where they are for a long time, as if that would help.) ...Right. Rules. Anything you'd rather I didn't, say so. Anything you'd rather I did, say it louder."
+     },
+     {
+      "text": "Right. Rules. Anything you'd rather I didn't, say so. Anything you'd rather I did, say it louder; Rook's walls are thin, but she's deaf in the left ear."
+     }
+    ],
+    "choices": [
+     {
+      "text": "(Pull her into the water.)",
+      "effects": [
+       {
+        "if": {
+         "fact": "sella.nights",
+         "gte": 1
+        },
+        "then": {
+         "npcFlag": {
+          "npc": "sella",
+          "key": "say:cold_bath",
+          "value": true
+         }
+        }
+       }
+      ],
+      "goto": "night"
+     },
+     {
+      "text": "(Kiss her.)",
+      "effects": [
+       {
+        "if": {
+         "fact": "sella.nights",
+         "gte": 1
+        },
+        "then": {
+         "npcFlag": {
+          "npc": "sella",
+          "key": "say:cold_bath",
+          "value": true
+         }
+        }
+       }
+      ],
+      "goto": "night"
+     },
+     {
+      "text": "Actually. Just sleep, tonight.",
+      "goto": "rest_night_paid"
+     },
+     {
+      "text": "(Stop here.)",
+      "goto": "stop_paid"
+     }
+    ]
+   },
+   "stop_paid": {
+    "id": "stop_paid",
+    "text": "(She sits back on her heels, and doesn't sulk, and doesn't ask why.) Then I'll have the bath. It's paid for. (She counts thirteen coins back into your palm and closes your fingers on them.) Two for the water. That's Rook's rule, not mine. ...You'll come back when you want to. Or you won't. Either's all right, love. Go on.",
+    "effects": [
+     {
+      "gold": 13
+     }
+    ],
+    "choices": [
+     {
+      "text": "Goodnight, Sella.",
+      "end": true
+     }
+    ]
+   },
+   "rest_night": {
+    "id": "rest_night",
+    "text": "Sleep. (She looks at you as if you'd asked her to recite something in a foreign tongue.) You've paid fifteen gold to sleep.",
+    "effects": [
+     {
+      "gold": -15
+     }
+    ],
+    "choices": [
+     {
+      "text": "Yes.",
+      "goto": "rest_bed"
+     }
+    ]
+   },
+   "rest_night_paid": {
+    "id": "rest_night_paid",
+    "text": "Sleep. (She looks at you as if you'd asked her to recite something in a foreign tongue.) You've paid fifteen gold to sleep.",
+    "choices": [
+     {
+      "text": "Yes.",
+      "goto": "rest_bed"
+     }
+    ]
+   },
+   "rest_bed": {
+    "id": "rest_bed",
+    "text": "...Lie down, then. No. Boots off; Rook'll have my hide. Shift over. I'm not sitting up all night in a chair. I've done that for worse money.",
+    "next": "rest_dark"
+   },
+   "rest_dark": {
+    "id": "rest_dark",
+    "speaker": "narrator",
+    "text": "She lies down on top of the quilt with all her clothes on, and you under it, and for a while she talks: about Rook, about Holloway's feet, about a man from Low Kiln who wanted her to bark. You don't hear the end of the man from Low Kiln. Some time in the night you half wake and she isn't talking. She's lying on her side, watching you, the way you'd watch weather.",
+    "effects": [
+     {
+      "add": {
+       "sella.nights": 1
+      }
+     },
+     {
+      "rel": {
+       "npc": "sella",
+       "affection": 6,
+       "trust": 8
+      },
+      "quiet": true
+     },
+     {
+      "condition": {
+       "id": "rested",
+       "days": 1,
+       "note": "A night in the blue room, asleep"
+      }
+     },
+     {
+      "npcFlag": {
+       "npc": "sella",
+       "key": "say:rest",
+       "value": true
+      }
+     }
+    ],
+    "next": "rest_morning"
+   },
+   "rest_morning": {
+    "id": "rest_morning",
+    "text": [
+     {
+      "when": {
+       "not": {
+        "fact": "sella.felt_cold",
+        "eq": true
+       }
+      },
+      "text": "(She's sitting on the edge of the bed with her hand flat on your chest.) You were cold as the river all night. Like lying next to a stone. And now look at you: warm as toast. ...Fifteen gold to lie awake next to a stone. Best money I ever made. Don't tell anyone."
+     },
+     {
+      "text": "Fifteen gold to watch you snore. Best money I ever made. (She's already dressed. She doesn't count it.) Don't tell anyone. They'll all want it, and then where will I be? Rich and bored."
+     }
+    ],
+    "choices": [
+     {
+      "text": "(Tell her where you come from.)",
+      "once": "past",
+      "effects": [
+       {
+        "if": {
+         "not": {
+          "fact": "sella.felt_cold",
+          "eq": true
+         }
+        },
+        "then": [
+         {
+          "set": {
+           "sella.felt_cold": true
+          }
+         },
+         {
+          "if": {
+           "not": {
+            "fact": "sella.free",
+            "eq": true
+           }
+          },
+          "then": {
+           "set": {
+            "sella.cold_sold": true
+           }
+          }
+         }
+        ]
+       }
+      ],
+      "goto": "past"
+     },
+     {
+      "text": "Did I talk in my sleep?",
+      "once": "sleeptalk",
+      "effects": [
+       {
+        "if": {
+         "not": {
+          "fact": "sella.felt_cold",
+          "eq": true
+         }
+        },
+        "then": [
+         {
+          "set": {
+           "sella.felt_cold": true
+          }
+         },
+         {
+          "if": {
+           "not": {
+            "fact": "sella.free",
+            "eq": true
+           }
+          },
+          "then": {
+           "set": {
+            "sella.cold_sold": true
+           }
+          }
+         }
+        ]
+       }
+      ],
+      "goto": "sleeptalk"
+     },
+     {
+      "text": "The bolt on the door. You never shoot it.",
+      "show": {
+       "fact": "sella.nights",
+       "gte": 2
+      },
+      "once": "door",
+      "effects": [
+       {
+        "if": {
+         "not": {
+          "fact": "sella.felt_cold",
+          "eq": true
+         }
+        },
+        "then": [
+         {
+          "set": {
+           "sella.felt_cold": true
+          }
+         },
+         {
+          "if": {
+           "not": {
+            "fact": "sella.free",
+            "eq": true
+           }
+          },
+          "then": {
+           "set": {
+            "sella.cold_sold": true
+           }
+          }
+         }
+        ]
+       }
+      ],
+      "goto": "door"
+     },
+     {
+      "text": "Sleep a little longer first.",
+      "action": "rest",
+      "effects": [
+       {
+        "if": {
+         "not": {
+          "fact": "sella.felt_cold",
+          "eq": true
+         }
+        },
+        "then": [
+         {
+          "set": {
+           "sella.felt_cold": true
+          }
+         },
+         {
+          "if": {
+           "not": {
+            "fact": "sella.free",
+            "eq": true
+           }
+          },
+          "then": {
+           "set": {
+            "sella.cold_sold": true
+           }
+          }
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "text": "Until next time.",
+      "effects": [
+       {
+        "if": {
+         "not": {
+          "fact": "sella.felt_cold",
+          "eq": true
+         }
+        },
+        "then": [
+         {
+          "set": {
+           "sella.felt_cold": true
+          }
+         },
+         {
+          "if": {
+           "not": {
+            "fact": "sella.free",
+            "eq": true
+           }
+          },
+          "then": {
+           "set": {
+            "sella.cold_sold": true
+           }
+          }
+         }
+        ]
+       }
+      ],
+      "end": true
+     }
+    ]
+   },
+   "door": {
+    "id": "door",
+    "text": "That? It's Rook's. (She sits on the bed to do up her boots, and doesn't look up.) Working nights it stays drawn back. Rook's got a key and a cudgel, and if a man turns funny she's up those stairs before he's finished turning. I've needed her twice in seven years. Once for a drover. Once for one of the Watch, and I'll not say which. ...So, no. I've never shot it. It's not my door. Nothing in here's my door.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "sella",
+       "affection": 5
+      },
+      "quiet": true
+     }
+    ],
+    "choices": [
+     {
+      "text": "Seven years. You must have been young.",
+      "goto": "door_years"
+     },
+     {
+      "text": "Whose door would be yours?",
+      "goto": "door_south"
+     },
+     {
+      "text": "Until next time.",
+      "end": true
+     }
+    ]
+   },
+   "door_years": {
+    "id": "door_years",
+    "text": "Twenty-two, and sure I was cleverer than everyone in the valley. I was right about most of them. (She laughs, low.) I'm twenty-nine, love, since you're doing sums. Seven years at the top of Rook's stairs, and I've only fallen down them twice.",
+    "choices": [
+     {
+      "text": "Whose door would be yours?",
+      "goto": "door_south"
+     },
+     {
+      "text": "Until next time.",
+      "end": true
+     }
+    ]
+   },
+   "door_south": {
+    "id": "door_south",
+    "text": "I told you. A house in the south. A door that locks from the inside. (She stands, and checks her hair in the jug, and doesn't look at you.) And somebody who knocks.",
+    "choices": [
+     {
+      "text": "Until next time.",
+      "end": true
+     }
+    ]
+   },
+   "free_decline": {
+    "id": "free_decline",
+    "text": "Your loss, love. Literally; I'm worth a fortune. (She means it lightly, and very nearly manages it.) ...No, it's all right. It is. I'll not ask twice. I don't ask twice. (She pats your cheek, once, like a regular's.) Go on. Rook's stew's still warm.",
+    "effects": [
+     {
+      "set": {
+       "sella.free_declined": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Goodnight, Sella.",
+      "end": true
+     }
+    ]
+   },
+   "free_ask": {
+    "id": "free_ask",
+    "text": "(She looks at you for a long moment, as if you were a coin she was checking for clipping.) I said I'd not ask twice. I never said I'd not answer. ...Come on, then. Before I think better of it. I'm thinking better of it already. Come on.",
+    "next": "free_stairs"
+   },
+   "free_stairs": {
+    "id": "free_stairs",
+    "speaker": "narrator",
+    "text": "She doesn't take your hand on the stairs, or your sleeve. She goes up ahead of you, and on the fourth step she forgets to step over it, and it creaks, loud as a shout, and she stops dead with one foot on it and laughs at herself, and that's worse, somehow, than if she hadn't. In the blue room she turns the lamp up, not down. She stands with her back against the door as if somebody might try it.",
+    "next": "free_door"
+   },
+   "free_door": {
+    "id": "free_door",
+    "text": [
+     {
+      "when": {
+       "fact": "sella.told_knowing",
+       "eq": true
+      },
+      "text": "I keep thinking about you sitting on my bed telling me where you're from. Knowing who'd hear it by morning. (She shakes her head.) Nobody does that. Nobody's ever done that."
+     },
+     {
+      "text": "I don't know how to do this one. ...That's a lie. I know how. I don't know how to do it like this."
+     }
+    ],
+    "choices": [
+     {
+      "text": "Then don't do anything. Come here.",
+      "goto": "free_bolt"
+     },
+     {
+      "text": "Do you want to?",
+      "goto": "free_want"
+     },
+     {
+      "text": "We could just sleep.",
+      "goto": "free_sleep"
+     },
+     {
+      "text": "(Stop here.)",
+      "goto": "free_stop"
+     }
+    ]
+   },
+   "free_want": {
+    "id": "free_want",
+    "text": "Ask me that again and I'll cry, and I don't cry, so don't. (She takes a breath.) Yes. ...Yes. There. Said it. Come here.",
+    "next": "free_bolt"
+   },
+   "free_stop": {
+    "id": "free_stop",
+    "text": "(She lets out a breath she's been holding since the stairs.) All right. (And it is; you can see it is.) All right. ...Sit with me, then. Just sit. I've never just sat in here with anybody. Rook'd think we'd died.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "sella",
+       "trust": 10
+      },
+      "quiet": true
+     },
+     {
+      "later": {
+       "days": 3,
+       "id": "sella.free_again",
+       "effect": {
+        "npcFlag": {
+         "npc": "sella",
+         "key": "say:free",
+         "value": false
+        }
+       }
+      }
+     }
+    ],
+    "next": "free_sit"
+   },
+   "free_sit": {
+    "id": "free_sit",
+    "speaker": "narrator",
+    "text": "You sit on the bed with your backs to the wall, and she tells you about the house in the south: which room faces the sun; the colour of the door; the knock. Then she sends you down the stairs, and stands at the top to watch you skip the fourth.",
+    "choices": [
+     {
+      "text": "Goodnight, Sella.",
+      "end": true
+     }
+    ]
+   },
+   "free_sleep": {
+    "id": "free_sleep",
+    "text": "(She laughs, properly, the first time tonight.) You and your sleeping. ...Yes. All right. Yes.",
+    "next": "free_sleep_bed"
+   },
+   "free_sleep_bed": {
+    "id": "free_sleep_bed",
+    "speaker": "narrator",
+    "text": "She reaches behind her without looking and finds the bolt, and shoots it. Then she gets into the bed in her shift, and you get in beside her, and she lies with her back against you and pulls your arm over her like a blanket. She's asleep before you are. She's still there when you wake.",
+    "effects": [
+     {
+      "set": {
+       "sella.free": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "sella",
+       "affection": 10,
+       "trust": 15
+      },
+      "quiet": true
+     },
+     {
+      "condition": {
+       "id": "rested",
+       "days": 1,
+       "note": "A night in the blue room, off the clock"
+      }
+     }
+    ],
+    "next": "free_morning"
+   },
+   "free_bolt": {
+    "id": "free_bolt",
+    "speaker": "narrator",
+    "text": "She reaches behind her without looking and finds the bolt. It sticks halfway; nobody has ever shot it. She has to turn round and put her shoulder to it, swearing, and it goes home with a sound like the last coin put down on a counter. (Her back is still to you. Her forehead is against the door.) \"...There.\"",
+    "next": "free_night"
+   },
+   "free_m_downstairs": {
+    "id": "free_m_downstairs",
+    "text": "(She laughs.) Downstairs Rook hears everything and charges nobody. You'd be better off with me. ...No. You wouldn't. That's the point, love. Go on.",
+    "choices": [
+     {
+      "text": "Until next time.",
+      "end": true
+     }
+    ]
+   },
+   "free_m_who": {
+    "id": "free_m_who",
+    "text": "You know who. Everybody pays; she pays most. (She pulls the quilt up to her chin.) I said don't tell me. I didn't say I'd sell it. ...I didn't say I wouldn't, either. I don't know, {name}. That's the honest answer, and I'm out of practice at those. Don't make me practise before breakfast.",
+    "choices": [
+     {
+      "text": "Until next time.",
+      "end": true
+     }
+    ]
+   },
+   "free_m_kiss": {
+    "id": "free_m_kiss",
+    "speaker": "narrator",
+    "text": "She lets you. Then she pushes you off by the face, gently, with the flat of her hand. \"Out. Before I get used to it.\" She's smiling. She doesn't stop smiling until you're down the stairs, and you know that because the ninth step creaks behind you: she came down two steps to watch you go, and forgot it.",
+    "choices": [
+     {
+      "text": "Until next time.",
+      "end": true
+     }
+    ]
+   },
+   "refuse_roost": {
+    "id": "refuse_roost",
+    "text": "(At the top of the stairs she stops with her hand on the door.) They're saying you burned the Roost with folk still in it. (She puts the coins back in your hand, all of them.) I don't judge, love. It's bad for business. But I can smell it on you, and I'm not working with that in the room. ...Come back when I can't.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "sella",
+       "key": "cb:burned_roost",
+       "value": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "...Goodnight, Sella.",
+      "end": true
+     }
+    ]
+   },
+   "say_keegan": {
+    "id": "say_keegan",
+    "text": "The knight's been asking Rook what you like for breakfast. In full sentences, love. With a list. ...She's going to read you a chapter after. You know that. You'll have to sit through the whole chapter.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "sella",
+       "key": "say:keegan",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "say_rav": {
+    "id": "say_rav",
+    "text": "You went round the back of the Flagon after closing. Rav's been up my stairs twice in seven years, and both times to lance something. Be kind to him. He's softer than he drinks.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "sella",
+       "key": "say:rav",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
    }
   }
  },
@@ -14335,7 +17125,18 @@
    "show": {
     "id": "show",
     "speaker": "narrator",
-    "text": "He turns and walks into the Hollow, and you follow. The sick ones' eyes are milky; their gums are black. One of them tries to stand when it sees you, and cannot. Greymuzzle looks east, toward the stream, then back at you, and waits.",
+    "text": [
+     {
+      "when": {
+       "fact": "maeca.lover",
+       "eq": true
+      },
+      "text": "He comes close enough to smell your hand, then your face, and his lip lifts off his teeth, and goes down again. Then your collar, for longer; and his tail moves, once. He turns and walks into the Hollow, and you follow. The sick ones' eyes are milky; their gums are black. One of them tries to stand when it sees you, and cannot. Greymuzzle looks east, toward the stream, then back at you, and waits."
+     },
+     {
+      "text": "He comes close enough to smell your hand, then your face, and his lip lifts off his teeth, and goes down again. He turns and walks into the Hollow, and you follow. The sick ones' eyes are milky; their gums are black. One of them tries to stand when it sees you, and cannot. Greymuzzle looks east, toward the stream, then back at you, and waits."
+     }
+    ],
     "effects": [
      {
       "set": {
@@ -14622,12 +17423,6 @@
        "archetype": "reaver"
       },
       "text": "Ha! Look at the size of you. I've a dozen lads would follow you for the fun of it; don't make me find out which dozen. Redcowl. You're in my camp. Talk."
-     },
-     {
-      "when": {
-       "sex": "female"
-      },
-      "text": "Well. My lads haven't seen a woman who wasn't their mother in a month, nor a bath in a year. Walk straight and they'll keep their hands where I've told them. Redcowl. You're in my camp. Talk."
      },
      {
       "text": "Redcowl. You're standing in my camp, which means my sentries are drunk or you're interesting. Which is it?"
@@ -15428,10 +18223,10 @@
       "when": {
        "sex": "female"
       },
-      "text": "Because a man in a cage is worth something to somebody, and a man in a ditch is worth nothing to anybody. I've buried enough worth-nothings for one life, lass. ...And I feed them. Ask them. I feed them before I feed my own."
+      "text": "Because a man in a cage is worth something to somebody, and a man in a ditch is worth nothing to anybody. I've buried enough worth-nothings for one life, lass. ...Ask them if they're hungry."
      },
      {
-      "text": "Because a man in a cage is worth something to somebody, and a man in a ditch is worth nothing to anybody. I've buried enough worth-nothings for one life, lad. ...And I feed them. Ask them. I feed them before I feed my own."
+      "text": "Because a man in a cage is worth something to somebody, and a man in a ditch is worth nothing to anybody. I've buried enough worth-nothings for one life, lad. ...Ask them if they're hungry."
      }
     ],
     "choices": [
@@ -16691,7 +19486,7 @@
   "nodes": {
    "first": {
     "id": "first",
-    "text": "You're the one who opened the cage. I— thank you. Uncle Harlan hasn't stopped crying. It wasn't wolves, you know. A toll clerk met us on the road, in Vonnra's violet, and said the Old Road was shut at the Waystation and sent us down the forest track. And they were waiting.",
+    "text": "You're the one with the bar. I— thank you. Uncle Harlan hasn't stopped crying. It wasn't wolves, you know. A toll clerk met us on the road, in Vonnra's violet, and said the Old Road was shut at the Waystation and sent us down the forest track. And they were waiting.",
     "effects": [
      {
       "quest": {
@@ -17328,6 +20123,406 @@
      {
       "text": "Something else.",
       "goto": "hub"
+     }
+    ]
+   }
+  }
+ },
+ "cin_drowned_fire": {
+  "npc": "cin_drowned_fire",
+  "entry": [
+   {
+    "node": "bedroll"
+   }
+  ],
+  "nodes": {
+   "bedroll": {
+    "id": "bedroll",
+    "speaker": "narrator",
+    "text": "Your bedroll has not been slept in.",
+    "next": "prints"
+   },
+   "prints": {
+    "id": "prints",
+    "speaker": "narrator",
+    "text": "Prints in the frost, your own. They come up from the river. None go down to it.",
+    "next": "frost"
+   },
+   "frost": {
+    "id": "frost",
+    "speaker": "narrator",
+    "text": "Past the firelight, the frost is breaking.",
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "cin_none_cross": {
+  "npc": "cin_none_cross",
+  "entry": [
+   {
+    "node": "call"
+   }
+  ],
+  "nodes": {
+   "call": {
+    "id": "call",
+    "speaker": "ford_warden",
+    "text": "(sung, under the water) Lamps are lit... stay where they reach...",
+    "next": "lie_down"
+   },
+   "lie_down": {
+    "id": "lie_down",
+    "speaker": "ford_warden",
+    "text": "Lie down.",
+    "next": "none"
+   },
+   "none": {
+    "id": "none",
+    "speaker": "ford_warden",
+    "text": "NONE. CROSS. AFTER DARK.",
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "cin_heart_goes_down": {
+  "npc": "cin_heart_goes_down",
+  "entry": [
+   {
+    "node": "morning"
+   }
+  ],
+  "nodes": {
+   "morning": {
+    "id": "morning",
+    "speaker": "ford_warden",
+    "text": "Is it morning?",
+    "next": "nobodys"
+   },
+   "nobodys": {
+    "id": "nobodys",
+    "speaker": "grimtunnel",
+    "text": "Ooh, still lit! Nobody's, is it? Nobody's!",
+    "next": "downstairs"
+   },
+   "downstairs": {
+    "id": "downstairs",
+    "speaker": "grimtunnel",
+    "text": "...You smell like downstairs.",
+    "next": "grateful"
+   },
+   "grateful": {
+    "id": "grateful",
+    "speaker": "grimtunnel",
+    "text": "Finders keepers, surface-m— (a sniff) ...Downstairs'll be ever so grateful.",
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "cin_first_light": {
+  "npc": "cin_first_light",
+  "entry": [
+   {
+    "node": "back"
+   }
+  ],
+  "nodes": {
+   "back": {
+    "id": "back",
+    "speaker": "narrator",
+    "text": "The sun clears the trees, and the ember goes back into the ground.",
+    "next": "face"
+   },
+   "face": {
+    "id": "face",
+    "speaker": "narrator",
+    "text": "You try to call up your mother's face, and find it is not quite where you left it.",
+    "next": "baking"
+   },
+   "baking": {
+    "id": "baking",
+    "speaker": "narrator",
+    "text": "Somewhere up the street, someone is baking.",
+    "next": "dawn"
+   },
+   "dawn": {
+    "id": "dawn",
+    "speaker": "guard",
+    "text": "Dawn arrivals. We don't get many that live.",
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "cin_forty_one_mouths": {
+  "npc": "cin_forty_one_mouths",
+  "entry": [
+   {
+    "node": "them_first"
+   }
+  ],
+  "nodes": {
+   "them_first": {
+    "id": "them_first",
+    "speaker": "kerchief_woman",
+    "text": "Them first.",
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "cin_iron_marker": {
+  "npc": "cin_iron_marker",
+  "entry": [
+   {
+    "node": "verse1"
+   }
+  ],
+  "nodes": {
+   "verse1": {
+    "id": "verse1",
+    "speaker": "chid",
+    "text": "(sung) Lie down, lie down, the lamps are tended, / and all the dark is kept; / the morning lies a little under, / and it will wake you where you slept.",
+    "next": "verse2"
+   },
+   "verse2": {
+    "id": "verse2",
+    "speaker": "chid",
+    "text": "(sung) Lie down, lie down, the road is ended, / your toll is paid and kept; / the dark is but the day not risen, / and it will wake you where you slept.",
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "cin_raid_on_the_roost": {
+  "npc": "cin_raid_on_the_roost",
+  "entry": [
+   {
+    "node": "bairns"
+   }
+  ],
+  "nodes": {
+   "bairns": {
+    "id": "bairns",
+    "speaker": "redcowl",
+    "text": [
+     {
+      "when": {
+       "sex": "female"
+      },
+      "text": "Ha! HA. At night, lass. With my bairns asleep behind me. ...Mind where you swing."
+     },
+     {
+      "text": "Ha! HA. At night, lad. With my bairns asleep behind me. ...Mind where you swing."
+     }
+    ],
+    "next": "last"
+   },
+   "last": {
+    "id": "last",
+    "speaker": "redcowl",
+    "text": [
+     {
+      "when": {
+       "fact": "redcowl.ashford_said",
+       "eq": true
+      },
+      "text": "...Ashford. (a laugh) There. Now we've both said it."
+     },
+     {
+      "text": "Tell the saw-bones... the leg held."
+     }
+    ],
+    "effects": [
+     {
+      "if": {
+       "fact": "redcowl.ashford_said",
+       "eq": true
+      },
+      "then": [
+       {
+        "set": {
+         "redcowl.last_words": "ashford"
+        }
+       }
+      ],
+      "else": [
+       {
+        "set": {
+         "redcowl.last_words": "leg"
+        }
+       }
+      ]
+     }
+    ],
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "cin_dig_boils_over": {
+  "npc": "cin_dig_boils_over",
+  "entry": [
+   {
+    "node": "pump"
+   }
+  ],
+  "nodes": {
+   "pump": {
+    "id": "pump",
+    "speaker": "grimtunnel",
+    "text": [
+     {
+      "when": {
+       "any": [
+        {
+         "fact": "dig.pump",
+         "eq": "broken"
+        },
+        {
+         "fact": "dig.pump",
+         "eq": "blown"
+        },
+        {
+         "fact": "dig.pump",
+         "eq": "moved"
+        }
+       ]
+      },
+      "text": "Surface-meat! You broke my PUMP. ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT."
+     },
+     {
+      "text": "Surface-meat! Killing my lads, are we? ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT."
+     }
+    ],
+    "next": "quiet"
+   },
+   "quiet": {
+    "id": "quiet",
+    "speaker": "grimtunnel",
+    "text": "I told it about you! It went ever so QUIET!",
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "cin_behind_the_door": {
+  "npc": "cin_behind_the_door",
+  "entry": [
+   {
+    "node": "nondum"
+   }
+  ],
+  "nodes": {
+   "nondum": {
+    "id": "nondum",
+    "speaker": "barrow_lord",
+    "text": [
+     {
+      "when": {
+       "any": [
+        {
+         "knows": "arcana"
+        },
+        {
+         "hasTag": "scholar_lens"
+        }
+       ]
+      },
+      "text": "Nondum. (Not yet.)"
+     },
+     {
+      "text": "Nondum."
+     }
+    ],
+    "next": "redi"
+   },
+   "redi": {
+    "id": "redi",
+    "speaker": "barrow_lord",
+    "text": [
+     {
+      "when": {
+       "any": [
+        {
+         "knows": "arcana"
+        },
+        {
+         "hasTag": "scholar_lens"
+        }
+       ]
+      },
+      "text": "Redi. (Go back.)"
+     },
+     {
+      "text": "Redi."
+     }
+    ],
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "cin_road_back": {
+  "npc": "cin_road_back",
+  "entry": [
+   {
+    "node": "place"
+   }
+  ],
+  "nodes": {
+   "place": {
+    "id": "place",
+    "speaker": "brannoc",
+    "text": "You know the place.",
+    "next": "wat"
+   },
+   "wat": {
+    "id": "wat",
+    "speaker": "brannoc",
+    "text": "...Wat.",
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
      }
     ]
    }

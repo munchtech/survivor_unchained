@@ -4,6 +4,15 @@ Drafts of the game's five romances (Sella, Maeca, Keegan, Rav and Ysolde)
 for the main author to take into the game or leave out. Nothing here changes
 the game: no content JSON, code or existing doc has been edited.
 
+> **Status (round three of the cinematics edit).** Adopted. The Act 1 data for
+> Sella, Maeca, Keegan and Rav is now in `godot/data/content/dialogue.json`,
+> merged node by node (these drafts predate later live work, so do not drop
+> them in whole again), with fixes: the body's hours are cold as the river
+> all night and warm by breakfast, for every survivor (`STORY_BIBLE.md`
+> section 1); no real-world oaths or quotations; Rav's count is seven. The
+> scene files below are corrected to match and remain the Act 2 writer's
+> source. `vonnra.f_past` now reads `sella.past_sold`.
+
 ## What's here, and the reading order
 
 1. **`ARCS.md`**: start here. §0 sets out how love works in this valley
