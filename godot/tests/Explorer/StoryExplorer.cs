@@ -44,6 +44,8 @@ sealed class Options
     public bool Prologue;
     /// <summary>States a stuck quest is given to move, before it is called a softlock.</summary>
     public int Confirm = 300;
+    /// <summary>Keep every state's save once its survivor is done (to replay them).</summary>
+    public bool Keep;
 }
 
 sealed class StoryExplorer
@@ -91,8 +93,24 @@ sealed class StoryExplorer
     public StoryExplorer Run()
     {
         Clock.Start();
-        foreach (var r in O.Roots) Explore(r);
-        Analyse();
+        foreach (var r in O.Roots)
+        {
+            start = Nodes.Count;
+            Explore(r);
+            // What only this survivor's states can say, said now; then what
+            // the analysis no longer needs let go (the saves are most of it).
+            Softlocks();
+            Lost();
+            Loops();
+            known.Clear();
+            for (int i = start; i < Nodes.Count && !O.Keep; i++)
+            {
+                var n = Nodes[i];
+                n.Save = "";
+                n.Visit = n.Visit with { EntrySave = "", Done = null };
+            }
+        }
+        Gates();
         Clock.Stop();
         return this;
     }
@@ -197,7 +215,7 @@ sealed class StoryExplorer
                     local[child.Hash] = child.Id;
                     var cj = Playthrough.Load(child.Save);
                     child.Quests = Quests(cj);
-                    child.Held = Held(cj.Ch).ToArray();
+                    child.Held = Held(cj.Ch).Select(string.Intern).ToArray();
                     Seen.Pending = null;
                     n.Next.Add(child.Id);
                     output.Add((child, 0));
@@ -290,7 +308,7 @@ sealed class StoryExplorer
         c.Quests = Quests(j);
         c.Progress = j.World.Quests.Values.Sum(q => q.Entries.Count + (q.Status == QuestStatus.Resolved ? 5 : 0)) + j.World.Knowledge.Count + j.Ch.Knowledge.Count
             + j.World.Facts.Count(f => f.Value.Type is Fact.Kind.Str);
-        c.Held = Held(j.Ch).ToArray();
+        c.Held = Held(j.Ch).Select(string.Intern).ToArray();
         int fresh = Seen.Take(c, j);
         if (c.Step?.Key.StartsWith("use:") == true) fresh += Seen.Add("use", $"{c.Parent!.Visit.Zone}:{c.Step.Key[4..]}");
         if (c.Mode == Mode.Talk && c.Parent?.Mode != Mode.Talk) fresh += Seen.Add("talk", c.Npc!);
@@ -302,7 +320,7 @@ sealed class StoryExplorer
     }
 
     static Dictionary<string, string> Quests(Journey j) =>
-        j.World.Quests.ToDictionary(q => q.Key, q => $"{q.Value.Status}:{string.Join(",", q.Value.Entries)}:{q.Value.Outcome}");
+        j.World.Quests.ToDictionary(q => string.Intern(q.Key), q => string.Intern($"{q.Value.Status}:{string.Join(",", q.Value.Entries)}:{q.Value.Outcome}"));
 
     static IEnumerable<string> Held(CharacterData ch) =>
         ch.Pack.Where(i => i != null).Select(i => i!.Def).Concat(Items.EquipSlots.Select(s => ch.Equipment[s]?.Def).Where(d => d != null)!).Distinct().OrderBy(x => x, StringComparer.Ordinal)!;
@@ -345,7 +363,7 @@ sealed class StoryExplorer
 
     string Hash(Node n, Journey j)
     {
-        var sb = new StringBuilder(Canon(j, coarse: true));
+        var sb = new StringBuilder(n.Root.ToString()).Append('|').Append(Canon(j, coarse: true));
         sb.Append("|m:").Append(n.Mode).Append(':').Append(n.Npc).Append(':').Append(n.At).Append(':').Append(n.Arena?.GetHashCode());
         sb.Append("|z:").Append(n.Visit.ZoneMark);
         return Convert.ToHexString(System.Security.Cryptography.SHA1.HashData(Encoding.UTF8.GetBytes(sb.ToString())));
@@ -407,13 +425,12 @@ sealed class StoryExplorer
 
     /* ---------------------------------------------------------- analysis -- */
 
-    void Analyse()
-    {
-        Softlocks();
-        Lost();
-        Loops();
-        Gates();
-    }
+    /// <summary>Where the survivor being explored begins in Nodes.</summary>
+    int start;
+    /// <summary>Quests seen settled, on any survivor's road so far.</summary>
+    readonly HashSet<string> settles = new();
+
+    IEnumerable<Node> Ours => Nodes.Skip(start);
 
     /// <summary>A quest in the journal that nothing moves on any more. Where
     /// the exploration saw a quest at some point of its story and never saw
@@ -422,7 +439,7 @@ sealed class StoryExplorer
     void Softlocks()
     {
         var places = new Dictionary<(string Q, string At), List<Node>>();
-        foreach (var n in Nodes.Where(n => n.Expanded && n.Mode == Mode.Roam))
+        foreach (var n in Ours.Where(n => n.Expanded && n.Mode == Mode.Roam))
             foreach (var (q, sig) in n.Quests)
                 if (sig.StartsWith("Active:"))
                 {
@@ -432,7 +449,7 @@ sealed class StoryExplorer
         // A quest that settles somewhere (on any road) and on this one cannot;
         // one that never settles in the chapter is an open thread, and the
         // report counts it among the quests never resolved.
-        var settles = Nodes.SelectMany(n => n.Quests).Where(q => !q.Value.StartsWith("Active:") && !q.Value.StartsWith("Unknown:")).Select(q => q.Key).ToHashSet();
+        settles.UnionWith(Ours.SelectMany(n => n.Quests).Where(q => !q.Value.StartsWith("Active:") && !q.Value.StartsWith("Unknown:")).Select(q => q.Key));
         foreach (var ((q, sig), list) in places)
         {
             if (!settles.Contains(q)) continue;
@@ -495,7 +512,7 @@ sealed class StoryExplorer
     void Lost()
     {
         var wanted = Playthrough.StoryItems;
-        foreach (var n in Nodes.Where(n => n.Parent != null))
+        foreach (var n in Ours.Where(n => n.Parent != null).ToList())
         {
             foreach (var item in n.Parent!.Held.Except(n.Held).Where(wanted.Contains))
             {
@@ -524,7 +541,7 @@ sealed class StoryExplorer
     /// round: every way on leads back into it, and none out.</summary>
     void Loops()
     {
-        var talk = Nodes.Where(n => n.Mode == Mode.Talk).ToList();
+        var talk = Ours.Where(n => n.Mode == Mode.Talk).ToList();
         var outs = new Dictionary<int, bool?>();
         foreach (var n in talk)
         {

@@ -82,7 +82,7 @@ public class StoryExplorerTests(ITestOutputHelper log)
         // Its short cuts (one zone tried many ways, a visit found fresh again,
         // a conversation without its zone) come to what doing the steps one
         // after another comes to, so every trace in the report replays.
-        var x = new StoryExplorer(new Options { Roots = [new Root("stalker", "outcast", Sex.Female)], MaxStates = 120, Beam = 4, MaxDay = 3, Confirm = 0 }).Run();
+        var x = new StoryExplorer(new Options { Roots = [new Root("stalker", "outcast", Sex.Female)], MaxStates = 120, Beam = 4, MaxDay = 3, Confirm = 0, Keep = true }).Run();
         var some = x.Nodes.Where(n => n.Mode == Mode.Roam).OrderByDescending(n => n.Depth).Take(3)
             .Concat(x.Nodes.Where(n => n.Mode == Mode.Talk).OrderByDescending(n => n.Depth).Take(2)).ToList();
         Assert.True(some.Count >= 3);
