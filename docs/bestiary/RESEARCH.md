@@ -264,6 +264,13 @@ itemization research is in `docs/items/RESEARCH.md`.
   random, so a hard counter there punishes a choice the player did not
   make. *(design reading)*
 
+### Attention
+- People can track about **four** moving objects at once (Pylyshyn and
+  Storm's multiple-object-tracking task, 1988, and the studies after it);
+  with slower, more distinct objects the number rises to eight or nine.
+  [Wikipedia](https://en.wikipedia.org/wiki/Multiple_object_tracking),
+  [Alvarez and Franconeri 2007](https://visualcognition.psych.northwestern.edu/publications/AlvarezTracking2007.pdf)
+
 ## 4. Themes across the sources
 
 **Roles.** Every game with memorable enemies gives each enemy *one* job and
