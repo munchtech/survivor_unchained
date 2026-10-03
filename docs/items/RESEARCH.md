@@ -1,7 +1,7 @@
 # Research: itemization in the genre
 
-
 Background for the item plan (`README.md` says where it fits). Summarised and paraphrased from developer talks, patch notes, wikis and player discussion; quotations are short fragments. Drop rates and caps from live games change, so check any number before relying on it. The Grim Dawn, Torchlight, Titan Quest and Elden Ring sections are more lightly sourced than the rest.
+
 Scope: concrete mechanics, what players loved, what they hated, and the design lesson for each game, followed by cross-cutting themes and a closing list of design lessons. Everything below is summarised and paraphrased; quotations are kept to short fragments. Where a number is given it comes from wikis or patch notes, and live-service values (drop rates, caps) have changed over time, so check them before relying on them.
 
 ---
