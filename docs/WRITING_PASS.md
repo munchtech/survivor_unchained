@@ -64,7 +64,7 @@ records the choices whose weight lands later (section 9).
 | Nell | Brannoc asks after his daughter; the truth buries her, a lie sends him to the gate | [DATA, done] |
 | Seeds | Holloway's letter; Sella's pillow talk (quoted in the fortune); the Wayfinder's margin; Keegan after a death; Chid's "C"; Tam's knocking; Maeca and the Kerchiefs; Redcowl's "little bird" and "Ashford"; Rav names his brother | [DATA, done] |
 | The fortune | Seven readings now (beasts, caravan, crates, Pell, self, before the ford, below), the accusation, the name | [DATA, done] |
-| The chapter's end page | The lamps as an open thread; the new beats | [CODE, to do] C4 |
+| The chapter's end page | The lamps as an open thread; the new beats | [CODE, done] C4 |
 | Fixes | The shrine-bell contradiction; retired words; Holloway's "my own toll clerk"; Rav's "eleven years"; a rule written twice; item lore that assumed you knew; morning reports in the wrong tense | [DATA, done] |
 
 ## 3. Shared gates

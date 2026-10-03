@@ -336,6 +336,36 @@ public class BreadcrumbTests
         Assert.Contains("far bank", Fortune(k).Read);
     }
 
+    [Fact]
+    public void The_chapters_page_keeps_the_lamps_open_and_remembers_who_said_it_to_Vonnra()
+    {
+        // E2: both troubles settled, Jory told, the crates given to Redcowl, Vonnra accused.
+        var s = Q("scholar");
+        Entries(s, "lamps", "book", "irons", "coin");
+        Entries(s, "caravan", "harlan_plea", "roost_found", "crates_redcowl", "survivors_freed", "jory_told", "cargo_returned");
+        Entries(s, "beasts", "root_cause", "pump_blown", "redcowl_charge");
+        s.World.Facts["beasts.outcome"] = "cured";
+        s.World.Facts["caravan.survivors"] = "rescued";
+        s.World.Facts["caravan.cargo"] = "returned";
+        s.World.Facts["chapter.ready"] = true;
+        var (r, p, _) = Fortune(s);
+        p = r.Choose(p.Choices.First(c => c.Text.Contains("You lit the lamps")).Index).Next!;
+        p = r.Advance()!;
+        Assert.Equal("fortune", r.Choose(p.Choices[0].Index).Action);
+        Assert.True(s.World.Fact("chapter.done").Truthy);
+        var sum = Chapter.Summary(s.Ch, s.World);
+        Assert.Equal(new[] { "vault", "below", "lamps" }, sum.Open.Select(o => o.Id));
+        Assert.Contains("did not say no", sum.Open.Single(o => o.Id == "lamps").Line);
+        var caravan = sum.Threads.Single(t => t.Id == "caravan").Beats;
+        Assert.Contains(caravan, b => b.Contains("You told Redcowl what is in the six crates"));
+        Assert.Contains(caravan, b => b.Contains("You told Jory what he was carrying"));
+        Assert.Contains(sum.Threads.Single(t => t.Id == "beasts").Beats, b => b.Contains("Redcowl gave you one charge"));
+        Assert.Equal("Wren, who said it to Vonnra's face", sum.Epithet);
+        // Running with the Pack is said first.
+        s.World.Facts["beasts.outcome"] = "allied";
+        Assert.Equal("Wren, who runs with wolves", Chapter.Summary(s.Ch, s.World).Epithet);
+    }
+
     /* ------------------------------------------------------- the six crates -- */
 
     [Fact]

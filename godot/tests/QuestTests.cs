@@ -261,6 +261,9 @@ public class QuestTests
         Assert.Equal("Wren, who sold the Coyle strongbox", sum.Epithet);
         Assert.Equal(new[] { "Cured at the source", "Rescued, and robbed" }, sum.Threads.Select(t => t.Verdict));
         Assert.Equal(new[] { "vault", "below" }, sum.Open.Select(o => o.Id));
+        // The lamps are an open thread once the watchman's book has begun them.
+        Rules.Apply(E("{ quest: { id: 'lamps', status: 'active', entry: 'book' } }"), s.C);
+        Assert.Equal(new[] { "vault", "below", "lamps" }, Chapter.Summary(s.Ch, s.World).Open.Select(o => o.Id));
     }
 
     [Fact]
