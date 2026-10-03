@@ -70,6 +70,31 @@ public partial class PersonView : Node3D, INpcView
 
     public void Act(string clip, double speed = 1) => Act(clip, speed, false);
 
+    /// <summary>The flourish of her calling, as it is chosen (her own, or the
+    /// library clip given for anyone else).</summary>
+    public void Flourish(string fallback)
+    {
+        if (person.Body == "heroine" && HerClips.Has($"{person.Calling}_show")) Act(HerClips.Prefix + person.Calling + "_show");
+        else Act(fallback);
+        breakT = Mathf.Max(breakT, 6);
+    }
+
+    // Her idle breaks: standing a while, now and then she does something.
+    double breakT = 8;
+    readonly RandomNumberGenerator rng = new();
+
+    void Fidget(double delta)
+    {
+        if (person.Body != "heroine" || walking || holding || actLeft > 0 || Driven) return;
+        // Only while she stands in her calling's idle.
+        if (!People.Clip(person, loop).StartsWith(HerClips.Prefix + "idle_")) return;
+        breakT -= delta;
+        if (breakT > 0) return;
+        breakT = rng.RandfRange(9, 15);
+        var brk = $"idle_{person.Calling}_break";
+        if (HerClips.Has(brk)) Act(HerClips.Prefix + brk);
+    }
+
     /// <summary>A gesture once; held on its last frame (a fall, getting up)
     /// until the next loop or gesture, or back to the loop.</summary>
     public void Act(string clip, double speed, bool hold)
@@ -174,6 +199,7 @@ public partial class PersonView : Node3D, INpcView
             actLeft -= delta;
             if (actLeft <= 0) PlayLoop(0.25);
         }
+        Fidget(delta);
     }
 
     // Explicit, so it does not shadow Godot's own Dispose().

@@ -92,11 +92,22 @@ IDLES = {
 }
 
 
+_bases = {}
+
+
+def base_of(rig, calling):
+    """A calling's captured standing (made once a run, shared by its idle,
+    its breaks and its flourish)."""
+    if calling not in _bases:
+        style = IDLES[f"idle_{calling}"][0]
+        _bases[calling] = idle_loop(f"idle_{calling}_base", rig, style, seconds=(5.0, 8.0))
+    return _bases[calling]
+
+
 def clips(rig, want):
     out = []
     for name, (style, arms, weapon) in IDLES.items():
         if want and not any(w in name for w in want):
             continue
-        base = idle_loop(name + "_base", rig, style, seconds=(5.0, 8.0))
-        out.append(layered(name, rig, base, arms, {"weapon": weapon}))
+        out.append(layered(name, rig, base_of(rig, name[5:]), arms, {"weapon": weapon}))
     return out

@@ -5,7 +5,7 @@
   "100STYLE": "Ian Mason et al., 100STYLE (2022), https://zenodo.org/record/8127870, CC BY 4.0: retargeted to her skeleton, feet locked, looped, arms re-keyed.",
   "UAL": "Quaternius, Universal Animation Library 1 and 2, CC0: the fallback for clips not yet made."
  },
- "made": 33,
+ "made": 43,
  "planned": 45,
  "clips": [
   {
@@ -59,62 +59,62 @@
   {
    "clip": "idle_warden_break",
    "plays_for": "idle break, warden",
-   "status": "fallback",
+   "status": "made",
    "fallback": "-",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 3.333,
+   "layer": "full"
   },
   {
    "clip": "idle_arcanist_break",
    "plays_for": "idle break, arcanist",
-   "status": "fallback",
+   "status": "made",
    "fallback": "-",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 3.333,
+   "layer": "full"
   },
   {
    "clip": "idle_reaver_break",
    "plays_for": "idle break, reaver",
-   "status": "fallback",
+   "status": "made",
    "fallback": "-",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 3.333,
+   "layer": "full"
   },
   {
    "clip": "idle_stalker_break",
    "plays_for": "idle break, stalker",
-   "status": "fallback",
+   "status": "made",
    "fallback": "-",
    "made_by": "keyed (100STYLE Followed for the glance)",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 4.0,
+   "layer": "full"
   },
   {
    "clip": "catch_breath",
    "plays_for": "standing after a hard run",
-   "status": "fallback",
+   "status": "made",
    "fallback": "-",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 3.467,
+   "layer": "full"
   },
   {
    "clip": "run_warden",
@@ -491,62 +491,62 @@
   {
    "clip": "sit_log",
    "plays_for": "the title: by the fire",
-   "status": "fallback",
+   "status": "made",
    "fallback": "Sitting_Idle",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 8.0,
+   "layer": "full"
   },
   {
    "clip": "warden_show",
    "plays_for": "creation flourish",
-   "status": "fallback",
+   "status": "made",
    "fallback": "Sword_Block",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 2.333,
+   "layer": "full"
   },
   {
    "clip": "arcanist_show",
    "plays_for": "creation flourish",
-   "status": "fallback",
+   "status": "made",
    "fallback": "Spell_Simple_Enter",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 2.6,
+   "layer": "full"
   },
   {
    "clip": "reaver_show",
    "plays_for": "creation flourish",
-   "status": "fallback",
+   "status": "made",
    "fallback": "Sword_Regular_A",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 2.4,
+   "layer": "full"
   },
   {
    "clip": "stalker_show",
    "plays_for": "creation flourish",
-   "status": "fallback",
+   "status": "made",
    "fallback": "Pistol_Shoot",
    "made_by": "keyed",
-   "source": "",
-   "licence": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 3.0,
+   "layer": "full"
   },
   {
    "clip": "cast_flick",

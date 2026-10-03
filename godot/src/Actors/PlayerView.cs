@@ -45,8 +45,11 @@ public partial class PlayerView : Node3D
     readonly bool her;
     readonly HerCarriage? carriage;
     readonly float runSpeed;
-    bool upperNative, fullNative;
+    bool upperNative, fullNative, fullSoft;
     float heading, turnRate, aim, aimHold, lastSpeed, accel;
+    // Standing and running, for her breaks and her breath.
+    double stillT, runT, ranFor, breakAt = 9;
+    readonly RandomNumberGenerator rng = new();
 
     public PlayerView(Loadout lo)
     {
@@ -184,8 +187,22 @@ public partial class PlayerView : Node3D
     {
         full.Animation = People.Clip(person, clip);
         fullNative = full.Animation.ToString().StartsWith(HerClips.Prefix);
+        fullSoft = false;
         tree.Set("parameters/fullScale/scale", speed);
         tree.Set("parameters/fullShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
+    }
+
+    /// <summary>One of her own on the whole of her: soft ones (a fidget, a
+    /// breath caught) give way the moment she moves.</summary>
+    bool FullHer(string clip, double speed, bool soft)
+    {
+        if (!her || !HerClips.Has(clip)) return false;
+        full.Animation = HerClips.Prefix + clip;
+        fullNative = true;
+        fullSoft = soft;
+        tree.Set("parameters/fullScale/scale", speed);
+        tree.Set("parameters/fullShot/request", (int)AnimationNodeOneShot.OneShotRequest.Fire);
+        return true;
     }
 
     bool Busy => (bool)tree.Get("parameters/upperShot/active") || (bool)tree.Get("parameters/fullShot/active");
@@ -329,6 +346,7 @@ public partial class PlayerView : Node3D
         }
         hurtSeen -= dt;
         speed = Mathf.Lerp(speed, sp, 1 - Mathf.Exp(-10 * (float)dt));
+        if (her) Rest(b, dt, sp);
         if (her) Carry((float)dt, sp);
         else tree.Set("parameters/move/blend_position", speed);
         // The carried light: steadier at full health, guttering when hurt.
@@ -341,6 +359,40 @@ public partial class PlayerView : Node3D
         Light.Position = new Vector3(0, 2.4f, 0.4f);
         // Unseen: a ghost, flickering.
         Visible = !(p.InvisibleT > 0 && (int)(time * 12) % 3 == 0);
+    }
+
+    /// <summary>When nothing is near: a breath caught after a long run, and
+    /// now and then, standing, her calling's fidget. Either gives way the
+    /// moment she moves.</summary>
+    void Rest(Battle b, double dt, float sp)
+    {
+        var p = b.Player;
+        if (fullSoft && sp > 0.6 && (bool)tree.Get("parameters/fullShot/active"))
+        {
+            tree.Set("parameters/fullShot/request", (int)AnimationNodeOneShot.OneShotRequest.FadeOut);
+            fullSoft = false;
+        }
+        if (sp > 3) { runT += dt; stillT = 0; ranFor = runT; return; }
+        if (sp > 0.3) { stillT = 0; return; }
+        runT = 0;
+        stillT += dt;
+        // (A breath is caught on stopping, or not at all.)
+        if (stillT > 1.0) ranFor = 0;
+        bool calm = b.NearestHostile(p.X, p.Z, 14) == null && !Busy;
+        if (!calm) { breakAt = Mathf.Max((float)breakAt, (float)stillT + 4); return; }
+        if (ranFor > 6 && stillT > 0.2)
+        {
+            ranFor = 0;
+            FullHer("catch_breath", 1, true);
+            breakAt = stillT + rng.RandfRange(9, 14);
+            return;
+        }
+        ranFor = 0;
+        if (stillT >= breakAt)
+        {
+            breakAt = stillT + rng.RandfRange(10, 16);
+            FullHer($"idle_{person.Calling}_break", 1, true);
+        }
     }
 
     /// <summary>Her run and stand, her lean and her aim, this frame.</summary>

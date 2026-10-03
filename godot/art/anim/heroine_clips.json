@@ -1,4 +1,11 @@
 {
+	"arcanist_show": {
+		"layer": "full",
+		"length": 2.59999990463257,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
 	"axe_back": {
 		"contact": 0.0833333333333333,
 		"layer": "upper",
@@ -77,6 +84,13 @@
 		"loop": false,
 		"source": "keyed (tools/anim)"
 	},
+	"catch_breath": {
+		"layer": "full",
+		"length": 3.46666669845581,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
 	"crossbow_shoot": {
 		"contact": 0.0,
 		"layer": "upper",
@@ -151,6 +165,13 @@
 		"speed": 0.0,
 		"weapon": "staff"
 	},
+	"idle_arcanist_break": {
+		"layer": "full",
+		"length": 3.33333325386047,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
 	"idle_reaver": {
 		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
 		"layer": "full",
@@ -160,6 +181,13 @@
 		"source": "100STYLE Angry_ID frames 1055-1355 (60 fps)",
 		"speed": 0.0,
 		"weapon": "axe"
+	},
+	"idle_reaver_break": {
+		"layer": "full",
+		"length": 3.33333325386047,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
 	},
 	"idle_stalker": {
 		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
@@ -171,6 +199,13 @@
 		"speed": 0.0,
 		"weapon": "crossbow"
 	},
+	"idle_stalker_break": {
+		"layer": "full",
+		"length": 4.0,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
 	"idle_warden": {
 		"changes": "retargeted to her skeleton, feet locked, looped (seam spread), centred",
 		"layer": "full",
@@ -180,6 +215,20 @@
 		"source": "100STYLE Heavyset_ID frames 1107-1409 (60 fps)",
 		"speed": 0.0,
 		"weapon": "sword+shield"
+	},
+	"idle_warden_break": {
+		"layer": "full",
+		"length": 3.33333325386047,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"reaver_show": {
+		"layer": "full",
+		"length": 2.40000009536743,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
 	},
 	"run_arcanist": {
 		"cycle": 0.666666666666667,
@@ -258,6 +307,20 @@
 		"steps": 2.0,
 		"weapon": "sword+shield"
 	},
+	"sit_log": {
+		"layer": "full",
+		"length": 8.0,
+		"licence": "own work",
+		"loop": true,
+		"source": "keyed (tools/anim)"
+	},
+	"stalker_show": {
+		"layer": "full",
+		"length": 3.0,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
 	"sword_back": {
 		"contact": 0.0833333333333333,
 		"layer": "upper",
@@ -296,6 +359,13 @@
 	"warcry": {
 		"layer": "upper",
 		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"warden_show": {
+		"layer": "full",
+		"length": 2.33333325386047,
 		"licence": "own work",
 		"loop": false,
 		"source": "keyed (tools/anim)"

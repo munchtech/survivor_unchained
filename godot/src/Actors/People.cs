@@ -130,8 +130,13 @@ public static class People
 
     /// <summary>The clip a person plays for one the game names: the heroine's
     /// own where she has it ("her/..."), the library's otherwise.</summary>
-    public static string Clip(Person p, string name) =>
-        p.Body == "heroine" && HerClips.For(p.Calling, p.Kind, name) is string her ? her : Resolve(name);
+    public static string Clip(Person p, string name)
+    {
+        if (p.Body != "heroine") return Resolve(name);
+        // (One of hers asked for by her own name.)
+        if (name.StartsWith(HerClips.Prefix)) return HerClips.Has(name[HerClips.Prefix.Length..]) ? name : Resolve("Idle");
+        return HerClips.For(p.Calling, p.Kind, name) is string her ? her : Resolve(name);
+    }
 
     /// <summary>A person, put together: returns its root (add it to the
     /// scene), skeleton and animation player.</summary>

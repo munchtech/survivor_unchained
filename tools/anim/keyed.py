@@ -436,28 +436,28 @@ def _zero_default(n):
     return head.startswith(("hips.", "spine", "neck", "head", "clav_")) or head.endswith((".rot", ".toe"))
 
 
-def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None) -> Clip:
-    """A clip from keys [(frame, pose, ease), ...]. For a loop, the last key
-    should be the first again."""
-    keys = sorted(keys, key=lambda k: k[0])
-    flats = [_flatten(k[1]) for k in keys]
-    names = set()
-    for f in flats:
-        names |= set(f)
-    frames = int(round(keys[-1][0])) + 1
-    rot = np.empty((frames, len(rig.sk), 4))
-    pos = np.empty((frames, len(rig.sk), 3))
-    # A turn or offset a key leaves out is none at that key (so a key without
-    # "spine" stands straight); a hand or foot a key leaves out is wherever
-    # the keys either side put it.
-    for f in flats:
-        for n in names:
-            if n not in f and _zero_default(n):
-                f[n] = 0.0
-    for fr in range(frames):
+class Track:
+    """Keys [(frame, pose, ease), ...] as a pose at any frame."""
+
+    def __init__(self, keys):
+        self.keys = sorted(keys, key=lambda k: k[0])
+        self.flats = [_flatten(k[1]) for k in self.keys]
+        self.names = set()
+        for f in self.flats:
+            self.names |= set(f)
+        # A turn or offset a key leaves out is none at that key (so a key
+        # without "spine" stands straight); a hand or foot a key leaves out
+        # is wherever the keys either side put it.
+        for f in self.flats:
+            for n in self.names:
+                if n not in f and _zero_default(n):
+                    f[n] = 0.0
+        self.frames = int(round(self.keys[-1][0])) + 1
+
+    def __call__(self, fr):
         flat = {}
-        for n in names:
-            have = [(k[0], f[n], k[2] if len(k) > 2 else "auto") for k, f in zip(keys, flats) if n in f]
+        for n in self.names:
+            have = [(k[0], f[n], k[2] if len(k) > 2 else "auto") for k, f in zip(self.keys, self.flats) if n in f]
             if not have:
                 continue
             if isinstance(have[0][1], float):
@@ -465,10 +465,24 @@ def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None) -> Cli
             else:
                 # Presets switch at the key nearest in time.
                 flat[n] = min(have, key=lambda h: abs(h[0] - fr))[1]
-        pose = _unflatten(flat)
+        return _unflatten(flat)
+
+
+def build(name, rig: Rig, keys, fps=30, loop=False, meta=None, post=None, base=None) -> Clip:
+    """A clip from keys [(frame, pose, ease), ...]. For a loop, the last key
+    should be the first again. With a base clip, the keys are laid over its
+    frames (Rig.solve's base): turns add to its turns, hands and feet given
+    are solved afresh."""
+    track = Track(keys)
+    frames = track.frames
+    rot = np.empty((frames, len(rig.sk), 4))
+    pos = np.empty((frames, len(rig.sk), 3))
+    for fr in range(frames):
+        pose = track(fr)
         if post:
             pose = post(fr, pose)
-        rot[fr], pos[fr] = rig.solve(pose)
+        b = None if base is None else (base.rot[min(fr, base.frames - 1)], base.pos[min(fr, base.frames - 1)])
+        rot[fr], pos[fr] = rig.solve(pose, base=b)
     m = {"source": "keyed (tools/anim)", "licence": "own work"}
     m.update(meta or {})
     return Clip(name, fps, rot, pos, loop=loop, meta=m)
