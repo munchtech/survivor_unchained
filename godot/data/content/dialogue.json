@@ -20451,5 +20451,32 @@
     ]
    }
   }
+ },
+ "cin_road_back": {
+  "npc": "cin_road_back",
+  "entry": [
+   {
+    "node": "place"
+   }
+  ],
+  "nodes": {
+   "place": {
+    "id": "place",
+    "speaker": "brannoc",
+    "text": "You know the place.",
+    "next": "wat"
+   },
+   "wat": {
+    "id": "wat",
+    "speaker": "brannoc",
+    "text": "...Wat.",
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
+     }
+    ]
+   }
+  }
  }
 }

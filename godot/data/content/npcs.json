@@ -799,6 +799,11 @@
    "title": "Cinematic",
    "glyph": "moon"
   },
+  "cin_road_back": {
+   "name": "The Road Back",
+   "title": "Cinematic",
+   "glyph": "campfire"
+  },
   "cin_raid_on_the_roost": {
    "name": "Raid on the Roost",
    "title": "Cinematic",

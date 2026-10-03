@@ -10,8 +10,8 @@ routes are `docs/WRITING_PASS.md`.
 
 ## 1. Index
 
-The full table is section 7. In short: thirteen Act 1 scripts, ready to build
-(C01 to C13); the Act 2 and Act 3 cinematics and the endings outlined
+The full table is section 7. In short: fourteen Act 1 scripts, ready to build
+(C01 to C14); the Act 2 and Act 3 cinematics and the endings outlined
 (`act2_outline.md`, `act3_outline.md`). Build in priority order: 1 (the opening
 and the act's turns), then 2 (the choices), then 3 (the optional night fights).
 
@@ -31,6 +31,47 @@ They are short. The longest in Act 1 is the fortune, and only because the
 player wrote most of it. Nobody explains anything. The survivor never makes
 a speech; she barely speaks at all. The camera notices what the narrator does
 not say.
+
+### The soul test
+
+The owner's question of every scene is "do we have soul?": is this one game in a
+million, or one of many? Every script here has been read against it, and every
+new one must be. **If a shot, a line or a beat could be lifted into another
+dark-fantasy game and work unchanged, it is not finished.**
+
+What makes a scene this game's and no other's:
+- **This valley's debt to the dead.** Everyone here keeps the lights on with a
+  debt to the dead they cannot pay, and the light is the dead. A scene earns its
+  place when it touches that: who is being burned, who is being kept, who is
+  counting.
+- **This valley's things.** Lamps held up to faces; ember blue in a new black
+  iron; oil burning warm; breath that does and does not show; prints in frost;
+  a hammer as the town's clock; boots; a toll-token with three roads; a square
+  coin; a ledger in violet ink; weed in red hair. If a scene could swap its
+  objects for any other game's, its objects are wrong.
+- **This valley's words.** "Lie down." "Is it morning?" "Not yet." "Them
+  first." "You know the place." "Nobody's!" The Order's call, the hymn, the
+  handbook. People speak in their trades and their histories, never in the
+  genre's voice.
+- **One point of view.** The narrator's: present tense, plain nouns, one image
+  at a time, never what it means. The camera holds a beat longer than is safe,
+  looks at hands, and stays with the person who has to live with it.
+- **Costs paid on screen, by people we know.** Not "the town suffers": Brannoc
+  kneels; Rook steps back and back; Harlan's hand stays on Jory's shoulder.
+
+What fails it, and is cut on sight:
+- a villain who explains, or laughs at nothing;
+- a hooded watcher who sees the deed and leaves (we cut two);
+- prophecy, destiny, the chosen one; "it has begun";
+- red eyes meaning evil, rain meaning grief, a tear in close-up meaning sad;
+- a dying speech that sums up a life;
+- a reveal that is only a fact, rather than something the player did, seen
+  again;
+- a line any character could say;
+- an image that is only beautiful.
+
+Ask it of every shot, in every review, alongside `docs/editorial/REALNESS_AND_EXTREMES.md`'s
+four questions about the people in it.
 
 ## 3. The heroine
 
@@ -103,8 +144,10 @@ pushed toward blue-green at night, highlights kept warm wherever there is
 fire, a little more contrast than play, and a soft vignette. Three lights
 carry the story's meaning and should always read as themselves:
 - **firelight** (warm, low, flickering): people, the living, the town;
-- **ford-lamp blue** (`#8ac8ff`, steady, cold): the Wardens, the chain, the
-  Morrow's light as the Watch kept it;
+- **ford-lamp blue** (`#8ac8ff`, steady, cold): ember burning in a Warden's
+  iron (Brannoc's new irons on the Low Ford road; the Wardens; the chain). The
+  Watch's oil, when it had any, burned warm, like any lamp: a warm lamp at the
+  ford means nothing is drinking from it;
 - **ember red** (`#ff5a1e` to `#ff9a48`, pulsing): the ember, the scars, the
   survivor burning at night.
 
@@ -165,6 +208,14 @@ tests know it.
 the change is on its conversation's nodes, so it happens whether the
 cinematic plays or is skipped.
 
+**Love scenes are not cinematics.** There are no NPC faces to hold, and
+two-person animation is the dearest thing on this list. Each love scene's
+cut-away is narrated, as written in `docs/romance/`, and the screen holds one
+object, still, for its length: Sella's bolt going home; Maeca's boots side by
+side outside the hides; Keegan's armour laid out in order on a chapel bench;
+two cups on Rav's table, one full; Ysolde's spectacles folded on the twelfth
+drawing. An insert at 85 to 100, the room's own light, no music but the room.
+
 **Performance.** Lines carry a note: the feeling under it, the beat, where the
 speaker looks. For the heroine, the notes give face shapes and gaze. For NPCs,
 the notes give body and head (no faces yet).
@@ -219,7 +270,9 @@ in the order to build it.
    while the ember burns (C01, C04, and every night after); a breath that a
    lamp's flame leans from (C09).
 9. **Ground decals**: wet footprints (C01), frost on grass, blood.
-10. **Sets**: a roof on the toll tower to stand on (C09), with a backdrop of
+10. **Sets**: the prologue's Low Ford road at night, reused for a story fight,
+    its irons lit along it and the ambush's wagon and ditch (C14); a roof on the
+    toll tower to stand on (C09), with a backdrop of
     the valley whose lights follow the world's facts; Brannoc's anvil and the
     rack with two lamp-irons by the smithy (C07, and all of Act 1); the Roost's
     people (women, the old, children, cooking fires) and an old red standard
@@ -234,16 +287,23 @@ in the order to build it.
     Order's evening call; the lamp motif; the burial hymn "Lie Down", sung by
     Chid and a crowd, C08).
 
+12. **Allies in a fight**: an NPC who fights beside her in an arena, holds a
+    place (the edge of a light) and does not chase (Brannoc, C14; Act 2's war at
+    the gate needs many).
+13. **Story fights on the merciful routes**: C14 is the first, on the truth
+    route; the Act 1 story fights are otherwise all on the violent routes.
+
 **Should have**
-12. Ember VFX: the ember draining out of the survivor at dawn (down her body
+14. Ember VFX: the ember draining out of the survivor at dawn (down her body
     into the ground); embers kindling in her at night; the heart's cold
     light reaching for her (C03).
-13. A Warden of real presence: a face for the giant (or a helm with eyes of
+15. A Warden of real presence: a face for the giant (or a helm with eyes of
     blue light) that can be held in close-up; his lamp on its own bone so it
     can be lifted to a face.
-14. Water: the ford's surface reacting (wakes, the drowned turning in an
+16. Water: the ford's surface reacting (wakes, the drowned turning in an
     eddy).
-15. Hand IK for holding hands, taking a coin, reading a palm.
+17. Hand IK for holding hands, taking a coin, reading a palm, closing a dead
+    man's eyes, lifting a cord over a head.
 
 **Production notes**
 - Render VO with Qwen3-TTS at 48 kHz, one file per id, named by id.
@@ -273,6 +333,7 @@ in the order to build it.
 | C11 | Raid on the Roost | Arena | Boss arrival and death (Redcowl) | 3 | 10 s + 17 s | `c11_raid_on_the_roost.md` |
 | C12 | The Dig Boils Over | Arena | Boss arrival and retreat (Grimtunnel) | 3 | 9 s + 11 s | `c12_dig_boils_over.md` |
 | C13 | Behind the Sealed Door | The Verge's door; arena | The door; boss arrival and kneel (the Barrow Lord) | 3 | 12.5 s + 8 s + 16 s | `c13_behind_the_door.md` |
+| C14 | The Road Back | The smithy; the Low Ford road | Choice; the truth route's night (Wat; Brannoc carries Nell home) | 2 | 18 s + choice, 30 s, 10 s, 48 s | `c14_road_back.md` |
 
 ### Act 2 (outlines, `act2_outline.md`)
 
