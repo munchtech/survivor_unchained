@@ -108,7 +108,7 @@ def frame(W, H, margins, st: Style, ss=2, post=None, pieces=()):
     is False), shadow (file px)."""
     m_file = [v * 2 for v in margins]
     w, h = W * ss, H * ss
-    m = [v * ss for v in m_file]
+    m = [int(round(v * ss)) for v in m_file]
     k = ss
     s = F.Surface(w, h)
     xx, yy = s.xx, s.yy

@@ -35,7 +35,8 @@ def birefnet_mask(path):
         "4": {"class_type": "MaskToImage", "inputs": {"mask": ["3", 0]}},
         "5": {"class_type": "SaveImage", "inputs": {"images": ["4", 0], "filename_prefix": "uiforge_mask"}},
     }
-    out = comfy.run(api, CACHE)
+    import krea
+    out = krea.qrun(api, CACHE, front=True)
     m = Image.open(out[0]).convert("L")
     img = Image.open(path)
     if m.size != img.size:

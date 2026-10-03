@@ -26,7 +26,14 @@ BASE = dict(
 )
 
 
-def fit(src, dst, tone="#141117", grade=True, hole_light=0.55, geo=BASE, keep=0.5, mask=None):
+# The light in the coins' holes, by what the card is (deep, hot).
+HOLE = {
+    "common": ("#4a1a0a", "#ff8a3a"), "uncommon": ("#123a10", "#8ae05a"), "rare": ("#0e2a4a", "#8fd0ff"),
+    "epic": ("#2a0e4a", "#c070ff"), "legendary": ("#4a2a0a", "#ffd07a"), "evolution": ("#5a1a06", "#ffb050"),
+}
+
+
+def fit(src, dst, tone="#141117", grade=True, hole_light=0.55, geo=BASE, keep=0.5, mask=None, kind="common"):
     rgb = P.load(src)
     mask = C.birefnet_mask(src) if mask is None else mask
     a = P.silhouette(mask)
@@ -59,7 +66,7 @@ def fit(src, dst, tone="#141117", grade=True, hole_light=0.55, geo=BASE, keep=0.
             # The hole: the dark middle of the coin.
             inner = (r < min(sub.shape) * 0.28) & (lum < 0.12)
             holes[by0:by1, bx0:bx1] = np.maximum(holes[by0:by1, bx0:bx1], inner.astype(np.float32))
-    rgb = P.ember_holes(rgb, holes, hole_light)
+    rgb = P.ember_holes(rgb, holes, hole_light, *HOLE[kind])
     out = np.dstack([rgb, a])
     if grade:
         out = C.grade(out)

@@ -217,6 +217,10 @@ public partial class DraftPanel : Control
         b.AddChild(panel);
         panel.SetMeta("rc", rc);
         panel.SetMeta("frame", o.Kind == OfferKind.Evolve ? "card_evolve" : $"card_{Math.Min(r, 4)}");
+        // A painted card has no shadow of its own: its rarity's glow, when lifted, is drawn behind it.
+        var glow = new Panel { MouseFilter = MouseFilterEnum.Ignore, ShowBehindParent = true, Name = "Glow" };
+        Style.Fill(glow);
+        panel.AddChild(glow);
         var v2 = Style.V(Style.Gap2);
         v2.Position = new Vector2(22, 20);
         v2.Size = new Vector2(CardW - 44, CardH - 36);
@@ -312,7 +316,16 @@ public partial class DraftPanel : Control
             var s = Style.Box(new Color(0.09f, 0.075f, 0.1f, 0.98f).Lerp(rc, banishing && on ? 0.0f : 0.05f), edge, ch ? 3 : on ? 2 : 1, 10, 0);
             s.ShadowColor = on ? (banishing ? new Color("#ff6a4a") : rc) with { A = 0.4f } : new Color(0, 0, 0, 0.7f);
             s.ShadowSize = on ? 30 : 18;
-            panel.AddThemeStyleboxOverride("panel", UiArt.Has((string)panel.GetMeta("frame")) ? UiArt.Frame((string)panel.GetMeta("frame"), s) : s);
+            bool art = UiArt.Has((string)panel.GetMeta("frame"));
+            panel.AddThemeStyleboxOverride("panel", art ? UiArt.Frame((string)panel.GetMeta("frame"), s) : s);
+            if (panel.GetNodeOrNull<Panel>("Glow") is { } glow)
+            {
+                var g = Style.Box(new Color(0, 0, 0, 0), new Color(0, 0, 0, 0), 0, 10, 0);
+                g.ShadowColor = s.ShadowColor;
+                g.ShadowSize = s.ShadowSize;
+                glow.AddThemeStyleboxOverride("panel", g);
+                glow.Visible = art;
+            }
             panel.SelfModulate = banishing && on ? new Color(1.15f, 0.8f, 0.75f) : Colors.White;
             b.GetNode<Label>("Ban").Visible = banishing && on;
             b.Position = b.Position with { Y = on && chosen == null ? -12 : 0 };

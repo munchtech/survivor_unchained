@@ -27,6 +27,42 @@ STYLE = ("hand-painted dark fantasy game interface art, forged blackened iron, s
          "crisp clean edges, AAA game UI, no text, no letters, no numbers, no watermark")
 
 
+def qrun(api, out_dir, front=False, timeout=7200):
+    """comfy.run, quieter, and able to jump the queue (front=True) for quick jobs such as a
+    cut-out, so they do not wait behind a long batch of paintings."""
+    import json
+    import time
+    import urllib.parse
+    import urllib.request
+    import uuid
+    body = {"prompt": api, "client_id": str(uuid.uuid4())}
+    if front:
+        body["front"] = True
+    r = comfy.post("/prompt", body)
+    pid = r["prompt_id"]
+    t0 = time.time()
+    while True:
+        h = comfy.get(f"/history/{pid}")
+        if pid in h:
+            entry = h[pid]
+            if entry.get("status", {}).get("status_str") == "error":
+                raise SystemExit(json.dumps(entry["status"].get("messages", []))[:3000])
+            break
+        if time.time() - t0 > timeout:
+            raise SystemExit("timed out")
+        time.sleep(1.0)
+    os.makedirs(out_dir, exist_ok=True)
+    saved = []
+    for node, out in entry["outputs"].items():
+        for f in out.get("images", []):
+            q = urllib.parse.urlencode({"filename": f["filename"], "subfolder": f.get("subfolder", ""), "type": f.get("type", "output")})
+            dst = os.path.join(out_dir, f["filename"])
+            with urllib.request.urlopen(f"{comfy.URL}/view?{q}") as resp, open(dst, "wb") as o:
+                o.write(resp.read())
+            saved.append(dst)
+    return saved
+
+
 def _graph(prompt, seed, lora=0.8, steps=8, denoise=1.0, prefix="uiforge"):
     return {
         "unet": {"class_type": "UNETLoader", "inputs": {"unet_name": "krea2_turbo_fp8_scaled.safetensors", "weight_dtype": "default"}},

@@ -47,15 +47,15 @@ def calm(rgb, region, tone, keep=0.45, low=0.08, sigma=10, feather=8):
     return F.lin_to_srgb(out)
 
 
-def ember_holes(rgb, holes, strength=0.6):
+def ember_holes(rgb, holes, strength=0.6, deep="#4a1a0a", hot="#ff8a3a"):
     """The coins' holes lit from beneath: dark, with a dull ember deep in them, a hot
     point at the middle (asleep: never a flat fill, which reads as a sign)."""
     lin = F.srgb_to_lin(rgb)
     h = cv2.GaussianBlur(holes.astype(np.float32), (0, 0), 1.0)
     inner = cv2.erode(holes.astype(np.float32), np.ones((3, 3), np.uint8), iterations=2)
     core = cv2.GaussianBlur(inner, (0, 0), 2.5)
-    deep = F.hexc("#4a1a0a")
-    hot = F.hexc("#ff8a3a")
+    deep = F.hexc(deep)
+    hot = F.hexc(hot)
     lin = lin * (1 - h[..., None] * 0.8) + (h[..., None] * deep * 0.25 + (core ** 4)[..., None] * hot * 0.45) * strength
     return F.lin_to_srgb(lin)
 
