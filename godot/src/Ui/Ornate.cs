@@ -196,6 +196,8 @@ public partial class Medallion : Control
     /// <summary>How far round its progress arc is drawn (0: none).</summary>
     public float Arc;
     public Color ArcColor = Style.Ember;
+    /// <summary>Lit: an ember glow behind it (the art in hand, a socket waiting to be set).</summary>
+    public bool Lit;
     readonly int size;
 
     public Medallion(int size, string text = "", string? glyph = null)
@@ -211,6 +213,8 @@ public partial class Medallion : Control
     {
         var c = new Vector2(size / 2f, size / 2f);
         float r = size / 2f - 3;
+        if (Lit)
+            for (int i = 6; i >= 1; i--) DrawCircle(c, r + i * size * 0.035f, new Color(1, 0.45f, 0.15f, 0.05f));
         DrawCircle(c + new Vector2(0, 3), r + 2, new Color(0, 0, 0, 0.5f));
         DrawCircle(c, r + 1, new Color("#060508"));
         // The core: lit from the upper left.
