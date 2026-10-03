@@ -1,0 +1,183 @@
+{
+ "rook": {
+  "seed": 6,
+  "score": 5.648,
+  "clean": "5/12",
+  "utmos": 3.39,
+  "accent": {
+   "england": 1.0,
+   "singapore": 0.0,
+   "us": 0.0
+  },
+  "f0": 207.7,
+  "wps": 4.31,
+  "bad": [],
+  "said": "Another one off the low Ford Road. I'm Rook, and this is the last lamp. Bed, bread, a bath, if you ask nicely. And a strong room for what you'd rather not carry about."
+ },
+ "chid": {
+  "seed": 6,
+  "score": 4.91,
+  "clean": "0/24",
+  "utmos": 3.96,
+  "accent": {
+   "us": 0.999,
+   "southatlandtic": 0.001,
+   "canada": 0.0
+  },
+  "f0": 236.6,
+  "wps": 4.1,
+  "bad": [
+   "pitch 237 Hz outside 75-150",
+   "accent heard as us (1.00), want ireland"
+  ],
+  "said": "Oh, a visitor. Hello, I'm Chid. They call me the fool, which is fair. This is the shrine of the morning light. It used to work. It might again."
+ },
+ "rav": {
+  "seed": 6,
+  "score": 5.288,
+  "clean": "0/24",
+  "utmos": 3.36,
+  "accent": {
+   "scotland": 0.734,
+   "ireland": 0.184,
+   "us": 0.072
+  },
+  "f0": 193.6,
+  "wps": 4.15,
+  "bad": [
+   "pitch 194 Hz outside 75-150"
+  ],
+  "said": "Sit down, pal, and drop your trousers or don't. I've seen worse, and I've sown worse, and I've drunk to forget the both of them."
+ },
+ "narrator": {
+  "seed": 11,
+  "score": 6.335,
+  "clean": "1/12",
+  "utmos": 3.87,
+  "accent": {
+   "england": 1.0,
+   "wales": 0.0,
+   "us": 0.0
+  },
+  "f0": 101.2,
+  "wps": 3.06,
+  "bad": [],
+  "said": "The fire has burned low. Out in the dark, the ground is moving, and somewhere ahead there is water and a cold blue light. You get up, because there is nothing else to do."
+ },
+ "holloway": {
+  "seed": 8,
+  "score": 6.377,
+  "clean": "2/12",
+  "utmos": 3.77,
+  "accent": {
+   "england": 0.993,
+   "us": 0.005,
+   "scotland": 0.001
+  },
+  "f0": 126.8,
+  "wps": 3.36,
+  "bad": [],
+  "said": "Eleven men, and four of them can hold a spear the right way round. I've a wall to keep, a road to keep, and a town that thinks both keep themselves."
+ },
+ "vonnra": {
+  "seed": 5,
+  "score": 5.669,
+  "clean": "0/12",
+  "utmos": 3.55,
+  "accent": {
+   "england": 0.991,
+   "indian": 0.005,
+   "hongkong": 0.002
+  },
+  "f0": 157.6,
+  "wps": 2.21,
+  "bad": [
+   "cut off at the head"
+  ],
+  "said": "The toll is the toll. Five gold to pass east. I am Vonra. I see a great deal, Traveller, and I say very little. You will find that is the arrangement."
+ },
+ "brannoc": {
+  "seed": 2,
+  "score": 4.384,
+  "clean": "2/24",
+  "utmos": 2.11,
+  "accent": {
+   "england": 0.766,
+   "us": 0.219,
+   "scotland": 0.006
+  },
+  "f0": 106.1,
+  "wps": 2.25,
+  "bad": [],
+  "said": "Steel or fur? Iron's good this year. Good ore from the north before the road shut. Won't see the like again."
+ },
+ "redcowl": {
+  "seed": 4,
+  "score": 5.308,
+  "clean": "0/24",
+  "utmos": 2.91,
+  "accent": {
+   "scotland": 0.985,
+   "us": 0.007,
+   "ireland": 0.004
+  },
+  "f0": 207.7,
+  "wps": 3.48,
+  "bad": [
+   "pitch 208 Hz outside 65-120"
+  ],
+  "said": "Ha! Look at the colors on you! You're standing in my roost, and my lot are hungry, and nobody here has ever been hungry for long. Talk!"
+ },
+ "ysolde": {
+  "seed": 10,
+  "score": 4.995,
+  "clean": "0/24",
+  "utmos": 3.82,
+  "accent": {
+   "england": 0.96,
+   "scotland": 0.033,
+   "indian": 0.003
+  },
+  "f0": 203.5,
+  "wps": 3.2,
+  "bad": [
+   "cut off at the head",
+   "accent heard as england (0.96), want scotland"
+  ],
+  "said": "Maps. Places the road forgets. Some of them it forgot on purpose. Read the oaths in the margins before you go. They are not decoration."
+ },
+ "maeca": {
+  "seed": 16,
+  "score": 5.325,
+  "clean": "0/24",
+  "utmos": 4.2,
+  "accent": {
+   "scotland": 0.908,
+   "indian": 0.05,
+   "singapore": 0.013
+  },
+  "f0": 155.8,
+  "wps": 2.49,
+  "bad": [
+   "words wrong: ['tracks->trask']",
+   "cut off at the head",
+   "accent heard as scotland (0.91), want wales"
+  ],
+  "said": "Trask by the stream. Three days old. They drank and they lay down where they drank. The pack doesn't do that. Something in the water does."
+ },
+ "sella": {
+  "seed": 4,
+  "score": 6.69,
+  "clean": "8/12",
+  "utmos": 4.16,
+  "accent": {
+   "england": 1.0,
+   "us": 0.0,
+   "scotland": 0.0
+  },
+  "f0": 170.5,
+  "wps": 3.59,
+  "bad": [],
+  "said": "Evening. Love. The lamps lit upstairs, if you're asking. Conversations extra, mind. Most people don't know they want it till they've had it."
+ }
+}

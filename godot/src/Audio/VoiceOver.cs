@@ -44,6 +44,25 @@ public partial class VoiceOver : Node
         line = new AudioStreamPlayer { Bus = "Voice" };
         AddChild(line);
         Apply();
+        // --record PATH: everything that reaches the speakers, voices and all,
+        // written to a WAV on exit (to check the mix without ears in the room).
+        if (Args.Get("record") is string)
+        {
+            record = new AudioEffectRecord();
+            AudioServer.AddBusEffect(0, record);
+            record.SetRecordingActive(true);
+        }
+    }
+
+    AudioEffectRecord? record;
+
+    public override void _ExitTree()
+    {
+        if (record == null || Args.Get("record") is not string path) return;
+        record.SetRecordingActive(false);
+        var wav = record.GetRecording();
+        wav?.SaveToWav(path);
+        GD.Print($"recorded the mix to {path}");
     }
 
     /// <summary>The settings' voice volume and switch.</summary>
@@ -102,6 +121,7 @@ public partial class VoiceOver : Node
         line.Play();
         Current = take;
         CurrentId = id;
+        GD.Print($"voice {id} ({take.Sec:0.0} s)");
         return take;
     }
 

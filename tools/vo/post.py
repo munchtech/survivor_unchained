@@ -14,7 +14,7 @@
     level   loudness to -16 LUFS (the narrator -17), true peak under -1.5 dBTP
 
 Then the parts of a line (the narrator's aside, the speaker) are joined with
-the pause between them, and the whole is written as Ogg Vorbis, mono, 44.1 kHz.
+the pause between them, and the whole is written as Ogg Vorbis, mono, 32 kHz.
 
     python tools/vo/post.py in.wav out.ogg --room inn [--fx giant]
 """
@@ -30,6 +30,9 @@ import soundfile as sf
 from scipy import signal
 
 SR = 48000
+# Speech has nothing a listener misses above 16 kHz; at 32 kHz the files are a
+# third smaller for the same Vorbis quality.
+OUT_SR = 32000
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -297,8 +300,10 @@ def limit(x: np.ndarray, ceiling_db: float) -> np.ndarray:
     up = signal.resample_poly(x, 4, 1)
     pk = np.abs(up).reshape(-1, 4).max(axis=1)[: len(x)]
     need = np.minimum(1.0, c / np.maximum(pk, 1e-9))
+    from scipy.ndimage import minimum_filter1d
     look = int(0.005 * SR)
-    g = -signal.order_filter(-need, np.ones(2 * look + 1), 0) if len(need) > 2 * look else need
+    # The gain a peak needs, from 5 ms before it to 5 ms after (look-ahead).
+    g = minimum_filter1d(need, size=2 * look + 1)
     g = np.minimum(g, 1.0)
     rel = np.exp(-1 / (0.08 * SR))
     for i in range(1, len(g)):
@@ -341,12 +346,12 @@ def assemble(parts: list[tuple[np.ndarray, str]], gap: float = 0.38, seed: int =
     return line + rt * np.max(np.abs(line)) / 0.5, marks
 
 
-def write_ogg(x: np.ndarray, path: str, ffmpeg: str, quality: float = 4.0):
+def write_ogg(x: np.ndarray, path: str, ffmpeg: str, quality: float = 2.0):
     import librosa
-    y = librosa.resample(x.astype(np.float32), orig_sr=SR, target_sr=44100, res_type="soxr_vhq")
-    tmp = path + ".tmp.wav"
-    sf.write(tmp, y, 44100, subtype="PCM_24")
+    y = librosa.resample(x.astype(np.float32), orig_sr=SR, target_sr=OUT_SR, res_type="soxr_vhq")
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    tmp = path + ".tmp.wav"
+    sf.write(tmp, y, OUT_SR, subtype="PCM_24")
     subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-i", tmp, "-c:a", "libvorbis", "-q:a", str(quality), "-ac", "1", path], check=True)
     os.remove(tmp)
 

@@ -70,16 +70,44 @@ def audition(worker, name: str, v: dict, n: int) -> dict:
     return {"pick": best, "clean": len(ok), "of": len(results)}
 
 
+def ref_text(voice: str) -> str:
+    """The words the part's reference says (its own line, or the line of the
+    audition it was found in)."""
+    book = json.load(open(CASTING, encoding="utf-8")) if os.path.exists(CASTING) else {}
+    return book.get(voice, {}).get("text") or cast()[voice]["ref_text"]
+
+
+def adopt(book: dict, voice: str, src: str):
+    """Cast a part from another part's audition (a candidate heard as the
+    right accent for this one): `--adopt chid rav:9`."""
+    other, seed = src.split(":")
+    v = cast()
+    path = os.path.join(WORK, "casting", other, f"c{int(seed):02d}.wav")
+    text = v[other]["ref_text"]
+    rep = analyse.asdict(analyse.analyse(path, text))
+    score, bad = judge(rep, voice, v[voice], tuple(v[voice]["tempo"]))
+    save_ref(path, os.path.join(REFS, f"{voice}.flac"))
+    book[voice] = {"seed": int(seed), "from": other, "text": text, "score": score, "utmos": rep["utmos"],
+                   "accent": rep["accent_top"], "f0": rep["pitch"]["f0_median"], "wps": rep["words_per_sec"],
+                   "bad": bad, "said": rep["said"]}
+    json.dump(book, open(CASTING, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+    print(f"cast {voice} from {other} c{int(seed):02d}: {book[voice]}")
+
+
 def main(argv):
     ap = argparse.ArgumentParser()
     ap.add_argument("voices", nargs="*")
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--n", type=int, default=6)
     ap.add_argument("--redo", action="store_true")
+    ap.add_argument("--adopt", nargs=2, metavar=("VOICE", "FROM:SEED"))
     a = ap.parse_args(argv)
     voices = cast()
     os.makedirs(REFS, exist_ok=True)
     book = json.load(open(CASTING, encoding="utf-8")) if os.path.exists(CASTING) else {}
+    if a.adopt:
+        adopt(book, *a.adopt)
+        return
     names = a.voices or [k for k in voices if a.all and (a.redo or k not in book)]
     worker = voxcpm()
     try:

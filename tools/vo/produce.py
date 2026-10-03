@@ -114,7 +114,8 @@ def prompt_for(voice: str, reg: str) -> tuple[str, str, str]:
     book = json.load(open(registers.BANK, encoding="utf-8")) if os.path.exists(registers.BANK) else {}
     if reg != "rest" and reg in book.get(voice, {}) and os.path.exists(os.path.join(REFS, f"{voice}.{reg}.flac")):
         return os.path.join(REFS, f"{voice}.{reg}.flac"), book[voice][reg]["text"], reg
-    return os.path.join(REFS, f"{voice}.flac"), cast()[voice]["ref_text"], "rest"
+    from cast_session import ref_text
+    return os.path.join(REFS, f"{voice}.flac"), ref_text(voice), "rest"
 
 
 def style_of(d: dict, stress: list[str]) -> str:
@@ -284,6 +285,7 @@ def main(argv):
     ap = argparse.ArgumentParser()
     ap.add_argument("ids", nargs="*", help="line ids or id prefixes")
     ap.add_argument("--voice")
+    ap.add_argument("--where", help="only lines from this source (e.g. Prologue.cs, npcs.json)")
     ap.add_argument("--takes", type=int, default=3)
     ap.add_argument("--max", type=int, default=8)
     ap.add_argument("--redo", action="store_true")
@@ -297,7 +299,8 @@ def main(argv):
     todo = [l for l in man if l["status"] != "skip"
             and (a.redo or l["status"] in ("todo", "stale"))
             and (not a.ids or any(l["id"] == p or l["id"].startswith(p) for p in a.ids))
-            and (not a.voice or l["voice"] == a.voice or any(s["voice"] == a.voice for s in l.get("segments", [])))]
+            and (not a.voice or l["voice"] == a.voice or any(s["voice"] == a.voice for s in l.get("segments", [])))
+            and (not a.where or a.where in l.get("where", ""))]
     missing = sorted({s["voice"] for l in todo for s in l["segments"] if not os.path.exists(os.path.join(REFS, f"{s['voice']}.flac"))})
     if missing:
         print("no cast reference yet for:", ", ".join(missing), "(run cast_session.py); their lines wait")

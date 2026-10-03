@@ -109,7 +109,7 @@ sealed class FakeLook : IZoneLook
     public double HeightAt(double x, double z) => ground.HeightAt(x, z);
     public void SetNight(bool on) => Night = on;
     public void Plates(List<Plate> plates) => LastPlates = plates;
-    public void Bark(string text, double x, double y, double z, string? speaker = null) => Barks.Add(text);
+    public void Bark(string text, double x, double y, double z, string? speaker = null, string? voice = null) => Barks.Add(text);
     public readonly List<string> BossPoses = new();
     public IBossView BossView(string kind) => new FakeBoss(BossPoses);
     public INpcView Fallen(PersonSpec spec, Held? arms, double x, double z, double facing, string clip) => new FakeView();

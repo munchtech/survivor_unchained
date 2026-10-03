@@ -18,7 +18,8 @@ REFS = os.path.join(HERE, "refs")
 # (tools/vo/README.md says how to set them up).
 TOOLS = os.environ.get("VO_TOOLS", os.path.expanduser("~/vo-tools"))
 WORK = os.environ.get("VO_WORK", os.path.join(TOOLS, "work"))
-FFMPEG = os.environ.get("FFMPEG", r"C:\Program Files\ShareX\ffmpeg.exe" if os.name == "nt" else "ffmpeg")
+FFMPEG = os.environ.get("FFMPEG") or next((p for p in (os.path.join(TOOLS, "ffmpeg", "bin", "ffmpeg.exe"),
+                                                       r"C:\Program Files\ShareX\ffmpeg.exe") if os.path.exists(p)), "ffmpeg")
 VOXCPM_PY = os.path.join(TOOLS, "voxcpm", "Scripts" if os.name == "nt" else "bin", "python")
 
 
@@ -88,8 +89,9 @@ def judge(report: dict, voice: str, v: dict, want_wps: tuple[float, float] | Non
     bad = []
     if report.get("faults"):
         bad.append(f"words wrong: {report['faults']}")
-    if report.get("artefacts"):
-        bad += report["artefacts"]
+    # Speech from the first frame is how the model starts a take, and the edit
+    # gives it its breath of air; a missing first word shows in the words.
+    bad += [a for a in report.get("artefacts", []) if a != "cut off at the head"]
     lo, hi = f0_range(v)
     f0 = report.get("pitch", {}).get("f0_median", 0)
     if f0 and not (lo * 0.9 <= f0 <= hi * 1.1) and not v.get("fx"):

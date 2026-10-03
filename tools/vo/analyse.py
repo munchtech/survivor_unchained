@@ -159,7 +159,9 @@ def whisper():
 def transcribe(wav: np.ndarray, sr: int) -> str:
     import librosa
     a = librosa.resample(wav.astype(np.float32), orig_sr=sr, target_sr=16000) if sr != 16000 else wav.astype(np.float32)
-    out = whisper()({"raw": a, "sampling_rate": 16000}, generate_kwargs={"language": "english", "task": "transcribe"})
+    long = len(a) > 29 * 16000  # a long speech is heard in pieces
+    out = whisper()({"raw": a, "sampling_rate": 16000}, generate_kwargs={"language": "english", "task": "transcribe"},
+                    **({"return_timestamps": True, "chunk_length_s": 28} if long else {}))
     return out["text"].strip()
 
 
@@ -323,13 +325,28 @@ class Report:
     artefacts: list = field(default_factory=list)
 
 
+def _retry(fn, *args, tries: int = 4):
+    """The card is shared: a CUDA error under someone else's load is waited
+    out and tried again, not taken as the take's fault."""
+    import time
+    import torch
+    for i in range(tries):
+        try:
+            return fn(*args)
+        except RuntimeError as e:
+            if "CUDA" not in str(e) and "cuDNN" not in str(e) and "CUDNN" not in str(e) or i == tries - 1:
+                raise
+            torch.cuda.empty_cache()
+            time.sleep(5 * (i + 1))
+
+
 def analyse(path: str, text: str | None = None, want=("asr", "utmos", "accent", "emotion")) -> Report:
     wav, sr = sf.read(path, dtype="float32", always_2d=False)
     if wav.ndim > 1:
         wav = wav.mean(axis=1)
     r = Report(path=path, seconds=round(len(wav) / sr, 2))
     if "asr" in want:
-        r.said = transcribe(wav, sr)
+        r.said = _retry(transcribe, wav, sr)
         if text:
             r.wer, r.wrong = wer(text, r.said)
             r.wer = round(r.wer, 3)
@@ -340,11 +357,11 @@ def analyse(path: str, text: str | None = None, want=("asr", "utmos", "accent", 
         r.words_per_sec = round(float(nwords / max(0.5, r.pauses["speech"] - sum(r.pauses["pauses"]))), 2)
     r.pitch = pitch(wav, sr)
     if "utmos" in want:
-        r.utmos = round(utmos(wav, sr), 2)
+        r.utmos = round(_retry(utmos, wav, sr), 2)
     if "accent" in want:
-        r.accent, r.accent_p, r.accent_top = accent(wav, sr)
+        r.accent, r.accent_p, r.accent_top = _retry(accent, wav, sr)
     if "emotion" in want:
-        r.emotion = emotion(wav, sr)
+        r.emotion = _retry(emotion, wav, sr)
     r.artefacts = artefacts(wav, sr)
     return r
 
