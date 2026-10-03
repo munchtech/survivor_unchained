@@ -34,8 +34,9 @@ by game.
    shipped a fix (Halls of Torment, Soulstone, Picayune Dreams) ended up
    layering or dimming the player's effects (§1.4, §3.4, §6).
 5. **Adds must never soak the player's auto-aim.** Halls of Torment's
-   angriest feedback and Army of Ruin's deadliest fight both came from
-   adds or attacks that absorbed shots (§1.2, §3.11).
+   angriest feedback came from adds that absorbed shots, and Army of Ruin's
+   developers blamed its deadliest fight on an attack that did the same
+   (§1.2, §3.11).
 6. **Use the horde.** Bosses that feed on it (Sketamari), are hurt by it
    (Nova Drift's Dweller loses health when a minion dies), are armoured by
    it (Ravenswatch) or are counted down by it (Halls of Torment's Marching
@@ -328,9 +329,12 @@ Not strictly a survivors-like, but the closest analogue to our day and
 night. **Night changes behaviour, not numbers**: hogs stop exploding,
 ghosts become visible, gnolls sleep, the Tentacle Nightmare becomes a
 mobile laser; heroes change too (Scarlet becomes a werewolf). **Every
-chapter boss flips the arena to night at half health and enrages** (faster,
-same patterns, the bar glowing red). Bosses take 50–75% less while their
-adds live and are stunned when the adds die. Clearing the chapter's
+chapter boss flips the arena to night at half health**; enraged, it attacks
+faster with the same patterns, shown by the bar glowing red (the wiki does
+not say what triggers the enrage). Bosses carry a basic armour (50% less
+damage); the Faceless doubles it (75% less) while its eyes live, and is
+stunned when they die; the Claws has no adds but two hands, each immune
+once staggered until the other is staggered too. Clearing the chapter's
 Nightmare Tumour takes 30% off the boss's health. An overtime penalty (up
 to +100% boss health and damage over three minutes) and an early-summon
 reward (the Hourglass). A night form that removed a hero's damage (the
@@ -341,8 +345,9 @@ Snow Queen) was reworked: night should be a gift with a cost, never a tax.
 
 Find the boss portal within ten minutes or face the Final Swarm. The final
 boss strips the player's weapons and **returns one each phase**. Endless
-runs reached five hours at 1.5 frames a second until ghosts sped up after
-20 minutes and crowd-control immunity was capped. Boss Curse shrines add
+runs reached five hours at 1.5 frames a second; one patch added ghosts to
+the Final Swarm, and a later one (December 2025) made them speed up after
+20 minutes and capped crowd-control immunity. Boss Curse shrines add
 bosses for chests. `notes/C1`, Megabonk.
 
 ### 3.9 Nova Drift (Chimeric)
@@ -362,9 +367,10 @@ Off-screen arrows point to bosses. `notes/C1`, Spirit Hunters.
 
 ### 3.11 Army of Ruin (Milkstone)
 
-Telemetry showed the Forge boss's saw blocked shots and dragged the fight
-out while the boss wave's minion ramp peaked: deaths spiked at minute 15.
-The fix was lower boss health and a slower ramp. Late, on long stages, a
+Its telemetry showed deaths on the first Forge stage peaking at minute 15,
+in the boss wave; the developers' "guess" was that the boss's saw blocked
+shots and dragged the fight out while the minion ramp peaked. The fix was
+lower boss health and a slower ramp. Late, on long stages, a
 bigger horde helped evolved builds: "adding new enemies may even work in
 favor of the player". `notes/C1`, Army of Ruin.
 
@@ -589,8 +595,9 @@ reviews; Reddit could be read only through search summaries).
 sponge", I Am Legion; "boss fights feel like chores", Nordic Ashes); (2)
 cannot see the attack ("your own attacks blinds you", 20 Minutes Till
 Dawn); (3) the build cannot answer the boss (Rogue: Genesia's Vampire Queen
-healing faster than she is hurt, and its Void Primordial finished by one
-player after 30 hours at one frame a second; a Vampire Hunters statue "the
+healing faster than she is hurt, and its shielded Void Primordial, which one
+player had at 0.005 health after about 18 hours at one frame a second, the
+thread never confirming a kill; a Vampire Hunters statue "the
 flamethrower literally cannot reach"); (4) wasted time after a long run;
 (5) endless that is the same boss with more health ("isn't all that
 enticing", Picayune Dreams' developer); (6) arena changes that outlast the

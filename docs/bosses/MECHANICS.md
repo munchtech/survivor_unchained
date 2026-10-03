@@ -230,16 +230,17 @@ do together is the genre's own design space.
   health whenever a minion dies**, so area builds still count against a
   single target [§3.9]; Hyper Light Drifter's Emperor is stunned by its own
   exploding adds [§5]; the Shaper's add waves refill flasks [§4.2].
-- *Adds as an armour gate*: Ravenswatch bosses take 50–75% less while their
-  adds live, and are stunned when they die [§3.7]; Diablo IV's Varshan
+- *Adds as an armour gate*: Ravenswatch's Faceless takes 75% less instead of
+  its usual 50% while its eyes live, and is stunned when they die [§3.7]; Diablo IV's Varshan
   gains a buff unless the add he channels is killed [§4.1].
 - *Adds with a job*: our Slurry Engine's menders; Halls of Torment's
   Marching Ghosts, two armies converging as a visible countdown [§1.2].
 
 **Failure modes.** Adds that soak the player's auto-aim and projectiles
 were Halls of Torment's angriest feedback (the Lord of Regret's orbs, made
-untargetable) [§1.2] and Army of Ruin's deadliest fight (a saw that blocked
-shots while the minion ramp peaked) [§3.11]. Filler adds that only feed an
+untargetable) [§1.2] and the developers' own explanation of Army of Ruin's deadliest fight (a
+saw that, they guessed, blocked shots while the minion ramp peaked)
+[§3.11]. Filler adds that only feed an
 area build (Diablo IV) [§4.1]. Late, a bigger horde helps an evolved build
 rather than threatening it [§3.11].
 
@@ -273,8 +274,8 @@ Greed's four pylons; Diablo IV's breakable shields; Rogue: Genesia's Sand
 Worm shield broken by killing elites from the horde [§2, §1, §4, §6].
 
 **Failure modes.** A shield the build cannot answer (Rogue: Genesia's Void
-Primordial, damageable only with enough penetration: one player finished
-it after 30 hours at one frame a second) [§6]; parts that regrow forever;
+Primordial, damageable only with enough penetration: one player had it at
+0.005 health after about 18 hours at one frame a second) [§6]; parts that regrow forever;
 parts hidden behind the boss from a high camera.
 
 **Readability.** Parts glow in the boss's colour, sit on the side the
@@ -411,8 +412,8 @@ the time after it feel like.
 - **Endless.** Vampire Survivors re-runs the whole boss schedule with +100%
   health a cycle; Halls of Torment's Vault scales until its run "starts
   breaking" at about 95 minutes; Megabonk's endless swarm produced
-  five-hour runs at 1.5 frames a second until ghosts sped up after 20
-  minutes. Players say endless needs new mechanics, not more health
+  five-hour runs at 1.5 frames a second until later patches added ghosts
+  that speed up after 20 minutes. Players say endless needs new mechanics, not more health
   ("fighting the same bosses ... just with more health now isn't all that
   enticing", Picayune Dreams' developer) [§6]. Opt-in boss density is the
   favourite: Risk of Rain 2's Shrine of the Mountain doubles the boss and
