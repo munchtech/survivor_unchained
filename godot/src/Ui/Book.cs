@@ -198,7 +198,9 @@ public partial class JournalScreen : Overlay
     Control Quests()
     {
         var w = G.Journey.World;
-        var list = w.Quests.Values.Where(q => q.Status != QuestStatus.Unknown && Lore.Quests.ContainsKey(q.Id)).ToList();
+        // The troubles first, then the mysteries (the lamps open on the Low
+        // Ford road, before anyone in town has asked the survivor for anything).
+        var list = w.Quests.Values.Where(q => q.Status != QuestStatus.Unknown && Lore.Quests.ContainsKey(q.Id)).OrderBy(q => Lore.Quests[q.Id].Mystery).ToList();
         quest ??= list.FirstOrDefault(q => q.Status == QuestStatus.Active)?.Id ?? list.FirstOrDefault()?.Id;
         var side = Style.V(4);
         side.CustomMinimumSize = new Vector2(300, 0);

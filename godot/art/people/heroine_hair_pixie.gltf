@@ -3,7 +3,7 @@
   "generator": "Khronos glTF Blender I/O v4.5.51",
   "version": "2.0",
   "extras": {
-   "data": "18bc2a6b76dde8f6faac563a5411d678"
+   "data": "1a673e2d83f79add1b8cd54ff8a8763b"
   }
  },
  "scene": 0,
@@ -1467,25 +1467,27 @@
       "POSITION": 0,
       "NORMAL": 1,
       "TEXCOORD_0": 2,
-      "TANGENT": 3,
-      "COLOR_0": 4,
-      "JOINTS_0": 5,
-      "WEIGHTS_0": 6
+      "TEXCOORD_1": 3,
+      "TANGENT": 4,
+      "COLOR_0": 5,
+      "JOINTS_0": 6,
+      "WEIGHTS_0": 7
      },
-     "indices": 7,
+     "indices": 8,
      "material": 0
     },
     {
      "attributes": {
-      "POSITION": 8,
-      "NORMAL": 9,
-      "TEXCOORD_0": 10,
-      "TANGENT": 11,
-      "COLOR_0": 12,
-      "JOINTS_0": 13,
-      "WEIGHTS_0": 14
+      "POSITION": 9,
+      "NORMAL": 10,
+      "TEXCOORD_0": 11,
+      "TEXCOORD_1": 12,
+      "TANGENT": 13,
+      "COLOR_0": 14,
+      "JOINTS_0": 15,
+      "WEIGHTS_0": 16
      },
-     "indices": 15,
+     "indices": 17,
      "material": 1
     }
    ]
@@ -1515,7 +1517,7 @@
  ],
  "skins": [
   {
-   "inverseBindMatrices": 16,
+   "inverseBindMatrices": 18,
    "joints": [
     68,
     67,
@@ -1623,35 +1625,41 @@
    "bufferView": 3,
    "componentType": 5126,
    "count": 62352,
-   "type": "VEC4"
+   "type": "VEC2"
   },
   {
    "bufferView": 4,
+   "componentType": 5126,
+   "count": 62352,
+   "type": "VEC4"
+  },
+  {
+   "bufferView": 5,
    "componentType": 5123,
    "count": 62352,
    "normalized": true,
    "type": "VEC4"
   },
   {
-   "bufferView": 5,
+   "bufferView": 6,
    "componentType": 5121,
    "count": 62352,
    "type": "VEC4"
   },
   {
-   "bufferView": 6,
+   "bufferView": 7,
    "componentType": 5126,
    "count": 62352,
    "type": "VEC4"
   },
   {
-   "bufferView": 7,
+   "bufferView": 8,
    "componentType": 5123,
    "count": 227868,
    "type": "SCALAR"
   },
   {
-   "bufferView": 8,
+   "bufferView": 9,
    "componentType": 5126,
    "count": 1748,
    "max": [
@@ -1667,50 +1675,56 @@
    "type": "VEC3"
   },
   {
-   "bufferView": 9,
+   "bufferView": 10,
    "componentType": 5126,
    "count": 1748,
    "type": "VEC3"
   },
   {
-   "bufferView": 10,
+   "bufferView": 11,
    "componentType": 5126,
    "count": 1748,
    "type": "VEC2"
   },
   {
-   "bufferView": 11,
+   "bufferView": 12,
+   "componentType": 5126,
+   "count": 1748,
+   "type": "VEC2"
+  },
+  {
+   "bufferView": 13,
    "componentType": 5126,
    "count": 1748,
    "type": "VEC4"
   },
   {
-   "bufferView": 12,
+   "bufferView": 14,
    "componentType": 5123,
    "count": 1748,
    "normalized": true,
    "type": "VEC4"
   },
   {
-   "bufferView": 13,
+   "bufferView": 15,
    "componentType": 5121,
    "count": 1748,
    "type": "VEC4"
   },
   {
-   "bufferView": 14,
+   "bufferView": 16,
    "componentType": 5126,
    "count": 1748,
    "type": "VEC4"
   },
   {
-   "bufferView": 15,
+   "bufferView": 17,
    "componentType": 5123,
    "count": 9006,
    "type": "SCALAR"
   },
   {
-   "bufferView": 16,
+   "bufferView": 18,
    "componentType": 5126,
    "count": 69,
    "type": "MAT4"
@@ -1737,86 +1751,98 @@
   },
   {
    "buffer": 0,
-   "byteLength": 997632,
+   "byteLength": 498816,
    "byteOffset": 1995264,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 498816,
-   "byteOffset": 2992896,
+   "byteLength": 997632,
+   "byteOffset": 2494080,
    "target": 34962
   },
   {
    "buffer": 0,
-   "byteLength": 249408,
+   "byteLength": 498816,
    "byteOffset": 3491712,
    "target": 34962
   },
   {
    "buffer": 0,
+   "byteLength": 249408,
+   "byteOffset": 3990528,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
    "byteLength": 997632,
-   "byteOffset": 3741120,
+   "byteOffset": 4239936,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 455736,
-   "byteOffset": 4738752,
+   "byteOffset": 5237568,
    "target": 34963
   },
   {
    "buffer": 0,
    "byteLength": 20976,
-   "byteOffset": 5194488,
+   "byteOffset": 5693304,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 20976,
-   "byteOffset": 5215464,
+   "byteOffset": 5714280,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 13984,
-   "byteOffset": 5236440,
+   "byteOffset": 5735256,
+   "target": 34962
+  },
+  {
+   "buffer": 0,
+   "byteLength": 13984,
+   "byteOffset": 5749240,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 27968,
-   "byteOffset": 5250424,
+   "byteOffset": 5763224,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 13984,
-   "byteOffset": 5278392,
+   "byteOffset": 5791192,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 6992,
-   "byteOffset": 5292376,
+   "byteOffset": 5805176,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 27968,
-   "byteOffset": 5299368,
+   "byteOffset": 5812168,
    "target": 34962
   },
   {
    "buffer": 0,
    "byteLength": 18012,
-   "byteOffset": 5327336,
+   "byteOffset": 5840136,
    "target": 34963
   },
   {
    "buffer": 0,
    "byteLength": 4416,
-   "byteOffset": 5345348
+   "byteOffset": 5858148
   }
  ],
  "samplers": [
@@ -1827,7 +1853,7 @@
  ],
  "buffers": [
   {
-   "byteLength": 5349764,
+   "byteLength": 5862564,
    "uri": "heroine_hair_pixie.bin"
   }
  ]

@@ -1495,32 +1495,41 @@ public sealed partial class Battle
             z.TickT -= dt;
             if (z.TickT > 0) continue;
             z.TickT = z.Tick;
-            if (z.Owner == Side.Enemy || z.Owner == Side.World)
-            {
-                if (Dist(p.X, p.Z, z.X, z.Z) < z.Radius + p.Radius * 0.5)
-                {
-                    HurtPlayer(z.Dps * z.Tick, z.School, "burning ground", null);
-                    if (z.School == School.Fire) { p.BurnT = 1.5; p.BurnDps = z.Dps * 0.25; }
-                }
-                // World hazards hurt everything standing in them.
-                if (z.Owner == Side.World)
-                    ForEachEnemyNear(z.X, z.Z, z.Radius, e => HitEnemy(e, z.Dps * z.Tick, z.School, ZoneTag, new HitOpts { NoCrit = true, NoProcs = true, Dot = true }));
-                continue;
-            }
-            var weapon = WeaponById(z.Weapon);
-            ForEachHostileInRadius(z.X, z.Z, z.Radius, (e, _) =>
-            {
-                HitEnemy(e, z.Dps * z.Tick, z.School, z.Tags, new HitOpts { Weapon = weapon, Status = z.Status, BossDamage = z.BossDamage, Credit = z.Credit });
-                if (z.Art == "cinder" && e.State == EnemyState.Dying && Has("pyre_walker")) HealPlayer(MaxHp * 0.015, "pyre-walker", true);
-                if (z.Art == "snare_hold" && e.Alive && Art.Struck.Add(e.Id)) ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, e.Boss ? 0.3 : 1.5), 0);
-                if (z.Slow > 0)
-                {
-                    var c = e.Status.Ensure(StatusKind.Chill, 0, 0, 0, 0);
-                    c.T = Math.Max(c.T, z.Tick + 0.1);
-                    c.Stacks = Math.Max(c.Stacks, (1 - z.Slow) * 8);
-                }
-            });
+            ZoneTick(z);
         }
+    }
+
+    /// <summary>A zone's pulse. Its own method so the lambdas below, which
+    /// capture the zone, are made only when it pulses, not for every zone on
+    /// every tick.</summary>
+    void ZoneTick(GroundZone z)
+    {
+        var p = Player;
+        if (z.Owner == Side.Enemy || z.Owner == Side.World)
+        {
+            if (Dist(p.X, p.Z, z.X, z.Z) < z.Radius + p.Radius * 0.5)
+            {
+                HurtPlayer(z.Dps * z.Tick, z.School, "burning ground", null);
+                if (z.School == School.Fire) { p.BurnT = 1.5; p.BurnDps = z.Dps * 0.25; }
+            }
+            // World hazards hurt everything standing in them.
+            if (z.Owner == Side.World)
+                ForEachEnemyNear(z.X, z.Z, z.Radius, e => HitEnemy(e, z.Dps * z.Tick, z.School, ZoneTag, new HitOpts { NoCrit = true, NoProcs = true, Dot = true }));
+            return;
+        }
+        var weapon = WeaponById(z.Weapon);
+        ForEachHostileInRadius(z.X, z.Z, z.Radius, (e, _) =>
+        {
+            HitEnemy(e, z.Dps * z.Tick, z.School, z.Tags, new HitOpts { Weapon = weapon, Status = z.Status, BossDamage = z.BossDamage, Credit = z.Credit });
+            if (z.Art == "cinder" && e.State == EnemyState.Dying && Has("pyre_walker")) HealPlayer(MaxHp * 0.015, "pyre-walker", true);
+            if (z.Art == "snare_hold" && e.Alive && Art.Struck.Add(e.Id)) ApplyStatus(e, new StatusPayload(StatusKind.Stun, 1, 1, e.Boss ? 0.3 : 1.5), 0);
+            if (z.Slow > 0)
+            {
+                var c = e.Status.Ensure(StatusKind.Chill, 0, 0, 0, 0);
+                c.T = Math.Max(c.T, z.Tick + 0.1);
+                c.Stacks = Math.Max(c.Stacks, (1 - z.Slow) * 8);
+            }
+        });
     }
 
     void UpdateStrikes(double dt)

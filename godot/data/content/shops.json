@@ -253,7 +253,17 @@
    },
    {
     "id": "blasting_ember",
-    "qty": 2
+    "qty": 2,
+    "when": {
+     "any": [
+      {
+       "knows": "root_cause"
+      },
+      {
+       "knows": "clue.blasting_ember"
+      }
+     ]
+    }
    },
    {
     "id": "apprentice_wand",

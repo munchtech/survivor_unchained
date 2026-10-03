@@ -130,6 +130,8 @@ public class StoryLint
             foreach (var k in All(t, @"""give""\s*:\s*""(\w+)""")) u.ItemsGiven.Add(k);
             foreach (var k in All(t, @"Loot\(PickupKind\.\w+,\s*""(\w+)""")) u.ItemsGiven.Add(k);
             foreach (var k in All(t, @"GiveItem\(""(\w+)""")) u.ItemsGiven.Add(k);
+            // Things dropped where a fight ends (the Warden's lamp-iron at the ford).
+            foreach (var k in All(t, @"SpawnPickup\(PickupKind\.\w+,[^;""]*""(\w+)""")) u.ItemsGiven.Add(k);
             foreach (var k in All(t, @"(?:HasTag\s*=|""hasTag""\s*:)\s*""(\w+)""")) u.TagsWanted.Add(k);
         }
     }
@@ -195,6 +197,24 @@ public class StoryLint
         Assert.Contains("beasts.pelts_sold", u.FactsWritten);
         Assert.Contains("settings.intimacy", u.FactsRead);
         Assert.Empty(u.FactsRead.Where(f => !u.FactsWritten.Contains(f) && !Outside(f)).OrderBy(f => f).Select(f => $"read, never written: {f}"));
+    }
+
+    /// <summary>Facts Act 1 records for the acts to come (docs/WRITING_PASS.md
+    /// section 9, the bible's ledger in section 10), and the game's own bookkeeping.</summary>
+    static readonly string[] Seeds =
+    [
+        "brannoc.waits_buyer", "chid.note_asked", "harlan.told_dig", "holloway.letter_seen", "jory.told_knew", "redcowl.ashford_said",
+        "redcowl.birds", "redcowl.gave_charge", "sella.sleeptalk", "vonnra.asked_jessop", "wayfinder.name",
+        "player.zone", "map.drawn",
+    ];
+
+    [Fact]
+    public void Every_fact_written_is_read_or_is_a_seed_for_a_later_act()
+    {
+        var u = World.Value;
+        Assert.Empty(u.FactsWritten.Where(f => !u.FactsRead.Contains(f) && !Seeds.Contains(f)).OrderBy(f => f).Select(f => $"written, never read: {f}"));
+        // A seed that is read now is no longer only a seed: take it off the list.
+        Assert.Empty(Seeds.Where(u.FactsRead.Contains).Select(f => $"read now, still listed as a seed: {f}"));
     }
 
     [Fact]

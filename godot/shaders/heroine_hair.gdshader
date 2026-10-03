@@ -25,10 +25,36 @@ uniform float through = 0.5;
 // combed, dark (under the hair), thinning out at her hairline (its vertex
 // alpha) to bare skin. A braid's strands are drawn so too.
 uniform bool cap = false;
+// A leather tie in her hair: dark, no strands.
+uniform bool tie = false;
+// Her hair's swing (src/Actors/HairSway.cs): how far a mass hung below her
+// head has been left behind, and where her head is (both in the mesh's own
+// space). Each point is moved by it the more the further it hangs below her
+// head and the nearer its tip; and a breath of air through it, always.
+uniform vec3 sway = vec3(0.0);
+uniform vec3 head = vec3(0.0, 1.6, 0.0);
+// A style that hangs on a chain (its second UV: the place along it and how
+// much it moves with it): how far each of the chain's points has swung
+// from where it hangs at rest, in the mesh's own space.
+uniform vec3 chain[8];
 
 varying vec3 strand;
 varying float sparkle;
 varying float fibre;
+
+void vertex() {
+	float hang = clamp((head.y - VERTEX.y) / 0.35, 0.0, 1.0);
+	float tip = (cap || tie) ? 1.0 : smoothstep(0.0, 1.0, UV.y);
+	float moves = (cap && COLOR.b < 0.5) ? 0.0 : 1.0;           // (not the cap on her scalp; a braid's strands, yes)
+	vec3 air = vec3(sin(TIME * 1.1 + VERTEX.y * 5.0), 0.0, cos(TIME * 0.9 + VERTEX.x * 7.0)) * 0.0025;
+	if (UV2.y > 0.0) {
+		float s = clamp(UV2.x, 0.0, 1.0) * 7.0;
+		int i = min(int(floor(s)), 6);
+		VERTEX += (mix(chain[i], chain[i + 1], s - float(i)) + air * UV2.x) * UV2.y;
+	} else {
+		VERTEX += (sway + air) * hang * hang * tip * moves;
+	}
+}
 
 void fragment() {
 	vec4 t = texture(strands, UV);
@@ -43,7 +69,10 @@ void fragment() {
 	strand = normalize(BINORMAL);                                 // along its V: root to tip
 	sparkle = t.g;
 	fibre = t.r * (cap ? 0.35 : 1.0);                            // (the cap's under the hair: little highlight)
-	if (cap) {
+	if (tie) {
+		ALBEDO = vec3(0.055, 0.035, 0.024);
+		fibre = 0.6;
+	} else if (cap) {
 		// (at her hairline, where its strands are seen, as bright as hair; dark under the cards)
 		float fade = COLOR.a;
 		// (a rope of hair, a braid's strand (its blue), as bright as hair, deep in it darker)

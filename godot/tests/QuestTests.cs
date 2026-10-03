@@ -59,6 +59,8 @@ public class QuestTests
     public void Talking_Snib_into_moving_the_pump_then_resting_cures_the_stream()
     {
         var s = Q("scholar");
+        // Nobody asks a foreman to move his outflow without a reason to care about the water.
+        s.Ch.Knowledge.Add("clue.green_stream");
         Talk(Convo("snib"), s.C, "sinkhole");
         Assert.Equal("moved", s.World.Fact("dig.pump").Str);
         Day(s, 0.5);
@@ -104,6 +106,8 @@ public class QuestTests
     {
         var s = Q("hunter");
         Items(s, "pell_ledger");
+        // What the ledger proves needs the night it was written about: the Coyle wagons, and red fletching.
+        Rules.Apply(Es("[{ quest: { id: 'caravan', status: 'active', entry: 'harlan_plea' } }, { quest: { id: 'caravan', entry: 'wreck' } }]"), s.C);
         Talk(Convo("holloway"), s.C, "ledger");
         Assert.Equal("exposed", s.World.Fact("caravan.pell").Str);
         Assert.Contains("exposed_pell", s.World.Npc("harlan").Memories);
@@ -239,6 +243,8 @@ public class QuestTests
         s.World.Facts["beasts.outcome"] = "cured";
         s.World.Facts["caravan.survivors"] = "rescued";
         s.World.Facts["caravan.cargo"] = "sold";
+        // The dead watchman's book opened the lamps on the Low Ford road.
+        Rules.Apply(E("{ quest: { id: 'lamps', status: 'active', entry: 'book' } }"), s.C);
         Day(s, 0.5);
         Assert.True(s.World.Fact("chapter.ready").Bool);
         var r = new DialogueRunner(Convo("vonnra"), s.C);
@@ -256,7 +262,7 @@ public class QuestTests
         var sum = Chapter.Summary(s.Ch, s.World);
         Assert.Equal("Wren, who sold the Coyle strongbox", sum.Epithet);
         Assert.Equal(new[] { "Cured at the source", "Rescued, and robbed" }, sum.Threads.Select(t => t.Verdict));
-        Assert.Equal(new[] { "vault", "below" }, sum.Open.Select(o => o.Id));
+        Assert.Equal(new[] { "vault", "below", "lamps" }, sum.Open.Select(o => o.Id));
     }
 
     [Fact]
@@ -273,6 +279,7 @@ public class QuestTests
     {
         var s = Q("hunter");
         Items(s, "pell_ledger");
+        Rules.Apply(Es("[{ quest: { id: 'caravan', status: 'active', entry: 'harlan_plea' } }, { quest: { id: 'caravan', entry: 'wreck' } }]"), s.C);
         Talk(Convo("holloway"), s.C, "ledger");
         var r = Simulation.AdvanceDay(s.C, () => 0.01);
         Assert.Contains(r.Heard, h => h.Event == "exposed_pell" && h.Npc == "rook");
@@ -459,6 +466,7 @@ public class QuestTests
     {
         var s = Q("outcast");
         s.Ch.Gold = 50;
+        s.Ch.Knowledge.Add("clue.green_stream");
         Talk(Convo("snib"), s.C, "how much", "forty gold");
         Assert.Equal("moved", s.World.Fact("dig.pump").Str);
         Assert.Contains(s.World.History, h => h.Id == "bribed_snib");
@@ -536,6 +544,9 @@ public class ObjectiveTests
         Assert.Contains(Steps(s.C, "caravan"), t => t.Contains("Tell Harlan"));
         Assert.Contains(Steps(s.C, "caravan"), t => t.Contains("strongbox is still in the Roost"));
         Rules.Apply(Es("[{ set: { 'caravan.cargo': 'returned' } }, { quest: { id: 'caravan', status: 'resolved' } }]"), s.C);
+        // Settled, but Harlan has not heard Jory is alive: that news is still to carry.
+        Assert.Equal(["Tell Harlan Coyle that Jory is alive"], Steps(s.C, "caravan"));
+        s.World.Npc("harlan").Flags["once:jory"] = true;
         Assert.DoesNotContain(Objectives.Of(s.C), o => o.Id == "caravan");
     }
 }

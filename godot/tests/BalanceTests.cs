@@ -15,6 +15,7 @@ namespace SurvivorUnchained.Tests;
 /// that holds to it, to the fifteenth minute's ember, then put through the
 /// standard crowd and champion. Each path must reach its power; none may run
 /// away from the rest; no single rule may carry a build.</summary>
+[Collection("Balance")]
 public class BalanceTests(ITestOutputHelper log)
 {
     /// <summary>Every path from the calling that leans toward it, a few seeds,
@@ -91,3 +92,8 @@ public class BalanceTests(ITestOutputHelper log)
         Assert.All(worst, kv => Assert.True(kv.Value <= 0.45, $"{kv.Key} dealt {kv.Value:P0} of a build's damage"));
     }
 }
+
+/// <summary>The probes fill every core; run alone, after the rest, so the
+/// tests that time themselves (MapGenTests) are not starved.</summary>
+[CollectionDefinition("Balance", DisableParallelization = true)]
+public class BalanceCollection { }

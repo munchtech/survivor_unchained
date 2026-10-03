@@ -205,8 +205,7 @@ public static class Ai
             if (e.RaiseT <= 0)
             {
                 e.RaiseT = raise.Every;
-                bool any = b.Graves.Exists(g => Dist(g.X, g.Z, e.X, e.Z) < raise.Range);
-                if (any)
+                if (GraveNear(b, e, raise.Range))
                 {
                     e.State = EnemyState.Casting;
                     e.StateT = 1.5;
@@ -326,6 +325,15 @@ public static class Ai
             e.Anim = EnemyAnim.Attack;
             e.AnimT = 0;
         }
+    }
+
+    /// <summary>A grave within reach. A loop, not a lambda: one capturing the
+    /// creature would be allocated on every Update, for every creature.</summary>
+    static bool GraveNear(Battle b, Enemy e, double range)
+    {
+        foreach (var g in b.Graves)
+            if (Dist(g.X, g.Z, e.X, e.Z) < range) return true;
+        return false;
     }
 
     static double SlowFactor(Enemy e)
