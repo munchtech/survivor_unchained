@@ -22,7 +22,9 @@ in real time.
   story whole (unreachable nodes, journal lines never earned, facts asked
   about but never set, items wanted but never obtainable, pronoun drift):
   keep it green when writing content. Voices: `docs/VOICES.md`; the
-  story's secrets and where it goes: `docs/STORY_BIBLE.md`.
+  story's secrets and the whole arc, act by act: `docs/STORY_BIBLE.md`;
+  Act 1's routes, gates, facts, journal lines and what is left to build:
+  `docs/WRITING_PASS.md` (its scenarios are `tests/BreadcrumbTests.cs`).
 - On Windows, `godot/assets` may arrive as a tiny text file instead of a
   symlink: clone with `-c core.symlinks=true` (Developer Mode on), or
   delete it and copy `public/assets` into its place.
