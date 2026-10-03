@@ -587,7 +587,7 @@ public sealed class Verge : ZoneRuntime
                     ? "The fragment fits one notch of the seven, and under your hand the whole sigil wakes, violet, like an eye opening. The door is listening."
                     : "The fragment fits one notch of the seven, and the stone warms under it. Whatever the sigil is waiting for, it is not daylight.", null, 6);
                 else G.Say(reads ? "Old-empire script over the door: \"Here the Seventh Legion buried what it could not burn.\" Below it, a sigil with seven notches, all empty."
-                    : "A door of black stone, smooth as glass, and a violet sigil you cannot read. It hums against your teeth.", null, 6);
+                    : "A door of black stone, smooth as glass. Cut over it, words in a dead tongue: HIC LEGIO SEPTIMA SEPELIVIT QUOD URERE NON POTUIT. Under them, a violet sigil you cannot read. It hums against your teeth.", null, 7);
             },
         });
         I.Add(new()

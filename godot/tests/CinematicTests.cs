@@ -58,11 +58,12 @@ public class CinematicTests
     }
 
     [Fact]
-    public void Only_a_devout_survivor_hears_the_answer_to_the_Wardens_question()
+    public void The_dying_Warden_asks_one_thing_and_Grimtunnel_cannot_finish_his_insult()
     {
-        string Answer(string bg) => Lines("cin_heart_goes_down", Q(bg)).Single(l => l.Id.EndsWith(".answer")).Text;
-        Assert.Contains("morning comes", Answer("devout"));
-        Assert.Equal("", Answer("hunter"));
+        var lines = Lines("cin_heart_goes_down", Q());
+        Assert.Equal("Is it morning?", lines.First().Text);
+        Assert.Equal("ford_warden", lines.First().Speaker);
+        Assert.Contains("ever so grateful", lines.Last().Text);
     }
 
     [Fact]
@@ -80,7 +81,7 @@ public class CinematicTests
 
         var k = Q("outcast");
         k.World.Facts["redcowl.ashford_said"] = true;
-        Assert.Equal("...Ashford.", Lines("cin_raid_on_the_roost", k).Last().Text);
+        Assert.StartsWith("...Ashford.", Lines("cin_raid_on_the_roost", k).Last().Text);
         Assert.Equal("ashford", k.World.Fact("redcowl.last_words").Str);
     }
 
@@ -138,6 +139,6 @@ public class CinematicTests
         s.World.Facts["nell.told"] = "gone";
         var heard = string.Join(" ", Simulation.AdvanceDay(s.C, () => 0.5).Lines);
         Assert.Contains("They are burying her this morning", heard);
-        Assert.Contains("Go down, go down", Lines("cin_iron_marker", s).First().Text);
+        Assert.Contains("Lie down, lie down", Lines("cin_iron_marker", s).First().Text);
     }
 }

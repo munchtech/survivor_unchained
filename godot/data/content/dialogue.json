@@ -14129,12 +14129,6 @@
       "text": "Ha! Look at the size of you. I've a dozen lads would follow you for the fun of it; don't make me find out which dozen. Redcowl. You're in my camp. Talk."
      },
      {
-      "when": {
-       "sex": "female"
-      },
-      "text": "Well. My lads haven't seen a woman who wasn't their mother in a month, nor a bath in a year. Walk straight and they'll keep their hands where I've told them. Redcowl. You're in my camp. Talk."
-     },
-     {
       "text": "Redcowl. You're standing in my camp, which means my sentries are drunk or you're interesting. Which is it?"
      }
     ],
@@ -14831,10 +14825,10 @@
       "when": {
        "sex": "female"
       },
-      "text": "Because a man in a cage is worth something to somebody, and a man in a ditch is worth nothing to anybody. I've buried enough worth-nothings for one life, lass. ...And I feed them. Ask them. I feed them before I feed my own."
+      "text": "Because a man in a cage is worth something to somebody, and a man in a ditch is worth nothing to anybody. I've buried enough worth-nothings for one life, lass. ...Ask them if they're hungry."
      },
      {
-      "text": "Because a man in a cage is worth something to somebody, and a man in a ditch is worth nothing to anybody. I've buried enough worth-nothings for one life, lad. ...And I feed them. Ask them. I feed them before I feed my own."
+      "text": "Because a man in a cage is worth something to somebody, and a man in a ditch is worth nothing to anybody. I've buried enough worth-nothings for one life, lad. ...Ask them if they're hungry."
      }
     ],
     "choices": [
@@ -16541,22 +16535,6 @@
     "id": "morning",
     "speaker": "ford_warden",
     "text": "Is it morning?",
-    "next": "answer"
-   },
-   "answer": {
-    "id": "answer",
-    "speaker": "narrator",
-    "text": [
-     {
-      "when": {
-       "bg": "devout"
-      },
-      "text": "You know the answer. They taught it you at seven, with the lamps: morning comes."
-     },
-     {
-      "text": ""
-     }
-    ],
     "next": "nobodys"
    },
    "nobodys": {
@@ -16655,13 +16633,13 @@
    "verse1": {
     "id": "verse1",
     "speaker": "chid",
-    "text": "(sung) Go down, go down, the morning's under, / down where the lamps are kept; / and when the day has done its turning, / it will wake you where you slept.",
+    "text": "(sung) Lie down, lie down, the lamps are tended, / and all the dark is kept; / the morning lies a little under, / and it will wake you where you slept.",
     "next": "verse2"
    },
    "verse2": {
     "id": "verse2",
     "speaker": "chid",
-    "text": "(sung) Go down, go down, and do not wonder, / down where the light is kept; / the dark is only day not happened, / and it will wake you where you slept.",
+    "text": "(sung) Lie down, lie down, the road is ended, / your toll is paid and kept; / the dark is but the day not risen, / and it will wake you where you slept.",
     "choices": [
      {
       "text": "(Continue.)",
@@ -16704,7 +16682,7 @@
        "fact": "redcowl.ashford_said",
        "eq": true
       },
-      "text": "...Ashford."
+      "text": "...Ashford. (a laugh) There. Now we've both said it."
      },
      {
       "text": "Tell the saw-bones... the leg held."
@@ -16770,18 +16748,18 @@
         }
        ]
       },
-      "text": "Surface-meat! You broke my PUMP. ...Doesn't matter. The heart doesn't mind. The heart is PATIENT."
+      "text": "Surface-meat! You broke my PUMP. ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT."
      },
      {
-      "text": "Surface-meat! Killing my lads, are we? ...Doesn't matter. The heart doesn't mind. The heart is PATIENT."
+      "text": "Surface-meat! Killing my lads, are we? ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT."
      }
     ],
-    "next": "knows"
+    "next": "quiet"
    },
-   "knows": {
-    "id": "knows",
+   "quiet": {
+    "id": "quiet",
     "speaker": "grimtunnel",
-    "text": "It knows you! Downstairs! It KNOWS you!",
+    "text": "I told it about you! It went ever so QUIET!",
     "choices": [
      {
       "text": "(Continue.)",
