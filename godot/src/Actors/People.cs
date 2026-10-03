@@ -93,6 +93,8 @@ public static class People
         // in her calling's outfit; --body woman brings back the older body.
         if (body == SurvivorUnchained.Play.Loadouts.HerBody && Args.Get("body") != "woman" && ResourceLoader.Exists("res://art/people/heroine.glb")) body = "heroine";
         var p = body switch { SurvivorUnchained.Play.Loadouts.HerBody => Woman(look), "heroine" => Heroine(look), "anime" => Her(look), _ => Build(look) };
+        // Her own clips are chosen by her calling, which her outfit says.
+        if (body == "heroine") p.Calling = HerClips.Calling(look.Outfit);
         // Her body wears her calling's outfit, cut from it.
         if (body == "heroine" && look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string her) HerOutfit(p, her[4..]);
         // Her hair, a mesh of its own: the style chosen if it is one of hers.
@@ -119,6 +121,21 @@ public static class People
         /// <summary>Which body: "" for the kit's, "heroine" for hers (her
         /// own idle and carriage).</summary>
         public string Body = "";
+        /// <summary>Her calling and what she holds (HerClips.Kind), which
+        /// choose her own clips.</summary>
+        public string Calling = "", Kind = "";
+        /// <summary>Her corrective layer, told how much of what plays is her own.</summary>
+        public HerPose? Pose;
+    }
+
+    /// <summary>The clip a person plays for one the game names: the heroine's
+    /// own where she has it ("her/..."), the library's otherwise.</summary>
+    public static string Clip(Person p, string name)
+    {
+        if (p.Body != "heroine") return Resolve(name);
+        // (One of hers asked for by her own name.)
+        if (name.StartsWith(HerClips.Prefix)) return HerClips.Has(name[HerClips.Prefix.Length..]) ? name : Resolve("Idle");
+        return HerClips.For(p.Calling, p.Kind, name) is string her ? her : Resolve(name);
     }
 
     /// <summary>A person, put together: returns its root (add it to the
@@ -224,7 +241,8 @@ public static class People
         var root = GD.Load<PackedScene>("res://art/people/heroine.glb").Instantiate<Node3D>();
         var skel = (Skeleton3D)root.FindChildren("*", "Skeleton3D", true, false)[0];
         var person = new Person { Root = root, Skeleton = skel, Anim = new AnimationPlayer(), Body = "heroine" };
-        skel.AddChild(new HerPose());
+        person.Pose = new HerPose();
+        skel.AddChild(person.Pose);
         skel.AddChild(new HerJiggle());
         skel.AddChild(new HerFaceLife());
         foreach (var mi in skel.GetChildren().OfType<MeshInstance3D>())
@@ -238,6 +256,8 @@ public static class People
         root.AddChild(person.Anim);
         person.Anim.RootNode = "..";
         person.Anim.AddAnimationLibrary("", Clips());
+        // Her own clips beside the library's (tools/anim).
+        if (HerClips.Library() is AnimationLibrary her) person.Anim.AddAnimationLibrary("her", her);
         return person;
     }
 
