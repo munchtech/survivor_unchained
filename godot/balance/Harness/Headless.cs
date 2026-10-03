@@ -81,7 +81,7 @@ public sealed class NullLook : IZoneLook
     public double HeightAt(double x, double z) => 0;
     public void SetNight(bool on) { }
     public void Plates(List<Plate> plates) { }
-    public void Bark(string text, double x, double y, double z, string? speaker = null) { }
+    public void Bark(string text, double x, double y, double z, string? speaker = null, string? voice = null) { }
     public IBossView BossView(string kind) => new NullBoss();
     public INpcView Fallen(PersonSpec spec, Held? arms, double x, double z, double facing, string clip) => new NullView();
     public IOrb Orb(string color, double size) => new NullOrb();
