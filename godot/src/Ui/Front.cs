@@ -248,9 +248,10 @@ public partial class CreateScreen : Overlay
     protected override void Build()
     {
         var a = Callings.Archetype(d.Archetype);
+        // As tall as its step needs (the long Name step scrolls); never a half-empty plate.
         var left = Style.Panel(Style.Plate(20));
         left.Position = new Vector2(40, 40);
-        left.Size = new Vector2(520, 1000);
+        left.Size = new Vector2(520, d.Step == 3 ? 1000 : 0);
         AddChild(left);
         var col = Style.V(10);
         left.AddChild(col);
@@ -268,8 +269,8 @@ public partial class CreateScreen : Overlay
         col.AddChild(steps);
         col.AddChild(Style.Rule());
         var body = d.Step switch { 0 => Calling(), 1 => Arms(a), 2 => Origin(), _ => NameLook(a) };
-        var scroll = Style.Scroll(body);
-        col.AddChild(scroll);
+        col.AddChild(d.Step == 3 ? Style.Scroll(body) : body);
+        col.AddChild(Style.Gap(Style.Gap2));
         var foot = Style.H(10, Nav.Id(Style.Button(d.Step > 0 ? "Back" : "Leave", () => { if (d.Step > 0) Set(() => d.Step--); else G.CancelCreation(); }), "back"));
         foot.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill });
         foot.AddChild(d.Step < 3 ? Nav.Id(Style.Button($"Next: {Steps[d.Step + 1]}", () => Set(() => d.Step++), true), "next") : Nav.Id(Style.Button("Begin the journey", Begin, true), "begin"));
