@@ -22,7 +22,7 @@ public partial class Game
         // A screen hears the keys first.
         if (screens.Current is Overlay o)
         {
-            if (o.Key(a)) return true;
+            if (o.Handle(a)) return true;
             if (inTransit) return true;
             if (o.Dismissable && (a is Act.Cancel or Act.Pause || a == o.Toggle)) { CloseOverlay(); return true; }
             return true;
@@ -171,7 +171,7 @@ public partial class Game
         draftTip = null;
         string? great = LevelUp.GreatNext(b) ? b.Time < 60 ? "The arena begins: anyone can take any of them" : "The fifteenth minute: a second, or the first deepened" : null;
         hud.Draft(new DraftView(LevelUp.DraftLevel(b), LevelUp.BlessingNext(b), list, b.Rerolls, b.Banishes, LevelUp.Queued(b), tip,
-            LevelUp.BuildTags(b), Pick, Reroll, Banish, great));
+            LevelUp.BuildTags(b), Pick, Reroll, Banish, great, b));
     }
 
     public void Pick(int i)
@@ -216,6 +216,9 @@ public partial class Game
     DialogueRunner? runner;
     string? talkNpc;
     float? camSaved;
+    // The line on screen and its choices, for what the next line recalls.
+    Presented? lastLine;
+    string? before;
 
     public void Talk(string id)
     {
@@ -240,6 +243,8 @@ public partial class Game
         hudMode = "dialogue";
         scene.SimPaused = true;
         hud.Prompt(promptShown = null);
+        lastLine = null;
+        before = null;
         ShowLine(p);
     }
 
@@ -254,13 +259,18 @@ public partial class Game
         var take = voice.Say(p.Line, p.Raw);
         hud.Dialogue(new DialogueView(d?.Name ?? sp?.Name ?? id, d?.Title ?? sp?.Title ?? "", d != null || id is "greymuzzle" or "snib" ? Rules.Attitude(s) : "",
             p.Speaker == "player" ? "player" : p.Speaker == "narrator" ? "narrator" : "npc", p.Text, p.Choices, p.Choices.Count == 0,
-            d?.Person, d?.Arms, d?.Scale ?? 1, sp?.Glyph, Journey.Ch.Name, Choose, Advance) { Voice = take });
+            d?.Person, d?.Arms, d?.Scale ?? 1, sp?.Glyph, Journey.Ch.Name, Choose, Advance, before) { Voice = take });
+        lastLine = p;
     }
+
+    /// <summary>A line, shortened, to recall above the next.</summary>
+    static string Short(string s) => s.Length <= 140 ? s : s[..s.LastIndexOf(' ', 137)] + "...";
 
     public void Choose(int index)
     {
         var r = runner;
         if (r == null) return;
+        if (lastLine?.Choices.FirstOrDefault(c => c.Index == index) is { } said) before = $"You: \u201c{Short(said.Text)}\u201d";
         var (next, action) = r.Choose(index);
         Journey.OnTouch();
         if (action != null && !DialogueAction(action)) { EndDialogue(); return; }
@@ -274,6 +284,7 @@ public partial class Game
     {
         var r = runner;
         if (r == null) return;
+        if (lastLine != null) before = lastLine.Speaker == "narrator" ? Short(lastLine.Text) : $"{(lastLine.Speaker == "player" ? "You" : Lore.NameOf(talkNpc ?? ""))}: \u201c{Short(lastLine.Text)}\u201d";
         var p = r.Advance();
         if (p != null) ShowLine(p); else EndDialogue();
     }

@@ -373,6 +373,41 @@
    "report": "Wenna came in at dawn, muddy to the knees: the stream is running clear. Your wolves were drinking from it when she left."
   },
   {
+   "id": "stream.clear_slaughtered",
+   "when": {
+    "all": [
+     {
+      "fact": "blight.days_clean",
+      "gte": 2
+     },
+     {
+      "fact": "beasts.outcome",
+      "eq": "slaughtered"
+     }
+    ]
+   },
+   "effect": [
+    {
+     "set": {
+      "stream.clear": true
+     }
+    },
+    {
+     "history": {
+      "id": "stream_cleared",
+      "text": "stopped the poison in the Thornhollow stream",
+      "tags": [
+       "deed",
+       "beasts"
+      ],
+      "spread": 2
+     }
+    }
+   ],
+   "once": true,
+   "report": "Wenna came in at dawn, muddy to the knees: the stream is running clear. There is nothing left in the wood to drink from it."
+  },
+  {
    "id": "lie.found",
    "once": true,
    "when": {
@@ -734,6 +769,21 @@
       "entry": "cargo_moved",
       "outcome": "with_kerchiefs"
      }
+    },
+    {
+     "if": {
+      "not": {
+       "fact": "be.crates",
+       "exists": true
+      }
+     },
+     "then": [
+      {
+       "set": {
+        "be.crates": "dig"
+       }
+      }
+     ]
     }
    ],
    "report": "A pedlar off the south road was selling Coyle cloth at half its price. Harlan bought a bolt of his own goods back and did not say a word."
@@ -908,7 +958,7 @@
      "nell.buried": true
     }
    },
-   "report": "Brannoc banked his forge at noon yesterday and took a handcart down the Low Ford road, with a blanket and a spade. He was back before the gate shut, with something under his apron in the cart, and Chid walked out past the guards to meet him. They buried her at first light behind the shrine, next to the old captain. Nobody was asked to come, and half the town did."
+   "report": "Brannoc banked his forge at dusk yesterday and went down the Low Ford road alone, with a lantern and a blanket. He came back up it at sunrise with the blanket in his arms, and Chid walked out past the guards to meet him, and walked beside him up the street. They are burying her this morning, behind the shrine, next to the old captain. Nobody has been asked to come."
   },
   {
    "id": "nell.asking",
@@ -967,7 +1017,13 @@
     "fact": "holloway.post_told",
     "eq": true
    },
-   "effect": [],
+   "effect": [
+    {
+     "set": {
+      "corran.home": true
+     }
+    }
+   ],
    "report": "Two of the Watch went down the Low Ford road yesterday with a handcart and a spade, and came back at dusk with the cart covered. Holloway met them at the gate and walked beside it to the Watch's corner of the yard."
   },
   {
@@ -998,7 +1054,7 @@
      "chapter.ready": true
     }
    },
-   "report": "A note under your door, in violet ink: \"Come and have your fortune read. No charge, this once. — V.\""
+   "report": "A note under your door, in violet ink: \"Come up to the roof after dark, and have your fortune read. No charge, this once. — V.\""
   },
   {
    "id": "crates.settle",

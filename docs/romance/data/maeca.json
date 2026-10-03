@@ -1,0 +1,1755 @@
+{
+ "maeca": {
+  "npc": "maeca",
+  "entry": [
+   {
+    "when": {
+     "fact": "beasts.outcome",
+     "eq": "slaughtered"
+    },
+    "node": "cold"
+   },
+   {
+    "when": {
+     "npcKnows": {
+      "npc": "maeca",
+      "event": "greymuzzle_fang_sold"
+     }
+    },
+    "node": "cold"
+   },
+   {
+    "when": {
+     "history": "killed_greymuzzle"
+    },
+    "node": "gone"
+   },
+   {
+    "when": {
+     "not": {
+      "met": "maeca"
+     }
+    },
+    "node": "first"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "fact": "beasts.outcome",
+       "eq": "cured"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "thanked",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "thanks"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "burned_roost"
+      },
+      {
+       "met": "maeca"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "cb:burned_roost",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_burned_roost"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "maeca"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "say:calling",
+         "eq": true
+        }
+       }
+      },
+      {
+       "any": [
+        {
+         "archetype": "warden"
+        },
+        {
+         "archetype": "reaver"
+        },
+        {
+         "archetype": "arcanist"
+        },
+        {
+         "archetype": "stalker"
+        }
+       ]
+      }
+     ]
+    },
+    "node": "say_calling"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "maeca"
+      },
+      {
+       "fact": "promise.pack",
+       "eq": true
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "cb:knelt",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_knelt"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "maeca"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "invited",
+         "eq": true
+        }
+       }
+      },
+      {
+       "all": [
+        {
+         "time": "night"
+        },
+        {
+         "rel": {
+          "npc": "maeca",
+          "axis": "respect",
+          "gte": 30
+         }
+        },
+        {
+         "rel": {
+          "npc": "maeca",
+          "axis": "affection",
+          "gte": 10
+         }
+        },
+        {
+         "any": [
+          {
+           "fact": "beasts.outcome",
+           "eq": "cured"
+          },
+          {
+           "fact": "beasts.outcome",
+           "eq": "allied"
+          }
+         ]
+        },
+        {
+         "not": {
+          "history": "killed_greymuzzle"
+         }
+        }
+       ]
+      },
+      {
+       "not": {
+        "hasTag": "wolf_pelts"
+       }
+      }
+     ]
+    },
+    "node": "invite"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "maeca"
+      },
+      {
+       "fact": "maeca.lover",
+       "eq": true
+      },
+      {
+       "fact": "sella.nights",
+       "gte": 1
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "say:sella",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "say_sella"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "maeca"
+      },
+      {
+       "history": "broke_promise"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "cb:broke_promise",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_broke_promise"
+   },
+   {
+    "node": "hub"
+   }
+  ],
+  "marker": [
+   {
+    "when": {
+     "not": {
+      "met": "maeca"
+     }
+    },
+    "mark": "!"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "knows": "root_cause"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "once:truth",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "mark": "?"
+   }
+  ],
+  "nodes": {
+   "first": {
+    "id": "first",
+    "text": [
+     {
+      "when": {
+       "bg": "hunter"
+      },
+      "text": "You walk like someone who's followed a thing to its den. Hunter? Then you've seen it too, out there. They're not hunting. They're running. Maeca. Barefoot, before you ask."
+     },
+     {
+      "when": {
+       "hasTag": "wolf_pelts"
+      },
+      "text": "That cloak's made of wolves. I can smell it from here, and so can they. Maeca Barefoot. What do you want?"
+     },
+     {
+      "text": "Another blade for Holloway's bounty? The wolves aren't the problem. They're what the problem looks like from the road. Maeca Barefoot, of the Ashford garrison. What's left of it."
+     }
+    ],
+    "effects": [
+     {
+      "quest": {
+       "id": "beasts",
+       "status": "active",
+       "entry": "maeca_theory"
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "What's driving them out?",
+      "goto": "driving"
+     },
+     {
+      "text": "Their tracks are wrong. They're dragging their back legs.",
+      "when": {
+       "knows": "beastlore"
+      },
+      "badge": "Beastlore",
+      "once": "tracks",
+      "goto": "tracks"
+     },
+     {
+      "text": "It's the stream. Ember slurry from the Dig.",
+      "when": {
+       "knows": "root_cause"
+      },
+      "once": "truth",
+      "goto": "truth"
+     },
+     {
+      "text": "Can the Pack be spoken to?",
+      "when": {
+       "any": [
+        {
+         "knows": "beastlore"
+        },
+        {
+         "knows": "root_cause"
+        }
+       ]
+      },
+      "goto": "speak"
+     },
+     {
+      "text": "Where can I find you?",
+      "once": "where",
+      "goto": "where"
+     },
+     {
+      "text": "You know them, don't you. The Kerchiefs.",
+      "show": {
+       "any": [
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "roost_found"
+         }
+        },
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "redcowl_met"
+         }
+        },
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "redcowl_wagons"
+         }
+        }
+       ]
+      },
+      "once": "kerchiefs",
+      "goto": "kerchiefs"
+     },
+     {
+      "text": "Why \"Barefoot\"?",
+      "once": "barefoot",
+      "goto": "barefoot"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "hub": {
+    "id": "hub",
+    "text": [
+     {
+      "when": {
+       "time": "night"
+      },
+      "text": "(She doesn't look up from her cup.) It's late. Say it."
+     },
+     {
+      "when": {
+       "rel": {
+        "npc": "maeca",
+        "axis": "respect",
+        "gte": 30
+       }
+      },
+      "text": "Hunter. What have you found?"
+     },
+     {
+      "text": "You again. What is it?"
+     }
+    ],
+    "choices": [
+     {
+      "text": "What's driving them out?",
+      "goto": "driving"
+     },
+     {
+      "text": "Their tracks are wrong. They're dragging their back legs.",
+      "when": {
+       "knows": "beastlore"
+      },
+      "badge": "Beastlore",
+      "once": "tracks",
+      "goto": "tracks"
+     },
+     {
+      "text": "It's the stream. Ember slurry from the Dig.",
+      "when": {
+       "knows": "root_cause"
+      },
+      "once": "truth",
+      "goto": "truth"
+     },
+     {
+      "text": "Can the Pack be spoken to?",
+      "when": {
+       "any": [
+        {
+         "knows": "beastlore"
+        },
+        {
+         "knows": "root_cause"
+        }
+       ]
+      },
+      "goto": "speak"
+     },
+     {
+      "text": "Where can I find you?",
+      "once": "where",
+      "goto": "where"
+     },
+     {
+      "text": "You know them, don't you. The Kerchiefs.",
+      "show": {
+       "any": [
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "roost_found"
+         }
+        },
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "redcowl_met"
+         }
+        },
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "redcowl_wagons"
+         }
+        }
+       ]
+      },
+      "once": "kerchiefs",
+      "goto": "kerchiefs"
+     },
+     {
+      "text": "Why \"Barefoot\"?",
+      "once": "barefoot",
+      "goto": "barefoot"
+     },
+     {
+      "text": "Is the fire at the Blind still big enough for two?",
+      "show": {
+       "all": [
+        {
+         "all": [
+          {
+           "time": "night"
+          },
+          {
+           "npcFlag": {
+            "npc": "maeca",
+            "key": "invited",
+            "eq": true
+           }
+          },
+          {
+           "not": {
+            "history": "killed_greymuzzle"
+           }
+          }
+         ]
+        },
+        {
+         "not": {
+          "fact": "wolf.blood",
+          "gt": 0
+         }
+        }
+       ]
+      },
+      "when": {
+       "all": [
+        {
+         "time": "night"
+        },
+        {
+         "rel": {
+          "npc": "maeca",
+          "axis": "respect",
+          "gte": 30
+         }
+        },
+        {
+         "rel": {
+          "npc": "maeca",
+          "axis": "affection",
+          "gte": 10
+         }
+        },
+        {
+         "any": [
+          {
+           "fact": "beasts.outcome",
+           "eq": "cured"
+          },
+          {
+           "fact": "beasts.outcome",
+           "eq": "allied"
+          }
+         ]
+        },
+        {
+         "not": {
+          "history": "killed_greymuzzle"
+         }
+        }
+       ]
+      },
+      "locked": "Not tonight. Not like this.",
+      "goto": "blind_walk"
+     },
+     {
+      "text": "Is the fire at the Blind still big enough for two?",
+      "show": {
+       "all": [
+        {
+         "all": [
+          {
+           "time": "night"
+          },
+          {
+           "npcFlag": {
+            "npc": "maeca",
+            "key": "invited",
+            "eq": true
+           }
+          },
+          {
+           "not": {
+            "history": "killed_greymuzzle"
+           }
+          }
+         ]
+        },
+        {
+         "fact": "wolf.blood",
+         "gt": 0
+        }
+       ]
+      },
+      "when": {
+       "all": [
+        {
+         "time": "night"
+        },
+        {
+         "rel": {
+          "npc": "maeca",
+          "axis": "respect",
+          "gte": 30
+         }
+        },
+        {
+         "rel": {
+          "npc": "maeca",
+          "axis": "affection",
+          "gte": 10
+         }
+        },
+        {
+         "any": [
+          {
+           "fact": "beasts.outcome",
+           "eq": "cured"
+          },
+          {
+           "fact": "beasts.outcome",
+           "eq": "allied"
+          }
+         ]
+        },
+        {
+         "not": {
+          "history": "killed_greymuzzle"
+         }
+        }
+       ]
+      },
+      "locked": "Not tonight. Not like this.",
+      "goto": "blood"
+     },
+     {
+      "text": "What did you hunt, before the wolves?",
+      "once": "t_maeca",
+      "goto": "t_maeca"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "driving": {
+    "id": "driving",
+    "text": "Something in the deep wood. The deer are thin, the Pack's thinner, and the old alpha, Greymuzzle, has brought them closer to people than he ever would. Find out why and you'll have done more than a hundred pelts. Ask Tam, by the well. He's seen something, and nobody believes a child.",
+    "effects": [
+     {
+      "quest": {
+       "id": "beasts",
+       "entry": "maeca_theory"
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "tracks": {
+    "id": "tracks",
+    "text": "You saw that? Nobody sees that. Dragging, yes. Weak in the hindquarters, like a dog that's eaten what it shouldn't. So. Not bold. Sick.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "maeca",
+       "respect": 20,
+       "trust": 10
+      }
+     },
+     {
+      "learn": "clue.sick_wolf",
+      "text": "The wolves are sick, not bold."
+     },
+     {
+      "quest": {
+       "id": "beasts",
+       "entry": "clue.sick_wolf"
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "truth": {
+    "id": "truth",
+    "text": "Grimtunnel's diggers. Should've known; every bad thing under Thornhollow has a lamp in its hand. Stop that pump and the Pack'll come back to itself. Days, maybe. It'll happen.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "maeca",
+       "respect": 20,
+       "trust": 15
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "speak": {
+    "id": "speak",
+    "text": "Not with words. But Greymuzzle's old and he isn't stupid. Go into the Hollow with no wolf blood on you, none since you last slept. Don't wear their skins. And don't run. He'll decide what you are. If he decides wrong, well. Run then.",
+    "effects": [
+     {
+      "learn": "hint.greymuzzle"
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "where": {
+    "id": "where",
+    "text": "The Hunters' Blind, out past the wreck on the Old Road, most days. I watch the Hollow from there. You'll know it by the smoke; I'm the only one fool enough to light a fire in that wood. Nights, I'm here, drinking Rav's piss.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "barefoot": {
+    "id": "barefoot",
+    "text": "Boots were signed for. They never came. You learn to hear the ground through your feet. I prefer it now.",
+    "choices": [
+     {
+      "text": "Who signed for them?",
+      "goto": "signed"
+     },
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     }
+    ]
+   },
+   "signed": {
+    "id": "signed",
+    "text": "Somebody with a good hand and a ledger. ...You ask a lot of questions for a stranger.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "thanks": {
+    "id": "thanks",
+    "text": "The Hollow's quiet. The Pack's eating again: deer, not travellers. I've been a hunter all my life, {name}, and I've never once saved anything. ...Thank you.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "maeca",
+       "affection": 10
+      },
+      "quiet": true
+     },
+     {
+      "npcFlag": {
+       "npc": "maeca",
+       "key": "thanked",
+       "value": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Look after them.",
+      "goto": "hub"
+     }
+    ]
+   },
+   "cold": {
+    "id": "cold",
+    "text": "You emptied the Hollow. I heard. I hope Holloway's gold keeps you warm.",
+    "choices": [
+     {
+      "text": "...",
+      "end": true
+     }
+    ]
+   },
+   "gone": {
+    "id": "gone",
+    "text": [
+     {
+      "when": {
+       "fact": "maeca.lover",
+       "eq": true
+      },
+      "text": "You went to his house. In the dark. After I told you what he was to me. Get out of my light, and don't come to the Blind again."
+     },
+     {
+      "text": "You went to his house. In the dark. Get out of my light."
+     }
+    ],
+    "choices": [
+     {
+      "text": "...",
+      "end": true
+     }
+    ]
+   },
+   "cb_burned_roost": {
+    "id": "cb_burned_roost",
+    "text": "You burned the Roost with them still in the cages. I know what fire does in a ravine. I was at Ashford.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "maeca",
+       "key": "cb:burned_roost",
+       "value": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "maeca",
+       "respect": -15
+      },
+      "quiet": true
+     }
+    ],
+    "next": "hub"
+   },
+   "say_calling": {
+    "id": "say_calling",
+    "text": [
+     {
+      "when": {
+       "archetype": "warden"
+      },
+      "text": "A shield. Good. Don't raise it in the Hollow. To a wolf a raised arm's a raised arm."
+     },
+     {
+      "when": {
+       "archetype": "reaver"
+      },
+      "text": "Leave the big blade at the Blind if you go near the Hollow. They can smell iron that's been used."
+     },
+     {
+      "when": {
+       "archetype": "arcanist"
+      },
+      "text": "Whatever it is you burn with, don't burn it in the Hollow. Fire's the one thing they all remember."
+     },
+     {
+      "when": {
+       "archetype": "stalker"
+      },
+      "text": "You move like you've done this. Quiet feet. ...Pity about the boots."
+     },
+     {
+      "text": "You move like you've done this. Quiet feet. ...Pity about the boots."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "maeca",
+       "key": "say:calling",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "invite": {
+    "id": "invite",
+    "text": "(She finishes her cup and stands.) I'm going out to the Blind. The fire's big enough for two, if you can keep quiet. Most can't.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "maeca",
+       "key": "invited",
+       "value": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "I can keep quiet.",
+      "show": {
+       "not": {
+        "fact": "wolf.blood",
+        "gt": 0
+       }
+      },
+      "goto": "blind_walk"
+     },
+     {
+      "text": "I can keep quiet.",
+      "show": {
+       "fact": "wolf.blood",
+       "gt": 0
+      },
+      "goto": "blood"
+     },
+     {
+      "text": "Not tonight.",
+      "goto": "hub"
+     }
+    ]
+   },
+   "blind": {
+    "id": "blind",
+    "speaker": "narrator",
+    "text": [
+     {
+      "when": {
+       "fact": "settings.intimacy",
+       "eq": "full"
+      },
+      "text": "[explicit scene: Maeca and {name}, the Hunters' Blind in the Verge at night, a lean-to of hides and a fire the size of a hat; wordless, wary, careful hands that become sure ones, frost outside and the Pack audible far off; her trust given like a held breath let go — to be written]"
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "maeca.blind_nights",
+         "lte": 1
+        },
+        {
+         "npcFlag": {
+          "npc": "maeca",
+          "key": "thanked",
+          "eq": true
+         }
+        },
+        {
+         "fact": "beasts.outcome",
+         "eq": "cured"
+        }
+       ]
+      },
+      "text": "Off in the Hollow the Pack is loud, a long tangle of voices, and she stops with her hands on your buckle and listens, and then she laughs: a short surprised sound, as if she'd trodden on something. \"They're eating,\" she says, and pulls you down onto the hides. Her hands are hard and careful, the way they are with a snare, and then they're not careful. The fire goes down to embers. Neither of you feeds it. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you."
+     },
+     {
+      "text": "She doesn't talk, and then neither of you needs to. She undoes your boots before anything else, and sets them side by side outside the hides, and that seems to be a decision. Her hands are hard and careful, the way they are with a snare: slow, listening, ready to stop. They become sure. Once, far off, the Pack calls, and she goes still against you until it's done. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you."
+     }
+    ],
+    "effects": [
+     {
+      "add": {
+       "maeca.blind_nights": 1
+      }
+     },
+     {
+      "set": {
+       "maeca.lover": true
+      }
+     },
+     {
+      "if": {
+       "fact": "maeca.blind_nights",
+       "lte": 1
+      },
+      "then": {
+       "rel": {
+        "npc": "maeca",
+        "affection": 15,
+        "trust": 10
+       },
+       "quiet": true
+      },
+      "else": {
+       "rel": {
+        "npc": "maeca",
+        "affection": 5
+       },
+       "quiet": true
+      }
+     },
+     {
+      "condition": {
+       "id": "warmed",
+       "days": 1,
+       "note": "A night at the Hunters' Blind"
+      }
+     },
+     {
+      "notice": "You slept well, for once. (Warmed: +8% damage, +5% speed, one day)"
+     }
+    ],
+    "next": "blind_dark"
+   },
+   "blind_morning": {
+    "id": "blind_morning",
+    "text": [
+     {
+      "when": {
+       "npcFlag": {
+        "npc": "maeca",
+        "key": "told_ashford",
+        "eq": true
+       }
+      },
+      "text": "(Grey light. She's already up, barefoot in the frost, listening.) Go on, then. The wood's awake, and so's Holloway, and he'll count us both."
+     },
+     {
+      "text": "(Grey light. She's already up, barefoot in the frost, listening to the wood.) The Pack found me, after Ashford. Three days in a cave mouth with the garrison dead round me, and the old grey one came and lay down across the way in. Kept the cold off. Kept everything off. ...That's why. That's all of why. Don't make it a story."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "maeca",
+       "key": "told_ashford",
+       "value": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "I won't.",
+      "end": true
+     }
+    ]
+   },
+   "cb_broke_promise": {
+    "id": "cb_broke_promise",
+    "text": "You knelt to him. You held out your hand and he let you in. Then you killed his. ...I've nothing to say to you that I'd want to have said.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "maeca",
+       "key": "cb:broke_promise",
+       "value": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "...",
+      "end": true
+     }
+    ]
+   },
+   "t_maeca": {
+    "id": "t_maeca",
+    "text": "Men, for the garrison. Deer, for me. Men are easier. They keep to paths and they talk while they walk.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "kerchiefs": {
+    "id": "kerchiefs",
+    "text": "Some. (She drinks, and looks at the cup instead of you.) Fed some of them, once. Buried more. ...Ask me about wolves.",
+    "effects": [
+     {
+      "set": {
+       "maeca.kerchiefs": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "cb_knelt": {
+    "id": "cb_knelt",
+    "text": "You went into the Hollow with nothing on your hands and knelt to him. (She looks at your knees, which are still muddy.) He let you. ...He doesn't let me, and he's known me ten years.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "maeca",
+       "key": "cb:knelt",
+       "value": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "maeca",
+       "respect": 10
+      },
+      "quiet": true
+     }
+    ],
+    "next": "hub"
+   },
+   "blood": {
+    "id": "blood",
+    "text": "(At the edge of the Hollow she stops, and sniffs, once, and turns round.) Not with that on you. Wash. River's that way. ...Or sleep, and come tomorrow. The night takes it off. It took it off me.",
+    "choices": [
+     {
+      "text": "...",
+      "end": true
+     }
+    ]
+   },
+   "blind_walk": {
+    "id": "blind_walk",
+    "speaker": "narrator",
+    "text": [
+     {
+      "when": {
+       "not": {
+        "fact": "maeca.blind_nights",
+        "gte": 1
+       }
+      },
+      "text": "She goes out by the east gate without a lamp, and you follow her along the Old Road past the wreck, by starlight and the white of the frost. She walks barefoot on ground that would cut you through your boots, and doesn't make a sound. Once she stops, and you stop, and somewhere off in the Hollow a wolf calls and is answered. \"Him,\" she says. \"And the bitch with the torn ear. Eating.\" She walks on."
+     },
+     {
+      "text": "The Old Road, the wreck, the frost. You know the way now, and she lets you walk in front, which she has never done."
+     }
+    ],
+    "next": "blind_fire"
+   },
+   "blind_fire": {
+    "id": "blind_fire",
+    "speaker": "narrator",
+    "text": "The Hunters' Blind is a lean-to of hides against a fallen oak, with a fire the size of a hat. She feeds it one stick at a time. She doesn't talk. After a while she takes the crossbow off her back, and checks it, and lays it down by her right hand, and turns and looks at you across the fire as if you were a track she has been following for days.",
+    "next": "blind_ask"
+   },
+   "blind_ask": {
+    "id": "blind_ask",
+    "text": [
+     {
+      "when": {
+       "not": {
+        "fact": "maeca.blind_nights",
+        "gte": 1
+       }
+      },
+      "text": "If you're going to talk after, don't."
+     },
+     {
+      "text": "(She holds out her hand. That's all.)"
+     }
+    ],
+    "choices": [
+     {
+      "text": "I won't.",
+      "show": {
+       "not": {
+        "fact": "maeca.blind_nights",
+        "gte": 1
+       }
+      },
+      "goto": "blind"
+     },
+     {
+      "text": "(Take her hand.)",
+      "show": {
+       "fact": "maeca.blind_nights",
+       "gte": 1
+      },
+      "goto": "blind"
+     },
+     {
+      "text": "Then not tonight. I'll keep the fire.",
+      "goto": "watch_only"
+     },
+     {
+      "text": "(Stop here. Go back to town.)",
+      "goto": "blind_leave"
+     }
+    ]
+   },
+   "blind_leave": {
+    "id": "blind_leave",
+    "text": "(She nods at the fire.) Mind the frost on the Old Road. It's worse by the wreck.",
+    "choices": [
+     {
+      "text": "Goodnight.",
+      "end": true
+     }
+    ]
+   },
+   "watch_only": {
+    "id": "watch_only",
+    "speaker": "narrator",
+    "text": "You keep the fire. She keeps the dark. Some time after midnight she comes in from the edge of the light and sits down with her back against yours, and you can feel her breathing, slow, and listening. You sleep like that, sitting up. In the morning the frost is on both your shoulders and not between them.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "maeca",
+       "trust": 10,
+       "affection": 5
+      },
+      "quiet": true
+     },
+     {
+      "condition": {
+       "id": "rested",
+       "days": 1,
+       "note": "A night keeping Maeca's fire"
+      }
+     }
+    ],
+    "next": "watch_morning"
+   },
+   "watch_morning": {
+    "id": "watch_morning",
+    "text": "You kept quiet. (She stands, and stretches, and looks at the Hollow, not you.) Most can't.",
+    "choices": [
+     {
+      "text": "Morning.",
+      "end": true
+     }
+    ]
+   },
+   "blind_dark": {
+    "id": "blind_dark",
+    "speaker": "narrator",
+    "text": [
+     {
+      "when": {
+       "fact": "maeca.blind_nights",
+       "eq": 2
+      },
+      "text": "Afterwards, in the dark under the hides, she puts her feet against your legs, and you flinch: they're cold as stones in a stream. She starts to take them back."
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "all": [
+          {
+           "fact": "maeca.blind_nights",
+           "gte": 3
+          },
+          {
+           "not": {
+            "npcFlag": {
+             "npc": "maeca",
+             "key": "say:asked",
+             "eq": true
+            }
+           }
+          }
+         ]
+        },
+        {
+         "fact": "beasts.outcome",
+         "eq": "allied"
+        }
+       ]
+      },
+      "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. Outside, in the frost, you hear them come: soft feet, a long way round, and then a sigh, and then another. The Pack, lying down round the Blind in the dark. She lifts her head. \"They don't do that,\" she says. \"Not for me. Not for anyone.\" She lies back down. \"You walk quiet. You came into my Hollow and knelt to him and he let you. You never talk about before.\" A pause. \"What were you?\""
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "maeca.blind_nights",
+         "gte": 3
+        },
+        {
+         "not": {
+          "npcFlag": {
+           "npc": "maeca",
+           "key": "say:asked",
+           "eq": true
+          }
+         }
+        }
+       ]
+      },
+      "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. \"You walk quiet,\" she says. \"You never talk about before.\" A pause. \"What were you?\""
+     },
+     {
+      "text": "The fire's down to embers. Far off, the Pack is quiet."
+     }
+    ],
+    "choices": [
+     {
+      "text": "(Sleep.)",
+      "show": {
+       "any": [
+        {
+         "fact": "maeca.blind_nights",
+         "lte": 1
+        },
+        {
+         "all": [
+          {
+           "fact": "maeca.blind_nights",
+           "gte": 3
+          },
+          {
+           "npcFlag": {
+            "npc": "maeca",
+            "key": "say:asked",
+            "eq": true
+           }
+          }
+         ]
+        }
+       ]
+      },
+      "goto": "blind_morning"
+     },
+     {
+      "text": "(Hold them.)",
+      "show": {
+       "fact": "maeca.blind_nights",
+       "eq": 2
+      },
+      "effects": [
+       {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "say:feet",
+         "value": true
+        }
+       }
+      ],
+      "goto": "blind2_feet"
+     },
+     {
+      "text": "(Let her.)",
+      "show": {
+       "fact": "maeca.blind_nights",
+       "eq": 2
+      },
+      "effects": [
+       {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "say:feet",
+         "value": true
+        }
+       }
+      ],
+      "goto": "blind2_let"
+     },
+     {
+      "text": "A hunter. Out of these woods, once.",
+      "show": {
+       "all": [
+        {
+         "all": [
+          {
+           "fact": "maeca.blind_nights",
+           "gte": 3
+          },
+          {
+           "not": {
+            "npcFlag": {
+             "npc": "maeca",
+             "key": "say:asked",
+             "eq": true
+            }
+           }
+          }
+         ]
+        },
+        {
+         "bg": "hunter"
+        }
+       ]
+      },
+      "effects": [
+       {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "say:asked",
+         "value": true
+        }
+       }
+      ],
+      "goto": "told_true"
+     },
+     {
+      "text": "A clerk of dead men's letters, in a cloister cellar.",
+      "show": {
+       "all": [
+        {
+         "all": [
+          {
+           "fact": "maeca.blind_nights",
+           "gte": 3
+          },
+          {
+           "not": {
+            "npcFlag": {
+             "npc": "maeca",
+             "key": "say:asked",
+             "eq": true
+            }
+           }
+          }
+         ]
+        },
+        {
+         "bg": "scholar"
+        }
+       ]
+      },
+      "effects": [
+       {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "say:asked",
+         "value": true
+        }
+       }
+      ],
+      "goto": "told_true"
+     },
+     {
+      "text": "Worse company than the Kerchiefs. I walked away.",
+      "show": {
+       "all": [
+        {
+         "all": [
+          {
+           "fact": "maeca.blind_nights",
+           "gte": 3
+          },
+          {
+           "not": {
+            "npcFlag": {
+             "npc": "maeca",
+             "key": "say:asked",
+             "eq": true
+            }
+           }
+          }
+         ]
+        },
+        {
+         "bg": "outcast"
+        }
+       ]
+      },
+      "effects": [
+       {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "say:asked",
+         "value": true
+        }
+       }
+      ],
+      "goto": "told_true"
+     },
+     {
+      "text": "I lit chapel lamps nobody came to see.",
+      "show": {
+       "all": [
+        {
+         "all": [
+          {
+           "fact": "maeca.blind_nights",
+           "gte": 3
+          },
+          {
+           "not": {
+            "npcFlag": {
+             "npc": "maeca",
+             "key": "say:asked",
+             "eq": true
+            }
+           }
+          }
+         ]
+        },
+        {
+         "not": {
+          "bg": "hunter"
+         }
+        },
+        {
+         "not": {
+          "bg": "scholar"
+         }
+        },
+        {
+         "not": {
+          "bg": "outcast"
+         }
+        }
+       ]
+      },
+      "effects": [
+       {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "say:asked",
+         "value": true
+        }
+       }
+      ],
+      "goto": "told_true"
+     },
+     {
+      "text": "Not much. Nobody you'd have heard of.",
+      "show": {
+       "all": [
+        {
+         "fact": "maeca.blind_nights",
+         "gte": 3
+        },
+        {
+         "not": {
+          "npcFlag": {
+           "npc": "maeca",
+           "key": "say:asked",
+           "eq": true
+          }
+         }
+        }
+       ]
+      },
+      "effects": [
+       {
+        "npcFlag": {
+         "npc": "maeca",
+         "key": "say:asked",
+         "value": true
+        }
+       }
+      ],
+      "goto": "told_little"
+     }
+    ]
+   },
+   "blind2_feet": {
+    "id": "blind2_feet",
+    "speaker": "narrator",
+    "text": "You take one in your hands. The sole is hard as boot leather, and scarred: old white lines across the ball of the foot, a ridge along the heel where something cut it to the bone a long time ago and it healed badly in the cold. She lets you hold it. She lets you hold the other. She lies very still, the way she lay still when the Pack called, and doesn't say anything, and after a long time her feet are warm. (Into the dark, very low:) \"Nobody's held those.\"",
+    "effects": [
+     {
+      "rel": {
+       "npc": "maeca",
+       "trust": 10
+      },
+      "quiet": true
+     }
+    ],
+    "next": "blind_morning"
+   },
+   "blind2_let": {
+    "id": "blind2_let",
+    "speaker": "narrator",
+    "text": "She tucks them up under her instead, the way a dog curls its nose under its tail, and goes to sleep. In the night, half awake, you feel her put them back against you, slowly, as if she was trying it out.",
+    "next": "blind_morning"
+   },
+   "told_true": {
+    "id": "told_true",
+    "text": [
+     {
+      "when": {
+       "bg": "hunter"
+      },
+      "text": "Thought so. You put your feet down like you're asking the ground first. (She almost smiles.) I'd have liked you, then. Probably would have shot you for poaching."
+     },
+     {
+      "when": {
+       "bg": "scholar"
+      },
+      "text": "Letters. (She thinks about it.) Tracks for people who sit still. ...Read me something, one day. Not now."
+     },
+     {
+      "when": {
+       "bg": "outcast"
+      },
+      "text": "Walking away's a skill. Most never learn it. They stay till it's too late, out of pride."
+     },
+     {
+      "text": "Lamps. Nobody coming. (A long breath.) I held a cave mouth three days for nobody coming. We'd have got on."
+     }
+    ],
+    "effects": [
+     {
+      "set": {
+       "maeca.heard_past": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "maeca",
+       "trust": 10
+      },
+      "quiet": true
+     }
+    ],
+    "next": "blind3_morning"
+   },
+   "told_little": {
+    "id": "told_little",
+    "text": "(She doesn't push.) All right. (And it is.) ...Keep it, then. I keep mine.",
+    "next": "blind3_morning"
+   },
+   "blind3_morning": {
+    "id": "blind3_morning",
+    "text": "(Grey light. She's awake before you, as always, but she hasn't got up. Her head is still on your chest. Her face is very still.) Your heart's slow. Slow as a bear's in January. It was going like a hare's last night. ...I've lain with my ear to a lot of things to see if they'd live, {name}. (She gets up, then, and goes out barefoot into the frost, and stands there listening to the wood with her back to you.) Go on. Holloway'll count us.",
+    "effects": [
+     {
+      "set": {
+       "maeca.heard_heart": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Maeca—",
+      "goto": "blind3_m_no"
+     },
+     {
+      "text": "(Go.)",
+      "end": true
+     }
+    ]
+   },
+   "blind3_m_no": {
+    "id": "blind3_m_no",
+    "text": "No. (Not unkind.) Don't make it a story. Not yet.",
+    "choices": [
+     {
+      "text": "(Go.)",
+      "end": true
+     }
+    ]
+   },
+   "say_sella": {
+    "id": "say_sella",
+    "text": [
+     {
+      "when": {
+       "fact": "sella.free",
+       "eq": true
+      },
+      "text": "You go up Sella's stairs. (She doesn't look up from her cup.) Not for money, now. Rook talks. ...Is it her, or me, or both? I don't mind which. I mind not knowing."
+     },
+     {
+      "text": "You go up Sella's stairs. Rook talks. (A shrug.) She's honest about what she charges. That's more than most."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "maeca",
+       "key": "say:sella",
+       "value": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Both.",
+      "show": {
+       "fact": "sella.free",
+       "eq": true
+      },
+      "goto": "say_sella_both"
+     },
+     {
+      "text": "You.",
+      "show": {
+       "fact": "sella.free",
+       "eq": true
+      },
+      "goto": "say_sella_you"
+     },
+     {
+      "text": "I don't know yet.",
+      "show": {
+       "fact": "sella.free",
+       "eq": true
+      },
+      "goto": "say_sella_dunno"
+     },
+     {
+      "text": "Something else.",
+      "show": {
+       "not": {
+        "fact": "sella.free",
+        "eq": true
+       }
+      },
+      "goto": "hub"
+     }
+    ]
+   },
+   "say_sella_both": {
+    "id": "say_sella_both",
+    "text": "(A nod.) Good. Now I know.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "maeca",
+       "trust": 5
+      },
+      "quiet": true
+     }
+    ],
+    "next": "hub"
+   },
+   "say_sella_you": {
+    "id": "say_sella_you",
+    "text": "(She looks at you, long, the way she looks at a track that might be lying.) We'll see.",
+    "next": "hub"
+   },
+   "say_sella_dunno": {
+    "id": "say_sella_dunno",
+    "text": "That's an answer.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "maeca",
+       "trust": 5
+      },
+      "quiet": true
+     }
+    ],
+    "next": "hub"
+   }
+  }
+ }
+}

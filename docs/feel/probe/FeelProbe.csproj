@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- A measuring tool for docs/feel, not part of the game: the arena bot of
+       godot/tests/ArenaPlay.cs, counting hits to kill, event rates and draft
+       cadence minute by minute. Run from the repo root (the logic finds
+       godot/data from the working directory):
+         dotnet run (project docs/feel/probe, Release), argument: minutes, e.g. 36.
+       See docs/feel/README.md for the exact command. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>12</LangVersion>
+    <RootNamespace>SurvivorUnchained.Tests</RootNamespace>
+    <NoWarn>CS8618;CS8602;CS8604;CS1998;CS0162;CS8600;CS8603</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../../godot/logic/**/*.cs" LinkBase="logic" />
+    <Compile Include="../../../godot/tests/FakeHost.cs" />
+  </ItemGroup>
+</Project>

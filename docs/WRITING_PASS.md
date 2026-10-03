@@ -10,14 +10,22 @@ what is left to build in code. The whole arc it points at is
 
 - **[DATA, done]**: written into `godot/data/content/` (or a text-only line in
   a zone script) and played by a named test. Nothing to build.
-- **[CODE, to do]**: needs the implementer. Section 11 has each one: what,
-  where, the exact data, and the test scenarios that prove it.
+- **[CODE, done]**: built in code by the implementation pass, with the test
+  that plays it. Section 11 has each one: what, where, the exact data, the
+  choices made where the spec left room, and the test.
+- **[CODE, to do]**: needs an implementer (none are left in Act 1).
 - **[LATER]**: an Act 2 or 3 beat. Act 1 already records the fact it needs;
   the beat itself is in `STORY_BIBLE.md` sections 7 and 8.
 
-Tests: `cd godot/tests && dotnet test` (238 pass). The pass's own scenarios
-are `godot/tests/BreadcrumbTests.cs`; four older tests in `QuestTests.cs`
-were given the context the new gates require (section 13).
+Tests: `cd godot/tests && dotnet test` (298 pass). The pass's own scenarios
+are `godot/tests/BreadcrumbTests.cs` (the code items' scenarios at its end);
+four older tests in `QuestTests.cs` were given the context the new gates
+require (section 13). The implementation pass added `RouteTests.cs` (every
+road of Act 1 played end to end through the game's own conversations, the
+Waystation, the Verge and its night fights, with a save and a load at the
+turns that matter), `AuditTests.cs` (one play-through per bug the audit
+found, section 15), the `Route` harness they share (`Route.cs`) and
+`QaSaves.cs` (saves at the moments worth looking at in the real game).
 
 ---
 
@@ -57,14 +65,15 @@ records the choices whose weight lands later (section 9).
 
 | Thread | What is new | Status |
 |---|---|---|
-| Found early | Pell's ledger, the strongbox, the Roost, the cages and the Dig, each found before its quest, now start their story rather than finish it; people react to a survivor who arrives already knowing | [DATA, done] (dialogue gates and reactions); [CODE, to do] C1, C2 (the strongbox's journal line, ledger objectives) |
-| The Beast Problem | Snib explains his pump to a stranger, and will not move it for someone with no reason to care; Redcowl's charge as a way to blow the pump; Pell sells the charge only to someone who knows the Dig | [DATA, done]; [CODE, to do] C6 |
-| The Missing Caravan | Jessop named and missing; Harlan's greeting follows the days and the news; telling Harlan where the Roost is; the ledger read for its date; the six crates' fate; Jory told or lied to; who tells Redcowl where Pell sleeps; Harlan pays for the boy even after you sold his box | [DATA, done]; [CODE, to do] C5 (the crates in an empty camp) |
-| The Lamps at the Low Ford | A new mystery: the dead watchman's book, Corran and Dannet, Keegan, Brannoc's irons and his mark, Rook's money, the carters' notice, the square coin, Nell; the accusation at the fortune | [DATA, done]; [CODE, to do] C3 (the prologue writes the first line) |
+| Found early | Pell's ledger, the strongbox, the Roost, the cages and the Dig, each found before its quest, now start their story rather than finish it; people react to a survivor who arrives already knowing | [DATA, done] (dialogue gates and reactions); [CODE, done] C1, C2 (the strongbox's journal line, ledger objectives) |
+| The Beast Problem | Snib explains his pump to a stranger, and will not move it for someone with no reason to care; Redcowl's charge as a way to blow the pump; Pell sells the charge only to someone who knows the Dig | [DATA, done]; [CODE, done] C6 |
+| The Missing Caravan | Jessop named and missing; Harlan's greeting follows the days and the news; telling Harlan where the Roost is; the ledger read for its date; the six crates' fate; Jory told or lied to; who tells Redcowl where Pell sleeps; Harlan pays for the boy even after you sold his box | [DATA, done]; [CODE, done] C5 (the crates in an empty camp) |
+| The Lamps at the Low Ford | A new mystery: the dead watchman's book, Corran and Dannet, Keegan, Brannoc's irons and his mark, Rook's money, the carters' notice, the square coin, Nell; the accusation at the fortune | [DATA, done]; [CODE, done] C3 (the prologue writes the first line) |
 | Nell | Brannoc asks after his daughter; the truth buries her, a lie sends him to the gate | [DATA, done] |
 | Seeds | Holloway's letter; Sella's pillow talk (quoted in the fortune); the Wayfinder's margin; Keegan after a death; Chid's "C"; Tam's knocking; Maeca and the Kerchiefs; Redcowl's "little bird" and "Ashford"; Rav names his brother | [DATA, done] |
 | The fortune | Seven readings now (beasts, caravan, crates, Pell, self, before the ford, below), the accusation, the name | [DATA, done] |
-| The chapter's end page | The lamps as an open thread; the new beats | [CODE, to do] C4 |
+| The chapter's end page | The lamps as an open thread; the new beats | [CODE, done] C4 |
+| Implementation audit | Rewards taken once, choices that outlive their sense hidden, honest marks, no stale leads, what the world remembers across a save (section 15) | [CODE, done] |
 | Fixes | The shrine-bell contradiction; retired words; Holloway's "my own toll clerk"; Rav's "eleven years"; a rule written twice; item lore that assumed you knew; morning reports in the wrong tense | [DATA, done] |
 
 ## 3. Shared gates
@@ -137,7 +146,7 @@ flowchart TD
 | Meeting Holloway, Maeca, Wenna, Tam, Harlan | the square | `holloway_bounty`, `maeca_theory`, `wenna_request`, `tam_plea`, `harlan_view` | existing |
 | "What are you pumping?" | Snib, at the Dig, while `STREAM_CTX` fails | `learn clue.pipe`; `beasts/snib_slurry`, quest active | [DATA, done] |
 | Redcowl's charge | Redcowl, after `crates_keep`, while `PUMPING` | `give blasting_ember`; `redcowl.gave_charge`; `beasts/redcowl_charge` | [DATA, done] |
-| Pell's blasting ember on his shelf | Pell's shop, once `root_cause` or `clue.blasting_ember` | the item | [DATA, done]; restock timing is C6 |
+| Pell's blasting ember on his shelf | Pell's shop, once `root_cause` or `clue.blasting_ember` | the item, the same day | [DATA, done]; [CODE, done] C6 |
 
 ### 4.3 Order constraints
 
@@ -271,8 +280,9 @@ flowchart TD
 | "Those six crates..." | Redcowl, `clue.blasting_ember` and `CRATES_FREE` | `be.crates` `redcowl`, `crates_redcowl` | [DATA, done] |
 | "Your six crates are still in the Roost." | Harlan, `clue.blasting_ember`, `roost_found`, `CRATES_FREE` | `be.crates` `harlan`, `crates_harlan` | [DATA, done] |
 | "What was in the crates?" | Jory, until answered | `jory.knows_be` or `jory.lied_to` | [DATA, done] |
-| Picking up the strongbox | the Roost | journal line and tracker step | [CODE, to do] C1 |
-| The ledger's next step | tracker | by context | [CODE, to do] C2 |
+| Picking up the strongbox | the Roost | `strongbox_found`, quest active; tracker step | [CODE, done] C1 |
+| The ledger's next step | tracker; the wreck gold on the map | by context | [CODE, done] C2 |
+| Vonnra's note under the door | tracker, from `chapter.ready` until the book is closed | "A Note in Violet Ink" | [CODE, done] (section 15) |
 
 ### 5.3 Order constraints
 
@@ -297,7 +307,7 @@ flowchart TD
 | The strongbox sold, then the boy brought home | Harlan's reward | he pays for the boy anyway, once, and refuses you after | [DATA, done] |
 | The wagons, by name | Harlan | Redcowl names Coyle (`redcowl_wagons`) | [DATA, done] |
 | Jory, before Harlan | Harlan | Jory's `clerk_turned`; Harlan's greeting as above | [DATA, done] |
-| The crates in an empty camp | Redcowl gone | Harlan can still be told; take a charge or sink them | [CODE, to do] C5 |
+| The crates in an empty camp | Redcowl gone | Harlan can still be told; take a charge or sink them | [CODE, done] C5 |
 
 ### 5.5 Facts
 
@@ -308,7 +318,9 @@ flowchart TD
 | `caravan.pell` | `exposed`, `ally`, `fled` | Holloway, Harlan, Pell, Redcowl | `Waystation.cs` presence, fortune, Act 2 |
 | `caravan.days`, `caravan.box_taken`, `caravan.box_days`, `caravan.box_left` | as before | rules, `Verge.cs` | rules, Harlan, tracker |
 | `redcowl` | `bargained`, `tricked`, `furious`, `dead` | Redcowl, `Verge.cs` | Verge, Standings |
-| **`be.crates`** | `redcowl`, `harlan`; at the chapter's close `burned`, `watch` or `dig` (rule `crates.settle`); `sunk` (C5) | `redcowl.crates_keep`, `harlan.crates`, rule | Redcowl, Harlan, fortune, folk, concerns, Act 2 beats 1, 5, 7 |
+| **`be.crates`** | `redcowl`, `harlan`; `sunk` (C5); `burned` the moment the Roost's powder goes up (unless Harlan's men have them); `dig` when the Kerchiefs sell the cargo on (rule `caravan.box_moved`); at the chapter's close, if still unset, `burned`, `watch` or `dig` (rule `crates.settle`) | `redcowl.crates_keep`, `harlan.crates`, `Verge.cs`, rules | Redcowl, Harlan, fortune, folk, concerns, Standings, `Verge.cs`, Act 2 beats 1, 5, 7 |
+| **`crates.charge_taken`** | true | C5 "Take a charge" | C5 |
+| **`corran.home`** | true | rule `holloway.corran` (the dawn after Holloway hears) | Holloway's concern, the town's talk |
 | **`redcowl.gave_charge`** | true | `redcowl.crates_charge` | Act 2 |
 | **`redcowl.birds`**, **`redcowl.ashford_said`** | true | Redcowl | Act 2 beat 7 |
 | **`jory.knows_be`**, **`jory.told_knew`**, **`jory.lied_to`** | true | Jory | Jory, Harlan, rule `jory.words`, folk, concerns, fortune, Act 2 beat 5 |
@@ -363,7 +375,11 @@ New: **`roost_told`**, **`redcowl_wagons`**, **`ledger_read`**,
 | **`pell_given`** | You told Redcowl where Pell Varrow sleeps. |
 | **`pell_hunted`** | Redcowl has gone looking for Pell Varrow. You did not tell him where to look. |
 
-Pending (with code): `strongbox_found` (C1), `crates_sunk` (C5).
+Added with code: **`strongbox_found`** (C1): "The Coyle strongbox, out of the
+Kerchiefs' camp: heavy, locked, the Coyle Company seal on the lid. There is a
+Coyle Trading Post in the Waystation."; **`crates_sunk`** (C5): "You rolled
+the six crates marked "B.E." into the ravine's stream, one at a time, and
+listened to each one not go off."
 
 ### 5.7 Who says what to a survivor who arrives knowing
 
@@ -400,7 +416,7 @@ The journal assembles it; the survivor draws the line.
 
 | Entry | Where it is learned | Gate | Status |
 |---|---|---|---|
-| `book` | the dead watchman's belt-book (prologue); also when the survivor raises it with Keegan (`keegan.warden`), Chid (`chid.warden`) or Holloway (`holloway.post`) | `lore.warden` | [DATA, done] for the three; [CODE, to do] C3 for the prologue itself |
+| `book` | the dead watchman's belt-book (prologue); also when the survivor raises it with Keegan (`keegan.warden`), Chid (`chid.warden`) or Holloway (`holloway.post`) | `lore.warden` | [DATA, done] for the three; [CODE, done] C3 for the prologue itself |
 | `keegan` | `keegan.warden` | `lore.warden` | [DATA, done] |
 | `post` | `holloway.post`: Corran, Dannet, no oil since his first winter | `lore.warden` | [DATA, done] |
 | `irons` | `brannoc.irons`, `brannoc.mark` | none, or the lamp-iron | [DATA, done] |
@@ -430,7 +446,7 @@ says it was not them." `"mystery": true`.
 
 | Entry | Text |
 |---|---|
-| `book` | The dead watchman's belt-book, at the post on the Low Ford road: "Lamps at the Low Ford lit again, and not by us." "Sent Dannet for the captain. Dannet not back." |
+| `book` | The dead watchman's belt-book, at the post on the Low Ford road: "Lamps at the Low Ford lit again, and not by us. Not oil. Wrong colour." "Sent Dannet for the captain. Dannet not back." |
 | `keegan` | Dame Keegan: the lamps were never meant to keep the dark out. They kept the Warden asleep. "If somebody lit them again, somebody wanted it awake." |
 | `post` | Captain Holloway knew the dead watchman: Corran, written down as a deserter in the spring, and his runner Dannet with him. The Watch has had no oil for the ford lamps in years. |
 | `irons` | Brannoc forged twelve new lamp-irons for the Low Ford last winter. Ten were collected at night, paid for in square old-empire coin left on the anvil. Two are still on his rack. |
@@ -453,7 +469,7 @@ flowchart TD
   quick -- no --> price[He nods, as at a price]
   q -- 'I passed nobody' --> lie[nell.told lie]
   q -- 'I didn't look' --> evaded[nell.told evaded]
-  gone & risen --> burial[[Next dawn: he fetches her, Chid meets the cart, they bury her by Ashe: nell.buried]]
+  gone & risen --> burial[[That dusk he goes down the road for her, alone or with the survivor (C14); at sunrise Chid meets him at the gate; they bury her by Ashe: nell.buried]]
   lie & evaded --> asking[[Two days on: he asks pedlars at the gate: nell.asking]]
   burial --> irons2[Hub: 'Those last two irons', brannoc.waits_buyer]
 ```
@@ -564,6 +580,13 @@ Every Act 1 seed, the beat it pays, and when. In brackets, the bible's section a
 9. `f_door`: a variant with the name after the accusation; then "Close the
    book on this chapter." (action `fortune`).
 
+The accusation is made once (`once: accuse`), and once the book is closed
+("Your chapter is written") the fortune is not read again: her mark and the
+tracker's "A Note in Violet Ink" go with it. `f_ember` has two more readings:
+crates gone down the south road with the cargo (`be.crates` `dig` and
+`caravan.cargo` `with_kerchiefs`), and crates that burned with the Roost
+whether or not anyone was in its cages.
+
 **The chapter page** (`godot/logic/World/Chapter.cs`): C4.
 
 ---
@@ -573,7 +596,7 @@ Every Act 1 seed, the beat it pays, and when. In brackets, the bible's section a
 Each item: what, where, the exact data, and how to prove it. Keep the house
 style (`godot/README.md`): comments in short British prose that say why.
 
-### C1. The strongbox, found, says whose it is and where to take it
+### C1. The strongbox, found, says whose it is and where to take it [CODE, done]
 
 - **What.** Taking the Coyle strongbox in the Roost writes a journal line that
   stands on its own and activates the caravan, and the tracker always says
@@ -591,8 +614,14 @@ style (`godot/README.md`): comments in short British prose that say why.
   Waystation, or keep it", whatever `caravan.survivors` is (today it shows only
   once the survivors are settled).
 - **Tests.** K4.
+- **Done.** As specified. Also: a caravan settled at the cages while Harlan
+  has not yet heard that Jory is alive keeps one step on the tracker, "Tell
+  Harlan Coyle that Jory is alive", until he has (returning the box first and
+  freeing the cages after resolves the quest at once, and the hundred for the
+  boy was then nowhere on screen). `QuestTests.Say_how_long_the_cages_will_hold...`
+  asserts it.
 
-### C2. The ledger's next step follows what the survivor knows
+### C2. The ledger's next step follows what the survivor knows [CODE, done]
 
 - **What.** The tracker's ledger lines follow `LEDGER_CTX`, so it never tells a
   survivor to show Holloway a book that would only be read for its date, or
@@ -613,8 +642,13 @@ style (`godot/README.md`): comments in short British prose that say why.
 - **Helper.** `H` gains `Any(params string[] entries)`; `CTX_KERCHIEF` also
   reads `Knows("hint.roost")`.
 - **Tests.** K5b.
+- **Done.** `H` has `Any(...)`; the two contexts are `KnowsKerchiefs` and
+  `KnowsTheNight` in `Objectives.cs`, read exactly as `CTX_KERCHIEF` and
+  `CTX_COYLE`. The tracker shows at most three steps, so with Harlan not yet
+  met his "offering a reward" line (which points at the same man) may push
+  "Ask Harlan about the crates" off the bottom: deliberate.
 
-### C3. The dead watchman's book opens the lamps
+### C3. The dead watchman's book opens the lamps [CODE, done]
 
 - **What.** Reading the belt-book in the prologue writes `lamps/book`.
 - **Where.** `godot/logic/Play/Zones/Prologue.cs`, the `watchman` interactable.
@@ -622,8 +656,12 @@ style (`godot/README.md`): comments in short British prose that say why.
   `[{ "learn": "lore.warden", "text": "The lamps at the ford feed the Warden." }, { "quest": { "id": "lamps", "status": "active", "entry": "book" } }]`.
   The entry already exists (written today by Keegan, Chid and Holloway too).
 - **Tests.** L1.
+- **Done.** As specified. Because the lamps now open on the Low Ford road,
+  before anyone in town has asked the survivor for anything, the journal
+  lists the troubles first and the mysteries after (`Book.cs`), so it opens
+  on the Beast Problem, not on the lamps.
 
-### C4. The chapter's page
+### C4. The chapter's page [CODE, done]
 
 - **Where.** `godot/logic/World/Chapter.cs`.
 - **Open threads.** `new[] { "vault", "below", "lamps" }`; show `lamps` only if
@@ -637,8 +675,11 @@ style (`godot/README.md`): comments in short British prose that say why.
 - **Epithet.** After "who runs with wolves": `vonnra.accused` gives
   "{name}, who said it to Vonnra's face".
 - **Tests.** E2.
+- **Done.** As specified, and `crates_sunk` (C5) is a caravan beat too. A
+  Pell taken from his bed by Redcowl no longer also reads "Pell Varrow fled
+  the Waystation in the night." (his `pell_given` line says what happened).
 
-### C5. The crates in an empty Roost
+### C5. The crates in an empty Roost [CODE, done]
 
 - **What.** If Redcowl is dead or tricked, or the Roost is cleared, the six
   crates stand in an empty camp. The survivor can take one charge, or roll the
@@ -661,8 +702,20 @@ style (`godot/README.md`): comments in short British prose that say why.
   `{ "when": { "fact": "be.crates", "eq": "sunk" }, "text": "And six crates at the bottom of a stream, where nothing will ever buy them. That is the first thing you have thrown away that I approve of." }`
 - **Act 2.** `sunk` counts as nothing reaching the Dig (bible 7.1).
 - **Tests.** K14.
+- **Done, with three choices.** (1) Both interactables need
+  `clue.blasting_ember` as well: "Take a charge" and "Sink them" give away
+  what B.E. is, and a survivor who never learned it sees six crates of
+  somebody's salt (the manifest and Harlan's "be" are the breadcrumb). (2)
+  While any of the Roost's crew stands within 16 m of the cargo, both are
+  refused ("Too many eyes. Deal with them first"), as the cages are. (3) What
+  is taken leaves the scene: the strongbox's chest when it is carried off,
+  and the crates (and their colliders) once sunk, fetched by Harlan's men,
+  sold on with the cargo, burned or taken by the Watch, now and on every
+  visit after (`IZoneLook.HideProps`). A bluffed Roost empties at once
+  (Redcowl and his crew leave the camp the moment the bluff lands), so
+  nobody is left to call the survivor a thief or to watch the crates.
 
-### C6. A shop line that becomes true is on the shelf when you next look
+### C6. A shop line that becomes true is on the shelf when you next look [CODE, done]
 
 - **What.** `RollStock` reads a line's `when` only at restock (every three days
   for Pell), so the blasting ember the survivor has just earned the right to
@@ -675,13 +728,23 @@ style (`godot/README.md`): comments in short British prose that say why.
   `Offered` (rolling its `chance` as at restock), and record it. Restock clears
   `Offered`. Migrate old saves with an empty list.
 - **Tests.** B9.
+- **Done.** `ShopState.Offered` holds "index:item" keys (an item may have
+  two lines in one shop: Harlan's draughts). A conditional line counts as
+  offered once it has been rolled this restock, whether or not its chance
+  came up, so reopening a shop never re-rolls a chance. Saves are version 2;
+  a version 1 save counts the conditional lines whose item is already on the
+  shelf as rolled (`An_older_save_counts_what_its_shelf_already_holds_as_rolled`).
 
-### C7. Where you stand with the Kerchiefs (optional)
+### C7. Where you stand with the Kerchiefs (optional) [CODE, done]
 
 - **Where.** `godot/logic/World/Standing.cs`, the Kerchiefs' "Tolerated" reason.
 - **Data.** When `be.crates` is `redcowl`, the reason reads "Redcowl keeps the
   Coyle crates from the Dig, on your word." (after the colours check).
 - **Tests.** One line in an existing standings test.
+- **Done.** `BreadcrumbTests.C7_the_Kerchiefs_tolerate_whoever_kept_the_crates_from_the_Dig`.
+  The reason replaces the bargain's only where the Kerchiefs already
+  tolerate the survivor (telling Redcowl about the crates is not itself a
+  pass).
 
 ---
 
@@ -714,7 +777,8 @@ Each: setup, steps, expected. "Auto" names the test that already plays it;
   is set, and blows it: `dig.pump` `blown`, `pump_blown`, `dig.hostile`.
 - **B7. Sell the cure** (auto: `QuestTests.Pell_buys_the_cure_and_the_stream_clears_on_his_terms`).
 - **B8. Do nothing** (auto: `QuestTests.Left_alone_the_wolves_come_to_the_gate`).
-- **B9. Pell's charge waits for the knowledge** (to write, C6). Day 1, open
+- **B9. Pell's charge waits for the knowledge** (C6; `BreadcrumbTests.B9_Pells_charge_is_on_the_shelf_as_soon_as_the_survivor_knows_the_Dig`,
+  `An_older_save_counts_what_its_shelf_already_holds_as_rolled`; played in `RouteTests.B2_...`). Day 1, open
   Pell's shop: no blasting ember. Learn `root_cause`; open the shop again the
   same day: blasting ember is there. Buy both; open again: not restocked until
   the cycle turns.
@@ -731,15 +795,15 @@ Each: setup, steps, expected. "Auto" names the test that already plays it;
   Expected: "bar in your hands", no "days late", no `harlan_plea`, the hundred
   paid.
 - **K4. The strongbox first.** Auto (greeting):
-  `BreadcrumbTests.A_strongbox_carried_in_cold_is_met_with_the_seal_and_the_boy`.
-  To write (C1): in the Verge with the caravan unknown, take the box. Expected:
+  `BreadcrumbTests.A_strongbox_carried_in_cold_is_met_with_the_seal_and_the_boy`;
+  C1: `BreadcrumbTests.K4_a_strongbox_taken_before_anyone_asked_says_whose_it_is_and_where_it_goes`. in the Verge with the caravan unknown, take the box. Expected:
   quest active, `strongbox_found`, the tracker's "Take the Coyle strongbox to
   Harlan Coyle..." step.
 - **K5. The ledger on the first night** (auto: `BreadcrumbTests.A_ledger_burgled_on_the_first_night_starts_the_caravan_instead_of_ending_it`).
   Outcast burgles the warehouse with lockpicks before any caravan lead.
   Holloway offers "I found this book..." not "Here's his ledger"; reading gives
   `ledger_read`; still no expose; after `wreck`, "his ledger" exposes Pell.
-- **K5b. The ledger's tracker** (to write, C2). After K5's first step:
+- **K5b. The ledger's tracker** (C2; `BreadcrumbTests.K5b_the_ledgers_step_follows_what_the_survivor_knows`). After K5's first step:
   "Find out who \"R.\" is..."; after `wreck`: "show it to Harlan, or to Captain
   Holloway"; the wreck is gold on the map until found.
 - **K6. Harlan reads the ledger** (auto: `BreadcrumbTests.Harlan_reads_the_ledger_too_and_sends_you_to_find_who_R_is`).
@@ -752,7 +816,8 @@ Each: setup, steps, expected. "Auto" names the test that already plays it;
   **Jory lied to** (auto: `Jory_told_salt_believes_it`).
 - **K12. Where Pell sleeps** (auto: `BreadcrumbTests.Who_tells_Redcowl_where_Pell_sleeps_decides_how_Pell_leaves`).
 - **K13. Harlan pays for the boy** (auto: `BreadcrumbTests.Harlan_pays_for_the_boy_even_after_you_sold_his_box`).
-- **K14. The crates in an empty camp** (to write, C5). Trick Redcowl out of the
+- **K14. The crates in an empty camp** (C5; `BreadcrumbTests.K14_the_crates_in_an_empty_camp_can_be_broken_into_or_sunk`,
+  `AuditTests.What_the_story_carries_off_is_gone_from_the_Roost`). Trick Redcowl out of the
   Roost. Expected: "Take a charge" gives one `blasting_ember` once; "Sink them"
   sets `be.crates` `sunk` and `crates_sunk`, and both interactables go; Harlan's
   "Your six crates" is gone; the fortune reads the `sunk` line; at the
@@ -763,7 +828,7 @@ Each: setup, steps, expected. "Auto" names the test that already plays it;
 
 ### The Lamps
 
-- **L1. The book opens the mystery** (to write, C3). In the prologue examine
+- **L1. The book opens the mystery** (C3; `BreadcrumbTests.L1_the_dead_watchmans_book_opens_the_lamps`). In the prologue examine
   the dead watchman. Expected: `lore.warden`; quest `lamps` active with `book`.
 - **L2. Holloway's deserters** (auto: `BreadcrumbTests.Holloway_learns_his_deserter_died_at_his_post`).
 - **L3. Brannoc's mark** (auto: `BreadcrumbTests.Brannoc_knows_his_own_mark_on_the_Wardens_lamp_iron`).
@@ -786,11 +851,35 @@ Each: setup, steps, expected. "Auto" names the test that already plays it;
 - **S4.** Rook's rumours follow the caravan (auto: `BreadcrumbTests.Rook_talks_about_whatever_is_still_unsettled`).
 - **E1.** The fortune reads in order and closes the chapter (auto:
   `QuestTests.Vonnra_reads_back_what_you_did_and_the_chapter_closes`).
-- **E2. The chapter page** (to write, C4). Settle both quests with Jory told
+- **E2. The chapter page** (C4; `BreadcrumbTests.E2_the_chapters_page_reads_back_the_crates_Jory_and_the_accusation`). Settle both quests with Jory told
   and the crates given to Redcowl, accuse Vonnra, close the chapter. Expected:
   open threads `vault`, `below`, `lamps`; caravan beats include the crates and
   Jory lines; the epithet "who said it to Vonnra's face" unless the Pack ran
   with you.
+
+### Every road, end to end (`RouteTests.cs`)
+
+Played through the game's own pieces (conversations, the Waystation, the
+Verge and its night fights, nights slept, a save and a load at the turns that
+matter, asserting nothing is lost and the next step is the same):
+
+- **The Beast Problem.** B1 in order (the scholar reads the water, Snib moves
+  the pump); B2 the Dig first, a dead wolf as the reason to care, Pell's
+  charge the same day, the pump blown; B6 Redcowl's charge; B7 the cure sold
+  to Pell; B5 the hunter kneels and the Pack runs; B8 left alone; the wood
+  emptied (slaughtered); the Dig boiling over by night; the Pack hunted in
+  its Hollow by night.
+- **The Missing Caravan.** K1 in order (wreck, ruts, the Roost bought, the
+  cages, the box home); K2 the Roost first; K3 and K10 the cages first by a
+  bluff and the box sold to Rav's friend, the arrest and the fine; K5 the
+  ledger burgled on the first night, read, then proved; K12 where Pell
+  sleeps; K16 too late, the box all that comes home; the box kept three days
+  and the boy still paid for; the Roost raided by night, the camp empty, the
+  crates sunk; the sealed door opened by night.
+- **The Lamps.** Every piece, Nell told the truth, the accusation and the
+  chapter's page.
+- **The whole chapter** from the gate to the fortune, with a save at every
+  turn, to the crates the chapter's close sends to the Dig.
 
 ### Wrong order, all hidden rather than greyed
 
@@ -844,7 +933,116 @@ pieces.
   characters, like Rook's; check the conversation panel at 1080p.
 - **`f_past` quotes the backgrounds' story text** in `archetypes.json` nearly
   word for word. If a background's story changes, change its `f_past` line.
-- **C6 changes the save** (`ShopState.Offered`): migrate old saves with an
-  empty list.
+- **C6 changed the save** (`ShopState.Offered`, save version 2): done, and
+  a version 1 save is migrated (section 11, C6).
+- **A strongbox kept three days** is Harlan's no more (`caravan.cargo`
+  `kept`): it can still be fenced through Rav, but not given back. That is
+  the writers' clock, kept as written; a late return would be a new choice.
 - **Patch scripts.** The data was written by repeatable scripts kept outside
   the repo; the JSON is now the source of truth. Edit it directly.
+
+## 15. The implementation audit
+
+Act 1 played as a QA lead would, every road and the wrong turns between
+them. Each finding is fixed and proved by a play-through in `AuditTests.cs`
+(or a route in `RouteTests.cs`); content fixes were made in the data, in the
+writers' words where a line was needed (VOICES.md).
+
+**Rewards taken twice, choices that outlive their sense**
+
+- Redcowl read Pell's ledger ("Give me that.") and handed it back: shown
+  again, Pell's fate could be told twice, both ways; shown to Holloway, it
+  put "in irons before dark" a man already gone. He keeps it now.
+- Redcowl's hundred ("I'll throw in the teamsters... Open them yourself; my
+  lads won't stop you") did not free the cages: his men still refused. It
+  does now (`redcowl.releases`). The teamsters' keep (fifty) could be paid
+  twice; he sold the strongbox to someone already carrying it.
+- Rav slid Jessop's key across the table every time he was asked.
+- Snib could be asked to move, shut off, be bribed over, or be fought for a
+  pump already moved or broken, paying the bribe again; and said "Pump is
+  still pumping" of a broken one. He now says what became of it (two lines
+  in his voice) and is asked nothing about it.
+- Vonnra's accusation could be made, and paid for in feeling, every time the
+  fortune was read; her toll ledger was paid for every time it was asked
+  about.
+- Tam warmed to being believed every time he told it (twenty trust a time).
+- Quest things could be sold over Rav's and Vonnra's counters: the strongbox
+  sold there set nothing (no fence, no "wanted", the story never knew), the
+  ledger or the sigil's fragment for a copper. Now nothing the story still
+  needs goes over a counter or is dropped; each quest item says, in
+  `items.json` ("needed"), how long it is needed, after which it is a
+  keepsake that can be left behind.
+
+**Gates and breadcrumbs**
+
+- Greymuzzle met before the Roost was known showed "You would need somewhere
+  to lead them", and never offered it again. He does now, to anyone who has
+  not broken their word to him.
+- The arrest's way out ("You should be asking who paid the Kerchiefs")
+  exposed Pell with a ledger that proved nothing yet; it needs `LEDGER_CTX`.
+- Harlan's question mark stayed up for good once Jory was home, and was up
+  for a box he no longer wanted; Holloway's was up for a ledger he had
+  already read and could not use. Marks now mean something to bring them:
+  Harlan for the box, Jory's news and the Roost; Holloway while the ledger
+  can be read or proves something; Vonnra until the book is closed.
+- Leads were written into stories already over ("Harlan blames the wolves"
+  after Jory was home, the bounty after the cure), from Rook, Holloway,
+  Maeca, Wenna, Tam and Harlan. Harlan asked after a nephew who was home and
+  offered a reward for him; Maeca met after the cure lectured about the
+  bounty before she thanked anyone.
+- The town spoke of Corran brought home, and of Aldo buried, the day before
+  either happened.
+- Sold to Pell, the Dig's step said "Stop the slurry" while Pell was doing
+  it: it says to give him two days, or beat him to it.
+- Journal notices were split at the first colon in a line, so a line with
+  one put half of itself in capitals as a title: the quest's name is the
+  title now.
+
+**What the world remembers**
+
+- Cages opened were open only until the survivor left the Verge, or loaded a
+  save: on the next visit they were shut again, and once all three were
+  open Jory could be let out of his cage a second time. They are the zone's
+  memory now, and stay open.
+- A Roost whose Redcowl fell first and his crew after was never "cleared".
+- The Roost's powder burned "the prisoners still in their cages" after they
+  had starved, and left the crates "still waiting in a ravine"; the cargo
+  sold down the south road left them there too, to be told to Harlan. Now
+  only the living burn, and the crates go with the fire or with the cargo.
+- The strongbox's chest and the crates stayed on screen after they were
+  taken or sunk.
+
+**Reported by the CI review** (`docs/cloud/ci-health.md`, R1 to R4)
+
+- **R1.** Once the stream ran clear, an allied or bought-off Pack still had
+  blighted wolves in the Hollow and by the water: "sick" read only the
+  `cured` outcome. The Verge now asks whether the stream runs clean
+  (`stream.clear`, or cured), whatever settled the Pack.
+- **R2.** After a slaughter nothing ever set `stream.clear`, so bitterroot
+  grew on for good. Rule `stream.clear_slaughtered` clears it two days after
+  the pump stops, with a morning line ("There is nothing left in the wood to
+  drink from it.") and the `stream_cleared` deed.
+- **R3.** A promise to the Pack broke on any wolf killed, even one that came
+  for you (their kin worn into the Hollow). Only a wolf at peace with you,
+  struck on purpose (neutral or provoked), breaks it now.
+- **R4.** An allied survivor is never "who cleared the water": kept, by
+  decision. Running with the Pack is the louder name (as E2 says) and has its
+  own verdict; the pump's beat and the "stopped the poison" deed are still on
+  the page.
+
+Each is a play-through in `AuditTests` (R1 to R3 fail without their fix).
+From the cloud branch's duplicate of C1 to C7, the tests that add coverage
+and pass against this implementation were kept: the prologue's own watchman
+(`PrologueTests`), the wagons' map mark from Turn to Quest to Place
+(`VergeTests`), C7's line in the standings test and a shop saved with
+`offered: null` (`WorldTests`), and `crates.settle` leaving `sunk` alone.
+
+**Lint.** `StoryLint.Every_fact_written_is_read_or_is_a_seed_for_a_later_act`:
+every fact Act 1 writes is read, or is one of the named seeds of section 9.
+
+**Checked in the real game** (1920x1080, saves from `QaSaves.cs`, `--open
+talk:ID>words>+` to reach a line deep in a conversation): the journal and
+the tracker mid-caravan, Harlan's longest greeting, Brannoc and Nell, the
+fortune's crates and last pages with the accusation, the chapter's page,
+Pell's shelf with the charge, the Roost before and after the crates. Text
+fits everywhere; the tracker wraps its longer steps to two lines.

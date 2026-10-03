@@ -23,6 +23,12 @@ game builds them:
                                          # headless: a screenshot in godot/.shots/
     cd godot/tests && dotnet test        # the game's logic, without a screen
 
+Every push and pull request runs `.github/workflows/godot.yml` (the
+Actions tab, "Godot"): the logic's tests, StoryLint among them, summarised
+on the run's page with any failure's message and the slowest tests
+(`tools/ci/trx_summary.py`), then a build of the whole game's C#. The bots
+and the horde benchmark below are opt-in and never run there.
+
 In the Godot editor on your own computer: install Godot 4.5.1 (.NET) and the
 .NET 8 SDK, import `godot/project.godot`, and press F5 (the C# builds from
 nuget.org). On Windows, `godot/assets` arrives as a small file rather than
@@ -48,10 +54,25 @@ Options go after `--`:
 - `--continue`: the last journey saved (saves are in Godot's user folder);
 - `--auto`: a crude player drives (`src/Game/Autopilot.cs`), from the title
   on; `--auto idle` only takes the level-up cards;
-- `--open inventory|character|journal|map|pause|rest|stash|shop:ID|chapter|all`,
-  `--open talk:ID`, `--open draft`: a screen, a conversation or the level-up
-  draft opened a moment in (`--every T` between several); `--bare` hides the
-  world, for quick pictures of the interface;
+- `--open inventory|character|arts|journal|map|maps|pause|rest|stash|shop:ID|chapter|all`,
+  `--open talk:ID`, `--open draft`, `--open result` (a won arena's end, in
+  an arena): a screen, a conversation or the level-up draft opened a moment
+  in (`--every T` between several); `--bare` hides the world, for quick
+  pictures of the interface; `--keys A,B,...` then presses those actions in
+  turn (`Right`, `Confirm`, `SubNext`...), and `--pad` as from a pad (focus
+  ring and pad prompts shown); `--items ID[:RARITY],...` and `--xp N` fill
+  the pack and give experience first; `--open "talk:ID>words>+"`
+  takes the choice whose words contain `words` and clicks on at each `+`
+  (a line deep in a conversation: `"talk:vonnra>fortune>+>+>+"` is the
+  fortune's fourth page);
+- `QA_SAVES=DIR dotnet test tests/Tests.csproj --filter QaSaves`: saves at
+  the Act 1 moments worth looking at (the ledger read, the Roost emptied,
+  the fortune, Harlan met with the Roost on your boots), played into by
+  the tests' `Route` harness; copy one to the game's saves as `slot0.json`
+  (with `meta.json` `{"last":0}`) and run with `--continue`. To keep them
+  out of your own saves, a `godot/override.cfg` (not committed) with
+  `config/use_custom_user_dir=true` and a `config/custom_user_dir_name`
+  gives the game a user folder of its own;
 - `STORY_PLAY=1 dotnet test tests/Tests.csproj --filter StoryPlay` (with
   `--logger "console;verbosity=detailed"`): the Verge walked by day by a
   plain-minded bot with only what it carries, pack to pack, with what it
@@ -64,6 +85,12 @@ Options go after `--`:
   and what hurt it (`ARENA_TRACE=1` for a line a minute,
   `ARENA_CASE=seed,calling,tier,people` for one case); for tuning the horde
   and how often the cards come;
+- `HORDE_BENCH=1 dotnet test tests/Tests.csproj --filter HordeBench_Run` (with
+  `--logger "console;verbosity=detailed"`): the fight timed under a horde of
+  300, 600 and 900 (the enemy pool's whole size) on a generated arena with
+  a mid-game build: milliseconds a tick, what a tick allocates, and a
+  fingerprint of how the fight ended, which a change meant only to make
+  it faster must leave as it was (`HORDE_TICKS` for the ticks timed);
 - `--shot NAME --seconds S [--every T --count N]`: screenshots
   (`src/Shots.cs`);
 - `--log S`: a line every S seconds (the fight, the zone, the sound);
@@ -208,7 +235,11 @@ game at the same place and hour; needs the dev server), then
   where they land, sinking), sprays, numbers and blade arcs (`Hits.cs`), the
   colours of each school (`Palette.cs`).
 - `src/Ui/`: the look shared by every screen (`Style.cs`, the icons in
-  `Glyphs.cs`), the items' pictures (`ItemPhotos.cs`: each item photographed
+  `Glyphs.cs`, painted art by name from `art/ui` in `UiArt.cs`, with the
+  drawn look as the fallback: `docs/UI_ART_BRIEF.md`), focus moved by keys
+  and pad on every screen (`Nav.cs`), the corner map (`Minimap.cs`), arrows
+  to what matters off screen (`EdgeMarks.cs`), slots that drag and drop
+  (`SlotView.cs`); the design of all of it in `docs/UI_DESIGN.md`, the items' pictures (`ItemPhotos.cs`: each item photographed
   once in a little studio of its own, lit by a studio HDRI, and kept; what is
   photographed is in `ItemModels.cs`: the weapons in hand, and the rest made
   in code with `src/World/Shapes.cs`, turned, swept, cut out and draped), the HUD (`GameHud.cs`), the level-up draft and the

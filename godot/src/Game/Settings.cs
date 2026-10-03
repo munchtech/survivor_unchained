@@ -16,6 +16,8 @@ public sealed class Settings
     public string Gore = "full";
     public string Motion = "full";
     public bool Fullscreen = true;
+    /// <summary>The survivor's health drawn under them in a night's fight.</summary>
+    public bool UnderBar = true;
     public bool Mature;
     /// <summary>The recorded voices on (subtitles show either way), and how loud, 0..1.</summary>
     public bool Voices = true;

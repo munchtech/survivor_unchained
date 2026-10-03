@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
 
 namespace SurvivorUnchained.Ui;
@@ -22,6 +23,33 @@ public static class Style
     public static readonly Color Good = new("#8ae05a"), Bad = new("#ff7a6a");
     public static readonly Color[] Rarity = { new("#c8c0b0"), new("#6fd46a"), new("#5aa8ff"), new("#c070ff"), new("#ffb040"), new("#ff6a3a") };
     public static Color RarityOf(int r) => Rarity[Math.Clamp(r, 0, Rarity.Length - 1)];
+    /// <summary>Rarity is never colour alone: each also has a count of small
+    /// diamonds, one for common up to six (drawn, not typed: the faces lack them).</summary>
+    public static HBoxContainer Gems(int r, float size = 7)
+    {
+        int n = Math.Clamp(r, 0, Rarity.Length - 1) + 1;
+        var h = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        h.AddThemeConstantOverride("separation", (int)(size * 0.9f));
+        for (int i = 0; i < n; i++)
+        {
+            var box = new Control { CustomMinimumSize = new Vector2(size * 1.2f, size * 1.6f), MouseFilter = Control.MouseFilterEnum.Ignore };
+            box.AddChild(new ColorRect { Color = RarityOf(r), Size = new Vector2(size, size), Position = new Vector2(size * 0.6f, size * 0.1f), Rotation = Mathf.Pi / 4, MouseFilter = Control.MouseFilterEnum.Ignore });
+            h.AddChild(box);
+        }
+        return h;
+    }
+    /// <summary>The day's growing (experience), cool where the night's ember is warm.</summary>
+    public static readonly Color Day = new("#86b0d8"), DayHi = new("#d8ecff");
+    public static readonly Color Shield = new("#9ad4ff");
+    /// <summary>What has focus: the ember's light.</summary>
+    public static readonly Color Focus = new("#ffc46a");
+
+    /* The type scale, in pixels at 1080p (docs/UI_DESIGN.md). Body text is
+     * Body or more (XAG 101 asks 18 at 1080p on a PC); nothing a player
+     * must read is under Caption; Badge is only for numerals on a badge. */
+    public const int Hero = 54, Heading = 32, Title = 24, Lead = 20, Body = 18, Small = 16, Caption = 15, Badge = 13;
+    /* Spacing steps: everything sits on these. */
+    public const int Gap1 = 4, Gap2 = 8, Gap3 = 12, Gap4 = 16, Gap5 = 24, Gap6 = 32;
 
     static readonly Dictionary<string, Font> fonts = new();
     static Font F(string file) => fonts.TryGetValue(file, out var f) ? f : fonts[file] = GD.Load<Font>($"res://art/fonts/{file}.woff2");
@@ -49,21 +77,30 @@ public static class Style
     }
 
     /// <summary>An iron plate with a gold hairline and a shadow under it.</summary>
-    public static StyleBoxFlat Plate(int pad = 18)
+    public static StyleBox Plate(int pad = 18)
     {
         var b = Box(new Color(0.09f, 0.08f, 0.105f, 0.97f), Line, 1, 6, pad);
         b.ShadowColor = new Color(0, 0, 0, 0.6f);
         b.ShadowSize = 18;
         b.ShadowOffset = new Vector2(0, 6);
-        return b;
+        return UiArt.Frame("plate", b);
     }
 
-    public static StyleBoxFlat Paper(int pad = 22)
+    public static StyleBox Paper(int pad = 22)
     {
         var b = Box(new Color("#e4d6b6"), new Color(0.35f, 0.24f, 0.08f, 0.35f), 1, 4, pad);
         b.ShadowColor = new Color(0, 0, 0, 0.6f);
         b.ShadowSize = 18;
-        return b;
+        return UiArt.Frame("paper", b);
+    }
+
+    /// <summary>The ring round what has focus: ember-gold, a soft glow, seen from a sofa.</summary>
+    public static StyleBox FocusFrame()
+    {
+        var b = Box(new Color(0, 0, 0, 0), Focus, 2, 7, 0);
+        b.ShadowColor = Focus with { A = 0.45f };
+        b.ShadowSize = 10;
+        return UiArt.Frame("focus", b);
     }
 
     /* ---------------------------------------------------------- widgets -- */
@@ -103,12 +140,18 @@ public static class Style
         b.AddThemeColorOverride("font_pressed_color", Colors.White);
         b.AddThemeColorOverride("font_disabled_color", new Color(0.6f, 0.55f, 0.45f, 0.5f));
         var bg = primary ? new Color("#43290f") : new Color("#221e28");
-        int padX = small ? 10 : 18, padY = small ? 4 : 8;
-        StyleBoxFlat S(Color c, Color border) { var s = Box(c, border, 1, 4); s.ContentMarginLeft = s.ContentMarginRight = padX; s.ContentMarginTop = s.ContentMarginBottom = padY; return s; }
-        b.AddThemeStyleboxOverride("normal", S(bg, Line));
-        b.AddThemeStyleboxOverride("hover", S(bg.Lightened(0.12f), LineHi));
-        b.AddThemeStyleboxOverride("pressed", S(bg.Lightened(0.2f), LineHi));
-        b.AddThemeStyleboxOverride("disabled", S(bg.Darkened(0.3f), Line with { A = 0.15f }));
+        int padX = small ? 12 : 18, padY = small ? 5 : 8;
+        StyleBox S(string id, Color c, Color border)
+        {
+            var s = Box(c, border, 1, 4);
+            s.ContentMarginLeft = s.ContentMarginRight = padX; s.ContentMarginTop = s.ContentMarginBottom = padY;
+            return UiArt.Frame(id, s);
+        }
+        string p = primary ? "button_primary" : "button";
+        b.AddThemeStyleboxOverride("normal", S(p, bg, Line));
+        b.AddThemeStyleboxOverride("hover", S(p + "_hover", bg.Lightened(0.12f), LineHi));
+        b.AddThemeStyleboxOverride("pressed", S(p + "_pressed", bg.Lightened(0.2f), LineHi));
+        b.AddThemeStyleboxOverride("disabled", S("button_disabled", bg.Darkened(0.3f), Line with { A = 0.15f }));
         b.AddThemeStyleboxOverride("focus", new StyleBoxEmpty());
         if (onPress != null) b.Pressed += onPress;
         return b;
@@ -120,8 +163,9 @@ public static class Style
         var b = Button(text, onPress, false, true);
         if (on)
         {
-            var s = Box(new Color("#d0a858"), new Color("#6a4a14"), 1, 4);
-            s.ContentMarginLeft = s.ContentMarginRight = 10; s.ContentMarginTop = s.ContentMarginBottom = 4;
+            var flat = Box(new Color("#d0a858"), new Color("#6a4a14"), 1, 4);
+            flat.ContentMarginLeft = flat.ContentMarginRight = 12; flat.ContentMarginTop = flat.ContentMarginBottom = 5;
+            var s = UiArt.Frame("segment_on", flat);
             b.AddThemeStyleboxOverride("normal", s);
             b.AddThemeStyleboxOverride("hover", s);
             b.AddThemeColorOverride("font_color", new Color("#2a1a0c"));
@@ -169,25 +213,103 @@ public static class Style
     /// <summary>A key, as a keycap.</summary>
     public static Control Key(string text)
     {
-        var p = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-        var s = Box(new Color("#0d0c10"), GoldDim, 1, 3, 5);
+        var p = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(24, 22) };
+        var s = Box(new Color("#0d0c10"), GoldDim, 1, 3, 6);
         s.ContentMarginTop = s.ContentMarginBottom = 1;
-        p.AddThemeStyleboxOverride("panel", s);
-        p.AddChild(Label(text, UiBold, 12, GoldHi, false, HorizontalAlignment.Center, false));
+        p.AddThemeStyleboxOverride("panel", UiArt.Frame("keycap", s));
+        var l = Label(text, UiBold, 14, GoldHi, false, HorizontalAlignment.Center, false);
+        l.VerticalAlignment = VerticalAlignment.Center;
+        p.AddChild(l);
         return p;
+    }
+
+    /// <summary>The face buttons' colours, each with its letter, so they are
+    /// never told apart by colour alone.</summary>
+    static readonly Dictionary<string, Color> PadColours = new()
+    {
+        ["A"] = new("#6bc45a"), ["B"] = new("#ec5a50"), ["X"] = new("#4a9cf0"), ["Y"] = new("#f2c440"),
+    };
+
+    static readonly Dictionary<string, string> PadFiles = new()
+    {
+        ["A"] = "pad_a", ["B"] = "pad_b", ["X"] = "pad_x", ["Y"] = "pad_y", ["LB"] = "pad_lb", ["RB"] = "pad_rb", ["LT"] = "pad_lt", ["RT"] = "pad_rt",
+        ["View"] = "pad_view", ["Menu"] = "pad_menu", ["D-pad up"] = "pad_dpad_up", ["D-pad down"] = "pad_dpad_down", ["D-pad left"] = "pad_dpad_left",
+        ["D-pad right"] = "pad_dpad_right", ["D-pad"] = "pad_dpad", ["Left stick"] = "pad_lstick", ["Right stick"] = "pad_rstick",
+    };
+
+    /// <summary>A pad button as it looks: a face button is a dark disc with its
+    /// letter in its colour; a bumper, a trigger, View and Menu are dark pills.</summary>
+    public static Control PadButton(string name)
+    {
+        if (PadFiles.TryGetValue(name, out var file) && UiArt.Icon("prompt", file) is { } art)
+            return new TextureRect { Texture = art, CustomMinimumSize = new Vector2(name.Length == 1 ? 26 : 34, 26), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered, MouseFilter = Control.MouseFilterEnum.Ignore };
+        if (name.StartsWith("D-pad")) return Dpad(name.Length > 6 ? name[6..] : "");
+        bool face = PadColours.TryGetValue(name, out var col);
+        string text = name;
+        var p = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(face ? 26 : 30, 26) };
+        var s = Box(new Color("#0d0c10"), face ? col : GoldDim, face ? 2 : 1, face ? 13 : 7, face ? 0 : 6);
+        p.AddThemeStyleboxOverride("panel", s);
+        var l = Label(text, UiHeavy, face ? 15 : 13, face ? col : GoldHi, false, HorizontalAlignment.Center, false);
+        l.VerticalAlignment = VerticalAlignment.Center;
+        p.AddChild(l);
+        return p;
+    }
+
+    /// <summary>The D-pad as a little cross, the arm meant lit (none: all four).</summary>
+    static Control Dpad(string arm)
+    {
+        var c = new Control { CustomMinimumSize = new Vector2(26, 26), MouseFilter = Control.MouseFilterEnum.Ignore };
+        var back = new Panel { Size = new Vector2(26, 26), MouseFilter = Control.MouseFilterEnum.Ignore };
+        back.AddThemeStyleboxOverride("panel", Box(new Color("#0d0c10"), GoldDim, 1, 6, 0));
+        c.AddChild(back);
+        void Arm(string which, Vector2 at, Vector2 size) =>
+            c.AddChild(new ColorRect { Position = at, Size = size, Color = arm == "" || arm == which ? GoldHi : GoldDim with { A = 0.6f }, MouseFilter = Control.MouseFilterEnum.Ignore });
+        Arm("up", new Vector2(10, 4), new Vector2(6, 7));
+        Arm("down", new Vector2(10, 15), new Vector2(6, 7));
+        Arm("left", new Vector2(4, 10), new Vector2(7, 6));
+        Arm("right", new Vector2(15, 10), new Vector2(7, 6));
+        return c;
+    }
+
+    /// <summary>The key or button for an action, as the device last touched has it.</summary>
+    public static Control Prompt(Play.Act a)
+    {
+        var c = Play.Controls.Instance;
+        if (c != null && c.UsingPad && c.PadLabels(a).FirstOrDefault() is string pad) return PadButton(pad);
+        return Key(c?.KeyLabel(a) ?? "?");
+    }
+
+    /// <summary>A prompt and what it does ("A  Wear"), for a screen's footer.</summary>
+    public static Control Hint(Play.Act a, string text, Color? color = null)
+    {
+        var h = H(6, Prompt(a), Label(text, Ui, Caption, color ?? InkDim));
+        h.Alignment = BoxContainer.AlignmentMode.Center;
+        return h;
+    }
+
+    /// <summary>A footer of prompts, spaced like words in a line.</summary>
+    public static HBoxContainer Hints(params (Play.Act Act, string Text)[] items)
+    {
+        var h = H(Gap5);
+        foreach (var (a, t) in items) h.AddChild(Hint(a, t));
+        return h;
     }
 
     /// <summary>A hairline rule, gold fading at both ends.</summary>
     public static Control Rule()
     {
+        // A painted divider (ornaments/rule.png, a filigree with a centre stone) if there is one.
+        var art = UiArt.Art("ornaments/rule.png");
         var r = new TextureRect
         {
-            Texture = new GradientTexture2D
+            Texture = art ?? new GradientTexture2D
             {
                 Gradient = new Gradient { Offsets = new[] { 0f, 0.5f, 1f }, Colors = new[] { LineHi with { A = 0 }, LineHi, LineHi with { A = 0 } } },
                 Width = 256, Height = 1,
             },
-            StretchMode = TextureRect.StretchModeEnum.Scale, CustomMinimumSize = new Vector2(0, 1), MouseFilter = Control.MouseFilterEnum.Ignore,
+            StretchMode = art != null ? TextureRect.StretchModeEnum.KeepAspectCentered : TextureRect.StretchModeEnum.Scale,
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            CustomMinimumSize = new Vector2(0, art != null ? art.GetHeight() : 1), MouseFilter = Control.MouseFilterEnum.Ignore,
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
         };
         var m = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -195,6 +317,13 @@ public static class Style
         m.AddThemeConstantOverride("margin_bottom", 8);
         m.AddChild(r);
         return m;
+    }
+
+    /// <summary>The ornament under a great heading (ornaments/flourish.png), or nothing.</summary>
+    public static Control Flourish()
+    {
+        if (UiArt.Art("ornaments/flourish.png") is not { } art) return Gap(0);
+        return new TextureRect { Texture = art, CustomMinimumSize = art.GetSize(), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered, MouseFilter = Control.MouseFilterEnum.Ignore, SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter };
     }
 
     /// <summary>A darkening over the game behind an overlay; a click on it closes.</summary>

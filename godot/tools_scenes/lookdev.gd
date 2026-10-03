@@ -83,13 +83,18 @@ func _init():
 					skel.add_child(mi)
 					mi.skeleton = NodePath("..")
 					fur(mi)
+					if OS.get_environment("OLDOUTFIT") == "": outfit_materials(mi)
+					else:
+						for s in mi.mesh.get_surface_count():
+							if mi.mesh.surface_get_material(s) is StandardMaterial3D: mi.mesh.surface_get_material(s).vertex_color_use_as_albedo = false
 			o.free()
 			# Her skin under the outfit's fitted pieces is not drawn (its
 			# channel in her vertex colours: warden red, arcanist green).
 			var ch = ["warden", "arcanist", "reaver", "ranger"].find(outfit.trim_suffix("_").split(".")[0].split("_")[0])
 			if ch >= 0 and OS.get_environment("NOHIDE") == "":
 				for bm in skel.get_children():
-					if bm is MeshInstance3D and not String(bm.name).contains(".") and bm.mesh.surface_get_format(0) & Mesh.ARRAY_FORMAT_COLOR:
+					# (her body only, as People.HerOutfit has it: not her outfit's pieces, whose colours are their own)
+					if bm is MeshInstance3D and not String(bm.name).contains(".") and not String(bm.name).contains("_") and bm.mesh.surface_get_format(0) & Mesh.ARRAY_FORMAT_COLOR:
 						hide_skin(bm, ch)
 		# HAIR=<style> (heroine_hair_<style>.gltf; "none" for none), HAIRCOLOR=#rrggbb.
 		var style = OS.get_environment("HAIR") if OS.get_environment("HAIR") != "" else "long"
@@ -153,7 +158,7 @@ func _init():
 		players.append(ap)
 	var cam = Camera3D.new()
 	cam.position = Vector3(0, float(OS.get_environment("CAMY")) if OS.get_environment("CAMY") != "" else 1.0, (1.6 + clips.size() * 0.75) * (float(OS.get_environment("CAMD")) if OS.get_environment("CAMD") != "" else 1.0))
-	cam.fov = 40
+	cam.fov = float(OS.get_environment("FOV")) if OS.get_environment("FOV") != "" else 40.0
 	root.add_child(cam)
 	cam.current = true
 	# ORBIT=deg,height,dist,targety: the camera round the middle figure, looking at it.
@@ -189,6 +194,35 @@ func _init():
 	rim.rotation_degrees = Vector3(-20, 200, 0)
 	rim.light_energy = 0.0 if OS.get_environment("NORIM") != "" else 1.2
 	root.add_child(rim)
+
+# As People.OutfitMaterials: her outfit's pieces by shaders/heroine_outfit.gdshader
+# (OLDOUTFIT=1: as exported, to compare).
+var outfit_table = null
+func outfit_materials(mi):
+	if outfit_table == null:
+		outfit_table = JSON.parse_string(FileAccess.get_file_as_string("res://art/people/outfit_materials.json"))
+	for s in mi.mesh.get_surface_count():
+		var src = mi.mesh.surface_get_material(s)
+		if mi.get_surface_override_material(s) != null or not (src is StandardMaterial3D): continue
+		src.vertex_color_use_as_albedo = false
+		if not outfit_table.has(String(src.resource_name)): continue
+		var k = {"leather": 0, "metal": 1, "cloth": 2, "gloss": 3}.get(outfit_table[String(src.resource_name)]["kind"], -1)
+		if k < 0: continue
+		var m = ShaderMaterial.new()
+		m.shader = load("res://shaders/heroine_outfit.gdshader")
+		m.set_shader_parameter("kind", k)
+		m.set_shader_parameter("albedo", src.albedo_texture)
+		m.set_shader_parameter("normal_map", src.normal_texture)
+		m.set_shader_parameter("orm", src.roughness_texture)
+		m.set_shader_parameter("has_orm", src.roughness_texture != null)
+		m.set_shader_parameter("roughness_value", src.roughness)
+		m.set_shader_parameter("metallic_value", src.metallic)
+		m.set_shader_parameter("repeats", float(outfit_table[String(src.resource_name)]["repeats"]))
+		if OS.get_environment("OUTFITVIEW") != "": m.set_shader_parameter("debug_view", int(OS.get_environment("OUTFITVIEW")))
+		for kv in OS.get_environment("OUTFITSET").split(",", false):
+			var e = kv.split("=")
+			m.set_shader_parameter(e[0], float(e[1]))
+		mi.set_surface_override_material(s, m)
 
 # As People.PoreScale: pore tiles to a UV unit, one every 1.5 cm on her.
 func pore_scale(mesh):

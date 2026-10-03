@@ -1701,6 +1701,162 @@ def smooth_cups(name, mkey, size=1.0, lift=0.005, thick=0.003, trim=None):
     return made
 
 
+def breast_centre(sd):
+    """The middle of her breast on side `sd`: the centre of the ellipsoid
+    fitted to its front (the areola filled), and the way out through the
+    nipple from it."""
+    s_ = 1 if sd == "l" else -1
+    nip = NIPPLE[sd]
+    near = (np.linalg.norm(P_FILLED - nip, axis=1) < 0.075) & (N[:, 1] < -0.3) & (P[:, 0] * s_ > 0.01)
+    q0 = P_FILLED[near]
+    m = q0.mean(0)
+    _, _, R = np.linalg.svd(q0 - m)
+    q = (q0 - m) @ R.T
+    k, *_ = np.linalg.lstsq(np.c_[q ** 2, q], np.ones(len(q)), rcond=None)
+    A, B, C, D, E, F = k
+    cl = -np.array([D / (2 * A), E / (2 * B), F / (2 * C)])
+    c = m + cl @ R
+    z = nip - c
+    return c, z / np.linalg.norm(z)
+
+
+def full_cups(name, mkey, top, lift=0.004, thick=0.003, trim=None, studs=None, below=0.012, gap=0.011, side=0.06,
+              roll=0.014, step=0.0022):
+    """A pair of formed cups, as a plate bra's or a fitted bodice's are: each
+    a smooth shell over the whole breast, made as a height field seen
+    straight on to it (along the way out through her nipple): at each point
+    the front-most of her skin and the hull round her breast and the chest
+    under it (so it bridges the crease beneath rather than sinking into
+    it), eased smooth and never inside her, lifted `lift` off her. Toward
+    its outline the shell rolls down onto her skin over `roll` metres, so no
+    rim stands off her. The outline: above, the line `top(|x|)` (a height
+    for each distance from her middle: a plunge is a line falling toward her
+    middle); below, `below` under her breast's fold (the lowest of her its
+    bone moves), on her ribs; inside,
+    `gap` from her middle; outside, `side` past her nipple. Cut cleanly along
+    it, made on her right breast and mirrored onto her left, its weights from
+    her skin under it (it moves, and swings, with her)."""
+    from scipy import ndimage
+    from scipy.spatial import ConvexHull
+    sd, s_ = "r", -1
+    nip = NIPPLE[sd]
+    c, z = breast_centre(sd)
+    # Her own skin, but at each nipple the filled skin (else the cup would
+    # come to a point there). Not the filled skin elsewhere: it eases the
+    # lumps of her breasts and lies inside her where they curve most.
+    at_nip = np.min([np.linalg.norm(P - q, axis=1) for q in NIPPLE.values()], axis=0) < 0.03
+    CUP_SKIN = np.where(at_nip[:, None], P_FILLED, P)
+    cup_bvh = BVHTree.FromPolygons([tuple(q) for q in CUP_SKIN], TRI.tolist())
+    arms = ARMW["l"] + ARMW["r"]
+    # Her breast and the chest and ribs round it: the hull of these is the
+    # shell a rigid cup would make. (Out to 16 cm, well past the outline, so
+    # the hull's own cut edge is never under the cup.)
+    pick = (np.linalg.norm(P_FILLED - c, axis=1) < 0.16) & (P_FILLED[:, 0] * s_ > 0.002) & (arms < 0.3) \
+        & (wsum("Head", "neck_01") < 0.3)
+    eq = ConvexHull(P_FILLED[pick]).equations
+    # Her breast's fold: the lowest of her that her breast's bone moves
+    # (the cup's bottom edge is `below` under it, on her ribs).
+    fold = P[(wsum("breast_r") > 0.25) & (P[:, 0] < 0)][:, 2].min()
+    print("FOLD %.3f (underbust %.3f)" % (fold, UNDERBUST))
+    # The view: straight on along z, a grid `step` apart across it.
+    up = np.array([0.0, 0.0, 1.0]) - z[2] * z
+    up /= np.linalg.norm(up)
+    sv = np.cross(z, up)
+    half = 0.13
+    us = np.arange(-half, half + 1e-9, step)
+    n = len(us)
+    gu, gv = np.meshgrid(us, us, indexing="ij")
+    origin = nip + z * 0.25 + gu[..., None] * sv + gv[..., None] * up
+    o = origin.reshape(-1, 3)
+    d = -z
+    # Skin: the first of her (the areola filled) along each ray.
+    skin_t = np.full(len(o), np.nan)
+    for i, oi in enumerate(o):
+        hit = cup_bvh.ray_cast(Vector(oi), Vector(d), 0.6)
+        if hit[0] is not None:
+            skin_t[i] = hit[3]
+    # Hull: where each ray enters it.
+    nd = eq[:, :3] @ d
+    num = -(o @ eq[:, :3].T + eq[:, 3])
+    tf = num / np.where(np.abs(nd) > 1e-9, nd, 1e-9)
+    t_in = np.where(nd[None, :] < 0, tf, -np.inf).max(1)
+    t_out = np.where(nd[None, :] > 0, tf, np.inf).min(1)
+    hull_t = np.where(t_in < t_out, t_in, np.nan)
+    ok = np.isfinite(skin_t)
+    shell_t = np.where(np.isfinite(hull_t), np.minimum(hull_t, skin_t), skin_t) - lift
+    shell_t = np.where(ok, shell_t, np.nan).reshape(n, n)
+    skin_lift = (skin_t - lift).reshape(n, n)
+    # Eased smooth (the hull is faceted), never inside her.
+    fill = np.where(np.isfinite(shell_t), shell_t, np.nanmax(shell_t))
+    for _ in range(40):
+        fill = np.minimum(ndimage.uniform_filter(fill, 3, mode="nearest"), np.where(np.isfinite(skin_lift), skin_lift, fill))
+    shell_t = np.where(np.isfinite(shell_t), fill, np.nan)
+    # The outline as a field on the shell (metres inside it, roughly).
+    pos_shell = (origin + d * shell_t[..., None]).reshape(-1, 3)
+    ax = np.abs(pos_shell[:, 0])
+    f = np.minimum.reduce([top(ax) - pos_shell[:, 2], pos_shell[:, 2] - (fold - below), ax - gap,
+                           abs(nip[0]) + side - ax])
+    f = np.where(np.isfinite(f), f, -1.0)
+    # Toward the outline the shell rolls down onto her skin.
+    k = np.clip(f / roll, 0, 1).reshape(n, n)
+    k = k * k * (3 - 2 * k)
+    t = np.where(np.isfinite(skin_lift), skin_lift + (shell_t - skin_lift) * k, shell_t)
+    pos = (origin + d * t[..., None]).reshape(-1, 3)
+    if os.environ.get("CUPDEBUG"):
+        skin_bvh = BVHTree.FromPolygons([tuple(q) for q in P], TRI.tolist())
+        def sdist(Q):
+            out = []
+            for q in Q:
+                if not np.isfinite(q).all():
+                    out.append(np.nan); continue
+                loc, nrm, _, _ = skin_bvh.find_nearest(Vector(q))
+                out.append((Vector(q) - loc).dot(nrm))
+            return np.array(out)
+        for nm, Q in (("skin hit", (origin + d * skin_t.reshape(n, n)[..., None]).reshape(-1, 3)),
+                      ("shell", (origin + d * shell_t[..., None]).reshape(-1, 3)), ("rolled", pos)):
+            sdv = sdist(Q[::5])
+            print("CUPDEBUG", nm, "inside %d of %d, min %.1f mm, median %.1f mm" % (np.sum(sdv < -0.0005), np.isfinite(sdv).sum(), np.nanmin(sdv) * 1000, np.nanmedian(sdv) * 1000))
+        print("CUPDEBUG z", z.round(3), "c", c.round(3), "nip", nip.round(3))
+    ax = np.abs(pos[:, 0])
+    f = np.minimum.reduce([top(ax) - pos[:, 2], pos[:, 2] - (fold - below), ax - gap, abs(nip[0]) + side - ax])
+    f = np.where(np.isfinite(pos).all(1), f, -1.0)
+    pos = np.where(np.isfinite(pos), pos, 0.0)
+    # The sheet: the grid as triangles, cut along the outline.
+    idx = np.arange(n * n).reshape(n, n)
+    a0, a1, b0, b1 = idx[:-1, :-1].ravel(), idx[1:, :-1].ravel(), idx[:-1, 1:].ravel(), idx[1:, 1:].ravel()
+    tris = np.vstack([np.c_[a0, a1, b1], np.c_[a0, b1, b0]])
+    nor = vertex_normals(pos, tris)
+    if (nor * z).sum(1).mean() < 0:
+        tris = tris[:, ::-1]
+    _, j = cKDTree(P).query(pos)
+    attr = np.hstack([vertex_normals(pos, tris), W[j].astype(float), np.zeros((len(pos), 1))])
+    pos, at, tris = clip(f, pos, attr, tris)
+    pos, at, tris = weld(pos, at, tris)
+    tris = islands(pos, tris)
+    # Distance in from its edge (for the bound edge and the rivets).
+    loops = edge_loops(tris)
+    rim = np.unique(np.concatenate([np.array(lp) for lp in loops])) if loops else np.arange(0)
+    at[:, -1] = cKDTree(pos[rim]).query(pos)[0] if len(rim) else 0.05
+    off = np.array([cup_bvh.find_nearest(Vector(q))[3] for q in pos[::7]])
+    print("FULL CUP %s: %d points, %.1f mm off her skin at most, %.1f mm on average" % (
+        name, len(pos), off.max() * 1000, off.mean() * 1000))
+    mp = pos * np.array([-1, 1, 1])
+    pos2 = np.vstack([pos, mp])
+    nor = at[:, :3]
+    at2 = np.vstack([at, np.hstack([nor * np.array([-1, 1, 1]), at[:, 3:3 + NB][:, SWAP], at[:, -1:]])])
+    tris2 = np.vstack([tris, tris[:, ::-1] + len(pos)])
+    beads = []
+    if trim:
+        tkey, w, h, tt = trim
+        pos2, beads = bind_edges(name, pos2, at2, tris2, tkey, max(w, 0.005), max(h, 0.0006), 0.0018, thick)
+    made = [finish(name, pos2, at2[:, 3:3 + NB], tris2, mkey, thick, 0.0006, 10 ** 7)] + beads
+    if studs:
+        made += rivets(name, pos2, at2, tris2, thick, studs)
+    for o_ in made:
+        o_["hides"] = True
+    return made
+
+
 def trimmed(name, pos, at, tris, mkey, thick, bevel, trim, budget=3000):
     """A sheet and, if asked, the gold along its edge (the field in `at`'s
     last column is the distance in from the edge)."""
@@ -1879,26 +2035,77 @@ def witch_hat(name, mkey, band_key, brim=0.21, height=0.34, droop=0.09, bald=Fal
 
 
 # ---------------------------------------------------------------- outfits --
+def plunge_line(over=0.03, low=0.03, wing=0.022):
+    """The top edge of a plunging cup, as a height for each distance from her
+    middle: from `low` over her underbust at her middle, rising in a curve
+    to `over` above her nipple, highest a little past it where a strap
+    would hold it (`wing` higher), then down the side of her breast toward
+    her arm."""
+    from scipy.interpolate import PchipInterpolator
+    nx = abs(NIPPLE["r"][0])
+    nz = NIPPLE["r"][2]
+    xs = np.array([0.0, 0.012, nx * 0.45, nx * 0.8, nx, nx + 0.025, nx + 0.05, nx + 0.09])
+    zs = np.array([UNDERBUST + low - 0.005, UNDERBUST + low, nz - 0.01, nz + over * 0.8, nz + over, nz + over + wing,
+                   nz + over + 0.005, nz - 0.02])
+    return PchipInterpolator(xs, zs, extrapolate=True)
+
+
 def warden():
-    """The oath-knight: polished plate over quilted leather, edged in gold."""
-    cup, band = cups(cover=0.6, plunge=0.012)
-    for sd in "lr":
-        print("NIPPLE COVER warden", sd, "cup field %.4f" % cup[np.argmin(np.linalg.norm(P - NIPPLE[sd], axis=1))])
-    bot = bottom("cheeky")
-    plate = AND(bot, FRONT - 0.5, (CROTCH + 0.13) - Z)
+    """The oath-knight, sworn to the Order of the Morning Light: formed
+    plate cups, plunging deep between her breasts, gold-bound and riveted,
+    held by straps over her shoulders and a strap round her back; a war belt
+    slung low on her hips with a steel fauld over the front of her and
+    tassets on her hips, a short leather flap behind leaving the curve of
+    her cheeks bare, and beneath them only a thong; plate at her shoulders,
+    forearms, knees and shins."""
+    arms = ARMW["l"] + ARMW["r"]
+    nx, nz = abs(NIPPLE["r"][0]), NIPPLE["r"][2]
 
     def gold(w=0.007):
         return ("gold", w, 0.0004, 0.0015)
 
+    # The belt: slung low, where a brief's waistband would run, rising over
+    # her hip bones and behind.
+    bz0 = CROTCH + 0.13
+
+    def belt_z(a):
+        return bz0 + 0.05 * np.clip(np.abs(0.17 * np.sin(a)) / 0.15, 0, 1) ** 2 + 0.06 * ramp(-np.cos(a), -0.15, 0.35)
+    under_belt = bz0 - 0.022
+    # The straps: from each cup's peak, over her shoulder, down her back to
+    # the strap round it.
+    back_z = UNDERBUST + 0.035
+    straps = []
+    for sd, sg in (("l", 1), ("r", -1)):
+        top = front_point(sg * (nx + 0.024), nz + 0.044)
+        straps.append([top, np.array([sg * (nx - 0.005), -0.05, 1.53]), np.array([sg * 0.11, 0.03, 1.565]),
+                       np.array([sg * 0.1, 0.11, 1.47]), np.array([sg * 0.085, 0.125, back_z])])
     out = [
-        *smooth_cups("warden.cups", "steel", thick=0.0022),
-        *piece("warden.band", band, "darkleather", lift=0.003, smooth=3, soften=25, trim=gold(0.006)),
-        *[o for k, cv in enumerate(shoulder_strap_curves()) for o in ribbon(f"warden.strap{k}", cv, 0.016, "darkleather")],
-        *piece("warden.bottom", bot, "darkleather", lift=0.003, smooth=2, bridge=True),
-        *piece("warden.plate", plate, "steel", lift=0.006, thick=0.003, smooth=6, trim=gold(0.006), studs="gold"),
+        *full_cups("warden.cups", "steel", plunge_line(), lift=0.004, thick=0.0028, trim=gold(0.007), studs="gold"),
+        *[o for k, cv in enumerate(straps) for o in ribbon(f"warden.strap{k}", cv, 0.018, "darkleather", thick=0.003,
+                                                          trim=gold(0.003))],
+        *girdle("warden.backstrap", lambda a_: np.full_like(a_, back_z), 0.022, "darkleather", lift=0.003, thick=0.003,
+                trim=gold(0.003), arc=(1.2, 2 * np.pi - 1.2), mask=arms < 0.3),
+        *girdle("warden.belt", belt_z, 0.05, "darkleather", lift=0.006, thick=0.005, trim=gold(0.005)),
+        *piece("warden.buckle", AND(0.03 - np.linalg.norm(P - front_point(0.0, bz0), axis=1), 0.3 - arms), "gold",
+               lift=0.016, thick=0.004, smooth=4, soften=1),
+        # The fauld over the front of her, coming to a point below her crotch.
+        *hanging("warden.fauld", -0.42, 0.42, under_belt, lambda u: CROTCH - 0.075 + 0.07 * abs(u) ** 1.5, "steel",
+                 flare=0.05, lift=0.02, gap=0.014, thick=0.003, trim=gold(0.008)),
+        # Behind, a short flap of leather: the lower curve of her cheeks bare.
+        *hanging("warden.flap", np.pi - 0.42, np.pi + 0.42, under_belt + 0.05, lambda u: CROTCH + 0.06 + 0.035 * u * u,
+                 "darkleather", flare=0.06, lift=0.016, gap=0.012, thick=0.003, trim=gold(0.005)),
+        # Beneath, a thong: a narrow front (under the fauld) and a string
+        # down the back from the belt.
+        *piece("warden.thong", AND(FRONT - 0.3, np.minimum(0.012 + 0.42 * np.maximum(Z - CROTCH, 0), 0.034) - np.abs(X),
+                                   (under_belt + 0.01) - Z, Z - (CROTCH - 0.03)), "darkleather", lift=0.002, smooth=2, soften=0),
+        *ribbon("warden.thong_back", thong_path(under_belt + 0.06), 0.02, "darkleather", lift=0.003, thick=0.003, snap=False),
     ]
-    for sd in "lr":
+    for sd, sg in (("l", 1), ("r", -1)):
         out += [
+            # A tasset on her hip, hung from the belt, swinging with her thigh.
+            *hanging(f"warden.tasset_{sd}", min(sg * 0.95, sg * 1.75), max(sg * 0.95, sg * 1.75), under_belt + 0.02,
+                     lambda u: CROTCH - 0.02 - 0.03 * (1 - abs(u)), "steel", flare=0.1, lift=0.022, gap=0.016, thick=0.003,
+                     trim=gold(0.007)),
             *piece(f"warden.pauldron_{sd}", cap(shoulder(sd), 0.11), "steel", lift=0.012, thick=0.004, smooth=14, trim=gold(0.01), studs="gold"),
             *piece(f"warden.vambrace_{sd}", limb(sd, ELBOW_S + 0.05, WRIST_S - 0.01, legs=False), "steel", lift=0.006, smooth=8, trim=gold(), studs="gold"),
             *piece(f"warden.greave_{sd}", limb(sd, KNEE_S + 0.03, ANKLE_S + 0.01, front_dip=0.04), "steel", lift=0.008, smooth=12, trim=gold(), studs="gold"),
@@ -2390,6 +2597,123 @@ def reaver():
 
 OUTFITS = {"warden": warden, "arcanist": arcanist, "ranger": ranger, "reaver": reaver}
 
+# How each material is drawn in the game (shaders/heroine_outfit.gdshader):
+# leather (grain, burnished edges, stitching), metal (forged, polished at
+# the edges, dark in the crevices), cloth (weave, sheen), gloss (latex,
+# satin: clean). Fur and sheer stockings have shaders of their own.
+KIND = {"steel": "metal", "darksteel": "metal", "gold": "metal", "bronze": "metal", "rust": "metal",
+        "velvet": "cloth", "arcvelvet": "cloth", "linen": "cloth", "lace": "cloth", "ink": "cloth",
+        "satin": "gloss", "fur": "fur", "stocking": "sheer"}
+
+
+def kind(key):
+    return KIND.get(key, "leather")
+
+
+def detail(objs, rays=20, reach=0.03):
+    """What the outfit's shader needs to know of each point of each piece,
+    from the pieces as made (thickened, bevelled), all of the outfit and
+    her skin together:
+      - how far it is from the piece's edge (its rim, where the sheet turns
+        over: the faces that stand across her skin rather than along it), in
+        metres: for stitching, burnished and polished edges, and wear;
+      - how convex it is there (a bulge is worn, a hollow keeps its dirt);
+      - how much of the sky it sees (rays out to 3 cm against everything
+        else): darker and dirtier where pieces overlap or meet her;
+      - a number for the piece (each its own shade).
+    The first two as a second UV, the others as its vertex colours."""
+    from mathutils import Vector
+    import zlib
+    allv, allt = [P], [TRI]
+    base = len(P)
+    for o in objs:
+        me = o.data
+        allv.append(np.array([(o.matrix_world @ v.co)[:] for v in me.vertices]))
+        allt.append(np.array([[v + base for v in p.vertices[:3]] for p in me.polygons if len(p.vertices) >= 3]))
+        base += len(me.vertices)
+    bvh = BVHTree.FromPolygons([tuple(q) for q in np.vstack(allv)], np.vstack(allt).tolist())
+    rng = np.random.default_rng(1)
+    dirs = rng.normal(size=(rays, 3))
+    dirs /= np.linalg.norm(dirs, axis=1)[:, None]
+    for o in objs:
+        me = o.data
+        me.calc_loop_triangles()
+        V = np.array([(o.matrix_world @ v.co)[:] for v in me.vertices])
+        Nv = np.array([(o.matrix_world.to_3x3() @ v.normal).normalized()[:] for v in me.vertices])
+        # The rim: faces that stand across her skin (its normal nearly square
+        # to her skin's there), or the sheet's own border if it has no rim.
+        fc = np.array([np.mean([V[i] for i in p.vertices], 0) for p in me.polygons])
+        fn = np.array([(o.matrix_world.to_3x3() @ p.normal).normalized()[:] for p in me.polygons])
+        # (a piece far from her, a hat's brim, has no skin under it: then its
+        # rim is where its faces turn from those round them)
+        hits = [SKIN_BVH.find_nearest(Vector(c), 0.06) for c in fc]
+        skin_n = np.array([h[1][:] if h[0] is not None else f for h, f in zip(hits, fn)])
+        rimf = np.abs((fn * skin_n).sum(1)) < 0.45
+        rimv = np.unique(np.concatenate([list(me.polygons[i].vertices) for i in np.nonzero(rimf)[0]])) if rimf.any() else np.array([], int)
+        if len(rimv) < 3:
+            ek = {}
+            for p in me.polygons:
+                vs = list(p.vertices)
+                for a, b in zip(vs, vs[1:] + vs[:1]):
+                    k = (min(a, b), max(a, b))
+                    ek[k] = ek.get(k, 0) + 1
+            rimv = np.unique([v for k, c in ek.items() if c == 1 for v in k]).astype(int)
+        # (a broken point, no number at all, is far from every edge and sees the sky)
+        fin = np.isfinite(V).all(1)
+        rimv = rimv[fin[rimv]]
+        dist = np.full(len(V), 0.05)
+        if len(rimv):
+            dist[fin] = cKDTree(V[rimv]).query(V[fin])[0]
+        V = np.where(fin[:, None], V, 0.0)
+        Nv = np.where(np.isfinite(Nv).all(1)[:, None], Nv, [0.0, 0.0, 1.0])
+        # Convexity: how far each point stands out from the middle of its neighbours, along its normal.
+        nb = [[] for _ in range(len(V))]
+        for e in me.edges:
+            a, b = e.vertices
+            nb[a].append(b)
+            nb[b].append(a)
+        conv = np.zeros(len(V))
+        for i, n_ in enumerate(nb):
+            if n_:
+                d = V[n_].mean(0) - V[i]
+                el = np.linalg.norm(V[n_] - V[i], axis=1).mean() + 1e-6
+                conv[i] = -(d @ Nv[i]) / el
+        for _ in range(3):
+            conv = np.array([0.5 * conv[i] + 0.5 * conv[n_].mean() if n_ else conv[i] for i, n_ in enumerate(nb)])
+        conv = np.tanh(conv * 4) * 0.5 + 0.5
+        ao = np.ones(len(V))
+        for i in range(len(V)):
+            n = Nv[i]
+            hemi = dirs * np.sign(dirs @ n)[:, None]
+            org = Vector(V[i] + n * 0.0008)
+            seen = 0.0
+            tot = 0.0
+            for d in hemi:
+                w = float(d @ n)
+                tot += w
+                if bvh.ray_cast(org, Vector(d), reach)[0] is None:
+                    seen += w
+            ao[i] = seen / max(tot, 1e-6)
+        loops = np.zeros(len(me.loops), np.int32)
+        me.loops.foreach_get("vertex_index", loops)
+        du = me.uv_layers.new(name="detail")
+        du.data.foreach_set("uv", np.c_[dist, conv][loops].astype(np.float32).ravel())
+        me.uv_layers.active_index = 0
+        me.uv_layers[0].active_render = True
+        rnd = (zlib.crc32(o.name.split(".")[-1].split("_")[0].encode()) % 1000) / 1000.0
+        col = me.color_attributes.new("detail", "FLOAT_COLOR", "POINT")
+        col.data.foreach_set("color", np.c_[ao, np.full(len(V), rnd), np.zeros(len(V)), np.ones(len(V))].astype(np.float32).ravel())
+        me.color_attributes.active_color = col
+    print("DETAIL", len(objs), "pieces")
+
+
+def material_table(path):
+    """The outfit materials' table for the game: each one's kind and how
+    many times its texture repeats in a metre (its UVs are in those units)."""
+    import json
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump({k: {"kind": kind(k), "repeats": v[3]} for k, v in SPEC.items()}, fh, indent=1)
+
 made = []
 for name, build in OUTFITS.items():
     if ONLY and name != ONLY:
@@ -2451,6 +2775,7 @@ if BODY_OUT:
 # Nothing else rides along (the scene may hold strays).
 for o in [o for o in bpy.data.objects if o not in made and o not in (arm, body)]:
     bpy.data.objects.remove(o)
+material_table(os.path.join(os.path.dirname(OUT), "outfit_materials.json"))
 # One file an outfit, so the game loads only what she wears.
 for name in OUTFITS:
     mine = [o for o in made if o.name.startswith(name + ".")]
@@ -2464,6 +2789,7 @@ for name in OUTFITS:
     # Text and binary apart, the textures beside them in one folder that
     # every outfit shares (embedded, each file carried its own copies).
     path = os.path.join(os.path.dirname(OUT), f"heroine_outfit_{name}.gltf")
+    detail(mine)
     bpy.ops.export_scene.gltf(filepath=path, export_format="GLTF_SEPARATE", export_texture_dir="outfit_tex", use_selection=True,
-                              export_skins=True, export_animations=False, export_yup=True)
+                              export_skins=True, export_animations=False, export_yup=True, export_vertex_color="ACTIVE")
     print("OUTFIT", name, len(mine), "pieces,", sum(len(o.data.polygons) for o in mine), "faces ->", path)

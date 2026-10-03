@@ -50,6 +50,10 @@ public sealed class ItemDef
     public bool Base;
     public Consumable? Consumable;
     public bool Unique;
+    /// <summary>A quest thing the story may still ask for while this holds
+    /// (always, when it is not written): until then it is neither sold over
+    /// a counter nor dropped. Once its part is played it is only a keepsake.</summary>
+    public World.Cond? Needed;
 }
 
 public sealed class AffixDef
