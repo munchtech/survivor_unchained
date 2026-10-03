@@ -165,7 +165,7 @@ public static class Enemies
             Note = "Red cloth over the face and quick hands under it. They rob the dead first and the living second, which is at least an order." },
         new() { Id = "pillager", Name = "Kerchief Pillager", Family = Family.Kerchief, Faction = Faction.Kerchief, Visual = "kerchief_hooded",
             Health = 30, Speed = 3.4, Damage = 9, Radius = 0.48, Xp = 6, Gold = 3, Behavior = Behavior.Ranged,
-            Ranged = new() { Range = 9, Cooldown = 4.8, Speed = 8.5, School = School.Fire, Lob = true, Zone = new(1.7, 3.5, 0.3), Art = "firepot" },
+            Ranged = new() { Range = 9, Cooldown = 4.2, Speed = 8.5, School = School.Fire, Lob = true, Zone = new(1.7, 3.5, 0.3), Art = "firepot" },
             Loot = "kerchief",
             Note = "The ones who throw. Firepots, bottles, once a boot: whatever the last wagon had in it." },
         new() { Id = "bruiser", Name = "Kerchief Bruiser", Family = Family.Kerchief, Faction = Faction.Kerchief, Visual = "kerchief_brute", Scale = 1.15,
