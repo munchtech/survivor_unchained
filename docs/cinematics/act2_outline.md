@@ -35,7 +35,7 @@ is built. The beats are `STORY_BIBLE.md` section 7; the facts are Act 1's
     Holloway's powder (`be.crates` = `watch`): he collapses the hole, and the farm
     with it, and the lamplings under it.
 - **Key lines.** Tam, on the cart or at the edge: "It knocked. I said it knocked."
-  Tam's Pa (Penhale, Somerset, swearing): "Forty years I've ploughed that. Forty.
+  Tam's Pa (Penhale, Somerset, swearing): "My father ploughed that. And his.
   ...Go on, then, take it." Wenna, handing out masks: "Bitterroot in the beak,
   child. Breathe through it or die." Holloway, at the powder: "Light it."
 
@@ -52,13 +52,18 @@ is built. The beats are `STORY_BIBLE.md` section 7; the facts are Act 1's
   formally, the way she recites. She looks up. The two of them in the cold as the
   light goes: her breath smokes; as the dark comes and the ember wakes, the
   survivor's stops smoking. Keegan watches it stop. She asks.
-- **Chapter four** (Keegan reads it; this is the handbook's own text):
-  "Of the Unchained, and Their Return to the Dark. One. That they do not
-  breathe the cold of night as the living do. Two. That they come back, and that
-  they come back more often than is reasonable. Three. That the dead are quiet
-  round them, and beasts are not. Four. That their past goes out of them, the
-  names first. The knight who has seen these signs shall return the Unchained to
-  the dark, with mercy, at once, and shall not be persuaded."
+- **Chapter four** (Keegan reads it; this is the handbook's own text, two
+  hundred years older than she is, and it sounds it): "Of the Unchained, and
+  Their Return to the Dark. Their breath showeth not by night. They return. The
+  dead make way for them; the hound will not. They lose their mothers' names
+  before their faces. They cannot abide running water. The knight that hath seen
+  these signs shall return the Unchained to the dark, with mercy, and shall not be
+  persuaded."
+- **The wrong sign.** The last sign is false, and Keegan knows it: the one she
+  is reading it to came up out of a river. She reads it anyway, because it is in
+  the book, and her voice goes flat on it. That is what she means by "badly
+  written". It also tells the player the handbook is a book, written by people
+  who guessed.
 - **Variants.** Her respect and trust for the survivor, whether the survivor lies
   to her now ("Did you die on the Low Ford road?"), and whether Keegan has seen her
   come back from death:
@@ -73,7 +78,9 @@ is built. The beats are `STORY_BIBLE.md` section 7; the facts are Act 1's
     chapterhouse, which already knows.
 - **Key lines.** "I have been watching your breath. At night. For three weeks. I
   have kept a table." / (the slip) "I don't— I do not want to be right." / To a lie:
-  "You are not breathing, and you are lying to me. One of those is not your fault."
+  "Your breath does not show, and you are lying to me. One of those is not your
+  fault." (Her breath is the only one in the shot: the survivor's exhale is
+  audible, as in C01, and leaves nothing in the cold.)
 
 ## C22 · The Letter (Holloway)
 
@@ -131,7 +138,7 @@ is built. The beats are `STORY_BIBLE.md` section 7; the facts are Act 1's
   a stick (in the cage) or on a cell wall with a nail: ember by the cartload into
   the hill, the depth, the night the chain gives. He gives the survivor a date.
 - **Key line.** "I'm not a good man. I'm a careful one. ...Carefully, then: you
-  have eleven days."
+  have nine days."
 
 ## C26 · The Bandits Are the Army
 
@@ -146,8 +153,9 @@ is built. The beats are `STORY_BIBLE.md` section 7; the facts are Act 1's
   - *Rav comes* (Redcowl died in Act 1): Rav walks down into the Roost in his
     doctor's coat and comes out of it in the red hat, and leads them to the gate.
     His regard for the survivor decides whether they fight beside her.
-- **Key lines.** Redcowl to Holloway: "You counted our boots once. Count our
-  blades." Rav, in the hat: "Don't look at me like that, pal. Somebody had to wear
+- **Key lines.** Redcowl to Holloway: "You turned the wagons back once,
+  Captain. Turn us." (Holloway's count belongs to C22 and C23; Redcowl's grievance
+  is the relief that never came up the road.) Rav, in the hat: "Don't look at me like that, pal. Somebody had to wear
   it, and he's not using it."
 
 ## C27 · The Hooded Buyer (Brannoc)
@@ -179,32 +187,37 @@ is built. The beats are `STORY_BIBLE.md` section 7; the facts are Act 1's
 - **Does.** The order that guarded the valley is the threat. Sallow; the silver
   cages; Edric Marrow; the ledger. Pays `wayfinder.notes` ("So has he"),
   `wayfinder.name`, `keegan.vigil`.
-- **Beats.** Silver cages in a cold hall, the risen in them sitting very upright,
-  breathing no smoke; Sallow at a desk writing in silver ink; the ledger open; the
+- **Beats.** Silver cages in a cold hall, the risen in them sitting very upright
+  (the cold hall's breath effects do the rest; no shot is built on it); Sallow at
+  a desk writing in silver ink; the ledger open; the
   survivor's entry in Ysolde's hand; Edric in a cage drawing the corners of a
   barrow on the floor with a fingernail.
 - **Variants.** The name in the ledger (hers, "Nobody", "Lark"); Keegan with her
   (she breaks with the Vigil here) or not; free the cages, leave them, bargain.
 - **Key lines.** Sallow: "You've come back more often than anyone in the book.
-  I'm afraid that makes you an asset." / Edric, to the survivor: "Ask her if she's
+  I'm afraid that puts you on the credit side." / Edric, to the survivor: "Ask her if she's
   got the corners right yet."
 
 ## C30 · What You Are (the turn)
 
 - **Trigger.** After Silverstair, the survivor goes to Chid (or he comes to her).
 - **Does.** The truth, said gently by the gentlest person who knows: she drowned at
-  the Low Ford and got up. Every Act 1 seed lands here: the prints, the breath, "I
-  gave you to the water", "You smell like downstairs", the far bank, the mother's
-  face. Moves: Chid and the survivor; he does not yet say what he is.
+  the Low Ford and got up. Every Act 1 seed lands here: the prints, the breath, the
+  Warden's "Lie down." (the Order's word for the dead, said to her), "You smell like
+  downstairs", the far bank, the mother's face. Moves: Chid and the survivor; he does not yet say what he is.
 - **Beats.** The shrine at night, one candle. Chid tells it as a story about
-  someone else, then stops pretending. The survivor's hands. A long silence. She
-  breathes on the cold window: no mist. Then the cost going forward: the names.
+  someone else, then stops pretending. The survivor's hands. A long silence. Then
+  Chid asks her mother's name again, as he did in Act 1 (`chid.names`), gently, and
+  waits, and this time the camera waits with him on her face for as long as she
+  takes. (If he never asked in Act 1, he asks for the first time, and says so.) No
+  breath beat here: C21 had it, and C52 will.
 - **Choices.** "Did it hurt?" / "Who did this?" / "Am I still me?" (each a short
   answer; none a lecture).
 - **Key lines.** Chid: "You were cold when they brought you in. Properly cold.
-  And then you weren't. ...I said I'd forgotten how it looks. I hadn't. I lied to
-  you. I'm sorry; it was a kind lie and they're the worst kind." / "Am I still
-  me?" "You're asking. That's most of it."
+  And then you weren't." / *(Only if she heard him say it in Act 1, the once-only
+  choice "You look like you've seen this before.")* "I said I'd forgotten how it
+  looks. I hadn't. You don't." / "Am I still me?" "The ones in the ditch don't
+  ask."
 
 ## C31 · The War at the Gate (Act 2's climax)
 
