@@ -172,7 +172,9 @@ public static class Lore
         {
             NpcName = NameOf,
             QuestName = id => Quests.TryGetValue(id, out var q) ? q.Name : id,
-            EntryText = EntryText,
+            // "Quest: what you learned", which the notices read as a title and
+            // a line: the quest's name is the title, however many colons the line has.
+            EntryText = (quest, entry) => $"{(Quests.TryGetValue(quest, out var q) ? q.Name : quest)}: {EntryText(quest, entry)}",
         };
 
     /// <summary>What is on someone's mind: the first concern that holds.</summary>

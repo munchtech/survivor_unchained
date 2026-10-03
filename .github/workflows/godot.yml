@@ -1,0 +1,59 @@
+# The Godot game's checks, on every push and pull request: the logic's tests
+# (StoryLint among them) and a build of the whole game's C#, view included.
+# The bots that play arenas and the Verge (ARENA_PLAY, STORY_PLAY) and the
+# horde benchmark (HORDE_BENCH) are opt-in and stay off here.
+name: Godot
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: godot-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DOTNET_NOLOGO: 'true'
+      DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
+    steps:
+      # The game's C# and data only: the web build's assets are not needed.
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            godot
+            tools/ci
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      # No lock files, so the packages are cached by the project files.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('godot/**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+      - name: Restore
+        run: |
+          dotnet restore godot/tests/Tests.csproj
+          dotnet restore godot/SurvivorUnchained.csproj
+      - name: Test the logic
+        run: >
+          dotnet test godot/tests/Tests.csproj --no-restore
+          --logger "trx;LogFileName=results.trx"
+          --logger "console;verbosity=normal"
+          --results-directory godot/tests/results
+      - name: Summarise the tests
+        if: always()
+        run: python3 tools/ci/trx_summary.py godot/tests/results/results.trx >> "$GITHUB_STEP_SUMMARY"
+      - name: Build the game
+        run: dotnet build godot/SurvivorUnchained.csproj --no-restore
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results
+          path: godot/tests/results
+          if-no-files-found: ignore

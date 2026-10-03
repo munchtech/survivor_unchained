@@ -1,0 +1,897 @@
+{
+ "rav": {
+  "npc": "rav",
+  "entry": [
+   {
+    "when": {
+     "not": {
+      "met": "rav"
+     }
+    },
+    "node": "first"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "tricked_redcowl"
+      },
+      {
+       "met": "rav"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rav",
+         "key": "cb:tricked_redcowl",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_tricked_redcowl"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "killed_redcowl"
+      },
+      {
+       "met": "rav"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rav",
+         "key": "cb:killed_redcowl",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_killed_redcowl"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "rav"
+      },
+      {
+       "npcFlag": {
+        "npc": "rav",
+        "key": "cb:killed_redcowl",
+        "eq": true
+       }
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rav",
+         "key": "came_back",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "came_back"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "burned_roost"
+      },
+      {
+       "met": "rav"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rav",
+         "key": "cb:burned_roost",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_burned_roost"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "history": "exposed_pell"
+      },
+      {
+       "met": "rav"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rav",
+         "key": "cb:exposed_pell",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_exposed_pell"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "rav"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rav",
+         "key": "say:calling",
+         "eq": true
+        }
+       }
+      },
+      {
+       "any": [
+        {
+         "archetype": "warden"
+        },
+        {
+         "archetype": "reaver"
+        },
+        {
+         "archetype": "arcanist"
+        },
+        {
+         "archetype": "stalker"
+        }
+       ]
+      }
+     ]
+    },
+    "node": "say_calling"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "rav"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rav",
+         "key": "say:sella",
+         "eq": true
+        }
+       }
+      },
+      {
+       "day": {
+        "gte": 2
+       }
+      }
+     ]
+    },
+    "node": "say_sella"
+   },
+   {
+    "node": "hub"
+   }
+  ],
+  "marker": [
+   {
+    "when": {
+     "not": {
+      "met": "rav"
+     }
+    },
+    "mark": "!"
+   }
+  ],
+  "nodes": {
+   "first": {
+    "id": "first",
+    "text": [
+     {
+      "when": {
+       "bg": "outcast"
+      },
+      "text": "Well, well. Somebody who knows how to wear a kerchief without looking like a parrot. Sit. I'm Rav Cutwell. Doctor Cutwell, if you're bleeding. Doctor McBreathless, if you're the Watch."
+     },
+     {
+      "when": {
+       "hasTag": "kerchief_colors"
+      },
+      "text": "Red cloth, walking into my tavern in daylight. Brave, or somebody gave it you for a joke. Rav. Sit, before Holloway sees you."
+     },
+     {
+      "text": "You're in my light. ...Oh, sit, then. Rav. I was a doctor, then I was a Kerchief, and now I'm a doctor who drinks here. Ask me which paid better."
+     }
+    ],
+    "choices": [
+     {
+      "text": "Tell me about the Kerchiefs.",
+      "goto": "kerchiefs"
+     },
+     {
+      "text": "Did anyone come through with news of Coyle's caravan?",
+      "goto": "clerk"
+     },
+     {
+      "text": "Know anyone who'd buy this, quietly?",
+      "when": {
+       "hasItem": "coyle_strongbox"
+      },
+      "goto": "fence"
+     },
+     {
+      "text": "Can you get me into the Roost alive?",
+      "when": {
+       "knows": "underworld"
+      },
+      "badge": "Underworld",
+      "once": "roost",
+      "goto": "roost"
+     },
+     {
+      "text": "Redcowl. You know him?",
+      "show": {
+       "any": [
+        {
+         "knows": "hint.roost"
+        },
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "redcowl_met"
+         }
+        }
+       ]
+      },
+      "once": "redcowl",
+      "goto": "redcowl"
+     },
+     {
+      "text": "What have you got for sale?",
+      "action": "trade"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "hub": {
+    "id": "hub",
+    "text": [
+     {
+      "when": {
+       "rel": {
+        "npc": "rav",
+        "axis": "trust",
+        "gte": 30
+       }
+      },
+      "text": "Pal. Pull up a stool."
+     },
+     {
+      "when": {
+       "time": "night"
+      },
+      "text": "Night surgery's double. Night drinking's the same price; I checked. And if you're here for Sella, she's busy: you can hear the bed from the cellar."
+     },
+     {
+      "text": "What'll it be? Advice is free, and worth it."
+     }
+    ],
+    "choices": [
+     {
+      "text": "Tell me about the Kerchiefs.",
+      "goto": "kerchiefs"
+     },
+     {
+      "text": "Did anyone come through with news of Coyle's caravan?",
+      "goto": "clerk"
+     },
+     {
+      "text": "Know anyone who'd buy this, quietly?",
+      "when": {
+       "hasItem": "coyle_strongbox"
+      },
+      "goto": "fence"
+     },
+     {
+      "text": "Can you get me into the Roost alive?",
+      "when": {
+       "knows": "underworld"
+      },
+      "badge": "Underworld",
+      "once": "roost",
+      "goto": "roost"
+     },
+     {
+      "text": "Redcowl. You know him?",
+      "show": {
+       "any": [
+        {
+         "knows": "hint.roost"
+        },
+        {
+         "quest": {
+          "id": "caravan",
+          "entry": "redcowl_met"
+         }
+        }
+       ]
+      },
+      "once": "redcowl",
+      "goto": "redcowl"
+     },
+     {
+      "text": "What have you got for sale?",
+      "action": "trade"
+     },
+     {
+      "text": "Ever think of going back to the Kerchiefs?",
+      "once": "t_rav",
+      "goto": "t_rav"
+     },
+     {
+      "text": "Doctor, I've a pain.",
+      "show": {
+       "all": [
+        {
+         "time": "night"
+        },
+        {
+         "rel": {
+          "npc": "rav",
+          "axis": "trust",
+          "gte": 20
+         }
+        }
+       ]
+      },
+      "once": "pain",
+      "goto": "pain"
+     },
+     {
+      "text": "(Go round the back after closing.)",
+      "show": {
+       "all": [
+        {
+         "time": "night"
+        },
+        {
+         "npcFlag": {
+          "npc": "rav",
+          "key": "once:pain",
+          "eq": true
+         }
+        }
+       ]
+      },
+      "when": {
+       "rel": {
+        "npc": "rav",
+        "axis": "trust",
+        "gte": 20
+       }
+      },
+      "locked": "He'd buy you a drink. That's all, yet.",
+      "once": "back_room",
+      "goto": "back_room"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "kerchiefs": {
+    "id": "kerchiefs",
+    "text": "Redcowl runs them. He'd rather talk than bleed, and he'd rather you bled than he talked. Their camp's in the ravine off the Old Road: the Roost. Wear red, walk slow, keep your hands empty, and you might get to say hello before they shoot you.",
+    "effects": [
+     {
+      "learn": "hint.roost"
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "clerk": {
+    "id": "clerk",
+    "text": [
+     {
+      "when": {
+       "knows": "underworld"
+      },
+      "text": "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd \"done somebody a favour\": told Coyle's teamsters the road was shut and sent them down the forest track. Between us, he'd also a key he shouldn't have. Pell's warehouse. Showed it me like a boy with a frog. ...Not seen him since. He wasn't the type to buy rounds, either."
+     },
+     {
+      "text": "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd \"done somebody a favour\": told Coyle's teamsters the road was shut and sent them down the forest track. Draw your own lines, pal. ...Not seen him since, now I think of it."
+     }
+    ],
+    "effects": [
+     {
+      "quest": {
+       "id": "caravan",
+       "status": "active",
+       "entry": "clerk_turned"
+      }
+     },
+     {
+      "if": {
+       "knows": "underworld"
+      },
+      "then": [
+       {
+        "quest": {
+         "id": "caravan",
+         "entry": "clerks_key"
+        }
+       },
+       {
+        "give": "clerks_key"
+       },
+       {
+        "notice": "Rav slides a key across the table: \"He left it on his stool.\""
+       }
+      ]
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "fence": {
+    "id": "fence",
+    "text": "Coyle's strongbox. Oh, dear. Aye, I know a man. A hundred and fifty, and nobody asks where it came from. At first. People always find out in the end; it's the only law in this valley that gets kept.",
+    "choices": [
+     {
+      "text": "Sell it.",
+      "effects": [
+       {
+        "take": "coyle_strongbox"
+       },
+       {
+        "gold": 150
+       },
+       {
+        "set": {
+         "caravan.cargo": "sold",
+         "player.wanted": true
+        }
+       },
+       {
+        "quest": {
+         "id": "caravan",
+         "entry": "cargo_sold",
+         "outcome": "kept"
+        }
+       },
+       {
+        "if": {
+         "all": [
+          {
+           "fact": "caravan.survivors",
+           "exists": true
+          },
+          {
+           "fact": "caravan.cargo",
+           "exists": true
+          }
+         ]
+        },
+        "then": {
+         "quest": {
+          "id": "caravan",
+          "status": "resolved"
+         }
+        }
+       },
+       {
+        "history": {
+         "id": "fenced_cargo",
+         "text": "sold the Coyle strongbox to a fence",
+         "tags": [
+          "theft",
+          "caravan"
+         ],
+         "spread": 2,
+         "sentiment": {
+          "trust": -20
+         },
+         "reactions": {
+          "harlan": {
+           "trust": -80,
+           "affection": -60
+          },
+          "holloway": {
+           "trust": -40
+          }
+         }
+        },
+        "witnesses": [
+         "rav"
+        ]
+       }
+      ],
+      "goto": "hub"
+     },
+     {
+      "text": "On second thought.",
+      "goto": "hub"
+     }
+    ]
+   },
+   "roost": {
+    "id": "roost",
+    "text": "Alive, and talking? Wear this, walk in the front, and say \"Redcowl owes Rav a leg.\" He'll laugh. If he laughs, you're in. If he doesn't laugh, I was never here.",
+    "effects": [
+     {
+      "if": {
+       "not": {
+        "hasItem": "red_kerchief"
+       }
+      },
+      "then": {
+       "give": "red_kerchief"
+      }
+     },
+     {
+      "learn": "pass.redcowl"
+     },
+     {
+      "rel": {
+       "npc": "rav",
+       "trust": 10
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "redcowl": {
+    "id": "redcowl",
+    "text": "Know him? I sewed his leg back on with a sail-needle and a bottle of something blue, and he's never once said thank you. That's the leg he owes me. ...Don't ask me the rest. I'm a doctor; I don't do family histories.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "cb_tricked_redcowl": {
+    "id": "cb_tricked_redcowl",
+    "text": "You told Redcowl the Watch was coming, and he RAN. I've waited my whole life to see that man run. Sit. This one's on me, and so's the next.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "rav",
+       "key": "cb:tricked_redcowl",
+       "value": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "rav",
+       "affection": 5
+      },
+      "quiet": true
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_killed_redcowl": {
+    "id": "cb_killed_redcowl",
+    "text": "(He doesn't look up.) You killed him. ...Dunstan. That was his name, before the hat. Our mother's idea; he hated it. (He drinks.) No. He'd have said it was the job. It was always the job, with him. Get out of my light for a bit, pal. Come back tomorrow. I'll be a doctor again tomorrow.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "rav",
+       "key": "cb:killed_redcowl",
+       "value": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "...",
+      "end": true
+     }
+    ]
+   },
+   "cb_burned_roost": {
+    "id": "cb_burned_roost",
+    "text": "The Roost burned. With the cages full, they're saying. ...He'll have got out. He always gets out. The ones in the cages didn't.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "rav",
+       "key": "cb:burned_roost",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "cb_exposed_pell": {
+    "id": "cb_exposed_pell",
+    "text": "Pell in irons! I'll drink to that. I'll drink to anything, but I'll drink to that twice.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "rav",
+       "key": "cb:exposed_pell",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "say_calling": {
+    "id": "say_calling",
+    "text": [
+     {
+      "when": {
+       "archetype": "warden"
+      },
+      "text": "Shield arm's longer than the other. Comes of holding a door shut. Holloway'd love you, pal; don't let him."
+     },
+     {
+      "when": {
+       "archetype": "reaver"
+      },
+      "text": "You've broken a few noses. Your knuckles are a medical history."
+     },
+     {
+      "when": {
+       "archetype": "arcanist"
+      },
+      "text": "Spell-scorched fingertips. You'll want goose fat for that. And to stop doing it, but you won't."
+     },
+     {
+      "when": {
+       "archetype": "stalker"
+      },
+      "text": "You counted the doors when you sat down. Old Kerchief habit. Who taught you?"
+     },
+     {
+      "text": "You counted the doors when you sat down. Old Kerchief habit. Who taught you?"
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "rav",
+       "key": "say:calling",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "say_sella": {
+    "id": "say_sella",
+    "text": [
+     {
+      "when": {
+       "sex": "female"
+      },
+      "text": "A word to the wise: Sella charges ladies the gentleman's rate, to see if they'll notice. Notice."
+     },
+     {
+      "text": "A word to the wise: Sella's charging the gentleman's rate this week. It's the same as the lady's rate. She just says it slower."
+     }
+    ],
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "rav",
+       "key": "say:sella",
+       "value": true
+      }
+     }
+    ],
+    "next": "hub"
+   },
+   "t_rav": {
+    "id": "t_rav",
+    "text": "Every night, round the fourth cup. Then I remember the latrines, and the lice, and the man who sharpened his teeth for a joke and then couldn't stop, and I have a fifth.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "pain": {
+    "id": "pain",
+    "text": "Where? ...No, don't point, pal, we're in company. Come round the back after closing and I'll take a look. Largely professionally. Bring a bottle; it's an anaesthetic for one of us.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "rav",
+       "affection": 5
+      },
+      "quiet": true
+     }
+    ],
+    "choices": [
+     {
+      "text": "Another night, Doctor.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "back_room": {
+    "id": "back_room",
+    "speaker": "narrator",
+    "text": "Behind the Crooked Flagon there's a lean-to with a lamp, a scrubbed table, a shelf of jars (one of them moving), and a sail-needle stuck in a cork like a trophy. Rav is sitting on the table with his feet on a stool and two cups already poured.",
+    "effects": [
+     {
+      "set": {
+       "rav.back_room": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "rav",
+       "affection": 5,
+       "trust": 5
+      },
+      "quiet": true
+     }
+    ],
+    "next": "back_room_look"
+   },
+   "back_room_look": {
+    "id": "back_room_look",
+    "text": "You came. (He looks faintly alarmed about it.) Right. Up on the table. Breathe in. Out. Don't flatter yourself, that's medical. (He looks at your eyes, and your tongue, and your hands, turning them over the way Sella does, but for different reasons. He listens at your back with his ear flat against it, and tells you to cough. He's quiet a moment.) There's nothing wrong with you, pal. (He frowns at your wrist, then lets it go.) ...That's the worrying part. Nobody's got nothing wrong with them. Have a drink, before I find something.",
+    "choices": [
+     {
+      "text": "Is this the anaesthetic?",
+      "goto": "back_room_drink"
+     },
+     {
+      "text": "(Kiss him.)",
+      "goto": "back_room_kiss"
+     },
+     {
+      "text": "Thank you, Doctor.",
+      "goto": "back_room_end"
+     }
+    ]
+   },
+   "back_room_drink": {
+    "id": "back_room_drink",
+    "text": "For one of us. (He drinks his, then looks at yours.) Both of us, evidently. ...Go home, pal. You've got a job up the Old Road, and I've got a bad habit of liking folk who've jobs up the Old Road.",
+    "choices": [
+     {
+      "text": "Goodnight, Rav.",
+      "end": true
+     }
+    ]
+   },
+   "back_room_kiss": {
+    "id": "back_room_kiss",
+    "text": "(He lets you, for a moment. He tastes of the Flagon's piss and something under it, cloves. Then he puts a hand flat on your chest and moves you back a foot, gently, the way he'd move a patient.) Not yet, pal. Not three cups down, and not while you're still needing things off me: keys, ways in, who's who up the Old Road. (He picks up his cup.) Ask me again when you've stopped needing anything. I'll be here. I'm always here. That's the other worrying part.",
+    "effects": [
+     {
+      "rel": {
+       "npc": "rav",
+       "affection": 5
+      },
+      "quiet": true
+     }
+    ],
+    "choices": [
+     {
+      "text": "Goodnight, Rav.",
+      "end": true
+     }
+    ]
+   },
+   "back_room_end": {
+    "id": "back_room_end",
+    "text": "\"Doctor.\" (He snorts.) Get out of my surgery.",
+    "choices": [
+     {
+      "text": "Goodnight.",
+      "end": true
+     }
+    ]
+   },
+   "came_back": {
+    "id": "came_back",
+    "text": "(He's at his table. He's sober, or near it. He's shaved.) You came back. (He looks at you for a long time.) Most folk wouldn't. Most folk would drink at Rook's for a month and hope I'd died of it. ...Sit. I'll not talk about it if you don't. I'm a doctor today. What's wrong with you?",
+    "effects": [
+     {
+      "set": {
+       "rav.came_back": true
+      }
+     },
+     {
+      "npcFlag": {
+       "npc": "rav",
+       "key": "came_back",
+       "value": true
+      }
+     },
+     {
+      "rel": {
+       "npc": "rav",
+       "trust": 15
+      },
+      "quiet": true
+     }
+    ],
+    "choices": [
+     {
+      "text": "Nothing. I came to sit.",
+      "goto": "came_back_sit"
+     },
+     {
+      "text": "I'm sorry.",
+      "goto": "came_back_sorry"
+     }
+    ]
+   },
+   "came_back_sit": {
+    "id": "came_back_sit",
+    "text": "(A breath out through his nose.) Aye. Well. Sit, then.",
+    "next": "hub"
+   },
+   "came_back_sorry": {
+    "id": "came_back_sorry",
+    "text": "No. You're not, and you shouldn't be; he'd have said it was the job. Don't say it again, pal. I'll not be able to hear it twice.",
+    "next": "hub"
+   }
+  }
+ }
+}

@@ -79,6 +79,7 @@ public static class Standings
             else if (KerchiefsFriendly(c))
             {
                 string why = Rules.Test(new Cond { HasTag = "kerchief_colors" }, c) ? "You wear their red. They take it as a promise."
+                    : Is(c, "be.crates", "redcowl") ? "Redcowl keeps the Coyle crates from the Dig, on your word."
                     : Is(c, "redcowl", "bargained") ? "You struck a bargain with Redcowl. It holds while it pays."
                     : Is(c, "caravan.pell", "ally") ? "Pell's word goes a long way in the Roost."
                     : "Redcowl gave you a pass, and his people know your face.";

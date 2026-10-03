@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Core;
 using SurvivorUnchained.Rpg;
@@ -42,7 +43,7 @@ public sealed record SlotInfo(int Slot, string Name, int Level, string Archetype
 /// <summary>The save slots, as files in a folder (the game's user folder).</summary>
 public sealed class Saves
 {
-    public const int Version = 1;
+    public const int Version = 2;
     public const int SlotCount = 3;
     readonly string dir;
 
@@ -63,6 +64,16 @@ public sealed class Saves
         d.World.Legacy ??= new();
         d.World.Shops ??= new();
         d.World.GroundItems ??= new();
+        // 2: shops remember which conditional lines this restock has rolled.
+        // An older shelf already holds whatever of them it rolled, so those
+        // count as rolled (or they would be put up a second time).
+        foreach (var (id, st) in d.World.Shops)
+        {
+            st.Offered ??= new();
+            if (d.Version >= 2 || !Lore.Shops.TryGetValue(id, out var def)) continue;
+            for (int i = 0; i < def.Lines.Count; i++)
+                if (def.Lines[i].When != null && st.Stock.Any(it => it.Def == def.Lines[i].Id)) st.Offered.Add($"{i}:{def.Lines[i].Id}");
+        }
         d.Version = Version;
         return d;
     }
