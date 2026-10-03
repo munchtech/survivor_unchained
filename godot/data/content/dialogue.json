@@ -9415,6 +9415,14 @@
     ],
     "choices": [
      {
+      "text": "He said to tell you: the leg held.",
+      "show": {
+       "fact": "redcowl.last_words",
+       "eq": "leg"
+      },
+      "goto": "leg_held"
+     },
+     {
       "text": "...",
       "end": true
      }
@@ -9547,6 +9555,16 @@
      },
      {
       "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "leg_held": {
+    "id": "leg_held",
+    "text": "(He puts the cup down, very carefully, as if it were full.) ...Did he. (A long time.) Course it held. I'm a good doctor. ...Go on, pal. Come back tomorrow.",
+    "choices": [
+     {
+      "text": "...",
       "end": true
      }
     ]
@@ -10703,9 +10721,24 @@
        }
       ],
       "when": {
-       "fact": "chapter.ready",
-       "eq": true
+       "all": [
+        {
+         "fact": "chapter.ready",
+         "eq": true
+        },
+        {
+         "any": [
+          {
+           "time": "night"
+          },
+          {
+           "time": "dusk"
+          }
+         ]
+        }
+       ]
       },
+      "locked": "She reads only after dark",
       "goto": "fortune"
      },
      {
@@ -10866,9 +10899,24 @@
        }
       ],
       "when": {
-       "fact": "chapter.ready",
-       "eq": true
+       "all": [
+        {
+         "fact": "chapter.ready",
+         "eq": true
+        },
+        {
+         "any": [
+          {
+           "time": "night"
+          },
+          {
+           "time": "dusk"
+          }
+         ]
+        }
+       ]
       },
+      "locked": "She reads only after dark",
       "goto": "fortune"
      },
      {
@@ -10968,9 +11016,24 @@
        }
       ],
       "when": {
-       "fact": "chapter.ready",
-       "eq": true
+       "all": [
+        {
+         "fact": "chapter.ready",
+         "eq": true
+        },
+        {
+         "any": [
+          {
+           "time": "night"
+          },
+          {
+           "time": "dusk"
+          }
+         ]
+        }
+       ]
       },
+      "locked": "She reads only after dark",
       "goto": "fortune"
      },
      {
@@ -11123,9 +11186,24 @@
        }
       ],
       "when": {
-       "fact": "chapter.ready",
-       "eq": true
+       "all": [
+        {
+         "fact": "chapter.ready",
+         "eq": true
+        },
+        {
+         "any": [
+          {
+           "time": "night"
+          },
+          {
+           "time": "dusk"
+          }
+         ]
+        }
+       ]
       },
+      "locked": "She reads only after dark",
       "goto": "fortune"
      },
      {
@@ -11228,9 +11306,24 @@
        }
       ],
       "when": {
-       "fact": "chapter.ready",
-       "eq": true
+       "all": [
+        {
+         "fact": "chapter.ready",
+         "eq": true
+        },
+        {
+         "any": [
+          {
+           "time": "night"
+          },
+          {
+           "time": "dusk"
+          }
+         ]
+        }
+       ]
       },
+      "locked": "She reads only after dark",
       "goto": "fortune"
      },
      {
@@ -11333,9 +11426,24 @@
        }
       ],
       "when": {
-       "fact": "chapter.ready",
-       "eq": true
+       "all": [
+        {
+         "fact": "chapter.ready",
+         "eq": true
+        },
+        {
+         "any": [
+          {
+           "time": "night"
+          },
+          {
+           "time": "dusk"
+          }
+         ]
+        }
+       ]
       },
+      "locked": "She reads only after dark",
       "goto": "fortune"
      },
      {
@@ -11430,9 +11538,24 @@
        }
       ],
       "when": {
-       "fact": "chapter.ready",
-       "eq": true
+       "all": [
+        {
+         "fact": "chapter.ready",
+         "eq": true
+        },
+        {
+         "any": [
+          {
+           "time": "night"
+          },
+          {
+           "time": "dusk"
+          }
+         ]
+        }
+       ]
       },
+      "locked": "She reads only after dark",
       "goto": "fortune"
      },
      {
@@ -11443,7 +11566,23 @@
    },
    "fortune": {
     "id": "fortune",
-    "text": "Sit. Give me your hand. No, the other one: the one you hold the blade with. No charge, this once. I have been waiting to see how it came out.",
+    "text": [
+     {
+      "when": {
+       "archetype": "arcanist"
+      },
+      "text": "Sit. Give me your hand. No, the other one: the one you burn with. No charge, this once. I have been waiting to see how it came out."
+     },
+     {
+      "when": {
+       "archetype": "stalker"
+      },
+      "text": "Sit. Give me your hand. No, the other one: the one you draw with. No charge, this once. I have been waiting to see how it came out."
+     },
+     {
+      "text": "Sit. Give me your hand. No, the other one: the one you hold the blade with. No charge, this once. I have been waiting to see how it came out."
+     }
+    ],
     "next": "f_beasts"
    },
    "f_beasts": {
@@ -13742,7 +13881,18 @@
    "show": {
     "id": "show",
     "speaker": "narrator",
-    "text": "He turns and walks into the Hollow, and you follow. The sick ones' eyes are milky; their gums are black. One of them tries to stand when it sees you, and cannot. Greymuzzle looks east, toward the stream, then back at you, and waits.",
+    "text": [
+     {
+      "when": {
+       "fact": "maeca.lover",
+       "eq": true
+      },
+      "text": "He comes close enough to smell your hand, then your face, and his lip lifts off his teeth, and goes down again. Then your collar, for longer; and his tail moves, once. He turns and walks into the Hollow, and you follow. The sick ones' eyes are milky; their gums are black. One of them tries to stand when it sees you, and cannot. Greymuzzle looks east, toward the stream, then back at you, and waits."
+     },
+     {
+      "text": "He comes close enough to smell your hand, then your face, and his lip lifts off his teeth, and goes down again. He turns and walks into the Hollow, and you follow. The sick ones' eyes are milky; their gums are black. One of them tries to stand when it sees you, and cannot. Greymuzzle looks east, toward the stream, then back at you, and waits."
+     }
+    ],
     "effects": [
      {
       "set": {
@@ -16308,6 +16458,395 @@
      {
       "text": "Something else.",
       "goto": "hub"
+     }
+    ]
+   }
+  }
+ },
+ "cin_drowned_fire": {
+  "npc": "cin_drowned_fire",
+  "entry": [
+   {
+    "node": "bedroll"
+   }
+  ],
+  "nodes": {
+   "bedroll": {
+    "id": "bedroll",
+    "speaker": "narrator",
+    "text": "Your bedroll has not been slept in.",
+    "next": "prints"
+   },
+   "prints": {
+    "id": "prints",
+    "speaker": "narrator",
+    "text": "Prints in the frost, your own. They come up from the river. None go down to it.",
+    "next": "frost"
+   },
+   "frost": {
+    "id": "frost",
+    "speaker": "narrator",
+    "text": "Past the firelight, the frost is breaking.",
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "cin_none_cross": {
+  "npc": "cin_none_cross",
+  "entry": [
+   {
+    "node": "call"
+   }
+  ],
+  "nodes": {
+   "call": {
+    "id": "call",
+    "speaker": "ford_warden",
+    "text": "(sung, under the water) Lamps are lit... stay where they reach...",
+    "next": "lie_down"
+   },
+   "lie_down": {
+    "id": "lie_down",
+    "speaker": "ford_warden",
+    "text": "Lie down.",
+    "next": "none"
+   },
+   "none": {
+    "id": "none",
+    "speaker": "ford_warden",
+    "text": "NONE. CROSS. AFTER DARK.",
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "cin_heart_goes_down": {
+  "npc": "cin_heart_goes_down",
+  "entry": [
+   {
+    "node": "morning"
+   }
+  ],
+  "nodes": {
+   "morning": {
+    "id": "morning",
+    "speaker": "ford_warden",
+    "text": "Is it morning?",
+    "next": "answer"
+   },
+   "answer": {
+    "id": "answer",
+    "speaker": "narrator",
+    "text": [
+     {
+      "when": {
+       "bg": "devout"
+      },
+      "text": "You know the answer. They taught it you at seven, with the lamps: morning comes."
+     },
+     {
+      "text": ""
+     }
+    ],
+    "next": "nobodys"
+   },
+   "nobodys": {
+    "id": "nobodys",
+    "speaker": "grimtunnel",
+    "text": "Ooh, still lit! Nobody's, is it? Nobody's!",
+    "next": "downstairs"
+   },
+   "downstairs": {
+    "id": "downstairs",
+    "speaker": "grimtunnel",
+    "text": "...You smell like downstairs.",
+    "next": "grateful"
+   },
+   "grateful": {
+    "id": "grateful",
+    "speaker": "grimtunnel",
+    "text": "Finders keepers, surface-m— (a sniff) ...Downstairs'll be ever so grateful.",
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "cin_first_light": {
+  "npc": "cin_first_light",
+  "entry": [
+   {
+    "node": "back"
+   }
+  ],
+  "nodes": {
+   "back": {
+    "id": "back",
+    "speaker": "narrator",
+    "text": "The sun clears the trees, and the ember goes back into the ground.",
+    "next": "face"
+   },
+   "face": {
+    "id": "face",
+    "speaker": "narrator",
+    "text": "You try to call up your mother's face, and find it is not quite where you left it.",
+    "next": "baking"
+   },
+   "baking": {
+    "id": "baking",
+    "speaker": "narrator",
+    "text": "Somewhere up the street, someone is baking.",
+    "next": "dawn"
+   },
+   "dawn": {
+    "id": "dawn",
+    "speaker": "guard",
+    "text": "Dawn arrivals. We don't get many that live.",
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "cin_forty_one_mouths": {
+  "npc": "cin_forty_one_mouths",
+  "entry": [
+   {
+    "node": "them_first"
+   }
+  ],
+  "nodes": {
+   "them_first": {
+    "id": "them_first",
+    "speaker": "kerchief_woman",
+    "text": "Them first.",
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "cin_iron_marker": {
+  "npc": "cin_iron_marker",
+  "entry": [
+   {
+    "node": "verse1"
+   }
+  ],
+  "nodes": {
+   "verse1": {
+    "id": "verse1",
+    "speaker": "chid",
+    "text": "(sung) Go down, go down, the morning's under, / down where the lamps are kept; / and when the day has done its turning, / it will wake you where you slept.",
+    "next": "verse2"
+   },
+   "verse2": {
+    "id": "verse2",
+    "speaker": "chid",
+    "text": "(sung) Go down, go down, and do not wonder, / down where the light is kept; / the dark is only day not happened, / and it will wake you where you slept.",
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "cin_raid_on_the_roost": {
+  "npc": "cin_raid_on_the_roost",
+  "entry": [
+   {
+    "node": "bairns"
+   }
+  ],
+  "nodes": {
+   "bairns": {
+    "id": "bairns",
+    "speaker": "redcowl",
+    "text": [
+     {
+      "when": {
+       "sex": "female"
+      },
+      "text": "Ha! HA. At night, lass. With my bairns asleep behind me. ...Mind where you swing."
+     },
+     {
+      "text": "Ha! HA. At night, lad. With my bairns asleep behind me. ...Mind where you swing."
+     }
+    ],
+    "next": "last"
+   },
+   "last": {
+    "id": "last",
+    "speaker": "redcowl",
+    "text": [
+     {
+      "when": {
+       "fact": "redcowl.ashford_said",
+       "eq": true
+      },
+      "text": "...Ashford."
+     },
+     {
+      "text": "Tell the saw-bones... the leg held."
+     }
+    ],
+    "effects": [
+     {
+      "if": {
+       "fact": "redcowl.ashford_said",
+       "eq": true
+      },
+      "then": [
+       {
+        "set": {
+         "redcowl.last_words": "ashford"
+        }
+       }
+      ],
+      "else": [
+       {
+        "set": {
+         "redcowl.last_words": "leg"
+        }
+       }
+      ]
+     }
+    ],
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "cin_dig_boils_over": {
+  "npc": "cin_dig_boils_over",
+  "entry": [
+   {
+    "node": "pump"
+   }
+  ],
+  "nodes": {
+   "pump": {
+    "id": "pump",
+    "speaker": "grimtunnel",
+    "text": [
+     {
+      "when": {
+       "any": [
+        {
+         "fact": "dig.pump",
+         "eq": "broken"
+        },
+        {
+         "fact": "dig.pump",
+         "eq": "blown"
+        },
+        {
+         "fact": "dig.pump",
+         "eq": "moved"
+        }
+       ]
+      },
+      "text": "Surface-meat! You broke my PUMP. ...Doesn't matter. The heart doesn't mind. The heart is PATIENT."
+     },
+     {
+      "text": "Surface-meat! Killing my lads, are we? ...Doesn't matter. The heart doesn't mind. The heart is PATIENT."
+     }
+    ],
+    "next": "knows"
+   },
+   "knows": {
+    "id": "knows",
+    "speaker": "grimtunnel",
+    "text": "It knows you! Downstairs! It KNOWS you!",
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
+     }
+    ]
+   }
+  }
+ },
+ "cin_behind_the_door": {
+  "npc": "cin_behind_the_door",
+  "entry": [
+   {
+    "node": "nondum"
+   }
+  ],
+  "nodes": {
+   "nondum": {
+    "id": "nondum",
+    "speaker": "barrow_lord",
+    "text": [
+     {
+      "when": {
+       "any": [
+        {
+         "knows": "arcana"
+        },
+        {
+         "hasTag": "scholar_lens"
+        }
+       ]
+      },
+      "text": "Nondum. (Not yet.)"
+     },
+     {
+      "text": "Nondum."
+     }
+    ],
+    "next": "redi"
+   },
+   "redi": {
+    "id": "redi",
+    "speaker": "barrow_lord",
+    "text": [
+     {
+      "when": {
+       "any": [
+        {
+         "knows": "arcana"
+        },
+        {
+         "hasTag": "scholar_lens"
+        }
+       ]
+      },
+      "text": "Redi. (Go back.)"
+     },
+     {
+      "text": "Redi."
+     }
+    ],
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
      }
     ]
    }

@@ -760,7 +760,7 @@
    }
   },
   {
-   "text": "They buried Brannoc's girl behind the shrine. Chid sang. Chid can't sing. Nobody minded.",
+   "text": "They buried Brannoc's girl behind the shrine this morning. Chid sang. Chid can't sing. Nobody minded.",
    "when": {
     "fact": "nell.buried",
     "eq": true

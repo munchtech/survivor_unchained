@@ -743,6 +743,76 @@
    "name": "Notice Board",
    "title": "The square, the Waystation",
    "glyph": "scroll"
+  },
+  "ford_warden": {
+   "name": "The Ford-Warden",
+   "title": "Keeper of the Low Crossing",
+   "glyph": "skull"
+  },
+  "grimtunnel": {
+   "name": "Grimtunnel",
+   "title": "Boss of the Dig",
+   "glyph": "relic"
+  },
+  "guard": {
+   "name": "Watchman",
+   "title": "The Waystation Watch",
+   "glyph": "shield"
+  },
+  "kerchief_woman": {
+   "name": "Kerchief",
+   "title": "Of the Roost",
+   "glyph": "flame"
+  },
+  "barrow_lord": {
+   "name": "The Barrow Lord",
+   "title": "Of the Seventh Legion",
+   "glyph": "skull"
+  },
+  "cin_drowned_fire": {
+   "name": "The Drowned Fire",
+   "title": "Cinematic",
+   "glyph": "flame"
+  },
+  "cin_none_cross": {
+   "name": "None Cross After Dark",
+   "title": "Cinematic",
+   "glyph": "skull"
+  },
+  "cin_heart_goes_down": {
+   "name": "The Heart Goes Down",
+   "title": "Cinematic",
+   "glyph": "heart"
+  },
+  "cin_first_light": {
+   "name": "First Light",
+   "title": "Cinematic",
+   "glyph": "sun"
+  },
+  "cin_forty_one_mouths": {
+   "name": "Forty-One Mouths",
+   "title": "Cinematic",
+   "glyph": "flame"
+  },
+  "cin_iron_marker": {
+   "name": "The Iron Marker",
+   "title": "Cinematic",
+   "glyph": "moon"
+  },
+  "cin_raid_on_the_roost": {
+   "name": "Raid on the Roost",
+   "title": "Cinematic",
+   "glyph": "axe"
+  },
+  "cin_dig_boils_over": {
+   "name": "The Dig Boils Over",
+   "title": "Cinematic",
+   "glyph": "relic"
+  },
+  "cin_behind_the_door": {
+   "name": "Behind the Sealed Door",
+   "title": "Cinematic",
+   "glyph": "skull"
   }
  },
  "guards": [
@@ -750,7 +820,7 @@
    "x": -4.6,
    "z": 34.6,
    "facing": 3.141592653589793,
-   "line": "Dawn arrivals. We do not get many that live."
+   "line": "Dawn arrivals. We don't get many that live."
   },
   {
    "x": 4.6,

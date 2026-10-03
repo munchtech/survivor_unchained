@@ -245,6 +245,8 @@ public class QuestTests
         s.World.Facts["caravan.cargo"] = "sold";
         Day(s, 0.5);
         Assert.True(s.World.Fact("chapter.ready").Bool);
+        // She reads only after dark (docs/cinematics/c09_fortune.md).
+        s.World.Time = TimeOfDay.Night;
         var r = new DialogueRunner(Convo("vonnra"), s.C);
         var p = r.Start();
         p = r.Choose(p!.Choices.First(x => Regex.IsMatch(x.Text, "fortune", RegexOptions.IgnoreCase)).Index).Next;
