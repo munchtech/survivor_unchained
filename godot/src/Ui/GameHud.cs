@@ -86,6 +86,11 @@ public partial class GameHud : CanvasLayer
     VBoxContainer corner = null!;
     // Discoveries in a burst become one toast that grows.
     (PanelContainer Box, ToastKind Kind, List<string> Names, double At)? lastToast;
+    // What matters off the screen; where the prompt's thing is on it; the arena's clock and its word.
+    EdgeMarks edges = null!;
+    Vector2? promptAnchor;
+    Label tallyWord = null!;
+    double? arenaLeft;
 
     static Color Hex(string h) => new(h);
 
@@ -106,6 +111,9 @@ public partial class GameHud : CanvasLayer
         play.AddChild(combat);
         BuildBackings();
         BuildUnder();
+        edges = new EdgeMarks();
+        Style.Fill(edges);
+        combat.AddChild(edges);
         BuildEmber();
         BuildVitals();
         BuildArsenal();
@@ -217,6 +225,10 @@ public partial class GameHud : CanvasLayer
         row.Alignment = BoxContainer.AlignmentMode.Center;
         row.Position = new Vector2(860, 80); row.Size = new Vector2(200, 20);
         combat.AddChild(row);
+        // Under the clock in an arena: what it counts to.
+        tallyWord = Style.Label("", Style.UiHeavy, Style.Badge, Style.Ember, false, HorizontalAlignment.Center);
+        tallyWord.Position = new Vector2(760, 104); tallyWord.Size = new Vector2(400, 18);
+        combat.AddChild(tallyWord);
     }
 
     void BuildVitals()
@@ -505,7 +517,7 @@ public partial class GameHud : CanvasLayer
         void Status(string glyph, double left, bool good)
         {
             var col = good ? Hex("#9ad4ff") : Hex("#ff8a6a");
-            var chip = Style.Panel(UiArt.Frame("chip", Style.Box(new Color(0.04f, 0.03f, 0.05f, 0.8f), col, 1, 13, 5)), Style.H(3, Glyphs.Icon(glyph, 17, col), Style.Label($"{Math.Ceiling(left)}", Style.UiBold, Style.Badge, col)));
+            var chip = Style.Panel(UiArt.Frame("chip", Style.Box(new Color(0.04f, 0.03f, 0.05f, 0.8f), col, 1, 13, 5)), Style.H(3, Glyphs.Icon(glyph, 17, col), Style.Label(left > 600 ? "" : $"{Math.Ceiling(left)}", Style.UiBold, Style.Badge, col)));
             chip.MouseFilter = Control.MouseFilterEnum.Ignore;
             statuses.AddChild(chip);
         }
@@ -546,8 +558,11 @@ public partial class GameHud : CanvasLayer
             emberLevel.Text = lv.ToString();
             emberLevel.AddThemeColorOverride("font_color", ember ? Style.EmberHi : Hex("#d8ecff"));
         }
-        int m = (int)(b.Time / 60), s = (int)(b.Time % 60);
-        tallyTime.Text = $"{m}:{s:00}";
+        // In an arena the clock counts down to what rules it; after, how long past the half hour.
+        double shown = arenaLeft is double left && left > 0 ? left : arenaLeft is double past ? -past : b.Time;
+        int m = (int)(shown / 60), s = (int)(shown % 60);
+        tallyTime.Text = arenaLeft is double l2 && l2 <= 0 ? $"+{m}:{s:00}" : $"{m}:{s:00}";
+        tallyTime.AddThemeColorOverride("font_color", arenaLeft is double l3 && l3 > 0 && l3 < 60 ? Style.EmberHi : Hex("#efe3c8"));
         tallyKills.Text = b.KillCount.ToString();
         tallyGold.Text = $"{Math.Floor(gold + b.GoldGained - b.GoldBanked)}";
 
@@ -819,6 +834,19 @@ public partial class GameHud : CanvasLayer
         underWanted &= at != null;
     }
 
+    /// <summary>In an arena: seconds until what rules it comes (negative: past it), and the word for it; null elsewhere.</summary>
+    public void ArenaClock(double? left, string word)
+    {
+        arenaLeft = left;
+        tallyWord.Text = left == null ? "" : word;
+    }
+
+    /// <summary>What matters off the screen, each frame.</summary>
+    public void Beyond(List<Beyond> list) => edges.Show(list);
+
+    /// <summary>Where the thing the prompt is for stands on screen (null: the prompt keeps its place).</summary>
+    public void PromptAt(Vector2? at) => promptAnchor = at;
+
     /// <summary>The corner map, a few times a second; null hides it (an arena, the title).</summary>
     public void MapFrame(MinimapView? m)
     {
@@ -907,6 +935,15 @@ public partial class GameHud : CanvasLayer
             float k = (float)(t / life);
             box.Modulate = Colors.White with { A = k < 0.05f ? k / 0.05f : k > 0.88f ? (1 - k) / 0.12f : 1 };
             if (t >= life) box.QueueFree();
+        }
+        // The prompt over the thing it is for, where the eye already is; at the bottom when that is off screen.
+        if (promptBox.Visible)
+        {
+            var size = promptBox.GetCombinedMinimumSize();
+            var at = promptAnchor is { } pa && pa.X > 0 && pa.X < 1920 && pa.Y > 140 && pa.Y < 1080 - 200
+                ? new Vector2(Mathf.Clamp(pa.X - size.X / 2, 20, 1900 - size.X), Mathf.Clamp(pa.Y - size.Y - 6, 120, 1080 - 200 - size.Y))
+                : new Vector2((1920 - size.X) / 2, 1080 - 180 - size.Y);
+            promptBox.Position = promptBox.Position.Lerp(at, promptBox.Position.DistanceTo(at) > 400 ? 1 : 1 - Mathf.Exp(-18 * dt));
         }
         // The health under the survivor eases in and out with the night's fight.
         underAlpha = Mathf.MoveToward(underAlpha, underWanted ? 1 : 0, dt * 4);

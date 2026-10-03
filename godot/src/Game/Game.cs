@@ -599,11 +599,18 @@ public partial class Game : Node, IZoneHost
             scene.Showcase = showNow;
         }
         scene.Update(dt);
-        // The survivor's place on screen, for the health drawn under them.
+        // The survivor's place on screen, for the health drawn under them; the prompt's thing; what matters off screen.
         if (Mode == "play" && Battle is { } fb2)
         {
             var at = new Vector3((float)fb2.Player.X, (float)scene.HeightAt(fb2.Player.X, fb2.Player.Z), (float)fb2.Player.Z);
             hud.Follow(camera.IsPositionBehind(at) ? null : camera.UnprojectPosition(at));
+            if (near != null)
+            {
+                var np = new Vector3((float)near.X, (float)scene.HeightAt(near.X, near.Z) + 2.4f, (float)near.Z);
+                hud.PromptAt(camera.IsPositionBehind(np) ? null : camera.UnprojectPosition(np));
+            }
+            else hud.PromptAt(null);
+            hud.Beyond(Overlay == null ? Offscreen(fb2) : new());
         }
         {
             var sb = Battle;
@@ -621,6 +628,12 @@ public partial class Game : Node, IZoneHost
             var ch = Journey.Ch;
             hud.Frame(Battle, ch.Gold, Inventory.Count(ch, "health_draught"), (ch.Level, ch.Xp / Character.XpForLevel(ch.Level)));
             hud.MapFrame(MiniView());
+            if (zone is ArenaRun ar && Battle is { } cb2)
+            {
+                double left = ar.Spec.Minutes * 60 - cb2.Time;
+                hud.ArenaClock(ar.Won ? -(cb2.Time - ar.Spec.Minutes * 60) : left > 0 ? left : 0, ar.Won ? "PAST THE HALF HOUR" : left > 0 ? "BEFORE WHAT RULES IT COMES" : "IT HAS COME");
+            }
+            else hud.ArenaClock(null, "");
         }
         hud.SetBruise(scene.Bruise);
         scene.Voices.Quiet = hudMode == "dialogue" || screens.Current != null;
@@ -628,6 +641,31 @@ public partial class Game : Node, IZoneHost
         air.Env.AdjustmentSaturation = Mathf.Lerp(air.Env.AdjustmentSaturation, Battle?.Player.Alive == false ? 0.2f : 1f, 1 - Mathf.Exp(-2 * (float)dt));
         Report(dt);
         Tour(dt);
+    }
+
+    /// <summary>What matters and is off the screen: what rules the fight, the nearest elites, chests.</summary>
+    List<Ui.Beyond> Offscreen(Battle b)
+    {
+        var o = new List<Ui.Beyond>();
+        if (scene == null) return o;
+        var view = new Rect2(Vector2.Zero, GetViewport().GetVisibleRect().Size).Grow(-30);
+        double px = b.Player.X, pz = b.Player.Z;
+        void Add(double x, double z, string glyph, Color c)
+        {
+            var w = new Vector3((float)x, (float)scene.HeightAt(x, z) + 1, (float)z);
+            var sp = camera.UnprojectPosition(w);
+            bool behind = camera.IsPositionBehind(w);
+            if (!behind && view.HasPoint(sp)) return;
+            if (behind) sp = view.GetCenter() - (sp - view.GetCenter());
+            double d = Math.Sqrt((x - px) * (x - px) + (z - pz) * (z - pz));
+            o.Add(new Ui.Beyond(sp, glyph, c, (float)Math.Clamp(1 - (d - 20) / 60, 0, 1)));
+        }
+        foreach (var e in b.Enemies.Living().Where(e => e.Boss)) Add(e.X, e.Z, "horns", Style.BloodHi);
+        foreach (var e in b.Enemies.Living().Where(e => e.Elite && !e.Boss).OrderBy(e => (e.X - px) * (e.X - px) + (e.Z - pz) * (e.Z - pz)).Take(3))
+            Add(e.X, e.Z, "skull", Style.EmberHi);
+        foreach (var p in b.Pickups.Living().Where(p => p.Kind == PickupKind.Chest).OrderBy(p => (p.X - px) * (p.X - px) + (p.Z - pz) * (p.Z - pz)).Take(2))
+            Add(p.X, p.Z, "relic", Style.GoldHi);
+        return o;
     }
 
     /// <summary>What the corner map shows now: by day and on the story's roads, not in an arena.</summary>
@@ -667,10 +705,13 @@ public partial class Game : Node, IZoneHost
             {
                 var parts = group.Split(':');
                 int n = int.TryParse(parts[0], out var v) ? v : 100;
+                // A kind ending in ! comes as elites (pictures of the edge marks, elite fights).
+                string kind = parts.Length > 1 ? parts[1].TrimEnd('!') : "risen";
+                bool elite = parts.Length > 1 && parts[1].EndsWith('!');
                 for (int i = 0; i < n; i++)
                 {
                     double a = Rng.NextDouble() * Math.Tau, d = Args.Num("dist", 9) + Rng.NextDouble() * Args.Num("spread", 20);
-                    hb.SpawnEnemy(parts.Length > 1 ? parts[1] : "risen", hb.Player.X + Math.Cos(a) * d, hb.Player.Z + Math.Sin(a) * d);
+                    hb.SpawnEnemy(kind, hb.Player.X + Math.Cos(a) * d, hb.Player.Z + Math.Sin(a) * d, elite ? new Battle.SpawnOpts { Elite = true } : null);
                 }
             }
         }
