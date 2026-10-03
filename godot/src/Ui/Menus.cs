@@ -170,49 +170,95 @@ public partial class PauseScreen : Overlay
 
     protected override void Build()
     {
-        AddChild(Style.Scrim(panel == "" ? G.CloseOverlay : () => { panel = ""; Refresh(); }));
-        if (panel != "")
+        // The world stays in view, paused, behind a column down the left: the eye goes to the
+        // list, the game is still there (docs/UI_DESIGN.md, "Pause").
+        var shade = new TextureRect
         {
-            var box = Style.Centered(Style.Panel(Style.Plate(22)), panel == "controls" ? new Vector2(860, 780) : new Vector2(700, 440));
-            AddChild(box);
-            var v = Style.V(10, Style.Cap(panel == "controls" ? "Controls" : "Settings", 18), Style.Rule());
-            v.AddChild(panel == "controls" ? new ControlsPanel() : SettingsPanel.Build(G, Refresh));
-            v.AddChild(Style.Button("Back", () => { panel = ""; Refresh(); }));
-            box.AddChild(v);
-            Nav.Scope = box;
-            return;
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Stop,
+            Texture = new GradientTexture2D
+            {
+                Gradient = new Gradient { Colors = new[] { new Color(0.02f, 0.015f, 0.03f, 0.92f), new Color(0.02f, 0.015f, 0.03f, 0.55f), new Color(0.02f, 0.015f, 0.03f, 0.35f) }, Offsets = new[] { 0f, 0.35f, 1f } },
+                Width = 256, Height = 4,
+            },
+        };
+        Style.Fill(shade);
+        shade.GuiInput += e => { if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) { if (panel == "") G.CloseOverlay(); else { panel = ""; Refresh(); } } };
+        AddChild(shade);
+        var column = Style.Panel(OrnateBox.Make(OrnateBox.Kind.Plate, 0));
+        column.Position = new Vector2(-30, -30);
+        column.Size = new Vector2(530, 1140);
+        AddChild(column);
+        var col = Style.V(Style.Gap3);
+        col.Position = new Vector2(56, 64);
+        col.Size = new Vector2(400, 980);
+        AddChild(col);
+        var plaque = new Plaque("Paused", 34, 70);
+        col.AddChild(plaque);
+        // Where you stand: the place, the day, what you are about.
+        var w = G.Journey.World;
+        if (G.Zone is { } z)
+        {
+            col.AddChild(Style.Label(z.Name, Style.Display, 24, Style.GoldHi));
+            col.AddChild(Style.Label($"Day {w.Day}{(z.Region != null ? $"  ·  {z.Region}" : "")}", Style.TextItalic, Style.Small, Style.InkDim, true));
         }
+        var doing = w.Quests.Values.Where(q => q.Status == QuestStatus.Active && Lore.Quests.ContainsKey(q.Id)).OrderBy(q => Lore.Quests[q.Id].Mystery).FirstOrDefault();
+        if (doing != null)
+            col.AddChild(Style.H(6, Glyphs.Icon("quest", 16, Style.EmberHi), Style.Label(Lore.Quests[doing.Id].Name, Style.UiBold, Style.Small, Style.EmberHi, true)));
+        col.AddChild(Style.Rule());
         menu.Items.Clear();
         menu.Add("Resume", G.CloseOverlay);
         // Nothing is kept of an arena until it is over; once won, it can be left.
         if (G.Zone is Play.Zones.ArenaRun ar) { if (ar.Won) menu.Add("Leave the arena", () => { G.CloseOverlay(); ar.Leave(); }); }
         else menu.Add("Save", () => { G.Save("manual"); G.Toast(new Toast(ToastKind.World, "Journey saved")); });
-        menu.Add("Settings", () => { panel = "settings"; Refresh(); });
-        menu.Add("Controls", () => { panel = "controls"; Refresh(); });
-        menu.Add("Pack", () => G.Open("inventory"));
-        menu.Add("Self", () => G.Open("character"));
-        menu.Add("Arts", () => G.Open("arts"));
-        menu.Add("Journal", () => G.Open("journal"));
-        menu.Add("Map", () => G.Open("map"));
+        menu.Add("Settings", () => { panel = panel == "settings" ? "" : "settings"; Refresh(); });
+        menu.Add("Controls", () => { panel = panel == "controls" ? "" : "controls"; Refresh(); });
         menu.Add("Leave to the title", G.QuitToTitle);
         menu.Add("Quit the game", G.QuitGame);
-        Nav.Scope = null;
-        var plate = Style.Panel(Style.Plate(22));
-        plate.CustomMinimumSize = new Vector2(460, 0);
-        var centre = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
-        Style.Fill(centre);
-        centre.AddChild(plate);
-        AddChild(centre);
-        var col = Style.V(6, Style.Label("PAUSED", Style.Display, 26, Style.GoldHi, false, HorizontalAlignment.Center), Style.Rule(), menu.Build());
-        col.AddChild(Style.Gap(Style.Gap2));
-        // The book's keys, as a reminder: each opens its page from play.
-        var keys = Style.H(10);
-        keys.Alignment = BoxContainer.AlignmentMode.Center;
-        if (Controls.Instance.UsingPad) keys.AddChild(Style.Hint(Act.Inventory, "Pack, Self, Arts, Journal, Map"));
-        else foreach (var (a, name) in new[] { (Act.Inventory, "Pack"), (Act.Character, "Self"), (Act.Arts, "Arts"), (Act.Journal, "Journal"), (Act.Map, "Map") })
-            keys.AddChild(Style.H(4, Style.Key(G.Key(a)), Style.Label(name, Style.Ui, Style.Caption, Style.InkDim)));
-        col.AddChild(keys);
-        plate.AddChild(col);
+        col.AddChild(menu.Build());
+        col.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
+        // The book, one press away: each page as a medallion with its key.
+        col.AddChild(new Section("The book"));
+        var book = Style.H(Style.Gap2);
+        bool pad = Controls.Instance.UsingPad;
+        foreach (var (a, name, glyph, kind) in new[] { (Act.Inventory, "Pack", "relic", "inventory"), (Act.Character, "Self", "hood", "character"), (Act.Arts, "Arts", "arcane", "arts"), (Act.Journal, "Journal", "book", "journal"), (Act.Map, "Map", "map", "map") })
+        {
+            var b = Style.Button("", () => G.Open(kind), false, true);
+            foreach (var st in new[] { "normal", "hover", "pressed" }) b.AddThemeStyleboxOverride(st, new StyleBoxEmpty());
+            var v = Style.V(2);
+            v.MouseFilter = MouseFilterEnum.Ignore;
+            var mc = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+            mc.AddChild(new Medallion(62, "", glyph));
+            v.AddChild(mc);
+            v.AddChild(Style.Label(name, Style.UiBold, Style.Caption, Style.GoldHi, false, HorizontalAlignment.Center));
+            var kc = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+            kc.AddChild(pad ? (a == Act.Inventory ? Style.PadButton("View") : Style.Label("then RB", Style.Ui, Style.Badge, Style.InkFaint)) : Style.Key(G.Key(a)));
+            v.AddChild(kc);
+            v.Size = new Vector2(72, 116);
+            b.AddChild(v);
+            b.CustomMinimumSize = new Vector2(72, 116);
+            b.TooltipText = name;
+            book.AddChild(Nav.Skip(b));
+        }
+        col.AddChild(book);
+
+        // Settings and controls open beside the column, the column still there to go back to.
+        if (panel != "")
+        {
+            var box = Style.Panel(Style.Plate(26));
+            box.Position = new Vector2(540, 70);
+            // As tall as what it holds.
+            box.Size = new Vector2(panel == "controls" ? 1000 : 1100, 0);
+            AddChild(box);
+            var v = Style.V(Style.Gap3, new Plaque(panel == "controls" ? "Controls" : "Settings", 28, 60));
+            v.AddChild(panel == "controls" ? new ControlsPanel() : SettingsPanel.Build(G, Refresh));
+            var back = Style.Button("Back", () => { panel = ""; Refresh(); });
+            back.SizeFlagsHorizontal = SizeFlags.ShrinkBegin;
+            back.CustomMinimumSize = new Vector2(160, 0);
+            v.AddChild(back);
+            box.AddChild(v);
+            Nav.Scope = box;
+        }
+        else Nav.Scope = null;
     }
 
     public override bool Key(Act a)

@@ -134,26 +134,29 @@ public partial class OrnateBox : StyleBox
 public partial class Plaque : Control
 {
     readonly Label label;
-    readonly float rule;
+    readonly float tw;
 
     public Plaque(string text, int size = 40, float rule = 160, Color? color = null)
     {
-        this.rule = rule;
         MouseFilter = MouseFilterEnum.Ignore;
         var up = text.ToUpperInvariant();
         label = Style.Label(up, Style.Display, size, color ?? Style.GoldHi, false, HorizontalAlignment.Center);
         AddChild(label);
         // Measured from the face itself: a label not yet in the tree does not know its size.
         var ts = Style.Display.GetStringSize(up, HorizontalAlignment.Left, -1, size);
+        tw = ts.X;
         CustomMinimumSize = new Vector2(ts.X + rule * 2 + 56, size * 1.35f);
-        label.Position = new Vector2(rule + 28, 0);
         label.Size = new Vector2(ts.X, size * 1.35f);
+        Resized += () => { label.Position = new Vector2((Size.X - tw) / 2, 0); QueueRedraw(); };
+        label.Position = new Vector2(rule + 28, 0);
     }
 
     public override void _Draw()
     {
+        // The title in the middle however wide the plaque is stretched; the rules run out from it.
         float y = Size.Y * 0.55f, w = Size.X;
-        float l = rule + 14, r = w - rule - 14;
+        float x0 = (w - tw) / 2;
+        float l = x0 - 14, r = x0 + tw + 14;
         DrawLine(new Vector2(8, y), new Vector2(l - 10, y), Style.Gold with { A = 0.8f }, 1.5f, true);
         DrawLine(new Vector2(r + 10, y), new Vector2(w - 8, y), Style.Gold with { A = 0.8f }, 1.5f, true);
         foreach (var x in new[] { 8f, l - 10, r + 10, w - 8 })
