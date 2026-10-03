@@ -406,6 +406,15 @@ def wire(spec, sspec, W, H, margins, mat):
     px, py = Pw / nx, Ph / ny
     rr = spec["radius"]
     z = sspec.get("thick", 8) + sspec.get("bevel", 0) + rr * 0.1
+    arc = spec.get("phase") == "arc"
+    if arc:
+        # A closed loop (a ring): the twist follows the length along it, a whole number of turns.
+        seg = [math.hypot(pts[(j + 1) % len(pts)][0] - pts[j][0], pts[(j + 1) % len(pts)][1] - pts[j][1]) for j in range(len(pts))]
+        total = sum(seg)
+        turns = max(1, round(total / pitch))
+        cum = [0.0]
+        for d_ in seg[:-1]:
+            cum.append(cum[-1] + d_)
     for strand in (0, 1):
         cu = bpy.data.curves.new(f"wire{strand}", "CURVE")
         cu.dimensions = "3D"
@@ -414,13 +423,19 @@ def wire(spec, sspec, W, H, margins, mat):
         sp = cu.splines.new("POLY")
         sp.points.add(len(pts) - 1)
         for j, (x, y) in enumerate(pts):
-            # Twist phase from the position along the side, so it repeats with the tile.
-            horizontal = abs(y - (i + off)) < 0.5 or abs(y - (H - i - off)) < 0.5
-            if not horizontal and not (abs(x - (i + off)) < 0.5 or abs(x - (W - i - off)) < 0.5):
-                horizontal = abs(y - H / 2) > abs(x - W / 2) * H / W
-            ph = 2 * math.pi * ((x - l) / px if horizontal else (y - t) / py) + strand * math.pi
+            if arc:
+                ph = 2 * math.pi * turns * cum[j] / total + strand * math.pi
+                a, b_ = Vector(pts[j - 1]), Vector(pts[(j + 1) % len(pts)])
+                tng = (b_ - a).normalized()
+                nrm = Vector((-tng.y, -tng.x, 0))  # across the wire (file y is flipped)
+            else:
+                # Twist phase from the position along the side, so it repeats with the tile.
+                horizontal = abs(y - (i + off)) < 0.5 or abs(y - (H - i - off)) < 0.5
+                if not horizontal and not (abs(x - (i + off)) < 0.5 or abs(x - (W - i - off)) < 0.5):
+                    horizontal = abs(y - H / 2) > abs(x - W / 2) * H / W
+                ph = 2 * math.pi * ((x - l) / px if horizontal else (y - t) / py) + strand * math.pi
+                nrm = Vector((0, 1, 0)) if horizontal else Vector((1, 0, 0))
             # The two strands circle the wire's centre line, across it and up and down.
-            nrm = Vector((0, 1, 0)) if horizontal else Vector((1, 0, 0))
             v = P(x, y, W, H, 0) + nrm * (math.cos(ph) * rr * 0.45 * U)
             sp.points[j].co = (v.x, v.y, (z + math.sin(ph) * rr * 0.45) * U, 1)
         sp.use_cyclic_u = True
@@ -486,6 +501,14 @@ def scroll(spec, W, H, mat, top):
     # Flattened about its own centre line, which lies on the surface it is laid on.
     ob.location.z = (top + spec.get("lift", 1.0)) * U
     ob.scale.z = spec.get("flat", 0.6)
+    ob.data.materials.append(mat)
+
+
+def poly(spec, W, H, mat, top):
+    """A flat forged piece of any outline (a finial, a strap end), extruded and bevelled."""
+    th = spec.get("thick", 4)
+    ob = curve_object("poly", [densify(spec["pts"], 3)], W, H, extrude=th / 2, bevel=spec.get("bevel", 1.5),
+                      z=top + spec.get("lift", 0) + th / 2)
     ob.data.materials.append(mat)
 
 
@@ -605,6 +628,10 @@ def build(spec, out):
         d["pts"] = [(x * ss, y * ss) for x, y in s_["pts"]]
         d = scale_spec(d, ["w0", "w1", "lift"])
         scroll(d, Ws, Hs, smat, top)
+    for pl in spec.get("polys", []):
+        d = dict(pl)
+        d["pts"] = [(x * ss, y * ss) for x, y in pl["pts"]]
+        poly(scale_spec(d, ["thick", "bevel", "lift"]), Ws, Hs, smat, top)
     if spec.get("seam"):
         sm = scale_spec(spec["seam"], ["offset", "radius", "z"])
         seam(sm, st, Ws, Hs, top)

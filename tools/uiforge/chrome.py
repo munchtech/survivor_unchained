@@ -384,6 +384,43 @@ def build_plate():
     save(render("plate", spec, "#16131a", calib_inset=[o + 34] * 4), "frames/plate.png")
 
 
+def build_minimap():
+    """The minimap's rim (minimap/frame.png, 480 square, centred on the 200 px disc): a
+    forged band, the twisted wire along both its edges, the binders' coins at the four
+    quarters, a forged arrowhead standing out of it at the north. Its middle open."""
+    W = H = 480
+    R_out = 236
+    band = 40
+    inset = W / 2 - R_out
+    spec = {"size": [W, H], "ss": 2, "margins": [120, 120, 120, 120], "samples": 96, "tile": False,
+            "strap": dict(IRON, inset=inset, width=band, thick=9, bevel=3.5, radius=R_out, hammer=1.0, dent_scale=0.08),
+            "wire": {"offset": 9, "radius": 3.2, "pitch": 9, "color": GOLD, "rough": 0.3, "phase": "arc"},
+            "ember_strength": 1.4, "ember_color": "#ff4a10"}
+    c = W / 2
+    mid = R_out - band / 2
+    coins = []
+    for k, a in enumerate((90, 0, 270, 180)):
+        if k == 0:
+            continue  # the north has the finial
+        r = math.radians(a)
+        coins.append({"x": c + math.cos(r) * mid, "y": c - math.sin(r) * mid, "size": 30, "hole": 0.34, "ember": 1})
+    spec["coins"] = coins
+    # The north: an arrowhead of drawn iron standing out of the band.
+    top_y = c - mid
+    spec["polys"] = [{"pts": [(c, top_y - 19), (c + 19, top_y + 15), (c, top_y + 6), (c - 19, top_y + 15)], "thick": 7, "bevel": 2.0, "lift": 1.5}]
+    spec["rivets"] = [{"x": c, "y": top_y + 12, "r": 4}]
+
+    def open_middle(img):
+        yy, xx = np.mgrid[0:H, 0:W]
+        rr = np.hypot(xx - c + 0.5, yy - c + 0.5) / (W / 2)
+        img = img.copy()
+        img[..., 3] *= np.clip((rr - 0.835) / 0.012, 0, 1)
+        return img
+    paint = ("a round minimap frame ring of " + IRON_PROMPT + ", square iron coins at east south and west, a forged iron "
+             "arrowhead at the north, the middle empty and black", 0.30)
+    save(render("minimap", spec, None, post=open_middle, paint=paint), "minimap/frame.png")
+
+
 GROUPS = {n[6:]: f for n, f in globals().items() if n.startswith("build_")}
 
 if __name__ == "__main__":

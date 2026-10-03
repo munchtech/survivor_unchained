@@ -62,6 +62,8 @@ def main():
         prefix = args[i + 1]
         del args[i:i + 2]
     names = args or list(SCREENS)
+    # Imported art loads from its import, so changed art must be imported again first.
+    subprocess.run([GODOT, "--headless", "--path", os.path.join(ROOT, "godot"), "--import"], capture_output=True, timeout=900)
     for n in names:
         run(n, prefix)
 
