@@ -152,6 +152,23 @@ Godot shot beside the web game's: `node tools/godot/web_shot.mjs` (the web
 game at the same place and hour; needs the dev server), then
 `python3 tools/godot/compare.py web.png godot.png out.jpg`.
 
+## Voices
+
+Every spoken line (conversations, barks, the town's passing lines, the
+zones' captions) is listed in `data/voice/lines.json` with an ID from where
+it lives and a hash of its words, and written out as a recording script per
+voice in `docs/voice/script/`, with casting in `docs/voice/CASTING.md`. After
+any change to the writing:
+
+    python3 tools/voice/extract.py           # the manifest, the scripts, the casting
+    python3 tools/voice/extract.py --check   # only say what changed
+    python3 tools/voice/tts_batch.py         # voice what is new or changed (the local TTS)
+
+`src/Audio/VoiceOver.cs` plays a take when its line is shown, if one was
+recorded for those words (`data/voice/takes.json`, written by the batch);
+otherwise nothing plays. `dotnet test` reports lines the manifest has not
+caught up with, without failing. The whole of it: `docs/voice/README.md`.
+
 ## What is where
 
 - `logic/`: the game without a screen, in plain C# (it builds into the game

@@ -35,6 +35,7 @@ CONTENT = os.path.join(GODOT, "data", "content")
 MANIFEST = os.path.join(GODOT, "data", "voice", "lines.json")
 SCRIPTS = os.path.join(ROOT, "docs", "voice", "script")
 CASTING = os.path.join(ROOT, "docs", "voice", "CASTING.md")
+README = os.path.join(ROOT, "docs", "voice", "README.md")
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 ZONE_FILES = [("prologue", "logic/Play/Zones/Prologue.cs"), ("waystation", "logic/Play/Zones/Waystation.cs"),
@@ -846,6 +847,47 @@ def write_casting(cast, counts, lexicon):
         f.write("\n".join(out).rstrip() + "\n")
 
 
+def write_counts(lines, cast):
+    """The counts and the flagged lines, between the markers in docs/voice/README.md."""
+    if not os.path.exists(README):
+        return
+    kinds = ["dialogue", "notice", "bark", "folk", "zone", "chapter"]
+    table = defaultdict(lambda: defaultdict(int))
+    for l in lines:
+        if not l.get("skip"):
+            table[l["voice"]][l["kind"]] += 1
+    out = ["<!-- generated:start (tools/voice/extract.py writes this section) -->", "", "## Line counts", "",
+           "Takes to record, per voice (a passer-by's line counts once per sex; optional lines are the chapter page).", "",
+           "| Voice | Who | " + " | ".join(kinds) + " | Takes |", "|---|---|" + "---:|" * (len(kinds) + 1)]
+    total = defaultdict(int)
+    for v in sorted(table, key=lambda v: -sum(table[v].values())):
+        row = table[v]
+        for k in kinds:
+            total[k] += row[k]
+        out.append(f"| `{v}` | {cast.get(v, {}).get('name', v)} | " + " | ".join(str(row[k] or "") for k in kinds) + f" | **{sum(row.values())}** |")
+    out.append("| | **All** | " + " | ".join(f"**{total[k]}**" for k in kinds) + f" | **{sum(total.values())}** |")
+    out += ["", f"{sum(1 for l in lines if l.get('skip'))} lines are writer's slots and are not recorded; "
+            f"{sum(1 for l in lines if l.get('optional'))} are optional.", "", "## Flagged lines", ""]
+    flagged = [l for l in lines if any(f.startswith(("token", "placeholder", "gendered", "interpolated")) for f in l.get("flags", []))]
+    out.append("Lines whose take cannot say exactly what the subtitle says. The proposed take is in the script; "
+               "a `say` in `tools/voice/directions.json` replaces it. Lines with stage directions taken out "
+               f"(`stage-direction`, {sum(1 for l in lines if 'stage-direction' in l.get('flags', []))} of them) are listed in each script.")
+    out.append("")
+    out.append("| Line | Flags | Recorded as |")
+    out.append("|---|---|---|")
+    for l in flagged:
+        rec = "(not recorded)" if l.get("skip") else (l.get("say") or l["text"])
+        out.append(f"| `{l['id']}` | {', '.join(l['flags'])} | {md_escape(short(rec, 120))} |")
+    out += ["", "<!-- generated:end -->"]
+    text = open(README, encoding="utf-8").read()
+    a, b = text.find("<!-- generated:start"), text.find("<!-- generated:end -->")
+    if a < 0 or b < 0:
+        return
+    text = text[:a] + "\n".join(out) + text[b + len("<!-- generated:end -->"):]
+    with open(README, "w", encoding="utf-8", newline="\n") as f:
+        f.write(text)
+
+
 def main():
     check = "--check" in sys.argv
     voices = load_here("voices.json", OrderedDict())
@@ -895,6 +937,7 @@ def main():
     write_scripts(lines.lines, voices, lexicon)
     if voices:
         write_casting(OrderedDict(voices), counts, lexicon)
+    write_counts(lines.lines, voices)
     missing = sorted({l["voice"] for l in lines.lines} - set(voices))
     if missing:
         print("voices with no casting in tools/voice/voices.json: " + ", ".join(missing))
