@@ -90,6 +90,9 @@ public sealed class WeaponInst
     }
 
     public double BossDamage => Def.BossDamage ?? 1;
+
+    /// <summary>Critical strike chance its own blows add (Starseeker's sure strikes).</summary>
+    public double CritBonus => Num(s => s.Crit) ?? 0;
 }
 
 /// <summary>How each behaviour turns a weapon into things on the field.</summary>
@@ -175,6 +178,7 @@ public static class Firing
         WeaponBehavior.Herd => FireHerd(b, w),
         WeaponBehavior.Chakram => FireChakram(b, w),
         WeaponBehavior.Slash => FireSlash(b, w),
+        WeaponBehavior.Raise => FireRaise(b, w),
         _ => false,
     };
 
@@ -222,7 +226,9 @@ public static class Firing
             pr.Bounces = (int)(w.Num(s => s.Bounces) ?? 0) + (w.Evolution?.Mods.Bounces ?? 0);
             pr.Life = life ?? DurationOf(b, w, w.Num(s => s.Life) ?? 2.0) / (1 + Content.Weapons.DurationStep * (w.Rank - 1));
             pr.Homing = (w.Num(s => s.Homing) ?? 0) + w.Mods.Homing;
-            pr.Target = target ?? -2;
+            pr.Seek = SeekOf(w);
+            // A hunter of the strongest or the marked picks its own prey in flight.
+            pr.Target = pr.Seek is Seek.Strongest or Seek.Elite or Seek.Marked ? -2 : target ?? -2;
             pr.Weapon = w.Id;
             pr.Art = w.Art;
             pr.Status = w.StatusOf;
@@ -243,6 +249,9 @@ public static class Firing
     }
 
     static double DamageFor(WeaponInst w) => w.Damage;
+
+    /// <summary>What its projectiles hunt: the evolution's choice, else the weapon's, else the nearest.</summary>
+    static Seek? SeekOf(WeaponInst w) => w.Evolution?.Set?.Seek ?? w.Def.Base.Seek;
 
     static bool FireSpray(Battle b, WeaponInst w)
     {
@@ -329,8 +338,7 @@ public static class Firing
         int jumps = CountOf(b, w, (int)(w.Num(s => s.Chains) ?? 5) - 1) + (w.Evolution?.Mods.Chains ?? 0);
         double reach = AreaOf(b, w, w.Num(s => s.ChainRange) ?? 6);
         bool fork = w.Flag(s => s.Fork);
-        bool sky = w.Evolution?.Id == "skybreak";
-        ChainFrom(b, p.X, p.Z, first, jumps, reach, w.Damage, w.School, w.Tags, w, fork, sky);
+        ChainFrom(b, p.X, p.Z, first, jumps, reach, w.Damage, w.School, w.Tags, w, fork);
         return true;
     }
 
@@ -533,6 +541,17 @@ public static class Firing
             double sz = p.Z - Math.Sin(a) * 3 + Math.Sin(a + Math.PI / 2) * off;
             Launch(b, w, a, x: sx, z: sz, herd: true, life: DurationOf(b, w, w.Num(s => s.Life) ?? 1.8));
         }
+        return true;
+    }
+
+    /// <summary>The dead get up for you: allies of its kind, up to its count at
+    /// once, for its duration, striking as hard as the skill is ranked.</summary>
+    static bool FireRaise(Battle b, WeaponInst w)
+    {
+        var p = b.Player;
+        if (b.NearestHostile(p.X, p.Z, 15) == null) return false;
+        string kind = w.Evolution?.Set?.Raises ?? w.Def.Base.Raises ?? "ghoul_ally";
+        b.RaiseFor(w, kind, DurationOf(b, w, w.Num(s => s.Duration) ?? 12), CountOf(b, w));
         return true;
     }
 

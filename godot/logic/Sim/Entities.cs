@@ -8,8 +8,10 @@ namespace SurvivorUnchained.Sim;
 /* The things a fight is made of. Plain objects, pooled by the battle so
  * nothing is allocated in the middle of a horde. */
 
-/// <summary>A status a hit carries: which, how likely, how strong, how long.</summary>
-public sealed record StatusPayload(StatusKind Kind, double Chance, double Power, double Duration);
+/// <summary>A status a hit carries: which, how likely, how strong, how long.
+/// Stack: a bleed that deepens with each wound (up to five) rather than
+/// keeping the worst of them.</summary>
+public sealed record StatusPayload(StatusKind Kind, double Chance, double Power, double Duration, bool Stack = false);
 
 /// <summary>Ground left burning (hallowed, blighted) where something lands.</summary>
 public sealed record GroundSpec(double Radius, double Duration, double DpsPct);
@@ -93,6 +95,8 @@ public sealed class Enemy : Pooled
     public Named? Named;
     /// <summary>Summons and raised dead expire.</summary>
     public double LifeT;
+    /// <summary>The weapon that raised it (an ally of a raising skill), for its damage and credit.</summary>
+    public string? SummonedBy;
     /// <summary>For quest logic ("the alpha", "caravan guard").</summary>
     public string? Tag;
     /// <summary>Deaths caused by the player's damage (for credit).</summary>

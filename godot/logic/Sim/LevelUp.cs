@@ -64,6 +64,7 @@ public static class LevelUp
     {
         if (req == null) return true;
         if (req.Any != null) return req.Any.Any(r => Meets(b, r, statuses, tags));
+        if (req.All != null) return req.All.All(r => Meets(b, r, statuses, tags));
         if (req.Status is { } s) return statuses.Contains(s);
         if (req.Tag is { } t) return tags.Contains(t);
         if (req.Boon != null) return b.Boons.GetValueOrDefault(req.Boon) > 0;

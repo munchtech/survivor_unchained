@@ -114,7 +114,9 @@ public sealed class ArenaRun : ZoneRuntime
     /// <summary>Minutes past the half hour (0 before it).</summary>
     double Beyond => Math.Max(0, Seconds - End) / 60;
     int Level() => Math.Max(1, Spec.Tier * 2 - 1 + levels + (int)(Minute / 2.5) + (int)(Beyond / 2));
-    int Target() => (int)Math.Min(won ? 380 : 320, (22 + 7.5 * Minute) * packSize * (1 + 0.12 * (Spec.Tier - 1)));
+    /// <summary>How many the horde is kept at (a dark bargain struck asks for more of them).</summary>
+    int Target() => (int)Math.Min(won ? 380 : 320, (22 + 7.5 * Minute) * packSize * (1 + 0.12 * (Spec.Tier - 1)) * Bargain);
+    double Bargain => 1 + 0.15 * (B?.Boons.GetValueOrDefault("dark_bargain") ?? 0);
 
     /// <summary>Throwers and shooters at once: a few behind the crowd, never a
     /// battery (hundreds of them, each lobbing fire, is not a fight but weather).</summary>

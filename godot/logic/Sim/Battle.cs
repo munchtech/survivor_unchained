@@ -555,7 +555,7 @@ public sealed partial class Battle
         if (s[StatusKind.Mark] is { } mark) dmg *= 1 + 0.3 * (mark.Power != 0 ? mark.Power : 1);
         if (s.Has(StatusKind.Frozen)) dmg *= Boons.ContainsKey("deep_chill") ? 1.35 : 1.15;
         if (s.Has(StatusKind.Sear) && school == School.Holy) dmg *= 1.3;
-        if (s.Has(StatusKind.Shock) && !o.Dot) { dmg *= 1.35; if (!Boons.ContainsKey("static_charge")) s.Remove(StatusKind.Shock); }
+        if (s.Has(StatusKind.Shock) && !o.Dot) { dmg *= 1.35 + st.Get(Stat.ShockBonus); if (!Boons.ContainsKey("static_charge")) s.Remove(StatusKind.Shock); }
         dmg *= e.TakenMul;
         // Resistances.
         dmg *= 1 - (e.Def.Resists?.Of(school) ?? 0);
@@ -572,7 +572,7 @@ public sealed partial class Battle
         bool crit = o.Crit;
         if (!crit && !o.NoCrit && !o.Dot)
         {
-            double chance = st.Get(Stat.CritChance) + (Player.SureCritT > 0 ? 1 : 0);
+            double chance = st.Get(Stat.CritChance) + (Player.SureCritT > 0 ? 1 : 0) + (o.Weapon?.CritBonus ?? 0);
             crit = Rng.Next() < chance;
         }
         if (crit) dmg *= st.Get(Stat.CritDamage);
@@ -757,8 +757,10 @@ public sealed partial class Battle
         double chance = p.Chance * (1 + Stats.Get(Stat.StatusChance));
         if (Rng.Next() >= chance) return;
         var s = e.Status;
-        double sd = Stats.Get(Stat.StatusDamage);
+        double sd = Stats.Get(Stat.StatusDamage) * Stats.Get(Stat.StatusDamageOf(p.Kind));
         double dps = hitDamage * p.Power / Math.Max(0.5, p.Duration) * sd;
+        // Longer burning is more burning: the rate holds, the time stretches.
+        double dur = p.Duration * Stats.Get(Stat.StatusDurationOf(p.Kind));
         from ??= credit;
         switch (p.Kind)
         {
@@ -768,15 +770,17 @@ public sealed partial class Battle
                 cur.Stacks = Math.Min(5, cur.Stacks + 1);
                 if (dps >= cur.Power) cur.From = from;
                 cur.Power = Math.Max(cur.Power, dps);
-                cur.T = Math.Max(cur.T, p.Duration);
+                cur.T = Math.Max(cur.T, dur);
                 break;
             }
             case StatusKind.Bleed:
             {
                 var cur = s.Ensure(StatusKind.Bleed, 0, 1, 0, 0.5);
+                // A wound that deepens with each cut (A Thousand Cuts) rather than the worst kept.
+                if (p.Stack) cur.Stacks = Math.Min(5, cur.Stacks + (cur.T > 0 ? 1 : 0));
                 if (dps >= cur.Power) cur.From = from;
                 cur.Power = Math.Max(cur.Power, dps);
-                cur.T = Math.Max(cur.T, p.Duration);
+                cur.T = Math.Max(cur.T, dur);
                 break;
             }
             case StatusKind.Poison:
@@ -785,15 +789,15 @@ public sealed partial class Battle
                 cur.Stacks = Math.Min(10, cur.Stacks + 1);
                 if (dps >= cur.Power) cur.From = from;
                 cur.Power = Math.Max(cur.Power, dps);
-                cur.T = Math.Max(cur.T, p.Duration);
+                cur.T = Math.Max(cur.T, dur);
                 break;
             }
             case StatusKind.Chill:
             {
                 if (s[StatusKind.Frozen] is { } frozen) { frozen.T = Math.Max(frozen.T, 0.4); break; }
                 var cur = s.Ensure(StatusKind.Chill, 0, 0, 0, 0);
-                cur.Stacks += p.Power * (Boons.ContainsKey("deep_chill") ? 2 : 1);
-                cur.T = Math.Max(cur.T, p.Duration);
+                cur.Stacks += p.Power * (Boons.ContainsKey("deep_chill") ? 2 : 1) * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill));
+                cur.T = Math.Max(cur.T, dur);
                 if (cur.Stacks >= 5 && !e.Boss)
                 {
                     s.Remove(StatusKind.Chill);
@@ -808,13 +812,13 @@ public sealed partial class Battle
             case StatusKind.Fear:
             case StatusKind.Charm:
                 if (e.Boss && p.Kind != StatusKind.Stun) return;
-                s[p.Kind] = new StatusSlot(Math.Max(s[p.Kind]?.T ?? 0, p.Duration), 1, p.Power, 0);
+                s[p.Kind] = new StatusSlot(Math.Max(s[p.Kind]?.T ?? 0, dur), 1, p.Power, 0);
                 break;
             default:
             {
                 var cur = s.Ensure(p.Kind, 0, 1, p.Power, 0.5);
                 cur.From ??= from;
-                cur.T = Math.Max(cur.T, p.Duration);
+                cur.T = Math.Max(cur.T, dur);
                 cur.Power = Math.Max(cur.Power, p.Power);
                 if (p.Kind == StatusKind.Sear && e.Def.Family == Family.Undead) cur.Power = Math.Max(cur.Power, dps != 0 ? dps : 2);
                 break;
@@ -845,6 +849,7 @@ public sealed partial class Battle
                     double d = slot.Power * 0.5;
                     if (k == StatusKind.Burn) d *= slot.Stacks;
                     if (k == StatusKind.Poison) d *= slot.Stacks;
+                    if (k == StatusKind.Bleed) d *= Math.Max(1, slot.Stacks) * (s.Has(StatusKind.Frozen) && Boons.ContainsKey("frostbite") ? 3 : 1);
                     if (k == StatusKind.Bleed && Len(e.Vx, e.Vz) > 0.5) d *= 1.6;
                     var (school, tags) = k switch
                     {
@@ -898,6 +903,18 @@ public sealed partial class Battle
         double thorns = st.Get(Stat.Thorns);
         if (thorns > 0 && from != null && from.Alive)
             HitEnemy(from, (4 + amount * 0.2) * thorns, School.Nature, [Tag.Aura], new HitOpts { NoCrit = true, NoProcs = true, Credit = "thorns" });
+        // And they burst from you, at most twice a second, as hard as the ember has made you.
+        if (thorns > 0 && Time - thornsAt > 0.5)
+        {
+            thornsAt = Time;
+            double burst = 12 * thorns * (1 + 0.08 * (EmberLevel - 1)), r = 2.5 * Math.Sqrt(st.Get(Stat.Area));
+            Events.Emit(new Ev.Nova { X = p.X, Z = p.Z, Radius = r, School = School.Nature, Duration = 0.25, Rings = 0 });
+            ForEachHostileInRadius(p.X, p.Z, r, (e, d) =>
+            {
+                double dd = d == 0 ? 1 : d;
+                HitEnemy(e, burst, School.Nature, ThornTags, new HitOpts { NoCrit = true, Knockback = 0.6, DirX = (e.X - p.X) / dd, DirZ = (e.Z - p.Z) / dd, Credit = "thorns" });
+            });
+        }
         double dmg = amount;
         double armor = st.Get(Stat.Armor);
         foreach (var z in Zones.Items) if (z.Alive && z.Armor > 0 && Dist(z.X, z.Z, p.X, p.Z) < z.Radius) armor += z.Armor;
@@ -909,6 +926,9 @@ public sealed partial class Battle
         if (Art.WraithT > 0) dmg *= 0.5;
         return HurtPlayerRaw(dmg, school, source, from);
     }
+
+    double thornsAt = -9;
+    static readonly Tag[] ThornTags = [Tag.Aura, Tag.Area, Tag.Nature];
 
     /// <summary>A blow slipped at the last moment: the dash comes back, the
     /// air round you cracks (what is close is staggered), and for a moment
@@ -1083,7 +1103,7 @@ public sealed partial class Battle
         e.Damage = def.Damage * sc.Damage;
         e.Faction = o.Faction ?? def.Faction;
         e.Disposition = o.Disposition ?? (def.Faction == Faction.Ally ? Disposition.Ally : Disposition.Hostile);
-        e.Speed = def.Speed * (0.92 + Rng.Next() * 0.16) * (e.Disposition == Disposition.Ally ? 1 : Rules.FoeSpeed);
+        e.Speed = def.Speed * (0.92 + Rng.Next() * 0.16) * (e.Disposition == Disposition.Ally ? 1 : Rules.FoeSpeed * (1 + 0.05 * Boons.GetValueOrDefault("dark_bargain")));
         e.Elite = def.Elite || o.Elite;
         e.Boss = def.Boss;
         e.State = o.Style == SpawnStyle.Rise ? EnemyState.Rising : o.Style == SpawnStyle.Burrow ? EnemyState.Burrowed : EnemyState.Active;
@@ -1114,6 +1134,7 @@ public sealed partial class Battle
         e.Wake = o.Wake;
         e.Roused = false;
         e.DrainedAt = -99;
+        e.SummonedBy = null;
         Events.Emit(new Ev.Spawn { Enemy = e.Id, X = x, Z = z, Def = defId, Style = o.Style ?? SpawnStyle.Walk });
         return e;
     }
@@ -1404,11 +1425,13 @@ public sealed partial class Battle
     {
         Events.Emit(new Ev.Explosion { X = x, Z = z, Radius = r, School = school, Power = Math.Min(2, dmg / 40) });
         var t2 = tags.Has(Tag.Explosion) ? tags : [.. tags, Tag.Explosion];
+        // A weapon's blast carries what its blows carry (a cinder's burning, a cloud's shock).
+        var status = weapon?.StatusOf;
         ForEachHostileInRadius(x, z, r, (e, d) =>
         {
             if (e.Id == skip) return;
             double dd = d == 0 ? 1 : d;
-            HitEnemy(e, dmg, school, t2, new HitOpts { Weapon = weapon, Knockback = 0.5, DirX = (e.X - x) / dd, DirZ = (e.Z - z) / dd, Depth = depth + 1 });
+            HitEnemy(e, dmg, school, t2, new HitOpts { Weapon = weapon, Knockback = 0.5, DirX = (e.X - x) / dd, DirZ = (e.Z - z) / dd, Depth = depth + 1, Status = status });
         });
         foreach (var c in Collision.Within(x, z, r)) if (c.Tag != null) Hooks.OnHitProp?.Invoke(c.Tag, c.Id, school, dmg, x, z);
         if (depth < 3) Fire(TriggerEvent.Explode, new ProcCtx { X = x, Z = z, Damage = dmg, School = school, Tags = t2, Depth = depth + 1 });
@@ -1556,6 +1579,7 @@ public sealed partial class Battle
             EmberXp -= EmberNext;
             EmberLevel++;
             EmberNext = EmberNeed(EmberLevel);
+            RescaleAllies(EmberLevel - 1);
             PendingLevels++;
             if (Content.Boons.IsMilestone(EmberLevel)) PendingBlessings.Add(EmberLevel);
             Events.Emit(new Ev.LevelUp { Level = EmberLevel });
@@ -1596,6 +1620,8 @@ public sealed partial class Battle
         var evo = Array.Find(w.Def.Evolutions, e => e.Id == branch);
         if (evo == null) return;
         w.Evolution = evo;
+        // What it does beyond numbers: its own rules, credited to it.
+        foreach (var t in evo.Triggers) AddTrigger(t, $"evo:{evo.Id}", 1, w.Id);
         Events.Emit(new Ev.Evolve { Weapon = w.Id, Into = evo.Id });
         Events.Emit(new Ev.Announce { Kicker = $"{w.Def.Name} evolves", Title = evo.Name, Subtitle = evo.Description, Tone = Tone.Boon });
     }
@@ -1616,6 +1642,8 @@ public sealed partial class Battle
         // Less to live on (a glass cannon): what is left of it, no more than all of it.
         Player.Hp = Math.Min(Player.Hp, MaxHp);
         if (id == "vitality") HealPlayer(25, "vitality");
+        // Wisdom is the draft's own passive: each rank a reroll.
+        if (id == "wisdom") Rerolls++;
         if (id == "spirit_companion") Summon("spirit_wolf", 0, 99);
         if (id == "grave_call") Summon("ghoul_ally", 0, 99);
     }
@@ -1645,8 +1673,8 @@ public sealed partial class Battle
         Player.Hp = Math.Min(Player.Hp, MaxHp);
     }
 
-    public void AddTrigger(TriggerDef def, string source, int rank = 1) =>
-        Triggers.Add(new TriggerInstance { Def = def, Source = source, Rank = rank });
+    public void AddTrigger(TriggerDef def, string source, int rank = 1, string? credit = null) =>
+        Triggers.Add(new TriggerInstance { Def = def, Source = source, Rank = rank, Credit = credit });
 
     public void RemoveTriggers(string source) => Triggers.RemoveAll(t => t.Source == source);
 
@@ -1682,9 +1710,54 @@ public sealed partial class Battle
         if (s != null)
         {
             s.LifeT = life;
-            s.MaxHp = s.Hp = s.Def.Health * (1 + 0.1 * EmberLevel);
-            s.Damage = s.Def.Damage * (1 + 0.08 * EmberLevel);
+            s.MaxHp = s.Hp = s.Def.Health * AllyToughness(EmberLevel) * Stats.Get(Stat.SummonHealth);
+            s.Damage = s.Def.Damage * AllyStrength(EmberLevel);
         }
+        return s;
+    }
+
+    /// <summary>How much harder and tougher than their kind the survivor's allies
+    /// are at an ember level: they grow with the ember, as the horde does.</summary>
+    public static double AllyStrength(int level) => 1 + 0.12 * level;
+    public static double AllyToughness(int level) => 1 + 0.1 * level;
+
+    /// <summary>The ember rose: the allies it called up rise with it (a raising
+    /// weapon's are set by the weapon each time it calls).</summary>
+    void RescaleAllies(int from)
+    {
+        double dmg = AllyStrength(EmberLevel) / AllyStrength(from), hp = AllyToughness(EmberLevel) / AllyToughness(from);
+        foreach (var e in Enemies.Items)
+        {
+            if (!e.Alive || e.Disposition != Disposition.Ally || e.SummonedBy != null || e.Def.Id == "mirror") continue;
+            e.Damage *= dmg;
+            e.MaxHp *= hp;
+            e.Hp *= hp;
+        }
+    }
+
+    /// <summary>A raising weapon's allies: up to max of them at once, near a fresh
+    /// grave if there is one, as strong as the weapon is ranked.</summary>
+    public Enemy? RaiseFor(WeaponInst w, string kind, double life, int max)
+    {
+        int n = 0;
+        foreach (var e in Enemies.Items)
+            if (e.Alive && e.Disposition == Disposition.Ally && e.SummonedBy == w.Id && e.State != EnemyState.Dying)
+            {
+                n++;
+                e.Damage = w.Damage;
+            }
+        if (n >= max) return null;
+        var p = Player;
+        double x = p.X, z = p.Z;
+        for (int i = Graves.Count - 1; i >= 0; i--)
+            if (Time - Graves[i].T < 6 && Dist(Graves[i].X, Graves[i].Z, p.X, p.Z) < 10) { x = Graves[i].X; z = Graves[i].Z; break; }
+        double a = Rng.Next() * Tau;
+        var s = SpawnEnemy(kind, x + Math.Cos(a) * 1.2, z + Math.Sin(a) * 1.2, new SpawnOpts { Level = EmberLevel, Disposition = Disposition.Ally, Faction = Faction.Ally, Style = SpawnStyle.Rise });
+        if (s == null) return null;
+        s.SummonedBy = w.Id;
+        s.LifeT = life;
+        s.MaxHp = s.Hp = s.Def.Health * AllyToughness(EmberLevel) * (1 + 0.1 * (w.Rank - 1)) * Stats.Get(Stat.SummonHealth);
+        s.Damage = w.Damage;
         return s;
     }
 
@@ -1696,6 +1769,7 @@ public sealed partial class Battle
     {
         var p = Player;
         auraT -= dt;
+        Contagion(dt);
         int chill = Boons.GetValueOrDefault("chilling");
         int sear = Boons.GetValueOrDefault("searing");
         if (chill == 0 && sear == 0) return;
@@ -1719,6 +1793,36 @@ public sealed partial class Battle
             Events.Emit(new Ev.Nova { X = p.X, Z = p.Z, Radius = r, School = School.Holy, Duration = 0.4, Rings = 0 });
         }
         if (auraT <= 0) auraT = 0.5;
+    }
+
+    double contagionT;
+
+    /// <summary>Contagion: each second every poisoned thing near the survivor
+    /// passes a stack to the nearest of its neighbours that has fewer.</summary>
+    void Contagion(double dt)
+    {
+        if (!Boons.ContainsKey("contagion") || (contagionT -= dt) > 0) return;
+        contagionT = 1;
+        var p = Player;
+        var sick = HostilesInRadius(p.X, p.Z, 16).Where(e => e.Status[StatusKind.Poison] is { } ps && ps.T > 0).Take(48).ToList();
+        foreach (var e in sick)
+        {
+            var src = e.Status[StatusKind.Poison]!;
+            Enemy? to = null;
+            double best = 3.2 * 3.2;
+            foreach (var o in HostilesInRadius(e.X, e.Z, 3.2))
+            {
+                if (o == e || (o.Status[StatusKind.Poison]?.Stacks ?? 0) >= src.Stacks) continue;
+                double d = (o.X - e.X) * (o.X - e.X) + (o.Z - e.Z) * (o.Z - e.Z);
+                if (d < best) { best = d; to = o; }
+            }
+            if (to == null) continue;
+            var s = to.Status.Ensure(StatusKind.Poison, 0, 0, 0, 0.5);
+            s.Stacks = Math.Min(10, s.Stacks + 1);
+            if (src.Power >= s.Power) { s.Power = src.Power; s.From = src.From; }
+            s.T = Math.Max(s.T, 3);
+            Events.Emit(new Ev.Chain { Points = [e.X, e.Z, to.X, to.Z], School = School.Nature });
+        }
     }
 
     /* ============================================================= procs == */
@@ -1773,18 +1877,24 @@ public sealed partial class Battle
     void RunEffects(TriggerInstance t, ProcCtx ctx)
     {
         int depth = ctx.Depth ?? 1;
-        var was = credit;
-        credit = t.Source;
+        var (was, wasWeapon) = (credit, ctxWeapon);
+        credit = t.Credit ?? t.Source;
+        ctxWeapon = t.Credit;
         foreach (var fx in t.Def.Effects) RunEffect(fx, ctx, depth);
-        credit = was;
+        (credit, ctxWeapon) = (was, wasWeapon);
     }
 
     double BaseOf(double damage, Basis basis, ProcCtx ctx) => basis switch
     {
         Basis.Hit => damage * (ctx.Damage ?? 0),
         Basis.MaxHp => damage * (ctx.Target?.MaxHp ?? 0),
+        Basis.Weapon => damage * (ctx.Weapon?.Damage ?? WeaponById(ctxWeapon)?.Damage ?? 0),
         _ => damage * (1 + 0.08 * (EmberLevel - 1)),
     };
+
+    /// <summary>The weapon whose rule is running (an evolution's), for Basis.Weapon
+    /// when the event that set it off carried none (a kill by a status).</summary>
+    string? ctxWeapon;
 
     void RunEffect(Effect effect, ProcCtx ctx, int depth)
     {
@@ -1816,7 +1926,11 @@ public sealed partial class Battle
                     if (src.Power >= s.Power) s.From = src.From;
                     s.Power = Math.Max(s.Power, src.Power);
                     s.T = Math.Max(s.T, 3);
-                    Events.Emit(new Ev.Chain { Points = [x, z, e.X, e.Z], School = fx.Kind == StatusKind.Burn ? School.Fire : School.Nature });
+                    Events.Emit(new Ev.Chain { Points = [x, z, e.X, e.Z], School = fx.Kind switch
+                    {
+                        StatusKind.Burn => School.Fire, StatusKind.Mark => School.Arcane, StatusKind.Bleed => School.Physical,
+                        StatusKind.Chill => School.Frost, StatusKind.Shock => School.Storm, StatusKind.Sear => School.Holy, _ => School.Nature,
+                    } });
                 }
                 break;
             }
@@ -1845,6 +1959,16 @@ public sealed partial class Battle
                 Player.Shield = Math.Max(Player.Shield, fx.Amount);
                 Player.ShieldT = fx.Duration;
                 break;
+            case Effect.Barrier fx:
+            {
+                double cap = MaxHp * fx.Cap;
+                if (Player.Shield < cap)
+                {
+                    Player.Shield = Math.Min(cap, Math.Max(0, Player.Shield) + MaxHp * fx.Fraction);
+                    Player.ShieldT = Math.Max(Player.ShieldT, fx.Duration);
+                }
+                break;
+            }
             case Effect.Zone fx:
             {
                 var zn = SpawnZone(Side.Player, x, z, fx.Radius * Stats.Get(Stat.Area), fx.Duration, BaseOf(fx.Dps, fx.Basis, ctx), fx.School);
