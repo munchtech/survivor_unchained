@@ -315,4 +315,21 @@ public class OfferTests
         Assert.Contains(LevelUp.BuildPaths(BattleTests.Arena(1, ("cinderfall", 2), ("firepot", 2))), p => p.Id == "pyre");
         Assert.True(Share(true) > Share(false) * 1.2, $"{Share(true):0.00} against {Share(false):0.00}");
     }
+
+    [Fact]
+    public void A_great_hand_always_holds_a_ward_and_a_power()
+    {
+        for (uint seed = 1; seed <= 200; seed++)
+        {
+            var b = BattleTests.Arena(seed);
+            b.GreatOwed = 1;
+            var hand = LevelUp.Draft(b);
+            Assert.Equal(3, hand.Count);
+            Assert.All(hand, o => Assert.True(o.Great));
+            var roles = hand.Select(o => Boons.GreatRoles[o.Id]).ToList();
+            Assert.Contains(Boons.GreatRole.Ward, roles);
+            Assert.Contains(Boons.GreatRole.Power, roles);
+            Assert.Contains(roles, r => r is Boons.GreatRole.Answer or Boons.GreatRole.Tempo);
+        }
+    }
 }

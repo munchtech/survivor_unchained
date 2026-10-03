@@ -147,8 +147,11 @@ public static class LevelUp
     {
         var w = b.Weapons.Find(x => x.Id == weaponId);
         if (w == null || w.Evolution != null || w.Rank < Content.Weapons.MaxRank) return new();
-        return w.Def.Evolutions.Where(evo => evo.Catalysts.Any(c => b.Boons.GetValueOrDefault(c) > 0)).ToList();
+        return w.Def.Evolutions.Where(evo => evo.Catalysts.Any(c => Holds(b, c))).ToList();
     }
+
+    /// <summary>A passive held for a recipe: drafted, or stood in for by kindled gear.</summary>
+    public static bool Holds(Battle b, string passive) => b.Boons.GetValueOrDefault(passive) > 0 || b.Stands.Contains(passive);
 
     /// <summary>The passive skills that would evolve a weapon, by branch.</summary>
     public static List<(Evolution Branch, string[] Passives)> EvolvesWith(string weaponId) =>
@@ -193,9 +196,9 @@ public static class LevelUp
     {
         var m = b.Drafting;
         if (m.Cards > 0) return m.Cards;
-        if (GreatNext(b)) return m.Cards = m.Greats >= 1 ? 4 : 3;
+        if (GreatNext(b)) return m.Cards = m.Greats >= 1 || b.Omens ? 4 : 3;
         double luck = b.Stats.Get(Stat.Luck);
-        return m.Cards = 3 + (SkillNext(b) && b.Rng.Next() < 1 - 1 / System.Math.Max(1, luck) ? 1 : 0);
+        return m.Cards = 3 + (SkillNext(b) && (b.Roads || b.Rng.Next() < 1 - 1 / System.Math.Max(1, luck)) ? 1 : 0);
     }
 
     /// <summary>A card's key, as the draft remembers what it showed.</summary>
@@ -267,7 +270,16 @@ public static class LevelUp
                 if (suits) o.Why.Add("Suits your path");
                 pool.Add(new Cand { O = o, W = (deeper ? 3 : 1) * (suits ? 1.5 : 1) * Again(o) });
             }
-            for (int i = 0; i < count; i++) if (TakeFrom(b, pool) is { } c) offers.Add(c.O);
+            // Dealt by role: a ward and a power in every hand, then an answer to
+            // champions or a quickening, then (a fourth card) anything.
+            Boons.GreatRole Role(Cand c) => Boons.GreatRoles[c.O.Id];
+            System.Func<Cand, bool>?[] order =
+            [
+                c => Role(c) == Boons.GreatRole.Ward, c => Role(c) == Boons.GreatRole.Power,
+                c => Role(c) is Boons.GreatRole.Answer or Boons.GreatRole.Tempo, null,
+            ];
+            for (int i = 0; i < count; i++)
+                if ((TakeFrom(b, pool, order[System.Math.Min(i, order.Length - 1)]) ?? TakeFrom(b, pool)) is { } c) offers.Add(c.O);
             return Shown(b, offers.Count > 0 ? offers : Respite(blessing: true, great: GreatNext(b)));
         }
 
@@ -325,7 +337,7 @@ public static class LevelUp
         int passiveRoom = Boons.MaxPassives - PassivesHeld(b);
         // The weapons waiting on a passive to evolve (rank 7 or more, none held).
         var waiting = b.Weapons.Where(w => w.Evolution == null && w.Rank >= Content.Weapons.MaxRank - 1 &&
-            !w.Def.Evolutions.Any(e => e.Catalysts.Any(c => b.Boons.GetValueOrDefault(c) > 0))).ToList();
+            !w.Def.Evolutions.Any(e => e.Catalysts.Any(c => Holds(b, c)))).ToList();
 
         // Combat skills: ranks in the ones you carry, new ones while there is room.
         var combat = new List<Cand>();
@@ -350,10 +362,10 @@ public static class LevelUp
             int next = w.Rank + 1;
             string extra = next == Content.Weapons.ProjRankA || next == Content.Weapons.ProjRankB ? " One more projectile." : "";
             var cats = EvolvesWith(w.Id).SelectMany(e => e.Passives).Distinct().ToList();
-            bool held = cats.Any(c => b.Boons.GetValueOrDefault(c) > 0);
+            bool held = cats.Any(c => Holds(b, c));
             string hint = "";
             if (next >= Content.Weapons.MaxRank - 1 && w.Evolution == null)
-                hint = held ? " At rank 8 it evolves." : passiveRoom > 0 ? $" At rank 8, with {Names(cats)}, it evolves." : $" It evolves with {Names(cats)}, but your passives are full.";
+                hint = held ? (cats.Any(c => b.Boons.GetValueOrDefault(c) > 0) ? " At rank 8 it evolves." : $" At rank 8 it evolves: your gear stands in for {Names(cats.Where(b.Stands.Contains))}.") : passiveRoom > 0 ? $" At rank 8, with {Names(cats)}, it evolves." : $" It evolves with {Names(cats)}, but your passives are full.";
             var o = new Offer
             {
                 Kind = OfferKind.Rank, Id = w.Id, Rarity = Rarity.Common, Title = w.Evolution?.Name ?? w.Def.Name, Recipe = w.Evolution == null ? Recipe(w.Id) : null,
@@ -534,7 +546,7 @@ public static class LevelUp
             else if (w.Def.Evolutions.Length == 0) note = w.Honed > 0 ? $"Honed {w.Honed}" : "";
             else
             {
-                var held = w.Def.Evolutions.Where(e => e.Catalysts.Any(c => b.Boons.GetValueOrDefault(c) > 0)).ToList();
+                var held = w.Def.Evolutions.Where(e => e.Catalysts.Any(c => Holds(b, c))).ToList();
                 ready = held.Count > 0 && w.Rank >= Content.Weapons.MaxRank;
                 note = held.Count > 0
                     ? (ready ? $"Evolves now: {string.Join(" or ", held.Select(e => e.Name))}" : $"At rank 8: {string.Join(" or ", held.Select(e => e.Name))}")

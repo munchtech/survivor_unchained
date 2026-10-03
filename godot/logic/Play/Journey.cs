@@ -168,7 +168,10 @@ public sealed class Journey
         b.GearIds.UnionWith(kit.GearIds);
         b.GearStatuses.UnionWith(kit.GearStatuses);
         b.Rerolls = kit.Rerolls;
-        b.Banishes = 2;
+        b.Banishes = 2 + kit.Banishes;
+        b.Stands.UnionWith(kit.Stands);
+        b.Roads = kit.Roads;
+        b.Omens = kit.Omens;
         b.Player.Revives = kit.Revives;
         if (b.EmberOn)
             for (int i = 0; i < kit.StartLevels; i++) b.GainEmber(b.EmberNext);

@@ -128,6 +128,8 @@ public sealed class CreationChoice
 public static class Inventory
 {
     public const int PackSize = 24;
+    /// <summary>Kindled affixes a survivor's gear can bring to the ember at once.</summary>
+    public const int MaxKindled = 2;
 
     public static List<ItemInstance?> NewPack()
     {
@@ -154,10 +156,12 @@ public static class Inventory
             bool hasPrefix = false, hasSuffix = false;
             for (int k = 0; k < n && pool.Count > 0; k++)
             {
-                var cands = pool.Where(a => !picked.Contains(a.Id) && (a.Prefix ? !hasPrefix || n > 2 : !hasSuffix || n > 2)).ToList();
+                // One kindling to an item.
+                bool kindled = picked.Any(id => Items.Affix(id)?.Kindled != null);
+                var cands = pool.Where(a => !picked.Contains(a.Id) && (a.Prefix ? !hasPrefix || n > 2 : !hasSuffix || n > 2) && !(kindled && a.Kindled != null)).ToList();
                 if (cands.Count == 0) break;
-                // What answers the map comes four times as often; a skill worn is rare.
-                double W(AffixDef x) => (lean?.Contains(x.Id) == true ? 4 : 1) * (x.Grants != null ? 0.35 : 1);
+                // What answers the map comes four times as often; a skill worn is rare, and a kindling rarer.
+                double W(AffixDef x) => (lean?.Contains(x.Id) == true ? 4 : 1) * (x.Grants != null ? 0.35 : 1) * (x.Kindled != null ? 0.3 : 1);
                 double total = cands.Sum(W), roll = rng.Next() * total;
                 var a = cands[^1];
                 foreach (var c in cands) { roll -= W(c); if (roll <= 0) { a = c; break; } }
@@ -303,6 +307,14 @@ public sealed class CombatKit
     public HashSet<string> GearIds = new();
     public HashSet<StatusKind> GearStatuses = new();
     public int StartLevels, Revives, Rerolls = 3;
+    /// <summary>What the kindled gear gives the ember (Items: AffixDef.Kindled):
+    /// banishings beyond the two, a fourth card, a fourth great choice, and the
+    /// passives it stands in for in a recipe.</summary>
+    public int Banishes;
+    public bool Roads, Omens;
+    public HashSet<string> Stands = new();
+    /// <summary>The kindled affixes in force (the first two worn; a third does nothing).</summary>
+    public List<string> Kindled = new();
 }
 
 public static class Character
@@ -397,6 +409,12 @@ public static class Character
             st.AddAll(Inventory.Mods(it));
             foreach (var t in def.Triggers ?? new()) kit.Triggers.Add((t, $"item:{it.Uid}"));
             foreach (var k in def.Statuses ?? new()) kit.GearStatuses.Add(k);
+            // Kindling: one to an item, two to the survivor.
+            if (it.Affixes.Select(ar => Items.Affix(ar.Id)).FirstOrDefault(a => a?.Kindled != null) is { } kin && kit.Kindled.Count < Inventory.MaxKindled)
+            {
+                kit.Kindled.Add(kin.Id);
+                Kindle(kit, kin.Kindled!);
+            }
             // Skills the gear grants, while there is room for them.
             foreach (var ar in it.Affixes)
                 if (Items.Affix(ar.Id)?.Grants is { } g && kit.Weapons.All(w => w.Id != g) && kit.Weapons.Count < Content.Weapons.MaxWeapons)
@@ -435,6 +453,19 @@ public static class Character
             }
         }
         return kit;
+    }
+
+    static void Kindle(CombatKit kit, string key)
+    {
+        switch (key)
+        {
+            case "spark": kit.StartLevels++; break;
+            case "reroll": kit.Rerolls++; break;
+            case "refusal": kit.Banishes++; break;
+            case "roads": kit.Roads = true; break;
+            case "omens": kit.Omens = true; break;
+            default: if (key.StartsWith("stand:")) kit.Stands.Add(key[6..]); break;
+        }
     }
 
     static readonly string[] CompareKeys =

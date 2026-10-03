@@ -67,6 +67,11 @@ public sealed class AffixDef
     public string? Grants;
     /// <summary>The least rarity it rolls on (skills come only on fine gear).</summary>
     public int MinRarity;
+    /// <summary>What it gives the night's ember beyond numbers (docs/SKILLS_DESIGN.md,
+    /// "Gear and the ember"): spark, reroll, refusal, roads, omens, or stand:PASSIVE,
+    /// which counts as that passive in an evolution's recipe. One to an item,
+    /// two to a survivor.</summary>
+    public string? Kindled;
 }
 
 public static class Items
@@ -183,12 +188,46 @@ public static class Items
         new() { Id = "of_knives", Name = "of Knives", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Relic, ItemKind.Ring], Grants = "knifestorm", MinRarity = 2,
             Text = _ => "Grants the skill Knifestorm" },
 
+        /* Kindled: gear that shapes the ember without owning it. Rare and up,
+         * one to an item, two to a survivor (Inventory.MaxKindled). */
+        new() { Id = "of_the_first_spark", Name = "of the First Spark", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Relic], Kindled = "spark", MinRarity = 2,
+            Text = _ => "Kindled: the ember starts a level higher" },
+        new() { Id = "of_second_thoughts", Name = "of Second Thoughts", Prefix = false, Slots = [ItemKind.Ring, ItemKind.Head], Kindled = "reroll", MinRarity = 2,
+            Text = _ => "Kindled: one more redraw in the ember's drafts" },
+        new() { Id = "of_refusal", Name = "of Refusal", Prefix = false, Slots = [ItemKind.Ring, ItemKind.Head], Kindled = "refusal", MinRarity = 2,
+            Text = _ => "Kindled: one more banishing in the ember's drafts" },
+        new() { Id = "of_many_roads", Name = "of Many Roads", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Cloak], Kindled = "roads", MinRarity = 2,
+            Text = _ => "Kindled: the ember's drafts show a fourth card" },
+        new() { Id = "of_omens", Name = "of Omens", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Relic], Kindled = "omens", MinRarity = 2,
+            Text = _ => "Kindled: great blessings offer a fourth choice" },
+        Stand("of_the_whetstone", "of the Whetstone", "serration"),
+        Stand("of_rime", "of Rime", "chilling"),
+        Stand("of_the_censer", "of the Censer", "searing"),
+        Stand("of_the_wide_field", "of the Wide Field", "expanse"),
+        Stand("of_the_true_eye", "of the True Eye", "precision"),
+        Stand("of_mending", "of Mending", "recovery"),
+        Stand("of_the_ox", "of the Ox", "might"),
+        Stand("of_the_evergreen", "of the Evergreen", "perennial"),
+        Stand("of_the_adder", "of the Adder", "venom"),
+        Stand("of_the_pack", "of the Pack", "kinship"),
+        Stand("of_the_lodestone", "of the Lodestone", "conduit"),
+        Stand("of_embers", "of Embers", "emberblood"),
+
         new() { Id = "of_greed", Name = "of Greed", Prefix = false, Slots = [ItemKind.Ring, ItemKind.Amulet],
             Mods = t => [M(Stat.GoldGain, ModKind.Inc, 0.1 + t * 0.08), M(Stat.PickupRadius, ModKind.Flat, 0.5 + t * 0.3)],
             Text = t => $"+{Pct(0.1 + t * 0.08)} gold, longer reach for pickups" },
     ];
 
     public static AffixDef? Affix(string id) => Array.Find(Affixes, a => a.Id == id);
+
+    /// <summary>A catalyst suffix: the gear stands in for a passive in the ember's
+    /// recipes, so a survivor who plans an evolution by day reaches it with a
+    /// passive slot to spare (never without the rank-8 climb).</summary>
+    static AffixDef Stand(string id, string name, string passive) => new()
+    {
+        Id = id, Name = name, Prefix = false, Slots = [ItemKind.Ring, ItemKind.Amulet, ItemKind.Cloak, ItemKind.Body], Kindled = $"stand:{passive}", MinRarity = 2,
+        Text = _ => $"Kindled: counts as {Content.Boons.Find(passive)?.Name ?? passive} in the ember's evolutions",
+    };
 
     /// <summary>The slot an item goes in by default.</summary>
     public static EquipSlot? SlotFor(ItemDef def) => def.Kind switch

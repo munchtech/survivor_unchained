@@ -236,6 +236,10 @@ public sealed partial class Battle
     /// catalysts and the draft.</summary>
     public readonly HashSet<string> GearIds = new();
     public readonly HashSet<StatusKind> GearStatuses = new();
+    /// <summary>Passives the kindled gear stands in for in a recipe; a fourth
+    /// card in every skill draft; a fourth great choice (CombatKit).</summary>
+    public readonly HashSet<string> Stands = new();
+    public bool Roads, Omens;
     public readonly HashSet<string> BannedCards = new();
     /// <summary>Skill tags the survivor's calling leans toward, for the draft.</summary>
     public readonly HashSet<Tag> Favours = new();
@@ -1017,7 +1021,7 @@ public sealed partial class Battle
     void Wake(int rank)
     {
         var p = Player;
-        var zn = SpawnZone(Side.Player, p.X, p.Z, rank >= 2 ? 1.4 : 1.0, rank >= 2 ? 3.5 : 2.2, 8 + EmberLevel * 0.6, School.Fire);
+        var zn = SpawnZone(Side.Player, p.X, p.Z, rank >= 2 ? 1.4 : 1.0, rank >= 2 ? 3.5 : 2.2, 12 * (1 + 0.08 * (EmberLevel - 1)), School.Fire);
         p.WakeX = p.X; p.WakeZ = p.Z;
         if (zn == null) return;
         zn.Tags = [Tag.Fire, Tag.Zone, Tag.Area];
@@ -1731,6 +1735,8 @@ public sealed partial class Battle
         w.Evolution = evo;
         // What it does beyond numbers: its own rules, credited to it.
         foreach (var t in evo.Triggers) AddTrigger(t, $"evo:{evo.Id}", 1, w.Id);
+        // It shows what it has become at once: the first volley is now.
+        w.Timer = 0;
         Events.Emit(new Ev.Evolve { Weapon = w.Id, Into = evo.Id });
         Events.Emit(new Ev.Announce { Kicker = $"{w.Def.Name} evolves", Title = evo.Name, Subtitle = evo.Description, Tone = Tone.Boon });
     }
