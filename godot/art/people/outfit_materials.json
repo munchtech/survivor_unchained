@@ -86,5 +86,9 @@
  "stocking": {
   "kind": "sheer",
   "repeats": 14
+ },
+ "bone": {
+  "kind": "leather",
+  "repeats": 12
  }
 }
