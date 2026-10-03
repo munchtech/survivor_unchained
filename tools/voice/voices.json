@@ -1,0 +1,577 @@
+{
+ "narrator": {
+  "name": "The narrator",
+  "who": "Tells the player what happens and what can be seen, in the present tense and the second person: captions in the world, the silences in conversations, the notice board, the chapter's last page.",
+  "age": "50s",
+  "accent": "Neutral RP, unshowy; nothing regional to place him.",
+  "timbre": "Low, close, a slight gravel; a voice that sits near the microphone.",
+  "pace": "unhurried",
+  "range": "Narrow on purpose: from dry and plain to quietly grave. Never theatrical; horror is said flat, which is what makes it land.",
+  "habits": "One image per line; lets the full stop do the work. Reads quoted speech without acting it.",
+  "rest": "plain, close, unhurried",
+  "wants": "to let the picture speak",
+  "never": "Never cute, never names a feeling the scene has already shown, never performs.",
+  "share": "Nobody: the narrator is heard more than anyone, and must be his own voice.",
+  "design": "A man in his fifties with a low, close, slightly gravelled voice and neutral southern English Received Pronunciation. Calm, warm and unhurried, like someone telling a winter's tale by a fire to one listener; quiet, dry, and plain, with no theatrical colour. Recorded close to the microphone in a dry room.",
+  "auditions": [
+   "The fire has burned low. Out in the dark, the ground is moving.",
+   "The last of them falls back into the ditch and stays there. The one with the reins was a girl, twelve at most: red hair under the weed, and new boots.",
+   "Under the silence you hear it, for as long as a held breath: slow, patient, enormous. Not breathing. Praying."
+  ]
+ },
+ "rook": {
+  "name": "Mother Rook",
+  "who": "Keeper of the Last Lamp, the inn. Knows everyone's business and admits to most of it; Vonnra pays her for news of the ford road, and paid double for the survivor.",
+  "age": "about 60",
+  "accent": "Yorkshire, broad but tidy; 'pet' is hers.",
+  "timbre": "Warm, dry, chesty; a laugh that lives on the out-breath.",
+  "pace": "brisk",
+  "range": "From bossing a room to a rare, low tenderness she covers at once; cold and short when crossed.",
+  "habits": "Short sentences, imperatives, kindness said sideways ('Sit down before you fall down'). Counts beds and debts.",
+  "rest": "dry, bossy warmth",
+  "wants": "to keep the house in order",
+  "never": "Never says please or sorry; never cries in front of anyone.",
+  "share": "Could lend her voice, lighter and quicker, to a townswoman variant if the pool needs a second woman.",
+  "design": "A sturdy woman of about sixty with a warm, dry, slightly husky voice and a Yorkshire accent. Brisk and bossy, mid-low pitch, quick to command and quick to laugh on the out-breath; underneath it, an unshowy kindness. Plain, practical, working-class, a landlady used to being obeyed.",
+  "auditions": [
+   "Wipe your boots.",
+   "If you're bleeding, bleed outside.",
+   "You told Brannoc about his girl. ... Good. Somebody had to, and it was never going to be me."
+  ]
+ },
+ "holloway": {
+  "name": "Captain Holloway",
+  "who": "Captain of the Waystation Watch: a quartermaster made a captain. Was the Ashford garrison's quartermaster who signed for the boots that never came.",
+  "age": "about 45",
+  "accent": "Lancashire flattened by the army.",
+  "timbre": "Hoarse from shouting, mid-low, worn at the edges.",
+  "pace": "clipped",
+  "range": "Tired patience to anger held one notch below the surface; very quiet whenever Ashford or Maeca comes up. Swears rarely, and it lands.",
+  "habits": "Numbers and lists, what things cost; says 'proof', never 'evidence'. Contractions.",
+  "rest": "tired, clipped, contained",
+  "wants": "to get through the day with what he has",
+  "never": "Never says sorry; the nearest he gets is paying for something.",
+  "share": "His voice, younger and less worn, can stand in for the watchman pool if needed.",
+  "design": "A man in his mid-forties with a hoarse, slightly rough mid-low voice, a northern English Lancashire accent worn flat by years in the army. Clipped, tired, practical; speaks in short counted phrases with anger held just under the surface. Sounds like an officer who has shouted too much and slept too little.",
+  "auditions": [
+   "Eleven men, and four of them can hold a spear the right way round.",
+   "Grey beard, proud of it? Bad hip? ...Corran. He had that post before I had this one.",
+   "Mine. From the north, about the north. ... Read your own post, if anybody writes to you."
+  ]
+ },
+ "maeca": {
+  "name": "Maeca Barefoot",
+  "who": "Hunter, last of the Ashford garrison; the Pack kept her alive after the Fall. A possible lover.",
+  "age": "mid-30s",
+  "accent": "Welsh borders: a soft lilt kept short.",
+  "timbre": "A hunter's half-voice: low, quiet, a hard edge on it.",
+  "pace": "level, unhurried, present tense",
+  "range": "Flat and watchful to a quiet, final contempt; on the morning after, an unguarded softness she shuts again.",
+  "habits": "Few words, all about ground, tracks, weather and animals. 'The Pack', or 'them'.",
+  "rest": "level, watchful, few words",
+  "wants": "to read you before she trusts you",
+  "never": "Never raises her voice; never says more than three words about Ashford.",
+  "share": "Nobody.",
+  "design": "A woman in her mid-thirties with a low, quiet, slightly husky voice and a light Welsh borders accent. Speaks barely above a murmur, as a hunter does in a wood: level, spare and watchful, with a hard edge under the calm. Never raises her voice.",
+  "auditions": [
+   "Tracks. Big ones. Going east, and none coming back.",
+   "Some. ... Fed some of them, once. Buried more. ...Ask me about wolves.",
+   "The Pack found me, after Ashford. Three days in a cave mouth with the garrison dead round me."
+  ]
+ },
+ "wenna": {
+  "name": "Old Wenna",
+  "who": "The herbalist. Nursed the fever year; has suspected for a decade that it came out of the ground.",
+  "age": "70s",
+  "accent": "Somerset, rolled r's.",
+  "timbre": "Cracked, reedy, quick.",
+  "pace": "brisk, speeding up when interested",
+  "range": "Impatient scolding to a breathless rush of interest; a flash of something guarded when the fever year comes near.",
+  "habits": "Lists of plants and symptoms; interrupts herself with a dash; calls everyone 'child'. Very rude, very kind.",
+  "rest": "brisk, cracked impatience",
+  "wants": "to get on with it",
+  "never": "Never admits to being frightened; never names the fever year's dead.",
+  "share": "Tam's Pa (Act 2) is her county and could borrow her direction, not her voice.",
+  "design": "A small, sharp woman in her seventies with a cracked, reedy voice and a West Country Somerset accent with rolled r's. Brisk and impatient, rude and kind at once; she speeds up and her pitch climbs when something interests her. An old herbalist who has seen everything and suffers no fools.",
+  "auditions": [
+   "Sit. No, there. Feverfew, woundwort, a little willow: chew it, don't swallow it, child.",
+   "Green. Warm. Smells like a chapel lamp. Ember slurry, child: the dust of the stones, cooked and watered.",
+   "I've no time for heroes. I've time for patients. Which are you?"
+  ]
+ },
+ "tam": {
+  "name": "Tam",
+  "who": "Tam Penhale, the farm boy, nine. Nobody believes him; he is right every time.",
+  "age": "nine (a young voice)",
+  "accent": "Somerset farm boy.",
+  "timbre": "Light, eager, a little breathless.",
+  "pace": "quick, run-on",
+  "range": "Earnest excitement to indignation at not being believed; small and frightened once or twice.",
+  "habits": "Sentences joined with 'and'; 'Pa says'; the exact thing he saw, in order, with the wrong word for the important part. Pleased with an overheard swear word.",
+  "rest": "eager, earnest",
+  "wants": "to be believed",
+  "never": "Never sarcastic.",
+  "share": "The town's children could take his voice with lighter direction if a separate child voice will not come right.",
+  "design": "A nine-year-old English farm boy with a light, eager, slightly breathless voice and a soft Somerset accent. Earnest and excitable, talking quickly in long run-on sentences, pitch rising when he is not believed. A real child's voice, not a cartoon.",
+  "auditions": [
+   "And I saw it and it was a wolf but it was all thin and Pa says wolves aren't thin but it was.",
+   "I SAID it was wolves.",
+   "There's knocking. Under the top field. Pa says it's the frost. It isn't the frost."
+  ]
+ },
+ "brannoc": {
+  "name": "Brannoc",
+  "who": "The smith. Forged the Low Ford's lamp-irons for a buyer who paid in square coin; his daughter Nell drowned at the ford and rose in the ditch.",
+  "age": "about 50",
+  "accent": "Cornish, slow and deep.",
+  "timbre": "Very deep, slow, a little rough; the hammer under everything.",
+  "pace": "slow, fragments, long gaps",
+  "range": "Narrow and immovable, until Nell: then the stillness of a man who has put the hammer down.",
+  "habits": "Fragments, two sentences at most. Talks about iron as others talk about weather. His only question is about Nell.",
+  "rest": "slow, deep, few words",
+  "wants": "to be left to his work",
+  "never": "Never small talk; never thanks anyone in words, except once (brannoc.nell_quick).",
+  "share": "Nobody.",
+  "design": "A big man of about fifty with a very deep, slow, slightly rough voice and a Cornish accent. Speaks in short heavy fragments with long pauses between them, plain and unmoved, like a smith between hammer strokes. Few words; each one set down like iron on an anvil.",
+  "auditions": [
+   "Steel or fur?",
+   "Twelve ordered. Ten went down to the ford, at night, square coin on the anvil.",
+   "Thank you. ... Forge is shut. Go on."
+  ]
+ },
+ "harlan": {
+  "name": "Harlan Coyle",
+  "who": "Of the Coyle Company. A grieving uncle, and the man who has sold the Dig its blasting ember for two years.",
+  "age": "about 55",
+  "accent": "Bristol merchant.",
+  "timbre": "Warm, round, salesman's; cracks under pressure.",
+  "pace": "patter that over-explains, then stops dead",
+  "range": "Bright patter to broken grief on 'Jory'; a too-quick change of subject when the crates come up.",
+  "habits": "Lists of goods and prices; 'friend'. Over-explains, then stops.",
+  "rest": "warm patter with a crack in it",
+  "wants": "to sell, and not to think",
+  "never": "Never names the buyer of the B.E. crates.",
+  "share": "Jory is family and should sound it: cast Jory first, then build Harlan as his older, rounder self (or the other way round).",
+  "design": "A stout man in his mid-fifties with a warm, round, friendly voice and a Bristol West Country accent. A merchant's easy patter that runs on and over-explains, then stops dead; under the warmth, a crack that opens when he is frightened or grieving.",
+  "auditions": [
+   "Harlan Coyle, of the Coyle Company: salt, iron and Morrow cloth, the best on the Old Road.",
+   "Three. In cages. ... Is one of them young? Fair, freckled, a mouth on him that'll get him— ... Get him out.",
+   "I sell salt to people who salt things. I don't ask the salt what it's for, friend."
+  ]
+ },
+ "jory": {
+  "name": "Jory Coyle",
+  "who": "Harlan's nephew, seventeen, rescued from the Kerchiefs' cages. Did not know what he was carrying.",
+  "age": "seventeen",
+  "accent": "Bristol, like his uncle.",
+  "timbre": "Young, quiet, a little hoarse.",
+  "pace": "short sentences, halting",
+  "range": "Shaken and flat to a brittle laugh; once, a slow betrayed understanding.",
+  "habits": "'Uncle'. The cage in every other thing he says.",
+  "rest": "quiet, shaken",
+  "wants": "to hold himself together",
+  "never": "Never brave about it.",
+  "share": "Family likeness with Harlan.",
+  "design": "A seventeen-year-old English youth with a quiet, slightly hoarse young man's voice and a Bristol accent. Shaken and subdued, speaking in short halting sentences, trying to sound steadier than he is.",
+  "auditions": [
+   "I'm all right. ... Uncle's counting crates that aren't there.",
+   "Every rut in Thornhollow. I took them over every rut. ... Uncle knew. Didn't he.",
+   "Right. Right. ...Thank you. I think. I'll know when I've stopped feeling sick."
+  ]
+ },
+ "pell": {
+  "name": "Pell Varrow",
+  "who": "Factor. Paid the Kerchiefs to take the caravan; lost his sister in the Ashford Fall. 'I'm not a good man. I'm a careful one.'",
+  "age": "about 40",
+  "accent": "Precise London RP.",
+  "timbre": "Soft, a little nasal, smiling.",
+  "pace": "measured, complete sentences",
+  "range": "Smiling courtesy to a frightened, ever more polite precision; once, a dry grief for his sister.",
+  "habits": "The vocabulary of ledgers: terms, considerations, accounts.",
+  "rest": "soft, precise, smiling",
+  "wants": "to keep the terms in his favour",
+  "never": "Never raises his voice, never swears, never makes a threat that could be repeated to the Watch.",
+  "share": "Lord-Exchequer Sallow (Act 2) is a softer, older cousin of this casting; keep them distinct.",
+  "design": "A slim man of about forty with a soft, precise, slightly nasal voice and crisp London Received Pronunciation. Smiling, courteous and exact, speaking in complete sentences like a clerk reading terms; when frightened he becomes even more polite.",
+  "auditions": [
+   "Ah. You. What can I do for you today, specifically?",
+   "Let's be civilised. There's gold in this for you, a good deal of gold, if that book were to go in the fire.",
+   "My sister kept the books in Ashford. I came up to collect them, after."
+  ]
+ },
+ "rav": {
+  "name": "Rav Cutwell",
+  "who": "The Crooked Flagon's doctor and drinker; Redcowl's brother, though he never says so.",
+  "age": "50s",
+  "accent": "Glaswegian.",
+  "timbre": "Gravel, wry; a bedside calm under the cant.",
+  "pace": "loose, half-drunk music",
+  "range": "Wry cant and filth to a doctor's steady frankness; one line of grief (rav.cb_killed_redcowl).",
+  "habits": "'Pal'. Frank about bodies. Funny about everything except his brother.",
+  "rest": "wry, gravelly, loose",
+  "wants": "to keep it light and keep drinking",
+  "never": "Never sentimental; never names his brother but once.",
+  "share": "Redcowl is his brother: let them share a grain (both Scots) without sharing a voice.",
+  "design": "A man in his fifties with a gravelly, wry voice and a Glasgow accent, loose and musical as if a few drinks in; under the banter, the calm, steady bedside manner of a doctor. Frank, funny and unshockable.",
+  "auditions": [
+   "Drop your trousers or don't, pal. I've seen worse and I've seen better.",
+   "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds.",
+   "Get out of my light for a bit, pal. Come back tomorrow. I'll be a doctor again tomorrow."
+  ]
+ },
+ "chid": {
+  "name": "Chid",
+  "who": "'The Fool', last priest of the Order of the Morning Light; an Unchained near two hundred years old who does not know he lets it show.",
+  "age": "sounds 30s",
+  "accent": "Irish-tinged.",
+  "timbre": "Light, bright, breathless.",
+  "pace": "quick, running on and doubling back",
+  "range": "Delight that catches in the throat, to an old stillness he slips into without noticing.",
+  "habits": "Exclamations; theology in plain words; now and then a line far older than he looks.",
+  "rest": "light, delighted",
+  "wants": "to make you feel welcome",
+  "never": "Never cynical; never says how old he is.",
+  "share": "Nobody.",
+  "design": "A man who sounds in his thirties, with a light, bright, slightly breathless tenor voice and a soft Irish lilt. Joyful and quick, words tumbling over each other, the voice catching on delight; now and then a sudden quiet, older stillness.",
+  "auditions": [
+   "You're awake! Good. Good! A carter found you on the Old Road and brought you here.",
+   "A C. Lovely. Lots of people start with C. Cuthbert. Cressida. There was a Cormac, once, who—",
+   "She was very light. ...Sit down a minute. Not there. There."
+  ]
+ },
+ "vonnra": {
+  "name": "Vonnra Ash-of-Morrow",
+  "who": "Toll-keeper and far seer: the last binder, who lit the lamps and made the survivor. Her 'sight' is old lore and bought talk. The most important casting in the game.",
+  "age": "60s",
+  "accent": "Clipped and unplaceable: old empire, no region.",
+  "timbre": "A low alto with a little air in it.",
+  "pace": "very slow, long pauses",
+  "range": "Stillness to a stillness that frightens; almost never louder, only slower.",
+  "habits": "No contractions. Talks of payment, of seeing, of what is 'arranged'. Calls the survivor 'traveller', and after the fortune perhaps their name.",
+  "rest": "still, slow, certain",
+  "wants": "to be paid, and to see what she has already bought",
+  "never": "Never answers yes or no; never hurries; never says what she wants.",
+  "share": "Nobody.",
+  "design": "A woman in her sixties with a low alto voice with a little breath in it and a clipped, cultivated, unplaceable accent, as if from an old empire's court. Extremely still and slow, every word chosen and set down, with long silences between phrases. Calm, certain and quietly unsettling; she never hurries and never raises her voice.",
+  "auditions": [
+   "Traveller. The road was quiet tonight. It will not always be. Payment, always.",
+   "Gone south. On the toll's business. ... Clerks go south, traveller. It is the direction they fall in.",
+   "Sit down. I have not finished reading."
+  ]
+ },
+ "keegan": {
+  "name": "Dame Keegan Orme",
+  "who": "Of the Argent Vigil, probationary; the last true knight of an order that is gone, though she does not know it. Chapter four of her handbook is about the survivor.",
+  "age": "20s",
+  "accent": "Oxbridge RP.",
+  "timbre": "Clear, bright, projected.",
+  "pace": "brisk, over-articulated",
+  "range": "Lecturing earnestness to flustered contractions when she forgets herself; once, real fear.",
+  "habits": "No contractions on duty; cites the probationary handbook by chapter; names rhetorical figures.",
+  "rest": "earnest, projected",
+  "wants": "to do it by the book",
+  "never": "Never admits the Vigil is gone; never says what chapter four is about.",
+  "share": "Nobody.",
+  "design": "A young woman in her twenties with a clear, bright, well-projected voice and crisp Oxbridge Received Pronunciation. Earnest and over-articulated, like a keen lecturer reciting from a handbook; comic but sincere, and flustered when she slips into ordinary speech.",
+  "auditions": [
+   "Dame Keegan Orme, of the Argent Vigil. Probationary. That is a technicality.",
+   "The probationary handbook, chapter two, is very clear on the matter of taverns.",
+   "You look well. You look extremely well. ...I've got to go and read something."
+  ]
+ },
+ "sella": {
+  "name": "Sella",
+  "who": "The blue room at the top of Rook's stairs. Sells company and talk, and sells what is said upstairs; Vonnra outbids everyone. A possible lover.",
+  "age": "late 20s",
+  "accent": "Softened Cockney.",
+  "timbre": "Low, amused, intimate.",
+  "pace": "easy, unhurried",
+  "range": "Teasing warmth that is also work, to a plain, unguarded tenderness she does not trust.",
+  "habits": "Heavy contractions; 'love'. Frank about sex and money and about which is which.",
+  "rest": "low, amused warmth",
+  "wants": "to be paid, and to like you anyway",
+  "never": "Never coy, never pitiful, never sorry for her work. Adult; never breathy.",
+  "share": "Nobody.",
+  "design": "A woman in her late twenties with a low, warm, amused voice and a softened London Cockney accent. Easy and intimate, frank and funny, with a smile always audible; grown-up and direct rather than breathy or coy.",
+  "auditions": [
+   "Evening. The lamp's lit upstairs, if you're asking. You look like you're asking.",
+   "Put your purse away. Tonight I'm not working. ...Don't look at me like that.",
+   "Chapel lamps, with nobody to see them but you, and you lit them anyway."
+  ]
+ },
+ "redcowl": {
+  "name": "Redcowl",
+  "who": "Chief of the Kerchiefs: Dunstan Cutwell, Rav's brother, leader of Ashford's dispossessed, who feeds forty-one mouths off the road.",
+  "age": "40s",
+  "accent": "Hard Scots.",
+  "timbre": "A big chest voice.",
+  "pace": "loud, then cold and slow on a turn",
+  "range": "Booming laughter that comes before a threat, to a sudden cold quiet; a flicker of the brother.",
+  "habits": "'Ha! HA.' 'Lad' or 'lass' as the survivor is; 'my lot'. Talks about feeding people the way chiefs talk about gold.",
+  "rest": "booming, dangerous good humour",
+  "wants": "to feed his people",
+  "never": "Never says please; never says Ashford, and never lets anyone say it twice.",
+  "share": "Brother to Rav: both Scots, different men.",
+  "design": "A big man in his forties with a deep, booming chest voice and a hard Scottish accent. Laughs loudly before he threatens, then turns cold and quiet in an instant; a bandit chief with real authority and real menace.",
+  "auditions": [
+   "Talk or bleed. Your choice.",
+   "Ha! A little bird. Sings for its drink. ... Birds don't have names, lass. Not in my camp.",
+   "Don't. ... You get to say that once in my camp. You've said it."
+  ]
+ },
+ "wayfinder": {
+  "name": "Ysolde Marrow, the Wayfinder",
+  "who": "Cartographer of the night arenas; writes down who comes back and sells the list north, to keep her risen brother fed.",
+  "age": "50s",
+  "accent": "Edinburgh.",
+  "timbre": "Crisp, dry, bookish.",
+  "pace": "brisk",
+  "range": "Gallows humour to a precise, guarded vagueness about her buyers.",
+  "habits": "Talks of the dead as entries in a margin; contractions; precise about maps.",
+  "rest": "brisk, dry, bookish",
+  "wants": "to sell you a map and write you down",
+  "never": "Never says who buys her notes.",
+  "share": "Edric Marrow (Act 2) is her brother: the same accent, quieter.",
+  "design": "A woman in her fifties with a crisp, dry, precise voice and an educated Edinburgh Scottish accent. Brisk and bookish with a gallows sense of humour, like a cartographer who has outlived a great many customers.",
+  "auditions": [
+   "Maps. Places the road forgets. Pick one.",
+   "Name first; I'm a tidy woman. ... Speaking of which. How do I put you down?",
+   "Nobody. ... You'd be surprised how often Nobody comes back."
+  ]
+ },
+ "snib": {
+  "name": "Snib",
+  "who": "Self-appointed foreman of the Dig, a lampling. Exactly what he looks like. Survives everything.",
+  "age": "ageless, small",
+  "accent": "None you could place; a goblin's scrape.",
+  "timbre": "Small, fast, pitched up; a tinny lamp ring on stressed words (add in post).",
+  "pace": "fast, panicked",
+  "range": "Panic to more panic; pomposity collapsing into contradiction.",
+  "habits": "Third person; capitals on the stressed word; contradicts himself in the next breath. 'Boss'.",
+  "rest": "panicked, fast",
+  "wants": "to not be blamed",
+  "never": "Never calm.",
+  "share": "The babbling lampling can take his voice, whispered and slower. Grimtunnel is his family: build him from Snib's design, bigger and lower.",
+  "design": "A small creature with a high, fast, reedy, slightly scratchy voice, panicky and self-important, words tumbling out in bursts with sudden loud stresses. A comic goblin foreman, nervous and pompous, speaking about himself in the third person.",
+  "auditions": [
+   "OI! No surface-meat past the pump!",
+   "The pump does not pump itself. It does, actually.",
+   "Snib does not want to talk about pipe-lads. Snib wants you to LEAVE."
+  ]
+ },
+ "grimtunnel": {
+  "name": "Grimtunnel",
+  "who": "Boss of the Dig; a believer, carrying the Warden's heart down to the god he thinks he is freeing.",
+  "age": "ageless",
+  "accent": "Snib's family.",
+  "timbre": "Bigger and lower than Snib, oily; a cackle; cave reverb (add in post).",
+  "pace": "gleeful, quick",
+  "range": "Gloating to possessive delight.",
+  "habits": "'Nobody's!', 'surface-meat'.",
+  "rest": "oily glee",
+  "wants": "to take what is his",
+  "never": "Never afraid of you.",
+  "share": "Built from Snib's voice, pitched down; two lines in Act 1.",
+  "design": "A squat goblin boss with a lower, oily, gloating voice that breaks into a cackle; gleeful, greedy and possessive, speaking quickly with relish, as if from inside a cave.",
+  "auditions": [
+   "Oho! A Warden's heart, still warm! Nobody's, is it? Nobody's!",
+   "Finders keepers, surface-meat. The Deep Dig thanks you!"
+  ]
+ },
+ "lampling": {
+  "name": "The babbling lampling",
+  "who": "A lampling at the edge of the pit, who saw the dark move.",
+  "age": "ageless",
+  "accent": "Snib's people.",
+  "timbre": "Whispered, dry, close.",
+  "pace": "uneven, repeating",
+  "range": "Dazed to terrified.",
+  "habits": "Repetition, broken grammar, the same three facts in a different order.",
+  "rest": "whispered, dazed",
+  "wants": "to stop knowing what it knows",
+  "share": "Snib's voice, whispered.",
+  "design": "A small creature whispering in a dry, cracked, close voice, dazed with fear, repeating itself in broken phrases, as if it cannot stop seeing something.",
+  "auditions": [
+   "It moved. The dark moved. We dug, and we dug, and it MOVED.",
+   "Kell's lamp came back up on its own, still lit. Still lit."
+  ]
+ },
+ "ford_warden": {
+  "name": "The Ford-Warden",
+  "who": "The drowned thing that kept the Low Ford, woken by the lamps; the prologue's boss.",
+  "age": "ancient",
+  "accent": "None: a voice from under water.",
+  "timbre": "Huge, slow, drowned; pitch down and a wet reverb in post.",
+  "pace": "slow, proclaimed",
+  "range": "A proclamation, nothing else.",
+  "habits": "Speaks in capitals.",
+  "rest": "vast, slow, proclaiming",
+  "wants": "to keep the crossing",
+  "share": "Two lines: any deep male voice, processed. Could be the watchman's voice pitched down an octave.",
+  "design": "An enormous, ancient, inhuman voice, very deep and slow, booming as if from under deep water; a drowned guardian proclaiming a law.",
+  "auditions": [
+   "NONE CROSS AFTER DARK.",
+   "RISE, YOU WHO DROWNED HERE."
+  ]
+ },
+ "dead_watchman": {
+  "name": "The dead Watchman",
+  "who": "Corran, dead at his post on the Low Ford road; his jaw moves once, for the survivor alone.",
+  "age": "60s, dead",
+  "accent": "Northern, faint.",
+  "timbre": "Dry, cracked, barely voiced.",
+  "pace": "slow",
+  "range": "One line.",
+  "habits": "",
+  "rest": "dry, dead whisper",
+  "wants": "to pass on what he learned",
+  "share": "With the bones in the Verge: one 'dead' voice for both.",
+  "design": "An old man's voice, dry and cracked and barely above a whisper, as if from a throat long dead; slow, flat and close.",
+  "auditions": [
+   "It shatters its own lamps when it charges. Make it charge."
+  ]
+ },
+ "bones": {
+  "name": "The bones",
+  "who": "A legionary's skeleton by the vault door in the Verge.",
+  "age": "dead",
+  "accent": "None.",
+  "timbre": "Dry, hollow whisper.",
+  "pace": "slow",
+  "range": "One line.",
+  "rest": "hollow whisper",
+  "wants": "to warn",
+  "share": "The dead Watchman's voice.",
+  "design": "A dry, hollow, ancient whisper, slow and toneless, as if spoken through an empty skull.",
+  "auditions": [
+   "It was never locked from the outside."
+  ]
+ },
+ "townsman": {
+  "name": "A townsman",
+  "who": "Any man of the Waystation in passing: carters, stall-keepers, drinkers, the grumbling, the gossiping and the bawdy.",
+  "age": "30s to 50s",
+  "accent": "Northern or West Country English, ordinary.",
+  "timbre": "Ordinary, a working man's voice.",
+  "pace": "off-hand",
+  "range": "Grumbles, gossip, fear and filthy jokes, all said in passing.",
+  "habits": "Said to the air, not performed.",
+  "rest": "off-hand, ordinary",
+  "wants": "to say his piece and walk on",
+  "share": "If one voice repeats too often, add a second townsman (a design with an older, rougher voice) and split the folk lines between them by line number.",
+  "design": "An ordinary working man in his forties with a plain, slightly rough northern English voice, speaking off-hand in passing as he walks by, conversational and unperformed.",
+  "auditions": [
+   "Bread's up again. It's always up.",
+   "Holloway couldn't find his own arse with a lantern and a map.",
+   "Came up the Low Ford at night? You're brave or daft."
+  ]
+ },
+ "townswoman": {
+  "name": "A townswoman",
+  "who": "Any woman of the Waystation in passing.",
+  "age": "30s to 50s",
+  "accent": "West Country or northern English, ordinary.",
+  "timbre": "Ordinary, brisk.",
+  "pace": "off-hand",
+  "range": "As the townsman's.",
+  "habits": "Said to the air, not performed.",
+  "rest": "off-hand, ordinary",
+  "wants": "to say her piece and walk on",
+  "share": "As the townsman: a second design if one voice wears thin.",
+  "design": "An ordinary working woman in her forties with a plain, brisk West Country English voice, speaking off-hand in passing as she walks by, conversational and unperformed.",
+  "auditions": [
+   "Two coppers for a turnip. Two!",
+   "My husband went out to the Verge a month back. Some days I hope he stays out.",
+   "Is that blood? Don't tell me."
+  ]
+ },
+ "child": {
+  "name": "A child",
+  "who": "The town's children at play.",
+  "age": "about eight",
+  "accent": "Local English.",
+  "timbre": "Light, quick.",
+  "pace": "quick",
+  "range": "Play and dares.",
+  "rest": "playful",
+  "wants": "to play",
+  "share": "Tam's voice, lighter, if a second child voice will not come right.",
+  "design": "A young English child of about eight with a light, quick, playful voice, calling out mid-game.",
+  "auditions": [
+   "You can't catch me!"
+  ]
+ },
+ "watchman": {
+  "name": "A watchman",
+  "who": "The Waystation Watch on the gate and on the rounds.",
+  "age": "30s",
+  "accent": "Northern English.",
+  "timbre": "Plain, a little official.",
+  "pace": "steady",
+  "range": "Warnings and boredom.",
+  "rest": "dutiful, plain",
+  "wants": "to keep the gate and finish the shift",
+  "share": "The townsman's voice with a sterner direction, if the budget is short.",
+  "design": "A watchman in his thirties with a plain, steady northern English voice, a little official and a little bored, giving warnings at a gate.",
+  "auditions": [
+   "Keep your weapon sheathed in town.",
+   "East road. Mind the wolves."
+  ]
+ },
+ "watchwoman": {
+  "name": "A watchwoman",
+  "who": "The Waystation Watch on the gate and on the rounds.",
+  "age": "30s",
+  "accent": "Northern English.",
+  "timbre": "Plain, firm.",
+  "pace": "steady",
+  "range": "Warnings and boredom.",
+  "rest": "dutiful, plain",
+  "wants": "to keep the gate and finish the shift",
+  "share": "The townswoman's voice with a sterner direction, if the budget is short.",
+  "design": "A watchwoman in her thirties with a plain, firm northern English voice, steady and a little official, giving warnings at a gate.",
+  "auditions": [
+   "Dawn arrivals. We do not get many that live.",
+   "Lamps are lit. Stay where they reach."
+  ]
+ },
+ "_lexicon": {
+  "Vonnra": "VON-ruh (short o, as in 'on')",
+  "Ash-of-Morrow": "ASH-of-MORR-oh",
+  "Morrow": "MORR-oh",
+  "Maeca": "MAY-kuh",
+  "Brannoc": "BRAN-uck",
+  "Wenna": "WEN-uh",
+  "Harlan": "HAR-lun",
+  "Coyle": "COIL",
+  "Jory": "JOR-ee (as in 'jolly')",
+  "Pell Varrow": "PEL VARR-oh",
+  "Varrow": "VARR-oh",
+  "Rav": "RAV (rhymes with 'have')",
+  "Cutwell": "CUT-well",
+  "Chid": "CHID (rhymes with 'did')",
+  "Keegan Orme": "KEE-gun ORM",
+  "Sella": "SEL-uh",
+  "Redcowl": "RED-cowl ('cowl' rhymes with 'owl')",
+  "Snib": "SNIB",
+  "Grimtunnel": "GRIM-tun-ul",
+  "Ysolde": "ih-ZOLD-uh",
+  "Greymuzzle": "GRAY-muzz-ul",
+  "Thornhollow": "THORN-holl-oh",
+  "Ashford": "ASH-fud",
+  "Jessop": "JESS-up",
+  "Dunstan": "DUN-stun",
+  "Corran": "KORR-un",
+  "Dannet": "DAN-it",
+  "Penhale": "pen-HAIL",
+  "Penhales": "pen-HAILZ",
+  "Low Kiln": "LOH KILN",
+  "Aldo": "AL-doh",
+  "Oswin": "OZ-win",
+  "Ashe": "ASH",
+  "Kerchiefs": "KER-chifs",
+  "Silverstair": "SIL-ver-stair",
+  "Argent Vigil": "AR-junt VIJ-il",
+  "Waystation": "WAY-stay-shun"
+ }
+}

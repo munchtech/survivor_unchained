@@ -783,8 +783,8 @@ def write_scripts(lines, cast, lexicon):
                 out.append("- The survivor can answer: " + " / ".join(f"\"{a}\"" for a in ctx["answers"]))
             d = l["direction"]
             out.append(f"- **Direction** ({d['source']}): {d['emotion']}, intensity {d['intensity']}/5, {d['pace']}." +
-                       (f" Wants {d['wants'][0].lower() + d['wants'][1:] if d['wants'].startswith('To ') else d['wants']}." if d.get("wants") else "") +
-                       (f" {d['notes'][0].upper() + d['notes'][1:]}." if d.get("notes") else ""))
+                       (f" Wants {(d['wants'][0].lower() + d['wants'][1:]).rstrip('.')}." if d.get("wants") else "") +
+                       (f" {d['notes'][0].upper() + d['notes'][1:].rstrip('.')}." if d.get("notes") else ""))
             if l.get("flags"):
                 out.append("- Flags: " + ", ".join(f"`{f}`" for f in l["flags"]))
             out.append("")
@@ -800,7 +800,8 @@ def write_casting(cast, counts, lexicon):
            "The **voice design** paragraph of each is written for a model that builds a voice from a description "
            "(Qwen3-TTS VoiceDesign): one paragraph, physical and concrete, no names. Generate several candidates "
            "from it, audition them on the **audition lines**, and keep the winner as the reference clip "
-           "(`tools/voice/refs/<voice>.wav`) so every later take is cloned from the same voice.", "",
+           "(`tools/voice/refs/<voice>.wav`) so every later take is cloned from the same voice. Audition lines come "
+           "from the script where it shows the range; a few are written for the audition alone and are not in the game.", "",
            "| Voice | Who | Takes | Shares with |", "|---|---|---|---|"]
     for k, c in cast.items():
         if k.startswith("_"):
