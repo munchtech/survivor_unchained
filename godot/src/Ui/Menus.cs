@@ -77,6 +77,7 @@ public static class SettingsPanel
         }
         v.AddChild(Row("Picture", ["low", "medium", "high"], s.Quality, x => s.Quality = x));
         v.AddChild(Row("Sound", ["on", "quiet", "off"], s.Sound, x => s.Sound = x));
+        v.AddChild(Row("Voices", ["on", "quiet", "off"], s.Voices, x => s.Voices = x));
         v.AddChild(Row("Display", ["window", "fullscreen"], s.Fullscreen ? "fullscreen" : "window", x => s.Fullscreen = x == "fullscreen"));
         v.AddChild(Row("Gore", ["full", "reduced", "off"], s.Gore, x => s.Gore = x));
         v.AddChild(Row("Screen shake", ["full", "reduced", "off"], s.Motion, x => s.Motion = x));
@@ -164,7 +165,7 @@ public partial class PauseScreen : Overlay
         AddChild(Style.Scrim(panel == "" ? G.CloseOverlay : () => { panel = ""; Refresh(); }));
         if (panel != "")
         {
-            var box = Style.Centered(Style.Panel(Style.Plate(22)), panel == "controls" ? new Vector2(760, 640) : new Vector2(640, 380));
+            var box = Style.Centered(Style.Panel(Style.Plate(22)), panel == "controls" ? new Vector2(760, 640) : new Vector2(640, 420));
             AddChild(box);
             var v = Style.V(10, Style.Cap(panel == "controls" ? "Controls" : "Settings", 18), Style.Rule());
             v.AddChild(panel == "controls" ? new ControlsPanel() : SettingsPanel.Build(G, Refresh));

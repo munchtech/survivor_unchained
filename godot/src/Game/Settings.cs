@@ -13,6 +13,8 @@ public sealed class Settings
 {
     public string Quality = "high";
     public string Sound = "on";
+    /// <summary>Recorded voices, under the sound's own volume.</summary>
+    public string Voices = "on";
     public string Gore = "full";
     public string Motion = "full";
     public bool Fullscreen = true;
@@ -52,6 +54,7 @@ public sealed class Settings
     public float ShakeLevel => Motion switch { "reduced" => 0.4f, "off" => 0, _ => 1 };
     public bool Hitstop => Motion != "off";
     public float Volume => Sound switch { "quiet" => 0.4f, "off" => 0, _ => 1 };
+    public float VoiceVolume => Voices switch { "quiet" => 0.5f, "off" => 0, _ => 1 };
 
     public static string Next(string now, params string[] among) => among[(Array.IndexOf(among, now) + 1) % among.Length];
 

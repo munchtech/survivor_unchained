@@ -44,6 +44,8 @@ public sealed class Folk
         public int Id;
         public INpcView View = null!;
         public FolkRole Role;
+        /// <summary>Whose voice says their lines.</summary>
+        public Sex Sex;
         public double X, Z, Vx, Vz, Heading;
         public List<FolkNode> Path = new();
         public FolkNode? Dest;
@@ -165,9 +167,10 @@ public sealed class Folk
     Walker Make(FolkRole role, FolkNode at, FolkLook? look = null)
     {
         var l = look ?? (role == FolkRole.Child ? Pick(Lore.ChildLooks) : role == FolkRole.Watch ? Lore.WatchLook : Pick(Lore.FolkLooks));
+        var spec = Person(role, l, rng);
         var w = new Walker
         {
-            Id = nextId++, View = o.Look.Walker(Person(role, l, rng), 0.8 * (l.Scale ?? 1)), Role = role,
+            Id = nextId++, View = o.Look.Walker(spec, 0.8 * (l.Scale ?? 1)), Role = role, Sex = spec.Sex,
             X = at.X + Rnd(-0.6, 0.6), Z = at.Z + Rnd(-0.6, 0.6), At = at,
             Speed = role == FolkRole.Child ? Rnd(3.3, 3.9) : role == FolkRole.Watch ? 1.25 : Rnd(1.35, 1.8),
             BarkT = Rnd(8, 30), Heading = rng.NextDouble() * Math.PI * 2,
@@ -551,7 +554,7 @@ public sealed class Folk
         if (said.Count > 8) said.RemoveAt(0);
         w.BarkT = Rnd(40, 80);
         barkT = Rnd(7, 13);
-        o.Look.Bark(line.Text, w.X, y + 0.2, w.Z);
+        o.Look.Bark(line.Text, w.X, y + 0.2, w.Z, voice: w.Sex == Sex.Female ? "f" : "m");
     }
 
     public void Dispose()

@@ -96,6 +96,7 @@ public partial class Game : Node, IZoneHost
         synth = new Synth();
         AddChild(synth);
         sound = new SoundBridge(synth);
+        AddChild(new VoiceOver());
         // The interface: every button ticks under the pointer and clicks.
         GetTree().NodeAdded += n => { if (n is BaseButton bb) Sounded(bb); };
         saves = new Saves(ProjectSettings.GlobalizePath("user://saves"));
@@ -204,6 +205,7 @@ public partial class Game : Node, IZoneHost
         if (scene != null) { scene.Fx.Gore.Level = s.GoreLevel; scene.Hitstop = s.Hitstop; }
         air.Quality(s.Quality);
         AudioServer.SetBusVolumeDb(0, s.Volume <= 0 ? -80 : Mathf.LinearToDb(s.Volume));
+        VoiceOver.Instance?.Volume(s.VoiceVolume);
     }
 
     public string Key(Act a) => controls.KeyLabel(a);
@@ -428,7 +430,7 @@ public partial class Game : Node, IZoneHost
     /* --------------------------------------------------- what zones ask -- */
 
     public void Apply(IEnumerable<Change> changes) => Journey.Apply(changes);
-    public void Say(string text, string? who = null, double seconds = 4) => hud.Say(text, who, seconds);
+    public void Say(string text, string? who = null, double seconds = 4) { hud.Say(text, who, seconds); VoiceOver.Instance?.Narrate(text); }
     public void Toast(Toast t) { hud.Toast(t); sound.Toast(t); }
     public void Announce(Announcement a) { hud.Announce(a); sound.Announce(a, bossUp); }
     public void After(double seconds, Action fn) => later.Add((seconds, fn));
@@ -528,6 +530,7 @@ public partial class Game : Node, IZoneHost
                     break;
                 case Ev.Bark bk:
                     scene?.Voices.Bark(bk.Text, new Vector3((float)bk.X, (float)scene.HeightAt(bk.X, bk.Z), (float)bk.Z), bk.Speaker, bk.Speaker == null);
+                    if (scene != null && bk.Speaker != null) VoiceOver.Instance?.Bark(scene, bk.Text, new Vector3((float)bk.X, (float)scene.HeightAt(bk.X, bk.Z), (float)bk.Z), null);
                     break;
                 case Ev.PlayerHit ph when ph.Dodged && Battle is { } b:
                     scene?.Voices.Bark("Dodged", new Vector3((float)b.Player.X, (float)scene.HeightAt(b.Player.X, b.Player.Z), (float)b.Player.Z), null, true);

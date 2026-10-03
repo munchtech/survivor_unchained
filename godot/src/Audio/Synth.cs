@@ -73,7 +73,7 @@ public partial class Synth : Node
     public readonly float[] Level = { 0.85f, 0.8f, 0.9f, 0.7f };
     static readonly float[] Send = { 0.2f, 0.55f, 0.3f, 0.08f };
     public float Master = 0.85f;
-    float duck = 1, duckNow = 1, masterNow;
+    float duck = 1, duckNow = 1, masterNow, under = 1, underNow = 1;
     readonly Dictionary<string, Queue<ulong>> gates = new();
     public static readonly float[] White = NoiseBuffer(false), Brown = NoiseBuffer(true);
     static readonly Random rng = new();
@@ -171,6 +171,9 @@ public partial class Synth : Node
     /// <summary>Lower the music under a conversation or a menu.</summary>
     public void DuckMusic(float k) => duck = k;
 
+    /// <summary>Lower the music and the ambience under someone speaking (VoiceOver).</summary>
+    public void DuckUnderVoice(float k) => under = k;
+
     /// <summary>At most `max` of this sound per `ms`: a hundred hits a second
     /// must not become a hundred sounds.</summary>
     public bool Gate(string key, int max, int ms)
@@ -229,6 +232,7 @@ public partial class Synth : Node
         {
             double t = (clock + i) / Rate;
             duckNow += (duck - duckNow) * 0.00006f;
+            underNow += (under - underNow) * 0.0002f;
             masterNow += (Master - masterNow) * 0.0002f;
             float dl = 0, dr = 0, wl = 0, wr = 0;
             for (int v = voices.Count - 1; v >= 0; v--)
@@ -237,7 +241,7 @@ public partial class Synth : Node
                 if (t < voice.Start) continue;
                 if (t > voice.End) { voices.RemoveAt(v); continue; }
                 float s = voice.Sample(t, dt);
-                float bus = Level[(int)voice.Bus] * (voice.Bus == Bus.Music ? duckNow : 1);
+                float bus = Level[(int)voice.Bus] * (voice.Bus == Bus.Music ? duckNow * underNow : voice.Bus == Bus.Amb ? underNow : 1);
                 float l = s * voice.L * bus, r = s * voice.R * bus;
                 dl += l; dr += r;
                 float send = Send[(int)voice.Bus] + voice.Verb;
@@ -247,7 +251,7 @@ public partial class Synth : Node
             {
                 float s = b.Sample(t, dt), s2 = b.Wide ? b.Right : s;
                 if (s == 0 && s2 == 0) continue;
-                float amb = Level[(int)Bus.Amb], l = s * amb, r = s2 * amb;
+                float amb = Level[(int)Bus.Amb] * underNow, l = s * amb, r = s2 * amb;
                 dl += l; dr += r;
                 wl += l * Send[(int)Bus.Amb]; wr += r * Send[(int)Bus.Amb];
             }

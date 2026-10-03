@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Godot;
 using SurvivorUnchained.Sim;
+using SurvivorUnchained.Sound;
 using SurvivorUnchained.Ui;
 using SurvivorUnchained.World;
 
@@ -247,6 +248,7 @@ public partial class Game
     {
         sound.Line();
         var id = talkNpc!;
+        VoiceOver.Instance?.Line(id, p.Node, Journey.Ctx);
         var d = Lore.Person(id);
         Lore.Speakers.TryGetValue(id, out var sp);
         var s = World.Npc(id);
@@ -285,6 +287,7 @@ public partial class Game
         if (camSaved is float d) { cam.TargetDistance = d; camSaved = null; }
         runner = null;
         talkNpc = null;
+        VoiceOver.Instance?.Stop();
         hud.Dialogue(null);
         hudMode = null;
         if (scene != null) scene.SimPaused = false;
