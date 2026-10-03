@@ -9205,7 +9205,7 @@
       "when": {
        "knows": "underworld"
       },
-      "text": "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd \"done somebody a favour\": told Coyle's teamsters the road was shut and sent them down the forest track. Between us, he'd also a key he shouldn't have. Pell's warehouse. Showed it me like a boy with a frog. ...Not seen him since. He's not the type to leave town. He wasn't the type to buy rounds, either."
+      "text": "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd \"done somebody a favour\": told Coyle's teamsters the road was shut and sent them down the forest track. Between us, he'd also a key he shouldn't have. Pell's warehouse. Showed it me like a boy with a frog. ...Not seen him since. He wasn't the type to buy rounds, either."
      },
      {
       "text": "A toll clerk bought the room a round the night the caravan vanished. Clerks don't buy rounds. Jessop, his name is; Vonnra's. He'd \"done somebody a favour\": told Coyle's teamsters the road was shut and sent them down the forest track. Draw your own lines, pal. ...Not seen him since, now I think of it."
@@ -11136,7 +11136,7 @@
    },
    "vault": {
     "id": "vault",
-    "text": "No. Not for any price. That is the only thing I will ever say to you without charging for it.",
+    "text": "Not for any price. That is the only thing I will ever say to you without charging for it.",
     "effects": [
      {
       "quest": {
@@ -11733,7 +11733,7 @@
       "text": "The door in the hillside is listening, as I am. That is all I see for free, {name}. The rest you will walk into yourself, and you will, because you are the kind that does."
      },
      {
-      "text": "No. That is all. That is all I see for free. The rest you will walk into yourself, and you will, because you are the kind that does."
+      "text": "The door is not for sale. That is all I see for free. The rest you will walk into yourself, and you will, because you are the kind that does."
      }
     ],
     "effects": [
