@@ -194,6 +194,17 @@ every local model and method on the same five hard lines, including the
 performance-first route (act the line, then convert its timbre to the cast
 voice with Seed-VC), for the owner to judge by ear.
 
+What it found (69 takes, numbers in `docs/voice/samples/README.md`):
+acting first and converting moves most like a person (Dia's performances
+converted: pace change 0.29, 2.7 breaths a line, against 0.11 to 0.15 and
+under one breath for every direct read), which proves the route; but the
+local models that act are American, and the accent does not survive the
+conversion, and conversion costs clarity. What keeps the accent and the
+voice (VoxCPM2 continuation or style, Chatterbox) still moves like a
+reader, with a good line here and there (Sella's intimate line is the best
+English-voiced take). No model can shout. None of it measures as a person
+on every count, so no line has been put into the game.
+
 ## Against the cloud voice pass
 
 A cloud session built a parallel voice pass (branch `claude/cloud-voice`:
@@ -223,3 +234,15 @@ then cloning from that designed reference, line by line, with the
 direction as a style instruction. It is the only commercially usable local
 model that holds the world's accents, and its 48 kHz output is the best
 source for a mix. The acting tests follow below.
+
+**But no local model reaches the bar** ("cinematic, never AI-sounding",
+and the owner's "do we have soul?"). The pipeline, the cast, the mix and
+the game's playback are built and tested; the takes are not good enough
+to ship. What would reach it, cheapest first (costs in
+`docs/voice/samples/README.md`): one British character actor recording
+guide performances that Seed-VC turns into each part's designed voice
+(`produce.py --method perform --guides DIR`, about £2,500 to £4,000 for
+Act 1); a paid generator with acting tags, tested on the same five lines
+first (ElevenLabs, about $99 for a month, and the only generated route
+that does Scots, Irish and Welsh); or a cast of actors (about £10,000 to
+£15,000).
