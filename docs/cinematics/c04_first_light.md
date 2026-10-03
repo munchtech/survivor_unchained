@@ -6,7 +6,7 @@ part A about 40 s, part B about 26 s · skippable
 ## What it does
 
 **Part A, the north bank.** She comes up out of the river at first light, across
-the ford she died trying to cross, and her wet prints come up out of the water
+the ford she went down to for water at dusk, and her wet prints come up out of the water
 again, and this time go on. The sun clears the trees and the ember runs out of
 her, down her body into the ground the way the river ran off her when she woke.
 And then, for the first time all night, her breath smokes in the cold: she
@@ -21,7 +21,7 @@ when the survivor comes in, and back.
 
 - **She wants** warmth, water, a bed: the ordinary. **She gets** them, and loses
   something she will not miss until later (the face). **She changes** from a thing
-  that burned to a woman who is cold.
+  that felt nothing to a woman who can feel the cold.
 - **Vonnra wants** to see the survivor arrive, and kept her lamp lit past dawn for
   it; **she hides** everything; the lamp burning in daylight is the only sign.
 - **Rook** is paid to watch the road and tell (`rook.ford`); her glance at the
@@ -84,7 +84,7 @@ when the survivor comes in, and back.
 | # | Shot | Lens | Camera | Framing and action | Dur. |
 |---|---|---|---|---|---|
 | A1 | MS | 35 | Static, low (0.3 m) on the north bank's edge, looking south at the water | *(Crossing:)* her boots come up out of the river into frame and onto the frosted bank; she walks on past camera, and behind her, in the frost, wet prints come up out of the water and go on north. *(Still south, looting:)* a static MS of her standing in the ford's shallows, turning toward the light that is starting in the east. | 4.0 |
-| A2 | ELS | 40 | Static, from the west, across the road and up into the birches | The tops of the birches go gold one by one from the east as the sun clears the ridge; the light comes down the trunks like water filling a glass. | 5.0 |
+| A2 | ELS | 40 | Static, from the west, across the road and up into the birches | The tops of the birches go gold one by one from the east as the sun clears the ridge; the light comes down the trunks, and where it reaches the road, the blue in the iron by the verge goes pale and small. | 5.0 |
 | A3 | MS | 50 | Static, side-on from the east, the sun behind the camera | The light reaches her face and shoulders. She shuts her eyes against it. | 3.5 |
 | A4 | MLS | 35 | A slow tilt from her chest to her feet (2 s), then hold | The ember goes out of her: red light runs down her body like water, off her shoulders, out of her hands, down her legs, and soaks into the frosted road at her feet and is gone. Her weapon's night-glow cools with it (see Calling). Line N5. | 5.0 |
 | A5 | CU | 85 | Static, frontal, low sun from frame right, the birches' shade behind her | The warmth comes into her all at once, like a lamp turned up: colour in her face, her lips no longer blue. She breathes out, and her breath smokes in the cold: a long white plume in the sunlight. She sees it. She breathes again, to see it again. Then the cold reaches her, now that she can feel it: her shoulders lift, she shivers once, hard. | 5.5 |
@@ -101,7 +101,7 @@ Part A total: 40.0 s.
 | B1 | ELS | 24 | Crane down (5 m to 1.8 m) just inside the south gate, looking north up the road | The town in the morning: roofs, a dozen chimneys smoking straight up, the square, the well; to the right the toll tower with the sun on it, and in its upper window, very small, a lamp still burning, pale in the daylight. She walks in under the camera and on up the road. Line N7. Title over the shot's end: **CHAPTER ONE** / *The Waystation*. | 7.0 |
 | B2 | MS | 50 | Static, behind the west guard, his shoulder in frame | G1 watches her go. Line GD1, to the other guard, not to her. | 3.5 |
 | B3 | MLS | 35 | Tracking behind her at her pace, over her shoulder, looking north | Ahead of her, as she comes, people stop what they are doing and look: the man with the ladder stops in the road and turns so the ladder swings; beyond him the woman at the well holds the bucket halfway; the child runs. Nobody speaks. | 5.0 |
-| B4 | MS | 50 | Static, beside the inn door, Rook in the foreground right, soft at first | Focus pulls from Rook's folded arms to the survivor stopping at the square's edge, looking round at the faces. Rook looks at her; then up, east, at the toll tower. | 4.0 |
+| B4 | MS | 50 | Static, beside the inn door, Rook in the foreground right, soft at first | Focus pulls from Rook's folded arms to the survivor stopping at the square's edge, looking round at the faces. Rook looks at her; then up, east, at the toll tower. *(Hunter: Rook's look on her holds one beat longer before it goes to the tower, and her arms tighten. She knew this woman's mother. She says nothing, that morning or after: her third layer.)* | 4.0 |
 | B4a | CU | 200 | Static, from beside Rook, her eyeline, compressed | The tower's upper window: the lamp on the sill, pale in the sun, goes out. A thread of smoke. | 1.5 |
 | B4b | MS | 50 | As B4 | Rook looks back at the survivor, and unfolds her arms. | 2.0 |
 | B5 | MLS to play | 35 to play | Rise and swing into the follow camera | The square, the survivor in it, Rook at her door. Bars out; Rook's `!` comes up. Control. (No zone title: the chapter's card was it.) | 3.0 |

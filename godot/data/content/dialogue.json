@@ -10919,7 +10919,7 @@
    },
    "back_room_look": {
     "id": "back_room_look",
-    "text": "You came. (He looks faintly alarmed about it.) Right. Up on the table. Breathe in. Out. Don't flatter yourself, that's medical. (He looks at your eyes, and your tongue, and your hands, turning them over the way Sella does, but for different reasons. He listens at your back with his ear flat against it, and tells you to cough. He's quiet a moment.) There's nothing wrong with you, pal. (He frowns at your wrist, then lets it go.) ...That's the worrying part. Nobody's got nothing wrong with them. Have a drink, before I find something.",
+    "text": "You came. (He looks faintly alarmed about it.) Right. Up on the table. Breathe in. Out. Don't flatter yourself, that's medical. (He looks at your eyes, and your tongue, and your hands, turning them over the way Sella does, but for different reasons. He listens at your back with his ear flat against it, and tells you to cough. He's quiet a moment.) You're cold, pal. Cold as a cellar step. (He frowns at your wrist, then lets it go.) ...There's nothing wrong with you. That's the worrying part. Nobody's got nothing wrong with them. Have a drink, before I find something.",
     "choices": [
      {
       "text": "Is this the anaesthetic?",
@@ -13360,10 +13360,10 @@
        "fact": "tam.tock",
        "eq": true
       },
-      "text": "Last. Under the Verge, something is turning over in its sleep, and under a farm past the Old Road, something is knocking to be let in. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside... (The roof shivers under the table, and the glass of her lamp rings in its frame. The flame lies over toward the hill. Down in the town every dog starts at once. She looks east, into the dark, and does not finish.)"
+      "text": "Last. Under the Verge, something is turning over in its sleep, and under a farm past the Old Road, something is knocking to be let in. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside... (The roof shivers under the table, and the glass of her lamp rings in its frame. The flame lies over toward the hill. Down in the town every lamp dips at once, and comes back; the braziers on the wall do not. She looks east, into the dark, and does not finish.)"
      },
      {
-      "text": "Last. Under the Verge, something is turning over in its sleep. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside... (The roof shivers under the table, and the glass of her lamp rings in its frame. The flame lies over toward the hill. Down in the town every dog starts at once. She looks east, into the dark, and does not finish.)"
+      "text": "Last. Under the Verge, something is turning over in its sleep. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside... (The roof shivers under the table, and the glass of her lamp rings in its frame. The flame lies over toward the hill. Down in the town every lamp dips at once, and comes back; the braziers on the wall do not. She looks east, into the dark, and does not finish.)"
      }
     ],
     "choices": [
@@ -15680,7 +15680,7 @@
        "fact": "sella.nights",
        "gte": 3
       },
-      "text": "You're getting to be a habit, {name}. I don't mind. Rook does; she says you're wearing out the stairs. Go on, the day's wasting, and somebody out there needs killing."
+      "text": "You're getting to be a habit, {name}. I don't mind. Rook does; she says you're wearing out the stairs. Go on, the day's wasting, and somebody out there owes you money, or the other way round."
      },
      {
       "when": {
@@ -15988,7 +15988,7 @@
       "when": {
        "archetype": "arcanist"
       },
-      "text": "You're warm. Not in a nice way. Are you on fire? You're a little bit on fire."
+      "text": "Your hands are warm. Not in a nice way. Are you on fire? Your hands are a little bit on fire."
      },
      {
       "when": {
@@ -16360,6 +16360,55 @@
     "id": "stairs_room",
     "speaker": "narrator",
     "text": [
+     {
+      "when": {
+       "all": [
+        {
+         "archetype": "warden"
+        },
+        {
+         "fact": "sella.nights",
+         "gte": 1
+        }
+       ]
+      },
+      "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. Your buckles take an age. She undoes them as if she has done a great many, and laughs at the last one, which is stuck. \"All that steel, and under it, look. A person.\""
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "archetype": "reaver"
+        },
+        {
+         "fact": "sella.nights",
+         "gte": 1
+        }
+       ]
+      },
+      "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. She takes your hands, one and then the other, and turns them over, and looks at the knuckles. \"Gently, upstairs. I mean it. I like this jug.\""
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "archetype": "arcanist"
+        },
+        {
+         "fact": "sella.nights",
+         "gte": 1
+        }
+       ]
+      },
+      "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. She lays her palm flat on your chest and takes it away again, fast, then puts it back, slower. \"Your hands are hot and the rest of you's a cellar floor. Pick one, love.\""
+     },
+     {
+      "when": {
+       "fact": "sella.nights",
+       "gte": 1
+      },
+      "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. She comes round behind you to start on the laces, and says into your ear, \"There. Now you know what it's like,\" and you jump. She's delighted."
+     },
      {
       "when": {
        "archetype": "warden"
@@ -16927,7 +16976,7 @@
    "free_bolt": {
     "id": "free_bolt",
     "speaker": "narrator",
-    "text": "She reaches behind her without looking and finds the bolt. It sticks halfway; nobody has ever shot it. She has to turn round and put her shoulder to it, swearing, and it goes home with a sound like a full stop. (Her back is still to you. Her forehead is against the door.) \"...There.\"",
+    "text": "She reaches behind her without looking and finds the bolt. It sticks halfway; nobody has ever shot it. She has to turn round and put her shoulder to it, swearing, and it goes home with a sound like the last coin put down on a counter. (Her back is still to you. Her forehead is against the door.) \"...There.\"",
     "next": "free_night"
    },
    "free_m_downstairs": {

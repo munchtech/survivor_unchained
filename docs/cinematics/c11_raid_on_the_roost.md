@@ -91,7 +91,7 @@ her weapon until he has stopped.
 - **Music.** Arrival: the horde music ducked; the `Boss` mood in on the axe
   coming down. Death: music cut on the blow; the torches, the wind, his
   breathing; after his last line, silence; then, far off behind the arena's
-  edge, a child crying, once, and hushed.
+  edge, the Roost's kitchen: a ladle knocks once on the rim of a pot, and stops.
 - **Effects.** Torches; the axe's weight; his laugh (big, then wet); the axe-head
   into dirt; the torch burning down.
 

@@ -145,9 +145,11 @@ fire, a little more contrast than play, and a soft vignette. Three lights
 carry the story's meaning and should always read as themselves:
 - **firelight** (warm, low, flickering): people, the living, the town;
 - **ford-lamp blue** (`#8ac8ff`, steady, cold): ember burning in a Warden's
-  iron (Brannoc's new irons on the Low Ford road; the Wardens; the chain). The
-  Watch's oil, when it had any, burned warm, like any lamp: a warm lamp at the
-  ford means nothing is drinking from it;
+  iron, and only there (Brannoc's new irons on the Low Ford road; the Wardens;
+  the chain). In an open lamp ember burns gold, small and very steady: Rook's
+  Order lamp, Vonnra's lamp on the tower, the town's lamps. Oil, when anyone has
+  it, burns yellower and smokier than either (Brannoc's lantern in C14). Sella's
+  blue room is indigo glass over a warm flame, never `#8ac8ff`;
 - **ember red** (`#ff5a1e` to `#ff9a48`, pulsing): the ember, the scars, the
   survivor burning at night.
 
@@ -320,7 +322,7 @@ in the order to build it.
 
 | Id | Title | Where | Kind | Priority | Length | File |
 |---|---|---|---|---|---|---|
-| C01 | The Drowned Fire | Prologue, the camp | The opening | 1 | 46 s | `c01_drowned_fire.md` |
+| C01 | The Drowned Fire | Prologue, the camp | The opening | 1 | 48 s | `c01_drowned_fire.md` |
 | C02 | None Cross After Dark | Prologue, the ford | Boss arrival (the Ford-Warden) | 1 | 44 s | `c02_none_cross.md` |
 | C03 | The Heart Goes Down | Prologue, the ford | Boss death; Grimtunnel | 1 | 45 s | `c03_heart_goes_down.md` |
 | C04 | First Light | The north bank; the Waystation | The ember goes out; chapter one opens | 1 | 40 s + 26 s | `c04_first_light.md` |

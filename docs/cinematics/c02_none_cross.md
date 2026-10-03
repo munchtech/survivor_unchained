@@ -84,7 +84,7 @@ the one it gives the living.
 | 8 | ECU | 135 | Static | Her face in the lamp's light: the eyes with the flame small in each, the wet hair, and in it the green weed, which the light finds and holds on. The lamp is close enough to her lips that breath would show in its light; none does. Blue on one side of her face; her own ember's red faint on the other. Line W2, very quietly, off. | 3.5 |
 | 9 | CU | 85 | Static, low, up at him past the lamp | His face under the hood lit from below: the beard streaming, two points of blue light for eyes. After W2 he holds the look a full second, then straightens. | 3.0 |
 | 10 | LS | 35 | Static, low on the water behind his legs, looking east down the pool | Behind him, every one of the drowned turns its face toward her at once, a wave down the rows. | 2.5 |
-| 11 | LS | 24 | Static, low on the near bank, the whole ford | Line W3. His eyes flare; all three posts flare with them (a frost nova at each); ice runs out from each post across the water. The drowned lift their heads. Title card: **THE FORD-WARDEN** / *Keeper of the Low Crossing*. | 4.5 |
+| 11 | LS | 24 | Static, low on the near bank, the whole ford | Line W3. The three posts' flames lean toward him, all at once, like grass in a wind: he is drinking them. Ice runs out from each post across the water. The drowned lift their heads. Title card: **THE FORD-WARDEN** / *Keeper of the Low Crossing*. | 4.5 |
 | 12 | MS to play | 35 to play | Pull back and up into the follow camera | He sets his guard. Bars out; the boss bar and the lamps' tip come up. Control. | 2.0 |
 
 Total: 44.0 s.
@@ -99,7 +99,7 @@ keeper of a crossing looks for, holding a lamp to a face at night, is the breath
 hers does not show in the lamp's light. Nobody says so; C09 lets it be seen.) The
 tremble in shot 7 is the only weakness he shows until C03: a shudder down the arm,
 the lamp swinging, and then the arm locked again. W2 is said looking at the weed,
-not her eyes. W3 is the gate shutting: the whole body behind it.
+not her eyes. W3 is not a roar. It is the ford's rule, said as it has been said every night for two hundred years: the same tired register as "Lie down.", every word set down like a stone, no louder than W2.
 
 **The survivor.**
 - *Shot 4.* `brows_up` 0.2: listening. Gaze on the lamp-arm (0, -0.1).
@@ -130,7 +130,7 @@ every voice in it. A long cave reverb with the water in it. W1 is sung.
 |---|---|---|---|
 | `cin_none_cross.call` | 4 | *(sung, under the water)* Lamps are lit... / stay where they reach... | The Order's evening call, slowed to a dirge, heard through water. Twice; the second trails off as he rises. |
 | `cin_none_cross.lie_down` | 8 | Lie down. | Quiet. Not a threat: the Order's word for the dead (its burial hymn begins with it, C08), said to her as you would say it over a grave. |
-| `cin_none_cross.none` | 11 | NONE. CROSS. AFTER DARK. | The gate shutting. Every word a stone. |
+| `cin_none_cross.none` | 11 | NONE. CROSS. AFTER DARK. | The ford's rule, not a threat. Tired; every word set down like a stone; no louder than "Lie down." (The capitals are the subtitle's, not the performance's.) |
 
 ## Sound
 
@@ -144,7 +144,7 @@ every voice in it. A long cave reverb with the water in it. W1 is sung.
   water: low-passed, the surface buzzing with it. Rising: water sheeting off cloth
   and beard, a long pour. Wading: heavy displacement, the greatsword dragging on
   stone. The lamp: a faint glassy hum, louder in 7 and 8; the tremble's rattle of
-  iron. W3: the posts flaring (the frost-nova sound), ice cracking across the water.
+  iron. W3: the posts' flames leaning toward him with a sound like a breath drawn in through teeth; ice cracking across the water.
 
 ## VFX
 

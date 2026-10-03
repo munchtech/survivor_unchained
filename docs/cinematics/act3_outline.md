@@ -38,16 +38,24 @@ to the Act 1 standard before it is built. The beats are `STORY_BIBLE.md` section
   square coin, the carters' notice, Wat, Nell, Jessop, the caravan let go, the
   survivor made. Her reason: the valley. She is not wrong about what happens if the
   chain breaks.
-- **Variants.** *Accused:* she tells it unasked, in her own words, in order, and
-  calls the survivor by name throughout: the only long speech she makes in the
-  game. *Not accused:* she admits each piece only as the survivor lays it down
-  (dialogue), and calls her "traveller" until the end.
+- **How she tells it: she reads it.** Not a speech. She sits on the landing,
+  opens the ledger from C09, and reads the entries aloud, in order, as she read
+  the palm: a name, a date, a crossing. Wat. A woman from Low Kiln. A pedlar with
+  no name, "the pedlar". At twenty-five she reads "Nell, the smith's girl" in
+  exactly the voice she used for twenty-four. At twenty-seven she reads the
+  survivor's name (or "the one from the ford"), and stops, because there is
+  nothing after it yet.
+- **Variants.** *Accused:* she reads it unasked, at the first landing, and calls
+  the survivor by name after. *Not accused:* the survivor finds the ledger on
+  the stair among the pieces and reads it herself (the page as an insert, C09's
+  page, now legible), and Vonnra admits each entry only as it is laid down,
+  calling her "traveller" until the end.
 - **Key lines.** "I drowned twenty-six people to find you. I wrote every one of
   them down." (The plain verb, after a whole game of "arranged": that is her
-  change.) Then, later, unasked, in the middle of something else: "The smith's
-  girl was the twenty-fifth." And silence: no music, nobody moves, and the
-  survivor does the arithmetic (she came after the twenty-sixth). The ledger in
-  C09 is the page these lines land on.
+  change.) Then she opens the book. "The smith's girl was the twenty-fifth" is not
+  a line any more: it is the twenty-fifth entry, read in the same voice as the
+  others, and the silence after it is the player's. The ledger in C09 is the page
+  these entries are read from.
 - **Underneath** (never said; played): pride. She is the last of the line that
   kept the Legion's keys, and she cannot bear to be the one in whose time the
   chain broke. Her truth is a chained beast, a failing chain and a necessary
@@ -191,7 +199,7 @@ coin's holder.
   lies down smiling; "Keep the lights lit." (his note to Ashe, said at last to
   someone, and he knows exactly what it costs: he has known for two hundred years
   what the lights burn); the survivor goes dark at dawn unless she holds the coin
-  (then she climbs the stair, alive and cold, breathing smoke).
+  (then she climbs the stair, alive, and shivering, breathing smoke).
 - *Vonnra* (accused, her respect high, refused): she goes up to the Low Ford alone
   at night and walks into the water; at the bottom of the world a light goes out,
   and then another comes on: "It is not often the second thing happens." She
@@ -205,7 +213,7 @@ coin's holder.
 The Morrow is let die. No more ember, anywhere: every lamp in the valley goes out
 at once; Sallow's army falls down where it stands at dawn; the Unchained die
 properly, the survivor too, except the coin's holder. The dead are let go: the
-voices of C43 go quiet one by one, not all at once, the way the dogs did in C09,
+voices of C43 go quiet one by one, not all at once, the way the town's lamps did in C09,
 and her mother's last; and if the survivor is dying, she has her mother's face
 back for exactly as long as it takes. The coin: kept (she lives, mortal), or given
 to Chid (he ages, at last, between one breath and the next), to Edric, or to the

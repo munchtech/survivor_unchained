@@ -43,7 +43,7 @@ shadows, the ember's red on her.
 |---|---|---|---|---|---|
 | 1 | LS | 35 | Static, low, from behind her | The horde's wolves stop attacking at once and back off her, low, into a ring 12 m wide, eyes on something behind the ring. `WorldRate` 0.3. | 3.0 |
 | 2 | MS | 85 | Static, low, on the ring's far side | The ring opens. Greymuzzle walks through it, slow, grey to the eyes, his breath smoking in the moonlight. He stops and looks at her. *(If she promised:)* he looks for a long moment, and his head lowers, not to attack. | 3.5 |
-| 3 | MCU | 50 | Handheld (0.3) | He lifts his head and howls; the ring howls with him; the ring closes. Title: **GREYMUZZLE** / *The Old Alpha*. Back to `WorldRate` 1 and play. | 2.5 |
+| 3 | MCU | 50 | Handheld (0.3) | He lifts his head and howls; the ring howls with him; the ring closes. Title: **GREYMUZZLE** / *Who Kept the Cold Off*. Back to `WorldRate` 1 and play. | 2.5 |
 
 ## Death
 

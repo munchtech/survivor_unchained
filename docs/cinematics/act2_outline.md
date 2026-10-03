@@ -14,8 +14,8 @@ is built. The beats are `STORY_BIBLE.md` section 7; the facts are Act 1's
 - **Does.** The Waystation feels what Ashford felt. Tam was right. Pays C06 (the
   children), C09 (the farm window in the fortune's last reading), `tam.tock`.
 - **Beats.** The knocking under the Penhale farm's floor, at night, louder; the
-  dog that would not go in the barn; the barn's floor sagging; the ground opening
-  like a mouth; the farm going down (or not); things coming up out of it: pale,
+  dog that would not go in the barn; the barn's floor sagging; then, in Tam's words, "The
+  knocking stops. Then the floor isn't there."; the farm going down (or not); things coming up out of it: pale,
   segmented, the size of dogs, moving like something remembered; the town's bell;
   people running to the edge with lamps. Then dawn on the hole.
 - **Variants.**
@@ -58,14 +58,15 @@ is built. The beats are `STORY_BIBLE.md` section 7; the facts are Act 1's
   Unchained is the likeness of the one who died, and walks in their shoes, and
   knows their friends. The knight shall not be deceived by this. Two. Its breath
   does not show by night. By day it is ordinary. It comes back from death. Three.
-  It cannot abide running water. The knight shall not converse with it beyond
-  what is needful." (She skips; her finger goes down the page past four, five and
+  It shuns the lamp, and will not come where the lamps are lit. The knight shall
+  not converse with it beyond what is needful." (She skips; her finger goes down the page past four, five and
   six, which she does not read aloud.) "Seven. The return shall be made at dawn,
   when it is weakest, with a blade the knight has kept clean, and the knight
   shall not be persuaded. Eight. The knight shall make the return kindly, for it
   was a person once." (She stops.) "Nine. The knight shall not grieve."
 - **The wrong sign.** Three is false, and Keegan knows it: the one she is
-  reading it to came up out of a river. She reads it anyway, because it is in
+  reading it to has stood in her gate lamp every night for three weeks, and
+  walked up the Low Ford road between the lamps. She reads it anyway, because it is in
   the book, and her voice goes flat on it. That is what she means by "badly
   written". It also tells the player the handbook is a book, written by people
   who guessed.

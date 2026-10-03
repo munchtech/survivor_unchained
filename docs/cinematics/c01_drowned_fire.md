@@ -1,6 +1,6 @@
 # C01 · The Drowned Fire
 
-**The game's first image.** Priority 1 · Prologue · about 46 s · skippable
+**The game's first image.** Priority 1 · Prologue · about 48 s · skippable
 
 ## What it does
 
@@ -77,15 +77,15 @@ out into the frost, and nothing shows. Then the frost breaks.
 | 3 | CU | 85 | Push in 0.1 m over the shot | Her face on its side on the frozen ground, eyes shut, weed in her hair. Half the face lit by the embers, half moon-blue. At 2.0 s her eyes open: no gasp, no start. She looks at the fire. | 4.0 |
 | 4 | MS | 35 | Static, low (0.4 m), on the fire's far (west) side, looking east through the embers at her | She pushes up onto her elbow. Water runs off her sleeve onto the ground. Her hair hangs. | 3.5 |
 | 5 | INSERT | 65 | Static | Her hand comes into frame and opens toward the coals, palm down, and keeps going, closer than anyone could bear to hold a hand to coals. It stays there. (We do not see her face. We see that the hand does not pull back.) | 3.5 |
-| 6 | MCU | 50 | Static, from her right at shoulder height | She sits up, legs drawn round to one side, and looks down at herself; at the cord on her wrist and the full flask; then past it, at the bedroll, dry, its blanket folded. Line N1. A 1.5 s look at her background's item by the pack (see Variants), in the shot's last third. | 5.0 |
+| 6 | MCU | 50 | Static, from her right at shoulder height | She sits up, legs drawn round to one side, and looks down at herself; at the cord on her wrist and the full flask; then past it, at the bedroll, dry, its blanket folded. Line N1. She puts a hand inside her coat and takes out a folded letter, wet through, and opens it: the ink has run to blue water, and no word is left. She folds it and puts it back. (The letter that brought her home: her mother was failing. The water took it, as Vonnra will say.) A 1.5 s look at her background's item by the pack (see Variants), in the shot's last third. | 7.0 |
 | 7 | OTS | 28 | From behind her left shoulder, low; a slow tilt and pan north along the trail, 25° over the shot | The prints in the frost, dark and wet, coming out of the night along the road to where she lay. The camera follows them back into the dark they came from. Far off between the trunks, three points of cold blue light, low, by water. Line N2. | 5.5 |
 | 8 | CU | 85 | Static, frontal, a little below her eyes, against the black of the trees | She looks from the trail to her own boots, soaked black, and breathes out: a long breath, close and audible, the kind you let go when you are tired and cold. Against the dark, in air cold enough for frost, nothing shows. Hold one beat after. | 4.0 |
-| 9 | LS | 24 | Static, low (0.3 m), from the south-east at (-2.5, 97.5), looking north-west at the camp | The embers, the log, the dry bedroll, her things, her weapon on the log; her, small, by the embers. Background left, beyond the firelight, the frost cracks across in a line, and a grey hand comes up through it (R1). She has not seen it. Line N3. | 5.0 |
+| 9 | LS | 24 | Static, low (0.3 m), from the south-east at (-2.5, 97.5), looking north-west at the camp | The embers, the log, the dry bedroll, her things, her weapon on the log; her, small, by the embers. Background left, beyond the firelight, the frost goes dark in a patch, as if water were coming up through the ground, and a head comes up through it, hair streaming, the way a swimmer comes up (R1). They rise the way she did. She has not seen it. Line N3. | 5.0 |
 | 10 | MCU | 50 | Static | Her head turns sharply toward the sound. She is on her feet in one movement. | 2.5 |
 | 11 | MS | 35 | Static, side-on | She takes her weapon from the log (one movement for every calling; the arcanist's differs: see Calling). Around her, on three sides, the frost breaks. | 3.5 |
 | 12 | MLS to high | 35 to play | Crane up and round behind her into the game's follow camera | From in front of her, the camera rises and swings behind and above her as R1 tears free and R2, R3, R4 come up on three sides. The frame opens to the game's height. Bars out over the last 0.8 s; HUD and the "Move" hint come up. Control. | 3.5 |
 
-Total: 46.0 s.
+Total: 48.0 s.
 
 ## Performance
 

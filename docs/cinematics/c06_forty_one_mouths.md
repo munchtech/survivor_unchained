@@ -92,7 +92,7 @@ drumming his heels on the one marked in chalk "B.E.". He looks up.
 | 5 | INSERT | 100 | Static | An old man's hands stitching a red kerchief closed over a tear, with a sail-needle. | 2.0 |
 | 6 | LS | 35 | Static, from behind the survivor, looking up the camp to its head | Under the old red standard, on a bench of six crates, a big man sitting with a cup, watching her come. Behind him two sentries. The standard moves in the draught; the tower on it shows, then folds. | 4.0 |
 | 7 | INSERT | 65 | Static, low | His heels drumming on the crate below him: the chalked letters **B.E.** under his boot. He stops drumming. | 2.0 |
-| 8 | MCU | 50 | Static, slightly low, the standard behind his head | Redcowl looks at her for a long moment, then laughs: a big chest laugh, with nothing in his eyes. Line: his first line (`redcowl.first`, by variant). | 6.0 |
+| 8 | MCU | 50 | Static, slightly low, the standard behind his head | Redcowl looks at her for a long moment, then laughs, a big chest laugh, at the boy with the wooden sword, who is still pointing it at her, very seriously; then he looks back at her, and the laugh is gone. Line: his first line (`redcowl.first`, by variant). | 6.0 |
 | 9 | 2S | 50 | Static, the conversation camera (see below) | She stops before the crates. His conversation's choices come up. | 2.0 |
 
 Total: 33 s, then the conversation.
@@ -121,7 +121,7 @@ Special beats inside the conversation:
   2S wide: the whole camp moving at once, the washing torn down, the children
   scooped up, the pot taken off the fire with the stew still in it.
 - **The ledger** (`redcowl.pell`): he reads standing; the camp goes quiet round
-  him; on "After!" he crushes the tin cup.
+  him; on "After!" he sets the tin cup down on the crate very carefully, as if it were full. (His brother's tell: Rav does the same with the news in C11.)
 
 ## Performance
 

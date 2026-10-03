@@ -83,10 +83,13 @@ drink its light. When the Watch took the crossings it burned **oil** in the
 ford lamps: light enough to cross by, and nothing in it for the Warden to drink,
 so it slept. Then the Watch ran out of oil ("We've not had oil for those lamps
 since my first winter"), and the ford went dark and stayed quiet. Last winter
-somebody hung twelve new irons there, the kind made to hold ember (cages, not
-oil-lamps: Brannoc's irons, his mark under the socket), and lit them with it.
-That woke the Warden. Ford-lamp blue is ember burning in a Warden's iron; the
-Watch's oil burned warm.
+somebody hung ten new irons along the road and at the ford, the kind made to hold
+ember (cages, not oil-lamps: Brannoc's irons, his mark under the socket; twelve
+were forged and two are still on his rack), and lit them with it. That woke the
+Warden. Ember burns blue only in an iron; in an open lamp it burns gold and very
+steady; oil burns yellower and smokier. The ford's own three posts the Warden
+broke in the fight; the road's irons are still burning when Brannoc walks down
+it (C14).
 
 **The risen and the Unchained.** When someone dies in the dark near ember, the
 Morrow's light sometimes goes into them and they get up. Almost always they
@@ -119,7 +122,11 @@ what no living traveller had: kill the Warden.
 **The survivor's mother.** Whatever their background, the survivor was coming
 home. Their mother lived in the valley (on a farm at the Verge's edge, for a
 hunter, and Rook knew her; elsewhere in Thornhollow for the rest: the
-background says where the survivor went, not where they came from). A letter
+background says where the survivor went, not where they came from). She is
+buried in the Quiet Garden behind the shrine, a week before Nell, under a
+plain wooden marker that nobody points out (C08); Rook, if she knew her, says
+nothing. The letter that brought the survivor home is in her coat in C01, the
+ink run to blue water. A letter
 found the survivor on the road that she was failing, and they came as fast as
 they could, and camped at the Low Ford at dusk a day short. She had died the
 week before. The survivor does not know. She is in the Morrow. Hers is the face
@@ -525,7 +532,8 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
 
 **Chid** (pays: Act 3)
 - `chid.long`: Rook's mother brought him bread. `chid.warden`: "Before me,
-  certainly, which is a long time." `npcs.json` chid bark: "Morning comes. It
+  certainly, which is a long time." (His "I think" there is Chid hiding: he knew
+  the Warden, Brother Tobin, Act 3.) `npcs.json` chid bark: "Morning comes. It
   always has. I should know." `folk.json`: "Chid's not aged a day since my mam
   was a girl." **(on purpose)** `folk.json`: "the priest's a fool. Says so
   himself."
@@ -613,9 +621,11 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
 - C07: the hammer as the town's clock; Nell's old holed boots on a nail by the
   rack (Act 2's major extreme).
 - C08: the burial hymn "Lie Down" ("the morning lies a little under / and it
-  will wake you where you slept": true, in Act 3); Vonnra in the ring, not
-  bowing, looking at the survivor; Rook's lamp at the grave in daylight; the
-  Order's sign.
+  will wake you where you slept": true, in Act 3); Vonnra in the ring, head
+  bowed like everyone's, the one voice that knows every word and is in tune (a
+  binder knows the Order's hymn); Rook's lamp at the grave in daylight; the
+  Order's sign (finger and thumb putting out a lamp at morning) beside a lamp
+  left burning; the survivor's mother's week-old grave, unremarked.
 - C09: the vistas on Vonnra's eyeline (her sight is a roof and a long memory);
   the breath in the lamplight; the struck ledger, twenty-six lines and one not
   struck (Act 3: "I wrote every one of them down"; C50); the tremor that stops
@@ -623,8 +633,9 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
 - C11: Redcowl's last words (Rav: "the leg held"); C12: "It went ever so
   QUIET!"; C13: "Nondum." and "Redi.", the Latin over the door, Jessop's back
   on the stair.
-- C14: Wat and the carters risen round Brannoc's cart; Brannoc with his hammer
-  outside the forge.
+- C14: Brannoc walking down a road lit by his own irons; Wat and the carters
+  risen out of the river; Brannoc watching Wat's light go into her hands (Act
+  3); Wat's toll-token (C27); Chid at the gate at sunrise, seeing her breath.
 
 **Below** (pays: Act 2, the breakthrough; Act 3)
 - `quests.json` vault entries, `Verge.cs` vaultdoor: seven notches, one

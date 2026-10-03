@@ -469,7 +469,7 @@ flowchart TD
   quick -- no --> price[He nods, as at a price]
   q -- 'I passed nobody' --> lie[nell.told lie]
   q -- 'I didn't look' --> evaded[nell.told evaded]
-  gone & risen --> burial[[Next dawn: he fetches her, Chid meets the cart, they bury her by Ashe: nell.buried]]
+  gone & risen --> burial[[That dusk he goes down the road for her, alone or with the survivor (C14); at sunrise Chid meets him at the gate; they bury her by Ashe: nell.buried]]
   lie & evaded --> asking[[Two days on: he asks pedlars at the gate: nell.asking]]
   burial --> irons2[Hub: 'Those last two irons', brannoc.waits_buyer]
 ```
