@@ -203,8 +203,11 @@ public class StoryLint
     /// section 9, the bible's ledger in section 10), and the game's own bookkeeping.</summary>
     static readonly string[] Seeds =
     [
-        "brannoc.waits_buyer", "chid.note_asked", "harlan.told_dig", "holloway.letter_seen", "jory.told_knew", "redcowl.ashford_said",
+        "brannoc.waits_buyer", "chid.note_asked", "harlan.told_dig", "holloway.letter_seen", "jory.told_knew",
         "redcowl.birds", "redcowl.gave_charge", "sella.sleeptalk", "vonnra.asked_jessop", "wayfinder.name",
+        // The romances' Act 1 seeds (docs/romance/ARCS.md section 7): what each lover
+        // learned of the survivor, read in Act 2 ("what you are") and Act 3.
+        "maeca.heard_heart", "maeca.heard_past", "rav.came_back", "sella.cold_sold", "sella.heard_past",
         "player.zone", "map.drawn",
     ];
 

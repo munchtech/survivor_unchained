@@ -59,8 +59,7 @@ Choices:
 **KEEGAN:** Rhetoric, to the sons and daughters of people who could afford
 it. I was very good. I was the youngest lecturer they had ever had, and they
 told me so every morning, in case I forgot and became the oldest. (She
-smiles at the road.) I taught them chiasmus. "Ask not what the Vigil can do
-for you." They did not, and it did not. ...That was a joke. It was not a
+smiles at the road.) I taught them chiasmus. "The Vigil keeps the gate, and the gate keeps the Vigil." It has kept neither. ...That was a joke. It was not a
 good one. It's late.
 
 > *(The slip is "It's". She doesn't notice. Nor should the player be told.)*
@@ -120,7 +119,7 @@ there for a count of three.
 
 **KEEGAN:** I am on duty. (She takes her hand back. Then, without looking,
 she puts it back, under yours, for another count of three.) ...That was
-anaphora. Doing the same thing twice for emphasis. Goodnight.
+epizeuxis. The same thing, twice, at once, for emphasis. Goodnight.
 
 → end
 
@@ -167,8 +166,7 @@ Choices:
 **Effects:** set `keegan.asked` = `truth`; rel `keegan` trust +30.
 
 **KEEGAN:** (She lets out a long breath.) Thank you. (She looks at the book,
-not at you.) I knew. I have known since they carried you into the shrine
-under a sheet and you walked out of it. I hoped. Hope is a figure of speech.
+not at you.) I knew. I have known since they carried you into the shrine under a sheet and you walked out of it. *(Only with `keegan.saw_risen`; otherwise:)* I have known since your breath did not show on my wall at night. I hoped. Hope is a figure of speech.
 It is called... I cannot remember what it is called. I have been a lecturer
 in rhetoric for seven years and I cannot remember what it's called.
 
@@ -308,7 +306,7 @@ Choices:
 ### `keegan.camp_no` **(new: the survivor refuses, kindly)**
 
 **KEEGAN:** (A long breath out, of great relief and some disappointment, in
-about equal measure.) Oh, thank God. (She laughs, which surprises her.)
+about equal measure.) Oh, thank— thank you. (She laughs, which surprises her.)
 I mean— no. I mean thank you. Both.
 
 **NARRATOR:** She sleeps in her cuirass on your side of the line, with the
@@ -384,14 +382,13 @@ condition `warmed` 1 day; `night.spent`.
 - **Sex variants.** Same beats either way. If the survivor is a woman, she
   may cite chapter eleven's total silence on the subject, as an oversight.
 - **Ends on.** Before dawn, awake, her ear against the survivor's chest,
-  waiting to hear whether the heat goes out of them at first light, because
+  waiting to feel the warmth come into them at first light, because
   she has read chapter four and knows the hour. It does. She holds on.
 
 ### `keegan.night_morning` **(new: the armour back on)**
 
 **NARRATOR:** First light. She's awake; she has been for a while. Her ear is
-on your chest. You feel the heat go out of you, all at once, like a lamp
-turned down, and you feel her feel it. She doesn't move.
+on your chest. You feel the warmth come into you, all at once, like a lamp turned up, and you feel her feel it. She doesn't move.
 
 **KEEGAN:** (Very quietly.) "At dawn, when it is weakest." (She lifts her
 head.) It's just a sentence. It's only a sentence. I've marked worse
