@@ -303,6 +303,36 @@ public class AuditTests
     }
 
     [Fact]
+    public void What_the_story_carries_off_is_gone_from_the_Roost()
+    {
+        var p = Route.New("outcast").Enter("verge");
+        p.Learn("clue.blasting_ember");
+        p.Walk("roost");
+        p.Talk("redcowl", "watch is on its way");
+        p.Walk("cages");
+        var cargo = p.Meta!.Place("V", "cargo");
+        int colliders = p.B!.Collision.All().Count;
+        p.Use("strongbox");
+        Assert.Contains(p.Host!.FakeLook.PropsHidden, h => h.Id == "props/Chest_Wood");
+        Assert.DoesNotContain(p.B.Collision.All(), c => c.Tag == "strongbox");
+        Assert.DoesNotContain(p.Host.FakeLook.PropsHidden, h => h.Id == "props/Crate_Wooden");
+        p.Use("crates_sink");
+        Assert.Contains(p.Host.FakeLook.PropsHidden, h => h.Id == "props/Crate_Wooden");
+        Assert.DoesNotContain(p.B.Collision.All(), c => Math.Abs(c.X - cargo.X) < 0.01 && Math.Abs(c.Z - cargo.Z) < 0.01);
+        // And when the survivor comes back.
+        p.Leave();
+        p.Enter("verge");
+        Assert.Contains(p.Host!.FakeLook.PropsHidden, h => h.Id == "props/Chest_Wood");
+        Assert.Contains(p.Host.FakeLook.PropsHidden, h => h.Id == "props/Crate_Wooden");
+        // Redcowl's crates stay in his camp.
+        var r = Route.New("outcast");
+        r.Learn("clue.blasting_ember");
+        r.Talk("redcowl", "six crates", "blasting ember", "deep enough", "keep them dry");
+        r.Enter("verge");
+        Assert.DoesNotContain(r.Host!.FakeLook.PropsHidden, h => h.Id == "props/Crate_Wooden");
+    }
+
+    [Fact]
     public void The_Roost_is_empty_once_its_last_defender_falls_whoever_fell_first()
     {
         var p = Route.New("hunter").Enter("verge");

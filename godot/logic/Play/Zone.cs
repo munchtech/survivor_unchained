@@ -112,6 +112,9 @@ public interface IZoneLook
     void Stop(string node);
     /// <summary>A kit piece set down now (a grave marker); lift raises it off the ground (onto a table).</summary>
     void AddProp(string id, double x, double z, double rot = 0, double scale = 1, double lift = 0);
+    /// <summary>The zone's own pieces of a kind (id) within r of (x, z) taken
+    /// away: what the story has carried off (a strongbox, crates sunk in a stream).</summary>
+    void HideProps(string id, double x, double z, double r) { }
     /// <summary>A light set down now, with a small flame that glows with it.
     /// Returns its index (for SetLit).</summary>
     int AddLight(double x, double y, double z, string color, double intensity, double distance, double flicker = 0.12, double glowSize = 0.08, string glowColor = "#ffb35a");

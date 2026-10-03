@@ -552,6 +552,7 @@ public sealed class Verge : ZoneRuntime
                 W.Facts["caravan.box_taken"] = true;
                 // Found before anyone asked for it, the box still says whose it is.
                 G.Apply("""[{ "give": "coyle_strongbox" }, { "quest": { "id": "caravan", "status": "active", "entry": "strongbox_found" } }]""");
+                ShowCargo();
                 if (KerchiefsFriendly() && F("redcowl").Str != "bargained" && roostCrew.Any(Up)) TurnHostile("roost.hostile", "Thief!");
             },
         });
@@ -582,6 +583,7 @@ public sealed class Verge : ZoneRuntime
             Act = () =>
             {
                 G.Apply("""[{ "set": { "be.crates": "sunk" } }, { "quest": { "id": "caravan", "entry": "crates_sunk" } }]""");
+                ShowCargo();
                 G.Say("You roll them down into the ravine's water one at a time, and listen to each one not go off.", null, 6);
             },
         });
@@ -691,6 +693,25 @@ public sealed class Verge : ZoneRuntime
             if (CageOpen(k) || F("caravan.survivors").Str == "rescued") G.Look.Show(cageNodes[k], false);
     }
 
+    /// <summary>What is left of the Coyle cargo at the Roost: the strongbox
+    /// until someone carries it off (or it is sold on, or burns), the six
+    /// crates until they are sunk, fetched, sold on or burned.</summary>
+    void ShowCargo()
+    {
+        var cargo = V("cargo");
+        if (F("caravan.box_taken").Truthy || F("caravan.cargo").Truthy)
+        {
+            G.Look.HideProps("props/Chest_Wood", cargo.X + 2.2, cargo.Z - 1.4, 1.2);
+            B?.Collision.RemoveTagged("strongbox");
+        }
+        if (F("be.crates").Str is "sunk" or "burned" or "harlan" or "dig" or "watch")
+        {
+            double cx = cargo.X - 1.5, cz = cargo.Z + 0.75;
+            G.Look.HideProps("props/Crate_Wooden", cx, cz, 2.5);
+            if (B != null) foreach (var c in B.Collision.All().Where(c => c.Tag == null && Dist(c.X, c.Z, cx, cz) < 2.5).ToList()) B.Collision.Remove(c.Id);
+        }
+    }
+
     void OpenCage(int i)
     {
         W.Zone("verge")[$"cage{i}"] = true;
@@ -758,6 +779,7 @@ public sealed class Verge : ZoneRuntime
                     G.Apply("""[{ "set": { "caravan.cargo": "lost" } }, { "quest": { "id": "caravan", "entry": "cargo_lost", "outcome": "lost" } }]""");
                 if (F("be.crates").IsNull || F("be.crates").Str == "redcowl")
                     G.Apply("""[{ "set": { "be.crates": "burned" } }]""");
+                ShowCargo();
                 G.Apply($"[{CaravanSettle}]");
             }
             return;
@@ -876,6 +898,7 @@ public sealed class Verge : ZoneRuntime
         }
         if (!F("dig.pump").IsNull && F("dig.pump").Str != "running") G.Look.Stop("pump_wheel");
         ShowCages();
+        ShowCargo();
         // Your wolves, if the Pack runs with you.
         if (F("pack.allied").Truthy)
         {
