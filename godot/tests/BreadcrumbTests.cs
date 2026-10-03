@@ -310,12 +310,25 @@ public class BreadcrumbTests
     {
         var s = Q("hunter");
         s.Ch.Gold = 20;
-        Talk(Convo("sella"), s.C, "how much", "15 gold", "where you come from");
+        Talk(Convo("sella"), s.C, "how much", "15 gold, then", "kiss her", "where you come from");
         Assert.True(s.World.Fact("sella.heard_past").Truthy);
+        Assert.True(s.World.Fact("sella.past_sold").Truthy);
         s.World.Facts["beasts.outcome"] = "cured";
         s.World.Facts["caravan.survivors"] = "rescued";
         s.World.Facts["chapter.ready"] = true;
         Assert.Contains("bow too big", Fortune(s).Read);
+        // Told after the night she would not take the money: she has stopped
+        // selling you, and the fortune does not have it.
+        var f = Q("hunter");
+        f.Ch.Gold = 20;
+        f.World.Facts["sella.free"] = true;
+        Talk(Convo("sella"), f.C, "how much", "15 gold, then", "kiss her", "where you come from");
+        Assert.True(f.World.Fact("sella.heard_past").Truthy);
+        Assert.False(f.World.Fact("sella.past_sold").Truthy);
+        f.World.Facts["beasts.outcome"] = "cured";
+        f.World.Facts["caravan.survivors"] = "rescued";
+        f.World.Facts["chapter.ready"] = true;
+        Assert.Contains("far bank", Fortune(f).Read);
         var k = Q("hunter");
         k.World.Facts["beasts.outcome"] = "cured";
         k.World.Facts["caravan.survivors"] = "rescued";
