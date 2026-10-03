@@ -508,8 +508,14 @@ def ideal_breasts(surface, full=0.05, fade=0.09):
     return out
 
 
-# Garments over her breasts are cut from the perfect form.
+# Garments over her breasts are cut from the perfect form, and never lie
+# inside her own skin there (the fill that eases her breasts' lumps sinks
+# up to centimetres into the curve under them; skin would show through).
 P_FILLED = ideal_breasts(P_FILLED)
+_on_breast = wsum("breast_l", "breast_r") > 0.01
+_out = ((P_FILLED - P) * N).sum(1)
+P_FILLED = np.where((_on_breast & (_out < 0))[:, None], P_FILLED - N * _out[:, None], P_FILLED)
+print("BREAST FILL kept out of her at", int((_on_breast & (_out < 0)).sum()), "points")
 
 
 def smooth_field(f, k=3):
@@ -659,6 +665,8 @@ SPEC = {
     "ink": ("rough_linen", (0.22, 0.26, 0.34), 22, 10, 0.0, 0.65),
     "stocking": ("rough_linen", (1.0, 1.0, 1.02), 230, 14, 0.0, 0.45, 0.42),
     "bone": ("rough_linen", (0.92, 0.84, 0.68), 178, 12, 0.0, 0.5),
+    "browncloth": ("rough_linen", (0.66, 0.5, 0.36), 112, 6, 0.0, 0.8),
+    "forestleather": ("Leather026", (0.42, 0.66, 0.42), 40, 3, 0.0, None),
 }
 MATS = {}
 
@@ -1487,6 +1495,28 @@ def islands(pos, tris, keep_frac=0.02):
     return tris[good[lab[tris[:, 0]]]]
 
 
+ARM_BONES = [BI[n] for n in BONES if n.split("_")[0] in ("clavicle", "upperarm", "lowerarm", "hand")]
+BREAST_BONES = [BI[n] for n in ("breast_l", "breast_r") if n in BI]
+
+
+def steady_on_breasts(wt, least=0.01):
+    """Weights with her arms' share taken off wherever her breasts have any
+    (that share given to the rest, in proportion; her upper chest's bone if
+    nothing else is left)."""
+    wt = np.array(wt, float)
+    on = wt[:, BREAST_BONES].sum(1) > least
+    if not on.any():
+        return wt
+    w = wt[on].copy()
+    w[:, ARM_BONES] = 0
+    tot = w.sum(1)
+    empty = tot < 1e-6
+    w[empty, BI["spine_03"]] = 1
+    tot[empty] = 1
+    wt[on] = w / tot[:, None]
+    return wt
+
+
 def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000):
     """A sheet made a piece: her weights, its texture laid out at true size,
     a thickness and a rounded edge, bound to her skeleton. The sheet is
@@ -1500,6 +1530,11 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000):
         tris = tris[okp[tris].all(1)]
         pos = np.where(okp[:, None], pos, 0.0)
     tris = islands(pos, tris)
+    # Over her breasts a piece moves with her body and breasts, never her
+    # arms: her skin at the outer curve of each breast is partly her arm's,
+    # and a garment taking that from it is dragged out of shape when her arm
+    # moves (the skin under it is hidden).
+    wt = steady_on_breasts(wt)
     # No point left without a bone (it would stay behind when she moves):
     # those take the weights of her skin nearest them.
     tot = wt.sum(1)
@@ -2070,10 +2105,9 @@ def warden():
     """The oath-knight, sworn to the Order of the Morning Light: formed
     plate cups, plunging deep between her breasts, gold-bound and riveted,
     held by straps over her shoulders and a strap round her back; a war belt
-    slung low on her hips with a steel fauld over the front of her and
-    tassets on her hips, a short leather flap behind leaving the curve of
-    her cheeks bare, and beneath them only a thong; plate at her shoulders,
-    forearms, knees and shins."""
+    slung low on her hips, a skirt of steel plates hung from it, and
+    beneath it only a thong; plate at her shoulders, forearms, knees and
+    shins."""
     arms = ARMW["l"] + ARMW["r"]
     nx, nz = abs(NIPPLE["r"][0]), NIPPLE["r"][2]
 
@@ -2113,24 +2147,31 @@ def warden():
                   boss="steel"),
         *sunburst("warden.gore", gore_at, np.array([0, -1.0, 0.25]), np.array([0, 0, 1.0]), 0.019, "gold", rays=8,
                   thick=0.003, boss="steel"),
-        # The fauld over the front of her, coming to a point below her crotch.
-        *hanging("warden.fauld", -0.42, 0.42, under_belt, lambda u: CROTCH - 0.075 + 0.07 * abs(u) ** 1.5, "steel",
-                 flare=0.05, lift=0.02, gap=0.014, thick=0.003, trim=gold(0.008)),
-        # Behind, a short flap of leather: the lower curve of her cheeks bare.
-        *hanging("warden.flap", np.pi - 0.42, np.pi + 0.42, under_belt + 0.05, lambda u: CROTCH + 0.06 + 0.035 * u * u,
-                 "darkleather", flare=0.06, lift=0.016, gap=0.012, thick=0.003, trim=gold(0.005)),
+
         # Beneath, a thong: a narrow front (under the fauld) and a string
         # down the back from the belt.
         *piece("warden.thong", AND(FRONT - 0.3, np.minimum(0.012 + 0.42 * np.maximum(Z - CROTCH, 0), 0.034) - np.abs(X),
                                    (under_belt + 0.01) - Z, Z - (CROTCH - 0.03)), "darkleather", lift=0.002, smooth=2, soften=0),
         *ribbon("warden.thong_back", thong_path(under_belt + 0.06), 0.02, "darkleather", lift=0.003, thick=0.003, snap=False),
     ]
+    # A skirt of steel plates hung all round from the belt, each its own (her
+    # legs move freely between them; each swings with the thigh it is over),
+    # gold-edged and rounded at its foot: longest in front, over her crotch,
+    # shorter behind (the lower curve of her cheeks glimpsed below them); a
+    # second row behind the gaps, a little shorter and darker, so nothing
+    # shows through them.
+    plates = 12
+    step = 2 * np.pi / plates
+    for row, (lift_, drop, key, w_) in enumerate(((0.021, 0.0, "steel", 0.47), (0.015, 0.02, "darksteel", 0.4))):
+        for k in range(plates):
+            ac = (k + 0.5 * row) * step
+            fr_ = (1 + np.cos(ac)) / 2
+            hem = CROTCH - 0.06 * fr_ + 0.035 * (1 - fr_) + drop
+            out += hanging(f"warden.skirt{row}_{k}", ac - step * w_, ac + step * w_, under_belt + 0.004,
+                           lambda u, h=hem: h + 0.022 * u * u, key, flare=0.14, lift=lift_, gap=0.016, thick=0.0025,
+                           trim=gold(0.006) if row == 0 else None)
     for sd, sg in (("l", 1), ("r", -1)):
         out += [
-            # A tasset on her hip, hung from the belt, swinging with her thigh.
-            *hanging(f"warden.tasset_{sd}", min(sg * 0.95, sg * 1.75), max(sg * 0.95, sg * 1.75), under_belt + 0.02,
-                     lambda u: CROTCH - 0.02 - 0.03 * (1 - abs(u)), "steel", flare=0.1, lift=0.022, gap=0.016, thick=0.003,
-                     trim=gold(0.007)),
             *piece(f"warden.pauldron_{sd}", cap(shoulder(sd), 0.11), "steel", lift=0.012, thick=0.004, smooth=14, trim=gold(0.01), studs="gold"),
             *piece(f"warden.vambrace_{sd}", limb(sd, ELBOW_S + 0.05, WRIST_S - 0.01, legs=False), "steel", lift=0.006, smooth=8, trim=gold(), studs="gold"),
             *piece(f"warden.greave_{sd}", limb(sd, KNEE_S + 0.03, ANKLE_S + 0.01, front_dip=0.04), "steel", lift=0.008, smooth=12, trim=gold(), studs="gold"),
@@ -2226,123 +2267,117 @@ def leg_z(sd, s0):
 
 
 def ranger():
-    """The ranger, after the reference: a green leather suit (her left arm
-    sleeved, a stand collar round the left and back of her neck, her left
-    breast and leg covered, her right hip bare to a high-cut leotard line),
-    smooth green cups, the right one on a halter; an underbust brown corset,
-    cinched and pointed in front, laced across a gap; a belt slung round her
-    hips with a buckle and a pouch on her left hip; a buckled strap high on
-    her bare right thigh; bronze pauldron lames on her left shoulder, bronze
-    bracers, fingerless gloves; knee boots with folded cuffs, the right one
-    laced up the front."""
+    """The stalker: one fitted bodysuit of brown leather, a corset that
+    holds her: strapless, a sweetheart line over her breasts (hugged tight,
+    on their perfect form), her shoulders and the top of her chest bare,
+    laced up the front over a strip of her skin, cinched, and on down over
+    her crotch: cut high over her right hip to a thong behind, so her right
+    hip and cheek are bare; her left leg in a light tan pant leg into her
+    boot. A belt slung round her hips with a bronze buckle; a buckled strap
+    cinched high on her bare right thigh; bronze lames at her left
+    shoulder, bronze bracers, fingerless gloves; knee boots with folded
+    cuffs, the right one laced up the front. Corset, gloves and boots of
+    forest-green leather; the pant leg light brown cloth."""
+    from scipy.interpolate import PchipInterpolator
     arms = ARMW["l"] + ARMW["r"]
 
     def edge(w=0.006, key="darkleather"):
         return (key, w, 0.0006, 0.0013)
 
-    nz = head("neck_01")[2]
-    ang = np.arctan2(X, -(Y - CROTCH_Y))
-
     def belt_z(a):
         return CROTCH + 0.085 - 0.022 * np.sin(a)
 
-    # The suit: her left upper body and sleeve, its inner edge a plunge from
-    # the base of her neck down beside the cleavage; round her middle under
-    # the corset; a leotard over her right hip; her left leg to the boot.
-    plunge = X - (0.006 + 0.028 * np.clip((Z - UNDERBUST) / (nz - UNDERBUST), 0, 1))
-    upper = AND(plunge, Z - (UNDERBUST - 0.05), 0.5 - ARMW["r"],
-                (WRIST_S - 0.035) - ARM_S["l"] + 9 * (ARMW["l"] < 0.5))
-    middle = AND(Z - (CROTCH + 0.04), (UNDERBUST - 0.01) - Z, 0.35 - arms)
-    hips = AND((CROTCH + 0.12) - Z, Z - (CROTCH - 0.03), 0.3 - arms)
-    lower = OR(AND(hips, OR(X + 0.01, bottom("full", top=0.11, side_rise=0.09))), limb("l", 0.0, KNEE_S + 0.08))
-    suit = OR(upper, middle, lower)
-    # The corset: pulled taut round her (as a corset is, smooth over her
-    # muscles), from under her breasts to the belt, higher behind, a point
-    # in front dipping below the belt, open down the front for its lacing.
-    def fr(a):
-        return ramp(np.cos(a), -0.2, 0.3)
-
-    def corset_span(a):
-        x = 0.13 * np.sin(a)
-        point = 0.042 * np.clip(1 - np.abs(x) / 0.075, 0, 1) * fr(a)
-        return belt_z(a) + 0.004 - point, UNDERBUST - 0.008 + 0.045 * (1 - fr(a))
-
-    torso = (ARMW["l"] + ARMW["r"] < 0.25) & (HAIR < 0.5) & (wsum("breast_l", "breast_r") < 0.05)
-    open_a = 0.1
-    zt = UNDERBUST - 0.02
-    zb = float(belt_z(0.0)) + 0.026
-    rows = np.linspace(zt, zb, 7)
-    ea = np.array([open_a + 0.07, 2 * np.pi - open_a - 0.07])
-    zs_, _, R_, cxy_ = hull_radius_grid(zb - 0.02, zt + 0.02, mask=torso, angles=ea)
-    sides = {}
-    for col, sgn in ((0, 1), (1, -1)):
+    nx, nzn = abs(NIPPLE["r"][0]), NIPPLE["r"][2]
+    ax_ = np.abs(X)
+    # The sweetheart: an arc over each breast, well above the nipple, down
+    # to a point between them; behind, a straight band round her back.
+    # (round her side at her nipple's height, under her arm, so the whole of
+    # each breast is held; the band behind is lower)
+    sweet = PchipInterpolator([0.0, 0.025, nx * 0.6, nx, nx + 0.04, nx + 0.09, nx + 0.14],
+                              [nzn - 0.014, nzn - 0.004, nzn + 0.026, nzn + 0.034, nzn + 0.03, nzn + 0.012, nzn + 0.0],
+                              extrapolate=True)
+    top_z = sweet(np.minimum(ax_, nx + 0.14)) * FRONT + (UNDERBUST + 0.06) * (1 - FRONT)
+    # Below, each leg's opening a single smooth line round her hip, by the
+    # angle round her (0 her front, pi behind): on her right, from her crotch
+    # up over her hip bone, high at her side, and down across her cheek to
+    # the top of the cleft (her right hip and cheek bare); on her left, a
+    # cheeky seat (the lower curve of her cheek bare). Between her legs, a
+    # narrow strip, widening a little in front.
+    ang = np.abs(np.arctan2(X, -(Y - CROTCH_Y)))
+    edge_r = CROTCH + PchipInterpolator([0, 0.5, 1.1, 1.57, 2.1, 2.6, np.pi], [0.02, 0.12, 0.19, 0.21, 0.19, 0.15, 0.13])(ang)
+    edge_l = CROTCH + PchipInterpolator([0, 0.6, 1.2, 1.57, 2.1, 2.6, np.pi], [-0.02, 0.0, 0.03, 0.05, 0.065, 0.06, 0.055])(ang)
+    rise = np.maximum(Z - CROTCH, 0)
+    strip = (0.012 + 0.3 * rise) * FRONT + (0.009 + 0.05 * rise) * (1 - FRONT) - ax_
+    legs = OR(Z - np.where(X < 0, edge_r, edge_l), strip)
+    # (her breasts always held, however near her arms they come)
+    not_arms = np.where(wsum("breast_l", "breast_r") > 0.03, 1.0, 0.5 - arms)
+    body = AND(top_z - Z, Z - (CROTCH - 0.025), not_arms, legs)
+    # Its front laced across a strip of her skin from under her breasts to
+    # her waist.
+    lace_top, lace_bot = UNDERBUST - 0.012, float(belt_z(0.0)) + 0.02
+    gap = np.where((Z < lace_top) & (Z > lace_bot) & (FRONT > 0.5), ax_ - 0.007, 1.0)
+    corset = AND(body, gap)
+    lift, thick = 0.0035, 0.003
+    rows = np.linspace(lace_top - 0.008, lace_bot + 0.008, 8)
+    holes = {}
+    for sg in (1, -1):
         e = []
         for z in rows:
-            r = np.interp(z, zs_, R_[:, col]) + 0.0085 + 0.0045
-            d = np.array([np.sin(ea[col]), -np.cos(ea[col]), 0.0])
-            e.append((np.array([cxy_[0], cxy_[1], z]) + d * r, d))
-        sides[sgn] = e
-    eyelets = [p for sg in (1, -1) for p, _ in sides[sg]]
-    enorm = [n for sg in (1, -1) for _, n in sides[sg]]
+            q = front_point(sg * 0.0125, z)
+            n = np.array(SKIN_BVH.find_nearest(Vector(q))[1][:])
+            e.append((q + n * (lift + thick + 0.0008), n))
+        holes[sg] = e
+    eyelets = [q for sg in (1, -1) for q, _ in holes[sg]]
+    enorm = [n for sg in (1, -1) for _, n in holes[sg]]
     laces = []
     for i in range(len(rows) - 1):
         for sg in (1, -1):
-            laces += ribbon(f"ranger.lace{i}{'ab'[sg > 0]}", [sides[sg][i][0], sides[-sg][i + 1][0]], 0.0035, "darkleather",
+            laces += ribbon(f"ranger.lace{i}{'ab'[sg > 0]}", [holes[sg][i][0], holes[-sg][i + 1][0]], 0.0035, "darkleather",
                             lift=0.0008, thick=0.0012, snap=False)
-    # Her right breast in a formed cup of the suit's leather (her left is
-    # under the suit itself); the halter from its peak up to the collar.
-    ranger_cup = plate_cups("ranger.cup", "greenleather", plunge_line(over=0.035, low=0.035), lift=0.003, thick=0.0025,
-                            trim=edge(0.005), only="r")
-    pk = CUP_PEAK["r"]
-    halter_curve = [front_point(pk[0] + 0.004, pk[2] - 0.012), np.array([-0.05, -0.1, 1.5]),
-                    np.array([-0.03, -0.065, nz + 0.02]), np.array([-0.01, -0.03, nz + 0.035])]
-    neck = (wsum("neck_01", "Head") > 0.35) & (HAIR < 0.5) & (Z > nz - 0.03) & (Z < nz + 0.11)
-    # The belt and its gear.
+    # The belt and its buckle; the strap on her right thigh.
     bfront = front_point(0.035, float(belt_z(0.2)))
     bn_ = np.array(SKIN_BVH.find_nearest(Vector(bfront))[1][:])
     tz = leg_z("r", 0.16)
     tpt = front_point(LEG["r"][0][0] - 0.03, tz)
     tn_ = np.array(SKIN_BVH.find_nearest(Vector(tpt))[1][:])
     fingers = wsum(*[n for n in BONES if n.split("_")[0] in ("index", "middle", "ring", "pinky", "thumb") and n.split("_")[1] in ("02", "03")])
+    tops = {"r": KNEE_S - 0.03, "l": KNEE_S + 0.1}
     out = [
-        *ranger_cup,
-        *piece("ranger.suit", suit, "greenleather", lift=0.0028, smooth=3, soften=12, slot="right", trim=edge(0.005), iron=40,
-              filled=True),
-        *girdle("ranger.collar", lambda a: np.full_like(a, nz + 0.03), 0.045, "greenleather", lift=0.003, thick=0.003,
-                trim=edge(0.005), mask=neck, arc=(0.5, 4.4), flare=0.004, nu=90),
-        *ribbon("ranger.halter", halter_curve, 0.016, "brownleather", lift=0.009, trim=edge(0.003)),
-        *girdle("ranger.corset", None, 0.0, "brownleather", lift=0.0085, thick=0.003, trim=edge(0.006), rows=24, nu=200,
-                mask=torso, arc=(open_a, 2 * np.pi - open_a), span=corset_span),
+        *piece("ranger.corset", corset, "forestleather", lift=lift, thick=thick, smooth=8, iron=60, soften=20, slot="right",
+               trim=edge(0.006), filled=True, keep_off=("Head", "neck_01")),
         *domes("ranger.eyelets", eyelets, enorm, "bronze", r=0.0026),
         *laces,
-        *girdle("ranger.belt", belt_z, 0.042, "brownleather", lift=0.009, thick=0.004, trim=edge(0.005)),
-        *frame("ranger.buckle", bfront + bn_ * 0.02, bn_, np.array([0, 0, 1.0]), 0.042, 0.052, "bronze", r=0.0028),
-        *pouch("ranger.pouch", "l", -0.005, float(belt_z(np.pi / 2)) - 0.055, (0.024, 0.055, 0.06), "brownleather"),
+        *girdle("ranger.belt", belt_z, 0.042, "brownleather", lift=0.011, thick=0.004, trim=edge(0.005)),
+        *frame("ranger.buckle", bfront + bn_ * 0.022, bn_, np.array([0, 0, 1.0]), 0.042, 0.052, "bronze", r=0.0028),
         *girdle("ranger.thighstrap", lambda a: np.full_like(a, tz), 0.028, "brownleather", lift=0.003, thick=0.003,
                 trim=edge(0.004), mask=(LEGW["r"] > 0.6) & (np.abs(Z - tz) < 0.05)),
         *frame("ranger.thighbuckle", tpt + tn_ * 0.008, tn_, np.array([0, 0, 1.0]), 0.03, 0.036, "bronze", r=0.0022),
+        # Her left leg in light tan leather, from under the corset's edge
+        # into her boot.
+        # (its top up under the corset in front, below her cheek behind)
+        *piece("ranger.pant", limb("l", -0.1, tops["l"] + 0.06, front_dip=-0.19), "browncloth", lift=0.0025, thick=0.0025,
+               smooth=6, soften=8, trim=edge(0.004, "brownleather")),
     ]
     sh = shoulder("l")
-    for k, (dz, r, lift) in enumerate(((0.0, 0.11, 0.024), (-0.045, 0.1, 0.019), (-0.09, 0.09, 0.014), (-0.13, 0.08, 0.009))):
+    for k, (dz, r, lft) in enumerate(((0.0, 0.11, 0.024), (-0.045, 0.1, 0.019), (-0.09, 0.09, 0.014), (-0.13, 0.08, 0.009))):
         c = sh + np.array([0.02 * k, 0, dz])
-        out += piece(f"ranger.pauldron{k}", AND(cap(c, r), Z - (c[2] - r * 0.55)), "bronze", lift=lift, thick=0.004, smooth=14,
+        out += piece(f"ranger.pauldron{k}", AND(cap(c, r), Z - (c[2] - r * 0.55)), "bronze", lift=lft, thick=0.004, smooth=14,
                      soften=10, studs="darksteel")
-    tops = {"r": KNEE_S - 0.03, "l": KNEE_S + 0.1}
     for sd in "lr":
         cz = leg_z(sd, tops[sd] + 0.02)
         out += [
             *piece(f"ranger.bracer_{sd}", limb(sd, ELBOW_S + 0.04, WRIST_S - 0.015, legs=False), "bronze", lift=0.007, smooth=8,
                    soften=10, trim=edge(0.006, "brownleather"), studs="darksteel"),
-            *piece(f"ranger.glove_{sd}", AND(limb(sd, WRIST_S - 0.03, 9.9, legs=False), 0.4 - fingers), "darkleather", lift=0.0015,
+            *piece(f"ranger.glove_{sd}", AND(limb(sd, WRIST_S - 0.03, 9.9, legs=False), 0.4 - fingers), "forestleather", lift=0.0015,
                    thick=0.0012, bevel=0.0004, soften=8),
-            *piece(f"ranger.boot_{sd}", limb(sd, tops[sd], 9.9), "brownleather", lift=0.005, smooth=8, iron=300,
-                   hull=LEG_S[sd] - ANKLE_S - 0.03, soften=10),
-            *girdle(f"ranger.cuff_{sd}", lambda a, cz=cz: np.full_like(a, cz), 0.06, "brownleather", lift=0.01, thick=0.003,
-                    trim=edge(0.005), mask=(LEGW[sd] > 0.6) & (np.abs(Z - cz) < 0.07), flare=0.012),
+            *piece(f"ranger.boot_{sd}", limb(sd, tops[sd], 9.9), "forestleather", lift=0.005 if sd == "r" else 0.0065, smooth=8,
+                   iron=300, hull=LEG_S[sd] - ANKLE_S - 0.03, soften=10),
+            *girdle(f"ranger.cuff_{sd}", lambda a, cz=cz: np.full_like(a, cz), 0.06, "forestleather", lift=0.01 if sd == "r" else 0.012,
+                    thick=0.003, trim=edge(0.005), mask=(LEGW[sd] > 0.6) & (np.abs(Z - cz) < 0.07), flare=0.012),
         ]
     # The right boot laced up the front of her shin, below its cuff.
     kx = LEG["r"][1][0]
-    ax_ = LEG["r"][2][0]
+    ax0 = LEG["r"][2][0]
     z0, z1 = LEG["r"][2][2] + 0.07, leg_z("r", tops["r"] + 0.02) - 0.04
     lz = np.linspace(z1, z0, 9)
     bl = {}
@@ -2350,7 +2385,7 @@ def ranger():
         e = []
         for z in lz:
             t = (LEG["r"][1][2] - z) / (LEG["r"][1][2] - LEG["r"][2][2])
-            x = kx + (ax_ - kx) * t + 0.013 * sgn
+            x = kx + (ax0 - kx) * t + 0.013 * sgn
             q = front_point(x, z)
             n = np.array(SKIN_BVH.find_nearest(Vector(q))[1][:])
             e.append(q + n * 0.0095)
@@ -2668,7 +2703,7 @@ OUTFITS = {"warden": warden, "arcanist": arcanist, "ranger": ranger, "reaver": r
 # satin: clean). Fur and sheer stockings have shaders of their own.
 KIND = {"steel": "metal", "darksteel": "metal", "gold": "metal", "bronze": "metal", "rust": "metal",
         "velvet": "cloth", "arcvelvet": "cloth", "linen": "cloth", "lace": "cloth", "ink": "cloth",
-        "satin": "gloss", "bone": "leather", "fur": "fur", "stocking": "sheer"}
+        "browncloth": "cloth", "satin": "gloss", "bone": "leather", "fur": "fur", "stocking": "sheer"}
 
 
 def kind(key):

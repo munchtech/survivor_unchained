@@ -90,5 +90,13 @@
  "bone": {
   "kind": "leather",
   "repeats": 12
+ },
+ "browncloth": {
+  "kind": "cloth",
+  "repeats": 6
+ },
+ "forestleather": {
+  "kind": "leather",
+  "repeats": 3
  }
 }
