@@ -109,7 +109,7 @@ public static class Weapons
         {
             Id = "oathblade", Name = "Oathblade", School = School.Physical, Behavior = WeaponBehavior.Slash, Tags = [Tag.Melee, Tag.Steel, Tag.Physical, Tag.Area],
             Base = new() { Cooldown = 1.05, Damage = 22.81, Reach = 2.8, Arc = 2.3, Knockback = 0.9, Projectiles = 1 },
-            Art = "slash_steel", BossDamage = 1.4, Findable = true,
+            Art = "slash_steel", BossDamage = 1.8, Findable = true,
             Description = "Your blade swings on its own at whatever is nearest, cutting everything in a wide arc in front of you.",
             Evolutions =
             [
@@ -405,7 +405,7 @@ public static class Weapons
         {
             Id = "dawnpulse", Name = "Dawnpulse", School = School.Holy, Behavior = WeaponBehavior.Nova, Tags = [Tag.Nova, Tag.Area, Tag.Spell, Tag.Holy],
             Base = new() { Cooldown = 2.6, Damage = 11.02, Radius = 3.75, ExpandTime = 0.35, Knockback = 0.65, Status = S(Sear, 1, 1, 3) },
-            Art = "nova_holy", BossDamage = 2.4, Findable = true, Growth = 0.16,
+            Art = "nova_holy", BossDamage = 2.8, Findable = true, Growth = 0.16,
             Description = "A ring of Light erupts outward from you, throwing back what it touches. The dead hate it.",
             Evolutions =
             [
@@ -419,7 +419,7 @@ public static class Weapons
         {
             Id = "hallowed_ring", Name = "Hallowed Ground", School = School.Holy, Behavior = WeaponBehavior.Zone, Tags = [Tag.Zone, Tag.Area, Tag.Aura, Tag.Holy],
             Base = new() { Cooldown = 3.95, Damage = 3.82, Radius = 3, Duration = 4, TickRate = 0.5, Status = S(Sear, 0.4, 1, 2) },
-            Art = "zone_holy", BossDamage = 2.0, Findable = true, Growth = 0.16,
+            Art = "zone_holy", BossDamage = 2.5, Findable = true, Growth = 0.16,
             Description = "Hallows the ground beneath your feet. Whatever stands in it burns.",
             Evolutions =
             [
@@ -433,7 +433,7 @@ public static class Weapons
         {
             Id = "blightfield", Name = "Blightfield", School = School.Shadow, Behavior = WeaponBehavior.Zone, Tags = [Tag.Zone, Tag.Area, Tag.Dot, Tag.Shadow],
             Base = new() { Cooldown = 4.3, Damage = 7.02, Radius = 3.25, Duration = 4.5, TickRate = 0.45, AtTarget = true, Status = S(Poison, 0.6, 0.2, 4) },
-            Art = "zone_blight", BossDamage = 2.0, Findable = true, Growth = 0.18,
+            Art = "zone_blight", BossDamage = 2.5, Findable = true, Growth = 0.18,
             Description = "Corrupts the ground under the nearest crowd; anything standing in it rots.",
             Evolutions =
             [
@@ -449,7 +449,7 @@ public static class Weapons
         {
             Id = "thornbloom", Name = "Thornbloom", School = School.Nature, Behavior = WeaponBehavior.Zone, Tags = [Tag.Zone, Tag.Area, Tag.Nature],
             Base = new() { Cooldown = 3.8, Damage = 8.69, Radius = 2.3, Duration = 4, TickRate = 0.5, AtTarget = true, Slow = 0.55 },
-            Art = "zone_thorn", BossDamage = 2.0, Findable = true, Growth = 0.18,
+            Art = "zone_thorn", BossDamage = 2.5, Findable = true, Growth = 0.18,
             Description = "Brambles burst up under the nearest crowd, tearing at everything caught and holding it slow.",
             Evolutions =
             [
@@ -509,7 +509,7 @@ public static class Weapons
         {
             Id = "rotwood", Name = "Rotwood", School = School.Nature, Behavior = WeaponBehavior.Zone, Tags = [Tag.Zone, Tag.Area, Tag.Dot, Tag.Nature, Tag.Shadow],
             Base = new() { Cooldown = 3.6, Damage = 18.6, Radius = 4.2, Duration = 6, TickRate = 0.4, AtTarget = true, Slow = 0.45, Status = S(Poison, 0.8, 0.25, 4) },
-            Art = "zone_plague", BossDamage = 2.0,
+            Art = "zone_plague", BossDamage = 2.4,
             Description = "The blight grows thorns: a wide, slow thicket that holds what it rots, and spreads the rot from what dies in it.",
             Triggers = [T(TriggerEvent.Kill, [new Effect.Spread(Poison, 3, 3, 2)], new() { Weapon = "rotwood" }, icd: 0.1)],
         },
@@ -531,7 +531,7 @@ public static class Weapons
         {
             Id = "dawns_judgement", Name = "Dawn's Judgement", School = School.Holy, Behavior = WeaponBehavior.Bounce, Tags = [Tag.Projectile, Tag.Thrown, Tag.Bounce, Tag.Nova, Tag.Holy],
             Base = new() { Cooldown = 1.8, Damage = 15, Speed = 10.5, Projectiles = 2, Bounces = 9, Range = 16, Life = 3.5, Radius = 0.32, Knockback = 0.3, Status = S(Sear, 1, 1, 3) },
-            Art = "disc_reckon", BossDamage = 1.8,
+            Art = "disc_reckon", BossDamage = 2.2,
             Description = "Two shields of morning that ricochet through the crowd, and break into light wherever they strike.",
             Triggers = [T(TriggerEvent.Hit, [new Effect.Nova(2.2, 0.35, Basis.Hit, School.Holy, 0.4)], new() { Weapon = "dawns_judgement" }, icd: 0.15)],
         },

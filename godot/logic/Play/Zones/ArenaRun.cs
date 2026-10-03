@@ -113,12 +113,14 @@ public sealed class ArenaRun : ZoneRuntime
 
     /// <summary>Minutes past the half hour (0 before it).</summary>
     double Beyond => Math.Max(0, Seconds - End) / 60;
-    int Level() => Math.Max(1, Spec.Tier * 2 - 1 + levels + (int)(Minute / 2.5) + (int)(Beyond / 2));
+    // A tier is three creature levels: the survivor's own pace (levels 1, 4, 7 for tiers 1 to 3),
+    // so a tier at the survivor's level is a fair night and one above it a hard one.
+    int Level() => Math.Max(1, Spec.Tier * 3 - 2 + levels + (int)(Minute / 2.5) + (int)(Beyond / 2));
     /// <summary>What an ordinary creature's health is divided by at a minute.</summary>
     public static double FodderEase(double minute) => 1 + 0.08 * minute;
 
     /// <summary>How many the horde is kept at (a dark bargain struck asks for more of them).</summary>
-    int Target() => (int)Math.Min(won ? 380 : 320, (22 + 7.5 * Minute) * packSize * (1 + 0.12 * (Spec.Tier - 1)) * Bargain);
+    int Target() => (int)Math.Min(won ? 380 : 320, (22 + 7.5 * Minute) * packSize * (1 + 0.15 * (Spec.Tier - 1)) * Bargain);
     double Bargain => 1 + 0.15 * (B?.Boons.GetValueOrDefault("dark_bargain") ?? 0);
 
     /// <summary>Throwers and shooters at once: a few behind the crowd, never a
@@ -339,7 +341,7 @@ public sealed class ArenaRun : ZoneRuntime
         if (boss != null)
         {
             // A fight of half a minute to a minute for most builds (docs/SKILLS_DESIGN.md, "Bosses").
-            boss.MaxHp = boss.Hp = boss.MaxHp * (9 + Spec.Tier * 3);
+            boss.MaxHp = boss.Hp = boss.MaxHp * (10 + Spec.Tier * 4);
             boss.Damage *= 1.3;
         }
         for (int k = 0; k < 14; k++)

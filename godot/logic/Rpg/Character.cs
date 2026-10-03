@@ -157,14 +157,19 @@ public static class Inventory
             var pool = Items.Affixes.Where(a => a.Slots.Contains(def.Kind) && it.Rarity >= a.MinRarity).ToList();
             var picked = new HashSet<string>();
             bool hasPrefix = false, hasSuffix = false;
+            // The passives the survivor's carried skills evolve with (the kindlings that would stand in for them).
+            var wanted = ch == null ? new HashSet<string>() : SkillBook.Carried(ch)
+                .SelectMany(w => Sim.LevelUp.EvolvesWith(w.Id).SelectMany(e => e.Passives)).Select(id => $"stand:{id}").ToHashSet();
             for (int k = 0; k < n && pool.Count > 0; k++)
             {
                 // One kindling to an item.
                 bool kindled = picked.Any(id => Items.Affix(id)?.Kindled != null);
                 var cands = pool.Where(a => !picked.Contains(a.Id) && (a.Prefix ? !hasPrefix || n > 2 : !hasSuffix || n > 2) && !(kindled && a.Kindled != null)).ToList();
                 if (cands.Count == 0) break;
-                // What answers the map comes four times as often; a skill worn is rare, and a kindling rarer.
-                double W(AffixDef x) => (lean?.Contains(x.Id) == true ? 4 : 1) * (x.Grants != null ? 0.35 : 1) * (x.Kindled != null ? 0.3 : 1);
+                // What answers the map comes four times as often; a skill worn is rare, and a kindling rarer,
+                // though one that stands in for what the survivor's carried skills evolve with comes twice as often.
+                double W(AffixDef x) => (lean?.Contains(x.Id) == true ? 4 : 1) * (x.Grants != null ? 0.35 : 1) *
+                    (x.Kindled == null ? 1 : 0.3 * (wanted.Contains(x.Kindled) ? 2 : 1));
                 double total = cands.Sum(W), roll = rng.Next() * total;
                 var a = cands[^1];
                 foreach (var c in cands) { roll -= W(c); if (roll <= 0) { a = c; break; } }
@@ -361,11 +366,17 @@ public static class Character
     public static double XpForLevel(int level) => MathX.Round(120 * Math.Pow(level, 1.55));
 
     /// <summary>Character experience from the fight; the levels gained.</summary>
+    /// <summary>The survivor's last level (docs/SKILLS_DESIGN.md, "Decisions"): reached near
+    /// the end of Act 3; past it the open axes are gear and the arena's depth, and the
+    /// night's power stays the ember's.</summary>
+    public const int MaxLevel = 30;
+
     public static int GainXp(CharacterData ch, double xp)
     {
+        if (ch.Level >= MaxLevel) { ch.Xp = 0; return 0; }
         ch.Xp += xp;
         int gained = 0;
-        while (ch.Xp >= XpForLevel(ch.Level))
+        while (ch.Level < MaxLevel && ch.Xp >= XpForLevel(ch.Level))
         {
             ch.Xp -= XpForLevel(ch.Level);
             ch.Level++;
@@ -373,6 +384,7 @@ public static class Character
             if (ch.Level % 2 == 0) ch.TraitPicks++;
             gained++;
         }
+        if (ch.Level >= MaxLevel) ch.Xp = 0;
         return gained;
     }
 

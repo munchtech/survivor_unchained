@@ -56,8 +56,17 @@ void Arena()
     var peoples = opt.List("people", "all") is ["all"] ? MapOffers.Peoples.Select(p => p.Id).ToArray() : opt.List("people", "all");
     int seeds = opt.Int("seeds", 4), seed0 = opt.Int("seed0", 1);
     var tiers = opt.Has("tiers") ? opt.List("tiers", "1").Select(int.Parse).ToArray() : [opt.Int("tier", 1)];
-    // --oaths none|all|a,b+c: unsworn, each oath alone, or the ones named ('+' swears two at once).
-    var oaths = opt.List("oaths", "none") is ["all"] ? new[] { "none" }.Concat(MapOffers.Oaths.Select(o => o.Id)).ToArray() : opt.List("oaths", "none");
+    // --oaths none|all|table|a,b+c: unsworn, each oath alone, as the Wayfinder's table swears
+    // them (none or one at tier 1, two at tiers 2 and 3, three from 4), or the ones named ('+' swears two at once).
+    var oaths = opt.Get("oaths", "none") == "table" ? ["table"] : opt.List("oaths", "none") is ["all"] ? new[] { "none" }.Concat(MapOffers.Oaths.Select(o => o.Id)).ToArray() : opt.List("oaths", "none");
+    string[]? Sworn(string oath, int tier, int seed)
+    {
+        if (oath == "none") return null;
+        if (oath != "table") return oath.Split('+');
+        var rng = new SurvivorUnchained.Core.Rng((uint)(seed * 104729 + tier * 7919 + 3));
+        int n = tier <= 1 ? (seed % 3 == 0 ? 0 : 1) : Math.Min(3, 1 + tier / 2);
+        return n == 0 ? null : rng.Shuffle(MapOffers.Oaths.Select(o => o.Id).ToList()).Take(n).ToArray();
+    }
     // --level N|tier: the survivor's character level (tier: 1, 4, 7 by tier, as the story's pace has it).
     string level = opt.Get("level", "1");
     bool deft = opt.Get("bot", "plain") == "deft";
@@ -71,7 +80,7 @@ void Arena()
                     {
                         int nw = allWeapons ? Callings.Archetype(c).Weapons.Count : 1;
                         for (int w = 0; w < nw; w++)
-                            specs.Add(new RunSpec(seed0 + s, c, pol, tier, peoples[(s + w) % peoples.Length], oath == "none" ? null : oath.Split('+'),
+                            specs.Add(new RunSpec(seed0 + s, c, pol, tier, peoples[(s + w) % peoples.Length], Sworn(oath, tier, seed0 + s),
                                 opt.Double("cap", 40), opt.Double("beyond", 0), allWeapons ? w : s % Callings.Archetype(c).Weapons.Count,
                                 Level: level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), Deft: deft));
                     }
