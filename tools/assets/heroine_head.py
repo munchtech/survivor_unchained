@@ -1333,6 +1333,18 @@ print("SHAPES: %d on her head, of %d sliders' and expressions' (%s)" % (_made, l
     "%s %d" % (o.name, len(o.data.shape_keys.key_blocks) - 1) for o in parts)))
 
 
+# ---- her upper lids' paint cleaned of the lash line painted on them (it
+# stretches into stripes as she blinks): heroine_lids.py.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import heroine_lids  # noqa: E402
+heroine_lids.clean(head, hpath)
+for _im in bpy.data.images:
+    if bpy.path.abspath(_im.filepath) == hpath:
+        if _im.packed_file:
+            _im.unpack(method="REMOVE")
+        _im.reload()
+
+
 # ---------------------------------------------------------------- written --
 for o in [hm] + list(proxies.values()) + [o for o in bpy.data.objects if o.name.startswith("CheckCam")]:
     bpy.data.objects.remove(o, do_unlink=True)

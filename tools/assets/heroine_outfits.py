@@ -49,6 +49,10 @@ body = bpy.data.objects["Heroine"]
 # hairstyles beside it.
 HEAD = bpy.data.objects.get("HeroineHead")
 HEAD_PARTS = [o for o in bpy.data.objects if o.type == "MESH" and o.parent == arm and o.name.startswith("Heroine") and o != body]
+# (her brows are in her face's paint once heroine_face.py has painted it: their
+# cards, kept for that painting, are not the game's, as heroine_head.py has it)
+if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), "heroine_face", "face_paint.png")):
+    HEAD_PARTS = [o for o in HEAD_PARTS if o.name != "HeroineBrows"]
 HAIR_DEFAULT = bpy.data.objects.get("hair_long")
 BONES = [b.name for b in arm.data.bones]
 BI = {n: i for i, n in enumerate(BONES)}

@@ -27,17 +27,36 @@ func _init():
 				var part = String(mi.mesh.surface_get_material(s).resource_name)
 				if part in ["eyes", "brows", "lashes", "teeth", "tongue"]:
 					if part == "eyes":
-						m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-						m.alpha_scissor_threshold = 0.5
-						m.roughness = 0.08
-						m.metallic_specular = 0.7
+						# As People.HerPart: shaders/heroine_eye.gdshader on her eyes' own paint.
+						m = ShaderMaterial.new()
+						m.shader = load("res://shaders/heroine_eye.gdshader")
+						m.set_shader_parameter("eye", load("res://art/people/head_tex/heroine_eye.png"))
+						m.set_shader_parameter("iris", load("res://art/people/head_tex/heroine_iris.png"))
+						for kv in OS.get_environment("EYE").split(",", false):
+							var e = kv.split("=")
+							var xy = e[1].split(":")
+							m.set_shader_parameter(e[0], Vector2(float(xy[0]), float(xy[1])) if xy.size() == 2 else float(e[1]))
 					if part in ["brows", "lashes"]:
 						m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 						m.alpha_scissor_threshold = 0.35
 						m.alpha_antialiasing_mode = BaseMaterial3D.ALPHA_ANTIALIASING_ALPHA_TO_COVERAGE_AND_TO_ONE
 						m.cull_mode = BaseMaterial3D.CULL_DISABLED
 						m.albedo_color = hair_colour().darkened(0.45) if part == "brows" else Color(0.12, 0.08, 0.07)
+						if part == "lashes": m.albedo_texture = load("res://art/people/head_tex/heroine_lashes.png")
 					mi.set_surface_override_material(s, m)
+					continue
+				# As People.Skin: shaders/heroine_skin.gdshader (OLDSKIN=1 the material before it).
+				if OS.get_environment("OLDSKIN") == "":
+					var sk = ShaderMaterial.new()
+					sk.shader = load("res://shaders/heroine_skin.gdshader")
+					sk.set_shader_parameter("paint", m.albedo_texture)
+					sk.set_shader_parameter("pores", load("res://art/people/skin_pores.png"))
+					sk.set_shader_parameter("pore_scale", pore_scale(mi.mesh))
+					if OS.get_environment("NOSSS") != "": sk.set_shader_parameter("scatter", 0.0)
+					for kv in OS.get_environment("SKIN").split(",", false):
+						var e = kv.split("=")
+						sk.set_shader_parameter(e[0], float(e[1]))
+					mi.set_surface_override_material(s, sk)
 					continue
 				m.albedo_color = Color(1.0, 0.86, 0.74)
 				if OS.get_environment("NOTEX") != "": m.albedo_texture = null; m.albedo_color = Color(0.85, 0.62, 0.5)
@@ -119,6 +138,9 @@ func _init():
 			skel.add_child(load("res://src/Actors/HerPose.cs").new())
 		if OS.get_environment("NOJIGGLE") == "":
 			skel.add_child(load("res://src/Actors/HerJiggle.cs").new())
+		# NOLIFE=1: her face still (no blinks, no eyes moving), for side-by-side pictures.
+		if OS.get_environment("NOLIFE") == "":
+			skel.add_child(load("res://src/Actors/HerFaceLife.cs").new())
 		var ap = AnimationPlayer.new()
 		h.add_child(ap)
 		var lib = AnimationLibrary.new()
@@ -167,6 +189,21 @@ func _init():
 	rim.rotation_degrees = Vector3(-20, 200, 0)
 	rim.light_energy = 0.0 if OS.get_environment("NORIM") != "" else 1.2
 	root.add_child(rim)
+
+# As People.PoreScale: pore tiles to a UV unit, one every 1.5 cm on her.
+func pore_scale(mesh):
+	var area = 0.0
+	var uv_area = 0.0
+	for s in mesh.get_surface_count():
+		var arr = mesh.surface_get_arrays(s)
+		if arr[Mesh.ARRAY_TEX_UV] == null: continue
+		var v = arr[Mesh.ARRAY_VERTEX]
+		var uv = arr[Mesh.ARRAY_TEX_UV]
+		var idx = arr[Mesh.ARRAY_INDEX]
+		for t in range(0, idx.size() - 2, 3):
+			area += (v[idx[t + 1]] - v[idx[t]]).cross(v[idx[t + 2]] - v[idx[t]]).length() / 2.0
+			uv_area += abs((uv[idx[t + 1]] - uv[idx[t]]).cross(uv[idx[t + 2]] - uv[idx[t]])) / 2.0
+	return sqrt(area / uv_area) / 0.015 if uv_area > 0.0 else 30.0
 
 func hair_colour():
 	return Color(OS.get_environment("HAIRCOLOR")) if OS.get_environment("HAIRCOLOR") != "" else Color("#8f2d14")
