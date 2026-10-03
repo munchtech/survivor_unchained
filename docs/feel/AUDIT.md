@@ -377,7 +377,71 @@ How the code stands against each:
 
 ---
 
-## 9. Measured
+## 9. Measured: the headless arena, minute by minute
 
-*(Filled in below if the headless arena bot could be run in this session;
-see the note at the end.)*
+The repo's own arena bot (`tests/ArenaPlay.cs`: go to the fight, give
+ground when pressed, collect ember, dash out of a crush, take **the first
+card offered**) was run with a probe that counted what feel depends on.
+The probe was a scratch program outside the repo that compiled
+`godot/logic` read-only; nothing in the game was changed. Four cases,
+tier 1, no oaths, 36 minutes each (six minutes past the boss).
+
+Caveat: the bot drafts blindly. A player choosing for synergy will do
+better. But the *direction* of every trend below was the same for all
+four callings, which is what matters here.
+
+### Hits to kill an ordinary creature (direct blows, not DoT ticks)
+
+| Minute | Warden / pack | Stalker / dead | Arcanist / kerchiefs | Reaver / lamplings |
+|---|---|---|---|---|
+| 2 | 1.7 (35% one-hit) | 1.4 (64%) | 3.0 (15%) | 1.5 (69%) |
+| 5 | 1.6 (37%) | 1.4 (65%) | 2.9 (14%) | 1.4 (74%) |
+| 10 | 2.1 (26%) | 2.1 (44%) | 3.4 (5%) | 1.4 (71%) |
+| 15 | 3.0 (19%) | 2.6 (35%) | 3.6 (9%) | 1.7 (58%) |
+| 20 | 3.4 (15%) | 3.6 (17%) | 5.1 (2%) | 1.9 (38%) |
+| 25 | 3.2 (12%) | 3.9 (26%) | 4.6 (4%) | 2.2 (24%) |
+| 30 | 3.9 (6%) | 4.4 (5%) | 4.6 (2%) | 3.5 (11%) |
+| 35 (after the win) | 7.7 (0%) | 6.0 (1%) | (fell at 30.6) | 4.7 (3%) |
+
+**This is the most important finding of the audit.** In every case the
+ordinary creature gets *harder* to kill as the run goes on, even with six
+weapons at rank 8 and several evolved. The share of creatures that die to a
+single blow falls from between a quarter and three quarters of all kills
+to about one in twenty. The genre's core promise (you start fragile and end
+a god; the swarm that once threatened you now evaporates) is inverted in
+the numbers. The player's power is expressed only as *volume* (kills per
+minute roughly doubles, from ~550 to ~1,200), never as *ease*.
+
+### Other numbers that set budgets
+
+| Measure | Early (min 2–5) | Mid (min 15) | Late (min 30) | Peak in any 1 s |
+|---|---|---|---|---|
+| Direct hits per second | 5–16 | 30–48 | 75–87 | 170–260 (to 690 after the win) |
+| Kills per second | 4–9 | 11–14 | 16–21 | 47–93 |
+| Ember stones collected per second | 4–11 | 11–15 | 14–22 | 400–840 (lodestone sweeps) |
+| Projectiles alive | 2–30 | 13–56 | 22–100 | 115 |
+| Kills that burst the body (gibs) | 30–55% | 31–37% | 32–39% | |
+| Crit rate (of hits) | 5–16% | 8–16% | 7–15% | |
+| Ember level | 9–17 at min 2 | 32–41 | 47–57 | |
+| Drafts per minute | 7–12 in minute 1, 3–9 in minute 2 | 1–3 | 1 | |
+
+What these mean for feel:
+
+- **Damage numbers:** at 75–90 hits/s late (and 250 in a burst), the 48
+  labels with 0.75 s life (≈64/s) are saturated for the whole second half
+  of every run. Numbers recycle mid-flight.
+- **The XP chime:** lodestone sweeps deliver 400–800 stones in a second.
+  The XP sound is gated to 80/s and its ladder tops out after 24 stones
+  (0.3 s), then sits on one pitch. The best moment for a rising ladder
+  plays as a flat buzz (**inferred** from the gate and the formula).
+- **Kill sound:** gated to ~55/s; kills peak at 47–93/s. Fine on
+  average, clipped at peaks.
+- **Drafts:** 10–20 cards in the first two minutes, then one a minute
+  from about minute 10. The early flood means many drafts are taken in
+  quick succession, which the research links to choice fatigue and to
+  each choice mattering less; the late trickle means the second half of
+  the run has few reward beats other than chests (RESEARCH §3.4).
+- **Gibs:** a third of all kills burst the body throughout. Good, but
+  because it never rises, it cannot carry a sense of growth.
+- **The boss minute** (31) is visible as a dip in kills: the horde is
+  held at half while the boss lives.
