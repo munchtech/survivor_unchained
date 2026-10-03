@@ -158,6 +158,50 @@ SUBJECTS = {
 }
 
 
+def fit(src, dst, size=256, fill=0.96, lo=0.035, hi=0.20, mask=None):
+    """A painted emblem on black made into an icon: alpha from its light (so its glow
+    falls off softly over any backing), the solid parts from the mask when given, its
+    colour un-premultiplied, cropped to what is there and centred at `fill` of the square."""
+    import numpy as np
+    from PIL import Image
+    import cv2
+    import forge as F
+    rgb = np.asarray(Image.open(src).convert("RGB"), np.float32) / 255
+    v = rgb.max(axis=2)
+    t = np.clip((v - lo) / (hi - lo), 0, 1)
+    a = t * t * (3 - 2 * t)
+    if mask is not None:
+        a = np.maximum(a, mask)
+    else:
+        # A dark thing inside its own glow (a shield against light) is solid, not a hole:
+        # whatever the glow encloses, away from the edges, is filled.
+        lowm = (a < 0.35).astype(np.uint8)
+        n, lab = cv2.connectedComponents(lowm, connectivity=4)
+        border = np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))
+        enclosed = (lowm > 0) & ~np.isin(lab, border)
+        a = np.where(enclosed, np.maximum(a, 0.97), a)
+    # Nothing at the very edges (a painting's vignette or smoke must not frame the icon).
+    h, w = a.shape
+    yy, xx = np.mgrid[0:h, 0:w]
+    e = np.minimum(np.minimum(xx, w - 1 - xx), np.minimum(yy, h - 1 - yy)) / (0.04 * w)
+    a = a * np.clip(e, 0, 1)
+    col = np.clip(rgb / np.maximum(a[..., None], 0.08), 0, 1)
+    col = col * a[..., None] + rgb * (1 - a[..., None])
+    ys, xs = np.nonzero(a > 0.45)
+    if len(xs) == 0:
+        raise ValueError("empty icon: " + src)
+    x0, x1, y0, y1 = xs.min(), xs.max() + 1, ys.min(), ys.max() + 1
+    side = int(max(x1 - x0, y1 - y0) / fill)
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    img = np.dstack([col, a]).astype(np.float32)
+    M = np.float32([[1, 0, side / 2 - cx], [0, 1, side / 2 - cy]])
+    sq = cv2.warpAffine(img, M, (side, side), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+    out = F.downsample(sq, (size, size)) if side > size else cv2.resize(sq, (size, size), interpolation=cv2.INTER_CUBIC)
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    F.to_pil(out).save(dst, optimize=True)
+    return out
+
+
 def prompt(key):
     school, subject = SUBJECTS[key]
     return LOOK + subject + ", " + SCHOOL[school] + "."

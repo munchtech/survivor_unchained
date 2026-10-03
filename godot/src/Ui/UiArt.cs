@@ -40,21 +40,21 @@ public static class UiArt
         // The strap repeats along a plate of any size; the coins at the corners reach
         // 12 past it; what is inside keeps 21 from the edge, as before the art.
         ["plate"] = new("frames/plate.png", 64, 64, 64, 64, Tile: true, Out: 12, Clear: 21),
-        ["paper"] = new("frames/paper.png", 32, 32, 32, 32),
-        ["tooltip"] = new("frames/tooltip.png", 16, 16, 16, 16),
-        ["tooltip_worn"] = new("frames/tooltip_worn.png", 16, 16, 16, 16),
+        ["paper"] = new("frames/paper.png", 32, 32, 32, 32, Tile: true),
+        ["tooltip"] = new("frames/tooltip.png", 16, 16, 16, 16, Tile: true),
+        ["tooltip_worn"] = new("frames/tooltip_worn.png", 16, 16, 16, 16, Tile: true),
         // Buttons, tabs, segments, keycaps.
-        ["button"] = new("frames/button.png", 12, 10, 12, 10),
-        ["button_hover"] = new("frames/button_hover.png", 12, 10, 12, 10),
-        ["button_pressed"] = new("frames/button_pressed.png", 12, 10, 12, 10),
-        ["button_disabled"] = new("frames/button_disabled.png", 12, 10, 12, 10),
-        ["button_primary"] = new("frames/button_primary.png", 12, 10, 12, 10),
-        ["button_primary_hover"] = new("frames/button_primary_hover.png", 12, 10, 12, 10),
-        ["button_primary_pressed"] = new("frames/button_primary_pressed.png", 12, 10, 12, 10),
+        ["button"] = new("frames/button.png", 12, 10, 12, 10, Tile: true),
+        ["button_hover"] = new("frames/button_hover.png", 12, 10, 12, 10, Tile: true),
+        ["button_pressed"] = new("frames/button_pressed.png", 12, 10, 12, 10, Tile: true),
+        ["button_disabled"] = new("frames/button_disabled.png", 12, 10, 12, 10, Tile: true),
+        ["button_primary"] = new("frames/button_primary.png", 12, 10, 12, 10, Tile: true),
+        ["button_primary_hover"] = new("frames/button_primary_hover.png", 12, 10, 12, 10, Tile: true),
+        ["button_primary_pressed"] = new("frames/button_primary_pressed.png", 12, 10, 12, 10, Tile: true),
         ["segment_on"] = new("frames/segment_on.png", 10, 8, 10, 8),
         ["tab"] = new("frames/tab.png", 14, 10, 14, 6),
         ["tab_on"] = new("frames/tab_on.png", 14, 10, 14, 6),
-        ["row_on"] = new("frames/row_on.png", 12, 10, 12, 10),
+        ["row_on"] = new("frames/row_on.png", 12, 10, 12, 10, Tile: true),
         ["keycap"] = new("frames/keycap.png", 6, 6, 6, 6),
         ["focus"] = new("frames/focus.png", 14, 14, 14, 14),
         // Slots, by rarity (0 common to 5 relic), and the empty one.
@@ -75,14 +75,18 @@ public static class UiArt
         ["card_4"] = new("frames/card_legendary.png", 64, 80, 64, 64, Out: 24),
         ["card_evolve"] = new("frames/card_evolution.png", 64, 80, 64, 64, Out: 24),
         // What comes and goes on the HUD.
-        ["toast"] = new("frames/toast.png", 14, 10, 10, 10),
-        ["prompt"] = new("frames/prompt.png", 22, 12, 22, 12),
-        ["hint"] = new("frames/hint.png", 16, 16, 16, 16),
+        ["toast"] = new("frames/toast.png", 14, 10, 10, 10, Tile: true),
+        ["prompt"] = new("frames/prompt.png", 22, 12, 22, 12, Tile: true),
+        // The note: its nail and its drop of wax in corners wider than the text keeps from.
+        ["hint"] = new("frames/hint.png", 40, 40, 40, 40, Tile: true, Clear: 14),
         ["chip"] = new("frames/chip.png", 8, 8, 8, 8),
         ["weapon_slot"] = new("frames/weapon_slot.png", 12, 12, 12, 12),
-        ["bar_track"] = new("bars/track.png", 8, 6, 8, 6),
+        ["bar_track"] = new("bars/track.png", 8, 6, 8, 6, Tile: true),
         ["bar_track_boss"] = new("bars/track_boss.png", 24, 8, 24, 8),
-        ["map_frame"] = new("frames/map_frame.png", 20, 20, 20, 20),
+        // Casings over the bars (GameHud.Casing): iron round the groove, reaching past it.
+        ["bar_casing"] = new("bars/casing.png", 16, 8, 16, 8, Tile: true, Out: 6),
+        ["bar_casing_boss"] = new("bars/casing_boss.png", 64, 14, 64, 14, Tile: true, Out: 12),
+        ["map_frame"] = new("frames/map_frame.png", 20, 20, 20, 20, Tile: true),
     };
 
     static readonly Dictionary<string, Texture2D?> cache = new();

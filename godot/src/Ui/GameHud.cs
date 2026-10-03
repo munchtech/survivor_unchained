@@ -163,6 +163,17 @@ public partial class GameHud : CanvasLayer
 
     /// <summary>A round medallion rimmed in gold (the ember's, the heart's);
     /// painted (hud/NAME.png, drawn larger than the medallion, centred on it) when there is art.</summary>
+    /// <summary>A painted casing laid over a bar (bars/casing.png, casing_boss.png): forged iron
+    /// round the groove, reaching a little past it, its middle open so the fill shows. Added
+    /// after the bar so it sits over the fill's edge; nothing when there is no art.</summary>
+    static void Casing(Control parent, Control bar, string id)
+    {
+        if (!UiArt.Has(id)) return;
+        var c = new Panel { Position = bar.Position, Size = bar.Size, MouseFilter = Control.MouseFilterEnum.Ignore };
+        c.AddThemeStyleboxOverride("panel", UiArt.Frame(id, new StyleBoxEmpty()));
+        parent.AddChild(c);
+    }
+
     static Panel Medal(Control parent, Vector2 at, float size, Color inner, string? art = null)
     {
         var p = new Panel { Position = at, Size = new Vector2(size, size), MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -197,6 +208,7 @@ public partial class GameHud : CanvasLayer
         var track = new Panel { Position = new Vector2(x + 30, 23), Size = new Vector2(w - 30, 12), MouseFilter = Control.MouseFilterEnum.Ignore, ClipContents = true };
         track.AddThemeStyleboxOverride("panel", UiArt.Frame("bar_track", Style.Box(Hex("#120c0a"), new Color(0.85f, 0.71f, 0.42f, 0.28f), 1, 5, 0)));
         combat.AddChild(track);
+        Casing(combat, track, "bar_casing");
         emberFill = Fill("ember_fill", [Hex("#6a1e04"), Hex("#c24a0a"), Hex("#ff8a2a"), Hex("#ffd070")], [0, 0.45f, 0.85f, 1]);
         emberFill.Position = new Vector2(1, 1);
         emberFill.Size = new Vector2(0, 10);
@@ -250,6 +262,7 @@ public partial class GameHud : CanvasLayer
         var bar = new Panel { Position = new Vector2(34, 38), Size = new Vector2(362, 26), ClipContents = true, MouseFilter = Control.MouseFilterEnum.Ignore };
         bar.AddThemeStyleboxOverride("panel", UiArt.Frame("bar_track", Style.Box(Hex("#160a0a"), new Color(0.85f, 0.71f, 0.42f, 0.32f), 1, 4, 0)));
         v.AddChild(bar);
+        Casing(v, bar, "bar_casing");
         hpTrail = new ColorRect { Color = Hex("#e8c07a") with { A = 0.85f }, Position = new Vector2(1, 1), Size = new Vector2(360, 24), MouseFilter = Control.MouseFilterEnum.Ignore };
         bar.AddChild(hpTrail);
         hpFill = Fill("health_fill", [Hex("#ff6a5a"), Hex("#d2262c"), Hex("#8a0e16")], [0, 0.35f, 1], true);
@@ -464,6 +477,7 @@ public partial class GameHud : CanvasLayer
         var track = new Panel { Position = new Vector2(0, 58), Size = new Vector2(w, 16), ClipContents = true, MouseFilter = Control.MouseFilterEnum.Ignore };
         track.AddThemeStyleboxOverride("panel", UiArt.Frame("bar_track_boss", Style.Box(Hex("#140808"), Style.GoldDim, 1, 3, 0)));
         bossBox.AddChild(track);
+        Casing(bossBox, track, "bar_casing_boss");
         bossTrack = track;
         bossTrail = new ColorRect { Color = Hex("#e8c07a"), Position = new Vector2(1, 1), Size = new Vector2(w - 2, 14), MouseFilter = Control.MouseFilterEnum.Ignore };
         track.AddChild(bossTrail);

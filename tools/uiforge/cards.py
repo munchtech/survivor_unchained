@@ -33,9 +33,42 @@ HOLE = {
 }
 
 
-def fit(src, dst, tone="#141117", grade=True, hole_light=0.55, geo=BASE, keep=0.5, mask=None, kind="common"):
+def move_coins(rgb, mask, coins, strap=46, shift=240, heal_prompt=None, tag="card"):
+    """Coins the painting set inside the card's foot (where the code writes the rarity and
+    the key) moved out to the very corners: each lifted out whole, the strap behind it made
+    good from the strap further along, then laid at its corner."""
+    h, w = mask.shape
+    pieces = []
+    for (x0, y0, x1, y1), (cx, cy) in coins:
+        pc = P.piece(rgb, mask, (x0, y0, x1, y1)).copy()
+        # Only the coin: a square window inside its box (the box also holds strap).
+        ph, pw = pc.shape[:2]
+        yy, xx = np.mgrid[0:ph, 0:pw]
+        edge = np.minimum(np.minimum(xx, pw - 1 - xx), np.minimum(yy, ph - 1 - yy)).astype(np.float32)
+        pc[..., 3] = np.clip((edge - 2) / 2.5, 0, 1)
+        pieces.append((pc, (cx, cy), max(x1 - x0, y1 - y0)))
+    # Where they were, the strap and the middle grown back in (inpainted from round about).
+    hole = np.zeros((h, w), np.uint8)
+    for (x0, y0, x1, y1), _ in coins:
+        hole[max(0, y0 - 3):y1 + 3, max(0, x0 - 3):x1 + 3] = 255
+    import cv2
+    u8 = (np.clip(rgb, 0, 1) * 255).astype(np.uint8)
+    rgb = cv2.inpaint(u8, hole, 9, cv2.INPAINT_TELEA).astype(np.float32) / 255
+    # Then the painting's own hand over the inpainted blur.
+    if heal_prompt:
+        for i, ((x0, y0, x1, y1), _) in enumerate(coins):
+            reg = np.zeros((h, w), np.float32)
+            reg[max(0, y0 - 3):y1 + 3, max(0, x0 - 3):x1 + 3] = 1
+            rgb = P.heal(rgb, reg, heal_prompt, denoise=0.55, seed=90 + i, tag=f"{tag}{i}")
+    return rgb, mask, pieces
+
+
+def fit(src, dst, tone="#141117", grade=True, hole_light=0.55, geo=BASE, keep=0.5, mask=None, kind="common", coins=(), heal_prompt=None):
     rgb = P.load(src)
-    mask = C.birefnet_mask(src) if mask is None else mask
+    mask = (C.birefnet_mask(src) if mask is None else mask).copy()
+    pieces = []
+    if coins:
+        rgb, mask, pieces = move_coins(rgb, mask, coins, heal_prompt=heal_prompt, tag=kind)
     a = P.silhouette(mask)
     h, w = a.shape
     # The card itself is solid whatever the mask made of its dark middle.
@@ -67,6 +100,8 @@ def fit(src, dst, tone="#141117", grade=True, hole_light=0.55, geo=BASE, keep=0.
             inner = (r < min(sub.shape) * 0.28) & (lum < 0.12)
             holes[by0:by1, bx0:bx1] = np.maximum(holes[by0:by1, bx0:bx1], inner.astype(np.float32))
     rgb = P.ember_holes(rgb, holes, hole_light, *HOLE[kind])
+    for pc, (cx, cy), size in pieces:
+        rgb, a = P.paste(rgb, a, pc, cx, cy, size, shadow=5)
     out = np.dstack([rgb, a])
     if grade:
         out = C.grade(out)

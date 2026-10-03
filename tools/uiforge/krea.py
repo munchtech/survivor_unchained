@@ -79,6 +79,12 @@ def _graph(prompt, seed, lora=0.8, steps=8, denoise=1.0, prefix="uiforge"):
     }
 
 
+def _done(out, tag, seed):
+    """What an earlier run already made for this call (so a cut-off batch resumes)."""
+    import glob
+    return sorted(glob.glob(os.path.join(out, f"{tag}_{seed}_*.png")))
+
+
 def _collect(files, out, tag, seed):
     made = []
     for i, f in enumerate(sorted(files)):
@@ -91,10 +97,12 @@ def _collect(files, out, tag, seed):
 def t2i(prompt, seed=1, n=4, size=(1024, 1024), lora=0.8, out=None, tag="t2i", steps=8):
     out = out or os.path.join(OUT, tag)
     os.makedirs(out, exist_ok=True)
+    if _done(out, tag, seed):
+        return _done(out, tag, seed)
     g = _graph(prompt, seed, lora=lora, steps=steps)
     g["lat"] = {"class_type": "EmptyLatentImage", "inputs": {"width": size[0], "height": size[1], "batch_size": n}}
     g["ks"]["inputs"]["latent_image"] = ["lat", 0]
-    return _collect(comfy.run(g, out), out, tag, seed)
+    return _collect(qrun(g, out), out, tag, seed)
 
 
 def t2i_many(jobs, size=(1024, 1024), lora=0.8, out=None, tag="many", steps=8, n=1):
@@ -102,6 +110,12 @@ def t2i_many(jobs, size=(1024, 1024), lora=0.8, out=None, tag="many", steps=8, n
     Returns {name: [paths]}."""
     out = out or os.path.join(OUT, tag)
     os.makedirs(out, exist_ok=True)
+    res = {name: _done(out, name, seed) for name, prompt, seed in jobs if _done(out, name, seed)}
+    jobs = [j for j in jobs if j[0] not in res]
+    if not jobs:
+        return res
+    import uuid
+    tok = uuid.uuid4().hex[:6]
     base = _graph("", 0, lora=lora, steps=steps)
     g = {k: base[k] for k in ("unet", "lora", "clip", "vae")}
     g["lat"] = {"class_type": "EmptyLatentImage", "inputs": {"width": size[0], "height": size[1], "batch_size": n}}
@@ -113,11 +127,10 @@ def t2i_many(jobs, size=(1024, 1024), lora=0.8, out=None, tag="many", steps=8, n
                                                          "latent_image": ["lat", 0], "seed": seed, "steps": steps, "cfg": 1,
                                                          "sampler_name": "euler", "scheduler": "simple", "denoise": 1.0}}
         g[f"dec{i}"] = {"class_type": "VAEDecode", "inputs": {"samples": [f"ks{i}", 0], "vae": ["vae", 0]}}
-        g[f"save{i}"] = {"class_type": "SaveImage", "inputs": {"images": [f"dec{i}", 0], "filename_prefix": f"many_{i:03d}_"}}
-    files = comfy.run(g, out)
-    res = {}
+        g[f"save{i}"] = {"class_type": "SaveImage", "inputs": {"images": [f"dec{i}", 0], "filename_prefix": f"many_{tok}_{i:03d}_"}}
+    files = qrun(g, out)
     for i, (name, prompt, seed) in enumerate(jobs):
-        mine = sorted(f for f in files if os.path.basename(f).startswith(f"many_{i:03d}_"))
+        mine = sorted(f for f in files if os.path.basename(f).startswith(f"many_{tok}_{i:03d}_"))
         res[name] = []
         for j, f in enumerate(mine):
             dst = os.path.join(out, f"{name}_{seed}_{j}.png")
@@ -126,16 +139,18 @@ def t2i_many(jobs, size=(1024, 1024), lora=0.8, out=None, tag="many", steps=8, n
     return res
 
 
-def i2i(guide, prompt, denoise=0.45, seed=1, n=2, lora=0.8, out=None, tag="i2i", steps=8):
+def i2i(guide, prompt, denoise=0.45, seed=1, n=2, lora=0.8, out=None, tag="i2i", steps=8, front=False):
     out = out or os.path.join(OUT, tag)
     os.makedirs(out, exist_ok=True)
+    if _done(out, tag, seed):
+        return _done(out, tag, seed)
     name = comfy.upload(guide)
     g = _graph(prompt, seed, lora=lora, steps=steps, denoise=denoise)
     g["img"] = {"class_type": "LoadImage", "inputs": {"image": name}}
     g["enc"] = {"class_type": "VAEEncode", "inputs": {"pixels": ["img", 0], "vae": ["vae", 0]}}
     g["rep"] = {"class_type": "RepeatLatentBatch", "inputs": {"samples": ["enc", 0], "amount": n}}
     g["ks"]["inputs"]["latent_image"] = ["rep", 0]
-    return _collect(comfy.run(g, out), out, tag, seed)
+    return _collect(qrun(g, out, front=front), out, tag, seed)
 
 
 if __name__ == "__main__":

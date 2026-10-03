@@ -60,6 +60,35 @@ def ember_holes(rgb, holes, strength=0.6, deep="#4a1a0a", hot="#ff8a3a"):
     return F.lin_to_srgb(lin)
 
 
+def heal(rgb, region, prompt, denoise=0.5, seed=77, pad=96, tag="heal", feather=6):
+    """Let the Krea repaint a region (a seam, a removed piece's ghost) in the painting's own
+    hand: the box round it painted over at `denoise`, laid back through a feathered mask."""
+    import os
+    import krea
+    ys, xs = np.nonzero(region > 0.5)
+    if len(xs) == 0:
+        return rgb
+    h, w = region.shape
+    x0, x1 = max(0, xs.min() - pad), min(w, xs.max() + pad)
+    y0, y1 = max(0, ys.min() - pad), min(h, ys.max() + pad)
+    crop = rgb[y0:y1, x0:x1]
+    # The Krea likes sizes in 16s and about a megapixel: scale the crop up to it.
+    k = max(1.0, 768 / max(crop.shape[:2]))
+    cw, ch = int(round(crop.shape[1] * k / 16)) * 16, int(round(crop.shape[0] * k / 16)) * 16
+    big = cv2.resize(crop, (cw, ch), interpolation=cv2.INTER_CUBIC)
+    os.makedirs(os.path.join(krea.OUT, "heal"), exist_ok=True)
+    gpath = os.path.join(krea.OUT, "heal", f"guide_{tag}_{seed}.png")
+    Image.fromarray((np.clip(big, 0, 1) * 255).astype(np.uint8)).save(gpath)
+    out = krea.i2i(gpath, prompt, denoise=denoise, seed=seed, n=1, tag=f"heal_{tag}", out=os.path.join(krea.OUT, "heal"), front=True)
+    painted = np.asarray(Image.open(out[0]).convert("RGB"), np.float32) / 255
+    painted = cv2.resize(painted, (x1 - x0, y1 - y0), interpolation=cv2.INTER_AREA)
+    m = cv2.GaussianBlur(cv2.dilate(region[y0:y1, x0:x1].astype(np.float32), np.ones((5, 5), np.uint8)), (0, 0), feather)[..., None]
+    m = np.clip(m * 1.5, 0, 1)
+    res = rgb.copy()
+    res[y0:y1, x0:x1] = crop * (1 - m) + painted * m
+    return res
+
+
 def paste(dst_rgb, dst_a, piece_rgba, cx, cy, size, shadow=4):
     """A cut piece (RGBA float) scaled to `size` (its larger side) and laid centred at (cx, cy)."""
     ph, pw = piece_rgba.shape[:2]

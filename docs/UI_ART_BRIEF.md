@@ -126,6 +126,40 @@ diamonds. In art, rarity rises in *richness* as well as hue:
   #0b0a0d, the brightest highlight #fff2d8.
 - **Don't** strobe or animate (the code animates; art is still).
 
+### 2.6 The soul, as painted (locked)
+**Brannoc's iron, the binders' gold, the Morrow's light.** The interface is
+smith's work from the Waystation, not a jeweller's: the same hand that forged
+the twelve lamp-irons for the Low Ford.
+
+- **The iron** is strap iron drawn out under the hammer, ragged at its edges,
+  planished, never milled. Frames *hang*: a plate or a card is held at its top
+  corners by lamp-iron brackets (scrolls curling outward, as the brackets of
+  the Waystation's signs do) and nailed at its foot.
+- **The gold** is the binders': a thin twisted wire set into the strap, and
+  the square coin with its quatrefoil hole, nailed at every corner.
+- **The light** is the Morrow's. Ember sleeps in the coins' holes (a dull
+  smoulder, never a flat fill: it must never read as a sign) and wakes where
+  there is power: the ember bar, the primary action, the focus, the draft,
+  the evolution. By day it sleeps; at night it burns.
+- **The emblem** is the opened link: one link of the seven-link chain pried
+  apart, ember at the break. It rides the top of every draft card, stands at
+  the head of the art's ring of seven links, and divides the great headings.
+- **Rarity is a road through the world**: common is plain road iron; uncommon
+  the Verge (bramble, thorn, moss); rare the Low Ford at night (river rime,
+  cold blue); epic the binders (violet stones, square-cut sigil lines);
+  legendary the Order of the Morning Light (dawn gold, lamp flames); the
+  evolution the chain breaking, gilded, ember pouring from the breaks.
+- **Paper** is the Waystation's ledger: deckled, foxed at the rims, iron
+  corner caps, a nail and a drop of wax.
+- **The hand**: every painted piece is painted on the local Krea with the
+  darkbrush LoRA over a forged guide that fixes its geometry, then cleaned in
+  `tools/uiforge` (silhouette, calm middles, light in the holes, the house
+  grade). Exact shapes too small to paint (pad buttons, map marks, keycaps,
+  cursors, the interface's own marks) are forged in the same light
+  (`tools/uiforge/matcaps`) so the two halves are one family.
+
+Style frames (the game's own screens with the art in): `docs/concepts/ui/style/`.
+
 ---
 
 ## 3. Tools and workflows

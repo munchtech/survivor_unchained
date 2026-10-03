@@ -59,6 +59,22 @@ def cards():
         print("card", name, flush=True)
 
 
+def cards2():
+    """A second, bolder pass where the first kept too much of the plain iron."""
+    base = os.path.join(G, "card_common_black.png")
+    more = {
+        "rare": (0.66, RARITY["rare"].replace("sharp pale blue rime frost crystals", "thick jagged pale blue rime frost "
+                                               "crystals and icicles heavily encrusting")),
+        "legendary": (0.64, RARITY["legendary"].replace("the brackets wrought like the flames of a chapel lamp",
+                                                        "the brackets wrought as golden flames of a chapel lamp, gold "
+                                                        "flame shapes curling from every corner")),
+        "evolution": (0.68, RARITY["evolution"]),
+    }
+    for i, (name, (d, p)) in enumerate(more.items()):
+        krea.i2i(base, p + ". " + S, denoise=d, seed=650 + i, n=3, tag=f"card2_{name}")
+        print("card2", name, flush=True)
+
+
 def small():
     jobs = {
         "slot": ("An empty square inventory slot of a dark fantasy game: a recessed well sunk into hand-forged blackened "
