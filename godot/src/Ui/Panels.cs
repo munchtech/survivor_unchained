@@ -178,7 +178,7 @@ public partial class DraftPanel : Control
         body.SizeFlagsVertical = SizeFlags.ExpandFill;
         v2.AddChild(body);
         // Why the ember dealt it: attuned, on your path, evolves something; a surge.
-        foreach (var why in o.Why.Take(2))
+        foreach (var why in o.Why.Where(w => o.Path == null || !w.StartsWith("On your path")).Take(2))
             v2.AddChild(Style.Label(why, Style.UiBold, 14, why.StartsWith("Little") ? Style.InkDim : Style.EmberHi, true, HorizontalAlignment.Center));
         // What a combat skill becomes.
         if (o.Recipe is { Length: > 0 } recipe)

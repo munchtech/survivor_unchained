@@ -637,15 +637,21 @@ public partial class Game : Node, IZoneHost
                 if (k != null) { k.Tier = kinds[i] == PickupKind.Ember ? i : 2; k.Vx = k.Vz = 0; k.Age = -600; }
             }
         }
-        // --give A,B[:RANK]: those ember weapons in hand from the start (pictures of them).
+        // --give A,B[:RANK][@EVOLUTION],+PASSIVE[:RANK]: a build in hand from the start
+        // (pictures of weapons, of the draft with an arsenal), the arena's opening blessing passed over.
         if (!giveDone && Args.Get("give") is string give && Battle is { } gb)
         {
             giveDone = true;
             foreach (var w in give.Split(','))
             {
-                var parts = w.Split(':');
-                gb.AddWeapon(parts[0], parts.Length > 1 && int.TryParse(parts[1], out var r) ? r : 1);
+                var evo = w.Split('@');
+                var parts = evo[0].Split(':');
+                int r = parts.Length > 1 && int.TryParse(parts[1], out var rv) ? rv : 1;
+                if (parts[0].StartsWith('+')) { for (int i = 0; i < r; i++) gb.AddBoon(parts[0][1..]); continue; }
+                gb.AddWeapon(parts[0], r);
+                if (evo.Length > 1) gb.Evolve(parts[0], evo[1]);
             }
+            gb.GreatOwed = 0;
         }
         // --blast SCHOOL[:R]: that school's burst a few paces ahead, every second and a half (pictures of it).
         if (Args.Get("blast") is string bl && Battle is { } bb && scene != null)
