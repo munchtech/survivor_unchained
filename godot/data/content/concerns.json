@@ -58,6 +58,13 @@
    "text": "Had wolves at his gate. Has not slept since."
   },
   {
+   "text": "Has brought Corran home from the Low Ford post, and crossed out a word in his book.",
+   "when": {
+    "fact": "holloway.post_told",
+    "eq": true
+   }
+  },
+  {
    "when": {
     "quest": {
      "id": "beasts",
@@ -114,6 +121,12 @@
  ],
  "rav": [
   {
+   "text": "Drinks to a man he will not name again, every night, at the same hour.",
+   "when": {
+    "history": "killed_redcowl"
+   }
+  },
+  {
    "when": {
     "fact": "caravan.pell",
     "eq": "exposed"
@@ -148,6 +161,13 @@
    "text": "Has written off his strongbox, and says your name when he says it."
   },
   {
+   "text": "Jory knows what was in the crates. They speak in the shop, and nowhere else.",
+   "when": {
+    "fact": "jory.knows_be",
+    "eq": true
+   }
+  },
+  {
    "when": {
     "fact": "caravan.survivors",
     "eq": "rescued"
@@ -180,6 +200,13 @@
   }
  ],
  "pell": [
+  {
+   "text": "Gone from his bed in the night. His door was not forced.",
+   "when": {
+    "fact": "pell.fate",
+    "eq": "taken"
+   }
+  },
   {
    "when": {
     "fact": "caravan.pell",
@@ -256,6 +283,13 @@
    "text": "The Pack wrecked his family's farm. His Pa slept in town that night, and is alive to complain about it."
   },
   {
+   "text": "Says the ground under the farm knocks at night. Nobody believes him, again.",
+   "when": {
+    "fact": "tam.tock",
+    "eq": true
+   }
+  },
+  {
    "when": {
     "fact": "beasts.outcome",
     "eq": "cured"
@@ -267,6 +301,28 @@
   }
  ],
  "brannoc": [
+  {
+   "text": "Buried his daughter behind the shrine. Keeps his forge lit later than he used to, and will not sell the two lamp-irons left on his rack.",
+   "when": {
+    "fact": "nell.buried",
+    "eq": true
+   }
+  },
+  {
+   "text": "Waiting for word from Low Kiln that his girl got there.",
+   "when": {
+    "any": [
+     {
+      "fact": "nell.told",
+      "eq": "lie"
+     },
+     {
+      "fact": "nell.told",
+      "eq": "evaded"
+     }
+    ]
+   }
+  },
   {
    "when": {
     "quest": {
@@ -281,6 +337,13 @@
   }
  ],
  "vonnra": [
+  {
+   "text": "Has not answered what you said to her about the lamps. Has started calling you by your name.",
+   "when": {
+    "fact": "vonnra.accused",
+    "eq": true
+   }
+  },
   {
    "when": {
     "fact": "chapter.done",
@@ -303,6 +366,13 @@
  ],
  "keegan": [
   {
+   "text": "Has been rereading chapter four of the handbook. Will not say why.",
+   "when": {
+    "fact": "keegan.saw_risen",
+    "eq": true
+   }
+  },
+  {
    "when": {
     "knows": "lore.warden"
    },
@@ -314,6 +384,13 @@
  ],
  "jory": [
   {
+   "text": "Knows what he was carrying now, and who it was for. Has not decided what that makes his uncle.",
+   "when": {
+    "fact": "jory.knows_be",
+    "eq": true
+   }
+  },
+  {
    "text": "Home, and trying not to talk about the cage."
   }
  ],
@@ -323,6 +400,13 @@
     "history": "killed_redcowl"
    },
    "text": "Dead, in his own camp."
+  },
+  {
+   "text": "Sits on six crates of blasting ember he means nobody to have.",
+   "when": {
+    "fact": "be.crates",
+    "eq": "redcowl"
+   }
   },
   {
    "text": "Would rather talk than bleed. Says so, anyway."

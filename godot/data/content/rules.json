@@ -889,6 +889,88 @@
    "report": "Brannoc's yard is stacked with pelts to the eaves, and the flies have found it. Maeca walked past it this morning and did not look."
   },
   {
+   "id": "nell.burial",
+   "once": true,
+   "when": {
+    "any": [
+     {
+      "fact": "nell.told",
+      "eq": "gone"
+     },
+     {
+      "fact": "nell.told",
+      "eq": "risen"
+     }
+    ]
+   },
+   "effect": {
+    "set": {
+     "nell.buried": true
+    }
+   },
+   "report": "Brannoc banked his forge at noon yesterday and took a handcart down the Low Ford road, with a blanket and a spade. He was back before the gate shut, with something under his apron in the cart, and Chid walked out past the guards to meet him. They buried her at first light behind the shrine, next to the old captain. Nobody was asked to come, and half the town did."
+  },
+  {
+   "id": "nell.asking",
+   "once": true,
+   "when": {
+    "fact": "nell.asking",
+    "eq": true
+   },
+   "effect": [],
+   "report": "Brannoc stopped a pedlar off the south road at the gate yesterday, and asked him something. The pedlar shook his head. Brannoc asked the next one too."
+  },
+  {
+   "id": "jory.words",
+   "once": true,
+   "when": {
+    "fact": "jory.knows_be",
+    "eq": true
+   },
+   "effect": [],
+   "report": "Jory Coyle and his uncle had words in the yard before it was light. Jory did the shouting. Harlan didn't say anything at all, and then he opened the shop as usual."
+  },
+  {
+   "id": "pell.taken",
+   "once": true,
+   "when": {
+    "fact": "pell.fate",
+    "eq": "taken"
+   },
+   "effect": [],
+   "report": "Pell Varrow's door stood open at first light, the lock not forced. His bed had been slept in. There was a red thread caught on the hinge, and a cart went out of the east gate before cockcrow. Vonnra's lamp was lit in the toll tower all night; nobody has asked her what went through."
+  },
+  {
+   "id": "pell.ran",
+   "once": true,
+   "when": {
+    "fact": "pell.fate",
+    "eq": "ran"
+   },
+   "effect": [],
+   "report": "Pell Varrow left before dawn on a fast horse, with two satchels and none of his furniture. Three men in red came over the wall an hour after, kicked his door in, and found his ledgers gone with him."
+  },
+  {
+   "id": "crates.harlan",
+   "once": true,
+   "when": {
+    "fact": "be.crates",
+    "eq": "harlan"
+   },
+   "effect": [],
+   "report": "Two of Harlan's teamsters took an empty wagon out of the east gate yesterday afternoon, with the Coyle purse, and came back after dark with it full and covered. They wouldn't say from where. Harlan unloaded it himself."
+  },
+  {
+   "id": "holloway.corran",
+   "once": true,
+   "when": {
+    "fact": "holloway.post_told",
+    "eq": true
+   },
+   "effect": [],
+   "report": "Two of the Watch went down the Low Ford road yesterday with a handcart and a spade, and came back at dusk with the cart covered. Holloway met them at the gate and walked beside it to the Watch's corner of the yard."
+  },
+  {
    "id": "chapter.ready",
    "once": true,
    "when": {
@@ -917,6 +999,66 @@
     }
    },
    "report": "A note under your door, in violet ink: \"Come and have your fortune read. No charge, this once. — V.\""
+  },
+  {
+   "id": "crates.settle",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "fact": "chapter.done",
+      "eq": true
+     },
+     {
+      "not": {
+       "fact": "be.crates",
+       "exists": true
+      }
+     }
+    ]
+   },
+   "effect": {
+    "if": {
+     "history": "burned_roost"
+    },
+    "then": [
+     {
+      "set": {
+       "be.crates": "burned"
+      }
+     }
+    ],
+    "else": [
+     {
+      "if": {
+       "any": [
+        {
+         "fact": "redcowl",
+         "eq": "dead"
+        },
+        {
+         "fact": "roost.cleared",
+         "eq": true
+        }
+       ]
+      },
+      "then": [
+       {
+        "set": {
+         "be.crates": "watch"
+        }
+       }
+      ],
+      "else": [
+       {
+        "set": {
+         "be.crates": "dig"
+        }
+       }
+      ]
+     }
+    ]
+   }
   },
   {
    "id": "dig.deeper",
@@ -961,18 +1103,6 @@
     }
    ],
    "report": "The cups rattled on Rook's shelves in the night. Nobody could say why. Chid says the ground turned over in its sleep."
-  },
-  {
-   "id": "wolf.blood.washes",
-   "when": {
-    "fact": "wolf.blood",
-    "gt": 0
-   },
-   "effect": {
-    "set": {
-     "wolf.blood": 0
-    }
-   }
   },
   {
    "id": "wolf.blood.washes",

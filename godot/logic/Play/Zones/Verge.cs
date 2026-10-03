@@ -613,7 +613,7 @@ public sealed class Verge : ZoneRuntime
             Act = () =>
             {
                 G.Apply("""[{ "quest": { "id": "vault", "status": "active", "entry": "bootprints" } }]""");
-                G.Say("Bootprints in the mud, fresh, going up to the door. None coming away.", null, 4);
+                G.Say("Bootprints in the mud, fresh, going up to the door. None coming away. Trodden into one heel-print: a copper toll-token, stamped with three roads.", null, 5);
             },
         });
         I.Add(new()
@@ -853,7 +853,7 @@ public sealed class Verge : ZoneRuntime
                     foreach (var it in cc.Items) G.GiveItem(it.Def, it.Qty);
                     W.Corpse = null;
                     G.Look.SetLit(light, false);
-                    G.Say("Where you fell. The ground has kept your things for you, mostly.", null, 4);
+                    G.Say("Where you fell. The ground has kept your things for you, most of them.", null, 4);
                 },
             });
         }
