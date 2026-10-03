@@ -177,4 +177,15 @@ public class PrologueTests
         Assert.Same(Atmospheres.Dawn, s.Host.Air);
         Assert.DoesNotContain(b.Collision.All(), c => c.Tag == "gate");
     }
+
+    [Fact]
+    public void The_dead_watchmans_book_opens_the_lamps()
+    {
+        // L1: the first line of the lamps is read on the night you rise.
+        var s = Make();
+        s.Zone.Interactables.Single(i => i.Id == "watchman").Act();
+        Assert.Contains("lore.warden", s.J.Ch.Knowledge);
+        Assert.Equal(QuestStatus.Active, s.J.World.Quests["lamps"].Status);
+        Assert.Contains("book", s.J.World.Quests["lamps"].Entries);
+    }
 }

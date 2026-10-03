@@ -16,6 +16,8 @@ public sealed class Settings
     public string Gore = "full";
     public string Motion = "full";
     public bool Fullscreen = true;
+    /// <summary>The survivor's health drawn under them in a night's fight.</summary>
+    public bool UnderBar = true;
     public bool Mature;
 
     const string File = "user://settings.json";

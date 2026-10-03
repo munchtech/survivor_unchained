@@ -140,6 +140,11 @@ public sealed class Verge : ZoneRuntime
         return out_;
     }
 
+    /// <summary>The stream runs clean again: whatever settled the Pack (cured,
+    /// allied, bought, emptied), the poison stopped two days since. Until then
+    /// the wolves by the water are sick, and bitterroot grows on the green stretch.</summary>
+    bool StreamClean() => F("stream.clear").Truthy || F("beasts.outcome").Str == "cured";
+
     bool KerchiefsOut() => !KerchiefsFriendly() && F("redcowl").Str is not ("tricked" or "dead") && !F("roost.cleared").Truthy;
 
     /* ---------------------------------------------------- the night's fights -- */
@@ -300,7 +305,7 @@ public sealed class Verge : ZoneRuntime
         }
         bool night = W.Time == TimeOfDay.Night;
         double pop = F("beasts.population").IsNull ? 60 : F("beasts.population").Number;
-        bool sick = F("beasts.outcome").Str != "cured";
+        bool sick = !StreamClean();
         // The Pack, by the water while the sickness is on them.
         if (!WolvesFriendly() && pop > 5)
             for (int k = (int)Math.Round(5 * pop / 60); k > 0; k--)
@@ -350,7 +355,7 @@ public sealed class Verge : ZoneRuntime
                 if (greymuzzle != null) SetDisposition(greymuzzle);
             }
             SpawnGroup("wolf", 5, hollow.X, hollow.Z, 9, "hollow", 14);
-            if (F("beasts.outcome").Str != "cured") SpawnGroup("wolf_blighted", 3, hollow.X, hollow.Z, 6, "hollow", 8);
+            if (!StreamClean()) SpawnGroup("wolf_blighted", 3, hollow.X, hollow.Z, 6, "hollow", 8);
             if (HollowCalm()) G.Say("The wolves watch you come. None of them move to stop you.", null, 4);
             else if (Test("""{ "hasTag": "wolf_pelts" }""") && !F("pack.allied").Truthy) G.Say("They smell the cloak before they see you. Every wolf in the Hollow is on its feet.", null, 4);
             else if (F("wolf.blood").Truthy && Knows("hint.greymuzzle")) G.Say("They smell the blood on you before they see you. Maeca said none since you last slept.", null, 5);
@@ -502,7 +507,7 @@ public sealed class Verge : ZoneRuntime
             I.Add(new()
             {
                 Id = $"root{k}", X = sample.X + roots[k].X, Z = sample.Z + roots[k].Z, R = 2, Verb = "Dig up", Name = "Bitterroot",
-                When = () => !seen.Contains($"root{k}") && F("beasts.outcome").Str != "cured" && !F("stream.clear").Truthy,
+                When = () => !seen.Contains($"root{k}") && !StreamClean(),
                 Act = () => { seen.Add($"root{k}"); G.Apply("""[{ "give": "bitterroot" }]"""); },
             });
         }
@@ -620,7 +625,7 @@ public sealed class Verge : ZoneRuntime
                     ? "The fragment fits one notch of the seven, and under your hand the whole sigil wakes, violet, like an eye opening. The door is listening."
                     : "The fragment fits one notch of the seven, and the stone warms under it. Whatever the sigil is waiting for, it is not daylight.", null, 6);
                 else G.Say(reads ? "Old-empire script over the door: \"Here the Seventh Legion buried what it could not burn.\" Below it, a sigil with seven notches, all empty."
-                    : "A door of black stone, smooth as glass, and a violet sigil you cannot read. It hums against your teeth.", null, 6);
+                    : "A door of black stone, smooth as glass. Cut over it, words in a dead tongue: HIC LEGIO SEPTIMA SEPELIVIT QUOD URERE NON POTUIT. Under them, a violet sigil you cannot read. It hums against your teeth.", null, 7);
             },
         });
         I.Add(new()
@@ -634,7 +639,8 @@ public sealed class Verge : ZoneRuntime
                 if (Knows("faith"))
                     G.After(4.5, () =>
                     {
-                        G.Say("The skull turns, very slightly, toward you. \"It was never locked from the outside.\"", "The bones", 6);
+                        G.Say("The skull turns, very slightly, toward you.", null, 3);
+                        G.After(3.2, () => G.Say("It was never locked from the outside.", "The bones", 4));
                         G.Apply("""[{ "quest": { "id": "vault", "entry": "whisper" } }]""");
                     });
             },
@@ -678,7 +684,7 @@ public sealed class Verge : ZoneRuntime
     [
         "A teamster, thin and grey, stumbles out and grips your arm. His nails are broken to the quick from the bars.",
         "A woman who will not stop saying thank you.",
-        "A young man: \"Jory. Jory Coyle. Is my uncle —? Is he —?\"",
+        "A young man, freckled, still holding the bars after the door is open.",
     ];
 
     /// <summary>A cage opened stays open: on the next visit, and in a save
@@ -717,6 +723,7 @@ public sealed class Verge : ZoneRuntime
         W.Zone("verge")[$"cage{i}"] = true;
         G.Look.Show(cageNodes[i], false);
         G.Say(CageLines[i], null, 4);
+        if (i == 2) G.After(2.5, () => G.Say("Jory. Jory Coyle. Is my uncle—? Is he—?", "Jory Coyle", 4));
         if (Enumerable.Range(0, cageNodes.Length).All(CageOpen))
             G.Apply($$"""
                 [
@@ -812,8 +819,10 @@ public sealed class Verge : ZoneRuntime
             f["verge.wolf_kills"] = Num("verge.wolf_kills") + 1;
             // Blood on you until you next sleep (rules.json washes it off at dawn): the Hollow can smell it.
             f["wolf.blood"] = Num("wolf.blood") + 1;
-            // You knelt to Greymuzzle and promised him; the Pack keeps count.
-            if (F("promise.pack").Truthy && !F("promise.broken").Truthy)
+            // You knelt to Greymuzzle and promised him; the Pack keeps count of
+            // the wolves you strike down that were at peace with you, not of
+            // those that came for you (wearing their kin into the Hollow, say).
+            if (F("promise.pack").Truthy && !F("promise.broken").Truthy && (e.Disposition == Disposition.Neutral || e.Provoked))
                 G.Apply($$"""[{ "set": { "promise.broken": true } }, {{Hist("broke_promise", "promised Greymuzzle a cure, and killed his wolves", ["beasts", "wolves", "betrayal"], 2, null, """{ "maeca": { "trust": -30, "affection": -20 } }""")}}]""");
             if (Num("verge.wolf_kills") == 15)
                 G.Apply($"[{Hist("wolf_slaughter", "killed a great many wolves in the Verge", ["beasts", "wolves"], 2, null, """{ "maeca": { "affection": -20 }, "brannoc": { "respect": 5 }, "holloway": { "respect": 10 } }""")}]");

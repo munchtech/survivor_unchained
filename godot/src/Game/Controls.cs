@@ -11,6 +11,10 @@ public enum Act
 {
     Up, Down, Left, Right, Dash, Ability, Ultimate, Interact, Inventory, Character, Journal, Map,
     Pause, Confirm, Cancel, Reroll, Banish, Pick1, Pick2, Pick3, Pick4, TabNext, TabPrev, Arts,
+    /// <summary>A menu's second and third thing to do with what has focus (pad X and Y).</summary>
+    Alt, Alt2,
+    /// <summary>A page within a screen (pad LT and RT): the journal's sections, the map's zoom.</summary>
+    SubPrev, SubNext,
 }
 
 /// <summary>
@@ -35,20 +39,30 @@ public partial class Controls : Node
         [Act.Pause] = ["Escape", "KeyP"], [Act.Confirm] = ["Enter", "NumpadEnter"], [Act.Cancel] = ["Escape", "Backspace"],
         [Act.Reroll] = ["KeyX"], [Act.Banish] = ["KeyB"], [Act.Pick1] = ["Digit1"], [Act.Pick2] = ["Digit2"], [Act.Pick3] = ["Digit3"], [Act.Pick4] = ["Digit4"],
         [Act.TabNext] = ["BracketRight"], [Act.TabPrev] = ["BracketLeft"], [Act.Arts] = ["KeyK"],
+        [Act.Alt] = ["Delete"], [Act.Alt2] = [], [Act.SubPrev] = ["Comma"], [Act.SubNext] = ["Period"],
     };
 
     public static readonly Act[] Rebindable = [Act.Up, Act.Left, Act.Down, Act.Right, Act.Dash, Act.Ability, Act.Ultimate, Act.Interact, Act.Inventory, Act.Character, Act.Arts, Act.Journal, Act.Map, Act.Reroll, Act.Banish];
-    static readonly string[] Reserved = ["Escape", "Enter", "NumpadEnter", "Backspace", "Digit1", "Digit2", "Digit3", "Digit4", "BracketLeft", "BracketRight"];
+    static readonly string[] Reserved = ["Escape", "Enter", "NumpadEnter", "Backspace", "Digit1", "Digit2", "Digit3", "Digit4", "BracketLeft", "BracketRight", "Comma", "Period", "Delete"];
 
-    /// <summary>The standard pad layout: View opens the pack; the self, the
-    /// journal and the map are in the pause menu (Menu), so a pad reaches everything.</summary>
+    /// <summary>The standard pad layout: View opens the pack, whose tabs
+    /// (LB, RB) reach the self, the arts, the journal and the map; Menu
+    /// pauses. In a menu, A confirms, B goes back, X and Y act on what has
+    /// focus, the triggers turn a screen's pages.</summary>
     static readonly Dictionary<Act, JoyButton[]> Pad = new()
     {
         [Act.Dash] = [JoyButton.A], [Act.Ability] = [JoyButton.X], [Act.Ultimate] = [JoyButton.Y], [Act.Interact] = [JoyButton.B],
         [Act.Confirm] = [JoyButton.A], [Act.Cancel] = [JoyButton.B], [Act.Inventory] = [JoyButton.Back], [Act.Pause] = [JoyButton.Start],
         [Act.Up] = [JoyButton.DpadUp], [Act.Down] = [JoyButton.DpadDown], [Act.Left] = [JoyButton.DpadLeft], [Act.Right] = [JoyButton.DpadRight],
         [Act.TabNext] = [JoyButton.RightShoulder], [Act.TabPrev] = [JoyButton.LeftShoulder], [Act.Reroll] = [JoyButton.X], [Act.Banish] = [JoyButton.Y],
+        [Act.Alt] = [JoyButton.X], [Act.Alt2] = [JoyButton.Y],
     };
+
+    /// <summary>In a menu one button means its menu meaning first: A is
+    /// confirm before it is a dash, B is back before it is a word with
+    /// someone, X and Y act on what has focus.</summary>
+    static readonly Act[] MenuFirst = [Act.Confirm, Act.Cancel, Act.Alt, Act.Alt2, Act.Up, Act.Down, Act.Left, Act.Right, Act.TabNext, Act.TabPrev, Act.SubNext, Act.SubPrev, Act.Pause, Act.Inventory];
+    static readonly Act[] Directions = [Act.Up, Act.Down, Act.Left, Act.Right];
 
     public static Controls Instance { get; private set; } = null!;
 
@@ -58,9 +72,27 @@ public partial class Controls : Node
     readonly List<Func<Act, bool>> listeners = new();
     /// <summary>Movement intent, length at most 1 (x east, z south, as the sim has it).</summary>
     public float MoveX, MoveZ;
-    public bool UsingPad;
+    bool usingPad;
+    /// <summary>The pad was touched last (the prompts show its buttons); a
+    /// key, a click or a real move of the mouse turns it back.</summary>
+    public bool UsingPad
+    {
+        get => usingPad;
+        set { if (usingPad == value) return; usingPad = value; DeviceChanged?.Invoke(); }
+    }
+    /// <summary>The device last touched changed: prompts redraw with its keys or buttons.</summary>
+    public event Action? DeviceChanged;
     /// <summary>A menu or conversation has the keys: the survivor stands still.</summary>
     public bool Captured;
+    /// <summary>Something over the game has the buttons (a screen, the draft, a
+    /// conversation): pad buttons mean their menu meaning first, and a held
+    /// direction repeats.</summary>
+    public bool MenuMode;
+    // A held direction (pad or stick) repeats after a beat, then steadily.
+    const double RepeatDelay = 0.36, RepeatEvery = 0.11;
+    Act? heldDir;
+    double heldT;
+    bool triggerL, triggerR;
 
     const string SaveFile = "user://bindings.json";
 
@@ -94,30 +126,50 @@ public partial class Controls : Node
     {
         switch (e)
         {
-            case InputEventKey k when !k.Echo:
+            case InputEventKey k:
                 var code = CodeOf(k.PhysicalKeycode);
                 if (code == null) return;
+                // A key held in a menu repeats (the system's own rate); in play it is held, not repeated.
+                if (k.Echo && !(MenuMode && ActsFor(code).Any(a => Directions.Contains(a)))) return;
                 if (k.Pressed) { UsingPad = false; Down(code); }
                 else down.Remove(code);
                 break;
             case InputEventMouseButton m:
                 var mc = m.ButtonIndex switch { MouseButton.Left => "Mouse0", MouseButton.Middle => "Mouse1", MouseButton.Right => "Mouse2", _ => null };
                 if (mc == null) return;
-                if (m.Pressed) { foreach (var a in ActsFor(mc)) latched.Add(a); down.Add(mc); }
+                if (m.Pressed) { UsingPad = false; foreach (var a in ActsFor(mc)) latched.Add(a); down.Add(mc); }
                 else down.Remove(mc);
+                break;
+            case InputEventMouseMotion mm when mm.Relative.Length() > 6:
+                UsingPad = false;
                 break;
             case InputEventJoypadButton j:
                 if (!j.Pressed) return;
                 UsingPad = true;
                 bool taken = false;
-                foreach (var (a, buttons) in Pad)
+                foreach (var a in PadActs(j.ButtonIndex))
                 {
-                    if (!buttons.Contains(j.ButtonIndex)) continue;
                     latched.Add(a);
                     if (!taken) foreach (var l in listeners.ToList()) if (l(a)) { taken = true; break; }
                 }
+                if (MenuMode && PadActs(j.ButtonIndex).Where(Directions.Contains).Cast<Act?>().FirstOrDefault() is Act dir) { heldDir = dir; heldT = 0; }
                 break;
         }
+    }
+
+    /// <summary>What a pad button means now, in the order it is offered.</summary>
+    IEnumerable<Act> PadActs(JoyButton b)
+    {
+        var acts = Pad.Where(kv => kv.Value.Contains(b)).Select(kv => kv.Key);
+        return MenuMode ? acts.OrderBy(a => Array.IndexOf(MenuFirst, a) is int i and >= 0 ? i : 99) : acts;
+    }
+
+    /// <summary>An action fired as a fresh press (a repeat, a trigger).</summary>
+    void Fire(Act a)
+    {
+        UsingPad = true;
+        latched.Add(a);
+        foreach (var l in listeners.ToList()) if (l(a)) break;
     }
 
     public override void _Notification(int what)
@@ -145,7 +197,41 @@ public partial class Controls : Node
         foreach (var l in listeners.ToList()) if (l(a)) break;
     }
 
-    public override void _Process(double delta) => Poll();
+    public override void _Process(double delta)
+    {
+        Poll();
+        if (MenuMode) MenuPoll(delta); else heldDir = null;
+    }
+
+    /// <summary>In a menu: the left stick moves focus like the D-pad, a held
+    /// direction repeats, and the triggers turn pages.</summary>
+    void MenuPoll(double dt)
+    {
+        Act? stick = null, dpad = null;
+        foreach (var dev in Input.GetConnectedJoypads())
+        {
+            float ax = Input.GetJoyAxis(dev, JoyAxis.LeftX), ay = Input.GetJoyAxis(dev, JoyAxis.LeftY);
+            if (Mathf.Max(Mathf.Abs(ax), Mathf.Abs(ay)) > 0.55f) stick = Mathf.Abs(ax) > Mathf.Abs(ay) ? (ax > 0 ? Act.Right : Act.Left) : (ay > 0 ? Act.Down : Act.Up);
+            foreach (var d in Directions) if (Pad[d].Any(b => Input.IsJoyButtonPressed(dev, b))) dpad = d;
+            bool l = Input.GetJoyAxis(dev, JoyAxis.TriggerLeft) > 0.6f, r = Input.GetJoyAxis(dev, JoyAxis.TriggerRight) > 0.6f;
+            if (l && !triggerL) Fire(Act.SubPrev);
+            if (r && !triggerR) Fire(Act.SubNext);
+            triggerL = l || Input.GetJoyAxis(dev, JoyAxis.TriggerLeft) > 0.3f && triggerL;
+            triggerR = r || Input.GetJoyAxis(dev, JoyAxis.TriggerRight) > 0.3f && triggerR;
+        }
+        var now = dpad ?? stick;
+        if (now == null) { heldDir = null; return; }
+        if (now != heldDir)
+        {
+            // The stick's first push is a press of its own (the D-pad's came as a button).
+            heldDir = now;
+            heldT = 0;
+            if (dpad == null) Fire(now.Value);
+            return;
+        }
+        heldT += dt;
+        if (heldT >= RepeatDelay) { heldT -= RepeatEvery; Fire(now.Value); }
+    }
 
     /// <summary>Movement from the keys and the left stick.</summary>
     void Poll()
@@ -231,15 +317,17 @@ public partial class Controls : Node
         Godot.Key.Bracketleft => "BracketLeft", Godot.Key.Bracketright => "BracketRight", Godot.Key.Capslock => "CapsLock",
         Godot.Key.Semicolon => "Semicolon", Godot.Key.Apostrophe => "Quote", Godot.Key.Comma => "Comma", Godot.Key.Period => "Period",
         Godot.Key.Slash => "Slash", Godot.Key.Backslash => "Backslash", Godot.Key.Minus => "Minus", Godot.Key.Equal => "Equal", Godot.Key.Quoteleft => "Backquote",
+        Godot.Key.Delete => "Delete",
         _ => null,
     };
 
     static readonly Dictionary<string, string> Named = new()
     {
         ["Mouse0"] = "LMB", ["Mouse1"] = "MMB", ["Mouse2"] = "RMB", ["ShiftLeft"] = "Shift", ["ControlLeft"] = "Ctrl", ["AltLeft"] = "Alt",
-        ["CapsLock"] = "Caps", ["ArrowUp"] = "↑", ["ArrowDown"] = "↓", ["ArrowLeft"] = "←", ["ArrowRight"] = "→", ["BracketLeft"] = "[",
+        ["CapsLock"] = "Caps", ["ArrowUp"] = "Up", ["ArrowDown"] = "Down", ["ArrowLeft"] = "Left", ["ArrowRight"] = "Right", ["BracketLeft"] = "[",
         ["BracketRight"] = "]", ["NumpadEnter"] = "Enter", ["Escape"] = "Esc", ["Backspace"] = "Backspace", ["Semicolon"] = ";", ["Quote"] = "'",
         ["Comma"] = ",", ["Period"] = ".", ["Slash"] = "/", ["Backslash"] = "\\", ["Minus"] = "-", ["Equal"] = "=", ["Backquote"] = "`",
+        ["Delete"] = "Del",
     };
 
     public static string Label(string code) =>
@@ -255,5 +343,13 @@ public partial class Controls : Node
         [JoyButton.DpadLeft] = "D-pad left", [JoyButton.DpadRight] = "D-pad right",
     };
 
-    public IEnumerable<string> PadLabels(Act a) => Pad.TryGetValue(a, out var bs) ? bs.Select(b => PadNames.TryGetValue(b, out var n) ? n : $"B{(int)b}") : [];
+    public IEnumerable<string> PadLabels(Act a) => a switch
+    {
+        Act.SubPrev => ["LT"],
+        Act.SubNext => ["RT"],
+        _ => Pad.TryGetValue(a, out var bs) ? bs.Select(b => PadNames.TryGetValue(b, out var n) ? n : $"B{(int)b}") : [],
+    };
+
+    /// <summary>The one key or button that means this now, for a prompt.</summary>
+    public string PromptLabel(Act a) => UsingPad ? PadLabels(a).FirstOrDefault() ?? KeyLabel(a) : KeyLabel(a);
 }
