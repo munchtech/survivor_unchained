@@ -244,6 +244,15 @@ def record_part(worker, ears: Ears, line: dict, i: int, seg: dict, d: dict, take
             # Seed-VC: the performance keeps its timing, stress and breath.
             perf = os.path.join(folder, f"p{i}_{v}_perf_s{seed:02d}.wav")
             out = os.path.join(folder, f"p{i}_{v}_vc_s{seed:02d}.wav")
+            # A recorded guide performance, where there is one, is the take
+            # to convert (<id>.wav, or <id>.p<part>.wav for a line in parts).
+            guide = METHOD.get("guides") and next((g for g in (os.path.join(METHOD["guides"], f"{line['id']}.p{i}.wav"),
+                                                               os.path.join(METHOD["guides"], f"{line['id']}.wav"))
+                                                   if os.path.exists(g) and (len(line["segments"]) == 1 or g.endswith(f".p{i}.wav"))), None)
+            if guide:
+                perf = guide
+                out = os.path.join(folder, f"p{i}_{v}_guide_vc.wav")
+                most = 1
             if not os.path.exists(perf):
                 r = worker.ask(text=text, design=performance(vdef, d), seed=seed, out=perf, steps=25)
                 if "error" in r:
@@ -353,6 +362,7 @@ def main(argv):
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--method", choices=["cont", "perform"], default="cont")
     ap.add_argument("--f0", action="store_true", help="perform: the 44 kHz converter that follows the performance's pitch")
+    ap.add_argument("--guides", help="perform: a folder of recorded guide performances (<line id>.wav) to convert instead of generating")
     a = ap.parse_args(argv)
     man = lines_mod.merge(lines_mod.build())
     if a.index:
@@ -378,7 +388,7 @@ def main(argv):
 
     by_id = {l["id"]: l for l in man}
     worker = voxcpm()
-    METHOD.update(name=a.method, f0=a.f0, vc=seedvc() if a.method == "perform" else None)
+    METHOD.update(name=a.method, f0=a.f0, guides=a.guides, vc=seedvc() if a.method == "perform" else None)
     ears = Ears()
     done = 0
     try:

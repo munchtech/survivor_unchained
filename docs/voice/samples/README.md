@@ -65,3 +65,38 @@ no one measure can win it). It is a guide to where to listen first, not a
 verdict: only an ear can say whether a take sounds made.
 
 <!-- RESULTS -->
+
+## If none of these is good enough
+
+They may not be: the bar is a human performance, and every file here is
+generated. The routes that get there, cheapest first:
+
+1. **One actor's performance, the cast's voices** (performance-driven
+   voice conversion). A versatile British character actor (or one woman
+   and one man) records every line as a guide performance, in the accents,
+   with the direction in the scripts (`python tools/vo/script.py <part>`
+   prints each part's lines with their direction). Seed-VC (already set up
+   here, `--method perform` in `tools/vo/produce.py` takes any performance)
+   turns each line into its part's designed voice. The timing, stress,
+   breath and accent are a person's; only the timbre is converted. About
+   100 finished minutes for Act 1, roughly 8 to 12 studio hours: at the
+   Equity indie minimum (£200 an hour, the first hour £400) about £2,500 to
+   £4,000 with a studio, more with a director. The actor must agree in
+   writing to the conversion (Equity's AI guidance).
+2. **A paid generator with acting control**: ElevenLabs v3 (or the newer
+   v4) with audio tags ([whispers], [sighs], [laughs], [shouting]) and
+   Voice Design, which does Scots, Irish and Welsh, which nothing local
+   here does. Act 1 is about 100,000 characters; with three takes a line,
+   about 300,000 credits: one month of the Pro plan ($99, 600,000 credits,
+   commercial rights included). Still synthetic, but the best-acted
+   synthetic speech available; worth one evening's test on these same five
+   lines before deciding.
+3. **A human cast**: the principals (narrator, Vonnra, Rook, Brannoc,
+   Holloway, Chid, Maeca, Rav, Redcowl, Sella) by actors, the passers-by
+   and barks by two or three actors doubling. At Equity indie rates, about
+   £10,000 to £15,000 for Act 1 with studio and direction. The only route
+   that is certain to have soul.
+
+The game is ready for any of them: line ids and hashes, the scripts with
+direction, the mix, the index the game reads, and the tests that keep it
+honest are the same whoever makes the takes.
