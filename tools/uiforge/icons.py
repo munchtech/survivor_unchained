@@ -14,6 +14,8 @@ from __future__ import annotations
 
 import os
 
+from PIL import Image
+
 import krea
 
 LOOK = ("A single bold painted emblem for a dark fantasy game skill icon, in the style of Diablo IV skill icons, hand painted, "
@@ -158,16 +160,21 @@ SUBJECTS = {
 }
 
 
-def fit(src, dst, size=256, fill=0.96, lo=0.035, hi=0.20, mask=None):
+def fit(src, dst, size=256, fill=1.04, lo=0.035, hi=0.20, mask=None):
     """A painted emblem on black made into an icon: alpha from its light (so its glow
     falls off softly over any backing), the solid parts from the mask when given, its
     colour un-premultiplied, cropped to what is there and centred at `fill` of the square."""
     import numpy as np
-    from PIL import Image
     import cv2
     import forge as F
     rgb = np.asarray(Image.open(src).convert("RGB"), np.float32) / 255
     v = rgb.max(axis=2)
+    # The painting's own black is never quite black (a haze): read it from the border
+    # and start the alpha above it, so no faint square is left round the icon.
+    b = max(8, v.shape[0] // 16)
+    border = np.concatenate([v[:b].ravel(), v[-b:].ravel(), v[:, :b].ravel(), v[:, -b:].ravel()])
+    lo = max(lo, float(np.percentile(border, 95)) + 0.02)
+    hi = max(hi, lo + 0.12)
     t = np.clip((v - lo) / (hi - lo), 0, 1)
     a = t * t * (3 - 2 * t)
     if mask is not None:
@@ -187,7 +194,7 @@ def fit(src, dst, size=256, fill=0.96, lo=0.035, hi=0.20, mask=None):
     a = a * np.clip(e, 0, 1)
     col = np.clip(rgb / np.maximum(a[..., None], 0.08), 0, 1)
     col = col * a[..., None] + rgb * (1 - a[..., None])
-    ys, xs = np.nonzero(a > 0.45)
+    ys, xs = np.nonzero(a > 0.7)
     if len(xs) == 0:
         raise ValueError("empty icon: " + src)
     x0, x1, y0, y1 = xs.min(), xs.max() + 1, ys.min(), ys.max() + 1
@@ -198,12 +205,43 @@ def fit(src, dst, size=256, fill=0.96, lo=0.035, hi=0.20, mask=None):
     sq = cv2.warpAffine(img, M, (side, side), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
     out = F.downsample(sq, (size, size)) if side > size else cv2.resize(sq, (size, size), interpolation=cv2.INTER_CUBIC)
     os.makedirs(os.path.dirname(dst), exist_ok=True)
-    F.to_pil(out).save(dst, optimize=True)
+    save_small(F.to_pil(out), dst)
     return out
 
 
-def prompt(key):
-    school, subject = SUBJECTS[key]
+def save_small(img, dst):
+    """A PNG of 256 colours with alpha (dithered): a sixth of the size, no visible loss on
+    painted icons, and still a plain PNG the game loads by name."""
+    q = img.quantize(256, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.FLOYDSTEINBERG)
+    q.save(dst, optimize=True)
+
+
+# Second takes, where the first read as a letter or a number, or put a figure where the
+# thing itself should be (seed 950).
+REDO = {
+    "slash_steel": ("physical", "a single hand-forged notched longsword, blade up, inside a wide bright crescent arc of "
+                                "steel light, no figure"),
+    "disc": ("holy", "a round iron-rimmed shield spinning through the air, a golden trail of light behind it, no figure"),
+    "mote": ("arcane", "three small round glowing violet orbs of light, each trailing a curved streak, no figure"),
+    "mote_cascade": ("arcane", "a burst of many tiny glowing violet orbs of light splitting apart like sparks, no figure"),
+    "tether_mark": ("shadow", "a coil of dark violet smoke wrapped round a cracked gravestone, no figure"),
+    "beam_gaze": ("nature", "a single wide open eye of green fire, a beam of green flame pouring from it"),
+    "consecrate": ("holy", "a glowing golden ring of light burned into dark stone ground, rays rising, no figure"),
+    "bolt": ("storm", "a forked lightning bolt striking down out of a dark storm cloud"),
+    "magnet": ("fire", "a black iron horseshoe lodestone drawing glowing embers and small gold coins toward it, no figure"),
+}
+# Third takes (seed 960): abstract, where the model kept painting a person.
+REDO2 = {
+    "mote": ("arcane", "an abstract magic sigil: three glowing violet spheres of light circling one another on curved "
+                       "trails of light, empty black space round them"),
+    "mote_cascade": ("arcane", "an abstract magic sigil: a fountain of dozens of tiny glowing violet sparks bursting "
+                               "outward and splitting, empty black space round them"),
+}
+
+
+def prompt(key, redo=False):
+    table = {False: SUBJECTS, True: REDO, 2: REDO2}[redo]
+    school, subject = table[key]
     return LOOK + subject + ", " + SCHOOL[school] + "."
 
 
@@ -220,8 +258,18 @@ def generate(keys, seed=900, n=2, per=8, tag="icons"):
     return made
 
 
+def redo(keys=None, seed=950, n=3):
+    keys = list(keys or REDO)
+    jobs = [(k, prompt(k, redo=True), seed) for k in keys]
+    return krea.t2i_many(jobs, tag="icons", n=n)
+
+
 if __name__ == "__main__":
     import sys
     args = sys.argv[1:]
-    keys = args or list(SUBJECTS)
-    generate(keys)
+    if args and args[0] == "--redo2":
+        krea.t2i_many([(k, prompt(k, redo=2), 960) for k in REDO2], tag="icons", n=3)
+    elif args and args[0] == "--redo":
+        redo(args[1:] or None)
+    else:
+        generate(args or list(SUBJECTS))
