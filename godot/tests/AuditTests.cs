@@ -227,6 +227,19 @@ public class AuditTests
         Assert.DoesNotContain(p.Talk("tam", "tell me again").Last!.Choices, c => c.Text.Contains("You did right"));
     }
 
+    [Fact]
+    public void A_journal_line_is_announced_under_its_quests_name_whatever_colons_it_has()
+    {
+        var p = Route.New("hunter");
+        var toasts = new List<Toast>();
+        p.J.OnToast = toasts.Add;
+        p.Apply("""[{ "quest": { "id": "lamps", "entry": "nell" } }]""");
+        var t = toasts.Single(x => x.Kind == ToastKind.Quest);
+        Assert.Equal("The Lamps at the Low Ford", t.Text);
+        Assert.Equal(Lore.EntryText("lamps", "nell"), t.Sub);
+        Assert.Contains(": twelve", t.Sub);
+    }
+
     /* --------------------------------------------- the journal, kept honest -- */
 
     [Fact]
