@@ -64,6 +64,20 @@ public static class LevelUp
     public const int MaxHone = 10;
     public const double HoneStep = 0.12;
 
+    /// <summary>The passives that only touch some kinds of combat skill, and
+    /// which: offered to a build with none of them, they are a trap.</summary>
+    public static readonly Dictionary<string, Tag[]> Affects = new()
+    {
+        ["duplicity"] = [Tag.Projectile, Tag.Orbit, Tag.Chain, Tag.Melee, Tag.Summon, Tag.Storm],
+        ["velocity"] = [Tag.Projectile],
+        ["emberblood"] = [Tag.Fire],
+        ["conduit"] = [Tag.Storm],
+        ["venom"] = [Tag.Dot, Tag.Steel],
+        ["kinship"] = [Tag.Summon],
+        ["perennial"] = [Tag.Zone, Tag.Orbit, Tag.Summon, Tag.Explosion],
+        ["serration"] = [Tag.Physical, Tag.Steel],
+    };
+
     /// <summary>Statuses the build applies, from weapons, evolutions and triggers.</summary>
     public static HashSet<StatusKind> BuildStatuses(Battle b)
     {
@@ -339,7 +353,7 @@ public static class LevelUp
                 hint = held ? " At rank 8 it evolves." : passiveRoom > 0 ? $" At rank 8, with {Names(cats)}, it evolves." : $" It evolves with {Names(cats)}, but your passives are full.";
             var o = new Offer
             {
-                Kind = OfferKind.Rank, Id = w.Id, Rarity = Rarity.Common, Title = w.Evolution?.Name ?? w.Def.Name,
+                Kind = OfferKind.Rank, Id = w.Id, Rarity = Rarity.Common, Title = w.Evolution?.Name ?? w.Def.Name, Recipe = w.Evolution == null ? Recipe(w.Id) : null,
                 Text = $"+{w.Def.Growth * 100:0}% damage (+{(next - 1) * w.Def.Growth * 100:0}% in all).{extra}{hint}",
                 From = w.Rank, To = next, Icon = w.Evolution?.Art ?? w.Def.Art, Tags = w.Tags,
             };
@@ -355,7 +369,7 @@ public static class LevelUp
             {
                 if (b.Weapons.Exists(w => w.Id == id) || b.BannedCards.Contains(id)) continue;
                 var d = Content.Weapons.All[id];
-                var o = new Offer { Kind = OfferKind.Weapon, Id = id, Rarity = Rarity.Uncommon, Title = d.Name, Text = d.Description, Icon = d.Art, Tags = d.Tags, From = 0, To = 1 };
+                var o = new Offer { Kind = OfferKind.Weapon, Id = id, Rarity = Rarity.Uncommon, Title = d.Name, Text = d.Description, Icon = d.Art, Tags = d.Tags, From = 0, To = 1, Recipe = Recipe(id) };
                 double w = 3.2 * want * Affinity(d.Tags, tags) * Again(o);
                 var mine = paths.FirstOrDefault(p => p.Weapons.Contains(id));
                 if (mine != null) { w *= PathLean; o.Path = mine.Id; o.Why.Add($"On your path: {mine.Name}"); }
@@ -397,6 +411,13 @@ public static class LevelUp
             var o = new Offer { Kind = OfferKind.Boon, Id = d.Id, Rarity = d.Rarity, Title = d.Name, Text = d.Text + note, From = r, To = r + 1, Icon = d.Icon, Tags = d.Tags };
             double wgt = Weight(d.Rarity) * 0.75 * Affinity(d.Tags, tags) * Again(o);
             if (r > 0) wgt *= 1.35;
+            // A passive for kinds of skill the build has none of is a trap: far
+            // less likely, and the card says so.
+            if (Affects.TryGetValue(d.Id, out var kinds) && !b.Weapons.Any(w => kinds.Any(w.Tags.Contains)) && evolves.Count == 0)
+            {
+                wgt *= 0.3;
+                o.Why.Add("Little use to what you carry now");
+            }
             if (r == 0 && evolves.Count > 0)
             {
                 wgt *= soon ? 4 : 1.6;
@@ -467,6 +488,52 @@ public static class LevelUp
             mem.CatalystWait[w.Id] = offers.Any(o => IsCatalyst(o, w)) ? 0 : mem.CatalystWait.GetValueOrDefault(w.Id) + 1;
         var list = offers.Take(System.Math.Max(count, offers.Count(o => o.Kind is OfferKind.Evolve or OfferKind.Union))).ToList();
         return Shown(b, list);
+    }
+
+    /// <summary>What becomes of a combat skill, in a line: each evolution and
+    /// the passives that make it, and the union it is half of.</summary>
+    public static string Recipe(string weaponId)
+    {
+        if (!Content.Weapons.All.TryGetValue(weaponId, out var d) || d.Evolutions.Length == 0) return "";
+        var parts = d.Evolutions.Select(e => $"{e.Name} with {Names(e.Catalysts)}").ToList();
+        string s = $"Evolves: {string.Join("; ", parts)}.";
+        if (Unions.Of(weaponId) is { } u)
+            s += $" With {Content.Weapons.All[u.A == weaponId ? u.B : u.A].Name}, both evolved: {u.Name}.";
+        return s;
+    }
+
+    /// <summary>A carried combat skill as the draft's arsenal shows it.</summary>
+    public sealed record ArsenalLine(string Id, string Name, string Icon, School School, int Rank, bool Evolved, string Note, bool Ready);
+
+    /// <summary>The arsenal, each skill with where it stands: what evolves it,
+    /// whether it can now, what it joins.</summary>
+    public static List<ArsenalLine> Arsenal(Battle b)
+    {
+        var o = new List<ArsenalLine>();
+        foreach (var w in b.Weapons)
+        {
+            string note;
+            bool ready = false;
+            if (w.Evolution != null)
+            {
+                var u = Unions.Of(w.Id);
+                var mate = u == null ? null : b.Weapons.Find(x => x.Id == (u.A == w.Id ? u.B : u.A));
+                note = u == null ? (w.Honed > 0 ? $"Honed {w.Honed}" : "Evolved")
+                    : mate?.Evolution != null ? $"Unites now: {u.Name}" : $"Joins {Content.Weapons.All[u.A == w.Id ? u.B : u.A].Name} for {u.Name}";
+                ready = mate?.Evolution != null;
+            }
+            else if (w.Def.Evolutions.Length == 0) note = w.Honed > 0 ? $"Honed {w.Honed}" : "";
+            else
+            {
+                var held = w.Def.Evolutions.Where(e => e.Catalysts.Any(c => b.Boons.GetValueOrDefault(c) > 0)).ToList();
+                ready = held.Count > 0 && w.Rank >= Content.Weapons.MaxRank;
+                note = held.Count > 0
+                    ? (ready ? $"Evolves now: {string.Join(" or ", held.Select(e => e.Name))}" : $"At rank 8: {string.Join(" or ", held.Select(e => e.Name))}")
+                    : $"Needs {Names(w.Def.Evolutions.SelectMany(e => e.Catalysts).Distinct())}";
+            }
+            o.Add(new ArsenalLine(w.Id, w.Evolution?.Name ?? w.Def.Name, w.Evolution?.Art ?? w.Def.Art, w.School, w.Rank, w.Evolution != null, note, ready));
+        }
+        return o;
     }
 
     /// <summary>The unions whose two halves are carried, both evolved.</summary>

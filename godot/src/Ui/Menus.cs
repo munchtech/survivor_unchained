@@ -96,7 +96,7 @@ public partial class ControlsPanel : VBoxContainer
         ("Move", [Act.Up, Act.Left, Act.Down, Act.Right], "Left stick"), ("Dash", [Act.Dash], null), ("Ability", [Act.Ability], null),
         ("Draught", [Act.Ultimate], null), ("Talk, use, pick up", [Act.Interact], null), ("Pack", [Act.Inventory], null),
         ("Self", [Act.Character], "Menu"), ("Arts", [Act.Arts], "Menu"), ("Journal", [Act.Journal], "Menu"), ("Map", [Act.Map], "Menu"), ("Pause", [Act.Pause], null),
-        ("Draft: take a card", [Act.Pick1], "D-pad, A"), ("Draft: reroll", [Act.Reroll], null), ("Draft: banish", [Act.Banish], null),
+        ("Draft: take a card", [Act.Pick1], "D-pad, A"), ("Draft: reroll", [Act.Reroll], null), ("Draft: banish", [Act.Banish], null), ("Draft: skip", [Act.Skip], "Right stick"),
     };
 
     Act? waiting;

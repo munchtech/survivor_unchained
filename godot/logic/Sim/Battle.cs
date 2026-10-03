@@ -125,8 +125,10 @@ public sealed class Offer
     public string? Path;
     /// <summary>Carried by day (attuned): it comes in at a higher rank.</summary>
     public bool Attuned;
-    /// <summary>Why the draft dealt it (shown on the card): on your path, familiar, evolves something.</summary>
+    /// <summary>Why the draft dealt it (shown on the card): on your path, attuned, evolves something.</summary>
     public readonly List<string> Why = new();
+    /// <summary>A combat skill's recipes: what evolves it, into what, and what it joins.</summary>
+    public string? Recipe;
 }
 
 /// <summary>Everything about one blow on a creature.</summary>
