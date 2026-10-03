@@ -17,14 +17,14 @@ public class BlessingTests
     [Fact]
     public void The_first_blessing_comes_early_and_the_rest_further_apart()
     {
-        Assert.Equal(4, Boons.Milestones[0]);
-        Assert.True(Boons.IsMilestone(4));
-        Assert.False(Boons.IsMilestone(5));
+        Assert.Equal(5, Boons.Milestones[0]);
+        Assert.True(Boons.IsMilestone(5));
+        Assert.False(Boons.IsMilestone(6));
         for (int i = 1; i < 6; i++) Assert.True(Boons.Milestones[i] - Boons.Milestones[i - 1] > Boons.Milestones[i - 1] - (i > 1 ? Boons.Milestones[i - 2] : 0) - 1);
         var b = BattleTests.Arena(4);
-        for (int i = 0; i < 3; i++) b.GainEmber(b.EmberNext - b.EmberXp + 0.01);
-        Assert.Equal(4, b.EmberLevel);
-        Assert.Equal(new[] { 4 }, b.PendingBlessings);
+        for (int i = 0; i < 4; i++) b.GainEmber(b.EmberNext - b.EmberXp + 0.01);
+        Assert.Equal(5, b.EmberLevel);
+        Assert.Equal(new[] { 5 }, b.PendingBlessings);
     }
 
     [Fact]

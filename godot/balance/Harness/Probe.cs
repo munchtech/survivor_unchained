@@ -25,6 +25,8 @@ public sealed class ProbeResult
     public string Build = "";
     /// <summary>Damage a second into a crowd that keeps coming; things killed a second.</summary>
     public double CrowdDps, KillsPerSec;
+    /// <summary>Damage the survivor took a second in the crowd (the price of fighting close).</summary>
+    public double Intake;
     /// <summary>Damage a second into one champion (a crowd about it).</summary>
     public double BossDps;
     /// <summary>Health as armour, dodge, block and mending make it.</summary>
@@ -65,13 +67,13 @@ public static class Probe
         int guard = 0;
         while (guard++ < 400)
         {
-            ArenaSim.Drafts(b, pick, rng, r, null, ArenaSim.Cards);
+            ArenaSim.Drafts(b, pick, rng, r, null);
             if (!gave && b.EmberLevel >= second) { gave = true; b.GreatOwed++; continue; }
             if (b.EmberLevel >= spec.Level) break;
             b.Time = MinuteOf(b.EmberLevel) * 60;
             b.GainEmber((b.EmberNext - b.EmberXp) / b.Stats.Get(Stat.XpGain) + 0.001);
         }
-        ArenaSim.Drafts(b, pick, rng, r, null, ArenaSim.Cards);
+        ArenaSim.Drafts(b, pick, rng, r, null);
         return (j, b, r.Taken.Keys.ToList());
     }
 
@@ -85,57 +87,101 @@ public static class Probe
         };
         var path = Picker.Make(spec.Policy).Path;
         if (path != null) res.OnPath = b.Weapons.Count(w => path.Weapons.Contains(w.Id));
-        var people = MapOffers.People(spec.People);
-        double minute = MinuteOf(spec.Level);
-        int level = FoeLevel(spec.Level);
+        b.Time = MinuteOf(spec.Level) * 60;
+        Measure(b, res, FoeLevel(spec.Level), spec.People, spec.Seed, drafts: true, spec.Policy);
+        return res;
+    }
+
+    /// <summary>One combat skill alone (at a rank, or evolved), nothing else
+    /// taken, against the standard crowd and champion at a minute's strength:
+    /// for keeping the skills even with each other.</summary>
+    public static ProbeResult Weapon(string id, int rank, string? evolution, int foeLevel, int seed, string people = "dead")
+    {
+        var a = Callings.Archetype("warden");
+        var j = Journey.Begin(new CreationChoice
+        {
+            Name = "Probe", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
+        }, (uint)seed);
+        var b = j.StartBattle(true, new CollisionWorld(200), (_, _) => 0, 0, 0, 0, (uint)seed, arena: true);
+        foreach (var w in b.Weapons.ToList()) b.RemoveWeapon(w.Id);
+        b.AddWeapon(id, rank);
+        if (evolution != null)
+        {
+            var w = b.Weapons[0];
+            var evo = w.Def.Evolutions.First(e => e.Id == evolution);
+            // Its passive at one rank, as an evolution is earned.
+            b.AddBoon(evo.Catalysts[0]);
+            b.Evolve(id, evolution);
+        }
+        b.EmberLevel = Targets.LevelAt(Math.Max(1, (foeLevel - 1) * 2.5));
+        b.Time = (foeLevel - 1) * 2.5 * 60;
+        var spec = new ProbeSpec(seed, "warden", "first", b.EmberLevel, 0, 0, people);
+        var res = new ProbeResult { Spec = spec, Build = ArenaSim.Describe(b), Weapons = 1, Evolved = evolution != null ? 1 : 0, Ehp = Ehp(b) };
+        Measure(b, res, foeLevel, people, seed, drafts: false);
+        return res;
+    }
+
+    /// <summary>The standard test, as an arena of tier 1 is at that minute: the
+    /// horde kept at its number, in groups from out of sight, for half a minute
+    /// (after it has had time to arrive); then a champion that does not fall
+    /// and chases, half the horde about it.</summary>
+    static void Measure(Battle b, ProbeResult res, int level, string peopleId, int seed, bool drafts, string? policy = null)
+    {
+        var people = MapOffers.People(peopleId);
+        double minute = b.Time / 60;
         var kinds = people.Arena.Where(h => h.From <= minute).Select(h => h.Def).Where(d => Enemies.Get(d).Ranged == null).ToList();
         if (kinds.Count == 0) kinds = [people.Arena[0].Def];
-        var rng = new Rng((uint)spec.Seed * 31 + 5);
-        b.Time = minute * 60;
+        var rng = new Rng((uint)seed * 31 + 5);
+        int horde = (int)(22 + 7.5 * minute);
+        b.Hooks.OnPlayerDeath = _ => true;
 
-        // The crowd: kept at forty, coming from every side.
         double Tick(double seconds, int keep, Enemy? champion)
         {
-            double angle = 0, dealt = 0;
+            double dealt = 0, spawnT = 0;
             for (double t = 0; t < seconds; t += ArenaSim.Dt)
             {
                 var p = b.Player;
-                p.Iframes = 1;
-                p.Hp = b.MaxHp;
+                // Hurt, never felled: what it costs is counted, and the test goes on.
+                if (p.Hp < b.MaxHp * 0.25) p.Hp = b.MaxHp;
                 int alive = 0;
                 foreach (var e in b.Enemies.Items) if (e.Alive && e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying) alive++;
-                for (int k = alive; k < keep; k++)
+                if ((spawnT -= ArenaSim.Dt) <= 0 && alive < keep)
                 {
-                    double a = rng.Next() * Math.PI * 2, d = 9 + rng.Next() * 4;
-                    b.SpawnEnemy(kinds[rng.Int(0, kinds.Count - 1)], p.X + Math.Cos(a) * d, p.Z + Math.Sin(a) * d, new Battle.SpawnOpts { Level = level });
+                    spawnT = 0.45;
+                    double a = rng.Next() * Math.PI * 2, d = 22 + rng.Next() * 6;
+                    double gx = p.X + Math.Cos(a) * d, gz = p.Z + Math.Sin(a) * d;
+                    string kind = kinds[rng.Int(0, kinds.Count - 1)];
+                    for (int k = 0, n = 3 + rng.Int(0, 3) + (int)(minute / 5); k < n; k++)
+                        b.SpawnEnemy(kind, gx + (rng.Next() - 0.5) * 5, gz + (rng.Next() - 0.5) * 5, new Battle.SpawnOpts { Level = level });
                 }
-                // A slow circle, four metres across: moving, never fleeing.
-                angle += ArenaSim.Dt * 0.6;
-                b.Tick(ArenaSim.Dt, -Math.Sin(angle), Math.Cos(angle));
+                // Moved as the arena bot moves (giving ground, closing when it is quiet), the champion chasing.
+                var (mx, mz) = Pilot.Steer(b);
+                b.Tick(ArenaSim.Dt, mx, mz);
                 foreach (var ev in b.Events.Drain())
                     if (ev is Ev.Hit h && champion != null && h.Target == champion.Id) dealt += h.Amount;
-                if (b.DraftOwed) ArenaSim.Drafts(b, Picker.Make(spec.Policy), rng, new RunResult { Spec = new RunSpec(0, "", "") }, null, ArenaSim.Cards);
+                if (drafts && b.DraftOwed) ArenaSim.Drafts(b, Picker.Make(policy!), rng, new RunResult { Spec = new RunSpec(0, "", "") }, null);
+                // Nothing more is learned in the test itself.
+                if (!drafts) { b.PendingLevels = 0; b.PendingBlessings.Clear(); }
             }
             return dealt;
         }
 
-        Tick(4, 40, null);
+        Tick(10, horde, null);
         double before = b.DamageBy.Values.Sum();
         int kills = b.KillCount;
+        double taken = b.DamageTaken;
         const double crowd = 30;
-        Tick(crowd, 40, null);
+        Tick(crowd, horde, null);
         res.CrowdDps = (b.DamageBy.Values.Sum() - before) / crowd;
         res.KillsPerSec = (b.KillCount - kills) / crowd;
+        res.Intake = (b.DamageTaken - taken) / crowd;
         foreach (var (k, v) in b.DamageBy) res.DamageBy[k] = v;
-
-        // The champion: what rules the people, at the minute's strength, that does not fall.
         foreach (var e in b.Enemies.Items) if (e.Alive && e.Disposition == Disposition.Hostile) b.Enemies.Release(e);
-        var boss = b.SpawnEnemy(people.Champion, b.Player.X + 3, b.Player.Z, new Battle.SpawnOpts { Level = level + 1, Elite = true });
-        if (boss != null) { boss.MaxHp = boss.Hp = 1e12; boss.Speed = 0; }
-        const double duel = 20;
-        double hit = Tick(duel, 12, boss);
-        res.BossDps = hit / duel;
-        return res;
+        double ca = rng.Next() * Math.PI * 2;
+        var boss = b.SpawnEnemy(people.Champion, b.Player.X + Math.Cos(ca) * 8, b.Player.Z + Math.Sin(ca) * 8, new Battle.SpawnOpts { Level = level + 1, Elite = true });
+        if (boss != null) boss.MaxHp = boss.Hp = 1e12;
+        const double duel = 25;
+        res.BossDps = Tick(duel, horde / 2, boss) / duel;
     }
 
     /// <summary>Health as the horde sees it: armour, dodge, a ward's blocks, a

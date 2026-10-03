@@ -227,6 +227,8 @@ public sealed class ArenaRun : ZoneRuntime
         {
             great15 = true;
             B.GreatOwed++;
+            // And a banish with it: by now the build knows what it does not want.
+            B.Banishes++;
             G.Announce(new Announcement("The fifteenth minute", "A great blessing", "reward", 2.6));
         }
         if (!bossUp && !won && Seconds >= End) Boss();

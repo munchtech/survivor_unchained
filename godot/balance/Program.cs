@@ -32,6 +32,7 @@ switch (cmd)
 {
     case "arena": Arena(); break;
     case "probe": ProbeAll(); break;
+    case "weapons": WeaponsAll(); break;
     case "report": Console.WriteLine(Report.Arena(Load(opt.Get("in", "balance.jsonl")))); break;
     default:
         Console.WriteLine("dotnet run -c Release --project godot/balance -- arena|probe|report [options]  (see Program.cs)");
@@ -111,6 +112,54 @@ void ProbeAll()
     var md = Report.Probes(results.ToList());
     if (opt.Has("out")) File.WriteAllText(opt.Get("out", "probe.md"), md);
     Console.WriteLine(md);
+}
+
+/* Every combat skill alone at the stages a run passes through: rank 1 at
+ * the second minute, rank 4 at the eighth, rank 8 at the fifteenth, each
+ * evolution at the twenty-second; each as the median of a few seeds, and
+ * against the median of all skills at that stage. */
+void WeaponsAll()
+{
+    var stages = new (string Name, int Rank, bool Evolved, int Foe)[] { ("r1", 1, false, 1), ("r4", 4, false, 4), ("r8", 8, false, 7), ("evo", 8, true, 9) };
+    int seeds = opt.Int("seeds", 3);
+    var only = opt.Has("only") ? opt.List("only", "").ToHashSet() : null;
+    var jobs = new List<(string Weapon, string? Evo, string Stage, int Rank, int Foe, int Seed)>();
+    foreach (var w in Weapons.All.Values.Where(w => w.Findable && (only == null || only.Contains(w.Id))))
+        foreach (var st in stages)
+            foreach (var evo in st.Evolved ? w.Evolutions.Select(e => (string?)e.Id) : [null])
+                for (int s = 0; s < seeds; s++) jobs.Add((w.Id, evo, st.Name, st.Rank, st.Foe, 1 + s));
+    var results = new ConcurrentBag<(string Weapon, string? Evo, string Stage, ProbeResult R)>();
+    Parallel.ForEach(jobs, new ParallelOptions { MaxDegreeOfParallelism = opt.Int("par", 16) }, job =>
+    {
+        try { results.Add((job.Weapon, job.Evo, job.Stage, SurvivorUnchained.Balance.Probe.Weapon(job.Weapon, job.Rank, job.Evo, job.Foe, job.Seed, opt.Get("people", "dead")))); }
+        catch (Exception e) { Console.Error.WriteLine($"{job.Weapon} {job.Evo}: {e.Message}"); }
+    });
+    var sb = new StringBuilder();
+    sb.AppendLine("## Every combat skill alone\n");
+    sb.AppendLine("Index: 0.6 × crowd damage + 0.4 × champion damage, each against the median of all skills at that stage (1.00 is the median). In brackets: crowd / champion damage a second, and the damage the survivor took a second (the price of the range it fights at).\n");
+    sb.AppendLine("| skill | r1 | r4 | r8 | evolutions |");
+    sb.AppendLine("|---|---|---|---|---|");
+    var per = results.GroupBy(r => (r.Weapon, r.Evo, r.Stage)).ToDictionary(g => g.Key, g => (Crowd: Report.Median(g.Select(x => x.R.CrowdDps)), Boss: Report.Median(g.Select(x => x.R.BossDps)), Hurt: Report.Median(g.Select(x => x.R.Intake))));
+    var medC = per.GroupBy(x => x.Key.Stage).ToDictionary(g => g.Key, g => Report.Median(g.Select(x => x.Value.Crowd)));
+    var medB = per.GroupBy(x => x.Key.Stage).ToDictionary(g => g.Key, g => Report.Median(g.Select(x => x.Value.Boss)));
+    string Cell(string w, string? evo, string stage)
+    {
+        if (!per.TryGetValue((w, evo, stage), out var v)) return "–";
+        double idx = 0.6 * v.Crowd / medC[stage] + 0.4 * v.Boss / Math.Max(1, medB[stage]);
+        return $"{idx:0.00} ({v.Crowd:0}/{v.Boss:0}, {v.Hurt:0})";
+    }
+    foreach (var w in Weapons.All.Values.Where(w => w.Findable && (only == null || only.Contains(w.Id))).OrderBy(w => w.Id))
+        sb.AppendLine($"| {w.Id} | {Cell(w.Id, null, "r1")} | {Cell(w.Id, null, "r4")} | {Cell(w.Id, null, "r8")} | " +
+            string.Join("; ", w.Evolutions.Select(e => $"{e.Id} {Cell(w.Id, e.Id, "evo")}")) + " |");
+    sb.AppendLine($"\nStage medians (crowd/champion): {string.Join(", ", medC.OrderBy(x => x.Key).Select(x => $"{x.Key} {x.Value:0}/{medB[x.Key]:0}"))}");
+    if (opt.Has("out")) File.WriteAllText(opt.Get("out", "weapons.md"), sb.ToString());
+    if (opt.Has("json"))
+        File.WriteAllText(opt.Get("json", "weapons.json"), JsonSerializer.Serialize(per.Select(kv => new
+        {
+            weapon = kv.Key.Weapon, evo = kv.Key.Evo, stage = kv.Key.Stage, crowd = kv.Value.Crowd, boss = kv.Value.Boss, hurt = kv.Value.Hurt,
+            index = 0.6 * kv.Value.Crowd / medC[kv.Key.Stage] + 0.4 * kv.Value.Boss / Math.Max(1, medB[kv.Key.Stage]),
+        }).ToList(), Opts.Json));
+    Console.WriteLine(sb.ToString());
 }
 
 sealed class Opts

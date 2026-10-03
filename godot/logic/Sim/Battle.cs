@@ -103,7 +103,7 @@ public sealed class BattleSetup
     public double? Hp;
 }
 
-public enum OfferKind { Weapon, Rank, Boon, Evolve, Heal, Gold }
+public enum OfferKind { Weapon, Rank, Boon, Evolve, Heal, Gold, Hone, Union }
 
 public sealed class Offer
 {
@@ -119,6 +119,14 @@ public sealed class Offer
     public string Title = "", Text = "", Icon = "";
     public int? From, To;
     public Tag[] Tags = Array.Empty<Tag>();
+    /// <summary>Ranks beyond the one (a surge: two at once).</summary>
+    public int Surge;
+    /// <summary>The build path it belongs to, if the build walks one it is on.</summary>
+    public string? Path;
+    /// <summary>Carried by day (attuned): it comes in at a higher rank.</summary>
+    public bool Attuned;
+    /// <summary>Why the draft dealt it (shown on the card): on your path, familiar, evolves something.</summary>
+    public readonly List<string> Why = new();
 }
 
 /// <summary>Everything about one blow on a creature.</summary>
@@ -227,7 +235,18 @@ public sealed partial class Battle
     public readonly HashSet<string> BannedCards = new();
     /// <summary>Skill tags the survivor's calling leans toward, for the draft.</summary>
     public readonly HashSet<Tag> Favours = new();
-    public int Rerolls = 2, Banishes = 1;
+    /// <summary>The build paths the calling leans toward, for the draft.</summary>
+    public readonly HashSet<string> CallingPaths = new();
+    /// <summary>The skills carried by day, attuned for the night, and the rank
+    /// each comes in at: the draft offers them first (Rpg/SkillBook.cs).</summary>
+    public readonly Dictionary<string, int> Attuned = new();
+    /// <summary>Skills learned by day and not carried: offered a little more.</summary>
+    public readonly HashSet<string> Familiar = new();
+    /// <summary>What the draft remembers between drafts (LevelUp).</summary>
+    public readonly DraftMemory Drafting = new();
+    /// <summary>Rerolls and banishes in hand; each milestone level adds a reroll, up to MaxRerolls.</summary>
+    public int Rerolls = 3, Banishes = 2;
+    public const int MaxRerolls = 9;
     readonly List<int> q = new();
     /// <summary>The projectile loop's own query list: hits inside it run
     /// queries of their own on q.</summary>
@@ -379,6 +398,7 @@ public sealed partial class Battle
             if (p.DashT <= 0)
             {
                 AddBuff("momentum", Stat.MoveSpeed, Abilities.Dash.MomentumSpeed, ModKind.Inc, Abilities.Dash.Momentum, 1);
+                dashEnded = Time;
                 p.Vx = p.DashDX * Stats.Get(Stat.MoveSpeed);
                 p.Vz = p.DashDZ * Stats.Get(Stat.MoveSpeed);
             }
@@ -411,8 +431,27 @@ public sealed partial class Battle
         condScratch.Add(p.Moving ? ModWhen.Moving : ModWhen.Still);
         if (p.Hp < MaxHp * 0.35) condScratch.Add(ModWhen.LowHealth);
         if (p.Hp >= MaxHp - 0.01) condScratch.Add(ModWhen.FullHealth);
+        // What gear asks of the moment: the dark, beasts close, fire underfoot, a dash just done.
+        if (Night) condScratch.Add(ModWhen.Night);
+        if (Time - dashEnded < 1.5) condScratch.Add(ModWhen.AfterDash);
+        if ((senseT -= dt) <= 0)
+        {
+            senseT = 0.25;
+            nearBeasts = HostilesInRadius(p.X, p.Z, 8).Any(e => e.Def.Family is Family.Wolf or Family.Boar or Family.Beast);
+            inBurning = false;
+            foreach (var z in Zones.Items)
+                if (z.Alive && z.School == School.Fire && Dist(z.X, z.Z, p.X, p.Z) < z.Radius) { inBurning = true; break; }
+        }
+        if (nearBeasts) condScratch.Add(ModWhen.NearBeasts);
+        if (inBurning) condScratch.Add(ModWhen.InBurning);
         Stats.SetActive(condScratch);
     }
+
+    /// <summary>The dark (a night in the world, every arena): gear that
+    /// answers to the night is awake.</summary>
+    public bool Night;
+    double senseT, dashEnded = -9;
+    bool nearBeasts, inBurning;
 
     readonly List<ModWhen> condScratch = new();
 
@@ -548,7 +587,8 @@ public sealed partial class Battle
         if (e.Disposition == Disposition.Ally || (e.Disposition == Disposition.Neutral && !e.Provoked && !o.Provoke)) return 0;
         var st = Stats;
         double dmg = baseDamage * st.DamageMult(school, tags, e.Def.Family);
-        if (o.Summon) dmg *= st.Get(Stat.SummonDamage);
+        // Allies go for the throat: champions and worse take more from them.
+        if (o.Summon) dmg *= st.Get(Stat.SummonDamage) * (e.Boss || e.Elite ? 1.6 : 1);
         if (e.Boss || e.Elite) dmg *= o.BossDamage ?? o.Weapon?.Def.BossDamage ?? 1;
         // Vulnerabilities.
         var s = e.Status;
@@ -1570,10 +1610,11 @@ public sealed partial class Battle
         Pickups.Release(k);
     }
 
-    public void GainEmber(double v)
+    /// <param name="raw">As it is, not multiplied by what grows ember (a skipped draft's refund).</param>
+    public void GainEmber(double v, bool raw = false)
     {
         if (!EmberOn) return;
-        EmberXp += v * Stats.Get(Stat.XpGain);
+        EmberXp += v * (raw ? 1 : Stats.Get(Stat.XpGain));
         while (EmberXp >= EmberNext)
         {
             EmberXp -= EmberNext;
@@ -1581,7 +1622,12 @@ public sealed partial class Battle
             EmberNext = EmberNeed(EmberLevel);
             RescaleAllies(EmberLevel - 1);
             PendingLevels++;
-            if (Content.Boons.IsMilestone(EmberLevel)) PendingBlessings.Add(EmberLevel);
+            if (Content.Boons.IsMilestone(EmberLevel))
+            {
+                PendingBlessings.Add(EmberLevel);
+                // A milestone also hands back a reroll.
+                Rerolls = Math.Min(MaxRerolls, Rerolls + 1);
+            }
             Events.Emit(new Ev.LevelUp { Level = EmberLevel });
             Fire(TriggerEvent.LevelUp, new ProcCtx { X = Player.X, Z = Player.Z });
         }
@@ -1594,6 +1640,7 @@ public sealed partial class Battle
         if (!Content.Weapons.All.ContainsKey(id) || Weapons.Exists(w => w.Id == id) || Weapons.Count >= Content.Weapons.MaxWeapons) return null;
         var w = new WeaponInst(id, rank, Weapons.Count);
         Weapons.Add(w);
+        foreach (var t in w.Def.Triggers) AddTrigger(t, $"weapon:{id}", 1, id);
         CheckDiscoveries();
         return w;
     }
@@ -1602,8 +1649,29 @@ public sealed partial class Battle
     {
         int i = Weapons.FindIndex(w => w.Id == id);
         if (i < 0) return;
+        var w = Weapons[i];
+        // Its own rules, and its evolution's, go with it.
+        RemoveTriggers($"weapon:{id}");
+        if (w.Evolution != null) RemoveTriggers($"evo:{w.Evolution.Id}");
         Weapons.RemoveAt(i);
         for (int k = 0; k < Weapons.Count; k++) Weapons[k].Slot = k;
+    }
+
+    /// <summary>Two evolved skills become one (Content/Unions.cs): both go, the
+    /// union comes in at full rank, and a combat slot is free again.</summary>
+    public WeaponInst? Unite(string union)
+    {
+        var u = Content.Unions.Find(union);
+        if (u == null) return null;
+        var a = Weapons.Find(w => w.Id == u.A);
+        var c = Weapons.Find(w => w.Id == u.B);
+        if (a?.Evolution == null || c?.Evolution == null) return null;
+        RemoveWeapon(u.A);
+        RemoveWeapon(u.B);
+        var w = AddWeapon(u.Into, Content.Weapons.MaxRank);
+        Events.Emit(new Ev.Evolve { Weapon = u.Into, Into = u.Id });
+        Events.Emit(new Ev.Announce { Kicker = "Union", Title = u.Name, Subtitle = u.Description, Tone = Tone.Boon });
+        return w;
     }
 
     public void RankWeapon(string id)
@@ -1611,6 +1679,15 @@ public sealed partial class Battle
         var w = Weapons.Find(x => x.Id == id);
         if (w == null || w.Rank >= Content.Weapons.MaxRank) return;
         w.Rank++;
+    }
+
+    /// <summary>A finished weapon honed (the endless dark's draft): a little more damage each time.</summary>
+    public void Hone(string id)
+    {
+        var w = Weapons.Find(x => x.Id == id);
+        if (w == null || w.Honed >= LevelUp.MaxHone) return;
+        w.Honed++;
+        w.Mods.Damage *= 1 + LevelUp.HoneStep;
     }
 
     public void Evolve(string id, string branch)
@@ -2059,11 +2136,15 @@ public sealed partial class Battle
     /// <summary>For the HUD: how ready a weapon is, 0..1.</summary>
     public double WeaponReady(WeaponInst w) => Clamp(1 - w.Timer / Math.Max(0.01, Firing.CooldownOf(this, w)), 0, 1);
 
-    /// <summary>Ember needed for the next ember level. Quick early, steep late.</summary>
+    /// <summary>Ember needed for the next ember level. Quick early, steep late:
+    /// in a first-tier arena about five levels in the first minute, fourteen by
+    /// the fifth, thirty by the fifteenth and forty-six by the half hour, so a
+    /// build is still choosing what to finish when what rules the horde comes
+    /// (docs/SKILLS_DESIGN.md, "Pace").</summary>
     public static double EmberNeed(int level)
     {
         int n = level - 1;
-        return Math.Floor(12 + n * 9 + n * n * 1.6 + (level > 20 ? (level - 20) * (level - 20) * 6 : 0));
+        return Math.Round(20 + n * 28 + n * n * 3.2 + (level > 28 ? (level - 28) * (level - 28) * 8 : 0));
     }
 }
 

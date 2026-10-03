@@ -79,6 +79,16 @@ public static class SkillBook
     public static IEnumerable<(string Id, int Rank)> Carried(CharacterData ch) =>
         ch.Slotted.Where(id => Weapons.All.ContainsKey(id) && Knows(ch, id) && Meets(ch, id)).Take(Slots(ch)).Select(id => (id, Rank(ch)));
 
+    /// <summary>The skills attuned for the night: those carried by day (and
+    /// measured up to). In an arena the ember offers them in its first drafts,
+    /// and each comes in at NightRank.</summary>
+    public static IEnumerable<string> Attuned(CharacterData ch) => Carried(ch).Select(c => c.Id).Where(id => Weapons.All[id].Findable);
+
+    /// <summary>The rank an attuned skill comes in at by night: two, and three
+    /// once the survivor has grown (the tenth level), so the day's growth is
+    /// felt in the dark without the ember starting anywhere but low.</summary>
+    public static int NightRank(CharacterData ch) => ch.Level >= 10 ? 3 : 2;
+
     /// <summary>Every third level the calling teaches one of its own kind the
     /// survivor has seen burn (and is up to): its id, or null.</summary>
     public static string? Calling(CharacterData ch)

@@ -77,6 +77,10 @@ sealed class GreedyPicker(PathDef? path) : Picker
         return !offers.Any(o => OnPath(o)) && b.Weapons.Count(w => path.Weapons.Contains(w.Id)) < Math.Min(4, path.Weapons.Length);
     }
 
+    public override bool Skip(Battle b, List<Offer> offers) =>
+        // A full build offered nothing of its own: pass, and level sooner.
+        path != null && b.Weapons.Count >= 4 && !offers.Any(o => OnPath(o) || o.Kind is OfferKind.Rank or OfferKind.Evolve or OfferKind.Hone);
+
     public override int Banish(Battle b, List<Offer> offers)
     {
         if (path == null) return -1;
@@ -86,7 +90,7 @@ sealed class GreedyPicker(PathDef? path) : Picker
 
     bool OnPath(Offer o) => path != null && o.Kind switch
     {
-        OfferKind.Weapon or OfferKind.Rank => path.Weapons.Contains(o.Id),
+        OfferKind.Weapon or OfferKind.Rank or OfferKind.Hone => path.Weapons.Contains(o.Id),
         OfferKind.Boon => path.Passives.Contains(o.Id) || path.Blessings.Contains(o.Id) || path.Great.Contains(o.Id),
         OfferKind.Evolve => true,
         _ => false,
@@ -113,6 +117,9 @@ sealed class GreedyPicker(PathDef? path) : Picker
         {
             case OfferKind.Evolve:
                 s = 1000 + (path?.Capstones.Contains(o.Branch!) == true ? 100 : 0);
+                break;
+            case OfferKind.Union:
+                s = 1100;
                 break;
             case OfferKind.Weapon:
             {
@@ -154,6 +161,7 @@ sealed class GreedyPicker(PathDef? path) : Picker
                 if (o.From > 0) s *= 0.9;
                 break;
             }
+            case OfferKind.Hone: s = 22 + 30 * Share(b, o.Id); break;
             case OfferKind.Heal: s = 5 + 40 * (1 - hp); break;
             default: s = 1; break;
         }

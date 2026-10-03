@@ -154,12 +154,21 @@ public sealed class Journey
             Hp = exp != null ? Math.Min(exp.Hp, kit.Stats.Get(Stat.MaxHealth)) : null,
         });
         b.EmberOn = combat && (arena || ember);
+        b.Night = arena || ember || World.Time == TimeOfDay.Night;
         GearWeapons = kit.Weapons.Select(w => w.Id).ToHashSet();
         b.Favours.UnionWith(Callings.Archetype(Ch.Archetype).Favours);
+        b.CallingPaths.UnionWith(Content.Paths.All.Where(p => p.Callings.Contains(Ch.Archetype)).Select(p => p.Id));
+        // What is carried by day is attuned for the night (offered first, a
+        // rank or two up); what is only learned comes a little more often.
+        if (b.EmberOn)
+        {
+            foreach (var id in SkillBook.Attuned(Ch)) b.Attuned[id] = SkillBook.NightRank(Ch);
+            b.Familiar.UnionWith(Ch.Skills.Where(id => Content.Weapons.All.ContainsKey(id) && !b.Attuned.ContainsKey(id)));
+        }
         b.GearIds.UnionWith(kit.GearIds);
         b.GearStatuses.UnionWith(kit.GearStatuses);
         b.Rerolls = kit.Rerolls;
-        b.Banishes = 1;
+        b.Banishes = 2;
         b.Player.Revives = kit.Revives;
         if (b.EmberOn)
             for (int i = 0; i < kit.StartLevels; i++) b.GainEmber(b.EmberNext);

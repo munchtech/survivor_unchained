@@ -36,6 +36,8 @@ public sealed class WeaponInst
     public int Slot;
     /// <summary>For beams and orbits: active until.</summary>
     public double ActiveT;
+    /// <summary>Times it has been honed (finished, in the endless dark).</summary>
+    public int Honed;
     public int Swing;
     Tag[]? tags;
 
@@ -83,7 +85,7 @@ public sealed class WeaponInst
     {
         get
         {
-            double d = (Def.Base.Damage ?? 0) * (1 + Content.Weapons.DamageStep * (Rank - 1)) * Mods.Damage;
+            double d = (Def.Base.Damage ?? 0) * (1 + Def.Growth * (Rank - 1)) * Mods.Damage;
             if (evolution != null) d *= evolution.Mods.Damage ?? 1;
             return d;
         }
@@ -314,7 +316,10 @@ public static class Firing
         bool atTarget = w.Flag(s => s.AtTarget);
         if (atTarget)
         {
-            var t = b.DensestHostile(p.X, p.Z, 11, r);
+            // Every other one goes under a champion or worse, when one is near:
+            // a field that only ever finds the crowd never brings down what leads it.
+            var big = (w.Swing++ & 1) == 1 ? b.NearestHostile(p.X, p.Z, 11, e => e.Elite || e.Boss) : null;
+            var t = big ?? b.DensestHostile(p.X, p.Z, 11, r);
             if (t == null) return false;
             x = t.X; z = t.Z;
         }

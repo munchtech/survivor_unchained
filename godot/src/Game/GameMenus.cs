@@ -160,7 +160,7 @@ public partial class Game
         var b = Battle!;
         scene!.SimPaused = true;
         hudMode = "draft";
-        Present(LevelUp.Draft(b, LevelUp.Count(b)));
+        Present(LevelUp.Draft(b));
     }
 
     void Present(List<Offer> list)
@@ -181,25 +181,27 @@ public partial class Game
         var o = offers[i];
         LevelUp.Choose(b, o);
         if (o.Kind == OfferKind.Weapon) Toast(new Toast(ToastKind.Level, $"{o.Title} joins your arsenal"));
-        if (b.DraftOwed) Present(LevelUp.Draft(b, offers.Count));
+        if (b.DraftOwed) Present(LevelUp.Draft(b));
         else CloseDraft();
     }
 
     void Reroll()
     {
-        var b = Battle!;
-        if (b.Rerolls <= 0) return;
-        b.Rerolls--;
-        Present(LevelUp.Draft(b, offers.Count));
+        if (LevelUp.Reroll(Battle!) is { } again) Present(again);
     }
 
     void Banish(int i)
     {
+        if (i < 0 || i >= offers.Count || LevelUp.Banish(Battle!, offers[i]) is not { } again) return;
+        Present(again);
+    }
+
+    void Skip()
+    {
         var b = Battle!;
-        if (i < 0 || i >= offers.Count || b.Banishes <= 0 || offers[i].Kind == OfferKind.Evolve) return;
-        b.Banishes--;
-        b.BannedCards.Add(offers[i].Id);
-        Present(LevelUp.Draft(b, offers.Count));
+        if (!LevelUp.Skip(b)) return;
+        if (b.DraftOwed) Present(LevelUp.Draft(b));
+        else CloseDraft();
     }
 
     void CloseDraft()

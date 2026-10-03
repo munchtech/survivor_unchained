@@ -32,7 +32,7 @@ public static class Discoveries
         new() { Id = "shadowflame", Name = "Shadowflame", Weapons = ("umbral_bolt", "cinderfall"),
             Description = "Umbral bolts detonate on impact, scorching everything nearby.",
             Hint = "Shadow and flame were ever entwined.",
-            Apply = (a, _, battle) => battle.AddTrigger(T(TriggerEvent.Hit, [new Effect.Explode(1.4, 0.5, Basis.Hit, School.Fire)], new() { Weapon = a.Id }, icd: 0.05), "disc:shadowflame") },
+            Apply = (a, _, battle) => battle.AddTrigger(T(TriggerEvent.Hit, [new Effect.Explode(1.4, 0.3, Basis.Hit, School.Fire)], new() { Weapon = a.Id }, icd: 0.15), "disc:shadowflame") },
         new() { Id = "deadly_brew", Name = "Deadly Brew", Weapons = ("knifestorm", "rimeshard"),
             Description = "Every thrown knife is coated in a numbing venom that chills its victim.",
             Hint = "A rogue with access to the alchemist's icebox is a dangerous thing.",

@@ -54,14 +54,16 @@ public sealed class BoonDef
 
 public static class Boons
 {
-    /// <summary>The ember levels that bring a blessing: the first a minute or
-    /// two in, then further apart (4, 10, 18, 28, 40 ...).</summary>
+    /// <summary>The ember levels that bring a blessing: the first a minute in,
+    /// then further apart (5, 12, 21, 32, 45, 60 ...): at the ember's pace,
+    /// about the first, fifth, tenth, twentieth and twenty-eighth minutes,
+    /// between the great blessings rather than on them.</summary>
     public static readonly int[] Milestones = MakeMilestones();
 
     static int[] MakeMilestones()
     {
         var o = new List<int>();
-        for (int l = 4, gap = 6; l < 400; l += gap, gap += 2) o.Add(l);
+        for (int l = 5, gap = 7; l < 400; l += gap, gap += 2) o.Add(l);
         return o.ToArray();
     }
 
@@ -107,7 +109,7 @@ public static class Boons
         new() { Id = "expanse", Name = "Expanse", Icon = "expand", Rarity = Rarity.Uncommon, Max = 5, Kind = BoonKind.Passive, Tags = [Tag.Area],
             Text = "+12% area: novas, fields, orbits, storms and auras are bigger; chains, beams and blades reach farther.",
             Mods = r => [Inc(Stat.Area, 0.12 * r, "boon:expanse")] },
-        new() { Id = "duplicity", Name = "Duplicity", Icon = "triple", Rarity = Rarity.Rare, Max = 3, Kind = BoonKind.Passive, Tags = [Tag.Projectile],
+        new() { Id = "duplicity", Name = "Duplicity", Icon = "triple", Rarity = Rarity.Epic, Max = 2, Kind = BoonKind.Passive, Tags = [Tag.Projectile],
             Text = "+1 projectile on everything that sends things out.", Mods = r => [Flat(Stat.Projectiles, r, "boon:duplicity")] },
         new() { Id = "fortune", Name = "Fortune", Icon = "coin", Rarity = Rarity.Uncommon, Max = 4, Kind = BoonKind.Passive,
             Text = "+10% luck: a fourth card more often, rarer cards, ranks that surge, better drops.", Mods = r => [Flat(Stat.Luck, 0.1 * r, "boon:fortune")] },
@@ -141,8 +143,8 @@ public static class Boons
             Text = "+10% storm damage, and the shocked take 6% more from the blow that finds them.",
             Mods = r => [Inc(Stat.DamageOf(School.Storm), 0.1 * r, "boon:conduit"), Flat(Stat.ShockBonus, 0.06 * r, "boon:conduit")] },
         new() { Id = "venom", Name = "Venom", Icon = "plague", Rarity = Rarity.Uncommon, Max = 5, Kind = BoonKind.Passive, Tags = [Tag.Dot],
-            Text = "Damage over time (burning, bleeding, poison, searing) is 12% stronger, and poisons take hold 10% more often.",
-            Mods = r => [Inc(Stat.DamageOf(Tag.Dot), 0.12 * r, "boon:venom"), Inc(Stat.StatusChance, 0.1 * r, "boon:venom")] },
+            Text = "Damage over time (burning, bleeding, poison, searing) is 12% stronger, and every status takes hold 10% more often.",
+            Mods = r => [Inc(Stat.DamageOf(Tag.Dot), 0.12 * r, "boon:venom"), Flat(Stat.StatusChance, 0.1 * r, "boon:venom")] },
         new() { Id = "kinship", Name = "Kinship", Icon = "spiritwolf", Rarity = Rarity.Uncommon, Max = 5, Kind = BoonKind.Passive, Tags = [Tag.Summon],
             Text = "What fights for you strikes 15% harder and is 15% tougher.",
             Mods = r => [Inc(Stat.SummonDamage, 0.15 * r, "boon:kinship"), Inc(Stat.SummonHealth, 0.15 * r, "boon:kinship")] },
@@ -166,14 +168,14 @@ public static class Boons
             Text = "Anything that dies burning hands its fire to two neighbours.", Requires = new(Status: Burn),
             Triggers = [T(TriggerEvent.Kill, [new Effect.Spread(Burn, 3.2, 2, 2)], new() { TargetStatus = Burn })] },
         new() { Id = "pyre_burst", Name = "Pyre Burst", Icon = "pyre", Rarity = Rarity.Rare, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Fire, Tag.Explosion],
-            Text = "Burning creatures have a 30% chance to explode when they die.", Requires = new(Status: Burn),
-            Triggers = [T(TriggerEvent.Kill, [new Effect.Explode(2.4, 0.35, Basis.MaxHp, School.Fire, P(Burn, 0.7, 0.25, 3))], new() { TargetStatus = Burn }, chance: 0.3)] },
+            Text = "Burning creatures have a 25% chance to explode when they die.", Requires = new(Status: Burn),
+            Triggers = [T(TriggerEvent.Kill, [new Effect.Explode(2.4, 0.22, Basis.MaxHp, School.Fire, P(Burn, 0.7, 0.25, 3))], new() { TargetStatus = Burn }, chance: 0.25, icd: 0.05)] },
         new() { Id = "emberseekers", Name = "Emberseekers", Icon = "embers", Rarity = Rarity.Epic, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Fire, Tag.Projectile],
             Text = "Every explosion throws out two embers that seek the strongest creature near you.", Requires = new(Tag: Tag.Explosion),
-            Triggers = [T(TriggerEvent.Explode, [new Effect.Missiles(2, 18, Basis.Flat, School.Fire, Seek.Strongest, 9, "ember_seeker")], icd: 0.12)] },
+            Triggers = [T(TriggerEvent.Explode, [new Effect.Missiles(2, 14, Basis.Flat, School.Fire, Seek.Strongest, 9, "ember_seeker")], icd: 0.2)] },
         new() { Id = "shatter", Name = "Shatter", Icon = "shatter", Rarity = Rarity.Rare, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Frost, Tag.Explosion],
             Text = "Frozen creatures shatter when they die, spraying frost that chills everything nearby.", Requires = new(Status: Chill),
-            Triggers = [T(TriggerEvent.Kill, [new Effect.Explode(2.6, 0.45, Basis.MaxHp, School.Frost, P(Chill, 1, 2, 2.5))], new() { TargetStatus = Frozen })] },
+            Triggers = [T(TriggerEvent.Kill, [new Effect.Explode(2.6, 0.3, Basis.MaxHp, School.Frost, P(Chill, 1, 2, 2.5))], new() { TargetStatus = Frozen }, icd: 0.05)] },
         new() { Id = "deep_chill", Name = "Deep Chill", Icon = "frostaura", Rarity = Rarity.Uncommon, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Frost],
             Text = "Chill builds twice as fast. Frozen creatures take 35% more from everything.", Requires = new(Status: Chill),
             Mods = _ => [Inc(Stat.StatusDamage, 0.15, "syn:deep_chill")] },
@@ -267,8 +269,8 @@ public static class Boons
             Deeper = [[T(TriggerEvent.Tick, [new Effect.Strike(1, 1.5, 24, Basis.Flat, School.Storm, 9)], icd: 6)],
                 [T(TriggerEvent.Tick, [new Effect.Strike(1, 1.5, 24, Basis.Flat, School.Storm, 9)], icd: 6)]] },
         new() { Id = "storm_caller", Name = "Storm Caller", Icon = "bolt", Rarity = Rarity.Epic, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Storm],
-            Text = "Every 12th kill calls lightning down on the thickest knot of creatures near you.", Requires = new(Tag: Tag.Storm),
-            Triggers = [T(TriggerEvent.Kill, [new Effect.Strike(3, 1.6, 40, Basis.Flat, School.Storm, 6)], chance: 1.0 / 12)] },
+            Text = "Every 16th kill calls lightning down on the thickest knot of creatures near you.", Requires = new(Tag: Tag.Storm),
+            Triggers = [T(TriggerEvent.Kill, [new Effect.Strike(3, 1.6, 30, Basis.Flat, School.Storm, 6)], chance: 1.0 / 16)] },
         new() { Id = "fracture", Name = "Fracture", Icon = "shatter", Rarity = Rarity.Epic, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Frost, Tag.Fire],
             Text = "Fire on the frozen is a violent thing: burning a frozen creature makes it explode.", Requires = new(All: [new(Status: Chill), new(Status: Burn)]),
             Triggers = [T(TriggerEvent.Hit, [new Effect.Explode(2.6, 1.2, Basis.Hit, School.Frost)], new() { School = School.Fire, TargetStatus = Frozen }, icd: 0.05)] },
@@ -286,9 +288,9 @@ public static class Boons
         new() { Id = "contagion", Name = "Contagion", Icon = "plague", Rarity = Rarity.Rare, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Dot, Tag.Nature],
             Text = "Poison spreads on its own: each second a poisoned creature passes a dose to the nearest of its neighbours.", Requires = new(Status: Poison) },
         new() { Id = "deaths_due", Name = "Death's Due", Icon = "mark", Rarity = Rarity.Rare, Max = 1, Kind = BoonKind.Blessing, Tags = [Tag.Arcane, Tag.Explosion],
-            Text = "A marked creature that dies bursts for a fifth of its health, and the toughest thing near it is marked.", Requires = new(Status: Mark),
-            Triggers = [T(TriggerEvent.Kill, [new Effect.Explode(2.4, 0.2, Basis.MaxHp, School.Arcane), new Effect.Apply(P(Mark, 1, 1, 5), OnHit: false, Radius: 7, Count: 1)],
-                new() { TargetStatus = Mark }, icd: 0.08)] },
+            Text = "A marked creature that dies bursts for a tenth of its health, and the toughest thing near it is marked.", Requires = new(Status: Mark),
+            Triggers = [T(TriggerEvent.Kill, [new Effect.Explode(2.2, 0.1, Basis.MaxHp, School.Arcane), new Effect.Apply(P(Mark, 1, 1, 5), OnHit: false, Radius: 6, Count: 1)],
+                new() { TargetStatus = Mark }, icd: 0.2)] },
     }.ToDictionary(b => b.Id);
 
     /// <summary>The order the boons were written in (the draft walks them in it).</summary>

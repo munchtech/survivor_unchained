@@ -302,7 +302,7 @@ public sealed class CombatKit
     public List<string> Facets = new();
     public HashSet<string> GearIds = new();
     public HashSet<StatusKind> GearStatuses = new();
-    public int StartLevels, Revives, Rerolls = 2;
+    public int StartLevels, Revives, Rerolls = 3;
 }
 
 public static class Character

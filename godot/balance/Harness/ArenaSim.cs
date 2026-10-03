@@ -32,7 +32,7 @@ public sealed class RunResult
     public double? WonAt;
     public bool Died;
     public double Minutes;
-    public int Kills, Ember, Cards, Respites, Rerolls, Banishes;
+    public int Kills, Ember, Cards, Respites, Rerolls, Banishes, Skips;
     public string KilledBy = "", Build = "", Path = "";
     public double DamageTaken, LowHp = 1;
     public double? BossTtk;
@@ -67,40 +67,32 @@ public static class ArenaSim
         OfferKind.Boon when o.Great => $"g:{o.Id}",
         OfferKind.Boon when o.Blessing => $"b:{o.Id}",
         OfferKind.Boon => $"p:{o.Id}",
+        OfferKind.Hone => $"h:{o.Id}",
+        OfferKind.Union => $"u:{o.Id}",
         OfferKind.Heal => "heal",
         _ => "gold",
     };
 
-    /// <summary>Settle every draft owed, the policy's way.</summary>
-    public static void Drafts(Battle b, Picker pick, Rng rng, RunResult r, Minute? m, Func<Battle, int> cards)
+    /// <summary>Settle every draft owed, the policy's way (banish, reroll,
+    /// skip and choose through the same calls the game makes).</summary>
+    public static void Drafts(Battle b, Picker pick, Rng rng, RunResult r, Minute? m)
     {
         int guard = 0;
         while (b.DraftOwed && guard++ < 200)
         {
-            bool normal = !LevelUp.GreatNext(b) && !LevelUp.BlessingNext(b);
-            var offers = LevelUp.Draft(b, cards(b));
+            bool normal = LevelUp.SkillNext(b);
+            var offers = LevelUp.Draft(b);
             if (offers.Count == 0) break;
-            // Banish then reroll, as a player would, while the draft allows.
             int ban = b.Banishes > 0 ? pick.Banish(b, offers) : -1;
-            if (ban >= 0 && offers[ban].Kind != OfferKind.Evolve)
-            {
-                b.Banishes--;
-                b.BannedCards.Add(offers[ban].Id);
-                r.Banishes++;
-                offers = LevelUp.Draft(b, cards(b));
-            }
-            if (b.Rerolls > 0 && pick.Reroll(b, offers))
-            {
-                b.Rerolls--;
-                r.Rerolls++;
-                offers = LevelUp.Draft(b, cards(b));
-            }
+            if (ban >= 0 && LevelUp.Banish(b, offers[ban]) is { } afterBan) { offers = afterBan; r.Banishes++; }
+            if (b.Rerolls > 0 && pick.Reroll(b, offers) && LevelUp.Reroll(b) is { } again) { offers = again; r.Rerolls++; }
             foreach (var o in offers) r.Offered[Card(o)] = r.Offered.GetValueOrDefault(Card(o)) + 1;
             if (normal)
             {
                 r.NormalDrafts++;
-                if (offers.Any(o => o.Kind is OfferKind.Rank or OfferKind.Evolve)) r.Advancing++;
+                if (offers.Any(o => o.Kind is OfferKind.Rank or OfferKind.Evolve or OfferKind.Hone || (o.Kind == OfferKind.Boon && o.From > 0))) r.Advancing++;
                 if (offers.All(o => o.Kind is OfferKind.Heal or OfferKind.Gold)) r.Respites++;
+                if (pick.Skip(b, offers) && LevelUp.Skip(b)) { r.Skips++; continue; }
             }
             var take = offers[Math.Clamp(pick.Choose(b, offers, rng), 0, offers.Count - 1)];
             r.Taken[Card(take)] = r.Taken.GetValueOrDefault(Card(take)) + 1;
@@ -111,9 +103,6 @@ public static class ArenaSim
             if (m != null) m.Drafts++;
         }
     }
-
-    /// <summary>How many cards a draft shows.</summary>
-    public static int Cards(Battle b) => LevelUp.Count(b);
 
     public static RunResult Play(RunSpec spec)
     {
@@ -178,7 +167,7 @@ public static class ArenaSim
             }
             host.Pass(Dt);
             j.BankArt(b);
-            Drafts(b, pick, rng, r, m, Cards);
+            Drafts(b, pick, rng, r, m);
             m.LowHp = Math.Min(m.LowHp, p.Hp / b.MaxHp);
             t += Dt;
             if (r.WonAt == null && zone.Won)
