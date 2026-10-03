@@ -332,8 +332,9 @@ recipe readable on the card ("Evolves: Grave-Edge with Whetstone"). Vampire
 Survivors' single destiny gives less replay; Rogue: Genesia's
 multi-ingredient recipes need a wiki. A minute gate (the feel study's S-10)
 was measured and not needed: a build that plans gets its first evolution at
-a median of about ten minutes, one that does not at about twenty; the moment
-is earned and still centred in the run.
+a median of seven to ten minutes (sooner at the higher tiers, where banked
+skills come in higher), one that does not at seventeen to twenty; the moment
+is earned and still in the run's first half, where the feel study wants it.
 
 ---
 
@@ -465,7 +466,7 @@ four. A union frees a combat slot; honing is the depth after the slots close.
 R§4: six and six matches the number of level-ups in thirty minutes. Four
 slots (DRG, Megabonk) bring evolutions sooner but leave the late draft
 empty; unlimited passives (Brotato) turn passives into stats. Measured: a
-planning bot completes its build at about 24 to 29 minutes.
+planning bot completes its build at about 22 to 28 minutes.
 
 ---
 
@@ -523,7 +524,16 @@ card, the arsenal, the catalyst pity) agrees.
 
 `EmberNeed(n) = round(20 + 28n + 3.2n² + (n > 28 ? 8(n − 28)² : 0))`.
 
-PACE_TABLE
+Measured at tier 1 (median of 144 runs):
+
+| Minute | 1 | 2 | 3 | 5 | 10 | 15 | 20 | 25 | 30 |
+|---|---|---|---|---|---|---|---|---|---|
+| Ember level | 6 | 9 | 11 | 15 | 24 | 31 | 38 | 45 | 50 |
+| Drafts that minute | 7 | 3 | 3 | 2 | 2 | 2 | 2 | 2 | 2 |
+
+Cards a minute over a whole night: 1.95. `Harness/Targets.EmberByMinute`
+holds this pace, so a probe at an ember level meets the horde of the minute
+it is usually reached.
 
 About six cards in the first minute (five levels and Dusk's great blessing),
 then two or three a minute, under two late (R§9: between 0.5 and 3 a minute).
@@ -573,7 +583,24 @@ All measured by the harness (section 15) with the deft hands, the survivor
 at the story's level for the tier (1, 4, 7), and the oaths the table
 swears (none or one at tier 1, two at tiers 2 and 3).
 
-TARGETS_TABLE
+| Measure | Target | Measured |
+|---|---|---|
+| Win at the survivor's tier (planning drafts: greedy, first) | tier 1 ≥ 95%, tiers 2–3 ≥ 85% | tier 1: 96%, 96%; tier 2: 96%, 94%; tier 3: 92%, 88% |
+| Win drafting at random | below planning drafts, so the draft matters | tier 1 98%, tier 2 85%, tier 3 90%; the boss takes half as long again or longer (49 / 77 / 81 s against 35 / 36 / 48 s) |
+| A tier above the survivor's level (level 10: tier 3 is the band's top) | each tier above a real step; three above mostly lost | tier 3: 92% won; tier 4: 79% (16% fell before the boss); tier 5: 80% (18%); tier 6: 49% (41%) |
+| Every path at tier 2, its own bot | ≥ 80% | 82% (the Host) to 100% (the Hunt, the Long Winter, the Storm, the Weave) |
+| Boss fight, median | 30–90 s (R§9) | tier 1: 42 s, tier 2: 57 s, tier 3: 57 s; by path at tier 2: 20 s (the Hunt, the Weave) to 78 s (Dawn) |
+| Herald fight, median | under the boss's | 26 / 44 / 58 s |
+| Ordinary creature's time to kill, minutes 5 / 15 / 25 (tier 2) | falls through the night | 0.45 / 0.23 / 0.13 s (it rose, 0.43 / 0.69 / 0.95 s, before) |
+| Champion's time to kill, minute 15 | seconds | 1.2 to 2.0 s |
+| First evolution, median | earned: about ten minutes when planned | greedy 7–10 min, first 10–15, random 17–20 |
+| Evolutions a night | three or four when planned | 3.6–4.2 planned, 1.8–2.0 at random |
+| Build complete (six skills evolved) | the last third | 22–28 min |
+| Cards a minute | 0.5–3 (R§9) | 7 in the first, then 2–3, 1.95 over the night |
+| Largest share of a build's damage by one skill (mean where carried) | no skill carries the game | 21% (Judgement Disc; 39% before) |
+| Largest share by one rule (probes) | ≤ 45% | 31% (Shatter, after its chain was paced) |
+| Path probes at the fifteenth minute's ember (`BalanceTests`) | crowd 0.7–1.35 of the median, champion ≥ 0.25, toughness ≥ 0.55, power index ≤ 1.9 | crowd 1106–1823 (0.75–1.23), champion 177–1045, toughness 184–430: within every bound |
+| Great blessings, first choice (small samples) | none a trap | 78% (Hold the Crossing, 9 runs) to 100% won |
 
 ---
 
@@ -589,7 +616,7 @@ TARGETS_TABLE
 - Measured: no path runs away (balance index within 1.9 of the median, crowd
   within 1.35), none falls short (crowd ≥ 0.7, champion ≥ 0.25, toughness ≥
   0.55), no rule carries more than 45% of a build; at tier 2 every path wins
-  WIN_RANGE of its nights.
+  82% to 100% of its nights.
 
 ### Why this is the answer
 
@@ -695,10 +722,57 @@ report; its day-story walk (`BALANCE_LAB=story`) is the lab's own.
 
 ## 16. Before and after
 
-BEFORE_AFTER
+"Before" is the game as this work found it, measured by the harness's first
+bot (plain hands, level 1, no oaths); "after" is the finished design. The
+last rows are the same measure, before and after.
+
+| | Before | After |
+|---|---|---|
+| Tier 1 won (first / greedy / random), plain hands, level 1, no oaths | 94% / 88% / 91% | 92% / 94% / 96% (against a boss with half again the health, the hands now giving ground to it) |
+| Tier 2 won (greedy / random), plain hands, level 1, no oaths | 88% / 71% | 94% / 92% (a tier is now three creature levels, not two) |
+| Tier 2 at the story's level and the table's oaths, deft hands (greedy / random) | not measurable (no oaths, no levels, no deft hands in the harness) | 96% / 85% |
+| A tier above the survivor's (deft, level 10, table oaths: tiers 4, 5, 6) | 86%, 81%, 62% before the ladder changed | 79%, 80%, 49% |
+| Paths at tier 2, their own bot | 58% (the Wild) to 100% | 82% to 100% |
+| Path probes: crowd spread / champion spread | ×2.0 / ×6.9 (level 35) | ×1.65 / ×5.9 (the fifteenth minute's ember), every path inside the bounds |
+| One skill's mean share of the builds that carry it | 39% (Judgement Disc) | 21% |
+| Ember at minutes 1 / 15 / 30 | 7 / 37 / 53 | 6 / 31 / 50 |
+| Ordinary creature's time to kill at minutes 5 / 15 / 25, tier 2 | 0.43 / 0.69 / 0.95 s (rising) | 0.45 / 0.23 / 0.13 s (falling) |
+| Boss fight | not measured; bots killed it in 10–30 s once measured | 42–57 s by tier |
+| Great blessings | 12, random hands | 20 in four roles, hands dealt by role, a calling's own once a night |
+| Passives | stat names (Might, Haste, Precision...) | 25 things of the valley, most with a rule of their own |
+| Day to night | the weapon only | banked skills, familiar skills, the calling's paths, kindled gear, the codex, the tome |
+| Rare drought in the draft | up to twenty levels | at most ten |
 
 ---
 
 ## 17. Open
 
-OPEN_ITEMS
+- **The middle of the night is safe.** Lowest health is about 90% from minute
+  ten to the boss; the threat is champions, heralds and the boss. The feel
+  study's floods and breathers (S-12) would put pressure back mid-run, and
+  its boss ceremony (S-11) would make the boss the peak; both are arena
+  pacing beyond the spawner that keeps up, and are not built.
+- **The boss-killers kill the boss fast.** The Hunt and the Weave fell the
+  tier-2 boss in about 20 s, under research's 30 s. That is their identity;
+  if the boss is to be the peak for them too, give it a phase (S-11), not
+  more health (which would drag Dawn and the Wild past 90 s).
+- **Most falls at tier 3 come before minute fifteen**, even with Dusk. A
+  softer first quarter hour at the higher tiers is the next lever if
+  playtests agree.
+- **The Edge is not built.** When it is, apply section 14's night cap and
+  lean (`Battle.Night`).
+- **Icons.** The new great blessings and the callings' own reuse existing
+  glyphs (embers, static, thorn, howl, aegis, drain, arcane, mark); they
+  should have their own in the UI art manifest.
+- **Small samples.** The callings' own greats were first choices in 9 runs
+  each; a dedicated sweep (each calling, many seeds) should confirm them.
+  Cinderwake and Burn Bright have each sat lowest in one sweep or another:
+  watch them.
+- **The Grave's crowd** is the lowest in the probes (0.75 of the median),
+  though it wins 92% of its arenas; a small lift to Umbral Bolt is the
+  obvious one.
+- **Probes and arenas measure crowds differently**: the probe's crowd is the
+  level's full strength (a yardstick that does not saturate), the arena's is
+  softened by the minute.
+- **The day story's balance** (the balance lab's walk of the Verge) was not
+  part of this work.
