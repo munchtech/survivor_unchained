@@ -43,7 +43,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import analyse  # noqa: E402
 import lines as lines_mod  # noqa: E402
 import post  # noqa: E402
-from common import FFMPEG, INDEX, OUT_AUDIO, REFS, WORK, accent_target, cast, judge, voxcpm  # noqa: E402
+from common import FFMPEG, INDEX, OUT_AUDIO, REFS, WORK, accent_target, cast, judge, seedvc, voxcpm  # noqa: E402
 
 PACE = {"very slow": (1.3, 2.3), "slow": (1.7, 2.8), "measured": (2.2, 3.4), "measured then slow": (1.8, 3.3),
         "slow then quick": (1.9, 3.8), "quick then slower": (2.0, 3.8), "quick then measured": (2.2, 3.8),
@@ -118,6 +118,28 @@ def prompt_for(voice: str, reg: str) -> tuple[str, str, str]:
     return os.path.join(REFS, f"{voice}.flac"), ref_text(voice), "rest"
 
 
+# How lines are made: "cont" (continuation from the voice's mood bank) or
+# "perform" (voice design acts the line, Seed-VC makes it the cast voice).
+METHOD = {"name": "cont", "vc": None, "f0": False}
+
+
+def performance(vdef: dict, d: dict) -> str:
+    """The voice-design prompt for one line: the part as cast, and how this
+    line is played (from its direction), in a director's plain words."""
+    he = "She" if vdef.get("sex") == "f" else "He"
+    bits = [vdef["design"]]
+    play = f"{he} speaks {d.get('emo', 'plainly')}"
+    pace, vol = d.get("pace", "measured"), d.get("vol", "level")
+    if pace != "measured":
+        play += f", {pace}"
+    if vol != "level":
+        play += {"hushed": ", almost whispering", "quiet": ", quietly", "raised": ", voice raised", "shout": ", shouting"}.get(vol, "")
+    bits.append(play + ".")
+    if d.get("note"):
+        bits.append(d["note"][:240])
+    return " ".join(bits)
+
+
 def style_of(d: dict, stress: list[str]) -> str:
     bits = [d.get("emo", "")]
     pace = d.get("pace", "measured")
@@ -145,10 +167,28 @@ class Ears:
 
     def hear(self, path: str, text: str, voice: str) -> dict:
         import soundfile as sf
-        rep = asdict(analyse.analyse(path, text))
+        import tells
+        # One Whisper pass, with word timings: the words, and the tells.
+        rep = asdict(analyse.analyse(path, None, want=("utmos", "accent")))
+        tl = tells.tells(path)
+        rep["said"] = tl.pop("said")
+        rep["tells"] = tl
+        w_, rep["wrong"] = analyse.wer(text, rep["said"])
+        rep["wer"] = round(float(w_), 3)
+        rep["faults"] = analyse.substantive(rep["wrong"])
+        rep["human"] = round(human(tl), 2)
         w, sr = sf.read(path, dtype="float32")
+        if w.ndim > 1:
+            w = w.mean(1)
         rep["similarity"] = round(float(np.dot(analyse.speaker_embedding(w, sr), self.ref_print(voice))), 3)
         return rep
+
+
+def human(t: dict) -> float:
+    """How much a take moves like a person (tells.py): pace that changes,
+    stress that lands, pitch that travels, breath; each capped."""
+    return (min(t["pace_variation"], 0.3) * 6 + min(t["stress_spread_db"], 8) * 0.25
+            + min(t["word_pitch_moves_st"], 4) * 0.35 + min(t["breaths"], 3) * 0.2)
 
 
 PACE_X = {"very slow": (0.55, 0.9), "slow": (0.65, 1.0), "measured": (0.8, 1.2), "brisk": (0.95, 1.35), "quick": (1.0, 1.5)}
@@ -177,7 +217,7 @@ def score_take(rep: dict, voice: str, vdef: dict, d: dict, words: int) -> tuple[
     sim = rep.get("similarity", 0)
     if sim < 0.45 and not vdef.get("fx"):
         bad.append(f"not the same person as the reference ({sim:.2f})")
-    score += 2.0 * sim
+    score += 2.0 * sim + rep.get("human", 0)
     return round(score, 3), bad
 
 
@@ -194,10 +234,29 @@ def record_part(worker, ears: Ears, line: dict, i: int, seg: dict, d: dict, take
     os.makedirs(folder, exist_ok=True)
     heard = []
     seed = 0
+    if METHOD["name"] == "perform":
+        style = "performed, then converted"
     while seed < most:
         seed += 1
-        out = os.path.join(folder, f"p{i}_{v}_{reg}_s{seed:02d}.wav")
-        if not os.path.exists(out):
+        if METHOD["name"] == "perform":
+            # The line acted in full by voice design (the part described, and
+            # how this line is played), then turned into the cast voice by
+            # Seed-VC: the performance keeps its timing, stress and breath.
+            perf = os.path.join(folder, f"p{i}_{v}_perf_s{seed:02d}.wav")
+            out = os.path.join(folder, f"p{i}_{v}_vc_s{seed:02d}.wav")
+            if not os.path.exists(perf):
+                r = worker.ask(text=text, design=performance(vdef, d), seed=seed, out=perf, steps=25)
+                if "error" in r:
+                    log(f"    seed {seed}: {r['error']}")
+                    continue
+            if not os.path.exists(out):
+                r = METHOD["vc"].ask(source=perf, target=os.path.join(REFS, f"{v}.flac"), out=out, f0=METHOD["f0"])
+                if "error" in r:
+                    log(f"    seed {seed}: {r['error']}")
+                    continue
+        else:
+            out = os.path.join(folder, f"p{i}_{v}_{reg}_s{seed:02d}.wav")
+        if METHOD["name"] != "perform" and not os.path.exists(out):
             # Spoken on from a take of the same voice in the line's mood:
             # the person holds, and the mood and pace carry (registers.py).
             r = worker.ask(text=text, ref=os.path.join(REFS, f"{v}.flac"), prompt_wav=prompt_wav, prompt_text=prompt_text,
@@ -254,7 +313,7 @@ def finish(line: dict, picks: list[dict], log) -> dict:
     post.write_ogg(audio, dst, FFMPEG)
     fr = char_marks(line["text"], line["segments"])
     segs = [[m[0], m[1], round(f[0], 3), round(f[1], 3)] for m, f in zip(marks, fr)]
-    take = {"file": rel, "hash": line["hash"], "sec": round(len(audio) / post.SR, 2), "segs": segs, "model": "voxcpm2",
+    take = {"file": rel, "hash": line["hash"], "sec": round(len(audio) / post.SR, 2), "segs": segs, "model": "voxcpm2" if METHOD["name"] == "cont" else "voxcpm2 performance + seed-vc",
             "parts": [{"voice": s["voice"], "seed": p["seed"], "score": p["score"], "similarity": p["similarity"],
                        "utmos": p["utmos"], "accent": p["accent"], "wps": p["words_per_sec"], "said": p["said"],
                        "style": p["style"]} for s, p in zip(line["segments"], picks)],
@@ -291,6 +350,8 @@ def main(argv):
     ap.add_argument("--redo", action="store_true")
     ap.add_argument("--index", action="store_true")
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--method", choices=["cont", "perform"], default="cont")
+    ap.add_argument("--f0", action="store_true", help="perform: the 44 kHz converter that follows the performance's pitch")
     a = ap.parse_args(argv)
     man = lines_mod.merge(lines_mod.build())
     if a.index:
@@ -316,6 +377,7 @@ def main(argv):
 
     by_id = {l["id"]: l for l in man}
     worker = voxcpm()
+    METHOD.update(name=a.method, f0=a.f0, vc=seedvc() if a.method == "perform" else None)
     ears = Ears()
     done = 0
     try:
@@ -344,6 +406,8 @@ def main(argv):
             write_index(list(by_id.values()))
     finally:
         worker.close()
+        if METHOD["vc"]:
+            METHOD["vc"].close()
         n = write_index(list(by_id.values()))
         print(f"recorded {done}; {n} lines in the index")
 

@@ -4196,6 +4196,13 @@
      "text": "She doesn't talk, and then neither of you needs to. She undoes your boots before anything else, and sets them side by side outside the hides, and that seems to be a decision. Her hands are hard and careful, the way they are with a snare: slow, listening, ready to stop. They become sure. Once, far off, the Pack calls, and she goes still against you until it's done. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you."
     }
    ],
+   "direction": {
+    "emo": "intimate, quiet",
+    "intent": "a night with Maeca",
+    "pace": "slow",
+    "vol": "hushed",
+    "note": "Close and unhurried; the boots a small ceremony."
+   },
    "status": "todo"
   },
   {
@@ -4406,6 +4413,13 @@
      "text": "He let you. ...He doesn't let me, and he's known me ten years."
     }
    ],
+   "direction": {
+    "emo": "quiet wonder, a little jealous",
+    "intent": "she saw you kneel to Greymuzzle",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Narrator for the look at your knees. 'He let you.' amazed. The last sentence hurt, plain."
+   },
    "status": "todo"
   },
   {
@@ -4425,6 +4439,13 @@
      "text": "Not with that on you. Wash. River's that way. ...Or sleep, and come tomorrow. The night takes it off. It took it off me."
     }
    ],
+   "direction": {
+    "emo": "flat warning, then kind",
+    "intent": "you smell of wolf blood",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Narrator: she stops and sniffs. Curt orders. 'It took it off me.' quiet, a confession."
+   },
    "status": "todo"
   },
   {
@@ -4450,6 +4471,13 @@
      "text": "She goes out by the east gate without a lamp, and you follow her along the Old Road past the wreck, by starlight and the white of the frost. She walks barefoot on ground that would cut you through your boots, and doesn't make a sound. Once she stops, and you stop, and somewhere off in the Hollow a wolf calls and is answered. \"Him,\" she says. \"And the bitch with the white foot. Eating.\" She walks on."
     }
    ],
+   "direction": {
+    "emo": "hushed, attentive",
+    "intent": "the walk to the Blind",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Starlit, careful. Maeca's quoted words in her own soft half-voice if read; the narrator keeps it plain."
+   },
    "status": "todo"
   },
   {
@@ -4465,6 +4493,13 @@
      "text": "The Old Road, the wreck, the frost. You know the way now, and she lets you walk in front, which she has never done."
     }
    ],
+   "direction": {
+    "emo": "quiet warmth",
+    "intent": "she lets you lead",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "The last clause a small gift."
+   },
    "status": "todo"
   },
   {
@@ -4480,6 +4515,13 @@
      "text": "The Hunters' Blind is a lean-to of hides against a fallen oak, with a fire the size of a hat. She feeds it one stick at a time. She doesn't talk. After a while she takes the crossbow off her back, and checks it, and lays it down by her right hand, and turns and looks at you across the fire as if you were a track she has been following for days."
     }
    ],
+   "direction": {
+    "emo": "still, charged",
+    "intent": "the Blind",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "One action at a time. The look across the fire held."
+   },
    "status": "todo"
   },
   {
@@ -4495,6 +4537,13 @@
      "text": "If you're going to talk after, don't."
     }
    ],
+   "direction": {
+    "emo": "dry, guarded",
+    "intent": "terms for the night",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Deadpan; almost a smile."
+   },
    "status": "todo"
   },
   {
@@ -4569,6 +4618,13 @@
      "text": "Mind the frost on the Old Road. It's worse by the wreck."
     }
    ],
+   "direction": {
+    "emo": "practical tenderness",
+    "intent": "sends you off safe",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Care disguised as a road report."
+   },
    "status": "todo"
   },
   {
@@ -4594,6 +4650,13 @@
      "text": "You keep the fire. She keeps the dark. Some time after midnight she comes in from the edge of the light and sits down with her back against yours, and you can feel her breathing, slow, and listening. You sleep like that, sitting up. In the morning the frost is on both your shoulders and not between them."
     }
    ],
+   "direction": {
+    "emo": "tender, quiet",
+    "intent": "a night keeping watch",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Calm. The frost line a quiet image of closeness."
+   },
    "status": "todo"
   },
   {
@@ -4617,6 +4680,13 @@
      "text": "Most can't."
     }
    ],
+   "direction": {
+    "emo": "approving, dry",
+    "intent": "you kept the watch",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Narrator for the stretch. 'Most can't.' a small compliment."
+   },
    "status": "todo"
   },
   {
@@ -4642,6 +4712,13 @@
      "text": "Afterwards, in the dark under the hides, she puts her feet against your legs, and flinches: you're colder than they are. She starts to take them back."
     }
    ],
+   "direction": {
+    "emo": "intimate, uneasy",
+    "intent": "you're cold",
+    "pace": "slow",
+    "vol": "hushed",
+    "note": "A small chill under the warmth."
+   },
    "status": "todo"
   },
   {
@@ -4657,6 +4734,13 @@
      "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. Outside, in the frost, you hear them come: soft feet, a long way round, and then a sigh, and then another. The Pack, lying down round the Blind in the dark. She lifts her head. \"They don't do that,\" she says. \"Not for me. Not for anyone.\" She lies back down. \"You walk quiet. You came into my Hollow and knelt to him and he let you. You never talk about before.\" A pause. \"What were you?\""
     }
    ],
+   "direction": {
+    "emo": "hushed wonder",
+    "intent": "the Pack lies down round you",
+    "pace": "slow",
+    "vol": "hushed",
+    "note": "Very quiet. The Pack's arrival a held breath."
+   },
    "status": "todo"
   },
   {
@@ -4672,6 +4756,12 @@
      "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. \"You walk quiet,\" she says. \"You never talk about before.\" A pause. \"What were you?\""
     }
    ],
+   "direction": {
+    "emo": "intimate, curious",
+    "intent": "she asks what you were",
+    "pace": "slow",
+    "vol": "hushed"
+   },
    "status": "todo"
   },
   {
@@ -4687,6 +4777,12 @@
      "text": "The fire's down to embers. Far off, the Pack is quiet."
     }
    ],
+   "direction": {
+    "emo": "still",
+    "intent": "quiet",
+    "pace": "slow",
+    "vol": "hushed"
+   },
    "status": "todo"
   },
   {
@@ -4782,6 +4878,13 @@
      "text": "You take one in your hands. The sole is hard as boot leather, and scarred: old white lines across the ball of the foot, a ridge along the heel where something cut it to the bone a long time ago and it healed badly in the cold. She lets you hold it. She lets you hold the other. She lies very still, the way she lay still when the Pack called, and doesn't say anything for a long time. Into the dark, very low: \"Your hands are colder than my feet.\" A pause. \"Hold them anyway. ...Nobody's held those.\""
     }
    ],
+   "direction": {
+    "emo": "tender, sombre",
+    "intent": "her scarred feet",
+    "pace": "slow",
+    "vol": "hushed",
+    "note": "The scars described gently; the stillness at the end weighty."
+   },
    "status": "todo"
   },
   {
@@ -4797,6 +4900,13 @@
      "text": "She tucks them up under her instead, the way a dog curls its nose under its tail, and goes to sleep. In the night, half awake, you feel her put them back against you, slowly, as if she was trying it out."
     }
    ],
+   "direction": {
+    "emo": "tender, wry",
+    "intent": "she curls up",
+    "pace": "slow",
+    "vol": "hushed",
+    "note": "A small smile at the dog image."
+   },
    "status": "todo"
   },
   {
@@ -4820,6 +4930,13 @@
      "text": "I'd have liked you, then. Probably would have shot you for poaching."
     }
    ],
+   "direction": {
+    "emo": "warm, wry",
+    "intent": "you were a hunter",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Narrator: she almost smiles. The poaching joke fond."
+   },
    "status": "todo"
   },
   {
@@ -4843,6 +4960,13 @@
      "text": "Tracks for people who sit still. ...Read me something, one day. Not now."
     }
    ],
+   "direction": {
+    "emo": "curious, soft",
+    "intent": "you were a scholar",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Thinking. 'Read me something, one day.' shy, then 'Not now.' quick."
+   },
    "status": "todo"
   },
   {
@@ -4858,6 +4982,13 @@
      "text": "Walking away's a skill. Most never learn it. They stay till it's too late, out of pride."
     }
    ],
+   "direction": {
+    "emo": "respect",
+    "intent": "you walked away",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Plain respect, with Ashford under it."
+   },
    "status": "todo"
   },
   {
@@ -4881,6 +5012,13 @@
      "text": "I held a cave mouth three days for nobody coming. We'd have got on."
     }
    ],
+   "direction": {
+    "emo": "kinship, grief",
+    "intent": "you lit lamps for nobody",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Narrator: a long breath. The cave mouth line very quiet. 'We'd have got on.' tender."
+   },
    "status": "todo"
   },
   {
@@ -4908,6 +5046,13 @@
      "text": "...Keep it, then. I keep mine."
     }
    ],
+   "direction": {
+    "emo": "accepting",
+    "intent": "she doesn't push",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Narrator around her. 'I keep mine.' kind."
+   },
    "status": "todo"
   },
   {
@@ -4944,6 +5089,13 @@
      "text": "Go on. Holloway'll count us."
     }
    ],
+   "direction": {
+    "emo": "tender, frightened, hiding it",
+    "intent": "she heard your heart change",
+    "pace": "slow",
+    "vol": "hushed",
+    "note": "Narrator: grey light, her head on your chest. Close and still: the hare and the bear. 'I counted between.' A pause where the name would be. Narrator: she goes out. 'Go on. Holloway'll count us.' steadier."
+   },
    "status": "todo"
   },
   {
@@ -4987,6 +5139,13 @@
      "text": "Don't make it a story. Not yet."
     }
    ],
+   "direction": {
+    "emo": "gentle refusal",
+    "intent": "not yet",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "'No.' Narrator: not unkind. Her old rule, softened."
+   },
    "status": "todo"
   },
   {
@@ -5020,6 +5179,13 @@
      "text": "Not for money, now. Rook talks. ...Is it her, or me, or both? I don't mind which. I mind not knowing."
     }
    ],
+   "direction": {
+    "emo": "plain, exposed",
+    "intent": "asks about Sella",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Narrator: the cup. Level. 'I mind not knowing.' honest and quiet."
+   },
    "status": "todo"
   },
   {
@@ -5043,6 +5209,13 @@
      "text": "She's honest about what she charges. That's more than most."
     }
    ],
+   "direction": {
+    "emo": "dry, fair",
+    "intent": "Sella's honest",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Narrator: a shrug. Fair-minded."
+   },
    "status": "todo"
   },
   {
@@ -5102,6 +5275,12 @@
      "text": "Good. Now I know."
     }
    ],
+   "direction": {
+    "emo": "settled",
+    "intent": "now she knows",
+    "pace": "measured",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
@@ -5121,6 +5300,13 @@
      "text": "We'll see."
     }
    ],
+   "direction": {
+    "emo": "wary hope",
+    "intent": "we'll see",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Narrator for the long look. 'We'll see.' guarded."
+   },
    "status": "todo"
   },
   {
@@ -5136,6 +5322,12 @@
      "text": "That's an answer."
     }
    ],
+   "direction": {
+    "emo": "dry acceptance",
+    "intent": "an answer of sorts",
+    "pace": "measured",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
@@ -11273,6 +11465,13 @@
      "text": "Course it held. I'm a good doctor. ...Go on, pal. Come back tomorrow."
     }
    ],
+   "direction": {
+    "emo": "grief held with care",
+    "intent": "his brother's last words",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Narrator: the cup set down. '...Did he.' A long time. Professional pride as armour: 'I'm a good doctor.' cracking. Kind dismissal."
+   },
    "status": "todo"
   },
   {
@@ -11298,6 +11497,13 @@
      "text": "Behind the Crooked Flagon there's a lean-to with a lamp, a scrubbed table, a shelf of jars one of them moving , and a sail-needle stuck in a cork like a trophy. Rav is sitting on the table with his feet on a stool and two cups already poured."
     }
    ],
+   "direction": {
+    "emo": "wry, observant",
+    "intent": "Rav's surgery",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "A little relish in the moving jar and the trophy needle."
+   },
    "status": "todo"
   },
   {
@@ -11337,6 +11543,13 @@
      "text": "...There's nothing wrong with you. That's the worrying part. Nobody's got nothing wrong with them. Have a drink, before I find something."
     }
    ],
+   "direction": {
+    "emo": "flirty, then troubled",
+    "intent": "he examines you",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Alarmed 'You came.' Doctor's orders, joking. Narrator through the exam. 'Cold as a cellar step.' quiet and worried. The last lines a joke covering real alarm."
+   },
    "status": "todo"
   },
   {
@@ -11390,6 +11603,13 @@
      "text": "Both of us, evidently. ...Go home, pal. You've got a job up the Old Road, and I've got a bad habit of liking folk who've jobs up the Old Road."
     }
    ],
+   "direction": {
+    "emo": "rueful, fond",
+    "intent": "sends you home",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Dry about the cups. The last sentence a soft confession."
+   },
    "status": "todo"
   },
   {
@@ -11427,6 +11647,13 @@
      "text": "Ask me again when you've stopped needing anything. I'll be here. I'm always here. That's the other worrying part."
     }
    ],
+   "direction": {
+    "emo": "tender, careful",
+    "intent": "not yet",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Narrator through the kiss and the hand. 'Not yet, pal.' gentle. His reasons plain. 'I'm always here.' rueful; the worrying part dry."
+   },
    "status": "todo"
   },
   {
@@ -11460,6 +11687,13 @@
      "text": "Get out of my surgery."
     }
    ],
+   "direction": {
+    "emo": "mock-offended, fond",
+    "intent": "shoos you out",
+    "pace": "measured",
+    "vol": "level",
+    "note": "Narrator: the snort. Grumbling affection."
+   },
    "status": "todo"
   },
   {
@@ -11497,6 +11731,13 @@
      "text": "Most folk wouldn't. Most folk would drink at Rook's for a month and hope I'd died of it. ...Sit. I'll not talk about it if you don't. I'm a doctor today. What's wrong with you?"
     }
    ],
+   "direction": {
+    "emo": "sober, raw, steady",
+    "intent": "you came back after Dunstan",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Narrator: sober, shaved. 'You came back.' Long look. Dry about Rook's. Then plain: no talk of it. 'I'm a doctor today.' steadying himself."
+   },
    "status": "todo"
   },
   {
@@ -11536,6 +11777,13 @@
      "text": "Aye. Well. Sit, then."
     }
    ],
+   "direction": {
+    "emo": "gruff acceptance",
+    "intent": "sit",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Narrator: the breath. 'Aye. Well.'"
+   },
    "status": "todo"
   },
   {
@@ -11551,6 +11799,13 @@
      "text": "No. You're not, and you shouldn't be; he'd have said it was the job. Don't say it again, pal. I'll not be able to hear it twice."
     }
    ],
+   "direction": {
+    "emo": "grief, firm",
+    "intent": "don't apologise",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Firm and kind. 'I'll not be able to hear it twice.' near breaking."
+   },
    "status": "todo"
   },
   {
@@ -13786,6 +14041,13 @@
      "text": "Sit. Give me your hand. No, the other one: the one you draw with. No charge, this once. I have been waiting to see how it came out."
     }
    ],
+   "direction": {
+    "emo": "calm command, a hidden eagerness",
+    "intent": "begins the fortune",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "As fortune.0."
+   },
    "status": "todo"
   },
   {
@@ -15994,6 +16256,13 @@
      "text": "Chapter eleven, paragraph six permits \"a meal taken in company for the purposes of morale\". I have read it very carefully. It does not say whose morale. ...Sit. Not there; that stone is the one the gate was built on, and it is older than manners. Here."
     }
    ],
+   "direction": {
+    "emo": "flustered propriety, pleased",
+    "intent": "invites you to supper, by the book",
+    "pace": "measured",
+    "vol": "level",
+    "note": "'I am on watch.' prim. Narrator: the bread. The citation proud; 'It does not say whose morale.' a slip of mischief. The stone warning earnest."
+   },
    "status": "todo"
   },
   {
@@ -16009,6 +16278,13 @@
      "text": "She breaks the bread and gives you the larger half without seeming to decide to. There's a heel of cheese, and a flask that turns out to be water, and the north road beyond the gate is black all the way to the hills."
     }
    ],
+   "direction": {
+    "emo": "quiet, warm",
+    "intent": "supper at the gate",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Gentle; the dark road a quiet image."
+   },
    "status": "todo"
   },
   {
@@ -16102,6 +16378,13 @@
      "text": "I taught them chiasmus. \"The Vigil keeps the gate, and the gate keeps the Vigil.\" It has kept neither. ...That was a joke. It was not a good one. It's late."
     }
    ],
+   "direction": {
+    "emo": "proud, then rueful",
+    "intent": "her old life",
+    "pace": "measured",
+    "vol": "level",
+    "note": "Lecturer's pride; the chiasmus recited. 'It has kept neither.' quiet. Narrator: she smiles at the road. Flustered about the joke; 'It's late.' a contraction slipping."
+   },
    "status": "todo"
   },
   {
@@ -16195,6 +16478,13 @@
      "text": "How old are you? No. Do not answer. I should only write it down."
     }
    ],
+   "direction": {
+    "emo": "dry, warming",
+    "intent": "her age",
+    "pace": "measured",
+    "vol": "level",
+    "note": "Narrator: sidelong. A joke at herself; the last line a smile."
+   },
    "status": "todo"
   },
   {
@@ -16292,6 +16582,13 @@
      "text": "I have considered it every month for two years, on the day the post does not come. I have written it down and crossed it out. That was an example of correctio. ...Thank you for saying it. Nobody else will. They think I am funny. I am funny. I am also not a fool."
     }
    ],
+   "direction": {
+    "emo": "composed hurt",
+    "intent": "the letters don't come",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Narrator holds the silence. Very precise, very hurt. 'That was an example of correctio.' brittle. Thanks sincere. 'I am also not a fool.' quiet and firm."
+   },
    "status": "todo"
   },
   {
@@ -16389,6 +16686,13 @@
      "text": "...You did not fall asleep. Nobody has ever not fallen asleep."
     }
    ],
+   "direction": {
+    "emo": "delight trying to hide",
+    "intent": "she reads to you",
+    "pace": "measured",
+    "vol": "level",
+    "note": "Narrator: delighted. The handbook quoted with relish; 'In protest.' Narrator for the reading. The last line amazed and shy."
+   },
    "status": "todo"
   },
   {
@@ -16482,6 +16786,13 @@
      "text": "She says it gently, and then she doesn't say anything else for a while, and her hand stays flat on the cover."
     }
    ],
+   "direction": {
+    "emo": "gentle refusal",
+    "intent": "not chapter four",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Narrator: the book closed. 'No.' gently. Narrator holds the quiet."
+   },
    "status": "todo"
   },
   {
@@ -16579,6 +16890,13 @@
      "text": "...That was epizeuxis. The same thing, twice, at once, for emphasis. Goodnight."
     }
    ],
+   "direction": {
+    "emo": "shy, moved",
+    "intent": "her hand",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Narrator for the hands. 'I am on duty.' unsteady. The rhetoric lesson a shield. 'Goodnight.' soft."
+   },
    "status": "todo"
   },
   {
@@ -16612,6 +16930,13 @@
      "text": "It was good for morale. Mine. I checked."
     }
    ],
+   "direction": {
+    "emo": "pleased, shy",
+    "intent": "goodnight",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "'Goodnight.' Narrator: as you go. 'Mine. I checked.' delighted."
+   },
    "status": "todo"
   },
   {
@@ -17407,6 +17732,13 @@
      "text": "She laughs when the water slops over the side, and again when you try to mop it with her shift. Then the lamp is down to a bead, and the blue room is a small warm place with the whole night outside it. She talks the way she always talks, low against your ear, telling you exactly what she means to do next and then doing it, and she's good at it and likes it and makes no secret of either. But there are gaps, tonight. Places where she stops mid-sentence and doesn't finish, and you don't need her to. You wake with her hair across your chest and the sun already up. She is dressed, and counting."
     }
    ],
+   "direction": {
+    "emo": "warm, wry, intimate",
+    "intent": "a night with Sella",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Fond and discreet; the slopped water funny."
+   },
    "status": "todo"
   },
   {
@@ -17422,6 +17754,13 @@
      "text": "The blue room smells of lavender and lamp oil, and the bath is warm, at least to begin with. After that the door is shut, and what happens behind it is slow, and warm, and funny, and nobody's business but yours: her hair coming down, her mouth at your ear, her hands everywhere they're welcome and nowhere they're not. For a few hours the road and the dead on it are a long way off. You wake with her hair across your chest and the sun already up. She is dressed, and counting."
     }
    ],
+   "direction": {
+    "emo": "warm, wry, intimate",
+    "intent": "a night with Sella",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Fond and discreet; 'and funny' with a smile."
+   },
    "status": "todo"
   },
   {
@@ -17486,6 +17825,13 @@
      "text": "Two nights. ...You make a noise in your sleep, you know. Like you're arguing with somebody. You lose. Every time."
     }
    ],
+   "direction": {
+    "emo": "teasing, fond",
+    "intent": "you talk in your sleep",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "'You lose. Every time.' a grin."
+   },
    "status": "todo"
   },
   {
@@ -17936,6 +18282,13 @@
      "text": "The blue room, and the lamp, and the bolt, which she shot herself, which she has never done. She doesn't talk the way she talks for money. For a while neither of you talks at all. She is slower than you have known her, and less sure, and there is a moment when she stops with her hands on your face and just looks, as if she is learning it, and doesn't make a joke of it. Later she lies awake, and you can feel her deciding something, and then she sleeps."
     }
    ],
+   "direction": {
+    "emo": "tender, quiet",
+    "intent": "the free night",
+    "pace": "slow",
+    "vol": "hushed",
+    "note": "Slower and softer; the look a held breath."
+   },
    "status": "todo"
   },
   {
@@ -18351,6 +18704,13 @@
      "text": "She doesn't take your hand any more; she takes your sleeve, the way you'd take a regular's. Rook's stairs creak on the fourth step and the ninth. On the fourth she looks back, to check you're stepping over it. You are."
     }
    ],
+   "direction": {
+    "emo": "warm, wry",
+    "intent": "a regular now",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "The check on the fourth step a small tenderness."
+   },
    "status": "todo"
   },
   {
@@ -18366,6 +18726,12 @@
      "text": "She takes the coins first and your hand second, and leads you up Rook's narrow stairs. They creak on the fourth step and the ninth, and she steps over both without looking."
     }
    ],
+   "direction": {
+    "emo": "warm, plain",
+    "intent": "up the stairs",
+    "pace": "measured",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
@@ -18381,6 +18747,12 @@
      "text": "Coins, then your hand, then the stairs. Fourth step, ninth step. You're learning."
     }
    ],
+   "direction": {
+    "emo": "dry, warm",
+    "intent": "you're learning",
+    "pace": "brisk",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
@@ -18396,6 +18768,12 @@
      "text": "You're getting good at my stairs, love. Careful. People'll think you live here."
     }
    ],
+   "direction": {
+    "emo": "teasing",
+    "intent": "you know the stairs",
+    "pace": "measured",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
@@ -18411,6 +18789,13 @@
      "text": "Mind the fourth. And the ninth. Rook says they're for the drunks. I say they're for the wives."
     }
    ],
+   "direction": {
+    "emo": "dry, wicked",
+    "intent": "the creaking steps",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "The wives joke deadpan."
+   },
    "status": "todo"
   },
   {
@@ -18426,6 +18811,12 @@
      "text": "In you go. Bath's run. It's warm, I promise. For a bit."
     }
    ],
+   "direction": {
+    "emo": "warm, teasing",
+    "intent": "the bath",
+    "pace": "measured",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
@@ -18441,6 +18832,13 @@
      "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. Your buckles take an age. She undoes them as if she has done a great many, and laughs at the last one, which is stuck. \"All that steel, and under it, look. A person.\""
     }
    ],
+   "direction": {
+    "emo": "warm, amused",
+    "intent": "the blue room",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Her quoted line warm and wry if read in her voice; the narrator smiles at it."
+   },
    "status": "todo"
   },
   {
@@ -18456,6 +18854,12 @@
      "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. She takes your hands, one and then the other, and turns them over, and looks at the knuckles. \"Gently, upstairs. I mean it. I like this jug.\""
     }
    ],
+   "direction": {
+    "emo": "warm, amused",
+    "intent": "the blue room",
+    "pace": "measured",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
@@ -18471,6 +18875,13 @@
      "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. She lays her palm flat on your chest and takes it away again, fast, then puts it back, slower. \"Your hands are hot and the rest of you's a cellar floor. Pick one, love.\""
     }
    ],
+   "direction": {
+    "emo": "warm, curious",
+    "intent": "the blue room",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "A small chill in 'cellar floor'."
+   },
    "status": "todo"
   },
   {
@@ -18486,6 +18897,12 @@
      "text": "The blue room again: the quilt, the jug, the bath, her, all of it blue. She comes round behind you to start on the laces, and says into your ear, \"There. Now you know what it's like,\" and you jump. She's delighted."
     }
    ],
+   "direction": {
+    "emo": "warm, playful",
+    "intent": "the blue room",
+    "pace": "measured",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
@@ -18501,6 +18918,13 @@
      "text": "The blue room is blue because the lamp glass is, and everything in it takes the colour: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. Your buckles take an age. She undoes them as if she has done a great many, and laughs at the last one, which is stuck. \"All that steel, and under it, look. A person.\""
     }
    ],
+   "direction": {
+    "emo": "warm, wry",
+    "intent": "the blue room",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "The two mothers a nice turn, unhurried."
+   },
    "status": "todo"
   },
   {
@@ -18516,6 +18940,12 @@
      "text": "The blue room is blue because the lamp glass is, and everything in it takes the colour: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She takes your hands, one and then the other, and turns them over, and looks at the knuckles. \"Gently, upstairs. I mean it. I like this jug.\""
     }
    ],
+   "direction": {
+    "emo": "warm, wry",
+    "intent": "the blue room",
+    "pace": "slow",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
@@ -18531,6 +18961,12 @@
      "text": "The blue room is blue because the lamp glass is, and everything in it takes the colour: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She lays her palm flat on your chest and takes it away again, fast, then puts it back, slower. \"Your hands are hot and the rest of you's a cellar floor. Pick one, love.\""
     }
    ],
+   "direction": {
+    "emo": "warm, wry",
+    "intent": "the blue room",
+    "pace": "slow",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
@@ -18546,6 +18982,12 @@
      "text": "The blue room is blue because the lamp glass is, and everything in it takes the colour: the quilt, the jug, the bath, her. She tests the water with her elbow like somebody's mother, and then tips your chin up with one finger like nobody's mother at all. She comes round behind you to start on the laces, and says into your ear, \"There. Now you know what it's like,\" and you jump. She's delighted."
     }
    ],
+   "direction": {
+    "emo": "warm, playful",
+    "intent": "the blue room",
+    "pace": "slow",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
@@ -18565,6 +19007,13 @@
      "text": "...Right. Rules. Anything you'd rather I didn't, say so. Anything you'd rather I did, say it louder."
     }
    ],
+   "direction": {
+    "emo": "shaken, then professional",
+    "intent": "you're cold as the river",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Narrator through the cold, long and quiet. Then her rules, steadying herself with the patter."
+   },
    "status": "todo"
   },
   {
@@ -18580,6 +19029,13 @@
      "text": "Right. Rules. Anything you'd rather I didn't, say so. Anything you'd rather I did, say it louder; Rook's walls are thin, but she's deaf in the left ear."
     }
    ],
+   "direction": {
+    "emo": "frank, wry",
+    "intent": "her rules",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "The deaf-ear joke deadpan."
+   },
    "status": "todo"
   },
   {
@@ -18647,6 +19103,13 @@
      "text": "Two for the water. That's Rook's rule, not mine. ...You'll come back when you want to. Or you won't. Either's all right, love. Go on."
     }
    ],
+   "direction": {
+    "emo": "graceful, kind",
+    "intent": "you stop",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Narrator: no sulk. Practical with the coins. 'Either's all right, love.' meant."
+   },
    "status": "todo"
   },
   {
@@ -18680,6 +19143,13 @@
      "text": "You've paid fifteen gold to sleep."
     }
    ],
+   "direction": {
+    "emo": "baffled amusement",
+    "intent": "you paid to sleep",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Narrator for the look. Incredulous."
+   },
    "status": "todo"
   },
   {
@@ -18713,6 +19183,13 @@
      "text": "You've paid fifteen gold to sleep."
     }
    ],
+   "direction": {
+    "emo": "baffled amusement",
+    "intent": "you paid to sleep",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "As rest_night.0."
+   },
    "status": "todo"
   },
   {
@@ -18738,6 +19215,13 @@
      "text": "...Lie down, then. No. Boots off; Rook'll have my hide. Shift over. I'm not sitting up all night in a chair. I've done that for worse money."
     }
    ],
+   "direction": {
+    "emo": "bossy, wry",
+    "intent": "lie down, then",
+    "pace": "brisk",
+    "vol": "quiet",
+    "note": "Rapid little orders; the chair line dry."
+   },
    "status": "todo"
   },
   {
@@ -18753,6 +19237,13 @@
      "text": "She lies down on top of the quilt with all her clothes on, and you under it, and for a while she talks: about Rook, about Holloway's feet, about a man from Low Kiln who wanted her to bark. You don't hear the end of the man from Low Kiln. Some time in the night you half wake and she isn't talking. She's lying on her side, watching you, the way you'd watch weather."
     }
    ],
+   "direction": {
+    "emo": "tender, quiet",
+    "intent": "she watches you sleep",
+    "pace": "slow",
+    "vol": "hushed",
+    "note": "The Low Kiln man funny; the watching very quiet."
+   },
    "status": "todo"
   },
   {
@@ -18772,6 +19263,13 @@
      "text": "You were cold as the river all night. Like lying next to a stone. And now look at you: warm as toast. ...Fifteen gold to lie awake next to a stone. Best money I ever made. Don't tell anyone."
     }
    ],
+   "direction": {
+    "emo": "unsettled, then fond",
+    "intent": "you were cold all night",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Narrator: her hand on your chest. Quiet wonder at the cold. Then warm and wry: 'Best money I ever made.'"
+   },
    "status": "todo"
   },
   {
@@ -18795,6 +19293,13 @@
      "text": "Don't tell anyone. They'll all want it, and then where will I be? Rich and bored."
     }
    ],
+   "direction": {
+    "emo": "fond, teasing",
+    "intent": "best money",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Narrator: she doesn't count it. 'Rich and bored.' a grin."
+   },
    "status": "todo"
   },
   {
@@ -18868,6 +19373,13 @@
      "text": "Working nights it stays drawn back. Rook's got a key and a cudgel, and if a man turns funny she's up those stairs before he's finished turning. I've needed her twice in seven years. Once for a drover. Once for one of the Watch, and I'll not say which. ...So, no. I've never shot it. It's not my door. Nothing in here's my door."
     }
    ],
+   "direction": {
+    "emo": "matter-of-fact, guarded",
+    "intent": "the bolt and Rook",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Narrator: her boots. Plain about danger; 'I'll not say which.' closed."
+   },
    "status": "todo"
   },
   {
@@ -18921,6 +19433,13 @@
      "text": "I'm twenty-nine, love, since you're doing sums. Seven years at the top of Rook's stairs, and I've only fallen down them twice."
     }
    ],
+   "direction": {
+    "emo": "wry, warm",
+    "intent": "her years",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Narrator: a low laugh. Self-mocking."
+   },
    "status": "todo"
   },
   {
@@ -18964,6 +19483,13 @@
      "text": "And somebody who knocks."
     }
    ],
+   "direction": {
+    "emo": "wistful, guarded",
+    "intent": "the house in the south",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Narrator: she checks her hair, not looking at you. 'And somebody who knocks.' quiet."
+   },
    "status": "todo"
   },
   {
@@ -19005,6 +19531,13 @@
      "text": "Go on. Rook's stew's still warm."
     }
    ],
+   "direction": {
+    "emo": "hurt, covering lightly",
+    "intent": "you said no",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "The joke nearly managed. 'I don't ask twice.' Narrator: the pat. Brisk kindness."
+   },
    "status": "todo"
   },
   {
@@ -19034,6 +19567,13 @@
      "text": "I said I'd not ask twice. I never said I'd not answer. ...Come on, then. Before I think better of it. I'm thinking better of it already. Come on."
     }
    ],
+   "direction": {
+    "emo": "wary, then giving in",
+    "intent": "you asked",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Narrator for the look. Wry logic. 'Come on.' twice, the second a little shaky."
+   },
    "status": "todo"
   },
   {
@@ -19049,6 +19589,13 @@
      "text": "She doesn't take your hand on the stairs, or your sleeve. She goes up ahead of you, and on the fourth step she forgets to step over it, and it creaks, loud as a shout, and she stops dead with one foot on it and laughs at herself, and that's worse, somehow, than if she hadn't. In the blue room she turns the lamp up, not down. She stands with her back against the door as if somebody might try it."
     }
    ],
+   "direction": {
+    "emo": "tender, comic",
+    "intent": "she forgets the step",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "The creak 'loud as a shout' a beat of comedy; then quieter."
+   },
    "status": "todo"
   },
   {
@@ -19072,6 +19619,12 @@
      "text": "Nobody does that. Nobody's ever done that."
     }
    ],
+   "direction": {
+    "emo": "moved, wondering",
+    "intent": "nobody does that",
+    "pace": "slow",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
@@ -19087,6 +19640,13 @@
      "text": "I don't know how to do this one. ...That's a lie. I know how. I don't know how to do it like this."
     }
    ],
+   "direction": {
+    "emo": "nervous, honest",
+    "intent": "she doesn't know how",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "A small laugh at her own lie."
+   },
    "status": "todo"
   },
   {
@@ -19150,6 +19710,13 @@
      "text": "Yes. ...Yes. There. Said it. Come here."
     }
    ],
+   "direction": {
+    "emo": "near tears, then decided",
+    "intent": "yes",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Narrator: the breath. 'Yes.' twice, the second firmer. 'Come here.' soft."
+   },
    "status": "todo"
   },
   {
@@ -19177,6 +19744,13 @@
      "text": "All right. ...Sit with me, then. Just sit. I've never just sat in here with anybody. Rook'd think we'd died."
     }
    ],
+   "direction": {
+    "emo": "relief, tender",
+    "intent": "just sit",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Narrator: the held breath. The Rook joke soft."
+   },
    "status": "todo"
   },
   {
@@ -19192,6 +19766,12 @@
      "text": "You sit on the bed with your backs to the wall, and she tells you about the house in the south: which room faces the sun; the colour of the door; the knock. Then she sends you down the stairs, and stands at the top to watch you skip the fourth."
     }
    ],
+   "direction": {
+    "emo": "tender, quiet",
+    "intent": "sitting together",
+    "pace": "slow",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
@@ -19221,6 +19801,13 @@
      "text": "You and your sleeping. ...Yes. All right. Yes."
     }
    ],
+   "direction": {
+    "emo": "delighted, shy",
+    "intent": "yes, sleep",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Narrator: a proper laugh."
+   },
    "status": "todo"
   },
   {
@@ -19236,6 +19823,12 @@
      "text": "She reaches behind her without looking and finds the bolt, and shoots it. Then she gets into the bed in her shift, and you get in beside her, and she lies with her back against you and pulls your arm over her like a blanket. She's asleep before you are. She's still there when you wake."
     }
    ],
+   "direction": {
+    "emo": "tender, quiet",
+    "intent": "she sleeps",
+    "pace": "slow",
+    "vol": "hushed"
+   },
    "status": "todo"
   },
   {
@@ -19251,6 +19844,13 @@
      "text": "She reaches behind her without looking and finds the bolt. It sticks halfway; nobody has ever shot it. She has to turn round and put her shoulder to it, swearing, and it goes home with a sound like the last coin put down on a counter. Her back is still to you. Her forehead is against the door. \"...There.\""
     }
    ],
+   "direction": {
+    "emo": "tender, comic",
+    "intent": "the bolt",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "The stuck bolt funny; the coin image quietly moving."
+   },
    "status": "todo"
   },
   {
@@ -19270,6 +19870,13 @@
      "text": "Downstairs Rook hears everything and charges nobody. You'd be better off with me. ...No. You wouldn't. That's the point, love. Go on."
     }
    ],
+   "direction": {
+    "emo": "wry, then honest",
+    "intent": "go on",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Narrator: she laughs. The turn 'No. You wouldn't.' honest."
+   },
    "status": "todo"
   },
   {
@@ -19304,6 +19911,13 @@
      "text": "I said don't tell me. I didn't say I'd sell it. ...I didn't say I wouldn't, either. I don't know. That's the honest answer, and I'm out of practice at those. Don't make me practise before breakfast."
     }
    ],
+   "direction": {
+    "emo": "honest, uncomfortable",
+    "intent": "Vonnra pays",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Narrator: the quilt. Her honesty stumbling; a beat where the name would be."
+   },
    "status": "todo"
   },
   {
@@ -19329,6 +19943,13 @@
      "text": "She lets you. Then she pushes you off by the face, gently, with the flat of her hand. \"Out. Before I get used to it.\" She's smiling. She doesn't stop smiling until you're down the stairs, and you know that because the ninth step creaks behind you: she came down two steps to watch you go, and forgot it."
     }
    ],
+   "direction": {
+    "emo": "warm, wry",
+    "intent": "out",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Her quoted word warm. The smile in the narration."
+   },
    "status": "todo"
   },
   {
@@ -19366,6 +19987,13 @@
      "text": "I don't judge, love. It's bad for business. But I can smell it on you, and I'm not working with that in the room. ...Come back when I can't."
     }
    ],
+   "direction": {
+    "emo": "cool, firm",
+    "intent": "she won't work tonight",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Narrator at the door and the coins. Cool, not cruel. 'Come back when I can't.' quiet."
+   },
    "status": "todo"
   },
   {
@@ -19391,6 +20019,13 @@
      "text": "The knight's been asking Rook what you like for breakfast. In full sentences, love. With a list. ...She's going to read you a chapter after. You know that. You'll have to sit through the whole chapter."
     }
    ],
+   "direction": {
+    "emo": "delighted gossip",
+    "intent": "Keegan's list",
+    "pace": "measured",
+    "vol": "level",
+    "note": "Teasing; 'the whole chapter' mock-doom."
+   },
    "status": "todo"
   },
   {
@@ -19406,6 +20041,13 @@
      "text": "You went round the back of the Flagon after closing. Rav's been up my stairs twice in seven years, and both times to lance something. Be kind to him. He's softer than he drinks."
     }
    ],
+   "direction": {
+    "emo": "fond, frank",
+    "intent": "be kind to Rav",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "'He's softer than he drinks.' gentle."
+   },
    "status": "todo"
   },
   {
@@ -19495,6 +20137,13 @@
      "text": "He comes close enough to smell your hand, then your face, and his lip lifts off his teeth, and goes down again. He turns and walks into the Hollow, and you follow. The sick ones' eyes are milky; their gums are black. One of them tries to stand when it sees you, and cannot. Greymuzzle looks east, toward the stream, then back at you, and waits."
     }
    ],
+   "direction": {
+    "emo": "sombre pity",
+    "intent": "the sick Pack",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "As show.0; the lip lifting a tense beat."
+   },
    "status": "todo"
   },
   {
@@ -22717,6 +23366,13 @@
      "text": "Your bedroll has not been slept in."
     }
    ],
+   "direction": {
+    "emo": "quiet unease",
+    "intent": "you did not sleep here",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Plain and close."
+   },
    "status": "todo"
   },
   {
@@ -22732,6 +23388,13 @@
      "text": "Prints in the frost, your own. They come up from the river. None go down to it."
     }
    ],
+   "direction": {
+    "emo": "creeping dread",
+    "intent": "your own prints come from the river",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "'None go down to it.' alone, very quiet."
+   },
    "status": "todo"
   },
   {
@@ -22747,6 +23410,12 @@
      "text": "Past the firelight, the frost is breaking."
     }
    ],
+   "direction": {
+    "emo": "uneasy",
+    "intent": "something is coming",
+    "pace": "slow",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
@@ -22762,7 +23431,7 @@
   {
    "id": "dlg.cin_none_cross.call.0",
    "kind": "dialogue",
-   "voice": "cin_none_cross",
+   "voice": "warden",
    "text": "(sung, under the water) Lamps are lit... stay where they reach...",
    "where": "dialogue.json cin_none_cross/call#0",
    "hash": "1d16761f7ebe",
@@ -22772,40 +23441,60 @@
      "text": "sung, under the water"
     },
     {
-     "voice": "cin_none_cross",
+     "voice": "warden",
      "text": "Lamps are lit... stay where they reach..."
     }
    ],
+   "direction": {
+    "emo": "eerie, singing",
+    "intent": "the Warden sings under the water",
+    "pace": "very slow",
+    "vol": "hushed",
+    "note": "Sung low and far off, as if through water."
+   },
    "status": "todo"
   },
   {
    "id": "dlg.cin_none_cross.lie_down.0",
    "kind": "dialogue",
-   "voice": "cin_none_cross",
+   "voice": "warden",
    "text": "Lie down.",
    "where": "dialogue.json cin_none_cross/lie_down#0",
    "hash": "d918c7cc3d98",
    "segments": [
     {
-     "voice": "cin_none_cross",
+     "voice": "warden",
      "text": "Lie down."
     }
    ],
+   "direction": {
+    "emo": "vast, gentle",
+    "intent": "the Warden's lullaby",
+    "pace": "very slow",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
    "id": "dlg.cin_none_cross.none.0",
    "kind": "dialogue",
-   "voice": "cin_none_cross",
+   "voice": "warden",
    "text": "NONE. CROSS. AFTER DARK.",
    "where": "dialogue.json cin_none_cross/none#0",
    "hash": "7a9cdb2c49b5",
    "segments": [
     {
-     "voice": "cin_none_cross",
+     "voice": "warden",
      "text": "NONE. CROSS. AFTER DARK."
     }
    ],
+   "direction": {
+    "emo": "vast, final",
+    "intent": "the Warden's law",
+    "pace": "slow",
+    "vol": "shout",
+    "note": "Each word a bell stroke."
+   },
    "status": "todo"
   },
   {
@@ -22821,58 +23510,78 @@
   {
    "id": "dlg.cin_heart_goes_down.morning.0",
    "kind": "dialogue",
-   "voice": "cin_heart_goes_down",
+   "voice": "warden",
    "text": "Is it morning?",
    "where": "dialogue.json cin_heart_goes_down/morning#0",
    "hash": "f7a2a69e2307",
    "segments": [
     {
-     "voice": "cin_heart_goes_down",
+     "voice": "warden",
      "text": "Is it morning?"
     }
    ],
+   "direction": {
+    "emo": "dazed, enormous",
+    "intent": "the dying Warden",
+    "pace": "very slow",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
    "id": "dlg.cin_heart_goes_down.nobodys.0",
    "kind": "dialogue",
-   "voice": "cin_heart_goes_down",
+   "voice": "grimtunnel",
    "text": "Ooh, still lit! Nobody's, is it? Nobody's!",
    "where": "dialogue.json cin_heart_goes_down/nobodys#0",
    "hash": "676eeb4cf137",
    "segments": [
     {
-     "voice": "cin_heart_goes_down",
+     "voice": "grimtunnel",
      "text": "Ooh, still lit! Nobody's, is it? Nobody's!"
     }
    ],
+   "direction": {
+    "emo": "gleeful greed",
+    "intent": "Grimtunnel finds the heart",
+    "pace": "quick",
+    "vol": "raised",
+    "note": "Cackling delight."
+   },
    "status": "todo"
   },
   {
    "id": "dlg.cin_heart_goes_down.downstairs.0",
    "kind": "dialogue",
-   "voice": "cin_heart_goes_down",
+   "voice": "grimtunnel",
    "text": "...You smell like downstairs.",
    "where": "dialogue.json cin_heart_goes_down/downstairs#0",
    "hash": "ca65f966df2d",
    "segments": [
     {
-     "voice": "cin_heart_goes_down",
+     "voice": "grimtunnel",
      "text": "...You smell like downstairs."
     }
    ],
+   "direction": {
+    "emo": "sly, sniffing",
+    "intent": "Grimtunnel smells you",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "A sniff; creepy and pleased."
+   },
    "status": "todo"
   },
   {
    "id": "dlg.cin_heart_goes_down.grateful.0",
    "kind": "dialogue",
-   "voice": "cin_heart_goes_down",
+   "voice": "grimtunnel",
    "text": "Finders keepers, surface-m— (a sniff) ...Downstairs'll be ever so grateful.",
    "where": "dialogue.json cin_heart_goes_down/grateful#0",
    "hash": "d6a6b3a4b868",
    "segments": [
     {
-     "voice": "cin_heart_goes_down",
+     "voice": "grimtunnel",
      "text": "Finders keepers, surface-m—"
     },
     {
@@ -22880,10 +23589,17 @@
      "text": "a sniff"
     },
     {
-     "voice": "cin_heart_goes_down",
+     "voice": "grimtunnel",
      "text": "...Downstairs'll be ever so grateful."
     }
    ],
+   "direction": {
+    "emo": "gloating, then reverent",
+    "intent": "he takes it down",
+    "pace": "measured",
+    "vol": "level",
+    "note": "Cut off by his own sniff; then oily reverence."
+   },
    "status": "todo"
   },
   {
@@ -22909,6 +23625,12 @@
      "text": "The sun clears the trees, and the ember goes back into the ground."
     }
    ],
+   "direction": {
+    "emo": "gentle loss",
+    "intent": "the ember fades",
+    "pace": "slow",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
@@ -22924,6 +23646,13 @@
      "text": "You try to call up your mother's face, and find it is not quite where you left it."
     }
    ],
+   "direction": {
+    "emo": "gentle loss, unsettling",
+    "intent": "the mother's face",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Almost tender, and wrong."
+   },
    "status": "todo"
   },
   {
@@ -22939,21 +23668,34 @@
      "text": "Somewhere up the street, someone is baking."
     }
    ],
+   "direction": {
+    "emo": "dawn warmth",
+    "intent": "ordinary life",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "The first warmth after the night."
+   },
    "status": "todo"
   },
   {
    "id": "dlg.cin_first_light.dawn.0",
    "kind": "dialogue",
-   "voice": "cin_first_light",
+   "voice": "guard",
    "text": "Dawn arrivals. We don't get many that live.",
    "where": "dialogue.json cin_first_light/dawn#0",
    "hash": "720af83233d0",
    "segments": [
     {
-     "voice": "cin_first_light",
+     "voice": "guard",
      "text": "Dawn arrivals. We don't get many that live."
     }
    ],
+   "direction": {
+    "emo": "bored, matter-of-fact",
+    "intent": "a guard at dawn",
+    "pace": "measured",
+    "vol": "level"
+   },
    "status": "todo"
   },
   {
@@ -22969,16 +23711,22 @@
   {
    "id": "dlg.cin_forty_one_mouths.them_first.0",
    "kind": "dialogue",
-   "voice": "cin_forty_one_mouths",
+   "voice": "kerchief_woman",
    "text": "Them first.",
    "where": "dialogue.json cin_forty_one_mouths/them_first#0",
    "hash": "3bf0d0b0d0da",
    "segments": [
     {
-     "voice": "cin_forty_one_mouths",
+     "voice": "kerchief_woman",
      "text": "Them first."
     }
    ],
+   "direction": {
+    "emo": "hard, weary",
+    "intent": "the children eat first",
+    "pace": "measured",
+    "vol": "level"
+   },
    "status": "todo"
   },
   {
@@ -22994,7 +23742,7 @@
   {
    "id": "dlg.cin_iron_marker.verse1.0",
    "kind": "dialogue",
-   "voice": "cin_iron_marker",
+   "voice": "chid",
    "text": "(sung) Lie down, lie down, the lamps are tended, / and all the dark is kept; / the morning lies a little under, / and it will wake you where you slept.",
    "where": "dialogue.json cin_iron_marker/verse1#0",
    "hash": "605aa6fae0ef",
@@ -23004,16 +23752,23 @@
      "text": "sung"
     },
     {
-     "voice": "cin_iron_marker",
+     "voice": "chid",
      "text": "Lie down, lie down, the lamps are tended, / and all the dark is kept; / the morning lies a little under, / and it will wake you where you slept."
     }
    ],
+   "direction": {
+    "emo": "tender, out of tune",
+    "intent": "Chid sings at Nell's grave",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Sung simply and not well; he can't sing and nobody minds."
+   },
    "status": "todo"
   },
   {
    "id": "dlg.cin_iron_marker.verse2.0",
    "kind": "dialogue",
-   "voice": "cin_iron_marker",
+   "voice": "chid",
    "text": "(sung) Lie down, lie down, the road is ended, / your toll is paid and kept; / the dark is but the day not risen, / and it will wake you where you slept.",
    "where": "dialogue.json cin_iron_marker/verse2#0",
    "hash": "445bda17c9b2",
@@ -23023,10 +23778,17 @@
      "text": "sung"
     },
     {
-     "voice": "cin_iron_marker",
+     "voice": "chid",
      "text": "Lie down, lie down, the road is ended, / your toll is paid and kept; / the dark is but the day not risen, / and it will wake you where you slept."
     }
    ],
+   "direction": {
+    "emo": "tender, out of tune",
+    "intent": "Chid sings at Nell's grave",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "As verse1."
+   },
    "status": "todo"
   },
   {
@@ -23042,43 +23804,57 @@
   {
    "id": "dlg.cin_raid_on_the_roost.bairns.0",
    "kind": "dialogue",
-   "voice": "cin_raid_on_the_roost",
+   "voice": "redcowl",
    "text": "Ha! HA. At night, lass. With my bairns asleep behind me. ...Mind where you swing.",
    "where": "dialogue.json cin_raid_on_the_roost/bairns#0",
    "hash": "9b65d78c63fc",
    "segments": [
     {
-     "voice": "cin_raid_on_the_roost",
+     "voice": "redcowl",
      "text": "Ha! HA. At night, lass. With my bairns asleep behind me. ...Mind where you swing."
     }
    ],
+   "direction": {
+    "emo": "laughing menace",
+    "intent": "you came at night",
+    "pace": "measured",
+    "vol": "raised",
+    "note": "'Ha! HA.' then cold: the bairns. 'Mind where you swing.' a grim joke."
+   },
    "status": "todo"
   },
   {
    "id": "dlg.cin_raid_on_the_roost.bairns.1",
    "kind": "dialogue",
-   "voice": "cin_raid_on_the_roost",
+   "voice": "redcowl",
    "text": "Ha! HA. At night, lad. With my bairns asleep behind me. ...Mind where you swing.",
    "where": "dialogue.json cin_raid_on_the_roost/bairns#1",
    "hash": "96303d9e498c",
    "segments": [
     {
-     "voice": "cin_raid_on_the_roost",
+     "voice": "redcowl",
      "text": "Ha! HA. At night, lad. With my bairns asleep behind me. ...Mind where you swing."
     }
    ],
+   "direction": {
+    "emo": "laughing menace",
+    "intent": "you came at night",
+    "pace": "measured",
+    "vol": "raised",
+    "note": "As bairns.0."
+   },
    "status": "todo"
   },
   {
    "id": "dlg.cin_raid_on_the_roost.last.0",
    "kind": "dialogue",
-   "voice": "cin_raid_on_the_roost",
+   "voice": "redcowl",
    "text": "...Ashford. (a laugh) There. Now we've both said it.",
    "where": "dialogue.json cin_raid_on_the_roost/last#0",
    "hash": "1504d8df43a2",
    "segments": [
     {
-     "voice": "cin_raid_on_the_roost",
+     "voice": "redcowl",
      "text": "...Ashford."
     },
     {
@@ -23086,25 +23862,39 @@
      "text": "a laugh"
     },
     {
-     "voice": "cin_raid_on_the_roost",
+     "voice": "redcowl",
      "text": "There. Now we've both said it."
     }
    ],
+   "direction": {
+    "emo": "dying, bitter amusement",
+    "intent": "he says Ashford",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Breath failing. Narrator: a laugh. 'Now we've both said it.'"
+   },
    "status": "todo"
   },
   {
    "id": "dlg.cin_raid_on_the_roost.last.1",
    "kind": "dialogue",
-   "voice": "cin_raid_on_the_roost",
+   "voice": "redcowl",
    "text": "Tell the saw-bones... the leg held.",
    "where": "dialogue.json cin_raid_on_the_roost/last#1",
    "hash": "00ac7277a0e7",
    "segments": [
     {
-     "voice": "cin_raid_on_the_roost",
+     "voice": "redcowl",
      "text": "Tell the saw-bones... the leg held."
     }
    ],
+   "direction": {
+    "emo": "dying, tender",
+    "intent": "a message for Rav",
+    "pace": "very slow",
+    "vol": "hushed",
+    "note": "Barely voiced; the leg held."
+   },
    "status": "todo"
   },
   {
@@ -23120,46 +23910,67 @@
   {
    "id": "dlg.cin_dig_boils_over.pump.0",
    "kind": "dialogue",
-   "voice": "cin_dig_boils_over",
+   "voice": "grimtunnel",
    "text": "Surface-meat! You broke my PUMP. ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT.",
    "where": "dialogue.json cin_dig_boils_over/pump#0",
    "hash": "9182437b8989",
    "segments": [
     {
-     "voice": "cin_dig_boils_over",
+     "voice": "grimtunnel",
      "text": "Surface-meat! You broke my PUMP. ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT."
     }
    ],
+   "direction": {
+    "emo": "furious, then gleeful",
+    "intent": "Grimtunnel's pump",
+    "pace": "quick",
+    "vol": "shout",
+    "note": "'PUMP' stressed. Then oily calm: 'Downstairs is PATIENT.'"
+   },
    "status": "todo"
   },
   {
    "id": "dlg.cin_dig_boils_over.pump.1",
    "kind": "dialogue",
-   "voice": "cin_dig_boils_over",
+   "voice": "grimtunnel",
    "text": "Surface-meat! Killing my lads, are we? ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT.",
    "where": "dialogue.json cin_dig_boils_over/pump#1",
    "hash": "60d3ffba4bfc",
    "segments": [
     {
-     "voice": "cin_dig_boils_over",
+     "voice": "grimtunnel",
      "text": "Surface-meat! Killing my lads, are we? ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT."
     }
    ],
+   "direction": {
+    "emo": "furious, then gleeful",
+    "intent": "Grimtunnel's lads",
+    "pace": "quick",
+    "vol": "shout",
+    "note": "As pump.0."
+   },
    "status": "todo"
   },
   {
    "id": "dlg.cin_dig_boils_over.quiet.0",
    "kind": "dialogue",
-   "voice": "cin_dig_boils_over",
+   "voice": "grimtunnel",
    "text": "I told it about you! It went ever so QUIET!",
    "where": "dialogue.json cin_dig_boils_over/quiet#0",
    "hash": "2cb194c7f6c6",
    "segments": [
     {
-     "voice": "cin_dig_boils_over",
+     "voice": "grimtunnel",
      "text": "I told it about you! It went ever so QUIET!"
     }
    ],
+   "direction": {
+    "emo": "delighted, unnerving",
+    "intent": "he told it about you",
+    "pace": "quick",
+    "vol": "raised",
+    "note": "'QUIET' stressed, giddy."
+   },
    "status": "todo"
   },
   {
@@ -23175,69 +23986,89 @@
   {
    "id": "dlg.cin_behind_the_door.nondum.0",
    "kind": "dialogue",
-   "voice": "cin_behind_the_door",
+   "voice": "barrow_lord",
    "text": "Nondum. (Not yet.)",
    "where": "dialogue.json cin_behind_the_door/nondum#0",
    "hash": "cad83a173168",
    "segments": [
     {
-     "voice": "cin_behind_the_door",
+     "voice": "barrow_lord",
      "text": "Nondum."
-    },
-    {
-     "voice": "narrator",
-     "text": "Not yet."
     }
    ],
+   "direction": {
+    "emo": "ancient, final",
+    "intent": "not yet",
+    "pace": "very slow",
+    "vol": "quiet",
+    "say": "Nondum.",
+    "note": "Latin: NON-dum. The narrator does not translate aloud; the subtitle does."
+   },
    "status": "todo"
   },
   {
    "id": "dlg.cin_behind_the_door.nondum.1",
    "kind": "dialogue",
-   "voice": "cin_behind_the_door",
+   "voice": "barrow_lord",
    "text": "Nondum.",
    "where": "dialogue.json cin_behind_the_door/nondum#1",
    "hash": "04cabffa7c4f",
    "segments": [
     {
-     "voice": "cin_behind_the_door",
+     "voice": "barrow_lord",
      "text": "Nondum."
     }
    ],
+   "direction": {
+    "emo": "ancient, final",
+    "intent": "not yet",
+    "pace": "very slow",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
    "id": "dlg.cin_behind_the_door.redi.0",
    "kind": "dialogue",
-   "voice": "cin_behind_the_door",
+   "voice": "barrow_lord",
    "text": "Redi. (Go back.)",
    "where": "dialogue.json cin_behind_the_door/redi#0",
    "hash": "752675633e10",
    "segments": [
     {
-     "voice": "cin_behind_the_door",
+     "voice": "barrow_lord",
      "text": "Redi."
-    },
-    {
-     "voice": "narrator",
-     "text": "Go back."
     }
    ],
+   "direction": {
+    "emo": "ancient, final",
+    "intent": "go back",
+    "pace": "very slow",
+    "vol": "quiet",
+    "say": "Redi.",
+    "note": "Latin: RED-ee."
+   },
    "status": "todo"
   },
   {
    "id": "dlg.cin_behind_the_door.redi.1",
    "kind": "dialogue",
-   "voice": "cin_behind_the_door",
+   "voice": "barrow_lord",
    "text": "Redi.",
    "where": "dialogue.json cin_behind_the_door/redi#1",
    "hash": "dd9f960807f3",
    "segments": [
     {
-     "voice": "cin_behind_the_door",
+     "voice": "barrow_lord",
      "text": "Redi."
     }
    ],
+   "direction": {
+    "emo": "ancient, final",
+    "intent": "go back",
+    "pace": "very slow",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
@@ -23253,31 +24084,43 @@
   {
    "id": "dlg.cin_road_back.place.0",
    "kind": "dialogue",
-   "voice": "cin_road_back",
+   "voice": "brannoc",
    "text": "You know the place.",
    "where": "dialogue.json cin_road_back/place#0",
    "hash": "3e5a03fa0c92",
    "segments": [
     {
-     "voice": "cin_road_back",
+     "voice": "brannoc",
      "text": "You know the place."
     }
    ],
+   "direction": {
+    "emo": "grief, plain",
+    "intent": "Brannoc at the ford",
+    "pace": "slow",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
    "id": "dlg.cin_road_back.wat.0",
    "kind": "dialogue",
-   "voice": "cin_road_back",
+   "voice": "brannoc",
    "text": "...Wat.",
    "where": "dialogue.json cin_road_back/wat#0",
    "hash": "cef4693f7e9c",
    "segments": [
     {
-     "voice": "cin_road_back",
+     "voice": "brannoc",
      "text": "...Wat."
     }
    ],
+   "direction": {
+    "emo": "grief, recognition",
+    "intent": "he names the carter",
+    "pace": "very slow",
+    "vol": "hushed"
+   },
    "status": "todo"
   },
   {
@@ -29905,6 +30748,13 @@
      "text": "A Watchman, grey-bearded and a long time dead, sitting against the post as if he had only stopped for breath. Something has had his eyes. In his belt-book, three lines in a hand that worsens as it goes: \"Lamps at the Low Ford lit again, and not by us. Not oil. Wrong colour.\" \"Sent Dannet for the captain. Dannet not back.\" \"The Warden is walking. I can hear it singing in the water.\""
     }
    ],
+   "direction": {
+    "emo": "sombre, careful",
+    "intent": "reads a dead man and his last words",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "The book's lines read as written words, each more unsettled; 'singing in the water' nearly a whisper."
+   },
    "status": "todo"
   },
   {
@@ -29921,22 +30771,34 @@
      "text": "...and for you alone, the dead man's jaw moves."
     }
    ],
+   "direction": {
+    "emo": "eerie wonder",
+    "intent": "a dead man speaks to you alone",
+    "pace": "slow",
+    "vol": "hushed"
+   },
    "status": "todo"
   },
   {
    "id": "say.b81f9a1e8df8",
    "kind": "say",
-   "voice": "narrator",
+   "voice": "watchman",
    "text": "It broke its own lamps, coming for me. Twice.",
    "who": "The dead Watchman",
    "where": "godot/logic/Play/Zones/Prologue.cs",
    "hash": "b81f9a1e8df8",
    "segments": [
     {
-     "voice": "narrator",
+     "voice": "watchman",
      "text": "It broke its own lamps, coming for me. Twice."
     }
    ],
+   "direction": {
+    "emo": "dry, broken, dead",
+    "intent": "the watchman's warning",
+    "pace": "slow",
+    "vol": "hushed"
+   },
    "status": "todo"
   },
   {
@@ -30886,9 +31748,17 @@
    "segments": [
     {
      "voice": "narrator",
-     "text": "A door of black stone, smooth as glass. Cut over it, words in a dead tongue: HIC LEGIO SEPTIMA SEPELIVIT QUOD URERE NON POTUIT. Under them, a violet sigil you cannot read. It hums against your teeth."
+     "text": "A door of black stone, smooth as glass. Cut over it, words in a dead tongue: hic legio septima sepelivit quod urere non potuit. Under them, a violet sigil you cannot read. It hums against your teeth."
     }
    ],
+   "direction": {
+    "emo": "wary, solemn",
+    "intent": "the sealed door",
+    "pace": "slow",
+    "vol": "quiet",
+    "say": "A door of black stone, smooth as glass. Cut over it, words in a dead tongue: hic legio septima sepelivit quod urere non potuit. Under them, a violet sigil you cannot read. It hums against your teeth.",
+    "note": "The Latin said slowly and gravely, as old words."
+   },
    "status": "todo"
   },
   {
@@ -30928,22 +31798,34 @@
      "text": "The skull turns, very slightly, toward you."
     }
    ],
+   "direction": {
+    "emo": "eerie",
+    "intent": "the skull turns",
+    "pace": "slow",
+    "vol": "hushed"
+   },
    "status": "todo"
   },
   {
    "id": "say.4c984565e1f9",
    "kind": "say",
-   "voice": "narrator",
+   "voice": "bones",
    "text": "It was never locked from the outside.",
    "who": "The bones",
    "where": "godot/logic/Play/Zones/Verge.cs",
    "hash": "4c984565e1f9",
    "segments": [
     {
-     "voice": "narrator",
+     "voice": "bones",
      "text": "It was never locked from the outside."
     }
    ],
+   "direction": {
+    "emo": "ancient, dry",
+    "intent": "the dead speak",
+    "pace": "very slow",
+    "vol": "hushed"
+   },
    "status": "todo"
   },
   {
@@ -31052,22 +31934,35 @@
      "text": "A young man, freckled, still holding the bars after the door is open."
     }
    ],
+   "direction": {
+    "emo": "pity, plain",
+    "intent": "Jory in the cage",
+    "pace": "measured",
+    "vol": "quiet"
+   },
    "status": "todo"
   },
   {
    "id": "say.1a1877c48374",
    "kind": "say",
-   "voice": "narrator",
+   "voice": "jory",
    "text": "Jory. Jory Coyle. Is my uncle—? Is he—?",
    "who": "Jory Coyle",
    "where": "godot/logic/Play/Zones/Verge.cs",
    "hash": "1a1877c48374",
    "segments": [
     {
-     "voice": "narrator",
-     "text": "Jory. Jory Coyle. Is my uncle—? Is he—?"
+     "voice": "jory",
+     "text": "Jory. Jory Coyle. Is my uncle... Is he..."
     }
    ],
+   "direction": {
+    "emo": "panic, hope",
+    "intent": "Jory asks for his uncle",
+    "pace": "quick",
+    "vol": "level",
+    "say": "Jory. Jory Coyle. Is my uncle... Is he..."
+   },
    "status": "todo"
   },
   {

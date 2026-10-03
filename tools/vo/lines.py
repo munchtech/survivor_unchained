@@ -50,7 +50,9 @@ def text_hash(s: str) -> str:
 NPC_VOICE = {"survivor": "lampling", "wayfinder": "ysolde", "board": None, "greymuzzle": "narrator"}
 # Named speakers of the zone code's lines and barks.
 SPEAKER_VOICE = {"The Ford-Warden": "warden", "Grimtunnel": "grimtunnel", "Snib": "snib",
-                 "The dead Watchman": "watchman", "The bones": "bones"}
+                 "The dead Watchman": "watchman", "The bones": "bones", "Jory Coyle": "jory"}
+# A conversation node's own speaker (the cinematics name theirs).
+NODE_VOICE = {"ford_warden": "warden", "barrow_lord": "barrow_lord", "kerchief_woman": "kerchief_woman", "guard": "guard"}
 
 
 def name_elided(s: str) -> tuple[str, bool]:
@@ -105,7 +107,7 @@ def from_dialogue(lines: list):
         owner = NPC_VOICE.get(npc, npc)
         for nid, node in convo["nodes"].items():
             speaker = node.get("speaker")
-            voice = "narrator" if speaker == "narrator" else owner
+            voice = NODE_VOICE.get(speaker, speaker) if speaker and speaker != "player" else owner
             for i, v in enumerate(variants(node["text"])):
                 raw = v["text"]
                 line = {"id": f"dlg.{npc}.{nid}.{i}", "kind": "dialogue", "voice": voice, "text": raw,
@@ -200,7 +202,7 @@ def from_code(lines: list):
                     if t in seen or "{" in t and "$" in args[0]:
                         continue
                     seen.add(t)
-                    lines.append({"id": f"say.{text_hash(t)}", "kind": "say", "voice": "narrator", "text": t,
+                    lines.append({"id": f"say.{text_hash(t)}", "kind": "say", "voice": SPEAKER_VOICE.get(who or "", "narrator"), "text": t,
                                   "who": who, "where": rel})
             for m in re.finditer(r"new Ev\.Bark\s*\{([^}]*)\}", src):
                 body = m.group(1)

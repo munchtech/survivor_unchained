@@ -435,6 +435,34 @@
     2.5,
     3.3
    ]
+  },
+  "barrow_lord": {
+   "name": "The Legion's dead, behind the door",
+   "sex": "m",
+   "age": 0,
+   "accent": "old Latin, inhuman",
+   "design": "An ancient dead soldier speaking from deep inside a stone tomb, a very low, hollow, dry voice like wind in a crypt, slow and final, each word heavy.",
+   "ref_text": "Not yet. Go back. The road is shut, and it is kept.",
+   "room": "dig",
+   "fx": "dead",
+   "tempo": [
+    1.0,
+    2.0
+   ],
+   "deep": true
+  },
+  "kerchief_woman": {
+   "name": "A Kerchief woman",
+   "sex": "f",
+   "age": 45,
+   "accent": "hard Scots",
+   "design": "A hard, weary woman in her forties with a rough Scottish accent, one of a camp of hungry refugees, low and blunt.",
+   "ref_text": "Them first. The bairns eat, then the old ones, then us. That's how it's done here.",
+   "room": "camp",
+   "tempo": [
+    2.4,
+    3.2
+   ]
   }
  }
 }

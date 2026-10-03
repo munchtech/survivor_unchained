@@ -30,9 +30,9 @@ def cast() -> dict:
 class Worker:
     """A TTS model in its own process and venv, asked one take at a time."""
 
-    def __init__(self, python: str, script: str, env: dict | None = None):
+    def __init__(self, python: str, script: str, env: dict | None = None, cwd: str | None = None):
         e = dict(os.environ, PYTHONIOENCODING="utf-8", **(env or {}))
-        self.p = subprocess.Popen([python, script], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        self.p = subprocess.Popen([python, script], stdin=subprocess.PIPE, stdout=subprocess.PIPE, cwd=cwd,
                                   stderr=open(os.path.join(TOOLS, f"{os.path.basename(script)}.log"), "a", encoding="utf-8"),
                                   text=True, encoding="utf-8", env=e, bufsize=1)
         self.lock = threading.Lock()
@@ -60,11 +60,18 @@ def voxcpm() -> Worker:
     return Worker(VOXCPM_PY, os.path.join(HERE, "backends", "voxcpm_worker.py"))
 
 
+def seedvc() -> Worker:
+    """Seed-VC, run from its own checkout (VO_TOOLS/seed-vc) in its venv."""
+    py = os.path.join(TOOLS, "seedvc", "Scripts" if os.name == "nt" else "bin", "python")
+    return Worker(py, os.path.join(HERE, "backends", "seedvc_worker.py"), cwd=os.path.join(TOOLS, "seed-vc"))
+
+
 # What CommonAccent should hear in each part (the FX voices are not judged on it).
 ACCENT = {
     "rav": "scotland", "redcowl": "scotland", "ysolde": "scotland",
     "chid": "ireland", "maeca": "wales",
-    "snib": None, "grimtunnel": None, "lampling": None, "warden": None, "bones": None,
+    "snib": None, "grimtunnel": None, "lampling": None, "warden": None, "bones": None, "barrow_lord": None,
+    "kerchief_woman": "scotland",
 }
 
 
