@@ -34,6 +34,16 @@ public partial class ArtsScreen : Overlay
 
     bool Safe => G.Battle is not { Combat: true };
 
+    /// <summary>Its two pages turn with LT and RT (, and .).</summary>
+    public override bool Key(Act a)
+    {
+        if (a is not (Act.SubNext or Act.SubPrev)) return false;
+        skills = !skills;
+        Sound.Sfx.Page();
+        Refresh();
+        return true;
+    }
+
     protected override void Build()
     {
         var ch = G.Journey.Ch;
@@ -42,9 +52,12 @@ public partial class ArtsScreen : Overlay
         var v = Frame(skills ? "Skills by Day" : "Arts", new Vector2(1340, 800), G.Key(Act.Arts),
             skills ? "What the arenas showed you, learned for the day. Each asks something of you; what you carry is banked for the night."
             : Safe ? "One art in hand. Each grows with use, and its ranks open facets." : "Out here you can choose a facet a rank has opened. Change your art where it is safe.");
-        var tabs = Style.H(8, Style.Segment("The art in hand", !skills, () => { skills = false; Refresh(); }), Style.Segment("Skills by day", skills, () => { skills = true; Refresh(); }));
+        bool pad = Controls.Instance.UsingPad;
+        var tabs = Style.H(8, pad ? Style.PadButton("LT") : Style.Key(G.Key(Act.SubPrev)),
+            Nav.Skip(Style.Segment("The art in hand", !skills, () => { skills = false; Refresh(); })), Nav.Skip(Style.Segment("Skills by day", skills, () => { skills = true; Refresh(); })),
+            pad ? Style.PadButton("RT") : Style.Key(G.Key(Act.SubNext)));
         v.AddChild(tabs);
-        if (skills) { BuildSkills(v); return; }
+        if (skills) { BuildSkills(v); Foot(v); return; }
         var row = Style.H(26);
         v.AddChild(row);
 
@@ -65,6 +78,14 @@ public partial class ArtsScreen : Overlay
         row.AddChild(scroll);
 
         if (sel != null && Abilities.Find(sel) is { } def) row.AddChild(Detail(ch, def, known.Contains(def.Id)));
+        Foot(v);
+    }
+
+    void Foot(VBoxContainer v)
+    {
+        if (!Controls.Instance.UsingPad) return;
+        v.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
+        v.AddChild(Footer((Act.Confirm, "Choose"), (Act.SubNext, skills ? "The art in hand" : "Skills by day"), (Act.TabNext, "Next page"), (Act.Cancel, "Close")));
     }
 
     Control Entry(CharacterData ch, AbilityDef a, bool known)
@@ -72,14 +93,15 @@ public partial class ArtsScreen : Overlay
         bool held = ch.Ability == a.Id, on = sel == a.Id;
         int rank = ArtBook.Rank(ch, a.Id);
         var b = Style.Button("", () => { sel = a.Id; Refresh(); });
-        b.CustomMinimumSize = new Vector2(420, 62);
-        if (on) b.AddThemeStyleboxOverride("normal", Style.Box(new Color("#3a2614"), Style.LineHi, 2, 4));
+        Nav.Id(b, $"art:{a.Id}");
+        b.CustomMinimumSize = new Vector2(420, 64);
+        if (on) b.AddThemeStyleboxOverride("normal", UiArt.Frame("row_on", Style.Box(new Color("#3a2614"), Style.LineHi, 2, 4)));
         var tint = !known ? Style.InkDim with { A = 0.5f } : held ? Style.EmberHi : Style.Gold;
         var r = Style.H(12, Glyphs.Icon(a.Icon, 28, tint));
         var role = Roles[a.Role];
         string tag = known ? $"{role.Name}  ·  rank {Numerals[rank - 1]}" + (ArtBook.OpenSlots(ch, a.Id) > 0 ? "  ·  a facet to choose" : "") : role.Name;
         var words = Style.V(0, Style.Label(a.Name + (held ? "  ·  in hand" : ""), Style.Display, 17, known ? (held ? Colors.White : Style.GoldHi) : Style.InkDim),
-            Style.Label(tag, Style.Ui, 13, known ? role.Color : Style.InkDim with { A = 0.6f }));
+            Style.Label(tag, Style.Ui, Style.Caption, known ? role.Color : Style.InkDim with { A = 0.6f }));
         words.CustomMinimumSize = new Vector2(340, 0);
         r.AddChild(words);
         r.Position = new Vector2(12, 8);
@@ -96,14 +118,14 @@ public partial class ArtsScreen : Overlay
         var role = Roles[a.Role];
         var head = Style.H(16, Glyphs.Icon(a.Icon, 64, Style.GoldHi));
         var names = Style.V(2, Style.Label(a.Name, Style.Display, 32, Style.GoldHi),
-            Style.Label($"{role.Name}{(a.Movement ? "  ·  a way of moving" : $"  ·  a {Callings.Archetype(a.Calling!).Name}'s art")}  ·  {a.Cooldown:0} s{(a.Interrupts ? "  ·  breaks channels" : "")}", Style.UiBold, 14, role.Color));
+            Style.Label($"{role.Name}{(a.Movement ? "  ·  a way of moving" : $"  ·  a {Callings.Archetype(a.Calling!).Name}'s art")}  ·  {a.Cooldown:0} s{(a.Interrupts ? "  ·  breaks channels" : "")}", Style.UiBold, Style.Caption, role.Color));
         head.AddChild(names);
         d.AddChild(head);
         d.AddChild(Style.Label(a.Description, Style.Text, 17, Style.Ink, true));
         if (!known)
         {
             d.AddChild(Style.Gap(8));
-            d.AddChild(Style.Label($"Not yet learned. A manual teaches it: the thing that rules an arena carries one, and they turn up in the packs of the dead.", Style.TextItalic, 15, Style.InkDim, true));
+            d.AddChild(Style.Label($"Not yet learned. A manual teaches it: the thing that rules an arena carries one, and they turn up in the packs of the dead.", Style.TextItalic, Style.Small, Style.InkDim, true));
             d.AddChild(Facets(ch, a, false));
             return d;
         }
@@ -114,13 +136,13 @@ public partial class ArtsScreen : Overlay
         bar.AddThemeStyleboxOverride("background", Style.Box(new Color(0.1f, 0.08f, 0.07f), Style.Line, 1, 3, 0));
         bar.AddThemeStyleboxOverride("fill", Style.Box(Style.Ember, Style.Ember, 0, 3, 0));
         string next = rank < Abilities.MaxRank ? $"{xp:0} / {Abilities.RankXp[rank]:0} to rank {Numerals[rank]}" : "Mastered";
-        d.AddChild(Style.H(10, Style.Label($"Rank {Numerals[rank - 1]}", Style.UiBold, 16, Style.GoldHi), Style.Label(next, Style.Ui, 14, Style.InkDim)));
+        d.AddChild(Style.H(10, Style.Label($"Rank {Numerals[rank - 1]}", Style.UiBold, Style.Body, Style.GoldHi), Style.Label(next, Style.Ui, Style.Caption, Style.InkDim)));
         d.AddChild(bar);
-        d.AddChild(Style.Label($"+{(Abilities.RankPower(rank) - 1) * 100:0}% strength, {(1 - Abilities.RankHaste(rank)) * 100:0}% shorter wait.  It grows with every use, and with what dies while it is fresh.", Style.Ui, 13, Style.InkDim, true));
+        d.AddChild(Style.Label($"+{(Abilities.RankPower(rank) - 1) * 100:0}% strength, {(1 - Abilities.RankHaste(rank)) * 100:0}% shorter wait.  It grows with every use, and with what dies while it is fresh.", Style.Ui, Style.Caption, Style.InkDim, true));
 
         if (ch.Ability == a.Id) d.AddChild(Style.Label("In hand", Style.UiBold, 16, Style.EmberHi));
         else if (Safe) d.AddChild(Style.Button($"Take {a.Name} in hand", () => G.Gear((j, b) => j.HoldArt(a.Id, b)), true));
-        else d.AddChild(Style.Label("Take it in hand somewhere safe: the Waystation, a quiet road.", Style.TextItalic, 14, Style.InkDim, true));
+        else d.AddChild(Style.Label("Take it in hand somewhere safe: the Waystation, a quiet road.", Style.TextItalic, Style.Caption, Style.InkDim, true));
         d.AddChild(Facets(ch, a, true));
         return d;
     }
@@ -133,7 +155,7 @@ public partial class ArtsScreen : Overlay
         var chosen = known ? ArtBook.Facets(ch, a.Id) : new();
         string opens = slots == 0 ? "rank II opens the first" : slots == 1 ? "rank IV opens the second" : "";
         v.AddChild(Style.Gap(4));
-        v.AddChild(Style.H(8, Style.SubLabel("Facets"), Style.Label(known ? $"{chosen.Count} of {slots} chosen{(opens != "" ? $"  ·  {opens}" : "")}" : "", Style.Ui, 13, Style.InkDim)));
+        v.AddChild(Style.H(8, Style.SubLabel("Facets"), Style.Label(known ? $"{chosen.Count} of {slots} chosen{(opens != "" ? $"  ·  {opens}" : "")}" : "", Style.Ui, Style.Caption, Style.InkDim)));
         var grid = new GridContainer { Columns = 2 };
         grid.AddThemeConstantOverride("h_separation", 10);
         grid.AddThemeConstantOverride("v_separation", 10);
@@ -143,11 +165,12 @@ public partial class ArtsScreen : Overlay
             bool canPick = known && !on && chosen.Count < slots;
             bool canDrop = known && on && Safe;
             var b = Style.Button("", canPick ? () => G.Gear((j, bt) => j.ChooseFacet(a.Id, f.Id, true, bt)) : canDrop ? () => G.Gear((j, bt) => j.ChooseFacet(a.Id, f.Id, false, bt)) : null);
-            b.CustomMinimumSize = new Vector2(390, 84);
-            if (on) b.AddThemeStyleboxOverride("normal", Style.Box(new Color("#3a2614"), Style.EmberHi, 2, 4));
+            b.CustomMinimumSize = new Vector2(390, 88);
+            Nav.Id(b, $"facet:{f.Id}");
+            if (on) b.AddThemeStyleboxOverride("normal", UiArt.Frame("row_on", Style.Box(new Color("#3a2614"), Style.EmberHi, 2, 4)));
             b.Disabled = !canPick && !canDrop;
-            var words = Style.V(2, Style.Label(f.Name + (on ? "  ✓" : ""), Style.UiBold, 16, on ? Style.EmberHi : canPick ? Style.GoldHi : Style.Ink),
-                Style.Label(f.Text, Style.Ui, 13, on || canPick ? Style.Ink : Style.InkDim, true));
+            var words = Style.V(2, Style.Label(f.Name + (on ? "  ·  chosen" : ""), Style.UiBold, 16, on ? Style.EmberHi : canPick ? Style.GoldHi : Style.Ink),
+                Style.Label(f.Text, Style.Ui, Style.Caption, on || canPick ? Style.Ink : Style.InkDim, true));
             words.Position = new Vector2(12, 8);
             words.Size = new Vector2(366, 70);
             words.MouseFilter = MouseFilterEnum.Ignore;
@@ -174,7 +197,7 @@ public partial class ArtsScreen : Overlay
         var list = Style.V(6);
         list.CustomMinimumSize = new Vector2(430, 0);
         list.AddChild(Style.SubLabel($"Learned  ·  carrying {SkillBook.Carried(ch).Count()} of {SkillBook.Slots(ch)}"));
-        if (ch.Skills.Count == 0) list.AddChild(Style.Label("None yet. What burns in the arenas can be learned by day.", Style.TextItalic, 14, Style.InkDim, true));
+        if (ch.Skills.Count == 0) list.AddChild(Style.Label("None yet. What burns in the arenas can be learned by day.", Style.TextItalic, Style.Caption, Style.InkDim, true));
         foreach (var id in ch.Skills) list.AddChild(SkillEntry(ch, id, true));
         if (seen.Count > 0)
         {
@@ -183,7 +206,7 @@ public partial class ArtsScreen : Overlay
             foreach (var id in seen) list.AddChild(SkillEntry(ch, id, false));
         }
         int unseen = Weapons.Pool.Count(id => !ch.Discovered.Contains(id));
-        if (unseen > 0) list.AddChild(Style.Label($"{unseen} more the arenas have not shown you yet.", Style.TextItalic, 13, Style.InkDim, true));
+        if (unseen > 0) list.AddChild(Style.Label($"{unseen} more the arenas have not shown you yet.", Style.TextItalic, Style.Caption, Style.InkDim, true));
         var scroll = Style.Scroll(list);
         scroll.CustomMinimumSize = new Vector2(450, 600);
         row.AddChild(scroll);
@@ -195,14 +218,15 @@ public partial class ArtsScreen : Overlay
         var w = Weapons.All[id];
         bool carried = ch.Slotted.Contains(id), meets = SkillBook.Meets(ch, id), on = selSkill == id;
         var b = Style.Button("", () => { selSkill = id; Refresh(); });
-        b.CustomMinimumSize = new Vector2(420, 62);
-        if (on) b.AddThemeStyleboxOverride("normal", Style.Box(new Color("#3a2614"), Style.LineHi, 2, 4));
+        Nav.Id(b, $"skill:{id}");
+        b.CustomMinimumSize = new Vector2(420, 64);
+        if (on) b.AddThemeStyleboxOverride("normal", UiArt.Frame("row_on", Style.Box(new Color("#3a2614"), Style.LineHi, 2, 4)));
         var col = ItemViews.SchoolColors[w.School];
         var r = Style.H(12, Glyphs.Icon(w.Art, 28, known ? col : col with { A = 0.45f }));
         string attr = SkillBook.Attribute(id);
         string tag = $"asks {SkillBook.Need} {attr}  ·  you have {SkillBook.Have(ch, attr)}";
         var words = Style.V(0, Style.Label(w.Name + (carried ? (meets ? "  ·  carried, banked" : "  ·  idle") : ""), Style.Display, 17, known ? (carried ? Colors.White : Style.GoldHi) : Style.InkDim),
-            Style.Label(tag, Style.Ui, 13, meets ? Style.Good : Style.Bad));
+            Style.Label(tag, Style.Ui, Style.Caption, meets ? Style.Good : Style.Bad));
         words.CustomMinimumSize = new Vector2(340, 0);
         r.AddChild(words);
         r.Position = new Vector2(12, 8);
@@ -219,25 +243,25 @@ public partial class ArtsScreen : Overlay
         var col = ItemViews.SchoolColors[w.School];
         var head = Style.H(16, Glyphs.Icon(w.Art, 64, col));
         head.AddChild(Style.V(2, Style.Label(w.Name, Style.Display, 32, Style.GoldHi),
-            Style.Label($"{w.School.ToString().ToLowerInvariant()}  ·  {string.Join(", ", w.Tags.Select(t => t.ToString().ToLowerInvariant()))}", Style.UiBold, 14, col)));
+            Style.Label($"{w.School.ToString().ToLowerInvariant()}  ·  {string.Join(", ", w.Tags.Select(t => t.ToString().ToLowerInvariant()))}", Style.UiBold, Style.Caption, col)));
         d.AddChild(head);
         d.AddChild(Style.Label(w.Description, Style.Text, 17, Style.Ink, true));
         string attr = SkillBook.Attribute(w.Id);
         d.AddChild(Style.Label($"It asks {SkillBook.Need} {attr} of whoever uses it. You have {SkillBook.Have(ch, attr)}.{(meets ? "" : " Until you measure up (points, a respec), it lies idle.")}",
-            Style.UiBold, 15, meets ? Style.Good : Style.Bad, true));
+            Style.UiBold, Style.Small, meets ? Style.Good : Style.Bad, true));
         d.AddChild(Style.Label($"By day it is rank {Ranks[SkillBook.Rank(ch)]}, and grows with you (every third level). In the night's arenas the ember starts from nothing, but what you carry by day is banked: it sleeps in you through the day, the ember offers it in its first drafts, and it comes in at rank {Ranks[SkillBook.NightRank(ch)]}" +
-            (ch.Level < 10 ? " (rank III from the tenth level)." : "."), Style.Ui, 14, Style.InkDim, true));
+            (ch.Level < 10 ? " (rank III from the tenth level)." : "."), Style.Ui, Style.Caption, Style.InkDim, true));
         d.AddChild(Style.Gap(6));
         if (!known)
-            d.AddChild(Style.Label("You have seen it burn. Learn it from a tome (a story fight won, Vonnra's Curiosities), or your calling may teach it as you grow.", Style.TextItalic, 15, Style.InkDim, true));
+            d.AddChild(Style.Label("You have seen it burn. Learn it from a tome (a story fight won, Vonnra's Curiosities), or your calling may teach it as you grow.", Style.TextItalic, Style.Small, Style.InkDim, true));
         else if (!Safe)
-            d.AddChild(Style.Label(carried ? "Carried. Change what you carry somewhere safe." : "Change what you carry somewhere safe: the Waystation, a quiet road.", Style.TextItalic, 14, Style.InkDim, true));
+            d.AddChild(Style.Label(carried ? "Carried. Change what you carry somewhere safe." : "Change what you carry somewhere safe: the Waystation, a quiet road.", Style.TextItalic, Style.Caption, Style.InkDim, true));
         else if (carried)
             d.AddChild(Style.Button($"Put {w.Name} down", () => G.Gear((j, _) => SkillBook.Unslot(j.Ch, w.Id))));
         else if (ch.Slotted.Count < SkillBook.Slots(ch))
             d.AddChild(Style.Button($"Carry {w.Name}", () => G.Gear((j, _) => SkillBook.Slot(j.Ch, w.Id)), true));
         else
-            d.AddChild(Style.Label("Your hands are full: put one down first. More room comes at the fourth level and the eighth.", Style.TextItalic, 14, Style.InkDim, true));
+            d.AddChild(Style.Label("Your hands are full: put one down first. More room comes at the fourth level and the eighth.", Style.TextItalic, Style.Caption, Style.InkDim, true));
         return d;
     }
 }

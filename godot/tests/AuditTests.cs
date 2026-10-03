@@ -401,6 +401,110 @@ public class AuditTests
         Assert.Contains("gone down the south road", p.Fortune().Read);
     }
 
+    /* ------------------------------ reported by the CI review (docs/cloud/ci-health.md) -- */
+
+    static bool Blighted(Route p, string? tag = null) => p.B!.Enemies.Living().Any(e => e.Def.Id == "wolf_blighted" && (tag == null || e.Tag == tag));
+
+    [Fact]
+    public void R1_a_Pack_that_runs_with_you_or_was_bought_off_is_not_sick_once_the_water_runs_clear()
+    {
+        // Allied: the poison still running, the sick lie in the Hollow with the rest.
+        var p = Route.New("hunter");
+        p.Talk("rav", "about the kerchiefs");
+        p.Talk("greymuzzle", "kneel", "run with me", "go");
+        Assert.Equal("allied", p.S("beasts.outcome"));
+        p.Enter("verge");
+        p.Walk("hollow", 20, 0);
+        Assert.True(Blighted(p, "hollow"));
+        // The pump stopped, two days on: the stream runs clear, and so do they.
+        p.W.Facts["dig.pump"] = "broken";
+        p.Leave();
+        Assert.Contains("Your wolves were drinking", p.Sleeps(2));
+        Assert.Equal("allied", p.S("beasts.outcome"));
+        p.Enter("verge");
+        p.Walk("hollow", 20, 0);
+        Assert.False(Blighted(p, "hollow"));
+        // Bought off (the Dig sold to Pell): his pump moved, the water clean, the wood well.
+        var b = Route.New("scholar");
+        b.Give("stream_sample");
+        b.Talk("wenna", "test it");
+        b.Talk("pell", "killing the wolves", "forty");
+        b.Sleeps(4);
+        Assert.Equal("exploited", b.S("beasts.outcome"));
+        Assert.True(b.F("stream.clear").Truthy);
+        b.Enter("verge");
+        Assert.False(Blighted(b));
+        b.Walk("hollow", 20, 0);
+        Assert.False(Blighted(b, "hollow"));
+    }
+
+    [Fact]
+    public void R2_after_a_slaughter_the_stream_still_clears_and_the_bitterroot_goes_with_the_poison()
+    {
+        var p = Route.New("hunter");
+        p.Talk("holloway", "wolves");
+        p.W.Facts["beasts.population"] = 4;
+        p.Sleep();
+        Assert.Equal("slaughtered", p.S("beasts.outcome"));
+        p.Enter("verge");
+        Assert.True(p.Offers("root0"));
+        p.W.Facts["dig.pump"] = "broken";
+        p.Leave();
+        Assert.Contains("nothing left in the wood to drink from it", p.Sleeps(2));
+        Assert.True(p.F("stream.clear").Truthy);
+        Assert.Equal("slaughtered", p.S("beasts.outcome"));
+        p.Enter("verge");
+        for (int k = 0; k < 3; k++) Assert.False(p.Offers($"root{k}"));
+    }
+
+    [Fact]
+    public void R3_a_promise_to_the_Pack_is_broken_by_killing_a_wolf_at_peace_not_one_that_came_for_you()
+    {
+        var p = Route.New("hunter");
+        p.Talk("greymuzzle", "kneel", "stop whatever is poisoning");
+        Assert.True(p.F("promise.pack").Truthy);
+        // Their kin worn into the Hollow: the den comes for you, and you defend yourself.
+        p.Give("wolfhide_cloak");
+        p.J.Equip(p.J.Ch.Pack.First(i => i?.Def == "wolfhide_cloak")!.Uid, null, null);
+        p.Enter("verge");
+        p.Walk("hollow", 10, 0);
+        var den = p.B!.Enemies.Living().First(e => e.Tag == "hollow" && e.Disposition == Sim.Disposition.Hostile);
+        p.B.KillEnemy(den, true, null);
+        p.Wait(0.2);
+        Assert.False(p.F("promise.broken").Truthy);
+        Assert.DoesNotContain(p.W.History, h => h.Id == "broke_promise");
+        // A wolf minding its own business, struck down on purpose: that breaks it.
+        p.Leave();
+        p.J.Unequip(EquipSlot.Cloak, null);
+        p.Enter("verge");
+        p.Walk("hollow", 10, 0);
+        var calm = p.B!.Enemies.Living().First(e => e.Tag == "hollow" && e.Disposition == Sim.Disposition.Neutral);
+        p.B.Provoke(calm);
+        p.B.KillEnemy(calm, true, null);
+        p.Wait(0.2);
+        Assert.True(p.F("promise.broken").Truthy);
+        Assert.Contains(p.W.History, h => h.Id == "broke_promise");
+    }
+
+    [Fact]
+    public void R4_running_with_the_Pack_is_the_louder_name_but_the_cleared_water_is_on_the_page()
+    {
+        // Decided: "who runs with wolves" outranks "who cleared the water" (the
+        // allied verdict is its own), and the deed is still read back.
+        var p = Route.New("hunter");
+        p.Talk("rav", "about the kerchiefs");
+        p.Talk("greymuzzle", "kneel", "run with me", "go");
+        p.Apply("""[{ "set": { "dig.pump": "broken" } }, { "quest": { "id": "beasts", "entry": "pump_broken" } }, { "history": { "id": "broke_pump", "text": "wrecked the Dig's pump", "tags": ["beasts"], "spread": 2 } }]""");
+        p.Sleeps(2);
+        Assert.True(p.F("stream.clear").Truthy);
+        var sum = Chapter.Summary(p.J.Ch, p.W);
+        Assert.Equal("Wren, who runs with wolves", sum.Epithet);
+        var beasts = sum.Threads.Single(t => t.Id == "beasts");
+        Assert.Equal("Ran with the Pack", beasts.Verdict);
+        Assert.Contains(Lore.EntryText("beasts", "pump_broken"), beasts.Beats);
+        Assert.Contains("stopped the poison in the Thornhollow stream", sum.Deeds);
+    }
+
     [Fact]
     public void Nothing_the_story_still_needs_goes_over_a_counter()
     {

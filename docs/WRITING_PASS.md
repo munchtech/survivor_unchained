@@ -17,7 +17,7 @@ what is left to build in code. The whole arc it points at is
 - **[LATER]**: an Act 2 or 3 beat. Act 1 already records the fact it needs;
   the beat itself is in `STORY_BIBLE.md` sections 7 and 8.
 
-Tests: `cd godot/tests && dotnet test` (288 pass). The pass's own scenarios
+Tests: `cd godot/tests && dotnet test` (298 pass). The pass's own scenarios
 are `godot/tests/BreadcrumbTests.cs` (the code items' scenarios at its end);
 four older tests in `QuestTests.cs` were given the context the new gates
 require (section 13). The implementation pass added `RouteTests.cs` (every
@@ -1011,6 +1011,31 @@ writers' words where a line was needed (VOICES.md).
   only the living burn, and the crates go with the fire or with the cargo.
 - The strongbox's chest and the crates stayed on screen after they were
   taken or sunk.
+
+**Reported by the CI review** (`docs/cloud/ci-health.md`, R1 to R4)
+
+- **R1.** Once the stream ran clear, an allied or bought-off Pack still had
+  blighted wolves in the Hollow and by the water: "sick" read only the
+  `cured` outcome. The Verge now asks whether the stream runs clean
+  (`stream.clear`, or cured), whatever settled the Pack.
+- **R2.** After a slaughter nothing ever set `stream.clear`, so bitterroot
+  grew on for good. Rule `stream.clear_slaughtered` clears it two days after
+  the pump stops, with a morning line ("There is nothing left in the wood to
+  drink from it.") and the `stream_cleared` deed.
+- **R3.** A promise to the Pack broke on any wolf killed, even one that came
+  for you (their kin worn into the Hollow). Only a wolf at peace with you,
+  struck on purpose (neutral or provoked), breaks it now.
+- **R4.** An allied survivor is never "who cleared the water": kept, by
+  decision. Running with the Pack is the louder name (as E2 says) and has its
+  own verdict; the pump's beat and the "stopped the poison" deed are still on
+  the page.
+
+Each is a play-through in `AuditTests` (R1 to R3 fail without their fix).
+From the cloud branch's duplicate of C1 to C7, the tests that add coverage
+and pass against this implementation were kept: the prologue's own watchman
+(`PrologueTests`), the wagons' map mark from Turn to Quest to Place
+(`VergeTests`), C7's line in the standings test and a shop saved with
+`offered: null` (`WorldTests`), and `crates.settle` leaving `sunk` alone.
 
 **Lint.** `StoryLint.Every_fact_written_is_read_or_is_a_seed_for_a_later_act`:
 every fact Act 1 writes is read, or is one of the named seeds of section 9.

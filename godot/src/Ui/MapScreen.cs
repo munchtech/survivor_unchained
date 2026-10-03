@@ -17,7 +17,11 @@ namespace SurvivorUnchained.Ui;
 /// an ink mark where it stands, every wall and house its footprint. Fog is
 /// plain paper where you have not been; places are named once seen (the way
 /// out and what the journal told you always are). The wheel zooms, a drag
-/// pans, M or Escape puts it away.
+/// pans, M or Escape puts it away. Beside it, a list of where to go, the
+/// places found and what to beware of, nearest first, each with how far and
+/// which way: a line chosen (hovered, focused) glides the map to it and
+/// rings it. With a pad the list is walked with the D-pad, the triggers zoom
+/// and Y finds you.
 /// </summary>
 public partial class MapScreen : Overlay
 {
@@ -41,12 +45,12 @@ public partial class MapScreen : Overlay
         }
     }
 
-    static float Extent(World.ZoneMeta m) => m.Map?.Extent is { ValueKind: JsonValueKind.Number } e ? (float)e.GetDouble() : (float)m.Bound * 2;
+    public static float Extent(World.ZoneMeta m) => m.Map?.Extent is { ValueKind: JsonValueKind.Number } e ? (float)e.GetDouble() : (float)m.Bound * 2;
 
     static double Hash(double x, double y) { double s = Math.Sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.Floor(s); }
 
-    /// <summary>The zone drawn on paper, once per zone.</summary>
-    static ImageTexture Drawing(ZoneData z)
+    /// <summary>The zone drawn on paper, once per zone (the map and the corner map share it).</summary>
+    public static ImageTexture Drawing(ZoneData z)
     {
         if (drawings.TryGetValue(z.Id, out var hit)) return hit;
         var meta = z.Meta;
@@ -153,79 +157,207 @@ public partial class MapScreen : Overlay
         return ImageTexture.CreateFromImage(img);
     }
 
+    /* --------------------------------------------------------- the atlas -- */
+
+    const int F = 920;
+    Vector2 panTo;
+    bool gliding;
+    Control? ring;
+    double t;
+    float extent = 1;
+    Vector2 youAt;
+
+    /// <summary>A mark the list can name: where, what, and its words.</summary>
+    readonly record struct Entry(double X, double Z, MarkKind Kind, string Label);
+
+    /// <summary>The triggers zoom (or , and .); Y finds you; focus on a line of the list glides the map to it.</summary>
+    public override bool Key(Act a)
+    {
+        switch (a)
+        {
+            case Act.SubNext: zoom = Math.Min(3.5f, zoom * 1.25f); Place(F); return true;
+            case Act.SubPrev: zoom = Math.Max(1, zoom / 1.25f); Place(F); return true;
+            case Act.Alt2: FindMe(); return true;
+        }
+        return false;
+    }
+
+    void FindMe()
+    {
+        if (G.Battle is not { } b) return;
+        Glide(b.Player.X, b.Player.Z, null);
+        Sound.Sfx.Hover();
+    }
+
+    /// <summary>The map moves to a place, and a ring marks it (none: just move).</summary>
+    void Glide(double x, double z, Vector2? mark)
+    {
+        panTo = new Vector2(Math.Clamp(-(float)x / extent, -0.5f, 0.5f), Math.Clamp(-(float)z / extent, -0.5f, 0.5f));
+        gliding = true;
+        if (ring != null && IsInstanceValid(ring))
+        {
+            ring.Visible = mark != null;
+            if (mark is { } m) ring.Position = m - ring.Size / 2;
+        }
+    }
+
+    public override void _Process(double delta)
+    {
+        base._Process(delta);
+        t += delta;
+        if (gliding)
+        {
+            pan = pan.Lerp(panTo, 1 - Mathf.Exp(-9 * (float)delta));
+            if (pan.DistanceTo(panTo) < 0.0005f) { pan = panTo; gliding = false; }
+            Place(F);
+        }
+        if (ring != null && IsInstanceValid(ring) && ring.Visible)
+        {
+            float k = 1 + 0.18f * Mathf.Sin((float)t * 6);
+            ring.Scale = new Vector2(k, k) / zoom;
+        }
+    }
+
     protected override void Build()
     {
         var scene = G.Scene!;
         var zone = G.Zone!;
         var meta = scene.Data.Meta;
-        float extent = Extent(meta);
-        AddChild(Style.Scrim(G.CloseOverlay, 0.7f));
-        var sheet = Style.Centered(Style.V(6), new Vector2(760, 860));
-        AddChild(sheet);
-        sheet.AddChild(Style.Label(zone.Name, Style.Display, 30, Style.GoldHi, false, HorizontalAlignment.Center));
-        if (zone.Region != null) sheet.AddChild(Style.Label(zone.Region, Style.TextItalic, 16, Style.InkDim, false, HorizontalAlignment.Center));
-        const int Frame = 740;
-        var frame = new Panel { CustomMinimumSize = new Vector2(Frame, Frame), ClipContents = true, MouseFilter = MouseFilterEnum.Stop };
-        frame.AddThemeStyleboxOverride("panel", Style.Box(new Color("#d9cba8"), new Color("#5a3e24"), 2, 3, 0));
-        sheet.AddChild(frame);
-        world = new Control { Size = new Vector2(Frame, Frame), MouseFilter = MouseFilterEnum.Ignore };
+        extent = Extent(meta);
+        AddChild(Style.Scrim(G.CloseOverlay, 0.86f));
+        BookTabs(new Vector2(80, 26));
+        // The map, as large as the screen allows.
+        var frame = new Panel { Position = new Vector2(80, 80), Size = new Vector2(F, F), ClipContents = true, MouseFilter = MouseFilterEnum.Stop };
+        frame.AddThemeStyleboxOverride("panel", UiArt.Frame("map_frame", Style.Box(new Color("#d9cba8"), new Color("#5a3e24"), 2, 3, 0)));
+        AddChild(frame);
+        world = new Control { Size = new Vector2(F, F), MouseFilter = MouseFilterEnum.Ignore };
         frame.AddChild(world);
-        world.AddChild(new TextureRect { Texture = Drawing(scene.Data), Size = new Vector2(Frame, Frame), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore });
-        var ink = new MapInk(scene, extent, Frame) { Size = new Vector2(Frame, Frame), MouseFilter = MouseFilterEnum.Ignore };
-        world.AddChild(ink);
+        world.AddChild(new TextureRect { Texture = Drawing(scene.Data), Size = new Vector2(F, F), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore });
+        world.AddChild(new MapInk(scene, extent, F) { Size = new Vector2(F, F), MouseFilter = MouseFilterEnum.Ignore });
         var zs = G.Journey.World.Zone(zone.Id);
         var seen = zs.TryGetValue("seen", out var f) && f.Str is { } s ? s : new string('0', Journey.FogN * Journey.FogN);
-        world.AddChild(new TextureRect { Texture = Fog(seen, Journey.FogN), Size = new Vector2(Frame, Frame), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore });
-        // What is known: marks, named once seen.
+        world.AddChild(new TextureRect { Texture = Fog(seen, Journey.FogN), Size = new Vector2(F, F), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore });
         bool Seen(double x, double z)
         {
             int i = (int)Math.Floor((x / extent + 0.5) * Journey.FogN), j = (int)Math.Floor((z / extent + 0.5) * Journey.FogN);
             return i >= 0 && j >= 0 && i < Journey.FogN && j < Journey.FogN && seen[j * Journey.FogN + i] == '1';
         }
-        Vector2 Px(double x, double z) => new((float)((x / extent + 0.5) * Frame), (float)((z / extent + 0.5) * Frame));
-        var marks = world;
-        foreach (var m in zone.MapMarks().Where(m => m.Kind is MarkKind.Exit or MarkKind.Quest || Seen(m.X, m.Z)).OrderByDescending(m => m.Kind == MarkKind.Place))
-        {
-            var (glyph, color) = m.Kind switch
-            {
-                MarkKind.Quest or MarkKind.Turn => ("quest", new Color("#a8321e")), MarkKind.Danger => ("skull", new Color("#6a1a10")),
-                MarkKind.Mystery => ("eye", new Color("#5a3a7a")), MarkKind.Exit => ("next", new Color("#2a4a3a")), MarkKind.Person => ("talk", new Color("#3a2414")),
-                _ => ("map", new Color("#3a2414")),
-            };
-            Mark(marks, Px(m.X, m.Z), m.Label, glyph, color, m.Kind == MarkKind.Place);
-        }
-        if (G.Journey.World.Corpse is { } corpse && corpse.Zone == zone.Id) Mark(marks, Px(corpse.X, corpse.Z), $"{corpse.HeroName}'s belongings", "skull", new Color("#6a1a10"), false);
+        Vector2 Px(double x, double z) => new((float)((x / extent + 0.5) * F), (float)((z / extent + 0.5) * F));
+        var entries = zone.MapMarks().Where(m => m.Kind is MarkKind.Exit or MarkKind.Quest || Seen(m.X, m.Z)).Select(m => new Entry(m.X, m.Z, m.Kind, m.Label)).ToList();
+        if (G.Journey.World.Corpse is { } corpse && corpse.Zone == zone.Id) entries.Add(new Entry(corpse.X, corpse.Z, MarkKind.Danger, $"{corpse.HeroName}'s belongings"));
+        foreach (var m in entries.OrderByDescending(m => m.Kind == MarkKind.Place)) Mark(world, Px(m.X, m.Z), m.Label, m.Kind);
+        // The ring that marks what the list has chosen.
+        ring = new Panel { Size = new Vector2(46, 46), PivotOffset = new Vector2(23, 23), MouseFilter = MouseFilterEnum.Ignore, Visible = false };
+        var rs = Style.Box(new Color(0, 0, 0, 0), new Color("#a8321e"), 3, 23, 0);
+        ring.AddThemeStyleboxOverride("panel", rs);
+        world.AddChild(ring);
         // You.
         if (G.Battle is { } b)
         {
-            var you = new Polygon2D { Polygon = new[] { new Vector2(0, -9), new Vector2(7, 7), new Vector2(0, 3), new Vector2(-7, 7) }, Color = new Color("#b8321e"), Position = Px(b.Player.X, b.Player.Z), Rotation = (float)(Math.PI - b.Player.Facing) };
-            marks.AddChild(you);
+            youAt = Px(b.Player.X, b.Player.Z);
+            world.AddChild(new Polygon2D { Polygon = new[] { new Vector2(0, -11), new Vector2(8, 8), new Vector2(0, 4), new Vector2(-8, 8) }, Color = new Color("#b8321e"), Position = youAt, Rotation = (float)(Math.PI - b.Player.Facing) });
         }
-        var foot = Style.H(16);
-        foreach (var (glyph, text) in new[] { ("quest", "Someone needs you"), ("skull", "Hostile"), ("eye", "Unexplained"), ("next", "The way out") })
-            foot.AddChild(Style.H(4, Glyphs.Icon(glyph, 14, Style.GoldHi), Style.Label(text, Style.Ui, 14, Style.Ink)));
-        foot.AddChild(Style.Label($"{G.Key(Act.Map)} close · wheel to zoom · drag to move", Style.Ui, 13, Style.InkDim));
-        foot.Alignment = BoxContainer.AlignmentMode.Center;
-        sheet.AddChild(foot);
-        frame.GuiInput += e => Input(e, Frame);
-        Place(Frame);
+        frame.GuiInput += e => Input(e, F);
+        Place(F);
+
+        // The list: where to go, what has been found, what to beware of; each line glides the map to it.
+        var side = Style.Panel(Style.Plate(20));
+        side.Position = new Vector2(80 + F + 30, 80);
+        side.Size = new Vector2(1920 - (80 + F + 30) - 80, F);
+        AddChild(side);
+        var col = Style.V(Style.Gap2);
+        side.AddChild(col);
+        var head = Style.H(Style.Gap3);
+        var names = Style.V(0, Style.Cap(zone.Name, 24));
+        if (zone.Region != null) names.AddChild(Style.Label(zone.Region, Style.TextItalic, Style.Small, Style.InkDim));
+        names.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        head.AddChild(names);
+        head.AddChild(Nav.Skip(CloseButton(G.Key(Act.Map), G.CloseOverlay)));
+        col.AddChild(head);
+        col.AddChild(Style.Rule());
+        var list = Style.V(2);
+        var p0 = G.Battle?.Player;
+        void Group(string title, IEnumerable<Entry> items)
+        {
+            var these = items.OrderBy(e => p0 == null ? 0 : Math.Sqrt((e.X - p0.X) * (e.X - p0.X) + (e.Z - p0.Z) * (e.Z - p0.Z))).ToList();
+            if (these.Count == 0) return;
+            list.AddChild(Style.Gap(Style.Gap2));
+            list.AddChild(Style.SubLabel(title));
+            foreach (var e in these) list.AddChild(Line(e, Px(e.X, e.Z)));
+        }
+        Group("Where to go", entries.Where(e => e.Kind is MarkKind.Quest or MarkKind.Turn or MarkKind.Exit));
+        Group("People", entries.Where(e => e.Kind == MarkKind.Person));
+        Group("Places", entries.Where(e => e.Kind == MarkKind.Place));
+        Group("Danger and the strange", entries.Where(e => e.Kind is MarkKind.Danger or MarkKind.Mystery));
+        if (entries.Count == 0) list.AddChild(Style.Label("Nothing found yet. The map fills in as you walk.", Style.TextItalic, Style.Body, Style.InkDim, true));
+        var scroll = Style.Scroll(list);
+        col.AddChild(scroll);
+        col.AddChild(Style.Rule());
+        // The legend, in the marks' own look (the corner map's too).
+        var legend = new GridContainer { Columns = 2, MouseFilter = MouseFilterEnum.Ignore };
+        legend.AddThemeConstantOverride("h_separation", 24);
+        legend.AddThemeConstantOverride("v_separation", 6);
+        foreach (var (kind, text) in new[] { (MarkKind.Quest, "Someone needs you"), (MarkKind.Exit, "The way out"), (MarkKind.Danger, "Hostile"), (MarkKind.Mystery, "Unexplained") })
+            legend.AddChild(Style.H(6, Minimap.Mark(kind, 18), Style.Label(text, Style.Ui, Style.Caption, Style.Ink)));
+        col.AddChild(legend);
+        col.AddChild(Controls.Instance.UsingPad
+            ? Style.Hints((Act.Up, "Choose"), (Act.SubNext, "Closer"), (Act.SubPrev, "Further"), (Act.Alt2, "Find me"))
+            : MouseFooter("Wheel to zoom", "drag to move", "a line to find it"));
+        var me = Style.Button("", FindMe, false, true);
+        var mr = Style.H(6, Controls.Instance.UsingPad ? Style.PadButton("Y") : Glyphs.Icon("crosshair", 16, Style.GoldHi), Style.Label("Find me", Style.UiBold, Style.Small, Style.GoldHi));
+        mr.MouseFilter = MouseFilterEnum.Ignore;
+        mr.Position = new Vector2(10, 5);
+        me.AddChild(mr);
+        me.CustomMinimumSize = new Vector2(mr.GetCombinedMinimumSize().X + 22, 34);
+        me.Position = new Vector2(80 + F - me.CustomMinimumSize.X - 12, 80 + F - 46);
+        AddChild(Nav.Skip(me));
     }
 
-    static void Mark(Control parent, Vector2 at, string label, string glyph, Color color, bool place)
+    /// <summary>A line of the list: its mark, its name, how far and which way from you.</summary>
+    Control Line(Entry e, Vector2 at)
     {
+        var b = Style.Button("", () => { Glide(e.X, e.Z, at); zoom = Math.Max(zoom, 1.8f); Place(F); }, false, true);
+        var row = Style.H(8, Minimap.Mark(e.Kind, 18), Style.Label(e.Label, Style.UiBold, Style.Small, Style.Ink));
+        if (G.Battle?.Player is { } p)
+        {
+            double dx = e.X - p.X, dz = e.Z - p.Z, d = Math.Sqrt(dx * dx + dz * dz);
+            row.AddChild(Style.Label(d < 8 ? "here" : $"{Math.Round(d / 5) * 5:0} m {Way(dx, dz)}", Style.TextItalic, Style.Caption, Style.InkDim));
+        }
+        row.MouseFilter = MouseFilterEnum.Ignore;
+        row.Position = new Vector2(10, 6);
+        b.AddChild(row);
+        b.CustomMinimumSize = new Vector2(0, 36);
+        b.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        Nav.Mark(b, $"mark:{e.Label}", () => { Glide(e.X, e.Z, at); zoom = Math.Max(zoom, 1.8f); Place(F); }, focus: () => Glide(e.X, e.Z, at));
+        b.MouseEntered += () => Glide(e.X, e.Z, at);
+        return b;
+    }
+
+    /// <summary>Which way, in the eight words of a compass (north is up the map).</summary>
+    static string Way(double dx, double dz)
+    {
+        string[] w = { "north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west" };
+        double a = Math.Atan2(dx, -dz);
+        int i = (int)Math.Round(a / (Math.PI / 4));
+        return w[(i % 8 + 8) % 8];
+    }
+
+    static void Mark(Control parent, Vector2 at, string label, MarkKind kind)
+    {
+        bool place = kind == MarkKind.Place;
+        var (_, color) = Minimap.Look(kind);
         var node = new Control { Position = at, MouseFilter = MouseFilterEnum.Ignore };
         if (!place)
         {
-            var icon = Glyphs.Icon(glyph, 16, color);
-            icon.Position = new Vector2(-8, -8);
-            icon.Size = new Vector2(16, 16);
+            var icon = Minimap.Mark(kind, 22);
+            icon.Position = new Vector2(-11, -11);
             node.AddChild(icon);
         }
-        var l = Style.Label(label, place ? Style.Display : Style.TextBold, place ? 14 : 13, place ? new Color("#3a2414") : color, false, HorizontalAlignment.Center, false);
+        var l = Style.Label(label, place ? Style.Display : Style.TextBold, place ? 16 : 15, place ? new Color("#3a2414") : color, false, HorizontalAlignment.Center, false);
         l.AddThemeColorOverride("font_outline_color", new Color("#e4d6b6"));
-        l.AddThemeConstantOverride("outline_size", 4);
-        l.Size = new Vector2(220, 18);
-        l.Position = new Vector2(-110, place ? -9 : 9);
+        l.AddThemeConstantOverride("outline_size", 5);
+        l.Size = new Vector2(240, 22);
+        l.Position = new Vector2(-120, place ? -11 : 12);
         node.AddChild(l);
         parent.AddChild(node);
     }
@@ -236,7 +368,7 @@ public partial class MapScreen : Overlay
         world.Scale = new Vector2(zoom, zoom);
         // The map's middle at the frame's middle, moved by the pan.
         world.Position = new Vector2(frame / 2f, frame / 2f) - new Vector2(frame / 2f, frame / 2f) * zoom + pan * frame * zoom;
-        foreach (var c in world.GetChildren()) if (c is Control mk && mk is not TextureRect && mk is not MapInk) mk.Scale = new Vector2(1 / zoom, 1 / zoom);
+        foreach (var c in world.GetChildren()) if (c is Control mk && mk is not TextureRect && mk is not MapInk && mk != ring) mk.Scale = new Vector2(1 / zoom, 1 / zoom);
     }
 
     void Input(InputEvent e, int frame)
@@ -249,6 +381,7 @@ public partial class MapScreen : Overlay
                 dragging = mb.Pressed;
                 dragFrom = mb.Position;
                 panFrom = pan;
+                gliding = false;
                 break;
             case InputEventMouseMotion mm when dragging:
                 var d = (mm.Position - dragFrom) / (frame * zoom);
