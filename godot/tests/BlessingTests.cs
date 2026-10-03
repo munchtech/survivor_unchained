@@ -239,4 +239,22 @@ public class BlessingTests
         Assert.Equal(0, TargetOf(false));
         Assert.Equal(1, TargetOf(true));
     }
+
+    [Fact]
+    public void What_burns_strikes_an_emberblood_weaker()
+    {
+        double Taken(int ranks, bool burning)
+        {
+            var b = BattleTests.Arena(13);
+            for (int r = 0; r < ranks; r++) b.AddBoon("emberblood");
+            var wolf = b.SpawnEnemy("wolf", b.Player.X + 2, b.Player.Z, new Battle.SpawnOpts { Elite = true, Style = SpawnStyle.Walk, Disposition = Disposition.Hostile })!;
+            Tick(b, 1 / 60.0);
+            if (burning) b.ApplyStatus(wolf, new StatusPayload(StatusKind.Burn, 1, 1, 5), 10);
+            double before = b.Player.Hp;
+            b.HurtPlayer(40, School.Physical, "wolf", wolf, telegraphed: true);
+            return before - b.Player.Hp;
+        }
+        Assert.Equal(Taken(0, true), Taken(5, false), 1);
+        Assert.Equal(Taken(0, true) * 0.7, Taken(5, true), 1);
+    }
 }

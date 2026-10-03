@@ -84,4 +84,17 @@ public class KindledTests
             Assert.True(it.Affixes.Count(a => Items.Affix(a.Id)?.Kindled != null) <= 1);
         }
     }
+
+    [Fact]
+    public void Gear_brings_a_skill_in_at_rank_four_at_most()
+    {
+        var j = Warden();
+        var weapon = Callings.Archetype("warden").Weapons[0];
+        var skill = Items.Get(weapon).Weapon!.Id;
+        j.Ch.Mastery[skill] = 9999;
+        var it = Inventory.Make(j.Ch, weapon, 1, 4);
+        Assert.True(Inventory.AddToPack(j.Ch, it));
+        j.Equip(it.Uid, EquipSlot.Weapon, null);
+        Assert.Equal(Inventory.GearRankCap, Character.Kit(j.Ch).Weapons.First(w => w.Id == skill).Rank);
+    }
 }

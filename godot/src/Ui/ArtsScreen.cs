@@ -40,7 +40,7 @@ public partial class ArtsScreen : Overlay
         var known = ArtBook.Known(ch);
         sel ??= ch.Ability != "" ? ch.Ability : known.FirstOrDefault();
         var v = Frame(skills ? "Skills by Day" : "Arts", new Vector2(1340, 800), G.Key(Act.Arts),
-            skills ? "What the arenas showed you, learned for the day. Each asks something of you; what you carry is attuned for the night."
+            skills ? "What the arenas showed you, learned for the day. Each asks something of you; what you carry is banked for the night."
             : Safe ? "One art in hand. Each grows with use, and its ranks open facets." : "Out here you can choose a facet a rank has opened. Change your art where it is safe.");
         var tabs = Style.H(8, Style.Segment("The art in hand", !skills, () => { skills = false; Refresh(); }), Style.Segment("Skills by day", skills, () => { skills = true; Refresh(); }));
         v.AddChild(tabs);
@@ -201,7 +201,7 @@ public partial class ArtsScreen : Overlay
         var r = Style.H(12, Glyphs.Icon(w.Art, 28, known ? col : col with { A = 0.45f }));
         string attr = SkillBook.Attribute(id);
         string tag = $"asks {SkillBook.Need} {attr}  ·  you have {SkillBook.Have(ch, attr)}";
-        var words = Style.V(0, Style.Label(w.Name + (carried ? (meets ? "  ·  carried, attuned" : "  ·  idle") : ""), Style.Display, 17, known ? (carried ? Colors.White : Style.GoldHi) : Style.InkDim),
+        var words = Style.V(0, Style.Label(w.Name + (carried ? (meets ? "  ·  carried, banked" : "  ·  idle") : ""), Style.Display, 17, known ? (carried ? Colors.White : Style.GoldHi) : Style.InkDim),
             Style.Label(tag, Style.Ui, 13, meets ? Style.Good : Style.Bad));
         words.CustomMinimumSize = new Vector2(340, 0);
         r.AddChild(words);
@@ -225,7 +225,7 @@ public partial class ArtsScreen : Overlay
         string attr = SkillBook.Attribute(w.Id);
         d.AddChild(Style.Label($"It asks {SkillBook.Need} {attr} of whoever uses it. You have {SkillBook.Have(ch, attr)}.{(meets ? "" : " Until you measure up (points, a respec), it lies idle.")}",
             Style.UiBold, 15, meets ? Style.Good : Style.Bad, true));
-        d.AddChild(Style.Label($"By day it is rank {Ranks[SkillBook.Rank(ch)]}, and grows with you (every third level). In the night's arenas the ember starts from nothing, but what you carry by day is attuned: the ember offers it in its first drafts, and it comes in at rank {Ranks[SkillBook.NightRank(ch)]}" +
+        d.AddChild(Style.Label($"By day it is rank {Ranks[SkillBook.Rank(ch)]}, and grows with you (every third level). In the night's arenas the ember starts from nothing, but what you carry by day is banked: it sleeps in you through the day, the ember offers it in its first drafts, and it comes in at rank {Ranks[SkillBook.NightRank(ch)]}" +
             (ch.Level < 10 ? " (rank III from the tenth level)." : "."), Style.Ui, 14, Style.InkDim, true));
         d.AddChild(Style.Gap(6));
         if (!known)

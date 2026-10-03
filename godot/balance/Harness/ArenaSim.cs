@@ -135,6 +135,8 @@ public static class ArenaSim
         double lastDamage = 0, lastTaken = 0;
         int lastKills = 0;
         double t = 0;
+        var trace = Environment.GetEnvironmentVariable("ARENA_TRACE") is { } tr && tr.Split('@')[0] == spec.Key ? tr : null;
+        double traceFrom = trace != null && trace.Contains('@') ? double.Parse(trace.Split('@')[1], System.Globalization.CultureInfo.InvariantCulture) * 60 : 0;
         while (t < spec.Cap * 60 && p.Alive && host.Result == null)
         {
             var (mx, mz) = Pilot.Steer(b);
@@ -163,6 +165,10 @@ public static class ArenaSim
                         firstHit.Remove(k.Enemy);
                         break;
                     case Ev.Kill k2: firstHit.Remove(k2.Enemy); break;
+                    // ARENA_TRACE=KEY@MINUTE: the blows that land on the survivor, from that minute (why a run fell).
+                    case Ev.PlayerHit ph when trace != null && t >= traceFrom:
+                        Console.Error.WriteLine($"{t / 60:0.000} {ph.Source,-22} {ph.Amount,6:0} {(ph.Dodged ? "dodged" : ph.Blocked ? "blocked" : "")} hp {p.Hp:0}/{b.MaxHp:0} shield {p.Shield:0}");
+                        break;
                 }
             }
             host.Pass(Dt);

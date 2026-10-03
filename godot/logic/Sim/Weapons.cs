@@ -186,7 +186,8 @@ public static class Firing
 
     static bool FireAimed(Battle b, WeaponInst w)
     {
-        var target = b.NearestHostile(b.Player.X, b.Player.Z, RangeOf(w));
+        // A skill that hunts the strongest is aimed at it from the hand, not only in flight.
+        var target = SeekOf(w) is Seek.Elite or Seek.Strongest ? Toughest(b, RangeOf(w)) : b.NearestHostile(b.Player.X, b.Player.Z, RangeOf(w));
         if (target == null) return false;
         int n = CountOf(b, w);
         if (w.Flag(s => s.Burst))
@@ -254,6 +255,15 @@ public static class Firing
 
     /// <summary>What its projectiles hunt: the evolution's choice, else the weapon's, else the nearest.</summary>
     static Seek? SeekOf(WeaponInst w) => w.Evolution?.Set?.Seek ?? w.Def.Base.Seek;
+
+    /// <summary>The toughest thing in reach: a boss, then a champion, then the most health.</summary>
+    static Enemy? Toughest(Battle b, double range)
+    {
+        Enemy? best = null;
+        foreach (var e in b.HostilesInRadius(b.Player.X, b.Player.Z, range))
+            if (best == null || (e.Boss ? 2e6 : e.Elite ? 1e6 : 0) + e.MaxHp > (best.Boss ? 2e6 : best.Elite ? 1e6 : 0) + best.MaxHp) best = e;
+        return best;
+    }
 
     static bool FireSpray(Battle b, WeaponInst w)
     {

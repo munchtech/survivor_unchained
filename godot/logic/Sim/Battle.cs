@@ -969,6 +969,8 @@ public sealed partial class Battle
         dmg *= 1 - StatBlock.ArmorReduction(armor);
         dmg *= 1 - Clamp(st.GetRaw(Stat.ResistOf(school)), -1, 0.8);
         if (from != null) dmg *= 1 - Clamp(st.GetRaw(Stat.FromOf(from.Def.Family)), -1, 0.8);
+        // Emberblood: what burns is busy burning (the Pyre's ward, as chill is the Winter's).
+        if (from != null && from.Status.Has(StatusKind.Burn) && Boons.TryGetValue("emberblood", out int eb)) dmg *= 1 - 0.06 * eb;
         if (p.BulwarkT > 0) dmg *= Has("unmoving") ? 0.2 : 0.35;
         // Half a ghost: blows land at half.
         if (Art.WraithT > 0) dmg *= 0.5;

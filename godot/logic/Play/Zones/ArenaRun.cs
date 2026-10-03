@@ -115,7 +115,7 @@ public sealed class ArenaRun : ZoneRuntime
     double Beyond => Math.Max(0, Seconds - End) / 60;
     int Level() => Math.Max(1, Spec.Tier * 2 - 1 + levels + (int)(Minute / 2.5) + (int)(Beyond / 2));
     /// <summary>What an ordinary creature's health is divided by at a minute.</summary>
-    public static double FodderEase(double minute) => 1 + 0.12 * minute;
+    public static double FodderEase(double minute) => 1 + 0.08 * minute;
 
     /// <summary>How many the horde is kept at (a dark bargain struck asks for more of them).</summary>
     int Target() => (int)Math.Min(won ? 380 : 320, (22 + 7.5 * Minute) * packSize * (1 + 0.12 * (Spec.Tier - 1)) * Bargain);
@@ -338,7 +338,8 @@ public sealed class ArenaRun : ZoneRuntime
         if (boss != null && Spec.BossName != null) boss.Named = new Named { Title = Spec.BossName };
         if (boss != null)
         {
-            boss.MaxHp = boss.Hp = boss.MaxHp * (6 + Spec.Tier * 2);
+            // A fight of half a minute to a minute for most builds (docs/SKILLS_DESIGN.md, "Bosses").
+            boss.MaxHp = boss.Hp = boss.MaxHp * (9 + Spec.Tier * 3);
             boss.Damage *= 1.3;
         }
         for (int k = 0; k < 14; k++)

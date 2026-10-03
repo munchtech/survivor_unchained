@@ -58,6 +58,14 @@ public partial class DraftPanel : Control
         return null;
     }
 
+    static string Role(string id) => Boons.GreatRoles.TryGetValue(id, out var r) ? r switch
+    {
+        Boons.GreatRole.Ward => "ward",
+        Boons.GreatRole.Answer => "answer",
+        Boons.GreatRole.Tempo => "quickening",
+        _ => "power",
+    } : "great";
+
     static string Kicker(Offer o) => o.Kind switch
     {
         OfferKind.Weapon => o.To is int r && r > 1 ? $"New combat skill · rank {r}" : "New combat skill",
@@ -65,7 +73,8 @@ public partial class DraftPanel : Control
         OfferKind.Evolve => "Evolution",
         OfferKind.Union => "Union",
         OfferKind.Hone => $"Honing · {o.To} of {LevelUp.MaxHone}",
-        OfferKind.Boon when o.Great => o.From is int g && g > 0 ? $"Great blessing · rank {g} to {o.To}" : "Great blessing",
+        // A great blessing says what it is for (docs/SKILLS_DESIGN.md: power, ward, answer, quickening).
+        OfferKind.Boon when o.Great => o.From is int g && g > 0 ? $"{Role(o.Id)} · rank {g} to {o.To}" : $"Great blessing · {Role(o.Id)}",
         OfferKind.Boon when Boons.Find(o.Id)?.Kind == BoonKind.Blessing => o.From is int f && f > 0 ? $"Blessing · rank {f} to {o.To}" : "Blessing",
         OfferKind.Boon => o.From is int f2 && f2 > 0 ? $"Passive skill · rank {f2} to {o.To}" : "New passive skill",
         _ => "Respite",

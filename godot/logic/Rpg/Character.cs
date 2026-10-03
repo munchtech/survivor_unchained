@@ -130,6 +130,9 @@ public static class Inventory
     public const int PackSize = 24;
     /// <summary>Kindled affixes a survivor's gear can bring to the ember at once.</summary>
     public const int MaxKindled = 2;
+    /// <summary>The highest rank gear brings a skill in at: the smith starts it,
+    /// the ember finishes it (ranks 5 to 8 and the evolution are the night's).</summary>
+    public const int GearRankCap = 4;
 
     public static List<ItemInstance?> NewPack()
     {
@@ -423,7 +426,7 @@ public static class Character
             {
                 // Mastery: every 60 kills with a weapon starts it a rank higher, to +2.
                 int bonus = Math.Min(2, ch.Mastery.GetValueOrDefault(def.Weapon.Id) / 60);
-                kit.Weapons.Add((def.Weapon.Id, def.Weapon.Rank + bonus + Math.Max(0, it.Rarity - def.Rarity)));
+                kit.Weapons.Add((def.Weapon.Id, Math.Min(Inventory.GearRankCap, def.Weapon.Rank + bonus + Math.Max(0, it.Rarity - def.Rarity))));
             }
         }
         foreach (var (id, rank) in SkillBook.Carried(ch))

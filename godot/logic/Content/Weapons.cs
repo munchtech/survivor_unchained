@@ -241,9 +241,9 @@ public static class Weapons
         new()
         {
             Id = "firepot", Name = "Firepot", School = School.Fire, Behavior = WeaponBehavior.Aimed, Tags = [Tag.Projectile, Tag.Thrown, Tag.Fire, Tag.Explosion],
-            Base = new() { Cooldown = 1.9, Damage = 19.54, Speed = 8.2, Projectiles = 1, Pierce = 0, Range = 12.5, Splash = 2.0, Life = 1.7, Radius = 0.3, Status = S(Burn, 0.6, 0.25, 3), GroundOnHit = G(1.5, 2.5, 0.25) },
+            Base = new() { Cooldown = 1.9, Damage = 19.54, Speed = 8.2, Projectiles = 1, Pierce = 0, Range = 12.5, Splash = 2.0, Life = 1.7, Radius = 0.3, Status = S(Burn, 0.6, 0.25, 3), GroundOnHit = G(1.5, 2.5, 0.25), Seek = Seek.Elite },
             Art = "firepot", BossDamage = 1.3, Findable = true,
-            Description = "A Kerchief's trick: a pot of blasting ember thrown at the nearest foe. It bursts, and the ground burns where it broke.",
+            Description = "A Kerchief's trick: a pot of blasting ember thrown at the biggest thing in reach. It bursts, and the ground burns where it broke.",
             Evolutions =
             [
                 new() { Id = "powder_keg", Name = "Powder Keg", Description = "Two kegs at a throw, each blast wider and heavier, throwing the crowd apart.",
@@ -288,7 +288,7 @@ public static class Weapons
         {
             Id = "cinderfall", Name = "Cinderfall", School = School.Fire, Behavior = WeaponBehavior.Aimed, Tags = [Tag.Projectile, Tag.Spell, Tag.Fire, Tag.Explosion],
             Base = new() { Cooldown = 1.75, Damage = 29.3, Speed = 8.6, Projectiles = 1, Pierce = 0, Range = 15, Splash = 1.8, Life = 2.4, Radius = 0.28, Status = S(Burn, 0.5, 0.25, 3) },
-            Art = "cinder", Findable = true,
+            Art = "cinder", BossDamage = 1.3, Findable = true,
             Description = "A slow, heavy cinder that bursts on impact and sets what it touches alight.",
             Evolutions =
             [
