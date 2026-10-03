@@ -554,7 +554,7 @@
     "holy_light",
     "warden_iron"
    ],
-   "lore": "The iron cage of the lamp the Ford-Warden carried. Whatever burned in it went down a hole in Grimtunnel's arms. The cage still remembers the light."
+   "lore": "The iron cage of the lamp the Ford-Warden carried. Under the socket, cut clean and new, a smith's mark: a hammer struck through a B. Whatever burned in it went down a hole in Grimtunnel's arms. The cage still remembers the light."
   },
   "bone_charm": {
    "id": "bone_charm",
@@ -950,7 +950,8 @@
    "rarity": 2,
    "icon": "chest",
    "value": 250,
-   "description": "Heavy, locked, stamped with the Coyle Company seal. Harlan wants it back. Rav knows someone who would want it more."
+   "description": "Heavy, locked, stamped with the Coyle Company seal. There is a Coyle Trading Post in the Waystation.",
+   "lore": "Someone has tried the lock with a knife, and given up, and tried again."
   },
   "pell_ledger": {
    "id": "pell_ledger",
@@ -959,7 +960,8 @@
    "rarity": 2,
    "icon": "book",
    "value": 0,
-   "description": "Payments to \"R.\" on the night the caravan was taken. And one to the toll clerk."
+   "description": "Pell Varrow's own book. Two payments on one night: forty to \"R.\", and ten to Jessop, \"for the road\".",
+   "lore": "Small, tidy figures. In the margin of the last page, in the same hand: \"tell Holloway where they camp, after.\""
   },
   "clerks_key": {
    "id": "clerks_key",
@@ -968,7 +970,7 @@
    "rarity": 1,
    "icon": "key",
    "value": 0,
-   "description": "A key to Pell's warehouse, which the clerk should not have had."
+   "description": "A key to Pell Varrow's warehouse, which Jessop the toll clerk should not have had."
   },
   "sigil_fragment": {
    "id": "sigil_fragment",
@@ -1028,7 +1030,7 @@
    "consumable": {
     "teaches": "leap"
    },
-   "lore": "A reaver's primer, mostly pictures. The pictures are of people landing on other people."
+   "lore": "A reaver's primer, nearly all pictures. The pictures are of people landing on other people."
   },
   "manual_blink": {
    "id": "manual_blink",

@@ -130,6 +130,8 @@ public class StoryLint
             foreach (var k in All(t, @"""give""\s*:\s*""(\w+)""")) u.ItemsGiven.Add(k);
             foreach (var k in All(t, @"Loot\(PickupKind\.\w+,\s*""(\w+)""")) u.ItemsGiven.Add(k);
             foreach (var k in All(t, @"GiveItem\(""(\w+)""")) u.ItemsGiven.Add(k);
+            // Things dropped where a fight ends (the Warden's lamp-iron at the ford).
+            foreach (var k in All(t, @"SpawnPickup\(PickupKind\.\w+,[^;""]*""(\w+)""")) u.ItemsGiven.Add(k);
             foreach (var k in All(t, @"(?:HasTag\s*=|""hasTag""\s*:)\s*""(\w+)""")) u.TagsWanted.Add(k);
         }
     }

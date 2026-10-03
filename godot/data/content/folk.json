@@ -156,11 +156,15 @@
    "text": "Is that blood? Don't tell me."
   },
   {
-   "text": "Chid rang the bell twice this morning. Nobody knows why.",
-   "night": false
+   "text": "Chid rang the bell twice this morning. Nobody's told him once does it.",
+   "night": false,
+   "when": {
+    "fact": "shrine.lit",
+    "eq": true
+   }
   },
   {
-   "text": "The Flagon's ale is mostly water. The water's mostly ale."
+   "text": "The Flagon's ale is half water. The water's half ale."
   },
   {
    "text": "Evening. Get indoors soon.",
@@ -361,7 +365,7 @@
    }
   },
   {
-   "text": "Pell's diggers moved their pipe. Pell, doing a kindness. Hm.",
+   "text": "Pell's diggers moved their pipe. Pell Varrow, doing a kindness. Check your purse.",
    "when": {
     "fact": "beasts.outcome",
     "eq": "exploited"
@@ -736,6 +740,97 @@
     "eq": true
    },
    "text": "Sella was singing on the stairs this morning. Sella. Singing. Somebody's in trouble."
+  },
+  {
+   "text": "Brannoc's girl went south with Wat's cart a fortnight back. Quietest forge in the valley since, and that's saying something.",
+   "when": {
+    "all": [
+     {
+      "not": {
+       "fact": "nell.told",
+       "exists": true
+      }
+     },
+     {
+      "day": {
+       "lte": 4
+      }
+     }
+    ]
+   }
+  },
+  {
+   "text": "They buried Brannoc's girl behind the shrine. Chid sang. Chid can't sing. Nobody minded.",
+   "when": {
+    "fact": "nell.buried",
+    "eq": true
+   }
+  },
+  {
+   "text": "Brannoc's stopping carters off the south road, asking after a red-haired girl. Nobody's had the heart to say they've not seen her.",
+   "when": {
+    "fact": "nell.asking",
+    "eq": true
+   }
+  },
+  {
+   "text": "Jessop from the toll owes me four coppers and a ladder. Gone south, they say. Took neither.",
+   "when": {
+    "day": {
+     "gte": 2
+    }
+   }
+  },
+  {
+   "text": "Penhales' dog won't go in the barn. Stands at the door and whines at the floor.",
+   "when": {
+    "fact": "tremor.felt",
+    "eq": true
+   }
+  },
+  {
+   "text": "A Kerchief bought a sack of oats at the market and PAID for it. In coin. My husband says it's the end of the world.",
+   "when": {
+    "fact": "be.crates",
+    "eq": "redcowl"
+   }
+  },
+  {
+   "text": "Watch brought old Corran home from the ford post. Wrote him down a deserter, they did. Deserted to where, I ask you.",
+   "when": {
+    "fact": "holloway.post_told",
+    "eq": true
+   }
+  },
+  {
+   "text": "Jory Coyle's stopped calling his uncle Uncle. Calls him Mister Coyle in the shop, in front of customers.",
+   "when": {
+    "fact": "jory.knows_be",
+    "eq": true
+   }
+  },
+  {
+   "text": "They say a cart went out of the east gate the night Pell vanished, and Vonnra let it through without the toll. Vonnra. Without the toll.",
+   "when": {
+    "fact": "pell.fate",
+    "eq": "taken"
+   }
+  },
+  {
+   "text": "Pell Varrow's gone south on a horse he hadn't paid for. Course he hadn't.",
+   "when": {
+    "fact": "pell.fate",
+    "eq": "ran"
+   }
+  },
+  {
+   "text": "Captain's had a letter with a silver seal. Hasn't said a word since. Not that he says many.",
+   "when": {
+    "day": {
+     "gte": 3
+    }
+   },
+   "watch": true
   }
  ]
 }

@@ -24,6 +24,7 @@
    "clue.green_stream": "The Thornhollow stream runs green below the blight. Nothing grows at its edge.",
    "clue.pipe": "Upstream, a pipe of riveted iron spills warm, faintly glowing slurry into the water.",
    "clue.lampling_tracks": "Small clawed prints and the drag-marks of lamps, coming and going from the pipe. Lamplings.",
+   "snib_slurry": "At the Dig, a lampling who calls himself the foreman pumps the waste of cooked ember down a pipe into the stream. \"Stream is very obliging.\"",
    "sample": "You have a stoppered bottle of the green water.",
    "clue.analysis": "Wenna tested the water: ember slurry. It rots the gut of anything that drinks it, and someone is dumping it on purpose.",
    "root_cause": "The Dig. Grimtunnel's crew is pumping ember slurry into the stream to clear their workings. The wolves are sick, starving and afraid.",
@@ -39,7 +40,8 @@
    "dig_held": "The lamplings poured up out of the Dig in the dark and you could not hold them. The pump runs on.",
    "pack_led": "The Pack ran beside you into the Roost, and the Roost fell.",
    "told_holloway": "You told Holloway the beasts were dealt with.",
-   "dig_sold": "You sold the Dig's location to Pell Varrow."
+   "dig_sold": "You sold the Dig's location to Pell Varrow.",
+   "redcowl_charge": "Redcowl gave you one charge out of the Coyle crates, for the Dig's pump. \"Put it where it'll do the most harm to the right people.\""
   },
   "outcomes": {
    "slaughtered": "The wolves are gone from Thornhollow. The road is safe. It is also very quiet.",
@@ -59,18 +61,25 @@
    "wreck": "The caravan's wreck, off the Old Road: no wolf did this. Wagons were led off the road, and there is red fletching in the sideboards.",
    "ruts": "Wheel ruts turn off the road into the forest. Someone drove the wagons away, loaded.",
    "guard_says": "The east-gate guard swears the Old Road was never closed that day.",
-   "clerk_turned": "In the tavern: a toll clerk told Coyle's teamsters the road was closed and sent them down the forest track.",
-   "sella_clerk": "Sella, upstairs at the Last Lamp: the toll clerk paid her in new silver with the Varrow mark on it, and bragged in bed that he had \"sent some wagons down the wrong road\".",
+   "clerk_turned": "In the tavern: Jessop, Vonnra's toll clerk, told Coyle's teamsters the Old Road was shut and sent them down the forest track. He bought the room a round that night. Nobody has seen him since.",
+   "sella_clerk": "Sella, upstairs at the Last Lamp: Jessop the toll clerk paid her in new silver with the Varrow mark on it, and bragged in bed that he had \"sent some wagons down the wrong road\". He has not been up her stairs since.",
    "toll_ledger": "Vonnra's toll ledger: the Coyle caravan never paid the toll. It never came through the gate at all.",
-   "pell_ledger": "Pell Varrow's ledger: a payment to \"R.\" the night the caravan vanished, and another to the toll clerk.",
-   "clerks_key": "The toll clerk had a key to Pell's warehouse. He should not have.",
-   "roost_found": "Redcowl's Roost: the Kerchief camp in the ravine. The Coyle cargo is there. So are three survivors, in cages.",
+   "pell_ledger": "Pell Varrow's ledger, from his own warehouse. Two payments on one night: forty to \"R.\", and ten to someone called Jessop, \"for the road\". In the margin, in the same small hand: \"tell Holloway where they camp, after.\"",
+   "ledger_read": "Pell's ledger, read by someone who knew the date: forty to \"R.\" and ten to Jessop, the toll clerk, \"for the road\", both on the night the Coyle wagons vanished. Who is \"R.\", and what did forty buy?",
+   "clerks_key": "Jessop, the toll clerk, had a key to Pell Varrow's warehouse. He should not have had it.",
+   "roost_found": "Redcowl's Roost, the Kerchief camp in the ravine: the Coyle wagons' cargo under canvas (the name is painted on every board), and three prisoners in cages, with teamsters' hands.",
+   "roost_told": "You told Harlan Coyle where his wagons are: the Roost, in the ravine, and three men in cages. He would pay anything to have them out.",
+   "redcowl_wagons": "Redcowl calls the wagons in his camp salvage. A merchant at the Waystation called Coyle painted his name on every board of them.",
    "roost_raided": "You took Redcowl's Roost by night. Redcowl is dead, and the camp is yours to go through.",
    "roost_repelled": "You went at the Roost by night and were thrown back. The Kerchiefs are awake to you now.",
    "manifest": "A torn manifest: salt, cloth, iron, and six crates marked only \"B.E.\" for a buyer called G.",
    "blasting_ember": "The \"B.E.\" crates are blasting ember. Bound for the Dig.",
+   "crates_redcowl": "You told Redcowl what is in the six crates marked \"B.E.\", and who they were bound for. He says nobody is having them now: not the Dig, not the Watch, not Harlan.",
+   "crates_harlan": "You told Harlan Coyle where his six crates are. He thanked you, and reached for paper. Paid for is paid for.",
    "redcowl_met": "Redcowl, who leads the Kerchiefs, would rather talk than bleed. He says so, anyway.",
    "survivors_freed": "You opened the cages. Jory and the other two are free.",
+   "jory_told": "You told Jory what he was carrying: blasting ember, for the Dig. He asked whether his uncle knew.",
+   "jory_salt": "Jory asked what was in the crates. You said salt.",
    "survivors_dead": "The prisoners in the Roost did not survive.",
    "cargo_returned": "Harlan has his cargo back.",
    "cargo_kept": "You kept the Coyle cargo.",
@@ -78,7 +87,9 @@
    "cargo_lost": "The Coyle cargo burned with the Roost.",
    "cargo_moved": "The Kerchiefs broke the Coyle cargo up and sold it down the south road. Nobody went back for it.",
    "pell_exposed": "Pell Varrow has been exposed.",
-   "pell_joined": "You took Pell Varrow's money, and his side."
+   "pell_joined": "You took Pell Varrow's money, and his side.",
+   "pell_given": "You told Redcowl where Pell Varrow sleeps.",
+   "pell_hunted": "Redcowl has gone looking for Pell Varrow. You did not tell him where to look."
   },
   "outcomes": {
    "returned": "The Coyle Company has its goods back, and knows who to thank.",
@@ -96,7 +107,7 @@
    "seen": "A door of black stone in the hillside of the Verge, older than anything in the Waystation, sealed with a sigil nobody can read.",
    "script": "You read the script over the door: \"Here the Seventh Legion buried what it could not burn.\"",
    "fragment": "A fragment of a sigil, from the hand of someone who did not make it out. It fits one notch of the door's seven, and after dark the whole sigil wakes to it.",
-   "bootprints": "Fresh bootprints in the mud at the door, going in, not coming out. Someone got inside.",
+   "bootprints": "Fresh bootprints in the mud at the door, going in, not coming out. Trodden into one of them, a copper toll-token from the Waystation, stamped with three roads. Someone got inside.",
    "vonnra_refuses": "Vonnra will not talk about the vault. Not for money, which is how you know it matters.",
    "chid_empire": "Chid says the old empire \"did something here\" before the Watch was founded, and the Watch was founded to keep it done.",
    "whisper": "The bones at the door spoke, to you and no one else: \"It was never locked from the outside.\"",
@@ -115,7 +126,26 @@
    "sinkhole": "At the bottom of the sinkhole: something pale, eyeless and segmented, bigger than a house. Dead. Probably.",
    "survivor": "A lampling survivor, half-mad: \"It moved. The dark moved. Grimtunnel says it is ours now.\"",
    "map": "A digger's survey of the tunnels under the Verge. The last one just says \"DOWN\" and keeps going.",
-   "prayer": "At the lip of the pit you heard it, under everything, for as long as a held breath: slow, patient, enormous. Not breathing. Praying."
+   "prayer": "At the lip of the pit you heard it, under everything, for as long as a held breath: slow, patient, enormous. Not breathing. Praying.",
+   "tock": "Tam says the ground under his family's farm knocks at night, like somebody asking to be let in. His Pa says it is moles."
+  }
+ },
+ "lamps": {
+  "id": "lamps",
+  "name": "The Lamps at the Low Ford",
+  "mystery": true,
+  "summary": "Somebody relit the lamps at the Low Ford, and the Warden woke and drowned whoever crossed after dark. The Watch says it was not them.",
+  "entries": {
+   "book": "The dead watchman's belt-book, at the post on the Low Ford road: \"Lamps at the Low Ford lit again, and not by us.\" \"Sent Dannet for the captain. Dannet not back.\"",
+   "keegan": "Dame Keegan: the lamps were never meant to keep the dark out. They kept the Warden asleep. \"If somebody lit them again, somebody wanted it awake.\"",
+   "post": "Captain Holloway knew the dead watchman: Corran, written down as a deserter in the spring, and his runner Dannet with him. The Watch has had no oil for the ford lamps in years.",
+   "irons": "Brannoc forged twelve new lamp-irons for the Low Ford last winter. Ten were collected at night, paid for in square old-empire coin left on the anvil. Two are still on his rack.",
+   "mark": "The lamp-iron you took off the Warden has Brannoc's mark under the socket. It is one of the ten.",
+   "rook": "Mother Rook is paid to say who comes up the Low Ford road, and when. She was paid double for you.",
+   "coin": "Vonnra wears an old-empire coin on a cord at her throat: square, never spent. She says it will buy something that cannot be bought twice.",
+   "notice": "On the notice board: carters wanted for the south road, toll work, paid double for a quick crossing. Apply at the Toll Tower. Someone has written underneath that quick means after dark.",
+   "nell": "The girl holding the reins in the ditch on the Low Ford road, in new boots, was Nell, Brannoc's daughter: twelve, going south to her aunt with Wat the carter, on toll work.",
+   "accused": "You told Vonnra she lit the lamps at the Low Ford. She did not say no. She said your name, and went on reading."
   }
  }
 }

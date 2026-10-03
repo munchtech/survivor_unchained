@@ -59,6 +59,8 @@ public class QuestTests
     public void Talking_Snib_into_moving_the_pump_then_resting_cures_the_stream()
     {
         var s = Q("scholar");
+        // Nobody asks a foreman to move his outflow without a reason to care about the water.
+        s.Ch.Knowledge.Add("clue.green_stream");
         Talk(Convo("snib"), s.C, "sinkhole");
         Assert.Equal("moved", s.World.Fact("dig.pump").Str);
         Day(s, 0.5);
@@ -104,6 +106,8 @@ public class QuestTests
     {
         var s = Q("hunter");
         Items(s, "pell_ledger");
+        // What the ledger proves needs the night it was written about: the Coyle wagons, and red fletching.
+        Rules.Apply(Es("[{ quest: { id: 'caravan', status: 'active', entry: 'harlan_plea' } }, { quest: { id: 'caravan', entry: 'wreck' } }]"), s.C);
         Talk(Convo("holloway"), s.C, "ledger");
         Assert.Equal("exposed", s.World.Fact("caravan.pell").Str);
         Assert.Contains("exposed_pell", s.World.Npc("harlan").Memories);
@@ -273,6 +277,7 @@ public class QuestTests
     {
         var s = Q("hunter");
         Items(s, "pell_ledger");
+        Rules.Apply(Es("[{ quest: { id: 'caravan', status: 'active', entry: 'harlan_plea' } }, { quest: { id: 'caravan', entry: 'wreck' } }]"), s.C);
         Talk(Convo("holloway"), s.C, "ledger");
         var r = Simulation.AdvanceDay(s.C, () => 0.01);
         Assert.Contains(r.Heard, h => h.Event == "exposed_pell" && h.Npc == "rook");
@@ -459,6 +464,7 @@ public class QuestTests
     {
         var s = Q("outcast");
         s.Ch.Gold = 50;
+        s.Ch.Knowledge.Add("clue.green_stream");
         Talk(Convo("snib"), s.C, "how much", "forty gold");
         Assert.Equal("moved", s.World.Fact("dig.pump").Str);
         Assert.Contains(s.World.History, h => h.Id == "bribed_snib");
