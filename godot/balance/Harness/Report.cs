@@ -59,6 +59,23 @@ public static class Report
         Summary(sb, "policy", runs.GroupBy(r => r.Spec.Policy));
         Summary(sb, "calling", runs.GroupBy(r => r.Spec.Calling));
         Summary(sb, "people", runs.GroupBy(r => r.Spec.People));
+        if (runs.Select(r => r.Spec.Tier).Distinct().Count() > 1) Summary(sb, "tier", runs.GroupBy(r => $"tier {r.Spec.Tier}"));
+        if (runs.Select(r => Oath(r)).Distinct().Count() > 1) Summary(sb, "oath", runs.GroupBy(Oath));
+        if (runs.Select(r => r.Spec.Level).Distinct().Count() > 1) Summary(sb, "level", runs.GroupBy(r => $"level {r.Spec.Level}"));
+
+        // How the losses come: before the boss, by five minutes; to the boss, with what was left of it.
+        var lost = runs.Where(r => r.Died && !r.Won).ToList();
+        if (lost.Count > 0)
+        {
+            sb.AppendLine("### When the losses come\n");
+            var tiers = runs.Select(r => r.Spec.Tier).Distinct().OrderBy(t => t).ToList();
+            Head(sb, ["minutes", .. tiers.Select(t => $"tier {t}")]);
+            for (int b5 = 0; b5 < 7; b5++)
+                Row(sb, [b5 < 6 ? $"{b5 * 5}-{b5 * 5 + 5}" : "the boss", .. tiers.Select(t => (object)lost.Count(r => r.Spec.Tier == t && (r.BossLeft >= 0 ? 6 : (int)Math.Min(5, r.Minutes / 5)) == b5))]);
+            var toBoss = lost.Where(r => r.BossLeft >= 0).ToList();
+            if (toBoss.Count > 0) sb.AppendLine($"\nFell to the boss: {toBoss.Count}, with a median {Pct(Median(toBoss.Select(r => r.BossLeft)))} of it left.");
+            sb.AppendLine();
+        }
         if (runs.Select(r => r.Spec.Policy).Distinct().Count() > 1 && runs.Select(r => r.Spec.Calling).Distinct().Count() > 1)
             Summary(sb, "calling · policy", runs.GroupBy(r => $"{r.Spec.Calling} · {r.Spec.Policy}"));
 
@@ -78,17 +95,20 @@ public static class Report
         sb.AppendLine();
 
         // Every card: how often offered, taken, and how runs that took it went.
-        sb.AppendLine("### Cards (offered, taken, and the win rate of the runs that took one)\n");
-        Head(sb, "card", "offered", "taken", "pick", "won taking", "won not", "delta", "lived taking (min)");
+        // Runs that took a card by the fifteenth minute against those that had not (nearly
+        // every run lives that long, so long runs, which take more cards, do not flatter it).
+        sb.AppendLine("### Cards (offered, taken, and how the runs that took one by minute 15 went)\n");
+        Head(sb, "card", "offered", "taken", "pick", "won, taken by 15", "won, not by 15", "delta", "first taken (min)");
         var keys = runs.SelectMany(r => r.Offered.Keys.Concat(r.Taken.Keys)).Distinct().Where(k => !k.StartsWith("r:") && k is not ("heal" or "gold")).ToList();
         var rowsOut = new List<(string Key, double Delta, string[] Cells)>();
         foreach (var k in keys)
         {
             int offered = runs.Sum(r => r.Offered.GetValueOrDefault(k)), taken = runs.Sum(r => r.Taken.GetValueOrDefault(k));
-            var took = runs.Where(r => r.Taken.ContainsKey(k)).ToList();
-            var not = runs.Where(r => !r.Taken.ContainsKey(k)).ToList();
+            var took = runs.Where(r => r.Picks.Any(p => p.Card == k && p.Minute < 15)).ToList();
+            var not = runs.Where(r => r.Picks.All(p => p.Card != k || p.Minute >= 15)).ToList();
             double wt = Rate(took, r => r.Won), wn = Rate(not, r => r.Won);
-            rowsOut.Add((k, wt - wn, [k, offered.ToString(), taken.ToString(), Pct(offered == 0 ? double.NaN : taken / (double)offered), Pct(wt), Pct(wn), F((wt - wn) * 100, "+0;-0;0"), F(Median(took.Select(r => r.Minutes)))]));
+            var first = runs.Select(r => r.Picks.FirstOrDefault(p => p.Card == k)).Where(p => p.Card != null).Select(p => p.Minute);
+            rowsOut.Add((k, wt - wn, [k, offered.ToString(), taken.ToString(), Pct(offered == 0 ? double.NaN : taken / (double)offered), Pct(wt), Pct(wn), F((wt - wn) * 100, "+0;-0;0"), F(Median(first))]));
         }
         foreach (var (_, _, cells) in rowsOut.OrderBy(x => x.Key[..2]).ThenByDescending(x => double.IsNaN(x.Delta) ? -9 : x.Delta)) Row(sb, cells);
         sb.AppendLine();
@@ -124,6 +144,34 @@ public static class Report
         sb.AppendLine();
         sb.AppendLine($"Rerolls used {runs.Sum(r => r.Rerolls)}, banishes {runs.Sum(r => r.Banishes)}, respite drafts {runs.Sum(r => r.Respites)} of {runs.Sum(r => r.NormalDrafts)}.");
         return sb.ToString();
+    }
+
+    static string Oath(RunResult r) => r.Spec.Oaths is { Length: > 0 } o ? string.Join("+", o) : "none";
+
+    static string Q(string s) => s.Contains(',') || s.Contains('"') ? $"\"{s.Replace("\"", "\"\"")}\"" : s;
+
+    /// <summary>The runs as CSV (the balance lab's columns, for a spreadsheet): one row a run,
+    /// and one a card taken.</summary>
+    public static void Csv(List<RunResult> runs, string dir)
+    {
+        System.IO.Directory.CreateDirectory(dir);
+        var o = new StringBuilder("run,key,policy,bot,seed,calling,weapon,art,tier,people,oath,level,won,win_min,died,minutes,killer,kills,ember,cards,low_hp,boss_ttk,boss_left,quaffs,greats,ember_curve,alive_curve,hp_curve,build\n");
+        var cards = new StringBuilder("run,calling,tier,people,won,minutes,card,minute\n");
+        for (int i = 0; i < runs.Count; i++)
+        {
+            var r = runs[i];
+            var s = r.Spec;
+            o.AppendLine(string.Join(",", new[]
+            {
+                i.ToString(), Q(s.Key), s.Policy, s.Deft ? "deft" : "plain", s.Seed.ToString(), s.Calling, s.Weapon.ToString(), s.Art.ToString(), s.Tier.ToString(), s.People, Oath(r), s.Level.ToString(),
+                r.Won ? "1" : "0", r.WonAt is double w ? F(w, "0.00") : "", r.Died ? "1" : "0", F(r.Minutes, "0.00"), r.KilledBy, r.Kills.ToString(), r.Ember.ToString(), r.Cards.ToString(),
+                F(r.LowHp, "0.000"), r.BossTtk is double bt ? F(bt, "0.0") : "", r.BossLeft < 0 ? "" : F(r.BossLeft, "0.000"), r.Quaffs.ToString(), Q(string.Join(" ", r.Greats)),
+                Q(string.Join(" ", r.ByMinute.Select(m => m.Ember))), Q(string.Join(" ", r.ByMinute.Select(m => m.Alive))), Q(string.Join(" ", r.ByMinute.Select(m => F(m.LowHp, "0.00")))), Q(r.Build),
+            }));
+            foreach (var p in r.Picks) cards.AppendLine($"{i},{s.Calling},{s.Tier},{s.People},{(r.Won ? 1 : 0)},{F(r.Minutes, "0.00")},{p.Card},{F(p.Minute, "0.00")}");
+        }
+        System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "arena_runs.csv"), o.ToString());
+        System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "arena_cards.csv"), cards.ToString());
     }
 
     public static string Probes(List<ProbeResult> probes)

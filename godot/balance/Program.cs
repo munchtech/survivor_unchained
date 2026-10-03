@@ -20,8 +20,12 @@ using SurvivorUnchained.Rpg;
  *   report  a summary of runs saved before (arena's .jsonl)
  *
  * Options: --callings warden,reaver|all  --policies greedy,random,path:steel|paths
- *          --seeds N  --seed0 S  --tier T  --people pack,dead|all  --cap MIN
- *          --beyond MIN  --weapons all  --levels 20,40  --par N  --out PATH */
+ *          --seeds N  --seed0 S  --tier T (or --tiers 1,2,3)  --people pack,dead|all
+ *          --oaths none|all|a,b+c  --level N|tier  --bot plain|deft  --cap MIN
+ *          --beyond MIN  --weapons all  --levels 20,40  --par N  --out PATH  --csv DIR
+ *
+ * This is the one balance tool: the balance lab's sweep (godot/tests/BalanceLab.cs,
+ * BALANCE_LAB=arena) runs these same arenas through these same hands. */
 
 var opt = Opts.Parse(args);
 string cmd = args.Length > 0 && !args[0].StartsWith("--") ? args[0] : "help";
@@ -50,17 +54,27 @@ string[] Policies() =>
 void Arena()
 {
     var peoples = opt.List("people", "all") is ["all"] ? MapOffers.Peoples.Select(p => p.Id).ToArray() : opt.List("people", "all");
-    int seeds = opt.Int("seeds", 4), seed0 = opt.Int("seed0", 1), tier = opt.Int("tier", 1);
+    int seeds = opt.Int("seeds", 4), seed0 = opt.Int("seed0", 1);
+    var tiers = opt.Has("tiers") ? opt.List("tiers", "1").Select(int.Parse).ToArray() : [opt.Int("tier", 1)];
+    // --oaths none|all|a,b+c: unsworn, each oath alone, or the ones named ('+' swears two at once).
+    var oaths = opt.List("oaths", "none") is ["all"] ? new[] { "none" }.Concat(MapOffers.Oaths.Select(o => o.Id)).ToArray() : opt.List("oaths", "none");
+    // --level N|tier: the survivor's character level (tier: 1, 4, 7 by tier, as the story's pace has it).
+    string level = opt.Get("level", "1");
+    bool deft = opt.Get("bot", "plain") == "deft";
     bool allWeapons = opt.Get("weapons", "") == "all";
     var specs = new List<RunSpec>();
     foreach (var c in Callers())
         foreach (var pol in Policies())
-            for (int s = 0; s < seeds; s++)
-            {
-                int nw = allWeapons ? Callings.Archetype(c).Weapons.Count : 1;
-                for (int w = 0; w < nw; w++)
-                    specs.Add(new RunSpec(seed0 + s, c, pol, tier, peoples[(s + w) % peoples.Length], null, opt.Double("cap", 40), opt.Double("beyond", 0), allWeapons ? w : s % Callings.Archetype(c).Weapons.Count));
-            }
+            foreach (int tier in tiers)
+                foreach (var oath in oaths)
+                    for (int s = 0; s < seeds; s++)
+                    {
+                        int nw = allWeapons ? Callings.Archetype(c).Weapons.Count : 1;
+                        for (int w = 0; w < nw; w++)
+                            specs.Add(new RunSpec(seed0 + s, c, pol, tier, peoples[(s + w) % peoples.Length], oath == "none" ? null : oath.Split('+'),
+                                opt.Double("cap", 40), opt.Double("beyond", 0), allWeapons ? w : s % Callings.Archetype(c).Weapons.Count,
+                                Level: level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), Deft: deft));
+                    }
     string outPath = opt.Get("out", "balance.jsonl");
     Console.WriteLine($"{specs.Count} arenas, {opt.Int("par", 16)} at a time -> {outPath}");
     var results = new ConcurrentBag<RunResult>();
@@ -82,8 +96,9 @@ void Arena()
             Console.WriteLine($"[{done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}: {(r.Won ? $"won {r.WonAt:0.0}" : r.Died ? $"fell {r.Minutes:0.0}" : $"standing {r.Minutes:0.0}")} ember {r.Ember}  {r.Build}");
         }
     });
-    var md = Report.Arena(results.ToList());
+    var md = Report.Arena(results.OrderBy(r => r.Spec.Key).ToList());
     File.WriteAllText(Path.ChangeExtension(outPath, ".md"), md);
+    if (opt.Has("csv")) Report.Csv(results.OrderBy(r => r.Spec.Key).ToList(), opt.Get("csv", "out/csv"));
     Console.WriteLine(md);
 }
 

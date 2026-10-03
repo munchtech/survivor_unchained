@@ -27,7 +27,7 @@ public static class Pilot
         return r[(r.Count - 1) / 2];
     }
 
-    public static (double X, double Z) Steer(Battle b)
+    public static (double X, double Z) Steer(Battle b, bool deft = false)
     {
         var p = b.Player;
         double mx, mz;
@@ -80,6 +80,7 @@ public static class Pilot
         else { mx = -p.X; mz = -p.Z; }
         double far = Math.Sqrt(p.X * p.X + p.Z * p.Z);
         if (far > 60) { mx = mx * 0.3 - p.X / far; mz = mz * 0.3 - p.Z / far; }
+        if (deft) Deft(b, press.Count >= 2 || stone != null, ref mx, ref mz);
         if (b.Collision.Blocked(p.X + mx * 0.1, p.Z + mz * 0.1, p.Radius)) (mx, mz) = (-mz, mx);
         double ml = Math.Sqrt(mx * mx + mz * mz);
         if (ml > 1e-6) { mx /= ml; mz /= ml; }
@@ -88,7 +89,8 @@ public static class Pilot
 
     /// <summary>The hands that are not the feet: a dash out of a crush, the art
     /// on a crowd, a draught when low.</summary>
-    public static void Act(Battle b, Journey j, double mx, double mz)
+    /// <returns>Whether a draught was drunk.</returns>
+    public static bool Act(Battle b, Journey j, double mx, double mz)
     {
         var p = b.Player;
         // A champion winding up a lunge close by: dash across its line, as anyone with a dash learns to.
@@ -102,6 +104,58 @@ public static class Pilot
                 }
         if (p.DashCharges > 0 && b.HostilesInRadius(p.X, p.Z, 2.2).Count >= 3) b.Dash(mx, mz);
         if (p.AbilityCd <= 0 && b.HostilesInRadius(p.X, p.Z, 6).Count >= 5) b.UseAbility(mx, mz);
-        if (p.Hp < b.MaxHp * 0.33) j.Quaff(b);
+        if (p.Hp >= b.MaxHp * 0.33) return false;
+        double before = p.Hp;
+        j.Quaff(b);
+        return p.Hp > before;
     }
+
+    /// <summary>What a player who knows the fight does over the plain hands'
+    /// choice, the worst danger first (from the balance lab's deft bot, which
+    /// the tests' ArenaPlay shares): off the line of a marked lunge, dashing
+    /// across it if late; out from under a lobbed pot and off burning ground;
+    /// and, with nothing pressing and no ember near, in on the nearest thrower.</summary>
+    public static void Deft(Battle b, bool busy, ref double mx, ref double mz)
+    {
+        var p = b.Player;
+        foreach (var e in b.Enemies.Living())
+        {
+            if (e.State != EnemyState.Windup || e.Disposition != Disposition.Hostile) continue;
+            var lunge = e.Def.Charge ?? e.Def.Lunge;
+            if (lunge == null) continue;
+            double reach = lunge.Speed * lunge.Time + e.Radius + 1;
+            double rx = p.X - e.X, rz = p.Z - e.Z;
+            double along = rx * e.LungeX + rz * e.LungeZ;
+            double across = rx * -e.LungeZ + rz * e.LungeX;
+            if (along < -1 || along > reach || Math.Abs(across) > e.Radius * 1.1 + p.Radius + 0.9) continue;
+            double side = across >= 0 ? 1 : -1;
+            mx = -e.LungeZ * side; mz = e.LungeX * side;
+            if (e.StateT < 0.3 && p.DashCharges > 0) b.Dash(mx, mz);
+            return;
+        }
+        foreach (var pr in b.Projectiles.Living())
+        {
+            if (!pr.Lob || pr.Owner != Side.Enemy) continue;
+            double d = Dist(pr.LandX, pr.LandZ, p.X, p.Z);
+            if (d < 2.2) { mx = (p.X - pr.LandX) / Math.Max(0.1, d); mz = (p.Z - pr.LandZ) / Math.Max(0.1, d); return; }
+        }
+        foreach (var z in b.Zones.Living())
+        {
+            if (z.Owner is not (Side.Enemy or Side.World)) continue;
+            double d = Dist(z.X, z.Z, p.X, p.Z);
+            if (d < z.Radius + p.Radius) { mx = (p.X - z.X) / Math.Max(0.1, d); mz = (p.Z - z.Z) / Math.Max(0.1, d); return; }
+        }
+        if (busy) return;
+        Enemy? shooter = null;
+        double sd = 11;
+        foreach (var e in b.Enemies.Living())
+        {
+            if (e.Def.Ranged == null || e.Elite || e.Disposition != Disposition.Hostile || e.State == EnemyState.Dying) continue;
+            double d = Dist(e.X, e.Z, p.X, p.Z);
+            if (d < sd) { sd = d; shooter = e; }
+        }
+        if (shooter != null && sd > 1.8 && b.HostilesInRadius(p.X, p.Z, 4.5).Count < 3) { mx = shooter.X - p.X; mz = shooter.Z - p.Z; }
+    }
+
+    static double Dist(double ax, double az, double bx, double bz) => Math.Sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
 }

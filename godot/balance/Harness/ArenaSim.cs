@@ -12,11 +12,15 @@ using SurvivorUnchained.Sim;
 
 namespace SurvivorUnchained.Balance;
 
-/// <summary>One arena to play: who, how they draft, where, how long.</summary>
+/// <summary>One arena to play: who, how they draft, where, how long; the
+/// survivor's character level (points in the calling's own attribute), and
+/// whether the hands are deft (they read lunges, pots and burning ground as a
+/// player who knows the fight does: a death is then the game's, not the bot's).</summary>
 public sealed record RunSpec(int Seed, string Calling, string Policy, int Tier = 1, string People = "pack", string[]? Oaths = null,
-    double Cap = 40, double Beyond = 0, int Weapon = 0, int Art = 0)
+    double Cap = 40, double Beyond = 0, int Weapon = 0, int Art = 0, int Level = 1, bool Deft = false)
 {
-    public string Key => $"{Calling}/{Policy}/t{Tier}/{People}/s{Seed}/w{Weapon}";
+    public string Key => $"{Calling}/{Policy}/t{Tier}/{People}/s{Seed}/w{Weapon}" + (Level > 1 ? $"/L{Level}" : "") + (Deft ? "/deft" : "") +
+        (Oaths is { Length: > 0 } ? $"/{string.Join("+", Oaths)}" : "");
 }
 
 /// <summary>A minute of the fight, as the harness saw it.</summary>
@@ -47,6 +51,11 @@ public sealed class RunResult
     /// <summary>Normal drafts with a card that ranks or evolves something carried; drafts in all.</summary>
     public int Advancing, NormalDrafts;
     public List<string> Greats = new();
+    /// <summary>Every card taken, with the minute it was taken (for comparing runs that took a card early).</summary>
+    public List<(string Card, double Minute)> Picks = new();
+    /// <summary>What was left of the boss when the survivor fell to it (-1: it was not up).</summary>
+    public double BossLeft = -1;
+    public int Quaffs;
 
     /// <summary>Won at the half hour and still standing for the boss: the target.</summary>
     public bool Won => WonAt != null;
@@ -97,6 +106,7 @@ public static class ArenaSim
             var take = offers[Math.Clamp(pick.Choose(b, offers, rng), 0, offers.Count - 1)];
             r.Taken[Card(take)] = r.Taken.GetValueOrDefault(Card(take)) + 1;
             if (take.Great) r.Greats.Add(take.Id);
+            r.Picks.Add((Card(take), b.Time / 60));
             if (take.Kind == OfferKind.Evolve) r.Evolved.Add((take.Branch!, b.Time / 60));
             LevelUp.Choose(b, take);
             r.Cards++;
@@ -112,6 +122,10 @@ public static class ArenaSim
             Name = "Bot", Archetype = spec.Calling, Background = "hunter", Palette = a.Palettes[0].Id,
             WeaponItem = a.Weapons[Math.Min(spec.Weapon, a.Weapons.Count - 1)], Ability = a.Abilities[Math.Min(spec.Art, a.Abilities.Count - 1)],
         }, (uint)spec.Seed);
+        // A survivor further on: the levels, and the points put into the calling's own.
+        while (j.Ch.Level < spec.Level) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
+        switch (spec.Calling) { case "arcanist": j.Ch.Attributes.Wits += j.Ch.Points; break; case "stalker": j.Ch.Attributes.Finesse += j.Ch.Points; break; default: j.Ch.Attributes.Might += j.Ch.Points; break; }
+        j.Ch.Points = 0;
         var arena = new ArenaSpec { Id = "table:bot", Name = "The Harness", Seed = spec.Seed, Tier = spec.Tier, People = spec.People, Oaths = (spec.Oaths ?? []).ToList() };
         Arenas.Begin(j.World, arena);
         var map = MapGen.Generate(arena.Map);
@@ -139,8 +153,8 @@ public static class ArenaSim
         double traceFrom = trace != null && trace.Contains('@') ? double.Parse(trace.Split('@')[1], System.Globalization.CultureInfo.InvariantCulture) * 60 : 0;
         while (t < spec.Cap * 60 && p.Alive && host.Result == null)
         {
-            var (mx, mz) = Pilot.Steer(b);
-            Pilot.Act(b, j, mx, mz);
+            var (mx, mz) = Pilot.Steer(b, spec.Deft);
+            if (Pilot.Act(b, j, mx, mz)) r.Quaffs++;
             zone.Step(Dt);
             zone.Frame(Dt);
             b.Tick(Dt, mx, mz);
@@ -203,6 +217,7 @@ public static class ArenaSim
         }
         r.Died = !p.Alive;
         r.Minutes = t / 60;
+        if (r.Died && r.WonAt == null && host.Boss is { } bar && t >= arena.Minutes * 60) r.BossLeft = bar.Hp / Math.Max(1, bar.MaxHp);
         // What rules the horde comes at the half hour (an elite, not a Boss, by its kind).
         if (r.WonAt is double won) r.BossTtk = won * 60 - arena.Minutes * 60;
         r.Kills = b.KillCount;
