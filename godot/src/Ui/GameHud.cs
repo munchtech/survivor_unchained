@@ -176,11 +176,12 @@ public partial class GameHud : CanvasLayer
         return p;
     }
 
-    /// <summary>A bar's fill: painted (bars/NAME.png, stretched along the bar) or the drawn gradient.</summary>
+    /// <summary>A bar's fill: painted (bars/NAME.png, a strip that tiles along the bar, so it
+    /// is never squashed as the bar fills) or the drawn gradient.</summary>
     static TextureRect Fill(string art, Color[] colors, float[] stops, bool vertical = false)
     {
         var r = GradientRect(colors, stops, vertical);
-        if (UiArt.Art($"bars/{art}.png") is { } tex) r.Texture = tex;
+        if (UiArt.Art($"bars/{art}.png") is { } tex) { r.Texture = tex; r.StretchMode = TextureRect.StretchModeEnum.Tile; }
         return r;
     }
 

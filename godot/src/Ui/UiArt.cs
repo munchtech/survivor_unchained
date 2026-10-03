@@ -110,8 +110,11 @@ public static class UiArt
             Texture = tex, TextureMarginLeft = s.L, TextureMarginTop = s.T, TextureMarginRight = s.R, TextureMarginBottom = s.B,
             AxisStretchHorizontal = axis, AxisStretchVertical = axis,
         };
+        // What is inside keeps clear of the painted border: at least three quarters of
+        // the slice margin (the border lives in the outer three quarters, by the brief).
+        var slice = new Dictionary<Side, int> { [Side.Left] = s.L, [Side.Top] = s.T, [Side.Right] = s.R, [Side.Bottom] = s.B };
         foreach (var side in new[] { Side.Left, Side.Top, Side.Right, Side.Bottom })
-            b.SetContentMargin(side, fallback.GetContentMargin(side));
+            b.SetContentMargin(side, Mathf.Max(fallback.GetContentMargin(side), slice[side] * 0.75f));
         return b;
     }
 
