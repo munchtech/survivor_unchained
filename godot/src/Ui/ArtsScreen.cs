@@ -50,7 +50,7 @@ public partial class ArtsScreen : Overlay
         var known = ArtBook.Known(ch);
         sel ??= ch.Ability != "" ? ch.Ability : known.FirstOrDefault();
         var v = Frame(skills ? "Skills by Day" : "Arts", new Vector2(1340, 800), G.Key(Act.Arts),
-            skills ? "What the arenas showed you, learned for the day. Each asks something of you."
+            skills ? "What the arenas showed you, learned for the day. Each asks something of you; what you carry is banked for the night."
             : Safe ? "One art in hand. Each grows with use, and its ranks open facets." : "Out here you can choose a facet a rank has opened. Change your art where it is safe.");
         bool pad = Controls.Instance.UsingPad;
         var tabs = Style.H(8, pad ? Style.PadButton("LT") : Style.Key(G.Key(Act.SubPrev)),
@@ -225,7 +225,7 @@ public partial class ArtsScreen : Overlay
         var r = Style.H(12, Glyphs.Icon(w.Art, 28, known ? col : col with { A = 0.45f }));
         string attr = SkillBook.Attribute(id);
         string tag = $"asks {SkillBook.Need} {attr}  ·  you have {SkillBook.Have(ch, attr)}";
-        var words = Style.V(0, Style.Label(w.Name + (carried ? (meets ? "  ·  carried" : "  ·  idle") : ""), Style.Display, 17, known ? (carried ? Colors.White : Style.GoldHi) : Style.InkDim),
+        var words = Style.V(0, Style.Label(w.Name + (carried ? (meets ? "  ·  carried, banked" : "  ·  idle") : ""), Style.Display, 17, known ? (carried ? Colors.White : Style.GoldHi) : Style.InkDim),
             Style.Label(tag, Style.Ui, Style.Caption, meets ? Style.Good : Style.Bad));
         words.CustomMinimumSize = new Vector2(340, 0);
         r.AddChild(words);
@@ -249,7 +249,8 @@ public partial class ArtsScreen : Overlay
         string attr = SkillBook.Attribute(w.Id);
         d.AddChild(Style.Label($"It asks {SkillBook.Need} {attr} of whoever uses it. You have {SkillBook.Have(ch, attr)}.{(meets ? "" : " Until you measure up (points, a respec), it lies idle.")}",
             Style.UiBold, Style.Small, meets ? Style.Good : Style.Bad, true));
-        d.AddChild(Style.Label($"By day it is rank {Ranks[SkillBook.Rank(ch)]}, and grows with you (every third level). In the night's arenas the ember starts from nothing, whatever you know.", Style.Ui, Style.Caption, Style.InkDim, true));
+        d.AddChild(Style.Label($"By day it is rank {Ranks[SkillBook.Rank(ch)]}, and grows with you (every third level). In the night's arenas the ember starts from nothing, but what you carry by day is banked: it sleeps in you through the day, the ember offers it in its first drafts, and it comes in at rank {Ranks[SkillBook.NightRank(ch)]}" +
+            (ch.Level < 10 ? " (rank III from the tenth level)." : "."), Style.Ui, Style.Caption, Style.InkDim, true));
         d.AddChild(Style.Gap(6));
         if (!known)
             d.AddChild(Style.Label("You have seen it burn. Learn it from a tome (a story fight won, Vonnra's Curiosities), or your calling may teach it as you grow.", Style.TextItalic, Style.Small, Style.InkDim, true));

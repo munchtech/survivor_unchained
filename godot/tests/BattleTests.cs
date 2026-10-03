@@ -54,8 +54,9 @@ public class BattleTests
                 for (int k = 0; k < 3; k++)
                 {
                     double a = b.Rng.Next() * Math.PI * 2;
+                    // The horde's level rises as an arena's does: every two and a half minutes.
                     b.SpawnEnemy(def, b.Player.X + Math.Cos(a) * 14, b.Player.Z + Math.Sin(a) * 14,
-                        new Battle.SpawnOpts { Level = 1 + (int)Math.Floor(t / 30), Style = SpawnStyle.Rise });
+                        new Battle.SpawnOpts { Level = 1 + (int)Math.Floor(t / 150), Style = SpawnStyle.Rise });
                 }
             }
             // Drift slowly, the way a player holding ground does, rather than fleeing.
@@ -254,14 +255,21 @@ public class DraftTests
     }
 
     [Fact]
-    public void Fills_with_passives_once_every_combat_skill_is_taken()
+    public void Fills_with_passives_and_honing_once_every_combat_skill_is_finished()
     {
         var b = BattleTests.Arena(12, Content.Weapons.Pool.Take(Content.Weapons.MaxWeapons).Select(id => (id, Content.Weapons.MaxRank)).ToArray());
         b.EmberLevel = 3; b.PendingLevels = 1;
         foreach (var w in b.Weapons) b.Evolve(w.Id, w.Def.Evolutions[0].Id);
         var offers = LevelUp.Draft(b, 3);
-        Assert.All(offers, o => Assert.True(o.Kind == OfferKind.Boon && !o.Blessing));
+        // Passives and honing; and a union where two of them belong together (it comes first).
+        Assert.All(offers, o => Assert.True((o.Kind == OfferKind.Boon && !o.Blessing) || o.Kind is OfferKind.Hone or OfferKind.Union));
         Assert.Equal(3, offers.Count);
+        // Honing a finished weapon: a little more each time, ten times at most.
+        var w0 = b.Weapons[0];
+        double before = w0.Damage;
+        for (int i = 0; i < LevelUp.MaxHone + 3; i++) b.Hone(w0.Id);
+        Assert.Equal(LevelUp.MaxHone, w0.Honed);
+        Assert.Equal(before * System.Math.Pow(1 + LevelUp.HoneStep, LevelUp.MaxHone), w0.Damage, 6);
     }
 
     [Fact]

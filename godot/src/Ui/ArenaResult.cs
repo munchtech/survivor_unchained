@@ -4,6 +4,7 @@ using Godot;
 using SurvivorUnchained.Arena;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Play;
+using SurvivorUnchained.Rpg;
 
 namespace SurvivorUnchained.Ui;
 
@@ -71,7 +72,23 @@ public partial class ArenaResultScreen : Overlay
         var outv = Style.V(8, Style.SubLabel("What you take out"));
         outv.AddChild(Line("book", $"{r.Xp:N0} experience" + (r.LevelsGained > 0 ? $"  ·  you are level {G.Journey.Ch.Level} now" : ""), r.LevelsGained > 0 ? Style.Good : Style.Ink));
         if (r.Gold > 0) outv.AddChild(Line("coin", $"{r.Gold:N0} gold", Style.GoldHi));
-        if (r.Tome is { } tome) outv.AddChild(Line("book", $"A tome: {Weapons.All[tome].Name}", new Color("#b8a8d8")));
+        // A tome won is the survivor's to write: one of what burned here.
+        if (r.Inscribed is { } tome) outv.AddChild(Line("book", $"A tome: {Weapons.All[tome].Name}", new Color("#b8a8d8")));
+        else if (r.TomeChoices.Count > 0)
+        {
+            outv.AddChild(Line("book", "A blank tome: write it with one of what burned", new Color("#b8a8d8")));
+            var pick = Style.H(8);
+            foreach (var id in r.TomeChoices)
+            {
+                var w = Weapons.All[id];
+                var btn = Style.Button(w.Name, () => { if (Arenas.Inscribe(G.Journey, r, id)) Refresh(); }, false, true);
+                btn.TooltipText = $"{w.Description} By day it asks {SkillBook.Need} {SkillBook.Attribute(id)}.";
+                pick.AddChild(btn);
+            }
+            outv.AddChild(pick);
+        }
+        foreach (var made in r.Recorded)
+            outv.AddChild(Line("scroll", made.StartsWith("evo:") ? $"In the codex: {EvolutionName(made[4..])}" : $"In the codex: the union {Unions.Find(made[6..])?.Name}", Style.GoldHi));
         if (r.Taught is { } taught) outv.AddChild(Line("book", $"Your calling taught you {Weapons.All[taught].Name}", Style.Good));
         outv.AddChild(Style.Rule());
         outv.AddChild(Style.SubLabel(r.Discovered.Count > 0 ? "Discovered" : "Nothing new discovered"));
@@ -108,6 +125,8 @@ public partial class ArenaResultScreen : Overlay
         acts.Alignment = BoxContainer.AlignmentMode.Center;
         wrap.AddChild(acts);
     }
+
+    static string EvolutionName(string id) => Weapons.All.Values.SelectMany(w => w.Evolutions).FirstOrDefault(e => e.Id == id)?.Name ?? id;
 
     /// <summary>The run's ending in a line: who brought you down and when, and how near the end was.</summary>
     string Story()

@@ -105,7 +105,7 @@ public partial class ControlsPanel : VBoxContainer
         ("Self", [Act.Character], "View, then RB"), ("Arts", [Act.Arts], "View, then RB"), ("Journal", [Act.Journal], "View, then RB"), ("Map", [Act.Map], "View, then RB"), ("Pause", [Act.Pause], null),
         ("Turn the book's pages", [Act.TabPrev, Act.TabNext], "LB / RB"), ("A screen's own pages", [Act.SubPrev, Act.SubNext], "LT / RT"),
         ("In menus: choose, back", [Act.Confirm, Act.Cancel], "A, B"), ("In menus: more", [Act.Alt], "X, Y"),
-        ("Draft: take a card", [Act.Pick1], "D-pad, A"), ("Draft: reroll", [Act.Reroll], "X"), ("Draft: banish", [Act.Banish], "Y"),
+        ("Draft: take a card", [Act.Pick1], "D-pad, A"), ("Draft: reroll", [Act.Reroll], "X"), ("Draft: banish", [Act.Banish], "Y"), ("Draft: skip", [Act.Skip], "R3"),
     };
 
     Act? waiting;

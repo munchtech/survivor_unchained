@@ -85,6 +85,14 @@ Options go after `--`:
   and what hurt it (`ARENA_TRACE=1` for a line a minute,
   `ARENA_CASE=seed,calling,tier,people` for one case); for tuning the horde
   and how often the cards come;
+- `cd godot/balance && dotnet build -c Release`, then `dotnet bin/Release/net8.0/Balance.dll arena|probe|weapons|report ...`:
+  the balance tool (`docs/SKILLS_DESIGN.md` section 15): whole arenas played
+  headless by bots that draft by a policy (`first`, `random`, `greedy`,
+  `path:ID`), at a tier and level, under the oaths the table swears, with
+  plain or deft hands; build probes; every skill alone; a markdown report
+  and CSVs. `BALANCE_LAB=arena|story|all dotnet test tests/Tests.csproj
+  --filter BalanceLab` drives the same arenas (and the day-story walk) from
+  environment knobs (`tests/BalanceLab.cs`);
 - `HORDE_BENCH=1 dotnet test tests/Tests.csproj --filter HordeBench_Run` (with
   `--logger "console;verbosity=detailed"`): the fight timed under a horde of
   300, 600 and 900 (the enemy pool's whole size) on a generated arena with
@@ -104,7 +112,7 @@ Options go after `--`:
 Keys: WASD to move, Space to dash, Q for the art in hand, K for the arts
 (which is in hand, its rank and facets), E to use or talk, R to drink a
 draught, 1-4 to pick a card or an answer (X rerolls the cards, B then a
-number banishes one), Escape to pause.
+number banishes one, V skips the draft for some ember back), Escape to pause.
 
 The dash is everyone's and is where timing lives: two charges; a blow that
 was telegraphed (a lunge after its wind-up, a missile, a marked blast)

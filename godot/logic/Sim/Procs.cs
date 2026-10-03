@@ -17,8 +17,10 @@ namespace SurvivorUnchained.Sim;
 
 public enum TriggerEvent { Hit, Crit, Kill, Status, Explode, Freeze, Shatter, Hurt, Dash, Ability, Ember, Tick, LevelUp, Block, Dodge, PerfectDodge }
 
-/// <summary>What an effect's damage is a fraction of.</summary>
-public enum Basis { Hit, MaxHp, Flat }
+/// <summary>What an effect's damage is a fraction of: the blow that set it
+/// off, the target's health, a flat number that grows with the ember, or the
+/// damage of the weapon whose rule it is (an evolution's).</summary>
+public enum Basis { Hit, MaxHp, Flat, Weapon }
 
 public sealed class TriggerCond
 {
@@ -50,6 +52,8 @@ public abstract record Effect
     public sealed record Chain(int Count, double Range, double Damage, Basis Basis, School School) : Effect;
     public sealed record Heal(double Amount, Basis Basis) : Effect;
     public sealed record Shield(double Amount, double Duration) : Effect;
+    /// <summary>A barrier of a fraction of the survivor's health, added to what is there, up to Cap of it.</summary>
+    public sealed record Barrier(double Fraction, double Cap, double Duration) : Effect;
     public sealed record Zone(double Radius, double Duration, double Dps, Basis Basis, School School, string Art, double Slow = 0, StatusPayload? Status = null) : Effect;
     public sealed record Buff(string Id, string Stat, double Value, ModKind Kind, double Duration, int MaxStacks = 1) : Effect;
     public enum CooldownScope { All, Ability, Dash }
@@ -79,6 +83,9 @@ public sealed class TriggerInstance
 {
     public TriggerDef Def = null!;
     public string Source = "";
+    /// <summary>What its damage is credited to (Battle.DamageBy): its source,
+    /// or the weapon an evolution's rule belongs to.</summary>
+    public string? Credit;
     public double Cd;
     /// <summary>Rank scales damage-bearing effects.</summary>
     public int Rank = 1;

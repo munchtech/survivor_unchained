@@ -9,9 +9,10 @@ using SurvivorUnchained.World;
 
 namespace SurvivorUnchained.Ui;
 
-/// <summary>What the level-up draft shows, and what picking does; the fight, for the build beside the cards.</summary>
+/// <summary>What the level-up draft shows, and what picking does; the fight, for the build beside the cards;
+/// a skip, when one is allowed (docs/SKILLS_DESIGN.md, "The offer").</summary>
 public sealed record DraftView(int Level, bool Blessing, List<Offer> Offers, int Rerolls, int Banishes, int Queued, string? Tip, HashSet<Tag> Build,
-    Action<int> Pick, Action Reroll, Action<int> Banish, string? Great = null, Battle? Battle = null);
+    Action<int> Pick, Action Reroll, Action<int> Banish, string? Great = null, Battle? Battle = null, Action? Skip = null);
 
 /// <summary>A conversation as the panel shows it: who, and what they look like.</summary>
 public sealed record DialogueView(string Name, string Title, string Mood, string Speaker, string Text, List<PresentedChoice> Choices,
@@ -31,11 +32,14 @@ public sealed record DialogueView(string Name, string Title, string Mood, string
 /// never a guess. 1-4 or a click takes a card, the arrows or the D-pad move
 /// along them and Enter or A takes the one lifted; for a moment after the
 /// cards appear none can be taken, so a key still held from the fight does
-/// not spend a level by accident.
+/// not spend a level by accident. The skill system's words ride on each card
+/// (docs/SKILLS_DESIGN.md): why the ember dealt it (banked, on your path,
+/// your calling's own), what a combat skill becomes, the path it belongs to;
+/// a great blessing says what it is for; V (or R3) skips for ember back.
 /// </summary>
 public partial class DraftPanel : Control
 {
-    const float CardW = 320, CardH = 452;
+    const float CardW = 320, CardH = 500;
     readonly DraftView v;
     int focus;
     bool armed, banishing;
@@ -62,12 +66,23 @@ public partial class DraftPanel : Control
         return null;
     }
 
+    static string Role(string id) => Boons.GreatRoles.TryGetValue(id, out var r) ? r switch
+    {
+        Boons.GreatRole.Ward => "ward",
+        Boons.GreatRole.Answer => "answer",
+        Boons.GreatRole.Tempo => "quickening",
+        _ => "power",
+    } : "great";
+
     static string Kicker(Offer o) => o.Kind switch
     {
-        OfferKind.Weapon => "New combat skill",
+        OfferKind.Weapon => o.To is int r && r > 1 ? $"New combat skill · rank {r}" : "New combat skill",
         OfferKind.Rank => $"Combat skill · rank {o.From} to {o.To}",
         OfferKind.Evolve => "Evolution",
-        OfferKind.Boon when o.Great => o.From is int g && g > 0 ? $"Great blessing · rank {g} to {o.To}" : "Great blessing",
+        OfferKind.Union => "Union",
+        OfferKind.Hone => $"Honing · {o.To} of {LevelUp.MaxHone}",
+        // A great blessing says what it is for: power, ward, answer, quickening.
+        OfferKind.Boon when o.Great => o.From is int g && g > 0 ? $"{Role(o.Id)} · rank {g} to {o.To}" : $"Great blessing · {Role(o.Id)}",
         OfferKind.Boon when Boons.Find(o.Id)?.Kind == BoonKind.Blessing => o.From is int f && f > 0 ? $"Blessing · rank {f} to {o.To}" : "Blessing",
         OfferKind.Boon => o.From is int f2 && f2 > 0 ? $"Passive skill · rank {f2} to {o.To}" : "New passive skill",
         _ => "Respite",
@@ -99,6 +114,8 @@ public partial class DraftPanel : Control
         col.AddChild(Style.Label(head.ToUpperInvariant(), Style.Display, 48, new Color("#ffe6b8"), false, HorizontalAlignment.Center));
         col.AddChild(Style.Flourish());
         if (v.Queued > 0) col.AddChild(Style.Label($"{v.Queued} more to choose after this", Style.UiBold, Style.Small, Style.InkDim, false, HorizontalAlignment.Center));
+        if (v.Battle != null && LevelUp.BuildPaths(v.Battle) is { Count: > 0 } paths)
+            col.AddChild(Style.Label($"Walking {string.Join(" and ", paths.Select(p => p.Name))}", Style.TextItalic, Style.Small, Style.EmberHi, false, HorizontalAlignment.Center));
         if (v.Tip != null)
         {
             var tip = Style.Label(v.Tip, Style.TextItalic, Style.Body, Style.Ink, true, HorizontalAlignment.Center);
@@ -143,6 +160,13 @@ public partial class DraftPanel : Control
         Inside(banish, bb);
         banish.Disabled = v.Banishes <= 0;
         foot.AddChild(banish);
+        if (v.Skip != null)
+        {
+            var skip = Style.Button("", () => { if (armed && chosen == null) v.Skip(); }, false, true);
+            Inside(skip, Style.H(6, Style.Prompt(Act.Skip), Style.Label("Skip", Style.UiBold, Style.Caption, Style.GoldHi)));
+            skip.TooltipText = $"Take none: {LevelUp.SkipRefund * 100:0}% of the level's ember comes back, so the next level comes sooner.";
+            foot.AddChild(skip);
+        }
     }
 
     /// <summary>A row inside a button, sized to it.</summary>
@@ -210,17 +234,18 @@ public partial class DraftPanel : Control
 
     Button Card(Offer o, int i)
     {
-        var r = o.Kind == OfferKind.Evolve ? 4 : (int)o.Rarity;
+        bool crown = o.Kind is OfferKind.Evolve or OfferKind.Union;
+        var r = crown ? 4 : (int)o.Rarity;
         var rc = Style.RarityOf(r);
         var school = SchoolOf(o);
-        var color = o.Kind == OfferKind.Evolve ? new Color("#ffd88a") : school is School s ? ItemViews.SchoolColors[s] : rc;
+        var color = crown ? new Color("#ffd88a") : school is School s ? ItemViews.SchoolColors[s] : rc;
         var b = new Button { CustomMinimumSize = new Vector2(CardW, CardH), FocusMode = FocusModeEnum.None, MouseDefaultCursorShape = CursorShape.PointingHand };
         foreach (var state in new[] { "normal", "hover", "pressed", "disabled", "focus" }) b.AddThemeStyleboxOverride(state, new StyleBoxEmpty());
         var panel = new Panel { MouseFilter = MouseFilterEnum.Ignore };
         Style.Fill(panel);
         b.AddChild(panel);
         panel.SetMeta("rc", rc);
-        panel.SetMeta("frame", o.Kind == OfferKind.Evolve ? "card_evolve" : $"card_{Math.Min(r, 4)}");
+        panel.SetMeta("frame", crown ? "card_evolve" : $"card_{Math.Min(r, 4)}");
         var v2 = Style.V(Style.Gap2);
         v2.Position = new Vector2(22, 20);
         v2.Size = new Vector2(CardW - 44, CardH - 36);
@@ -269,6 +294,12 @@ public partial class DraftPanel : Control
         var body = Style.Label(text, Style.Text, Style.Body, Style.Ink, true, HorizontalAlignment.Center);
         body.SizeFlagsVertical = SizeFlags.ExpandFill;
         v2.AddChild(body);
+        // Why the ember dealt it: banked from the day, on your path, your calling's own, a duo; a trap said plainly.
+        foreach (var why in o.Why.Where(w => o.Path == null || !w.StartsWith("On your path")).Take(2))
+            v2.AddChild(Style.Label(why, Style.UiBold, Style.Caption, why.StartsWith("Little") ? Style.InkDim : Style.EmberHi, true, HorizontalAlignment.Center));
+        // What a combat skill becomes, and with what.
+        if (o.Recipe is { Length: > 0 } recipe)
+            v2.AddChild(Style.Label(recipe, Style.TextItalic, Style.Badge, Style.InkDim, true, HorizontalAlignment.Center));
         var tags = Style.H(10);
         tags.Alignment = BoxContainer.AlignmentMode.Center;
         bool fits = false;
@@ -279,14 +310,17 @@ public partial class DraftPanel : Control
             tags.AddChild(Style.Label(tg.ToString().ToLowerInvariant(), Style.UiBold, Style.Caption, fit ? Style.EmberHi : Style.InkFaint));
         }
         v2.AddChild(tags);
-        if (fits)
+        // The path it belongs to, or (if none) that it fits what the build already does.
+        if (o.Path is { } pid && Content.Paths.Find(pid) is { } path)
+            v2.AddChild(Style.Label(path.Name, Style.DisplayLight, Style.Small, Style.Gold, false, HorizontalAlignment.Center));
+        else if (fits)
         {
             var fl = Style.H(4, Glyphs.Icon("flame", 15, Style.EmberHi), Style.Label("Fits your build", Style.UiBold, Style.Caption, Style.EmberHi));
             fl.Alignment = BoxContainer.AlignmentMode.Center;
             v2.AddChild(fl);
         }
         // Its rarity, in words and diamonds as well as colour; its key.
-        var foot = Style.H(Style.Gap2, Style.Label(o.Kind == OfferKind.Evolve ? "Legendary" : o.Rarity.ToString(), Style.UiBold, Style.Caption, rc), Style.Gems(r, 6));
+        var foot = Style.H(Style.Gap2, Style.Label(crown ? "Legendary" : o.Rarity.ToString(), Style.UiBold, Style.Caption, rc), Style.Gems(r, 6));
         foot.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
         var key = new Control { CustomMinimumSize = new Vector2(30, 26), MouseFilter = MouseFilterEnum.Ignore, Name = "Key" };
         foot.AddChild(key);
@@ -372,6 +406,7 @@ public partial class DraftPanel : Control
             case Act.Reroll or Act.Alt: if (armed && v.Rerolls > 0 && chosen == null) v.Reroll(); else Sound.Sfx.Deny(); break;
             case Act.Banish or Act.Alt2: if (v.Banishes > 0) { banishing = !banishing; Mark(); Prompts(); } else Sound.Sfx.Deny(); break;
             case Act.Cancel: if (banishing) { banishing = false; Mark(); Prompts(); } break;
+            case Act.Skip: if (armed && chosen == null && v.Skip != null) v.Skip(); else Sound.Sfx.Deny(); break;
         }
         return true;
     }

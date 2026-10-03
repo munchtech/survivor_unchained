@@ -9,5 +9,7 @@
   <ItemGroup>
     <!-- The logic's tests are their own project (tests/Tests.csproj). -->
     <Compile Remove="tests/**" />
+    <!-- So is the balance harness (balance/Balance.csproj). -->
+    <Compile Remove="balance/**" />
   </ItemGroup>
 </Project>

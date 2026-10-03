@@ -160,7 +160,7 @@ public partial class Game
         var b = Battle!;
         scene!.SimPaused = true;
         hudMode = "draft";
-        Present(LevelUp.Draft(b, b.Stats.Get(Stat.Luck) >= 1.5 ? 4 : 3));
+        Present(LevelUp.Draft(b));
     }
 
     void Present(List<Offer> list)
@@ -169,9 +169,9 @@ public partial class Game
         offers = list;
         var tip = draftTip;
         draftTip = null;
-        string? great = LevelUp.GreatNext(b) ? b.Time < 60 ? "The arena begins: anyone can take any of them" : "The fifteenth minute: a second, or the first deepened" : null;
+        string? great = LevelUp.GreatNext(b) ? b.Time < 60 ? "Dusk: the ember wakes, and any of them is yours" : "Midnight: a second, or the first deepened" : null;
         hud.Draft(new DraftView(LevelUp.DraftLevel(b), LevelUp.BlessingNext(b), list, b.Rerolls, b.Banishes, LevelUp.Queued(b), tip,
-            LevelUp.BuildTags(b), Pick, Reroll, Banish, great, b));
+            LevelUp.BuildTags(b), Pick, Reroll, Banish, great, b, LevelUp.CanSkip(b) ? Skip : null));
     }
 
     public void Pick(int i)
@@ -181,25 +181,27 @@ public partial class Game
         var o = offers[i];
         LevelUp.Choose(b, o);
         if (o.Kind == OfferKind.Weapon) Toast(new Toast(ToastKind.Level, $"{o.Title} joins your arsenal"));
-        if (b.DraftOwed) Present(LevelUp.Draft(b, offers.Count));
+        if (b.DraftOwed) Present(LevelUp.Draft(b));
         else CloseDraft();
     }
 
     void Reroll()
     {
-        var b = Battle!;
-        if (b.Rerolls <= 0) return;
-        b.Rerolls--;
-        Present(LevelUp.Draft(b, offers.Count));
+        if (LevelUp.Reroll(Battle!) is { } again) Present(again);
     }
 
     void Banish(int i)
     {
+        if (i < 0 || i >= offers.Count || LevelUp.Banish(Battle!, offers[i]) is not { } again) return;
+        Present(again);
+    }
+
+    void Skip()
+    {
         var b = Battle!;
-        if (i < 0 || i >= offers.Count || b.Banishes <= 0 || offers[i].Kind == OfferKind.Evolve) return;
-        b.Banishes--;
-        b.BannedCards.Add(offers[i].Id);
-        Present(LevelUp.Draft(b, offers.Count));
+        if (!LevelUp.Skip(b)) return;
+        if (b.DraftOwed) Present(LevelUp.Draft(b));
+        else CloseDraft();
     }
 
     void CloseDraft()
