@@ -22,7 +22,7 @@ MOCAP = Path(os.environ.get("MOCAP_DIR", r"C:\Users\munch\Tools\mocap"))
 
 LICENCE = {
     "kimodo": ("Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated", "soma"),
-    "video": ("SAM 3D Body (Meta, SAM License) from video", "soma"),
+    "video": ("SAM 3D Body (Meta, SAM License) from video", "mhr"),
     "mixamo": ("Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed", "mixamo"),
 }
 
@@ -30,6 +30,9 @@ LICENCE = {
 TABLE = {
     "test_kimodo_leap": ("kimodo", "example_01_single_text_prompt.bvh", None, False, False, "full",
                          "Kimodo's own example: runs and leaps an obstacle (pipeline test)"),
+    "test_video_pose": ("video", "pexels_6769391_pose.bvh", None, False, True, "full",
+                        "SAM 3D Body on Pexels video 6769391 (https://www.pexels.com/video/woman-wearing-denim-pants-6769391/, "
+                        "Pexels licence), 2-14 s: a woman posing, hands to hips and pockets (pipeline test)"),
 }
 
 

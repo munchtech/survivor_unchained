@@ -129,6 +129,145 @@ PROFILES = {
 }
 
 
+
+def _mhr_positions():
+    """SAM 3D Body's Momentum Human Rig, as BuildPoseFile writes it (joints
+    named joint_NNN): which joint stands where on her. Read from a take
+    against the body (the eyes say which way she faces, so which leg and arm
+    is the left)."""
+    J = lambda n: f"joint_{n:03d}"
+    pts = {
+        "pelvis": "Hips", "spine_01": J(35), "spine_02": J(36), "spine_03": J(37), "neck_01": J(110),
+        "Head": J(113), "head_top": J(126), "eye_l": J(124), "eye_r": J(122),
+    }
+    for s, (cl, sh, el, wr, idx, mid, ring, pnk, th, hip, kn, an, ball, toe) in {
+            "l": (74, 75, 76, 78, 80, 84, 88, 92, 97, 2, 3, 4, 7, 8),
+            "r": (38, 39, 40, 42, 44, 48, 52, 56, 61, 18, 19, 20, 23, 24)}.items():
+        pts.update({f"clavicle_{s}": J(cl), f"upperarm_{s}": J(sh), f"lowerarm_{s}": J(el), f"hand_{s}": J(wr),
+                    f"thigh_{s}": J(hip), f"calf_{s}": J(kn), f"foot_{s}": J(an), f"ball_{s}": J(ball),
+                    f"ball_leaf_{s}": J(toe)})
+        for f, base in (("index", idx), ("middle", mid), ("ring", ring), ("pinky", pnk), ("thumb", th)):
+            for k in range(4):
+                pts[f"{f}_0{k + 1}_{s}" if k < 3 else f"{f}_04_leaf_{s}"] = J(base + k)
+    return pts
+
+
+def _aims():
+    """Each bone: where it points (its own joint to the next) and the second
+    line that fixes its roll; both measured the same way on her rest and on
+    the take. Second lines: a pair of points (from, to), or "fwd" (the way
+    the head looks), or a bend ("bend", a, b, c, default)."""
+    aims = {
+        "pelvis": ("pelvis", "spine_01", ("thigh_r", "thigh_l")),
+        "spine_01": ("spine_01", "spine_02", ("thigh_r", "thigh_l")),
+        "spine_02": ("spine_02", "spine_03", ("upperarm_r", "upperarm_l")),
+        "spine_03": ("spine_03", "neck_01", ("upperarm_r", "upperarm_l")),
+        "neck_01": ("neck_01", "Head", ("upperarm_r", "upperarm_l")),
+        "Head": ("Head", "head_top", ("eye_r", "eye_l")),
+    }
+    for s in "lr":
+        aims.update({
+            f"clavicle_{s}": (f"clavicle_{s}", f"upperarm_{s}", ("spine_03", "neck_01")),
+            f"upperarm_{s}": (f"upperarm_{s}", f"lowerarm_{s}", ("bend", f"upperarm_{s}", f"lowerarm_{s}", f"hand_{s}", "arm")),
+            f"lowerarm_{s}": (f"lowerarm_{s}", f"hand_{s}", (f"pinky_01_{s}", f"index_01_{s}")),
+            f"hand_{s}": (f"hand_{s}", f"middle_01_{s}", (f"pinky_01_{s}", f"index_01_{s}")),
+            f"thigh_{s}": (f"thigh_{s}", f"calf_{s}", ("bend", f"thigh_{s}", f"calf_{s}", f"foot_{s}", "leg")),
+            f"calf_{s}": (f"calf_{s}", f"foot_{s}", ("bend", f"thigh_{s}", f"calf_{s}", f"foot_{s}", "leg")),
+            f"foot_{s}": (f"foot_{s}", f"ball_{s}", ("thigh_r", "thigh_l")),
+            f"ball_{s}": (f"ball_{s}", f"ball_leaf_{s}", ("thigh_r", "thigh_l")),
+        })
+        for f in ("index", "middle", "ring", "pinky", "thumb"):
+            for k in range(3):
+                nxt = f"{f}_0{k + 2}_{s}" if k < 2 else f"{f}_04_leaf_{s}"
+                aims[f"{f}_0{k + 1}_{s}"] = (f"{f}_0{k + 1}_{s}", nxt, (f"pinky_01_{s}", f"index_01_{s}"))
+    return aims
+
+
+AIMS = _aims()
+
+
+def _frame(d, s):
+    """An orthonormal frame from a pointing line and a second line (made
+    square to it)."""
+    d = d / np.linalg.norm(d, axis=-1, keepdims=True)
+    s = s - d * np.sum(s * d, axis=-1, keepdims=True)
+    s = s / np.maximum(np.linalg.norm(s, axis=-1, keepdims=True), 1e-9)
+    t = np.cross(d, s)
+    return np.stack([d, s, t], axis=-1)
+
+
+def _matrix_quat(m):
+    from rig import qfrom_matrix
+    return np.array([qfrom_matrix(x) for x in m])
+
+
+def globals_from_positions(sk: Skeleton, src: "Source", spec):
+    """Her bones' rotations in the world for each frame from where the
+    source's joints are: each bone turned so its line runs where the take's
+    does, its roll set by a second line measured alike on her and the take
+    (the hips' line, the shoulders', the bend of a limb, the knuckles')."""
+    pts_map = spec["points"]
+    grest, prest = sk.rest_globals()
+    grest, prest = grest[0], prest[0]
+    T = src.pos.shape[0]
+
+    # Her own points at rest.
+    def hers(name):
+        if name == "head_top":
+            return prest[sk.i("Head")] + qrot(grest[sk.i("Head")], [0, 0.14, 0])
+        if name in ("eye_l", "eye_r"):
+            h = prest[sk.i("Head")]
+            return h + np.array([0.032 if name == "eye_l" else -0.032, 0.07, 0.09])
+        return prest[sk.i(name)]
+
+    def theirs(name):
+        return src.pos[:, src.joint(pts_map[name])]
+
+    def second(sec, P, rest):
+        if sec[0] == "bend":
+            _, a, b, c, kind = sec
+            A, B, C = P(a), P(b), P(c)
+            n = np.cross(B - A, C - B)
+            # A straight limb's bend is no guide: lean on the way it would
+            # bend (an elbow forward, a knee back) as it straightens.
+            fwd = np.array([0, 0, 1.0]) if kind == "arm" else np.array([0, 0, -1.0])
+            if not rest:
+                left = P("thigh_l") - P("thigh_r")
+                left = left / np.linalg.norm(left, axis=-1, keepdims=True)
+                up = np.broadcast_to([0, 1.0, 0], left.shape)
+                face = np.cross(left, up)
+                fwd = face if kind == "arm" else -face
+            dflt = np.cross(B - A, fwd)
+            w = np.linalg.norm(n, axis=-1, keepdims=True) / np.maximum(
+                np.linalg.norm(B - A, axis=-1, keepdims=True) * np.linalg.norm(C - B, axis=-1, keepdims=True), 1e-9)
+            k = np.clip(w / 0.35, 0, 1)
+            nn = n / np.maximum(np.linalg.norm(n, axis=-1, keepdims=True), 1e-9)
+            dd = dflt / np.maximum(np.linalg.norm(dflt, axis=-1, keepdims=True), 1e-9)
+            return nn * k + dd * (1 - k)
+        return P(sec[1]) - P(sec[0])
+
+    g = np.tile(grest, (T, 1, 1))
+    for bone, (a, b, sec) in AIMS.items():
+        if bone not in sk.index or a not in pts_map or b not in pts_map:
+            continue
+        jb = sk.i(bone)
+        d0 = hers(b) - hers(a)
+        s0 = second(sec, hers, True)
+        d1 = theirs(b) - theirs(a)
+        s1 = second(sec, theirs, False)
+        F0 = _frame(d0[None], np.asarray(s0, float)[None])[0]
+        F1 = _frame(d1, s1)
+        R = np.einsum("tij,kj->tik", F1, F0)  # F1 @ F0^T
+        g[:, jb] = qmul(_matrix_quat(R), grest[jb])
+    return g
+
+
+_MHR = _mhr_positions()
+PROFILES["mhr"] = {"map": {}, "hips": "Hips", "hip": (_MHR["thigh_l"], _MHR["thigh_r"]),
+                   "knee": (_MHR["calf_l"], _MHR["calf_r"]), "ankle": (_MHR["foot_l"], _MHR["foot_r"]),
+                   "toe": (_MHR["ball_l"], _MHR["ball_r"]), "neutral": False, "ground": True,
+                   "positions": {"points": _MHR, "bones": {b: None for b in AIMS}}}
+
 class Source:
     """A take, its globals in metres at 30 frames a second. `profile` names
     its skeleton (PROFILES): 100style, soma (Kimodo) or mixamo."""
@@ -217,24 +356,30 @@ def retarget(sk: Skeleton, src: Source, mapping=None, stance=0.8, lock=True, pos
     grest, prest = grest[0], prest[0]
     T = src.rot.shape[0]
     J = len(sk)
-    # Calibration: her limbs swung onto the source's rest lines; her back,
-    # neck and head matched to the performer's neutral standing.
-    cal = {}
-    neutral = neutral_posture(src) if posture else None
-    for b, (s, tchild, schild) in mapping.items():
-        jb = sk.i(b)
-        if neutral is not None and b in POSTURE:
-            cal[b] = qmul(qinv(neutral[s]), grest[jb])
-            continue
-        if tchild is None:
-            dt = qrot(grest[jb], [0, 1, 0])
-        else:
-            dt = prest[sk.i(tchild)] - prest[jb]
-        ds = src.direction(schild)
-        cal[b] = qmul(qbetween(dt, ds), grest[jb])
-    g = np.tile(grest, (T, 1, 1))
-    for b, (s, _, _) in mapping.items():
-        g[:, sk.i(b)] = qmul(src.rot[:, src.joint(s)], cal[b])
+    if "positions" in pr:
+        # A source whose rest is no pose at all (SAM 3D Body's rig lies
+        # along its bones' axes): her bones aimed from the joints' places.
+        g = globals_from_positions(sk, src, pr["positions"])
+        mapping = pr["positions"]["bones"]
+    else:
+        # Calibration: her limbs swung onto the source's rest lines; her
+        # back, neck and head matched to the performer's neutral standing.
+        cal = {}
+        neutral = neutral_posture(src) if posture else None
+        for b, (s, tchild, schild) in mapping.items():
+            jb = sk.i(b)
+            if neutral is not None and b in POSTURE:
+                cal[b] = qmul(qinv(neutral[s]), grest[jb])
+                continue
+            if tchild is None:
+                dt = qrot(grest[jb], [0, 1, 0])
+            else:
+                dt = prest[sk.i(tchild)] - prest[jb]
+            ds = src.direction(schild)
+            cal[b] = qmul(qbetween(dt, ds), grest[jb])
+        g = np.tile(grest, (T, 1, 1))
+        for b, (s, _, _) in mapping.items():
+            g[:, sk.i(b)] = qmul(src.rot[:, src.joint(s)], cal[b])
     # Bones with no source keep their rest turn on their parent.
     for j in range(J):
         if sk.names[j] in mapping or sk.parent[j] < 0:
@@ -250,7 +395,8 @@ def retarget(sk: Skeleton, src: Source, mapping=None, stance=0.8, lock=True, pos
     # Heights from the ground: the performer standing straight has the hips
     # a leg's drop above a planted ankle; hers stand where her rest does.
     ground_s = np.percentile(src.pos[:, src.joint(LANK), 1], 5)
-    stand_s = src.rest[src.joint(HIPS)][1] - src.rest[src.joint(LANK)][1] + ground_s
+    # (Measured down the leg's own length, whatever pose the source's rest is.)
+    stand_s = src.rest[src.joint(HIPS)][1] - src.rest[src.joint(LHIP)][1] + leg_s + ground_s
     pel_off = np.array([0.0, prest[sk.i("pelvis")][1] - k * stand_s, 0.0])
     pelvis = hips + pel_off
     # Locals by FK order.
@@ -279,6 +425,21 @@ def retarget(sk: Skeleton, src: Source, mapping=None, stance=0.8, lock=True, pos
         # A planted ankle at her own ankle's height.
         a[:, 1] += prest[sk.i(f"foot_{side}")][1] - k * ground_s
         ankles[side] = a
+    if pr.get("ground"):
+        # Height from one camera is the least sure thing it gives: the lower
+        # foot is put on the ground every frame, the body with it (smoothed,
+        # so it settles rather than jitters).
+        rest_ank = prest[sk.i("foot_l")][1]
+        low = np.minimum(ankles["l"][:, 1], ankles["r"][:, 1]) - rest_ank
+        kern = np.exp(-0.5 * (np.arange(-6, 7) / 3.0) ** 2)
+        kern /= kern.sum()
+        off = np.convolve(np.pad(low, 6, mode="edge"), kern, mode="valid")
+        for side in "lr":
+            ankles[side][:, 1] -= off
+        pel = sk.i("pelvis")
+        world = qrot(sk.rest_rot[root], pos[:, pel]) + prest[root]
+        world[:, 1] -= off
+        pos[:, pel] = qrot(qinv(sk.rest_rot[root]), world - prest[root])
     contacts = {}
     if lock:
         for side, sj, tj in (("l", LANK, LTOE), ("r", RANK, RTOE)):
