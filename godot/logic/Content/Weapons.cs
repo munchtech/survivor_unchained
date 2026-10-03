@@ -259,7 +259,7 @@ public static class Weapons
         {
             Id = "seeking_motes", Name = "Seeking Motes", School = School.Arcane, Behavior = WeaponBehavior.Aimed, Tags = [Tag.Projectile, Tag.Spell, Tag.Arcane],
             Base = new() { Cooldown = 0.93, Damage = 5.42, Speed = 8.4, Projectiles = 3, Pierce = 2, Range = 14, Homing = 5.5, Life = 2.2, Radius = 0.18, Burst = true },
-            Art = "mote", BossDamage = 1.7, Findable = true, Growth = 0.36,
+            Art = "mote", BossDamage = 1.1, Findable = true, Growth = 0.36,
             Description = "A rapid volley of small seeking motes that curve through the crowd on their own.",
             Evolutions =
             [
@@ -331,7 +331,7 @@ public static class Weapons
         {
             Id = "arcweb", Name = "Arcweb", School = School.Storm, Behavior = WeaponBehavior.Chain, Tags = [Tag.Chain, Tag.Spell, Tag.Storm],
             Base = new() { Cooldown = 1.65, Damage = 20.3, Chains = 5, ChainRange = 6.25, Range = 11, Status = S(Shock, 0.5, 1, 3) },
-            Art = "arc", BossDamage = 3.5, Findable = true, Growth = 0.4,
+            Art = "arc", BossDamage = 2.4, Findable = true, Growth = 0.4,
             Description = "Lightning that leaps from foe to foe.",
             Evolutions =
             [
@@ -389,7 +389,7 @@ public static class Weapons
         {
             Id = "gravecall", Name = "Gravecall", School = School.Shadow, Behavior = WeaponBehavior.Raise, Tags = [Tag.Summon, Tag.Spell, Tag.Shadow],
             Base = new() { Cooldown = 3.2, Damage = 68.73, Projectiles = 2, Duration = 14, Raises = "ghoul_ally" },
-            Art = "risen", BossDamage = 1.0, Findable = true,
+            Art = "risen", BossDamage = 1.6, Findable = true,
             Description = "The dead you walk among get up for you: risen servants that hunt beside you a while.",
             Evolutions =
             [

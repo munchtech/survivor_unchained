@@ -590,7 +590,7 @@ public sealed partial class Battle
         var st = Stats;
         double dmg = baseDamage * st.DamageMult(school, tags, e.Def.Family);
         // Allies go for the throat: champions and worse take more from them.
-        if (o.Summon) dmg *= st.Get(Stat.SummonDamage) * (e.Boss || e.Elite ? 1.6 : 1);
+        if (o.Summon) dmg *= st.Get(Stat.SummonDamage) * (e.Boss || e.Elite ? 2.0 : 1);
         if (e.Boss || e.Elite) dmg *= o.BossDamage ?? o.Weapon?.Def.BossDamage ?? 1;
         // Vulnerabilities.
         var s = e.Status;

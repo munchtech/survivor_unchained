@@ -263,6 +263,8 @@ public partial class Game : Node, IZoneHost
     public void LeaveArena(ArenaResult result)
     {
         var s = result.Spec;
+        // A tome left blank is written with the first of what it offered.
+        if (result.Inscribed == null && result.TomeChoices.Count > 0) Arenas.Inscribe(Journey, result, result.TomeChoices[0]);
         screens.Close();
         Travel(s.ReturnZone, null, null, new Arrival(s.ReturnX, s.ReturnZ, s.ReturnFacing));
     }

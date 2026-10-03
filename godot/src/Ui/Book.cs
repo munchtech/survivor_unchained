@@ -316,7 +316,26 @@ public partial class JournalScreen : Overlay
             var e = Content.Enemies.Get(id);
             left.AddChild(Style.V(1, P($"{e.Name}  × {n}", 16, Style.TextBold), P(e.Note, 14, Style.Text, InkSoft)));
         }
-        var right = Style.V(8, H2("Discoveries"));
+        // What the ember has made: evolutions and unions, named once made; until
+        // then the recipe stands as the hint.
+        var right = Style.V(8);
+        var evos = Weapons.All.Values.Where(x => x.Findable).SelectMany(x => x.Evolutions.Select(e => (W: x, E: e))).ToList();
+        int known = evos.Count(x => w.Codex.Contains($"evo:{x.E.Id}")) + Unions.All.Count(u => w.Codex.Contains($"union:{u.Id}"));
+        right.AddChild(H2($"What the ember makes  ({known} of {evos.Count + Unions.All.Length})"));
+        foreach (var (wd, e) in evos)
+        {
+            bool found = w.Codex.Contains($"evo:{e.Id}");
+            string recipe = $"{wd.Name} at rank 8, with {string.Join(" or ", e.Catalysts.Select(c => Boons.Find(c)?.Name ?? c))}";
+            right.AddChild(Style.V(1, P(found ? e.Name : "???", 16, Style.TextBold, found ? Ink : InkSoft), P(found ? $"{recipe}. {e.Description}" : recipe, 14, Style.TextItalic, InkSoft)));
+        }
+        foreach (var u in Unions.All)
+        {
+            bool found = w.Codex.Contains($"union:{u.Id}");
+            string recipe = $"{Weapons.All[u.A].Name} and {Weapons.All[u.B].Name}, both evolved";
+            right.AddChild(Style.V(1, P(found ? u.Name : "??? (a union)", 16, Style.TextBold, found ? Ink : InkSoft), P(found ? $"{recipe}. {u.Description}" : recipe, 14, Style.TextItalic, InkSoft)));
+        }
+        right.AddChild(Style.Gap(10));
+        right.AddChild(H2("Discoveries"));
         foreach (var d in Discoveries.All)
         {
             bool found = w.Codex.Contains(d.Id);

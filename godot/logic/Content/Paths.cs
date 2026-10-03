@@ -38,7 +38,7 @@ public static class Paths
     [
         new() { Id = "steel", Name = "Steel and Blood", Text = "Blades close in; wounds that bleed; finishing what bleeds.",
             Weapons = ["oathblade", "cleaver", "axe_gyre", "iron_palms", "reaving_arc", "knifestorm", "gale_chakram", "dawnpulse", "butchers_wheel"],
-            Passives = ["might", "ferocity", "serration", "ironhide", "haste", "fleetfoot", "evasion", "thorns", "venom"],
+            Passives = ["might", "ferocity", "serration", "ironhide", "haste", "fleetfoot", "evasion", "thorns", "venom", "conduit"],
             Blessings = ["blood_scent", "butchers_mark", "frostbite", "shatter", "static_charge", "sanctify"],
             Great = ["bloodthirst", "momentum", "duelists_grace", "restless_hands", "cinderwake"],
             Capstones = ["graveedge", "whirlwind", "bonesplitter", "reavers_wheel", "gyrestorm", "temple_breaker", "butchers_wheel"],

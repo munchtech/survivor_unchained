@@ -60,6 +60,8 @@ public static class LevelUp
     public const int AttunedDrafts = 4;
     /// <summary>Drafts a weapon ready to evolve may wait for its passive.</summary>
     public const int CatalystPity = 2;
+    /// <summary>Skill drafts a rare passive may go missing for (the weight rises long before).</summary>
+    public const int RareFloor = 10;
     /// <summary>Times a finished weapon can be honed, and what each does.</summary>
     public const int MaxHone = 10;
     public const double HoneStep = 0.12;
@@ -243,7 +245,7 @@ public static class LevelUp
         var offers = new List<Offer>();
         // Rare cards: likelier with luck, and the longer since one was offered.
         double Weight(Rarity r) => RarityWeight(r) * (r != Rarity.Common ? 1 + (luck - 1) * 0.6 : 1) *
-            (r >= Rarity.Rare ? System.Math.Min(3, 1 + 0.2 * mem.RarePity) : 1);
+            (r >= Rarity.Rare ? System.Math.Min(4, 1 + 0.3 * mem.RarePity) : 1);
         // A reroll looks again: what was just shown is far less likely.
         double Again(Offer o) => mem.Shown.Contains(Key(o)) ? 0.15 : 1;
         bool OnPath(string id, System.Func<PathDef, string[]> of) => paths.Any(p => of(p).Contains(id));
@@ -329,6 +331,7 @@ public static class LevelUp
         var combat = new List<Cand>();
         foreach (var w in b.Weapons)
         {
+            if (b.BannedCards.Contains(w.Id)) continue;
             if (w.Rank >= Content.Weapons.MaxRank)
             {
                 // Finished (evolved, or nothing to become): honing, for the endless dark.
@@ -429,14 +432,20 @@ public static class LevelUp
 
         // The guarantees, then the rest from everything.
         int Open() => System.Math.Max(0, count - offers.Count);
+        // What a guarantee put there stays there (the last guarantee does not swap it out).
+        var kept = new HashSet<Offer>(offers);
         void Add(Cand? c)
         {
             if (c == null) return;
             offers.Add(c.O);
+            kept.Add(c.O);
             combat.Remove(c);
             passive.Remove(c);
         }
         bool IsCombat(Offer o) => o.Kind is OfferKind.Rank or OfferKind.Weapon or OfferKind.Evolve or OfferKind.Hone;
+        // A rare passive does not go missing for more than RareFloor drafts.
+        if (Open() > 0 && mem.RarePity >= RareFloor && !offers.Any(o => o.Kind == OfferKind.Boon && o.Rarity >= Rarity.Rare))
+            Add(TakeFrom(b, passive, c => c.O.Rarity >= Rarity.Rare));
         // A weapon ready to evolve does not wait more than CatalystPity drafts for its passive.
         foreach (var w in waiting)
             if (Open() > 0 && mem.CatalystWait.GetValueOrDefault(w.Id) >= CatalystPity && !offers.Any(o => IsCatalyst(o, w)))
@@ -449,13 +458,13 @@ public static class LevelUp
         if (Open() > 0 && young && !offers.Any(o => o.Kind == OfferKind.Weapon)) Add(TakeFrom(b, combat, c => c.NewWeapon));
         if (Open() > 0 && !offers.Any(IsCombat)) Add(TakeFrom(b, combat));
         var both = combat.Concat(passive).ToList();
-        while (Open() > 0 && TakeFrom(b, both) is { } c) Add(c);
+        while (Open() > 0 && TakeFrom(b, both) is { } c) { offers.Add(c.O); combat.Remove(c); passive.Remove(c); }
         // Once two are carried, always something that ranks what you carry.
         bool Advances(Offer o) => o.Kind is OfferKind.Rank or OfferKind.Evolve or OfferKind.Hone || (o.Kind == OfferKind.Boon && !o.Blessing && o.From > 0);
         if (b.Weapons.Count >= 2 && !offers.Any(Advances))
         {
             var adv = TakeFrom(b, combat.Concat(passive).Where(c => c.Advancing).ToList());
-            int swap = offers.FindLastIndex(o => o.Kind != OfferKind.Evolve && !waiting.Any(w => IsCatalyst(o, w)) && !(young && o.Kind == OfferKind.Weapon && offers.Count(x => x.Kind == OfferKind.Weapon) == 1));
+            int swap = offers.FindLastIndex(o => !kept.Contains(o));
             if (adv != null && swap >= 0) offers[swap] = adv.O;
             else if (adv != null) offers.Add(adv.O);
         }

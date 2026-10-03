@@ -64,6 +64,8 @@ public sealed record ArenaResult(ArenaSpec Spec, bool Won, double Seconds, int K
     public List<string> TomeChoices { get; init; } = new();
     /// <summary>Evolutions and unions made here for the first time (now in the codex).</summary>
     public List<string> Recorded { get; init; } = new();
+    /// <summary>What the tome was written with, once it has been.</summary>
+    public string? Inscribed { get; set; }
 }
 
 public static class Arenas
@@ -113,9 +115,14 @@ public static class Arenas
             .Where(x => x != null).Select(x => x!);
 
     /// <summary>Write a tome won in an arena with one of its choices: the tome
-    /// goes into the pack, ready to be read. False if it was not one of them.</summary>
-    public static bool Inscribe(Journey j, ArenaResult r, string id) =>
-        r.TomeChoices.Contains(id) && j.GiveItem(SkillBook.Tome(id), 1);
+    /// goes into the pack, ready to be read. Once only; false if it was not
+    /// one of them (or the pack is full).</summary>
+    public static bool Inscribe(Journey j, ArenaResult r, string id)
+    {
+        if (r.Inscribed != null || !r.TomeChoices.Contains(id) || !j.GiveItem(SkillBook.Tome(id), 1)) return false;
+        r.Inscribed = id;
+        return true;
+    }
 
     /// <summary>What rules the horde is dead: the fight is won, and the story is
     /// told so at once (the arena goes on; whatever happens in it now, it was won).</summary>
