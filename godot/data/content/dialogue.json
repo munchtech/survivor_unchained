@@ -14671,7 +14671,17 @@
    },
    "cages": {
     "id": "cages",
-    "text": "Because a man in a cage is worth something to somebody, and a man in a ditch is worth nothing to anybody. I've buried enough worth-nothings for one life, lad. ...And I feed them. Ask them. I feed them before I feed my own.",
+    "text": [
+     {
+      "when": {
+       "sex": "female"
+      },
+      "text": "Because a man in a cage is worth something to somebody, and a man in a ditch is worth nothing to anybody. I've buried enough worth-nothings for one life, lass. ...And I feed them. Ask them. I feed them before I feed my own."
+     },
+     {
+      "text": "Because a man in a cage is worth something to somebody, and a man in a ditch is worth nothing to anybody. I've buried enough worth-nothings for one life, lad. ...And I feed them. Ask them. I feed them before I feed my own."
+     }
+    ],
     "choices": [
      {
       "text": "About the Coyle wagons.",
