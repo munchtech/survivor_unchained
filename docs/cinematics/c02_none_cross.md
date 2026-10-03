@@ -18,8 +18,9 @@ the one it gives the living.
   once, the first time anything about him has, and he masters it (C03 lets it go).
   **He reveals**, without a word that says so, that he has seen her before.
 - **She wants** to cross. **She is told** something she cannot use yet.
-- **Plants:** "Lie down." (his order to the dead, against his own "Rise, you who
-  drowned here"; Act 3's choice to lie down in the chain); the lamp-iron in his fist
+- **Plants:** "Lie down." (the Order's word for the dead, against his own fight
+  bark "Rise, you who drowned here"; paid inside Act 1 when Chid's burial hymn at
+  Nell's grave begins with it, C08; and by Act 3's choice to lie down in the chain); the lamp-iron in his fist
   is new iron in an ancient gauntlet (someone waded out and put it there: paid when
   she shows it to Brannoc, `brannoc.mark`, and he says "Mine."); the Order's call
   "Lamps are lit. Stay where they reach." (the Waystation still says it at dusk,
@@ -80,7 +81,7 @@ the one it gives the living.
 | 5 | LS | 24 | Static, low over the pool (0.2 m above the water), near his head | He rises: the head comes up first, water sheeting off the hood and the beard; he sits up like a drowned man sitting up, hands on the bed of the river, a pause; he stands, and keeps standing, taller than the far posts. The lamp never touches the water. | 5.0 |
 | 6 | MS | 35 | Tracking backward ahead of him at waist height, then settling | He wades to her, not fast, the greatsword dragging on the stones in his right hand, the lamp in his left. He stops an arm's length from her. | 4.0 |
 | 7 | 2S | 50 | Static, profile, both in frame | He bends (a long way down) and lifts the lamp to her face, the way the keeper of a crossing looks at a traveller. Her calling's stance (see Calling). Halfway up, the lamp-arm trembles: once, badly. He steadies it. | 4.0 |
-| 8 | ECU | 135 | Static | Her face in the lamp's light: the eyes with the flame small in each, the wet hair, and in it the green weed, which the light finds and holds on. Blue on one side of her face; her own ember's red faint on the other. Line W2, very quietly, off. | 3.5 |
+| 8 | ECU | 135 | Static | Her face in the lamp's light: the eyes with the flame small in each, the wet hair, and in it the green weed, which the light finds and holds on. The lamp is close enough to her lips that breath would show in its light; none does. Blue on one side of her face; her own ember's red faint on the other. Line W2, very quietly, off. | 3.5 |
 | 9 | CU | 85 | Static, low, up at him past the lamp | His face under the hood lit from below: the beard streaming, two points of blue light for eyes. After W2 he holds the look a full second, then straightens. | 3.0 |
 | 10 | LS | 35 | Static, low on the water behind his legs, looking east down the pool | Behind him, every one of the drowned turns its face toward her at once, a wave down the rows. | 2.5 |
 | 11 | LS | 24 | Static, low on the near bank, the whole ford | Line W3. His eyes flare; all three posts flare with them (a frost nova at each); ice runs out from each post across the water. The drowned lift their heads. Title card: **THE FORD-WARDEN** / *Keeper of the Low Crossing*. | 4.5 |
@@ -93,7 +94,9 @@ Total: 44.0 s.
 **The Ford-Warden** (no face rig: the hood, the beard and the eye-lights carry
 him). Not a beast: every movement is a tired man's, made enormous. He rises the way
 an old man gets out of a cold bath. He does not hurry. When he lifts the lamp he
-tilts his head to look, the way you look at a face you think you know. The
+tilts his head to look, the way you look at a face you think you know. (What a
+keeper of a crossing looks for, holding a lamp to a face at night, is the breath:
+hers does not show in the lamp's light. Nobody says so; C09 lets it be seen.) The
 tremble in shot 7 is the only weakness he shows until C03: a shudder down the arm,
 the lamp swinging, and then the arm locked again. W2 is said looking at the weed,
 not her eyes. W3 is the gate shutting: the whole body behind it.
@@ -126,7 +129,7 @@ every voice in it. A long cave reverb with the water in it. W1 is sung.
 | VO id | Shot | Line | Note |
 |---|---|---|---|
 | `cin_none_cross.call` | 4 | *(sung, under the water)* Lamps are lit... / stay where they reach... | The Order's evening call, slowed to a dirge, heard through water. Twice; the second trails off as he rises. |
-| `cin_none_cross.lie_down` | 8 | Lie down. | Quiet. Not a threat: an instruction, given a thousand times to the drowned, given again from habit. |
+| `cin_none_cross.lie_down` | 8 | Lie down. | Quiet. Not a threat: the Order's word for the dead (its burial hymn begins with it, C08), said to her as you would say it over a grave. |
 | `cin_none_cross.none` | 11 | NONE. CROSS. AFTER DARK. | The gate shutting. Every word a stone. |
 
 ## Sound

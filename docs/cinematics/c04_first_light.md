@@ -101,10 +101,12 @@ Part A total: 40.0 s.
 | B1 | ELS | 24 | Crane down (5 m to 1.8 m) just inside the south gate, looking north up the road | The town in the morning: roofs, a dozen chimneys smoking straight up, the square, the well; to the right the toll tower with the sun on it, and in its upper window, very small, a lamp still burning, pale in the daylight. She walks in under the camera and on up the road. Line N7. Title over the shot's end: **CHAPTER ONE** / *The Waystation*. | 7.0 |
 | B2 | MS | 50 | Static, behind the west guard, his shoulder in frame | G1 watches her go. Line GD1, to the other guard, not to her. | 3.5 |
 | B3 | MLS | 35 | Tracking behind her at her pace, over her shoulder, looking north | Ahead of her, as she comes, people stop what they are doing and look: the man with the ladder stops in the road and turns so the ladder swings; beyond him the woman at the well holds the bucket halfway; the child runs. Nobody speaks. | 5.0 |
-| B4 | MS | 50 | Static, beside the inn door, Rook in the foreground right, soft at first | Focus pulls from Rook's folded arms to the survivor stopping at the square's edge, looking round at the faces. Rook looks at her; then up, east, at the toll tower's window, where the lamp has just gone out, a thread of smoke going up from it; and back at the survivor. She unfolds her arms. | 6.0 |
+| B4 | MS | 50 | Static, beside the inn door, Rook in the foreground right, soft at first | Focus pulls from Rook's folded arms to the survivor stopping at the square's edge, looking round at the faces. Rook looks at her; then up, east, at the toll tower. | 4.0 |
+| B4a | CU | 200 | Static, from beside Rook, her eyeline, compressed | The tower's upper window: the lamp on the sill, pale in the sun, goes out. A thread of smoke. | 1.5 |
+| B4b | MS | 50 | As B4 | Rook looks back at the survivor, and unfolds her arms. | 2.0 |
 | B5 | MLS to play | 35 to play | Rise and swing into the follow camera | The square, the survivor in it, Rook at her door. Bars out; Rook's `!` comes up. Control. (No zone title: the chapter's card was it.) | 3.0 |
 
-Part B total: 24.5 s (plus the travel fade before it).
+Part B total: 26.0 s (plus the travel fade before it).
 
 ## Performance
 

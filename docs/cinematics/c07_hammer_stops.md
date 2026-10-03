@@ -61,14 +61,14 @@ the hammer stops.
 - **The survivor** comes up the road and stops across the anvil from him at
   (9.8, 14.6), facing east (heading pi/2).
 - **The street:** two townsfolk passing behind her on the road, out of focus,
-  who matter only in shot 14.
+  who matter only in shot 12.
 
 ## Shot list (the question)
 
 | # | Shot | Lens | Camera | Framing and action | Dur. |
 |---|---|---|---|---|---|
 | 1 | INSERT | 85 | Static, low beside the anvil | The hammer coming down on hot iron: sparks; again. The rhythm the whole town hears every day. | 3.0 |
-| 2 | MS | 50 | Static, from behind her shoulder, low | Brannoc across the anvil, head down, working. He does not look up. The rack with the two irons is in frame left, in shadow. Line `brannoc.nell` begins, in time with the strokes: one phrase between blows. | 9.0 |
+| 2 | MS | 50 | Static, from behind her shoulder, low | Brannoc across the anvil, head down, working. He does not look up. The rack with the two irons is in frame left, in shadow. Line `brannoc.nell` begins, in time with the strokes: one phrase between blows, five phrases (to "...by dark."). | 13.0 |
 | 3 | CU | 85 | Static, from the hearth side, on his hands and the iron | His hands and the hammer; the iron going from yellow to orange. "Girl with him." Stroke. "Twelve." Stroke. "Red hair." Stroke. "New boots." Stroke. | 5.0 |
 | 4 | MLS | 35 | Static, side-on, both of them, the anvil between | "Going to her aunt at Low Kiln." The hammer comes up for the next stroke and stays up. | 3.0 |
 | 5 | MCU | 50 | Static, on her | The hammer's sound has stopped. The forge roars softly in the quiet. She looks at him. (She knows the girl. Let the player know she knows.) | 3.0 |
@@ -85,7 +85,8 @@ the hammer stops.
 | 8 | MS | 50 | Static, from her side | Line `brannoc.nell_ditch`. He stands with his hands flat on the anvil's face, as if holding it down. | 6.0 |
 | 9 | LS | 35 | Slow push in, from the road | *(If `brannoc.saw_iron`: before he speaks he turns his head and looks at the two irons on the rack, a long look, and then looks at nothing.)* The forge, the man, the anvil, the street behind. The second choice comes up. | 4.0 + choice |
 | 10a | MCU | 85 | Static, on her, then on him (cut on his line) | *"She was gone before I came. The water took her."* Line `brannoc.nell_gone`: he picks the hammer up and holds it, and doesn't use it. | 6.0 |
-| 10b | CU | 85 | Static, low, up at him: the one close shot of his face, half in the hearth's light, eyes catching it | *"She'd got up with the others. I put her down."* Line `brannoc.nell_risen`. He looks at her properly for the first time. "Was it quick?" Choice. | 6.0 + choice |
+| 10b | CU | 85 | Static, low, up at him: the one close shot of his face, half in the hearth's light, eyes catching it | *"She'd got up with the others. I put her down."* He looks at her properly, for the first time. Silence. (The close-up is for the look, not for a line: he has no face rig yet.) | 2.5 |
+| 10c | MS | 50 | Static, from her side | Line `brannoc.nell_risen`: "Got up. ...Got up, and you put her down. ...Was it quick?" Choice. | 5.0 + choice |
 | 11b | MS | 50 | Static, on him | *"It was quick."*: Line `brannoc.nell_quick`. "...Thank you." The forge ticking as it cools. *"It wasn't."*: Line `brannoc.nell_slow`: he nods once, as at a price. | 5.0 |
 | 12 | LS | 28 | Static, from across the road, wide | She goes. He stays at the anvil with the hammer down, not working. The forge glows. Behind her, as she walks out of frame, two townsfolk passing in the road slow, and stop, and look toward the smithy: the hammer has stopped, and in this town that is news. | 6.0 |
 
@@ -120,7 +121,7 @@ and lands on nothing: he says it to the anvil.
   0.4 over 2 s. She remembers the ditch.
 - *Shot 5.* `brows_sad` 0.5, `mouth_open` 0.06, eyes on his face; a slow
   blink. She is deciding, and the player is deciding with her.
-- *10a / 10b.* On her answer she holds his gaze (he is not looking; she looks at
+- *10a / 10b / 10c.* On her answer she holds his gaze (he is not looking; she looks at
   him anyway). For "I put her down": `frown` 0.2, jaw set, no tears. For
   "It was quick" or "It wasn't": the truth or the kindness should be readable
   only from whether she looks away (`It was quick`: gaze stays on him;
@@ -183,6 +184,6 @@ lamp-irons (visible all through Act 1); Brannoc in an apron; his hammering idle
 cut to a rhythm the VO can be timed to; laying a hammer down; standing with
 both hands on the anvil; his head turned to the rack; the bar on the anvil as a
 prop with a cooling colour; a still stand at the anvil for the rest of the day;
-townsfolk who can be told to stop and look. One close-up of his face (shot 10b)
+townsfolk who can be told to stop and look. One close-up of his face, silent (shot 10b)
 needs at least a lit face that can hold a look: even without a rig, his eyes
 catching the hearth will do.

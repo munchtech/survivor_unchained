@@ -22,9 +22,10 @@ drumming his heels on the one marked in chalk "B.E.". He looks up.
 - **Plants:** the six crates as a bench (`redcowl.crates`: "My lads were using
   them for seats"; the B.E. choice; Act 2's powder); the red standard with
   Ashford's arms (Act 2: the levy's story, `redcowl.ashford_said`); the forty-one
-  (`redcowl.who`); the cages fed first (`redcowl.cages`: "I feed them before I
-  feed my own"); the children (Act 2: what Redcowl is fighting for when he
-  fights the Dig).
+  (`redcowl.who`); the cages fed first, shown here, so that his own account of
+  the cages can end on "...Ask them if they're hungry." (`redcowl.cages`) instead of
+  telling what the scene has shown; the children (Act 2: what Redcowl is fighting
+  for when he fights the Dig).
 - **Pays:** the wreck's red fletching; Rav's "Wear red, walk slow, keep your
   hands empty".
 
@@ -150,9 +151,11 @@ Conversation `cin_forty_one_mouths`.
 |---|---|---|---|---|
 | `cin_forty_one_mouths.them_first` | 4 | `kerchief_woman` | Them first. | To her child, not looking at him. Quiet, tired, final. Scots (the Kerchiefs' rougher edge). |
 
-Then Redcowl's first line, by variant (`redcowl.first` #0 to #5, existing):
+Then Redcowl's first line, by variant (`redcowl.first` #0 to #4, existing):
 the crossbows (level 8 or more, or 12 Kerchiefs killed); her colours; the
-arcanist; the reaver; a woman; anyone else. And the conversation goes on with
+arcanist; the reaver; anyone else. (The variant for a woman, about his lads not
+having seen one in a month, is cut: this camp is full of women and children, and
+the scene exists to overturn exactly that menace.) And the conversation goes on with
 its existing lines. *Casting:* Redcowl, 40s, hard Scots, a big chest voice that
 laughs before it threatens and goes cold on a turn (`VOICES.md`).
 
@@ -166,8 +169,6 @@ laughs before it threatens and goes cold on a turn (`VOICES.md`).
   twice, the way you check a coin.
 - **Arcanist** (#2): in shot 8 he leans back from her hands.
 - **Reaver** (#3): in shot 8 he looks her up and down and the laugh is real.
-- **A woman** (#4): in shot 2 two of the men by the fires stand up; the woman
-  hanging washing says something to them we do not hear, and they sit down again.
 
 ## Sound
 

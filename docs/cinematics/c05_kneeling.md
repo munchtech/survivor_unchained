@@ -14,8 +14,8 @@ him to run with her, or leaves them be.
 
 - **Greymuzzle wants** his Pack to live, and he is old and they are dying.
   **He hides** the sick ones until he has decided about her. **He reveals**,
-  only to the camera, that he can smell what she is: the first creature in the
-  game who knows, and he lets her in anyway.
+  only to the camera, that he can smell what she is. The Warden knew it, and
+  Grimtunnel; he is the first who knows and lets her in anyway.
 - **She wants** the killing to stop. **She changes** by binding herself: a
   promise the Pack will keep count of (`promise.pack`), or an alliance with a
   price (Maeca's regard, the Watch's), or a walk away.
@@ -45,7 +45,7 @@ him to run with her, or leaves them be.
 
 - **Thornhollow Verge, Wolf Hollow**, (-64, -86): a den under a shelf of grey
   rock, beds of flattened grass, old bones, a few birches. The Hunters' Blind is
-  on the ridge 47 m south-east at (-26, -40), its smoke visible.
+  on the ridge 60 m south-east at (-26, -40), its smoke visible.
 - **Time:** day (he comes out by day only to someone the Hollow is calm for).
   Late afternoon is best: low, warm sun from the west raking across the Hollow,
   the den's mouth in shadow.
@@ -70,18 +70,18 @@ him to run with her, or leaves them be.
 | # | Shot | Lens | Camera | Framing and action | Dur. |
 |---|---|---|---|---|---|
 | 1 | LS | 35 | Static, low, behind her right shoulder | The Hollow opening out: the rock shelf, the dark den, wolves on the rocks above, watching. Nothing moves but dust. | 3.5 |
-| 2 | MS | 85 | Static, low, from the den's side | Greymuzzle comes out of the shadow alone, slowly, and stops. Line `greymuzzle.first` begins. | 4.0 |
+| 2 | MS | 85 | Static, low, from the den's side | Greymuzzle comes out of the shadow alone, slowly, and stops. | 4.0 |
 | 3 | CU | 100 | Static | His face: grey to the eyes, the eyes yellow and clouding at the rims; he does not growl. He looks at her for a long time. | 3.5 |
-| 4 | MLS | 35 | Static, side-on, both of them in frame at the two edges | She holds still. Behind him, in the shadow of the stones, wolves lying in the dirt that do not get up. The line ends. **Choice 1** comes up in the lower bar; the shot holds, breathing (the wolves' flanks, the dust), for as long as the player takes. | 4.0 + choice |
+| 4 | MLS | 35 | Static, side-on, both of them in frame at the two edges | She holds still. Behind him, in the shadow of the stones, wolves lying in the dirt that do not get up. **Choice 1** comes up in the lower bar; the shot holds, breathing (the wolves' flanks, the dust), for as long as the player takes. | 4.0 + choice |
 | 5 | MS | 50 | Static, frontal on her | *Kneel:* she disarms (see Calling) and kneels on one knee, then lowers the other, side-on to him, eyes down, and holds out an empty hand, palm up, low. | 5.0 |
 | 6 | 2S | 65 | Static, profile, ground level | He comes to her. Stops a nose from her hand. Smells it. | 3.5 |
 | 7 | CU | 85 | Static, over his shoulder onto her face | He lifts his head to her face, close, and breathes her in. His lip lifts off his teeth: not a snarl, a flinch. She does not move. | 3.5 |
 | 8 | ECU | 100 | Static | His muzzle at her jaw; the lip goes down again. His ears, which were flat, come up. (Maeca's lover: he moves to her collar and stays there longer than anywhere else, and his tail, out of focus behind, moves once.) | 3.0 |
-| 9 | LS | 35 | Static, from the rocks above, looking down | He turns and walks into the Hollow; she rises and follows him into the shadow. Line `greymuzzle.show` begins. | 4.5 |
+| 9 | LS | 35 | Static, from the rocks above, looking down | He turns and walks into the Hollow; she rises and follows him into the shadow. | 4.5 |
 | 10 | MS | 50 | Slow track along the sick wolves at their height | The sick ones: milky eyes, black gums. One of them sees her and tries to stand, and cannot, and lies down again. | 5.0 |
-| 11 | MCU | 85 | Static, past her onto him | Greymuzzle looks east, toward the stream, then back at her, and waits. The line ends. **Choice 2** in the lower bar; hold. | 3.5 + choice |
+| 11 | MCU | 85 | Static, past her onto him | Greymuzzle looks east, toward the stream, then back at her, and waits. **Choice 2** in the lower bar; hold. | 3.5 + choice |
 | 12 | (by choice) | | | See Endings. | 4 to 8 |
-| 13 | ELS | 135 | Static, from the Hollow up to the ridge south-east | *If she has met Maeca and the Pack is not her enemy:* on the ridge, by the Blind's smoke, a barefoot figure standing among the birches, watching the Hollow. When the camera finds her she turns and goes. | 3.0 |
+| 13 | ELS | 135 | Static, from the Hollow up to the ridge south-east | *If she has met Maeca and the Pack is not her enemy:* on the ridge, by the Blind's smoke, a barefoot figure standing among the birches, watching the Hollow. When the camera finds her she does not go: she sits down on the ridge, her crossbow across her knees, to watch the rest. | 3.5 |
 | 14 | to play | | Blend into the follow camera | Bars out. | 1.5 |
 
 Total, kneeling and promising: about 58 s plus the two choices.
@@ -93,7 +93,7 @@ Total, kneeling and promising: about 58 s plus the two choices.
   spread, and leaves it there. He looks at the hand. Then he lies down where he
   stands, among his sick, which is the answer. 5 s.
 - **"The men in the ravine are no friends of yours. Run with me."**
-  (`greymuzzle.ally`, line read.) LS, 24, low: he lifts his head and howls, once;
+  (`greymuzzle.ally`.) LS, 24, low: he lifts his head and howls, once;
   it goes up the rock and out over the Verge. Four of the strongest come down off
   the rocks and stand beside her. The old wolf lies back down among the sick. He
   is not coming. They are his answer. Then a CU on one of the four, close to her
@@ -150,18 +150,13 @@ as much as he has.
 
 ## Lines
 
-All existing, all the narrator's, conversation `greymuzzle`:
-
-| VO id | Shot | Line |
-|---|---|---|
-| `greymuzzle.first` | 2 to 4 | *The old wolf comes out of the rocks alone. He is grey to the eyes, and thin, and he does not growl. He looks at you for a long time. Behind him, in the shadow of the stones, wolves lie in the dirt and do not get up.* |
-| `greymuzzle.show` #0 (Maeca's lover) or #1 | 7 to 11 | *He comes close enough to smell your hand, then your face, and his lip lifts off his teeth, and goes down again. Then your collar, for longer; and his tail moves, once. He turns and walks into the Hollow, and you follow...* (see `dialogue.json` for the whole of both) |
-| `greymuzzle.ally` | 12 | *Greymuzzle lifts his head and howls, once...* |
-
-The narrator speaks `greymuzzle.first` over shots 2 to 4 at a slow pace, with a
-pause before "Behind him". `greymuzzle.show` is split across shots 7 to 11:
-its first sentence on the smelling (7 to 8), the rest on the walk and the sick
-(9 to 11). Choices are read, not voiced.
+None. The cinematic is wordless: `VOICES.md` says Greymuzzle never speaks and
+that everything he says is the narrator watching what he does, and in a
+cinematic the camera is that narrator. The conversation's narration
+(`greymuzzle.first`; `greymuzzle.show`, with its variant for Maeca's lover;
+`greymuzzle.ally`) stays in the data, for the conversation as text when the
+cinematic is skipped or switched off; the cinematic plays it as picture, beat for
+beat. The choices come up in the lower bar, read, not voiced.
 
 ## Sound
 
@@ -193,7 +188,7 @@ its first sentence on the smelling (7 to 8), the rest on the walk and the sick
   shot 13 only if its conditions hold.
 - **Skip.** Skips to the next choice, never past one; after the last, to the
   end state.
-- **Subtitles.** The narrator in italics.
+- **Subtitles.** None; the choices only.
 
 ## What it needs
 

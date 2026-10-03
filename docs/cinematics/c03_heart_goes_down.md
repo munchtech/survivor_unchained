@@ -6,8 +6,9 @@
 
 The Warden goes down on his knees in the ford, and for the last seconds of his
 long watch he is a man again: a tired voice under the giant's, asking the only
-thing a man on a night watch wants to know. Is it morning. He lets his lamp into
-the water at last. Out of the river where he fell rises his heart, a stone full of
+thing a man on a night watch wants to know. Is it morning. She nods (her first
+mercy, to the thing that drowned her), and he lets his lamp into the water at
+last. Out of the river where he fell rises his heart, a stone full of
 cold light, and it drifts toward her as if it knows her. Up beside it out of the
 mud comes a squat thing with a lamp strapped to its head, which snatches it out of
 the air; but the light goes on straining out of his arms toward her, and he looks
@@ -38,7 +39,7 @@ groans, and every lamp along the road dips at once.
 
 - Replaces the staging in `Prologue.OnWardenDown` / `RunVictory`: plays when the
   Warden dies.
-- Reads: calling (shot 7's hand), background (the devout's line).
+- Reads: calling (shot 7's hand), background (the devout's sign in shot 3b).
 - Sets: as `RunVictory` does now, in code, at the hand-back (`learn grimtunnel`,
   history `ford_warden_slain` and `core_stolen`, `give grimtunnels_lamp`), so a skip
   sets them too. The lamp-iron, shards and gold drop as now.
@@ -73,7 +74,8 @@ groans, and every lamp along the road dips at once.
 |---|---|---|---|---|---|
 | 1 | MCU | 85 | Static on his head and shoulders; the blow at `WorldRate` 0.15 for 0.8 s | The last hit lands on his hood and helm (an impact keyed to the hit's school: a spray of sparks, frost, fire or splinters; no weapon in frame). The light in his eyes gutters. Cut on the impact. | 2.0 |
 | 2 | MLS | 35 | Static, low at water level, from the south-west | He goes down on his knees in the river; the greatsword falls from his right hand and sinks. His left arm stays up, the lamp held clear of the water, steady. | 4.0 |
-| 3 | CU | 85 | Static, up at him past the lamp | He looks at the lamp, not at her. Line W4, in another voice (see Lines). The arm begins to shake. *(Devout: line D1, the narrator, over the end of the shot.)* | 4.5 |
+| 3 | CU | 85 | Static, up at him past the lamp | He looks at the lamp, not at her. Line W4, in another voice (see Lines). The arm begins to shake. | 4.0 |
+| 3b | MCU | 50 | Static, on her, his lamp's light on her face | She looks at him, and nods: once, slowly. Yes. It is the first thing she gives anyone in the game, and she gives it to the thing that drowned her. *(Devout: after the nod, she closes her hand over her heart and opens it toward him, palm out: the Order's sign for the dead. Chid makes the same sign at Nell's grave, C08.)* | 2.5 |
 | 4 | INSERT | 65 | Static | The fist lowers, and the lamp goes into the river. The flame hisses out in a puff of steam. Dark. | 2.5 |
 | 5 | LS | 28 | Static, from behind her, low | He folds forward into the water and is still. The mist closes over him. A beat of nothing. Then the water over his chest lightens from beneath. | 4.0 |
 | 6 | MS | 50 | Slow push in toward the light | The heart rises out of the water: a stone the size of a fist, full of cold light, turning slowly, water running off it. No line: its hum, and the river. | 4.0 |
@@ -85,14 +87,14 @@ groans, and every lamp along the road dips at once.
 | 12 | ELS | 24 | Static, 10 m up over the north bank, 60 m east of the ford, looking west along the river | The ford small in the middle of the frame, her in it; the road's lamps either side of the river (lights 12, 13 and 14). Silence. Then, from under everything, a groan: long, deep, felt in the ground. The river shivers in rings. Every lamp in the frame dips at once, and comes back. The sky's lowest edge has gone grey. She looks down at her feet. | 5.0 |
 | 13 | MS to play | 35 to play | Pull back and up into the follow camera | She stands in the ford with the dawn coming. Bars out. Control. | 2.0 |
 
-Total: 45.0 s (about 43 without the devout line's extra beat).
+Total: 45.0 s.
 
 ## Performance
 
 **The Warden.** In shot 3 the giant becomes a man for a line: the head lowers, the
 shoulders drop. He asks it of the lamp, the way a man on the last hour of a watch
 asks the one coming to relieve him. The arm, which shook once in C02 and was
-mastered, shakes now and is not. In shot 4 the arm lowers the way a man puts down
+mastered, shakes now and is not. He sees her nod (shot 3b), and in shot 4 the arm lowers the way a man puts down
 something he has carried a very long way. He dies like falling asleep in a chair.
 
 **Grimtunnel** (no face rig; head, body and beam). Quick jerks and dead stillness
@@ -104,8 +106,9 @@ and cannot quite say it to her now.
 
 **The survivor.**
 - *Shot 3.* Gaze on the lamp (0, -0.5). `brows_up` 0.15. Her weapon lowers.
-  *(Devout:* on D1, `brows_sad` 0.3 and her lips part (`mouth_open` 0.08), as if to
-  give him the answer.)*
+- *Shot 3b.* The nod: head down 8°, held 0.4 s, up. `brows_sad` 0.35, `mouth_open`
+  0.05. Gaze on his face (0, -0.4). Mercy, not pity; she does not know why she
+  gives it. (Devout: the sign, unhurried, a thing her hands know.)
 - *Shots 6 to 8.* Gaze on the heart, following it (`Wander` 0.02). `eyes_wide` 0.3,
   `mouth_open` 0.12, `brows_sad` 0.15: wonder, and something like homesickness, with
   no idea why. She reaches without deciding to.
@@ -131,8 +134,6 @@ Conversation `cin_heart_goes_down`.
 | VO id | Shot | Speaker | Line | Note |
 |---|---|---|---|---|
 | `cin_heart_goes_down.morning` | 3 | `ford_warden` | Is it morning? | **Not the giant's voice.** A man's: tired, sixty, no reverb, no boom, the accent worn off it. He asks it of the lamp. Quietly enough that the subtitle is the only certain thing. |
-| `cin_heart_goes_down.answer#0` (devout) | 3 | `narrator` | *You know the answer. They taught it you at seven, with the lamps: morning comes.* | Only for a devout survivor (the Order raised her; the Order made him). Even, and close. |
-| `cin_heart_goes_down.answer#1` | | | (no line) | Every other survivor: nothing plays. |
 | `cin_heart_goes_down.nobodys` | 9 | `grimtunnel` | Ooh, still lit! Nobody's, is it? Nobody's! | Delight, a child's at a pie. |
 | `cin_heart_goes_down.downstairs` | 10 | `grimtunnel` | ...You smell like downstairs. | The glee gone; curious; a sniff before it. Then the laugh in the breath after. |
 | `cin_heart_goes_down.grateful` | 11 | `grimtunnel` | Finders keepers, surface-m— (a sniff) ...Downstairs'll be ever so grateful. | Half over his shoulder as he dives. He cannot finish "meat" at her. |
