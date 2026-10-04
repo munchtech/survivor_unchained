@@ -250,6 +250,14 @@ Agree §17.7's proposed brief changes with the experience lead first: boss at 45
 - **Experience director (`a33f58e68e89e3ccf`):** pacing, the victory beat, the maps' loop. Both briefs in section 4 are theirs.
 - **Story (`a035208561a66c171`):** all names and lines. The bible's "The nights" holds the rules.
 - **Animation (`a1e3002b800ee55ac`):**
+  - **Delivered** on `worktree-agent-a1e3002b800ee55ac@eeadae6` (the VAT cache is now v9):
+    - the wolf howl as the beasts' "cast" role: wolf, wolf_alpha, wolf_blighted, wolf_spirit;
+    - a rally gesture as every person visual's cast. kerchief_brute and skeleton_minion keep their windup until a slam lands.
+  - **Keep its two small edits in combat code:**
+    - CrowdView's Casting uses `t = e.AnimT`;
+    - Ai's grave-caller raise sets `e.AnimT = 0`.
+  - kneel_shoot and slam wait on the owner's Kimodo run.
+  - Its tool `godot/tools_scenes/crowd_sheet.gd` (VISUAL=, ROLE=, N=, STEP=, YAW=, OUT=) renders any crowd kind's role as a contact sheet. Use it to check the new kinds on screen.
   - has the motion list: a quadruped howl, kneel-to-shoot, a slam, a horn, drum or rally gesture, the shamble;
   - is fine with gear variants (crossbow, pike) as new visual keys later;
   - the tint hook in CrowdView is combat's: exactly those lines.
