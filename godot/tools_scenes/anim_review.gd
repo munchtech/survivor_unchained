@@ -15,6 +15,8 @@ extends SceneTree
 #   SPEED=m/s                              carried forward at this speed (in metres of the world), camera following
 #   PLAY=x                                 playback speed
 #   OUTFIT=warden|arcanist|reaver|ranger   her outfit; HAIR=style; WEAPON=sword|staff|bow|axe|axes|daggers|wand
+#   MODEL=female|male                      a townsfolk body (the kit's) instead of hers, in PARTS (kit
+#                                          outfit parts, comma-separated); clips "folk/<name>"
 #   NOHERPOSE=1                            without her corrective pose layer
 #   FULL=1                                 save every frame as its own picture too (out_NN.png)
 var clip = ""
@@ -51,10 +53,15 @@ func _init():
 	get_root().add_child(vp)
 	var root = Node3D.new()
 	vp.add_child(root)
-	her = load("res://art/people/heroine.glb").instantiate()
+	var model = env("MODEL", "")
+	if model != "":
+		her = load("res://assets/people/Superhero_%s_FullBody.gltf" % model.capitalize()).instantiate()
+	else:
+		her = load("res://art/people/heroine.glb").instantiate()
 	root.add_child(her)
 	her.scale = Vector3.ONE * 1.04
-	dress(her)
+	if model != "": kit(her, env("PARTS", ""))
+	else: dress(her)
 	ap = AnimationPlayer.new()
 	her.add_child(ap)
 	ap.root_node = NodePath("..")
@@ -69,6 +76,8 @@ func _init():
 	ap.add_animation_library("ual", ual)
 	if ResourceLoader.exists("res://art/anim/heroine.res"):
 		ap.add_animation_library("her", load("res://art/anim/heroine.res"))
+	if ResourceLoader.exists("res://art/anim/folk.res"):
+		ap.add_animation_library("folk", load("res://art/anim/folk.res"))
 	if not ap.has_animation(clip):
 		push_error("no clip " + clip)
 		quit(1)
@@ -119,6 +128,20 @@ func overlay(over):
 func env(k, d):
 	var v = OS.get_environment(k)
 	return v if v != "" else d
+
+# A townsfolk body in the kit's clothes, as People.Build puts one together.
+func kit(h, parts):
+	var skel: Skeleton3D = h.find_children("*", "Skeleton3D", true, false)[0]
+	for part in parts.split(",", false):
+		var sc = load("res://assets/people/%s.gltf" % part).instantiate()
+		var from = sc.find_children("*", "Skeleton3D", true, false)[0]
+		for mi in from.get_children():
+			if mi is MeshInstance3D:
+				from.remove_child(mi)
+				mi.owner = null
+				skel.add_child(mi)
+				mi.skeleton = NodePath("..")
+		sc.free()
 
 func dress(h):
 	var skel: Skeleton3D = h.find_children("*", "Skeleton3D", true, false)[0]
