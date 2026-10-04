@@ -88,6 +88,9 @@ public abstract partial class Overlay : Control
 
     public override void _Process(double delta) => Nav.Update(delta);
 
+    /// <summary>Its focus routes walked (--navcheck).</summary>
+    public System.Collections.Generic.List<string> NavAudit() => Nav.Audit();
+
     public override void _Input(InputEvent e)
     {
         // The mouse moving takes the ring away; the pointer is the focus now.

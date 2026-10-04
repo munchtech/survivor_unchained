@@ -160,14 +160,16 @@ public partial class MapScreen : Overlay
                     }
             }
         for (int pass = 0; pass < 3; pass++) alpha = Blur(alpha, F, 3);
+        // Opaque and flat where nothing was walked: the same dark as past the paper's edge,
+        // so the two meet without a seam and no ink shows through (at 94% with grain it did).
         for (int y = 0; y < F; y++)
             for (int x = 0; x < F; x++)
-            {
-                float g = (float)(Hash(x, y) * 0.025);
-                img.SetPixel(x, y, new Color(0.075f + g, 0.062f + g, 0.058f + g, alpha[y * F + x] * 0.94f));
-            }
+                img.SetPixel(x, y, Dark with { A = Mathf.Clamp(alpha[y * F + x] * 1.04f, 0, 1) });
         return ImageTexture.CreateFromImage(img);
     }
+
+    /// <summary>Unwalked land and past the paper's edge: one dark.</summary>
+    static readonly Color Dark = new(0.075f, 0.062f, 0.058f);
 
     /// <summary>A box blur of a square field, across then down.</summary>
     static float[] Blur(float[] a, int n, int r)
@@ -245,6 +247,7 @@ public partial class MapScreen : Overlay
         t += delta;
         if (gliding)
         {
+            panTo = Held(panTo);
             pan = pan.Lerp(panTo, 1 - Mathf.Exp(-9 * (float)delta));
             if (pan.DistanceTo(panTo) < 0.0005f) { pan = panTo; gliding = false; }
             Place(F);
@@ -267,12 +270,13 @@ public partial class MapScreen : Overlay
         AddChild(frame);
         MoveChild(frame, 1);
         // Past the drawing's edge is the same dark as the unwalked land, so the known world floats in it.
-        frame.AddChild(new ColorRect { Color = new Color(0.075f, 0.062f, 0.058f), Size = new Vector2(1920, 1080), MouseFilter = MouseFilterEnum.Ignore });
+        frame.AddChild(new ColorRect { Color = Dark, Size = new Vector2(1920, 1080), MouseFilter = MouseFilterEnum.Ignore });
         world = new Control { Size = new Vector2(F, F), MouseFilter = MouseFilterEnum.Ignore };
         frame.AddChild(world);
         // The expand mode first: a control is never smaller than its minimum, and the drawing's own is 1600.
         world.AddChild(new TextureRect { ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, Texture = Drawing(scene.Data), Size = new Vector2(F, F), MouseFilter = MouseFilterEnum.Ignore, TextureFilter = TextureFilterEnum.LinearWithMipmaps });
-        world.AddChild(new MapInk(scene, extent, F) { Size = new Vector2(F, F), MouseFilter = MouseFilterEnum.Ignore });
+        // Clipped to the paper: a tree on its edge would hang its crown into the dark past it.
+        world.AddChild(new MapInk(scene, extent, F) { Size = new Vector2(F, F), MouseFilter = MouseFilterEnum.Ignore, ClipContents = true });
         var zs = G.Journey.World.Zone(zone.Id);
         var seen = zs.TryGetValue("seen", out var f) && f.Str is { } s ? s : new string('0', Journey.FogN * Journey.FogN);
         world.AddChild(new TextureRect { ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, Texture = Fog(seen, Journey.FogN), Size = new Vector2(F, F), MouseFilter = MouseFilterEnum.Ignore });
@@ -451,11 +455,30 @@ public partial class MapScreen : Overlay
     void Place(int frame)
     {
         if (world == null) return;
+        pan = Held(pan);
         world.Scale = new Vector2(zoom, zoom);
         // The point the pan names sits at the middle of the part of the screen the map shows through.
         var centre = View.Position + View.Size / 2;
         world.Position = centre - (new Vector2(0.5f, 0.5f) - pan) * frame * zoom;
         foreach (var c in world.GetChildren()) if (c is Control mk && mk is not TextureRect && mk is not MapInk && mk != ring) mk.Scale = new Vector2(1 / zoom, 1 / zoom);
+    }
+
+    /// <summary>
+    /// The pan kept so the drawing covers the view on each side where it is
+    /// large enough to: the zone's edge never leaves a band of nothing beside
+    /// the known world (opened at the Verge's west edge, a third of the view
+    /// was past it). Where the drawing is smaller than the view, it is centred.
+    /// </summary>
+    Vector2 Held(Vector2 p)
+    {
+        float Axis(float v, float view)
+        {
+            float s = F * zoom;
+            if (s <= view) return 0;
+            float lim = 0.5f - view / (2 * s);
+            return Math.Clamp(v, -lim, lim);
+        }
+        return new Vector2(Axis(p.X, View.Size.X), Axis(p.Y, View.Size.Y));
     }
 
     void Input(InputEvent e, int frame)

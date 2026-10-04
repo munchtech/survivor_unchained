@@ -155,6 +155,22 @@ public partial class Plaque : Control
     {
         // The title in the middle however wide the plaque is stretched; the rules run out from it.
         float y = Size.Y * 0.55f, w = Size.X;
+        if (tw <= 0)
+        {
+            // No title (the house's rule under the name): one rule with its stone at the middle,
+            // the painted one where there is one, not two halves round an empty gap.
+            if (UiArt.Art("ornaments/rule.png") is { } art)
+            {
+                float h = art.GetHeight();
+                DrawTextureRect(art, new Rect2(0, y - h / 2, w, h), false);
+                return;
+            }
+            DrawLine(new Vector2(8, y), new Vector2(w - 8, y), Style.Gold with { A = 0.8f }, 1.5f, true);
+            foreach (var x in new[] { 8f, w - 8 })
+                DrawColoredPolygon(new[] { new Vector2(x, y - 3), new Vector2(x + 3, y), new Vector2(x, y + 3), new Vector2(x - 3, y) }, Style.Gold);
+            DrawColoredPolygon(new[] { new Vector2(w / 2, y - 6), new Vector2(w / 2 + 6, y), new Vector2(w / 2, y + 6), new Vector2(w / 2 - 6, y) }, Style.Ember);
+            return;
+        }
         float x0 = (w - tw) / 2;
         float l = x0 - 14, r = x0 + tw + 14;
         DrawLine(new Vector2(8, y), new Vector2(l - 10, y), Style.Gold with { A = 0.8f }, 1.5f, true);
@@ -223,14 +239,25 @@ public partial class Medallion : Control
         // The core: lit from the upper left.
         DrawCircle(c, r - 4, Core.Darkened(0.35f));
         DrawCircle(c - new Vector2(r * 0.15f, r * 0.15f), r * 0.72f, Core);
-        DrawArc(c, r - 2, 0, Mathf.Tau, 64, Ring, 3.5f, true);
-        DrawArc(c, r - 8, 0, Mathf.Tau, 64, Ring with { A = 0.35f }, 1, true);
-        if (Arc > 0) DrawArc(c, r - 2, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * Mathf.Clamp(Arc, 0, 1), 64, ArcColor, 5, true);
-        // Four studs on the ring.
-        for (int i = 0; i < 4; i++)
+        if (UiArt.Art("medallion/ring.png") is { } ring)
         {
-            var d = new Vector2(Mathf.Cos(i * Mathf.Pi / 2 + Mathf.Pi / 4), Mathf.Sin(i * Mathf.Pi / 2 + Mathf.Pi / 4)) * (r - 2);
-            DrawCircle(c + d, 2.5f, Ring.Lightened(0.3f));
+            // The painted ring over the box, its middle open on the core; its school or rarity
+            // kept as a hairline just inside it.
+            DrawArc(c, r * 0.76f, 0, Mathf.Tau, 64, Ring with { A = 0.8f }, 2, true);
+            DrawTextureRect(ring, new Rect2(Vector2.Zero, new Vector2(size, size)), false);
+            if (Arc > 0) DrawArc(c, r * 0.88f, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * Mathf.Clamp(Arc, 0, 1), 64, ArcColor, 4, true);
+        }
+        else
+        {
+            DrawArc(c, r - 2, 0, Mathf.Tau, 64, Ring, 3.5f, true);
+            DrawArc(c, r - 8, 0, Mathf.Tau, 64, Ring with { A = 0.35f }, 1, true);
+            if (Arc > 0) DrawArc(c, r - 2, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * Mathf.Clamp(Arc, 0, 1), 64, ArcColor, 5, true);
+            // Four studs on the ring.
+            for (int i = 0; i < 4; i++)
+            {
+                var d = new Vector2(Mathf.Cos(i * Mathf.Pi / 2 + Mathf.Pi / 4), Mathf.Sin(i * Mathf.Pi / 2 + Mathf.Pi / 4)) * (r - 2);
+                DrawCircle(c + d, 2.5f, Ring.Lightened(0.3f));
+            }
         }
         if (Glyph != null)
         {
@@ -300,10 +327,16 @@ public partial class Globe : Control
             }
         }
         if (Pulse > 0) DrawCircle(c, r, new Color(1, 0.3f, 0.25f, Pulse * 0.25f));
-        // The glass's light, and its ring.
-        DrawCircle(c + new Vector2(-r * 0.32f, -r * 0.42f), r * 0.26f, new Color(1, 1, 1, 0.08f));
-        DrawArc(c, r + 1, 0, Mathf.Tau, 72, Style.Gold, 4, true);
-        DrawArc(c, r - 5, 0, Mathf.Tau, 72, new Color(0, 0, 0, 0.5f), 3, true);
+        // The glass's light, and its rim: painted (hud/globe_glass.png over the liquid, hud/globe_rim.png
+        // round it, both filling the globe's box with their middles open) or drawn.
+        if (UiArt.Art("hud/globe_glass.png") is { } glass) DrawTextureRect(glass, new Rect2(Vector2.Zero, Size), false);
+        else DrawCircle(c + new Vector2(-r * 0.32f, -r * 0.42f), r * 0.26f, new Color(1, 1, 1, 0.08f));
+        if (UiArt.Art("hud/globe_rim.png") is { } rim) DrawTextureRect(rim, new Rect2(Vector2.Zero, Size), false);
+        else
+        {
+            DrawArc(c, r + 1, 0, Mathf.Tau, 72, Style.Gold, 4, true);
+            DrawArc(c, r - 5, 0, Mathf.Tau, 72, new Color(0, 0, 0, 0.5f), 3, true);
+        }
         if (Shield > 0) DrawArc(c, r + 6, -Mathf.Pi / 2, -Mathf.Pi / 2 + Mathf.Tau * Mathf.Clamp(Shield, 0, 1), 72, Style.Shield, 4, true);
         if (Number != "")
         {

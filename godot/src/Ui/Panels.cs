@@ -266,8 +266,10 @@ public partial class DraftPanel : Control
         Style.Fill(glow);
         panel.AddChild(glow);
         var v2 = Style.V(Style.Gap2);
-        v2.Position = new Vector2(22, 20);
-        v2.Size = new Vector2(CardW - 44, CardH - 36);
+        // The painted card's iron is wider than the drawn one's edge: what is written keeps inside it.
+        bool painted = UiArt.Has((string)panel.GetMeta("frame"));
+        v2.Position = painted ? new Vector2(40, 22) : new Vector2(22, 20);
+        v2.Size = painted ? new Vector2(CardW - 80, CardH - 64) : new Vector2(CardW - 44, CardH - 36);
         b.AddChild(v2);
         // What it is, on a ribbon; NEW when it is new to the build.
         var ribbon = Style.H(6);
@@ -276,7 +278,7 @@ public partial class DraftPanel : Control
         if (Fresh(o)) ribbon.AddChild(Style.Panel(Style.Box(Style.Ember with { A = 0.9f }, Style.EmberHi, 1, 12, 6), Style.Label("NEW", Style.UiHeavy, Style.Badge, new Color("#2a1206"), false, HorizontalAlignment.Center, false)));
         v2.AddChild(ribbon);
         // The icon on a disc of its colour.
-        var art = new CenterContainer { CustomMinimumSize = new Vector2(CardW - 44, 132), MouseFilter = MouseFilterEnum.Ignore };
+        var art = new CenterContainer { CustomMinimumSize = new Vector2(v2.Size.X, 132), MouseFilter = MouseFilterEnum.Ignore };
         var medal = new Medallion(124, "", o.Icon) { Ring = color, Ink = color.Lightened(0.15f), Core = color.Darkened(0.82f), Name = "Medal" };
         art.AddChild(medal);
         v2.AddChild(art);

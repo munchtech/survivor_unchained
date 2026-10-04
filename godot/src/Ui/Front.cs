@@ -250,7 +250,7 @@ public partial class CreateScreen : Overlay
         var a = Callings.Archetype(d.Archetype);
         // A forged column down the left, the figure by the fire in the middle, the choice read
         // closely on the right (docs/UI_DESIGN.md, "Creation").
-        var column = Style.Panel(OrnateBox.Make(OrnateBox.Kind.Plate, 0));
+        var column = Style.Panel(Style.Plate(0));
         column.Position = new Vector2(-30, -30);
         column.Size = new Vector2(620, 1140);
         AddChild(column);

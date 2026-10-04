@@ -184,7 +184,7 @@ public partial class PauseScreen : Overlay
         Style.Fill(shade);
         shade.GuiInput += e => { if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) { if (panel == "") G.CloseOverlay(); else { panel = ""; Refresh(); } } };
         AddChild(shade);
-        var column = Style.Panel(OrnateBox.Make(OrnateBox.Kind.Plate, 0));
+        var column = Style.Panel(Style.Plate(0));
         column.Position = new Vector2(-30, -30);
         column.Size = new Vector2(530, 1140);
         AddChild(column);

@@ -368,6 +368,44 @@ Where the delivered art differs from the tables above (`UiArt.cs` and
 Stat icons (5.5) are not made: they are not wired, and wiring them changes the
 standing's layout (the designer's). Everything else in sections 4 and 5 is in place.
 
+### 4.9 The redesign's pieces (the second design pass)
+The second design pass recomposed every major screen as full pages and a
+console HUD (`UI_DESIGN.md` section 11), drawn in code by `godot/src/Ui/Ornate.cs`
+so the game reads as itself before the art lands. Each piece below is asked for
+by name and is **wired**: a file at its path replaces the drawn piece, as in
+section 1. All are in `tools/comfy/ui_assets.json` (`made_by: not yet made`).
+The soul (2.6) holds for every one: smith's work from the Waystation, hung from
+lamp-iron brackets, the binders' wire and coins, the ember asleep in the coins.
+
+| Asset | Path | File (shown) | Margins | Where, and notes |
+|---|---|---|---|---|
+| Well | `frames/well.png` | 256×256 (128) | 12 12 12 12, tiled | A tray sunk into a plate for a grid or a list (`Style.Well`): the pack's, stores' and storeroom's slot wells, the map's list, the journal's list. Shown 200×120 to 1100×560. Sunk, so darker than the plate and lit along its **foot**, not its top; no brackets |
+| Slab | `frames/slab.png` | 256×256 (128) | 14 14 14 14, tiled | A raised group inside a plate (`Style.Slab`): the standing's groups, the stores' sub-plates, the map's tools, the draft's build strip. Lit top edge, a dull hairline, **no brackets or coins** (those mark a plate) |
+| Page header | `frames/header.png` | 512×200 (256×100) | 0 0 0 12, tiled | The band across the top of every full page (`Overlay.Page`), 1928×100: the book's tabs at its left, the title plaque in the middle, Close at the right. Only its foot is a border; it repeats along its length, so no ornament may land mid-band |
+| Banner | `frames/banner.png` | 512×192 (256×96) | 24 14 24 14 | A verdict or a name cut in metal (`OrnateBox.Kind.Banner`): THE ARENA IS WON (470×100), who the survivor is becoming in creation (380×100), a speaker's name in conversation (250×64). Oxblood-stained iron, hung from two brackets, an ember stone at the top's middle; the words are the code's |
+| Attribute pillar | `frames/pillar.png` | 424×728 (212×364) | 32 100 32 36, `Out: 12`, `Clear: 14` | Self's four attributes, 188×340 each (with the 12 the brackets may reach past it). A narrow standing stele: a round seat at its head (10-130 px down) for the 120 px medallion with the number, the name and words below, a + button at its foot when there are points to spend. The code draws an ember hairline when points wait: keep the iron neutral |
+| HUD console | `frames/console.png` | 512×308 (256×154) | 48 28 48 28, tiled, `Out: 12` | The plate along the HUD's foot (`GameHud.BuildVitals`) the skills stand on, 130 high and 300-720 wide with the skill count; only its top ~98 px are on the screen. Its ends meet the health globe (left) and the art's ring (right): turn them down into round fittings. Plain middle: the skill sockets sit on it |
+| Open book | `book/open.png` | 3400×1704 (1700×852) | whole | The Journal (`OpenBook`): the leather cover and both pages. The words sit 78 px in from the cover's outer edges, 34 from the spine, 68 from top and foot: keep the pages blank and even there. The silk ribbons (the sections) are drawn over its top edge by the code |
+| Medallion ring | `medallion/ring.png` | 440×440 (shown 44-220) | whole | Every medallion (`Medallion`): levels, the four attributes, the arts' grid and great medallion, facet sockets, creation's step road, the arena's numbers, the draft cards' icon discs. Drawn into the medallion's square: the band from 80% to 100% of the half size, **transparent inside 78%**, where the code draws the core in the school's or rarity's colour, a hairline of it just inside the ring, the progress arc at 88%, and the number or glyph. Must read at 44 px |
+| Globe rim | `hud/globe_rim.png` | 288×288 (144) | whole | The health globe's rim (`Globe`, liquid radius 66): the band from 92% to 100% of the half size (may reach in to 83%), transparent inside. A lamp-iron bracket at its top is welcome; the shield's arc is drawn just outside it by the code |
+| Globe glass | `hud/globe_glass.png` | 288×288 (144) | whole | Over the liquid, under the number: the glass's reflections only (a soft highlight upper left, a thin rim of light lower right), the rest transparent. The liquid's level, colour, trail and pulse are the code's |
+
+Drawn by the code and **not** asked for by name yet (say if you want to paint
+them, and the hook is added): the crested card used by the arts' facets and
+creation's choices (`OrnateBox.Kind.Card` with a crest band in the school's or
+rarity's colour, 287×280 and 470×92); the Journal's silk ribbons (`RibbonBox`,
+132×66-86, one silk per section); the title plaque's gold rules and ember stones
+(`Plaque`; a title without words already uses `ornaments/rule.png`).
+
+Pieces that changed their place in the redesign:
+
+| Asset | Now | Why |
+|---|---|---|
+| Health bar, its casing, `hud/medal_heart.png` | Not shown: health is the globe | The console HUD (Diablo IV's band): health reads at a glance as a level in a vessel, beside the skills, where the eye drops from the fight |
+| `frames/map_frame.png` | Not shown on the map, which is now full bleed | The map is opened to find something: the whole screen, no frame. The wooden frame and brass caps suit the Wayfinder's table, where three maps lie on a table: it moves there when that screen is rebuilt |
+| `frames/plate.png` | Also the creation and pause columns (which run off the screen's edge, so only the plate's inner edge shows) | One iron for every surface the survivor reads from |
+| Draft cards | Now 320×500 (was 452 high): the painted card stretches 48 px in its middle; the card's words keep 40 px inside its iron | The crested card's medallion sits in the card's crest; the card is taller for the reasons and the path at its foot |
+
 ---
 
 ## 5. Icons
