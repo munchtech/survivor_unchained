@@ -25,7 +25,7 @@ CACHE = os.path.join(ROOT, "tools", "comfy", "out", "uiforge", "relief")
 
 # Materials: albedo (sRGB hex), metalness, roughness, worn albedo (the rubbed edges), wear amount.
 MATS = {
-    "iron": ("#201c26", 0.85, 0.40, "#9a96a4", 0.9),
+    "iron": ("#1c1922", 0.85, 0.50, "#9a96a4", 0.9),
     "iron_dark": ("#141118", 0.7, 0.55, "#4a4652", 0.4),
     "chain": ("#34303a", 0.9, 0.34, "#c4c0cc", 1.0),
     "gold": ("#c9a256", 1.0, 0.30, "#f4dca0", 0.6),
@@ -34,6 +34,7 @@ MATS = {
     "stone": ("#3a0608", 0.0, 0.12, "#7a1a18", 0.3),
     "bone": ("#b8ab90", 0.0, 0.55, "#e6dcc4", 0.4),
     "ember": ("#2a0c04", 0.0, 0.7, "#2a0c04", 0.0),
+    "glass": ("#000000", 0.0, 0.03, "#000000", 0.0),
 }
 IDS = {k: i for i, k in enumerate(MATS)}
 
@@ -81,10 +82,12 @@ class Relief:
         ss = self.ss
         # Wear and grime follow the piece's forms, not its hammer marks (shape_height, when set).
         src = self.shape_height if getattr(self, "shape_height", None) is not None else self.height
-        hb = cv2.GaussianBlur(src, (0, 0), 1.2 * ss)
-        lap = cv2.Laplacian(hb, cv2.CV_32F, ksize=5) / (ss * ss)
-        convex = np.clip(-lap * 1.2, 0, 1)            # rubbed bright
-        cavity = np.clip(lap * 0.8, 0, 1)             # grime settles
+        # Curvature in file px (heights and distances are in render px: h'' scales as 1/ss), so
+        # a piece wears the same at any supersampling.
+        hb = cv2.GaussianBlur(src, (0, 0), 0.8 * ss)
+        curv = cv2.Laplacian(hb, cv2.CV_32F, ksize=3) * ss
+        convex = np.clip(-curv * 1.2, 0, 1)           # rubbed bright
+        cavity = np.clip(curv * 0.8, 0, 1)            # grime settles
         n1 = F.fbm(self.h, self.w, scale=self.w / 6, octaves=4, seed=seed)
         n2 = F.fbm(self.h, self.w, scale=self.w / 40, octaves=3, seed=seed + 1)
         base = np.zeros((self.h, self.w, 3), np.float32)
@@ -160,6 +163,36 @@ def rope(R: Relief, cx, cy, radius, thick, pitch, height, turns=None):
     inside = np.clip((hw - np.abs(d)) * R.ss + 0.5, 0, 1)
     edge = np.sqrt(np.clip(1 - (d / hw) ** 2, 0, 1))
     return (hgt * 0.55 + edge * 0.45) * height * R.ss * inside, inside
+
+
+def coin(R: Relief, x, y, size, base, hole=0.34, thick=None, rot=45.0):
+    """The binders' square coin set on its point (file px), a round hole through it with a
+    raised lip. Returns (height in file px, coin mask, hole mask) at render res; the caller
+    lays them (max) and lights the hole."""
+    X, Y = R.xx / R.ss, R.yy / R.ss
+    a = math.radians(rot)
+    u = (X - x) * math.cos(a) + (Y - y) * math.sin(a)
+    v = -(X - x) * math.sin(a) + (Y - y) * math.cos(a)
+    half = size / 2
+    # A square with slightly rounded corners, its faces bevelled toward the edges.
+    rc = size * 0.08
+    qx, qy = np.abs(u) - (half - rc), np.abs(v) - (half - rc)
+    sd = -(np.hypot(np.maximum(qx, 0), np.maximum(qy, 0)) + np.minimum(np.maximum(qx, qy), 0) - rc)
+    th = thick if thick is not None else size * 0.16
+    bev = size * 0.12
+    face = np.clip(sd / bev, 0, 1)
+    face = np.sqrt(1 - (1 - face) ** 2)
+    d = np.hypot(X - x, Y - y)
+    hr = size * hole / 2
+    lip = np.exp(-((d - hr * 1.25) / (size * 0.05)) ** 2) * size * 0.05
+    h = base + th * face + lip
+    mask = np.clip(sd * R.ss + 0.5, 0, 1)
+    hole_m = np.clip((hr - d) * R.ss + 0.5, 0, 1)
+    h = np.where(hole_m > 0.5, base - th * 0.5, h)
+    return h, mask, hole_m
+
+
+import math  # noqa: E402
 
 
 def save_file(img, path):
