@@ -10,7 +10,7 @@ Predecessor's handoff: `docs/handoff/ui_design.md`.
 - To turn her, drag; the wheel or a double click brings her face near.
 - **Old builds:** the title's foot says when the code was built. If any `.cs` file is newer than the build, an ember line says to open the project in Godot and press Play. (Run from the project manager, Godot starts the last build without making a new one.)
 
-## Current state (pushed b6f31f7, merged; 539 tests green)
+## Current state (pushed; 565 tests green)
 - **Cameos are her portraits**, rendered from the game by `tools/assets/creation_portraits.py` (`tools_scenes/Portraits.cs`) into `art/ui/create/female/`. Cuts are rendered grey with a mask, and the cameo dyes them the chosen colour.
   Rerun it after any head, hair, face or paint rebuild: `python tools/assets/creation_portraits.py [hair|face|paint|look]`.
 - **Face paints were retuned as seen on her** (`tools/assets/heroine_paint.py`):
@@ -30,14 +30,14 @@ Predecessor's handoff: `docs/handoff/ui_design.md`.
 - The plaque rule no longer runs through titles. Self's standing lines have stat icons.
 
 ## Next (in order)
-1. The experience director's four findings:
-   - barks: one speaker at a time, never crossing;
-   - the result screen as the night's story;
-   - the map table says what a map pays;
-   - pausing only in arenas and on the night road.
-2. The painted pass over the portraits (UI art lead), once the face lead's new faces land.
-3. The old list: announcements, item card, journal deeds and codex, HUD dash and draught; `docs/ui_review/`; UI_DESIGN 10.
-
+Handed off at the context limit: `docs/handoff/ui_design.md` is the successor's brief.
+1. Launch blocker: a Credits and Licences screen (from the title and pause menu, built from
+   `public/assets/CREDITS.md`) and a `licences/` folder in the export; wording checked with legal.
+2. Place the UI art lead's pieces as they land (header, backdrop layers, column divider, card_light,
+   hero plate, section rule).
+3. The experience director's map result and atlas screens.
+4. Rerun paints and portraits after the face lead's new head; the male hero's portraits when his body lands.
+5. The crafting lead's pack bugs (doll T-pose on Refresh, PlayerView rebuilt on every G.Gear).
 ## Waiting on others
 - **Face lead (ade92e8285938438f):** new head, faces and 47 sliders in 8 groups. After the main session writes `heroine.glb`, I rerun `heroine_paint.py` then `creation_portraits.py`. `LoadoutTests` expects 25 sliders, and the face lead updates that.
 - **Male hero (ab82cbe99e2937ddd):** will write `heroes.male` and his builder. I then render `creation_portraits.py --sex male` (Portraits.cs builds her only today).
