@@ -3641,6 +3641,46 @@
     "when": {
      "all": [
       {
+       "met": "maeca"
+      },
+      {
+       "fact": "shedfur.ready",
+       "eq": true
+      },
+      {
+       "not": {
+        "fact": "shedfur.given",
+        "eq": true
+       }
+      }
+     ]
+    },
+    "node": "shed_fur_braid"
+   },
+   {
+    "when": {
+     "all": [
+      {
+       "met": "maeca"
+      },
+      {
+       "fact": "pack.allied",
+       "eq": true
+      },
+      {
+       "not": {
+        "fact": "shedfur.offered",
+        "eq": true
+       }
+      }
+     ]
+    },
+    "node": "shed_fur_offer"
+   },
+   {
+    "when": {
+     "all": [
+      {
        "history": "burned_roost"
       },
       {
@@ -5347,6 +5387,65 @@
      }
     ],
     "next": "hub"
+   },
+   "shed_fur_offer": {
+    "id": "shed_fur_offer",
+    "text": "They've been leaving fur on the thorn by the Blind. For you, I think. Give me an evening.",
+    "effects": [
+     {
+      "set": {
+       "shedfur.offered": true
+      }
+     },
+     {
+      "later": {
+       "days": 1,
+       "id": "shedfur.ready",
+       "effect": [
+        {
+         "set": {
+          "shedfur.ready": true
+         }
+        }
+       ]
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "shed_fur_braid": {
+    "id": "shed_fur_braid",
+    "text": "(She sits with her back to the fire and braids it on her knee, grey and grey and white, the way you'd braid a child's hair. She doesn't talk. When it's done she bites the end off.) Next to the skin. They'll know you in the dark.",
+    "effects": [
+     {
+      "give": "shed_fur_braid",
+      "made": "maeca:shedFur"
+     },
+     {
+      "set": {
+       "shedfur.given": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -5790,6 +5889,27 @@
       "text": "Tallow lamps? Everyone else burns ember.",
       "once": "tallow",
       "goto": "tallow"
+     },
+     {
+      "text": "Brew me something.",
+      "action": "still"
+     },
+     {
+      "text": "Will you stitch something into my gear?",
+      "when": {
+       "any": [
+        {
+         "fact": "stream.clear",
+         "eq": true
+        },
+        {
+         "fact": "beasts.outcome",
+         "eq": "cured"
+        }
+       ]
+      },
+      "locked": "Not until the stream runs clean",
+      "action": "craft"
      },
      {
       "text": "What do you sell?",
@@ -6785,6 +6905,13 @@
      }
     },
     "mark": "!"
+   },
+   {
+    "when": {
+     "fact": "commission.done",
+     "eq": true
+    },
+    "mark": "!"
    }
   ],
   "nodes": {
@@ -6847,6 +6974,16 @@
      {
       "text": "Will you work my gear?",
       "action": "craft"
+     },
+     {
+      "text": "Greymuzzle's fang. Will you set it?",
+      "when": {
+       "hasItem": "greymuzzle_fang"
+      },
+      "show": {
+       "hasItem": "greymuzzle_fang"
+      },
+      "goto": "fang"
      },
      {
       "text": "Those lamp-irons on the rack?",
@@ -6943,6 +7080,16 @@
      {
       "text": "Will you work my gear?",
       "action": "craft"
+     },
+     {
+      "text": "Greymuzzle's fang. Will you set it?",
+      "when": {
+       "hasItem": "greymuzzle_fang"
+      },
+      "show": {
+       "hasItem": "greymuzzle_fang"
+      },
+      "goto": "fang"
      },
      {
       "text": "Those lamp-irons on the rack?",
@@ -7507,6 +7654,24 @@
     "choices": [
      {
       "text": "Goodbye, Brannoc.",
+      "end": true
+     }
+    ]
+   },
+   "fang": {
+    "id": "fang",
+    "text": "(He holds it up to the forge-light and turns it.) Worn flat on the one side. He chewed on that side.",
+    "choices": [
+     {
+      "text": "Will you work my gear?",
+      "action": "craft"
+     },
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
       "end": true
      }
     ]
@@ -12512,6 +12677,10 @@
       },
       "once": "ford",
       "goto": "ford"
+     },
+     {
+      "text": "Can you move a power from one thing to another?",
+      "action": "craft"
      },
      {
       "text": "What do you sell?",
@@ -19269,6 +19438,24 @@
       },
       "once": "what",
       "goto": "what"
+     },
+     {
+      "text": "Sell me a jar of that.",
+      "show": {
+       "any": [
+        {
+         "not": {
+          "fact": "dig.pump",
+          "exists": true
+         }
+        },
+        {
+         "fact": "dig.pump",
+         "eq": "running"
+        }
+       ]
+      },
+      "action": "slurry"
      },
      {
       "text": "Leave.",

@@ -1092,6 +1092,10 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     void IBossArena.Say(string title, string? sub, string tone) => G.Announce(new Announcement(title, sub ?? "", tone, 2.4));
     void IBossArena.Bark(double x, double z, string text, string? speaker) => B?.Events.Emit(new Ev.Bark { X = x, Z = z, Text = text, Speaker = speaker });
     double IBossArena.HordeShare { set => bossShare = value; }
+    /// <summary>The night won where the survivor stands, its boss passed over (pictures of the long
+    /// night, and of a fall after the win: --minute 34 --won --die 40).</summary>
+    public void WinNow() { if (!won && !over && B != null) Victory(B.Player.X, B.Player.Z); }
+
     void IBossArena.Won(double x, double z)
     {
         if (over || !bossUp) return;

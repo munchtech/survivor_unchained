@@ -18,6 +18,35 @@
  "remakeCap": 3,
  "remakeHeat": 4,
  "rekindle": { "shards": 3, "gold": 20, "goldStep": 20 },
+ "_brews": "Wenna's draughts: cheaper than Harlan's (a health draught is 15 there), never stronger. The moonpetal draught (60%) has combat's yes.",
+ "brews": [
+  { "draught": "health_draught", "takes": { "bitterroot": 2 }, "gold": 4, "crafter": "wenna" },
+  { "draught": "antidote", "takes": { "bitterroot": 1 }, "gold": 3, "crafter": "wenna", "say": "brew.antidote" },
+  { "draught": "moonpetal_draught", "takes": { "moonpetal": 1 }, "gold": 10, "crafter": "wenna", "moment": "brew.moonpetal" }
+ ],
+ "flask": { "item": "wennas_flask", "draught": "health_draught", "material": "bitterroot", "per": 1, "upto": 3, "gold": 120, "crafter": "wenna" },
+ "_commission": "Brannoc's 'make me one': Uncommon, the material's affix at grade I, full heat, ready the next morning. Gold is what the piece would fetch.",
+ "commission": {
+  "crafter": "brannoc", "iron": 2, "rarity": 1, "days": 1,
+  "patterns": [
+   { "id": "leather_cap" }, { "id": "iron_helm" }, { "id": "padded_jerkin" }, { "calling": true },
+   { "id": "chain_shirt", "when": { "rel": { "npc": "brannoc", "axis": "respect", "gte": 20 } }, "needs": "respect 20" },
+   { "id": "watch_buckler", "when": { "rel": { "npc": "brannoc", "axis": "respect", "gte": 20 } }, "needs": "respect 20" }
+  ]
+ },
+ "settings": {
+  "greymuzzle_fang": { "affix": "greymuzzles", "crafter": "brannoc", "moment": "fang", "mark": "greymuzzle_fang", "kinds": ["weapon", "amulet"], "gold": 0 }
+ },
+ "_bind": "Vonnra's binding (design 7.3): a shard and 40 gold a grade bound; the piece that takes it spends 5-7 heat; the donor is unmade.",
+ "bind": { "shardsPerGrade": 1, "goldPerGrade": 40, "heat": [5, 7], "crafter": "vonnra" },
+ "_slurry": "Snib's jars (design 9), while the pump runs: 30 gold, three a day. Steeping, by weight: a grade past the cap, a slurry affix past the seams, only the veins, a grade lost. It sets the piece.",
+ "slurry": {
+  "jar": "slurry_jar", "crafter": "snib", "mark": "slurried", "gold": 30, "perDay": 3,
+  "sold": { "all": [{ "met": "snib" }, { "any": [{ "not": { "fact": "dig.pump", "exists": true } }, { "fact": "dig.pump", "eq": "running" }] }] },
+  "odds": { "up": 25, "slurry": 25, "nothing": 30, "down": 20 },
+  "affixes": ["seeping", "of_the_sump", "green_veined"]
+ },
+ "_crafters": "Conversations hold the words said in them: Brannoc's fang node, Maeca's braid (dialogue.json, maeca: shed_fur_offer, shed_fur_braid) and her fang.seen (a once-only 'said' in npcs.json). Here are the lines said at a bench and written on what is made.",
  "materials": {
   "wolf_pelt": { "qty": 3, "into": ["of_the_wolf", "wolfbane"], "crafter": "brannoc", "marks": "wolf_pelts" },
   "boar_hide": { "qty": 3, "into": ["sturdy", "of_the_hearth", "surefooted"], "crafter": "brannoc" },
@@ -31,7 +60,7 @@
   "brannoc": {
    "name": "Brannoc",
    "place": "Brannoc's Smithy",
-   "verbs": ["temper", "workIn", "cage", "remake", "rekindle", "breakDown"],
+   "verbs": ["temper", "workIn", "cage", "remake", "rekindle", "breakDown", "commission", "set"],
    "when": { "met": "brannoc" },
    "closed": { "time": "night" },
    "closedLine": "Forge is banked. Come back by day.",
@@ -54,10 +83,11 @@
     "history.cage": ["A coal from {night}, caged by {who}, day {day}"],
     "history.remake": ["Remade on Brannoc's anvil, day {day}"],
     "fang.choice": ["Set this in something."],
-    "fang.give.before": ["He holds it up to the forge-light and turns it."],
-    "fang.give": ["Worn flat on the one side. He chewed on that side."],
     "fang.set": ["Set. It'll bite for you now."],
-    "history.fang": ["Set with Greymuzzle's fang on Brannoc's anvil, day {day}"]
+    "history.fang": ["Set with Greymuzzle's fang on Brannoc's anvil, day {day}"],
+    "commission.take": ["Tomorrow. Early."],
+    "commission.ready": ["Yours. Don't bend it."],
+    "history.commission": ["Made for you on Brannoc's anvil, day {day}"]
    },
    "easier": [
     { "when": { "rel": { "npc": "brannoc", "axis": "respect", "gte": 20 } }, "heatTop": -1, "line": "He takes his time over it." },
@@ -73,75 +103,74 @@
    "respectFromCraft": 0,
    "easier": [],
    "lines": {
-    "shedFur.offer": ["They've been leaving fur on the thorn by the Blind. For you, I think. Give me an evening."],
-    "shedFur.braid.before": ["She sits with her back to the fire and braids it on her knee, grey and grey and white, the way you'd braid a child's hair. She doesn't talk. When it's done she bites the end off."],
-    "shedFur.braid": ["Next to the skin. They'll know you in the dark."],
-    "history.shedFur": ["Braided by Maeca from what the Pack shed, day {day}"],
-    "fang.seen": ["That's his. Wear it where I can't see it."]
+    "history.shedFur": ["Braided by Maeca from what the Pack shed, day {day}"]
+   }
+  },
+  "vonnra": {
+   "name": "Vonnra",
+   "place": "The Toll-House Table",
+   "verbs": ["bind"],
+   "when": { "met": "vonnra" },
+   "respectPerCraft": 1,
+   "respectFromCraft": 10,
+   "_draft": "Lines below are the crafting lead's drafts until the story lead's come (no {name}: her name-takes are spliced).",
+   "lines": {
+    "greet": ["Sit. Put it on the cloth. Not that one. That one.", "The lamp is lit. What would you have kept?"],
+    "bind": ["It has let go. It is yours now.", "Done. The other is ash. That is the price."],
+    "first.bind.before": ["(She holds the lesser piece over the lamp and waits. Not long. Something in it lets go, and she closes her hand on it.)"],
+    "first.bind": ["What leaves can be kept. It only needs somewhere to go."],
+    "bind.coal": ["That one is caged. It will not come out for me."],
+    "history.bind": ["Bound at the toll-house table by {who}, day {day}"]
+   },
+   "easier": [
+    { "when": { "fact": "vonnra.accused", "eq": true }, "gold": -10, "needs": "after you have accused her", "line": "She charges you a tenth less. She does not say why." }
+   ]
+  },
+  "snib": {
+   "name": "Snib",
+   "place": "The Dig",
+   "verbs": ["steep"],
+   "when": { "met": "snib" },
+   "respectPerCraft": 0,
+   "respectFromCraft": 0,
+   "easier": [],
+   "_draft": "Lines below are the crafting lead's drafts until the story lead's come.",
+   "lines": {
+    "jar.sale": ["Thirty. Snib does not haggle. Snib haggles. Thirty."],
+    "jar.none": ["No more today. Pump needs its sleep. Pump does not sleep."],
+    "steep.up": ["The veins take, and the iron drinks."],
+    "steep.slurry": ["Something green settles in it and stays."],
+    "steep.nothing": ["Green-black veins, and nothing else."],
+    "steep.down": ["It hisses. Something in it gives."],
+    "history.steep": ["Steeped in the Dig's slurry, day {day}"]
    }
   },
   "wenna": {
    "name": "Old Wenna",
    "place": "Wenna's Remedies",
-   "verbs": ["workIn"],
-   "when": { "all": [{ "met": "wenna" }, { "any": [{ "fact": "stream.clear", "eq": true }, { "fact": "beasts.outcome", "eq": "cured" }] }] },
-   "closedLine": "I've half the Verge coughing, child. Bring me a clean stream and I'll stitch your coat.",
+   "verbs": ["brew", "workIn", "buy"],
+   "grows": "affection",
+   "when": { "met": "wenna" },
+   "gates": {
+    "workIn": { "when": { "any": [{ "fact": "stream.clear", "eq": true }, { "fact": "beasts.outcome", "eq": "cured" }] }, "line": "I've half the Verge coughing, child. Bring me a clean stream and I'll stitch your coat." }
+   },
    "respectPerCraft": 1,
    "respectFromCraft": 10,
    "lines": {
     "greet": ["Sit. Not there— that's Tam's chest-rub. What is it, child?", "Kettle's on, still's not. Quick, child.", "Bitterroot, moonpetal, and mind the shelf— it's older than you."],
-    "brew": ["Bitterroot, boiled twice. Hold your nose.", "Drink it cold. It's worse, and it works.", "Antidote. You won't need it till you do."],
+    "brew": ["Bitterroot, boiled twice. Hold your nose.", "Drink it cold. It's worse, and it works."],
+    "brew.antidote": ["Antidote. You won't need it till you do."],
     "first.brew": ["Bitter's the point, child— the body hates it, and gets up to get away from it. Drink."],
-    "flask.sale": ["A flask. Pewter, a lid that fits, my mark on the bottom. Rook fills it every night you sleep under her roof. A hundred and twenty, and it's cheap."]
+    "brew.moonpetal": ["Moonpetal. Opens at night, shuts at dawn— like some I could name. Drink it cold."],
+    "flask.sale": ["A flask. Pewter, a lid that fits, my mark on the bottom. Rook fills it every night you sleep under her roof. A hundred and twenty, and it's cheap."],
+    "flask.filled": ["Rook has filled Wenna's flask by the fire: {n} draughts. The bitterroot's gone into it."],
+    "flask.dry": ["Wenna's flask is dry, and there's no bitterroot to fill it. Rook shakes it at you on your way past."],
+    "first.workIn": ["There. Bitterroot in the lining— don't pick at it— keeps your blood where it belongs. Off you go, child."],
+    "workIn": ["Stitched. Don't wash it.", "In it goes. Smells foul; works.", "Done, child. Next."]
    },
-   "easier": []
-  },
-  "vonnra": {
-   "name": "Vonnra",
-   "place": "the Toll Tower",
-   "verbs": [],
-   "when": { "all": [{ "met": "vonnra" }, { "fact": "toll.paid", "eq": true }] },
-   "closedLine": "Pay the toll first. Then we shall see what else you can afford.",
-   "respectPerCraft": 0,
-   "respectFromCraft": 0,
-   "lines": {
-    "greet": ["Put them on the table. The one you would keep, and the one you would give up for it.", "Sit. The lamp is lit. It is always lit.", "Two things on my table, and only one goes home with you. Choose."],
-    "first.bind.before": ["She holds the old piece above the lamp's chimney, in the heat and out of the flame, and waits with her eyes on the road. It takes a long time. Then something goes out of it, the way a held breath goes, and she lays the piece you are keeping in its place."],
-    "first.bind": ["There. It let go. Everything does, if one is patient with the lamp. ...It has somewhere to be now. That is all anything wants."],
-    "first.bind.after": ["What is left of the old piece is only metal. She sweeps it into the drawer with the day's tolls."],
-    "bind": ["It held. Things do, when they are told where.", "Bound. It will not go back. It does not remember the way.", "Done. Payment, always."],
-    "history.bind": ["Bound over {who}'s lamp, day {day}"],
-    "bind.caged": ["That one is in Brannoc's cage. He makes a good cage. It stays where he put it."],
-    "terms.accused": ["She charges you a tenth less. She does not say why."],
-    "first.mark": ["Marked. It will do it that way now, until it breaks."],
-    "mark": ["It has its mark. It will keep it."],
-    "history.mark": ["Marked at Vonnra's table, day {day}"]
-   },
-   "easier": []
-  },
-  "snib": {
-   "name": "Snib",
-   "place": "the Dig",
-   "verbs": [],
-   "when": { "all": [{ "met": "snib" }, { "not": { "any": [{ "fact": "dig.pump", "eq": "broken" }, { "fact": "dig.pump", "eq": "blown" }, { "fact": "dig.pump", "eq": "moved" }] } }] },
-   "closedLine": "No slurry, no jars. Snib is VERY sad about it. Snib is not sad about it.",
-   "respectPerCraft": 0,
-   "respectFromCraft": 0,
-   "lines": {
-    "greet": ["Jars! Slurry jars! Three a day, Boss's orders. Boss did not order it. Snib is ordering it.", "Snib does not SELL slurry. Snib sells JARS. The slurry is free. ...It is thirty gold.", "You again. Snib has jars. Do not open them indoors."],
-    "jar": ["It is the GOOD stuff. Snib would not drink it. Snib would not drink the bad stuff EITHER."],
-    "jar.sale": ["Thirty. Snib does not haggle. Snib haggles. Thirty."],
-    "jar.none": ["No more today. Pump needs its sleep. Pump does not sleep."],
-    "steep.up": ["The veins take, and the iron drinks. It stays warm in your hand for a long time after."],
-    "steep.affix": ["Something green settles in it and stays. It is never quite still after."],
-    "steep.nothing": ["Green-black veins, and nothing else."],
-    "steep.down": ["It hisses. Something in it gives."],
-    "first.steep.before": ["He takes the lid off at arm's length and looks away. What is in the jar is the colour of the stream below the pipe, and warm. The piece goes in, and something in the jar moves to meet it."],
-    "first.steep": ["There! Steeped! Snib did not see it move. It did not move."],
-    "steep": ["Steeped. Snib would not wear that. Snib would. Snib cannot afford it.", "Green. GREEN. That is the good green. That is the bad green. Same green.", "Do not lick it. Snib licked it once. Snib got promoted."],
-    "history.steep": ["Steeped in one of Snib's jars, day {day}"]
-   },
-   "easier": []
+   "easier": [
+    { "when": { "any": [{ "rel": { "npc": "wenna", "axis": "trust", "gte": 30 } }, { "rel": { "npc": "wenna", "axis": "affection", "gte": 30 } }] }, "entryGrade": 1, "needs": "trust or affection 30", "line": "She takes more care over yours." }
+   ]
   }
  },
  "night": {

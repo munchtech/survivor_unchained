@@ -15,7 +15,7 @@ namespace SurvivorUnchained.Tests;
 /// <summary>An ember arena, run without a screen (Arena/Arena.cs, Play/Zones/ArenaRun.cs).</summary>
 public class ArenaTests
 {
-    sealed record Setup(Journey J, FakeHost Host, ArenaRun Zone, Battle B, MapBuild Map, ArenaSpec Spec)
+    internal sealed record Setup(Journey J, FakeHost Host, ArenaRun Zone, Battle B, MapBuild Map, ArenaSpec Spec)
     {
         /// <summary>What was called out over the fight.</summary>
         public readonly List<string> Barks = new();
@@ -28,7 +28,7 @@ public class ArenaTests
         OnWin = """[{ "set": { "test.won": true } }]""", OnLose = """[{ "set": { "test.lost": true } }]""",
     };
 
-    static Setup Make(ArenaSpec spec, Journey? j = null)
+    internal static Setup Make(ArenaSpec spec, Journey? j = null)
     {
         var a = Callings.Archetype("warden");
         j ??= Journey.Begin(new CreationChoice
@@ -581,6 +581,30 @@ public class ArenaTests
         Assert.Equal(12.5, w.Fact("arena.last.minutes").Number, 1);
         Assert.Equal(1, w.Fact("arena.nights").Number);
         Assert.Equal(1, w.Fact("arena.fell").Number);
+    }
+
+    [Fact]
+    public void A_fall_after_the_win_spills_half_of_what_the_night_gave()
+    {
+        // The game's order: the zone hears of the fall while the battle still has the survivor
+        // standing (it marks them dead only after). A fall must still spill half (the owner's rule).
+        var s = Make(Spec("pack"));
+        s.Zone.SkipTo(34 * 60);
+        s.Zone.WinNow();
+        int before = Inventory.Count(s.J.Ch, Crafting.Shard);
+        var all = Crafting.Night("pack", 1, false, s.B.EmberLevel, 4, true, false, s.B.ChampionsByFamily);
+        Assert.True(all.Kept[Crafting.Shard] >= 2);
+        Assert.True(s.B.Player.Alive);
+        s.Zone.OnDeath("a Longtooth Wolf");
+        Run(s, 3);
+        var r = s.Host.ArenaResult!;
+        Assert.True(r.Won);
+        Assert.Equal(all.Kept[Crafting.Shard] / 2, r.Carried[Crafting.Shard]);
+        Assert.Equal(all.Kept[Crafting.Shard] - all.Kept[Crafting.Shard] / 2, r.Spilled[Crafting.Shard]);
+        Assert.Equal(before + all.Kept[Crafting.Shard] / 2, Inventory.Count(s.J.Ch, Crafting.Shard));
+        Assert.True(s.J.World.Fact("arena.last.fell").Truthy);
+        Assert.Equal("a Longtooth Wolf", s.J.World.Fact("arena.last.killer").Str);
+        Assert.Equal(1, s.J.World.Fact("arena.fell").Number);
     }
 
     [Fact]

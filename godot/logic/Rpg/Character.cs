@@ -38,6 +38,9 @@ public sealed class ItemInstance
     public Maps.Chart? Chart;
     /// <summary>The day it was last remade: a remade piece cools overnight before the next.</summary>
     public int? Remade;
+    /// <summary>A trophy's power set into it (an affix id: Greymuzzle's fang), outside its seams:
+    /// no grades, no heat, and its name leads the piece's.</summary>
+    public string? Setting;
 }
 
 public enum ConditionId { Wounded, Blightsick, Poisoned, Blessed, Rested, Wolfscent, Hunted, Warmed }
@@ -182,7 +185,7 @@ public static class Inventory
         {
             var rng = new Rng(seed ?? (uint)loose.Next(1_000_000_000));
             int n = Math.Min(3, it.Rarity);
-            var pool = Items.Affixes.Where(a => a.Slots.Contains(def.Kind) && it.Rarity >= a.MinRarity).ToList();
+            var pool = Items.Affixes.Where(a => a.Slots.Contains(def.Kind) && it.Rarity >= a.MinRarity && !a.Unique).ToList();
             var picked = new HashSet<string>();
             bool hasPrefix = false, hasSuffix = false;
             // The passives the survivor's carried skills evolve with (the kindlings that would stand in for them).
@@ -214,6 +217,8 @@ public static class Inventory
         if (it.Name != null) return it.Name;
         var def = Items.Get(it.Def);
         var affs = it.Affixes.Select(a => Items.Affix(a.Id)).Where(a => a != null).ToList();
+        // What is set in it leads: Greymuzzle's Worn Oathblade.
+        if (it.Setting != null && Items.Affix(it.Setting) is { } set) affs.Insert(0, set);
         var pre = affs.FirstOrDefault(a => a!.Prefix);
         var suf = affs.FirstOrDefault(a => !a!.Prefix);
         return string.Join(" ", new[] { pre?.Name, def.Name, suf?.Name }.Where(s => !string.IsNullOrEmpty(s)));
@@ -228,10 +233,13 @@ public static class Inventory
         var o = (def.Mods ?? new()).Select(m => m with { Source = src }).ToList();
         foreach (var a in it.Affixes)
             if (Items.Affix(a.Id) is { } ad) o.AddRange(ad.Mods(a.Tier).Select(m => m with { Source = src }));
+        if (it.Setting != null && Items.Affix(it.Setting) is { } set) o.AddRange(set.Mods(0).Select(m => m with { Source = src }));
         return o;
     }
 
-    public static List<string> Lines(ItemInstance it) => it.Affixes.Select(a => Items.Affix(a.Id)?.Text(a.Tier) ?? "").ToList();
+    public static List<string> Lines(ItemInstance it) =>
+        (it.Setting != null && Items.Affix(it.Setting) is { } set ? new[] { set.Text(0) } : Array.Empty<string>())
+            .Concat(it.Affixes.Select(a => Items.Affix(a.Id)?.Text(a.Tier) ?? "")).ToList();
 
     public static bool AddToPack(CharacterData ch, ItemInstance it)
     {
@@ -258,6 +266,16 @@ public static class Inventory
     }
 
     public static int Free(CharacterData ch) => ch.Pack.Count(p => p == null);
+
+    /// <summary>How many more of a thing the pack could take (a material: any number, it goes in the pouch).</summary>
+    public static int Room(CharacterData ch, string defId)
+    {
+        var def = Items.Get(defId);
+        if (def.Kind == ItemKind.Material) return int.MaxValue;
+        int stack = Math.Max(1, def.Stack ?? 1), n = Free(ch) * stack;
+        foreach (var p in ch.Pack) if (p != null && p.Def == defId) n += Math.Max(0, stack - p.Qty);
+        return n;
+    }
 
     public static int Count(CharacterData ch, string defId)
     {
