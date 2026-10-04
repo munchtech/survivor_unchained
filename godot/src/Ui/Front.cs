@@ -200,7 +200,9 @@ public sealed class CreationDraft
     {
         Name = Name.Trim(), Archetype = Archetype, Background = Background, Palette = Palette, Model = Model, WeaponItem = WeaponItem, Ability = Ability,
         Headgear = Headgear, Cloak = Cloak, Skin = Skin, Hair = Hair, Sex = Sex, HairStyle = HairStyle, Beard = Beard, Figure = Figure,
-        Face = Sex == Sex.Female ? new Dictionary<string, double>(Face) : null, Eyes = Sex == Sex.Female ? Eyes : null, Paint = Sex == Sex.Female ? Paint : null,
+        // (a hero's own body's face, eyes and paint: Loadouts.HeroKit)
+        Face = Loadouts.HeroKit(Sex) != null ? new Dictionary<string, double>(Face) : null,
+        Eyes = Loadouts.HeroKit(Sex) != null ? Eyes : null, Paint = Loadouts.HeroKit(Sex) != null ? Paint : null,
     };
 
     /// <summary>The figure by the fire is built again when this changes (who
@@ -211,13 +213,21 @@ public sealed class CreationDraft
     /// skin, eyes, face and paint are changed on her where she stands).</summary>
     public string LookKey => $"{BodyKey}|{Skin}|{Hair}|{HairStyle}|{Eyes}|{Paint}|{string.Join(",", Face.OrderBy(f => f.Key).Select(f => $"{f.Key}={f.Value:0.###}"))}";
 
-    /// <summary>A body chosen: her own hairstyle or his, kept if it is one of theirs.</summary>
+    /// <summary>A body chosen: its own hairstyle kept if it is one of its own,
+    /// its own first otherwise; a hero's own eyes, paint and face start as theirs.</summary>
     public void SetSex(Sex sx)
     {
         Sex = sx;
-        if (sx == Sex.Female) HairStyle = Loadouts.HerHair(HairStyle);
+        Section = FaceGroup = 0;
+        if (Loadouts.HeroKit(sx) is { } kit)
+        {
+            HairStyle = sx == Sex.Female ? Loadouts.HerHair(HairStyle) : kit.Cuts.Any(c => c.Id == HairStyle) ? HairStyle : kit.Cuts[0].Id;
+            Eyes = kit.Eyes.FirstOrDefault()?.Id ?? "";
+            Paint = kit.Paints.FirstOrDefault()?.Id ?? "none";
+            FaceShape = kit.Faces.FirstOrDefault()?.Id ?? "";
+            Face = new Dictionary<string, double>(kit.Faces.FirstOrDefault()?.Shape ?? new());
+        }
         else if (!Lore.HairStyles(sx).Contains(HairStyle) && HairStyle != "none") HairStyle = Lore.HairStyles(sx)[0];
-        Section = 0;
     }
 }
 
