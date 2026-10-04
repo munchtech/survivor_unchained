@@ -31,6 +31,7 @@ uniform float grain = 0.6;                         // how strongly the fine grai
 uniform int debug_view = 0;                        // (1 edge distance, 2 convexity, 3 sky seen: to check what was baked)
 
 varying vec4 det;                                  // (edge distance m, convexity 0..1, sky seen, piece)
+varying float painted;                             // (1 where stitches are painted; 0 where the piece is sewn with thread of its own)
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float noise(vec2 p) {
@@ -42,6 +43,7 @@ float fbm(vec2 p) { return 0.5 * noise(p) + 0.3 * noise(p * 2.13 + 7.1) + 0.2 * 
 
 void vertex() {
 	det = vec4(UV2.x, UV2.y, COLOR.r, COLOR.g);
+	painted = COLOR.b;
 }
 
 vec3 blend_normals(vec3 a, vec3 b, float k) {      // (two normal-map texels, the second laid over the first; encoded as maps are)
@@ -83,7 +85,7 @@ void fragment() {
 		vec2 along = normalize(vec2(-grad_m.y, grad_m.x) + 1e-6);
 		float row = 1.0 - smoothstep(0.00045, 0.0008, abs(edge - stitch_in));
 		float dash = smoothstep(0.15, 0.25, fract(dot(m, along) / stitch_len)) * (1.0 - smoothstep(0.7, 0.8, fract(dot(m, along) / stitch_len)));
-		float st = row * dash;
+		float st = row * dash * painted;
 		col = mix(col, thread * (0.85 + 0.15 * macro), st);
 		rough = mix(rough, 0.7, st);
 		metal = 0.0;
@@ -95,12 +97,14 @@ void fragment() {
 		// on plate that is kept; the plate's own story is told below)
 		// (one formed piece, not a patchwork: the scan's stains and dents
 		// kept to a whisper, a faint planishing over all of it)
+		// (a formed plate reads as one smooth surface: the scan's patches,
+		// even faint, read in its reflections as lumps, so none of it here)
 		vec3 mean_col = textureLod(albedo, UV, 10.0).rgb * tint;
-		col = mean_col * (0.97 + 0.04 * macro) * mix(1.0, texture(albedo, UV).r * tint.r / max(mean_col.r, 0.01), 0.08);
+		col = mean_col * (0.98 + 0.03 * macro);
 		vec2 e = vec2(0.003, 0.0);
 		float h0 = fbm(m * 40.0), hx = fbm((m + e.xy) * 40.0), hy = fbm((m + e.yx) * 40.0);
-		vec3 dent = normalize(vec3((h0 - hx) * 0.35, (h0 - hy) * 0.35, 1.0)) * 0.5 + 0.5;
-		nrm = blend_normals(mix(vec3(0.5, 0.5, 1.0), nrm, 0.06), dent, 1.0);
+		vec3 dent = normalize(vec3((h0 - hx) * 0.08, (h0 - hy) * 0.08, 1.0)) * 0.5 + 0.5;
+		nrm = dent;
 		float polish = max(near_edge, bulge);
 		// (brushed along one way: fine streaks in its roughness)
 		float brush = noise(vec2(m.x * 1800.0, m.y * 40.0));
