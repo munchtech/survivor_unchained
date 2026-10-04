@@ -47,6 +47,11 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     readonly string[] lean;
     double spawnT = 1.2, eventT = 55;
     int eventIx;
+    /// <summary>The night's shape before the boss: how full the field is kept, its breathers,
+    /// and which turn comes next (ArenaPacing; the experience lead's).</summary>
+    readonly ArenaPacing pacing;
+    bool hushed;
+    double heraldAt;
     bool herald10, herald20, great15, bossUp, won, over;
     double nextHerald, pulseT;
     (double X, double Z)? way;
@@ -84,6 +89,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         this.map = map;
         people = MapOffers.People(spec.People);
         oaths = spec.Oaths.Select(MapOffers.Oath).ToList();
+        pacing = new ArenaPacing(spec.Minutes * 60);
         Recount();
         lean = MapOffers.Lean(spec.Map, spec.People);
         Hooks = new BattleHooks { OnKill = OnKill, OnLoot = OnLoot, OnPickup = OnPickup };
@@ -139,6 +145,8 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         if (B == null) return;
         B.Time = seconds;
         herald10 = Minute >= 10; herald20 = Minute >= 20; great15 = Minute >= 15;
+        pacing.SkipTo(seconds);
+        hushed = pacing.Hush(seconds);
         B.GreatOwed = 0;
         // Its sign was given two minutes ago: the light stands on the edge, the words long gone.
         if (!runUp && seconds >= End - 120) RunUp(quiet: true);
@@ -159,7 +167,8 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     public static double FodderEase(double minute) => 1 + 0.08 * minute;
 
     /// <summary>How many the horde is kept at (a dark bargain struck asks for more of them).</summary>
-    int Target() => (int)Math.Min(won ? 380 : 320, (22 + 7.5 * Minute) * packSize * (1 + 0.15 * (Spec.Tier - 1)) * Bargain);
+    // Before the boss, the night's shape (ArenaPacing) swells and thins the line.
+    int Target() => (int)Math.Min(won ? 380 : 320, (22 + 7.5 * Minute) * packSize * (1 + 0.15 * (Spec.Tier - 1)) * Bargain * (won || bossUp ? 1 : pacing.TargetShare(Seconds)));
     double Bargain => 1 + 0.15 * (B?.Boons.GetValueOrDefault("dark_bargain") ?? 0);
 
     /// <summary>Throwers and shooters at once: a few behind the crowd, never a
@@ -282,10 +291,34 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             if (Around(R() * Math.PI * 2, 24) is var (x, z)) Group(Pick(), 4, x, z, 3);
         }
         eventT -= dt;
-        if (eventT <= 0 && !bossUp)
+        if (eventT <= 0 && !bossUp && won)
         {
             eventT = (60 + R() * 25) / (1 + waves);
             Event(eventIx++ % 4);
+        }
+        else if (eventT <= 0 && !bossUp)
+        {
+            // Before the boss the night's shape picks the turn (none in a herald's duel or the hush).
+            if (pacing.Next(Seconds, R) is Turn t)
+            {
+                eventT = (60 + R() * 25) / (1 + waves);
+                Event(t);
+                pacing.Played(Seconds);
+            }
+            else eventT = 4;
+        }
+        // A herald's duel lasts while it lives, or a minute at most; its fall lets the people flood in.
+        if (heraldAt > 0 && (herald is not { Alive: true } || herald.State == EnemyState.Dying || Seconds - heraldAt > 60))
+        {
+            heraldAt = 0;
+            pacing.HeraldFell(Seconds);
+        }
+        // The hush: the people draw back from the survivor and wait for what rules them.
+        if (!hushed && !won && pacing.Hush(Seconds))
+        {
+            hushed = true;
+            // (The hush's own share is already in the target.)
+            MakeWay(1);
         }
         // (Not on the boss's heels: a herald missed that late is let go.)
         if (!herald10 && Minute >= 10) { herald10 = true; if (Seconds < End - 60) Herald(); }
@@ -369,6 +402,147 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         }
     }
 
+    /// <summary>A turn the night's shape chose.</summary>
+    void Event(Turn t)
+    {
+        switch (t)
+        {
+            case Turn.Ring: Event(0); break;
+            case Turn.Champion: Event(1); break;
+            case Turn.Stampede: Event(2); break;
+            case Turn.Swarm: Event(3); break;
+            default: Signature(t == Turn.SecondSignature); break;
+        }
+    }
+
+    /* ------------------------------------------- the people's own turns -- */
+
+    /// <summary>The people's own question as a moment with a tell (docs/bestiary/HORDES.md 4.3):
+    /// a sound and a word first, then the thing itself, so a reader can answer it. The first
+    /// comes at about six minutes and again, at full strength, in the long push; the second at
+    /// about seventeen.</summary>
+    void Signature(bool second)
+    {
+        double m = Minute;
+        double scale = packSize * (1 + 0.15 * (Spec.Tier - 1));
+        int N(double n) => Math.Max(4, (int)(n * scale));
+        double a = R() * Math.PI * 2;
+        switch (people.Id, second)
+        {
+            case ("pack", false):
+                // The Hunt: the fastest of the pack from three sides at once.
+                Shout("A howl, then another answering it, and another: they are all round you.");
+                G.After(1.6, () => { for (int k = 0; k < 3; k++) Column(Fastest(), a + k * Math.Tau / 3, 24, N(5 + m / 4), 1.25); });
+                break;
+            case ("pack", true):
+                // The Blight Runs: the sick ones in a rush from one side; they burst as they die.
+                Shout("Coughing in the trees, and something green on the wind.");
+                G.After(1.6, () => Column(Has("wolf_blighted") ? "wolf_blighted" : Fastest(), a, 24, N(10 + m / 2), 1.2));
+                break;
+            case ("dead", false):
+                // The Ford Rises: the ground cracks in a ring round the survivor, and the dead come up out of it at once.
+                RingRise(Has("risen_warrior") && m > 15 ? "risen_warrior" : "risen", N(12 + m / 2), 8.5, SpawnStyle.Rise, "The ground cracks in a ring round you.");
+                break;
+            case ("dead", true):
+                // The Shield Line: shieldmen in a line out of the dark, bowmen behind; the answer is round its end.
+                Shout("Shields, in a line, out of the dark.");
+                G.After(1.2, () => Line(Has("risen_warrior") ? "risen_warrior" : "risen", Has("risen_archer") ? "risen_archer" : null, a, 20, N(8 + m / 3)));
+                break;
+            case ("lamplings", false):
+                // The Dig Opens: picks under the survivor's feet, and the tunnellers come up in a ring.
+                RingRise("lampling", N(12 + m / 2), 8, SpawnStyle.Burrow, "Picks, under your feet, all round.");
+                break;
+            case ("lamplings", true):
+                // The Sappers' Rank: the throwers on one side with their fuses lit, the tunnellers ahead of them.
+                Shout("Fuses hissing, out at the edge of the light.");
+                G.After(1.4, () => Line("lampling", Has("lampling_sapper") ? "lampling_sapper" : null, a, 19, N(8 + m / 3)));
+                break;
+            case ("kerchiefs", false):
+                // The Ambush: footpads from two sides at once, on a whistle.
+                Shout("A whistle, and an answer from behind you.");
+                G.After(1.4, () => { Column("footpad", a, 18, N(6 + m / 3), 1.1); Column("footpad", a + Math.PI, 18, N(6 + m / 3), 1.1); });
+                break;
+            default:
+                // The Wall: bruisers walk in a line with the throwers behind it.
+                Shout("A drum, and a wall of barn doors in the open.");
+                G.After(1.4, () => Line(Has("bruiser") ? "bruiser" : "footpad", Has("pillager") ? "pillager" : null, a, 20, N(6 + m / 4)));
+                break;
+        }
+        // Each is led by a captain who carries a chest: answering the question pays.
+        G.After(1.5, () => Captain(a));
+    }
+
+    /// <summary>The captain of a people's own turn: a champion of the strongest kind in the field, with a chest.</summary>
+    void Captain(double a)
+    {
+        if (B == null || over || Around(a, 19) is not var (x, z)) return;
+        var c = Spawn(Strongest(), x, z, true);
+        if (c == null) return;
+        c.MaxHp = c.Hp = c.MaxHp * 2;
+        chests.Add(c.Id);
+    }
+
+    /// <summary>A kind of this people already in the field.</summary>
+    bool Has(string def) => people.Arena.Any(h => h.Def == def && h.From <= Minute);
+
+    /// <summary>The fastest kind this people has in the field so far.</summary>
+    string Fastest() => people.Arena.Where(h => h.From <= Minute).OrderByDescending(h => Enemies.Get(h.Def).Speed).First().Def;
+
+    /// <summary>A column coming straight in: abreast across the bearing, a way out, a little faster than they walk.</summary>
+    void Column(string def, double a, double dist, int n, double speed)
+    {
+        if (B == null || over) return;
+        var p = B.Player;
+        double sx = -Math.Sin(a), sz = Math.Cos(a);
+        for (int i = 0; i < n; i++)
+        {
+            double off = (i - n / 2.0) * 1.3;
+            double x = p.X + Math.Cos(a) * dist + sx * off, z = p.Z + Math.Sin(a) * dist + sz * off;
+            if (!map.CanStand(x, z) || B.Collision.Blocked(x, z, 0.6)) continue;
+            if (Spawn(def, x, z) is { } e) e.Speed *= speed;
+        }
+    }
+
+    /// <summary>A rank walking in from one side, and a second rank behind it.</summary>
+    void Line(string front, string? back, double a, double dist, int n)
+    {
+        if (B == null || over) return;
+        var p = B.Player;
+        double sx = -Math.Sin(a), sz = Math.Cos(a);
+        for (int i = 0; i < n; i++)
+        {
+            double off = (i - (n - 1) / 2.0) * 1.7;
+            double x = p.X + Math.Cos(a) * dist + sx * off, z = p.Z + Math.Sin(a) * dist + sz * off;
+            if (map.CanStand(x, z) && !B.Collision.Blocked(x, z, 0.7)) Spawn(front, x, z);
+            if (back == null || i % 2 == 1) continue;
+            double bx = x + Math.Cos(a) * 3, bz = z + Math.Sin(a) * 3;
+            if (map.CanStand(bx, bz) && !B.Collision.Blocked(bx, bz, 0.6)) Spawn(back, bx, bz);
+        }
+    }
+
+    /// <summary>A ring round the survivor marked on the ground, and a moment later what was
+    /// under it comes up at every mark at once (helpless for its first moment: the answer is
+    /// to be ready in the middle, or out before it closes).</summary>
+    void RingRise(string def, int n, double radius, SpawnStyle style, string tell)
+    {
+        var p = B!.Player;
+        var at = new List<(double X, double Z)>();
+        for (int i = 0; i < n; i++)
+        {
+            double a = (double)i / n * Math.Tau + R() * 0.2, rr = radius + (R() - 0.5) * 2;
+            double x = p.X + Math.Cos(a) * rr, z = p.Z + Math.Sin(a) * rr;
+            if (!map.CanStand(x, z) || B.Collision.Blocked(x, z, 0.6)) continue;
+            at.Add((x, z));
+            B.Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = x, Z = z, Radius = 0.9, Duration = 1.3, Hostile = true, Kind = TelegraphKind.Ground });
+        }
+        Shout(tell);
+        G.After(1.3, () =>
+        {
+            if (B == null || over) return;
+            foreach (var (x, z) in at) Spawn(def, x, z, style: style);
+        });
+    }
+
     void Shout(string text)
     {
         var p = B!.Player;
@@ -389,6 +563,8 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         // Its arrival is read on its own: the crowd's lanes hold off a moment.
         B!.Charges.Calm(B, 10);
         G.Announce(new Announcement($"Herald of {people.Name}", "It carries a chest", "danger", 2.4));
+        // Before the boss, its duel is the thing on the field: the crowd let thin round it.
+        if (!won) { pacing.HeraldCame(); heraldAt = Seconds; }
     }
 
     /// <summary>Two minutes out: its sign, from the bearing it will come from (a sound,
@@ -578,11 +754,12 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     /// (gone once out of sight), so the boss does not arrive inside a crowd it cannot be
     /// seen in, and the share is the fight's from its first second, not once the survivor
     /// has mown down the half-hour's horde.</summary>
-    void MakeWay()
+    void MakeWay(double? share = null)
     {
         var p = B!.Player;
         var crowd = B.Enemies.Living().Where(o => o.Disposition == Disposition.Hostile && !o.Elite && o.State != EnemyState.Dying).ToList();
-        int keep = (int)(Target() * bossShare);
+        // (The hush before the boss passes its own share; the boss's arrival keeps its fight's.)
+        int keep = (int)(Target() * (share ?? bossShare));
         foreach (var o in crowd.OrderByDescending(o => (o.X - p.X) * (o.X - p.X) + (o.Z - p.Z) * (o.Z - p.Z)).Take(Math.Max(0, crowd.Count - keep)))
         {
             o.Status[StatusKind.Fear] = new StatusSlot(5, 1, 1, 0);

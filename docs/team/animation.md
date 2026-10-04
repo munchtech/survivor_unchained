@@ -1,44 +1,43 @@
 # Animation: status
 
-Branch `worktree-agent-aa4f5fc266b043035`. The brief, history and gotchas are in `docs/handoff/animation.md`. Read that first.
+Branch `worktree-agent-aa4f5fc266b043035`. The brief, history and gotchas are in `docs/handoff/animation.md`.
 
 ## State
 
-- **In the game:** her 59 clips, unchanged (`godot/art/anim/heroine.res`). A full rebuild in this worktree reproduces them exactly, to within 3e-5.
-- **Kimodo:** `tools/anim/kimodo_gen.py` now runs `kimodo_batch.py`.
-  - It loads the model and Llama 3 once, then makes 25 prompts, 3 takes each, into `C:/Users/munch/Tools/mocap/kimodo/<name>_<k>.bvh`.
-  - It skips prompts that are already made.
-  - The prompts now match the game's arts: the vault springs back, and the chain hauls her in. They also cover hits, a hip-shot idle, her walk, and the townsfolk (a man's walk, a woman's, an old man's, arms crossed, talk, cheer, clap, wave, work) and a shamble.
-  - A dry run (`--dry`, noise for words) passed here.
-  - **The owner runs it in their own terminal:** `python C:\Users\munch\Desktop\survivorsunchained\.claude\worktrees\agent-aa4f5fc266b043035\tools\anim\kimodo_gen.py`. This sandbox can't read the HF token. Keep this worktree until it prints KIMODO DONE.
-- **Mixamo arts, judged from their raw retargets (side view, `LOOK=pelvis`):**
-  - `vault_jump_over`: rejected. It is a sideways speed vault over an obstacle: the hands plant on nothing, and she lands turned 90°. The game's vault has no obstacle.
-  - `shield_run`: a usable charge cycle for the bull rush's legs. It has no stop.
-  - `greatsword_slide_attack`: a knee slide with the blade raised, then a low sweep and a spin. It could be the haul, but the strike is the wrong blow, at the wrong time.
-- **The game's vault (Arts.cs, worth knowing):** the battle's `Aim` is never set in play. Moving, she vaults forward the way she runs. Standing, she springs back from her facing. So she needs two clips. PlayerView picks between them by comparing her travel with her facing.
-- **In progress:** `tools/anim/clips/arts.py`, keyed `vault` (a split leap on the run) and `vault_back` (a tucked back spring into a three-point landing).
-  - They are first passes and not yet good enough. In the split, the front leg didn't read straight and the arms read as a T-pose; both are reworked but not yet re-judged. In the back spring, the tuck and landing were too shallow; also reworked.
-  - They are built only when named (`build.py vault`), so a full build and the game leave them out.
+- **Hers in the game:** 64 clips in `godot/art/anim/heroine.res`. `tools/anim/manifest.json` lists every one.
+- **Her arts** (`tools/anim/clips/arts.py`, all keyed and checked in the running game):
+  - `vault`: a split leap; she vaults forward like this when moving.
+  - `vault_back`: a tucked back spring into a three-point landing, used when she vaults standing.
+  - `bull_rush`: one gait-solver stride cycle, pitched behind the shield, then a planted shove.
+  - `chain_haul`: flown in flat with the axe cocked, held until she arrives.
+  - `chain_strike`: played when the haul ends; the blow lands in its second frame.
+  - PlayerView picks the vault by her travel against her facing, and holds her facing in the air.
+  - Any art's landing gives way to her run once she moves (`ArtTail`).
+- **Townsfolk** (`tools/anim/folk.py`, `godot/art/anim/folk.res`, `FolkClips.cs`): 20 clips, each made for the women's and the men's kit skeletons. They cover walk, idle, talk, arms crossed, sitting on a chair, sitting on the floor, cheer, wave, work and pick-up. Unarmed townsfolk play them through `People.Clip`, and their walk runs at a rate that keeps the feet planted. Checked in the Waystation.
+- **Kimodo:** all 25 prompts × 3 takes are in `C:/Users/munch/Tools/mocap/kimodo/`, and all were judged on contact sheets.
+  - Townsfolk takes: good. They are used.
+  - Arts (vault, bull rush, chain haul, leap): they lose to the keyed clips.
+  - Hits: too subtle and too long for a survivors-like flinch.
+  - Knockdown (all three takes fall backward, roll and rise): good, and unused so far.
+  - her_hip_idle ignored its prompt; her_walk, kneel and shrug are usable; the bow is too deep.
+- **Kimodo's LoRA warning** is harmless: I reproduced it in the venv with a tiny model, and the adapter merges exactly.
+
+## Key decisions
+
+- Mixamo or Kimodo takes that don't fit the game's action are rejected, not bent to fit; the four arts are keyed.
+- Clips are made per skeleton. The kit's women and men differ from the library's skeleton (neck up to 23°), so each folk clip is made for both bodies.
+- Armed people (guards, bosses) and the crowd keep the library, so a guard never walks like a shopper.
+- Unjudged clips stay out of full builds: `arts.py` has a `JUDGED` set, and HerClips plays anything in her library at once.
 
 ## Next
 
-1. Judge `vault` and `vault_back`: build them, then render sheets from the side, three-quarter and arena views (`review.py her/vault side three --weapon daggers --outfit ranger`). Iterate until they meet the bar.
-2. Wire them in PlayerView:
-   - choose the vault by travel against facing; standing, turn her to face away from the travel;
-   - add an art tail: fade the full shot once the art is over and she moves;
-   - for her, skip `OverhandThrow` on the grapple.
-   - Check in the game. `--cast` passes push (1,0), which gives the forward vault; a standing test needs `UseAbility(0,0)`.
-3. Bull rush: the 0.4 s charge is 9 m at 22.5 m/s. Key it as one fast gait cycle (`gait.pose_at`, warden lean to about 34°, shield square, sword cocked), then a planted shove and the settle.
-4. Chain haul: make two clips, `chain_haul` (thrown, yanked off her feet, axe cocked, held) and `chain_strike` (a chop that lands within 0.07 s of arrival, then the recovery). PlayerView plays the strike when the Grapple rush ends.
-5. Compare each against Kimodo's takes when they land.
-6. Townsfolk: a `folk.res` on the UAL skeleton (same bone names, minus breasts and glutes). Map it in `People.Clip` for unarmed non-heroines only (bosses and guards keep the UAL), and store the walk's natural speed for `PersonView`. Today the UAL plays `Yes` for Cheer and Wave, and `Crouch_Idle` for sitting on the floor.
+1. A backward death for her: a variant of `death` from Kimodo `knockdown_*` (the fall, held down).
+2. Her walk in town, if she ever walks: Kimodo `her_walk_*`, or Mixamo's feminine walk retargeted onto her.
+3. Crowd shamble: Kimodo `shamble_*` for the undead. The crowd is VAT-baked (`Vat.cs`, bump `Vat.Version`); coordinate with Combat, who is varying crowd tints.
+4. Polish: the strike's crouch on landing; a heavier flinch layered over runs.
 
-## Decisions
+## Notes for other areas
 
-- Mixamo takes that don't fit the game's action are rejected, not bent to fit. We key the clip, or use Kimodo.
-- Unjudged clips never reach the library: HerClips plays anything in it at once.
-
-## Gotchas (new)
-
-- In a fresh worktree, `--import` once can leave `.godot/imported` almost empty (21 files), and then Godot hangs on missing scenes. Run the import again until `heroine.glb-*.scn` exists.
-- Commands run from this agent must be plain: no shell variables and no `cd` chains into other worktrees.
+- Combat: `CrowdView` tint hook, I agreed to their option (b): they add the lines themselves.
+- `--cast T --still` casts the art standing (for pictures of the back spring).
+- `anim_review.gd` renders the kit bodies too: `MODEL=female|male PARTS=<kit parts>`, clips `folk/...`.

@@ -20,7 +20,7 @@ public sealed class Autopilot
     readonly Game g;
     readonly HashSet<Act> pressed = new();
     int wp = 1;
-    double t, orbit, dashT, abilityT, drinkT, stuckT, sideT, lastX, lastZ;
+    double t, orbit, dashT, abilityT, drinkT, stuckT, sideT, lastX, lastZ, postT;
     int side = 1;
     (double X, double Z, double R)? territory;
     /// <summary>Take the drafts and otherwise stand still (--auto idle): the worst player.</summary>
@@ -68,11 +68,16 @@ public sealed class Autopilot
                 tz = c.Z + Math.Sin(orbit) * 6 + (stage == "Ambush" ? 6 : 0);
                 break;
             }
-            case "Post" when d.GetValueOrDefault("chestOpened") is false:
+            case "Post" when d.GetValueOrDefault("chestOpened") is false && postT < 25:
             {
+                // From the chest's far side from the dead watchman, so the prompt is the chest's
+                // (standing between them, the watchman's book was read over and over).
+                postT += dt;
                 var c = Place("chest");
-                tx = c.X - 1.4; tz = c.Z + 0.6;
-                if (Math.Sqrt((p.X - tx) * (p.X - tx) + (p.Z - tz) * (p.Z - tz)) < 1.6) Controls.Instance.Press(Act.Interact);
+                var m = Place("watchman");
+                double ax = c.X - m.X, az = c.Z - m.Z, al = Math.Max(0.01, Math.Sqrt(ax * ax + az * az));
+                tx = c.X + ax / al * 1.2; tz = c.Z + az / al * 1.2;
+                if (Math.Sqrt((p.X - tx) * (p.X - tx) + (p.Z - tz) * (p.Z - tz)) < 1.0 && g.Prompted == "chest") Controls.Instance.Press(Act.Interact);
                 break;
             }
             case "Boss" or "Intro":

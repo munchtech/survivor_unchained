@@ -31,6 +31,7 @@ public partial class PersonView : Node3D, INpcView
     {
         person = People.Build(spec);
         person.Kind = HerClips.Kind(arms?.Right, arms?.Left, arms?.Forearm);
+        person.Folk = person.Kit && arms?.Right == null && arms?.Left == null && arms?.Forearm == null;
         person.Root.Scale = Vector3.One * (float)(scale / 0.8 * 1.04);
         AddChild(person.Root);
         if (arms?.Right is string r && Arms.All.ContainsKey(r)) held["handslot.r"] = Arms.Hold(person, r, "hand_r");
@@ -132,8 +133,11 @@ public partial class PersonView : Node3D, INpcView
         walking = want != "";
         if (walking)
         {
+            // A townsperson's own walk, at the rate that keeps their feet planted.
+            string walk = People.Clip(person, WalkClip);
+            float stride = walk.StartsWith(FolkClips.Prefix) ? FolkClips.Speed(walk) * person.Root.Scale.X : 0;
             loopSpeed = natural > 0 ? Mathf.Clamp(speed / natural, 0.4, 1.6)
-                : want == WalkClip ? Mathf.Clamp(speed / 1.5, 0.6, 1.5) : Mathf.Clamp(speed / 3.6, 0.7, 1.5);
+                : want == WalkClip ? Mathf.Clamp(speed / (stride > 0 ? stride : 1.5), 0.6, 1.5) : Mathf.Clamp(speed / 3.6, 0.7, 1.5);
             if (want != loopClip || !was) { loopClip = want; if (actLeft <= 0) PlayLoop(0.25); }
             else if (actLeft <= 0) person.Anim.SpeedScale = (float)loopSpeed;
         }
