@@ -93,10 +93,14 @@
  },
  "browncloth": {
   "kind": "cloth",
-  "repeats": 6
+  "repeats": 18
  },
  "forestleather": {
   "kind": "leather",
   "repeats": 3
+ },
+ "thread": {
+  "kind": "gloss",
+  "repeats": 60
  }
 }

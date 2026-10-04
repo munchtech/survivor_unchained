@@ -912,6 +912,7 @@ public sealed class Verge : ZoneRuntime
         {
             var blind = V("blind");
             var a = new NpcActor(Lore.Npcs["maeca"], G.Look, G.Rng, new Spot { X = blind.X + 2.6, Z = blind.Z + 4.2, Facing = 0.4 });
+            a.Said = () => SaidNow(a.Def, false);
             Actors["maeca"] = a;
             Interactables.Add(new() { Id = "talk:maeca", X = a.X, Z = a.Z, R = 2.8, Verb = "Talk", Name = "Maeca Barefoot", Act = () => G.Talk("maeca") });
         }

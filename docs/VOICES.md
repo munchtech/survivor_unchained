@@ -31,6 +31,12 @@ Rules for everyone:
   reach for their mother when something is unbearable.
 - The player's lines are short, plain and a little dry. They never make a
   speech.
+- A bark is twelve words or fewer. A bark that stops being true when a thread
+  is settled goes in the person's `said` list with the condition that keeps it
+  true, beside a line for how it ended.
+- Inside narration, a quoted line is spoken by its speaker. A bare "she says"
+  is cut, so the subtitle and the voice agree; a tag that carries manner ("says
+  into your ear") stays, read by the narrator.
 - The game is written for adults. Swearing, crude jokes and frank talk
   about sex belong to the mouths below that have them (Rav, Sella,
   Redcowl, the Flagon's regulars, the Watch on a bad night); Holloway
