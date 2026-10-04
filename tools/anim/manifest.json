@@ -8,7 +8,7 @@
   "Kimodo": "NVIDIA Kimodo-SOMA-RP-v1.1, NVIDIA Open Model License: generated motion (tools/anim/kimodo_gen.py).",
   "SAM 3D Body": "Meta SAM 3D Body (SAM License) with the Momentum Human Rig (Apache 2.0): motion from video (tools/anim/video_motion.py); test footage from Pexels (Pexels licence), each clip's URL in its row."
  },
- "made": 61,
+ "made": 59,
  "planned": 62,
  "clips": [
   {
@@ -753,30 +753,6 @@
    "licence": "own work",
    "changes": "",
    "length": 3.0,
-   "layer": "full"
-  },
-  {
-   "clip": "test_kimodo_leap",
-   "plays_for": "(not in the plan)",
-   "status": "made",
-   "fallback": "-",
-   "made_by": "",
-   "source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: example_01_single_text_prompt.bvh",
-   "licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
-   "changes": "retargeted to her skeleton, feet locked",
-   "length": 4.967,
-   "layer": "full"
-  },
-  {
-   "clip": "test_video_pose",
-   "plays_for": "(not in the plan)",
-   "status": "made",
-   "fallback": "-",
-   "made_by": "",
-   "source": "SAM 3D Body (Meta, SAM License) from video: pexels_6769391_pose.bvh",
-   "licence": "SAM 3D Body (Meta, SAM License) from video",
-   "changes": "retargeted to her skeleton, feet locked, in place",
-   "length": 11.967,
    "layer": "full"
   }
  ]
