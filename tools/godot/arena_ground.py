@@ -14,6 +14,10 @@ A place's seven layers, in the order the shader reads them:
   2..5  what the place paints over it (splat R, G, B, A: a way, ruts, a
         stream bed, graves, ash, spoil...);
   6     what steep faces show.
+
+Each layer's mean colour in linear light goes in layers.json too: the game
+brings every photograph to the value the place asks of it (ArenaGround.cs),
+however bright the day it was shot in. `--meta` rewrites only that.
 """
 import json
 import sys
@@ -142,6 +146,44 @@ def height(path):
     return square(ImageOps.autocontrast(im, cutoff=1))
 
 
+def mean_linear(im):
+    """A photograph's mean colour in linear light (what the shader multiplies)."""
+    small = im.resize((128, 128), Image.BOX)
+    px = [c / 255 for p in small.getdata() for c in p]
+    lin = [c / 12.92 if c < 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in px]
+    n = len(lin) // 3
+    return [round(sum(lin[i::3]) / n, 5) for i in range(3)]
+
+
+def meta_only(place):
+    """Rewrite layers.json's means from the strips already made (no new images,
+    so nothing for Godot to import again)."""
+    out = OUT / place
+    meta = json.loads((out / 'layers.json').read_text())
+    strip = Image.open(out / 'albedo.jpg').convert('RGB')
+    for i, m in enumerate(meta['layers']):
+        m['mean'] = mean_linear(strip.crop((0, i * SIZE, SIZE, (i + 1) * SIZE)))
+    (out / 'layers.json').write_text(json.dumps(meta, indent=1) + '\n')
+    print(place, [m['mean'] for m in meta['layers']])
+
+
+def flatten(im, radius=48):
+    """The photograph's broad light and shade taken out (each pixel over its
+    blurred surroundings, times the mean): a tile with lumps in it repeats as
+    a grid from thirty metres up, however its copies are offset. The ground's
+    broad variation is the shader's, in world space, where it never repeats."""
+    import numpy as np
+    from PIL import ImageFilter
+    a = np.asarray(im, dtype=np.float32)
+    pad = radius * 3
+    # Blurred as the tile it is (wrapped), so its edges stay seamless.
+    wrapped = Image.fromarray(np.pad(a, ((pad, pad), (pad, pad), (0, 0)), mode='wrap').astype(np.uint8))
+    blur = np.asarray(wrapped.filter(ImageFilter.GaussianBlur(radius)), dtype=np.float32)[pad:-pad, pad:-pad]
+    mean = a.reshape(-1, 3).mean(0)
+    out = a * mean / np.maximum(blur, 1.0)
+    return Image.fromarray(np.clip(out + 0.5, 0, 255).astype(np.uint8))
+
+
 def build(place, layers, info):
     out = OUT / place
     out.mkdir(parents=True, exist_ok=True)
@@ -149,17 +191,19 @@ def build(place, layers, info):
     meta = []
     for i, (name, asset) in enumerate(layers):
         d = files(asset)
-        a = square(Image.open(d / 'diff.jpg').convert('RGB'))
+        a = flatten(square(Image.open(d / 'diff.jpg').convert('RGB')))
         n = square(Image.open(d / 'nor.png').convert('RGB'))
         ao, rough, _ = square(Image.open(d / 'arm.jpg').convert('RGB')).split()
         h = height(d / 'disp.png')
         for k, im in (('albedo', a), ('normal', n), ('arh', Image.merge('RGB', (ao, rough, h)))):
             strips[k].paste(im, (0, i * SIZE))
         metres = info[asset]['dimensions'][0] / 1000
-        meta.append({'name': name, 'source': asset, 'metres': round(metres, 3)})
+        meta.append({'name': name, 'source': asset, 'metres': round(metres, 3), 'mean': mean_linear(a)})
     for k, im in strips.items():
         im.save(out / f'{k}.jpg', quality=93, subsampling=0)
-        (out / f'{k}.jpg.import').write_text(IMPORT.format(place=place, name=k, layers=len(layers)))
+        # Godot keeps its own lines (the uid) in an import file once made: never rewritten.
+        if not (out / f'{k}.jpg.import').exists():
+            (out / f'{k}.jpg.import').write_text(IMPORT.format(place=place, name=k, layers=len(layers)))
     (out / 'layers.json').write_text(json.dumps({'layers': meta}, indent=1) + '\n')
     print(f'{place}: ' + ', '.join(f"{m['name']}={m['source']}" for m in meta), flush=True)
 
@@ -176,6 +220,10 @@ def credit(assets):
 
 
 def main():
+    if '--meta' in sys.argv:
+        for place in [a for a in sys.argv[1:] if a != '--meta'] or list(PLACES):
+            meta_only(place)
+        return
     want = sys.argv[1:] or list(PLACES)
     with get('https://api.polyhaven.com/assets?t=textures') as r:
         info = json.load(r)

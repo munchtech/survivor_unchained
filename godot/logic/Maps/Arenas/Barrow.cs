@@ -141,7 +141,7 @@ public sealed class Barrow : ArenaShape
             if (d > a.R + 4) continue;
             double k = 1 - MathX.Smoothstep(a.R * 0.45, a.R, d + n1 * 2.2 + n2);
             p.L4 = Math.Max(p.L4, k);
-            p.Char = Math.Max(p.Char, (1 - MathX.Smoothstep(a.R * 0.1, a.R * 0.45, d + n1 * 1.5)) * (Ashen ? 0.55 : 0.3));
+            p.Char = Math.Max(p.Char, (1 - MathX.Smoothstep(a.R * 0.1, a.R * 0.45, d + n1 * 1.5)) * (Ashen ? 0.3 : 0.15));
         }
         foreach (var r in rubble)
         {
@@ -152,6 +152,9 @@ public sealed class Barrow : ArenaShape
         if (Drowned) p.Wet = Math.Max(p.Wet, MathX.Smoothstep(0.35, 0.7, Noise.Noise(x * 0.05 - 9, z * 0.05)) * MathX.Smoothstep(-1, 3, inn));
         // Just inside the ring, the turf is scorched before it chars.
         p.L4 = Math.Max(p.L4, (1 - MathX.Smoothstep(3, 9, inn + n1 * 2)) * 0.7);
+        // Dead grass on the turf, thinning on the bare and gone on stone, earth and ash.
+        double hard = Math.Max(Math.Max(p.L2, p.L3), Math.Max(p.L4, p.L5));
+        p.Grass = (1 - hard) * (1 - p.BaseB * 0.6) * MathX.Smoothstep(-0.45, 0.1, n1 + n2 * 0.4);
     }
 
     public override void Wall(double x, double z, double d)

@@ -95,7 +95,7 @@ public sealed class Dig : ArenaShape
     {
         double n1 = Noise.Noise(x * 0.09, z * 0.09), n2 = Noise.Noise(x * 0.23 + 4, z * 0.23);
         // Spoil (the ground's second material) tipped in heaps and spread round them.
-        p.BaseB *= 0.55;
+        p.BaseB = 0;
         foreach (var hp in heaps)
         {
             double d = MathX.Dist(x, z, hp.X, hp.Z);
@@ -105,8 +105,8 @@ public sealed class Dig : ArenaShape
         double rf = B.At(railsF, x, z) + n2 * 0.15;
         p.L2 = 1 - MathX.Smoothstep(0.9, 1.6, rf);
         p.Trod = (1 - MathX.Smoothstep(0.8, 2.5, rf)) * 0.5;
-        // Broken stone heaped about too.
-        p.L2 = Math.Max(p.L2, MathX.Smoothstep(0.45, 0.75, Noise.Noise(x * 0.08 + 13, z * 0.08 - 1)) * 0.8);
+        // Broken stone in a few drifts, where the rock was blasted.
+        p.L2 = Math.Max(p.L2, MathX.Smoothstep(0.55, 0.8, Noise.Noise(x * 0.035 + 13, z * 0.035 - 1) + n2 * 0.15) * 0.85);
         foreach (var s in pools)
         {
             double d = MathX.Dist(x, z, s.X, s.Z);
@@ -123,7 +123,9 @@ public sealed class Dig : ArenaShape
         // Burnt round the pit's mouth; burnt where the blasting was.
         double dp = MathX.Dist(x, z, pitX, pitZ);
         p.L5 = Math.Max(MathX.Smoothstep(0.55, 0.85, Noise.Noise(x * 0.05 - 7, z * 0.05 + 7)) * (Ashen ? 1 : 0.6), 1 - MathX.Smoothstep(PitR + 1, PitR + 8, dp + n1 * 2));
-        p.Char = Math.Max(p.Char, 1 - MathX.Smoothstep(PitR - 0.5, PitR + 3.5, dp + n1 * 1.5));
+        // The pit's mouth: charred round its lip, and glowing whole down inside it.
+        p.Char = Math.Max(p.Char, 0.85 * (1 - MathX.Smoothstep(PitR - 0.5, PitR + 3.5, dp + n1 * 1.5)));
+        p.Char = Math.Max(p.Char, 1 - MathX.Smoothstep(PitR - 3.5, PitR - 1.5, dp));
         if (Drowned) p.Wet = Math.Max(p.Wet, MathX.Smoothstep(0.35, 0.7, Noise.Noise(x * 0.05 - 9, z * 0.05)) * 0.7);
     }
 

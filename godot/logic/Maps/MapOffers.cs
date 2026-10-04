@@ -133,6 +133,11 @@ public static class MapOffers
     static string PlaceWord(Rng rng, string people) =>
         rng.Pick(ArenaPlaces.Names.First(n => n.Place == ArenaPlaces.IdFor(people)).Words);
 
+    /// <summary>A name given to another people's place (an offer whose people
+    /// were changed): its adjective kept, its place word theirs.</summary>
+    public static string Renamed(string name, string people, int seed) =>
+        $"{string.Join(' ', name.Split(' ').SkipLast(1))} {PlaceWord(new Rng((uint)seed), people)}";
+
     /// <summary>The maps the table offers today: three, each of its own
     /// people and oaths, the tier the survivor has earned (and one higher).</summary>
     public static List<MapOffer> Today(int day, int tier, int drawn)

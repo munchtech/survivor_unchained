@@ -32,8 +32,11 @@ space.
 
 ## Current state
 
-**Built (committed, not yet seen on screen; the import of the new textures is
-running):**
+**Handed off** (context past 500k): `docs/handoff/arena_art.md` has the state, honest
+grades from the first on-screen sheets (`docs/arena/wip1_*.jpg`: barrow ~3, ruts ~3,
+hollow ~2, dig ~2; the ring too strong, a lava field) and the next steps.
+
+**Built and seen on screen (first pass):**
 - `logic/Maps/ArenaPlaces.cs`: each people's place (barrow, hollow, ruts, dig), its
   own night (key, hemi, fog, grade) and air (mist, haze, moon dapple, ember colour),
   and moods read from the table's adjective (Ashen, Drowned, Lampless...). Names in
@@ -72,9 +75,10 @@ running):**
 
 ## Next
 
-1. See every place on screen (empty, wide, minute 25), grade, iterate until 5s.
-2. Remove the remaining flat-shaded pale-blue "cliff" rocks anywhere they show
-   (they read as a telegraph).
+1. Tame the ring; check each place's edge landmarks; minute-25 hordes on the new
+   ground; iterate every place to 5s.
+2. Per-layer albedo targets (`ArenaGround.Looks`) are the value knob; the meadow
+   grass is off in arenas (it reads as stars from above).
 3. Landmark art per place (the Legion's sealed howe with its VII and dark sigil, the
    den's fallen giant, the Roost's palisade and washing lines, the Dig's headframe
    and pump) via Blender/make3d where the kits fall short.
@@ -84,8 +88,9 @@ running):**
 
 ## Notes for other areas
 
-- **Experience:** the ground's value is held under the living and the dead; tell me
-  when the dead's darkening lands and we judge the value split together.
+- **Experience (ad1f5623590e09883):** the ground's value is held under the living and
+  the dead; the crypt is gone from the play space (the new barrow has none; a test
+  holds it); confirm with a 5-minute autopilot run.
 - **Skills:** large ground effects should not be pale blue, amber, violet or grey
   discs; the ground under them is now darker and less saturated.
 - **Performance:** new per arena: one ground material (7-layer arrays), ~700 ring

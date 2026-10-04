@@ -36,6 +36,8 @@ public struct ArenaPaint
     public double Trod;
     /// <summary>The ground's second material (layer 1) over its first.</summary>
     public double BaseB;
+    /// <summary>How thick the place's grass grows here (0 none).</summary>
+    public double Grass;
 }
 
 /// <summary>A place's own making: its shapes, paint and dressing.</summary>
@@ -69,7 +71,8 @@ public static class ArenaGen
     public const double R = MapGen.ArenaR;
     const double Size = MapGen.Size;
     const int Res = MapGen.Res;
-    const int SplatRes = MapGen.SplatRes;
+    /// <summary>The paint is finer than a map's: the camera is closer to an arena's ground than a texel of 0.6 m allows.</summary>
+    public const int SplatRes = 1024;
 
     public static ArenaShape ShapeFor(string place) => place switch
     {
@@ -113,6 +116,7 @@ public static class ArenaGen
         public Heightfield Ground = null!;
         readonly byte[] splat = new byte[SplatRes * SplatRes * 4];
         readonly byte[] splat2 = new byte[SplatRes * SplatRes * 4];
+        readonly byte[] grass = new byte[SplatRes * SplatRes];
         public readonly List<FloraPlace> Flora = new();
         public readonly List<PropPlace> Pieces = new();
         public readonly List<ColliderDef> Colliders = new();
@@ -218,6 +222,8 @@ public static class ArenaGen
                     int o = (j * SplatRes + i) * 4;
                     splat[o] = MapGen.B(p.L2); splat[o + 1] = MapGen.B(p.L3); splat[o + 2] = MapGen.B(p.L4); splat[o + 3] = MapGen.B(p.L5);
                     splat2[o] = MapGen.B(p.Wet); splat2[o + 1] = MapGen.B(p.Char); splat2[o + 2] = MapGen.B(p.Trod); splat2[o + 3] = MapGen.B(p.BaseB);
+                    // Nothing grows on char, in water or where it is trodden flat.
+                    grass[j * SplatRes + i] = MapGen.B(p.Grass * (1 - p.Char) * (1 - p.Wet * 0.9) * (1 - p.Trod * 0.7));
                 }
             });
         }
@@ -231,7 +237,8 @@ public static class ArenaGen
             double finger = Math.Pow(Math.Max(0, Noise.Ridged(x * 0.045 - 3, z * 0.045 + 9, 3)), 3) * 9;
             double inward = 1 - MathX.Smoothstep(1.5, 4.5 + finger, inn + n * 1.6);
             double outward = MathX.Smoothstep(-12, -3, inn + n * 2);
-            return MathX.Clamp01(inward * outward);
+            // Never past 0.85: what is hotter than that (a pit's mouth) glows whole.
+            return MathX.Clamp01(inward * outward) * 0.85;
         }
 
         /* ----------------------------------------------------------- flora -- */
@@ -405,7 +412,7 @@ public static class ArenaGen
             {
                 double a = a0 + k * Math.PI * 2 / n + Rng.Range(-0.08, 0.08);
                 var (x, z) = AtEdge(a, -1.5);
-                Lights.Add(new LightDef { X = x, Y = HeightAt(x, z) + 0.7, Z = z, Color = Place.Air.Ember, Intensity = 6.5, Distance = 11, Flicker = 0.35, On = true });
+                Lights.Add(new LightDef { X = x, Y = HeightAt(x, z) + 0.7, Z = z, Color = Place.Air.Ember, Intensity = 3.6, Distance = 9, Flicker = 0.35, On = true });
             }
         }
 
@@ -441,7 +448,7 @@ public static class ArenaGen
             };
             return new MapBuild
             {
-                Spec = Spec, Meta = meta, Ground = Ground, SplatRes = SplatRes, Splat = splat, Splat2 = splat2, Flora = Flora, Props = new(), Pieces = Pieces,
+                Spec = Spec, Meta = meta, Ground = Ground, SplatRes = SplatRes, Splat = splat, Splat2 = splat2, Grass = grass, Flora = Flora, Props = new(), Pieces = Pieces,
                 Kinds = Kinds, Areas = new List<Area> { start }, Packs = new(), Walkable = Walk, Place = Place, Rim = rim, Streams = Streams, Inside = Inside,
             };
         }

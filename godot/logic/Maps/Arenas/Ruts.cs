@@ -90,6 +90,8 @@ public sealed class Ruts : ArenaShape
             p.L4 = Math.Max(p.L4, (1 - MathX.Smoothstep(2, 6, d + n1 * 1.5)) * 0.6);
         }
         if (Drowned) p.Wet = Math.Max(p.Wet, MathX.Smoothstep(0.3, 0.65, Noise.Noise(x * 0.05 - 9, z * 0.05)) * 0.9);
+        // Grass on the verges, never on the road or in the camp.
+        p.Grass = MathX.Smoothstep(1.4, 2.6, f + n1 * 0.4) * (1 - camp) * (1 - p.L4) * MathX.Smoothstep(-0.5, 0.0, n2 + n1 * 0.5);
     }
 
     public override void Wall(double x, double z, double d)

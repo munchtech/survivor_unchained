@@ -26,6 +26,8 @@ public sealed class ZoneData
     /// height sample is, its edge and its streams (Maps/ArenaGen.cs); null elsewhere.</summary>
     public readonly SurvivorUnchained.Maps.ArenaPlace? Place;
     public readonly Image? Splat2;
+    /// <summary>An arena's grass as the meadow shader reads paint: G where none grows.</summary>
+    public readonly Image? GrassMask;
     public readonly double[]? Inside;
     public readonly List<(double X, double Z)> Rim = new();
     public readonly List<(double X, double Z, double Hw)[]> Streams = new();
@@ -110,6 +112,12 @@ public sealed class ZoneData
         Splat = Image.CreateFromData(m.SplatRes, m.SplatRes, false, Image.Format.Rgba8, m.Splat);
         Place = m.Place;
         if (m.Splat2 != null) Splat2 = Image.CreateFromData(m.SplatRes, m.SplatRes, false, Image.Format.Rgba8, m.Splat2);
+        if (m.Grass != null)
+        {
+            var g = new byte[m.Grass.Length * 4];
+            for (int i = 0; i < m.Grass.Length; i++) g[i * 4 + 1] = (byte)(255 - m.Grass[i]);
+            GrassMask = Image.CreateFromData(m.SplatRes, m.SplatRes, false, Image.Format.Rgba8, g);
+        }
         Inside = m.Inside;
         Rim.AddRange(m.Rim);
         Streams.AddRange(m.Streams);

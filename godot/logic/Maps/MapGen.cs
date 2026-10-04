@@ -76,6 +76,8 @@ public sealed class MapBuild
     /// <summary>An arena's second paint, as Splat: R wet, G the ember's char,
     /// B trodden, A the ground's second material (ArenaGen).</summary>
     public byte[]? Splat2;
+    /// <summary>An arena's grass, one byte a texel as Splat: how thick it grows.</summary>
+    public byte[]? Grass;
     /// <summary>An arena's edge, all the way round: (x, z) every two degrees.</summary>
     public List<(double X, double Z)> Rim = new();
     /// <summary>Still water laid in an arena (a stream's course): points along

@@ -106,9 +106,12 @@ public sealed class Hollow : ArenaShape
         double yard = 1 - MathX.Smoothstep(6, 13, MathX.Dist(x, z, denX, denZ) + n1 * 3);
         p.Trod = Math.Max(run * 0.7, yard);
         p.L3 = Math.Max(p.L3, Math.Max(run * 0.55, yard * 0.85));
-        // Drier litter, needles and twigs, in drifts toward the rim.
-        p.L5 = MathX.Smoothstep(0.15, 0.55, Noise.Noise(x * 0.05 + 21, z * 0.05 + 3) + n2 * 0.2) * MathX.Smoothstep(28, 10, inn) * (1 - p.L3);
+        // Drier litter, needles and twigs, in drifts across the bowl, thickest toward the rim.
+        p.L5 = MathX.Smoothstep(0.05, 0.45, Noise.Noise(x * 0.035 + 21, z * 0.035 + 3) + n2 * 0.2 + MathX.Smoothstep(30, 8, inn) * 0.3) * (1 - p.L3);
         if (Drowned) p.Wet = Math.Max(p.Wet, MathX.Smoothstep(0.35, 0.7, Noise.Noise(x * 0.05 - 9, z * 0.05)) * 0.8);
+        // Grass only where the canopy opens, in clearings of the litter.
+        double hard = Math.Max(Math.Max(p.L2, p.L3), Math.Max(p.L4, p.L5));
+        p.Grass = (1 - hard) * MathX.Smoothstep(0.2, 0.55, Noise.Noise(x * 0.03 - 40, z * 0.03 + 12) + n2 * 0.2);
     }
 
     public override void Wall(double x, double z, double d)

@@ -177,7 +177,7 @@ public partial class Game : Node, IZoneHost
         if (z == "arena")
         {
             var o = SurvivorUnchained.Maps.MapOffers.Today(World.Day, 1, 0)[(int)Args.Num("offer", 0)];
-            if (Args.Get("people") is string pe) o = o with { People = pe };
+            if (Args.Get("people") is string pe) { o = o with { People = pe }; o.Spec.Name = SurvivorUnchained.Maps.MapOffers.Renamed(o.Spec.Name, pe, o.Spec.Seed); }
             if (Args.Get("oaths") is string oa) o.Spec.Oaths = oa.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
             if (Args.Has("tier")) o.Spec.Tier = (int)Args.Num("tier", 1);
             // --theme ID --seed N: that ground (pictures of each arena's look, the same place each time).

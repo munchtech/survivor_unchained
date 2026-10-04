@@ -7,7 +7,7 @@
 // ember's char with its cracks glowing, and the dark past the ring.
 //
 // For the fight's sake the ground is held in a value range below everything
-// that moves on it (value, sat), and the ember's glow keeps to the char.
+// that moves on it (g_tone, g_sat), and the ember's glow keeps to the char.
 shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 
@@ -21,18 +21,22 @@ uniform sampler2DArray g_alb : source_color, filter_linear_mipmap_anisotropic, r
 uniform sampler2DArray g_nor : filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2DArray g_arh : filter_linear_mipmap_anisotropic, repeat_enable;
 uniform float g_scale[NL];
-// Each photograph brought into this country's light (linear multipliers).
-uniform vec3 g_tone[NL];
+// Each photograph brought to the value the place asks of it (its mean albedo
+// over what it was shot at), and how much of its colour it keeps: all kept
+// below the living (View/ArenaGround.cs).
+uniform float g_tone[NL];
+uniform float g_sat[NL];
 uniform float zone_size = 300.0;
-// The ground's value and colour, all told: kept below the living.
-uniform float value = 0.8;
-uniform float sat = 0.85;
 // Moonlight through a canopy, in pools (the Hollow).
 uniform float dapple = 0.0;
 uniform vec3 ember : source_color = vec3(1.0, 0.35, 0.13);
 uniform float ember_glow = 1.0;
 // Water's colour in the low places (a stream's slurry sheen).
 uniform vec3 wet_tint : source_color = vec3(0.55, 0.55, 0.52);
+// The night sky as standing water gives it back (no reflection probe sees
+// it from the arena's camera; without it, water reads as a hole).
+uniform vec3 sheen : source_color = vec3(0.2, 0.27, 0.4);
+uniform float sheen_amount = 0.06;
 
 varying vec3 w_pos;
 varying vec3 w_nrm;
@@ -59,20 +63,34 @@ vec2 g_uv(int i, vec3 p, vec3 n, out mat3 tbn) {
 	return p.xz * g_scale[i];
 }
 
-vec2 turned(vec2 uv) { return G_TURN * uv * 0.87 + vec2(0.37, 0.71); }
+// No tile repeats on screen (Inigo Quilez's "texture repetition", third
+// way): a slow noise picks, patch by patch, one of eight offsets into the
+// photograph, and two neighbouring picks are blended where the noise
+// crosses between them. Offsets only, so the normals need no turning; the
+// gradients are the unshifted uv's, so the mip level never jumps at a seam.
+struct Pick { vec2 a; vec2 b; float t; vec2 dx; vec2 dy; };
 
-vec4 tex2(sampler2DArray s, vec2 uv, int i, float tile) {
-	vec4 a = texture(s, vec3(uv, float(i)));
-	if (tile <= 0.0) return a;
-	return mix(a, texture(s, vec3(turned(uv), float(i))), tile);
+Pick pick(vec2 uv, vec2 w, int i) {
+	Pick p;
+	float k = texture(noise_tex, w * 0.09 + vec2(float(i) * 0.137, float(i) * 0.291)).r;
+	float l = k * 8.0;
+	float ia = floor(l);
+	p.a = sin(vec2(3.0, 7.0) * ia);
+	p.b = sin(vec2(3.0, 7.0) * (ia + 1.0));
+	p.t = smoothstep(0.25, 0.75, fract(l));
+	p.dx = dFdx(uv);
+	p.dy = dFdy(uv);
+	return p;
 }
 
-vec3 nor2(vec2 uv, int i, float tile) {
-	vec3 a = texture(g_nor, vec3(uv, float(i))).xyz * 2.0 - 1.0;
-	if (tile <= 0.0) return a;
-	vec3 b = texture(g_nor, vec3(turned(uv), float(i))).xyz * 2.0 - 1.0;
-	b.xy = transpose(G_TURN) * b.xy;
-	return normalize(mix(a, b, tile));
+vec4 tex2(sampler2DArray s, vec2 uv, int i, Pick p) {
+	vec4 a = textureGrad(s, vec3(uv + p.a, float(i)), p.dx, p.dy);
+	vec4 b = textureGrad(s, vec3(uv + p.b, float(i)), p.dx, p.dy);
+	return mix(a, b, p.t);
+}
+
+vec3 nor2(vec2 uv, int i, Pick p) {
+	return normalize(tex2(g_nor, uv, i, p).xyz * 2.0 - 1.0);
 }
 
 void fragment() {
@@ -84,7 +102,6 @@ void fragment() {
 	vec4 sp = texture(splat, suv);
 	vec4 s2 = texture(splat2, suv);
 	vec3 n_geo = normalize(w_nrm);
-	float tile = smoothstep(0.46, 0.54, nL.b * 0.6 + nM.r * 0.4);
 
 	// The ground's two materials, in the patches the paint asks for.
 	float b2 = smoothstep(0.3, 0.7, s2.a + (nM.b - 0.5) * 0.5 + (nF.g - 0.5) * 0.15);
@@ -107,13 +124,15 @@ void fragment() {
 	// Heights decide at the edges: the taller material shows.
 	const float BLEND_DEPTH = 0.22;
 	float hs[NL];
+	vec4 arhs[NL];
 	float best = 0.0;
 	for (int k = 0; k < NL; k++) {
 		hs[k] = -1.0;
 		if (gw[k] < 0.003) continue;
 		mat3 tbn;
 		vec2 uv = g_uv(k, w_pos, n_geo, tbn);
-		hs[k] = gw[k] + tex2(g_arh, uv, k, tile).b * BLEND_DEPTH;
+		arhs[k] = tex2(g_arh, uv, k, pick(uv, w, k));
+		hs[k] = gw[k] + arhs[k].b * BLEND_DEPTH;
 		best = max(best, hs[k]);
 	}
 	float tot = 0.0;
@@ -129,9 +148,12 @@ void fragment() {
 		if (wk < 0.004) continue;
 		mat3 tbn;
 		vec2 uv = g_uv(k, w_pos, n_geo, tbn);
-		vec4 arh = tex2(g_arh, uv, k, tile);
-		albedo += tex2(g_alb, uv, k, tile).rgb * g_tone[k] * wk;
-		n_w += tbn * nor2(uv, k, tile) * wk;
+		Pick p = pick(uv, w, k);
+		vec4 arh = arhs[k];
+		vec3 a = tex2(g_alb, uv, k, p).rgb;
+		a = mix(vec3(dot(a, vec3(0.2126, 0.7152, 0.0722))), a, g_sat[k]);
+		albedo += a * g_tone[k] * wk;
+		n_w += tbn * nor2(uv, k, p) * wk;
 		rough += arh.g * wk;
 		ao += arh.r * wk;
 		hgt += arh.b * wk;
@@ -163,24 +185,24 @@ void fragment() {
 	float charred = smoothstep(0.15, 0.6, ch + (nF.b - 0.5) * 0.3);
 	albedo = mix(albedo, vec3(0.022, 0.019, 0.017) * (0.7 + 0.6 * nF.g), charred * 0.92);
 	rough = mix(rough, 0.95, charred);
-	float crack = pow(1.0 - abs(nM.g * 2.0 - 1.0), 12.0) + pow(1.0 - abs(nF.r * 2.0 - 1.0), 18.0) * 0.7;
-	float deep = smoothstep(0.55, 0.95, ch);
+	// Thin cracks: the char split along two scales of noise, glowing only
+	// where it is deepest; a hotter place (a pit's mouth, char past 0.85)
+	// glows whole. Kept thin so the ring never reads as an amber telegraph.
+	float crack = pow(1.0 - abs(nF.r * 2.0 - 1.0), 28.0) + pow(1.0 - abs(texture(noise_tex, w * 0.7 + 0.21).g * 2.0 - 1.0), 36.0) * 0.6;
+	float deep = smoothstep(0.5, 0.8, ch);
+	float hot = smoothstep(0.87, 1.0, ch);
 	float breathe = 0.6 + 0.4 * sin(TIME * 0.9 + nL.r * 9.0) * sin(TIME * 0.37 + nM.b * 5.0);
-	vec3 glow = ember * (crack * deep * 2.6 + deep * deep * 0.12) * breathe * ember_glow;
+	vec3 glow = ember * (crack * deep * 1.6 + hot * (0.5 + 0.8 * crack)) * breathe * ember_glow;
 
 	// Moon through the leaves, in pools.
 	if (dapple > 0.0) {
-		float leaves = texture(noise_tex, w * 0.045 + vec2(TIME * 0.004, TIME * 0.0025)).g * 0.7 + texture(noise_tex, w * 0.13 - vec2(TIME * 0.006, 0.0)).b * 0.3;
-		albedo *= mix(1.0, mix(0.55, 1.25, smoothstep(0.42, 0.62, leaves)), dapple);
+		float leaves = texture(noise_tex, w * 0.022 + vec2(TIME * 0.002, TIME * 0.0012)).g * 0.75 + texture(noise_tex, w * 0.09 - vec2(TIME * 0.004, 0.0)).b * 0.25;
+		albedo *= mix(1.0, mix(0.45, 1.4, smoothstep(0.4, 0.62, leaves)), dapple);
 	}
 
 	// Past the ring the night closes in: the place goes on, darker.
 	float past = 1.0 - smoothstep(0.0, 1.0, w_in);
 	albedo *= 1.0 - 0.6 * past;
-
-	// Held below the living.
-	float l = dot(albedo, vec3(0.2126, 0.7152, 0.0722));
-	albedo = mix(vec3(l), albedo, sat) * value;
 
 	ALBEDO = albedo;
 	ROUGHNESS = clamp(rough, 0.04, 1.0);
@@ -188,5 +210,8 @@ void fragment() {
 	AO_LIGHT_AFFECT = 0.25;
 	SPECULAR = mix(0.35, 0.6, pool);
 	NORMAL = normalize((VIEW_MATRIX * vec4(n, 0.0)).xyz);
+	// Standing water gives the sky back, broken by the wind on it.
+	float ripple = texture(noise_tex, w * 0.35 + vec2(TIME * 0.02, -TIME * 0.013)).g;
+	glow += sheen * sheen_amount * pool * (0.55 + 0.9 * ripple) * (1.0 - charred);
 	EMISSION = glow;
 }
