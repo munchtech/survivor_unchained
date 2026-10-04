@@ -413,8 +413,9 @@ public partial class ForgeScreen : Overlay
         if (Crafting.Does(crafter, Verb.Remake))
         {
             var q = Crafting.Remake(X, it, crafter);
-            bool top = q.Blocked != null && q.Takes.Count == 0;
-            row.AddChild(Tile(q.Title, top ? null : q.After, q, () => Work(q, () => Sound.Sfx.Loot(true)), "Remake", "remake", top ? q.Blocked : null));
+            // At the last pattern, or remade today and cooling: said quietly, no press.
+            bool quiet = q.Blocked != null && (q.Takes.Count == 0 || it.Remade == G.Journey.World.Day);
+            row.AddChild(Tile(q.Title, quiet ? null : q.After, q, () => Work(q, () => Sound.Sfx.Loot(true)), "Remake", "remake", quiet ? q.Blocked : null));
         }
         if (Crafting.Does(crafter, Verb.Rekindle))
         {

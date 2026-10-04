@@ -182,10 +182,10 @@ question ("do I have enough?") answerable at a glance.
 | Rarity | Seams (affix places) | Grade cap at the forge | Heat at drop (±20%) | Break down yields |
 |---|---|---|---|---|
 | Common (0) | 0 | – | 6 | 1 old iron |
-| Uncommon (1) | 1 | II | 10 | 2 |
-| Rare (2) | 2 | III | 14 | 4 |
-| Epic (3) | 3 | IV | 18 | 6 |
-| Legendary (4) | 3 | IV | 22 | 9 |
+| Uncommon (1) | 1 | II | 10 | 1 |
+| Rare (2) | 2 | III | 14 | 2 |
+| Epic (3) | 3 | IV | 18 | 3 |
+| Legendary (4) | 3 | IV | 22 | 5 |
 | Storied (5) | 3 | IV | 22 | cannot be broken down |
 
 - **Grades** are the affix tiers the game already has (0 to 3), shown as I to
@@ -247,7 +247,7 @@ skills it already gives:
 **Ember shards, carried out.**
 
 ```
-shards = floor(max(0, ember - 10) / 8) + (tier - 1) + floor(minutesPast / 2) + (won story fight ? 2 : 0)
+shards = floor(max(0, ember - 10) / 12) + (tier - 1) + floor(minutesPast / 2) + (won story fight ? 2 : 0)
 ```
 
 `ember` is the ember level at the end; `minutesPast` the minutes stayed after
@@ -312,7 +312,7 @@ will be after** (the affix line before and after, the grade's number).
 | **Temper** | one affix up one grade, to the piece's cap (5.1) | to II: 2 old iron, 10 gold · to III: 4 iron, 25 gold · to IV: 7 iron, 50 gold | to II: 2–4 · III: 3–5 · IV: 4–6 |
 | **Work in** | a material becomes its answer (table below) in an open seam, or in place of an affix the survivor chooses (that affix is lost); it enters at grade I (II on an Epic, III on a Legendary) | the material (table) + 15 gold + 10 a rarity step | 4–6 |
 | **Cage a coal** | a kindled affix: **three are offered** from those that fit the piece, leaning toward the stand-ins the survivor's skills evolve with; the one taken goes in the seam its old coal held, or an open seam, or in place of a chosen affix. Rare and up. | 4 ember shards + 30 gold; another three: 1 ember shard | 5–7 |
-| **Remake** | the piece made again on a better pattern: rarity +1, a seam opens, +4 heat; a weapon's rank +1 (to four). To Epic at most in Act 1. | to Uncommon: 4 old iron, 30 gold · Rare: 8, 75 · Epic: 14, 160 | none |
+| **Remake** | the piece made again on a better pattern: rarity +1, a seam opens, +4 heat; a weapon's rank +1 (to four). To Epic at most in Act 1. One remake a piece a day: "Iron wants a night to cool." | to Uncommon: 4 old iron, 30 gold · Rare: 8, 75 · Epic: 18, 200 | none |
 | **Rekindle** | heat + half the piece's starting heat (rounded up) | 3 ember shards and 20 gold the first time; each time after, the shards double and the gold rises by 20 (3, 6, 12, 24...) | – |
 | **Break down** | section 5.2 | – | – |
 
@@ -643,7 +643,7 @@ restyles or rebuilds it.
 |---|---|---|---|
 | Brannoc | temper, work in, cage, remake to Epic, rekindle, break down; commissions | his fate (lie: Snib's bodgery); the last two irons; remake to Legendary at respect 40 | the heart's cage (story) |
 | Wenna | brewing; tinctures after the cure; the flask | the breakthrough (she may die: Rook brews) | – |
-| Vonnra | binding | sigils and the binders' book (Marks, items plan) | the book passes to the survivor |
+| Vonnra | binding | marks and the binders' book (items plan) | the book passes to the survivor |
 | Snib | slurry jars while the pump runs | the bodgery | – |
 | New hands | – | the Vigil's armourers at Silverstair (Wrought bases); Rav the tailor (looks, items plan) | Heartwrought (the Morrow's own, pale and ember-veined) |
 | Materials | ten | the north road's few (Vigil silver, north-wood) | the Morrow's |
@@ -721,6 +721,8 @@ steeping; the seeds' lines.
 15. **The anvil works one seam at a time** (seen in the running game, 19.1):
     every craft for every seam at once was a wall of refusals. A seam is
     chosen and only its crafts are offered (Last Epoch's forge).
+16. **One remake a piece a day** (19.2): a Kerchief night's purse remade the starting weapon from Uncommon to Epic in one visit; remade iron cooling overnight spreads the climb over days, as the targets ask, and is the smith's own reason.
+17. **Break down yields halved; a shard per 12 ember, not 8** (19.2): measured, iron and shards piled up unspent (190 iron and 100 shards by Act 1's end).
 
 ---
 
@@ -760,10 +762,40 @@ What looked wrong, and what was done about it:
 Still to see: the forge after a craft (the line Brannoc says, the gauge
 after), the pack's break down by mouse, a real arena's end with a fall.
 
-### 19.2 The economy
+### 19.2 The economy (`tests/CraftingEconomy.cs`)
 
-*(The simulation, section 13.4: not yet run. Combat's cuts are in:
-arena fodder pays 2% gold; gear comes only from carriers.)*
+Act 1 as ten days, a won night each (tiers 1, 2, 3 by thirds; the four
+peoples in turn; a story night in three), eight seeds. Faucets: combat's
+sweep at `71608a4` (deft bot; fodder gold 2%, gear from carriers only): ember
+57/62/67, champions 864/1052/1079, Kerchief nights 2,570–3,320 gold, the
+others 11–22; about 13 pieces of gear a night by the arena's own drop rule;
+by day a few of the Verge's beasts, 80 gold of quests and 50 of the story's
+prices. The spender wears what is finer, breaks down the rest, and crafts
+on what it wears: remake the weapon, temper the lowest grade, fill open
+seams, cage up to two coals, rekindle a cold piece.
+
+| Measure | Target | Before tuning | After (today's gold) | After (champion gold at a tenth) |
+|---|---|---|---|---|
+| First craft | day 1–2 | 1 | 1 | 1 |
+| Crafts a day (median, max) | 2–5 | 1 (23) | 2 (14) | 2 (11) |
+| Weapon rare / epic | day 3–4 / 6–8 | 4 / 4 | 4 / 5 | 4 / 8 |
+| Pieces the forge finished | 0–2 | 7–8 (measured loosely) | 2 | 1 |
+| Gold spent on crafting | 30–60% | 17% | 19% | 67% |
+| Shards a won night | 4–8 | 9 | 7 | 7 |
+| Unspent at the end: iron, shards | – | 190, 100 | – | 52, 77 |
+
+**Findings.**
+- **Gold is the one faucet crafting cannot hold.** A Kerchief night pays
+  2,500–3,300 gold (its champions keep the day's gold rate), the rest of a
+  ten-day act pays about 1,500, and crafting's prices were set against the
+  second. With champions at a tenth in arenas (combat's one line, at
+  `Rules.FodderGold`'s use in `Battle.KillEnemy`), the Kerchiefs stay the
+  gold night (about 300, three times an ordinary one) and every target holds.
+  **Asked of combat.** The test holds the targets on that economy.
+- **Iron and shards were too generous** for their sinks: decision 17.
+- **A remake a day** (decision 16).
+- **Shards still gather** (77 by Act 1's end). Phase 3's binding (a shard a
+  grade), redraws and the endgame's charts draw on them; re-measure then.
 
 ---
 
@@ -783,7 +815,7 @@ until you leave or fall, and closes). Combat's mechanics for maps are
 | | Pays | Wants from crafting |
 |---|---|---|
 | **The scars** (survivors runs) | **fire**: ember shards (more the deeper you stay), the people's materials, kindling | coals caged in gear, to shape the draft; nothing else (the scar is "mindless fun": what you bring in is decided at the forge, not in the run) |
-| **The atlas** (build maps) | **iron and bases**: gear at the map's item level (broken down: old iron), gold, the people's materials, charts | the build itself: seams, grades, bound affixes, sigils; and charts worked for what they pay |
+| **The atlas** (build maps) | **iron and bases**: gear at the map's item level (broken down: old iron), gold, the people's materials, charts | the build itself: seams, grades, bound affixes, marks; and charts worked for what they pay |
 
 So a player who only maps runs short of fire (rekindling, caging, burning
 charts); one who only runs scars runs short of iron and good bases. Neither
@@ -819,12 +851,12 @@ the ceilings rise, each by a hand the story gives:
 | **The forge's cap follows the hands** | grade V at the Vigil's armourers (Act 2), VI on Heartwrought (Act 3); the forge never passes what the piece's item level allows; the bright grade stays one above the forge, and only the slurry (or its endgame heir, 20.5) gives it | Brannoc, the Vigil, the Morrow | the story |
 | **Remake to Legendary** | at Brannoc's respect 40 (Act 2), costing the people's rare material from a map boss | Brannoc | atlas bosses |
 | **Binding** | the build's engine: the offensive affixes (fire, crit, haste, reach), which the forge never makes, are moved from donor drops onto the piece kept; donors are the atlas's flood of gear | Vonnra (or her book) | map drops |
-| **Sigils** (proposal, combat's yes needed) | a fourth kind of seam content that changes how one day skill behaves in maps: Oathblade's arc wider and it bleeds; a bolt that forks; a chain that returns. Dropped by map bosses, one people's kind each; inscribed in an open seam; one per piece, three per kit | Vonnra, from the binders' book (the items plan's Marks) | map bosses |
+| **Marks** (proposal, combat's yes needed) | a fourth kind of seam content that changes how one day skill behaves in maps: Oathblade's arc wider and it bleeds; a bolt that forks; a chain that returns. Dropped by map bosses, one people's kind each; inscribed in an open seam; one per piece, three per kit; Vonnra: "It is marked. It will not forget." | Vonnra, from the binders' book (the items plan's Marks) | map bosses |
 | **Heat** | unchanged: the budget that stops "craft the best and done"; higher grades cost more heat (V: 6–8, VI: 7–9), so a map piece is a set of choices, not a checklist | – | – |
 
-**Why sigils**: Path of Exile's build depth is in what changes a skill
+**Why marks** (and not "sigils", which the canon keeps for the Legion's seven-notch sigils that hold the chain): Path of Exile's build depth is in what changes a skill
 (supports, unique interactions), not in bigger numbers. Our day skills have
-ranks and arts but nothing that bends them. A sigil is a small, readable
+ranks and arts but nothing that bends them. A mark is a small, readable
 change, one per piece, so a kit of three is a build's signature. It is the
 binders' own craft (they hold one thing's power in another) and gives Vonnra's
 book its endgame.
@@ -869,5 +901,5 @@ Light on purpose: the scar is "mindless survivors fun".
 1. Two kits (pack and table).
 2. Item level on gear and grade caps by item level (with combat's map loot).
 3. Chart verbs at the table (when combat's chart item exists).
-4. Sigils (when combat agrees the skill hooks).
+4. Marks (when combat agrees the skill hooks).
 5. Higher grades and remake to Legendary (Act 2's hands).
