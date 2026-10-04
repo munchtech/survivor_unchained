@@ -87,9 +87,10 @@ public class MapGenTests
     {
         var m = MapGen.Generate(new MapSpec { Seed = 5, Arena = true, People = people });
         Assert.Contains(m.Pieces, p => p.Id.StartsWith(piece));
-        // Lit where they keep a light, and every piece stands on open ground inside.
-        if (people != "kerchiefs") Assert.True(m.Meta.Lights.Count > 12);
-        Assert.All(m.Pieces, p => Assert.True(Math.Sqrt(p.X * p.X + p.Z * p.Z) < MapGen.ArenaR));
+        // Lit where they keep a light (the ember's ring is lit all round), and every
+        // piece stands inside the edge or, a landmark, just past it.
+        Assert.True(m.Meta.Lights.Count > 12);
+        Assert.All(m.Pieces, p => Assert.True(Math.Sqrt(p.X * p.X + p.Z * p.Z) < ArenaPlaceTests.Edge(m, p.X, p.Z) + 8, $"{p.Id} at {p.X:0},{p.Z:0}"));
         // The Pack's wood has bare trees for cover, not full crowns.
         var wood = MapGen.Generate(new MapSpec { Seed = 5, Arena = true, People = "pack" });
         Assert.DoesNotContain(wood.Flora, f => f.Kind is "pine" or "broadleaf" or "autumn" && Math.Sqrt(f.X * f.X + f.Z * f.Z) < MapGen.ArenaR - 14);

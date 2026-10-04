@@ -25,8 +25,11 @@ public static class Visuals
 
     static Clips Shamble(string idle, string attack, string windup, string move = "Zombie_Walk_Fwd_Loop", string? cast = null) =>
         new(move, idle, attack, windup, "Death01", "LayToIdle", "Hit_Chest", cast);
-    static Clips Fight(string move, string idle, string attack, string windup, string hit = "Hit_Chest") =>
-        new(move, idle, attack, windup, "Death01", "Idle_Loop", hit);
+    /// <summary>A caster's call, horn or drum (a cast: FolkClips.Crowd): the weapon or the fist thrust up and shaken.</summary>
+    const string Rally = "Rally";
+
+    static Clips Fight(string move, string idle, string attack, string windup, string hit = "Hit_Chest", string? cast = Rally) =>
+        new(move, idle, attack, windup, "Death01", "Idle_Loop", hit, cast);
 
     static PersonSpec P(Sex sex, string kind, bool hood = false, bool pauldron = false, string? hair = null, bool beard = false, string? hairColor = null,
         string? skin = null, double? figure = null, string? cloth = null, string? under = null) => new()
@@ -47,13 +50,13 @@ public static class Visuals
             "risen_ally" => new(visual, P(Sex.Female, "peasant", hair: "Hair_Long", hairColor: "#6a665e", skin: Rot, figure: 0.9, cloth: Grave, under: GraveDark), null,
                 Shamble("Zombie_Idle_Loop", "Zombie_Scratch", "Zombie_Idle_Loop")),
             "skeleton_warrior" => new(visual, P(Sex.Male, "ranger", pauldron: true, beard: true, hairColor: "#4a4640", skin: Rot, cloth: "#3e4238"),
-                new Held { Right = "viking_sword", Forearm = "shield_round" }, Shamble("Idle_Shield_Loop", "Sword_Regular_A", "Idle_Shield_Loop")),
+                new Held { Right = "viking_sword", Forearm = "shield_round" }, Shamble("Idle_Shield_Loop", "Sword_Regular_A", "Idle_Shield_Loop", cast: Rally)),
             "skeleton_warrior_elite" => new(visual, P(Sex.Male, "ranger", hood: true, pauldron: true, beard: true, hairColor: "#3a3630", skin: Rot, cloth: "#2a2c2e"),
-                new Held { Right = "zweihander" }, Shamble("Sword_Idle", "Sword_Attack", "Sword_Idle", "Walk_Loop")),
+                new Held { Right = "zweihander" }, Shamble("Sword_Idle", "Sword_Attack", "Sword_Idle", "Walk_Loop", Rally)),
             "skeleton_rogue" => new(visual, P(Sex.Female, "ranger", hood: true, skin: Rot, figure: 0.8, cloth: "#3a3e34"),
-                new Held { Right = "crossbow" }, Shamble("Pistol_Idle_Loop", "Pistol_Shoot", "Pistol_Idle_Loop")),
+                new Held { Right = "crossbow" }, Shamble("Pistol_Idle_Loop", "Pistol_Shoot", "Pistol_Idle_Loop", cast: Rally)),
             "skeleton_mage" => new(visual, P(Sex.Male, "peasant", hood: true, beard: true, hairColor: "#4a4640", skin: Rot, cloth: "#2e2a36", under: "#16141a"),
-                new Held { Right = "short_staff" }, Shamble("Zombie_Idle_Loop", "Spell_Simple_Shoot", "Spell_Simple_Idle_Loop", cast: "Spell_Simple_Enter")),
+                new Held { Right = "short_staff" }, Shamble("Zombie_Idle_Loop", "Spell_Simple_Shoot", "Spell_Simple_Idle_Loop", cast: Rally)),
             // A footpad: quick, hooded, a knife in each hand.
             "kerchief_rogue" => new(visual, P(Sex.Female, "ranger", hood: true, skin: "#e0a47c", figure: 1.1, cloth: Kerchief),
                 new Held { Right = "daggers", Left = "dagger_b" }, Fight("Jog_Fwd_Loop", "Sword_Idle", "Sword_Regular_B", "Sword_Idle")),
@@ -62,7 +65,7 @@ public static class Visuals
                 Fight("Jog_Fwd_Loop", "Idle_Loop", "OverhandThrow", "Idle_Loop")),
             // A bruiser: bare-chested behind a round shield, an axe.
             "kerchief_brute" => new(visual, P(Sex.Male, "bare", pauldron: true, hair: "Hair_Buzzed", beard: true, hairColor: "#2a1a12", skin: "#946040", under: KerchiefDark),
-                new Held { Right = "viking_axe", Forearm = "shield_round" }, Fight("Walk_Loop", "Idle_Shield_Loop", "Sword_Regular_A", "Idle_Shield_Loop", "Idle_Shield_Break"), 1.1),
+                new Held { Right = "viking_axe", Forearm = "shield_round" }, Fight("Walk_Loop", "Idle_Shield_Loop", "Sword_Regular_A", "Idle_Shield_Loop", "Idle_Shield_Break", cast: null), 1.1),
             // An enforcer: a big man in a red hood with a greataxe.
             "kerchief_enforcer" => new(visual, P(Sex.Male, "bare", hood: true, beard: true, hairColor: "#1a1410", skin: "#e0a47c", cloth: Kerchief, under: KerchiefDark),
                 new Held { Right = "snake_axe" }, Fight("Jog_Fwd_Loop", "Sword_Idle", "Sword_Attack", "Sword_Idle"), 1.15),

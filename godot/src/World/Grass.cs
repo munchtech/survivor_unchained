@@ -79,6 +79,9 @@ public static class Grass
         mat.SetShaderParameter("meadow_scale", 1f / meta.RootElement.GetProperty("layers")[0].GetProperty("metres").GetSingle());
         mat.SetShaderParameter("zone_size", z.Size);
         mat.SetShaderParameter("leaves", z.Leaves);
+        // An ember arena grows its place's own grass where its paint says
+        // (its mask: G is where none grows), coloured from its own ground.
+        if (z.Place != null && z.GrassMask != null) ArenaGround.Grass(mat, z);
         mat.SetShaderParameter("span", radius * 2);
         mat.SetShaderParameter("centre", centre);
         // The ground's heights, a texel per sample, read bilinear.
