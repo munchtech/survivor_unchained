@@ -695,6 +695,7 @@ public sealed partial class Battle
         {
             X = e.X, Z = e.Z, Amount = dmg, Crit = crit, School = school, Target = e.Id, Dot = o.Dot, Blocked = blocked,
             Family = e.Def.Family, Def = e.Def.Id, MaxHp = e.MaxHp, Dx = e.LastDx, Dz = e.LastDz,
+            Art = o.Weapon?.Art, Rank = o.Weapon?.Rank ?? 0,
         });
 
         // Lifesteal.
@@ -1355,7 +1356,7 @@ public sealed partial class Battle
     public void ScheduleStrike(double x, double z, double r, double dmg, School school, Tag[] tags, double delay, WeaponInst? weapon, Side owner = Side.Player, int depth = 0)
     {
         strikes.Add(new StrikeSpec(x, z, r, dmg, school, tags, delay, weapon, owner, depth) { Credit = credit });
-        Events.Emit(new Ev.Strike { X = x, Z = z, Radius = r, School = school, Delay = delay });
+        Events.Emit(new Ev.Strike { X = x, Z = z, Radius = r, School = school, Delay = delay, Art = weapon?.Art, Rank = weapon?.Rank ?? 0 });
         if (owner == Side.Enemy) Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = x, Z = z, Radius = r, Duration = delay, Hostile = true });
     }
 
@@ -1690,7 +1691,7 @@ public sealed partial class Battle
     /// <summary>An area blast from the survivor's side. Raises Explode for procs.</summary>
     public void Explode(double x, double z, double r, double dmg, School school, Tag[] tags, WeaponInst? weapon, int depth = 0, int skip = -1)
     {
-        Events.Emit(new Ev.Explosion { X = x, Z = z, Radius = r, School = school, Power = Math.Min(2, dmg / 40) });
+        Events.Emit(new Ev.Explosion { X = x, Z = z, Radius = r, School = school, Power = Math.Min(2, dmg / 40), Art = weapon?.Art, Rank = weapon?.Rank ?? 0 });
         var t2 = tags.Has(Tag.Explosion) ? tags : [.. tags, Tag.Explosion];
         // A weapon's blast carries what its blows carry (a cinder's burning, a cloud's shock).
         var status = weapon?.StatusOf;

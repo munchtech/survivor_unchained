@@ -812,6 +812,23 @@ public partial class Game : Node, IZoneHost
                 if (evo.Length > 1) gb.Evolve(parts[0], evo[1]);
             }
             gb.GreatOwed = 0;
+            // --lab: the skills given and nothing else (the calling's own is put away), so a
+            // picture shows one skill at a time.
+            if (Args.Has("lab"))
+            {
+                var keep = give.Split(',').Select(w => w.Split('@')[0].Split(':')[0]).ToHashSet();
+                foreach (var w in gb.Weapons.Select(x => x.Id).ToList()) if (!keep.Contains(w)) gb.RemoveWeapon(w);
+            }
+        }
+        // --lab: no drafts and no dying, so a run of pictures is all the skill in hand.
+        if (Args.Has("lab") && Battle is { } lb)
+        {
+            lb.PendingLevels = 0;
+            lb.PendingBlessings.Clear();
+            lb.GreatOwed = 0;
+            lb.EmberXp = 0;
+            lb.EmberNext = 1e9;
+            lb.Player.Hp = lb.MaxHp;
         }
         // --blast SCHOOL[:R]: that school's burst a few paces ahead, every second and a half (pictures of it).
         if (Args.Get("blast") is string bl && Battle is { } bb && scene != null)
