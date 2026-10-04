@@ -284,6 +284,7 @@ def lie(starts, dirs, comb, L, steps, offset, side=None, lift=0.0, stop=None):
     side = part_side(starts) if side is None else side         # (each keeps to its root's side of her parting)
     lift = np.broadcast_to(np.asarray(lift, float), (S,))
     held = np.zeros(S, bool)
+    r0 = rise(starts)
     for k in range(1, K):
         want = comb(p, side)
         _, idx = COLLIDE.query(p, k=3)
@@ -299,7 +300,11 @@ def lie(starts, dirs, comb, L, steps, offset, side=None, lift=0.0, stop=None):
         # (rising to its height off her over its first 4 cm: no root standing up off her scalp)
         h = offset * np.clip(k * L / 0.04, 0.2, 1.0) + lift * np.clip(k / np.maximum(steps, 1), 0, 1)
         q = q - n * (((q - c) * n).sum(1) - h)[:, None]
-        go = (k <= steps) & ~held
+        # (never down over her face: a strand laid on her scalp stops at her
+        # hairline over her brow and temples, as a stray one ran down her cheek)
+        onto_face = (rise(q) < np.minimum(r0, 0.0) - 0.004) & (q[:, 1] < -0.02) & (q[:, 2] > EYE_Z - 0.13)
+        go = (k <= steps) & ~held & ~onto_face
+        held |= onto_face
         p = np.where(go[:, None], q, p)
         if stop is not None:
             held |= stop(p)

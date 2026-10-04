@@ -17,7 +17,8 @@ public static class People
     public sealed record Look(
         string Sex, string[] Outfit, string? Hair = null, bool Beard = false,
         Color? HairColor = null, Color? Skin = null, Color? Cloth = null, Color? Under = null, double Figure = 0,
-        IReadOnlyDictionary<string, float>? Face = null, Color? Eyes = null, Color? EyeRing = null, string? Paint = null);
+        IReadOnlyDictionary<string, float>? Face = null, Color? Eyes = null, Color? EyeRing = null, string? Paint = null,
+        string? FaceShape = null);
 
     public static readonly string[] MaleRanger = { "Male_Ranger_Arms", "Male_Ranger_Body", "Male_Ranger_Legs", "Male_Ranger_Feet_Boots" };
     public static readonly string[] MalePeasant = { "Male_Peasant_Arms", "Male_Peasant_Body", "Male_Peasant_Legs", "Male_Peasant_Feet" };
@@ -88,7 +89,7 @@ public static class People
         var sex = spec.Sex == SurvivorUnchained.Rpg.Sex.Female ? "female" : "male";
         var outfit = spec.Outfit?.ToArray() ?? (sex == "female" ? FemalePeasant : MalePeasant);
         return new Look(sex, outfit, spec.Hair, spec.Beard == true, C(spec.HairColor), C(spec.Skin), C(spec.Dye?.Cloth), C(spec.Dye?.Under),
-            sex == "female" ? spec.Figure ?? 1 : 0, spec.Face?.ToDictionary(f => f.Key, f => (float)f.Value), C(spec.Eyes), C(spec.EyeRing), spec.Paint);
+            sex == "female" ? spec.Figure ?? 1 : 0, spec.Face?.ToDictionary(f => f.Key, f => (float)f.Value), C(spec.Eyes), C(spec.EyeRing), spec.Paint, spec.FaceShape);
     }
 
     public static Person Build(SurvivorUnchained.World.PersonSpec spec)
@@ -110,6 +111,7 @@ public static class People
             HerHair(p, HerHairs.Contains(look.Hair) ? look.Hair! : HerHairs[0], look.HairColor ?? HerHairColour);
             if (look.Face != null) HerFace(p, look.Face);
             HerPaint(p, look.Paint);
+            p.FaceShape = look.FaceShape;                 // (its painting laid as her skin was made: Skin)
         }
         // A child's larger head.
         if (spec.Head is double h && h != 1)
@@ -142,6 +144,8 @@ public static class People
         public string HairStyle = "";
         /// <summary>The paint on her face (Lore.Her.Paints), or none.</summary>
         public string? Paint;
+        /// <summary>The face she started from, whose painting her head wears (none: her own).</summary>
+        public string? FaceShape;
         /// <summary>Her head's pose as she is drawn (her corrective layer
         /// included, which a pose read in _Process is not), skeleton space.</summary>
         public Transform3D? HeadPose;
@@ -491,7 +495,25 @@ public static class People
             }
         HerFace(p, look.Face ?? new Dictionary<string, float>(), whole: true);
         if (look.Paint != p.Paint) HerPaint(p, look.Paint);
+        if (look.FaceShape != p.FaceShape) HerHeadPaint(p, look.FaceShape);
     }
+
+    /// <summary>Her head's painting for a face she started from (Lore.Her's
+    /// faces: tools/assets/heroine_head.py's head_tex/heroine_head_ID.jpg,
+    /// each painted on her head shaped as that face, its brows, lips and
+    /// skin its own), or her own.</summary>
+    public static void HerHeadPaint(Person p, string? face)
+    {
+        p.FaceShape = face;
+        var file = HeadPaintFile(face);
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.Mesh.SurfaceGetMaterial(s)?.ResourceName == "skin_head" && mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial skin)
+                    skin.SetShaderParameter("paint", file != null ? GD.Load<Texture2D>(file) : (mi.Mesh.SurfaceGetMaterial(s) as BaseMaterial3D)?.AlbedoTexture);
+    }
+
+    static string? HeadPaintFile(string? face) =>
+        face is { Length: > 0 } && ResourceLoader.Exists($"res://art/people/head_tex/heroine_head_{face}.jpg") ? $"res://art/people/head_tex/heroine_head_{face}.jpg" : null;
 
     static Shader? hairShader, eyeShader;
 
@@ -661,8 +683,13 @@ public static class People
         // side of her brow as a hard white band.
         if (src.ResourceName == "skin_head")
         {
+            if (HeadPaintFile(look.FaceShape) is string own) m.SetShaderParameter("paint", GD.Load<Texture2D>(own));
             m.SetShaderParameter("rough", 0.6f);
             m.SetShaderParameter("shine", 0.36f);
+            // (her eyes, brows and lips deepened when her face is small on
+            // screen, so a face still reads from the game's camera)
+            if (ResourceLoader.Exists("res://art/people/head_tex/heroine_features.png"))
+                m.SetShaderParameter("features", GD.Load<Texture2D>("res://art/people/head_tex/heroine_features.png"));
         }
         return m;
     }

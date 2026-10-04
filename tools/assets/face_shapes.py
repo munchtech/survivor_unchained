@@ -21,23 +21,35 @@ SKIN = ("skins", "toigo_light_skin_female_ginger")
 # weight; "X-" is both sides). Every slider moves her from here. Fitted by
 # landmarks to the four AI references of her (face_fit.py: the mean of the
 # four fits, depth held), then by eye toward the research
-# (FACE_RESEARCH.md): eyes a touch larger, brows higher, the jaw and chin
-# narrower, the lower lip the fuller.
+# (FACE_RESEARCH.md), judged in the game's light at creation's close-up:
+# the jaw tapered to a small chin and the face heart-shaped, cheekbones
+# higher and wider, the eyes larger, upturned and a little hooded (staring,
+# they looked plain), a shorter nose, the mouth higher (a short philtrum)
+# and wider, the lips taller, not pushed forward (MakeHuman's lip volume
+# alone pouts them), a cupid's bow peaked, the brows arched. Then measured
+# against her reference's proportions (MediaPipe, FACE_RESEARCH.md's
+# ratios): her brows raised, her mouth higher still, her upper lip fuller
+# and her lower less (1:1.6), her cheeks less hollow, her jaw a little
+# less tapered and her chin a little longer.
 FACE = {"head-age-decr": 0.619, "head-age-incr": 0.121, "head-diamond": 0.322, "head-fat-decr": 0.58,
-        "head-scale-horiz-decr": 0.229, "head-scale-vert-incr": 0.16, "forehead-temple-decr": 0.03,
-        "forehead-temple-incr": 0.133, "eyebrows-trans-up": 0.4, "X-eye-corner1-down": 0.285, "X-eye-corner2-down": 0.225,
-        "X-eye-corner2-up": 0.25, "X-eye-epicanthus-in": 0.095, "X-eye-height1-decr": 0.095, "X-eye-height3-decr": 0.203,
-        "X-eye-height3-incr": 0.192, "X-eye-scale-incr": 0.36, "X-eye-trans-down": 0.071, "X-eye-trans-in": 0.233,
-        "X-eye-trans-out": 0.518, "nose-base-down": 0.217, "nose-hump-decr": 0.056, "nose-nostrils-width-incr": 0.104,
-        "nose-point-down": 0.114, "nose-point-up": 0.2, "nose-point-width-decr": 0.3, "nose-scale-horiz-decr": 0.217,
-        "nose-scale-horiz-incr": 0.178, "nose-scale-vert-incr": 0.117, "nose-trans-down": 0.372, "nose-volume-decr": 0.327,
-        "nose-volume-incr": 0.068, "nose-width2-incr": 0.047, "nose-width3-incr": 0.025, "X-cheek-bones-decr": 0.031,
-        "X-cheek-bones-incr": 0.044, "X-cheek-trans-down": 0.263, "X-cheek-trans-up": 0.225, "X-cheek-volume-incr": 0.114,
-        "mouth-angles-up": 0.251, "mouth-cupidsbow-incr": 0.4, "mouth-lowerlip-volume-incr": 0.848,
-        "mouth-lowerlip-width-incr": 0.101, "mouth-scale-horiz-decr": 0.118, "mouth-scale-horiz-incr": 0.397,
-        "mouth-trans-down": 0.147, "mouth-upperlip-volume-incr": 0.729, "mouth-upperlip-width-decr": 0.024,
-        "mouth-upperlip-width-incr": 0.12, "chin-bones-decr": 0.55, "chin-height-decr": 0.277, "chin-height-incr": 0.135,
-        "chin-jaw-drop-decr": 0.211, "chin-width-decr": 0.4}
+        "head-invertedtriangular": 0.5, "head-scale-horiz-decr": 0.469, "head-scale-vert-incr": 0.16,
+        "forehead-temple-decr": 0.03, "forehead-temple-incr": 0.133, "eyebrows-angle-up": 0.6, "eyebrows-trans-up": 1.15,
+        "X-eye-corner1-down": 0.285, "X-eye-corner2-down": 0.225, "X-eye-corner2-up": 0.95, "X-eye-epicanthus-in": 0.095,
+        "X-eye-height1-decr": 0.095, "X-eye-height2-decr": 0.9, "X-eye-height3-decr": 0.203, "X-eye-height3-incr": 0.192,
+        "X-eye-scale-incr": 0.585, "X-eye-trans-down": 0.071, "X-eye-trans-in": 0.233, "X-eye-trans-out": 0.518,
+        "nose-base-down": 0.217, "nose-hump-decr": 0.056, "nose-nostrils-width-incr": 0.104, "nose-point-down": 0.114,
+        "nose-point-up": 0.5, "nose-point-width-decr": 0.3, "nose-scale-depth-decr": 0.24, "nose-scale-horiz-decr": 0.417,
+        "nose-scale-horiz-incr": 0.178, "nose-scale-vert-decr": 0.4, "nose-scale-vert-incr": 0.117,
+        "nose-trans-down": 0.372, "nose-volume-decr": 0.327, "nose-volume-incr": 0.068, "nose-width2-incr": 0.047,
+        "nose-width3-incr": 0.025, "X-cheek-bones-decr": 0.031, "X-cheek-bones-incr": 0.404, "X-cheek-trans-down": 0.263,
+        "X-cheek-trans-up": 0.705, "X-cheek-volume-decr": 0.096, "mouth-angles-up": 0.391,
+        "mouth-cupidsbow-incr": 1.15, "mouth-lowerlip-height-incr": 0.4, "mouth-lowerlip-volume-incr": 0.198,
+        "mouth-lowerlip-width-incr": 0.101, "mouth-scale-depth-decr": 0.3, "mouth-scale-horiz-decr": 0.118,
+        "mouth-scale-horiz-incr": 0.592, "mouth-trans-backward": 0.32, "mouth-trans-down": 0.147, "mouth-trans-up": 0.6,
+        "mouth-upperlip-height-incr": 0.3, "mouth-upperlip-middle-up": 0.6, "mouth-upperlip-volume-incr": 0.879,
+        "mouth-upperlip-width-decr": 0.024, "mouth-upperlip-width-incr": 0.12, "chin-bones-decr": 1.35,
+        "chin-height-decr": 0.062, "chin-jaw-drop-decr": 0.211, "chin-prominent-incr": 0.3,
+        "chin-width-decr": 0.7, "sculpt-chin-narrow": 0.75}
 # Her build where her head meets her body (MakeHuman's woman is longer and
 # slimmer of neck than she was made).
 BUILD = {"measure-neck-height-decr": 0.9, "measure-neck-circ-incr": 0.5, "neck-back-scale-depth-incr": 0.3}

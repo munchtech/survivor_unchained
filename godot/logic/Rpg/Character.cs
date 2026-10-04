@@ -99,6 +99,9 @@ public sealed class CharacterData
     /// eyes' colour and the paint she wears (both Lore.Hero's).</summary>
     public Dictionary<string, double>? Face;
     public string? Eyes, Paint;
+    /// <summary>The face she started from (Lore.Hero's faces): each its own
+    /// painting of her skin, brows and lips, which her head wears (none: her own).</summary>
+    public string? FaceShape;
     public int Level = 1;
     public double Xp;
     public Attributes Attributes = new();
@@ -137,7 +140,7 @@ public sealed class CharacterData
 public sealed class CreationChoice
 {
     public string Name = "", Archetype = "warden", Background = "hunter", Palette = "", WeaponItem = "", Ability = "";
-    public string? Model, Cloak, Skin, Hair, HairStyle, Eyes, Paint;
+    public string? Model, Cloak, Skin, Hair, HairStyle, Eyes, Paint, FaceShape;
     public bool? Headgear, Beard;
     public Sex? Sex;
     public double? Figure;
@@ -389,7 +392,7 @@ public static class Character
             Beard = c.Beard, Figure = c.Figure, Attributes = Callings.StartAttributes(c.Archetype),
             // (only the sliders moved from her own face are kept)
             Face = c.Face?.Where(f => Math.Abs(f.Value) > 1e-3).ToDictionary(f => f.Key, f => Math.Round(Math.Clamp(f.Value, -1, 1), 3)) is { Count: > 0 } face ? face : null,
-            Eyes = c.Eyes, Paint = c.Paint == "none" ? null : c.Paint,
+            Eyes = c.Eyes, Paint = c.Paint == "none" ? null : c.Paint, FaceShape = c.FaceShape is "own" or "" ? null : c.FaceShape,
             Knowledge = new(bg.Knowledge), Gold = 25, Ability = c.Ability, CreatedDay = day,
         };
         ch.Known = ArtBook.Starting(c.Archetype);

@@ -45,6 +45,8 @@ public sealed class PersonSpec
     public string? Eyes, EyeRing;
     /// <summary>The paint on her face (Lore.Paints), or none.</summary>
     public string? Paint;
+    /// <summary>The face she started from, whose painting of her skin her head wears (none: her own).</summary>
+    public string? FaceShape;
 }
 
 public sealed class Held { public string? Right, Left, Forearm; }

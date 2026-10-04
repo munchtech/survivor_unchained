@@ -116,7 +116,8 @@ public partial class FaceSheet : Node3D
         static Color? C(Godot.Collections.Dictionary d, string k) => d.ContainsKey(k) && (string)d[k] != "" ? new Color((string)d[k]) : null;
         var face = d.ContainsKey("face") ? d["face"].AsGodotDictionary().ToDictionary(kv => (string)kv.Key, kv => (float)kv.Value) : new Dictionary<string, float>();
         var look = new People.Look("female", new[] { "her:warden" }, d.ContainsKey("hair") ? (string)d["hair"] : "long", false,
-            C(d, "hairColor"), C(d, "skin"), null, null, 1, face, C(d, "eyes"), C(d, "eyeRing"), d.ContainsKey("paint") ? (string)d["paint"] : null);
+            C(d, "hairColor"), C(d, "skin"), null, null, 1, face, C(d, "eyes"), C(d, "eyeRing"), d.ContainsKey("paint") ? (string)d["paint"] : null,
+            d.ContainsKey("faceShape") ? (string)d["faceShape"] : null);
         People.HerRestyle(her!, look);
         // PLAIN=1: her skin a plain glossy grey, to judge her shape and its
         // normals without her paint.

@@ -255,8 +255,11 @@ for _f in os.listdir(os.path.join(_TDIR, "expression", "units", "caucasian")):
 sides = fs.sides
 
 
-assert not any(n in fs.SCULPTS for n in FACE), "her own face is MakeHuman's targets only"
+# (her face's sculpts, ours, are laid on her points once MakeHuman's are
+# read, below: MV_HM)
 for _t, _v in FACE.items():
+    if _t in fs.SCULPTS:
+        continue
     for _n in sides([_t]):
         TargetService.load_target(hm, TARGET[_n], weight=_v)
 # Every slider's and expression's targets too, at nothing (so they change
@@ -310,6 +313,14 @@ def grab(o):
 MV, MF, MU = grab(hm)
 # (as MakeHuman has her, before she is placed on hers: what our sculpts are made on)
 MV_HM = MV.copy()
+# Her face's own sculpts (a narrower chin): made on her points as MakeHuman
+# has them, its targets laid. (Her eyes, brows and lashes, fitted already,
+# are far from what they move.)
+for _t, _v in FACE.items():
+    if _t in fs.SCULPTS:
+        MV = MV + _v * fs.SCULPTS[_t](MV_HM, fs.anatomy(MV_HM))
+        print("SCULPT", _t, _v)
+MV_HM = MV.copy()
 _body = hm.vertex_groups["body"].index
 _inbody = np.array([any(g.group == _body for g in v.groups) for v in hm.data.vertices])
 keep = [i for i, f in enumerate(MF) if _inbody[f].all()]
@@ -361,7 +372,7 @@ MV = place(MV)
 # ---- the region made anew (her head, and her body above CUT), each face
 # quartered (linearly, so the surface keeps its shape and the eyes, brows
 # and lashes, fitted to it, still sit right) for the detail of her skin.
-def subdivide(V, F, U):
+def subdivide(V, F, U, smooth=None):
     used = sorted({i for f in F for i in f})
     idx = {o: n for n, o in enumerate(used)}
     rows, cols, vals = list(range(len(used))), used[:], [1.0] * len(used)
@@ -390,12 +401,76 @@ def subdivide(V, F, U):
             nF.append([idx[f[i]], mids[i], c, mids[i - 1]])
             nU.append(np.array([uv[i], (uv[i] + uv[(i + 1) % k]) / 2, cuv, (uv[i - 1] + uv[i]) / 2]))
     Sub = sp.csr_matrix((vals, (rows, cols)), shape=(n, len(V)))
-    return Sub, nF, nU
+    if smooth is None:
+        return Sub, nF, nU
+    # Smoothed as Catmull and Clark smooth (its points where their rules put
+    # them, all of it still linear in MakeHuman's points, so every shape key
+    # made through it agrees): the facets of MakeHuman's coarse face, which
+    # its quartering kept, lit as lumps and creases in the game's light.
+    # Each point as much as `smooth` says (none round her eyes, where her
+    # lids must stay on the eyeballs fitted to them), and none on the
+    # region's edge.
+    nv = len(V)
+    faces_of, edges_of, eface = {}, {}, {}
+    for fi, f in enumerate(F):
+        for i in range(len(f)):
+            a, b = f[i], f[(i + 1) % len(f)]
+            faces_of.setdefault(a, []).append(fi)
+            e = (min(a, b), max(a, b))
+            edges_of.setdefault(a, set()).add(e)
+            edges_of.setdefault(b, set()).add(e)
+            eface.setdefault(e, []).append(fi)
+    boundary = {v for e, fs in eface.items() if len(fs) == 1 for v in e}
+
+    def face_point(fi):
+        f = F[fi]
+        return {i: 1.0 / len(f) for i in f}
+
+    def add(acc, d, w):
+        for i, x in d.items():
+            acc[i] = acc.get(i, 0.0) + x * w
+    rows, cols, vals = [], [], []
+    S = Sub.tolil()
+    for o in used:
+        w = float(smooth[o]) if o not in boundary else 0.0
+        if w <= 0:
+            continue
+        nn = len(edges_of[o])
+        cc = {}
+        for fi in faces_of[o]:
+            add(cc, face_point(fi), 1.0 / len(faces_of[o]) / nn)
+        for a, b in edges_of[o]:
+            add(cc, {a: 0.5, b: 0.5}, 2.0 / len(edges_of[o]) / nn)
+        add(cc, {o: 1.0}, (nn - 3.0) / nn)
+        r = idx[o]
+        S[r, :] = S[r, :] * (1 - w)
+        for i, x in cc.items():
+            S[r, i] += w * x
+    for e, fs in eface.items():
+        if len(fs) != 2:
+            continue
+        w = min(float(smooth[e[0]]), float(smooth[e[1]]))
+        if w <= 0:
+            continue
+        cc = {}
+        add(cc, {e[0]: 0.25, e[1]: 0.25}, 1.0)
+        add(cc, face_point(fs[0]), 0.25)
+        add(cc, face_point(fs[1]), 0.25)
+        r = emid[e]
+        S[r, :] = S[r, :] * (1 - w)
+        for i, x in cc.items():
+            S[r, i] += w * x
+    return S.tocsr(), nF, nU
 
 
 _fc = np.array([MV[f].mean(0) for f in MF])
 _region = [i for i, f in enumerate(MF) if (g_cut(MV[f]) > -0.10).any()]
-SUB, RF, RU = subdivide(MV, [MF[i] for i in _region], [MU[i] for i in _region])
+# (smoothed but round her eyes: from nothing within 1.4 cm of each eye's
+# middle to all of it by 2.4 cm, so her lids stay on her eyeballs)
+_ev0 = place(grab(proxies[dict(PARTS)["eyes"]])[0])
+_eye_c = [_ev0[_ev0[:, 0] * sd > 0].mean(0) for sd in (1, -1)]
+_smooth = smooth01((np.min([np.linalg.norm(MV - c, axis=1) for c in _eye_c], 0) - 0.014) / 0.010)
+SUB, RF, RU = subdivide(MV, [MF[i] for i in _region], [MU[i] for i in _region], smooth=_smooth)
 RV0 = SUB @ MV
 print("REGION", len(RV0), "points,", len(RF), "faces")
 
@@ -1104,6 +1179,7 @@ _mix = ((1 - smooth01(s_split(P_[_near]) / 0.03)) * (dist < 0.01) * ((np.abs(_hc
 _inside = np.zeros((HSIZE, HSIZE), bool)
 _inside[r_, c_] = True
 HEAD_BASE = col
+HEAD_R, HEAD_C = r_, c_                     # (her head's texels: r_ and c_ are used again further on)
 # Her face as tools/assets/heroine_face.py painted it (a photograph's skin,
 # brows, lashes and lips, by the local ComfyUI), over MakeHuman's by its alpha.
 FACE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "heroine_face")
@@ -1118,13 +1194,13 @@ def head_paint(face_paint, path):
     if face_paint and os.path.exists(face_paint):
         fp = np.asarray(Image.open(face_paint).convert("RGBA"), np.float32)[::-1] / 255
         if fp.shape[0] == HSIZE:
-            a = fp[r_, c_, 3:4]
-            c = c * (1 - a) + fp[r_, c_, :3] * a
+            a = fp[HEAD_R, HEAD_C, 3:4]
+            c = c * (1 - a) + fp[HEAD_R, HEAD_C, :3] * a
             print("FACE PAINT %s laid over %d%% of her head" % (os.path.basename(face_paint), 100 * (a > 0.5).mean()))
     c[_near] = c[_near] * (1 - _mix) + _hc * _mix
     img = np.zeros((HSIZE, HSIZE, 4), np.float32)
     img[..., 3] = 1
-    img[r_, c_, :3] = c
+    img[HEAD_R, HEAD_C, :3] = c
     save_image(pad(img, _inside), path)
 
 

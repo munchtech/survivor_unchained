@@ -45,6 +45,8 @@ hm = HumanService.create_human(mask_helpers=True, detailed_helpers=True, extra_v
                                scale=0.1, macro_detail_dict=fs.MACROS)
 TARGET = fs.target_paths()
 for t, v in {**fs.FACE, **fs.BUILD}.items():
+    if t in fs.SCULPTS:                              # (her face's sculpts: set_face lays them)
+        continue
     for n in fs.sides([t]):
         TargetService.load_target(hm, TARGET[n], weight=v, name="face_" + n)
 SK = {}
@@ -112,6 +114,11 @@ def set_face(weights):
         if kb.name.startswith("face_"):
             t = kb.name[5:]
             kb.value = 0.0 if bare and t not in fs.sides(list(fs.BUILD)) else fs.weight_of(t)
+    weights = dict(weights)
+    if not bare:
+        for t, v in fs.FACE.items():
+            if t in fs.SCULPTS:
+                weights[t] = weights.get(t, 0.0) + v
     for t, v in weights.items():
         if t == "-":
             continue

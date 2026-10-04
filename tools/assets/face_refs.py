@@ -57,9 +57,10 @@ FACES = {
     "hardwon": "She is a stunningly beautiful athletic woman of twenty-six with lightly tanned skin and a few freckles, steady grey eyes, "
                "straight strong brows, a defined angular jaw, a straight nose, full firm lips, sculpted cheekbones: a fierce warrior beauty "
                "with the face of a fashion model. Dark blonde hair.",
-    "fey": "She is a stunningly beautiful ethereal elfin woman of twenty-two with luminous pale skin, very large wide-set grey eyes with an "
-           "upward tilt, very high sharp cheekbones, a tiny refined nose, small full lips, a narrow pointed chin, delicate fine brows, and "
-           "softly pointed elf ears. Silver-white hair.",
+    # (silver hair painted her twenty years older: young, and fair-haired)
+    "fey": "She is a stunningly beautiful ethereal young elfin woman of twenty with flawless luminous pale porcelain skin, very large "
+           "wide-set silver-grey eyes with an upward tilt, very high sharp cheekbones, a tiny refined nose, small full rosy lips, a narrow "
+           "pointed chin, delicate fine pale brows, a youthful delicate face. Pale strawberry-blonde hair.",
 }
 SEEDS = [11, 23, 37, 41]
 

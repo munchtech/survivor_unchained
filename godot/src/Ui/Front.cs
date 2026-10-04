@@ -203,6 +203,7 @@ public sealed class CreationDraft
         // (a hero's own body's face, eyes and paint: Loadouts.HeroKit)
         Face = Loadouts.HeroKit(Sex) != null ? new Dictionary<string, double>(Face) : null,
         Eyes = Loadouts.HeroKit(Sex) != null ? Eyes : null, Paint = Loadouts.HeroKit(Sex) != null ? Paint : null,
+        FaceShape = Loadouts.HeroKit(Sex) != null ? FaceShape : null,
     };
 
     /// <summary>The figure by the fire is built again when this changes (who
@@ -211,7 +212,7 @@ public sealed class CreationDraft
 
     /// <summary>What the figure looks like: changes when this does (her hair,
     /// skin, eyes, face and paint are changed on her where she stands).</summary>
-    public string LookKey => $"{BodyKey}|{Skin}|{Hair}|{HairStyle}|{Eyes}|{Paint}|{string.Join(",", Face.OrderBy(f => f.Key).Select(f => $"{f.Key}={f.Value:0.###}"))}";
+    public string LookKey => $"{BodyKey}|{Skin}|{Hair}|{HairStyle}|{Eyes}|{Paint}|{FaceShape}|{string.Join(",", Face.OrderBy(f => f.Key).Select(f => $"{f.Key}={f.Value:0.###}"))}";
 
     /// <summary>A body chosen: its own hairstyle kept if it is one of its own,
     /// its own first otherwise; a hero's own eyes, paint and face start as theirs.</summary>

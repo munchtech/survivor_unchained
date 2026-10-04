@@ -54,6 +54,62 @@ head = bpy.data.objects["HeroineHead"]
 sc = bpy.context.scene
 SKIN_AS_IS = None
 
+# One of her other faces (face_presets.py), painted on her head shaped as
+# it: FACE_SHAPE a JSON file of its sliders ({slider: -1 to 1}, set on her
+# head's keys and its parts'), FACE_WHO the words for the woman it is (as
+# face_refs.FACES has her, without her hair).
+if os.environ.get("FACE_SHAPE"):
+    import json
+    _shape = json.load(open(os.environ["FACE_SHAPE"], encoding="utf-8-sig"))
+    for _o in bpy.data.objects:
+        if _o.type == "MESH" and _o.data.shape_keys:
+            _kb = _o.data.shape_keys.key_blocks
+            for _s, _v in _shape.items():
+                if _s + "+" in _kb:
+                    _kb[_s + "+"].value = max(_v, 0.0)
+                if _s + "-" in _kb:
+                    _kb[_s + "-"].value = max(-_v, 0.0)
+    bpy.context.view_layer.update()
+    print("SHAPED as", _shape)
+if os.environ.get("FACE_WHO"):
+    PROMPT = ("A high-end beauty campaign photograph, {view} of the face of " + os.environ["FACE_WHO"] + " Completely bald smooth "
+              "shaved head, serene neutral expression, subtle elegant makeup, defined lashes, luminous skin with fine natural pores, flat "
+              "even soft studio lighting with no shadows, plain grey background, sharp focus, high detail.")
+
+
+def as_shaped(o):
+    """An object's points and normals as its keys shape it (each key's move
+    at its value: no modifiers, which would renumber its points), in the world."""
+    me = o.data
+    V = np.zeros(len(me.vertices) * 3)
+    me.vertices.foreach_get("co", V)
+    V = V.reshape(-1, 3)
+    if me.shape_keys:
+        kb = me.shape_keys.key_blocks
+        base = np.zeros(len(V) * 3)
+        kb[0].data.foreach_get("co", base)
+        base = base.reshape(-1, 3)
+        V = base.copy()
+        for k in kb[1:]:
+            if k.value:
+                co = np.zeros(len(V) * 3)
+                k.data.foreach_get("co", co)
+                V += k.value * (co.reshape(-1, 3) - base)
+    mw = np.array(o.matrix_world)
+    V = V @ mw[:3, :3].T + mw[:3, 3]
+    # (normals from the faces round each point, as shaped)
+    N = np.zeros_like(V)
+    for p in me.polygons:
+        vs = list(p.vertices)
+        n = np.cross(V[vs[1]] - V[vs[0]], V[vs[-1]] - V[vs[0]])
+        N[vs] += n
+    N /= np.linalg.norm(N, axis=1)[:, None] + 1e-12
+    # (out from her, as Blender's own normals are)
+    own = np.array([v.normal[:] for v in me.vertices]) @ mw[:3, :3].T
+    if (N * own).sum(1).mean() < 0:
+        N = -N
+    return V, N
+
 
 # ------------------------------------------------------------ drawings --
 def clean_skin(size=21):
@@ -186,13 +242,12 @@ def texels():
     and which way it faces (and its triangle and weights, for what else is
     known at her head's points)."""
     me = head.data
-    V = np.array([v.co[:] for v in me.vertices])
+    V, N = as_shaped(head)                 # (as shaped: one of her other faces, if asked for)
     me.calc_loop_triangles()
     T = np.array([t.vertices[:] for t in me.loop_triangles])
     L = np.array([t.loops[:] for t in me.loop_triangles])
     uvd = me.uv_layers[0].data
     UV = np.array([d.uv[:] for d in uvd])[L] * SIZE
-    N = np.array([v.normal[:] for v in me.vertices])
     rows, cols, tri, bary = [], [], [], []
     for k, t in enumerate(UV):
         x0, y0 = np.maximum(np.floor(t.min(0)).astype(int), 0)
@@ -227,7 +282,7 @@ def seen(V, N, toward):
     vs, fs = [], []
     for o in objs:
         base = len(vs)
-        vs += [tuple(o.matrix_world @ v.co) for v in o.data.vertices]
+        vs += [tuple(p) for p in as_shaped(o)[0]]
         fs += [[base + i for i in p.vertices] for p in o.data.polygons]
     bvh = BVHTree.FromPolygons(vs, fs)
     d = Vector(toward)

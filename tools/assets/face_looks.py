@@ -4,9 +4,9 @@ game's sliders are always the keys her head was made with.
 
     python tools/assets/face_looks.py [faces.json]
 
-faces.json (face_presets.py's): [{"id", "name", "words", "shape": {slider: v}}, ...],
-her faces to start from, in order (the first her own). Without it her
-faces are kept, any slider they name that is gone dropped.
+faces.json: [{"id", "name", "words", "shape": {slider: v}, "skin", "eyes"}, ...],
+her faces to start from, in order (the first her own); by default
+heroine_face/presets.json.
 """
 import json
 import os
@@ -50,8 +50,12 @@ if __name__ == "__main__":
     her = looks["heroes"]["female"]
     her["sliders"] = sliders()
     ids = {s["id"] for s in her["sliders"]}
-    if len(sys.argv) > 1:
-        her["faces"] = json.load(open(sys.argv[1], encoding="utf-8-sig"))
+    # Her faces: as given, or heroine_face/presets.json (each its sliders, and
+    # the skin and eyes it comes with; its reference is the tools' alone).
+    presets = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), "heroine_face", "presets.json")
+    if os.path.exists(presets):
+        her["faces"] = [{k: f[k] for k in ("id", "name", "words", "shape", "skin", "eyes") if k in f}
+                        for f in json.load(open(presets, encoding="utf-8-sig"))]
     for f in her["faces"]:
         f["shape"] = {k: round(float(v), 3) for k, v in f["shape"].items() if k in ids}
     with open(LOOKS, "w", encoding="utf-8", newline="\n") as fh:
