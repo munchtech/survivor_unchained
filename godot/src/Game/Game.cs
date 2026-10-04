@@ -66,7 +66,7 @@ public partial class Game : Node, IZoneHost
     string? hudMode;
     readonly List<(double T, Action Fn)> later = new();
     bool inTransit;
-    double autosaveT, fogT, hudT, draftWait, reportT;
+    double autosaveT, fogT, hudT, draftWait, reportT, shareT;
     Autopilot? auto;
 
     public override void _Ready()
@@ -692,6 +692,12 @@ public partial class Game : Node, IZoneHost
         {
             auto?.Drive(dt);
             Journey.Playtime += dt;
+            // Booked to its kind of play: the story's share is measured, not guessed.
+            Journey.Clock(dt, zone switch
+            {
+                ArenaRun run => run.Spec.Story ? "story night" : "table night",
+                _ => zone.Id switch { "lowford" => "prologue", "waystation" => "town", "map" => "map", _ => "wild" },
+            });
             UpdateInteraction();
             // The ground walked, on the map's fog.
             fogT -= dt;
@@ -1063,6 +1069,13 @@ public partial class Game : Node, IZoneHost
         if (!Args.Has("log")) return;
         reportT -= dt;
         if (reportT > 0) return;
+        // The story's share of the play so far, once a minute (Journey.StoryShare).
+        if ((shareT -= Args.Num("log", 5)) <= 0 && Journey.World.TimeIn.Count > 0)
+        {
+            shareT = 60;
+            var (town, strict) = Journey.StoryShare;
+            GD.Print($"time: story {town * 100:0}% (without the town {strict * 100:0}%): {string.Join(", ", Journey.World.TimeIn.Select(kv => $"{kv.Key} {(int)kv.Value / 60}:{(int)kv.Value % 60:00}"))}");
+        }
         reportT = Args.Num("log", 5);
         var b = Battle;
         var p = b?.Player;

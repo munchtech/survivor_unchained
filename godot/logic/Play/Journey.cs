@@ -183,6 +183,26 @@ public sealed partial class Journey
         return b;
     }
 
+    /// <summary>The kinds of play that tell the story (the rest are the endgame's arenas: table
+    /// nights, ember scars, maps).</summary>
+    public static readonly string[] StoryModes = ["prologue", "town", "wild", "story night"];
+
+    /// <summary>Time played, booked to its kind of play.</summary>
+    public void Clock(double dt, string mode) => World.TimeIn[mode] = World.TimeIn.GetValueOrDefault(mode) + dt;
+
+    /// <summary>The story's share of the time played so far (0..1), with the town counted as story
+    /// (its people, its quests) and without it (only the prologue, the wild and the story's nights).</summary>
+    public (double WithTown, double Strict) StoryShare
+    {
+        get
+        {
+            double all = World.TimeIn.Values.Sum();
+            if (all <= 0) return (0, 0);
+            double story = StoryModes.Sum(m => World.TimeIn.GetValueOrDefault(m));
+            return (story / all, (story - World.TimeIn.GetValueOrDefault("town")) / all);
+        }
+    }
+
     /// <summary>The ember burns here and this is no arena (the prologue's night): what kills teach
     /// is banked for the dawn.</summary>
     public bool EmberLit { get; private set; }

@@ -172,6 +172,10 @@ public sealed class WorldState
     /// <summary>What a night with the ember lit outside an arena (the prologue's) has taught,
     /// banked until its dawn (Journey.Douse).</summary>
     public double NightLessons;
+    /// <summary>Seconds played by kind of play (prologue, town, wild, story night, table night,
+    /// map): the owner wants the story two fifths of the game early on, and this is how it is
+    /// measured rather than guessed (Journey.StoryShare).</summary>
+    public Dictionary<string, double> TimeIn = new();
     /// <summary>Discoveries recorded in the codex.</summary>
     public List<string> Codex = new();
     /// <summary>Bestiary kill counts by creature.</summary>
