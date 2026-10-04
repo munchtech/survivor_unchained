@@ -964,9 +964,13 @@ the story's view of them, so that the nights tell the story the days write.
   it; the more she carries, the more come. The arena's rising horde is that,
   and nothing about it needs saying before Act 3. **The Dawn as every arena's
   end** is the world's own rule (the ember drains at sunrise) and is right; after
-  C43 every dawn is the night's dead going home. The same goes for the hour past
-  the half hour: if it ends (the owner's call), it ends at dawn, the light coming
-  across the ground and the ember going out of everything, the survivor's too.
+  C43 every dawn is the night's dead going home. **The hour past the half hour is
+  truly endless** (the owner's decision): once the place is won the way out is
+  open, and the dawn is on the other side of it. Inside, the night holds for as
+  long as she stays, because she is what keeps it: the brightest thing in the
+  dark, and everything that has lost a light still coming to her. Nobody says so;
+  the Wayfinder's "Stay past that if you like. Some do. I sell them fewer maps."
+  is all the story says about it.
 - **Bosses speak as themselves.** A story boss's lines are its cinematic's
   (C10 to C14): Greymuzzle wordless, Redcowl's bairns and his last words,
   Grimtunnel's faith, the Barrow Lord's one-word orders, Wat's silence. No
