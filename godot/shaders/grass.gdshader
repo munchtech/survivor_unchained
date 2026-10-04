@@ -14,6 +14,13 @@ uniform float zone_size = 290.0;
 uniform float leaves = 0.3;
 uniform float heal = 0.0;
 uniform float density = 1.0;
+// A place's own grass (an ember arena's): its colour against the ground's,
+// its value, and how much of it has gone to straw.
+uniform vec3 tint = vec3(0.9, 1.2, 0.72);
+uniform float tone = 1.0;
+uniform float straw_bias = 0.0;
+uniform vec3 straw_color = vec3(0.24, 0.21, 0.11);
+uniform float straw_mix = 0.3;
 uniform vec3 wind = vec3(1.0, 0.35, 1.0);
 uniform vec4 pusher = vec4(0.0, 0.0, 0.0, 0.0);
 // The grid wraps round `centre` every `span` metres; heights from the zone's.
@@ -78,8 +85,8 @@ void vertex() {
 	vec3 g = textureLod(g_alb, vec3(wp * meadow_scale, 0.0), 5.0).rgb;
 	g *= 0.8 + 0.2 * texture(noise_tex, wp * 0.011).r;
 	// Each blade its own shade; patches gone to straw over tens of metres.
-	v_tint = g * vec3(0.9, 1.2, 0.72) * (0.78 + 0.4 * UV2.x) * (0.9 + 0.25 * h4);
-	v_dry = smoothstep(0.45, 0.75, texture(noise_tex, wp * 0.02 + 5.3).g) * (0.6 + 0.4 * h1);
+	v_tint = g * tint * tone * (0.78 + 0.4 * UV2.x) * (0.9 + 0.25 * h4);
+	v_dry = clamp(smoothstep(0.45, 0.75, texture(noise_tex, wp * 0.02 + 5.3).g) * (0.6 + 0.4 * h1) + straw_bias, 0.0, 1.0);
 }
 
 void fragment() {
@@ -89,8 +96,8 @@ void fragment() {
 	vec3 gb = v_tint * mix(0.32, 1.15, pow(t, 0.7));
 	gb = mix(gb, gb * vec3(1.12, 1.08, 0.78), smoothstep(0.7, 1.0, t) * 0.5);
 	// Straw: dry grass, paler and warmer, toward the tip most.
-	vec3 straw = vec3(0.24, 0.21, 0.11) * mix(0.4, 1.0, t);
-	gb = mix(gb, straw, v_dry * 0.3);
+	vec3 straw = straw_color * mix(0.4, 1.0, t);
+	gb = mix(gb, straw, v_dry * straw_mix);
 	ALBEDO = gb;
 	// Both faces of a blade take the ground's normal: lit as the meadow is,
 	// not half of it from below.

@@ -1,0 +1,74 @@
+{
+ "layers": [
+  {
+   "name": "litter",
+   "source": "dry_decay_leaves",
+   "metres": 2.0,
+   "mean": [
+    0.17158,
+    0.07566,
+    0.035
+   ]
+  },
+  {
+   "name": "rot",
+   "source": "forest_leaves_03",
+   "metres": 2.3,
+   "mean": [
+    0.06453,
+    0.04112,
+    0.01616
+   ]
+  },
+  {
+   "name": "roots",
+   "source": "roots",
+   "metres": 1.67,
+   "mean": [
+    0.17377,
+    0.11554,
+    0.05814
+   ]
+  },
+  {
+   "name": "mud",
+   "source": "mud_forest",
+   "metres": 2.35,
+   "mean": [
+    0.03817,
+    0.0193,
+    0.00681
+   ]
+  },
+  {
+   "name": "bed",
+   "source": "river_small_rocks",
+   "metres": 2.9,
+   "mean": [
+    0.19302,
+    0.15207,
+    0.10636
+   ]
+  },
+  {
+   "name": "needles",
+   "source": "forest_leaves_04",
+   "metres": 1.5,
+   "mean": [
+    0.22627,
+    0.11783,
+    0.04669
+   ]
+  },
+  {
+   "name": "face",
+   "source": "mossy_rock",
+   "metres": 3.0,
+   "mean": [
+    0.15713,
+    0.15117,
+    0.09807
+   ]
+  }
+ ]
+}

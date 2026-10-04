@@ -177,15 +177,21 @@ public partial class Game : Node, IZoneHost
         if (z == "arena")
         {
             var o = SurvivorUnchained.Maps.MapOffers.Today(World.Day, 1, 0)[(int)Args.Num("offer", 0)];
-            if (Args.Get("people") is string pe) o = o with { People = pe };
+            if (Args.Get("people") is string pe) { o = o with { People = pe }; o.Spec.Name = SurvivorUnchained.Maps.MapOffers.Renamed(o.Spec.Name, pe, o.Spec.Seed); }
             if (Args.Get("oaths") is string oa) o.Spec.Oaths = oa.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
             if (Args.Has("tier")) o.Spec.Tier = (int)Args.Num("tier", 1);
+            // --theme ID --seed N: that ground (pictures of each arena's look, the same place each time).
+            if (Args.Get("theme") is string th) o.Spec.Theme = th;
+            if (Args.Has("seed")) o.Spec.Seed = (int)Args.Num("seed", 1);
+            if (Args.Get("mood") is string mo) o.Spec.Mood = mo;
             var at0 = Waystation.AtTable;
             var spec = Arenas.FromTable(o, "waystation", at0.X, at0.Z, at0.Facing);
             // --boss DEF[:NAME]: a story's foe at the half hour (pictures of Grimtunnel, of Greymuzzle).
             if (Args.Get("boss") is string bo) { var bp = bo.Split(':'); spec.Boss = bp[0]; if (bp.Length > 1) spec.BossName = bp[1].Replace('_', ' '); }
             // --spare: the story lets it go (Greymuzzle spared).
             spec.Spare = Args.Has("spare");
+            // --story: told as a story's night (twenty minutes, over at its boss's fall), for pictures of its end.
+            if (Args.Has("story")) { spec.Story = true; spec.Minutes = 20; }
             Arenas.Begin(World, spec);
         }
         if (z != "lowford")
@@ -297,8 +303,11 @@ public partial class Game : Node, IZoneHost
         var s = result.Spec;
         // A tome left blank is written with the first of what it offered.
         if (result.Inscribed == null && result.TomeChoices.Count > 0) Arenas.Inscribe(Journey, result, result.TomeChoices[0]);
-        screens.Close();
+        // The result stays up until the fade has gone dark: closed first, the emptied field showed
+        // between it and the road.
+        bool leaving = !inTransit;
         Travel(s.ReturnZone, null, null, new Arrival(s.ReturnX, s.ReturnZ, s.ReturnFacing));
+        if (leaving) Wait(0.8, () => screens.Close());
     }
 
     ZoneRuntime Make(string id, ZoneMeta meta) => id switch
@@ -313,6 +322,9 @@ public partial class Game : Node, IZoneHost
     void LeaveZone()
     {
         later.Clear();
+        // A chest opening does not outlive its place.
+        chestsWaiting.Clear();
+        if (chestShown != null) { chestShown.QueueFree(); chestShown = null; if (hudMode == "chest") hudMode = null; }
         // A cinematic does not outlive its place.
         if (cine != null) { var c = cine; cine = null; c.Finish(); }
         zone?.Dispose();
@@ -359,6 +371,7 @@ public partial class Game : Node, IZoneHost
         zone = Make(id, scene!.Data.Meta);
         var time = zone.TimeOf(World);
         air.Set(zone.AtmosphereFor(time));
+        air.Air(scene!.Data.Place?.Air);
         scene.View.SetNight(time == TimeOfDay.Night);
         Perf.Lap("the zone's runtime and its air");
         EnterPlay(zone, from, at);
@@ -406,7 +419,7 @@ public partial class Game : Node, IZoneHost
         h.OnPlayerDeath = killer =>
         {
             if (zh.OnPlayerDeath?.Invoke(killer) == true) return true;
-            OnDeath(killer?.Named?.Title ?? killer?.Def.Name ?? "the dark");
+            OnDeath(killer == null ? "the dark" : Content.Enemies.Called(killer.Named?.Title, killer.Def.Name));
             return false;
         };
         b.Hooks = h;
@@ -587,7 +600,14 @@ public partial class Game : Node, IZoneHost
                     break;
                 case Ev.Discovery d:
                     if (!World.Codex.Contains(d.Id)) World.Codex.Add(d.Id);
-                    if (Content.Discoveries.All.FirstOrDefault(x => x.Id == d.Id) is { } pair) Toast(new Toast(ToastKind.Lore, pair.Name, "A new discovery, remembered in the codex", null, null, 9));
+                    if (Content.Discoveries.All.FirstOrDefault(x => x.Id == d.Id) is { } pair) Toast(new Toast(ToastKind.Lore, $"Discovery: {pair.Name}", pair.Description, null, null, 9));
+                    break;
+                case Ev.Evolve ev:
+                    // It clicked: its place on the bar crowned; drafted, the world slows for a breath
+                    // as the new thing fires its first (a chest's waits for the chest to close).
+                    if (ev.Chest) break;
+                    hud.Crown(ev.Weapon);
+                    scene?.Slow(0.6);
                     break;
                 case Ev.Bark bk:
                     scene?.Voices.Bark(bk.Text, new Vector3((float)bk.X, (float)scene.HeightAt(bk.X, bk.Z), (float)bk.Z), bk.Speaker, bk.Speaker == null);
@@ -706,6 +726,7 @@ public partial class Game : Node, IZoneHost
             Perf.End(Perf.Part.Sound);
         }
         if (Mode != "play") return;
+        UpdateChest();
         UpdateDraft(dt);
         hudT -= dt;
         if (hudT <= 0)
@@ -797,7 +818,7 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
-    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, dieDone;
+    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, dieDone, chestDone;
     double blastT = 0.5, marksT = 1;
 
     void Tour(double dt)
@@ -841,6 +862,14 @@ public partial class Game : Node, IZoneHost
         {
             minuteDone = true;
             mr.SkipTo(Args.Num("minute", 29.9f) * 60);
+        }
+        // --chest 1,3,5! [--chest-at T]: chests of those sizes opened at her feet T seconds in, one
+        // after another (! a boss's hoard), for pictures of the opening.
+        if (!chestDone && Args.Get("chest") is string chs && zone is ArenaRun car && Battle != null && Journey.Playtime >= Args.Num("chest-at", 3))
+        {
+            chestDone = true;
+            foreach (var one in chs.Split(','))
+                if (int.TryParse(one.TrimEnd('!'), out var cn)) car.ChestAt(cn, one.EndsWith('!'));
         }
         if (!giveDone && Args.Get("give") is string give && Battle is { } gb)
         {

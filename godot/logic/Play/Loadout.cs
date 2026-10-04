@@ -54,6 +54,15 @@ public static class Loadouts
     /// of them goes over her, and no hood.</summary>
     public const string HerBody = "woman";
 
+    /// <summary>A man survivor's own body (People.Hero: the hero, once his
+    /// outfits are made; the kit's man till then, in the outfit listed beside
+    /// his own).</summary>
+    public const string HisBody = "man";
+
+    /// <summary>A man survivor's own outfit for his calling, as the view knows
+    /// it ("him:" and its name).</summary>
+    public static string HisOutfit(string archetype) => "him:" + (archetype == "stalker" ? "ranger" : archetype);
+
     /// <summary>A woman survivor's outfit for her calling, as the view knows
     /// it ("her:" and its name: People.HerOutfit; the stalker wears the
     /// ranger's).</summary>
@@ -61,8 +70,9 @@ public static class Loadouts
 
     /// <summary>What the survivor's own body offers to be shaped with (creation
     /// and the loadout both ask here): the heroine's; a man's when he wears the
-    /// male hero's body (until then he is the kit's, shaped with a cut and a beard).</summary>
-    public static HeroLook? HeroKit(Sex sex) => sex == Sex.Female ? Lore.Hero(sex) : null;
+    /// male hero's body (until then he is the kit's, shaped with a cut and a beard).
+    /// His is looks.json's heroes.male, written once his body is playable.</summary>
+    public static HeroLook? HeroKit(Sex sex) => Lore.Hero(sex);
 
     /// <summary>Her hairstyle: the one chosen if it is one of hers (Lore.Her.Cuts),
     /// the nearest of hers to an older save's cut, her first otherwise.</summary>
@@ -93,9 +103,11 @@ public static class Loadouts
         var eyes = kit?.Eyes.FirstOrDefault(e => e.Id == ch.Eyes);
         var person = new PersonSpec
         {
-            Sex = sex, Body = her ? HerBody : null, Outfit = her ? new List<string> { HerOutfit(ch.Archetype) } : OutfitOf(ch.Archetype, sex, hood),
+            Sex = sex, Body = her ? HerBody : HisBody,
+            Outfit = her ? new List<string> { HerOutfit(ch.Archetype) } : OutfitOf(ch.Archetype, sex, hood).Append(HisOutfit(ch.Archetype)).ToList(),
             Hair = her ? HerHair(ch.HairStyle) : hood || ch.HairStyle == "none" ? null : ch.HairStyle ?? Lore.HairStyles(sex)[0],
             Beard = sex == Sex.Male && (ch.Beard ?? true),
+            BeardStyle = kit is { Beards.Count: > 0 } ? (kit.Beards.Any(b => b.Id == ch.BeardStyle) ? ch.BeardStyle : kit.Beards[0].Id) : null,
             HairColor = string.IsNullOrEmpty(hair) ? null : hair, Skin = string.IsNullOrEmpty(skin) ? null : skin, Figure = ch.Figure,
             // A hero's face, eyes and paint are their body's own.
             Face = kit != null && ch.Face is { Count: > 0 } face ? new Dictionary<string, double>(face) : null,

@@ -122,3 +122,34 @@ Cut to loop and made mono at 24 kHz (the game plays each wide, its right side ha
 - "Curly Teddy Natural" texture, Poly Haven (https://polyhaven.com/a/curly_teddy_natural), CC0 -> godot/art/outfit
 - Her head, eyes, brows, lashes, teeth, tongue and hairstyles (long01, ponytail01, braid01, bob02, short03): MakeHuman system assets (http://www.makehumancommunity.org), made with MPFB, CC0 -> godot/art/people/heroine*.glb/gltf, godot/art/people/head_tex
 - Her head's skin, "Light skin female ginger" by MargaretToigo, MakeHuman community assets, CC0 -> godot/art/people/head_tex/heroine_head.jpg
+- brown_mud_02: Poly Haven (https://polyhaven.com/a/brown_mud_02), CC0
+- brown_mud_03: Poly Haven (https://polyhaven.com/a/brown_mud_03), CC0
+- brown_mud_leaves_01: Poly Haven (https://polyhaven.com/a/brown_mud_leaves_01), CC0
+- burned_ground_01: Poly Haven (https://polyhaven.com/a/burned_ground_01), CC0
+- dark_rock: Poly Haven (https://polyhaven.com/a/dark_rock), CC0
+- dry_mud_field_001: Poly Haven (https://polyhaven.com/a/dry_mud_field_001), CC0
+- forest_leaves_03: Poly Haven (https://polyhaven.com/a/forest_leaves_03), CC0
+- forest_leaves_04: Poly Haven (https://polyhaven.com/a/forest_leaves_04), CC0
+- grass_path_3: Poly Haven (https://polyhaven.com/a/grass_path_3), CC0
+- gravel_road: Poly Haven (https://polyhaven.com/a/gravel_road), CC0
+- gravel_stones: Poly Haven (https://polyhaven.com/a/gravel_stones), CC0
+- ground_grey: Poly Haven (https://polyhaven.com/a/ground_grey), CC0
+- mossy_rock: Poly Haven (https://polyhaven.com/a/mossy_rock), CC0
+- mud_forest: Poly Haven (https://polyhaven.com/a/mud_forest), CC0
+- muddy_tracks: Poly Haven (https://polyhaven.com/a/muddy_tracks), CC0
+- quarry_wall: Poly Haven (https://polyhaven.com/a/quarry_wall), CC0
+- red_mud_stones: Poly Haven (https://polyhaven.com/a/red_mud_stones), CC0
+- river_small_rocks: Poly Haven (https://polyhaven.com/a/river_small_rocks), CC0
+- rocks_ground_06: Poly Haven (https://polyhaven.com/a/rocks_ground_06), CC0
+- rocky_terrain: Poly Haven (https://polyhaven.com/a/rocky_terrain), CC0
+- rocky_trail: Poly Haven (https://polyhaven.com/a/rocky_trail), CC0
+- roots: Poly Haven (https://polyhaven.com/a/roots), CC0
+- stone_pathway_02: Poly Haven (https://polyhaven.com/a/stone_pathway_02), CC0
+- withered_grass: Poly Haven (https://polyhaven.com/a/withered_grass), CC0
+- wood_chips: Poly Haven (https://polyhaven.com/a/wood_chips), CC0
+- dry_decay_leaves: Poly Haven (https://polyhaven.com/a/dry_decay_leaves), CC0
+- excavated_soil_wall: Poly Haven (https://polyhaven.com/a/excavated_soil_wall), CC0
+- mud_cracked_dry_03: Poly Haven (https://polyhaven.com/a/mud_cracked_dry_03), CC0
+- red_dirt_mud_01: Poly Haven (https://polyhaven.com/a/red_dirt_mud_01), CC0
+- stony_dirt_path: Poly Haven (https://polyhaven.com/a/stony_dirt_path), CC0
+- dry_ground_rocks: Poly Haven (https://polyhaven.com/a/dry_ground_rocks), CC0

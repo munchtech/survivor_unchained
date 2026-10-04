@@ -967,6 +967,17 @@ public partial class GameHud : CanvasLayer
         root.AddChild(talk);
     }
 
+    /// <summary>A combat skill has evolved: its place on the bar is crowned.</summary>
+    public void Crown(string weaponId) { if (slots.TryGetValue(weaponId, out var s)) s.Crown(); }
+
+    /// <summary>Something staged over the play (a chest opening), above the bars and under the screens.</summary>
+    public void Over(Control c) => root.AddChild(c);
+
+    /// <summary>Where a held thing lives on screen: a combat skill's place in the arsenal, else the
+    /// middle of the passives' row (a chest's things fly home to them).</summary>
+    public Vector2 PlaceOf(string id) =>
+        slots.TryGetValue(id, out var s) && s.IsInsideTree() ? s.GetGlobalRect().GetCenter() : boons.GetGlobalRect().GetCenter();
+
     /// <summary>A key for the draft or the conversation, if one is up.</summary>
     public bool Key(Act a) => draft?.Key(a) ?? talk?.Key(a) ?? false;
 
@@ -1109,6 +1120,23 @@ public partial class WeaponSlot : Panel
         rankText.CustomMinimumSize = new Vector2(12, 0);
         badge.AddChild(rankText);
         AddChild(badge);
+    }
+
+    double crown = -1;
+
+    /// <summary>It has evolved: the slot swells and burns gold, settling over a second, so the
+    /// eye goes from the moment in the world to where the new thing lives.</summary>
+    public void Crown() => crown = 0;
+
+    public override void _Process(double delta)
+    {
+        if (crown < 0) return;
+        crown += delta;
+        float k = (float)Math.Clamp(crown / 1.3, 0, 1), e = (1 - k) * (1 - k);
+        PivotOffset = Size / 2;
+        Scale = Vector2.One * (1 + 0.5f * e * (0.75f + 0.25f * Mathf.Cos((float)crown * 18)));
+        Modulate = Colors.White.Lerp(new Color(2.4f, 1.9f, 1.0f), e);
+        if (crown >= 1.3) { crown = -1; Scale = Vector2.One; Modulate = Colors.White; }
     }
 
     public void Show(string glyph, Color school, double ready, int rank, int max, bool evolved, bool canEvolve)

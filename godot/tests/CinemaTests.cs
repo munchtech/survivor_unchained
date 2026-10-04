@@ -56,12 +56,15 @@ public class CinemaTests
     [Fact]
     public void A_cinematic_says_every_line_of_its_conversation_once_in_order()
     {
-        foreach (var f in All().Where(f => f.Conversation.StartsWith("cin_")))
+        // A cinematic in parts (C04's north bank and its Waystation) says its
+        // conversation across them, the parts in order of their ids.
+        foreach (var parts in All().Where(f => f.Conversation.StartsWith("cin_")).GroupBy(f => f.Conversation))
         {
-            var said = Lay(f).Cues.Where(c => c.Cue.Do == "line").Select(c => c.Cue.Str("id")!).ToList();
-            var convo = Dialogue.Find(f.Conversation)!;
+            var said = parts.OrderBy(f => f.Id, StringComparer.Ordinal)
+                .SelectMany(f => Lay(f).Cues.Where(c => c.Cue.Do == "line").Select(c => c.Cue.Str("id")!)).ToList();
+            var convo = Dialogue.Find(parts.Key)!;
             var order = new List<string>();
-            for (var n = convo.Entry[0].Node; n != null; n = convo.Nodes[n].Next) order.Add($"{f.Conversation}.{n}");
+            for (var n = convo.Entry[0].Node; n != null; n = convo.Nodes[n].Next) order.Add($"{parts.Key}.{n}");
             Assert.Equal(order, said);
         }
     }
@@ -131,14 +134,39 @@ public class CinemaTests
     }
 
     [Fact]
-    public void The_opening_is_narration_whoever_voices_it()
+    public void The_opening_is_narration_whoever_voices_it_and_one_labelled_voice()
     {
-        // C01's voice may be recast (Vonnra calling her home): the timing follows
-        // the take, and the subtitle stays narration while the speaker is listed.
+        // The narrator may be recast (the timing follows the take; the subtitle stays
+        // narration while the speaker is listed). The one other voice is the call up
+        // the road, Vonnra's, never named but labelled "A voice up the road": the
+        // narrator never speaks a person's words, and the label is how a careful
+        // player later knows her (docs/STORY_BIBLE.md, "Who tells it").
         var f = CineFile.Load("c01");
         var ctx = Make("hunter", "Wren", 1).C;
-        foreach (var c in Lay(f).Cues.Where(c => c.Cue.Do == "line"))
-            Assert.Contains(CineLines.Find(c.Cue.Str("id")!, ctx).SpeakerId, f.Narrators);
+        var lines = Lay(f).Cues.Where(c => c.Cue.Do == "line").Select(c => CineLines.Find(c.Cue.Str("id")!, ctx)).ToList();
+        var call = Assert.Single(lines, l => l.SpeakerId == "far_voice");
+        Assert.DoesNotContain("far_voice", f.Narrators);
+        Assert.Equal("A voice up the road", call.Speaker);
+        Assert.All(lines.Where(l => l != call), l => Assert.Contains(l.SpeakerId, f.Narrators));
+    }
+
+    [Fact]
+    public void A_line_can_run_over_a_cut_and_a_cue_can_wait_for_it()
+    {
+        // The far lamp's line begins on the wide shot and ends on her close-up; the
+        // call waits for it, and the close-up holds until the call is said.
+        var f = CineFile.Parse("""
+            { "id": "t", "conversation": "cin_drowned_fire", "shots": [
+              { "id": "1", "dur": 2, "cues": [ { "at": 0.5, "do": "line", "id": "cin_drowned_fire.lamp" } ] },
+              { "id": "2", "dur": 1, "fit": ["cin_drowned_fire.lamp", "cin_drowned_fire.call"], "tail": 0.5,
+                "cues": [ { "at": "after:cin_drowned_fire.lamp+0.4", "do": "line", "id": "cin_drowned_fire.call" } ] } ] }
+            """);
+        var s = new CineSchedule(f, new CineContext(), id => id.EndsWith(".lamp") ? 6.0 : 3.0);
+        Assert.Equal(2.0, s.Shots[1].Start, 6);
+        Assert.Equal(6.9, s.Cues.First(c => c.Cue.Str("id") == "cin_drowned_fire.call").T, 6);
+        Assert.Equal(6.9 + 3.0 + 0.5, s.Length, 6);
+        var bad = CineFile.Parse("""{ "id": "u", "shots": [ { "id": "1", "dur": 1, "fit": ["x.y"], "cues": [] } ] }""");
+        Assert.Throws<FormatException>(() => new CineSchedule(bad, new CineContext(), _ => 1));
     }
 
     [Fact]
