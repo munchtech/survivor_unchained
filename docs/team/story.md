@@ -44,6 +44,10 @@ before recording. Agent a73ca9d35d0c487a9, branch `worktree-agent-a73ca9d35d0c48
   one is a quiet seed of what she is.
 - **No genre words in the valley's mouth,** maps included: no weeping or
   whispering places, no alpha or warlord.
+- **The base game is not explicit** (the legal lead's blocker): every love
+  scene fades at the moment itself. No explicit slot ships, and `StoryLint`
+  holds it. Whether "Warmed" comes off the love scenes is the owner's call; it
+  is unchanged.
 - **Pacing (the owner's):** story about 40% early; story nights 20 minutes, the
   Wayfinder's maps 30; the endgame is the atlas (build maps) and the ember scars
   (survivors fun); after ending B they are the Wayfinder's book of the nights
@@ -69,6 +73,14 @@ before recording. Agent a73ca9d35d0c487a9, branch `worktree-agent-a73ca9d35d0c48
   didn't." is the one lie in her part, practised smooth; the hurt goes in the
   corners. Re-take `places.0` ("Last till the dead of night").
 - **New lines for every packet:** the night talk (`npcs.json` `said`, appended).
+- **Voice ids shifted by one** when the explicit slots came out (variant 0 of
+  each love scene). No takes exist yet:
+  - `sella.night` .1/.2/.3 are now .0/.1/.2, so the final packet's
+    `dlg.sella.night.1` ("Don't,") is `.0`;
+  - `sella.free_night` .1/.2 are now .0/.1, so `dlg.sella.free_night.1` ("You
+    told me anyway,") is `.0`;
+  - `maeca.blind` .1/.2 are now .0/.1, so `dlg.maeca.blind.1` ("They're
+    eating.") is `.0`.
 - **Changed, if the board is ever voiced:** `dlg.board.read.0` now ends "fifty
   for the old grey dog-wolf" (`tools/vo/manifest.json` still has the old text).
 
@@ -79,7 +91,9 @@ before recording. Agent a73ca9d35d0c487a9, branch `worktree-agent-a73ca9d35d0c48
 2. C14: Brannoc's dusk choice (`brannoc.road`), the `nell.burial` variant, the
    night's last lines and a RouteTests play, once combat builds the fight.
 3. C01 to C04: the cinematics lead's line asks, when they come.
-4. Crafting phase 3: wire-up questions only; the lines are written.
+4. Crafting phase 3: all lines sent to the crafting lead (a7debf1459f14dfe7),
+   who is wiring them, slurry affix names included (Fevered, of the Sump,
+   Pipe-Lad's). Answer wire-up questions only.
 5. Act 2's text, when the owner asks.
 
 ## Blockers

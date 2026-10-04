@@ -68,6 +68,30 @@ public class BattleTests
         }
     }
 
+    /// <summary>A late night's stones do not carpet the field: past the cap the rest of the ember is
+    /// gathered into one hoard stone where the overflow began, which keeps every bit of it and does
+    /// not cool.</summary>
+    [Fact]
+    public void Ember_past_the_cap_is_gathered_into_one_hoard_stone()
+    {
+        var b = Arena(1);
+        b.Player.Iframes = 1e9;
+        double dropped = 0;
+        for (int i = 0; i < 500; i++)
+        {
+            var e = b.SpawnEnemy("risen", 40 + i % 25 * 0.6, 40 + i / 25 * 0.6)!;
+            dropped += e.Def.Xp * Content.Enemies.ScaleFor(e.Level).Xp * b.Rules.EmberGain;
+            b.KillEnemy(e, true, null);
+            if (i % 25 == 0) b.Tick(1 / 60.0, 0, 0);
+        }
+        b.Tick(1 / 60.0, 0, 0);
+        var stones = b.Pickups.Items.Where(p => p.Alive && p.Kind == PickupKind.Ember).ToList();
+        Assert.InRange(stones.Count(p => p.Tier != Battle.HoardTier), Battle.EmberCap - 10, Battle.EmberCap + 10);
+        var hoard = Assert.Single(stones, p => p.Tier == Battle.HoardTier);
+        Assert.True(hoard.Persistent);
+        Assert.Equal(dropped, stones.Sum(p => p.Value), 6);
+    }
+
     [Fact]
     public void A_minute_of_fighting_kills_levels_and_stays_finite()
     {
