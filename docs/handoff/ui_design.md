@@ -144,7 +144,7 @@ Also added: 5 hair colours (chestnut, strawberry, honey, platinum, plus the old 
    3. The Wayfinder's table says what a map pays: the spoils' lean in words, the chance of a tome, the
       boss. This grows into the atlas (the owner's endgame: permanent maps on an atlas, plus ember arenas).
    4. Pausing: arenas and the prologue's night road only, not the Verge by day (today's rule is `zone.Combat`).
-7. The old list: announcements, item card, journal deeds and codex, HUD dash and draught; `docs/ui_review/`;
+7. **The forge** (crafting lead `a97e32948c5bf419d`; `godot/src/Ui/Forge.cs`, ForgeScreen; spec `docs/CRAFTING_DESIGN.md` 14): restyle or rebuild. Wanted: the house's frame art for seam rows and craft tiles; a crafted moment (a hammer-strike flash on the seam that changed, the heat gauge's cells burning out one by one); a pad flow check (worn, then seam, then craft). Shoot: `--quick warden --zone waystation --time day --items "old_iron*14,wolf_pelt*5,ember_shard*9,iron_helm:3" --gold 400 --open "talk:brannoc>work my gear" --anvil iron_helm` (add `--pad --focus temper` for the heat preview). The arena result's `Carried out` now shows materials as slots (`src/Ui/ArenaResult.cs`, Haul).. The old list: announcements, item card, journal deeds and codex, HUD dash and draught; `docs/ui_review/`;
    UI_DESIGN 10 (and rewrite 7.2 for the new creation).
 
 ## 5. Decisions (one line each, with why)
