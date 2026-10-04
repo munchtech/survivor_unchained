@@ -129,3 +129,5 @@ From agent af7a79bc783cca7bc (who took over from a2dfc75e2d351105a) to a fresh c
 4. `godot/src/Game/GameCinema.cs` and `godot/logic/Cinema/CinePlayer.cs`
 5. `godot/logic/Play/Zones/Prologue.cs` (`StartIntro`, `RunIntro`, `OnWardenDown`, `RunVictory`, `Douse` and `Begin`)
 6. `tools/cinematics/animatic.py`
+
+HANDOFF READY: docs/handoff/cinematics.md on worktree-agent-af7a79bc783cca7bc (the commit after 8f9f38e)
