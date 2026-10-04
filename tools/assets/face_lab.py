@@ -48,6 +48,7 @@ for t, v in {**fs.FACE, **fs.BUILD}.items():
     for n in fs.sides([t]):
         TargetService.load_target(hm, TARGET[n], weight=v, name="face_" + n)
 SK = {}
+PROXIES = []
 
 
 def key(name):
@@ -130,6 +131,8 @@ def set_face(weights):
                 kb.slider_min, kb.slider_max = -3, 3
                 kb.value = v
     bpy.context.view_layer.update()
+    if PROXIES:
+        follow()
 
 
 # ------------------------------------------------------------ the look --
@@ -162,6 +165,13 @@ hm.data.materials.clear()
 skin_dir = os.path.join(DATA, *fs.SKIN)
 hm.data.materials.append(image_material("skin", mhmat_texture(next(os.path.join(skin_dir, f) for f in os.listdir(skin_dir)
                                                                      if f.endswith(".mhmat"))), rough=0.45))
+from bl_ext.user_default.mpfb.entities.clothes.mhclo import Mhclo  # noqa: E402
+
+# Her eyes, brows and lashes, each with its fitting (MakeHuman's: each of its
+# points rides on three of hers), so they follow her face as it is shaped:
+# fitted once, to her face as loaded, they would stay where that face had
+# them and a face judged with them would be judged wrongly.
+PROXIES = []
 for kind, name in fs.PARTS:
     if kind in ("teeth", "tongue"):
         continue
@@ -173,6 +183,35 @@ for kind, name in fs.PARTS:
     o.data.materials.append(image_material(kind, mhmat_texture(mhmat), alpha=True, rough=0.1 if kind == "eyes" else 0.8))
     for mo in o.modifiers:
         mo.show_viewport = mo.show_render = False
+    mc = Mhclo()
+    mc.load(os.path.join(DATA, kind, name, name + ".mhclo"))
+    n = len(o.data.vertices)
+    vi = np.zeros((n, 3), int)
+    vw = np.zeros((n, 3))
+    for i in range(n):
+        if i in mc.verts:
+            vi[i], vw[i] = mc.verts[i]["verts"], mc.verts[i]["weights"]
+    co0 = np.zeros(n * 3)
+    o.data.vertices.foreach_get("co", co0)
+    PROXIES.append((o, vi, vw, co0.reshape(-1, 3)))
+FITTED = None
+
+
+def follow():
+    """The proxies moved as her points have moved since they were fitted."""
+    global FITTED
+    P = positions()
+    if FITTED is None:
+        FITTED = P
+    d = P - FITTED
+    for o, vi, vw, co0 in PROXIES:
+        dw = (d[vi] * vw[:, :, None]).sum(1)
+        inv = np.linalg.inv(np.array(o.matrix_world)[:3, :3])
+        o.data.vertices.foreach_set("co", (co0 + dw @ inv.T).ravel().astype(np.float32))
+        o.data.update()
+
+
+follow()
 
 sc = bpy.context.scene
 for eng in ("BLENDER_EEVEE_NEXT", "BLENDER_EEVEE"):

@@ -18,12 +18,26 @@ EYES = "green"
 SKIN = ("skins", "toigo_light_skin_female_ginger")
 
 # Her own face: MakeHuman's woman shaped by its targets (each with its
-# weight; "X-" is both sides). Every slider moves her from here.
-FACE = {"head-age-decr": 0.35, "head-fat-decr": 0.2, "X-eye-scale-incr": 0.35, "X-eye-corner2-up": 0.35, "eyebrows-angle-up": 0.3,
-        "nose-scale-horiz-decr": 0.65, "nose-point-up": 0.3, "nose-point-width-decr": 0.3, "nose-hump-decr": 0.45, "nose-scale-vert-decr": 0.3,
-        "mouth-upperlip-volume-incr": 0.75, "mouth-lowerlip-volume-incr": 0.8, "mouth-cupidsbow-incr": 0.5, "mouth-angles-up": 0.2,
-        "X-cheek-bones-incr": 0.15, "X-cheek-volume-incr": 0.5, "chin-bones-incr": 0.1, "chin-width-incr": 0.3, "chin-height-decr": 0.25,
-        "chin-triangle": 0.2, "chin-prominent-incr": 0.15}
+# weight; "X-" is both sides). Every slider moves her from here. Fitted by
+# landmarks to the four AI references of her (face_fit.py: the mean of the
+# four fits, depth held), then by eye toward the research
+# (FACE_RESEARCH.md): eyes a touch larger, brows higher, the jaw and chin
+# narrower, the lower lip the fuller.
+FACE = {"head-age-decr": 0.619, "head-age-incr": 0.121, "head-diamond": 0.322, "head-fat-decr": 0.58,
+        "head-scale-horiz-decr": 0.229, "head-scale-vert-incr": 0.16, "forehead-temple-decr": 0.03,
+        "forehead-temple-incr": 0.133, "eyebrows-trans-up": 0.4, "X-eye-corner1-down": 0.285, "X-eye-corner2-down": 0.225,
+        "X-eye-corner2-up": 0.25, "X-eye-epicanthus-in": 0.095, "X-eye-height1-decr": 0.095, "X-eye-height3-decr": 0.203,
+        "X-eye-height3-incr": 0.192, "X-eye-scale-incr": 0.36, "X-eye-trans-down": 0.071, "X-eye-trans-in": 0.233,
+        "X-eye-trans-out": 0.518, "nose-base-down": 0.217, "nose-hump-decr": 0.056, "nose-nostrils-width-incr": 0.104,
+        "nose-point-down": 0.114, "nose-point-up": 0.2, "nose-point-width-decr": 0.3, "nose-scale-horiz-decr": 0.217,
+        "nose-scale-horiz-incr": 0.178, "nose-scale-vert-incr": 0.117, "nose-trans-down": 0.372, "nose-volume-decr": 0.327,
+        "nose-volume-incr": 0.068, "nose-width2-incr": 0.047, "nose-width3-incr": 0.025, "X-cheek-bones-decr": 0.031,
+        "X-cheek-bones-incr": 0.044, "X-cheek-trans-down": 0.263, "X-cheek-trans-up": 0.225, "X-cheek-volume-incr": 0.114,
+        "mouth-angles-up": 0.251, "mouth-cupidsbow-incr": 0.4, "mouth-lowerlip-volume-incr": 0.848,
+        "mouth-lowerlip-width-incr": 0.101, "mouth-scale-horiz-decr": 0.118, "mouth-scale-horiz-incr": 0.397,
+        "mouth-trans-down": 0.147, "mouth-upperlip-volume-incr": 0.729, "mouth-upperlip-width-decr": 0.024,
+        "mouth-upperlip-width-incr": 0.12, "chin-bones-decr": 0.55, "chin-height-decr": 0.277, "chin-height-incr": 0.135,
+        "chin-jaw-drop-decr": 0.211, "chin-width-decr": 0.4}
 # Her build where her head meets her body (MakeHuman's woman is longer and
 # slimmer of neck than she was made).
 BUILD = {"measure-neck-height-decr": 0.9, "measure-neck-circ-incr": 0.5, "neck-back-scale-depth-incr": 0.3}
@@ -36,8 +50,7 @@ SCULPTS = {}
 # its "-" key, each with the weight its key is made at). The weight is the
 # slider's reach: ±1 on the slider is the key at full, so a key is made as
 # far as her face still looks well (checked in face_lab.py renders at both
-# ends), and the game's slider spans all of it. (DRAFT: weights still to be
-# set from the calibration sheets; heroine_head.py does not read this yet.)
+# ends), and the game's slider spans all of it (REACH below).
 SLIDER_GROUPS = ["Head", "Eyes", "Nose", "Cheeks", "Mouth", "Jaw", "Ears", "Neck"]
 SLIDERS = {
     # Head
