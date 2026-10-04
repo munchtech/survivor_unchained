@@ -46,6 +46,7 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 *The same words are also* `guard.0.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json cin_first_light/dawn#0
 *Played:* bored, matter-of-fact; doing: a guard at dawn; pace: measured; volume: level.
+*Length:* the cut is timed to it: 2.4–3.0 s, first sound to last word.
 
 ```
 [bored, matter-of-fact] Dawn arrivals. We don't get many that live.

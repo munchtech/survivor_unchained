@@ -26,7 +26,12 @@ public sealed class VoTake
     /// <summary>VoiceLines.Hash of the text the take was made from.</summary>
     public string Hash = "";
     public string Voice = "";
+    /// <summary>The file's length, the room's decay included.</summary>
     public double Sec;
+    /// <summary>The voice itself, first sound to last word, without the
+    /// room's decay (0 in takes made before it was measured): what a cut
+    /// timed to the line waits for.</summary>
+    public double Read;
     /// <summary>Where each voice in the line starts and ends, in seconds, and
     /// how far through the text it has got by then (0..1): the words on
     /// screen follow the voice, the narrator's part and then the speaker's.</summary>

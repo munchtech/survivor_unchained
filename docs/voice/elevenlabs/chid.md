@@ -13,7 +13,7 @@ Voice id in the game: `chid`. 51 takes to record (5,525 characters; about 16,575
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Chid`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, Irish). Male, 30s. Studio quality. Persona: a gentle priest. A man who sounds in his thirties, a gentle priest with a light, bright Irish accent. A light, breathless, delighted tenor that runs on and doubles back, catching with joy; kind, earnest and a little foolish. Thick Irish accent. No reverb or effects.
+Native English (British, Irish). Male, 30s. Studio quality. Persona: a gentle priest. A man who sounds in his thirties, a gentle priest with a light, bright Irish accent. A light, breathless, delighted tenor that runs on and doubles back, catching with joy; kind, earnest and a little foolish. Light Irish accent. No reverb or effects.
 ```
 
 Preview text:

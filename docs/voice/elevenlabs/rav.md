@@ -11,7 +11,7 @@ Voice id in the game: `rav`. 52 takes to record (5,351 characters; about 16,053 
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Rav Cutwell`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, British). Male, 50s. Studio quality. Persona: a Glasgow tavern doctor. A fifty-four-year-old tavern doctor from Glasgow in Scotland, with a gravelly, wry baritone and a strong Glaswegian Scottish accent. Half-drunk music in his rhythm, funny and frank, with a calm bedside steadiness underneath. No reverb or effects.
+Native English (British, Glaswegian). Male, 50s. Studio quality. Persona: a Glasgow tavern doctor. A fifty-four-year-old tavern doctor from Glasgow in Scotland, with a gravelly, wry baritone and a strong Glaswegian Scottish accent. Half-drunk music in his rhythm, funny and frank, with a calm bedside steadiness underneath. Thick Glaswegian accent. No reverb or effects.
 ```
 
 Preview text:

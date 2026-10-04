@@ -1,6 +1,6 @@
 # A Kerchief woman: ElevenLabs packet
 
-Voice id in the game: `kerchief_woman`. 1 takes to record (11 characters; about 33 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `kerchief_woman`. 1 take to record (11 characters; about 33 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 

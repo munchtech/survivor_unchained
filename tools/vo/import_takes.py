@@ -199,6 +199,9 @@ def main(argv):
 
     def log(s):
         pass
+    # The placeholder run may have saved the manifest while the words were
+    # being checked: mix against it afresh, so neither undoes the other.
+    by_id = {l["id"]: l for l in lines_mod.merge(lines_mod.build())}
     for lid in sorted({m["line"] for m in kept}):
         take = rebuild(by_id[lid], log)
         if take is None:
@@ -213,6 +216,10 @@ def main(argv):
         print(f"imported {len(kept)} takes: {len(done)} lines final, {len(partial)} waiting on another voice's parts, "
               f"{len(waiting)} with a part that has neither a take nor a placeholder ({', '.join(waiting[:8])}); "
               f"{n} lines in the game's index")
+        # A cinematic's cut is timed to its line: say which takes miss it (kept; a new take retimes the cut).
+        for lid in done + partial:
+            if by_id[lid]["take"].get("timing"):
+                print(f"  timing {lid}: {by_id[lid]['take']['timing']}")
     _missing(plan(files, list(by_id.values()), a.voice) if a.voice else p, a.voice)
     return {"kept": kept, "wrong": wrong, "done": done, "partial": partial, "waiting": waiting}
 

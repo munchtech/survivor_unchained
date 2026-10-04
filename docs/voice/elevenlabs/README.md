@@ -96,10 +96,11 @@ By how much each voice is heard, and where the player meets it first:
 | [A Watchwoman](guard_f.md) | 9 | 406 |  |
 | [A town girl](folk_child_f.md) | 7 | 205 |  |
 | [A town boy](folk_child_m.md) | 7 | 205 |  |
-| [The Ford-Warden](warden.md) | 7 | 178 |  |
+| [The Ford-Warden](warden.md) | 6 | 164 |  |
 | [The dead Watchman](watchman.md) | 1 | 45 |  |
 | [The Legion's dead, behind the door](barrow_lord.md) | 5 | 41 |  |
 | [The bones](bones.md) | 1 | 37 |  |
+| [The Ford-Warden, the man under him](warden_man.md) | 1 | 14 |  |
 | [The Red Hand](red_hand.md) | 1 | 13 |  |
 | [A Kerchief woman](kerchief_woman.md) | 1 | 11 |  |
 <!-- /PACKETS -->

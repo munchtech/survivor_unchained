@@ -1,6 +1,6 @@
 # The Red Hand: ElevenLabs packet
 
-Voice id in the game: `red_hand`. 1 takes to record (13 characters; about 39 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `red_hand`. 1 take to record (13 characters; about 39 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 

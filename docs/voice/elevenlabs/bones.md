@@ -1,6 +1,6 @@
 # The bones: ElevenLabs packet
 
-Voice id in the game: `bones`. 1 takes to record (37 characters; about 111 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `bones`. 1 take to record (37 characters; about 111 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -11,7 +11,7 @@ An ancient skeleton speaking in a dry, hollow, rasping whisper, very slow and ve
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU The bones`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, British). Male, ageless, not human. Studio quality. Persona: male voice with british accent. An ancient skeleton speaking in a dry, hollow, rasping whisper, very slow and very quiet. No reverb or effects.
+Native English (British). Male, ageless, not human. Studio quality. Persona: Ancient skeleton character. An ancient skeleton speaking in a dry, hollow, rasping whisper, very slow and very quiet. No reverb or effects.
 ```
 
 Preview text:
@@ -34,6 +34,10 @@ Then bring them into the game (it trims, levels, mixes and replaces the placehol
 ```
 python tools/vo/import_takes.py ~/Downloads/su_vo --voice bones
 ```
+
+## The effect
+
+Record every take dry, with no effect or reverb: the game adds it. For every line, it thins it to a hollow, dry rasp, as if from inside a barrow.
 
 ## The lines
 

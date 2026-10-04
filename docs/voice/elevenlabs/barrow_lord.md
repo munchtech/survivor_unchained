@@ -11,7 +11,7 @@ Voice id in the game: `barrow_lord`. 5 takes to record (41 characters; about 123
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU The Legion's dead, behind the door`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, British). Male, ageless, not human. Studio quality. Persona: male voice with british accent. An ancient dead soldier speaking from deep inside a stone tomb, a very low, hollow, dry voice like wind in a crypt, slow and final, each word heavy. No reverb or effects.
+Native English (British). Male, ageless, not human. Studio quality. Persona: Ancient dead soldier character. An ancient dead soldier speaking from deep inside a stone tomb, a very low, hollow, dry voice like wind in a crypt, slow and final, each word heavy. No reverb or effects.
 ```
 
 Preview text:
@@ -34,6 +34,10 @@ Then bring them into the game (it trims, levels, mixes and replaces the placehol
 ```
 python tools/vo/import_takes.py ~/Downloads/su_vo --voice barrow_lord
 ```
+
+## The effect
+
+Record every take dry, with no effect or reverb: the game adds it. For every line, it thins it to a hollow, dry rasp, as if from inside a barrow.
 
 ## The lines
 

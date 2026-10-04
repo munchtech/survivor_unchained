@@ -11,7 +11,7 @@ Voice id in the game: `holloway`. 64 takes to record (7,712 characters; about 23
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Captain Holloway`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, Lancashire). Male, 40s. Studio quality. Persona: a tired northern English army captain. A tired forty-five-year-old soldier from Lancashire in the north of England, an army quartermaster made captain. A hoarse, worn baritone, rough from years of shouting orders, with a flat northern English accent. Clipped and weary, anger held just below the surface. Thick Lancashire accent. No reverb or effects.
+Native English (British, Lancashire). Male, 40s. Studio quality. Persona: a tired northern English army captain. A tired forty-five-year-old soldier from Lancashire in the north of England, an army quartermaster made captain. A hoarse, worn baritone, rough from years of shouting orders, with a flat northern English accent. Clipped and weary, anger held just below the surface. Light Lancashire accent. No reverb or effects.
 ```
 
 Preview text:

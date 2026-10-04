@@ -11,7 +11,7 @@ Voice id in the game: `sella`. 95 takes to record (9,821 characters; about 29,46
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Sella`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, London). Female, 20s. Studio quality. Persona: a London courtesan. A woman in her late twenties from London with a soft, warm Cockney accent. A low, amused, intimate alto, relaxed and knowing, frank and unembarrassed, with warmth that is also a professional's. Never breathy. Thick London accent. No reverb or effects.
+Native English (British, London). Female, 20s. Studio quality. Persona: a London courtesan. A woman in her late twenties from London with a soft, warm Cockney accent. A low, amused, intimate alto, relaxed and knowing, frank and unembarrassed, with warmth that is also a professional's. Never breathy. Light London accent. No reverb or effects.
 ```
 
 Preview text:

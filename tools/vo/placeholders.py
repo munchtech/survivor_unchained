@@ -20,6 +20,7 @@ shared card only ever holds one of them.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -60,12 +61,18 @@ def tagged(seg_text: str, d: dict) -> str:
     return seg_text
 
 
-def description(vdef: dict, d: dict) -> str:
-    """The part's Maya1 voice with this line's tone, pace and loudness."""
+PACES = ["very slow", "slow", "conversational", "fast"]
+
+
+def description(vdef: dict, d: dict, nudge: int = 0) -> str:
+    """The part's Maya1 voice with this line's tone, pace and loudness.
+    `nudge` moves the pace a step quicker (+) or slower (-), for a line
+    whose last take did not fit the cut it is timed to."""
     who, _, rest = vdef["maya"].partition(". ")
     keep = [x for x in rest.rstrip(".").split(", ") if "pitch" in x or "timbre" in x]
-    pace = d.get("pace", "measured")
-    keep.append(f"{PACE_WORD[next((k for k in PACE_WORD if k in pace), 'measured')]} pacing")
+    pace = PACE_WORD[next((k for k in PACE_WORD if k in d.get("pace", "measured")), "measured")]
+    pace = PACES[max(0, min(len(PACES) - 1, PACES.index(pace) + nudge))]
+    keep.append(f"{pace} pacing")
     # The narrator never shows a feeling (the story lead's rule): his tone is always plain.
     emo = "plain" if vdef.get("name") == "The narrator" else re.split(r",| then ", d.get("emo", "") or "")[0].strip() or "plain"
     vol = d.get("vol", "level")
@@ -91,20 +98,24 @@ def chunks(text: str) -> list[str]:
     return out + ([cur] if cur else [])
 
 
-def segment_jobs(line: dict, rnd: int) -> list[dict]:
+def segment_jobs(line: dict, rnd: int, nudge: int = 0) -> list[dict]:
     voices = cast()
     d = line.get("direction", {})
     jobs = []
     for i, seg in enumerate(line["segments"]):
         sd = produce.NARRATOR_ASIDE if seg["voice"] == "narrator" and line["voice"] != "narrator" else d
         text = produce.prepare(tagged(seg["text"], sd) if seg["voice"] != "narrator" or line["voice"] == "narrator" else seg["text"])[0]
-        desc = description(voices[seg["voice"]], sd)
+        desc = description(voices[seg["voice"]], sd, nudge)
         parts = chunks(text)
-        jobs.append({"line": line["id"], "part": i, "voice": seg["voice"], "text": seg["text"], "round": rnd,
-                     "chunks": [{"out": os.path.join(FOLDER, line["id"], f"p{i}_c{k}_r{rnd}.wav"), "description": desc,
+        # The files are named for what was asked (the words, the description,
+        # the voice), so a changed direction is acted again, not served from the cache.
+        key = hashlib.sha1(f"{desc}|{text}|{seg['voice']}".encode("utf-8")).hexdigest()[:6]
+        stem = os.path.join(FOLDER, line["id"], f"p{i}")
+        jobs.append({"line": line["id"], "part": i, "voice": seg["voice"], "text": seg["text"], "round": rnd, "nudge": nudge,
+                     "chunks": [{"out": f"{stem}_c{k}_r{rnd}_{key}.wav", "description": desc,
                                  "text": c, "seed": 1000 * rnd + 7} for k, c in enumerate(parts)],
-                     "perf": os.path.join(FOLDER, line["id"], f"p{i}_perf_r{rnd}.wav"),
-                     "vc": os.path.join(FOLDER, line["id"], f"p{i}_vc_r{rnd}.wav")})
+                     "perf": f"{stem}_perf_r{rnd}_{key}.wav",
+                     "vc": f"{stem}_vc_r{rnd}_{key}.wav"})
     return jobs
 
 
@@ -186,13 +197,27 @@ def check(jobs: list[dict], log) -> dict:
     if not todo:
         return {}
     path = os.path.join(FOLDER, "check_jobs.json")
-    json.dump(todo, open(path, "w", encoding="utf-8"), ensure_ascii=False)
-    wait_for_gpu(log)
-    log(f"  checking {len(todo)} parts (Whisper)")
     out = path + ".out"
-    subprocess.run([ANALYSIS_PY, os.path.abspath(__file__), "--check", path, out], env=dict(os.environ, PYTHONIOENCODING="utf-8"),
-                   stdout=open(os.path.join(TOOLS, "placeholder_check.log"), "a", encoding="utf-8"), stderr=subprocess.STDOUT)
-    return json.load(open(out, encoding="utf-8")) if os.path.exists(out) else {}
+    heard: dict = {}
+    # The checker has died without a word on a crowded card (3 October):
+    # what it did not hear is checked again, twice at most.
+    for attempt in range(3):
+        left = [t for t in todo if t["path"] not in heard]
+        if not left:
+            break
+        json.dump(left, open(path, "w", encoding="utf-8"), ensure_ascii=False)
+        if os.path.exists(out):
+            os.remove(out)  # never read an earlier batch's answers as this one's
+        wait_for_gpu(log)
+        log(f"  checking {len(left)} parts (Whisper)" + (f", again (try {attempt + 1})" if attempt else ""))
+        r = subprocess.run([ANALYSIS_PY, os.path.abspath(__file__), "--check", path, out], env=dict(os.environ, PYTHONIOENCODING="utf-8"),
+                           stdout=open(os.path.join(TOOLS, "placeholder_check.log"), "a", encoding="utf-8"), stderr=subprocess.STDOUT)
+        if os.path.exists(out):
+            heard.update(json.load(open(out, encoding="utf-8")))
+        if r.returncode:
+            log(f"    the checker stopped (exit {r.returncode}) with {len(heard)} of {len(todo)} heard")
+            time.sleep(20)
+    return heard
 
 
 def run_check(path: str, out: str):
@@ -220,14 +245,18 @@ def main(argv):
     ap.add_argument("--chunk", type=int, default=40, help="lines per pass through the three models")
     ap.add_argument("--batch", type=int, default=8, help="Maya1 performances decoded together (8 is about ten times one)")
     ap.add_argument("--redo", action="store_true", help="make placeholders again for lines that have one")
+    ap.add_argument("--refault", action="store_true", help="judge the words of every placeholder again from what Whisper "
+                                                                "heard, with the lexicon as it is now (no GPU)")
     ap.add_argument("--check", nargs=2, help=argparse.SUPPRESS)
     a = ap.parse_args(argv)
     if a.check:
         return run_check(*a.check)
+    if a.refault:
+        return refault()
     man = lines_mod.merge(lines_mod.build())
     by_id = {l["id"]: l for l in man}
     todo = [l for l in man if l["status"] != "skip"
-            and (l["status"] in ("todo", "stale", "failed") or (a.redo and (l.get("take") or {}).get("placeholder")))
+            and (l["status"] in ("todo", "stale", "failed") or (a.redo and (l.get("take") or {}).get("placeholder") and not (l.get("take") or {}).get("final_parts")))
             and (not a.ids or any(l["id"] == p or l["id"].startswith(p) for p in a.ids))
             and (not a.voice or any(s["voice"] == a.voice for s in l["segments"]))
             and all(os.path.exists(os.path.join(REFS, f"{s['voice']}.flac")) for s in l["segments"])]
@@ -245,11 +274,13 @@ def main(argv):
     made = 0
     for c in range(0, len(todo), a.chunk):
         group = todo[c: c + a.chunk]
+        by_line = {l["id"]: l for l in group}
         best: dict[tuple, dict] = {}
+        nudge: dict[str, int] = {}
         pending = [j for l in group for j in segment_jobs(l, 1)]
         for rnd in range(1, a.rounds + 1):
             if rnd > 1:
-                pending = [j for l in group for j in segment_jobs(l, rnd)
+                pending = [j for l in group for j in segment_jobs(l, rnd, nudge.get(l["id"], 0))
                            if (l["id"], j["part"]) not in best or best[(l["id"], j["part"])]["faults"]]
             if not pending:
                 break
@@ -262,24 +293,95 @@ def main(argv):
                 if not h:
                     continue
                 k = (j["line"], j["part"])
-                if k not in best or len(h["faults"]) < len(best[k]["faults"]):
-                    best[k] = {**h, "path": j["vc"], "seed": j["round"], "score": 0, "style": "placeholder: Maya1 performance, Seed-VC"}
+                cand = {**h, "path": j["vc"], "seed": j["round"], "score": 0, "style": "placeholder: Maya1 performance, Seed-VC"}
+                timed(by_line[j["line"]], cand, nudge)
+                if k not in best or rank(cand) < rank(best[k]):
+                    best[k] = cand
+        # Another process (the importer) may have written finals since this
+        # run read the manifest: take the manifest afresh, and never put a
+        # placeholder over a final.
+        by_id = {l["id"]: l for l in lines_mod.merge(lines_mod.build())}
         for l in group:
             picks = [best.get((l["id"], i)) for i in range(len(l["segments"]))]
             if any(p is None for p in picks):
                 log(f"  {l['id']}: no take")
                 continue
-            take = produce.finish(l, picks, log)
+            now = by_id.get(l["id"])
+            t = (now or {}).get("take") or {}
+            if now is None or (t.get("final_parts") and t.get("hash") == now["hash"]):
+                log(f"  {l['id']}: has a final take now; left alone")
+                continue
+            if now["hash"] != l["hash"]:
+                log(f"  {l['id']}: its words changed during the run; next time")
+                continue
+            take = produce.finish(now, picks, log)
             take.update(model="maya1 performance + seed-vc", placeholder=True)
             faults = [f for p in picks for f in p["faults"]]
             if faults:
                 take["faults"] = faults
-            by_id[l["id"]].update(take=take, status="done", placeholder=True)
-            by_id[l["id"]].pop("failed", None)
+            now.update(take=take, status="done", placeholder=True)
+            now.pop("failed", None)
             made += 1
         lines_mod.save(list(by_id.values()))
         n = produce.write_index(list(by_id.values()))
         log(f"{time.strftime('%H:%M')} {made} placeholders made; {n} lines in the game's index")
+
+
+def refault():
+    """A word fault can be Whisper's spelling of a name said right ('Danit'
+    for 'Dannet'): once the lexicon knows the spelling, the placeholders'
+    faults are judged again from what was heard, and the lines still wrong
+    are listed for --redo."""
+    import analyse
+    man = lines_mod.merge(lines_mod.build())
+    cleared, wrong = 0, []
+    for l in man:
+        t = l.get("take") or {}
+        if not t.get("placeholder") or t.get("hash") != l["hash"] or not t.get("parts"):
+            continue
+        words = []
+        for seg, p in zip(l["segments"], t["parts"]):
+            if p.get("said"):
+                words += analyse.substantive(analyse.wer(seg["text"], p["said"])[1])
+        other = [f for f in t.get("faults", []) if f.startswith(("long:", "short:", "unmixed", "unheard"))]
+        if t.get("faults") and not words and not other:
+            cleared += 1
+        t.pop("faults", None)
+        if words or other:
+            t["faults"] = words + other
+            wrong.append(f"{l['id']}: {', '.join((words + other)[:4])}")
+    lines_mod.save(man)
+    produce.write_index(man)
+    print(f"{cleared} placeholders cleared; {len(wrong)} still with faults")
+    for w in wrong:
+        print("  " + w)
+
+
+def rank(p: dict) -> tuple:
+    """Fewest faults first; then, for a line timed to a cut, the nearest to its window."""
+    return len(p["faults"]), p.get("off_by", 0.0)
+
+
+def timed(line: dict, cand: dict, nudge: dict):
+    """A line timed to a cut (direction `time`): a take that will not fit
+    once its pauses are tightened is a fault, and the next round is asked a
+    step quicker or slower."""
+    win = (line.get("direction") or {}).get("time")
+    if not win or len(line["segments"]) != 1:
+        return
+    try:
+        _, _, read, _ = produce.fit(line, [cand])
+    except Exception as e:  # a take the mix cannot read is judged on its words alone
+        cand["faults"] = cand["faults"] + [f"unmixed: {type(e).__name__}"]
+        return
+    cand["read"] = read
+    off = produce.timing(line, read)
+    if off:
+        cand["faults"] = cand["faults"] + [off]
+        cand["off_by"] = round(max(win[0] - read, read - win[1]), 2)
+        step = 1 if read > win[1] else -1
+        if nudge.get(line["id"], 0) * step >= 0:  # keep going the same way; never undo a step
+            nudge[line["id"]] = nudge.get(line["id"], 0) + step
 
 
 if __name__ == "__main__":

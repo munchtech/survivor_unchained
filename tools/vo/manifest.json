@@ -21,7 +21,7 @@
     "vol": "level",
     "wants": "to take charge of you, and to see who you are",
     "hides": "Vonnra pays her for news of Low Ford arrivals, double for this one",
-    "note": "'Well.' a beat, looking you over. On the Chid sentence she watches your face for how you take 'blue lights going out'. A dry edge on 'bleeding on my step'. No laugh at the end: a breath, and the warmth is in the order itself.",
+    "note": "'Well.' a beat, looking you over: partly for Vonnra's money, and the kindness is real as well. On the Chid sentence she watches your face for how you take 'blue lights going out'. A dry edge on 'bleeding on my step'. No laugh at the end: a breath, and the warmth is in the order itself.",
     "beats": "Well. [beat] The one who walked up from the Low Ford at dawn. Chid came in babbling about blue lights going out at the crossing, and here you are, bleeding on my step. I'm Rook. This is the Last Lamp. [breath] Sit down before you fall down."
    },
    "status": "todo"
@@ -611,11 +611,12 @@
     }
    ],
    "direction": {
-    "emo": "candid, unapologetic",
+    "emo": "candid, unrepentant",
     "intent": "admits she reports on travellers",
     "pace": "measured",
     "vol": "quiet",
-    "note": "Lower after the pause, honest. 'Don't look like that, pet' brisk and unrepentant. A flicker of unease under 'before you'd finished your stew'."
+    "note": "Lower after the pause, honest. 'Don't look like that, pet' brisk and unrepentant on top, and she changes the subject fast.",
+    "beats": "Not many, this last year. The ford's been bad since the winter. ...Vonnra pays me to tell her who comes up that road, and when. [beat] Don't look like that, pet; she pays everyone for something. I'd told her about you before you'd finished your stew."
    },
    "status": "todo"
   },
@@ -657,7 +658,7 @@
     "intent": "Vonnra paid double for you",
     "pace": "slow",
     "vol": "quiet",
-    "note": "The bossiness gone. 'She's never paid me double for anything.' quiet, troubled."
+    "note": "'She's never paid me double for anything.' is more than she meant to say. Then she's busy with a cup."
    },
    "status": "todo"
   },
@@ -923,11 +924,12 @@
     }
    ],
    "direction": {
-    "emo": "moved, hiding it",
+    "emo": "amused, then brusque",
     "intent": "thanks you for the shrine",
     "pace": "measured",
     "vol": "level",
-    "note": "Amused at Chid. A catch on 'My mother's lamp's got a sister again.' Then brusque to cover it: 'Don't make a habit of it.'"
+    "note": "Amused at Chid. No catch: Rook never cries in front of anyone. A pause after 'My mother's lamp's got a sister again.', then brisk: 'Don't make a habit of it.'",
+    "beats": "Chid came running in this morning without his shoes on. The shrine lamp, he says. My mother's lamp's got a sister again. [beat] ...Your bowl's on the house tonight. Don't make a habit of it."
    },
    "status": "todo"
   },
@@ -1241,9 +1243,9 @@
     "intent": "what happened to Ashford",
     "pace": "measured",
     "vol": "quiet",
-    "hides": "she lost people there too",
-    "note": "No warmth to spare. 'Ashford was.' on its own. The 'pet' is habit, not softness. The three 'don't ask' each firmer; the last a closed door.",
-    "beats": "Ashford was. [beat] Half of it went to the Morrow in one night, pet, and the other half the year after, coughing. [breath] Don't ask Holloway about it. Don't ask Maeca. [beat] And don't ask me twice."
+    "hides": "she knows who stood on which side of it, and that it isn't over (the Kerchiefs are what's left of Ashford)",
+    "note": "No warmth to spare. 'Ashford was.' on its own. The 'pet' is habit, not softness. The don'ts flat, each one a door closing, with no build.",
+    "beats": "Ashford was. [beat] Half of it went to the Morrow in one night, pet, and the other half the year after, coughing. [breath] Don't ask Holloway about it. Don't ask Maeca. Don't ask a Kerchief, if you meet one. [beat] And don't ask me twice."
    },
    "status": "todo"
   },
@@ -23891,7 +23893,11 @@
     "intent": "you did not sleep here",
     "pace": "slow",
     "vol": "quiet",
-    "note": "One plain fact, close."
+    "note": "One plain fact, close.",
+    "time": [
+     2.4,
+     2.8
+    ]
    },
    "take": {
     "file": "narrator/dlg.cin_drowned_fire.bedroll.0.ogg",
@@ -23944,7 +23950,12 @@
     "pace": "slow",
     "vol": "quiet",
     "note": "Two plain facts; a pause, then 'None go down to it.' on its own.",
-    "beats": "Prints in the frost, your own. They come up from the river. [beat] None go down to it."
+    "beats": "Prints in the frost, your own. They come up from the river. [beat] None go down to it.",
+    "time_note": "about 0.7 s of pause before 'None go down to it.'",
+    "time": [
+     6.0,
+     7.0
+    ]
    },
    "take": {
     "file": "narrator/dlg.cin_drowned_fire.prints.0.ogg",
@@ -23996,7 +24007,11 @@
     "intent": "something is coming",
     "pace": "slow",
     "vol": "quiet",
-    "note": "Plain."
+    "note": "Plain.",
+    "time": [
+     2.6,
+     3.2
+    ]
    },
    "take": {
     "file": "narrator/dlg.cin_drowned_fire.frost.0.ogg",
@@ -24055,11 +24070,17 @@
     }
    ],
    "direction": {
-    "emo": "eerie, singing",
-    "intent": "the Warden sings under the water",
+    "emo": "a slow dirge",
+    "intent": "the Order's evening call, heard through water",
     "pace": "very slow",
-    "vol": "hushed",
-    "note": "Sung low and far off, as if through water."
+    "vol": "quiet",
+    "note": "Sung low, as a dirge: two phrases of about three seconds with a short breath between; the second trails off as he rises.",
+    "fx": "underwater",
+    "time_note": "two phrases of about 3.0 s with 0.8 s between, the second trailing off",
+    "time": [
+     6.4,
+     7.6
+    ]
    },
    "status": "todo"
   },
@@ -24077,10 +24098,15 @@
     }
    ],
    "direction": {
-    "emo": "vast, gentle",
-    "intent": "the Warden's lullaby",
+    "emo": "quiet, gentle",
+    "intent": "the Order's word for the dead, said over a grave",
     "pace": "very slow",
-    "vol": "quiet"
+    "vol": "quiet",
+    "note": "Not a threat: said to her as you would say it over a grave.",
+    "time": [
+     1.0,
+     1.4
+    ]
    },
    "status": "todo"
   },
@@ -24098,11 +24124,16 @@
     }
    ],
    "direction": {
-    "emo": "vast, final",
-    "intent": "the Warden's law",
+    "emo": "tired, final",
+    "intent": "the ford's rule, not a threat",
     "pace": "slow",
-    "vol": "shout",
-    "note": "Each word a bell stroke."
+    "vol": "quiet",
+    "note": "Every word set down like a stone; no louder than 'Lie down.' The capitals are the subtitle's, not the performance's.",
+    "beats": "None. [beat] Cross. [beat] After dark.",
+    "time": [
+     2.6,
+     3.4
+    ]
    },
    "status": "todo"
   },
@@ -24119,21 +24150,26 @@
   {
    "id": "dlg.cin_heart_goes_down.morning.0",
    "kind": "dialogue",
-   "voice": "warden",
+   "voice": "warden_man",
    "text": "Is it morning?",
    "where": "dialogue.json cin_heart_goes_down/morning#0",
    "hash": "f7a2a69e2307",
    "segments": [
     {
-     "voice": "warden",
+     "voice": "warden_man",
      "text": "Is it morning?"
     }
    ],
    "direction": {
-    "emo": "dazed, enormous",
-    "intent": "the dying Warden",
-    "pace": "very slow",
-    "vol": "quiet"
+    "emo": "tired, lost",
+    "intent": "the man under the Warden asks the lamp",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Not the giant's voice: a plain, tired man of sixty, the accent worn off, no boom. Quiet enough that the subtitle is the only certain thing.",
+    "time": [
+     1.2,
+     1.6
+    ]
    },
    "status": "todo"
   },
@@ -24151,11 +24187,16 @@
     }
    ],
    "direction": {
-    "emo": "gleeful greed",
-    "intent": "Grimtunnel finds the heart",
+    "room": "ford",
+    "emo": "delight",
+    "intent": "Grimtunnel finds the heart still lit",
     "pace": "quick",
     "vol": "raised",
-    "note": "Cackling delight."
+    "note": "Delight, a child's at a pie.",
+    "time": [
+     2.4,
+     3.0
+    ]
    },
    "status": "todo"
   },
@@ -24173,11 +24214,18 @@
     }
    ],
    "direction": {
-    "emo": "sly, sniffing",
-    "intent": "Grimtunnel smells you",
+    "room": "ford",
+    "emo": "curious, the glee gone",
+    "intent": "Grimtunnel smells her",
     "pace": "slow",
     "vol": "quiet",
-    "note": "A sniff; creepy and pleased."
+    "note": "A sniff before it; the glee gone, curious. Then the laugh in the breath after.",
+    "beats": "[sniff] ...You smell like downstairs. [chuckle]",
+    "time_note": "the words 1.6 to 2.0 s, after the sniff",
+    "time": [
+     2.0,
+     2.6
+    ]
    },
    "status": "todo"
   },
@@ -24196,11 +24244,17 @@
     }
    ],
    "direction": {
-    "emo": "gloating, then reverent",
+    "room": "ford",
+    "emo": "glee, then caught short",
     "intent": "he takes it down",
     "pace": "measured",
     "vol": "level",
-    "note": "Cut off by his own sniff; then oily reverence."
+    "note": "Half over his shoulder as he dives. 'surface-m—' breaks off: he cannot finish 'meat' at her. A sniff, then the rest to himself.",
+    "time_note": "broken at 'surface-m'",
+    "time": [
+     3.2,
+     4.0
+    ]
    },
    "status": "todo"
   },
@@ -24232,7 +24286,11 @@
     "intent": "the ember fades",
     "pace": "slow",
     "vol": "quiet",
-    "note": "Plain and slow."
+    "note": "Plain and slow.",
+    "time": [
+     3.6,
+     4.2
+    ]
    },
    "status": "todo"
   },
@@ -24254,7 +24312,12 @@
     "intent": "the mother's face",
     "pace": "slow",
     "vol": "quiet",
-    "note": "Plain and slow; the strangeness is in the words."
+    "note": "Plain and slow; the strangeness is in the words.",
+    "time_note": "the cut then holds three seconds of silence",
+    "time": [
+     4.6,
+     5.4
+    ]
    },
    "status": "todo"
   },
@@ -24276,7 +24339,11 @@
     "intent": "ordinary life",
     "pace": "slow",
     "vol": "quiet",
-    "note": "Dawn, plainly."
+    "note": "Dawn, plainly.",
+    "time": [
+     2.4,
+     3.0
+    ]
    },
    "status": "todo"
   },
@@ -24297,7 +24364,11 @@
     "emo": "bored, matter-of-fact",
     "intent": "a guard at dawn",
     "pace": "measured",
-    "vol": "level"
+    "vol": "level",
+    "time": [
+     2.4,
+     3.0
+    ]
    },
    "status": "todo"
   },
@@ -32109,22 +32180,27 @@
   {
    "id": "cbark.9515915472c5",
    "kind": "combat",
-   "voice": null,
+   "voice": "red_hand",
    "text": "\"Toll's due.\"",
    "who": "The Red Hand",
    "where": "godot/logic/Play/Bosses/ArenaBosses.cs",
-   "skip": "no voice cast for The Red Hand",
    "hash": "9515915472c5",
-   "status": "skip"
+   "segments": [
+    {
+     "voice": "red_hand",
+     "text": "\"Toll's due.\""
+    }
+   ],
+   "status": "todo"
   },
   {
    "id": "cbark.f40206dc73f8",
    "kind": "combat",
-   "voice": null,
+   "voice": "red_hand",
    "text": "The toll bell, three times.",
    "who": "The Red Hand",
    "where": "godot/logic/Play/Bosses/ArenaBosses.cs",
-   "skip": "no voice cast for The Red Hand",
+   "skip": "a caption for a sound, not speech",
    "hash": "f40206dc73f8",
    "status": "skip"
   },
@@ -32177,11 +32253,7 @@
      }
     ],
     "made": "2026-10-03",
-    "placeholder": true,
-    "faults": [
-     "dannet->danit",
-     "dannet->danit"
-    ]
+    "placeholder": true
    },
    "status": "done"
   },
@@ -32851,23 +32923,23 @@
   {
    "id": "cbark.f7a2a69e2307",
    "kind": "combat",
-   "voice": "warden",
+   "voice": "warden_man",
    "text": "Is it morning?",
    "who": "The Ford-Warden",
    "where": "godot/logic/Play/Zones/Prologue.cs",
    "hash": "f7a2a69e2307",
    "segments": [
     {
-     "voice": "warden",
+     "voice": "warden_man",
      "text": "Is it morning?"
     }
    ],
    "direction": {
-    "emo": "lost, plaintive",
-    "intent": "the Warden asks",
+    "emo": "tired, lost",
+    "intent": "the man under the Warden asks the lamp",
     "pace": "slow",
     "vol": "quiet",
-    "note": "A drowned thing's question."
+    "note": "C03: not the giant's voice but the tired man of sixty under him, the accent worn off, no boom."
    },
    "status": "todo"
   },
