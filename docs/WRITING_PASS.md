@@ -1299,10 +1299,38 @@ changed:
 
   C14's night (Wat) gets its pair when combat builds the fight.
   [CODE and DATA, done; `VergeTests` holds that every story night has both.]
+- **And the town hears it in the morning** (`rules.json`, once each):
+  - `hollow.killed`: "Just before dawn the Pack howled from the Hollow, all of
+    them together, once, and not again. Maeca was through the east gate the
+    moment it opened, and did not say where she was going. Nobody asked."
+  - `hollow.spared`: "Tam says he saw an old grey wolf on the ridge at first
+    light, walking slow, and it stood and looked at the town for a long time
+    before it went. Nobody believes him."
+  - `roost.cairn`: "Lamps moved in the ravine all night. At first light there
+    was a cairn at the top of the Roost road, where the Old Road can see it.
+    The Flagon's back room stayed shut all morning, and nobody saw Rav go out."
+    (The brother, for those who are listening.)
+  - `dig.quiet`, when the fight did not blow the pump (`dig.burned` tells that
+    one): "The hill over the Dig stayed dark after you came down from it. At
+    first light Snib was sitting on an upturned bucket at the pit mouth, with
+    his chin in his hands, waiting for somebody to tell him what to do."
+  - `vault.watched`: "Vonnra came down from the toll tower before dawn, which
+    nobody has seen her do, and walked out along the Verge road and back. She
+    paid the gate-guard for his trouble, and told him he had not seen her."
+- **No "alpha" anywhere:** the bounty notice ("fifty for the old grey
+  dog-wolf"), Holloway's locked choice ("Bring pelts, or Greymuzzle's fang")
+  and the day kill's deed ("the Pack's old dog-wolf"). `StoryLint` now reads
+  the content and the scripts' deeds, lines and announcements for alpha,
+  warlord and ganger.
 - **The result screen's other words:** "THE NIGHT IS HELD" (was "THE ARENA IS
   WON"); "Your longest night yet"; a table night won, "The Wayfinder will want
   it for her margins." The story night's hint: "An ember arena: won or lost,
   the valley hears of it" (was "the story remembers how it goes").
+- **The arena's own words:** "Brought down by a Kerchief Footpad" (an article
+  for one of a kind, none for a name: `Enemies.Called`); "until the
+  Pack-Mother comes" (`MapOffers.InSentence`); "is down: the night is held";
+  "end it" for "beat it"; no "It" for a boss who may be a man; the table's
+  "Wolfbane gear, or gear of the Wolf".
 - **The table names its maps in the valley's words** (bible, "The nights"):
   `MapOffers.Names`, per people. "The Weeping Wood" and its kin are gone.
   [CODE, done; `StoryLint`.]

@@ -911,6 +911,61 @@
    "report": "The Watch says the lamplings were carrying their own out of the hillside all night: small, and burned, some still holding their lamps lit. One of them sat by the pile and counted them. It got to forty and started again."
   },
   {
+   "id": "hollow.killed",
+   "once": true,
+   "when": {
+    "history": "killed_greymuzzle"
+   },
+   "effect": [],
+   "report": "Just before dawn the Pack howled from the Hollow, all of them together, once, and not again. Maeca was through the east gate the moment it opened, and did not say where she was going. Nobody asked."
+  },
+  {
+   "id": "hollow.spared",
+   "once": true,
+   "when": {
+    "history": "spared_greymuzzle"
+   },
+   "effect": [],
+   "report": "Tam says he saw an old grey wolf on the ridge at first light, walking slow, and it stood and looked at the town for a long time before it went. Nobody believes him."
+  },
+  {
+   "id": "roost.cairn",
+   "once": true,
+   "when": {
+    "history": "killed_redcowl"
+   },
+   "effect": [],
+   "report": "Lamps moved in the ravine all night. At first light there was a cairn at the top of the Roost road, where the Old Road can see it. The Flagon's back room stayed shut all morning, and nobody saw Rav go out."
+  },
+  {
+   "id": "dig.quiet",
+   "once": true,
+   "when": {
+    "all": [
+     {
+      "history": "broke_dig"
+     },
+     {
+      "not": {
+       "fact": "dig.pump",
+       "eq": "blown"
+      }
+     }
+    ]
+   },
+   "effect": [],
+   "report": "The hill over the Dig stayed dark after you came down from it. At first light Snib was sitting on an upturned bucket at the pit mouth, with his chin in his hands, waiting for somebody to tell him what to do."
+  },
+  {
+   "id": "vault.watched",
+   "once": true,
+   "when": {
+    "history": "opened_vault"
+   },
+   "effect": [],
+   "report": "Vonnra came down from the toll tower before dawn, which nobody has seen her do, and walked out along the Verge road and back. She paid the gate-guard for his trouble, and told him he had not seen her."
+  },
+  {
    "id": "jory.nights",
    "once": true,
    "when": {

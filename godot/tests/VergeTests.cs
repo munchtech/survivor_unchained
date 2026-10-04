@@ -145,6 +145,8 @@ public class VergeTests
         Assert.Equal("dead", s.J.World.Fact("greymuzzle").Str);
         Assert.True(s.J.World.Fact("beasts.population").Number <= 30);
         Assert.False(Make(TimeOfDay.Night, s.J).Zone.Interactables.Single(i => i.Id == "night:hollow").When!());
+        // And the town hears it in the morning.
+        Assert.Contains(Simulation.AdvanceDay(s.J.Ctx, () => 0.5).Lines, l => l.Contains("howled from the Hollow"));
         // The raid lost: the story is told so, and it waits at the table.
         var raid = Make(TimeOfDay.Night, s.J);
         raid.Zone.Interactables.Single(i => i.Id == "night:roost").Act();

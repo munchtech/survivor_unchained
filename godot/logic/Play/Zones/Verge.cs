@@ -868,7 +868,7 @@ public sealed class Verge : ZoneRuntime
         if (e.Tag == "greymuzzle")
         {
             greymuzzle = null;
-            G.Apply($$"""[{ "set": { "greymuzzle": "dead" } }, { "quest": { "id": "beasts", "entry": "alpha_dead" } }, {{Hist("killed_greymuzzle", "killed Greymuzzle, the old alpha of the Pack", ["beasts", "wolves"], 2, null, """{ "maeca": { "affection": -50, "respect": -20 }, "holloway": { "respect": 20 } }""")}}]""");
+            G.Apply($$"""[{ "set": { "greymuzzle": "dead" } }, { "quest": { "id": "beasts", "entry": "alpha_dead" } }, {{Hist("killed_greymuzzle", "killed Greymuzzle, the Pack's old dog-wolf", ["beasts", "wolves"], 2, null, """{ "maeca": { "affection": -50, "respect": -20 }, "holloway": { "respect": 20 } }""")}}]""");
             G.SetBoss(null);
         }
         if (e.Tag == "redcowl")

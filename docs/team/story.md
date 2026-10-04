@@ -19,7 +19,15 @@ before recording. Agent a73ca9d35d0c487a9, branch `worktree-agent-a73ca9d35d0c48
   - the Wayfinder's maps are named in the valley's words for their people
     ("The Lampless Howes", "The Hungry Gap", "The Praying Sump");
   - phase 3's crafter lines are in `crafting.json` ahead of the hooks: Vonnra's
-    binding and marks, Snib's jars (inert until crafting adds the verbs).
+    binding and marks, Snib's jars (inert until crafting adds the verbs);
+  - the arena's own words: "Wolfbane gear, or gear of the Wolf"; "Ruled by the
+    Pack-Mother"; "is down: the night is held"; "end it" (not "beat it");
+    "Brought down by a Kerchief Footpad" (`Enemies.Called`).
+  - Seen at 1920x1080: the table, a won table night, and a won and a lost story
+    night's result. Not seen: a real fall's result (below).
+  - the morning after each story night has its report (`rules.json`);
+  - "alpha" is gone from the bounty notice, Holloway's locked choice and a deed,
+    and `StoryLint` holds it out.
 - **Voice is paused by the owner:** no placeholders; the final voices come from
   ElevenLabs later, one character at a time. Packets stay text-only (below).
 
@@ -61,6 +69,8 @@ before recording. Agent a73ca9d35d0c487a9, branch `worktree-agent-a73ca9d35d0c48
   didn't." is the one lie in her part, practised smooth; the hurt goes in the
   corners. Re-take `places.0` ("Last till the dead of night").
 - **New lines for every packet:** the night talk (`npcs.json` `said`, appended).
+- **Changed, if the board is ever voiced:** `dlg.board.read.0` now ends "fifty
+  for the old grey dog-wolf" (`tools/vo/manifest.json` still has the old text).
 
 ## Next
 
@@ -86,4 +96,10 @@ None. The owner's open question: who sings the hymn at Nell's grave (C08).
   the lines play. Vonnra's role does not move: she binds at the Toll Tower.
 - **Experience and UI:** the result screen's words for today's slots are done
   (WRITING_PASS §20). Send the new slots and I will fill them.
+  - A story night's last line is the screen's closing beat: give it more than
+    a body-size italic line at the foot.
+  - Check: `--zone arena --time night --auto --die 14` left her fallen, with no
+    result screen after 20 s of game time. It may be the harness.
+- **Cinematics** (a3058a45eee41d695): agreed to strip lower-case directions
+  from cinematic subtitles. C13's "(Not yet.)" and "(Go back.)" stay.
 - **Arena art:** the table's map names now match each people's ground.
