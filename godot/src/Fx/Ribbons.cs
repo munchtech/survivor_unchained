@@ -18,7 +18,7 @@ public partial class Ribbons : MeshInstance3D
     /// <summary>How a ribbon is drawn (the shader's styles).</summary>
     public enum Style { Glow = 0, Flame = 1, Bolt = 2, Wisp = 3, Steel = 4, Frost = 5 }
 
-    const int MaxPts = 24;
+    const int MaxPts = 32;
     const int Capacity = 9000;
 
     sealed class Trail
@@ -48,25 +48,25 @@ public partial class Ribbons : MeshInstance3D
     readonly List<long> gone = new();
     readonly List<Stroke> strokes = new();
     readonly Stack<Trail> spare = new();
-    readonly ArrayMesh mesh = new();
-    readonly Vector3[] verts = new Vector3[Capacity];
-    readonly Color[] cols = new Color[Capacity];
-    readonly Vector2[] uvs = new Vector2[Capacity];
-    readonly Vector2[] uv2s = new Vector2[Capacity];
-    readonly int[] idx = new int[Capacity * 3];
-    readonly ShaderMaterial mat;
+    readonly Buffer glow = new(), shade = new();
     readonly Random rng = new(41);
     float now;
-    int nv, ni;
 
     public Ribbons()
     {
         Name = "Ribbons";
-        Mesh = mesh;
+        Mesh = glow.Mesh;
         CastShadow = ShadowCastingSetting.Off;
-        mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/ribbon.gdshader") };
-        MaterialOverride = mat;
+        MaterialOverride = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/ribbon.gdshader") };
         CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f));
+        // The shadow under every ribbon, drawn first: a light over the pale
+        // dead needs dark round it to be seen at all.
+        AddChild(new MeshInstance3D
+        {
+            Name = "Shade", Mesh = shade.Mesh, CastShadow = ShadowCastingSetting.Off,
+            MaterialOverride = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/ribbon_shade.gdshader"), RenderPriority = -1 },
+            CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f)),
+        });
     }
 
     float Rf() => (float)rng.NextDouble();
@@ -74,7 +74,12 @@ public partial class Ribbons : MeshInstance3D
     /// <summary>A trail's head this frame: `key` names it (a projectile's id,
     /// or anything that flies), `width` across at the head, its points
     /// living `life` seconds behind it.</summary>
-    public void Feed(long key, Vector3 head, float width, float life, Color color, float energy, Style style = Style.Glow)
+    public void Feed(long key, Vector3 head, float width, float life, Color color, float energy, Style style = Style.Glow) =>
+        Feed(key, head, width, life, color, energy, style, 0);
+
+    /// <summary>As Feed, for a point passed `ago` seconds before now (a fast
+    /// sweep fed several points a frame, so its curve stays round).</summary>
+    public void Feed(long key, Vector3 head, float width, float life, Color color, float energy, Style style, float ago)
     {
         if (!trails.TryGetValue(key, out var t))
         {
@@ -91,7 +96,7 @@ public partial class Ribbons : MeshInstance3D
         }
         t.Head = (t.Head + 1) % MaxPts;
         t.At[t.Head] = head;
-        t.Born[t.Head] = now;
+        t.Born[t.Head] = now - ago;
         t.Count = Math.Min(MaxPts, t.Count + 1);
     }
 
@@ -126,11 +131,26 @@ public partial class Ribbons : MeshInstance3D
         return w;
     }
 
-    /// <summary>A bolt's shape, made afresh: midpoint displacement down to
-    /// short legs, the jag scaled to its length, thinner towards its ends.</summary>
+    const int BoltPts = 17;
+
+    /// <summary>A bolt's width along it: thinner towards its ends.</summary>
+    static readonly float[] BoltWidths = MakeBoltWidths();
+
+    static float[] MakeBoltWidths()
+    {
+        var w = new float[BoltPts];
+        for (int i = 0; i < BoltPts; i++) { float u = i / (float)(BoltPts - 1); w[i] = 0.35f + 0.65f * Mathf.Min(1, Mathf.Min(u, 1 - u) * 6); }
+        return w;
+    }
+
+    /// <summary>A bolt's shape, made afresh in the arrays it already has:
+    /// midpoint displacement down to sixteen legs, the jag halving at each
+    /// level, and its forks off points along it.</summary>
     void Fork(ref Stroke s)
     {
-        var pts = new List<Vector3> { s.A, s.B };
+        if (s.Pts == null || s.Pts.Length != BoltPts) s.Pts = new Vector3[BoltPts];
+        s.Widths = BoltWidths;
+        var p = s.Pts;
         float len = s.A.DistanceTo(s.B);
         float amp = len * s.Jag;
         var dir = (s.B - s.A) / Mathf.Max(1e-3f, len);
@@ -138,43 +158,41 @@ public partial class Ribbons : MeshInstance3D
         if (side.LengthSquared() < 1e-4f) side = Vector3.Right;
         side = side.Normalized();
         var up = side.Cross(dir).Normalized();
-        while (pts.Count < 17 && amp > 0.04f)
+        p[0] = s.A;
+        p[BoltPts - 1] = s.B;
+        for (int step = BoltPts - 1; step > 1; step /= 2, amp *= 0.5f)
+            for (int i = 0; i + step < BoltPts; i += step)
+                p[i + step / 2] = (p[i] + p[i + step]) / 2 + side * (Rf() - 0.5f) * amp + up * (Rf() - 0.5f) * amp * 0.5f;
+        if (s.Branches <= 0) { s.Forks = null; return; }
+        if (s.Forks == null || s.Forks.Length != s.Branches)
         {
-            var next = new List<Vector3>(pts.Count * 2);
-            for (int i = 0; i < pts.Count - 1; i++)
-            {
-                next.Add(pts[i]);
-                next.Add((pts[i] + pts[i + 1]) / 2 + side * (Rf() - 0.5f) * amp + up * (Rf() - 0.5f) * amp * 0.5f);
-            }
-            next.Add(pts[^1]);
-            pts = next;
-            amp *= 0.5f;
+            s.Forks = new Vector3[s.Branches][];
+            for (int b = 0; b < s.Branches; b++) s.Forks[b] = new Vector3[3];
         }
-        s.Pts = pts.ToArray();
-        var w = new float[s.Pts.Length];
-        for (int i = 0; i < w.Length; i++) { float u = i / (float)(w.Length - 1); w[i] = 0.35f + 0.65f * Mathf.Min(1, Mathf.Min(u, 1 - u) * 6); }
-        s.Widths = w;
-        if (s.Branches <= 0 || s.Pts.Length < 6) { s.Forks = null; return; }
-        // Forks off points along it, short and thin, made afresh with it.
-        s.Forks = new Vector3[s.Branches][];
         for (int b = 0; b < s.Branches; b++)
         {
-            int at = 2 + (int)(Rf() * (s.Pts.Length - 4));
-            var from = s.Pts[at];
-            var off = side * (Rf() - 0.5f) * 2;
-            var to = from + (dir * 0.5f + off) * len * (0.18f + Rf() * 0.2f) + up * (Rf() - 0.5f) * 0.4f;
-            var mid = (from + to) / 2 + new Vector3(Rf() - 0.5f, Rf() - 0.5f, Rf() - 0.5f) * from.DistanceTo(to) * 0.3f;
-            s.Forks[b] = new[] { from, mid, to };
+            var from = p[2 + (int)(Rf() * (BoltPts - 4))];
+            var to = from + (dir * 0.5f + side * (Rf() - 0.5f) * 2) * len * (0.18f + Rf() * 0.2f) + up * (Rf() - 0.5f) * 0.4f;
+            var fk = s.Forks[b];
+            fk[0] = from;
+            fk[1] = (from + to) / 2 + new Vector3(Rf() - 0.5f, Rf() - 0.5f, Rf() - 0.5f) * from.DistanceTo(to) * 0.3f;
+            fk[2] = to;
         }
     }
-
     static readonly float[] ForkWidths = { 1f, 0.6f, 0f };
+
+    /// <summary>The narrowest a ribbon is drawn, in pixels at its head: from the
+    /// game's high camera a trail of true width is a hairline.</summary>
+    public float MinPixels = 6;
+    float perPxAtUnit;
 
     public void Step(float dt, Camera3D? cam)
     {
         now += dt;
-        nv = ni = 0;
         var eye = cam?.GlobalPosition ?? new Vector3(0, 30, 10);
+        float fov = cam?.Fov ?? 34;
+        float h = cam?.GetViewport()?.GetVisibleRect().Size.Y ?? 1080;
+        perPxAtUnit = 2 * Mathf.Tan(Mathf.DegToRad(fov) / 2) / Mathf.Max(1, h);
         // Trails: drawn oldest to head, points dropped as they outlive the trail.
         gone.Clear();
         foreach (var (key, t) in trails)
@@ -234,11 +252,23 @@ public partial class Ribbons : MeshInstance3D
         DrawLine(tp, tw, t.Width, t.Color, t.Energy * stale, t.Style, eye, n);
     }
 
+    /// <summary>How dark the shadow under each style is: what is pale (steel,
+    /// frost, a glow) needs it most to stand out from the pale dead it crosses;
+    /// fire carries its own contrast.</summary>
+    static float ShadeOf(Style s) => s switch
+    {
+        Style.Steel => 0.6f, Style.Frost => 0.5f, Style.Glow => 0.42f, Style.Wisp => 0.5f, Style.Bolt => 0.45f, _ => 0.3f,
+    };
+
     void DrawLine(Vector3[] pts, float[] widths, float width, Color color, float energy, Style style, Vector3 eye, int count = -1)
     {
         int n = count < 0 ? pts.Length : count;
-        if (n < 2 || nv + n * 2 > Capacity || ni + (n - 1) * 6 > idx.Length) return;
-        int first = nv;
+        if (n < 2 || !glow.Fits(n) || !shade.Fits(n)) return;
+        // Never thinner than a few pixels where it is widest.
+        width = Mathf.Max(width, MinPixels * perPxAtUnit * pts[n - 1].DistanceTo(eye));
+        float dark = ShadeOf(style) * Mathf.Clamp(energy / 2, 0, 1);
+        var under = new Color(color.R * 0.05f, color.G * 0.05f, color.B * 0.07f);
+        int g0 = glow.Nv, s0 = shade.Nv;
         for (int i = 0; i < n; i++)
         {
             var p = pts[i];
@@ -247,30 +277,65 @@ public partial class Ribbons : MeshInstance3D
             var side = tan.Cross(toEye);
             if (side.LengthSquared() < 1e-8f) side = Vector3.Right;
             side = side.Normalized() * (width * widths[i] * 0.5f);
-            float u = i / (float)(n - 1);
-            var c = new Color(color.R, color.G, color.B, Mathf.Clamp(widths[i] * 1.5f, 0, 1));
-            verts[nv] = p - side; cols[nv] = c; uvs[nv] = new Vector2(u, 0); uv2s[nv] = new Vector2(energy, (float)style); nv++;
-            verts[nv] = p + side; cols[nv] = c; uvs[nv] = new Vector2(u, 1); uv2s[nv] = new Vector2(energy, (float)style); nv++;
+            float u = i / (float)(n - 1), a = Mathf.Clamp(widths[i] * 1.5f, 0, 1);
+            glow.Pair(p - side, p + side, new Color(color.R, color.G, color.B, a), u, energy, (float)style);
+            // Its shadow: wider, dark, laid under it.
+            shade.Pair(p - side * 1.9f, p + side * 1.9f, under with { A = a }, u, dark, (float)style);
         }
-        for (int i = 0; i < n - 1; i++)
+        glow.Strip(g0, n);
+        shade.Strip(s0, n);
+    }
+
+    /// <summary>One mesh's worth of ribbon, filled afresh each frame.</summary>
+    sealed class Buffer
+    {
+        public readonly ArrayMesh Mesh = new();
+        readonly Vector3[] verts = new Vector3[Capacity];
+        readonly Color[] cols = new Color[Capacity];
+        readonly Vector2[] uvs = new Vector2[Capacity];
+        readonly Vector2[] uv2s = new Vector2[Capacity];
+        readonly int[] idx = new int[Capacity * 3];
+        public int Nv, Ni;
+
+        public bool Fits(int n) => Nv + n * 2 <= Capacity && Ni + (n - 1) * 6 <= idx.Length;
+
+        public void Pair(Vector3 a, Vector3 b, Color c, float u, float energy, float style)
         {
-            int a = first + i * 2;
-            idx[ni++] = a; idx[ni++] = a + 1; idx[ni++] = a + 2;
-            idx[ni++] = a + 1; idx[ni++] = a + 3; idx[ni++] = a + 2;
+            verts[Nv] = a; cols[Nv] = c; uvs[Nv] = new Vector2(u, 0); uv2s[Nv] = new Vector2(energy, style); Nv++;
+            verts[Nv] = b; cols[Nv] = c; uvs[Nv] = new Vector2(u, 1); uv2s[Nv] = new Vector2(energy, style); Nv++;
+        }
+
+        public void Strip(int first, int n)
+        {
+            for (int i = 0; i < n - 1; i++)
+            {
+                int a = first + i * 2;
+                idx[Ni++] = a; idx[Ni++] = a + 1; idx[Ni++] = a + 2;
+                idx[Ni++] = a + 1; idx[Ni++] = a + 3; idx[Ni++] = a + 2;
+            }
+        }
+
+        public void Flush()
+        {
+            Mesh.ClearSurfaces();
+            if (Ni > 0)
+            {
+                var arr = new Godot.Collections.Array();
+                arr.Resize((int)Godot.Mesh.ArrayType.Max);
+                arr[(int)Godot.Mesh.ArrayType.Vertex] = verts.AsSpan(0, Nv).ToArray();
+                arr[(int)Godot.Mesh.ArrayType.Color] = cols.AsSpan(0, Nv).ToArray();
+                arr[(int)Godot.Mesh.ArrayType.TexUV] = uvs.AsSpan(0, Nv).ToArray();
+                arr[(int)Godot.Mesh.ArrayType.TexUV2] = uv2s.AsSpan(0, Nv).ToArray();
+                arr[(int)Godot.Mesh.ArrayType.Index] = idx.AsSpan(0, Ni).ToArray();
+                Mesh.AddSurfaceFromArrays(Godot.Mesh.PrimitiveType.Triangles, arr);
+            }
+            Nv = Ni = 0;
         }
     }
 
     void Flush()
     {
-        mesh.ClearSurfaces();
-        if (ni == 0) return;
-        var arr = new Godot.Collections.Array();
-        arr.Resize((int)Mesh.ArrayType.Max);
-        arr[(int)Mesh.ArrayType.Vertex] = verts.AsSpan(0, nv).ToArray();
-        arr[(int)Mesh.ArrayType.Color] = cols.AsSpan(0, nv).ToArray();
-        arr[(int)Mesh.ArrayType.TexUV] = uvs.AsSpan(0, nv).ToArray();
-        arr[(int)Mesh.ArrayType.TexUV2] = uv2s.AsSpan(0, nv).ToArray();
-        arr[(int)Mesh.ArrayType.Index] = idx.AsSpan(0, ni).ToArray();
-        mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arr);
+        glow.Flush();
+        shade.Flush();
     }
 }
