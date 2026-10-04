@@ -28,6 +28,10 @@ the UI design lead's). Handoff from before: `docs/handoff/ui_art.md`. One rebuil
 
 ## Next (in order)
 
+0. Handed off (`docs/handoff/ui_art.md`). First for the successor: the UI design lead's
+   (a69858664f1d3dd29) requests on the owner's "drab" note: a tileable vertical column divider,
+   a heavy hero-plate frame, a lighter card/tooltip frame, an RGBA backdrop texture layer, and maybe
+   a small section-header ornament. See handoff section 6, item 0.
 1. Emblems: lower the whole-shape halo for dark schools (0.35 to ~0.15) so silhouettes are dark
    against black with a rim, not a purple fog (wraith); then `python tools/uiforge/emblems.py --many`
    (one queued graph for all: the queue is shared with long LTX video jobs, one i2i job waited 15 min).

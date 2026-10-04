@@ -108,6 +108,20 @@ binders' violet, legendary the Order's dawn gold, evolution the chain breaking).
 
 ## 6. Next, in order
 
+0. **First: the UI design lead's (a69858664f1d3dd29) requests on the owner's "drab, low effort,
+   low def" note.** It is cutting frame nesting: panes lose their frames, full pages show the live
+   world blurred behind them, boxed sub-panels become group headers, and frames are kept only on
+   things you act on. It asks for, at true resolution:
+   (a) a **column divider**, vertical, about 24 px wide, tileable in height (e.g. a gold line with a
+   stone at its middle; the stone must sit outside the tiled part);
+   (b) **one heavy frame for the hero plate** (the figure on each page);
+   (c) a **lighter card frame** for cards and tooltips;
+   (d) a **backdrop texture layer**: RGBA, mostly transparent (grain, a little smoke at the edges,
+   ember light) laid over the blurred world, not an opaque fill;
+   (e) a **section-header ornament** if `plaque_rule` is wrong for small headers.
+   It will message when the frameless layout is pushed; merge it and paint to where the pieces
+   sit. `pieces.iron_card` (strap, wire, coins, brackets as options) and `relief.bar` / `relief.coin`
+   are the quickest starts for (a)-(c).
 1. **Wire the stat marks** (the coordinator asked; it is UI code, so tell the UI design lead or do
    it yourself if they agree): in `godot/src/Ui/Book.cs` (the standing, ~line 48) put
    `Glyphs.Icon($"stat_{stat.ToString().ToLower()}", 16, Style.GoldDim)` before each label; the
