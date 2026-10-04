@@ -1,47 +1,48 @@
 # UI design (and the UI merge): status
 
-Agent ac76f400913a109cd (successor to a5629aff0f215ea4a, whose handoff is `docs/handoff/ui_design.md`),
-branch `worktree-agent-ac76f400913a109cd` (includes the integration branch at 780e256 and 51350b1).
+Agent ac76f400913a109cd, branch `worktree-agent-ac76f400913a109cd` (integration branch merged in at 765a575).
+Predecessor's handoff: `docs/handoff/ui_design.md`.
 
-## Current state: the heroine's character creation (stopped mid-way at the owner's usage limit)
-Built and pushed (472 tests green), **not yet seen right on screen**:
-- **Saved and worn**: `CharacterData`/`CreationChoice` keep `Face` (slider -> value, only those moved),
-  `Eyes`, `Paint`; `PersonSpec` carries `Face`, `Eyes`, `EyeRing`, `Paint`; `Loadouts.Of` gives her
-  her hairstyle at last (`Loadouts.HerHair`: hers, or an old save's cut mapped to the nearest).
-- **Data** (`data/content/looks.json`): `herHairs` (5 cuts with words), `eyes` (9, iris + ring
-  colour, in-world names), `paints` (8 with sheen/metal), `faces` (7 presets), `sliders` (25, grouped
-  Eyes/Nose/Mouth/Jaw, end words, tasteful `min`/`max` judged from renders), 5 more hair colours.
-- **View** (`src/Actors/People.cs`): `LookOf(spec)`, `HerRestyle` (hair cut/colour, skin, eyes, face,
-  paint changed on her where she stands), `HerEyes`/`EyesOf` (read after her corrective layer via
-  `SkeletonUpdated`), `HerPaint` (a next pass, `shaders/heroine_paint.gdshader`), `EyeColour`.
-- **Eye shader**: iris recolour (`recolour`, `iris_colour`, `ring_colour`): fibres kept, verified on
-  all 9 colours in renders.
-- **Creation** (`Ui/Front.cs`, new `Ui/CreateLook.cs`): five steps (Calling, Arms, Origin, **Look**,
-  Name); Look has parts Body/Hair/Face/Paint (him: Body/Hair) on LT/RT; cameos for cuts, faces and
-  paints (`art/ui/create/*.png`, glyph until painted; cuts dyed live by a mask), beads for colours
-  (eyes drawn as her own iris, `shaders/ui_iris.gdshader`), `Groove` sliders; drag/wheel/double
-  click and the right stick (`Controls.Look`) turn her and frame her (`GameFront.UpdateCreate`:
-  full, head and shoulders, face; longer lens, DOF behind her). Defaults to the heroine. Name step
-  reads back each step. The figure slider is gone (no effect on her body).
-- Tools: `tools_scenes/face_sheet.gd` + `FaceSheet.cs` (her looks side by side via the real code).
+## How the owner reaches character customisation
+**New Journey, then step IV "Look"** on the road of medallions at the top left (click it, or Next three
+times, or `]` / RB). Its parts are Body, Hair, Face and Paint (click the tabs, or `,` `.` / LT RT). The
+figure turns when you drag her, and the mouse wheel or a double click brings the camera to her face.
+- **Why the owner may not see it:** the main checkout's built C# (`godot/.godot/mono/temp/bin/Debug/
+  SurvivorUnchained.dll`, 10/3 23:43) is older than the creation work. Started from the Godot project
+  manager's Run, or the game exe, it runs that old build (four steps, no Look). Fix: open the project in
+  the Godot editor and press Play (it builds first), or run `dotnet build godot/SurvivorUnchained.csproj`
+  once and then start the game. New textures (the face paint) are imported when the editor opens.
+- Checked in this worktree with the integration branch merged in: the five steps show and the Look step
+  works (shots `godot/.shots/c2_part*.png`, `c3_part*.png`). A key-tour shot from the title stayed on
+  step I, because the tour's presses arrived before the fade into creation. That is a harness timing
+  issue, not a player bug; use `--new --step 3 --part N` for shots.
+
+## Current state (pushed, 520 tests green)
+- Saved and worn: her cut, hair and eye colour, face (25 sliders, 7 faces), paint; skin as before.
+- Look data is per hero body: `looks.json` `heroes.female` (`Lore.Hero(sex)`, `Loadouts.HeroKit`).
+  The male hero (ae2de192cce8298ca) can fill `heroes.male` and change `HeroKit` to give him the same step.
+- Face paint art: `tools/assets/heroine_paint.py` (unrolls her face from heroine.glb, paints 7 designs,
+  lays them on her UVs) -> `art/people/paint/*.png` (BC7, mipmaps). Rerun it when her head is rebuilt.
+  **Not yet seen on her in the game**, and the brow layer (`paint/brows.png`) is **not wired** yet.
+- Creation: portrait key light and DOF when near; hair turned to show the cut; `--step N --part N`.
 
 ## Next (in order)
-1. **Shoot the Look step** (`--new --keys TabNext,TabNext,TabNext[,SubNext...]`; the first shots
-   only reached step II: the key tour needs longer `--seconds` or a `--step` arg) and fix what shows.
-2. **Face paint art**: write `tools/assets/heroine_paint.py` (head UV <- cylindrical face sheet
-   reprojection from heroine.glb; brush-stroke designs) -> `art/people/paint/<id>.png`; plus a
-   **brow dye** layer (her brows are painted copper in the head texture, wrong with other hair colours).
-3. **Cameo portraits**: render via FaceSheet (hair cuts in grey + `_mask`, faces, paints), paint them
-   over, register in `tools/comfy/ui_assets.json` and UI_ART_BRIEF for the UI art lead.
-4. Pad focus audit of the Look step; UI_DESIGN 7.2 rewritten.
-5. Then the handoff's list: announcements, item card, journal deeds/codex, HUD dash and draught.
+1. See each paint on her in game (FaceSheet with `"paint"`, then the Look step) and tune.
+2. Wire the brows: a pass under the paint, dyed her hair's colour (`People.HerPaint`/`HerRestyle`).
+3. Cameo portraits for cuts, faces, paints (FaceSheet renders: cuts in grey plus `_mask`); register
+   them for the UI art lead (`tools/comfy/ui_assets.json`, UI_ART_BRIEF).
+4. Reply to the male hero lead with the field names (`CharacterData.Face/Eyes/Paint`,
+   `HairStyle`, `Lore.Hero`), and agree `BeardStyle`.
+5. The experience director's four findings (barks overlap, the result screen as the night's story,
+   the table says what a map pays, pausing only in arenas and on the night road), then the handoff's
+   list (announcements, item card, journal, HUD dash and draught).
 
 ## Key decisions
-- Creation opens on the heroine (the docs call the survivor "the heroine"; a man remains a choice).
-- Slider ends are capped where the shape keys break (renders): e.g. cheeks +0.25, eyes_height +0.25.
-- Face paint is a separate pass over her skin, so the skin shader (main session's) is untouched.
+- Creation opens on the heroine. Slider ends capped where her shape keys break. Paint is a pass of its
+  own over her skin (the skin shader is untouched). Look is per hero body, not per sex.
 
 ## Notes for other areas
-- Main session: long/ponytail show a pale strip at her left temple; brows don't follow hair colour.
-- UI art (a72467cac33063d3a): cameo portraits and a swatch setting will be registered (step 3).
-- Scratchpad: mine is `scratchpad/uid2/` (`shot.ps1`, `fs.ps1` face sheets, `crop*.py`).
+- Main session: at close range her long and ponytail hairlines show a hard cap edge and a bare strip
+  at her left temple, and strands clip into her neck.
+- Voice lead: the `Names` list in Front.cs is unchanged (it carries one recorded take per name).
+- Scratchpad: `scratchpad/uid2/` (`shot.ps1`, `fs.ps1` face sheets, `crop*.py`, `paintsheet.py`).
