@@ -67,6 +67,11 @@ public sealed class RunResult
     public bool BossSoft;
     /// <summary>The long night: the boss's returns that came, and the dark's oaths sworn.</summary>
     public int Returns, Dark;
+    /// <summary>What the night pays (for the crafting economy, docs/CRAFTING_DESIGN.md):
+    /// the gold picked up, the champions slain, and the slain by family.</summary>
+    public double Gold;
+    public int Champions;
+    public Dictionary<string, int> KillsBy = new();
 
     /// <summary>Won at the half hour and still standing for the boss: the target.</summary>
     public bool Won => WonAt != null;
@@ -180,6 +185,8 @@ public static class ArenaSim
                     case Ev.Spawn s: firstHit.Remove(s.Enemy); break;
                     case Ev.Hit h when h.Amount > 0 && !firstHit.ContainsKey(h.Target): firstHit[h.Target] = t; break;
                     case Ev.Kill k when k.ByPlayer:
+                        r.KillsBy[k.Family.ToString()] = r.KillsBy.GetValueOrDefault(k.Family.ToString()) + 1;
+                        if (k.Elite && !k.Boss) r.Champions++;
                         if (firstHit.TryGetValue(k.Enemy, out var t0))
                         {
                             double ttk = t - t0;
@@ -252,6 +259,7 @@ public static class ArenaSim
         r.Returns = zone.Returns;
         r.Dark = zone.DarkSworn;
         r.Kills = b.KillCount;
+        r.Gold = b.GoldGained;
         r.Ember = b.EmberLevel;
         r.DamageTaken = b.DamageTaken;
         r.LowHp = r.ByMinute.Count > 0 ? r.ByMinute.Min(x => x.LowHp) : 1;

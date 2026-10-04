@@ -63,6 +63,7 @@ public partial class Game
             "arts" => new ArtsScreen(this),
             "chapter" => new ChapterScreen(this),
             _ when kind.StartsWith("shop:") => new ShopScreen(this, kind[5..]),
+            _ when kind.StartsWith("forge:") => new ForgeScreen(this, kind[6..]),
             _ => new PauseScreen(this),
         };
         if (o is MapScreen && zone != null && Battle is { } b)
@@ -325,6 +326,8 @@ public partial class Game
                 else Toast(new Toast(ToastKind.World, "They have nothing to sell you"));
                 return false;
             case "stash": afterTalk = "stash"; return false;
+            // A crafter's bench (docs/CRAFTING_DESIGN.md): the one who was talked to.
+            case "craft": if (talkNpc is string who) afterTalk = $"forge:{who}"; return false;
             case "maps": afterTalk = "maps"; return false;
             case "rest": afterTalk = "rest"; return false;
             case "fortune": Save("chapter"); afterTalk = "chapter"; return false;

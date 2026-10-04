@@ -1,0 +1,741 @@
+# Crafting: the design
+
+How the survivor makes and remakes what they keep, in this valley and no
+other: what the night yields, what the Waystation's hands make of it between
+nights, the numbers that hold it, and the order it is built in. The research
+behind it is `CRAFTING_RESEARCH.md` (its lessons are cited as C1 to C30).
+It builds on what the game already has (`godot/logic/Rpg/Items.cs`,
+`Rpg/Character.cs`, `Play/Journey.cs`, `Arena/Arena.cs`, `Play/Zones/*`,
+`data/content/*.json`) and on two plans that came before it: the items plan
+(`docs/items/`, a design with nothing built; this design takes its heat,
+its crafters and its rules, and cuts or changes the rest, section 18) and the
+skills design (`SKILLS_DESIGN.md`, built; this design feeds its evolutions
+and never owns them, section 12).
+
+Every number here is a proposal held by a test or a simulation (section 14)
+and is the balance lab's to move.
+
+---
+
+## 1. The idea in one page
+
+**Gear is what the survivor keeps; the ember is what the night lends.**
+Crafting is how the day turns what the night left behind into something kept,
+by the hands of the people who live here.
+
+- **Three things go into anything made here: iron, the world's own, and
+  fire.** *Iron* (old iron, from breaking down what you don't keep) gives a
+  piece its body: grades and a better make. *The world's own* (wolf pelts,
+  boar hide, red cloth, barrow dust, ember shards, bitterroot, moonpetal)
+  gives it its kind: each material becomes the answer to the danger it came
+  from. *Fire* (ember shards, carried out of the night) gives it the ember's
+  shape: a coal caged in the piece that bends the night's draft, and the heat
+  to work it again. Brannoc says it in six words: "Iron for the shape. Fur for
+  the kind." The fire he doesn't name.
+- **Every piece has a life: its heat.** A hot piece can be worked; each craft
+  spends heat; at none the piece is set, for good. Heat is shown, its cost is
+  shown before the hammer falls, and running out never breaks anything. A
+  great find is a great base *with heat in it* (C5, C6).
+- **Choose what; luck decides how good; heat decides how often** (C3). The
+  survivor chooses the affix to raise, the material to work in, which of
+  three coals to cage. Luck lives in the drops (the base, its rarity, its
+  heat), in a small range on each heat cost, and in the three coals offered.
+  The best of everything still comes from the world, not the forge (C8).
+- **Each craft is done by someone, in their place, in their voice** (C17).
+  Brannoc at the forge works iron, hide and coal. Wenna in her still-room
+  brews and works the herbs. Vonnra at the toll binds one piece's power into
+  another. Snib, while the Dig still pumps, sells the one gamble. How they
+  feel about you sets their terms (C18); the story opens their crafts and can
+  take a crafter away, moving the work to a worse pair of hands rather than
+  deleting it (C19).
+- **The night pays in what it is.** A won arena sends the survivor out with
+  ember shards (more the longer they stayed past the half hour, half of them
+  spilled if they fall: the run's last decision, C21) and with the people's
+  own materials: the Pack's pelts and hides, the Risen's barrow dust, the
+  Lamplings' shards, the Kerchiefs' red cloth. Choosing a map at the
+  Wayfinder's table is choosing what to make (C14).
+- **The danger answers itself** (C13). Wolf pelt makes a piece *of the Wolf*
+  or a blade *Wolfbane*; barrow dust makes it *of the Grave* or *Gravebane*;
+  boar hide keeps out the cold and steadies the feet; ember shards turn fire
+  and light. The oaths and peoples the table offers are answered by what
+  their own fights yield.
+- **Crafting feeds the night's evolutions without owning them** (section 12).
+  A caged coal is a kindled affix: it may stand in for a passive in an
+  evolution's recipe, and the forge offers three, leaning toward what your
+  carried skills evolve with. The ember still has to climb to rank 8; gear
+  still never brings an evolution, a blessing or a rank past four.
+- **No chores** (C24, C25, C27). Materials go in a pouch, not the pack. Every
+  unwanted piece breaks down to old iron (C9). No crafting junk to level a
+  skill; no recipes on a wiki (C15, C16); a draught brewed once is refilled at
+  the inn (phase 2).
+- **What lies under it.** Ember is the held dead, leaking up (`STORY_BIBLE.md`
+  section 1, said in Act 3). Every coal the survivor carries out and has caged
+  in their gear is somebody's light. Act 1 never says it; the crafts carry its
+  seeds (section 11.4). By Act 3 the survivor's best gear has names in it.
+
+**Soul test.** Could this crafting belong to another game? Its three
+ingredients are this valley's (the Watch's old iron, the Verge's beasts, the
+night's ember); its smith forged the irons that drowned his daughter and
+cages coals in your sword the way he caged them in the ford's lamps; its
+binder holds one thing's power in another the way her family held the chain;
+its gamble is the Dig's poison, sold by the one person who survives
+everything, and exists only while the stream is poisoned. The mechanics are
+the story's facts.
+
+---
+
+## 2. What exists today, and what is wrong with it
+
+Read from the code (October 2026, `claude/vigilant-galileo-l6jqyx`).
+
+| Thing | Today | Problem |
+|---|---|---|
+| Materials | Seven: wolf pelt, boar hide, red cloth, barrow dust, ember shard, bitterroot, moonpetal (`items.json`, stack 20 or 10, in the 24-place pack) | Their only uses: sell, Holloway's bounty, five pelts for the wolfhide cloak, quest checks. They clog the pack (C27). |
+| Where they come from | By day in the Verge (`Verge.OnLoot`: pelts 55% of wolves, hides 50% of boars, cloth 30% of Kerchiefs, shards 18% of lamplings, dust 25% of the dead; bitterroot and moonpetal gathered) and the prologue's shards | The arena, half the game, yields none (C1, C14). |
+| Gear | Rarity 0 to 5 (Common to Storied); plain bases roll `min(3, rarity)` affixes at grades 0 to 3 (`Inventory.Make`); named things never roll; the weapon is a skill brought in at a rank (rarity raises it, capped at 4) | Two drops of a rarity differ only in which affixes; a beloved piece can never improve (C12). |
+| Kindled affixes | Built (`AffixDef.Kindled`): spark, reroll, refusal, roads, omens, and twelve stand-ins for passives in evolution recipes; one an item, two a survivor; a stand-in rolls twice as often when the carried skills evolve with it | Only luck finds them. **Bug**: two stand-ins share ids with plain affixes (`of_mending`, `of_embers`), so a rolled stand-in for Bitterroot or Emberblood reads back as the plain one and never stands in (fixed in phase 1, section 12.2). |
+| Brannoc | Sells; buys pelts at 8 and hides at 6 (`sellpelts`); makes the wolfhide cloak (5 pelts, 30 gold, in dialogue); "reforges" the weapon (`Journey.Service("reforge")`: rarity +1 for 40 × (rarity + 1) gold, to rarity 4) | The reforge is the only gear improvement in the game: a flat gold-for-rank trade with no choice in it. |
+| Gold | In: Kerchief fodder and every champion and boss drop it in arenas; quests (about 800 across Act 1's branches); selling. Out: shops, rest (5), bribes and the story's prices (about 500), the reforge | Few sinks after the first days (measured in section 13). |
+| The arena's spoils | Experience by time, gold picked up, gear from champions and the boss's chest, a manual, a tome, skills discovered (`Arenas.Finish`) | Nothing from the night is made into anything (C21). |
+
+---
+
+## 3. Principles
+
+Each is a lesson from the research, fitted to this game.
+
+1. **Gather from what you already do** (C1). No gathering job: materials
+   come from fights by day and night, from breaking down what you don't
+   keep, and from a few herbs on the walk.
+2. **Choose what, let luck decide how good, show the budget** (C3, C4).
+3. **Every piece has a life; failure spends it, never the piece** (C5, C6).
+4. **The forge's ceiling sits below the world's** (C8): crafting raises a
+   piece to what the best drop of its rarity could have been, and no further;
+   Legendary pieces come only from the world in Act 1; the bright grade only
+   from the one gamble.
+5. **No dead drops** (C9): everything breaks down to something.
+6. **The danger answers itself; where you go is what you make** (C13, C14).
+7. **Done by someone, on their terms** (C17, C18, C19).
+8. **Discovery by touch and by people** (C15, C16): a craft shows when you
+   carry what it needs and know who does it.
+9. **The night stays the night's** (`SKILLS_DESIGN.md` section 10): crafting
+   shapes the draft, never the ember's power.
+10. **No chores, no bloat** (C24, C25, C27): a pouch; one press for every
+    repeat; no levelling a craft.
+11. **Self-found** (C29): gold buys work, never a best piece.
+
+---
+
+## 4. Materials: iron, the world's own, and fire
+
+### 4.1 The list
+
+Ten materials in Act 1, three of them new. All go in **the pouch** (4.3).
+
+| Material | Id | Kind | From | Used for |
+|---|---|---|---|---|
+| **Old iron** | `old_iron` (new) | iron | breaking down gear (5.2); Brannoc sells 10 a restock at 6 gold each | tempering, remaking |
+| **Wolf pelt** | `wolf_pelt` | the world's own | wolves by day (55%) and the Pack's arenas | *of the Wolf*, *Wolfbane*; the wolfhide cloak |
+| **Boar hide** | `boar_hide` | the world's own | boars by day (50%) and the Pack's arenas | *Sturdy*, *of the Hearth*, *Surefooted* |
+| **Red cloth** | `kerchief_cloth` | the world's own | Kerchiefs by day (30%) and their arenas | *Watchman's* |
+| **Barrow dust** | `bone_dust` | the world's own | the dead by day (25%) and the Risen's arenas | *of the Grave*, *Gravebane* |
+| **Ember shard** | `ember_shard` | the world's own and fire | lamplings by day (18%), the prologue, every arena's end (6.1), the Lamplings' arenas | *of the Salamander*, *Lampsnuffer's*, *of the Lantern*; caging a coal; rekindling |
+| **Bitterroot** | `bitterroot` | the world's own (Wenna) | the green stretch while the stream is poisoned | *of the Physician*; draughts (phase 2) |
+| **Moonpetal** | `moonpetal` | the world's own (Wenna) | the moon grove | *of Mending*; a stronger draught (phase 2) |
+| **Slurry jar** | `slurry_jar` (new, phase 3) | the gamble | Snib, while the Dig pumps | steeping (section 9) |
+| **Shed fur** | `shed_fur` (new, phase 3, story's call) | the world's own | the Pack, when allied | a charm Maeca braids (section 10.3) |
+
+**Why so few.** Hades II's dozen currencies and Grim Dawn's fragments are the
+bloat warnings (C27). Each material here has one source people and one job,
+and the people are the Wayfinder's four plus the Verge's beasts, so the list
+is the world's list. New acts add their own few (section 16).
+
+### 4.2 Why ember shards are the fire
+
+The ember is the night's power and goes out at dawn; the shards are what it
+leaves in the survivor's fist, cooled. Making them the fire (the coal caged
+in a piece, the heat that lets it be worked again) ties the night to the day
+in one object the game already has, and plants the reveal: the thing that
+makes your best gear better is the light of the valley's dead (11.4).
+
+### 4.3 The pouch
+
+Materials never take a place in the pack. `CharacterData.Materials`
+(material id to count, no limit) holds them; the pack's **Materials** filter
+shows the pouch; shops buy from it; quests that ask for or take a material
+(`hasItem`, `take`, `give`) read and write it through `Inventory.Count`,
+`Inventory.Take` and `Inventory.AddToPack`, so the story's data does not
+change. A save from before is migrated: materials in the pack move to the
+pouch (save version 3).
+
+**Why**: the pack is 24 places; seven stacks of materials were a third of it.
+Every ARPG that kept materials in the pack moved them out (Diablo IV, Last
+Epoch, Path of Exile's stash tabs). The pouch also makes the forge's
+question ("do I have enough?") answerable at a glance.
+
+---
+
+## 5. Heat, grades and seams: what a piece is made of
+
+### 5.1 The numbers on a piece
+
+| Rarity | Seams (affix places) | Grade cap at the forge | Heat at drop (±20%) | Break down yields |
+|---|---|---|---|---|
+| Common (0) | 0 | – | 6 | 1 old iron |
+| Uncommon (1) | 1 | II | 10 | 2 |
+| Rare (2) | 2 | III | 14 | 4 |
+| Epic (3) | 3 | IV | 18 | 6 |
+| Legendary (4) | 3 | IV | 22 | 9 |
+| Storied (5) | 3 | IV | 22 | cannot be broken down |
+
+- **Grades** are the affix tiers the game already has (0 to 3), shown as I to
+  IV. Each grade's value is fixed (`AffixDef.Mods(tier)`): the grade *is* the
+  roll, readable in two seconds. A **bright** grade V exists only through the
+  slurry (section 9).
+- **Seams**: a piece has `min(3, rarity)` places for affixes, as drops have
+  always rolled. A place with nothing in it is an **open seam**, shown on the
+  card; remaking a piece opens one.
+- **Heat** is rolled when a piece drops (the rarity's figure, 80% to 120%,
+  whole numbers) and is full on anything made or bought. The starting kit
+  has its rarity's figure exactly. Heat never rises except by remaking (5.3)
+  and rekindling (5.4). At 0 the piece is **set**: it can be worn, broken
+  down, bound *from* (section 8) and tailored (later), never worked again.
+- **Which pieces can be worked**: every piece that rolls affixes (plain
+  bases), and **every weapon** (the weapon is a skill, and Brannoc is a
+  smith). Named non-weapons (the wolf-fang necklace, the Ashen Plate, relics,
+  trophies) are somebody's work: Brannoc won't touch them ("That's somebody's
+  work. Leave it be."). They can still be broken down. **Why**: their fixed
+  powers are their identity; the items plan's Storied lifts are their road
+  (Act 2).
+- **Weapons**: weapons have no affixes today. Remaking one opens seams for
+  the weapon's affixes (*Wolfbane*, *Gravebane*, *Lampsnuffer's*,
+  *Watchman's*, *Cruel*), so the smith is how a weapon gets a kind. Its rank
+  still rises with rarity, capped at four (`Inventory.GearRankCap`).
+
+### 5.2 Breaking down
+
+Anywhere safe (by day, not in a fight's reach; never in an arena), from the
+pack, and at the forge. Yields the old iron above, **plus one ember shard
+for a caged coal** (kindled affix) in it. Not for quest things, trophies,
+draughts, anything worn, or Storied pieces. It asks once ("Break it down for
+4 old iron?") and cannot be undone.
+
+**Why**: Risk of Rain's scrap and Last Epoch's shattering (C9, C10). It is
+also a choice against selling: Brannoc pays 40% of value in gold; breaking
+gives iron, which gold can only buy in small amounts.
+
+### 5.3 Heat and remaking
+
+Remaking a piece on a better pattern (5.4) raises its rarity and adds the
+difference in heat between the two rarities' figures (+4 a step), so a hot
+Uncommon stays hot as it climbs, and a cold one stays cold. **Why**: heat is
+"how much more it can take"; a better pattern can take more. It also makes a
+starting weapon (Common, 6) workable all the way to Epic (18) if the
+survivor pays for every step, which is the "beloved item made better" the
+research asks for (C12), while a dropped Epic (14 to 22, three affixes
+already) stays the better bargain (C8).
+
+---
+
+## 6. What the night yields
+
+### 6.1 What comes out of an arena
+
+At the arena's end (`Arenas.Finish`), beside the experience, gold, gear and
+skills it already gives:
+
+**Ember shards, carried out.**
+
+```
+shards = floor(max(0, ember - 10) / 8) + (tier - 1) + floor(minutesPast / 2) + (won story fight ? 2 : 0)
+```
+
+`ember` is the ember level at the end; `minutesPast` the minutes stayed after
+the half-hour win. **Walked out** by the way out: all of them. **Fell**
+(before or after the win): half, rounded down. Measured outcomes are in
+section 13.
+
+**The people's own**, from what was slain:
+
+| People | Material | Amount |
+|---|---|---|
+| the Pack | wolf pelts (wolves), boar hides (boars) | 1 per champion of the kind, + 1 per 150 of the kind slain |
+| the Risen | barrow dust | 1 per champion, + 1 per 150 slain |
+| the Lamplings | ember shards | 1 per champion, + 1 per 200 slain |
+| the Kerchiefs | red cloth | 1 per champion, + 1 per 150 slain |
+
+Each kind capped at 8 a night. Fell: half, rounded down, like the shards.
+
+**Why at the end and not as pickups**: hundreds of creatures dropping pelts
+is confetti and a chore of vacuuming (VISION principle 1); a tally on the
+arena's end is the Halls of Torment well's moment without the walk (C21).
+Champions already drop gear as pickups; that stays.
+
+### 6.2 The run's last decision
+
+Past the half hour the arena goes on, harder by the minute, until the
+survivor leaves by the way out or falls (fallen after the win, it is still
+won). With shards rising one every two minutes past the win, and half of
+everything spilled on a fall, **staying is a wager**: another two minutes for
+another shard, against losing half of what is already in the fist. This is
+the survivors-like's own crafting decision (Halls of Torment's well, Dead
+Cells' Collector), and it uses a part of the arena that already exists.
+
+### 6.3 What is made or improvised mid-run
+
+**Nothing, on purpose.** The night's making is the ember draft (skills,
+ranks, evolutions, unions): it is already a choice of three every level, and
+it belongs to the combat lead. A crafting menu inside a thirty-minute horde
+would break the genre's rhythm (research 2.7: the survivors-likes do no item
+crafting mid-run) and the rule that the night stays the night's. What the
+run decides is what comes home (6.2). By day, the walk's gathering and the
+beasts' drops stay as they are.
+
+---
+
+## 7. The Waystation's hands
+
+### 7.1 Brannoc's forge (phase 1)
+
+The heart of crafting. Opened from his conversation ("Work my gear." in
+place of "Can you improve my weapon?") and at the anvil in the smithy
+(an interactable that opens it directly once he has worked for you once).
+By night: "Forge is banked." Nothing is worked after dark (the story's own
+line; the forge is the day's).
+
+Every verb shows, before the press: what it takes (each material with
+have and need, the gold), the heat range it will cost, and **what the piece
+will be after** (the affix line before and after, the grade's number).
+
+| Verb | What it does | Takes | Heat |
+|---|---|---|---|
+| **Temper** | one affix up one grade, to the piece's cap (5.1) | to II: 2 old iron, 10 gold · to III: 4 iron, 25 gold · to IV: 7 iron, 50 gold | to II: 2–4 · III: 3–5 · IV: 4–6 |
+| **Work in** | a material becomes its answer (table below) in an open seam, or in place of an affix the survivor chooses (that affix is lost); it enters at grade I (II on an Epic, III on a Legendary) | the material (table) + 15 gold + 10 a rarity step | 4–6 |
+| **Cage a coal** | a kindled affix: **three are offered** from those that fit the piece, leaning toward the stand-ins the survivor's skills evolve with; the one taken goes in the seam its old coal held, or an open seam, or in place of a chosen affix. Rare and up. | 4 ember shards + 30 gold; another three: 1 ember shard | 5–7 |
+| **Remake** | the piece made again on a better pattern: rarity +1, a seam opens, +4 heat; a weapon's rank +1 (to four). To Epic at most in Act 1. | to Uncommon: 4 old iron, 30 gold · Rare: 8, 75 · Epic: 14, 160 | none |
+| **Rekindle** | heat + half the piece's starting heat (rounded up) | 3 ember shards and 20 gold the first time; each time after, the shards double and the gold rises by 20 (3, 6, 12, 24...) | – |
+| **Break down** | section 5.2 | – | – |
+
+**What each material is worked into** (where more than one fits the piece,
+the survivor chooses):
+
+| Material | Takes | Into (the slots it fits) |
+|---|---|---|
+| Wolf pelt | 3 | *of the Wolf* (cloak, body, head, amulet) · *Wolfbane* (weapon, ring, amulet, off-hand) |
+| Boar hide | 3 | *Sturdy* (head, body, cloak, off-hand) · *of the Hearth* (cloak, body, head, amulet) · *Surefooted* (cloak, body, ring) |
+| Red cloth | 4 | *Watchman's* (weapon, ring, amulet, off-hand) |
+| Barrow dust | 3 | *of the Grave* (cloak, body, amulet) · *Gravebane* (weapon, ring, amulet, off-hand) |
+| Ember shard | 2 | *of the Salamander* (cloak, body, head, ring) · *Lampsnuffer's* (weapon, ring, amulet, off-hand) · *of the Lantern* (head, amulet, relic) |
+| Bitterroot (Wenna) | 3 | *of the Physician* (body, amulet, ring) |
+| Moonpetal (Wenna) | 1 | *of Mending* (body, amulet, ring) |
+
+A pelt worked into a piece **marks it**: the piece carries the `wolf_pelts`
+tag the wolfhide cloak carries, and the Verge's wolves smell it ("They smell
+the cloak before they see you"). Working the Pack's skins into your gear is
+a thing the world reacts to (C19). No other material marks.
+
+**Why these verbs and no others.**
+- Temper is Last Epoch's forge in a smith's word, with the target chosen and
+  the cost shown (C3, C4). Its caps are what the best drop of the rarity
+  rolls, so a crafted piece equals a lucky drop and never beats it (C8).
+- Work in is Path of Exile's essence and Valheim's biome armour together:
+  a certain affix of a known kind, from the place that needs it (C13). It
+  enters low, so the certainty costs tempers to grow.
+- Cage a coal is the draft's own shape (three, take one) brought to the
+  forge, and the only place crafting meets the night (section 12). Three
+  offered, not one chosen from all, keeps the luck in what you are shown and
+  makes a redraw a real spend (C4, C22).
+- Remake replaces today's reforge (which raised a weapon's rarity for gold
+  alone) with the same promise ("a grade truer, by day and by night") and a
+  real cost in iron; it is how a weapon gets its kind.
+- Rekindle is the only way back, and its doubling cost is Minecraft's anvil
+  turned kind: it never says "Too Expensive", it gets dearer (C26).
+- Not built, and why: **hone** (rerolling a value within its grade; our
+  grades have one value each, which is clearer), **reforge to a random
+  affix** (Work in and the coal cover the targeted cases; random reforging is
+  what the drops are for), **add an affix past the seams** (only the slurry
+  breaks the limit).
+
+**Brannoc's terms** (C18). His respect (the story already tracks it) sets
+them:
+- respect 20 or more: every heat range's top falls by one ("He takes his
+  time over it.");
+- respect 40 or more: tempering costs one old iron less.
+- Each craft he does for you raises his respect by 1, to +15 from crafting
+  in all ("He likes work.").
+- His prices follow the shop's (`Journey.PriceMod`): a smith who distrusts
+  you charges more.
+
+### 7.2 Wenna's still-room (phase 2)
+
+| Verb | What | Takes |
+|---|---|---|
+| **Brew** a health draught | one draught | 2 bitterroot + 4 gold (Harlan sells one for 15) |
+| **Brew** an antidote | one antidote | 1 bitterroot + 3 gold |
+| **Brew** a moonpetal draught (new) | heals 60% (the health draught heals 40%) | 1 moonpetal + 10 gold |
+| **Work in** *of the Physician*, *of Mending* | as at the forge | bitterroot 3 / moonpetal 1 + gold; heat 4–6 |
+| **Her flask** (phase 2b) | once bought (120 gold), the survivor's draughts refill at the inn while they sleep, one bitterroot a draught, up to three | – |
+
+She brews from the start; she **won't work gear while the stream is still
+green** ("I've half the Verge coughing, child. Bring me a clean stream and
+I'll stitch your coat."), so her tinctures open with `StreamClean()`. Her
+standing sets the grade a tincture enters at (II at trust or affection 30).
+**Why**: The Witcher's refill (C25) ends the draught chore; the stream gate
+is the story's own and gives the cure one more reward.
+
+### 7.3 Vonnra's binding (phase 3)
+
+**Bind**: one affix lifted out of a donor piece and set in the chosen piece,
+at the donor's grade (to the piece's cap), in an open seam or in place of a
+chosen affix. **The donor is unmade.** Takes 1 ember shard and 40 gold a
+grade; costs the receiving piece 5–7 heat. A set piece (no heat) can be a
+donor and never a receiver.
+
+She does it at the toll-house table, in full sentences, holding the donor
+over a lamp until "it lets go". If she has been accused (`vonnra.accused`),
+she uses the survivor's name and charges a tenth less (the items plan's small
+true consequence).
+
+**Why**: Last Epoch's legendary potential and Kanai's Cube (C11): two finds
+become one keeper, every drop is a possible ingredient, and the offensive
+affixes (fire, crit, haste, reach), which the forge never makes, can still be
+moved onto the piece you love. It is also exactly what the binders do: keep a
+power from leaving by holding it in a new vessel. Act 3 says what she meant
+to do with the survivor; Act 1's player has already watched her do it to a
+ring.
+
+### 7.4 Snib's slurry (phase 3)
+
+Section 9.
+
+### 7.5 Commissions (phase 2)
+
+"Make me one": the survivor chooses a base Brannoc knows (leather cap, iron
+helm, padded jerkin, chain shirt, the old watch shield, and the weapons of
+their calling) and a material; next morning (C20) it is ready, Uncommon,
+the material's affix at grade I, full heat. Takes the material, 2 old iron
+and the base's value in gold. His known bases grow with his respect (the
+Ashen Plate's pattern at 40). The wolfhide cloak (5 pelts, 30 gold) is his
+first commission and stays in his conversation as it is.
+
+---
+
+## 8. Discovery: how a craft is learned
+
+- **By touch** (C15). A verb or material shows at the forge once the survivor
+  has carried what it needs: Work in shows each material's line the first
+  time one is in the pouch; Cage a coal shows once an ember shard has been.
+  The first time each is offered, Brannoc says one line about it (11.2).
+- **By people** (C16). Each crafter's work opens with them (meeting Brannoc;
+  Wenna's stream; Vonnra's toll; Snib's pump) and their standing deepens it
+  (7.1).
+- **By the story** (10).
+- **Nothing on a wiki**: every craft says what it takes, what it costs and
+  what it will make before the press.
+
+---
+
+## 9. The one gamble: steeping in slurry (phase 3)
+
+The Dig cooks ember into slurry; slurry is in the stream, sickening the
+wolves. While the pump runs (`dig.pump` is running) and Snib has been met,
+he sells **slurry jars** (30 gold, three a day). Steeping a piece:
+
+| Result | Chance |
+|---|---|
+| one affix up a grade past its cap (to the **bright** grade V if it was IV) | 25% |
+| a slurry affix in a fourth place, past the seams: strong, with a price ("+20% damage; you mend 15% less") | 25% |
+| nothing changes but the veins | 30% |
+| one affix down a grade | 20% |
+
+A steeped piece is **slurried** (green-black veins, a sick glow at night), set
+(heat 0), and cannot be steeped again. The card says all of this before the
+jar is opened, in Snib's voice ("It's the GOOD stuff. Mostly. Snib would not
+drink it."). **Why**: C7; the only way past the forge's ceiling, and a moral
+one: the gamble exists because the stream is poisoned, and curing the stream
+closes it (the jars already bought keep).
+
+---
+
+## 10. Story: crafts the story opens, and crafters it can take
+
+### 10.1 Act 1's gates (each needs the story lead's words)
+
+| Craft | Opens when | Why it is the story's |
+|---|---|---|
+| Brannoc's forge | met | the town's smith |
+| Cage a coal | an ember shard carried to him | the man who forged cages for the ford's ember |
+| Wenna's tinctures | `StreamClean()` | she is nursing the Verge until then |
+| Vonnra's binding | met at the toll | the binders keep what would leave |
+| Snib's jars | the Dig met, the pump running | the gamble is the stream's poison |
+| **The fang set** | Greymuzzle killed (`greymuzzle_fang` held) | Brannoc sets the old alpha's fang into a weapon or amulet: a unique prefix, *Greymuzzle's* (+30% damage to wolves and beasts, and the Pack knows it by sight); Maeca's regard falls when she sees it |
+| **Shed fur** | the Pack allied (`pack.allied`) | Maeca braids a charm from fur the Pack sheds: the only wolf-craft that kills no wolf (a Rare amulet, *of the Pack's Leave*: wolves give way). The pelts' route and the fur's route are the Beast Problem's two answers in the hand. |
+
+### 10.2 Losing a crafter (later acts; the design now so Act 1 builds for it)
+
+When the story takes someone, their work moves to worse hands; it never
+vanishes (the items plan's rule, kept):
+- **Brannoc**, if lied to about Nell (Act 2, `nell.told` = lie): "never works
+  for the survivor again". Snib's bodgery at the Dig takes every forge verb,
+  each heat range one higher, and its lines are Snib's.
+- **Wenna**, if she dies in the breakthrough (Act 2): Rook brews the draughts
+  in her kitchen (a fixed point that survives everything); the tinctures are
+  lost with her.
+- **Vonnra**, at the bottom of the stair (Act 3): the binding passes to the
+  survivor, at her table, with her book.
+- **Snib**: never (the bible's fixed point).
+
+The code keeps each verb's **crafter** as data, so moving a verb is a data
+change.
+
+### 10.3 Crafters' voices (from `VOICES.md`; the story lead writes the lines)
+
+- **Brannoc**: fragments, the hammer under everything; iron talked about like
+  weather; no thanks. Tempering: no words, a count of blows. Caging a coal: the
+  one place he says more than he means to (11.4).
+- **Wenna**: brisk lists, "child", interrupting herself when interested.
+- **Vonnra**: no contractions, long pauses, payment and arrangement; "traveller"
+  until the fortune.
+- **Snib**: third person, capitals, contradicting himself.
+
+### 10.4 The seeds (ember is the dead; never said in Act 1)
+
+Proposals for the story lead, each a plain image, never an answer:
+- A caged coal "takes a long time to go dark. When it does, it is the shape of
+  a thumbprint." (narration, the first cage).
+- Brannoc, the first cage: something about cages and what ember wants, near
+  the lamp-irons on his rack, never saying the irons' story twice.
+- The history line on a caged piece names the night it came from ("A coal from
+  the Weeping Fen, day 4").
+- Act 3 (design note): every piece with caged coals gains a line per coal, a
+  name, when the survivor understands what ember is.
+
+---
+
+## 11. Crafters as people: what the code needs
+
+- Each verb belongs to a **crafter** (`brannoc`, `wenna`, `vonnra`, `snib`) in
+  data, with the condition it opens on (`Cond`, the story's own condition
+  language) and the place it is done.
+- Each craft writes a short **history line** on the piece for the memorable
+  ones (remade, a coal caged, bound, steeped), not for every temper.
+- Each craft can carry **world effects** (respect, a history event) through
+  the story's own `Change` list, so the story lead can attach consequences in
+  data without code.
+
+---
+
+## 12. Evolutions and skill synergies (the combat lead's; agreed hooks)
+
+### 12.1 The hooks
+
+| Hook | Rule | File |
+|---|---|---|
+| Cage a coal | offers three kindled affixes that fit the piece; stand-ins for a passive that the survivor's carried skills **or gear weapons** evolve with weigh ×2 (the drops' own rule, `Inventory.Make`) | `Rpg/Crafting.cs` |
+| One coal a piece, two a survivor | unchanged (`Inventory.MaxKindled`): caging replaces the piece's coal, and the forge warns when a third would do nothing | – |
+| Remake | a weapon's rank rises with rarity, capped at four (`GearRankCap`), as the reforge did | `Character.Kit` (unchanged) |
+| The night's yield | shards and the people's materials at `Arenas.Finish`; nothing changes inside the fight | `Arena/Arena.cs` |
+| Draughts (phase 2) | brewing makes them cheaper, not stronger; the moonpetal draught (60%) needs the combat lead's yes | – |
+
+**Never**: crafting grants no evolution, blessing, union, rank past four or
+passive; it never changes a card's odds except through the existing kindled
+rules; nothing is crafted inside an arena.
+
+### 12.2 The duplicate-id bug (fixed in phase 1, told to combat)
+
+`Items.Affixes` holds `of_mending` and `of_embers` twice (a plain affix and a
+kindled stand-in of the same id). `Items.Affix(id)` finds the first, so a
+stand-in for Bitterroot or Emberblood, once rolled, reads back as the plain
+affix and never stands in. The stand-ins become `of_the_root` ("of the Root",
+for Bitterroot) and `of_the_brand` ("of the Brand", for Emberblood); a save
+that rolled one already holds the plain affix and is unchanged. A test holds
+every affix id unique.
+
+---
+
+## 13. The economy
+
+### 13.1 What the night and the day pay (measured)
+
+`CraftingProbe`, 48 arenas (four callings × tiers 1–3 × four peoples), deft
+hands, greedy drafts, 35 minutes (five past the half hour), before the combat
+lead's fixes below:
+
+| Tier | Won | Ember at the end (median) | Slain | Champions | Gold: Kerchiefs / others |
+|---|---|---|---|---|---|
+| 1 | 100% | 57 | 20k–47k | 690–1600 | 52k–63k / 0–40 |
+| 2 | 94% | 62 | 17k–61k | 450–2100 | 64k–69k / 0–43 |
+| 3 | 100% | 67 | 21k–62k | 800–2200 | 80k–109k / 0–32 |
+
+Two problems, both the combat lead's and both being fixed there: Kerchief
+fodder paid tens of thousands of gold a night (fodder gold drops to 2%), and
+champions dropped about 300 pieces of gear a night (gear will drop only from
+the minute's champion events, heralds, minibosses and the boss). Crafting was
+designed not to lean on gold: old iron, ember shards, materials and heat
+gate it. The night's yield (6.1) uses champions: about 1 per 150 is 5 to 8 of
+the people's material a won night, and the shard formula gives 5 to 11.
+
+### 13.2 Faucets and sinks
+
+| | Faucets (in) | Sinks (out) |
+|---|---|---|
+| **Gold** | Kerchief fodder, champions and bosses in arenas; quests; selling | crafting fees; old iron from Brannoc; rest; draughts; the story's prices |
+| **Old iron** | breaking down; Brannoc's 10 a restock | tempering; remaking; commissions |
+| **The world's own** | the Verge by day; the night's people | working in; commissions; brewing; Holloway's bounty and Brannoc's pelt price (they compete) |
+| **Ember shards** | every arena's end; lamplings; the prologue; breaking down a caged piece | caging; redraws; rekindling (doubling); working in |
+| **Heat** | drop; remake (+4); rekindle | every craft |
+
+What stops inflation: heat (a piece can only take so much), the forge's
+ceiling (a piece maxes at what a lucky drop of its rarity would be, and its
+seams are its rarity's), rekindling's doubling, and the competing uses of
+each material (a pelt sold, a pelt to the bounty, a pelt worked in).
+
+### 13.3 Targets
+
+| Measure | Target |
+|---|---|
+| First craft | day 1 or 2, by the second visit to the smithy |
+| Crafts a day (Act 1, a player who crafts) | 2 to 5 |
+| A starting weapon remade to Rare | by day 3 to 4; to Epic by day 6 to 8 |
+| Pieces fully worked (every seam at its cap) by Act 1's end | 0 to 2: the forge never finishes the survivor's gear in an act |
+| Gold spent on crafting | 30% to 60% of gold earned in Act 1 |
+| A night's shards | enough for one cage or one rekindle (4 to 8) when won and walked out |
+| Staying five minutes past the win | +2 to 3 shards; falling there loses more than staying gains |
+
+### 13.4 The simulation
+
+`CraftingEconomy` (a test) plays Act 1's economy forward day by day with the
+measured faucets and a spender that crafts on what it wears, and checks the
+targets above; `CraftingProbe` (opt-in) re-measures the faucets from real
+arenas. Results in section 19.
+
+---
+
+## 14. UI needs (a brief for the UI design lead)
+
+The UI design lead owns screens; phase 1 builds the forge in the house's
+frame language from this brief so it can be played and seen, and the lead
+restyles or rebuilds it.
+
+1. **The forge** (`ForgeScreen`, a full page like the shop's counter). Left:
+   Brannoc as a person (portrait, how he feels about you, his terms, a line).
+   Middle: **the anvil**: the chosen piece large; its seams as rows (affix,
+   grade as I to IV with its cap, open seams shown as open); its **heat** as a
+   bar with the number; under it **the verbs** as cards, only those that
+   apply, each with what it takes (have and need, red when short), the heat
+   range, and **before and after** in words. Right: what can be worked (worn
+   first, then the pack) and the pouch.
+2. **Cage a coal**: three crested cards like the draft's, each saying what
+   the coal does in the ember ("Kindled: counts as the Ford's Cold in the
+   ember's evolutions") and which of your skills it serves.
+3. **The pack**: the Materials filter shows the pouch; the item card shows
+   heat ("Heat 9 of 14", or "Set") and each affix's grade; open seams; Break
+   down beside Leave behind.
+4. **The arena's end**: a "Carried out" line (ember shards, the people's
+   materials, and on a fall, what was spilled).
+5. **The shop**: the pouch beside the pack, so materials sell.
+
+---
+
+## 15. What is in Act 1, and what waits
+
+| | Act 1 | Act 2 | Act 3 |
+|---|---|---|---|
+| Brannoc | temper, work in, cage, remake to Epic, rekindle, break down; commissions | his fate (lie: Snib's bodgery); the last two irons; remake to Legendary at respect 40 | the heart's cage (story) |
+| Wenna | brewing; tinctures after the cure; the flask | the breakthrough (she may die: Rook brews) | – |
+| Vonnra | binding | sigils and the binders' book (Marks, items plan) | the book passes to the survivor |
+| Snib | slurry jars while the pump runs | the bodgery | – |
+| New hands | – | the Vigil's armourers at Silverstair (Wrought bases); Rav the tailor (looks, items plan) | Heartwrought (the Morrow's own, pale and ember-veined) |
+| Materials | ten | the north road's few (Vigil silver, north-wood) | the Morrow's |
+| Ceilings | grade IV, Epic by craft | Legendary by craft | Heartwrought |
+
+---
+
+## 16. Build phases
+
+Each phase is playable end to end and seen in the running game before the
+next.
+
+**Phase 1: the forge's core loop.**
+- Data: `crafting.json` (verbs, materials, costs, crafters, conditions);
+  `old_iron` in `items.json`; Brannoc's shop line for old iron; his
+  conversation's "Work my gear." (story lead's words) opening the forge.
+- Logic: `Rpg/Crafting.cs` (heat, seams, every Brannoc verb, the three
+  coals, break down), the pouch in `Inventory`, heat on drop in
+  `Inventory.Make`, the night's yield in `Arenas.Finish`, the pelt mark in
+  `WorldTags`, the duplicate-id fix, save version 3 (heat for old pieces, the
+  pouch).
+- Interface: `ForgeScreen`; the pack's pouch and the card's heat and grades;
+  break down in the pack; the arena's end's carried-out line.
+- Tests: every verb's rules and costs; the save migration; the pouch with
+  the story's `hasItem`, `take` and `give`; the night's yield; the economy
+  simulation's targets.
+
+**Phase 2: the still-room and commissions.** Wenna's brewing, tinctures and
+flask; commissions; the fang set and shed fur with the story's words.
+
+**Phase 3: the binder and the slurry.** Vonnra's binding; Snib's jars and
+steeping; the seeds' lines.
+
+---
+
+## 17. Decisions, and why
+
+1. **Heat over unlimited crafting.** The only answer the research found to
+   "craft the best and done" that does not take away the player's choice
+   (Last Epoch); a visible budget is fair where Diablo IV's was cruel because
+   no single craft can lose its value to luck alone.
+2. **Fixed grades, no ranges within them.** Today's affixes have one value a
+   grade; adding ranges would add a "hone" verb and a number to read on every
+   line for little decision. Kept the game's own model.
+3. **The forge's ceiling equals a lucky drop of the piece's rarity.** C8:
+   the chase stays in the world; the forge turns a good find into the best
+   version of itself.
+4. **Work in enters low; offensive affixes are never made, only moved.**
+   Answers (resistances, slayers, armour) are what crafting should guarantee
+   (C13); raw power stays in drops and binding.
+5. **Three coals, not a chosen coal.** The forge's one meeting with the night
+   uses the night's shape; choosing any stand-in outright would let a
+   survivor plan every evolution by day, which the skills design keeps the
+   night's.
+6. **Remake adds heat.** Otherwise the starting weapon could never become
+   good, and the beloved piece (C12) would be impossible.
+7. **Materials yielded at an arena's end, not dropped.** No confetti, no
+   vacuuming; the tally is the reward's moment.
+8. **No mid-run crafting.** The draft already is the night's making.
+9. **The pouch.** No materials in the pack.
+10. **Crafting is a page of its own, opened from the person.** Every craft is
+    a conversation first; the page is the counter you work at.
+11. **Ember shards are the fire, not a new currency.** One object carries the
+    night into the day and carries the reveal.
+12. **The items plan's six-grade item levels, Marks, sets, notches,
+    sigils, tailor and steeping-by-default are not in Act 1.** They are the
+    items plan's, unbuilt, and a crafting design that waited for them would
+    make nothing playable; this design's data leaves room for each.
+
+**For the owner** (escalated, with a recommendation; nothing waits on them):
+- The weapon reforge becomes Remake and costs old iron as well as gold:
+  stronger choices, slightly slower early weapon ranks. *Recommend yes.*
+- Staying past the half hour risks half the night's materials on a fall.
+  *Recommend yes*: it gives the endless minutes a stake.
+
+---
+
+## 18. What this design takes from the items plan, and what it changes
+
+Taken: heat (and rekindling with ember shards), the crafters and their
+services' spirit, "show cost, chance and range; never destroy", the one
+labelled gamble, the binder's book idea (as binding), losing a crafter
+moves the work, the pouch, salvage to materials.
+Changed: scrap and ashsteel become one **old iron**; tempering's grades are
+the game's four; reforge and hone are cut; tinctures are Wenna's half of
+**Work in**, shared with Brannoc's materials; Marks, sigils, notches and
+the tailor wait for Act 2; rekindling doubles instead of once per item;
+steeping's odds are re-weighted with a worse-case and no Named reroll.
+
+---
+
+## 19. Results
+
+*(Filled as each phase lands: the probe's measurements, the simulation's
+outcomes against section 13.3, and what was seen in the running game.)*

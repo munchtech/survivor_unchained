@@ -6852,8 +6852,8 @@
       "goto": "cloak"
      },
      {
-      "text": "Can you improve my weapon?",
-      "action": "reforge"
+      "text": "Can you work my gear?",
+      "action": "craft"
      },
      {
       "text": "Those lamp-irons on the rack?",
@@ -6948,8 +6948,8 @@
       "goto": "cloak"
      },
      {
-      "text": "Can you improve my weapon?",
-      "action": "reforge"
+      "text": "Can you work my gear?",
+      "action": "craft"
      },
      {
       "text": "Those lamp-irons on the rack?",
@@ -7031,8 +7031,8 @@
       "goto": "cloak"
      },
      {
-      "text": "Can you improve my weapon?",
-      "action": "reforge"
+      "text": "Can you work my gear?",
+      "action": "craft"
      },
      {
       "text": "Those lamp-irons on the rack?",

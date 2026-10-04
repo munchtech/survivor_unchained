@@ -23,6 +23,17 @@ public sealed class ItemInstance
     public string? Name;
     /// <summary>Where it came from, one line per owner.</summary>
     public List<string>? History;
+    /// <summary>How much more it can be worked (docs/CRAFTING_DESIGN.md, "Heat"): every
+    /// craft spends some; at none it is set. Null on what can never be worked.</summary>
+    public int? Heat;
+    /// <summary>The heat it had when made, and what remaking added since: its bar's length.</summary>
+    public int? HeatFull;
+    /// <summary>How often it has been rekindled (each time dearer).</summary>
+    public int? Rekindled;
+    /// <summary>What the world can tell was worked into it ('wolf_pelts': the wolves smell it).</summary>
+    public List<string>? Marks;
+    /// <summary>How often its three coals have been drawn again today.</summary>
+    public int? Draw;
 }
 
 public enum ConditionId { Wounded, Blightsick, Poisoned, Blessed, Rested, Wolfscent, Hunted, Warmed }
@@ -93,6 +104,8 @@ public sealed class CharacterData
     public List<string> Knowledge = new();
     public Equipment Equipment = new();
     public List<ItemInstance?> Pack = Inventory.NewPack();
+    /// <summary>The materials pouch: crafting's materials by id, never in the pack's places.</summary>
+    public Dictionary<string, int> Materials = new();
     public double Gold;
     /// <summary>The art in hand (the web game's id, 'shield_bash').</summary>
     public string Ability = "";
@@ -145,11 +158,14 @@ public static class Inventory
 
     /// <summary>A new item; plain gear rolls its affixes.</summary>
     /// <param name="lean">Affixes it is likelier to roll (what answers the map it fell in).</param>
-    public static ItemInstance Make(CharacterData? ch, string defId, int qty = 1, int? rarity = null, uint? seed = null, List<AffixRoll>? affixes = null, IReadOnlyCollection<string>? lean = null)
+    /// <param name="dropped">It fell in the world: its heat is rolled (made or bought, it is full).</param>
+    public static ItemInstance Make(CharacterData? ch, string defId, int qty = 1, int? rarity = null, uint? seed = null, List<AffixRoll>? affixes = null,
+        IReadOnlyCollection<string>? lean = null, bool dropped = false)
     {
         var def = Items.Get(defId);
         string uid = ch != null ? $"i{ch.NextUid++}" : $"i{loose.Next(1_000_000_000):x}";
         var it = new ItemInstance { Uid = uid, Def = defId, Qty = qty, Rarity = rarity ?? def.Rarity, Affixes = affixes ?? new() };
+        if (Crafting.Workable(def)) it.Heat = it.HeatFull = Crafting.HeatAtMaking(it.Rarity, dropped ? new Rng(seed ?? (uint)loose.Next(1_000_000_000)) : null);
         if (def.Base && affixes == null)
         {
             var rng = new Rng(seed ?? (uint)loose.Next(1_000_000_000));
@@ -208,6 +224,12 @@ public static class Inventory
     public static bool AddToPack(CharacterData ch, ItemInstance it)
     {
         var def = Items.Get(it.Def);
+        // Materials go in the pouch, which is never full.
+        if (def.Kind == ItemKind.Material)
+        {
+            ch.Materials[it.Def] = ch.Materials.GetValueOrDefault(it.Def) + Math.Max(0, it.Qty);
+            return true;
+        }
         if (def.Stack is { } stack)
             foreach (var p in ch.Pack)
             {
@@ -227,7 +249,7 @@ public static class Inventory
 
     public static int Count(CharacterData ch, string defId)
     {
-        int n = 0;
+        int n = ch.Materials.GetValueOrDefault(defId);
         foreach (var p in ch.Pack) if (p?.Def == defId) n += p.Qty;
         foreach (var s in Items.EquipSlots) if (ch.Equipment[s]?.Def == defId) n++;
         return n;
@@ -237,6 +259,13 @@ public static class Inventory
     public static int Take(CharacterData ch, string defId, int qty = 1)
     {
         int left = qty;
+        // The pouch first: that is where materials live.
+        if (ch.Materials.TryGetValue(defId, out int have) && have > 0)
+        {
+            int t = Math.Min(left, have);
+            left -= t;
+            if (have - t > 0) ch.Materials[defId] = have - t; else ch.Materials.Remove(defId);
+        }
         for (int i = 0; i < ch.Pack.Count && left > 0; i++)
         {
             var p = ch.Pack[i];
@@ -248,6 +277,16 @@ public static class Inventory
         }
         return qty - left;
     }
+
+    /// <summary>The pouch as things to show and sell: one stack a material ('m:' and its id),
+    /// in the materials' own order.</summary>
+    public static List<ItemInstance> Pouch(CharacterData ch) =>
+        ch.Materials.Where(kv => kv.Value > 0 && Items.Find(kv.Key) != null)
+            .OrderBy(kv => Items.Get(kv.Key).Rarity).ThenBy(kv => Items.Get(kv.Key).Name)
+            .Select(kv => new ItemInstance { Uid = PouchUid(kv.Key), Def = kv.Key, Qty = kv.Value, Rarity = Items.Get(kv.Key).Rarity }).ToList();
+
+    public static string PouchUid(string defId) => $"m:{defId}";
+    public static string? FromPouch(string uid) => uid.StartsWith("m:") ? uid[2..] : null;
 
     public sealed record Where(bool InPack, int Index, EquipSlot Slot, ItemInstance Item);
 
@@ -290,7 +329,11 @@ public static class Inventory
     {
         var tags = new HashSet<string>();
         foreach (var s in Items.EquipSlots)
+        {
             if (ch.Equipment[s] is { } it && Items.Find(it.Def)?.Tags is { } t) tags.UnionWith(t);
+            // What was worked into it shows too (a pelt worked into a coat: the wolves smell it).
+            if (ch.Equipment[s]?.Marks is { } m) tags.UnionWith(m);
+        }
         foreach (var p in ch.Pack)
             if (p != null && Items.Find(p.Def) is { Kind: ItemKind.Tool, Tags: { } t }) tags.UnionWith(t);
         foreach (var tr in ch.Traits) if (Callings.Trait(tr)?.Tags is { } t) tags.UnionWith(t);
