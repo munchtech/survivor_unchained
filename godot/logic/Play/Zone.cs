@@ -146,6 +146,9 @@ public interface IZoneLook
     INpcView Fallen(PersonSpec spec, Held? arms, double x, double z, double facing, string clip);
     /// <summary>A bright thing with a light of its own (the Warden's heart).</summary>
     IOrb Orb(string color, double size);
+    /// <summary>The Kindling's ember-core: a lump of raw ember, split by glowing fissures that widen
+    /// as it is broken (Light: 0 whole, 1 nearly broken). A plain orb where nothing better is drawn.</summary>
+    IOrb EmberCore(double size) => Orb("#ff7a2a", size * 0.45);
 }
 
 /// <summary>A boss's own view: a pose (sleep, wake, walk, windup, cleave,

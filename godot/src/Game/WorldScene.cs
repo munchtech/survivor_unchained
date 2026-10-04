@@ -284,6 +284,13 @@ public partial class WorldScene : Node3D, IZoneLook
         return v;
     }
 
+    public IOrb EmberCore(double size)
+    {
+        var o = new EmberCoreView(size);
+        AddChild(o);
+        return o;
+    }
+
     public IOrb Orb(string color, double size)
     {
         var o = new OrbView(color, size);

@@ -67,6 +67,8 @@ public sealed class RunResult
     public bool BossSoft;
     /// <summary>The long night: the boss's returns that came, and the dark's oaths sworn.</summary>
     public int Returns, Dark;
+    /// <summary>The Kindling's ember-core broken within its minute (null: it never came).</summary>
+    public bool? CoreBroken;
     /// <summary>The minibosses met (by def) and those killed: how long each took, and the minute.</summary>
     public List<string> MinibossesMet = new();
     public List<(string Def, double Ttk, double At)> Minibosses = new();
@@ -266,6 +268,7 @@ public static class ArenaSim
             r.BossSoft = bs.Soft;
         }
         r.Returns = zone.Returns;
+        r.CoreBroken = zone.CoreBroken;
         r.Dark = zone.DarkSworn;
         r.Kills = b.KillCount;
         r.Gold = b.GoldGained;

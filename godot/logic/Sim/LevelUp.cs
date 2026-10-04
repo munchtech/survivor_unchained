@@ -198,7 +198,7 @@ public static class LevelUp
     {
         var m = b.Drafting;
         if (m.Cards > 0) return m.Cards;
-        if (GreatNext(b)) return m.Cards = m.Greats >= 1 || b.Omens ? 4 : 3;
+        if (GreatNext(b)) return m.Cards = (m.Greats >= 1 || b.Omens ? 4 : 3) + b.GreatExtra;
         double luck = b.Stats.Get(Stat.Luck);
         return m.Cards = 3 + (SkillNext(b) && (b.Roads || b.Rng.Next() < 1 - 1 / System.Math.Max(1, luck)) ? 1 : 0);
     }
@@ -640,7 +640,7 @@ public static class LevelUp
         var m = b.Drafting;
         m.Cards = 0;
         m.Shown.Clear();
-        if (great) { b.GreatOwed = System.Math.Max(0, b.GreatOwed - 1); m.Greats++; }
+        if (great) { b.GreatOwed = System.Math.Max(0, b.GreatOwed - 1); m.Greats++; b.GreatExtra = 0; }
         else if (blessing) { if (b.PendingBlessings.Count > 0) b.PendingBlessings.RemoveAt(0); }
         else b.PendingLevels = System.Math.Max(0, b.PendingLevels - 1);
     }

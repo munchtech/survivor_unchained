@@ -258,6 +258,8 @@ public sealed partial class Battle
     public readonly List<int> PendingBlessings = new();
     /// <summary>Great blessings owed (an arena's first, its fifteenth minute's).</summary>
     public int GreatOwed;
+    /// <summary>Cards more on the next great blessing (the ember-core broken in time).</summary>
+    public int GreatExtra;
     public readonly HashSet<string> Discoveries = new();
     /// <summary>Where the fight is coming from, for the adaptive director.</summary>
     public readonly DamageProfile Profile = new();

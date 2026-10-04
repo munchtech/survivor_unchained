@@ -90,7 +90,7 @@ public static class MapOffers
                 new(22, "mb_ford_bell", ["grave_caller", "risen_bell"], ["gravebound", "bannered"]), // the bell
             ]),
         new("lamplings", "the Lamplings", new[] { ("lampling", 5.0), ("lampling_sapper", 1.5) }, "boss_lamplings", "Gutterwick", "Second-Best in the Dig", ["lampsnuffer", "of_the_salamander"],
-            [("lampling", 5, 0), ("lampling_wick", 3, 3), ("lampling_sapper", 3.5, 7), ("lampling_lamp", 1.5, 12), ("lampling_fuse", 1.2, 16)], "lampling",
+            [("lampling", 5, 0), ("lampling_wick", 3, 3), ("lampling_sapper", 3.5, 7), ("lampling_lamp", 1.5, 12), ("lampling_fuse", 1.2, 16)], "lampling_ganger",
             ["swift"],
             [
                 new(3, "mb_wick_mother", ["lampling_wick"], []),                   // the swarm from below

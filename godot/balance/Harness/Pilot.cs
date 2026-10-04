@@ -164,7 +164,10 @@ public static class Pilot
             double d = Dist(e.X, e.Z, p.X, p.Z);
             if (d < sd) { sd = d; shooter = e; }
         }
-        if (shooter != null && sd > 1.8 && b.HostilesInRadius(p.X, p.Z, 4.5).Count < 3) { mx = shooter.X - p.X; mz = shooter.Z - p.Z; }
+        if (shooter != null && sd > 1.8 && b.HostilesInRadius(p.X, p.Z, 4.5).Count < 3) { mx = shooter.X - p.X; mz = shooter.Z - p.Z; return; }
+        // The Kindling's core: stood beside, as anyone does who has read what breaking it gives.
+        foreach (var e in b.Enemies.Living())
+            if (e.Def.Id == "ember_core" && e.State != EnemyState.Dying && Dist(e.X, e.Z, p.X, p.Z) > 2.5) { mx = e.X - p.X; mz = e.Z - p.Z; return; }
     }
 
     /// <summary>Off (--bossread 0) for the numbers of the hands before they knew the bosses.</summary>
