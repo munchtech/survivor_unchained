@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Godot;
+using SurvivorUnchained.Core;
 using SurvivorUnchained.Play;
 using SurvivorUnchained.Rpg;
 using SurvivorUnchained.View;
@@ -9,30 +10,41 @@ using SurvivorUnchained.World;
 
 namespace SurvivorUnchained.Ui;
 
-/* Creation's fourth step, the look (docs/UI_DESIGN.md 7.2): her body, hair,
+/* Creation's fourth step, the look (docs/UI_DESIGN.md 7.2): the body, hair,
  * face and paint, each a part of its own on the triggers, the figure framed
- * for it (all of her, head and shoulders, her face) and turned or brought
- * near by hand. Her cuts, faces and paints are cameos (her portrait in an
- * iron ring, painted from the model: art/ui/create); colours are beads (her
- * irises drawn as irises); her face's sliders run from one end to the other
- * about her own face, as far as it still looks like her (Lore.Sliders). */
+ * for it (all of them, head and shoulders, the face) and turned or brought
+ * near by hand. A hero's own body (the heroine's; the male hero's when he has
+ * one: Loadouts.HeroKit) offers its own cuts, faces, eyes and paints, as
+ * cameos (a portrait in an iron ring, painted from the model:
+ * art/ui/create/SEX/); colours are beads (irises drawn as irises); the face's
+ * sliders run from one end to the other about the hero's own face, as far as
+ * it still looks like them. A kit body is shaped with a cut and a beard. */
 public partial class CreateScreen
 {
-    static readonly string[] HerSections = { "Body", "Hair", "Face", "Paint" };
-    static readonly string[] HisSections = { "Body", "Hair" };
-    static readonly string[] FaceGroups = { "Eyes", "Nose", "Mouth", "Jaw" };
     static readonly Dictionary<string, string> HairNames = new() { ["Hair_SimpleParted"] = "Parted", ["Hair_Buzzed"] = "Cropped", ["Hair_Long"] = "Long", ["Hair_Buns"] = "Buns", ["Hair_BuzzedFemale"] = "Cropped", ["none"] = "Shorn" };
     ScrollContainer? scroll;
     (int, int) scrollKey;
 
     bool Her => d.Sex == Sex.Female;
-    string[] Sections => Her ? HerSections : HisSections;
+    /// <summary>"Her" or "His", as the survivor is.</summary>
+    string Their => Her ? "Her" : "His";
+    /// <summary>What their own body offers to be shaped with (null: a kit body).</summary>
+    HeroLook? Kit => Loadouts.HeroKit(d.Sex);
+    string[] Sections => Kit is { } k
+        ? new[] { "Body", "Hair" }.Concat(k.Sliders.Count > 0 || k.Faces.Count > 1 || k.Eyes.Count > 1 ? new[] { "Face" } : Array.Empty<string>())
+            .Concat(k.Paints.Count > 1 ? new[] { "Paint" } : Array.Empty<string>()).ToArray()
+        : new[] { "Body", "Hair" };
     string Section => Sections[Math.Clamp(d.Section, 0, Sections.Length - 1)];
+    /// <summary>A cameo's picture under art/ui/create/, by the survivor's sex.</summary>
+    string Art(string key) => $"{d.Sex.Key()}/{key}";
 
     /// <summary>How near each part frames the figure, and how far she is turned for it
     /// (her hair seen from the side, where a cut shows).</summary>
     float SectionZoom() => d.Step != LookStep ? 0 : Section switch { "Hair" => 0.55f, "Face" or "Paint" => 1f, _ => 0f };
-    float SectionTurn() => d.Step == LookStep && Section == "Hair" ? -0.55f : 0;
+    float SectionTurn() => d.Step == LookStep && Section == "Hair" ? -0.95f : 0;
+
+    /// <summary>The figure framed for the step and part as they are now.</summary>
+    public void FrameForStep() => G.FrameFigure(SectionZoom(), SectionTurn());
 
     /* ---------------------------------------------------------- the stage -- */
 
@@ -78,7 +90,7 @@ public partial class CreateScreen
             int at = i;
             bool on = d.Section == i;
             var b = Style.Button("", () => Set(() => d.Section = at), false, true);
-            b.CustomMinimumSize = new Vector2(Her ? 96 : 140, 40);
+            b.CustomMinimumSize = new Vector2(Sections.Length > 2 ? 96 : 140, 40);
             foreach (var x in new[] { "normal", "hover", "pressed" }) b.AddThemeStyleboxOverride(x, new StyleBoxEmpty());
             Nav.Skip(b);
             var v = Style.V(3, Style.Label(Sections[i].ToUpperInvariant(), Style.Display, 16, on ? Style.EmberHi : Style.GoldDim, false, HorizontalAlignment.Center));
@@ -96,11 +108,12 @@ public partial class CreateScreen
         return row;
     }
 
-    Control Look(Archetype a) => Section switch
+    Control Look(Archetype a) => (Section, Kit) switch
     {
-        "Hair" => Her ? HerHair() : HisHair(a),
-        "Face" => HerFace(),
-        "Paint" => HerPaint(),
+        ("Hair", { } k) => HeroHair(k),
+        ("Hair", null) => KitHair(a),
+        ("Face", { } k) => HeroFace(k),
+        ("Paint", { } k) => HeroPaint(k),
         _ => LookBody(a),
     };
 
@@ -110,11 +123,11 @@ public partial class CreateScreen
         var body = Style.H(6);
         foreach (var sx in new[] { Sex.Female, Sex.Male })
             body.AddChild(Nav.Id(Style.Segment(sx == Sex.Male ? "Man" : "Woman", d.Sex == sx, () => Set(() => d.SetSex(sx))), $"sex:{sx}"));
-        if (!Her) body.AddChild(Nav.Id(Style.Segment(d.Beard ? "Bearded" : "Clean-shaven", d.Beard, () => Set(() => d.Beard = !d.Beard)), "beard"));
+        if (!Her && Kit == null) body.AddChild(Nav.Id(Style.Segment(d.Beard ? "Bearded" : "Clean-shaven", d.Beard, () => Set(() => d.Beard = !d.Beard)), "beard"));
         v.AddChild(body);
         v.AddChild(Style.SubLabel("Skin"));
         v.AddChild(Beads(Lore.Skins, d.Skin, id => d.Skin = id, Bead.Kind.Skin, "#f2c4a8"));
-        v.AddChild(Style.SubLabel(Her ? "Colours of her outfit" : "Colours"));
+        v.AddChild(Style.SubLabel($"Colours of {Their.ToLowerInvariant()} outfit"));
         var pal = new GridContainer { Columns = 2 };
         pal.AddThemeConstantOverride("h_separation", 6);
         pal.AddThemeConstantOverride("v_separation", 6);
@@ -125,25 +138,27 @@ public partial class CreateScreen
         return v;
     }
 
-    /// <summary>Her five cuts as cameos (dyed the colour chosen), and the colours.</summary>
-    Control HerHair()
+    /// <summary>The hero's own cuts as cameos (dyed the colour chosen), and the colours.</summary>
+    Control HeroHair(HeroLook k)
     {
-        var v = Style.V(8, Style.SubLabel("Her hair"));
-        var row = Style.H(6);
+        var v = Style.V(8, Style.SubLabel($"{Their} hair"));
+        var row = new HFlowContainer();
+        row.AddThemeConstantOverride("h_separation", 6);
         var dye = HairColour();
-        foreach (var cut in Lore.HerHairs)
-            row.AddChild(new Cameo($"hair_{cut.Id}", cut.Name, d.HairStyle == cut.Id, () => Set(() => d.HairStyle = cut.Id), 82, dye, "lock"));
+        foreach (var cut in k.Cuts)
+            row.AddChild(new Cameo(Art($"hair_{cut.Id}"), cut.Name, d.HairStyle == cut.Id, () => Set(() => d.HairStyle = cut.Id), 82, dye, "lock"));
         v.AddChild(row);
         v.AddChild(Style.Gap(4));
         v.AddChild(Style.SubLabel("Colour"));
-        v.AddChild(Beads(Lore.Hairs, d.Hair, id => d.Hair = id, Bead.Kind.Hair, People.HerHairColour.ToHtml(false)));
+        v.AddChild(Beads(Lore.Hairs, d.Hair, id => d.Hair = id, Bead.Kind.Hair, OwnHair().ToHtml(false)));
         return v;
     }
 
-    Control HisHair(Archetype a)
+    /// <summary>A kit body's hair: its cuts, its colours, and the hood over it.</summary>
+    Control KitHair(Archetype a)
     {
         bool hidden = d.Archetype == "stalker" ? d.Model == "rogue_hooded" : d.Headgear && d.Archetype != "reaver";
-        var v = Style.V(8, Style.H(8, Style.SubLabel("His hair"), hidden ? Style.Label("under the hood", Style.TextItalic, 13, Style.InkDim) : new Control()));
+        var v = Style.V(8, Style.H(8, Style.SubLabel($"{Their} hair"), hidden ? Style.Label("under the hood", Style.TextItalic, 13, Style.InkDim) : new Control()));
         var cuts = Style.H(4);
         foreach (var h in Lore.HairStyles(d.Sex).Append("none")) cuts.AddChild(Style.Segment(HairNames.GetValueOrDefault(h, h), d.HairStyle == h, () => Set(() => d.HairStyle = h)));
         if (hidden) cuts.Modulate = new Color(1, 1, 1, 0.5f);
@@ -158,38 +173,49 @@ public partial class CreateScreen
         return v;
     }
 
-    /// <summary>Faces to start from, her eyes' colour, and her face shaped by hand.</summary>
-    Control HerFace()
+    /// <summary>Faces to start from, the eyes' colour, and the face shaped by hand.</summary>
+    Control HeroFace(HeroLook k)
     {
-        var v = Style.V(8, Style.SubLabel("Her face"));
-        var grid = new GridContainer { Columns = 4 };
-        grid.AddThemeConstantOverride("h_separation", 8);
-        grid.AddThemeConstantOverride("v_separation", 4);
-        foreach (var f in Lore.Faces)
-            grid.AddChild(new Cameo($"face_{f.Id}", f.Name, d.FaceShape == f.Id, () => Set(() => { d.FaceShape = f.Id; d.Face = new Dictionary<string, double>(f.Shape); }), 92, null, "mask"));
-        v.AddChild(grid);
-        v.AddChild(Style.SubLabel("Eyes"));
-        v.AddChild(Beads(Lore.Eyes, d.Eyes, id => d.Eyes = id, Bead.Kind.Eye, ""));
+        var v = Style.V(8);
+        if (k.Faces.Count > 1)
+        {
+            v.AddChild(Style.SubLabel($"{Their} face"));
+            var grid = new GridContainer { Columns = 4 };
+            grid.AddThemeConstantOverride("h_separation", 8);
+            grid.AddThemeConstantOverride("v_separation", 4);
+            foreach (var f in k.Faces)
+                grid.AddChild(new Cameo(Art($"face_{f.Id}"), f.Name, d.FaceShape == f.Id, () => Set(() => { d.FaceShape = f.Id; d.Face = new Dictionary<string, double>(f.Shape); }), 92, null, "mask"));
+            v.AddChild(grid);
+        }
+        if (k.Eyes.Count > 1)
+        {
+            v.AddChild(Style.SubLabel("Eyes"));
+            v.AddChild(Beads(k.Eyes, d.Eyes, id => d.Eyes = id, Bead.Kind.Eye, ""));
+        }
+        if (k.Sliders.Count == 0) return v;
         // Shaped by hand: a group of sliders at a time.
+        var groups = k.Sliders.Select(s => s.Group).Distinct().ToArray();
+        int g = Math.Clamp(d.FaceGroup, 0, groups.Length - 1);
         var head = Style.H(6, Style.SubLabel("Shape it"));
         head.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill });
-        for (int i = 0; i < FaceGroups.Length; i++)
+        for (int i = 0; i < groups.Length; i++)
         {
             int at = i;
-            head.AddChild(Nav.Id(Style.Segment(FaceGroups[i], d.FaceGroup == i, () => Set(() => d.FaceGroup = at)), $"group:{FaceGroups[i]}"));
+            head.AddChild(Nav.Id(Style.Segment(groups[i], g == i, () => Set(() => d.FaceGroup = at)), $"group:{groups[i]}"));
         }
         v.AddChild(head);
-        foreach (var s in Lore.Sliders.Where(s => s.Group == FaceGroups[Math.Clamp(d.FaceGroup, 0, FaceGroups.Length - 1)]))
+        foreach (var s in k.Sliders.Where(s => s.Group == groups[g]))
             v.AddChild(SliderRow(s));
-        var preset = Lore.Faces.FirstOrDefault(f => f.Id == d.FaceShape) ?? Lore.Faces[0];
-        if (Shaped(preset))
-            v.AddChild(Nav.Id(Style.Button($"Back to {preset.Name.ToLowerInvariant()}", () => Set(() => d.Face = new Dictionary<string, double>(preset.Shape)), false, true), "unshape"));
+        var preset = k.Faces.FirstOrDefault(f => f.Id == d.FaceShape) ?? k.Faces.FirstOrDefault();
+        if (Shaped(k, preset))
+            v.AddChild(Nav.Id(Style.Button(preset != null ? $"Back to {preset.Name.ToLowerInvariant()}" : $"Back to {Their.ToLowerInvariant()} own face",
+                () => Set(() => d.Face = new Dictionary<string, double>(preset?.Shape ?? new())), false, true), "unshape"));
         return v;
     }
 
-    /// <summary>Her face moved from the face it started from.</summary>
-    bool Shaped(FaceShape preset) =>
-        Lore.Sliders.Any(s => Math.Abs(d.Face.GetValueOrDefault(s.Id) - preset.Shape.GetValueOrDefault(s.Id)) > 1e-3);
+    /// <summary>The face moved from the face it started from.</summary>
+    bool Shaped(HeroLook k, FaceShape? preset) =>
+        k.Sliders.Any(s => Math.Abs(d.Face.GetValueOrDefault(s.Id) - (preset?.Shape.GetValueOrDefault(s.Id) ?? 0)) > 1e-3);
 
     /// <summary>One of her face's sliders: its name, the word for each end, and
     /// the groove between, her own face at its middle.</summary>
@@ -210,15 +236,15 @@ public partial class CreateScreen
         return row;
     }
 
-    /// <summary>Her paints as cameos: bare, kohl, woad, ochre, ash, blood, gilt.</summary>
-    Control HerPaint()
+    /// <summary>The paints as cameos (hers: bare, kohl, woad, ochre, ash, blood, gilt).</summary>
+    Control HeroPaint(HeroLook k)
     {
-        var v = Style.V(8, Style.SubLabel("Paint on her face"));
+        var v = Style.V(8, Style.SubLabel($"Paint on {Their.ToLowerInvariant()} face"));
         var grid = new GridContainer { Columns = 4 };
         grid.AddThemeConstantOverride("h_separation", 8);
         grid.AddThemeConstantOverride("v_separation", 4);
-        foreach (var p in Lore.Paints)
-            grid.AddChild(new Cameo($"paint_{p.Id}", p.Name, d.Paint == p.Id, () => Set(() => d.Paint = p.Id), 92, null, "mask"));
+        foreach (var p in k.Paints)
+            grid.AddChild(new Cameo(Art($"paint_{p.Id}"), p.Name, d.Paint == p.Id, () => Set(() => d.Paint = p.Id), 92, null, "mask"));
         v.AddChild(grid);
         return v;
     }
@@ -245,44 +271,49 @@ public partial class CreateScreen
         return v;
     }
 
-    Color HairColour() => Lore.Hairs.FirstOrDefault(h => h.Id == d.Hair) is { Color: not "" } h ? new Color(h.Color) : Her ? People.HerHairColour : new Color("#6a5a48");
+    Color HairColour() => Lore.Hairs.FirstOrDefault(h => h.Id == d.Hair) is { Color: not "" } h ? new Color(h.Color) : OwnHair();
+
+    /// <summary>Hair "as it grew": hers copper, a kit body's its paint's brown.</summary>
+    Color OwnHair() => Her ? People.HerHairColour : new Color("#6a5a48");
 
     /* ------------------------------------------------------- read closely -- */
 
     /// <summary>The right-hand plate on the look step: the part's choice read
-    /// closely, the whole likeness, and how to turn her and come near.</summary>
+    /// closely, the whole likeness, and how to turn the figure and come near.</summary>
     Control LookDetail(Archetype a)
     {
         string title, name, words;
+        var k = Kit;
         switch (Section)
         {
-            case "Hair" when Her:
-                var cut = Lore.HerHairs.FirstOrDefault(h => h.Id == d.HairStyle) ?? Lore.HerHairs[0];
-                (title, name, words) = ("Her hair", cut.Name, cut.Words);
+            case "Hair" when k != null:
+                var cut = k.Cuts.FirstOrDefault(h => h.Id == d.HairStyle) ?? k.Cuts[0];
+                (title, name, words) = ($"{Their} hair", cut.Name, cut.Words);
                 break;
-            case "Face":
-                var f = Lore.Faces.FirstOrDefault(x => x.Id == d.FaceShape) ?? Lore.Faces[0];
-                (title, name, words) = ("Her face", Shaped(f) ? $"{f.Name}, shaped" : f.Name, f.Words);
+            case "Face" when k != null:
+                var f = k.Faces.FirstOrDefault(x => x.Id == d.FaceShape) ?? k.Faces.FirstOrDefault();
+                (title, name, words) = ($"{Their} face", (f?.Name ?? "Their own") + (Shaped(k, f) ? ", shaped" : ""), f?.Words ?? "");
                 break;
-            case "Paint":
-                var p = Lore.Paints.FirstOrDefault(x => x.Id == d.Paint) ?? Lore.Paints[0];
+            case "Paint" when k != null:
+                var p = k.Paints.FirstOrDefault(x => x.Id == d.Paint) ?? k.Paints[0];
                 (title, name, words) = ("Paint", p.Name, p.Words);
                 break;
             case "Hair":
-                (title, name, words) = ("His hair", HairNames.GetValueOrDefault(d.HairStyle, d.HairStyle), d.Headgear && d.Archetype != "reaver" ? "Worn under the calling's hood." : "Worn as it grew.");
+                (title, name, words) = ($"{Their} hair", HairNames.GetValueOrDefault(d.HairStyle, d.HairStyle), d.Headgear && d.Archetype != "reaver" ? "Worn under the calling's hood." : "Worn as it grew.");
                 break;
             default:
-                (title, name, words) = (Her ? "Her body" : "His body", $"{a.Name}'s colours", a.Palettes.FirstOrDefault(x => x.Id == d.Palette)?.Name ?? "");
+                (title, name, words) = ($"{Their} body", $"{a.Name}'s colours", a.Palettes.FirstOrDefault(x => x.Id == d.Palette)?.Name ?? "");
                 break;
         }
         var v = Style.V(8, Style.Cap(title, 24), Style.Label(name, Style.Display, 20, Style.GoldHi), Style.Label(words, Style.TextItalic, 16, new Color("#c8a878"), true), Style.Rule());
-        v.AddChild(Style.SubLabel(Her ? "Her likeness" : "His likeness"));
-        foreach (var (k, val) in Likeness()) v.AddChild(Line(k, val));
+        v.AddChild(Style.SubLabel($"{Their} likeness"));
+        foreach (var (key, val) in Likeness()) v.AddChild(Line(key, val));
         v.AddChild(Style.Rule());
-        // How to turn her and come near, for the device in hand.
+        // How to turn the figure and come near, for the device in hand.
         bool pad = Controls.Instance.UsingPad;
-        v.AddChild(pad ? Style.H(8, Style.PadButton("Right stick"), Style.Label("turn her, come near", Style.Ui, Style.Caption, Style.InkDim))
-            : Style.Label("Drag to turn her; the wheel brings her near; a double click goes to her face.", Style.Ui, Style.Caption, Style.InkDim, true));
+        string them = Her ? "her" : "him";
+        v.AddChild(pad ? Style.H(8, Style.PadButton("Right stick"), Style.Label($"turn {them}, come near", Style.Ui, Style.Caption, Style.InkDim))
+            : Style.Label($"Drag to turn {them}; the wheel brings {them} near; a double click goes to {Their.ToLowerInvariant()} face.", Style.Ui, Style.Caption, Style.InkDim, true));
         if (Sections.Length > 1)
             v.AddChild(Style.H(8, pad ? Style.PadButton("LT") : Style.Key(","), pad ? Style.PadButton("RT") : Style.Key("."), Style.Label("the parts of the look", Style.Ui, Style.Caption, Style.InkDim)));
         return v;
@@ -292,13 +323,15 @@ public partial class CreateScreen
     IEnumerable<(string, string)> Likeness()
     {
         string Of(List<LookChoice> l, string id) => l.FirstOrDefault(c => c.Id == id)?.Name ?? id;
+        var k = Kit;
         yield return ("Skin", Of(Lore.Skins, d.Skin));
-        yield return ("Hair", Her ? $"{(Lore.HerHairs.FirstOrDefault(h => h.Id == d.HairStyle)?.Name ?? d.HairStyle)}, {Of(Lore.Hairs, d.Hair).ToLowerInvariant()}" : $"{HairNames.GetValueOrDefault(d.HairStyle, d.HairStyle)}, {Of(Lore.Hairs, d.Hair).ToLowerInvariant()}");
-        if (!Her) yield break;
-        var f = Lore.Faces.FirstOrDefault(x => x.Id == d.FaceShape) ?? Lore.Faces[0];
-        yield return ("Face", Shaped(f) ? $"{f.Name}, shaped" : f.Name);
-        yield return ("Eyes", Of(Lore.Eyes, d.Eyes));
-        yield return ("Paint", Lore.Paints.FirstOrDefault(p => p.Id == d.Paint)?.Name ?? "Bare");
+        string cut = k != null ? k.Cuts.FirstOrDefault(h => h.Id == d.HairStyle)?.Name ?? d.HairStyle : HairNames.GetValueOrDefault(d.HairStyle, d.HairStyle);
+        yield return ("Hair", $"{cut}, {Of(Lore.Hairs, d.Hair).ToLowerInvariant()}");
+        if (k == null) yield break;
+        var f = k.Faces.FirstOrDefault(x => x.Id == d.FaceShape) ?? k.Faces.FirstOrDefault();
+        if (f != null || k.Sliders.Count > 0) yield return ("Face", (f?.Name ?? "Their own") + (Shaped(k, f) ? ", shaped" : ""));
+        if (k.Eyes.Count > 0) yield return ("Eyes", Of(k.Eyes, d.Eyes));
+        if (k.Paints.Count > 0) yield return ("Paint", k.Paints.FirstOrDefault(x => x.Id == d.Paint)?.Name ?? k.Paints[0].Name);
     }
 
     /// <summary>The look in a line (read back on the name step).</summary>
