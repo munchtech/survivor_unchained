@@ -317,6 +317,16 @@ public class CinematicTests
         foreach (var (_, c) in Dialogue.All.Where(kv => kv.Key != "vonnra"))
             foreach (var n in c.Nodes.Values)
                 foreach (var v in n.Text) Assert.DoesNotContain("Someone always does", v.Text);
+        // The other signatures (VOICES.md) are their owners' too, in conversation and in passing.
+        var signatures = new Dictionary<string, string> { ["before you ask"] = "maeca", ["Not there"] = "keegan", ["Payment, always"] = "vonnra" };
+        foreach (var (phrase, owner) in signatures)
+        {
+            foreach (var (_, c) in Dialogue.All)
+                foreach (var n in c.Nodes.Values.Where(n => (n.Speaker ?? c.Npc) != owner))
+                    foreach (var v in n.Text) Assert.DoesNotContain(phrase, System.Text.RegularExpressions.Regex.Replace(v.Text, @"\([A-Z][^)]*\)", ""));
+            foreach (var p in Lore.Npcs.Values.Concat(Lore.Outsiders.Values).Where(p => p.Id != owner))
+                foreach (var b in p.Barks.Concat(p.NightBarks ?? new()).Concat((p.Said ?? new()).Select(l => l.Text))) Assert.DoesNotContain(phrase, b);
+        }
         s.World.Facts["player.just_died"] = true;
         Assert.Contains("I never asked his name", Talk(Convo("chid"), s.C, "Which carter")!.Text);
         // And somebody in the street notices there are no carts.

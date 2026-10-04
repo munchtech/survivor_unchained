@@ -11905,7 +11905,7 @@
    },
    "cb_nemesis_slain": {
     "id": "cb_nemesis_slain",
-    "text": "You got your things back! From the thing! Was it horrible? It was horrible. Sit down. Not there. There.",
+    "text": "You got your things back! From the thing! Was it horrible? It was horrible. Sit down. The good stool, the other one wobbles.",
     "effects": [
      {
       "npcFlag": {
