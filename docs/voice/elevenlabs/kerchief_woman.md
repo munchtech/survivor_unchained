@@ -1,6 +1,6 @@
 # A Kerchief woman: ElevenLabs packet
 
-Voice id in the game: `kerchief_woman`. 2 takes to record (22 characters; about 66 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `kerchief_woman`. 1 takes to record (11 characters; about 33 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -43,24 +43,12 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 
 ### 1. `dlg.cin_forty_one_mouths.them_first.0.wav`
 
+*The same words are also* `say.3bf0d0b0d0da.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json cin_forty_one_mouths/them_first#0
 *Played:* hard, weary; doing: the children eat first; pace: measured; volume: level.
 
 ```
 [hard, weary] Them first.
-```
-Subtitle: Them first.
-
-## Scenes: Verge
-
-### 2. `say.3bf0d0b0d0da.wav`
-
-*Where:* godot/logic/Play/Zones/Verge.cs
-*Played:* plain, firm; doing: the caged eat first; pace: measured; volume: level.
-*Note:* Two words, matter-of-fact, Scots.
-
-```
-[plain, firm] Them first.
 ```
 Subtitle: Them first.
 

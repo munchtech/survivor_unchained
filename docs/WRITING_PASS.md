@@ -1224,3 +1224,33 @@ road, with Wenna's affection under 20) and
 - "Someone always does" is Vonnra's (C09 turns on it);
 - "before you ask" is Maeca's;
 - "Not there... Here." is Keegan's.
+
+## 18. Lines made final for recording (the ElevenLabs packets)
+
+Each character's packet (`docs/voice/elevenlabs/`, on the voice branch) is read
+line by line against the data before the owner records it. What that reading
+changed:
+
+- **Delivery directions are lower case** inside a person's line (`VOICES.md`):
+  "(quietly)" for Redcowl's "Don't."; "(very precisely)" for Keegan;
+  "(a breath out through his nose)" for Rav; "(a long breath, through the
+  nose)" for Brannoc; "(a long breath)" and "(not unkind)" for Maeca. The
+  actor plays them; the narrator never reads them. Narration in parentheses
+  is a capitalised sentence ("(A whistle from the ridge. The whole camp
+  stops.)").
+- **Maeca's second night** (`maeca.blind2_feet`): "Then, into the dark, very
+  low: "Your hands are colder than my feet." She doesn't take them back."
+  (no "(A pause.)" for anyone to read aloud).
+- **The narrator's sinkhole** (`Verge.cs`, LINE_NOTES 3.1) no longer winks:
+  "...bigger than a house. It does not move. You watch it long enough to be
+  sure, and you are not." The journal: "It does not move."
+- **The Hollow knows** (`Verge.cs`): "They smell the blood on you before they
+  see you: one of theirs, since you last slept." (not Maeca's rule quoted back).
+- **Tam's Pa fetched** (`tam.fetch`): "...and go on into the trees for his Pa.
+  He calls you several things on the way back, and one of them is a fool. But
+  he comes."
+- **Rav's back room**: "a shelf of jars, one of them moving, and" (no
+  parenthesis inside narration).
+- **Rook's gossip** no longer repeats her callback's joke: "Jory Coyle's home,
+  asleep in my good room with the lamp lit, and Harlan's been up my stairs four
+  times to look at him."

@@ -1,6 +1,6 @@
 # Townswoman, middle-aged: ElevenLabs packet
 
-Voice id in the game: `folk_f1`. 46 takes to record (2,715 characters; about 8,145 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `folk_f1`. 45 takes to record (2,638 characters; about 7,914 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -494,15 +494,4 @@ Subtitle: Pell Varrow's gone south on a horse he hadn't paid for. Course he hadn
 [gossip, matter-of-fact] Old Oswin's gone to the Morrow. Sat down in his chair after his dinner and went.
 ```
 Subtitle: Old Oswin's gone to the Morrow. Sat down in his chair after his dinner and went.
-
-### 46. `folk.109.f.wav`
-
-*Where:* folk.json lines[109]
-*Played:* puzzled, uneasy; doing: the carter nobody sees; pace: measured; volume: level.
-*Note:* A real question to a neighbour.
-
-```
-[puzzled, uneasy] No carts on the Old Road since the wolves. So who keeps bringing that one in?
-```
-Subtitle: No carts on the Old Road since the wolves. So who keeps bringing that one in?
 

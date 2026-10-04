@@ -1,8 +1,6 @@
 # Old Wenna: ElevenLabs packet
 
-Voice id in the game: `wenna`. 34 takes to record (4,081 characters; about 12,243 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
-
-**Hold 4 of these** (marked HOLD below) until the story editor's review of section 17 is back; the rest can be recorded now.
+Voice id in the game: `wenna`. 33 takes to record (3,978 characters; about 11,934 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -199,9 +197,9 @@ Subtitle: My blightward. I made it the fever year. Stuff the beak with bitterroo
 *Note:* The brisk voice drops. 'coughing green' vivid. 'Same smell exactly.' quiet, chilling. Then a hard change of subject: 'I've roots on the boil.'
 
 ```
-[haunted, brusque, quietly] The year after Ashford went into the ground. Half the valley coughing green and the other half burying them. "Gone to the Morrow," they say up here, like it's a walk. They died, child. Same smell as your bottle. Same smell exactly. ...I've roots on the boil.
+[haunted, brusque, quietly] The year after Ashford went into the ground. Coughing green, then the sweats, then the— well. "Gone to the Morrow," they say up here, like it's a walk. They died, child. Same smell as your bottle. Same smell exactly. ...I've roots on the boil.
 ```
-Subtitle: The year after Ashford went into the ground. Half the valley coughing green and the other half burying them. "Gone to the Morrow," they say up here, like it's a walk. They died, child. Same smell as your bottle. Same smell exactly. ...I've roots on the boil.
+Subtitle: The year after Ashford went into the ground. Coughing green, then the sweats, then the— well. "Gone to the Morrow," they say up here, like it's a walk. They died, child. Same smell as your bottle. Same smell exactly. ...I've roots on the boil.
 
 ### 15. `dlg.wenna.cb_sold_dig.0.wav`
 
@@ -271,6 +269,7 @@ Subtitle: Spark-hands. Don't touch the drying racks; the last one of you set my 
 
 ### 21. `dlg.wenna.say_calling.3.wav`
 
+*The same words are also* `dlg.wenna.say_calling.4.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json wenna/say_calling#3
 *Played:* bossy care; doing: feeds you; pace: brisk; volume: level.
 *Note:* 'Don't ask what it is.' brisk.
@@ -280,18 +279,7 @@ Subtitle: Spark-hands. Don't touch the drying racks; the last one of you set my 
 ```
 Subtitle: You're the sort that eats standing up. It shows in the skin. Here. Chew this. Don't ask what it is.
 
-### 22. `dlg.wenna.say_calling.4.wav`
-
-*Where:* dialogue.json wenna/say_calling#4
-*Played:* bossy care; doing: feeds you; pace: brisk; volume: level.
-*Note:* 'Don't ask what it is.' brisk.
-
-```
-[bossy care] You're the sort that eats standing up. It shows in the skin. Here. Chew this. Don't ask what it is.
-```
-Subtitle: You're the sort that eats standing up. It shows in the skin. Here. Chew this. Don't ask what it is.
-
-### 23. `dlg.wenna.say_woman.0.wav`
+### 22. `dlg.wenna.say_woman.0.wav`
 
 *Where:* dialogue.json wenna/say_woman#0
 *Played:* frank, kind; doing: a woman's medicine; pace: measured; volume: quiet.
@@ -302,7 +290,7 @@ Subtitle: You're the sort that eats standing up. It shows in the skin. Here. Che
 ```
 Subtitle: If you're ever carrying, child, there's a tea for keeping it and a tea for not. I don't ask which, and I don't tell Chid.
 
-### 24. `dlg.wenna.t_wenna.0.wav`
+### 23. `dlg.wenna.t_wenna.0.wav`
 
 *Where:* dialogue.json wenna/t_wenna#0
 *Played:* wry, unsentimental; doing: her husbands; pace: measured; volume: level.
@@ -313,7 +301,7 @@ Subtitle: If you're ever carrying, child, there's a tea for keeping it and a tea
 ```
 Subtitle: Three husbands. Buried two, lost one at cards. The one I lost at cards was the best of them, and I've never forgiven the man who won him.
 
-### 25. `dlg.wenna.tallow.0.wav`
+### 24. `dlg.wenna.tallow.0.wav`
 
 *Where:* dialogue.json wenna/tallow#0
 *Played:* tart, dry; doing: her candles are honest; pace: measured; volume: level.
@@ -326,7 +314,7 @@ Subtitle: I burn fat, child. Fat's honest. Fat was a pig.
 
 ## Said in passing
 
-### 26. `bark.wenna.day.0.wav`
+### 25. `bark.wenna.day.0.wav`
 
 *Where:* npcs.json wenna.barks[0]
 *Played:* irritable; pace: brisk; volume: level.
@@ -336,7 +324,7 @@ Subtitle: I burn fat, child. Fat's honest. Fat was a pig.
 ```
 Subtitle: Bitterroot, bitterroot. Always need more.
 
-### 27. `bark.wenna.night.0.wav`
+### 26. `bark.wenna.night.0.wav`
 
 *Where:* npcs.json wenna.nightBarks[0]
 *Played:* tired, cross; pace: measured; volume: quiet.
@@ -346,7 +334,7 @@ Subtitle: Bitterroot, bitterroot. Always need more.
 ```
 Subtitle: Moon's up. Good for picking. Bad for knees.
 
-### 28. `bark.wenna.night.1.wav`
+### 27. `bark.wenna.night.1.wav`
 
 *Where:* npcs.json wenna.nightBarks[1]
 *Played:* tired, cross; pace: measured; volume: quiet.
@@ -356,7 +344,7 @@ Subtitle: Moon's up. Good for picking. Bad for knees.
 ```
 Subtitle: Mind the nettles in the dark.
 
-### 29. `bark.wenna.night.2.wav`
+### 28. `bark.wenna.night.2.wav`
 
 *Where:* npcs.json wenna.nightBarks[2]
 *Played:* tired, cross; pace: measured; volume: quiet.
@@ -366,7 +354,7 @@ Subtitle: Mind the nettles in the dark.
 ```
 Subtitle: Night air's full of things. Some of them are herbs.
 
-### 30. `bark.wenna.night.3.wav`
+### 29. `bark.wenna.night.3.wav`
 
 *Where:* npcs.json wenna.nightBarks[3]
 *Played:* tired, cross; pace: measured; volume: quiet.
@@ -376,7 +364,7 @@ Subtitle: Night air's full of things. Some of them are herbs.
 ```
 Subtitle: Nightshade's out. So are the idiots.
 
-### 31. `bark.wenna.said.0.wav`  HOLD
+### 30. `bark.wenna.said.0.wav`
 
 *Where:* npcs.json wenna.said[0]
 *Played:* uneasy; doing: the animals are wrong; pace: measured; volume: level.
@@ -387,7 +375,7 @@ Subtitle: Nightshade's out. So are the idiots.
 ```
 Subtitle: The animals were never like this. Never.
 
-### 32. `bark.wenna.said.1.wav`  HOLD
+### 31. `bark.wenna.said.1.wav`
 
 *Where:* npcs.json wenna.said[1]
 *Played:* suspicious; doing: the water; pace: measured; volume: level.
@@ -398,18 +386,18 @@ Subtitle: The animals were never like this. Never.
 ```
 Subtitle: The water tastes wrong this year.
 
-### 33. `bark.wenna.said.2.wav`  HOLD
+### 32. `bark.wenna.said.2.wav`
 
 *Where:* npcs.json wenna.said[2]
 *Played:* delighted; doing: the water is sweet again; pace: measured; volume: raised.
 *Note:* 'Sweet!' a cackle of pleasure.
 
 ```
-[delighted, loudly] Water's sweet. Sweet! I'd forgotten.
+[delighted, loudly] Water's sweet again. I'd forgotten it could be.
 ```
-Subtitle: Water's sweet. Sweet! I'd forgotten.
+Subtitle: Water's sweet again. I'd forgotten it could be.
 
-### 34. `bark.wenna.said.3.wav`  HOLD
+### 33. `bark.wenna.said.3.wav`
 
 *Where:* npcs.json wenna.said[3]
 *Played:* bitter, dry; doing: clean water, no wolves; pace: slow; volume: level.
