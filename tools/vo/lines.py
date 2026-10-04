@@ -51,7 +51,8 @@ def text_hash(s: str) -> str:
 NPC_VOICE = {"survivor": "lampling", "wayfinder": "ysolde", "board": None, "greymuzzle": "narrator"}
 # Named speakers of the zone code's lines and barks.
 SPEAKER_VOICE = {"The Ford-Warden": "warden", "Grimtunnel": "grimtunnel", "Snib": "snib",
-                 "The dead Watchman": "watchman", "The bones": "bones", "Jory Coyle": "jory"}
+                 "The dead Watchman": "watchman", "The bones": "bones", "Jory Coyle": "jory",
+                 "A Kerchief woman": "kerchief_woman"}
 # A conversation node's own speaker (the cinematics name theirs).
 NODE_VOICE = {"ford_warden": "warden", "barrow_lord": "barrow_lord", "kerchief_woman": "kerchief_woman", "guard": "guard"}
 
@@ -347,6 +348,37 @@ def report(lines):
         print(f"{v:12s}", row)
     print(Counter(l["status"] for l in lines))
 
+
+
+# The cinematics in story order (docs/cinematics/cNN_<name>.md).
+CINEMATICS = sorted((f[:-3] for f in os.listdir(os.path.join(ROOT, "docs", "cinematics")) if re.match(r"c\d\d_.*\.md$", f)),
+                    key=lambda n: n) if os.path.isdir(os.path.join(ROOT, "docs", "cinematics")) else []
+CIN_ORDER = {n[4:]: i for i, n in enumerate(sorted(CINEMATICS))}
+NPC_ORDER = ["rook", "chid", "brannoc", "holloway", "wenna", "tam", "maeca", "harlan", "jory", "sella", "pell", "rav",
+             "vonnra", "keegan", "wayfinder", "survivor", "greymuzzle", "redcowl"]
+
+
+def impact(l: dict) -> tuple:
+    """Most heard and earliest first: the opening cinematic, the prologue,
+    the other cinematics in story order, the rest of the scenes,
+    conversations in the order the town is met, then barks and passers-by."""
+    i = l["id"]
+    if i.startswith("dlg.cin_"):
+        name = i.split(".")[1][4:]
+        n = CIN_ORDER.get(name, 99)
+        return (0 if n == 0 else 2, n, 0)
+    if i.startswith("say.") and "Prologue" in l.get("where", ""):
+        return (1, 0, 0)
+    if i.startswith("say."):
+        return (3, 0, 0)
+    if i.startswith("dlg."):
+        npc = i.split(".")[1]
+        return (4, NPC_ORDER.index(npc) if npc in NPC_ORDER else len(NPC_ORDER), 0)
+    if i.startswith(("bark.", "guard.")):
+        return (5, 0, 0)
+    if i.startswith("cbark."):
+        return (6, 0, 0)
+    return (7, 0, 0)
 
 if __name__ == "__main__":
     lines = merge(build())

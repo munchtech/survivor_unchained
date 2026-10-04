@@ -12,7 +12,8 @@
    "tempo": [
     2.2,
     2.9
-   ]
+   ],
+   "maya": "Realistic male voice in the 50s age with british accent, an old storyteller. Low pitch, warm slightly gravelly timbre, slow even pacing, calm plain tone."
   },
   "rook": {
    "name": "Mother Rook",
@@ -25,7 +26,8 @@
    "tempo": [
     3.0,
     3.9
-   ]
+   ],
+   "maya": "Realistic female voice in the 60s age with british accent, a Yorkshire innkeeper. Low pitch, husky lived-in timbre, brisk pacing, dry bossy tone."
   },
   "holloway": {
    "name": "Captain Holloway",
@@ -38,7 +40,8 @@
    "tempo": [
     2.8,
     3.6
-   ]
+   ],
+   "maya": "Realistic male voice in the 40s age with british accent, a tired northern English army captain. Low pitch, hoarse worn timbre, measured pacing, weary stern tone."
   },
   "maeca": {
    "name": "Maeca Barefoot",
@@ -51,7 +54,8 @@
    "tempo": [
     2.3,
     3.1
-   ]
+   ],
+   "maya": "Realistic female voice in the 30s age with welsh accent, a hunter. Low pitch, quiet level timbre, measured pacing, guarded tone."
   },
   "wenna": {
    "name": "Old Wenna",
@@ -64,7 +68,8 @@
    "tempo": [
     3.0,
     4.0
-   ]
+   ],
+   "maya": "Realistic female voice in the 70s age with british accent, a West Country village herbalist. Normal pitch, creaky dry timbre, measured pacing, tart tone."
   },
   "tam": {
    "name": "Tam",
@@ -77,7 +82,8 @@
    "tempo": [
     3.2,
     4.2
-   ]
+   ],
+   "maya": "Realistic male child voice, a nine-year-old boy with british accent from the West Country. High pitch, light timbre, fast pacing, earnest breathless tone."
   },
   "brannoc": {
    "name": "Brannoc",
@@ -91,7 +97,8 @@
    "tempo": [
     1.8,
     2.6
-   ]
+   ],
+   "maya": "Realistic male voice in the 50s age with british accent, a Cornish blacksmith. Very low pitch, deep rough timbre, slow pacing, flat gruff tone."
   },
   "harlan": {
    "name": "Harlan Coyle",
@@ -104,7 +111,8 @@
    "tempo": [
     3.0,
     3.9
-   ]
+   ],
+   "maya": "Realistic male voice in the 50s age with british accent, a Bristol merchant. Normal pitch, warm rounded timbre, quick pacing, friendly tone."
   },
   "pell": {
    "name": "Pell Varrow",
@@ -117,7 +125,8 @@
    "tempo": [
     2.6,
     3.4
-   ]
+   ],
+   "maya": "Realistic male voice in the 40s age with british accent, a precise London factor. Normal pitch, smooth slightly nasal timbre, measured pacing, polite smiling tone."
   },
   "rav": {
    "name": "Rav Cutwell",
@@ -130,7 +139,8 @@
    "tempo": [
     2.8,
     3.6
-   ]
+   ],
+   "maya": "Realistic male voice in the 50s age with scottish accent, a Glasgow tavern doctor. Low pitch, gravelly timbre, conversational pacing, wry tone."
   },
   "chid": {
    "name": "Chid",
@@ -143,7 +153,8 @@
    "tempo": [
     3.2,
     4.2
-   ]
+   ],
+   "maya": "Realistic male voice in the 30s age with irish accent, a gentle priest. Normal pitch, light bright timbre, fast pacing, delighted tone."
   },
   "vonnra": {
    "name": "Vonnra Ash-of-Morrow",
@@ -156,7 +167,8 @@
    "tempo": [
     1.7,
     2.4
-   ]
+   ],
+   "maya": "Realistic female voice in the 60s age with british accent, an old aristocrat. Low pitch, smooth airy timbre, very slow pacing, cool controlled tone."
   },
   "keegan": {
    "name": "Dame Keegan Orme",
@@ -169,7 +181,8 @@
    "tempo": [
     2.8,
     3.6
-   ]
+   ],
+   "maya": "Realistic female voice in the 20s age with british accent, a young upper-class knight. Normal pitch, clear bright timbre, measured pacing, formal earnest tone."
   },
   "sella": {
    "name": "Sella",
@@ -182,7 +195,8 @@
    "tempo": [
     2.6,
     3.4
-   ]
+   ],
+   "maya": "Realistic female voice in the 20s age with british accent, a London courtesan. Low pitch, warm intimate timbre, relaxed pacing, amused knowing tone."
   },
   "redcowl": {
    "name": "Redcowl",
@@ -196,7 +210,8 @@
    "tempo": [
     2.6,
     3.6
-   ]
+   ],
+   "maya": "Realistic male voice in the 40s age with scottish accent, a bandit chief. Low pitch, deep booming timbre, conversational pacing, rough confident tone."
   },
   "snib": {
    "name": "Snib",
@@ -209,7 +224,8 @@
    "tempo": [
     3.5,
     4.6
-   ]
+   ],
+   "maya": "Goblin character, male voice with a rough london accent. High pitch, thin squeaky timbre, very fast pacing, panicky tone."
   },
   "grimtunnel": {
    "name": "Grimtunnel",
@@ -222,7 +238,8 @@
    "tempo": [
     2.6,
     3.6
-   ]
+   ],
+   "maya": "Goblin character, male voice with a rough london accent. Low pitch, gravelly oily timbre, slow savouring pacing, gleeful greedy tone."
   },
   "lampling": {
    "name": "The babbling lampling",
@@ -235,7 +252,8 @@
    "tempo": [
     2.6,
     3.6
-   ]
+   ],
+   "maya": "Small creature character, male voice with british accent. High pitch, dry rasping timbre, fast pacing, frightened tone, whispering."
   },
   "jory": {
    "name": "Jory Coyle",
@@ -248,7 +266,8 @@
    "tempo": [
     2.6,
     3.4
-   ]
+   ],
+   "maya": "Realistic male voice in the 20s age with british accent, a seventeen-year-old Bristol boy. Normal pitch, young unsteady timbre, measured pacing, shaken tone."
   },
   "ysolde": {
    "name": "Ysolde Marrow, the Wayfinder",
@@ -261,7 +280,8 @@
    "tempo": [
     3.0,
     3.8
-   ]
+   ],
+   "maya": "Realistic female voice in the 50s age with scottish accent, an Edinburgh cartographer. Normal pitch, crisp educated timbre, brisk pacing, dry tone."
   },
   "warden": {
    "name": "The Ford-Warden",
@@ -276,7 +296,8 @@
    "tempo": [
     1.0,
     2.0
-   ]
+   ],
+   "maya": "Ancient monster character, male voice with british accent. Very low pitch, vast booming timbre, very slow pacing, terrible calm tone."
   },
   "watchman": {
    "name": "The dead Watchman",
@@ -290,7 +311,8 @@
    "tempo": [
     1.6,
     2.4
-   ]
+   ],
+   "maya": "Realistic male voice in the 60s age with british accent, a dead northern soldier. Low pitch, dry rasping hollow timbre, slow pacing, worn out tone."
   },
   "bones": {
    "name": "The bones",
@@ -304,7 +326,8 @@
    "tempo": [
     1.4,
     2.2
-   ]
+   ],
+   "maya": "Ancient skeleton character, male voice with british accent. Low pitch, dry hollow rasping timbre, very slow pacing, quiet tone, whispering."
   },
   "guard": {
    "name": "A Watchman at the gate",
@@ -317,7 +340,8 @@
    "tempo": [
     2.6,
     3.6
-   ]
+   ],
+   "maya": "Realistic male voice in the 30s age with british accent, a northern town guard. Low pitch, plain gruff timbre, measured pacing, bored tone."
   },
   "folk_f1": {
    "name": "Townswoman, middle-aged",
@@ -330,7 +354,8 @@
    "tempo": [
     2.8,
     3.6
-   ]
+   ],
+   "maya": "Realistic female voice in the 40s age with british accent, a northern townswoman. Normal pitch, plain warm timbre, conversational pacing, gossipy tired tone."
   },
   "folk_f2": {
    "name": "Townswoman, young",
@@ -343,7 +368,8 @@
    "tempo": [
     2.9,
     3.8
-   ]
+   ],
+   "maya": "Realistic female voice in the 20s age with british accent, a West Country countrywoman. Normal pitch, bright timbre, conversational pacing, sharp amused tone."
   },
   "folk_m1": {
    "name": "Townsman, middle-aged",
@@ -356,7 +382,8 @@
    "tempo": [
     2.7,
     3.5
-   ]
+   ],
+   "maya": "Realistic male voice in the 50s age with british accent, a northern townsman. Low pitch, rough gravelly timbre, conversational pacing, grumbling tone."
   },
   "folk_m2": {
    "name": "Townsman, old",
@@ -369,7 +396,8 @@
    "tempo": [
     2.3,
     3.1
-   ]
+   ],
+   "maya": "Realistic male voice in the 70s age with british accent, an old West Country countryman. Low pitch, creaky timbre, slow pacing, wry weary tone."
   },
   "folk_child_f": {
    "name": "A town girl",
@@ -382,7 +410,8 @@
    "tempo": [
     3.0,
     4.2
-   ]
+   ],
+   "maya": "Realistic female child voice, an eight-year-old girl with british accent from the north. High pitch, clear timbre, fast pacing, cheeky excited tone."
   },
   "folk_child_m": {
    "name": "A town boy",
@@ -395,7 +424,8 @@
    "tempo": [
     3.0,
     4.2
-   ]
+   ],
+   "maya": "Realistic male child voice, an eight-year-old boy with british accent from the north. High pitch, bright timbre, fast pacing, cheeky loud tone."
   },
   "guard_f": {
    "name": "A Watchwoman",
@@ -408,7 +438,8 @@
    "tempo": [
     2.6,
     3.6
-   ]
+   ],
+   "maya": "Realistic female voice in the 30s age with british accent, a northern town guardswoman. Low pitch, firm gruff timbre, measured pacing, curt tone."
   },
   "heroine": {
    "name": "The survivor (a woman)",
@@ -421,7 +452,8 @@
    "tempo": [
     2.5,
     3.3
-   ]
+   ],
+   "maya": "Realistic female voice in the 30s age with british accent from the north. Low pitch, warm slightly husky timbre, measured pacing, dry steady tone."
   },
   "hero": {
    "name": "The survivor (a man)",
@@ -434,7 +466,8 @@
    "tempo": [
     2.5,
     3.3
-   ]
+   ],
+   "maya": "Realistic male voice in the 30s age with british accent from the north. Low pitch, quiet slightly rough timbre, measured pacing, dry steady tone."
   },
   "barrow_lord": {
    "name": "The Legion's dead, behind the door",
@@ -449,7 +482,8 @@
     1.0,
     2.0
    ],
-   "deep": true
+   "deep": true,
+   "maya": "Ancient dead soldier character, male voice with british accent. Very low pitch, hollow dry timbre, very slow pacing, final heavy tone, whispering."
   },
   "kerchief_woman": {
    "name": "A Kerchief woman",
@@ -462,7 +496,8 @@
    "tempo": [
     2.4,
     3.2
-   ]
+   ],
+   "maya": "Realistic female voice in the 40s age with scottish accent, a hard refugee. Low pitch, rough timbre, measured pacing, blunt weary tone."
   }
  }
 }

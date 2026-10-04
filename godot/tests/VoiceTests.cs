@@ -112,6 +112,14 @@ public class VoiceTests
     }
 
     [Fact]
+    public void APlaceholderIsMarkedInTheIndex()
+    {
+        var idx = Json.Parse<VoIndex>("{\"lines\": {\"dlg.rook.first.0\": {\"file\": \"rook/dlg.rook.first.0.ogg\", \"hash\": \"ab138606fcd5\", \"voice\": \"rook\", \"sec\": 9.1, \"placeholder\": true}, \"dlg.rook.first.1\": {\"file\": \"rook/dlg.rook.first.1.ogg\", \"hash\": \"x\", \"voice\": \"rook\", \"sec\": 4}}}");
+        Assert.True(idx.Lines["dlg.rook.first.0"].Placeholder);
+        Assert.False(idx.Lines["dlg.rook.first.1"].Placeholder);
+    }
+
+    [Fact]
     public void ATakeIsOnlyPlayedForTheWordsItWasMadeFrom()
     {
         var keep = VoiceLines.Index;
