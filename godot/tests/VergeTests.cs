@@ -130,6 +130,10 @@ public class VergeTests
             var spec = night.Host.Entered!;
             Assert.True(spec.Story);
             Assert.NotNull(spec.BossName);
+            // Each ends on the narrator's own line for how it went, never "the story goes on".
+            Assert.False(string.IsNullOrWhiteSpace(spec.EndWon), spec.Id);
+            Assert.False(string.IsNullOrWhiteSpace(spec.EndLost), spec.Id);
+            Assert.DoesNotContain("story", spec.EndWon + spec.EndLost);
             // Both outcomes are real changes, with real quest entries.
             foreach (var change in new[] { spec.OnWin!, spec.OnLose! })
                 foreach (var c in Json.Parse<List<Change>>(change).Where(c => c.Quest?.Entry != null))

@@ -545,6 +545,8 @@ public class ArenaTests
         var again = Arenas.Again(s.J.World.Rematches[0], "waystation", 1, 2, 0);
         Assert.Null(again.OnLose);
         Assert.NotNull(again.OnWin);
+        // Its lost line says where she comes to, and a rematch sends her back to the table instead.
+        Assert.Null(again.EndLost);
         var next = Make(again, s.J);
         next.B.Player.Iframes = 1e9;
         next.B.Time = 1800;

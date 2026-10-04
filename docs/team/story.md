@@ -1,98 +1,89 @@
 # Story and writing: status
 
 Owner of the canon, the words and the story data; signs off every voice packet
-before recording. Branch: `worktree-agent-a035208561a66c171` (successor to
-a7622ae77d19e31dc; handoff in `docs/handoff/story.md`).
+before recording. Agent a73ca9d35d0c487a9, branch `worktree-agent-a73ca9d35d0c487a9`
+(successor to a035208561a66c171; handoff in `docs/handoff/story.md`).
 
 ## State
 
-- **Canon:**
-  - `docs/STORY_BIBLE.md`: the truth, the pacing, who tells it, and "The nights"
-    (the scars' places, the town's talk about your nights, the minibosses'
-    rules).
-  - `docs/VOICES.md`: how everyone talks, and the voicing rules.
-  - `docs/WRITING_PASS.md`: §17 to §19 are the latest.
+- **Canon:** `docs/STORY_BIBLE.md` (the truth, the pacing, who tells it, "The
+  nights"); `docs/VOICES.md`; `docs/WRITING_PASS.md` §17 to §20 are the latest.
 - **Act 1's data** is written and tested (`CinematicTests`, `RouteTests`,
-  `StoryLint`).
-- **The town talks about your nights:** 29 `said` lines across 13 people, each
-  a seed. They're said that night (`arena.last.ago` 0) and the morning after
-  (1), then dropped. `CinematicTests` proves that someone speaks after every
-  kind of night.
-- **Voice packets** (the owner has paused voice work; packets stay text-only):
-  - **Final:** narrator, Rook, Holloway, Brannoc, Sella, Vonnra, Harlan.
-  - **Read, with notes waiting for a voice lead** (below): Chid, Maeca,
-    Ysolde.
-- **Crafting:** Brannoc's forge lines are in his voice. Phase 2's lines (the
-  fang, the shed fur, Wenna's still-room) are with the crafting lead.
+  `StoryLint`, `VergeTests`). The seed, body-hours and signature checks are
+  clean after the 4 October merges.
+- **Done this session** (WRITING_PASS §20):
+  - every story night ends on the narrator's own line, won and lost, in place
+    of "The story goes on." (`ArenaSpec.EndWon`, `EndLost`);
+  - the result screen's banner, "longest" line and table line reworded; the
+    story night's hint no longer talks about "the story";
+  - the Wayfinder's maps are named in the valley's words for their people
+    ("The Lampless Howes", "The Hungry Gap", "The Praying Sump");
+  - phase 3's crafter lines are in `crafting.json` ahead of the hooks: Vonnra's
+    binding and marks, Snib's jars (inert until crafting adds the verbs).
+- **Voice is paused by the owner:** no placeholders; the final voices come from
+  ElevenLabs later, one character at a time. Packets stay text-only (below).
 
 ## Key decisions (why)
 
-- **Vonnra is not the narrator.** She is the voice up the road at the waking:
-  labelled "A voice up the road", never the narrator's italics. The fortune
-  opens on the same words.
-- **Her name for the survivor is warm the way owning is warm,** not tender.
-  **Her free things are priced and then waived,** so they stay owed.
-- **Redcowl fed his prisoners.** If they die, the cold killed them.
-- **The night's talk plants and never says.** The question "So what were you
-  killing?" may be asked; nobody in Act 1 answers it.
-- **No genre words in the valley's mouth:** Greymuzzle is the old dog-wolf;
-  there is no alpha, warlord or ganger.
-- **The night is worded by the night:** "the dead of night", everywhere but
-  the Wayfinder's own half hour.
-- **After ending B,** the endgame is the Wayfinder's book of the nights that
-  were (the owner's decision).
+- **Vonnra is not the narrator.** She is the one unnamed call up the road at
+  the waking, subtitled "A voice up the road". The fortune opens on the same words.
+- **Her free things are priced and then waived,** so they stay owed. Her
+  crafting lines carry no `{name}` and no "traveller", so they hold either side
+  of the fortune.
+- **A night's last line never claims the dawn:** she comes back into the same
+  night, and the town talks about it that night.
+- **Every lost story night is a fall,** so its line is her coming to, and each
+  one is a quiet seed of what she is.
+- **No genre words in the valley's mouth,** maps included: no weeping or
+  whispering places, no alpha or warlord.
+- **Pacing (the owner's):** story about 40% early; story nights 20 minutes, the
+  Wayfinder's maps 30; the endgame is the atlas (build maps) and the ember scars
+  (survivors fun); after ending B they are the Wayfinder's book of the nights
+  that were.
 
-## Notes waiting for a voice lead (packets text-only)
+## Packet notes, text-only (for when voice resumes)
 
-- **Chid:**
-  - Wants: company, the shrine lit, and this one to stay up.
-  - Hides: he is Unchained and near two hundred; he carries the survivor in (the
-    carter is his lie); he is "C."; he was at the ford the night they rose.
-  - Takes 13 and 14: "..…" becomes "…".
-  - Bark day.1, "I should know.": older than he looks, and he doesn't notice
-    saying it.
-- **Maeca:**
-  - Wants: the Pack cured and let be.
-  - Hides: the Pack saved her at Ashford; the Kerchiefs are her old
-    neighbours; she is looking for whoever signed for the boots.
-  - Bark said.6's note is stale.
-  - Bark said.3: "'Listen.' very quiet; not a whisper."
-  - Re-take driving.0: "alpha" is now "dog-wolf".
-- **Ysolde:**
-  - Wants: the maps walked and the margins full.
-  - Hides: she sells the margins (who comes back) to Sallow, for her brother
-    Edric's keep. He came out of the barrow risen, and the Vigil cages him.
-  - t_wayfinder: "My brother didn't." is the one lie in her part, practised
-    smooth. The hurt goes in the corners.
-  - Re-take places.0, which now says "Last till the dead of night".
-- **New lines for every packet:** the night talk (npcs.json `said`, appended).
-- **Changed lines in packets:**
-  - Chid `cb_nemesis_slain.0` (no longer Keegan's "Not there").
-  - Sella `say_calling.2`, "Something on you's smouldering, love." Sella's
-    packet is final, so tell voice.
-
-## Act 1 pass (done)
-
-- Every quoted phrase in the bible's seed list is in the game's text.
-- Every line about her body heat holds at the time it can be said.
-- The signatures stay their owners'; a test holds them.
+- **Final:** narrator, Rook, Holloway, Brannoc, Sella, Vonnra, Harlan.
+- **Sella's final packet has changed lines,** which need new takes:
+  `say_calling.2` ("Something on you's smouldering, love.") and
+  `bark.sella.night.1` ("I've a bath going cold upstairs. Shame to waste it.").
+- **Chid:** wants company, the shrine lit, and this one to stay up. Hides that
+  he is Unchained and near two hundred; that he carries the survivor in (the
+  carter is his lie); that he is "C."; that he was at the ford the night they
+  rose. Takes 13 and 14: "..…" becomes "…". Bark day.1, "I should know.": older
+  than he looks, and he doesn't notice saying it. Re-take `cb_nemesis_slain.0`.
+- **Maeca:** wants the Pack cured and let be. Hides that the Pack saved her at
+  Ashford, that the Kerchiefs are her old neighbours, that she is looking for
+  whoever signed for the boots. Bark said.6's note is stale. Bark said.3:
+  "'Listen.' very quiet; not a whisper." Re-take `driving.0` ("dog-wolf").
+- **Ysolde:** wants the maps walked and the margins full. Hides that she sells
+  the margins to Sallow for her brother Edric's keep. t_wayfinder's "My brother
+  didn't." is the one lie in her part, practised smooth; the hurt goes in the
+  corners. Re-take `places.0` ("Last till the dead of night").
+- **New lines for every packet:** the night talk (`npcs.json` `said`, appended).
 
 ## Next
 
-1. The result screen's words, when the experience successor sends UI's slots.
-2. C14: `brannoc.road`, the `nell.burial` variant and a RouteTests play, once
-   combat's successor builds the fight (combat handoff, queue item 5).
+1. The result screen's new slots, when the experience successor sends UI's
+   beats (the words for today's slots are in).
+2. C14: Brannoc's dusk choice (`brannoc.road`), the `nell.burial` variant, the
+   night's last lines and a RouteTests play, once combat builds the fight.
 3. C01 to C04: the cinematics lead's line asks, when they come.
-4. Crafting phase 3: Vonnra's binding lines. Act 2, when the owner asks.
+4. Crafting phase 3: wire-up questions only; the lines are written.
+5. Act 2's text, when the owner asks.
 
 ## Blockers
 
-None. One question for the owner: who sings the hymn (C08).
+None. The owner's open question: who sings the hymn at Nell's grave (C08).
 
 ## For other areas
 
-- **Main session:** C01's call should carry the label "A voice up the road".
-- **Crafting:** call the endgame's "sigils" Marks; the sigil is the Legion's.
-- **Experience:** your `arena.last.*` facts are read now. `arena.last.ago` is
-  new (Arena.cs, plus the daily rule `arena.ago`).
-- **Combat and arena art:** the renames and the scars' places are in, as sent.
+- **Combat:** `Arenas.Again` now keeps `Spare` (a retaken Hollow fight was
+  killing Greymuzzle while its `OnWin` said spared). Map names come from
+  `MapOffers.Names`; text still goes through story.
+- **Crafting:** `crafting.json` has `vonnra` (bind, mark, `terms.accused` for
+  the tenth off) and `snib` (jar, steep), with `verbs: []`. Add the verbs and
+  the lines play. Vonnra's role does not move: she binds at the Toll Tower.
+- **Experience and UI:** the result screen's words for today's slots are done
+  (WRITING_PASS §20). Send the new slots and I will fill them.
+- **Arena art:** the table's map names now match each people's ground.

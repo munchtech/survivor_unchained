@@ -1279,3 +1279,48 @@ changed:
     build game) and a night's scar (the survivors' game).
   - Combat sets the clock. The story asks that no announcement say "half hour"
     on a 20-minute night.
+
+## 20. The night's last line, the table's names, and phase 3's crafters (4 October)
+
+- **A story night ends on its own line** (the editorial's I-7, LINE_NOTES 3.4):
+  `ArenaSpec.EndWon` and `EndLost`, set in `Verge.cs`, take the place of "The
+  story goes on." on the result screen. A lost one adds "The fight waits on
+  the Wayfinder's table, to be taken again." A rematch keeps the won line and
+  drops the lost one, since it sends her back to the table, not where the line
+  says she comes to. Every lost night is a fall, so each lost line is her
+  coming to. None claims the dawn: she comes back into the same night.
+
+  | Night | Won | Lost |
+  |---|---|---|
+  | The Hollow by Night | "The Hollow is quiet. The only breath in it is yours, and it does not show in the cold." Spared: "Behind you, in the den's mouth, an old wolf is breathing. You leave him to it." | "You come to at the Hollow's mouth with your collar wet from a wolf's jaws. Nothing ate you. Something carried you out." |
+  | Raid on the Roost | "The red hat lies in the mud. By the fires, someone is telling the children to hush, and they do." | "You come to on the road below the Roost, laid out straight with your hands on your chest, the way the Kerchiefs lay out their dead." |
+  | The Dig Boils Over | "Nothing more comes up. A long way under your feet, the ground goes still, the way a room does when someone has said your name." (C12's "It went ever so QUIET!"; Act 3's names) | "When you come to, they have gone back down the hole, and taken their own dead with them." |
+  | Behind the Sealed Door | "The dead stand aside and let you up the stair. They did not do that for the last one." (Jessop, C13) | "The dead carry you back up the stair and put you out, the way you would put out a cat." |
+
+  C14's night (Wat) gets its pair when combat builds the fight.
+  [CODE and DATA, done; `VergeTests` holds that every story night has both.]
+- **The result screen's other words:** "THE NIGHT IS HELD" (was "THE ARENA IS
+  WON"); "Your longest night yet"; a table night won, "The Wayfinder will want
+  it for her margins." The story night's hint: "An ember arena: won or lost,
+  the valley hears of it" (was "the story remembers how it goes").
+- **The table names its maps in the valley's words** (bible, "The nights"):
+  `MapOffers.Names`, per people. "The Weeping Wood" and its kin are gone.
+  [CODE, done; `StoryLint`.]
+- **Phase 3's crafters, written ahead** (`crafting.json`; inert until crafting
+  adds their verbs):
+  - **Vonnra binds** at the Toll Tower. No `{name}` and no "traveller" in her
+    lines, so they hold before and after the fortune. The first binding: "There.
+    It let go. Everything does, if one is patient with the lamp. ...It has
+    somewhere to be now. That is all anything wants." (It is what she means to
+    do with the survivor, and C43's "That is all I ever wanted" answers it.)
+    `terms.accused` is the line for the tenth off: "She charges you a tenth
+    less. She does not say why."
+  - **The mark** (endgame): "Marked. It will do it that way now, until it
+    breaks." (The design's "It will not forget" was the retired "I will not
+    forget" in other clothes.)
+  - **Snib's jars:** "It is the GOOD stuff. Snib would not drink it. Snib would
+    not drink the bad stuff EITHER." (no "Mostly", which is retired). The first
+    steeping: "...and something in the jar moves to meet it." / "There!
+    Steeped! Snib did not see it move. It did not move."
+  - Narration in a `.before` slot carries no parentheses (the slot is already
+    the narrator's): Brannoc's fang and Maeca's braid lost theirs.

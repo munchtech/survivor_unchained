@@ -125,8 +125,23 @@ public static class MapOffers
         return r;
     }
 
-    static readonly string[] Adjectives = { "Weeping", "Ashen", "Thorned", "Drowned", "Moonless", "Broken", "Gallows", "Whispering", "Hollow", "Bleeding", "Crooked", "Silent" };
-    static readonly string[] Places = { "Wood", "Thicket", "Glade", "Tangle", "Barrow-Wood", "Deepwood", "Fen", "Holt", "Wilds", "Brake" };
+    // A map is named in the valley's own words for its people's kind of ground (the story bible,
+    // "The nights"), so the name says whose place it is before the sheet does. Lampless, Quiet and
+    // Praying are seeds: the Order's call, the dead's word, and Tam's.
+    static readonly Dictionary<string, (string[] Adjectives, string[] Places)> Names = new()
+    {
+        ["dead"] = (["Lampless", "Quiet", "Morrow", "Drowned", "Long", "Cold"], ["Howes", "Lows", "Lych-Way", "Chesters"]),
+        ["pack"] = (["Grey", "Bitter", "Thorn", "Bracken", "Whelping", "Elder"], ["Dene", "Clough", "Holt", "Shaw"]),
+        ["kerchiefs"] = (["Red", "Salt", "Toll", "Gallows", "Hungry", "Widow's"], ["Ruts", "Drove", "Cutting", "Gap"]),
+        ["lamplings"] = (["Praying", "Gold", "Warm", "Black", "Deep", "Lamplit"], ["Sump", "Delph", "Sough", "Spoil"]),
+    };
+
+    /// <summary>A map's name, drawn from its people's words.</summary>
+    public static string Name(string people, Rng rng)
+    {
+        var (adjectives, places) = Names[people];
+        return $"The {rng.Pick(adjectives)} {rng.Pick(places)}";
+    }
 
     /// <summary>The maps the table offers today: three, each of its own
     /// people and oaths, the tier the survivor has earned (and one higher).</summary>
@@ -145,7 +160,7 @@ public static class MapOffers
             var spec = new MapSpec
             {
                 Seed = rng.Int(1, int.MaxValue - 1), Tier = t, Theme = theme, Oaths = oaths, Night = true,
-                Name = $"The {rng.Pick(Adjectives)} {rng.Pick(Places)}",
+                Name = Name(people.Id, rng),
             };
             list.Add(new MapOffer(spec, people.Id));
         }

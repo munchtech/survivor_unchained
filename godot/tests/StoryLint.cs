@@ -272,5 +272,29 @@ public class StoryLint
         Assert.True(slots >= 3, $"{slots} slots");
     }
 
+    [Fact]
+    public void The_table_names_its_maps_in_the_valleys_words_for_their_people()
+    {
+        // The bible's place words ("The nights"): a map's name says whose ground it is, and no
+        // genre word gets on to the Wayfinder's sheets.
+        var words = new Dictionary<string, string[]>
+        {
+            ["dead"] = ["Howes", "Lows", "Lych-Way", "Chesters"],
+            ["pack"] = ["Dene", "Clough", "Holt", "Shaw"],
+            ["kerchiefs"] = ["Ruts", "Drove", "Cutting", "Gap"],
+            ["lamplings"] = ["Sump", "Delph", "Sough", "Spoil"],
+        };
+        var seen = new HashSet<string>();
+        for (int day = 1; day <= 40; day++)
+            foreach (var o in SurvivorUnchained.Maps.MapOffers.Today(day, 1 + day % 5, day % 3))
+            {
+                Assert.Matches(@"^The [A-Z][\w']+ [A-Z][\w-]+$", o.Spec.Name);
+                Assert.Contains(o.Spec.Name.Split(' ')[^1], words[o.People]);
+                Assert.DoesNotMatch(@"Weeping|Whispering|Bleeding|Moonless|Ashen|Alpha|Warlord", o.Spec.Name);
+                seen.Add(o.Spec.Name);
+            }
+        Assert.True(seen.Count > 40, $"{seen.Count} names in forty days");
+    }
+
     static Ctx Ctx() => Lore.Context(WorldState.Fresh(1), H.Survivor());
 }
