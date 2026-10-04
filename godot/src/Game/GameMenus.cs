@@ -75,9 +75,10 @@ public partial class Game
             Journey.Walk(zone.Id, extent, b.Player.X, b.Player.Z);
         }
         screens.Show(o);
-        // The pause menu stops the world; any other screen only in a fight (an arena, the night's
-        // road), where the horde would not wait. Elsewhere the world goes on behind it (the owner).
-        scene.SimPaused = o is PauseScreen || zone?.Combat == true;
+        // The pause menu stops the world; any other screen only where the ember burns (an arena,
+        // the prologue's night road), where the horde would not wait. Elsewhere, the Verge by
+        // day too, the world goes on behind it (the owner's rule).
+        scene.SimPaused = o is PauseScreen || zone?.Ember == true;
         cam.ScreenShift = o.CameraShift;
         controls.Captured = true;
         hud.Prompt(promptShown = null);
