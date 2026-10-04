@@ -50,16 +50,20 @@ replaces the older one.
 
 By how much each voice is heard, and where the player meets it first:
 
-1. **The narrator** ([packet](narrator.md)): the cinematic opening is his,
-   and he is the most-heard voice in the game. Start with his first section
-   (the Prologue, the first 20 or so lines): it sets the tone for everything
-   after.
+**Record now** (final, signed by the story lead): Mother Rook, Captain
+Holloway, Brannoc and Sella, in that order.
+
+1. **The narrator** ([packet](narrator.md)): **on hold. Do not record him
+   yet.** The owner has asked whether Vonnra should be the narrator (the
+   voice that calls the survivor to town in the prologue), given her twist,
+   and the story lead is deciding. His lines keep their placeholders until
+   then.
 2. **Mother Rook** ([packet](rook.md)): the first conversation, and the hub
    the player returns to.
-3. **Captain Holloway**, **Brannoc**, **Sella**, **Vonnra**, **Harlan**: the
-   town's main parts, in the order the story meets them.
-4. **Chid**, **Maeca**, **Ysolde**: held for the story editor's review (in
-   progress).
+3. **Captain Holloway** ([packet](holloway.md)), **Brannoc**
+   ([packet](brannoc.md)), **Sella** ([packet](sella.md)): final. Then
+   **Vonnra** and **Harlan**, once the story lead signs them off.
+4. **Chid**, **Maeca**, **Ysolde**: after the story editor's review.
 5. The rest: Pell, Rav, Keegan, Wenna, Tam, Jory, Redcowl, the watch, the
    townsfolk, the creatures and the dead.
 
@@ -68,8 +72,8 @@ By how much each voice is heard, and where the player meets it first:
 <!-- PACKETS -->
 | Character | Takes | Characters | Held |
 |---|---|---|---|
-| [The narrator](narrator.md) | 269 | 27,374 |  |
-| [Sella](sella.md) | 95 | 9,821 |  |
+| [The narrator](narrator.md) | 269 | 27,374 | 269 |
+| [Sella](sella.md) | 95 | 9,832 |  |
 | [Vonnra Ash-of-Morrow](vonnra.md) | 102 | 9,021 |  |
 | [Captain Holloway](holloway.md) | 64 | 7,712 |  |
 | [Harlan Coyle](harlan.md) | 63 | 7,141 |  |

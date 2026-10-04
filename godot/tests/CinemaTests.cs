@@ -7,6 +7,7 @@ using SurvivorUnchained.Cinema;
 using SurvivorUnchained.Core;
 using SurvivorUnchained.World;
 using Xunit;
+using static SurvivorUnchained.Tests.H;
 
 namespace SurvivorUnchained.Tests;
 
@@ -127,6 +128,17 @@ public class CinemaTests
         Assert.DoesNotContain(left, c => c.Cue.Do is "line" or "sfx" or "music");
         // The dead it raises are raised whether it is watched or not.
         Assert.Equal(4, left.Count(c => c.Cue.Do == "spawn"));
+    }
+
+    [Fact]
+    public void The_opening_is_narration_whoever_voices_it()
+    {
+        // C01's voice may be recast (Vonnra calling her home): the timing follows
+        // the take, and the subtitle stays narration while the speaker is listed.
+        var f = CineFile.Load("c01");
+        var ctx = Make("hunter", "Wren", 1).C;
+        foreach (var c in Lay(f).Cues.Where(c => c.Cue.Do == "line"))
+            Assert.Contains(CineLines.Find(c.Cue.Str("id")!, ctx).SpeakerId, f.Narrators);
     }
 
     [Fact]

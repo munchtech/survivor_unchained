@@ -42,7 +42,7 @@ public partial class Game
             case Act.Interact when near != null:
                 var locked = near.Locked?.Invoke();
                 if (locked != null) Toast(new Toast(ToastKind.Warning, locked));
-                else near.Act();
+                else { near.Act(); zone?.Touched(); }
                 return true;
             case Act.Ultimate: Journey.Quaff(Battle); return true;
         }
@@ -87,6 +87,8 @@ public partial class Game
     {
         if (screens.Current is RestScreen { Reporting: true }) { FinishRest(); return; }
         screens.Close();
+        // A shop, the pack or a rest may have changed what people's markers say.
+        zone?.Touched();
         cam.ScreenShift = 0;
         if (scene != null && hudMode == null) scene.SimPaused = false;
         controls.Captured = false;
@@ -303,6 +305,8 @@ public partial class Game
     void EndDialogue()
     {
         if (talkNpc != null && zone?.Actors.TryGetValue(talkNpc, out var actor) == true) actor.Talking = false;
+        // What it changed shows over people's heads at once (their markers).
+        zone?.Touched();
         cam.FocusOverride = null;
         if (camSaved is float d) { cam.TargetDistance = d; camSaved = null; }
         runner = null;

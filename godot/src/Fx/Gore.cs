@@ -169,7 +169,44 @@ public partial class Gore : Node3D
         public Blood? Blood;
     }
 
-    readonly Dictionary<Kind, MultiMesh> meshes = new();
+    /// <summary>One kind of piece: its MultiMesh and the floats behind it,
+    /// changed here and handed over once a frame (a call into the engine for
+    /// every piece in the air or on the ground, every frame, cost more).</summary>
+    sealed class GibMeshes
+    {
+        public required MultiMesh Mesh;
+        public required float[] Buffer;
+        public required int Stride;
+        public bool Dirty;
+
+        public void Place(int slot, Transform3D t)
+        {
+            int o = slot * Stride;
+            var b = t.Basis;
+            var f = Buffer;
+            f[o] = b.X.X; f[o + 1] = b.Y.X; f[o + 2] = b.Z.X; f[o + 3] = t.Origin.X;
+            f[o + 4] = b.X.Y; f[o + 5] = b.Y.Y; f[o + 6] = b.Z.Y; f[o + 7] = t.Origin.Y;
+            f[o + 8] = b.X.Z; f[o + 9] = b.Y.Z; f[o + 10] = b.Z.Z; f[o + 11] = t.Origin.Z;
+            Dirty = true;
+        }
+
+        public void Tint(int slot, Color c)
+        {
+            if (Stride < 16) return;
+            int o = slot * Stride + 12;
+            Buffer[o] = c.R; Buffer[o + 1] = c.G; Buffer[o + 2] = c.B; Buffer[o + 3] = c.A;
+            Dirty = true;
+        }
+
+        public void Flush()
+        {
+            if (!Dirty) return;
+            Dirty = false;
+            RenderingServer.MultimeshSetBuffer(Mesh.GetRid(), Buffer);
+        }
+    }
+
+    readonly Dictionary<Kind, GibMeshes> meshes = new();
     readonly Dictionary<Kind, Stack<int>> free = new();
     readonly List<Gib> live = new();
 
@@ -177,13 +214,16 @@ public partial class Gore : Node3D
     {
         // Chunks knocked out of round.
         var chunk = Knocked(new SphereMesh { Radius = 0.5f, Height = 1, RadialSegments = 6, Rings = 3 });
-        var bone = new CylinderMesh { TopRadius = 0.12f, BottomRadius = 0.16f, Height = 1, RadialSegments = 5, Rings = 1 };
-        var skull = new SphereMesh { Radius = 0.5f, Height = 0.9f, RadialSegments = 8, Rings = 6 };
+        // Bones and skulls read as bones and skulls from the arena's height, not as white
+        // sticks and balls (docs/EXPERIENCE_AUDIT.md, finding 3): a shaft with knuckled ends,
+        // a cranium with a jaw and dark sockets, in old, dirty bone rather than chalk.
+        var bone = Bone();
+        var skull = Skull();
         var meat = new StandardMaterial3D { AlbedoColor = Colors.White, VertexColorUseAsAlbedo = true, Roughness = 0.38f, Metallic = 0.05f };
-        var boneM = new StandardMaterial3D { AlbedoColor = new Color("#c8bca4"), Roughness = 0.75f };
+        var boneM = new StandardMaterial3D { AlbedoColor = new Color("#9a9078"), VertexColorUseAsAlbedo = true, Roughness = 0.85f };
         chunk.SurfaceSetMaterial(0, meat);
-        bone.Material = boneM;
-        skull.Material = boneM;
+        bone.SurfaceSetMaterial(0, boneM);
+        skull.SurfaceSetMaterial(0, boneM);
         Add(Kind.Meat, chunk, 360, true);
         Add(Kind.Bone, bone, 180, false);
         Add(Kind.Skull, skull, 48, false);
@@ -192,15 +232,69 @@ public partial class Gore : Node3D
     void Add(Kind kind, Mesh mesh, int n, bool colors)
     {
         var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseColors = colors, InstanceCount = n, VisibleInstanceCount = n, Mesh = mesh };
+        // Every piece put away to begin with (scaled to nothing), white.
+        var pieces = new GibMeshes { Mesh = mm, Buffer = new float[n * (colors ? 16 : 12)], Stride = colors ? 16 : 12 };
         var zero = new Transform3D(Godot.Basis.FromScale(Vector3.Zero), Vector3.Zero);
-        for (int i = 0; i < n; i++) { mm.SetInstanceTransform(i, zero); if (colors) mm.SetInstanceColor(i, Colors.White); }
+        for (int i = 0; i < n; i++) { pieces.Place(i, zero); pieces.Tint(i, Colors.White); }
+        pieces.Flush();
         var inst = new MultiMeshInstance3D { Multimesh = mm, CastShadow = GeometryInstance3D.ShadowCastingSetting.On, Layers = 1 };
         inst.CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f));
         AddChild(inst);
-        meshes[kind] = mm;
+        meshes[kind] = pieces;
         var s = new Stack<int>();
         for (int i = n - 1; i >= 0; i--) s.Push(i);
         free[kind] = s;
+    }
+
+    /// <summary>A long bone, one unit long along Y: a narrow shaft, a knuckle at each end
+    /// (two lobes at one, a ball at the other), darker toward the ends where the dirt is.</summary>
+    static ArrayMesh Bone()
+    {
+        var st = new SurfaceTool();
+        st.Begin(Mesh.PrimitiveType.Triangles);
+        void Part(PrimitiveMesh m, Transform3D at, Color c)
+        {
+            var arr = m.GetMeshArrays();
+            var v = (Vector3[])arr[(int)Mesh.ArrayType.Vertex];
+            var nrm = (Vector3[])arr[(int)Mesh.ArrayType.Normal];
+            var idx = arr[(int)Mesh.ArrayType.Index].AsInt32Array();
+            foreach (int i in idx) { st.SetColor(c); st.SetNormal((at.Basis * nrm[i]).Normalized()); st.AddVertex(at * v[i]); }
+        }
+        var shaft = new Color(0.95f, 0.93f, 0.88f);
+        var end = new Color(0.72f, 0.68f, 0.6f);
+        Part(new CylinderMesh { TopRadius = 0.07f, BottomRadius = 0.08f, Height = 0.8f, RadialSegments = 7, Rings = 1 }, Transform3D.Identity, shaft);
+        Part(new SphereMesh { Radius = 0.11f, Height = 0.2f, RadialSegments = 7, Rings = 4 }, new Transform3D(Godot.Basis.Identity, new Vector3(-0.06f, 0.42f, 0)), end);
+        Part(new SphereMesh { Radius = 0.11f, Height = 0.2f, RadialSegments = 7, Rings = 4 }, new Transform3D(Godot.Basis.Identity, new Vector3(0.06f, 0.42f, 0)), end);
+        Part(new SphereMesh { Radius = 0.13f, Height = 0.24f, RadialSegments = 7, Rings = 4 }, new Transform3D(Godot.Basis.Identity, new Vector3(0, -0.42f, 0)), end);
+        return st.Commit();
+    }
+
+    /// <summary>A skull, about a unit across: the cranium long front to back, a face plate,
+    /// a lower jaw, and the sockets and nose dark (vertex colour), so it reads as a skull.</summary>
+    static ArrayMesh Skull()
+    {
+        var st = new SurfaceTool();
+        st.Begin(Mesh.PrimitiveType.Triangles);
+        void Part(PrimitiveMesh m, Transform3D at, Func<Vector3, Color> paint)
+        {
+            var arr = m.GetMeshArrays();
+            var v = (Vector3[])arr[(int)Mesh.ArrayType.Vertex];
+            var nrm = (Vector3[])arr[(int)Mesh.ArrayType.Normal];
+            var idx = arr[(int)Mesh.ArrayType.Index].AsInt32Array();
+            foreach (int i in idx) { var p = at * v[i]; st.SetColor(paint(p)); st.SetNormal((at.Basis * nrm[i]).Normalized()); st.AddVertex(p); }
+        }
+        // Facing +Z: sockets either side of the middle a little above it, the nose below.
+        Color Face(Vector3 p)
+        {
+            float eye = Mathf.Min(new Vector2(p.X - 0.17f, p.Y - 0.02f).Length(), new Vector2(p.X + 0.17f, p.Y - 0.02f).Length());
+            float nose = new Vector2(p.X * 1.6f, p.Y + 0.14f).Length();
+            float dark = p.Z > 0.2f ? Mathf.Max(1 - Mathf.SmoothStep(0.07f, 0.12f, eye), 1 - Mathf.SmoothStep(0.04f, 0.08f, nose)) : 0;
+            return new Color(1, 0.97f, 0.9f).Lerp(new Color(0.12f, 0.1f, 0.09f), dark);
+        }
+        Part(new SphereMesh { Radius = 0.5f, Height = 0.9f, RadialSegments = 12, Rings = 8 }, new Transform3D(Godot.Basis.FromScale(new Vector3(0.82f, 0.86f, 1)), new Vector3(0, 0.08f, -0.06f)), Face);
+        Part(new SphereMesh { Radius = 0.3f, Height = 0.5f, RadialSegments = 10, Rings = 5 }, new Transform3D(Godot.Basis.FromScale(new Vector3(1.05f, 0.9f, 0.9f)), new Vector3(0, -0.14f, 0.2f)), Face);
+        Part(new BoxMesh { Size = new Vector3(0.42f, 0.12f, 0.3f) }, new Transform3D(Godot.Basis.Identity, new Vector3(0, -0.36f, 0.16f)), _ => new Color(0.86f, 0.82f, 0.74f));
+        return st.Commit();
     }
 
     /// <summary>A rough lump: a low sphere with its points pushed about, flat-shaded.</summary>
@@ -239,17 +333,18 @@ public partial class Gore : Node3D
             Retire(old);
             slot = free[kind].Pop();
         }
-        if (kind == Kind.Meat) meshes[kind].SetInstanceColor(slot, tint ?? Colors.White);
+        if (kind == Kind.Meat) meshes[kind].Tint(slot, tint ?? Colors.White);
         live.Add(new Gib
         {
             Kind = kind, Slot = slot, P = at, V = v, Axis = new Vector3(R() - 0.5f, R() - 0.5f, R() - 0.5f).Normalized(),
-            Ang = R() * 6, Spin = 6 + R() * 10, R = size * 0.4f, Life = 16 + R() * 6, Blood = blood, Size = size,
+            // (Bone and skull go back to the ground sooner: in a horde they were a litter.)
+            Ang = R() * 6, Spin = 6 + R() * 10, R = size * 0.4f, Life = kind == Kind.Meat ? 16 + R() * 6 : 8 + R() * 4, Blood = blood, Size = size,
         });
     }
 
     void Retire(Gib g)
     {
-        meshes[g.Kind].SetInstanceTransform(g.Slot, new Transform3D(Godot.Basis.FromScale(Vector3.Zero), Vector3.Zero));
+        meshes[g.Kind].Place(g.Slot, new Transform3D(Godot.Basis.FromScale(Vector3.Zero), Vector3.Zero));
         free[g.Kind].Push(g.Slot);
         live.Remove(g);
     }
@@ -317,7 +412,7 @@ public partial class Gore : Node3D
         }
         // The head goes its own way.
         if (undead || R() < 0.5f)
-            Throw(Kind.Skull, at + Vector3.Up * 0.8f * scale, new Vector3(dir.X * 5 + (R() - 0.5f) * 3, 7 + R() * 3, dir.Z * 5 + (R() - 0.5f) * 3), 0.32f * Math.Min(1.5f, scale), blood);
+            Throw(Kind.Skull, at + Vector3.Up * 0.8f * scale, new Vector3(dir.X * 5 + (R() - 0.5f) * 3, 7 + R() * 3, dir.Z * 5 + (R() - 0.5f) * 3), 0.26f * Math.Min(1.5f, scale), blood);
         if (blood != null)
         {
             hits.Spray(at + Vector3.Up * 0.3f, -dir, blood.Spray, Level);
@@ -374,15 +469,17 @@ public partial class Gore : Node3D
             // In their time the ground takes them.
             float sink = Math.Max(0, g.Age - (g.Life - 2.5f)) * 0.35f;
             var p = new Vector3(g.P.X, Math.Max(g.P.Y, ground + g.R) - sink, g.P.Z);
-            var scale = g.Kind == Kind.Bone ? new Vector3(g.Size * 0.55f, g.Size * 1.6f, g.Size * 0.55f) : Vector3.One * g.Size;
-            meshes[g.Kind].SetInstanceTransform(g.Slot, new Transform3D(new Godot.Basis(g.Axis, g.Ang) * Godot.Basis.FromScale(scale), p));
+            var scale = g.Kind == Kind.Bone ? new Vector3(g.Size * 1.1f, g.Size * 1.6f, g.Size * 1.1f) : Vector3.One * g.Size;
+            meshes[g.Kind].Place(g.Slot, new Transform3D(new Godot.Basis(g.Axis, g.Ang) * Godot.Basis.FromScale(scale), p));
         }
+        foreach (var m in meshes.Values) m.Flush();
     }
 
     /// <summary>A new place: nothing of the last one's dead comes along.</summary>
     public void Clear()
     {
         for (int i = live.Count - 1; i >= 0; i--) Retire(live[i]);
+        foreach (var m in meshes.Values) m.Flush();
         foreach (var s in splats) s.Decal.Visible = false;
     }
 }

@@ -131,16 +131,6 @@ public partial class Atmosphere : Node3D
         Set(Current);
     }
 
-    /// <summary>The picture's quality: lower trades ambient occlusion, the air's
-    /// volume, shadow detail and edge smoothing for speed.</summary>
-    public void Quality(string q)
-    {
-        Env.SsaoEnabled = q != "low";
-        Env.VolumetricFogEnabled = q == "high";
-        RenderingServer.DirectionalShadowAtlasSetSize(q == "low" ? 2048 : 4096, true);
-        if (IsInsideTree()) GetViewport().Msaa3D = q == "high" ? Viewport.Msaa.Msaa2X : Viewport.Msaa.Disabled;
-    }
-
     /* -------------------------------------------------------------- grade -- */
 
     const int LutSize = 32;

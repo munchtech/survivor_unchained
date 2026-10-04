@@ -297,7 +297,8 @@ public partial class Game
                     var l = CineLines.Find(c.Str("id")!, ctx);
                     if (l.Raw == "") break;
                     var take = g.voice.Say(l.VoId, l.Raw);
-                    bars.Say(l.Text, l.Speaker, (take?.Sec ?? CineLines.Reading(l.Text)) + c.Num("linger", 0.7));
+                    // Narration (the file says whose) reads unnamed, in italics, whoever voices it.
+                    bars.Say(l.Text, file.Narrators.Contains(l.SpeakerId ?? "") ? null : l.Speaker, (take?.Sec ?? CineLines.Reading(l.Text)) + c.Num("linger", 0.7));
                     break;
                 }
                 case "music":

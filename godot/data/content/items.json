@@ -797,6 +797,7 @@
   "wolf_pelt": {
    "id": "wolf_pelt",
    "name": "Wolf Pelt",
+   "plural": "wolf pelts",
    "kind": "material",
    "rarity": 0,
    "icon": "pelt",
@@ -807,6 +808,7 @@
   "boar_hide": {
    "id": "boar_hide",
    "name": "Boar Hide",
+   "plural": "boar hides",
    "kind": "material",
    "rarity": 0,
    "icon": "hide",
@@ -817,6 +819,7 @@
   "bitterroot": {
    "id": "bitterroot",
    "name": "Bitterroot",
+   "plural": "bitterroot",
    "kind": "material",
    "rarity": 0,
    "icon": "root",
@@ -827,6 +830,7 @@
   "moonpetal": {
    "id": "moonpetal",
    "name": "Moonpetal",
+   "plural": "moonpetals",
    "kind": "material",
    "rarity": 2,
    "icon": "flower",
@@ -837,6 +841,7 @@
   "bone_dust": {
    "id": "bone_dust",
    "name": "Barrow Dust",
+   "plural": "barrow dust",
    "kind": "material",
    "rarity": 0,
    "icon": "dust",
@@ -847,6 +852,7 @@
   "ember_shard": {
    "id": "ember_shard",
    "name": "Ember Shard",
+   "plural": "ember shards",
    "kind": "material",
    "rarity": 1,
    "icon": "ember",
@@ -857,6 +863,7 @@
   "kerchief_cloth": {
    "id": "kerchief_cloth",
    "name": "Red Cloth",
+   "plural": "red cloth",
    "kind": "material",
    "rarity": 0,
    "icon": "kerchief",
@@ -867,6 +874,7 @@
   "old_iron": {
    "id": "old_iron",
    "name": "Old Iron",
+   "plural": "old iron",
    "kind": "material",
    "rarity": 0,
    "icon": "iron",

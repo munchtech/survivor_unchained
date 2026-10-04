@@ -37,7 +37,7 @@ public static class Chapter
             null => ("Not yet settled", ThreadTone.Open),
             "cured" => ("Cured at the source", ThreadTone.Good),
             "allied" => ("Ran with the Pack", ThreadTone.Grey),
-            "slaughtered" => (S(w, "greymuzzle") == "dead" ? "Put down, alpha and all" : "Put down", ThreadTone.Grey),
+            "slaughtered" => (S(w, "greymuzzle") == "dead" ? "Put down, Greymuzzle and all" : "Put down", ThreadTone.Grey),
             "ignored" => ("Left to fester", ThreadTone.Bad),
             "exploited" => ("Settled, for a price", ThreadTone.Grey),
             _ => ("Settled", ThreadTone.Grey),

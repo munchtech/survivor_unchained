@@ -184,46 +184,79 @@ public sealed class CreationDraft
 {
     public int Step;
     public string Name = "", Archetype = "warden", WeaponItem = "worn_oathblade", Ability = "shield_bash", Background = "hunter";
-    public string Palette = "steel", Model = "knight", Cloak = "calling", Skin = "fair", Hair = "as_is", HairStyle = "Hair_SimpleParted";
+    public string Palette = "steel", Model = "knight", Cloak = "calling", Skin = "fair", Hair = "as_is", HairStyle = "long";
     public bool Headgear = true, Beard = true;
-    public Sex Sex = Sex.Male;
+    /// <summary>The survivor is the heroine, unless a man is chosen.</summary>
+    public Sex Sex = Sex.Female;
     public double Figure = 1.0;
+    /// <summary>Her eyes, the paint on her face, and her face: its sliders
+    /// (her own face where none is moved) and the face it started from.</summary>
+    public string Eyes = "moss", Paint = "none", FaceShape = "own";
+    public Dictionary<string, double> Face = new();
+    /// <summary>The look step's part (body, hair, face, paint) and the face's group of sliders.</summary>
+    public int Section, FaceGroup;
 
     public CreationChoice Choice() => new()
     {
         Name = Name.Trim(), Archetype = Archetype, Background = Background, Palette = Palette, Model = Model, WeaponItem = WeaponItem, Ability = Ability,
         Headgear = Headgear, Cloak = Cloak, Skin = Skin, Hair = Hair, Sex = Sex, HairStyle = HairStyle, Beard = Beard, Figure = Figure,
+        Face = Sex == Sex.Female ? new Dictionary<string, double>(Face) : null, Eyes = Sex == Sex.Female ? Eyes : null, Paint = Sex == Sex.Female ? Paint : null,
     };
 
-    /// <summary>What the figure by the fire looks like: changes when this does.</summary>
-    public string LookKey => $"{Archetype}|{Model}|{WeaponItem}|{Palette}|{Headgear}|{Cloak}|{Skin}|{Hair}|{Sex}|{HairStyle}|{Beard}|{Figure}";
+    /// <summary>The figure by the fire is built again when this changes (who
+    /// they are, what they wear and hold); a man's hair and skin are his clothes' kit.</summary>
+    public string BodyKey => $"{Archetype}|{Model}|{WeaponItem}|{Palette}|{Headgear}|{Cloak}|{Sex}|{Figure}|{Beard}" + (Sex == Sex.Male ? $"|{Skin}|{Hair}|{HairStyle}" : "");
+
+    /// <summary>What the figure looks like: changes when this does (her hair,
+    /// skin, eyes, face and paint are changed on her where she stands).</summary>
+    public string LookKey => $"{BodyKey}|{Skin}|{Hair}|{HairStyle}|{Eyes}|{Paint}|{string.Join(",", Face.OrderBy(f => f.Key).Select(f => $"{f.Key}={f.Value:0.###}"))}";
+
+    /// <summary>A body chosen: her own hairstyle or his, kept if it is one of theirs.</summary>
+    public void SetSex(Sex sx)
+    {
+        Sex = sx;
+        if (sx == Sex.Female) HairStyle = Loadouts.HerHair(HairStyle);
+        else if (!Lore.HairStyles(sx).Contains(HairStyle) && HairStyle != "none") HairStyle = Lore.HairStyles(sx)[0];
+        Section = 0;
+    }
 }
 
 /// <summary>
 /// Making the survivor, by the fire (the web game's screens/Create.tsx).
-/// Four steps, each a question the world will ask again later: Calling (how
+/// Five steps, each a question the world will ask again later: Calling (how
 /// do you fight?), Arms (with what, and what do your hands do?), Origin
-/// (where are you from?), Name (who are you?). The figure by the fire
-/// changes as you choose; the panel on the right says what each choice means.
+/// (where are you from?), Look (what does she look like?), Name (who are
+/// you?). The figure by the fire changes as you choose, and can be turned
+/// (drag, or the right stick) and brought near (the wheel, or the right
+/// stick) to her face; the panel on the right says what each choice means.
 /// Enter or A on a choice takes it; on the one already taken, it moves on
-/// (so A, A walks through); LB and RB turn the steps.
+/// (so A, A walks through); LB and RB turn the steps, LT and RT the look's parts.
 /// </summary>
 public partial class CreateScreen : Overlay
 {
     public override string Kind => "create";
     public override bool Dismissable => false;
     readonly CreationDraft d;
-    static readonly string[] Steps = { "Calling", "Arms", "Origin", "Name" };
-    static readonly string[] Numerals = { "I", "II", "III", "IV" };
+    static readonly string[] Steps = { "Calling", "Arms", "Origin", "Look", "Name" };
+    static readonly string[] Numerals = { "I", "II", "III", "IV", "V" };
+    const int LookStep = 3, NameStep = 4;
     static readonly Dictionary<string, string> ClassGlyph = new() { ["warden"] = "shield", ["reaver"] = "axe", ["arcanist"] = "staff", ["stalker"] = "bow" };
     static readonly Dictionary<string, string> BgGlyph = new() { ["hunter"] = "claw", ["scholar"] = "book", ["outcast"] = "mask", ["devout"] = "sun" };
-    static readonly string[] Names = { "Ashe", "Brannagh", "Corwen", "Dace", "Edda", "Fen", "Garrow", "Hollis", "Isolde", "Jessamy", "Kell", "Lorne", "Maren", "Nolly", "Orrin", "Pim", "Quill", "Rhosyn", "Sabre", "Tamsin", "Ulla", "Voss", "Wren", "Yarrow" };
-    static readonly Dictionary<string, string> HairNames = new() { ["Hair_SimpleParted"] = "Parted", ["Hair_Buzzed"] = "Cropped", ["Hair_Long"] = "Long", ["Hair_Buns"] = "Buns", ["Hair_BuzzedFemale"] = "Cropped", ["none"] = "Shorn" };
+    // Never a name the story has spent or nearly spent (Ashe, Kell, Orrin; Ysolde, Brannoc, Corran, Holloway, Tam).
+    static readonly string[] Names = { "Alder", "Bryony", "Cass", "Dace", "Edda", "Fen", "Garrow", "Hester", "Ilse", "Jessamy", "Kit", "Lorne", "Maren", "Nolly", "Orla", "Pim", "Quill", "Rhosyn", "Sabre", "Tegan", "Ulla", "Voss", "Wren", "Yarrow" };
     LineEdit? nameBox;
 
     public CreateScreen(Game g, CreationDraft draft) : base(g) { d = draft; }
 
-    void Set(Action change) { change(); G.DressFigure(d); Refresh(); }
+    void Set(Action change)
+    {
+        int step = d.Step, section = d.Section;
+        change();
+        G.DressFigure(d);
+        // A new step or part frames the figure for it (the look's parts come near: her hair, her face).
+        if (d.Step != step || d.Section != section) G.FrameFigure(SectionZoom(), SectionTurn());
+        Refresh();
+    }
 
     void ChooseArchetype(string id)
     {
@@ -238,7 +271,7 @@ public partial class CreateScreen : Overlay
         if (!CanBegin)
         {
             // No name yet: offer one from the road (a pad cannot type), and wait for a second word.
-            Set(() => { d.Step = 3; d.Name = Names[Random.Shared.Next(Names.Length)]; });
+            Set(() => { d.Step = NameStep; d.Name = Names[Random.Shared.Next(Names.Length)]; });
             Nav.FocusId = "begin";
             return;
         }
@@ -248,6 +281,10 @@ public partial class CreateScreen : Overlay
     protected override void Build()
     {
         var a = Callings.Archetype(d.Archetype);
+        // (the column's place in its list, kept through the rebuild a choice makes)
+        float was = scroll != null && IsInstanceValid(scroll) && scrollKey == (d.Step, d.Section) ? scroll.ScrollVertical : 0;
+        // The figure between the column and the plate: dragged, she turns; the wheel brings her near.
+        AddChild(Stage());
         // A forged column down the left, the figure by the fire in the middle, the choice read
         // closely on the right (docs/UI_DESIGN.md, "Creation").
         var column = Style.Panel(Style.Plate(0));
@@ -261,20 +298,24 @@ public partial class CreateScreen : Overlay
         col.AddChild(Style.Label("By the fire on the Low Ford road", Style.TextItalic, Style.Body, new Color("#c8a878")));
         col.AddChild(new Plaque("Who sits here?", 30, 30));
         col.AddChild(StepRoad());
-        var body = d.Step switch { 0 => Calling(), 1 => Arms(a), 2 => Origin(), _ => NameLook(a) };
+        if (d.Step == LookStep) col.AddChild(SectionTabs());
+        var body = d.Step switch { 0 => Calling(), 1 => Arms(a), 2 => Origin(), LookStep => Look(a), _ => NamePage(a) };
         var sc = Style.Scroll(body);
         sc.SizeFlagsVertical = SizeFlags.ExpandFill;
         col.AddChild(sc);
+        scroll = sc;
+        scrollKey = (d.Step, d.Section);
+        if (was > 0) Callable.From(() => { if (IsInstanceValid(sc)) sc.ScrollVertical = (int)was; }).CallDeferred();
         var foot = Style.H(10, Nav.Id(Style.Button(d.Step > 0 ? "Back" : "Leave", () => { if (d.Step > 0) Set(() => d.Step--); else G.CancelCreation(); }), "back"));
         foot.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill });
-        foot.AddChild(d.Step < 3 ? Nav.Id(Style.Button($"Next: {Steps[d.Step + 1]}", () => Set(() => d.Step++), true), "next") : Nav.Id(Style.Button("Begin the journey", Begin, true), "begin"));
+        foot.AddChild(d.Step < NameStep ? Nav.Id(Style.Button($"Next: {Steps[d.Step + 1]}", () => Set(() => d.Step++), true), "next") : Nav.Id(Style.Button("Begin the journey", Begin, true), "begin"));
         col.AddChild(foot);
 
         var right = Style.Panel(Style.Plate(24));
         right.Position = new Vector2(1380, 110);
         right.Size = new Vector2(500, 0);
         right.CustomMinimumSize = new Vector2(500, 0);
-        right.AddChild(d.Step switch { 0 => CallingDetail(a), 1 => ArmsDetail(), 2 => OriginDetail(), _ => Summary(a) });
+        right.AddChild(d.Step switch { 0 => CallingDetail(a), 1 => ArmsDetail(), 2 => OriginDetail(), LookStep => LookDetail(a), _ => Summary(a) });
         AddChild(right);
 
         // Who they are becoming, on a banner at the figure's feet.
@@ -391,7 +432,9 @@ public partial class CreateScreen : Overlay
         return v;
     }
 
-    Control NameLook(Archetype a)
+    /// <summary>The last step: their name (typed, or one from the road), and
+    /// who they are, read back before the journey begins.</summary>
+    Control NamePage(Archetype a)
     {
         var v = Style.V(8, Style.SubLabel("Name"));
         nameBox = new LineEdit { Text = d.Name, PlaceholderText = "Your name", MaxLength = 18, CustomMinimumSize = new Vector2(360, 38), SizeFlagsHorizontal = SizeFlags.ExpandFill };
@@ -409,75 +452,35 @@ public partial class CreateScreen : Overlay
         // The keyboard types at once; a pad cannot type, so it is offered names instead.
         if (!Controls.Instance.UsingPad) Callable.From(() => nameBox?.GrabFocus()).CallDeferred();
         else if (d.Name.Trim() == "") Nav.Prefer = "roadname";
-
-        v.AddChild(Style.SubLabel("Body"));
-        var body = Style.H(6);
-        foreach (var sx in new[] { Sex.Male, Sex.Female })
-            body.AddChild(Style.Segment(sx == Sex.Male ? "Man" : "Woman", d.Sex == sx, () => Set(() =>
-            {
-                d.Sex = sx;
-                var styles = Lore.HairStyles(sx);
-                if (!styles.Contains(d.HairStyle) && d.HairStyle != "none") d.HairStyle = styles[0];
-            })));
-        if (d.Sex == Sex.Male) body.AddChild(Style.Segment(d.Beard ? "Bearded" : "Clean-shaven", d.Beard, () => Set(() => d.Beard = !d.Beard)));
-        v.AddChild(body);
-        if (d.Sex == Sex.Female)
-        {
-            var slider = new HSlider { MinValue = 0, MaxValue = 1.5, Step = 0.1, Value = d.Figure, CustomMinimumSize = new Vector2(220, 24), FocusMode = FocusModeEnum.None };
-            slider.DragEnded += _ => Set(() => d.Figure = slider.Value);
-            // With focus, left and right move it a step.
-            Nav.Mark(slider, "figure", null, adjust: dir => Set(() => d.Figure = Math.Clamp(Math.Round((d.Figure + dir * 0.1) * 10) / 10, 0, 1.5)));
-            string Word(double f) => f < 0.45 ? "Slender" : f < 0.95 ? "Shapely" : f < 1.25 ? "Full" : "Buxom";
-            v.AddChild(Style.H(10, Style.Label("Figure", Style.UiBold, 14, Style.Ink), slider, Style.Label(Word(d.Figure), Style.Ui, 14, Style.InkDim)));
-        }
-        // A woman is in a body of her own (Loadouts.HerBody): her hair is her
-        // own (its colour can be chosen, not its cut), the calling's colours
-        // dye her suit, and no hood goes over her.
-        bool her = d.Sex == Sex.Female;
-        v.AddChild(Style.SubLabel(her ? "Colours of her suit" : "Colours"));
-        var pal = new GridContainer { Columns = 2 };
-        foreach (var p in a.Palettes) pal.AddChild(Style.Segment(p.Name, d.Palette == p.Id, () => Set(() => d.Palette = p.Id)));
-        v.AddChild(pal);
-        v.AddChild(Style.SubLabel("Skin"));
-        v.AddChild(Swatches(Lore.Skins, d.Skin, id => d.Skin = id, "#f6c4a0"));
-        bool hairHidden = !her && (d.Archetype == "stalker" ? d.Model == "rogue_hooded" : d.Headgear && d.Archetype != "reaver");
-        v.AddChild(Style.H(8, Style.SubLabel("Hair"), hairHidden ? Style.Label("under the hood", Style.TextItalic, 13, Style.InkDim) : new Control()));
-        if (!her)
-        {
-            var cuts = Style.H(4);
-            foreach (var h in Lore.HairStyles(d.Sex).Append("none")) cuts.AddChild(Style.Segment(HairNames.GetValueOrDefault(h, h), d.HairStyle == h, () => Set(() => d.HairStyle = h)));
-            if (hairHidden) cuts.Modulate = new Color(1, 1, 1, 0.5f);
-            v.AddChild(cuts);
-        }
-        v.AddChild(Swatches(Lore.Hairs, d.Hair, id => d.Hair = id, "#6a5a48"));
-        if (d.Archetype != "reaver" && !her)
-        {
-            v.AddChild(Style.SubLabel("Hood"));
-            if (a.AltModel != null) v.AddChild(Style.Button(d.Model == a.Model ? "Hood up" : "Hood down", () => Set(() => d.Model = d.Model == a.Model ? a.AltModel! : a.Model), false, true));
-            if (d.Archetype != "stalker") v.AddChild(Style.Button(d.Headgear ? "Hood up" : "Hood down", () => Set(() => d.Headgear = !d.Headgear), false, true));
-        }
-        v.AddChild(Style.SubLabel("Cloak"));
-        v.AddChild(Swatches(Lore.CloakDyes, d.Cloak, id => d.Cloak = id, "#3a2a20"));
+        // Who they are, each step's answer on its medallion; a press goes back to it.
+        v.AddChild(Style.Gap(6));
+        v.AddChild(Style.SubLabel(d.Sex == Sex.Female ? "Who she is" : "Who he is"));
+        var bg = Callings.Background(d.Background);
+        var ab = Abilities.ById(d.Ability);
+        v.AddChild(Recall(0, ClassGlyph.GetValueOrDefault(d.Archetype, "sword"), a.Name, a.Tagline));
+        v.AddChild(Recall(1, ab.Icon, Items.Get(d.WeaponItem).Name, $"and {ab.Name} in hand"));
+        v.AddChild(Recall(2, BgGlyph.GetValueOrDefault(d.Background, "map"), bg.Name, bg.Summary));
+        v.AddChild(Recall(LookStep, "mask", d.Sex == Sex.Female ? "Her look" : "His look", LookWords()));
         return v;
     }
 
-    Control Swatches(List<LookChoice> list, string now, Action<string> set, string fallback)
+    /// <summary>A step's answer, read back: pressed, it goes back to that step.</summary>
+    Button Recall(int step, string glyph, string name, string words)
     {
-        var h = Style.H(5);
-        foreach (var c in list)
-        {
-            var id = c.Id;
-            var b = new Button { CustomMinimumSize = new Vector2(32, 32), FocusMode = FocusModeEnum.None, TooltipText = c.Name };
-            Nav.Id(b, $"swatch:{fallback}:{id}");
-            var col = string.IsNullOrEmpty(c.Color) ? new Color(fallback) : new Color(c.Color);
-            b.AddThemeStyleboxOverride("normal", Style.Box(col, now == id ? Style.GoldHi : new Color(0, 0, 0, 0.8f), now == id ? 3 : 1, 15, 0));
-            b.AddThemeStyleboxOverride("hover", Style.Box(col.Lightened(0.1f), Style.LineHi, 2, 15, 0));
-            b.AddThemeStyleboxOverride("pressed", Style.Box(col, Style.GoldHi, 3, 15, 0));
-            b.Pressed += () => Set(() => set(id));
-            h.AddChild(b);
-        }
-        h.AddChild(Style.Label(list.FirstOrDefault(c => c.Id == now)?.Name ?? "", Style.Ui, Style.Caption, Style.InkDim));
-        return h;
+        var b = Style.Button("", () => Set(() => d.Step = step));
+        b.CustomMinimumSize = new Vector2(470, 70);
+        Nav.Id(b, $"recall:{step}");
+        foreach (var x in new[] { "normal", "hover", "pressed" })
+            b.AddThemeStyleboxOverride(x, x == "normal" ? new StyleBoxEmpty() : Style.Slab(0));
+        var row = Style.H(12, new Medallion(52, "", glyph) { Ring = Style.GoldDim, Ink = Style.GoldHi });
+        var w = Style.V(0, Style.Label(name, Style.UiBold, Style.Small, Style.GoldHi), Style.Label(words, Style.Ui, Style.Caption, Style.InkDim, true));
+        w.CustomMinimumSize = new Vector2(380, 0);
+        w.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        row.AddChild(w);
+        row.Position = new Vector2(8, 9);
+        row.MouseFilter = MouseFilterEnum.Ignore;
+        b.AddChild(row);
+        return b;
     }
 
     static Label Line(string bold, string text) => Style.Label($"{bold}   {text}", Style.Text, 15, Style.Ink, true);
@@ -541,14 +544,22 @@ public partial class CreateScreen : Overlay
         // Typing a name: the letters are the name's, not the menu's.
         if (nameBox != null && nameBox.HasFocus() && a is not (Act.Cancel or Act.Confirm)) return true;
         if (nameBox != null && nameBox.HasFocus() && a == Act.Confirm) { nameBox.ReleaseFocus(); Begin(); return true; }
-        if (a == Act.TabNext) { Set(() => d.Step = Math.Min(3, d.Step + 1)); return true; }
+        if (a == Act.TabNext) { Set(() => d.Step = Math.Min(NameStep, d.Step + 1)); return true; }
         if (a == Act.TabPrev) { Set(() => d.Step = Math.Max(0, d.Step - 1)); return true; }
+        // The look's parts, on the triggers (or , and .).
+        if (d.Step == LookStep && a is Act.SubNext or Act.SubPrev)
+        {
+            int n = Sections.Length;
+            Set(() => d.Section = (d.Section + (a == Act.SubNext ? 1 : n - 1)) % n);
+            Sound.Sfx.Page();
+            return true;
+        }
         if (a == Act.Cancel) { if (d.Step > 0) Set(() => d.Step--); else G.CancelCreation(); return true; }
         if (a == Act.Confirm)
         {
             // On a choice not yet taken, Enter or A takes it (focus does it); otherwise, onward.
             if (Nav.KeyMode && Nav.Current is { } c && !c.C.HasMeta("on")) return false;
-            if (d.Step < 3) Set(() => d.Step++); else Begin();
+            if (d.Step < NameStep) Set(() => d.Step++); else Begin();
             return true;
         }
         return false;

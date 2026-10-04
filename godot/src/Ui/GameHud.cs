@@ -974,6 +974,7 @@ public partial class GameHud : CanvasLayer
 
     public override void _Process(double delta)
     {
+        using var _ = new Perf.Span(Perf.Part.Hud);
         float dt = (float)delta;
         if (sayT > 0)
         {

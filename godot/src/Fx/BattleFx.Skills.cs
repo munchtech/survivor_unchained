@@ -62,6 +62,38 @@ public partial class BattleFx
         float flare = (0.45f + share * 0.9f) * (e.Crit ? 1.6f : 1) * g;
         Sparks.Spawn(at, Vector3.Zero, e.Crit ? 0.12f : 0.08f, flare, pal.Core * (e.Crit ? 1.1f : 0.8f), pal.Glow * 0.3f, flare * 0.4f, sprite: Sprites.Of("flare"), spinV: 0);
         if (!rich) return;
+        // The skill's own mark at the body: an arrow's line carried through it, a knife's
+        // cut, a disc's star of gold, a mote's violet star, a shard's frost star.
+        switch (art)
+        {
+            case "arrow" or "arrow_mark":
+                Ribbons.Line(new[] { at - away * 0.5f, at + away * 0.3f, at + away * 1.1f }, 0.16f * g, 0.12f, Hdr("#ffd8a0", 1f), 2.4f, Ribbons.Style.Steel, new[] { 0f, 1f, 0f });
+                break;
+            case "dagger" or "dagger_blood" or "dagger_flurry":
+                Sparks.Spawn(at, Vector3.Zero, 0.16f, 0.7f * g, art == "dagger_blood" ? Blood : SteelWhite * 0.8f, null, 0.8f * g, sprite: Sprites.Of("scratch"), spinV: 0);
+                break;
+            case "disc" or "disc_aegis" or "disc_reckon":
+                Sparks.Spawn(at, Vector3.Zero, 0.18f, 1.1f * g, OathGold, OathGold * 0.2f, 0.3f, sprite: Sprites.Range("star").First + 3 + 1, spinV: 2);
+                break;
+            case "mote" or "mote_cascade" or "mote_star":
+                Sparks.Spawn(at, Vector3.Zero, 0.16f, 0.8f * g, art == "mote_cascade" ? FenLight : Hdr("#e070ff", 2.6f), null, 0.2f, sprite: Sprites.Range("star").First + 2 + 1, spinV: 3);
+                break;
+            case "shard" or "shard_deep" or "spear_ice":
+                Sparks.Spawn(at, Vector3.Zero, 0.2f, 0.9f * g, Hdr("#bfe8ff", 2.4f), null, 0.3f, sprite: Sprites.Range("star").First + 1, spinV: 1);
+                // Where it breaks, the cold takes the ground under the body: a few points of ice.
+                Erupt(e.X, e.Z, 0.1f, 0.55f + share * 0.4f, 3 + (int)(share * 4), SpikeKind.Ice, 0.55f * g, 0.6f, Hdr("#8fd8ff", 1.3f));
+                break;
+        }
+        // The skill's own burst at the body, small: a mote breaks in violet, a disc in gold, a shard in rime.
+        var (book, tint) = art switch
+        {
+            "mote" or "mote_cascade" or "mote_star" or "moon" or "moon_brand" => ("arcane_burst", new Color(1.2f, 1.1f, 1.3f, 0.9f)),
+            "disc" or "disc_aegis" or "disc_reckon" => ("holy_burst", new Color(1.2f, 1.1f, 0.85f, 0.9f)),
+            "shard" or "shard_deep" or "spear_ice" => ("frost_burst", new Color(0.55f, 0.8f, 1.3f, 0.9f)),
+            "umbral" or "ruin" or "siphon" or "tether" or "tether2" or "tether_mark" => ("shadow_burst", new Color(1.3f, 1.2f, 1.4f, 0.9f)),
+            _ => ((string?)null, Colors.White),
+        };
+        if (book != null) Books.Spawn(book, at, 0.25f * g, 0.3f, tint, sizeEnd: (0.55f + share * 0.5f) * g);
         int n = (e.Crit ? 7 : 3) + (int)(share * 6);
         switch (school)
         {
@@ -133,7 +165,7 @@ public partial class BattleFx
                 break;
             case "mote" or "mote_cascade" or "mote_star" or "moon" or "moon_brand":
                 // A spell spoken: a turning glyph of light at the hand.
-                Sparks.Spawn(hand + Vector3.Up * 0.1f, Vector3.Zero, 0.22f, 0.55f * g, (art.StartsWith("moon") ? Moon : art == "mote_cascade" ? FenLight : pal.Core) * 0.7f, pal.Glow * 0.2f, 0.9f * g, sprite: Sprites.Of("magic"), spinV: 6);
+                Sparks.Spawn(hand + Vector3.Up * 0.1f, Vector3.Zero, 0.26f, 0.85f * g, (art.StartsWith("moon") ? Moon : art == "mote_cascade" ? FenLight : pal.Core) * 0.7f, pal.Glow * 0.2f, 0.9f * g, sprite: Sprites.Of("magic"), spinV: 6);
                 break;
             case "cinder" or "living_flame" or "star":
                 Books.Spawn("fire_blast", hand, 0.5f * g, 0.35f, new Color(1.4f, 1.4f, 1.4f, 0.9f), sizeEnd: 1.1f * g);
@@ -182,13 +214,22 @@ public partial class BattleFx
             case "palm_storm": core = Palette.Of(School.Storm).Core; glow = Palette.Of(School.Storm).Glow; life = 0.16f; break;
         }
         mirror = !mirror;
-        if (spin)
+        // The blade's path, swept fast: a hot edge at the reach and a wake behind
+        // it, drawn as it goes (a painted fan read as a flat disc of beige).
+        float sweepSpan = spin ? Mathf.Tau * 1.05f : (float)e.Arc * 1.1f, start = (float)e.Angle - (mirror ? -1 : 1) * sweepSpan / 2;
+        float dirSign = mirror ? -1 : 1;
+        float swing = heavy ? 0.13f : 0.09f;
+        sweeps.Add(new Sweep
         {
-            // A full turn: two half-arcs chasing each other round.
-            Hits.Arc(at, facing, reach * 1.02f, life, false, core, glow);
-            Hits.Arc(at, facing + Mathf.Pi, reach * 1.02f, life, false, core, glow);
-        }
-        else Hits.Arc(at, facing, reach, life, mirror, core, glow);
+            C = at, R = reach, A0 = start, Span = sweepSpan * dirSign, Life = swing, Edge = core, Wake = glow,
+            W = heavy ? 0.5f : 0.38f, G = g, Key = ++sweepKey * 2,
+        });
+        if (spin)
+            sweeps.Add(new Sweep
+            {
+                C = at, R = reach * 0.8f, A0 = start + Mathf.Pi, Span = sweepSpan * dirSign, Life = swing * 1.1f, Edge = core, Wake = glow,
+                W = 0.4f, G = g, Key = ++sweepKey * 2,
+            });
         // Sparks struck off the edge, flung along the swing.
         int n = Math.Min(14, (int)(5 * g) + (heavy ? 4 : 0));
         float a0 = (float)e.Angle - (float)e.Arc / 2, span = spin ? Mathf.Tau : (float)e.Arc;
@@ -227,6 +268,45 @@ public partial class BattleFx
             }
     }
 
+    /// <summary>A blade's swing in progress: its tip carried round the arc
+    /// over its life, a ribbon behind the edge and a wider, fainter one behind
+    /// the flat, fed several points a frame so the curve stays round.</summary>
+    struct Sweep
+    {
+        public Vector3 C;
+        public float R, A0, Span, Life, Age, W, G;
+        public Color Edge, Wake;
+        public long Key;
+    }
+
+    readonly System.Collections.Generic.List<Sweep> sweeps = new();
+    long sweepKey = 1L << 40;
+
+    void StepSweeps(float dt)
+    {
+        for (int i = sweeps.Count - 1; i >= 0; i--)
+        {
+            var s = sweeps[i];
+            float t0 = s.Age / s.Life;
+            s.Age += dt;
+            float t1 = Mathf.Min(1, s.Age / s.Life);
+            if (t0 >= 1) { sweeps.RemoveAt(i); continue; }
+            sweeps[i] = s;
+            const int Sub = 6;
+            for (int k = 1; k <= Sub; k++)
+            {
+                float t = Mathf.Lerp(t0, t1, k / (float)Sub);
+                // Fast out of the wind-up, slowing through the follow.
+                float e = 1 - (1 - t) * (1 - t);
+                float a = s.A0 + s.Span * e;
+                var dir = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+                float ago = (1 - k / (float)Sub) * dt;
+                Ribbons.Feed(s.Key, s.C + dir * s.R * 0.97f, 0.14f * s.G, 0.12f, new Color(s.Edge.R / 3, s.Edge.G / 3, s.Edge.B / 3), 3f, Ribbons.Style.Steel, ago);
+                Ribbons.Feed(s.Key + 1, s.C + dir * s.R * 0.74f, s.R * s.W * s.G, 0.1f, new Color(s.Wake.R / 3, s.Wake.G / 3, s.Wake.B / 3), 1.3f, Ribbons.Style.Wisp, ago);
+            }
+        }
+    }
+
     /* -------------------------------------------------------- in the air -- */
 
     /// <summary>A projectile of the survivor's, drawn as its skill: its body
@@ -247,7 +327,7 @@ public partial class BattleFx
                 var basis = new Godot.Basis(Vector3.Up, heading);
                 steel.Add(new Transform3D(basis, at), art == "arrow_mark" ? new Color(1.2f, 0.8f, 0.6f) : new Color(0.9f, 0.88f, 0.82f));
                 // A pale streak behind it: an arrow is read by its line, not its shaft.
-                Ribbons.Feed(key, at, 0.09f * g, 0.13f, art == "arrow_mark" ? Hdr("#ff9a5a", 1f) : Hdr("#fff4e0", 1f), 2.2f, Ribbons.Style.Steel);
+                Ribbons.Feed(key, at, 0.2f * g, 0.18f, art == "arrow_mark" ? Hdr("#ff9a5a", 1f) : Hdr("#fff4e0", 1f), 2.2f, Ribbons.Style.Steel);
                 if (art == "arrow_mark") Sparks.Spawn(at, Vector3.Zero, 0.05f, 0.35f, Hdr("#ff7a3a", 2.2f), null, 0.2f);
                 return true;
             }
@@ -256,7 +336,7 @@ public partial class BattleFx
                 var basis = new Godot.Basis(Vector3.Up, heading) * new Godot.Basis(Vector3.Right, Mathf.Pi / 2) * new Godot.Basis(Vector3.Up, (float)(now * 9 + p.Id));
                 daggers.Add(new Transform3D(basis, at), Colors.White);
                 var c = art == "dagger_blood" ? Hdr("#ff4a3a", 1f) : Hdr("#fff4e0", 1f);
-                Ribbons.Feed(key, at, 0.12f * g, 0.12f, c, art == "dagger_flurry" ? 2.6f : 2f, Ribbons.Style.Steel);
+                Ribbons.Feed(key, at, 0.22f * g, 0.16f, c, art == "dagger_flurry" ? 2.8f : 2.3f, Ribbons.Style.Steel);
                 return true;
             }
             case "axe" or "axe_blood" or "axe_storm":
@@ -275,9 +355,10 @@ public partial class BattleFx
                 var gold = art == "disc_aegis" ? Hdr("#e8f0ff", 1.4f) : OathGold * 0.5f;
                 rings.Add(new Transform3D(new Godot.Basis(Vector3.Up, (float)(now * 16)).Scaled(Vector3.One * s), at), gold);
                 // The sun it carries: a hot core in a wide warm halo, and a gold wake.
+                Shade(at, 1.9f * s, 0.55f);
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * 0.5f * s), at), pal.Core * 0.7f);
-                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * 1.8f * s), at), pal.Glow * 0.16f);
-                Ribbons.Feed(key, at, 0.38f * s, 0.22f, art == "disc_aegis" ? Hdr("#cfe0ff", 1f) : Hdr("#ffd27a", 1f), 2f, Ribbons.Style.Glow);
+                orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * 1.15f * s), at), pal.Glow * 0.12f);
+                Ribbons.Feed(key, at, 0.55f * s, 0.3f, art == "disc_aegis" ? Hdr("#cfe0ff", 1f) : Hdr("#ffd27a", 1f), 2f, Ribbons.Style.Glow);
                 if (R() < 0.3f) Sparks.Spawn(at, new Vector3((R() - 0.5f), 0.6f, (R() - 0.5f)), 0.5f, 0.07f, pal.Core, pal.Glow, 0.01f, -0.4f, 1.5f, sprite: Sprites.Of("star"), spinV: 4);
                 return true;
             }
@@ -285,6 +366,7 @@ public partial class BattleFx
             {
                 float s = 0.8f * Mathf.Sqrt(g);
                 var tint = art == "chakram_hail" ? Palette.Of(School.Frost).Glow * 0.5f : new Color(0.9f, 0.95f, 0.92f);
+                Shade(at, 1.4f * s, 0.5f);
                 rings.Add(new Transform3D(new Godot.Basis(Vector3.Up, (float)(now * 22)).Scaled(Vector3.One * s), at), tint);
                 // Gale Chakram rides the wind: a pale curl of air behind it.
                 Ribbons.Feed(key, at, 0.55f * s, 0.25f, art == "chakram_hail" ? Hdr("#bfe6ff", 1f) : Hdr("#e8f8f0", 1f), art == "chakram_razor" ? 1.6f : 1.1f,
@@ -298,9 +380,12 @@ public partial class BattleFx
                 var gw = art == "mote_cascade" ? Hdr("#3affc0", 2f) : pal.Glow;
                 float s = 0.3f * g * (art == "mote_star" ? 1.3f : 1);
                 var wob = new Vector3(Mathf.Sin((float)now * 23 + p.Id), Mathf.Sin((float)now * 17 + p.Id * 3) * 0.6f, Mathf.Cos((float)now * 19 + p.Id)) * 0.06f;
+                Shade(at + wob, s * 2.6f, 0.6f);
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 0.55f), at + wob), c);
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 2.4f), at + wob), gw * 0.2f);
-                Ribbons.Feed(key, at + wob, 0.16f * g, 0.32f, new Color(gw.R / 3, gw.G / 3, gw.B / 3), 2.2f, Ribbons.Style.Glow);
+                Ribbons.Feed(key, at + wob, 0.22f * g, 0.24f, new Color(gw.R / 2.2f, gw.G / 2.2f, gw.B / 2.2f), 2.6f, Ribbons.Style.Glow);
+                // Its heart a four-pointed star that twinkles as it hunts.
+                Sparks.Spawn(at + wob, Vector3.Zero, 0.05f, s * (1.5f + 0.4f * Mathf.Sin((float)now * 40 + p.Id)), c * 0.6f, null, s * 1.2f, sprite: Sprites.Range("star").First + 2 + 1, spinV: 0);
                 if (art == "mote_star" && R() < 0.4f) Sparks.Spawn(at, Vector3.Zero, 0.25f, 0.28f * g, c * 0.5f, null, 0.05f, sprite: Sprites.Of("star"), spinV: 6);
                 else if (R() < 0.2f) Sparks.Spawn(at, new Vector3(R() - 0.5f, R() - 0.5f, R() - 0.5f), 0.35f, 0.05f, c, gw, 0.01f, 0, 2);
                 return true;
@@ -308,10 +393,11 @@ public partial class BattleFx
             case "moon" or "moon_brand" or "moonfall":
             {
                 float s = 0.75f * g;
+                Shade(at, s * 2.4f, 0.6f);
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 0.6f), at), Moon);
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 2.2f), at), Hdr("#9a7aff", 1f) * 0.25f);
                 Sparks.Spawn(at, Vector3.Zero, 0.06f, s * 1.1f, Moon * 0.35f, null, s * 1.1f, sprite: Sprites.Of("twirl"), spinV: 0);
-                Ribbons.Feed(key, at, 0.3f * g, 0.3f, Hdr("#b8a8ff", 1f), 1.8f, Ribbons.Style.Glow);
+                Ribbons.Feed(key, at, 0.45f * g, 0.36f, Hdr("#b8a8ff", 1f), 2.2f, Ribbons.Style.Glow);
                 return true;
             }
             case "cinder" or "living_flame" or "star":
@@ -319,6 +405,7 @@ public partial class BattleFx
                 // A burning coal: flame streaming off it, embers shed behind, a little smoke.
                 bool star = art == "star", small = art == "living_flame";
                 float s = (star ? 1.25f : small ? 0.55f : 0.85f) * g;
+                Shade(at, s * 2.2f, 0.45f);
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 0.45f), at), star ? Hdr("#fff4e0", 4f) : Hdr("#ffe0a0", 3.5f));
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 1.9f), at), Hdr("#ff6a1a", 2f) * 0.22f);
                 Ribbons.Feed(key, at, 0.55f * s, star ? 0.4f : 0.28f, Hdr("#ff8a2a", 1f), 2.4f, Ribbons.Style.Flame);
@@ -339,11 +426,12 @@ public partial class BattleFx
             {
                 float s = (art == "spear_ice" ? 2.4f : art == "shard_deep" ? 1.2f : 1) * Mathf.Sqrt(g);
                 var basis = new Godot.Basis(Vector3.Up, heading) * new Godot.Basis(Vector3.Right, Mathf.Pi / 2);
+                Shade(at, 1.3f * s, 0.55f);
                 shards.Add(new Transform3D(basis.Scaled(Vector3.One * s), at), pal.Glow * 0.6f);
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * 0.9f * s), at), pal.Glow * 0.12f);
-                Ribbons.Feed(key, at, (art == "spear_ice" ? 0.6f : 0.22f) * s, art == "spear_ice" ? 0.45f : 0.24f, Hdr("#cdeeff", 1f), 1.8f, Ribbons.Style.Frost);
-                // Cold smoking off it.
-                if (R() < 0.3f) Smoke.Spawn(at, -fwd * 0.4f + Vector3.Up * 0.1f, 0.7f, 0.18f * s, new Color(0.8f, 0.9f, 1f), new Color(0.7f, 0.8f, 0.95f), 0.5f * s, drag: 2, alpha: 0.18f);
+                Ribbons.Feed(key, at, (art == "spear_ice" ? 0.7f : 0.34f) * s, art == "spear_ice" ? 0.45f : 0.24f, Hdr("#7cc8ff", 1f), 2.2f, Ribbons.Style.Frost);
+                // Glints of frost shed behind it (not smoke: puffs in a line read as litter).
+                if (R() < 0.35f) Sparks.Spawn(at, -fwd * (0.5f + R()) + new Vector3((R() - 0.5f) * 0.6f, (R() - 0.5f) * 0.4f, (R() - 0.5f) * 0.6f), 0.35f, 0.07f, Hdr("#dff4ff", 2.2f), Hdr("#5ab4ff", 1.2f), 0.02f, 2, 2, sprite: Sprites.Of("star"), spinV: 6);
                 return true;
             }
             case "umbral" or "ruin" or "siphon" or "tether" or "tether2" or "tether_mark":
@@ -352,9 +440,10 @@ public partial class BattleFx
                 bool ruin = art == "ruin", lantern = p.Weapon == "soul_lantern";
                 float s = (ruin ? 0.8f : 0.55f) * g;
                 var rim = lantern ? Hdr("#b8ffe0", 2.2f) : art == "siphon" ? Hdr("#d070ff", 2.4f) : pal.Glow;
+                Shade(at, s * 2.4f, 0.75f);
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 0.5f), at), lantern ? Hdr("#e8fff4", 3f) : pal.Core * 0.7f);
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 1.8f), at), rim * 0.2f);
-                Ribbons.Feed(key, at, 0.45f * s, ruin ? 0.5f : 0.35f, new Color(rim.R / 3, rim.G / 3, rim.B / 3), 1.6f, Ribbons.Style.Wisp);
+                Ribbons.Feed(key, at, 0.62f * s, ruin ? 0.55f : 0.42f, new Color(rim.R / 3, rim.G / 3, rim.B / 3), 1.6f, Ribbons.Style.Wisp);
                 // The tether: a thread back to the hand that cast it.
                 if (art.StartsWith("tether") && b0 != null)
                 {
@@ -386,6 +475,10 @@ public partial class BattleFx
         }
         return false;
     }
+
+    /// <summary>A dark soft bed under a bright core (drawn first), so it shows over the pale dead.</summary>
+    void Shade(Vector3 at, float size, float a) =>
+        shades.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * size), at), new Color(0.02f, 0.015f, 0.035f, a));
 
     /// <summary>The battle being drawn (for what is drawn relative to the survivor).</summary>
     Battle? b0;
@@ -472,6 +565,8 @@ public partial class BattleFx
                     var dir = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
                     Smoke.Spawn(ground + Vector3.Up * 0.3f + dir * r * 0.3f, dir * r * 1.4f + Vector3.Up * 0.2f, 0.9f, r * 0.25f, new Color(0.78f, 0.9f, 1f), new Color(0.6f, 0.75f, 0.95f), r * 0.6f, drag: 2.2f, alpha: 0.22f);
                 }
+                // The front leaves ice standing in it: a ring of crystal points, leaning out, gone in a second.
+                Erupt(e.X, e.Z, r * 0.35f, r * 0.95f, 14 + rings * 5, SpikeKind.Ice, 1.0f * g, 0.95f, Hdr("#8fd8ff", 1.3f));
                 Scars.Add("frost", ground, r * 0.85f, 3.5f, 0);
                 Flash(ground + Vector3.Up * 1.2f, f.Light, 6, 0.35f, r * 2.5f);
                 return true;
@@ -604,6 +699,7 @@ public partial class BattleFx
             {
                 // Bonesplitter: the ground split open ahead of the chop, stones thrown up.
                 Scars.Add("crack", ground, r * 1.1f * g, 6f, 0);
+                Erupt(e.X, e.Z, 0.2f, r * 0.9f, 7, SpikeKind.Stone, 0.9f * g, 0.9f, new Color(0.55f, 0.42f, 0.3f));
                 Blast(e.X, e.Z, School.Physical, r, 0.6f);
                 for (int i = 0; i < 10; i++)
                     Smoke.Spawn(ground + Vector3.Up * 0.3f, new Vector3((R() - 0.5f) * 4, 3 + R() * 4, (R() - 0.5f) * 4), 0.8f, 0.12f + R() * 0.1f, new Color("#5a4632"), gravity: 16, sprite: Sprites.Of("dirt"), spinV: 5);
@@ -644,6 +740,233 @@ public partial class BattleFx
         }
         Flash(a.Lerp(b, 0.4f), pal.Light, 6, life, 12);
         return true;
+    }
+
+    /* -------------------------------------------------------------- spikes -- */
+
+    /// <summary>What grows out of the ground for a moment: ice (Hoarfrost's
+    /// front, a shard breaking), thorns (the brambles), stone (the ground a
+    /// chop splits). Real shapes, lit, so they stand up out of the ground
+    /// from the high camera as no flat picture can; each grows in a breath,
+    /// stands, and sinks back.</summary>
+    enum SpikeKind { Ice, Thorn, Stone }
+
+    struct Spike
+    {
+        public Vector3 At;
+        public Godot.Basis Turn;
+        public float H, W, Age, Life;
+        public SpikeKind Kind;
+        public Color Color;
+    }
+
+    readonly System.Collections.Generic.List<Spike> spikes = new();
+    Batch? iceSpikes, thornSpikes, stoneSpikes;
+
+    void EnsureSpikes()
+    {
+        if (iceSpikes != null) return;
+        Material Crystal(float emit, float rim, float gloss)
+        {
+            var m = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/crystal.gdshader") };
+            m.SetShaderParameter("emit", emit);
+            m.SetShaderParameter("rim", rim);
+            m.SetShaderParameter("gloss", gloss);
+            return m;
+        }
+        // A five-sided point (ice), a four-sided hook of a thorn, a blunt shard of stone; each one unit tall, its base at its origin.
+        Mesh Point(int sides, float top) => new CylinderMesh { TopRadius = top, BottomRadius = 0.5f, Height = 1, RadialSegments = sides, Rings = 1, CapBottom = false };
+        iceSpikes = Add(new Batch(Point(5, 0), 400, Crystal(0.45f, 2.6f, 0.05f), true));
+        thornSpikes = Add(new Batch(Point(4, 0), 400, Crystal(0.12f, 1.4f, 0.5f), true));
+        stoneSpikes = Add(new Batch(Point(5, 0.12f), 200, Crystal(0.02f, 0.4f, 0.8f), true));
+    }
+
+    /// <summary>A ring of spikes round (x, z) between radii r0 and r1, leaning out.</summary>
+    void Erupt(double x, double z, float r0, float r1, int n, SpikeKind kind, float height, float life, Color color)
+    {
+        EnsureSpikes();
+        for (int i = 0; i < n && spikes.Count < 900; i++)
+        {
+            float a = (i + R() * 0.8f) / n * Mathf.Tau, d = Mathf.Lerp(r0, r1, Mathf.Sqrt(R()));
+            double sx = x + Mathf.Cos(a) * d, sz = z + Mathf.Sin(a) * d;
+            var outward = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
+            float lean = (kind == SpikeKind.Stone ? 0.5f : 0.35f) + R() * 0.35f;
+            // Leaning out from the middle, turned about itself.
+            var axis = outward.Cross(Vector3.Up).Normalized();
+            var turn = new Godot.Basis(axis, -lean) * new Godot.Basis(Vector3.Up, R() * Mathf.Tau);
+            float h = height * (0.55f + R() * 0.6f) * (1.1f - 0.3f * (d - r0) / Mathf.Max(0.01f, r1 - r0));
+            spikes.Add(new Spike
+            {
+                At = V(sx, Y(sx, sz) - 0.05, sz), Turn = turn, H = h, W = h * (kind == SpikeKind.Thorn ? 0.16f : kind == SpikeKind.Stone ? 0.5f : 0.3f),
+                Life = life * (0.85f + R() * 0.3f), Kind = kind, Color = color, Age = -R() * 0.06f,
+            });
+        }
+    }
+
+    void StepSpikes(float dt)
+    {
+        if (iceSpikes == null) return;
+        iceSpikes.Begin(); thornSpikes!.Begin(); stoneSpikes!.Begin();
+        for (int i = spikes.Count - 1; i >= 0; i--)
+        {
+            var s = spikes[i];
+            s.Age += dt;
+            if (s.Age >= s.Life) { spikes.RemoveAt(i); continue; }
+            spikes[i] = s;
+            if (s.Age < 0) continue;
+            // Up in a tenth of a second (overshooting a little), standing, then sinking back.
+            float up = Mathf.Min(1, s.Age / 0.1f), grow = up < 1 ? 1 - (1 - up) * (1 - up) : 1;
+            float sink = Mathf.Clamp((s.Age - (s.Life - 0.3f)) / 0.3f, 0, 1);
+            float h = s.H * grow * (1 + 0.08f * Mathf.Sin(Mathf.Min(1, s.Age / 0.18f) * Mathf.Pi)), w = s.W * (0.6f + 0.4f * grow);
+            var basis = s.Turn * Godot.Basis.FromScale(new Vector3(w, h, w));
+            var at = s.At + Vector3.Down * s.H * sink * 0.9f + basis.Y * 0.5f;
+            var c = s.Color with { A = 1 - sink };
+            var batch = s.Kind == SpikeKind.Ice ? iceSpikes : s.Kind == SpikeKind.Thorn ? thornSpikes : stoneSpikes;
+            batch.Add(new Transform3D(basis, at), c);
+        }
+        iceSpikes.End(); thornSpikes.End(); stoneSpikes.End();
+    }
+
+    /* -------------------------------------------------------------- ground -- */
+
+    /// <summary>How each of the survivor's grounds looks: its colour, the
+    /// pattern that lives inside it, and what rises from it. The rule (agreed
+    /// with the experience director): no fill, a lit edge, a sparse living
+    /// pattern inside at a third of strength at most, the creatures and the
+    /// survivor always drawn over it, and never her red or the risen's grey.</summary>
+    enum Inside { Runes, Veins, Roots, Embers }
+
+    static (Color Edge, Inside Inside, float Turn) GroundLook(string art) => art switch
+    {
+        "zone_holy" or "zone_sanct" => (Hdr("#ffcf6a", 1.5f), Inside.Runes, 0.25f),
+        "zone_pyre" => (Hdr("#ff8a2a", 1.6f), Inside.Embers, 0.2f),
+        "zone_blight" or "zone_blight2" or "zone_plague" => (Hdr("#b8e04a", 1.3f), Inside.Veins, 0.04f),
+        "zone_thorn" or "zone_bloom" or "zone_root" => (Hdr("#4ec85a", 1.3f), Inside.Roots, 0.03f),
+        _ => (Colors.Transparent, Inside.Runes, 0),
+    };
+
+    readonly System.Collections.Generic.Dictionary<int, (Mark Edge, Mark Fill)> grounds = new();
+    static Texture2D? rimTex, veinTex;
+
+    /// <summary>A ground of the survivor's drawn to the rule above; false for
+    /// one this does not know (drawn as before).</summary>
+    bool SkillGround(GroundZone z, double now)
+    {
+        var (edgeCol, inside, turn) = GroundLook(z.Art);
+        if (edgeCol.A == 0) return false;
+        rimTex ??= RimTexture();
+        veinTex ??= VeinTexture();
+        float r = (float)z.Radius;
+        if (!grounds.TryGetValue(z.Id, out var g) || !g.Edge.Active)
+        {
+            var fillTex = inside switch
+            {
+                Inside.Runes => Sprites.Runes(1),
+                Inside.Embers => Sprites.Burning,
+                Inside.Roots => GD.Load<Texture2D>("res://art/fx/marks/roots_emit.png"),
+                _ => veinTex,
+            };
+            var fill = Ground(z.X, z.Z, r, fillTex, edgeCol, 1e6f, 1.0f);
+            var edge = Ground(z.X, z.Z, r, rimTex, edgeCol, 1e6f, 2.2f);
+            g = (edge, fill);
+            grounds[z.Id] = g;
+        }
+        float fade = (float)Math.Clamp(Math.Min(z.Age / 0.25, (z.Life - z.Age) / 0.5), 0, 1);
+        float breathe = 0.85f + 0.15f * Mathf.Sin((float)now * 2.4f + z.Id);
+        var at = V(z.X, heightAt(z.X, z.Z), z.Z);
+        foreach (var m in new[] { g.Edge, g.Fill })
+        {
+            m.T = 0;
+            m.Decal.Position = at;
+            m.Decal.Size = new Vector3(r * 2, 4, r * 2);
+        }
+        g.Edge.Decal.Modulate = edgeCol with { A = fade * breathe };
+        // The pattern inside: a third of the edge's strength at most, turning slowly.
+        g.Fill.Decal.Modulate = edgeCol with { A = fade * 0.32f };
+        g.Fill.Decal.Rotation = new Vector3(0, (float)(now * turn + z.Id * 1.7), 0);
+        // What lives in it, sparse.
+        var pal = Palette.Of(Palette.OfArt(z.Art));
+        if (R() < 0.12f + 0.03f * r)
+        {
+            float a = R() * Mathf.Tau, d = r * Mathf.Sqrt(R()) * 0.92f;
+            double x = z.X + Mathf.Cos(a) * d, zz = z.Z + Mathf.Sin(a) * d;
+            var foot = V(x, Y(x, zz) + 0.1, zz);
+            switch (inside)
+            {
+                case Inside.Runes:
+                    Sparks.Spawn(foot, Vector3.Up * (1 + R()), 1.1f, 0.08f, pal.Core * 0.8f, pal.Glow * 0.4f, 0.02f, 0, 0.5f, sprite: R() < 0.3f ? Sprites.Of("star") : 0, spinV: 2);
+                    break;
+                case Inside.Embers:
+                    Sparks.Spawn(foot, Vector3.Up * (1.5f + R()), 0.8f, 0.06f, Ember, EmberDeep, 0.01f, -1, 1);
+                    if (R() < 0.3f) Books.Spawn("fire_loop", foot + Vector3.Up * 0.35f, 0.7f, 0.8f, new Color(1.3f, 1.3f, 1.3f, 0.7f), sizeEnd: 0.3f);
+                    break;
+                case Inside.Veins:
+                    // A bubble of the blight rising and breaking, and its fume low over the ground.
+                    Sparks.Spawn(foot, Vector3.Up * 0.5f, 0.6f, 0.07f, edgeCol * 0.9f, edgeCol * 0.3f, 0.16f, 0, 1);
+                    if (R() < 0.4f) Smoke.Spawn(foot + Vector3.Up * 0.15f, new Vector3((R() - 0.5f) * 0.4f, 0.12f, (R() - 0.5f) * 0.4f), 1.6f, 0.5f, new Color(0.45f, 0.6f, 0.15f), new Color(0.2f, 0.3f, 0.08f), 1.3f, drag: 1, alpha: 0.16f);
+                    break;
+                case Inside.Roots when R() < 0.35f:
+                    // Thorns: brambles break the ground and sink again, here and there.
+                    Erupt(x, zz, 0, 0.45f, 3, SpikeKind.Thorn, 0.9f, 1.6f, Hdr("#4ec85a", 1f));
+                    break;
+                default:
+                    // Thorns: a green glint where a bramble catches the light.
+                    Sparks.Spawn(foot + Vector3.Up * 0.2f, Vector3.Up * 0.3f, 0.5f, 0.1f, pal.Core * 0.6f, pal.Glow * 0.3f, 0.02f, 0, 1, sprite: Sprites.Of("star"), spinV: 2);
+                    break;
+            }
+        }
+        return true;
+    }
+
+    void GroundsGone(System.Collections.Generic.HashSet<int> alive)
+    {
+        if (grounds.Count == 0) return;
+        var gone = new System.Collections.Generic.List<int>();
+        foreach (var (id, g) in grounds)
+            if (!alive.Contains(id))
+            {
+                g.Edge.Active = false; g.Edge.Decal.Visible = false;
+                g.Fill.Active = false; g.Fill.Decal.Visible = false;
+                gone.Add(id);
+            }
+        foreach (var id in gone) grounds.Remove(id);
+    }
+
+    /// <summary>A lit edge and nothing inside it: a thin bright band, soft both ways.</summary>
+    static Texture2D RimTexture()
+    {
+        const int N = 256;
+        var img = Image.CreateEmpty(N, N, false, Image.Format.Rgba8);
+        for (int y = 0; y < N; y++)
+            for (int x = 0; x < N; x++)
+            {
+                float u = (x + 0.5f) / N * 2 - 1, v = (y + 0.5f) / N * 2 - 1;
+                float r = Mathf.Sqrt(u * u + v * v);
+                float a = Mathf.Exp(-Mathf.Pow((r - 0.93f) / 0.022f, 2)) + 0.25f * Mathf.Exp(-Mathf.Pow((r - 0.9f) / 0.06f, 2));
+                a = r > 0.985f ? 0 : Mathf.Clamp(a, 0, 1);
+                img.SetPixel(x, y, new Color(a, a, a, a));
+            }
+        return ImageTexture.CreateFromImage(img);
+    }
+
+    /// <summary>The blight's veins: thin branching lines in a ring-faded disc
+    /// (ridges of layered noise), sparse, so the ground shows through.</summary>
+    static Texture2D VeinTexture()
+    {
+        const int N = 256;
+        var noise = new FastNoiseLite { NoiseType = FastNoiseLite.NoiseTypeEnum.Perlin, Frequency = 0.022f, FractalOctaves = 3, Seed = 7 };
+        var img = Image.CreateEmpty(N, N, false, Image.Format.Rgba8);
+        for (int y = 0; y < N; y++)
+            for (int x = 0; x < N; x++)
+            {
+                float u = (x + 0.5f) / N * 2 - 1, v = (y + 0.5f) / N * 2 - 1;
+                float r = Mathf.Sqrt(u * u + v * v);
+                float n = Mathf.Abs(noise.GetNoise2D(x, y));
+                float vein = Mathf.Clamp(1 - n / 0.06f, 0, 1);
+                float a = vein * vein * Mathf.Clamp((0.9f - r) / 0.15f, 0, 1);
+                img.SetPixel(x, y, new Color(a, a, a, a));
+            }
+        return ImageTexture.CreateFromImage(img);
     }
 
     /* ---------------------------------------------------------- lightning -- */

@@ -98,6 +98,7 @@ public partial class Game : Node, IZoneHost
         AddChild(new Shots());
         synth = new Synth();
         AddChild(synth);
+        if (Perf.On) MeasureWith(new Perf());
         sound = new SoundBridge(synth);
         voice = new VoiceOver();
         AddChild(voice);
@@ -130,7 +131,7 @@ public partial class Game : Node, IZoneHost
         Begin(new CreationChoice
         {
             // --palette ID: the calling's colours (its first, undyed, by default).
-            Name = Args.Get("name") ?? "Ashe", Archetype = arch, Background = Args.Get("bg") ?? "hunter",
+            Name = Args.Get("name") ?? "Wren", Archetype = arch, Background = Args.Get("bg") ?? "hunter",
             Palette = a.Palettes.Any(p => p.Id == Args.Get("palette")) ? Args.Get("palette")! : a.Palettes[0].Id,
             WeaponItem = Args.Get("weapon") ?? a.Weapons[0], Ability = a.Abilities[0],
             // --sex female [--hair STYLE --figure F --skin ID]: a woman survivor.
@@ -150,13 +151,18 @@ public partial class Game : Node, IZoneHost
                 foreach (var f in parts[1].Split('+')) ArtBook.Choose(ch, parts[0], f);
             }
         }
-        // --items A,B[:RARITY]: those things in the pack from the start (pictures of the pack, the shop).
+        // --items A,B[:RARITY],C*N: those things in the pack from the start, N of them for a
+        // stack (pictures of the pack, the shop, the forge with a stocked pouch).
         if (Args.Get("items") is string items)
             foreach (var spec in items.Split(','))
             {
                 var parts = spec.Split(':');
-                Journey.GiveItem(parts[0], 1, parts.Length > 1 && int.TryParse(parts[1], out var r) ? r : null);
+                var idq = parts[0].Split('*');
+                int qty = idq.Length > 1 && int.TryParse(idq[1], out var nq) ? nq : 1;
+                Journey.GiveItem(idq[0], qty, parts.Length > 1 && int.TryParse(parts[1], out var r) ? r : null);
             }
+        // --gold N: that much gold in the purse (pictures of a counter with money to spend).
+        if (Args.Has("gold")) Journey.Ch.Gold = Args.Num("gold", 0);
         // --xp N: that much experience at once (pictures of the self with points to spend).
         if (Args.Has("xp")) Character.GainXp(Journey.Ch, Args.Num("xp", 0));
         var z = Args.Get("zone") ?? "lowford";
@@ -231,7 +237,7 @@ public partial class Game : Node, IZoneHost
         s.ApplyWindow();
         cam.ShakeScale = s.ShakeLevel;
         if (scene != null) { scene.Fx.Gore.Level = s.GoreLevel; scene.Hitstop = s.Hitstop; }
-        air.Quality(s.Quality);
+        Graphics.Apply(s, air, GetViewport(), scene);
         AudioServer.SetBusVolumeDb(0, s.Volume <= 0 ? -80 : Mathf.LinearToDb(s.Volume));
         voice?.Apply();
     }
@@ -350,14 +356,20 @@ public partial class Game : Node, IZoneHost
         // An arena is only ever entered from the story: one left behind is over.
         if (id != "arena") World.Arena = null;
         else if (World.Arena == null) { id = "waystation"; at = Waystation.AtTable; }
+        ulong t0 = Time.GetTicksUsec();
         if (scene == null || scene.Data.Id != id || scene.Battle != null) Stage(id);
         else RemoveFigure();
+        Perf.Lap("the rest of the stage (lights, fires)");
         zone = Make(id, scene!.Data.Meta);
         var time = zone.TimeOf(World);
         air.Set(zone.AtmosphereFor(time));
         air.Air(scene!.Data.Place?.Air);
         scene.View.SetNight(time == TimeOfDay.Night);
+        Perf.Lap("the zone's runtime and its air");
         EnterPlay(zone, from, at);
+        Perf.Lap("play: the crowd's kinds made ready (bakes)");
+        // --perf: how long the place took to stand up (the frame it happens in holds that long).
+        if (Perf.On) GD.Print($"perf zone {id} built in {(Time.GetTicksUsec() - t0) / 1000.0:0} ms (at {Time.GetTicksMsec() / 1000.0:0.0}s since launch)");
     }
 
     void EnterPlay(ZoneRuntime z, string? from, Arrival? at)
@@ -372,6 +384,7 @@ public partial class Game : Node, IZoneHost
         var start = at ?? z.ArrivalFrom(from);
         var meta = scene.Data.Meta;
         var b = Journey.StartBattle(z.Combat, meta.Collision(), scene.HeightAt, start.X, start.Z, start.Facing, (uint)Rng.Next(), arena: z is ArenaRun, ember: z.Ember);
+        Perf.Lap("play: the fight begun");
         // An arena is seen from higher and further out: the whole of the fight.
         var (pitch, dist) = z.Camera is var (cp, cd) ? (Mathf.DegToRad((float)cp), (float)cd) : camHome;
         // --cam still wins: it is for close pictures, arenas included.
@@ -379,8 +392,10 @@ public partial class Game : Node, IZoneHost
         cam.Pitch = pitch;
         cam.Distance = cam.TargetDistance = dist;
         scene.StartBattle(b, Loadouts.Of(Journey.Ch));
+        Perf.Lap("play: the survivor stood up");
         HookBattle(b);
         z.Begin(b);
+        Perf.Lap("play: the zone begun (its people, its pieces)");
         scene.Crowd.Prepare(z.Creatures.Select(c => Content.Enemies.Get(c).Visual));
         hud.ZoneInfo(z.Name, z.Region, World.Day, z.TimeOf(World));
         World.Facts["player.zone"] = z.Id;
@@ -502,6 +517,7 @@ public partial class Game : Node, IZoneHost
 
     (Vector3 Pos, Vector3 Look) showT, showNow;
     bool showing;
+    float showFov = 34, showBreath = 1;
 
     public void Showcase((double X, double Y, double Z)? pos, (double X, double Y, double Z) look = default)
     {
@@ -510,9 +526,12 @@ public partial class Game : Node, IZoneHost
         Pose(new Vector3((float)x, (float)y, (float)z), new Vector3((float)look.X, (float)look.Y, (float)look.Z));
     }
 
-    /// <summary>A held camera, drifting to its mark (snap: there at once).</summary>
-    void Pose(Vector3 pos, Vector3 look, bool snap = false)
+    /// <summary>A held camera, drifting to its mark (snap: there at once); its
+    /// field of view (narrower for a close portrait), and how much it breathes.</summary>
+    void Pose(Vector3 pos, Vector3 look, bool snap = false, float fov = 34, float breath = 1)
     {
+        showFov = fov;
+        showBreath = breath;
         showT = (pos, look);
         if (snap) showNow = showT;
         else if (!showing) showNow = (camera.GlobalPosition, look);
@@ -601,6 +620,8 @@ public partial class Game : Node, IZoneHost
             case Ev.Telegraph t when t.Boss && t.Label is { Length: > 0 } l: Shots.Want(l, Math.Min(0.7, t.Duration * 0.6)); break;
             case Ev.Break: Shots.Want("break", 0.3); break;
             case Ev.Focus: Shots.Want("focus", 1.0); break;
+            // The fall, as a run of frames through its slow motion and after.
+            case Ev.Victory: for (int i = 0; i < 12; i++) Shots.Want("fall", 0.05 + i * 0.25); break;
         }
     }
 
@@ -633,7 +654,11 @@ public partial class Game : Node, IZoneHost
             }
             autosaveT += dt;
             if (autosaveT > 90 && Overlay == null && !inTransit) { autosaveT = 0; Save("auto"); }
+            Perf.Begin(Perf.Part.Zone);
             zone.Frame(dt);
+            Perf.End(Perf.Part.Zone);
+            // An arena's camera breathes with its night (unless a conversation has it, or --cam fixed it).
+            if (zone is ArenaRun ar && hudMode == null && camSaved == null && !Args.Has("cam")) cam.TargetDistance = (float)ar.CameraDistance;
             RunLater(dt);
         }
         else if (auto != null && Mode != "play") AutoFront();
@@ -648,15 +673,19 @@ public partial class Game : Node, IZoneHost
                 if (Enum.TryParse<Act>(fk.Split(',')[keyI++], true, out var fa)) controls.Press(fa);
             }
         }
+        // The figure being made: turned, and framed as near as asked.
+        if (Mode == "create") UpdateCreate(dt);
         // A held camera drifts toward its mark, breathing a little.
         if (showing)
         {
-            float breathe = Mathf.Sin((float)scene.Time * 0.35f) * 0.08f;
+            float breathe = Mathf.Sin((float)scene.Time * 0.35f) * 0.08f * showBreath;
             var target = showT.Pos + new Vector3(breathe, breathe * 0.5f, 0);
             float k1 = 1 - Mathf.Exp(-1.8f * (float)dt), k2 = 1 - Mathf.Exp(-2.2f * (float)dt);
             showNow = (showNow.Pos.Lerp(target, k1), showNow.Look.Lerp(showT.Look, k2));
             scene.Showcase = showNow;
+            camera.Fov = Mathf.Lerp(camera.Fov, showFov, k1);
         }
+        else if (camera.Fov != 34) camera.Fov = 34;
         scene.Update(dt);
         CinemaFrame(dt);
         // The survivor's place on screen, for the health drawn under them; the prompt's thing; what matters off screen.
@@ -676,14 +705,17 @@ public partial class Game : Node, IZoneHost
             var sb = Battle;
             var at = sb != null ? new Vector3((float)sb.Player.X, 0, (float)sb.Player.Z) : showNow.Look;
             var time = Journey is { } jn ? zone?.TimeOf(jn.World) ?? jn.World.Time : TimeOfDay.Night;
+            Perf.Begin(Perf.Part.Sound);
             sound.Update(dt, new SoundState(Mode, zone?.Id, time, at.X, at.Z, sb, bossUp, Mode == "play" ? Overlay : screens.Current?.Kind,
                 zone != null ? zone.Ambience : null, zone != null ? zone.MusicMood : null));
+            Perf.End(Perf.Part.Sound);
         }
         if (Mode != "play") return;
         UpdateDraft(dt);
         hudT -= dt;
         if (hudT <= 0)
         {
+            using var _ = new Perf.Span(Perf.Part.Hud);
             hudT = 1.0 / 12;
             var ch = Journey.Ch;
             hud.Frame(Battle, ch.Gold, Inventory.Count(ch, "health_draught"), (ch.Level, ch.Xp / Character.XpForLevel(ch.Level)));
@@ -770,7 +802,7 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
-    bool hordeDone, dropsDone, castDone, giveDone, minuteDone;
+    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, dieDone;
     double blastT = 0.5, marksT = 1;
 
     void Tour(double dt)
@@ -889,6 +921,14 @@ public partial class Game : Node, IZoneHost
             cb.Aim = null;
             cb.UseAbility(Args.Has("still") ? 0 : 1, 0);
         }
+        // --die T: T seconds in, a risen at arm's length before her (--behind:
+        // at her back) fells her where she stands (a picture of her fall).
+        if (!dieDone && Args.Has("die") && Battle is { } kb && Journey.Playtime >= Args.Num("die", 1))
+        {
+            dieDone = true;
+            var killer = kb.SpawnEnemy("risen", kb.Player.X, kb.Player.Z + (Args.Has("behind") ? -1.2 : 1.2));
+            kb.HurtPlayerRaw(kb.Player.Hp + 1e6, School.Physical, "test", killer);
+        }
         if (Args.Get("open") is not string want) return;
         tourT -= dt;
         if (tourT > 0) return;
@@ -915,7 +955,12 @@ public partial class Game : Node, IZoneHost
         else if (next == "draft" && Battle is { } b) { b.GainEmber(b.EmberNext); }
         // A won arena's end, with a sample tally (pictures of the result screen; in an arena).
         else if (next == "result" && World.Arena is { } spec && Battle is { } rb)
-            ArenaOver(new ArenaResult(spec, true, 2134, rb.KillCount + 1840, Math.Max(rb.EmberLevel, 27), 1460, 212, Content.Weapons.Pool.Take(2).ToList(), 1, true));
+            ArenaOver(new ArenaResult(spec, true, 2134, rb.KillCount + 1840, Math.Max(rb.EmberLevel, 27), 1460, 212, Content.Weapons.Pool.Take(2).ToList(), 1, true)
+            {
+                // --fell: the same night, fallen past the half hour: half of it spilled.
+                Carried = Args.Has("fell") ? new() { ["ember_shard"] = 3, ["wolf_pelt"] = 2, ["boar_hide"] = 1 } : new() { ["ember_shard"] = 7, ["wolf_pelt"] = 4, ["boar_hide"] = 3 },
+                Spilled = Args.Has("fell") ? new() { ["ember_shard"] = 4, ["wolf_pelt"] = 2, ["boar_hide"] = 2 } : new(),
+            });
         else Open(next);
     }
 
@@ -966,6 +1011,64 @@ public partial class Game : Node, IZoneHost
         var (drawn, dead) = scene!.Crowd.Counts;
         var (gibs, splats) = scene.Fx.Gore.Counts;
         GD.Print($"[{scene.Time,6:0.0}s] {zone?.Id} hp {p?.Hp:0}/{b?.MaxHp:0} ember {b?.EmberLevel} kills {b?.KillCount} foes {foes} (drawn {drawn}, lying {dead}, gibs {gibs}, blood {splats}) at {p?.X:0},{p?.Z:0} {Overlay} {dbg}{FrameCost()}{(synth.Live ? $" | sound {sound.Music.Mood} voices {synth.Voices} mix {synth.MixCost / Math.Max(1e-9, synth.Mixed) * 100:0}% heard {synth.Mixed:0}s skips {synth.Skips} queue {synth.Queue / synth.Rate * 1000:0}ms" : "")}");
+    }
+
+    /// <summary>--perf: the frame measured (Perf.cs), with the game's own
+    /// numbers beside it: the horde, the dead, the gore, the sound's voices.</summary>
+    void MeasureWith(Perf perf)
+    {
+        AddChild(perf);
+        Perf.CounterNames = ["foes", "drawn", "lying", "gibs", "blood", "voices"];
+        Perf.Counters = a =>
+        {
+            a[0] = Battle?.Enemies.Count ?? 0;
+            if (scene != null)
+            {
+                var (drawn, dead) = scene.Crowd.Counts;
+                var (gibs, splats) = scene.Fx.Gore.Counts;
+                a[1] = drawn; a[2] = dead; a[3] = gibs; a[4] = splats;
+            }
+            a[5] = synth.Live ? synth.Voices : 0;
+        };
+        Perf.Note = () => $"{zone?.Id} foes {Battle?.Enemies.Count ?? 0} ember {Battle?.EmberLevel} kills {Battle?.KillCount} " +
+                          (zone?.Debug() is { Count: > 0 } d ? string.Join(" ", d.Take(3).Select(kv => $"{kv.Key}={kv.Value}")) : "");
+        // --perf-off A,B: things taken out of the picture, to see what each costs
+        // by the difference (never for play): her, crowd, grass, flora, props,
+        // landmarks, ground, water, fires, fx, hud, lamps, lampshadows,
+        // sunshadows, ssao, volfog, fog, glow, taa, msaa, fxaa.
+        if (Args.Get("perf-off") is not string off) return;
+        var what = off.Split(',').ToHashSet();
+        perf.Each = () =>
+        {
+            if (scene == null) return;
+            if (what.Contains("her") && scene.Player != null) scene.Player.Visible = false;
+            if (what.Contains("crowd")) scene.Crowd.Visible = false;
+            if (what.Contains("fx")) scene.Fx.Visible = false;
+            if (what.Contains("hud")) hud.Visible = false;
+            foreach (var c in scene.View.GetChildren())
+            {
+                if (c is not Node3D n) continue;
+                string nm = n.Name;
+                bool named = nm is "Grass" or "Flora" or "Props" or "Landmarks" or "Ground" or "Water" or "Fires" or "Lights";
+                if (what.Contains("grass") && nm == "Grass" || what.Contains("flora") && nm == "Flora" || what.Contains("props") && nm == "Props" ||
+                    what.Contains("landmarks") && nm == "Landmarks" || what.Contains("ground") && nm == "Ground" || what.Contains("water") && nm == "Water" ||
+                    what.Contains("fires") && nm == "Fires" || what.Contains("lamps") && nm == "Lights" ||
+                    // The pieces set down one by one (an arena's cover, a runtime's props).
+                    what.Contains("pieces") && !named)
+                    n.Visible = false;
+                if (what.Contains("lampshadows") && nm == "Lights")
+                    foreach (var l in n.GetChildren()) if (l is OmniLight3D o) o.ShadowEnabled = false;
+            }
+            if (what.Contains("sunshadows")) air.Key.ShadowEnabled = false;
+            if (what.Contains("ssao")) air.Env.SsaoEnabled = false;
+            if (what.Contains("volfog")) air.Env.VolumetricFogEnabled = false;
+            if (what.Contains("fog")) air.Env.FogEnabled = false;
+            if (what.Contains("glow")) air.Env.GlowEnabled = false;
+            var vp = GetViewport();
+            if (what.Contains("taa")) vp.UseTaa = false;
+            if (what.Contains("msaa")) vp.Msaa3D = Viewport.Msaa.Disabled;
+            if (what.Contains("fxaa")) vp.ScreenSpaceAA = Viewport.ScreenSpaceAAEnum.Disabled;
+        };
     }
 
     /// <summary>What was put off, in game time: it waits while a menu, a

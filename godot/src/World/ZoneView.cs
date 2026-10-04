@@ -45,18 +45,24 @@ public partial class ZoneView : Node3D
     {
         Data = z;
         Name = $"Zone_{z.Id}";
+        Perf.Lap("zone view", true);
         var g = Ground.Build(z);
         ground = (ShaderMaterial)g.Mesh.SurfaceGetMaterial(0);
         AddChild(g);
         AddChild(Water.Build(z));
+        Perf.Lap("ground and water");
         AddChild(Dressing.Flora(z));
+        Perf.Lap("flora");
         props = Dressing.Props(z);
         AddChild(props);
+        Perf.Lap("props");
         Landmarks = new Landmarks(z);
         AddChild(Landmarks.Root);
+        Perf.Lap("landmarks");
         // An ember arena's ring, its mist and its streams.
-        if (z.Place != null) AddChild(ArenaEdge.Build(z));
+        if (z.Place != null) { AddChild(ArenaEdge.Build(z)); Perf.Lap("arena edge"); }
         if (grassAround is Vector2 at) GrowGrass(at, grassRadius);
+        Perf.Lap("grass");
 
         var meta = z.Meta;
         specs = new List<ZoneData.LightSpec>(z.Lights);
@@ -94,6 +100,8 @@ public partial class ZoneView : Node3D
         }
         for (int i = 0; i < lights.Count; i++) SetLit(i, z.Lights[i].On);
         SetNight(false);
+        // The plain pieces drawn together, now that what is hidden here is hidden.
+        Landmarks.Merge();
     }
 
     OmniLight3D MakeLight(ZoneData.LightSpec l)
@@ -107,8 +115,8 @@ public partial class ZoneView : Node3D
             // three.js's intensity I lights to I/pi what Godot's energy E lights to E.
             LightEnergy = l.Intensity / Mathf.Pi,
             OmniRange = l.Distance > 0 ? l.Distance : 60, OmniAttenuation = 1.7f,
-            // The big lights (fires, lanterns) cast shadows near the camera.
-            ShadowEnabled = l.Intensity >= 8, DistanceFadeShadow = 28, DistanceFadeEnabled = true,
+            // The big lights (fires, lanterns) cast shadows near the camera (not at the lowest quality).
+            ShadowEnabled = l.Intensity >= 8 && SurvivorUnchained.Play.Graphics.Current.LampShadows, DistanceFadeShadow = 28, DistanceFadeEnabled = true,
             DistanceFadeBegin = 45, DistanceFadeLength = 20, LightVolumetricFogEnergy = 1.2f,
         };
         lights.Add(light);
@@ -211,9 +219,12 @@ public partial class ZoneView : Node3D
     /// and the grass (the Verge's water is the runtime's).</summary>
     public void SetHeal(float heal)
     {
+        healed = heal;
         ground.SetShaderParameter("heal", heal);
         grass?.Multimesh.Mesh.SurfaceGetMaterial(0)?.Set("shader_parameter/heal", heal);
     }
+
+    float healed;
 
     /// <summary>The kit pieces of a kind within r of a point, taken away in
     /// play (the strongbox carried off, the crates rolled into the stream):
@@ -251,8 +262,31 @@ public partial class ZoneView : Node3D
     public void GrowGrass(Vector2 at, float radius = 40)
     {
         grass?.QueueFree();
-        grass = Grass.Build(Data, at, radius);
+        grass = Grass.Build(Data, at, radius, grassCell);
+        grassAt = at;
+        grassRadius = radius;
         AddChild(grass);
+    }
+
+    float grassCell = 0.3f, grassRadius = 40;
+    Vector2 grassAt;
+
+    /// <summary>How far apart the meadow's tufts are (the picture's quality): regrown if it changed.</summary>
+    public void GrassCell(float cell)
+    {
+        if (Mathf.IsEqualApprox(cell, grassCell)) return;
+        grassCell = cell;
+        if (grass == null) return;
+        var centre = (Vector2)grass.Multimesh.Mesh.SurfaceGetMaterial(0).Get("shader_parameter/centre");
+        GrowGrass(grassAt, grassRadius);
+        FollowGrass(centre);
+        if (healed != 0) SetHeal(healed);
+    }
+
+    /// <summary>Whether the big lamps cast shadows (the picture's quality).</summary>
+    public void LampShadows(bool on)
+    {
+        for (int i = 0; i < lights.Count; i++) lights[i].ShadowEnabled = on && specs[i].Intensity >= 8;
     }
 
     /// <summary>The meadow's middle, every frame: the shader moves the tufts.</summary>

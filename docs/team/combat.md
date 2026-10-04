@@ -1,80 +1,70 @@
-# Combat: skills, enemies, bosses, balance
+# Combat: skills, enemies, encounters, bosses, balance
 
 Status page for the combat lead.
-- **Agent:** `ac4ec5bbd2763a0df`, the successor to `a09c5a65f5a84319e`.
+- **Agent:** `ac4ec5bbd2763a0df`.
 - **Branch:** `worktree-agent-ac4ec5bbd2763a0df`.
-- **Read first:** `docs/handoff/combat.md` (the predecessor's knowledge, and the brief for the owner's three encounter notes), then `docs/SKILLS_DESIGN.md` §16.
+- **Read first:** `docs/handoff/combat.md` (the predecessor's knowledge), then `docs/SKILLS_DESIGN.md` §16–17.
 
-## Current state (2026-10-03, stopped at the owner's usage limit)
+## Current state (2026-10-04, stopped at the owner's usage limit)
 
-Tests green (491). Everything is committed and pushed (`e9e591d`). The branch has merged the integration branch and the experience director's pacing (`e8f6f77`).
+Tests green (530). Everything is committed and pushed. Merged with the integration branch at `81429e6`.
 
-**Encounter note 1, the charge director, is built** (`Sim/Charges.cs`; SKILLS_DESIGN §16.4):
-- waves of `2 + tier / 2` runs at once, starting 0.7 s apart;
-- lulls of 3–6 s;
-- spikes on the people's tell (40–55 s apart, 18–26 s while `ArenaPacing.Building`);
-- calm in breathers, the hush and a herald's duel;
-- one crowd run at a time while a boss is up;
-- caps on tunnellers under the ground (8), bursts fusing (8) and the horde's burning ground (24, oldest out first);
-- the harness's "Encounters over the minutes" table, with `--charges 0` for the old way.
+**The owner's three encounter notes are built:**
+1. **The charge director** (§16.4): waves, lulls, spikes on the people's tell, and calm in breathers, the hush and duels. Charges a minute went from 123–184 to 42–59; the most at once from 15–22 to 5–7.
+2. **Stretches** (§16.5): five per people, at 3, 7, 12, 16 and 22 minutes.
+   - Each opens with a named miniboss wearing one verb. Its kinds join only after it comes, and its champion Signs open.
+   - Two minibosses return in the long push.
+   - In the long night, heralds and pairs of minibosses take turns.
+   - New verbs: auras, calls, slams, chained charges, runs that end in a blast, chilling or poisoning bites, fanned lobs.
+3. **Variety** (§16.5): 13 new kinds and 20 minibosses on existing rigs, told apart by scale, tint and behaviour. Nine champion Signs. A model brief for each in §16.5.
+   - The story lead's names are applied, including Gutterwick for the table's Lamplings.
 
-| The Pack, tier 2, deft, 24 runs | Before | After |
+**Other changes:**
+- **Story nights are 20 minutes** on one night clock (§16.6): ember and experience are paced to match, and they end on their boss with no long night. Every night speaks in one voice ("The dead of night").
+- **Crafting's economy fixes:** arena fodder pays 2% gold; gear comes only from carriers.
+- **A fix:** bad ground no longer buys the survivor a moment of grace each tick (§16.7).
+- **Maps, the permanent ARPG arenas:** the mechanics are designed in §17, not built. The experience lead owns their shape and loop.
+
+**Measured** (deft bot, tiers 1–3, greedy and random, table oaths, 96 runs each). The "after" row is before the last tuning: minibosses now carry a one-card chest, the Scorpion and the Decurion are softer, so it needs re-measuring.
+
+| | Before (`81429e6`) | After (`71608a4`) |
 |---|---|---|
-| Charges a minute | 123–184 | 42–59 |
-| Most at once | 15–22 | 5–7 (spikes) |
-| Seconds a minute with 3+ lanes | 24–31 | 7–12 |
-
-## Key decisions
-
-- **Charges are directed, not timed:** overlap is a moment with a tell, as the owner asked, not the weather.
-- **The director has its own random stream:** sharing the battle's moved the balance probes by noise alone (weave's crowd went 1823 → 2023, past the 1.35 bound).
-- **The split with the experience director:** they decide when and how full (breathers, set pieces, which turn); combat decides what spawns and what it does, including the bodies of their Signature turns.
+| Won (greedy / random) | 98% / 92% | 88% / 94% |
+| Won (tiers 1 / 2 / 3) | 97% / 94% / 94% | 94% / 94% / 84% |
+| Boss TTK (Pack / Barrow / Gutterwick / Red Hand) | 99 / 90 / 97 / 77 s | 76 / 78 / 101 / 64 s |
+| Herald TTK (greedy / random) | 19 / 25 s | 20 / 37 s (Signs) |
+| Damage a minute at 25 (greedy) | 247k | 276k (miniboss chests: since cut to one card) |
+| Miniboss TTK, median | – | 9–52 s (The Scorpion 52, the Decurion 49, both since softened) |
 
 ## Next (in order)
 
-1. **Notes 2 and 3: escalation and variety.** The design is worked out; the build is not started.
-   - **New verbs, small code:**
-     - `AuraSpec`: kin haste and ward, using new `Enemy.HasteT/WardT`;
-     - `SummonSpec`: a cast that calls kin up or in;
-     - `SlamSpec`: a ground circle, then a strike;
-     - charge chains on `LungeSpec`;
-     - a burst at the end of a run (fuse-runners);
-     - a per-def bite chill or poison;
-     - `EnemyDef.Tint` and `Glow`, plus the agreed lines in `CrowdView.Draw` and `LayOut` (approved by animation).
-   - **Signs on champions:** cloned defs with a Sign prefix on the name (COUNTERS.md §4). Swift, Ironbound, Kindled, Volatile, Brood, Shielded and Bannered come first.
-   - **New minion types per people,** on existing rigs (scale, tint, behaviour), and a model brief for each in SKILLS_DESIGN:
-     - Pack: Ridge-Runner (orbit and lunge), Slurry Sow (trail), Old Howler (aura);
-     - Risen: Bone-Heap (split), Drowned (frost trail), Bell-Ringer (aura), Legion shield-rusher (lunge);
-     - Lamplings: Wick (pack), Fuse-Runner (a charge that bursts), Lamp-Thrower (3-shot fan);
-     - Kerchiefs: Levy Crossbow (3-shot), Levy Pikeman (lunge), Drummer (aura).
-   - **A miniboss per stretch,** five a people, at about 3, 7, 12, 16 and 22 minutes:
-     - each shows one verb first;
-     - the kinds that carry that verb join the horde only after it has come;
-     - the verb also unlocks the matching champion Sign;
-     - never in the hush or a herald's duel;
-     - each drops a chest and gear.
-   - **In the long night,** two signed minibosses come between the returns.
-   - Fill the experience director's Signature bodies with the new kinds.
-2. **Re-measure the Pack-Mother and the Red Hand** (`30 + 5t`, `21 + 3.5t`, not yet measured).
-3. **The full sweep,** with both bots: `arena --callings all --policies greedy,random,paths --seeds 6 --tiers 1,2,3 --level tier --oaths table --cap 46 --beyond 15 --bot deft`.
-4. **The long night's tail:** a 0.004 quadratic term.
-5. **Agreed with crafting (a7862117a0240deb5), not yet built:**
-   - arena fodder gold at 2%, through a MapRules multiplier for non-elites;
-   - plain gear only from champion events, heralds, minibosses and the boss.
+1. **Re-measure** with the one-card chests: `arena --callings all --policies greedy,random --seeds 4 --tiers 1,2,3 --level tier --oaths table --cap 34 --bot deft`. Compare with the "before" numbers above.
+   - **Bosses fell faster after the change;** that should come back with the smaller chests. The Pack-Mother's and Red Hand's re-measure is this sweep. If TTK still runs under 90 s, raise HealthMul.
+   - The baseline harness is rebuilt from `git archive 81429e6` into the scratchpad, as described in the handoff.
+2. **The experience lead's briefs:**
+   - From tier 3, a careless draft should lose more often than a planned one (about 60% won against 85%). Use a 6-seed sweep with greedy and random, both bots, to separate the signal from noise.
+   - Check the boss floor with a late `--give` build: 35 s was seen.
+3. **The full sweep, and the long night's tail** (0.004 quadratic).
+4. **Build maps** (§17.7, with the experience and crafting leads).
+5. **Then:** oaths on bosses, the Kindling, the Ford-Warden echo, weight as a number, and the remaining Signs (Warded, Mending, Leader).
 
-   Send them the new def ids and loot tags once they exist.
-6. **Then the rest of §16.5:** oaths on bosses, hazards hurting the horde, the Kindling, the Ford-Warden echo, and weight as a number.
+## Key decisions
+
+- **A verb is shown before it spreads:** one big body first, then the crowd. A held-back miniboss's kinds join after 2½ minutes.
+- **Signed champions are cloned defs with their kind's id:** no special cases in the AI, the view or the bestiary.
+- **The balance probe's yardstick stays the day's rank and file** (`Denizens.Horde`), so new kinds don't move every path's number.
+- **Verb timers draw dice only when a creature has the verb,** and the charge director has its own stream. This keeps the fight's dice where they were.
 
 ## Notes for other areas
 
-- **Animation (a1e3002b800ee55ac):**
-  - the tint hook in CrowdView is agreed, and combat adds it;
-  - a gear variant (person bodies with other Held items) is welcome later, for example a crossbow for the Levy Crossbow;
-  - motion asks will follow the defs: a kneel-to-shoot, a howl, a slam wind-up.
-- **Skills look and feel:** the spike tells emit `Ev.Sound` ids `tell_howl`, `tell_drum`, `tell_fuse` and `tell_whistle`, which have no sound yet. Auras will want a ring effect.
-- **Story:**
-  - the miniboss names will be placeholders, for you to rename;
-  - "The Ganger" is still a placeholder;
-  - the spike tells' lines are ours (ArenaRun.SpikeTell); change them if they jar.
-- **Performance:** the director scans the enemy pool once a tick (900 slots), and enemy ground is capped at 24.
-- **Experience (a33f58e68e89e3ccf):** the charge director is wired to your pacing, as agreed.
+- **Animation (a1e3002b800ee55ac):** the motion list has been sent: a quadruped howl; kneel-to-shoot; a slam; a horn, drum or rally gesture; the shamble. Crossbow and pike gear variants are wanted.
+- **Skills look and feel (a8bafe3cd8a229639):**
+  - auras, calls and slams carry `Ev.Telegraph.Faction` for the people's colour;
+  - the dead's spike tell is now `tell_horn`, not `tell_drum`.
+- **Story (a035208561a66c171):** the renames are applied. "The dead of night" wording is used for every night.
+- **Crafting (a7862117a0240deb5):** the miniboss ids have been sent, `Loot = "miniboss"`. Maps want chart items (§17.2).
+- **Experience (a33f58e68e89e3ccf):**
+  - story nights are built as agreed;
+  - the maps' mechanics are in §17, with proposed changes to your brief in §17.7;
+  - minibosses respect your Hush and the herald's duel.
+- **Performance:** auras use one spatial query per pulse; enemy ground is capped at 24.

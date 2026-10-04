@@ -742,7 +742,7 @@ channel. Each boss asks one question in its own people's terms:
 |---|---|---|
 | The Pack-Mother (Greymuzzle in his Hollow) | She herds you: go through the wolves, never the gap | the moon-howl that fire breaks; the last of the Pack round you |
 | The Barrow Lord | Walls of men: read the formation | orders in the old empire's tongue; he will not lie down until stood over |
-| The Ganger (Grimtunnel on his own night) | The ground is the enemy | one lamp for three verbs (his three, and he goes back down the hole) |
+| Gutterwick (Grimtunnel on his own night) | The ground is the enemy | one lamp for three verbs (his three, and he goes back down the hole) |
 | The Red Hand | What is your build without its best piece? | the Toll takes a weapon; the thief carries it; storm makes him drop it |
 
 **On screen** (checked frame by frame with `--on boss`, and `--marks`, a
@@ -766,7 +766,7 @@ absurd build, an enrage for a weak one), measured with deft hands at tiers
 1–3 and the table's oaths: the Pack-Mother 69 → 84 s and the Red Hand 72 →
 84 s (both then raised a further tenth), the Barrow Lord 80 → 86 s, the
 Ganger 92 → 98 s. Health per boss: Pack-Mother `30 + 5t`, Barrow Lord
-`13 + 2.2t`, the Ganger and Grimtunnel `18 + 3t`, the Red Hand `21 + 3.5t`,
+`13 + 2.2t`, Gutterwick and Grimtunnel `18 + 3t`, the Red Hand `21 + 3.5t`,
 times its people's champion's.
 
 ### Why this is the answer
@@ -901,7 +901,147 @@ It keeps its own random stream, so it moves no other dice.
 | Most at once | 15–22 | 5–7 (in spikes) |
 | Seconds a minute with three or more lanes | 24–31 | 7–12 |
 
-### 16.5 Decisions the studies left open
+### 16.5 The night in stretches
+
+The owner: **"consider mechanics that ramp along with the level time and don't
+appear till certain mini bosses and minion types show up"**, and **"variety of
+minion types elites and mini bosses instead of all just the same models of
+wolves"**.
+
+A night comes in five **stretches** (`Denizens.Stretches`;
+`Play/Zones/Escalation.cs`). They start at minutes 3, 7, 12, 16 and 22 of a
+table night, just after the experience lead's releases.
+- **The miniboss:** each stretch opens with a named miniboss. Its verb is shown
+  first on one big body, its lesson is said under its name, and it gets the
+  heralds' bar. It carries a chest, and the crowd's lanes hold off for six
+  seconds so it can be read.
+- **The kinds:** only once it has come do the kinds that carry its verb join
+  the horde, and their share grows with the minutes they have been in.
+- **The Signs:** the stretch's champion Signs open at the same time.
+- **Held back:** a miniboss never comes in a herald's duel, in the hush or
+  beside another. If it is held back 2½ minutes, its kinds join without it.
+- **The long push:** at 25 minutes two of the minibosses met so far come back
+  together, from both sides, each wearing a Sign.
+- **The long night:** heralds and pairs of minibosses take turns between the
+  returns. The pairs wear as many Signs as a champion, one more for each
+  return.
+
+**The minibosses, by people:**
+
+| Minute | The Pack | The Risen | The Lamplings | The Kerchiefs |
+|---|---|---|---|---|
+| 3 | **Old Tusk**: a charge run three times (`Chain`); tuskers join; Ironbound | **The Scorpion**: five bolts in a fan; bowmen join | **The Wick-Mother**: calls wicks up round you; wicks join | **Firepot Nan**: three pots in a fan; throwers join; Kindled |
+| 7 | **Whitethroat**: circles and cuts in, calls yearlings; Ridge-Runners join | **The Decurion**: a shield rush, calls shields up; shieldmen and shield-rushers join; Shielded | **The Chucker**: three pots at once, bursts; sappers join; Kindled | **The Pike-Captain**: runs twice, calls pikes from the dark; pikemen join |
+| 12 | **Greenbelly**: trail, burst, splits into three; the blight-sick join; Volatile, Brood | **The Heap**: falls on what is near, splits into heaps that split; Bone-Heaps join; Brood | **The Lamplighter**: five flames in a fan, wards its diggers; Lamp-Throwers join; Ironbound | **Barn-Door**: an 80% guard, brings the door down; bruisers join; Shielded, Ironbound |
+| 16 | **The Outflow Sow**: a charge that leaves slurry; Slurry Sows join; Kindled | **The Weed-Wife**: three frost orbs, cold wet ground; the Drowned join; Rimed | **The Perfect of Fuses**: three burning lanes, a great blast; Fuse-Runners join; Volatile | **The Levy Sergeant**: volleys of five, calls crossbows; Levy Crossbows join |
+| 22 | **Old Blue**: a howl that hastes the Pack, calls wolves in; Howlers join; Bannered | **The Signifer**: a standard that hastes and wards the dead, raises them; horn-blowers and grave-callers join; Gravebound, Bannered | **The Gaffer**: tunnels, slams as it surfaces, brings its gang up; Brood | **The Drum-Major**: a drum that hastes, calls footpads from every side; drummers join; Bannered |
+
+**New verbs, small and data-driven** (`Content/Enemies.cs`, `Sim/Ai.cs`). Each
+is a cast with its mark and its word first, then the thing:
+- **Aura:** a pulse that quickens (pace and blows) or wards its own kind. It
+  is said over the caster, so the eye finds the one to kill. Only one
+  rallying voice may be on the field at a time.
+- **Summon:** each newcomer's place is marked on the ground first, then it
+  comes there.
+- **Slam:** a disc that fills where the survivor stood (or round the
+  creature), then the blow. Marked, it lands, even if the slammer dies.
+- **Chained charges:** the next run has a shorter wind-up.
+- **A run that ends in its own blast:** the Fuse-Runner.
+- **Blows that chill or poison.**
+- **Lobs:** several lobbed pots fan out across the line, so the gaps can be
+  stood in.
+
+**Champion Signs** (`Content/Signs.cs`; COUNTERS.md §4, phase A) give a
+champion one more verb and its colour, worn in its name ("Swift, Kindled
+Barrow Knight"). The signed champion is its own def with its kind's id, so the
+AI, the view and the bestiary need no special case.
+- **The Signs:** Swift, Ironbound, Kindled, Rimed, Volatile, Brood, Shielded,
+  Bannered, Gravebound.
+- **How many:** none at tier 1 before minute 10, then one; one at tier 2; one,
+  and two from minute 15, at tiers 3–4; two beyond that. A herald wears one
+  more, up to three.
+- **Champions in the crowd** wear one Sign from minute 10 at tier 2 and above.
+- **Never together:** Swift with Rimed; Brood with Gravebound; Swift with
+  Volatile; a shield on what already guards; a second rallying voice.
+
+**Visible variety on existing rigs.** Each new kind and miniboss is an existing
+model at its own size and colour (`EnemyDef.Tint` and `Glow`, drawn by the
+crowd through a hook agreed with animation) and, above all, with its own
+behaviour. No two kinds of one people share a body at the same size and
+colour (a test holds it).
+
+**Model briefs for the art pass** (silhouette · size against the base model ·
+colour · what it carries · how it moves):
+
+| Kind | Brief |
+|---|---|
+| Ridge-Runner | a lean yearling wolf, long-legged, tail high · 0.9 · pale tawny back, dark legs · nothing · a loping circle, a short yip as it plants to lunge |
+| Slurry Sow | a bloated sow, belly dragging · 1.2 · sick green-brown, slurry dripping, a faint green glow on the flanks · nothing · a heavy waddle; leaves green ground |
+| Howler | a grey-muzzled wolf, thick neck ruff · 1.1 · ash grey-blue · nothing · stands off; head lifts to howl (needs a howl clip on the quadruped rig) |
+| Old Tusk | a huge scarred boar, broken tusk · 1.9 · grey-brown, scar tissue pale · nothing · paws, then runs three lanes in a row |
+| Whitethroat | a pale she-wolf, white throat and chest · 1.5 · near-white, faint glow · nothing · circles at speed; the yearlings move with her |
+| Greenbelly | a swollen blighted wolf, belly heaving · 1.75 · deep green, glowing sores · nothing · a sick trot; bursts into three |
+| The Outflow Sow | a vast sow caked in slurry · 2.0 · green-black, glowing slurry · nothing · charges; its lane stays green |
+| Old Blue | an old alpha, thin and tall, grey-blue · 1.35 · grey-blue · nothing · hangs back and howls; the howl calls wolves |
+| Bone-Heap | several risen fused into one mound, limbs out at angles · 1.45 · bone pale · nothing · a slow lurch; comes apart into three |
+| Drowned | a risen hung with weed, water running off it · 1.05 · grey-green-blue, wet sheen · nothing · a dragging shamble; frost where it walks |
+| Horn-Blower | a risen legionary with a curved horn · 1.0 · bronze and grey · a cornu · stands off and blows (needs a horn clip) |
+| Legion Shield-Rusher | a risen legionary in green bronze, tall rectangular shield · 1.12 · verdigris bronze · a scutum and a short sword · plants, then runs shield-first |
+| The Scorpion | a tall risen crossbowman, hood, quiver of bolts · 1.55 · bone and leather · a heavy crossbow · kneels to loose five (needs the kneel-to-shoot clip) |
+| The Decurion | a legion file-leader, crested helm · 1.65 · verdigris and red crest · a scutum, a gladius · shield rush; shields rise beside him |
+| The Heap | a barrow walking: dozens of bones in one mass · 2.1 · bone and earth · nothing · falls on what is near (needs a slam clip) |
+| The Weed-Wife | a drowned toll-reeve, staff of office, chain of the ford · 1.6 · wet blue-grey, faint glow · a staff · stands off casting three frost orbs |
+| The Signifer | the Legion's standard-bearer, VII on a rag that was red once · 1.5 · bronze, faded red, a glow · a standard · plants it; the dead round it quicken |
+| Wick | a tiny lampling, a candle stub on the head · 0.72 · bright warm wax, flame glow · a candle stub · darting runs in a pack |
+| Fuse-Runner | a lampling hugging a lit crate stencilled "B.E." · 1.08 · soot and ember-orange · a crate with a fuse · plants, then runs a lane and goes up |
+| Lamp-Thrower | a lampling with a blue-white lamp held high · 1.05 · cold blue-white glow · a lamp · stands off and shakes out three flames |
+| The Wick-Mother | a big lampling crowned with candles · 1.6 · warm wax glow · a candle crown · calls; the ground opens round the survivor |
+| The Chucker | a broad sapper with a satchel of pots · 1.6 · soot and orange · a satchel · lobs three at once |
+| The Lamplighter | a tall lampling under the Dig's great lamp · 1.7 · blue-white glow · a great lamp on a pole · five-flame fans; a lit ring wards its diggers |
+| The Perfect of Fuses | a lampling under the biggest crate in the Dig · 1.9 · ember-orange glow · a great crate · runs three burning lanes |
+| The Gaffer | a broad tunnel-boss, a pick on the shoulder · 2.0 · dirt-grey · a pick · tunnels, slams as it surfaces |
+| Levy Crossbow | a red-capped levy crossbowman · 1.0 · muted red, steel · a crossbow (needs a gear variant of the hooded body) · kneels and looses three |
+| Levy Pikeman | a levyman with a long pike · 1.08 · ochre and red · a pike (gear variant) · plants, then runs the pike's line |
+| Levy Drummer | a levy drummer with a banner pole · 1.12 · deep red · a drum on a strap · stands off and drums (needs a drum clip) |
+| Firepot Nan | a broad woman in an apron, pots on her belt · 1.5 · red and soot · firepots · lobs three |
+| The Pike-Captain | a scarred levy captain, a red sash · 1.55 · ochre and red · a pike · runs twice; pikes come from the dark |
+| Barn-Door | a giant carrying an actual barn door as a shield · 1.7 · weathered wood and red · a barn door · slams the door down |
+| The Levy Sergeant | a sergeant with a heavy crossbow and a whistle · 1.55 · steel-blue and red · a heavy crossbow · volleys of five |
+| The Drum-Major | the levy's drum-major, red to the elbows · 1.45 · deep red glow · a great drum · drums; the Kerchiefs come from every side |
+
+### 16.6 Story nights: twenty minutes on one clock
+
+The owner: **"story should be 40% of the game early on"**. The bible sets
+story nights at twenty minutes and the table's at thirty.
+
+- **One night clock:** `ArenaRun.Minute` runs in minutes of a thirty-minute
+  night, so a twenty-minute night is the same night told half again as fast.
+  Its kinds, levels, heralds, great blessing, stretches, minibosses and
+  turns all follow it (turn spacing as well, at the experience lead's
+  request).
+- **Ember and experience:** the ember pays at the same pace, so the boss meets
+  the build a table night's boss would. Character experience counts the
+  night's minutes the same way.
+- **The end:** a story night ends on its boss. The way out opens, the people
+  draw back, and there is no long night: that belongs to the table, where
+  staying is the point. Its words are the story's: "It is nearly here", "The
+  night's end", "Halfway through the dark".
+
+### 16.7 Two corrections found on the way
+
+- **Bad ground gave grace.** Each tick of the horde's ground on the survivor
+  was a blow, and every blow buys 0.45 s untouchable. Standing in fire made
+  her safe from the crowd's teeth, and set off thorns, a ward's block and
+  dodges. Bad ground is now damage over time: armour and resistance answer
+  it, nothing else does, and it is said once a second. The drowned's frost
+  ground chills.
+- **The economy** (crafting's measure). The Kerchiefs' horde paid 52k–109k
+  gold a night, and the crowd's champions dropped about 300 pieces of gear.
+  The arena's rank and file now drop a fiftieth of their gold, and plain gear
+  comes only from what carries a chest: a champion's turn, a captain, a
+  herald, a miniboss, the boss.
+
+### 16.8 Decisions the studies left open
 
 Recorded here because this area owns them; the story's are the bible's
 ("The nights") and are followed.
@@ -913,7 +1053,7 @@ Recorded here because this area owns them; the story's are the bible's
   back; the build stays (the Mithrix lesson).
 - **The endless hour's end**: none (the owner); 16.3.
 - **Grimtunnel never dies in an arena** (the bible): he goes back down the
-  hole, delighted; a table's Lamplings field **the Ganger**, never him or his
+  hole, delighted; a table's Lamplings field **Gutterwick**, never him or his
   name.
 - **Keegan's duel at first light** (the bible): a day fight without ember;
   not an arena, so not built here.
@@ -929,9 +1069,12 @@ Recorded here because this area owns them; the story's are the bible's
   halves the stagger bar's filling: `MapRules.StaggerTaken`); the horde
   carries the rest. Not yet built.
 - **Enemy hazards hurt the horde** at half, the horde's own hazards only, not
-  an oath's ground: not yet built.
-- **Signs**: none at tier 1 before minute ten, one at tiers 1–3, two from
-  tier 4, three on late heralds: not yet built.
+  an oath's ground: death bursts and slams already do (a strike's 0.6);
+  ground does not yet.
+- **Signs**: none at tier 1 before minute ten, one at tier 2, one and then
+  two from minute fifteen at tiers 3–4, two beyond; a herald one more, at
+  most three; built (16.5), nine of COUNTERS.md's twelve (Warded, Mending
+  and Leader wait for their verbs).
 - **Contested ground** (two peoples at war): from Act 2, as the bible has it,
   and a candidate for the long night's deeper hours.
 - **Thieves**: ember stones on the ground only, never what is held; a
@@ -946,7 +1089,198 @@ Recorded here because this area owns them; the story's are the bible's
 
 ---
 
-## 17. Before and after
+## 17. The two arenas: nights and maps
+
+The owner: **"end game is two types of arenas - permanent and our normal arenas.
+permanent is our arpg build maps like poe and the normal arenas are for
+mindless survivors fun"**.
+
+**The split:**
+- **The experience lead** owns the maps' shape and loop: length, rhythm, what
+  pays what, and the atlas's progression. Their brief: 8–12 minutes; three to
+  five linked areas of placed packs; one event; a map boss; paying gear and
+  the next map; on an atlas from the Wayfinder's table; opening at Act 1's
+  end; a kill or find every 10–20 s and a pack every 20–40 s.
+- **Combat** owns the mechanics below: map items and their mods, packs,
+  champions and bosses at map tier, and loot.
+- **Crafting** will work map items.
+
+Nothing here is built yet. This section is the design to build from.
+
+### 17.1 What makes them different
+
+| | **Nights** (the table's arenas, the story's nights) | **Maps** (permanent ARPG build maps) |
+|---|---|---|
+| What fights | the ember: a build drafted from nothing, card by card, gone at dawn | the survivor's own, kept for good: day skills at their ranks, gear and its affixes, attributes, the art, the Edge in full |
+| What it asks | survive the clock; the horde melts, the champions and the boss are the test | clear the way to the map's boss; each pack is a fight |
+| Shape | one clearing; 30 minutes (20 for a story), then the long night | three to five clearings on a winding way (`MapGen` without `Arena`: start, clearings, altars, the boss's clearing, packs placed along the way) |
+| The crowd | hundreds, softened by the minute (`FodderEase`), refilled out of sight | placed packs of 4–10 at the map's level, at the day's strength (no softening, no refill) |
+| Champions | Signs by tier and minute; a chest each | magic packs (a champion with one Sign leading its kind) and rare packs (two or three Signs and an escort): the map's loot is theirs |
+| Minibosses | one per stretch, by the clock | the people's minibosses guard the altars, one or two a map |
+| The boss | the people's ruler, 90–120 s at par, then returning | the same ruler and script (`ArenaBosses` runs on any `IBossArena`) at map strength, 45–75 s at par: a map is ten minutes, not thirty |
+| Difficulty | tier (three creature levels each), the table's oaths | the map's tier (creature level `8 + 2 × tier`: tier 1 is level 10, Act 1's end; tier 16 is level 40, the Depths) and its mods |
+| Mods | oaths, sworn at the table | rolled on the map item; each pays in quantity and rarity |
+| Pays | cards inside; out: experience, a little gold, shards, the people's material | the chase: gear at the map's item level, maps, materials, Named items from bosses |
+| Kept | the codex, what the night taught | the atlas, the build, everything picked up |
+| A fall | ends the night; half the materials spill | three falls a map; each spills half the materials carried; the third closes it |
+
+The nights are the genre's fun: power from nothing, a horde to melt, a
+build that is gone at dawn. The maps are the RPG's chase. The build is the
+character, it grows between runs, and the map is a lock that the build is
+the key to.
+
+They share one bestiary: the same peoples, kinds, minibosses, Signs, boss
+scripts, telegraph language and charge director. A player who learns a verb
+in one has learnt it for the other.
+
+### 17.2 The map item (a Wayfinder's chart)
+
+A chart is an item, used up when the map opens. It has:
+
+- **Tier** 1–16. This sets the creature level and the item level of what
+  drops (`ilvl = creature level`, capped at 40), and which mods can roll.
+- **People:** one of the peoples, later two ("contested", from tier 8). This
+  sets the kinds, minibosses, boss and theme.
+- **Layout:** a seed, and 3–5 areas (more at higher tiers). The same chart
+  always opens the same ground.
+- **Rarity:**
+  - plain: no mods;
+  - fine: one or two;
+  - rare: three to five.
+
+  Each mod adds item quantity, rarity and pack size. Crafting re-rolls,
+  adds, seals and removes them, from the people's materials and heat.
+- **Prefixes, which strengthen the foe:** the table's oaths, as at night
+  (embers, champions, ruin, the hunt, iron, winter, blight, the deep, the
+  swarm). Then the map's own:
+  - **Signed**: every champion wears one more Sign;
+  - **Twin guardians**: two minibosses at each altar;
+  - **Contested**: a second people's packs;
+  - **Restless**: the boss returns once at half its health;
+  - **Hardened**: the people's base Sign on every pack.
+- **Suffixes, which weaken the survivor:** less mending, less armour, a slower
+  dash, no regeneration, shorter reach for her light (the moonless, which
+  belongs here rather than in the long night), and a cursed draught.
+- **Quality** (crafting): +1% quantity a point, to 20.
+
+### 17.3 Inside a map
+
+- **Packs:** `MapGen` places 2–3 packs a clearing and one about every 14 m
+  along the ways. A pack is 4–10 of the people's open kinds, at the map's
+  level and the day's strength.
+  - Which kinds may appear goes by tier, not by a clock. Tier 1 fields the
+    first two stretches' kinds; each two tiers adds the next stretch. By
+    tier 9 the whole roster is in, and the mods carry it on from there. The
+    escalation's rule, "a verb is shown before it spreads", becomes the
+    atlas's.
+- **Magic and rare packs:**
+  - about one pack in four is magic: a champion with one Sign leads it;
+  - one in ten is rare: two or three Signs and an escort;
+  - Signs open by tier as the kinds do.
+
+  They drop the map's gear.
+- **Altars:** each altar clearing is guarded by one of the people's minibosses,
+  wearing the map's Signs. Killing it lights the altar for the map's event,
+  which is the experience lead's to shape. The people's signature turn and
+  its captain suit it.
+- **The boss:** the people's ruler in its own clearing, run by its arena script
+  with the contract's floors scaled to the map: 10, 12 and 10 s, and
+  `HealthMul` about a third of the night's. It drops the map's best: a Named
+  chance, maps, the people's rare material.
+- **The charge director in map mode:**
+  - packs charge in waves at `Cap = 2`;
+  - no spikes, except in the event and the boss's fight;
+  - a pack charges only once it is engaged (roused, as the day's packs are:
+    `Wake`, `Leash`).
+- **Map strength:** packs are not softened (`FodderEase` is the night's). A
+  map's power check is the build against full-strength packs, the experience
+  lead's 10–20 s between kills.
+
+### 17.4 What the build is asked
+
+The nights test a draft; the maps test what the player made of the character.
+- **Mods are build checks.** Each oath and map mod has answers in gear:
+  - iron asks for crits;
+  - winter, tenacity;
+  - blight, poison resistance and mending;
+  - Signed, single-target damage;
+  - Contested, area.
+
+  The chart shows its mods before it is used. Reading them, re-rolling them
+  and choosing which to run is the PoE loop, and gear's affix seams (crafting)
+  are where the answers are made.
+- **Depth through the existing systems:**
+  - skill ranks (to 8 by day);
+  - the art and its facets;
+  - attributes and gear affinity;
+  - the Edge in full (SKILLS_DESIGN §14.2: it is capped at night, and maps
+    are where it shines);
+  - kindled and Named items;
+  - crafting's heat and seams.
+
+  No new power axis is needed. Maps are the place the existing ones are
+  pushed.
+
+### 17.5 Loot
+
+- **Gear:** every kill may drop, at the map's item level, at the day's rates
+  scaled by quantity and rarity.
+  - Magic packs drop one item, rare packs two, minibosses two and a chance
+    of a Fine-or-better.
+  - The boss drops three to five and its Named chance (`ACQUISITION.md`'s
+    echoes and Named tables).
+- **Charts:**
+  - each map drops one to three charts, of its tier or one up, more under
+    quantity;
+  - the boss's chart is always one tier up, the first time a people is beaten
+    at that tier;
+  - this is the ladder.
+- **Materials:** the people's material per champion and miniboss (crafting's
+  `night.peoples` rates, raised), and old iron.
+- **Gold:** the day's rates. Maps are where gold is made; nights pay a
+  fiftieth.
+- **No ember:** shards are the nights'.
+
+### 17.6 The atlas (mechanical levers for the experience lead's progression)
+
+What combat can expose for the atlas to use:
+- **Completion:** a map's boss killed marks its (people, tier) on the atlas.
+- **The first completion of each pair** gives an atlas point.
+- **Points buy biases:**
+  - more charts of a people;
+  - a chosen mod more or less often;
+  - Signed packs paying more;
+  - a second event;
+  - an extra altar;
+  - the boss's Named chance.
+- **Echoes** (the story's named foes, `PROGRESSION.md` §6) are atlas-unlocked
+  pinnacle maps. Their bosses are the story's own fights (Greymuzzle, the
+  Barrow Lord, Grimtunnel at last, Redcowl) at map strength.
+
+### 17.7 What to build, in order
+
+1. `MapRun : ZoneRuntime, IBossArena` on `MapGen`'s winding layout. Packs come
+   from `PackSpot`s, rousing by the day's rules. The boss's clearing runs
+   `ArenaBosses.For`.
+2. The chart item: tier, people, seed, rarity and mods, read by `MapRun` as
+   `MapRules`.
+3. Magic and rare packs (Signs), and altar guardians (minibosses).
+4. Loot at the map's item level, and charts.
+5. The atlas's records and biases, with the experience lead.
+6. Crafting's chart verbs, with the crafting lead.
+
+**Changes proposed to the experience lead's brief:**
+- **The boss** is 45–75 s at par, a third of the night's health, so a
+  ten-minute map is not a third boss fight.
+- **Kinds open by tier**, so tier 1 maps teach two verbs, not twenty.
+- **The moonless** returns as a map suffix. It reads as a choice on a chart,
+  never as the long night's weather.
+- **The event** is the people's signature turn, lit at an altar by killing its
+  guardian, so it is earned rather than timed.
+
+---
+
+## 18. Before and after
 
 "Before" is the game as this work found it, measured by the harness's first
 bot (plain hands, level 1, no oaths); "after" is the finished design. The
@@ -976,7 +1310,7 @@ last rows are the same measure, before and after.
 
 ---
 
-## 18. Open
+## 19. Open
 
 - **The middle of the night is safe.** Lowest health is about 90% from minute
   ten to the boss; the threat is champions, heralds and the boss. The feel

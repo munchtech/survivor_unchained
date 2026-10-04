@@ -31,6 +31,7 @@ public partial class Sparks : MultiMeshInstance3D
     int count;
     const int Stride = 20;
     static readonly Random rng = new(11);
+    Uploads sent;
 
     public Sparks(int capacity, bool additive)
     {
@@ -41,9 +42,10 @@ public partial class Sparks : MultiMeshInstance3D
         mat.SetShaderParameter("sprites", Sprites.Array);
         Multimesh = new MultiMesh
         {
-            TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseColors = true, UseCustomData = true, InstanceCount = capacity, VisibleInstanceCount = 0,
+            TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseColors = true, UseCustomData = true, InstanceCount = Uploads.Least, VisibleInstanceCount = 0,
             Mesh = new QuadMesh { Size = Vector2.One, Material = mat },
         };
+        sent = new Uploads(Uploads.Least, capacity);
         CastShadow = ShadowCastingSetting.Off;
         // They go everywhere: never culled as a whole.
         CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f));
@@ -51,9 +53,13 @@ public partial class Sparks : MultiMeshInstance3D
 
     public static float R() => (float)rng.NextDouble();
 
+    /// <summary>The share of sparks and smoke made (the picture's quality: all of them at high).</summary>
+    public static float Density = 1;
+
     public void Spawn(in P p)
     {
         if (count >= parts.Length) return;
+        if (Density < 1 && R() > Density) return;
         var q = p;
         if (q.ColorEnd.A == 0 && q.ColorEnd.R == 0 && q.ColorEnd.G == 0 && q.ColorEnd.B == 0) q.ColorEnd = q.Color;
         if (q.Alpha == 0) q.Alpha = 1;
@@ -97,11 +103,52 @@ public partial class Sparks : MultiMeshInstance3D
             buffer[o + 12] = c.R; buffer[o + 13] = c.G; buffer[o + 14] = c.B; buffer[o + 15] = a;
             buffer[o + 16] = Mathf.Max(0, p.Sprite); buffer[o + 17] = p.Spin; buffer[o + 18] = k; buffer[o + 19] = 0;
         }
-        Multimesh.Buffer = buffer;
-        Multimesh.VisibleInstanceCount = count;
+        sent.Send(Multimesh, buffer, count, Stride);
     }
 
-    public void Clear() { count = 0; Multimesh.VisibleInstanceCount = 0; }
+    public void Clear() { count = 0; sent.Send(Multimesh, buffer, 0, Stride); }
+}
+
+/// <summary>
+/// What of a batch drawn from code is handed to the engine each frame: only
+/// as many places as are in use (rounded up to a power of two, so the
+/// MultiMesh is seldom remade), and nothing at all while it stays empty.
+/// Sending the whole of every batch's room each frame (a megabyte in all,
+/// copied three times and uploaded) cost more than what was in it.
+/// </summary>
+public struct Uploads
+{
+    /// <summary>The fewest places a batch keeps.</summary>
+    public const int Least = 64;
+    readonly int most;
+    int size, shown, low;
+
+    public Uploads(int size, int most) { this.size = size; this.most = most; shown = low = 0; }
+
+    public void Send(MultiMesh mm, float[] buffer, int count, int stride)
+    {
+        if (count == 0 && shown == 0) return;
+        int want = size;
+        if (count > size) want = Math.Min(most, Pow2(count));
+        // Well under its room for a few seconds: given back (a burst's peak is not kept for ever).
+        else if (size > Least && count < size / 4) { if (++low > 240) want = Math.Max(Least, Pow2(Math.Max(1, count)) * 2); }
+        else low = 0;
+        if (want != size)
+        {
+            size = want;
+            low = 0;
+            mm.InstanceCount = size;
+        }
+        RenderingServer.MultimeshSetBuffer(mm.GetRid(), new ReadOnlySpan<float>(buffer, 0, size * stride));
+        mm.VisibleInstanceCount = shown = Math.Min(count, size);
+    }
+
+    static int Pow2(int n)
+    {
+        int p = Least;
+        while (p < n) p <<= 1;
+        return p;
+    }
 }
 
 /// <summary>An instanced batch of one mesh placed from code each frame
@@ -110,6 +157,7 @@ public partial class Batch : MultiMeshInstance3D
 {
     readonly float[] buffer;
     int count;
+    Uploads sent;
 
     /// <summary>`mat`: what all of them are drawn with (their colour the
     /// instance's), or none, for a mesh whose surfaces have their own.</summary>
@@ -117,7 +165,9 @@ public partial class Batch : MultiMeshInstance3D
     {
         buffer = new float[capacity * 16];
         MaterialOverride = mat;
-        Multimesh = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseColors = true, InstanceCount = capacity, VisibleInstanceCount = 0, Mesh = mesh };
+        int first = Math.Min(capacity, Uploads.Least);
+        Multimesh = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseColors = true, InstanceCount = first, VisibleInstanceCount = 0, Mesh = mesh };
+        sent = new Uploads(first, capacity);
         CastShadow = shadow ? ShadowCastingSetting.On : ShadowCastingSetting.Off;
         CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f));
     }
@@ -135,9 +185,5 @@ public partial class Batch : MultiMeshInstance3D
         buffer[o + 12] = c.R; buffer[o + 13] = c.G; buffer[o + 14] = c.B; buffer[o + 15] = c.A;
     }
 
-    public void End()
-    {
-        Multimesh.Buffer = buffer;
-        Multimesh.VisibleInstanceCount = count;
-    }
+    public void End() => sent.Send(Multimesh, buffer, count, 16);
 }
