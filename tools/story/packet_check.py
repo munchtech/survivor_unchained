@@ -49,7 +49,14 @@ def source(tid):
         return lst[int(p[3])] if lst and int(p[3]) < len(lst) else None
     if p[0] == "folk":
         return folk["lines"][int(p[1])]["text"] if int(p[1]) < len(folk["lines"]) else None
+    if p[0] == "name":
+        # A name take must be one creation still suggests, or its splice is never played.
+        return p[2] if p[2] in names else None
     return code
+
+
+front = open(os.path.join(ROOT, "godot", "src", "Ui", "Front.cs"), encoding="utf-8").read()
+names = re.findall(r'"(\w+)"', re.search(r"string\[\] Names = \{([^}]*)\}", front).group(1))
 
 
 FEEL = re.compile(r"\b(eerie|grim|dread|awe|wonder|warm|warmth|tender|relief|sombre|menace|unease|uneasy|pity|horror|tense|ominous|creeping|gentle|fond|sad|grief|joy|amused|wry|smile)\b", re.I)
@@ -86,4 +93,7 @@ for b in blocks[1:]:
         if full and note:
             print("   note:", note.group(1))
         print("   >", paste.replace("\n", " / "))
+taken = set(re.findall(r"`name\.\w+\.(\w+)\.wav`", text))
+if taken and set(names) - taken:
+    print("NAME TAKES MISSING for:", ", ".join(sorted(set(names) - taken))); bad += 1
 print("checked", len(blocks) - 1, "takes;", bad, "not matching the data")

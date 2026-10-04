@@ -433,6 +433,9 @@ None of them says it.
 - **Redcowl** (Dunstan Cutwell). *Face:* the bandit chief with cages. *Secret:*
   the leader of Ashford's dispossessed, who kept his prisoners fed and who
   would, if anyone asked him straight, fight the Dig before the Watch would.
+  If the teamsters die in his cages, hunger is not what kills them: it is the
+  cold at night. His people's children sleep by the fires, and the cages are not
+  by the fires. Holloway says so, and Harlan hears it ("They were fed").
   Never says "Ashford", and lets nobody say it twice. *Ends:* killed in Act 1;
   holds the breakthrough's mouth with his people and the six crates and dies
   in it; takes the Waystation's gate after Holloway; hanged.
