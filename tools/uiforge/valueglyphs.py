@@ -40,6 +40,45 @@ CUSTOM = {
 }
 
 
+# The standing's lines (Book.cs, by Stat, lower case: stat_maxhealth ...), each a mark of the
+# house: a line glyph where one says it, else a shape of our own (24-unit paths).
+CIRCLE = "A{r} {r} 0 1 1 {x2} {y} A{r} {r} 0 1 1 {x1} {y} Z"
+
+
+def ring(cx, cy, r):
+    return f"M{cx - r} {cy} " + CIRCLE.format(r=r, x1=cx - r, x2=cx + r, y=cy)
+
+
+STATS = {
+    "stat_maxhealth": "heart",
+    "stat_armor": [("fill", "M3.5 6 L8 2.5 L10 4.8 L14 4.8 L16 2.5 L20.5 6 L19 13.5 L17 19.5 L12 22 L7 19.5 L5 13.5 Z"),
+                   ("cut", "M9.6 4.8 L14.4 4.8 L12 8.4 Z"), ("cut", "M11.3 10 L12.7 10 L12.7 19.5 L11.3 19.5 Z"),
+                   ("cut", "M5 13.6 L19 13.6 L18.8 14.8 L5.2 14.8 Z")],
+    "stat_regen": [("fill", "M12 21.5 C3.5 15.5 2.5 10 4.5 6.5 C6.5 3.2 10.5 3.8 12 7 C13.5 3.8 17.5 3.2 19.5 6.5 "
+                            "C21.5 10 20.5 15.5 12 21.5 Z"),
+                   ("cut", "M12 7.6 L16 12 L13.4 12 L13.4 17 L10.6 17 L10.6 12 L8 12 Z")],
+    "stat_healing": [("fill", "M9.8 2 L14.2 2 L14.2 4 L13.4 4 L13.4 8.4 C17.6 9.7 20.2 12.8 20.2 16.4 C20.2 20.4 16.6 22.6 "
+                              "12 22.6 C7.4 22.6 3.8 20.4 3.8 16.4 C3.8 12.8 6.4 9.7 10.6 8.4 L10.6 4 L9.8 4 Z"),
+                     ("cut", "M10.9 12.4 L13.1 12.4 L13.1 15 L15.7 15 L15.7 17.2 L13.1 17.2 L13.1 19.8 L10.9 19.8 "
+                             "L10.9 17.2 L8.3 17.2 L8.3 15 L10.9 15 Z")],
+    "stat_dodge": [("fill", "M3 19.5 C4.5 9.5 11.5 4.5 18.2 5.4 L18.6 2.4 L23 8.6 L16.4 11.6 L17 8.6 C12 8 7.4 11.6 6.3 20.2 Z"),
+                   ("fill", ring(15.5, 16.5, 3.4))],
+    "stat_damage": "sword",
+    "stat_critchance": "crosshair",
+    "stat_critdamage": [("fill", "M12 1.5 L14 8.5 L20.5 4 L16.5 10.5 L23 12 L16.5 13.8 L20.5 20 L14 15.6 L12 22.5 L10 15.6 "
+                                 "L3.5 20 L7.5 13.8 L1 12 L7.5 10.5 L3.5 4 L10 8.5 Z"),
+                        ("cut", ring(12, 12, 2.6))],
+    "stat_cooldown": "hourglass",
+    "stat_area": [("fill", ring(12, 12, 3.6)), ("fill", "M12 0.8 L15.6 5.2 L8.4 5.2 Z"), ("fill", "M12 23.2 L15.6 18.8 L8.4 18.8 Z"),
+                  ("fill", "M0.8 12 L5.2 8.4 L5.2 15.6 Z"), ("fill", "M23.2 12 L18.8 8.4 L18.8 15.6 Z")],
+    "stat_movespeed": "boot",
+    "stat_dashcharges": "dash",
+    "stat_pickupradius": "magnet",
+    "stat_xpgain": "sun",
+    "stat_goldgain": [("fill", "M12 1.5 L22.5 12 L12 22.5 L1.5 12 Z"), ("cut", ring(12, 12, 3.4))],
+}
+
+
 def custom_mask(parts, S, pad=1.2):
     scale = S / (24 + 2 * pad)
     fill = np.zeros((S, S), np.uint8)
@@ -53,7 +92,13 @@ def custom_mask(parts, S, pad=1.2):
 
 def mark(key, size=256, ss=2, stroke=2.3):
     S = size * ss
-    if key in CUSTOM:
+    if key in STATS:
+        v = STATS[key]
+        if isinstance(v, str):
+            body, cut = G.bold(v, S, stroke=stroke)
+        else:
+            body, cut = custom_mask(v, S)
+    elif key in CUSTOM:
         body, cut = custom_mask(CUSTOM[key], S)
     elif key in G.glyphs():
         body, cut = G.bold(key, S, stroke=stroke)
@@ -80,7 +125,7 @@ def mark(key, size=256, ss=2, stroke=2.3):
     return F.to_pil(F.downsample(img, (size, size)))
 
 
-def build(out_dir, keys=KEYS):
+def build(out_dir, keys=KEYS + list(STATS)):
     os.makedirs(out_dir, exist_ok=True)
     made = {}
     for k in keys:
