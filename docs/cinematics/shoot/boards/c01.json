@@ -6,7 +6,7 @@
     "frost": "frost silvering the grass beyond the embers' reach"
   },
   "shots": {
-    "2": "top shot looking straight down from above: {camp}; beside the embers {her} lies face down on the bare earth, one hand lying in the ash at the very edge of the coals, {frost} at the corners of the frame; warm orange ember glow on her and the stones, everything else cold grey",
+    "2": "bird's-eye view looking straight down from high above at night: a ring of stones round a fire burned down to glowing embers with an iron tripod and cauldron over it; beside the ring a young woman with long soaked dark red hair spread on the ground lies flat on her front, face down, motionless, one arm stretched out so her hand lies in the ash at the edge of the coals; a rough log and a rolled bedroll nearby; frost silvering the grass at the corners of the frame; only the embers glow orange",
     "3": "extreme close-up of {her} lying on her side on frozen ground, her face sideways in the frame, eyes just opening, wet hair across her cheek, half her face lit warm orange by embers, the other half cold moonlight grey, shallow focus",
     "4": "insert shot from above: a woman's bare hand and forearm with a leather bracer lying in grey ash at the edge of glowing orange coals in a ring of stones, far too close to the heat, not pulling back; one ember drifting",
     "5": "low medium shot through glowing embers in the foreground: {her} pushing herself up from the ground on her arms, hair hanging down in wet ropes, water dripping, a log behind her, dark trees",
@@ -14,10 +14,10 @@
     "7": "over the shoulder of {her}, seen from behind and low: a line of dark wet bootprints in white frosted grass coming out of the dark wood straight to where she sits, the trail receding north between black trunks into night",
     "8": "close-up, frontal, slightly below eye level: {her} breathing out slowly with lips parted in freezing air and no breath showing at all, black trees behind her, frost on the grass, warm ember light on one side of her face, cold blue moon rim on the other",
     "8a": "extreme long shot up a dark forest road at night: far off by a river three small points of cold pale blue light low by the water on iron posts, a dark stone gate wall beyond, and high above everything, tiny, one single warm gold lamp burning at the top of a dark tower against the night sky; tall black pines frame the road",
-    "8b": "close-up of {her}, frontal, very still, listening, eyes sliding a fraction toward her own shoulder as if someone spoke close behind her, not turning; dark wood behind, warm ember light on her cheek",
+    "8b": "tight close-up of {her} outdoors at night in a dark birch wood, frontal, very still, listening, her eyes sliding a fraction to one side as if someone had spoken just behind her shoulder, not turning her head; frosted grass and black trunks soft behind her; a little warm ember light on one cheek",
     "9": "low wide shot from across a frosted clearing: {camp}, {her} small on the log by the embers with her back half turned; in the background left past the firelight the frost has gone dark in a patch and a drowned man's head and shoulders are breaking up out of the ground like a swimmer surfacing, hair streaming",
-    "10": "medium close-up: {her} snapping her head round hard toward something off screen left, eyes wide, rising to her feet in one movement, ember light behind her",
-    "11": "medium wide side view: {her} snatching up a sword and round shield from a log and coming round ready to fight, while on three sides of the frosted clearing drowned dead men are breaking up out of the cracked frozen ground",
-    "12": "high angle crane shot from behind and above {her} standing armed at the centre of a frosted clearing by a fire burned to embers, four drowned dead rising from the ground around her in the dark wood, the camera rising"
+    "10": "medium close-up outdoors at night in a frosted birch wood: {her} whipping her head round hard toward something off screen to the left, eyes wide, mouth open, already rising from where she sat on a log; ember light on her from behind",
+    "11": "medium wide side view in a frosted clearing at night, one woman only: {her} snatching up her sword from a log and turning with it raised, while around the clearing three drowned dead men are clawing up out of the cracked frozen ground, heads and shoulders breaking through; a fire of embers glowing",
+    "12": "high angle looking down from above and behind a single woman with a sword and round shield standing alone at the centre of a frosted clearing by a fire of embers, seen small from far above; four drowned dead clawing up out of the frozen ground around her in a ring; dark birch wood"
   }
 }

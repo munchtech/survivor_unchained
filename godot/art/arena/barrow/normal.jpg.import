@@ -1,0 +1,30 @@
+[remap]
+
+importer="2d_array_texture"
+type="CompressedTexture2DArray"
+uid="uid://dceln04y41bc2"
+path.bptc="res://.godot/imported/normal.jpg-ec4b7beab119042c3c40f9138374e55f.bptc.ctexarray"
+path.astc="res://.godot/imported/normal.jpg-ec4b7beab119042c3c40f9138374e55f.astc.ctexarray"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
+
+[deps]
+
+source_file="res://art/arena/barrow/normal.jpg"
+dest_files=["res://.godot/imported/normal.jpg-ec4b7beab119042c3c40f9138374e55f.bptc.ctexarray", "res://.godot/imported/normal.jpg-ec4b7beab119042c3c40f9138374e55f.astc.ctexarray"]
+
+[params]
+
+compress/mode=2
+compress/high_quality=true
+compress/lossy_quality=0.9
+compress/uastc_level=0
+compress/rdo_quality_loss=0.0
+compress/hdr_compression=1
+compress/channel_pack=0
+mipmaps/generate=true
+mipmaps/limit=-1
+slices/horizontal=1
+slices/vertical=7

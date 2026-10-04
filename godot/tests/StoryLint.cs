@@ -303,10 +303,10 @@ public class StoryLint
         // genre word gets on to the Wayfinder's sheets.
         var words = new Dictionary<string, string[]>
         {
-            ["dead"] = ["Howes", "Lows", "Lych-Way", "Chesters"],
-            ["pack"] = ["Dene", "Clough", "Holt", "Shaw"],
-            ["kerchiefs"] = ["Ruts", "Drove", "Cutting", "Gap"],
-            ["lamplings"] = ["Sump", "Delph", "Sough", "Spoil"],
+            ["dead"] = ["Howes", "Lows", "Barrows", "Lych-Way", "Chesters", "Burying-Ground"],
+            ["pack"] = ["Dene", "Clough", "Holt", "Shaw", "Brake", "Den"],
+            ["kerchiefs"] = ["Ruts", "Drove", "Cutting", "Ravine", "Waggon-Way", "Gap"],
+            ["lamplings"] = ["Sump", "Delph", "Sough", "Spoil", "Workings"],
         };
         var seen = new HashSet<string>();
         for (int day = 1; day <= 40; day++)

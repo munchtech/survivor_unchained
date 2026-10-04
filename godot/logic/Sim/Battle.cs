@@ -80,6 +80,10 @@ public sealed class MapRules
     /// arena's horde is tens of thousands a night: at the day's rate the Kerchiefs alone paid
     /// 52k-109k gold (docs/CRAFTING_DESIGN.md), so there it is a fiftieth.</summary>
     public double FodderGold = 1;
+    /// <summary>The same for champions, heralds and captains (bosses and minibosses always pay in
+    /// full). An arena's thousand champions at the day's rate paid a Kerchief night 2.5k-3.3k gold,
+    /// more than the rest of Act 1 together; there it is a tenth (crafting's measure).</summary>
+    public double ChampionGold = 1;
 }
 
 public sealed class BattleHooks
@@ -815,7 +819,7 @@ public sealed partial class Battle
             if (credited)
             {
                 double luck = Stats.Get(Stat.Luck);
-                if (e.Def.Gold is { } gold && gold != 0 && Rng.Next() < (0.55 + luck * 0.1) * (e.Elite ? 1 : Rules.FodderGold)) SpawnPickup(PickupKind.Gold, e.X, e.Z, Math.Ceiling(gold * (0.6 + Rng.Next() * 0.8)));
+                if (e.Def.Gold is { } gold && gold != 0 && Rng.Next() < (0.55 + luck * 0.1) * (e.Boss || e.Def.Miniboss ? 1 : e.Elite ? Rules.ChampionGold : Rules.FodderGold)) SpawnPickup(PickupKind.Gold, e.X, e.Z, Math.Ceiling(gold * (0.6 + Rng.Next() * 0.8)));
                 if (Rng.Next() < 0.012 * luck + (e.Elite ? 0.4 : 0)) SpawnPickup(PickupKind.Heal, e.X, e.Z, e.Elite ? 40 : 25);
                 if (Rng.Next() < 0.004 * luck) SpawnPickup(PickupKind.Magnet, e.X, e.Z, 1);
                 if (Hooks.OnLoot != null)

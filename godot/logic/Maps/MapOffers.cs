@@ -125,26 +125,24 @@ public static class MapOffers
         return r;
     }
 
-    // A map is named in the valley's own words for its people's kind of ground (the story bible,
-    // "The nights"), so the name says whose place it is before the sheet does. Lampless, Quiet and
-    // Praying are seeds: the Order's call, the dead's word, and Tam's.
-    static readonly Dictionary<string, (string[] Adjectives, string[] Places)> Names = new()
-    {
-        ["dead"] = (["Lampless", "Quiet", "Morrow", "Drowned", "Long", "Cold"], ["Howes", "Lows", "Lych-Way", "Chesters"]),
-        ["pack"] = (["Grey", "Bitter", "Thorn", "Bracken", "Whelping", "Elder"], ["Dene", "Clough", "Holt", "Shaw"]),
-        ["kerchiefs"] = (["Red", "Salt", "Toll", "Gallows", "Hungry", "Widow's"], ["Ruts", "Drove", "Cutting", "Gap"]),
-        ["lamplings"] = (["Praying", "Gold", "Warm", "Black", "Deep", "Lamplit"], ["Sump", "Delph", "Sough", "Spoil"]),
-    };
-
     /// <summary>A name as it is written inside a sentence: "until the Pack-Mother comes".</summary>
     public static string InSentence(string name) => name.StartsWith("The ") ? "the " + name[4..] : name;
 
-    /// <summary>A map's name, drawn from its people's words.</summary>
-    public static string Name(string people, Rng rng)
-    {
-        var (adjectives, places) = Names[people];
-        return $"The {rng.Pick(adjectives)} {rng.Pick(places)}";
-    }
+    static string[] WordsFor((string Place, string[] Words)[] table, string people) =>
+        table.First(n => n.Place == ArenaPlaces.IdFor(people)).Words;
+
+    /// <summary>A map's name, in the valley's own words for its people's ground (ArenaPlaces):
+    /// what the place is like, which makes its look, and where its people live, so a Risen
+    /// map is a barrow and never a fen.</summary>
+    public static string Name(string people, Rng rng) =>
+        $"The {rng.Pick(WordsFor(ArenaPlaces.Adjectives, people))} {PlaceWord(rng, people)}";
+
+    static string PlaceWord(Rng rng, string people) => rng.Pick(WordsFor(ArenaPlaces.Names, people));
+
+    /// <summary>A name given to another people's place (an offer whose people
+    /// were changed): its adjective kept, its place word theirs.</summary>
+    public static string Renamed(string name, string people, int seed) =>
+        $"{string.Join(' ', name.Split(' ').SkipLast(1))} {PlaceWord(new Rng((uint)seed), people)}";
 
     /// <summary>The maps the table offers today: three, each of its own
     /// people and oaths, the tier the survivor has earned (and one higher).</summary>

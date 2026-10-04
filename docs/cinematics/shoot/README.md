@@ -115,7 +115,7 @@ State on 2026-10-04 (see `docs/team/cinematics.md`):
 
 | Id | Shooting script | Boards | Animatic | In the game |
 |---|---|---|---|---|
-| C01 The Drowned Fire | `c01.md`, written from its timeline | style chosen, frames to make | tool written (`animatic.py`), to cut | `c01.json` plays on a new journey; previs pass 3 reads, with stand-in motion |
+| C01 The Drowned Fire | `c01.md`, written from its timeline | made (`boards/c01/`) | in `animatics/prologue.mp4` | `c01.json` plays on a new journey; previs pass 3 reads, with stand-in motion |
 | C02 None Cross After Dark | to write | to make | to cut (with the Prologue) | not yet |
 | C03 The Heart Goes Down | to write | to make | to cut (with the Prologue) | not yet |
 | C04 First Light | to write | to make | to cut (with the Prologue) | not yet |
