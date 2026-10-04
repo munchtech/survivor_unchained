@@ -32,8 +32,9 @@ The main session owns heroine outfits and anything with no lead yet.
 | # | What | Why | Owner | Size |
 |---|---|---|---|---|
 | 0.1 | The owner answers the seven provenance questions (`ASSET_PROVENANCE.md`, "Questions only the owner can answer"). Above all: what made `234.glb` and from what picture; where the reference sheet came from; what pictures the hero's and older woman's figures came from | Three UNKNOWN bodies and the cameos hang on these answers (PE-05, PE-06, PE-09, UI-05) | Owner, collected by the provenance auditor | S |
+| 0.1a | The owner confirms he owns The Ember Watch (`stevenrogerino/wowsurvivors`), or gets a written assignment from whoever does | The world, lore, weapons and combat were ported from it (DA-02). The legal lead ranks it a blocker until confirmed | Owner, with legal | S |
 | 0.2 | Ship a `licenses/` folder with the build: Godot `LICENSE.txt` and `COPYRIGHT.txt`, .NET `THIRD-PARTY-NOTICES.TXT`, the three `OFL-*.txt`, `CREDITS.md`. Generate the in-game Credits from `CREDITS.md`, with licence links and the CC BY "changes" notes | Notices required by MIT, OFL and CC BY don't ship today (BU-01) | Legal specifies; main session builds it; UI design for the Credits screen | S |
-| 0.3 | Exclude unused third-party and dev-only files from the export (list in BU-02), or switch to a resources-only export | Unused CC BY and UNKNOWN files ship today (BU-02) | Main session with the performance lead | S |
+| 0.3 | Exclude unused third-party and dev-only files from the export (list in BU-02), or switch to a resources-only export. Remove the anime base body (`anime_female.glb`, `her_Hair_*.glb` and the `--body anime` path) from the build in any case | Unused CC BY and UNKNOWN files ship today (BU-02). Legal: an unused, youthful-styled body in an adult game is a needless ratings risk (PE-04) | Main session with the performance lead | S |
 | 0.4 | Steam pre-generated AI disclosure: Krea 2 images, LTX effects and sounds, TRELLIS 2 sculpts, Kimodo motion, placeholder voices, and code and dialogue written with Claude | Steam's content survey; Krea §4.3; LTX Attachment A item 5 | Legal | S |
 | 0.5 | Ask Krea (opensource@krea.ai) for enterprise terms, and record the answer | The US$1M revenue cap and 30-day termination (AI-01). This sets the deadline for stage 2 | Owner with legal | S |
 | 0.6 | Rename Starfall, Moonfire and Fan of Knives. Review Consecration and Whirlwind beside them | The Ember Watch's own Warcraft guard lists them (DA-04) | Story lead with the combat lead | S |
@@ -67,7 +68,7 @@ The deadline is set by 0.5, or by revenue nearing US$1M.
 | 3.2 | **LTX flipbooks** (FX-02, 14) | Fire, smoke, frost and bursts simulated in Blender (Mantaflow and particles), rendered on black and cut by the same `flipbook.py`; or fully procedural shaders | Skills VFX lead | L |
 | 3.3 | **LTX combat tells** (AU-03, 5 takes) | Recorded (drum, horn, fuse hiss) or synthesised in the game's own synth | Combat lead | S |
 | 3.4 | **Voice placeholders** (AU-04, 19 takes) | Per the owner, no placeholders: remove them from the build. Then record finals in ElevenLabs on a paid plan (keeping the plan, invoices and each voice's terms), or with actors under signed releases | Voice lead (paused by the owner) | M |
-| 3.5 | **Anime body, refitted Quaternius hair, older woman body** (PE-03, PE-04, PE-05) | Nothing to make: they are dev-only paths. Drop them from the build (0.3), and later from the repo if the owner agrees | Main session | S |
+| 3.5 | **Older woman body** (PE-05) | Nothing to make: a dev-only fallback. Drop it from the build (0.3), and later from the repo if the owner agrees. (The anime body and its hair, PE-03 and PE-04, go in 0.3.) | Main session | S |
 
 ## Stage 4: credited third-party work (low risk, but not ours, and seen)
 

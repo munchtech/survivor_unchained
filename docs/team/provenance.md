@@ -17,10 +17,10 @@ Rows by risk:
 | Risk | Rows |
 |---|---|
 | none | 18 |
-| low | 55 |
+| low | 54 |
 | medium | 10 |
 | high | 9 |
-| UNKNOWN | 10 |
+| UNKNOWN | 11 |
 
 All licences were checked at the source:
 
@@ -55,7 +55,7 @@ All licences were checked at the source:
 
 ## Next
 
-1. Get the owner's answers to the seven questions in `ASSET_PROVENANCE.md`, then update PE-05, PE-06, PE-09, UI-05, AI-14, AI-15 and DA-03.
+1. Get the owner's answers to the seven questions in `ASSET_PROVENANCE.md`, then update PE-05, PE-06, PE-09, UI-05, AI-14, AI-15, DA-02 and DA-03.
 2. Re-run the AI appendix and file counts before release (`git ls-files`).
 3. Audit again after each replacement lands.
 
@@ -71,8 +71,11 @@ Owner answers (questions 1 to 7).
   - the unknown bodies are blockers until answered;
   - the sword and shield should be fixed;
   - the notices and the export filter should be fixed;
-  - Moonfire, Starfall and Fan of Knives should be renamed.
+  - Moonfire, Starfall and Fan of Knives should be renamed;
+  - The Ember Watch (DA-02) is a blocker until the owner confirms he owns it;
+  - the anime body is to come out of the build for ratings as well as licence reasons;
+  - a Meshy plan question is added to owner question 1.
 
-  Their brief: `docs/legal/LEGAL_BRIEF.md`.
+  Their brief: `docs/legal/LEGAL_BRIEF.md`, issue 5 (f52c1b4d on `worktree-agent-aa12c130ddf4b904c`).
 - **Everyone:** add any new third-party or AI asset to `public/assets/CREDITS.md` and `docs/legal/ASSET_PROVENANCE.md`, with its source URL and licence, before it lands. Never ship `tools/make3d` output.
 - **UI art:** the Krea-made list in the appendix assumes every `chrome.py` piece is painted over. Please confirm the boundary.
