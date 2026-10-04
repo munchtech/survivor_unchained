@@ -1,0 +1,23 @@
+{
+  "seed": 1100,
+  "people": {
+    "her": "a young woman with long soaked dark red hair clinging to her, a strand of green river weed in it, bare arms, a fitted leather and steel armoured bodice with round steel pauldrons, a corked water flask tied on a cord round her wrist",
+    "camp": "a small camp in a birch and pine wood at night: a ring of stones round a fire burned down to glowing embers, an iron tripod with a black cauldron over it, a rough log, a rolled bedroll",
+    "frost": "frost silvering the grass beyond the embers' reach"
+  },
+  "shots": {
+    "2": "top shot looking straight down from above: {camp}; beside the embers {her} lies face down on the bare earth, one hand lying in the ash at the very edge of the coals, {frost} at the corners of the frame; warm orange ember glow on her and the stones, everything else cold grey",
+    "3": "extreme close-up of {her} lying on her side on frozen ground, her face sideways in the frame, eyes just opening, wet hair across her cheek, half her face lit warm orange by embers, the other half cold moonlight grey, shallow focus",
+    "4": "insert shot from above: a woman's bare hand and forearm with a leather bracer lying in grey ash at the edge of glowing orange coals in a ring of stones, far too close to the heat, not pulling back; one ember drifting",
+    "5": "low medium shot through glowing embers in the foreground: {her} pushing herself up from the ground on her arms, hair hanging down in wet ropes, water dripping, a log behind her, dark trees",
+    "6": "medium close-up, front three-quarter: {her} sitting on a log by a fire burned to embers, looking down at the full flask tied to her wrist, puzzled and still, brows drawn; behind her in the dark a dry bedroll with its blanket still folded; warm ember light from the left",
+    "7": "over the shoulder of {her}, seen from behind and low: a line of dark wet bootprints in white frosted grass coming out of the dark wood straight to where she sits, the trail receding north between black trunks into night",
+    "8": "close-up, frontal, slightly below eye level: {her} breathing out slowly with lips parted in freezing air and no breath showing at all, black trees behind her, frost on the grass, warm ember light on one side of her face, cold blue moon rim on the other",
+    "8a": "extreme long shot up a dark forest road at night: far off by a river three small points of cold pale blue light low by the water on iron posts, a dark stone gate wall beyond, and high above everything, tiny, one single warm gold lamp burning at the top of a dark tower against the night sky; tall black pines frame the road",
+    "8b": "close-up of {her}, frontal, very still, listening, eyes sliding a fraction toward her own shoulder as if someone spoke close behind her, not turning; dark wood behind, warm ember light on her cheek",
+    "9": "low wide shot from across a frosted clearing: {camp}, {her} small on the log by the embers with her back half turned; in the background left past the firelight the frost has gone dark in a patch and a drowned man's head and shoulders are breaking up out of the ground like a swimmer surfacing, hair streaming",
+    "10": "medium close-up: {her} snapping her head round hard toward something off screen left, eyes wide, rising to her feet in one movement, ember light behind her",
+    "11": "medium wide side view: {her} snatching up a sword and round shield from a log and coming round ready to fight, while on three sides of the frosted clearing drowned dead men are breaking up out of the cracked frozen ground",
+    "12": "high angle crane shot from behind and above {her} standing armed at the centre of a frosted clearing by a fire burned to embers, four drowned dead rising from the ground around her in the dark wood, the camera rising"
+  }
+}

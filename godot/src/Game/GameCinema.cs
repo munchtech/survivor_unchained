@@ -117,6 +117,9 @@ public partial class Game
             {
                 var lo = Loadouts.Of(g.Journey.Ch);
                 var v = new PersonView(lo.Person, new Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm }, 0.8) { Name = "CineSurvivor" };
+                // The townsfolk's clips too (sitting on the floor, arms folded): made on the
+                // same skeleton, they stand in until her own cinematic motion comes.
+                if (FolkClips.Library() is { } folk && !v.Person.Anim.HasAnimationLibrary("folk")) v.Person.Anim.AddAnimationLibrary("folk", folk);
                 g.scene!.AddChild(v);
                 people[name] = v;
                 if (c.Mark != null) Place(name, places.Resolve(MarkEl(c.Mark)), file.Mark(c.Mark).Heading);
@@ -188,6 +191,11 @@ public partial class Game
             {
                 stillShot = span.Index;
                 Shots.Want($"{file.Id}_s{shot.Id}", 0.05);
+                // --cinebones: where the cast's bones are at each still, for framing shots on them.
+                if (Args.Has("cinebones"))
+                    foreach (var name in people.Keys)
+                        GD.Print($"cinebones {file.Id} s{shot.Id} {name} " + string.Join(" ", new[] { "head", "eyes", "chest", "hand_r", "hand_l", "foot_l", "foot_r" }
+                            .Select(bn => ActorAt(name, bn) is V3 p ? $"{bn}=({p.X:0.00},{p.Y:0.00},{p.Z:0.00})" : "")));
             }
             bars.Frame((float)player.Bars, shot.Black ? 1 : 0);
             if (player.Done) Over = true;
@@ -491,15 +499,102 @@ public partial class Game
                     for (int i = 0; i <= n; i++)
                     {
                         var p = a + dir * (i * stride) + side * ((i % 2 == 0 ? 1 : -1) * 0.12);
+                        // Dark and wet against the frost: sorted over it, and glossy enough to take the moon.
                         var d = new Decal
                         {
-                            TextureAlbedo = Footprint(i % 2 == 0), Size = new Vector3(0.13f, 0.4f, 0.3f),
-                            Position = new Vector3((float)p.X, (float)g.scene!.HeightAt(p.X, p.Z), (float)p.Z),
-                            Rotation = new Vector3(0, yaw + Mathf.Pi, 0), AlbedoMix = (float)c.Num("dark", 0.85), CullMask = 1,
+                            TextureAlbedo = Footprint(i % 2 == 0), TextureOrm = WetOrm(), Size = new Vector3(0.15f, 1.2f, 0.34f),
+                            Position = new Vector3((float)p.X, (float)g.scene!.HeightAt(p.X, p.Z) + 0.1f, (float)p.Z),
+                            Rotation = new Vector3(0, yaw + Mathf.Pi, 0), AlbedoMix = (float)c.Num("dark", 0.85), CullMask = 1, SortingOffset = 1,
                         };
                         g.scene.AddChild(d);
                         prints.Add(d);
+                        // Where the boot came down the frost is knocked off the grass: a soft dark
+                        // patch round each print, so the trail reads from far off as a line through it.
+                        var t = new Decal
+                        {
+                            TextureAlbedo = Trampled(), Size = new Vector3(0.34f, 1.2f, 0.62f),
+                            Position = d.Position, Rotation = d.Rotation, AlbedoMix = 0.55f, CullMask = 1, SortingOffset = 0.5f,
+                        };
+                        g.scene.AddChild(t);
+                        prints.Add(t);
                     }
+                    break;
+                }
+                case "frost":
+                {
+                    // Frost on the ground about a place, thin and patchy, and none within a fire's
+                    // reach: the prints show dark in it. It stays, as the prints do.
+                    // Laid in tiles, each on its own ground and only knee-deep, so it
+                    // whitens the grass and the earth and never the trees.
+                    var at = places.Resolve(c.Get("where"));
+                    float size = (float)c.Num("size", 40), rad = (float)c.Num("radius", 3);
+                    Vector2? hole = c.Has("clear") && places.Resolve(c.Get("clear")) is V3 h ? new Vector2((float)h.X, (float)h.Z) : null;
+                    // "trail": the places someone walked through it; the frost is knocked off the
+                    // grass along it, so the way they came reads as a dark line from far off.
+                    var trail = new List<Vector2>();
+                    if (c.Get("trail") is { ValueKind: JsonValueKind.Array } tr)
+                        foreach (var e in tr.EnumerateArray()) { var q = places.Resolve(e); trail.Add(new Vector2((float)q.X, (float)q.Z)); }
+                    int n = Math.Max(1, (int)Math.Ceiling(size / 6));
+                    float tile = size / n;
+                    for (int i = 0; i < n; i++)
+                        for (int j = 0; j < n; j++)
+                        {
+                            float x0 = (float)at.X - size / 2 + i * tile, z0 = (float)at.Z - size / 2 + j * tile;
+                            float cx = x0 + tile / 2, cz = z0 + tile / 2;
+                            var d = new Decal
+                            {
+                                TextureAlbedo = Frost(new Vector2(x0, z0), tile, new Vector2((float)at.X, (float)at.Z), size, hole, rad, trail),
+                                Size = new Vector3(tile, 1.4f, tile), Position = new Vector3(cx, (float)g.scene!.HeightAt(cx, cz) + 0.35f, cz),
+                                AlbedoMix = (float)c.Num("amount", 0.4), CullMask = 1, UpperFade = 0.1f, LowerFade = 0.1f,
+                            };
+                            g.scene.AddChild(d);
+                            prints.Add(d);
+                        }
+                    break;
+                }
+                case "glow":
+                {
+                    // A light seen far off (the ford's lamps from the camp, one lamp high up the
+                    // road): a point of its colour and a halo, for this cinematic only. "clear"
+                    // carries it through the mist; without it the air takes it as it takes all else.
+                    string name = c.Str("name") ?? $"glow{props.Count}";
+                    if (props.Remove(name, out var old)) old.QueueFree();
+                    if (c.Bool("remove")) break;
+                    var col = new Color(c.Str("color") ?? "#ffcf80");
+                    float size = (float)c.Num("size", 0.3), energy = (float)c.Num("energy", 3);
+                    bool clear = c.Bool("clear");
+                    var root = new Node3D { Position = V(places.Resolve(c.Get("where"))) };
+                    var lin = col.SrgbToLinear() * energy;
+                    root.AddChild(new MeshInstance3D
+                    {
+                        Mesh = new SphereMesh { Radius = size, Height = size * 2, RadialSegments = 12, Rings = 6 },
+                        CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+                        MaterialOverride = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(lin.R, lin.G, lin.B), DisableFog = clear },
+                    });
+                    root.AddChild(new MeshInstance3D
+                    {
+                        Mesh = new QuadMesh { Size = Vector2.One * size * (float)c.Num("spread", 9) },
+                        CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+                        MaterialOverride = new StandardMaterial3D
+                        {
+                            ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+                            BlendMode = BaseMaterial3D.BlendModeEnum.Add, BillboardMode = BaseMaterial3D.BillboardModeEnum.Enabled,
+                            AlbedoTexture = Halo(), AlbedoColor = new Color(col.R, col.G, col.B, (float)c.Num("halo", 0.55)), DisableFog = clear,
+                        },
+                    });
+                    // "under": [width, height], the dark of what the light is set in (a tower against the sky).
+                    if (c.Get("under") is { ValueKind: JsonValueKind.Array } u)
+                    {
+                        float uw = (float)u[0].GetDouble(), uh = (float)u[1].GetDouble();
+                        root.AddChild(new MeshInstance3D
+                        {
+                            Mesh = new BoxMesh { Size = new Vector3(uw, uh, uw) }, Position = new Vector3(0, -uh / 2 - size, 0),
+                            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+                            MaterialOverride = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(c.Str("dark") ?? "#05070c") },
+                        });
+                    }
+                    g.scene!.AddChild(root);
+                    props[name] = root;
                     break;
                 }
                 case "bars" or "fade" or "wet":
@@ -509,6 +604,14 @@ public partial class Game
         }
 
         readonly Dictionary<string, Node3D> props = new();
+        static GradientTexture2D? halo;
+
+        /// <summary>A soft round halo, bright at the middle and gone at the edge.</summary>
+        static GradientTexture2D Halo() => halo ??= new GradientTexture2D
+        {
+            Gradient = new Gradient { Colors = [new Color(1, 1, 1, 1), new Color(1, 1, 1, 0.25f), new Color(1, 1, 1, 0)], Offsets = [0, 0.18f, 1] },
+            Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f), Width = 64, Height = 64,
+        };
         readonly List<Decal> prints = new();
         static readonly Dictionary<bool, ImageTexture> printTex = new();
 
@@ -529,6 +632,64 @@ public partial class Game
                     img.SetPixel(x, y, new Color(0.03f, 0.035f, 0.04f, a * 0.85f));
                 }
             return printTex[left] = ImageTexture.CreateFromImage(img);
+        }
+
+        static ImageTexture? trampled;
+
+        /// <summary>A soft dark oval: the ground round a print, the frost knocked off it.</summary>
+        static ImageTexture Trampled()
+        {
+            if (trampled != null) return trampled;
+            const int N = 48;
+            var img = Image.CreateEmpty(N, N, false, Image.Format.Rgba8);
+            for (int y = 0; y < N; y++)
+                for (int x = 0; x < N; x++)
+                {
+                    float u = (x + 0.5f) / N * 2 - 1, v = (y + 0.5f) / N * 2 - 1;
+                    float a = Mathf.Clamp(1 - Mathf.Sqrt(u * u + v * v), 0, 1);
+                    img.SetPixel(x, y, new Color(0.10f, 0.11f, 0.12f, a * a * 0.8f));
+                }
+            return trampled = ImageTexture.CreateFromImage(img);
+        }
+
+        static ImageTexture? wetOrm;
+
+        /// <summary>A wet print's surface: smooth (roughness low), so it glints.</summary>
+        static ImageTexture WetOrm()
+        {
+            if (wetOrm != null) return wetOrm;
+            var img = Image.CreateEmpty(4, 4, false, Image.Format.Rgba8);
+            img.Fill(new Color(1, 0.12f, 0, 1));
+            return wetOrm = ImageTexture.CreateFromImage(img);
+        }
+
+        static readonly FastNoiseLite frostNoise = new() { Seed = 11, Frequency = 0.3f, FractalOctaves = 4 };
+
+        /// <summary>One tile of frost as a decal's picture (its corner and size in the
+        /// world): a thin rime broken by noise, thinning to the patch's edge, and
+        /// cleared in a soft ring where a fire keeps it off.</summary>
+        static ImageTexture Frost(Vector2 corner, float tile, Vector2 centre, float size, Vector2? hole, float radius, List<Vector2> trail)
+        {
+            const int N = 96;
+            var img = Image.CreateEmpty(N, N, false, Image.Format.Rgba8);
+            for (int y = 0; y < N; y++)
+                for (int x = 0; x < N; x++)
+                {
+                    var w = corner + new Vector2((x + 0.5f) / N, (y + 0.5f) / N) * tile;
+                    float n = frostNoise.GetNoise2D(w.X, w.Y) * 0.5f + 0.5f;
+                    float a = Mathf.SmoothStep(0.3f, 0.7f, n);
+                    var off = (w - centre).Abs() / (size / 2);
+                    a *= Mathf.Clamp((1 - Mathf.Max(off.X, off.Y)) / 0.2f, 0, 1);
+                    if (hole is Vector2 hc) a *= Mathf.SmoothStep(radius * 0.7f, radius * 1.4f, w.DistanceTo(hc));
+                    for (int k = 0; k + 1 < trail.Count; k++)
+                    {
+                        var ab = trail[k + 1] - trail[k];
+                        float s = Mathf.Clamp((w - trail[k]).Dot(ab) / Mathf.Max(ab.LengthSquared(), 1e-4f), 0, 1);
+                        a *= Mathf.SmoothStep(0.22f, 0.5f, w.DistanceTo(trail[k] + ab * s));
+                    }
+                    img.SetPixel(x, y, new Color(0.70f, 0.75f, 0.80f, a));
+                }
+            return ImageTexture.CreateFromImage(img);
         }
 
         HerFaceLife? Life(string actor) =>
