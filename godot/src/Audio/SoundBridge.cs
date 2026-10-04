@@ -83,6 +83,7 @@ public sealed class SoundBridge
                     }
                     break;
                 case Ev.Sound snd when snd.Id == "door": Sfx.Door(); break;
+                case Ev.Sound snd when snd.Id.StartsWith("tell"): Sfx.Tell(snd.Id); break;
             }
         }
     }

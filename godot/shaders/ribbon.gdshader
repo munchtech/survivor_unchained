@@ -8,6 +8,8 @@
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, depth_test_disabled, cull_disabled, shadows_disabled, fog_disabled;
 
+#include "res://shaders/hero_clear.gdshaderinc"
+
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float noise(vec2 p) {
 	vec2 i = floor(p), f = fract(p);
@@ -58,5 +60,5 @@ void fragment() {
 	} else {
 		light = body * 0.6 + core * 1.1;
 	}
-	ALBEDO = tint * light * strength;
+	ALBEDO = tint * light * strength * hero_clear(VERTEX, VIEW_MATRIX, PROJECTION_MATRIX, VIEWPORT_SIZE);
 }

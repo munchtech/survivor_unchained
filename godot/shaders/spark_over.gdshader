@@ -7,6 +7,8 @@
 shader_type spatial;
 render_mode unshaded, blend_add, depth_draw_never, depth_test_disabled, cull_disabled, shadows_disabled, fog_disabled;
 
+#include "res://shaders/hero_clear.gdshaderinc"
+
 uniform sampler2DArray sprites : filter_linear_mipmap;
 
 varying vec4 tint;
@@ -28,5 +30,5 @@ void fragment() {
 	// Round, whatever the sprite: the pack's forks of lightning run to the edge
 	// of their square and would show it as they turn.
 	else { vec4 t = texture(sprites, vec3(UV, sprite - 1.0)); a = t.r * t.a * (1.0 - smoothstep(0.82, 0.98, length(UV * 2.0 - 1.0))); }
-	ALBEDO = tint.rgb * a * tint.a;
+	ALBEDO = tint.rgb * a * tint.a * hero_clear(VERTEX, VIEW_MATRIX, PROJECTION_MATRIX, VIEWPORT_SIZE);
 }

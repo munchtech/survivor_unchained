@@ -477,6 +477,36 @@ public static class Sfx
         a.Play(new Fm { T = Now + 0.1, F = good ? f * Semis(4) : f * Semis(-3), Ratio = 2, Index = 0.4, D = 0.7, G = 0.025, Bus = Bus.Ui, Verb = 0.5 });
     }
 
+    /// <summary>A people's tell, a moment before its rush (combat's charge
+    /// director): the Pack's howl, the Kerchiefs' drum, a Lampling's fuse, the
+    /// barrow's whistle. Recorded takes (tools/comfy/sfx_clips.py), heard over
+    /// the fight and never quite the same twice; a made sound if a take is
+    /// missing, so a tell is never silent.</summary>
+    public static void Tell(string id)
+    {
+        if (A is not { } a || !a.Gate("tell", 1, 900)) return;
+        if (Recordings.Has(id))
+        {
+            a.Play(new Clip { Of = id, G = id == "tell_fuse" ? 0.5 : 0.62, Pitch = R(0.94, 1.05), Verb = id == "tell_fuse" ? 0.15 : 0.45 });
+            return;
+        }
+        switch (id)
+        {
+            case "tell_howl":
+                a.Play(new Tone { F = 420, F2 = 620, D = 1.6, G = 0.08, Type = Wave.Triangle, Verb = 0.6 });
+                break;
+            case "tell_drum":
+                for (int i = 0; i < 3; i++) a.Play(new Tone { T = Now + i * 0.42, F = 70, F2 = 42, D = 0.5, G = 0.3, Verb = 0.4 });
+                break;
+            case "tell_fuse":
+                a.Play(new Hiss { D = 1.1, G = 0.08, Hp = 3500, Verb = 0.1 });
+                break;
+            default:
+                a.Play(new Fm { F = 1900, Ratio = 2.01, Index = 0.4, D = 0.6, G = 0.05, Verb = 0.6 });
+                break;
+        }
+    }
+
     public static void Door()
     {
         if (A is not { } a) return;
