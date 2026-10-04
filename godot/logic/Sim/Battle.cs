@@ -74,6 +74,8 @@ public sealed class MapRules
     public double Light = 1;
     /// <summary>How fast a boss's stagger bar fills (the Oath of Iron fills it slower).</summary>
     public double StaggerTaken = 1;
+    /// <summary>The ember the dead leave, over the usual (an oath's pay: "half again the ember").</summary>
+    public double EmberGain = 1;
 }
 
 public sealed class BattleHooks
@@ -227,6 +229,8 @@ public sealed partial class Battle
     readonly List<StrikeSpec> strikes = new();
     public readonly Dictionary<string, Buff> Buffs = new();
     public MapRules Rules = new();
+    /// <summary>When the horde's chargers may run, and its other marks' caps (Charges.cs).</summary>
+    public readonly ChargeDirector Charges;
     public int EmberLevel = 1;
     public double EmberXp, EmberNext = 12;
     /// <summary>The ember burns here (it is night: an arena, the prologue): the
@@ -251,6 +255,8 @@ public sealed partial class Battle
     string? credit;
     public int KillCount;
     public readonly Dictionary<Family, int> KillsByFamily = new();
+    /// <summary>Champions slain, by family: what a night's people yield to crafting (docs/CRAFTING_DESIGN.md 6.1).</summary>
+    public readonly Dictionary<Family, int> ChampionsByFamily = new();
     public double DamageTaken, GoldGained;
     /// <summary>How much of GoldGained is already in the survivor's purse.</summary>
     public double GoldBanked;
@@ -307,6 +313,7 @@ public sealed partial class Battle
     public Battle(BattleSetup s)
     {
         Rng = new Rng(s.Seed);
+        Charges = new ChargeDirector(s.Seed);
         Collision = s.Collision;
         HeightAt = s.HeightAt;
         Combat = s.Combat;
@@ -345,6 +352,7 @@ public sealed partial class Battle
         double wdt = dt * WorldRate;
 
         RebuildSpatial();
+        Charges.Tick(this, wdt);
         UpdatePlayer(dt, moveX, moveZ);
         Flow.Update(Player.X, Player.Z);
         if (Combat)
@@ -669,7 +677,9 @@ public sealed partial class Battle
         e.Hp -= dmg;
         // A boss's gate: it stops at its phase's mark; the rest is its Break.
         if (e.HpFloor > 0 && e.Hp < e.HpFloor) { e.Overflow += e.HpFloor - e.Hp; e.Hp = e.HpFloor; }
-        e.Flash = 1;
+        // A boss struck many times a second would never stop flashing white and its body
+        // would be lost in it: a softer flash, so it stays itself under the build's blows.
+        e.Flash = e.Boss ? Math.Max(e.Flash, 0.4) : 1;
         e.LastSchool = school;
         // Which way the blow was going: its own, or away from the survivor.
         double dx = o.DirX, dz = o.DirZ;
@@ -695,6 +705,7 @@ public sealed partial class Battle
         {
             X = e.X, Z = e.Z, Amount = dmg, Crit = crit, School = school, Target = e.Id, Dot = o.Dot, Blocked = blocked,
             Family = e.Def.Family, Def = e.Def.Id, MaxHp = e.MaxHp, Dx = e.LastDx, Dz = e.LastDz,
+            Art = o.Weapon?.Art, Rank = o.Weapon?.Rank ?? 0,
         });
 
         // Lifesteal.
@@ -773,6 +784,7 @@ public sealed partial class Battle
         {
             KillCount++;
             KillsByFamily[e.Def.Family] = KillsByFamily.GetValueOrDefault(e.Def.Family) + 1;
+            if (e.Elite && !e.Boss) ChampionsByFamily[e.Def.Family] = ChampionsByFamily.GetValueOrDefault(e.Def.Family) + 1;
         }
         // A body comes apart under a blow of three times what it had left, or
         // twice on a critical; fire does it its own way (no burst).
@@ -788,7 +800,7 @@ public sealed partial class Battle
         if (e.Disposition != Disposition.Ally)
         {
             // The dead leave a stone with light still in it.
-            double xp = e.Def.Xp * Content.Enemies.ScaleFor(e.Level).Xp;
+            double xp = e.Def.Xp * Content.Enemies.ScaleFor(e.Level).Xp * Rules.EmberGain;
             if (xp > 0 && EmberOn && !e.Raised) DropEmber(e.X, e.Z, xp);
             if (credited)
             {
@@ -815,13 +827,13 @@ public sealed partial class Battle
                 var zn = SpawnZone(Side.Enemy, e.X, e.Z, 1.4, 3.5, e.Damage * 0.35, School.Fire);
                 if (zn != null) { zn.Tags = [Tag.Zone]; zn.Art = "zone_fire_enemy"; }
             }
-            if (Rules.DeathBurst && Rng.Next() < 0.22)
+            if (Rules.DeathBurst && Rng.Next() < 0.22 && Charges.MayFuse(this, 0.7))
             {
                 Events.Emit(new Ev.Telegraph { Id = e.Id, Shape = TelegraphShape.Circle, X = e.X, Z = e.Z, Radius = 1.8, Duration = 0.7, Hostile = true });
                 strikes.Add(new StrikeSpec(e.X, e.Z, 1.8, e.Damage * 0.9, School.Shadow, [Tag.Explosion], 0.7, null, Side.Enemy, 0));
             }
         }
-        if (e.Def.Burst is { } b)
+        if (e.Def.Burst is { } b && Charges.MayFuse(this, b.Fuse))
         {
             Events.Emit(new Ev.Telegraph { Id = e.Id, Shape = TelegraphShape.Circle, X = e.X, Z = e.Z, Radius = b.Radius, Duration = b.Fuse, Hostile = true });
             strikes.Add(new StrikeSpec(e.X, e.Z, b.Radius, e.Damage * b.DamagePct, b.School, [Tag.Explosion], b.Fuse, null, Side.Enemy, 0));
@@ -971,7 +983,9 @@ public sealed partial class Battle
     /// doing broken, and then resists for 15 s.</summary>
     public void AddStagger(Enemy e, double amount)
     {
-        if (!e.Boss || e.StaggeredT > 0 || !e.Alive) return;
+        // Untouchable (a phase turning, laid down, going down the hole) is not staggerable:
+        // a stagger spent there was a quarter more damage nobody could deal.
+        if (!e.Boss || e.StaggeredT > 0 || !e.Alive || e.TakenMul <= 0) return;
         e.Stagger += amount * (e.StaggerResistT > 0 ? 0.25 : 1) * Rules.StaggerTaken;
         if (e.Stagger < 1) return;
         e.Stagger = 0;
@@ -1321,6 +1335,20 @@ public sealed partial class Battle
     /// <summary>A fresh ground effect; the caller sets the rest.</summary>
     public GroundZone? SpawnZone(Side owner, double x, double z, double radius, double life, double dps, School school)
     {
+        // The horde's burning ground is capped (the oldest goes out first), so it never fills
+        // the field nor takes the pool from the survivor's own.
+        if (owner == Side.Enemy)
+        {
+            int n = 0;
+            GroundZone? oldest = null;
+            foreach (var g in Zones.Items)
+            {
+                if (!g.Alive || g.Owner != Side.Enemy) continue;
+                n++;
+                if (oldest == null || g.Age > oldest.Age) oldest = g;
+            }
+            if (n >= Charges.GroundCap && oldest != null) Zones.Release(oldest);
+        }
         var zn = Zones.Spawn();
         if (zn == null) return null;
         zn.Reset();
@@ -1355,7 +1383,7 @@ public sealed partial class Battle
     public void ScheduleStrike(double x, double z, double r, double dmg, School school, Tag[] tags, double delay, WeaponInst? weapon, Side owner = Side.Player, int depth = 0)
     {
         strikes.Add(new StrikeSpec(x, z, r, dmg, school, tags, delay, weapon, owner, depth) { Credit = credit });
-        Events.Emit(new Ev.Strike { X = x, Z = z, Radius = r, School = school, Delay = delay });
+        Events.Emit(new Ev.Strike { X = x, Z = z, Radius = r, School = school, Delay = delay, Art = weapon?.Art, Rank = weapon?.Rank ?? 0 });
         if (owner == Side.Enemy) Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = x, Z = z, Radius = r, Duration = delay, Hostile = true });
     }
 
@@ -1430,6 +1458,7 @@ public sealed partial class Battle
         {
             Id = 900000 + blowIds++, Shape = b.Shape, Kind = b.Kind, X = b.X, Z = b.Z, X1 = b.X1, Z1 = b.Z1, Radius = b.Radius, Inner = b.Inner,
             Width = b.Width, Angle = b.Angle, Arc = b.Arc, Duration = b.Delay, Hostile = true, Boss = b.From?.Boss == true, Label = b.Label,
+            ByX = b.From?.X, ByZ = b.From?.Z,
         });
         return b;
     }
@@ -1690,7 +1719,7 @@ public sealed partial class Battle
     /// <summary>An area blast from the survivor's side. Raises Explode for procs.</summary>
     public void Explode(double x, double z, double r, double dmg, School school, Tag[] tags, WeaponInst? weapon, int depth = 0, int skip = -1)
     {
-        Events.Emit(new Ev.Explosion { X = x, Z = z, Radius = r, School = school, Power = Math.Min(2, dmg / 40) });
+        Events.Emit(new Ev.Explosion { X = x, Z = z, Radius = r, School = school, Power = Math.Min(2, dmg / 40), Art = weapon?.Art, Rank = weapon?.Rank ?? 0 });
         var t2 = tags.Has(Tag.Explosion) ? tags : [.. tags, Tag.Explosion];
         // A weapon's blast carries what its blows carry (a cinder's burning, a cloud's shock).
         var status = weapon?.StatusOf;

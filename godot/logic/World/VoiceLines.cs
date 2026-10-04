@@ -26,7 +26,12 @@ public sealed class VoTake
     /// <summary>VoiceLines.Hash of the text the take was made from.</summary>
     public string Hash = "";
     public string Voice = "";
+    /// <summary>The file's length, the room's decay included.</summary>
     public double Sec;
+    /// <summary>The voice itself, first sound to last word, without the
+    /// room's decay (0 in takes made before it was measured): what a cut
+    /// timed to the line waits for.</summary>
+    public double Read;
     /// <summary>Where each voice in the line starts and ends, in seconds, and
     /// how far through the text it has got by then (0..1): the words on
     /// screen follow the voice, the narrator's part and then the speaker's.</summary>
@@ -37,6 +42,11 @@ public sealed class VoTake
     /// <summary>A stand-in made locally until the final take (recorded by
     /// hand in ElevenLabs, tools/vo/import_takes.py) replaces it.</summary>
     public bool Placeholder;
+    /// <summary>Where the survivor's name is spliced in, in seconds (0: before
+    /// the line), for a voice that says it (Vonnra): the line was recorded
+    /// without it, and the name is its own take (VoiceLines.NameTake). Null
+    /// for every other line.</summary>
+    public double? Name;
 }
 
 public sealed class VoIndex
@@ -60,6 +70,19 @@ public static class VoiceLines
     /// <summary>A line written in the zone code: its text's hash.</summary>
     public static string Said(string text) => $"say.{Hash(text)}";
     public static string FightBark(string text) => $"cbark.{Hash(text)}";
+    /// <summary>The survivor's name said by this voice: a take for each name
+    /// the creation screen suggests ('name.vonnra.Wren', "Wren.").</summary>
+    public static string Name(string voice, string name) => $"name.{voice}.{name}";
+
+    /// <summary>The take of the survivor's name in this voice, if it was
+    /// recorded (a name the player typed for themselves was not).</summary>
+    public static VoTake? NameTake(string voice, string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return null;
+        var n = name.Trim();
+        n = char.ToUpperInvariant(n[0]) + n[1..].ToLowerInvariant();
+        return Take(Name(voice, n), $"{n}.");
+    }
 
     static VoIndex? index;
     static Dictionary<string, List<string>>? byText;

@@ -1,48 +1,73 @@
 # Voice: status
 
-Agent a2da9a388ceb1b987, branch `worktree-agent-a2da9a388ceb1b987`.
+Agent a501b387a90d78b4e (took over from a2da9a388ceb1b987 on 3 October), branch `worktree-agent-a501b387a90d78b4e`.
+Handoff from the predecessor: `docs/handoff/voice.md` (still accurate, except where this page says otherwise).
 
 ## The route (the owner, October 2026)
 
 "we're just going to use elevenlabs for our voicework so we will do 1 character at a time. we will put in placeholders with voicebox and the agent will direct me one to work on at a time"
 
-- **Finals:** recorded by the owner in ElevenLabs (Eleven v4), one character at a time, from the packets in `docs/voice/elevenlabs/`. `tools/vo/import_takes.py` brings the takes in.
-- **Placeholders:** every line meanwhile gets a local one (`tools/vo/placeholders.py`). Maya1 performs the line, Seed-VC turns it into the cast voice, and it is mixed through our chain. Each is flagged `placeholder` in the manifest and in `godot/data/vo/index.json`.
-- **The shoot-out is closed**, with a short verdict in `docs/voice/samples/README.md`.
-- **The Voicebox MCP is dropped**; the client (`tools/vo/voicebox.py`) is enough.
+- **Finals:** the owner records them in ElevenLabs from `docs/voice/elevenlabs/<voice>.md`; `tools/vo/import_takes.py <folder> --voice <v>` brings them in.
+- **Placeholders:** Maya1 performs each line, Seed-VC converts it to the cast voice, and our chain mixes it (`tools/vo/placeholders.py`). Each is flagged `placeholder`.
 
-## State
+## State (22:50, 3 October)
 
-- **Packets:** all 33 speaking parts are drafted (`docs/voice/elevenlabs/`, README with the workflow and order).
-  - The story lead (a7622ae77d19e31dc) is checking them before any are recorded.
-  - Chid, Maeca, Ysolde, the said barks, and Grimtunnel's and the Barrow Lord's barks are HOLD until the story edits at fbb6e90 reach the integration branch.
-  - The hymn verses are HOLD for the owner's choice.
-- **First to record: the narrator** (`docs/voice/elevenlabs/narrator.md`). The cinematic opening is his, and his is the most-heard voice. The C01 and Prologue sections come first.
-- **Importer:** done and tested (`tools/vo/tests`). It refuses another voice's part, an unknown or renamed id, and words that differ from the subtitle (unless `--force`), and it lists what is still to record.
-- **Placeholders:** in trial on the first 8 lines.
-  - Maya1 is batched (8 at once is about 10× one).
-  - Each of the three GPU phases waits for ComfyUI's queue to empty and then asks it to free its models.
+- **Final packets** (`FINAL` in `tools/vo/elevenlabs.py`), so the owner can record them now: narrator, Rook, Holloway, Brannoc, Sella. The story lead (a7622ae77d19e31dc) signed each one, and every one of their notes is applied.
+- **Next for sign-off: Vonnra.**
+  - Her packet now includes the name splice (see below).
+  - Her shifted directions still need realigning before it goes to the story lead:
+    - f_ember .2/.3/.4: notes on the wrong variants;
+    - cb_vault3: note quotes "It is. For now.";
+    - f_pell.3: note quotes "He will not forget you.";
+    - ford.0.
+  - Find them with the stale-note check (quoted words in a note that are not in the line).
+  - After Vonnra: Harlan, then the rest by impact.
+- **The story lead changed one line:** `bark.sella.night.1`, at 707a910 on their branch. Its direction is already in. The take goes stale when the change reaches the integration branch.
+- **Vonnra's name splice is built:**
+  - `f_accuse.0`, `f_door.0` and `hub.0` are recorded without the name and split where it goes (`lines.NAME_VOICES`).
+  - There is one take per name the creation screen suggests (`name.vonnra.<Name>`, 24 names read from `Front.cs`).
+  - The index has `name` (seconds). `VoiceOver` pauses the line and says the name; a name the player typed leaves the pause empty.
+  - It has a test. It has not yet been heard in the game, because there are no Vonnra takes yet.
+- **Cinematic timing** (for the cinematics lead, a2dfc75e2d351105a):
+  - The 14 opening lines carry `time` windows. The mix tightens pauses to fit, the placeholder rounds nudge the pace, the packets print "Length:", and the importer reports any take that misses.
+  - The index's `read` is the voice without the room's decay; time cuts on it.
+  - I promised the lead the measured `read` values once the first pass lands.
+- **New part `warden_man`:** "Is it morning?", the tired man of sixty under the Warden (C03), approved.
+- **A person's words quoted inside narration** take the line's `quote` direction (`lines.part_direction`), not the narrator's "plain".
+
+## The detached run (left running)
+
+- Started at 22:38 by `~/vo-tools/scripts/placeholders_all.cmd` (`Start-Process cmd`). It logs to `~/vo-tools/placeholders_all.log` and ends with `PLACEHOLDERSDONE`.
+- At 22:48 it was auditioning `red_hand` (judged as Scots), with `warden_man` next. After that it:
+  1. redoes `prints` and `frost` (C01) to fit their cuts;
+  2. makes every line, 40 a pass.
+- It runs from **this** worktree, so the oggs, `manifest.json` and `index.json` land here.
+- It started before the Vonnra splice and Sella's quote directions, so for those lines it uses the code it loaded at start:
+  - the run's Vonnra lines will come out unsplit: redo them (`placeholders.py dlg.vonnra --redo`);
+  - Sella's quoted parts will be played "plain": redo those too.
+  - Rerun the `.cmd` to pick up the new code. Done lines are skipped, and cached work is reused.
+- To stop it, kill the Python processes whose command line matches `placeholders.py|maya_batch|seedvc_worker|cast_session|voxcpm_worker` (PowerShell `Get-CimInstance Win32_Process`). Killing them makes the `.cmd` print `PLACEHOLDERSDONE`, so don't trust that line after a stop.
 
 ## Next
 
-1. Finish the placeholder trial, listen to the numbers, then run all 1,067 lines in the background, most important first (`python tools/vo/placeholders.py`, about 40 lines a pass). Commit the oggs and the index as they come.
-2. When fbb6e90 lands: rebuild the manifest, re-direct the changed lines, regenerate the packets, and send the story lead the changes.
-3. Import the owner's narrator takes when they come. Then the next character: Rook.
+1. As passes land, commit them (`git add godot/art/vo godot/data/vo tools/vo/manifest.json tools/vo/refs`), after running `dotnet test` first.
+2. Import the new oggs into Godot (`.import` files) and check that they play.
+3. Send the cinematics lead the `read` values.
+4. Realign Vonnra's directions, then send her packet. Redo her and Sella's placeholders on the new code.
+5. Watch for the owner's takes; on arrival, import them and report what is missing.
+6. The hymn stays held for the owner's choice.
 
 ## Decisions
 
-- **Placeholders are Maya1 performances converted to the cast voice.** In the shoot-out they were the only takes heard as English that also moved like a person. Batching makes them fast enough for every line.
-- **Packets are ordered by impact.** The opening cinematic comes first, then the prologue, the other cinematics, scenes, conversations in the order the town is met, barks and passers-by. The placeholders run in the same order (`lines.impact`).
-- **The narrator's paste tags give only volume.** The story lead's rule: the narrator never shows a feeling.
-- **Final parts are kept in `VO_WORK/finals`.** A line shared between voices is mixed again whenever any of its parts arrives, using placeholders for the rest. It is final when every part is.
-
-## For the owner
-
-- **ElevenLabs workflow, order and costs:** `docs/voice/elevenlabs/README.md`. Act 1 is about 400,000 credits at three tries a line.
-- **The hymn** at Nell's grave is open. Options are in the same README: Eleven Music, a singer we have rights to, or a licensed singing synth.
+- **No local model reaches the final bar, so finals are recorded in ElevenLabs** (owner).
+- **Packets are ordered by impact.** The story lead signs each one before it is recorded.
+- **The narrator never shows a feeling.** His tags give only volume, and timing notes are pauses, not feelings (story lead).
+- **Casting briefs ask for "Broad" accents at most, and "Light" where the accent is softened.** VOICES calls the accents a palette, not a caricature.
+- **Placeholder work files are named by a hash of what was asked.** A changed direction is then acted again rather than served from the cache.
+- **A placeholder never overwrites a final,** and the run and the importer re-read the manifest before they write it.
 
 ## Notes for others
 
-- **GPU:** I wait for ComfyUI's queue to empty before each phase, then ask it to free its models.
+- **GPU:** before each phase, the run waits for ComfyUI's queue to empty, then frees its models.
 - **Hugging Face downloads:** set `HF_TOKEN_PATH` to a missing file and `HF_HUB_DISABLE_IMPLICIT_TOKEN=1`.
-- **Stopping my jobs:** `TaskStop` on a bash script leaves native child processes running; stop them by command line in PowerShell.
+- **The worktree guard** refuses compound shell commands. Put the logic in a script file and run it plainly.

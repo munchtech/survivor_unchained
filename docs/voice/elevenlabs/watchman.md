@@ -1,6 +1,6 @@
 # The dead Watchman: ElevenLabs packet
 
-Voice id in the game: `watchman`. 1 takes to record (45 characters; about 135 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `watchman`. 1 take to record (45 characters; about 135 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -11,7 +11,7 @@ Voice id in the game: `watchman`. 1 takes to record (45 characters; about 135 cr
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU The dead Watchman`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, northern English). Male, 60s. Studio quality. Persona: a dead northern soldier. An old dead soldier speaking in a dry, rasping, hollow whisper with a northern English accent, slow and broken. Thick northern English accent. No reverb or effects.
+Native English (British, northern English). Male, 60s. Studio quality. Persona: a dead northern soldier. An old dead soldier speaking in a dry, rasping, hollow whisper with a northern English accent, slow and broken. Broad northern English accent. No reverb or effects.
 ```
 
 Preview text:
@@ -34,6 +34,10 @@ Then bring them into the game (it trims, levels, mixes and replaces the placehol
 ```
 python tools/vo/import_takes.py ~/Downloads/su_vo --voice watchman
 ```
+
+## The effect
+
+Record every take dry, with no effect or reverb: the game adds it. For every line, it thins it to a hollow, dry rasp, as if from inside a barrow.
 
 ## The lines
 

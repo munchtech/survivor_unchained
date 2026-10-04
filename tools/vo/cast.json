@@ -27,7 +27,9 @@
     3.0,
     3.9
    ],
-   "maya": "Realistic female voice in the 60s age with british accent, a Yorkshire innkeeper. Low pitch, husky lived-in timbre, brisk pacing, dry bossy tone."
+   "maya": "Realistic female voice in the 60s age with british accent, a Yorkshire innkeeper. Low pitch, husky lived-in timbre, brisk pacing, dry bossy tone.",
+   "wants": "the inn kept and everyone fed",
+   "hides": "she has sold every traveller on the ford road to Vonnra, and watched the carters go down it and not come back"
   },
   "holloway": {
    "name": "Captain Holloway",
@@ -41,7 +43,9 @@
     2.8,
     3.6
    ],
-   "maya": "Realistic male voice in the 40s age with british accent, a tired northern English army captain. Low pitch, hoarse worn timbre, measured pacing, weary stern tone."
+   "maya": "Realistic male voice in the 40s age with british accent, a tired northern English army captain. Low pitch, hoarse worn timbre, measured pacing, weary stern tone.",
+   "wants": "to keep the town alive on eleven men and a year without pay, and to be left to count it",
+   "hides": "he signed for the Ashford garrison's boots, and the boots never came; Maeca's bare feet are his doing, as he sees it. Later, the letter under his cup is from the north, asking for \"the one from the ford\", which means you; every time he looks at you after that, he is deciding whether to answer it"
   },
   "maeca": {
    "name": "Maeca Barefoot",
@@ -90,7 +94,7 @@
    "sex": "m",
    "age": 52,
    "accent": "Cornish",
-   "design": "A fifty-two-year-old blacksmith from Cornwall with a very deep, slow, rough bass voice and a broad Cornish West Country accent with a rolled 'r'. Few words, heavy and blunt, each one set down like iron on an anvil.",
+   "design": "A fifty-two-year-old blacksmith from Cornwall with a very deep, slow, rough bass voice and a broad Cornish accent with a burred West Country 'r'. Few words, heavy and blunt, each one set down like iron on an anvil.",
    "ref_text": "Steel or fur? Iron's good this year. Good ore, from the north, before the road shut. Won't see the like again.",
    "room": "forge",
    "deep": true,
@@ -98,7 +102,9 @@
     1.8,
     2.6
    ],
-   "maya": "Realistic male voice in the 50s age with british accent, a Cornish blacksmith. Very low pitch, deep rough timbre, slow pacing, flat gruff tone."
+   "maya": "Realistic male voice in the 50s age with british accent, a Cornish blacksmith. Very low pitch, deep rough timbre, slow pacing, flat gruff tone.",
+   "wants": "before the truth, to work, and his girl safe at her aunt's in Low Kiln",
+   "hides": "before the truth, the fear he won't name: he has been stopping every carter on the south road to ask, which is why his one question comes out with too many words. After the truth (C08) he hides nothing: each line in that stretch is a man holding a weight he made himself; the irons were his"
   },
   "harlan": {
    "name": "Harlan Coyle",
@@ -196,7 +202,9 @@
     2.6,
     3.4
    ],
-   "maya": "Realistic female voice in the 20s age with british accent, a London courtesan. Low pitch, warm intimate timbre, relaxed pacing, amused knowing tone."
+   "maya": "Realistic female voice in the 20s age with british accent, a London courtesan. Low pitch, warm intimate timbre, relaxed pacing, amused knowing tone.",
+   "wants": "a house in the south with a door that locks from the inside, and somebody who knocks; until then, your custom, and to keep it work",
+   "hides": "she sells what's said upstairs, and Vonnra outbids everyone: every intimate scene has a buyer listening, until she stops (sella.free). Adult, frank, never breathy, never coy"
   },
   "redcowl": {
    "name": "Redcowl",
@@ -498,6 +506,34 @@
     3.2
    ],
    "maya": "Realistic female voice in the 40s age with scottish accent, a hard refugee. Low pitch, rough timbre, measured pacing, blunt weary tone."
+  },
+  "red_hand": {
+   "name": "The Red Hand",
+   "sex": "m",
+   "age": 45,
+   "accent": "hard west-of-Scotland Scots",
+   "design": "A Kerchief enforcer in his forties, one of Ashford's old levy, with a low, flat, hard west-of-Scotland voice. He never raises it: he is collecting a debt, not threatening. Few words to strangers, and those flat.",
+   "ref_text": "Toll's due. Same as last month, and the month before. Put it in the hand and walk on.",
+   "room": "outdoor",
+   "tempo": [
+    2.2,
+    3.0
+   ],
+   "maya": "Realistic male voice in the 40s age with scottish accent, a debt collector. Low pitch, flat hard timbre, slow pacing, flat tone."
+  },
+  "warden_man": {
+   "name": "The Ford-Warden, the man under him",
+   "sex": "m",
+   "age": 60,
+   "accent": "plain English, the accent worn almost away",
+   "design": "A plain, tired man of sixty, an old soldier of a religious order, speaking quietly and close with a dry, worn, slightly hoarse baritone. English, the regional accent worn almost away. No boom, no grandeur: an ordinary man who has been very tired for a very long time.",
+   "ref_text": "Is it morning? I kept the lamps. Someone has to keep the lamps, or nobody knows where the water is.",
+   "room": "close",
+   "tempo": [
+    1.8,
+    2.6
+   ],
+   "maya": "Realistic male voice in the 60s age with british accent, a tired old soldier. Low pitch, dry worn hoarse timbre, slow pacing, tired lost tone."
   }
  }
 }

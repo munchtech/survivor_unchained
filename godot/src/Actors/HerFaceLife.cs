@@ -19,6 +19,11 @@ public partial class HerFaceLife : Node
     public Vector2 Look;
     /// <summary>How far her eyes wander round it.</summary>
     public float Wander = 0.13f;
+    /// <summary>Her lids held (1 shut, 0 open) by a cinematic, or null: she blinks on her own.</summary>
+    public float? Lids;
+
+    /// <summary>Her eyes jump to where she is looking now (a cinematic's saccade), not at their next rest.</summary>
+    public void Snap() => nextLook = t;
 
     readonly RandomNumberGenerator rng = new();
     readonly System.Collections.Generic.List<(MeshInstance3D Mesh, int L, int R)> lids = new();
@@ -59,7 +64,8 @@ public partial class HerFaceLife : Node
             if (rng.Randf() < 0.5f) nextLook = t + 0.05;          // (eyes often move as she blinks)
         }
         float shut = 0;
-        if (blinkAt >= 0)
+        if (Lids is float held) { shut = held; blinkAt = -1; nextBlink = t + rng.RandfRange(1.5f, 3.5f); }
+        else if (blinkAt >= 0)
         {
             double b = t - blinkAt;
             shut = b < 0.07 ? Ease((float)(b / 0.07)) : b < 0.1 ? 1 : b < 0.25 ? 1 - Ease((float)((b - 0.1) / 0.15)) : 0;

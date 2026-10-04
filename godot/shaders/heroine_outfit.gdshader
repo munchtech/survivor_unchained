@@ -14,7 +14,7 @@
 //  - gloss: latex and satin, clean and smooth.
 shader_type spatial;
 
-uniform int kind = 0;                              // 0 leather, 1 metal, 2 cloth, 3 gloss
+uniform int kind = 0;                              // 0 leather, 1 metal, 2 cloth, 3 gloss, 4 twill
 uniform sampler2D albedo : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D normal_map : hint_normal, filter_linear_mipmap_anisotropic, repeat_enable;
 uniform sampler2D orm : hint_default_white, filter_linear_mipmap_anisotropic, repeat_enable;   // (G rough, B metal)
@@ -113,9 +113,21 @@ void fragment() {
 		metal = 1.0;   // (all metal: the scan's metal map has rust and dirt in it, and each patch of it showed as a pale fleck)
 		ANISOTROPY = 0.35;
 		ANISOTROPY_FLOW = vec2(1.0, 0.0);
-	} else if (kind == 2) {
+	} else if (kind == 2 || kind == 4) {
 		// Cloth: its weave fine, rough, a sheen seen across it.
 		nrm = blend_normals(nrm, texture(normal_map, UV * 3.7).rgb, 0.8);
+		if (kind == 4) {
+			// Twill (a pant leg, breeches): diagonal ribs 2.8 mm apart and the
+			// thread across them, so it reads as woven cloth, never as skin.
+			// Each fades out before it is too fine for the pixels to hold.
+			float fw = max(fwidth(m.x), fwidth(m.y));
+			float k1 = 6.2832 / 0.0028, k2 = 6.2832 / 0.0008;
+			float a1 = 1.0 - smoothstep(0.0006, 0.0013, fw), a2 = 1.0 - smoothstep(0.00018, 0.00035, fw);
+			float c1 = cos(k1 * (m.x + m.y)), c2 = cos(k2 * (m.x - m.y));
+			vec2 g = vec2(0.5 * k1 * c1 * a1 + 0.15 * k2 * c2 * a2, 0.5 * k1 * c1 * a1 - 0.15 * k2 * c2 * a2) * 0.00012;
+			nrm = blend_normals(nrm, normalize(vec3(-g, 1.0)) * 0.5 + 0.5, 1.0);
+			col *= 1.0 + 0.08 * a1 * sin(k1 * (m.x + m.y));
+		}
 		rough = clamp(rough * 0.3 + 0.7, 0.6, 1.0);
 		metal = 0.0;
 		RIM = 0.35;

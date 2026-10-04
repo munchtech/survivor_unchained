@@ -79,6 +79,7 @@ public static class ItemModels
         ["root"] = new(Root, new(Pitch: 0.2f, Turn: 0.4f, Tilt: 0.3f)),
         ["flower"] = new(Flower, new(Pitch: 0.55f, Turn: 0.3f)),
         ["dust"] = new(Dust, new(Pitch: 0.45f, Turn: 0.3f)),
+        ["iron"] = new(OldIron, new(Pitch: 0.5f, Turn: 0.35f)),
         // Written.
         ["book"] = new(() => Book("#3a2a1c", true), new(Pitch: 0.3f, Turn: 0.6f)),
         ["journal"] = new(() => Book("#5a2a2a", false), new(Pitch: 0.3f, Turn: -0.5f)),
@@ -865,6 +866,27 @@ public static class ItemModels
             warp: p => p + new Vector3(0, (Noise(p.X * 9, p.Z * 9) - 0.5f) * 0.06f, 0));
         Add(root, rock.Faceted(), Mat("#2e2622", 0, 0.8f));
         root.AddChild(Light("#ff8a2a", 0.8f, 1.2f, new Vector3(0, -0.2f, 0.25f)));
+        return root;
+    }
+
+    /// <summary>Old iron for the forge: bent nails, a buckle, a blade's broken half, all of it
+    /// gone brown at the edges.</summary>
+    static Node3D OldIron()
+    {
+        var root = new Node3D();
+        var nails = new Build();
+        Tube(nails, new List<Vector3> { new(-0.4f, -0.44f, 0.06f), new(-0.08f, -0.36f, 0.1f), new(0.02f, -0.16f, 0.08f) }, 0.026f, 6);
+        Tube(nails, new List<Vector3> { new(0.08f, -0.48f, -0.04f), new(0.34f, -0.4f, 0.03f), new(0.42f, -0.18f, 0.0f) }, 0.026f, 6);
+        Tube(nails, new List<Vector3> { new(-0.34f, -0.3f, -0.12f), new(-0.14f, -0.1f, -0.1f) }, 0.022f, 6);
+        // The nails' heads: flat discs at one end of each.
+        Lathe(nails, Pts(0, 0, 0.06f, 0, 0.06f, 0.02f, 0, 0.03f), 10, At(-0.4f, -0.45f, 0.06f));
+        Lathe(nails, Pts(0, 0, 0.06f, 0, 0.06f, 0.02f, 0, 0.03f), 10, At(0.08f, -0.49f, -0.04f));
+        // A buckle's ring.
+        Tube(nails, Path(28, t => { float a = Mathf.Tau * t; return new Vector3(0.17f * Mathf.Cos(a) - 0.04f, -0.42f, 0.17f * Mathf.Sin(a) + 0.14f); }, true), 0.026f, 6, true);
+        Add(root, nails, Mat("#4a423c", 0.65f, 0.6f));
+        var blade = new Build();
+        Extrude(blade, Pts(-0.05f, -0.1f, 0.07f, -0.12f, 0.05f, 0.38f, 0.0f, 0.5f, -0.06f, 0.32f), 0.03f, 0.01f, At(Rot(-1.25f, 0.5f, 0.2f), 0.12f, -0.36f, -0.12f));
+        Add(root, blade, Mat("#837870", 0.85f, 0.32f));
         return root;
     }
 

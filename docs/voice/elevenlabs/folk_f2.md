@@ -1,6 +1,6 @@
 # Townswoman, young: ElevenLabs packet
 
-Voice id in the game: `folk_f2`. 47 takes to record (3,042 characters; about 9,126 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `folk_f2`. 47 takes to record (3,056 characters; about 9,168 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -11,7 +11,7 @@ A young woman from the West Country of England with a bright, quick voice and a 
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Townswoman, young`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, West Country). Female, 20s. Studio quality. Persona: a West Country countrywoman. A young woman from the West Country of England with a bright, quick voice and a rural West Country accent. Sharp-tongued and amused. Thick West Country accent. No reverb or effects.
+Native English (British, West Country). Female, 20s. Studio quality. Persona: a West Country countrywoman. A young woman from the West Country of England with a bright, quick voice and a rural West Country accent. Sharp-tongued and amused. Broad West Country accent. No reverb or effects.
 ```
 
 Preview text:
@@ -511,7 +511,7 @@ Subtitle: They say a cart went out of the east gate the night Pell vanished, and
 *Played:* warning, kindly; doing: the lamps; pace: measured; volume: level.
 
 ```
-[warning, kindly] Lamps are lit. Stay where they reach, or it's the Morrow for you.
+[warning, kindly] No carter's been up the Old Road in a month. So who keeps bringing that one in?
 ```
-Subtitle: Lamps are lit. Stay where they reach, or it's the Morrow for you.
+Subtitle: No carter's been up the Old Road in a month. So who keeps bringing that one in?
 

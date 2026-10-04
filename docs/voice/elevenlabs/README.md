@@ -68,39 +68,41 @@ By how much each voice is heard, and where the player meets it first:
 <!-- PACKETS -->
 | Character | Takes | Characters | Held |
 |---|---|---|---|
-| [The narrator](narrator.md) | 301 | 29,769 | 2 |
-| [Sella](sella.md) | 96 | 10,023 |  |
-| [Vonnra Ash-of-Morrow](vonnra.md) | 78 | 8,980 |  |
-| [Captain Holloway](holloway.md) | 65 | 7,808 | 4 |
-| [Harlan Coyle](harlan.md) | 64 | 7,245 | 10 |
-| [Mother Rook](rook.md) | 46 | 6,140 | 2 |
-| [Chid](chid.md) | 53 | 5,762 | 53 |
-| [Rav Cutwell](rav.md) | 53 | 5,397 | 1 |
-| [Maeca Barefoot](maeca.md) | 74 | 5,330 | 74 |
-| [Dame Keegan Orme](keegan.md) | 45 | 4,801 | 1 |
-| [Old Wenna](wenna.md) | 34 | 4,081 | 4 |
-| [Redcowl](redcowl.md) | 43 | 3,881 |  |
-| [Pell Varrow](pell.md) | 32 | 3,695 |  |
-| [Ysolde Marrow, the Wayfinder](ysolde.md) | 27 | 3,255 | 27 |
-| [Townsman, middle-aged](folk_m1.md) | 47 | 3,061 |  |
-| [Townswoman, young](folk_f2.md) | 47 | 3,042 |  |
-| [Townswoman, middle-aged](folk_f1.md) | 46 | 2,715 |  |
+| [The narrator](narrator.md) | 269 | 27,374 |  |
+| [Sella](sella.md) | 95 | 9,821 |  |
+| [Vonnra Ash-of-Morrow](vonnra.md) | 102 | 9,021 |  |
+| [Captain Holloway](holloway.md) | 64 | 7,712 |  |
+| [Harlan Coyle](harlan.md) | 63 | 7,141 |  |
+| [Mother Rook](rook.md) | 45 | 6,073 |  |
+| [Chid](chid.md) | 51 | 5,525 | 2 |
+| [Rav Cutwell](rav.md) | 52 | 5,351 |  |
+| [Maeca Barefoot](maeca.md) | 73 | 5,332 |  |
+| [Dame Keegan Orme](keegan.md) | 44 | 4,924 | 1 |
+| [Old Wenna](wenna.md) | 33 | 3,978 |  |
+| [Redcowl](redcowl.md) | 40 | 3,806 |  |
+| [Pell Varrow](pell.md) | 31 | 3,605 |  |
+| [Ysolde Marrow, the Wayfinder](ysolde.md) | 26 | 3,142 |  |
+| [Townswoman, young](folk_f2.md) | 47 | 3,056 |  |
+| [Townsman, middle-aged](folk_m1.md) | 46 | 2,998 |  |
+| [Townswoman, middle-aged](folk_f1.md) | 45 | 2,638 |  |
 | [Townsman, old](folk_m2.md) | 43 | 2,470 |  |
-| [Brannoc](brannoc.md) | 53 | 2,266 | 3 |
-| [Snib](snib.md) | 14 | 2,137 |  |
-| [Tam](tam.md) | 19 | 1,815 | 5 |
-| [Jory Coyle](jory.md) | 15 | 884 |  |
-| [A Watchman at the gate](guard.md) | 13 | 553 |  |
-| [Grimtunnel](grimtunnel.md) | 10 | 518 | 3 |
+| [Snib](snib.md) | 15 | 2,199 |  |
+| [Brannoc](brannoc.md) | 49 | 2,197 |  |
+| [Tam](tam.md) | 19 | 1,814 |  |
+| [Jory Coyle](jory.md) | 14 | 877 |  |
+| [A Watchman at the gate](guard.md) | 12 | 510 |  |
+| [Grimtunnel](grimtunnel.md) | 7 | 442 |  |
 | [The babbling lampling](lampling.md) | 2 | 421 |  |
 | [A Watchwoman](guard_f.md) | 9 | 406 |  |
 | [A town girl](folk_child_f.md) | 7 | 205 |  |
 | [A town boy](folk_child_m.md) | 7 | 205 |  |
-| [The Ford-Warden](warden.md) | 9 | 201 |  |
+| [The Ford-Warden](warden.md) | 6 | 164 |  |
 | [The dead Watchman](watchman.md) | 1 | 45 |  |
+| [The Legion's dead, behind the door](barrow_lord.md) | 5 | 41 |  |
 | [The bones](bones.md) | 1 | 37 |  |
-| [The Legion's dead, behind the door](barrow_lord.md) | 4 | 24 |  |
-| [A Kerchief woman](kerchief_woman.md) | 2 | 22 |  |
+| [The Ford-Warden, the man under him](warden_man.md) | 1 | 14 |  |
+| [The Red Hand](red_hand.md) | 1 | 13 |  |
+| [A Kerchief woman](kerchief_woman.md) | 1 | 11 |  |
 <!-- /PACKETS -->
 
 "Takes" counts every part the character speaks. A line shared with the

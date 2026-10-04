@@ -23,6 +23,8 @@ void vertex() {
 void fragment() {
 	float a;
 	if (sprite < 0.5) a = pow(max(0.0, 1.0 - length(UV * 2.0 - 1.0)), 1.6);
-	else { vec4 t = texture(sprites, vec3(UV, sprite - 1.0)); a = t.r * t.a; }
+	// Round, whatever the sprite: the pack's forks of lightning run to the edge
+	// of their square and would show it as they turn.
+	else { vec4 t = texture(sprites, vec3(UV, sprite - 1.0)); a = t.r * t.a * (1.0 - smoothstep(0.82, 0.98, length(UV * 2.0 - 1.0))); }
 	ALBEDO = tint.rgb * a * tint.a;
 }

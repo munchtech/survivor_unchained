@@ -12,6 +12,8 @@ public interface IBossArena
     int Tier { get; }
     /// <summary>Who it is here (the Pack's ruler is Greymuzzle in his Hollow, the Pack-Mother at the table).</summary>
     string BossName { get; }
+    /// <summary>The story lets it go at the end rather than die.</summary>
+    bool Spare { get; }
     bool Sworn(string oath);
     double R();
     Enemy? Spawn(string def, double x, double z, bool elite = false, SpawnStyle? style = null);
@@ -77,9 +79,14 @@ public abstract class ArenaBoss
     public virtual double HealthMul(int tier) => 12 + 2 * tier;
     public virtual double DamageMul => 1.3;
 
+    /// <summary>Its health as it came (the creature it was is pooled: once it is gone the
+    /// same body is soon a wolf, and its numbers are the wolf's).</summary>
+    public double MaxHp { get; private set; }
+
     public void Begin(Enemy e)
     {
         E = e;
+        MaxHp = e.MaxHp;
         PhaseIx = 0;
         PhaseT = 0;
         e.HpFloor = Phases[0].Mark * e.MaxHp;
@@ -143,7 +150,10 @@ public abstract class ArenaBoss
         TransitionT = 2.5 + Math.Min(2.5, over / Math.Max(1, e.MaxHp) * 25);
         e.TakenMul = 0;
         Channel = null;
-        B.Interrupt(e);
+        // Whatever it was winding up is dropped, quietly: the turn is the news, not an
+        // "Interrupted!" over it, and an old move must not finish in the new phase.
+        move = null;
+        e.State = EnemyState.Active;
         B.Events.Emit(new Ev.Shake { Amount = 0.35 });
         A.Say(Current.Name, over > 0 ? $"Break: {Math.Round(over):N0}" : null, "danger");
     }

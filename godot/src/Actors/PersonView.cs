@@ -31,6 +31,7 @@ public partial class PersonView : Node3D, INpcView
     {
         person = People.Build(spec);
         person.Kind = HerClips.Kind(arms?.Right, arms?.Left, arms?.Forearm);
+        person.Folk = person.Kit && arms?.Right == null && arms?.Left == null && arms?.Forearm == null;
         person.Root.Scale = Vector3.One * (float)(scale / 0.8 * 1.04);
         AddChild(person.Root);
         if (arms?.Right is string r && Arms.All.ContainsKey(r)) held["handslot.r"] = Arms.Hold(person, r, "hand_r");
@@ -120,6 +121,28 @@ public partial class PersonView : Node3D, INpcView
         actLeft = double.MaxValue;
     }
 
+    /// <summary>Played by a cinematic's clock (CinemaDirector): its own animation
+    /// clock, moved only by Advance, so the performance keeps to the timeline.</summary>
+    public bool Cinema { get; private set; }
+
+    /// <summary>A clip from a moment in it, at a speed (0 holds that frame), blended in.</summary>
+    public void Cue(string clip, double from, double speed, double blend)
+    {
+        Cinema = true;
+        var name = People.Clip(person, clip);
+        if (!person.Anim.HasAnimation(name)) { GD.PushWarning($"cinema: no clip {clip}"); return; }
+        person.Anim.CallbackModeProcess = AnimationMixer.AnimationCallbackModeProcess.Manual;
+        person.Anim.Play(name, blend);
+        person.Anim.SpeedScale = (float)speed;
+        person.Anim.Seek(from, true);
+        Native(name);
+        holding = true;
+        actLeft = double.MaxValue;
+    }
+
+    /// <summary>The cinematic's clock moved on.</summary>
+    public void Advance(double dt) { if (Cinema) person.Anim.Advance(dt); }
+
     public void Locomotion(double speed)
     {
         if (holding) return;
@@ -132,8 +155,11 @@ public partial class PersonView : Node3D, INpcView
         walking = want != "";
         if (walking)
         {
+            // A townsperson's own walk, at the rate that keeps their feet planted.
+            string walk = People.Clip(person, WalkClip);
+            float stride = walk.StartsWith(FolkClips.Prefix) ? FolkClips.Speed(walk) * person.Root.Scale.X : 0;
             loopSpeed = natural > 0 ? Mathf.Clamp(speed / natural, 0.4, 1.6)
-                : want == WalkClip ? Mathf.Clamp(speed / 1.5, 0.6, 1.5) : Mathf.Clamp(speed / 3.6, 0.7, 1.5);
+                : want == WalkClip ? Mathf.Clamp(speed / (stride > 0 ? stride : 1.5), 0.6, 1.5) : Mathf.Clamp(speed / 3.6, 0.7, 1.5);
             if (want != loopClip || !was) { loopClip = want; if (actLeft <= 0) PlayLoop(0.25); }
             else if (actLeft <= 0) person.Anim.SpeedScale = (float)loopSpeed;
         }
@@ -194,6 +220,7 @@ public partial class PersonView : Node3D, INpcView
             hp.Lower += (native - hp.Lower) * k;
             hp.Upper += (native - hp.Upper) * k;
         }
+        if (Cinema) return;
         if (actLeft > 0 && !holding)
         {
             actLeft -= delta;

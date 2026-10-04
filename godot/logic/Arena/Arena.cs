@@ -50,6 +50,9 @@ public sealed class ArenaSpec
     /// <summary>Who comes at the half hour, if not what rules the people (a named
     /// foe of the story: Greymuzzle, Redcowl).</summary>
     public string? Boss, BossName, BossTitle;
+    /// <summary>The boss is brought down and let go, not killed (Greymuzzle, when the story
+    /// allows it: docs/STORY_BIBLE.md, "The nights").</summary>
+    public bool Spare;
 
     /// <summary>The ground (always by night: the ember burns only in the dark).</summary>
     public MapSpec Map => new() { Seed = Seed, Tier = Tier, Theme = Theme, Night = true, Oaths = Oaths, Name = Name, Arena = true, People = People };
@@ -66,6 +69,10 @@ public sealed record ArenaResult(ArenaSpec Spec, bool Won, double Seconds, int K
     public List<string> Recorded { get; init; } = new();
     /// <summary>What the tome was written with, once it has been.</summary>
     public string? Inscribed { get; set; }
+    /// <summary>What the survivor carried out for the Waystation's hands (ember shards, the
+    /// people's own), and what they spilled falling (docs/CRAFTING_DESIGN.md 6.1).</summary>
+    public Dictionary<string, int> Carried { get; init; } = new();
+    public Dictionary<string, int> Spilled { get; init; } = new();
 }
 
 public static class Arenas
@@ -161,6 +168,10 @@ public static class Arenas
         foreach (var m in Made(b).Where(m => m.StartsWith("evo:")))
             if (!ch.Stats.Evolutions.Contains(m[4..])) ch.Stats.Evolutions.Add(m[4..]);
         j.BankGold(b);
+        // What the night leaves in the survivor's fist, for the Waystation's hands: walked
+        // out, all of it; fallen, half.
+        var carry = Crafting.Night(spec.People, spec.Tier, spec.Story, b.EmberLevel, Math.Max(0, b.Time / 60 - spec.Minutes), won, !b.Player.Alive, b.ChampionsByFamily);
+        j.Carry(carry);
         var w = j.World;
         if (!won)
         {
@@ -174,7 +185,7 @@ public static class Arenas
         w.Arena = null;
         return new ArenaResult(spec, won, b.Time, b.KillCount, b.EmberLevel, xp, b.GoldTotal, fresh, levels, longest, null, taught)
         {
-            TomeChoices = choices, Recorded = recorded,
+            TomeChoices = choices, Recorded = recorded, Carried = carry.Kept, Spilled = carry.Spilled,
         };
     }
 }

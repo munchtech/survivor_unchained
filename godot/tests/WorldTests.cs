@@ -68,7 +68,9 @@ public class CharacterTests
         Inventory.AddToPack(ch, Inventory.Make(ch, "wolf_pelt", qty: 3));
         Inventory.AddToPack(ch, Inventory.Make(ch, "wolf_pelt", qty: 4));
         Assert.Equal(7, Inventory.Count(ch, "wolf_pelt"));
-        Assert.Single(ch.Pack.Where(p => p?.Def == "wolf_pelt"));
+        // In the pouch, not the pack (docs/CRAFTING_DESIGN.md 4.3).
+        Assert.Equal(7, ch.Materials["wolf_pelt"]);
+        Assert.Empty(ch.Pack.Where(p => p?.Def == "wolf_pelt"));
     }
 
     [Fact]

@@ -548,5 +548,22 @@
   "wps": 2.87,
   "bad": [],
   "said": "Then first the bairns eat, then the old ones, then us. That's how it's done here."
+ },
+ "red_hand": {
+  "seed": 4,
+  "score": 4.525,
+  "clean": "0/12",
+  "utmos": 3.62,
+  "accent": {
+   "england": 0.61,
+   "us": 0.38,
+   "wales": 0.006
+  },
+  "f0": 157.4,
+  "wps": 3.44,
+  "bad": [
+   "accent heard as england (0.61), want scotland"
+  ],
+  "said": "Tull's due. Same as last month and the month before. Put it in the hand and walk on."
  }
 }

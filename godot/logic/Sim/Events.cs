@@ -21,10 +21,15 @@ public enum Tone { Danger, Info, Boon, Story }
 
 public static class Ev
 {
+    /* Art and Rank on the survivor's own blows say which skill made them and
+     * how far it has been ranked, so the view can draw each skill its own way
+     * and grow it as it ranks up (the view only; nothing here reads them). */
+
     public sealed class Hit : CombatEvent
     {
         public double X, Z, Amount; public bool Crit; public School School; public int Target;
         public bool Dot, Blocked; public Family? Family; public string? Def; public double MaxHp, Dx, Dz;
+        public string? Art; public int Rank;
     }
 
     /// <summary>Burst: the killing blow was far more than it had left (the body
@@ -47,13 +52,13 @@ public static class Ev
     public sealed class PlayerHeal : CombatEvent { public double Amount; }
     public sealed class PlayerDeath : CombatEvent { public double X, Z; public string Killer = ""; public int KillerId; }
     public sealed class Status : CombatEvent { public int Target; public StatusKind Kind; public double X, Z; }
-    public sealed class Nova : CombatEvent { public double X, Z, Radius; public School School; public double Duration; public int? Rings; }
-    public sealed class Explosion : CombatEvent { public double X, Z, Radius; public School School; public double Power; }
-    public sealed class Chain : CombatEvent { public double[] Points = System.Array.Empty<double>(); public School School; }
-    public sealed class Beam : CombatEvent { public double X0, Z0, X1, Z1, Width; public School School; public double Duration; }
-    public sealed class Strike : CombatEvent { public double X, Z, Radius; public School School; public double Delay; }
-    public sealed class Slash : CombatEvent { public double X, Z, Angle, Arc, Reach; public School School; }
-    public sealed class Muzzle : CombatEvent { public double X, Z, Angle; public School School; public string Weapon = ""; }
+    public sealed class Nova : CombatEvent { public double X, Z, Radius; public School School; public double Duration; public int? Rings; public string? Art; public int Rank; }
+    public sealed class Explosion : CombatEvent { public double X, Z, Radius; public School School; public double Power; public string? Art; public int Rank; }
+    public sealed class Chain : CombatEvent { public double[] Points = System.Array.Empty<double>(); public School School; public string? Art; public int Rank; }
+    public sealed class Beam : CombatEvent { public double X0, Z0, X1, Z1, Width; public School School; public double Duration; public string? Art; public int Rank; }
+    public sealed class Strike : CombatEvent { public double X, Z, Radius; public School School; public double Delay; public string? Art; public int Rank; }
+    public sealed class Slash : CombatEvent { public double X, Z, Angle, Arc, Reach; public School School; public string? Art; public int Rank; }
+    public sealed class Muzzle : CombatEvent { public double X, Z, Angle; public School School; public string Weapon = ""; public string? Art; public int Rank; }
 
     public sealed class Telegraph : CombatEvent
     {
@@ -64,6 +69,8 @@ public static class Ev
         public double Inner;
         /// <summary>A boss's: drawn above the survivor's own effects, and named over the boss.</summary>
         public bool Boss; public string? Label;
+        /// <summary>Who marked it, where it stood (its name is said over it, not over the survivor).</summary>
+        public double? ByX, ByZ;
     }
 
     public sealed class Spawn : CombatEvent { public int Enemy; public double X, Z; public string Def = ""; public SpawnStyle Style; }

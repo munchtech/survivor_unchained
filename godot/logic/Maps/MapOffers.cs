@@ -78,7 +78,7 @@ public static class MapOffers
     public static MapRules Rules(MapSpec spec)
     {
         var r = new MapRules();
-        foreach (var o in spec.Oaths) Oath(o).Rule?.Invoke(r);
+        foreach (var o in spec.Oaths) { Oath(o).Rule?.Invoke(r); r.EmberGain *= Oath(o).Ember; }
         return r;
     }
 

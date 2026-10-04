@@ -1,6 +1,6 @@
 # A Kerchief woman: ElevenLabs packet
 
-Voice id in the game: `kerchief_woman`. 2 takes to record (22 characters; about 66 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `kerchief_woman`. 1 take to record (11 characters; about 33 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -11,7 +11,7 @@ Voice id in the game: `kerchief_woman`. 2 takes to record (22 characters; about 
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU A Kerchief woman`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, Scottish). Female, 40s. Studio quality. Persona: a hard refugee. A hard, weary woman in her forties with a rough Scottish accent, one of a camp of hungry refugees, low and blunt. Thick Scottish accent. No reverb or effects.
+Native English (British, Scottish). Female, 40s. Studio quality. Persona: a hard refugee. A hard, weary woman in her forties with a rough Scottish accent, one of a camp of hungry refugees, low and blunt. Broad Scottish accent. No reverb or effects.
 ```
 
 Preview text:
@@ -43,24 +43,12 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 
 ### 1. `dlg.cin_forty_one_mouths.them_first.0.wav`
 
+*The same words are also* `say.3bf0d0b0d0da.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json cin_forty_one_mouths/them_first#0
 *Played:* hard, weary; doing: the children eat first; pace: measured; volume: level.
 
 ```
 [hard, weary] Them first.
-```
-Subtitle: Them first.
-
-## Scenes: Verge
-
-### 2. `say.3bf0d0b0d0da.wav`
-
-*Where:* godot/logic/Play/Zones/Verge.cs
-*Played:* plain, firm; doing: the caged eat first; pace: measured; volume: level.
-*Note:* Two words, matter-of-fact, Scots.
-
-```
-[plain, firm] Them first.
 ```
 Subtitle: Them first.
 

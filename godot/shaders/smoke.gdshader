@@ -26,6 +26,8 @@ void fragment() {
 	} else {
 		vec4 t = texture(sprites, vec3(UV, sprite - 1.0));
 		ALBEDO = tint.rgb * mix(0.6, 1.1, t.r);
-		ALPHA = tint.a * t.a;
+		// Round, whatever the sprite: one that runs to its own edge (a clod
+		// thrown wide) would otherwise show the square of its quad as it turns.
+		ALPHA = tint.a * t.a * (1.0 - smoothstep(0.82, 0.98, length(UV * 2.0 - 1.0)));
 	}
 }

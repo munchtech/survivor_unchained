@@ -1,8 +1,6 @@
 # Rav Cutwell: ElevenLabs packet
 
-Voice id in the game: `rav`. 53 takes to record (5,397 characters; about 16,191 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
-
-**Hold 1 of these** (marked HOLD below) until the story editor's review of section 17 is back; the rest can be recorded now.
+Voice id in the game: `rav`. 52 takes to record (5,351 characters; about 16,053 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -13,7 +11,7 @@ Voice id in the game: `rav`. 53 takes to record (5,397 characters; about 16,191 
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Rav Cutwell`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, British). Male, 50s. Studio quality. Persona: a Glasgow tavern doctor. A fifty-four-year-old tavern doctor from Glasgow in Scotland, with a gravelly, wry baritone and a strong Glaswegian Scottish accent. Half-drunk music in his rhythm, funny and frank, with a calm bedside steadiness underneath. No reverb or effects.
+Native English (British, Glaswegian). Male, 50s. Studio quality. Persona: a Glasgow tavern doctor. A fifty-four-year-old tavern doctor from Glasgow in Scotland, with a gravelly, wry baritone and a strong Glaswegian Scottish accent. Half-drunk music in his rhythm, funny and frank, with a calm bedside steadiness underneath. Broad Glaswegian accent. No reverb or effects.
 ```
 
 Preview text:
@@ -272,6 +270,7 @@ Subtitle: Spell-scorched fingertips. You'll want goose fat for that. And to stop
 
 ### 21. `dlg.rav.say_calling.3.wav`
 
+*The same words are also* `dlg.rav.say_calling.4.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json rav/say_calling#3
 *Played:* sharp, curious; doing: spots an old habit; pace: measured; volume: quiet.
 *Note:* Suddenly sober and interested: 'Who taught you?'
@@ -281,18 +280,7 @@ Subtitle: Spell-scorched fingertips. You'll want goose fat for that. And to stop
 ```
 Subtitle: You counted the doors when you sat down. Old Kerchief habit. Who taught you?
 
-### 22. `dlg.rav.say_calling.4.wav`
-
-*Where:* dialogue.json rav/say_calling#4
-*Played:* sharp, curious; doing: spots an old habit; pace: measured; volume: quiet.
-*Note:* Suddenly sober and interested: 'Who taught you?'
-
-```
-[sharp, curious, quietly] You counted the doors when you sat down. Old Kerchief habit. Who taught you?
-```
-Subtitle: You counted the doors when you sat down. Old Kerchief habit. Who taught you?
-
-### 23. `dlg.rav.say_sella.0.wav`
+### 22. `dlg.rav.say_sella.0.wav`
 
 *Where:* dialogue.json rav/say_sella#0
 *Played:* conspiratorial; doing: a tip; pace: measured; volume: quiet.
@@ -303,7 +291,7 @@ Subtitle: You counted the doors when you sat down. Old Kerchief habit. Who taugh
 ```
 Subtitle: A word to the wise: Sella charges ladies the gentleman's rate, to see if they'll notice. Notice.
 
-### 24. `dlg.rav.say_sella.1.wav`
+### 23. `dlg.rav.say_sella.1.wav`
 
 *Where:* dialogue.json rav/say_sella#1
 *Played:* bawdy, dry; doing: a joke about Sella; pace: measured; volume: quiet.
@@ -314,7 +302,7 @@ Subtitle: A word to the wise: Sella charges ladies the gentleman's rate, to see 
 ```
 Subtitle: A word to the wise: Sella's charging the gentleman's rate this week. It's the same as the lady's rate. She just says it slower.
 
-### 25. `dlg.rav.t_rav.0.wav`
+### 24. `dlg.rav.t_rav.0.wav`
 
 *Where:* dialogue.json rav/t_rav#0
 *Played:* wry, rueful; doing: why he left; pace: measured; volume: level.
@@ -325,7 +313,7 @@ Subtitle: A word to the wise: Sella's charging the gentleman's rate this week. I
 ```
 Subtitle: Every night, round the fourth cup. Then I remember the latrines, and the lice, and the man who sharpened his teeth for a joke and then couldn't stop, and I have a fifth.
 
-### 26. `dlg.rav.pain.0.wav`
+### 25. `dlg.rav.pain.0.wav`
 
 *Where:* dialogue.json rav/pain#0
 *Played:* flirtatious, wry; doing: a doctor's offer; pace: measured; volume: quiet.
@@ -336,7 +324,7 @@ Subtitle: Every night, round the fourth cup. Then I remember the latrines, and t
 ```
 Subtitle: Where? ...No, don't point, pal, we're in company. Come round the back after closing and I'll take a look. Largely professionally. Bring a bottle; it's an anaesthetic for one of us.
 
-### 27. `dlg.rav.leg_held.0.p1.wav`
+### 26. `dlg.rav.leg_held.0.p1.wav`
 
 *Where:* dialogue.json rav/leg_held#0; part 2 of 4: narrator: He puts the cup down, very carefully, as if it were full. / **rav: ...Did he.** / narrator: A long time. / rav: Course it held. I'm a good doctor. ...Go on, pal. Come back tomorrow.
 *Played:* grief held with care; doing: his brother's last words; pace: slow; volume: quiet.
@@ -347,7 +335,7 @@ Subtitle: Where? ...No, don't point, pal, we're in company. Come round the back 
 ```
 Subtitle: ...Did he.
 
-### 28. `dlg.rav.leg_held.0.p3.wav`
+### 27. `dlg.rav.leg_held.0.p3.wav`
 
 *Where:* dialogue.json rav/leg_held#0; part 4 of 4: narrator: He puts the cup down, very carefully, as if it were full. / rav: ...Did he. / narrator: A long time. / **rav: Course it held. I'm a good doctor. ...Go on, pal. Come back tomorrow.**
 *Played:* grief held with care; doing: his brother's last words; pace: slow; volume: quiet.
@@ -358,7 +346,7 @@ Subtitle: ...Did he.
 ```
 Subtitle: Course it held. I'm a good doctor. ...Go on, pal. Come back tomorrow.
 
-### 29. `dlg.rav.back_room_look.0.p0.wav`
+### 28. `dlg.rav.back_room_look.0.p0.wav`
 
 *Where:* dialogue.json rav/back_room_look#0; part 1 of 7: **rav: You came.** / narrator: He looks faintly alarmed about it. / rav: Right. Up on the table. Breathe in. Out. Don't flatter yourself, that's medical. / narrator: He looks at your eyes, and your tongue, and your hands, turning them over the way Sella do… / rav: You're cold, pal. Cold as a cellar step. / narrator: He frowns at your wrist, then lets it go. / rav: ...There's nothing wrong with you. That's the worrying part. Nobody's got nothing wrong wi…
 *Played:* flirty, then troubled; doing: he examines you; pace: measured; volume: quiet.
@@ -369,7 +357,7 @@ Subtitle: Course it held. I'm a good doctor. ...Go on, pal. Come back tomorrow.
 ```
 Subtitle: You came.
 
-### 30. `dlg.rav.back_room_look.0.p2.wav`
+### 29. `dlg.rav.back_room_look.0.p2.wav`
 
 *Where:* dialogue.json rav/back_room_look#0; part 3 of 7: rav: You came. / narrator: He looks faintly alarmed about it. / **rav: Right. Up on the table. Breathe in. Out. Don't flatter yourself, that's medical.** / narrator: He looks at your eyes, and your tongue, and your hands, turning them over the way Sella do… / rav: You're cold, pal. Cold as a cellar step. / narrator: He frowns at your wrist, then lets it go. / rav: ...There's nothing wrong with you. That's the worrying part. Nobody's got nothing wrong wi…
 *Played:* flirty, then troubled; doing: he examines you; pace: measured; volume: quiet.
@@ -380,7 +368,7 @@ Subtitle: You came.
 ```
 Subtitle: Right. Up on the table. Breathe in. Out. Don't flatter yourself, that's medical.
 
-### 31. `dlg.rav.back_room_look.0.p4.wav`
+### 30. `dlg.rav.back_room_look.0.p4.wav`
 
 *Where:* dialogue.json rav/back_room_look#0; part 5 of 7: rav: You came. / narrator: He looks faintly alarmed about it. / rav: Right. Up on the table. Breathe in. Out. Don't flatter yourself, that's medical. / narrator: He looks at your eyes, and your tongue, and your hands, turning them over the way Sella do… / **rav: You're cold, pal. Cold as a cellar step.** / narrator: He frowns at your wrist, then lets it go. / rav: ...There's nothing wrong with you. That's the worrying part. Nobody's got nothing wrong wi…
 *Played:* flirty, then troubled; doing: he examines you; pace: measured; volume: quiet.
@@ -391,7 +379,7 @@ Subtitle: Right. Up on the table. Breathe in. Out. Don't flatter yourself, that'
 ```
 Subtitle: You're cold, pal. Cold as a cellar step.
 
-### 32. `dlg.rav.back_room_look.0.p6.wav`
+### 31. `dlg.rav.back_room_look.0.p6.wav`
 
 *Where:* dialogue.json rav/back_room_look#0; part 7 of 7: rav: You came. / narrator: He looks faintly alarmed about it. / rav: Right. Up on the table. Breathe in. Out. Don't flatter yourself, that's medical. / narrator: He looks at your eyes, and your tongue, and your hands, turning them over the way Sella do… / rav: You're cold, pal. Cold as a cellar step. / narrator: He frowns at your wrist, then lets it go. / **rav: ...There's nothing wrong with you. That's the worrying part. Nobody's got nothing wrong wi…**
 *Played:* flirty, then troubled; doing: he examines you; pace: measured; volume: quiet.
@@ -402,7 +390,7 @@ Subtitle: You're cold, pal. Cold as a cellar step.
 ```
 Subtitle: ...There's nothing wrong with you. That's the worrying part. Nobody's got nothing wrong with them. Have a drink, before I find something.
 
-### 33. `dlg.rav.back_room_drink.0.p0.wav`
+### 32. `dlg.rav.back_room_drink.0.p0.wav`
 
 *Where:* dialogue.json rav/back_room_drink#0; part 1 of 3: **rav: For one of us.** / narrator: He drinks his, then looks at yours. / rav: Both of us, evidently. ...Go home, pal. You've got a job up the Old Road, and I've got a b…
 *Played:* rueful, fond; doing: sends you home; pace: measured; volume: quiet.
@@ -413,7 +401,7 @@ Subtitle: ...There's nothing wrong with you. That's the worrying part. Nobody's 
 ```
 Subtitle: For one of us.
 
-### 34. `dlg.rav.back_room_drink.0.p2.wav`
+### 33. `dlg.rav.back_room_drink.0.p2.wav`
 
 *Where:* dialogue.json rav/back_room_drink#0; part 3 of 3: rav: For one of us. / narrator: He drinks his, then looks at yours. / **rav: Both of us, evidently. ...Go home, pal. You've got a job up the Old Road, and I've got a b…**
 *Played:* rueful, fond; doing: sends you home; pace: measured; volume: quiet.
@@ -424,7 +412,7 @@ Subtitle: For one of us.
 ```
 Subtitle: Both of us, evidently. ...Go home, pal. You've got a job up the Old Road, and I've got a bad habit of liking folk who've jobs up the Old Road.
 
-### 35. `dlg.rav.back_room_kiss.0.p1.wav`
+### 34. `dlg.rav.back_room_kiss.0.p1.wav`
 
 *Where:* dialogue.json rav/back_room_kiss#0; part 2 of 4: narrator: He lets you, for a moment. He tastes of the Flagon's piss and something under it, cloves. … / **rav: Not yet, pal. Not three cups down, and not while you're still needing things off me: keys,…** / narrator: He picks up his cup. / rav: Ask me again when you've stopped needing anything. I'll be here. I'm always here. That's t…
 *Played:* tender, careful; doing: not yet; pace: slow; volume: quiet.
@@ -435,7 +423,7 @@ Subtitle: Both of us, evidently. ...Go home, pal. You've got a job up the Old Ro
 ```
 Subtitle: Not yet, pal. Not three cups down, and not while you're still needing things off me: keys, ways in, who's who up the Old Road.
 
-### 36. `dlg.rav.back_room_kiss.0.p3.wav`
+### 35. `dlg.rav.back_room_kiss.0.p3.wav`
 
 *Where:* dialogue.json rav/back_room_kiss#0; part 4 of 4: narrator: He lets you, for a moment. He tastes of the Flagon's piss and something under it, cloves. … / rav: Not yet, pal. Not three cups down, and not while you're still needing things off me: keys,… / narrator: He picks up his cup. / **rav: Ask me again when you've stopped needing anything. I'll be here. I'm always here. That's t…**
 *Played:* tender, careful; doing: not yet; pace: slow; volume: quiet.
@@ -446,7 +434,7 @@ Subtitle: Not yet, pal. Not three cups down, and not while you're still needing 
 ```
 Subtitle: Ask me again when you've stopped needing anything. I'll be here. I'm always here. That's the other worrying part.
 
-### 37. `dlg.rav.back_room_end.0.p0.wav`
+### 36. `dlg.rav.back_room_end.0.p0.wav`
 
 *Where:* dialogue.json rav/back_room_end#0; part 1 of 3: **rav: "Doctor."** / narrator: He snorts. / rav: Get out of my surgery.
 *Played:* mock-offended, fond; doing: shoos you out; pace: measured; volume: level.
@@ -457,7 +445,7 @@ Subtitle: Ask me again when you've stopped needing anything. I'll be here. I'm a
 ```
 Subtitle: "Doctor."
 
-### 38. `dlg.rav.back_room_end.0.p2.wav`
+### 37. `dlg.rav.back_room_end.0.p2.wav`
 
 *Where:* dialogue.json rav/back_room_end#0; part 3 of 3: rav: "Doctor." / narrator: He snorts. / **rav: Get out of my surgery.**
 *Played:* mock-offended, fond; doing: shoos you out; pace: measured; volume: level.
@@ -468,7 +456,7 @@ Subtitle: "Doctor."
 ```
 Subtitle: Get out of my surgery.
 
-### 39. `dlg.rav.came_back.0.p1.wav`
+### 38. `dlg.rav.came_back.0.p1.wav`
 
 *Where:* dialogue.json rav/came_back#0; part 2 of 4: narrator: He's at his table. He's sober, or near it. He's shaved. / **rav: You came back.** / narrator: He looks at you for a long time. / rav: Most folk wouldn't. Most folk would drink at Rook's for a month and hope I'd died of it. .…
 *Played:* sober, raw, steady; doing: you came back after Dunstan; pace: slow; volume: quiet.
@@ -479,7 +467,7 @@ Subtitle: Get out of my surgery.
 ```
 Subtitle: You came back.
 
-### 40. `dlg.rav.came_back.0.p3.wav`
+### 39. `dlg.rav.came_back.0.p3.wav`
 
 *Where:* dialogue.json rav/came_back#0; part 4 of 4: narrator: He's at his table. He's sober, or near it. He's shaved. / rav: You came back. / narrator: He looks at you for a long time. / **rav: Most folk wouldn't. Most folk would drink at Rook's for a month and hope I'd died of it. .…**
 *Played:* sober, raw, steady; doing: you came back after Dunstan; pace: slow; volume: quiet.
@@ -490,18 +478,18 @@ Subtitle: You came back.
 ```
 Subtitle: Most folk wouldn't. Most folk would drink at Rook's for a month and hope I'd died of it. ...Sit. I'll not talk about it if you don't. I'm a doctor today. What's wrong with you?
 
-### 41. `dlg.rav.came_back_sit.0.p1.wav`
+### 40. `dlg.rav.came_back_sit.0.wav`
 
-*Where:* dialogue.json rav/came_back_sit#0; part 2 of 2: narrator: A breath out through his nose. / **rav: Aye. Well. Sit, then.**
+*Where:* dialogue.json rav/came_back_sit#0
 *Played:* gruff acceptance; doing: sit; pace: slow; volume: quiet.
 *Note:* Narrator: the breath. 'Aye. Well.'
 
 ```
-[gruff acceptance, quietly] Aye. Well. Sit, then.
+[gruff acceptance, quietly] [a breath out through his nose] Aye. Well. Sit, then.
 ```
 Subtitle: Aye. Well. Sit, then.
 
-### 42. `dlg.rav.came_back_sorry.0.wav`
+### 41. `dlg.rav.came_back_sorry.0.wav`
 
 *Where:* dialogue.json rav/came_back_sorry#0
 *Played:* grief, firm; doing: don't apologise; pace: slow; volume: quiet.
@@ -514,7 +502,7 @@ Subtitle: No. You're not, and you shouldn't be; he'd have said it was the job. D
 
 ## Said in passing
 
-### 43. `bark.rav.day.0.wav`
+### 42. `bark.rav.day.0.wav`
 
 *Where:* npcs.json rav.barks[0]
 *Played:* wry; pace: measured; volume: level.
@@ -524,7 +512,7 @@ Subtitle: No. You're not, and you shouldn't be; he'd have said it was the job. D
 ```
 Subtitle: I'm a doctor. Don't make me prove it.
 
-### 44. `bark.rav.day.1.wav`
+### 43. `bark.rav.day.1.wav`
 
 *Where:* npcs.json rav.barks[1]
 *Played:* wry; pace: measured; volume: level.
@@ -534,7 +522,7 @@ Subtitle: I'm a doctor. Don't make me prove it.
 ```
 Subtitle: Red cloth's a hard habit to break.
 
-### 45. `bark.rav.day.2.wav`
+### 44. `bark.rav.day.2.wav`
 
 *Where:* npcs.json rav.barks[2]
 *Played:* wry; pace: measured; volume: level.
@@ -544,7 +532,7 @@ Subtitle: Red cloth's a hard habit to break.
 ```
 Subtitle: Buy me a drink and I'll tell you a lie worth hearing.
 
-### 46. `bark.rav.day.3.wav`
+### 45. `bark.rav.day.3.wav`
 
 *Where:* npcs.json rav.barks[3]
 *Played:* wry; pace: measured; volume: level.
@@ -554,7 +542,7 @@ Subtitle: Buy me a drink and I'll tell you a lie worth hearing.
 ```
 Subtitle: Drop your trousers or don't. The leeches aren't fussy.
 
-### 47. `bark.rav.day.4.wav`
+### 46. `bark.rav.day.4.wav`
 
 *Where:* npcs.json rav.barks[4]
 *Played:* wry; pace: measured; volume: level.
@@ -564,7 +552,7 @@ Subtitle: Drop your trousers or don't. The leeches aren't fussy.
 ```
 Subtitle: Half my patients die. The other half pay.
 
-### 48. `bark.rav.day.5.wav`
+### 47. `bark.rav.day.5.wav`
 
 *Where:* npcs.json rav.barks[5]
 *Played:* wry; pace: measured; volume: level.
@@ -574,7 +562,7 @@ Subtitle: Half my patients die. The other half pay.
 ```
 Subtitle: Pox, piles, a pike-wound or a broken heart: I've a cure for three of them and a drink for the fourth.
 
-### 49. `bark.rav.night.0.wav`
+### 48. `bark.rav.night.0.wav`
 
 *Where:* npcs.json rav.nightBarks[0]
 *Played:* merry; pace: measured; volume: level.
@@ -584,7 +572,7 @@ Subtitle: Pox, piles, a pike-wound or a broken heart: I've a cure for three of t
 ```
 Subtitle: Night surgery's double. Night anything's double.
 
-### 50. `bark.rav.night.1.wav`
+### 49. `bark.rav.night.1.wav`
 
 *Where:* npcs.json rav.nightBarks[1]
 *Played:* merry; pace: measured; volume: level.
@@ -594,7 +582,7 @@ Subtitle: Night surgery's double. Night anything's double.
 ```
 Subtitle: The best stories come after the third cup.
 
-### 51. `bark.rav.night.2.wav`
+### 50. `bark.rav.night.2.wav`
 
 *Where:* npcs.json rav.nightBarks[2]
 *Played:* merry; pace: measured; volume: level.
@@ -604,7 +592,7 @@ Subtitle: The best stories come after the third cup.
 ```
 Subtitle: Pull up a stool. Mind the blood.
 
-### 52. `bark.rav.night.3.wav`
+### 51. `bark.rav.night.3.wav`
 
 *Where:* npcs.json rav.nightBarks[3]
 *Played:* merry; pace: measured; volume: level.
@@ -614,14 +602,14 @@ Subtitle: Pull up a stool. Mind the blood.
 ```
 Subtitle: Last orders were an hour ago. I'm the only one who heard them.
 
-### 53. `bark.rav.said.0.wav`  HOLD
+### 52. `bark.rav.said.0.wav`
 
 *Where:* npcs.json rav.said[0]
 *Played:* grief, sudden; doing: his mother; pace: slow; volume: quiet.
 *Note:* Two words escaping him; barely voiced.
 
 ```
-[grief, sudden, quietly] Oh, Mam.
+[grief, sudden, quietly] Man owed me a leg, pal. Bad debt, now.
 ```
-Subtitle: Oh, Mam.
+Subtitle: Man owed me a leg, pal. Bad debt, now.
 
