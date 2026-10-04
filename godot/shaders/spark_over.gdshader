@@ -1,9 +1,11 @@
-// A spark, a mote, a flare: a sprite facing the camera (a layer of the
+// The hearts of what the survivor sends flying, drawn over the crowd they fly
+// through (from above, a body hides anything at chest height); otherwise
+// spark.gdshader. A spark, a mote, a flare: a sprite facing the camera (a layer of the
 // effects' sprites, turned; or a soft round spot), its size the instance's
 // scale and its colour the instance's (above 1 to bloom). The additive kind,
 // for light (sparks, cores, trails); smoke.gdshader is its mixed twin.
 shader_type spatial;
-render_mode unshaded, blend_add, depth_draw_never, cull_disabled, shadows_disabled, fog_disabled;
+render_mode unshaded, blend_add, depth_draw_never, depth_test_disabled, cull_disabled, shadows_disabled, fog_disabled;
 
 uniform sampler2DArray sprites : filter_linear_mipmap;
 
