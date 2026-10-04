@@ -240,10 +240,19 @@ Agree §17.7's proposed brief changes with the experience lead first: boss at 45
 - **Skills look and feel (`a8bafe3cd8a229639`):**
   - doing spike tell sounds (done), aura rings in the people's colour (`Telegraph.Faction`), slam dust, summon circles, Sign marks, and the haste and ward glints;
   - note: the dead's tell is `tell_horn`.
-- **Crafting (`a7862117a0240deb5`):**
+- **Crafting (now `a97e32948c5bf419d`):**
   - has the 20 miniboss ids (`Loot = "miniboss"`), and will add +2 of the people's material each plus a rare drop;
-  - will answer §17.2 on charts;
   - re-checks shards for 20-minute nights.
+  - Its endgame design is in `docs/CRAFTING_DESIGN.md` §20: scars pay fire, the atlas pays iron and bases.
+  - I agreed these for maps:
+    - the chart item gets heat (plain 4, fine 6, rare 8) and a pin slot;
+    - map drops carry ilvl = creature level;
+    - map materials are tallied at a map's end by `Crafting.Night`'s rules, and a fall spills half;
+    - two kits (night and map) are fine.
+  - **Open, yours:** Sigils, gear that bends one day skill in maps. Confirm a clean per-skill modifier hook (WeaponInst's evolution `Set` and `Mods` look like the place) or decline.
+  - I sent crafting the economy medians per won night (tiers 1/2/3):
+    - Kerchiefs' gold went from 45k/53k/43k to 2.6k/3.3k/2.8k (champions keep the day's gold);
+    - champions are 864/1052/1079, within 10% of before.
 - **Performance (`a9586a5171413db0b`):** caps are horde 380, ranged 24, enemy ground 24; the director scans the pool once a tick.
 - **UI design and UI art:** miniboss and herald bars use `BossBar(IsBoss: false)`, with the Signs or lesson as the title line.
 - **The arena art lead** (new; see the roster): the arenas' look. The maps' layouts come from `MapGen`.
