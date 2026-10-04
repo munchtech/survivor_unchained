@@ -96,6 +96,10 @@ public abstract class ArenaBoss
     protected double Cadence => Soft ? 0.75 : 1;
     protected Phase Current => Phases[PhaseIx];
     protected bool Last => PhaseIx == Phases.Length - 1;
+    /// <summary>Brought to its end (held at one) and past the last phase's floor: a boss that ends
+    /// otherwise than dying starts its end only now, or a strong build skipped the last floor
+    /// (the Barrow Lord was laid down in about 35 s).</summary>
+    protected bool Spent(Enemy e) => Last && e.Hp <= 1.5 && PhaseT >= Current.Floor;
 
     /// <summary>The boss's tick: the gate, the enrages, then its moves.</summary>
     public bool Tick(Enemy e, double dt)

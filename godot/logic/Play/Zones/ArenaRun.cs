@@ -157,6 +157,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         foreach (var pc in map.Pieces) G.Look.AddProp(pc.Id, pc.X, pc.Z, pc.Rot, pc.Scale);
         b.Rules = MapOffers.Rules(Spec.Map);
         b.Rules.FodderGold = 0.02;
+        b.Rules.ChampionGold = 0.1;
         // A shorter night pays its ember quicker, so its boss meets the build a table's would.
         b.Rules.EmberGain *= Pace;
         // The survivor's light reaches further here (the camera is further out); a moonless oath still halves it.
