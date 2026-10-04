@@ -23,15 +23,23 @@ Agent af7a79bc783cca7bc (succeeded a2dfc75e2d351105a on 4 October), branch `work
   - lines are timed on the take's `read`, with the room's tail playing on.
   - The cinematic survivor also has the folk clips.
   - `--cinebones` prints bone places at each still, for framing on them.
-- **`tools/cinematics/animatic.py` is written** (with `--plan`). It lays boards (or slates) on CineSchedule's clock, with VO, subtitles, temp SFX (Sfx.Cine's recipes), music beds and ambience, then encodes through ffmpeg. It has not yet been run end to end.
+- **The Prologue animatic is cut:** `docs/cinematics/shoot/animatics/prologue.mp4` (C01, C02, C03, C04 A and B, with cards for the play between). Its cut list is `prologue.txt`. It was made by `tools/cinematics/animatic.py`: boards on CineSchedule's clock, with the placeholder VO, subtitles, temp SFX (Sfx.Cine's recipes), temp music beds and ambience.
+- **Boards: C01 to C04 are made** (54 frames, `shoot/boards/<id>/`, from `shoot/boards/<id>.json` through `tools/cinematics/boards.py`), in ink and grey marker with colour only in the light. Weak frames still to remake:
+  - C01 s10 (she sits rather than whips round) and s11 (she is drawn twice);
+  - C02 s3 (drawn as two panels) and the Warden's scale in s7 and s12 (he should be nearly three times her height);
+  - C03 s6 (the heart is held in hands; it should rise alone), s11 (Grimtunnel crawls; he should dive) and s13 (she is drawn twice).
+- **C02 to C04 timelines are drafts** (`c02.json`, `c03.json`, `c04a.json`, `c04b.json`, each with a `draft` note). They are cut from the written scripts for the animatic. Their cameras are unsurveyed, and they are not yet wired into the zones.
 - **Narration:** Vonnra is not the narrator (story). The call up the road is subtitled "A voice up the road", never named (`far_voice` is not among C01's `narrators`).
 
 ## Next
 
-1. Write `shoot/c02.md` to `c04.md`. Survey each set in the engine first with `_survey.json`, which the tests skip.
-2. Write `tools/cinematics/boards.py` and make the C01 to C04 boards (Krea 2 turbo, style B prefix in the handoff, 1536×640, fixed seed per shot), judged on contact sheets.
-3. Cut `shoot/animatics/prologue.mp4` (C01, a card, C02, a card, C03, C04).
-4. Build the C02 to C04 timelines and wire them in (C02 in place of `RunIntro`, C03 of `RunVictory`'s staging, C04 A of `Douse`, C04 B on the first Waystation arrival). C02 and C03 need the Warden under the cinematic's control (a `boss` cast kind on `WardenView`).
+1. Watch the animatic and judge its pacing. Remake the weak boards (listed above), then recut.
+2. Survey the C02 to C04 sets in the engine (`_survey.json`; the tests skip it), set the draft timelines' cameras on what is really there, and write `shoot/c02.md` to `c04.md` from them.
+3. Wire C02 to C04 into the game:
+   - C02 replaces `RunIntro`. It needs a `boss` cast kind on `WardenView`, the zone's view hidden while it plays, and the `warden_up` event to spawn him at (3, -33.2).
+   - C03 replaces `RunVictory`'s staging.
+   - C04 A replaces `Douse`'s caption, with the `douse` event.
+   - C04 B plays on the first Waystation arrival.
 
 ## Key decisions
 
