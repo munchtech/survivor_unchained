@@ -12,6 +12,19 @@ best possible design for this job?", not "how do I improve what is here?".
 Where the answer was a rebuild, it was rebuilt (the pack, the shop, the
 storeroom, the map, the self, the journal's people, parts of the HUD).
 
+**The second pass.** The owner saw the first pass's windows and said they were
+"the literal exact same shapes": a huge empty parchment square with the zone
+small at its edge, a big dark box with small items, a wall of text in a box,
+and nowhere any material, depth or framing that said "this is Survivor
+Unchained". "I don't want to polish, I want to create perfection." So every
+major screen was recomposed from its job: two or three concepts each, drawn
+from the real game's parts and painted with the local model, the best chosen
+with its reasons (section 11). Two things came out of it for every screen:
+**the page system** (the day's book and the stores take the whole screen) and
+**the frame language** (forged iron, drawn in code by `Ornate.cs` until the
+painted art replaces it piece by piece). Sections 4 to 7 describe the screens
+as they are now; section 11 records the concepts and the choices.
+
 The game is two halves, and so is its interface:
 
 - **The night** (the prologue's road, the ember arenas): a survivors-like.
@@ -25,7 +38,8 @@ keyboard and pad are equals (R5).
 
 Contents: 1 style guide · 2 navigation · 3 the audit · 4 the HUD · 5 the
 draft · 6 the day's book · 7 other screens · 8 accessibility · 9 input from
-the feel and items work · 10 what is next.
+the feel and items work · 10 what is next · 11 the second pass: concepts and
+choices.
 
 ---
 
@@ -81,10 +95,37 @@ never typed. All caps only for one- or two-word labels.
 ### 1.3 Spacing, frames, icons, motion, sound
 - **Spacing**: steps of 4 (`Gap1`-`Gap6`: 4 8 12 16 24 32). 36 px from the
   screen's edges. Prose lines under about 80 characters.
-- **Frames**: plates for screens, paper for what is written, cards for
-  choices, sunk wells for slots, pills for kickers and badges. Ornament on
-  edges and corners, never under text. Plates fit their content (no half-
-  empty plates).
+- **Frames: the house's language** (`Ornate.cs`; the painted art's soul is
+  in `UI_ART_BRIEF.md` 2.6). Every surface says what kind of thing it holds
+  by its material and shape:
+  - **plates** (forged iron, lit at the top and dark at the foot, a bevel, an
+    inset gold hairline, bracketed corners each with a cut stone, a soft
+    shadow) for a pane of a page or a window;
+  - **wells** (the same iron sunk in, lit along the foot) for grids and lists;
+  - **slabs** (raised, a dull hairline, no brackets) for groups inside a plate;
+  - **crested cards** (the rarity or school in a crest band and the corners,
+    a stone at the head) for choices: the draft, the arts' facets, creation;
+  - **paper** for what is written, **the open book** for the journal;
+  - **banners** (oxblood iron) for verdicts and names;
+  - **medallions** for anything round: a level, an attribute, an art, a
+    socket, a step, a number, the pause menu's book;
+  - **the title plaque** (Cinzel between gold rules ending in ember stones)
+    for every page's name, and **sections** (small gold capitals, a stone, a
+    rule running on) inside panes.
+  Ornament on edges and corners, never under text. **Why**: the owner's "no
+  material hierarchy, depth or framing"; Diablo IV, Grim Dawn and PoE2 read as
+  themselves through their frame material before anything else, and drawing
+  the language in code made the game say "Survivor Unchained" before any art
+  landed.
+- **Pages**: the day's book (pack, self, arts, journal, map) and the stores
+  are full pages, not windows (`Overlay.Page`): the world darkens behind
+  (`Backdrop`, an ember glow at the foot), a header band runs across the top
+  (the book's tabs at its left, the title plaque in the middle, Close at the
+  right), and the screen hands back a 1840 × 920 content area at (40, 112)
+  that it fills with framed panes (`Overlay.Pane`). The HUD steps away while
+  a page is open. **Why**: these are reading and comparing screens; every
+  best ARPG (D4, PoE2, Last Epoch) gives them the screen, and a window inside
+  a dark rectangle left most of the screen empty.
 - **Icons**: line glyphs for the abstract (a 24-unit square, a 1.6 stroke,
   `data/content/glyphs.json`), photographs of the models for items; painted
   art replaces either by name (`UI_ART_BRIEF.md` §5). Readable at 18 px.
@@ -101,7 +142,14 @@ painted art by name under `godot/art/ui/` and keeps the drawn look when there
 is none. Made at twice the size shown; frames nine-sliced, their content kept
 clear of the painted border. **Why**: art can arrive one piece at a time
 with the game whole at every step, and the artist never touches code.
-Proven end to end with a plate, a ring, a fill and the logo.
+The art pass delivered 282 pieces (plates, buttons, slots, the draft's cards,
+tooltips, bars and casings, the minimap's rim, the art's ring, the logo, 211
+icons); the redesign's own pieces (well, slab, header, banner, the Self
+pillars, the HUD console, the open book, the medallion ring, the globe's rim
+and glass) are registered by name and wait for their paint
+(`UI_ART_BRIEF.md` 4.9). Where painted and drawn meet, the painted piece wears
+the drawn one's job: a painted card keeps the crested card's medallion and
+lifted glow, a painted plate keeps the drawn plate's content margins.
 
 ---
 
@@ -209,13 +257,24 @@ switch every prompt the same way.
 
 The HUD is non-diegetic and lives at the edges (R1): what can kill you where
 the eye already rests, what you choose at the top edge, what fires by itself
-in a quiet row at the bottom, what your hands do under the right thumb, where
-you are and what you seek at the top right.
+on a console at the foot, where you are and what you seek at the top right.
+
+**The console** (second pass; concept `hud_b_console`): in a fight, health,
+the skills and the art in hand are one band along the foot: a forged plate
+(`console`, 300-720 wide with the skill count) with the skills standing on
+it, the health **globe** at its left end and the art's ring at its right, the
+draught and the dash beside the ring. At peace (the town by day) there is no
+console: the globe keeps to the bottom-left corner and the rest is gone.
+**Why**: Diablo IV and Lost Ark put health, skills and the art in one band
+where the eye drops from the fight (proximity, Fitts); the first pass's
+corners split attention three ways. Weighed against the corners as they were
+(`hud_a_corners`) and a minimal ring round the survivor (`hud_c_minimal`, too
+little for an ARPG's day).
 
 **Why not move it all round the survivor** (as some survivors-likes do): our
-day half is an ARPG with a town and a map; an ARPG's corner layout (Diablo
-IV, PoE) is what its players read without thinking. The night borrows only
-the one thing that must be at the centre: health (4.3).
+day half is an ARPG with a town and a map; an ARPG's band and corners (Diablo
+IV, PoE) are what its players read without thinking. The night borrows only
+the one thing that must be at the centre: health under the feet (4.3).
 
 ### 4.1 The bar: ember by night, experience by day (top centre)
 **Done**: a medallion with the level; the bar; the word under it, **EMBER**
@@ -238,19 +297,23 @@ Witching, Ashfall, the Coming, Beyond (S-21).
 not time passing; one number replaces the objective line repeating it.
 
 ### 4.3 Health
-**Done**: low left, the heart medallion and the bar with its number, quarter
-ticks, a trail that catches up (a big hit is *seen*), the shield over it,
-statuses as chips (a status with no end shows no count). Below 35% the heart
-beats, the bar pulses, the screen's edge bruises. **Health under the
-survivor** at night: a 76 px bar under their feet with the shield, easing in
-with the fight (setting "Health under you").
-**Why both**: the corner bar holds the numbers and statuses an ARPG player
-reads by day; the under-bar is where the eye is in a horde (Vampire
-Survivors, 20 Minutes Till Dawn). Red is never alone: the number, the beat
-and the bruise all say "low".
+**Done**: a **globe** of blood in a gold rim (132 px) at the console's left
+end: its level, a pale trail that catches up behind a fall (a big hit is
+*seen*), a shield's arc round the rim, its number on the glass, statuses as
+chips above it (a status with no end shows no count). Below 35% it beats and
+pulses and the screen's edge bruises. **Health under the survivor** at
+night: a 76 px bar under their feet with the shield, easing in with the
+fight (setting "Health under you").
+**Why both**: a globe reads at a glance as a level, not a number (Diablo's
+own answer, and the console's anchor); the under-bar is where the eye is in a
+horde (Vampire Survivors, 20 Minutes Till Dawn). Red is never alone: the
+number, the beat and the bruise all say "low". The art pass's health bar,
+its casing and the heart medallion belonged to the first pass's corner and
+are not shown; the globe's painted rim and glass are asked for instead
+(`UI_ART_BRIEF.md` 4.9).
 
-### 4.4 Skills (bottom centre)
-**Done**: each skill a 67 px slot, its glyph in its school's colour, a shade
+### 4.4 Skills (on the console)
+**Done**: each skill a 67 px slot standing on the console, its glyph in its school's colour, a shade
 sweeping as it readies, a flash when it fires; the rank as a **numeral on a
 badge** over a segmented strip (was 5 px pips); a skill ready to evolve
 breathes gold until the draft offers it. Six places at night (a promise of a
@@ -259,9 +322,11 @@ full build), none empty by day. Blessings and passives as chips above.
 recognition over recall); the breathing slot tells the player an evolution is
 coming before the card does, so they feel clever when it arrives.
 
-### 4.5 Hands (bottom right)
-**Done**: dash charges, the draught and its count, the art's ready-ring with
-its seconds; each with its key or button for the device in hand.
+### 4.5 Hands (the console's right end)
+**Done**: the art's ready-ring (painted: six of the binders' coins and the
+seventh link pried open) with its seconds at the console's right end, then
+the draught and its count and the dash charges; each with its key or button
+for the device in hand.
 
 ### 4.6 The corner: minimap, place, quest (top right)
 **Done**: a **minimap** (200 px) drawn from the zone itself (the big map's
@@ -305,14 +370,21 @@ small and the build out of sight); HoloCure's stats beside the options;
 Hades' boon cards (rich, framed by source, say what they replace). Ours is
 Hades' cards with HoloCure's "your build beside the choice".
 
-**Done**:
-- Cards 320 × 452: a ribbon saying what it is and **NEW** when new to the
-  build; the icon on a disc in its school's colour; the name; a rank strip
+**Done** (second pass: concept `draft_c_crested_cards`, over `draft_a_cards`
+and `draft_b_rows`): the cards rise over the ember's fire (the world darkens,
+the fire glows from the foot: "the night's power"), under a great heading
+("A GREAT BLESSING", "EMBER 12") on the title plaque.
+- **Crested cards** 320 × 500: the rarity in the crest band, the corners and
+  the hairline (painted: the rarity as a road through the world, iron, the
+  Verge's bramble, the Low Ford's rime, the binders' violet, the Order's dawn
+  gold, the breaking chain); the lifted card glows in its rarity and its
+  medallion lights. A ribbon saying what it is and **NEW** when new to the
+  build; the icon on a medallion in its school's colour; the name; a rank strip
   (held dim, this one bright); the text at 18 px; tags lit where the build has
   them and **Fits your build**; a passive that a held skill needs to evolve
   says so in gold (**Evolves Butcher's Cleaver at rank 8**); rarity in word,
   colour and diamonds; its key.
-- **Your build** under the cards: the skills (with ranks) in six places, the
+- **Your build** on a slab under the cards: the skills (with ranks) in six places, the
   blessings and passives; the lifted card **lights what it touches** (the
   skill it raises, the place a new skill takes, the blessing it deepens, the
   skill it would let evolve).
@@ -337,15 +409,25 @@ leisure, with one way in and one way between pages.
 **Alternatives weighed**: five separate windows (the old way: three were
 unreachable by pad except through the pause menu); a radial (fast, but these
 are reading screens); one book of tabs (Diablo IV, PoE2 on pad). **Done**:
-Pack, Self, Arts, Journal and Map are five pages of one book: tabs on the
-plate's edge, each with its key; LB/RB or [ ] turn pages with a page sound;
-a page's own key, or View on a pad, closes it.
+Pack, Self, Arts, Journal and Map are five pages of one book, each a **full
+page** (1.3): the tabs in the header band's left, each with its key; LB/RB or
+[ ] turn pages with a page sound; a page's own key, or View on a pad, closes
+it; Close at the band's right.
 **Why**: one button (View) reaches everything; the tabs teach the keys by
 showing them; turning pages keeps the player's place (Hick: five clear
 choices at the top, depth behind each).
 
 ### 6.1 Pack (`Pack.cs`, **rebuilt**)
 **The job**: answer "is this better?" and "what do I do with it?".
+**Composition** (second pass, `pack_b_two_panes` over `pack_a_box` and
+`pack_c_hero_centre`): two panes across the page. Left, the survivor large
+with what they wear round them in slots (head, amulet, body, cloak at the
+left; weapon, off-hand, two rings, relic at the right) and their standing on
+a slab beneath; right, the filters along the top, what they carry in a well
+of 112 px slots, gold and how full the pack is, and the chosen thing read
+closely with the worn thing beside it. **Why**: the owner's "a big dark
+mostly-empty box with small items"; the slots are now as large as D4's and
+the figure is the page's anchor.
 **Design**: the survivor and what they wear on the left, with their
 **standing**, which shows what a hovered or focused thing would change
 ("Health 212 to 236 better"); what they carry on the right with **filters**
@@ -365,11 +447,17 @@ and sort keep a growing pack scannable (Hick, chunking).
 ### 6.2 Self (`Book.cs`, **rebuilt**)
 **The job**: answer "what am I becoming, and where do my numbers come
 from?".
-**Design**: who they are on the left (figure, level, experience in the day's
-blue, the art in hand, what they know and what it opens, conditions); the
-attributes in the middle, each saying what a point gives, and with points to
-spend the **+ previews** the point's change in the standing (+1.1% faster,
-+2% area); traits under them. On the right the whole standing, grouped by
+**Composition** (second pass, `self_b_pillars` over `self_a_columns` and
+`self_c_paper_sheet`): three panes. **Why**: the owner's "a dense wall of
+text in a box"; each kind of thing now has its own shape.
+**Design**: who they are on the left (figure, the level on a medallion,
+experience in the day's blue, the art in hand, the calling, what they know
+and what it opens, conditions); the four attributes in the middle as
+**pillars**, the number the hero on a 120 px medallion at each head, each
+saying what a point gives, and with points to spend the **+ previews** the
+point's change in the standing (+1.1% faster, +2% area); traits under them as
+cards, with the places still to fill (a trait at level 4, 6, 8) shown locked.
+On the right the whole standing on slabs, grouped by
 purpose (staying alive, dealing death, moving, fortune); **any line, hovered
 or focused, says where it comes from** (the calling, the attributes, each
 thing worn by name, traits, conditions).
@@ -378,53 +466,98 @@ without a source teaches nothing. Previewing a point before spending it is
 error prevention (R9) and makes the choice a choice (autonomy).
 
 ### 6.3 Arts (`ArtsScreen.cs`)
-**Design**: two pages (the art in hand; skills by day) on LT/RT; known arts
-then those to learn, dim; the chosen one's rank, progress and facets
-("rank II opens the first"). **Why kept**: it already shows what is coming
-before it can be had (progressive disclosure that teaches).
+**Design** (second pass, `arts_b_altar` over `arts_a_list` and `arts_c_tree`):
+two pages (the art in hand; skills by day) on LT/RT. The art in hand is an
+**altar**: the known arts as medallions on slabs with their rank, then those
+to learn, dim, in the left pane; the chosen art as a great medallion with its
+two facet sockets (rank II, rank IV), its words, its rank and progress; four
+**facet cards** (crested, "opens at rank II"); and the **road to mastery**, five
+rank medallions joined by a line, each saying what it brings. Skills by day:
+the learned ones and the unseen ones as "?" medallions, and three cards that
+teach how a skill comes to you (seen, learned, carried).
+**Why**: arts are few and precious; medallions with progress round the ring
+say so. A tree overstates a five-rank system; a list hid what is coming. It
+still shows what is coming before it can be had (progressive disclosure that
+teaches).
 
 ### 6.4 Journal (`Book.cs`)
-**Design**: paper; Quests, People, Deeds, Codex on LT/RT; reading text at
-18 px; empty pages say what will be written there. **People rebuilt** as a
+**Design** (second pass, `journal_b_open_book` over `journal_a_sheet` and
+`journal_c_board`): **a book lying open** (`OpenBook`: tooled leather,
+parchment darkening into the spine, the leaves' thickness), the list on the
+left leaf and the page on the right; Quests, People, Deeds and Codex are
+**silk ribbons** over its top edge (red, green, blue, gold) on LT/RT; the day
+and whose journal it is at the leaves' feet; reading text at 18 px; empty pages
+say what will be written there. **Why**: it is the survivor's own book; two
+leaves give list and page side by side; leather and parchment are the
+material the owner asked for. **People rebuilt** as a
 list and a page: those met with how each feels in a word; the one chosen
 drawn as they look, trust, warmth, respect and fear as measures with words
 ("much fond of you"), what is on their mind and what they know you did.
 **Why**: relatedness (PENS) is the town's heart; a page per person, with
 their face, makes "they remember" felt rather than listed.
 
-### 6.5 Map (`MapScreen.cs`, **rebuilt** as an atlas)
-**Design**: the zone drawn from itself, as large as the screen allows
-(920 px); beside it **where to go, the people, the places and what to
-beware of**, nearest first, each with how far and which way ("15 m
-north-east"). A line hovered or focused **glides the map to its mark and
-rings it**; chosen, it draws closer. Pad: the D-pad walks the list, the
-triggers zoom, Y finds you; mouse: the wheel zooms, a drag pans.
+### 6.5 Map (`MapScreen.cs`, **rebuilt** as an atlas, then full bleed)
+**Design** (second pass, `map_b_full_bleed` over `map_a_square` and
+`map_c_table`): the zone drawn from itself takes the whole screen under the
+header band; it opens **fitted to what you know** (every walked cell and
+where you stand, with a margin), never on the whole zone with the known part
+small at its edge. **Unwalked land is dark**, opaque and the same dark as
+past the paper's edge, so the known world is a lit island; the view is held
+so the paper covers it wherever the paper is large enough (opened at the
+Verge's west edge, a third of the view used to be past it). Beside it, on a
+plate at the right, **where to go, the people, the places and what to beware
+of**, nearest first, each with how far and which way ("15 m north-east"),
+then the legend and the prompts. A line hovered or focused **glides the map
+to its mark and rings it**; chosen, it draws closer. Zoom, find-me and "all I
+know" on a slab at the map's foot; a compass at its head. Pad: the D-pad
+walks the list, the triggers zoom, Y finds you; mouse: the wheel zooms, a
+drag pans.
 **Why**: a map is opened to answer "where is X?"; a list answers it
-directly and the map shows the way, and a pad needs no cursor to use it.
+directly and the map shows the way, and a pad needs no cursor to use it. The
+owner's complaint was "a huge empty parchment square with the zone tiny at
+its edge": the screen is the map now, and it opens on what matters.
 
 ---
 
 ## 7. Other screens
 
 ### 7.1 Title
-The fire, the stranger, the logo (painted when the art arrives), a short
-menu with an ember marking focus and its key, the last journey under
-Continue; side panels take focus. **Why kept**: short (Hick) and in the
-world.
+The fire, the stranger, the painted logo (the broken chain through the
+letters), the house's rule under it (one gold rule with its ember stone), a
+short menu with an ember marking focus and its key, the last journey under
+Continue; side panels on plates with plaques take focus. **Why kept**: short
+(Hick) and in the world; only light touches in the second pass.
 
 ### 7.2 Making a survivor
-Four steps on LB/RB; rows with an icon, a name and a line; the figure by the
-fire changes at once; the right panel says what a choice means; the plate
-as tall as its step. Pad: A takes a choice, A again moves on; left/right
-move the figure slider; on the name step a pad is offered "a name from the
-road" (it cannot type). **Why**: every choice shows its consequence before
-the commitment (R9), and a pad can finish creation without a keyboard.
+**Composition** (second pass, `create_b_crested` over `create_a_rows`): a
+forged column down the left (the painted plate, running off the screen's
+edge), the figure by the fire in the middle, the choice read closely on a
+plate at the right, and who they are becoming on a **banner** at the figure's
+feet ("NAMELESS · Hunter Warden"). In the column: the four steps as a **road
+of medallions** (I Calling, II Arms, III Origin, IV Name) on LB/RB, then the
+choices as crested cards, each with its medallion mark, a name and a line.
+The figure changes at once. Pad: A takes a choice, A again moves on;
+left/right move the figure slider; on the name step a pad is offered "a name
+from the road" (it cannot type). **Why**: every choice shows its consequence
+before the commitment (R9), a pad can finish creation without a keyboard, and
+the fire stays the centre of the screen.
 
 ### 7.3 Pause
-A plate that fits its list; the book's keys as a reminder; settings and
-controls in a panel that takes focus.
+**Composition** (second pass, `pause_b_side` over `pause_a_box`): the game
+stays in view, paused, and a forged column runs down the left: PAUSED on its
+plaque, where you are, the day and what you are about, the menu, and the
+book's five pages as medallions with their keys at its foot; settings and
+controls open beside the column and take focus. **Why**: Diablo IV and Elden
+Ring keep the world in view behind the pause; a box in the middle hid the
+moment the player paused on.
 
 ### 7.4 Conversation
+**Composition** (second pass, `talk_b_portrait` over `talk_a_boxed` and
+`talk_c_column`): the person large, head to hip (`Portrait`, half framing),
+standing over the left end of the words as across a table; their name on a
+banner, what they are and how they feel about you under it; the words and
+the answers on a plate along the foot. **Why**: relatedness is the town's
+heart (Disco Elysium, BG3, Hades); a 228 px bust in a box made them furniture.
 The person as they look to you; speech at its pace; what you can say back,
 numbered; badges for what a background or kit opens; what you cannot say,
 greyed, with the reason. **Done**: focus on the lines (up and down, A or
@@ -434,16 +567,22 @@ last). **Why**: the pace of speech hides the thread; a recalled line means a
 choice is never made blind.
 
 ### 7.5 Shop (**rebuilt**)
-Three columns: their shelf, the chosen thing with its price and what it
-would replace, your pack. Prices on a dark tag with a coin, **red when more
+**Composition** (second pass, `shop_b_counter` over `shop_a_box` and
+`shop_c_two_grids`): a full page laid out as a **counter**. The merchant is a
+person first, on the left: their face, how they feel about you, their usual
+prices, what they buy, when new stock comes, what is on their mind. The wares
+large in the middle in a well, the chosen thing read closely under them with
+its price and what it would replace; your pack and purse at the right.
+Prices on a dark tag with a coin, **red when more
 than you have**; quantity as "×3" (never confused with a price). Buy or sell
 by right-click, double-click, A, or **dragging across**. **Why**: the
 decision (price against worth against what you wear) is made in the middle
 column, between the two things it is about.
 
 ### 7.6 Storeroom (**rebuilt**)
-Stored and carried side by side with how full each is; a click, A, or a drag
-moves a thing across.
+A full page: the store's large grid (48 places) on the left, your pack and
+the thing read closely on the right, with how full each is; a click, A, or a
+drag moves a thing across.
 
 ### 7.7 The Last Lamp
 Sleep (with its price), wait for night, not yet; refused, it says why ("You
@@ -455,6 +594,11 @@ it, their bane, the oaths (asks, gives, what answers them), Enter at the
 foot. The plate fits.
 
 ### 7.9 The arena's end
+**Composition** (second pass, `result_b_spoils` over `result_a_boxes`): the
+verdict on a **banner**, the arena's name, the night's numbers on **counting
+medallions** whose rings fill, what you take out on a forged plate, and the
+lost build as grey medallions on ash beside it. **Why**: peak-end; the
+numbers are the trophy, so they are the largest things on the screen.
 The verdict, the name, the tally **counting up** one after another (time,
 slain, ember, past the half hour), "your longest yet", what comes out
 against what stays; how it ended in a line: who brought you down and when,
@@ -506,8 +650,56 @@ Weighed against the research, taken where it makes the interface better.
 
 ## 10. What is next, in order
 
-1. The art (`UI_ART_BRIEF.md`); every plug-in point loads by name.
-2. The feel work's remaining interface pieces (section 9): the chest panel, the evolution's name card.
-3. Text size setting (needs the HUD anchored rather than placed at 1080p).
-4. Hold-to-read detail on cards and items (pad Y, keyboard Alt).
-5. The remaining accessibility settings (section 8).
+1. Bring the rest into the frame language, each from its job: the item card
+   (a crested tooltip, the comparison as two cards with a delta column);
+   buttons, segments and tabs drawn by Ornate with every state; the
+   Wayfinder's table (three maps as cards on a table, in the painted wooden
+   map frame); the Last Lamp; the chapter's end; toasts, the hint,
+   announcements, the boss bar; the Journal's deeds and codex inside the book.
+2. The painted pieces of `UI_ART_BRIEF.md` 4.9 (the UI art lead).
+3. The feel work's remaining interface pieces (section 9): the chest panel,
+   the evolution's name card.
+4. Text size setting (needs the HUD anchored rather than placed at 1080p).
+5. Hold-to-read detail on cards and items (pad Y, keyboard Alt).
+6. The remaining accessibility settings (section 8).
+
+---
+
+## 11. The second pass: concepts and choices
+
+`tools/comfy/ui_concepts.py` drew each layout from crops of the real game and
+painted it with the local Krea model (img2img, the darkbrush LoRA at 0.6,
+denoise 0.55); each image in `docs/ui_review/concepts/<screen>_<a|b|c>_<name>.jpg`
+is the drawn layout beside its painting. The before, first pass and second
+pass of every screen side by side are in `docs/ui_review/<screen>.jpg`
+(`tools/comfy/ui_review.py`).
+
+| Screen | Weighed | Chosen | Why |
+|---|---|---|---|
+| HUD | A corners (as it was), B console, C minimal | **B console** | Diablo IV and Lost Ark put health, skills and the art in one band where the eye drops from the fight (proximity, Fitts); the corners split attention three ways. Health as a globe reads at a glance as a level; the ember bar stays top centre; health under the feet stays at night |
+| Pack | A box, B two panes, C hero centre | **B two panes** | The survivor large on the left with what they wear round them and their standing beneath; what they carry on the right in 112 px slots with filters, the chosen thing read closely, gear beside what it would replace (D4, Grim Dawn: comparison is recognition, not recall) |
+| Self | A columns, B pillars, C paper sheet | **B pillars** | Who they are; the four attributes as pillars with the number the hero and a + that previews its change; traits as cards with the places still to fill; the standing grouped on slabs with sources on hover. Answers "a wall of text" by giving each kind of thing its shape |
+| Arts | A list, B altar, C tree | **B altar** | Arts are few and precious: medallions with rank progress; the chosen art as a great medallion with its facet sockets; facet cards; a road of five ranks. A tree overstates a five-rank system; a list hid what is coming |
+| Journal | A sheet, B open book, C board | **B open book** | The survivor's own book; two leaves give list and page side by side; ribbons are the book's own tabs; leather and parchment are the material asked for |
+| Map | A square, B full bleed, C table | **B full bleed** | Opened to find something: the whole screen, fitted to the walked land and you, unwalked land dark so the known world is a lit island; the list at the right; zoom and find-me at the foot |
+| Draft | A cards, B rows, C crested cards | **C crested cards** | Hades' cards with rarity in the frame; the ember's fire behind says "the night's power"; the build strip beneath (HoloCure) |
+| Conversation | A boxed, B portrait, C column | **B portrait** | The person large, head to hip, over the left end of the words as across a table (Disco Elysium, BG3, Hades) |
+| Shop | A box, B counter, C two grids | **B counter** | The merchant is a person first; the wares large in the middle, the thing read closely; your pack and purse at the right |
+| Creation | A rows, B crested | **B crested** | A forged column of crested calling cards; the steps as a road of medallions; the choice read closely; who they are becoming on a banner; the fire stays the centre |
+| Pause | A box, B side | **B side column** | The game stays in view, paused (D4, Elden Ring): a forged column with the place, the day and the task, the menu, the book as medallions; settings open beside it |
+| Arena's end | A boxes, B spoils | **B spoils** | Peak-end: a verdict banner, the night's numbers counting on medallions, what you take on a forged plate, the lost build as grey medallions on ash |
+
+**The art and the redesign together** (the UI merge): the painted art fills
+the new layouts rather than either winning by default. The painted plate,
+paper, slots, tooltips, buttons, tabs, prompts, toasts, hint, bars and their
+casings, the minimap rim, the art's ring and the logo wear the new layouts
+directly; the painted draft cards wear the crested card's medallion and
+lifted glow, with the words kept 40 px inside their iron; the creation and
+pause columns wear the painted plate; the globe stays the health (the
+painted health bar belonged to the old corner); the map stays full bleed (the
+painted wooden frame moves to the Wayfinder's table when it is rebuilt).
+
+**Focus routes** are walked by the game itself: `--navcheck` with a picture
+(`--shot`) prints, for the open screen, how many things can take focus, how
+many the four directions reach from where focus starts, and any that are
+unreachable, off the screen or without size (`Nav.Audit`).

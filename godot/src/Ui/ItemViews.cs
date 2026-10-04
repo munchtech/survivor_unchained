@@ -148,8 +148,9 @@ public static class ItemViews
         }
         if (caption != null)
         {
-            var c = Style.Label(caption.ToUpperInvariant(), Style.UiHeavy, 10, Style.GoldDim, false, HorizontalAlignment.Center);
-            c.Position = new Vector2(0, size - 16);
+            var c = Style.Label(caption.ToUpperInvariant(), Style.UiHeavy, 11, Style.GoldDim, false, HorizontalAlignment.Center);
+            // Inside the painted well's lip, not on it.
+            c.Position = new Vector2(0, size - (UiArt.Has("slot") ? 23 : 16));
             c.Size = new Vector2(size, 14);
             box.AddChild(c);
         }

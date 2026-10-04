@@ -14,7 +14,8 @@ namespace SurvivorUnchained.Ui;
 /// </summary>
 public partial class Portrait : SubViewportContainer
 {
-    public enum Framing { Full, Bust }
+    /// <summary>Full: head to foot. Half: head to hip, a person across a table. Bust: head and shoulders.</summary>
+    public enum Framing { Full, Half, Bust }
 
     readonly SubViewport vp;
     readonly Node3D stage;
@@ -38,9 +39,14 @@ public partial class Portrait : SubViewportContainer
         stage.AddChild(new DirectionalLight3D { LightColor = new Color("#ffd8a8"), LightEnergy = 2.2f, Rotation = new Vector3(-0.6f, -0.7f, 0) });
         stage.AddChild(new DirectionalLight3D { LightColor = new Color("#8ab0ff"), LightEnergy = 1.6f, Rotation = new Vector3(-0.2f, 2.6f, 0) });
         stage.AddChild(new DirectionalLight3D { LightColor = new Color("#c0a890"), LightEnergy = 0.5f, Rotation = new Vector3(-0.1f, 0.4f, 0) });
-        var cam = new Camera3D { Fov = framing == Framing.Bust ? 22 : 30 };
+        var cam = new Camera3D { Fov = framing switch { Framing.Bust => 22, Framing.Half => 27, _ => 30 } };
         stage.AddChild(cam);
-        var (from, to) = framing == Framing.Bust ? (new Vector3(0, 1.62f, 1.45f), new Vector3(0, 1.55f, 0)) : (new Vector3(0, 1.05f, 4.1f), new Vector3(0, 0.95f, 0));
+        var (from, to) = framing switch
+        {
+            Framing.Bust => (new Vector3(0, 1.62f, 1.45f), new Vector3(0, 1.55f, 0)),
+            Framing.Half => (new Vector3(0, 1.4f, 2.7f), new Vector3(0, 1.28f, 0)),
+            _ => (new Vector3(0, 1.05f, 4.1f), new Vector3(0, 0.95f, 0)),
+        };
         cam.Transform = new Transform3D(Basis.LookingAt(to - from, Vector3.Up), from);
     }
 

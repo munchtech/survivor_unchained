@@ -1,0 +1,134 @@
+"""Item icons (icons/item/KEY.png): the game's own photographs of its item
+models (ItemPhotos, run the game with --icons), painted over on the local
+Krea so each keeps the real thing's shape and colours and gains the hand of
+the rest of the interface; then cut, centred to fill about four fifths of the
+square, lit from the upper left, graded.
+"""
+from __future__ import annotations
+
+import os
+
+import numpy as np
+from PIL import Image
+
+import krea
+
+PHOTOS = os.path.join(os.environ.get("APPDATA", ""), "Godot", "app_userdata", "Survivor Unchained", "icons")
+GUIDES = os.path.join(krea.OUT, "item_guides")
+
+LOOK = ("A single dark fantasy game item icon, hand painted in the style of Diablo IV item icons, the object alone, "
+        "three-quarter view, soft warm light from the upper left, a crisp clear silhouette, on a pure black background, "
+        "no frame, no text: ")
+
+ITEMS = {
+    "antidote": "a small stoppered glass bottle of cloudy green antidote, a wax-sealed cork",
+    "armor": "a shirt of riveted iron chain mail",
+    "armor_heavy": "a heavy blackened plate cuirass with gold rivets and pauldrons",
+    "armor_light": "a quilted padded linen jerkin, laced",
+    "axe": "a pair of crossed hand axes with leather-wrapped hafts",
+    "bandage": "a roll of clean linen bandages",
+    "bomb": "a small keg of blasting ember with a lit fuse, bound in iron",
+    "bone": "a knucklebone charm hung on a fine gold chain",
+    "book": "an old leather-bound manual with brass corners",
+    "bow": "a hunter's crossbow of dark wood and iron",
+    "censer": "a gilded censer on chains, smoke curling from it",
+    "chest": "an iron-bound wooden strongbox with a brass lock",
+    "circlet": "a thin circlet of moonsilver set with a pale pearl",
+    "cleaver": "a heavy butcher's cleaver with a worn wooden handle",
+    "cloak": "a long dark traveller's cloak with a hood and a clasp",
+    "dagger": "a pair of crossed throwing knives",
+    "dust": "a small sack of grey barrow dust spilling at the top",
+    "ember": "a glowing orange ember shard crystal on a lump of black rock",
+    "fang": "a wolf's fang hung on a gold chain",
+    "flower": "a pale moonpetal flower with a long green stem",
+    "helm": "an iron nasal helm, dented",
+    "helm_light": "a round leather cap",
+    "hide": "a rough boar hide",
+    "journal": "a red leather-bound journal with a gold sigil on its cover",
+    "kerchief": "a red cloth kerchief tied in a knot",
+    "key": "an old iron key with a ring bow",
+    "lamp": "a miner's brass lamp with a candle inside",
+    "lantern": "a forged iron lamp-iron lantern with a candle burning inside",
+    "lens": "a cracked magnifying lens in a gold rim",
+    "map": "a torn parchment map with a red ink route",
+    "mask": "a leather plague mask with a long beak and brass goggles",
+    "moon": "a charm of a pale silver crescent moon on a gold chain",
+    "pelt": "a grey wolf pelt",
+    "picks": "a ring of iron lockpicks",
+    "potion": "a round flask of glowing red health draught with a cork",
+    "ring": "a gold ring set with a red stone",
+    "root": "a twisted pale bitterroot with a green sprout",
+    "scroll": "a rolled parchment scroll with a red wax seal",
+    "seed": "a leather pouch of thornseeds with green shoots",
+    "shield": "a round wooden shield with an iron boss and rim",
+    "sigil": "a shard of black stone cut with a glowing violet sigil",
+    "staff": "a twisted wooden staff with a glowing violet crystal at its head",
+    "sword": "a long straight sword with a crossguard",
+    "totem": "a carved wooden storm totem bound with iron and blue cloth",
+    "vial": "a stoppered glass vial of murky green stream water",
+    "vial_orange": "a stoppered glass vial of glowing orange ember slurry",
+    "wand": "a short wooden wand with a pale crystal tip",
+    "wand_dark": "a dark wand of twisted black wood wrapped in violet light",
+}
+
+
+def guide(key, size=1024):
+    os.makedirs(GUIDES, exist_ok=True)
+    dst = os.path.join(GUIDES, key + ".png")
+    if os.path.exists(dst):
+        return dst
+    im = Image.open(os.path.join(PHOTOS, key + ".v1.png")).convert("RGBA")
+    # The object at about four fifths of the square, on black.
+    bb = im.getchannel("A").point(lambda v: 255 if v > 20 else 0).getbbox()
+    obj = im.crop(bb)
+    k = size * 0.78 / max(obj.size)
+    obj = obj.resize((max(1, int(obj.width * k)), max(1, int(obj.height * k))), Image.LANCZOS)
+    bg = Image.new("RGBA", (size, size), (0, 0, 0, 255))
+    bg.alpha_composite(obj, ((size - obj.width) // 2, (size - obj.height) // 2))
+    bg.convert("RGB").save(dst)
+    return dst
+
+
+def generate(keys=None, denoise=0.5, seed=1000, n=2):
+    for k in keys or list(ITEMS):
+        krea.i2i(guide(k), LOOK + ITEMS[k] + ".", denoise=denoise, seed=seed, n=n, tag="items", out=os.path.join(krea.OUT, "items", k))
+        print("item", k, flush=True)
+
+
+OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "godot", "art", "ui", "icons", "item")
+
+# Which candidate each item uses (place in the batch of seed 1000); the first if not named.
+PICKS: dict = {}
+
+
+def fit(key, j=None, size=256, fill=0.84):
+    """A painted item cut out (BiRefNet for the thing, its light for any glow), centred at
+    `fill` of the square, the house grade, saved small."""
+    import cv2
+    import cut as C
+    import forge as F
+    import icons
+    j = PICKS.get(key, 0) if j is None else j
+    src = os.path.join(krea.OUT, "items", key, f"items_1000_{j}.png")
+    rgba = C.cutout(src, mode="mask+glow")
+    # Keep only the solid thing and light near it: the mask's own region, a little grown.
+    a = rgba[..., 3]
+    x0, y0, x1, y1 = C.bbox(rgba, thr=0.35, pad=6)
+    crop = C.grade(rgba[y0:y1, x0:x1], sat=0.95, shadows=1.18)
+    h, w = crop.shape[:2]
+    side = int(max(w, h) / fill)
+    M = np.float32([[1, 0, (side - w) / 2], [0, 1, (side - h) / 2]])
+    sq = cv2.warpAffine(crop, M, (side, side), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+    out = F.downsample(sq, (size, size)) if side > size else cv2.resize(sq, (size, size), interpolation=cv2.INTER_CUBIC)
+    os.makedirs(OUT, exist_ok=True)
+    icons.save_small(F.to_pil(out), os.path.join(OUT, key + ".png"))
+
+
+if __name__ == "__main__":
+    import sys
+    if sys.argv[1:2] == ["--fit"]:
+        for k in sys.argv[2:] or list(ITEMS):
+            fit(k)
+            print("fit", k, flush=True)
+    else:
+        generate(sys.argv[1:] or None)
