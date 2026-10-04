@@ -175,6 +175,98 @@ The game asks three questions, one an act: **What are you?** (Act 2 answers.)
 **Who made you, and why?** (Act 3.) **What will you do with it?** (The ending.)
 Act 1 asks none of them out loud; it plants all three.
 
+### Pacing: the story's share, and the two kinds of arena (the owner's structure)
+
+The owner: "story should be 40% of the game early on, end game is two types of
+arenas - permanent and our normal arenas."
+
+- **Early on, the story is two parts in five.** In Act 1:
+  - a day is about 20 minutes of play: the town, the Verge by day,
+    conversations, the cinematics;
+  - a **story night is 20 minutes**, and a Wayfinder's map is 30;
+  - Act 1 runs about seven days, which is roughly five to six hours;
+  - a typical route has three or four story nights and three or four maps, so
+    the days are about 40% of the time;
+  - the story asks for about one night in two, and the Wayfinder offers the
+    rest. Story nights are shorter so the story is never gated behind two
+    hours of arena (`docs/EXPERIENCE_AUDIT.md`).
+- **The share falls as the game goes on:** about a third in Act 2 and a
+  quarter in Act 3, with the endgame all nights. The days get fewer and
+  heavier, and the nights get longer and more yours.
+- **A story night ends on its story beat.** The boss is the story's foe
+  (Greymuzzle, Redcowl, Grimtunnel, the Barrow Lord, Wat), and the dawn after
+  it belongs to the story. The endless hour past the boss is for the
+  Wayfinder's maps and the endgame's open nights, never a story night's
+  business.
+- **The endgame has two kinds of arena.** Both exist after every ending, and
+  the ending changes how they are dressed, never whether they are there.
+  - **Permanent arenas: the Wayfinder's atlas.** These are places drawn and
+    kept: each map sworn under its oaths (the margin's word), returned to and
+    built on. It is the build game, the ARPG's maps. In the world, they are the
+    places the road forgets, and Ysolde (or, if she is gone, her book) keeps
+    them.
+  - **Normal arenas: a night's scar.** A scar opens in the dark, burns until
+    you leave or fall, and closes. It is the mindless survivors' game, and the
+    rising horde is the dead coming to the brightest light (see "The nights").
+- **Who sets the clocks:** combat sets the night's clock and the arena's
+  shape (with the experience director). The story's part is that announcements
+  name the night, never the clock: no "half hour" on a 20-minute story night.
+
+### Who tells it: the narrator, and the voice up the road (the owner's question)
+
+The owner asked whether Vonnra, the villain, should be the narrator: "someone
+who calls us to the town when we 'wake up' in the tutorial prologue".
+
+**The narrator stays the narrator: unplaced, never a character. Vonnra is the
+voice that calls the survivor up the road, once, at the waking. She is
+unnamed, and the same words come back from her mouth to open the fortune.**
+
+The payoff is real, and we keep it:
+- the voice that guides you turns out to be the woman who made you;
+- the second person ("You get up") turns out to have been an arrangement.
+
+Making her the whole narration would cost more than it earns:
+1. **Her sight is bought, not real** (section 3). The fortune's best clue is
+   that she quotes back what Sella sold her. The narrator knows what nobody
+   could sell her: the survivor's own mind ("your mother's face... not quite
+   where you left it"), Maeca's lips against your chest, the Blind, Sella's
+   free night. If Vonnra narrates, either she truly sees, which kills the
+   fortune's clue and the bible's rule, or the narration breaks its own rules.
+2. **The twist would land on day one.** The player meets her the first
+   afternoon, and a voice they have heard for an hour is recognised at once.
+   The accusation at the fortune is Act 1's reward for a careful player, and it
+   would become everyone's by the first evening.
+3. **Her power is scarcity.** She has few words and long pauses, and she is the
+   most important casting in the game. Three hundred narrated lines of her, and
+   the fortune is just more of her.
+4. **The private scenes.** Sella's free night is the one night no buyer hears,
+   and the Blind is the one place nobody sells anything. With her voice over
+   them, neither scene means anything.
+5. **The narrator never lies** (LINE_NOTES 3.1), and play depends on it. A
+   villain's narration is unreliable by nature.
+
+What we do instead (C01, the prologue's captions, C09):
+- At the waking, after the prints, "Far up the road one lamp burns high in the
+  dark, and a voice comes down to you over the frost, close as if she stood at
+  your shoulder." The voice: "Come up, traveller. ...No charge, this once."
+- The subtitle names her only as "A voice up the road" (speaker `far_voice`).
+  She is recorded in Vonnra's voice, far off and thinned by the cold.
+- The lamp is her lamp on the toll tower: "Her lamp is lit, and she is
+  looking south, toward the ford" (`vonnra.hub`). She watches the ford road at
+  night, saw a light go out at the crossing and another come on, and called
+  her answer up the road. She does not raise her voice; the frost carries it.
+  "I am arranging."
+- **The payoff, at the act's turn:** the fortune opens "Sit. Give me your hand.
+  ... No charge, this once. I have been waiting to see how it came out." It is
+  the same words, close now, at the moment the act asks whether to accuse her.
+  A careful player hears who called them up the road.
+- **And a third time in Act 3:** the toll she waived was the survivor's life
+  (the hymn's "your toll is paid and kept"; the coin is the toll at the inner
+  door).
+- **The risk:** some players will know the voice on day one. That is a clue
+  fairly earned, and it points only where the lamps already point: who watches
+  the ford. It says nothing about what the survivor is, or why.
+
 ## 3. Who is really who
 
 | Who | Seems | Is | Comes out |
@@ -926,9 +1018,14 @@ burned her". The player says it. (`docs/cinematics/act3_outline.md`, C43.)
   worships, and is right; Snib survives.
 
 **The ending decides the nights.** After A the ember scars still open, and the
-player knows what they are. After B there is no more ember, and the scars never
-open again: the last thing the mercy ending costs is the power the player used
-all game. After C they open, and the survivor is the boss in every one.
+player knows what they are. After B there is no more ember in the valley, and
+its scars close for good: the last thing the mercy ending costs is the power the
+player used all game. After C they open, and the survivor is the boss in every
+one. The endgame's two kinds of arena (section 2, "Pacing") exist after every
+ending. After B they are the Wayfinder's book, the nights that were, drawn and
+kept and played as what they were. That keeps B's cost in the world and the
+nights in the game. (Recommended; the owner's call, since it touches the
+endgame's frame.)
 
 **The epilogue.** A page per person and place, worked out from the world, the
 way `Chapter.cs` writes Act 1's: who lived, who rules the gate, what the
@@ -1025,9 +1122,13 @@ the story's view of them, so that the nights tell the story the days write.
   survivor holds. Name it in their words (a carrier), not a genre's.
 - **Two peoples at war in one arena:** the Kerchiefs against the lamplings is
   Act 2's truth (Redcowl fights the Dig); it fits from Act 2, not before.
-- **The ending decides the nights** (section 8): after re-forging, the scars
-  open and the player knows what they are; after breaking the chain they never
-  open again; after taking the light, the survivor is the boss in every one.
+- **The ending decides the nights** (section 8):
+  - after re-forging, the scars open, and the player knows what they are;
+  - after breaking the chain, the valley's scars close, and the endgame's
+    nights are the Wayfinder's book of the nights that were;
+  - after taking the light, the survivor is the boss in every one.
+  The endgame's two kinds of arena exist after every ending (section 2,
+  "Pacing").
 
 ## 10. The consequence ledger
 

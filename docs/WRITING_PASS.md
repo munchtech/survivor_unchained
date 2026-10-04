@@ -1256,3 +1256,26 @@ changed:
   times to look at him."
 - **Sella's night barks** both opened "Rook's walls are thin": `bark.sella.night.1`
   is now "I've a bath going cold upstairs. Shame to waste it."
+
+## 19. The voice up the road, and the story's share (4 October, the owner's questions)
+
+- **Vonnra is not the narrator** (bible, section 2, "Who tells it"). She is the
+  voice that calls the survivor up the road at the waking, once and unnamed:
+  - `cin_drowned_fire.lamp` (narrator): "Far up the road one lamp burns high in
+    the dark, and a voice comes down to you over the frost, close as if she
+    stood at your shoulder."
+  - `cin_drowned_fire.call` (speaker `far_voice`, "A voice up the road"): "Come
+    up, traveller. ...No charge, this once."
+  - The same pair is in the prologue's captions (`Prologue.cs`), so the call
+    plays before the cinematic exists.
+  - C01 has two placeholder shots for the cinematics lead to frame (8a, 8b).
+  - The fortune already opens on the same words.
+  - [DATA and CODE, done;
+    `CinematicTests.The_voice_that_calls_her_up_the_road_opens_the_fortune`]
+- **Pacing** (bible, section 2, "Pacing"):
+  - early on, the story is two parts in five;
+  - a story night is 20 minutes, and a Wayfinder's map is 30;
+  - the endgame has two kinds of arena: permanent (the Wayfinder's atlas, the
+    build game) and a night's scar (the survivors' game).
+  - Combat sets the clock. The story asks that no announcement say "half hour"
+    on a 20-minute night.

@@ -113,6 +113,8 @@ the fire). Conversation `cin_drowned_fire`.
 |---|---|---|---|
 | `cin_drowned_fire.bedroll` | 6 | *Your bedroll has not been slept in.* | The game's first words. Plain as an inventory. |
 | `cin_drowned_fire.prints` | 7 | *Prints in the frost, your own. They come up from the river. None go down to it.* | Three statements, a small pause before the last. The voice is never ominous; the picture is enough. |
+| `cin_drowned_fire.lamp` | 8a | *Far up the road one lamp burns high in the dark, and a voice comes down to you over the frost, close as if she stood at your shoulder.* | Plain. The lamp is the toll tower's, and the narrator does not say so. |
+| `cin_drowned_fire.call` | 8b | *Come up, traveller. ...No charge, this once.* | Speaker `far_voice`, subtitled only "A voice up the road". Vonnra, unnamed: far off and thinned by the cold, unhurried, never raised. A toll-keeper waving a traveller through, kindly; the pause before "No charge" is her deciding to. The fortune (C09) opens on the same words. (Bible, "Who tells it".) |
 | `cin_drowned_fire.frost` | 9 | *Past the firelight, the frost is breaking.* | As the line of frost cracks, not before. |
 
 ## Calling (shot 11)
