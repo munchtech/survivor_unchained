@@ -22,6 +22,17 @@ uniform float dome = 0.55;
 uniform float pupil = 0.28;
 // Her iris's colour, over its paint's (white keeps it as painted).
 uniform vec3 tint : source_color = vec3(1.0);
+// Her eyes' colour chosen (People.EyeColour): the paint's fibres and crypts,
+// its light and dark, kept, and its colour taken from the iris's (outside)
+// and the ring's (round the pupil, as real eyes have: a blue eye's amber
+// collarette), softly from one to the other at `ring` (in the paint's own
+// radii, where its amber gives way to green). 0 keeps the paint's colour.
+uniform float recolour = 0.0;
+uniform vec3 iris_colour : source_color = vec3(0.30, 0.42, 0.22);
+uniform vec3 ring_colour : source_color = vec3(0.62, 0.42, 0.16);
+uniform float ring = 0.56;
+// The paint's mean light (linear), so a colour chosen comes out as itself.
+const float PAINT_LIGHT = 0.12;
 // Where she is looking, each eye's iris slid over its ball (in irises'
 // radii: +x to her left, +y down; both eyes' paint the same way round).
 uniform vec2 gaze_a = vec2(0.0);
@@ -64,6 +75,14 @@ void fragment() {
 	float t = clamp((rr - pupil) / (1.0 - pupil), 0.0, 1.0);
 	float src = mix(0.28, 1.0, t);
 	vec3 ir = texture(iris, vec2(0.5) + dd / max(rr, 1e-4) * src * 0.412).rgb;
+	if (recolour > 0.0) {
+		float lum = dot(ir, vec3(0.2126, 0.7152, 0.0722));
+		vec3 hue = mix(ring_colour, iris_colour, smoothstep(ring - 0.1, ring + 0.12, src));
+		// (a little of the paint's own hue left in, so the fibres are not all one dye)
+		vec3 own = clamp(ir / max(lum, 1e-4), vec3(0.5), vec3(1.6));
+		vec3 dyed = hue * (lum / PAINT_LIGHT) * mix(vec3(1.0), own, 0.15);
+		ir = mix(ir, dyed, recolour);
+	}
 	if (rr < pupil) ir = vec3(0.012);
 	vec3 col = mix(texture(eye, UV).rgb, ir * tint, in_iris);
 	// The limbal ring: the iris's edge dark, as the sclera meets it.
