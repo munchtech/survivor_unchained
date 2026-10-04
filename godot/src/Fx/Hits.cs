@@ -115,6 +115,16 @@ public partial class Hits : Node3D
     public void Number(Vector3 at, int amount, bool crit) =>
         Text(at, crit ? $"{amount}!" : amount.ToString(), crit ? new Color(1.6f, 1.15f, 0.4f) : new Color(1, 0.94f, 0.86f), crit ? 88 : 60);
 
+    /// <summary>The boss's words now showing put away (the BREAK is said alone).</summary>
+    public void ClearWords()
+    {
+        for (int i = 0; i < words.Count; i++)
+        {
+            var (l, t, life, at) = words[i];
+            if (t < 1) { l.Visible = false; words[i] = (l, 1, life, at); }
+        }
+    }
+
     /// <summary>A boss's word over its mark: steady for `life` seconds, then gone in a breath.</summary>
     public void Word(Vector3 at, string text, Color color, int size, float life)
     {

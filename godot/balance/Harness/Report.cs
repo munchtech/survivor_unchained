@@ -93,6 +93,23 @@ public static class Report
             }
             sb.AppendLine();
         }
+        // The long night: how far past the half hour the won runs got, and what ended them.
+        var night = runs.Where(r => r.Won && r.Spec.Beyond > 0).ToList();
+        if (night.Count > 0)
+        {
+            sb.AppendLine("### The long night (won runs, minutes past the half hour)\n");
+            Head(sb, "calling", "runs", "fell", "median", "p10-p90", "furthest", "standing at +15/+30/+45/+60/+90", "returns met", "dark's oaths");
+            foreach (var g in night.GroupBy(r => r.Spec.Calling).OrderBy(g => g.Key).Append(night.GroupBy(_ => "all").First()))
+            {
+                var l = g.ToList();
+                var past = l.Select(r => r.Minutes - 30).OrderBy(x => x).ToList();
+                string standing = string.Join(" / ", new[] { 15, 30, 45, 60, 90 }.Select(m => Pct(l.Count(r => r.Minutes - 30 >= m) / (double)l.Count)));
+                Row(sb, g.Key, l.Count, Pct(Rate(l, r => r.Died)), F(Median(past), "0"), $"{F(past[(int)(past.Count * 0.1)], "0")}-{F(past[Math.Min(past.Count - 1, (int)(past.Count * 0.9))], "0")}",
+                    F(past[^1], "0"), standing, F(Median(l.Select(r => (double)r.Returns)), "0"), F(Median(l.Select(r => (double)r.Dark)), "0"));
+            }
+            var killers = night.Where(r => r.Died).GroupBy(r => r.KilledBy).OrderByDescending(g => g.Count()).Take(6);
+            sb.AppendLine("\nWhat ended them: " + string.Join(", ", killers.Select(g => $"{g.Key} {g.Count()}")) + "\n");
+        }
         if (runs.Select(r => r.Spec.Policy).Distinct().Count() > 1 && runs.Select(r => r.Spec.Calling).Distinct().Count() > 1)
             Summary(sb, "calling · policy", runs.GroupBy(r => $"{r.Spec.Calling} · {r.Spec.Policy}"));
 

@@ -22,14 +22,14 @@ public class BossTests
 
     /// <summary>An arena of `people` brought to the edge of the half hour, the survivor kept alive.
     /// `game`: the battle's hooks wired as the game wires them (BattleHooks.Following), not shared.</summary>
-    static Fight At30(string people, int seed = 3, int tier = 1, bool game = false, string? boss = null, string? bossName = null)
+    static Fight At30(string people, int seed = 3, int tier = 1, bool game = false, string? boss = null, string? bossName = null, bool spare = false)
     {
         var a = Callings.Archetype("warden");
         var j = Journey.Begin(new CreationChoice
         {
             Name = "Bot", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
         }, (uint)seed);
-        var spec = new ArenaSpec { Id = "table:test", Name = "Test", Seed = seed, Tier = tier, People = people, Boss = boss, BossName = bossName };
+        var spec = new ArenaSpec { Id = "table:test", Name = "Test", Seed = seed, Tier = tier, People = people, Boss = boss, BossName = bossName, Spare = spare };
         Arenas.Begin(j.World, spec);
         var map = MapGen.Generate(spec.Map);
         var host = new HeadlessHost(j, seed);
@@ -225,6 +225,35 @@ public class BossTests
             foreach (var ev in f.B.Events.Drain()) killed |= ev is Ev.Kill { Boss: true };
         });
         Assert.True(f.Zone.Won);
+        Assert.True(killed);
+    }
+
+    /// <summary>Greymuzzle let go (the story bible, narrowly): brought down, he does not die;
+    /// he gets up and goes, and the fight is won without a kill.</summary>
+    [Fact]
+    public void Greymuzzle_spared_goes_down_gets_up_and_goes()
+    {
+        var f = At30("pack", boss: "boss_pack", bossName: "Greymuzzle", spare: true);
+        var boss = Boss(f);
+        bool killed = false;
+        Step(f, 260, _ =>
+        {
+            if (boss.Alive && boss.Boss && boss.TakenMul > 0) f.B.HitEnemy(boss, boss.MaxHp * 0.05, School.Physical, [Tag.Physical], new HitOpts { NoCrit = true });
+            foreach (var ev in f.B.Events.Drain()) killed |= ev is Ev.Kill { Boss: true };
+        });
+        Assert.True(f.Zone.Won);
+        Assert.False(killed);
+        Assert.Contains(f.B.Pickups.Items, p => p.Alive && p.Kind == PickupKind.Chest && p.Ref == "boss");
+        // Not spared, the same fight ends in a kill.
+        var g = At30("pack", boss: "boss_pack", bossName: "Greymuzzle");
+        var b2 = Boss(g);
+        killed = false;
+        Step(g, 260, _ =>
+        {
+            if (b2.Alive && b2.Boss && b2.TakenMul > 0) g.B.HitEnemy(b2, b2.MaxHp * 0.05, School.Physical, [Tag.Physical], new HitOpts { NoCrit = true });
+            foreach (var ev in g.B.Events.Drain()) killed |= ev is Ev.Kill { Boss: true };
+        });
+        Assert.True(g.Zone.Won);
         Assert.True(killed);
     }
 

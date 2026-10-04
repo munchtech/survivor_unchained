@@ -61,6 +61,8 @@ public sealed class RunResult
     public int BossMarked, BossLanded, BossStaggers, BossPhase = -1;
     public double BossBreak;
     public bool BossSoft;
+    /// <summary>The long night: the boss's returns that came, and the dark's oaths sworn.</summary>
+    public int Returns, Dark;
 
     /// <summary>Won at the half hour and still standing for the boss: the target.</summary>
     public bool Won => WonAt != null;
@@ -230,10 +232,12 @@ public static class ArenaSim
         if (zone.BossScript is { } bs)
         {
             r.BossLanded = b.BossBlowsTaken;
-            r.BossBreak = bs.BreakSum / Math.Max(1, bs.E.MaxHp);
+            r.BossBreak = bs.BreakSum / Math.Max(1, bs.MaxHp);
             r.BossPhase = bs.PhaseIx;
             r.BossSoft = bs.Soft;
         }
+        r.Returns = zone.Returns;
+        r.Dark = zone.DarkSworn;
         r.Kills = b.KillCount;
         r.Ember = b.EmberLevel;
         r.DamageTaken = b.DamageTaken;
