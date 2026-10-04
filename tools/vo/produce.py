@@ -295,6 +295,8 @@ def char_marks(raw: str, segs: list[dict]) -> list[tuple[float, float]]:
     for s in segs:
         probe = s["text"][: min(24, len(s["text"]))]
         k = raw.find(probe, cur)
+        if k < 0:  # a part cut short where the name was ("Sit down." of "Sit down, {name}.")
+            k = raw.find(probe[:10], cur)
         if k < 0:
             k = cur
         end = raw.find(")", k) + 1 if s["voice"] == "narrator" and raw[max(0, k - 1):k] == "(" else k + len(s["text"])
@@ -305,17 +307,61 @@ def char_marks(raw: str, segs: list[dict]) -> list[tuple[float, float]]:
     return out
 
 
-def finish(line: dict, picks: list[dict], log) -> dict:
+GAP = 0.38  # between the parts of a line (post.assemble)
+# The pauses inside a read, tightened step by step while a line is longer
+# than the cut it is timed to; never below a held beat (about 0.7 s).
+FIT_GAPS = (1.6, 1.2, 0.95, 0.75)
+
+
+def part_fx(line: dict, seg: dict) -> str | None:
+    """The part's effect: its voice's, unless the line's direction says
+    otherwise ('none' for dry); the narrator's asides keep his."""
+    v = cast()[seg["voice"]]
+    d = line.get("direction", {})
+    kind = v.get("fx") if seg["voice"] == "narrator" and line["voice"] != "narrator" else d.get("fx", v.get("fx"))
+    return None if kind == "none" else kind
+
+
+def mix(line: dict, picks: list[dict], max_gap: float = 1.6) -> tuple:
+    """The line's parts edited, toned and placed: (audio, marks, read), where
+    `read` is the voice's own length without the room's decay."""
     voices = cast()
     d = line.get("direction", {})
-    parts = []
+    parts, read = [], 0.0
     for seg, pick in zip(line["segments"], picks):
         v = voices[seg["voice"]]
         room = "close" if seg["voice"] == "narrator" else d.get("room", v.get("room", "close"))
-        vol = "level" if seg["voice"] == "narrator" and line["voice"] != "narrator" else d.get("vol", "level")
-        x = post.master(pick["path"], room, v.get("sex", "m"), v.get("fx"), vol=vol)
+        vol = "level" if seg["voice"] == "narrator" and line["voice"] != "narrator" else lines_mod.part_direction(line, seg).get("vol", "level")
+        info: dict = {}
+        x = post.master(pick["path"], room, v.get("sex", "m"), part_fx(line, seg), vol=vol, max_gap=max_gap, info=info)
         parts.append((x, room))
-    audio, marks = post.assemble(parts, vol=d.get("vol", "level"))
+        read += info["read"]
+    audio, marks = post.assemble(parts, gap=GAP, vol=d.get("vol", "level"))
+    return audio, marks, round(read + GAP * (len(parts) - 1), 2)
+
+
+def fit(line: dict, picks: list[dict]) -> tuple:
+    """mix(), with the pauses tightened while the read is longer than the
+    window its cut is timed to (direction `time`: [shortest, longest] s)."""
+    win = (line.get("direction") or {}).get("time")
+    for g in FIT_GAPS if win else FIT_GAPS[:1]:
+        audio, marks, read = mix(line, picks, g)
+        if not win or read <= win[1]:
+            break
+    return audio, marks, read, g
+
+
+def timing(line: dict, read: float) -> str | None:
+    """What is wrong with a timed line's length, or None."""
+    win = (line.get("direction") or {}).get("time")
+    if not win or win[0] - 0.05 <= read <= win[1] + 0.05:
+        return None
+    return f"{'long' if read > win[1] else 'short'}: {read:.1f} s, the cut wants {win[0]}–{win[1]} s"
+
+
+def finish(line: dict, picks: list[dict], log) -> dict:
+    d = line.get("direction", {})
+    audio, marks, read, gap = fit(line, picks)
     target = -17.0 if line["voice"] == "narrator" else VOL_LUFS.get(d.get("vol", "level"), -16.0)
     audio = post.loudness(audio, target)
     rel = f"{line['voice']}/{line['id']}.ogg"
@@ -327,10 +373,22 @@ def finish(line: dict, picks: list[dict], log) -> dict:
             "parts": [{"voice": s["voice"], "src": p.get("path"), "seed": p["seed"], "score": p["score"], "similarity": p["similarity"],
                        "utmos": p["utmos"], "accent": p["accent"], "wps": p["words_per_sec"], "said": p["said"],
                        "style": p["style"]} for s, p in zip(line["segments"], picks)],
-            "made": time.strftime("%Y-%m-%d")}
+            "made": time.strftime("%Y-%m-%d"), "read": read}
     if line.get("sex"):
         take["sex"] = line["sex"]
-    log(f"  -> {rel} {take['sec']}s")
+    if line.get("name_at") is not None:
+        # Where the survivor's name is spliced in (VoiceOver): before the
+        # first part, or at the end of the part before it, in its pause.
+        k = line["name_at"]
+        take["name_at"] = 0.0 if k == 0 else round(marks[k - 1][1], 3)
+    if d.get("time"):
+        take["time"] = d["time"]
+        if gap < FIT_GAPS[0]:
+            take["pauses_capped"] = gap
+        off = timing(line, read)
+        if off:
+            take["timing"] = off
+    log(f"  -> {rel} {take['sec']}s" + (f" (read {read}s, wants {d['time'][0]}–{d['time'][1]})" if d.get("time") else ""))
     return take
 
 
@@ -342,6 +400,10 @@ def write_index(manifest_lines: list[dict]):
             e = {"file": t["file"], "hash": t["hash"], "voice": l["voice"], "sec": t["sec"], "segs": t["segs"]}
             if t.get("sex"):
                 e["sex"] = t["sex"]
+            if t.get("read"):
+                e["read"] = t["read"]
+            if t.get("name_at") is not None and l.get("name_at") is not None:
+                e["name"] = t["name_at"]
             if t.get("placeholder"):
                 e["placeholder"] = True
             idx["lines"][l["id"]] = e

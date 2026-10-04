@@ -1,0 +1,202 @@
+{
+	"f_arms_crossed": {
+		"changes": "retargeted to her skeleton, feet locked, looped, in place",
+		"layer": "full",
+		"length": 3.59999990463257,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"loop": true,
+		"note": "townsfolk (women)",
+		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: arms_crossed_0.bvh",
+		"speed": 0.0
+	},
+	"f_cheer": {
+		"changes": "retargeted to her skeleton, feet locked, in place",
+		"layer": "full",
+		"length": 2.46666669845581,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"loop": false,
+		"note": "townsfolk (women)",
+		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: cheer_2.bvh",
+		"speed": 0.0
+	},
+	"f_idle": {
+		"changes": "retargeted to her skeleton, feet locked, looped, in place",
+		"layer": "full",
+		"length": 16.6333332061768,
+		"licence": "Mixamo (Adobe)",
+		"loop": true,
+		"note": "townsfolk (women)",
+		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_weight_shift_idle.bvh",
+		"speed": 0.0
+	},
+	"f_pick_up": {
+		"changes": "retargeted to her skeleton, feet locked, in place",
+		"layer": "full",
+		"length": 3.43333339691162,
+		"licence": "Mixamo (Adobe)",
+		"loop": false,
+		"note": "townsfolk (women)",
+		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_pick_up.bvh",
+		"speed": 0.0
+	},
+	"f_sit_chair": {
+		"changes": "retargeted to her skeleton, feet locked, looped, in place",
+		"layer": "full",
+		"length": 4.0,
+		"licence": "Mixamo (Adobe)",
+		"loop": true,
+		"note": "townsfolk (women)",
+		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_sitting_chair.bvh",
+		"speed": 0.0
+	},
+	"f_sit_floor": {
+		"changes": "retargeted to her skeleton, feet locked, looped, in place",
+		"layer": "full",
+		"length": 10.8666667938232,
+		"licence": "Mixamo (Adobe)",
+		"loop": true,
+		"note": "townsfolk (women)",
+		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_sitting_floor.bvh",
+		"speed": 0.0
+	},
+	"f_talk": {
+		"changes": "retargeted to her skeleton, feet locked, looped, in place",
+		"layer": "full",
+		"length": 5.03333330154419,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"loop": true,
+		"note": "townsfolk (women)",
+		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: talk_0.bvh",
+		"speed": 0.0
+	},
+	"f_walk": {
+		"changes": "retargeted to her skeleton, feet locked, looped, in place",
+		"layer": "full",
+		"length": 1.0,
+		"licence": "Mixamo (Adobe)",
+		"loop": "cycle",
+		"note": "townsfolk (women)",
+		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_walk_feminine.bvh",
+		"speed": 1.65163411874448
+	},
+	"f_wave": {
+		"changes": "retargeted to her skeleton, feet locked, in place",
+		"layer": "full",
+		"length": 2.46666669845581,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"loop": false,
+		"note": "townsfolk (women)",
+		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: wave_1.bvh",
+		"speed": 0.0
+	},
+	"f_work": {
+		"changes": "retargeted to her skeleton, feet locked, retimed, in place",
+		"layer": "full",
+		"length": 2.79999995231628,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"loop": false,
+		"note": "townsfolk (women)",
+		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: work_0.bvh",
+		"speed": 0.0
+	},
+	"m_arms_crossed": {
+		"changes": "retargeted to her skeleton, feet locked, looped, in place",
+		"layer": "full",
+		"length": 3.59999990463257,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"loop": true,
+		"note": "townsfolk (men)",
+		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: arms_crossed_0.bvh",
+		"speed": 0.0
+	},
+	"m_cheer": {
+		"changes": "retargeted to her skeleton, feet locked, in place",
+		"layer": "full",
+		"length": 2.46666669845581,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"loop": false,
+		"note": "townsfolk (men)",
+		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: cheer_0.bvh",
+		"speed": 0.0
+	},
+	"m_idle": {
+		"changes": "retargeted to her skeleton, feet locked, looped, in place",
+		"layer": "full",
+		"length": 16.6333332061768,
+		"licence": "Mixamo (Adobe)",
+		"loop": true,
+		"note": "townsfolk (men)",
+		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_weight_shift_idle.bvh",
+		"speed": 0.0
+	},
+	"m_pick_up": {
+		"changes": "retargeted to her skeleton, feet locked, in place",
+		"layer": "full",
+		"length": 3.43333339691162,
+		"licence": "Mixamo (Adobe)",
+		"loop": false,
+		"note": "townsfolk (men)",
+		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_pick_up.bvh",
+		"speed": 0.0
+	},
+	"m_sit_chair": {
+		"changes": "retargeted to her skeleton, feet locked, looped, in place",
+		"layer": "full",
+		"length": 4.0,
+		"licence": "Mixamo (Adobe)",
+		"loop": true,
+		"note": "townsfolk (men)",
+		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_sitting_chair.bvh",
+		"speed": 0.0
+	},
+	"m_sit_floor": {
+		"changes": "retargeted to her skeleton, feet locked, looped, in place",
+		"layer": "full",
+		"length": 10.8666667938232,
+		"licence": "Mixamo (Adobe)",
+		"loop": true,
+		"note": "townsfolk (men)",
+		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_sitting_floor.bvh",
+		"speed": 0.0
+	},
+	"m_talk": {
+		"changes": "retargeted to her skeleton, feet locked, looped, in place",
+		"layer": "full",
+		"length": 10.2666664123535,
+		"licence": "Mixamo (Adobe)",
+		"loop": true,
+		"note": "townsfolk (men)",
+		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_talking.bvh",
+		"speed": 0.0
+	},
+	"m_walk": {
+		"changes": "retargeted to her skeleton, feet locked, looped, in place",
+		"layer": "full",
+		"length": 3.59999990463257,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"loop": true,
+		"note": "townsfolk (men)",
+		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: walk_man_2.bvh",
+		"speed": 1.45648291036455
+	},
+	"m_wave": {
+		"changes": "retargeted to her skeleton, feet locked, in place",
+		"layer": "full",
+		"length": 2.46666669845581,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"loop": false,
+		"note": "townsfolk (men)",
+		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: wave_1.bvh",
+		"speed": 0.0
+	},
+	"m_work": {
+		"changes": "retargeted to her skeleton, feet locked, retimed, in place",
+		"layer": "full",
+		"length": 2.79999995231628,
+		"licence": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License)",
+		"loop": false,
+		"note": "townsfolk (men)",
+		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: work_0.bvh",
+		"speed": 0.0
+	}
+}

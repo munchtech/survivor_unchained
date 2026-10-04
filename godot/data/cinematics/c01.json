@@ -1,0 +1,238 @@
+{
+  "id": "c01",
+  "title": "The Drowned Fire",
+  "script": "docs/cinematics/shoot/c01.md",
+  "conversation": "cin_drowned_fire",
+  "zone": "lowford",
+  "bars": {"in": 0.5, "out": 0.8},
+  "skip": {"from": 1.5, "hold": 0.8},
+  "world": {"rate": 0, "zoneHeld": true},
+  "marks": {
+    "fire": [-10.5, 90.5],
+    "lie": [-9.1, 91.05, 3.1416],
+    "stone": [-9.78, 90.2],
+    "log_n": [-8.35, 89.15],
+    "reach": [-8.95, 89.3, 1.5708],
+    "end": [-8.9, 88.3, 3.1416],
+    "bedroll": [-11.6, 94.8],
+    "item": [-12.3, 93.2],
+    "verge": [-6.0, 72.0],
+    "trail_in": [-8.6, 79.0],
+    "ford": [0.0, -44.0],
+    "r1": [-17.0, 85.0],
+    "r2": [-3.5, 82.0],
+    "r3": [-14.0, 98.0],
+    "r4": [-2.0, 97.0]
+  },
+  "cast": {
+    "her": {"kind": "survivor", "mark": "lie"},
+    "r1": {"kind": "enemy", "def": "risen", "mark": "r1"},
+    "r2": {"kind": "enemy", "def": "risen", "mark": "r2"},
+    "r3": {"kind": "enemy", "def": "risen", "mark": "r3"},
+    "r4": {"kind": "enemy", "def": "risen", "mark": "r4"}
+  },
+  "shots": [
+    {
+      "id": "0",
+      "type": "HOLD",
+      "dur": 0.5,
+      "hold": true,
+      "note": "Creation's last frame: her, dry, by the high fire. The UI is gone.",
+      "cues": [
+        {"do": "hold", "slot": "all", "piece": null},
+        {"do": "prop", "name": "weapon", "piece": "@weapon", "where": [-8.33, 0.42, 89.05], "rot": [0, 90, 72]},
+        {"do": "prop", "name": "shield", "piece": "@shield", "where": [-8.05, 0.3, 89.55], "rot": [0, 80, 78], "when": {"calling": ["warden"]}},
+        {"do": "anim", "clip": "her/get_up", "from": 0, "speed": 0, "blend": 0},
+        {"do": "lids", "value": 1, "over": 0},
+        {"do": "gaze", "look": [0.1, 0.3], "wander": 0.05}
+      ]
+    },
+    {
+      "id": "1",
+      "type": "BLACK",
+      "dur": 3.5,
+      "black": true,
+      "note": "The drowning, in sound only.",
+      "cues": [
+        {"do": "music", "mood": "silence"},
+        {"do": "fire", "light": 0, "flames": 0.12},
+        {"do": "light", "light": 0, "level": 0.34, "color": "#ff7430", "rate": 0.45},
+        {"do": "prints", "from": {"mark": "verge"}, "to": {"mark": "trail_in"}, "stride": 0.8},
+        {"do": "prints", "from": {"mark": "trail_in"}, "to": [-9.0, 90.3], "stride": 0.8},
+        {"at": 0.15, "do": "sfx", "name": "water_close"},
+        {"at": 2.2, "do": "sfx", "name": "drip", "pan": -0.2},
+        {"at": 2.95, "do": "sfx", "name": "drip", "pan": -0.15},
+        {"at": 3.1, "do": "sfx", "name": "owl", "gain": 0.5, "pan": 0.7}
+      ]
+    },
+    {
+      "id": "2",
+      "type": "ECU",
+      "dur": 3.0,
+      "still": 2.0,
+      "note": "A strand of her wet hair across a flat stone of the ring; a bead swells at its tip and drops. Embers soft behind.",
+      "cam": {"pos": {"actor": "her", "bone": "head", "off": [-0.38, 0.02, 0.05]}, "at": {"actor": "her", "bone": "head", "off": [-0.62, -0.12, -0.12]}, "lens": 100, "focus": 0.3, "fstop": 2.0},
+      "cues": [
+        {"at": 2.2, "do": "sfx", "name": "drip", "pan": -0.1}
+      ]
+    },
+    {
+      "id": "3",
+      "type": "CU",
+      "dur": 4.0,
+      "still": 2.6,
+      "note": "Her face on its side on the frozen ground, weed in her hair, half ember, half moon. At 2.0 her eyes open. No start.",
+      "cam": {"pos": {"actor": "her", "bone": "head", "off": [-0.78, 0.02, -0.38]}, "at": {"actor": "her", "bone": "head", "off": [0, -0.03, 0]}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0, "move": {"push": 0.1, "ease": "linear"}},
+      "cues": [
+        {"at": 2.0, "do": "lids", "value": 0, "over": 0.15},
+        {"at": 2.0, "do": "face", "keys": {"eyes_wide": 0.25}, "over": 0.2},
+        {"at": 2.6, "do": "face", "keys": {"eyes_wide": 0.05}, "over": 1.0},
+        {"at": 2.2, "do": "lids", "value": null}
+      ]
+    },
+    {
+      "id": "4",
+      "type": "MS",
+      "dur": 3.5,
+      "still": 2.6,
+      "note": "Low on the fire's far side, through the embers: she pushes up. Water runs off her sleeve. Her hair hangs.",
+      "cam": {"pos": [-12.3, 0.42, 91.75], "at": {"actor": "her", "bone": "chest", "off": [0, -0.1, 0]}, "lens": 35, "focus": {"actor": "her", "bone": "head"}, "fstop": 2.8},
+      "cues": [
+        {"at": 0.4, "do": "anim", "clip": "her/get_up", "from": 0, "speed": 0.16, "blend": 0.1},
+        {"at": 0.6, "do": "sfx", "name": "cloth_water", "gain": 0.8}
+      ]
+    },
+    {
+      "id": "5",
+      "type": "INSERT",
+      "dur": 3.5,
+      "note": "Her hand at the coals, palm down, closer than anyone could bear. It does not pull back. (Hand-keyed reach to come.)",
+      "cam": {"pos": {"actor": "her", "bone": "hand_r", "off": [-0.55, 0.22, 0.3]}, "at": {"actor": "her", "bone": "hand_r", "off": [-0.05, -0.02, 0]}, "lens": 65, "focus": {"actor": "her", "bone": "hand_r"}, "fstop": 2.0},
+      "cues": []
+    },
+    {
+      "id": "6",
+      "type": "MCU",
+      "dur": 7.0,
+      "still": 1.5,
+      "note": "Front three-quarter from her left, the fire's side, at shoulder height: up, sitting back on her heels. The cord, the full flask, the dry bedroll. N1. The letter (to come). A look at her background's thing.",
+      "cam": {"pos": {"actor": "her", "bone": "head", "off": [-0.4, 0.06, -1.3]}, "at": {"actor": "her", "bone": "head", "off": [0, -0.05, 0]}, "lens": 50, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.8},
+      "cues": [
+        {"do": "anim", "clip": "Crouch_Idle_Loop", "from": 0, "speed": 0.6, "blend": 0.0},
+        {"do": "face", "keys": {"brows_sad": 0.3, "mouth_open": 0.08}, "over": 1.2},
+        {"do": "gaze", "look": [0, 0.8], "wander": 0.04},
+        {"at": 0.8, "do": "line", "id": "cin_drowned_fire.bedroll"},
+        {"at": 1.6, "do": "gaze", "look": [-0.5, 0.5]},
+        {"at": 3.2, "do": "gaze", "look": [0, 0.7]},
+        {"at": 4.6, "do": "gaze", "look": [0.45, 0.3]},
+        {"at": 6.1, "do": "gaze", "look": [0, 0.2]}
+      ]
+    },
+    {
+      "id": "7",
+      "type": "OTS",
+      "dur": 7.5,
+      "fit": ["cin_drowned_fire.prints"],
+      "tail": 0.7,
+      "still": 4.5,
+      "note": "Behind her left shoulder, low: the prints in the frost, dark and wet, coming out of the night to where she lay. Tilt and pan north along them to three cold points of blue, low, by water. N2.",
+      "cam": {"pos": {"actor": "her", "bone": "head", "off": [-0.62, 0.38, 1.35]}, "at": [-8.4, 0.0, 88.4], "lens": 28, "focus": 3.0, "fstop": 4.0, "move": {"at": [-6.6, 1.2, 72.0], "start": 0.4, "end": "end-0.6", "ease": "slow", "focus": {"abs": [-6.6, 1.2, 72.0]}}},
+      "cues": [
+        {"do": "look", "where": [-8.4, 0, 84.0], "over": 0.01},
+        {"do": "gaze", "look": [0, 0.5], "wander": 0.03},
+        {"at": 0.6, "do": "line", "id": "cin_drowned_fire.prints"}
+      ]
+    },
+    {
+      "id": "8",
+      "type": "CU",
+      "dur": 4.0,
+      "still": 2.2,
+      "note": "Frontal, a little under her eyes, the black of the trees behind. From the trail to her boots. She breathes out, long. Nothing shows. Hold a beat.",
+      "cam": {"pos": {"actor": "her", "bone": "head", "off": [0.05, 0.04, -1.15]}, "at": {"actor": "her", "bone": "eyes"}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
+      "cues": [
+        {"do": "gaze", "look": [0, 0.1]},
+        {"at": 0.7, "do": "gaze", "look": [0, 0.9]},
+        {"at": 1.2, "do": "face", "keys": {"mouth_open": 0.2, "brows_sad": 0.4}, "over": 1.2},
+        {"at": 1.2, "do": "sfx", "name": "breath_out", "gain": 1.3},
+        {"at": 2.5, "do": "face", "keys": {"mouth_open": 0.05, "brows_sad": 0.2}, "over": 0.9}
+      ]
+    },
+    {
+      "id": "9",
+      "type": "LS",
+      "dur": 5.0,
+      "still": 4.0,
+      "note": "Low from the south-east: the camp, her small by the embers. Background left, past the firelight, the frost darkens and a head comes up through it like a swimmer. She has not seen. N3.",
+      "cam": {"pos": [-4.6, 0.95, 95.6], "at": [-9.0, 0.55, 90.2], "lens": 24, "focus": 6.5, "fstop": 5.6},
+      "cues": [
+        {"at": 1.3, "do": "world", "rate": 0.11},
+        {"at": 1.3, "do": "spawn", "actor": "r1", "def": "risen", "mark": "r1", "style": "rise"},
+        {"at": 1.3, "do": "sfx", "name": "frost_crack", "where": {"mark": "r1"}, "gain": 0.8},
+        {"at": 1.5, "do": "sfx", "name": "drone"},
+        {"at": 1.7, "do": "line", "id": "cin_drowned_fire.frost"},
+        {"at": 2.1, "do": "sfx", "name": "roots", "where": {"mark": "r1"}},
+        {"at": 3.4, "do": "sfx", "name": "rasp", "where": {"mark": "r1"}, "gain": 0.7}
+      ]
+    },
+    {
+      "id": "10",
+      "type": "MCU",
+      "dur": 2.5,
+      "still": 1.6,
+      "note": "Her head turns hard toward the sound, screen left as the risen was. On her feet in one movement.",
+      "cam": {"pos": {"actor": "her", "bone": "head", "off": [-1.15, 0.25, 0.42]}, "at": {"actor": "her", "bone": "head", "off": [0, 0.05, 0], "track": true}, "lens": 50, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.8},
+      "cues": [
+        {"do": "world", "rate": 0},
+        {"at": 0.15, "do": "look", "where": {"mark": "r1"}, "over": 0.25},
+        {"at": 0.15, "do": "gaze", "look": [0.4, -0.05], "wander": 0.02},
+        {"at": 0.15, "do": "face", "keys": {"eyes_wide": 0.6, "brows_sad": 0, "brows_angry": 0.2, "mouth_open": 0.1}, "over": 0.2},
+        {"at": 0.45, "do": "anim", "clip": "her/get_up", "from": 0.55, "speed": 1.3, "blend": 0.15}
+      ]
+    },
+    {
+      "id": "11",
+      "type": "MS",
+      "dur": 3.5,
+      "still": 1.8,
+      "note": "Side-on: she takes her weapon from the log and comes round with it ready. On three sides the frost breaks.",
+      "cam": {"pos": [-8.95, 1.05, 92.2], "at": {"mark": "reach", "off": [0.15, 0.9, 0]}, "lens": 35, "focus": {"mark": "reach", "off": [0, 1.0, 0]}, "fstop": 4.0},
+      "cues": [
+        {"do": "anim", "clip": "@idle", "from": 0, "speed": 1, "blend": 0.2},
+        {"do": "move", "to": "reach", "dur": 0.7, "heading": 1.5708},
+        {"at": 0.7, "do": "anim", "clip": "PickUp_Table", "from": 0, "speed": 1.1, "blend": 0.15, "when": {"calling": ["warden", "reaver", "stalker"]}},
+        {"at": 1.25, "do": "prop", "name": "weapon", "remove": true, "when": {"calling": ["warden", "reaver", "stalker"]}},
+        {"at": 1.25, "do": "prop", "name": "shield", "remove": true},
+        {"at": 1.25, "do": "hold", "slot": "all", "piece": "@own", "when": {"calling": ["warden", "reaver", "stalker"]}},
+        {"at": 0.7, "do": "anim", "clip": "Spell_Simple_Enter", "from": 0, "speed": 0.9, "blend": 0.15, "when": {"calling": ["arcanist"]}},
+        {"at": 1.6, "do": "face", "keys": {"smile": 0.15}, "over": 0.15, "when": {"calling": ["arcanist"]}},
+        {"at": 2.1, "do": "face", "keys": {"smile": 0, "brows_angry": 0.3}, "over": 0.2, "when": {"calling": ["arcanist"]}},
+        {"at": 1.4, "do": "sfx", "name": "hit"},
+        {"at": 1.4, "do": "face", "keys": {"eyes_wide": 0.2, "brows_angry": 0.35, "mouth_open": 0.12}, "over": 0.3},
+        {"at": 1.0, "do": "world", "rate": 0.05},
+        {"at": 1.0, "do": "spawn", "actor": "r2", "def": "risen", "mark": "r2", "style": "rise"},
+        {"at": 1.15, "do": "spawn", "actor": "r3", "def": "risen", "mark": "r3", "style": "rise"},
+        {"at": 1.3, "do": "spawn", "actor": "r4", "def": "risen", "mark": "r4", "style": "rise"},
+        {"at": 1.0, "do": "sfx", "name": "frost_crack", "where": {"mark": "r2"}, "gain": 0.6},
+        {"at": 1.2, "do": "sfx", "name": "frost_crack", "where": {"mark": "r3"}, "gain": 0.6},
+        {"at": 2.6, "do": "anim", "clip": "@idle", "from": 0, "speed": 1, "blend": 0.3}
+      ]
+    },
+    {
+      "id": "12",
+      "type": "MLS",
+      "dur": 3.5,
+      "still": 1.2,
+      "note": "From in front of her, the one crane of the scene: up and round behind her into the game's camera as R1 tears free and the rest come up. Bars out. Control.",
+      "cam": {"pos": [-8.6, 1.25, 86.4], "at": {"mark": "end", "off": [0, 1.0, 0]}, "lens": 35, "move": {"path": [[-6.0, 2.6, 88.2], [-6.2, 9.5, 96.5]], "start": 0, "end": "end", "ease": "inout", "follow": true}},
+      "cues": [
+        {"do": "move", "to": "end", "dur": 1.3, "clip": "Walk_Formal_Loop", "speed": 0.9},
+        {"at": 1.3, "do": "anim", "clip": "@idle", "from": 0, "speed": 1, "blend": 0.3},
+        {"do": "world", "rate": 0.25},
+        {"at": 0.2, "do": "sfx", "name": "rasp", "where": {"mark": "r2"}, "gain": 0.6},
+        {"at": "end-1.0", "do": "music", "mood": "combat", "intensity": 0.55}
+      ]
+    }
+  ],
+  "end": {"her": "end", "camera": "follow"}
+}

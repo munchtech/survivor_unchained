@@ -206,7 +206,7 @@ func outfit_materials(mi):
 		if mi.get_surface_override_material(s) != null or not (src is StandardMaterial3D): continue
 		src.vertex_color_use_as_albedo = false
 		if not outfit_table.has(String(src.resource_name)): continue
-		var k = {"leather": 0, "metal": 1, "cloth": 2, "gloss": 3}.get(outfit_table[String(src.resource_name)]["kind"], -1)
+		var k = {"leather": 0, "metal": 1, "cloth": 2, "gloss": 3, "twill": 4}.get(outfit_table[String(src.resource_name)]["kind"], -1)
 		if k < 0: continue
 		var m = ShaderMaterial.new()
 		m.shader = load("res://shaders/heroine_outfit.gdshader")

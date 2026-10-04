@@ -13,12 +13,14 @@ ComfyUI with the prompt and seed recorded beside them.
              toast, prompt pill, tabs, row, segment, keycap, chip, bar groove and casing
   paper      the ledger paper and the hint note
   cards      the draft's cards, painted over forged guides
-  painted    the minimap rim, medallions, the art's ring, the boss's casing, logo, ornaments
+  painted    the map's frame, the boss's casing, logo, ornaments
   light      the focus ring and the bars' fills
   prompts    the pad's buttons, forged
   mapmarks   the map's marks, in ink on parchment
   glyphs     the interface's own marks as value art
   icons      the skills', arts', blessings' and evolutions' painted icons
+  medals     the level and heart medallions and the heart's stone, modelled as reliefs (after
+             icons: the stone is the heart icon)
   items      the items' painted icons
   cursors    the pointer, the hand, the refusal
   arrow      the survivor's arrow on the minimap
@@ -59,7 +61,9 @@ def g_cards():
 
 def g_painted():
     import fitall
-    for n in ("mapframe", "minimap", "medals", "bosscasing", "logo", "rule", "flourish"):
+    # The minimap's rim and the art's ring are Blender pieces (chrome); the medallions are
+    # reliefs (medals). Only what is still painted from text is fitted here.
+    for n in ("mapframe", "bosscasing", "logo", "rule", "flourish"):
         fitall.GROUPS[n]()
 
 
@@ -89,6 +93,12 @@ def g_glyphs():
 def g_icons():
     import iconpicks
     iconpicks.main()
+
+
+def g_medals():
+    import medals
+    for n in medals.BUILD:
+        medals.build(n)
 
 
 def g_items():

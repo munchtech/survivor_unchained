@@ -266,16 +266,26 @@ def place(x: np.ndarray, room: str, seed: int = 7, vol: str = "level") -> np.nda
 
 # --------------------------------------------------------------- voice --
 
+# How much an effect lengthens the voice (a giant is slowed like a tape).
+STRETCH = {"giant": 1.25, "underwater": 1.25}
+
+
 def fx(x: np.ndarray, kind: str | None) -> np.ndarray:
     import librosa
     if not kind:
         return x
-    if kind == "giant":
+    if kind in ("giant", "underwater"):
         # Slowed like a tape: lower and larger, with a sub-octave under it.
-        slow = librosa.resample(x, orig_sr=SR, target_sr=int(SR / 0.8), res_type="soxr_vhq")
+        slow = librosa.resample(x, orig_sr=SR, target_sr=int(SR * STRETCH[kind]), res_type="soxr_vhq")
         sub = librosa.effects.pitch_shift(slow.astype(np.float32), sr=SR, n_steps=-12).astype(np.float64)
         sub = signal.sosfilt(signal.butter(2, 900, "lowpass", fs=SR, output="sos"), sub)
         y = slow + sub * 0.35
+        if kind == "underwater":
+            # Heard through the river (C02): the top gone, and the surface
+            # moving over it in a slow, uneven wobble.
+            y = signal.sosfilt(signal.butter(4, 700, "lowpass", fs=SR, output="sos"), y)
+            t = np.arange(len(y)) / SR
+            y = y * (1 + 0.2 * np.sin(2 * np.pi * 3.1 * t) * (0.6 + 0.4 * np.sin(2 * np.pi * 0.37 * t)))
         return place(y, "dig", seed=11)
     if kind == "dead":
         y = signal.sosfilt(signal.butter(2, [220, 4200], "bandpass", fs=SR, output="sos"), x)
@@ -321,12 +331,18 @@ def limit(x: np.ndarray, ceiling_db: float) -> np.ndarray:
 
 # ------------------------------------------------------------ the whole --
 
-def master(path: str, room: str = "close", sex: str = "m", kind: str | None = None, seed: int = 7, vol: str = "level") -> np.ndarray:
-    """One take, edited and toned, before it is placed and levelled with its line."""
+def master(path: str, room: str = "close", sex: str = "m", kind: str | None = None, seed: int = 7, vol: str = "level",
+           max_gap: float = 1.6, info: dict | None = None) -> np.ndarray:
+    """One take, edited and toned, before it is placed and levelled with its
+    line. `max_gap` caps the pauses inside it (a cut timed to the line asks
+    for less); `info` gets the read's own length, first sound to last word,
+    without any room's decay."""
     x = load(path)
     x = clean(x)
-    x = edit(x)
+    x = edit(x, max_gap=max_gap)
     x = tone(x, sex, vol)
+    if info is not None:
+        info["read"] = len(x) / SR * STRETCH.get(kind or "", 1.0)
     x = fx(x, kind)
     return x
 

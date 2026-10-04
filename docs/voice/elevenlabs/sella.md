@@ -1,17 +1,19 @@
 # Sella: ElevenLabs packet
 
-Voice id in the game: `sella`. 96 takes to record (10,023 characters; about 30,069 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `sella`. 95 takes to record (9,821 characters; about 29,463 credits at three tries a line). Status: **final** (the story lead, 2026-10-03): record it.
 
 ## Who they are
 
 **Sella** (the blue room). Low, amused, intimate; heavy contractions; "love". Frank about sex and money and about which is which; never coy, never pitiful, never sorry for her work. Sells talk as well as company and says so. *Casting:* late 20s, softened Cockney; warmth that is also work. Adult, never breathy.
+
+*Wants:* a house in the south with a door that locks from the inside, and somebody who knocks; until then, your custom, and to keep it work. *Hides:* she sells what's said upstairs, and Vonnra outbids everyone: every intimate scene has a buyer listening, until she stops (sella.free). Adult, frank, never breathy, never coy.
 
 ## Casting the voice
 
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Sella`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, London). Female, 20s. Studio quality. Persona: a London courtesan. A woman in her late twenties from London with a soft, warm Cockney accent. A low, amused, intimate alto, relaxed and knowing, frank and unembarrassed, with warmth that is also a professional's. Never breathy. Thick London accent. No reverb or effects.
+Native English (British, London). Female, 20s. Studio quality. Persona: a London courtesan. A woman in her late twenties from London with a soft, warm Cockney accent. A low, amused, intimate alto, relaxed and knowing, frank and unembarrassed, with warmth that is also a professional's. Never breathy. Light London accent. No reverb or effects.
 ```
 
 Preview text:
@@ -179,29 +181,41 @@ Subtitle: Clever. Everybody, love. Pell pays for what his rivals say. Holloway p
 ```
 Subtitle: Fifteen gold, up front. For that you get the blue room, a bath that's warm at least to start with, and me, until morning. Anything you'd rather I didn't do, say so. Anything you'd rather I did, say that too.
 
-### 13. `dlg.sella.morning.0.p1.wav`
+### 13. `dlg.sella.night.1.p1.wav`
 
-*Where:* dialogue.json sella/morning#0; part 2 of 2: narrator: She's sitting on the edge of the bed, frowning, with her palm flat on your breastbone. / **sella: You were cold as the river all night, love. Like sleeping next to a stone. And now look at…**
-*Played:* fond, teasing; doing: you're a habit; pace: measured; volume: level.
-*Note:* Pleased. Rook's complaint relayed with relish. Brisk send-off with a dark joke.
+*Where:* dialogue.json sella/night#1; part 2 of 3: narrator: The water's gone cool by the time either of you notices, and she drags the quilt off the b… / **sella: Don't,** / narrator: and kisses you so you can't. After, you lie on the floor of the blue room with the lamp tu…
+*Played:* low, caught; doing: a night with Sella; pace: slow; volume: quiet.
+*Note:* Low. She stops you looking at her because tonight has stopped being work and she can't have you see it; the kiss cuts it off.
 
 ```
-[fond, teasing] You were cold as the river all night, love. Like sleeping next to a stone. And now look at you: warm as toast. ...Rook's got a word for that. It's not a nice word. Get up and eat something.
+[low, caught, quietly] Don't,
+```
+Subtitle: Don't,
+
+### 14. `dlg.sella.morning.0.p1.wav`
+
+*Where:* dialogue.json sella/morning#0; part 2 of 2: narrator: She's sitting on the edge of the bed, frowning, with her palm flat on your breastbone. / **sella: You were cold as the river all night, love. Like sleeping next to a stone. And now look at…**
+*Played:* fond, uneasy under it; doing: she noticed the body's hours; pace: measured; volume: quiet.
+*Hides:* she knows who pays for a thing like this, and unless she has stopped selling you, Vonnra will have it by noon
+*Note:* The first time anyone says it (the bible's 'body's hours'). Narrator: her palm on your breastbone. 'cold as the river all night' puzzled, half a joke she doesn't quite make; 'warm as toast' a shade too bright. '...Rook's got a word for that. It's not a nice word.' quieter; not looking at you, because she's already counting it: as near as she comes to warning you. 'Get up and eat something.' brisk care, and real.
+
+```
+[fond, uneasy under it, quietly] You were cold as the river all night, love. Like sleeping next to a stone. And now look at you: warm as toast. ...Rook's got a word for that. It's not a nice word. Get up and eat something.
 ```
 Subtitle: You were cold as the river all night, love. Like sleeping next to a stone. And now look at you: warm as toast. ...Rook's got a word for that. It's not a nice word. Get up and eat something.
 
-### 14. `dlg.sella.morning.1.wav`
+### 15. `dlg.sella.morning.1.wav`
 
 *Where:* dialogue.json sella/morning#1
-*Played:* fond, teasing; doing: morning after; pace: measured; volume: quiet.
-*Note:* 'Not badly.' kind. 'the pieces are what I like.' warm double meaning.
+*Played:* fond, teasing; doing: you're a habit; pace: measured; volume: level.
+*Note:* Rook's complaint relayed with relish; a brisk send-off with a dark joke.
 
 ```
-[fond, teasing, quietly] You're getting to be a habit. I don't mind. Rook does; she says you're wearing out the stairs. Go on, the day's wasting, and somebody out there owes you money, or the other way round.
+[fond, teasing] You're getting to be a habit. I don't mind. Rook does; she says you're wearing out the stairs. Go on, the day's wasting, and somebody out there owes you money, or the other way round.
 ```
 Subtitle: You're getting to be a habit. I don't mind. Rook does; she says you're wearing out the stairs. Go on, the day's wasting, and somebody out there owes you money, or the other way round.
 
-### 15. `dlg.sella.morning.2.wav`
+### 16. `dlg.sella.morning.2.wav`
 
 *Where:* dialogue.json sella/morning#2
 *Played:* teasing, fond; doing: you talk in your sleep; pace: measured; volume: quiet.
@@ -212,7 +226,7 @@ Subtitle: You're getting to be a habit. I don't mind. Rook does; she says you're
 ```
 Subtitle: Two nights. ...You make a noise in your sleep, you know. Like you're arguing with somebody. You lose. Every time.
 
-### 16. `dlg.sella.morning.3.wav`
+### 17. `dlg.sella.morning.3.wav`
 
 *Where:* dialogue.json sella/morning#3
 *Played:* affectionate mischief; doing: to send them off without admitting she cares; pace: measured; volume: quiet.
@@ -224,7 +238,7 @@ Subtitle: Two nights. ...You make a noise in your sleep, you know. Like you're a
 ```
 Subtitle: You snore, by the way. Not badly. Go on, then. Come back in one piece; the pieces are what I like.
 
-### 17. `dlg.sella.cb_tricked_redcowl.0.wav`
+### 18. `dlg.sella.cb_tricked_redcowl.0.wav`
 
 *Where:* dialogue.json sella/cb_tricked_redcowl#0
 *Played:* admiring, flirtatious; doing: praises your lie; pace: measured; volume: level.
@@ -235,7 +249,7 @@ Subtitle: You snore, by the way. Not badly. Go on, then. Come back in one piece;
 ```
 Subtitle: Heard you sent Redcowl running with nothing but a lie and a straight face. You'd do well upstairs, love.
 
-### 18. `dlg.sella.cb_exposed_pell.0.wav`
+### 19. `dlg.sella.cb_exposed_pell.0.wav`
 
 *Where:* dialogue.json sella/cb_exposed_pell#0
 *Played:* dry, unsentimental; doing: Pell's gone; pace: measured; volume: level.
@@ -246,7 +260,7 @@ Subtitle: Heard you sent Redcowl running with nothing but a lie and a straight f
 ```
 Subtitle: Pell's in the cells. One less customer. I'll miss his money and not one other thing about him.
 
-### 19. `dlg.sella.cb_burned_roost.0.wav`
+### 20. `dlg.sella.cb_burned_roost.0.wav`
 
 *Where:* dialogue.json sella/cb_burned_roost#0
 *Played:* guarded, cool; doing: she's heard; pace: slow; volume: quiet.
@@ -257,7 +271,7 @@ Subtitle: Pell's in the cells. One less customer. I'll miss his money and not on
 ```
 Subtitle: They're saying you burned the Roost with folk still in it. ...I don't judge, love; it's bad for business. But I heard.
 
-### 20. `dlg.sella.cb_freed_teamsters.0.wav`
+### 21. `dlg.sella.cb_freed_teamsters.0.wav`
 
 *Where:* dialogue.json sella/cb_freed_teamsters#0
 *Played:* amused tenderness; doing: Jory's crush; pace: measured; volume: level.
@@ -268,7 +282,7 @@ Subtitle: They're saying you burned the Roost with folk still in it. ...I don't 
 ```
 Subtitle: Jory Coyle came up the stairs to say thank you to somebody, and it wasn't me, and he went red as a radish. Sweet. Go easy on him; he thinks you're a story.
 
-### 21. `dlg.sella.say_calling.0.wav`
+### 22. `dlg.sella.say_calling.0.wav`
 
 *Where:* dialogue.json sella/say_calling#0
 *Played:* teasing; doing: all that steel; pace: measured; volume: level.
@@ -279,7 +293,7 @@ Subtitle: Jory Coyle came up the stairs to say thank you to somebody, and it was
 ```
 Subtitle: All that steel. Takes an age to get off, I expect. I charge by the hour, love, not by the buckle.
 
-### 22. `dlg.sella.say_calling.1.wav`
+### 23. `dlg.sella.say_calling.1.wav`
 
 *Where:* dialogue.json sella/say_calling#1
 *Played:* teasing; doing: big hands; pace: measured; volume: level.
@@ -290,7 +304,7 @@ Subtitle: All that steel. Takes an age to get off, I expect. I charge by the hou
 ```
 Subtitle: Big hands. Be gentle with them upstairs, or you'll be paying for the furniture.
 
-### 23. `dlg.sella.say_calling.2.wav`
+### 24. `dlg.sella.say_calling.2.wav`
 
 *Where:* dialogue.json sella/say_calling#2
 *Played:* startled, amused; doing: you're hot to the touch; pace: measured; volume: level.
@@ -301,20 +315,10 @@ Subtitle: Big hands. Be gentle with them upstairs, or you'll be paying for the f
 ```
 Subtitle: Your hands are warm. Not in a nice way. Are you on fire? Your hands are a little bit on fire.
 
-### 24. `dlg.sella.say_calling.3.wav`
+### 25. `dlg.sella.say_calling.3.wav`
 
+*The same words are also* `dlg.sella.say_calling.4.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json sella/say_calling#3
-*Played:* startled, then wry; doing: you crept up; pace: measured; volume: level.
-*Note:* A real start, covered with a joke.
-
-```
-[startled, then wry] You came up behind me without a sound. Do that upstairs and you'll get a candlestick in the ear.
-```
-Subtitle: You came up behind me without a sound. Do that upstairs and you'll get a candlestick in the ear.
-
-### 25. `dlg.sella.say_calling.4.wav`
-
-*Where:* dialogue.json sella/say_calling#4
 *Played:* startled, then wry; doing: you crept up; pace: measured; volume: level.
 *Note:* A real start, covered with a joke.
 
@@ -372,11 +376,11 @@ Subtitle: Put your purse away. Tonight I'm not working. ...Don't look at me like
 ### 30. `dlg.sella.free_night.1.p1.wav`
 
 *Where:* dialogue.json sella/free_night#1; part 2 of 3: narrator: She doesn't talk the way she talks for money. She doesn't talk at all, at first. She undre… / **sella: You told me anyway,** / narrator: and nothing else, and then she sleeps.
-*Played:* tender, quiet; doing: a night Sella gives; pace: slow; volume: hushed.
-*Note:* The narrator's, hushed and unhurried: the one night that isn't work, so no patter. Narrator plain: the narrator never shows a feeling. Her four words are hers, said into your shoulder.
+*Played:* wonder, nearly asleep; doing: a night Sella gives; pace: slow; volume: quiet.
+*Note:* Into your shoulder, nearly asleep. Wonder, not tears. You told her your past knowing she sells it, and that is the whole night.
 
 ```
-[tender, quiet, whispers] You told me anyway,
+[wonder, nearly asleep, quietly] You told me anyway,
 ```
 Subtitle: You told me anyway,
 
@@ -404,6 +408,7 @@ Subtitle: A hunter. Out of these woods, with a bow too big for you, I'll bet, an
 
 ### 33. `dlg.sella.past.0.p3.wav`
 
+*The same words are also* `dlg.sella.past.1.p3.wav`, `dlg.sella.past.2.p5.wav`, `dlg.sella.past.3.p5.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json sella/past#0; part 4 of 4: narrator: She goes still when you start. You know who buys what's said up here; she knows you know. … / sella: A hunter. Out of these woods, with a bow too big for you, I'll bet, and mud to the knees. … / narrator: She doesn't say anything else for a while. Then: / **sella: Go on. Out. Before I start charging you for the sentiment.**
 *Played:* attentive, warm; doing: listens to your past; pace: measured; volume: quiet.
 *Note:* Narrator for her listening. Pictures it fondly. A little laugh at herself on the guess.
@@ -424,19 +429,9 @@ Subtitle: Go on. Out. Before I start charging you for the sentiment.
 ```
 Subtitle: A cloister rat. Four years in a cellar reading dead men's letters, and you walked out with their lens in your pocket. ...Good for you, love. ...You know where that goes, love. You know exactly where.
 
-### 35. `dlg.sella.past.1.p3.wav`
+### 35. `dlg.sella.past.2.p1.wav`
 
-*Where:* dialogue.json sella/past#1; part 4 of 4: narrator: She goes still when you start. You know who buys what's said up here; she knows you know. … / sella: A cloister rat. Four years in a cellar reading dead men's letters, and you walked out with… / narrator: She doesn't say anything else for a while. Then: / **sella: Go on. Out. Before I start charging you for the sentiment.**
-*Played:* attentive, warm; doing: listens to your past; pace: measured; volume: quiet.
-*Note:* Narrator for her listening. Teasing 'cloister rat', admiring. 'Good for you, love.'
-
-```
-[attentive, warm, quietly] Go on. Out. Before I start charging you for the sentiment.
-```
-Subtitle: Go on. Out. Before I start charging you for the sentiment.
-
-### 36. `dlg.sella.past.2.p1.wav`
-
+*The same words are also* `dlg.sella.past.6.p1.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json sella/past#2; part 2 of 6: narrator: She goes still when you start. You know who buys what's said up here; she knows you know. … / **sella: Worse company than the Kerchiefs, and you walked away from it.** / narrator: She laughs, low. / sella: Takes one to know one. Don't tell Rook. ...You know where that goes, love. You know exactl… / narrator: She doesn't say anything else for a while. Then: / sella: Go on. Out. Before I start charging you for the sentiment.
 *Played:* attentive, conspiratorial; doing: listens to your past; pace: measured; volume: quiet.
 *Note:* Narrator for her listening and her low laugh. 'Takes one to know one.'
@@ -446,7 +441,7 @@ Subtitle: Go on. Out. Before I start charging you for the sentiment.
 ```
 Subtitle: Worse company than the Kerchiefs, and you walked away from it.
 
-### 37. `dlg.sella.past.2.p3.wav`
+### 36. `dlg.sella.past.2.p3.wav`
 
 *Where:* dialogue.json sella/past#2; part 4 of 6: narrator: She goes still when you start. You know who buys what's said up here; she knows you know. … / sella: Worse company than the Kerchiefs, and you walked away from it. / narrator: She laughs, low. / **sella: Takes one to know one. Don't tell Rook. ...You know where that goes, love. You know exactl…** / narrator: She doesn't say anything else for a while. Then: / sella: Go on. Out. Before I start charging you for the sentiment.
 *Played:* attentive, conspiratorial; doing: listens to your past; pace: measured; volume: quiet.
@@ -457,19 +452,9 @@ Subtitle: Worse company than the Kerchiefs, and you walked away from it.
 ```
 Subtitle: Takes one to know one. Don't tell Rook. ...You know where that goes, love. You know exactly where.
 
-### 38. `dlg.sella.past.2.p5.wav`
+### 37. `dlg.sella.past.3.p1.wav`
 
-*Where:* dialogue.json sella/past#2; part 6 of 6: narrator: She goes still when you start. You know who buys what's said up here; she knows you know. … / sella: Worse company than the Kerchiefs, and you walked away from it. / narrator: She laughs, low. / sella: Takes one to know one. Don't tell Rook. ...You know where that goes, love. You know exactl… / narrator: She doesn't say anything else for a while. Then: / **sella: Go on. Out. Before I start charging you for the sentiment.**
-*Played:* attentive, conspiratorial; doing: listens to your past; pace: measured; volume: quiet.
-*Note:* Narrator for her listening and her low laugh. 'Takes one to know one.'
-
-```
-[attentive, conspiratorial, quietly] Go on. Out. Before I start charging you for the sentiment.
-```
-Subtitle: Go on. Out. Before I start charging you for the sentiment.
-
-### 39. `dlg.sella.past.3.p1.wav`
-
+*The same words are also* `dlg.sella.past.7.p1.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json sella/past#3; part 2 of 6: narrator: She goes still when you start. You know who buys what's said up here; she knows you know. … / **sella: Chapel lamps, with nobody to see them but you, and you lit them anyway.** / narrator: She's quiet a moment. / sella: That's the saddest thing anyone's told me up here, love, and they tell me some sad things.… / narrator: She doesn't say anything else for a while. Then: / sella: Go on. Out. Before I start charging you for the sentiment.
 *Played:* moved; doing: listens to your past; pace: slow; volume: quiet.
 *Note:* Narrator for her listening and her quiet. Then genuinely moved, soft.
@@ -479,7 +464,7 @@ Subtitle: Go on. Out. Before I start charging you for the sentiment.
 ```
 Subtitle: Chapel lamps, with nobody to see them but you, and you lit them anyway.
 
-### 40. `dlg.sella.past.3.p3.wav`
+### 38. `dlg.sella.past.3.p3.wav`
 
 *Where:* dialogue.json sella/past#3; part 4 of 6: narrator: She goes still when you start. You know who buys what's said up here; she knows you know. … / sella: Chapel lamps, with nobody to see them but you, and you lit them anyway. / narrator: She's quiet a moment. / **sella: That's the saddest thing anyone's told me up here, love, and they tell me some sad things.…** / narrator: She doesn't say anything else for a while. Then: / sella: Go on. Out. Before I start charging you for the sentiment.
 *Played:* moved; doing: listens to your past; pace: slow; volume: quiet.
@@ -490,18 +475,7 @@ Subtitle: Chapel lamps, with nobody to see them but you, and you lit them anyway
 ```
 Subtitle: That's the saddest thing anyone's told me up here, love, and they tell me some sad things. ...You know where that goes, love. You know exactly where.
 
-### 41. `dlg.sella.past.3.p5.wav`
-
-*Where:* dialogue.json sella/past#3; part 6 of 6: narrator: She goes still when you start. You know who buys what's said up here; she knows you know. … / sella: Chapel lamps, with nobody to see them but you, and you lit them anyway. / narrator: She's quiet a moment. / sella: That's the saddest thing anyone's told me up here, love, and they tell me some sad things.… / narrator: She doesn't say anything else for a while. Then: / **sella: Go on. Out. Before I start charging you for the sentiment.**
-*Played:* moved; doing: listens to your past; pace: slow; volume: quiet.
-*Note:* Narrator for her listening and her quiet. Then genuinely moved, soft.
-
-```
-[moved, quietly] Go on. Out. Before I start charging you for the sentiment.
-```
-Subtitle: Go on. Out. Before I start charging you for the sentiment.
-
-### 42. `dlg.sella.past.4.p1.wav`
+### 39. `dlg.sella.past.4.p1.wav`
 
 *Where:* dialogue.json sella/past#4; part 2 of 2: narrator: You tell her. She listens properly, chin on her fist, the way she does everything. / **sella: A hunter. Out of these woods, with a bow too big for you, I'll bet, and mud to the knees. …**
 *Played:* fond surprise; doing: to know them a little; pace: measured; volume: level.
@@ -513,7 +487,7 @@ Subtitle: Go on. Out. Before I start charging you for the sentiment.
 ```
 Subtitle: A hunter. Out of these woods, with a bow too big for you, I'll bet, and mud to the knees. ...I'd not have guessed. I'd have guessed, but not that.
 
-### 43. `dlg.sella.past.5.p1.wav`
+### 40. `dlg.sella.past.5.p1.wav`
 
 *Where:* dialogue.json sella/past#5; part 2 of 2: narrator: You tell her. She listens properly, chin on her fist, the way she does everything. / **sella: A cloister rat. Four years in a cellar reading dead men's letters, and you walked out with…**
 *Played:* admiring warmth; doing: to approve of their escape; pace: brisk; volume: quiet.
@@ -525,19 +499,7 @@ Subtitle: A hunter. Out of these woods, with a bow too big for you, I'll bet, an
 ```
 Subtitle: A cloister rat. Four years in a cellar reading dead men's letters, and you walked out with their lens in your pocket. ...Good for you, love.
 
-### 44. `dlg.sella.past.6.p1.wav`
-
-*Where:* dialogue.json sella/past#6; part 2 of 4: narrator: You tell her. She listens properly, chin on her fist, the way she does everything. / **sella: Worse company than the Kerchiefs, and you walked away from it.** / narrator: She laughs, low. / sella: Takes one to know one. Don't tell Rook.
-*Played:* kinship; doing: to share a secret back; pace: measured; volume: quiet.
-*Wants:* to share a secret back
-*Note:* The pause is her low laugh. 'Takes one to know one' hints at her own past, unexplained. 'Don't tell Rook' is a shared joke.
-
-```
-[kinship, quietly] Worse company than the Kerchiefs, and you walked away from it.
-```
-Subtitle: Worse company than the Kerchiefs, and you walked away from it.
-
-### 45. `dlg.sella.past.6.p3.wav`
+### 41. `dlg.sella.past.6.p3.wav`
 
 *Where:* dialogue.json sella/past#6; part 4 of 4: narrator: You tell her. She listens properly, chin on her fist, the way she does everything. / sella: Worse company than the Kerchiefs, and you walked away from it. / narrator: She laughs, low. / **sella: Takes one to know one. Don't tell Rook.**
 *Played:* kinship; doing: to share a secret back; pace: measured; volume: quiet.
@@ -549,19 +511,7 @@ Subtitle: Worse company than the Kerchiefs, and you walked away from it.
 ```
 Subtitle: Takes one to know one. Don't tell Rook.
 
-### 46. `dlg.sella.past.7.p1.wav`
-
-*Where:* dialogue.json sella/past#7; part 2 of 4: narrator: You tell her. She listens properly, chin on her fist, the way she does everything. / **sella: Chapel lamps, with nobody to see them but you, and you lit them anyway.** / narrator: She's quiet a moment. / sella: That's the saddest thing anyone's told me up here, love, and they tell me some sad things.
-*Played:* moved; doing: to honour what they told her; pace: slow; volume: quiet.
-*Wants:* to honour what they told her
-*Note:* She is quiet a moment before the second sentence. 'Saddest thing' is said without performance; the last clause keeps it from tipping into pity.
-
-```
-[moved, quietly] Chapel lamps, with nobody to see them but you, and you lit them anyway.
-```
-Subtitle: Chapel lamps, with nobody to see them but you, and you lit them anyway.
-
-### 47. `dlg.sella.past.7.p3.wav`
+### 42. `dlg.sella.past.7.p3.wav`
 
 *Where:* dialogue.json sella/past#7; part 4 of 4: narrator: You tell her. She listens properly, chin on her fist, the way she does everything. / sella: Chapel lamps, with nobody to see them but you, and you lit them anyway. / narrator: She's quiet a moment. / **sella: That's the saddest thing anyone's told me up here, love, and they tell me some sad things.**
 *Played:* moved; doing: to honour what they told her; pace: slow; volume: quiet.
@@ -573,7 +523,7 @@ Subtitle: Chapel lamps, with nobody to see them but you, and you lit them anyway
 ```
 Subtitle: That's the saddest thing anyone's told me up here, love, and they tell me some sad things.
 
-### 48. `dlg.sella.sleeptalk.0.p0.wav`
+### 43. `dlg.sella.sleeptalk.0.p0.wav`
 
 *Where:* dialogue.json sella/sleeptalk#0; part 1 of 3: **sella: You said a name. Over and over, like you'd got hold of it in the dark and didn't want to l…** / narrator: She shrugs one shoulder. / sella: Didn't catch it. I don't think you did either.
 *Played:* gentle, uneasy; doing: you said a name; pace: slow; volume: quiet.
@@ -584,7 +534,7 @@ Subtitle: That's the saddest thing anyone's told me up here, love, and they tell
 ```
 Subtitle: You said a name. Over and over, like you'd got hold of it in the dark and didn't want to let go.
 
-### 49. `dlg.sella.sleeptalk.0.p2.wav`
+### 44. `dlg.sella.sleeptalk.0.p2.wav`
 
 *Where:* dialogue.json sella/sleeptalk#0; part 3 of 3: sella: You said a name. Over and over, like you'd got hold of it in the dark and didn't want to l… / narrator: She shrugs one shoulder. / **sella: Didn't catch it. I don't think you did either.**
 *Played:* gentle, uneasy; doing: you said a name; pace: slow; volume: quiet.
@@ -595,7 +545,7 @@ Subtitle: You said a name. Over and over, like you'd got hold of it in the dark 
 ```
 Subtitle: Didn't catch it. I don't think you did either.
 
-### 50. `dlg.sella.stairs_say.0.wav`
+### 45. `dlg.sella.stairs_say.0.wav`
 
 *Where:* dialogue.json sella/stairs_say#0
 *Played:* teasing; doing: you know the stairs; pace: measured; volume: quiet.
@@ -605,7 +555,7 @@ Subtitle: Didn't catch it. I don't think you did either.
 ```
 Subtitle: You're getting good at my stairs, love. Careful. People'll think you live here.
 
-### 51. `dlg.sella.stairs_say.1.wav`
+### 46. `dlg.sella.stairs_say.1.wav`
 
 *Where:* dialogue.json sella/stairs_say#1
 *Played:* dry, wicked; doing: the creaking steps; pace: measured; volume: quiet.
@@ -616,7 +566,7 @@ Subtitle: You're getting good at my stairs, love. Careful. People'll think you l
 ```
 Subtitle: Mind the fourth. And the ninth. Rook says they're for the drunks. I say they're for the wives.
 
-### 52. `dlg.sella.stairs_say.2.wav`
+### 47. `dlg.sella.stairs_say.2.wav`
 
 *Where:* dialogue.json sella/stairs_say#2
 *Played:* warm, teasing; doing: the bath; pace: measured; volume: quiet.
@@ -626,7 +576,55 @@ Subtitle: Mind the fourth. And the ninth. Rook says they're for the drunks. I sa
 ```
 Subtitle: In you go. Bath's run. It's warm, I promise. For a bit.
 
-### 53. `dlg.sella.stairs_rules.0.p1.wav`
+### 48. `dlg.sella.stairs_room.0.p1.wav`
+
+*The same words are also* `dlg.sella.stairs_room.4.p1.wav`*: record once; the importer copies the take.*
+*Where:* dialogue.json sella/stairs_room#0; part 2 of 2: narrator: The blue room again: the quilt, the jug, the bath, her, all of it blue. Your buckles take … / **sella: All that steel, and under it, look. A person.**
+*Played:* amused, and meaning it; doing: the blue room; pace: measured; volume: quiet.
+*Note:* A professional's line that happens to be true.
+
+```
+[amused, and meaning it, quietly] All that steel, and under it, look. A person.
+```
+Subtitle: All that steel, and under it, look. A person.
+
+### 49. `dlg.sella.stairs_room.1.p1.wav`
+
+*The same words are also* `dlg.sella.stairs_room.5.p1.wav`*: record once; the importer copies the take.*
+*Where:* dialogue.json sella/stairs_room#1; part 2 of 2: narrator: The blue room again: the quilt, the jug, the bath, her, all of it blue. She takes your han… / **sella: Gently, upstairs. I mean it. I like this jug.**
+*Played:* dry; doing: the blue room; pace: measured; volume: quiet.
+*Note:* A warning dressed as a joke.
+
+```
+[dry, quietly] Gently, upstairs. I mean it. I like this jug.
+```
+Subtitle: Gently, upstairs. I mean it. I like this jug.
+
+### 50. `dlg.sella.stairs_room.2.p1.wav`
+
+*The same words are also* `dlg.sella.stairs_room.6.p1.wav`*: record once; the importer copies the take.*
+*Where:* dialogue.json sella/stairs_room#2; part 2 of 2: narrator: The blue room again: the quilt, the jug, the bath, her, all of it blue. She lays her palm … / **sella: Your hands are hot and the rest of you's a cellar floor. Pick one, love.**
+*Played:* teasing; doing: the blue room; pace: measured; volume: quiet.
+*Note:* She has noticed the cold, and the joke is how she makes it nothing.
+
+```
+[teasing, quietly] Your hands are hot and the rest of you's a cellar floor. Pick one, love.
+```
+Subtitle: Your hands are hot and the rest of you's a cellar floor. Pick one, love.
+
+### 51. `dlg.sella.stairs_room.3.p1.wav`
+
+*The same words are also* `dlg.sella.stairs_room.7.p1.wav`*: record once; the importer copies the take.*
+*Where:* dialogue.json sella/stairs_room#3; part 2 of 3: narrator: The blue room again: the quilt, the jug, the bath, her, all of it blue. She comes round be… / **sella: There. Now you know what it's like,** / narrator: and you jump. She's delighted.
+*Played:* delighted; doing: the blue room; pace: measured; volume: quiet.
+*Note:* Into your ear, delighted to make you jump.
+
+```
+[delighted, quietly] There. Now you know what it's like,
+```
+Subtitle: There. Now you know what it's like,
+
+### 52. `dlg.sella.stairs_rules.0.p1.wav`
 
 *Where:* dialogue.json sella/stairs_rules#0; part 2 of 2: narrator: In the bath she slides her hands down your arms, and stops. Under the warm water you are c… / **sella: ...Right. Rules. Anything you'd rather I didn't, say so. Anything you'd rather I did, say …**
 *Played:* shaken, then professional; doing: you're cold as the river; pace: slow; volume: quiet.
@@ -637,7 +635,7 @@ Subtitle: In you go. Bath's run. It's warm, I promise. For a bit.
 ```
 Subtitle: ...Right. Rules. Anything you'd rather I didn't, say so. Anything you'd rather I did, say it louder.
 
-### 54. `dlg.sella.stairs_rules.1.wav`
+### 53. `dlg.sella.stairs_rules.1.wav`
 
 *Where:* dialogue.json sella/stairs_rules#1
 *Played:* frank, wry; doing: her rules; pace: measured; volume: quiet.
@@ -648,7 +646,7 @@ Subtitle: ...Right. Rules. Anything you'd rather I didn't, say so. Anything you'
 ```
 Subtitle: Right. Rules. Anything you'd rather I didn't, say so. Anything you'd rather I did, say it louder; Rook's walls are thin, but she's deaf in the left ear.
 
-### 55. `dlg.sella.stop_paid.0.p1.wav`
+### 54. `dlg.sella.stop_paid.0.p1.wav`
 
 *Where:* dialogue.json sella/stop_paid#0; part 2 of 4: narrator: She sits back on her heels, and doesn't sulk, and doesn't ask why. / **sella: Then I'll have the bath. It's paid for.** / narrator: She counts thirteen coins back into your palm and closes your fingers on them. / sella: Two for the water. That's Rook's rule, not mine. ...You'll come back when you want to. Or …
 *Played:* graceful, kind; doing: you stop; pace: measured; volume: quiet.
@@ -659,7 +657,7 @@ Subtitle: Right. Rules. Anything you'd rather I didn't, say so. Anything you'd r
 ```
 Subtitle: Then I'll have the bath. It's paid for.
 
-### 56. `dlg.sella.stop_paid.0.p3.wav`
+### 55. `dlg.sella.stop_paid.0.p3.wav`
 
 *Where:* dialogue.json sella/stop_paid#0; part 4 of 4: narrator: She sits back on her heels, and doesn't sulk, and doesn't ask why. / sella: Then I'll have the bath. It's paid for. / narrator: She counts thirteen coins back into your palm and closes your fingers on them. / **sella: Two for the water. That's Rook's rule, not mine. ...You'll come back when you want to. Or …**
 *Played:* graceful, kind; doing: you stop; pace: measured; volume: quiet.
@@ -670,8 +668,9 @@ Subtitle: Then I'll have the bath. It's paid for.
 ```
 Subtitle: Two for the water. That's Rook's rule, not mine. ...You'll come back when you want to. Or you won't. Either's all right, love. Go on.
 
-### 57. `dlg.sella.rest_night.0.p0.wav`
+### 56. `dlg.sella.rest_night.0.p0.wav`
 
+*The same words are also* `dlg.sella.rest_night_paid.0.p0.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json sella/rest_night#0; part 1 of 3: **sella: Sleep.** / narrator: She looks at you as if you'd asked her to recite something in a foreign tongue. / sella: You've paid fifteen gold to sleep.
 *Played:* baffled amusement; doing: you paid to sleep; pace: measured; volume: quiet.
 *Note:* Narrator for the look. Incredulous.
@@ -681,8 +680,9 @@ Subtitle: Two for the water. That's Rook's rule, not mine. ...You'll come back w
 ```
 Subtitle: Sleep.
 
-### 58. `dlg.sella.rest_night.0.p2.wav`
+### 57. `dlg.sella.rest_night.0.p2.wav`
 
+*The same words are also* `dlg.sella.rest_night_paid.0.p2.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json sella/rest_night#0; part 3 of 3: sella: Sleep. / narrator: She looks at you as if you'd asked her to recite something in a foreign tongue. / **sella: You've paid fifteen gold to sleep.**
 *Played:* baffled amusement; doing: you paid to sleep; pace: measured; volume: quiet.
 *Note:* Narrator for the look. Incredulous.
@@ -692,29 +692,7 @@ Subtitle: Sleep.
 ```
 Subtitle: You've paid fifteen gold to sleep.
 
-### 59. `dlg.sella.rest_night_paid.0.p0.wav`
-
-*Where:* dialogue.json sella/rest_night_paid#0; part 1 of 3: **sella: Sleep.** / narrator: She looks at you as if you'd asked her to recite something in a foreign tongue. / sella: You've paid fifteen gold to sleep.
-*Played:* baffled amusement; doing: you paid to sleep; pace: measured; volume: quiet.
-*Note:* As rest_night.0.
-
-```
-[baffled amusement, quietly] Sleep.
-```
-Subtitle: Sleep.
-
-### 60. `dlg.sella.rest_night_paid.0.p2.wav`
-
-*Where:* dialogue.json sella/rest_night_paid#0; part 3 of 3: sella: Sleep. / narrator: She looks at you as if you'd asked her to recite something in a foreign tongue. / **sella: You've paid fifteen gold to sleep.**
-*Played:* baffled amusement; doing: you paid to sleep; pace: measured; volume: quiet.
-*Note:* As rest_night.0.
-
-```
-[baffled amusement, quietly] You've paid fifteen gold to sleep.
-```
-Subtitle: You've paid fifteen gold to sleep.
-
-### 61. `dlg.sella.rest_bed.0.wav`
+### 58. `dlg.sella.rest_bed.0.wav`
 
 *Where:* dialogue.json sella/rest_bed#0
 *Played:* bossy, wry; doing: lie down, then; pace: brisk; volume: quiet.
@@ -725,18 +703,19 @@ Subtitle: You've paid fifteen gold to sleep.
 ```
 Subtitle: ...Lie down, then. No. Boots off; Rook'll have my hide. Shift over. I'm not sitting up all night in a chair. I've done that for worse money.
 
-### 62. `dlg.sella.rest_morning.0.p1.wav`
+### 59. `dlg.sella.rest_morning.0.p1.wav`
 
 *Where:* dialogue.json sella/rest_morning#0; part 2 of 2: narrator: She's sitting on the edge of the bed with her hand flat on your chest. / **sella: You were cold as the river all night. Like lying next to a stone. And now look at you: war…**
 *Played:* unsettled, then fond; doing: you were cold all night; pace: slow; volume: quiet.
-*Note:* Narrator: her hand on your chest. Quiet wonder at the cold. Then warm and wry: 'Best money I ever made.'
+*Hides:* she knows who pays for a thing like this, and unless she has stopped selling you, Vonnra will have it by noon
+*Note:* Narrator: her hand on your chest. Quiet wonder at the cold. Then warm and wry: 'Best money I ever made.' doubles (she'll be paid for it twice): play it as a joke and nothing more; the listener finds the rest.
 
 ```
 [unsettled, then fond, quietly] You were cold as the river all night. Like lying next to a stone. And now look at you: warm as toast. ...Fifteen gold to lie awake next to a stone. Best money I ever made. Don't tell anyone.
 ```
 Subtitle: You were cold as the river all night. Like lying next to a stone. And now look at you: warm as toast. ...Fifteen gold to lie awake next to a stone. Best money I ever made. Don't tell anyone.
 
-### 63. `dlg.sella.rest_morning.1.p0.wav`
+### 60. `dlg.sella.rest_morning.1.p0.wav`
 
 *Where:* dialogue.json sella/rest_morning#1; part 1 of 3: **sella: Fifteen gold to watch you snore. Best money I ever made.** / narrator: She's already dressed. She doesn't count it. / sella: Don't tell anyone. They'll all want it, and then where will I be? Rich and bored.
 *Played:* fond, teasing; doing: best money; pace: measured; volume: quiet.
@@ -747,7 +726,7 @@ Subtitle: You were cold as the river all night. Like lying next to a stone. And 
 ```
 Subtitle: Fifteen gold to watch you snore. Best money I ever made.
 
-### 64. `dlg.sella.rest_morning.1.p2.wav`
+### 61. `dlg.sella.rest_morning.1.p2.wav`
 
 *Where:* dialogue.json sella/rest_morning#1; part 3 of 3: sella: Fifteen gold to watch you snore. Best money I ever made. / narrator: She's already dressed. She doesn't count it. / **sella: Don't tell anyone. They'll all want it, and then where will I be? Rich and bored.**
 *Played:* fond, teasing; doing: best money; pace: measured; volume: quiet.
@@ -758,7 +737,7 @@ Subtitle: Fifteen gold to watch you snore. Best money I ever made.
 ```
 Subtitle: Don't tell anyone. They'll all want it, and then where will I be? Rich and bored.
 
-### 65. `dlg.sella.door.0.p0.wav`
+### 62. `dlg.sella.door.0.p0.wav`
 
 *Where:* dialogue.json sella/door#0; part 1 of 3: **sella: That? It's Rook's.** / narrator: She sits on the bed to do up her boots, and doesn't look up. / sella: Working nights it stays drawn back. Rook's got a key and a cudgel, and if a man turns funn…
 *Played:* matter-of-fact, guarded; doing: the bolt and Rook; pace: measured; volume: quiet.
@@ -769,7 +748,7 @@ Subtitle: Don't tell anyone. They'll all want it, and then where will I be? Rich
 ```
 Subtitle: That? It's Rook's.
 
-### 66. `dlg.sella.door.0.p2.wav`
+### 63. `dlg.sella.door.0.p2.wav`
 
 *Where:* dialogue.json sella/door#0; part 3 of 3: sella: That? It's Rook's. / narrator: She sits on the bed to do up her boots, and doesn't look up. / **sella: Working nights it stays drawn back. Rook's got a key and a cudgel, and if a man turns funn…**
 *Played:* matter-of-fact, guarded; doing: the bolt and Rook; pace: measured; volume: quiet.
@@ -780,7 +759,7 @@ Subtitle: That? It's Rook's.
 ```
 Subtitle: Working nights it stays drawn back. Rook's got a key and a cudgel, and if a man turns funny she's up those stairs before he's finished turning. I've needed her twice in seven years. Once for a drover. Once for one of the Watch, and I'll not say which. ...So, no. I've never shot it. It's not my door. Nothing in here's my door.
 
-### 67. `dlg.sella.door_years.0.p0.wav`
+### 64. `dlg.sella.door_years.0.p0.wav`
 
 *Where:* dialogue.json sella/door_years#0; part 1 of 3: **sella: Twenty-two, and sure I was cleverer than everyone in the valley. I was right about most of…** / narrator: She laughs, low. / sella: I'm twenty-nine, love, since you're doing sums. Seven years at the top of Rook's stairs, a…
 *Played:* wry, warm; doing: her years; pace: measured; volume: quiet.
@@ -791,7 +770,7 @@ Subtitle: Working nights it stays drawn back. Rook's got a key and a cudgel, and
 ```
 Subtitle: Twenty-two, and sure I was cleverer than everyone in the valley. I was right about most of them.
 
-### 68. `dlg.sella.door_years.0.p2.wav`
+### 65. `dlg.sella.door_years.0.p2.wav`
 
 *Where:* dialogue.json sella/door_years#0; part 3 of 3: sella: Twenty-two, and sure I was cleverer than everyone in the valley. I was right about most of… / narrator: She laughs, low. / **sella: I'm twenty-nine, love, since you're doing sums. Seven years at the top of Rook's stairs, a…**
 *Played:* wry, warm; doing: her years; pace: measured; volume: quiet.
@@ -802,7 +781,7 @@ Subtitle: Twenty-two, and sure I was cleverer than everyone in the valley. I was
 ```
 Subtitle: I'm twenty-nine, love, since you're doing sums. Seven years at the top of Rook's stairs, and I've only fallen down them twice.
 
-### 69. `dlg.sella.door_south.0.p0.wav`
+### 66. `dlg.sella.door_south.0.p0.wav`
 
 *Where:* dialogue.json sella/door_south#0; part 1 of 3: **sella: I told you. A house in the south. A door that locks from the inside.** / narrator: She stands, and checks her hair in the jug, and doesn't look at you. / sella: And somebody who knocks.
 *Played:* wistful, guarded; doing: the house in the south; pace: slow; volume: quiet.
@@ -813,7 +792,7 @@ Subtitle: I'm twenty-nine, love, since you're doing sums. Seven years at the top
 ```
 Subtitle: I told you. A house in the south. A door that locks from the inside.
 
-### 70. `dlg.sella.door_south.0.p2.wav`
+### 67. `dlg.sella.door_south.0.p2.wav`
 
 *Where:* dialogue.json sella/door_south#0; part 3 of 3: sella: I told you. A house in the south. A door that locks from the inside. / narrator: She stands, and checks her hair in the jug, and doesn't look at you. / **sella: And somebody who knocks.**
 *Played:* wistful, guarded; doing: the house in the south; pace: slow; volume: quiet.
@@ -824,7 +803,7 @@ Subtitle: I told you. A house in the south. A door that locks from the inside.
 ```
 Subtitle: And somebody who knocks.
 
-### 71. `dlg.sella.free_decline.0.p0.wav`
+### 68. `dlg.sella.free_decline.0.p0.wav`
 
 *Where:* dialogue.json sella/free_decline#0; part 1 of 5: **sella: Your loss, love. Literally; I'm worth a fortune.** / narrator: She means it lightly, and very nearly manages it. / sella: ...No, it's all right. It is. I'll not ask twice. I don't ask twice. / narrator: She pats your cheek, once, like a regular's. / sella: Go on. Rook's stew's still warm.
 *Played:* hurt, covering lightly; doing: you said no; pace: measured; volume: quiet.
@@ -835,7 +814,7 @@ Subtitle: And somebody who knocks.
 ```
 Subtitle: Your loss, love. Literally; I'm worth a fortune.
 
-### 72. `dlg.sella.free_decline.0.p2.wav`
+### 69. `dlg.sella.free_decline.0.p2.wav`
 
 *Where:* dialogue.json sella/free_decline#0; part 3 of 5: sella: Your loss, love. Literally; I'm worth a fortune. / narrator: She means it lightly, and very nearly manages it. / **sella: ...No, it's all right. It is. I'll not ask twice. I don't ask twice.** / narrator: She pats your cheek, once, like a regular's. / sella: Go on. Rook's stew's still warm.
 *Played:* hurt, covering lightly; doing: you said no; pace: measured; volume: quiet.
@@ -846,7 +825,7 @@ Subtitle: Your loss, love. Literally; I'm worth a fortune.
 ```
 Subtitle: ...No, it's all right. It is. I'll not ask twice. I don't ask twice.
 
-### 73. `dlg.sella.free_decline.0.p4.wav`
+### 70. `dlg.sella.free_decline.0.p4.wav`
 
 *Where:* dialogue.json sella/free_decline#0; part 5 of 5: sella: Your loss, love. Literally; I'm worth a fortune. / narrator: She means it lightly, and very nearly manages it. / sella: ...No, it's all right. It is. I'll not ask twice. I don't ask twice. / narrator: She pats your cheek, once, like a regular's. / **sella: Go on. Rook's stew's still warm.**
 *Played:* hurt, covering lightly; doing: you said no; pace: measured; volume: quiet.
@@ -857,7 +836,7 @@ Subtitle: ...No, it's all right. It is. I'll not ask twice. I don't ask twice.
 ```
 Subtitle: Go on. Rook's stew's still warm.
 
-### 74. `dlg.sella.free_ask.0.p1.wav`
+### 71. `dlg.sella.free_ask.0.p1.wav`
 
 *Where:* dialogue.json sella/free_ask#0; part 2 of 2: narrator: She looks at you for a long moment, as if you were a coin she was checking for clipping. / **sella: I said I'd not ask twice. I never said I'd not answer. ...Come on, then. Before I think be…**
 *Played:* wary, then giving in; doing: you asked; pace: measured; volume: quiet.
@@ -868,7 +847,7 @@ Subtitle: Go on. Rook's stew's still warm.
 ```
 Subtitle: I said I'd not ask twice. I never said I'd not answer. ...Come on, then. Before I think better of it. I'm thinking better of it already. Come on.
 
-### 75. `dlg.sella.free_door.0.p0.wav`
+### 72. `dlg.sella.free_door.0.p0.wav`
 
 *Where:* dialogue.json sella/free_door#0; part 1 of 3: **sella: I keep thinking about you sitting on my bed telling me where you're from. Knowing who'd he…** / narrator: She shakes her head. / sella: Nobody does that. Nobody's ever done that.
 *Played:* moved, wondering; doing: nobody does that; pace: slow; volume: quiet.
@@ -879,7 +858,7 @@ Subtitle: I said I'd not ask twice. I never said I'd not answer. ...Come on, the
 ```
 Subtitle: I keep thinking about you sitting on my bed telling me where you're from. Knowing who'd hear it by morning.
 
-### 76. `dlg.sella.free_door.0.p2.wav`
+### 73. `dlg.sella.free_door.0.p2.wav`
 
 *Where:* dialogue.json sella/free_door#0; part 3 of 3: sella: I keep thinking about you sitting on my bed telling me where you're from. Knowing who'd he… / narrator: She shakes her head. / **sella: Nobody does that. Nobody's ever done that.**
 *Played:* moved, wondering; doing: nobody does that; pace: slow; volume: quiet.
@@ -890,7 +869,7 @@ Subtitle: I keep thinking about you sitting on my bed telling me where you're fr
 ```
 Subtitle: Nobody does that. Nobody's ever done that.
 
-### 77. `dlg.sella.free_door.1.wav`
+### 74. `dlg.sella.free_door.1.wav`
 
 *Where:* dialogue.json sella/free_door#1
 *Played:* nervous, honest; doing: she doesn't know how; pace: slow; volume: quiet.
@@ -901,29 +880,29 @@ Subtitle: Nobody does that. Nobody's ever done that.
 ```
 Subtitle: I don't know how to do this one. ...That's a lie. I know how. I don't know how to do it like this.
 
-### 78. `dlg.sella.free_want.0.p0.wav`
+### 75. `dlg.sella.free_want.0.p0.wav`
 
 *Where:* dialogue.json sella/free_want#0; part 1 of 3: **sella: Ask me that again and I'll cry, and I don't cry, so don't.** / narrator: She takes a breath. / sella: Yes. ...Yes. There. Said it. Come here.
-*Played:* near tears, then decided; doing: yes; pace: slow; volume: quiet.
-*Note:* Narrator: the breath. 'Yes.' twice, the second firmer. 'Come here.' soft.
+*Played:* dry, then decided; doing: yes; pace: slow; volume: quiet.
+*Note:* Narrator: the breath. Not tears: she is never pitiful. Telling you she might cry is the most naked thing she says, and she says it dry; then she decides. 'Yes.' twice, the second firmer. 'Come here.' soft.
 
 ```
-[near tears, then decided, quietly] Ask me that again and I'll cry, and I don't cry, so don't.
+[dry, then decided, quietly] Ask me that again and I'll cry, and I don't cry, so don't.
 ```
 Subtitle: Ask me that again and I'll cry, and I don't cry, so don't.
 
-### 79. `dlg.sella.free_want.0.p2.wav`
+### 76. `dlg.sella.free_want.0.p2.wav`
 
 *Where:* dialogue.json sella/free_want#0; part 3 of 3: sella: Ask me that again and I'll cry, and I don't cry, so don't. / narrator: She takes a breath. / **sella: Yes. ...Yes. There. Said it. Come here.**
-*Played:* near tears, then decided; doing: yes; pace: slow; volume: quiet.
-*Note:* Narrator: the breath. 'Yes.' twice, the second firmer. 'Come here.' soft.
+*Played:* dry, then decided; doing: yes; pace: slow; volume: quiet.
+*Note:* Narrator: the breath. Not tears: she is never pitiful. Telling you she might cry is the most naked thing she says, and she says it dry; then she decides. 'Yes.' twice, the second firmer. 'Come here.' soft.
 
 ```
-[near tears, then decided, quietly] Yes. ...Yes. There. Said it. Come here.
+[dry, then decided, quietly] Yes. ...Yes. There. Said it. Come here.
 ```
 Subtitle: Yes. ...Yes. There. Said it. Come here.
 
-### 80. `dlg.sella.free_stop.0.p1.wav`
+### 77. `dlg.sella.free_stop.0.p1.wav`
 
 *Where:* dialogue.json sella/free_stop#0; part 2 of 4: narrator: She lets out a breath she's been holding since the stairs. / **sella: All right.** / narrator: And it is; you can see it is. / sella: All right. ...Sit with me, then. Just sit. I've never just sat in here with anybody. Rook'…
 *Played:* relief, tender; doing: just sit; pace: slow; volume: quiet.
@@ -934,7 +913,7 @@ Subtitle: Yes. ...Yes. There. Said it. Come here.
 ```
 Subtitle: All right.
 
-### 81. `dlg.sella.free_stop.0.p3.wav`
+### 78. `dlg.sella.free_stop.0.p3.wav`
 
 *Where:* dialogue.json sella/free_stop#0; part 4 of 4: narrator: She lets out a breath she's been holding since the stairs. / sella: All right. / narrator: And it is; you can see it is. / **sella: All right. ...Sit with me, then. Just sit. I've never just sat in here with anybody. Rook'…**
 *Played:* relief, tender; doing: just sit; pace: slow; volume: quiet.
@@ -945,7 +924,7 @@ Subtitle: All right.
 ```
 Subtitle: All right. ...Sit with me, then. Just sit. I've never just sat in here with anybody. Rook'd think we'd died.
 
-### 82. `dlg.sella.free_sleep.0.p1.wav`
+### 79. `dlg.sella.free_sleep.0.p1.wav`
 
 *Where:* dialogue.json sella/free_sleep#0; part 2 of 2: narrator: She laughs, properly, the first time tonight. / **sella: You and your sleeping. ...Yes. All right. Yes.**
 *Played:* delighted, shy; doing: yes, sleep; pace: measured; volume: quiet.
@@ -956,7 +935,18 @@ Subtitle: All right. ...Sit with me, then. Just sit. I've never just sat in here
 ```
 Subtitle: You and your sleeping. ...Yes. All right. Yes.
 
-### 83. `dlg.sella.free_m_downstairs.0.p1.wav`
+### 80. `dlg.sella.free_bolt.0.p1.wav`
+
+*Where:* dialogue.json sella/free_bolt#0; part 2 of 2: narrator: She reaches behind her without looking and finds the bolt. It sticks halfway; nobody has e… / **sella: ...There.**
+*Played:* barely voiced; doing: the bolt; pace: slow; volume: quiet.
+*Note:* Her forehead against the door and her back to you. She has never shot it; the word is the decision.
+
+```
+[barely voiced, quietly] ...There.
+```
+Subtitle: ...There.
+
+### 81. `dlg.sella.free_m_downstairs.0.p1.wav`
 
 *Where:* dialogue.json sella/free_m_downstairs#0; part 2 of 2: narrator: She laughs. / **sella: Downstairs Rook hears everything and charges nobody. You'd be better off with me. ...No. Y…**
 *Played:* wry, then honest; doing: go on; pace: measured; volume: quiet.
@@ -967,7 +957,7 @@ Subtitle: You and your sleeping. ...Yes. All right. Yes.
 ```
 Subtitle: Downstairs Rook hears everything and charges nobody. You'd be better off with me. ...No. You wouldn't. That's the point, love. Go on.
 
-### 84. `dlg.sella.free_m_who.0.p0.wav`
+### 82. `dlg.sella.free_m_who.0.p0.wav`
 
 *Where:* dialogue.json sella/free_m_who#0; part 1 of 3: **sella: You know who. Everybody pays; she pays most.** / narrator: She pulls the quilt up to her chin. / sella: I said don't tell me. I didn't say I'd sell it. ...I didn't say I wouldn't, either. I don'…
 *Played:* honest, uncomfortable; doing: Vonnra pays; pace: slow; volume: quiet.
@@ -978,7 +968,7 @@ Subtitle: Downstairs Rook hears everything and charges nobody. You'd be better o
 ```
 Subtitle: You know who. Everybody pays; she pays most.
 
-### 85. `dlg.sella.free_m_who.0.p2.wav`
+### 83. `dlg.sella.free_m_who.0.p2.wav`
 
 *Where:* dialogue.json sella/free_m_who#0; part 3 of 3: sella: You know who. Everybody pays; she pays most. / narrator: She pulls the quilt up to her chin. / **sella: I said don't tell me. I didn't say I'd sell it. ...I didn't say I wouldn't, either. I don'…**
 *Played:* honest, uncomfortable; doing: Vonnra pays; pace: slow; volume: quiet.
@@ -989,7 +979,18 @@ Subtitle: You know who. Everybody pays; she pays most.
 ```
 Subtitle: I said don't tell me. I didn't say I'd sell it. ...I didn't say I wouldn't, either. I don't know. That's the honest answer, and I'm out of practice at those. Don't make me practise before breakfast.
 
-### 86. `dlg.sella.refuse_roost.0.p1.wav`
+### 84. `dlg.sella.free_m_kiss.0.p1.wav`
+
+*Where:* dialogue.json sella/free_m_kiss#0; part 2 of 3: narrator: She lets you. Then she pushes you off by the face, gently, with the flat of her hand. / **sella: Out. Before I get used to it.** / narrator: She's smiling. She doesn't stop smiling until you're down the stairs, and you know that be…
+*Played:* smiling; doing: out; pace: measured; volume: quiet.
+*Note:* Smiling as she pushes you off: the truth under the joke.
+
+```
+[smiling, quietly] Out. Before I get used to it.
+```
+Subtitle: Out. Before I get used to it.
+
+### 85. `dlg.sella.refuse_roost.0.p1.wav`
 
 *Where:* dialogue.json sella/refuse_roost#0; part 2 of 4: narrator: At the top of the stairs she stops with her hand on the door. / **sella: They're saying you burned the Roost with folk still in it.** / narrator: She puts the coins back in your hand, all of them. / sella: I don't judge, love. It's bad for business. But I can smell it on you, and I'm not working…
 *Played:* cool, firm; doing: she won't work tonight; pace: slow; volume: quiet.
@@ -1000,7 +1001,7 @@ Subtitle: I said don't tell me. I didn't say I'd sell it. ...I didn't say I woul
 ```
 Subtitle: They're saying you burned the Roost with folk still in it.
 
-### 87. `dlg.sella.refuse_roost.0.p3.wav`
+### 86. `dlg.sella.refuse_roost.0.p3.wav`
 
 *Where:* dialogue.json sella/refuse_roost#0; part 4 of 4: narrator: At the top of the stairs she stops with her hand on the door. / sella: They're saying you burned the Roost with folk still in it. / narrator: She puts the coins back in your hand, all of them. / **sella: I don't judge, love. It's bad for business. But I can smell it on you, and I'm not working…**
 *Played:* cool, firm; doing: she won't work tonight; pace: slow; volume: quiet.
@@ -1011,7 +1012,7 @@ Subtitle: They're saying you burned the Roost with folk still in it.
 ```
 Subtitle: I don't judge, love. It's bad for business. But I can smell it on you, and I'm not working with that in the room. ...Come back when I can't.
 
-### 88. `dlg.sella.say_keegan.0.wav`
+### 87. `dlg.sella.say_keegan.0.wav`
 
 *Where:* dialogue.json sella/say_keegan#0
 *Played:* delighted gossip; doing: Keegan's list; pace: measured; volume: level.
@@ -1022,7 +1023,7 @@ Subtitle: I don't judge, love. It's bad for business. But I can smell it on you,
 ```
 Subtitle: The knight's been asking Rook what you like for breakfast. In full sentences, love. With a list. ...She's going to read you a chapter after. You know that. You'll have to sit through the whole chapter.
 
-### 89. `dlg.sella.say_rav.0.wav`
+### 88. `dlg.sella.say_rav.0.wav`
 
 *Where:* dialogue.json sella/say_rav#0
 *Played:* fond, frank; doing: be kind to Rav; pace: measured; volume: quiet.
@@ -1035,7 +1036,7 @@ Subtitle: You went round the back of the Flagon after closing. Rav's been up my 
 
 ## Said in passing
 
-### 90. `bark.sella.day.0.wav`
+### 89. `bark.sella.day.0.wav`
 
 *Where:* npcs.json sella.barks[0]
 *Played:* amused; pace: measured; volume: level.
@@ -1045,7 +1046,7 @@ Subtitle: You went round the back of the Flagon after closing. Rav's been up my 
 ```
 Subtitle: Buy a girl a drink? No? Buy yourself one, then. You look like you need it.
 
-### 91. `bark.sella.day.1.wav`
+### 90. `bark.sella.day.1.wav`
 
 *Where:* npcs.json sella.barks[1]
 *Played:* amused; pace: measured; volume: level.
@@ -1055,7 +1056,7 @@ Subtitle: Buy a girl a drink? No? Buy yourself one, then. You look like you need
 ```
 Subtitle: You've got road on you. I can smell it from here.
 
-### 92. `bark.sella.day.2.wav`
+### 91. `bark.sella.day.2.wav`
 
 *Where:* npcs.json sella.barks[2]
 *Played:* amused; pace: measured; volume: level.
@@ -1065,7 +1066,7 @@ Subtitle: You've got road on you. I can smell it from here.
 ```
 Subtitle: Rook's stew or my company. Only one of them's warm.
 
-### 93. `bark.sella.night.0.wav`
+### 92. `bark.sella.night.0.wav`
 
 *Where:* npcs.json sella.nightBarks[0]
 *Played:* teasing; pace: measured; volume: quiet.
@@ -1075,17 +1076,18 @@ Subtitle: Rook's stew or my company. Only one of them's warm.
 ```
 Subtitle: Cold night to sleep alone, love.
 
-### 94. `bark.sella.night.1.wav`
+### 93. `bark.sella.night.1.wav`
 
 *Where:* npcs.json sella.nightBarks[1]
 *Played:* teasing; pace: measured; volume: quiet.
+*Note:* An invitation dressed as thrift.
 
 ```
 [teasing, quietly] Rook's walls are thin. Just so you know.
 ```
 Subtitle: Rook's walls are thin. Just so you know.
 
-### 95. `bark.sella.night.2.wav`
+### 94. `bark.sella.night.2.wav`
 
 *Where:* npcs.json sella.nightBarks[2]
 *Played:* teasing; pace: measured; volume: quiet.
@@ -1095,7 +1097,7 @@ Subtitle: Rook's walls are thin. Just so you know.
 ```
 Subtitle: The blue room's got a lamp lit. Guess who's in it.
 
-### 96. `bark.sella.night.3.wav`
+### 95. `bark.sella.night.3.wav`
 
 *Where:* npcs.json sella.nightBarks[3]
 *Played:* teasing; pace: measured; volume: quiet.

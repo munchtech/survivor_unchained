@@ -790,12 +790,23 @@ public sealed class Prologue : ZoneRuntime
             return;
         }
         G.SetAtmosphere(Atmospheres.Night);
-        Objective([("Survive the night", false, false)]);
-        // C01's lines (docs/cinematics/c01_drowned_fire.md, cin_drowned_fire) as
-        // captions until the cinematic plays them.
+        // C01, the opening (docs/cinematics/shoot/c01.md), once a journey: it
+        // wakes her by the fire and hands back as the dead come up. Where no
+        // cinematic can play (the tests, a quick start), its lines are captions.
+        bool woke = F("prologue.woke").Truthy;
+        W.Facts["prologue.woke"] = true;
+        if (!woke && G.Cinematic("c01", Woken)) return;
+        Woken();
+        if (woke) return;
         G.Say("Your bedroll has not been slept in.", null, 3);
         G.After(3.2, () => G.Say("Prints in the frost, your own. They come up from the river. None go down to it.", null, 5));
         G.After(8.4, () => G.Say("Past the firelight, the frost is breaking.", null, 3.5));
+    }
+
+    /// <summary>Awake by the fire, the dead coming up: the night begins.</summary>
+    void Woken()
+    {
+        Objective([("Survive the night", false, false)]);
         G.AnnounceZone();
     }
 

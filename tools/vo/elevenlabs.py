@@ -33,17 +33,19 @@ SHEET = {"narrator": "The narrator.", "rook": "Mother Rook", "holloway": "Captai
          "redcowl": "Redcowl", "snib": "Snib", "grimtunnel": "Grimtunnel", "warden": "The Ford-Warden.",
          "barrow_lord": "The Barrow Lord", "guard": "The Waystation's watchmen.", "guard_f": "The Waystation's watchmen.",
          "kerchief_woman": "The Kerchiefs.", "lampling": "The babbling lampling.", "jory": "Jory Coyle.",
-         "ysolde": "Ysolde Marrow", "watchman": "Nell, Wat, Corran."}
+         "ysolde": "Ysolde Marrow", "watchman": "Nell, Wat, Corran.", "warden_man": "The Ford-Warden."}
 # Held for the story lead's review (a7622ae77d19e31dc): whole parts, and kinds of line.
-HOLD_VOICES = {"chid": "the story editor's review of section 17", "maeca": "the story editor's review of section 17",
-               "ysolde": "the story editor's review of section 17"}
-HOLD_LINES = (("bark.", ".said."), ("cbark.", "grimtunnel"), ("cbark.", "barrow_lord"))
+HOLD_VOICES: dict = {}
+# Packets the story lead has checked and marked final (voice: date).
+FINAL = {"narrator": "2026-10-03", "rook": "2026-10-03", "holloway": "2026-10-03", "brannoc": "2026-10-03", "sella": "2026-10-03"}
+# Lines waiting on the story lead or the owner: (id prefix, why).
+HOLD_LINES = (("dlg.keegan.vonnra.", "the story lead's confirmation of Keegan's kenning"),)
 TAG = {"beat": "…", "breath": "[inhales]", "laugh": "[laughs]", "laughs": "[laughs]", "chuckle": "[chuckles]",
        "sigh": "[sighs]", "sighs": "[sighs]", "sniff": "[sniffs]", "gasp": "[gasps]", "silence": "[long pause]", "name": "",
        "whisper": "[whispers]"}
 VOL_TAG = {"hushed": "whispers", "quiet": "quietly", "raised": "loudly", "shout": "shouting"}
 REGION = {"Yorkshire": "Yorkshire", "Lancashire": "Lancashire", "Welsh": "Welsh", "Somerset": "Somerset, West Country",
-          "Cornish": "Cornish", "Bristol": "Bristol", "London": "London", "Glasgow": "Glaswegian", "Irish": "Irish",
+          "Cornish": "Cornish", "Bristol": "Bristol", "London": "London", "Glasgow": "Glaswegian", "Glaswegian": "Glaswegian", "Irish": "Irish",
           "Scots": "Scottish", "Edinburgh": "Edinburgh Scottish", "northern": "northern English", "West Country": "West Country",
           "RP": "Received Pronunciation", "empire": "old-fashioned upper-class English"}
 
@@ -65,9 +67,9 @@ def held(line: dict, voice: str) -> str | None:
         return "the owner's choice of how the hymn is sung (README)"
     if voice in HOLD_VOICES:
         return HOLD_VOICES[voice]
-    for a, b in HOLD_LINES:
-        if line["id"].startswith(a) and (b in line["id"] or any(s["voice"] == b for s in line["segments"])):
-            return "the story editor's review of section 17"
+    for prefix, why in HOLD_LINES:
+        if line["id"].startswith(prefix):
+            return why
     return None
 
 
@@ -84,10 +86,19 @@ def words(t: str) -> list[str]:
     return re.findall(r"[a-z']+", re.sub(r"\[[^\]]*\]", " ", t.lower()))
 
 
-def paste(seg_text: str, d: dict, narrator_aside: bool, plain: bool = False) -> str:
+ACTED = {"a sniff": "sniffs", "a laugh": "laughs", "a sigh": "sighs", "a gasp": "gasps"}
+
+
+def acted_tag(m) -> str:
+    inner = m.group(1).strip()
+    inner = ACTED.get(inner, inner)
+    return "[" + re.sub(r"^sung\b", "singing", inner) + "]"
+
+
+def paste(seg_text: str, d: dict, narrator_aside: bool, plain: bool = False, acted: str | None = None) -> str:
     """What to paste into ElevenLabs: a direction tag, then the words with
     the writer's beats as audio tags where a beats part says exactly them."""
-    text = seg_text
+    text = re.sub(r"\[([^\]]+)\]", acted_tag, acted) if acted else seg_text
     if not narrator_aside:
         for part in (d.get("beats") or "").split("|"):
             if words(part) and words(part) == words(seg_text):
@@ -95,8 +106,11 @@ def paste(seg_text: str, d: dict, narrator_aside: bool, plain: bool = False) -> 
                 break
     text = re.sub(r"\s+", " ", text).replace(" …", "…").strip()
     text = re.sub(r"[.,;:]…", "…", text)
+    text = re.sub(r"…[,;:]", "…", text)
     how = [] if narrator_aside or plain else [re.split(r";", d.get("emo", ""))[0].strip()]
     vol = "quiet" if narrator_aside else d.get("vol", "level")
+    if plain and vol == "hushed" and not d.get("whisper"):
+        vol = "quiet"  # the narrator whispers only where his direction says so
     if VOL_TAG.get(vol):
         how.append(VOL_TAG[vol])
     tag = ", ".join(h for h in how if h)
@@ -108,11 +122,40 @@ def brief(voice: str, v: dict) -> str:
     age = v.get("age") or 0
     ages = f"{age // 10 * 10}s" if age >= 20 else (f"a child of about {age}" if age else "ageless, not human")
     region = next((r for k, r in REGION.items() if k.lower() in v.get("accent", "").lower()), "British")
-    persona = v.get("maya", "").split(". ")[0].split(", ")[-1] if v.get("maya") else v["name"]
+    # Maya1's description names the persona in the clause that is not about the voice.
+    clauses = v.get("maya", "").split(". ")[0].split(", ")
+    persona = next((c for c in reversed(clauses) if "voice" not in c), v["name"])
+    # The accents are a palette, not a caricature (VOICES.md): broad at most,
+    # and a softened, flattened or tinged one asked for lightly.
+    light = any(w in v.get("accent", "").lower() for w in ("tinge", "soft", "flatten", "worn", "light"))
     accent = (f"Crisp {region}." if "Pronunciation" in region or "upper-class" in region
-              else f"Thick {region} accent." if region != "British" else "")
-    return (f"Native English (British, {region}). {sex}, {ages}. Studio quality. "
+              else f"{'Light' if light else 'Broad'} {region} accent." if region != "British" else "")
+    native = f"Native English (British, {region})." if region != "British" else "Native English (British)."
+    return (f"{native} {sex}, {ages}. Studio quality. "
             f"Persona: {persona}. {v['design']} {accent} No reverb or effects.").replace("  ", " ")
+
+
+# What the game does to a voice after the take, for the packet (post.fx).
+FX_SAYS = {"giant": "slows it by a quarter (lower and larger), lays a voice an octave down under it, and puts it in a "
+                    "cave with water in it",
+           "underwater": "does the same, and hears it through the river: the top gone, the surface moving over it",
+           "dead": "thins it to a hollow, dry rasp, as if from inside a barrow"}
+
+
+def length_note(line: dict, seg: dict) -> str | None:
+    """How long the read should run, for a line a cinematic's cut is timed to."""
+    import produce
+    from post import STRETCH
+    d = line.get("direction") or {}
+    win = d.get("time")
+    if not win:
+        return None
+    k = STRETCH.get(produce.part_fx(line, seg) or "", 1.0)
+    extra = f" ({d['time_note']})" if d.get("time_note") else ""
+    if k != 1.0:
+        return (f"*Length:* the cut is timed to {win[0]}–{win[1]} s{extra} once the effect has slowed it, so read it in "
+                f"{win[0] / k:.1f}–{win[1] / k:.1f} s, first sound to last word.")
+    return f"*Length:* the cut is timed to it: {win[0]}–{win[1]} s{extra}, first sound to last word."
 
 
 def entries(man: list[dict], voice: str) -> list[dict]:
@@ -141,6 +184,8 @@ def scene(l: dict) -> str:
         return "Said in passing"
     if i.startswith("cbark."):
         return "In a fight"
+    if i.startswith("name."):
+        return "The survivor's name"
     return "Passers-by"
 
 
@@ -150,18 +195,29 @@ def file_name(line: dict, part: int) -> str:
 
 def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
     v = cast()[voice]
-    es = entries(man, voice)
+    es, first = [], {}
+    for e in entries(man, voice):
+        key = e["seg"].get("acted", e["seg"]["text"])
+        if key in first:
+            first[key]["also"].append(file_name(e["line"], e["part"]))
+            continue
+        e["also"] = []
+        first[key] = e
+        es.append(e)
     chars = sum(len(e["seg"]["text"]) for e in es)
     holds = [e for e in es if held(e["line"], voice)]
     spoken = " ".join(e["seg"]["text"] for e in es)
     lex = {k: x for k, x in lexicon().get("say", {}).items() if k != x and re.search(rf"(?<![\w']){re.escape(k)}(?![\w'])", spoken)}
     w = [f"# {v['name']}: ElevenLabs packet", "",
-         f"Voice id in the game: `{voice}`. {len(es)} takes to record ({chars:,} characters; about {chars * 3:,} credits at three "
-         f"tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.", ""]
+         f"Voice id in the game: `{voice}`. {len(es)} take{'s' if len(es) != 1 else ''} to record ({chars:,} characters; about {chars * 3:,} credits at three "
+         f"tries a line). " + (f"Status: **final** (the story lead, {FINAL[voice]}): record it." if voice in FINAL else
+                                    "Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final."), ""]
     if holds:
-        why = sorted({held(e['line'], voice) for e in holds})
-        w += [f"**Hold {len(holds)} of these** (marked HOLD below) until {', '.join(why)} is back; the rest can be recorded now.", ""]
-    w += ["## Who they are", "", sheet(voice) or v["design"], "",
+        w += [f"**Hold {len(holds)} of these** (marked HOLD below, with why); the rest can be recorded now.", ""]
+    w += ["## Who they are", "", sheet(voice) or v["design"], ""]
+    if v.get("wants") or v.get("hides"):
+        w += [f"*Wants:* {v.get('wants', '')}. *Hides:* {v.get('hides', '')}.", ""]
+    w += [
           "## Casting the voice", "",
           "In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below "
           "as the text; generate, listen to the three, and regenerate until one is this person. Save it as "
@@ -182,6 +238,13 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
           if es else "", "",
           "Then bring them into the game (it trims, levels, mixes and replaces the placeholders, and lists what is missing or "
           f"wrong):", "", "```", f"python tools/vo/import_takes.py ~/Downloads/su_vo --voice {voice}", "```", ""]
+    fxs = sorted({k for k in [v.get("fx")] + [(e["line"].get("direction") or {}).get("fx") for e in es] if k and k != "none"})
+    if fxs:
+        w += ["## The effect", "",
+              "Record every take dry, with no effect or reverb: the game adds it. " +
+              " ".join(f"For {'every line' if k == v.get('fx') else 'the lines that say so'}, it {FX_SAYS[k]}." for k in fxs) +
+              (" So read a little quicker than he should finally sound." if any(k in ("giant", "underwater") for k in fxs) else ""),
+              ""]
     if lex:
         w += ["## Saying the names", "", "The text to paste already respells these; keep the respelling: " +
               ", ".join(f"{k} as *{x}*" for k, x in sorted(lex.items())) + ".", ""]
@@ -199,11 +262,17 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
         if sec != section:
             section = sec
             w += [f"## {sec}", ""]
-        d = l.get("direction") or {}
+            if sec == "The survivor's name":
+                w += ["One take for each name the creation screen suggests. The game splices it into every line where she "
+                      "says the survivor's name (marked *The name* above); a name the player types that is not on this list "
+                      "leaves the pause empty. Keep each the same in tone, so it fits all of them.", ""]
+        d = lines_mod.part_direction(l, s)
         aside = s["voice"] == "narrator" and l["voice"] != "narrator"
         hold = held(l, voice)
-        w.append(f"### {n}. `{file_name(l, k)}`" + ("  HOLD" if hold else ""))
+        w.append(f"### {n}. `{file_name(l, k)}`" + (f"  HOLD: {hold}" if hold else ""))
         w.append("")
+        if e["also"]:
+            w.append(f"*The same words are also* {', '.join(f'`{x}`' for x in e['also'])}*: record once; the importer copies the take.*")
         ctx = f"{l.get('where', '')}"
         if len(l["segments"]) > 1:
             ctx += f"; part {k + 1} of {len(l['segments'])}: " + " / ".join(
@@ -220,7 +289,19 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
             for key, label in (("wants", "Wants"), ("hides", "Hides"), ("note", "Note")):
                 if d.get(key):
                     w.append(f"*{label}:* {d[key]}")
-        w += ["", "```", paste(s["text"], d, aside, plain=voice == "narrator"), "```", f"Subtitle: {s['text']}", ""]
+            if length_note(l, s):
+                w.append(length_note(l, s))
+        text = paste(s["text"], d, aside, plain=voice == "narrator", acted=s.get("acted"))
+        at = l.get("name_at")
+        if at is not None and k == at - 1:
+            w.append("*The name:* the survivor's name (one of her name takes, at the end of this packet) is spliced in straight "
+                     "after this take, so end it leading into a name, not closing the sentence.")
+            text = re.sub(r"[.…]+$", ",", text)
+        elif at is not None and k == at:
+            w.append("*The name:* her take of the survivor's name plays just before this one; start as if she had that moment "
+                     "said it." if k == 0 else "*The name:* the survivor's name comes just before this take, in the pause; "
+                     "start as if she had just said it.")
+        w += ["", "```", text, "```", f"Subtitle: {s['text']}", ""]
     return "\n".join(w) + "\n", {"voice": voice, "name": v["name"], "takes": len(es), "chars": chars, "held": len(holds)}
 
 

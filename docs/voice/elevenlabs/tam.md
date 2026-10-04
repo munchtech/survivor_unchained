@@ -1,8 +1,6 @@
 # Tam: ElevenLabs packet
 
-Voice id in the game: `tam`. 19 takes to record (1,815 characters; about 5,445 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
-
-**Hold 5 of these** (marked HOLD below) until the story editor's review of section 17 is back; the rest can be recorded now.
+Voice id in the game: `tam`. 19 takes to record (1,814 characters; about 5,442 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -13,7 +11,7 @@ Voice id in the game: `tam`. 19 takes to record (1,815 characters; about 5,445 c
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Tam`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, Somerset, West Country). Male, a child of about 9. Studio quality. Persona: a nine-year-old boy with british accent from the West Country. A nine-year-old farm boy from Somerset in the West Country of England, with a light, high child's voice and a soft rural West Country accent. Earnest and breathless, his words tumbling out one after another. Thick Somerset, West Country accent. No reverb or effects.
+Native English (British, Somerset, West Country). Male, a child of about 9. Studio quality. Persona: a nine-year-old boy with british accent from the West Country. A nine-year-old farm boy from Somerset in the West Country of England, with a light, high child's voice and a soft rural West Country accent. Earnest and breathless, his words tumbling out one after another. Broad Somerset, West Country accent. No reverb or effects.
 ```
 
 Preview text:
@@ -202,7 +200,7 @@ Subtitle: The ground knocks. At night. Tock, and then tock, under the floor, lik
 ```
 Subtitle: Pa says stay in town.
 
-### 15. `bark.tam.said.0.wav`  HOLD
+### 15. `bark.tam.said.0.wav`
 
 *Where:* npcs.json tam.said[0]
 *Played:* earnest; doing: what he saw; pace: quick; volume: level.
@@ -213,7 +211,7 @@ Subtitle: Pa says stay in town.
 ```
 Subtitle: They drank from the stream and fell down.
 
-### 16. `bark.tam.said.1.wav`  HOLD
+### 16. `bark.tam.said.1.wav`
 
 *Where:* npcs.json tam.said[1]
 *Played:* aggrieved; doing: nobody believed him; pace: quick; volume: level.
@@ -224,7 +222,7 @@ Subtitle: They drank from the stream and fell down.
 ```
 Subtitle: I told the Watch. The Watch laughed.
 
-### 17. `bark.tam.said.2.wav`  HOLD
+### 17. `bark.tam.said.2.wav`
 
 *Where:* npcs.json tam.said[2]
 *Played:* triumphant; doing: he was right; pace: quick; volume: raised.
@@ -235,7 +233,7 @@ Subtitle: I told the Watch. The Watch laughed.
 ```
 Subtitle: The stream's clear and Pa says I was right, and I was.
 
-### 18. `bark.tam.said.3.wav`  HOLD
+### 18. `bark.tam.said.3.wav`
 
 *Where:* npcs.json tam.said[3]
 *Played:* troubled; doing: the wolves were all killed; pace: measured; volume: level.
@@ -246,14 +244,14 @@ Subtitle: The stream's clear and Pa says I was right, and I was.
 ```
 Subtitle: Somebody killed all the wolves. Even the ones that were only sick.
 
-### 19. `bark.tam.said.4.wav`  HOLD
+### 19. `bark.tam.said.4.wav`
 
 *Where:* npcs.json tam.said[4]
 *Played:* spooked, earnest; doing: knocking under the barn; pace: quick; volume: level.
 *Note:* 'We've got no pipes.' the point he's sure of.
 
 ```
-[spooked, earnest] Ground knocks under our barn. Pa says pipes. We've got no pipes.
+[spooked, earnest] Still knocking under our floor. Pa's stopped saying it's moles.
 ```
-Subtitle: Ground knocks under our barn. Pa says pipes. We've got no pipes.
+Subtitle: Still knocking under our floor. Pa's stopped saying it's moles.
 

@@ -172,6 +172,8 @@ public partial class PlayerView : Node3D
     }
 
     public Vector3 FigurePosition => person.Root.GlobalPosition;
+    /// <summary>Out of the picture while a cinematic's double plays her.</summary>
+    public bool Hidden;
 
     void Upper(string clip, double speed)
     {
@@ -412,7 +414,7 @@ public partial class PlayerView : Node3D
         Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light);
         Light.Position = new Vector3(0, 2.4f, 0.4f);
         // Unseen: a ghost, flickering.
-        Visible = !(p.InvisibleT > 0 && (int)(time * 12) % 3 == 0);
+        Visible = !Hidden && !(p.InvisibleT > 0 && (int)(time * 12) % 3 == 0);
     }
 
     /// <summary>When nothing is near: a breath caught after a long run, and

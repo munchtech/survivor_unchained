@@ -188,6 +188,21 @@ then follows through and recovers; played at 1.6×.
   and down two-handed, landing in the second frame, as the game's blow
   does on arrival.
 
+### 4.7 Townsfolk (`tools/anim/folk.py`, `godot/art/anim/folk.res`)
+Unarmed people on the kit's bodies play their own clips where they have
+them (`FolkClips`, through `People.Clip`), each made twice, for the women's
+and the men's skeletons (their rests differ from the library's by up to
+23 degrees at the neck, so one set would not sit right on both):
+- `walk`: hers Mixamo's feminine walk (one whole cycle, closed on itself),
+  his Kimodo's easy stride; played at the rate that keeps the feet planted.
+- `idle` (Mixamo's weight shift), `talk` (hers Kimodo, both hands; his
+  Mixamo's conversation), `arms_crossed` (Kimodo), `sit_chair`, `sit_floor`
+  (Mixamo): loops.
+- `cheer` (hers both arms, his a fist), `wave`, `work` (Kimodo), `pick_up`
+  (Mixamo): played once.
+Before, the library had them nod `Yes` for a cheer or a wave and crouch to
+sit on the floor.
+
 ## 5. In the game
 
 - Her clips are one library, `godot/art/anim/heroine.res` ("her/..."),
@@ -236,4 +251,5 @@ fire, the flourishes, the breaks, the caught breath, a stop).
 - The arts are keyed (no capture fitted the game's timing; Mixamo's vault
   was a vault over an obstacle). Kimodo's takes of the same prompts are
   being judged against them.
-- Folk and the crowd keep the library.
+- The crowd (VAT-baked) keeps the library; so do armed people (guards,
+  bosses) and running townsfolk.

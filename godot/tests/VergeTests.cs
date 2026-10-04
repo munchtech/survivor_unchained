@@ -251,6 +251,6 @@ public class VergeTests
         _ = s.Zone.Ambience(0, 0);
         s.Zone.Frame(1 / 60.0);
         Assert.Equal("waystation", s.Host.Travelled?.Zone);
-        Assert.Contains("moonpetal", s.J.Ch.Pack.Where(p => p != null).Select(p => p!.Def));
+        Assert.True(Inventory.Count(s.J.Ch, "moonpetal") > 0);
     }
 }

@@ -145,13 +145,17 @@ public static class People
         /// <summary>Her head's pose as she is drawn (her corrective layer
         /// included, which a pose read in _Process is not), skeleton space.</summary>
         public Transform3D? HeadPose;
+        /// <summary>A kit body (People.Build), a woman's or a man's; and, set
+        /// by its view, whether it goes unarmed: the townsfolk, who play
+        /// their own clips (FolkClips) where they have them.</summary>
+        public bool Kit, Woman, Folk;
     }
 
     /// <summary>The clip a person plays for one the game names: the heroine's
     /// own where she has it ("her/..."), the library's otherwise.</summary>
     public static string Clip(Person p, string name)
     {
-        if (p.Body != "heroine") return Resolve(name);
+        if (p.Body != "heroine") return p.Folk && FolkClips.For(p.Woman, name) is string folk ? folk : Resolve(name);
         // (One of hers asked for by her own name.)
         if (name.StartsWith(HerClips.Prefix)) return HerClips.Has(name[HerClips.Prefix.Length..]) ? name : Resolve("Idle");
         return HerClips.For(p.Calling, p.Kind, name) is string her ? her : Resolve(name);
@@ -189,7 +193,7 @@ public static class People
                 }
             scene.Free();
         }
-        var person = new Person { Root = root, Skeleton = skel, Anim = new AnimationPlayer() };
+        var person = new Person { Root = root, Skeleton = skel, Anim = new AnimationPlayer(), Kit = true, Woman = look.Sex == "female" };
         foreach (var c in skel.GetChildren())
             if (c is MeshInstance3D mi)
             {
@@ -203,6 +207,8 @@ public static class People
         root.AddChild(person.Anim);
         person.Anim.RootNode = "..";
         person.Anim.AddAnimationLibrary("", Clips());
+        // The townsfolk's own clips beside the library's (tools/anim/folk.py).
+        if (FolkClips.Library() is AnimationLibrary folk) person.Anim.AddAnimationLibrary("folk", folk);
         return person;
     }
 
@@ -541,7 +547,7 @@ public static class People
             var key = src.ResourceName;
             if (!outfitTable.ContainsKey(key)) continue;
             var entry = outfitTable[key].AsGodotDictionary();
-            int kind = (string)entry["kind"] switch { "leather" => 0, "metal" => 1, "cloth" => 2, "gloss" => 3, _ => -1 };
+            int kind = (string)entry["kind"] switch { "leather" => 0, "metal" => 1, "cloth" => 2, "gloss" => 3, "twill" => 4, _ => -1 };
             if (kind < 0) continue;
             var m = new ShaderMaterial { Shader = outfitShader };
             m.SetShaderParameter("kind", kind);

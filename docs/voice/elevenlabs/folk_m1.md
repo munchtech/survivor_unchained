@@ -1,6 +1,6 @@
 # Townsman, middle-aged: ElevenLabs packet
 
-Voice id in the game: `folk_m1`. 47 takes to record (3,061 characters; about 9,183 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `folk_m1`. 46 takes to record (2,998 characters; about 8,994 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -11,7 +11,7 @@ A grumpy middle-aged townsman from the north of England with a rough, gravelly b
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Townsman, middle-aged`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, northern English). Male, 50s. Studio quality. Persona: a northern townsman. A grumpy middle-aged townsman from the north of England with a rough, gravelly baritone and a broad northern accent. Grumbling and blunt. Thick northern English accent. No reverb or effects.
+Native English (British, northern English). Male, 50s. Studio quality. Persona: a northern townsman. A grumpy middle-aged townsman from the north of England with a rough, gravelly baritone and a broad northern accent. Grumbling and blunt. Broad northern English accent. No reverb or effects.
 ```
 
 Preview text:
@@ -501,18 +501,7 @@ Subtitle: They say a cart went out of the east gate the night Pell vanished, and
 *Played:* warning, kindly; doing: the lamps; pace: measured; volume: level.
 
 ```
-[warning, kindly] Lamps are lit. Stay where they reach, or it's the Morrow for you.
+[warning, kindly] No carter's been up the Old Road in a month. So who keeps bringing that one in?
 ```
-Subtitle: Lamps are lit. Stay where they reach, or it's the Morrow for you.
-
-### 47. `folk.109.m.wav`
-
-*Where:* folk.json lines[109]
-*Played:* puzzled, uneasy; doing: the carter nobody sees; pace: measured; volume: level.
-*Note:* A real question to a neighbour.
-
-```
-[puzzled, uneasy] No carts on the Old Road since the wolves. So who keeps bringing that one in?
-```
-Subtitle: No carts on the Old Road since the wolves. So who keeps bringing that one in?
+Subtitle: No carter's been up the Old Road in a month. So who keeps bringing that one in?
 
