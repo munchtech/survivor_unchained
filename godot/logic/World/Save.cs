@@ -43,7 +43,7 @@ public sealed record SlotInfo(int Slot, string Name, int Level, string Archetype
 /// <summary>The save slots, as files in a folder (the game's user folder).</summary>
 public sealed class Saves
 {
-    public const int Version = 2;
+    public const int Version = 3;
     public const int SlotCount = 3;
     readonly string dir;
 
@@ -74,6 +74,27 @@ public sealed class Saves
             for (int i = 0; i < def.Lines.Count; i++)
                 if (def.Lines[i].When != null && st.Stock.Any(it => it.Def == def.Lines[i].Id)) st.Offered.Add($"{i}:{def.Lines[i].Id}");
         }
+        // 3: crafting (docs/CRAFTING_DESIGN.md). Materials leave the pack for the pouch, and
+        // every piece that can be worked has its heat (what was made before heat existed
+        // is as hot as its rarity, never colder).
+        var ch = d.Character;
+        ch.Materials ??= new();
+        for (int i = 0; i < ch.Pack.Count; i++)
+            if (ch.Pack[i] is { } it && Items.Find(it.Def) is { Kind: ItemKind.Material })
+            {
+                Inventory.AddToPack(ch, it);
+                ch.Pack[i] = null;
+            }
+        void Heat(ItemInstance? it)
+        {
+            if (it == null || it.Heat != null || Items.Find(it.Def) is not { } def || !Crafting.Workable(def)) return;
+            it.Heat = it.HeatFull = Crafting.HeatAtMaking(it.Rarity);
+        }
+        foreach (var it in ch.Pack) Heat(it);
+        foreach (var s in Items.EquipSlots) Heat(ch.Equipment[s]);
+        foreach (var it in d.World.Stash) Heat(it);
+        foreach (var it in d.World.Nemesis?.Carries ?? new()) Heat(it);
+        foreach (var it in d.World.Corpse?.Items ?? new()) Heat(it);
         d.Version = Version;
         return d;
     }

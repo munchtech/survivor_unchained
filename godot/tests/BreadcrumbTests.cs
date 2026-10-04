@@ -661,8 +661,8 @@ public class BreadcrumbTests
         // A version 1 save knew nothing of the lines already rolled (the save's
         // names are camelCase).
         var text = Json.Write(p.J.ToSave(new SaveLocation { Zone = "waystation" }));
-        Assert.Contains("\"version\":2", text);
-        var v1 = System.Text.RegularExpressions.Regex.Replace(text.Replace("\"version\":2", "\"version\":1"), ",\"offered\":\\[[^\\]]*\\]", "");
+        Assert.Contains($"\"version\":{Saves.Version}", text);
+        var v1 = System.Text.RegularExpressions.Regex.Replace(text.Replace($"\"version\":{Saves.Version}", "\"version\":1"), ",\"offered\":\\[[^\\]]*\\]", "");
         Assert.DoesNotContain("\"offered\"", v1);
         var old = Saves.Parse(v1)!;
         Assert.Contains(old.World.Shops["pell"].Offered, k => k.EndsWith(":blasting_ember"));

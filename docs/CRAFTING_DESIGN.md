@@ -557,7 +557,23 @@ every affix id unique.
 
 ### 13.1 What the night and the day pay (measured)
 
-*(Filled from `CraftingProbe`: section 13.4.)*
+`CraftingProbe`, 48 arenas (four callings × tiers 1–3 × four peoples), deft
+hands, greedy drafts, 35 minutes (five past the half hour), before the combat
+lead's fixes below:
+
+| Tier | Won | Ember at the end (median) | Slain | Champions | Gold: Kerchiefs / others |
+|---|---|---|---|---|---|
+| 1 | 100% | 57 | 20k–47k | 690–1600 | 52k–63k / 0–40 |
+| 2 | 94% | 62 | 17k–61k | 450–2100 | 64k–69k / 0–43 |
+| 3 | 100% | 67 | 21k–62k | 800–2200 | 80k–109k / 0–32 |
+
+Two problems, both the combat lead's and both being fixed there: Kerchief
+fodder paid tens of thousands of gold a night (fodder gold drops to 2%), and
+champions dropped about 300 pieces of gear a night (gear will drop only from
+the minute's champion events, heralds, minibosses and the boss). Crafting was
+designed not to lean on gold: old iron, ember shards, materials and heat
+gate it. The night's yield (6.1) uses champions: about 1 per 150 is 5 to 8 of
+the people's material a won night, and the shard formula gives 5 to 11.
 
 ### 13.2 Faucets and sinks
 
