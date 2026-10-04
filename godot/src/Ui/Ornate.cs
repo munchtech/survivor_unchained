@@ -63,6 +63,7 @@ public partial class OrnateBox : StyleBox
                 float g = i * 3;
                 RenderingServer.CanvasItemAddRect(ci, new Rect2(x0 - g, y0 - g, r.Size.X + g * 2, r.Size.Y + g * 2), Accent with { A = 0.05f * Glow * (1 - i / 9f) });
             }
+        if (Painted(ci, r)) return;
         // The iron: lit at the top, dark at the foot.
         RenderingServer.CanvasItemAddPolygon(ci, new[] { new Vector2(x0, y0), new Vector2(x1, y0), new Vector2(x1, y1), new Vector2(x0, y1) },
             new[] { Top, Top, Foot, Foot });
@@ -114,6 +115,36 @@ public partial class OrnateBox : StyleBox
             // A stone at the top's middle.
             Stone(ci, new Vector2((x0 + x1) / 2, y0 + 1), 6, Look == Kind.Card ? Accent.Lightened(0.35f) : Style.Ember);
         }
+    }
+
+    /// <summary>The art's name for each look (UiArt.Frames).</summary>
+    static string ArtId(Kind k) => k switch
+    {
+        Kind.Plate => "plate", Kind.Well => "well", Kind.Card => "crest_card", Kind.Paper => "paper", Kind.Banner => "banner", _ => "slab",
+    };
+
+    /// <summary>
+    /// The painted piece in place of the drawn one, when there is one: the art
+    /// is the material, and the code keeps only what the art cannot know, the
+    /// accent of the moment (a card's rarity or school in its crest band and a
+    /// hairline, an ember edge when points wait). Returns false to draw it.
+    /// </summary>
+    bool Painted(Rid ci, Rect2 r)
+    {
+        if (!UiArt.Frames.TryGetValue(ArtId(Look), out var sl) || UiArt.Tex(sl.File) is not { } tex) return false;
+        var at = r.GrowIndividual(sl.Out, sl.Oy, sl.Out, sl.Oy);
+        var mode = sl.Tile ? RenderingServer.NinePatchAxisMode.TileFit : RenderingServer.NinePatchAxisMode.Stretch;
+        RenderingServer.CanvasItemAddNinePatch(ci, at, new Rect2(Vector2.Zero, tex.GetSize()), tex.GetRid(), new Vector2(sl.L, sl.T), new Vector2(sl.R, sl.B), mode, mode, true, Colors.White);
+        if (Look == Kind.Card)
+        {
+            float h = Math.Min(Crest, r.Size.Y * 0.3f);
+            if (h > 0)
+                RenderingServer.CanvasItemAddPolygon(ci, new[] { r.Position, new Vector2(r.End.X, r.Position.Y), new Vector2(r.End.X, r.Position.Y + h), new Vector2(r.Position.X, r.Position.Y + h) },
+                    new[] { Accent with { A = 0.22f }, Accent with { A = 0.22f }, Accent with { A = 0 }, Accent with { A = 0 } });
+            var inner = r.Grow(-Math.Max(4, Math.Min(sl.L - sl.Out, sl.T - sl.Oy) * 0.6f));
+            Outline(ci, inner.Position.X, inner.Position.Y, inner.End.X, inner.End.Y, Accent with { A = Accent.A * 0.5f }, 1);
+        }
+        return true;
     }
 
     static void Outline(Rid ci, float x0, float y0, float x1, float y1, Color c, float w)
@@ -173,6 +204,15 @@ public partial class Plaque : Control
         }
         float x0 = (w - tw) / 2;
         float l = x0 - 14, r = x0 + tw + 14;
+        // Painted rules (ornaments/plaque_rule.png: the ember stone at its left end, the gold running
+        // out to its right): to the right of the title as drawn, to the left mirrored.
+        if (UiArt.Art("ornaments/plaque_rule.png") is { } rule)
+        {
+            float h = rule.GetHeight(), len = Mathf.Max(0, l - 4);
+            DrawTextureRect(rule, new Rect2(r, y - h / 2, len, h), false);
+            DrawTextureRect(rule, new Rect2(l, y - h / 2, -len, h), false);
+            return;
+        }
         DrawLine(new Vector2(8, y), new Vector2(l - 10, y), Style.Gold with { A = 0.8f }, 1.5f, true);
         DrawLine(new Vector2(r + 10, y), new Vector2(w - 8, y), Style.Gold with { A = 0.8f }, 1.5f, true);
         foreach (var x in new[] { 8f, l - 10, r + 10, w - 8 })
@@ -491,6 +531,13 @@ public partial class RibbonBox : StyleBox
     public override void _Draw(Rid ci, Rect2 r)
     {
         var c = Raised ? Silk.Lightened(0.12f) : Silk;
+        // Painted silk (book/ribbon.png, pale, its tail notched), dyed the section's colour by the code.
+        if (UiArt.Art("book/ribbon.png") is { } silk)
+        {
+            RenderingServer.CanvasItemAddTextureRect(ci, new Rect2(r.Position + new Vector2(3, 3), r.Size), silk.GetRid(), false, new Color(0, 0, 0, 0.3f));
+            RenderingServer.CanvasItemAddTextureRect(ci, r, silk.GetRid(), false, c.Lightened(0.25f));
+            return;
+        }
         float notch = 12;
         var pts = new[] { r.Position, new Vector2(r.End.X, r.Position.Y), r.End, new Vector2(r.Position.X + r.Size.X / 2, r.End.Y - notch), new Vector2(r.Position.X, r.End.Y) };
         // A shadow on the page, then the silk with its sheen down the middle.

@@ -117,8 +117,9 @@ never typed. All caps only for one- or two-word labels.
   themselves through their frame material before anything else, and drawing
   the language in code made the game say "Survivor Unchained" before any art
   landed.
-- **Pages**: the day's book (pack, self, arts, journal, map) and the stores
-  are full pages, not windows (`Overlay.Page`): the world darkens behind
+- **Pages and panels**: reading and planning screens are full pages, and
+  what is tweaked mid-play is a side panel (`Overlay.SidePanel`) with the
+  world in view (section 6, "Page or panel"). A full page (`Overlay.Page`): the world darkens behind
   (`Backdrop`, an ember glow at the foot), a header band runs across the top
   (the book's tabs at its left, the title plaque in the middle, Close at the
   right), and the screen hands back a 1840 × 920 content area at (40, 112)
@@ -417,17 +418,42 @@ it; Close at the band's right.
 showing them; turning pages keeps the player's place (Hick: five clear
 choices at the top, depth behind each).
 
+**Page or panel, screen by screen** (the owner: "full page screens in general
+aren't really great on some things"). The test is the job: a screen opened to
+**read, plan or find** at leisure, with nothing in the world to watch, earns
+the whole screen; a screen opened to **tweak mid-play or glance at** keeps the
+world in view. And the world: every screen pauses it **only in a fight** (an
+arena, the night's road), where the horde would not wait; elsewhere the world
+goes on behind it (the owner's rule). The pause menu always stops it.
+
+| Screen | Form | Why |
+|---|---|---|
+| Pack | **Panel at the right** (880 wide); the thing read closely at the left; the survivor steps aside into the gap (the camera's `ScreenShift`) | The most-used screen mid-play: swap a ring, drink, compare a drop. Diablo IV, PoE and Last Epoch all keep the inventory as a side panel with the hero in view; the gear is seen on the survivor in the world as it changes |
+| Self | Full page | A planning sheet: four attributes with previews, traits for the build, every number with its sources. Too much to read in a panel without hiding the reasons, and it is not tweaked in the heat of play |
+| Arts | Full page | Mastery and facets are planned, changed only "where it is safe" (D4's and PoE's skill trees are full screen) |
+| Journal | Full page (the open book) | Reading at leisure |
+| Map | Full page | Opened to find something: the whole screen is the map (D4, Elden Ring). The glance is the minimap's job |
+| Shop, storeroom | Full page | Trading is deliberate, in a safe place, comparison-heavy across three things (their wares, your pack, the thing in hand), and the merchant is a person on the page. Nothing in the world to watch |
+| Pause | Side column | The world stays in view, paused (D4, Elden Ring) |
+| Conversation, draft | Over the world | The person, or the fire, is the scene |
+| Last Lamp, Wayfinder's table | Windows | A quick choice in the place itself |
+| Arena's end, chapter's end, creation | Full page | Moments, not tools: they are the screen |
+
 ### 6.1 Pack (`Pack.cs`, **rebuilt**)
 **The job**: answer "is this better?" and "what do I do with it?".
-**Composition** (second pass, `pack_b_two_panes` over `pack_a_box` and
-`pack_c_hero_centre`): two panes across the page. Left, the survivor large
-with what they wear round them in slots (head, amulet, body, cloak at the
-left; weapon, off-hand, two rings, relic at the right) and their standing on
-a slab beneath; right, the filters along the top, what they carry in a well
-of 112 px slots, gold and how full the pack is, and the chosen thing read
-closely with the worn thing beside it. **Why**: the owner's "a big dark
-mostly-empty box with small items"; the slots are now as large as D4's and
-the figure is the page's anchor.
+**Composition** (third pass: a panel, see "Page or panel" above; the second
+pass's `pack_b_two_panes` became the panel's halves stacked): a panel down the
+right. At its head the book's tabs, Close, the plaque and who the survivor
+is; then the survivor drawn with what they wear round them in 72 px slots
+(head, amulet, body, cloak at the left; weapon, off-hand, two rings, relic at
+the right), their standing in a well beneath; then the filters and sort, what
+they carry in a well of 84 px slots (8 by 3), gold and how full the pack is.
+The thing chosen (or focused, with a pad) is read closely at the screen's
+left over the world, the worn thing's card under it; the survivor stands in
+the gap between, in the world, wearing what they wear. **Why**: the owner's
+"a big dark mostly-empty box with small items" first, then "full page screen
+in general aren't really great on some things": the pack is the screen the
+player opens in the middle of play.
 **Design**: the survivor and what they wear on the left, with their
 **standing**, which shows what a hovered or focused thing would change
 ("Health 212 to 236 better"); what they carry on the right with **filters**
@@ -585,13 +611,25 @@ the thing read closely on the right, with how full each is; a click, A, or a
 drag moves a thing across.
 
 ### 7.7 The Last Lamp
-Sleep (with its price), wait for night, not yet; refused, it says why ("You
-need 5 gold; you have 2"). The morning on paper at body size.
+**Done** (the third pass): a window in the place itself, the world in view
+round it: the lamp's name on its plaque, Mother Rook's line, and the choices
+as three **crested cards**, each with its sign on a medallion (the moon, the
+hourglass, the way out), what it does in a line, and its price on a coin tag;
+sleeping is the lit one. Refused, the card is greyed with the reason on it
+("You need 5 gold; you have 2"). The morning after is read on paper.
+**Why**: a choice of three with consequences is read best as three things
+side by side (Hick, recognition); the window keeps the inn in view.
 
 ### 7.8 The Wayfinder's table
-Three maps as cards: tier with diamonds, name, who holds it and what rules
-it, their bane, the oaths (asks, gives, what answers them), Enter at the
-foot. The plate fits.
+**Done** (the third pass): what it is, three map sheets in their wooden
+frames (the painted `map_frame`) lying a little askew on the Wayfinder's dark
+table, each lettered by hand with its tier, its place, who holds it and who
+rules it, their bane, and each oath **sealed in wax** beside its terms (asks
+in red, gives in green, what answers it); the Wayfinder's compass in each
+sheet's corner; Enter the arena on the table under each. The story's lost
+fights wait on a slab along the table's foot. **Why**: a choice among three
+places is a choice among maps; drawn as maps it says what it is before a
+word is read, and the oaths as seals make a map's price felt.
 
 ### 7.9 The arena's end
 **Composition** (second pass, `result_b_spoils` over `result_a_boxes`): the
@@ -608,7 +646,16 @@ minute), which needs the fight to keep them. **Why**: the end of half an hour is
 (peak-end).
 
 ### 7.10 The chapter's end
-The survivor's book read back from the world. Enter keeps walking.
+**Done** (the third pass): the survivor's own book lying open on the dark,
+the same book as the journal, so the chapter closes in the hand that kept
+it. Over it, "THE END OF THE FIRST CHAPTER", the place on its plaque and the
+survivor's epithet. The left leaf: what was done (each thread with its
+verdict and its last beats) and what still waits; the right leaf: who
+remembers you and how, what the world says you did, and the tally (days,
+level, slain, falls, gold) on medallions at its foot. Keep walking or return
+to the fire beneath; Enter keeps walking. **Why**: a chapter's end is a
+moment, not a form; read back from the world in the survivor's own book, it
+is felt as theirs (peak-end).
 
 ---
 

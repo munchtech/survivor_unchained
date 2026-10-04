@@ -51,6 +51,10 @@ public static class UiArt
         ["slab"] = new("frames/slab.png", 14, 14, 14, 14, Tile: true),
         ["header"] = new("frames/header.png", 0, 0, 0, 12, Tile: true),
         ["banner"] = new("frames/banner.png", 24, 14, 24, 14),
+        // The crested card every choice is drawn on (the arts' facets, creation's callings, the lamp's
+        // choices, a pillar with no art of its own): neutral iron; the code tints its crest band and
+        // hairline in the rarity or school of the moment.
+        ["crest_card"] = new("frames/crest_card.png", 40, 72, 40, 40, Out: 10),
         // Self's attribute pillars (188 by 340, the medallion in the crest at the head) and
         // the HUD's console the skills sit on (130 high, 300 to 720 wide with the skill
         // count; its foot runs off the screen). Both hang from the house's brackets.

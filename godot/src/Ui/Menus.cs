@@ -299,24 +299,67 @@ public partial class RestScreen : Overlay
             paper.AddChild(Style.Scroll(v));
             return;
         }
-        AddChild(Style.Scrim(G.CloseOverlay));
+        // The choice made in the place itself (docs/UI_DESIGN.md 7.7): three crested cards on a plate,
+        // each with its sign, what it does and what it costs; the world stays in view round it.
+        AddChild(Style.Scrim(G.CloseOverlay, 0.5f));
         int cost = G.Journey.RestCost;
         bool afford = G.Journey.Ch.Gold >= cost;
-        var plate = Style.Panel(Style.Plate(22));
-        plate.CustomMinimumSize = new Vector2(500, 0);
+        var plate = Style.Panel(Style.Plate(26));
         var centre = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
         Style.Fill(centre);
         centre.AddChild(plate);
         AddChild(centre);
-        var col = Style.V(8, Style.Label("THE LAST LAMP", Style.Display, 24, Style.GoldHi, false, HorizontalAlignment.Center), Style.Rule());
-        var sleep = Style.Button($"Sleep until morning  ·  {(cost > 0 ? $"{cost} gold" : "on the house")}", () => G.Rest(false), true);
-        sleep.Disabled = !afford;
-        col.AddChild(sleep);
-        if (!afford) col.AddChild(Style.Label($"You need {cost} gold; you have {Math.Floor(G.Journey.Ch.Gold)}.", Style.UiBold, Style.Caption, Style.Bad, false, HorizontalAlignment.Center));
-        if (w.Time != TimeOfDay.Night) col.AddChild(Style.Button("Wait until nightfall", () => G.Rest(true)));
-        col.AddChild(Style.Button("Not yet", G.CloseOverlay));
-        col.AddChild(Style.Label("Sleeping lets a day pass. The world will not wait for you, and the ember goes out while you sleep.", Style.TextItalic, Style.Caption, Style.InkDim, true));
+        var col = Style.V(Style.Gap3);
+        col.AddChild(new Plaque("The Last Lamp", 30, 120));
+        col.AddChild(Style.Label("Mother Rook keeps a bed, a fire and the door. What will you do with the hours?", Style.TextItalic, Style.Body, Style.InkDim, false, HorizontalAlignment.Center));
+        var row = Style.H(Style.Gap4);
+        row.Alignment = BoxContainer.AlignmentMode.Center;
+        row.AddChild(Choice("moon", "Sleep until morning", "A day passes. You wake rested; the ember goes out while you sleep.",
+            cost > 0 ? $"{cost} gold" : "On the house", afford ? null : $"You need {cost} gold; you have {Math.Floor(G.Journey.Ch.Gold)}.", () => G.Rest(false), true, "rest:sleep"));
+        if (w.Time != TimeOfDay.Night)
+            row.AddChild(Choice("hourglass", "Wait until nightfall", "The day goes by at the fire. By dark the arenas burn and the road is not safe.", null, null, () => G.Rest(true), false, "rest:wait"));
+        row.AddChild(Choice("next", "Not yet", "Back out into the day. The lamp will be lit when you come back.", null, null, G.CloseOverlay, false, "rest:leave"));
+        col.AddChild(row);
         plate.AddChild(col);
+    }
+
+    /// <summary>One of the lamp's choices: a crested card with its sign, words, price and, if refused, why.</summary>
+    Control Choice(string glyph, string title, string text, string? price, string? refused, Action go, bool primary, string id)
+    {
+        var box = OrnateBox.Make(OrnateBox.Kind.Card, 18, refused != null ? Style.InkFaint : primary ? Style.Ember : Style.Gold);
+        box.Crest = 70;
+        var lit = OrnateBox.Make(OrnateBox.Kind.Card, 18, refused != null ? Style.InkFaint : Style.EmberHi);
+        lit.Crest = 70;
+        lit.Glow = refused != null ? 0 : 1.2f;
+        var b = new Button { CustomMinimumSize = new Vector2(300, 330), FocusMode = FocusModeEnum.None, MouseDefaultCursorShape = refused != null ? CursorShape.Forbidden : CursorShape.PointingHand };
+        b.AddThemeStyleboxOverride("normal", box);
+        b.AddThemeStyleboxOverride("hover", lit);
+        b.AddThemeStyleboxOverride("pressed", lit);
+        b.AddThemeStyleboxOverride("disabled", box);
+        b.AddThemeStyleboxOverride("focus", new StyleBoxEmpty());
+        b.Disabled = refused != null;
+        b.Pressed += go;
+        var v = Style.V(Style.Gap2);
+        v.MouseFilter = MouseFilterEnum.Ignore;
+        v.Position = new Vector2(20, 18);
+        v.Size = new Vector2(260, 294);
+        var med = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+        med.AddChild(new Medallion(96, "", glyph) { Lit = primary && refused == null });
+        v.AddChild(med);
+        v.AddChild(Style.Label(title, Style.Display, 21, refused != null ? Style.InkDim : Style.GoldHi, true, HorizontalAlignment.Center));
+        var words = Style.Label(text, Style.Text, Style.Small, Style.Ink, true, HorizontalAlignment.Center);
+        words.SizeFlagsVertical = SizeFlags.ExpandFill;
+        v.AddChild(words);
+        if (price != null)
+        {
+            var tag = Style.H(4, Glyphs.Icon("coin", 16, Style.GoldHi), Style.Label(price, Style.UiBold, Style.Small, refused != null ? Style.Bad : Style.GoldHi));
+            tag.Alignment = BoxContainer.AlignmentMode.Center;
+            v.AddChild(tag);
+        }
+        if (refused != null) v.AddChild(Style.Label(refused, Style.UiBold, Style.Caption, Style.Bad, true, HorizontalAlignment.Center));
+        b.AddChild(v);
+        Nav.Id(b, id);
+        return b;
     }
 
     public override bool Key(Act a)
@@ -338,51 +381,80 @@ public partial class ChapterScreen : Overlay
 
     protected override void Build()
     {
+        // The survivor's own book, lying open on the dark (docs/UI_DESIGN.md 7.10): the same
+        // book as the journal, so the chapter closes in the hand that kept it.
         var sum = Chapter.Summary(G.Journey.Ch, G.Journey.World);
-        AddChild(Style.Scrim(null, 0.8f));
-        var wrap = Style.Centered(Style.V(10), new Vector2(1400, 900));
-        AddChild(wrap);
-        wrap.AddChild(Style.Label("THE END OF THE FIRST CHAPTER", Style.UiHeavy, 15, Style.Gold, false, HorizontalAlignment.Center));
-        wrap.AddChild(Style.Label("The Waystation", Style.Display, 52, Style.GoldHi, false, HorizontalAlignment.Center));
-        wrap.AddChild(Style.Flourish());
-        wrap.AddChild(Style.Label(sum.Epithet, Style.TextItalic, 20, Style.Ink, false, HorizontalAlignment.Center));
-        var book = Style.Panel(Style.Paper(28));
-        book.SizeFlagsVertical = SizeFlags.ExpandFill;
-        wrap.AddChild(book);
+        HideHud();
+        AddChild(new Backdrop(null, 0.94f));
+        var kicker = Style.Label("THE END OF THE FIRST CHAPTER", Style.UiHeavy, 15, Style.Gold, false, HorizontalAlignment.Center);
+        kicker.Position = new Vector2(0, 34); kicker.Size = new Vector2(1920, 20);
+        AddChild(kicker);
+        var plaque = new Plaque("The Waystation", 46, 170);
+        plaque.Position = new Vector2((1920 - plaque.CustomMinimumSize.X) / 2, 58);
+        AddChild(plaque);
+        var epithet = Style.Label(sum.Epithet, Style.TextItalic, 21, Style.Ink, false, HorizontalAlignment.Center);
+        epithet.Position = new Vector2(0, 128); epithet.Size = new Vector2(1920, 28);
+        AddChild(epithet);
+
+        var book = new OpenBook(new Vector2(1560, 760)) { Position = new Vector2(180, 172) };
+        AddChild(book);
         var ink = Style.ParchmentInk;
         var soft = new Color("#5a4a36");
-        Label P(string t, int size = 15, Font? f = null, Color? c = null) => Style.Label(t, f ?? Style.Text, size, c ?? ink, true, HorizontalAlignment.Left, false);
-        Label H(string t) => Style.Label(t, Style.Display, 21, new Color("#3a2414"), false, HorizontalAlignment.Left, false);
-        var left = Style.V(8, H("What was done"));
+        Label P(string t, int size = 16, Font? f = null, Color? c = null) => Style.Label(t, f ?? Style.Text, size, c ?? ink, true, HorizontalAlignment.Left, false);
+        Control H(string t) => Style.V(2, Style.Label(t, Style.Display, 23, new Color("#3a2414"), false, HorizontalAlignment.Left, false),
+            new ColorRect { Color = new Color("#3a2414") with { A = 0.35f }, CustomMinimumSize = new Vector2(0, 1), MouseFilter = MouseFilterEnum.Ignore });
+
+        // The left leaf: what was done, and what still waits.
+        var left = Style.V(Style.Gap2, H("What was done"));
         foreach (var t in sum.Threads)
         {
             var tone = t.Tone switch { ThreadTone.Good => new Color("#3a6a2a"), ThreadTone.Bad => new Color("#8a2a1a"), _ => soft };
-            left.AddChild(Style.V(2, Style.H(10, P(t.Name, 17, Style.TextBold), P(t.Verdict, 15, Style.TextItalic, tone)), P(t.Outcome)));
-            foreach (var b in t.Beats.TakeLast(3)) left.AddChild(P($"• {b}", 14, Style.Text, soft));
+            var name = Style.H(10, P(t.Name, 18, Style.TextBold), P(t.Verdict, 16, Style.TextItalic, tone));
+            left.AddChild(Style.V(2, name, P(t.Outcome)));
+            foreach (var bt in t.Beats.TakeLast(3)) left.AddChild(P($"\u2022 {bt}", 15, Style.Text, soft));
         }
+        left.AddChild(Style.Gap(Style.Gap2));
         left.AddChild(H("Still waiting"));
-        foreach (var o in sum.Open) left.AddChild(Style.V(1, P(o.Name, 16, Style.TextBold), P(o.Line, 14, Style.TextItalic, soft)));
-        var right = Style.V(8, H("Who remembers you"));
-        if (sum.People.Count == 0) right.AddChild(P("Nobody, yet. You kept to yourself.", 15, Style.TextItalic, soft));
-        foreach (var p in sum.People)
+        foreach (var o in sum.Open) left.AddChild(Style.V(1, P(o.Name, 17, Style.TextBold), P(o.Line, 15, Style.TextItalic, soft)));
+        var ls = Style.Scroll(left);
+        Style.Fill(ls);
+        book.Left.AddChild(ls);
+
+        // The right leaf: who remembers, what the world says, and the tally on medallions at its foot.
+        var right = Style.V(Style.Gap2, H("Who remembers you"));
+        if (sum.People.Count == 0) right.AddChild(P("Nobody, yet. You kept to yourself.", 16, Style.TextItalic, soft));
+        foreach (var pe in sum.People)
         {
-            var warm = p.Warmth >= 25 ? new Color("#3a6a2a") : p.Warmth <= -25 ? new Color("#8a2a1a") : soft;
-            right.AddChild(Style.V(1, Style.H(10, P(p.Name, 16, Style.TextBold), P(p.Role, 14, Style.TextItalic, soft)), P(Style.Cap1(p.Regard), 15, Style.Text, warm)));
-            if (p.Knows != null) right.AddChild(P($"Knows that you {p.Knows}.", 14, Style.Text, soft));
+            var warm = pe.Warmth >= 25 ? new Color("#3a6a2a") : pe.Warmth <= -25 ? new Color("#8a2a1a") : soft;
+            right.AddChild(Style.V(1, Style.H(10, P(pe.Name, 17, Style.TextBold), P(pe.Role, 15, Style.TextItalic, soft)), P(Style.Cap1(pe.Regard), 16, Style.Text, warm)));
+            if (pe.Knows != null) right.AddChild(P($"Knows that you {pe.Knows}.", 15, Style.Text, soft));
         }
+        right.AddChild(Style.Gap(Style.Gap2));
         right.AddChild(H("What the world says you did"));
-        if (sum.Deeds.Count == 0) right.AddChild(P("Nothing it has noticed. Give it time.", 15, Style.TextItalic, soft));
-        foreach (var d in sum.Deeds) right.AddChild(P($"You {d}.", 14));
-        right.AddChild(P(string.Join("     ", sum.Stats.Select(s => $"{s.Value} {s.Label}")), 14, Style.UiBold, soft));
-        var two = Style.H(34);
-        left.SizeFlagsHorizontal = right.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        two.AddChild(Style.Scroll(left));
-        two.AddChild(Style.Scroll(right));
-        book.AddChild(two);
-        var acts = Style.H(12, Style.Button("Keep walking", G.CloseOverlay), Style.Button("Return to the fire", G.QuitToTitle, true));
+        if (sum.Deeds.Count == 0) right.AddChild(P("Nothing it has noticed. Give it time.", 16, Style.TextItalic, soft));
+        foreach (var d in sum.Deeds) right.AddChild(P($"You {d}.", 16));
+        var rs = Style.Scroll(right);
+        rs.Size = new Vector2(book.Right.Size.X, book.Right.Size.Y - 128);
+        book.Right.AddChild(rs);
+        var tally = Style.H(Style.Gap3);
+        tally.Alignment = BoxContainer.AlignmentMode.Center;
+        foreach (var (label, value) in sum.Stats)
+        {
+            var med = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+            med.AddChild(new Medallion(70, value));
+            tally.AddChild(Style.V(4, med, Style.Label(label.ToUpperInvariant(), Style.UiHeavy, 12, new Color("#5a3a1c"), false, HorizontalAlignment.Center)));
+        }
+        tally.Position = new Vector2(0, book.Right.Size.Y - 112);
+        tally.Size = new Vector2(book.Right.Size.X, 104);
+        book.Right.AddChild(tally);
+
+        var acts = Style.H(Style.Gap3, Style.Button("Keep walking", G.CloseOverlay), Style.Button("Return to the fire", G.QuitToTitle, true));
         acts.Alignment = BoxContainer.AlignmentMode.Center;
-        wrap.AddChild(acts);
-        wrap.AddChild(Style.Label("Your journey is saved. The chapter ends here, but the road does not: the Waystation, the Verge and the Wayfinder's table are still yours to walk. What lies north is not written yet.", Style.TextItalic, 14, Style.InkDim, false, HorizontalAlignment.Center));
+        acts.Position = new Vector2(0, 952); acts.Size = new Vector2(1920, 40);
+        AddChild(acts);
+        var note = Style.Label("Your journey is saved. The chapter ends here, but the road does not: the Waystation, the Verge and the Wayfinder's table are still yours to walk. What lies north is not written yet.", Style.TextItalic, Style.Caption, Style.InkDim, false, HorizontalAlignment.Center);
+        note.Position = new Vector2(0, 1008); note.Size = new Vector2(1920, 24);
+        AddChild(note);
     }
 
     public override bool Key(Act a)
