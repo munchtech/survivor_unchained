@@ -49,6 +49,10 @@ PLAN = {
     "stop_stalker_l": ("stopping, left foot down: stalker", "-", "keyed"),
     "stop_stalker_r": ("stopping, right foot down: stalker", "-", "keyed"),
     "dash": ("the dash", "Roll", "keyed"),
+    "leap": ("the Crashing Leap art", "NinjaJump_Start", "Mixamo 'Standing Melee Run Jump Attack', retimed to the art's 0.42 s"),
+    "vault": ("the vault art (0.32 s)", "Jump_Start", "Mixamo 'Jumping Over Into Combat' (downloaded, not yet retargeted)"),
+    "bull_rush": ("the bull rush art (0.4 s)", "Shield_Dash", "Mixamo 'Sword And Shield Run' (downloaded, not yet retargeted)"),
+    "chain_haul": ("hauled in on the chain, blade first", "Sword_Dash", "Mixamo 'Great Sword Slide Attack' (downloaded, not yet retargeted)"),
     "sword_back": ("sword swing, first (left to right)", "Sword_Regular_A", "keyed"),
     "sword_fore": ("sword swing, second (right to left)", "Sword_Regular_B", "keyed"),
     "sword_heavy": ("sword, wide arc", "Sword_Attack", "keyed"),
@@ -106,6 +110,11 @@ def main():
             "100STYLE": "Ian Mason et al., 100STYLE (2022), https://zenodo.org/record/8127870, CC BY 4.0: "
                         "retargeted to her skeleton, feet locked, looped, arms re-keyed.",
             "UAL": "Quaternius, Universal Animation Library 1 and 2, CC0: the fallback for clips not yet made.",
+            "Mixamo": "Adobe Mixamo (owner's account): motion used in the game under Mixamo's terms; the raw FBX files "
+                      "are kept outside the repository (C:/Users/munch/Tools/mocap/mixamo) and never redistributed.",
+            "Kimodo": "NVIDIA Kimodo-SOMA-RP-v1.1, NVIDIA Open Model License: generated motion (tools/anim/kimodo_gen.py).",
+            "SAM 3D Body": "Meta SAM 3D Body (SAM License) with the Momentum Human Rig (Apache 2.0): motion from video "
+                           "(tools/anim/video_motion.py); test footage from Pexels (Pexels licence), each clip's URL in its row.",
         },
         "made": sum(1 for r in rows if r["status"] == "made"),
         "planned": len(PLAN),

@@ -3,10 +3,13 @@
  "sources": {
   "keyed": "Keyed in code in tools/anim (gait.py, keyed.py, clips/*.py): the project's own work.",
   "100STYLE": "Ian Mason et al., 100STYLE (2022), https://zenodo.org/record/8127870, CC BY 4.0: retargeted to her skeleton, feet locked, looped, arms re-keyed.",
-  "UAL": "Quaternius, Universal Animation Library 1 and 2, CC0: the fallback for clips not yet made."
+  "UAL": "Quaternius, Universal Animation Library 1 and 2, CC0: the fallback for clips not yet made.",
+  "Mixamo": "Adobe Mixamo (owner's account): motion used in the game under Mixamo's terms; the raw FBX files are kept outside the repository (C:/Users/munch/Tools/mocap/mixamo) and never redistributed.",
+  "Kimodo": "NVIDIA Kimodo-SOMA-RP-v1.1, NVIDIA Open Model License: generated motion (tools/anim/kimodo_gen.py).",
+  "SAM 3D Body": "Meta SAM 3D Body (SAM License) with the Momentum Human Rig (Apache 2.0): motion from video (tools/anim/video_motion.py); test footage from Pexels (Pexels licence), each clip's URL in its row."
  },
  "made": 61,
- "planned": 58,
+ "planned": 62,
  "clips": [
   {
    "clip": "idle_warden",
@@ -393,6 +396,54 @@
    "layer": "full"
   },
   {
+   "clip": "leap",
+   "plays_for": "the Crashing Leap art",
+   "status": "made",
+   "fallback": "NinjaJump_Start",
+   "made_by": "Mixamo 'Standing Melee Run Jump Attack', retimed to the art's 0.42 s",
+   "source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: run_jump_attack.bvh",
+   "licence": "Mixamo (Adobe)",
+   "changes": "retargeted to her skeleton, feet locked, retimed, in place",
+   "length": 1.1,
+   "layer": "full"
+  },
+  {
+   "clip": "vault",
+   "plays_for": "the vault art (0.32 s)",
+   "status": "fallback",
+   "fallback": "Jump_Start",
+   "made_by": "Mixamo 'Jumping Over Into Combat' (downloaded, not yet retargeted)",
+   "source": "",
+   "licence": "",
+   "changes": "",
+   "length": null,
+   "layer": ""
+  },
+  {
+   "clip": "bull_rush",
+   "plays_for": "the bull rush art (0.4 s)",
+   "status": "fallback",
+   "fallback": "Shield_Dash",
+   "made_by": "Mixamo 'Sword And Shield Run' (downloaded, not yet retargeted)",
+   "source": "",
+   "licence": "",
+   "changes": "",
+   "length": null,
+   "layer": ""
+  },
+  {
+   "clip": "chain_haul",
+   "plays_for": "hauled in on the chain, blade first",
+   "status": "fallback",
+   "fallback": "Sword_Dash",
+   "made_by": "Mixamo 'Great Sword Slide Attack' (downloaded, not yet retargeted)",
+   "source": "",
+   "licence": "",
+   "changes": "",
+   "length": null,
+   "layer": ""
+  },
+  {
    "clip": "sword_back",
    "plays_for": "sword swing, first (left to right)",
    "status": "made",
@@ -702,18 +753,6 @@
    "licence": "own work",
    "changes": "",
    "length": 3.0,
-   "layer": "full"
-  },
-  {
-   "clip": "leap",
-   "plays_for": "(not in the plan)",
-   "status": "made",
-   "fallback": "-",
-   "made_by": "",
-   "source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: run_jump_attack.bvh",
-   "licence": "Mixamo (Adobe)",
-   "changes": "retargeted to her skeleton, feet locked, retimed, in place",
-   "length": 1.1,
    "layer": "full"
   },
   {
