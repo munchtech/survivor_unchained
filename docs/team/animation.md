@@ -14,6 +14,12 @@ Agent a1e3002b800ee55ac, branch `worktree-agent-a1e3002b800ee55ac` (took over fr
   - Any kit body asked for `Zombie_Walk_Fwd_Loop` gets it in the bake (`Vat.Clip`, `FolkClips.Undead`).
   - The crowd plays a walk of known pace at the rate its feet need (`VatAsset.Pace`, CrowdView). The VAT cache is v8.
   - Seen in the game with risen, warriors, archers and grave callers.
+- **Kimodo, for the owner:** double-click "Run Kimodo" on the Desktop (after this branch is merged into the main checkout). It makes these first, in this order, then the rest:
+  1. lie_side_wake, sit_back_heels (C01's wake);
+  2. rise_stiff, bend_lift (C02's Warden);
+  3. kneel_shoot, slam (combat's crossbowmen and heavies);
+  4. kneel_fall (C03), flask_drink (C04).
+  Prompts already made are skipped, so it is safe to stop and run again.
 - **Kimodo:** 30 new prompts are pushed (f802ed3) and the owner's run is still to come. That run is the only blocker for the cinematics clips and for combat's kneel-to-shoot and slam. The 25 earlier prompts are all made.
 - **Merged:** the integration branch and combat's `worktree-agent-ac4ec5bbd2763a0df@71608a4` (their new kinds), so I can test against them. All 532 tests pass.
 

@@ -112,12 +112,18 @@ PROMPTS = {
     "child_run": ("A child runs forward happily", 4.0, 13),
 }
 
+# Made first, so a run stopped early has what is wanted soonest: the
+# opening's wake (C01), the Warden's rise (C02), combat's crossbow and slam,
+# the Warden's fall (C03) and the flask (C04).
+FIRST = ["lie_side_wake", "sit_back_heels", "rise_stiff", "bend_lift", "kneel_shoot", "slam", "kneel_fall", "flask_drink"]
+
 
 def main(argv):
     dry = "--dry" in argv
     names = [a for a in argv if not a.startswith("--")]
-    jobs = [dict(name=n, prompt=p + ".", seconds=s, seed=seed, takes=TAKES)
-            for n, (p, s, seed) in PROMPTS.items() if not names or n in names]
+    order = FIRST + [n for n in PROMPTS if n not in FIRST]
+    jobs = [dict(name=n, prompt=PROMPTS[n][0] + ".", seconds=PROMPTS[n][1], seed=PROMPTS[n][2], takes=TAKES)
+            for n in order if not names or n in names]
     out = MOCAP / ("kimodo_dry" if dry else "kimodo")
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as f:
         json.dump(jobs, f)
