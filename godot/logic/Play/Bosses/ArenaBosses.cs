@@ -17,16 +17,18 @@ public static class ArenaBosses
     /// <summary>The script for what rules a people (by the boss's kind).</summary>
     public static ArenaBoss? For(string def, IBossArena arena) => def switch
     {
-        "wolf_alpha" => new PackMother(arena),
-        "barrow_knight" => new BarrowLord(arena),
+        "boss_pack" => new PackMother(arena),
+        "boss_dead" => new BarrowLord(arena),
         "grimtunnel_roused" => new Grimtunnel(arena),
-        "enforcer" => new RedHand(arena),
+        "boss_lamplings" => new Grimtunnel(arena, ganger: true),
+        "boss_kerchiefs" => new RedHand(arena),
         _ => null,
     };
 }
 
 /// <summary>The Pack-Mother: she herds you; refuse to be herded. Fire breaks her
-/// moon-howl.</summary>
+/// moon-howl. The same fight is Greymuzzle's in his own Hollow (the story's): he is
+/// wordless, so the Pack's lines are what is heard, never what is said.</summary>
 public sealed class PackMother : ArenaBoss
 {
     public PackMother(IBossArena a) : base(a) { }
@@ -37,7 +39,10 @@ public sealed class PackMother : ArenaBoss
         new("The Den", 0, 15, 0),
     ];
     public override School Weakness => School.Fire;
-    public override string WeaknessText => "Fire breaks her moon-howl";
+    public override string WeaknessText => $"Fire breaks {Her} moon-howl";
+    /// <summary>Greymuzzle is a he; the Pack-Mother a she.</summary>
+    bool He => A.BossName == "Greymuzzle";
+    string Her => He ? "his" : "her";
     protected override string HardName => "The Long Hunt";
     double driveT = 6, biteT = 3, howlT, shakeT = 2, lungeT = 4;
     double howlHp;
@@ -88,7 +93,7 @@ public sealed class PackMother : ArenaBoss
         var p = B.Player;
         // The crescent on the far side of the survivor from her, its open side toward her.
         double away = Math.Atan2(p.Z - E.Z, p.X - E.X);
-        A.Bark(E.X, E.Z, "A rising howl: the Pack wheels.", "The Pack-Mother");
+        A.Bark(E.X, E.Z, "A rising howl: the Pack wheels.", null);
         int n = 7 + A.Tier;
         for (int k = 0; k < n; k++)
         {
@@ -120,20 +125,19 @@ public sealed class PackMother : ArenaBoss
         Channel = "The moon-howl: break it!";
         ChannelProgress = 0;
         howlHp = e.Hp;
-        A.Bark(e.X, e.Z, "She sits back and howls at the moon.", "The Pack-Mother");
-        double laneT = 0.4;
+        A.Bark(e.X, e.Z, $"{(He ? "He" : "She")} sits back and howls at the moon.", null);
+        double nextLane = 0.4;
         Hold(8, () => { Channel = null; }, t =>
         {
             ChannelProgress = t / 8;
             if (howlHp - E.Hp >= E.MaxHp * 0.06) { BreakChannel(E, "Hurt enough to stop"); return false; }
-            laneT -= 1 / 60.0;
-            if (laneT <= 0)
+            if (t >= nextLane)
             {
-                laneT = 1.6;
+                nextLane += 1.6;
                 var p = B.Player;
                 double a = A.R() * Math.PI * 2;
                 double x0 = p.X + Math.Cos(a) * 12, z0 = p.Z + Math.Sin(a) * 12;
-                Lane(x0, z0, p.X - Math.Cos(a) * 12, p.Z - Math.Sin(a) * 12, 1.8, 1.2, 1.5, "Her dead run", School.Frost);
+                Lane(x0, z0, p.X - Math.Cos(a) * 12, p.Z - Math.Sin(a) * 12, 1.8, 1.2, 1.5, He ? "His dead run" : "Her dead run", School.Frost);
             }
             return true;
         });
@@ -176,6 +180,8 @@ public sealed class BarrowLord : ArenaBoss
     double layT, layHeld;
     bool laying;
     int risings;
+    /// <summary>He is down at one and must be stood over (the bots read it as a player does).</summary>
+    public bool Laying => laying;
 
     // Undead resist frost and shadow; on him they do not, so every school can lay him down in time.
     public override double HealthMul(int tier) => 9 + 1.5 * tier;
@@ -223,7 +229,9 @@ public sealed class BarrowLord : ArenaBoss
                 {
                     holdT = 12 * Cadence;
                     var p = B.Player;
-                    A.Bark(E.X, E.Z, "\"Hold!\"", "The Barrow Lord");
+                    // His orders are in the old empire's tongue, one word each
+                    // (docs/VOICES.md); what they mean is shown by what follows.
+                    A.Bark(E.X, E.Z, "\"Sta!\"", "The Barrow Lord");
                     var b = Band(p.X, p.Z, 4.5, 6.5, 1.5, 0.8, "Hold!", School.Shadow);
                     b.Slow = 0.05; b.SlowFor = 1.2;
                     return false;
@@ -236,7 +244,7 @@ public sealed class BarrowLord : ArenaBoss
     void CloseUp()
     {
         var p = B.Player;
-        A.Bark(E.X, E.Z, "\"Close up!\"", "The Barrow Lord");
+        A.Bark(E.X, E.Z, "\"Iunge!\"", "The Barrow Lord");
         double a = Math.Atan2(E.Z - p.Z, E.X - p.X);
         double cx = p.X + Math.Cos(a) * 9, cz = p.Z + Math.Sin(a) * 9;
         double sx = -Math.Sin(a), sz = Math.Cos(a);
@@ -339,10 +347,23 @@ public sealed class BarrowLord : ArenaBoss
 
 /// <summary>Grimtunnel, roused: the ground is the enemy. He cannot die before the
 /// story's end, so the fight is won when he goes back down the hole. Frost stops
-/// him under the ground.</summary>
+/// him under the ground.
+///
+/// The Ganger fights the same fight: a Dig foreman, the table's Lamplings' boss,
+/// since the story keeps Grimtunnel and his name for the Dig Boils Over and Act 3
+/// (docs/STORY_BIBLE.md, "The nights"). It wears one lamp, not his three, that
+/// flares for each of the three verbs in turn and puts them all out when it breaks;
+/// and it dies like anything else.</summary>
 public sealed class Grimtunnel : ArenaBoss
 {
-    public Grimtunnel(IBossArena a) : base(a) { }
+    readonly bool ganger;
+    public Grimtunnel(IBossArena a, bool ganger = false) : base(a)
+    {
+        this.ganger = ganger;
+        Lit = ganger ? [true] : [true, true, true];
+        lampHp = new double[Lit.Length];
+    }
+    public bool Ganger => ganger;
     protected override Phase[] Phases { get; } =
     [
         new("The Dig", 0.60, 15, 60),
@@ -350,17 +371,20 @@ public sealed class Grimtunnel : ArenaBoss
         new("The Boil", 0, 15, 0),
     ];
     public override School Weakness => School.Frost;
-    public override string WeaknessText => "Frost stops him under the ground";
+    public override string WeaknessText => ganger ? "Frost catches it under the ground" : "Frost stops him under the ground";
     protected override string HardName => "The Fall";
-    protected override bool DiesAtZero => false;
+    protected override bool DiesAtZero => ganger;
     double underT = 5, lampT = 3, mothT = 12, boilT = 6, pickT = 2;
-    int lampIx;
+    int lampIx, verb;
     double dazeT;
-    /// <summary>His three lamps (red, blue, green): each lit, a verb; hit while it flares to break it.</summary>
-    public readonly bool[] Lit = [true, true, true];
-    readonly double[] lampHp = new double[3];
+    /// <summary>His three lamps (red, blue, green): each lit, a verb; hit while it flares to
+    /// break it. The Ganger's one lamp carries all three verbs.</summary>
+    public readonly bool[] Lit;
+    readonly double[] lampHp;
     int flaring = -1;
     double flareT;
+    /// <summary>The lamp flaring now (-1: none): hit him while it does to break it.</summary>
+    public int Flaring => flaring;
     readonly System.Collections.Generic.List<(double X, double Z, int Id, int Mark)> pits = new();
     bool goingDown;
     double downT;
@@ -369,14 +393,15 @@ public sealed class Grimtunnel : ArenaBoss
 
     protected override void Enter(int phase)
     {
-        if (phase == 0) for (int i = 0; i < 3; i++) lampHp[i] = E.MaxHp * 0.08;
+        // His three lamps a twelfth of him each; the Ganger's one a sixth.
+        if (phase == 0) for (int i = 0; i < Lit.Length; i++) lampHp[i] = E.MaxHp * (ganger ? 0.16 : 0.08);
         if (phase == 2) { E.Speed *= 1.3; boilT = 4; }
     }
 
     protected override bool Act(Enemy e, double dt)
     {
         if (goingDown) return GoDown(e, dt);
-        if (e.Hp <= 1.5 && PhaseIx == Phases.Length - 1) { StartDown(e); return true; }
+        if (!ganger && e.Hp <= 1.5 && PhaseIx == Phases.Length - 1) { StartDown(e); return true; }
         if (dazeT > 0) { dazeT -= dt; e.TakenMul = 1.5; e.Vx = e.Vz = 0; e.State = EnemyState.Stunned; e.StateT = Math.Max(e.StateT, dt * 2); return true; }
         // Under the ground he is still in reach, at half.
         e.TakenMul = under ? 0.5 : 1;
@@ -389,8 +414,10 @@ public sealed class Grimtunnel : ArenaBoss
         if (lampT <= 0 && Lit.Any(l => l))
         {
             lampT = 7 * Cadence;
-            for (int k = 0; k < 3; k++) { lampIx = (lampIx + 1) % 3; if (Lit[lampIx]) break; }
-            Lamp(lampIx);
+            if (ganger) { lampIx = 0; verb = (verb + 1) % 3; }
+            else { for (int k = 0; k < 3; k++) { lampIx = (lampIx + 1) % 3; if (Lit[lampIx]) break; } verb = lampIx; }
+            flaring = lampIx;
+            Lamp(verb);
             return true;
         }
         if (PhaseIx == 2)
@@ -404,7 +431,6 @@ public sealed class Grimtunnel : ArenaBoss
     /// <summary>His lamp flares: a verb, and while it flares, hits on him break it.</summary>
     void Lamp(int i)
     {
-        flaring = i;
         flareT = 2.5;
         var p = B.Player;
         switch (i)
@@ -518,8 +544,8 @@ public sealed class Grimtunnel : ArenaBoss
             if (lampHp[flaring] <= 0)
             {
                 Lit[flaring] = false;
-                B.Events.Emit(new Ev.Announce { Title = $"His {LampNames[flaring]} breaks", Tone = Tone.Boon });
-                B.Events.Emit(new Ev.Explosion { X = e.X, Z = e.Z, Radius = 2.5, School = flaring == 0 ? School.Fire : flaring == 1 ? School.Frost : School.Nature, Power = 1 });
+                B.Events.Emit(new Ev.Announce { Title = ganger ? "Its lamp breaks" : $"His {LampNames[flaring]} breaks", Subtitle = ganger ? "Its blasting, its diggers and its slurry are done" : null, Tone = Tone.Boon });
+                B.Events.Emit(new Ev.Explosion { X = e.X, Z = e.Z, Radius = 2.5, School = verb == 0 ? School.Fire : verb == 1 ? School.Frost : School.Nature, Power = 1 });
                 flaring = -1;
             }
         }
@@ -529,7 +555,7 @@ public sealed class Grimtunnel : ArenaBoss
     }
 
     /// <summary>The bar's lamps, for the HUD's title.</summary>
-    public string Lamps => string.Join(" ", Lit.Select((l, i) => l ? LampNames[i].Split(' ')[0] : "-"));
+    public string Lamps => ganger ? (Lit[0] ? "lit" : "out") : string.Join(" ", Lit.Select((l, i) => l ? LampNames[i].Split(' ')[0] : "-"));
 
     void StartDown(Enemy e)
     {
@@ -537,7 +563,8 @@ public sealed class Grimtunnel : ArenaBoss
         downT = 0;
         e.TakenMul = 0;
         e.Hp = 1;
-        A.Bark(e.X, e.Z, "\"Not done! Not DONE!\"", "Grimtunnel");
+        // He goes down delighted, never beaten: he is wanted below (docs/STORY_BIBLE.md, "The nights").
+        A.Bark(e.X, e.Z, "\"Ha! Keep upstairs, surface-meat! I'm wanted DOWNSTAIRS!\"", "Grimtunnel");
         B.Events.Emit(new Ev.Focus { X = e.X, Z = e.Z, Duration = 1.6 });
     }
 
@@ -589,6 +616,8 @@ public sealed class RedHand : ArenaBoss
     bool levy, everything;
     Enemy? thief;
     WeaponInst? taken;
+    /// <summary>The footpad running with the survivor's weapon, while he runs.</summary>
+    public Enemy? Thief => thief;
     readonly System.Collections.Generic.List<int> posts = new();
     double postsT;
 

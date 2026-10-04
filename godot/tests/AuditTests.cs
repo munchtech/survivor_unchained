@@ -286,9 +286,9 @@ public class AuditTests
         a.W.Facts["beasts.severity"] = 6;
         a.Sleep();
         Assert.True(a.F("wolves.at_gate").Truthy);
-        Assert.DoesNotContain(Lore.FolkLines, l => l.Text.Contains("buried Aldo") && Rules.Test(l.When, a.C));
+        Assert.DoesNotContain(Lore.FolkLines, l => l.Text.Contains("Aldo's coffin") && Rules.Test(l.When, a.C));
         a.Sleep();
-        Assert.Contains(Lore.FolkLines, l => l.Text.Contains("buried Aldo") && Rules.Test(l.When, a.C));
+        Assert.Contains(Lore.FolkLines, l => l.Text.Contains("Aldo's coffin") && Rules.Test(l.When, a.C));
     }
 
     /* -------------------------------------------- what the world remembers -- */

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SurvivorUnchained.Play.Bosses;
+using SurvivorUnchained.Play.Zones;
 using SurvivorUnchained.Sim;
 using SurvivorUnchained.World;
 
@@ -110,11 +112,14 @@ public sealed class Autopilot
 
     /// <summary>Out in a fight with no script: circle a patch of ground, keep
     /// the crowd in front and moving, step out of marked ground and lunges,
-    /// pick up ember when nothing is close, bash when mobbed, drink when low.</summary>
+    /// pick up ember when nothing is close, bash when mobbed, drink when low.
+    /// An arena's boss up, it circles the boss instead and reads its fight as a
+    /// practised player does (BossSense), so pictures show a fight fought.</summary>
     void Field(double dt, Battle b)
     {
         var p = b.Player;
-        var home = territory ??= (p.X, p.Z, 18);
+        var boss = g.Zone is ArenaRun { BossScript: { } s } && s.E is { Alive: true } be && be.State != EnemyState.Dying ? s : null;
+        (double X, double Z, double R) home = boss != null ? (boss.E.X, boss.E.Z, 10.0) : territory ??= (p.X, p.Z, 18);
         double rx = 0, rz = 0;
         int close = 0;
         var sectors = new bool[8];
@@ -125,7 +130,7 @@ public sealed class Autopilot
             if (dd > 14) continue;
             if (dd < 3) close++;
             if (dd < 7) sectors[(int)((Math.Atan2(dz, dx) + Math.PI) / (Math.PI * 2) * 8) % 8] = true;
-            double w = (e.Elite || e.Boss ? 2.2 : 1) * Math.Max(0, 7 - dd) / 7;
+            double w = (e.Boss ? 0.8 : e.Elite ? 2.2 : 1) * Math.Max(0, 7 - dd) / 7;
             rx += dx / dd * w; rz += dz / dd * w;
             if (e.State is EnemyState.Windup or EnemyState.Lunging && dd < 6) { rx += -dz / dd * 2.5; rz += dx / dd * 2.5; }
         }
@@ -150,6 +155,7 @@ public sealed class Autopilot
         double mx = (tx - p.X) * 0.25 + rx * 1.6, mz = (tz - p.Z) * 0.25 + rz * 1.6;
         double hd = Math.Sqrt((p.X - home.X) * (p.X - home.X) + (p.Z - home.Z) * (p.Z - home.Z));
         if (hd > home.R * 1.5) { mx += (home.X - p.X) / hd * 2; mz += (home.Z - p.Z) / hd * 2; }
+        if (boss != null) BossSense.Steer(b, boss, true, 5, ref mx, ref mz);
         Steer(dt, mx, mz, p, tx, tz);
         dashT -= dt; abilityT -= dt; drinkT -= dt;
         if ((ring >= 6 || close >= 4) && dashT <= 0 && p.DashCharges > 0) { Press(Act.Dash); dashT = 0.8; }

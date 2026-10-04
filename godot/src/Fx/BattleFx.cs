@@ -505,6 +505,14 @@ public partial class BattleFx : Node3D
         if (key is int k2) keyed[k2] = m;
     }
 
+    /// <summary>A mark's colour lifted for its word: the ground's tint is dim by design, the word must read over a crowd.</summary>
+    static Color WordColour(Color c)
+    {
+        var h = c with { A = 1 };
+        float m = Mathf.Max(h.R, Mathf.Max(h.G, h.B));
+        return m < 1.4f ? new Color(h.R / Mathf.Max(0.01f, m) * 1.4f, h.G / Mathf.Max(0.01f, m) * 1.4f, h.B / Mathf.Max(0.01f, m) * 1.4f) : h;
+    }
+
     /* ------------------------------------------------------------- events -- */
 
     public void Handle(IReadOnlyList<CombatEvent> events, Battle b)
@@ -688,16 +696,17 @@ public partial class BattleFx : Node3D
                         keyed[e.Id] = Ground(e.X, e.Z, (float)e.Radius, tex, col, (float)e.Duration);
                     }
                     else Ring(e.X, e.Z, (float)e.Radius, col, (float)e.Duration, true, e.Id);
-                    // A boss's move, named over it for a moment.
+                    // A boss's move, named over its mark for as long as the mark stands (a lane or a
+                    // cone from the boss is named over the boss, where the eye already is).
                     if (e.Label is { Length: > 0 } label)
-                        Hits.Text(V(e.X, Y(e.X, e.Z) + 2.2, e.Z), label, col with { A = 1 }, 40);
+                        Hits.Word(V(e.X, Y(e.X, e.Z) + 3.4, e.Z), label.ToUpperInvariant(), WordColour(col), 46, (float)Math.Min(2.5, e.Duration + 0.3));
                     break;
                 }
                 case Ev.Break br:
                 {
                     // A phase broken past its mark: the surplus as one big number.
                     var at = V(br.X, Y(br.X, br.Z) + 2.6, br.Z);
-                    Hits.Text(at, $"BREAK {Math.Round(br.Amount):N0}", new Color(2.4f, 1.9f, 0.6f), 76);
+                    Hits.Word(at, $"BREAK {Math.Round(br.Amount):N0}", new Color(2.4f, 1.9f, 0.6f), 84, 2.2f);
                     Flash(at, new Color("#ffd46a"), 8, 0.5f, 9);
                     Cam?.AddTrauma(0.35f);
                     break;

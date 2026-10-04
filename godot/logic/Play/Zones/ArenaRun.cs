@@ -123,6 +123,8 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         B.Time = seconds;
         herald10 = Minute >= 10; herald20 = Minute >= 20; great15 = Minute >= 15;
         B.GreatOwed = 0;
+        // Its sign was given two minutes ago: the light stands on the edge, the words long gone.
+        if (!runUp && seconds >= End - 120) RunUp(quiet: true);
     }
 
     /* ---------------------------------------------------------- the horde -- */
@@ -263,6 +265,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             G.Announce(new Announcement("The fifteenth minute", "A great blessing", "reward", 2.6));
         }
         if (!runUp && !won && Seconds >= End - 120) RunUp();
+        if (makingWay.Count > 0) MakingWay();
         if (!bossUp && !won && Seconds >= End) Boss();
     }
 
@@ -353,22 +356,22 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
 
     /// <summary>Two minutes out: its sign, from the bearing it will come from (a sound,
     /// then a light on the arena's edge), so the survivor turns to face it.</summary>
-    void RunUp()
+    void RunUp(bool quiet = false)
     {
         runUp = true;
         var p = B!.Player;
         signAngle = R() * Math.PI * 2;
         string sign = BossDef switch
         {
-            "wolf_alpha" => "A howl from the edge of the wood; the wolves lift their heads.",
-            "barrow_knight" => "A drum, slow, under everything; the dead turn to face it.",
-            "grimtunnel_roused" => "A blasting thump, and the ground shivers; picks rattle somewhere.",
-            "enforcer" => "A whistle, three notes, and an answering whistle.",
+            "boss_pack" => "A howl from the edge of the wood; the wolves lift their heads.",
+            "boss_dead" => "A drum, slow, under everything; the dead turn to face it.",
+            "grimtunnel_roused" or "boss_lamplings" => "A blasting thump, and the ground shivers; picks rattle somewhere.",
+            "boss_kerchiefs" => "A whistle, three notes, and an answering whistle.",
             _ => "Something is coming.",
         };
-        B.Events.Emit(new Ev.Bark { X = p.X, Z = p.Z + 3, Text = sign });
+        if (!quiet) B.Events.Emit(new Ev.Bark { X = p.X, Z = p.Z + 3, Text = sign });
         G.Look.AddLight(p.X + Math.Cos(signAngle) * 26, 2.5, p.Z + Math.Sin(signAngle) * 26, "#ff6a3a", 3.2, 16, 0.25, 0.12, "#ff8a5a");
-        G.Announce(new Announcement("The half hour nears", "It comes from where the sign was", "danger", 2.6));
+        if (!quiet) G.Announce(new Announcement("The half hour nears", "It comes from where the sign was", "danger", 2.6));
     }
 
     /// <summary>The half hour: what rules the people comes, a boss and no herald: on the
@@ -383,12 +386,14 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         // Its ground cleared: the boss is the thing on screen.
         foreach (var o in B.Enemies.Living().ToList())
             if (o.Disposition == Disposition.Hostile && !o.Elite && (o.X - at.X) * (o.X - at.X) + (o.Z - at.Z) * (o.Z - at.Z) < 64) B.Enemies.Release(o);
+        MakeWay();
         boss = Spawn(BossDef, at.X, at.Z, true, SpawnStyle.Walk);
         script = ArenaBosses.For(BossDef, this);
         if (boss != null)
         {
             boss.Boss = true;
-            if (Spec.BossName != null) boss.Named = new Named { Title = Spec.BossName };
+            // Named, so its body glows as a named thing's does and its blows carry its name.
+            boss.Named = new Named { Title = BossName };
             boss.MaxHp = boss.Hp = boss.MaxHp * (script?.HealthMul(Spec.Tier) ?? 12 + 2 * Spec.Tier);
             boss.Damage *= script?.DamageMul ?? 1.3;
             if (script != null)
@@ -413,10 +418,46 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         Objectives();
     }
 
+    /// <summary>Those falling back for their ruler, until they are out of sight (by pool
+    /// slot and spawn, since a slot let go is soon another creature).</summary>
+    readonly Dictionary<int, double> makingWay = new();
+
+    /// <summary>The people make way for what rules them: past the share the horde is held
+    /// at while the boss lives, the crowd falls back into the dark, the farthest first
+    /// (gone once out of sight), so the boss does not arrive inside a crowd it cannot be
+    /// seen in, and the share is the fight's from its first second, not once the survivor
+    /// has mown down the half-hour's horde.</summary>
+    void MakeWay()
+    {
+        var p = B!.Player;
+        var crowd = B.Enemies.Living().Where(o => o.Disposition == Disposition.Hostile && !o.Elite && o.State != EnemyState.Dying).ToList();
+        int keep = (int)(Target() * bossShare);
+        foreach (var o in crowd.OrderByDescending(o => (o.X - p.X) * (o.X - p.X) + (o.Z - p.Z) * (o.Z - p.Z)).Take(Math.Max(0, crowd.Count - keep)))
+        {
+            o.Status[StatusKind.Fear] = new StatusSlot(5, 1, 1, 0);
+            makingWay[o.Id] = o.Seed;
+        }
+    }
+
+    void MakingWay()
+    {
+        var p = B!.Player;
+        foreach (var (id, seed) in makingWay.ToList())
+        {
+            var o = B.Enemies.Items[id];
+            double d2 = (o.X - p.X) * (o.X - p.X) + (o.Z - p.Z) * (o.Z - p.Z);
+            if (!o.Alive || o.Seed != seed || o.State == EnemyState.Dying) makingWay.Remove(id);
+            else if (d2 > 25 * 25) { B.Enemies.Release(o); makingWay.Remove(id); }
+            // Cornered or slow, it turns back and is one of the share.
+            else if (!o.Status.Has(StatusKind.Fear)) makingWay.Remove(id);
+        }
+    }
+
     /* ------------------------------------------------- the boss's arena -- */
 
     Battle IBossArena.B => B!;
     int IBossArena.Tier => Spec.Tier;
+    string IBossArena.BossName => BossName;
     bool IBossArena.Sworn(string oath) => Spec.Oaths.Contains(oath);
     double IBossArena.R() => R();
     Enemy? IBossArena.Spawn(string def, double x, double z, bool elite, SpawnStyle? style) => Spawn(def, x, z, elite, style);
@@ -536,7 +577,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             B.Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = wx, Z = wz, Radius = 2.4, Duration = 1.2, Hostile = false });
         }
         if (boss is { Alive: true } b && b.State != EnemyState.Dying)
-            G.SetBoss(script != null ? script.Bar(BossName, script is Grimtunnel g ? $"{BossTitle} · lamps: {g.Lamps}" : BossTitle) : new BossBar(BossName, BossTitle, b.Hp, b.MaxHp));
+            G.SetBoss(script != null ? script.Bar(BossName, script is Grimtunnel g ? $"{BossTitle} · {(g.Ganger ? "lamp" : "lamps")}: {g.Lamps}" : BossTitle) : new BossBar(BossName, BossTitle, b.Hp, b.MaxHp));
         else if (herald is { Alive: true } h && h.State != EnemyState.Dying) G.SetBoss(new BossBar(h.Named?.Title ?? $"Herald of {people.Name}", people.Name, h.Hp, h.MaxHp, IsBoss: false));
         else G.SetBoss(null);
         // The clock on the objectives, each second.

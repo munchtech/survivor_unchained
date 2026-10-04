@@ -215,7 +215,7 @@
    "text": "Buried two this week. The ground's full and the priest's a fool. Says so himself."
   },
   {
-   "text": "They buried Aldo this morning. The Captain carried the front of the coffin himself.",
+   "text": "The Captain carried the front of Aldo's coffin himself. Wouldn't let anyone spell him.",
    "when": {
     "fact": "aldo.buried",
     "eq": true
@@ -762,7 +762,7 @@
    }
   },
   {
-   "text": "They buried Brannoc's girl behind the shrine this morning. Chid sang. Chid can't sing. Nobody minded.",
+   "text": "They buried Brannoc's girl behind the shrine. Chid sang. Chid can't sing. Nobody minded.",
    "when": {
     "fact": "nell.buried",
     "eq": true
@@ -833,6 +833,27 @@
     }
    },
    "watch": true
+  },
+  {
+   "text": "Old Oswin's gone to the Morrow. Sat down in his chair after his dinner and went.",
+   "night": false,
+   "when": {
+    "day": {
+     "gte": 3
+    }
+   }
+  },
+  {
+   "text": "Lamps are lit. Stay where they reach, or it's the Morrow for you.",
+   "watch": true,
+   "night": true
+  },
+  {
+   "text": "No carts on the Old Road since the wolves. So who keeps bringing that one in?",
+   "when": {
+    "fact": "player.deaths",
+    "gte": 2
+   }
   }
  ]
 }

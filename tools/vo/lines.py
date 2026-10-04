@@ -14,6 +14,7 @@ Line ids:
   dlg.<npc>.<node>.<variant>   a line of a conversation (dialogue.json)
   ply.<npc>.<node>.<choice>    the survivor's reply (choices; voiced later)
   bark.<npc>.<day|night>.<i>   said to the air in town (npcs.json)
+  bark.<npc>.said.<i>          the same, only while the world is a certain way (npcs.json "said")
   guard.<i>                    a gate guard (npcs.json)
   folk.<i>                     a passer-by (folk.json)
   say.<hash>                   the narrator, or a voice, from the zone code
@@ -135,6 +136,10 @@ def from_npcs(lines: list):
                 for i, b in enumerate(n.get(key) or []):
                     lines.append({"id": f"bark.{npc}.{tag}.{i}", "kind": "bark", "voice": voice, "text": b,
                                   "where": f"npcs.json {npc}.{key}[{i}]"})
+            # Said only while the world is a certain way (what the survivor settled).
+            for i, s in enumerate(n.get("said") or []):
+                lines.append({"id": f"bark.{npc}.said.{i}", "kind": "bark", "voice": voice, "text": s["text"],
+                              "where": f"npcs.json {npc}.said[{i}]"})
     for i, g in enumerate(d.get("guards") or []):
         lines.append({"id": f"guard.{i}", "kind": "bark", "voice": "guard", "text": g["line"], "where": f"npcs.json guards[{i}]"})
 

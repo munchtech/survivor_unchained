@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using SurvivorUnchained.Play;
+using SurvivorUnchained.Play.Bosses;
 using SurvivorUnchained.Sim;
 
 namespace SurvivorUnchained.Balance;
@@ -27,7 +28,7 @@ public static class Pilot
         return r[(r.Count - 1) / 2];
     }
 
-    public static (double X, double Z) Steer(Battle b, bool deft = false)
+    public static (double X, double Z) Steer(Battle b, bool deft = false, ArenaBoss? boss = null)
     {
         var p = b.Player;
         double mx, mz;
@@ -82,6 +83,8 @@ public static class Pilot
         if (far > 60) { mx = mx * 0.3 - p.X / far; mz = mz * 0.3 - p.Z / far; }
         if (deft) Deft(b, press.Count >= 2 || stone != null, ref mx, ref mz);
         if (b.Collision.Blocked(p.X + mx * 0.1, p.Z + mz * 0.1, p.Radius)) (mx, mz) = (-mz, mx);
+        // The boss's own fight, read last: it overrules the crowd.
+        if (ReadsBosses && (boss != null || b.Blows.Count > 0)) Boss(b, boss, deft, ref mx, ref mz);
         double ml = Math.Sqrt(mx * mx + mz * mz);
         if (ml > 1e-6) { mx /= ml; mz /= ml; }
         return (mx, mz);
@@ -94,9 +97,10 @@ public static class Pilot
     {
         var p = b.Player;
         // A champion winding up a lunge close by: dash across its line, as anyone with a dash learns to.
+        // (Not a boss: its blows are marked on the ground, and Boss reads them by their shape.)
         if (p.DashCharges > 0)
             foreach (var e in b.HostilesInRadius(p.X, p.Z, 7))
-                if ((e.Elite || e.Boss) && e.State == EnemyState.Windup)
+                if (e.Elite && (!e.Boss || !ReadsBosses) && e.State == EnemyState.Windup)
                 {
                     double dx = p.X - e.X, dz = p.Z - e.Z, l = Math.Max(0.01, Math.Sqrt(dx * dx + dz * dz));
                     b.Dash(-dz / l, dx / l);
@@ -156,6 +160,14 @@ public static class Pilot
         }
         if (shooter != null && sd > 1.8 && b.HostilesInRadius(p.X, p.Z, 4.5).Count < 3) { mx = shooter.X - p.X; mz = shooter.Z - p.Z; }
     }
+
+    /// <summary>Off (--bossread 0) for the numbers of the hands before they knew the bosses.</summary>
+    public static bool ReadsBosses = true;
+
+    /// <summary>The boss read as a player who has died to it once (Play/Bosses/BossSense.cs,
+    /// shared with the game's autopilot).</summary>
+    public static void Boss(Battle b, ArenaBoss? boss, bool deft, ref double mx, ref double mz) =>
+        BossSense.Steer(b, boss, deft, Reach(b), ref mx, ref mz);
 
     static double Dist(double ax, double az, double bx, double bz) => Math.Sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
 }

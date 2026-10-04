@@ -52,6 +52,9 @@ public sealed class NpcDef
     public Spot Spot = new();
     public List<string> Barks = new();
     public List<string>? NightBarks;
+    /// <summary>Things said to the air only while the world is a certain way: the
+    /// town noticing what the survivor settled, and lines that stop being true.</summary>
+    public List<FolkLine>? Said;
     public PersonSpec? Person;
     public Held? Arms;
 }

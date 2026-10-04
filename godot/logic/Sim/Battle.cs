@@ -95,6 +95,22 @@ public sealed class BattleHooks
     public Action<Enemy, School, double>? OnBossHit;
     /// <summary>A boss's stagger bar filled.</summary>
     public Action<Enemy>? OnBossStagger;
+
+    /// <summary>Hooks that ask `zone`'s at the moment they are called. A zone sets some
+    /// of its hooks only when a fight begins (the arena's boss at the half hour), so a
+    /// copy taken when the battle starts would never see them: the game's boss scripts
+    /// did not run for that reason, while the tests, which share the zone's hooks, did.</summary>
+    public static BattleHooks Following(BattleHooks zone) => new()
+    {
+        OnKill = (e, byPlayer) => zone.OnKill?.Invoke(e, byPlayer),
+        OnLoot = e => zone.OnLoot?.Invoke(e) ?? Array.Empty<Loot>(),
+        OnPickup = p => zone.OnPickup?.Invoke(p) ?? true,
+        OnPlayerDeath = killer => zone.OnPlayerDeath?.Invoke(killer) ?? false,
+        BossTick = (e, dt) => zone.BossTick?.Invoke(e, dt) ?? false,
+        OnHitProp = (tag, id, school, dmg, x, z) => zone.OnHitProp?.Invoke(tag, id, school, dmg, x, z),
+        OnBossHit = (e, school, dmg) => zone.OnBossHit?.Invoke(e, school, dmg),
+        OnBossStagger = e => zone.OnBossStagger?.Invoke(e),
+    };
 }
 
 public sealed class BattleSetup

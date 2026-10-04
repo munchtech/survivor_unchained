@@ -10,6 +10,8 @@ public interface IBossArena
 {
     Battle B { get; }
     int Tier { get; }
+    /// <summary>Who it is here (the Pack's ruler is Greymuzzle in his Hollow, the Pack-Mother at the table).</summary>
+    string BossName { get; }
     bool Sworn(string oath);
     double R();
     Enemy? Spawn(string def, double x, double z, bool elite = false, SpawnStyle? style = null);
@@ -228,6 +230,8 @@ public abstract class ArenaBoss
             e.Anim = EnemyAnim.Windup;
         }
         bool go = move.Each?.Invoke(move.T) ?? true;
+        // The move ended itself (a channel broken from inside it): nothing is left to finish.
+        if (move == null) return true;
         if (!go || move.T >= move.Dur)
         {
             var m = move;
