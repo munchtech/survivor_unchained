@@ -40,6 +40,9 @@ public sealed class PackMother : ArenaBoss
     ];
     public override School Weakness => School.Fire;
     public override string WeaknessText => $"Fire breaks {Her} moon-howl";
+    // Measured (docs/team/combat.md): at 12 + 2 a tier a par build broke her for 63% of
+    // her health over the floors and won in 69 s; the contract asks 90-120.
+    public override double HealthMul(int tier) => 30 + 5 * tier;
     /// <summary>Greymuzzle is a he; the Pack-Mother a she.</summary>
     bool He => A.BossName == "Greymuzzle";
     string Her => He ? "his" : "her";
@@ -184,7 +187,8 @@ public sealed class BarrowLord : ArenaBoss
     public bool Laying => laying;
 
     // Undead resist frost and shadow; on him they do not, so every school can lay him down in time.
-    public override double HealthMul(int tier) => 9 + 1.5 * tier;
+    // 9 + 1.5 a tier measured 80 s and a 14% Break with his laying-down; the contract asks 90-120.
+    public override double HealthMul(int tier) => 13 + 2.2 * tier;
 
     protected override void Enter(int phase)
     {
@@ -340,7 +344,9 @@ public sealed class BarrowLord : ArenaBoss
     double holyT;
     public override void OnHit(Enemy e, School school, double dmg)
     {
-        if (laying && school == School.Holy) holyT = 0.5;
+        // Down, holy hastens his laying; it is not a channel to break (the bar's line is the
+        // survivor's to fill, and a holy blow took it away).
+        if (laying) { if (school == School.Holy) holyT = 0.5; return; }
         base.OnHit(e, school, dmg);
     }
 }
@@ -364,6 +370,8 @@ public sealed class Grimtunnel : ArenaBoss
         lampHp = new double[Lit.Length];
     }
     public bool Ganger => ganger;
+    // 12 + 2 a tier measured 92 s and a 66% Break (under the ground he takes half).
+    public override double HealthMul(int tier) => 18 + 3 * tier;
     protected override Phase[] Phases { get; } =
     [
         new("The Dig", 0.60, 15, 60),
@@ -612,6 +620,8 @@ public sealed class RedHand : ArenaBoss
     ];
     public override School Weakness => School.Storm;
     public override string WeaknessText => "Storm makes his thief drop what he took";
+    // 12 + 2 a tier measured 72 s and a 15% Break.
+    public override double HealthMul(int tier) => 21 + 3.5 * tier;
     protected override string HardName => "Everything Owed";
     double tollT = 10, volleyT = 5, cageT = 3, maulT = 2, sweepT = 4;
     bool levy, everything;
