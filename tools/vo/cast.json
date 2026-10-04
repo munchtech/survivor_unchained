@@ -27,7 +27,9 @@
     3.0,
     3.9
    ],
-   "maya": "Realistic female voice in the 60s age with british accent, a Yorkshire innkeeper. Low pitch, husky lived-in timbre, brisk pacing, dry bossy tone."
+   "maya": "Realistic female voice in the 60s age with british accent, a Yorkshire innkeeper. Low pitch, husky lived-in timbre, brisk pacing, dry bossy tone.",
+   "wants": "the inn kept and everyone fed",
+   "hides": "she has sold every traveller on the ford road to Vonnra, and watched the carters go down it and not come back"
   },
   "holloway": {
    "name": "Captain Holloway",

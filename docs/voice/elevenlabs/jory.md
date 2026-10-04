@@ -1,6 +1,6 @@
 # Jory Coyle: ElevenLabs packet
 
-Voice id in the game: `jory`. 15 takes to record (884 characters; about 2,652 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `jory`. 14 takes to record (877 characters; about 2,631 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -148,6 +148,7 @@ Subtitle: Right. Right. ...Thank you. I think. I'll know when I've stopped feeli
 
 ### 10. `dlg.jory.truth_ask.0.p0.wav`
 
+*The same words are also* `dlg.jory.truth_ask.0.p2.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json jory/truth_ask#0; part 1 of 3: **jory: I will.** / narrator: He doesn't move. / jory: I will.
 *Played:* frozen resolve; doing: he will ask; pace: slow; volume: quiet.
 *Note:* 'I will.' Narrator: he doesn't move. 'I will.' smaller.
@@ -157,18 +158,7 @@ Subtitle: Right. Right. ...Thank you. I think. I'll know when I've stopped feeli
 ```
 Subtitle: I will.
 
-### 11. `dlg.jory.truth_ask.0.p2.wav`
-
-*Where:* dialogue.json jory/truth_ask#0; part 3 of 3: jory: I will. / narrator: He doesn't move. / **jory: I will.**
-*Played:* frozen resolve; doing: he will ask; pace: slow; volume: quiet.
-*Note:* 'I will.' Narrator: he doesn't move. 'I will.' smaller.
-
-```
-[frozen resolve, quietly] I will.
-```
-Subtitle: I will.
-
-### 12. `dlg.jory.salt.0.p1.wav`
+### 11. `dlg.jory.salt.0.p1.wav`
 
 *Where:* dialogue.json jory/salt#0; part 2 of 2: narrator: He nods, and it goes out of his face at once, the way it goes out of a child's. / **jory: Salt. Right. ...Thanks.**
 *Played:* relief, deflation; doing: believes the lie; pace: slow; volume: quiet.
@@ -181,7 +171,7 @@ Subtitle: Salt. Right. ...Thanks.
 
 ## Said in passing
 
-### 13. `bark.jory.day.0.wav`
+### 12. `bark.jory.day.0.wav`
 
 *Where:* npcs.json jory.barks[0]
 *Played:* shaken; pace: measured; volume: quiet.
@@ -191,7 +181,7 @@ Subtitle: Salt. Right. ...Thanks.
 ```
 Subtitle: I thought I'd die in there.
 
-### 14. `bark.jory.day.1.wav`
+### 13. `bark.jory.day.1.wav`
 
 *Where:* npcs.json jory.barks[1]
 *Played:* wry, tired; pace: measured; volume: quiet.
@@ -201,7 +191,7 @@ Subtitle: I thought I'd die in there.
 ```
 Subtitle: Uncle keeps hugging me. It's a lot.
 
-### 15. `bark.jory.day.2.wav`
+### 14. `bark.jory.day.2.wav`
 
 *Where:* npcs.json jory.barks[2]
 *Played:* haunted; pace: slow; volume: quiet.

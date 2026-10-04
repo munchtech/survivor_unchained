@@ -1,12 +1,12 @@
 # Mother Rook: ElevenLabs packet
 
-Voice id in the game: `rook`. 46 takes to record (6,140 characters; about 18,420 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
-
-**Hold 2 of these** (marked HOLD below) until the story editor's review of section 17 is back; the rest can be recorded now.
+Voice id in the game: `rook`. 45 takes to record (6,073 characters; about 18,219 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
 **Mother Rook** (the Last Lamp). Short sentences, bossy imperatives, kindness said sideways ("Sit down before you fall down"). Yorkshire turns: "love" is Sella's, Rook's is "pet". Counts beds and debts; knows everyone's business and admits to most of it. Never says please, never says sorry, never cries in front of anyone. Laughs on the out-breath. *Casting:* 60, Yorkshire, warm, dry, bossy.
+
+*Wants:* the inn kept and everyone fed. *Hides:* she has sold every traveller on the ford road to Vonnra, and watched the carters go down it and not come back.
 
 ## Casting the voice
 
@@ -53,7 +53,7 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 *Played:* dry, brisk, kind underneath; doing: takes charge of a bloodied stranger; pace: brisk; volume: level.
 *Wants:* to take charge of you, and to see who you are
 *Hides:* Vonnra pays her for news of Low Ford arrivals, double for this one
-*Note:* 'Well.' a beat, looking you over. On the Chid sentence she watches your face for how you take 'blue lights going out'. A dry edge on 'bleeding on my step'. No laugh at the end: a breath, and the warmth is in the order itself.
+*Note:* 'Well.' a beat, looking you over: partly for Vonnra's money, and the kindness is real as well. On the Chid sentence she watches your face for how you take 'blue lights going out'. A dry edge on 'bleeding on my step'. No laugh at the end: a breath, and the warmth is in the order itself.
 
 ```
 [dry, brisk, kind underneath] Well… The one who walked up from the Low Ford at dawn. Chid came in babbling about blue lights going out at the crossing, and here you are, bleeding on my step. I'm Rook. This is the Last Lamp. [inhales] Sit down before you fall down.
@@ -156,9 +156,9 @@ Subtitle: The wolves are settled, one way or another, and nobody's thanked anybo
 *Note:* Warmth for Jory; exasperated fondness for Harlan. 'Pick one.' dry.
 
 ```
-[warm, wry] Jory Coyle's home and sleeping in my good room with the lamp lit, and Harlan's tried to pay me for it twice. The wolves are another matter: Holloway's paying for pelts, Mayka says they're sick, and the Pen-hale boy says they drink from the stream and fall down. Pick one.
+[warm, wry] Jory Coyle's home, asleep in my good room with the lamp lit, and Harlan's been up my stairs four times to look at him. The wolves are another matter: Holloway's paying for pelts, Mayka says they're sick, and the Pen-hale boy says they drink from the stream and fall down. Pick one.
 ```
-Subtitle: Jory Coyle's home and sleeping in my good room with the lamp lit, and Harlan's tried to pay me for it twice. The wolves are another matter: Holloway's paying for pelts, Maeca says they're sick, and the Penhale boy says they drink from the stream and fall down. Pick one.
+Subtitle: Jory Coyle's home, asleep in my good room with the lamp lit, and Harlan's been up my stairs four times to look at him. The wolves are another matter: Holloway's paying for pelts, Maeca says they're sick, and the Penhale boy says they drink from the stream and fall down. Pick one.
 
 ### 11. `dlg.rook.rumours.5.wav`
 
@@ -218,11 +218,11 @@ Subtitle: Holloway thinks he does. Vonnra knows she does. Pell's got it written 
 ### 16. `dlg.rook.ford.0.wav`
 
 *Where:* dialogue.json rook/ford#0
-*Played:* candid, unapologetic; doing: admits she reports on travellers; pace: measured; volume: quiet.
-*Note:* Lower after the pause, honest. 'Don't look like that, pet' brisk and unrepentant. A flicker of unease under 'before you'd finished your stew'.
+*Played:* candid, unrepentant; doing: admits she reports on travellers; pace: measured; volume: quiet.
+*Note:* Lower after the pause, honest. 'Don't look like that, pet' brisk and unrepentant on top, and she changes the subject fast.
 
 ```
-[candid, unapologetic, quietly] Not many, this last year. The ford's been bad since the winter. ...Vonra pays me to tell her who comes up that road, and when. Don't look like that, pet; she pays everyone for something. I'd told her about you before you'd finished your stew.
+[candid, unrepentant, quietly] Not many, this last year. The ford's been bad since the winter. ...Vonra pays me to tell her who comes up that road, and when… Don't look like that, pet; she pays everyone for something. I'd told her about you before you'd finished your stew.
 ```
 Subtitle: Not many, this last year. The ford's been bad since the winter. ...Vonnra pays me to tell her who comes up that road, and when. Don't look like that, pet; she pays everyone for something. I'd told her about you before you'd finished your stew.
 
@@ -230,7 +230,7 @@ Subtitle: Not many, this last year. The ford's been bad since the winter. ...Von
 
 *Where:* dialogue.json rook/ford2#0
 *Played:* uneasy; doing: Vonnra paid double for you; pace: slow; volume: quiet.
-*Note:* The bossiness gone. 'She's never paid me double for anything.' quiet, troubled.
+*Note:* 'She's never paid me double for anything.' is more than she meant to say. Then she's busy with a cup.
 
 ```
 [uneasy, quietly] Nothing. She paid me double. She's never paid me double for anything.
@@ -284,11 +284,11 @@ Subtitle: Holloway's men were in asking after you. I told them you owed me money
 ### 22. `dlg.rook.cb_shrine_lit.0.wav`
 
 *Where:* dialogue.json rook/cb_shrine_lit#0
-*Played:* moved, hiding it; doing: thanks you for the shrine; pace: measured; volume: level.
-*Note:* Amused at Chid. A catch on 'My mother's lamp's got a sister again.' Then brusque to cover it: 'Don't make a habit of it.'
+*Played:* amused, then brusque; doing: thanks you for the shrine; pace: measured; volume: level.
+*Note:* Amused at Chid. No catch: Rook never cries in front of anyone. A pause after 'My mother's lamp's got a sister again.', then brisk: 'Don't make a habit of it.'
 
 ```
-[moved, hiding it] Chid came running in this morning without his shoes on. The shrine lamp, he says. My mother's lamp's got a sister again. ...Your bowl's on the house tonight. Don't make a habit of it.
+[amused, then brusque] Chid came running in this morning without his shoes on. The shrine lamp, he says. My mother's lamp's got a sister again… ...Your bowl's on the house tonight. Don't make a habit of it.
 ```
 Subtitle: Chid came running in this morning without his shoes on. The shrine lamp, he says. My mother's lamp's got a sister again. ...Your bowl's on the house tonight. Don't make a habit of it.
 
@@ -371,6 +371,7 @@ Subtitle: If you're going to set anything on fire, pet, do it outside. Sella's g
 
 ### 30. `dlg.rook.say_calling.3.wav`
 
+*The same words are also* `dlg.rook.say_calling.4.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json rook/say_calling#3
 *Played:* startled, then dry; doing: you crept in; pace: measured; volume: level.
 *Note:* Mild suspicion; the bell threat dry.
@@ -380,18 +381,7 @@ Subtitle: If you're going to set anything on fire, pet, do it outside. Sella's g
 ```
 Subtitle: You came in without the door making a sound. That door always makes a sound. Do it again and I'll put a bell on you.
 
-### 31. `dlg.rook.say_calling.4.wav`
-
-*Where:* dialogue.json rook/say_calling#4
-*Played:* startled, then dry; doing: you crept in; pace: measured; volume: level.
-*Note:* Mild suspicion; the bell threat dry.
-
-```
-[startled, then dry] You came in without the door making a sound. That door always makes a sound. Do it again and I'll put a bell on you.
-```
-Subtitle: You came in without the door making a sound. That door always makes a sound. Do it again and I'll put a bell on you.
-
-### 32. `dlg.rook.say_woman.0.wav`
+### 31. `dlg.rook.say_woman.0.wav`
 
 *Where:* dialogue.json rook/say_woman#0
 *Played:* frank, protective; doing: warns a woman about jealous wives; pace: measured; volume: quiet.
@@ -402,7 +392,7 @@ Subtitle: You came in without the door making a sound. That door always makes a 
 ```
 Subtitle: There's a bolt on the inside of your door. Use it. Not for the men; for their wives. They come up the stairs looking for Sella and they're not particular.
 
-### 33. `dlg.rook.t_rook.0.wav`
+### 32. `dlg.rook.t_rook.0.wav`
 
 *Where:* dialogue.json rook/t_rook#0
 *Played:* dry, hiding grief; doing: her husband; pace: measured; volume: quiet.
@@ -413,7 +403,7 @@ Subtitle: There's a bolt on the inside of your door. Use it. Not for the men; fo
 ```
 Subtitle: There was. Drank with the Watch, sang flat, and went up the north road with the last lot that went. I kept his chair by the hearth. I sit in it now. It's a good chair; that's the only reason.
 
-### 34. `dlg.rook.cb_told_brannoc.0.p0.wav`
+### 33. `dlg.rook.cb_told_brannoc.0.p0.wav`
 
 *Where:* dialogue.json rook/cb_told_brannoc#0; part 1 of 3: **rook: You told Brannoc about his girl.** / narrator: She wipes the same bit of counter for a while. / rook: Good. Somebody had to, and it was never going to be me. ...Sit down. You look like you wan…
 *Played:* grief held down, gruff; doing: thanks you for telling Brannoc; pace: slow; volume: quiet.
@@ -424,7 +414,7 @@ Subtitle: There was. Drank with the Watch, sang flat, and went up the north road
 ```
 Subtitle: You told Brannoc about his girl.
 
-### 35. `dlg.rook.cb_told_brannoc.0.p2.wav`
+### 34. `dlg.rook.cb_told_brannoc.0.p2.wav`
 
 *Where:* dialogue.json rook/cb_told_brannoc#0; part 3 of 3: rook: You told Brannoc about his girl. / narrator: She wipes the same bit of counter for a while. / **rook: Good. Somebody had to, and it was never going to be me. ...Sit down. You look like you wan…**
 *Played:* grief held down, gruff; doing: thanks you for telling Brannoc; pace: slow; volume: quiet.
@@ -435,21 +425,21 @@ Subtitle: You told Brannoc about his girl.
 ```
 Subtitle: Good. Somebody had to, and it was never going to be me. ...Sit down. You look like you want feeding, and I want something to do with my hands.
 
-### 36. `dlg.rook.valley.0.wav`
+### 35. `dlg.rook.valley.0.wav`
 
 *Where:* dialogue.json rook/valley#0
 *Played:* flat, closing a door; doing: what happened to Ashford; pace: measured; volume: quiet.
 *Hides:* she lost people there too
-*Note:* No warmth to spare. 'Ashford was.' on its own. The 'pet' is habit, not softness. The three 'don't ask' each firmer; the last a closed door.
+*Note:* No warmth to spare. 'Ashford was.' on its own. The 'pet' is habit, not softness. The don'ts flat, each one a door closing, with no build.
 
 ```
-[flat, closing a door, quietly] Ashford was… Half of it went to the Morrow in one night, pet, and the other half the year after, coughing. [inhales] Don't ask Holloway about it. Don't ask Mayka… And don't ask me twice.
+[flat, closing a door, quietly] Ashford was… Half of it went to the Morrow in one night, pet, and the other half the year after, coughing. [inhales] Don't ask Holloway about it. Don't ask Mayka. Don't ask a Kerchief, if you meet one… And don't ask me twice.
 ```
-Subtitle: Ashford was. Half of it went to the Morrow in one night, pet, and the other half the year after, coughing. Don't ask Holloway about it. Don't ask Maeca. And don't ask me twice.
+Subtitle: Ashford was. Half of it went to the Morrow in one night, pet, and the other half the year after, coughing. Don't ask Holloway about it. Don't ask Maeca. Don't ask a Kerchief, if you meet one. And don't ask me twice.
 
 ## Said in passing
 
-### 37. `bark.rook.day.0.wav`
+### 36. `bark.rook.day.0.wav`
 
 *Where:* npcs.json rook.barks[0]
 *Played:* proud, dry; pace: brisk; volume: level.
@@ -460,7 +450,7 @@ Subtitle: Ashford was. Half of it went to the Morrow in one night, pet, and the 
 ```
 Subtitle: Beds are dry and the stew's hot. That's more than most can say.
 
-### 38. `bark.rook.day.1.wav`
+### 37. `bark.rook.day.1.wav`
 
 *Where:* npcs.json rook.barks[1]
 *Played:* bossy; pace: brisk; volume: raised.
@@ -471,7 +461,7 @@ Subtitle: Beds are dry and the stew's hot. That's more than most can say.
 ```
 Subtitle: Wipe your boots.
 
-### 39. `bark.rook.day.2.wav`
+### 38. `bark.rook.day.2.wav`
 
 *Where:* npcs.json rook.barks[2]
 *Played:* dry, bossy; pace: brisk; volume: raised.
@@ -482,7 +472,7 @@ Subtitle: Wipe your boots.
 ```
 Subtitle: If you're bleeding, bleed outside.
 
-### 40. `bark.rook.day.3.wav`
+### 39. `bark.rook.day.3.wav`
 
 *Where:* npcs.json rook.barks[3]
 *Played:* dry, sly; pace: measured; volume: level.
@@ -493,7 +483,7 @@ Subtitle: If you're bleeding, bleed outside.
 ```
 Subtitle: Rooms upstairs by the night. By the hour, ask Sella.
 
-### 41. `bark.rook.night.0.wav`
+### 40. `bark.rook.night.0.wav`
 
 *Where:* npcs.json rook.nightBarks[0]
 *Played:* tired, firm; pace: measured; volume: quiet.
@@ -504,7 +494,7 @@ Subtitle: Rooms upstairs by the night. By the hour, ask Sella.
 ```
 Subtitle: Lamps stay lit till the last one's in.
 
-### 42. `bark.rook.night.1.wav`
+### 41. `bark.rook.night.1.wav`
 
 *Where:* npcs.json rook.nightBarks[1]
 *Played:* tired, warm; pace: measured; volume: quiet.
@@ -515,7 +505,7 @@ Subtitle: Lamps stay lit till the last one's in.
 ```
 Subtitle: Bed's warm if you want it. Stew's gone.
 
-### 43. `bark.rook.night.2.wav`
+### 42. `bark.rook.night.2.wav`
 
 *Where:* npcs.json rook.nightBarks[2]
 *Played:* hushing; pace: measured; volume: hushed.
@@ -526,7 +516,7 @@ Subtitle: Bed's warm if you want it. Stew's gone.
 ```
 Subtitle: Quietly, now. People are sleeping.
 
-### 44. `bark.rook.night.3.wav`
+### 43. `bark.rook.night.3.wav`
 
 *Where:* npcs.json rook.nightBarks[3]
 *Played:* dry, wicked; pace: measured; volume: quiet.
@@ -537,7 +527,7 @@ Subtitle: Quietly, now. People are sleeping.
 ```
 Subtitle: Going up to Sella's? Wipe your boots twice. She's particular about her floor and nothing else.
 
-### 45. `bark.rook.said.0.wav`  HOLD
+### 44. `bark.rook.said.0.wav`
 
 *Where:* npcs.json rook.said[0]
 *Played:* worried, dry; doing: Harlan is grieving; pace: measured; volume: level.
@@ -548,7 +538,7 @@ Subtitle: Going up to Sella's? Wipe your boots twice. She's particular about her
 ```
 Subtitle: Harlan's not eating. I've sent bread. He's sent it back.
 
-### 46. `bark.rook.said.1.wav`  HOLD
+### 45. `bark.rook.said.1.wav`
 
 *Where:* npcs.json rook.said[1]
 *Played:* quiet, closed; doing: Nell's hook by the door; pace: slow; volume: quiet.
