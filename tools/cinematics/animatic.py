@@ -653,6 +653,7 @@ NAMES = speaker_names()
 
 
 def write_cutlist(out, cuts, total):
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     lines = [f"{'time':>7}  {'dur':>5}  shot"]
     for kind, what, t, dur in cuts:
         if kind == "card":
