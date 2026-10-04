@@ -24,7 +24,7 @@ import krea
 OUT = os.path.join(krea.OUT, "paintover")
 
 
-def paint(rgba, prompt, name, denoise=0.32, seed=1, target=1024, detail=1.0, keep_light=0.6, n=1, pick=0):
+def paint(rgba, prompt, name, denoise=0.32, seed=1, target=1024, detail=1.0, keep_light=0.6, n=1, pick=0, protect=None):
     """rgba: float (H, W, 4) at file size. Returns float RGBA at file size."""
     os.makedirs(OUT, exist_ok=True)
     H, W = rgba.shape[:2]
@@ -49,5 +49,10 @@ def paint(rgba, prompt, name, denoise=0.32, seed=1, target=1024, detail=1.0, kee
     mixed = lin_p * (1 - keep_light) + (lin_p / np.maximum(lp, 1e-4) * lb) * keep_light
     detail_only = lin_p - lp
     mixed = mixed + detail_only * (detail - 1.0)
-    out = np.dstack([F.lin_to_srgb(np.clip(mixed, 0, 1)), rgba[..., 3]])
+    rgb = F.lin_to_srgb(np.clip(mixed, 0, 1))
+    if protect is not None:
+        # Where a piece is too small for the painting to keep (a link, a stone), the render stays.
+        m = cv2.GaussianBlur(protect.astype(np.float32), (0, 0), 1.5)[..., None]
+        rgb = rgb * (1 - m) + base * m
+    out = np.dstack([rgb, rgba[..., 3]])
     return out.astype(np.float32)

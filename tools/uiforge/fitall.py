@@ -64,7 +64,8 @@ def f_minimap():
 
 
 def f_medals():
-    rounds.fit_round(raw("medal", "medal_31.png"), 140, rim_at=0.98, calm_below=0.5, ember_rim=0.6).save(ui("hud", "medal_level.png"))
+    # 116 (58 shown) round the 46 px medal: larger, it would cover the bar's word beside it.
+    rounds.fit_round(raw("medal", "medal_31.png"), 116, rim_at=0.98, calm_below=0.5, ember_rim=0.6).save(ui("hud", "medal_level.png"))
     rounds.fit_round(raw("many1", "medal_heart_321_0.png"), 128, rim_at=0.98).save(ui("hud", "medal_heart.png"))
     rounds.fit_round(raw("many1", "ring_art_322_0.png"), 220, rim_at=0.99, open_below=0.78).save(ui("hud", "ring_art.png"))
 

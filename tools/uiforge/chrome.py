@@ -83,8 +83,9 @@ def render(name, spec, tone=None, calib_inset=None, post=None, paint=None):
     paint = PAINT.get(name) if paint is None else paint
     if paint:
         import paintover as PO
-        prompt, denoise = paint
-        img = PO.paint(img, prompt, name, denoise=denoise, seed=11, keep_light=0.75)
+        prompt, denoise = paint[:2]
+        protect = paint[2](img.shape[0], img.shape[1]) if len(paint) > 2 else None
+        img = PO.paint(img, prompt, name, denoise=denoise, seed=11, keep_light=0.75, protect=protect)
     img = calibrate(img, spec["margins"], tone, calib_inset)
     if post:
         img = post(img)
@@ -419,6 +420,74 @@ def build_minimap():
     paint = ("a round minimap frame ring of " + IRON_PROMPT + ", square iron coins at east south and west, a forged iron "
              "arrowhead at the north, the middle empty and black", 0.30)
     save(render("minimap", spec, None, post=open_middle, paint=paint), "minimap/frame.png")
+
+
+def stadium(cx, cy, length, width, angle=0.0, gap=0.0, gap_at=-math.pi / 2, n=60):
+    """A chain link's centre line (file px), opened by `gap` radians at `gap_at`."""
+    r = width / 2
+    st = max(length - width, 0) / 2
+    c, s = math.cos(angle), math.sin(angle)
+    pts = []
+    for i in range(n):
+        t = i / n * 2 * math.pi
+        if gap and abs(((t - gap_at + math.pi) % (2 * math.pi)) - math.pi) < gap / 2:
+            pts.append(None)
+            continue
+        x = (st if math.cos(t) >= 0 else -st) + r * math.cos(t)
+        y = r * math.sin(t)
+        pts.append((cx + x * c - y * s, cy + x * s + y * c))
+    if gap:
+        k = pts.index(None)
+        while pts[k] is None:
+            k = (k + 1) % n
+        pts = [p for p in pts[k:] + pts[:k] if p is not None]
+    else:
+        pts.append(pts[0])
+    return pts
+
+
+def build_artring():
+    """The ring round the art in hand (hud/ring_art.png, 220 square, 110 shown over the 89 px
+    ring): a forged band with the twisted wire, six of the binders' coins round it and at
+    its head the seventh link of the chain, pried open, the ember at the break."""
+    W = H = 220
+    R_out = 108
+    band = 20
+    inset = W / 2 - R_out
+    c = W / 2
+    spec = {"size": [W, H], "ss": 4, "margins": [55, 55, 55, 55], "samples": 96, "tile": False,
+            "strap": dict(IRON, inset=inset, width=band, thick=6, bevel=2.5, radius=R_out, hammer=1.0, dent_scale=0.10),
+            "wire": {"offset": 6, "radius": 2.0, "pitch": 7, "color": GOLD, "rough": 0.3, "phase": "arc"},
+            "ember_strength": 1.6, "ember_color": "#ff4a10"}
+    mid = R_out - band / 2
+    coins = []
+    for k in range(1, 7):
+        a = math.pi / 2 - k * 2 * math.pi / 7
+        coins.append({"x": c + math.cos(a) * mid, "y": c - math.sin(a) * mid, "size": 15, "hole": 0.36, "ember": 1})
+    spec["coins"] = coins
+    # The seventh link, standing over the band's head, pried open at its top.
+    ly = c - mid
+    spec["scrolls"] = [{"pts": stadium(c, ly, 38, 17, angle=0.0, gap=1.25, gap_at=-math.pi / 2), "w0": 5.0, "w1": 5.0,
+                        "lift": 3.0, "flat": 0.9}]
+    # The ember at the break: a short hot thread across the gap.
+    spec["cracks"] = [{"pts": [(c - 4.5, ly - 8.5), (c, ly - 7.8), (c + 4.5, ly - 8.5)], "w": 0.9, "strength": 7.0, "color": "#ff8a2a"}]
+
+    def open_middle(img):
+        yy, xx = np.mgrid[0:H, 0:W]
+        rr = np.hypot(xx - c + 0.5, yy - c + 0.5) / (W / 2)
+        img = img.copy()
+        img[..., 3] *= np.clip((rr - 0.79) / 0.02, 0, 1)
+        # The ember's glow at the break, over everything.
+        d = np.hypot(xx - c, yy - (ly - 8.5)) / W
+        g = np.exp(-(d / 0.028) ** 2) * 0.6
+        lin = F.srgb_to_lin(img[..., :3]) + g[..., None] * F.hexc("#ff7a2a") * 0.8
+        img[..., :3] = F.lin_to_srgb(np.clip(lin, 0, 1))
+        img[..., 3] = np.maximum(img[..., 3], g * 0.85)
+        return img
+    paint = ("a round ring of " + IRON_PROMPT + ", six small square iron coins set round it, at its top one iron chain link "
+             "pried open with molten ember light at the break, the middle empty and black", 0.28,
+             lambda h, w: (np.hypot(*np.mgrid[0:h, 0:w][::-1] - np.array([c, ly])[:, None, None]) < 24).astype(np.float32))
+    save(render("artring", spec, None, post=open_middle, paint=paint), "hud/ring_art.png")
 
 
 GROUPS = {n[6:]: f for n, f in globals().items() if n.startswith("build_")}
