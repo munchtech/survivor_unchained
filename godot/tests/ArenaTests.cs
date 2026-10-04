@@ -15,7 +15,7 @@ namespace SurvivorUnchained.Tests;
 /// <summary>An ember arena, run without a screen (Arena/Arena.cs, Play/Zones/ArenaRun.cs).</summary>
 public class ArenaTests
 {
-    sealed record Setup(Journey J, FakeHost Host, ArenaRun Zone, Battle B, MapBuild Map, ArenaSpec Spec)
+    internal sealed record Setup(Journey J, FakeHost Host, ArenaRun Zone, Battle B, MapBuild Map, ArenaSpec Spec)
     {
         /// <summary>What was called out over the fight.</summary>
         public readonly List<string> Barks = new();
@@ -28,7 +28,7 @@ public class ArenaTests
         OnWin = """[{ "set": { "test.won": true } }]""", OnLose = """[{ "set": { "test.lost": true } }]""",
     };
 
-    static Setup Make(ArenaSpec spec, Journey? j = null)
+    internal static Setup Make(ArenaSpec spec, Journey? j = null)
     {
         var a = Callings.Archetype("warden");
         j ??= Journey.Begin(new CreationChoice

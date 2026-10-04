@@ -938,6 +938,13 @@ public partial class Game : Node, IZoneHost
                 if (Args.Has("pad")) { controls.UsingPad = true; Ui.Nav.KeyMode = true; }
                 if (Enum.TryParse<Act>(keys.Split(',')[keyI++], true, out var ka)) controls.Press(ka);
             }
+            // --clicks X:Y,rX:Y,...: then the mouse goes there and clicks (r: the right button), in turn,
+            // through the same input a hand would give (pictures of a page worked by mouse).
+            else if (Args.Get("clicks") is string clicks && clickI < clicks.Split(',').Length)
+            {
+                tourT = Args.Num("click-every", 0.8f);
+                ClickAt(clicks.Split(',')[clickI++]);
+            }
             return;
         }
         if (Args.Has("pad")) { controls.UsingPad = true; Ui.Nav.KeyMode = true; }
@@ -957,6 +964,26 @@ public partial class Game : Node, IZoneHost
                 Spilled = Args.Has("fell") ? new() { ["ember_shard"] = 4, ["wolf_pelt"] = 2, ["boar_hide"] = 2 } : new(),
             });
         else Open(next);
+    }
+
+    int clickI;
+
+    /// <summary>A click as the mouse gives it: moved there, pressed, released ("r640:480" for the right button).</summary>
+    void ClickAt(string spec)
+    {
+        bool right = spec.StartsWith('r');
+        var xy = spec.TrimStart('r').Split(':');
+        if (xy.Length != 2 || !float.TryParse(xy[0], System.Globalization.CultureInfo.InvariantCulture, out var x)
+            || !float.TryParse(xy[1], System.Globalization.CultureInfo.InvariantCulture, out var y)) return;
+        var at = new Vector2(x, y);
+        controls.UsingPad = false;
+        Ui.Nav.KeyMode = false;
+        var vp = GetViewport();
+        vp.PushInput(new InputEventMouseMotion { Position = at, GlobalPosition = at });
+        var button = right ? MouseButton.Right : MouseButton.Left;
+        vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = true });
+        vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = false });
+        GD.Print($"click {spec}");
     }
 
     /// <summary>--open talk:ID>words>+: a conversation, each choice after it
