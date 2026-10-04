@@ -143,6 +143,18 @@ public static class Pilot
             if (e.StateT < 0.3 && p.DashCharges > 0) b.Dash(mx, mz);
             return;
         }
+        // A crossbow knelt and aiming down its fixed line: off the line, as from a lunge.
+        foreach (var e in b.Enemies.Living())
+        {
+            if (e.State != EnemyState.Casting || e.Cast != CastKind.Aim || e.Disposition != Disposition.Hostile) continue;
+            double rx = p.X - e.X, rz = p.Z - e.Z;
+            double along = rx * e.LungeX + rz * e.LungeZ;
+            double across = rx * -e.LungeZ + rz * e.LungeX;
+            if (along < 0 || along > e.AimReach + 3 || Math.Abs(across) > 1.2 + along * 0.2) continue;
+            double side = across >= 0 ? 1 : -1;
+            mx = -e.LungeZ * side; mz = e.LungeX * side;
+            return;
+        }
         foreach (var pr in b.Projectiles.Living())
         {
             if (!pr.Lob || pr.Owner != Side.Enemy) continue;

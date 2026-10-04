@@ -39,6 +39,9 @@ public sealed class RangedSpec
     public GroundSpec? Zone;
     public (double Factor, double Duration)? Slow;
     public string? Art;
+    /// <summary>Seconds planted and aiming before it looses (a crossbow's kneel): its aim is fixed
+    /// as it begins, so stepping off the line in time is a dodge, as a lunge's wind-up is. 0: none.</summary>
+    public double Aim;
 }
 
 public sealed record LungeSpec(double Range, double Cooldown, double Windup, double Time, double Speed);
@@ -305,7 +308,7 @@ public static class Enemies
         new() { Id = "mb_old_quarrel", Name = "The Scorpion", Family = Family.Undead, Faction = Faction.Dead, Visual = "skeleton_rogue", Scale = 1.55, Tint = (1.0, 0.95, 0.85),
             // (Measured: 52 s to kill, 126 at the slowest; a kiter that long is a chase, not a fight.)
             Health = 300, Speed = 2.4, Damage = 10, Radius = 0.75, Mass = 4, Xp = 40, Resists = Undead, Behavior = Behavior.Ranged,
-            Ranged = new() { Range = 11, Cooldown = 2.6, Speed = 12, School = School.Physical, Count = 5, Spread = 0.2, Art = "bolt_bone" },
+            Ranged = new() { Range = 11, Cooldown = 2.6, Speed = 12, School = School.Physical, Count = 5, Spread = 0.2, Art = "bolt_bone", Aim = 0.55 },
             Elite = true, Miniboss = true, Loot = "miniboss",
             Lesson = "Five bolts in a fan. Stand in a gap, or close on it.",
             Note = "The Legion called its bolt-engine a scorpion. This one has carried his for two thousand years and no longer needs it: he looses five where it loosed one, and he has not forgotten how to keep his distance." },
@@ -383,7 +386,7 @@ public static class Enemies
         // The Kerchiefs.
         new() { Id = "levy_crossbow", Name = "Levy Crossbow", Family = Family.Kerchief, Faction = Faction.Kerchief, Visual = "kerchief_hooded", Scale = 0.98, Tint = (0.8, 0.85, 0.95),
             Health = 28, Speed = 3.0, Damage = 7, Radius = 0.48, Xp = 6, Gold = 2, Resists = Kerchief, Behavior = Behavior.Ranged,
-            Ranged = new() { Range = 10, Cooldown = 3.6, Speed = 12, School = School.Physical, Count = 3, Spread = 0.22, Art = "bolt_bone" }, Loot = "kerchief",
+            Ranged = new() { Range = 10, Cooldown = 3.6, Speed = 12, School = School.Physical, Count = 3, Spread = 0.22, Art = "bolt_bone", Aim = 0.55 }, Loot = "kerchief",
             Note = "The levy kept its crossbows when it lost everything else. Three bolts in a fan, and gaps between them wide enough to stand in." },
         new() { Id = "levy_pike", Name = "Levy Pikeman", Family = Family.Kerchief, Faction = Faction.Kerchief, Visual = "kerchief_rogue", Scale = 1.08, Tint = (1.1, 0.95, 0.72),
             Health = 40, Speed = 3.8, Damage = 11, Radius = 0.5, Xp = 6, Gold = 2, Resists = Kerchief, Behavior = Behavior.Chase,
@@ -413,7 +416,7 @@ public static class Enemies
             Note = "Carries a barn door. The barn it came off is gone, with the farm and the rest of the street, and he will not put down what is left." },
         new() { Id = "mb_levy_sergeant", Name = "The Levy Sergeant", Family = Family.Kerchief, Faction = Faction.Kerchief, Visual = "kerchief_hooded", Scale = 1.55, Tint = (0.85, 0.85, 1.0),
             Health = 480, Speed = 3.0, Damage = 10, Radius = 0.78, Mass = 5, Xp = 40, Gold = 15, Resists = Kerchief, Behavior = Behavior.Ranged,
-            Ranged = new() { Range = 11, Cooldown = 2.8, Speed = 13, School = School.Physical, Count = 5, Spread = 0.18, Art = "bolt_bone" },
+            Ranged = new() { Range = 11, Cooldown = 2.8, Speed = 13, School = School.Physical, Count = 5, Spread = 0.18, Art = "bolt_bone", Aim = 0.55 },
             Summon = new(15, 3, "levy_crossbow", 1.2, SpawnStyle.Walk, 12, AtTarget: true, Max: 9, Word: "Loose!"), Elite = true, Miniboss = true, Loot = "miniboss",
             Lesson = "Volleys of five, and a file of crossbows behind. Stand in the gaps, or close.",
             Note = "Still drills the levy's crossbows by the old count, and still calls the loose. The bolts have only got better." },

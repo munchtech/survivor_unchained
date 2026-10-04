@@ -20,7 +20,8 @@ public enum EnemyState { Rising, Active, Windup, Lunging, Recover, Burrowed, Sur
 public enum Disposition { Hostile, Neutral, Ally }
 public enum EnemyAnim { Move, Idle, Attack, Hit, Die, Rise, Windup, Cast, Burrow }
 /// <summary>What a creature in its Casting state is casting.</summary>
-public enum CastKind { None, Raise, Summon, Slam, Aura }
+/// <summary>Aim: a crossbow planted and aiming (RangedSpec.Aim), its line fixed.</summary>
+public enum CastKind { None, Raise, Summon, Slam, Aura, Aim }
 /// <summary>Whose a projectile or ground effect is.</summary>
 public enum Side { Player, Enemy, Ally, World }
 public enum Seek { Nearest, Elite, Random, Strongest, Marked }
@@ -79,6 +80,8 @@ public sealed class Enemy : Pooled
     /// <summary>Pack slot angle, orbit phase.</summary>
     public double Slot, Seed;
     public double LungeX, LungeZ;
+    /// <summary>How far its target stood when it knelt to aim (RangedSpec.Aim).</summary>
+    public double AimReach;
     public readonly StatusSet Status = new();
     public double Flash;
     /// <summary>A clock for the view, and what it should be playing.</summary>

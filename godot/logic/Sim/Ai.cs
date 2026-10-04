@@ -230,6 +230,28 @@ public static class Ai
             }
         }
 
+        // Aiming (a crossbow's kneel): planted on its line until it looses, then up again.
+        if (e.State == EnemyState.Casting && e.Cast == CastKind.Aim && def.Ranged is { } aimed)
+        {
+            e.StateT -= dt;
+            e.Vx = e.Vz = 0;
+            e.Anim = EnemyAnim.Windup;
+            e.Facing = Math.Atan2(e.LungeZ, e.LungeX);
+            if (e.StateT <= 0)
+            {
+                e.State = EnemyState.Active;
+                e.Cast = CastKind.None;
+                // At the line it chose as it knelt, as far as the target then was.
+                var at = tgt;
+                double aimReach = Math.Max(1, e.AimReach);
+                at.X = e.X + e.LungeX * aimReach; at.Z = e.Z + e.LungeZ * aimReach;
+                Shoot(b, e, at);
+                e.RangedT = aimed.Cooldown * (0.85 + b.Rng.Next() * 0.3);
+            }
+            b.Collision.Resolve(ref e.X, ref e.Z, e.Radius);
+            return;
+        }
+
         // Its own verbs: a rallying pulse, a call for its kind, a blow on the ground.
         if ((def.Aura != null || def.Summon != null || def.Slam != null) && Verbs(b, e, def, tgt, dist, dt)) return;
 
@@ -309,6 +331,19 @@ public static class Ai
             e.RangedT -= dt;
             if (e.RangedT <= 0 && dist < ranged.Range && b.Collision.Raycast(e.X, e.Z, tgt.X, tgt.Z, 0.1) == null)
             {
+                if (ranged.Aim > 0)
+                {
+                    // Kneel and aim: the line is fixed now, so a step off it in time is a dodge.
+                    e.State = EnemyState.Casting;
+                    e.Cast = CastKind.Aim;
+                    e.StateT = ranged.Aim;
+                    e.Anim = EnemyAnim.Windup;
+                    e.AnimT = 0;
+                    e.LungeX = dx / dist; e.LungeZ = dz / dist;
+                    e.AimReach = dist;
+                    e.Vx = e.Vz = 0;
+                    return;
+                }
                 Shoot(b, e, tgt);
                 e.RangedT = ranged.Cooldown * (0.85 + b.Rng.Next() * 0.3);
             }

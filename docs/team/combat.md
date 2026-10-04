@@ -44,9 +44,15 @@ Tests green (585). Everything is pushed, and the integration branch is merged in
    - Branch `combat-wip-runups` (e63e74fd) has four levers: pincer spikes, signed champions ×2, ranged and aura kinds ×2, and forerunners (two signed half-heralds from either side).
    - The results so far: 9% / 2% / 8%, with wins falling 89% → 84%. Fodder melts at these minutes, so count does nothing.
    - The exact next step: try a forerunner pair *once* per run-up at herald strength (×(4 + tier)) instead of twice at half, and drop the champion-share lever. Re-measure. If wins hold within two points, merge it in.
-2. **Animation's ask** (`a435f4dd0ac80df75`): a `RangedSpec.Aim` wind-up, about 0.55 s for crossbows. The shooter plants and faces in Windup with `AnimT = 0`, then shoots. It doubles as a dodge window. This is a small change in `Sim/Ai.cs` Shoot; give the levy crossbows and the Scorpion an Aim.
+2. **Done:** the crossbow's aim. `RangedSpec.Aim` is 0.55 s on the levy crossbows, the Scorpion and the Levy Sergeant. The shooter kneels (Casting, `CastKind.Aim`, Anim Windup with `AnimT = 0`) with its line fixed, so a step off the line is a dodge; the deft hands read it.
 3. **The Kerchiefs at tier 3** stay the hardest people (68% / 50%). Under iron, blight and embers they win 18–41%. The Lamplings stay the easiest (87% / 81%).
 4. **Then:** ground hazards hurting the horde at half, the Ford-Warden echo, weight as a number, and the Signs Warded, Mending and Leader.
+
+## The three lengths, plainly
+
+- **A story night (20 minutes): a timer, then a goal.** You survive the horde for 20 minutes. Then the story's foe comes, and the night ends when it falls (or you do). Nothing comes after it.
+- **A table night (30 minutes): a timer, then a choice.** At 30:00 what rules that people comes, and beating it wins the night. The night does not end there: the way out opens, and you can stay in the endless long night, which only gets harder, until you fall or walk out.
+- **An atlas map (about 10 minutes): a goal, with no timer.** You walk a winding way through placed packs and altars to the ruler at the end and kill it. The 10 minutes is how long that usually takes. The map ends when the ruler falls and you leave, or at your third fall.
 
 ## Key decisions
 
