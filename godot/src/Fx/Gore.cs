@@ -171,10 +171,12 @@ public partial class Gore : Node3D
         public Kind Kind;
         public int Slot;
         public Vector3 P, V, Axis;
-        public float Ang, Spin, R, Age, Life, Size;
+        public float Ang, Spin, R, Age, Life, Size, Settle;
         public bool Resting, Bled;
-        // At rest and placed there: nothing about it changes until it sinks.
+        // At rest, settled and placed there: nothing about it changes until it sinks.
         public bool Still;
+        /// <summary>How it lay as it stopped, and how it comes to rest: a bone flat, a skull face up.</summary>
+        public Quaternion From, Rest;
         public Blood? Blood;
     }
 
@@ -229,7 +231,8 @@ public partial class Gore : Node3D
         var bone = Bone();
         var skull = Skull();
         var meat = new StandardMaterial3D { AlbedoColor = Colors.White, VertexColorUseAsAlbedo = true, Roughness = 0.38f, Metallic = 0.05f };
-        var boneM = new StandardMaterial3D { AlbedoColor = new Color("#9a9078"), VertexColorUseAsAlbedo = true, Roughness = 0.85f };
+        // Old bone, darker than the living: chalk-white pieces drew the eye before what was coming.
+        var boneM = new StandardMaterial3D { AlbedoColor = new Color("#6e6555"), VertexColorUseAsAlbedo = true, Roughness = 0.9f };
         chunk.SurfaceSetMaterial(0, meat);
         bone.SurfaceSetMaterial(0, boneM);
         skull.SurfaceSetMaterial(0, boneM);
@@ -349,6 +352,15 @@ public partial class Gore : Node3D
             // (Bone and skull go back to the ground sooner: in a horde they were a litter.)
             Ang = R() * 6, Spin = 6 + R() * 10, R = size * 0.4f, Life = kind == Kind.Meat ? 16 + R() * 6 : 8 + R() * 4, Blood = blood, Size = size,
         });
+    }
+
+    /// <summary>How a piece lies once still: a bone along the ground at any heading with a little
+    /// roll, a skull on its back or side with its face (+Z) tipped up toward the sky.</summary>
+    Quaternion RestPose(Kind kind)
+    {
+        var yaw = new Godot.Basis(Vector3.Up, R() * Mathf.Tau);
+        if (kind == Kind.Bone) return new Quaternion(yaw * new Godot.Basis(Vector3.Right, Mathf.Pi / 2) * new Godot.Basis(Vector3.Up, R() * Mathf.Tau));
+        return new Quaternion(yaw * new Godot.Basis(Vector3.Right, -(0.55f + R() * 0.6f)) * new Godot.Basis(Vector3.Forward, (R() - 0.5f) * 0.8f));
     }
 
     void Retire(Gib g)
@@ -472,16 +484,33 @@ public partial class Gore : Node3D
                         // It bleeds where it lands.
                         if (g.Blood != null && g.Kind != Kind.Bone) Splash(g.P.X, g.P.Z, 0.25f + g.Size * 1.6f, g.Blood, 30 + R() * 15);
                     }
-                    if (Math.Abs(g.V.Y) < 2.2f) { g.Resting = true; g.V = Vector3.Zero; }
+                    if (Math.Abs(g.V.Y) < 2.2f)
+                    {
+                        g.Resting = true;
+                        g.V = Vector3.Zero;
+                        g.From = new Quaternion(new Godot.Basis(g.Axis, g.Ang));
+                        g.Rest = RestPose(g.Kind);
+                    }
                     else { g.V = new Vector3(g.V.X * 0.55f, -g.V.Y * 0.28f, g.V.Z * 0.55f); g.Spin *= 0.5f; }
                 }
             }
             // In their time the ground takes them.
             float sink = Math.Max(0, g.Age - (g.Life - 2.5f)) * 0.35f;
-            var p = new Vector3(g.P.X, Math.Max(g.P.Y, ground + g.R) - sink, g.P.Z);
+            // Bone and skull roll over into how they lie, so from the arena's height a bone is a
+            // bone lying flat and a skull looks up out of the grass, not a stick on end or an egg.
+            var rot = new Godot.Basis(g.Axis, g.Ang);
+            float r = g.R;
+            if (g.Resting && g.Kind != Kind.Meat)
+            {
+                g.Settle = Math.Min(1, g.Settle + dt / 0.2f);
+                float k = g.Settle * g.Settle * (3 - 2 * g.Settle);
+                rot = new Godot.Basis(g.From.Slerp(g.Rest, k));
+                if (g.Kind == Kind.Bone) r = Mathf.Lerp(g.R, g.Size * 0.15f, k);
+            }
+            var p = new Vector3(g.P.X, Math.Max(g.P.Y, ground + r) - sink, g.P.Z);
             var scale = g.Kind == Kind.Bone ? new Vector3(g.Size * 1.1f, g.Size * 1.6f, g.Size * 1.1f) : Vector3.One * g.Size;
-            meshes[g.Kind].Place(g.Slot, new Transform3D(new Godot.Basis(g.Axis, g.Ang) * Godot.Basis.FromScale(scale), p));
-            g.Still = g.Resting;
+            meshes[g.Kind].Place(g.Slot, new Transform3D(rot * Godot.Basis.FromScale(scale), p));
+            g.Still = g.Resting && (g.Kind == Kind.Meat || g.Settle >= 1);
         }
         foreach (var m in meshes.Values) m.Flush();
     }

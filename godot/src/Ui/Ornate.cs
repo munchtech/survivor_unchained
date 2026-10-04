@@ -210,12 +210,13 @@ public partial class Plaque : Control
         float x0 = (w - tw) / 2;
         float l = x0 - 14, r = x0 + tw + 14;
         // Painted rules (ornaments/plaque_rule.png: the ember stone at its left end, the gold running
-        // out to its right): to the right of the title as drawn, to the left mirrored.
+        // out to its right): to the right of the title as drawn, to the left mirrored. A negative
+        // width flips the picture but keeps the rect's corner, so the mirrored one starts len to the left.
         if (UiArt.Art("ornaments/plaque_rule.png") is { } rule)
         {
             float h = rule.GetHeight(), len = Mathf.Max(0, l - 4);
             DrawTextureRect(rule, new Rect2(r, y - h / 2, len, h), false);
-            DrawTextureRect(rule, new Rect2(l, y - h / 2, -len, h), false);
+            DrawTextureRect(rule, new Rect2(l - len, y - h / 2, -len, h), false);
             return;
         }
         DrawLine(new Vector2(8, y), new Vector2(l - 10, y), Style.Gold with { A = 0.8f }, 1.5f, true);

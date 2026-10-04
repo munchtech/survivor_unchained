@@ -98,7 +98,11 @@ public static class People
         // The woman survivor is the heroine (tools/assets/build_heroine.py),
         // in her calling's outfit; --body woman brings back the older body.
         if (body == SurvivorUnchained.Play.Loadouts.HerBody && Args.Get("body") != "woman" && ResourceLoader.Exists("res://art/people/heroine.glb")) body = "heroine";
-        var p = body switch { SurvivorUnchained.Play.Loadouts.HerBody => Woman(look), "heroine" => Heroine(look), "anime" => Her(look), _ => Build(look) };
+        // The man survivor is the hero (tools/assets/hero_male_body.py) once
+        // his outfits are made; till then the kit's man, and --body hero shows him.
+        if (body == SurvivorUnchained.Play.Loadouts.HisBody && ResourceLoader.Exists("res://art/people/hero.glb") && Args.Get("body") == "hero") body = "hero";
+        var p = body switch { SurvivorUnchained.Play.Loadouts.HerBody => Woman(look), "heroine" => Heroine(look), "hero" => Hero(look), "anime" => Her(look), _ => Build(look) };
+        if (body == "hero" && look.Face != null) HerFace(p, look.Face);
         // Her own clips are chosen by her calling, which her outfit says.
         if (body == "heroine") p.Calling = HerClips.Calling(look.Outfit);
         // Her body wears her calling's outfit, cut from it.
@@ -109,7 +113,7 @@ public static class People
         {
             HerHair(p, HerHairs.Contains(look.Hair) ? look.Hair! : HerHairs[0], look.HairColor ?? HerHairColour);
             if (look.Face != null) HerFace(p, look.Face);
-            HerPaint(p, look.Paint);
+            HerPaint(p, look.Paint, look.HairColor);
         }
         // A child's larger head.
         if (spec.Head is double h && h != 1)
@@ -142,6 +146,8 @@ public static class People
         public string HairStyle = "";
         /// <summary>The paint on her face (Lore.Her.Paints), or none.</summary>
         public string? Paint;
+        /// <summary>The colour her brows are dyed (her hair's), or none: as painted.</summary>
+        public Color? Brow;
         /// <summary>Her head's pose as she is drawn (her corrective layer
         /// included, which a pose read in _Process is not), skeleton space.</summary>
         public Transform3D? HeadPose;
@@ -176,7 +182,8 @@ public static class People
         if (covered.Count > 0)
             foreach (var c in skel.GetChildren())
                 if (c is MeshInstance3D body) Mask(body, skel, covered);
-        var parts = new List<string>(look.Outfit);
+        // (Not the hero's own outfit, "him:<calling>", which the kit has no part for.)
+        var parts = look.Outfit.Where(o => !o.StartsWith("him:")).ToList();
         if (look.Hair != null) parts.Add(look.Hair);
         if (look.Beard) parts.Add("Hair_Beard");
         foreach (var part in parts)
@@ -288,6 +295,50 @@ public static class People
         return person;
     }
 
+    /// <summary>The man survivor, the hero: the owner's sculpt, rigged by
+    /// AccuRIG and bound to the game's own skeleton by
+    /// tools/assets/hero_male_body.py, with a head of his own
+    /// (hero_male_head.py: eyes, lashes, teeth, his face's shapes). His skin,
+    /// eyes and head are drawn as hers are (HerPart), his skin with the relief
+    /// baked from his sculpt.</summary>
+    public static Person Hero(Look look)
+    {
+        var root = GD.Load<PackedScene>("res://art/people/hero.glb").Instantiate<Node3D>();
+        var skel = (Skeleton3D)root.FindChildren("*", "Skeleton3D", true, false)[0];
+        var person = new Person { Root = root, Skeleton = skel, Anim = new AnimationPlayer(), Body = "hero" };
+        // His carriage over the library's clips: fingers eased, his arms held
+        // clear of his lats rather than in, his hips square.
+        person.Pose = new HerPose { ArmsIn = -5f, HipTilt = 0f, NeckPitch = HisNeckPitch };
+        skel.AddChild(person.Pose);
+        int headBone = skel.FindBone("Head");
+        if (headBone >= 0) skel.SkeletonUpdated += () => person.HeadPose = skel.GetBoneGlobalPose(headBone);
+        skel.AddChild(new HerFaceLife());
+        foreach (var mi in skel.GetChildren().OfType<MeshInstance3D>())
+        {
+            person.Meshes.Add(mi);
+            mi.Layers = 2;
+            for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.Mesh.SurfaceGetMaterial(s) is BaseMaterial3D src)
+                    mi.SetSurfaceOverrideMaterial(s, HerPart(src, look, mi.Mesh, "hero"));
+        }
+        root.AddChild(person.Anim);
+        person.Anim.RootNode = "..";
+        person.Anim.AddAnimationLibrary("", Clips());
+        return person;
+    }
+
+    /// <summary>His own skin's tone when none is chosen: his paint as it is,
+    /// barely warmed (hers is warmed further: her paint is paler).</summary>
+    static readonly Color HisTone = new(1.0f, 0.95f, 0.9f);
+
+    /// <summary>His neck leans further forward at rest than the library's
+    /// body's: the library's clips throw his head back by about this much
+    /// (HerPose.NeckPitch), till his own clips are made.</summary>
+    const float HisNeckPitch = 22f;
+
+    /// <summary>His own eyes: flint grey, a little warmer round the pupil.</summary>
+    static readonly (Color Iris, Color Ring) HisEyes = (new("#727c84"), new("#8a8672"));
+
     /// <summary>Her hairstyles (tools/assets/heroine_head.py: a file each,
     /// fitted to her head), the first hers unless another is chosen.</summary>
     public static readonly string[] HerHairs = { "long", "ponytail", "braid", "bob", "pixie" };
@@ -297,7 +348,7 @@ public static class People
 
     /// <summary>A material of hers by its name (heroine_head.py names
     /// them): her skin, her eyes and the rest of her head.</summary>
-    static Material HerPart(BaseMaterial3D src, Look look, Mesh mesh)
+    static Material HerPart(BaseMaterial3D src, Look look, Mesh mesh, string who = "heroine")
     {
         var hair = look.HairColor ?? HerHairColour;
         var m = (StandardMaterial3D)src.Duplicate();
@@ -309,8 +360,11 @@ public static class People
                 eyeShader ??= GD.Load<Shader>("res://shaders/heroine_eye.gdshader");
                 var e = new ShaderMaterial { Shader = eyeShader };
                 e.SetShaderParameter("eye", GD.Load<Texture2D>("res://art/people/head_tex/heroine_eye.png"));
-                e.SetShaderParameter("iris", GD.Load<Texture2D>("res://art/people/head_tex/heroine_iris.png"));
-                EyeColour(e, look.Eyes, look.EyeRing);
+                var iris = $"res://art/people/head_tex/{who}_iris.png";
+                e.SetShaderParameter("iris", GD.Load<Texture2D>(ResourceLoader.Exists(iris) ? iris : "res://art/people/head_tex/heroine_iris.png"));
+                // (his own, when none is chosen: flint grey, Lore.Eyes' "flint")
+                if (who == "hero" && look.Eyes == null) EyeColour(e, HisEyes.Iris, HisEyes.Ring);
+                else EyeColour(e, look.Eyes, look.EyeRing);
                 return e;
             case "brows" or "lashes":
                 // Cards cut out by their alpha, soft at the edges; brows
@@ -328,7 +382,7 @@ public static class People
                 m.Roughness = 0.35f;
                 return m;
             default:
-                return Skin(src, look, mesh);
+                return Skin(src, look, mesh, who == "hero" ? HisTone : null);
         }
     }
 
@@ -436,23 +490,46 @@ public static class People
     /// out on her head's own paint by tools/assets/heroine_paint.py): drawn
     /// over her skin as a pass of its own, so it lies on the skin rather than
     /// in it, with its own sheen (chalky woad, waxy kohl, bright leaf), and
-    /// moves with her face as it shapes and speaks. None: taken off.</summary>
-    public static void HerPaint(Person p, string? paint)
+    /// moves with her face as it shapes and speaks. None: taken off.
+    /// Under it, her brows dyed her hair's colour (art/people/paint/brows.png:
+    /// her painted brows, found), since they are painted copper into her skin;
+    /// her hair as it grew keeps them as painted.</summary>
+    public static void HerPaint(Person p, string? paint, Color? brow = null)
     {
         p.Paint = paint;
+        p.Brow = brow;
         var def = paint == null ? null : SurvivorUnchained.World.Lore.Her.Paints.FirstOrDefault(x => x.Id == paint);
         var file = def == null ? "" : $"res://art/people/paint/{def.Id}.png";
+        const string brows = "res://art/people/paint/brows.png";
         foreach (var mi in p.Meshes)
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
             {
                 if (mi.Mesh.SurfaceGetMaterial(s)?.ResourceName != "skin_head" || mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial skin) continue;
-                if (def == null || !ResourceLoader.Exists(file)) { skin.NextPass = null; continue; }
                 paintShader ??= GD.Load<Shader>("res://shaders/heroine_paint.gdshader");
-                var m = new ShaderMaterial { Shader = paintShader };
-                m.SetShaderParameter("paint", GD.Load<Texture2D>(file));
-                m.SetShaderParameter("rough", (float)def.Rough);
-                m.SetShaderParameter("metal", (float)def.Metal);
-                skin.NextPass = m;
+                // The passes over her skin, in order: her brows, then the paint.
+                ShaderMaterial? first = null, last = null;
+                void Then(ShaderMaterial m) { if (last == null) first = m; else last.NextPass = m; last = m; }
+                if (brow is Color b && ResourceLoader.Exists(brows))
+                {
+                    var m = new ShaderMaterial { Shader = paintShader };
+                    m.SetShaderParameter("paint", GD.Load<Texture2D>(brows));
+                    m.SetShaderParameter("dyed", true);
+                    // (darker than her hair and a little warmer, as brows are: the fairer
+                    // her hair the more, so a platinum blonde has ash-brown brows, not grey)
+                    m.SetShaderParameter("dye", b.Darkened(0.25f + 0.15f * b.Luminance).Lerp(new Color("#6a4a30"), 0.2f));
+                    m.SetShaderParameter("skin_paint", skin.GetShaderParameter("paint"));
+                    m.SetShaderParameter("rough", 0.8f);
+                    Then(m);
+                }
+                if (def != null && ResourceLoader.Exists(file))
+                {
+                    var m = new ShaderMaterial { Shader = paintShader };
+                    m.SetShaderParameter("paint", GD.Load<Texture2D>(file));
+                    m.SetShaderParameter("rough", (float)def.Rough);
+                    m.SetShaderParameter("metal", (float)def.Metal);
+                    Then(m);
+                }
+                skin.NextPass = first;
             }
     }
 
@@ -478,7 +555,7 @@ public static class People
                 else if (mi.GetSurfaceOverrideMaterial(s) is StandardMaterial3D b && b.ResourceName == "brows") b.AlbedoColor = colour.Darkened(0.45f);
             }
         HerFace(p, look.Face ?? new Dictionary<string, float>(), whole: true);
-        if (look.Paint != p.Paint) HerPaint(p, look.Paint);
+        if (look.Paint != p.Paint || look.HairColor != p.Brow) HerPaint(p, look.Paint, look.HairColor);
     }
 
     static Shader? hairShader, eyeShader;
@@ -520,6 +597,14 @@ public static class People
             OutfitMaterials(mi);
         }
         scene.Free();
+        // Plate holds her: under the warden's formed cups her breasts swing
+        // less and never squash (metal does not give); cloth and leather move
+        // with her as her own skin does.
+        if (p.Skeleton.GetNodeOrNull<HerJiggle>("HerJiggle") is HerJiggle jig)
+        {
+            jig.Amount = set == "warden" ? 0.55f : 1f;
+            jig.Squash = set == "warden" ? 0f : 1f;
+        }
         // Her skin under the outfit's fitted pieces is not drawn: each
         // outfit marks it in one channel of her vertex colours.
         int ch = System.Array.IndexOf(OutfitChannels, set);
@@ -633,7 +718,7 @@ public static class People
     /// <summary>Her paint as skin: light carried under it (subsurface
     /// scattering, reddened as through flesh), a soft sheen rather than
     /// plastic, and warmed toward a sun-browned tone, or the tone chosen.</summary>
-    static Material Skin(BaseMaterial3D src, Look look, Mesh mesh)
+    static Material Skin(BaseMaterial3D src, Look look, Mesh mesh, Color? own = null)
     {
         // shaders/heroine_skin.gdshader: pores, soft uneven sheen, light
         // under the skin. (Her vertex colours mark what each outfit hides,
@@ -641,7 +726,13 @@ public static class People
         skinShader2 ??= GD.Load<Shader>("res://shaders/heroine_skin.gdshader");
         var m = new ShaderMaterial { Shader = skinShader2 };
         m.SetShaderParameter("paint", src.AlbedoTexture);
-        m.SetShaderParameter("tone", SkinTone(look));
+        m.SetShaderParameter("tone", look.Skin is Color ? SkinTone(look) : own ?? SkinTone(look));
+        // A body's relief baked from its sculpt (the hero's), under the pores.
+        if (src.NormalTexture != null)
+        {
+            m.SetShaderParameter("relief", src.NormalTexture);
+            m.SetShaderParameter("has_relief", true);
+        }
         m.SetShaderParameter("pores", GD.Load<Texture2D>("res://art/people/skin_pores.png"));
         m.SetShaderParameter("pore_scale", PoreScale(mesh));
         return m;

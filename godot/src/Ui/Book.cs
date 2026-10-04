@@ -260,7 +260,10 @@ public partial class SheetScreen : Overlay
                     label.CustomMinimumSize = new Vector2(150, 0);
                     var change = Style.Label("", Style.UiBold, Style.Body, Style.Good);
                     changes[key] = change;
-                    var line = Style.H(10, label, Style.Label(fmt(kit.Get(key)), Style.UiBold, Style.Body, Style.Ink), change);
+                    // Each line led by its painted mark (icons/glyph/stat_<key>.png), so the eye finds a line without reading.
+                    var mark = Glyphs.Icon($"stat_{key.ToLowerInvariant()}", 20, Style.Gold);
+                    mark.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+                    var line = Style.H(10, mark, label, Style.Label(fmt(kit.Get(key)), Style.UiBold, Style.Body, Style.Ink), change);
                     // Each line says where it comes from, hovered or focused.
                     var holder = Style.Panel(new StyleBoxEmpty(), line);
                     holder.MouseFilter = MouseFilterEnum.Stop;

@@ -62,6 +62,58 @@
       "fact": "nell.buried",
       "eq": true
      }
+    },
+    {
+     "text": "Lamp burned all night for you, pet. A night's ember. It's on your slate.",
+     "night": true,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 0
+       },
+       {
+        "fact": "arena.last.past",
+        "gte": 5
+       }
+      ]
+     }
+    },
+    {
+     "text": "Face like a wet week. Eat first. It'll still be there after.",
+     "night": false,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 1
+       },
+       {
+        "fact": "arena.last.story",
+        "eq": true
+       },
+       {
+        "fact": "arena.last.won",
+        "eq": false
+       }
+      ]
+     }
+    },
+    {
+     "text": "Sit down before you fall down. Again.",
+     "night": false,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 1
+       },
+       {
+        "fact": "arena.last.fell",
+        "eq": true
+       }
+      ]
+     }
     }
    ]
   },
@@ -154,6 +206,47 @@
      "when": {
       "fact": "caravan.survivors",
       "eq": "rescued"
+     }
+    },
+    {
+     "text": "One in. Count's right, for once.",
+     "night": true,
+     "when": {
+      "fact": "arena.last.ago",
+      "eq": 0
+     }
+    },
+    {
+     "text": "Heard you put down what rules out there. Proof it can be done.",
+     "night": false,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 1
+       },
+       {
+        "fact": "arena.last.won",
+        "eq": true
+       }
+      ]
+     }
+    },
+    {
+     "text": "Seven nights out, seven back. I've taken you out of the missing column.",
+     "night": false,
+     "once": true,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 1
+       },
+       {
+        "fact": "arena.nights",
+        "gte": 7
+       }
+      ]
      }
     }
    ]
@@ -262,6 +355,76 @@
       "fact": "beasts.outcome",
       "eq": "slaughtered"
      }
+    },
+    {
+     "text": "Heard you out by the Hollow last night. From the Blind. How many?",
+     "night": false,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 1
+       },
+       {
+        "fact": "arena.last.people",
+        "eq": "pack"
+       },
+       {
+        "not": {
+         "fact": "beasts.outcome",
+         "exists": true
+        }
+       }
+      ]
+     }
+    },
+    {
+     "text": "Mine don't run at fire. Whatever came at you last night wasn't mine.",
+     "night": false,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 1
+       },
+       {
+        "fact": "arena.last.people",
+        "eq": "pack"
+       },
+       {
+        "any": [
+         {
+          "fact": "beasts.outcome",
+          "eq": "cured"
+         },
+         {
+          "fact": "beasts.outcome",
+          "eq": "allied"
+         }
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "text": "There's no Pack left. I counted the pelts. So what were you killing?",
+     "night": false,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 1
+       },
+       {
+        "fact": "arena.last.people",
+        "eq": "pack"
+       },
+       {
+        "fact": "beasts.outcome",
+        "eq": "slaughtered"
+       }
+      ]
+     }
     }
    ]
   },
@@ -339,6 +502,60 @@
       "fact": "nell.buried",
       "eq": true
      }
+    },
+    {
+     "text": "Oh, you're cold! Colder than usual, I mean. Come and sit by the flame.",
+     "night": true,
+     "once": true,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 0
+       },
+       {
+        "fact": "arena.last.fell",
+        "eq": true
+       }
+      ]
+     }
+    },
+    {
+     "text": "Back again! You always are. Sit, sit; the flame likes company.",
+     "night": true,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 0
+       },
+       {
+        "fact": "arena.last.fell",
+        "eq": true
+       },
+       {
+        "fact": "arena.fell",
+        "gte": 2
+       }
+      ]
+     }
+    },
+    {
+     "text": "Out ever so long! The whole dark was up, like moths round a candle.",
+     "night": true,
+     "once": true,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 0
+       },
+       {
+        "fact": "arena.last.past",
+        "gte": 15
+       }
+      ]
+     }
     }
    ]
   },
@@ -400,6 +617,64 @@
      "when": {
       "fact": "redcowl",
       "eq": "dead"
+     }
+    },
+    {
+     "text": "Red on your sleeve, pal, and it's not yours. Don't tell me whose.",
+     "night": false,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 1
+       },
+       {
+        "fact": "arena.last.people",
+        "eq": "kerchiefs"
+       },
+       {
+        "not": {
+         "fact": "redcowl",
+         "eq": "dead"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "text": "Red on your sleeve again. There's not enough Kerchiefs left to bleed like that.",
+     "night": false,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 1
+       },
+       {
+        "fact": "arena.last.people",
+        "eq": "kerchiefs"
+       },
+       {
+        "fact": "redcowl",
+        "eq": "dead"
+       }
+      ]
+     }
+    },
+    {
+     "text": "Back on your feet. Doctor's orders: drink, then fall over somewhere soft.",
+     "night": true,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 0
+       },
+       {
+        "fact": "arena.last.fell",
+        "eq": true
+       }
+      ]
      }
     }
    ]
@@ -578,6 +853,25 @@
     "A man can't count in peace in this town.",
     "Who's there?",
     "The numbers don't sleep. Why should I?"
+   ],
+   "said": [
+    {
+     "text": "Roughly how much ember did you burn last night? I'm keeping a column.",
+     "night": false,
+     "once": true,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 1
+       },
+       {
+        "fact": "arena.nights",
+        "gte": 2
+       }
+      ]
+     }
+    }
    ]
   },
   "wenna": {
@@ -687,6 +981,23 @@
        }
       ]
      }
+    },
+    {
+     "text": "Hot stone on you, child. Last I smelled that was the fever year.",
+     "night": false,
+     "once": true,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 1
+       },
+       {
+        "fact": "arena.nights",
+        "gte": 2
+       }
+      ]
+     }
     }
    ]
   },
@@ -772,6 +1083,23 @@
        }
       ]
      }
+    },
+    {
+     "text": "The hill lit up last night and Pa said marsh-lights and it was you.",
+     "night": false,
+     "once": true,
+     "when": {
+      "fact": "arena.last.ago",
+      "eq": 1
+     }
+    },
+    {
+     "text": "Pa says I'm not to watch the hill at night. I watch it.",
+     "night": false,
+     "when": {
+      "fact": "arena.last.ago",
+      "eq": 1
+     }
     }
    ]
   },
@@ -854,6 +1182,22 @@
       "fact": "nell.buried",
       "eq": true
      }
+    },
+    {
+     "text": "Hill went gold last night. Open lamps. Not mine.",
+     "night": false,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 1
+       },
+       {
+        "fact": "arena.last.people",
+        "eq": "lamplings"
+       }
+      ]
+     }
     }
    ]
   },
@@ -901,6 +1245,25 @@
     "The dark is also a customer.",
     "Payment, even now.",
     "I count the lights on the ford road, every night. Somebody should."
+   ],
+   "said": [
+    {
+     "text": "A light went out on the hill tonight. Not for long.",
+     "night": true,
+     "once": true,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 0
+       },
+       {
+        "fact": "arena.last.fell",
+        "eq": true
+       }
+      ]
+     }
+    }
    ]
   },
   "keegan": {
@@ -960,6 +1323,39 @@
       "fact": "keegan.saw_risen",
       "eq": true
      }
+    },
+    {
+     "text": "The risen, last night. I have made a note. A perfectly ordinary note.",
+     "night": false,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 1
+       },
+       {
+        "fact": "arena.last.people",
+        "eq": "dead"
+       }
+      ]
+     }
+    },
+    {
+     "text": "Down last night, they say, and up by breakfast. You are, if I may, robust.",
+     "night": false,
+     "once": true,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 1
+       },
+       {
+        "fact": "arena.last.fell",
+        "eq": true
+       }
+      ]
+     }
     }
    ]
   },
@@ -1001,6 +1397,49 @@
     "I've a bath going cold upstairs. Shame to waste it.",
     "The blue room's got a lamp lit. Guess who's in it.",
     "Rook's walls are thin and I'm not quiet. Fair warning."
+   ],
+   "said": [
+    {
+     "text": "Tell me about last night, love. I pay better than the Wayfinder.",
+     "once": true,
+     "when": {
+      "any": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 0
+       },
+       {
+        "all": [
+         {
+          "fact": "arena.last.ago",
+          "eq": 1
+         },
+         {
+          "not": {
+           "time": "night"
+          }
+         }
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "text": "Back, and all your bits still on. Pity to waste them on sleep.",
+     "night": true,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 0
+       },
+       {
+        "fact": "arena.last.fell",
+        "eq": false
+       }
+      ]
+     }
+    }
    ]
   }
  },
@@ -1131,6 +1570,149 @@
    "nightBarks": [
     "The ink is still wet on this one. So is the blood.",
     "Night maps cost the same. They just feel dearer."
+   ],
+   "said": [
+    {
+     "text": "Your longest yet. That's going in the margin. Somebody will want to read it.",
+     "once": true,
+     "when": {
+      "all": [
+       {
+        "any": [
+         {
+          "fact": "arena.last.ago",
+          "eq": 0
+         },
+         {
+          "all": [
+           {
+            "fact": "arena.last.ago",
+            "eq": 1
+           },
+           {
+            "not": {
+             "time": "night"
+            }
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "fact": "arena.last.longest",
+        "eq": true
+       }
+      ]
+     }
+    },
+    {
+     "text": "Longer again. You're making my margins untidy.",
+     "when": {
+      "all": [
+       {
+        "any": [
+         {
+          "fact": "arena.last.ago",
+          "eq": 0
+         },
+         {
+          "all": [
+           {
+            "fact": "arena.last.ago",
+            "eq": 1
+           },
+           {
+            "not": {
+             "time": "night"
+            }
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "fact": "arena.last.longest",
+        "eq": true
+       },
+       {
+        "fact": "arena.nights",
+        "gte": 3
+       }
+      ]
+     }
+    },
+    {
+     "text": "You stayed on past it. The ones who do, I usually end up drawing.",
+     "when": {
+      "all": [
+       {
+        "any": [
+         {
+          "fact": "arena.last.ago",
+          "eq": 0
+         },
+         {
+          "all": [
+           {
+            "fact": "arena.last.ago",
+            "eq": 1
+           },
+           {
+            "not": {
+             "time": "night"
+            }
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "fact": "arena.last.won",
+        "eq": true
+       },
+       {
+        "fact": "arena.last.past",
+        "gte": 10
+       }
+      ]
+     }
+    },
+    {
+     "text": "You went down in there and came out anyway. I've a column for that.",
+     "when": {
+      "all": [
+       {
+        "any": [
+         {
+          "fact": "arena.last.ago",
+          "eq": 0
+         },
+         {
+          "all": [
+           {
+            "fact": "arena.last.ago",
+            "eq": 1
+           },
+           {
+            "not": {
+             "time": "night"
+            }
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "fact": "arena.last.fell",
+        "eq": true
+       },
+       {
+        "fact": "arena.last.story",
+        "eq": false
+       }
+      ]
+     }
+    }
    ]
   }
  },

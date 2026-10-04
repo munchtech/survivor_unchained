@@ -125,8 +125,24 @@ public static class MapOffers
         return r;
     }
 
-    static readonly string[] Adjectives = { "Weeping", "Ashen", "Thorned", "Drowned", "Moonless", "Broken", "Gallows", "Whispering", "Hollow", "Bleeding", "Crooked", "Silent" };
-    static readonly string[] Places = { "Wood", "Thicket", "Glade", "Tangle", "Barrow-Wood", "Deepwood", "Fen", "Holt", "Wilds", "Brake" };
+    /// <summary>A name as it is written inside a sentence: "until the Pack-Mother comes".</summary>
+    public static string InSentence(string name) => name.StartsWith("The ") ? "the " + name[4..] : name;
+
+    static string[] WordsFor((string Place, string[] Words)[] table, string people) =>
+        table.First(n => n.Place == ArenaPlaces.IdFor(people)).Words;
+
+    /// <summary>A map's name, in the valley's own words for its people's ground (ArenaPlaces):
+    /// what the place is like, which makes its look, and where its people live, so a Risen
+    /// map is a barrow and never a fen.</summary>
+    public static string Name(string people, Rng rng) =>
+        $"The {rng.Pick(WordsFor(ArenaPlaces.Adjectives, people))} {PlaceWord(rng, people)}";
+
+    static string PlaceWord(Rng rng, string people) => rng.Pick(WordsFor(ArenaPlaces.Names, people));
+
+    /// <summary>A name given to another people's place (an offer whose people
+    /// were changed): its adjective kept, its place word theirs.</summary>
+    public static string Renamed(string name, string people, int seed) =>
+        $"{string.Join(' ', name.Split(' ').SkipLast(1))} {PlaceWord(new Rng((uint)seed), people)}";
 
     /// <summary>The maps the table offers today: three, each of its own
     /// people and oaths, the tier the survivor has earned (and one higher).</summary>
@@ -145,7 +161,7 @@ public static class MapOffers
             var spec = new MapSpec
             {
                 Seed = rng.Int(1, int.MaxValue - 1), Tier = t, Theme = theme, Oaths = oaths, Night = true,
-                Name = $"The {rng.Pick(Adjectives)} {rng.Pick(Places)}",
+                Name = Name(people.Id, rng),
             };
             list.Add(new MapOffer(spec, people.Id));
         }
