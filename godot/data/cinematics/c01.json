@@ -3,6 +3,7 @@
   "title": "The Drowned Fire",
   "script": "docs/cinematics/shoot/c01.md",
   "conversation": "cin_drowned_fire",
+  "narrators": ["narrator", "far_voice"],
   "zone": "lowford",
   "bars": {"in": 0.5, "out": 0.8},
   "skip": {"from": 1.5, "hold": 0.8},
