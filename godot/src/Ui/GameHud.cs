@@ -532,16 +532,12 @@ public partial class GameHud : CanvasLayer
         hpShown = k;
         globe.Level = k;
         globe.Shield = (float)Math.Clamp(p.Shield / max, 0, 1);
-        globe.Number = $"{Math.Ceiling(Math.Max(p.Hp, 0))}";
-        globe.QueueRedraw();
-        foreach (var c in statuses.GetChildren()) c.QueueFree();
-        void Status(string glyph, double left, bool good)
-        {
-            var col = good ? Hex("#9ad4ff") : Hex("#ff8a6a");
-            var chip = Style.Panel(UiArt.Frame("chip", Style.Box(new Color(0.04f, 0.03f, 0.05f, 0.8f), col, 1, 13, 5)), Style.H(3, Glyphs.Icon(glyph, 17, col), Style.Label(left > 600 ? "" : $"{Math.Ceiling(left)}", Style.UiBold, Style.Badge, col)));
-            chip.MouseFilter = Control.MouseFilterEnum.Ignore;
-            statuses.AddChild(chip);
-        }
+        double hpNum = Math.Ceiling(Math.Max(p.Hp, 0));
+        if (hpNum != globeNum) { globeNum = hpNum; globe.Number = $"{hpNum}"; }
+        globe.Changed();
+        statusWant.Clear();
+        statusLeft.Clear();
+        void Status(string glyph, double left, bool good) { statusWant.Add((glyph, good)); statusLeft.Add(left); }
         if (p.BurnT > 0) Status("flame", p.BurnT, false);
         if (p.PoisonT > 0) Status("plague", p.PoisonT, false);
         if (p.SlowT > 0 && p.SlowF < 1) Status("boot", p.SlowT, false);
@@ -550,6 +546,7 @@ public partial class GameHud : CanvasLayer
         if (p.InvisibleT > 0) Status("smoke", p.InvisibleT, true);
         if (b.WorldRate < 1) Status("hourglass", b.WorldRateT, true);
         foreach (var (id, bf) in b.Buffs) Status(id == "warcry" ? "howl" : "arcane", bf.T, true);
+        Statuses();
         underWanted = false;
         if (!b.Combat) return;
 
@@ -618,23 +615,15 @@ public partial class GameHud : CanvasLayer
         for (int j = empties; j < want; j++) weapons.AddChild(new EmptySlot());
         foreach (var c in weapons.GetChildren().OfType<EmptySlot>().Skip(want)) c.QueueFree();
 
-        foreach (var c in boons.GetChildren()) c.QueueFree();
+        boonWant.Clear();
         foreach (var (id, rank) in b.Boons)
+            if (rank > 0 && Boons.Find(id) != null) boonWant.Add((id, rank));
+        if (!Same(boonWant, boonHave))
         {
-            if (rank <= 0 || Boons.Find(id) is not { } bd) continue;
-            var col = Style.RarityOf((int)bd.Rarity);
-            var chip = new Panel { CustomMinimumSize = new Vector2(34, 34), MouseFilter = Control.MouseFilterEnum.Ignore };
-            chip.AddThemeStyleboxOverride("panel", UiArt.Frame("chip", Style.Box(Hex("#1a1720"), col with { A = 0.55f }, 1, bd.Kind == BoonKind.Blessing ? 6 : 17, 0)));
-            var gl = Glyphs.Icon(bd.Icon, 20, col);
-            gl.Position = new Vector2(7, 7); gl.Size = new Vector2(20, 20);
-            chip.AddChild(gl);
-            if (bd.Max > 1)
-            {
-                var r = Style.Label($"{rank}", Style.UiHeavy, Style.Badge, Colors.White);
-                r.Position = new Vector2(23, 17);
-                chip.AddChild(r);
-            }
-            boons.AddChild(chip);
+            boonHave.Clear();
+            boonHave.AddRange(boonWant);
+            foreach (var c in boons.GetChildren()) c.QueueFree();
+            foreach (var (id, rank) in boonWant) boons.AddChild(BoonChip(Boons.Find(id)!, rank));
         }
 
         int maxDash = (int)Math.Round(b.Stats.Get(Stat.DashCharges));
@@ -681,6 +670,75 @@ public partial class GameHud : CanvasLayer
             abilityCd.Text = ready >= 1 ? "" : p.AbilityCd >= 1 ? $"{Math.Ceiling(p.AbilityCd)}" : $"{p.AbilityCd:0.0}";
             abilityName.Text = def.Name + rank;
         }
+    }
+
+    // The chips over the globe and in the boons' row, as last built. They were
+    // all remade on every call (twelve a second); now only when which there are
+    // changes, a countdown set in place, so nothing shifts in between.
+    readonly List<(string Glyph, bool Good)> statusWant = new(), statusHave = new();
+    readonly List<double> statusLeft = new(), statusShown = new();
+    readonly List<Label> statusText = new();
+    readonly List<(string Id, int Rank)> boonWant = new(), boonHave = new();
+    double globeNum = double.NaN;
+
+    static bool Same<T>(List<T> a, List<T> b)
+    {
+        if (a.Count != b.Count) return false;
+        var eq = EqualityComparer<T>.Default;
+        for (int i = 0; i < a.Count; i++) if (!eq.Equals(a[i], b[i])) return false;
+        return true;
+    }
+
+    /// <summary>A status's countdown as shown: whole seconds, none for what lasts.</summary>
+    static double Countdown(double left) => left > 600 ? -1 : Math.Ceiling(left);
+
+    void Statuses()
+    {
+        if (Same(statusWant, statusHave))
+        {
+            for (int i = 0; i < statusText.Count; i++)
+            {
+                double n = Countdown(statusLeft[i]);
+                if (n == statusShown[i]) continue;
+                statusShown[i] = n;
+                statusText[i].Text = n < 0 ? "" : $"{n}";
+            }
+            return;
+        }
+        statusHave.Clear();
+        statusHave.AddRange(statusWant);
+        statusText.Clear();
+        statusShown.Clear();
+        foreach (var c in statuses.GetChildren()) c.QueueFree();
+        for (int i = 0; i < statusWant.Count; i++)
+        {
+            var (glyph, good) = statusWant[i];
+            double n = Countdown(statusLeft[i]);
+            var col = good ? Hex("#9ad4ff") : Hex("#ff8a6a");
+            var text = Style.Label(n < 0 ? "" : $"{n}", Style.UiBold, Style.Badge, col);
+            var chip = Style.Panel(UiArt.Frame("chip", Style.Box(new Color(0.04f, 0.03f, 0.05f, 0.8f), col, 1, 13, 5)), Style.H(3, Glyphs.Icon(glyph, 17, col), text));
+            chip.MouseFilter = Control.MouseFilterEnum.Ignore;
+            statuses.AddChild(chip);
+            statusText.Add(text);
+            statusShown.Add(n);
+        }
+    }
+
+    static Panel BoonChip(BoonDef bd, int rank)
+    {
+        var col = Style.RarityOf((int)bd.Rarity);
+        var chip = new Panel { CustomMinimumSize = new Vector2(34, 34), MouseFilter = Control.MouseFilterEnum.Ignore };
+        chip.AddThemeStyleboxOverride("panel", UiArt.Frame("chip", Style.Box(Hex("#1a1720"), col with { A = 0.55f }, 1, bd.Kind == BoonKind.Blessing ? 6 : 17, 0)));
+        var gl = Glyphs.Icon(bd.Icon, 20, col);
+        gl.Position = new Vector2(7, 7); gl.Size = new Vector2(20, 20);
+        chip.AddChild(gl);
+        if (bd.Max > 1)
+        {
+            var r = Style.Label($"{rank}", Style.UiHeavy, Style.Badge, Colors.White);
+            r.Position = new Vector2(23, 17);
+            chip.AddChild(r);
+        }
+        return chip;
     }
 
     public void ZoneInfo(string name, string? region, int day, TimeOfDay time)
@@ -1043,7 +1101,7 @@ public partial class GameHud : CanvasLayer
         float beat = low ? 1 + 0.06f * Mathf.Max(0, Mathf.Sin(now * 7)) : 1;
         heart.Scale = new Vector2(beat, beat);
         globe.Pulse = low ? 0.5f + 0.5f * Mathf.Sin(now * 7) : 0;
-        globe.QueueRedraw();
+        globe.Changed();
         if (levelPop > 0) { levelPop = Math.Max(0, levelPop - delta / 0.6); float sc = 1 + 0.9f * (float)(levelPop * levelPop); emberLevel.Scale = new Vector2(sc, sc); }
         if (pullT >= 0)
         {

@@ -331,6 +331,17 @@ public partial class Globe : Control
     public string Number = "";
     public float Pulse;
     readonly float r;
+    // What was last drawn: the HUD asks every frame, and a redraw rebuilt every polygon.
+    (float, float, float, string, float, Color) drawn = (float.NaN, 0, 0, "", 0, default);
+
+    /// <summary>Redrawn only if what it shows has changed since it was last drawn.</summary>
+    public void Changed()
+    {
+        var now = (Level, Trail, Shield, Number, Pulse, Liquid);
+        if (now == drawn) return;
+        drawn = now;
+        QueueRedraw();
+    }
 
     public Globe(float radius)
     {
