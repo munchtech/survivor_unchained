@@ -2528,7 +2528,7 @@ Subtitle: He looks at you for a long time.
 
 ### 232. `dlg.vonnra.hub.2.p0.wav`
 
-*Where:* dialogue.json vonnra/hub#2; part 1 of 2: **narrator: Her lamp is lit, and she is looking south, toward the ford.** / vonnra: Traveller. The road was quiet tonight. It will not always be. Payment, always.
+*Where:* dialogue.json vonnra/hub#2; part 1 of 2: **narrator: Her lamp is lit, and she is looking south, toward the ford.** / vonnra: Traveller. The road is quiet tonight. It will not always be. Payment, always.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
 
 ```

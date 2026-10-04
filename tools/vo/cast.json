@@ -112,13 +112,15 @@
    "age": 55,
    "accent": "Bristol",
    "design": "A fifty-five-year-old merchant from Bristol in the West Country of England, with a warm, rounded Bristolian accent. A friendly salesman's baritone, quick patter, warm and generous, with a crack of grief that breaks through when he stops talking.",
-   "ref_text": "Coyle Company, friend: salt, nails, lamp oil, good wool and better rope, at the fairest prices between here and the coast. Ask anyone. Well. Ask most people.",
+   "ref_text": "Coyle Company, friend: salt, iron and Morrow cloth, nails, good wool and better rope, at the fairest prices between here and the coast. Ask anyone. Well. Ask most people.",
    "room": "yard",
    "tempo": [
     3.0,
     3.9
    ],
-   "maya": "Realistic male voice in the 50s age with british accent, a Bristol merchant. Normal pitch, warm rounded timbre, quick pacing, friendly tone."
+   "maya": "Realistic male voice in the 50s age with british accent, a Bristol merchant. Normal pitch, warm rounded timbre, quick pacing, friendly tone.",
+   "wants": "Jory home, and the Company alive",
+   "hides": "the Company has sold the Dig its blasting ember for two years, through Pell's books and the Kerchiefs' road; he put Jory on the road with six crates he knew were bound for the hole. His grief is real and so is his guilt, and every 'Jory' carries both. His sister died in the fever year, of the ember sickness, and he sells the stuff anyway; he has never let himself see that, so never play the irony"
   },
   "pell": {
    "name": "Pell Varrow",
@@ -174,7 +176,9 @@
     1.7,
     2.4
    ],
-   "maya": "Realistic female voice in the 60s age with british accent, an old aristocrat. Low pitch, smooth airy timbre, very slow pacing, cool controlled tone."
+   "maya": "Realistic female voice in the 60s age with british accent, an old aristocrat. Low pitch, smooth airy timbre, very slow pacing, cool controlled tone.",
+   "wants": "the chain held and the valley alive, and for that, one Unchained who will walk down a stair; every line measures the survivor for it",
+   "hides": "she lit the ford lamps; she drowned twenty-six to get one; she called this one up the road; her sight is bought (Rook, Sella, Pell). Her 'No charge' and 'This once' are debts entered, not gifts: she prices a thing, then waives it, so it stays owed"
   },
   "keegan": {
    "name": "Dame Keegan Orme",

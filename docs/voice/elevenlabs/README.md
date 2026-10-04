@@ -74,9 +74,9 @@ Holloway, Brannoc and Sella, in that order.
 |---|---|---|---|
 | [The narrator](narrator.md) | 270 | 27,508 |  |
 | [Sella](sella.md) | 95 | 9,832 |  |
-| [Vonnra Ash-of-Morrow](vonnra.md) | 103 | 9,057 |  |
+| [Vonnra Ash-of-Morrow](vonnra.md) | 103 | 9,072 |  |
 | [Captain Holloway](holloway.md) | 64 | 7,712 |  |
-| [Harlan Coyle](harlan.md) | 63 | 7,141 |  |
+| [Harlan Coyle](harlan.md) | 63 | 7,217 |  |
 | [Mother Rook](rook.md) | 45 | 6,073 |  |
 | [Chid](chid.md) | 51 | 5,525 | 2 |
 | [Rav Cutwell](rav.md) | 52 | 5,351 |  |

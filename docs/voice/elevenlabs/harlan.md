@@ -1,10 +1,12 @@
 # Harlan Coyle: ElevenLabs packet
 
-Voice id in the game: `harlan`. 63 takes to record (7,141 characters; about 21,423 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `harlan`. 63 takes to record (7,217 characters; about 21,651 credits at three tries a line). Status: **final** (the story lead, 2026-10-04): record it.
 
 ## Who they are
 
 **Harlan Coyle** (the Coyle Company). A salesman's patter with a crack in it: lists of goods, prices, "friend". Over-explains, then stops dead. Breaks on "Jory". Never names the buyer of the B.E. crates, and changes the subject a beat too fast when anyone tries. *Casting:* 55, Bristol merchant, warm and cracking.
+
+*Wants:* Jory home, and the Company alive. *Hides:* the Company has sold the Dig its blasting ember for two years, through Pell's books and the Kerchiefs' road; he put Jory on the road with six crates he knew were bound for the hole. His grief is real and so is his guilt, and every 'Jory' carries both. His sister died in the fever year, of the ember sickness, and he sells the stuff anyway; he has never let himself see that, so never play the irony.
 
 ## Casting the voice
 
@@ -17,7 +19,7 @@ Native English (British, Bristol). Male, 50s. Studio quality. Persona: a Bristol
 Preview text:
 
 ```
-Coyle Company, friend: salt, nails, lamp oil, good wool and better rope, at the fairest prices between here and the coast. Ask anyone. Well. Ask most people.
+Coyle Company, friend: salt, iron and Morrow cloth, nails, good wool and better rope, at the fairest prices between here and the coast. Ask anyone. Well. Ask most people.
 ```
 
 In the Voice Library instead: search for *Bristol*, *male*, *50*, and listen for this: A fifty-five-year-old merchant from Bristol in the West Country of England, with a warm, rounded Bristolian accent. Use only voices whose library licence allows commercial use.
@@ -179,12 +181,12 @@ Subtitle: Jory's round the back, pretending to count crates. Pretending! What ca
 
 *Where:* dialogue.json harlan/hub#1
 *Played:* numb grief; doing: Jory is dead; pace: slow; volume: quiet.
-*Note:* 'I heard. I heard.' Pause. A small fond detail that hurts most: sulking if supper was late. Then hollow kindness.
+*Note:* 'I heard. I heard.' 'They were fed' is Holloway's comfort, and it isn't one. The cold, plainly. The brick is where he breaks. Then hollow kindness.
 
 ```
-[numb grief, quietly] I heard. I heard. ...They'd not been fed for a week, Holloway says. Jory used to sulk if supper was late. You needn't say anything. What do you want?
+[numb grief, quietly] I heard. I heard. ...They were fed, Holloway says. It was the cold that did it, in those cages, at night. Jory never could get warm of a night. I used to put a hot brick in his bed. You needn't say anything. What do you want?
 ```
-Subtitle: I heard. I heard. ...They'd not been fed for a week, Holloway says. Jory used to sulk if supper was late. You needn't say anything. What do you want?
+Subtitle: I heard. I heard. ...They were fed, Holloway says. It was the cold that did it, in those cages, at night. Jory never could get warm of a night. I used to put a hot brick in his bed. You needn't say anything. What do you want?
 
 ### 13. `dlg.harlan.hub.2.p1.wav`
 
@@ -279,7 +281,8 @@ Subtitle: The east road. The Old Road, through Thornhollow. They should've come 
 
 *Where:* dialogue.json harlan/notwolves#0
 *Played:* shock, then pleading; doing: someone took them; pace: quick; volume: level.
-*Note:* Stunned 'Driven...?'. Breaks off 'Who—'. Then begging: 'Please.'
+*Hides:* who would want those crates stopped
+*Note:* Stunned 'Driven...?'. Breaks off 'Who—'. Then begging: 'Please.' 'Who—' is him starting to guess, and not daring to.
 
 ```
 [shock, then pleading] Driven...? Wolves don't drive wagons. Who— no. Find out who. Please.
@@ -312,6 +315,7 @@ Subtitle: The strongbox! Unopened. You could've walked off with this and I'd nev
 
 *Where:* dialogue.json harlan/pell#0
 *Played:* betrayed fury; doing: Pell did it; pace: quick; volume: raised.
+*Hides:* Pell keeps the books for the Dig trade, and could hang him with them. The fury is on top; the fear is under it, unplayed
 *Note:* 'Pell. Pell!' disbelief then fury. Bitter on 'as a friend'. Hot determination at the end.
 
 ```
@@ -324,6 +328,7 @@ Subtitle: Pell. Pell! We shook hands on this square at midsummer; he offered to 
 *Where:* dialogue.json harlan/be#0
 *Played:* guilty, evasive; doing: admits the crates; pace: slow; volume: quiet.
 *Wants:* to say as little as possible
+*Hides:* the buyer is the Dig, and he has known for two years
 *Note:* A long hesitation. 'Six crates.' Justifying himself. 'B.E. Blasting ember.' said like spelling a guilt. Last sentence a weak joke.
 
 ```
@@ -335,6 +340,7 @@ Subtitle: ...Six crates. For a buyer I won't name. Paid in advance, in gold, whi
 
 *Where:* dialogue.json harlan/g#0
 *Played:* evasive patter; doing: won't name the buyer; pace: quick; volume: level.
+*Hides:* the buyer is the Dig, and he has known for two years
 *Note:* Too-quick salesman's joke. Changes the subject a beat too fast: 'Is there anything else?'
 
 ```
@@ -512,6 +518,7 @@ Subtitle: Sleeps with the lamp lit. Eats like a horse. Asked me last night what 
 
 *Where:* dialogue.json harlan/t_harlan#0
 *Played:* tender memory; doing: how Jory came to him; pace: slow; volume: quiet.
+*Hides:* his sister died in the fever year, of the ember sickness, and he sells the stuff anyway; he has never let himself see it, so never play the irony
 *Note:* Sad on his sister. A laugh in the voice for 'Do you have a horse?'. 'He named all of them wrong.' fond, wet-eyed.
 
 ```
@@ -559,7 +566,7 @@ Subtitle: Get him out. Whatever it costs. Whatever they want, I'll pay it twice.
 
 *Where:* dialogue.json harlan/ledger_early#0; part 2 of 4: narrator: He reads, and his finger stops on a line. / **harlan: That's the night. That's the night Jory's wagons went. Forty to "R." Ten to Jessop: that's…** / narrator: He looks up. / harlan: For what road? Who's "R."? ...Find out who "R." is, friend. Please. Then take that to Holl…
 *Played:* shock, fury restrained; doing: the ledger shows the night; pace: measured; volume: quiet.
-*Note:* Narrator: his finger stops. 'That's the night.' twice, the second hollow. Reading. Narrator: he looks up. Questions. Then pleading; the last line a frightening honesty.
+*Note:* Narrator: his finger stops. 'That's the night.' twice, the second hollow. Reading. Narrator: he looks up. Questions. Then pleading; the last line a frightening honesty. 'If I knew, I'd do something I'd hang for.' plain, a man stating a fact about himself.
 
 ```
 [shock, fury restrained, quietly] That's the night. That's the night Jory's wagons went. Forty to "R." Ten to Jessop: that's Vonnra's clerk. "For the road."
@@ -570,7 +577,7 @@ Subtitle: That's the night. That's the night Jory's wagons went. Forty to "R." T
 
 *Where:* dialogue.json harlan/ledger_early#0; part 4 of 4: narrator: He reads, and his finger stops on a line. / harlan: That's the night. That's the night Jory's wagons went. Forty to "R." Ten to Jessop: that's… / narrator: He looks up. / **harlan: For what road? Who's "R."? ...Find out who "R." is, friend. Please. Then take that to Holl…**
 *Played:* shock, fury restrained; doing: the ledger shows the night; pace: measured; volume: quiet.
-*Note:* Narrator: his finger stops. 'That's the night.' twice, the second hollow. Reading. Narrator: he looks up. Questions. Then pleading; the last line a frightening honesty.
+*Note:* Narrator: his finger stops. 'That's the night.' twice, the second hollow. Reading. Narrator: he looks up. Questions. Then pleading; the last line a frightening honesty. 'If I knew, I'd do something I'd hang for.' plain, a man stating a fact about himself.
 
 ```
 [shock, fury restrained, quietly] For what road? Who's "R."? ...Find out who "R." is, friend. Please. Then take that to Holloway, not to me. If I knew, I'd do something I'd hang for.
@@ -581,6 +588,8 @@ Subtitle: For what road? Who's "R."? ...Find out who "R." is, friend. Please. Th
 
 *Where:* dialogue.json harlan/crates#0; part 2 of 4: narrator: His face does what it does whenever anyone says those two letters. / **harlan: ...Are they. With the bandit.** / narrator: He's already reaching for paper. / harlan: Thank you, friend. Leave that with me. Paid for is paid for.
 *Played:* uneasy, then too brisk; doing: the crates; pace: measured; volume: quiet.
+*Wants:* the crates delivered, because the Dig has paid
+*Hides:* that he means to send them on
 *Note:* Narrator for his face. '...Are they.' Narrator: reaching for paper. Thanks a beat too quick. 'Paid for is paid for.' businesslike cover.
 
 ```
@@ -592,6 +601,8 @@ Subtitle: ...Are they. With the bandit.
 
 *Where:* dialogue.json harlan/crates#0; part 4 of 4: narrator: His face does what it does whenever anyone says those two letters. / harlan: ...Are they. With the bandit. / narrator: He's already reaching for paper. / **harlan: Thank you, friend. Leave that with me. Paid for is paid for.**
 *Played:* uneasy, then too brisk; doing: the crates; pace: measured; volume: quiet.
+*Wants:* the crates delivered, because the Dig has paid
+*Hides:* that he means to send them on
 *Note:* Narrator for his face. '...Are they.' Narrator: reaching for paper. Thanks a beat too quick. 'Paid for is paid for.' businesslike cover.
 
 ```
@@ -603,6 +614,7 @@ Subtitle: Thank you, friend. Leave that with me. Paid for is paid for.
 
 *Where:* dialogue.json harlan/be_dig#0; part 2 of 2: narrator: He takes a long time to answer. / **harlan: I sell salt to people who salt things. I sell iron to people who hit things. I don't ask t…**
 *Played:* defensive guilt; doing: justifies selling to the Dig; pace: slow; volume: quiet.
+*Hides:* the buyer is the Dig, and he has known for two years
 *Note:* Narrator: a long time. A salesman's creed, recited. Then the subject changes a beat too fast.
 
 ```

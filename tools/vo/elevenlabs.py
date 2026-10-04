@@ -37,7 +37,7 @@ SHEET = {"narrator": "The narrator.", "rook": "Mother Rook", "holloway": "Captai
 # Held for the story lead's review (a7622ae77d19e31dc): whole parts, and kinds of line.
 HOLD_VOICES: dict = {}
 # Packets the story lead has checked and marked final (voice: date).
-FINAL = {"narrator": "2026-10-03", "rook": "2026-10-03", "holloway": "2026-10-03", "brannoc": "2026-10-03", "sella": "2026-10-03"}
+FINAL = {"narrator": "2026-10-03", "rook": "2026-10-03", "holloway": "2026-10-03", "brannoc": "2026-10-03", "sella": "2026-10-03", "vonnra": "2026-10-04", "harlan": "2026-10-04"}
 # Lines waiting on the story lead or the owner: (id prefix, why).
 HOLD_LINES = (("dlg.keegan.vonnra.", "the story lead's confirmation of Keegan's kenning"),)
 TAG = {"beat": "…", "breath": "[inhales]", "laugh": "[laughs]", "laughs": "[laughs]", "chuckle": "[chuckles]",
