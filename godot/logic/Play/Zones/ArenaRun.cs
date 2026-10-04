@@ -889,9 +889,10 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     public static (double Health, double Damage, double Pace) Hardening(double m)
     {
         // Compounding from an hour past: three hundredths a minute, so by two hours past
-        // nothing stands (measured: docs/team/combat.md).
+        // nothing stands (measured: docs/team/combat.md). The square's 0.004 (from 0.006) gives
+        // the tail to good builds: the median run past the half hour went 22 -> 26 minutes.
         double press = m > 60 ? Math.Pow(1.03, m - 60) : 1;
-        return ((1 + 0.1 * m + 0.006 * m * m) * press, (1 + 0.035 * m) * press, 1 + Math.Min(0.15, 0.004 * m));
+        return ((1 + 0.1 * m + 0.004 * m * m) * press, (1 + 0.035 * m) * press, 1 + Math.Min(0.15, 0.004 * m));
     }
 
     void LongNight()

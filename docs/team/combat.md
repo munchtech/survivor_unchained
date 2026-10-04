@@ -32,7 +32,7 @@ Tests green. Everything below is pushed.
 
 ## Next (in order)
 
-1. **The long night's tail:** 0.006 against 0.004 is measuring now (`out/ln6`, `out/ln4`; tier 2, deft, greedy, +160 cap).
+1. **The long night's tail:** done; the square is 0.004 (median past the half hour 22 -> 26 minutes). The dark's oaths and the crowd end it, not the square.
 2. **Pictures of maps** at full resolution: the start, a pack waking, an altar's event, the ruler (`--zone map --at boss`).
 3. **Maps, next:**
    - agree the length and rhythm with the experience lead (they run at the top of 8–12 minutes, with a pack every 14 s against their 20–40);

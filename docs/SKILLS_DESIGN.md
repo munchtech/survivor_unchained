@@ -824,7 +824,7 @@ falls or takes the way out. It climbs on three lines at once
 (`Play/Zones/ArenaRun.cs`, "the long night"):
 
 - **The horde hardens** by the minute (`ArenaRun.Hardening`): health
-  `1 + 0.1m + 0.006m²`, blows `1 + 0.035m`, smoothly for the first hour past
+  `1 + 0.1m + 0.004m²`, blows `1 + 0.035m`, smoothly for the first hour past
   the half hour; from then on both compound by 3% a minute, so by two hours
   past nothing stands. A little quicker too, to a ceiling of 15% (pace a
   player can still read and outrun). No minute is a tenth harder than the
@@ -848,6 +848,12 @@ their caps; nothing kills without a mark; every new pressure is announced.
 | Minutes past the half hour: median (p10–p90) | 21 (9–40) | 21 (11–38), with the dark's oaths and the returns |
 | Furthest | 62 | 53 (the first version, returns as walls: 39) |
 | What ended them | heralds and the Kerchiefs' bruisers first, then lamplings | the horde, spread across the peoples (lamplings first); no return a wall |
+
+Later, with greedy drafts only (8 seeds, 30 won runs): at the square's 0.006
+the median was 22 minutes past (15–38), furthest 54; at 0.004, 26 (16–41),
+furthest 43, so 0.004 stays. The square is not what ends the long night: the
+dark's oaths and the crowd are (lamp-throwers, the blight-sick, shield-men,
+crossbows, grave-callers), and only a quarter of runs stand at +30.
 
 ### Why this is the answer
 
