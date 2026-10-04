@@ -1,0 +1,17 @@
+{
+  "seed": 1400,
+  "people": {
+    "her": "a young woman with long damp dark red hair, bare arms, a fitted leather and steel armoured bodice with round steel pauldrons, a corked water flask on a cord round her wrist",
+    "dawn": "first light at dawn in a birch wood, low gold sun from the east raking through the trunks, frost on everything"
+  },
+  "shots": {
+    "A1": "low medium shot on a frosted riverbank looking back at the water: a woman's wet boots stepping up out of the river onto the frost and walking on past camera, a line of wet dark bootprints coming up out of the water behind her and going on; grey dawn",
+    "A2": "extreme long shot across a forest road into tall birches at sunrise: the tops of the birches turning gold one by one from the east, the light coming down the trunks; by the verge a small blue flame in an iron lamp going pale and small in the daylight",
+    "A3": "medium shot side-on: {her} on a frosted road in {dawn}, the first sunlight reaching her face and shoulders, eyes closing against it, tired",
+    "A4": "medium long shot tilting down {her} standing on a frosted road: glowing ember red light running down her body like water, off her shoulders and out of her hands, down her legs, soaking into the frosted road at her feet; {dawn}",
+    "A5": "close-up of {her} in low gold dawn sunlight, colour returning to her face, breathing out a long white plume of breath smoke into the cold air and watching it with the faintest smile; birches in shade behind her",
+    "A6": "medium close-up: {her} pulling the cork from a small water flask with her teeth and stopping to smell it, nose wrinkling; dawn light",
+    "A7": "close-up of {her}, very still, eyes unfocused and searching inward, trying to remember something and not finding it; soft gold dawn light, birch trunks behind",
+    "A8": "low wide shot from behind {her} walking away up a road through a birch wood toward the light, at the top of the hill a wooden town gate standing open, long shadows on the frost"
+  }
+}

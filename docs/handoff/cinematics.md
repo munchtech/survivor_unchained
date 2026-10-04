@@ -42,41 +42,48 @@ From agent af7a79bc783cca7bc (who took over from a2dfc75e2d351105a) to a fresh c
   - the story lead's shots 8a and 8b are framed;
   - the shooting script is written (`shoot/c01.md`);
   - it runs 68.5 s.
-- **`tools/cinematics/animatic.py`** is written. `--plan` prints the schedule (it matches the game's: 68.5 s). The full render has not been run yet. It needs boards, or it shows slates.
+- **Boards for C01 to C04** (54 frames) are in `shoot/boards/<id>/s<shot>.jpg`, made by `tools/cinematics/boards.py` from `shoot/boards/<id>.json`. That file holds a fixed description per person, put in with `{name}`, and a seed per shot. The style is ink and grey marker, with colour only in the light. The weak frames still to remake are listed on the status page.
+- **The Prologue animatic:** `docs/cinematics/shoot/animatics/prologue.mp4`, with its cut list in `prologue.txt`. It runs C01, C02, C03, C04 A and C04 B, with cards for the play between them.
+- **C02 to C04 draft timelines** (`godot/data/cinematics/c02.json`, `c03.json`, `c04a.json`, `c04b.json`):
+  - They are cut from the written scripts, so the animatic plays the game's own clock.
+  - Each carries a `draft` note. Their cameras are not surveyed in the engine.
+  - They are not wired into the zones yet, so nothing starts them.
+  - C04's two parts share `cin_first_light`. The line-order test reads a conversation across its parts, in id order.
 
 ## Next, in order
 
-1. **`shoot/c02.md` to `c04.md`.** The written scripts carry shot lists and coordinates. Check them in the engine first with `godot/data/cinematics/_survey.json`, which the tests skip.
-   - Render with `python <scratchpad>/cine/prev.py <id> <name> <until> [--zone Z] [--cols 2 --width 760]`; it saves a contact sheet in the scratchpad.
-   - Or by hand: `godot/` → `dotnet build -v q -nologo SurvivorUnchained.csproj`, then `Godot_v4.5.1-stable_mono_win64_console.exe --path . --resolution 1920x1080 -- --quick warden --sex female --zone lowford --cine <id> --shot <name> --until <s> --cinebones`.
-2. **`tools/cinematics/boards.py`** writes a prompt per shot to `shoot/boards/<id>.json`, run through `tools/comfy/graphs/krea_t2i.json` with these settings:
-   - `30:24=false` and `30:23=false` (no prompt expansion);
-   - `30:5` at 1536×640;
-   - `30:3` with a fixed seed per shot;
-   - the prompt in `30:19`, and `29` as the filename prefix.
+1. **Judge the animatic.** Watch it at full size, judge the pacing against the windows, then remake the weak boards and recut. To remake one, edit its prompt and run `python tools/cinematics/boards.py <id> --only <shots> --sheet <out.jpg>`.
+   - The model draws a person twice when that person's description is long and the shot is wide. Name one person only ("one woman only"), and say "a giant nearly three times her height" for the Warden.
+   - Recut with:
 
-   The style prefix: "Rough storyboard panel for a dark fantasy film, ink and grey marker sketch, quick gestural lines, flat grey tones, clear staging, monochrome except for small touches of coloured light: ".
-   - Keep a fixed description per person.
-   - The Warden's lamp is "a square cage of new black forged iron with a cold pale blue flame". Without that, the model draws Victorian lanterns.
-   - Save each board as `shoot/boards/<id>/s<shot>.jpg`.
-   - Judge them on contact sheets (`<scratchpad>/cine/sheet.py`).
-   - `<scratchpad>/cine/style_test.py` is a working example of driving the graph.
-3. **Cut the animatic:**
+     ```
+     python tools/cinematics/animatic.py c01 "card:..." c02 "card:..." c03 "card:..." c04a "card:..." c04b --crf 28 --out docs/cinematics/shoot/animatics/prologue.mp4
+     ```
 
-   ```
-   python tools/cinematics/animatic.py c01 "card:..." c02 "card:..." c03 c04a c04b --out docs/cinematics/shoot/animatics/prologue.mp4 --index <a voice index with the C02 to C04 takes>
-   ```
+     The exact cards are in `prologue.txt`.
+2. **Survey C02 to C04 in the engine,** then set the drafts' cameras on what is really there, and write `shoot/c02.md` to `c04.md` from the final timelines.
+   - Render with `python <scratchpad>/cine/prev.py <id> <name> <until> [--zone Z] [--cols 2 --width 760]`. It saves a contact sheet in the scratchpad.
+   - Or by hand:
+     1. In `godot/`, run `dotnet build -v q -nologo SurvivorUnchained.csproj`.
+     2. Then run `Godot_v4.5.1-stable_mono_win64_console.exe --path . --resolution 1920x1080 -- --quick warden --sex female --zone lowford --cine <id> --shot <name> --until <s> --cinebones`.
+   - C04 B is in the Waystation, so use `--zone waystation`.
+3. **Put animation's first three C01 clips on the timeline** (on worktree-agent-a1e3002b800ee55ac@809c358: merge it once the main session has, or ask):
+   - `her/lie_side_wake` (7 s): she lies on her right side, head toward -X, facing +Z, and comes up onto her right elbow, held. The face close-up is from +Z.
+   - `her/sit_back_heels` (6 s): from that pose to kneeling on her heels, facing +Z, hands palm up before her lap.
+   - `her/reach_coals` (4.2 s): from there, the right hand goes out low, palm down, and is held.
 
-   - The C01 to C04 cinematic takes are in the repo (the 11 for C02 to C04 restored from the voice branch at 7fc0013); `--index` is only needed for takes that are not.
-   - Review the cut list (`prologue.txt`) and watch the film before you report it.
-4. **C02 to C04 timelines, then wiring:**
-   - C02 replaces `Prologue.RunIntro`.
-     - It needs the Warden under the cinematic's control. Add a `boss` cast kind that builds a `WardenView` (`src/Actors/BossViews.cs`; its inner `PersonView` plays clips) and hides the zone's own `wardenView` while it plays.
-     - An `event` cue (`ZoneRuntime.CineEvent`) spawns the boss at its end mark (3, -33.2).
-   - C03 replaces `RunVictory`'s staging. Keep its `G.Apply` effects in code at the hand-back, so a skip sets them too.
-   - C04 A replaces `Douse`'s caption.
-   - C04 B plays on the first Waystation arrival.
-
+   With these she wakes on her side facing the fire and kneels, instead of sitting on the log. To re-block shots 2 to 8b round them:
+   - set her `lie` heading so that +Z faces the fire;
+   - re-survey with `--cinebones`;
+   - tell animation's successor what the clips need.
+4. **Wire C02 to C04 into the zones:**
+   - **C02** replaces `Prologue.RunIntro`.
+     - Add a `boss` cast kind that builds a `WardenView` (`src/Actors/BossViews.cs`; its inner `PersonView` plays clips).
+     - Hide the zone's own `wardenView` while it plays.
+     - Its `warden_up` event (`ZoneRuntime.CineEvent`) spawns him at (3, -33.2).
+   - **C03** replaces `RunVictory`'s staging. Keep its `G.Apply` effects in code at the hand-back, so a skip sets them too.
+   - **C04 A** replaces `Douse`'s caption. Its `douse` event calls `Douse`.
+   - **C04 B** plays on the first Waystation arrival.
 ## Decisions (why)
 
 - **Cue timing and fit.** Cues are timed from their own shot, and a shot fits its line, so a new take recuts itself.
@@ -97,6 +104,8 @@ From agent af7a79bc783cca7bc (who took over from a2dfc75e2d351105a) to a fresh c
 - **PowerShell `Set-Content -Encoding utf8` wrote a BOM into a C# file.** Write with `[IO.File]::WriteAllText`.
 
 ## Gotchas
+
+- **Stage directions show in subtitles.** C02's W1 subtitle shows "(sung, under the water)", because the direction is part of the line's text. Ask the story lead to move it into the line's direction, or strip parentheses in `CinemaBars.Say`.
 
 - **Never commit the `.import` and `.uid` files** that the import touches. About 1000 of them are dirty in this worktree. Add files by name.
 - **The worktree's `godot/assets`** is a junction to `public/assets`, marked skip-worktree.
@@ -120,3 +129,5 @@ From agent af7a79bc783cca7bc (who took over from a2dfc75e2d351105a) to a fresh c
 4. `godot/src/Game/GameCinema.cs` and `godot/logic/Cinema/CinePlayer.cs`
 5. `godot/logic/Play/Zones/Prologue.cs` (`StartIntro`, `RunIntro`, `OnWardenDown`, `RunVictory`, `Douse` and `Begin`)
 6. `tools/cinematics/animatic.py`
+
+HANDOFF READY: docs/handoff/cinematics.md on worktree-agent-af7a79bc783cca7bc (the commit after 8f9f38e)

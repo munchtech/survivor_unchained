@@ -56,12 +56,15 @@ public class CinemaTests
     [Fact]
     public void A_cinematic_says_every_line_of_its_conversation_once_in_order()
     {
-        foreach (var f in All().Where(f => f.Conversation.StartsWith("cin_")))
+        // A cinematic in parts (C04's north bank and its Waystation) says its
+        // conversation across them, the parts in order of their ids.
+        foreach (var parts in All().Where(f => f.Conversation.StartsWith("cin_")).GroupBy(f => f.Conversation))
         {
-            var said = Lay(f).Cues.Where(c => c.Cue.Do == "line").Select(c => c.Cue.Str("id")!).ToList();
-            var convo = Dialogue.Find(f.Conversation)!;
+            var said = parts.OrderBy(f => f.Id, StringComparer.Ordinal)
+                .SelectMany(f => Lay(f).Cues.Where(c => c.Cue.Do == "line").Select(c => c.Cue.Str("id")!)).ToList();
+            var convo = Dialogue.Find(parts.Key)!;
             var order = new List<string>();
-            for (var n = convo.Entry[0].Node; n != null; n = convo.Nodes[n].Next) order.Add($"{f.Conversation}.{n}");
+            for (var n = convo.Entry[0].Node; n != null; n = convo.Nodes[n].Next) order.Add($"{parts.Key}.{n}");
             Assert.Equal(order, said);
         }
     }
