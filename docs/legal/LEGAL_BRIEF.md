@@ -75,7 +75,7 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
   - Love scenes are written as non-graphic "cut-aways" that end before the act.
   - Sella is a sex worker: the player pays 15 gold for a night (`sella.price`, `sella.rest_night`).
   - **Each love scene grants a combat buff**: `sella.night`, `sella.free_night` and `maeca.blind` apply `warmed`, which the notice text gives as "+8% damage, +5% speed, one day".
-  - Behind `settings.intimacy == "full"` sit placeholder lines reading "[explicit scene: … — to be written]". Nothing in the code sets that fact today, so they are unreachable, but they ship in the data.
+  - Three placeholder lines reading "[explicit scene: … — to be written]" sat behind `settings.intimacy == "full"`. Nothing set that fact, so they were unreachable, but they shipped in the data. The story lead has now removed them (issue 6).
 - **Violence:** constant horde combat against humans, undead and beasts. Blood, pools and gibs ("a blow far bigger than what it killed bursts the body"), and corpses that lie for 18 seconds. There is a gore setting (full, reduced, off).
 - **Language:** infrequent strong language (one "fucking"; some "shit", "piss", "bitch", "bastard").
 - **No drugs, gambling, loot boxes or sexual violence**, and no minors in sexual contexts. I searched the content data for each.
@@ -289,8 +289,12 @@ These are my rulings on the auditor's findings (`ASSET_PROVENANCE.md`).
 ### 6. Explicit-scene placeholders and the explicit-content decision: BLOCKER (remove placeholders) / DECISION
 
 **Evidence.**
-- Six "[explicit scene: … — to be written]" slots ship in `dialogue.json` behind `settings.intimacy == "full"`.
+- Three "[explicit scene: … — to be written]" slots shipped in `dialogue.json` behind `settings.intimacy == "full"`: `sella.night`, `sella.free_night` and `maeca.blind`. Three more, for Act 2, existed only in the docs.
 - `docs/romance/README.md` plans beat sheets "for the owner's writer".
+- **Status: the placeholders are removed** (story lead, efc15256 on `worktree-agent-a73ca9d35d0c487a9`, not yet merged):
+  - Every scene keeps its non-explicit cut-away for all players.
+  - `StoryLint` now fails if any "[explicit" text or `settings.intimacy` variant returns to `dialogue.json`.
+  - The romance drafts in `docs/romance/data` still hold slots as notes only. They aren't shipped, and the test would catch them.
 
 **Why it matters.**
 - The placeholders are not explicit, but they are sexual descriptions shipped in data, and Steam's survey covers "all adult content uploaded".

@@ -26,7 +26,7 @@ Source: https://partner.steamgames.com/doc/gettingstarted/onboarding (read 4 Oct
   - `tools_scenes/*` excluded;
   - unused bodies and packs excluded, among them `anime_female.glb`, `woman.glb`, the KayKit characters and the git-ignored Poly Haven copies;
   - check the `.pck` listing before upload.
-- [ ] **Explicit-scene placeholders out of release data** [6]: the six `[explicit scene: … — to be written]` texts behind `settings.intimacy == "full"`.
+- [x] **Explicit-scene placeholders out of release data** [6]: the three `[explicit scene: … — to be written]` texts. Removed by the story lead (efc15256); `StoryLint` guards it. Tick for good once merged.
 - [ ] **Placeholder voices** [11]: replaced by finals, or dropped from release (they're marked `placeholder` in the index).
 - [ ] **Licence notices and credits ship** [4]:
   - a "Credits and licences" screen;

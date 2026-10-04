@@ -59,6 +59,7 @@ Then **stay on as the standing compliance check**: review new assets and tools a
   - **UI art:** stop naming Diablo IV, Hades and Baldur's Gate in prompts. Done in c457cc9; the side-by-side icon check is still to come.
   - **Voice:** the ElevenLabs rules, now the first job in `docs/handoff/voice.md` (4f8e241). The voice lead has handed off; its open question is answered in `docs/team/legal.md`, under "Notes for other areas".
   - **Main session:** the decisions list: export filter and debug arguments, the explicit placeholders, the "Warmed" buff, the placeholder voices, and the credits screen.
+  - **Story:** removed the three explicit-scene placeholders, guarded by `StoryLint` (efc15256 on `worktree-agent-a73ca9d35d0c487a9`). It left "Warmed" for the owner's decision.
 - **The motion check of the run and sprint clips** (my own renders, brief issue 2).
   - **The Warden's left plate cup clips in the sprint and shows part of the nipple.** Reported to the main session.
   - The other outfits stay covered.

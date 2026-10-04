@@ -15,7 +15,7 @@ Agent aa12c130ddf4b904c, branch `worktree-agent-aa12c130ddf4b904c` (worktree `.c
   - the boar;
   - the base bodies' source pictures;
   - the owner's confirmation that he owns The Ember Watch;
-  - explicit-scene placeholders out of release data;
+  - explicit-scene placeholders out of release data (done by the story lead at efc15256, awaiting merge);
   - placeholder voices replaced or dropped.
 - **Biggest business risk:** the Krea 2 licence allows commercial use of outputs only under US$1M company revenue, and is revocable on 30 days' notice.
 - **Provenance reviewed:** `ASSET_PROVENANCE.md` and `REPLACEMENT_PLAN.md` (c009fdfd on `worktree-agent-a80ff0c7fd988b178`). The rulings are in brief issue 5, and I agree with the plan's order.
