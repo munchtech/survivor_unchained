@@ -103,7 +103,18 @@ public partial class DraftPanel : Control
 
     public override void _Ready()
     {
-        AddChild(Style.Scrim(null, 0.74f));
+        AddChild(new Backdrop(null, 0.8f));
+        var fire = new TextureRect
+        {
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
+            Texture = new GradientTexture2D
+            {
+                Gradient = new Gradient { Colors = new[] { new Color(1, 0.42f, 0.12f, 0.26f), new Color(0.8f, 0.2f, 0.05f, 0.1f), new Color(0.6f, 0.1f, 0.02f, 0) }, Offsets = new[] { 0f, 0.5f, 1f } },
+                Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1f, 0.5f), Width = 256, Height = 256,
+            },
+            Position = new Vector2(160, 160), Size = new Vector2(1600, 900),
+        };
+        AddChild(fire);
         var col = Style.V(Style.Gap2);
         col.Position = new Vector2(0, 128);
         col.Size = new Vector2(1920, 900);
@@ -111,8 +122,9 @@ public partial class DraftPanel : Control
         string kicker = v.Great ?? (v.Blessing ? $"Ember {v.Level}: a milestone" : "The ember rises");
         string head = v.Great != null ? "A Great Blessing" : v.Blessing ? "A Blessing" : $"Ember {v.Level}";
         col.AddChild(Style.Label(kicker, Style.TextItalic, Style.Lead, v.Great != null || v.Blessing ? new Color("#ffd88a") : new Color("#e8b878"), false, HorizontalAlignment.Center));
-        col.AddChild(Style.Label(head.ToUpperInvariant(), Style.Display, 48, new Color("#ffe6b8"), false, HorizontalAlignment.Center));
-        col.AddChild(Style.Flourish());
+        var plaque = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+        plaque.AddChild(new Plaque(head, 46, 170, new Color("#ffe6b8")));
+        col.AddChild(plaque);
         if (v.Queued > 0) col.AddChild(Style.Label($"{v.Queued} more to choose after this", Style.UiBold, Style.Small, Style.InkDim, false, HorizontalAlignment.Center));
         if (v.Battle != null && LevelUp.BuildPaths(v.Battle) is { Count: > 0 } paths)
             col.AddChild(Style.Label($"Walking {string.Join(" and ", paths.Select(p => p.Name))}", Style.TextItalic, Style.Small, Style.EmberHi, false, HorizontalAlignment.Center));
@@ -183,6 +195,8 @@ public partial class DraftPanel : Control
     {
         var strip = Style.H(Style.Gap2);
         strip.Alignment = BoxContainer.AlignmentMode.Center;
+        var slab = Style.Panel(Style.Slab(12), strip);
+        slab.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
         strip.AddChild(Style.Label("YOUR BUILD", Style.UiHeavy, Style.Caption, Style.Gold));
         foreach (var w in b.Weapons)
         {
@@ -209,7 +223,7 @@ public partial class DraftPanel : Control
             buildChips[id] = chip;
             strip.AddChild(chip);
         }
-        return strip;
+        return slab;
     }
 
     static Control Chip(string? glyph, Color c, string rank, bool evolved, bool round = false)
@@ -257,17 +271,9 @@ public partial class DraftPanel : Control
         if (Fresh(o)) ribbon.AddChild(Style.Panel(Style.Box(Style.Ember with { A = 0.9f }, Style.EmberHi, 1, 12, 6), Style.Label("NEW", Style.UiHeavy, Style.Badge, new Color("#2a1206"), false, HorizontalAlignment.Center, false)));
         v2.AddChild(ribbon);
         // The icon on a disc of its colour.
-        var art = new CenterContainer { CustomMinimumSize = new Vector2(CardW - 44, 128), MouseFilter = MouseFilterEnum.Ignore };
-        var disc = new Panel { CustomMinimumSize = new Vector2(112, 112), MouseFilter = MouseFilterEnum.Ignore };
-        var ds = Style.Box(color.Darkened(0.82f) with { A = 0.95f }, color with { A = 0.7f }, 2, 56, 0);
-        ds.ShadowColor = color with { A = 0.25f };
-        ds.ShadowSize = 16;
-        disc.AddThemeStyleboxOverride("panel", ds);
-        var glyph = Glyphs.Icon(o.Icon, 68, color);
-        glyph.Position = new Vector2(22, 22);
-        glyph.Size = new Vector2(68, 68);
-        disc.AddChild(glyph);
-        art.AddChild(disc);
+        var art = new CenterContainer { CustomMinimumSize = new Vector2(CardW - 44, 132), MouseFilter = MouseFilterEnum.Ignore };
+        var medal = new Medallion(124, "", o.Icon) { Ring = color, Ink = color.Lightened(0.15f), Core = color.Darkened(0.82f), Name = "Medal" };
+        art.AddChild(medal);
         v2.AddChild(art);
         v2.AddChild(Style.Label(o.Title, Style.Display, Style.Title, Style.GoldHi, true, HorizontalAlignment.Center));
         if (o.Kind == OfferKind.Evolve && Weapons.All.TryGetValue(o.Id, out var from))
@@ -346,11 +352,14 @@ public partial class DraftPanel : Control
             var panel = b.GetChild<Panel>(0);
             var rc = (Color)panel.GetMeta("rc");
             bool on = i == focus, ch = chosen == i;
-            var edge = banishing ? new Color("#ff6a4a") : ch ? Style.GoldHi : rc with { A = on ? 0.95f : 0.55f };
-            var s = Style.Box(new Color(0.09f, 0.075f, 0.1f, 0.98f).Lerp(rc, banishing && on ? 0.0f : 0.05f), edge, ch ? 3 : on ? 2 : 1, 10, 0);
-            s.ShadowColor = on ? (banishing ? new Color("#ff6a4a") : rc) with { A = 0.4f } : new Color(0, 0, 0, 0.7f);
-            s.ShadowSize = on ? 30 : 18;
+            var edge = banishing && on ? new Color("#ff6a4a") : ch ? Style.GoldHi : rc;
+            // A crested card: its rarity in the crest and the corners, a glow when lifted.
+            var s = OrnateBox.Make(OrnateBox.Kind.Card, 0, edge);
+            s.Crest = 120;
+            s.Glow = on ? 1.4f : 0;
+            s.Top = new Color("#211c26").Lerp(rc, 0.05f);
             panel.AddThemeStyleboxOverride("panel", UiArt.Has((string)panel.GetMeta("frame")) ? UiArt.Frame((string)panel.GetMeta("frame"), s) : s);
+            if (b.FindChild("Medal", true, false) is Medallion m) { m.Lit = on; m.QueueRedraw(); }
             panel.SelfModulate = banishing && on ? new Color(1.15f, 0.8f, 0.75f) : Colors.White;
             b.GetNode<Label>("Ban").Visible = banishing && on;
             b.Position = b.Position with { Y = on && chosen == null ? -12 : 0 };
@@ -482,37 +491,50 @@ public partial class TalkPanel : Control
         };
         Style.Fill(shade);
         AddChild(shade);
+        // The words on a plate across the foot of the screen; the person stands in front of its
+        // left end, large, as they would across a table (docs/UI_DESIGN.md, "Conversation").
         var box = Style.Panel(Style.Plate(22));
-        box.Position = new Vector2(240, 1080 - 40 - 420);
-        box.Size = new Vector2(1440, 420);
+        box.Position = new Vector2(420, 1080 - 36 - 404);
+        box.Size = new Vector2(1460, 404);
         AddChild(box);
-        var row = Style.H(28);
-        box.AddChild(row);
-        // Who.
-        var who = Style.V(4);
-        who.CustomMinimumSize = new Vector2(230, 0);
-        var frame = Style.Panel(Style.Box(new Color(0.03f, 0.025f, 0.04f), Style.Line, 1, 6, 0));
-        frame.CustomMinimumSize = new Vector2(228, 274);
-        if (d.Person != null) frame.AddChild(new Portrait(new Vector2I(228, 274), Portrait.Framing.Bust).Of(d.Person, d.Arms, d.Scale));
+        var inset = new MarginContainer { MouseFilter = MouseFilterEnum.Ignore };
+        inset.AddThemeConstantOverride("margin_left", 190);
+        inset.AddThemeConstantOverride("margin_top", 26);
+        box.AddChild(inset);
+        var glow = new TextureRect
+        {
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
+            Texture = new GradientTexture2D
+            {
+                Gradient = new Gradient { Colors = new[] { new Color(1, 0.5f, 0.2f, 0.2f), new Color(1, 0.5f, 0.2f, 0) }, Offsets = new[] { 0f, 1f } },
+                Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.55f), FillTo = new Vector2(1f, 0.55f), Width = 128, Height = 128,
+            },
+            Position = new Vector2(-40, 300), Size = new Vector2(720, 780),
+        };
+        AddChild(glow);
+        if (d.Person != null)
+        {
+            var fig = new Portrait(new Vector2I(560, 760), Portrait.Framing.Half).Of(d.Person, d.Arms, d.Scale);
+            fig.Position = new Vector2(30, 1080 - 760);
+            AddChild(fig);
+        }
         else
         {
-            var c = new CenterContainer();
-            c.AddChild(Glyphs.Icon(d.Glyph ?? "talk", 110, new Color("#e8c890")));
-            frame.AddChild(c);
+            var m = new Medallion(240, "", d.Glyph ?? "talk") { Ink = new Color("#e8c890"), Lit = true };
+            m.Position = new Vector2(190, 1080 - 36 - 404 - 40);
+            AddChild(m);
         }
-        who.AddChild(frame);
-        who.AddChild(Style.Label(d.Name, Style.Display, 22, Style.GoldHi, true, HorizontalAlignment.Center));
-        if (d.Title != "") who.AddChild(Style.Label(d.Title, Style.TextItalic, Style.Caption, Style.InkDim, true, HorizontalAlignment.Center));
-        if (d.Mood != "")
-        {
-            var mood = Style.H(4, Glyphs.Icon("eye", 14, Style.Gold), Style.Label(d.Mood, Style.Ui, Style.Caption, Style.Gold));
-            mood.Alignment = BoxContainer.AlignmentMode.Center;
-            who.AddChild(mood);
-        }
-        row.AddChild(who);
+        // Their name on a banner over the plate's edge, what they are and how they feel about you beside it.
+        var banner = Style.Panel(OrnateBox.Make(OrnateBox.Kind.Banner, 18), Style.Label(d.Name.ToUpperInvariant(), Style.Display, 26, Style.GoldHi));
+        banner.Position = new Vector2(610, 1080 - 36 - 404 - 26);
+        AddChild(banner);
         // What is said, and what can be said back.
         var main = Style.V(10);
         main.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        var about = Style.H(Style.Gap3);
+        if (d.Title != "") about.AddChild(Style.Label(d.Title, Style.TextItalic, Style.Small, Style.InkDim));
+        if (d.Mood != "") about.AddChild(Style.H(4, Glyphs.Icon("eye", 14, Style.Gold), Style.Label(d.Mood, Style.Ui, Style.Small, Style.Gold)));
+        if (about.GetChildCount() > 0) main.AddChild(about);
         // What was said just before, quietly, so the thread is never lost to the pace of speech.
         if (d.Before != null) main.AddChild(Style.Label(d.Before, Style.TextItalic, Style.Small, Style.InkFaint, true));
         if (d.Speaker == "player") main.AddChild(Style.Label(d.PlayerName.ToUpperInvariant(), Style.Display, Style.Caption, new Color("#9ab8d8")));
@@ -571,7 +593,7 @@ public partial class TalkPanel : Control
         }
         focus = lines.FindIndex(l => l.Enabled);
         Prompts();
-        row.AddChild(main);
+        inset.AddChild(main);
     }
 
     /// <summary>The keys beside the lines: numbers on a keyboard, A on the focused line with a pad.</summary>

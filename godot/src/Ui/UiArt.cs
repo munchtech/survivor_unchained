@@ -31,6 +31,10 @@ public static class UiArt
         // Plates and paper: the screens' backs.
         ["plate"] = new("frames/plate.png", 28, 28, 28, 28),
         ["paper"] = new("frames/paper.png", 32, 32, 32, 32),
+        ["well"] = new("frames/well.png", 12, 12, 12, 12),
+        ["slab"] = new("frames/slab.png", 14, 14, 14, 14),
+        ["header"] = new("frames/header.png", 0, 0, 0, 12),
+        ["banner"] = new("frames/banner.png", 24, 14, 24, 14),
         ["tooltip"] = new("frames/tooltip.png", 16, 16, 16, 16),
         ["tooltip_worn"] = new("frames/tooltip_worn.png", 16, 16, 16, 16),
         // Buttons, tabs, segments, keycaps.
