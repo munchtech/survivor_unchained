@@ -7,7 +7,7 @@ Prepared by the legal and Steam compliance lead (an AI agent, aa12c130ddf4b904c)
 Companion files:
 - `STEAM_CHECKLIST.md`: the submission steps, with draft survey answers and disclosure wording.
 - `QUESTIONS_FOR_LAWYER.md`: the short list for counsel.
-- `ASSET_PROVENANCE.md` and `REPLACEMENT_PLAN.md`: the provenance auditor's inventory (102 rows) and replacement order, on branch `worktree-agent-a80ff0c7fd988b178` at c009fdfd. My rulings on its findings are in issue 5. I agree with the plan's order: stage 0 (answers and compliance) and stage 1 (the boar, the bodies, the face paint) come before launch.
+- `ASSET_PROVENANCE.md` and `REPLACEMENT_PLAN.md`: the provenance auditor's inventory (102 rows) and replacement order, on branch `worktree-agent-a80ff0c7fd988b178` at fa6e3d63. My rulings on its findings are in issue 5. I agree with the plan's order: stage 0 (answers and compliance) and stage 1 (the boar, the bodies, the face paint) come before launch.
 
 ---
 
@@ -67,7 +67,7 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
     - Reaver: a single leather band covers the nipples, leaving heavy underboob; a low belt and loincloth flap.
     - Stalker: a leather corset with the nipples showing as a soft rise through it; the right buttock is bare in a thong cut, and a high cut runs over the right hip.
     - Warden: the plate skirt leaves the lower buttocks bare.
-  - **Not verified by me:** whether a nipple or areola can show during motion or jiggle, and whether her crotch is modelled or a smooth form.
+  - **My motion check** (issue 2): in the sprint, the Warden's left plate cup clips and shows part of the nipple. The other outfits stayed covered in the run and sprint clips. Her crotch is covered in all four outfits; whether it is modelled is still unconfirmed.
 - **Character creation:** it never shows her or him without the calling's full outfit, has no base layer, and no shipped toggle for one (UI design lead, 4 Oct). A dev portrait tool once built her bare by mistake; it is fixed, and the images were re-rendered dressed.
 - **The male hero:** a bare body with a smooth crotch and bare buttocks. He is reachable only through the debug argument `--body hero`, which is **not** gated to debug builds (`godot/src/Actors/People.cs:103`). A base garment is being added (hero lead, 4 Oct).
 - **Sexual content in text** (`godot/data/content/dialogue.json`):
@@ -75,7 +75,7 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
   - Love scenes are written as non-graphic "cut-aways" that end before the act.
   - Sella is a sex worker: the player pays 15 gold for a night (`sella.price`, `sella.rest_night`).
   - **Each love scene grants a combat buff**: `sella.night`, `sella.free_night` and `maeca.blind` apply `warmed`, which the notice text gives as "+8% damage, +5% speed, one day".
-  - Behind `settings.intimacy == "full"` sit placeholder lines reading "[explicit scene: … — to be written]". Nothing in the code sets that fact today, so they are unreachable, but they ship in the data.
+  - Three placeholder lines reading "[explicit scene: … — to be written]" sat behind `settings.intimacy == "full"`. Nothing set that fact, so they were unreachable, but they shipped in the data. The story lead has now removed them (issue 6).
 - **Violence:** constant horde combat against humans, undead and beasts. Blood, pools and gibs ("a blow far bigger than what it killed bursts the body"), and corpses that lie for 18 seconds. There is a gore setting (full, reduced, off).
 - **Language:** infrequent strong language (one "fucking"; some "shit", "piss", "bitch", "bastard").
 - **No drugs, gambling, loot boxes or sexual violence**, and no minors in sexual contexts. I searched the content data for each.
@@ -172,10 +172,20 @@ I checked these in the repository at `f56ee42` (integration branch) and in rende
 - In the free-text description, say plainly that the heroine's model has anatomical detail that her outfits always cover.
 - This honesty is the protection. Games have been re-rated or pulled when hidden content was found later; the best-known case is GTA: San Andreas's "Hot Coffee" in 2005.
 
+**My motion check** (4 Oct 2026; 960×540 renders, 8 frames at 1/15 s):
+- What I rendered: all four outfits in her own `run_*` and `sprint_*` clips with jiggle on, from the front at chest height, the front below, behind and the side.
+- Script: a scratch copy of `tools_scenes/lookdev.gd` that loads her clip library; it is listed in `docs/handoff/legal.md`.
+- **Warden: a finding.** In the sprint, her left breast pushes through the plate cup: a small skin-coloured patch, the nipple area, shows through the metal in four of eight frames (`warden_sprint_chest_01`, `_02`, `_04`, `_05`). That is clipping, and it shows part of a nipple in normal play.
+- **Reaver:** the band keeps the nipples covered throughout. Heavy underboob shows as the arms swing. The buttocks are fully bare (thong). The loincloth flap swings with the knee, but the crotch stays covered.
+- **Stalker:** the nipples show as shapes through the leather, and the right buttock is bare. No exposure.
+- **Arcanist:** a deep plunge, with the nipples showing as shapes through the suit. No exposure.
+- **Warden, otherwise:** the lower buttocks show beneath the plate skirt. No exposure.
+- **Not yet checked:** combat swings, the dash and leap, deaths, crouching, cinematic poses, and creation's poses.
+
 **Action.**
 1. Use the draft answers in `STEAM_CHECKLIST.md`.
-2. Before submission, have the outfits work verify in motion, with jiggle on and at close range, that no nipple, areola or genital area ever shows: running, dashing, death falls, the cinematics and creation. The main session or the outfits lead should do this; I haven't seen it.
-3. If anything does show, either fix it or disclose it.
+2. **Fix the Warden's left cup clipping** in the sprint (outfits, main session). Until it's fixed, the survey's "no exposed nipples in play" is not true.
+3. Extend the motion check to the clips not yet checked, at close range. If anything shows, fix it or disclose it.
 
 ### 3. Debug paths and unused files in the release build: BLOCKER
 
@@ -279,8 +289,12 @@ These are my rulings on the auditor's findings (`ASSET_PROVENANCE.md`).
 ### 6. Explicit-scene placeholders and the explicit-content decision: BLOCKER (remove placeholders) / DECISION
 
 **Evidence.**
-- Six "[explicit scene: … — to be written]" slots ship in `dialogue.json` behind `settings.intimacy == "full"`.
+- Three "[explicit scene: … — to be written]" slots shipped in `dialogue.json` behind `settings.intimacy == "full"`: `sella.night`, `sella.free_night` and `maeca.blind`. Three more, for Act 2, existed only in the docs.
 - `docs/romance/README.md` plans beat sheets "for the owner's writer".
+- **Status: the placeholders are removed** (story lead, efc15256 on `worktree-agent-a73ca9d35d0c487a9`, not yet merged):
+  - Every scene keeps its non-explicit cut-away for all players.
+  - `StoryLint` now fails if any "[explicit" text or `settings.intimacy` variant returns to `dialogue.json`.
+  - The romance drafts in `docs/romance/data` still hold slots as notes only. They aren't shipped, and the test would catch them.
 
 **Why it matters.**
 - The placeholders are not explicit, but they are sexual descriptions shipped in data, and Steam's survey covers "all adult content uploaded".
