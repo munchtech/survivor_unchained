@@ -174,7 +174,7 @@ def main(argv):
                 ears = produce.Ears()
             tmp = os.path.join(FINALS, "_check.wav")
             to_wav(m["file"], tmp)
-            rep = ears.hear(tmp, m["text"], m["voice"])
+            rep = ears.hear(tmp, re.sub(r"\s\+\s", " and ", m["text"]), m["voice"])
             if rep["faults"] and not a.force:
                 wrong.append((m, rep["faults"], rep["said"]))
                 continue

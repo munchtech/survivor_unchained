@@ -52,7 +52,7 @@ NPC_VOICE = {"survivor": "lampling", "wayfinder": "ysolde", "board": None, "grey
 # Named speakers of the zone code's lines and barks.
 SPEAKER_VOICE = {"The Ford-Warden": "warden", "Grimtunnel": "grimtunnel", "Snib": "snib",
                  "The dead Watchman": "watchman", "The bones": "bones", "Jory Coyle": "jory",
-                 "A Kerchief woman": "kerchief_woman", "The Barrow Lord": "barrow_lord"}
+                 "A Kerchief woman": "kerchief_woman", "The Barrow Lord": "barrow_lord", "The Red Hand": "red_hand"}
 # A conversation node's own speaker (the cinematics name theirs).
 NODE_VOICE = {"ford_warden": "warden", "barrow_lord": "barrow_lord", "kerchief_woman": "kerchief_woman", "guard": "guard"}
 
@@ -282,6 +282,8 @@ def from_code(lines: list):
                             "text": t, "who": speaker, "where": rel}
                     if line["voice"] is None:
                         line["skip"] = f"no voice cast for {speaker}"
+                    elif not t.strip().startswith(("\"", "“")):
+                        line["skip"] = "a caption for a sound, not speech"  # a boss's spoken barks are in quotes
                     lines.append(line)
 
 

@@ -36,6 +36,8 @@ SHEET = {"narrator": "The narrator.", "rook": "Mother Rook", "holloway": "Captai
          "ysolde": "Ysolde Marrow", "watchman": "Nell, Wat, Corran."}
 # Held for the story lead's review (a7622ae77d19e31dc): whole parts, and kinds of line.
 HOLD_VOICES: dict = {}
+# Packets the story lead has checked and marked final (voice: date).
+FINAL = {"narrator": "2026-10-03", "rook": "2026-10-03"}
 # Lines waiting on the story lead or the owner: (id prefix, why).
 HOLD_LINES = (("dlg.keegan.vonnra.", "the story lead's confirmation of Keegan's kenning"),)
 TAG = {"beat": "…", "breath": "[inhales]", "laugh": "[laughs]", "laughs": "[laughs]", "chuckle": "[chuckles]",
@@ -177,7 +179,8 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
     lex = {k: x for k, x in lexicon().get("say", {}).items() if k != x and re.search(rf"(?<![\w']){re.escape(k)}(?![\w'])", spoken)}
     w = [f"# {v['name']}: ElevenLabs packet", "",
          f"Voice id in the game: `{voice}`. {len(es)} takes to record ({chars:,} characters; about {chars * 3:,} credits at three "
-         f"tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.", ""]
+         f"tries a line). " + (f"Status: **final** (the story lead, {FINAL[voice]}): record it." if voice in FINAL else
+                                    "Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final."), ""]
     if holds:
         w += [f"**Hold {len(holds)} of these** (marked HOLD below, with why); the rest can be recorded now.", ""]
     w += ["## Who they are", "", sheet(voice) or v["design"], ""]

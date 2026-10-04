@@ -100,6 +100,7 @@ By how much each voice is heard, and where the player meets it first:
 | [The dead Watchman](watchman.md) | 1 | 45 |  |
 | [The Legion's dead, behind the door](barrow_lord.md) | 5 | 41 |  |
 | [The bones](bones.md) | 1 | 37 |  |
+| [The Red Hand](red_hand.md) | 1 | 13 |  |
 | [A Kerchief woman](kerchief_woman.md) | 1 | 11 |  |
 <!-- /PACKETS -->
 

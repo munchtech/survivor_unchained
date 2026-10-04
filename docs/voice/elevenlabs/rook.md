@@ -1,6 +1,6 @@
 # Mother Rook: ElevenLabs packet
 
-Voice id in the game: `rook`. 45 takes to record (6,073 characters; about 18,219 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `rook`. 45 takes to record (6,073 characters; about 18,219 credits at three tries a line). Status: **final** (the story lead, 2026-10-03): record it.
 
 ## Who they are
 
@@ -429,7 +429,7 @@ Subtitle: Good. Somebody had to, and it was never going to be me. ...Sit down. Y
 
 *Where:* dialogue.json rook/valley#0
 *Played:* flat, closing a door; doing: what happened to Ashford; pace: measured; volume: quiet.
-*Hides:* she lost people there too
+*Hides:* she knows who stood on which side of it, and that it isn't over (the Kerchiefs are what's left of Ashford)
 *Note:* No warmth to spare. 'Ashford was.' on its own. The 'pet' is habit, not softness. The don'ts flat, each one a door closing, with no build.
 
 ```

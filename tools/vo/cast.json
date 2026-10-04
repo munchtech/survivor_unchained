@@ -500,6 +500,20 @@
     3.2
    ],
    "maya": "Realistic female voice in the 40s age with scottish accent, a hard refugee. Low pitch, rough timbre, measured pacing, blunt weary tone."
+  },
+  "red_hand": {
+   "name": "The Red Hand",
+   "sex": "m",
+   "age": 45,
+   "accent": "hard west-of-Scotland Scots",
+   "design": "A Kerchief enforcer in his forties, one of Ashford's old levy, with a low, flat, hard west-of-Scotland voice. He never raises it: he is collecting a debt, not threatening. Few words to strangers, and those flat.",
+   "ref_text": "Toll's due. Same as last month, and the month before. Put it in the hand and walk on.",
+   "room": "outdoor",
+   "tempo": [
+    2.2,
+    3.0
+   ],
+   "maya": "Realistic male voice in the 40s age with scottish accent, a debt collector. Low pitch, flat hard timbre, slow pacing, flat tone."
   }
  }
 }
