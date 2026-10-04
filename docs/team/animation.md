@@ -1,6 +1,14 @@
 # Animation: status
 
-Branch `worktree-agent-aa4f5fc266b043035`. The brief, history and gotchas are in `docs/handoff/animation.md`.
+Branch `worktree-agent-a1e3002b800ee55ac` (took over from `aa4f5fc266b043035`). The brief, history and gotchas are in `docs/handoff/animation.md`.
+
+## Paused (owner's usage limit), exact state
+
+- Merged the integration branch; nothing new is in the game yet.
+- Started on `death_back`: the three Kimodo `knockdown_*` takes were retargeted whole (scratch `try_takes.py`: `generated.make(..., place="keep")`), packed as `k_knockdown_*`, then removed again before any sheet was judged. The library is the committed 64 clips.
+- Found for `death_back`: `Battle` keeps `Player.LastKiller` (an `Enemy` with X, Z), so PlayerView can choose the fall by where the killer stands against her facing (in front: on her back; behind: today's face-down `death`). `face_forward` averages the whole take, so a knockdown that rolls needs its facing taken from the first frames instead; crop the take to the fall with `warp=[(a, b, b - a)]` and hold it (`"hold": True`).
+- Combat (`ac4ec5bbd2763a0df`) will send a motion list once their new defs land: likely a kneel-to-shoot (crossbowman), a howl (wolf caller) and a slam wind-up (heavies); the shamble suits their Risen variants. Not yet answered.
+- Fresh-worktree setup that sheets need (rendered blank without it): `godot/assets` checks out as a text file, so replace it with a junction to `public/assets` (then `git update-index --assume-unchanged godot/assets`), and copy the `*.import`/`*.uid` files under `public/assets` from a worktree that has them, then `--import`.
 
 ## State
 
