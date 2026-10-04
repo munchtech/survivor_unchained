@@ -81,6 +81,7 @@ public partial class BattleFx : Node3D
         AddChild(Hits);
         AddChild(Gore);
         AddChild(Ribbons);
+        AddChild(Blades);
         for (int i = 0; i < 8; i++)
         {
             var l = new OmniLight3D { LightEnergy = 0, OmniRange = 10, OmniAttenuation = 1.6f, ShadowEnabled = false, Visible = false };
@@ -122,7 +123,7 @@ public partial class BattleFx : Node3D
         // What is thrown is the weapon in hand (Arms), not a stick of light.
         axes = Add(new Batch(Weapon("viking_axe", 0.85f), 400, null));
         daggers = Add(new Batch(Weapon("dagger_b", 0.5f), 600, null));
-        shards = Add(new Batch(new PrismMesh { Size = new Vector3(0.14f, 0.7f, 0.14f) }, 600, Glowing(1.8f, 0.1f)));
+        shards = Add(new Batch(IceLance(), 600, Crystal(0.5f, 1.8f, 0.05f, 1f)));
         rings = Add(new Batch(new TorusMesh { InnerRadius = 0.36f, OuterRadius = 0.5f, Rings = 16, RingSegments = 6 }, 200, Glowing(1.2f, 0.2f, 0.8f)));
         // What lies on the ground is what the pack shows (the photographs'
         // models): an ember is the ember's crystals, lit the colour of its
@@ -269,8 +270,8 @@ public partial class BattleFx : Node3D
             m.Progress = true;
             if (m.Fill == null) { m.Fill = new Decal { UpperFade = 0.3f, LowerFade = 0.3f, CullMask = 1, TextureEmission = discTex }; AddChild(m.Fill); }
             m.Fill.Position = m.Decal.Position;
-            m.Fill.Modulate = color with { A = 0.55f };
-            m.Fill.EmissionEnergy = 2;
+            m.Fill.Modulate = color with { A = 0.42f };
+            m.Fill.EmissionEnergy = 1.4f;
             m.Fill.Size = new Vector3(0.01f, 4, 0.01f);
             m.Fill.Visible = true;
         }
@@ -467,10 +468,12 @@ public partial class BattleFx : Node3D
                 float u = (x + 0.5f) / N * 2 - 1, v = (y + 0.5f) / N * 2 - 1;
                 float r = Mathf.Sqrt(u * u + v * v), a;
                 if (kind == 0) a = Mathf.Clamp(1 - Mathf.Abs(r - 0.9f) / 0.07f, 0, 1) + Mathf.Clamp(1 - r, 0, 1) * 0.12f * (r < 0.93f ? 1 : 0);
-                else if (kind == 1) a = r < 0.97f ? 0.35f + 0.65f * Mathf.SmoothStep(0.6f, 0.95f, r) : Mathf.Clamp((1 - r) / 0.03f, 0, 1);
+                // A blow coming, filling as it comes: a bright front at its edge and a sparse hatch behind
+                // it, so the crowd still reads through (a solid fill hid the fight).
+                else if (kind == 1) a = r < 0.97f ? 0.08f + (Mathf.PosMod((u - v) * 6f, 1f) < 0.22f ? 0.2f : 0) + 0.72f * Mathf.SmoothStep(0.8f, 0.95f, r) : Mathf.Clamp((1 - r) / 0.03f, 0, 1);
                 else if (kind == 2) { float e = Mathf.Abs(u); a = (Mathf.Clamp(1 - Mathf.Abs(e - 0.88f) / 0.1f, 0, 1) + 0.22f) * Mathf.Clamp((1 - Mathf.Abs(v)) / 0.05f, 0, 1); }
                 // This ground stays bad: hatched, with its edge.
-                else if (kind == 3) a = r < 0.97f ? (Mathf.PosMod((u + v) * 7f, 1f) < 0.3f ? 0.55f : 0.12f) + Mathf.Clamp(1 - Mathf.Abs(r - 0.92f) / 0.05f, 0, 1) : 0;
+                else if (kind == 3) a = r < 0.97f ? (Mathf.PosMod((u + v) * 7f, 1f) < 0.3f ? 0.38f : 0.08f) + Mathf.Clamp(1 - Mathf.Abs(r - 0.92f) / 0.05f, 0, 1) : 0;
                 // Stand here: a dashed ring.
                 else if (kind == 4) a = Mathf.Clamp(1 - Mathf.Abs(r - 0.9f) / 0.06f, 0, 1) * (Mathf.PosMod(Mathf.Atan2(v, u) / Mathf.Tau * 24f, 1f) < 0.55f ? 1 : 0) + (r < 0.9f ? 0.1f : 0);
                 // This will be solid: a hard, thick edge.
@@ -1103,7 +1106,7 @@ public partial class BattleFx : Node3D
         Projectiles(b, fdt, now);
         Pickups(b, now);
         StepFronts(fdt);
-        StepSweeps(fdt);
+        Blades.Step(fdt);
         StepSpikes(fdt);
         Ribbons.Step(fdt, GetViewport()?.GetCamera3D());
         Sparks.Step(fdt);
@@ -1181,7 +1184,7 @@ public partial class BattleFx : Node3D
             bool mine = z.Owner != Sim.Side.Enemy, runes = mine && school is School.Holy or School.Arcane;
             if (!zoneMarks.TryGetValue(z.Id, out var m) || !m.Active)
             {
-                var tex = !mine ? discTex! : school switch { School.Holy => Sprites.Runes(1), School.Arcane => Sprites.Runes(0), School.Fire => Sprites.Burning, _ => discTex! };
+                var tex = !mine ? hatchTex! : school switch { School.Holy => Premul(Sprites.Runes(0)), School.Arcane => Premul(Sprites.Runes(0)), School.Fire => Premul(Sprites.Burning), _ => discTex! };
                 m = Ground(z.X, z.Z, (float)z.Radius, tex, col, 1e6f, runes ? 2.2f : 1.2f);
                 zoneMarks[z.Id] = m;
             }
