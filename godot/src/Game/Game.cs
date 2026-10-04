@@ -836,11 +836,12 @@ public partial class Game : Node, IZoneHost
         }
         // --give A,B[:RANK][@EVOLUTION],+PASSIVE[:RANK]: a build in hand from the start
         // (pictures of weapons, of the draft with an arsenal), the arena's opening blessing passed over.
-        // --minute M: the arena's clock set to M minutes (pictures of its boss: --minute 29.9).
+        // --minute M: the arena's clock set to M minutes (pictures of its boss: --minute 29.9); --won: and the night won.
         if (!minuteDone && Args.Has("minute") && zone is ArenaRun mr && Battle != null)
         {
             minuteDone = true;
             mr.SkipTo(Args.Num("minute", 29.9f) * 60);
+            if (Args.Has("won")) mr.WinNow();
         }
         if (!giveDone && Args.Get("give") is string give && Battle is { } gb)
         {
