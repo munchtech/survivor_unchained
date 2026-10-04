@@ -103,7 +103,8 @@ public partial class DraftPanel : Control
             col.AddChild(tip);
         }
         col.AddChild(Style.Gap(Style.Gap5));
-        var row = Style.H(28);
+        // Painted cards reach past their edges (the brackets they hang from): spaced so they do not touch.
+        var row = Style.H(UiArt.Has("card_0") ? 52 : 28);
         row.Alignment = BoxContainer.AlignmentMode.Center;
         row.CustomMinimumSize = new Vector2(0, CardH + 16);
         col.AddChild(row);

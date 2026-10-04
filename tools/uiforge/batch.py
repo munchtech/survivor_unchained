@@ -69,6 +69,9 @@ def cards2():
                                                         "the brackets wrought as golden flames of a chapel lamp, gold "
                                                         "flame shapes curling from every corner")),
         "evolution": (0.68, RARITY["evolution"]),
+        "uncommon": (0.64, RARITY["uncommon"].replace("thorny bramble stems curling round the brackets and along the strap",
+                                                      "thick thorny bramble stems with long sharp thorns wound round the "
+                                                      "brackets and creeping down both sides of the strap")),
     }
     for i, (name, (d, p)) in enumerate(more.items()):
         krea.i2i(base, p + ". " + S, denoise=d, seed=650 + i, n=3, tag=f"card2_{name}")
