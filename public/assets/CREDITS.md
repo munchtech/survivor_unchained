@@ -12,6 +12,8 @@ Third-party art in this folder, with its licence. CC-BY works are used with cred
 
 - Her own clips (godot/art/anim/heroine.res) are keyed for the game in code by tools/anim (own work), except her idles' standing: 100STYLE dataset, Ian Mason, Sebastian Starke, Taku Komura (https://zenodo.org/record/8127870, "Real-Time Style Modelling of Human Locomotion via Feature-Wise Transformations and Local Motion Phases", 2022), CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes: retargeted to her skeleton, feet locked, looped, centred, and the arms re-keyed to hold her weapons. Which take each clip uses is in tools/anim/manifest.json.
 - Anything she has not had made for her yet plays from Quaternius's Universal Animation Libraries (CC0, above).
+- Her Crashing Leap is Mixamo's "Standing Melee Run Jump Attack" (Adobe Mixamo, used in the game under Mixamo's terms; retargeted to her and retimed; the raw files are not distributed). Further Mixamo motion (the vault, the bull rush, the chain haul, townsfolk) is downloaded for the same use: see tools/anim/manifest.json.
+- Motion generated with NVIDIA's Kimodo (Kimodo-SOMA-RP, NVIDIA Open Model License) and captured from video with Meta's SAM 3D Body (SAM License; Momentum Human Rig, Apache 2.0) is credited clip by clip in tools/anim/manifest.json when it ships.
 
 ## Poly Haven (CC0)
 

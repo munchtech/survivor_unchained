@@ -82,10 +82,13 @@ is built. The beats are `STORY_BIBLE.md` section 7; the facts are Act 1's
   - *She steps aside.* She closes the handbook, puts it inside her breastplate, and
     unbars the gate: "I have read chapter four thirty times. I have decided it is
     badly written." She comes north.
-  - *She stands.* A duel at the gate at night: she fights with the handbook's
-    discipline and no anger. Won: kill her (she says "With mercy," as the handbook
-    does) or spare her (she sits in the road with her sword across her knees, and
-    says nothing, and is still there at dawn).
+  - *She stands.* A duel at the gate at first light, by the handbook's seventh
+    article ("at dawn, when it is weakest"): no ember, the survivor ordinary and
+    warm, her breath smoking, which is the hour Keegan chose because the book did.
+    She fights with the handbook's discipline and no anger. Won: kill her (she
+    says "With mercy," as the handbook does) or spare her (she sits in the road
+    with her sword across her knees, and says nothing, and is still there at
+    noon).
   - *She reports.* She lets the survivor pass and sits down to write to the
     chapterhouse, which already knows.
 - **Key lines.** "I have been watching your breath. At night. For three weeks. I

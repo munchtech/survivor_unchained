@@ -4,6 +4,7 @@ using System.Linq;
 using SurvivorUnchained.Arena;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Maps;
+using SurvivorUnchained.Play.Bosses;
 using SurvivorUnchained.Rpg;
 using SurvivorUnchained.Sim;
 using SurvivorUnchained.World;
@@ -28,7 +29,7 @@ namespace SurvivorUnchained.Play.Zones;
  * come often. A great blessing is chosen as it begins and another at the
  * fifteenth minute, from all of them, whoever the survivor is. Win or die,
  * the arena is over and the story goes on. */
-public sealed class ArenaRun : ZoneRuntime
+public sealed class ArenaRun : ZoneRuntime, IBossArena
 {
     public readonly ArenaSpec Spec;
     readonly MapBuild map;
@@ -44,6 +45,12 @@ public sealed class ArenaRun : ZoneRuntime
     (double X, double Z)? way;
     Enemy? boss, herald;
     readonly HashSet<int> chests = new();
+    /// <summary>The boss's script (its phases, moves and weakness), the bearing its sign
+    /// came from, and the share of its number the horde is kept at while it lives.</summary>
+    ArenaBoss? script;
+    double signAngle, bossShare = 0.4;
+    bool runUp;
+    public ArenaBoss? BossScript => script;
 
     public override string Id => "arena";
     public override string Name => Spec.Name;
@@ -105,6 +112,17 @@ public sealed class ArenaRun : ZoneRuntime
         b.GreatOwed = 1;
         G.Announce(new Announcement(Spec.Name, Region, "zone", 3.4, "Ember arena"));
         Objectives();
+    }
+
+    /// <summary>The clock moved on to `seconds` (pictures and probes of the boss): what that
+    /// stretch would have brought (its heralds, the fifteenth minute's great blessing, the
+    /// opening one) is passed over rather than all arriving at once.</summary>
+    public void SkipTo(double seconds)
+    {
+        if (B == null) return;
+        B.Time = seconds;
+        herald10 = Minute >= 10; herald20 = Minute >= 20; great15 = Minute >= 15;
+        B.GreatOwed = 0;
     }
 
     /* ---------------------------------------------------------- the horde -- */
@@ -221,7 +239,7 @@ public sealed class ArenaRun : ZoneRuntime
             spawnT = thin ? 0.225 : 0.45;
             if (Around(R() * Math.PI * 2, 24 + R() * 5) is var (x, z)) Group(Pick(), (3 + (int)(R() * 4) + (int)(Minute / 5)) * (thin ? 2 : 1), x, z, thin ? 4.5 : 3.5);
         }
-        else if (bossUp && spawnT <= 0 && alive < Target() / 2)
+        else if (bossUp && spawnT <= 0 && alive < Target() * bossShare)
         {
             spawnT = 0.9;
             if (Around(R() * Math.PI * 2, 24) is var (x, z)) Group(Pick(), 4, x, z, 3);
@@ -244,6 +262,7 @@ public sealed class ArenaRun : ZoneRuntime
             B.Banishes++;
             G.Announce(new Announcement("The fifteenth minute", "A great blessing", "reward", 2.6));
         }
+        if (!runUp && !won && Seconds >= End - 120) RunUp();
         if (!bossUp && !won && Seconds >= End) Boss();
     }
 
@@ -332,29 +351,85 @@ public sealed class ArenaRun : ZoneRuntime
         G.Announce(new Announcement($"Herald of {people.Name}", "It carries a chest", "danger", 2.4));
     }
 
-    /// <summary>The half hour: what rules the people comes.</summary>
+    /// <summary>Two minutes out: its sign, from the bearing it will come from (a sound,
+    /// then a light on the arena's edge), so the survivor turns to face it.</summary>
+    void RunUp()
+    {
+        runUp = true;
+        var p = B!.Player;
+        signAngle = R() * Math.PI * 2;
+        string sign = BossDef switch
+        {
+            "wolf_alpha" => "A howl from the edge of the wood; the wolves lift their heads.",
+            "barrow_knight" => "A drum, slow, under everything; the dead turn to face it.",
+            "grimtunnel_roused" => "A blasting thump, and the ground shivers; picks rattle somewhere.",
+            "enforcer" => "A whistle, three notes, and an answering whistle.",
+            _ => "Something is coming.",
+        };
+        B.Events.Emit(new Ev.Bark { X = p.X, Z = p.Z + 3, Text = sign });
+        G.Look.AddLight(p.X + Math.Cos(signAngle) * 26, 2.5, p.Z + Math.Sin(signAngle) * 26, "#ff6a3a", 3.2, 16, 0.25, 0.12, "#ff8a5a");
+        G.Announce(new Announcement("The half hour nears", "It comes from where the sign was", "danger", 2.6));
+    }
+
+    /// <summary>The half hour: what rules the people comes, a boss and no herald: on the
+    /// picture from the bearing of its sign, its own kind round it, the field
+    /// cleared where it stands, its weakness named.</summary>
     void Boss()
     {
         bossUp = true;
         var p = B!.Player;
-        var at = Around(R() * Math.PI * 2, 18) ?? (p.X + 8, p.Z);
+        if (!runUp) signAngle = R() * Math.PI * 2;
+        var at = Around(signAngle, 13) ?? Around(R() * Math.PI * 2, 13) ?? (p.X + 8, p.Z);
+        // Its ground cleared: the boss is the thing on screen.
+        foreach (var o in B.Enemies.Living().ToList())
+            if (o.Disposition == Disposition.Hostile && !o.Elite && (o.X - at.X) * (o.X - at.X) + (o.Z - at.Z) * (o.Z - at.Z) < 64) B.Enemies.Release(o);
         boss = Spawn(BossDef, at.X, at.Z, true, SpawnStyle.Walk);
-        if (boss != null && Spec.BossName != null) boss.Named = new Named { Title = Spec.BossName };
+        script = ArenaBosses.For(BossDef, this);
         if (boss != null)
         {
-            // A fight of half a minute to a minute for most builds (docs/SKILLS_DESIGN.md, "Bosses").
-            boss.MaxHp = boss.Hp = boss.MaxHp * (10 + Spec.Tier * 4);
-            boss.Damage *= 1.3;
+            boss.Boss = true;
+            if (Spec.BossName != null) boss.Named = new Named { Title = Spec.BossName };
+            boss.MaxHp = boss.Hp = boss.MaxHp * (script?.HealthMul(Spec.Tier) ?? 12 + 2 * Spec.Tier);
+            boss.Damage *= script?.DamageMul ?? 1.3;
+            if (script != null)
+            {
+                script.Begin(boss);
+                Hooks.BossTick = (e, dt) => e == boss && script.Tick(e, dt);
+                Hooks.OnBossHit = (e, school, dmg) => { if (e == boss) script.OnHit(e, school, dmg); };
+                Hooks.OnBossStagger = e => { if (e == boss) script.OnStagger(e); };
+            }
+            B.Events.Emit(new Ev.Focus { X = at.X, Z = at.Z, Duration = 1.6 });
         }
-        for (int k = 0; k < 14; k++)
+        // Its own kind round it, not a random draw.
+        string escort = people.Arena[0].Def;
+        for (int k = 0; k < 10; k++)
         {
-            double a = k * Math.PI * 2 / 14;
+            double a = k * Math.PI * 2 / 10;
             double x = at.X + Math.Cos(a) * 5, z = at.Z + Math.Sin(a) * 5;
-            if (map.CanStand(x, z)) Spawn(Pick(), x, z);
+            if (map.CanStand(x, z)) Spawn(escort, x, z);
         }
         B.Events.Emit(new Ev.Shake { Amount = 0.45 });
-        G.Announce(new Announcement(BossName, BossTitle, "danger", 3, "The half hour"));
+        G.Announce(new Announcement(BossName, script != null ? $"{BossTitle} · Weakness: {script.WeaknessText}" : BossTitle, "danger", 3.4, "The half hour"));
         Objectives();
+    }
+
+    /* ------------------------------------------------- the boss's arena -- */
+
+    Battle IBossArena.B => B!;
+    int IBossArena.Tier => Spec.Tier;
+    bool IBossArena.Sworn(string oath) => Spec.Oaths.Contains(oath);
+    double IBossArena.R() => R();
+    Enemy? IBossArena.Spawn(string def, double x, double z, bool elite, SpawnStyle? style) => Spawn(def, x, z, elite, style);
+    bool IBossArena.CanStand(double x, double z) => map.CanStand(x, z) && !B!.Collision.Blocked(x, z, 0.6);
+    void IBossArena.Say(string title, string? sub, string tone) => G.Announce(new Announcement(title, sub ?? "", tone, 2.4));
+    void IBossArena.Bark(double x, double z, string text, string? speaker) => B?.Events.Emit(new Ev.Bark { X = x, Z = z, Text = text, Speaker = speaker });
+    double IBossArena.HordeShare { set => bossShare = value; }
+    void IBossArena.Won(double x, double z)
+    {
+        if (over || won) return;
+        var b = boss;
+        if (b != null) foreach (var l in OnLoot(b)) B!.SpawnPickup(l.Kind, x, z, l.Value, l.Ref);
+        Victory(x, z);
     }
 
     /* ------------------------------------------------------------ spoils -- */
@@ -375,6 +450,8 @@ public sealed class ArenaRun : ZoneRuntime
             o.Add(new Loot(PickupKind.Item, PlainGear[(int)(R() * PlainGear.Length)], 1, true, Rarity(gear), lean));
         if (e == boss)
         {
+            int n = 3 + (Spec.Tier >= 3 ? 2 : 0) + (script != null && script.BreakSum >= e.MaxHp * 0.1 ? 1 : 0) + (B!.BossBlowsTaken == 0 ? 1 : 0);
+            o.Add(new Loot(PickupKind.Chest, "boss", n, true));
             for (int k = 0; k < 2 + Spec.Tier / 2; k++)
                 o.Add(new Loot(PickupKind.Item, PlainGear[(int)(R() * PlainGear.Length)], 1, true, Math.Max(1, Rarity(gear * 1.5)), lean));
             var pool = Abilities.All.Values.Where(a => a.Movement && ArtBook.CanLearn(G.Journey.Ch, a.Id)).Select(a => a.Id).ToList();
@@ -387,7 +464,7 @@ public sealed class ArenaRun : ZoneRuntime
     bool OnPickup(Pickup p)
     {
         if (p.Kind != PickupKind.Chest || B == null) return true;
-        int n = 1 + (R() < 0.3 ? 1 : 0) + (R() < 0.1 ? 1 : 0);
+        int n = p.Ref == "boss" ? (int)p.Value : 1 + (R() < 0.3 ? 1 : 0) + (R() < 0.1 ? 1 : 0);
         var got = LevelUp.OpenChest(B, n);
         G.Announce(new Announcement("A chest", string.Join(" · ", got), "reward", 2.8));
         return true;
@@ -397,7 +474,7 @@ public sealed class ArenaRun : ZoneRuntime
     {
         // (Let go of the fallen: the pool gives the same body to the next of the horde.)
         if (e == herald) herald = null;
-        if (e == boss && !over) Victory(e.X, e.Z);
+        if (e == boss && !over) { script?.Fell(e); Victory(e.X, e.Z); }
     }
 
     /* -------------------------------------------------------------- the end -- */
@@ -458,8 +535,9 @@ public sealed class ArenaRun : ZoneRuntime
             pulseT = 1.3;
             B.Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = wx, Z = wz, Radius = 2.4, Duration = 1.2, Hostile = false });
         }
-        if (boss is { Alive: true } b && b.State != EnemyState.Dying) G.SetBoss(new BossBar(BossName, BossTitle, b.Hp, b.MaxHp));
-        else if (herald is { Alive: true } h && h.State != EnemyState.Dying) G.SetBoss(new BossBar(h.Named?.Title ?? $"Herald of {people.Name}", people.Name, h.Hp, h.MaxHp));
+        if (boss is { Alive: true } b && b.State != EnemyState.Dying)
+            G.SetBoss(script != null ? script.Bar(BossName, script is Grimtunnel g ? $"{BossTitle} · lamps: {g.Lamps}" : BossTitle) : new BossBar(BossName, BossTitle, b.Hp, b.MaxHp));
+        else if (herald is { Alive: true } h && h.State != EnemyState.Dying) G.SetBoss(new BossBar(h.Named?.Title ?? $"Herald of {people.Name}", people.Name, h.Hp, h.MaxHp, IsBoss: false));
         else G.SetBoss(null);
         // The clock on the objectives, each second.
         if ((int)Seconds != lastSecond) { lastSecond = (int)Seconds; Objectives(); }

@@ -459,7 +459,7 @@ public partial class Game : Node, IZoneHost
     public void After(double seconds, Action fn) => later.Add((seconds, fn));
     public bool GiveItem(string def, int qty = 1, int? rarity = null) => Journey.GiveItem(def, qty, rarity);
     public void ReturnItem(ItemInstance it) => Journey.ReturnItem(it);
-    public void SetBoss(BossBar? bar) { hud.Boss(bar); bossUp = bar != null; }
+    public void SetBoss(BossBar? bar) { hud.Boss(bar); bossUp = bar is { IsBoss: true }; }
     public void SetObjectives(List<Tracked> list) => hud.Objectives(list);
     public void SetHint(Hint? hint) => hud.Hint(CurrentHint = hint);
     public void SetAtmosphere(AtmospherePreset p, bool rebuild = true) => air.Set(p, rebuild);
@@ -561,11 +561,18 @@ public partial class Game : Node, IZoneHost
                 case Ev.PlayerHit ph when ph.Dodged && Battle is { } b:
                     scene?.Voices.Bark("Dodged", new Vector3((float)b.Player.X, (float)scene.HeightAt(b.Player.X, b.Player.Z), (float)b.Player.Z), null, true);
                     break;
+                case Ev.Focus f when scene != null && Battle is { } fb:
+                    // A boss's arrival or fall: the camera turns to frame it with the survivor, then comes back.
+                    cam.FocusOverride = new Vector3((float)(f.X + fb.Player.X) / 2, (float)scene.HeightAt(f.X, f.Z) + 1, (float)(f.Z + fb.Player.Z) / 2);
+                    focusT = f.Duration;
+                    break;
             }
         }
     }
 
     WorldState World => Journey.World;
+    /// <summary>How long the camera stays turned to a boss (Ev.Focus).</summary>
+    double focusT;
 
     public override void _Process(double delta)
     {
@@ -575,6 +582,7 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("pad") && keyI > 0) controls.UsingPad = true;
         if (scene == null) return;
         double dt = Math.Min(delta, 0.1);
+        if (focusT > 0 && (focusT -= dt) <= 0 && hudMode == null) cam.FocusOverride = null;
         if (Mode == "play" && zone != null)
         {
             auto?.Drive(dt);
@@ -727,7 +735,7 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
-    bool hordeDone, dropsDone, castDone, giveDone;
+    bool hordeDone, dropsDone, castDone, giveDone, minuteDone;
     double blastT = 0.5;
 
     void Tour(double dt)
@@ -766,6 +774,12 @@ public partial class Game : Node, IZoneHost
         }
         // --give A,B[:RANK][@EVOLUTION],+PASSIVE[:RANK]: a build in hand from the start
         // (pictures of weapons, of the draft with an arsenal), the arena's opening blessing passed over.
+        // --minute M: the arena's clock set to M minutes (pictures of its boss: --minute 29.9).
+        if (!minuteDone && Args.Has("minute") && zone is ArenaRun mr && Battle != null)
+        {
+            minuteDone = true;
+            mr.SkipTo(Args.Num("minute", 29.9f) * 60);
+        }
         if (!giveDone && Args.Get("give") is string give && Battle is { } gb)
         {
             giveDone = true;

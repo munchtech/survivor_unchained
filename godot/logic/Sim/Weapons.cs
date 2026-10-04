@@ -38,6 +38,8 @@ public sealed class WeaponInst
     public double ActiveT;
     /// <summary>Times it has been honed (finished, in the endless dark).</summary>
     public int Honed;
+    /// <summary>Taken from the hand for a while (the Red Hand's toll): it does not fire.</summary>
+    public double DisabledT;
     public int Swing;
     Tag[]? tags;
 
@@ -147,6 +149,7 @@ public static class Firing
 
     public static void Tick(Battle b, WeaponInst w, double dt)
     {
+        if (w.DisabledT > 0) { w.DisabledT -= dt; return; }
         w.Timer -= dt;
         if (w.BurstLeft > 0)
         {

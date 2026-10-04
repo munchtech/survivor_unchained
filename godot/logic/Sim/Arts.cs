@@ -322,7 +322,7 @@ public sealed partial class Battle
         e.Facing = facing;
         Decoys.Add(e);
         // What was coming for you comes for them.
-        ForEachHostileInRadius(x, z, 14, (h, _) => { if (h.Target == -1) { h.Target = e.Id; h.RetargetT = 1.5; } });
+        ForEachHostileInRadius(x, z, 14, (h, _) => { if (h.Target == -1 && !h.Elite && !h.Boss) { h.Target = e.Id; h.RetargetT = 1.5; } });
         return e;
     }
 
