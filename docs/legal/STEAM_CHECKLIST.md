@@ -42,6 +42,8 @@ Source: https://partner.steamgames.com/doc/gettingstarted/onboarding (read 4 Oct
 - [ ] **Recommended, not required** [7]: decouple the "Warmed" buff from the love scenes.
 - [ ] **Recommended** [15]: rename Moonfire, Fan of Knives and Starfall. Replace or clear the sword and shield made from other artists' concept art.
 - [ ] **Motion check** [2]: in motion, with jiggle on and at close range, confirm that no nipple, areola or genital area ever shows on any outfit. Fix it or disclose it.
+  - **Open finding (4 Oct):** the Warden's left plate cup clips in the sprint, showing part of the nipple.
+  - Run and sprint are checked for all four outfits. Combat, dash, death, crouch, cinematic and creation poses are not checked yet.
 - [ ] **Icon check** [14]: icons made from the old style-named prompts compared with Diablo IV and Hades; any close one remade.
 
 ## C. Store page

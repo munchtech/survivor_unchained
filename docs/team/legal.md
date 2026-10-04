@@ -19,7 +19,7 @@ Agent aa12c130ddf4b904c, branch `worktree-agent-aa12c130ddf4b904c` (worktree `.c
   - placeholder voices replaced or dropped.
 - **Biggest business risk:** the Krea 2 licence allows commercial use of outputs only under US$1M company revenue, and is revocable on 30 days' notice.
 - **Provenance reviewed:** `ASSET_PROVENANCE.md` and `REPLACEMENT_PLAN.md` (c009fdfd on `worktree-agent-a80ff0c7fd988b178`). The rulings are in brief issue 5, and I agree with the plan's order.
-- **Not yet verified by me:** whether any nipple, areola or crotch shows in motion with jiggle on. I asked for a motion check in the checklist.
+- **Motion check (my renders, 4 Oct):** the **Warden's left plate cup clips in the sprint and shows part of the nipple**; reported to the main session. The other outfits stay covered in the run and sprint clips. Other clips are still unchecked.
 
 ## Key decisions (with why)
 
@@ -32,7 +32,7 @@ Agent aa12c130ddf4b904c, branch `worktree-agent-aa12c130ddf4b904c` (worktree `.c
 
 1. Re-rule when the owner answers the provenance questions (234.glb, the reference sheet, the hero's and woman's pictures, The Ember Watch, the names).
 2. Standing check: review new tools and assets as leads add them. Read status pages at milestones.
-3. When the main session has time: render a motion and jiggle check of each outfit, or ask for one.
+3. Extend the motion check (combat, dash, death, crouch, cinematics, creation) with `scratchpad/legal/motion.sh` and `motioncheck.gd` (see the handoff). Re-check the Warden's cup once it is fixed.
 4. Before launch: review the credits screen, the `licences/` folder and the `.pck` listing.
 
 ## Blockers on me
