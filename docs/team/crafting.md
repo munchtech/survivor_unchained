@@ -18,9 +18,9 @@ Design: `docs/CRAFTING_DESIGN.md` (sections 1–20; 19 is what was seen, 20 the 
 - **Also fixed**: plurals for materials (`Items.Several`); a banked forge quotes but refuses; the
   arena's end shows carried and spilled materials as slots; old iron's icon remade.
 - **Endgame designed** (design 20): the scars pay fire, the atlas pays iron and bases; two kits;
-  item level and grade caps; sigils (proposal); chart verbs at Ysolde's table. Combat agreed
+  item level and grade caps; marks (a proposal; not "sigils", which the canon keeps); chart verbs at Ysolde's table. Combat agreed
   chart heat and a pin, item level on map drops, map materials tallied like nights, two kits;
-  sigils await combat's successor's hook check.
+  marks await combat's successor's hook check.
 - **The economy is simulated** (`tests/CraftingEconomy.cs`, design 19.2) on combat's post-cut
   numbers, and tuned: break down halved, a shard per 12 ember, remake to Epic 18 iron and 200
   gold, one remake a piece a day. Every target holds **if arena champions pay a tenth of the
@@ -51,7 +51,7 @@ Design: `docs/CRAFTING_DESIGN.md` (sections 1–20; 19 is what was seen, 20 the 
 ## Agreed with others
 
 - **Combat** (`ac4ec5bbd2763a0df`): every hook (design 12); fodder gold 2% and carrier-only gear
-  are built. Sent: the endgame asks (chart heat and pin, item level, sigils, map material tally,
+  are built. Sent: the endgame asks (chart heat and pin, item level, marks, map material tally,
   two kits) and a request for post-cut gold and gear per night.
 - **Story** (`a035208561a66c171`): rulings applied; my placeholder lines for Brannoc are in
   `crafting.json` for their approval; the fang set, shed fur and Wenna's hooks are sent.
