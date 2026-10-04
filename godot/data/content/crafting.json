@@ -37,6 +37,15 @@
  "settings": {
   "greymuzzle_fang": { "affix": "greymuzzles", "crafter": "brannoc", "moment": "fang", "mark": "greymuzzle_fang", "kinds": ["weapon", "amulet"], "gold": 0 }
  },
+ "_bind": "Vonnra's binding (design 7.3): a shard and 40 gold a grade bound; the piece that takes it spends 5-7 heat; the donor is unmade.",
+ "bind": { "shardsPerGrade": 1, "goldPerGrade": 40, "heat": [5, 7], "crafter": "vonnra" },
+ "_slurry": "Snib's jars (design 9), while the pump runs: 30 gold, three a day. Steeping, by weight: a grade past the cap, a slurry affix past the seams, only the veins, a grade lost. It sets the piece.",
+ "slurry": {
+  "jar": "slurry_jar", "crafter": "snib", "mark": "slurried", "gold": 30, "perDay": 3,
+  "sold": { "all": [{ "met": "snib" }, { "any": [{ "not": { "fact": "dig.pump", "exists": true } }, { "fact": "dig.pump", "eq": "running" }] }] },
+  "odds": { "up": 25, "slurry": 25, "nothing": 30, "down": 20 },
+  "affixes": ["seeping", "of_the_sump", "green_veined"]
+ },
  "_crafters": "Conversations hold the words said in them: Brannoc's fang node, Maeca's braid (dialogue.json, maeca: shed_fur_offer, shed_fur_braid) and her fang.seen (a once-only 'said' in npcs.json). Here are the lines said at a bench and written on what is made.",
  "materials": {
   "wolf_pelt": { "qty": 3, "into": ["of_the_wolf", "wolfbane"], "crafter": "brannoc", "marks": "wolf_pelts" },
@@ -95,6 +104,45 @@
    "easier": [],
    "lines": {
     "history.shedFur": ["Braided by Maeca from what the Pack shed, day {day}"]
+   }
+  },
+  "vonnra": {
+   "name": "Vonnra",
+   "place": "The Toll-House Table",
+   "verbs": ["bind"],
+   "when": { "met": "vonnra" },
+   "respectPerCraft": 1,
+   "respectFromCraft": 10,
+   "_draft": "Lines below are the crafting lead's drafts until the story lead's come (no {name}: her name-takes are spliced).",
+   "lines": {
+    "greet": ["Sit. Put it on the cloth. Not that one. That one.", "The lamp is lit. What would you have kept?"],
+    "bind": ["It has let go. It is yours now.", "Done. The other is ash. That is the price."],
+    "first.bind.before": ["(She holds the lesser piece over the lamp and waits. Not long. Something in it lets go, and she closes her hand on it.)"],
+    "first.bind": ["What leaves can be kept. It only needs somewhere to go."],
+    "bind.coal": ["That one is caged. It will not come out for me."],
+    "history.bind": ["Bound at the toll-house table by {who}, day {day}"]
+   },
+   "easier": [
+    { "when": { "fact": "vonnra.accused", "eq": true }, "gold": -10, "needs": "after you have accused her", "line": "She charges you a tenth less. She does not say why." }
+   ]
+  },
+  "snib": {
+   "name": "Snib",
+   "place": "The Dig",
+   "verbs": ["steep"],
+   "when": { "met": "snib" },
+   "respectPerCraft": 0,
+   "respectFromCraft": 0,
+   "easier": [],
+   "_draft": "Lines below are the crafting lead's drafts until the story lead's come.",
+   "lines": {
+    "jar.sale": ["Thirty. Snib does not haggle. Snib haggles. Thirty."],
+    "jar.none": ["No more today. Pump needs its sleep. Pump does not sleep."],
+    "steep.up": ["The veins take, and the iron drinks."],
+    "steep.slurry": ["Something green settles in it and stays."],
+    "steep.nothing": ["Green-black veins, and nothing else."],
+    "steep.down": ["It hisses. Something in it gives."],
+    "history.steep": ["Steeped in the Dig's slurry, day {day}"]
    }
   },
   "wenna": {

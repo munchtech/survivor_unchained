@@ -1234,6 +1234,18 @@
    "value": 120,
    "description": "Each night you sleep at the inn, Rook tops your health draughts up to three, a bitterroot a draught.",
    "lore": "Pewter, a lid that fits, her mark on the bottom."
+  },
+  "slurry_jar": {
+   "id": "slurry_jar",
+   "name": "Slurry Jar",
+   "plural": "slurry jars",
+   "kind": "material",
+   "rarity": 2,
+   "icon": "slurry_jar",
+   "value": 30,
+   "stack": 10,
+   "description": "Steep a piece in it, from the pack: a grade past what the forge can do, or something green and strong with a price, or only the veins, or a grade lost. It sets the piece for good.",
+   "lore": "It's the GOOD stuff. Mostly. Snib would not drink it."
   }
  },
  "raritynames": [

@@ -539,6 +539,14 @@ public sealed partial class Journey
         var w = World;
         switch (action)
         {
+            // Snib's jars, bought in his hearing (docs/CRAFTING_DESIGN.md 9): the talk goes on.
+            case "slurry":
+            {
+                var q = Crafting.BuyJar(Craft);
+                if (!q.Ok) { Warn(q.Blocked!); return true; }
+                Make(q);
+                return true;
+            }
             case "sellpelts":
             {
                 int pelts = Inventory.Count(Ch, "wolf_pelt"), hides = Inventory.Count(Ch, "boar_hide");

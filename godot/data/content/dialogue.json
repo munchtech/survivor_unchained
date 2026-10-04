@@ -12686,6 +12686,10 @@
       "goto": "ford"
      },
      {
+      "text": "Can you move a power from one thing to another?",
+      "action": "craft"
+     },
+     {
       "text": "What do you sell?",
       "action": "trade"
      },
@@ -19455,6 +19459,24 @@
       },
       "once": "what",
       "goto": "what"
+     },
+     {
+      "text": "Sell me a jar of that.",
+      "show": {
+       "any": [
+        {
+         "not": {
+          "fact": "dig.pump",
+          "exists": true
+         }
+        },
+        {
+         "fact": "dig.pump",
+         "eq": "running"
+        }
+       ]
+      },
+      "action": "slurry"
      },
      {
       "text": "Leave.",

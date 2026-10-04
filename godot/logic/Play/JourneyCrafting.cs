@@ -64,6 +64,7 @@ public sealed partial class Journey
         var brew = q.Verb == Verb.Brew ? Crafting.BrewOf(q.Def!) : null;
         CraftSaid = q.Verb switch
         {
+            Verb.Buy when q.Def == Crafting.Rules.Slurry.Jar => Crafting.Line(q.Crafter, "jar.sale") is { } js ? new Said(null, js, null) : null,
             Verb.Buy => CraftSaid,
             Verb.Commission => Crafting.Line(q.Crafter, "commission.take") is { } l ? new Said(null, l, null) : null,
             _ => Crafting.Speak(Craft, q.Crafter, q.Verb, brew?.Moment, brew?.Say),
@@ -78,6 +79,7 @@ public sealed partial class Journey
         string? sub = q.Verb switch
         {
             Verb.Brew => $"You carry {Inventory.Count(Ch, q.Def!)}",
+            Verb.Buy when q.Def == Crafting.Rules.Slurry.Jar => CraftSaid?.Line ?? $"You carry {Inventory.Count(Ch, q.Def!)}",
             Verb.Commission => $"On {Crafting.Crafter(q.Crafter)?.Name ?? "the"}'s bench: ready tomorrow morning",
             _ => def.Description,
         };
