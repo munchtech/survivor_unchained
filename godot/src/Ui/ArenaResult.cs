@@ -285,7 +285,7 @@ public partial class ArenaResultScreen : Overlay
 
     static Control Card(Control inner, StyleBox? box = null)
     {
-        var p = Style.Panel(box ?? Style.Plate(20), Style.Scroll(inner));
+        var p = Style.Panel(box ?? Style.Column(20), Style.Scroll(inner));
         p.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         inner.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         return p;
