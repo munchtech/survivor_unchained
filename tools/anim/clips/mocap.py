@@ -12,7 +12,7 @@ from pathlib import Path
 
 import numpy as np
 
-from retarget import Source, best_loop, clip_from, face_forward, in_place, make_loop, retarget
+from retarget import Source, best_loop, clip_from, face_forward, in_place, lean_neck, make_loop, retarget
 
 STYLE = Path(os.environ.get("MOCAP_DIR", r"C:\Users\munch\Tools\mocap")) / "100STYLE"
 
@@ -41,6 +41,7 @@ def idle_loop(name, rig, style, seconds=(4.0, 8.0), window=None, stance=0.8):
     src = Source(path, start, stop)
     local, pos, info = retarget(rig.sk, src, stance=stance)
     local, pos = face_forward(rig.sk, local, pos)
+    local = lean_neck(rig, local)
     d, a, b = best_loop(local, pos, rig.sk, int(seconds[0] * 30), int(seconds[1] * 30))
     L, P = make_loop(local, pos, a, b)
     P, speed, heading = in_place(rig.sk, P)

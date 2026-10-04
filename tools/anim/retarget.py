@@ -618,5 +618,27 @@ def face_forward(sk: Skeleton, local, pos):
     return L, P
 
 
+# The hero's neck leans further forward at rest than any performer's: laid
+# along the performer's lines, a take throws his head back by about this
+# much (the library's clips, made for yet another body, need People.HisNeckPitch).
+NECK_PITCH = {"him": 10.0}
+
+
+def lean_neck(rig, local):
+    """A take's neck bowed forward about the chest's own left-right axis,
+    every frame, by the body's NECK_PITCH (none for her)."""
+    deg = NECK_PITCH.get(getattr(rig, "body", "her"), 0.0)
+    if not deg:
+        return local
+    sk = rig.sk
+    neck, chest = sk.i("neck_01"), sk.i("spine_03")
+    axis = qrot(qinv(sk.rest_globals()[0][0, chest]), [1.0, 0, 0])
+    half = math.radians(deg) / 2
+    bow = np.array([*(axis / np.linalg.norm(axis) * math.sin(half)), math.cos(half)])
+    L = local.copy()
+    L[:, neck] = qmul(bow, L[:, neck])
+    return L
+
+
 def clip_from(name, sk, local, pos, loop=False, meta=None):
     return Clip(name, 30, local, pos, loop=loop, meta=meta or {})
