@@ -98,8 +98,10 @@ def generate(keys=None, denoise=0.5, seed=1000, n=2):
 # Second takes painted from words alone (seed 1100), where the game's photograph was a poor
 # start: the pelts read as the same flat skin, the root as a little man, the seeds as an onion.
 T2I = {
-    "pelt": "a thick grey wolf pelt folded over on itself, the wolf's head with its ears and muzzle lying on top, long "
-            "shaggy grey and silver fur, tied with a leather thong",
+    # Seed 1110: the wolf's head painted a living wolf (a summon, not a skin); now headless.
+    "pelt": "a thick tanned grey wolf fur pelt folded in a heap and tied with a leather thong, long shaggy grey and "
+            "silver fur, the pale tanned leather of its underside showing at the folded edge, a bushy tail hanging "
+            "down, no head, no face, no eyes",
     "hide": "a rolled boar hide, tied with twine, coarse dark brown bristles standing up along its back, the pale raw "
             "underside showing at the roll's end",
     "root": "a gnarled forked bitterroot, pale and knotted with fine hair roots, dark wet soil clinging to it, a single "
@@ -115,7 +117,10 @@ T2I = {
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "godot", "art", "ui", "icons", "item")
 
 # Which candidate each item uses: KEY -> place in the batch of seed 1000, or (seed, place).
-PICKS: dict = {}
+PICKS: dict = {
+    # Painted from words (T2I), where the photograph was a poor start.
+    "hide": (1100, 1), "root": (1100, 2), "seed": (1100, 3), "dust": (1100, 0), "bomb": (1100, 1), "pelt": (1110, 2),
+}
 
 
 def t2i(keys=None, seed=1100, n=4):

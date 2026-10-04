@@ -20,6 +20,7 @@ ComfyUI with the prompt and seed recorded beside them.
   mapmarks   the map's marks, in ink on parchment
   glyphs     the interface's own marks as value art
   icons      the skills', arts', blessings' and evolutions' painted icons
+  emblems    the icons remade as modelled emblems, painted over (after icons: they replace theirs)
   medals     round pieces modelled as reliefs: the level medallion, the medallion ring, the health
              globe's rim and glass, the (unused) heart medallion and its stone (after icons: the
              stone is the heart icon)
@@ -97,6 +98,11 @@ def g_glyphs():
 def g_icons():
     import iconpicks
     iconpicks.main()
+
+
+def g_emblems():
+    import emblems
+    emblems.build()
 
 
 def g_medals():
