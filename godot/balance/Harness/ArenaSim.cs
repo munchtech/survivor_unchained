@@ -28,6 +28,10 @@ public sealed class Minute
 {
     public int Ember, Kills, Alive, Drafts;
     public double Damage, Taken, LowHp = 1, TtkFodder, TtkFodder90, TtkElite;
+    /// <summary>The horde's charges: runs started, the most at once, seconds with three or
+    /// more at once, and spikes (Sim/Charges.cs).</summary>
+    public int Charges, ChargePeak, Spikes;
+    public double Overlap;
 }
 
 public sealed class RunResult
@@ -74,6 +78,8 @@ public sealed class RunResult
 public static class ArenaSim
 {
     public const double Dt = 1 / 60.0;
+    /// <summary>--charges 0: every charger on its own clock, as before the charge director.</summary>
+    public static bool Director = true;
 
     public static string Card(Offer o) => o.Kind switch
     {
@@ -143,6 +149,8 @@ public static class ArenaSim
         b.Hooks = zone.Hooks;
         host.Battle = b;
         zone.Begin(b);
+        b.Charges.On = Director;
+        int lastStarted = 0, lastSpikes = 0;
 
         var pick = Picker.Make(spec.Policy);
         var rng = new Rng((uint)(spec.Seed * 7919 + 13));
@@ -198,6 +206,8 @@ public static class ArenaSim
             j.BankArt(b);
             Drafts(b, pick, rng, r, m);
             m.LowHp = Math.Min(m.LowHp, p.Hp / b.MaxHp);
+            m.ChargePeak = Math.Max(m.ChargePeak, b.Charges.Live);
+            if (b.Charges.Live >= 3) m.Overlap += Dt;
             t += Dt;
             if (r.WonAt == null && zone.Won)
             {
@@ -216,6 +226,9 @@ public static class ArenaSim
                 m.TtkFodder = Median(fodder);
                 m.TtkFodder90 = fodder.Count == 0 ? double.NaN : fodder.OrderBy(x => x).ElementAt((int)(fodder.Count * 0.9));
                 m.TtkElite = Median(elite);
+                m.Charges = b.Charges.Started - lastStarted;
+                m.Spikes = b.Charges.SpikesRun - lastSpikes;
+                lastStarted = b.Charges.Started; lastSpikes = b.Charges.SpikesRun;
                 r.ByMinute.Add(m);
                 lastKills = b.KillCount; lastDamage = dealt; lastTaken = b.DamageTaken;
                 fodder.Clear(); elite.Clear();

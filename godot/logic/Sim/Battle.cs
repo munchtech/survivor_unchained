@@ -229,6 +229,8 @@ public sealed partial class Battle
     readonly List<StrikeSpec> strikes = new();
     public readonly Dictionary<string, Buff> Buffs = new();
     public MapRules Rules = new();
+    /// <summary>When the horde's chargers may run, and its other marks' caps (Charges.cs).</summary>
+    public readonly ChargeDirector Charges;
     public int EmberLevel = 1;
     public double EmberXp, EmberNext = 12;
     /// <summary>The ember burns here (it is night: an arena, the prologue): the
@@ -309,6 +311,7 @@ public sealed partial class Battle
     public Battle(BattleSetup s)
     {
         Rng = new Rng(s.Seed);
+        Charges = new ChargeDirector(s.Seed);
         Collision = s.Collision;
         HeightAt = s.HeightAt;
         Combat = s.Combat;
@@ -347,6 +350,7 @@ public sealed partial class Battle
         double wdt = dt * WorldRate;
 
         RebuildSpatial();
+        Charges.Tick(this, wdt);
         UpdatePlayer(dt, moveX, moveZ);
         Flow.Update(Player.X, Player.Z);
         if (Combat)
@@ -819,13 +823,13 @@ public sealed partial class Battle
                 var zn = SpawnZone(Side.Enemy, e.X, e.Z, 1.4, 3.5, e.Damage * 0.35, School.Fire);
                 if (zn != null) { zn.Tags = [Tag.Zone]; zn.Art = "zone_fire_enemy"; }
             }
-            if (Rules.DeathBurst && Rng.Next() < 0.22)
+            if (Rules.DeathBurst && Rng.Next() < 0.22 && Charges.MayFuse(this, 0.7))
             {
                 Events.Emit(new Ev.Telegraph { Id = e.Id, Shape = TelegraphShape.Circle, X = e.X, Z = e.Z, Radius = 1.8, Duration = 0.7, Hostile = true });
                 strikes.Add(new StrikeSpec(e.X, e.Z, 1.8, e.Damage * 0.9, School.Shadow, [Tag.Explosion], 0.7, null, Side.Enemy, 0));
             }
         }
-        if (e.Def.Burst is { } b)
+        if (e.Def.Burst is { } b && Charges.MayFuse(this, b.Fuse))
         {
             Events.Emit(new Ev.Telegraph { Id = e.Id, Shape = TelegraphShape.Circle, X = e.X, Z = e.Z, Radius = b.Radius, Duration = b.Fuse, Hostile = true });
             strikes.Add(new StrikeSpec(e.X, e.Z, b.Radius, e.Damage * b.DamagePct, b.School, [Tag.Explosion], b.Fuse, null, Side.Enemy, 0));
@@ -1327,6 +1331,20 @@ public sealed partial class Battle
     /// <summary>A fresh ground effect; the caller sets the rest.</summary>
     public GroundZone? SpawnZone(Side owner, double x, double z, double radius, double life, double dps, School school)
     {
+        // The horde's burning ground is capped (the oldest goes out first), so it never fills
+        // the field nor takes the pool from the survivor's own.
+        if (owner == Side.Enemy)
+        {
+            int n = 0;
+            GroundZone? oldest = null;
+            foreach (var g in Zones.Items)
+            {
+                if (!g.Alive || g.Owner != Side.Enemy) continue;
+                n++;
+                if (oldest == null || g.Age > oldest.Age) oldest = g;
+            }
+            if (n >= Charges.GroundCap && oldest != null) Zones.Release(oldest);
+        }
         var zn = Zones.Spawn();
         if (zn == null) return null;
         zn.Reset();
