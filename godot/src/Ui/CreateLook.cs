@@ -10,10 +10,11 @@ using SurvivorUnchained.World;
 
 namespace SurvivorUnchained.Ui;
 
-/* Creation's fourth step, the look (docs/UI_DESIGN.md 7.2): the body, hair,
- * face and paint, each a part of its own on the triggers, the figure framed
- * for it (all of them, head and shoulders, the face) and turned or brought
- * near by hand. A hero's own body (the heroine's; the male hero's when he has
+/* Creation's second step, the look (docs/UI_DESIGN.md 7.2): the hair, face,
+ * paint and body, each a part of its own on the triggers, the figure framed
+ * for it (head and shoulders, the face, all of them) and turned or brought
+ * near by hand. Hair comes first: it is what a player looks for, and it shows
+ * at once that she is theirs to shape. A hero's own body (the heroine's; the male hero's when he has
  * one: Loadouts.HeroKit) offers its own cuts, faces, eyes and paints, as
  * cameos (a portrait in an iron ring, painted from the model:
  * art/ui/create/SEX/); colours are beads (irises drawn as irises); the face's
@@ -31,9 +32,9 @@ public partial class CreateScreen
     /// <summary>What their own body offers to be shaped with (null: a kit body).</summary>
     HeroLook? Kit => Loadouts.HeroKit(d.Sex);
     string[] Sections => Kit is { } k
-        ? new[] { "Body", "Hair" }.Concat(k.Sliders.Count > 0 || k.Faces.Count > 1 || k.Eyes.Count > 1 ? new[] { "Face" } : Array.Empty<string>())
-            .Concat(k.Paints.Count > 1 ? new[] { "Paint" } : Array.Empty<string>()).ToArray()
-        : new[] { "Body", "Hair" };
+        ? new[] { "Hair" }.Concat(k.Sliders.Count > 0 || k.Faces.Count > 1 || k.Eyes.Count > 1 ? new[] { "Face" } : Array.Empty<string>())
+            .Concat(k.Paints.Count > 1 ? new[] { "Paint" } : Array.Empty<string>()).Append("Body").ToArray()
+        : new[] { "Hair", "Body" };
     string Section => Sections[Math.Clamp(d.Section, 0, Sections.Length - 1)];
     /// <summary>A cameo's picture under art/ui/create/, by the survivor's sex.</summary>
     string Art(string key) => $"{d.Sex.Key()}/{key}";
@@ -41,7 +42,7 @@ public partial class CreateScreen
     /// <summary>How near each part frames the figure, and how far she is turned for it
     /// (her hair seen from the side, where a cut shows).</summary>
     float SectionZoom() => d.Step != LookStep ? 0 : Section switch { "Hair" => 0.55f, "Face" or "Paint" => 1f, _ => 0f };
-    float SectionTurn() => d.Step == LookStep && Section == "Hair" ? -0.95f : 0;
+    float SectionTurn() => d.Step != LookStep || Section != "Hair" ? 0 : d.HairStyle switch { "ponytail" => -1.4f, "braid" => -1.75f, _ => -0.95f };
 
     /// <summary>The figure framed for the step and part as they are now.</summary>
     public void FrameForStep() => G.FrameFigure(SectionZoom(), SectionTurn());
@@ -119,12 +120,13 @@ public partial class CreateScreen
 
     Control LookBody(Archetype a)
     {
-        var v = Style.V(8, Style.SubLabel("Body"));
-        var body = Style.H(6);
-        foreach (var sx in new[] { Sex.Female, Sex.Male })
-            body.AddChild(Nav.Id(Style.Segment(sx == Sex.Male ? "Man" : "Woman", d.Sex == sx, () => Set(() => d.SetSex(sx))), $"sex:{sx}"));
-        if (!Her && Kit == null) body.AddChild(Nav.Id(Style.Segment(d.Beard ? "Bearded" : "Clean-shaven", d.Beard, () => Set(() => d.Beard = !d.Beard)), "beard"));
-        v.AddChild(body);
+        // (a woman or a man is chosen on the first step, with the calling)
+        var v = Style.V(8);
+        if (!Her && Kit == null)
+        {
+            v.AddChild(Style.SubLabel("Beard"));
+            v.AddChild(Nav.Id(Style.Segment(d.Beard ? "Bearded" : "Clean-shaven", d.Beard, () => Set(() => d.Beard = !d.Beard)), "beard"));
+        }
         v.AddChild(Style.SubLabel("Skin"));
         v.AddChild(Beads(Lore.Skins, d.Skin, id => d.Skin = id, Bead.Kind.Skin, "#f2c4a8"));
         v.AddChild(Style.SubLabel($"Colours of {Their.ToLowerInvariant()} outfit"));
@@ -142,11 +144,11 @@ public partial class CreateScreen
     Control HeroHair(HeroLook k)
     {
         var v = Style.V(8, Style.SubLabel($"{Their} hair"));
-        var row = new HFlowContainer();
-        row.AddThemeConstantOverride("h_separation", 6);
+        // (large: a cut is told by its shape, which a small picture loses)
+        var row = Grid(3);
         var dye = HairColour();
         foreach (var cut in k.Cuts)
-            row.AddChild(new Cameo(Art($"hair_{cut.Id}"), cut.Name, d.HairStyle == cut.Id, () => Set(() => d.HairStyle = cut.Id), 82, dye, "lock"));
+            row.AddChild(new Cameo(Art($"hair_{cut.Id}"), cut.Name, d.HairStyle == cut.Id, () => Set(() => d.HairStyle = cut.Id), 136, dye, "lock"));
         v.AddChild(row);
         v.AddChild(Style.Gap(4));
         v.AddChild(Style.SubLabel("Colour"));
@@ -180,11 +182,9 @@ public partial class CreateScreen
         if (k.Faces.Count > 1)
         {
             v.AddChild(Style.SubLabel($"{Their} face"));
-            var grid = new GridContainer { Columns = 4 };
-            grid.AddThemeConstantOverride("h_separation", 8);
-            grid.AddThemeConstantOverride("v_separation", 4);
+            var grid = Grid(4);
             foreach (var f in k.Faces)
-                grid.AddChild(new Cameo(Art($"face_{f.Id}"), f.Name, d.FaceShape == f.Id, () => Set(() => { d.FaceShape = f.Id; d.Face = new Dictionary<string, double>(f.Shape); }), 92, null, "mask"));
+                grid.AddChild(new Cameo(Art($"face_{f.Id}"), f.Name, d.FaceShape == f.Id, () => Set(() => { d.FaceShape = f.Id; d.Face = new Dictionary<string, double>(f.Shape); }), 100, null, "mask"));
             v.AddChild(grid);
         }
         if (k.Eyes.Count > 1)
@@ -240,13 +240,21 @@ public partial class CreateScreen
     Control HeroPaint(HeroLook k)
     {
         var v = Style.V(8, Style.SubLabel($"Paint on {Their.ToLowerInvariant()} face"));
-        var grid = new GridContainer { Columns = 4 };
-        grid.AddThemeConstantOverride("h_separation", 8);
-        grid.AddThemeConstantOverride("v_separation", 4);
+        // (large: kohl and ash are fine lines a small picture loses)
+        var grid = Grid(3);
         foreach (var p in k.Paints)
-            grid.AddChild(new Cameo(Art($"paint_{p.Id}"), p.Name, d.Paint == p.Id, () => Set(() => d.Paint = p.Id), 92, null, "mask"));
+            grid.AddChild(new Cameo(Art($"paint_{p.Id}"), p.Name, d.Paint == p.Id, () => Set(() => d.Paint = p.Id), 136, null, "mask"));
         v.AddChild(grid);
         return v;
+    }
+
+    /// <summary>A grid of cameos, so many to a row.</summary>
+    static GridContainer Grid(int columns)
+    {
+        var g = new GridContainer { Columns = columns };
+        g.AddThemeConstantOverride("h_separation", columns > 3 ? 6 : 10);
+        g.AddThemeConstantOverride("v_separation", 2);
+        return g;
     }
 
     /* ---------------------------------------------------------- colours -- */
@@ -374,7 +382,7 @@ public partial class Cameo : Button
             m.SetShaderParameter("lit", on ? 1f : 0f);
             var pic = new TextureRect
             {
-                Texture = art, Material = m, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale,
+                Texture = art, Material = m, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, TextureFilter = TextureFilterEnum.LinearWithMipmaps,
                 Size = new Vector2(size, size) * 0.86f, Position = new Vector2(size, size) * 0.07f, MouseFilter = MouseFilterEnum.Ignore,
             };
             ring.AddChild(pic);

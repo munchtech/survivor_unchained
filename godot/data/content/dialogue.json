@@ -12060,7 +12060,7 @@
    },
    "cb_nemesis_slain": {
     "id": "cb_nemesis_slain",
-    "text": "You got your things back! From the thing! Was it horrible? It was horrible. Sit down. Not there. There.",
+    "text": "You got your things back! From the thing! Was it horrible? It was horrible. Sit down. The good stool, the other one wobbles.",
     "effects": [
      {
       "npcFlag": {
@@ -16322,7 +16322,7 @@
       "when": {
        "archetype": "arcanist"
       },
-      "text": "Your hands are warm. Not in a nice way. Are you on fire? Your hands are a little bit on fire."
+      "text": "Something on you's smouldering, love. Are you on fire? You're a little bit on fire."
      },
      {
       "when": {

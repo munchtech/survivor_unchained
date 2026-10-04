@@ -62,6 +62,19 @@ public static class Beasts
             double k = Math.Sin(t * Math.PI);
             return new Vat.Moves { Move = new(0, 0, (float)(-0.06 * k)) }.Bone(Chest, 0, 0, 0.15 * k).Bone(Neck, -0.2 * k).Bone(Head, -0.25 * k, 0.2 * k);
         }, Hold: true),
+        // The howl (a call or a rally: EnemyState.Casting, 0.7 to 1.4 s): it
+        // stands its ground, the chest and throat stretched up, the muzzle
+        // to the sky and the jaw a little open, trembling with the note,
+        // which climbs; held however long the cast lasts.
+        new("cast", "Wolf_Idle_", 2.0, 1.6, t =>
+        {
+            double up = Ease(t, 3.2), note = Math.Min(1, Math.Max(0, (t - 0.18) * 2));
+            double shake = 0.035 * note * Math.Sin(t * Math.Tau * 11);
+            return new Vat.Moves()
+                .Bone(Chest, -0.14 * up)
+                .Bone(Neck, -0.62 * up - 0.1 * note).Bone(Head, -0.55 * up - 0.12 * note + shake)
+                .Bone(Jaw, 0.08 * up + 0.22 * note + shake * 1.5).Bone(Tail, -0.25 * up);
+        }, Hold: true),
         // Over onto its side, legs gone slack.
         new("die", "Wolf_Idle_", 2.0, 0.9, t =>
         {

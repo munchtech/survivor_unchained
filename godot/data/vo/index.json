@@ -48,6 +48,182 @@
    ],
    "voice": "narrator"
   },
+  "dlg.cin_first_light.back.0": {
+   "file": "narrator/dlg.cin_first_light.back.0.ogg",
+   "hash": "a9b2d8ab716a",
+   "placeholder": true,
+   "read": 4.15,
+   "sec": 4.15,
+   "segs": [
+    [
+     0.0,
+     4.152,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "dlg.cin_first_light.baking.0": {
+   "file": "narrator/dlg.cin_first_light.baking.0.ogg",
+   "hash": "f3b5d8b3409e",
+   "placeholder": true,
+   "read": 2.98,
+   "sec": 2.98,
+   "segs": [
+    [
+     0.0,
+     2.977,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "dlg.cin_first_light.dawn.0": {
+   "file": "guard/dlg.cin_first_light.dawn.0.ogg",
+   "hash": "720af83233d0",
+   "placeholder": true,
+   "read": 2.89,
+   "sec": 2.99,
+   "segs": [
+    [
+     0.0,
+     2.89,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "guard"
+  },
+  "dlg.cin_first_light.face.0": {
+   "file": "narrator/dlg.cin_first_light.face.0.ogg",
+   "hash": "8ae8a60be36e",
+   "placeholder": true,
+   "read": 5.12,
+   "sec": 5.12,
+   "segs": [
+    [
+     0.0,
+     5.12,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "dlg.cin_heart_goes_down.downstairs.0": {
+   "file": "grimtunnel/dlg.cin_heart_goes_down.downstairs.0.ogg",
+   "hash": "ca65f966df2d",
+   "placeholder": true,
+   "read": 4.16,
+   "sec": 4.41,
+   "segs": [
+    [
+     0.0,
+     4.159,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "grimtunnel"
+  },
+  "dlg.cin_heart_goes_down.grateful.0": {
+   "file": "grimtunnel/dlg.cin_heart_goes_down.grateful.0.ogg",
+   "hash": "d6a6b3a4b868",
+   "placeholder": true,
+   "read": 4.3,
+   "sec": 4.55,
+   "segs": [
+    [
+     0.0,
+     4.298,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "grimtunnel"
+  },
+  "dlg.cin_heart_goes_down.morning.0": {
+   "file": "warden_man/dlg.cin_heart_goes_down.morning.0.ogg",
+   "hash": "f7a2a69e2307",
+   "placeholder": true,
+   "read": 1.55,
+   "sec": 1.55,
+   "segs": [
+    [
+     0.0,
+     1.548,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "warden_man"
+  },
+  "dlg.cin_heart_goes_down.nobodys.0": {
+   "file": "grimtunnel/dlg.cin_heart_goes_down.nobodys.0.ogg",
+   "hash": "676eeb4cf137",
+   "placeholder": true,
+   "read": 3.15,
+   "sec": 3.4,
+   "segs": [
+    [
+     0.0,
+     3.154,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "grimtunnel"
+  },
+  "dlg.cin_none_cross.call.0": {
+   "file": "warden/dlg.cin_none_cross.call.0.ogg",
+   "hash": "1d16761f7ebe",
+   "placeholder": true,
+   "read": 7.54,
+   "sec": 9.19,
+   "segs": [
+    [
+     0.0,
+     8.937,
+     0.369,
+     1.0
+    ]
+   ],
+   "voice": "warden"
+  },
+  "dlg.cin_none_cross.lie_down.0": {
+   "file": "warden/dlg.cin_none_cross.lie_down.0.ogg",
+   "hash": "d918c7cc3d98",
+   "placeholder": true,
+   "read": 1.45,
+   "sec": 3.1,
+   "segs": [
+    [
+     0.0,
+     2.852,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "warden"
+  },
+  "dlg.cin_none_cross.none.0": {
+   "file": "warden/dlg.cin_none_cross.none.0.ogg",
+   "hash": "7a9cdb2c49b5",
+   "placeholder": true,
+   "read": 3.61,
+   "sec": 5.26,
+   "segs": [
+    [
+     0.0,
+     5.015,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "warden"
+  },
   "say.178e6dd0ad78": {
    "file": "narrator/say.178e6dd0ad78.ogg",
    "hash": "178e6dd0ad78",
