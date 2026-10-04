@@ -175,8 +175,12 @@ public partial class Game
         if (chestsWaiting.Count == 0 || Overlay != null || inTransit || cine != null || scene == null || Battle is not { } b) return;
         hudMode = "chest";
         scene.SimPaused = true;
-        chestShown = new ChestCeremony(chestsWaiting.Dequeue(), b, scene, cam, hud);
+        chestShown = new ChestCeremony(chestsWaiting.Dequeue(), b, scene, cam, hud, Haptics);
         hud.Over(chestShown);
+        // (--shot: frames of each opening as it happens in a night, not only staged ones.)
+        Shots.Want("chest", 0.45);
+        Shots.Want("chest", 1.6);
+        Shots.Want("chest", 2.8);
     }
 
     /* ------------------------------------------------------------ draft -- */

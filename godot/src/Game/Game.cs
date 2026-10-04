@@ -66,7 +66,7 @@ public partial class Game : Node, IZoneHost
     string? hudMode;
     readonly List<(double T, Action Fn)> later = new();
     bool inTransit;
-    double autosaveT, fogT, hudT, draftWait, reportT;
+    double autosaveT, fogT, hudT, draftWait, reportT, shareT;
     Autopilot? auto;
 
     public override void _Ready()
@@ -100,6 +100,9 @@ public partial class Game : Node, IZoneHost
         AddChild(synth);
         if (Perf.On) MeasureWith(new Perf());
         sound = new SoundBridge(synth);
+        // A crowd melting past a threshold: a kick of the camera and a tick in the hands, a step
+        // bigger at each (S-08), never on an ordinary kill.
+        sound.Swelled = tier => { cam.AddTrauma(0.08f + 0.04f * tier); Haptics.Add(0.2f * (tier + 1), 0.2f, 0.04f); };
         voice = new VoiceOver();
         AddChild(voice);
         // The interface: every button ticks under the pointer and clicks.
@@ -584,15 +587,62 @@ public partial class Game : Node, IZoneHost
 
     /* ------------------------------------------------------------ frame -- */
 
+    /// <summary>The pad's rumble (S-14).</summary>
+    public readonly Haptics Haptics = new();
+    double critFeltAt, kickedAt;
+
+    /// <summary>What of the fight is felt through the pad: weight on the low motor (a blow taken, a
+    /// champion or boss down), snap on the high (a critical, a dodge slipped at the last moment).</summary>
+    void Feel(CombatEvent e, ref int crits)
+    {
+        var b = Battle;
+        // Her own heavy blows lean the view toward where they landed (S-17): her arts' impacts,
+        // a big blast, a critical that takes a third of something big. Never on the crowd's
+        // small deaths (late in a night every critical kills), and not oftener than a third of a second.
+        double now = Time.GetTicksMsec() / 1000.0;
+        if (b != null && now - kickedAt > 0.33)
+        {
+            Vector3? toward = e switch
+            {
+                Ev.Ability { Id: "leap" or "bull_rush" or "shield_bash" } a => new Vector3((float)(a.X - b.Player.X), 0, (float)(a.Z - b.Player.Z)) is var d && d.LengthSquared() > 0.01f ? d : new Vector3(Mathf.Cos((float)a.Angle), 0, Mathf.Sin((float)a.Angle)),
+                Ev.Explosion x when x.Power > 1 => new Vector3((float)(x.X - b.Player.X), 0, (float)(x.Z - b.Player.Z)),
+                Ev.Hit h when h.Crit && !h.Dot && h.MaxHp > b.MaxHp * 2 && h.Amount >= h.MaxHp * 0.35 => new Vector3((float)(h.X - b.Player.X), 0, (float)(h.Z - b.Player.Z)),
+                _ => null,
+            };
+            if (toward is { } tw) { cam.Kick(tw, e is Ev.Ability ? 0.3f : 0.22f); kickedAt = now; }
+        }
+        switch (e)
+        {
+            case Ev.Hit h when h.Crit && !h.Dot && crits++ == 0 && Time.GetTicksMsec() / 1000.0 - critFeltAt > 0.25:
+                critFeltAt = Time.GetTicksMsec() / 1000.0;
+                Haptics.Add(0, 0.2f, 0.03f);
+                break;
+            case Ev.PerfectDodge: Haptics.Add(0.3f, 0.5f, 0.06f); break;
+            case Ev.PlayerHit ph when !ph.Dodged && !ph.Blocked && !ph.Dot && b != null:
+                Haptics.Add(0.25f + 0.45f * (float)Math.Min(1, ph.Amount / (b.MaxHp * 0.15)), 0.3f, 0.12f, blow: true);
+                break;
+            case Ev.LevelUp:
+                Haptics.Add(0.4f, 0, 0.08f);
+                Haptics.After(0.14, 0.5f, 0, 0.08f);
+                break;
+            case Ev.Kill k when k.ByPlayer && k.Elite && !k.Boss: Haptics.Add(0.7f, 0, 0.15f); break;
+            case Ev.Victory: Haptics.Add(1, 0.4f, 0.4f, peak: true); break;
+            case Ev.PlayerDeath: Haptics.Add(1, 0, 0.4f, blow: true, peak: true); break;
+            case Ev.Evolve { Chest: false }: Haptics.Add(0.6f, 0.4f, 0.25f); break;
+        }
+    }
+
     void OnEvents(List<CombatEvent> evs)
     {
         Journey.BankArt(Battle);
         Journey.BankGold(Battle);
         sound.Events(evs, Battle);
         zone?.Events(evs);
+        int crits = 0;
         foreach (var e in evs)
         {
             if (Shots.On("boss")) BossShot(e);
+            Feel(e, ref crits);
             switch (e)
             {
                 case Ev.Announce an:
@@ -608,6 +658,8 @@ public partial class Game : Node, IZoneHost
                     if (ev.Chest) break;
                     hud.Crown(ev.Weapon);
                     scene?.Slow(0.6);
+                    Shots.Want("evolve", 0.25);
+                    Shots.Want("evolve", 0.9);
                     break;
                 case Ev.Bark bk:
                     // A named voice in a fight (the Warden, Grimtunnel) is heard over everything, when its line shows
@@ -659,6 +711,12 @@ public partial class Game : Node, IZoneHost
         {
             auto?.Drive(dt);
             Journey.Playtime += dt;
+            // Booked to its kind of play: the story's share is measured, not guessed.
+            Journey.Clock(dt, zone switch
+            {
+                ArenaRun run => run.Spec.Story ? "story night" : "table night",
+                _ => zone.Id switch { "lowford" => "prologue", "waystation" => "town", "map" => "map", _ => "wild" },
+            });
             UpdateInteraction();
             // The ground walked, on the map's fog.
             fogT -= dt;
@@ -723,6 +781,7 @@ public partial class Game : Node, IZoneHost
             var at = sb != null ? new Vector3((float)sb.Player.X, 0, (float)sb.Player.Z) : showNow.Look;
             var time = Journey is { } jn ? zone?.TimeOf(jn.World) ?? jn.World.Time : TimeOfDay.Night;
             Perf.Begin(Perf.Part.Sound);
+            Haptics.Update(dt, Settings.Current.Rumble, controls.UsingPad);
             sound.Update(dt, new SoundState(Mode, zone?.Id, time, at.X, at.Z, sb, bossUp, Mode == "play" ? Overlay : screens.Current?.Kind,
                 zone != null ? zone.Ambience : null, zone != null ? zone.MusicMood : null));
             Perf.End(Perf.Part.Sound);
@@ -1041,11 +1100,18 @@ public partial class Game : Node, IZoneHost
         if (!Args.Has("log")) return;
         reportT -= dt;
         if (reportT > 0) return;
+        // The story's share of the play so far, once a minute (Journey.StoryShare).
+        if ((shareT -= Args.Num("log", 5)) <= 0 && Journey.World.TimeIn.Count > 0)
+        {
+            shareT = 60;
+            var (town, strict) = Journey.StoryShare;
+            GD.Print($"time: story {town * 100:0}% (without the town {strict * 100:0}%): {string.Join(", ", Journey.World.TimeIn.Select(kv => $"{kv.Key} {(int)kv.Value / 60}:{(int)kv.Value % 60:00}"))}");
+        }
         reportT = Args.Num("log", 5);
         var b = Battle;
         var p = b?.Player;
         int foes = b?.Enemies.Count ?? 0;
-        var dbg = zone?.Debug() is { Count: > 0 } d ? string.Join(" ", d.Take(4).Select(kv => $"{kv.Key}={kv.Value}")) : "";
+        var dbg = zone?.Debug() is { Count: > 0 } d ? string.Join(" ", d.Take(6).Select(kv => $"{kv.Key}={kv.Value}")) : "";
         var (drawn, dead) = scene!.Crowd.Counts;
         var (gibs, splats) = scene.Fx.Gore.Counts;
         GD.Print($"[{scene.Time,6:0.0}s] {zone?.Id} hp {p?.Hp:0}/{b?.MaxHp:0} ember {b?.EmberLevel} kills {b?.KillCount} foes {foes} (drawn {drawn}, lying {dead}, gibs {gibs}, blood {splats}) at {p?.X:0},{p?.Z:0} {Overlay} {dbg}{FrameCost()}{(synth.Live ? $" | sound {sound.Music.Mood} voices {synth.Voices} mix {synth.MixCost / Math.Max(1e-9, synth.Mixed) * 100:0}% heard {synth.Mixed:0}s skips {synth.Skips} queue {synth.Queue / synth.Rate * 1000:0}ms" : "")}");

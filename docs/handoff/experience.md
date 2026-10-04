@@ -2,7 +2,7 @@
 
 For a fresh successor. Read `docs/team/README.md` first (the owner's bar, how we work, the
 roster), then this, then `docs/team/experience.md` (the one-page status) and
-`docs/EXPERIENCE_AUDIT.md` (the audit and the plan).
+`docs/EXPERIENCE_AUDIT.md` (the audit, the structure, the maps' shape, the music by beat).
 
 ## The owner, in their words
 
@@ -11,199 +11,156 @@ roster), then this, then `docs/team/experience.md` (the one-page status) and
   want to polish, I want to create perfection", "how things are can be limiting".
 - Decisions:
   - "endless is truly endless";
-  - full-page screens pause the world only in arena combat;
-  - final voices are recorded in ElevenLabs, with placeholders until then.
+  - full-page screens pause the world only in arena combat, "and are often not the best choice";
+  - final voices are recorded in ElevenLabs later (the voice lead is paused: no placeholders).
 - Structure (4 October): "story should be 40% of the game early on, end game is two types of
   arenas - permanent and our normal arenas. permanent is our arpg build maps like poe and the
-  normal arenas are for mindless survivors fun". Story fights are 20 minutes; the Wayfinder's
-  maps are 30.
-- Music: "i'll work on music at some point". Leave the score; say what it must do at each beat
-  (done: the audit's music table).
+  normal arenas are for mindless survivors fun". Story nights are 20 minutes; "the Wayfinder's
+  maps are 30" (the table's people-named nights, as the story lead uses the words; the atlas's
+  build maps are another thing and run about ten minutes).
+- Music: "i'll work on music at some point". Leave the score; the audit says what it must do.
 
 ## The brief
 
 You are the gameplay experience director: the whole experience as a player lives it, from the
-title through a run, the hub, the story and many runs. Find what holds it back from the best
-of the genre, and raise it.
+title through a run, the hub, the story and many runs. Raise it to the best of the genre.
+- **Yours:** game feel and juice; pacing and set pieces; onboarding; the loop and
+  meta-progression; the endgame arenas' shape and loop; anything no lead owns.
+- **The leads:** short written briefs (what's wrong, the evidence, the target, how it's judged);
+  check their results in play.
+- **How:** play with the autopilot and harness, shoot frames at 1920×1080, read the logs. Decide,
+  record why, escalate only what needs the owner. Commit and push your branch at milestones
+  (the main session merges it; no PRs); `dotnet test` in `godot/tests` before every commit;
+  British spelling; comments are short prose saying why.
 
-- **Yours:**
-  - game feel and juice;
-  - pacing and set pieces;
-  - onboarding;
-  - the overall loop and meta-progression;
-  - the endgame arenas' shape and loop;
-  - anything no lead owns.
-- **The leads:** hand them short written briefs (what's wrong, the evidence, the target, how
-  it's judged) and check their results in play.
-- **How:** play with the game's own autopilot and harness, shoot frames at full resolution,
-  read the logs. Don't stop to ask: decide, record the reason, and escalate only what needs
-  the owner, with a recommendation.
-- **Housekeeping:** tests green, British spelling; commit and push at milestones.
+## Done (all on `worktree-agent-ad1f5623590e09883`, pushed; last `8a56eb43`)
 
-## Done (all merged into the integration branch)
+Merged with the integration branch at `f56ee42`. 567 tests green.
 
-- **The audit,** draft two (`docs/EXPERIENCE_AUDIT.md`): ten ranked findings with evidence
-  frames (`docs/experience/*.jpg`), the owner's structure, the music by beat, and the plan by
-  owner.
-- **The night's shape** (`godot/logic/Play/Zones/ArenaPacing.cs`, wired in `ArenaRun.Step`):
-  - a sawtooth into 10, 20 and 28;
-  - breathers after turns;
-  - a herald's duel on a thinned field, then a flood;
-  - the hush (28½–30);
-  - no turn twice running;
-  - a chest in every three turns from minute 8;
-  - each people's own question at 6, 17 and 26 minutes, with a tell, led by a captain with a
-    chest (`ArenaRun.Signature`, `Column`, `Line`, `RingRise`);
-  - `Building` for combat's charge spikes.
+- **Verified at full resolution** since performance's merge: the opening groups, the camera, the
+  dead, the fall, a story night's end. Fixed from the frames: the boss's own 14 m flat death blast
+  under the fall (`BattleFx`, Ev.Kill), the way out's prompt over her at the peak (now 2.6 s
+  later), the victory words over the flash (0.8 s later), a story night's pointless way out and
+  "comes again" (`ArenaRun.Victory`, `Objectives`), chalk-white bones (old bone, laid flat, skulls
+  face up: `Gore`), the hit flash blooming pale bodies (rim, `vat.gdshaderinc`), the field flashing
+  between the result and the road (`Game.LeaveArena`), the autopilot stranding her after a result.
+- **The chest as a sequence** (S-09): `godot/src/Game/ChestCeremony.cs`. Staged in the world, not
+  on a page. `LevelUp.OpenChest` returns `ChestItem`s; `IZoneHost.Chest(ChestOpened)` (default:
+  the old one-line announcement for headless hosts); `GameMenus.UpdateChest` queues and shows it
+  (`hudMode "chest"`, the fight paused, `WorldScene.Hold` freezes the living's clock while effects
+  keep real time). 1/3/5 at 84/12/4% (mean 1.4, unchanged). The chest model has a hinged `Lid`
+  (`ItemModels.Chest`). Sounds: `Sfx.ChestShake/ChestBurst/ChestLand/ChestTick`.
+- **The evolution** (S-10): the slot crowned (`WeaponSlot.Crown`), 0.6 s slow motion
+  (`WorldScene.Slow`), gold light and rings instead of the 9 m pink disc. A chest's evolution waits
+  for the chest to close (`Ev.Evolve.Chest`). Discoveries are a side toast, not a centre title.
+- **Sound:** the ember ladder (S-02) on D minor pentatonic, merged per frame, a lodestone's breath;
+  the level-up landing on major (S-04); the crowd's fall and the swell at 15/40/80/150 kills in
+  1.5 s (S-08, `SoundBridge`), with a camera kick.
+- **Feel:** a 120 ms dash and art buffer (S-05, `WorldScene`); rumble (S-14, `Haptics.cs`, a
+  "Pad rumble" option); her blows lean the camera (S-17, `FollowCamera.Kick`), arts' hit-stop,
+  a bigger flinch. S-06 (bars that flow) was already built.
+- **The ember carpet:** 240 stones lie at most (`Battle.EmberCap`); the rest go into one red hoard
+  stone under a beam (`Battle.Hoard`). Stone colours kept saturated (no cream popcorn).
+- **Onboarding:** the prologue's character levels are banked (`WorldState.NightLessons`) and paid
+  at dawn as "What the night taught you" (`Journey.Douse`, `Prologue.Douse`).
+- **Death poses:** `CrowdView.DeathOf` picks die/die2/die3 by seed, never the nearest body's pose;
+  animation's v11 bake (`worktree-agent-a435f4dd0ac80df75@8b2b54f`) is not merged yet.
+- **Frozen and burning** keep the body's value; ice and fire live at the rim and top (agreed with
+  skills; theirs to judge on its Hoarfrost ring).
+- **The 40%:** `WorldState.TimeIn` books play time by prologue/town/wild/story night/table
+  night/map; `Journey.StoryShare`; the `--log` run prints it each minute. Estimate from content in
+  the status page.
+- **The maps' shape:** decided in the audit's structure section; combat has taken the numbers.
+- **The night re-measured** (96 nights): danger peaks at the landmarks but the run-ups are the
+  calmest stretches (7–10: 5%, 17–20: 3%, 25–28: 2% of runs under half health). Combat has taken
+  the brief (signed champions twice, pincer charges, ranged and aura kinds while Building).
 
-  It scales to any night length.
-- **The fall as the night's peak** (`Ev.Victory`):
-  - slow motion to a tenth, easing back over 2.2 s (`WorldScene`);
-  - the camera turned to it (`Ev.Focus`);
-  - layered effects with no filled disc (`BattleFx`, case `Ev.Victory`);
-  - a sound-effects duck under its own boom and chord (`Synth.DuckSfx`, `Sfx.Fall`; evolutions
-    duck too);
-  - the horde made to flee for 3.5 s.
-- **Story nights end on their beat:** the spoils are pulled in at 2.4 s and the night ends at
-  7 s after the fall (`ArenaRun.Victory`).
-- **The breathing camera** (`ArenaRun.CameraDistance`, applied in `Game.cs`): 22 m at the start,
-  31 m as the horde grows, 33 m for the boss, up to 34 m in the long night.
-- **The night opens with the horde in sight:** three groups at 12–15 m at 1.5 s.
-- **The dead read as dead** (`CrowdView.DrawCorpses`): darkened by half within about a second,
-  lying 8 s in a horde and 18 s when few. Real bone and skull gibs, back in the ground in 8–12 s
-  (`Gore.Bone`, `Gore.Skull`).
-- **`arena.last.*` facts** for the town to talk about (`Arenas.Finish`). They are StoryLint
-  seeds until story lines read them.
-- **The autopilot** opens the watch-post chest from its far side (it used to loop on the
-  watchman's book); `Game.Prompted`.
-- **Tests:** `PacingTests`, plus these in `ArenaTests`:
-  - `The_people_ask_their_own_question_with_a_tell_first`;
-  - `The_town_can_talk_about_the_last_night`;
-  - `The_fall_is_the_peak_and_a_story_night_ends_on_its_beat`;
-  - `The_camera_opens_close_and_stands_back_as_the_horde_grows`.
+## Next, in order
 
-## In progress, and next, in order
-
-1. **Verify at full resolution.** Never seen on screen:
-   - the breathing camera (0:00–5:00 and 25:00);
-   - the opening groups;
-   - the darker dead and the new gibs. Performance's merge moved `CorpseMax` to a public field
-     and batched the gibs; check them in frames;
-   - the fall since its filled disc was removed;
-   - a story night's end.
-
-   Then tell arena art (`ab03c3c85571e5085`) how the dead read against its ground: it asked.
-2. **The chest as a sequence** (feel S-09; taken from UI's backlog): the world held, the chest
-   shakes and bursts, the items land one by one with a reel and a sound each (1, 3 or 5 items),
-   skippable, the ceremony scaled to what is inside. Today `ArenaRun.OnPickup` →
-   `LevelUp.OpenChest` → a single announcement line.
-3. **Then:**
-   - the evolution ceremony (S-10);
-   - the XP ladder (S-02; `Sfx.Xp` climbs microtonally and tops out at 24);
-   - the multi-kill swell (S-08);
-   - the level-up landing on major (S-04);
-   - the dash buffer (S-05);
-   - rumble (S-14; none exists).
-
-   The specs are in `docs/feel/SUGGESTIONS.md`.
-4. **The ember carpet:** late nights leave thousands of uncollected stones (`boss_18.png`
-   showed it). Merge them past a cap, as Vampire Survivors' red gem does.
-5. **Onboarding:** the prologue pays character XP per kill (`Journey.Killed`), so "LEVEL 3 – a
-   new trait (C)" pops up while the ember drafts. Bank it and pay it at dawn as "what the night
-   taught you". Also: prompts that never share a spot (the chest and the watchman).
-6. **The 40%, measured:** journey time by mode (day story, story night, table night, map),
-   reported by the explorer and the harness. Target: 35–45% of Act 1 in the story.
-7. **The endgame's shape:** agree the maps' design (the audit's "The structure") with combat and
-   crafting before either builds.
-8. **Re-measure the night** with combat's charge director and its new kinds and minibosses. The
-   build-ups should finally carry danger: at the start 0% of runs dipped below half health in
-   the long push.
+1. **Judge in play once merged:** skills' fixes (the pyre square, the Hallowed Ground's glow,
+   hostile marks as hatch and edge, damage numbers S-13 at most about 12 up), animation's death
+   poses (30 bodies, no neighbours alike), arena art's places (the barrow near-black: its successor
+   is briefed), combat's run-ups (re-run the stretch table: target 10–20% under half in each
+   run-up, wins within two points of 93%) and maps (median clear 9–10 min at tiers 1–2).
+2. **Stage the map's strongbox and ruler's fall.** Combat's maps are built to our shape
+   (`worktree-agent-a1d4562f44c7f6feb@1b0f8bf1`, not yet merged here): 3/4/5 clearings by tier,
+   clears in 9.8/10.3/11.9 min, a pack every 12–16 s, the ruler 59–70 s, no packs on the last way,
+   the ruler's sign at its edge, the event (the people's question at the lit altar, about 50 s)
+   ending in a strongbox that calls `G.Chest(new ChestOpened(x, z, n, items, "The strongbox", n))`
+   with `ChestItemKind.Gear` items (a chart shows as a Gear item). Give Gear a colour (its rarity)
+   and detail (its rarity's name, "a chart" for charts) in `ChestCeremony.ColourOf/DetailOf`, and
+   stage the ruler's fall (`Ev.Victory`) smaller than the night's. The atlas: `Atlas.Biases`,
+   `Rank`, `Raise`, `Unspent`, `Road`/`Follow`. Picture: `--zone map --tier 1 --people dead`
+   (`--at boss` to start by the ruler).
+3. **A whole night at full resolution** on the autopilot (it now watches chests and leaves
+   results): judge the swell, the evolution, the chest in context. The chest's frames are tagged
+   (`NAME_chest_N`, `NAME_evolve_N`).
+4. **The table and the result as the hub loop** (audit finding 5): with UI design, what a night
+   pays, said before and after.
+5. **The rest of the feel list:** S-15 (loot by rarity), S-16 (the end screen's story, UI),
+   S-18 (a score that follows success), S-19 (a readability layer).
 
 ## Decisions (with why)
 
-- **Pacing reshapes the night and never re-prices it** (average share about 1). Measured: win
-  rate 94% and ember 53 at 30:00, before and after. Danger is combat's: the charge director,
-  kinds, minibosses.
-- **A climax, then a hush,** not one or the other: the long push peaks at 28, then the people
-  draw back for 90 s while the sign burns.
-- **The people's own turns are set pieces built from existing kinds.** Their timing and tells are
-  mine; what spawns in them is combat's as kinds unlock (the agreed split by file).
-- **The fall is the only screen-filling moment.** A champion's death blast is about 3 m, a
-  herald's about 5 m (agreed with skills).
-- **Story nights end on their beat; table nights have the long night** (the story bible §2
-  agrees).
-- **The camera starts close and stands back:** she is seen early; the fight is seen late.
-- **Pausing:** in arenas and on the prologue's night road only; recommended to UI. The code
-  pauses on `zone.Combat`, which also catches the Verge by day.
+- **The chest is staged in the world:** the owner says full pages are often not the best choice;
+  the world held round her keeps the night's place and stakes.
+- **A chest is worth 1.4 things on average, as before:** the jackpot changes, not the night's price.
+- **The fall is the only screen-filling moment;** a boss's kill adds light and a ring, no blast.
+- **A story night needs no way out:** it lets her go by itself.
+- **One levelling system at a time:** the ember by night, the character's lessons at dawn.
+- **Maps run about ten minutes and dense** (a pack every 13–15 s); length is set by the way.
+- **The run-ups' danger is combat's to add:** pacing reshapes the night, never re-prices it.
 
 ## Failures and why
 
-- **The autopilot looped on the dead watchman's book.** The prompt picks the nearest
-  interactable, and the chest's approach point was nearer the watchman. Fixed by approaching
-  from the far side and pressing only when `Prompted == "chest"`.
-- **The first fall had a flat pink disc** (a `Nova` on the ground) filling the screen under her.
-  Removed. Every big moment must be rings and light, never a filled disc.
-- **Frame times taken while the GPU was shared were meaningless** (30–136 ms). Use performance's
-  `--perf` harness, and quote nothing measured during ComfyUI or voice jobs.
-- **A sweep script hung** on a stray `cat > /dev/null` reading stdin. Keep analysis in the
-  scratchpad scripts.
+- **The ceremony's camera never came in:** the follow camera eases its distance over about two
+  seconds, so the ceremony sets `cam.Distance` itself for the first half second.
+- **The chest's open mouth read black twice:** first a burnt ground decal printed over it (the
+  chest now sits on render layer 2, which decals don't paint), then the seam's iron band, a solid
+  slab across the whole top, covered the light (the glow now sits above it).
+- **Story nights "never ended":** the autopilot closed the result as a screen. Fixed in the
+  autopilot; the game was right.
+- **Runs while the GPU was shared crawled** (frames of 250–600 ms; game time slowed). `play.py`
+  now runs at `--fixed-fps 60` by default.
+- **I woke two handed-off agents** (story, crafting) by messaging old ids. Read the roster from the
+  integration branch before messaging.
 
 ## Gotchas
 
-- **A fresh worktree's `godot/assets`** is a text file. Replace it with a junction to the
-  worktree's `public/assets` and set `git update-index --skip-worktree godot/assets`. Copying
-  another worktree's `godot/.godot` and running `--import` saves most of the import (it still
-  re-imports changed paths, about 15 min).
-- **Running a Godot import or a game run updates `.import` files** and leaves untracked ones.
-  Never commit them.
-- **Shell rules:** the Bash tool refuses complex `mkdir`/`cd` chains in this worktree and
-  `powershell -Command` strings. Use the Write tool and plain commands; use PowerShell for
-  process and GPU checks (`nvidia-smi`).
-- **The GPU is shared** (ComfyUI, the voice placeholders, other agents' game windows). Check
-  `nvidia-smi` before quoting frame times.
-- **StoryLint fails on a fact that is written and never read.** New facts go in `Seeds` until a
-  line reads them, and must leave it when one does.
-- **`Event(0)`:** with an `Event(Turn)` overload, the literal 0 still binds to `Event(int)`.
-- **Fixed-minute tests:** pacing changed when turns come, so tests that waited a fixed time for a
-  champion now loop until its bark (from minute 8 one comes in every three turns).
+- **Worktree setup:** `godot/assets` must be a junction to `public/assets` (skip-worktree set);
+  copy another worktree's `godot/.godot` and run `--import` (about 15 min of kit reimports).
+- **Never commit the `.import` churn** or stray `.uid` files from imports; add files by name.
+- **`godot/override.cfg`** (untracked) gives runs their own user folder
+  (`SurvivorUnchainedExperience`), so they never touch the owner's saves.
+- **The shell guard** refuses heredocs and `cd` chains in some forms: write scripts with the Write
+  tool into the scratchpad, and edit with the Edit tool.
+- **`G.After` runs in real seconds and waits while the fight is paused**; tests' hosts pass time.
+- **Godot `Color * float` scales alpha too.**
+- **The log line prints only the zone's first six debug entries.**
 
-## Collaborators (the roster in `docs/team/README.md` is current)
+## Collaborators (roster in `docs/team/README.md` on the integration branch is current)
 
-- **Combat** `ac4ec5bbd2763a0df`:
-  - wired into pacing: the charge director, calm in breathers, the hush and the duel, spikes
-    while `Building`;
-  - building the 20-minute night clock, story nights skipping the long night, kinds, minibosses
-    and Signs;
-  - sent: choice deciding survival from tier 3 (random drafting wins as often as greedy at tiers
-    1–3), and the endgame design.
-- **Story** `a035208561a66c171` (successor to `a7622ae77d19e31dc`): reactions to `arena.last.*`,
-  and the wording of the "half hour" strings. The defaults are in combat's hands.
-- **UI design** `ac76f400913a109cd`: one bark at a time, the result as the night's story, the
-  table saying what a map pays, the pause rule. Character creation comes first for them.
-- **Skills (VFX)** `a8bafe3cd8a229639`: zones with no fill, at most 35% coverage, never red or
-  pale grey; ribbons dimmed over her; the blast sizes above.
-- **Arena art** `ab03c3c85571e5085`: a place and ground per people; darker ground; landmarks
-  at the edges; tall pieces that fade whole or stay out of the play space.
-- **Performance** `a9586a5171413db0b`:
-  - the `--perf` harness, with herald, boss and dense scenarios;
-  - the Waystation is draw-call bound (about 6,000 shadow draws from the kit props);
-  - load time of 15 s for the Waystation.
+- **Combat** `a1d4562f44c7f6feb`: maps (length, breath, event strongbox, atlas biases) and the
+  run-ups' danger, both taken; tier 3 at 87/71 (greedy/random).
+- **Skills** `a63cd93fc73d5ed79`: marks, grounds and S-13 built on its branch; frozen and burning
+  lines in `vat.gdshaderinc` are ours.
+- **Animation** `a435f4dd0ac80df75`: die2/die3 baked (v11), our pick wired.
+- **Arena art** `a26767f7f9955cb56`: briefed on the barrow's near-black ground.
+- **UI design** `a69858664f1d3dd29`: a map's result page and the atlas.
+- **Crafting** (successor to `a97e32948c5bf419d`): chart verbs as choices of risk.
+- **Story** `a73ca9d35d0c487a9`: the strings used ("The night lets you go", "What the night taught
+  you") fit the canon.
 
 ## Files to read first
 
-1. `docs/EXPERIENCE_AUDIT.md`: the findings, the structure, the music, the plan.
-2. `docs/team/experience.md`: the one-page status.
-3. `godot/logic/Play/Zones/ArenaPacing.cs` and `ArenaRun.cs` (Step, Event, Signature, Victory,
-   Frame, CameraDistance).
-4. `docs/feel/SUGGESTIONS.md`: the specs for the moments still to build.
-5. `godot/src/Game/WorldScene.cs` (slow motion, hit-stop), `src/Fx/BattleFx.cs` (the moments'
-   effects), `src/Audio/Sfx.cs` and `Synth.cs` (stingers and ducking), `src/Actors/CrowdView.cs`
-   and `src/Fx/Gore.cs` (the dead).
-6. **The scratchpad's `experience/`:**
-   - `play.py NAME -- [game args]`: a game run at 1920×1080 with a log;
-   - `sheet.py`: contact sheets;
-   - `arc.py` and `compare.py`: the night's arc from `godot/balance` sweeps, in
-     `godot/balance/out/exp/*.jsonl`;
-   - examples: `--quick warden --sex female --zone arena --people dead --auto --log 30 --every 30
-     --count 110` (a full night), and `--minute 29.9 --give "<build>" --on boss --until 150`
-     (the boss, and the fall's frames).
+1. `docs/EXPERIENCE_AUDIT.md` (the structure and the maps' shape) and `docs/feel/SUGGESTIONS.md`.
+2. `godot/src/Game/ChestCeremony.cs`, `GameMenus.cs` (UpdateChest), `WorldScene.cs` (Hold, Slow,
+   the buffers, Weigh), `FollowCamera.cs` (Kick), `Haptics.cs`.
+3. `godot/logic/Play/Zones/ArenaRun.cs` (Victory, OnPickup, Frame) and `ArenaPacing.cs`.
+4. `godot/src/Audio/Sfx.cs` (the chest's sounds, the ladder, the swell) and `SoundBridge.cs`.
+5. The scratchpad's `experience/`: `play.py` (fixed fps), `sheet.py`, `tsheet.py`, `crop.py`,
+   `keep.py`, `spec.py` (a `--wav` spectrogram), `arc.py`/`compare.py` (balance sweeps),
+   `words.py`. Examples: `--zone arena --people dead --chest 1,3,5! --auto idle` (the chest);
+   `--story --minute 19.95 --give "<late build>" --on boss --until 150` (a story night's end);
+   balance: `arena --callings all --policies greedy,random --seeds 4 --tiers 1,2,3 --people all
+   --oaths table --level tier --bot deft --cap 34 --par 8`.
