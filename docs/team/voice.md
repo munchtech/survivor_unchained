@@ -1,73 +1,63 @@
 # Voice: status
 
-Agent a501b387a90d78b4e (took over from a2da9a388ceb1b987 on 3 October), branch `worktree-agent-a501b387a90d78b4e`.
-Handoff from the predecessor: `docs/handoff/voice.md` (still accurate, except where this page says otherwise).
+Agent a501b387a90d78b4e (took over from a2da9a388ceb1b987 on 3 October). Branch: `worktree-agent-a501b387a90d78b4e`.
+Read this with the predecessor's handoff, `docs/handoff/voice.md`. Where the two differ, this page is current.
 
 ## The route (the owner, October 2026)
 
 "we're just going to use elevenlabs for our voicework so we will do 1 character at a time. we will put in placeholders with voicebox and the agent will direct me one to work on at a time"
 
-- **Finals:** the owner records them in ElevenLabs from `docs/voice/elevenlabs/<voice>.md`; `tools/vo/import_takes.py <folder> --voice <v>` brings them in.
-- **Placeholders:** Maya1 performs each line, Seed-VC converts it to the cast voice, and our chain mixes it (`tools/vo/placeholders.py`). Each is flagged `placeholder`.
+- **Finals:** recorded by the owner in ElevenLabs from `docs/voice/elevenlabs/<voice>.md`. `tools/vo/import_takes.py <folder> --voice <v>` brings them in.
+- **Placeholders:** Maya1 performs the line, Seed-VC converts it to the cast voice, and our chain mixes it (`tools/vo/placeholders.py`). Each one is flagged as a placeholder.
 
-## State (22:50, 3 October)
+## State (03:30, 4 October)
 
-- **Final packets** (`FINAL` in `tools/vo/elevenlabs.py`), so the owner can record them now: narrator, Rook, Holloway, Brannoc, Sella. The story lead (a7622ae77d19e31dc) signed each one, and every one of their notes is applied.
-- **Next for sign-off: Vonnra.**
-  - Her packet now includes the name splice (see below).
-  - Her shifted directions still need realigning before it goes to the story lead:
-    - f_ember .2/.3/.4: notes on the wrong variants;
-    - cb_vault3: note quotes "It is. For now.";
-    - f_pell.3: note quotes "He will not forget you.";
-    - ford.0.
-  - Find them with the stale-note check (quoted words in a note that are not in the line).
-  - After Vonnra: Harlan, then the rest by impact.
-- **The story lead changed one line:** `bark.sella.night.1`, at 707a910 on their branch. Its direction is already in. The take goes stale when the change reaches the integration branch.
-- **Vonnra's name splice is built:**
-  - `f_accuse.0`, `f_door.0` and `hub.0` are recorded without the name and split where it goes (`lines.NAME_VOICES`).
-  - There is one take per name the creation screen suggests (`name.vonnra.<Name>`, 24 names read from `Front.cs`).
-  - The index has `name` (seconds). `VoiceOver` pauses the line and says the name; a name the player typed leaves the pause empty.
-  - It has a test. It has not yet been heard in the game, because there are no Vonnra takes yet.
-- **Cinematic timing** (for the cinematics lead, a2dfc75e2d351105a):
-  - The 14 opening lines carry `time` windows. The mix tightens pauses to fit, the placeholder rounds nudge the pace, the packets print "Length:", and the importer reports any take that misses.
-  - The index's `read` is the voice without the room's decay; time cuts on it.
-  - I promised the lead the measured `read` values once the first pass lands.
-- **New part `warden_man`:** "Is it morning?", the tired man of sixty under the Warden (C03), approved.
-- **A person's words quoted inside narration** take the line's `quote` direction (`lines.part_direction`), not the narrator's "plain".
+- **Final packets, ready to record:** narrator, Rook, Holloway, Brannoc, Sella.
+  - **Narrator:** off hold. Vonnra is not the narrator. The packet adds C01's lamp line.
+  - **Story lead's sign-off:** the story lead is now a035208561a66c171. Their predecessor signed off the five finals.
+- **With the story lead for sign-off:** Vonnra and Harlan (sent at ef8e7a0).
+  - Vonnra's packet has the name splice, 24 name takes from the new list (949cea3), the C01 call, and realigned directions.
+- **C01 voice up the road:** "Come up, traveller. ...No charge, this once." is Vonnra, unnamed (`far_voice`). A new "far" effect plays it at a distance. The fortune's "No charge, this once." is played as its twin.
+- **Cinematic timing** (cinematics lead af7a79bc783cca7bc, who has merged 7fc0013):
+  - Every C01 to C04 line carries its window (`time`). Cuts are timed on the index's `read`.
+  - A placeholder still too long after its pauses are tightened is sped up by Praat's overlap-add, at most by a third. Finals are never sped up.
+  - Lines still long: none 3.61 s, nobodys 3.15, downstairs 4.16, grateful 4.30. All four are being re-performed.
+  - I promised the cinematics lead the commit with those four, lamp and call once they land.
+- **Placeholders:** 168 lines are committed (64d49fc and 7fc0013).
+  - Fifteen word faults were Whisper's spelling of a right word, now in the lexicon.
+  - Five lines had wrong words; they are being redone with new seeds (`--first-round 4`).
+- **Name list:** the UI design lead (ac76f400913a109cd) knows that Front.cs `Names` drives Vonnra's name takes.
 
-## The detached run (left running)
+## The detached run
 
-- Started at 22:38 by `~/vo-tools/scripts/placeholders_all.cmd` (`Start-Process cmd`). It logs to `~/vo-tools/placeholders_all.log` and ends with `PLACEHOLDERSDONE`.
-- At 22:48 it was auditioning `red_hand` (judged as Scots), with `warden_man` next. After that it:
-  1. redoes `prints` and `frost` (C01) to fit their cuts;
-  2. makes every line, 40 a pass.
-- It runs from **this** worktree, so the oggs, `manifest.json` and `index.json` land here.
-- It started before the Vonnra splice and Sella's quote directions, so for those lines it uses the code it loaded at start:
-  - the run's Vonnra lines will come out unsplit: redo them (`placeholders.py dlg.vonnra --redo`);
-  - Sella's quoted parts will be played "plain": redo those too.
-  - Rerun the `.cmd` to pick up the new code. Done lines are skipped, and cached work is reused.
-- To stop it, kill the Python processes whose command line matches `placeholders.py|maya_batch|seedvc_worker|cast_session|voxcpm_worker` (PowerShell `Get-CimInstance Win32_Process`). Killing them makes the `.cmd` print `PLACEHOLDERSDONE`, so don't trust that line after a stop.
+- **Started:** 03:02, via `~/vo-tools/scripts/placeholders_all.cmd` (`Start-Process cmd`). It logs to `~/vo-tools/placeholders_all.log`.
+- **What it does:** first it redoes 9 lines (the five wrong-word lines and the four long cinematic ones). Then it makes every remaining line, 40 a pass, most important first, which includes C01's lamp and call.
+- **03:25:** ComfyUI had the card full. Maya1 ran out of memory and the run is retrying at smaller batches. The run waits up to 30 minutes for ComfyUI's queue to empty before each phase.
+- **To stop it:** kill the Python processes whose command line matches `placeholders.py|maya_batch|seedvc_worker`. Killing them makes the `.cmd` write `PLACEHOLDERSDONE`, so that line can't be trusted after a stop.
+- **To resume:** rerun the `.cmd`. It skips done lines and reuses cached work.
 
 ## Next
 
-1. As passes land, commit them (`git add godot/art/vo godot/data/vo tools/vo/manifest.json tools/vo/refs`), after running `dotnet test` first.
-2. Import the new oggs into Godot (`.import` files) and check that they play.
-3. Send the cinematics lead the `read` values.
-4. Realign Vonnra's directions, then send her packet. Redo her and Sella's placeholders on the new code.
-5. Watch for the owner's takes; on arrival, import them and report what is missing.
-6. The hymn stays held for the owner's choice.
+1. **Commit placeholder batches as they land:** `git add godot/art/vo godot/data/vo tools/vo/manifest.json tools/vo/refs`, after `dotnet test`. Then send the cinematics lead the commit and the `read` values.
+2. **Apply sign-offs:** add each voice the story lead signs to `FINAL`, apply their notes, and regenerate the packets.
+3. **Owner's takes:** import them when they arrive and report what is missing.
+4. **Godot import:** not done here.
+   - The game plays non-imported oggs (`VoiceOver.Stream` falls back to `AudioStreamOggVorbis.LoadFromFile`).
+   - An export imports them itself.
+   - A full import of this worktree needs about 1.6 GB of cache, and C: was at 99%.
+5. **The hymn** stays held for the owner's choice.
 
 ## Decisions
 
-- **No local model reaches the final bar, so finals are recorded in ElevenLabs** (owner).
-- **Packets are ordered by impact.** The story lead signs each one before it is recorded.
-- **The narrator never shows a feeling.** His tags give only volume, and timing notes are pauses, not feelings (story lead).
-- **Casting briefs ask for "Broad" accents at most, and "Light" where the accent is softened.** VOICES calls the accents a palette, not a caricature.
-- **Placeholder work files are named by a hash of what was asked.** A changed direction is then acted again rather than served from the cache.
-- **A placeholder never overwrites a final,** and the run and the importer re-read the manifest before they write it.
+- **Finals come from ElevenLabs** (owner). No local model reaches the bar.
+- **Packets are signed one at a time.** They go in order of impact, and the story lead signs each.
+- **The narrator never shows a feeling.** Timing notes are pauses, not feelings.
+- **Accents are a palette, not a caricature.** Casting briefs ask for "Broad" at most, and "Light" where the accent is softened.
+- **A person's words quoted inside narration take the line's `quote` direction,** not the narrator's.
+- **Placeholder work files are keyed by what was asked,** so a changed direction is acted again. A placeholder never overwrites a final.
 
 ## Notes for others
 
-- **GPU:** before each phase, the run waits for ComfyUI's queue to empty, then frees its models.
-- **Hugging Face downloads:** set `HF_TOKEN_PATH` to a missing file and `HF_HUB_DISABLE_IMPLICIT_TOKEN=1`.
-- **The worktree guard** refuses compound shell commands. Put the logic in a script file and run it plainly.
+- **GPU:** the run waits for ComfyUI's queue to empty before each phase, then frees its models. A busy card still costs it retries.
+- **Disk:** C: was at 99% at 03:00 (3.9 GB free, later 12 GB). The placeholder work grows by about 2.3 MB per line.
+- **Worktree guard:** compound shell commands are refused. Put the logic in a script file.
