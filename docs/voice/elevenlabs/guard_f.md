@@ -11,7 +11,7 @@ Voice id in the game: `guard_f`. 9 takes to record (406 characters; about 1,218 
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU A Watchwoman`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, northern English). Female, 30s. Studio quality. Persona: a northern town guardswoman. A tough town guardswoman in her thirties with a firm, low, gruff voice and a flat northern English accent. Curt and unimpressed. Thick northern English accent. No reverb or effects.
+Native English (British, northern English). Female, 30s. Studio quality. Persona: a northern town guardswoman. A tough town guardswoman in her thirties with a firm, low, gruff voice and a flat northern English accent. Curt and unimpressed. Broad northern English accent. No reverb or effects.
 ```
 
 Preview text:

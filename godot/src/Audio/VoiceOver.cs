@@ -21,6 +21,11 @@ public partial class VoiceOver : Node
 {
     public static VoiceOver? Instance { get; private set; }
     AudioStreamPlayer line = null!;
+    /// <summary>The survivor's name, in the voice of a line that says it
+    /// (VoTake.Name): the line waits while it is said.</summary>
+    AudioStreamPlayer nameLine = null!;
+    double? nameAt;
+    bool nameSaying;
     readonly List<AudioStreamPlayer3D> barks = new();
     readonly Dictionary<string, AudioStream?> streams = new();
     readonly Random rng = new();
@@ -43,6 +48,8 @@ public partial class VoiceOver : Node
         }
         line = new AudioStreamPlayer { Bus = "Voice" };
         AddChild(line);
+        nameLine = new AudioStreamPlayer { Bus = "Voice" };
+        AddChild(nameLine);
         Apply();
         // --record PATH: everything that reaches the speakers, voices and all,
         // written to a WAV on exit (to check the mix without ears in the room).
@@ -85,12 +92,14 @@ public partial class VoiceOver : Node
     }
 
     /// <summary>A conversation's line, by id and the words as written: the take,
-    /// if there is one for exactly these words (it starts at once).</summary>
-    public VoTake? Say(string? id, string? raw)
+    /// if there is one for exactly these words (it starts at once). `name` is
+    /// the survivor's, for a line whose voice says it.</summary>
+    public VoTake? Say(string? id, string? raw, string? name = null)
     {
         Stop();
         if (!Live || id == null || raw == null) return null;
-        return Start(id, VoiceLines.Take(id, raw));
+        var take = VoiceLines.Take(id, raw);
+        return Start(id, take, take?.Name != null ? VoiceLines.NameTake(take.Voice, name) : null);
     }
 
     /// <summary>A line from the zone code (the narrator, or a voice it names), by its words.</summary>
@@ -114,25 +123,58 @@ public partial class VoiceOver : Node
         return Start(id, take);
     }
 
-    VoTake? Start(string id, VoTake? take)
+    VoTake? Start(string id, VoTake? take, VoTake? name = null)
     {
         if (take == null || Stream(take) is not { } s) return null;
         line.Stream = s;
-        line.Play();
+        line.StreamPaused = false;
+        nameAt = null;
+        nameSaying = false;
+        // The name in its pause; without a take of it (a name the player
+        // typed), the line plays through and the pause is left empty.
+        if (take.Name is double at && name != null && Stream(name) is { } ns)
+        {
+            nameLine.Stream = ns;
+            if (at <= 0.01) { nameLine.Play(); nameSaying = true; }
+            else { nameAt = at; line.Play(); }
+        }
+        else line.Play();
         Current = take;
         CurrentId = id;
-        GD.Print($"voice {id} ({take.Sec:0.0} s{(take.Placeholder ? ", placeholder" : "")})");
+        GD.Print($"voice {id} ({take.Sec:0.0} s{(take.Placeholder ? ", placeholder" : "")}{(name != null && take.Name != null ? ", with the name" : "")})");
         return take;
     }
 
     public void Stop()
     {
-        if (line != null && line.Playing) line.Stop();
+        if (line != null && (line.Playing || line.StreamPaused)) { line.Stop(); line.StreamPaused = false; }
+        if (nameLine != null && nameLine.Playing) nameLine.Stop();
+        nameAt = null;
+        nameSaying = false;
         Current = null;
         CurrentId = null;
     }
 
-    public bool Speaking => line != null && line.Playing && Current != null;
+    public bool Speaking => line != null && Current != null && (line.Playing || nameSaying);
+
+    /// <summary>The splice: at the name's place the line pauses while the
+    /// name is said, then goes on (or starts, when the name comes first).</summary>
+    void SpliceName()
+    {
+        if (nameAt is double at && line.Playing && line.GetPlaybackPosition() >= at)
+        {
+            nameAt = null;
+            line.StreamPaused = true;
+            nameLine.Play();
+            nameSaying = true;
+        }
+        else if (nameSaying && !nameLine.Playing)
+        {
+            nameSaying = false;
+            if (line.StreamPaused) line.StreamPaused = false;
+            else line.Play();
+        }
+    }
 
     /// <summary>Where the voice is in its line, in seconds (what has been heard,
     /// not what has been mixed).</summary>
@@ -188,6 +230,7 @@ public partial class VoiceOver : Node
 
     public override void _Process(double delta)
     {
+        if (Current != null) SpliceName();
         bool talking = Speaking;
         if (!talking && Current != null) { Current = null; CurrentId = null; }
         bool barking = barks.Any(b => IsInstanceValid(b) && b.Playing);

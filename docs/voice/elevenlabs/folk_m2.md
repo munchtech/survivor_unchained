@@ -11,7 +11,7 @@ An old countryman in his seventies from the West Country of England with a creak
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Townsman, old`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, West Country). Male, 70s. Studio quality. Persona: an old West Country countryman. An old countryman in his seventies from the West Country of England with a creaky, slow voice and a broad rural accent. Wry and weary. Thick West Country accent. No reverb or effects.
+Native English (British, West Country). Male, 70s. Studio quality. Persona: an old West Country countryman. An old countryman in his seventies from the West Country of England with a creaky, slow voice and a broad rural accent. Wry and weary. Broad West Country accent. No reverb or effects.
 ```
 
 Preview text:

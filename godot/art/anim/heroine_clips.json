@@ -60,6 +60,14 @@
 		"source": "keyed (tools/anim)",
 		"weapon": "axes"
 	},
+	"bull_rush": {
+		"layer": "full",
+		"length": 1.0,
+		"licence": "own work",
+		"loop": false,
+		"note": "keyed: 0.4 s shield charge, then the plant and shove",
+		"source": "keyed (tools/anim)"
+	},
 	"cast_bolt": {
 		"contact": 0.0,
 		"layer": "upper",
@@ -89,6 +97,23 @@
 		"length": 3.46666669845581,
 		"licence": "own work",
 		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"chain_haul": {
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"note": "keyed: yanked off her feet and flown in on the chain, held",
+		"source": "keyed (tools/anim)"
+	},
+	"chain_strike": {
+		"contact": 0.0666666666666667,
+		"layer": "full",
+		"length": 0.866666674613953,
+		"licence": "own work",
+		"loop": false,
+		"note": "keyed: the haul's landing blow, two-handed",
 		"source": "keyed (tools/anim)"
 	},
 	"crossbow_shoot": {
@@ -497,6 +522,22 @@
 		"length": 0.666666686534882,
 		"licence": "own work",
 		"loop": false,
+		"source": "keyed (tools/anim)"
+	},
+	"vault": {
+		"layer": "full",
+		"length": 0.533333361148834,
+		"licence": "own work",
+		"loop": false,
+		"note": "keyed: split leap on the run, 0.32 s flight",
+		"source": "keyed (tools/anim)"
+	},
+	"vault_back": {
+		"layer": "full",
+		"length": 1.26666665077209,
+		"licence": "own work",
+		"loop": false,
+		"note": "keyed: back spring, 0.32 s flight, three-point landing",
 		"source": "keyed (tools/anim)"
 	},
 	"warcry": {

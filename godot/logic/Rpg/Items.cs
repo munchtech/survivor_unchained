@@ -54,6 +54,9 @@ public sealed class ItemDef
     /// (always, when it is not written): until then it is neither sold over
     /// a counter nor dropped. Once its part is played it is only a keepsake.</summary>
     public World.Cond? Needed;
+    /// <summary>A named piece the Waystation's hands may still work (one of their own making):
+    /// plain bases and weapons always may (docs/CRAFTING_DESIGN.md, "Which pieces can be worked").</summary>
+    public bool Workable;
 }
 
 public sealed class AffixDef
@@ -205,13 +208,13 @@ public static class Items
         Stand("of_the_censer", "of the Censer", "searing"),
         Stand("of_the_wide_field", "of the Wide Field", "expanse"),
         Stand("of_the_true_eye", "of the True Eye", "precision"),
-        Stand("of_mending", "of Mending", "recovery"),
+        Stand("of_the_root", "of the Root", "recovery"),
         Stand("of_the_ox", "of the Ox", "might"),
         Stand("of_the_evergreen", "of the Evergreen", "perennial"),
         Stand("of_the_adder", "of the Adder", "venom"),
         Stand("of_the_pack", "of the Pack", "kinship"),
         Stand("of_the_lodestone", "of the Lodestone", "conduit"),
-        Stand("of_embers", "of Embers", "emberblood"),
+        Stand("of_the_brand", "of the Brand", "emberblood"),
 
         new() { Id = "of_greed", Name = "of Greed", Prefix = false, Slots = [ItemKind.Ring, ItemKind.Amulet],
             Mods = t => [M(Stat.GoldGain, ModKind.Inc, 0.1 + t * 0.08), M(Stat.PickupRadius, ModKind.Flat, 0.5 + t * 0.3)],

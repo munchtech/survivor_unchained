@@ -60,6 +60,8 @@ public partial class Game : Node, IZoneHost
     ZoneRuntime? zone;
     Saves saves = null!;
     Interactable? near;
+    /// <summary>What the prompt is for now (the autopilot waits for the right one before it presses).</summary>
+    public string? Prompted => near?.Id;
     PromptView? promptShown;
     string? hudMode;
     readonly List<(double T, Action Fn)> later = new();
@@ -122,6 +124,7 @@ public partial class Game : Node, IZoneHost
     /// <summary>A stock survivor straight into the game (tools and tests).</summary>
     void Quick()
     {
+        quick = true;
         var arch = Args.Get("quick") is string q && q is "warden" or "reaver" or "arcanist" or "stalker" ? q : "warden";
         var a = Callings.Archetype(arch);
         Begin(new CreationChoice
@@ -172,7 +175,12 @@ public partial class Game : Node, IZoneHost
             if (Args.Get("oaths") is string oa) o.Spec.Oaths = oa.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
             if (Args.Has("tier")) o.Spec.Tier = (int)Args.Num("tier", 1);
             var at0 = Waystation.AtTable;
-            Arenas.Begin(World, Arenas.FromTable(o, "waystation", at0.X, at0.Z, at0.Facing));
+            var spec = Arenas.FromTable(o, "waystation", at0.X, at0.Z, at0.Facing);
+            // --boss DEF[:NAME]: a story's foe at the half hour (pictures of Grimtunnel, of Greymuzzle).
+            if (Args.Get("boss") is string bo) { var bp = bo.Split(':'); spec.Boss = bp[0]; if (bp.Length > 1) spec.BossName = bp[1].Replace('_', ' '); }
+            // --spare: the story lets it go (Greymuzzle spared).
+            spec.Spare = Args.Has("spare");
+            Arenas.Begin(World, spec);
         }
         if (z != "lowford")
         {
@@ -183,6 +191,8 @@ public partial class Game : Node, IZoneHost
         }
         else EnterZone(z, null, at);
         hud.Fade(0, 0.5);
+        // --cine ID: that cinematic played here at once (pictures of it, its previs).
+        if (Args.Get("cine") is string cid && cine == null) Cinematic(cid);
         Save("new");
         // --pull T: the table's first arena taken T seconds in (pictures of the pull).
         if (Args.Has("pull")) Wait(Args.Num("pull", 1), () => SetOut(SurvivorUnchained.Maps.MapOffers.Today(World.Day, 1, 0)[0]));
@@ -297,6 +307,8 @@ public partial class Game : Node, IZoneHost
     void LeaveZone()
     {
         later.Clear();
+        // A cinematic does not outlive its place.
+        if (cine != null) { var c = cine; cine = null; c.Finish(); }
         zone?.Dispose();
         zone = null;
         if (scene != null) { scene.QueueFree(); RemoveChild(scene); }
@@ -322,7 +334,7 @@ public partial class Game : Node, IZoneHost
         AddChild(scene);
         scene.Move = () => auto?.Move ?? (controls.Captured ? (0, 0) : (controls.MoveX, controls.MoveZ));
         scene.Pressed = a => (auto?.Take(a) ?? false) || (!controls.Captured && controls.Pressed(a));
-        scene.OnStep = dt => zone?.Step(dt);
+        scene.OnStep = dt => { if (cine is not { ZoneHeld: true }) zone?.Step(dt); };
         scene.OnEvents = OnEvents;
         ApplySettings();
         return scene;
@@ -518,7 +530,7 @@ public partial class Game : Node, IZoneHost
     void UpdateInteraction()
     {
         var b = Battle;
-        if (b == null || zone == null || Overlay != null || !b.Player.Alive || inTransit)
+        if (b == null || zone == null || Overlay != null || !b.Player.Alive || inTransit || cine != null)
         {
             near = null;
             if (promptShown != null) hud.Prompt(promptShown = null);
@@ -641,6 +653,7 @@ public partial class Game : Node, IZoneHost
             scene.Showcase = showNow;
         }
         scene.Update(dt);
+        CinemaFrame(dt);
         // The survivor's place on screen, for the health drawn under them; the prompt's thing; what matters off screen.
         if (Mode == "play" && Battle is { } fb2)
         {
@@ -753,7 +766,7 @@ public partial class Game : Node, IZoneHost
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
     bool hordeDone, dropsDone, castDone, giveDone, minuteDone;
-    double blastT = 0.5;
+    double blastT = 0.5, marksT = 1;
 
     void Tour(double dt)
     {
@@ -812,6 +825,23 @@ public partial class Game : Node, IZoneHost
                 if (evo.Length > 1) gb.Evolve(parts[0], evo[1]);
             }
             gb.GreatOwed = 0;
+            // --lab: the skills given and nothing else (the calling's own is put away), so a
+            // picture shows one skill at a time.
+            if (Args.Has("lab"))
+            {
+                var keep = give.Split(',').Select(w => w.Split('@')[0].Split(':')[0]).ToHashSet();
+                foreach (var w in gb.Weapons.Select(x => x.Id).ToList()) if (!keep.Contains(w)) gb.RemoveWeapon(w);
+            }
+        }
+        // --lab: no drafts and no dying, so a run of pictures is all the skill in hand.
+        if (Args.Has("lab") && Battle is { } lb)
+        {
+            lb.PendingLevels = 0;
+            lb.PendingBlessings.Clear();
+            lb.GreatOwed = 0;
+            lb.EmberXp = 0;
+            lb.EmberNext = 1e9;
+            lb.Player.Hp = lb.MaxHp;
         }
         // --blast SCHOOL[:R]: that school's burst a few paces ahead, every second and a half (pictures of it).
         if (Args.Get("blast") is string bl && Battle is { } bb && scene != null)
@@ -826,12 +856,33 @@ public partial class Game : Node, IZoneHost
                 scene.Fx.Blast(bb.Player.X + 2, bb.Player.Z - 1, school, r);
             }
         }
-        // --cast T: the art in hand used once, T seconds in (a picture of it).
+        // --marks: every telegraph the bosses use, round the survivor every four seconds, harmless
+        // and named for where it points (a picture that checks the drawing: is the cone east?).
+        if (Args.Has("marks") && Battle is { } mb)
+        {
+            marksT -= dt;
+            if (marksT <= 0)
+            {
+                marksT = 4;
+                double px = mb.Player.X, pz = mb.Player.Z;
+                Battle.EnemyBlow Mark(Battle.EnemyBlow b) { b.Delay = 3.5; return mb.Blow(b); }
+                Mark(new Battle.EnemyBlow { Shape = TelegraphShape.Cone, X = px + 2, Z = pz, Radius = 6, Angle = 0, Arc = Math.PI / 2, Label = "cone +x" });
+                Mark(new Battle.EnemyBlow { Shape = TelegraphShape.Cone, X = px - 2, Z = pz, Radius = 5, Angle = Math.PI / 2, Arc = Math.PI / 3, Label = "cone +z" });
+                Mark(new Battle.EnemyBlow { Shape = TelegraphShape.Line, X = px - 9, Z = pz - 6, X1 = px + 9, Z1 = pz - 6, Width = 2, Label = "lane" });
+                Mark(new Battle.EnemyBlow { Shape = TelegraphShape.Ring, X = px, Z = pz, Inner = 9, Radius = 11, Label = "band" });
+                Mark(new Battle.EnemyBlow { Shape = TelegraphShape.Circle, X = px - 7, Z = pz + 5, Radius = 2, Label = "blow" });
+                Mark(new Battle.EnemyBlow { Shape = TelegraphShape.Circle, Kind = TelegraphKind.Ground, X = px + 7, Z = pz + 5, Radius = 2, Label = "ground" });
+                Mark(new Battle.EnemyBlow { Shape = TelegraphShape.Circle, Kind = TelegraphKind.Safe, X = px - 7, Z = pz - 1, Radius = 2, Label = "safe" });
+                Mark(new Battle.EnemyBlow { Shape = TelegraphShape.Circle, Kind = TelegraphKind.Wall, X = px + 7, Z = pz - 1, Radius = 2, Label = "wall" });
+            }
+        }
+        // --cast T: the art in hand used once, T seconds in (a picture of it);
+        // --still: used standing, with no push (a vault then springs back).
         if (!castDone && Args.Has("cast") && Battle is { } cb && Journey.Playtime >= Args.Num("cast", 1))
         {
             castDone = true;
             cb.Aim = null;
-            cb.UseAbility(1, 0);
+            cb.UseAbility(Args.Has("still") ? 0 : 1, 0);
         }
         if (Args.Get("open") is not string want) return;
         tourT -= dt;

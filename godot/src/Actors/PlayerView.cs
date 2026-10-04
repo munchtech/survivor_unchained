@@ -172,6 +172,8 @@ public partial class PlayerView : Node3D
     }
 
     public Vector3 FigurePosition => person.Root.GlobalPosition;
+    /// <summary>Out of the picture while a cinematic's double plays her.</summary>
+    public bool Hidden;
 
     void Upper(string clip, double speed)
     {
@@ -214,6 +216,18 @@ public partial class PlayerView : Node3D
         return true;
     }
 
+    /// <summary>An art's landing or stop plays out only while she stands:
+    /// once the art is done (artTail) and she moves, it fades into her run.</summary>
+    void ArtTail(float sp)
+    {
+        if (artTail < 0 || time < artTail) return;
+        if (sp > 0.6f && (bool)tree.Get("parameters/fullShot/active"))
+            tree.Set("parameters/fullShot/request", (int)AnimationNodeOneShot.OneShotRequest.FadeOut);
+        if (sp > 0.6f || !(bool)tree.Get("parameters/fullShot/active")) artTail = -1;
+    }
+
+    double artTail = -1;
+
     bool Busy => (bool)tree.Get("parameters/upperShot/active") || (bool)tree.Get("parameters/fullShot/active");
 
     public void LevelFlare() => flare = 1;
@@ -227,7 +241,9 @@ public partial class PlayerView : Node3D
                 Upper("Spell_Simple_Shoot", 1.8);
                 break;
             case "grapple" or "grapple_miss":
-                Upper("OverhandThrow", 2.2);
+                // (Hers: the chain loosed like a thrown knife; a haul that
+                // follows plays over it.)
+                if (!UpperHer("throw", 1.6)) Upper("OverhandThrow", 2.2);
                 break;
             case "warcry" or "sprint" or "cinder_trail" or "wraith_walk":
                 if (!Busy) Upper("Punch_Cross", 1.4);
@@ -301,7 +317,8 @@ public partial class PlayerView : Node3D
         // keeps her legs' line and turns her back to the blow instead).
         aimHold -= (float)dt;
         if (p.AttackAnim is { } aa && fightTime - aa.T < 0.35 && !her) Rotation = new Vector3(0, (float)(Mathf.Pi / 2 - aa.Angle), 0);
-        else if (sp > 0.4f) Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, Mathf.Atan2((float)p.Vx, (float)p.Vz), 1 - Mathf.Exp(-14 * (float)dt)), 0);
+        // (In the air she keeps the facing she sprang with: her velocity is stale there.)
+        else if (sp > 0.4f && p.Leap == null) Rotation = new Vector3(0, Mathf.LerpAngle(Rotation.Y, Mathf.Atan2((float)p.Vx, (float)p.Vz), 1 - Mathf.Exp(-14 * (float)dt)), 0);
         // Dash: a roll (hers: a low lunge).
         if (p.DashT > 0 && !dashing)
         {
@@ -314,21 +331,43 @@ public partial class PlayerView : Node3D
         // A leap or a vault (hers are timed to the art already).
         if (p.Leap is { } l2 && l2.T < dt * 2)
         {
-            var jump = l2.Kind == Content.AbilityKind.Vault ? "Jump_Start" : "Jump_Full_Short";
-            bool own = People.Clip(person, jump).StartsWith(HerClips.Prefix);
-            Full(jump, own ? 1.0 : l2.Kind == Content.AbilityKind.Vault ? 1.8 : 1.3);
+            bool vault = l2.Kind == Content.AbilityKind.Vault;
+            float dx = (float)(l2.X1 - l2.X0), dz = (float)(l2.Z1 - l2.Z0);
+            // A vault against the way she faces (standing, she springs back
+            // from her facing) is a spring backwards, eyes on what she
+            // leaves; any other leap faces the way it goes.
+            bool back = vault && dx * Mathf.Sin(Rotation.Y) + dz * Mathf.Cos(Rotation.Y) < 0;
+            if (dx * dx + dz * dz > 0.01f) Rotation = new Vector3(0, back ? Mathf.Atan2(-dx, -dz) : Mathf.Atan2(dx, dz), 0);
+            aim = 0;
+            if (!(back && FullHer("vault_back", 1, false)))
+            {
+                var jump = vault ? "Jump_Start" : "Jump_Full_Short";
+                bool own = People.Clip(person, jump).StartsWith(HerClips.Prefix);
+                Full(jump, own ? 1.0 : vault ? 1.8 : 1.3);
+            }
+            // Once down, the landing gives way as soon as she moves on.
+            artTail = time + l2.Dur + 0.1;
         }
+        ArtTail(sp);
         // A charge behind the shield; a haul on the chain, blade first.
         if (b.Art.Rush != rushSeen)
         {
+            var was = rushSeen;
             rushSeen = b.Art.Rush;
             if (rushSeen is { } rk)
             {
                 Rotation = new Vector3(0, Mathf.Atan2((float)b.Art.RushDX, (float)b.Art.RushDZ), 0);
+                aim = 0;
                 var rush = rk == Content.AbilityKind.BullRush ? "Shield_Dash" : "Sword_Dash";
                 bool own = People.Clip(person, rush).StartsWith(HerClips.Prefix);
                 Full(rush, own ? 1.0 : rk == Content.AbilityKind.BullRush ? 1.5 : 2.2);
+                // Her charge's plant and shove show, then give way if she runs on.
+                if (rk == Content.AbilityKind.BullRush) artTail = time + b.Art.RushT + 0.25;
             }
+            // Hauled all the way in: the blow she lands with (hers held in
+            // the air until now, for however long the haul took).
+            else if (was == Content.AbilityKind.Grapple && FullHer("chain_strike", 1, false))
+                artTail = time + 0.3;
         }
         // Weapon swings: the blade drives the arm. Hers alternate as the
         // arcs do (the first from her left), the wide arcs her heavy cut.
@@ -375,7 +414,7 @@ public partial class PlayerView : Node3D
         Light.OmniRange = (float)((11 + flare * 6) * b.Stats.Get(Stat.LightRadius) * b.Rules.Light);
         Light.Position = new Vector3(0, 2.4f, 0.4f);
         // Unseen: a ghost, flickering.
-        Visible = !(p.InvisibleT > 0 && (int)(time * 12) % 3 == 0);
+        Visible = !Hidden && !(p.InvisibleT > 0 && (int)(time * 12) % 3 == 0);
     }
 
     /// <summary>When nothing is near: a breath caught after a long run, and

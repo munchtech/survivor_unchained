@@ -1,6 +1,6 @@
 # Redcowl: ElevenLabs packet
 
-Voice id in the game: `redcowl`. 43 takes to record (3,881 characters; about 11,643 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `redcowl`. 40 takes to record (3,806 characters; about 11,418 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -11,7 +11,7 @@ Voice id in the game: `redcowl`. 43 takes to record (3,881 characters; about 11,
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Redcowl`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, Scottish). Male, 40s. Studio quality. Persona: a bandit chief. A big, burly bandit chief in his forties with a deep, booming chest voice and a hard, broad Scottish accent. He laughs loud and easy, then turns cold and dangerous in the same breath. Commanding and rough. Thick Scottish accent. No reverb or effects.
+Native English (British, Scottish). Male, 40s. Studio quality. Persona: a bandit chief. A big, burly bandit chief in his forties with a deep, booming chest voice and a hard, broad Scottish accent. He laughs loud and easy, then turns cold and dangerous in the same breath. Commanding and rough. Broad Scottish accent. No reverb or effects.
 ```
 
 Preview text:
@@ -67,29 +67,18 @@ Subtitle: Ha! HA. At night, lass. With my bairns asleep behind me. ...Mind where
 ```
 Subtitle: Ha! HA. At night, lad. With my bairns asleep behind me. ...Mind where you swing.
 
-### 3. `dlg.cin_raid_on_the_roost.last.0.p0.wav`
+### 3. `dlg.cin_raid_on_the_roost.last.0.wav`
 
-*Where:* dialogue.json cin_raid_on_the_roost/last#0; part 1 of 3: **redcowl: ...Ashford.** / narrator: a laugh / redcowl: There. Now we've both said it.
+*Where:* dialogue.json cin_raid_on_the_roost/last#0
 *Played:* dying, bitter amusement; doing: he says Ashford; pace: slow; volume: quiet.
 *Note:* Breath failing. Narrator: a laugh. 'Now we've both said it.'
 
 ```
-[dying, bitter amusement, quietly] ...Ashford.
+[dying, bitter amusement, quietly] ...Ashford. [laughs] There. Now we've both said it.
 ```
-Subtitle: ...Ashford.
+Subtitle: ...Ashford. There. Now we've both said it.
 
-### 4. `dlg.cin_raid_on_the_roost.last.0.p2.wav`
-
-*Where:* dialogue.json cin_raid_on_the_roost/last#0; part 3 of 3: redcowl: ...Ashford. / narrator: a laugh / **redcowl: There. Now we've both said it.**
-*Played:* dying, bitter amusement; doing: he says Ashford; pace: slow; volume: quiet.
-*Note:* Breath failing. Narrator: a laugh. 'Now we've both said it.'
-
-```
-[dying, bitter amusement, quietly] There. Now we've both said it.
-```
-Subtitle: There. Now we've both said it.
-
-### 5. `dlg.cin_raid_on_the_roost.last.1.wav`
+### 4. `dlg.cin_raid_on_the_roost.last.1.wav`
 
 *Where:* dialogue.json cin_raid_on_the_roost/last#1
 *Played:* dying, tender; doing: a message for Rav; pace: very slow; volume: hushed.
@@ -102,7 +91,7 @@ Subtitle: Tell the saw-bones... the leg held.
 
 ## Conversations: Redcowl
 
-### 6. `dlg.redcowl.first.0.p1.wav`
+### 5. `dlg.redcowl.first.0.p1.wav`
 
 *Where:* dialogue.json redcowl/first#0; part 2 of 2: narrator: Every crossbow in the camp is on you, and nobody's laughing. / **redcowl: You're the one who's been putting my lads in the ground. Redcowl. Talk, and talk slow.**
 *Played:* cold menace; doing: faces the killer of his men; pace: slow; volume: level.
@@ -114,7 +103,7 @@ Subtitle: Tell the saw-bones... the leg held.
 ```
 Subtitle: You're the one who's been putting my lads in the ground. Redcowl. Talk, and talk slow.
 
-### 7. `dlg.redcowl.first.1.wav`
+### 6. `dlg.redcowl.first.1.wav`
 
 *Where:* dialogue.json redcowl/first#1
 *Played:* amused suspicion; doing: sizes up the red-wearer; pace: measured; volume: level.
@@ -125,7 +114,7 @@ Subtitle: You're the one who's been putting my lads in the ground. Redcowl. Talk
 ```
 Subtitle: Look at the colours on you. You're not one of mine, and you're not daft enough to be one of Holloway's. Redcowl. You're standing in my Roost. Talk.
 
-### 8. `dlg.redcowl.first.2.wav`
+### 7. `dlg.redcowl.first.2.wav`
 
 *Where:* dialogue.json redcowl/first#2
 *Played:* wary humour, threat; doing: warns a mage; pace: measured; volume: level.
@@ -136,7 +125,7 @@ Subtitle: Look at the colours on you. You're not one of mine, and you're not daf
 ```
 Subtitle: Keep your hands where I can see them, and keep them cold. The last spark-thrower in here set fire to my tent. Redcowl. You're in my camp. Talk.
 
-### 9. `dlg.redcowl.first.3.wav`
+### 8. `dlg.redcowl.first.3.wav`
 
 *Where:* dialogue.json redcowl/first#3
 *Played:* boisterous, then warning; doing: admires a big fighter; pace: measured; volume: raised.
@@ -147,7 +136,7 @@ Subtitle: Keep your hands where I can see them, and keep them cold. The last spa
 ```
 Subtitle: Ha! Look at the size of you. I've a dozen lads would follow you for the fun of it; don't make me find out which dozen. Redcowl. You're in my camp. Talk.
 
-### 10. `dlg.redcowl.first.4.wav`
+### 9. `dlg.redcowl.first.4.wav`
 
 *Where:* dialogue.json redcowl/first#4
 *Played:* rough humour, protective threat; doing: a woman in his camp; pace: measured; volume: level.
@@ -158,7 +147,7 @@ Subtitle: Ha! Look at the size of you. I've a dozen lads would follow you for th
 ```
 Subtitle: Redcowl. You're standing in my camp, which means my sentries are drunk or you're interesting. Which is it?
 
-### 11. `dlg.redcowl.hub.0.wav`
+### 10. `dlg.redcowl.hub.0.wav`
 
 *Where:* dialogue.json redcowl/hub#0
 *Played:* gruff amusement; doing: still here; pace: measured; volume: level.
@@ -169,7 +158,7 @@ Subtitle: Redcowl. You're standing in my camp, which means my sentries are drunk
 ```
 Subtitle: Still here? Ha. Talk, then.
 
-### 12. `dlg.redcowl.who.0.wav`
+### 11. `dlg.redcowl.who.0.wav`
 
 *Where:* dialogue.json redcowl/who#0
 *Played:* pride, then bitterness, then cover; doing: his people; pace: measured; volume: level.
@@ -180,7 +169,7 @@ Subtitle: Still here? Ha. Talk, then.
 ```
 Subtitle: Mine. Forty-one mouths, and a dozen of them can hold a blade. The rest are what's left when a town goes into the ground and the Watch counts its boots and goes home. ...Ha! Listen to me. Talk or bleed, I said. Talk.
 
-### 13. `dlg.redcowl.rav.0.wav`
+### 12. `dlg.redcowl.rav.0.wav`
 
 *Where:* dialogue.json redcowl/rav#0
 *Played:* roaring laughter, then business; doing: the password works; pace: measured; volume: raised.
@@ -191,7 +180,7 @@ Subtitle: Mine. Forty-one mouths, and a dozen of them can hold a blade. The rest
 ```
 Subtitle: Ha! HA. That old saw-bones. He does too, and he knows it. All right. Rav's friends get to talk before they get shot. So: talk.
 
-### 14. `dlg.redcowl.goods.0.wav`
+### 13. `dlg.redcowl.goods.0.wav`
 
 *Where:* dialogue.json redcowl/goods#0
 *Played:* businesslike, cheerful; doing: names his price; pace: measured; volume: level.
@@ -202,7 +191,7 @@ Subtitle: Ha! HA. That old saw-bones. He does too, and he knows it. All right. R
 ```
 Subtitle: The wagons are salvage, and salvage is mine. You want the strongbox, you buy it. A hundred gold and I'll throw in the teamsters, since they eat more than they're worth.
 
-### 15. `dlg.redcowl.deal.0.wav`
+### 14. `dlg.redcowl.deal.0.wav`
 
 *Where:* dialogue.json redcowl/deal#0
 *Played:* satisfied, then warning; doing: deal done; pace: measured; volume: level.
@@ -213,7 +202,7 @@ Subtitle: The wagons are salvage, and salvage is mine. You want the strongbox, y
 ```
 Subtitle: Pleasure. Box is by the tents; the teamsters are in the cages. Open them yourself; my lads won't stop you. And if Holloway asks, you've never seen my face.
 
-### 16. `dlg.redcowl.favour.0.wav`
+### 15. `dlg.redcowl.favour.0.wav`
 
 *Where:* dialogue.json redcowl/favour#0
 *Played:* grudging; doing: a favour for a favour; pace: measured; volume: level.
@@ -224,7 +213,7 @@ Subtitle: Pleasure. Box is by the tents; the teamsters are in the cages. Open th
 ```
 Subtitle: Is it, now. The howling's been keeping my lot up nights, I'll admit. ...Fine. The teamsters, for the favour. The box you still pay for. Fifty, for a friend.
 
-### 17. `dlg.redcowl.prisoners.0.wav`
+### 16. `dlg.redcowl.prisoners.0.wav`
 
 *Where:* dialogue.json redcowl/prisoners#0
 *Played:* dry, mocking; doing: names the price; pace: measured; volume: level.
@@ -235,7 +224,7 @@ Subtitle: Is it, now. The howling's been keeping my lot up nights, I'll admit. .
 ```
 Subtitle: The teamsters? They eat my food and pray a great deal. Fifty for their keep and they're yours.
 
-### 18. `dlg.redcowl.released.0.wav`
+### 17. `dlg.redcowl.released.0.wav`
 
 *Where:* dialogue.json redcowl/released#0
 *Played:* amused; doing: go ahead; pace: measured; volume: level.
@@ -246,7 +235,7 @@ Subtitle: The teamsters? They eat my food and pray a great deal. Fifty for their
 ```
 Subtitle: Cages are over there. Mind the one on the end; he bites.
 
-### 19. `dlg.redcowl.pell.0.wav`
+### 18. `dlg.redcowl.pell.0.wav`
 
 *Where:* dialogue.json redcowl/pell#0
 *Played:* rising fury; doing: Pell sold him out; pace: quick; volume: raised.
@@ -257,9 +246,9 @@ Subtitle: Cages are over there. Mind the one on the end; he bites.
 ```
 Subtitle: ...Give me that. "R., for the Coyle job." And to the clerk. And— "tell Holloway where they camp, after." After! Varrow, you soft-handed little— Take your wagons. Take your teamsters. I've business in the Waystation.
 
-### 20. `dlg.redcowl.trick.0.p0.wav`
+### 19. `dlg.redcowl.trick.0.p0.wav`
 
-*Where:* dialogue.json redcowl/trick#0; part 1 of 3: **redcowl: The Watch. Holloway hasn't got the men to—** / narrator: a whistle, from the ridge; the whole camp stops / redcowl: —PACK IT UP! PACK IT UP! Leave the heavy stuff!
+*Where:* dialogue.json redcowl/trick#0; part 1 of 3: **redcowl: The Watch. Holloway hasn't got the men to—** / narrator: A whistle from the ridge. The whole camp stops. / redcowl: —PACK IT UP! PACK IT UP! Leave the heavy stuff!
 *Played:* scorn, then panic; doing: the Watch is coming; pace: quick; volume: shout.
 *Note:* Scornful start, cut off by the narrator: the whistle, the camp stops. Then bellowing orders: 'PACK IT UP! PACK IT UP!'
 
@@ -268,9 +257,9 @@ Subtitle: ...Give me that. "R., for the Coyle job." And to the clerk. And— "te
 ```
 Subtitle: The Watch. Holloway hasn't got the men to—
 
-### 21. `dlg.redcowl.trick.0.p2.wav`
+### 20. `dlg.redcowl.trick.0.p2.wav`
 
-*Where:* dialogue.json redcowl/trick#0; part 3 of 3: redcowl: The Watch. Holloway hasn't got the men to— / narrator: a whistle, from the ridge; the whole camp stops / **redcowl: —PACK IT UP! PACK IT UP! Leave the heavy stuff!**
+*Where:* dialogue.json redcowl/trick#0; part 3 of 3: redcowl: The Watch. Holloway hasn't got the men to— / narrator: A whistle from the ridge. The whole camp stops. / **redcowl: —PACK IT UP! PACK IT UP! Leave the heavy stuff!**
 *Played:* scorn, then panic; doing: the Watch is coming; pace: quick; volume: shout.
 *Note:* Scornful start, cut off by the narrator: the whistle, the camp stops. Then bellowing orders: 'PACK IT UP! PACK IT UP!'
 
@@ -279,7 +268,7 @@ Subtitle: The Watch. Holloway hasn't got the men to—
 ```
 Subtitle: —PACK IT UP! PACK IT UP! Leave the heavy stuff!
 
-### 22. `dlg.redcowl.cages.0.wav`
+### 21. `dlg.redcowl.cages.0.wav`
 
 *Where:* dialogue.json redcowl/cages#0
 *Played:* hard logic, then hurt; doing: why the cages; pace: measured; volume: level.
@@ -290,7 +279,7 @@ Subtitle: —PACK IT UP! PACK IT UP! Leave the heavy stuff!
 ```
 Subtitle: Because a man in a cage is worth something to somebody, and a man in a ditch is worth nothing to anybody. I've buried enough worth-nothings for one life, lass. ...Ask them if they're hungry.
 
-### 23. `dlg.redcowl.cages.1.wav`
+### 22. `dlg.redcowl.cages.1.wav`
 
 *Where:* dialogue.json redcowl/cages#1
 *Played:* hard logic, then hurt; doing: why the cages; pace: measured; volume: level.
@@ -301,7 +290,7 @@ Subtitle: Because a man in a cage is worth something to somebody, and a man in a
 ```
 Subtitle: Because a man in a cage is worth something to somebody, and a man in a ditch is worth nothing to anybody. I've buried enough worth-nothings for one life, lad. ...Ask them if they're hungry.
 
-### 24. `dlg.redcowl.wagons.0.wav`
+### 23. `dlg.redcowl.wagons.0.wav`
 
 *Where:* dialogue.json redcowl/wagons#0
 *Played:* mocking; doing: salvage; pace: measured; volume: level.
@@ -312,7 +301,7 @@ Subtitle: Because a man in a cage is worth something to somebody, and a man in a
 ```
 Subtitle: Ha! Salvage, is what they are. Some merchant up at the Waystation painted his name on every board of them, so the road'd know who to thank. Coyle. The road knows now. ...You'll be wanting them. Everyone does, once they've seen them.
 
-### 25. `dlg.redcowl.crates.0.wav`
+### 24. `dlg.redcowl.crates.0.wav`
 
 *Where:* dialogue.json redcowl/crates#0
 *Played:* comic, uneasy; doing: the crates; pace: measured; volume: level.
@@ -323,7 +312,7 @@ Subtitle: Ha! Salvage, is what they are. Some merchant up at the Waystation pain
 ```
 Subtitle: Salvage. Heavy salvage. My lads were using them for seats, till one of them dropped one and we all stood very still and listened to it think about it.
 
-### 26. `dlg.redcowl.crates_dig.0.p1.wav`
+### 25. `dlg.redcowl.crates_dig.0.p1.wav`
 
 *Where:* dialogue.json redcowl/crates_dig#0; part 2 of 4: narrator: He doesn't laugh. / **redcowl: The hill.** / narrator: He looks north-east, past the ravine wall, at nothing you can see. / redcowl: The one that's been knocking at night. ...How deep are they going?
 *Played:* sudden gravity; doing: the crates are for the hill; pace: slow; volume: quiet.
@@ -334,7 +323,7 @@ Subtitle: Salvage. Heavy salvage. My lads were using them for seats, till one of
 ```
 Subtitle: The hill.
 
-### 27. `dlg.redcowl.crates_dig.0.p3.wav`
+### 26. `dlg.redcowl.crates_dig.0.p3.wav`
 
 *Where:* dialogue.json redcowl/crates_dig#0; part 4 of 4: narrator: He doesn't laugh. / redcowl: The hill. / narrator: He looks north-east, past the ravine wall, at nothing you can see. / **redcowl: The one that's been knocking at night. ...How deep are they going?**
 *Played:* sudden gravity; doing: the crates are for the hill; pace: slow; volume: quiet.
@@ -345,7 +334,7 @@ Subtitle: The hill.
 ```
 Subtitle: The one that's been knocking at night. ...How deep are they going?
 
-### 28. `dlg.redcowl.crates_keep.0.p0.wav`
+### 27. `dlg.redcowl.crates_keep.0.p0.wav`
 
 *Where:* dialogue.json redcowl/crates_keep#0; part 1 of 3: **redcowl: Then nobody's having them. Not the hole in the hill. Not Holloway. Not your merchant, and …** / narrator: A laugh, but not the big one. / redcowl: Guarding crates. My mother'd laugh herself sick.
 *Played:* grim resolve, rueful; doing: he'll guard them; pace: measured; volume: level.
@@ -356,7 +345,7 @@ Subtitle: The one that's been knocking at night. ...How deep are they going?
 ```
 Subtitle: Then nobody's having them. Not the hole in the hill. Not Holloway. Not your merchant, and not the soft-handed little man that sold them twice. They stay with me.
 
-### 29. `dlg.redcowl.crates_keep.0.p2.wav`
+### 28. `dlg.redcowl.crates_keep.0.p2.wav`
 
 *Where:* dialogue.json redcowl/crates_keep#0; part 3 of 3: redcowl: Then nobody's having them. Not the hole in the hill. Not Holloway. Not your merchant, and … / narrator: A laugh, but not the big one. / **redcowl: Guarding crates. My mother'd laugh herself sick.**
 *Played:* grim resolve, rueful; doing: he'll guard them; pace: measured; volume: level.
@@ -367,7 +356,7 @@ Subtitle: Then nobody's having them. Not the hole in the hill. Not Holloway. Not
 ```
 Subtitle: Guarding crates. My mother'd laugh herself sick.
 
-### 30. `dlg.redcowl.crates_charge.0.p1.wav`
+### 29. `dlg.redcowl.crates_charge.0.p1.wav`
 
 *Where:* dialogue.json redcowl/crates_charge#0; part 2 of 2: narrator: He looks at you a long while. Then he whistles, and a lad brings one over, walking like he… / **redcowl: Take it. Put it where it'll do the most harm to the right people. And run.**
 *Played:* grave trust; doing: gives you a charge; pace: slow; volume: quiet.
@@ -378,8 +367,9 @@ Subtitle: Guarding crates. My mother'd laugh herself sick.
 ```
 Subtitle: Take it. Put it where it'll do the most harm to the right people. And run.
 
-### 31. `dlg.redcowl.birds.0.p0.wav`
+### 30. `dlg.redcowl.birds.0.p0.wav`
 
+*The same words are also* `dlg.redcowl.birds.1.p0.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json redcowl/birds#0; part 1 of 3: **redcowl: Ha! A little bird. Sings for its drink, and sews a fair seam when it's sober.** / narrator: The laugh stops. / redcowl: Birds don't have names, lass. Not in my camp.
 *Played:* jovial, then cold; doing: won't name the informer; pace: measured; volume: level.
 *Note:* Fond riddle about the little bird (his brother). Narrator: the laugh stops. Cold and final, 'lass'.
@@ -389,7 +379,7 @@ Subtitle: Take it. Put it where it'll do the most harm to the right people. And 
 ```
 Subtitle: Ha! A little bird. Sings for its drink, and sews a fair seam when it's sober.
 
-### 32. `dlg.redcowl.birds.0.p2.wav`
+### 31. `dlg.redcowl.birds.0.p2.wav`
 
 *Where:* dialogue.json redcowl/birds#0; part 3 of 3: redcowl: Ha! A little bird. Sings for its drink, and sews a fair seam when it's sober. / narrator: The laugh stops. / **redcowl: Birds don't have names, lass. Not in my camp.**
 *Played:* jovial, then cold; doing: won't name the informer; pace: measured; volume: level.
@@ -400,18 +390,7 @@ Subtitle: Ha! A little bird. Sings for its drink, and sews a fair seam when it's
 ```
 Subtitle: Birds don't have names, lass. Not in my camp.
 
-### 33. `dlg.redcowl.birds.1.p0.wav`
-
-*Where:* dialogue.json redcowl/birds#1; part 1 of 3: **redcowl: Ha! A little bird. Sings for its drink, and sews a fair seam when it's sober.** / narrator: The laugh stops. / redcowl: Birds don't have names, lad. Not in my camp.
-*Played:* jovial, then cold; doing: won't name the informer; pace: measured; volume: level.
-*Note:* As birds.0, with 'lad'.
-
-```
-[jovial, then cold] Ha! A little bird. Sings for its drink, and sews a fair seam when it's sober.
-```
-Subtitle: Ha! A little bird. Sings for its drink, and sews a fair seam when it's sober.
-
-### 34. `dlg.redcowl.birds.1.p2.wav`
+### 32. `dlg.redcowl.birds.1.p2.wav`
 
 *Where:* dialogue.json redcowl/birds#1; part 3 of 3: redcowl: Ha! A little bird. Sings for its drink, and sews a fair seam when it's sober. / narrator: The laugh stops. / **redcowl: Birds don't have names, lad. Not in my camp.**
 *Played:* jovial, then cold; doing: won't name the informer; pace: measured; volume: level.
@@ -422,29 +401,18 @@ Subtitle: Ha! A little bird. Sings for its drink, and sews a fair seam when it's
 ```
 Subtitle: Birds don't have names, lad. Not in my camp.
 
-### 35. `dlg.redcowl.ashford.0.p1.wav`
+### 33. `dlg.redcowl.ashford.0.p1.wav`
 
-*Where:* dialogue.json redcowl/ashford#0; part 2 of 4: narrator: The laugh goes out of him like a lamp. / **redcowl: Don't.** / narrator: Quiet. / redcowl: You get to say that once in my camp. You've said it.
+*Where:* dialogue.json redcowl/ashford#0; part 2 of 2: narrator: The laugh goes out of him like a lamp. / **redcowl: Don't. You get to say that once in my camp. You've said it.**
 *Played:* cold, dangerous grief; doing: never say that name; pace: slow; volume: quiet.
 *Note:* Narrator: the laugh goes out of him. 'Don't.' Narrator: quiet. The warning, very quiet and very dangerous.
 
 ```
-[cold, dangerous grief, quietly] Don't.
+[cold, dangerous grief, quietly] Don't. [quietly] You get to say that once in my camp. You've said it.
 ```
-Subtitle: Don't.
+Subtitle: Don't. You get to say that once in my camp. You've said it.
 
-### 36. `dlg.redcowl.ashford.0.p3.wav`
-
-*Where:* dialogue.json redcowl/ashford#0; part 4 of 4: narrator: The laugh goes out of him like a lamp. / redcowl: Don't. / narrator: Quiet. / **redcowl: You get to say that once in my camp. You've said it.**
-*Played:* cold, dangerous grief; doing: never say that name; pace: slow; volume: quiet.
-*Note:* Narrator: the laugh goes out of him. 'Don't.' Narrator: quiet. The warning, very quiet and very dangerous.
-
-```
-[cold, dangerous grief, quietly] You get to say that once in my camp. You've said it.
-```
-Subtitle: You get to say that once in my camp. You've said it.
-
-### 37. `dlg.redcowl.pell_given.0.p0.wav`
+### 34. `dlg.redcowl.pell_given.0.p0.wav`
 
 *Where:* dialogue.json redcowl/pell_given#0; part 1 of 3: **redcowl: Ha! Somebody who knows where the rats sleep.** / narrator: He's already shouting for boots. / redcowl: Go home. Stay off the square tonight.
 *Played:* gleeful vengeance; doing: now he knows where Pell sleeps; pace: quick; volume: raised.
@@ -455,7 +423,7 @@ Subtitle: You get to say that once in my camp. You've said it.
 ```
 Subtitle: Ha! Somebody who knows where the rats sleep.
 
-### 38. `dlg.redcowl.pell_given.0.p2.wav`
+### 35. `dlg.redcowl.pell_given.0.p2.wav`
 
 *Where:* dialogue.json redcowl/pell_given#0; part 3 of 3: redcowl: Ha! Somebody who knows where the rats sleep. / narrator: He's already shouting for boots. / **redcowl: Go home. Stay off the square tonight.**
 *Played:* gleeful vengeance; doing: now he knows where Pell sleeps; pace: quick; volume: raised.
@@ -466,7 +434,7 @@ Subtitle: Ha! Somebody who knows where the rats sleep.
 ```
 Subtitle: Go home. Stay off the square tonight.
 
-### 39. `dlg.redcowl.pell_hunt.0.wav`
+### 36. `dlg.redcowl.pell_hunt.0.wav`
 
 *Where:* dialogue.json redcowl/pell_hunt#0
 *Played:* cold certainty; doing: he'll find Pell; pace: measured; volume: level.
@@ -479,7 +447,7 @@ Subtitle: I'll find him. Men like Varrow leave a smell of ink wherever they go.
 
 ## Said in passing
 
-### 40. `bark.redcowl.day.0.wav`
+### 37. `bark.redcowl.day.0.wav`
 
 *Where:* npcs.json redcowl.barks[0]
 *Played:* gruff; pace: measured; volume: level.
@@ -489,7 +457,7 @@ Subtitle: I'll find him. Men like Varrow leave a smell of ink wherever they go.
 ```
 Subtitle: Keep walking.
 
-### 41. `bark.redcowl.day.1.wav`
+### 38. `bark.redcowl.day.1.wav`
 
 *Where:* npcs.json redcowl.barks[1]
 *Played:* gruff; pace: measured; volume: level.
@@ -499,7 +467,7 @@ Subtitle: Keep walking.
 ```
 Subtitle: Salvage is salvage.
 
-### 42. `bark.redcowl.day.2.wav`
+### 39. `bark.redcowl.day.2.wav`
 
 *Where:* npcs.json redcowl.barks[2]
 *Played:* threat; pace: measured; volume: level.
@@ -509,7 +477,7 @@ Subtitle: Salvage is salvage.
 ```
 Subtitle: Talk or bleed. Your choice.
 
-### 43. `bark.redcowl.day.3.wav`
+### 40. `bark.redcowl.day.3.wav`
 
 *Where:* npcs.json redcowl.barks[3]
 *Played:* dark humour; pace: measured; volume: level.

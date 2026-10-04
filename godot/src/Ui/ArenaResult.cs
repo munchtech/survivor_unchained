@@ -77,6 +77,10 @@ public partial class ArenaResultScreen : Overlay
         var outv = Style.V(8, new Section("What you take out"));
         outv.AddChild(Line("book", $"{r.Xp:N0} experience" + (r.LevelsGained > 0 ? $"  ·  you are level {G.Journey.Ch.Level} now" : ""), r.LevelsGained > 0 ? Style.Good : Style.Ink));
         if (r.Gold > 0) outv.AddChild(Line("coin", $"{r.Gold:N0} gold", Style.GoldHi));
+        // What the night left in the fist, for the Waystation's hands; on a fall, what spilled.
+        static string Stack(System.Collections.Generic.Dictionary<string, int> d) => string.Join(", ", d.Select(kv => $"{kv.Value} {(Rpg.Items.Find(kv.Key)?.Name ?? kv.Key).ToLowerInvariant()}"));
+        if (r.Carried.Count > 0) outv.AddChild(Line("embers", $"Carried out: {Stack(r.Carried)}", Style.EmberHi));
+        if (r.Spilled.Count > 0) outv.AddChild(Line("embers", $"Spilled when you fell: {Stack(r.Spilled)}", Style.InkDim));
         // A tome won is the survivor's to write: one of what burned here.
         if (r.Inscribed is { } tome) outv.AddChild(Line("book", $"A tome: {Weapons.All[tome].Name}", new Color("#b8a8d8")));
         else if (r.TomeChoices.Count > 0)

@@ -667,7 +667,7 @@ SPEC = {
     # (the linen scan is blue, about (145, 171, 205): these two are tinted from
     # it to a colour, warm ivory and a light saddle brown)
     "bone": ("rough_linen", (1.376, 1.099, 0.779), 183, 12, 0.0, 0.5),
-    "browncloth": ("rough_linen", (0.564, 0.374, 0.224), 64, 18, 0.0, 0.8),
+    "browncloth": ("rough_linen", (0.523, 0.316, 0.204), 57, 18, 0.0, 0.8),
     "forestleather": ("Leather026", (0.42, 0.66, 0.42), 40, 3, 0.0, None),
     "thread": ("rough_linen", (1.349, 1.034, 0.682), 170, 60, 0.0, 0.5),
 }
@@ -783,7 +783,7 @@ def tube(name, curve, nrm, outward, mkey, width, height, overhang, thick, src_po
         tris = tris[:, ::-1]
     _, j = cKDTree(src_pos).query(pts)
     obj = finish(name, pts, src_wt[j], tris, mkey, 0.0, 0.0, 10 ** 7)
-    obj["hides"] = True
+    obj["hides"] = False
     return obj
 
 
@@ -1538,7 +1538,7 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     # `cut`, a second field, trims the piece after it is shaped: a cup
     # keeps the shape of the full cup however low it is cut.
     attr = np.hstack([N, W, (hull if hull is not None else -np.ones(len(P)))[:, None],
-                      (cut if cut is not None else np.ones(len(P)))[:, None], f[:, None]])
+                      (cut if (cut is not None and not callable(cut)) else np.ones(len(P)))[:, None], f[:, None]])
     # A garment crossing her crotch is cut off just in front of and just
     # behind the slot between her thighs (`gap` is how far a point is out
     # of that box), and the two cut edges joined by a strip under her.
@@ -1568,6 +1568,8 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
         at[:, -1] = edge
         pos, at, tris = mirrored(pos, at, tris)
     if cut is not None:
+        if callable(cut):
+            at[:, -2] = cut(pos)
         at[:, -1] = np.minimum(at[:, -1], at[:, -2])
         cut_done = True
         pos, at, tris = clip(at[:, -2], pos, at, tris)
@@ -2464,7 +2466,20 @@ def arcanist():
                        [0.0, nx_ * 0.42, nx_ * 0.62, 0.05])
     plunge = np.where(FRONT > 0.5, np.abs(X) - v_half, 1.0)
     plunge = np.where(Z < v_lo, 1.0, plunge)
-    corset = AND(neck_top - Z, OR(Z - 1.13, leotard), sleeve("l"), sleeve("r"), plunge)
+    # Its leg lines and plunge are cut exactly once it is shaped (cut on her
+    # skin and then smoothed, they wandered); her skin's field is left a
+    # little wider there, so the exact lines decide.
+    corset = AND(neck_top - Z, OR(Z - 1.13, leotard + 0.02), sleeve("l"), sleeve("r"), plunge + 0.02)
+
+    def exact(q):
+        qx, qy, qz = q[:, 0], q[:, 1], q[:, 2]
+        fr = ramp(-(qy - CROTCH_Y), -0.03, 0.03)
+        r = qz - CROTCH
+        wq = (0.0095 + 0.42 * np.maximum(r, 0)) * fr + (-0.01 + 1.5 * np.maximum(r - 0.13, 0)) * (1 - fr)
+        legs = np.maximum(qz - 1.13, wq - np.abs(qx))
+        vh = np.interp(qz, [v_lo, (NIPPLE["r"][2] + v_lo) / 2, NIPPLE["r"][2] + 0.03, v_hi], [0.0, nx_ * 0.42, nx_ * 0.62, 0.05])
+        pl = np.where((fr > 0.5) & (qz >= v_lo), np.abs(qx) - vh, 1.0)
+        return np.minimum(legs, pl)
     belt_z = 1.0 + 0.035 * X / 0.18
     belt = AND(0.016 - np.abs(Z - belt_z), 0.3 - arms)
     bones = OR(*[front_line(x, UNDERBUST - 0.022, x * 0.8, 1.025 - 0.025 * (abs(x) < 0.05), 0.009)
@@ -2480,7 +2495,7 @@ def arcanist():
         *ribbon("arcanist.thong", back_string(CROTCH + 0.155, CROTCH + 0.012), 0.016, "plumleather", lift=0.003, thick=0.003,
                trim=gold(0.004), snap=False),
         *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, iron=60, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80,
-               bridge=True),
+               bridge=True, cut=exact),
         *piece("arcanist.choker", choker, "blackleather", lift=0.002, soften=0, keep_off=("Head",)),
         *witch_hat("arcanist.hat", "plumleather", "darkpurple"),
     ]
@@ -2566,7 +2581,7 @@ def ranger():
     # (between her legs a narrow strip, a little wider in front; behind, a
     # thong down her cleft)
     strip = (0.012 + 0.3 * rise) * FRONT + np.minimum(0.008 + 0.07 * rise, 0.018) * (1 - FRONT) - ax_
-    legs = OR(np.where(X < 0, right, Z - edge_l), strip)
+    legs = OR(np.where(X < 0, right + 0.03, Z - edge_l), strip)
     # (her breasts always held; elsewhere never her arm, the cut eased so it
     # can never be ragged)
     not_arms = np.where(wsum("breast_l", "breast_r") > 0.03, 1.0, smooth_field(0.5 - arms, 30))
@@ -2578,7 +2593,24 @@ def ranger():
     # under her breasts.
     lace_top, lace_bot = UNDERBUST - 0.008, CROTCH + 0.118
     half = 0.011
-    gap = np.where((Z < lace_top + 0.018) & (Z > lace_bot - 0.045) & (FRONT > 0.5), ax_ - half, 1.0)
+    def exact(q):
+        # In front, one straight line from just shy of her crotch to beside
+        # her abs, curving out round her side under her breast. Behind, beside
+        # her spine and on a diagonal to her side; the thong between her legs.
+        # And the lace opening's two straight sides.
+        qx, qy, qz = q[:, 0], q[:, 1], q[:, 2]
+        fr = ramp(-(qy - CROTCH_Y), -0.03, 0.03)
+        r = qz - CROTCH
+        reach = np.where(r < 0, 0.012 + 0.004 * np.clip(r / 0.035 + 1, 0, 1),
+                         0.016 + 0.056 * np.clip(r, 0, None) / 0.24 + 0.13 * (np.clip(r - 0.31, 0, None) / 0.09) ** 2)
+        u = np.clip(-qx / 0.13, 0, 1)
+        side = (qx + reach) * fr + (r - (0.31 + 0.095 * u ** 0.9)) * (1 - fr)
+        rq = np.maximum(r, 0)
+        thong = (0.012 + 0.3 * rq) * fr + np.minimum(0.008 + 0.07 * rq, 0.018) * (1 - fr) - np.abs(qx)
+        right_q = np.where(qx < 0, np.maximum(side, thong), 1.0)
+        slot = np.where((qz < lace_top + 0.018) & (qz > lace_bot - 0.045) & (fr > 0.5), np.abs(qx) - half, 1.0)
+        return np.minimum(right_q, slot)
+
     corset = body
     lift, thick = 0.0035, 0.003
     rows = np.linspace(lace_top - 0.012, lace_bot + 0.012, 9)
@@ -2658,7 +2690,7 @@ def ranger():
     pant = AND(X - 0.004, (edge_l + 0.03) - Z, (tops["l"] + 0.06) - LEG_S["l"], 0.3 - ARMW["l"])
     out = [
         *piece("ranger.corset", corset, "forestleather", lift=lift, thick=thick, smooth=8, iron=60, soften=20, slot="right",
-               trim=edge(0.006), filled=True, keep_off=("Head", "neck_01"), edge=6, cut=gap),
+               trim=edge(0.006), filled=True, keep_off=("Head", "neck_01"), edge=6, cut=exact),
         *grommets("ranger.eyelets", eye[1] + eye[-1], enrm[1] + enrm[-1], "bronze"),
         *laces,
         *girdle("ranger.belt", belt_z, 0.042, "brownleather", lift=belt_lift, thick=0.004),
@@ -3084,7 +3116,7 @@ OUTFITS = {"warden": warden, "arcanist": arcanist, "ranger": ranger, "reaver": r
 # satin: clean). Fur and sheer stockings have shaders of their own.
 KIND = {"steel": "metal", "darksteel": "metal", "gold": "metal", "bronze": "metal", "rust": "metal",
         "velvet": "cloth", "arcvelvet": "cloth", "linen": "cloth", "lace": "cloth", "ink": "cloth",
-        "browncloth": "cloth", "thread": "gloss", "satin": "gloss", "bone": "leather", "fur": "fur", "stocking": "sheer"}
+        "browncloth": "twill", "thread": "gloss", "satin": "gloss", "bone": "leather", "fur": "fur", "stocking": "sheer"}
 
 
 def kind(key):

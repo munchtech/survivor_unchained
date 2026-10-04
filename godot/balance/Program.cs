@@ -24,12 +24,14 @@ using SurvivorUnchained.Rpg;
  *          --oaths none|all|a,b+c  --level N|tier  --bot plain|deft  --cap MIN
  *          --beyond MIN  --weapons all  --levels 20,40  --par N  --out PATH  --csv DIR
  *          --bossread 0 (the hands as they were before they read the bosses)
+ *          --charges 0 (every charger on its own clock, as before the charge director)
  *
  * This is the one balance tool: the balance lab's sweep (godot/tests/BalanceLab.cs,
  * BALANCE_LAB=arena) runs these same arenas through these same hands. */
 
 var opt = Opts.Parse(args);
 Pilot.ReadsBosses = opt.Get("bossread", "1") != "0";
+ArenaSim.Director = opt.Get("charges", "1") != "0";
 string cmd = args.Length > 0 && !args[0].StartsWith("--") ? args[0] : "help";
 // The content is read once, before the runs share it.
 _ = Callings.Archetypes; _ = Items.All; _ = Weapons.All; _ = Boons.All;

@@ -54,6 +54,33 @@ CLIPS = {
                     "drifting, flickering, continuous, no flames.", 4, 222),
     "arcane_burst": ("A burst of bright magenta and violet arcane energy erupts from the centre, a ring of crackling "
                      "glowing runes and light shards spreads outward, then it shimmers and fades to black.", 3, 23),
+    # The skills' own landings (docs/team/skills.md): each school's shape, not a generic burst.
+    "frost_spikes": ("A star of jagged pale blue ice crystals bursts up out of a single point at the centre and spreads outward "
+                     "along the ground in every direction, sharp glassy spikes catching the light, glittering frost, then the ice "
+                     "cracks and crumbles into cold mist and fades to black.", 3, 301),
+    "holy_ring": ("A thin perfect ring of brilliant white-gold light expands outward from the centre like a shockwave, fine golden "
+                  "rays and glittering motes along its edge, the middle stays dark, then the ring fades as it widens.", 2, 302),
+    "blood_scythe": ("A sweeping circular slash of dark crimson energy spins once around the centre in a full circle, a curved "
+                     "blade of blood-red light trailing red mist and black shadowy wisps, then it dissolves into dark red smoke "
+                     "and fades to black.", 2, 303),
+    "moon_burst": ("A burst of cold silver and lavender moonlight erupts from the centre, a bright white crescent flashes and "
+                   "shatters into pale violet shards of light and glittering stardust that drift outward, then fade to black.", 3, 304),
+    "ice_shatter": ("A block of pale blue ice shatters at the centre into dozens of glittering transparent crystal fragments that "
+                    "fly outward in every direction, with a small puff of frosty white mist, then the shards vanish.", 2, 305),
+    "poison_cloud": ("A churning cloud of sickly luminous green poison gas swirls slowly in place at the centre, thick toxic vapour "
+                     "curling and rolling, small bubbles of green light rising and popping, continuous, the cloud never grows.", 4, 306),
+    "bramble_burst": ("Dark twisted thorny bramble vines with long sharp thorns burst up out of the centre and spread outward in a "
+                      "tangle of curling stems, faint green light glowing along them, then they wither and fade to black.", 3, 307),
+    "gold_flare": ("A sudden brilliant flash of golden sunlight at the centre with long sharp star-shaped rays and a lens flare, "
+                   "it blooms and fades quickly to black.", 2, 308),
+    "fireball_impact": ("A fireball slams down into the centre: a violent splash of orange fire and molten glowing embers bursts "
+                        "outward in a ring, chunks of burning debris flung out, then thick dark smoke rises and fades to black.", 3, 309),
+    "dust_chop": ("A heavy blade chops into dry earth at the centre: a sharp spray of brown dirt clods, pebbles and dust fans "
+                  "outward, then the dust settles and fades to black.", 2, 310),
+    "shadow_wisps": ("Inky black-violet shadow smoke tendrils lash outward from the centre like grasping fingers, with faint purple "
+                     "sparks, then curl back and dissolve to black.", 3, 311),
+    "leaf_burst": ("A burst of glowing green leaves, seeds and pollen spores swirls outward from the centre in a spiral gust, then "
+                   "drifts and fades to black.", 3, 312),
 }
 
 

@@ -250,7 +250,7 @@ public static class Firing
             pr.AimAlongVelocity();
             if (herd) pr.Rehit = 0.6;
         }
-        b.Events.Emit(new Ev.Muzzle { X = p.X, Z = p.Z, Angle = angle, School = w.School, Weapon = w.Id });
+        b.Events.Emit(new Ev.Muzzle { X = p.X, Z = p.Z, Angle = angle, School = w.School, Weapon = w.Id, Art = w.Art, Rank = w.Rank });
         return pr;
     }
 
@@ -298,7 +298,7 @@ public static class Firing
         double r = AreaOf(b, w, w.Num(s => s.Radius) ?? 3.5);
         if (b.NearestHostile(p.X, p.Z, r + 1) == null) return false;
         int rings = 1 + (w.Rank >= Content.Weapons.ProjRankA ? 1 : 0) + (w.Rank >= Content.Weapons.ProjRankB ? 1 : 0);
-        b.Events.Emit(new Ev.Nova { X = p.X, Z = p.Z, Radius = r, School = w.School, Duration = w.Num(s => s.ExpandTime) ?? 0.35, Rings = rings });
+        b.Events.Emit(new Ev.Nova { X = p.X, Z = p.Z, Radius = r, School = w.School, Duration = w.Num(s => s.ExpandTime) ?? 0.35, Rings = rings, Art = w.Art, Rank = w.Rank });
         double dmg = w.Damage;
         double kb = w.Num(s => s.Knockback) ?? 0;
         double heal = w.Num(s => s.Heal) ?? 0;
@@ -375,7 +375,7 @@ public static class Firing
             {
                 Weapon = w, Status = w?.StatusOf, Depth = depth, BossDamage = w?.Def.BossDamage,
             });
-            if (sky) b.Events.Emit(new Ev.Strike { X = cur.X, Z = cur.Z, Radius = 0.9, School = school, Delay = 0 });
+            if (sky) b.Events.Emit(new Ev.Strike { X = cur.X, Z = cur.Z, Radius = 0.9, School = school, Delay = 0, Art = "arc_sky", Rank = w?.Rank ?? 1 });
             var next = b.NearestHostile(cur.X, cur.Z, reach, e => !hit.Contains(e.Id));
             if (fork && next != null && j < jumps - 1)
             {
@@ -384,7 +384,7 @@ public static class Firing
             }
             cur = next;
         }
-        b.Events.Emit(new Ev.Chain { Points = points.ToArray(), School = school });
+        b.Events.Emit(new Ev.Chain { Points = points.ToArray(), School = school, Art = w?.Art, Rank = w?.Rank ?? 1 });
         // Forks run a shorter chain of their own from where they split.
         for (int i = 0; i < Math.Min(3, queue.Count); i++)
         {
@@ -392,7 +392,7 @@ public static class Firing
             if (hit.Contains(f.Id)) continue;
             var pts = new[] { points[^2], points[^1], f.X, f.Z };
             b.HitEnemy(f, dmg * 0.7, school, tags, new HitOpts { Weapon = w, Depth = depth });
-            b.Events.Emit(new Ev.Chain { Points = pts, School = school });
+            b.Events.Emit(new Ev.Chain { Points = pts, School = school, Art = w?.Art, Rank = w?.Rank ?? 1 });
         }
     }
 
@@ -466,7 +466,7 @@ public static class Firing
         double len = RangeOf(w) * (1 + 0.04 * (w.Rank - 1));
         double width = AreaOf(b, w, w.Num(s => s.BeamWidth) ?? 0.6);
         double x1 = p.X + Math.Cos(a) * len, z1 = p.Z + Math.Sin(a) * len;
-        b.Events.Emit(new Ev.Beam { X0 = p.X, Z0 = p.Z, X1 = x1, Z1 = z1, Width = width, School = w.School, Duration = 0.35 });
+        b.Events.Emit(new Ev.Beam { X0 = p.X, Z0 = p.Z, X1 = x1, Z1 = z1, Width = width, School = w.School, Duration = 0.35, Art = w.Art, Rank = w.Rank });
         double dmg = w.Damage;
         b.ForEachHostileNearSegment(p.X, p.Z, x1, z1, width, e =>
             b.HitEnemy(e, dmg, w.School, w.Tags, new HitOpts { Weapon = w, Status = w.StatusOf, BossDamage = w.Def.BossDamage }));
@@ -494,7 +494,7 @@ public static class Firing
     static bool ConeHit(Battle b, WeaponInst w, double a, double arc, double reach, double dmg)
     {
         var p = b.Player;
-        b.Events.Emit(new Ev.Slash { X = p.X, Z = p.Z, Angle = a, Arc = arc, Reach = reach, School = w.School });
+        b.Events.Emit(new Ev.Slash { X = p.X, Z = p.Z, Angle = a, Arc = arc, Reach = reach, School = w.School, Art = w.Art, Rank = w.Rank });
         double kb = w.Num(s => s.Knockback) ?? 0;
         bool any = false;
         b.ForEachHostileInRadius(p.X, p.Z, reach, (e, d) =>

@@ -40,6 +40,9 @@ public sealed class PackMother : ArenaBoss
     ];
     public override School Weakness => School.Fire;
     public override string WeaknessText => $"Fire breaks {Her} moon-howl";
+    // Measured (docs/team/combat.md): at 12 + 2 a tier a par build broke her for 63% of
+    // her health over the floors and won in 69 s; the contract asks 90-120.
+    public override double HealthMul(int tier) => 30 + 5 * tier;
     /// <summary>Greymuzzle is a he; the Pack-Mother a she.</summary>
     bool He => A.BossName == "Greymuzzle";
     string Her => He ? "his" : "her";
@@ -47,6 +50,10 @@ public sealed class PackMother : ArenaBoss
     double driveT = 6, biteT = 3, howlT, shakeT = 2, lungeT = 4;
     double howlHp;
     bool lastPack;
+    /// <summary>Let go (the story's Greymuzzle, spared): he goes down and does not die.</summary>
+    protected override bool DiesAtZero => !A.Spare;
+    bool lettingGo;
+    double goT;
 
     protected override void Enter(int phase)
     {
@@ -56,6 +63,8 @@ public sealed class PackMother : ArenaBoss
 
     protected override bool Act(Enemy e, double dt)
     {
+        if (lettingGo) return LetGo(e, dt);
+        if (A.Spare && e.Hp <= 1.5 && PhaseIx == 2) { StartLetGo(e); return true; }
         if (Running(e, dt)) return true;
         var (dx, dz, d) = ToPlayer();
         var p = B.Player;
@@ -157,6 +166,45 @@ public sealed class PackMother : ArenaBoss
         Hold(0.8, () => DashTo(x1, z1, 0.35, () => Chain(n - 1)));
     }
 
+    /// <summary>Greymuzzle let go (docs/STORY_BIBLE.md, "The nights": only if she knelt and
+    /// promised and the stream already runs clean): he goes down, and does not die; he gets
+    /// up, slowly, and goes to the den among his sick, and she lets him. No words: he has none.</summary>
+    void StartLetGo(Enemy e)
+    {
+        lettingGo = true;
+        goT = 0;
+        Channel = null;
+        e.Hp = 1;
+        e.TakenMul = 0;
+        // Out of the fight: nothing of hers is aimed at him now.
+        e.Disposition = Disposition.Neutral;
+        e.State = EnemyState.Stunned;
+        e.StateT = 2.4;
+        e.Vx = e.Vz = 0;
+        A.Bark(e.X, e.Z, "He goes down, and does not stay down.", null);
+        B.Events.Emit(new Ev.Focus { X = e.X, Z = e.Z, Duration = 2.4 });
+    }
+
+    bool LetGo(Enemy e, double dt)
+    {
+        goT += dt;
+        e.TakenMul = 0;
+        if (goT < 2.4) { e.Vx = e.Vz = 0; e.State = EnemyState.Stunned; e.StateT = Math.Max(e.StateT, dt * 2); return true; }
+        if (goT - dt < 2.4)
+        {
+            // Up, and away from her, to the edge of the light: slowly, an old wolf's walk.
+            var (dx, dz, _) = ToPlayer();
+            e.State = EnemyState.Active;
+            A.Bark(e.X, e.Z, "He gets up, slowly, and goes to his sick. You let him.", null);
+            DashTo(E.X - dx * 12, E.Z - dz * 12, 6);
+        }
+        if (Running(e, dt) && goT < 8.6) return true;
+        double x = e.X, z = e.Z;
+        B.Enemies.Release(e);
+        A.Won(x, z);
+        return true;
+    }
+
     protected override void OnSoft() { driveT = Math.Min(driveT, 4); }
     protected override void OnHard() { B.Rules.Light *= 0.5; }
 }
@@ -184,7 +232,8 @@ public sealed class BarrowLord : ArenaBoss
     public bool Laying => laying;
 
     // Undead resist frost and shadow; on him they do not, so every school can lay him down in time.
-    public override double HealthMul(int tier) => 9 + 1.5 * tier;
+    // 9 + 1.5 a tier measured 80 s and a 14% Break with his laying-down; the contract asks 90-120.
+    public override double HealthMul(int tier) => 13 + 2.2 * tier;
 
     protected override void Enter(int phase)
     {
@@ -340,7 +389,9 @@ public sealed class BarrowLord : ArenaBoss
     double holyT;
     public override void OnHit(Enemy e, School school, double dmg)
     {
-        if (laying && school == School.Holy) holyT = 0.5;
+        // Down, holy hastens his laying; it is not a channel to break (the bar's line is the
+        // survivor's to fill, and a holy blow took it away).
+        if (laying) { if (school == School.Holy) holyT = 0.5; return; }
         base.OnHit(e, school, dmg);
     }
 }
@@ -364,6 +415,8 @@ public sealed class Grimtunnel : ArenaBoss
         lampHp = new double[Lit.Length];
     }
     public bool Ganger => ganger;
+    // 12 + 2 a tier measured 92 s and a 66% Break (under the ground he takes half).
+    public override double HealthMul(int tier) => 18 + 3 * tier;
     protected override Phase[] Phases { get; } =
     [
         new("The Dig", 0.60, 15, 60),
@@ -612,6 +665,8 @@ public sealed class RedHand : ArenaBoss
     ];
     public override School Weakness => School.Storm;
     public override string WeaknessText => "Storm makes his thief drop what he took";
+    // 12 + 2 a tier measured 72 s and a 15% Break.
+    public override double HealthMul(int tier) => 21 + 3.5 * tier;
     protected override string HardName => "Everything Owed";
     double tollT = 10, volleyT = 5, cageT = 3, maulT = 2, sweepT = 4;
     bool levy, everything;

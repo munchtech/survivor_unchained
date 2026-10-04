@@ -162,7 +162,10 @@ public static class Ai
                 return;
             }
             e.RangedT -= dt;
-            if (e.RangedT <= 0 && dist < lunge.Range && dist > 2 && b.Collision.Raycast(e.X, e.Z, tgt.X, tgt.Z, 0.3) == null)
+            // The charge director says when (Charges.cs): in a spike, a charger whose own clock is
+            // most of the way round goes with the rest; refused, it walks on and asks again.
+            if (e.RangedT <= (b.Charges.Eager ? lunge.Cooldown * 0.4 : 0) && dist < lunge.Range && dist > 2
+                && b.Collision.Raycast(e.X, e.Z, tgt.X, tgt.Z, 0.3) == null && b.Charges.MayStart(b, e))
             {
                 e.State = EnemyState.Windup;
                 e.StateT = lunge.Windup;
@@ -261,7 +264,7 @@ public static class Ai
             }
             case Behavior.Tunneler:
                 e.RangedT -= dt;
-                if (tgt.Player && dist > 6 && e.RangedT <= 0)
+                if (tgt.Player && dist > 6 && e.RangedT <= 0 && b.Charges.MayBurrow(b, e))
                 {
                     e.State = EnemyState.Burrowed;
                     e.StateT = 0;

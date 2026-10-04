@@ -1,19 +1,19 @@
 # Captain Holloway: ElevenLabs packet
 
-Voice id in the game: `holloway`. 65 takes to record (7,808 characters; about 23,424 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
-
-**Hold 4 of these** (marked HOLD below) until the story editor's review of section 17 is back; the rest can be recorded now.
+Voice id in the game: `holloway`. 64 takes to record (7,712 characters; about 23,136 credits at three tries a line). Status: **final** (the story lead, 2026-10-03): record it.
 
 ## Who they are
 
 **Captain Holloway** (the Watch). A quartermaster who was made a captain: numbers, lists, what things cost ("eleven men, four can hold a spear the right way round"). Clipped, tired, contractions, anger held one notch below the surface. Says "proof", never "evidence". Never says sorry; the nearest he gets is paying for something. Goes very quiet whenever Ashford or Maeca comes up. *Casting:* 45, Lancashire flattened by the army; hoarse from shouting.
+
+*Wants:* to keep the town alive on eleven men and a year without pay, and to be left to count it. *Hides:* he signed for the Ashford garrison's boots, and the boots never came; Maeca's bare feet are his doing, as he sees it. Later, the letter under his cup is from the north, asking for "the one from the ford", which means you; every time he looks at you after that, he is deciding whether to answer it.
 
 ## Casting the voice
 
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Captain Holloway`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, Lancashire). Male, 40s. Studio quality. Persona: a tired northern English army captain. A tired forty-five-year-old soldier from Lancashire in the north of England, an army quartermaster made captain. A hoarse, worn baritone, rough from years of shouting orders, with a flat northern English accent. Clipped and weary, anger held just below the surface. Thick Lancashire accent. No reverb or effects.
+Native English (British, Lancashire). Male, 40s. Studio quality. Persona: a tired northern English army captain. A tired forty-five-year-old soldier from Lancashire in the north of England, an army quartermaster made captain. A hoarse, worn baritone, rough from years of shouting orders, with a flat northern English accent. Clipped and weary, anger held just below the surface. Light Lancashire accent. No reverb or effects.
 ```
 
 Preview text:
@@ -99,7 +99,7 @@ Subtitle: The water's clean and the wolves are back in the deep wood. I was wron
 *Where:* dialogue.json holloway/hub#1
 *Played:* grief held down; doing: a man of his was killed; pace: slow; volume: quiet.
 *Wants:* not to show it
-*Note:* Quartermaster's list for a dead man. 'by the bad leg' barely steady. 'I'd give a month's pay to hear him hum.' cracks just slightly. Then forced back to business: 'Five a pelt, still. What do you want?'
+*Note:* Quartermaster's list for a dead man. 'by the bad leg' barely steady. No crack: 'I'd give a month's pay to hear him hum.' is the grief itself (paying is the nearest he gets to sorry), flatter and slower than the rest. Then straight back to business: 'Five a pelt, still. What do you want?'
 
 ```
 [grief held down, quietly] You heard. Aldo. Wife at Low Kiln, a bad knee, and a habit of humming on the wall that I told him twice to stop. They took him off it by the bad leg. I'd give a month's pay to hear him hum. Five a pelt, still. What do you want?
@@ -278,11 +278,11 @@ Subtitle: ...New ones. From a sick wood. Then the pelts buy me nothing, and you'
 ### 21. `dlg.holloway.defied.0.wav`
 
 *Where:* dialogue.json holloway/defied#0
-*Played:* contempt, threat; doing: throws you out; pace: measured; volume: raised.
-*Note:* 'Out of my sight.' sharp. The threat cold and almost pleasant at the end.
+*Played:* cold; doing: throws you out; pace: measured; volume: level.
+*Note:* His anger stays one notch below the surface; he doesn't shout at a person. 'Out of my sight.' sharp but level. The threat about the cell-rats almost pleasant.
 
 ```
-[contempt, threat, loudly] Out of my sight. And if I see you near my gate with a blade out, you'll find out how the cells feel on a cold night, and how the cell-rats feel about fresh meat.
+[cold] Out of my sight. And if I see you near my gate with a blade out, you'll find out how the cells feel on a cold night, and how the cell-rats feel about fresh meat.
 ```
 Subtitle: Out of my sight. And if I see you near my gate with a blade out, you'll find out how the cells feel on a cold night, and how the cell-rats feel about fresh meat.
 
@@ -519,6 +519,7 @@ Subtitle: Spark-thrower. The last one we had set the barracks roof alight trying
 
 ### 43. `dlg.holloway.say_calling.3.wav`
 
+*The same words are also* `dlg.holloway.say_calling.4.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json holloway/say_calling#3
 *Played:* dry recognition; doing: sees a fellow watcher; pace: measured; volume: level.
 *Note:* Almost a joke between equals.
@@ -528,18 +529,7 @@ Subtitle: Spark-thrower. The last one we had set the barracks roof alight trying
 ```
 Subtitle: You count the ways out when you walk into a room. So do I. One of us should be paid for it.
 
-### 44. `dlg.holloway.say_calling.4.wav`
-
-*Where:* dialogue.json holloway/say_calling#4
-*Played:* dry recognition; doing: sees a fellow watcher; pace: measured; volume: level.
-*Note:* Almost a joke between equals.
-
-```
-[dry recognition] You count the ways out when you walk into a room. So do I. One of us should be paid for it.
-```
-Subtitle: You count the ways out when you walk into a room. So do I. One of us should be paid for it.
-
-### 45. `dlg.holloway.say_woman.0.wav`
+### 44. `dlg.holloway.say_woman.0.wav`
 
 *Where:* dialogue.json holloway/say_woman#0
 *Played:* dry, grim; doing: won't patronise you; pace: measured; volume: level.
@@ -550,7 +540,7 @@ Subtitle: You count the ways out when you walk into a room. So do I. One of us s
 ```
 Subtitle: I'd tell you it's no place for a woman out there. The last three people I said that to were men, and they're dead. So I'll say: it's no place.
 
-### 46. `dlg.holloway.t_holloway.0.wav`
+### 45. `dlg.holloway.t_holloway.0.wav`
 
 *Where:* dialogue.json holloway/t_holloway#0
 *Played:* tired, wry; doing: what he wants; pace: measured; volume: quiet.
@@ -561,7 +551,7 @@ Subtitle: I'd tell you it's no place for a woman out there. The last three peopl
 ```
 Subtitle: A posting with walls somebody else has to count. A dog. Eight hours' sleep in one go. In that order. ...Don't tell the men about the dog.
 
-### 47. `dlg.holloway.ledger_early.0.p1.wav`
+### 46. `dlg.holloway.ledger_early.0.p1.wav`
 
 *Where:* dialogue.json holloway/ledger_early#0; part 2 of 4: narrator: He reads it standing up. Then he sits down and reads it again. / **holloway: Two payments, one night. Forty to "R." Ten to Jessop, "for the road": that's Vonnra's cler…** / narrator: He shuts it. / holloway: Don't tell me where you got it. If you tell me, I have to do something about it.
 *Played:* shocked, then careful; doing: the ledger is damning; pace: slow; volume: quiet.
@@ -573,7 +563,7 @@ Subtitle: A posting with walls somebody else has to count. A dog. Eight hours' s
 ```
 Subtitle: Two payments, one night. Forty to "R." Ten to Jessop, "for the road": that's Vonnra's clerk at the toll. And that's the night Harlan Coyle's wagons went off the Old Road and didn't come back.
 
-### 48. `dlg.holloway.ledger_early.0.p3.wav`
+### 47. `dlg.holloway.ledger_early.0.p3.wav`
 
 *Where:* dialogue.json holloway/ledger_early#0; part 4 of 4: narrator: He reads it standing up. Then he sits down and reads it again. / holloway: Two payments, one night. Forty to "R." Ten to Jessop, "for the road": that's Vonnra's cler… / narrator: He shuts it. / **holloway: Don't tell me where you got it. If you tell me, I have to do something about it.**
 *Played:* shocked, then careful; doing: the ledger is damning; pace: slow; volume: quiet.
@@ -585,7 +575,7 @@ Subtitle: Two payments, one night. Forty to "R." Ten to Jessop, "for the road": 
 ```
 Subtitle: Don't tell me where you got it. If you tell me, I have to do something about it.
 
-### 49. `dlg.holloway.ledger_early2.0.wav`
+### 48. `dlg.holloway.ledger_early2.0.wav`
 
 *Where:* dialogue.json holloway/ledger_early2#0
 *Played:* frustrated, careful; doing: needs more proof; pace: measured; volume: level.
@@ -596,7 +586,7 @@ Subtitle: Don't tell me where you got it. If you tell me, I have to do something
 ```
 Subtitle: Could be anyone. There's more thieves in this valley than letters to go round. Find me who "R." is, and what Pell bought for forty, and I'll put him in irons myself. Until then it's a book with numbers in, and Pell's got a man in Low Kiln who loves numbers. ...Keep it somewhere I can't see it.
 
-### 50. `dlg.holloway.post.0.p1.wav`
+### 49. `dlg.holloway.post.0.p1.wav`
 
 *Where:* dialogue.json holloway/post#0; part 2 of 2: narrator: He says nothing for long enough that you think he hasn't heard. / **holloway: Grey beard, proud of it? Bad hip? ...Corran. He had that post before I had this one. I wro…**
 *Played:* shock, guilt; doing: his old comrade is dead; pace: slow; volume: quiet.
@@ -607,7 +597,7 @@ Subtitle: Could be anyone. There's more thieves in this valley than letters to g
 ```
 Subtitle: Grey beard, proud of it? Bad hip? ...Corran. He had that post before I had this one. I wrote him down as a deserter in the spring. Him and his runner, Dannet. Dannet never came up the road, so I wrote him down too.
 
-### 51. `dlg.holloway.post2.0.p0.wav`
+### 50. `dlg.holloway.post2.0.p0.wav`
 
 *Where:* dialogue.json holloway/post2#0; part 1 of 3: **holloway: Not by us. We've not had oil for those lamps since my first winter, and nobody's asked me …** / narrator: He writes something down, and crosses it out. / holloway: So somebody had oil. And a reason. ...I'll send two men down with a cart. I owe Corran a h…
 *Played:* grim realisation, guilt; doing: someone lit the lamps; pace: slow; volume: quiet.
@@ -618,7 +608,7 @@ Subtitle: Grey beard, proud of it? Bad hip? ...Corran. He had that post before I
 ```
 Subtitle: Not by us. We've not had oil for those lamps since my first winter, and nobody's asked me for any.
 
-### 52. `dlg.holloway.post2.0.p2.wav`
+### 51. `dlg.holloway.post2.0.p2.wav`
 
 *Where:* dialogue.json holloway/post2#0; part 3 of 3: holloway: Not by us. We've not had oil for those lamps since my first winter, and nobody's asked me … / narrator: He writes something down, and crosses it out. / **holloway: So somebody had oil. And a reason. ...I'll send two men down with a cart. I owe Corran a h…**
 *Played:* grim realisation, guilt; doing: someone lit the lamps; pace: slow; volume: quiet.
@@ -629,22 +619,24 @@ Subtitle: Not by us. We've not had oil for those lamps since my first winter, an
 ```
 Subtitle: So somebody had oil. And a reason. ...I'll send two men down with a cart. I owe Corran a hole in the ground, and an apology he can't hear.
 
-### 53. `dlg.holloway.letter.0.p0.wav`
+### 52. `dlg.holloway.letter.0.p0.wav`
 
 *Where:* dialogue.json holloway/letter#0; part 1 of 3: **holloway: Mine. From the north, about the north.** / narrator: The cup doesn't move. / holloway: Read your own post, if anybody writes to you.
 *Played:* closed, curt; doing: won't discuss the letter; pace: measured; volume: quiet.
-*Note:* 'Mine.' hard. Narrator: the cup doesn't move. Brusque dismissal.
+*Hides:* the letter is about you: the north asks for "the one from the ford"
+*Note:* 'Mine.' hard. Narrator: the cup doesn't move. 'Read your own post, if anybody writes to you.' is curt cover; he looks at you a beat too long before it.
 
 ```
 [closed, curt, quietly] Mine. From the north, about the north.
 ```
 Subtitle: Mine. From the north, about the north.
 
-### 54. `dlg.holloway.letter.0.p2.wav`
+### 53. `dlg.holloway.letter.0.p2.wav`
 
 *Where:* dialogue.json holloway/letter#0; part 3 of 3: holloway: Mine. From the north, about the north. / narrator: The cup doesn't move. / **holloway: Read your own post, if anybody writes to you.**
 *Played:* closed, curt; doing: won't discuss the letter; pace: measured; volume: quiet.
-*Note:* 'Mine.' hard. Narrator: the cup doesn't move. Brusque dismissal.
+*Hides:* the letter is about you: the north asks for "the one from the ford"
+*Note:* 'Mine.' hard. Narrator: the cup doesn't move. 'Read your own post, if anybody writes to you.' is curt cover; he looks at you a beat too long before it.
 
 ```
 [closed, curt, quietly] Read your own post, if anybody writes to you.
@@ -653,7 +645,7 @@ Subtitle: Read your own post, if anybody writes to you.
 
 ## Said in passing
 
-### 55. `bark.holloway.day.0.wav`
+### 54. `bark.holloway.day.0.wav`
 
 *Where:* npcs.json holloway.barks[0]
 *Played:* curt; pace: brisk; volume: level.
@@ -663,7 +655,7 @@ Subtitle: Read your own post, if anybody writes to you.
 ```
 Subtitle: Keep to the road, and keep your blade where I can see it.
 
-### 56. `bark.holloway.day.1.wav`
+### 55. `bark.holloway.day.1.wav`
 
 *Where:* npcs.json holloway.barks[1]
 *Played:* curt; pace: brisk; volume: level.
@@ -673,7 +665,7 @@ Subtitle: Keep to the road, and keep your blade where I can see it.
 ```
 Subtitle: Three caravans this month. Three.
 
-### 57. `bark.holloway.night.0.wav`
+### 56. `bark.holloway.night.0.wav`
 
 *Where:* npcs.json holloway.nightBarks[0]
 *Played:* tired; pace: measured; volume: quiet.
@@ -683,7 +675,7 @@ Subtitle: Three caravans this month. Three.
 ```
 Subtitle: Curfew's not law. Yet.
 
-### 58. `bark.holloway.night.1.wav`
+### 57. `bark.holloway.night.1.wav`
 
 *Where:* npcs.json holloway.nightBarks[1]
 *Played:* tired; pace: measured; volume: quiet.
@@ -693,7 +685,7 @@ Subtitle: Curfew's not law. Yet.
 ```
 Subtitle: Two on the walls, one on each gate. It's not enough.
 
-### 59. `bark.holloway.night.2.wav`
+### 58. `bark.holloway.night.2.wav`
 
 *Where:* npcs.json holloway.nightBarks[2]
 *Played:* tired; pace: measured; volume: quiet.
@@ -703,7 +695,7 @@ Subtitle: Two on the walls, one on each gate. It's not enough.
 ```
 Subtitle: Go to bed, traveller.
 
-### 60. `bark.holloway.night.3.wav`
+### 59. `bark.holloway.night.3.wav`
 
 *Where:* npcs.json holloway.nightBarks[3]
 *Played:* tired; pace: measured; volume: quiet.
@@ -713,7 +705,7 @@ Subtitle: Go to bed, traveller.
 ```
 Subtitle: Every night I bury somebody's son. Go home.
 
-### 61. `bark.holloway.night.4.wav`
+### 60. `bark.holloway.night.4.wav`
 
 *Where:* npcs.json holloway.nightBarks[4]
 *Played:* tired; pace: measured; volume: quiet.
@@ -723,7 +715,7 @@ Subtitle: Every night I bury somebody's son. Go home.
 ```
 Subtitle: Quiet on the wall. I hate it quiet.
 
-### 62. `bark.holloway.said.0.wav`  HOLD
+### 61. `bark.holloway.said.0.wav`
 
 *Where:* npcs.json holloway.said[0]
 *Played:* businesslike; doing: the pelt bounty; pace: measured; volume: level.
@@ -734,7 +726,7 @@ Subtitle: Quiet on the wall. I hate it quiet.
 ```
 Subtitle: Five a pelt. Fifty for the old grey one.
 
-### 63. `bark.holloway.said.1.wav`  HOLD
+### 62. `bark.holloway.said.1.wav`
 
 *Where:* npcs.json holloway.said[1]
 *Played:* dry relief; doing: the bounty's done; pace: measured; volume: level.
@@ -745,7 +737,7 @@ Subtitle: Five a pelt. Fifty for the old grey one.
 ```
 Subtitle: Pelt book's closed. I'll not miss writing in it.
 
-### 64. `bark.holloway.said.2.wav`  HOLD
+### 63. `bark.holloway.said.2.wav`
 
 *Where:* npcs.json holloway.said[2]
 *Played:* grim, private; doing: Corran buried; pace: slow; volume: quiet.
@@ -757,14 +749,14 @@ Subtitle: Pelt book's closed. I'll not miss writing in it.
 ```
 Subtitle: Corran's in the ground. That's one debt paid.
 
-### 65. `bark.holloway.said.3.wav`  HOLD
+### 64. `bark.holloway.said.3.wav`
 
 *Where:* npcs.json holloway.said[3]
 *Played:* weary, grateful; doing: one caravan came home; pace: measured; volume: level.
-*Note:* 'One.' heavy; 'I'll take it.' accepting.
+*Note:* 'One caravan' weighed; 'I'll take it.' accepting.
 
 ```
-[weary, grateful] One caravan home. One. I'll take it.
+[weary, grateful] One caravan home. I'll take it.
 ```
-Subtitle: One caravan home. One. I'll take it.
+Subtitle: One caravan home. I'll take it.
 

@@ -1,6 +1,6 @@
 # Pell Varrow: ElevenLabs packet
 
-Voice id in the game: `pell`. 32 takes to record (3,695 characters; about 11,085 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `pell`. 31 takes to record (3,605 characters; about 10,815 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -11,7 +11,7 @@ Voice id in the game: `pell`. 32 takes to record (3,695 characters; about 11,085
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Pell Varrow`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, London). Male, 40s. Studio quality. Persona: a precise London factor. A forty-year-old London merchant's factor with a soft, precise, smooth tenor and a clipped upper-middle-class London accent, a little nasal. Smiling, polite and quietly calculating; every word chosen as if it will be written down. Thick London accent. No reverb or effects.
+Native English (British, London). Male, 40s. Studio quality. Persona: a precise London factor. A forty-year-old London merchant's factor with a soft, precise, smooth tenor and a clipped upper-middle-class London accent, a little nasal. Smiling, polite and quietly calculating; every word chosen as if it will be written down. Broad London accent. No reverb or effects.
 ```
 
 Preview text:
@@ -254,6 +254,7 @@ Subtitle: A scholar of the burning arts. Do you know, I've never once sold an ar
 
 ### 20. `dlg.pell.say_calling.3.wav`
 
+*The same words are also* `dlg.pell.say_calling.4.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json pell/say_calling#3
 *Played:* cold unease; doing: you crept up; pace: measured; volume: quiet.
 *Note:* The politeness thins. 'I'll remember it.' quietly.
@@ -263,18 +264,7 @@ Subtitle: A scholar of the burning arts. Do you know, I've never once sold an ar
 ```
 Subtitle: You've been standing there longer than I noticed. I don't care for that. I'll remember it.
 
-### 21. `dlg.pell.say_calling.4.wav`
-
-*Where:* dialogue.json pell/say_calling#4
-*Played:* cold unease; doing: you crept up; pace: measured; volume: quiet.
-*Note:* The politeness thins. 'I'll remember it.' quietly.
-
-```
-[cold unease, quietly] You've been standing there longer than I noticed. I don't care for that. I'll remember it.
-```
-Subtitle: You've been standing there longer than I noticed. I don't care for that. I'll remember it.
-
-### 22. `dlg.pell.say_woman.0.wav`
+### 21. `dlg.pell.say_woman.0.wav`
 
 *Where:* dialogue.json pell/say_woman#0
 *Played:* smooth flattery, condescending; doing: a merchant's theory; pace: measured; volume: level.
@@ -285,7 +275,7 @@ Subtitle: You've been standing there longer than I noticed. I don't care for tha
 ```
 Subtitle: I find women drive the harder bargain. I've a theory it's because you're used to being underpaid. Do prove me right; it's so rare that I am wrong.
 
-### 23. `dlg.pell.cb_bribed_snib.0.wav`
+### 22. `dlg.pell.cb_bribed_snib.0.wav`
 
 *Where:* dialogue.json pell/cb_bribed_snib#0
 *Played:* dry, competitive; doing: you went around him; pace: measured; volume: level.
@@ -296,7 +286,7 @@ Subtitle: I find women drive the harder bargain. I've a theory it's because you'
 ```
 Subtitle: I hear the Dig's pump broke. Pumps do. And I hear a very small foreman is forty gold richer. You might have come to me; I'd have done it for thirty-five, and kept it quieter.
 
-### 24. `dlg.pell.t_pell.0.p0.wav`
+### 23. `dlg.pell.t_pell.0.p0.wav`
 
 *Where:* dialogue.json pell/t_pell#0; part 1 of 3: **pell: My sister kept the books in Ashford. I came up to collect them, after. There wasn't an Ash…** / narrator: He straightens a pen that was straight. / pell: She wrote to me the week before. The garrison's boots had come in short, and somebody had …
 *Played:* grief behind precision; doing: why he counts; pace: slow; volume: quiet.
@@ -308,7 +298,7 @@ Subtitle: I hear the Dig's pump broke. Pumps do. And I hear a very small foreman
 ```
 Subtitle: My sister kept the books in Ashford. I came up to collect them, after. There wasn't an Ashford to collect them from.
 
-### 25. `dlg.pell.t_pell.0.p2.wav`
+### 24. `dlg.pell.t_pell.0.p2.wav`
 
 *Where:* dialogue.json pell/t_pell#0; part 3 of 3: pell: My sister kept the books in Ashford. I came up to collect them, after. There wasn't an Ash… / narrator: He straightens a pen that was straight. / **pell: She wrote to me the week before. The garrison's boots had come in short, and somebody had …**
 *Played:* grief behind precision; doing: why he counts; pace: slow; volume: quiet.
@@ -322,7 +312,7 @@ Subtitle: She wrote to me the week before. The garrison's boots had come in shor
 
 ## Said in passing
 
-### 26. `bark.pell.day.0.wav`
+### 25. `bark.pell.day.0.wav`
 
 *Where:* npcs.json pell.barks[0]
 *Played:* smooth; pace: measured; volume: level.
@@ -332,7 +322,7 @@ Subtitle: She wrote to me the week before. The garrison's boots had come in shor
 ```
 Subtitle: Everything has a price. Most things have two.
 
-### 27. `bark.pell.day.1.wav`
+### 26. `bark.pell.day.1.wav`
 
 *Where:* npcs.json pell.barks[1]
 *Played:* smooth; pace: measured; volume: level.
@@ -342,7 +332,7 @@ Subtitle: Everything has a price. Most things have two.
 ```
 Subtitle: Terrible business, Coyle's caravan. Terrible.
 
-### 28. `bark.pell.day.2.wav`
+### 27. `bark.pell.day.2.wav`
 
 *Where:* npcs.json pell.barks[2]
 *Played:* smooth; pace: measured; volume: level.
@@ -352,7 +342,7 @@ Subtitle: Terrible business, Coyle's caravan. Terrible.
 ```
 Subtitle: My warehouse is closed to the public.
 
-### 29. `bark.pell.night.0.wav`
+### 28. `bark.pell.night.0.wav`
 
 *Where:* npcs.json pell.nightBarks[0]
 *Played:* smooth; pace: measured; volume: quiet.
@@ -362,7 +352,7 @@ Subtitle: My warehouse is closed to the public.
 ```
 Subtitle: Closed. Closed! Come back in daylight.
 
-### 30. `bark.pell.night.1.wav`
+### 29. `bark.pell.night.1.wav`
 
 *Where:* npcs.json pell.nightBarks[1]
 *Played:* smooth; pace: measured; volume: quiet.
@@ -372,7 +362,7 @@ Subtitle: Closed. Closed! Come back in daylight.
 ```
 Subtitle: A man can't count in peace in this town.
 
-### 31. `bark.pell.night.2.wav`
+### 30. `bark.pell.night.2.wav`
 
 *Where:* npcs.json pell.nightBarks[2]
 *Played:* smooth; pace: measured; volume: quiet.
@@ -382,7 +372,7 @@ Subtitle: A man can't count in peace in this town.
 ```
 Subtitle: Who's there?
 
-### 32. `bark.pell.night.3.wav`
+### 31. `bark.pell.night.3.wav`
 
 *Where:* npcs.json pell.nightBarks[3]
 *Played:* smooth; pace: measured; volume: quiet.

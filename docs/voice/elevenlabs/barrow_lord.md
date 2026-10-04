@@ -1,6 +1,6 @@
 # The Legion's dead, behind the door: ElevenLabs packet
 
-Voice id in the game: `barrow_lord`. 4 takes to record (24 characters; about 72 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `barrow_lord`. 5 takes to record (41 characters; about 123 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -11,7 +11,7 @@ Voice id in the game: `barrow_lord`. 4 takes to record (24 characters; about 72 
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU The Legion's dead, behind the door`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, British). Male, ageless, not human. Studio quality. Persona: male voice with british accent. An ancient dead soldier speaking from deep inside a stone tomb, a very low, hollow, dry voice like wind in a crypt, slow and final, each word heavy. No reverb or effects.
+Native English (British). Male, ageless, not human. Studio quality. Persona: Ancient dead soldier character. An ancient dead soldier speaking from deep inside a stone tomb, a very low, hollow, dry voice like wind in a crypt, slow and final, each word heavy. No reverb or effects.
 ```
 
 Preview text:
@@ -35,6 +35,10 @@ Then bring them into the game (it trims, levels, mixes and replaces the placehol
 python tools/vo/import_takes.py ~/Downloads/su_vo --voice barrow_lord
 ```
 
+## The effect
+
+Record every take dry, with no effect or reverb: the game adds it. For every line, it thins it to a hollow, dry rasp, as if from inside a barrow.
+
 ## The lines
 
 Each: what is going on, how it is played, then the text to paste (the bracketed tags are ElevenLabs audio tags: they are acted, not spoken), the words the subtitle shows (what the take must say), and the file name.
@@ -43,6 +47,7 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 
 ### 1. `dlg.cin_behind_the_door.nondum.0.wav`
 
+*The same words are also* `dlg.cin_behind_the_door.nondum.1.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json cin_behind_the_door/nondum#0
 *Played:* ancient, final; doing: not yet; pace: very slow; volume: quiet.
 *Note:* Latin: NON-dum. The narrator does not translate aloud; the subtitle does.
@@ -52,18 +57,9 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 ```
 Subtitle: Nondum.
 
-### 2. `dlg.cin_behind_the_door.nondum.1.wav`
+### 2. `dlg.cin_behind_the_door.redi.0.wav`
 
-*Where:* dialogue.json cin_behind_the_door/nondum#1
-*Played:* ancient, final; doing: not yet; pace: very slow; volume: quiet.
-
-```
-[ancient, final, quietly] Nondum.
-```
-Subtitle: Nondum.
-
-### 3. `dlg.cin_behind_the_door.redi.0.wav`
-
+*The same words are also* `dlg.cin_behind_the_door.redi.1.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json cin_behind_the_door/redi#0
 *Played:* ancient, final; doing: go back; pace: very slow; volume: quiet.
 *Note:* Latin: RED-ee.
@@ -73,13 +69,32 @@ Subtitle: Nondum.
 ```
 Subtitle: Redi.
 
-### 4. `dlg.cin_behind_the_door.redi.1.wav`
+## In a fight
 
-*Where:* dialogue.json cin_behind_the_door/redi#1
-*Played:* ancient, final; doing: go back; pace: very slow; volume: quiet.
+### 3. `cbark.48322be332c3.wav`
+
+*Where:* godot/logic/Play/Bosses/ArenaBosses.cs
 
 ```
-[ancient, final, quietly] Redi.
+"Tenete!"
 ```
-Subtitle: Redi.
+Subtitle: "Tenete!"
+
+### 4. `cbark.da46ba3f8245.wav`
+
+*Where:* godot/logic/Play/Bosses/ArenaBosses.cs
+
+```
+"Iungite!"
+```
+Subtitle: "Iungite!"
+
+### 5. `cbark.bf64f42d30a8.wav`
+
+*Where:* godot/logic/Play/Bosses/ArenaBosses.cs
+
+```
+"Testudo!"
+```
+Subtitle: "Testudo!"
 

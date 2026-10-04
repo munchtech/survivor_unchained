@@ -89,22 +89,35 @@ public partial class InventoryScreen : Overlay
         v.AddChild(FilterRow());
         var well = Style.Panel(Style.Well(10));
         var centre = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
-        centre.AddChild(ItemViews.Grid(ch.Pack, 8, 84, it => it.Uid == sel, null, it => Select(it.Uid), Primary, Hover, "pack", Leave, SetupCell));
+        // Materials live in the pouch, not the pack (docs/CRAFTING_DESIGN.md 4.3): their filter shows it.
+        if (filter == PouchFilter) centre.AddChild(ItemViews.Grid(PouchView(ch), 8, 84, it => it.Uid == sel, null, it => Select(it.Uid), null, Hover, "pack", Leave, null));
+        else centre.AddChild(ItemViews.Grid(ch.Pack, 8, 84, it => it.Uid == sel, null, it => Select(it.Uid), Primary, Hover, "pack", Leave, SetupCell));
         well.AddChild(centre);
         v.AddChild(well);
         v.AddChild(Style.H(18,
             Style.H(4, Glyphs.Icon("coin", 18, Style.GoldHi), Style.Label($"{Math.Floor(ch.Gold)} gold", Style.UiBold, Style.Body, Style.GoldHi)),
-            Style.Label($"{ch.Pack.Count(p => p != null)} of {ch.Pack.Count} carried", Style.Ui, Style.Small, Style.InkDim)));
+            Style.Label($"{ch.Pack.Count(p => p != null)} of {ch.Pack.Count} carried", Style.Ui, Style.Small, Style.InkDim),
+            Style.Label(ch.Materials.Count == 0 ? "the pouch is empty" : $"{ch.Materials.Values.Sum()} in the pouch", Style.Ui, Style.Small, Style.InkDim)));
 
         // The thing chosen, read closely, at the left over the world: beside the survivor, not under the panel.
         inspect = Style.V(Style.Gap2);
         inspect.Position = new Vector2(40, 120);
         inspect.Size = new Vector2(480, 900);
         AddChild(inspect);
-        ShowInspect(sel != null ? Inventory.Find(ch, sel)?.Item : null);
+        ShowInspect(Selected);
         foot = new Control { CustomMinimumSize = new Vector2(PanelW - 40, 30), MouseFilter = MouseFilterEnum.Ignore };
         SideFooter(foot);
         Footer();
+    }
+
+    const int PouchFilter = 3;
+
+    /// <summary>The pouch's materials, then the trophies and tools the pack holds, as one shelf.</summary>
+    static List<ItemInstance?> PouchView(CharacterData ch)
+    {
+        var o = Inventory.Pouch(ch).Cast<ItemInstance?>().Concat(ch.Pack.Where(p => p != null && Items.Get(p.Def).Kind is ItemKind.Trophy or ItemKind.Tool)).ToList();
+        while (o.Count < 24 || o.Count % 8 != 0) o.Add(null);
+        return o;
     }
 
     static IEnumerable<ItemInstance> Carried(CharacterData ch) =>
@@ -286,9 +299,26 @@ public partial class InventoryScreen : Overlay
         Tip(it != null && it.Uid != sel ? ItemViews.Compare(it, Ch, InPack(it)) : null, over);
     }
 
-    bool InPack(ItemInstance it) => Inventory.Find(Ch, it.Uid) is { InPack: true };
+    bool InPack(ItemInstance it) => Inventory.Find(Ch, it.Uid) is { InPack: true } || Inventory.FromPouch(it.Uid) != null;
 
-    void Select(string uid) { sel = sel == uid ? null : uid; leaving = null; Refresh(); }
+    /// <summary>The chosen thing: in the pack, worn, or a stack in the pouch.</summary>
+    ItemInstance? Selected => sel == null ? null : Inventory.Find(Ch, sel)?.Item ?? Inventory.Pouch(Ch).FirstOrDefault(p => p.Uid == sel);
+
+    string? breaking;
+
+    /// <summary>Breaking down cannot be undone either: asked once, done the second time (never in an arena).</summary>
+    void BreakDown(ItemInstance it)
+    {
+        var q = Crafting.BreakDown(G.Journey.Craft, it);
+        if (!q.Ok || G.Journey.InArena) { Sound.Sfx.Deny(); return; }
+        if (breaking != it.Uid) { breaking = it.Uid; Sound.Sfx.Hover(); ShowInspect(it); return; }
+        breaking = null;
+        if (sel == it.Uid) sel = null;
+        Sound.Sfx.Shatter();
+        G.Gear((j, b) => j.Work(it.Uid, q, b));
+    }
+
+    void Select(string uid) { sel = sel == uid ? null : uid; leaving = null; breaking = null; Refresh(); }
 
     void Primary(ItemInstance it)
     {
@@ -332,10 +362,17 @@ public partial class InventoryScreen : Overlay
         if (!IsInstanceValid(inspect)) return;
         foreach (var c in inspect.GetChildren()) { inspect.RemoveChild(c); c.QueueFree(); }
         if (it == null) return;
-        var loc = Inventory.Find(Ch, it.Uid);
-        if (loc == null) return;
         var def = Items.Get(it.Def);
         var acts = Style.H(8);
+        // A stack in the pouch: read, and left behind if it must be.
+        if (Inventory.FromPouch(it.Uid) != null)
+        {
+            if (!Controls.Instance.UsingPad) acts.AddChild(Style.Button(leaving == it.Uid ? "Leave it all behind for good" : "Leave behind", () => Leave(it), false, true));
+            inspect.AddChild(ItemViews.Card(it, Ch, false, acts, 480));
+            return;
+        }
+        var loc = Inventory.Find(Ch, it.Uid);
+        if (loc == null) return;
         if (!Controls.Instance.UsingPad)
         {
             if (loc.InPack && def.Kind == ItemKind.Consumable) acts.AddChild(Style.Button("Use", () => Primary(it), true, true));
@@ -343,6 +380,9 @@ public partial class InventoryScreen : Overlay
             if (!loc.InPack && loc.Slot != EquipSlot.Weapon) acts.AddChild(Style.Button("Take off", () => Primary(it), false, true));
             if (loc.InPack && !G.Journey.StillNeeded(it))
                 acts.AddChild(Style.Button(leaving == it.Uid ? "Leave it behind for good" : "Leave behind", () => Leave(it), false, true));
+            // Gear not kept breaks down to old iron for the forge (docs/CRAFTING_DESIGN.md 5.2).
+            if (loc.InPack && !G.Journey.InArena && Crafting.BreakDown(G.Journey.Craft, it) is { Ok: true } bq)
+                acts.AddChild(Style.Button(breaking == it.Uid ? "Break it down for good" : $"Break down for {bq.Gives[Crafting.Iron]} old iron", () => BreakDown(it), false, true));
         }
         // Gear in the pack reads beside what it would replace: the ARPGs' side by side.
         if (loc.InPack && Items.SlotFor(def) != null)
@@ -367,8 +407,8 @@ public partial class InventoryScreen : Overlay
         if (!IsInstanceValid(foot)) return;
         foreach (var c in foot.GetChildren()) { foot.RemoveChild(c); c.QueueFree(); }
         Control f;
-        if (leaving != null && Inventory.Find(Ch, leaving) is { } l)
-            f = Style.H(Style.Gap5, Style.Hint(Act.Alt, $"again to leave {Inventory.Name(l.Item)} behind for good", Style.Bad), Style.Hint(Act.Cancel, "Keep it"));
+        if (leaving != null && (Inventory.Find(Ch, leaving)?.Item ?? Inventory.Pouch(Ch).FirstOrDefault(p => p.Uid == leaving)) is { } l)
+            f = Style.H(Style.Gap5, Style.Hint(Act.Alt, $"again to leave {Inventory.Name(l)} behind for good", Style.Bad), Style.Hint(Act.Cancel, "Keep it"));
         else if (Controls.Instance.UsingPad)
             f = Overlay.Footer((Act.Confirm, "Wear or use"), (Act.Alt, "Leave"), (Act.Alt2, "Sort"), (Act.SubNext, "Filter"), (Act.Cancel, "Close"));
         else f = MouseFooter("Right-click to wear or use", "drag to wear or take off", "hover to compare");
@@ -385,10 +425,11 @@ public partial class InventoryScreen : Overlay
             case Act.SubNext: filter = (filter + 1) % Filters.Length; Sound.Sfx.Page(); Refresh(); return true;
             case Act.SubPrev: filter = (filter + Filters.Length - 1) % Filters.Length; Sound.Sfx.Page(); Refresh(); return true;
             case Act.Alt2: Sort(); return true;
-            case Act.Cancel when leaving != null:
+            case Act.Cancel when leaving != null || breaking != null:
                 leaving = null;
+                breaking = null;
                 Footer();
-                ShowInspect(sel != null ? Inventory.Find(Ch, sel)?.Item : null);
+                ShowInspect(Selected);
                 return true;
         }
         if (a is Act.Up or Act.Down or Act.Left or Act.Right && leaving != null) { leaving = null; Footer(); }
@@ -497,6 +538,20 @@ public partial class ShopScreen : Overlay
             }));
         mwell.AddChild(mc);
         mine.AddChild(mwell);
+        // The materials pouch sells too (docs/CRAFTING_DESIGN.md 4.3): a whole stack at once.
+        var pouch = Inventory.Pouch(ch);
+        if (pouch.Count > 0)
+        {
+            mine.AddChild(new Section("Your pouch", "a stack sells whole"));
+            var pwell = Style.Panel(Style.Well(10));
+            var pc = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+            var cells = pouch.Cast<ItemInstance?>().ToList();
+            while (cells.Count % 5 != 0) cells.Add(null);
+            pc.AddChild(ItemViews.Grid(cells, 5, 72, it => sel is { Buy: false } s && s.Uid == it.Uid, it => G.Journey.PriceOf(shop, it.Uid, false),
+                it => Choose(it.Uid, false), it => Sell(it.Uid), (it, over) => Hover(it, over, false), "pouch"));
+            pwell.AddChild(pc);
+            mine.AddChild(pwell);
+        }
         var purse = Style.H(Style.Gap2, Glyphs.Icon("coin", 34, Style.GoldHi), Style.Label($"{Math.Floor(ch.Gold)}", Style.Display, 40, Style.GoldHi), Style.Label("gold", Style.TextItalic, Style.Body, Style.InkDim));
         purse.Alignment = BoxContainer.AlignmentMode.Center;
         mine.AddChild(purse);
@@ -537,7 +592,7 @@ public partial class ShopScreen : Overlay
         foreach (var c in inspect.GetChildren()) { inspect.RemoveChild(c); c.QueueFree(); }
         var ch = G.Journey.Ch;
         var stock = G.Journey.World.Shops.GetValueOrDefault(shop)?.Stock ?? new();
-        ItemInstance? chosen = sel is var (uid, buy) ? (buy ? stock.FirstOrDefault(x => x.Uid == uid) : ch.Pack.FirstOrDefault(x => x?.Uid == uid)) : null;
+        ItemInstance? chosen = sel is var (uid, buy) ? (buy ? stock.FirstOrDefault(x => x.Uid == uid) : ch.Pack.FirstOrDefault(x => x?.Uid == uid) ?? Inventory.Pouch(ch).FirstOrDefault(x => x.Uid == uid)) : null;
         if (chosen == null || sel is not var (_, buying))
         {
             inspect.AddChild(Style.Gap(Style.Gap4));

@@ -100,6 +100,10 @@ public interface IZoneHost
     void ArenaOver(Arena.ArenaResult result) { }
     /// <summary>Pulled into an ember arena (saved first, where the survivor stands).</summary>
     void EnterArena(Arena.ArenaSpec spec) { }
+    /// <summary>A cinematic (godot/data/cinematics/ID.json) played now, `done`
+    /// when it hands back or is skipped. False where none can play (no
+    /// screen, the tests): the zone then says its lines as captions.</summary>
+    bool Cinematic(string id, Action? done = null) => false;
 }
 
 /// <summary>The zone's look, as a runtime reaches into it.</summary>
@@ -366,6 +370,8 @@ public abstract class ZoneRuntime
     /// <summary>A place that wants its own music (a mystery, a shrine).</summary>
     public virtual string? MusicMood(double x, double z) => null;
     public virtual AmbienceMix Ambience(double x, double z) => new();
+    /// <summary>A cinematic's "event" cue (its hooks in the zone: the boss spawned where it leaves him).</summary>
+    public virtual void CineEvent(string name) { }
     public virtual Dictionary<string, object?> Debug() => new();
     public virtual void Dispose()
     {
