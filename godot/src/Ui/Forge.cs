@@ -727,7 +727,10 @@ public partial class ForgeScreen : Overlay
         struck = off ? null : (uid, q.Verb is Verb.Temper or Verb.WorkIn or Verb.Cage ? (q.Index >= 0 ? q.Index : seam) : -1, heat, q.Verb);
         // The pad's focus comes back to the seam worked when the press it was on is gone.
         Nav.Prefer = seam >= 0 ? $"seam:{seam}" : "worn:0";
-        G.Gear((j, b) => j.Work(uid, q, b));
+        // A craft changes what a piece does, never how it looks: the kit is folded back into the
+        // fight (Journey.Work), and the figure is not dressed again.
+        G.Journey.Work(uid, q, G.Battle);
+        Refresh();
     }
 
     /// <summary>The hammer's moment, once the page is built again after a craft: the seam worked
