@@ -69,7 +69,13 @@ branch at milestones (the main session merges), hand off past about 500k context
 3. **Phase 3**: Vonnra's binding at the toll-house table (her role is unchanged, confirmed by the
    story lead; write her lines without the survivor's name, as her name-takes are spliced; the
    story lead writes them); Snib's slurry while the pump runs.
-4. **Endgame builds** (design 20.6) once combat's successor has the chart item and map loot.
+4. **Endgame builds** (design 20.6). Combat has built the charts (`Maps/Charts.cs`: tier, people,
+   seed, rarity, prefixes and suffixes, each paying quantity, rarity and pack size), and the
+   experience director (`ad1f5623590e09883`) has set a map's shape (`docs/EXPERIENCE_AUDIT.md`,
+   "A map's shape", on `worktree-agent-ad1f5623590e09883`). Design the chart verbs (20.4) against
+   both. Their ask: working a chart is a choice about risk (which mod to live with for which
+   pay), never a tax; check Ink and Burn against that (Pin and Scrape already are). They also note
+   Kerchief maps pay about 700 gold at the day's rate: weigh it in `CraftingEconomy` once maps run.
 5. **Still to see** in the game: the forge right after a craft (Brannoc's line, the gauge), the
    pack's break down by mouse, a real arena's end after a fall.
 
