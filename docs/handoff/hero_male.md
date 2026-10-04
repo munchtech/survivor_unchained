@@ -64,11 +64,20 @@ Make the man the player can be the heroine's equal, from the owner's AccuRIG act
   - the skull is a little boxy at the top-back: ease `head-square` and `head-scale-vert-decr` in `FACE`;
   - the collarbone highlights are a little hard.
 
-## In progress when handed off
-The head was being rebuilt at `HEAD_SCALE` 1.06 with eyes a little more open (`X-eye-height2-decr` 0.15), and the Krea face paint was being re-run on it.
-1. Then rebuild the head again so it lays the new `face_paint.png`, and render with lookdev.
-2. If the paint is off, move `tools/assets/hero_male_face/face_paint.png` aside before rebuilding for new drawings. The head lays any face paint it finds, and the drawings are made from the head as built.
-3. Earlier paintings are kept in `tools/comfy/out/heroes/hero_face_paint_v1.png` and `_v2.png`.
+## State at handoff (e7709bd)
+- Nothing is in progress. The head at `HEAD_SCALE` 1.06, with its third Krea painting, is committed. Sheets: `docs/hero_male/face3.jpg` and `body3.jpg`.
+- **Repainting the face.**
+  1. Move `tools/assets/hero_male_face/face_paint.png` aside.
+  2. Rebuild the head: the drawings are made from the head as built, and the head lays any face paint it finds.
+  3. Run `hero_male_face.py`.
+  4. Rebuild the head again.
+- Earlier paintings are kept in `tools/comfy/out/heroes/hero_face_paint_v1.png` and `_v2.png`.
+- **Lookdev:**
+  ```
+  BODY=hero HAIR=none NOLIFE=1 SKIN=rough=0.6,shine=0.35 ORBIT=0,1.86,0.8,1.82 FOV=30
+  godot --path godot --resolution 1200x1200 -s res://tools_scenes/lookdev.gd -- Idle <out.png>
+  ```
+- **Tests:** 539 green.
 
 ## Next, in order
 1. **Finish the face.** Tune his skin values, commit `hero.glb` and the code, and send render sheets.
