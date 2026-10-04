@@ -8209,7 +8209,7 @@
        "fact": "caravan.survivors",
        "eq": "dead"
       },
-      "text": "I heard. I heard. ...They'd not been fed for a week, Holloway says. Jory used to sulk if supper was late. You needn't say anything. What do you want?"
+      "text": "I heard. I heard. ...They were fed, Holloway says. It was the cold that did it, in those cages, at night. Jory never could get warm of a night. I used to put a hot brick in his bed. You needn't say anything. What do you want?"
      },
      {
       "when": {
@@ -12407,7 +12407,7 @@
       "when": {
        "time": "night"
       },
-      "text": "(Her lamp is lit, and she is looking south, toward the ford.) Traveller. The road was quiet tonight. It will not always be. Payment, always."
+      "text": "(Her lamp is lit, and she is looking south, toward the ford.) Traveller. The road is quiet tonight. It will not always be. Payment, always."
      },
      {
       "when": {

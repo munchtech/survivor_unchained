@@ -162,6 +162,9 @@ public static class Dressing
         return root;
     }
 
+    /// <summary>The side of the squares the kit pieces are gathered in (--prop-cell, for measuring).</summary>
+    static float PropCell => Args.Num("prop-cell", 32);
+
     /// <summary>The world kits' pieces, placed one by one in the web game
     /// (the houses and walls too, which it merges): here each piece's parts
     /// as MultiMeshes, one per 32 m bucket so what is off screen is culled.</summary>
@@ -169,9 +172,10 @@ public static class Dressing
     {
         var root = new Node3D { Name = "Props" };
         var groups = new Dictionary<(string, int, int), List<Transform3D>>();
+        float cell = PropCell;
         foreach (var (id, at) in z.Props)
         {
-            var k = (id, Mathf.FloorToInt(at.Origin.X / 32), Mathf.FloorToInt(at.Origin.Z / 32));
+            var k = (id, Mathf.FloorToInt(at.Origin.X / cell), Mathf.FloorToInt(at.Origin.Z / cell));
             if (!groups.TryGetValue(k, out var list)) groups[k] = list = new();
             list.Add(at);
         }

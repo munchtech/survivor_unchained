@@ -73,6 +73,9 @@ public partial class Controls : Node
     readonly List<Func<Act, bool>> listeners = new();
     /// <summary>Movement intent, length at most 1 (x east, z south, as the sim has it).</summary>
     public float MoveX, MoveZ;
+    /// <summary>The right stick, past its dead zone (x right, y down): what a
+    /// screen turns or brings near with it (the figure in creation).</summary>
+    public Vector2 Look;
     bool usingPad;
     /// <summary>The pad was touched last (the prompts show its buttons); a
     /// key, a click or a real move of the mouse turns it back.</summary>
@@ -258,6 +261,14 @@ public partial class Controls : Node
         if (len > 1) { x /= len; z /= len; }
         MoveX = Captured ? 0 : x;
         MoveZ = Captured ? 0 : z;
+        var look = Vector2.Zero;
+        foreach (var dev in Input.GetConnectedJoypads())
+        {
+            var r = new Vector2(Input.GetJoyAxis(dev, JoyAxis.RightX), Input.GetJoyAxis(dev, JoyAxis.RightY));
+            float m = r.Length();
+            if (m > 0.2f) { look += r / m * Mathf.Min(1, (m - 0.2f) / 0.7f); UsingPad = true; }
+        }
+        Look = look.LimitLength(1);
     }
 
     /* ----------------------------------------------------------- binding -- */
