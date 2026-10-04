@@ -348,6 +348,65 @@ public class CinematicTests
         Assert.Contains("Low Kiln's three days. She'll be there by now.", Said("brannoc", s, false));
     }
 
+    /// <summary>A night as Arenas.Finish leaves it in the world.</summary>
+    static void Night(Setup s, string people, bool won, bool fell, bool story, double past = 0, bool longest = false)
+    {
+        var f = s.World.Facts;
+        // The Pack as a new journey has it (Journey.New), or the dawn's rules count it gone.
+        if (s.World.Fact("beasts.population").IsNull) f["beasts.population"] = 60;
+        f["arena.last.people"] = people; f["arena.last.won"] = won; f["arena.last.fell"] = fell; f["arena.last.story"] = story;
+        f["arena.last.past"] = past; f["arena.last.longest"] = longest; f["arena.last.ago"] = 0;
+        f["arena.nights"] = s.World.Fact("arena.nights").Number + 1;
+        if (fell) f["arena.fell"] = s.World.Fact("arena.fell").Number + 1;
+        s.World.Time = TimeOfDay.Night;
+    }
+
+    /// <summary>Everything the town says about the last night that holds now.</summary>
+    static List<string> NightTalk(Setup s, bool dark) =>
+        Lore.Npcs.Values.Concat(Lore.Outsiders.Values).SelectMany(p => p.Said ?? new())
+            .Where(l => SurvivorUnchained.Core.Json.Write(l.When).Contains("arena.last.ago"))
+            .Where(l => (l.Night == null || l.Night == dark) && Rules.Test(l.When, s.C)).Select(l => l.Text).ToList();
+
+    [Fact]
+    public void The_town_talks_about_the_night_just_past_and_then_lets_it_go()
+    {
+        // The experience audit's finding 5: after any night, someone says something, that
+        // night and the morning after; by the next night it is old news.
+        foreach (var people in new[] { "pack", "dead", "lamplings", "kerchiefs" })
+            foreach (var won in new[] { true, false })
+                foreach (var fell in new[] { true, false })
+                    foreach (var story in new[] { true, false })
+                    {
+                        var s = Q();
+                        Night(s, people, won, fell, story);
+                        Assert.NotEmpty(NightTalk(s, true));
+                        Simulation.AdvanceDay(s.C, () => 0.99);
+                        Assert.NotEmpty(NightTalk(s, false));
+                        s.World.Time = TimeOfDay.Night;
+                        Assert.Empty(NightTalk(s, true));
+                        Simulation.AdvanceDay(s.C, () => 0.99);
+                        Assert.Empty(NightTalk(s, false));
+                    }
+        // Who says what: the count on the wall, the lamp on the slate, the dark like moths.
+        var t = Q();
+        Night(t, "pack", won: true, fell: false, story: false, past: 16, longest: true);
+        var tonight = NightTalk(t, true);
+        Assert.Contains("One in. Count's right, for once.", tonight);
+        Assert.Contains("Lamp burned all night for you, pet. A night's ember. It's on your slate.", tonight);
+        Assert.Contains(tonight, l => l.Contains("like moths round a candle"));
+        Assert.Contains(tonight, l => l.StartsWith("Your longest yet."));
+        Simulation.AdvanceDay(t.C, () => 0.99);
+        // A Pack night: Maeca hears it, and once the Pack is gone she asks what is still out there.
+        Assert.Contains("Heard you out by the Hollow last night. From the Blind. How many?", Said("maeca", t, false));
+        t.World.Facts["beasts.outcome"] = "slaughtered";
+        Assert.Contains("There's no Pack left. I counted the pelts. So what were you killing?", Said("maeca", t, false));
+        // Chid's first fall gives away that the survivor is always cold at night; his "again" waits for a second.
+        var c = Q();
+        Night(c, "dead", won: false, fell: true, story: true);
+        Assert.Contains(NightTalk(c, true), l => l.Contains("Colder than usual"));
+        Assert.DoesNotContain(NightTalk(c, true), l => l.StartsWith("Back again!"));
+    }
+
     [Fact]
     public void Nobody_says_an_answer_before_its_act()
     {

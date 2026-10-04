@@ -199,6 +199,9 @@ public static class Arenas
         w.Facts["arena.last.day"] = w.Day;
         w.Facts["arena.last.longest"] = longest;
         w.Facts["arena.last.killer"] = !b.Player.Alive && killer != null ? killer : null;
+        // How long ago it was: 0 the night itself, 1 the day after (a daily rule counts it on),
+        // so the town talks about the night just past and not one from last week.
+        w.Facts["arena.last.ago"] = 0;
         if (!b.Player.Alive) w.Facts["arena.fell"] = w.Fact("arena.fell").Number + 1;
         w.Facts["arena.nights"] = w.Fact("arena.nights").Number + 1;
         w.Arena = null;
