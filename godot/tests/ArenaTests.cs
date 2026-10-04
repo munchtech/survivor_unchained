@@ -443,8 +443,8 @@ public class ArenaTests
     }
 
     /// <summary>Crafting's measure: the Kerchiefs' horde paid tens of thousands of gold a night and
-    /// the crowd's champions hundreds of pieces of gear. Now the rank and file drop a fiftieth of
-    /// their gold, and gear comes only from what carries a chest.</summary>
+    /// the crowd's champions hundreds of pieces of gear. Now the rank and file drop a three-hundredth
+    /// of their gold and champions a tenth, and gear comes only from what carries a chest.</summary>
     [Fact]
     public void An_arenas_horde_pays_a_little_gold_and_its_crowd_champions_no_gear()
     {
@@ -457,8 +457,9 @@ public class ArenaTests
             b.KillEnemy(e, true, null);
         }
         foreach (var k in b.Pickups.Living()) { if (k.Kind == PickupKind.Gold) gold++; if (k.Kind == PickupKind.Item) items++; }
-        // 380 footpads at the day's rate would drop about 250 purses; 20 champions keep theirs.
-        Assert.InRange(gold, 1, 40);
+        // 380 footpads and 20 champions at the day's rate would drop about 220 purses: now a
+        // three-hundredth of the crowd's and a tenth of the champions', one or two.
+        Assert.InRange(gold, 0, 8);
         Assert.Equal(0, items);
     }
 
