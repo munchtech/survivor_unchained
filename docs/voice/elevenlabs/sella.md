@@ -1,6 +1,6 @@
 # Sella: ElevenLabs packet
 
-Voice id in the game: `sella`. 95 takes to record (9,821 characters; about 29,463 credits at three tries a line). Status: **final** (the story lead, 2026-10-03): record it.
+Voice id in the game: `sella`. 95 takes to record (9,832 characters; about 29,496 credits at three tries a line). Status: **final** (the story lead, 2026-10-03): record it.
 
 ## Who they are
 
@@ -1083,9 +1083,9 @@ Subtitle: Cold night to sleep alone, love.
 *Note:* An invitation dressed as thrift.
 
 ```
-[teasing, quietly] Rook's walls are thin. Just so you know.
+[teasing, quietly] I've a bath going cold upstairs. Shame to waste it.
 ```
-Subtitle: Rook's walls are thin. Just so you know.
+Subtitle: I've a bath going cold upstairs. Shame to waste it.
 
 ### 94. `bark.sella.night.2.wav`
 

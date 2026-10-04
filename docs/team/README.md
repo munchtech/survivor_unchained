@@ -63,4 +63,5 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Performance | a9586a5171413db0b | docs/team/performance.md |
 | Arena art | ab03c3c85571e5085 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | ae2de192cce8298ca | docs/team/hero_male.md |
+| Heroine face, hair and character creation's Look | abfa9bb430ec2391e | docs/team/face.md |
 | Heroine outfits | main session | — |

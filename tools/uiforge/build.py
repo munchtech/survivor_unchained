@@ -10,7 +10,8 @@ tools/comfy/out/uiforge/ (ignored by git) and remake any that are missing on the
 ComfyUI with the prompt and seed recorded beside them.
 
   chrome     Blender-modelled metal, painted over: plate, buttons, slots, socket, tooltips,
-             toast, prompt pill, tabs, row, segment, keycap, chip, bar groove and casing
+             toast, prompt pill, tabs, row, segment, keycap, chip, bar groove and casing, the
+             HUD's console, the well and the slab
   paper      the ledger paper and the hint note
   cards      the draft's cards, painted over forged guides
   painted    the map's frame, the boss's casing, logo, ornaments
@@ -19,8 +20,11 @@ ComfyUI with the prompt and seed recorded beside them.
   mapmarks   the map's marks, in ink on parchment
   glyphs     the interface's own marks as value art
   icons      the skills', arts', blessings' and evolutions' painted icons
-  medals     the level and heart medallions and the heart's stone, modelled as reliefs (after
-             icons: the stone is the heart icon)
+  medals     round pieces modelled as reliefs: the level medallion, the medallion ring, the health
+             globe's rim and glass, the (unused) heart medallion and its stone (after icons: the
+             stone is the heart icon)
+  pieces     frames modelled as reliefs: the page header, the attribute pillar, the crested card
+             and row, the banner, the open book, the ribbon, the plaque's rule
   items      the items' painted icons
   cursors    the pointer, the hand, the refusal
   arrow      the survivor's arrow on the minimap
@@ -99,6 +103,12 @@ def g_medals():
     import medals
     for n in medals.BUILD:
         medals.build(n)
+
+
+def g_pieces():
+    import pieces
+    for n in pieces.BUILD:
+        pieces.build(n)
 
 
 def g_items():

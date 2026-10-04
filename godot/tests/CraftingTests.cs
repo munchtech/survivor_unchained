@@ -96,6 +96,33 @@ public class CraftingTests
     }
 
     [Fact]
+    public void Materials_are_counted_in_words_and_a_banked_forge_quotes_but_will_not_work()
+    {
+        Assert.Equal("1 wolf pelt", Items.Several("wolf_pelt", 1));
+        Assert.Equal("3 wolf pelts", Items.Several("wolf_pelt", 3));
+        Assert.Equal("4 old iron", Items.Several(Crafting.Iron, 4));
+        Assert.Equal("2 barrow dust", Items.Several("bone_dust", 2));
+        foreach (var m in Crafting.Rules.Materials.Keys.Append(Crafting.Iron)) Assert.NotNull(Items.Get(m).Plural);
+
+        var j = Make();
+        var it = Piece(j, "iron_helm", 2, ("hale", 0));
+        Give(j, Crafting.Iron, 20);
+        Assert.Contains("Needs 3 wolf pelts", Crafting.WorkIn(j.Craft, it, "wolf_pelt", "of_the_wolf").Blocked);
+        j.World.Time = TimeOfDay.Night;
+        var q = Crafting.Temper(j.Craft, it, 0);
+        Assert.False(q.Ok);
+        Assert.Contains("banked", q.Blocked);
+        // The terms still to earn are shown with the standing they ask.
+        var ladder = Crafting.TermLadder("brannoc", j.Ctx);
+        Assert.Equal(2, ladder.Count);
+        Assert.All(ladder, t => Assert.False(t.Met));
+        Assert.Equal("respect 20", ladder[0].Needs);
+        Assert.Contains("1 old iron less", ladder[1].Effect);
+        j.World.Npc("brannoc").Respect = 25;
+        Assert.True(Crafting.TermLadder("brannoc", j.Ctx)[0].Met);
+    }
+
+    [Fact]
     public void A_piece_has_heat_by_its_rarity_rolled_where_it_fell()
     {
         var j = Make();

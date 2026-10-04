@@ -279,6 +279,6 @@ public partial class Game
     {
         if (!Settings.Current.Mature) { Settings.Current.Mature = true; screens.Current?.Refresh(); return; }
         if (Mode == "title") NewJourney();
-        else if (Mode == "create" && draft != null) { draft.Name = "Ashe"; BeginJourney(draft.Choice()); }
+        else if (Mode == "create" && draft != null) { draft.Name = "Wren"; BeginJourney(draft.Choice()); }
     }
 }

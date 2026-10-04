@@ -63,8 +63,9 @@ public sealed class ChargeDirector
         {
             if (!e.Alive) continue;
             if (e.State == EnemyState.Burrowed) { under++; continue; }
-            if (e.Boss || e.Disposition == Disposition.Ally || (e.Def.Charge ?? e.Def.Lunge) == null) continue;
-            if (e.State is EnemyState.Windup or EnemyState.Lunging)
+            if (e.Boss || e.Disposition == Disposition.Ally || ((e.Def.Charge ?? e.Def.Lunge) == null && e.Def.Slam == null)) continue;
+            // (A blow on the ground being marked is a run as the eye reads it.)
+            if (e.State is EnemyState.Windup or EnemyState.Lunging || (e.State == EnemyState.Casting && e.Cast == CastKind.Slam))
             {
                 live++;
                 if (e.Elite) liveElite++;
@@ -120,28 +121,29 @@ public sealed class ChargeDirector
 
     /// <summary>May this creature start its run now? Refused, it keeps walking in and asks
     /// again in a moment.</summary>
-    public bool MayStart(Battle b, Enemy e)
+    /// <param name="retry">Refused, set its run's clock to ask again shortly (a slam keeps its own).</param>
+    public bool MayStart(Battle b, Enemy e, bool retry = true)
     {
         if (e.Boss || e.Disposition == Disposition.Ally) return true;
         if (!On) { Started++; live++; return true; }
         if (e.Elite)
         {
-            if (liveElite >= EliteCap) return Refuse(b, e);
+            if (liveElite >= EliteCap) return Refuse(e, retry);
             liveElite++; live++; Started++;
             return true;
         }
         int cap = b.Time < calmUntil ? 0 : Now switch { Beat.Wave => Cap, Beat.Spike => SpikeCap, _ => 0 };
         // One after another in a wave, so each lane is read before the next; a ripple in a spike.
         double gap = Now == Beat.Spike ? 0.12 : 0.7;
-        if (live >= cap || b.Time - lastStart < gap) return Refuse(b, e);
+        if (live >= cap || b.Time - lastStart < gap) return Refuse(e, retry);
         live++; Started++;
         lastStart = b.Time;
         return true;
     }
 
-    bool Refuse(Battle b, Enemy e)
+    bool Refuse(Enemy e, bool retry)
     {
-        e.RangedT = 0.3 + 0.5 * rng.Next();
+        if (retry) e.RangedT = 0.3 + 0.5 * rng.Next();
         Refused++;
         return false;
     }

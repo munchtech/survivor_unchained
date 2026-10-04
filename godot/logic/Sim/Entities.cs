@@ -19,6 +19,8 @@ public sealed record GroundSpec(double Radius, double Duration, double DpsPct);
 public enum EnemyState { Rising, Active, Windup, Lunging, Recover, Burrowed, Surfacing, Casting, Dying, Dead, Stunned, Fleeing, Idle }
 public enum Disposition { Hostile, Neutral, Ally }
 public enum EnemyAnim { Move, Idle, Attack, Hit, Die, Rise, Windup, Cast, Burrow }
+/// <summary>What a creature in its Casting state is casting.</summary>
+public enum CastKind { None, Raise, Summon, Slam, Aura }
 /// <summary>Whose a projectile or ground effect is.</summary>
 public enum Side { Player, Enemy, Ally, World }
 public enum Seek { Nearest, Elite, Random, Strongest, Marked }
@@ -127,6 +129,13 @@ public sealed class Enemy : Pooled
     /// <summary>A boss's stagger bar (0..1), filled by what would lock a lesser creature;
     /// held while staggered, and resisting it for a while after.</summary>
     public double Stagger, StaggeredT, StaggerResistT;
+    /// <summary>Quickened by its own kind's aura (pace and blows), and warded (less taken), for a while.</summary>
+    public double HasteT, Haste = 1, WardT, Ward;
+    /// <summary>The verbs' own clocks, what it is casting and where, the runs left in a
+    /// chain of charges, and how many it has called.</summary>
+    public double AuraT, SummonT, SlamT, CastX, CastZ;
+    public CastKind Cast;
+    public int ChainLeft, Summoned;
 
     public Enemy(int id) { Id = id; }
 }

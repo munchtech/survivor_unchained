@@ -3,7 +3,9 @@ local Krea, then fitted here. The card hangs from two lamp-iron brackets at
 its top, the broken chain riding over its top edge (clear of the ribbon the
 code writes there), and is nailed at its foot by two coins at the very
 corners (clear of the rarity word and the key). The file is the card plus
-its overhang (UiArt Out = 24): 736 by 1000, drawn one to one.
+its overhang (UiArt Out = 24): painted at 736 by 1000 (the card was 452 high), then
+lengthened through its calm middle to 736 by 1096 for the 320 by 500 card, so it is
+drawn one to one again.
 """
 from __future__ import annotations
 
@@ -42,12 +44,36 @@ PICKS = {
 }
 
 
+H_NOW = 1096       # the card is 500 high now (+ 24 above and below), file px
+
+
+def lengthen(path, height=H_NOW, at=520, blend=40):
+    """The card made taller through its calm middle: the rows above `at` repeated (the side
+    straps continue, hammered iron repeats unseen), cross-faded at both joins."""
+    from PIL import Image
+    img = np.asarray(Image.open(path).convert("RGBA"), np.float32) / 255
+    h0 = img.shape[0]
+    n = height - h0
+    if n <= 0:
+        return
+    band = img[at - n:at]
+    out = np.concatenate([img[:at], band, img[at:]], axis=0)
+    t = np.linspace(0, 1, blend, dtype=np.float32)[:, None, None]
+    # Into the repeat: the original's rows give way to the band's.
+    out[at:at + blend] = img[at:at + blend] * (1 - t) + band[:blend] * t
+    # Out of the repeat: the band's last rows give way to the original's continuation.
+    out[at + n - blend:at + n] = band[n - blend:] * (1 - t) + img[at - blend:at] * t
+    F.save(F.to_pil(out), path)
+
+
 def build_all(out_dir):
     import batch
     for kind, (src, coins) in PICKS.items():
-        fit(os.path.join(RAW, *src.split("/")), os.path.join(out_dir, f"card_{kind}.png"), kind=kind,
+        dst = os.path.join(out_dir, f"card_{kind}.png")
+        fit(os.path.join(RAW, *src.split("/")), dst, kind=kind,
             hole_light=0.35 if kind != "common" else 0.55, coins=coins,
             heal_prompt=(batch.RARITY.get(kind, "") + ". " + batch.S) if coins else None)
+        lengthen(dst)
 
 
 # The light in the coins' holes, by what the card is (deep, hot).

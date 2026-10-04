@@ -29,6 +29,30 @@
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_weight_shift_idle.bvh",
 		"speed": 0.0
 	},
+	"f_lurch": {
+		"changes": "",
+		"cycle": 0.733333333333333,
+		"layer": "full",
+		"length": 0.733333349227905,
+		"licence": "own work",
+		"loop": true,
+		"note": "the Risen's lurch, at the crowd's pace",
+		"source": "keyed (tools/anim/dead.py)",
+		"speed": 2.6,
+		"steps": 2.0
+	},
+	"f_lurch_armed": {
+		"changes": "",
+		"cycle": 0.733333333333333,
+		"layer": "full",
+		"length": 0.733333349227905,
+		"licence": "own work",
+		"loop": true,
+		"note": "the Risen's lurch, at the crowd's pace, armed",
+		"source": "keyed (tools/anim/dead.py)",
+		"speed": 2.6,
+		"steps": 2.0
+	},
 	"f_pick_up": {
 		"changes": "retargeted to her skeleton, feet locked, in place",
 		"layer": "full",
@@ -128,6 +152,30 @@
 		"note": "townsfolk (men)",
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_weight_shift_idle.bvh",
 		"speed": 0.0
+	},
+	"m_lurch": {
+		"changes": "",
+		"cycle": 0.733333333333333,
+		"layer": "full",
+		"length": 0.733333349227905,
+		"licence": "own work",
+		"loop": true,
+		"note": "the Risen's lurch, at the crowd's pace",
+		"source": "keyed (tools/anim/dead.py)",
+		"speed": 2.6,
+		"steps": 2.0
+	},
+	"m_lurch_armed": {
+		"changes": "",
+		"cycle": 0.733333333333333,
+		"layer": "full",
+		"length": 0.733333349227905,
+		"licence": "own work",
+		"loop": true,
+		"note": "the Risen's lurch, at the crowd's pace, armed",
+		"source": "keyed (tools/anim/dead.py)",
+		"speed": 2.6,
+		"steps": 2.0
 	},
 	"m_pick_up": {
 		"changes": "retargeted to her skeleton, feet locked, in place",

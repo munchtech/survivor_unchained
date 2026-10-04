@@ -453,16 +453,45 @@ public sealed class Waystation : ZoneRuntime
             // The hour turned (a rest, waiting for night): light the braziers or put them out.
             if (Dark != nightNow) { nightNow = Dark; SetNight(nightNow); }
         }
-        var plates = new List<Plate>();
+        Marks(dt);
+        plates.Clear();
         foreach (var (id, a) in Actors)
         {
             if (a.Hidden) continue;
             bool metThem = W.Npcs.TryGetValue(id, out var s) && s.Flags.TryGetValue("met", out var met) && met.Truthy;
-            var mark = Dialogue.All.TryGetValue(id, out var convo) ? Dialogue.MarkerOf(convo, C) : null;
             plates.Add(new Plate(id, a.X, G.Look.HeightAt(a.X, a.Z) + 2.25 * (a.Def.Scale ?? 1) - (a.Seated ? 0.5 : 0), a.Z, a.Def.Name,
-                metThem ? a.Def.Role : null, mark is { Length: > 0 } ? mark[0] : null));
+                metThem ? a.Def.Role : null, marks.GetValueOrDefault(id)));
         }
         G.Look.Plates(plates);
+    }
+
+    readonly List<Plate> plates = new();
+
+    // The markers over people's heads (the story's breadcrumbs) are each a run
+    // of the story's conditions: worked out when something may have changed
+    // them (a conversation closed, something used, the hour turned, the zone
+    // begun: Touched, and the time checked each frame) and every two seconds
+    // besides, not every frame for everyone (that was half the town's frame).
+    // A marker a conversation clears is gone the frame the conversation ends.
+    readonly Dictionary<string, char?> marks = new();
+    bool marksDirty = true;
+    double marksT;
+    TimeOfDay marksTime;
+
+    public override void Touched() => marksDirty = true;
+
+    void Marks(double dt)
+    {
+        marksT -= dt;
+        if (W.Time != marksTime) { marksTime = W.Time; marksDirty = true; }
+        if (!marksDirty && marksT > 0) return;
+        marksDirty = false;
+        marksT = 2;
+        foreach (var id in Actors.Keys)
+        {
+            var mark = Dialogue.All.TryGetValue(id, out var convo) ? Dialogue.MarkerOf(convo, C) : null;
+            marks[id] = mark is { Length: > 0 } ? mark[0] : null;
+        }
     }
 
     public override Dictionary<string, object?> Debug() => new()

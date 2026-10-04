@@ -42,6 +42,7 @@ through, and one that is not.
   read back. If she pays attention, she also learns where Vonnra's sight comes
   from.
 - **Pays:**
+  - C01's call up the road: "No charge, this once." opens the reading, the voice that called her up the road now across a table (bible, "Who tells it");
   - the whole of Act 1, reading by reading;
   - Sella's buyers ("Vonnra pays for all of it"), paid in the reading of her past
     if she told Sella that past while Sella was still selling her
@@ -221,7 +222,11 @@ lamp. No contractions; long pauses; never hurried; she never answers yes or no
 - **If accused**, the stillness becomes a different stillness: someone listening
   very hard. She lifts the lamp slowly. She breathes on its flame without meaning
   to: it is cold, and she is alive. "{name}" is the only word in the game she says
-  with something like warmth, and it should frighten.
+  with something like warmth, and it should frighten. It is not tenderness. It
+  is the warmth of ownership: level and exact, as if she has always had it (she
+  bought it from Rook on the first day, and the space on her ledger's line has
+  been waiting for it since). One take serves the accusation, the door and
+  every greeting after, so it is played that way in all three.
 - **Alone**, she is a clerk. The fingertip on the line is unsentimental, as on any
   entry not yet settled.
 

@@ -25,6 +25,7 @@ using SurvivorUnchained.Rpg;
  *          --beyond MIN  --weapons all  --levels 20,40  --par N  --out PATH  --csv DIR
  *          --bossread 0 (the hands as they were before they read the bosses)
  *          --charges 0 (every charger on its own clock, as before the charge director)
+ *          --minutes 20 (a story's night: twenty minutes, ending on its boss)
  *
  * This is the one balance tool: the balance lab's sweep (godot/tests/BalanceLab.cs,
  * BALANCE_LAB=arena) runs these same arenas through these same hands. */
@@ -86,7 +87,7 @@ void Arena()
                         for (int w = 0; w < nw; w++)
                             specs.Add(new RunSpec(seed0 + s, c, pol, tier, peoples[(s + w) % peoples.Length], Sworn(oath, tier, seed0 + s),
                                 opt.Double("cap", 40), opt.Double("beyond", 0), allWeapons ? w : s % Callings.Archetype(c).Weapons.Count,
-                                Level: level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), Deft: deft));
+                                Level: level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), Deft: deft, Minutes: opt.Double("minutes", 30)));
                     }
     string outPath = opt.Get("out", "balance.jsonl");
     Console.WriteLine($"{specs.Count} arenas, {opt.Int("par", 16)} at a time -> {outPath}");

@@ -45,16 +45,22 @@ public partial class ZoneView : Node3D
     {
         Data = z;
         Name = $"Zone_{z.Id}";
+        Perf.Lap("zone view", true);
         var g = Ground.Build(z);
         ground = (ShaderMaterial)g.Mesh.SurfaceGetMaterial(0);
         AddChild(g);
         AddChild(Water.Build(z));
+        Perf.Lap("ground and water");
         AddChild(Dressing.Flora(z));
+        Perf.Lap("flora");
         props = Dressing.Props(z);
         AddChild(props);
+        Perf.Lap("props");
         Landmarks = new Landmarks(z);
         AddChild(Landmarks.Root);
+        Perf.Lap("landmarks");
         if (grassAround is Vector2 at) GrowGrass(at, grassRadius);
+        Perf.Lap("grass");
 
         var meta = z.Meta;
         specs = new List<ZoneData.LightSpec>(z.Lights);
@@ -92,6 +98,8 @@ public partial class ZoneView : Node3D
         }
         for (int i = 0; i < lights.Count; i++) SetLit(i, z.Lights[i].On);
         SetNight(false);
+        // The plain pieces drawn together, now that what is hidden here is hidden.
+        Landmarks.Merge();
     }
 
     OmniLight3D MakeLight(ZoneData.LightSpec l)
