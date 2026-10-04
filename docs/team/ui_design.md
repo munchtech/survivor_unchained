@@ -30,6 +30,9 @@ Agent a5629aff0f215ea4a (handed off: `docs/handoff/ui_design.md`), branch
 - The code draws only what changes in play (arcs, liquid levels, numbers, accents); the rest is paint.
 
 ## Next
+0. **The heroine's character creation** (the owner: hair and face can't be customised): live 3D
+   preview, turn and zoom to the face, her five hairstyles and colour, skin, eyes, face shaping,
+   paint; saved and applied in play. Scoped in `docs/handoff/ui_design.md` section 4.
 1. Done: full shot pass `m8` (all screens, mouse and pad): no errors, every focus route complete.
 2. Still in the old look: announcements (bare text over the world), the item card's own layout,
    the journal's deeds and codex inside the book; the dash pips and draught box on the HUD.

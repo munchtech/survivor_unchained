@@ -65,7 +65,28 @@ page with nothing learned has nothing to focus. Pictures: `godot/.shots/m8_*.png
 
 ## 4. In progress / next, in order
 
-See `docs/team/ui_design.md` "Next". In short: read the last full shot pass and fix what it shows;
+**0. First: the heroine's character creation** (the owner, arriving at handoff: "can we customize hair
+or face in our create character yet? I couldn't find it"). The coordinator's brief: creation worthy of
+her, a live 3D preview turnable and zoomable to her face, with her own five hairstyles (with their
+physics) and hair colour, skin tone, eye colour, face shaping as tasteful sliders or presets, face
+paint if the system supports it; it must save, apply in play, and look AAA with painted art.
+What exists (scoped, not built):
+- Her body is "heroine" (`People.cs:94-102`, `art/people/heroine.glb`): `HerHair(p, style, colour)`
+  with `HerHairs = long, ponytail, braid, bob, pixie`; `HerFace(p, face)` with 25 shape-key sliders
+  (`HerSliders`, -1..1: eyes size/spacing/height/tilt/open, brows, nose, lips, mouth, cheekbones,
+  cheeks, jaw, chin, ears) and expressions; `Look.Face` carries them.
+- Not wired: `Loadout.cs:79` gives her no hairstyle (`Hair = her ? null`), so `People` falls back to
+  "long"; `CharacterData` (`Rpg/Character.cs:122`) keeps Skin, Hair (colour), HairStyle but **no face,
+  eye colour or paint**; `heroine_eye.gdshader` has **no iris tint** uniform; no face paint system.
+- Creation's look step (`Front.cs` ~410-460) hides the cut for her ("her hair is her own").
+Plan: add `Face` (slider dictionary), `Eyes` and `Paint` to the saved character and its Loadout/Look;
+let her hairstyle through `Loadout`; an iris tint in the eye shader (that shader and `src/Actors/`
+belong to the heroine pipeline, now the main session: agree the change with it); in creation, a look
+step with the figure turnable (drag / right stick) and a zoom to the face, her five cuts as painted
+portrait cards, swatches for hair, skin and eyes, face shaping as a few presets plus grouped sliders
+(eyes, brows, nose, mouth, jaw and chin), all on the house's plates. Shoot it at full resolution.
+
+See `docs/team/ui_design.md` "Next" for the rest. In short: read the last full shot pass and fix what it shows;
 announcements (bare text), the item card's own layout, the journal's deeds and codex, the HUD's dash
 pips and draught box; re-make `docs/ui_review/`; UI_DESIGN section 10.
 
@@ -114,6 +135,7 @@ pips and draught box; re-make `docs/ui_review/`; UI_DESIGN section 10.
 - Main session (coordinator): merges branches; relays the owner. Message "main".
 - UI art lead `a72467cac33063d3a` (`docs/team/ui_art.md`): paints from `UI_ART_BRIEF.md` 4.9 and
   `tools/comfy/ui_assets.json`; its step 0 is merging this branch.
+- Gameplay experience director `a33f58e68e89e3ccf` (may send UI briefs); crafting lead `a7862117a0240deb5`.
 - Story `a7622ae77d19e31dc`, combat `a09c5a65f5a84319e`, animation `aa4f5fc266b043035`, voice
   `a2da9a388ceb1b987` (see the roster in `docs/team/README.md`).
 
