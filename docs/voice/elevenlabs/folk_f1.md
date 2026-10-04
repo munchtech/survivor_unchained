@@ -11,7 +11,7 @@ A middle-aged townswoman from the north of England with a plain, warm, slightly 
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Townswoman, middle-aged`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, northern English). Female, 40s. Studio quality. Persona: a northern townswoman. A middle-aged townswoman from the north of England with a plain, warm, slightly nasal voice and a broad northern accent. Gossipy and tired. Thick northern English accent. No reverb or effects.
+Native English (British, northern English). Female, 40s. Studio quality. Persona: a northern townswoman. A middle-aged townswoman from the north of England with a plain, warm, slightly nasal voice and a broad northern accent. Gossipy and tired. Broad northern English accent. No reverb or effects.
 ```
 
 Preview text:

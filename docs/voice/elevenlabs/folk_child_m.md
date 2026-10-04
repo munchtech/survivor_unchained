@@ -11,7 +11,7 @@ An eight-year-old boy from the north of England with a high, bright child's voic
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU A town boy`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, northern English). Male, a child of about 8. Studio quality. Persona: an eight-year-old boy with british accent from the north. An eight-year-old boy from the north of England with a high, bright child's voice and a northern accent. Cheeky, loud and excited. Thick northern English accent. No reverb or effects.
+Native English (British, northern English). Male, a child of about 8. Studio quality. Persona: an eight-year-old boy with british accent from the north. An eight-year-old boy from the north of England with a high, bright child's voice and a northern accent. Cheeky, loud and excited. Broad northern English accent. No reverb or effects.
 ```
 
 Preview text:

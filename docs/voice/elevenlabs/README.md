@@ -70,7 +70,7 @@ By how much each voice is heard, and where the player meets it first:
 |---|---|---|---|
 | [The narrator](narrator.md) | 269 | 27,374 |  |
 | [Sella](sella.md) | 95 | 9,821 |  |
-| [Vonnra Ash-of-Morrow](vonnra.md) | 76 | 8,878 |  |
+| [Vonnra Ash-of-Morrow](vonnra.md) | 102 | 9,021 |  |
 | [Captain Holloway](holloway.md) | 64 | 7,712 |  |
 | [Harlan Coyle](harlan.md) | 63 | 7,141 |  |
 | [Mother Rook](rook.md) | 45 | 6,073 |  |
@@ -96,10 +96,11 @@ By how much each voice is heard, and where the player meets it first:
 | [A Watchwoman](guard_f.md) | 9 | 406 |  |
 | [A town girl](folk_child_f.md) | 7 | 205 |  |
 | [A town boy](folk_child_m.md) | 7 | 205 |  |
-| [The Ford-Warden](warden.md) | 7 | 178 |  |
+| [The Ford-Warden](warden.md) | 6 | 164 |  |
 | [The dead Watchman](watchman.md) | 1 | 45 |  |
 | [The Legion's dead, behind the door](barrow_lord.md) | 5 | 41 |  |
 | [The bones](bones.md) | 1 | 37 |  |
+| [The Ford-Warden, the man under him](warden_man.md) | 1 | 14 |  |
 | [The Red Hand](red_hand.md) | 1 | 13 |  |
 | [A Kerchief woman](kerchief_woman.md) | 1 | 11 |  |
 <!-- /PACKETS -->

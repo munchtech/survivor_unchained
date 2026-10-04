@@ -262,7 +262,7 @@ public partial class Game
         Lore.Speakers.TryGetValue(id, out var sp);
         var s = World.Npc(id);
         // Read aloud, where the line has been recorded (the last line stops).
-        var take = voice.Say(p.Line, p.Raw);
+        var take = voice.Say(p.Line, p.Raw, Journey.Ch.Name);
         hud.Dialogue(new DialogueView(d?.Name ?? sp?.Name ?? id, d?.Title ?? sp?.Title ?? "", d != null || id is "greymuzzle" or "snib" ? Rules.Attitude(s) : "",
             p.Speaker == "player" ? "player" : p.Speaker == "narrator" ? "narrator" : "npc", p.Text, p.Choices, p.Choices.Count == 0,
             d?.Person, d?.Arms, d?.Scale ?? 1, sp?.Glyph, Journey.Ch.Name, Choose, Advance, before) { Voice = take });

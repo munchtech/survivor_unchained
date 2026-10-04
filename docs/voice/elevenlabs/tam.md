@@ -11,7 +11,7 @@ Voice id in the game: `tam`. 19 takes to record (1,814 characters; about 5,442 c
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Tam`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, Somerset, West Country). Male, a child of about 9. Studio quality. Persona: a nine-year-old boy with british accent from the West Country. A nine-year-old farm boy from Somerset in the West Country of England, with a light, high child's voice and a soft rural West Country accent. Earnest and breathless, his words tumbling out one after another. Thick Somerset, West Country accent. No reverb or effects.
+Native English (British, Somerset, West Country). Male, a child of about 9. Studio quality. Persona: a nine-year-old boy with british accent from the West Country. A nine-year-old farm boy from Somerset in the West Country of England, with a light, high child's voice and a soft rural West Country accent. Earnest and breathless, his words tumbling out one after another. Broad Somerset, West Country accent. No reverb or effects.
 ```
 
 Preview text:

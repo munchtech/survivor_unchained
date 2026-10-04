@@ -1,17 +1,19 @@
 # Sella: ElevenLabs packet
 
-Voice id in the game: `sella`. 95 takes to record (9,821 characters; about 29,463 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `sella`. 95 takes to record (9,821 characters; about 29,463 credits at three tries a line). Status: **final** (the story lead, 2026-10-03): record it.
 
 ## Who they are
 
 **Sella** (the blue room). Low, amused, intimate; heavy contractions; "love". Frank about sex and money and about which is which; never coy, never pitiful, never sorry for her work. Sells talk as well as company and says so. *Casting:* late 20s, softened Cockney; warmth that is also work. Adult, never breathy.
+
+*Wants:* a house in the south with a door that locks from the inside, and somebody who knocks; until then, your custom, and to keep it work. *Hides:* she sells what's said upstairs, and Vonnra outbids everyone: every intimate scene has a buyer listening, until she stops (sella.free). Adult, frank, never breathy, never coy.
 
 ## Casting the voice
 
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Sella`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, London). Female, 20s. Studio quality. Persona: a London courtesan. A woman in her late twenties from London with a soft, warm Cockney accent. A low, amused, intimate alto, relaxed and knowing, frank and unembarrassed, with warmth that is also a professional's. Never breathy. Thick London accent. No reverb or effects.
+Native English (British, London). Female, 20s. Studio quality. Persona: a London courtesan. A woman in her late twenties from London with a soft, warm Cockney accent. A low, amused, intimate alto, relaxed and knowing, frank and unembarrassed, with warmth that is also a professional's. Never breathy. Light London accent. No reverb or effects.
 ```
 
 Preview text:
@@ -182,33 +184,34 @@ Subtitle: Fifteen gold, up front. For that you get the blue room, a bath that's 
 ### 13. `dlg.sella.night.1.p1.wav`
 
 *Where:* dialogue.json sella/night#1; part 2 of 3: narrator: The water's gone cool by the time either of you notices, and she drags the quilt off the b… / **sella: Don't,** / narrator: and kisses you so you can't. After, you lie on the floor of the blue room with the lamp tu…
-*Played:* plain; doing: a night with Sella; pace: slow; volume: quiet.
-*Note:* Low and close, discreet; 'She is dressed, and counting.' plain. Her word is hers.
+*Played:* low, caught; doing: a night with Sella; pace: slow; volume: quiet.
+*Note:* Low. She stops you looking at her because tonight has stopped being work and she can't have you see it; the kiss cuts it off.
 
 ```
-[plain, quietly] Don't,
+[low, caught, quietly] Don't,
 ```
 Subtitle: Don't,
 
 ### 14. `dlg.sella.morning.0.p1.wav`
 
 *Where:* dialogue.json sella/morning#0; part 2 of 2: narrator: She's sitting on the edge of the bed, frowning, with her palm flat on your breastbone. / **sella: You were cold as the river all night, love. Like sleeping next to a stone. And now look at…**
-*Played:* fond, teasing; doing: you're a habit; pace: measured; volume: level.
-*Note:* Pleased. Rook's complaint relayed with relish. Brisk send-off with a dark joke.
+*Played:* fond, uneasy under it; doing: she noticed the body's hours; pace: measured; volume: quiet.
+*Hides:* she knows who pays for a thing like this, and unless she has stopped selling you, Vonnra will have it by noon
+*Note:* The first time anyone says it (the bible's 'body's hours'). Narrator: her palm on your breastbone. 'cold as the river all night' puzzled, half a joke she doesn't quite make; 'warm as toast' a shade too bright. '...Rook's got a word for that. It's not a nice word.' quieter; not looking at you, because she's already counting it: as near as she comes to warning you. 'Get up and eat something.' brisk care, and real.
 
 ```
-[fond, teasing] You were cold as the river all night, love. Like sleeping next to a stone. And now look at you: warm as toast. ...Rook's got a word for that. It's not a nice word. Get up and eat something.
+[fond, uneasy under it, quietly] You were cold as the river all night, love. Like sleeping next to a stone. And now look at you: warm as toast. ...Rook's got a word for that. It's not a nice word. Get up and eat something.
 ```
 Subtitle: You were cold as the river all night, love. Like sleeping next to a stone. And now look at you: warm as toast. ...Rook's got a word for that. It's not a nice word. Get up and eat something.
 
 ### 15. `dlg.sella.morning.1.wav`
 
 *Where:* dialogue.json sella/morning#1
-*Played:* fond, teasing; doing: morning after; pace: measured; volume: quiet.
-*Note:* 'Not badly.' kind. 'the pieces are what I like.' warm double meaning.
+*Played:* fond, teasing; doing: you're a habit; pace: measured; volume: level.
+*Note:* Rook's complaint relayed with relish; a brisk send-off with a dark joke.
 
 ```
-[fond, teasing, quietly] You're getting to be a habit. I don't mind. Rook does; she says you're wearing out the stairs. Go on, the day's wasting, and somebody out there owes you money, or the other way round.
+[fond, teasing] You're getting to be a habit. I don't mind. Rook does; she says you're wearing out the stairs. Go on, the day's wasting, and somebody out there owes you money, or the other way round.
 ```
 Subtitle: You're getting to be a habit. I don't mind. Rook does; she says you're wearing out the stairs. Go on, the day's wasting, and somebody out there owes you money, or the other way round.
 
@@ -373,11 +376,11 @@ Subtitle: Put your purse away. Tonight I'm not working. ...Don't look at me like
 ### 30. `dlg.sella.free_night.1.p1.wav`
 
 *Where:* dialogue.json sella/free_night#1; part 2 of 3: narrator: She doesn't talk the way she talks for money. She doesn't talk at all, at first. She undre… / **sella: You told me anyway,** / narrator: and nothing else, and then she sleeps.
-*Played:* plain; doing: a night Sella gives; pace: slow; volume: quiet.
-*Note:* The narrator's, hushed and unhurried: the one night that isn't work, so no patter. Narrator plain: the narrator never shows a feeling. Her four words are hers, said into your shoulder.
+*Played:* wonder, nearly asleep; doing: a night Sella gives; pace: slow; volume: quiet.
+*Note:* Into your shoulder, nearly asleep. Wonder, not tears. You told her your past knowing she sells it, and that is the whole night.
 
 ```
-[plain, quietly] You told me anyway,
+[wonder, nearly asleep, quietly] You told me anyway,
 ```
 Subtitle: You told me anyway,
 
@@ -577,11 +580,11 @@ Subtitle: In you go. Bath's run. It's warm, I promise. For a bit.
 
 *The same words are also* `dlg.sella.stairs_room.4.p1.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json sella/stairs_room#0; part 2 of 2: narrator: The blue room again: the quilt, the jug, the bath, her, all of it blue. Your buckles take … / **sella: All that steel, and under it, look. A person.**
-*Played:* plain; doing: the blue room; pace: measured; volume: quiet.
-*Note:* Plain; her words are hers.
+*Played:* amused, and meaning it; doing: the blue room; pace: measured; volume: quiet.
+*Note:* A professional's line that happens to be true.
 
 ```
-[plain, quietly] All that steel, and under it, look. A person.
+[amused, and meaning it, quietly] All that steel, and under it, look. A person.
 ```
 Subtitle: All that steel, and under it, look. A person.
 
@@ -589,10 +592,11 @@ Subtitle: All that steel, and under it, look. A person.
 
 *The same words are also* `dlg.sella.stairs_room.5.p1.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json sella/stairs_room#1; part 2 of 2: narrator: The blue room again: the quilt, the jug, the bath, her, all of it blue. She takes your han… / **sella: Gently, upstairs. I mean it. I like this jug.**
-*Played:* plain; doing: the blue room; pace: measured; volume: quiet.
+*Played:* dry; doing: the blue room; pace: measured; volume: quiet.
+*Note:* A warning dressed as a joke.
 
 ```
-[plain, quietly] Gently, upstairs. I mean it. I like this jug.
+[dry, quietly] Gently, upstairs. I mean it. I like this jug.
 ```
 Subtitle: Gently, upstairs. I mean it. I like this jug.
 
@@ -600,11 +604,11 @@ Subtitle: Gently, upstairs. I mean it. I like this jug.
 
 *The same words are also* `dlg.sella.stairs_room.6.p1.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json sella/stairs_room#2; part 2 of 2: narrator: The blue room again: the quilt, the jug, the bath, her, all of it blue. She lays her palm … / **sella: Your hands are hot and the rest of you's a cellar floor. Pick one, love.**
-*Played:* plain; doing: the blue room; pace: measured; volume: quiet.
-*Note:* Plain; 'cellar floor' level.
+*Played:* teasing; doing: the blue room; pace: measured; volume: quiet.
+*Note:* She has noticed the cold, and the joke is how she makes it nothing.
 
 ```
-[plain, quietly] Your hands are hot and the rest of you's a cellar floor. Pick one, love.
+[teasing, quietly] Your hands are hot and the rest of you's a cellar floor. Pick one, love.
 ```
 Subtitle: Your hands are hot and the rest of you's a cellar floor. Pick one, love.
 
@@ -612,10 +616,11 @@ Subtitle: Your hands are hot and the rest of you's a cellar floor. Pick one, lov
 
 *The same words are also* `dlg.sella.stairs_room.7.p1.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json sella/stairs_room#3; part 2 of 3: narrator: The blue room again: the quilt, the jug, the bath, her, all of it blue. She comes round be… / **sella: There. Now you know what it's like,** / narrator: and you jump. She's delighted.
-*Played:* plain; doing: the blue room; pace: measured; volume: quiet.
+*Played:* delighted; doing: the blue room; pace: measured; volume: quiet.
+*Note:* Into your ear, delighted to make you jump.
 
 ```
-[plain, quietly] There. Now you know what it's like,
+[delighted, quietly] There. Now you know what it's like,
 ```
 Subtitle: There. Now you know what it's like,
 
@@ -702,7 +707,8 @@ Subtitle: ...Lie down, then. No. Boots off; Rook'll have my hide. Shift over. I'
 
 *Where:* dialogue.json sella/rest_morning#0; part 2 of 2: narrator: She's sitting on the edge of the bed with her hand flat on your chest. / **sella: You were cold as the river all night. Like lying next to a stone. And now look at you: war…**
 *Played:* unsettled, then fond; doing: you were cold all night; pace: slow; volume: quiet.
-*Note:* Narrator: her hand on your chest. Quiet wonder at the cold. Then warm and wry: 'Best money I ever made.'
+*Hides:* she knows who pays for a thing like this, and unless she has stopped selling you, Vonnra will have it by noon
+*Note:* Narrator: her hand on your chest. Quiet wonder at the cold. Then warm and wry: 'Best money I ever made.' doubles (she'll be paid for it twice): play it as a joke and nothing more; the listener finds the rest.
 
 ```
 [unsettled, then fond, quietly] You were cold as the river all night. Like lying next to a stone. And now look at you: warm as toast. ...Fifteen gold to lie awake next to a stone. Best money I ever made. Don't tell anyone.
@@ -877,22 +883,22 @@ Subtitle: I don't know how to do this one. ...That's a lie. I know how. I don't 
 ### 75. `dlg.sella.free_want.0.p0.wav`
 
 *Where:* dialogue.json sella/free_want#0; part 1 of 3: **sella: Ask me that again and I'll cry, and I don't cry, so don't.** / narrator: She takes a breath. / sella: Yes. ...Yes. There. Said it. Come here.
-*Played:* near tears, then decided; doing: yes; pace: slow; volume: quiet.
-*Note:* Narrator: the breath. 'Yes.' twice, the second firmer. 'Come here.' soft.
+*Played:* dry, then decided; doing: yes; pace: slow; volume: quiet.
+*Note:* Narrator: the breath. Not tears: she is never pitiful. Telling you she might cry is the most naked thing she says, and she says it dry; then she decides. 'Yes.' twice, the second firmer. 'Come here.' soft.
 
 ```
-[near tears, then decided, quietly] Ask me that again and I'll cry, and I don't cry, so don't.
+[dry, then decided, quietly] Ask me that again and I'll cry, and I don't cry, so don't.
 ```
 Subtitle: Ask me that again and I'll cry, and I don't cry, so don't.
 
 ### 76. `dlg.sella.free_want.0.p2.wav`
 
 *Where:* dialogue.json sella/free_want#0; part 3 of 3: sella: Ask me that again and I'll cry, and I don't cry, so don't. / narrator: She takes a breath. / **sella: Yes. ...Yes. There. Said it. Come here.**
-*Played:* near tears, then decided; doing: yes; pace: slow; volume: quiet.
-*Note:* Narrator: the breath. 'Yes.' twice, the second firmer. 'Come here.' soft.
+*Played:* dry, then decided; doing: yes; pace: slow; volume: quiet.
+*Note:* Narrator: the breath. Not tears: she is never pitiful. Telling you she might cry is the most naked thing she says, and she says it dry; then she decides. 'Yes.' twice, the second firmer. 'Come here.' soft.
 
 ```
-[near tears, then decided, quietly] Yes. ...Yes. There. Said it. Come here.
+[dry, then decided, quietly] Yes. ...Yes. There. Said it. Come here.
 ```
 Subtitle: Yes. ...Yes. There. Said it. Come here.
 
@@ -932,11 +938,11 @@ Subtitle: You and your sleeping. ...Yes. All right. Yes.
 ### 80. `dlg.sella.free_bolt.0.p1.wav`
 
 *Where:* dialogue.json sella/free_bolt#0; part 2 of 2: narrator: She reaches behind her without looking and finds the bolt. It sticks halfway; nobody has e… / **sella: ...There.**
-*Played:* plain; doing: the bolt; pace: slow; volume: quiet.
-*Note:* Plain; her word is hers.
+*Played:* barely voiced; doing: the bolt; pace: slow; volume: quiet.
+*Note:* Her forehead against the door and her back to you. She has never shot it; the word is the decision.
 
 ```
-[plain, quietly] ...There.
+[barely voiced, quietly] ...There.
 ```
 Subtitle: ...There.
 
@@ -976,11 +982,11 @@ Subtitle: I said don't tell me. I didn't say I'd sell it. ...I didn't say I woul
 ### 84. `dlg.sella.free_m_kiss.0.p1.wav`
 
 *Where:* dialogue.json sella/free_m_kiss#0; part 2 of 3: narrator: She lets you. Then she pushes you off by the face, gently, with the flat of her hand. / **sella: Out. Before I get used to it.** / narrator: She's smiling. She doesn't stop smiling until you're down the stairs, and you know that be…
-*Played:* plain; doing: out; pace: measured; volume: quiet.
-*Note:* Plain; her words are hers.
+*Played:* smiling; doing: out; pace: measured; volume: quiet.
+*Note:* Smiling as she pushes you off: the truth under the joke.
 
 ```
-[plain, quietly] Out. Before I get used to it.
+[smiling, quietly] Out. Before I get used to it.
 ```
 Subtitle: Out. Before I get used to it.
 
@@ -1074,6 +1080,7 @@ Subtitle: Cold night to sleep alone, love.
 
 *Where:* npcs.json sella.nightBarks[1]
 *Played:* teasing; pace: measured; volume: quiet.
+*Note:* An invitation dressed as thrift.
 
 ```
 [teasing, quietly] Rook's walls are thin. Just so you know.

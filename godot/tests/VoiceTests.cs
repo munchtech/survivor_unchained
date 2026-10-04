@@ -65,8 +65,38 @@ public class VoiceTests
             case "say":
             case "cbark":
                 return code.Value.FirstOrDefault(s => VoiceLines.Hash(s) == p[1]);
+            case "name":
+                // The survivor's name in a voice: only names the creation screen offers.
+                return p.Length == 3 && SuggestedNames().Contains(p[2]) ? $"{p[2]}." : null;
         }
         return null;
+    }
+
+    /// <summary>The names the creation screen suggests (Front.cs), as tools/vo/lines.py reads them.</summary>
+    static HashSet<string> SuggestedNames()
+    {
+        var src = File.ReadAllText(Path.GetFullPath(Path.Combine(DataFiles.Dir, "..", "src", "Ui", "Front.cs")));
+        var m = Regex.Match(src, @"string\[\]\s+Names\s*=\s*\{([^}]*)\}");
+        return m.Success ? Regex.Matches(m.Groups[1].Value, "\"([^\"]+)\"").Select(x => x.Groups[1].Value).ToHashSet() : new();
+    }
+
+    [Fact]
+    public void TheNameIsSplicedOnlyWhereItWasRecorded()
+    {
+        var keep = VoiceLines.Index;
+        try
+        {
+            VoiceLines.Use(new VoIndex { Lines = {
+                ["dlg.vonnra.hub.0"] = new VoTake { File = "vonnra/dlg.vonnra.hub.0.ogg", Voice = "vonnra", Hash = "x", Sec = 4, Name = 0 },
+                ["name.vonnra.Wren"] = new VoTake { File = "vonnra/name.vonnra.Wren.ogg", Voice = "vonnra", Hash = VoiceLines.Hash("Wren."), Sec = 0.8 } } });
+            Assert.NotNull(VoiceLines.NameTake("vonnra", "Wren"));
+            Assert.NotNull(VoiceLines.NameTake("vonnra", " wren "));   // as typed
+            Assert.Null(VoiceLines.NameTake("vonnra", "Bartholomew")); // a name of their own: the pause stays empty
+            Assert.Null(VoiceLines.NameTake("rook", "Wren"));
+            Assert.Null(VoiceLines.NameTake("vonnra", ""));
+            Assert.Contains("Wren", SuggestedNames());
+        }
+        finally { VoiceLines.Use(keep); }
     }
 
     [Fact]

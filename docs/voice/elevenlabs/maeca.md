@@ -11,7 +11,7 @@ Voice id in the game: `maeca`. 73 takes to record (5,332 characters; about 15,99
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Maeca Barefoot`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, Welsh). Female, 30s. Studio quality. Persona: a hunter. A woman in her thirties, a hunter from the Welsh borders, with a soft lilting Welsh-English accent. A low, quiet, level half-voice with a hard edge, like someone used to not being heard in a wood. Few words, calm and steady, never raised. Thick Welsh accent. No reverb or effects.
+Native English (British, Welsh). Female, 30s. Studio quality. Persona: a hunter. A woman in her thirties, a hunter from the Welsh borders, with a soft lilting Welsh-English accent. A low, quiet, level half-voice with a hard edge, like someone used to not being heard in a wood. Few words, calm and steady, never raised. Broad Welsh accent. No reverb or effects.
 ```
 
 Preview text:

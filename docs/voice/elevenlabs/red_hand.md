@@ -1,6 +1,6 @@
 # The Red Hand: ElevenLabs packet
 
-Voice id in the game: `red_hand`. 1 takes to record (13 characters; about 39 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `red_hand`. 1 take to record (13 characters; about 39 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -11,7 +11,7 @@ A Kerchief enforcer in his forties, one of Ashford's old levy, with a low, flat,
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU The Red Hand`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, Scottish). Male, 40s. Studio quality. Persona: a debt collector. A Kerchief enforcer in his forties, one of Ashford's old levy, with a low, flat, hard west-of-Scotland voice. He never raises it: he is collecting a debt, not threatening. Few words to strangers, and those flat. Thick Scottish accent. No reverb or effects.
+Native English (British, Scottish). Male, 40s. Studio quality. Persona: a debt collector. A Kerchief enforcer in his forties, one of Ashford's old levy, with a low, flat, hard west-of-Scotland voice. He never raises it: he is collecting a debt, not threatening. Few words to strangers, and those flat. Broad Scottish accent. No reverb or effects.
 ```
 
 Preview text:

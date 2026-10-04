@@ -55,6 +55,7 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 *Where:* dialogue.json cin_drowned_fire/bedroll#0
 *Played:* plain; doing: you did not sleep here; pace: slow; volume: quiet.
 *Note:* One plain fact, close.
+*Length:* the cut is timed to it: 2.4–2.8 s, first sound to last word.
 
 ```
 [quietly] Your bedroll has not been slept in.
@@ -67,6 +68,7 @@ Subtitle: Your bedroll has not been slept in.
 *Where:* dialogue.json cin_drowned_fire/prints#0
 *Played:* plain; doing: your own prints come from the river; pace: slow; volume: quiet.
 *Note:* Two plain facts; a pause, then 'None go down to it.' on its own.
+*Length:* the cut is timed to it: 6.0–7.0 s (about 0.7 s of pause before 'None go down to it.'), first sound to last word.
 
 ```
 [quietly] Prints in the frost, your own. They come up from the river… None go down to it.
@@ -79,6 +81,7 @@ Subtitle: Prints in the frost, your own. They come up from the river. None go do
 *Where:* dialogue.json cin_drowned_fire/frost#0
 *Played:* plain; doing: something is coming; pace: slow; volume: quiet.
 *Note:* Plain.
+*Length:* the cut is timed to it: 2.6–3.2 s, first sound to last word.
 
 ```
 [quietly] Past the firelight, the frost is breaking.
@@ -248,6 +251,7 @@ Subtitle: The ember will not let you go so easily.
 *Where:* dialogue.json cin_first_light/back#0
 *Played:* plain; doing: the ember fades; pace: slow; volume: quiet.
 *Note:* Plain and slow.
+*Length:* the cut is timed to it: 3.6–4.2 s, first sound to last word.
 
 ```
 [quietly] The sun clears the trees, and the ember goes back into the ground.
@@ -259,6 +263,7 @@ Subtitle: The sun clears the trees, and the ember goes back into the ground.
 *Where:* dialogue.json cin_first_light/face#0
 *Played:* plain; doing: the mother's face; pace: slow; volume: quiet.
 *Note:* Plain and slow; the strangeness is in the words.
+*Length:* the cut is timed to it: 4.6–5.4 s (the cut then holds three seconds of silence), first sound to last word.
 
 ```
 [quietly] You try to call up your mother's face, and find it is not quite where you left it.
@@ -270,6 +275,7 @@ Subtitle: You try to call up your mother's face, and find it is not quite where 
 *Where:* dialogue.json cin_first_light/baking#0
 *Played:* plain; doing: ordinary life; pace: slow; volume: quiet.
 *Note:* Dawn, plainly.
+*Length:* the cut is timed to it: 2.4–3.0 s, first sound to last word.
 
 ```
 [quietly] Somewhere up the street, someone is baking.
@@ -2551,7 +2557,7 @@ Subtitle: She is not looking at your palm.
 
 ### 235. `dlg.vonnra.f_accuse.0.p0.wav`
 
-*Where:* dialogue.json vonnra/f_accuse#0; part 1 of 2: **narrator: For the first time she looks at your face and not at your hand. It goes on long enough tha…** / vonnra: ...Sit down. I have not finished reading.
+*Where:* dialogue.json vonnra/f_accuse#0; part 1 of 3: **narrator: For the first time she looks at your face and not at your hand. It goes on long enough tha…** / vonnra: ...Sit down. / vonnra: I have not finished reading.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
 
 ```

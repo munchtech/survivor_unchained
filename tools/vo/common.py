@@ -71,7 +71,7 @@ ACCENT = {
     "rav": "scotland", "redcowl": "scotland", "ysolde": "scotland",
     "chid": "ireland", "maeca": "wales",
     "snib": None, "grimtunnel": None, "lampling": None, "warden": None, "bones": None, "barrow_lord": None,
-    "kerchief_woman": "scotland",
+    "kerchief_woman": "scotland", "red_hand": "scotland",
 }
 
 

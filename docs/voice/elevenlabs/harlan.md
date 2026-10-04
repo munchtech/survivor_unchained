@@ -11,7 +11,7 @@ Voice id in the game: `harlan`. 63 takes to record (7,141 characters; about 21,4
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Harlan Coyle`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, Bristol). Male, 50s. Studio quality. Persona: a Bristol merchant. A fifty-five-year-old merchant from Bristol in the West Country of England, with a warm, rounded Bristolian accent. A friendly salesman's baritone, quick patter, warm and generous, with a crack of grief that breaks through when he stops talking. Thick Bristol accent. No reverb or effects.
+Native English (British, Bristol). Male, 50s. Studio quality. Persona: a Bristol merchant. A fifty-five-year-old merchant from Bristol in the West Country of England, with a warm, rounded Bristolian accent. A friendly salesman's baritone, quick patter, warm and generous, with a crack of grief that breaks through when he stops talking. Broad Bristol accent. No reverb or effects.
 ```
 
 Preview text:

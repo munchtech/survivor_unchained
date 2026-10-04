@@ -13,7 +13,7 @@ Voice id in the game: `rook`. 45 takes to record (6,073 characters; about 18,219
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Mother Rook`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, Yorkshire). Female, 60s. Studio quality. Persona: a Yorkshire innkeeper. A sixty-year-old innkeeper from Yorkshire in the north of England, with a broad, flat northern Yorkshire accent: short 'a' sounds, 'love' rhymes with 'good'. A warm, husky, lived-in alto. Dry, brisk and bossy, kind underneath, quick to a dry laugh on the out-breath. Thick Yorkshire accent. No reverb or effects.
+Native English (British, Yorkshire). Female, 60s. Studio quality. Persona: a Yorkshire innkeeper. A sixty-year-old innkeeper from Yorkshire in the north of England, with a broad, flat northern Yorkshire accent: short 'a' sounds, 'love' rhymes with 'good'. A warm, husky, lived-in alto. Dry, brisk and bossy, kind underneath, quick to a dry laugh on the out-breath. Broad Yorkshire accent. No reverb or effects.
 ```
 
 Preview text:

@@ -11,7 +11,7 @@ A young woman from the West Country of England with a bright, quick voice and a 
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Townswoman, young`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, West Country). Female, 20s. Studio quality. Persona: a West Country countrywoman. A young woman from the West Country of England with a bright, quick voice and a rural West Country accent. Sharp-tongued and amused. Thick West Country accent. No reverb or effects.
+Native English (British, West Country). Female, 20s. Studio quality. Persona: a West Country countrywoman. A young woman from the West Country of England with a bright, quick voice and a rural West Country accent. Sharp-tongued and amused. Broad West Country accent. No reverb or effects.
 ```
 
 Preview text:

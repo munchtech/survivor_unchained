@@ -1,6 +1,6 @@
 # Vonnra Ash-of-Morrow: ElevenLabs packet
 
-Voice id in the game: `vonnra`. 76 takes to record (8,878 characters; about 26,634 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `vonnra`. 102 takes to record (9,021 characters; about 27,063 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -85,6 +85,7 @@ Subtitle: The toll is the toll. Five gold to pass east, or no gold and I remembe
 *Where:* dialogue.json vonnra/hub#0
 *Played:* calm finality, a new intimacy; doing: uses your name now; pace: slow; volume: quiet.
 *Note:* A beat where the name would be. Then as hub.1, but a degree warmer.
+*The name:* her take of the survivor's name plays just before this one; start as if she had that moment said it.
 
 ```
 [calm finality, a new intimacy, quietly] Your chapter is written. The next one is not. ...Payment, always.
@@ -510,18 +511,31 @@ Subtitle: Last. Under the Verge, something is turning over in its sleep, and und
 ```
 Subtitle: Last. Under the Verge, something is turning over in its sleep. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside...
 
-### 43. `dlg.vonnra.f_door.0.wav`
+### 43. `dlg.vonnra.f_door.0.p0.wav`
 
-*Where:* dialogue.json vonnra/f_door#0
+*Where:* dialogue.json vonnra/f_door#0; part 1 of 2: **vonnra: The door in the hillside is listening, as I am. That is all I see for free.** / vonnra: The rest you will walk into yourself, and you will, because you are the kind that does.
 *Played:* calm, intimate, inexorable; doing: closes the reading, using your name; pace: slow; volume: quiet.
 *Note:* 'is listening, as I am' very quiet. A beat where the name would be. The last sentence certain, almost fond.
+*The name:* the survivor's name (one of her name takes, at the end of this packet) is spliced in straight after this take, so end it leading into a name, not closing the sentence.
 
 ```
-[calm, intimate, inexorable, quietly] The door in the hillside is listening, as I am. That is all I see for free. The rest you will walk into yourself, and you will, because you are the kind that does.
+[calm, intimate, inexorable, quietly] The door in the hillside is listening, as I am. That is all I see for free,
 ```
-Subtitle: The door in the hillside is listening, as I am. That is all I see for free. The rest you will walk into yourself, and you will, because you are the kind that does.
+Subtitle: The door in the hillside is listening, as I am. That is all I see for free.
 
-### 44. `dlg.vonnra.f_door.1.wav`
+### 44. `dlg.vonnra.f_door.0.p1.wav`
+
+*Where:* dialogue.json vonnra/f_door#0; part 2 of 2: vonnra: The door in the hillside is listening, as I am. That is all I see for free. / **vonnra: The rest you will walk into yourself, and you will, because you are the kind that does.**
+*Played:* calm, intimate, inexorable; doing: closes the reading, using your name; pace: slow; volume: quiet.
+*Note:* 'is listening, as I am' very quiet. A beat where the name would be. The last sentence certain, almost fond.
+*The name:* the survivor's name comes just before this take, in the pause; start as if she had just said it.
+
+```
+[calm, intimate, inexorable, quietly] The rest you will walk into yourself, and you will, because you are the kind that does.
+```
+Subtitle: The rest you will walk into yourself, and you will, because you are the kind that does.
+
+### 45. `dlg.vonnra.f_door.1.wav`
 
 *Where:* dialogue.json vonnra/f_door#1
 *Played:* calm, inexorable; doing: closes the reading; pace: slow; volume: quiet.
@@ -532,7 +546,7 @@ Subtitle: The door in the hillside is listening, as I am. That is all I see for 
 ```
 Subtitle: The door is not for sale. That is all I see for free. The rest you will walk into yourself, and you will, because you are the kind that does.
 
-### 45. `dlg.vonnra.cb_opened_vault.0.wav`
+### 46. `dlg.vonnra.cb_opened_vault.0.wav`
 
 *Where:* dialogue.json vonnra/cb_opened_vault#0
 *Played:* shaken, controlled; doing: you opened the door; pace: slow; volume: quiet.
@@ -543,7 +557,7 @@ Subtitle: The door is not for sale. That is all I see for free. The rest you wil
 ```
 Subtitle: You opened it. ...Do not sit, traveller. I would rather you stood. What did you see on the stair?
 
-### 46. `dlg.vonnra.cb_vault2.0.wav`
+### 47. `dlg.vonnra.cb_vault2.0.wav`
 
 *Where:* dialogue.json vonnra/cb_vault2#0
 *Played:* relief hidden as finality; doing: the dead still hold; pace: slow; volume: quiet.
@@ -554,7 +568,7 @@ Subtitle: You opened it. ...Do not sit, traveller. I would rather you stood. Wha
 ```
 Subtitle: Then it is still there. That is all. I will say it again, because it bears repeating: that is all.
 
-### 47. `dlg.vonnra.cb_vault3.0.wav`
+### 48. `dlg.vonnra.cb_vault3.0.wav`
 
 *Where:* dialogue.json vonnra/cb_vault3#0
 *Played:* cool, menacing; doing: silence has a price; pace: slow; volume: quiet.
@@ -565,7 +579,7 @@ Subtitle: Then it is still there. That is all. I will say it again, because it b
 ```
 Subtitle: Yours, for now. Payment, always, traveller; even for silence. You will find I collect.
 
-### 48. `dlg.vonnra.cb_core_stolen.0.wav`
+### 49. `dlg.vonnra.cb_core_stolen.0.wav`
 
 *Where:* dialogue.json vonnra/cb_core_stolen#0
 *Played:* cold, controlled anger; doing: the heart was lost; pace: very slow; volume: quiet.
@@ -576,7 +590,7 @@ Subtitle: Yours, for now. Payment, always, traveller; even for silence. You will
 ```
 Subtitle: A heart went into the ground at the Low Ford, and you watched it go. I am not angry. I am arranging.
 
-### 49. `dlg.vonnra.cb_exposed_pell.0.wav`
+### 50. `dlg.vonnra.cb_exposed_pell.0.wav`
 
 *Where:* dialogue.json vonnra/cb_exposed_pell#0
 *Played:* dry, calculating; doing: Pell is caught; pace: slow; volume: quiet.
@@ -587,7 +601,7 @@ Subtitle: A heart went into the ground at the Low Ford, and you watched it go. I
 ```
 Subtitle: Pell Varrow in irons. He owed me a great deal. I shall have to find another way to be paid.
 
-### 50. `dlg.vonnra.say_calling.0.wav`
+### 51. `dlg.vonnra.say_calling.0.wav`
 
 *Where:* dialogue.json vonnra/say_calling#0
 *Played:* gentle condescension; doing: reads a warden; pace: slow; volume: quiet.
@@ -598,7 +612,7 @@ Subtitle: Pell Varrow in irons. He owed me a great deal. I shall have to find an
 ```
 Subtitle: Shields. Gates. Walls. You believe things can be kept out, traveller. It is a lovely belief.
 
-### 51. `dlg.vonnra.say_calling.1.wav`
+### 52. `dlg.vonnra.say_calling.1.wav`
 
 *Where:* dialogue.json vonnra/say_calling#1
 *Played:* measured warning; doing: reads a reaver; pace: slow; volume: quiet.
@@ -608,7 +622,7 @@ Subtitle: Shields. Gates. Walls. You believe things can be kept out, traveller. 
 ```
 Subtitle: You will break a great many things before the end. Try to choose them.
 
-### 52. `dlg.vonnra.say_calling.2.wav`
+### 53. `dlg.vonnra.say_calling.2.wav`
 
 *Where:* dialogue.json vonnra/say_calling#2
 *Played:* veiled warning; doing: reads an arcanist; pace: slow; volume: quiet.
@@ -619,7 +633,7 @@ Subtitle: You will break a great many things before the end. Try to choose them.
 ```
 Subtitle: You carry a fire you did not buy. Be careful whom you show it to. Some of them keep ledgers.
 
-### 53. `dlg.vonnra.say_calling.3.wav`
+### 54. `dlg.vonnra.say_calling.3.wav`
 
 *The same words are also* `dlg.vonnra.say_calling.4.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json vonnra/say_calling#3
@@ -631,7 +645,7 @@ Subtitle: You carry a fire you did not buy. Be careful whom you show it to. Some
 ```
 Subtitle: You came to my window from the side the light does not reach. Few think to. I noticed.
 
-### 54. `dlg.vonnra.coin.0.wav`
+### 55. `dlg.vonnra.coin.0.wav`
 
 *Where:* dialogue.json vonnra/coin#0
 *Played:* reverent, guarded; doing: the square coin; pace: slow; volume: quiet.
@@ -642,7 +656,7 @@ Subtitle: You came to my window from the side the light does not reach. Few thin
 ```
 Subtitle: Old-empire. Square. My grandmother's, and hers before. I have never spent it. One day I shall, and it will buy something that cannot be bought twice. ...That was free. Do not grow used to it.
 
-### 55. `dlg.vonnra.risen.0.wav`
+### 56. `dlg.vonnra.risen.0.wav`
 
 *Where:* dialogue.json vonnra/risen#0
 *Played:* grave, knowing; doing: you came back from death; pace: slow; volume: quiet.
@@ -653,7 +667,7 @@ Subtitle: Old-empire. Square. My grandmother's, and hers before. I have never sp
 ```
 Subtitle: You came back. Most do not, the first time. ...Do not thank Chid. Do not thank anyone. Payment, always, traveller, and for that above all; you will find out who holds the note.
 
-### 56. `dlg.vonnra.jessop.0.p0.wav`
+### 57. `dlg.vonnra.jessop.0.p0.wav`
 
 *Where:* dialogue.json vonnra/jessop#0; part 1 of 3: **vonnra: Gone south. On the toll's business.** / narrator: She turns a page of the ledger that does not need turning. / vonnra: Clerks go south, traveller. It is the direction they fall in.
 *Played:* smooth evasion; doing: covers for Jessop; pace: slow; volume: quiet.
@@ -664,7 +678,7 @@ Subtitle: You came back. Most do not, the first time. ...Do not thank Chid. Do n
 ```
 Subtitle: Gone south. On the toll's business.
 
-### 57. `dlg.vonnra.jessop.0.p2.wav`
+### 58. `dlg.vonnra.jessop.0.p2.wav`
 
 *Where:* dialogue.json vonnra/jessop#0; part 3 of 3: vonnra: Gone south. On the toll's business. / narrator: She turns a page of the ledger that does not need turning. / **vonnra: Clerks go south, traveller. It is the direction they fall in.**
 *Played:* smooth evasion; doing: covers for Jessop; pace: slow; volume: quiet.
@@ -675,7 +689,7 @@ Subtitle: Gone south. On the toll's business.
 ```
 Subtitle: Clerks go south, traveller. It is the direction they fall in.
 
-### 58. `dlg.vonnra.f_ember.0.wav`
+### 59. `dlg.vonnra.f_ember.0.wav`
 
 *Where:* dialogue.json vonnra/f_ember#0
 *Played:* curious, wary; doing: Redcowl keeps the crates; pace: slow; volume: quiet.
@@ -686,7 +700,7 @@ Subtitle: Clerks go south, traveller. It is the direction they fall in.
 ```
 Subtitle: And six crates in a bandit's tent, guarded now by a man who knows what they are for. He will not sell them. He is saving them. I wonder for what.
 
-### 59. `dlg.vonnra.f_ember.1.wav`
+### 60. `dlg.vonnra.f_ember.1.wav`
 
 *Where:* dialogue.json vonnra/f_ember#1
 *Played:* cool distinction; doing: the crates go home; pace: slow; volume: quiet.
@@ -697,7 +711,7 @@ Subtitle: And six crates in a bandit's tent, guarded now by a man who knows what
 ```
 Subtitle: And six crates going home to a man who knows where they go next. You told him where to find what was his. That is honest. It is not the same thing as good.
 
-### 60. `dlg.vonnra.f_ember.2.wav`
+### 61. `dlg.vonnra.f_ember.2.wav`
 
 *Where:* dialogue.json vonnra/f_ember#2
 *Played:* cold; doing: the crates burned; pace: slow; volume: quiet.
@@ -708,7 +722,7 @@ Subtitle: And six crates going home to a man who knows where they go next. You t
 ```
 Subtitle: And six crates at the bottom of a stream, where nothing will ever buy them. That is the first thing you have thrown away that I approve of.
 
-### 61. `dlg.vonnra.f_ember.3.wav`
+### 62. `dlg.vonnra.f_ember.3.wav`
 
 *Where:* dialogue.json vonnra/f_ember#3
 *Played:* foreboding; doing: the crates wait; pace: slow; volume: quiet.
@@ -719,7 +733,7 @@ Subtitle: And six crates at the bottom of a stream, where nothing will ever buy 
 ```
 Subtitle: And six crates that went up with the Roost. You will have heard it from the wall. Everyone did.
 
-### 62. `dlg.vonnra.f_ember.4.wav`
+### 63. `dlg.vonnra.f_ember.4.wav`
 
 *Where:* dialogue.json vonnra/f_ember#4
 *Played:* foreboding; doing: the crates wait; pace: slow; volume: quiet.
@@ -730,7 +744,7 @@ Subtitle: And six crates that went up with the Roost. You will have heard it fro
 ```
 Subtitle: And six crates gone down the south road with the rest of the cargo, sold to whoever paid for them first. I think you know who that was.
 
-### 63. `dlg.vonnra.f_ember.5.wav`
+### 64. `dlg.vonnra.f_ember.5.wav`
 
 *Where:* dialogue.json vonnra/f_ember#5
 *Played:* dark certainty; doing: to warn that the trade will finish itself; pace: slow; volume: level.
@@ -742,7 +756,7 @@ Subtitle: And six crates gone down the south road with the rest of the cargo, so
 ```
 Subtitle: And six crates still waiting in a ravine to go where they were paid to go. Someone will deliver them. Someone always does.
 
-### 64. `dlg.vonnra.f_ember.6.wav`
+### 65. `dlg.vonnra.f_ember.6.wav`
 
 *Where:* dialogue.json vonnra/f_ember#6
 *Played:* oblique warning; doing: to plant a question they have not asked; pace: slow; volume: quiet.
@@ -754,7 +768,7 @@ Subtitle: And six crates still waiting in a ravine to go where they were paid to
 ```
 Subtitle: And six crates nobody opened, marked with two letters, waiting in a ravine to go where they were paid to go. Someone will deliver them. Someone always does.
 
-### 65. `dlg.vonnra.f_past.0.p0.wav`
+### 66. `dlg.vonnra.f_past.0.p0.wav`
 
 *Where:* dialogue.json vonnra/f_past#0; part 1 of 2: **vonnra: And before the ford: a child following tracks through these woods, with a bow too big for …** / narrator: She is not looking at your palm.
 *Played:* intimate, uncanny; doing: quotes what you said in Sella's bed; pace: slow; volume: quiet.
@@ -765,7 +779,7 @@ Subtitle: And six crates nobody opened, marked with two letters, waiting in a ra
 ```
 Subtitle: And before the ford: a child following tracks through these woods, with a bow too big for them.
 
-### 66. `dlg.vonnra.f_past.1.p0.wav`
+### 67. `dlg.vonnra.f_past.1.p0.wav`
 
 *Where:* dialogue.json vonnra/f_past#1; part 1 of 2: **vonnra: And before the ford: four years in a cloister cellar among dead men's letters, and a lens …** / narrator: She is not looking at your palm.
 *Played:* intimate, uncanny; doing: quotes what you said in Sella's bed; pace: slow; volume: quiet.
@@ -776,7 +790,7 @@ Subtitle: And before the ford: a child following tracks through these woods, wit
 ```
 Subtitle: And before the ford: four years in a cloister cellar among dead men's letters, and a lens you were not meant to leave with.
 
-### 67. `dlg.vonnra.f_past.2.p0.wav`
+### 68. `dlg.vonnra.f_past.2.p0.wav`
 
 *Where:* dialogue.json vonnra/f_past#2; part 1 of 2: **vonnra: And before the ford: worse company than the Kerchiefs, and the trick of walking away from …** / narrator: She is not looking at your palm.
 *Played:* intimate, uncanny; doing: quotes what you said in Sella's bed; pace: slow; volume: quiet.
@@ -787,7 +801,7 @@ Subtitle: And before the ford: four years in a cloister cellar among dead men's 
 ```
 Subtitle: And before the ford: worse company than the Kerchiefs, and the trick of walking away from it.
 
-### 68. `dlg.vonnra.f_past.3.p0.wav`
+### 69. `dlg.vonnra.f_past.3.p0.wav`
 
 *Where:* dialogue.json vonnra/f_past#3; part 1 of 2: **vonnra: And before the ford: chapel lamps that nobody came to see, and you, lighting them anyway.** / narrator: She is not looking at your palm.
 *Played:* intimate, uncanny; doing: quotes what you said in Sella's bed; pace: slow; volume: quiet.
@@ -798,7 +812,7 @@ Subtitle: And before the ford: worse company than the Kerchiefs, and the trick o
 ```
 Subtitle: And before the ford: chapel lamps that nobody came to see, and you, lighting them anyway.
 
-### 69. `dlg.vonnra.f_past.4.wav`
+### 70. `dlg.vonnra.f_past.4.wav`
 
 *Where:* dialogue.json vonnra/f_past#4
 *Played:* gentle, unsettling; doing: your past is lost; pace: slow; volume: quiet.
@@ -809,21 +823,303 @@ Subtitle: And before the ford: chapel lamps that nobody came to see, and you, li
 ```
 Subtitle: Of before the ford, I see very little. The water took it, or you left it on the far bank. Most do.
 
-### 70. `dlg.vonnra.f_accuse.0.p1.wav`
+### 71. `dlg.vonnra.f_accuse.0.p1.wav`
 
-*Where:* dialogue.json vonnra/f_accuse#0; part 2 of 2: narrator: For the first time she looks at your face and not at your hand. It goes on long enough tha… / **vonnra: ...Sit down. I have not finished reading.**
+*Where:* dialogue.json vonnra/f_accuse#0; part 2 of 3: narrator: For the first time she looks at your face and not at your hand. It goes on long enough tha… / **vonnra: ...Sit down.** / vonnra: I have not finished reading.
 *Played:* listening very hard, caught for once; doing: accused, she answers with your name; pace: very slow; volume: quiet.
 *Wants:* you to sit and hear the rest
 *Note:* The narrator holds the long look. Not denial, not admission. A breath before 'Sit down' (she is alive, and it is cold). The name is spliced in at the pause, its own take in her voice: the only warmth anywhere in her part, and it should frighten. 'I have not finished reading.' quietly in command. Never 'traveller'.
+*The name:* the survivor's name (one of her name takes, at the end of this packet) is spliced in straight after this take, so end it leading into a name, not closing the sentence.
 
 ```
-[listening very hard, caught for once, quietly] [inhales] ...Sit down. I have not finished reading.
+[listening very hard, caught for once, quietly] [inhales] ...Sit down,
 ```
-Subtitle: ...Sit down. I have not finished reading.
+Subtitle: ...Sit down.
+
+### 72. `dlg.vonnra.f_accuse.0.p2.wav`
+
+*Where:* dialogue.json vonnra/f_accuse#0; part 3 of 3: narrator: For the first time she looks at your face and not at your hand. It goes on long enough tha… / vonnra: ...Sit down. / **vonnra: I have not finished reading.**
+*Played:* listening very hard, caught for once; doing: accused, she answers with your name; pace: very slow; volume: quiet.
+*Wants:* you to sit and hear the rest
+*Note:* The narrator holds the long look. Not denial, not admission. A breath before 'Sit down' (she is alive, and it is cold). The name is spliced in at the pause, its own take in her voice: the only warmth anywhere in her part, and it should frighten. 'I have not finished reading.' quietly in command. Never 'traveller'.
+*The name:* the survivor's name comes just before this take, in the pause; start as if she had just said it.
+
+```
+[listening very hard, caught for once, quietly] I have not finished reading.
+```
+Subtitle: I have not finished reading.
+
+## The survivor's name
+
+One take for each name the creation screen suggests. The game splices it into every line where she says the survivor's name (marked *The name* above); a name the player types that is not on this list leaves the pause empty. Keep each the same in tone, so it fits all of them.
+
+### 73. `name.vonnra.Ashe.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Ashe.
+```
+Subtitle: Ashe.
+
+### 74. `name.vonnra.Brannagh.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Brannagh.
+```
+Subtitle: Brannagh.
+
+### 75. `name.vonnra.Corwen.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Corwen.
+```
+Subtitle: Corwen.
+
+### 76. `name.vonnra.Dace.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Dace.
+```
+Subtitle: Dace.
+
+### 77. `name.vonnra.Edda.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Edda.
+```
+Subtitle: Edda.
+
+### 78. `name.vonnra.Fen.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Fen.
+```
+Subtitle: Fen.
+
+### 79. `name.vonnra.Garrow.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Garrow.
+```
+Subtitle: Garrow.
+
+### 80. `name.vonnra.Hollis.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Hollis.
+```
+Subtitle: Hollis.
+
+### 81. `name.vonnra.Isolde.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Isolde.
+```
+Subtitle: Isolde.
+
+### 82. `name.vonnra.Jessamy.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Jessamy.
+```
+Subtitle: Jessamy.
+
+### 83. `name.vonnra.Kell.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Kell.
+```
+Subtitle: Kell.
+
+### 84. `name.vonnra.Lorne.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Lorne.
+```
+Subtitle: Lorne.
+
+### 85. `name.vonnra.Maren.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Maren.
+```
+Subtitle: Maren.
+
+### 86. `name.vonnra.Nolly.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Nolly.
+```
+Subtitle: Nolly.
+
+### 87. `name.vonnra.Orrin.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Orrin.
+```
+Subtitle: Orrin.
+
+### 88. `name.vonnra.Pim.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Pim.
+```
+Subtitle: Pim.
+
+### 89. `name.vonnra.Quill.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Quill.
+```
+Subtitle: Quill.
+
+### 90. `name.vonnra.Rhosyn.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Rhosyn.
+```
+Subtitle: Rhosyn.
+
+### 91. `name.vonnra.Sabre.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Sabre.
+```
+Subtitle: Sabre.
+
+### 92. `name.vonnra.Tamsin.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Tamsin.
+```
+Subtitle: Tamsin.
+
+### 93. `name.vonnra.Ulla.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Ulla.
+```
+Subtitle: Ulla.
+
+### 94. `name.vonnra.Voss.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Voss.
+```
+Subtitle: Voss.
+
+### 95. `name.vonnra.Wren.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Wren.
+```
+Subtitle: Wren.
+
+### 96. `name.vonnra.Yarrow.wav`
+
+*Where:* Front.cs Names (the creation screen)
+*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
+*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+
+```
+[warm, unsettling, quietly] Yarrow.
+```
+Subtitle: Yarrow.
 
 ## Said in passing
 
-### 71. `bark.vonnra.day.0.wav`
+### 97. `bark.vonnra.day.0.wav`
 
 *Where:* npcs.json vonnra.barks[0]
 *Played:* still; pace: slow; volume: quiet.
@@ -833,7 +1129,7 @@ Subtitle: ...Sit down. I have not finished reading.
 ```
 Subtitle: The toll is the toll.
 
-### 72. `bark.vonnra.day.1.wav`
+### 98. `bark.vonnra.day.1.wav`
 
 *Where:* npcs.json vonnra.barks[1]
 *Played:* still; pace: slow; volume: quiet.
@@ -843,7 +1139,7 @@ Subtitle: The toll is the toll.
 ```
 Subtitle: I see a great deal. I say very little. You will find that is the arrangement.
 
-### 73. `bark.vonnra.night.0.wav`
+### 99. `bark.vonnra.night.0.wav`
 
 *Where:* npcs.json vonnra.nightBarks[0]
 *Played:* still; pace: slow; volume: quiet.
@@ -853,7 +1149,7 @@ Subtitle: I see a great deal. I say very little. You will find that is the arran
 ```
 Subtitle: The toll does not sleep, and neither do I.
 
-### 74. `bark.vonnra.night.1.wav`
+### 100. `bark.vonnra.night.1.wav`
 
 *Where:* npcs.json vonnra.nightBarks[1]
 *Played:* still; pace: slow; volume: quiet.
@@ -863,7 +1159,7 @@ Subtitle: The toll does not sleep, and neither do I.
 ```
 Subtitle: The dark is also a customer.
 
-### 75. `bark.vonnra.night.2.wav`
+### 101. `bark.vonnra.night.2.wav`
 
 *Where:* npcs.json vonnra.nightBarks[2]
 *Played:* still; pace: slow; volume: quiet.
@@ -873,7 +1169,7 @@ Subtitle: The dark is also a customer.
 ```
 Subtitle: Payment, even now.
 
-### 76. `bark.vonnra.night.3.wav`
+### 102. `bark.vonnra.night.3.wav`
 
 *Where:* npcs.json vonnra.nightBarks[3]
 *Played:* still; pace: slow; volume: quiet.
