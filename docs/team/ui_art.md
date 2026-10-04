@@ -1,59 +1,42 @@
 # UI art: status
 
-Agent a72467cac33063d3a. Branch `worktree-agent-a72467cac33063d3a` (= predecessor's
-`worktree-agent-abd496197891ea843` + this work). Handoff from before: `docs/handoff/ui_art.md`.
+Agent a72467cac33063d3a. Branch `worktree-agent-a72467cac33063d3a` (merges the integration branch and
+the UI design lead's). Handoff from before: `docs/handoff/ui_art.md`. One rebuild: `python tools/uiforge/build.py`.
 
-## State (stopped at the owner's usage limit)
+## State
 
-- **Medallions remade as reliefs** (item 1 of the list): new `tools/uiforge/relief.py` (a piece
-  modelled as a height field + PBR maps in numpy) and `blender_relief.py` (one vertex per render
-  pixel, rendered in Cycles under the house light from `blender_frames`), then a light paint-over
-  (`paintover.py`, 0.26-0.30) with the wire, the chain and the number's well protected.
-  - `hud/medal_level.png`: the Legion's seal. Planished iron ring, forge-welded at its foot, the
-    binders' twisted wire, seven notches at the inner edge (the binders' seven keys), a dark well
-    for the number with the ember smouldering in the gap at its foot.
-  - `hud/medal_heart.png`: a bezel with a heart-shaped hollow, an iron chain coiled round it in a
-    channel, one link pried open at the head with ember at the break (each link of the chain is
-    anchored in a heart: STORY_BIBLE).
-  - `icons/glyph_color/heart.png`: the heart-stone the code lays over the heart medal (22 px):
-    a heart-cut ruby, faceted, lit inside. Only that HUD uses the `heart` key.
-  - Built by `python tools/uiforge/build.py medals` (`tools/uiforge/medals.py`).
-- **Not yet seen in the running game.** Judged only in mock-ups at shown size over a game shot.
-- `build.py painted` no longer runs fitall's `minimap` and `medals` groups: they would have
-  overwritten the Blender minimap rim and art ring with the old AI cut-outs on a full rebuild.
+- **Every piece the redesign asks for is made and seen in game** (shots `godot/.shots/m3_*`):
+  `medallion/ring.png`, `hud/globe_rim.png` + `globe_glass.png`, `frames/console.png`, `well.png`,
+  `slab.png`, `header.png`, `pillar.png`, `crest_card.png`, `crest_row.png`, `banner.png`,
+  `book/open.png`, `book/ribbon.png`, `ornaments/plaque_rule.png`; draft cards lengthened to
+  736x1096 (320x500 shown, one to one). The level medallion is the Legion's seal (seven notches).
+- **How**: round and shaped pieces are reliefs (`relief.py`: height + PBR maps in numpy,
+  `blender_relief.py` renders them under the house light), then a light Krea paint-over with
+  small exact parts protected. Rectangular frames that tile use `chrome.py` (Blender curves) or
+  `pieces.iron_card`. Modules: `medals.py` (round), `pieces.py` (shaped/frames), `chrome.py`.
+- **The globe carries the heart's idea**: the binders' chain coiled round the vessel, the pried-open
+  link with its ember held in a lamp-iron collar at its head; the glass catches a leaded window.
+- `hud/medal_heart.png` and `icons/glyph_color/heart.png` (the heart-stone) are no longer shown.
 
 ## Next (in order)
 
-0. **Merge the UI design lead's branch** `worktree-agent-a5629aff0f215ea4a@ed542b3` (pushed; not yet
-   merged here). Per its message: health is now a globe, so the health bar, its casing and
-   `medal_heart` are no longer shown (the heart medal and stone above are then unused; the stone
-   may suit the globe). New pieces asked for by name (UI_ART_BRIEF 4.9, ui_assets.json "not yet
-   made"): `frames/well`, `slab`, `header`, `banner`, `pillar` (Self), `console` (HUD band),
-   `book/open.png`, `medallion/ring.png` (every design medallion, middle open from 78%),
-   `hud/globe_rim.png`, `hud/globe_glass.png`. `map_frame` now frames the Wayfinder's table's maps.
-   Draft cards are 320x500 now (the painted card stretches 48 px in the middle: refit).
-   `relief.py` suits the globe rim and the medallion ring directly. Do these before the list below.
-1. Import and screenshot the HUD at 1920x1080 (`python tools/uiforge/shots.py --prefix m1`);
-   check the level number in the well, the heart's beat, both by day and night. Judge
-   "do we have soul?" at shown size; iterate (the level band is dark at 58 px; the chain may want
-   more contrast).
-2. Skill icons that show a person (leap, smoke, mirror, echo, wraith, feint) and the soft ones at
-   17 px. Seen at 40/17 px (contact sheet): many more read as smoke blobs (tether, tether2,
-   tether_mark, umbral, siphon, zone_blight*, risen, herd*). Consider remaking the family as
-   relief emblems + paint-over rather than text-to-image.
-3. Weak item icons (pelt, hide, dust, seed, root). 4. Uncommon/rare cards louder.
-5. Logo as a relief (`relief.py` suits letters). 6. Stat icons as assets in `icons/glyph/stat_*`.
-7. Hover states screenshotted.
+1. Remake the icon family that reads as blobs or people (blink, leap, smoke, mirror, echo, wraith,
+   feint, risen, herd*, pyre, nova_sun, retaura, tether*, umbral, siphon, zone_blight*, expand,
+   static, triple, arcane...) as modelled emblems (relief silhouettes) painted over on the Krea, then
+   judge the whole family together at 17/28/44/67 px; remake the rest if the new ones outclass them.
+2. Weak item icons (pelt, hide, dust, seed, root). Uncommon/rare cards louder.
+3. Portrait cards for character creation when the UI design successor (ac76f400913a109cd) registers them.
+4. Logo as a relief; stat icons; hover states screenshotted.
 
 ## Key decisions
 
-- Reliefs over Blender curve specs for round, exact pieces: a height field gives any form
-  (notches, links, facets, ragged edges) with real light, and stays scriptable.
-- The heart's stone is the icon, the setting is the medal: the code draws the icon over it.
-- Paint-over caches by the render's content hash, so a changed model is painted afresh.
+- Reliefs for exact, scriptable forms with real light; paint-over only adds the hand (0.15-0.3).
+- Paint-over caches by the render's content hash; emissive and small parts are protected.
+- Wear is computed from curvature in file px, so a piece wears alike at any supersampling.
+- The banner's centre stone is the code's (one stone cannot sit in a tiled middle).
 
-## Notes for other areas
+## Blockers / notes for other areas
 
-- UI design (a5629aff0f215ea4a): no UI code touched here. Its merge is pushed (ed542b3); merge it first.
-- Raw renders and paintings: `tools/comfy/out/uiforge/relief/` and `.../paintover/` (ignored).
-  Copied the predecessor's `tools/comfy/out/uiforge/` into this worktree (613 MB) so builds reuse it.
+- ComfyUI was found down (refused) on 2026-10-04; asked the main session before restarting.
+- UI design: the mirrored plaque rule is drawn through the title (`Plaque._Draw`), reported.
+- Raw renders: `tools/comfy/out/uiforge/relief/`, paintings `.../paintover/` (ignored, on this PC).
