@@ -2,64 +2,66 @@
 
 Status page for the skills lead (branch `worktree-agent-a8bafe3cd8a229639`).
 
-## Current state (2026-10-03, stopped at the owner's usage limit)
+## Current state (2026-10-04, stopped at the owner's usage limit)
 
-Tests green (472). Everything below is committed and pushed.
+Tests are green (520). Everything below is committed and pushed. ComfyUI is freed.
 
 - **Inventory**:
   - 26 combat skills, 52 evolutions and 9 unions (`logic/Content/Weapons.cs`);
-  - 16 arts (`Content/Abilities.cs`);
-  - blessings and discoveries with visible rules (`Content/Boons.cs`, `Discoveries.cs`).
-  - The nine starting weapons: Oathblade or Judgement Disc (warden), Cleaver or Axe
-    Gyre (reaver), Seeking Motes, Cinderfall or Rimeshard (arcanist), Volley or
-    Knifestorm (stalker).
-- **Before, seen in play** (every skill at rank 4 in a horde of risen with eight
-  champions, night; frames in `godot/.shots/before_*`, sheets in the scratchpad's
-  `skills/before/`):
-  - every skill was drawn by its school, not as itself;
-  - projectiles were glowing dots with dotted trails, flown at chest height, so from
-    the high camera the crowd hid them. Moonbrand, Umbral Bolt and Volley are
-    invisible in a horde; Seeking Motes and Judgement Disc nearly so;
-  - Dawnpulse and Hallowed Ground read as fire (orange glare discs); Blightfield is a
-    flat neon-green disc with a hard rim; Hoarfrost and Rimeshard are white glare;
-    Thunderhead's own strike marks look like hostile telegraphs; Verdant Lance and
-    Arcweb are flat cylinders with square ends;
-  - champions' deaths (big dust blasts) drown every skill's frames.
-  - Thornbloom's run gave no frames: run it again.
-- **Crop and squaring, fixed at three levels**:
-  - `tools/comfy/flipbook.py` refuses (exit 2, nothing written) a clip that runs off
-    its own frame, and any cell with light on its border, past 0.97 of its radius, or
-    more than 1% of its light past 0.9. `--check` and `--clean` for atlases already made;
-  - the flipbook, spark and smoke shaders fade every quad round, whatever it holds;
-  - `tests/FxTests.cs` holds every atlas, sprite and ground mark to the rule (checked
-    that it fails on the old `fire_loop`);
-  - found and fixed: `fire_loop` (every frame at its edge), `ember_motes`, and five
-    sprites that ran off their square (the pack's lightning forks, a clod, a twirl).
-- **Batch 1, code written, not yet right on screen**:
-  - blows carry their skill's art and rank (`Ev.*.Art`, `Rank`; the view only reads them);
-  - `src/Fx/Ribbons.cs` and `shaders/ribbon.gdshader`: trails, bolts and threads as
-    one mesh a frame, drawn over the crowd;
-  - `src/Fx/BattleFx.Skills.cs`: each skill's flight, trail, release, swing and impact;
-    novas (Hoarfrost, Dawnpulse, Reaving Arc), chains, strikes from the sky and beams;
-  - projectile cores drawn over the crowd (`shaders/spark_over.gdshader`), flights lifted
-    to head height.
-  - **First look** (`godot/.shots/after1_*`, sheet `scratchpad/skills/ba_batch1_first.png`):
-    the new swing (sparks, crack, dust) shows; **the ribbon trails do not show** on
-    Volley or Seeking Motes. Debug that first (is the mesh drawn at all? camera,
-    strength, width, the `Now`/`Feed` timing against `Ribbons.Step`).
-- **Lab**: `--lab` (only the skills given, no drafts, no levels, no dying) with
-  `--give`, `--horde`, `--shot --every --count`. Scripts in the scratchpad's
-  `skills/`: `shot.py` (one run at 1920x1080, fixed 60 fps), `sweep.py TAG [ids]`
-  (each skill alone, a sheet each), `sheet.py` (contact sheets).
-- **New clips**: twelve prompts added to `tools/comfy/fx_clips.py` (frost_spikes,
-  holy_ring, blood_scythe, moon_burst, ice_shatter, poison_cloud, bramble_burst,
-  gold_flare, fireball_impact, dust_chop, shadow_wisps, leaf_burst). The batch was
-  stopped at the first clip for the usage limit; none is made. ComfyUI is freed.
+  - 16 arts;
+  - blessings and discoveries.
+  - The nine starting weapons: Oathblade, Judgement Disc, Cleaver, Axe Gyre,
+    Seeking Motes, Cinderfall, Rimeshard, Volley, Knifestorm.
+- **Before**: every skill drawn by its school; projectiles hidden in the crowd; the
+  grades are below. Frames: `godot/.shots/before_*`, rank 4, a horde of 70 risen
+  and 8 champions at 3 m, night.
+- **Crop and squaring** (done, tested):
+  - flipbook.py refuses a cut-off clip or a cell with edge light;
+  - the shaders fade every quad round;
+  - `FxTests` holds every atlas, sprite and mark to the rule.
+- **Batch 1, the nine starting weapons: working on screen, not yet sent.**
+  - Seen in the showcase frames (`godot/.shots/show1_*`: 40 risen at 9–14 m, every
+    0.05 s; strips made by the scratchpad's `skills/strip.py`):
+    - Volley: a fan of arrow streaks;
+    - Knifestorm: a ring of knife streaks;
+    - Axe Gyre: four axes with curved white wakes;
+    - Judgement Disc: gold hoops with gold wakes that curve as they home;
+    - Cinderfall: a burning coal with a flame trail, and its blast;
+    - Rimeshard: ice lances with frost trails;
+    - Seeking Motes: violet trails.
+  - Not seen yet, built since `show1`:
+    - the swept blade (Oathblade and Cleaver were still the painted fan in
+      `show1`, a flat beige half-disc);
+    - each skill's mark on the body;
+    - ice, stone and thorn spikes (`Erupt`, `shaders/crystal.gdshader`);
+    - the twinkling mote core;
+    - the toned-down Hoarfrost (white-out mist cut) and Dawnpulse (sigil smaller);
+    - the dark beds' effect in the crush scenario.
+- **Grounds** (Blightfield, Hallowed Ground, Thornbloom, Pyre): drawn to the
+  experience director's rule (no fill, lit edge, pattern ≤ 35%). Not yet seen: the
+  `show1` frames don't show the zone in the crop. Look at a full frame.
+- **Agreed with the experience director**:
+  - champion death blast about 3 m, flash ≤ 0.15 s, dust ≤ 0.6 s (done);
+  - zones as above;
+  - the survivor kept clear: what is drawn over the crowd drops to a third of its
+    strength over her (`shaders/hero_clear.gdshaderinc`).
+- **Spike tells** (combat): `Ev.Sound` ids `tell_*` play recorded takes (`Sfx.Tell`).
+  - Made with LTX's audio (`tools/comfy/sfx_clips.py`): tell_howl ×2, tell_drum ×2,
+    tell_fuse ×1.
+  - tell_whistle is not made yet; it plays a made sound until then.
+  - Nobody has listened to any take: the owner should.
+- **GPU jobs not done**:
+  - the skills' sprites (`tools/comfy/fx_sprites.py make`, Krea);
+  - the twelve clips (`fx_clips.py`).
+  - The first clip try failed with Windows error 1450 (out of RAM: 2 GB free while
+    Godot ran). Run them with no game open.
+  - The chain script is the scratchpad's `skills/gpu_chain.sh`.
+- **Ribbons.cs is the performance lead's** (a9586a5171413db0b) until they say they
+  have pushed region updates for `Buffer.Flush`. Don't edit it before then.
 
 ## Grades (before)
 
-1 (poor) to 5 (at the bar), from the frames above. Crop/square: "risk" where a
-square-edged texture or cylinder end could show.
+1 (poor) to 5 (at the bar), from frames in play.
 
 | Skill | Soul | Reads in a horde | Impact | School | Polish | Crop/square |
 |---|---|---|---|---|---|---|
@@ -85,43 +87,52 @@ square-edged texture or cylinder end could show.
 | Blightfield | 1 | 3 | 1 | 2 | 1 | ok |
 | Hallowed Ground | 1 | 3 | 1 | 1 | 1 | ok |
 
-The rest (Iron Palms, Grave Tether, Gravecall, Thornbloom, Spirit Herd and the
-unions) have frames but are not graded yet.
-
 ## Key decisions
 
-- **Per skill, not per school**: the school sets colour and shape language; the skill
-  sets the body, trail and landing. A rank-8 skill is drawn about a third larger and
-  brighter than at rank 1 (`Grow`); an evolution adds a layer of its own.
-- **Ribbons over dotted sparks** for what flies: a line reads as speed and direction;
-  dots read as litter, and cost more.
-- **Drawn over the crowd**: from the game's high camera, bodies hide anything at chest height.
-- **Pale effects need colour, not white**: the risen are pale grey, so white glare
-  vanishes into them; frost is blue, holy is gold, never white-hot over a crowd.
+- **Per skill, not per school**: the school sets colour and shape; the skill sets its
+  body, trail and landing. Rank grows it (`Grow`); an evolution adds a layer.
+- **Ribbons with a dark bed under them**: the risen are bone-grey, and light over them
+  washes to white; dark round a light is what makes it seen.
+- **Drawn over the crowd, at head height, never over her**: from the high camera,
+  bodies hide anything at chest height, and the survivor must stay readable.
+- **Real shapes where a flat picture fails**: ice, thorns and stone stand up as lit meshes.
+- **Pale effects need colour, not white**: frost is blue, holy is gold.
 
 ## Next steps, in order
 
-1. Find why the ribbon trails do not show; then rerun `sweep.py after1` for the nine
-   starting weapons and judge each at full resolution against the before frames.
-2. Make the twelve clips (`fx_clips.py <tools/comfy/out/clips> <names>`), cut each with
-   `flipbook.py` (it refuses a cropped one: change its seed and make it again), and use
-   them in `BattleFx.Skills.cs` (frost_spikes for Hoarfrost and Rimeshard, holy_ring for
-   Dawnpulse, blood_scythe for Reaving Arc, and so on).
-3. Before/after contact sheet of Batch 1 to the main session.
-4. Batch 2: zones (Blightfield, Hallowed Ground, Thornbloom with real brambles), the
-   herd (spirit beasts on the wolf's body with the ghost shader), summons, Grave
-   Tether, Iron Palms; then evolutions and unions; then arts and the callings' own;
-   then sound per skill (all synthesised today, by school).
-5. Champions' death blasts (`BattleFx` Kill, elites) are too big: agree a size with
-   the experience director.
+1. Build and run `sweep.py show2 <the nine>` (showcase, `--horde 40 --dist 9 --spread 5
+   --every 0.05 --count 32 --start 2.0`). Then run `sweep.py a4 <the nine>` with the
+   default crowd, like for like with `before`. Judge every one at full resolution
+   (`strip.py`, `ba.py`).
+2. Make the before/after contact sheet (`ba.py`) and send it to the main session.
+   Send the experience director the minute-25 view (`--minute 25 --auto` with a late
+   build).
+3. GPU, with no game open: the sprites (pick, then `fx_sprites.py cut NAME=PATH`),
+   the twelve clips, tell_whistle and a second tell_fuse take. Then use them:
+   - sun_disc for the Judgement Disc;
+   - frost_spikes and ice_shatter for frost;
+   - holy_ring and gold_flare for holy;
+   - blood_scythe for Reaving Arc;
+   - poison_cloud and bramble_burst for the grounds.
+4. Arcweb: a thicker, bluer bolt. Verdant Lance and the other novas and grounds, seen and judged.
+5. Combat's enemy looks (its message of 2026-10-04):
+   - aura rings in the people's colour (asked for the people on the event);
+   - slams with a dust ring and stone;
+   - summon circles;
+   - the Sign marks;
+   - the haste and ward glints;
+   - the bolt_bone and frost_orb arts.
+6. Then evolutions and unions, the arts and the callings' own, and sound per skill.
+   A Sonniss-style library is on disk in `tools/comfy/out/sfx/` (arrows, axe impacts):
+   check its licence first.
 
 ## Notes for other areas
 
-- **Combat** (`ac4ec5bbd2763a0df`): events now carry `Art` and `Rank`; nothing in the
-  logic reads them. Its coming encounter work (the charge director, minibosses) will
-  need telegraphs and effects from here: ask.
-- **Experience director**: hit-stop is global (`WorldScene.Weigh`); a hit's flare and
-  sparks scale with the share of life a blow takes. The champions' death blasts drown
-  the skills.
-- **Whoever owns pickups**: plain white balls lie on the ground in these frames
-  (what the dead drop, not yet identified).
+- **Combat** (ac4ec5bbd2763a0df): events carry `Art` and `Rank` for the view. The
+  tells are in. Its enemy looks are queued above.
+- **Experience director** (a33f58e68e89e3ccf): an enemy hit flashes its whole body
+  white, which blooms into a blob over the pale risen. A tint or rim would read better.
+- **Performance** (a9586a5171413db0b): owns `Ribbons.Buffer.Flush` for now. My added
+  batches (shades; ice, thorn and stone spikes with shadows, at most 900) are in its harness.
+- **Pickups**: plain white balls lie on the ground in every frame (not identified).
+  Loot beams are cylinders with flat-cut tops.
