@@ -17,9 +17,9 @@ her head is rebuilt (its UVs may change):
     PAINT_PREVIEW=<folder>: each design also saved over her face, on the sheet
 
 Out: godot/art/people/paint/<id>.png (her UV layout, transparent but for the
-paint), and godot/art/people/paint/brows.png: her painted brows found in her
-head's paint, so the game can dye them the colour of her hair (grey: how dark
-each hair is, alpha: how much brow there is).
+paint), and godot/art/people/paint/brows.png: where her painted brows are in
+her head's paint, so the game can dye them the colour of her hair (alpha: the
+brows' shape; the game finds each hair in her skin's paint).
 """
 import json
 import os
@@ -341,6 +341,13 @@ def lay(dst, cov, colour, alpha=1.0, grain=None, through=0.0):
     return dst
 
 
+def firm(L, k):
+    """Paint laid thick: its body opaque (the skin showing through a thin coat
+    turns blue to violet and blood to rust), its dry, broken edges still thin."""
+    L[..., 3] = np.clip(L[..., 3] * k, 0, 1)
+    return L
+
+
 def hexc(h):
     h = h.lstrip('#')
     return [int(h[i:i + 2], 16) / 255 for i in (0, 2, 4)]
@@ -362,11 +369,13 @@ def ring_dist(hole):
 
 
 def kohl(shape, f, smoky=1.0, seed=11):
-    """Soot and tallow round the eyes: smoked out over the lids and toward the
-    outer corners, under the lower lashes too; a dark line hard along the
-    upper lashes, drawn out to a point toward the temple."""
+    """Soot and tallow round the eyes: smoked thick over the lids to the crease
+    and out toward the outer corners, under the lower lashes too; a dark line
+    hard along the upper lashes, drawn out to a long point toward the temple.
+    (Bold: the lid's margin rolls in under the lashes, so a line laid only
+    there is hidden; the game sees her from metres away.)"""
     L = layer(shape)
-    ink = hexc('#140d0c')
+    ink = hexc('#120b0b')
     for side, hole in enumerate(f['holes']):
         dist = ring_dist(hole)
         ys, xs = np.nonzero(hole)
@@ -376,64 +385,67 @@ def kohl(shape, f, smoky=1.0, seed=11):
         # (her right eye's outer corner is toward the sheet's left, her left eye's toward its right)
         outer = 1 if side == 1 else -1
         xx = (np.arange(shape[1], dtype=np.float32)[None, :] - xs.mean()) * outer
-        # The smoke: up over the lid to the crease, out toward the outer corner, a little under.
-        reach = 22 + 58 * top + 34 * np.clip(xx / 80, 0, 1) * (0.4 + 0.6 * top)
-        smoke = (np.clip(1 - dist / reach, 0, 1) ** 1.25 * (dist > 0)).astype(np.float32)
-        smoke = blur(smoke, 7) * smoky
-        lay(L, smoke, ink, 0.86, pigment(shape, seed + side, 26, 0.3))
+        out = np.clip(xx / 80, 0, 1)
+        # The smoke: thick up over the lid, fading at the crease; swept out toward the outer corner; a little under.
+        reach = 26 + 70 * top + 46 * out * (0.4 + 0.6 * top)
+        smoke = (np.clip(1 - dist / reach, 0, 1) ** 0.6 * (dist > 0)).astype(np.float32)
+        smoke = blur(smoke, 6) * smoky
+        lay(L, smoke, ink, 0.97, pigment(shape, seed + side, 26, 0.2))
         # The line along the upper lashes, thickening toward the outer corner; the lower ones smudged.
-        thick = 7 + 6 * np.clip(xx / 80, 0, 1)
+        thick = 15 + 9 * out
         upper = ((dist > 0) & (dist < thick) & (yy < 6)).astype(np.float32)
-        lower = ((dist > 0) & (dist < 7) & (yy >= 6)).astype(np.float32)
-        line = np.clip(blur(upper, 1.4) * 1.0 + blur(lower, 2.5) * 0.7, 0, 1)
+        lower = ((dist > 0) & (dist < 10) & (yy >= 6)).astype(np.float32)
+        line = np.clip(blur(upper, 1.6) * 1.0 + blur(lower, 3.0) * 0.8, 0, 1)
         lay(L, line, ink, 1.0)
-        # The wing: from the outer corner of the upper lid, up and out to a point.
+        # The wing: from the outer corner of the upper lid, up and out to a long point.
         corner_x = xs.max() if outer > 0 else xs.min()
         near = np.abs(xs - corner_x) < 8
         cyc = ys[near].mean() if near.any() else cy
-        pts = [(corner_x - outer * 40, cyc - 14), (corner_x - outer * 4, cyc - 6), (corner_x + outer * 40, cyc - 22), (corner_x + outer * 78, cyc - 44)]
-        wing = stroke(shape, pts, [14, 14, 9, 1.0], dry=0.0, streaks=0.0, soft=0.22, seed=seed + 5 + side, taper=(0.02, 0.7), edge=0.04)
+        pts = [(corner_x - outer * 30, cyc - 22), (corner_x + outer * 6, cyc - 14), (corner_x + outer * 56, cyc - 34), (corner_x + outer * 112, cyc - 64)]
+        wing = stroke(shape, pts, [20, 20, 13, 1.0], dry=0.0, streaks=0.0, soft=0.2, seed=seed + 5 + side, taper=(0.02, 0.75), edge=0.04)
         lay(L, wing, ink, 1.0)
     return L
 
 
 def rouge(shape, f, seed=21):
-    """Kohl, and her lips stained the red of crushed rosehip (their lines kept),
-    a flush high on her cheeks."""
-    L = kohl(shape, f, smoky=0.8, seed=seed)
+    """Kohl, and her lips stained the deep red of crushed rosehip (their lines
+    kept), a flush high on her cheeks."""
+    L = kohl(shape, f, smoky=0.85, seed=seed)
     lips = blur(f['lips'].astype(np.float32), 2.0)
-    lay(L, lips, hexc('#8a1020'), 0.9, pigment(shape, seed, 14, 0.12), through=0.6)
+    lay(L, lips, hexc('#9a0c1c'), 0.95, pigment(shape, seed, 14, 0.1), through=0.5)
     for c in (CHEEK_R, CHEEK_L):
         flush = np.zeros(shape, np.float32)
         cv2.ellipse(flush, (int(c[0]), int(c[1] - 30)), (130, 64), -14 if c[0] > MID else 14, 0, 360, 1.0, -1)
-        lay(L, blur(flush, 44), hexc('#b8343c'), 0.2)
+        lay(L, blur(flush, 44), hexc('#c0303c'), 0.3)
     return L
 
 
 def woad(shape, f, seed=31):
-    """The old blue of the hill people: the left half of her face painted, brow
-    to jaw, solid but for the brush's grain; its edge brushed down her middle
-    and broken where the brush ran dry; chalky, the skin's grain through it."""
+    """The old blue of the hill people: a band dragged across her brow, temple
+    to temple, by the flat of three fingers; and under each eye two fingers
+    drawn down her cheek to the jaw. Chalky, broken where the woad ran dry,
+    the skin's grain through it."""
     L = layer(shape)
-    blue = hexc('#21407e')
-    grain = pigment(shape, seed, 16, 0.14)
-    h, w = shape
-    yy = np.arange(h, dtype=np.float32)[:, None]
-    xx = np.arange(w, dtype=np.float32)[None, :]
-    wob = noise((h, 1), 90, seed)[:, :1] * 30 - 15
-    edge = MID + 6 + wob
-    # The half: right of her middle (her left), from her brow's top to under her jaw.
-    inside = np.clip((xx - edge) / 6, 0, 1) * np.clip((yy - 640) / 50, 0, 1) * np.clip((1560 - yy) / 60, 0, 1)
-    # The brush's strokes, down her face: streaks of thicker and thinner paint;
-    # at the edge, the bristles' lines broken where the brush ran dry.
-    streak = noise((h, w), 14, seed + 1)
-    streak = cv2.resize(cv2.resize(streak, (w, h // 10)), (w, h))
-    bristle = cv2.resize(cv2.resize(noise((h, w), 3, seed + 3), (w, h // 24)), (w, h))
-    near_edge = np.clip(1 - (xx - edge) / 46, 0, 1)
-    broken = np.clip((bristle - 0.62 * near_edge) / 0.12 + 0.5, 0, 1) ** 0.6
-    fill = inside * (0.86 + 0.14 * streak) * (1 - near_edge * (1 - broken))
-    lay(L, fill.astype(np.float32), blue, 0.95, grain, through=0.25)
-    return L
+    # (toward cyan: the game's tone mapping turns a pure blue violet)
+    blue = hexc('#0b4aa4')
+    grain = pigment(shape, seed, 16, 0.18)
+    cov = np.zeros(shape, np.float32)
+    # The band over her brow (above her brows, below her hairline), a little higher at the temples.
+    by = 700
+    pts = [(TEMPLE_R[0] + 10, by + 40), (640, by + 6), (MID, by - 6), (1460, by + 6), (TEMPLE_L[0] - 10, by + 40)]
+    cov = np.maximum(cov, stroke(shape, pts, [96, 124, 128, 122, 90], dry=0.6, streaks=0.7, soft=0.3, seed=seed, taper=(0.05, 0.12), streak_px=9, edge=0.7))
+    # Two fingers down each cheek, from under the eye's outer half to the jaw, splaying a little.
+    for side, hole in enumerate(f['holes']):
+        ys, xs = np.nonzero(hole)
+        out = 1 if side == 1 else -1
+        x0, y0 = xs.mean() + out * 12, ys.max() + 46
+        for k, dx in enumerate((-34, 40)):
+            x = x0 + out * dx
+            pts = [(x, y0), (x + out * 6, y0 + 130), (x + out * (14 + k * 8), y0 + 290), (x + out * (20 + k * 14), y0 + 470)]
+            cov = np.maximum(cov, stroke(shape, pts, [56, 60, 52, 26], dry=0.55, streaks=0.5, soft=0.26, seed=seed + 3 + side * 2 + k,
+                                         taper=(0.05, 0.45), streak_px=6, edge=0.45))
+    lay(L, cov, blue, 0.96, grain, through=0.3)
+    return firm(L, 1.45)
 
 
 def ochre(shape, f, seed=41):
@@ -441,32 +453,33 @@ def ochre(shape, f, seed=41):
     fingers drawn from her right temple to her left: thick where they began,
     thinning and breaking up as the earth ran out."""
     L = layer(shape)
-    red = hexc('#7e2a14')
-    grain = pigment(shape, seed, 20, 0.3)
+    red = hexc('#8a1e0e')
+    grain = pigment(shape, seed, 20, 0.22)
     ey = (f['holes'][0].nonzero()[0].mean() + f['holes'][1].nonzero()[0].mean()) / 2
     # (the two fingers' tracks one band: where they overlap it is no thicker)
     cov = np.zeros(shape, np.float32)
-    for k, dy in enumerate((-26, 24)):
-        pts = [(TEMPLE_R[0] + 30, ey + dy + 26), (650, ey + dy - 2), (MID, ey + dy - 12), (1450, ey + dy - 2), (TEMPLE_L[0] - 30, ey + dy + 24)]
-        c = stroke(shape, pts, [92, 98, 96, 92, 70], dry=0.55, streaks=0.5, soft=0.3, seed=seed + k, taper=(0.04, 0.12), streak_px=8, edge=0.45)
+    for k, dy in enumerate((-30, 30)):
+        pts = [(TEMPLE_R[0] + 20, ey + dy + 26), (650, ey + dy - 2), (MID, ey + dy - 12), (1450, ey + dy - 2), (TEMPLE_L[0] - 20, ey + dy + 24)]
+        c = stroke(shape, pts, [100, 106, 104, 100, 76], dry=0.4, streaks=0.5, soft=0.28, seed=seed + k, taper=(0.04, 0.12), streak_px=8, edge=0.45)
         cov = np.maximum(cov, c)
-    lay(L, cov, red, 0.92, grain, through=0.45)
-    return L
+    lay(L, cov, red, 0.95, grain, through=0.35)
+    return firm(L, 1.4)
 
 
 def ash(shape, f, seed=51):
-    """Grey from a dead fire, thumbed under each eye and dragged down the cheek:
-    thick where the thumb pressed, smeared thin as it was drawn down."""
+    """Pale ash from a dead fire, thumbed under each eye and dragged down the
+    cheek: thick where the thumb pressed, smeared thin as it was drawn."""
     L = layer(shape)
-    grey = hexc('#a6a19a')
+    grey = hexc('#e8e4dc')
+    cov = np.zeros(shape, np.float32)
     for side, hole in enumerate(f['holes']):
         ys, xs = np.nonzero(hole)
         out = 1 if side == 1 else -1
-        x, y = xs.mean() + out * 10, ys.max() + 18
-        pts = [(x - out * 60, y + 4), (x, y + 18), (x + out * 30, y + 120), (x + out * 46, y + 230)]
-        c = stroke(shape, pts, [96, 110, 92, 40], dry=0.6, streaks=0.5, soft=0.45, seed=seed + side, taper=(0.08, 0.6), streak_px=11, edge=0.55)
-        lay(L, c, grey, 1.0, pigment(shape, seed + 5, 9, 0.5), through=0.5)
-    return L
+        x, y = xs.mean() + out * 10, ys.max() + 22
+        pts = [(x - out * 70, y + 4), (x, y + 20), (x + out * 30, y + 130), (x + out * 46, y + 250)]
+        cov = np.maximum(cov, stroke(shape, pts, [110, 124, 100, 44], dry=0.45, streaks=0.5, soft=0.4, seed=seed + side, taper=(0.08, 0.6), streak_px=11, edge=0.55))
+    lay(L, cov, grey, 1.0, pigment(shape, seed + 5, 9, 0.35), through=0.3)
+    return firm(L, 1.2)
 
 
 def blood(shape, f, seed=61):
@@ -479,39 +492,48 @@ def blood(shape, f, seed=61):
     for k, off in enumerate((-92, 0, 90)):
         x = cx + off
         pts = [(x - 4, 690), (x, 800), (x + 8, 960), (x + 20, 1130), (x + 30, 1290)]
-        c = stroke(shape, pts, [60, 66, 60, 52, 18], dry=0.6, streaks=0.4, soft=0.24, seed=seed + k, taper=(0.03, 0.5), streak_px=6, edge=0.45)
-        lay(L, c, hexc('#5c0a0c'), 0.9, pigment(shape, seed + 7 + k, 12, 0.3), through=0.4)
+        c = stroke(shape, pts, [62, 68, 62, 54, 18], dry=0.5, streaks=0.4, soft=0.24, seed=seed + k, taper=(0.03, 0.5), streak_px=6, edge=0.45)
+        # (toward crimson: the game's tone mapping turns a deep red to rust)
+        lay(L, c, hexc('#6c0322'), 0.97, pigment(shape, seed + 7 + k, 12, 0.2), through=0.25)
         rim = np.clip(c * (1 - c) * 4, 0, 1) * (c > 0.05)
-        lay(L, blur(rim.astype(np.float32), 2.0), hexc('#2e0405'), 0.3)
-    return L
+        lay(L, blur(rim.astype(np.float32), 2.0), hexc('#3a0406'), 0.35)
+    return firm(L, 1.35)
 
 
 def gilt(shape, f, seed=71):
-    """Flakes of gold leaf over her cheekbones and down the bridge of her nose:
-    torn edges, the larger laid close on the bone, smaller scattered further out."""
+    """Gold leaf pressed along the top of each cheekbone, from beside her nose
+    out toward the temple: torn pieces laid edge to edge so they read as one
+    band, broader at its middle, with a few flecks broken off around it."""
     L = layer(shape)
     rng = np.random.default_rng(seed)
-    gold = hexc('#d9aa4c')
+    gold = hexc('#e8bc58')
     spots = []
-    for c in (CHEEK_R, CHEEK_L):
-        out = 1 if c[0] > MID else -1
-        for _ in range(34):
-            r = rng.random() ** 1.3
-            a = rng.uniform(0, 2 * np.pi)
-            spots.append((c[0] + out * 20 + np.cos(a) * r * 190, c[1] - 40 + np.sin(a) * r * 80 - out * np.cos(a) * r * 30, 10 + 42 * (1 - r) ** 1.5 * rng.uniform(0.4, 1)))
-    for _ in range(12):
-        spots.append((MID + rng.normal(0, 16), rng.uniform(900, 1080), 8 + 22 * rng.random()))
+    for side, hole in enumerate(f['holes']):
+        ys, xs = np.nonzero(hole)
+        out = 1 if side == 1 else -1
+        # The band's line: under the eye's inner corner, along the bone, up toward the temple.
+        x0, y0 = xs.mean() - out * 20, ys.max() + 92
+        line = spline([(x0, y0), (x0 + out * 80, y0 + 8), (x0 + out * 180, y0 - 14), (x0 + out * 260, y0 - 70)], 200)
+        for i in range(46):
+            t = rng.random()
+            px, py = line[min(int(t * len(line)), len(line) - 1)]
+            wide = 14 + 18 * np.sin(np.pi * t)
+            spots.append((px + rng.normal(0, 6), py + rng.normal(0, wide * 0.3), (10 + 18 * np.sin(np.pi * t)) * rng.uniform(0.6, 1.1)))
+        for _ in range(14):
+            t = rng.random()
+            px, py = line[min(int(t * len(line)), len(line) - 1)]
+            spots.append((px + rng.normal(0, 30), py + rng.normal(0, 40), rng.uniform(4, 10)))
     for x, y, s in spots:
         n = rng.integers(6, 11)
         ang = np.sort(rng.uniform(0, 2 * np.pi, n))
-        rad = s * rng.uniform(0.45, 1.0, n)
-        squash = rng.uniform(0.55, 1.0)
+        rad = s * rng.uniform(0.55, 1.0, n)
+        squash = rng.uniform(0.6, 1.0)
         rot = rng.uniform(0, np.pi)
         px, py = np.cos(ang) * rad, np.sin(ang) * rad * squash
         poly = np.c_[x + px * np.cos(rot) - py * np.sin(rot), y + px * np.sin(rot) + py * np.cos(rot)].astype(np.int32)
         m = np.zeros(shape, np.uint8)
         cv2.fillPoly(m, [poly], 1, cv2.LINE_AA)
-        tone = rng.uniform(0.82, 1.08)
+        tone = rng.uniform(0.85, 1.08)
         lay(L, m.astype(np.float32), [g * tone for g in gold], 1.0)
     return L
 
@@ -520,11 +542,14 @@ DESIGNS = {'kohl': kohl, 'rouge': rouge, 'woad': woad, 'ochre': ochre, 'ash': as
 
 
 def brows_layer(shape, f):
-    """Her painted brows, found: grey how dark each hair is, alpha how much brow."""
-    a = np.clip(f['brows'] * 1.6, 0, 1)
+    """Where her painted brows are: alpha the brow's whole shape, a little
+    beyond it. The game finds each hair in her skin's own paint (its full
+    size, which this layout halves) and dyes it there (heroine_paint.gdshader)."""
+    dark = f['brows']
     L = layer(shape)
-    L[..., 0] = L[..., 1] = L[..., 2] = np.clip(a * 1.2, 0, 1)
-    L[..., 3] = blur(a, 1.0)
+    band = np.clip(blur(np.clip(dark * 3.0, 0, 1), 5) * 2.0, 0, 1)
+    L[..., 0] = L[..., 1] = L[..., 2] = 1.0
+    L[..., 3] = band
     return L
 
 
