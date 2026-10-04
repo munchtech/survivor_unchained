@@ -31,9 +31,17 @@ Rules for everyone:
   reach for their mother when something is unbearable.
 - The player's lines are short, plain and a little dry. They never make a
   speech.
-- A bark is twelve words or fewer. A bark that stops being true when a thread
-  is settled goes in the person's `said` list with the condition that keeps it
-  true, beside a line for how it ended.
+- A bark is said to the air as the survivor passes: a breath or two, never a
+  speech (aim for twelve words; Keegan's "monitoring it very closely" earns its
+  fourteen). A bark that stops being true when a thread is settled goes in the
+  person's `said` list with the condition that keeps it true, beside a line for
+  how it ended.
+- Repeating a word for weight ("It works! It works.", "Chapter four. Chapter
+  four.") is Chid's (his sentences double back) and Keegan's (repetition is a
+  figure, and figures are her trade). Nobody else leans on it.
+- One person's signature phrase is nobody else's: "Someone always does" is
+  Vonnra's (the fortune turns on it), "before you ask" is Maeca's, "Not there...
+  Here." is Keegan's.
 - Inside narration, a quoted line is spoken by its speaker. A bare "she says"
   is cut, so the subtitle and the voice agree; a tag that carries manner ("says
   into your ear") stays, read by the narrator.
@@ -169,7 +177,8 @@ breath ("The pump does not pump itself. It does, actually."). Loyal to
 lamp ring on stressed words.
 
 **Grimtunnel** (Boss of the Dig). Oily, gleeful, possessive: "Nobody's!",
-"surface-meat", "downstairs" for the deep. Under the greed, faith: he is
+"surface-meat" (never finished at the survivor once he has smelled downstairs
+on her in C03: "surface-m—"), "downstairs" for the deep. Under the greed, faith: he is
 carrying a god its heart, and when anything touches that he goes toad-still
 and very nearly bows, then covers it with a grin. He believes the thing below
 will be grateful, and says so. *Casting:* Snib's family, bigger, lower, a

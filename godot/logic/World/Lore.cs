@@ -89,6 +89,9 @@ public sealed class FolkLine
     /// <summary>Only for a survivor who has died and come back.</summary>
     public bool? Died;
     public bool? Child, Watch;
+    /// <summary>A person's line said once in a playthrough, at the first chance
+    /// once it holds (npcs.json "said": Brannoc's "Twelve, I made.").</summary>
+    public bool? Once;
 }
 
 public sealed class Concern { public string Text = ""; public Cond? When; public bool? Died; }

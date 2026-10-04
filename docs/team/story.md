@@ -17,9 +17,14 @@ Branch: `worktree-agent-a7622ae77d19e31dc`.
   - the bosses' barks.
 - **The explorer's full run** found nothing. Keegan's supper and Wenna's mask by the
   cure are played end to end in `RouteTests`.
-- **In progress:**
-  - the story editor's review of §17's new lines;
-  - the voice director's next batch.
+- **The story editor's round five on §17 is taken:**
+  - four phrase collisions fixed;
+  - Grimtunnel's "surface-m—" kept;
+  - the echo habit cut back to Chid and Keegan;
+  - three soul-test lines remade;
+  - Brannoc's "Twelve, I made." said once in a playthrough.
+  - §17 marks the lines to record exactly as written ("protect").
+- **In progress:** the voice director's next batch (Vonnra and the fortune).
 
 ## Key decisions (why)
 
@@ -46,13 +51,12 @@ Branch: `worktree-agent-a7622ae77d19e31dc`.
 
 ## Next
 
-1. The story editor's notes on §17: fix what is right, before any packet locks.
-2. The voice director's reads and packets, character by character: direction notes,
+1. The voice director's reads and packets, character by character: direction notes,
    then the lines marked final.
-3. C14's data (`brannoc.road`) once story fights get an ally and the Low Ford road
+2. C14's data (`brannoc.road`) once story fights get an ally and the Low Ford road
    by night.
-4. Act 2's text when the owner asks.
-5. Teaching the explorer to cure the stream would improve its reach (a systems
+3. Act 2's text when the owner asks.
+4. Teaching the explorer to cure the stream would improve its reach (a systems
    job).
 
 ## Blockers
@@ -66,8 +70,14 @@ None.
   that change no line without telling you. The hymn (C08) must be sung: Vonnra's
   in-tune alto is the clue.
 - **Combat:**
-  - I changed the words of four boss barks in `ArenaBosses.cs`.
+  - I changed the words of four boss barks in `ArenaBosses.cs`: the Barrow
+    Lord's "Tenete!" and "Iungite!", and Grimtunnel's going-down line.
+  - I changed the dig story fight's title in `Verge.cs` to *Ever So
+    Grateful*.
   - Keep new boss lines to `VOICES.md`.
+  - The table titles "Alpha of the Deep Wood" and "Warlord of the Ravine"
+    fail the soul test (bible: titles are the valley's words). I'll write
+    replacements if you want them.
   - There is no Dawn at 60:00 (the owner's decision), and the story agrees.
 - **Art:** Wenna's shop burns tallow, never ember. Maeca's plate reads "Hunter, of
   the Hollow".

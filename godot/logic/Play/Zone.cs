@@ -198,6 +198,10 @@ public sealed class NpcActor
     /// <summary>What they would say now about how things stand (the zone's
     /// reading of npcs.json "said"); half their barks, when there is any.</summary>
     public Func<IReadOnlyList<string>>? Said;
+    /// <summary>A line to say at the next chance, before anything else (said
+    /// once in a playthrough), and who to tell once it has been said.</summary>
+    public Func<string?>? Urgent;
+    public Action<string>? Spoken;
     string pose;
     double barkT;
 
@@ -255,7 +259,12 @@ public sealed class NpcActor
             IReadOnlyList<string> pool = Night && Def.NightBarks is { Count: > 0 } nb ? nb : Def.Barks;
             var said = Said?.Invoke();
             if (said is { Count: > 0 } && (pool.Count == 0 || rng.NextDouble() < 0.5)) pool = said;
-            if (pool.Count > 0) look.Bark(pool[rng.Next(pool.Count)], X, y + (Def.Scale ?? 1) * 0.4 - 0.2, Z, voice: Def.Id);
+            if (Urgent?.Invoke() is string first)
+            {
+                look.Bark(first, X, y + (Def.Scale ?? 1) * 0.4 - 0.2, Z, voice: Def.Id);
+                Spoken?.Invoke(first);
+            }
+            else if (pool.Count > 0) look.Bark(pool[rng.Next(pool.Count)], X, y + (Def.Scale ?? 1) * 0.4 - 0.2, Z, voice: Def.Id);
         }
     }
 
@@ -301,18 +310,31 @@ public abstract class ZoneRuntime
     protected WorldState W => G.Journey.World;
     protected Ctx C => G.Journey.Ctx;
     protected Fact F(string key) => W.Fact(key);
-    static readonly Dictionary<string, Cond> conds = new();
+    // Shared by every zone, and the tests run zones in parallel: a plain
+    // Dictionary written from two threads corrupts itself.
+    static readonly System.Collections.Concurrent.ConcurrentDictionary<string, Cond> conds = new();
     /// <summary>A condition, as the web game writes one (JSON; read once).</summary>
-    protected bool Test(string condJson)
-    {
-        if (!conds.TryGetValue(condJson, out var c)) conds[condJson] = c = Json.Parse<Cond>(condJson);
-        return Rules.Test(c, C);
-    }
-    /// <summary>A person's "said" lines that hold now, by day or after dark.</summary>
+    protected bool Test(string condJson) => Rules.Test(conds.GetOrAdd(condJson, j => Json.Parse<Cond>(j)), C);
+    /// <summary>A person's "said" lines that hold now, by day or after dark
+    /// (the once-only ones are said by <see cref="FirstTime"/>).</summary>
     protected IReadOnlyList<string> SaidNow(NpcDef def, bool dark) =>
         def.Said is { Count: > 0 } s
-            ? s.Where(l => (l.Night == null || l.Night == dark) && Rules.Test(l.When, C)).Select(l => l.Text).ToList()
+            ? s.Where(l => l.Once != true && (l.Night == null || l.Night == dark) && Rules.Test(l.When, C)).Select(l => l.Text).ToList()
             : Array.Empty<string>();
+    /// <summary>A once-only line of theirs that holds now and has never been said.</summary>
+    protected string? FirstTime(NpcDef def, bool dark) =>
+        def.Said?.FirstOrDefault(l => l.Once == true && (l.Night == null || l.Night == dark)
+            && !W.Npc(def.Id).Flag(SaidKey(l.Text)).Truthy && Rules.Test(l.When, C))?.Text;
+    /// <summary>Remember that a once-only line has been said.</summary>
+    protected void MarkSaid(NpcDef def, string text) => W.Npc(def.Id).Flags[SaidKey(text)] = true;
+    static string SaidKey(string text) => "said:" + VoiceLines.Hash(text);
+    /// <summary>A person's actor told what to say about how things stand.</summary>
+    protected void Wire(NpcActor a, Func<bool> dark)
+    {
+        a.Said = () => SaidNow(a.Def, dark());
+        a.Urgent = () => FirstTime(a.Def, dark());
+        a.Spoken = t => MarkSaid(a.Def, t);
+    }
     protected bool Knows(string k) => Rules.Test(new Cond { Knows = k }, C);
     protected bool HasItem(string def) => Rules.Test(new Cond { HasItem = def }, C);
     protected bool Quest(string id, string entry) => Rules.Test(new Cond { Quest = new QuestCond { Id = id, Entry = entry } }, C);
