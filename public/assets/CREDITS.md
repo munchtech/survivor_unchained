@@ -62,6 +62,7 @@ Cut to loop and made mono at 24 kHz (the game plays each wide, its right side ha
 
 ## Made for the game
 
+- The interface's art (frames, cards, slots, bars, medallions, ornaments, the logo, cursors, pad buttons, map marks and every icon): made for the game by tools/uiforge, from Blender renders (blender_frames.py, blender_chain.py), forged height fields and the local ComfyUI (Krea 2 turbo with the darkbrush LoRA, BiRefNet cut-outs); item icons painted over the game's own photographs of its item models -> godot/art/ui. No third-party images; the fonts are the game's own (SIL OFL, godot/art/fonts)
 - The woman survivor's body: a figure made in ComfyUI and given to the game by its owner -> godot/art/people/woman.glb (rigged to the Quaternius skeleton, brought down to a game's weight and its paint baked from the full figure by tools/assets/woman_body.py, with a mask of her skin, hair and suit, godot/art/people/woman_mask.png)
 
 ## Poly Haven models (CC0)
