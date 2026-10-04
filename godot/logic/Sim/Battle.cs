@@ -1426,17 +1426,48 @@ public sealed partial class Battle
         return p;
     }
 
+    /// <summary>The most stones left lying before the rest are gathered into one, the night's hoard
+    /// stone (the genre's red gem): a late night left thousands carpeting the field, and once the
+    /// pool was full the ember was simply lost.</summary>
+    public const int EmberCap = 240;
+    /// <summary>The tier the hoard stone is drawn at (the stones' own run 0 to 3).</summary>
+    public const int HoardTier = 4;
+    /// <summary>Stones lying on the ground (counted each tick, the hoard stone apart).</summary>
+    public int EmbersLying { get; private set; }
+    Pickup? hoardStone;
+
+    /// <summary>The hoard stone lying, if there is one.</summary>
+    public Pickup? HoardStone => hoardStone is { Alive: true, Kind: PickupKind.Ember, Tier: HoardTier } h ? h : null;
+
     void DropEmber(double x, double z, double xp)
     {
+        if (EmbersLying >= EmberCap) { Hoard(x, z, xp); return; }
         // Many small stones for a big creature reads better than one.
         double left = xp;
         int guard = 0;
         while (left > 0 && guard++ < 6)
         {
             double v = left > 40 ? Math.Min(left, 40) : left;
-            SpawnPickup(PickupKind.Ember, x + (Rng.Next() - 0.5), z + (Rng.Next() - 0.5), v);
+            if (SpawnPickup(PickupKind.Ember, x + (Rng.Next() - 0.5), z + (Rng.Next() - 0.5), v) == null) Hoard(x, z, v);
+            else EmbersLying++;
             left -= v;
         }
+    }
+
+    /// <summary>Ember past the cap goes into the hoard stone, which lies where the overflow began
+    /// and does not cool, worth all of it: a jackpot to go and fetch.</summary>
+    void Hoard(double x, double z, double xp)
+    {
+        if (HoardStone is not { } h)
+        {
+            h = SpawnPickup(PickupKind.Ember, x, z, 0)!;
+            if (h == null) return;
+            h.Tier = HoardTier;
+            h.Persistent = true;
+            h.Vx = h.Vz = 0;
+            hoardStone = h;
+        }
+        h.Value += xp;
     }
 
     /// <summary>A creature's blow on the ground after `delay` (its own mark already shown):
@@ -1889,9 +1920,11 @@ public sealed partial class Battle
     {
         var p = Player;
         double reach = Stats.Get(Stat.PickupRadius);
+        int lying = 0;
         foreach (var k in Pickups.Items)
         {
             if (!k.Alive) continue;
+            if (k.Kind == PickupKind.Ember && k.Tier != HoardTier) lying++;
             k.Age += dt;
             // Scatter, then settle.
             k.X += k.Vx * dt; k.Z += k.Vz * dt;
@@ -1921,6 +1954,7 @@ public sealed partial class Battle
             // Ember on the ground cools after a long while; gear does not.
             if (k.Alive && !k.Persistent && k.Kind == PickupKind.Ember && k.Age > 90) Pickups.Release(k);
         }
+        EmbersLying = lying;
     }
 
     void Collect(Pickup k)

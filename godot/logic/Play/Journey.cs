@@ -154,6 +154,7 @@ public sealed partial class Journey
             Hp = exp != null ? Math.Min(exp.Hp, kit.Stats.Get(Stat.MaxHealth)) : null,
         });
         b.EmberOn = combat && (arena || ember);
+        EmberLit = b.EmberOn && !arena;
         b.Night = arena || ember || World.Time == TimeOfDay.Night;
         GearWeapons = kit.Weapons.Select(w => w.Id).ToHashSet();
         b.Favours.UnionWith(Callings.Archetype(Ch.Archetype).Favours);
@@ -182,12 +183,42 @@ public sealed partial class Journey
         return b;
     }
 
-    /// <summary>The dawn: the ember goes out, and what it built with it.</summary>
-    public void Douse(Battle b)
+    /// <summary>The kinds of play that tell the story (the rest are the endgame's arenas: table
+    /// nights, ember scars, maps).</summary>
+    public static readonly string[] StoryModes = ["prologue", "town", "wild", "story night"];
+
+    /// <summary>Time played, booked to its kind of play.</summary>
+    public void Clock(double dt, string mode) => World.TimeIn[mode] = World.TimeIn.GetValueOrDefault(mode) + dt;
+
+    /// <summary>The story's share of the time played so far (0..1), with the town counted as story
+    /// (its people, its quests) and without it (only the prologue, the wild and the story's nights).</summary>
+    public (double WithTown, double Strict) StoryShare
+    {
+        get
+        {
+            double all = World.TimeIn.Values.Sum();
+            if (all <= 0) return (0, 0);
+            double story = StoryModes.Sum(m => World.TimeIn.GetValueOrDefault(m));
+            return (story / all, (story - World.TimeIn.GetValueOrDefault("town")) / all);
+        }
+    }
+
+    /// <summary>The ember burns here and this is no arena (the prologue's night): what kills teach
+    /// is banked for the dawn.</summary>
+    public bool EmberLit { get; private set; }
+
+    /// <summary>The dawn: the ember goes out, and what it built with it; what the night taught is
+    /// paid. The levels it came to.</summary>
+    public int Douse(Battle b)
     {
         var kit = Character.Kit(Ch);
         b.Douse(kit.Weapons);
         GearWeapons = kit.Weapons.Select(w => w.Id).ToHashSet();
+        EmberLit = false;
+        if (World.NightLessons <= 0) return 0;
+        int levels = Character.GainXp(Ch, World.NightLessons);
+        World.NightLessons = 0;
+        return levels;
     }
 
     /// <summary>Leaving a zone: the wounds come along (an arena's are left in it).</summary>
@@ -211,7 +242,12 @@ public sealed partial class Journey
         // An arena pays its experience at the end, for the time survived; a
         // fight in the story teaches as it goes, the more the stronger the foe.
         if (InArena) return;
-        int levels = Character.GainXp(Ch, 2 * e.Def.Xp * Content.Enemies.ScaleFor(e.Level).Xp * (e.Boss ? 3 : e.Elite ? 2 : 1));
+        double xp = 2 * e.Def.Xp * Content.Enemies.ScaleFor(e.Level).Xp * (e.Boss ? 3 : e.Elite ? 2 : 1);
+        // While the ember drafts outside an arena (the prologue's night) the lessons wait for dawn:
+        // a character level popping up while the ember levelled taught two systems at once in the
+        // first minute (docs/EXPERIENCE_AUDIT.md, finding 4).
+        if (EmberLit) { World.NightLessons += xp; return; }
+        int levels = Character.GainXp(Ch, xp);
         if (levels > 0)
         {
             OnAnnounce(new Announcement($"Level {Ch.Level}", Ch.TraitPicks > 0 ? "A new trait can be chosen (C)" : "Attribute points to spend (C)", "boon", 3.2, "You grow stronger"));

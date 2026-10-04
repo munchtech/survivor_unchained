@@ -191,11 +191,37 @@ are mine:
 - maps pay gear whose kindled affixes feed the nights (SKILLS_DESIGN §10, "day feeds night");
 - the codex and the bestiary fill from both.
 
-**A map's shape (the target to build to):**
-- three to five linked areas, like a small Verge, with packs placed by day's rules;
-- a kill or a find every 10–20 s, and a pack every 20–40 s of walking;
-- one event (a shrine, a strongbox held for 20 s, a rare with a Sign, a lost cart);
-- the map's boss in the last area, then its chest and the next map.
+**Words:** "the Wayfinder's maps" in the owner's pacing note (30 minutes) are the table's
+people-named nights; the atlas's build maps are another thing ("the places the road forgets")
+and run about ten minutes.
+
+**A map's shape (decided 4 October, against combat's build in SKILLS_DESIGN §17.8):**
+- **Length:** a median clear of 9–10 minutes at tiers 1–2 and 10–12 from tier 3 (built: 11.7,
+  11.6, 13.2). The lever is the way, not the packs: three clearings before the ruler's at tiers
+  1–2, four at tiers 3–5, five from tier 6.
+- **Density:** keep combat's pack every 13–15 s. Maps are the ARPG's clear-speed chase, and a
+  dense way is how a build shows; the audit's 20–40 s was a first guess. A kill or a find every
+  few seconds while a pack is engaged.
+- **The rhythm of a map:** a way of packs, an altar clearing (its keeper, a miniboss), the
+  event, more way, the ruler. One breath with nothing in it before the ruler's clearing, with its
+  sign on the edge (the night's run-up, small).
+- **The event:** the people's own question (their signature turn) lit by killing the first
+  altar's keeper: 45–60 s, ending in a strongbox of three to five things at the map's item
+  level and a chart chance. Earned, never timed.
+- **The ruler:** 45–75 s at par (built: 60–65 s), then its hoard and the next chart. Its fall is
+  the map's peak with the night's fall's staging (slow motion, light, rings), smaller.
+- **Falls:** three a map, half of what was picked up spilt each time, waking at the last altar
+  lit (as built).
+- **The result:** a map ends on its own page (UI): time, falls, gear by rarity, charts, materials,
+  gold, and the atlas's line ("The Lampless Howes, tier 2: cleared, first time: a point").
+- **The atlas** (the Wayfinder's table, from Vonnra's fortune): the peoples by tier, each pair
+  lit when its ruler falls, its first clear a point. The first biases, a point a rank, three
+  ranks each: *the people's road* (that people's charts come oftener), *twice lit* (a second
+  event), *the keeper's due* (keepers give one more thing), *the ruler's hoard* (one more thing
+  from the ruler and a better Named chance), *marked men* (signed packs pay more). The rest of
+  combat's list waits until tier 4 exists. The Act 1 beta shows tier 1 and the first point.
+- **What feeds what:** nights pay the materials and kindling that roll and craft charts; maps pay
+  the gear whose kindled affixes feed the nights; the codex and bestiary fill from both.
 
 **When maps open:** at the end of Act 1's story (Vonnra's fortune), as the Wayfinder's atlas.
 The Act 1 beta shows the first tier, so the endgame can be tasted.

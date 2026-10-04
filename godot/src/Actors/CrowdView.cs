@@ -42,6 +42,8 @@ public partial class CrowdView : Node3D
         public double Seed, Phase, Facing;
         public bool Walking;
         public bool Seen;
+        /// <summary>How it falls, chosen at its first dying frame and kept for its body.</summary>
+        public string? Death;
     }
 
     sealed record Corpse(string Visual, string Role, float X, float Z, float Facing, float Scale, Color Tint, float Glow, double Born);
@@ -49,12 +51,24 @@ public partial class CrowdView : Node3D
     static readonly string[] Deaths = ["die", "die2", "die3"];
 
     /// <summary>How this one falls: one of its rig's deaths (on its back, face down, on its side),
-    /// chosen by its seed, so a field of the dead is not one pose stamped over and over.</summary>
-    static string DeathOf(VatAsset asset, double seed)
+    /// chosen by its seed but never the pose of the nearest body of its kind already lying within a
+    /// metre and a half, so a field of the dead reads as a fight and not one pose stamped over and over.</summary>
+    string DeathOf(VatAsset asset, Enemy e)
     {
         int have = 1;
         while (have < Deaths.Length && asset.Clips.ContainsKey(Deaths[have])) have++;
-        return Deaths[(int)(Math.Abs(seed) * 7919) % have];
+        int k = (int)(Math.Abs(e.Seed) * 7919) % have;
+        if (have < 2) return Deaths[k];
+        Corpse? near = null;
+        float best = 1.5f * 1.5f;
+        foreach (var c in corpses)
+        {
+            if (c.Visual != e.Def.Visual) continue;
+            float dx = c.X - (float)e.X, dz = c.Z - (float)e.Z, d = dx * dx + dz * dz;
+            if (d < best) { best = d; near = c; }
+        }
+        if (near != null && near.Role == Deaths[k]) k = (k + 1) % have;
+        return Deaths[k];
     }
 
     readonly Dictionary<string, VatCrowd> crowds = new();
@@ -144,11 +158,11 @@ public partial class CrowdView : Node3D
             {
                 // Burst apart: nothing is left to fall (the gore threw it).
                 if (e.Burst) return;
-                role = DeathOf(asset, e.Seed);
+                role = g.Death ??= DeathOf(asset, e);
                 t = e.DieT * Math.Max(1, asset.Duration(role) / (Ai.DieTime * 0.62));
                 // Summons fade; the rest fall and stay.
                 if (e.Disposition == Disposition.Ally) dissolve = Smooth(e.DieT, Ai.DieTime * 0.55, Ai.DieTime);
-                else if (e.DieT >= Ai.DieTime - 0.12) { LayOut(e, g.Facing); return; }
+                else if (e.DieT >= Ai.DieTime - 0.12) { LayOut(e, g.Facing, role); return; }
                 break;
             }
             case EnemyState.Burrowed:
@@ -202,7 +216,9 @@ public partial class CrowdView : Node3D
         float sc = (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual);
         // Struck: a squash, and a flinch along the blow, gone with the flash.
         float f = e.State == EnemyState.Dying ? 0 : (float)e.Flash * (1 - Still);
-        var at = new Vector3((float)(e.X + e.LastDx * f * 0.14), (float)y, (float)(e.Z + e.LastDz * f * 0.14));
+        // The flinch along the blow: big enough to read from thirty metres up, twice on a critical (S-17).
+        float push = e.LastCrit ? 0.45f : 0.25f;
+        var at = new Vector3((float)(e.X + e.LastDx * f * push), (float)y, (float)(e.Z + e.LastDz * f * push));
         var basis = new Godot.Basis(Vector3.Up, (float)(Math.PI / 2 - g.Facing)) * Godot.Basis.FromScale(new Vector3(sc * (1 + f * 0.1f), sc * (1 - f * 0.1f), sc * (1 + f * 0.1f)));
         float frozen = e.Status.Has(StatusKind.Frozen) ? 1 : e.Status[StatusKind.Chill] is { } chill ? (float)Math.Min(0.5, chill.Stacks * 0.09) : 0;
         float burning = e.Status.Has(StatusKind.Burn) ? 1 - 0.8f * Still : 0;
@@ -224,13 +240,13 @@ public partial class CrowdView : Node3D
     }
 
     /// <summary>The body stays where it fell when the fight lets it go.</summary>
-    void LayOut(Enemy e, double facing)
+    void LayOut(Enemy e, double facing, string role)
     {
         if (!laidOut.Add((e.Id, e.Seed))) return;
         var (tint, glow) = Visuals.Tint(e.Def.Visual);
         if (e.Def.Tint is var (tr, tg, tb)) tint *= new Color((float)tr, (float)tg, (float)tb);
         if (e.Def.Glow is { } dg) glow = Math.Max(glow, (float)dg);
-        corpses.Add(new Corpse(e.Def.Visual, DeathOf(Crowd(e.Def.Visual).Asset, e.Seed), (float)e.X, (float)e.Z, (float)facing, (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time));
+        corpses.Add(new Corpse(e.Def.Visual, role, (float)e.X, (float)e.Z, (float)facing, (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time));
         while (corpses.Count > CorpseMax) corpses.RemoveAt(0);
     }
 

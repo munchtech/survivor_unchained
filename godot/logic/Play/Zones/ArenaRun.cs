@@ -1321,6 +1321,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
 
     public override Dictionary<string, object?> Debug() => new()
     {
-        ["minute"] = Math.Round(Minute, 1), ["alive"] = B?.Enemies.Living().Count() ?? 0, ["target"] = Target(), ["level"] = Level(), ["ember"] = B?.EmberLevel,
+        ["minute"] = Math.Round(Minute, 1), ["alive"] = B?.Enemies.Living().Count() ?? 0, ["target"] = Target(), ["level"] = Level(),
+        ["stones"] = B?.EmbersLying, ["hoard"] = B?.HoardStone is { } h ? Math.Round(h.Value) : 0, ["ember"] = B?.EmberLevel,
     };
 }

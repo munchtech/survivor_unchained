@@ -28,7 +28,8 @@ public partial class MapTableScreen : Overlay
         bool again = w.Rematches.Count > 0;
         AddChild(Style.Scrim(G.CloseOverlay, 0.62f));
         const float W = 1580;
-        float H = again ? 916 : 816;
+        // (a sheet holds what the map pays and up to two oaths in full)
+        float H = again ? 976 : 876;
         var at = new Vector2((1920 - W) / 2, (1080 - H) / 2);
         var plate = Style.Panel(Style.Plate(0));
         plate.Position = at;
@@ -51,7 +52,7 @@ public partial class MapTableScreen : Overlay
         AddChild(close);
 
         // The three sheets, a little askew as they lie.
-        float sheetW = 448, sheetH = 548, gap = (W - 44 - 3 * sheetW) / 4;
+        float sheetW = 448, sheetH = 608, gap = (W - 44 - 3 * sheetW) / 4;
         float[] tilt = { -1.2f, 0.6f, -0.5f };
         for (int i = 0; i < offers.Count && i < 3; i++)
         {
@@ -91,6 +92,30 @@ public partial class MapTableScreen : Overlay
 
     /// <summary>What answers a people, as gear is named: "Wolfbane gear, or gear of the Wolf"
     /// (a prefix goes before "gear", a suffix after it).</summary>
+    /// <summary>What a map pays, in the Wayfinder's hand: the things a night among that people leaves
+    /// in the fist, drawn (ember shards, the people's own); the gear its spoils lean to, which is
+    /// what answers them; and on a win, a tome one time in three.</summary>
+    static Control Pays(MapOffer o, Denizens people)
+    {
+        Label L(string t, Font f, int sz, Color c) => Style.Label(t, f, sz, c, true, HorizontalAlignment.Left, false);
+        var v = Style.V(4, Style.Label("WHAT IT PAYS", Style.UiHeavy, Style.Badge, InkSoft, false, HorizontalAlignment.Left, false));
+        var things = Style.H(6);
+        foreach (var m in SurvivorUnchained.Rpg.Crafting.NightMaterials(o.People).Take(4))
+        {
+            var def = SurvivorUnchained.Rpg.Items.Get(m);
+            var cell = Style.V(0, ItemPhotos.Icon(def.Icon, 44, InkSoft), Style.Label(def.Plural ?? def.Name.ToLowerInvariant(), Style.Ui, 12, Ink, true, HorizontalAlignment.Center, false));
+            cell.CustomMinimumSize = new Vector2(76, 0);
+            cell.TooltipText = def.Description;
+            things.AddChild(cell);
+        }
+        v.AddChild(things);
+        // (the gear in a line: the names only, three at most; the bane in full is in the sub-title's words)
+        var lean = MapOffers.Lean(o.Spec, o.People).Select(a => SurvivorUnchained.Rpg.Items.Affix(a)?.Name ?? a).Distinct().Take(3);
+        v.AddChild(L($"Gear leaning to {string.Join(", ", lean)}", Style.TextItalic, Style.Caption, Answer));
+        v.AddChild(L($"Won, a tome to write one time in {System.Math.Round(1 / SurvivorUnchained.Arena.Arenas.TableTome)}; experience and gold for every minute held.", Style.TextItalic, Style.Caption, InkSoft));
+        return v;
+    }
+
     static string Bane(string[] lean)
     {
         var names = lean.Select(a => SurvivorUnchained.Rpg.Items.Affix(a)?.Name ?? a).ToList();
@@ -121,10 +146,11 @@ public partial class MapTableScreen : Overlay
         var v = Style.V(6,
             Style.H(8, Style.Label($"TIER {o.Spec.Tier}", Style.UiHeavy, Style.Caption, InkSoft, false, HorizontalAlignment.Left, false), Style.Gems(System.Math.Min(o.Spec.Tier - 1, 5), 6)),
             L(o.Spec.Name.ToUpperInvariant(), Style.Display, 30, Ink),
-            L($"Held by {people.Name}", Style.TextItalic, Style.Body, Ink),
-            L($"Ruled by {MapOffers.InSentence(people.BossName)}",Style.Text, Style.Small, InkSoft),
-            L($"Their bane: {Bane(people.Lean)}", Style.TextItalic, Style.Caption, Answer),
-            Style.Rule());
+            L($"Held by {people.Name}; ruled at the end by {MapOffers.InSentence(people.BossName)}", Style.TextItalic, Style.Small, Ink));
+        // What it pays, before what it asks (the experience director's finding: the table said
+        // nothing of it): what the night leaves in the fist, drawn; the gear it leans to; a tome's chance.
+        v.AddChild(Pays(o, people));
+        v.AddChild(Style.Rule());
         if (o.Spec.Oaths.Count == 0) v.AddChild(L("Sworn under no oath.", Style.TextItalic, Style.Small, InkSoft));
         foreach (var id in o.Spec.Oaths)
         {
