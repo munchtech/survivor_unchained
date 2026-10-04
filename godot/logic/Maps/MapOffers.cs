@@ -136,6 +136,9 @@ public static class MapOffers
         ["lamplings"] = (["Praying", "Gold", "Warm", "Black", "Deep", "Lamplit"], ["Sump", "Delph", "Sough", "Spoil"]),
     };
 
+    /// <summary>A name as it is written inside a sentence: "until the Pack-Mother comes".</summary>
+    public static string InSentence(string name) => name.StartsWith("The ") ? "the " + name[4..] : name;
+
     /// <summary>A map's name, drawn from its people's words.</summary>
     public static string Name(string people, Rng rng)
     {

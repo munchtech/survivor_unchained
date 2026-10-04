@@ -131,12 +131,13 @@ public partial class ArenaResultScreen : Overlay
         two.AddChild(stayCard);
 
         // A story night ends on the narrator's line for how it went (docs/WRITING_PASS.md §20), and a
-        // lost one says where it waits; a table night ends with the Wayfinder, who writes it down.
+        // lost one says beneath it where it waits; a table night ends with the Wayfinder, who writes it down.
         string after = r.Spec.Story
-            ? r.Won ? r.Spec.EndWon ?? "The valley will hear of it."
-                : (r.Spec.EndLost is { } lost ? lost + " " : "") + "The fight waits on the Wayfinder's table, to be taken again."
+            ? r.Won ? r.Spec.EndWon ?? "The valley will hear of it." : r.Spec.EndLost ?? "The valley will hear of it."
             : r.Won ? "The Wayfinder will want it for her margins." : "The Wayfinder's table will have other maps.";
         wrap.AddChild(Style.Label(after, Style.TextItalic, Style.Body, Style.Ink, true, HorizontalAlignment.Center));
+        if (r.Spec.Story && !r.Won)
+            wrap.AddChild(Style.Label("The fight waits on the Wayfinder's table, to be taken again.", Style.TextItalic, Style.Caption, Style.InkDim, true, HorizontalAlignment.Center));
         var go = Style.Button("", () => G.LeaveArena(r), true);
         var gr = Style.H(8, Style.Prompt(Act.Confirm), Style.Label("Back to the road", Style.UiBold, Style.Body, new Color("#ffe4b0")));
         gr.MouseFilter = MouseFilterEnum.Ignore;
@@ -159,7 +160,7 @@ public partial class ArenaResultScreen : Overlay
         if (G.LastFall is var (killer, at) && G.Battle?.Player.Alive == false) parts.Add($"Brought down by {killer} at {Clock(at)}");
         if (!r.Won)
         {
-            if (r.Seconds < end) { int m = (int)Math.Ceiling((end - r.Seconds) / 60); parts.Add($"{m} minute{(m == 1 ? "" : "s")} before {boss} would have come"); }
+            if (r.Seconds < end) { int m = (int)Math.Ceiling((end - r.Seconds) / 60); parts.Add($"{m} minute{(m == 1 ? "" : "s")} before {SurvivorUnchained.Maps.MapOffers.InSentence(boss)} would have come"); }
             else parts.Add($"{boss} still stands");
         }
         return string.Join(";  ", parts) + (parts.Count > 0 ? "." : "");
