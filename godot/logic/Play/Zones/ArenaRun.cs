@@ -156,7 +156,9 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         // The people's own cover: graves, walls, rubble, lanterns.
         foreach (var pc in map.Pieces) G.Look.AddProp(pc.Id, pc.X, pc.Z, pc.Rot, pc.Scale);
         b.Rules = MapOffers.Rules(Spec.Map);
-        b.Rules.FodderGold = 0.02;
+        // A fiftieth still paid a Kerchief night 1.6k-2.1k gold from its forty thousand dead (crafting's
+        // measure): a three-hundredth keeps it the gold night at about 400.
+        b.Rules.FodderGold = 0.003;
         b.Rules.ChampionGold = 0.1;
         // A shorter night pays its ember quicker, so its boss meets the build a table's would.
         b.Rules.EmberGain *= Pace;
