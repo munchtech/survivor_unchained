@@ -1,55 +1,52 @@
 # Heroine face, hair and creation's Look: status
 
-Agent abfa9bb430ec2391e, branch `worktree-agent-abfa9bb430ec2391e`.
-Research: `docs/FACE_RESEARCH.md`.
+Agent ade92e8285938438f, branch `worktree-agent-ade92e8285938438f` (took over from abfa9bb430ec2391e).
+Read first: `docs/handoff/face.md` (the predecessor's handoff) and `docs/FACE_RESEARCH.md` (the science).
 
 ## The owner's asks (2026-10-04)
 - "weird hair strands in her neck", and a ragged hairline;
 - "all of the pre made faces are kinda ugly"; generate beautiful ones with the local AI;
-- forehead and other features not editable; the chin can't get narrower;
-- "the customizations don't do enough"; look up beauty science.
+- forehead and other features not editable; "chin can't get any narrower";
+- "the customizations don't do enough"; "look up beauty science and proportions and fix that stuff".
 
 ## Current state
-- **Research written** (`docs/FACE_RESEARCH.md`): averageness, symmetry and feminine cues; the 36% and 46% ratios; thirds, fifths and the golden ratio (myth); five AAA creators compared.
-- **Reference faces:** `tools/assets/face_refs.py` paints reference faces with local Krea 2. Each is a beauty portrait, front and three-quarter side by side, at four seeds per face. The heroine's references look stunning (scratch `face/refs/`).
-- **Face fitting works.** It has three parts:
-  - `tools/assets/face_shapes.py` holds her face data: MACROS, FACE, BUILD, and 122 fit targets.
-  - `tools/assets/face_lab.py` (Blender) renders MakeHuman's woman with any weights. It also anchors MediaPipe landmarks on her mesh, with every target's move.
-  - `tools/assets/face_fit.py` (its own venv with MediaPipe, `%LOCALAPPDATA%/facefit`) reads the landmarks and fits the weights. The fit is bounded least squares; each view has its own pose and is matched to anchors rendered at a similar turn.
-  - Results: a self-test recovers her own face to 0.1 to 0.35 mm. The heroine references fit to about 1 mm (front) and 1.3 to 1.5 mm (three-quarter).
-- **Candidate default face:** `tools/assets/heroine_face/fit_heroine_candidate.json`, fitted with the depth targets held (see `face_sheets/candidate_face.jpg`).
-- **47 sliders drafted** in `face_shapes.SLIDERS`, in 8 groups. Each side's reach is calibrated from ±1 and ±2 renders (`face_sheets/cal_*.jpg`).
-- **Narrow chin done:** `sculpt-chin-narrow` is a smooth V with no crease (`face_sheets/chin_sculpt.jpg`).
-- **Not yet in her head:** heroine_head.py still has the old FACE and 25 sliders, and the game is unchanged.
-- **Handoff written:** `docs/handoff/face.md`, at about 440k tokens.
+- **Her head is rebuilt from `face_shapes.py`:**
+  - `heroine_head.py` reads it: FACE (the landmark-fitted face), the sliders and the sculpts.
+  - 45 sliders are shape keys either way, with their reach; the eyes follow their sockets.
+  - Her neck's two sliders move bones (`HerPose.NeckWidth` and `NeckLength`), so collars follow.
+  - The default face: the mean of four fits to her AI references, then nudged toward the research (larger eyes, higher brows, slimmer jaw and chin).
+- **Her face is repainted** (`heroine_face.py`, Krea, seed 11). The prompt now uses the references' beauty framing: fine auburn brows, lighter freckles (MakeHuman's are closed out of the drawing first), lips with a tint.
+  - It paints nothing above her hairline, where one painting drew swept-back hair.
+  - `FACE_LAY_ONLY=1` lays a chosen set of views without painting again.
+- **Hair** (`heroine_hair.py`, all five styles):
+  - A real hairline (`face_shapes.HAIRLINE`): rounded at her temples, down in front of her ears, round them, slightly uneven. The old one left her temples bald.
+  - Her ears are found by their own keys, and no hair grows on them.
+  - Roots thin out toward the hairline. Fine hairs, then baby hairs (faint, by vertex alpha) lie over its edge.
+  - The cap's fade is longer and uneven.
+  - Hair keeps 1.6 cm clear of her neck: it lay on her neck like scratches, and pulled into it as her head turned.
+  - Gathered hair goes up round her ears, not over them.
+  - The hair carries her head's slider keys, so it follows a higher forehead or a broader face.
+- **Game:**
+  - `People.HerSliders` holds the 47 slider ids.
+  - `looks.json` sliders are written by `tools/assets/face_looks.py`: 8 groups of at most 8, as UI design asked (Head, Brows, Eyes, Nose, Cheeks, Mouth, Jaw, "Ears and neck").
+- **Presets, in progress:**
+  - Nine new references are being painted by `face_refs.py` (highborn, vixen, doe, sunborn, moonlit, saffron, wildling, hardwon, fey).
+  - `face_presets.py` fits each to sliders. It takes off what every fit shares (photo against render) and draws the difference out 1.6 times.
 
 ## Key decisions
-- **Presets come from AI references fitted by landmarks,** not hand-guessed numbers. This is the owner's ask, and the BG3 and Dragon's Dogma lesson.
-- **Her face data lives in one plain module** (`face_shapes.py`), shared by the head build, the lab and the fit.
-- **The fit uses picture x and y only.** MediaPipe's depth is on another scale. The three-quarter view is matched to anchors seen from near its own turn, because the cheek outline's landmarks slide with the view.
+- **Presets are slider settings fitted to AI references, drawn out:** the raw fits differ from her face by only about 0.2. Next, each preset gets its own face paint (see Next).
+- **Neck by bones, not keys:** what she wears at her throat is weighted to the same bones, so it follows without refitting the outfits.
+- **One hairline for hair and paint** (`face_shapes.HAIRLINE`), so they can't disagree.
 
-## Next (in order)
-1. Fit the new default face to the chosen heroine reference. Judge it beside the reference and hand-tune what the landmarks miss: profile, brow ridge, ears.
-2. **New sliders** in `face_shapes.py`, built by heroine_head.py:
-   - forehead height and slope, temples, brow ridge;
-   - cheekbone height, width and prominence, cheek fullness;
-   - jaw width and angle; chin width, length and projection;
-   - nose bridge, width, tip and length; lips separately; mouth width;
-   - eyes (size, spacing, tilt, depth); ear shape; neck length and width.
-
-   Each key is baked at a tasteful extreme, so the slider's ±1 spans the useful range. Sculpts go in `SCULPTS` where MakeHuman has no target.
-3. **Hair:** shape keys on the hair cards following the head (forehead and temples). Fix the neck strands and soften the hairline. Rebuild all five styles.
-4. **Rebuild the head:**
-   - repaint the face (heroine_face.py);
-   - fix the face paint (heroine_face_fixes.py), then rerun heroine_paint.py;
-   - outfits `--body` gives heroine.glb (tell the main session).
-5. **8 to 10 presets:** a reference per ethnicity and bone structure, fitted, and mapped to sliders in `looks.json`.
-6. **Game side:**
-   - `People.HerSliders`, the slider groups in `CreateLook`, neck length on `HerPose`;
-   - FaceSheet sheets of every slider at both ends and the middle;
-   - creation checked at 1920x1080.
+## Next
+1. Check in game at full resolution (FaceSheet): her face, every slider at both ends, the hairline, and her neck turned.
+2. The main session runs heroine_outfits.py --body on the new heroine_built.blend.
+3. Presets: pick a seed for each, fit, check in game; skin and eyes per preset (UI design added the fields).
+4. Each preset's own face paint: heroine_face.py on the preset-shaped head, heroine_head.py laying each paint (heroine_head_<id>.jpg), and the game choosing it by preset. That needs the preset id carried into the character's look.
+5. Tell UI design to rerun heroine_paint.py and creation_portraits.py; tell the male hero lead the final slider set.
 
 ## Notes for other areas
-- **Main session:** her neck will get slimmer and the head will be rebuilt. Outfits must be rebuilt on the new `heroine_built.blend`; the arcanist's collar and choker sit on her neck. I'll message you when it's ready.
-- **Male hero (ae2de192cce8298ca):** the slider set is growing. Field names will follow when they settle.
-- **Scratch:** `scratchpad/face/` holds `refs/`, `lab/` and the `anchor.ps1`, `sheet.py`, `compare.py` and `combine.py` helpers.
+- **Main session:** the new head is in `tools/comfy/out/heroes/heroine_built.blend` in my worktree (hair saved in it). It needs `heroine_outfits.py --body`, and I'll message before pushing art. Her neck's shape is unchanged; neck_width and neck_length move bones only.
+- **UI design (a69858664f1d3dd29):** the groups are written. Brows are painted in, auburn. The run order is in my message.
+- **Male hero (ab82cbe99e2937ddd):** import `face_shapes` (SLIDERS, REACH, slider_keys); its MACROS and FACE are hers. The neck is by bones.
+- **Scratch:** `scratchpad/face2/` holds `fs.ps1` (FaceSheet), `shot.ps1` (game shots), `anchors.ps1`, `montage.py`, `overlay.py`, `hair_dbg.py`, `paint_seeds.ps1`, `cmp_presets.py`, and `refs/` and `an_her/` (anchors on her face).

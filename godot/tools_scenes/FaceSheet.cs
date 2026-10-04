@@ -44,6 +44,13 @@ public partial class FaceSheet : Node3D
         her.Anim.Play(People.Clip(her, clip));
         her.Anim.Seek(0.4, true);
         her.Anim.Pause();
+        // REST=1: her skeleton as it was bound (no clip, nor her carriage).
+        if (OS.GetEnvironment("REST") == "1")
+        {
+            her.Anim.Stop();
+            her.Skeleton.ResetBonePoses();
+            if (her.Pose != null) her.Pose.Active = false;
+        }
         Studio();
     }
 
@@ -60,9 +67,12 @@ public partial class FaceSheet : Node3D
         e.ReflectedLightSource = Godot.Environment.ReflectionSource.Sky;
         env.Environment = e;
         AddChild(env);
-        AddChild(new DirectionalLight3D { RotationDegrees = new Vector3(-30, 35, 0), LightEnergy = 1.5f, ShadowEnabled = true });
-        AddChild(new DirectionalLight3D { RotationDegrees = new Vector3(-15, -150, 0), LightEnergy = 0.9f });
-        AddChild(new DirectionalLight3D { RotationDegrees = new Vector3(-10, -40, 0), LightEnergy = 0.35f, LightColor = new Color(1, 0.9f, 0.8f) });
+        // (LIGHTS=kbfa: which lights shine, key, back, fill and the ambient sky; all by default)
+        var on = OS.GetEnvironment("LIGHTS") is { Length: > 0 } l ? l : "kbfa";
+        if (!on.Contains('a')) { e.AmbientLightEnergy = 0; e.ReflectedLightSource = Godot.Environment.ReflectionSource.Disabled; e.AmbientLightSource = Godot.Environment.AmbientSource.Disabled; }
+        if (on.Contains('k')) AddChild(new DirectionalLight3D { RotationDegrees = new Vector3(-30, 35, 0), LightEnergy = 1.5f, ShadowEnabled = OS.GetEnvironment("NOSHADOW") != "1" });
+        if (on.Contains('b')) AddChild(new DirectionalLight3D { RotationDegrees = new Vector3(-15, -150, 0), LightEnergy = 0.9f });
+        if (on.Contains('f')) AddChild(new DirectionalLight3D { RotationDegrees = new Vector3(-10, -40, 0), LightEnergy = 0.35f, LightColor = new Color(1, 0.9f, 0.8f) });
         cam = new Camera3D { Fov = 22, Current = true };
         AddChild(cam);
     }
@@ -108,5 +118,29 @@ public partial class FaceSheet : Node3D
         var look = new People.Look("female", new[] { "her:warden" }, d.ContainsKey("hair") ? (string)d["hair"] : "long", false,
             C(d, "hairColor"), C(d, "skin"), null, null, 1, face, C(d, "eyes"), C(d, "eyeRing"), d.ContainsKey("paint") ? (string)d["paint"] : null);
         People.HerRestyle(her!, look);
+        // PLAIN=1: her skin a plain glossy grey, to judge her shape and its
+        // normals without her paint.
+        if (OS.HasEnvironment("FSDEBUG"))
+            foreach (var mi in her!.Meshes)
+                if (mi.Mesh is ArrayMesh am)
+                {
+                    var on = Enumerable.Range(0, am.GetBlendShapeCount()).Where(k => Mathf.Abs(mi.GetBlendShapeValue(k)) > 1e-4)
+                        .Select(k => $"{am.GetBlendShapeName(k)}={mi.GetBlendShapeValue(k):F2}");
+                    GD.Print($"FACESHEET mesh {mi.Name} shapes {am.GetBlendShapeCount()} mode {am.BlendShapeMode} on: {string.Join(" ", on)}");
+                }
+        // (HIDE=name,name: those of her meshes hidden)
+        if (OS.GetEnvironment("HIDE") is { Length: > 0 } hide)
+            foreach (var mi in her!.Meshes)
+                if (hide.Split(',').Contains(mi.Name.ToString())) mi.Visible = false;
+        // (PLAIN=2: her surface's normals as colours, unlit, to find a crease in them)
+        if (OS.GetEnvironment("PLAIN") is "1" or "2")
+        {
+            Material plain = OS.GetEnvironment("PLAIN") == "1"
+                ? new StandardMaterial3D { AlbedoColor = new Color(0.62f, 0.6f, 0.58f), Roughness = 0.35f }
+                : new ShaderMaterial { Shader = new Shader { Code = "shader_type spatial; render_mode unshaded; void fragment() { ALBEDO = (INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz * 0.5 + 0.5; }" } };
+            foreach (var mi in her!.Meshes.Where(m => !her.Hair.Contains(m)))
+                for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+                    mi.SetSurfaceOverrideMaterial(s, plain);
+        }
     }
 }

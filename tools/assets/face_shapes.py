@@ -42,6 +42,26 @@ FACE = {"head-age-decr": 0.619, "head-age-incr": 0.121, "head-diamond": 0.322, "
 # slimmer of neck than she was made).
 BUILD = {"measure-neck-height-decr": 0.9, "measure-neck-circ-incr": 0.5, "neck-back-scale-depth-incr": 0.3}
 
+# Where her hair begins: its height over her eyes at each angle round her
+# head (degrees from her front, about her skull's middle): over her
+# forehead, its corners rounded at her temples (a woman's, not receding),
+# down in front of her ears, round behind them (her ears themselves are
+# left bare: heroine_hair.py), down to her nape. Her hair grows above it
+# (heroine_hair.py); her face is painted below it (heroine_face.py).
+HAIRLINE = ([0, 20, 40, 55, 65, 75, 84, 100, 120, 145, 180], [0.080, 0.078, 0.071, 0.058, 0.042, 0.018, -0.010, -0.035, -0.048, -0.062, -0.074])
+
+
+def hairline_height(theta):
+    """Her hairline's height over her eyes at angles `theta` (radians, 0 her
+    front), a little uneven as a real one is (a few millimetres, slowly)."""
+    import numpy as np
+    from scipy.interpolate import PchipInterpolator
+    t = (theta + np.pi) % (2 * np.pi) - np.pi
+    a = np.degrees(np.abs(t))
+    uneven = 0.0022 * np.sin(7.0 * t + 1.3) + 0.0012 * np.sin(17.0 * t + 0.4) + 0.0007 * np.sin(31.0 * t + 2.1)
+    return PchipInterpolator(*HAIRLINE)(a) + uneven
+
+
 # Sculpts of our own, where MakeHuman has no target: name -> f(points, anatomy) -> moves.
 SCULPTS = {}
 
@@ -51,17 +71,17 @@ SCULPTS = {}
 # slider's reach: ±1 on the slider is the key at full, so a key is made as
 # far as her face still looks well (checked in face_lab.py renders at both
 # ends), and the game's slider spans all of it (REACH below).
-SLIDER_GROUPS = ["Head", "Eyes", "Nose", "Cheeks", "Mouth", "Jaw", "Ears", "Neck"]
+SLIDER_GROUPS = ["Head", "Brows", "Eyes", "Nose", "Cheeks", "Mouth", "Jaw", "Ears and neck"]
 SLIDERS = {
     # Head
     "forehead_height": ("Head", "Forehead", "Low", "High", {"forehead-scale-vert-incr": 1.0}, {"forehead-scale-vert-decr": 1.0}),
     "forehead_slope": ("Head", "Brow line", "Sloped", "Upright", {"forehead-trans-forward": 1.0}, {"forehead-trans-backward": 1.0}),
     "forehead_round": ("Head", "Forehead shape", "Flat", "Rounded", {"forehead-nubian-incr": 1.0}, {"forehead-nubian-decr": 1.0}),
     "temples": ("Head", "Temples", "Narrow", "Full", {"forehead-temple-incr": 1.0}, {"forehead-temple-decr": 1.0}),
-    "brow_ridge": ("Head", "Brow ridge", "Soft", "Heavy", {"eyebrows-trans-forward": 1.0}, {"eyebrows-trans-backward": 1.0}),
+    "brow_ridge": ("Brows", "Brow ridge", "Soft", "Heavy", {"eyebrows-trans-forward": 1.0}, {"eyebrows-trans-backward": 1.0}),
     "face_width": ("Head", "Face width", "Narrow", "Broad", {"head-scale-horiz-incr": 1.0}, {"head-scale-horiz-decr": 1.0}),
     "face_shape": ("Head", "Face shape", "Heart", "Oval", {"head-oval": 1.0}, {"head-invertedtriangular": 1.0}),
-    # Eyes and brows
+    # Eyes
     "eyes_size": ("Eyes", "Size", "Small", "Large", {"X-eye-scale-incr": 1.0}, {"X-eye-scale-decr": 1.0}),
     "eyes_spacing": ("Eyes", "Set", "Close", "Wide", {"X-eye-trans-out": 1.0}, {"X-eye-trans-in": 1.0}),
     "eyes_height": ("Eyes", "Height", "Low", "High", {"X-eye-trans-up": 1.0}, {"X-eye-trans-down": 1.0}),
@@ -69,8 +89,8 @@ SLIDERS = {
     "eyes_open": ("Eyes", "Lids", "Hooded", "Open", {"X-eye-height2-incr": 1.0}, {"X-eye-height2-decr": 1.0}),
     "eyes_depth": ("Eyes", "Depth", "Deep-set", "Prominent", {"X-eye-push1-out": 1.0}, {"X-eye-push1-in": 1.0}),
     "eyes_inner": ("Eyes", "Inner corners", "Round", "Almond", {"X-eye-epicanthus-in": 1.0}, {"X-eye-epicanthus-out": 1.0}),
-    "brows_height": ("Eyes", "Brow height", "Low", "High", {"eyebrows-trans-up": 1.0}, {"eyebrows-trans-down": 1.0}),
-    "brows_arch": ("Eyes", "Brow arch", "Straight", "Arched", {"eyebrows-angle-up": 1.0}, {"eyebrows-angle-down": 1.0}),
+    "brows_height": ("Brows", "Height", "Low", "High", {"eyebrows-trans-up": 1.0}, {"eyebrows-trans-down": 1.0}),
+    "brows_arch": ("Brows", "Arch", "Straight", "Arched", {"eyebrows-angle-up": 1.0}, {"eyebrows-angle-down": 1.0}),
     # Nose
     "nose_width": ("Nose", "Width", "Narrow", "Broad", {"nose-scale-horiz-incr": 1.0}, {"nose-scale-horiz-decr": 1.0}),
     "nose_length": ("Nose", "Length", "Short", "Long", {"nose-scale-vert-incr": 1.0}, {"nose-scale-vert-decr": 1.0}),
@@ -101,15 +121,19 @@ SLIDERS = {
     "chin_forward": ("Jaw", "Chin", "Back", "Forward", {"chin-prominent-incr": 1.0}, {"chin-prominent-decr": 1.0}),
     "jaw_forward": ("Jaw", "Underbite", "Back", "Forward", {"chin-prognathism-incr": 1.0}, {"chin-prognathism-decr": 1.0}),
     # Ears
-    "ears_size": ("Ears", "Size", "Small", "Large", {"X-ear-scale-incr": 1.0}, {"X-ear-scale-decr": 1.0}),
-    "ears_pointed": ("Ears", "Tips", "Round", "Pointed", {"X-ear-shape-pointed": 1.0}, {"X-ear-shape-round": 1.0}),
-    "ears_out": ("Ears", "Set", "Flat", "Out", {"X-ear-flap-incr": 1.0}, {"X-ear-flap-decr": 1.0}),
-    "ears_lobes": ("Ears", "Lobes", "Small", "Long", {"X-ear-lobe-incr": 1.0}, {"X-ear-lobe-decr": 1.0}),
-    # Neck (her body's, below her head: made on her body too, and its length by her head bone: HerPose)
-    "neck_width": ("Neck", "Width", "Slender", "Strong", {"neck-scale-horiz-incr": 1.0, "neck-scale-depth-incr": 0.6},
+    "ears_size": ("Ears and neck", "Ear size", "Small", "Large", {"X-ear-scale-incr": 1.0}, {"X-ear-scale-decr": 1.0}),
+    "ears_pointed": ("Ears and neck", "Ear tips", "Round", "Pointed", {"X-ear-shape-pointed": 1.0}, {"X-ear-shape-round": 1.0}),
+    "ears_out": ("Ears and neck", "Ears", "Flat", "Out", {"X-ear-flap-incr": 1.0}, {"X-ear-flap-decr": 1.0}),
+    "ears_lobes": ("Ears and neck", "Earlobes", "Small", "Long", {"X-ear-lobe-incr": 1.0}, {"X-ear-lobe-decr": 1.0}),
+    # Her neck: by her bones, not keys (BONE_SLIDERS; its targets unused)
+    "neck_width": ("Ears and neck", "Neck", "Slender", "Strong", {"neck-scale-horiz-incr": 1.0, "neck-scale-depth-incr": 0.6},
                    {"neck-scale-horiz-decr": 1.0, "neck-scale-depth-decr": 0.6}),
-    "neck_length": ("Neck", "Length", "Short", "Long", {"neck-scale-vert-incr": 1.0}, {"neck-scale-vert-decr": 1.0}),
+    "neck_length": ("Ears and neck", "Neck length", "Short", "Long", {"neck-scale-vert-incr": 1.0}, {"neck-scale-vert-decr": 1.0}),
 }
+
+# Sliders made by her bones in the game (HerPose), not shape keys of her
+# head: her neck is her body's, and what she wears at her throat must follow it.
+BONE_SLIDERS = ("neck_width", "neck_length")
 
 # Each slider's reach either way (its "+" key's targets and its "-" key's
 # made at so many times SLIDERS's weights), from the calibration sheets

@@ -266,8 +266,8 @@ for _t, _v in FACE.items():
 # (Her neck's sliders are not keys of her head: her bones shape her neck,
 # HerPose in the game, so what she wears at her throat follows it.)
 SHAPES = {}
-for _k, _sl in fs.SLIDERS.items():
-    if _sl[0] == "Neck":
+for _k in fs.SLIDERS:
+    if _k in fs.BONE_SLIDERS:
         continue
     _plus, _minus = fs.slider_keys(_k)
     SHAPES[_k + "+"] = {n: w for t, w in _plus.items() for n in sides([t])}
@@ -1095,34 +1095,44 @@ col = sample(MH_TEX, (HTU1[t_] * b_[:, :, None]).sum(1))[:, :3]
 _neck = s_split(P_) < 0.04
 mh_mean, mh_std = col[_neck].mean(0), col[_neck].std(0)
 col = HER_MEAN + (col - mh_mean) * np.clip(HER_STD / (mh_std + 1e-6), 0.7, 1.4)
+# Over the 3 cm above SPLIT, eased into her own skin's (the same whatever
+# her face's paint).
+_near = s_split(P_) < 0.03
+_, _, dist, _, huv = on_skin(P_[_near], 0.05, sure=True)
+_hc = sample(TEX, huv)[:, :3]
+_mix = ((1 - smooth01(s_split(P_[_near]) / 0.03)) * (dist < 0.01) * ((np.abs(_hc - HER_MEAN) / HER_STD).max(1) < 4.0))[:, None]
+_inside = np.zeros((HSIZE, HSIZE), bool)
+_inside[r_, c_] = True
+HEAD_BASE = col
 # Her face as tools/assets/heroine_face.py painted it (a photograph's skin,
 # brows, lashes and lips, by the local ComfyUI), over MakeHuman's by its alpha.
-FACE_PAINT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "heroine_face", "face_paint.png")
+FACE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "heroine_face")
+FACE_PAINT = os.path.join(FACE_DIR, "face_paint.png")
+
+
+def head_paint(face_paint, path):
+    """Her head's texture with a face's paint laid over (none: MakeHuman's
+    skin in her colouring), eased into her own skin at her neck, written to `path`."""
+    from PIL import Image
+    c = HEAD_BASE.copy()
+    if face_paint and os.path.exists(face_paint):
+        fp = np.asarray(Image.open(face_paint).convert("RGBA"), np.float32)[::-1] / 255
+        if fp.shape[0] == HSIZE:
+            a = fp[r_, c_, 3:4]
+            c = c * (1 - a) + fp[r_, c_, :3] * a
+            print("FACE PAINT %s laid over %d%% of her head" % (os.path.basename(face_paint), 100 * (a > 0.5).mean()))
+    c[_near] = c[_near] * (1 - _mix) + _hc * _mix
+    img = np.zeros((HSIZE, HSIZE, 4), np.float32)
+    img[..., 3] = 1
+    img[r_, c_, :3] = c
+    save_image(pad(img, _inside), path)
+
+
 # (HEAD_UNPAINTED=1: left in MakeHuman's skin, for heroine_face.py to paint
 # anew when her face's shape has changed: laid on the new shape, the old
 # paint's brows and lips sit off it, and a painting over it copies them.)
-if os.path.exists(FACE_PAINT) and not os.environ.get("HEAD_UNPAINTED"):
-    from PIL import Image
-    _fp = np.asarray(Image.open(FACE_PAINT).convert("RGBA"), np.float32)[::-1] / 255
-    if _fp.shape[0] == HSIZE:
-        _a = _fp[r_, c_, 3:4]
-        col = col * (1 - _a) + _fp[r_, c_, :3] * _a
-        print("FACE PAINT laid over %d%% of her head" % (100 * (_a > 0.5).mean()))
-# Over the 3 cm above SPLIT, eased into her own skin's.
-near = s_split(P_) < 0.03
-_, _, dist, _, huv = on_skin(P_[near], 0.05, sure=True)
-hc_ = sample(TEX, huv)[:, :3]
-mix = (1 - smooth01(s_split(P_[near]) / 0.03)) * (dist < 0.01) * ((np.abs(hc_ - HER_MEAN) / HER_STD).max(1) < 4.0)
-mix = mix[:, None]
-col[near] = col[near] * (1 - mix) + hc_ * mix
-himg = np.zeros((HSIZE, HSIZE, 4), np.float32)
-himg[..., 3] = 1
-himg[r_, c_, :3] = col
-inside = np.zeros((HSIZE, HSIZE), bool)
-inside[r_, c_] = True
-himg = pad(himg, inside)
 hpath = os.path.join(TEXDIR, "heroine_head.jpg")
-save_image(himg, hpath)
+head_paint(None if os.environ.get("HEAD_UNPAINTED") else FACE_PAINT, hpath)
 
 head.data.materials[0] = textured("skin_head", hpath)
 print("HEAD paint from", os.path.basename(_mh_png))
@@ -1328,6 +1338,19 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import heroine_face_fixes  # noqa: E402
 shutil.copy(hpath, heroine_face_fixes.RAW)
 heroine_face_fixes.fix(head, hpath)
+# Her other faces' paints (heroine_face/face_paint_<id>.png, each painted on
+# her head shaped as that face: face_presets.py), each her head's texture of
+# its own (head_tex/heroine_head_<id>.jpg), put right as hers is; the game
+# lays the one of the face chosen.
+if not os.environ.get("HEAD_UNPAINTED"):
+    for _f in sorted(os.listdir(FACE_DIR)):
+        if _f.startswith("face_paint_") and _f.endswith(".png"):
+            _id = _f[len("face_paint_"):-4]
+            _p = os.path.join(TEXDIR, f"heroine_head_{_id}.jpg")
+            head_paint(os.path.join(FACE_DIR, _f), _p)
+            _raw = heroine_face_fixes.RAW.replace(".jpg", f"_{_id}.jpg")
+            shutil.copy(_p, _raw)
+            heroine_face_fixes.fix(head, _p, raw=_raw)
 for _im in bpy.data.images:
     if bpy.path.abspath(_im.filepath) == hpath:
         if _im.packed_file:

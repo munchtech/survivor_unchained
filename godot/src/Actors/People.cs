@@ -332,23 +332,35 @@ public static class People
         }
     }
 
-    /// <summary>Her face's sliders (tools/assets/heroine_head.py's SLIDERS),
-    /// each from -1 to 1 about her own face.</summary>
+    /// <summary>Her face's sliders (tools/assets/face_shapes.py's SLIDERS,
+    /// made by heroine_head.py), each from -1 to 1 about her own face: each
+    /// a shape key either way on her head, its parts and her hair; her
+    /// neck's by her bones (HerPose).</summary>
     public static readonly string[] HerSliders =
     {
-        "eyes_size", "eyes_spacing", "eyes_height", "eyes_tilt", "eyes_open", "brows_height", "brows_arch", "nose_width", "nose_length",
-        "nose_tip", "nose_bridge", "nostrils", "lips_upper", "lips_lower", "mouth_width", "mouth_corners", "cupids_bow", "cheekbones",
-        "cheeks", "jaw", "chin_width", "chin_length", "chin_forward", "ears_size", "ears_pointed",
+        "forehead_height", "forehead_slope", "forehead_round", "temples", "brow_ridge", "face_width", "face_shape",
+        "eyes_size", "eyes_spacing", "eyes_height", "eyes_tilt", "eyes_open", "eyes_depth", "eyes_inner", "brows_height", "brows_arch",
+        "nose_width", "nose_length", "nose_bridge", "nose_bridge_width", "nose_tip", "nose_tip_width", "nose_projection", "nostrils",
+        "cheekbone_height", "cheekbone_width", "cheekbone_prominence", "cheeks",
+        "lips_upper", "lips_lower", "mouth_width", "mouth_height", "mouth_corners", "cupids_bow", "lips_forward",
+        "jaw_width", "jaw_angle", "chin_width", "chin_length", "chin_forward", "jaw_forward",
+        "ears_size", "ears_pointed", "ears_out", "ears_lobes",
+        "neck_width", "neck_length",
     };
 
     /// <summary>Her face shaped: each slider (HerSliders) from -1 to 1, and
     /// her expressions (heroine_head.py's EXPRESSIONS: blink_l, smile, ...)
     /// from 0 to 1, on her head and on the parts of it that follow it (eyes,
-    /// brows, lashes, teeth).</summary>
+    /// brows, lashes, teeth, her hair); her neck by her bones.</summary>
     public static void HerFace(Person p, IReadOnlyDictionary<string, float> face, bool whole = false)
     {
         // (whole: every slider set, those not given back to her own face)
         var all = whole ? HerSliders.ToDictionary(s => s, s => face.TryGetValue(s, out var v) ? v : 0f) : face;
+        if (p.Pose is HerPose hp)
+        {
+            if (all.TryGetValue("neck_width", out var nw)) hp.NeckWidth = Mathf.Clamp(nw, -1, 1);
+            if (all.TryGetValue("neck_length", out var nl)) hp.NeckLength = Mathf.Clamp(nl, -1, 1);
+        }
         foreach (var mi in p.Meshes)
         {
             if (mi.Mesh is not ArrayMesh am || am.GetBlendShapeCount() == 0) continue;
@@ -644,6 +656,14 @@ public static class People
         m.SetShaderParameter("tone", SkinTone(look));
         m.SetShaderParameter("pores", GD.Load<Texture2D>("res://art/people/skin_pores.png"));
         m.SetShaderParameter("pore_scale", PoreScale(mesh));
+        // Her face a little more matte than her body: at the shine her body
+        // has, her face read as plastic, and a light from behind lit the
+        // side of her brow as a hard white band.
+        if (src.ResourceName == "skin_head")
+        {
+            m.SetShaderParameter("rough", 0.6f);
+            m.SetShaderParameter("shine", 0.36f);
+        }
         return m;
     }
 
