@@ -99,7 +99,7 @@ void fragment() {
 		// kept to a whisper, a faint planishing over all of it)
 		// (a formed plate reads as one smooth surface: the scan's patches,
 		// even faint, read in its reflections as lumps, so none of it here)
-		vec3 mean_col = textureLod(albedo, UV, 10.0).rgb * tint;
+		vec3 mean_col = textureLod(albedo, vec2(0.5), 20.0).rgb * tint;   // (its smallest mip, one texel: the true mean; a 2x2 mip read through each UV island's own corner showed as pale patches)
 		col = mean_col * (0.98 + 0.03 * macro);
 		vec2 e = vec2(0.003, 0.0);
 		float h0 = fbm(m * 40.0), hx = fbm((m + e.xy) * 40.0), hy = fbm((m + e.yx) * 40.0);
@@ -110,7 +110,7 @@ void fragment() {
 		float brush = noise(vec2(m.x * 1800.0, m.y * 40.0));
 		rough = clamp(mix(0.3, 0.18, polish) + 0.1 * hollow + 0.14 * (1.0 - sky) + 0.06 * (brush - 0.5), 0.12, 0.6);
 		col *= mix(0.7, 1.0, sky) * mix(1.0, 1.1, polish);
-		metal = max(metal, 0.92);
+		metal = 1.0;   // (all metal: the scan's metal map has rust and dirt in it, and each patch of it showed as a pale fleck)
 		ANISOTROPY = 0.35;
 		ANISOTROPY_FLOW = vec2(1.0, 0.0);
 	} else if (kind == 2) {

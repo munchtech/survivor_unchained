@@ -324,7 +324,7 @@ def finish(line: dict, picks: list[dict], log) -> dict:
     fr = char_marks(line["text"], line["segments"])
     segs = [[m[0], m[1], round(f[0], 3), round(f[1], 3)] for m, f in zip(marks, fr)]
     take = {"file": rel, "hash": line["hash"], "sec": round(len(audio) / post.SR, 2), "segs": segs, "model": "voxcpm2" if METHOD["name"] == "cont" else "voxcpm2 performance + seed-vc",
-            "parts": [{"voice": s["voice"], "seed": p["seed"], "score": p["score"], "similarity": p["similarity"],
+            "parts": [{"voice": s["voice"], "src": p.get("path"), "seed": p["seed"], "score": p["score"], "similarity": p["similarity"],
                        "utmos": p["utmos"], "accent": p["accent"], "wps": p["words_per_sec"], "said": p["said"],
                        "style": p["style"]} for s, p in zip(line["segments"], picks)],
             "made": time.strftime("%Y-%m-%d")}
@@ -342,6 +342,8 @@ def write_index(manifest_lines: list[dict]):
             e = {"file": t["file"], "hash": t["hash"], "voice": l["voice"], "sec": t["sec"], "segs": t["segs"]}
             if t.get("sex"):
                 e["sex"] = t["sex"]
+            if t.get("placeholder"):
+                e["placeholder"] = True
             idx["lines"][l["id"]] = e
     os.makedirs(os.path.dirname(INDEX), exist_ok=True)
     with open(INDEX, "w", encoding="utf-8", newline="\n") as f:

@@ -532,12 +532,13 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
   well. You look extremely well. ...I've got to go and read something." (The
   contraction is the tell.)
 - `keegan.say_calling` (arcanist): "The Vigil kept a ledger of— never mind."
-- `wayfinder.first`: "You've the look of someone who comes back." `wayfinder.notes`:
-  "You come back more often than most... So has he."
+- `wayfinder.notes`: "You come back more often than most... So has he."
+  `wayfinder.margin`: how she writes the survivor down: their name, "Nobody",
+  or "Lark". Fact `wayfinder.name` decides the name in Sallow's ledger. "Comes
+  back" is the ledger's word: she never spends it on meeting (`wayfinder.first`
+  is "someone who'll want a second map").
 - `archetypes.json` `risen_once` says what happened ("You fell, and got up
   again."), never what it means: the interface keeps the bible's first rule.
-  `wayfinder.margin`: how she writes the survivor down: their name, "Nobody",
-  or "Lark". Fact `wayfinder.name` decides the name in Sallow's ledger.
 
 **Chid** (pays: Act 3)
 - `chid.long`: Rook's mother brought him bread. `chid.warden`: "Before me,
@@ -553,11 +554,13 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
   to be carried about."
 - `chid.shrine`: the flame "was never for seeing by... it was for keeping
   company" (the Order burned the dead for company). `chid.woke` and
-  `chid.carter`: the carter wears thin ("Someone always does"; "I never asked
-  his name"), and the hot water with "nothing in it but hot" for a cold body.
-  `chid.cb_nell`, if she stood at the grave: "There's always somebody who has
-  the tune" (Vonnra's alto; he has heard the binders sing it for longer than
-  he admits to).
+  `chid.carter`: the carter wears thin ("...Well. Someone did."; "The carter
+  sends his regards."; "I never asked his name"), and the hot water with
+  "nothing in it but hot" for a cold body. ("Someone always does" is Vonnra's,
+  in the fortune; never Chid's.) `chid.cb_nell`, if she stood at the grave:
+  "There's always somebody who has the tune" (Vonnra's alto; he has heard the
+  binders sing it for longer than he admits to), and he moves up the bench for
+  her though there is nobody else on it.
 
 **Ashford, the boots** (pays: Act 2, Holloway's letter and the boots)
 - `maeca.barefoot`, `maeca.signed`: boots signed for, never came; "Somebody
@@ -658,14 +661,15 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
 
 **Ember is the dead** (pays: Act 3, the bottom of the stair)
 - The twenty seeds already in the text: `docs/editorial/THE_EMBER_REVEAL.md` §5.
-- The idiom: "gone to the Morrow" (`rook.valley`; `folk.json`, Old Oswin and the
-  night watch's curfew line), and Wenna refusing it (`wenna.fever`: "They died,
-  child.").
+- The idiom: "gone to the Morrow" (`rook.valley`; `folk.json`, Old Oswin), and
+  Wenna refusing it (`wenna.fever`: "They died, child."). Three is the count;
+  the idiom is never a threat and never sits beside the Order's call.
 - `wenna.tallow`: "I burn fat, child. Fat's honest. Fat was a pig." Her lamps are
   tallow, never ember, and she never says why.
 - `items.json`: the Ember Shard ("Hold it to your ear in a quiet room, and the
-  room is not quite quiet."), Blasting Ember ("warmer when you are afraid"), the
-  slurry ("a little like a wound").
+  room is not quite quiet."), Blasting Ember ("warm, like a stone a hand has only
+  just let go of"), the slurry ("a little like a wound"); the Warden's Lamp-Iron
+  has "no well in it for oil, and no wick" (shown, never stated).
 
 **Below** (pays: Act 2, the breakthrough; Act 3)
 - `quests.json` vault entries, `Verge.cs` vaultdoor: seven notches, one
@@ -964,22 +968,30 @@ the story's view of them, so that the nights tell the story the days write.
   it; the more she carries, the more come. The arena's rising horde is that,
   and nothing about it needs saying before Act 3. **The Dawn as every arena's
   end** is the world's own rule (the ember drains at sunrise) and is right; after
-  C43 every dawn is the night's dead going home. The same goes for the hour past
-  the half hour: if it ends (the owner's call), it ends at dawn, the light coming
-  across the ground and the ember going out of everything, the survivor's too.
+  C43 every dawn is the night's dead going home. **The hour past the half hour is
+  truly endless** (the owner's decision): once the place is won the way out is
+  open, and the dawn is on the other side of it. Inside, the night holds for as
+  long as she stays, because she is what keeps it: the brightest thing in the
+  dark, and everything that has lost a light still coming to her. Nobody says so;
+  the Wayfinder's "Stay past that if you like. Some do. I sell them fewer maps."
+  is all the story says about it.
 - **Bosses speak as themselves.** A story boss's lines are its cinematic's
   (C10 to C14): Greymuzzle wordless, Redcowl's bairns and his last words,
   Grimtunnel's faith, the Barrow Lord's one-word orders, Wat's silence. No
   generic taunts. Titles are the valley's words: *Who Kept the Cold Off*, *Of
-  the Kerchiefs*, *Finders Keepers*, *Of the Seventh Legion*, *Over the Ford by
+  the Kerchiefs*, *Ever So Grateful* (his own words at the ford, C03, paid in
+  Act 3 by "Why isn't it grateful?"), *Of the Seventh Legion*, *Over the Ford by
   Dark*. The table bosses keep the same rule: the Barrow Lord gives his orders
-  in the old tongue, one word each (*Sta*, *Iunge*, *Testudo*; *Nondum* and
-  *Redi* are C13's), and what follows shows what they mean.
+  to his dead in the old tongue, one plural word each (*Tenete*, *Iungite*,
+  *Testudo*; C13's *Nondum* and *Redi* are said to her, so singular), and what
+  follows shows what they mean.
 - **Grimtunnel never dies in an arena.** Confirmed, and built: he is at the
   bottom of the stair in Act 3 with the heart. Every fight with him, the Dig's
   table arenas included, ends with him going back down the hole, delighted, not
-  beaten ("Ha! Keep upstairs, surface-meat! I'm wanted DOWNSTAIRS!"), and Snib
-  getting the last word. The fight is won; he is not.
+  beaten ("Ha! Keep upstairs, surface-m— you! I'm wanted DOWNSTAIRS!"), and
+  Snib getting the last word. The fight is won; he is not. Since C03 he never
+  finishes "surface-meat" at her: he has smelled downstairs on her (Snib, who
+  has not, still says it).
 - **The Barrow Lord is laid down, not killed.** At the end he will not lie down
   until the survivor stands over him, and holy (the Order's school) does it
   twice as fast. "Lie down" is the Order's word for the dead (the hymn, C02,

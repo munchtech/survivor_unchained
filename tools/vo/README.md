@@ -15,6 +15,28 @@ like what, and what could not be cast: `docs/VO_CAST.md`.
 | 4. Moods | `registers.py` | `refs/<voice>.<mood>.flac`: the part in warm, quiet, hard, quick and hushed moods, kept only if still the same person; `refs/registers.json` |
 | 5. Recording | `produce.py` | takes continued from the mood each line's direction calls for, judged, the best mixed (`post.py`) into `godot/art/vo/<voice>/<id>.ogg`, and `godot/data/vo/index.json` |
 
+**The route since October 2026** (the owner's decision): the final voices
+are recorded by hand in ElevenLabs, a character at a time, and every line
+has a local placeholder until then.
+
+| Step | Script | Makes |
+|---|---|---|
+| Placeholders | `placeholders.py` | every line without a take, most important first: Maya1 acts it (`backends/maya_batch.py`, the part's `maya` voice in `cast.json` with the line's direction and beats), Seed-VC makes it the cast voice, Whisper checks the words (three tries), `post.py` mixes it; flagged `placeholder` in the manifest and the game's index |
+| Packets | `elevenlabs.py` | `docs/voice/elevenlabs/<voice>.md`: casting brief, settings, every line in recording order with its direction, the text to paste (beats as audio tags) and the file name to save |
+| Finals | `import_takes.py <folder> --voice V` | the owner's takes matched to lines and parts, checked, kept in `VO_WORK/finals`, the lines mixed again (finals, and placeholders for parts not yet recorded) and written into the game; a report of what was refused and what is still to record |
+| Reads | `reads.py <id prefix>` | the directed reads of a scene as plain text, for the story lead's notes |
+
+```sh
+python tools/vo/placeholders.py --limit 40          # the next forty most important lines
+python tools/vo/elevenlabs.py                       # every packet
+python tools/vo/import_takes.py ~/Downloads/su_vo --voice narrator
+python -m unittest discover -s tools/vo/tests       # the client, the importer
+```
+
+The placeholders wait for ComfyUI's queue to be empty before each of their
+three GPU phases and then ask it to free its models, so the art and the
+voice do not page each other's weights.
+
 `analyse.py` is the ear (words, accent, naturalness, pitch, pace,
 speaker match, artefacts); `tells.py` measures what makes a take sound
 made (even pacing, even stress, flat pitch, no breath, sheen); `post.py`
