@@ -28,7 +28,10 @@ Branch: `worktree-agent-a7622ae77d19e31dc`.
   - **Final:** the narrator and Rook (voice branch b54e729, data 50f6f33);
     Holloway and Brannoc (voice lead a501b387a90d78b4e, fe070ed), with
     direction fixes sent. The hymn stays held for the owner.
-  - **Next, in recording order:** Sella, Vonnra, Harlan.
+  - **Sella:** final once her split quotes carry her own direction and the
+    morning variants are realigned. One bark was changed (707a910). Her
+    body's-hours mornings hide a sale to Vonnra (`sella.cold_sold`).
+  - **Next, in recording order:** Vonnra (with the name splice), Harlan.
 
 ## Key decisions (why)
 
