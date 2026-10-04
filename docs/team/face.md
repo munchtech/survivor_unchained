@@ -17,7 +17,11 @@ Research: `docs/FACE_RESEARCH.md`.
   - `tools/assets/face_lab.py` (Blender) renders MakeHuman's woman with any weights. It also anchors MediaPipe landmarks on her mesh, with every target's move.
   - `tools/assets/face_fit.py` (its own venv with MediaPipe, `%LOCALAPPDATA%/facefit`) reads the landmarks and fits the weights. The fit is bounded least squares; each view has its own pose and is matched to anchors rendered at a similar turn.
   - Results: a self-test recovers her own face to 0.1 to 0.35 mm. The heroine references fit to about 1 mm (front) and 1.3 to 1.5 mm (three-quarter).
+- **Candidate default face:** `tools/assets/heroine_face/fit_heroine_candidate.json`, fitted with the depth targets held (see `face_sheets/candidate_face.jpg`).
+- **47 sliders drafted** in `face_shapes.SLIDERS`, in 8 groups. Each side's reach is calibrated from ±1 and ±2 renders (`face_sheets/cal_*.jpg`).
+- **Narrow chin done:** `sculpt-chin-narrow` is a smooth V with no crease (`face_sheets/chin_sculpt.jpg`).
 - **Not yet in her head:** heroine_head.py still has the old FACE and 25 sliders, and the game is unchanged.
+- **Handoff written:** `docs/handoff/face.md`, at about 440k tokens.
 
 ## Key decisions
 - **Presets come from AI references fitted by landmarks,** not hand-guessed numbers. This is the owner's ask, and the BG3 and Dragon's Dogma lesson.

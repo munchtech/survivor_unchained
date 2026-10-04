@@ -228,7 +228,10 @@ if __name__ == "__main__":
             k = 1 + match(sets[1:], L) if len(sets) > 1 else 0
             views.append((sets[k], L))
             print("VIEW matched to", os.path.basename(names[k]))
-        w, err, yaw = fit(views, targets, reg=reg, start=start)
+        # (targets held where they start: those that move her face toward or away from
+        # the camera, which two views from in front say little of, are best set by eye in profile)
+        keep = [t for t in targets if any(h in t for h in a[a.index("--hold") + 1].split(","))] if "--hold" in a else None
+        w, err, yaw = fit(views, targets, reg=reg, start=start, keep=keep)
         json.dump(w, open(a[3], "w"), indent=1)
         print("FIT", a[2], "->", a[3], "error %s mm, turned %s deg" % ([round(e, 2) for e in err], [round(y) for y in yaw]))
         print(json.dumps(w))
