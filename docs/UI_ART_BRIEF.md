@@ -390,12 +390,17 @@ lamp-iron brackets, the binders' wire and coins, the ember asleep in the coins.
 | Globe rim | `hud/globe_rim.png` | 288×288 (144) | whole | The health globe's rim (`Globe`, liquid radius 66): the band from 92% to 100% of the half size (may reach in to 83%), transparent inside. A lamp-iron bracket at its top is welcome; the shield's arc is drawn just outside it by the code |
 | Globe glass | `hud/globe_glass.png` | 288×288 (144) | whole | Over the liquid, under the number: the glass's reflections only (a soft highlight upper left, a thin rim of light lower right), the rest transparent. The liquid's level, colour, trail and pulse are the code's |
 
-Drawn by the code and **not** asked for by name yet (say if you want to paint
-them, and the hook is added): the crested card used by the arts' facets and
-creation's choices (`OrnateBox.Kind.Card` with a crest band in the school's or
-rarity's colour, 287×280 and 470×92); the Journal's silk ribbons (`RibbonBox`,
-132×66-86, one silk per section); the title plaque's gold rules and ember stones
-(`Plaque`; a title without words already uses `ornaments/rule.png`).
+| Crested card | `frames/crest_card.png` | 600×700 (300×350) | 40 72 40 40, `Out: 10` | Every crested choice (`OrnateBox.Kind.Card`): the arts' facet cards (287×280), creation's calling cards (470×92), the Last Lamp's choices (300×330), a Self pillar until `pillar.png` exists. **Neutral iron**: the code tints the crest band (the top 70-120 px) and a hairline in the rarity or school, and glows it when lifted |
+| Ribbon | `book/ribbon.png` | 264×172 (132×86) | whole, stretched | The Journal's section ribbons (`RibbonBox`), 132×66-86. Paint it **pale ivory**: the code dyes it each section's colour (red, green, blue, gold) and casts its shadow |
+| Plaque rule | `ornaments/plaque_rule.png` | 480×24 (240×12) | whole, stretched | The rules either side of every page's name (`Plaque`): drawn to the title's right as painted, mirrored to its left, the ember stone toward the words; stretched 90-180 px, so the wire must stretch cleanly |
+
+**The owner on painted art** ("painted art is generally better right? ... I want
+the best"): paint and model **every** frame and ornament; the code draws only
+what changes as you play (progress arcs, levels of liquid, numbers, the accent
+of a rarity or school). Every drawn look in `Ornate.cs` (plate, well, slab,
+crested card, paper, banner) now gives way to its painted piece by name
+wherever it is used, including where the code makes it directly (the HUD's
+console wears the painted plate until `console.png` exists).
 
 Pieces that changed their place in the redesign:
 
