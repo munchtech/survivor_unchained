@@ -121,6 +121,12 @@ public sealed class Enemy : Pooled
     public double ThawT;
     /// <summary>Raised from a grave by one of its own: it carries no ember (raising is never a farm).</summary>
     public bool Raised;
+    /// <summary>A boss's gate: health stops here, and what would have gone past it is
+    /// its Break (docs/SKILLS_DESIGN.md, "Bosses").</summary>
+    public double HpFloor, Overflow;
+    /// <summary>A boss's stagger bar (0..1), filled by what would lock a lesser creature;
+    /// held while staggered, and resisting it for a while after.</summary>
+    public double Stagger, StaggeredT, StaggerResistT;
 
     public Enemy(int id) { Id = id; }
 }

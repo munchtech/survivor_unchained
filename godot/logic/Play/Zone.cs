@@ -37,8 +37,10 @@ public sealed record MapMark(double X, double Z, string Label, MarkKind Kind);
 
 /// <summary>The bar over a fight worth one: where its phases turn, what it
 /// is calling up (break it!), whether something is shielding it.</summary>
+/// IsBoss: a boss's (its music); a herald's is not. Break: the damage past
+/// its phase marks; Stagger: its stagger bar (0..1).
 public sealed record BossBar(string Name, string Title, double Hp, double MaxHp, double[]? Phases = null,
-    (string Label, double Progress)? Channel = null, bool Shielded = false);
+    (string Label, double Progress)? Channel = null, bool Shielded = false, bool IsBoss = true, double Break = 0, double Stagger = 0);
 
 /// <summary>A tip on screen: its keys, as the player has them bound.</summary>
 public sealed record Hint(string Id, string Title, string Text, List<string> Keys);

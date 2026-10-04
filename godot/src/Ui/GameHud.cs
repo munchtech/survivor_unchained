@@ -767,24 +767,43 @@ public partial class GameHud : CanvasLayer
         annLife = a.Seconds;
     }
 
+    string bossMarks = "";
+    ColorRect? bossStagger;
+
     public void Boss(BossBar? bar)
     {
         bossBox.Visible = bar != null;
         if (bar == null) return;
         bossName.Text = bar.Name.ToUpperInvariant();
-        bossTitle.Text = bar.Title;
+        // A boss's Break (the damage past its phase marks) beside its title.
+        bossTitle.Text = bar.Break >= 1 ? $"{bar.Title}   ·   Break {Math.Round(bar.Break):N0}" : bar.Title;
         float w = 742;
         float k = (float)Math.Clamp(bar.Hp / Math.Max(1, bar.MaxHp), 0, 1);
         bossFill.Size = new Vector2(w * k, 14);
         bossFill.Color = bar.Shielded ? Hex("#8a8a9a") : Hex("#b0222a");
         bossTrail.Size = new Vector2(Math.Max(bossTrail.Size.X - 2, w * k), 14);
-        foreach (var c in bossTrack.GetChildren()) if (c.HasMeta("phase")) c.QueueFree();
-        foreach (var ph in bar.Phases ?? Array.Empty<double>())
+        // The phase marks, built when they change rather than every frame.
+        string marks = bar.Phases == null ? "" : string.Join(",", bar.Phases);
+        if (marks != bossMarks)
         {
-            var mark = new ColorRect { Color = Style.GoldHi, Position = new Vector2(w * (float)ph, 0), Size = new Vector2(2, 16), MouseFilter = Control.MouseFilterEnum.Ignore };
-            mark.SetMeta("phase", true);
-            bossTrack.AddChild(mark);
+            bossMarks = marks;
+            foreach (var c in bossTrack.GetChildren()) if (c.HasMeta("phase")) c.QueueFree();
+            foreach (var ph in bar.Phases ?? Array.Empty<double>())
+            {
+                var mark = new ColorRect { Color = Style.GoldHi, Position = new Vector2(w * (float)ph, 0), Size = new Vector2(2, 16), MouseFilter = Control.MouseFilterEnum.Ignore };
+                mark.SetMeta("phase", true);
+                bossTrack.AddChild(mark);
+            }
         }
+        // The stagger bar: a thin line under the health, filled by what would lock a lesser creature.
+        if (bossStagger == null)
+        {
+            bossStagger = new ColorRect { Color = Hex("#e8c860"), Position = new Vector2(0, 17), Size = new Vector2(0, 4), MouseFilter = Control.MouseFilterEnum.Ignore };
+            bossTrack.AddChild(bossStagger);
+        }
+        bossStagger.Visible = bar.IsBoss && bar.Stagger > 0;
+        bossStagger.Size = new Vector2(w * (float)Math.Clamp(bar.Stagger, 0, 1), 4);
+        bossStagger.Color = bar.Stagger >= 1 ? Hex("#fff0a0") : Hex("#e8c860");
         bossChannelBox.Visible = bar.Channel != null;
         if (bar.Channel is var (label, prog))
         {

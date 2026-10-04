@@ -72,6 +72,8 @@ public sealed class MapRules
     public double IronSkin;
     /// <summary>How far the survivor's light carries (for the view).</summary>
     public double Light = 1;
+    /// <summary>How fast a boss's stagger bar fills (the Oath of Iron fills it slower).</summary>
+    public double StaggerTaken = 1;
 }
 
 public sealed class BattleHooks
@@ -89,6 +91,10 @@ public sealed class BattleHooks
     public Func<Enemy, double, bool>? BossTick;
     /// <summary>Something damaged a tagged collider (a barrel, a bramble wall, a ward).</summary>
     public Action<string, int, School, double, double, double>? OnHitProp;
+    /// <summary>A boss was hit (its school and the damage), for a weakness that breaks a channel.</summary>
+    public Action<Enemy, School, double>? OnBossHit;
+    /// <summary>A boss's stagger bar filled.</summary>
+    public Action<Enemy>? OnBossStagger;
 }
 
 public sealed class BattleSetup
@@ -335,6 +341,7 @@ public sealed partial class Battle
         UpdateProjectiles(dt, wdt);
         UpdateZones(dt);
         UpdateStrikes(dt);
+        UpdateBlows(dt);
         UpdatePickups(dt);
         UpdateBuffs(dt);
         if (Graves.Count > 40) Graves.RemoveRange(0, Graves.Count - 40);
@@ -608,6 +615,7 @@ public sealed partial class Battle
         // Allies go for the throat: champions and worse take more from them.
         if (o.Summon) dmg *= st.Get(Stat.SummonDamage) * (e.Boss || e.Elite ? (Boons.ContainsKey("go_for_the_throat") ? 2.8 : 2.0) : 1);
         if (e.Boss || e.Elite) dmg *= o.BossDamage ?? o.Weapon?.Def.BossDamage ?? 1;
+        if (e.StaggeredT > 0) dmg *= 1.25;
         // Vulnerabilities.
         var s = e.Status;
         if (s[StatusKind.Mark] is { } mark) dmg *= 1 + 0.3 * (mark.Power != 0 ? mark.Power : 1);
@@ -643,6 +651,8 @@ public sealed partial class Battle
 
         double before = e.Hp;
         e.Hp -= dmg;
+        // A boss's gate: it stops at its phase's mark; the rest is its Break.
+        if (e.HpFloor > 0 && e.Hp < e.HpFloor) { e.Overflow += e.HpFloor - e.Hp; e.Hp = e.HpFloor; }
         e.Flash = 1;
         e.LastSchool = school;
         // Which way the blow was going: its own, or away from the survivor.
@@ -676,6 +686,7 @@ public sealed partial class Battle
         if (ls > 0 && !o.Dot) HealPlayer(dmg * ls, "lifesteal", true);
 
         // Knockback: heavier things move less, bosses not at all.
+        if (o.Knockback != 0 && e.Boss) AddStagger(e, 0.004 * o.Knockback * st.Get(Stat.Knockback));
         if (o.Knockback != 0 && !e.Boss && e.Def.Behavior != Behavior.Stationary)
         {
             double k = o.Knockback * st.Get(Stat.Knockback) * 7 / Math.Max(0.5, e.Mass) * (e.Elite ? 0.35 : 1);
@@ -694,6 +705,7 @@ public sealed partial class Battle
             if (crit) Fire(TriggerEvent.Crit, ctx);
         }
 
+        if (e.Boss) Hooks.OnBossHit?.Invoke(e, school, dmg);
         if (e.Hp <= 0 && e.Alive && e.State != EnemyState.Dying) KillEnemy(e, true, o.Weapon, depth);
         else ArtOnHit(e);
         return dmg;
@@ -861,6 +873,7 @@ public sealed partial class Battle
                 var cur = s.Ensure(StatusKind.Chill, 0, 0, 0, 0);
                 cur.Stacks += p.Power * (Boons.ContainsKey("deep_chill") ? 2 : 1) * Stats.Get(Stat.StatusPowerOf(StatusKind.Chill));
                 cur.T = Math.Max(cur.T, dur);
+                if (cur.Stacks >= 5 && e.Boss) { cur.Stacks = 2; AddStagger(e, 0.12); }
                 if (cur.Stacks >= 5 && !e.Boss && e.ThawT <= 0)
                 {
                     s.Remove(StatusKind.Chill);
@@ -874,7 +887,8 @@ public sealed partial class Battle
             case StatusKind.Stun:
             case StatusKind.Fear:
             case StatusKind.Charm:
-                if (e.Boss && p.Kind != StatusKind.Stun) return;
+                // A boss is not locked: what would lock it fills its stagger bar instead.
+                if (e.Boss) { AddStagger(e, p.Kind == StatusKind.Stun ? 0.06 + 0.12 * dur : 0.08); return; }
                 s[p.Kind] = new StatusSlot(Math.Max(s[p.Kind]?.T ?? 0, dur), 1, p.Power, 0);
                 break;
             default:
@@ -932,6 +946,27 @@ public sealed partial class Battle
             }
         }
         if (e.ThawT > 0) e.ThawT -= dt;
+        if (e.StaggeredT > 0) e.StaggeredT -= dt;
+        if (e.StaggerResistT > 0) e.StaggerResistT -= dt;
+    }
+
+    /// <summary>A boss's stagger bar fills (a quarter as fast while it resists);
+    /// full, the boss is held for 3 s, taking a quarter more, whatever it was
+    /// doing broken, and then resists for 15 s.</summary>
+    public void AddStagger(Enemy e, double amount)
+    {
+        if (!e.Boss || e.StaggeredT > 0 || !e.Alive) return;
+        e.Stagger += amount * (e.StaggerResistT > 0 ? 0.25 : 1) * Rules.StaggerTaken;
+        if (e.Stagger < 1) return;
+        e.Stagger = 0;
+        e.StaggeredT = 3;
+        e.StaggerResistT = 18;
+        e.State = EnemyState.Stunned;
+        e.StateT = 3;
+        e.Vx = e.Vz = 0;
+        Hooks.OnBossStagger?.Invoke(e);
+        Events.Emit(new Ev.Announce { Title = "Staggered", Tone = Tone.Boon });
+        Events.Emit(new Ev.Shake { Amount = 0.25 });
     }
 
     /* ========================================================= damage out == */
@@ -1192,6 +1227,8 @@ public sealed partial class Battle
         public Faction? Faction;
         public Disposition? Disposition;
         public bool Elite;
+        /// <summary>A boss whatever its kind (the arena's ruler is its people's champion made boss).</summary>
+        public bool Boss;
         public string? Tag;
         public (double X, double Z, double Leash)? Home;
         /// <summary>A resting pack's waking distance (0: it hunts from afar).</summary>
@@ -1218,7 +1255,7 @@ public sealed partial class Battle
         e.Disposition = o.Disposition ?? (def.Faction == Faction.Ally ? Disposition.Ally : Disposition.Hostile);
         e.Speed = def.Speed * (0.92 + Rng.Next() * 0.16) * (e.Disposition == Disposition.Ally ? 1 : Rules.FoeSpeed * (1 + 0.05 * Boons.GetValueOrDefault("dark_bargain")));
         e.Elite = def.Elite || o.Elite;
-        e.Boss = def.Boss;
+        e.Boss = def.Boss || o.Boss;
         e.State = o.Style == SpawnStyle.Rise ? EnemyState.Rising : o.Style == SpawnStyle.Burrow ? EnemyState.Burrowed : EnemyState.Active;
         e.StateT = o.Style == SpawnStyle.Rise ? 1.1 : o.Style == SpawnStyle.Burrow ? 0.3 : 0;
         e.AttackT = 0.5 + Rng.Next() * 0.5;
@@ -1246,6 +1283,7 @@ public sealed partial class Battle
         e.Decoy = e.Prey = false;
         e.ThawT = 0;
         e.Raised = false;
+        e.HpFloor = e.Overflow = e.Stagger = e.StaggeredT = e.StaggerResistT = 0;
         e.Wake = o.Wake;
         e.Roused = false;
         e.DrainedAt = -99;
@@ -1303,6 +1341,104 @@ public sealed partial class Battle
         strikes.Add(new StrikeSpec(x, z, r, dmg, school, tags, delay, weapon, owner, depth) { Credit = credit });
         Events.Emit(new Ev.Strike { X = x, Z = z, Radius = r, School = school, Delay = delay });
         if (owner == Side.Enemy) Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = x, Z = z, Radius = r, Duration = delay, Hostile = true });
+    }
+
+    /// <summary>A blow the enemy side has marked on the ground: where, what shape,
+    /// how long until it lands, and what it does then.</summary>
+    public sealed class EnemyBlow
+    {
+        public TelegraphShape Shape;
+        public TelegraphKind Kind = TelegraphKind.Blow;
+        public double X, Z, X1, Z1, Radius, Inner, Width = 1, Angle, Arc;
+        public double Delay, T, Damage;
+        public School School = School.Physical;
+        public string Source = "";
+        public Enemy? From;
+        /// <summary>Slowed by it (a fraction of pace, for a time).</summary>
+        public double Slow, SlowFor;
+        public string? Label;
+        /// <summary>What it leaves, or does besides, when it lands.</summary>
+        public Action<Battle>? After;
+        public bool Hit(double x, double z, double r)
+        {
+            double dx = x - X, dz = z - Z, d = Math.Sqrt(dx * dx + dz * dz);
+            switch (Shape)
+            {
+                case TelegraphShape.Circle: return d <= Radius + r * 0.5;
+                case TelegraphShape.Ring: return d <= Radius + r * 0.5 && d >= Inner - r * 0.5;
+                case TelegraphShape.Cone:
+                {
+                    if (d > Radius + r * 0.5) return false;
+                    if (d < 0.6) return true;
+                    double a = Math.Atan2(dz, dx) - Angle;
+                    while (a > Math.PI) a -= Math.PI * 2;
+                    while (a < -Math.PI) a += Math.PI * 2;
+                    return Math.Abs(a) <= Arc / 2;
+                }
+                default:
+                {
+                    double lx = X1 - X, lz = Z1 - Z, len2 = lx * lx + lz * lz;
+                    double t = len2 > 0 ? Math.Clamp((dx * lx + dz * lz) / len2, 0, 1) : 0;
+                    double px = X + lx * t - x, pz = Z + lz * t - z;
+                    return Math.Sqrt(px * px + pz * pz) <= Width / 2 + r * 0.5;
+                }
+            }
+        }
+    }
+
+    readonly List<EnemyBlow> blows = new();
+    /// <summary>A boss's telegraphed blows that landed (a fight won with none is "unscathed").</summary>
+    public int BossBlowsTaken;
+    int blowIds = 1;
+
+    /// <summary>A mark on the ground that stays (a pit, a cage) until it is ended.</summary>
+    public int Mark(TelegraphKind kind, double x, double z, double r, double duration)
+    {
+        int id = 900000 + blowIds++;
+        Events.Emit(new Ev.Telegraph { Id = id, Shape = TelegraphShape.Circle, Kind = kind, X = x, Z = z, Radius = r, Duration = duration, Hostile = true, Boss = true });
+        return id;
+    }
+
+    public void EndMark(int id) =>
+        Events.Emit(new Ev.Telegraph { Id = id, Shape = TelegraphShape.Circle, Kind = TelegraphKind.Wall, Radius = 0.01, Duration = 0.01, Hostile = true });
+    public IReadOnlyList<EnemyBlow> Blows => blows;
+
+    /// <summary>Mark a blow and let it land after its delay: it hurts the survivor
+    /// if they are still in its shape (a blow slipped by a dash in time is a
+    /// perfect dodge), and only them.</summary>
+    public EnemyBlow Blow(EnemyBlow b)
+    {
+        b.T = b.Delay;
+        blows.Add(b);
+        Events.Emit(new Ev.Telegraph
+        {
+            Id = 900000 + blowIds++, Shape = b.Shape, Kind = b.Kind, X = b.X, Z = b.Z, X1 = b.X1, Z1 = b.Z1, Radius = b.Radius, Inner = b.Inner,
+            Width = b.Width, Angle = b.Angle, Arc = b.Arc, Duration = b.Delay, Hostile = true, Boss = b.From?.Boss == true, Label = b.Label,
+        });
+        return b;
+    }
+
+    void UpdateBlows(double dt)
+    {
+        for (int i = blows.Count - 1; i >= 0; i--)
+        {
+            var b = blows[i];
+            b.T -= dt;
+            if (b.T > 0) continue;
+            blows.RemoveAt(i);
+            var p = Player;
+            if (b.Damage > 0 || b.Slow > 0)
+            {
+                double cx = b.Shape == TelegraphShape.Line ? (b.X + b.X1) / 2 : b.X, cz = b.Shape == TelegraphShape.Line ? (b.Z + b.Z1) / 2 : b.Z;
+                if (b.Kind == TelegraphKind.Blow) Events.Emit(new Ev.Explosion { X = cx, Z = cz, Radius = Math.Max(1.2, b.Shape == TelegraphShape.Line ? b.Width : b.Radius * 0.6), School = b.School, Power = 0.8 });
+                if (p.Alive && b.Hit(p.X, p.Z, p.Radius))
+                {
+                    if (b.Damage > 0 && HurtPlayer(b.Damage, b.School, b.Source, b.From, telegraphed: true) > 0 && b.From?.Boss == true) BossBlowsTaken++;
+                    if (b.Slow > 0 && p.Iframes <= 0.45) SlowPlayer(b.Slow, b.SlowFor);
+                }
+            }
+            b.After?.Invoke(this);
+        }
     }
 
     /* ======================================================= projectiles == */

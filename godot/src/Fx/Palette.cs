@@ -38,6 +38,16 @@ public static class Palette
 
     public static readonly Color HostileRim = K("#ff5a2a", 2.2f), HostileDanger = K("#ff2a1a", 2.4f);
 
+    /// <summary>The telegraph language (docs/bosses/MECHANICS.md section 2): amber a blow is
+    /// coming here, violet this ground stays bad, pale blue stand here, grey this will be
+    /// solid. Each has its own edge as well (filled, hatched, dashed, hard), so colour is
+    /// never the only sign.</summary>
+    public static readonly Color TeleBlow = K("#ff9a1a", 2.6f), TeleGround = K("#a050ff", 2.2f), TeleSafe = K("#8ad0ff", 2.2f), TeleWall = K("#c8c8d0", 1.6f);
+    public static Color Telegraph(TelegraphKind k) => k switch
+    {
+        TelegraphKind.Ground => TeleGround, TelegraphKind.Safe => TeleSafe, TelegraphKind.Wall => TeleWall, _ => TeleBlow,
+    };
+
     /// <summary>The school a projectile or ground effect is, from its art.</summary>
     public static School OfArt(string art)
     {
