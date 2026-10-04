@@ -74,6 +74,8 @@ public sealed class MapRules
     public double Light = 1;
     /// <summary>How fast a boss's stagger bar fills (the Oath of Iron fills it slower).</summary>
     public double StaggerTaken = 1;
+    /// <summary>The ember the dead leave, over the usual (an oath's pay: "half again the ember").</summary>
+    public double EmberGain = 1;
 }
 
 public sealed class BattleHooks
@@ -788,7 +790,7 @@ public sealed partial class Battle
         if (e.Disposition != Disposition.Ally)
         {
             // The dead leave a stone with light still in it.
-            double xp = e.Def.Xp * Content.Enemies.ScaleFor(e.Level).Xp;
+            double xp = e.Def.Xp * Content.Enemies.ScaleFor(e.Level).Xp * Rules.EmberGain;
             if (xp > 0 && EmberOn && !e.Raised) DropEmber(e.X, e.Z, xp);
             if (credited)
             {
