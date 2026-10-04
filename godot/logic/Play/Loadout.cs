@@ -54,6 +54,15 @@ public static class Loadouts
     /// of them goes over her, and no hood.</summary>
     public const string HerBody = "woman";
 
+    /// <summary>A man survivor's own body (People.Hero: the hero, once his
+    /// outfits are made; the kit's man till then, in the outfit listed beside
+    /// his own).</summary>
+    public const string HisBody = "man";
+
+    /// <summary>A man survivor's own outfit for his calling, as the view knows
+    /// it ("him:" and its name).</summary>
+    public static string HisOutfit(string archetype) => "him:" + (archetype == "stalker" ? "ranger" : archetype);
+
     /// <summary>A woman survivor's outfit for her calling, as the view knows
     /// it ("her:" and its name: People.HerOutfit; the stalker wears the
     /// ranger's).</summary>
@@ -84,7 +93,8 @@ public static class Loadouts
         var eyes = Lore.Eyes.FirstOrDefault(e => e.Id == ch.Eyes);
         var person = new PersonSpec
         {
-            Sex = sex, Body = her ? HerBody : null, Outfit = her ? new List<string> { HerOutfit(ch.Archetype) } : OutfitOf(ch.Archetype, sex, hood),
+            Sex = sex, Body = her ? HerBody : HisBody,
+            Outfit = her ? new List<string> { HerOutfit(ch.Archetype) } : OutfitOf(ch.Archetype, sex, hood).Append(HisOutfit(ch.Archetype)).ToList(),
             Hair = her ? HerHair(ch.HairStyle) : hood || ch.HairStyle == "none" ? null : ch.HairStyle ?? Lore.HairStyles(sex)[0],
             Beard = sex == Sex.Male && (ch.Beard ?? true),
             HairColor = string.IsNullOrEmpty(hair) ? null : hair, Skin = string.IsNullOrEmpty(skin) ? null : skin, Figure = ch.Figure,

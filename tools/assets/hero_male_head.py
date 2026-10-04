@@ -68,7 +68,7 @@ FACE = {"head-square": 0.45, "head-scale-vert-decr": 0.25, "forehead-scale-vert-
         "chin-width-incr": 0.45, "chin-bones-incr": 0.9, "chin-prominent-incr": 0.35, "chin-height-incr": 0.05, "chin-cleft-incr": 0.25,
         "X-cheek-bones-incr": 0.65, "X-cheek-volume-decr": 0.6, "forehead-nubian-incr": 0.3,
         "eyebrows-trans-down": 0.35, "eyebrows-trans-forward": 0.5, "eyebrows-angle-down": 0.15,
-        "X-eye-height2-decr": 0.3, "X-eye-push1-in": 0.25, "X-eye-scale-decr": 0.05,
+        "X-eye-height2-decr": 0.15, "X-eye-push1-in": 0.25,
         "nose-hump-incr": 0.2, "nose-width1-incr": 0.25, "nose-point-width-decr": 0.1, "nose-scale-depth-incr": 0.1,
         "mouth-scale-horiz-incr": 0.18, "mouth-lowerlip-volume-incr": 0.3, "mouth-upperlip-volume-incr": 0.05}
 # His sliders, for the game to shape his face with: each a shape key one
@@ -105,6 +105,7 @@ EXPRESSIONS = {
 # corner under his jaw at 1.70 m, the hollow of his nape at 1.76 m. Both
 # lean as his neck does (rising behind, 0.54 m a metre).
 SPLIT_Z, CUT_Z, LEAN = 1.696, 1.662, 0.54
+HEAD_SCALE = 1.06
 
 
 def cut_z(P):
@@ -323,7 +324,9 @@ print("MAKEHUMAN", len(MV), "points,", len(MF), "faces of skin")
 _top = MV[_inbody, 2].max()
 mn, mc = nose_chin(MV[_inbody & (MV[:, 2] > _top - 0.28)])
 hn, hc = her_face_landmarks()
-S = np.linalg.norm(hn - hc) / np.linalg.norm(mn - mc)
+# (A size larger than his sculpt's face: on his shoulders and his neck, a
+# wrestler's, the sculpt's own head looked small.)
+S = HEAD_SCALE * np.linalg.norm(hn - hc) / np.linalg.norm(mn - mc)
 R = np.eye(3)
 T = hn - S * mn
 _hf = np.where(~RED[HTP] & (_tc[:, 2] > hc[2] - 0.003) & (_tc[:, 2] < 1.88) & (_tc[:, 1] < 0) & (np.abs(_tc[:, 0]) < 0.08))[0]
@@ -1098,19 +1101,60 @@ def scalp(P):
     return w * ~ear
 
 
+# Where his beard grows, the same: MakeHuman's man has a shadow of stubble
+# painted on, and he is drawn clean-shaven (his stubble and beards are
+# chosen in the game). His beard's ground: his jaw and cheeks below his
+# cheekbones, up his sideburns to the front of his ears, his upper lip below
+# his nose, and under his jaw, but not his lips.
+_nose = HEAD_V[np.argmin(HEAD_V[:, 1])]
+_teeth = place(grab(proxies["teeth_base"])[0])
+_mouth = np.array([0.0, _teeth[:, 1].min() - 0.008, float(np.median(_teeth[_teeth[:, 1] < _teeth[:, 1].min() + 0.01, 2]))])
+_side = np.abs(HEAD_V[:, 0]) > 0.068
+_ear_y = HEAD_V[_side & (np.abs(HEAD_V[:, 2] - _eye_z) < 0.03), 1].min()
+print("BEARD ground: nose tip %s, mouth %s, ears from y %.3f" % (np.round(_nose, 3), np.round(_mouth, 3), _ear_y))
+
+
+def beard(P):
+    """How much of a point is where his beard grows (0 to 1, soft at its edges)."""
+    ax = np.abs(P[:, 0])
+    # Its upper edge: under his nose over his lip, at his nose's base across
+    # his cheeks, up to his eyes' height at his sideburns.
+    top = (_nose[2] - 0.021 + 0.016 * smooth01((ax - 0.02) / 0.014)
+           + (_eye_z - _nose[2] + 0.005) * smooth01((ax - 0.052) / 0.012))
+    w = smooth01((top - P[:, 2]) / 0.01)
+    w *= 1 - smooth01((P[:, 1] - (_ear_y - 0.012)) / 0.01)          # in front of his ears
+    lip = ((P[:, 0] / 0.027) ** 2 + ((P[:, 2] - _mouth[2]) / 0.0115) ** 2 + ((P[:, 1] - _mouth[1]) / 0.03) ** 2)
+    w *= smooth01((lip - 1.0) / 0.35)                                 # not his lips
+    return w
+
+
 _sw = scalp(P_)[:, None]
-# (Its grain found in the texture itself, as an image: the fine detail of
-# what is there, its broad colour taken out, a third of it kept, a shaved
+_bw = beard(P_)[:, None]
+# (Their grain found in the texture itself, as an image: the fine detail of
+# what is there, its broad colour taken out, a part of it kept, a shaved
 # head's faint grain.)
 _tmp = np.zeros((HSIZE, HSIZE, 3), np.float32)
 _tmp[r_, c_] = col
 _ins = np.zeros((HSIZE, HSIZE), bool)
 _ins[r_, c_] = True
 _tmp = pad(_tmp, _ins)
-_grain = (_tmp - ndimage.gaussian_filter(_tmp, (8, 8, 0)))[r_, c_]
-col = col * (1 - _sw) + (HER_MEAN + 0.3 * _grain) * _sw
+_broad = ndimage.gaussian_filter(_tmp, (8, 8, 0))[r_, c_]
+_grain = _tmp[r_, c_] - _broad
 del _tmp
-print("SCALP cleared over %d%% of his head" % (100 * (_sw > 0.5).mean()))
+col = col * (1 - _sw) + (HER_MEAN + 0.3 * _grain) * _sw
+# (His beard's ground keeps its own broad colour, the warmth of his lips and
+# cheeks, only lightened back to his skin's where the stubble darkened it.)
+_lift = np.clip(HER_MEAN - _broad, 0, None) * 0.8
+col = col * (1 - _bw) + (_broad + _lift + 0.25 * _grain) * _bw
+print("SCALP cleared over %d%% of his head; BEARD ground over %d%%" % (100 * (_sw > 0.5).mean(), 100 * (_bw > 0.5).mean()))
+# The two grounds as a map for the game (his head's UV): red his beard's,
+# green his scalp's, for shaders/heroine_skin.gdshader to lay a shaved
+# shadow on (People.HisShadow).
+_mask = np.zeros((HSIZE, HSIZE, 4), np.float32)
+_mask[..., 3] = 1
+_mask[r_, c_, 0] = _bw[:, 0]
+_mask[r_, c_, 1] = _sw[:, 0]
+save_image(pad(_mask, _ins), os.path.join(TEXDIR, "hero_shadow.png"))
 # His face as tools/assets/hero_male_face.py painted it (a photograph's skin,
 # brows, lashes and lips, by the local ComfyUI), over MakeHuman's by its alpha.
 FACE_PAINT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hero_male_face", "face_paint.png")
