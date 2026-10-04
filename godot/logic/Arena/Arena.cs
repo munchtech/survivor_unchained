@@ -55,6 +55,9 @@ public sealed class ArenaSpec
     /// <summary>The boss is brought down and let go, not killed (Greymuzzle, when the story
     /// allows it: docs/STORY_BIBLE.md, "The nights").</summary>
     public bool Spare;
+    /// <summary>A story night's last line, won and lost: the narrator's, where the result
+    /// would otherwise say only that the story goes on (docs/WRITING_PASS.md §20).</summary>
+    public string? EndWon, EndLost;
 
     /// <summary>The ground (always by night: the ember burns only in the dark).</summary>
     public MapSpec Map => new() { Seed = Seed, Tier = Tier, Theme = Theme, Night = true, Oaths = Oaths, Name = Name, Arena = true, People = People, Mood = Mood };
@@ -102,6 +105,9 @@ public static class Arenas
         Id = lost.Id, Name = lost.Name, Sub = lost.Sub, Seed = lost.Seed + 1, Tier = lost.Tier, Theme = lost.Theme, Mood = lost.Mood,
         People = lost.People, Oaths = lost.Oaths.ToList(), Minutes = lost.Minutes, Story = true, OnWin = lost.OnWin, OnLose = null,
         Boss = lost.Boss, BossName = lost.BossName, BossTitle = lost.BossTitle,
+        // The fight is the same fight, spared or not; its lost line says where she comes to,
+        // which is no longer where this one sends her back.
+        Spare = lost.Spare, EndWon = lost.EndWon,
         ReturnZone = zone, ReturnX = x, ReturnZ = z, ReturnFacing = facing,
     };
 

@@ -12,8 +12,8 @@ namespace SurvivorUnchained.Maps;
  * place has its own ground, its own shapes, its own night, and the ember's
  * ring round its edge, where the scar holds you in.
  *
- * Its mood is what its name says: an "Ashen" place is burned, a "Drowned"
- * one standing in water, a "Moonless" one darker, so the table's names
+ * Its mood is what its name says: a "Burnt" place is smoky, a "Drowned"
+ * one standing in water, a "Lampless" one darker, so the table's names
  * and the place agree. */
 
 /// <summary>What a place's night is like, past what the sky preset says: low
@@ -48,17 +48,34 @@ public static class ArenaPlaces
         ("barrow", new[] { "Howes", "Lows", "Barrows", "Lych-Way", "Chesters", "Burying-Ground" }),
         ("hollow", new[] { "Dene", "Clough", "Holt", "Shaw", "Brake", "Den" }),
         ("ruts", new[] { "Ruts", "Drove", "Cutting", "Ravine", "Waggon-Way", "Gap" }),
-        ("dig", new[] { "Dig", "Sump", "Delph", "Sough", "Spoil", "Workings" }),
+        // Not "Dig": the Dig is Grimtunnel's, and the atlas is other places.
+        ("dig", new[] { "Sump", "Delph", "Sough", "Spoil", "Workings" }),
     };
 
-    /// <summary>The words a place's mood is called by (the table's adjectives,
-    /// MapOffers), and the mood each one makes. "Quiet" is the valley's word
-    /// for the dead; "Lampless" comes from the Order's dusk call.</summary>
+    /// <summary>What each people's places are like, as the table names them (the story
+    /// bible, "The nights"): their own words, so a name says whose ground it is.</summary>
+    public static readonly (string Place, string[] Words)[] Adjectives =
+    {
+        ("barrow", new[] { "Lampless", "Quiet", "Morrow", "Drowned", "Burnt", "Cold" }),
+        ("hollow", new[] { "Grey", "Deep", "Thorn", "Bracken", "Drowned", "Whelping", "Bitter" }),
+        // The hungry gap is the farmer's lean weeks of spring, when the stores are gone.
+        ("ruts", new[] { "Red", "Salt", "Toll", "Gallows", "Hungry", "Widow's", "Drowned" }),
+        ("dig", new[] { "Praying", "Gold", "Warm", "Black", "Deep", "Lamplit", "Drowned" }),
+    };
+
+    /// <summary>The mood each of those words makes. "Quiet" is the valley's word for the
+    /// dead, "Lampless" comes from the Order's dusk call, "Praying" is Tam's; a word with
+    /// nothing to show leaves the place's own night as it is ("still").</summary>
     public static readonly (string Word, string Mood)[] Moods =
     {
-        ("Ashen", "ashen"), ("Scorched", "ashen"), ("Drowned", "drowned"), ("Lampless", "moonless"), ("Moonless", "moonless"),
-        ("Briared", "thorned"), ("Crooked", "thorned"), ("Gallows", "gallows"), ("Quiet", "mist"), ("Praying", "mist"),
-        ("Fogbound", "mist"), ("Broken", "broken"),
+        ("Lampless", "moonless"), ("Deep", "moonless"),
+        ("Quiet", "mist"), ("Morrow", "mist"), ("Cold", "mist"), ("Grey", "mist"), ("Praying", "mist"),
+        ("Drowned", "drowned"),
+        ("Burnt", "ashen"), ("Warm", "ashen"), ("Black", "ashen"),
+        ("Thorn", "thorned"), ("Bracken", "thorned"),
+        ("Gallows", "gallows"),
+        ("Whelping", "still"), ("Bitter", "still"), ("Red", "still"), ("Salt", "still"), ("Toll", "still"),
+        ("Hungry", "still"), ("Widow's", "still"), ("Gold", "still"), ("Lamplit", "still"),
     };
 
     /// <summary>The mood a name gives (its first word that has one), or "".</summary>
