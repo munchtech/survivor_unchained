@@ -1,12 +1,12 @@
 # Crafting: status
 
-Crafting lead, agent `a7debf1459f14dfe7`, branch `worktree-agent-a7debf1459f14dfe7`
+Crafting lead, agent `a7debf1459f14dfe7` (handed off: `docs/handoff/crafting.md`), branch `worktree-agent-a7debf1459f14dfe7`
 (successor to `a97e32948c5bf419d`). Research: `docs/CRAFTING_RESEARCH.md` (lessons C1–C30).
 Design: `docs/CRAFTING_DESIGN.md` (sections 1–20; 19 is what was seen and measured, 20 the endgame).
 
 ## State (2026-10-04)
 
-**Phases 1 and 2 are built and seen running at 1920×1080** (design 19.1, 19.3). Tests green (570).
+**Phases 1 and 2 are built and seen running at 1920×1080** (design 19.1, 19.3); phase 3 is built and tested, not yet seen. Tests green (580).
 - **The arena's gold is cut** (combat built it): champions 7%, fodder 0.15%, bosses and minibosses
   in full. A Kerchief night pays about 350 gold (it paid 2.5k–3.3k). `CraftingEconomy` reads the
   arena's real rates and holds every target (weapon Epic by day 8; crafting takes 67% of the gold).
@@ -19,17 +19,11 @@ Design: `docs/CRAFTING_DESIGN.md` (sections 1–20; 19 is what was seen and meas
 
 ## Next, in order
 
-1. **Phase 3, in progress** (paused for the owner). The rules are in: `Crafting.Bind`/`Donors`,
-   `BuyJar`/`Buy`, `Steep` (odds, the bright grade V, three slurry affixes), Snib's "slurry" action
-   (buys a jar, the talk goes on), Vonnra's "craft" choice. The story lead's words are merged in from
-   `worktree-agent-a73ca9d35d0c487a9@d132033f`, but the conflict in `crafting.json` was resolved to
-   ours. **Exact next step:** copy their `crafters.vonnra.lines` and `crafters.snib.lines` verbatim
-   into our entries (`git show d132033f:godot/data/content/crafting.json`), keeping our `verbs`.
-   - Vonnra: their `when` (met and `toll.paid`) and `closedLine`; place "The Toll Tower"; `bind.coal` becomes `bind.caged`; her easier line from `terms.accused`.
-   - Snib: `when` (met, pump not broken/blown/moved) and `closedLine`. The outcome "slurry" becomes "affix" (`steep.affix`). The jar's lore is their `jar` line.
-   - Slurry affixes: "seeping" becomes **Fevered** (`fevered`), "green_veined" becomes **Pipe-Lad's** (`pipe_lads`).
-   - Their choice for Vonnra: "Can you move what's in one thing into another?". Snib's "Sell me a jar of that." should open **his bench** (`forge:snib`: a jar tile and a Steep tile with the odds, his `first.steep` lines), not just buy.
-   - Then: the forge's Bind section (donors per seam, a two-step confirm because the donor is unmade), the pack's Steep (two-step, odds shown, outcome said), a `slurry_jar` painted icon, `CraftersTests` for bind and steep, and pictures.
+1. **Phase 3: code, data (the story lead's words, verbatim) and tests are done** (fc2c6c75):
+   Vonnra's binding, Snib's jars and bench, steeping by hand. **Not yet seen**: the full-resolution
+   checks wait until Godot is free (the owner is using the GPU). The list and exact commands are in
+   `docs/handoff/crafting.md`, Next 1. Then paint the `slurry_jar` icon, and write 7.3, 9 and 19.4
+   into the design.
 2. **Endgame** (design 20.6): combat's maps and Marks hook exist (09b6b03, 5c50de1). Two kits; item
    level and grade caps; chart verbs at Ysolde's table (`ItemInstance.Chart`, quality field ready);
    Marks on the item side (`CombatKit.Marks`, `CombatKit.SkillMods`, grade 0–5 to strength 0–1; four
