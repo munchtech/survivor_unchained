@@ -387,13 +387,14 @@ public class CraftingTests
     }
 
     [Fact]
-    public void Wenna_will_not_work_gear_while_the_stream_is_green()
+    public void Wenna_brews_from_the_start_but_will_not_work_gear_while_the_stream_is_green()
     {
         var j = Make();
         j.World.Npc("wenna").Flags["met"] = true;
-        Assert.NotNull(Crafting.Closed("wenna", j.Ctx));
+        Assert.Null(Crafting.Closed("wenna", j.Ctx, Verb.Brew));
+        Assert.NotNull(Crafting.Closed("wenna", j.Ctx, Verb.WorkIn));
         j.World.Facts["stream.clear"] = true;
-        Assert.Null(Crafting.Closed("wenna", j.Ctx));
+        Assert.Null(Crafting.Closed("wenna", j.Ctx, Verb.WorkIn));
     }
 
     [Fact]

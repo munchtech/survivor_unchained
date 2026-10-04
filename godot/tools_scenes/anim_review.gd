@@ -17,7 +17,9 @@ extends SceneTree
 #   OUTFIT=warden|arcanist|reaver|ranger   her outfit; HAIR=style; WEAPON=sword|staff|bow|axe|axes|daggers|wand
 #   MODEL=female|male                      a townsfolk body (the kit's) instead of hers, in PARTS (kit
 #                                          outfit parts, comma-separated); clips "folk/<name>"
+#   MODEL=hero                             the hero, with his clips ("him/<name>", art/anim/hero.res)
 #   NOHERPOSE=1                            without her corrective pose layer
+#   GESTURE=her/nod GESTUREAT=s            a gesture laid over the clip (Gestures.cs) s seconds in
 #   FULL=1                                 save every frame as its own picture too (out_NN.png)
 var clip = ""
 var out = ""
@@ -54,13 +56,16 @@ func _init():
 	var root = Node3D.new()
 	vp.add_child(root)
 	var model = env("MODEL", "")
-	if model != "":
+	if model == "hero":
+		her = load("res://art/people/hero.glb").instantiate()
+	elif model != "":
 		her = load("res://assets/people/Superhero_%s_FullBody.gltf" % model.capitalize()).instantiate()
 	else:
 		her = load("res://art/people/heroine.glb").instantiate()
 	root.add_child(her)
 	her.scale = Vector3.ONE * 1.04
-	if model != "": kit(her, env("PARTS", ""))
+	if model == "hero": hero(her)
+	elif model != "": kit(her, env("PARTS", ""))
 	else: dress(her)
 	ap = AnimationPlayer.new()
 	her.add_child(ap)
@@ -78,6 +83,8 @@ func _init():
 		ap.add_animation_library("her", load("res://art/anim/heroine.res"))
 	if ResourceLoader.exists("res://art/anim/folk.res"):
 		ap.add_animation_library("folk", load("res://art/anim/folk.res"))
+	if ResourceLoader.exists("res://art/anim/hero.res"):
+		ap.add_animation_library("him", load("res://art/anim/hero.res"))
 	if not ap.has_animation(clip):
 		push_error("no clip " + clip)
 		quit(1)
@@ -88,9 +95,14 @@ func _init():
 	# game lays a swing over her run: the spine up, filtered, at OVERSPEED,
 	# fired OVERAT seconds in).
 	if env("OVER", "") != "": overlay(env("OVER", ""))
+	if env("GESTURE", "") != "":
+		var gsk: Skeleton3D = her.find_children("*", "Skeleton3D", true, false)[0]
+		gestures = load("res://src/Actors/Gestures.cs").new()
+		gsk.add_child(gestures)
 	stage(root)
 
 var tree: AnimationTree
+var gestures = null
 
 func overlay(over):
 	ap.stop()
@@ -142,6 +154,18 @@ func kit(h, parts):
 				skel.add_child(mi)
 				mi.skeleton = NodePath("..")
 		sc.free()
+
+# The hero (MODEL=hero) as his model comes, his paint on plain materials,
+# with his carriage over library clips (People.Hero) and what he holds.
+func hero(h):
+	var skel: Skeleton3D = h.find_children("*", "Skeleton3D", true, false)[0]
+	var hp = load("res://src/Actors/HerPose.cs").new()
+	hp.set("ArmsIn", -5.0)
+	hp.set("HipTilt", 0.0)
+	hp.set("NeckPitch", 22.0)
+	skel.add_child(hp)
+	if clip.begins_with("him/"): hp.set("Native", 1.0)
+	weapon(skel, env("WEAPON", ""))
 
 func dress(h):
 	var skel: Skeleton3D = h.find_children("*", "Skeleton3D", true, false)[0]
@@ -349,6 +373,8 @@ func _process(delta):
 	var k = frame - warm - 1
 	if tree != null and k == int(float(env("OVERAT", "0")) * 30):
 		tree.set("parameters/shot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	if gestures != null and k == int(float(env("GESTUREAT", "0")) * 30):
+		gestures.Play(ap.get_animation(env("GESTURE", "")), 1.0, env("HOLD", "") != "")
 	if k % step == 0:
 		# DEBUG=bone: print where that bone is and which way its axes point.
 		if env("DEBUG", "") != "":

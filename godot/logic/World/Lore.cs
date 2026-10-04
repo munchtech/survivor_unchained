@@ -100,6 +100,8 @@ public sealed class FolkLine
     /// <summary>A person's line said once in a playthrough, at the first chance
     /// once it holds (npcs.json "said": Brannoc's "Twelve, I made.").</summary>
     public bool? Once;
+    /// <summary>What a once-only line does when said (Maeca, seeing the fang worn: her regard falls).</summary>
+    public List<Change>? Effects;
 }
 
 public sealed class Concern { public string Text = ""; public Cond? When; public bool? Died; }

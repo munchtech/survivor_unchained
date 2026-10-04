@@ -315,8 +315,15 @@ public partial class InventoryScreen : Overlay
         breaking = null;
         if (sel == it.Uid) sel = null;
         Sound.Sfx.Shatter();
-        G.Gear((j, b) => j.Work(it.Uid, q, b));
+        // The HUD's toasts are hidden under the pack: what it came to is said where it was read.
+        broke = (Inventory.Name(it), string.Join(" and ", q.Gives.Select(kv => Items.Several(kv.Key, kv.Value))), q.Gives.Keys.First(), Time.GetTicksMsec());
+        // Only the pack changed: the figure is not dressed again (that rebuilds her, and she blinks out).
+        G.Journey.Work(it.Uid, q, G.Battle);
+        Refresh();
     }
+
+    /// <summary>What was just broken down, and what it came to (said in the reading place).</summary>
+    (string Name, string Gives, string Icon, ulong At)? broke;
 
     void Select(string uid) { sel = sel == uid ? null : uid; leaving = null; breaking = null; Refresh(); }
 
@@ -361,6 +368,20 @@ public partial class InventoryScreen : Overlay
     {
         if (!IsInstanceValid(inspect)) return;
         foreach (var c in inspect.GetChildren()) { inspect.RemoveChild(c); c.QueueFree(); }
+        // Shown for a few seconds, however often the page is built again meanwhile.
+        if (it == null && broke is { } b && Time.GetTicksMsec() - b.At < 3000)
+        {
+            var words = Style.V(1, Style.Label($"Broken down: {b.Name}", Style.UiBold, Style.Body, Style.Ink, true),
+                Style.Label($"{Style.Cap1(b.Gives)}, into the pouch for the forge.", Style.TextItalic, Style.Small, Style.InkDim, true));
+            words.CustomMinimumSize = new Vector2(380, 0);
+            words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            var row = Style.H(Style.Gap3, ItemPhotos.Icon(Items.Get(b.Icon).Icon, 48, Style.InkDim), words);
+            var note = Style.Panel(Style.Slab(14), row);
+            note.CustomMinimumSize = new Vector2(480, 0);
+            inspect.AddChild(note);
+            note.CreateTween().TweenProperty(note, "modulate:a", 0f, 0.8).SetDelay(Math.Max(0, 3.0 - (Time.GetTicksMsec() - b.At) / 1000.0));
+            return;
+        }
         if (it == null) return;
         var def = Items.Get(it.Def);
         var acts = Style.H(8);
@@ -382,7 +403,12 @@ public partial class InventoryScreen : Overlay
                 acts.AddChild(Style.Button(leaving == it.Uid ? "Leave it behind for good" : "Leave behind", () => Leave(it), false, true));
             // Gear not kept breaks down to old iron for the forge (docs/CRAFTING_DESIGN.md 5.2).
             if (loc.InPack && !G.Journey.InArena && Crafting.BreakDown(G.Journey.Craft, it) is { Ok: true } bq)
-                acts.AddChild(Style.Button(breaking == it.Uid ? "Break it down for good" : $"Break down for {bq.Gives[Crafting.Iron]} old iron", () => BreakDown(it), false, true));
+            {
+                var bb = Style.Button(breaking == it.Uid ? "Break it down for good" : $"Break down for {Items.Several(Crafting.Iron, bq.Gives[Crafting.Iron])}", () => BreakDown(it), false, true);
+                // Asked again, in the colour of what cannot be undone.
+                if (breaking == it.Uid) bb.AddThemeColorOverride("font_color", Style.Bad);
+                acts.AddChild(bb);
+            }
         }
         // Gear in the pack reads beside what it would replace: the ARPGs' side by side.
         if (loc.InPack && Items.SlotFor(def) != null)

@@ -149,6 +149,9 @@ public interface IZoneLook
     INpcView Fallen(PersonSpec spec, Held? arms, double x, double z, double facing, string clip);
     /// <summary>A bright thing with a light of its own (the Warden's heart).</summary>
     IOrb Orb(string color, double size);
+    /// <summary>The Kindling's ember-core: a lump of raw ember, split by glowing fissures that widen
+    /// as it is broken (Light: 0 whole, 1 nearly broken). A plain orb where nothing better is drawn.</summary>
+    IOrb EmberCore(double size) => Orb("#ff7a2a", size * 0.45);
 }
 
 /// <summary>A boss's own view: a pose (sleep, wake, walk, windup, cleave,
@@ -332,8 +335,14 @@ public abstract class ZoneRuntime
     protected string? FirstTime(NpcDef def, bool dark) =>
         def.Said?.FirstOrDefault(l => l.Once == true && (l.Night == null || l.Night == dark)
             && !W.Npc(def.Id).Flag(SaidKey(l.Text)).Truthy && Rules.Test(l.When, C))?.Text;
-    /// <summary>Remember that a once-only line has been said.</summary>
-    protected void MarkSaid(NpcDef def, string text) => W.Npc(def.Id).Flags[SaidKey(text)] = true;
+    /// <summary>Remember that a once-only line has been said, and do what saying it does.</summary>
+    protected void MarkSaid(NpcDef def, string text)
+    {
+        var n = W.Npc(def.Id);
+        if (n.Flag(SaidKey(text)).Truthy) return;
+        n.Flags[SaidKey(text)] = true;
+        if (def.Said?.FirstOrDefault(l => l.Once == true && l.Text == text)?.Effects is { Count: > 0 } fx) Rules.Apply(fx, C);
+    }
     static string SaidKey(string text) => "said:" + VoiceLines.Hash(text);
     /// <summary>A person's actor told what to say about how things stand.</summary>
     protected void Wire(NpcActor a, Func<bool> dark)

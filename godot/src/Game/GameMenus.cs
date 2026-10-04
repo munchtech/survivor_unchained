@@ -68,6 +68,7 @@ public partial class Game
             "chapter" => new ChapterScreen(this),
             _ when kind.StartsWith("shop:") => new ShopScreen(this, kind[5..]),
             _ when kind.StartsWith("forge:") => new ForgeScreen(this, kind[6..]),
+            _ when kind.StartsWith("still:") => new StillRoom(this, kind[6..]),
             _ => new PauseScreen(this),
         };
         if (o is MapScreen && zone != null && Battle is { } b)
@@ -77,9 +78,10 @@ public partial class Game
             Journey.Walk(zone.Id, extent, b.Player.X, b.Player.Z);
         }
         screens.Show(o);
-        // The pause menu stops the world; any other screen only in a fight (an arena, the night's
-        // road), where the horde would not wait. Elsewhere the world goes on behind it (the owner).
-        scene.SimPaused = o is PauseScreen || zone?.Combat == true;
+        // The pause menu stops the world; any other screen only where the ember burns (an arena,
+        // the prologue's night road), where the horde would not wait. Elsewhere, the Verge by
+        // day too, the world goes on behind it (the owner's rule).
+        scene.SimPaused = o is PauseScreen || zone?.Ember == true;
         cam.ScreenShift = o.CameraShift;
         controls.Captured = true;
         hud.Prompt(promptShown = null);
@@ -175,8 +177,12 @@ public partial class Game
         if (chestsWaiting.Count == 0 || Overlay != null || inTransit || cine != null || scene == null || Battle is not { } b) return;
         hudMode = "chest";
         scene.SimPaused = true;
-        chestShown = new ChestCeremony(chestsWaiting.Dequeue(), b, scene, cam, hud);
+        chestShown = new ChestCeremony(chestsWaiting.Dequeue(), b, scene, cam, hud, Haptics);
         hud.Over(chestShown);
+        // (--shot: frames of each opening as it happens in a night, not only staged ones.)
+        Shots.Want("chest", 0.45);
+        Shots.Want("chest", 1.6);
+        Shots.Want("chest", 2.8);
     }
 
     /* ------------------------------------------------------------ draft -- */
@@ -365,6 +371,8 @@ public partial class Game
             case "stash": afterTalk = "stash"; return false;
             // A crafter's bench (docs/CRAFTING_DESIGN.md): the one who was talked to.
             case "craft": if (talkNpc is string who) afterTalk = $"forge:{who}"; return false;
+            // A still-room: the crafter's brews and wares, beside the world (Wenna's).
+            case "still": if (talkNpc is string brewer) afterTalk = $"still:{brewer}"; return false;
             case "maps": afterTalk = "maps"; return false;
             case "rest": afterTalk = "rest"; return false;
             case "fortune": Save("chapter"); afterTalk = "chapter"; return false;

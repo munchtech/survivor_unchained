@@ -128,7 +128,8 @@ public sealed class Autopilot
     void Field(double dt, Battle b)
     {
         var p = b.Player;
-        var boss = g.Zone is ArenaRun { BossScript: { } s } && s.E is { Alive: true } be && be.State != EnemyState.Dying ? s : null;
+        var script = g.Zone switch { ArenaRun a => a.BossScript, MapRun m => m.BossScript, _ => null };
+        var boss = script is { } s && s.E is { Alive: true } be && be.State != EnemyState.Dying ? s : null;
         (double X, double Z, double R) home = boss != null ? (boss.E.X, boss.E.Z, 10.0) : territory ??= (p.X, p.Z, 18);
         double rx = 0, rz = 0;
         int close = 0;

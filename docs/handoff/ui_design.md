@@ -1,218 +1,195 @@
-# Handoff: UI design lead (character creation first)
+# Handoff: UI design lead
 
 For the next UI design lead of Survivor Unchained. This file and the repository are all you get.
 Read `docs/team/README.md` first, then this, then `docs/team/ui_design.md` (the one-page status).
 
-Branch `worktree-agent-ac76f400913a109cd` (pushed; the main session merges it; no PRs). It includes the
-integration branch `claude/vigilant-galileo-l6jqyx` at 535bb60; 539 tests green. The previous handoffs
-are in git history: `git show 51350b1:docs/handoff/ui_design.md` (the UI merge and the owner's answers),
-`git show c14b3a2:docs/handoff/ui_design.md` (the second design pass), and `docs/handoff/ui_art.md`.
+Branch `worktree-agent-a69858664f1d3dd29` (pushed; the main session merges it; no PRs). It includes the
+integration branch `claude/vigilant-galileo-l6jqyx` at f56ee42. 565 tests green. Older handoffs are in git
+history: `git show 0b6e24b:docs/handoff/ui_design.md` (creation's first build) and `51350b1`, `c14b3a2`.
 
 ---
 
 ## 1. The owner, in their words
 
 - "AAA standard", "strive for excellent, above and beyond", "I don't want to polish, I want to create
-  perfection", "Do we have soul?". Never settle; remake rather than polish; check at full resolution.
+  perfection", "Do we have soul?". Never settle: remake rather than polish, and check at full resolution.
 - The heroine: "sex appeal and the male gaze are a driving factor, tho not at the cost of looking bad".
-- "can we customize hair or face in our create character yet? I couldn't find it", and later
-  "have you implemented character customization in create character yet? I still don't see them when
-  I open it up". That second time they were running an **old build**: the main checkout's compiled
-  C# was older than the work (see 4.1).
-- Standing rules, relayed by the coordinator:
-  - Full-page screens pause the world only in arena combat, and a full page is often not the best choice.
+- On customisation: "can we customize hair or face in our create character yet? I couldn't find it". They
+  were running an old build (see 3, Look).
+- On the pages, latest: the persistent panel framing and backdrop look "a little drab and low effort and
+  low def".
+- Standing rules:
+  - Full-page screens pause the world only in arena combat, and are often not the best choice.
   - Unknown map land must look better.
   - Self is not merged into the Pack screen.
   - Use painted art, the best available.
-- The coordinator, last: "Make sure the creation screen shows the face, hair and body options plainly."
 
 ## 2. The brief
 
-1. **The heroine's character creation, first:**
-   - A live 3D preview of her, turnable and zoomable to her face.
-   - Her five hairstyles with physics.
-   - Hair colour, skin tone, eye colour (iris tint).
-   - Face shaping from her 25 shape keys.
-   - Face paint.
-   - All of it saved, applied in play, and in painted AAA art.
-   - Build it to serve the **male hero** too: a new lead is making his body.
-2. Permissions from the main session, which owns the heroine pipeline. You may change:
-   - the eye shader;
-   - her actor code (`src/Actors`: People.cs, Loadouts, HerHair, HerFace);
-   - the save fields.
+1. **Character creation first.** The heroine's Look: hair, face, shape, paint, eyes and body, all of it
+   plain to find and beautiful. Build it so the male hero fits the same step.
+2. **Work with:**
+   - the face lead, who owns her face, hair and the Look's content (presets, sliders);
+   - the UI art lead, who paints what you lay out;
+   - the male hero lead.
+3. **The experience director's findings:** barks, the result screen, the table saying what a map pays,
+   and pausing. All four are done; their next asks are in 4.
+4. **The owner's "drab" note:** the layout side (where frames go, density, no flat black). The art lead
+   paints the pieces.
+5. **The old list:**
+   - announcements, the item card, journal deeds and codex, the HUD's dash pips and draught box;
+   - `docs/ui_review/`;
+   - UI_DESIGN section 10, and 7.2 rewritten for the new creation.
 
-   Don't touch `tools/assets/heroine_outfits.py` or the outfit files. If the face needs something from the
-   head tools (`tools/assets/heroine_face*`, `heroine_head.py`), ask the main session or the face lead.
-3. Then the experience director's four findings (section 4, step 5).
-4. Then the old list: announcements, the item card's own layout, the journal's deeds and codex pages,
-   and the HUD's dash pips and draught box. After that, re-make `docs/ui_review/` and write UI_DESIGN section 10.
-
-## 3. Done (all pushed)
+## 3. Done this session (all pushed)
 
 | Commit | What |
 |---|---|
-| bff4f7f | Creation's Look step. Saved and worn: her cut, face sliders, eyes, paint. Iris recolour in `heroine_eye.gdshader`. Face paint drawn as its own pass (`heroine_paint.gdshader`). `People.HerRestyle` (changes her in place). Turntable and face framing. FaceSheet tool |
-| 09ba5a8 | Merged the integration branch (People.cs conflict: both sides' Person fields kept) |
-| f62b66a | Face paint art (`tools/assets/heroine_paint.py`, 7 designs plus a brows mask). Look data per hero body (`heroes.<sex>`, `Lore.Hero`, `Loadouts.HeroKit`). Portrait key light. `--step N --part N` |
-| dbbd52e, 0ef164a, 320e7ac | Merge; status; paint textures imported BC7 with mipmaps |
-| (this commit) | Merged the integration branch at 535bb60; this handoff |
+| a3335e0 | **The Look is step II** (Calling, Look, Arms, Origin, Name). Woman or man is chosen on step I. A card under the callings offers the look with her portrait; Next names it. The Look opens on Hair. **Portrait cameos** by `tools/assets/creation_portraits.py` (`tools_scenes/Portraits.cs`). The **title says when the code was built** and warns when the build is older than the code. Plaque rule fix. Stat icons on Self |
+| b6f31f7 | **Face paints retuned** on her in game (`heroine_paint.py`). **Brows dyed** her hair's colour (a pass in `heroine_paint.gdshader`). The **Look's parts** are Hair, Face, Shape, Paint, Body. The male hero's `BeardStyle`, `HeroLook.Beards` and Beard row. A face to start from may set `skin` and `eyes` |
+| 62d0f16 | **Barks** (`Ui/Voices.cs`): drawn on screen, one line at a time per speaker, stacked and never crossing. The **arena result told in beats** (`Ui/ArenaResult.cs`): counts with ticks and a landing blow; what comes out a line at a time with its sound, best last; the build going to ash; a press tells the rest. **Pausing** only where the ember burns (`GameMenus.cs`, `zone.Ember`). Portraits always dressed |
+| 8a042a2 | **Pages remade frameless:** the live world blurred behind every page (`shaders/ui_backdrop.gdshader`, `Backdrop`). Panes are `Style.Column` (dark glass, gold hairline, fading down). `Style.Slab` is a wash, not iron |
+| 0165e94 | Merge with the experience director's result-screen wording (narrator lines as the last beats) |
+| f6124b1d | **The Wayfinder's table says what a map pays:** the materials drawn, the gear it leans to, the tome chance (`Arenas.TableTome`) |
 
-**What the Look step is.** It is step IV of five: Calling, Arms, Origin, **Look**, Name. Creation now
-opens on the heroine.
-- **Parts:** Body, Hair, Face and Paint, switched with the tabs, LT and RT, or `,` and `.` (Face and Paint
-  appear only for a hero body).
-- **Body:** Woman or Man, skin beads, the calling's colour sets, cloak beads.
-- **Hair:** her 5 cuts as cameos (a mask dyes each cameo the chosen colour), then 11 colour beads.
-- **Face:**
-  - 7 faces to start from, as cameos;
-  - 9 eye colours, as beads drawn as her own iris (`ui_iris.gdshader`);
-  - 25 sliders in four groups (Eyes, Nose, Mouth, Jaw), on a bipolar `Groove`, each capped where her
-    shape keys break (`looks.json`);
-  - "Back to <face>", which resets the sliders.
-- **Paint:** 8 cameos (bare plus 7 designs).
-- **Right plate:** the chosen thing's name and words, her whole likeness, and how to turn her and come near.
-- **The figure:**
-  - drag to turn her, the wheel to zoom, a double click to go to her face and back;
-  - on a pad, the right stick (`Controls.Look`);
-  - the camera frames full, head and shoulders, or face (`GameFront.UpdateCreate`): a longer lens, depth
-    of field behind her, and a warm key light on her face;
-  - the Hair part turns her to show the cut;
-  - changes are applied to her where she stands (`People.HerRestyle`), so her animation and her hair's
-    swing carry on.
-- **Name step:** the name, plus each step's answer read back, which goes back to that step when pressed.
+## 4. Next, in order
 
-**The data**, in `godot/data/content/looks.json` under `heroes.female`:
-- `cuts` (long, ponytail, braid, bob, pixie);
-- `eyes` (moss = her paint as it is, hazel, wolf, peat, sloe, cornflower, flint, frost, heather; each with
-  a colour and a `ring`);
-- `paints` (with `rough` and `metal`);
-- `faces` (own, highborn, vixen, doe, hardwon, fey, wildling);
-- `sliders` (`group`, `low`/`high` words, `min`/`max`).
-
-Also added: 5 hair colours (chestnut, strawberry, honey, platinum, plus the old six).
-
-**Saved and worn:**
-- `CharacterData` / `CreationChoice` keep `Face` (only the sliders moved), `Eyes` and `Paint`.
-- `PersonSpec` carries `Face`, `Eyes`, `EyeRing` and `Paint`.
-- `Loadouts.Of` gives her her cut at last. `Loadouts.HerHair` maps old saves' kit cuts to hers.
-- Tests: `godot/tests/LoadoutTests.cs` (the last two).
-
-## 4. In progress / next, in order
-
-1. **Make sure the owner sees it.**
-   - The likeliest cause last time: `godot/.godot/mono/temp/bin/Debug/SurvivorUnchained.dll` in the main
-     checkout was older than the work. Started from the project manager's Run or a saved exe, the old
-     build runs.
-   - Tell the main session the owner must open the project in the Godot editor and press Play (it builds
-     first), or run `dotnet build godot/SurvivorUnchained.csproj` once.
-   - Then shoot creation from the title as a player would. The key tour from the title stayed on step I:
-     its presses came before the fade into creation (`--keys` starts 2 s in), so it needs a later start.
-   - Make the Look step **plain**. It must not be missed: consider putting it before Origin, or having
-     Next from Arms land on it; label the medallion "Look: hair, face, body".
-2. **See each face paint on her in game.**
-   - Shoot the Look step's Paint part with each design (or FaceSheet with `"paint": "<id>"`).
-   - Tune `heroine_paint.py`. Its feature points (`BROW_R`, `CHEEK_R`, `TEMPLE_R`, ...) were read off
-     the sheet by eye; the eye openings, lips and brows are found in her paint.
-   - The paint pass's `VERTEX += NORMAL * 0.0001` may need more if it shows z-fighting.
-3. **Wire the brows.**
-   - `art/people/paint/brows.png`: grey is how dark each hair is, alpha is how much brow.
-   - Draw it as a pass under the paint, dyed her hair's colour, in `People.HerPaint` / `HerRestyle`.
-   - Her brows are painted copper into `heroine_head.jpg`, so they are wrong with every other hair colour.
-4. **Cameo portraits** at `art/ui/create/<sex>/{hair,face,paint}_<id>.png` (the code shows a glyph until
-   they exist).
-   - Render them with FaceSheet (`tools_scenes/FaceSheet.cs`: `SHEET` json, `CAM` face|head|body, `YAW`).
-   - Render cuts with grey hair (`#808080`) plus a `_mask.png` (hair white, all else black) so
-     `ui_cameo.gdshader` can dye them.
-   - Treat them painterly, then register them in `tools/comfy/ui_assets.json` and `UI_ART_BRIEF` for the
-     UI art lead.
-5. **The male hero** (lead `ae2de192cce8298ca`, `docs/team/hero_male.md`). He asked to agree fields; this
-   is not answered yet. Tell him:
-   - Use `CharacterData.Face/Eyes/Paint/HairStyle` as they are.
-   - Add his `heroes.male` block to looks.json (`cuts`, `eyes`, `paints`, `faces`, `sliders`, with his
-     `chin_cleft` and `brow_ridge`).
-   - Change `Loadouts.HeroKit` to return his kit when he wears his body. The Look step then offers it.
-   - His `BeardStyle` (none, stubble, short, full, braided) needs a Beard row in the Look step's Hair part.
-     Add it when his data lands: a cameo row like the cuts.
-   - Cameo art lives under `art/ui/create/male/`.
-6. **The experience director's four findings** (`a33f58e68e89e3ccf`; `docs/EXPERIENCE_AUDIT.md`; frames
-   in `docs/experience/`):
-   1. One bark at a time: barks from one speaker queue, barks from different speakers stack, and lines
-      never cross.
-   2. The result screen as the night's story, in beats: the medallions count up; what comes out, one line
-      at a time with a sound, best last; what stays dims; one line on how it went; skippable. He gives
-      the timings and sounds.
-   3. The Wayfinder's table says what a map pays: the spoils' lean in words, the chance of a tome, the
-      boss. This grows into the atlas (the owner's endgame: permanent maps on an atlas, plus ember arenas).
-   4. Pausing: arenas and the prologue's night road only, not the Verge by day (today's rule is `zone.Combat`).
-7. The old list: announcements, item card, journal deeds and codex, HUD dash and draught; `docs/ui_review/`;
-   UI_DESIGN 10 (and rewrite 7.2 for the new creation).
+1. **Launch blocker (coordinator, from the legal lead aa12c130ddf4b904c; see `docs/legal/LEGAL_BRIEF.md`).**
+   No licence notices ship yet. Add:
+   - a **Credits and Licences** screen, reached from the title (`TitleScreen`'s Credits panel in
+     `Ui/Front.cs` today is a short list) and from the pause menu (`Ui/Menus.cs`). Build it from
+     `public/assets/CREDITS.md`, which the provenance auditor completed. Make it as good as the new pages:
+     a frameless column over the blurred world, sectioned and scrollable;
+   - a **`licences/` folder in the export**:
+     - the Godot and .NET notices;
+     - the OFL licences for Cinzel, Alegreya and Alegreya Sans;
+     - the CC BY credits;
+     - an AI-use line.
+     Check `export_presets.cfg` for how extra files ship (include filters, or copying beside the exe).
+   - **Check the wording with the legal lead** before you push.
+2. **Place the UI art lead's new pieces as they land** (a1a394643aabfb169). Each file is at twice its shown size;
+   `UiArt` halves it. Margins come by message.
+   - `header.png`: same slice, (0,0,0,12) Tile.
+   - The backdrop as two layers: `backdrop_grain.png`, 512 and tiled; `backdrop_edges.png`, 1920x1080 and
+     stretched. They stack in `Backdrop` (Ornate.cs) over the blurred world, under the shade.
+   - `column_divider.png` (0,24,0,24) Tile, 24 wide, plus `column_divider_stone.png` drawn at its middle in
+     code. They go between page columns (the gaps of 24–30 px between `Pane` rects).
+   - `card_light.png` (20,20,20,20): for tooltips and the result's cards. `crest_card` stays on choice and
+     trait cards.
+   - `hero_plate.png` (56,56,56,56) Out 12: round Self's figure and the Pack's figure.
+   - `section_rule.png`: to replace the ◆ in `Section` (Ornate.cs).
+3. **The experience director (ad1f5623590e09883), two endgame screens.** Their shape is in
+   `docs/EXPERIENCE_AUDIT.md`, "A map's shape" (combat's MapRun; maps open at Vonnra's fortune).
+   - **A map's result**, loot-first, of the night's result's family:
+     - time, falls (of three), gear by rarity as item cards, charts won, materials, gold;
+     - the atlas line ("The Lampless Howes, tier 2: cleared, first time: a point").
+   - **The atlas** at the Wayfinder's table:
+     - the peoples by tier as a grid, each pair lit when its ruler falls;
+     - the chart in hand, its mods readable (prefixes against her, suffixes on her, what each pays);
+     - the points with five biases of three ranks each: the people's road, twice lit, the keeper's due,
+       the ruler's hoard, marked men.
+     - It must look promising half-empty: the beta shows tier 1 and one point.
+   - Also match their in-world chest ceremony (`ChestCeremony`, frames in
+     `docs/experience/chest_hoard_five_reels.jpg`).
+4. **After the face lead's new head** (ade92e8285938438f): new faces, 47 sliders in 8 groups.
+   - Order: their head, face paint and hair; then the main session's `heroine_outfits.py --body`, which
+     writes `heroine.glb`. The main session will tell you when it lands.
+   - Then run `python tools/assets/heroine_paint.py` and
+     `python tools/assets/creation_portraits.py`, and shoot the Look's five parts.
+   - `LoadoutTests.Her_looks_are_whole` expects 25 sliders; the face lead updates it.
+5. **The male hero** (ab82cbe99e2937ddd, who took over from ae2de192cce8298ca). When `heroes.male` and his builder land:
+   - extend `Portraits.cs`, which builds her only, and `creation_portraits.py --sex male`. His cuts and
+     beards render grey, each with a mask;
+   - shoot his Look.
+6. **Notes from the crafting lead (a7debf1459f14dfe7):**
+   - Wenna's still-room (`Ui/StillRoom.cs`, a 760-wide side panel): restyle freely.
+   - The forge's hammer moment (`ForgeScreen.Strike`), and a "Make me one" tile.
+   - **Two bugs:**
+     - the Pack's doll T-poses for about a frame on every Refresh;
+     - `G.Gear` rebuilds the world's PlayerView on every call, so the survivor blinks. Wear and Take off
+       still call it.
+   - Break-down feedback: show it in the pack's inspect area, since toasts are hidden under the pack.
+7. **Density on the pages.**
+   - Self's attribute pillars are half empty, and the right column's lower half is empty. A bigger figure
+     would help.
+   - The creation screen still uses the iron column and plate. Consider the frameless style there too.
+8. The old list (2.5).
 
 ## 5. Decisions (one line each, with why)
 
-- Creation opens on the heroine: the docs and the owner call the survivor "the heroine". A man remains a choice.
-- Look is per hero body, not per sex (`heroes.<sex>`, `HeroKit`), so the male hero gets the same step without a rewrite.
-- Slider ends are capped where her MakeHuman shape keys break (judged from renders at ±0.5 and ±1).
-  The UI maps the groove's ends to those caps.
-- Face paint is a pass of its own over her skin (`next_pass`), so the main session's skin shader is untouched.
-- Paint is drawn on a cylindrical unrolling of her face, then laid onto her UVs, so designs are drawn
-  where features are, whatever her UV layout.
-- Iris colour keeps the paint's fibres (its luminance) and dyes two zones (iris and the ring round the
-  pupil), as real eyes have.
-- The Figure slider was removed: it does nothing to her body.
-- Her face and paint changes apply in place, not by a rebuild: no stutter, and her hair keeps swinging.
+- Look is step II: the calling dresses her, then she is shaped; no one walks past it.
+- The Look opens on Hair. It's what players look for, and the faces were "kinda ugly" until the face lead's rework.
+- Face and Shape are separate parts, so 47 sliders get the whole column (agreed with the face lead).
+- Portraits are rendered from the game, so they stay true when her head changes. The painted pass goes over them.
+- Paint is laid thick where it is meant to be solid. AgX turns a thin blue coat violet and a thin red one rust.
+- Brows are found in her skin paint under a mask, then dyed. They are painted copper into her skin, and the face lead keeps them that way.
+- Barks are on screen, not Label3D: only then can lines be measured and kept from crossing.
+- A speaker's line stays until it has been read (1 s + 0.045 s per letter), then the next shows. Scripted beats stay near their timing.
+- Pausing follows `zone.Ember`: arenas and the prologue's night road are exactly where the ember burns.
+- Pages have no frames by default. Iron marks what you act on, and the world shows behind.
+- The title warns of a stale build by comparing `.cs` times with `.godot/mono/temp/bin/Debug/SurvivorUnchained.dll`. Godot loads the code from memory, so `Assembly.Location` is empty.
 
 ## 6. Failures and why
 
-- **`GetBoneGlobalPose` in `_Process` misses `SkeletonModifier3D` changes.** HerPose lifts her pelvis, so
-  the read head was about 0.2 m low. Fixed by recording the head pose on `Skeleton3D.SkeletonUpdated`
-  (`Person.HeadPose`).
-- **FaceSheet at `--resolution 1280x1280` saved the bottom of a cropped viewport.** Use a size the screen
-  holds (1600x900).
-- **The Bash tool refuses to run scripts here** (worktree isolation), and PowerShell has no heredoc and
-  blocks some `Remove-Item` patterns. Write Python or PowerShell scripts to the scratchpad with the Write
-  tool and run them.
-- **Writing a file with an empty Python edit cleared it once** (`heroine_paint.py` went to 0 bytes, from
-  a bad `newline=` argument). Check sizes after scripted edits.
-- **`git checkout -- "*.import"` before committing also reverted my new paint `.import` settings.**
-  Edit those after the checkout, then commit.
+- **The portrait tool built her naked.** It asked for outfit "stalker", but her outfits are warden, reaver,
+  arcanist and ranger, and an unknown name builds her bare. Caught before the legal survey. `Portraits.cs`
+  now refuses unknown names.
+- **AgX shifts hues.** Woad first showed lavender and blood rust. Tuning the hue barely helped; making the
+  paint opaque (`firm()` in `heroine_paint.py`) fixed it.
+- **The first brows looked painted on** (a flat colour in the mask's shape), and a light colour left copper
+  edges. Finding each hair in the skin paint fixed it. The paint has no mipmaps, so the shader samples a
+  ring of 16 points at 44 px and takes the brightest.
+- **Every result frame looked fully told.** I set `told` on any rebuild, and the harness took its frames
+  late (`--every` frames start at `--seconds`). Use `--seconds 3 --every 0.8`.
+- **Bash refuses some commands** (`git` in compound commands, `sed` with variables). Write Python edit
+  scripts to the scratchpad (`uid3/edlib.py` `edit(rel, [(old, new)])` keeps CRLF) and run them from PowerShell.
+- **.NET in PowerShell resolves relative paths against the process's start folder.** One failed
+  ReadAllText wrote an empty `src/ui/Front.cs` at the worktree root. Use absolute paths.
 
 ## 7. Gotchas
 
-- `godot/assets` must be a junction to `public/assets` with skip-worktree set: `cmd /c mklink /J godot\assets public\assets`.
-- `godot/override.cfg` (excluded from git) gives this worktree the user folder `SurvivorUnchainedUiLead2`.
-- A new worktree has no `.godot` import cache. Copy the main checkout's (robocopy, without `mono`), then
-  `dotnet build` and `--headless --import`.
-- Shots: `scratchpad/uid2/shot.ps1 NAME SECONDS [game args]`; pictures land in `godot/.shots/`.
-- Creation shots: `--new --step 3 --part N`; `--sex female` is the default now.
-- FaceSheet: `scratchpad/uid2/fs.ps1 SHEET.json OUTDIR [face|head|body] [yaw]`, with the `crop.py`,
-  `crop2.py` and `contact.py` contact sheets.
-- `heroine_paint.py` caches its maps in `%TEMP%\heroine_paint_cache` (keyed on heroine.glb's size and
-  time). `PAINT_PREVIEW=<dir>` saves each design over her face on the sheet, and `--sheet out.png` saves
-  her face unrolled.
-- The voice lead records one take per name in Front.cs's `Names`: tell them before changing it.
-- Files are CRLF in the working tree; scripted edits must keep the line ending.
+- **Setup:**
+  - Junction `godot/assets` to `public/assets` with skip-worktree.
+  - `override.cfg` gives the user folder `SurvivorUnchainedUiLead3`.
+  - Copy `.godot` (without `mono`) and `public/assets/**/*.import` from a recent worktree, then run
+    `dotnet build` and `--headless --import`. The import exits with code 255, but that's harmless.
+- **Never commit the many `.import` files the import dirties,** nor `.uid` files. The project doesn't track
+  them. Do commit the `.import` files of new art.
+- **Shots** (`scratchpad/uid3/shot.ps1 NAME SECONDS [args]`):
+  - `--new --step 1 --part N` for the Look's parts (0 Hair, 1 Face, 2 Shape, 3 Paint, 4 Body);
+  - `--quick --open character`;
+  - `--zone arena --open result --seconds 3 --every 0.8`;
+  - `--zone waystation --open maps`;
+  - `--quick --barks 0.5` for a crowd of barks.
+- **Portraits:** `python tools/assets/creation_portraits.py [hair|face|paint|look] [--raw DIR]`. Run a
+  headless import afterwards so new PNGs get `.import` files, and set `mipmaps/generate=true` in new ones.
+  `scratchpad/uid3/por.ps1 JOBS.json OUT` runs a custom job list (views: bust, head, face, eyes).
+- **Paints:** `scratchpad/uid3/paints.ps1 -which kohl,woad` paints, imports, photographs and grids them.
+  `PAINT_PREVIEW=dir` shows each design on her unrolled face.
+- **The Voice lead** records one take per name in Front.cs's `Names`; it is unchanged.
+- **Files are CRLF.**
 
-## 8. Collaborators
+## 8. Collaborators (ids current at handoff)
 
-- Main session (coordinator): merges branches and relays the owner. Message `main`.
-- Face lead `abfa9bb430ec2391e`: the coordinator asks you to continue creation with them.
-- UI art lead `a72467cac33063d3a` (`docs/team/ui_art.md`): paints what you register.
-- Male hero lead `ae2de192cce8298ca`: see 4.5.
-- Experience director `a33f58e68e89e3ccf`: the four findings.
-- Voice lead `a501b387a90d78b4e`: names.
-- See the roster in `docs/team/README.md` for the rest.
+- **Main session (coordinator):** merges and relays the owner. Message `main`.
+- **Face lead `ade92e8285938438f`:** her head, faces, sliders and hair (`docs/team/face.md`).
+- **UI art lead `a1a394643aabfb169`:** painting the six pieces in 4.2.
+- **Male hero `ab82cbe99e2937ddd`:** fields agreed (see 4.5).
+- **Experience director `ad1f5623590e09883`:** map result and atlas.
+- **Legal and Steam compliance `aa12c130ddf4b904c`:** creation never shows her bare (answered); licences screen.
+- **Crafting `a7debf1459f14dfe7`:** still-room, forge, pack bugs.
+- **Voice `a501b387a90d78b4e`:** names.
+- See `docs/team/README.md` for the rest.
 
 ## 9. Read first
 
 1. `docs/team/README.md`, this file, then `docs/team/ui_design.md`.
-2. `godot/src/Ui/CreateLook.cs` (the Look step, Cameo, Bead, Groove), and `godot/src/Ui/Front.cs`
-   (CreationDraft, CreateScreen).
-3. `godot/src/Game/GameFront.cs` (DressFigure, UpdateCreate), and `godot/src/Actors/People.cs` (LookOf,
-   HerRestyle, HerPaint, EyeColour, HerEyes).
-4. `godot/data/content/looks.json` (`heroes`), `godot/logic/Play/Loadout.cs` (HeroKit, HerHair), and
-   `godot/logic/World/Lore.cs` (HeroLook).
-5. `tools/assets/heroine_paint.py`, and `godot/shaders/heroine_paint.gdshader`, `heroine_eye.gdshader`,
-   `ui_cameo.gdshader`, `ui_iris.gdshader`.
-6. `docs/UI_DESIGN.md` (1.3, 6, 7.2) and `docs/UI_ART_BRIEF.md` (4.9).
+2. `godot/src/Ui/Overlay.cs` (Page, Pane, SidePanel), `godot/src/Ui/Style.cs` (Column, Slab), and
+   `godot/src/Ui/Ornate.cs` (Backdrop, Plaque, Section).
+3. `godot/src/Ui/Front.cs` (TitleScreen, CreationDraft, CreateScreen) and `godot/src/Ui/CreateLook.cs`.
+4. `godot/src/Ui/ArenaResult.cs`, `godot/src/Ui/Voices.cs` and `godot/src/Ui/MapTable.cs`.
+5. `tools/assets/creation_portraits.py` with `godot/tools_scenes/Portraits.cs`, and `tools/assets/heroine_paint.py`
+   with `godot/shaders/heroine_paint.gdshader`.
+6. `docs/legal/LEGAL_BRIEF.md` and `public/assets/CREDITS.md`, for the next job.
 
-HANDOFF READY: docs/handoff/ui_design.md on worktree-agent-ac76f400913a109cd@0b6e24b
+HANDOFF READY: docs/handoff/ui_design.md on worktree-agent-a69858664f1d3dd29 (its tip)

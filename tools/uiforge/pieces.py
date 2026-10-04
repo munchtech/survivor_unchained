@@ -595,7 +595,7 @@ def save(img, rel):
 
 
 BUILD = {
-    "header": ("frames/header.png", header),
+    # The header is the page's now (pages.py): worked leather and a forged rail.
     "pillar": ("frames/pillar.png", pillar),
     "crest_card": ("frames/crest_card.png", crest_card),
     "crest_row": ("frames/crest_row.png", crest_row),

@@ -882,6 +882,17 @@
    "stack": 99,
    "description": "Nails, buckles, a blade's broken half. What gear comes to when it is broken down, and what Brannoc tempers and remakes with."
   },
+  "wayfinder_chart": {
+   "id": "wayfinder_chart",
+   "name": "Wayfinder's Chart",
+   "kind": "tool",
+   "rarity": 0,
+   "icon": "map",
+   "value": 25,
+   "stack": 1,
+   "description": "A way through somewhere bad, inked on hide. Take it to the Wayfinder's table to walk it; it is used up when you do.",
+   "lore": "The Wayfinder's hand, or a copy of it. The marks in the margin are what the last one to walk it met."
+  },
   "health_draught": {
    "id": "health_draught",
    "name": "Health Draught",
@@ -894,6 +905,20 @@
    "consumable": {
     "heal": 0.4
    }
+  },
+  "moonpetal_draught": {
+   "id": "moonpetal_draught",
+   "name": "Moonpetal Draught",
+   "kind": "consumable",
+   "rarity": 2,
+   "icon": "moon_draught",
+   "value": 45,
+   "stack": 10,
+   "description": "Heals 60% of your health.",
+   "consumable": {
+    "heal": 0.6
+   },
+   "lore": "Silver, and cold as the night it was picked in."
   },
   "antidote": {
    "id": "antidote",
@@ -933,7 +958,28 @@
    "rarity": 3,
    "icon": "fang",
    "value": 60,
-   "description": "The old wolf's fang. Holloway would pay for it. Maeca would not want to see it."
+   "description": "The old wolf's fang. Holloway would pay for it. Maeca would not want to see it.",
+   "tags": [
+    "greymuzzle_fang"
+   ]
+  },
+  "shed_fur_braid": {
+   "id": "shed_fur_braid",
+   "name": "Braid of Shed Fur",
+   "kind": "amulet",
+   "rarity": 2,
+   "icon": "fur_braid",
+   "value": 90,
+   "description": "30% less from wolves.",
+   "mods": [
+    {
+     "stat": "from.wolf",
+     "kind": "flat",
+     "value": 0.3,
+     "source": "item"
+    }
+   ],
+   "lore": "Grey and grey and white, bitten off at the end."
   },
   "stream_sample": {
    "id": "stream_sample",
@@ -1189,6 +1235,28 @@
     "teaches": "vault"
    },
    "lore": "A stalker's hand-sewn book of snares and the art of not being there when they close."
+  },
+  "wennas_flask": {
+   "id": "wennas_flask",
+   "name": "Wenna's Flask",
+   "kind": "tool",
+   "rarity": 1,
+   "icon": "flask",
+   "value": 120,
+   "description": "Each night you sleep at the inn, Rook tops your health draughts up to three, a bitterroot a draught.",
+   "lore": "Pewter, a lid that fits, her mark on the bottom."
+  },
+  "slurry_jar": {
+   "id": "slurry_jar",
+   "name": "Slurry Jar",
+   "plural": "slurry jars",
+   "kind": "material",
+   "rarity": 2,
+   "icon": "slurry_jar",
+   "value": 30,
+   "stack": 10,
+   "description": "Steep a piece in it, from the pack: a grade past what the forge can do, or something green and strong with a price, or only the veins, or a grade lost. It sets the piece for good.",
+   "lore": "It's the GOOD stuff. Mostly. Snib would not drink it."
   }
  },
  "raritynames": [

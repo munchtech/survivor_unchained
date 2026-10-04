@@ -56,7 +56,7 @@ public static class MapOffers
         new("hunt", "Oath of the Hunt", "They are a fifth faster", "More ember and gear", Ember: 1.25, Gear: 1.2,
             Answer: "pace, a vault or a chain, things that hold them", Lean: ["fleet", "surefooted"], Rule: r => r.FoeSpeed = 1.2),
         new("iron", "Oath of Iron", "They shrug off a third of any blow that is not a critical", "Gear finer still", Gear: 1.5,
-            Answer: "critical strikes", Lean: ["keen", "cruel"], Rule: r => r.IronSkin = 0.33),
+            Answer: "critical strikes", Lean: ["keen", "cruel"], Rule: r => { r.IronSkin = 0.33; r.StaggerTaken = 2 / 3.0; }),
         new("moonless", "Oath of the Moonless", "Your light carries half as far", "Champions, and what they carry", Elites: 1.3, Gear: 1.3,
             Answer: "a lantern's reach", Lean: ["of_the_lantern"], Rule: r => r.Light = 0.5),
         new("ruin", "Oath of Ruin", "Their dead may burst where they fall", "Half again the ember", Ember: 1.5,
@@ -90,7 +90,7 @@ public static class MapOffers
                 new(22, "mb_ford_bell", ["grave_caller", "risen_bell"], ["gravebound", "bannered"]), // the bell
             ]),
         new("lamplings", "the Lamplings", new[] { ("lampling", 5.0), ("lampling_sapper", 1.5) }, "boss_lamplings", "Gutterwick", "Second-Best in the Dig", ["lampsnuffer", "of_the_salamander"],
-            [("lampling", 5, 0), ("lampling_wick", 3, 3), ("lampling_sapper", 3.5, 7), ("lampling_lamp", 1.5, 12), ("lampling_fuse", 1.2, 16)], "lampling",
+            [("lampling", 5, 0), ("lampling_wick", 3, 3), ("lampling_sapper", 3.5, 7), ("lampling_lamp", 1.5, 12), ("lampling_fuse", 1.2, 16)], "lampling_ganger",
             ["swift"],
             [
                 new(3, "mb_wick_mother", ["lampling_wick"], []),                   // the swarm from below

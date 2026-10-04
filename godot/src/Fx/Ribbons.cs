@@ -247,6 +247,20 @@ public partial class Ribbons : MeshInstance3D
             n++;
         }
         if (n < 2) return;
+        // A point just past the head at no width, so the head comes to a tip
+        // (cut off at its full width, an arrow's streak and a sweep's lead
+        // ended square).
+        if (n < MaxPts)
+        {
+            var on = tp[n - 1] - tp[n - 2];
+            float len = on.Length();
+            if (len > 1e-4f)
+            {
+                tp[n] = tp[n - 1] + on / len * Mathf.Min(len * 2, t.Width * 0.8f);
+                tw[n] = 0;
+                n++;
+            }
+        }
         // A trail no longer fed fades as a whole.
         float stale = Mathf.Clamp(1 - (now - t.Seen) / Mathf.Max(0.05f, t.Life), 0, 1);
         tw[0] = 0;

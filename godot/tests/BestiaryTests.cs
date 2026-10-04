@@ -113,10 +113,14 @@ public class BestiaryTests
     }
 
     [Fact]
-    public void The_oaths_pay_by_how_they_play_and_the_lamplings_send_a_digger()
+    public void The_oaths_pay_by_how_they_play_and_the_lamplings_send_a_ganger()
     {
         Assert.Equal(1.6, MapOffers.Oath("blight").Gear);
         Assert.Equal(1.3, MapOffers.Oath("champions").Gear);
-        Assert.Equal("lampling", MapOffers.People("lamplings").Champion);
+        // A ganger of the Dig until the Blasting-Cart has its art: a digger's twenty health made
+        // the Lamplings' heralds a four-second fight, so their nights asked nothing of a draft.
+        var champ = SurvivorUnchained.Content.Enemies.Get(MapOffers.People("lamplings").Champion);
+        Assert.Equal(Family.Lampling, champ.Family);
+        Assert.True(champ.Health >= 400);
     }
 }

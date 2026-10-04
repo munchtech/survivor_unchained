@@ -20,15 +20,44 @@ namespace SurvivorUnchained.Rpg;
  * before and after) and only then done, so the screen and the tests read the
  * same numbers. The numbers are data (data/content/crafting.json). */
 
-public enum Verb { Temper, WorkIn, Cage, Remake, Rekindle, BreakDown }
+public enum Verb { Temper, WorkIn, Cage, Remake, Rekindle, BreakDown, Brew, Buy, Commission, Set, Bind, Steep }
 
 public sealed class CraftStep { public int Iron, Gold, GoldPerRarity; public int[] Heat = { 0, 0 }; }
 public sealed class CageRules { public int Shards = 4, Gold = 30, Redraw = 1, Offered = 3, MinRarity = 2; public int[] Heat = { 5, 7 }; }
 public sealed class RekindleRules { public int Shards = 3, Gold = 20, GoldStep = 20; }
 /// <summary>What a material is worked into, how many it takes, who works it, and what the world can tell.</summary>
 public sealed class MaterialRule { public int Qty = 1; public List<string> Into = new(); public string Crafter = "brannoc"; public string? Marks; }
-/// <summary>A crafter's better terms, while the condition holds.</summary>
-public sealed class Easier { public Cond? When; public int HeatTop, TemperIron; public string? Line; }
+/// <summary>A crafter's better terms, while the condition holds. Needs says the standing in
+/// words where the condition is more than one ("trust or affection 30").</summary>
+public sealed class Easier { public Cond? When; public int HeatTop, TemperIron, EntryGrade, Gold; public string? Line, Needs; }
+/// <summary>The binder's terms: a shard and gold a grade bound, and the heat it costs the piece that takes it.</summary>
+public sealed class BindRules { public int ShardsPerGrade = 1, GoldPerGrade = 40; public int[] Heat = { 5, 7 }; public string Crafter = "vonnra"; }
+/// <summary>The one gamble (design 9): jars sold while the pump runs, and what steeping does, by weight.</summary>
+public sealed class SlurryRules
+{
+    public string Jar = "slurry_jar", Crafter = "snib", Mark = "slurried";
+    public int Gold = 30, PerDay = 3;
+    public Cond? Sold;
+    public Dictionary<string, int> Odds = new() { ["up"] = 25, ["slurry"] = 25, ["nothing"] = 30, ["down"] = 20 };
+    public List<string> Affixes = new();
+}
+/// <summary>Where one of a crafter's verbs opens later than the crafter does (Wenna's
+/// tinctures, after the stream's cure), and what they say until it does.</summary>
+public sealed class Gate { public Cond? When; public string? Line; }
+/// <summary>A draught brewed: what it takes, the gold, who brews it, and the crafter's lines for it
+/// (Say: its own lines in turn, "brew.antidote"; Moment: a line said the first time, "brew.moonpetal").</summary>
+public sealed class BrewRule { public string Draught = ""; public Dictionary<string, int> Takes = new(); public int Gold; public string Crafter = "wenna"; public string? Say, Moment; }
+/// <summary>Wenna's flask: bought once at her still-room; the inn tops the survivor's draughts up to
+/// a number while they sleep, a material a draught (The Witcher's refill: no brewing chore).</summary>
+public sealed class FlaskRules { public string Item = "wennas_flask", Draught = "health_draught", Material = "bitterroot", Crafter = "wenna"; public int Per = 1, Upto = 3, Gold = 120; }
+/// <summary>A base the smith can make from nothing, and the standing it asks (Calling: the
+/// weapons of the survivor's calling).</summary>
+public sealed class Pattern { public string? Id; public bool Calling; public Cond? When; public string? Needs; }
+/// <summary>"Make me one": a new piece, ready the next morning.</summary>
+public sealed class CommissionRules { public string Crafter = "brannoc"; public int Iron = 2, Rarity = 1, Days = 1; public List<Pattern> Patterns = new(); }
+/// <summary>A trophy set into a piece: a power of its own, outside the seams (Greymuzzle's
+/// fang), and what the world can tell of it. Moment keys its lines ("fang.set", "history.fang").</summary>
+public sealed class SettingRule { public string Affix = "", Crafter = "brannoc", Moment = "fang"; public string? Mark; public List<ItemKind> Kinds = new(); public int Gold; }
 public sealed class CrafterDef
 {
     public string Name = "", Place = "";
@@ -36,9 +65,13 @@ public sealed class CrafterDef
     /// <summary>When they will work for the survivor at all; when not right now (the forge banked).</summary>
     public Cond? When, Closed;
     public string? ClosedLine;
-    /// <summary>Their respect rises with work brought, a little a craft, to a limit.</summary>
+    /// <summary>Their regard rises with work brought, a little a craft, to a limit (the smith's
+    /// respect; the herbalist's affection).</summary>
     public int RespectPerCraft, RespectFromCraft;
+    public Axis Grows = Axis.Respect;
     public List<Easier> Easier = new();
+    /// <summary>Verbs that open later than the crafter does, by the verb's key.</summary>
+    public Dictionary<string, Gate> Gates = new();
     /// <summary>What they say (the story lead's words, in data): "greet" on sitting down at
     /// their bench; a verb's key ("temper") after that craft, in turn; "first.VERB" the first
     /// time, with "first.VERB.before" and ".after" as narration round it; "history.VERB" the
@@ -67,6 +100,13 @@ public sealed class CraftingRules
     public List<CraftStep> Remake = new();
     public int RemakeCap = 3, RemakeHeat = 4;
     public RekindleRules Rekindle = new();
+    public List<BrewRule> Brews = new();
+    public FlaskRules Flask = new();
+    public CommissionRules Commission = new();
+    /// <summary>Trophies that can be set into a piece, by the trophy's item id.</summary>
+    public Dictionary<string, SettingRule> Settings = new();
+    public BindRules Bind = new();
+    public SlurryRules Slurry = new();
     public Dictionary<string, MaterialRule> Materials = new();
     public Dictionary<string, CrafterDef> Crafters = new();
     public NightRules Night = new();
@@ -89,6 +129,15 @@ public sealed class Quote
     /// <summary>The affix that goes in (work in, a coal).</summary>
     public string? Affix;
     public string? Material;
+    /// <summary>The piece a binding unmakes for its power.</summary>
+    public string? Donor;
+    /// <summary>What a gamble came to, once done ("up", "slurry", "nothing", "down").</summary>
+    public string? Outcome;
+    /// <summary>What is made (a draught brewed, a base commissioned, a trophy set) and how many.</summary>
+    public string? Def;
+    public int Count = 1;
+    /// <summary>The grade an affix goes in at (work in), when the crafter's standing lifts it.</summary>
+    public int Grade = -1;
     /// <summary>Old iron and shards it gives back (breaking down).</summary>
     public Dictionary<string, int> Gives = new();
     public bool Ok => Blocked == null;
@@ -153,13 +202,14 @@ public static class Crafting
 
     public static CrafterDef? Crafter(string id) => Rules.Crafters.GetValueOrDefault(id);
 
-    /// <summary>Why a crafter will not work for the survivor now (null: they will).</summary>
-    public static string? Closed(string crafter, Ctx c)
+    /// <summary>Why a crafter will not work for the survivor now, or not at that verb yet (null: they will).</summary>
+    public static string? Closed(string crafter, Ctx c, Verb? v = null)
     {
         var d = Crafter(crafter);
         if (d == null) return "Nobody here does that.";
         if (!World.Rules.Test(d.When, c)) return d.ClosedLine ?? $"{d.Name} will not work for you yet.";
         if (d.Closed != null && World.Rules.Test(d.Closed, c)) return d.ClosedLine ?? $"{d.Name} is not working now.";
+        if (v is Verb verb && d.Gates.TryGetValue(verb.Key(), out var g) && !World.Rules.Test(g.When, c)) return g.Line ?? $"{d.Name} will not do that yet.";
         return null;
     }
 
@@ -171,11 +221,18 @@ public static class Crafting
 
     /// <summary>What the crafter says over a craft just done: the first time each verb is done for
     /// the survivor, its own line (and narration); after, the verb's lines in turn.</summary>
-    public static Said? Speak(CraftCtx x, string crafter, Verb v)
+    public static Said? Speak(CraftCtx x, string crafter, Verb v, string? moment = null, string? say = null)
     {
         if (Crafter(crafter) is null) return null;
         string key = v.Key();
         var n = x.World.Npc(crafter);
+        // A moment of its own, said once ("brew.moonpetal": the first moonpetal draught).
+        if (moment != null && !n.Flag($"said.{moment}").Truthy && Line(crafter, moment) is { } once)
+        {
+            n.Flags[$"said.{moment}"] = true;
+            n.Flags[$"first.{key}"] = true;
+            return new Said(Line(crafter, $"{moment}.before"), once, Line(crafter, $"{moment}.after"));
+        }
         string flag = $"first.{key}";
         if (!n.Flag(flag).Truthy && Line(crafter, flag) is { } first)
         {
@@ -183,25 +240,32 @@ public static class Crafting
             return new Said(Line(crafter, $"{flag}.before"), first, Line(crafter, $"{flag}.after"));
         }
         n.Flags[flag] = true;
-        return Line(crafter, key, (int)n.Flag("crafted").Number) is { } l ? new Said(null, l, null) : null;
+        return Line(crafter, say != null && Line(crafter, say) != null ? say : key, (int)n.Flag("crafted").Number) is { } l ? new Said(null, l, null) : null;
     }
 
     /// <summary>The line a craft writes on a piece, in the crafter's hand if they have one.</summary>
-    static string History(CraftCtx x, string crafter, string key, string fallback)
+    static string History(CraftCtx x, string crafter, string key, string fallback) => History(x.World, crafter, key, fallback);
+
+    /// <summary>The same, for a piece made in a conversation (Maeca's braid: a "made" give).</summary>
+    public static string History(WorldState w, string crafter, string key, string fallback = "Made by {who}, day {day}")
     {
         string who = Crafter(crafter)?.Name ?? crafter;
         // The night the coal came out of: what lets Act 3 name it.
-        string night = x.World.Fact("shards.from").Str is { Length: > 0 } s ? (s.StartsWith("The ") ? "the " + s[4..] : s) : "the night";
-        return (Line(crafter, $"history.{key}") ?? fallback).Replace("{who}", who).Replace("{day}", $"{x.World.Day}").Replace("{night}", night);
+        string night = w.Fact("shards.from").Str is { Length: > 0 } s ? (s.StartsWith("The ") ? "the " + s[4..] : s) : "the night";
+        return (Line(crafter, $"history.{key}") ?? fallback).Replace("{who}", who).Replace("{day}", $"{w.Day}").Replace("{night}", night);
     }
 
-    static (int HeatTop, int TemperIron) Terms(string crafter, Ctx c)
+    static (int HeatTop, int TemperIron, int EntryGrade) Terms(string crafter, Ctx c)
     {
-        int h = 0, i = 0;
+        int h = 0, i = 0, g = 0;
         foreach (var e in Crafter(crafter)?.Easier ?? new())
-            if (World.Rules.Test(e.When, c)) { h += e.HeatTop; i += e.TemperIron; }
-        return (h, i);
+            if (World.Rules.Test(e.When, c)) { h += e.HeatTop; i += e.TemperIron; g += e.EntryGrade; }
+        return (h, i, g);
     }
+
+    /// <summary>What the crafter's terms take off their prices, as a share (-0.1: a tenth less).</summary>
+    static double GoldTerms(string crafter, Ctx c) =>
+        (Crafter(crafter)?.Easier ?? new()).Where(e => e.Gold != 0 && World.Rules.Test(e.When, c)).Sum(e => e.Gold) / 100.0;
 
     /// <summary>A crafter's terms, those given now and those still to earn: each with what it
     /// does and the standing it asks ("respect 20"), so the forge can show the way up.</summary>
@@ -213,7 +277,9 @@ public static class Crafting
             var fx = new List<string>();
             if (e.HeatTop < 0) fx.Add($"his crafts cost up to {-e.HeatTop} heat less");
             if (e.TemperIron < 0) fx.Add($"tempering takes {Items.Several(Iron, -e.TemperIron)} less");
-            string? needs = e.When?.Rel is { Gte: double g } r ? $"{r.Axis.ToString().ToLowerInvariant()} {g:0}" : null;
+            if (e.EntryGrade > 0) fx.Add($"what is worked in goes in {e.EntryGrade} grade{(e.EntryGrade > 1 ? "s" : "")} finer");
+            if (e.Gold < 0) fx.Add(e.Gold == -10 ? "a tenth off every price" : $"{-e.Gold}% off every price");
+            string? needs = e.Needs ?? (e.When?.Rel is { Gte: double g } r ? $"{r.Axis.ToString().ToLowerInvariant()} {g:0}" : null);
             o.Add((e.Line ?? "", string.Join("; ", fx), needs, World.Rules.Test(e.When, c)));
         }
         return o;
@@ -223,7 +289,8 @@ public static class Crafting
     public static List<string> TermLines(string crafter, Ctx c) =>
         (Crafter(crafter)?.Easier ?? new()).Where(e => e.Line != null && World.Rules.Test(e.When, c)).Select(e => e.Line!).ToList();
 
-    static int Price(CraftCtx x, string crafter, int gold) => gold <= 0 ? 0 : Math.Max(1, (int)Math.Ceiling(gold * x.PriceMod(crafter)));
+    static int Price(CraftCtx x, string crafter, int gold) =>
+        gold <= 0 ? 0 : Math.Max(1, (int)Math.Ceiling(gold * x.PriceMod(crafter) * (1 + GoldTerms(crafter, x.Ctx))));
 
     /* ----------------------------------------------------------- quotes -- */
 
@@ -234,7 +301,7 @@ public static class Crafting
     {
         if (q.Blocked != null) return;
         // A banked forge quotes, so the survivor can plan by night, but does nothing.
-        if (q.Crafter != "" && Closed(q.Crafter, x.Ctx) is { } shut) { q.Blocked = shut; return; }
+        if (q.Crafter != "" && Closed(q.Crafter, x.Ctx, q.Verb) is { } shut) { q.Blocked = shut; return; }
         foreach (var (m, n) in q.Takes)
             if (Inventory.Count(x.Ch, m) < n) { q.Blocked = $"Needs {Items.Several(m, n)}; you have {Inventory.Count(x.Ch, m)}."; return; }
         if (x.Ch.Gold < q.Gold) q.Blocked = $"{q.Gold} gold; you have {Math.Floor(x.Ch.Gold)}.";
@@ -254,7 +321,7 @@ public static class Crafting
     {
         var q = Begin(Verb.Temper, crafter, "Temper");
         q.Index = index;
-        var (top, less) = Terms(crafter, x.Ctx);
+        var (top, less, _) = Terms(crafter, x.Ctx);
         if (index < 0 || index >= it.Affixes.Count) { q.Blocked = "Choose what to temper."; return q; }
         var a = it.Affixes[index];
         var def = Items.Affix(a.Id);
@@ -297,7 +364,8 @@ public static class Crafting
         var def = Items.Get(it.Def);
         if (!Rules.Materials.TryGetValue(material, out var r) || !r.Into.Contains(affix) || r.Crafter != crafter) { q.Blocked = "That doesn't go in that way."; return q; }
         if (!Fits(def, affix)) { q.Blocked = "It doesn't take to that kind of piece."; return q; }
-        int tier = EntryGrade(it);
+        var (top, _, finer) = Terms(crafter, x.Ctx);
+        int tier = q.Grade = Math.Min(Math.Max(Cap(it), EntryGrade(it)), EntryGrade(it) + finer);
         q.Title = $"Work in {Items.Find(material)?.Name ?? material}";
         q.After = Line(affix, tier);
         if (replace >= 0)
@@ -307,7 +375,6 @@ public static class Crafting
         }
         else if (OpenSeams(it) == 0) q.Blocked = Seams(it) == 0 ? "No seam to work it into: have it remade first." : "No open seam: choose what it goes in over.";
         if (it.Affixes.Where((a, i) => i != replace).Any(a => a.Id == affix)) q.Blocked ??= "It already has that.";
-        var (top, _) = Terms(crafter, x.Ctx);
         q.Takes[material] = r.Qty;
         q.Gold = Price(x, crafter, Rules.WorkIn.Gold + Rules.WorkIn.GoldPerRarity * Math.Max(0, it.Rarity));
         (q.HeatLo, q.HeatHi) = HeatRange(Rules.WorkIn.Heat, top);
@@ -372,7 +439,7 @@ public static class Crafting
         if (q.Blocked == null && at >= it.Affixes.Count) q.Blocked = "Choose what the coal goes in over.";
         if (at >= 0 && at < it.Affixes.Count) q.Before = Line(it.Affixes[at].Id, it.Affixes[at].Tier);
         q.After = a?.Text(0);
-        var (top, _) = Terms(crafter, x.Ctx);
+        var (top, _, _) = Terms(crafter, x.Ctx);
         q.Takes[Shard] = Rules.Cage.Shards;
         q.Gold = Price(x, crafter, Rules.Cage.Gold);
         (q.HeatLo, q.HeatHi) = HeatRange(Rules.Cage.Heat, top);
@@ -447,7 +514,349 @@ public static class Crafting
         return q;
     }
 
+    /* --------------------------------------------------- the still-room -- */
+
+    public static BrewRule? BrewOf(string draught) => Rules.Brews.FirstOrDefault(b => b.Draught == draught);
+
+    /// <summary>The draughts a crafter brews, in the order they are shown.</summary>
+    public static IEnumerable<BrewRule> Brews(string crafter) => Rules.Brews.Where(b => b.Crafter == crafter);
+
+    /// <summary>Brew: draughts from what the survivor brings, cheaper than the shop's, never
+    /// stronger (design 12.1: brewing makes them cheaper, not better).</summary>
+    public static Quote Brew(CraftCtx x, string draught, int count = 1)
+    {
+        var r = BrewOf(draught);
+        var q = Begin(Verb.Brew, r?.Crafter ?? "", "Brew");
+        q.Def = draught;
+        q.Count = count = Math.Max(1, count);
+        if (r == null) { q.Blocked = "Nobody here brews that."; return q; }
+        foreach (var (m, n) in r.Takes) q.Takes[m] = n * count;
+        q.Gold = Price(x, r.Crafter, r.Gold) * count;
+        q.Gives[draught] = count;
+        q.After = Items.Get(draught).Description;
+        if (Inventory.Room(x.Ch, draught) < count) q.Blocked = "No room in your pack for it.";
+        Afford(x, q);
+        return q;
+    }
+
+    /// <summary>How many of a draught could be brewed now, up to a limit (for "brew five").</summary>
+    public static int CanBrew(CraftCtx x, string draught, int most)
+    {
+        int n = 0;
+        while (n < most && Brew(x, draught, n + 1).Ok) n++;
+        return n;
+    }
+
+    public static bool HasFlask(CharacterData ch) => Inventory.Count(ch, Rules.Flask.Item) > 0;
+
+    /// <summary>Wenna's flask: bought once; from then on the inn keeps the survivor's draughts topped up.</summary>
+    public static Quote BuyFlask(CraftCtx x)
+    {
+        var f = Rules.Flask;
+        var q = Begin(Verb.Buy, f.Crafter, "Her flask");
+        q.Def = f.Item;
+        q.Gold = Price(x, f.Crafter, f.Gold);
+        q.Gives[f.Item] = 1;
+        if (HasFlask(x.Ch)) q.Blocked = "You have it.";
+        else if (Inventory.Room(x.Ch, f.Item) < 1) q.Blocked = "No room in your pack for it.";
+        Afford(x, q);
+        return q;
+    }
+
+    /// <summary>A night at the inn with the flask: the draughts topped up to the flask's number, a
+    /// material each. How many were filled, and whether it ran dry (some were wanted, none filled).</summary>
+    public static (int Filled, bool Dry) Refill(CharacterData ch)
+    {
+        var f = Rules.Flask;
+        if (!HasFlask(ch)) return (0, false);
+        int want = Math.Max(0, f.Upto - Inventory.Count(ch, f.Draught)), n = 0;
+        while (n < want && Inventory.Count(ch, f.Material) >= f.Per && Inventory.Room(ch, f.Draught) > 0)
+        {
+            Inventory.Take(ch, f.Material, f.Per);
+            Inventory.AddToPack(ch, Inventory.Make(ch, f.Draught));
+            n++;
+        }
+        return (n, want > 0 && n == 0);
+    }
+
+    /* ------------------------------------------------------- commissions -- */
+
+    /// <summary>The bases the smith can make, each with whether his respect opens it yet and what it asks.</summary>
+    public static List<(string Def, bool Open, string? Needs)> Patterns(CraftCtx x)
+    {
+        var o = new List<(string Def, bool Open, string? Needs)>();
+        foreach (var p in Rules.Commission.Patterns)
+        {
+            bool open = World.Rules.Test(p.When, x.Ctx);
+            var ids = p.Calling ? Callings.Archetype(x.Ch.Archetype).Weapons : p.Id != null ? new List<string> { p.Id } : new();
+            foreach (var id in ids)
+                if (Items.Find(id) != null && o.All(e => e.Def != id)) o.Add((id, open, open ? null : p.Needs));
+        }
+        return o;
+    }
+
+    /// <summary>What a commission makes, before it is made: the piece as it will come off the anvil.</summary>
+    public static ItemInstance Pattern(string def, string affix) =>
+        new() { Def = def, Rarity = Rules.Commission.Rarity, Affixes = new() { new AffixRoll { Id = affix, Tier = 0 } } };
+
+    /// <summary>What is on the smith's bench for the survivor, and the day it is ready (null: nothing).</summary>
+    public static (string Def, string Affix, string Material, int Ready)? Ordered(WorldState w) =>
+        w.Fact("commission.def").Str is { Length: > 0 } d
+            ? (d, w.Fact("commission.affix").Str ?? "", w.Fact("commission.material").Str ?? "", (int)w.Fact("commission.ready").Number)
+            : null;
+
+    /// <summary>"Make me one": a base the smith knows and a material's answer in it, Uncommon, its
+    /// affix at grade I and its heat full, ready the next morning (C20: the wait is part of it).</summary>
+    public static Quote Commission(CraftCtx x, string def, string material, string affix)
+    {
+        var c = Rules.Commission;
+        var q = Begin(Verb.Commission, c.Crafter, "Make it");
+        q.Def = def;
+        q.Material = material;
+        q.Affix = affix;
+        var d = Items.Find(def);
+        var pat = Patterns(x).FirstOrDefault(p => p.Def == def);
+        if (d == null || pat.Def == null) { q.Blocked = "He doesn't know that pattern."; return q; }
+        if (!Rules.Materials.TryGetValue(material, out var r) || r.Crafter != c.Crafter || !r.Into.Contains(affix) || !Fits(d, affix)) { q.Blocked = "That doesn't go in that way."; return q; }
+        var made = Pattern(def, affix);
+        q.After = $"{Inventory.Name(made)}: {Line(affix, 0)}";
+        q.Takes[material] = r.Qty;
+        q.Takes[Iron] = c.Iron;
+        // What the finished piece would fetch at the shop (Journey.Value's rule): the work is the price.
+        q.Gold = Price(x, c.Crafter, (int)Math.Round(d.Value * (1 + 0.6 * Math.Max(0, c.Rarity - d.Rarity)) * 1.15));
+        if (!pat.Open) q.Blocked = $"He'll make that at {pat.Needs}.";
+        else if (Ordered(x.World) != null) q.Blocked = "He has one on his bench for you already.";
+        Afford(x, q);
+        return q;
+    }
+
+    /// <summary>A new morning: a commission due today is done, and shows over the smith's head.</summary>
+    public static void Morning(WorldState w)
+    {
+        if (Ordered(w) is { } o && w.Day >= o.Ready) w.Facts["commission.done"] = true;
+    }
+
+    /// <summary>The morning after: what was ordered, handed over (null if nothing is ready, or the pack
+    /// is full and it waits on the bench).</summary>
+    public static ItemInstance? Collect(CraftCtx x)
+    {
+        if (Ordered(x.World) is not { } o || x.World.Day < o.Ready || Items.Find(o.Def) == null) return null;
+        var c = Rules.Commission;
+        var it = Inventory.Make(x.Ch, o.Def, rarity: c.Rarity, affixes: new() { new AffixRoll { Id = o.Affix, Tier = 0 } });
+        if (!Inventory.AddToPack(x.Ch, it)) return null;
+        if (Rules.Materials.GetValueOrDefault(o.Material)?.Marks is { } mark) (it.Marks ??= new()).Add(mark);
+        (it.History ??= new()).Add(History(x, c.Crafter, "commission", "Made for you by {who}, day {day}"));
+        foreach (var k in new[] { "commission.def", "commission.affix", "commission.material", "commission.ready", "commission.done" }) x.World.Facts.Remove(k);
+        return it;
+    }
+
+    /* ---------------------------------------------------------- settings -- */
+
+    /// <summary>The trophies the survivor carries that this crafter could set into this piece.</summary>
+    public static List<string> Settable(CharacterData ch, ItemInstance it, string crafter = "brannoc") =>
+        Rules.Settings.Where(kv => kv.Value.Crafter == crafter && Inventory.Count(ch, kv.Key) > 0 && kv.Value.Kinds.Contains(Items.Get(it.Def).Kind))
+            .Select(kv => kv.Key).ToList();
+
+    /// <summary>Set a trophy into a piece: its power goes in outside the seams, spends no heat, and the
+    /// world can tell (Greymuzzle's fang: the Pack knows it by sight).</summary>
+    public static Quote Set(CraftCtx x, ItemInstance it, string trophy, string crafter = "brannoc")
+    {
+        var q = Begin(Verb.Set, crafter, "Set it");
+        q.Def = trophy;
+        if (!Rules.Settings.TryGetValue(trophy, out var s) || s.Crafter != crafter) { q.Blocked = "Nobody here sets that."; return q; }
+        q.Affix = s.Affix;
+        q.After = Line(s.Affix, 0);
+        if (!s.Kinds.Contains(Items.Get(it.Def).Kind)) q.Blocked = "It won't sit in this kind of piece.";
+        else if (!Workable(it)) q.Blocked = "That's somebody's work. Leave it be.";
+        else if (it.Setting != null) q.Blocked = "Something is set in it already.";
+        q.Takes[trophy] = 1;
+        q.Gold = Price(x, crafter, s.Gold);
+        Afford(x, q);
+        return q;
+    }
+
+    /* ----------------------------------------------------------- binding -- */
+
+    /// <summary>A power that can be lifted out of one piece into another: a plain affix. Coals are
+    /// the forge's, a worn skill is its piece's, a trophy's power and the slurry's will not let go.</summary>
+    public static bool Bindable(AffixDef? d) => d != null && d.Kindled == null && d.Grants == null && !d.Unique;
+
+    /// <summary>What the survivor carries that could give this piece a power: each piece in the pack and
+    /// the place of a bindable affix in it that this kind of piece takes.</summary>
+    public static List<(ItemInstance Donor, int Index)> Donors(CharacterData ch, ItemInstance it)
+    {
+        var kind = Items.Get(it.Def).Kind;
+        var o = new List<(ItemInstance, int)>();
+        foreach (var d in ch.Pack)
+        {
+            if (d == null || d.Uid == it.Uid || Items.SlotFor(Items.Get(d.Def)) == null) continue;
+            for (int k = 0; k < d.Affixes.Count; k++)
+                if (Items.Affix(d.Affixes[k].Id) is { } a && Bindable(a) && a.Slots.Contains(kind)) o.Add((d, k));
+        }
+        return o;
+    }
+
+    /// <summary>Bind: one power lifted out of a donor and set in this piece at the donor's grade (to this
+    /// piece's cap), in an open seam or in place of a chosen affix. The donor is unmade (design 7.3).</summary>
+    public static Quote Bind(CraftCtx x, ItemInstance it, ItemInstance donor, int donorIndex, int replace = -1, string? crafter = null)
+    {
+        var r = Rules.Bind;
+        crafter ??= r.Crafter;
+        var q = Begin(Verb.Bind, crafter, "Bind");
+        q.Donor = donor.Uid;
+        q.Index = replace;
+        if (donorIndex < 0 || donorIndex >= donor.Affixes.Count) { q.Blocked = "Choose what to lift out of it."; return q; }
+        var roll = donor.Affixes[donorIndex];
+        var a = Items.Affix(roll.Id);
+        q.Affix = roll.Id;
+        q.Grade = Math.Min(roll.Tier, Math.Max(Cap(it), 0));
+        q.After = Line(roll.Id, q.Grade);
+        if (a?.Kindled != null) { q.Blocked = Line(crafter, "bind.coal") ?? "That one is caged. It will not come out."; return q; }
+        if (!Bindable(a)) { q.Blocked = "That will not let go of what holds it."; return q; }
+        if (!Fits(Items.Get(it.Def), roll.Id)) { q.Blocked = "It doesn't take to that kind of piece."; return q; }
+        if (replace >= 0)
+        {
+            if (replace >= it.Affixes.Count) { q.Blocked = "Choose what it goes in over."; return q; }
+            q.Before = Line(it.Affixes[replace].Id, it.Affixes[replace].Tier);
+        }
+        else if (OpenSeams(it) == 0) q.Blocked = Seams(it) == 0 ? "No seam to hold it: have it remade first." : "No open seam: choose what it goes in over.";
+        if (it.Affixes.Where((b, i) => i != replace).Any(b => b.Id == roll.Id)) q.Blocked ??= "It already has that.";
+        if (Inventory.Find(x.Ch, donor.Uid) is not { InPack: true }) q.Blocked ??= "Take it off first: what gives its power is unmade.";
+        var (top, _, _) = Terms(crafter, x.Ctx);
+        q.Takes[Shard] = r.ShardsPerGrade * (q.Grade + 1);
+        q.Gold = Price(x, crafter, r.GoldPerGrade * (q.Grade + 1));
+        (q.HeatLo, q.HeatHi) = HeatRange(r.Heat, top);
+        Hot(it, q);
+        Afford(x, q);
+        return q;
+    }
+
+    /* ----------------------------------------------------------- the slurry -- */
+
+    public static bool Slurried(ItemInstance it) => it.Marks?.Contains(Rules.Slurry.Mark) == true;
+
+    /// <summary>Snib sells jars while the pump runs and he has been met: three a day.</summary>
+    public static Quote BuyJar(CraftCtx x)
+    {
+        var s = Rules.Slurry;
+        var q = Begin(Verb.Buy, s.Crafter, "A jar");
+        q.Def = s.Jar;
+        q.Gold = Price(x, s.Crafter, s.Gold);
+        q.Gives[s.Jar] = 1;
+        var w = x.World;
+        int sold = (int)w.Fact("slurry.day").Number == w.Day ? (int)w.Fact("slurry.sold").Number : 0;
+        if (!World.Rules.Test(s.Sold, x.Ctx)) q.Blocked = "Nobody is selling it.";
+        else if (sold >= s.PerDay) q.Blocked = Line(s.Crafter, "jar.none") ?? "No more today.";
+        if (q.Blocked == null && x.Ch.Gold < q.Gold) q.Blocked = $"{q.Gold} gold; you have {Math.Floor(x.Ch.Gold)}.";
+        return q;
+    }
+
+    /// <summary>A jar bought: paid, in the pouch, and counted against the day's three.</summary>
+    public static bool Buy(CraftCtx x, Quote q)
+    {
+        if (!q.Ok || q.Def != Rules.Slurry.Jar || x.Ch.Gold < q.Gold) return false;
+        var w = x.World;
+        int sold = (int)w.Fact("slurry.day").Number == w.Day ? (int)w.Fact("slurry.sold").Number : 0;
+        x.Ch.Gold -= q.Gold;
+        Inventory.AddToPack(x.Ch, Inventory.Make(x.Ch, q.Def, 1));
+        w.Facts["slurry.day"] = w.Day;
+        w.Facts["slurry.sold"] = sold + 1;
+        return true;
+    }
+
+    /// <summary>Steep: a piece in a jar of the Dig's slurry, by the survivor's own hand. One affix past the
+    /// forge's cap (to the bright grade), a slurry affix past the seams, only the veins, or a grade lost;
+    /// then it is set for good (design 9). Said in full before the jar is opened.</summary>
+    public static Quote Steep(CraftCtx x, ItemInstance it)
+    {
+        var s = Rules.Slurry;
+        var q = Begin(Verb.Steep, "", "Steep in slurry");
+        q.Takes[s.Jar] = 1;
+        if (!Workable(it)) q.Blocked = "That's somebody's work. Leave it be.";
+        else if (Slurried(it)) q.Blocked = "It has been steeped. Once is all it takes.";
+        else if (Seams(it) == 0) q.Blocked = "Too plain a piece: there is nothing in it for the slurry to take.";
+        else if (Inventory.Count(x.Ch, s.Jar) < 1) q.Blocked = "You have no slurry.";
+        q.HeatLo = q.HeatHi = it.Heat ?? 0;
+        q.After = "It is set for good after, whatever it comes to.";
+        return q;
+    }
+
+    /// <summary>The chances of each outcome, as shares of one (for the card that says them).</summary>
+    public static IEnumerable<(string Outcome, double Chance)> Odds()
+    {
+        double total = Math.Max(1, Rules.Slurry.Odds.Values.Sum());
+        return Rules.Slurry.Odds.Select(kv => (kv.Key, kv.Value / total));
+    }
+
+    static void Steeped(CraftCtx x, ItemInstance it, Quote q, Rng rng)
+    {
+        var s = Rules.Slurry;
+        string pick = rng.Weighted(s.Odds.Keys.ToList(), k => s.Odds[k]);
+        var plain = it.Affixes.Select((a, i) => (a, i)).Where(p => Bindable(Items.Affix(p.a.Id))).ToList();
+        // Nothing in it to raise or lower: what would have happened to an affix happens past the seams.
+        if (pick is "up" or "down" && plain.Count == 0) pick = pick == "up" ? "slurry" : "nothing";
+        switch (pick)
+        {
+            case "up":
+            {
+                // The lowest-raised first would be kind; the slurry is not: any of them, past the cap, to the bright grade.
+                var (a, _) = plain[rng.Int(0, plain.Count - 1)];
+                a.Tier = Math.Min(4, a.Tier + 1);
+                q.Affix = a.Id;
+                break;
+            }
+            case "down":
+            {
+                var (a, _) = plain[rng.Int(0, plain.Count - 1)];
+                if (a.Tier > 0) a.Tier--; else pick = "nothing";
+                q.Affix = a.Id;
+                break;
+            }
+            case "slurry":
+            {
+                var pool = s.Affixes.Where(id => Items.Affix(id) is { } d && d.Slots.Contains(Items.Get(it.Def).Kind) && it.Affixes.All(b => b.Id != id)).ToList();
+                if (pool.Count == 0) { pick = "nothing"; break; }
+                var id = pool[rng.Int(0, pool.Count - 1)];
+                it.Affixes.Add(new AffixRoll { Id = id, Tier = 0 });
+                q.Affix = id;
+                break;
+            }
+        }
+        q.Outcome = pick;
+        it.Heat = 0;
+        (it.Marks ??= new()).Add(s.Mark);
+        (it.History ??= new()).Add(History(x, s.Crafter, "steep", "Steeped in the Dig's slurry, day {day}"));
+    }
+
     /* ------------------------------------------------------------- doing -- */
+
+    /// <summary>Do a quoted craft that makes something new rather than working a piece: a brew, the
+    /// flask, a commission put on the bench. False if it could not be done.</summary>
+    public static bool Make(CraftCtx x, Quote q)
+    {
+        if (!q.Ok || q.Verb is not (Verb.Brew or Verb.Buy or Verb.Commission)) return false;
+        if (q.Verb == Verb.Buy && q.Def == Rules.Slurry.Jar) return Buy(x, q);
+        var ch = x.Ch;
+        if (q.Crafter != "" && Closed(q.Crafter, x.Ctx, q.Verb) is not null) return false;
+        foreach (var (m, n) in q.Takes) if (Inventory.Count(ch, m) < n) return false;
+        foreach (var (m, n) in q.Gives) if (Inventory.Room(ch, m) < n) return false;
+        if (ch.Gold < q.Gold || q.Verb == Verb.Commission && Ordered(x.World) != null) return false;
+        foreach (var (m, n) in q.Takes) Inventory.Take(ch, m, n);
+        ch.Gold -= q.Gold;
+        foreach (var (m, n) in q.Gives)
+            for (int k = 0; k < n; k++) Inventory.AddToPack(ch, Inventory.Make(ch, m));
+        if (q.Verb == Verb.Commission)
+        {
+            var w = x.World;
+            int ready = w.Day + Rules.Commission.Days;
+            w.Facts["commission.def"] = q.Def;
+            w.Facts["commission.affix"] = q.Affix;
+            w.Facts["commission.material"] = q.Material;
+            w.Facts["commission.ready"] = ready;
+        }
+        if (q.Verb != Verb.Buy) Worked(x, q.Crafter);
+        return true;
+    }
 
     /// <summary>Do what was quoted (quoted afresh, so the numbers are the ones the survivor
     /// saw). The heat spent is rolled in the quoted range; at none the piece is set. False if
@@ -463,7 +872,16 @@ public static class Crafting
             foreach (var (m, n) in q.Gives) Inventory.AddToPack(ch, Inventory.Make(ch, m, n));
             return true;
         }
-        if (q.Crafter != "" && Closed(q.Crafter, x.Ctx) is not null) return false;
+        if (q.Verb is Verb.Brew or Verb.Buy or Verb.Commission) return Make(x, q);
+        if (q.Verb == Verb.Steep)
+        {
+            if (Inventory.Count(ch, Rules.Slurry.Jar) < 1 || Slurried(it)) return false;
+            Inventory.Take(ch, Rules.Slurry.Jar, 1);
+            Steeped(x, it, q, rng);
+            return true;
+        }
+        if (q.Verb == Verb.Bind && (q.Donor == null || Inventory.Find(ch, q.Donor) is not { InPack: true })) return false;
+        if (q.Crafter != "" && Closed(q.Crafter, x.Ctx, q.Verb) is not null) return false;
         foreach (var (m, n) in q.Takes) if (Inventory.Count(ch, m) < n) return false;
         if (ch.Gold < q.Gold) return false;
         foreach (var (m, n) in q.Takes) Inventory.Take(ch, m, n);
@@ -476,7 +894,7 @@ public static class Crafting
                 break;
             case Verb.WorkIn:
             {
-                var roll = new AffixRoll { Id = q.Affix!, Tier = EntryGrade(it) };
+                var roll = new AffixRoll { Id = q.Affix!, Tier = q.Grade >= 0 ? q.Grade : EntryGrade(it) };
                 if (q.Index >= 0) it.Affixes[q.Index] = roll; else it.Affixes.Add(roll);
                 if (q.Material != null && Rules.Materials.GetValueOrDefault(q.Material)?.Marks is { } mark && !(it.Marks?.Contains(mark) ?? false))
                     (it.Marks ??= new()).Add(mark);
@@ -509,6 +927,25 @@ public static class Crafting
                 it.Rekindled = (it.Rekindled ?? 0) + 1;
                 cost = 0;
                 break;
+            case Verb.Bind:
+            {
+                var roll = new AffixRoll { Id = q.Affix!, Tier = q.Grade };
+                if (q.Index >= 0) it.Affixes[q.Index] = roll; else it.Affixes.Add(roll);
+                // The donor is unmade: held over the lamp until it lets go.
+                var d = Inventory.Find(ch, q.Donor!)!;
+                ch.Pack[d.Index] = null;
+                (it.History ??= new()).Add(History(x, q.Crafter, "bind", "Bound by {who}, day {day}"));
+                break;
+            }
+            case Verb.Set:
+            {
+                var s = Rules.Settings[q.Def!];
+                it.Setting = s.Affix;
+                if (s.Mark != null && !(it.Marks?.Contains(s.Mark) ?? false)) (it.Marks ??= new()).Add(s.Mark);
+                (it.History ??= new()).Add(History(x, q.Crafter, s.Moment, "Set by {who}, day {day}"));
+                cost = 0;
+                break;
+            }
         }
         if (cost > 0) it.Heat = Math.Max(0, (it.Heat ?? 0) - cost);
         Worked(x, q.Crafter);
@@ -522,7 +959,7 @@ public static class Crafting
         var n = x.World.Npc(crafter);
         double done = n.Flag("crafted").Number;
         n.Flags["crafted"] = done + 1;
-        if (done * d.RespectPerCraft < d.RespectFromCraft) n.Respect = Math.Min(100, n.Respect + d.RespectPerCraft);
+        if (done * d.RespectPerCraft < d.RespectFromCraft) n[d.Grows] = Math.Min(100, n[d.Grows] + d.RespectPerCraft);
     }
 
     /* ---------------------------------------------------------- the night -- */
@@ -532,6 +969,11 @@ public static class Crafting
 
     /// <summary>Ember shards for the ember reached, the tier, the minutes stayed past the half
     /// hour and a story fight won; the people's own for their champions slain. A fall keeps half.</summary>
+    /// <summary>What a night among a people can leave in the fist (Night's materials), in the
+    /// order a table says them: ember shards, then the people's own.</summary>
+    public static List<string> NightMaterials(string people) =>
+        new[] { Shard }.Concat((Rules.Night.Peoples.GetValueOrDefault(people) ?? new()).Select(p => p.Material)).Distinct().ToList();
+
     public static NightYield Night(string people, int tier, bool story, int ember, double minutesPast, bool won, bool fell,
         IReadOnlyDictionary<Family, int> champions)
     {
