@@ -147,16 +147,27 @@ public class BossTests
         Assert.False(herald!.Boss);
     }
 
-    [Fact]
-    public void A_boss_cannot_be_rushed_past_its_floors()
+    /// <summary>Every ruler, wired as the game wires it, against an absurd build that also does
+    /// each end's chore at once (stands over the Barrow Lord, chases Grimtunnel to his hole): a
+    /// late build killed the Barrow Lord in about 35 s, since his laying-down, Grimtunnel's going
+    /// down and Greymuzzle's going did not wait for the last phase's floor.</summary>
+    [Theory]
+    [InlineData("pack", null, null, false)]
+    [InlineData("pack", "boss_pack", "Greymuzzle", true)]
+    [InlineData("dead", null, null, false)]
+    [InlineData("lamplings", null, null, false)]
+    [InlineData("lamplings", "grimtunnel_roused", "Grimtunnel", false)]
+    [InlineData("kerchiefs", null, null, false)]
+    public void A_boss_cannot_be_rushed_past_its_floors(string people, string? def, string? name, bool spare)
     {
-        var f = At30("kerchiefs");
+        var f = At30(people, game: true, boss: def, bossName: name, spare: spare);
         var boss = Boss(f);
         double start = f.B.Time;
-        // An absurd build: everything it has, every tick.
+        // An absurd build: everything it has, every tick, and always where the end asks to be.
         Step(f, 200, _ =>
         {
-            if (boss.Alive && boss.State != EnemyState.Dying) f.B.HitEnemy(boss, boss.MaxHp * 0.2, School.Physical, [Tag.Physical], new HitOpts { NoCrit = true });
+            if (boss.Alive && boss.Boss && boss.State != EnemyState.Dying) f.B.HitEnemy(boss, boss.MaxHp * 0.2, School.Holy, [Tag.Holy], new HitOpts { NoCrit = true });
+            if (boss.Alive && boss.Boss) { f.B.Player.X = boss.X + 1; f.B.Player.Z = boss.Z; }
         });
         Assert.True(f.Zone.Won);
         double took = f.B.Time - start;
