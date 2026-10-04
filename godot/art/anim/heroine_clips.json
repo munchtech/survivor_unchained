@@ -267,6 +267,24 @@
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: run_jump_attack.bvh",
 		"speed": 0.0
 	},
+	"lie_side_wake": {
+		"hold": true,
+		"layer": "full",
+		"length": 7.0,
+		"licence": "own work",
+		"loop": false,
+		"note": "keyed (C01): on her right side, then up onto the elbow",
+		"source": "keyed (tools/anim)"
+	},
+	"reach_coals": {
+		"hold": true,
+		"layer": "full",
+		"length": 4.19999980926514,
+		"licence": "own work",
+		"loop": false,
+		"note": "keyed (C01): kneeling, the right hand held out over the fire, palm down",
+		"source": "keyed (tools/anim)"
+	},
 	"reaver_show": {
 		"layer": "full",
 		"length": 2.40000009536743,
@@ -350,6 +368,15 @@
 		"speed": 5.1,
 		"steps": 2.0,
 		"weapon": "sword+shield"
+	},
+	"sit_back_heels": {
+		"hold": true,
+		"layer": "full",
+		"length": 6.0,
+		"licence": "own work",
+		"loop": false,
+		"note": "keyed (C01): from the elbow to kneeling on her heels, looking at her hands",
+		"source": "keyed (tools/anim)"
 	},
 	"sit_log": {
 		"layer": "full",

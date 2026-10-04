@@ -70,6 +70,9 @@ public interface IZoneHost
     void Say(string text, string? who = null, double seconds = 4);
     void Toast(Toast t);
     void Announce(Announcement a);
+    /// <summary>A chest opened in a fight: the game stages it (ChestCeremony); a host without a
+    /// stage says what came out in a line.</summary>
+    void Chest(ChestOpened c) => Announce(new Announcement(c.Hoard ?? "A chest", string.Join(" · ", c.Items.Select(i => i.Name)), "reward", 2.8));
     void Talk(string npc);
     void Travel(string zone, string? caption = null, string? sub = null);
     /// <summary>Later, in game time (forgotten if the zone is left first).</summary>

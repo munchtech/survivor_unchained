@@ -59,7 +59,10 @@ public partial class ZoneView : Node3D
         Landmarks = new Landmarks(z);
         AddChild(Landmarks.Root);
         Perf.Lap("landmarks");
-        if (grassAround is Vector2 at) GrowGrass(at, grassRadius);
+        // An ember arena's ring, its mist and its streams.
+        if (z.Place != null) { AddChild(ArenaEdge.Build(z)); Perf.Lap("arena edge"); }
+        // (An arena whose place grows none, the Dig, has no meadow at all.)
+        if (grassAround is Vector2 at && (z.Place == null || ArenaGround.GrowsGrass(z.Place.Id))) GrowGrass(at, grassRadius);
         Perf.Lap("grass");
 
         var meta = z.Meta;

@@ -223,6 +223,25 @@ public partial class BattleFx : Node3D
         flashes[best] = (l, 0, life, peak);
     }
 
+    /// <summary>A chest bursting open (ChestCeremony): its light up out of it in a column, a
+    /// fountain of glints, a ring thrown across the ground (never a filled disc). A richer chest
+    /// throws more of each.</summary>
+    public void ChestBurst(Vector3 at, Color color, int count)
+    {
+        float k = count >= 5 ? 1.5f : count >= 3 ? 1.2f : 1f;
+        Flash(at + Vector3.Up * 1.4f, color, 12 * k, 0.7f, 10);
+        Pillar(at, 8 * k, 0.32f * k, color * 0.8f, 1.2f);
+        Waves.Add(at + Vector3.Up * 0.3f, 4 * k, 0.55f, color, 0.6f);
+        for (int i = 0; i < (int)(46 * k); i++)
+        {
+            float a = R() * Mathf.Tau, out_ = 0.4f + R() * 1.6f;
+            bool glint = i % 3 == 0;
+            Sparks.Spawn(at + new Vector3(Mathf.Cos(a) * 0.25f, 0.45f, Mathf.Sin(a) * 0.25f), new Vector3(Mathf.Cos(a) * out_, 4 + R() * 5 * k, Mathf.Sin(a) * out_),
+                1.1f + R() * 0.8f, glint ? 0.26f : 0.09f, new Color(2.6f, 2.0f, 1.1f), new Color(2.2f, 0.7f, 0.15f), 0.02f, 4, 1.2f,
+                sprite: glint ? Sprites.Of("star") : 0, spinV: 3);
+        }
+    }
+
     public void Burst(Vector3 at, School school, int n, float speed, float up = 1.5f, float size = 0.09f, float life = 0.45f, float gravity = 6)
     {
         var pal = Palette.Of(school);
@@ -636,13 +655,15 @@ public partial class BattleFx : Node3D
                     {
                         // A champion's fall is brief and no wider than its body's reach (the experience
                         // director's rule: about 3 m, a flash under 0.15 s, the dust down in 0.6 s, never
-                        // bigger than a level-up); only the boss's may fill the screen.
+                        // bigger than a level-up). A boss's is the fall's (Ev.Victory): its light and rings,
+                        // with no flat blast of its own under them (one fourteen metres across filled the peak).
                         // Champions falling together are told by the first: the rest burst light and
                         // small (eight full blasts at once washed the whole crowd white).
                         bool first = e.Boss || time - lastFall > 0.3;
                         if (first) lastFall = time;
                         Flash(V(e.X, gy + 1.5, e.Z), pal.Light, e.Boss ? 16 : first ? 10 : 4, e.Boss ? 0.6f : 0.15f, e.Boss ? 12 : 8);
-                        if (!Blast(e.X, e.Z, e.School, e.Boss ? 6 : first ? 2f : 1.3f, e.Boss ? 1.1f : 0.55f, e.Boss ? 1.5f : 0.8f, light: !e.Boss && !first)) Nova(e.X, e.Z, e.Boss ? 5 : 3, pal.Glow, 0.45f);
+                        if (e.Boss) Waves.Add(V(e.X, gy + 0.5, e.Z), 7, 0.5f, pal.Glow, 0.8f);
+                        else if (!Blast(e.X, e.Z, e.School, first ? 2f : 1.3f, 0.55f, 0.8f, light: !first)) Nova(e.X, e.Z, 3, pal.Glow, 0.45f);
                         Cam?.AddTrauma(0.35f);
                     }
                     break;
@@ -865,12 +886,32 @@ public partial class BattleFx : Node3D
                     Cam?.AddTrauma(0.6f);
                     break;
                 }
-                case Ev.Evolve or Ev.Discovery:
+                case Ev.Evolve { Chest: true }: break;
+                case Ev.Evolve:
                 {
+                    // It clicked: gold light down on her and two rings thrown out across the crowd,
+                    // in the world's slowed breath (WorldScene.Slow). Rings and light, never a filled
+                    // disc: the pink one nine metres across hid her at her best moment.
                     var p = PlayerPos;
-                    Nova(p.X, p.Z, 9, Palette.Of(School.Arcane).Glow, 0.8f);
-                    Flash(p + Vector3.Up * 2, new Color("#ffe0ff"), 30, 1.2f, 18);
+                    var gold = new Color(2.6f, 2.0f, 1.0f);
+                    Flash(p + Vector3.Up * 2, new Color("#ffe6b0"), 24, 1.0f, 14);
+                    Pillar(p, 12, 0.45f, gold * 0.75f, 1.0f);
+                    Waves.Add(p + Vector3.Up * 0.4f, 6, 0.5f, gold, 0.9f);
+                    Waves.Add(p + Vector3.Up * 0.6f, 10, 0.8f, new Color(2.2f, 1.3f, 0.5f), 0.6f);
+                    for (int i = 0; i < 40; i++)
+                    {
+                        float a = R() * Mathf.Tau;
+                        bool glint = i % 3 == 0;
+                        Sparks.Spawn(p + new Vector3(Mathf.Cos(a) * 0.6f, 0.3f, Mathf.Sin(a) * 0.6f), new Vector3(Mathf.Cos(a) * 1.2f, 3 + R() * 5, Mathf.Sin(a) * 1.2f), 1.2f, glint ? 0.28f : 0.09f,
+                            new Color(2.6f, 2.0f, 1.1f), new Color(2.2f, 0.7f, 0.15f), 0.02f, 2, 1.2f, sprite: glint ? Sprites.Of("star") : 0, spinV: 3);
+                    }
                     Cam?.AddTrauma(0.3f);
+                    break;
+                }
+                case Ev.Discovery:
+                {
+                    // A pair that quietly does more: a breath of light on her, no more.
+                    Flash(PlayerPos + Vector3.Up * 2, new Color("#ffe0ff"), 10, 0.5f, 9);
                     break;
                 }
                 case Ev.PerfectDodge e:

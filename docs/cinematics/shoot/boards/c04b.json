@@ -1,0 +1,18 @@
+{
+  "seed": 1500,
+  "people": {
+    "her": "a young woman with long dark red hair, bare arms, a fitted leather and steel armoured bodice with round steel pauldrons",
+    "town": "a small walled frontier town in early morning: timber and stone houses, a dozen chimneys smoking straight up in still air, a well in a small square, long blue shadows, low sun from the east",
+    "rook": "Mother Rook, a broad grey-haired innkeeper woman in a leather apron with her arms folded, standing in an inn doorway",
+    "guard": "a town watchman in a padded coat and iron helmet leaning on a spear"
+  },
+  "shots": {
+    "B1": "extreme long shot just inside a town's south gate looking north up the main road: {town}; to the right a tall stone toll tower with the sun on it and in its high window, very small, an oil lamp still burning pale in daylight; {her} walking in under the camera, small, seen from behind",
+    "B2": "medium shot from behind the shoulder of {guard} at a town gate, watching a red-haired armoured woman walk away up the road into the town, morning light",
+    "B3": "medium long shot tracking behind {her} walking up a town street in the morning: ahead of her people stopping to stare, a man carrying a ladder turning so it swings, a woman at a well holding her bucket halfway, a child running",
+    "B4": "medium shot beside an inn door, {rook} soft in the foreground right; in focus beyond her, a red-haired armoured woman stopped at the edge of a small square, looking round at the faces; morning",
+    "B4a": "telephoto close-up of a high stone tower window in full morning sun: on the sill a small lamp, its flame pale in the daylight, just going out with a thin thread of smoke",
+    "B4b": "medium shot: {rook} in her inn doorway looking at someone off screen, unfolding her arms, morning light",
+    "B5": "high angle rising over a small town square in the morning: a red-haired armoured woman standing in it, an innkeeper in her doorway, chimney smoke, long shadows"
+  }
+}
