@@ -5,9 +5,9 @@ Status page for the combat lead.
 - **Branch:** `worktree-agent-a1d4562f44c7f6feb`.
 - **Read first:** `docs/handoff/combat.md` (the predecessor's knowledge), then `docs/SKILLS_DESIGN.md` §16–17.
 
-## Current state (2026-10-04, paused for the owner's machine)
+## Current state (2026-10-04, handed off)
 
-Tests green (585). Everything is pushed, and the integration branch is merged in. One piece of work is parked on the side branch `combat-wip-runups`; see Next, item 1.
+Tests green (600 on the integration branch). Everything is pushed and merged. **Handed off:** `docs/handoff/combat.md` is the successor's brief. One piece of work is parked on the side branch `combat-wip-runups`; see Next, item 1.
 
 **Done this session** (§16.1, §16.7, §16.9, §17.8 in SKILLS_DESIGN):
 - **Boss floors hold for every ending.** The test drives an absurd build through the game's wiring: 60–77 s.
