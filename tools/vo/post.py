@@ -287,6 +287,17 @@ def fx(x: np.ndarray, kind: str | None) -> np.ndarray:
             t = np.arange(len(y)) / SR
             y = y * (1 + 0.2 * np.sin(2 * np.pi * 3.1 * t) * (0.6 + 0.4 * np.sin(2 * np.pi * 0.37 * t)))
         return place(y, "dig", seed=11)
+    if kind == "far":
+        # A voice from far up the road on a frosty night (C01): the top lost
+        # to the cold air, the body thinned, and a little early reflection
+        # off the frozen ground; enough that a player may not know it when
+        # they meet her close, and an attentive one might.
+        y = signal.sosfilt(signal.butter(2, [170, 3300], "bandpass", fs=SR, output="sos"), x)
+        out = y.copy()
+        for ms, db_ in ((19, -9.0), (37, -13.0), (61, -18.0)):
+            d = int(SR * ms / 1000)
+            out[d:] += y[:-d] * 10 ** (db_ / 20)
+        return place(out, "outdoor", seed=17)
     if kind == "dead":
         y = signal.sosfilt(signal.butter(2, [220, 4200], "bandpass", fs=SR, output="sos"), x)
         hollow = signal.fftconvolve(y, impulse(0.25, 4, 13))[: len(y)]

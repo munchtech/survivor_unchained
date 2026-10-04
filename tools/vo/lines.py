@@ -55,9 +55,10 @@ NPC_VOICE = {"survivor": "lampling", "wayfinder": "ysolde", "board": None, "grey
 # Named speakers of the zone code's lines and barks.
 SPEAKER_VOICE = {"The Ford-Warden": "warden", "Grimtunnel": "grimtunnel", "Snib": "snib",
                  "The dead Watchman": "watchman", "The bones": "bones", "Jory Coyle": "jory",
-                 "A Kerchief woman": "kerchief_woman", "The Barrow Lord": "barrow_lord", "The Red Hand": "red_hand"}
+                 "A Kerchief woman": "kerchief_woman", "The Barrow Lord": "barrow_lord", "The Red Hand": "red_hand",
+                 "A voice up the road": "vonnra"}
 # A conversation node's own speaker (the cinematics name theirs).
-NODE_VOICE = {"ford_warden": "warden", "barrow_lord": "barrow_lord", "kerchief_woman": "kerchief_woman", "guard": "guard"}
+NODE_VOICE = {"ford_warden": "warden", "far_voice": "vonnra", "barrow_lord": "barrow_lord", "kerchief_woman": "kerchief_woman", "guard": "guard"}
 
 
 def name_elided(s: str, mark: str = "") -> tuple[str, bool]:

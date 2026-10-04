@@ -35,7 +35,7 @@ SHEET = {"narrator": "The narrator.", "rook": "Mother Rook", "holloway": "Captai
          "kerchief_woman": "The Kerchiefs.", "lampling": "The babbling lampling.", "jory": "Jory Coyle.",
          "ysolde": "Ysolde Marrow", "watchman": "Nell, Wat, Corran.", "warden_man": "The Ford-Warden."}
 # Held for the story lead's review (a7622ae77d19e31dc): whole parts, and kinds of line.
-HOLD_VOICES: dict = {"narrator": "the owner has asked whether Vonnra should be the narrator (the voice that calls the survivor to town in the prologue), given her twist; the story lead is deciding"}
+HOLD_VOICES: dict = {}
 # Packets the story lead has checked and marked final (voice: date).
 FINAL = {"narrator": "2026-10-03", "rook": "2026-10-03", "holloway": "2026-10-03", "brannoc": "2026-10-03", "sella": "2026-10-03"}
 # Lines waiting on the story lead or the owner: (id prefix, why).
@@ -139,7 +139,8 @@ def brief(voice: str, v: dict) -> str:
 FX_SAYS = {"giant": "slows it by a quarter (lower and larger), lays a voice an octave down under it, and puts it in a "
                     "cave with water in it",
            "underwater": "does the same, and hears it through the river: the top gone, the surface moving over it",
-           "dead": "thins it to a hollow, dry rasp, as if from inside a barrow"}
+           "dead": "thins it to a hollow, dry rasp, as if from inside a barrow",
+           "far": "puts it far up the road on a frosty night: the top lost to the cold air, thinner, with a little early reflection"}
 
 
 def length_note(line: dict, seg: dict) -> str | None:
