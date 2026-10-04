@@ -32,6 +32,18 @@ uniform float g_scale[NL];
 // below the living (View/ArenaGround.cs).
 uniform float g_tone[NL];
 uniform float g_sat[NL];
+// Each photograph's own contrast pushed (1 as shot) about its mean luminance
+// (g_mean): from thirty metres up a scan's grain averages away, and the
+// ground reads as asphalt unless its lights and darks are pulled apart.
+uniform float g_con[NL];
+uniform float g_mean[NL];
+// How high each material lies (metres over the bare ground) and how much
+// its own photographed height swells it: summed, they make the ground's
+// macro relief, whose slopes light the edges between materials, so moss
+// stands up off the earth and a pool lies sunk in it rather than painted on.
+uniform float g_lift[NL];
+uniform float g_bump[NL];
+uniform float relief = 1.0;
 uniform float zone_size = 300.0;
 // Moonlight through a canopy, in pools (the Hollow).
 uniform float dapple = 0.0;
@@ -188,7 +200,7 @@ void fragment() {
 	}
 	vec3 albedo = vec3(0.0);
 	vec3 n_w = vec3(0.0);
-	float rough = 0.0, ao = 0.0, hgt = 0.0;
+	float rough = 0.0, ao = 0.0, hgt = 0.0, H = 0.0;
 	for (int k = 0; k < NL; k++) {
 		float wk = gw[k] / tot;
 		if (wk < 0.004) continue;
@@ -197,8 +209,11 @@ void fragment() {
 		Pick p = pick(uv, w, k);
 		vec4 arh = arhs[k];
 		vec3 a = tex2(g_alb, uv, k, p).rgb;
+		float la = dot(a, vec3(0.2126, 0.7152, 0.0722));
+		a *= pow(max(la, 1e-4) / g_mean[k], g_con[k] - 1.0);
 		a = mix(vec3(dot(a, vec3(0.2126, 0.7152, 0.0722))), a, g_sat[k]);
 		albedo += a * g_tone[k] * wk;
+		H += wk * (g_lift[k] + (arh.b - 0.5) * g_bump[k]);
 		n_w += tbn * nor2(uv, k, p) * wk;
 		rough += arh.g * wk;
 		ao += arh.r * wk;
@@ -236,6 +251,8 @@ void fragment() {
 		mc *= 0.3 + 0.8 * dome;
 		albedo = mix(albedo, mc, mo);
 		rough = mix(rough, 0.95, mo);
+		// A cushion stands a hand high, each dome a little higher.
+		H = mix(H, H + 0.05 + 0.06 * dome, mo);
 		// The domes' slopes, toward the light and away from it.
 		n = normalize(mix(n, normalize(n_geo - vec3(ra.x + rb.x * 0.6, 0.0, ra.y + rb.y * 0.6) * 0.9), mo * 0.85));
 	}
@@ -244,6 +261,7 @@ void fragment() {
 	float trod = s2.b * (0.8 + 0.4 * nF.r);
 	albedo *= 1.0 - 0.22 * trod;
 	rough = mix(rough, rough * 0.85, trod);
+	H -= 0.03 * trod;
 
 	// Standing water: in the low parts of the material first, then over it;
 	// dark, near mirror-smooth, flat, holding the moon.
@@ -254,6 +272,18 @@ void fragment() {
 	rough = mix(rough, 0.06, pool);
 	rough = mix(rough, rough * 0.55, smoothstep(0.1, 0.45, wet));
 	n = normalize(mix(n, n_geo, pool * 0.92));
+	// Water lies level, below its banks.
+	H = mix(H, -0.06, pool);
+
+	// The macro relief's slopes, from how the height changes pixel to pixel
+	// (Mikkelsen's bump mapping by derivatives), tilting the ground's normal.
+	vec3 dpx = dFdx(w_pos), dpy = dFdy(w_pos);
+	float hx = dFdx(H) * relief, hy = dFdy(H) * relief;
+	vec3 r1 = cross(dpy, n_geo), r2 = cross(n_geo, dpx);
+	float det = dot(dpx, r1);
+	vec3 grad = sign(det) * (hx * r1 + hy * r2);
+	vec3 nb = normalize(abs(det) * n_geo - grad);
+	n = normalize(n + (nb - n_geo));
 
 	// The scar's lip. Coming out from the fight: the ground heat-killed, browned
 	// and greyed; then the char, black, split into plates with grey ash lying

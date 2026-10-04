@@ -153,3 +153,5 @@ Cut to loop and made mono at 24 kHz (the game plays each wide, its right side ha
 - red_dirt_mud_01: Poly Haven (https://polyhaven.com/a/red_dirt_mud_01), CC0
 - stony_dirt_path: Poly Haven (https://polyhaven.com/a/stony_dirt_path), CC0
 - dry_ground_rocks: Poly Haven (https://polyhaven.com/a/dry_ground_rocks), CC0
+- grassy_cobblestone: Poly Haven (https://polyhaven.com/a/grassy_cobblestone), CC0
+- gray_rocks: Poly Haven (https://polyhaven.com/a/gray_rocks), CC0

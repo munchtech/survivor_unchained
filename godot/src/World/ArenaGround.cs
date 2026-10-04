@@ -15,27 +15,34 @@ namespace SurvivorUnchained.View;
 public static class ArenaGround
 {
     /// <summary>What each layer is brought to, place by place, in the layers'
-    /// order (tools/godot/arena_ground.py): its mean albedo in linear light (Y)
-    /// and how much of its colour it keeps (Sat). The scans were shot on days
-    /// of every brightness, from 0.01 (a black rock) to 0.4 (sunlit straw);
-    /// here every one is set where the place needs it, and all of them low:
-    /// the creatures, the dead and her light read over the ground. Steps in
-    /// value draw the place's lines (the Legion's road a shade paler than its
-    /// turf; the ruts a shade darker than the road).</summary>
-    static readonly Dictionary<string, (float Y, float Sat)[]> Looks = new()
+    /// order (tools/godot/arena_ground.py): its mean albedo in linear light (Y),
+    /// how much of its colour it keeps (Sat), how far its own lights and darks
+    /// are pulled apart (Con: from thirty metres up a scan's grain averages
+    /// away, and the ground reads as asphalt), how high it lies over the bare
+    /// ground in metres (Lift) and how much its photographed height swells it
+    /// (Bump). The scans were shot on days of every brightness; here each is
+    /// set where the place needs it, all below the living, and the steps in
+    /// value and height between them draw the place's lines.</summary>
+    public readonly record struct Layer(float Y, float Sat, float Con = 1.25f, float Lift = 0, float Bump = 0.05f);
+
+    static readonly Dictionary<string, Layer[]> Looks = new()
     {
         // turf, bare, way, grave, ash, rubble, face
-        ["barrow"] = [(0.07f, 0.55f), (0.06f, 0.5f), (0.095f, 0.5f), (0.035f, 0.7f), (0.04f, 0.6f), (0.085f, 0.45f), (0.05f, 0.6f)],
+        ["barrow"] = [new(0.07f, 0.55f, Lift: 0.04f, Bump: 0.08f), new(0.06f, 0.5f), new(0.095f, 0.5f, Lift: 0.02f, Bump: 0.06f), new(0.035f, 0.7f, Lift: -0.02f),
+            new(0.04f, 0.6f, Lift: -0.01f), new(0.085f, 0.45f, Lift: 0.02f, Bump: 0.08f), new(0.05f, 0.6f)],
         // litter, rot, roots, mud, bed, needles, face: the leaves warm and
         // red-brown against the cold night, the runs and banks black, the
         // stream's stones the palest thing on the ground (moss is the shader's)
-        ["hollow"] = [(0.08f, 1.0f), (0.045f, 0.85f), (0.065f, 0.8f), (0.026f, 0.8f), (0.1f, 0.6f), (0.085f, 0.9f), (0.07f, 0.7f)],
+        ["hollow"] = [new(0.08f, 1.0f, Lift: 0.02f), new(0.045f, 0.85f), new(0.065f, 0.8f, Lift: 0.03f, Bump: 0.1f), new(0.026f, 0.8f, Lift: -0.03f),
+            new(0.1f, 0.6f, Lift: -0.05f, Bump: 0.08f), new(0.085f, 0.9f, Lift: 0.01f), new(0.07f, 0.7f)],
         // verge, churn, ruts, wet, camp, metal, face
-        ["ruts"] = [(0.065f, 0.6f), (0.05f, 0.65f), (0.045f, 0.6f), (0.04f, 0.65f), (0.06f, 0.55f), (0.08f, 0.5f), (0.055f, 0.55f)],
+        ["ruts"] = [new(0.065f, 0.6f, Lift: 0.04f, Bump: 0.06f), new(0.05f, 0.65f), new(0.045f, 0.6f, Lift: -0.02f, Bump: 0.08f), new(0.04f, 0.65f, Lift: -0.04f),
+            new(0.06f, 0.55f, Lift: 0.01f), new(0.08f, 0.5f, Lift: 0.01f, Bump: 0.06f), new(0.055f, 0.55f)],
         // clay, spoil, ballast, slurry, rust, burnt, face: ochre clay and stone
         // stained rust in drifts, the spoil heaps coal-black, the cut walls
         // ochre; rust, never a red near her hair's
-        ["dig"] = [(0.1f, 0.95f), (0.038f, 0.35f), (0.05f, 0.6f), (0.045f, 0.8f), (0.075f, 0.85f), (0.035f, 0.5f), (0.08f, 0.9f)],
+        ["dig"] = [new(0.1f, 0.95f, Lift: 0.02f, Bump: 0.08f), new(0.038f, 0.35f, Lift: 0.04f, Bump: 0.1f), new(0.05f, 0.6f, Lift: 0.01f, Bump: 0.06f), new(0.045f, 0.8f, Lift: -0.05f),
+            new(0.075f, 0.85f), new(0.035f, 0.5f), new(0.08f, 0.9f)],
     };
 
     /// <summary>The standing water's tint, place by place.</summary>
@@ -76,20 +83,33 @@ public static class ArenaGround
         var scales = new Godot.Collections.Array<float>();
         var tones = new Godot.Collections.Array<float>();
         var sats = new Godot.Collections.Array<float>();
+        var cons = new Godot.Collections.Array<float>();
+        var means = new Godot.Collections.Array<float>();
+        var lifts = new Godot.Collections.Array<float>();
+        var bumps = new Godot.Collections.Array<float>();
         var looks = Looks[place.Id];
         int k = 0;
         foreach (var l in meta.RootElement.GetProperty("layers").EnumerateArray())
         {
             scales.Add(1f / l.GetProperty("metres").GetSingle());
             var m = l.GetProperty("mean");
-            float y = 0.2126f * m[0].GetSingle() + 0.7152f * m[1].GetSingle() + 0.0722f * m[2].GetSingle();
-            tones.Add(looks[k].Y / Mathf.Max(y, 0.004f));
-            sats.Add(looks[k].Sat);
+            float y = Mathf.Max(0.2126f * m[0].GetSingle() + 0.7152f * m[1].GetSingle() + 0.0722f * m[2].GetSingle(), 0.004f);
+            var look = looks[k];
+            tones.Add(look.Y / y);
+            sats.Add(look.Sat);
+            cons.Add(look.Con);
+            means.Add(y);
+            lifts.Add(look.Lift);
+            bumps.Add(look.Bump);
             k++;
         }
         mat.SetShaderParameter("g_scale", scales);
         mat.SetShaderParameter("g_tone", tones);
         mat.SetShaderParameter("g_sat", sats);
+        mat.SetShaderParameter("g_con", cons);
+        mat.SetShaderParameter("g_mean", means);
+        mat.SetShaderParameter("g_lift", lifts);
+        mat.SetShaderParameter("g_bump", bumps);
         mat.SetShaderParameter("wet_tint", Wet[place.Id]);
         mat.SetShaderParameter("dapple", (float)place.Air.Dapple);
         mat.SetShaderParameter("ember", new Color(place.Air.Ember));
@@ -97,41 +117,42 @@ public static class ArenaGround
         return mat;
     }
 
-    /// <summary>The grass a place grows: its colour from the place's first
-    /// layer (brought to its value), how green or straw, how thick.</summary>
-    static readonly Dictionary<string, (Vector3 Tint, float Straw, float Density)> Grasses = new()
+    /// <summary>A place's grass (shaders/arena_grass.gdshader): how thick it
+    /// grows where its paint says, its tussocks (blades, a blade's half-width,
+    /// the grid's cell, metres tall short and long, how far they spread), and
+    /// its colours as sRGB hex: deep in the tussock, its body, its dead tips,
+    /// the green still in it and how much of the field that is.</summary>
+    public sealed record GrassLook(float Density, int Blades, float Width, float Cell, Vector2 Height, float Spread,
+        string Root, string Body, string Tip, string Green, float GreenShare);
+
+    static readonly Dictionary<string, GrassLook> Grasses = new()
     {
-        // The barrow field's dead grass over chalk: straw, thin, grey-blond.
-        ["barrow"] = (new Vector3(1.0f, 1.0f, 0.82f), 0.75f, 0f),
-        ["hollow"] = (new Vector3(0.85f, 1.15f, 0.7f), 0.2f, 0f),
-        ["ruts"] = (new Vector3(0.9f, 1.1f, 0.72f), 0.45f, 0f),
-        ["dig"] = (new Vector3(1, 1, 1), 0.6f, 0f),
+        // The barrow field's long dead grass, olive-brown and its tips gone
+        // to pale straw under the moon: the field's whole face.
+        ["barrow"] = new(1f, 26, 0.016f, 0.42f, new(0.4f, 0.9f), 1.3f, "#0c0a07", "#54482f", "#b09a72", "#3e462a", 0.25f),
+        // Sparse and low where the canopy opens.
+        ["hollow"] = new(0.5f, 12, 0.02f, 0.55f, new(0.2f, 0.45f), 0.8f, "#0a0b07", "#38402a", "#6c7048", "#2e4626", 0.6f),
+        // The verges: greener, trodden shorter toward the road.
+        ["ruts"] = new(1f, 24, 0.016f, 0.45f, new(0.3f, 0.7f), 1.2f, "#0a0b07", "#40482a", "#8e8a5c", "#34502a", 0.55f),
+        // Dry yellow tufts on the working's spoil and edges, where nobody walks.
+        ["dig"] = new(0.8f, 12, 0.022f, 0.55f, new(0.25f, 0.6f), 0.9f, "#0e0a06", "#6a5632", "#c4a466", "#4a4a2a", 0.1f),
     };
+
+    public static GrassLook GrassOf(string place) => Grasses[place];
 
     public static bool GrowsGrass(string place) => Grasses[place].Density > 0;
 
     public static void Grass(ShaderMaterial mat, ZoneData z)
     {
-        var place = z.Place!;
-        string dir = $"res://art/arena/{place.Id}";
-        mat.SetShaderParameter("splat", ImageTexture.CreateFromImage(z.GrassMask!));
-        mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>($"{dir}/albedo.jpg"));
-        using var meta = JsonDocument.Parse(FileAccess.GetFileAsString($"{dir}/layers.json"));
-        var l0 = meta.RootElement.GetProperty("layers")[0];
-        mat.SetShaderParameter("meadow_scale", 1f / l0.GetProperty("metres").GetSingle());
-        var m = l0.GetProperty("mean");
-        float y = 0.2126f * m[0].GetSingle() + 0.7152f * m[1].GetSingle() + 0.0722f * m[2].GetSingle();
-        // A blade a shade paler than the ground it stands in, so the field has a nap.
-        mat.SetShaderParameter("tone", Looks[place.Id][0].Y * 1.35f / Mathf.Max(y, 0.004f));
-        var (tint, straw, density) = Grasses[place.Id];
-        mat.SetShaderParameter("tint", tint);
-        mat.SetShaderParameter("straw_bias", straw);
-        mat.SetShaderParameter("straw_mix", 0.3f + straw * 0.6f);
-        // Straw at the place's own value, a little over its ground.
-        float sv = Looks[place.Id][0].Y * 1.5f;
-        mat.SetShaderParameter("straw_color", new Vector3(sv * 1.45f, sv * 1.25f, sv * 0.7f));
-        mat.SetShaderParameter("density", density);
-        mat.SetShaderParameter("leaves", 0f);
+        var g = Grasses[z.Place!.Id];
+        mat.SetShaderParameter("density", g.Density);
+        mat.SetShaderParameter("height", g.Height);
+        mat.SetShaderParameter("spread", g.Spread);
+        mat.SetShaderParameter("root_col", new Color(g.Root));
+        mat.SetShaderParameter("body_col", new Color(g.Body));
+        mat.SetShaderParameter("tip_col", new Color(g.Tip));
+        mat.SetShaderParameter("green_col", new Color(g.Green));
+        mat.SetShaderParameter("green", g.GreenShare);
     }
 
     static ImageTexture Mipped(Image img)
