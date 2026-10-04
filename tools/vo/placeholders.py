@@ -107,11 +107,42 @@ def segment_jobs(line: dict, rnd: int) -> list[dict]:
     return jobs
 
 
+COMFY = os.environ.get("COMFY_URL", "http://127.0.0.1:8188")
+
+
+def wait_for_gpu(log, most: float = 1800):
+    """The card is shared with ComfyUI (the art). Wait until its queue is
+    empty, then ask it to let go of its models, so neither of us pages the
+    other's weights through system memory. Gives up waiting after `most`."""
+    import urllib.request
+    t0, said = time.time(), False
+    while time.time() - t0 < most:
+        try:
+            q = json.load(urllib.request.urlopen(f"{COMFY}/queue", timeout=5))
+        except Exception:
+            return  # no ComfyUI running: nothing to wait for
+        if not q.get("queue_running") and not q.get("queue_pending"):
+            try:
+                req = urllib.request.Request(f"{COMFY}/free", data=json.dumps({"unload_models": True, "free_memory": True}).encode(),
+                                             headers={"Content-Type": "application/json"}, method="POST")
+                urllib.request.urlopen(req, timeout=10)
+            except Exception:
+                pass
+            time.sleep(3)
+            return
+        if not said:
+            log("  waiting for ComfyUI's queue to empty")
+            said = True
+        time.sleep(15)
+    log("  ComfyUI still busy; going on")
+
+
 def act(jobs: list[dict], batch: int, log):
     flat = [c for j in jobs for c in j["chunks"] if not os.path.exists(c["out"])]
     if flat:
         path = os.path.join(FOLDER, "maya_jobs.json")
         json.dump(flat, open(path, "w", encoding="utf-8"), ensure_ascii=False)
+        wait_for_gpu(log)
         log(f"  acting {len(flat)} performances (Maya1)")
         env = dict(os.environ, PYTHONIOENCODING="utf-8")
         for b in (batch, max(1, batch // 2), 1):
@@ -135,6 +166,7 @@ def convert(jobs: list[dict], log):
     todo = [j for j in jobs if os.path.exists(j["perf"]) and not os.path.exists(j["vc"])]
     if not todo:
         return
+    wait_for_gpu(log)
     log(f"  converting {len(todo)} into the cast voices (Seed-VC)")
     w = seedvc()
     try:
@@ -154,6 +186,7 @@ def check(jobs: list[dict], log) -> dict:
         return {}
     path = os.path.join(FOLDER, "check_jobs.json")
     json.dump(todo, open(path, "w", encoding="utf-8"), ensure_ascii=False)
+    wait_for_gpu(log)
     log(f"  checking {len(todo)} parts (Whisper)")
     out = path + ".out"
     subprocess.run([ANALYSIS_PY, os.path.abspath(__file__), "--check", path, out], env=dict(os.environ, PYTHONIOENCODING="utf-8"),

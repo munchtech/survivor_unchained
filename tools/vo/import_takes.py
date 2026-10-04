@@ -93,7 +93,7 @@ def plan(files: list[str], man: list[dict], voice: str | None = None) -> dict:
     missing = []
     if voice:
         have = set(newest) | {(lid, int(p) if p else 0) for lid, p in (_final_key(x) for x in _finals())}
-        for l in man:
+        for l in sorted(man, key=lines_mod.impact):
             if l.get("status") == "skip":
                 continue
             for i, s in enumerate(l["segments"]):
