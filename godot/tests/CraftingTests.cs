@@ -123,6 +123,26 @@ public class CraftingTests
     }
 
     [Fact]
+    public void The_crafter_speaks_over_a_craft_and_a_caged_coal_names_its_night()
+    {
+        var j = Make();
+        var it = Piece(j, "iron_helm", 2, ("hale", 0));
+        Give(j, Crafting.Shard, 20);
+        j.Carry(new Crafting.NightYield(new() { [Crafting.Shard] = 1 }, new()), "The Ashen Fen");
+        var coal = Crafting.Coals(j.Ch, it, j.World.Day)[0];
+        Assert.True(j.Work(it.Uid, Crafting.Cage(j.Craft, it, coal), null));
+        Assert.Equal($"A coal from the Ashen Fen, caged by Brannoc, day {j.World.Day}", it.History![^1]);
+        // The first cage has its own words, with narration round them; the next is the verb's own.
+        Assert.Equal("Wants out. They all do.", j.CraftSaid!.Line);
+        Assert.NotNull(j.CraftSaid.Before);
+        Assert.NotNull(j.CraftSaid.After);
+        var again = Crafting.Coals(j.Ch, it, j.World.Day)[0];
+        Assert.True(j.Work(it.Uid, Crafting.Cage(j.Craft, it, again), null));
+        Assert.Null(j.CraftSaid!.Before);
+        Assert.Contains(j.CraftSaid.Line, Crafting.Crafter("brannoc")!.Lines["cage"]);
+    }
+
+    [Fact]
     public void A_piece_has_heat_by_its_rarity_rolled_where_it_fell()
     {
         var j = Make();
@@ -281,7 +301,7 @@ public class CraftingTests
         Assert.Equal(3, w.Rarity);
         // Epic is the forge's last pattern in Act 1.
         Assert.False(Crafting.Remake(j.Craft, w).Ok);
-        Assert.Contains(w.History!, h => h.StartsWith("Remade by Brannoc"));
+        Assert.Contains(w.History!, h => h.StartsWith("Remade on Brannoc's anvil"));
     }
 
     [Fact]
