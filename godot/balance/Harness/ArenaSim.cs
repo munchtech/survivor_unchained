@@ -56,6 +56,11 @@ public sealed class RunResult
     /// <summary>What was left of the boss when the survivor fell to it (-1: it was not up).</summary>
     public double BossLeft = -1;
     public int Quaffs;
+    /// <summary>The boss's fight: its telegraphed blows marked and landed, its Break (of its
+    /// health), its staggers, the phase it reached, and whether it grew wild (three minutes).</summary>
+    public int BossMarked, BossLanded, BossStaggers, BossPhase = -1;
+    public double BossBreak;
+    public bool BossSoft;
 
     /// <summary>Won at the half hour and still standing for the boss: the target.</summary>
     public bool Won => WonAt != null;
@@ -153,7 +158,7 @@ public static class ArenaSim
         double traceFrom = trace != null && trace.Contains('@') ? double.Parse(trace.Split('@')[1], System.Globalization.CultureInfo.InvariantCulture) * 60 : 0;
         while (t < spec.Cap * 60 && p.Alive && host.Result == null)
         {
-            var (mx, mz) = Pilot.Steer(b, spec.Deft);
+            var (mx, mz) = Pilot.Steer(b, spec.Deft, zone.BossScript);
             if (Pilot.Act(b, j, mx, mz)) r.Quaffs++;
             zone.Step(Dt);
             zone.Frame(Dt);
@@ -179,6 +184,8 @@ public static class ArenaSim
                         firstHit.Remove(k.Enemy);
                         break;
                     case Ev.Kill k2: firstHit.Remove(k2.Enemy); break;
+                    case Ev.Telegraph tg when tg.Boss && tg.Kind == TelegraphKind.Blow: r.BossMarked++; break;
+                    case Ev.Announce an when an.Title == "Staggered": r.BossStaggers++; break;
                     // ARENA_TRACE=KEY@MINUTE: the blows that land on the survivor, from that minute (why a run fell).
                     case Ev.PlayerHit ph when trace != null && t >= traceFrom:
                         Console.Error.WriteLine($"{t / 60:0.000} {ph.Source,-22} {ph.Amount,6:0} {(ph.Dodged ? "dodged" : ph.Blocked ? "blocked" : "")} hp {p.Hp:0}/{b.MaxHp:0} shield {p.Shield:0}");
@@ -220,6 +227,13 @@ public static class ArenaSim
         if (r.Died && r.WonAt == null && host.Boss is { } bar && t >= arena.Minutes * 60) r.BossLeft = bar.Hp / Math.Max(1, bar.MaxHp);
         // What rules the horde comes at the half hour (an elite, not a Boss, by its kind).
         if (r.WonAt is double won) r.BossTtk = won * 60 - arena.Minutes * 60;
+        if (zone.BossScript is { } bs)
+        {
+            r.BossLanded = b.BossBlowsTaken;
+            r.BossBreak = bs.BreakSum / Math.Max(1, bs.E.MaxHp);
+            r.BossPhase = bs.PhaseIx;
+            r.BossSoft = bs.Soft;
+        }
         r.Kills = b.KillCount;
         r.Ember = b.EmberLevel;
         r.DamageTaken = b.DamageTaken;
