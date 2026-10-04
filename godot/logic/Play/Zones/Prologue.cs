@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SurvivorUnchained.Cinema;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Rpg;
 using SurvivorUnchained.Sim;
@@ -60,6 +61,8 @@ public sealed class Prologue : ZoneRuntime
     readonly double[] pylonHp;
     Enemy? warden, caller, knight, grim;
     bool wardenGone, chestOpened, finished, coreShown, doused;
+    /// <summary>A cinematic is playing the Warden with its own body (C02, C03): ours waits, hidden.</summary>
+    bool wardenInCine;
     readonly XZ wardenHome;
     (double X, double Z, double Facing) wardenPos;
     readonly WardenAI ai = new();
@@ -575,13 +578,44 @@ public sealed class Prologue : ZoneRuntime
         var ford = L("ford");
         ClearAround(ford.X, ford.Z, 30);
         B.WorldRate = 0.001; B.WorldRateT = 1e9;
-        G.Showcase((wardenHome.X + 9, G.Look.HeightAt(wardenHome.X, wardenHome.Z) + 7, wardenHome.Z + 15), (wardenHome.X, 0.4, wardenHome.Z));
         G.SetHint(null);
+        // C02 (docs/cinematics/shoot/c02.md): its last cue spawns him where it
+        // leaves him (CineEvent "warden_up"); without it, the captions and barks.
+        if (G.Cinematic("c02", () => { if (Now == Stage.Intro) WardenUp(); })) { introByCine = true; return; }
+        G.Showcase((wardenHome.X + 9, G.Look.HeightAt(wardenHome.X, wardenHome.Z) + 7, wardenHome.Z + 15), (wardenHome.X, 0.4, wardenHome.Z));
+    }
+
+    bool introByCine;
+
+    /// <summary>C02's end: the Warden up and facing her an arm's length off, the fight on.</summary>
+    void WardenUp()
+    {
+        if (B == null || warden != null) return;
+        wardenInCine = false;
+        var p = B.Player;
+        // Where the cinematic leaves him (its mark warden_end), facing her.
+        var (wx, _, wz, _) = CineFile.Load("c02").Mark("warden_end");
+        warden = B.SpawnEnemy("ford_warden", wx, wz, new Battle.SpawnOpts { Level = 1, Tag = "warden" });
+        if (warden != null) { warden.Facing = Math.Atan2(p.Z - wz, p.X - wx); ai.Mode = "walk"; ai.T = 0; }
+        wardenPos = (wx, wz, Math.PI / 2 - (warden?.Facing ?? 0));
+        wardenView.Release();
+        Go(Stage.Boss);
+        Objective([("Cross at the Low Ford", false, false), ("Put out the lamps", false, true)]);
+    }
+
+    public override void CineEvent(string name)
+    {
+        switch (name)
+        {
+            // The cinematic's Warden is on: ours hides until it hands him back.
+            case "warden_cine": wardenInCine = true; break;
+            case "warden_up": WardenUp(); break;
+        }
     }
 
     void RunIntro(double dt)
     {
-        if (B == null) return;
+        if (B == null || introByCine) return;
         cutT += dt;
         if (cutT > 0.8 && shown.Add("intro1")) G.Say("Something lies in the ford, larger than any man, with a lamp in its fist.", null, 3.6);
         if (cutT > 1.4 && shown.Add("intro1b")) B.Events.Emit(new Ev.Bark { X = wardenPos.X, Z = wardenPos.Z, Text = "Lamps are lit... stay where they reach...", Speaker = "The Ford-Warden" });
@@ -818,6 +852,7 @@ public sealed class Prologue : ZoneRuntime
     public override void Frame(double dt)
     {
         if (wardenGone) return;
+        if (wardenInCine) { wardenView.Hide(); return; }
         if (warden is { Alive: true } && warden.State != EnemyState.Dying) wardenPos = (warden.X, warden.Z, Math.PI / 2 - warden.Facing);
         double wy = Math.Max(G.Look.HeightAt(wardenPos.X, wardenPos.Z), waterY - 0.25);
         wardenView.Glow = Math.Clamp(0.3 + LitCount * 0.25, 0, 1);

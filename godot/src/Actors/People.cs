@@ -124,8 +124,10 @@ public static class People
         return p;
     }
 
+    // Getting up ends in an idle but is not one: looped, a risen (or the Warden)
+    // would lie down and get up again.
     static bool IsCycle(string n) =>
-        n.Contains("Idle") || n.Contains("Walk") || n.Contains("Jog") || n.Contains("Sprint") || n.Contains("Fwd") || n == "Dance";
+        (n.Contains("Idle") && !n.StartsWith("LayTo")) || n.Contains("Walk") || n.Contains("Jog") || n.Contains("Sprint") || n.Contains("Fwd") || n == "Dance";
 
     public sealed class Person
     {
