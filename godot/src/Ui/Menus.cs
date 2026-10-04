@@ -87,6 +87,7 @@ public static class SettingsPanel
         v.AddChild(Row("Display", ["window", "fullscreen"], s.Fullscreen ? "fullscreen" : "window", x => s.Fullscreen = x == "fullscreen"));
         v.AddChild(Row("Gore", ["full", "reduced", "off"], s.Gore, x => s.Gore = x));
         v.AddChild(Row("Screen shake", ["full", "reduced", "off"], s.Motion, x => s.Motion = x));
+        v.AddChild(Row("Pad rumble", ["full", "low", "off"], s.Rumble, x => s.Rumble = x));
         v.AddChild(Row("Health under you", ["on", "off"], s.UnderBar ? "on" : "off", x => s.UnderBar = x == "on"));
         v.AddChild(Style.Label("Lower pictures trade shadow detail, grass, sparks and ambient occlusion for speed. Upscaling draws the world at fewer pixels and brings it up to your screen; the interface stays sharp. Reduced gore keeps a little blood and throws nothing. Screen shake off also stops the world holding still on a heavy blow. Health under you draws your health beneath your feet in a night's fight.",
             Style.TextItalic, Style.Caption, Style.InkDim, true));

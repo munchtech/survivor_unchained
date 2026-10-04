@@ -43,7 +43,18 @@ public partial class WorldScene : Node3D, IZoneLook
     /// <summary>Heavy blows hold the fight still for a moment (off with the screen's shake).</summary>
     public bool Hitstop = true;
     public double Time { get; private set; }
-    double acc, hitstop, hitstopCd, fightTime, damageFlash, slowmo, fall;
+    /// <summary>How still the world is held (0 none, 1 all but stopped): the survivor and the crowd
+    /// keep a breath of motion while what is staged over them (a chest opening) moves at full
+    /// speed. The fight itself is paused by SimPaused.</summary>
+    public float Hold;
+    double acc, hitstop, hitstopCd, fightTime, viewTime, damageFlash, slowmo, fall;
+
+    /// <summary>A dash or an art pressed a little early, kept until it can fire (seconds left).</summary>
+    double dashHeld, artHeld;
+    const double Buffer = 0.12;
+
+    /// <summary>The world slowed to under a third for a while (an evolution's first volley).</summary>
+    public void Slow(double seconds) => slowmo = Math.Max(slowmo, seconds);
     /// <summary>The night's peak in real seconds: the world slows hard as what ruled it falls
     /// and eases back to full speed (docs/EXPERIENCE_AUDIT.md, finding 2).</summary>
     const double Fall = 2.2;
@@ -102,6 +113,8 @@ public partial class WorldScene : Node3D, IZoneLook
         double falling = fall > 0 ? 0.1 + 0.9 * Math.Pow(1 - fall / Fall, 2.2) : 1;
         double fightDt = held ? dt * 0.08 : slowmo > 0 ? dt * Math.Min(0.3, falling) : dt * falling;
         fightTime += fightDt;
+        // A press kept from before a pause (a draft, a chest) is not spent after it.
+        if (SimPaused) dashHeld = artHeld = 0;
         if (b != null && !SimPaused)
         {
             acc += Math.Min(fightDt, 0.1);
@@ -109,8 +122,13 @@ public partial class WorldScene : Node3D, IZoneLook
             {
                 acc -= Step;
                 var (mx, mz) = Move();
-                if (Pressed(Act.Dash)) b.Dash(mx, mz);
-                if (Pressed(Act.Ability)) b.UseAbility(mx, mz);
+                // A press a little early is kept for 120 ms and fires the moment it can, in the
+                // direction held then (S-05): the dash is where timing lives, and a dropped press
+                // cost most exactly when it mattered.
+                if (Pressed(Act.Dash)) dashHeld = Buffer;
+                if (dashHeld > 0) dashHeld = b.Dash(mx, mz) ? 0 : dashHeld - Step;
+                if (Pressed(Act.Ability)) artHeld = Buffer;
+                if (artHeld > 0) artHeld = b.UseAbility(mx, mz) ? 0 : artHeld - Step;
                 OnStep(Step);
                 Perf.Begin(Perf.Part.Sim);
                 b.Tick(Step, mx, mz);
@@ -161,7 +179,9 @@ public partial class WorldScene : Node3D, IZoneLook
             if (e is Ev.Kill k && k.ByPlayer && (k.Boss || k.Elite)) s = Math.Max(s, k.Boss ? 0.14 : 0.08);
             else if (e is Ev.Hit h && h.Crit && !h.Dot && h.MaxHp > 0 && h.Amount >= h.MaxHp * 0.35) s = Math.Max(s, 0.045);
             else if (e is Ev.PlayerHit ph && ph.Amount > b.MaxHp * 0.12) s = Math.Max(s, 0.07);
-            else if (e is Ev.Ability a && a.Id == "shield_bash") s = Math.Max(s, 0.05);
+            // Her arts land with their own weight (S-17): the leap's landing, the rush's stop, the bash.
+            else if (e is Ev.Ability a && a.Id is "shield_bash" or "bull_rush") s = Math.Max(s, 0.05);
+            else if (e is Ev.Ability l && l.Id == "leap") s = Math.Max(s, 0.06);
         }
         if (s > 0) { hitstop = s; hitstopCd = s + 0.3; }
     }
@@ -173,12 +193,16 @@ public partial class WorldScene : Node3D, IZoneLook
         {
             var p = b.Player;
             float y = (float)HeightAt(p.X, p.Z);
+            // The living's own clock: the fight's, all but stopped while the world is held.
+            double viewDt = fightDt * (1 - 0.97 * Math.Clamp(Hold, 0, 1));
+            viewTime += viewDt;
             Perf.Begin(Perf.Part.Player);
-            Player?.Update(b, fightDt, fightTime, HeightAt);
+            Player?.Update(b, viewDt, viewTime, HeightAt);
             Perf.End(Perf.Part.Player);
             if (Showcase == null && !CameraHeld) cam.Update((float)dt, (float)p.X, y, (float)p.Z, (float)p.Vx, (float)p.Vz);
             Perf.Begin(Perf.Part.Crowd);
-            Crowd.Update(b, HeightAt, fightTime);
+            Crowd.Still = Hold;
+            Crowd.Update(b, HeightAt, viewTime);
             Perf.End(Perf.Part.Crowd);
             Fx.PlayerPos = new Vector3((float)p.X, y, (float)p.Z);
             Perf.Begin(Perf.Part.Fx);

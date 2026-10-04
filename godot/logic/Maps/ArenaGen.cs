@@ -38,6 +38,10 @@ public struct ArenaPaint
     public double BaseB;
     /// <summary>How thick the place's grass grows here (0 none).</summary>
     public double Grass;
+    /// <summary>Moss in cushions over whatever is under it.</summary>
+    public double Moss;
+    /// <summary>The slurry's own sick light, where it stands or runs.</summary>
+    public double Glow;
 }
 
 /// <summary>A place's own making: its shapes, paint and dressing.</summary>
@@ -116,6 +120,7 @@ public static class ArenaGen
         public Heightfield Ground = null!;
         readonly byte[] splat = new byte[SplatRes * SplatRes * 4];
         readonly byte[] splat2 = new byte[SplatRes * SplatRes * 4];
+        readonly byte[] splat3 = new byte[SplatRes * SplatRes * 4];
         readonly byte[] grass = new byte[SplatRes * SplatRes];
         public readonly List<FloraPlace> Flora = new();
         public readonly List<PropPlace> Pieces = new();
@@ -124,6 +129,8 @@ public static class ArenaGen
         public readonly List<FireDef> Fires = new();
         public readonly List<(double X, double Z, double R)> Taken = new();
         public readonly List<(double X, double Z, double Hw)[]> Streams = new();
+        public readonly List<(double X, double Z, double Hw)[]> Rails = new();
+        public readonly List<(double X, double Z, double R)> Vents = new();
         public readonly Dictionary<string, FloraKind> Kinds = MapGen.Catalog();
         int cid = 1;
 
@@ -222,6 +229,8 @@ public static class ArenaGen
                     int o = (j * SplatRes + i) * 4;
                     splat[o] = MapGen.B(p.L2); splat[o + 1] = MapGen.B(p.L3); splat[o + 2] = MapGen.B(p.L4); splat[o + 3] = MapGen.B(p.L5);
                     splat2[o] = MapGen.B(p.Wet); splat2[o + 1] = MapGen.B(p.Char); splat2[o + 2] = MapGen.B(p.Trod); splat2[o + 3] = MapGen.B(p.BaseB);
+                    // Nothing grows on char.
+                    splat3[o] = MapGen.B(p.Moss * (1 - p.Char)); splat3[o + 1] = MapGen.B(p.Glow);
                     // Nothing grows on char, in water or where it is trodden flat.
                     grass[j * SplatRes + i] = MapGen.B(p.Grass * (1 - p.Char) * (1 - p.Wet * 0.9) * (1 - p.Trod * 0.7));
                 }
@@ -448,8 +457,8 @@ public static class ArenaGen
             };
             return new MapBuild
             {
-                Spec = Spec, Meta = meta, Ground = Ground, SplatRes = SplatRes, Splat = splat, Splat2 = splat2, Grass = grass, Flora = Flora, Props = new(), Pieces = Pieces,
-                Kinds = Kinds, Areas = new List<Area> { start }, Packs = new(), Walkable = Walk, Place = Place, Rim = rim, Streams = Streams, Inside = Inside,
+                Spec = Spec, Meta = meta, Ground = Ground, SplatRes = SplatRes, Splat = splat, Splat2 = splat2, Splat3 = splat3, Grass = grass, Flora = Flora, Props = new(), Pieces = Pieces,
+                Kinds = Kinds, Areas = new List<Area> { start }, Packs = new(), Walkable = Walk, Place = Place, Rim = rim, Streams = Streams, Rails = Rails, Vents = Vents, Inside = Inside,
             };
         }
     }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using SurvivorUnchained.Core;
 
@@ -20,6 +20,7 @@ public sealed class Hollow : ArenaShape
     double denAng;
     double denX, denZ;
     readonly List<(double Ang, double X, double Z)> greats = new();
+    readonly List<(double Ax, double Az, double Bx, double Bz, double Hw)> rootSegs = new();
 
     bool Drowned => B.Place.HasMood("drowned");
     bool Autumn => B.Spec.Theme == "autumn";
@@ -38,7 +39,7 @@ public sealed class Hollow : ArenaShape
         (denX, denZ) = B.AtEdge(denAng, 2);
         B.Take(denX, denZ, 14);
         // The great trees round the rim, their roots reaching in.
-        var roots = new List<(double, double, double, double, double)>();
+        var roots = rootSegs;
         var runs = new List<(double, double, double, double, double)>();
         for (int k = 0; k < 7; k++)
         {
@@ -96,8 +97,15 @@ public sealed class Hollow : ArenaShape
         double bank = (1 - MathX.Smoothstep(1.2, 2.6, f + n1 * 0.4)) * MathX.Smoothstep(0.6, 1.0, f);
         p.L3 = bank;
         p.Wet = Math.Max(1 - MathX.Smoothstep(0.9, 1.25, f), bank * 0.55);
-        // Moss loves the water's side.
-        p.BaseB = Math.Max(p.BaseB * 0.7, (1 - MathX.Smoothstep(2, 5, f)) * 0.8);
+        // The slurry glows in the stream's bed, faintly.
+        p.Glow = 1 - MathX.Smoothstep(0.55, 1.0, f);
+        // The older litter, rotted dark, lies in broad patches and by the water.
+        p.BaseB = Math.Max(p.BaseB * 0.85, (1 - MathX.Smoothstep(2, 5, f)) * 0.8);
+        // Moss: in cushions along the stream's banks, and in islands across the
+        // bowl where the canopy keeps it damp; never on the bed or the runs.
+        double isle = MathX.Smoothstep(0.46, 0.62, Noise.Noise(x * 0.11 + 70, z * 0.11 - 31) + n2 * 0.25);
+        double banks = (1 - MathX.Smoothstep(1.5, 2.3, f + n1 * 0.5)) * MathX.Smoothstep(1.05, 1.3, f);
+        p.Moss = Math.Max(isle * 0.85, banks * MathX.Smoothstep(0.0, 0.35, n2));
         // Roots.
         double rf = B.At(rootsF, x, z) + n2 * 0.25;
         p.L2 = (1 - MathX.Smoothstep(0.6, 1.0, rf)) * (1 - p.L4);
@@ -105,7 +113,8 @@ public sealed class Hollow : ArenaShape
         double run = 1 - MathX.Smoothstep(0.5, 1.1, B.At(runsF, x, z) + n1 * 0.3);
         double yard = 1 - MathX.Smoothstep(6, 13, MathX.Dist(x, z, denX, denZ) + n1 * 3);
         p.Trod = Math.Max(run * 0.7, yard);
-        p.L3 = Math.Max(p.L3, Math.Max(run * 0.55, yard * 0.85));
+        p.L3 = Math.Max(p.L3, Math.Max(run * 0.75, yard * 0.85));
+        p.Moss *= (1 - run) * (1 - yard) * (1 - p.L4);
         // Drier litter, needles and twigs, in drifts across the bowl, thickest toward the rim.
         p.L5 = MathX.Smoothstep(0.05, 0.45, Noise.Noise(x * 0.035 + 21, z * 0.035 + 3) + n2 * 0.2 + MathX.Smoothstep(30, 8, inn) * 0.3) * (1 - p.L3);
         if (Drowned) p.Wet = Math.Max(p.Wet, MathX.Smoothstep(0.35, 0.7, Noise.Noise(x * 0.05 - 9, z * 0.05)) * 0.8);
@@ -145,6 +154,46 @@ public sealed class Hollow : ArenaShape
 
     public override void Dress()
     {
+        // ------------------------------------------------------ the stream --
+        // Stones the water has washed pale line its banks and stand in its bed:
+        // the palest things on the ground, they draw the stream's line.
+        for (int k = 0; k < stream.Length; k++)
+        {
+            var (x, z, hw) = stream[k];
+            if (B.In(x, z) < -8) continue;
+            var (nx, nz, _) = stream[Math.Min(k + 1, stream.Length - 1)];
+            var (px, pz, _) = stream[Math.Max(k - 1, 0)];
+            double dx = nx - px, dz = nz - pz, len = Math.Max(1e-6, Math.Sqrt(dx * dx + dz * dz));
+            double ax = -dz / len, az = dx / len;
+            foreach (int side in new[] { -1, 1 })
+            {
+                if (!Rng.Chance(0.55)) continue;
+                double o = side * hw * Rng.Range(0.7, 1.35);
+                double sx = x + ax * o + Rng.Range(-0.6, 0.6), sz = z + az * o + Rng.Range(-0.6, 0.6);
+                B.Put(Rng.Chance(0.35) ? "scan_boulder" : "scan_rock", sx, sz, Rng.Range(0.22, 0.5), 0.12);
+                if (Rng.Chance(0.5)) B.Put("scan_stones", sx + Rng.Range(-1, 1), sz + Rng.Range(-1, 1), Rng.Range(0.9, 1.4), 0.04);
+            }
+            if (Rng.Chance(0.12)) B.Put("scan_boulder", x + Rng.Range(-0.8, 0.8), z + Rng.Range(-0.8, 0.8), Rng.Range(0.25, 0.45), 0.2);
+        }
+        // Roots: the great trees' own, thick at the trunk and thinning inward,
+        // laid along the lines they were planned on.
+        foreach (var (ax0, az0, bx0, bz0, hw0) in rootSegs)
+        {
+            if (!Rng.Chance(0.6) || B.In(ax0, az0) < -2) continue;
+            double rot = Math.Atan2(bx0 - ax0, bz0 - az0) + Math.PI / 2;
+            B.PutAt("scan_root", (ax0 + bx0) / 2, (az0 + bz0) / 2, rot + Rng.Range(-0.3, 0.3), 1.1 + hw0 * 1.1, 0.12);
+        }
+        // Moss grown up into cushions on the wettest islands.
+        for (int t = 0; t < 260; t++)
+        {
+            double a = Rng.Range(0, Math.PI * 2), rr = Rng.Range(6, ArenaGen.R);
+            double x = Math.Cos(a) * rr, z = Math.Sin(a) * rr;
+            if (!B.CanStand(x, z) || B.At(streamF, x, z) < 1.1) continue;
+            double isle = Noise.Noise(x * 0.11 + 70, z * 0.11 - 31);
+            if (isle < 0.4) continue;
+            B.Put("scan_moss", x, z, Rng.Range(0.9, 1.5), 0.05);
+        }
+
         // ------------------------------------------------- the edge's places --
         // The great trees round the rim.
         foreach (var (a, tx, tz) in greats)

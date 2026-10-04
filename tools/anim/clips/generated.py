@@ -16,7 +16,7 @@ from pathlib import Path
 
 import numpy as np
 
-from retarget import Source, best_loop, clip_from, face_forward, in_place, make_loop, retarget
+from retarget import Source, best_loop, clip_from, face_forward, in_place, lean_neck, make_loop, retarget
 from rig import qinv, qrot, qslerp
 
 MOCAP = Path(os.environ.get("MOCAP_DIR", r"C:\Users\munch\Tools\mocap"))
@@ -92,6 +92,7 @@ def make(rig, name, source, file, warp_=None, loop=False, place="line", ground=F
         warp(src, warp_)
     local, pos, info = retarget(rig.sk, src)
     local, pos = face_forward(rig.sk, local, pos)
+    local = lean_neck(rig, local)
     speed = 0.0
     if loop == "cycle":
         # The take is one whole cycle (Mixamo's walks): closed by its own

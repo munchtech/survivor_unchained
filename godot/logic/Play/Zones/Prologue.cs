@@ -843,10 +843,20 @@ public sealed class Prologue : ZoneRuntime
         var p = B.Player;
         B.Events.Emit(new Ev.Nova { X = p.X, Z = p.Z, Radius = 3.4, School = School.Fire, Duration = 1.4 });
         B.Events.Emit(new Ev.Shake { Amount = 0.25 });
-        G.Journey.Douse(B);
+        int taught = G.Journey.Douse(B);
         G.Announce(new Announcement("The ember goes out", "It burns only in the dark", "zone", 4.2, "Dawn"));
+        // What the night taught her, paid now the ember has gone: the first character level, on
+        // its own, where it can be understood.
+        if (taught > 0)
+            G.After(4.6, () =>
+            {
+                var ch = G.Journey.Ch;
+                G.Announce(new Announcement($"Level {ch.Level}", ch.TraitPicks > 0 ? "A new trait can be chosen (C)" : "Attribute points to spend (C)", "boon", 4.5, "What the night taught you"));
+                G.Journey.Grew();
+            });
+        // Without C04 A the narrator's words are a caption; with it, they were said in it.
         if (caption) G.After(1.2, () => G.Say("As the sun clears the trees, the ember goes out of you and back into the ground, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again, from nothing. You try to call up your mother's face, and find it is not quite where you left it.", null, 11));
-        G.After(caption ? 11.5 : 4.5, () => Tip("day", "By day", $"By day the ember sleeps: you fight with what you carry, your art and your feet, and every fight teaches you ({Key("character")}). The ember is for the night.", [Key("character")], 14));
+        G.After(caption ? 11.5 : 9.5, () => Tip("day", "By day", $"By day the ember sleeps: you fight with what you carry, your art and your feet, and every fight teaches you ({Key("character")}). The ember is for the night.", [Key("character")], 14));
     }
 
     void Finish()

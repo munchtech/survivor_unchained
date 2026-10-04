@@ -54,9 +54,9 @@ Rules for everyone:
   Redcowl, the Flagon's regulars, the Watch on a bad night); Holloway
   swears rarely and it lands; Vonnra, Keegan, Chid and Tam never do.
   Violence is said in one plain line, where it lands, and not dwelt on.
-  Intimate scenes are written in full before and after, with a cut-away
-  for the moment itself and an `[explicit scene: ...]` slot for the
-  owner's writer (`STORY_BIBLE.md`).
+  Intimate scenes are written in full before and after, and fade at the
+  moment itself. Nothing explicit is written (`STORY_BIBLE.md`, "Intimate
+  scenes: fade to black").
 
 ---
 

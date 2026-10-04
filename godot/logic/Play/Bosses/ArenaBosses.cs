@@ -64,7 +64,7 @@ public sealed class PackMother : ArenaBoss
     protected override bool Act(Enemy e, double dt)
     {
         if (lettingGo) return LetGo(e, dt);
-        if (A.Spare && e.Hp <= 1.5 && PhaseIx == 2) { StartLetGo(e); return true; }
+        if (A.Spare && Spent(e)) { StartLetGo(e); return true; }
         if (Running(e, dt)) return true;
         var (dx, dz, d) = ToPlayer();
         var p = B.Player;
@@ -244,7 +244,7 @@ public sealed class BarrowLord : ArenaBoss
     protected override bool Act(Enemy e, double dt)
     {
         if (laying) return Lay(e, dt);
-        if (e.Hp <= 1.5 && PhaseIx == Phases.Length - 1) { StartLay(e); return true; }
+        if (Spent(e)) { StartLay(e); return true; }
         if (Running(e, dt)) return true;
         var (dx, dz, d) = ToPlayer();
         lineT -= dt; pilumT -= dt; testudoT -= dt; gladiusT -= dt; holdT -= dt;
@@ -454,7 +454,7 @@ public sealed class Grimtunnel : ArenaBoss
     protected override bool Act(Enemy e, double dt)
     {
         if (goingDown) return GoDown(e, dt);
-        if (!ganger && e.Hp <= 1.5 && PhaseIx == Phases.Length - 1) { StartDown(e); return true; }
+        if (!ganger && Spent(e)) { StartDown(e); return true; }
         if (dazeT > 0) { dazeT -= dt; e.TakenMul = 1.5; e.Vx = e.Vz = 0; e.State = EnemyState.Stunned; e.StateT = Math.Max(e.StateT, dt * 2); return true; }
         // Under the ground he is still in reach, at half.
         e.TakenMul = under ? 0.5 : 1;
