@@ -1,60 +1,87 @@
 # Legal and Steam compliance: status
 
-Agent aa12c130ddf4b904c, branch `worktree-agent-aa12c130ddf4b904c` (worktree `.claude/worktrees/agent-aa12c130ddf4b904c` in survivorsunchained). Not a lawyer: I find and organise the issues, cite primary sources, and recommend. The owner and the main session decide.
+Agent aab20546fe06daa89 (successor to aa12c130ddf4b904c), branch `worktree-agent-aab20546fe06daa89` (worktree `.claude/worktrees/agent-aab20546fe06daa89` in survivorsunchained). Not a lawyer: I find and organise the issues, cite primary sources, and recommend. The owner and the main session decide. Predecessor's handoff: `docs/handoff/legal.md`.
 
-## State (4 October 2026)
+## State (4 October 2026, paused at the coordinator's request)
 
-- **Delivered:**
-  - `docs/legal/LEGAL_BRIEF.md`: the bottom line for the owner, then 27 ranked issues with evidence, sources and actions.
-  - `docs/legal/STEAM_CHECKLIST.md`: the submission steps, draft survey answers, the AI disclosure and the credits line.
-  - `docs/legal/QUESTIONS_FOR_LAWYER.md`: 14 questions.
-- **Blockers before launch** (brief issues 1 to 6 and 11):
-  - the honest AI and mature-content surveys;
-  - debug paths and unused files out of the release build;
-  - licence notices and credits shipped;
-  - the boar;
-  - the base bodies' source pictures;
-  - the owner's confirmation that he owns The Ember Watch;
-  - explicit-scene placeholders out of release data (done by the story lead at efc15256, awaiting merge);
-  - placeholder voices replaced or dropped.
-- **Biggest business risk:** the Krea 2 licence allows commercial use of outputs only under US$1M company revenue, and is revocable on 30 days' notice.
-- **Provenance reviewed:** `ASSET_PROVENANCE.md` and `REPLACEMENT_PLAN.md` (c009fdfd on `worktree-agent-a80ff0c7fd988b178`). The rulings are in brief issue 5, and I agree with the plan's order.
-- **Motion check (my renders, 4 Oct):** the **Warden's left plate cup clips in the sprint and shows part of the nipple**; reported to the main session. The other outfits stay covered in the run and sprint clips. Other clips are still unchecked.
+- **Delivered (predecessor):** `docs/legal/LEGAL_BRIEF.md` (27 ranked issues), `STEAM_CHECKLIST.md`, `QUESTIONS_FOR_LAWYER.md`. The provenance audit has been reviewed and its rulings are in brief issue 5.
+- **Merged:** `origin/claude/vigilant-galileo-l6jqyx` and `worktree-agent-aa12c130ddf4b904c` (5c74633d).
+- **Launch blockers, as tracked:**
+  - **Debug paths and export filter (performance lead a7145e18b3eb78294):** spec sent on 4 Oct. It covers:
+    - `Args.All()` in `Shots.cs` returning nothing when `!OS.IsDebugBuild()`;
+    - `exclude_filter` additions in all three presets: `tools_scenes/*`, the anime and woman bodies, `her_Hair_*`, `hero.glb` until his garment exists, the unused KayKit, web and Poly Haven files, and `art/vo/*`;
+    - a zip-pack listing for me to review;
+    - an optional guard test.
+
+    No reply yet.
+  - **Licences screen and folder (UI design):** the lead a69858664f1d3dd29 has handed off, and the job is first in its handoff. The successor is not yet on the roster. The sources are verified for the spec (below), which is to be written into brief issue 4.
+  - **The boar; the base bodies' source; The Ember Watch:** waiting for the owner's answers (the main session asked).
+  - **Placeholder voices:** all 19 takes in `godot/data/vo/index.json` are `placeholder`. They are covered by the `art/vo/*` exclusion above; the main session to confirm. `VoiceOver.cs:89` already tolerates a missing file.
+- **Code checks (4 Oct):**
+  - `--bare` hides the world, not her outfit.
+  - The environment variables (`HAIRDEBUG`, `FX_LAYERS`, `CAMPFIRE_PARTS`, `FLORA_COUNT`) are effects only.
+  - Every developer argument goes through `Args` in `Shots.cs`, so one gate covers them all.
+- **Motion check:** not yet run this session, because the main checkout was importing outfits at 15:52. The predecessor's `motion.sh`, `motioncheck.gd` and `sheet.py` are intact in `scratchpad/legal/`. Clip names found in `heroine.res`:
+  - `dash`, `leap`, `death`, `death_back`, `hit`;
+  - `cast_bolt`, `cast_flick`, `cast_raise`;
+  - `crossbow_shoot`, `throw`;
+  - `sit_log`, `sit_back_heels`;
+  - `idle_*_break`.
+
+  The swing clip names (axe, daggers and sword families in `tools/anim/clips`) are still to be listed from Godot itself.
+
+## Licences spec: verified sources (for brief issue 4)
+
+- Godot 4.5.1:
+  - `LICENSE.txt` and `COPYRIGHT.txt` at the `4.5.1-stable` tag. Both are live and return HTTP 200.
+  - In game, `Engine.GetLicenseText()`, `GetLicenseInfo()` and `GetCopyrightInfo()` return the same notices, so the screen can't drift.
+  - Godot's compliance page accepts a credits screen, a licences menu or an accompanying file.
+- .NET 8:
+  - Godot "bundles the parts of .NET needed to run already-compiled games" (C# basics page), so the runtime's notices apply.
+  - Use `LICENSE.TXT` and `THIRD-PARTY-NOTICES.TXT` from `dotnet/runtime` `release/8.0`, or better, from the runtime pack the first export restores.
+- The OFL texts are in `godot/art/fonts`.
+- The CC BY entries in `public/assets/CREDITS.md` meet §3(a): creator, title, link, licence and changes.
+- **The player-facing text must drop the internal notes:** "under review", repo paths, and the tool line formats.
+
+## Next (exact)
+
+1. **Motion check, once the main checkout's import is idle.** Check that no `--import` process is writing to `godot/.godot/imported`.
+   - List her clips from Godot: a three-line GDScript loading `res://art/anim/heroine.res`.
+   - Run `motion.sh` with the clip loop changed to:
+     - swings;
+     - `dash` and `leap`;
+     - `death` and `death_back`;
+     - `hit`;
+     - the casts, `throw` and `crossbow_shoot`;
+     - the sits and the breaks;
+     - all four outfits with jiggle on.
+   - Then the cinematic poses (cinematics lead a3058a45eee41d695, `--cine`) and the creation poses.
+   - Re-check the Warden's left cup when the main session says the fix has landed.
+2. Write the licences spec into brief issue 4. Send it to the UI design successor once the roster names one.
+3. Review the performance lead's pack listing when it comes.
+4. Re-rule on the owner's provenance answers.
+5. Standing check of new tools and assets. Recent ones to look at:
+   - the skills lead's "filmed clips";
+   - arena art's Hollow and Dig concepts;
+   - the cinematics gestures.
 
 ## Key decisions (with why)
 
-- **Survey answers:** General Mature, Frequent Violence or Gore, and Some Nudity or Sexual Content, but not Adult Only. Partial nudity plus non-explicit, text-only sex fits there. Explicit sex would move the game to hidden-by-default and payment-processor risk.
-- **The hidden anatomy and the hero's debug body are disclosed or removed.** Steam requires disclosure of all adult content uploaded, even if unreachable.
-- **Pre-generated AI is disclosed for art, effects, sound, motion, meshes, writing and voices; live generation is "no".** The game makes no AI or network calls.
-- **Decoupling the "Warmed" buff from the love scenes is recommended.** In Australia, sex linked to rewards means R18+, and Steam's Australian credit-card gate applies from 9 Sep 2026.
-
-## Next
-
-1. Re-rule when the owner answers the provenance questions (234.glb, the reference sheet, the hero's and woman's pictures, The Ember Watch, the names).
-2. Standing check: review new tools and assets as leads add them. Read status pages at milestones.
-3. Extend the motion check (combat, dash, death, crouch, cinematics, creation) with `scratchpad/legal/motion.sh` and `motioncheck.gd` (see the handoff). Re-check the Warden's cup once it is fixed.
-4. Before launch: review the credits screen, the `licences/` folder and the `.pck` listing.
+- **Survey:** General Mature, Frequent Violence or Gore, and Some Nudity or Sexual Content; not Adult Only. Text-only, non-explicit sex plus partial nudity fits there.
+- **Hidden anatomy:** disclosed, and debug bodies removed from the build. Steam: disclose "all the adult content you've uploaded … even if it's not accessible".
+- **Placeholder voices:** excluded at export rather than deleted. The owner wants none, and no files are deleted.
+- **"Warmed" buff:** decoupling it from the love scenes is recommended. In Australia, sex tied to rewards means R18+, and the credit-card gate has applied since 9 Sep 2026.
+- **Krea 2:** commercial use of outputs only under US$1M revenue, and the licence is revocable on 30 days' notice. It is the biggest business risk.
 
 ## Blockers on me
 
-- The owner's answers on residence and business structure, and on the base bodies' generator and source pictures (`234.glb`, `woman.glb`, `ComfyUI_00008.glb`, `images/1.webp`).
-- The USPTO search is behind a bot challenge, so a person must run the trademark search.
+- The owner's answers on the bodies' sources, The Ember Watch, the boar (buy or replace), and his residence and business structure.
+- A person must run the USPTO search (it sits behind a bot challenge).
 
 ## Notes for other areas
 
-- **Voice (successor):** ElevenLabs rules are in `docs/handoff/voice.md`.
-  - Answer to the open question: running Whisper, UTMOS or a speaker embedding on the owner's ElevenLabs takes is a **grey area** under Prohibited Use Policy 9(k), "input for any machine learning". QA-only inference that trains nothing and keeps nothing is low risk, but the literal words reach it.
-  - Until the lawyer or ElevenLabs confirms in writing:
-    - keep the check opt-in;
-    - never store speaker embeddings of ElevenLabs takes;
-    - prefer the owner listening, or a word check on the subtitle text alone.
-  - Use Voice Design voices for the narrator and the love interests.
-- **UI art:** style-named prompts are fixed (c457cc9). The side-by-side icon check against Diablo IV and Hades is still to do before launch.
-- **Main session:** decisions needed on:
-  - the release export filter and gating debug arguments (brief issue 3);
-  - stripping the explicit placeholders (issue 6);
-  - the "Warmed" buff (issue 7);
-  - the placeholder voices (issue 11);
-  - the credits and licences screen (issue 4).
-- **Hero lead:** good that a base garment is coming. Until then, `--body hero` must not reach a release build.
-- **Anyone adding a tool or model:** tell me its licence link. I'll check commercial use, revenue limits, territory, attribution and output terms.
+- **Performance (a7145e18b3eb78294):** the export spec is in your messages. Send me the zip-pack listing.
+- **UI design successor:** the licences screen is first in `docs/handoff/ui_design.md`. Use `Engine.GetLicenseText()` and `GetCopyrightInfo()` for Godot's part. I'll check the wording.
+- **Voice (successor):** the ElevenLabs rules are in `docs/handoff/voice.md`. Whisper, UTMOS and speaker embeddings on ElevenLabs takes are a grey area under Prohibited Use Policy 9(k). Keep them opt-in, and never store the embeddings.
+- **UI art:** the side-by-side icon check against Diablo IV and Hades is still due before launch.
+- **Anyone adding a tool or model:** send me its licence link.
