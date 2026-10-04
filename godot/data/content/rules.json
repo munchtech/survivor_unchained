@@ -953,12 +953,26 @@
      }
     ]
    },
-   "effect": {
-    "set": {
-     "nell.buried": true
+   "effect": [
+    {
+     "set": {
+      "nell.buried": true,
+      "nell.burying": true
+     }
+    },
+    {
+     "later": {
+      "days": 1,
+      "id": "nell.burying",
+      "effect": {
+       "set": {
+        "nell.burying": false
+       }
+      }
+     }
     }
-   },
-   "report": "Brannoc banked his forge at noon yesterday and took a handcart down the Low Ford road, with a blanket and a spade. He was back before the gate shut, with something under his apron in the cart, and Chid walked out past the guards to meet him. They buried her at first light behind the shrine, next to the old captain. Nobody was asked to come, and half the town did."
+   ],
+   "report": "Brannoc banked his forge at dusk yesterday and went down the Low Ford road alone, with a lantern and a blanket. He came back up it at sunrise with the blanket in his arms, and Chid walked out past the guards to meet him, and walked beside him up the street. They are burying her this morning, behind the shrine, next to the old captain. Nobody has been asked to come."
   },
   {
    "id": "nell.asking",
@@ -1054,7 +1068,7 @@
      "chapter.ready": true
     }
    },
-   "report": "A note under your door, in violet ink: \"Come and have your fortune read. No charge, this once. — V.\""
+   "report": "A note under your door, in violet ink: \"Come up to the roof after dark, and have your fortune read. No charge, this once. — V.\""
   },
   {
    "id": "crates.settle",
@@ -1137,6 +1151,23 @@
      "dig.depth": 1
     }
    }
+  },
+  {
+   "id": "dig.pump.running",
+   "once": true,
+   "when": {
+    "not": {
+     "fact": "dig.pump",
+     "exists": true
+    }
+   },
+   "effect": [
+    {
+     "set": {
+      "dig.pump": "running"
+     }
+    }
+   ]
   },
   {
    "id": "tremor",

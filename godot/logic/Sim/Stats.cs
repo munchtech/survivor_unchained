@@ -37,13 +37,20 @@ public static class Stat
         DashCooldown = "dashCooldown", AbilityCooldown = "abilityCooldown", AbilityPower = "abilityPower",
         UltCharge = "ultCharge", LightRadius = "lightRadius", ExecuteThreshold = "executeThreshold",
         /// <summary>Slows and chills on the survivor are this much shorter and weaker (0..0.8).</summary>
-        Tenacity = "tenacity";
+        Tenacity = "tenacity",
+        /// <summary>How tough the survivor's allies are (a multiplier on their health).</summary>
+        SummonHealth = "summonHealth",
+        /// <summary>What a shocked creature takes on top of the shock's own 35%.</summary>
+        ShockBonus = "shockBonus";
 
     static readonly string[] damageSchool = Build<School>("damage.");
     static readonly string[] damageTag = Build<Tag>("damage.");
     static readonly string[] resist = Build<School>("resist.");
     static readonly string[] vs = Build<Family>("vs.");
     static readonly string[] from = Build<Family>("from.");
+    static readonly string[] statusDuration = Build<StatusKind>("statusDuration.");
+    static readonly string[] statusDamage = Build<StatusKind>("statusDamage.");
+    static readonly string[] statusPower = Build<StatusKind>("statusPower.");
 
     static string[] Build<T>(string prefix) where T : struct, Enum
     {
@@ -58,6 +65,12 @@ public static class Stat
     public static string ResistOf(School s) => resist[(int)s];
     public static string VsOf(Family f) => vs[(int)f];
     public static string FromOf(Family f) => from[(int)f];
+    /// <summary>How long a status lasts (a multiplier: burns that burn longer).</summary>
+    public static string StatusDurationOf(StatusKind k) => statusDuration[(int)k];
+    /// <summary>How hard a status's damage over time hits (a multiplier, on top of statusDamage).</summary>
+    public static string StatusDamageOf(StatusKind k) => statusDamage[(int)k];
+    /// <summary>How much of a status each blow builds (a multiplier: chill that freezes sooner).</summary>
+    public static string StatusPowerOf(StatusKind k) => statusPower[(int)k];
 }
 
 public sealed class StatBlock
@@ -74,8 +87,14 @@ public sealed class StatBlock
             [Stat.StatusChance] = 0, [Stat.StatusDamage] = 1, [Stat.Knockback] = 1, [Stat.DashCharges] = 2,
             [Stat.DashCooldown] = 1, [Stat.AbilityCooldown] = 1, [Stat.AbilityPower] = 1, [Stat.UltCharge] = 1,
             [Stat.LightRadius] = 1, [Stat.Projectiles] = 0, [Stat.Pierce] = 0, [Stat.Dodge] = 0, [Stat.Block] = 0,
-            [Stat.Lifesteal] = 0, [Stat.Thorns] = 0, [Stat.ExecuteThreshold] = 0,
+            [Stat.Lifesteal] = 0, [Stat.Thorns] = 0, [Stat.ExecuteThreshold] = 0, [Stat.SummonHealth] = 1, [Stat.ShockBonus] = 0,
         };
+        foreach (var k in EnumKey<StatusKind>.All)
+        {
+            d[Stat.StatusDurationOf(k)] = 1;
+            d[Stat.StatusDamageOf(k)] = 1;
+            d[Stat.StatusPowerOf(k)] = 1;
+        }
         // Every per-school or per-tag damage stat defaults to 1 (no change).
         foreach (var s in EnumKey<School>.All) d[Stat.DamageOf(s)] = 1;
         foreach (var t in EnumKey<Tag>.All) d[Stat.DamageOf(t)] = 1;

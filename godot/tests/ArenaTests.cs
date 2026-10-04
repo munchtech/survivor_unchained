@@ -63,6 +63,18 @@ public class ArenaTests
     /// <summary>What rules the people (the strongest of its kind on the field).</summary>
     static Enemy Boss(Setup s) => s.B.Enemies.Living().Where(e => e.Def.Id == MapOffers.People(s.Spec.People).Boss).MaxBy(e => e.MaxHp)!;
 
+    /// <summary>The boss beaten by a crushing build: through its phases (each gated by
+    /// its floor), as fast as the contract lets anything win.</summary>
+    static void Defeat(Setup s)
+    {
+        var boss = Boss(s);
+        for (int i = 0; i < 400 && !s.Zone.Won; i++)
+        {
+            if (boss.Alive && boss.State != EnemyState.Dying) s.B.HitEnemy(boss, boss.MaxHp * 0.25, School.Physical, [Tag.Physical]);
+            Run(s, 0.5);
+        }
+    }
+
     static int Hostile(Battle b) => b.Enemies.Living().Count(e => e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying);
 
     [Fact]
@@ -175,7 +187,7 @@ public class ArenaTests
         Run(s, 1);
         Assert.NotNull(s.Host.Boss);
         int level = s.J.Ch.Level;
-        s.B.HitEnemy(Boss(s), 1e9, School.Physical, [Tag.Physical]);
+        Defeat(s);
         Run(s, 4);
         // Won, and the story told so at once; but nothing is over.
         Assert.True(s.Zone.Won);
@@ -203,7 +215,8 @@ public class ArenaTests
         Assert.Equal(Arenas.XpFor(s.Spec, r.Seconds, true), r.Xp);
         Assert.True(s.J.Ch.Level > level);
         Assert.Contains("seeking_motes", s.J.Ch.Discovered);
-        Assert.Contains("might", s.J.Ch.Discovered);
+        // Only combat skills are discovered (only they can be learned by day).
+        Assert.DoesNotContain("might", s.J.Ch.Discovered);
         Assert.Contains("seeking_motes", r.Discovered);
         Assert.Null(s.J.World.Arena);
         Assert.True(s.J.World.Fact("arena.longest").Number > 50);
@@ -216,7 +229,7 @@ public class ArenaTests
         s.B.Player.Iframes = 1e9;
         s.B.Time = 1800;
         Run(s, 1);
-        s.B.HitEnemy(Boss(s), 1e9, School.Physical, [Tag.Physical]);
+        Defeat(s);
         Run(s, 1);
         Assert.True(s.Zone.OnDeath("a wolf"));
         Run(s, 3);
@@ -253,7 +266,7 @@ public class ArenaTests
         next.B.Player.Iframes = 1e9;
         next.B.Time = 1800;
         Run(next, 1);
-        next.B.HitEnemy(Boss(next), 1e9, School.Physical, [Tag.Physical]);
+        Defeat(next);
         Run(next, 1);
         Assert.Empty(s.J.World.Rematches);
         Assert.True(s.J.World.Fact("test.won").Truthy);

@@ -446,7 +446,7 @@ says it was not them." `"mystery": true`.
 
 | Entry | Text |
 |---|---|
-| `book` | The dead watchman's belt-book, at the post on the Low Ford road: "Lamps at the Low Ford lit again, and not by us." "Sent Dannet for the captain. Dannet not back." |
+| `book` | The dead watchman's belt-book, at the post on the Low Ford road: "Lamps at the Low Ford lit again, and not by us. Not oil. Wrong colour." "Sent Dannet for the captain. Dannet not back." |
 | `keegan` | Dame Keegan: the lamps were never meant to keep the dark out. They kept the Warden asleep. "If somebody lit them again, somebody wanted it awake." |
 | `post` | Captain Holloway knew the dead watchman: Corran, written down as a deserter in the spring, and his runner Dannet with him. The Watch has had no oil for the ford lamps in years. |
 | `irons` | Brannoc forged twelve new lamp-irons for the Low Ford last winter. Ten were collected at night, paid for in square old-empire coin left on the anvil. Two are still on his rack. |
@@ -469,7 +469,7 @@ flowchart TD
   quick -- no --> price[He nods, as at a price]
   q -- 'I passed nobody' --> lie[nell.told lie]
   q -- 'I didn't look' --> evaded[nell.told evaded]
-  gone & risen --> burial[[Next dawn: he fetches her, Chid meets the cart, they bury her by Ashe: nell.buried]]
+  gone & risen --> burial[[That dusk he goes down the road for her, alone or with the survivor (C14); at sunrise Chid meets him at the gate; they bury her by Ashe: nell.buried]]
   lie & evaded --> asking[[Two days on: he asks pedlars at the gate: nell.asking]]
   burial --> irons2[Hub: 'Those last two irons', brannoc.waits_buyer]
 ```
@@ -1046,3 +1046,51 @@ the tracker mid-caravan, Harlan's longest greeting, Brannoc and Nell, the
 fortune's crates and last pages with the accusation, the chapter's page,
 Pell's shelf with the charge, the Roost before and after the crates. Text
 fits everywhere; the tracker wraps its longer steps to two lines.
+
+## 16. The story explorer's findings (3 October)
+
+The explorer (`docs/cloud/story-explorer.md`) found no softlock, dead end or
+contradiction. It raised four things; each is settled here.
+
+- **Wenna's mask** (`wenna.first` and `wenna.hub`, "That beaked mask on the
+  wall..."). It wanted affection 20, which only two bitterroot deliveries (or
+  one and the teamsters freed) could reach. A survivor who cured the stream
+  first could never earn it, though curing it is the thing Wenna cares about
+  most ("The stream's clean, child. Clean."). **Now:** affection 20, *or* the
+  stream cleared by the survivor (history `stream_cleared`) and not sold to
+  Pell (`beasts.outcome` not `exploited`). The curer's mask has her own line:
+  "You cleaned my stream, child. Take it. ...Something down there's still
+  cooking, and I'm too old to go where it's needed." (Act 2's bad air.) [DATA,
+  done; `CinematicTests.Wenna_gives_her_mask_to_whoever_cleaned_her_stream`]
+- **Keegan's supper** (`keegan.hub`, "It's late. Have you eaten?"). It is the
+  romance's Act 1 beat (`docs/romance/`), so it should be reachable by the
+  survivor who listens to her. **Now:** respect 25 and affection 10, at night,
+  after the first dinner. The road, all in her own conversation:
+  - tell her about the Ford-Warden (the dead watchman's book teaches
+    `lore.warden`; `keegan.warden`, respect +15);
+  - ask her about Ashe (Rook's first lamp teaches `lore.ashe`; `keegan.ashe`,
+    respect +10);
+  - accept the dinner ("Does the handbook say anything about dinner?",
+    `keegan.dinner`, affection +10);
+  - then come back after dark.
+  Deeds that raise everyone's regard (the teamsters freed) can stand in for one
+  of the first two. [DATA, done;
+  `CinematicTests.Keegan_sups_with_whoever_listened_to_her`]
+- **The cinematics' conversations** (`cin_*`). Nothing started them. Each
+  trigger is now in `docs/cinematics/README.md` section 9, exactly. What could
+  live without the cinematic player is live now [CODE, done]:
+  - the opening's prints in the frost (C01);
+  - the Warden's evening call, "Lie down." and "Is it morning?" (C02, C03);
+  - Grimtunnel's "You smell like downstairs" and "ever so grateful" (C03);
+  - the ember going "back into the ground" (C04);
+  - "Them first." at the Roost (C06);
+  - Nell's burial in the Quiet Garden on its morning, as a conversation (C08;
+    the rule `nell.burial` sets `nell.burying` for that day only);
+  - Redcowl's last words as the Roost raid's outcome (C11), so Rav's "the leg
+    held" is reachable.
+  The night fights' scenes (C10 to C14) wait for boss hooks on `ArenaSpec`.
+- **`dig.pump = running`** was asked about and never written. **Now** a rule
+  (`dig.pump.running`) writes it at the first dawn, as the state the Dig is in
+  until someone moves, breaks or blows the pump; Act 2 reads it ("still
+  running at the act's end"). [DATA, done; `CinematicTests.The_pump_runs_until_someone_stops_it_and_the_burial_is_one_morning`]
+

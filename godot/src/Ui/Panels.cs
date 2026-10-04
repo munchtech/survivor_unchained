@@ -9,13 +9,18 @@ using SurvivorUnchained.World;
 
 namespace SurvivorUnchained.Ui;
 
-/// <summary>What the level-up draft shows, and what picking does; the fight, for the build beside the cards.</summary>
+/// <summary>What the level-up draft shows, and what picking does; the fight, for the build beside the cards;
+/// a skip, when one is allowed (docs/SKILLS_DESIGN.md, "The offer").</summary>
 public sealed record DraftView(int Level, bool Blessing, List<Offer> Offers, int Rerolls, int Banishes, int Queued, string? Tip, HashSet<Tag> Build,
-    Action<int> Pick, Action Reroll, Action<int> Banish, string? Great = null, Battle? Battle = null);
+    Action<int> Pick, Action Reroll, Action<int> Banish, string? Great = null, Battle? Battle = null, Action? Skip = null);
 
 /// <summary>A conversation as the panel shows it: who, and what they look like.</summary>
 public sealed record DialogueView(string Name, string Title, string Mood, string Speaker, string Text, List<PresentedChoice> Choices,
-    bool CanContinue, PersonSpec? Person, Held? Arms, double Scale, string? Glyph, string PlayerName, Action<int> Choose, Action Advance, string? Before = null);
+    bool CanContinue, PersonSpec? Person, Held? Arms, double Scale, string? Glyph, string PlayerName, Action<int> Choose, Action Advance, string? Before = null)
+{
+    /// <summary>The recording reading this line, if there is one: the words follow it.</summary>
+    public VoTake? Voice { get; init; }
+}
 
 /// <summary>
 /// The ember draft (docs/UI_DESIGN.md, "The draft"). Time stops; the cards
@@ -27,11 +32,14 @@ public sealed record DialogueView(string Name, string Title, string Mood, string
 /// never a guess. 1-4 or a click takes a card, the arrows or the D-pad move
 /// along them and Enter or A takes the one lifted; for a moment after the
 /// cards appear none can be taken, so a key still held from the fight does
-/// not spend a level by accident.
+/// not spend a level by accident. The skill system's words ride on each card
+/// (docs/SKILLS_DESIGN.md): why the ember dealt it (banked, on your path,
+/// your calling's own), what a combat skill becomes, the path it belongs to;
+/// a great blessing says what it is for; V (or R3) skips for ember back.
 /// </summary>
 public partial class DraftPanel : Control
 {
-    const float CardW = 320, CardH = 452;
+    const float CardW = 320, CardH = 500;
     readonly DraftView v;
     int focus;
     bool armed, banishing;
@@ -58,12 +66,23 @@ public partial class DraftPanel : Control
         return null;
     }
 
+    static string Role(string id) => Boons.GreatRoles.TryGetValue(id, out var r) ? r switch
+    {
+        Boons.GreatRole.Ward => "ward",
+        Boons.GreatRole.Answer => "answer",
+        Boons.GreatRole.Tempo => "quickening",
+        _ => "power",
+    } : "great";
+
     static string Kicker(Offer o) => o.Kind switch
     {
-        OfferKind.Weapon => "New combat skill",
+        OfferKind.Weapon => o.To is int r && r > 1 ? $"New combat skill · rank {r}" : "New combat skill",
         OfferKind.Rank => $"Combat skill · rank {o.From} to {o.To}",
         OfferKind.Evolve => "Evolution",
-        OfferKind.Boon when o.Great => o.From is int g && g > 0 ? $"Great blessing · rank {g} to {o.To}" : "Great blessing",
+        OfferKind.Union => "Union",
+        OfferKind.Hone => $"Honing · {o.To} of {LevelUp.MaxHone}",
+        // A great blessing says what it is for: power, ward, answer, quickening.
+        OfferKind.Boon when o.Great => o.From is int g && g > 0 ? $"{Role(o.Id)} · rank {g} to {o.To}" : $"Great blessing · {Role(o.Id)}",
         OfferKind.Boon when Boons.Find(o.Id)?.Kind == BoonKind.Blessing => o.From is int f && f > 0 ? $"Blessing · rank {f} to {o.To}" : "Blessing",
         OfferKind.Boon => o.From is int f2 && f2 > 0 ? $"Passive skill · rank {f2} to {o.To}" : "New passive skill",
         _ => "Respite",
@@ -84,7 +103,18 @@ public partial class DraftPanel : Control
 
     public override void _Ready()
     {
-        AddChild(Style.Scrim(null, 0.74f));
+        AddChild(new Backdrop(null, 0.8f));
+        var fire = new TextureRect
+        {
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
+            Texture = new GradientTexture2D
+            {
+                Gradient = new Gradient { Colors = new[] { new Color(1, 0.42f, 0.12f, 0.26f), new Color(0.8f, 0.2f, 0.05f, 0.1f), new Color(0.6f, 0.1f, 0.02f, 0) }, Offsets = new[] { 0f, 0.5f, 1f } },
+                Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1f, 0.5f), Width = 256, Height = 256,
+            },
+            Position = new Vector2(160, 160), Size = new Vector2(1600, 900),
+        };
+        AddChild(fire);
         var col = Style.V(Style.Gap2);
         col.Position = new Vector2(0, 128);
         col.Size = new Vector2(1920, 900);
@@ -92,9 +122,12 @@ public partial class DraftPanel : Control
         string kicker = v.Great ?? (v.Blessing ? $"Ember {v.Level}: a milestone" : "The ember rises");
         string head = v.Great != null ? "A Great Blessing" : v.Blessing ? "A Blessing" : $"Ember {v.Level}";
         col.AddChild(Style.Label(kicker, Style.TextItalic, Style.Lead, v.Great != null || v.Blessing ? new Color("#ffd88a") : new Color("#e8b878"), false, HorizontalAlignment.Center));
-        col.AddChild(Style.Label(head.ToUpperInvariant(), Style.Display, 48, new Color("#ffe6b8"), false, HorizontalAlignment.Center));
-        col.AddChild(Style.Flourish());
+        var plaque = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+        plaque.AddChild(new Plaque(head, 46, 170, new Color("#ffe6b8")));
+        col.AddChild(plaque);
         if (v.Queued > 0) col.AddChild(Style.Label($"{v.Queued} more to choose after this", Style.UiBold, Style.Small, Style.InkDim, false, HorizontalAlignment.Center));
+        if (v.Battle != null && LevelUp.BuildPaths(v.Battle) is { Count: > 0 } paths)
+            col.AddChild(Style.Label($"Walking {string.Join(" and ", paths.Select(p => p.Name))}", Style.TextItalic, Style.Small, Style.EmberHi, false, HorizontalAlignment.Center));
         if (v.Tip != null)
         {
             var tip = Style.Label(v.Tip, Style.TextItalic, Style.Body, Style.Ink, true, HorizontalAlignment.Center);
@@ -140,6 +173,13 @@ public partial class DraftPanel : Control
         Inside(banish, bb);
         banish.Disabled = v.Banishes <= 0;
         foot.AddChild(banish);
+        if (v.Skip != null)
+        {
+            var skip = Style.Button("", () => { if (armed && chosen == null) v.Skip(); }, false, true);
+            Inside(skip, Style.H(6, Style.Prompt(Act.Skip), Style.Label("Skip", Style.UiBold, Style.Caption, Style.GoldHi)));
+            skip.TooltipText = $"Take none: {LevelUp.SkipRefund * 100:0}% of the level's ember comes back, so the next level comes sooner.";
+            foot.AddChild(skip);
+        }
     }
 
     /// <summary>A row inside a button, sized to it.</summary>
@@ -156,6 +196,8 @@ public partial class DraftPanel : Control
     {
         var strip = Style.H(Style.Gap2);
         strip.Alignment = BoxContainer.AlignmentMode.Center;
+        var slab = Style.Panel(Style.Slab(12), strip);
+        slab.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
         strip.AddChild(Style.Label("YOUR BUILD", Style.UiHeavy, Style.Caption, Style.Gold));
         foreach (var w in b.Weapons)
         {
@@ -182,7 +224,7 @@ public partial class DraftPanel : Control
             buildChips[id] = chip;
             strip.AddChild(chip);
         }
-        return strip;
+        return slab;
     }
 
     static Control Chip(string? glyph, Color c, string rank, bool evolved, bool round = false)
@@ -207,24 +249,27 @@ public partial class DraftPanel : Control
 
     Button Card(Offer o, int i)
     {
-        var r = o.Kind == OfferKind.Evolve ? 4 : (int)o.Rarity;
+        bool crown = o.Kind is OfferKind.Evolve or OfferKind.Union;
+        var r = crown ? 4 : (int)o.Rarity;
         var rc = Style.RarityOf(r);
         var school = SchoolOf(o);
-        var color = o.Kind == OfferKind.Evolve ? new Color("#ffd88a") : school is School s ? ItemViews.SchoolColors[s] : rc;
+        var color = crown ? new Color("#ffd88a") : school is School s ? ItemViews.SchoolColors[s] : rc;
         var b = new Button { CustomMinimumSize = new Vector2(CardW, CardH), FocusMode = FocusModeEnum.None, MouseDefaultCursorShape = CursorShape.PointingHand };
         foreach (var state in new[] { "normal", "hover", "pressed", "disabled", "focus" }) b.AddThemeStyleboxOverride(state, new StyleBoxEmpty());
         var panel = new Panel { MouseFilter = MouseFilterEnum.Ignore };
         Style.Fill(panel);
         b.AddChild(panel);
         panel.SetMeta("rc", rc);
-        panel.SetMeta("frame", o.Kind == OfferKind.Evolve ? "card_evolve" : $"card_{Math.Min(r, 4)}");
-        // A painted card has no shadow of its own: its rarity's glow, when lifted, is drawn behind it.
+        panel.SetMeta("frame", crown ? "card_evolve" : $"card_{Math.Min(r, 4)}");
+        // A painted card has no glow of its own: its rarity's, when lifted, is drawn behind it.
         var glow = new Panel { MouseFilter = MouseFilterEnum.Ignore, ShowBehindParent = true, Name = "Glow" };
         Style.Fill(glow);
         panel.AddChild(glow);
         var v2 = Style.V(Style.Gap2);
-        v2.Position = new Vector2(22, 20);
-        v2.Size = new Vector2(CardW - 44, CardH - 36);
+        // The painted card's iron is wider than the drawn one's edge: what is written keeps inside it.
+        bool painted = UiArt.Has((string)panel.GetMeta("frame"));
+        v2.Position = painted ? new Vector2(40, 22) : new Vector2(22, 20);
+        v2.Size = painted ? new Vector2(CardW - 80, CardH - 64) : new Vector2(CardW - 44, CardH - 36);
         b.AddChild(v2);
         // What it is, on a ribbon; NEW when it is new to the build.
         var ribbon = Style.H(6);
@@ -233,17 +278,9 @@ public partial class DraftPanel : Control
         if (Fresh(o)) ribbon.AddChild(Style.Panel(Style.Box(Style.Ember with { A = 0.9f }, Style.EmberHi, 1, 12, 6), Style.Label("NEW", Style.UiHeavy, Style.Badge, new Color("#2a1206"), false, HorizontalAlignment.Center, false)));
         v2.AddChild(ribbon);
         // The icon on a disc of its colour.
-        var art = new CenterContainer { CustomMinimumSize = new Vector2(CardW - 44, 128), MouseFilter = MouseFilterEnum.Ignore };
-        var disc = new Panel { CustomMinimumSize = new Vector2(112, 112), MouseFilter = MouseFilterEnum.Ignore };
-        var ds = Style.Box(color.Darkened(0.82f) with { A = 0.95f }, color with { A = 0.7f }, 2, 56, 0);
-        ds.ShadowColor = color with { A = 0.25f };
-        ds.ShadowSize = 16;
-        disc.AddThemeStyleboxOverride("panel", ds);
-        var glyph = Glyphs.Icon(o.Icon, 68, color);
-        glyph.Position = new Vector2(22, 22);
-        glyph.Size = new Vector2(68, 68);
-        disc.AddChild(glyph);
-        art.AddChild(disc);
+        var art = new CenterContainer { CustomMinimumSize = new Vector2(v2.Size.X, 132), MouseFilter = MouseFilterEnum.Ignore };
+        var medal = new Medallion(124, "", o.Icon) { Ring = color, Ink = color.Lightened(0.15f), Core = color.Darkened(0.82f), Name = "Medal" };
+        art.AddChild(medal);
         v2.AddChild(art);
         v2.AddChild(Style.Label(o.Title, Style.Display, Style.Title, Style.GoldHi, true, HorizontalAlignment.Center));
         if (o.Kind == OfferKind.Evolve && Weapons.All.TryGetValue(o.Id, out var from))
@@ -270,6 +307,12 @@ public partial class DraftPanel : Control
         var body = Style.Label(text, Style.Text, Style.Body, Style.Ink, true, HorizontalAlignment.Center);
         body.SizeFlagsVertical = SizeFlags.ExpandFill;
         v2.AddChild(body);
+        // Why the ember dealt it: banked from the day, on your path, your calling's own, a duo; a trap said plainly.
+        foreach (var why in o.Why.Where(w => o.Path == null || !w.StartsWith("On your path")).Take(2))
+            v2.AddChild(Style.Label(why, Style.UiBold, Style.Caption, why.StartsWith("Little") ? Style.InkDim : Style.EmberHi, true, HorizontalAlignment.Center));
+        // What a combat skill becomes, and with what.
+        if (o.Recipe is { Length: > 0 } recipe)
+            v2.AddChild(Style.Label(recipe, Style.TextItalic, Style.Badge, Style.InkDim, true, HorizontalAlignment.Center));
         var tags = Style.H(10);
         tags.Alignment = BoxContainer.AlignmentMode.Center;
         bool fits = false;
@@ -280,14 +323,17 @@ public partial class DraftPanel : Control
             tags.AddChild(Style.Label(tg.ToString().ToLowerInvariant(), Style.UiBold, Style.Caption, fit ? Style.EmberHi : Style.InkFaint));
         }
         v2.AddChild(tags);
-        if (fits)
+        // The path it belongs to, or (if none) that it fits what the build already does.
+        if (o.Path is { } pid && Content.Paths.Find(pid) is { } path)
+            v2.AddChild(Style.Label(path.Name, Style.DisplayLight, Style.Small, Style.Gold, false, HorizontalAlignment.Center));
+        else if (fits)
         {
             var fl = Style.H(4, Glyphs.Icon("flame", 15, Style.EmberHi), Style.Label("Fits your build", Style.UiBold, Style.Caption, Style.EmberHi));
             fl.Alignment = BoxContainer.AlignmentMode.Center;
             v2.AddChild(fl);
         }
         // Its rarity, in words and diamonds as well as colour; its key.
-        var foot = Style.H(Style.Gap2, Style.Label(o.Kind == OfferKind.Evolve ? "Legendary" : o.Rarity.ToString(), Style.UiBold, Style.Caption, rc), Style.Gems(r, 6));
+        var foot = Style.H(Style.Gap2, Style.Label(crown ? "Legendary" : o.Rarity.ToString(), Style.UiBold, Style.Caption, rc), Style.Gems(r, 6));
         foot.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
         var key = new Control { CustomMinimumSize = new Vector2(30, 26), MouseFilter = MouseFilterEnum.Ignore, Name = "Key" };
         foot.AddChild(key);
@@ -313,20 +359,23 @@ public partial class DraftPanel : Control
             var panel = b.GetChild<Panel>(0);
             var rc = (Color)panel.GetMeta("rc");
             bool on = i == focus, ch = chosen == i;
-            var edge = banishing ? new Color("#ff6a4a") : ch ? Style.GoldHi : rc with { A = on ? 0.95f : 0.55f };
-            var s = Style.Box(new Color(0.09f, 0.075f, 0.1f, 0.98f).Lerp(rc, banishing && on ? 0.0f : 0.05f), edge, ch ? 3 : on ? 2 : 1, 10, 0);
-            s.ShadowColor = on ? (banishing ? new Color("#ff6a4a") : rc) with { A = 0.4f } : new Color(0, 0, 0, 0.7f);
-            s.ShadowSize = on ? 30 : 18;
+            var edge = banishing && on ? new Color("#ff6a4a") : ch ? Style.GoldHi : rc;
+            // A crested card: its rarity in the crest and the corners, a glow when lifted.
+            var s = OrnateBox.Make(OrnateBox.Kind.Card, 0, edge);
+            s.Crest = 120;
+            s.Glow = on ? 1.4f : 0;
+            s.Top = new Color("#211c26").Lerp(rc, 0.05f);
             bool art = UiArt.Has((string)panel.GetMeta("frame"));
             panel.AddThemeStyleboxOverride("panel", art ? UiArt.Frame((string)panel.GetMeta("frame"), s) : s);
             if (panel.GetNodeOrNull<Panel>("Glow") is { } glow)
             {
                 var g = Style.Box(new Color(0, 0, 0, 0), new Color(0, 0, 0, 0), 0, 10, 0);
-                g.ShadowColor = s.ShadowColor;
-                g.ShadowSize = s.ShadowSize;
+                g.ShadowColor = on ? edge with { A = 0.45f } : new Color(0, 0, 0, 0.7f);
+                g.ShadowSize = on ? 34 : 18;
                 glow.AddThemeStyleboxOverride("panel", g);
                 glow.Visible = art;
             }
+            if (b.FindChild("Medal", true, false) is Medallion m) { m.Lit = on; m.QueueRedraw(); }
             panel.SelfModulate = banishing && on ? new Color(1.15f, 0.8f, 0.75f) : Colors.White;
             b.GetNode<Label>("Ban").Visible = banishing && on;
             b.Position = b.Position with { Y = on && chosen == null ? -12 : 0 };
@@ -382,6 +431,7 @@ public partial class DraftPanel : Control
             case Act.Reroll or Act.Alt: if (armed && v.Rerolls > 0 && chosen == null) v.Reroll(); else Sound.Sfx.Deny(); break;
             case Act.Banish or Act.Alt2: if (v.Banishes > 0) { banishing = !banishing; Mark(); Prompts(); } else Sound.Sfx.Deny(); break;
             case Act.Cancel: if (banishing) { banishing = false; Mark(); Prompts(); } break;
+            case Act.Skip: if (armed && chosen == null && v.Skip != null) v.Skip(); else Sound.Sfx.Deny(); break;
         }
         return true;
     }
@@ -457,37 +507,50 @@ public partial class TalkPanel : Control
         };
         Style.Fill(shade);
         AddChild(shade);
+        // The words on a plate across the foot of the screen; the person stands in front of its
+        // left end, large, as they would across a table (docs/UI_DESIGN.md, "Conversation").
         var box = Style.Panel(Style.Plate(22));
-        box.Position = new Vector2(240, 1080 - 40 - 420);
-        box.Size = new Vector2(1440, 420);
+        box.Position = new Vector2(420, 1080 - 36 - 404);
+        box.Size = new Vector2(1460, 404);
         AddChild(box);
-        var row = Style.H(28);
-        box.AddChild(row);
-        // Who.
-        var who = Style.V(4);
-        who.CustomMinimumSize = new Vector2(230, 0);
-        var frame = Style.Panel(Style.Box(new Color(0.03f, 0.025f, 0.04f), Style.Line, 1, 6, 0));
-        frame.CustomMinimumSize = new Vector2(228, 274);
-        if (d.Person != null) frame.AddChild(new Portrait(new Vector2I(228, 274), Portrait.Framing.Bust).Of(d.Person, d.Arms, d.Scale));
+        var inset = new MarginContainer { MouseFilter = MouseFilterEnum.Ignore };
+        inset.AddThemeConstantOverride("margin_left", 190);
+        inset.AddThemeConstantOverride("margin_top", 26);
+        box.AddChild(inset);
+        var glow = new TextureRect
+        {
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
+            Texture = new GradientTexture2D
+            {
+                Gradient = new Gradient { Colors = new[] { new Color(1, 0.5f, 0.2f, 0.2f), new Color(1, 0.5f, 0.2f, 0) }, Offsets = new[] { 0f, 1f } },
+                Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.55f), FillTo = new Vector2(1f, 0.55f), Width = 128, Height = 128,
+            },
+            Position = new Vector2(-40, 300), Size = new Vector2(720, 780),
+        };
+        AddChild(glow);
+        if (d.Person != null)
+        {
+            var fig = new Portrait(new Vector2I(560, 760), Portrait.Framing.Half).Of(d.Person, d.Arms, d.Scale);
+            fig.Position = new Vector2(30, 1080 - 760);
+            AddChild(fig);
+        }
         else
         {
-            var c = new CenterContainer();
-            c.AddChild(Glyphs.Icon(d.Glyph ?? "talk", 110, new Color("#e8c890")));
-            frame.AddChild(c);
+            var m = new Medallion(240, "", d.Glyph ?? "talk") { Ink = new Color("#e8c890"), Lit = true };
+            m.Position = new Vector2(190, 1080 - 36 - 404 - 40);
+            AddChild(m);
         }
-        who.AddChild(frame);
-        who.AddChild(Style.Label(d.Name, Style.Display, 22, Style.GoldHi, true, HorizontalAlignment.Center));
-        if (d.Title != "") who.AddChild(Style.Label(d.Title, Style.TextItalic, Style.Caption, Style.InkDim, true, HorizontalAlignment.Center));
-        if (d.Mood != "")
-        {
-            var mood = Style.H(4, Glyphs.Icon("eye", 14, Style.Gold), Style.Label(d.Mood, Style.Ui, Style.Caption, Style.Gold));
-            mood.Alignment = BoxContainer.AlignmentMode.Center;
-            who.AddChild(mood);
-        }
-        row.AddChild(who);
+        // Their name on a banner over the plate's edge, what they are and how they feel about you beside it.
+        var banner = Style.Panel(OrnateBox.Make(OrnateBox.Kind.Banner, 18), Style.Label(d.Name.ToUpperInvariant(), Style.Display, 26, Style.GoldHi));
+        banner.Position = new Vector2(610, 1080 - 36 - 404 - 26);
+        AddChild(banner);
         // What is said, and what can be said back.
         var main = Style.V(10);
         main.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        var about = Style.H(Style.Gap3);
+        if (d.Title != "") about.AddChild(Style.Label(d.Title, Style.TextItalic, Style.Small, Style.InkDim));
+        if (d.Mood != "") about.AddChild(Style.H(4, Glyphs.Icon("eye", 14, Style.Gold), Style.Label(d.Mood, Style.Ui, Style.Small, Style.Gold)));
+        if (about.GetChildCount() > 0) main.AddChild(about);
         // What was said just before, quietly, so the thread is never lost to the pace of speech.
         if (d.Before != null) main.AddChild(Style.Label(d.Before, Style.TextItalic, Style.Small, Style.InkFaint, true));
         if (d.Speaker == "player") main.AddChild(Style.Label(d.PlayerName.ToUpperInvariant(), Style.Display, Style.Caption, new Color("#9ab8d8")));
@@ -546,7 +609,7 @@ public partial class TalkPanel : Control
         }
         focus = lines.FindIndex(l => l.Enabled);
         Prompts();
-        row.AddChild(main);
+        inset.AddChild(main);
     }
 
     /// <summary>The keys beside the lines: numbers on a keyboard, A on the focused line with a pad.</summary>
@@ -588,8 +651,15 @@ public partial class TalkPanel : Control
     public override void _Process(double delta)
     {
         if (Full) return;
-        tick += delta;
-        while (tick >= 0.022 && !Full) { tick -= 0.022; shown = Math.Min(d.Text.Length, shown + 2); }
+        // A line read aloud shows its words as they are said; the rest arrive
+        // at the pace of reading.
+        if (d.Voice != null && Sound.VoiceOver.Instance?.Reveal(d.Voice) is double f)
+            shown = Math.Max(shown, (int)Math.Round(f * d.Text.Length));
+        else
+        {
+            tick += delta;
+            while (tick >= 0.022 && !Full) { tick -= 0.022; shown = Math.Min(d.Text.Length, shown + 2); }
+        }
         text.VisibleCharacters = shown;
         if (Full) Finish();
     }

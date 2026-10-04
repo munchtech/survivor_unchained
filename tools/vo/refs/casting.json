@@ -1,0 +1,552 @@
+{
+ "rook": {
+  "seed": 6,
+  "score": 5.648,
+  "clean": "5/12",
+  "utmos": 3.39,
+  "accent": {
+   "england": 1.0,
+   "singapore": 0.0,
+   "us": 0.0
+  },
+  "f0": 207.7,
+  "wps": 4.31,
+  "bad": [],
+  "said": "Another one off the low Ford Road. I'm Rook, and this is the last lamp. Bed, bread, a bath, if you ask nicely. And a strong room for what you'd rather not carry about."
+ },
+ "chid": {
+  "seed": 9,
+  "from": "rav",
+  "text": "Sit down, pal, and drop your trousers or don't. I've seen worse, and I've sewn worse, and I've drunk to forget the both of them.",
+  "score": 5.675,
+  "utmos": 3.35,
+  "accent": {
+   "ireland": 0.995,
+   "scotland": 0.005,
+   "england": 0.0
+  },
+  "f0": 159.2,
+  "wps": 4.43,
+  "bad": [],
+  "said": "Sit down, pal, and drop your trousers, or don't. I've seen worse, and I've sown worse, and I've drunk to forget the both of them."
+ },
+ "rav": {
+  "seed": 6,
+  "score": 5.288,
+  "clean": "0/24",
+  "utmos": 3.36,
+  "accent": {
+   "scotland": 0.734,
+   "ireland": 0.184,
+   "us": 0.072
+  },
+  "f0": 193.6,
+  "wps": 4.15,
+  "bad": [
+   "pitch 194 Hz outside 75-150"
+  ],
+  "said": "Sit down, pal, and drop your trousers or don't. I've seen worse, and I've sown worse, and I've drunk to forget the both of them."
+ },
+ "narrator": {
+  "seed": 11,
+  "score": 6.335,
+  "clean": "1/12",
+  "utmos": 3.87,
+  "accent": {
+   "england": 1.0,
+   "wales": 0.0,
+   "us": 0.0
+  },
+  "f0": 101.2,
+  "wps": 3.06,
+  "bad": [],
+  "said": "The fire has burned low. Out in the dark, the ground is moving, and somewhere ahead there is water and a cold blue light. You get up, because there is nothing else to do."
+ },
+ "holloway": {
+  "seed": 8,
+  "score": 6.377,
+  "clean": "2/12",
+  "utmos": 3.77,
+  "accent": {
+   "england": 0.993,
+   "us": 0.005,
+   "scotland": 0.001
+  },
+  "f0": 126.8,
+  "wps": 3.36,
+  "bad": [],
+  "said": "Eleven men, and four of them can hold a spear the right way round. I've a wall to keep, a road to keep, and a town that thinks both keep themselves."
+ },
+ "vonnra": {
+  "seed": 5,
+  "score": 5.669,
+  "clean": "0/12",
+  "utmos": 3.55,
+  "accent": {
+   "england": 0.991,
+   "indian": 0.005,
+   "hongkong": 0.002
+  },
+  "f0": 157.6,
+  "wps": 2.21,
+  "bad": [
+   "cut off at the head"
+  ],
+  "said": "The toll is the toll. Five gold to pass east. I am Vonra. I see a great deal, Traveller, and I say very little. You will find that is the arrangement."
+ },
+ "brannoc": {
+  "seed": 2,
+  "score": 4.384,
+  "clean": "2/24",
+  "utmos": 2.11,
+  "accent": {
+   "england": 0.766,
+   "us": 0.219,
+   "scotland": 0.006
+  },
+  "f0": 106.1,
+  "wps": 2.25,
+  "bad": [],
+  "said": "Steel or fur? Iron's good this year. Good ore from the north before the road shut. Won't see the like again."
+ },
+ "redcowl": {
+  "seed": 4,
+  "score": 5.308,
+  "clean": "0/24",
+  "utmos": 2.91,
+  "accent": {
+   "scotland": 0.985,
+   "us": 0.007,
+   "ireland": 0.004
+  },
+  "f0": 207.7,
+  "wps": 3.48,
+  "bad": [
+   "pitch 208 Hz outside 65-120"
+  ],
+  "said": "Ha! Look at the colors on you! You're standing in my roost, and my lot are hungry, and nobody here has ever been hungry for long. Talk!"
+ },
+ "ysolde": {
+  "seed": 16,
+  "from": "maeca",
+  "text": "Tracks by the stream, three days old. They drank, and they lay down where they drank. The Pack doesn't do that. Something in the water does.",
+  "score": 6.432,
+  "utmos": 4.2,
+  "accent": {
+   "scotland": 0.908,
+   "indian": 0.05,
+   "singapore": 0.013
+  },
+  "f0": 155.8,
+  "wps": 2.49,
+  "bad": [
+   "words wrong: ['tracks->trask']"
+  ],
+  "said": "Trask by the stream. Three days old. They drank and they lay down where they drank. The pack doesn't do that. Something in the water does."
+ },
+ "maeca": {
+  "seed": 16,
+  "score": 5.325,
+  "clean": "0/24",
+  "utmos": 4.2,
+  "accent": {
+   "scotland": 0.908,
+   "indian": 0.05,
+   "singapore": 0.013
+  },
+  "f0": 155.8,
+  "wps": 2.49,
+  "bad": [
+   "words wrong: ['tracks->trask']",
+   "cut off at the head",
+   "accent heard as scotland (0.91), want wales"
+  ],
+  "said": "Trask by the stream. Three days old. They drank and they lay down where they drank. The pack doesn't do that. Something in the water does."
+ },
+ "sella": {
+  "seed": 4,
+  "score": 6.69,
+  "clean": "8/12",
+  "utmos": 4.16,
+  "accent": {
+   "england": 1.0,
+   "us": 0.0,
+   "scotland": 0.0
+  },
+  "f0": 170.5,
+  "wps": 3.59,
+  "bad": [],
+  "said": "Evening. Love. The lamps lit upstairs, if you're asking. Conversations extra, mind. Most people don't know they want it till they've had it."
+ },
+ "wenna": {
+  "seed": 2,
+  "score": 6.041,
+  "clean": "4/12",
+  "utmos": 3.67,
+  "accent": {
+   "england": 0.999,
+   "singapore": 0.0,
+   "us": 0.0
+  },
+  "f0": 224.7,
+  "wps": 4.0,
+  "bad": [],
+  "said": "Sit, child, and stop bleeding on my floor. Comfrey for the bruise, yarrow for the cut, and willow bark for the rest of you, and don't pull that face at me."
+ },
+ "tam": {
+  "seed": 8,
+  "score": 4.885,
+  "clean": "0/12",
+  "utmos": 3.76,
+  "accent": {
+   "canada": 0.709,
+   "us": 0.29,
+   "african": 0.0
+  },
+  "f0": 236.3,
+  "wps": 3.31,
+  "bad": [
+   "accent heard as canada (0.71), want england"
+  ],
+  "said": "Pa says stay in town, so I stayed in town. But I saw them, I did, three wolves down by the green water, and they drank and they fell down."
+ },
+ "harlan": {
+  "seed": 3,
+  "score": 6.663,
+  "clean": "2/12",
+  "utmos": 4.22,
+  "accent": {
+   "england": 0.969,
+   "us": 0.029,
+   "ireland": 0.001
+  },
+  "f0": 111.4,
+  "wps": 3.11,
+  "bad": [],
+  "said": "Coil Company, friend, salt, nails, lamp oil, good wool and better rope at the fairest prices between here and the coast. Ask anyone. Well, ask most people."
+ },
+ "pell": {
+  "seed": 8,
+  "score": 6.635,
+  "clean": "2/12",
+  "utmos": 4.28,
+  "accent": {
+   "england": 0.995,
+   "scotland": 0.002,
+   "wales": 0.002
+  },
+  "f0": 106.6,
+  "wps": 3.69,
+  "bad": [],
+  "said": "Terms, friend, are what we agree they are, and I always keep to mine. Consider it a courtesy. I find courtesy is very much cheaper than the alternative."
+ },
+ "keegan": {
+  "seed": 4,
+  "score": 7.065,
+  "clean": "10/12",
+  "utmos": 4.44,
+  "accent": {
+   "england": 1.0,
+   "indian": 0.0,
+   "singapore": 0.0
+  },
+  "f0": 197.1,
+  "wps": 3.48,
+  "bad": [],
+  "said": "Dame Keegan Ormore of the Argent Vigil, Probationary. The North Road is closed by order of the Vigil, under Chapter 2 of the Handbook, and I am obliged to explain why at some length"
+ },
+ "jory": {
+  "seed": 5,
+  "score": 6.445,
+  "clean": "0/12",
+  "utmos": 4.24,
+  "accent": {
+   "england": 0.988,
+   "scotland": 0.01,
+   "canada": 0.001
+  },
+  "f0": 128.8,
+  "wps": 3.21,
+  "bad": [
+   "words wrong: ['-all', '-all']"
+  ],
+  "said": "I'm alright, I'm alright. Uncle keeps asking, I keep saying. It was the dark that was the worst of it."
+ },
+ "guard": {
+  "seed": 8,
+  "score": 6.855,
+  "clean": "11/12",
+  "utmos": 4.38,
+  "accent": {
+   "england": 1.0,
+   "wales": 0.0,
+   "us": 0.0
+  },
+  "f0": 96.9,
+  "wps": 2.3,
+  "bad": [],
+  "said": "Keep your weapon sheathed in town. East roads that way. Mind the wolves."
+ },
+ "guard_f": {
+  "seed": 1,
+  "score": 6.821,
+  "clean": "8/12",
+  "utmos": 4.37,
+  "accent": {
+   "england": 0.884,
+   "australia": 0.112,
+   "scotland": 0.003
+  },
+  "f0": 193.7,
+  "wps": 3.1,
+  "bad": [],
+  "said": "Gates are shut till dawn. Walk on, traveler, and keep that blade sheathed."
+ },
+ "folk_f1": {
+  "seed": 9,
+  "score": 6.617,
+  "clean": "3/12",
+  "utmos": 4.45,
+  "accent": {
+   "england": 0.978,
+   "canada": 0.01,
+   "singapore": 0.007
+  },
+  "f0": 195.2,
+  "wps": 2.48,
+  "bad": [],
+  "said": "Bread's up again, it's always up, and rain by evening, my knee says."
+ },
+ "folk_f2": {
+  "seed": 3,
+  "score": 6.137,
+  "clean": "0/12",
+  "utmos": 4.31,
+  "accent": {
+   "england": 0.988,
+   "ireland": 0.005,
+   "singapore": 0.003
+  },
+  "f0": 282.5,
+  "wps": 5.36,
+  "bad": [
+   "words wrong: ['+weigh']",
+   "pitch 282 Hz outside 150-235",
+   "pace 5.4 words/s, want 2.9-3.8"
+  ],
+  "said": "Two coppers for a turnip. Two. You're not from the weigh station, are you?"
+ },
+ "folk_m1": {
+  "seed": 4,
+  "score": 3.835,
+  "clean": "1/12",
+  "utmos": 1.88,
+  "accent": {
+   "england": 0.68,
+   "us": 0.314,
+   "scotland": 0.003
+  },
+  "f0": 84.6,
+  "wps": 2.32,
+  "bad": [],
+  "said": "Bloody wolves, bloody watch. Bloody bread, mind the cart."
+ },
+ "folk_m2": {
+  "seed": 9,
+  "score": 5.722,
+  "clean": "1/12",
+  "utmos": 3.46,
+  "accent": {
+   "england": 0.998,
+   "us": 0.002,
+   "hongkong": 0.0
+  },
+  "f0": 121.4,
+  "wps": 2.35,
+  "bad": [],
+  "said": "my gran swore the warden was a story to keep children off the ford mourning"
+ },
+ "folk_child_f": {
+  "seed": 6,
+  "score": 6.568,
+  "clean": "3/12",
+  "utmos": 4.26,
+  "accent": {
+   "england": 0.902,
+   "singapore": 0.046,
+   "african": 0.044
+  },
+  "f0": 246.2,
+  "wps": 3.04,
+  "bad": [],
+  "said": "Are you the one from the Ford? Did you kill it? Was it big?"
+ },
+ "folk_child_m": {
+  "seed": 3,
+  "score": 5.997,
+  "clean": "6/12",
+  "utmos": 3.91,
+  "accent": {
+   "england": 1.0,
+   "indian": 0.0,
+   "wales": 0.0
+  },
+  "f0": 263.1,
+  "wps": 2.86,
+  "bad": [],
+  "said": "Show us your sword. Go on. Did you kill a wolf? A big one?"
+ },
+ "warden": {
+  "seed": 7,
+  "score": 6.265,
+  "clean": "12/12",
+  "utmos": 3.79,
+  "accent": {
+   "england": 0.987,
+   "us": 0.013,
+   "ireland": 0.0
+  },
+  "f0": 139.0,
+  "wps": 1.93,
+  "bad": [],
+  "said": "None cross after dark."
+ },
+ "grimtunnel": {
+  "seed": 10,
+  "score": 5.295,
+  "clean": "0/12",
+  "utmos": 2.67,
+  "accent": {
+   "us": 0.638,
+   "england": 0.35,
+   "african": 0.007
+  },
+  "f0": 231.2,
+  "wps": 2.6,
+  "bad": [
+   "words wrong: ['oho->oh']",
+   "pitch 231 Hz outside 95-165"
+  ],
+  "said": "Oh, what's this then? Nobody's, is it? Nobody's. Finders, keepers, surface meat."
+ },
+ "snib": {
+  "seed": 1,
+  "score": 6.28,
+  "clean": "1/12",
+  "utmos": 3.79,
+  "accent": {
+   "us": 0.938,
+   "scotland": 0.042,
+   "wales": 0.013
+  },
+  "f0": 169.0,
+  "wps": 3.23,
+  "bad": [],
+  "said": "Snib is foreman. Snib says who goes past the pump, and Snib says nobody. The pump does not pump itself. It does, actually. But nobody."
+ },
+ "lampling": {
+  "seed": 5,
+  "score": 6.065,
+  "clean": "7/12",
+  "utmos": 3.45,
+  "accent": {
+   "us": 1.0,
+   "canada": 0.0,
+   "southatlandtic": 0.0
+  },
+  "f0": 165.4,
+  "wps": 2.9,
+  "bad": [],
+  "said": "Down there, under the one that is dead, there is another. There is always another."
+ },
+ "watchman": {
+  "seed": 10,
+  "score": 6.309,
+  "clean": "6/12",
+  "utmos": 4.14,
+  "accent": {
+   "england": 0.998,
+   "hongkong": 0.001,
+   "wales": 0.001
+  },
+  "f0": 112.2,
+  "wps": 1.73,
+  "bad": [],
+  "said": "It shatters its own lamps when it charges. Make it charge."
+ },
+ "bones": {
+  "seed": 6,
+  "score": 5.71,
+  "clean": "6/12",
+  "utmos": 3.12,
+  "accent": {
+   "us": 1.0,
+   "canada": 0.0,
+   "scotland": 0.0
+  },
+  "f0": 143.3,
+  "wps": 2.27,
+  "bad": [],
+  "said": "It was never locked from the outside."
+ },
+ "heroine": {
+  "seed": 7,
+  "score": 6.492,
+  "clean": "8/12",
+  "utmos": 4.22,
+  "accent": {
+   "england": 1.0,
+   "australia": 0.0,
+   "wales": 0.0
+  },
+  "f0": 160.1,
+  "wps": 3.74,
+  "bad": [],
+  "said": "I woke by a dead fire on the low Ford Road. I don't know how I got there and I don't know how long I was gone. Tell me what's north."
+ },
+ "hero": {
+  "seed": 5,
+  "score": 6.67,
+  "clean": "6/12",
+  "utmos": 4.29,
+  "accent": {
+   "england": 1.0,
+   "wales": 0.0,
+   "ireland": 0.0
+  },
+  "f0": 94.4,
+  "wps": 3.79,
+  "bad": [],
+  "said": "I woke by a dead fire on the low Ford Road. I don't know how I got there, and I don't know how long I was gone. Tell me what's north."
+ },
+ "barrow_lord": {
+  "seed": 1,
+  "score": 5.492,
+  "clean": "1/12",
+  "utmos": 3.08,
+  "accent": {
+   "us": 0.999,
+   "scotland": 0.0,
+   "southatlandtic": 0.0
+  },
+  "f0": 108.3,
+  "wps": 2.2,
+  "bad": [],
+  "said": "Not yet. Go back. The road is shut and it is kept."
+ },
+ "kerchief_woman": {
+  "seed": 2,
+  "score": 6.243,
+  "clean": "3/12",
+  "utmos": 4.26,
+  "accent": {
+   "scotland": 0.919,
+   "ireland": 0.044,
+   "england": 0.024
+  },
+  "f0": 186.4,
+  "wps": 2.87,
+  "bad": [],
+  "said": "Then first the bairns eat, then the old ones, then us. That's how it's done here."
+ }
+}

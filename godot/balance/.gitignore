@@ -1,0 +1,3 @@
+out/
+# Godot names every script it finds, these too; the harness is not part of the game.
+*.uid

@@ -119,12 +119,15 @@ public sealed class Prologue : ZoneRuntime
             Id = "watchman", X = man.X, Z = man.Z, R = 2.4, Verb = "Examine", Name = "Dead Watchman",
             Act = () =>
             {
-                G.Say("A Watchman, grey-bearded and a long time dead, sitting against the post as if he had only stopped for breath. Something has had his eyes. In his belt-book, three lines in a hand that worsens as it goes: \"Lamps at the Low Ford lit again, and not by us.\" \"Sent Dannet for the captain. Dannet not back.\" \"The Warden is walking. I can hear it singing in the water.\"", null, 10);
+                G.Say("A Watchman, grey-bearded and a long time dead, sitting against the post as if he had only stopped for breath. Something has had his eyes. In his belt-book, three lines in a hand that worsens as it goes: \"Lamps at the Low Ford lit again, and not by us. Not oil. Wrong colour.\" \"Sent Dannet for the captain. Dannet not back.\" \"The Warden is walking. I can hear it singing in the water.\"", null, 10);
                 // The book is the first page of the lamps' mystery.
-                G.Apply("""[{ "learn": "lore.warden", "text": "The lamps at the ford feed the Warden." }, { "quest": { "id": "lamps", "status": "active", "entry": "book" } }]""");
+                G.Apply("""[{ "learn": "lore.warden", "text": "The lamps at the ford burn ember, and the Warden drinks it." }, { "quest": { "id": "lamps", "status": "active", "entry": "book" } }]""");
                 // The devout hear the dead, a little.
                 if (G.Journey.Ch.Knowledge.Contains("faith"))
-                    G.After(10.2, () => G.Say("...and for you alone, the dead man's jaw moves: \"It shatters its own lamps when it charges. Make it charge.\"", "The dead Watchman", 7));
+                {
+                    G.After(10.2, () => G.Say("...and for you alone, the dead man's jaw moves.", null, 3));
+                    G.After(13.4, () => G.Say("It broke its own lamps, coming for me. Twice.", "The dead Watchman", 5));
+                }
             },
         });
         Interactables.Add(new()
@@ -581,6 +584,8 @@ public sealed class Prologue : ZoneRuntime
         if (B == null) return;
         cutT += dt;
         if (cutT > 0.8 && shown.Add("intro1")) G.Say("Something lies in the ford, larger than any man, with a lamp in its fist.", null, 3.6);
+        if (cutT > 1.4 && shown.Add("intro1b")) B.Events.Emit(new Ev.Bark { X = wardenPos.X, Z = wardenPos.Z, Text = "Lamps are lit... stay where they reach...", Speaker = "The Ford-Warden" });
+        if (cutT > 3.4 && shown.Add("intro2b")) B.Events.Emit(new Ev.Bark { X = wardenPos.X, Z = wardenPos.Z, Text = "Lie down.", Speaker = "The Ford-Warden" });
         if (cutT > 2.6 && shown.Add("intro2"))
         {
             wardenView.SetPose("wake");
@@ -632,6 +637,8 @@ public sealed class Prologue : ZoneRuntime
         if (B == null) return;
         cutT += dt;
         double cx = wardenPos.X, cz = wardenPos.Z;
+        // C03 (cin_heart_goes_down): a tired man's voice, the Order's question at the end of a watch.
+        if (cutT > 0.3 && shown.Add("morning")) B.Events.Emit(new Ev.Bark { X = cx, Z = cz, Text = "Is it morning?", Speaker = "The Ford-Warden" });
         double cy = Math.Max(G.Look.HeightAt(cx, cz), waterY);
         if (cutT > 1.6 && !coreShown)
         {
@@ -663,8 +670,9 @@ public sealed class Prologue : ZoneRuntime
             grim.Facing = Math.Atan2(cz - grim.Z, cx - grim.X);
             if (grim.State == EnemyState.Surfacing) { grim.StateT -= dt; if (grim.StateT <= 0) grim.State = EnemyState.Active; }
         }
-        if (cutT > 5.4 && shown.Add("grim1")) B.Events.Emit(new Ev.Bark { X = cx + 2.2, Z = cz + 1.2, Text = "Oho! A Warden's heart, still warm! Nobody's, is it? Nobody's!", Speaker = "Grimtunnel" });
-        if (cutT > 8.4 && shown.Add("grim2")) B.Events.Emit(new Ev.Bark { X = cx + 2.2, Z = cz + 1.2, Text = "Finders keepers, surface-meat. The Deep Dig thanks you!", Speaker = "Grimtunnel" });
+        if (cutT > 5.4 && shown.Add("grim1")) B.Events.Emit(new Ev.Bark { X = cx + 2.2, Z = cz + 1.2, Text = "Ooh, still lit! Nobody's, is it? Nobody's!", Speaker = "Grimtunnel" });
+        if (cutT > 6.9 && shown.Add("grim1b")) B.Events.Emit(new Ev.Bark { X = cx + 2.2, Z = cz + 1.2, Text = "...You smell like downstairs.", Speaker = "Grimtunnel" });
+        if (cutT > 8.4 && shown.Add("grim2")) B.Events.Emit(new Ev.Bark { X = cx + 2.2, Z = cz + 1.2, Text = "Finders keepers, surface-m— (a sniff) ...Downstairs'll be ever so grateful.", Speaker = "Grimtunnel" });
         if (core.Visible && grim != null && cutT > 9.6)
         {
             double k = Math.Min(1, dt * 4);
@@ -717,7 +725,7 @@ public sealed class Prologue : ZoneRuntime
         B.Events.Emit(new Ev.Shake { Amount = 0.25 });
         G.Journey.Douse(B);
         G.Announce(new Announcement("The ember goes out", "It burns only in the dark", "zone", 4.2, "Dawn"));
-        G.After(1.2, () => G.Say("As the sun clears the trees, the ember in you gutters and goes out, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again, from nothing. You try to call up your mother's face, and find it is not quite where you left it.", null, 11));
+        G.After(1.2, () => G.Say("As the sun clears the trees, the ember goes out of you and back into the ground, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again, from nothing. You try to call up your mother's face, and find it is not quite where you left it.", null, 11));
         G.After(11.5, () => Tip("day", "By day", $"By day the ember sleeps: you fight with what you carry, your art and your feet, and every fight teaches you ({Key("character")}). The ember is for the night.", [Key("character")], 14));
     }
 
@@ -783,7 +791,11 @@ public sealed class Prologue : ZoneRuntime
         }
         G.SetAtmosphere(Atmospheres.Night);
         Objective([("Survive the night", false, false)]);
-        G.Say("The fire has burned low. Out in the dark, the ground is moving.", null, 4.5);
+        // C01's lines (docs/cinematics/c01_drowned_fire.md, cin_drowned_fire) as
+        // captions until the cinematic plays them.
+        G.Say("Your bedroll has not been slept in.", null, 3);
+        G.After(3.2, () => G.Say("Prints in the frost, your own. They come up from the river. None go down to it.", null, 5));
+        G.After(8.4, () => G.Say("Past the firelight, the frost is breaking.", null, 3.5));
         G.AnnounceZone();
     }
 

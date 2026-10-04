@@ -45,6 +45,17 @@ public static class UiArt
         // 12 past it; what is inside keeps 21 from the edge, as before the art.
         ["plate"] = new("frames/plate.png", 64, 64, 64, 64, Tile: true, Out: 12, Clear: 21),
         ["paper"] = new("frames/paper.png", 32, 32, 32, 32, Tile: true),
+        // Inside a plate: the sunk well a grid or list lies in, the raised slab a group
+        // stands on, the band across a page's head, the banner a verdict or name is cut in.
+        ["well"] = new("frames/well.png", 12, 12, 12, 12, Tile: true),
+        ["slab"] = new("frames/slab.png", 14, 14, 14, 14, Tile: true),
+        ["header"] = new("frames/header.png", 0, 0, 0, 12, Tile: true),
+        ["banner"] = new("frames/banner.png", 24, 14, 24, 14),
+        // Self's attribute pillars (188 by 340, the medallion in the crest at the head) and
+        // the HUD's console the skills sit on (130 high, 300 to 720 wide with the skill
+        // count; its foot runs off the screen). Both hang from the house's brackets.
+        ["pillar"] = new("frames/pillar.png", 32, 100, 32, 36, Out: 12, Clear: 14),
+        ["console"] = new("frames/console.png", 48, 28, 48, 28, Tile: true, Out: 12, Clear: 0),
         ["tooltip"] = new("frames/tooltip.png", 16, 16, 16, 16, Tile: true),
         ["tooltip_worn"] = new("frames/tooltip_worn.png", 16, 16, 16, 16, Tile: true),
         // Buttons, tabs, segments, keycaps.

@@ -63,39 +63,43 @@ public partial class InventoryScreen : Overlay
     {
         var ch = Ch;
         if (!seeded) { seeded = true; foreach (var it in Carried(ch)) seen.Add(it.Uid); }
-        var body = Frame("Pack", new Vector2(1500, 790), G.Key(Act.Inventory));
-        var row = Style.H(32);
-        row.SizeFlagsVertical = SizeFlags.ExpandFill;
-        body.AddChild(row);
+        // A full page: the survivor as they stand on the left, what they carry on the right.
+        var page = Page("Pack");
 
-        // The survivor, with what they wear round them, and their standing.
-        var you = Style.V(Style.Gap3);
-        you.CustomMinimumSize = new Vector2(600, 0);
-        var doll = Style.H(Style.Gap3, Column(Left, ch), Figure(ch), Column(Right, ch));
+        // The survivor, large, with what they wear round them; their standing beneath.
+        var you = Pane(page, new Rect2(0, 0, 780, 920));
+        var name = Style.H(12, Style.Label(ch.Name, Style.Display, 30, Style.GoldHi),
+            Style.Label($"Level {ch.Level} {Callings.Background(ch.Background).Name} {Callings.Archetype(ch.Archetype).Name}", Style.TextItalic, Style.Small, Style.InkDim));
+        name.Alignment = BoxContainer.AlignmentMode.Center;
+        you.AddChild(name);
+        var doll = Style.H(Style.Gap4, Column(Left, ch), Figure(ch), Column(Right, ch));
         doll.Alignment = BoxContainer.AlignmentMode.Center;
         you.AddChild(doll);
-        you.AddChild(Style.H(8, Style.SubLabel("Standing"), Style.Label("hover a thing to see what it would change", Style.TextItalic, Style.Caption, Style.InkFaint)));
+        you.AddChild(new Section("Standing", "hover a thing to see what it would change"));
+        var standWell = Style.Panel(Style.Well(14));
         stats = Style.V(2);
-        you.AddChild(stats);
+        standWell.AddChild(stats);
+        you.AddChild(standWell);
         ShowStats(null);
-        row.AddChild(you);
 
         // What they carry.
-        var carried = Style.V(Style.Gap3);
-        carried.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        var carried = Pane(page, new Rect2(810, 0, 1030, 920));
         carried.AddChild(FilterRow());
-        var grid = ItemViews.Grid(ch.Pack, 8, 82, it => it.Uid == sel, null, it => Select(it.Uid), Primary, Hover, "pack", Leave, SetupCell);
-        carried.AddChild(grid);
+        var well = Style.Panel(Style.Well(12));
+        var centre = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+        centre.AddChild(ItemViews.Grid(ch.Pack, 8, 112, it => it.Uid == sel, null, it => Select(it.Uid), Primary, Hover, "pack", Leave, SetupCell));
+        well.AddChild(centre);
+        carried.AddChild(well);
         carried.AddChild(Style.H(18,
-            Style.H(4, Glyphs.Icon("coin", 17, Style.GoldHi), Style.Label($"{Math.Floor(ch.Gold)}", Style.UiBold, Style.Small, Style.GoldHi)),
-            Style.Label($"{ch.Pack.Count(p => p != null)} of {ch.Pack.Count} carried", Style.Ui, Style.Caption, Style.InkDim)));
+            Style.H(4, Glyphs.Icon("coin", 18, Style.GoldHi), Style.Label($"{Math.Floor(ch.Gold)} gold", Style.UiBold, Style.Body, Style.GoldHi)),
+            Style.Label($"{ch.Pack.Count(p => p != null)} of {ch.Pack.Count} carried", Style.Ui, Style.Small, Style.InkDim)));
+        carried.AddChild(new Section("Read closely"));
         inspect = Style.V(Style.Gap2);
         inspect.SizeFlagsVertical = SizeFlags.ExpandFill;
         carried.AddChild(inspect);
         ShowInspect(sel != null ? Inventory.Find(ch, sel)?.Item : null);
-        row.AddChild(carried);
-        foot = new Control { CustomMinimumSize = new Vector2(0, 30), MouseFilter = MouseFilterEnum.Ignore };
-        body.AddChild(foot);
+        foot = new Control { CustomMinimumSize = new Vector2(1840, 30), MouseFilter = MouseFilterEnum.Ignore };
+        PageFooter(foot);
         Footer();
     }
 
@@ -106,14 +110,15 @@ public partial class InventoryScreen : Overlay
 
     Control Column(EquipSlot[] slots, CharacterData ch)
     {
-        var v = Style.V(8);
+        var v = Style.V(Style.Gap3);
+        v.Alignment = BoxContainer.AlignmentMode.Center;
         foreach (var s in slots)
         {
             var it = ch.Equipment[s];
             var (name, glyph) = Slots[s];
             var slot = s;
             Action? off = it != null && slot != EquipSlot.Weapon ? () => G.Gear((j, b) => j.Unequip(slot, b)) : null;
-            var view = ItemViews.Slot(it, 78, it != null && it.Uid == sel, null, false, it != null ? () => Select(it.Uid) : null, off,
+            var view = ItemViews.Slot(it, 104, it != null && it.Uid == sel, null, false, it != null ? () => Select(it.Uid) : null, off,
                 over => Hover(it, over), glyph, name, $"eq:{slot}");
             // Dragged from the pack, a thing that fits is worn here; dragged away from here, it is taken off.
             view.Drag = it != null && slot != EquipSlot.Weapon ? $"eq:{slot}:{it.Uid}" : null;
@@ -124,13 +129,22 @@ public partial class InventoryScreen : Overlay
         return v;
     }
 
-    Control Figure(CharacterData ch)
+    /// <summary>The survivor drawn live, large, on a pool of ember light.</summary>
+    public static Control Figure(CharacterData ch, int w = 420, int h = 620)
     {
-        var v = Style.V(4);
-        v.AddChild(new Portrait(new Vector2I(230, 340)).Of(Loadouts.Of(ch)));
-        v.AddChild(Style.Label(ch.Name, Style.Display, 20, Style.GoldHi, false, HorizontalAlignment.Center));
-        v.AddChild(Style.Label($"Level {ch.Level} {Callings.Background(ch.Background).Name} {Callings.Archetype(ch.Archetype).Name}", Style.Ui, Style.Caption, Style.InkDim, false, HorizontalAlignment.Center));
-        return v;
+        var holder = new Control { CustomMinimumSize = new Vector2(w, h), MouseFilter = MouseFilterEnum.Ignore };
+        var glow = new TextureRect
+        {
+            Texture = new GradientTexture2D
+            {
+                Gradient = new Gradient { Colors = new[] { new Color(1, 0.5f, 0.2f, 0.16f), new Color(1, 0.5f, 0.2f, 0) }, Offsets = new[] { 0f, 1f } },
+                Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.6f), FillTo = new Vector2(1f, 0.6f), Width = 128, Height = 128,
+            },
+            Size = new Vector2(w, h), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
+        };
+        holder.AddChild(glow);
+        holder.AddChild(new Portrait(new Vector2I(w, h)).Of(Loadouts.Of(ch)));
+        return holder;
     }
 
     /* ------------------------------------------------------- the standing -- */
@@ -332,7 +346,24 @@ public partial class InventoryScreen : Overlay
             if (loc.InPack && !G.Journey.StillNeeded(it))
                 acts.AddChild(Style.Button(leaving == it.Uid ? "Leave it behind for good" : "Leave behind", () => Leave(it), false, true));
         }
-        var card = ItemViews.Card(it, Ch, loc.InPack, acts, 560);
+        // Gear in the pack reads beside what it would replace: the ARPGs' side by side.
+        if (loc.InPack && Items.SlotFor(def) != null)
+        {
+            var pair = Style.H(Style.Gap3, ItemViews.Card(it, Ch, true, acts, 580));
+            var worn = ItemViews.Against(it, Ch);
+            var side = Style.V(4, Style.Label("WORN NOW", Style.UiHeavy, Style.Badge, Style.InkDim));
+            if (worn != null) side.AddChild(ItemViews.Card(worn, Ch, false, null, 380, true));
+            else
+            {
+                var empty = Style.Panel(Style.Slab(16), Style.Label("Nothing in that place: wearing it is all gain.", Style.TextItalic, Style.Small, Style.InkDim, true));
+                empty.CustomMinimumSize = new Vector2(380, 0);
+                side.AddChild(empty);
+            }
+            pair.AddChild(side);
+            inspect.AddChild(Style.Scroll(pair));
+            return;
+        }
+        var card = ItemViews.Card(it, Ch, loc.InPack, acts, 980);
         inspect.AddChild(Style.Scroll(card));
     }
 
@@ -348,7 +379,7 @@ public partial class InventoryScreen : Overlay
         else f = MouseFooter("Right-click or double-click to wear or use", "drag onto yourself to wear, off to take off", "hover to compare");
         if (f is BoxContainer bc) bc.Alignment = BoxContainer.AlignmentMode.Center;
         if (f is Label lb) lb.HorizontalAlignment = HorizontalAlignment.Center;
-        f.Size = new Vector2(1460, 30);
+        f.Size = new Vector2(1840, 30);
         foot.AddChild(f);
     }
 
@@ -404,35 +435,79 @@ public partial class ShopScreen : Overlay
         var w = G.Journey.World;
         var def = Lore.Shops[shop];
         var who = Lore.Person(shop);
-        var body = Frame(def.Name, new Vector2(1440, 600), "Esc", who != null ? $"{who.Name}, {who.Role.ToLowerInvariant()}  ·  prices soften for people who like you" : null, fit: true);
-        // Three columns: their shelf, the thing chosen with its price, your pack.
-        var row = Style.H(28);
-        body.AddChild(row);
+        var page = Page(def.Name, who != null ? $"{who.Name}, {who.Role.ToLowerInvariant()}" : null, null, "Esc");
+
+        // The merchant, as large as the wares: who you are dealing with, and how they deal with you.
+        var them = Pane(page, new Rect2(0, 0, 440, 920));
+        if (who?.Person != null)
+        {
+            var frame = Style.Panel(Style.Well(0));
+            frame.CustomMinimumSize = new Vector2(400, 470);
+            frame.AddChild(new Portrait(new Vector2I(400, 470), Portrait.Framing.Bust).Of(who.Person, who.Arms, who.Scale ?? 1));
+            them.AddChild(frame);
+        }
+        if (who != null)
+        {
+            var plaque = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+            plaque.AddChild(new Plaque(who.Name, 26, 40));
+            them.AddChild(plaque);
+            var st = w.Npc(shop);
+            double mod = G.Journey.PriceMod(shop);
+            int pct = (int)Math.Round((mod - 1) * 100);
+            them.AddChild(Style.Label(Style.Cap1(Rules.Attitude(st)), Style.TextItalic, Style.Body, Style.InkDim, false, HorizontalAlignment.Center));
+            them.AddChild(Style.Label(pct == 0 ? "Their usual prices" : pct < 0 ? $"Prices {-pct}% under their usual" : $"Prices {pct}% over their usual",
+                Style.UiBold, Style.Small, pct < 0 ? Style.Good : pct > 0 ? Style.Bad : Style.Ink, false, HorizontalAlignment.Center));
+        }
+        them.AddChild(Style.Label(def.BuysAll ? "They will buy anything." : $"They buy {string.Join(", ", def.Buys.Select(b => b.Replace('_', ' ')))}, at {def.Pays * 100:0}% of its worth.",
+            Style.TextItalic, Style.Small, Style.InkDim, true, HorizontalAlignment.Center));
+        if (def.RestockDays > 0)
+            them.AddChild(Style.Label($"New stock every {def.RestockDays} day{(def.RestockDays == 1 ? "" : "s")}.", Style.TextItalic, Style.Small, Style.InkDim, true, HorizontalAlignment.Center));
+        // What is on their mind, in the story's own words: a merchant is a person first.
+        if (who != null && Lore.ConcernOf(shop, G.Journey.Ctx) is string mind)
+            them.AddChild(Style.Panel(Style.Slab(14), Style.Label($"“{mind}”", Style.TextItalic, Style.Body, Style.Ink, true, HorizontalAlignment.Center)));
+
+        // The counter: their wares in a well of large slots, the chosen thing read closely beneath.
+        var counter = Pane(page, new Rect2(470, 0, 880, 920));
         var stock = w.Shops.GetValueOrDefault(shop)?.Stock ?? new();
         var shelf = stock.Cast<ItemInstance?>().ToList();
-        while (shelf.Count < 24 || shelf.Count % 6 != 0) shelf.Add(null);
-        row.AddChild(Style.V(Style.Gap2, Style.SubLabel("For sale"),
-            ItemViews.Grid(shelf, 6, 70, it => sel is { Buy: true } s && s.Uid == it.Uid, it => G.Journey.PriceOf(shop, it.Uid, true),
-                it => Choose(it.Uid, true), Buy, (it, over) => Hover(it, over, true), "shelf", null, (i, it, v) =>
-                {
-                    if (it != null) v.Drag = $"shelf:{it.Uid}";
-                    v.CanTake = d => d.StartsWith("mine:");
-                    v.Take = d => Sell(d[5..]);
-                }, dear: it => G.Journey.PriceOf(shop, it.Uid, true) is int p && p > ch.Gold)));
+        while (shelf.Count < 21 || shelf.Count % 7 != 0) shelf.Add(null);
+        counter.AddChild(new Section("Their wares", "a price in red is more than you have"));
+        var well = Style.Panel(Style.Well(12));
+        var centre = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+        centre.AddChild(ItemViews.Grid(shelf, 7, 104, it => sel is { Buy: true } s && s.Uid == it.Uid, it => G.Journey.PriceOf(shop, it.Uid, true),
+            it => Choose(it.Uid, true), Buy, (it, over) => Hover(it, over, true), "shelf", null, (i, it, v) =>
+            {
+                if (it != null) v.Drag = $"shelf:{it.Uid}";
+                v.CanTake = d => d.StartsWith("mine:");
+                v.Take = d => Sell(d[5..]);
+            }, dear: it => G.Journey.PriceOf(shop, it.Uid, true) is int p && p > ch.Gold));
+        well.AddChild(centre);
+        counter.AddChild(well);
+        counter.AddChild(new Section("Read closely"));
         inspect = Style.V(Style.Gap2);
-        inspect.CustomMinimumSize = new Vector2(420, 0);
-        row.AddChild(inspect);
-        row.AddChild(Style.V(Style.Gap2, Style.SubLabel("Your pack"),
-            ItemViews.Grid(ch.Pack, 6, 62, it => sel is { Buy: false } s && s.Uid == it.Uid, it => G.Journey.PriceOf(shop, it.Uid, false),
-                it => Choose(it.Uid, false), it => Sell(it.Uid), (it, over) => Hover(it, over, false), "mine", null, (i, it, v) =>
-                {
-                    if (it != null) v.Drag = $"mine:{it.Uid}";
-                    v.CanTake = d => d.StartsWith("shelf:");
-                    v.Take = d => Buy(d[6..]);
-                }),
-            Style.H(16, Style.H(4, Glyphs.Icon("coin", 18, Style.GoldHi), Style.Label($"{Math.Floor(ch.Gold)} gold", Style.UiBold, Style.Body, Style.GoldHi)))));
+        inspect.SizeFlagsVertical = SizeFlags.ExpandFill;
+        counter.AddChild(inspect);
+
+        // What you carry, and what you have to spend.
+        var mine = Pane(page, new Rect2(1380, 0, 460, 920));
+        mine.AddChild(new Section("Your pack", $"{ch.Pack.Count(p => p != null)} of {ch.Pack.Count}"));
+        var mwell = Style.Panel(Style.Well(10));
+        var mc = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+        mc.AddChild(ItemViews.Grid(ch.Pack, 5, 72, it => sel is { Buy: false } s && s.Uid == it.Uid, it => G.Journey.PriceOf(shop, it.Uid, false),
+            it => Choose(it.Uid, false), it => Sell(it.Uid), (it, over) => Hover(it, over, false), "mine", null, (i, it, v) =>
+            {
+                if (it != null) v.Drag = $"mine:{it.Uid}";
+                v.CanTake = d => d.StartsWith("shelf:");
+                v.Take = d => Buy(d[6..]);
+            }));
+        mwell.AddChild(mc);
+        mine.AddChild(mwell);
+        var purse = Style.H(Style.Gap2, Glyphs.Icon("coin", 34, Style.GoldHi), Style.Label($"{Math.Floor(ch.Gold)}", Style.Display, 40, Style.GoldHi), Style.Label("gold", Style.TextItalic, Style.Body, Style.InkDim));
+        purse.Alignment = BoxContainer.AlignmentMode.Center;
+        mine.AddChild(purse);
+        mine.AddChild(Style.Label("What they will not buy is dimmed.", Style.TextItalic, Style.Caption, Style.InkDim, true, HorizontalAlignment.Center));
         ShowInspect();
-        body.AddChild(Controls.Instance.UsingPad
+        PageFooter(Controls.Instance.UsingPad
             ? Footer((Act.Confirm, "Buy or sell"), (Act.Cancel, "Close"))
             : MouseFooter("Right-click or double-click to buy or sell", "or drag it across", "hover to compare"));
     }
@@ -470,7 +545,7 @@ public partial class ShopScreen : Overlay
         ItemInstance? chosen = sel is var (uid, buy) ? (buy ? stock.FirstOrDefault(x => x.Uid == uid) : ch.Pack.FirstOrDefault(x => x?.Uid == uid)) : null;
         if (chosen == null || sel is not var (_, buying))
         {
-            inspect.AddChild(Style.Gap(60));
+            inspect.AddChild(Style.Gap(Style.Gap4));
             var c = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
             c.AddChild(Glyphs.Icon("coin", 30, Style.GoldDim));
             inspect.AddChild(c);
@@ -486,7 +561,11 @@ public partial class ShopScreen : Overlay
         else if (short_) act = Style.Label($"{price} gold: you have {Math.Floor(ch.Gold)}.", Style.UiBold, Style.Caption, Style.Bad);
         else if (pad) act = Style.Hint(Act.Confirm, buying ? $"Buy for {price} gold" : $"Sell for {price} gold");
         else act = buying ? Style.Button($"Buy  ·  {price} gold", () => Buy(chosen.Uid), true, true) : Style.Button($"Sell  ·  {price} gold", () => Sell(chosen.Uid), true, true);
-        inspect.AddChild(ItemViews.Card(chosen, ch, true, act, 420));
+        // Bought gear reads beside what it would replace, as in the pack.
+        var card = ItemViews.Card(chosen, ch, true, act, buying && ItemViews.Against(chosen, ch) != null ? 480 : 820);
+        if (buying && ItemViews.Against(chosen, ch) is { } worn)
+            inspect.AddChild(Style.H(Style.Gap3, card, Style.V(4, Style.Label("WORN NOW", Style.UiHeavy, Style.Badge, Style.InkDim), ItemViews.Card(worn, ch, false, null, 320, true))));
+        else inspect.AddChild(card);
     }
 }
 
@@ -499,19 +578,47 @@ public partial class StashScreen : Overlay
 
     public StashScreen(Game g) : base(g) { Nav.Prefer = "mine:0"; }
 
+    VBoxContainer inspect = null!;
+
+    /// <summary>What is hovered or focused, read in the pack's pane rather than in a tip over the slots.</summary>
+    void Read(ItemInstance? it)
+    {
+        if (!IsInstanceValid(inspect)) return;
+        foreach (var c in inspect.GetChildren()) { inspect.RemoveChild(c); c.QueueFree(); }
+        if (it == null)
+        {
+            inspect.AddChild(Style.Label(Controls.Instance.UsingPad ? "Move over a thing to read it." : "Hover a thing to read it; click or drag it to move it.", Style.TextItalic, Style.Small, Style.InkDim, true, HorizontalAlignment.Center));
+            return;
+        }
+        inspect.AddChild(ItemViews.Card(it, G.Journey.Ch, false, null, 600));
+    }
+
     protected override void Build()
     {
         var ch = G.Journey.Ch;
         var w = G.Journey.World;
-        var body = Frame("Rook's Storeroom", new Vector2(1240, 560), "Esc", "Kept safe, whatever becomes of you.", fit: true);
-        var row = Style.H(36);
-        body.AddChild(row);
-        row.AddChild(Style.V(8, Style.SubLabel($"Stored  ·  {w.Stash.Count(x => x != null)} of {w.Stash.Count}"),
-            ItemViews.Grid(w.Stash, 8, 62, null, null, it => G.Journey.FromStash(it.Uid), it => G.Journey.FromStash(it.Uid), (it, over) => Tip(it != null ? ItemViews.Card(it, ch, false) : null, over), "store", null,
-                (i, it, v) => { if (it != null) v.Drag = $"store:{it.Uid}"; v.CanTake = d => d.StartsWith("mine:"); v.Take = d => G.Journey.ToStash(d[5..]); })));
-        row.AddChild(Style.V(8, Style.SubLabel($"Your pack  ·  {ch.Pack.Count(p => p != null)} of {ch.Pack.Count}"),
-            ItemViews.Grid(ch.Pack, 6, 62, null, null, it => G.Journey.ToStash(it.Uid), it => G.Journey.ToStash(it.Uid), (it, over) => Tip(it != null ? ItemViews.Card(it, ch, false) : null, over), "mine", null,
-                (i, it, v) => { if (it != null) v.Drag = $"mine:{it.Uid}"; v.CanTake = d => d.StartsWith("store:"); v.Take = d => G.Journey.FromStash(d[6..]); })));
-        body.AddChild(Controls.Instance.UsingPad ? Footer((Act.Confirm, "Move between pack and store"), (Act.Cancel, "Close")) : MouseFooter("Click, or drag, to move between pack and store"));
+        var page = Page("Rook's Storeroom", "Kept safe, whatever becomes of you", null, "Esc");
+        // The store is the larger: it keeps what a life on the road cannot carry.
+        var store = Pane(page, new Rect2(0, 0, 1140, 920));
+        store.AddChild(new Section("Stored", $"{w.Stash.Count(x => x != null)} of {w.Stash.Count}"));
+        var well = Style.Panel(Style.Well(12));
+        var sc = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+        sc.AddChild(ItemViews.Grid(w.Stash, 8, 118, null, null, it => G.Journey.FromStash(it.Uid), it => G.Journey.FromStash(it.Uid), (it, over) => Read(it), "store", null,
+            (i, it, v) => { if (it != null) v.Drag = $"store:{it.Uid}"; v.CanTake = d => d.StartsWith("mine:"); v.Take = d => G.Journey.ToStash(d[5..]); }));
+        well.AddChild(sc);
+        store.AddChild(well);
+        var mine = Pane(page, new Rect2(1170, 0, 670, 920));
+        mine.AddChild(new Section("Your pack", $"{ch.Pack.Count(p => p != null)} of {ch.Pack.Count}"));
+        var mwell = Style.Panel(Style.Well(12));
+        var mc = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+        mc.AddChild(ItemViews.Grid(ch.Pack, 6, 92, null, null, it => G.Journey.ToStash(it.Uid), it => G.Journey.ToStash(it.Uid), (it, over) => Read(it), "mine", null,
+            (i, it, v) => { if (it != null) v.Drag = $"mine:{it.Uid}"; v.CanTake = d => d.StartsWith("store:"); v.Take = d => G.Journey.FromStash(d[6..]); }));
+        mwell.AddChild(mc);
+        mine.AddChild(mwell);
+        mine.AddChild(new Section("Read closely"));
+        inspect = Style.V(Style.Gap2);
+        mine.AddChild(inspect);
+        Read(null);
+        PageFooter(Controls.Instance.UsingPad ? Footer((Act.Confirm, "Move between pack and store"), (Act.Cancel, "Close")) : MouseFooter("Click, or drag, to move between pack and store"));
     }
 }

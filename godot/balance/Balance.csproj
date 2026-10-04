@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The balance harness: the game's rules (../logic, plain C#) played
+       headless by bots, many runs at once, for the numbers the skill and
+       upgrade design is tuned against (docs/SKILLS_DESIGN.md).
+       Run it as `dotnet run -c Release` here, then the command (Program.cs). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>12</LangVersion>
+    <RootNamespace>SurvivorUnchained.Balance</RootNamespace>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <TieredPGO>true</TieredPGO>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../logic/**/*.cs" LinkBase="logic" />
+  </ItemGroup>
+</Project>

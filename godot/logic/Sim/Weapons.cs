@@ -36,6 +36,10 @@ public sealed class WeaponInst
     public int Slot;
     /// <summary>For beams and orbits: active until.</summary>
     public double ActiveT;
+    /// <summary>Times it has been honed (finished, in the endless dark).</summary>
+    public int Honed;
+    /// <summary>Taken from the hand for a while (the Red Hand's toll): it does not fire.</summary>
+    public double DisabledT;
     public int Swing;
     Tag[]? tags;
 
@@ -83,13 +87,16 @@ public sealed class WeaponInst
     {
         get
         {
-            double d = (Def.Base.Damage ?? 0) * (1 + Content.Weapons.DamageStep * (Rank - 1)) * Mods.Damage;
+            double d = (Def.Base.Damage ?? 0) * (1 + Def.Growth * (Rank - 1)) * Mods.Damage;
             if (evolution != null) d *= evolution.Mods.Damage ?? 1;
             return d;
         }
     }
 
     public double BossDamage => Def.BossDamage ?? 1;
+
+    /// <summary>Critical strike chance its own blows add (Starseeker's sure strikes).</summary>
+    public double CritBonus => Num(s => s.Crit) ?? 0;
 }
 
 /// <summary>How each behaviour turns a weapon into things on the field.</summary>
@@ -142,6 +149,7 @@ public static class Firing
 
     public static void Tick(Battle b, WeaponInst w, double dt)
     {
+        if (w.DisabledT > 0) { w.DisabledT -= dt; return; }
         w.Timer -= dt;
         if (w.BurstLeft > 0)
         {
@@ -175,12 +183,14 @@ public static class Firing
         WeaponBehavior.Herd => FireHerd(b, w),
         WeaponBehavior.Chakram => FireChakram(b, w),
         WeaponBehavior.Slash => FireSlash(b, w),
+        WeaponBehavior.Raise => FireRaise(b, w),
         _ => false,
     };
 
     static bool FireAimed(Battle b, WeaponInst w)
     {
-        var target = b.NearestHostile(b.Player.X, b.Player.Z, RangeOf(w));
+        // A skill that hunts the strongest is aimed at it from the hand, not only in flight.
+        var target = SeekOf(w) is Seek.Elite or Seek.Strongest ? Toughest(b, RangeOf(w)) : b.NearestHostile(b.Player.X, b.Player.Z, RangeOf(w));
         if (target == null) return false;
         int n = CountOf(b, w);
         if (w.Flag(s => s.Burst))
@@ -222,7 +232,9 @@ public static class Firing
             pr.Bounces = (int)(w.Num(s => s.Bounces) ?? 0) + (w.Evolution?.Mods.Bounces ?? 0);
             pr.Life = life ?? DurationOf(b, w, w.Num(s => s.Life) ?? 2.0) / (1 + Content.Weapons.DurationStep * (w.Rank - 1));
             pr.Homing = (w.Num(s => s.Homing) ?? 0) + w.Mods.Homing;
-            pr.Target = target ?? -2;
+            pr.Seek = SeekOf(w);
+            // A hunter of the strongest or the marked picks its own prey in flight.
+            pr.Target = pr.Seek is Seek.Strongest or Seek.Elite or Seek.Marked ? -2 : target ?? -2;
             pr.Weapon = w.Id;
             pr.Art = w.Art;
             pr.Status = w.StatusOf;
@@ -243,6 +255,18 @@ public static class Firing
     }
 
     static double DamageFor(WeaponInst w) => w.Damage;
+
+    /// <summary>What its projectiles hunt: the evolution's choice, else the weapon's, else the nearest.</summary>
+    static Seek? SeekOf(WeaponInst w) => w.Evolution?.Set?.Seek ?? w.Def.Base.Seek;
+
+    /// <summary>The toughest thing in reach: a boss, then a champion, then the most health.</summary>
+    static Enemy? Toughest(Battle b, double range)
+    {
+        Enemy? best = null;
+        foreach (var e in b.HostilesInRadius(b.Player.X, b.Player.Z, range))
+            if (best == null || (e.Boss ? 2e6 : e.Elite ? 1e6 : 0) + e.MaxHp > (best.Boss ? 2e6 : best.Elite ? 1e6 : 0) + best.MaxHp) best = e;
+        return best;
+    }
 
     static bool FireSpray(Battle b, WeaponInst w)
     {
@@ -305,7 +329,10 @@ public static class Firing
         bool atTarget = w.Flag(s => s.AtTarget);
         if (atTarget)
         {
-            var t = b.DensestHostile(p.X, p.Z, 11, r);
+            // Every other one goes under a champion or worse, when one is near:
+            // a field that only ever finds the crowd never brings down what leads it.
+            var big = (w.Swing++ & 1) == 1 ? b.NearestHostile(p.X, p.Z, 11, e => e.Elite || e.Boss) : null;
+            var t = big ?? b.DensestHostile(p.X, p.Z, 11, r);
             if (t == null) return false;
             x = t.X; z = t.Z;
         }
@@ -329,8 +356,7 @@ public static class Firing
         int jumps = CountOf(b, w, (int)(w.Num(s => s.Chains) ?? 5) - 1) + (w.Evolution?.Mods.Chains ?? 0);
         double reach = AreaOf(b, w, w.Num(s => s.ChainRange) ?? 6);
         bool fork = w.Flag(s => s.Fork);
-        bool sky = w.Evolution?.Id == "skybreak";
-        ChainFrom(b, p.X, p.Z, first, jumps, reach, w.Damage, w.School, w.Tags, w, fork, sky);
+        ChainFrom(b, p.X, p.Z, first, jumps, reach, w.Damage, w.School, w.Tags, w, fork);
         return true;
     }
 
@@ -533,6 +559,17 @@ public static class Firing
             double sz = p.Z - Math.Sin(a) * 3 + Math.Sin(a + Math.PI / 2) * off;
             Launch(b, w, a, x: sx, z: sz, herd: true, life: DurationOf(b, w, w.Num(s => s.Life) ?? 1.8));
         }
+        return true;
+    }
+
+    /// <summary>The dead get up for you: allies of its kind, up to its count at
+    /// once, for its duration, striking as hard as the skill is ranked.</summary>
+    static bool FireRaise(Battle b, WeaponInst w)
+    {
+        var p = b.Player;
+        if (b.NearestHostile(p.X, p.Z, 15) == null) return false;
+        string kind = w.Evolution?.Set?.Raises ?? w.Def.Base.Raises ?? "ghoul_ally";
+        b.RaiseFor(w, kind, DurationOf(b, w, w.Num(s => s.Duration) ?? 12), CountOf(b, w));
         return true;
     }
 

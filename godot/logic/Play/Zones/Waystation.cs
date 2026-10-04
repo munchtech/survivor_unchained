@@ -291,6 +291,20 @@ public sealed class Waystation : ZoneRuntime
                     : "The lock gives under your picks. Inside: crates, dust, and a ledger Pell should have burned.", null, 5);
             },
         });
+        // C08 (cin_iron_marker): the morning they bury Nell, the town is in the Quiet
+        // Garden, and the hymn plays as a conversation until the cinematic does.
+        I.Add(new()
+        {
+            Id = "burial", X = garden.X, Z = garden.Z, R = 5, Verb = "Stand with them", Name = "The Quiet Garden",
+            When = () => F("nell.burying").Truthy && W.Time != TimeOfDay.Night
+                && !(W.Zones.TryGetValue("waystation", out var zs) && zs.TryGetValue("burial", out var g) && g.Truthy),
+            Act = () =>
+            {
+                G.Apply("""[{ "zone": { "id": "waystation", "key": "burial", "value": true } }]""");
+                G.Say("The whole town is in the Quiet Garden, round a fresh grave beside the old captain's stone. Brannoc kneels at its head with an iron marker and his hammer: three strokes, iron into earth. Rook sets the inn's lamp at its foot, lit, in broad daylight, and steps back, and back.", null, 7);
+                G.After(7.2, () => G.Talk("cin_iron_marker"));
+            },
+        });
         I.Add(new()
         {
             Id = "garden", X = garden.X + 2.5, Z = garden.Z + 4.5, R = 2.2, Verb = "Open", Name = "An old trunk",

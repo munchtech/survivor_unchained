@@ -79,15 +79,27 @@ public static class SkillBook
     public static IEnumerable<(string Id, int Rank)> Carried(CharacterData ch) =>
         ch.Slotted.Where(id => Weapons.All.ContainsKey(id) && Knows(ch, id) && Meets(ch, id)).Take(Slots(ch)).Select(id => (id, Rank(ch)));
 
+    /// <summary>The skills attuned for the night: those carried by day (and
+    /// measured up to). In an arena the ember offers them in its first drafts,
+    /// and each comes in at NightRank.</summary>
+    public static IEnumerable<string> Attuned(CharacterData ch) => Carried(ch).Select(c => c.Id).Where(id => Weapons.All[id].Findable);
+
+    /// <summary>The rank an attuned skill comes in at by night: two, and three
+    /// once the survivor has grown (the tenth level), so the day's growth is
+    /// felt in the dark without the ember starting anywhere but low.</summary>
+    public static int NightRank(CharacterData ch) => ch.Level >= 10 ? 3 : 2;
+
     /// <summary>Every third level the calling teaches one of its own kind the
     /// survivor has seen burn (and is up to): its id, or null.</summary>
     public static string? Calling(CharacterData ch)
     {
         if (ch.Level % 3 != 0) return null;
         var favours = Callings.Archetype(ch.Archetype).Favours;
+        // Its own paths first, then its kind of skill.
+        double Own(string id) => (Paths.All.Any(p => p.Callings.Contains(ch.Archetype) && p.Weapons.Contains(id)) ? 2 : 0) + Weapons.All[id].Tags.Count(favours.Contains);
         var pick = ch.Discovered.Where(id => CanLearn(ch, id) && Meets(ch, id))
-            .OrderByDescending(id => Weapons.All[id].Tags.Count(favours.Contains)).ThenBy(id => id).FirstOrDefault();
-        if (pick == null || Weapons.All[pick].Tags.Count(favours.Contains) == 0) return null;
+            .OrderByDescending(Own).ThenBy(id => id).FirstOrDefault();
+        if (pick == null || Own(pick) == 0) return null;
         Learn(ch, pick);
         return pick;
     }

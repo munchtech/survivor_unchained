@@ -10,7 +10,7 @@ namespace SurvivorUnchained.Play;
 public enum Act
 {
     Up, Down, Left, Right, Dash, Ability, Ultimate, Interact, Inventory, Character, Journal, Map,
-    Pause, Confirm, Cancel, Reroll, Banish, Pick1, Pick2, Pick3, Pick4, TabNext, TabPrev, Arts,
+    Pause, Confirm, Cancel, Reroll, Banish, Pick1, Pick2, Pick3, Pick4, TabNext, TabPrev, Arts, Skip,
     /// <summary>A menu's second and third thing to do with what has focus (pad X and Y).</summary>
     Alt, Alt2,
     /// <summary>A page within a screen (pad LT and RT): the journal's sections, the map's zoom.</summary>
@@ -38,11 +38,11 @@ public partial class Controls : Node
         [Act.Inventory] = ["KeyI", "Tab"], [Act.Character] = ["KeyC"], [Act.Journal] = ["KeyJ"], [Act.Map] = ["KeyM"],
         [Act.Pause] = ["Escape", "KeyP"], [Act.Confirm] = ["Enter", "NumpadEnter"], [Act.Cancel] = ["Escape", "Backspace"],
         [Act.Reroll] = ["KeyX"], [Act.Banish] = ["KeyB"], [Act.Pick1] = ["Digit1"], [Act.Pick2] = ["Digit2"], [Act.Pick3] = ["Digit3"], [Act.Pick4] = ["Digit4"],
-        [Act.TabNext] = ["BracketRight"], [Act.TabPrev] = ["BracketLeft"], [Act.Arts] = ["KeyK"],
+        [Act.TabNext] = ["BracketRight"], [Act.TabPrev] = ["BracketLeft"], [Act.Arts] = ["KeyK"], [Act.Skip] = ["KeyV"],
         [Act.Alt] = ["Delete"], [Act.Alt2] = [], [Act.SubPrev] = ["Comma"], [Act.SubNext] = ["Period"],
     };
 
-    public static readonly Act[] Rebindable = [Act.Up, Act.Left, Act.Down, Act.Right, Act.Dash, Act.Ability, Act.Ultimate, Act.Interact, Act.Inventory, Act.Character, Act.Arts, Act.Journal, Act.Map, Act.Reroll, Act.Banish];
+    public static readonly Act[] Rebindable = [Act.Up, Act.Left, Act.Down, Act.Right, Act.Dash, Act.Ability, Act.Ultimate, Act.Interact, Act.Inventory, Act.Character, Act.Arts, Act.Journal, Act.Map, Act.Reroll, Act.Banish, Act.Skip];
     static readonly string[] Reserved = ["Escape", "Enter", "NumpadEnter", "Backspace", "Digit1", "Digit2", "Digit3", "Digit4", "BracketLeft", "BracketRight", "Comma", "Period", "Delete"];
 
     /// <summary>The standard pad layout: View opens the pack, whose tabs
@@ -55,6 +55,7 @@ public partial class Controls : Node
         [Act.Confirm] = [JoyButton.A], [Act.Cancel] = [JoyButton.B], [Act.Inventory] = [JoyButton.Back], [Act.Pause] = [JoyButton.Start],
         [Act.Up] = [JoyButton.DpadUp], [Act.Down] = [JoyButton.DpadDown], [Act.Left] = [JoyButton.DpadLeft], [Act.Right] = [JoyButton.DpadRight],
         [Act.TabNext] = [JoyButton.RightShoulder], [Act.TabPrev] = [JoyButton.LeftShoulder], [Act.Reroll] = [JoyButton.X], [Act.Banish] = [JoyButton.Y],
+        [Act.Skip] = [JoyButton.RightStick],
         [Act.Alt] = [JoyButton.X], [Act.Alt2] = [JoyButton.Y],
     };
 

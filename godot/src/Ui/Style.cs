@@ -76,23 +76,16 @@ public static class Style
         return b;
     }
 
-    /// <summary>An iron plate with a gold hairline and a shadow under it.</summary>
-    public static StyleBox Plate(int pad = 18)
-    {
-        var b = Box(new Color(0.09f, 0.08f, 0.105f, 0.97f), Line, 1, 6, pad);
-        b.ShadowColor = new Color(0, 0, 0, 0.6f);
-        b.ShadowSize = 18;
-        b.ShadowOffset = new Vector2(0, 6);
-        return UiArt.Frame("plate", b);
-    }
+    /// <summary>A forged iron plate: gradient, bevel, inset hairline, bracketed corners (Ornate.cs).</summary>
+    public static StyleBox Plate(int pad = 18) => UiArt.Frame("plate", OrnateBox.Make(OrnateBox.Kind.Plate, pad));
 
-    public static StyleBox Paper(int pad = 22)
-    {
-        var b = Box(new Color("#e4d6b6"), new Color(0.35f, 0.24f, 0.08f, 0.35f), 1, 4, pad);
-        b.ShadowColor = new Color(0, 0, 0, 0.6f);
-        b.ShadowSize = 18;
-        return UiArt.Frame("paper", b);
-    }
+    public static StyleBox Paper(int pad = 22) => UiArt.Frame("paper", OrnateBox.Make(OrnateBox.Kind.Paper, pad));
+
+    /// <summary>Iron sunk into a plate: where a grid or a list sits.</summary>
+    public static StyleBox Well(int pad = 12) => UiArt.Frame("well", OrnateBox.Make(OrnateBox.Kind.Well, pad));
+
+    /// <summary>A quieter plate inside a plate (a group, a card's body).</summary>
+    public static StyleBox Slab(int pad = 14) => UiArt.Frame("slab", OrnateBox.Make(OrnateBox.Kind.Slab, pad));
 
     /// <summary>The ring round what has focus: ember-gold, a soft glow, seen from a sofa.</summary>
     public static StyleBox FocusFrame()
@@ -172,6 +165,42 @@ public static class Style
             b.AddThemeColorOverride("font_hover_color", new Color("#2a1a0c"));
         }
         return b;
+    }
+
+    /// <summary>A level from nothing to full (the settings' volumes): a gold
+    /// groove that fills from the left, and its value in words beside it.
+    /// `change` runs as it moves, `done` when it is let go.</summary>
+    public static Control Slider(float value, Action<float> change, Action done, bool enabled = true)
+    {
+        var s = new HSlider
+        {
+            MinValue = 0, MaxValue = 1, Step = 0.05, Value = value, CustomMinimumSize = new Vector2(200, 22),
+            SizeFlagsVertical = Control.SizeFlags.ShrinkCenter, FocusMode = Control.FocusModeEnum.None, Editable = enabled,
+            MouseDefaultCursorShape = Control.CursorShape.PointingHand,
+        };
+        var groove = Box(new Color("#0d0c10"), Line, 1, 3);
+        groove.ContentMarginTop = groove.ContentMarginBottom = 3;
+        var fill = Box(enabled ? new Color("#d0a858") : GoldDim, new Color("#6a4a14"), 1, 3);
+        fill.ContentMarginTop = fill.ContentMarginBottom = 3;
+        s.AddThemeStyleboxOverride("slider", groove);
+        s.AddThemeStyleboxOverride("grabber_area", fill);
+        s.AddThemeStyleboxOverride("grabber_area_highlight", fill);
+        var knob = new GradientTexture2D
+        {
+            Gradient = new Gradient { Offsets = new[] { 0f, 0.55f, 0.62f, 1f }, Colors = new[] { GoldHi, GoldHi, new Color("#6a4a14"), new Color("#6a4a14", 0) } },
+            Width = 16, Height = 16, Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f),
+        };
+        s.AddThemeIconOverride("grabber", knob);
+        s.AddThemeIconOverride("grabber_highlight", knob);
+        s.AddThemeIconOverride("grabber_disabled", knob);
+        var said = Label($"{Mathf.RoundToInt(value * 100)}%", UiBold, 14, enabled ? Ink : InkDim);
+        said.CustomMinimumSize = new Vector2(44, 0);
+        bool dragging = false;
+        s.DragStarted += () => dragging = true;
+        s.DragEnded += _ => { dragging = false; done(); };
+        // A click on the groove moves it without a drag: that is done at once.
+        s.ValueChanged += v => { said.Text = $"{Mathf.RoundToInt((float)v * 100)}%"; change((float)v); if (!dragging) done(); };
+        return H(8, s, said);
     }
 
     /// <summary>A key, as a keycap.</summary>

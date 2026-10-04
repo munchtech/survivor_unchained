@@ -171,6 +171,16 @@ public sealed class Nav
     void Move(Act a)
     {
         if (Current is not { } cur) return;
+        if (Nearest(cur, a) is not { } next) { Sound.Sfx.Deny(); return; }
+        cur.Info?.Blur?.Invoke();
+        FocusId = next.Id;
+        Sound.Sfx.Hover();
+        Reveal(next.C);
+        next.Info?.Focus?.Invoke();
+    }
+
+    (Control C, string Id, NavItem? Info)? Nearest((Control C, string Id, NavItem? Info) cur, Act a)
+    {
         var dir = a switch { Act.Up => Vector2.Up, Act.Down => Vector2.Down, Act.Left => Vector2.Left, _ => Vector2.Right };
         var from = cur.C.GetGlobalRect();
         var fc = from.GetCenter();
@@ -190,12 +200,52 @@ public sealed class Nav
             float score = gap + across * (level ? 0.3f : 2.2f) + (level ? 0 : 40);
             if (score < bestScore) { bestScore = score; best = it; }
         }
-        if (best is not { } next) { Sound.Sfx.Deny(); return; }
-        cur.Info?.Blur?.Invoke();
-        FocusId = next.Id;
-        Sound.Sfx.Hover();
-        Reveal(next.C);
-        next.Info?.Focus?.Invoke();
+        return best;
+    }
+
+    /// <summary>
+    /// The focus routes walked without a hand on the pad (--navcheck): from
+    /// where focus starts, which things the four directions reach, which they
+    /// never do, which sit off the screen, and which way back is not the way
+    /// out (right then left should come home). A list in a scroll is walked as
+    /// laid out, without scrolling.
+    /// </summary>
+    public List<string> Audit()
+    {
+        var live = items.Where(i => GodotObject.IsInstanceValid(i.C) && i.C.IsVisibleInTree()).ToList();
+        var lines = new List<string>();
+        if (live.Count == 0) { lines.Add("no focusable controls"); return lines; }
+        var start = Current ?? live[0];
+        var dirs = new[] { Act.Up, Act.Down, Act.Left, Act.Right };
+        Act Back(Act a) => a switch { Act.Up => Act.Down, Act.Down => Act.Up, Act.Left => Act.Right, _ => Act.Left };
+        var reached = new HashSet<string> { start.Id };
+        var queue = new Queue<(Control C, string Id, NavItem? Info)>();
+        queue.Enqueue(start);
+        int oneWay = 0;
+        var oneWays = new List<string>();
+        var screen = host.GetViewportRect();
+        while (queue.Count > 0)
+        {
+            var at = queue.Dequeue();
+            foreach (var d in dirs)
+            {
+                if (Nearest(at, d) is not { } to) continue;
+                if (Nearest(to, Back(d)) is { } home && home.Id != at.Id) { oneWay++; if (oneWays.Count < 6) oneWays.Add($"{at.Id} {d} {to.Id} {Back(d)} {home.Id}"); }
+                if (reached.Add(to.Id)) queue.Enqueue(to);
+            }
+        }
+        lines.Add($"{live.Count} focusable, {reached.Count} reached from '{start.Id}', {oneWay} one-way steps");
+        foreach (var it in live.Where(i => !reached.Contains(i.Id))) lines.Add($"unreachable: '{it.Id}' at {it.C.GetGlobalRect()}");
+        foreach (var it in live.Where(i => !screen.Encloses(i.C.GetGlobalRect()) && !InScroll(i.C))) lines.Add($"off screen: '{it.Id}' at {it.C.GetGlobalRect()}");
+        foreach (var it in live.Where(i => i.C.Size.X < 4 || i.C.Size.Y < 4)) lines.Add($"no size: '{it.Id}'");
+        foreach (var w in oneWays) lines.Add($"one-way: {w}");
+        return lines;
+    }
+
+    static bool InScroll(Control c)
+    {
+        for (Node? n = c.GetParent(); n != null; n = n.GetParent()) if (n is ScrollContainer) return true;
+        return false;
     }
 
     /// <summary>Scrolled into view, if it sits in a scrolling list.</summary>

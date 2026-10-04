@@ -67,7 +67,16 @@ public partial class Shots : Node
         var file = every > 0 ? $"{dir}/{name}_{taken:00}.png" : $"{dir}/{name}.png";
         GetViewport().GetTexture().GetImage().SavePng(file);
         GD.Print($"saved {file} at {time:0.00}s");
+        // --navcheck: the open screen's focus routes walked as the picture is taken.
+        if (Args.Has("navcheck")) Audit(GetTree().Root);
         taken++;
         if (taken >= count) GetTree().Quit();
+    }
+
+    static void Audit(Node n)
+    {
+        if (n is Ui.Overlay o && o.IsVisibleInTree())
+            foreach (var line in o.NavAudit()) GD.Print($"nav {o.Kind}: {line}");
+        foreach (var c in n.GetChildren()) Audit(c);
     }
 }

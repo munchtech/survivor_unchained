@@ -4,6 +4,7 @@ using Godot;
 using SurvivorUnchained.Arena;
 using SurvivorUnchained.Content;
 using SurvivorUnchained.Play;
+using SurvivorUnchained.Rpg;
 
 namespace SurvivorUnchained.Ui;
 
@@ -23,35 +24,40 @@ public partial class ArenaResultScreen : Overlay
     static string Clock(double s) => $"{(int)(s / 60)}:{(int)(s % 60):00}";
 
     // The numbers counting up: each label, its final value, how it is written, when it starts.
-    readonly System.Collections.Generic.List<(Label L, double To, System.Func<double, string> Fmt, double At)> counts = new();
+    readonly System.Collections.Generic.List<(Medallion M, double To, System.Func<double, string> Fmt, double At)> counts = new();
     double shownFor;
 
     public override void _Process(double delta)
     {
         base._Process(delta);
         shownFor += delta;
-        foreach (var (l, to, fmt, at) in counts)
+        foreach (var (m, to, fmt, at) in counts)
         {
-            if (!IsInstanceValid(l)) continue;
+            if (!IsInstanceValid(m)) continue;
             double k = System.Math.Clamp((shownFor - at) / 0.9, 0, 1);
             k = 1 - (1 - k) * (1 - k) * (1 - k);
-            l.Text = fmt(to * k);
+            var t = fmt(to * k);
+            if (t != m.Text) { m.Text = t; m.Arc = (float)k; m.QueueRedraw(); }
         }
     }
 
     protected override void Build()
     {
-        AddChild(Style.Scrim(null, r.Won ? 0.62f : 0.74f));
-        var wrap = Style.Centered(Style.V(12), new Vector2(1060, 720));
+        HideHud();
+        AddChild(new Backdrop(null, r.Won ? 0.82f : 0.9f));
+        var wrap = Style.Centered(Style.V(14), new Vector2(1240, 900));
         AddChild(wrap);
         var tone = r.Won ? Style.EmberHi : Style.BloodHi;
         bool fell = G.Battle?.Player.Alive == false;
-        wrap.AddChild(Style.Label(!r.Won ? "THE EMBER GUTTERS" : fell ? "WON, AND HELD TO THE LAST" : "THE ARENA IS WON", Style.UiHeavy, 15, tone, false, HorizontalAlignment.Center));
-        wrap.AddChild(Style.Label(r.Spec.Name, Style.Display, 48, Style.GoldHi, false, HorizontalAlignment.Center));
-        wrap.AddChild(Style.Flourish());
+        // The verdict on a banner, the arena's name under it.
+        var banner = Style.Panel(OrnateBox.Make(OrnateBox.Kind.Banner, 30, r.Won ? Style.Gold : Style.BloodHi),
+            Style.Label(!r.Won ? "THE EMBER GUTTERS" : fell ? "WON, AND HELD TO THE LAST" : "THE ARENA IS WON", Style.Display, 40, r.Won ? new Color("#ffe6b8") : Style.BloodHi, false, HorizontalAlignment.Center));
+        banner.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
+        wrap.AddChild(banner);
+        wrap.AddChild(Style.Label(r.Spec.Name, Style.TextItalic, Style.Lead, Style.GoldHi, false, HorizontalAlignment.Center));
         double beyond = r.Seconds - r.Spec.Minutes * 60;
         counts.Clear();
-        var tally = Style.H(36,
+        var tally = Style.H(48,
             Stat("hourglass", r.Seconds, Clock, r.Won ? "survived" : "held out", 0.2),
             Stat("skull", r.Kills, x => $"{x:N0}", "slain", 0.45),
             Stat("flame", r.EmberLevel, x => $"{x:0}", "ember", 0.7));
@@ -67,11 +73,27 @@ public partial class ArenaResultScreen : Overlay
         two.SizeFlagsVertical = SizeFlags.ExpandFill;
         wrap.AddChild(two);
 
-        // What comes out.
-        var outv = Style.V(8, Style.SubLabel("What you take out"));
+        // What comes out, on a forged plate; what stays, on a slab gone to ash.
+        var outv = Style.V(8, new Section("What you take out"));
         outv.AddChild(Line("book", $"{r.Xp:N0} experience" + (r.LevelsGained > 0 ? $"  ·  you are level {G.Journey.Ch.Level} now" : ""), r.LevelsGained > 0 ? Style.Good : Style.Ink));
         if (r.Gold > 0) outv.AddChild(Line("coin", $"{r.Gold:N0} gold", Style.GoldHi));
-        if (r.Tome is { } tome) outv.AddChild(Line("book", $"A tome: {Weapons.All[tome].Name}", new Color("#b8a8d8")));
+        // A tome won is the survivor's to write: one of what burned here.
+        if (r.Inscribed is { } tome) outv.AddChild(Line("book", $"A tome: {Weapons.All[tome].Name}", new Color("#b8a8d8")));
+        else if (r.TomeChoices.Count > 0)
+        {
+            outv.AddChild(Line("book", "A blank tome: write it with one of what burned", new Color("#b8a8d8")));
+            var pick = Style.H(8);
+            foreach (var id in r.TomeChoices)
+            {
+                var w = Weapons.All[id];
+                var btn = Style.Button(w.Name, () => { if (Arenas.Inscribe(G.Journey, r, id)) Refresh(); }, false, true);
+                btn.TooltipText = $"{w.Description} By day it asks {SkillBook.Need} {SkillBook.Attribute(id)}.";
+                pick.AddChild(btn);
+            }
+            outv.AddChild(pick);
+        }
+        foreach (var made in r.Recorded)
+            outv.AddChild(Line("scroll", made.StartsWith("evo:") ? $"In the codex: {EvolutionName(made[4..])}" : $"In the codex: the union {Unions.Find(made[6..])?.Name}", Style.GoldHi));
         if (r.Taught is { } taught) outv.AddChild(Line("book", $"Your calling taught you {Weapons.All[taught].Name}", Style.Good));
         outv.AddChild(Style.Rule());
         outv.AddChild(Style.SubLabel(r.Discovered.Count > 0 ? "Discovered" : "Nothing new discovered"));
@@ -81,18 +103,30 @@ public partial class ArenaResultScreen : Overlay
         two.AddChild(Card(outv));
 
         // What stays.
-        var stay = Style.V(8, Style.SubLabel("What stays in the arena"));
+        var stay = Style.V(8, new Section("What stays in the arena"));
         if (G.Battle is { } b)
         {
-            foreach (var w in b.Weapons)
-                stay.AddChild(Style.H(8, Glyphs.Icon(w.Evolution?.Art ?? w.Def.Art, 20, Style.InkDim),
-                    Style.Label($"{w.Evolution?.Name ?? w.Def.Name}  {Numeral(w.Rank)}", Style.Ui, Style.Small, Style.InkDim)));
+            // The build the ember made, as grey medallions: it does not leave with you.
+            var ash = new GridContainer { Columns = 5, MouseFilter = MouseFilterEnum.Ignore };
+            ash.AddThemeConstantOverride("h_separation", 10);
+            ash.AddThemeConstantOverride("v_separation", 10);
+            Control Faded(string glyph, string name)
+            {
+                var mc = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+                mc.AddChild(new Medallion(64, "", glyph) { Ring = Style.InkFaint, Ink = Style.InkDim, Core = new Color("#16131a") });
+                var v = Style.V(2, mc, Style.Label(name, Style.Ui, Style.Caption, Style.InkDim, true, HorizontalAlignment.Center));
+                v.CustomMinimumSize = new Vector2(100, 0);
+                return v;
+            }
+            foreach (var w in b.Weapons) ash.AddChild(Faded(w.Evolution?.Art ?? w.Def.Art, $"{w.Evolution?.Name ?? w.Def.Name} {Numeral(w.Rank)}"));
             foreach (var (id, rank) in b.Boons)
-                if (rank > 0 && Boons.Find(id) is { } bd)
-                    stay.AddChild(Style.H(8, Glyphs.Icon(bd.Icon, 20, Style.InkDim), Style.Label(bd.Max > 1 ? $"{bd.Name}  {Numeral(rank)}" : bd.Name, Style.Ui, Style.Small, Style.InkDim)));
+                if (rank > 0 && Boons.Find(id) is { } bd) ash.AddChild(Faded(bd.Icon, bd.Max > 1 ? $"{bd.Name} {Numeral(rank)}" : bd.Name));
+            stay.AddChild(ash);
         }
         stay.AddChild(Style.Label("The ember goes out with the arena. The next one starts from nothing.", Style.TextItalic, Style.Caption, Style.InkFaint, true));
-        two.AddChild(Card(stay));
+        var stayCard = Card(stay, Style.Slab(18));
+        stayCard.Modulate = new Color(1, 1, 1, 0.85f);
+        two.AddChild(stayCard);
 
         string after = r.Spec.Story
             ? r.Won ? "The story goes on." : "The story goes on without the win. The Wayfinder will let you take this fight again."
@@ -108,6 +142,8 @@ public partial class ArenaResultScreen : Overlay
         acts.Alignment = BoxContainer.AlignmentMode.Center;
         wrap.AddChild(acts);
     }
+
+    static string EvolutionName(string id) => Weapons.All.Values.SelectMany(w => w.Evolutions).FirstOrDefault(e => e.Id == id)?.Name ?? id;
 
     /// <summary>The run's ending in a line: who brought you down and when, and how near the end was.</summary>
     string Story()
@@ -127,13 +163,16 @@ public partial class ArenaResultScreen : Overlay
     static readonly string[] Numerals = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
     static string Numeral(int n) => n >= 0 && n < Numerals.Length ? Numerals[n] : n.ToString();
 
+    /// <summary>A number of the night on a medallion, counting up with its ring filling, its name under it.</summary>
     Control Stat(string glyph, double value, System.Func<double, string> fmt, string label, double at)
     {
-        var l = Style.Label(fmt(0), Style.Display, 34, Style.GoldHi);
-        counts.Add((l, value, fmt, at));
-        var h = Style.H(8, Glyphs.Icon(glyph, 24, Style.GoldHi), l);
-        h.Alignment = BoxContainer.AlignmentMode.Center;
-        return Style.V(0, h, Style.Label(label.ToUpperInvariant(), Style.UiHeavy, Style.Badge, Style.Gold, false, HorizontalAlignment.Center));
+        var m = new Medallion(150, fmt(0)) { Ring = r.Won ? Style.Gold : Style.InkDim, ArcColor = r.Won ? Style.Ember : Style.BloodHi, Ink = Style.GoldHi };
+        counts.Add((m, value, fmt, at));
+        var mc = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+        mc.AddChild(m);
+        var name = Style.H(6, Glyphs.Icon(glyph, 16, Style.Gold), Style.Label(label.ToUpperInvariant(), Style.UiHeavy, Style.Caption, Style.Gold));
+        name.Alignment = BoxContainer.AlignmentMode.Center;
+        return Style.V(4, mc, name);
     }
 
     static Control Line(string glyph, string text, Color c) => Style.H(8, Glyphs.Icon(glyph, 20, c), Style.Label(text, Style.UiBold, Style.Body, c));
@@ -146,9 +185,9 @@ public partial class ArenaResultScreen : Overlay
         return Style.H(8, Glyphs.Icon(icon, 22, col), Style.V(0, Style.Label(name, Style.UiBold, Style.Small, col), Style.Label(what, Style.TextItalic, Style.Caption, Style.InkDim)));
     }
 
-    static Control Card(Control inner)
+    static Control Card(Control inner, StyleBox? box = null)
     {
-        var p = Style.Panel(Style.Plate(18), Style.Scroll(inner));
+        var p = Style.Panel(box ?? Style.Plate(20), Style.Scroll(inner));
         p.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         inner.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         return p;

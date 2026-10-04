@@ -27,7 +27,7 @@ public partial class MapScreen : Overlay
 {
     public override string Kind => "map";
     public override Act? Toggle => Act.Map;
-    const int W = 900;
+    const int W = 1600;
     static readonly Dictionary<string, ImageTexture> drawings = new();
     float zoom = 1;
     Vector2 pan;
@@ -60,14 +60,20 @@ public partial class MapScreen : Overlay
         var tint = new Vector3[G * G];
         var wet = new float[G * G];
         int sr = z.Splat.GetWidth();
+        Color Splat(float u, float v)
+        {
+            float x = Math.Clamp(u * sr - 0.5f, 0, sr - 1.001f), y = Math.Clamp(v * sr - 0.5f, 0, sr - 1.001f);
+            int x0 = (int)x, y0 = (int)y;
+            float tx = x - x0, ty = y - y0;
+            return z.Splat.GetPixel(x0, y0).Lerp(z.Splat.GetPixel(x0 + 1, y0), tx).Lerp(z.Splat.GetPixel(x0, y0 + 1).Lerp(z.Splat.GetPixel(x0 + 1, y0 + 1), tx), ty);
+        }
         for (int j = 0; j < G; j++)
             for (int i = 0; i < G; i++)
             {
                 float x = (i / (G - 1f) - 0.5f) * extent, zz = (j / (G - 1f) - 0.5f) * extent;
                 int k = j * G + i;
                 h[k] = z.HeightAt(x, zz);
-                int px = Math.Clamp((int)((x / z.Size + 0.5f) * sr), 0, sr - 1), py = Math.Clamp((int)((zz / z.Size + 0.5f) * sr), 0, sr - 1);
-                var p = z.Splat.GetPixel(px, py);
+                var p = Splat(x / z.Size + 0.5f, zz / z.Size + 0.5f);
                 var c = new Vector3(222, 208, 172);
                 void Mix(float r, float g, float b, float a) => c = c.Lerp(new Vector3(r, g, b), Mathf.Clamp(a, 0, 1));
                 Mix(196, 196, 150, 0.35f);
@@ -92,7 +98,7 @@ public partial class MapScreen : Overlay
             float tx = x - x0, ty = y - y0;
             return tint[y0 * G + x0].Lerp(tint[y0 * G + x0 + 1], tx).Lerp(tint[(y0 + 1) * G + x0].Lerp(tint[(y0 + 1) * G + x0 + 1], tx), ty);
         }
-        var img = Image.CreateEmpty(W, W, false, Image.Format.Rgb8);
+        var px8 = new byte[W * W * 3];
         float cell = extent / (G - 1);
         const float contour = 1.5f;
         for (int py = 0; py < W; py++)
@@ -108,19 +114,24 @@ public partial class MapScreen : Overlay
                 if (w > 0.05f) c = c.Lerp(new Vector3(118, 146, 150), Math.Min(1, w * 1.4f));
                 c *= shade;
                 // Contours: thin ink where the height crosses a line, every fifth heavier.
-                float band = y / contour, next = S(h, fx + 0.6f, fy + 0.6f) / contour;
+                float band = y / contour, next = S(h, fx + 0.34f, fy + 0.34f) / contour;
                 if (Mathf.Floor(band) != Mathf.Floor(next) && w < 0.3f)
                 {
                     bool major = (int)Mathf.Floor(Math.Max(band, next)) % 5 == 0;
                     c = c.Lerp(new Vector3(92, 70, 46), major ? 0.42f : 0.2f);
                 }
                 // The grain of the paper, and its age at the edges.
-                float n = (float)((Hash(px, py) - 0.5) * 14 + (Hash(px / 7, py / 7) - 0.5) * 10);
+                float n = (float)((Hash(px, py) - 0.5) * 12 + (Hash(px / 12, py / 12) - 0.5) * 10);
                 float r = new Vector2(px - W / 2f, py - W / 2f).Length() / W;
                 float age = Mathf.SmoothStep(0.3f, 0.72f, r) * 0.5f;
                 c = c.Lerp(new Vector3(70, 40, 14), age) + new Vector3(n, n, n * 0.8f);
-                img.SetPixel(px, py, new Color(c.X / 255, c.Y / 255, c.Z / 255));
+                int o = (py * W + px) * 3;
+                px8[o] = (byte)Math.Clamp(c.X, 0, 255);
+                px8[o + 1] = (byte)Math.Clamp(c.Y, 0, 255);
+                px8[o + 2] = (byte)Math.Clamp(c.Z, 0, 255);
             }
+        var img = Image.CreateFromData(W, W, false, Image.Format.Rgb8, px8);
+        img.GenerateMipmaps();
         var tex = ImageTexture.CreateFromImage(img);
         drawings[z.Id] = tex;
         return tex;
@@ -144,22 +155,51 @@ public partial class MapScreen : Overlay
                     {
                         if (x < 0 || y < 0 || x >= F || y >= F) continue;
                         float d = new Vector2(x - cx, y - cy).Length() / rr;
-                        float hole = 1 - Mathf.SmoothStep(0.3f, 1f, d);
+                        float hole = 1 - Mathf.SmoothStep(0.45f, 1f, d);
                         alpha[y * F + x] = Math.Min(alpha[y * F + x], 1 - hole);
                     }
             }
+        for (int pass = 0; pass < 3; pass++) alpha = Blur(alpha, F, 3);
+        // Opaque and flat where nothing was walked: the same dark as past the paper's edge,
+        // so the two meet without a seam and no ink shows through (at 94% with grain it did).
         for (int y = 0; y < F; y++)
             for (int x = 0; x < F; x++)
-            {
-                float g = (float)(Hash(x, y) * 0.05);
-                img.SetPixel(x, y, new Color(0.85f - g, 0.796f - g, 0.66f - g, alpha[y * F + x]));
-            }
+                img.SetPixel(x, y, Dark with { A = Mathf.Clamp(alpha[y * F + x] * 1.04f, 0, 1) });
         return ImageTexture.CreateFromImage(img);
+    }
+
+    /// <summary>Unwalked land and past the paper's edge: one dark.</summary>
+    static readonly Color Dark = new(0.075f, 0.062f, 0.058f);
+
+    /// <summary>A box blur of a square field, across then down.</summary>
+    static float[] Blur(float[] a, int n, int r)
+    {
+        var b = new float[a.Length];
+        var c = new float[a.Length];
+        for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+            {
+                float sum = 0; int k = 0;
+                for (int d = -r; d <= r; d++) { int xx = x + d; if (xx < 0 || xx >= n) continue; sum += a[y * n + xx]; k++; }
+                b[y * n + x] = sum / k;
+            }
+        for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+            {
+                float sum = 0; int k = 0;
+                for (int d = -r; d <= r; d++) { int yy = y + d; if (yy < 0 || yy >= n) continue; sum += b[yy * n + x]; k++; }
+                c[y * n + x] = sum / k;
+            }
+        return c;
     }
 
     /* --------------------------------------------------------- the atlas -- */
 
-    const int F = 920;
+    /// <summary>The drawing's size at zoom 1, and the part of the screen the map shows through
+    /// (the list stands over the rest).</summary>
+    const int F = 1080;
+    static readonly Rect2 View = new(0, 96, 1440, 984);
+    float minZoom = 0.6f;
     Vector2 panTo;
     bool gliding;
     Control? ring;
@@ -175,8 +215,8 @@ public partial class MapScreen : Overlay
     {
         switch (a)
         {
-            case Act.SubNext: zoom = Math.Min(3.5f, zoom * 1.25f); Place(F); return true;
-            case Act.SubPrev: zoom = Math.Max(1, zoom / 1.25f); Place(F); return true;
+            case Act.SubNext: zoom = Math.Min(4f, zoom * 1.25f); Place(F); return true;
+            case Act.SubPrev: zoom = Math.Max(minZoom, zoom / 1.25f); Place(F); return true;
             case Act.Alt2: FindMe(); return true;
         }
         return false;
@@ -207,6 +247,7 @@ public partial class MapScreen : Overlay
         t += delta;
         if (gliding)
         {
+            panTo = Held(panTo);
             pan = pan.Lerp(panTo, 1 - Mathf.Exp(-9 * (float)delta));
             if (pan.DistanceTo(panTo) < 0.0005f) { pan = panTo; gliding = false; }
             Place(F);
@@ -222,28 +263,23 @@ public partial class MapScreen : Overlay
     {
         var scene = G.Scene!;
         var zone = G.Zone!;
-        var meta = scene.Data.Meta;
-        extent = Extent(meta);
-        AddChild(Style.Scrim(G.CloseOverlay, 0.86f));
-        BookTabs(new Vector2(80, 26));
-        // The map, as large as the screen allows.
-        var frame = new Panel { Position = new Vector2(80, 80), Size = new Vector2(F, F), ClipContents = true, MouseFilter = MouseFilterEnum.Stop };
-        frame.AddThemeStyleboxOverride("panel", Style.Box(new Color("#d9cba8"), new Color("#5a3e24"), 2, 3, 0));
+        extent = Extent(scene.Data.Meta);
+        var page = Page(zone.Name, zone.Region, null, G.Key(Act.Map));
+        // The map is the screen: under the header band and the list, over the dark.
+        var frame = new Control { Position = Vector2.Zero, Size = new Vector2(1920, 1080), ClipContents = true, MouseFilter = MouseFilterEnum.Stop };
         AddChild(frame);
-        // The painted frame (frames/map_frame.png, its middle open) laid over the map's edge, reaching a little past it.
-        if (UiArt.Has("map_frame"))
-        {
-            var rim = new Panel { Position = frame.Position, Size = frame.Size, MouseFilter = MouseFilterEnum.Ignore, ZIndex = 1 };
-            rim.AddThemeStyleboxOverride("panel", UiArt.Frame("map_frame", new StyleBoxEmpty()));
-            AddChild(rim);
-        }
+        MoveChild(frame, 1);
+        // Past the drawing's edge is the same dark as the unwalked land, so the known world floats in it.
+        frame.AddChild(new ColorRect { Color = Dark, Size = new Vector2(1920, 1080), MouseFilter = MouseFilterEnum.Ignore });
         world = new Control { Size = new Vector2(F, F), MouseFilter = MouseFilterEnum.Ignore };
         frame.AddChild(world);
-        world.AddChild(new TextureRect { Texture = Drawing(scene.Data), Size = new Vector2(F, F), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore });
-        world.AddChild(new MapInk(scene, extent, F) { Size = new Vector2(F, F), MouseFilter = MouseFilterEnum.Ignore });
+        // The expand mode first: a control is never smaller than its minimum, and the drawing's own is 1600.
+        world.AddChild(new TextureRect { ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, Texture = Drawing(scene.Data), Size = new Vector2(F, F), MouseFilter = MouseFilterEnum.Ignore, TextureFilter = TextureFilterEnum.LinearWithMipmaps });
+        // Clipped to the paper: a tree on its edge would hang its crown into the dark past it.
+        world.AddChild(new MapInk(scene, extent, F) { Size = new Vector2(F, F), MouseFilter = MouseFilterEnum.Ignore, ClipContents = true });
         var zs = G.Journey.World.Zone(zone.Id);
         var seen = zs.TryGetValue("seen", out var f) && f.Str is { } s ? s : new string('0', Journey.FogN * Journey.FogN);
-        world.AddChild(new TextureRect { Texture = Fog(seen, Journey.FogN), Size = new Vector2(F, F), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore });
+        world.AddChild(new TextureRect { ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, Texture = Fog(seen, Journey.FogN), Size = new Vector2(F, F), MouseFilter = MouseFilterEnum.Ignore });
         bool Seen(double x, double z)
         {
             int i = (int)Math.Floor((x / extent + 0.5) * Journey.FogN), j = (int)Math.Floor((z / extent + 0.5) * Journey.FogN);
@@ -265,34 +301,36 @@ public partial class MapScreen : Overlay
             world.AddChild(new Polygon2D { Polygon = new[] { new Vector2(0, -11), new Vector2(8, 8), new Vector2(0, 4), new Vector2(-8, 8) }, Color = new Color("#b8321e"), Position = youAt, Rotation = (float)(Math.PI - b.Player.Facing) });
         }
         frame.GuiInput += e => Input(e, F);
+        minZoom = Math.Min(View.Size.X, View.Size.Y) / F * 0.9f;
+        // Opened on what is known, whatever the zone's own focus.
+        Fit(seen);
         Place(F);
 
+        // A compass in the corner, the way the old maps had one.
+        var rose = Glyphs.Icon("compass", 72, Style.Gold with { A = 0.75f });
+        rose.Position = new Vector2(36, 120);
+        AddChild(rose);
+        var north = Style.Label("N", Style.Display, 18, Style.GoldHi, false, HorizontalAlignment.Center);
+        north.Position = new Vector2(36, 96);
+        north.Size = new Vector2(72, 22);
+        AddChild(north);
+
         // The list: where to go, what has been found, what to beware of; each line glides the map to it.
-        var side = Style.Panel(Style.Plate(20));
-        side.Position = new Vector2(80 + F + 30, 80);
-        side.Size = new Vector2(1920 - (80 + F + 30) - 80, F);
-        AddChild(side);
-        var col = Style.V(Style.Gap2);
-        side.AddChild(col);
-        var head = Style.H(Style.Gap3);
-        var names = Style.V(0, Style.Cap(zone.Name, 24));
-        if (zone.Region != null) names.AddChild(Style.Label(zone.Region, Style.TextItalic, Style.Small, Style.InkDim));
-        names.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        head.AddChild(names);
-        head.AddChild(Nav.Skip(CloseButton(G.Key(Act.Map), G.CloseOverlay)));
-        col.AddChild(head);
-        col.AddChild(Style.Rule());
+        var col = Pane(page, new Rect2(1420, 0, 420, 920), Style.Plate(18), Style.Gap2);
+        col.AddChild(new Section("Where to go", "nearest first"));
         var list = Style.V(2);
         var p0 = G.Battle?.Player;
+        bool first = true;
         void Group(string title, IEnumerable<Entry> items)
         {
             var these = items.OrderBy(e => p0 == null ? 0 : Math.Sqrt((e.X - p0.X) * (e.X - p0.X) + (e.Z - p0.Z) * (e.Z - p0.Z))).ToList();
             if (these.Count == 0) return;
-            list.AddChild(Style.Gap(Style.Gap2));
+            if (!first) list.AddChild(Style.Gap(Style.Gap2));
+            first = false;
             list.AddChild(Style.SubLabel(title));
             foreach (var e in these) list.AddChild(Line(e, Px(e.X, e.Z)));
         }
-        Group("Where to go", entries.Where(e => e.Kind is MarkKind.Quest or MarkKind.Turn or MarkKind.Exit));
+        Group("Your road", entries.Where(e => e.Kind is MarkKind.Quest or MarkKind.Turn or MarkKind.Exit));
         Group("People", entries.Where(e => e.Kind == MarkKind.Person));
         Group("Places", entries.Where(e => e.Kind == MarkKind.Place));
         Group("Danger and the strange", entries.Where(e => e.Kind is MarkKind.Danger or MarkKind.Mystery));
@@ -302,22 +340,67 @@ public partial class MapScreen : Overlay
         col.AddChild(Style.Rule());
         // The legend, in the marks' own look (the corner map's too).
         var legend = new GridContainer { Columns = 2, MouseFilter = MouseFilterEnum.Ignore };
-        legend.AddThemeConstantOverride("h_separation", 24);
+        legend.AddThemeConstantOverride("h_separation", 20);
         legend.AddThemeConstantOverride("v_separation", 6);
         foreach (var (kind, text) in new[] { (MarkKind.Quest, "Someone needs you"), (MarkKind.Exit, "The way out"), (MarkKind.Danger, "Hostile"), (MarkKind.Mystery, "Unexplained") })
             legend.AddChild(Style.H(6, Minimap.Mark(kind, 18), Style.Label(text, Style.Ui, Style.Caption, Style.Ink)));
         col.AddChild(legend);
+        // The prompts in the list's foot: under the map they would sit on the drawing.
         col.AddChild(Controls.Instance.UsingPad
-            ? Style.Hints((Act.Up, "Choose"), (Act.SubNext, "Closer"), (Act.SubPrev, "Further"), (Act.Alt2, "Find me"))
-            : MouseFooter("Wheel to zoom", "drag to move", "a line to find it"));
-        var me = Style.Button("", FindMe, false, true);
-        var mr = Style.H(6, Controls.Instance.UsingPad ? Style.PadButton("Y") : Glyphs.Icon("crosshair", 16, Style.GoldHi), Style.Label("Find me", Style.UiBold, Style.Small, Style.GoldHi));
-        mr.MouseFilter = MouseFilterEnum.Ignore;
-        mr.Position = new Vector2(10, 5);
-        me.AddChild(mr);
-        me.CustomMinimumSize = new Vector2(mr.GetCombinedMinimumSize().X + 22, 34);
-        me.Position = new Vector2(80 + F - me.CustomMinimumSize.X - 12, 80 + F - 46);
-        AddChild(Nav.Skip(me));
+            ? Style.Hints((Act.Up, "Choose"), (Act.Alt2, "Find me"), (Act.Cancel, "Close"))
+            : Style.Label("Wheel to zoom · drag to move · a line to find it", Style.TextItalic, Style.Caption, Style.InkDim, true));
+
+        // Zoom and find-me, at the map's foot, where the hand is.
+        var tools = Style.Panel(Style.Slab(8));
+        tools.Position = new Vector2(40, 1000);
+        AddChild(tools);
+        var tr = Style.H(Style.Gap2);
+        tools.AddChild(tr);
+        Button Tool(string glyph, string? pad, string text, Action go)
+        {
+            var bt = Style.Button("", go, false, true);
+            var r = Style.H(6, pad != null && Controls.Instance.UsingPad ? Style.PadButton(pad) : Glyphs.Icon(glyph, 16, Style.GoldHi), Style.Label(text, Style.UiBold, Style.Small, Style.GoldHi));
+            r.MouseFilter = MouseFilterEnum.Ignore;
+            r.Position = new Vector2(10, 5);
+            bt.AddChild(r);
+            bt.CustomMinimumSize = new Vector2(r.GetCombinedMinimumSize().X + 22, 34);
+            return Nav.Skip(bt);
+        }
+        tr.AddChild(Tool("crosshair", "Y", "Find me", FindMe));
+        tr.AddChild(Tool("expand", "RT", "Closer", () => Key(Act.SubNext)));
+        tr.AddChild(Tool("expand", "LT", "Further", () => Key(Act.SubPrev)));
+        tr.AddChild(Tool("map", null, "All I know", () => { Fit(seen); gliding = false; Place(F); }));
+    }
+
+    /// <summary>
+    /// Frames what the survivor knows: every walked cell and where they stand,
+    /// with a margin, as large as the view allows. The map opens on the known
+    /// world, not on a square of blank paper with the zone at its edge.
+    /// </summary>
+    void Fit(string seen)
+    {
+        int n = Journey.FogN;
+        float u0 = 1, v0 = 1, u1 = 0, v1 = 0;
+        for (int j = 0; j < n; j++)
+            for (int i = 0; i < n; i++)
+            {
+                if (j * n + i >= seen.Length || seen[j * n + i] != '1') continue;
+                u0 = Math.Min(u0, i / (float)n); v0 = Math.Min(v0, j / (float)n);
+                u1 = Math.Max(u1, (i + 1) / (float)n); v1 = Math.Max(v1, (j + 1) / (float)n);
+            }
+        if (G.Battle is { } b)
+        {
+            float pu = (float)(b.Player.X / extent + 0.5), pv = (float)(b.Player.Z / extent + 0.5);
+            u0 = Math.Min(u0, pu - 0.04f); v0 = Math.Min(v0, pv - 0.04f);
+            u1 = Math.Max(u1, pu + 0.04f); v1 = Math.Max(v1, pv + 0.04f);
+        }
+        if (u1 <= u0 || v1 <= v0) { u0 = v0 = 0; u1 = v1 = 1; }
+        // A margin, and never closer than a quarter of the zone.
+        float cu = (u0 + u1) / 2, cv = (v0 + v1) / 2;
+        float su = Math.Max(0.25f, (u1 - u0) * 1.15f), sv = Math.Max(0.25f, (v1 - v0) * 1.15f);
+        minZoom = Math.Min(View.Size.X, View.Size.Y) / F * 0.9f;
+        zoom = Math.Clamp(Math.Min(View.Size.X / (su * F), View.Size.Y / (sv * F)), minZoom, 4f);
+        pan = new Vector2(0.5f - cu, 0.5f - cv);
     }
 
     /// <summary>A line of the list: its mark, its name, how far and which way from you.</summary>
@@ -372,18 +455,38 @@ public partial class MapScreen : Overlay
     void Place(int frame)
     {
         if (world == null) return;
+        pan = Held(pan);
         world.Scale = new Vector2(zoom, zoom);
-        // The map's middle at the frame's middle, moved by the pan.
-        world.Position = new Vector2(frame / 2f, frame / 2f) - new Vector2(frame / 2f, frame / 2f) * zoom + pan * frame * zoom;
+        // The point the pan names sits at the middle of the part of the screen the map shows through.
+        var centre = View.Position + View.Size / 2;
+        world.Position = centre - (new Vector2(0.5f, 0.5f) - pan) * frame * zoom;
         foreach (var c in world.GetChildren()) if (c is Control mk && mk is not TextureRect && mk is not MapInk && mk != ring) mk.Scale = new Vector2(1 / zoom, 1 / zoom);
+    }
+
+    /// <summary>
+    /// The pan kept so the drawing covers the view on each side where it is
+    /// large enough to: the zone's edge never leaves a band of nothing beside
+    /// the known world (opened at the Verge's west edge, a third of the view
+    /// was past it). Where the drawing is smaller than the view, it is centred.
+    /// </summary>
+    Vector2 Held(Vector2 p)
+    {
+        float Axis(float v, float view)
+        {
+            float s = F * zoom;
+            if (s <= view) return 0;
+            float lim = 0.5f - view / (2 * s);
+            return Math.Clamp(v, -lim, lim);
+        }
+        return new Vector2(Axis(p.X, View.Size.X), Axis(p.Y, View.Size.Y));
     }
 
     void Input(InputEvent e, int frame)
     {
         switch (e)
         {
-            case InputEventMouseButton { ButtonIndex: MouseButton.WheelUp, Pressed: true }: zoom = Math.Min(3.5f, zoom * 1.18f); Place(frame); break;
-            case InputEventMouseButton { ButtonIndex: MouseButton.WheelDown, Pressed: true }: zoom = Math.Max(1, zoom / 1.18f); Place(frame); break;
+            case InputEventMouseButton { ButtonIndex: MouseButton.WheelUp, Pressed: true }: zoom = Math.Min(4f, zoom * 1.18f); Place(frame); break;
+            case InputEventMouseButton { ButtonIndex: MouseButton.WheelDown, Pressed: true }: zoom = Math.Max(minZoom, zoom / 1.18f); Place(frame); break;
             case InputEventMouseButton { ButtonIndex: MouseButton.Left } mb:
                 dragging = mb.Pressed;
                 dragFrom = mb.Position;
@@ -414,10 +517,13 @@ public partial class MapInk : Control
         var meta = scene.Data.Meta;
         float s = size / extent;
         Vector2 Px(double x, double z) => new((float)((x / extent + 0.5) * size), (float)((z / extent + 0.5) * size));
+        // Only what lies on the paper: past its edge there is no fog to hide it.
+        bool On(Vector2 p) => p.X >= 0 && p.Y >= 0 && p.X <= size && p.Y <= size;
         foreach (var c in meta.Collision().All())
         {
             if (c.Kind != ColliderKind.Box || c.PlayerOnly || c.Hw * c.Hd < 0.6) continue;
             var at = Px(c.X, c.Z);
+            if (!On(at)) continue;
             float rot = -(float)c.Rot;
             Vector2 R(double x, double z) => at + new Vector2((float)x * s, (float)z * s).Rotated(rot);
             var pts = new[] { R(-c.Hw, -c.Hd), R(c.Hw, -c.Hd), R(c.Hw, c.Hd), R(-c.Hw, c.Hd) };
@@ -428,6 +534,7 @@ public partial class MapInk : Control
         {
             double bx = bl.GetProperty("x").GetDouble(), bz = bl.GetProperty("z").GetDouble(), br = bl.GetProperty("r").GetDouble(), rot = bl.GetProperty("rot").GetDouble();
             var at = Px(bx, bz);
+            if (!On(at)) continue;
             float r = (float)br * s;
             Vector2[] Hex(Vector2 o, float rr) => Enumerable.Range(0, 6).Select(a => o + new Vector2(Mathf.Cos((float)rot + a * Mathf.Pi / 3 + Mathf.Pi / 6), Mathf.Sin((float)rot + a * Mathf.Pi / 3 + Mathf.Pi / 6)) * rr).ToArray();
             DrawColoredPolygon(Hex(at + new Vector2(r * 0.18f, r * 0.22f), r), new Color(60 / 255f, 40 / 255f, 22 / 255f, 0.35f));
@@ -442,6 +549,7 @@ public partial class MapInk : Control
             string kind = f[0].GetString() ?? "";
             double x = f[1].GetDouble(), z = f[2].GetDouble(), sc = f[3].GetDouble();
             var p = Px(x, z);
+            if (!On(p)) continue;
             float jit = (float)Hash(x, z);
             if (kind == "pine")
             {

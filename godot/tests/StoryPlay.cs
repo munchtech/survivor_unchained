@@ -22,11 +22,16 @@ namespace SurvivorUnchained.Tests;
 /// </summary>
 public class StoryPlay(ITestOutputHelper log)
 {
-    sealed record Result(bool Died, double Minutes, int Kills, int Levels, double Xp, double LowHp, int Places, string Note);
+    internal sealed record Result(bool Died, double Minutes, int Kills, int Levels, double Xp, double LowHp, int Places, string Note)
+    {
+        public string Killer = "";
+        public int KillerLevel, Packs, Quaffs;
+        public Dictionary<string, double> Hurt = new();
+    }
 
     static double Dist(double ax, double az, double bx, double bz) => Math.Sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
 
-    static Result Walk(int seed, string calling, int level, int day, ITestOutputHelper? trace)
+    internal static Result Walk(int seed, string calling, int level, int day, ITestOutputHelper? trace = null)
     {
         var a = Callings.Archetype(calling);
         var j = global::SurvivorUnchained.Play.Journey.Begin(new CreationChoice
@@ -37,7 +42,7 @@ public class StoryPlay(ITestOutputHelper log)
         j.World.Day = day;
         // Where the prologue leaves a survivor: a level or two, points spent on the calling's own.
         while (j.Ch.Level < level) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
-        j.Ch.Attributes.Might += j.Ch.Points;
+        switch (calling) { case "arcanist": j.Ch.Attributes.Wits += j.Ch.Points; break; case "stalker": j.Ch.Attributes.Finesse += j.Ch.Points; break; default: j.Ch.Attributes.Might += j.Ch.Points; break; }
         j.Ch.Points = 0;
         var meta = ZoneMeta.Load("verge");
         var host = new FakeHost(j, meta);
@@ -65,7 +70,7 @@ public class StoryPlay(ITestOutputHelper log)
         var flow = new FlowField(b.Collision, 150);
         const double dt = 1 / 60.0;
         double t = 0, low = 1, xp0 = j.Ch.Xp, since = 0;
-        int level0 = j.Ch.Level, k = 0;
+        int level0 = j.Ch.Level, k = 0, quaffs = 0;
         var hurt = new Dictionary<string, double>();
         var p = b.Player;
         while (t < 30 * 60 && p.Alive && k < order.Count)
@@ -103,7 +108,7 @@ public class StoryPlay(ITestOutputHelper log)
             if (ml > 1e-6) { mx /= ml; mz /= ml; }
             if (b.HostilesInRadius(p.X, p.Z, 2.2).Count >= 3 && p.DashCharges > 0) b.Dash(mx, mz);
             if (b.HostilesInRadius(p.X, p.Z, 6).Count >= 3) b.UseAbility(mx, mz);
-            if (p.Hp < b.MaxHp * 0.35) j.Quaff(b);
+            if (p.Hp < b.MaxHp * 0.35) { double before = p.Hp; j.Quaff(b); if (p.Hp > before) quaffs++; }
             zone.Step(dt);
             zone.Frame(dt);
             b.Tick(dt, mx, mz);
@@ -118,7 +123,10 @@ public class StoryPlay(ITestOutputHelper log)
         }
         string note = !p.Alive ? $"killed by {p.LastKiller?.Def.Id ?? "?"} (lv {p.LastKiller?.Level}) at pack {k} of {packs}; hurt by " +
             string.Join(", ", hurt.OrderByDescending(h => h.Value).Take(4).Select(h => $"{h.Key} {h.Value:0}")) : "";
-        return new Result(!p.Alive, t / 60, b.KillCount, j.Ch.Level - level0, j.Ch.Xp - xp0, low, Math.Min(k, packs), $"of {packs} packs; " + note);
+        return new Result(!p.Alive, t / 60, b.KillCount, j.Ch.Level - level0, Enumerable.Range(level0, j.Ch.Level - level0).Sum(l => Character.XpForLevel(l)) + j.Ch.Xp - xp0, low, Math.Min(k, packs), $"of {packs} packs; " + note)
+        {
+            Killer = !p.Alive ? p.LastKiller?.Def.Id ?? "?" : "", KillerLevel = !p.Alive ? p.LastKiller?.Level ?? 0 : 0, Packs = packs, Quaffs = quaffs, Hurt = hurt,
+        };
     }
 
     [Theory]

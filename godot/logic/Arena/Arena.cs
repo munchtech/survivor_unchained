@@ -57,7 +57,16 @@ public sealed class ArenaSpec
 
 /// <summary>How an arena ended, and what came out of it.</summary>
 public sealed record ArenaResult(ArenaSpec Spec, bool Won, double Seconds, int Kills, int EmberLevel, double Xp, double Gold,
-    List<string> Discovered, int LevelsGained, bool Longest = false, string? Tome = null, string? Taught = null);
+    List<string> Discovered, int LevelsGained, bool Longest = false, string? Tome = null, string? Taught = null)
+{
+    /// <summary>What a tome won here may be inscribed with (the player chooses
+    /// one: Arenas.Inscribe); empty if none was won.</summary>
+    public List<string> TomeChoices { get; init; } = new();
+    /// <summary>Evolutions and unions made here for the first time (now in the codex).</summary>
+    public List<string> Recorded { get; init; } = new();
+    /// <summary>What the tome was written with, once it has been.</summary>
+    public string? Inscribed { get; set; }
+}
 
 public static class Arenas
 {
@@ -93,9 +102,27 @@ public static class Arenas
         Math.Round(seconds / 60 * 30 * (1 + 0.3 * (spec.Tier - 1)) + (won ? 300 * spec.Tier : 0));
 
     /// <summary>The skills a run discovered: every combat skill carried at the
-    /// end (and what it evolved from), every passive taken.</summary>
+    /// end (evolved or not), and the halves of any union made. Only combat
+    /// skills can be learned by day, so only they are discovered.</summary>
     public static IEnumerable<string> Skills(Battle b) =>
-        b.Weapons.Select(w => w.Id).Concat(b.Boons.Keys.Where(k => Content.Boons.All.TryGetValue(k, out var d) && d.Kind == Content.BoonKind.Passive));
+        b.Weapons.SelectMany(w => Content.Unions.All.FirstOrDefault(u => u.Into == w.Id) is { } un ? new[] { un.A, un.B } : new[] { w.Id })
+            .Where(id => Content.Weapons.All.TryGetValue(id, out var d) && d.Findable).Distinct();
+
+    /// <summary>What the fight made that the codex keeps: its evolutions
+    /// (evo:id) and unions (union:id), each with its recipe for the book.</summary>
+    public static IEnumerable<string> Made(Battle b) =>
+        b.Weapons.Select(w => w.Evolution is { } e ? $"evo:{e.Id}" : Content.Unions.All.FirstOrDefault(u => u.Into == w.Id) is { } un ? $"union:{un.Id}" : null)
+            .Where(x => x != null).Select(x => x!);
+
+    /// <summary>Write a tome won in an arena with one of its choices: the tome
+    /// goes into the pack, ready to be read. Once only; false if it was not
+    /// one of them (or the pack is full).</summary>
+    public static bool Inscribe(Journey j, ArenaResult r, string id)
+    {
+        if (r.Inscribed != null || !r.TomeChoices.Contains(id) || !j.GiveItem(SkillBook.Tome(id), 1)) return false;
+        r.Inscribed = id;
+        return true;
+    }
 
     /// <summary>What rules the horde is dead: the fight is won, and the story is
     /// told so at once (the arena goes on; whatever happens in it now, it was won).</summary>
@@ -121,17 +148,18 @@ public static class Arenas
             if (!ch.Discovered.Contains(id)) { ch.Discovered.Add(id); fresh.Add(id); }
         int levels = Character.GainXp(ch, xp);
         string? taught = levels > 0 ? j.Grew() : null;
-        // A story fight won gives a tome of something found in it (a table's, now and then).
-        string? tome = null;
+        // A story fight won gives a tome (a table's, now and then): blank, to be
+        // written with one of what burned here, the survivor's choice of up to three.
+        var choices = new List<string>();
         if (won && (spec.Story || b.Rng.Next() < 0.35))
-        {
-            var learnable = Skills(b).Where(id => SkillBook.CanLearn(ch, id)).ToList();
-            if (learnable.Count > 0)
-            {
-                tome = learnable[(int)(b.Rng.Next() * learnable.Count)];
-                j.GiveItem(SkillBook.Tome(tome), 1);
-            }
-        }
+            choices = Skills(b).Where(id => SkillBook.CanLearn(ch, id))
+                .OrderByDescending(id => b.Weapons.FirstOrDefault(w => w.Id == id)?.Rank ?? 8).Take(3).ToList();
+        // What was made here for the first time goes in the codex, recipe and all.
+        var recorded = new List<string>();
+        foreach (var m in Made(b))
+            if (!j.World.Codex.Contains(m)) { j.World.Codex.Add(m); recorded.Add(m); }
+        foreach (var m in Made(b).Where(m => m.StartsWith("evo:")))
+            if (!ch.Stats.Evolutions.Contains(m[4..])) ch.Stats.Evolutions.Add(m[4..]);
         j.BankGold(b);
         var w = j.World;
         if (!won)
@@ -144,6 +172,9 @@ public static class Arenas
         bool longest = b.Time / 60 > w.Fact("arena.longest").Number;
         if (longest) w.Facts["arena.longest"] = Math.Round(b.Time / 60, 2);
         w.Arena = null;
-        return new ArenaResult(spec, won, b.Time, b.KillCount, b.EmberLevel, xp, b.GoldTotal, fresh, levels, longest, tome, taught);
+        return new ArenaResult(spec, won, b.Time, b.KillCount, b.EmberLevel, xp, b.GoldTotal, fresh, levels, longest, null, taught)
+        {
+            TomeChoices = choices, Recorded = recorded,
+        };
     }
 }

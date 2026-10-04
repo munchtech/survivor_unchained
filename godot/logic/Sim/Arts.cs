@@ -101,6 +101,8 @@ public sealed partial class Battle
         double power = ArtPower;
         p.AbilityCd = def.Cooldown * Stats.Get(Stat.AbilityCooldown) * Abilities.RankHaste(ArtRank);
         Art.Struck.Clear();
+        var was = credit;
+        credit = "art";
         bool used = kind switch
         {
             AbilityKind.ShieldBash => ShieldBash(def, angle, power),
@@ -121,6 +123,7 @@ public sealed partial class Battle
             AbilityKind.Vault => Vault(def, dirX, dirZ, ax, az, angle, power),
             _ => false,
         };
+        credit = was;
         if (!used) return false;
         Art.CdFull = Math.Max(0.1, p.AbilityCd);
         ArtXp += 1;
@@ -319,7 +322,7 @@ public sealed partial class Battle
         e.Facing = facing;
         Decoys.Add(e);
         // What was coming for you comes for them.
-        ForEachHostileInRadius(x, z, 14, (h, _) => { if (h.Target == -1) { h.Target = e.Id; h.RetargetT = 1.5; } });
+        ForEachHostileInRadius(x, z, 14, (h, _) => { if (h.Target == -1 && !h.Elite && !h.Boss) { h.Target = e.Id; h.RetargetT = 1.5; } });
         return e;
     }
 
@@ -566,6 +569,15 @@ public sealed partial class Battle
     /// <summary>The art while it runs. True while it carries the survivor
     /// (a charge, a haul): the walk does not happen.</summary>
     bool TickArt(double dt)
+    {
+        var was = credit;
+        credit = "art";
+        bool carried = TickArtRun(dt);
+        credit = was;
+        return carried;
+    }
+
+    bool TickArtRun(double dt)
     {
         var p = Player;
         var a = Art;

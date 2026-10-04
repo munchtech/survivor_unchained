@@ -32,7 +32,7 @@ public static class MapOffers
     {
         new("swarm", "Oath of the Swarm", "Packs half again as large", "Half again the ember", PackSize: 1.5, Ember: 1.5,
             Answer: "reach and area", Lean: ["of_reach", "of_haste"]),
-        new("champions", "Oath of Champions", "Twice the champions", "More gear from them", Elites: 2, Gear: 1.6,
+        new("champions", "Oath of Champions", "Twice the champions", "More gear from them", Elites: 2, Gear: 1.3,
             Answer: "critical strikes, a mark", Lean: ["keen", "cruel"]),
         new("deep", "Oath of the Deep Dark", "Foes two levels stronger", "Better gear", Levels: 2, Gear: 1.4, Ember: 1.2,
             Answer: "health and armour", Lean: ["hale", "sturdy"]),
@@ -40,7 +40,7 @@ public static class MapOffers
             Answer: "area and mending", Lean: ["of_reach", "of_mending"]),
         new("winter", "Oath of the Long Winter", "Their blows chill you to a crawl", "Gear half again as fine", Gear: 1.5,
             Answer: "frost resistance, sure footing, a sprint or a charge", Lean: ["of_the_hearth", "surefooted"], Rule: r => r.HitChill = true),
-        new("blight", "Oath of the Blight", "Their blows poison, and you mend a third less", "Two fifths more ember", Ember: 1.4,
+        new("blight", "Oath of the Blight", "Their blows poison, and you mend a third less", "Two fifths more ember, and finer gear", Ember: 1.4, Gear: 1.6,
             Answer: "poison resistance, mending, draughts", Lean: ["of_the_physician", "of_mending"], Rule: r => { r.HitPoison = true; r.HealCut = 0.33; }),
         new("embers", "Oath of Embers", "Their dead leave the ground burning", "Better gear", Gear: 1.4,
             Answer: "fire resistance, pace", Lean: ["of_the_salamander", "fleet"], Rule: r => r.DeathFire = true),
@@ -63,7 +63,7 @@ public static class MapOffers
         new("dead", "the Risen", new[] { ("risen", 5.0), ("risen_warrior", 2.0), ("risen_archer", 2.0), ("grave_caller", 0.4) }, "barrow_knight", "The Barrow Lord", "Who Would Not Lie Down", ["gravebane", "of_the_grave", "hallowed"],
             [("risen", 5, 0), ("risen_archer", 2, 3), ("risen_warrior", 3, 7), ("grave_caller", 0.6, 13)], "barrow_knight"),
         new("lamplings", "the Lamplings", new[] { ("lampling", 5.0), ("lampling_sapper", 1.5) }, "grimtunnel_roused", "Grimtunnel, Roused", "Boss of the Deep Dig", ["lampsnuffer", "of_the_salamander"],
-            [("lampling", 5, 0), ("lampling_sapper", 2.5, 5)], "lampling_sapper"),
+            [("lampling", 5, 0), ("lampling_sapper", 3.5, 4)], "lampling"),
         new("kerchiefs", "the Kerchiefs", new[] { ("footpad", 5.0), ("pillager", 2.0), ("bruiser", 1.2) }, "enforcer", "The Red Hand", "Warlord of the Ravine", ["watchmans", "sturdy"],
             [("footpad", 5, 0), ("pillager", 2.5, 4), ("bruiser", 2, 9)], "enforcer"),
     };

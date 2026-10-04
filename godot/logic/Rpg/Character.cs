@@ -128,6 +128,11 @@ public sealed class CreationChoice
 public static class Inventory
 {
     public const int PackSize = 24;
+    /// <summary>Kindled affixes a survivor's gear can bring to the ember at once.</summary>
+    public const int MaxKindled = 2;
+    /// <summary>The highest rank gear brings a skill in at: the smith starts it,
+    /// the ember finishes it (ranks 5 to 8 and the evolution are the night's).</summary>
+    public const int GearRankCap = 4;
 
     public static List<ItemInstance?> NewPack()
     {
@@ -152,12 +157,19 @@ public static class Inventory
             var pool = Items.Affixes.Where(a => a.Slots.Contains(def.Kind) && it.Rarity >= a.MinRarity).ToList();
             var picked = new HashSet<string>();
             bool hasPrefix = false, hasSuffix = false;
+            // The passives the survivor's carried skills evolve with (the kindlings that would stand in for them).
+            var wanted = ch == null ? new HashSet<string>() : SkillBook.Carried(ch)
+                .SelectMany(w => Sim.LevelUp.EvolvesWith(w.Id).SelectMany(e => e.Passives)).Select(id => $"stand:{id}").ToHashSet();
             for (int k = 0; k < n && pool.Count > 0; k++)
             {
-                var cands = pool.Where(a => !picked.Contains(a.Id) && (a.Prefix ? !hasPrefix || n > 2 : !hasSuffix || n > 2)).ToList();
+                // One kindling to an item.
+                bool kindled = picked.Any(id => Items.Affix(id)?.Kindled != null);
+                var cands = pool.Where(a => !picked.Contains(a.Id) && (a.Prefix ? !hasPrefix || n > 2 : !hasSuffix || n > 2) && !(kindled && a.Kindled != null)).ToList();
                 if (cands.Count == 0) break;
-                // What answers the map comes four times as often; a skill worn is rare.
-                double W(AffixDef x) => (lean?.Contains(x.Id) == true ? 4 : 1) * (x.Grants != null ? 0.35 : 1);
+                // What answers the map comes four times as often; a skill worn is rare, and a kindling rarer,
+                // though one that stands in for what the survivor's carried skills evolve with comes twice as often.
+                double W(AffixDef x) => (lean?.Contains(x.Id) == true ? 4 : 1) * (x.Grants != null ? 0.35 : 1) *
+                    (x.Kindled == null ? 1 : 0.3 * (wanted.Contains(x.Kindled) ? 2 : 1));
                 double total = cands.Sum(W), roll = rng.Next() * total;
                 var a = cands[^1];
                 foreach (var c in cands) { roll -= W(c); if (roll <= 0) { a = c; break; } }
@@ -302,7 +314,15 @@ public sealed class CombatKit
     public List<string> Facets = new();
     public HashSet<string> GearIds = new();
     public HashSet<StatusKind> GearStatuses = new();
-    public int StartLevels, Revives, Rerolls = 2;
+    public int StartLevels, Revives, Rerolls = 3;
+    /// <summary>What the kindled gear gives the ember (Items: AffixDef.Kindled):
+    /// banishings beyond the two, a fourth card, a fourth great choice, and the
+    /// passives it stands in for in a recipe.</summary>
+    public int Banishes;
+    public bool Roads, Omens;
+    public HashSet<string> Stands = new();
+    /// <summary>The kindled affixes in force (the first two worn; a third does nothing).</summary>
+    public List<string> Kindled = new();
 }
 
 public static class Character
@@ -346,11 +366,17 @@ public static class Character
     public static double XpForLevel(int level) => MathX.Round(120 * Math.Pow(level, 1.55));
 
     /// <summary>Character experience from the fight; the levels gained.</summary>
+    /// <summary>The survivor's last level (docs/SKILLS_DESIGN.md, "Decisions"): reached near
+    /// the end of Act 3; past it the open axes are gear and the arena's depth, and the
+    /// night's power stays the ember's.</summary>
+    public const int MaxLevel = 30;
+
     public static int GainXp(CharacterData ch, double xp)
     {
+        if (ch.Level >= MaxLevel) { ch.Xp = 0; return 0; }
         ch.Xp += xp;
         int gained = 0;
-        while (ch.Xp >= XpForLevel(ch.Level))
+        while (ch.Level < MaxLevel && ch.Xp >= XpForLevel(ch.Level))
         {
             ch.Xp -= XpForLevel(ch.Level);
             ch.Level++;
@@ -358,6 +384,7 @@ public static class Character
             if (ch.Level % 2 == 0) ch.TraitPicks++;
             gained++;
         }
+        if (ch.Level >= MaxLevel) ch.Xp = 0;
         return gained;
     }
 
@@ -397,6 +424,12 @@ public static class Character
             st.AddAll(Inventory.Mods(it));
             foreach (var t in def.Triggers ?? new()) kit.Triggers.Add((t, $"item:{it.Uid}"));
             foreach (var k in def.Statuses ?? new()) kit.GearStatuses.Add(k);
+            // Kindling: one to an item, two to the survivor.
+            if (it.Affixes.Select(ar => Items.Affix(ar.Id)).FirstOrDefault(a => a?.Kindled != null) is { } kin && kit.Kindled.Count < Inventory.MaxKindled)
+            {
+                kit.Kindled.Add(kin.Id);
+                Kindle(kit, kin.Kindled!);
+            }
             // Skills the gear grants, while there is room for them.
             foreach (var ar in it.Affixes)
                 if (Items.Affix(ar.Id)?.Grants is { } g && kit.Weapons.All(w => w.Id != g) && kit.Weapons.Count < Content.Weapons.MaxWeapons)
@@ -405,7 +438,7 @@ public static class Character
             {
                 // Mastery: every 60 kills with a weapon starts it a rank higher, to +2.
                 int bonus = Math.Min(2, ch.Mastery.GetValueOrDefault(def.Weapon.Id) / 60);
-                kit.Weapons.Add((def.Weapon.Id, def.Weapon.Rank + bonus + Math.Max(0, it.Rarity - def.Rarity)));
+                kit.Weapons.Add((def.Weapon.Id, Math.Min(Inventory.GearRankCap, def.Weapon.Rank + bonus + Math.Max(0, it.Rarity - def.Rarity))));
             }
         }
         foreach (var (id, rank) in SkillBook.Carried(ch))
@@ -435,6 +468,19 @@ public static class Character
             }
         }
         return kit;
+    }
+
+    static void Kindle(CombatKit kit, string key)
+    {
+        switch (key)
+        {
+            case "spark": kit.StartLevels++; break;
+            case "reroll": kit.Rerolls++; break;
+            case "refusal": kit.Banishes++; break;
+            case "roads": kit.Roads = true; break;
+            case "omens": kit.Omens = true; break;
+            default: if (key.StartsWith("stand:")) kit.Stands.Add(key[6..]); break;
+        }
     }
 
     static readonly string[] CompareKeys =

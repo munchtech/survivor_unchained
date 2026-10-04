@@ -91,7 +91,14 @@ public sealed class Conversation
 }
 
 public sealed record PresentedChoice(int Index, string Text, bool Enabled, string? Locked, string? Badge, bool Ends, string? Action);
-public sealed record Presented(DNode Node, string Speaker, string Text, List<PresentedChoice> Choices);
+public sealed record Presented(DNode Node, string Speaker, string Text, List<PresentedChoice> Choices)
+{
+    /// <summary>The line's id for its recording (VoiceLines): which variant of
+    /// which node was said. Null when the text was joined from several.</summary>
+    public string? Line { get; init; }
+    /// <summary>That variant as written, before {name} and the rest are filled in.</summary>
+    public string? Raw { get; init; }
+}
 
 public static class Dialogue
 {
@@ -102,8 +109,16 @@ public static class Dialogue
     public static string PickText(List<Variant> t, Ctx ctx)
     {
         if (t.Exists(v => v.Add)) return string.Join("  ·  ", t.Where(v => v.Add && Rules.Test(v.When, ctx)).Select(v => v.Text));
-        foreach (var v in t) if (Rules.Test(v.When, ctx)) return v.Text;
-        return t.Count > 0 ? t[^1].Text : "";
+        int i = PickIndex(t, ctx);
+        return i >= 0 ? t[i].Text : "";
+    }
+
+    /// <summary>Which variant PickText takes: -1 when it joins several, or there are none.</summary>
+    public static int PickIndex(List<Variant> t, Ctx ctx)
+    {
+        if (t.Count == 0 || t.Exists(v => v.Add)) return -1;
+        for (int i = 0; i < t.Count; i++) if (Rules.Test(t[i].When, ctx)) return i;
+        return t.Count - 1;
     }
 
     static readonly Regex FactRef = new(@"\{fact:([\w.]+)\}", RegexOptions.Compiled);
@@ -173,7 +188,12 @@ public sealed class DialogueRunner
             choices.Add(new PresentedChoice(index, Dialogue.Template(Dialogue.PickText(c.Text, ctx), ctx), ok, ok ? null : c.Locked, c.Badge,
                 c.End || (c.Goto == null && c.Action == null), c.Action));
         }
-        return new Presented(n, n.Speaker ?? Convo.Npc, Dialogue.Template(Dialogue.PickText(n.Text, ctx), ctx), choices);
+        int variant = Dialogue.PickIndex(n.Text, ctx);
+        return new Presented(n, n.Speaker ?? Convo.Npc, Dialogue.Template(Dialogue.PickText(n.Text, ctx), ctx), choices)
+        {
+            Line = variant >= 0 ? VoiceLines.Dialogue(Convo.Npc, n.Id, variant) : null,
+            Raw = variant >= 0 ? n.Text[variant].Text : null,
+        };
     }
 
     /// <summary>Pick a choice by its index in the node: the next view (null

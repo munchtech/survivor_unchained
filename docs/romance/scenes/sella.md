@@ -75,8 +75,7 @@ chin up with one finger like nobody's mother at all.
   over, and looks at the knuckles. "Gently, upstairs. I mean it. I like this
   jug."
 - `[arcanist]` She lays her palm flat on your chest and takes it away again,
-  fast, then puts it back, slower. "You're warmer than the water. You know
-  that? You're warmer than the water."
+  fast, then puts it back, slower. "Your hands are hot and the rest of you's a cellar floor. Pick one, love."
 - `[stalker, or none]` She comes round behind you to start on the laces, and
   says into your ear, "There. Now you know what it's like," and you jump.
   She's delighted.
@@ -244,8 +243,7 @@ it, and then where will I be? Rich and bored.
 
 - `[when trait risen_once and not sella.felt_cold]` *(adds, before)*
   (She's sitting on the edge of the bed with her hand flat on your chest.)
-  You ran hot all night. Like lying next to a stove. And now look at you.
-  Cold as the river. {set `sella.felt_cold`}
+  You were cold as the river all night. Like lying next to a stone. And now look at you: warm as toast. {set `sella.felt_cold`}
 
 Choices: as `morning`.
 
@@ -256,8 +254,7 @@ Choices: as `morning`.
 **SELLA:**
 - `[when trait risen_once and not sella.felt_cold]` **(new)** (She's sitting
   on the edge of the bed, frowning, with her palm flat on your breastbone.)
-  You ran hot all night, love. Like sleeping next to a stove. And now you're
-  cold as the river. ...Rook's got a word for that. It's not a nice word.
+  You were cold as the river all night, love. Like sleeping next to a stone. And now look at you: warm as toast. ...Rook's got a word for that. It's not a nice word.
   Get up and eat something. {set `sella.felt_cold`; if not `sella.free`, also
   set `sella.cold_sold`}
 - `[when sella.nights >= 3]` *(existing)* You're getting to be a habit,
@@ -308,8 +305,7 @@ affection +5.
 **SELLA:** That? It's Rook's. (She sits on the bed to do up her boots, and
 doesn't look up.) Working nights it stays drawn back. Rook's got a key and a
 cudgel, and if a man turns funny she's up those stairs before he's finished
-turning. I've needed her twice in seven years. Once for a drover. Once for a
-priest, and I'll not say which. ...So, no. I've never shot it. It's not my
+turning. I've needed her twice in seven years. Once for a drover. Once for one of the Watch, and I'll not say which. ...So, no. I've never shot it. It's not my
 door. Nothing in here's my door.
 
 Choices:
@@ -694,7 +690,7 @@ into `hired`.)
 `survivor.knows_risen`, set by the turn), the first visit at night, if
 `sella.felt_cold` or `sella.sleeptalk`, and `sella.confronted` ≠ `ended`.
 
-**SELLA:** Hot at night. Cold as the river by morning. A name in your sleep
+**SELLA:** Cold as the river all night. Warm by breakfast. A name in your sleep
 you can't remember awake. (She's sitting on the edge of the bath, not
 looking at you.) I've had a lot of people in that bed, love. I've never had
 one who wasn't all there in the mornings. ...What are you?
@@ -712,7 +708,7 @@ moment.)
 - `[when sella.free and sella.confronted != hired]` ...Well. You're the
   best-mannered dead I've ever had. (Then, much quieter:) Does it hurt?
 - `[otherwise]` Don't tell me that. Not up here. Not when I— (She stops.)
-  Too late. Christ. (She puts her face in her hands, and then takes it out
+  Too late. Oh, hell. (She puts her face in her hands, and then takes it out
   again, composed.) Does it hurt?
 
 Choices:
@@ -724,8 +720,7 @@ Choices:
 **SELLA:** Then come here before it's dawn.
 
 **NARRATOR:** She holds you the rest of the night, as if she could keep you
-warm by main force. At first light she feels it go out of you, the heat,
-all at once, like a lamp turned down, and she holds on anyway.
+warm by main force. At first light she feels the warmth come into you, all at once, like a lamp turned up, and she holds on anyway.
 
 **Effects:** `night.spent`; condition `warmed` 1 day.
 
@@ -916,8 +911,7 @@ light in them.) You might have said it was cold. ...You did say. "Only at
 dawn." You lying sod.
 
 If `sella.asked_what` = `told`: she holds the survivor's hand on the stair,
-and both their hands are lit, and she says, "Well. Now we're both warm at
-night," and laughs, and it's her real laugh.
+and both their hands are lit, and she says, "Well. Now we're both cold at night," and laughs, and it's her real laugh.
 
 The ending's choices about the second Unchained (bible §8) are hers here:
 - **Ending A, she is chosen to lie down in the chain:** she says, "Somebody

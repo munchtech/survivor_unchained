@@ -113,6 +113,7 @@ public partial class WorldScene : Node3D, IZoneLook
                 foreach (var e in evs)
                 {
                     if (e is Ev.LevelUp) Player?.LevelFlare();
+                    else if (e is Ev.Muzzle shot) Player?.OnMuzzle(shot.Angle);
                     else if (e is Ev.Ability ab)
                     {
                         if (ab.Id == "mirror_strike") Player?.Reflections.Strike(ab.Who);
@@ -242,8 +243,8 @@ public partial class WorldScene : Node3D, IZoneLook
     public void SetNight(bool on) => View.SetNight(on);
     public void Plates(List<Plate> plates) => Voices.Plates(plates);
 
-    public void Bark(string text, double x, double y, double z, string? speaker = null) =>
-        Voices.Bark(text, new Vector3((float)x, (float)y, (float)z), speaker);
+    public void Bark(string text, double x, double y, double z, string? speaker = null, string? voice = null) =>
+        Voices.Bark(text, new Vector3((float)x, (float)y, (float)z), speaker, voice: voice);
 
     public IBossView BossView(string kind)
     {

@@ -190,13 +190,20 @@ public class QuestTests
     {
         var s = Q("hunter");
         s.Ch.Gold = 20;
-        Talk(Convo("sella"), s.C, "how much", "15 gold");
+        // Paid at the foot of the stairs; the last place to stop is in the bath.
+        Talk(Convo("sella"), s.C, "how much", "15 gold, then", "kiss her");
         Assert.Equal(5, s.Ch.Gold);
         Assert.Contains(s.Ch.Conditions, c => c.Id == ConditionId.Warmed);
         Assert.Equal(1, s.World.Fact("sella.nights").Number);
+        // Stopped there, she counts thirteen back: two were for the water.
+        var stop = Q("hunter");
+        stop.Ch.Gold = 20;
+        Talk(Convo("sella"), stop.C, "how much", "15 gold, then", "stop here");
+        Assert.Equal(18, stop.Ch.Gold);
+        Assert.False(stop.World.Fact("sella.nights").Truthy);
         var poor = Q("hunter");
         poor.Ch.Gold = 10;
-        Assert.Contains("locked", Assert.Throws<InvalidOperationException>(() => Talk(Convo("sella"), poor.C, "how much", "15 gold")).Message);
+        Assert.Contains("locked", Assert.Throws<InvalidOperationException>(() => Talk(Convo("sella"), poor.C, "how much", "15 gold, then")).Message);
     }
 
     [Fact]
@@ -247,6 +254,8 @@ public class QuestTests
         Rules.Apply(E("{ quest: { id: 'lamps', status: 'active', entry: 'book' } }"), s.C);
         Day(s, 0.5);
         Assert.True(s.World.Fact("chapter.ready").Bool);
+        // She reads only after dark (docs/cinematics/c09_fortune.md).
+        s.World.Time = TimeOfDay.Night;
         var r = new DialogueRunner(Convo("vonnra"), s.C);
         var p = r.Start();
         p = r.Choose(p!.Choices.First(x => Regex.IsMatch(x.Text, "fortune", RegexOptions.IgnoreCase)).Index).Next;
@@ -326,7 +335,7 @@ public class QuestTests
         Talk(Convo("keegan"), s.C, "bye");
         s.Ch.Knowledge.Add("lore.warden");
         var p = Talk(Convo("keegan"), s.C, "ford-warden");
-        Assert.Matches("keep the Warden asleep", p!.Text);
+        Assert.Matches("Oil keeps it sleeping. Ember wakes it.", p!.Text);
     }
 
     [Fact]
@@ -426,13 +435,14 @@ public class QuestTests
         s.World.Facts["beasts.outcome"] = "cured";
         Assert.NotEqual("invite", new DialogueRunner(Convo("maeca"), s.C).Start()!.Node.Id);
         s.World.Time = TimeOfDay.Night;
-        var p = Talk(Convo("maeca"), s.C, "keep quiet");
+        // The walk out to the Blind, the fire, her terms; then the moment.
+        var p = Talk(Convo("maeca"), s.C, "keep quiet", "I won't");
         Assert.Equal("blind", p!.Node.Id);
         Assert.DoesNotContain("[explicit scene", p.Text);
         Assert.True(s.World.Fact("maeca.lover").Truthy);
         Assert.Contains(s.Ch.Conditions, c => c.Id == ConditionId.Warmed);
         s.World.Facts["settings.intimacy"] = "full";
-        p = Talk(Convo("maeca"), s.C, "big enough for two");
+        p = Talk(Convo("maeca"), s.C, "big enough for two", "take her hand");
         Assert.StartsWith("[explicit scene", p!.Text);
     }
 

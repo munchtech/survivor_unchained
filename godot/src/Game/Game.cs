@@ -51,6 +51,7 @@ public partial class Game : Node, IZoneHost
     Screens screens = null!;
     Synth synth = null!;
     SoundBridge sound = null!;
+    VoiceOver voice = null!;
     bool bossUp;
     Atmosphere air = null!;
     Camera3D camera = null!;
@@ -96,6 +97,8 @@ public partial class Game : Node, IZoneHost
         synth = new Synth();
         AddChild(synth);
         sound = new SoundBridge(synth);
+        voice = new VoiceOver();
+        AddChild(voice);
         // The interface: every button ticks under the pointer and clicks.
         GetTree().NodeAdded += n => { if (n is BaseButton bb) Sounded(bb); };
         saves = new Saves(ProjectSettings.GlobalizePath("user://saves"));
@@ -216,6 +219,7 @@ public partial class Game : Node, IZoneHost
         if (scene != null) { scene.Fx.Gore.Level = s.GoreLevel; scene.Hitstop = s.Hitstop; }
         air.Quality(s.Quality);
         AudioServer.SetBusVolumeDb(0, s.Volume <= 0 ? -80 : Mathf.LinearToDb(s.Volume));
+        voice?.Apply();
     }
 
     public string Key(Act a) => controls.KeyLabel(a);
@@ -275,6 +279,8 @@ public partial class Game : Node, IZoneHost
     public void LeaveArena(ArenaResult result)
     {
         var s = result.Spec;
+        // A tome left blank is written with the first of what it offered.
+        if (result.Inscribed == null && result.TomeChoices.Count > 0) Arenas.Inscribe(Journey, result, result.TomeChoices[0]);
         screens.Close();
         Travel(s.ReturnZone, null, null, new Arrival(s.ReturnX, s.ReturnZ, s.ReturnFacing));
     }
@@ -441,13 +447,19 @@ public partial class Game : Node, IZoneHost
     /* --------------------------------------------------- what zones ask -- */
 
     public void Apply(IEnumerable<Change> changes) => Journey.Apply(changes);
-    public void Say(string text, string? who = null, double seconds = 4) => hud.Say(text, who, seconds);
+    /// <summary>The narrator (or a voice the zone names), read aloud where
+    /// there is a take; the words stay up at least as long as the voice.</summary>
+    public void Say(string text, string? who = null, double seconds = 4)
+    {
+        var take = voice.Narrate(text);
+        hud.Say(text, who, take != null ? Math.Max(seconds, take.Sec + 0.8) : seconds);
+    }
     public void Toast(Toast t) { hud.Toast(t); sound.Toast(t); }
     public void Announce(Announcement a) { hud.Announce(a); sound.Announce(a, bossUp); }
     public void After(double seconds, Action fn) => later.Add((seconds, fn));
     public bool GiveItem(string def, int qty = 1, int? rarity = null) => Journey.GiveItem(def, qty, rarity);
     public void ReturnItem(ItemInstance it) => Journey.ReturnItem(it);
-    public void SetBoss(BossBar? bar) { hud.Boss(bar); bossUp = bar != null; }
+    public void SetBoss(BossBar? bar) { hud.Boss(bar); bossUp = bar is { IsBoss: true }; }
     public void SetObjectives(List<Tracked> list) => hud.Objectives(list);
     public void SetHint(Hint? hint) => hud.Hint(CurrentHint = hint);
     public void SetAtmosphere(AtmospherePreset p, bool rebuild = true) => air.Set(p, rebuild);
@@ -543,15 +555,24 @@ public partial class Game : Node, IZoneHost
                     break;
                 case Ev.Bark bk:
                     scene?.Voices.Bark(bk.Text, new Vector3((float)bk.X, (float)scene.HeightAt(bk.X, bk.Z), (float)bk.Z), bk.Speaker, bk.Speaker == null);
+                    // A named voice in a fight (the Warden, Grimtunnel) is heard over everything.
+                    if (bk.Speaker != null) voice.Shout(bk.Text);
                     break;
                 case Ev.PlayerHit ph when ph.Dodged && Battle is { } b:
                     scene?.Voices.Bark("Dodged", new Vector3((float)b.Player.X, (float)scene.HeightAt(b.Player.X, b.Player.Z), (float)b.Player.Z), null, true);
+                    break;
+                case Ev.Focus f when scene != null && Battle is { } fb:
+                    // A boss's arrival or fall: the camera turns to frame it with the survivor, then comes back.
+                    cam.FocusOverride = new Vector3((float)(f.X + fb.Player.X) / 2, (float)scene.HeightAt(f.X, f.Z) + 1, (float)(f.Z + fb.Player.Z) / 2);
+                    focusT = f.Duration;
                     break;
             }
         }
     }
 
     WorldState World => Journey.World;
+    /// <summary>How long the camera stays turned to a boss (Ev.Focus).</summary>
+    double focusT;
 
     public override void _Process(double delta)
     {
@@ -561,6 +582,7 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("pad") && keyI > 0) controls.UsingPad = true;
         if (scene == null) return;
         double dt = Math.Min(delta, 0.1);
+        if (focusT > 0 && (focusT -= dt) <= 0 && hudMode == null) cam.FocusOverride = null;
         if (Mode == "play" && zone != null)
         {
             auto?.Drive(dt);
@@ -713,7 +735,7 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
-    bool hordeDone, dropsDone, castDone, giveDone;
+    bool hordeDone, dropsDone, castDone, giveDone, minuteDone;
     double blastT = 0.5;
 
     void Tour(double dt)
@@ -750,15 +772,27 @@ public partial class Game : Node, IZoneHost
                 if (k != null) { k.Tier = kinds[i] == PickupKind.Ember ? i : 2; k.Vx = k.Vz = 0; k.Age = -600; }
             }
         }
-        // --give A,B[:RANK]: those ember weapons in hand from the start (pictures of them).
+        // --give A,B[:RANK][@EVOLUTION],+PASSIVE[:RANK]: a build in hand from the start
+        // (pictures of weapons, of the draft with an arsenal), the arena's opening blessing passed over.
+        // --minute M: the arena's clock set to M minutes (pictures of its boss: --minute 29.9).
+        if (!minuteDone && Args.Has("minute") && zone is ArenaRun mr && Battle != null)
+        {
+            minuteDone = true;
+            mr.SkipTo(Args.Num("minute", 29.9f) * 60);
+        }
         if (!giveDone && Args.Get("give") is string give && Battle is { } gb)
         {
             giveDone = true;
             foreach (var w in give.Split(','))
             {
-                var parts = w.Split(':');
-                gb.AddWeapon(parts[0], parts.Length > 1 && int.TryParse(parts[1], out var r) ? r : 1);
+                var evo = w.Split('@');
+                var parts = evo[0].Split(':');
+                int r = parts.Length > 1 && int.TryParse(parts[1], out var rv) ? rv : 1;
+                if (parts[0].StartsWith('+')) { for (int i = 0; i < r; i++) gb.AddBoon(parts[0][1..]); continue; }
+                gb.AddWeapon(parts[0], r);
+                if (evo.Length > 1) gb.Evolve(parts[0], evo[1]);
             }
+            gb.GreatOwed = 0;
         }
         // --blast SCHOOL[:R]: that school's burst a few paces ahead, every second and a half (pictures of it).
         if (Args.Get("blast") is string bl && Battle is { } bb && scene != null)

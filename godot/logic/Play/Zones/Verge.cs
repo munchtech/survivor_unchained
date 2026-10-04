@@ -184,14 +184,14 @@ public sealed class Verge : ZoneRuntime
         // The Beast Problem, settled with blood: the Pack hunted in its own Hollow.
         StoryFight("hollow", hollow, 6.5, "Hunt the Pack", "Wolf Hollow",
             () => !WolvesFriendly() && !HollowCalm() && F("greymuzzle").Str != "dead",
-            () => Story("hollow_by_night", "The Hollow by Night", "pack", 311, "wolf_alpha", "Greymuzzle", "The Old Alpha",
+            () => Story("hollow_by_night", "The Hollow by Night", "pack", 311, "wolf_alpha", "Greymuzzle", "Who Kept the Cold Off",
                 $$"""[{ "set": { "greymuzzle": "dead", "hollow.hostile": true } }, { "add": { "beasts.population": -30 } }, { "quest": { "id": "beasts", "entry": "alpha_dead" } }, { "give": "greymuzzle_fang" }, {{Hist("killed_greymuzzle", "killed Greymuzzle, the old alpha of the Pack, in his own Hollow by night", ["beasts", "wolves"], 2, null, """{ "maeca": { "affection": -50, "respect": -20 }, "holloway": { "respect": 20 } }""")}}]""",
                 """[{ "add": { "beasts.population": 10 } }, { "set": { "hollow.hostile": true } }, { "quest": { "id": "beasts", "entry": "hollow_lost" } }]"""));
         // The Missing Caravan, by force: Redcowl's camp taken in the dark.
         StoryFight("roost", roost, 7, "Raid the Roost", "Redcowl's Roost",
             () => !KerchiefsFriendly() && F("redcowl").Str is not ("dead" or "tricked") && !F("roost.cleared").Truthy,
             () => Story("roost_raid", "Raid on the Roost", "kerchiefs", 523, "enforcer", "Redcowl", "Of the Kerchiefs",
-                $$"""[{ "set": { "redcowl": "dead", "roost.cleared": true, "roost.hostile": true } }, { "quest": { "id": "caravan", "entry": "roost_raided" } }, {{PackLed}}, {{Hist("killed_redcowl", "took Redcowl's Roost by night and killed him in it", ["kerchief", "caravan"], 2, """{ "fear": 10 }""", """{ "holloway": { "respect": 25 }, "rav": { "affection": -20 } }""")}}]""",
+                $$"""[{ "set": { "redcowl": "dead", "roost.cleared": true, "roost.hostile": true } }, { "quest": { "id": "caravan", "entry": "roost_raided" } }, { "if": { "fact": "redcowl.ashford_said", "eq": true }, "then": [{ "set": { "redcowl.last_words": "ashford" } }], "else": [{ "set": { "redcowl.last_words": "leg" } }] }, {{PackLed}}, {{Hist("killed_redcowl", "took Redcowl's Roost by night and killed him in it", ["kerchief", "caravan"], 2, """{ "fear": 10 }""", """{ "holloway": { "respect": 25 }, "rav": { "affection": -20 } }""")}}]""",
                 """[{ "set": { "roost.hostile": true } }, { "quest": { "id": "caravan", "entry": "roost_repelled" } }]"""));
         // When the Dig turns on you, it boils over after dark.
         StoryFight("dig", dig, 7, "Hold the Dig's edge", "The Dig",
@@ -200,7 +200,7 @@ public sealed class Verge : ZoneRuntime
             {
                 bool running = F("dig.pump").Str is not ("broken" or "blown" or "moved");
                 string pump = running ? """{ "set": { "dig.pump": "blown" } }, { "quest": { "id": "beasts", "entry": "pump_blown" } }, """ : "";
-                return Story("dig_boils", "The Dig Boils Over", "lamplings", 739, "grimtunnel_roused", "Grimtunnel", "Come Up Out of the Dark",
+                return Story("dig_boils", "The Dig Boils Over", "lamplings", 739, "grimtunnel_roused", "Grimtunnel", "Finders Keepers",
                     $$"""[{ "set": { "dig.broken": true } }, {{pump}}{ "quest": { "id": "beasts", "entry": "dig_overrun" } }, {{Hist("broke_dig", "held the Dig's edge by night until nothing more came up, and drove Grimtunnel back down", ["beasts", "lampling"], 2, """{ "respect": 10 }""", """{ "wenna": { "respect": 20 }, "maeca": { "respect": 20 } }""")}}]""",
                     """[{ "quest": { "id": "beasts", "entry": "dig_held" } }]""");
             });
@@ -371,7 +371,17 @@ public sealed class Verge : ZoneRuntime
             roostCrew.AddRange(SpawnGroup("bruiser", 2, roost.X - 4, roost.Z + 8, 6, "roost", 12));
             if (!KerchiefsFriendly() && F("redcowl").Str != "dead") PromoteRedcowl();
             else if (F("redcowl").Str is not ("dead" or "furious")) PlaceRedcowl();
-            if (KerchiefsFriendly()) G.Say("Red cloth at every tent. They see your colours and go back to their dice.", null, 4);
+            if (KerchiefsFriendly())
+            {
+                G.Say("Red cloth at every tent, washing on a line, children with a wooden sword. They see your colours and go back to what they were doing.", null, 4.5);
+                // C06 (cin_forty_one_mouths), the once it matters, until the cinematic plays it.
+                if (!W.Zone("verge").TryGetValue("roost_kitchen", out var k) || !k.Truthy)
+                {
+                    W.Zone("verge")["roost_kitchen"] = true;
+                    G.After(4.8, () => G.Say("By the cages a woman is passing stew in through the bars. Her own child holds up a bowl beside her.", null, 4.5));
+                    G.After(9.5, () => G.Say("Them first.", "A Kerchief woman", 3));
+                }
+            }
         }
         if (roostSpawned && !KerchiefsFriendly() && !F("roost.hostile").Truthy && Near(roost, 26) && roostCrew.Any(Up)) TurnHostile("roost.hostile", "The Roost has seen you");
         // The Dig.
@@ -625,7 +635,7 @@ public sealed class Verge : ZoneRuntime
                     ? "The fragment fits one notch of the seven, and under your hand the whole sigil wakes, violet, like an eye opening. The door is listening."
                     : "The fragment fits one notch of the seven, and the stone warms under it. Whatever the sigil is waiting for, it is not daylight.", null, 6);
                 else G.Say(reads ? "Old-empire script over the door: \"Here the Seventh Legion buried what it could not burn.\" Below it, a sigil with seven notches, all empty."
-                    : "A door of black stone, smooth as glass, and a violet sigil you cannot read. It hums against your teeth.", null, 6);
+                    : "A door of black stone, smooth as glass. Cut over it, words in a dead tongue: HIC LEGIO SEPTIMA SEPELIVIT QUOD URERE NON POTUIT. Under them, a violet sigil you cannot read. It hums against your teeth.", null, 7);
             },
         });
         I.Add(new()
@@ -639,7 +649,8 @@ public sealed class Verge : ZoneRuntime
                 if (Knows("faith"))
                     G.After(4.5, () =>
                     {
-                        G.Say("The skull turns, very slightly, toward you. \"It was never locked from the outside.\"", "The bones", 6);
+                        G.Say("The skull turns, very slightly, toward you.", null, 3);
+                        G.After(3.2, () => G.Say("It was never locked from the outside.", "The bones", 4));
                         G.Apply("""[{ "quest": { "id": "vault", "entry": "whisper" } }]""");
                     });
             },
@@ -683,7 +694,7 @@ public sealed class Verge : ZoneRuntime
     [
         "A teamster, thin and grey, stumbles out and grips your arm. His nails are broken to the quick from the bars.",
         "A woman who will not stop saying thank you.",
-        "A young man: \"Jory. Jory Coyle. Is my uncle —? Is he —?\"",
+        "A young man, freckled, still holding the bars after the door is open.",
     ];
 
     /// <summary>A cage opened stays open: on the next visit, and in a save
@@ -722,6 +733,7 @@ public sealed class Verge : ZoneRuntime
         W.Zone("verge")[$"cage{i}"] = true;
         G.Look.Show(cageNodes[i], false);
         G.Say(CageLines[i], null, 4);
+        if (i == 2) G.After(2.5, () => G.Say("Jory. Jory Coyle. Is my uncle—? Is he—?", "Jory Coyle", 4));
         if (Enumerable.Range(0, cageNodes.Length).All(CageOpen))
             G.Apply($$"""
                 [

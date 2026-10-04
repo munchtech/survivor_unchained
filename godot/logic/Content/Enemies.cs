@@ -101,8 +101,8 @@ public static class Enemies
             Guard = new(1.4, 0.75),
             Note = "Buried with his shield, and he has not let go of it. Arrows and bolts glance off the face of it; take him from the side." },
         new() { Id = "risen_archer", Name = "Risen Bowman", Family = Family.Undead, Faction = Faction.Dead, Visual = "skeleton_rogue",
-            Health = 22, Speed = 2.5, Damage = 7, Radius = 0.45, Xp = 4, Resists = Undead, Behavior = Behavior.Ranged,
-            Ranged = new() { Range = 9, Cooldown = 2.8, Speed = 11, School = School.Physical, Art = "bolt_bone" },
+            Health = 22, Speed = 2.5, Damage = 6, Radius = 0.45, Xp = 4, Resists = Undead, Behavior = Behavior.Ranged,
+            Ranged = new() { Range = 9, Cooldown = 3.3, Speed = 11, School = School.Physical, Art = "bolt_bone" },
             Note = "Still keeps the ford the way it was taught: from behind the others, at a distance. Close it." },
         new() { Id = "grave_caller", Name = "Grave-Caller", Family = Family.Undead, Faction = Faction.Dead, Visual = "skeleton_mage",
             Health = 34, Speed = 2.2, Damage = 9, Radius = 0.45, Xp = 7, Resists = Undead, Behavior = Behavior.Caster,
@@ -121,7 +121,7 @@ public static class Enemies
 
         /* ------------------------------------------------------------ lamplings -- */
         new() { Id = "lampling", Name = "Lampling Tunneler", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "lampling",
-            Health = 16, Speed = 3.6, Damage = 7, Radius = 0.38, Xp = 2, Behavior = Behavior.Tunneler, Resists = new() { [School.Fire] = 0.3, [School.Frost] = -0.3 },
+            Health = 20, Speed = 3.6, Damage = 8, Radius = 0.38, Xp = 2, Behavior = Behavior.Tunneler, Resists = new() { [School.Fire] = 0.3, [School.Frost] = -0.3 },
             Note = "They dig toward light the way moths fly at it. A lampling will chew through a cellar wall to sit beside your candle, and then through you to keep it." },
         new() { Id = "grimtunnel", Name = "Grimtunnel", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "grimtunnel", Scale = 1.9,
             Health = 400, Speed = 5, Damage = 10, Radius = 0.7, Xp = 0, Behavior = Behavior.Stationary, Resists = new() { [School.Fire] = 0.5 },
@@ -189,6 +189,9 @@ public static class Enemies
         new() { Id = "ghoul_ally", Name = "Risen Servant", Family = Family.Undead, Faction = Faction.Ally, Visual = "risen_ally",
             Health = 90, Speed = 3.0, Damage = 24, Radius = 0.5, Xp = 0, Behavior = Behavior.Chase, AttackEvery = 1.3,
             Note = "Something you killed, got up again on your side. It will not thank you." },
+        new() { Id = "knight_ally", Name = "Bone Knight", Family = Family.Undead, Faction = Faction.Ally, Visual = "skeleton_warrior_elite", Scale = 1.25,
+            Health = 240, Speed = 2.9, Damage = 34, Radius = 0.6, Mass = 3, Xp = 0, Behavior = Behavior.Chase, AttackEvery = 1.2,
+            Note = "A knight of the barrows, in the iron it was buried in, keeping a watch for you now." },
     }.ToDictionary(e => e.Id);
 
     public static EnemyDef Get(string id) => All.TryGetValue(id, out var d) ? d : throw new KeyNotFoundException($"unknown enemy {id}");
