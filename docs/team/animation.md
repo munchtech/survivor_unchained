@@ -21,7 +21,11 @@ Agent a435f4dd0ac80df75, branch `worktree-agent-a435f4dd0ac80df75` (took over fr
 ## Next (exact)
 
 1. Build and judge the slam: `python tools/anim/folk.py slam`. Map it as the `Cast` for kerchief_brute and skeleton_minion: add `"Slam"` to `FolkClips.Crowd`, and in `Visuals.cs` give those two `cast: "Slam"`. Then judge it on CrowdSheet (`VISUAL=kerchief_brute ROLE=cast`) and in the game with mb_barn_door, and bump `Vat.Version`.
-2. Kneel-to-shoot: combat (a1d4562f44c7f6feb) agreed to add `RangedSpec.Aim` (about 0.55 s for the levy crossbows and the Scorpion) and is making the sim change itself: Windup with `AnimT = 0`, then Shoot. Key `kneel_aim` as the windup, played from `e.AnimT`, and `kneel_shot` as the attack (the release, the kick, the rise). Add a `kerchief_crossbow` visual for levy_crossbow.
+2. Kneel-to-shoot: combat's `RangedSpec.Aim` is in, on `worktree-agent-a1d4562f44c7f6feb@add1989a` (merge it first).
+   - The aim is `EnemyState.Casting` with `e.Cast == CastKind.Aim`, `e.Anim = Windup` and `AnimT = 0` at its start. It lasts 0.55 s on levy_crossbow, mb_old_quarrel and mb_levy_sergeant, and the shooter faces `e.LungeX/Z`.
+   - Then it shoots, with `e.Anim = Attack` and `AnimT = 0`.
+   - CrowdView's Casting case must play the windup role from `e.AnimT` when `e.Cast == CastKind.Aim`; today it would play "cast", or a looping windup on `time`.
+   Key `kneel_aim` as the windup, played from `e.AnimT`, and `kneel_shot` as the attack (the release, the kick, the rise). Add a `kerchief_crossbow` visual for levy_crossbow.
 3. Cinematics' Kimodo clips, judged with the scratch `try_takes.py` (whole takes as `k_<prompt>_<take>`; delete them and repack after). Start with C02's rise_stiff and bend_lift on the kit man, kneel_fall (C03) and flask_drink (C04).
 4. Polish: the chain haul's landing crouch, and a heavier flinch while running (a gesture through `Gestures` would do it).
 
