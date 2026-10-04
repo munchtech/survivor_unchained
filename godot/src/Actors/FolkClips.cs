@@ -72,6 +72,24 @@ public static class FolkClips
         _ => null,
     };
 
+    /// <summary>The crowd's three ways to fall (crowd.py), for the roles
+    /// "die", "die2" and "die3": over onto the back, onto the face, and in
+    /// a heap on the side; or null where the library has none. A field of
+    /// the dead picks among them so no two neighbours lie alike.</summary>
+    public static string[]? Deaths(bool woman, bool armed, bool pistol = false)
+    {
+        var all = new[] { "die_back", "die_front", "die_side" };
+        var named = new string[all.Length];
+        for (int i = 0; i < all.Length; i++)
+        {
+            // Armed, what is held is laid flat with the hand (a crossbow on its side), not stood on end.
+            var n = (pistol ? Named(woman, all[i] + "_pistol") : null) ?? (armed ? Named(woman, all[i] + "_armed") : null) ?? Named(woman, all[i]);
+            if (n == null) return null;
+            named[i] = n;
+        }
+        return named;
+    }
+
     static string? Named(bool woman, string? want)
     {
         if (want == null || Library() is not { } l) return null;

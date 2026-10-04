@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/brows.png-e346ba718bed1dc822f240b664aaf38d.ct
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0

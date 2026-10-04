@@ -20,7 +20,7 @@ public sealed class Autopilot
     readonly Game g;
     readonly HashSet<Act> pressed = new();
     int wp = 1;
-    double t, orbit, dashT, abilityT, drinkT, stuckT, sideT, lastX, lastZ, postT;
+    double t, orbit, dashT, abilityT, drinkT, stuckT, sideT, lastX, lastZ, postT, resultT;
     int side = 1;
     (double X, double Z, double R)? territory;
     /// <summary>Take the drafts and otherwise stand still (--auto idle): the worst player.</summary>
@@ -41,6 +41,11 @@ public sealed class Autopilot
         Move = (0, 0);
         if (g.Overlay == "draft") { g.Pick(0); return; }
         if (g.Overlay == "dialogue") { g.Advance(); return; }
+        // A chest opening is watched to its end (pictures of it).
+        if (g.Overlay == "chest") return;
+        // A night's result is read, then left as a player leaves it (closing it as a screen
+        // stranded the survivor on the empty field).
+        if (g.Overlay == "arena") { if ((resultT += dt) > 5) { resultT = 0; Controls.Instance.Press(Act.Confirm); } return; }
         if (g.Overlay != null) { g.CloseOverlay(); return; }
         var b = g.Battle;
         var z = g.Zone;

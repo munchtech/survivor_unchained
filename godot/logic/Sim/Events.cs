@@ -78,7 +78,8 @@ public static class Ev
     public sealed class Spawn : CombatEvent { public int Enemy; public double X, Z; public string Def = ""; public SpawnStyle Style; }
     public sealed class Pickup : CombatEvent { public PickupKind Kind; public double Amount, X, Z; }
     public sealed class LevelUp : CombatEvent { public int Level; }
-    public sealed class Evolve : CombatEvent { public string Weapon = "", Into = ""; }
+    /// <summary>A weapon evolved; out of a chest, the chest's opening shows it, not this.</summary>
+    public sealed class Evolve : CombatEvent { public string Weapon = "", Into = ""; public bool Chest; }
     public sealed class Discovery : CombatEvent { public string Id = ""; }
     public sealed class Dash : CombatEvent { public double X0, Z0, X1, Z1; }
     /// <summary>A telegraphed blow slipped at the last moment (Battle.PerfectDodge).</summary>

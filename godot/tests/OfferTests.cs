@@ -90,6 +90,31 @@ public class OfferTests
         Assert.True(worst <= LevelUp.CatalystPity, $"waited {worst} drafts");
     }
 
+    /// <summary>A chest pays one thing, now and then three, rarely five, worth 1.4 on average as the
+    /// old count was (the jackpot changes, not the night's price); an evolution earned comes out
+    /// first and free; each thing says what it raised and between which ranks, for its opening.</summary>
+    [Fact]
+    public void A_chest_pays_one_three_or_five_with_an_evolution_first()
+    {
+        int n = 100000;
+        var counts = Enumerable.Range(0, n).Select(i => LevelUp.ChestCount((i + 0.5) / n)).ToList();
+        Assert.Equal([1, 3, 5], counts.Distinct().OrderBy(c => c));
+        Assert.InRange(counts.Average(), 1.39, 1.41);
+        var b = BattleTests.Arena(3, ("cinderfall", Weapons.MaxRank), ("volley", 2));
+        b.AddBoon("expanse");
+        var got = LevelUp.OpenChest(b, 3);
+        Assert.Equal(4, got.Count);
+        Assert.Equal(ChestItemKind.Evolution, got[0].Kind);
+        Assert.Equal("cinderfall", got[0].Id);
+        Assert.NotNull(b.Weapons.Single(w => w.Id == "cinderfall").Evolution);
+        foreach (var it in got.Skip(1))
+        {
+            Assert.True(it.Kind is ChestItemKind.Rank or ChestItemKind.Passive or ChestItemKind.Gold);
+            if (it.Kind != ChestItemKind.Gold) Assert.Equal(it.From + 1, it.To);
+            Assert.False(string.IsNullOrEmpty(it.Icon));
+        }
+    }
+
     [Fact]
     public void Unions_come_when_both_halves_are_evolved_and_free_a_slot()
     {

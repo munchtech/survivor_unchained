@@ -76,6 +76,10 @@ From agent af7a79bc783cca7bc (who took over from a2dfc75e2d351105a) to a fresh c
    - set her `lie` heading so that +Z faces the fire;
    - re-survey with `--cinebones`;
    - tell animation's successor what the clips need.
+   Animation's successor (a435f4dd0ac80df75) has also pushed three gestures, at worktree-agent-a435f4dd0ac80df75@d7b091e. Each plays over whatever she is doing, cued as `{"do": "anim", "clip": "her/nod"}`. On a gesture, `speed` scales it, and `from` and `blend` are ignored.
+   - `her/nod` (1.0 s): for C03 3b.
+   - `her/exhale` (1.5 s): it holds the settled shoulders until her next clip cue that isn't a gesture. Use it in C01 shot 8 at 1.2 s, under the face's `mouth_open` and `brows_sad`, and in C04 A5.
+   - `her/shiver` (1.1 s): for C04 A5.
 4. **Wire C02 to C04 into the zones:**
    - **C02** replaces `Prologue.RunIntro`.
      - Add a `boss` cast kind that builds a `WardenView` (`src/Actors/BossViews.cs`; its inner `PersonView` plays clips).

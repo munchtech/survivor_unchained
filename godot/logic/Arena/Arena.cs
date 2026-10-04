@@ -159,6 +159,9 @@ public static class Arenas
     /// <summary>The arena is over (the way out taken, or the survivor fallen):
     /// they take out what they learned and earned; lost, the story is told so,
     /// and a story fight waits at the table.</summary>
+    /// <summary>How often a table's night won gives a tome (a story fight always does); the table says so.</summary>
+    public const double TableTome = 0.35;
+
     public static ArenaResult Finish(Journey j, Battle b, ArenaSpec spec, bool won, string? killer = null)
     {
         var ch = j.Ch;
@@ -173,7 +176,7 @@ public static class Arenas
         // A story fight won gives a tome (a table's, now and then): blank, to be
         // written with one of what burned here, the survivor's choice of up to three.
         var choices = new List<string>();
-        if (won && (spec.Story || b.Rng.Next() < 0.35))
+        if (won && (spec.Story || b.Rng.Next() < TableTome))
             choices = Skills(b).Where(id => SkillBook.CanLearn(ch, id))
                 .OrderByDescending(id => b.Weapons.FirstOrDefault(w => w.Id == id)?.Rank ?? 8).Take(3).ToList();
         // What was made here for the first time goes in the codex, recipe and all.

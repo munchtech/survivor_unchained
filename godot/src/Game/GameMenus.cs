@@ -30,6 +30,8 @@ public partial class Game
         if (inTransit || Mode != "play") return false;
         // A cinematic hears only the held skip (GameCinema), never a menu.
         if (cine != null) return true;
+        // A chest opening: any key brings it all down, a second closes it.
+        if (hudMode == "chest") { chestShown?.Skip(); return true; }
         if (hudMode is "draft" or "dialogue") return hud.Key(a);
         switch (a)
         {
@@ -76,9 +78,10 @@ public partial class Game
             Journey.Walk(zone.Id, extent, b.Player.X, b.Player.Z);
         }
         screens.Show(o);
-        // The pause menu stops the world; any other screen only in a fight (an arena, the night's
-        // road), where the horde would not wait. Elsewhere the world goes on behind it (the owner).
-        scene.SimPaused = o is PauseScreen || zone?.Combat == true;
+        // The pause menu stops the world; any other screen only where the ember burns (an arena,
+        // the prologue's night road), where the horde would not wait. Elsewhere, the Verge by
+        // day too, the world goes on behind it (the owner's rule).
+        scene.SimPaused = o is PauseScreen || zone?.Ember == true;
         cam.ScreenShift = o.CameraShift;
         controls.Captured = true;
         hud.Prompt(promptShown = null);
@@ -135,6 +138,7 @@ public partial class Game
             screen?.Report(lines);
             air.Set(zone!.AtmosphereFor(TimeOfDay.Day));
             scene?.View.SetNight(false);
+            scene?.View.SetDusk(false);
             hud.ZoneInfo(zone.Name, zone.Region, w.Day, TimeOfDay.Day);
             Save("rest");
             hud.Fade(0, 0.6);
@@ -147,6 +151,38 @@ public partial class Game
         if (scene != null) scene.SimPaused = false;
         controls.Captured = false;
         controls.ClearLatches();
+    }
+
+    /* ------------------------------------------------------------ chest -- */
+
+    ChestCeremony? chestShown;
+    readonly Queue<ChestOpened> chestsWaiting = new();
+
+    /// <summary>A chest opened in the fight: staged as soon as nothing else has the screen
+    /// (ChestCeremony). The fight is paused under it, as for the draft: arenas only.</summary>
+    public void Chest(ChestOpened c) => chestsWaiting.Enqueue(c);
+
+    void UpdateChest()
+    {
+        if (chestShown is { } shown)
+        {
+            if (!shown.Done) return;
+            chestShown = null;
+            shown.QueueFree();
+            if (hudMode == "chest") hudMode = null;
+            if (scene != null && hudMode == null) scene.SimPaused = false;
+            controls.ClearLatches();
+            return;
+        }
+        if (chestsWaiting.Count == 0 || Overlay != null || inTransit || cine != null || scene == null || Battle is not { } b) return;
+        hudMode = "chest";
+        scene.SimPaused = true;
+        chestShown = new ChestCeremony(chestsWaiting.Dequeue(), b, scene, cam, hud, Haptics);
+        hud.Over(chestShown);
+        // (--shot: frames of each opening as it happens in a night, not only staged ones.)
+        Shots.Want("chest", 0.45);
+        Shots.Want("chest", 1.6);
+        Shots.Want("chest", 2.8);
     }
 
     /* ------------------------------------------------------------ draft -- */

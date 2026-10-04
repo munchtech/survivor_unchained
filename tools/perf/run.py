@@ -39,6 +39,7 @@ SCENARIOS = {
     # The town by day, the heroine walking the autopilot's circle.
     "hub": (HER + ["--zone", "waystation", "--time", "day", "--auto"], 10, 30),
     "hub_night": (HER + ["--zone", "waystation", "--time", "night", "--auto"], 10, 30),
+    "hub_dusk": (HER + ["--zone", "waystation", "--time", "dusk", "--auto"], 10, 30),
     # The Verge by day: packs, the wood's flora.
     "verge": (HER + ["--zone", "verge", "--time", "day", "--auto"], 10, 30),
     # An arena from its start, as it opens (the autopilot drafting first cards).

@@ -39,6 +39,27 @@ public sealed class FollowCamera
 
     public void AddTrauma(float v) => Trauma = Mathf.Clamp(Trauma + v * ShakeScale, 0, 1);
 
+    Vector3 kick;
+    float kickT = 1;
+
+    /// <summary>The view leans toward a blow of hers for a breath (S-17): out over 90 ms, back
+    /// over 160 ms, along the ground toward where it landed and a little down into it, so the
+    /// weight is hers and it reads which way it went. Not a shake: it never wobbles.</summary>
+    public void Kick(Vector3 toward, float metres)
+    {
+        toward.Y = 0;
+        if (toward.LengthSquared() < 1e-4f || ShakeScale <= 0) return;
+        kick = (toward.Normalized() + Vector3.Down * 0.35f) * metres * ShakeScale;
+        kickT = 0;
+    }
+
+    Vector3 Kicked()
+    {
+        if (kickT >= 0.25f) return Vector3.Zero;
+        float k = kickT < 0.09f ? Mathf.SmoothStep(0, 1, kickT / 0.09f) : 1 - Mathf.SmoothStep(0, 1, (kickT - 0.09f) / 0.16f);
+        return kick * k;
+    }
+
     public void Snap(float x, float y, float z)
     {
         look = new Vector3(x, y, z);
@@ -69,6 +90,7 @@ public sealed class FollowCamera
         look = new Vector3(Damp(look.X, f.X, 7, dt), Damp(look.Y, f.Y, 4, dt), Damp(look.Z, f.Z, 7, dt));
         Distance = Damp(Distance, TargetDistance, 1.6f, dt);
         Trauma = Mathf.Max(0, Trauma - dt * 1.4f);
+        kickT += dt;
         // The view slides sideways, the angle unchanged: pixels to metres at the survivor's distance.
         float perPx = 2 * Distance * Mathf.Tan(Mathf.DegToRad(Camera.Fov) / 2) / 1080;
         Camera.HOffset = Damp(Camera.HOffset, -ScreenShift * perPx, 6, dt);
@@ -82,8 +104,9 @@ public sealed class FollowCamera
         var pos = new Vector3(look.X + Mathf.Sin(Yaw) * cp * Distance, look.Y + sp * Distance, look.Z + Mathf.Cos(Yaw) * cp * Distance);
         float s = Trauma * Trauma, t = shakeT * 22;
         float N(float a) => Mathf.Sin(t + a) * 0.5f + Mathf.Sin(t * 2.3f + a * 1.7f) * 0.3f + Mathf.Sin(t * 4.1f + a * 3.1f) * 0.2f;
-        var at = pos + new Vector3(N(1) * s * 0.7f, N(2) * s * 0.5f, N(3) * s * 0.7f);
-        var target = new Vector3(look.X + N(4) * s * 0.25f, look.Y, look.Z + N(5) * s * 0.25f);
+        var lean = Kicked();
+        var at = pos + lean + new Vector3(N(1) * s * 0.7f, N(2) * s * 0.5f, N(3) * s * 0.7f);
+        var target = new Vector3(look.X + N(4) * s * 0.25f, look.Y, look.Z + N(5) * s * 0.25f) + lean * 1.3f;
         var basis = Basis.LookingAt(target - at, Vector3.Up);
         Camera.GlobalTransform = new Transform3D(basis.Rotated(basis.Z, N(6) * s * 0.025f), at);
     }

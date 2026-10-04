@@ -8,7 +8,11 @@ namespace SurvivorUnchained.Play;
 /// (Settings.Scale), applied to the renderer, the air and the place on show.
 /// High is the game as it was made, and the default; each step down gives up
 /// what costs most for what it shows from the game's camera (each measured:
-/// docs/PERF_AUDIT.md, "The graphics settings"). The resolution's steps draw
+/// docs/PERF_AUDIT.md, "The graphics settings"). A step gives up the world,
+/// never the heroine's own detail (the owner's rule): her meshes have no
+/// LODs, her textures keep every mip, her skin its scattering. (FXAA is off
+/// at every step: TAA and MSAA already smooth the edges, and it only blurred
+/// her and the world a second time.) The resolution's steps draw
 /// the world at fewer pixels and let FSR 2.2 bring it back up to the screen
 /// (its own temporal smoothing in place of TAA and MSAA); the interface is
 /// always drawn at the screen's own.
@@ -24,12 +28,13 @@ public static class Graphics
         float GrassCell, float Effects, bool CrowdShadows, int Corpses, float LodThreshold);
 
     /// <summary>The game as made (the project's own settings: soft shadows at
-    /// medium, positional at low, SSAO at medium, skin at low).</summary>
+    /// medium, positional at low, SSAO at medium, skin at low, MSAA 4x: the
+    /// project's msaa_3d=2 is 4x in Godot's count, not 2x).</summary>
     public static readonly Tier High = new(
         true, RenderingServer.EnvironmentSsaoQuality.Medium, true,
         4096, RenderingServer.ShadowQuality.SoftMedium, true,
         true, RenderingServer.ShadowQuality.SoftLow,
-        Viewport.Msaa.Msaa2X, RenderingServer.SubSurfaceScatteringQuality.Low,
+        Viewport.Msaa.Msaa4X, RenderingServer.SubSurfaceScatteringQuality.Low,
         0.3f, 1f, true, 160, 1f);
 
     public static readonly Tier Medium = High with
@@ -42,7 +47,8 @@ public static class Graphics
     public static readonly Tier Low = Medium with
     {
         Ssao = false, SunShadowSize = 2048, SunFilter = RenderingServer.ShadowQuality.SoftVeryLow, SunFourSplits = false,
-        LampShadows = false, Skin = RenderingServer.SubSurfaceScatteringQuality.Disabled,
+        // (Skin keeps its scattering: it is her own, and costs only the pixels she covers.)
+        LampShadows = false,
         GrassCell = 0.45f, Effects = 0.5f, CrowdShadows = false, Corpses = 60, LodThreshold = 2.5f,
     };
 

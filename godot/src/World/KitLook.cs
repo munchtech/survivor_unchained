@@ -25,7 +25,9 @@ public static class KitLook
     };
     static readonly Regex Foliage = new("Leaf|Leaves|Flower|Petal|Grass|Clover|Fern|Plant|Bush", RegexOptions.IgnoreCase);
 
-    public sealed record Look(float Wind, Color? LeafA, Color? LeafB, float LeafAmount, float Moss)
+    /// <param name="Shade">How much light the leaves give back: under an ember
+    /// arena's night they stand as dark crowns round the fight, not lit lawns.</param>
+    public sealed record Look(float Wind, Color? LeafA, Color? LeafB, float LeafAmount, float Moss, float Shade = 1)
     {
         /// <summary>A piece as it comes: still, its own colours.</summary>
         public static readonly Look Plain = new(0, null, null, 0, 0);
@@ -54,7 +56,7 @@ public static class KitLook
         bool cut = foliage || s.Transparency is BaseMaterial3D.TransparencyEnum.AlphaScissor or BaseMaterial3D.TransparencyEnum.Alpha;
         m.SetShaderParameter("alpha_scissor", cut ? Mathf.Max(s.AlphaScissorThreshold, 0.5f) : 0f);
         foreach (var (re, sat, tint) in Weather)
-            if (re.IsMatch(s.ResourceName)) { m.SetShaderParameter("weather_sat", sat); m.SetShaderParameter("weather_tint", tint); break; }
+            if (re.IsMatch(s.ResourceName)) { m.SetShaderParameter("weather_sat", sat); m.SetShaderParameter("weather_tint", foliage ? tint * look.Shade : tint); break; }
         m.SetShaderParameter("wind", foliage ? look.Wind : look.Wind * 0.3f);
         if (foliage && look.LeafA is Color a && look.LeafB is Color b)
         {
