@@ -325,11 +325,31 @@ public static class Sfx
     public static void Evolve()
     {
         if (A is not { } a) return;
+        a.DuckSfx(0.4f, 1.2);
         double b = 293.66;
         int[] steps = [0, 7, 12, 16, 19, 24];
         for (int i = 0; i < steps.Length; i++) a.Play(new Fm { T = Now + i * 0.09, F = b * Semis(steps[i]), Ratio = 2.01, Index = 0.8, D = 2.2, G = 0.045, Verb = 0.7 });
         a.Play(new Tone { F = 73.4, A = 0.3, D = 2.4, G = 0.16, Type = Wave.Saw, Lp = 400, Lp2 = 1400 });
     }
+
+    /// <summary>What ruled the night falls: the fight's noise drops away, a blow from under the
+    /// ground, the night's chord rising and held, a shimmer as the ember leaves it. (Its own
+    /// sounds go round the duck, on the music and interface buses.)</summary>
+    public static void Fall()
+    {
+        if (A is not { } a) return;
+        double t = Now;
+        a.DuckSfx(0.3f, 1.9);
+        a.Play(new Tone { T = t, F = 55, F2 = 22, D = 2.4, G = 0.45, Bus = Bus.Ui });
+        a.Play(new Hiss { T = t, D = 1.8, G = 0.15, Lp = 900, Lp2 = 80, Brown = true, Bus = Bus.Ui });
+        int[] s = [0, 7, 12, 16, 19, 24];
+        for (int i = 0; i < s.Length; i++)
+            a.Play(new Fm { T = t + 0.35 + i * 0.11, F = 146.83 * Semis(s[i]), Ratio = 2.01, Index = 0.7, A = 0.08, D = 3.2, G = 0.045, Verb = 0.8, Bus = Bus.Music });
+        a.Play(new Hiss { T = t + 0.3, A = 0.6, D = 2.4, G = 0.03, Hp = 7000, Bus = Bus.Ui });
+    }
+
+    /// <summary>The fight's noise held down for a big moment (an evolution, a chest), so it is heard.</summary>
+    public static void Moment(double seconds, float depth = 0.4f) => A?.DuckSfx(depth, seconds);
 
     public static void Discovery()
     {

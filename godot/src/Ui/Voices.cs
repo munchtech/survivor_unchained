@@ -38,9 +38,16 @@ public partial class Voices : Node3D
     }
 
     /// <summary>The names to show now (near the survivor): the rest go.</summary>
+    // What each plate says now, so its words are made and set only when they
+    // change (every frame for everyone was a frame's worth of garbage), and
+    // the sets kept from frame to frame.
+    readonly Dictionary<string, (string Name, string? Role, char? Marker)> said = new();
+    readonly HashSet<string> keep = new();
+    readonly List<string> gone = new();
+
     public void Plates(List<Plate> list)
     {
-        var keep = new HashSet<string>();
+        keep.Clear();
         foreach (var p in list)
         {
             keep.Add(p.Id);
@@ -50,16 +57,25 @@ public partial class Voices : Node3D
                 AddChild(pl.Name);
                 AddChild(pl.Mark);
                 plates[p.Id] = pl;
+                said.Remove(p.Id);
             }
-            pl.Name.Text = p.Role != null ? $"{p.Name}\n{p.Role}" : p.Name;
-            pl.Name.Position = new Vector3((float)p.X, (float)p.Y, (float)p.Z);
-            pl.Mark.Text = p.Marker?.ToString() ?? "";
-            pl.Mark.Visible = p.Marker != null;
-            pl.Mark.Position = pl.Name.Position + Vector3.Up * 0.45f;
+            if (!said.TryGetValue(p.Id, out var was) || was.Name != p.Name || was.Role != p.Role || was.Marker != p.Marker)
+            {
+                said[p.Id] = (p.Name, p.Role, p.Marker);
+                pl.Name.Text = p.Role != null ? $"{p.Name}\n{p.Role}" : p.Name;
+                pl.Mark.Text = p.Marker?.ToString() ?? "";
+                pl.Mark.Visible = p.Marker != null;
+            }
+            var at = new Vector3((float)p.X, (float)p.Y, (float)p.Z);
+            if (pl.Name.Position != at)
+            {
+                pl.Name.Position = at;
+                pl.Mark.Position = at + Vector3.Up * 0.45f;
+            }
         }
-        var gone = new List<string>();
+        gone.Clear();
         foreach (var id in plates.Keys) if (!keep.Contains(id)) gone.Add(id);
-        foreach (var id in gone) { plates[id].Name.QueueFree(); plates[id].Mark.QueueFree(); plates.Remove(id); }
+        foreach (var id in gone) { plates[id].Name.QueueFree(); plates[id].Mark.QueueFree(); plates.Remove(id); said.Remove(id); }
     }
 
     /// <summary>Something said to the air, over someone's head.</summary>

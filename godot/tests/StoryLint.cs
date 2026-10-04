@@ -209,6 +209,10 @@ public class StoryLint
         // learned of the survivor, read in Act 2 ("what you are") and Act 3.
         "maeca.heard_heart", "maeca.heard_past", "rav.came_back", "sella.cold_sold", "sella.heard_past",
         "player.zone", "map.drawn",
+        // The last night, for the town to talk about (docs/EXPERIENCE_AUDIT.md, finding 5): the
+        // story's lines read them next; take each off this list as it is read.
+        "arena.last.people", "arena.last.won", "arena.last.fell", "arena.last.story", "arena.last.tier", "arena.last.minutes",
+        "arena.last.past", "arena.last.day", "arena.last.longest", "arena.last.killer",
     ];
 
     [Fact]

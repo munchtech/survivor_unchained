@@ -76,6 +76,10 @@ public sealed class MapRules
     public double StaggerTaken = 1;
     /// <summary>The ember the dead leave, over the usual (an oath's pay: "half again the ember").</summary>
     public double EmberGain = 1;
+    /// <summary>How often the rank and file drop their gold (champions always as usual). An
+    /// arena's horde is tens of thousands a night: at the day's rate the Kerchiefs alone paid
+    /// 52k-109k gold (docs/CRAFTING_DESIGN.md), so there it is a fiftieth.</summary>
+    public double FodderGold = 1;
 }
 
 public sealed class BattleHooks
@@ -97,6 +101,9 @@ public sealed class BattleHooks
     public Action<Enemy, School, double>? OnBossHit;
     /// <summary>A boss's stagger bar filled.</summary>
     public Action<Enemy>? OnBossStagger;
+    /// <summary>A creature called up by one of its own (a summon), and who called it: the
+    /// zone softens or hardens it as it does the rest of its horde.</summary>
+    public Action<Enemy, Enemy>? OnCalled;
 
     /// <summary>Hooks that ask `zone`'s at the moment they are called. A zone sets some
     /// of its hooks only when a fight begins (the arena's boss at the half hour), so a
@@ -112,6 +119,7 @@ public sealed class BattleHooks
         OnHitProp = (tag, id, school, dmg, x, z) => zone.OnHitProp?.Invoke(tag, id, school, dmg, x, z),
         OnBossHit = (e, school, dmg) => zone.OnBossHit?.Invoke(e, school, dmg),
         OnBossStagger = e => zone.OnBossStagger?.Invoke(e),
+        OnCalled = (e, by) => zone.OnCalled?.Invoke(e, by),
     };
 }
 
@@ -647,6 +655,8 @@ public sealed partial class Battle
         if (s.Has(StatusKind.Sear) && school == School.Holy) dmg *= 1.3;
         if (s.Has(StatusKind.Shock) && !o.Dot) { dmg *= 1.35 + st.Get(Stat.ShockBonus); if (!Boons.ContainsKey("static_charge")) s.Remove(StatusKind.Shock); }
         dmg *= e.TakenMul;
+        // Warded by its own kind's lamp or drum.
+        if (e.WardT > 0) dmg *= 1 - e.Ward;
         // Resistances.
         dmg *= 1 - (e.Def.Resists?.Of(school) ?? 0);
         // Frontal guard: projectiles into a raised shield mostly glance off.
@@ -670,7 +680,7 @@ public sealed partial class Battle
             crit = Rng.Next() < chance;
         }
         if (crit) dmg *= st.Get(Stat.CritDamage) * (e.Hp < e.MaxHp * 0.5 && Boons.TryGetValue("ferocity", out int tooth) ? 1 + 0.12 * tooth : 1);
-        else if (Rules.IronSkin > 0 && e.Disposition == Disposition.Hostile) { dmg *= 1 - Rules.IronSkin; blocked = true; }
+        else if ((Rules.IronSkin > 0 || e.Def.IronSkin > 0) && e.Disposition == Disposition.Hostile) { dmg *= 1 - Math.Max(Rules.IronSkin, e.Def.IronSkin); blocked = true; }
         dmg = Math.Max(0.5, dmg);
 
         double before = e.Hp;
@@ -805,7 +815,7 @@ public sealed partial class Battle
             if (credited)
             {
                 double luck = Stats.Get(Stat.Luck);
-                if (e.Def.Gold is { } gold && gold != 0 && Rng.Next() < 0.55 + luck * 0.1) SpawnPickup(PickupKind.Gold, e.X, e.Z, Math.Ceiling(gold * (0.6 + Rng.Next() * 0.8)));
+                if (e.Def.Gold is { } gold && gold != 0 && Rng.Next() < (0.55 + luck * 0.1) * (e.Elite ? 1 : Rules.FodderGold)) SpawnPickup(PickupKind.Gold, e.X, e.Z, Math.Ceiling(gold * (0.6 + Rng.Next() * 0.8)));
                 if (Rng.Next() < 0.012 * luck + (e.Elite ? 0.4 : 0)) SpawnPickup(PickupKind.Heal, e.X, e.Z, e.Elite ? 40 : 25);
                 if (Rng.Next() < 0.004 * luck) SpawnPickup(PickupKind.Magnet, e.X, e.Z, 1);
                 if (Hooks.OnLoot != null)
@@ -1075,6 +1085,23 @@ public sealed partial class Battle
 
     double thornsAt = -9;
     static readonly Tag[] ThornTags = [Tag.Aura, Tag.Area, Tag.Nature];
+    double groundSum;
+
+    /// <summary>Bad ground under the survivor: armour and resistance answer it, as they answer a
+    /// blow; but it is not a blow. It is never dodged or blocked, sets off no thorns, and buys
+    /// none of the moment of grace a blow buys (it did: standing in fire made the survivor
+    /// untouchable by the crowd's teeth, half a second in every half second). Said once a second.</summary>
+    void HurtByGround(double amount, School school, double dt)
+    {
+        var p = Player;
+        if (!p.Alive || p.Iframes > 0 || p.Leap != null) return;
+        var st = Stats;
+        double dmg = amount * (1 - StatBlock.ArmorReduction(st.Get(Stat.Armor))) * (1 - Clamp(st.GetRaw(Stat.ResistOf(school)), -1, 0.8));
+        if (p.BulwarkT > 0) dmg *= Has("unmoving") ? 0.2 : 0.35;
+        if (Art.WraithT > 0) dmg *= 0.5;
+        string source = school switch { School.Fire => "burning ground", School.Frost => "frozen ground", School.Nature => "foul ground", _ => "bad ground" };
+        Dot(ref groundSum, dmg, school, source, dt);
+    }
 
     /// <summary>A blow slipped at the last moment: the dash comes back, the
     /// air round you cracks (what is close is staggered), and for a moment
@@ -1207,8 +1234,8 @@ public sealed partial class Battle
         {
             p.LastKiller = from;
             // The map's oath rides their blows.
-            if (!silent && Rules.HitChill) SlowPlayer(0.65, 1.4);
-            if (!silent && Rules.HitPoison) { p.PoisonT = Math.Max(p.PoisonT, 3); p.PoisonDps = Math.Max(p.PoisonDps, from.Damage * 0.12); }
+            if (!silent && (Rules.HitChill || from.Def.Bite == StatusKind.Chill)) SlowPlayer(0.65, 1.4);
+            if (!silent && (Rules.HitPoison || from.Def.Bite == StatusKind.Poison)) { p.PoisonT = Math.Max(p.PoisonT, 3); p.PoisonDps = Math.Max(p.PoisonDps, from.Damage * 0.12); }
         }
         if (p.Hp <= 0)
         {
@@ -1314,6 +1341,12 @@ public sealed partial class Battle
         e.ThawT = 0;
         e.Raised = false;
         e.HpFloor = e.Overflow = e.Stagger = e.StaggeredT = e.StaggerResistT = 0;
+        e.HasteT = e.WardT = e.Ward = 0; e.Haste = 1;
+        // (Only those with the verb draw from the stream: the rest of the fight's dice stay where they were.)
+        e.AuraT = def.Aura is { } au ? au.Every * (0.3 + Rng.Next() * 0.4) : 0;
+        e.SummonT = def.Summon is { } su ? su.Every * 0.5 : 0;
+        e.SlamT = def.Slam is { } sl ? sl.Cooldown * (0.4 + Rng.Next() * 0.4) : 0;
+        e.Cast = CastKind.None; e.ChainLeft = e.Summoned = 0;
         e.Wake = o.Wake;
         e.Roused = false;
         e.DrainedAt = -99;
@@ -1379,6 +1412,11 @@ public sealed partial class Battle
             left -= v;
         }
     }
+
+    /// <summary>A creature's blow on the ground after `delay` (its own mark already shown):
+    /// the survivor if she is still in it, and the horde round it at a little over half.</summary>
+    public void EnemyStrike(double x, double z, double r, double dmg, School school, double delay) =>
+        strikes.Add(new StrikeSpec(x, z, r, dmg, school, BlastTag, delay, null, Side.Enemy, 0));
 
     public void ScheduleStrike(double x, double z, double r, double dmg, School school, Tag[] tags, double delay, WeaponInst? weapon, Side owner = Side.Player, int depth = 0)
     {
@@ -1763,8 +1801,10 @@ public sealed partial class Battle
         {
             if (Dist(p.X, p.Z, z.X, z.Z) < z.Radius + p.Radius * 0.5)
             {
-                HurtPlayer(z.Dps * z.Tick, z.School, "burning ground", null);
+                HurtByGround(z.Dps * z.Tick, z.School, z.Tick);
                 if (z.School == School.Fire) { p.BurnT = 1.5; p.BurnDps = z.Dps * 0.25; }
+                // The drowned's wet ground is cold underfoot.
+                if (z.School == School.Frost) SlowPlayer(0.75, 0.6);
             }
             // World hazards hurt everything standing in them.
             if (z.Owner == Side.World)

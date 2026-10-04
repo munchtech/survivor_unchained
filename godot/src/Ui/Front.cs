@@ -242,7 +242,8 @@ public partial class CreateScreen : Overlay
     const int LookStep = 3, NameStep = 4;
     static readonly Dictionary<string, string> ClassGlyph = new() { ["warden"] = "shield", ["reaver"] = "axe", ["arcanist"] = "staff", ["stalker"] = "bow" };
     static readonly Dictionary<string, string> BgGlyph = new() { ["hunter"] = "claw", ["scholar"] = "book", ["outcast"] = "mask", ["devout"] = "sun" };
-    static readonly string[] Names = { "Ashe", "Brannagh", "Corwen", "Dace", "Edda", "Fen", "Garrow", "Hollis", "Isolde", "Jessamy", "Kell", "Lorne", "Maren", "Nolly", "Orrin", "Pim", "Quill", "Rhosyn", "Sabre", "Tamsin", "Ulla", "Voss", "Wren", "Yarrow" };
+    // Never a name the story has spent or nearly spent (Ashe, Kell, Orrin; Ysolde, Brannoc, Corran, Holloway, Tam).
+    static readonly string[] Names = { "Alder", "Bryony", "Cass", "Dace", "Edda", "Fen", "Garrow", "Hester", "Ilse", "Jessamy", "Kit", "Lorne", "Maren", "Nolly", "Orla", "Pim", "Quill", "Rhosyn", "Sabre", "Tegan", "Ulla", "Voss", "Wren", "Yarrow" };
     LineEdit? nameBox;
 
     public CreateScreen(Game g, CreationDraft draft) : base(g) { d = draft; }

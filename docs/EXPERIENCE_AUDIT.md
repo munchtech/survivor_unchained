@@ -1,9 +1,9 @@
-# The experience audit (draft one)
+# The experience audit (draft two)
 
 What holds Survivor Unchained back from the best of its genre, as a player lives it. Ranked
-by how much each thing costs in feel and in keeping a player. **Draft one:** stopped at the owner's
-usage limit, before the boss and the endless phase were seen on screen. Those, the plan's briefs,
-and a clean measure of frame times come next (see `docs/team/experience.md`).
+by how much each thing costs in feel and in keeping a player. **Draft two** adds the
+owner's answers (the structure, the music, a new arena art lead) and the plan they reshape. The
+boss and the long night on screen, and clean frame times, are being taken now.
 
 ## How it was played
 
@@ -158,30 +158,96 @@ and a clean measure of frame times come next (see `docs/team/experience.md`).
 
   All of these were measured under GPU contention.
 
-## The plan (draft one)
+## The structure (the owner's decisions, 4 October)
+
+> "story should be 40% of the game early on, end game is two types of arenas - permanent and our
+> normal arenas. permanent is our arpg build maps like poe and the normal arenas are for mindless
+> survivors fun"
+
+**Early on, story is about 40% of play.**
+- **Story nights:** 20 minutes. They are the same night at 1.5 times the speed: one night clock,
+  and ember gain × 30/Minutes, so the build at a story boss matches a table boss's. Combat is
+  building it; the pacing already scales. Table nights stay at 30 minutes.
+- **The 40% is measured, not guessed.** The journey will keep time by mode (day story, story
+  night, table night, map), and the explorer and the harness will report the share. The target
+  is 35–45% of Act 1's time in the story.
+
+**The endgame is two kinds of arena.** Combat owns their mechanics; the shape and the loop
+are mine:
+
+| | **Nights** (the survivors arenas) | **Maps** (the permanent ARPG build maps) |
+|---|---|---|
+| The fantasy | the hum: the brain off, a horde that melts | the build: gear and skills read, planned and proven |
+| Power | the ember, from nothing, cards | the character, kept: gear, day skills, arts, attributes, levels |
+| Length | 30 minutes (story nights 20), then the long night for as long as you dare | 8–12 minutes: one zone, a boss at its heart |
+| Starting one | the Wayfinder's table or an ember scar, with nothing to prepare | a map item set on the table's atlas, prepared for |
+| Difficulty | tier, the table's oaths, and oaths you swear for more (a ladder like Hades' Heat) | the map's tier and its affixes (oaths rolled on the item, or added by crafting) |
+| What it pays | XP for time, materials, the codex, tomes, the night's chests | gear (the main loot), maps of the next tier, atlas progress |
+| The long goal | the longest night; the highest heat; every people's boss beaten at each tier | the atlas: regions lit, tiers climbed, map bosses, completion bonuses |
+| Death | the night ends; what was earned is kept | the map is spent; the character keeps everything |
+
+**How the two feed each other:**
+- nights pay materials and kindling that craft and roll maps;
+- maps pay gear whose kindled affixes feed the nights (SKILLS_DESIGN §10, "day feeds night");
+- the codex and the bestiary fill from both.
+
+**A map's shape (the target to build to):**
+- three to five linked areas, like a small Verge, with packs placed by day's rules;
+- a kill or a find every 10–20 s, and a pack every 20–40 s of walking;
+- one event (a shrine, a strongbox held for 20 s, a rare with a Sign, a lost cart);
+- the map's boss in the last area, then its chest and the next map.
+
+**When maps open:** at the end of Act 1's story (Vonnra's fortune), as the Wayfinder's atlas.
+The Act 1 beta shows the first tier, so the endgame can be tasted.
+
+## What the music must do, beat by beat (for the owner's score)
+
+The owner will work on the music. Until then the procedural score stays. This is what each beat
+asks of the music, so the cues can be written to it.
+
+| Beat | What the music must do |
+|---|---|
+| Title, by the fire | the game's theme, alone and low: one instrument, the fire under it; it should make you want to stay |
+| Making a survivor | the theme's bed, unhurried; a small lift as each step is taken |
+| Prologue: waking, the dead rising | almost nothing, then a pulse as the ground opens: dread before action |
+| The road and the ambush | the first combat cue, light: it must leave room for the tutorial's words |
+| The Ford-Warden | the first boss theme: big, old, sad (the Watch's dead keeping a ford) |
+| Dawn | release: the theme in full for the first time, as the ember goes out |
+| The Waystation by day | a town: warm, a little shabby, human; changes by hour |
+| Conversation | ducked under the voice (already); a character's motif may rise where the writing turns |
+| The Verge by day / at night | the wood's quiet; at night a low drone with the ember scars' pulse in it |
+| Pulled into a night | a swell and a cut to silence on the black, then the night's first drum |
+| A night's dusk (0–2) | the arena's bed: low, steady, the people's colour in it (wolves' horns, the dead's drum, lamplings' picks, Kerchiefs' whistles) |
+| Building into a landmark | layers added bar by bar: the music should tell you something is coming before the screen does |
+| A herald | the people's motif, heavy; it stays until the herald falls |
+| The flood after it | the fullest the music gets before the boss: the hum, a groove you can mow to |
+| A breather | strip back to the bed for twenty seconds; never silence |
+| Midnight's great blessing | a held chord through the choice, resolving on the pick |
+| The long push (25–28½) | the climax of the night's score: the densest layers, rising |
+| The hush (28½–30) | everything drops to a single drum or drone under the sign's light; it should feel held, not empty |
+| The boss | the people's ruler's theme, its own for each of the four; a change at each phase |
+| The boss falls | a stinger and a release (the way out opens): the night's theme resolved |
+| The long night | the score grows harsher every five minutes as the dark swears an oath; no end, no resolution |
+| A chest, an evolution, a level | stingers over the bed: the chest a rising reel; an evolution the night's theme in brief; a level a short rise that lands on major |
+| Death | cut to near silence, one low note; the bed returns under the result |
+| The result | the night's theme in brief, calm: what you take out |
+
+## The plan
 
 | # | Item | Owner | State |
 |---|---|---|---|
 | 1 | The night's shape: sawtooth, breathers, herald duel and flood, the hush, the people's own questions | experience | **done** (`ArenaPacing.cs`) |
-| 1b | The danger rising with the shape: charge spikes in build-ups, calm in breathers | combat | **done** by combat (`e9e591d`); re-measure together |
-| 1c | The people's questions filled with the new kinds as they unlock | combat | next |
-| 2 | Moments: the chest as a sequence, the evolution as a ceremony, the boss's death as the peak (slow motion), ducking, XP ladder, multi-kill swell, level-up sound, dash buffer, rumble | experience | next |
-| 3 | Readability: a camera that starts close and pulls back as the horde grows; whole occluders fade (trees, crypts, roofs); the dead darken and sink; real bone and skull gibs; ground effects that never fill with a flat disc | experience (effects with combat told) | next |
-| 4 | Onboarding: the prologue's character experience banked and paid at the dawn ("what the night taught you"); one bark at a time; prompts that never share a spot | experience; bark queue to UI | next |
-| 5 | The loop: the result as the run's story and a reward reveal; the table shows what a map pays; story nights shorter than table nights (decision below); the town reacts to your nights (facts by me, words by story); pause only in arena combat | experience, UI, story | next |
-| 6 | Choice that decides survival from tier 3 | combat | brief to send |
-| 7 | Arena identity: each theme its own ground, props and landmarks | unowned (art) | escalate |
-| 8 | A difficulty ladder the player swears (oaths as Heat), and account quests and unlocks | experience with combat | design next |
-| 9 | Music: a composed score | owner | escalate |
-| 10 | Performance: a clean measure; the town's cost | experience | next |
-
-## For the owner (recommendations)
-
-1. **Music.** The procedural score is the one part of the game no amount of tuning makes AAA.
-   - **Recommended:** a composed score (licensed or commissioned), with local generation only
-     as placeholders.
-2. **Story nights' length.** Recommended: story arenas as 20-minute nights with the same shape
-   compressed (`ArenaPacing` scales), and table maps at 30. Four story beats at 30 minutes each
-   is two hours of arena gating the story.
-3. **Arena art.** No lead owns the arenas' look; it needs one (or the UI art lead's
-   pipeline turned to ground and props).
+| 1b | The danger rising with the shape: charge spikes in build-ups, calm in breathers | combat | **done** (charge director); re-measure together |
+| 1c | The people's questions filled with new kinds as they unlock; minibosses outside the hush and the duel | combat | in hand |
+| 1d | Story nights at 20 minutes: one night clock, ember × 30/Minutes, turns spaced to match, words that don't say "half hour" | combat (clock), story (words) | in hand; I check it on screen |
+| 2 | Moments: the chest as a sequence, the evolution as a ceremony, the boss's death as the peak, ducking, XP ladder, multi-kill swell, level-up sound, dash buffer, rumble | experience | next |
+| 3a | Her, readable: a camera that starts close and pulls back as the horde grows; a ring or silhouette when she is covered; whole occluders fade; the dead darken and sink; real bone and skull gibs | experience | next |
+| 3b | Skill effects that never fill with a flat disc (Blightfield, Hallowed Ground, Dawnpulse); champions' death blasts sized down | skills (`a8bafe3cd8a229639`) | in hand there; sizes agreed with me |
+| 3c | Arena identity and readability: each theme its own ground, props and landmarks; nothing tall where the fight is; the ground a quiet stage for the horde | arena art (new lead) | brief sent when it starts |
+| 4 | Onboarding: the prologue's character experience banked and paid at dawn; one bark at a time; prompts that never share a spot; the first minute of a night not empty | experience; bark queue to UI | next |
+| 5 | The loop: the result as the night's story and a reward reveal; the table says what a map pays; the town reacts to your nights; pause only in arena combat | experience, UI (`ac76f400913a109cd`), story | briefs sent |
+| 6 | Choice that decides survival from tier 3 | combat | brief sent |
+| 7 | The two endgame arenas: nights and maps, as above | combat (mechanics), experience (shape and loop), UI (atlas), crafting (map items) | design sent |
+| 8 | The 40% measured: time by mode, reported by the explorer and the harness | experience | next |
+| 9 | Music: the score to the beats above | owner | noted |
+| 10 | Performance: clean frame times; the town's cost | performance (`a9586a5171413db0b`) | numbers sent |

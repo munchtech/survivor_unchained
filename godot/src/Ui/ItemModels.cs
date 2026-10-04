@@ -79,7 +79,7 @@ public static class ItemModels
         ["root"] = new(Root, new(Pitch: 0.2f, Turn: 0.4f, Tilt: 0.3f)),
         ["flower"] = new(Flower, new(Pitch: 0.55f, Turn: 0.3f)),
         ["dust"] = new(Dust, new(Pitch: 0.45f, Turn: 0.3f)),
-        ["iron"] = new(OldIron, new(Pitch: 0.5f, Turn: 0.35f)),
+        ["iron"] = new(OldIron, new(Pitch: 0.85f, Turn: 0.2f)),
         // Written.
         ["book"] = new(() => Book("#3a2a1c", true), new(Pitch: 0.3f, Turn: 0.6f)),
         ["journal"] = new(() => Book("#5a2a2a", false), new(Pitch: 0.3f, Turn: -0.5f)),
@@ -869,25 +869,72 @@ public static class ItemModels
         return root;
     }
 
-    /// <summary>Old iron for the forge: bent nails, a buckle, a blade's broken half, all of it
-    /// gone brown at the edges.</summary>
+    /// <summary>Old iron for the forge: a heap of the Watch's scrap, the things gear comes to
+    /// when it is broken down. A thrown horseshoe, a blade snapped below the guard, square
+    /// nails (one bent), a mail ring; all of it pitted, rust bleeding through the black. Thick
+    /// shapes, so it reads as iron at the size of a pouch's slot.</summary>
     static Node3D OldIron()
     {
         var root = new Node3D();
-        var nails = new Build();
-        Tube(nails, new List<Vector3> { new(-0.4f, -0.44f, 0.06f), new(-0.08f, -0.36f, 0.1f), new(0.02f, -0.16f, 0.08f) }, 0.026f, 6);
-        Tube(nails, new List<Vector3> { new(0.08f, -0.48f, -0.04f), new(0.34f, -0.4f, 0.03f), new(0.42f, -0.18f, 0.0f) }, 0.026f, 6);
-        Tube(nails, new List<Vector3> { new(-0.34f, -0.3f, -0.12f), new(-0.14f, -0.1f, -0.1f) }, 0.022f, 6);
-        // The nails' heads: flat discs at one end of each.
-        Lathe(nails, Pts(0, 0, 0.06f, 0, 0.06f, 0.02f, 0, 0.03f), 10, At(-0.4f, -0.45f, 0.06f));
-        Lathe(nails, Pts(0, 0, 0.06f, 0, 0.06f, 0.02f, 0, 0.03f), 10, At(0.08f, -0.49f, -0.04f));
-        // A buckle's ring.
-        Tube(nails, Path(28, t => { float a = Mathf.Tau * t; return new Vector3(0.17f * Mathf.Cos(a) - 0.04f, -0.42f, 0.17f * Mathf.Sin(a) + 0.14f); }, true), 0.026f, 6, true);
-        Add(root, nails, Mat("#4a423c", 0.65f, 0.6f));
+        var rusted = new StandardMaterial3D { AlbedoTexture = Rust(new Color("#2e2a27"), new Color("#7a3f1e"), 0.55f), Metallic = 0.55f, Roughness = 0.78f };
+        var pitted = new StandardMaterial3D { AlbedoTexture = Rust(new Color("#5c5a58"), new Color("#6e3a1c"), 0.35f), Metallic = 0.9f, Roughness = 0.42f };
+
+        // The horseshoe, lying open toward the viewer: a flattened bar bent round, its heels turned.
+        var shoe = new Build();
+        Tube(shoe, Path(26, t =>
+        {
+            float a = Mathf.DegToRad(-200 + 220 * t);
+            float r = 0.3f + 0.03f * Mathf.Sin(t * Mathf.Pi);
+            return new Vector3(r * Mathf.Cos(a), 0, r * Mathf.Sin(a));
+        }), t => t < 0.06f || t > 0.94f ? 0.07f : 0.06f, 7, false, At(Basis.FromScale(new Vector3(1, 0.5f, 1)) * new Basis(Vector3.Up, 0.3f), -0.12f, -0.36f, 0.02f));
+        Add(root, shoe, rusted);
+
+        // A blade snapped a hand below the guard: the stub of the grip, the guard, a jagged edge.
         var blade = new Build();
-        Extrude(blade, Pts(-0.05f, -0.1f, 0.07f, -0.12f, 0.05f, 0.38f, 0.0f, 0.5f, -0.06f, 0.32f), 0.03f, 0.01f, At(Rot(-1.25f, 0.5f, 0.2f), 0.12f, -0.36f, -0.12f));
-        Add(root, blade, Mat("#837870", 0.85f, 0.32f));
+        Extrude(blade, Pts(-0.075f, -0.05f, 0.075f, -0.05f, 0.07f, 0.34f, 0.035f, 0.4f, 0.05f, 0.45f, 0.005f, 0.52f, -0.03f, 0.44f, -0.055f, 0.47f, -0.075f, 0.36f), 0.035f, 0.01f,
+            At(0, 0, -0.0175f));
+        var hilt = new Build();
+        Tube(hilt, new List<Vector3> { new(-0.17f, -0.06f, 0), new(0.17f, -0.06f, 0) }, 0.035f, 7);
+        Tube(hilt, new List<Vector3> { new(0, -0.08f, 0), new(0, -0.3f, 0) }, 0.04f, 7);
+        Lathe(hilt, Pts(0, -0.06f, 0.06f, -0.04f, 0.06f, 0.04f, 0, 0.06f), 10, At(0, -0.33f, 0));
+        // Laid across the horseshoe from the near right to the far left, face up to the light.
+        var held = new Node3D { Transform = At(new Basis(Vector3.Up, 1.15f) * new Basis(Vector3.Back, 0.12f) * new Basis(Vector3.Right, -Mathf.Pi / 2), 0.06f, -0.27f, 0.02f) };
+        root.AddChild(held);
+        Add(held, blade, pitted);
+        Add(held, hilt, rusted);
+
+        // Square nails in front, one bent; a mail ring at the side.
+        var nails = new Build();
+        foreach (var (x, z, turn) in new[] { (-0.28f, 0.34f, 0.35f), (0.02f, 0.4f, -0.25f) })
+            Lathe(nails, Pts(0, -0.2f, 0.024f, -0.18f, 0.032f, 0.13f, 0.065f, 0.14f, 0.065f, 0.17f, 0, 0.18f), 4,
+                At(new Basis(Vector3.Up, turn) * new Basis(Vector3.Back, Mathf.Pi / 2), x, -0.41f, z));
+        // The bent one: a square shank turned back on itself, its head flat.
+        Tube(nails, new List<Vector3> { new(0.22f, -0.41f, 0.3f), new(0.36f, -0.41f, 0.26f), new(0.42f, -0.41f, 0.18f), new(0.36f, -0.41f, 0.1f) }, 0.03f, 4);
+        Lathe(nails, Pts(0, 0, 0.065f, 0, 0.065f, 0.03f, 0, 0.035f), 4, At(new Basis(Vector3.Back, Mathf.Pi / 2) * new Basis(Vector3.Up, 0.3f), 0.2f, -0.41f, 0.305f));
+        Add(root, nails, rusted);
+        var ring = new Build();
+        Tube(ring, Path(24, t => { float a = Mathf.Tau * t; return new Vector3(0.1f * Mathf.Cos(a), 0, 0.12f * Mathf.Sin(a)); }, true), 0.032f, 6, true,
+            At(new Basis(Vector3.Right, 0.3f), 0.34f, -0.38f, -0.16f));
+        Add(root, ring, rusted);
         return root;
+    }
+
+    static readonly Dictionary<string, ImageTexture> rusts = new();
+
+    /// <summary>Iron gone to rust: the metal's own dark, with rust bleeding through in patches
+    /// (more of it the higher <paramref name="rust"/>), pitted with darker spots.</summary>
+    static ImageTexture Rust(Color iron, Color rust, float amount)
+    {
+        string key = $"{iron.ToHtml()}{rust.ToHtml()}{amount}";
+        if (rusts.TryGetValue(key, out var t)) return t;
+        return rusts[key] = Tex(Paint(128, 128, (u, v) =>
+        {
+            float n = Noise(u * 9, v * 9) * 0.65f + Noise(u * 31 + 7, v * 31) * 0.35f;
+            float k = Mathf.Clamp((n - (1 - amount)) * 3.2f, 0, 1);
+            var c = iron.Lerp(rust, k);
+            float pit = Noise(u * 70 + 3, v * 70 + 11);
+            return pit > 0.78f ? c.Darkened(0.45f) : c.Lightened((Noise(u * 50, v * 50) - 0.5f) * 0.12f);
+        }));
     }
 
     /// <summary>A shard of black stone, cut to fit a door, a rune inlaid in light.</summary>

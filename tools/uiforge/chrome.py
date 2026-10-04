@@ -66,6 +66,12 @@ PAINT = {
     "tooltip_worn": ("an empty square tooltip frame, a narrow strap of " + IRON_PROMPT.replace("gold", "pewter") +
                      ", small square coins at the corners", 0.28),
     "toast": ("a small wide plate of " + IRON_PROMPT + ", two rivets at its left end", 0.28),
+    "well": ("an empty square sunken tray of hand-forged blackened iron, a low hammered lip, a thin dull pewter wire in "
+             "it, the floor deep and plain dark, isolated on a pure black background, seen straight on", 0.26),
+    "slab": ("a plain raised square block of planished blackened iron, hammer marks, worn edges, a thin dull hairline "
+             "round its face, the face plain and flat, isolated on a pure black background, seen straight on", 0.26),
+    "console": ("a long forged iron plate of " + IRON_PROMPT + ", its top corners rounded, a square iron coin with a round "
+                "hole and a curled iron bracket at each top corner", 0.28),
     "prompt": ("a small long pill-shaped plate with rounded ends of " + IRON_PROMPT, 0.26),
     "weapon_slot": ("a square socket of " + IRON_PROMPT + ", a square coin with a round hole on each corner, a recessed dark centre", 0.30),
     "slot": ("an empty square recessed well of hand-forged blackened iron, hammered rim, rivets at the corners, the inside plain "
@@ -383,6 +389,79 @@ def build_plate():
     spec["scrolls"] = scrolls
     spec["rivets"] = rivets
     save(render("plate", spec, "#16131a", calib_inset=[o + 34] * 4), "frames/plate.png")
+
+
+def sunk_light(img, lip, depth=10, shade=0.55, foot=0.35):
+    """A tray's floor as the house light leaves it: the lip's shadow along the top and left
+    of the floor, the light caught along its foot (the floor rises to meet the lip there)."""
+    H, W = img.shape[:2]
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    dt = yy - lip
+    dl = xx - lip
+    db = (H - lip) - yy
+    dr = (W - lip) - xx
+    inside = (dt > 0) & (dl > 0) & (db > 0) & (dr > 0)
+    sh = np.maximum(np.clip(1 - dt / depth, 0, 1), np.clip(1 - dl / depth, 0, 1) * 0.7) * shade
+    lt = np.exp(-(db / 2.2) ** 2) * foot + np.exp(-(dr / 2.2) ** 2) * foot * 0.4
+    out = img.copy()
+    lin = F.srgb_to_lin(out[..., :3])
+    lin = lin * (1 - sh[..., None] * inside[..., None]) + (lt * inside)[..., None] * F.hexc("#e8c89a") * 0.25
+    out[..., :3] = F.lin_to_srgb(np.clip(lin, 0, 1))
+    return out
+
+
+def build_well():
+    """The well (frames/well.png, 256 square, 12 margins shown, tiled): a tray sunk into a
+    plate for a grid or a list. A low lip of iron round a floor set well below it, the lip's
+    shadow along the floor's top, the light caught along its foot; a dull pewter wire in the
+    lip; no brackets, no coins (those mark a plate)."""
+    W = H = 256
+    spec = {"size": [W, H], "ss": 2, "margins": [24, 24, 24, 24], "samples": 96,
+            "strap": dict(IRON, inset=1, width=11, thick=4, bevel=2.2, chamfer=5, hammer=0.8),
+            "panel": {"inset": 11, "color": "#0b090d", "z": -5.0, "hammer": 0.25},
+            "wire": {"offset": 5.5, "radius": 1.4, "pitch": 6, "color": "#7a7468", "rough": 0.45}}
+    save(render("well", spec, "#0c0a0e", calib_inset=[17, 17, 17, 17], post=lambda im: sunk_light(im, 11, 11)),
+         "frames/well.png")
+
+
+def build_slab():
+    """The slab (frames/slab.png, 256 square, 14 margins shown, tiled): a raised group inside
+    a plate. A block of planished iron standing up off the plate, its edges bevelled (lit
+    along the top and left, dark along the foot), a dull hairline round its face; no
+    brackets, no coins."""
+    W = H = 256
+    spec = {"size": [W, H], "ss": 2, "margins": [28, 28, 28, 28], "samples": 96,
+            "strap": dict(IRON, inset=1, width=7, thick=7, bevel=3.2, chamfer=4, hammer=0.9, color="#221e28"),
+            "panel": {"inset": 7, "color": "#1a171e", "z": 9.5, "hammer": 0.35},
+            "wire": {"offset": 12, "radius": 0.9, "pitch": 5, "color": "#6e6858", "rough": 0.5}}
+    save(render("slab", spec, "#17141b", calib_inset=[18, 18, 18, 18]), "frames/slab.png")
+
+
+def build_console():
+    """The HUD's console (frames/console.png, 512x308, 256x154 shown over a 130 high plate
+    300-720 wide, reaching 12 past it; only its top ~98 px are on the screen): the plate the
+    skills stand on. Its top corners turn down into round fittings where the globe and the
+    art's ring meet it, a binders' coin nailed on each with a short lamp-iron bracket along
+    the top; the strap and wire repeat between; the middle plain for the sockets."""
+    W, H = 512, 308
+    o = 24
+    spec = {"size": [W, H], "ss": 2, "margins": [96, 56, 96, 56], "samples": 96,
+            "strap": dict(IRON, inset=o, width=26, thick=9, bevel=3.5, corners=[46, 46, 6, 6], hammer=1.0, dent_scale=0.08),
+            "panel": {"inset": o + 24, "color": "#16131a", "z": 2.0, "hammer": 0.35},
+            "wire": {"offset": 13, "radius": 3.2, "pitch": 9, "color": GOLD, "rough": 0.3},
+            "ember_strength": 1.4, "ember_color": "#ff4a10", "rivet_lift": 3}
+    coins, scrolls, rivets = [], [], []
+    for cx in (o + 13, W - o - 13):
+        sx = 1 if cx < W / 2 else -1
+        cy = o + 13
+        coins.append({"x": cx, "y": cy, "size": 38, "hole": 0.34, "ember": 1})
+        # One arm along the top edge, curling back outward (the side is too short for one).
+        pts = bracket_scrolls(cx, cy, sx, 1, 30, 8, 0)[0]
+        scrolls.append({"pts": pts, "w0": 11, "w1": 3.5, "lift": 2.0, "flat": 0.75})
+    spec["coins"] = coins
+    spec["scrolls"] = scrolls
+    spec["rivets"] = rivets
+    save(render("console", spec, "#16131a", calib_inset=[o + 28] * 4), "frames/console.png")
 
 
 def build_minimap():
