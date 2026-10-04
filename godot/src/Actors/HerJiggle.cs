@@ -15,6 +15,10 @@ public partial class HerJiggle : SkeletonModifier3D
     /// <summary>Overall strength: 0 still, 1 as tuned, more for the bold.</summary>
     public float Amount = 1f;
 
+    /// <summary>How much the flesh squashes and stretches as it swings: none
+    /// under formed plate, which holds its shape (it moves, it never gives).</summary>
+    public float Squash = 1f;
+
     sealed class Mass
     {
         public required string Bone;
@@ -79,7 +83,7 @@ public partial class HerJiggle : SkeletonModifier3D
             var basis = new Basis(turn) * pose.Basis;
             // Stretched along its line as the mass pulls away, squashed as it
             // presses in, the width answering so the volume holds.
-            float k = 1 + Mathf.Clamp((to.Length() - from.Length()) / Mathf.Max(reach, 1e-4f), -1, 1) * m.Stretch;
+            float k = 1 + Mathf.Clamp((to.Length() - from.Length()) / Mathf.Max(reach, 1e-4f), -1, 1) * m.Stretch * Squash;
             var global = new Transform3D(basis, pose.Origin);
             int parent = sk.GetBoneParent(m.Index);
             var local = parent >= 0 ? sk.GetBoneGlobalPose(parent).AffineInverse() * global : global;
