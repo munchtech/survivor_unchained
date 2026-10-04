@@ -634,33 +634,33 @@ Subtitle: ...Keep it, then. I keep mine.
 ### 53. `dlg.maeca.blind3_morning.0.p1.wav`
 
 *Where:* dialogue.json maeca/blind3_morning#0; part 2 of 6: narrator: Grey light. She's awake before you, as always, but she hasn't got up. Her head is still on… / **maeca: Your heart's going like a hare's.** / narrator: She doesn't lift her head. / maeca: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot… / narrator: She gets up, then, and goes out barefoot into the frost, and stands there listening to the… / maeca: Go on. Holloway'll count us.
-*Played:* tender, frightened, hiding it; doing: she heard your heart change; pace: slow; volume: hushed.
-*Note:* Narrator: grey light, her head on your chest. Close and still: the hare and the bear. 'I counted between.' A pause where the name would be. Narrator: she goes out. 'Go on. Holloway'll count us.' steadier.
+*Played:* tender, frightened, hiding it; doing: she heard your heart change; pace: slow; volume: quiet.
+*Note:* Quiet, low, level and close, never whispered: a hunter's report on what she counted ('I counted between'), frightened under it. A whisper would make it a lover's line, and it is a hunter's. The narrator's parts stay plain.
 
 ```
-[tender, frightened, hiding it, whispers] Your heart's going like a hare's.
+[tender, frightened, hiding it, quietly] Your heart's going like a hare's.
 ```
 Subtitle: Your heart's going like a hare's.
 
 ### 54. `dlg.maeca.blind3_morning.0.p3.wav`
 
 *Where:* dialogue.json maeca/blind3_morning#0; part 4 of 6: narrator: Grey light. She's awake before you, as always, but she hasn't got up. Her head is still on… / maeca: Your heart's going like a hare's. / narrator: She doesn't lift her head. / **maeca: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot…** / narrator: She gets up, then, and goes out barefoot into the frost, and stands there listening to the… / maeca: Go on. Holloway'll count us.
-*Played:* tender, frightened, hiding it; doing: she heard your heart change; pace: slow; volume: hushed.
-*Note:* Narrator: grey light, her head on your chest. Close and still: the hare and the bear. 'I counted between.' A pause where the name would be. Narrator: she goes out. 'Go on. Holloway'll count us.' steadier.
+*Played:* tender, frightened, hiding it; doing: she heard your heart change; pace: slow; volume: quiet.
+*Note:* Quiet, low, level and close, never whispered: a hunter's report on what she counted ('I counted between'), frightened under it. A whisper would make it a lover's line, and it is a hunter's. The narrator's parts stay plain.
 
 ```
-[tender, frightened, hiding it, whispers] All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live.
+[tender, frightened, hiding it, quietly] All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live.
 ```
 Subtitle: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot of things to see if they'd live.
 
 ### 55. `dlg.maeca.blind3_morning.0.p5.wav`
 
 *Where:* dialogue.json maeca/blind3_morning#0; part 6 of 6: narrator: Grey light. She's awake before you, as always, but she hasn't got up. Her head is still on… / maeca: Your heart's going like a hare's. / narrator: She doesn't lift her head. / maeca: All night it was a bear's in January. I counted between. ...I've lain with my ear to a lot… / narrator: She gets up, then, and goes out barefoot into the frost, and stands there listening to the… / **maeca: Go on. Holloway'll count us.**
-*Played:* tender, frightened, hiding it; doing: she heard your heart change; pace: slow; volume: hushed.
-*Note:* Narrator: grey light, her head on your chest. Close and still: the hare and the bear. 'I counted between.' A pause where the name would be. Narrator: she goes out. 'Go on. Holloway'll count us.' steadier.
+*Played:* tender, frightened, hiding it; doing: she heard your heart change; pace: slow; volume: quiet.
+*Note:* Quiet, low, level and close, never whispered: a hunter's report on what she counted ('I counted between'), frightened under it. A whisper would make it a lover's line, and it is a hunter's. The narrator's parts stay plain.
 
 ```
-[tender, frightened, hiding it, whispers] Go on. Holloway'll count us.
+[tender, frightened, hiding it, quietly] Go on. Holloway'll count us.
 ```
 Subtitle: Go on. Holloway'll count us.
 

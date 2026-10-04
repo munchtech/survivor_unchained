@@ -78,7 +78,7 @@ For the agent taking over voice for Survivor Unchained.
    - Note: this worktree has no Godot import cache. A full import needs about 1.6 GB, and C: was at 99% (12 GB free at 03:15). The game plays non-imported oggs through `AudioStreamOggVorbis.LoadFromFile`, and an export imports them.
 3. **Packets, in recording order:** Chid, Maeca, Ysolde, then the rest by impact.
    - Run the stale-note check before sending each one: quoted words in a note that aren't in the line, beats that don't match, and "hushed" on a voice that shouldn't whisper.
-   - Still open from that check: maeca.blind3_morning.0 and redcowl's raid last.1 are "hushed". Ask the story lead.
+   - The story lead ruled the last two "hushed" lines (maeca.blind3_morning.0, redcowl raid last.1) quiet, not whispered; applied.
 4. **The owner's takes:** run `python tools/vo/import_takes.py <folder> --voice <v>`, listen, and report what is missing to the main session.
 5. **The hymn at Nell's grave** stays held for the owner's choice. The options are in `docs/voice/elevenlabs/README.md`.
 

@@ -71,7 +71,7 @@ Subtitle: Ha! HA. At night, lad. With my bairns asleep behind me. ...Mind where 
 
 *Where:* dialogue.json cin_raid_on_the_roost/last#0
 *Played:* dying, bitter amusement; doing: he says Ashford; pace: slow; volume: quiet.
-*Note:* Breath failing. Narrator: a laugh. 'Now we've both said it.'
+*Note:* The laugh is real, and there is no whisper: quiet, on what breath he has.
 
 ```
 [dying, bitter amusement, quietly] ...Ashford. [laughs] There. Now we've both said it.
@@ -81,11 +81,11 @@ Subtitle: ...Ashford. There. Now we've both said it.
 ### 4. `dlg.cin_raid_on_the_roost.last.1.wav`
 
 *Where:* dialogue.json cin_raid_on_the_roost/last#1
-*Played:* dying, tender; doing: a message for Rav; pace: very slow; volume: hushed.
-*Note:* Barely voiced; the leg held.
+*Played:* dying, tender; doing: a message for Rav; pace: very slow; volume: quiet.
+*Note:* Quiet, on the last of the breath, never whispered: it is still an order to his men about his brother. A whisper would make it a stage death; let the breath be in the pauses.
 
 ```
-[dying, tender, whispers] Tell the saw-bones... the leg held.
+[dying, tender, quietly] Tell the saw-bones... the leg held.
 ```
 Subtitle: Tell the saw-bones... the leg held.
 
