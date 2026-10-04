@@ -1,7 +1,7 @@
 # UI design (and the UI merge): status
 
-Agent a5629aff0f215ea4a, branch `worktree-agent-a5629aff0f215ea4a` (includes the integration branch
-at faabea9). Predecessors' handoffs: `docs/handoff/ui_design.md` (second design pass), `docs/handoff/ui_art.md`.
+Agent a5629aff0f215ea4a (handed off: `docs/handoff/ui_design.md`), branch
+`worktree-agent-a5629aff0f215ea4a` (includes the integration branch at d2a2eab). Predecessors' handoffs: `docs/handoff/ui_design.md` (second design pass), `docs/handoff/ui_art.md`.
 
 ## Current state
 - **UI merge** pushed (c14b3a2, a fast-forward for the integration branch); the painted art fills the
@@ -30,7 +30,7 @@ at faabea9). Predecessors' handoffs: `docs/handoff/ui_design.md` (second design 
 - The code draws only what changes in play (arcs, liquid levels, numbers, accents); the rest is paint.
 
 ## Next
-1. Read the full shot pass `m8` (all screens, mouse and pad, with `--navcheck`) and fix what it shows.
+1. Done: full shot pass `m8` (all screens, mouse and pad): no errors, every focus route complete.
 2. Still in the old look: announcements (bare text over the world), the item card's own layout,
    the journal's deeds and codex inside the book; the dash pips and draught box on the HUD.
 3. Re-make `docs/ui_review/` (before / first / second / third pass) once the above land.

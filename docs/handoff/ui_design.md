@@ -55,6 +55,13 @@ focus checks, and the chapter's end once seen on screen. Hand off past about 500
 | 0416a23 | The chapter's end as the survivor's open book |
 | d20f855 | The Wayfinder's table as map sheets on his table; the Last Lamp as three crested choices |
 | fcbd225 | Every Ornate look gives way to its painted piece by name; crest_card, ribbon, plaque_rule registered |
+| 9b4eaf1 | At the art lead's asking: banner and crest_card tile; `crest_row` for low crested cards (picked by height); the banner's stone drawn by the code |
+| ddd3656 | Merged the integration branch again (d2a2eab); 470 tests green |
+
+**Last full shot pass** (`m8`, after fcbd225, every screen with mouse and pad, `--navcheck`): no
+errors; every audited screen reaches all its focusable things; nothing off screen. The title and
+pause menus keep their own focus lists (MenuList), so the audit reports none for them; the skills
+page with nothing learned has nothing to focus. Pictures: `godot/.shots/m8_*.png` (ignored by git).
 
 ## 4. In progress / next, in order
 
