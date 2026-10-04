@@ -35,6 +35,9 @@ MATS = {
     "bone": ("#b8ab90", 0.0, 0.55, "#e6dcc4", 0.4),
     "ember": ("#2a0c04", 0.0, 0.7, "#2a0c04", 0.0),
     "glass": ("#000000", 0.0, 0.03, "#000000", 0.0),
+    "leather": ("#3a1a12", 0.0, 0.55, "#6a3e2a", 0.6),
+    "silk": ("#ece4d2", 0.0, 0.32, "#f6f0e2", 0.0),
+    "paper": ("#d2ccbc", 0.0, 0.92, "#e2dccc", 0.0),
 }
 IDS = {k: i for i, k in enumerate(MATS)}
 
@@ -100,7 +103,9 @@ class Relief:
             col, mt, rg, worn, wr = MATS[name]
             w_ = np.clip(convex * wear * wr * (0.7 + 0.6 * n2), 0, 1)
             c = F.hexc(col) * (1 - w_[..., None]) + F.hexc(worn) * w_[..., None]
-            c = c * (1 + 0.25 * n1[..., None] * grain)
+            # Paper and glass are even: no blotches (their grain is in their own maps).
+            g_ = grain * (0.1 if name in ("paper", "glass", "silk") else 1.0)
+            c = c * (1 + 0.25 * n1[..., None] * g_)
             base[sel] = c[sel]
             metal[sel] = mt
             rough[sel] = np.clip(rg + 0.12 * n2 * grain - 0.22 * w_, 0.04, 1)[sel]
@@ -190,6 +195,35 @@ def coin(R: Relief, x, y, size, base, hole=0.34, thick=None, rot=45.0):
     hole_m = np.clip((hr - d) * R.ss + 0.5, 0, 1)
     h = np.where(hole_m > 0.5, base - th * 0.5, h)
     return h, mask, hole_m
+
+
+def bar(R: Relief, pts, w0, w1, flat=True):
+    """A drawn bar of iron along a polyline (file px), `w0` wide at its start tapering to `w1`.
+    Returns (height in file px above what it lies on, mask) at render res. Flat on top like
+    drawn strap iron (flat=True) or round like a rod."""
+    X, Y = R.xx / R.ss, R.yy / R.ss
+    pts = np.asarray(pts, np.float32)
+    seg = np.hypot(*np.diff(pts, axis=0).T)
+    cum = np.concatenate([[0], np.cumsum(seg)])
+    widths = w0 + (w1 - w0) * cum / max(cum[-1], 1e-6)
+    best = np.full(X.shape, 1e9, np.float32)
+    wbest = np.full(X.shape, w1, np.float32)
+    for i in range(len(pts) - 1):
+        ax, ay = pts[i]
+        bx, by = pts[i + 1]
+        ex_, ey_ = bx - ax, by - ay
+        tt = np.clip(((X - ax) * ex_ + (Y - ay) * ey_) / (ex_ * ex_ + ey_ * ey_ + 1e-9), 0, 1)
+        d = np.hypot(X - ax - ex_ * tt, Y - ay - ey_ * tt)
+        w = widths[i] + (widths[i + 1] - widths[i]) * tt
+        closer = d < best
+        best = np.where(closer, d, best)
+        wbest = np.where(closer, w, wbest)
+    half = wbest / 2
+    m = np.clip((half - best) * R.ss + 0.5, 0, 1)
+    prof = np.sqrt(np.clip(1 - (best / np.maximum(half, 0.1)) ** 2, 0, 1))
+    if flat:
+        prof = np.minimum(1.0, 1.7 * prof)
+    return (prof * half * 0.9 * (m > 0)).astype(np.float32), m
 
 
 import math  # noqa: E402
