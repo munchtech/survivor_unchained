@@ -80,7 +80,7 @@ For a fresh successor. Read `docs/team/README.md` first, then this, then
    - Do: each `Buffer` becomes one surface made once at `Capacity` (9,000 verts, indices at Capacity×3), updated with `RenderingServer.MeshSurfaceUpdateVertexRegion`, `AttributeRegion` and `IndexRegion` (they take spans), with a degenerate tail.
    - Keep: the layout (Vertex, Color, UV, UV2) and the look.
    - Today: `Flush` copies five arrays and remakes the GPU buffers every frame.
-   - Message them when it's pushed.
+   - Message them when it's pushed. The skills lead has since handed off (their branch is at 69cb2af, unchanged in `Ribbons.cs`). Their successor knows from `docs/handoff/skills.md` to tell you before touching that file, so message whoever the roster names for skills.
 2. **Finish the stopped sweeps.** The commands are in `scratchpad/perf_sweeps.sh`, recreated below. Run them when the GPU is quiet (overnight was best):
    - `sweep.py hub off her,grass,ssao,volfog`
    - `sweep.py hub prop-cell 48,64,1000`
