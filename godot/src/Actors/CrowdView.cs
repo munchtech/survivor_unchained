@@ -21,6 +21,9 @@ public partial class CrowdView : Node3D
     const double CorpseLie = 18, CorpseLieCrowded = 8, CorpseSink = 2.5;
     /// <summary>The most bodies left lying (fewer at the lower qualities).</summary>
     public int CorpseMax = 160;
+    /// <summary>How still the world is held (WorldScene.Hold): a blow's flash fades rather than
+    /// freezing white on a body for the length of a chest's opening.</summary>
+    public float Still;
     bool shadows = true;
     /// <summary>Whether the crowd casts shadows (not at the lowest quality).</summary>
     public bool Shadows
@@ -41,7 +44,18 @@ public partial class CrowdView : Node3D
         public bool Seen;
     }
 
-    sealed record Corpse(string Visual, float X, float Z, float Facing, float Scale, Color Tint, float Glow, double Born);
+    sealed record Corpse(string Visual, string Role, float X, float Z, float Facing, float Scale, Color Tint, float Glow, double Born);
+
+    static readonly string[] Deaths = ["die", "die2", "die3"];
+
+    /// <summary>How this one falls: one of its rig's deaths (on its back, face down, on its side),
+    /// chosen by its seed, so a field of the dead is not one pose stamped over and over.</summary>
+    static string DeathOf(VatAsset asset, double seed)
+    {
+        int have = 1;
+        while (have < Deaths.Length && asset.Clips.ContainsKey(Deaths[have])) have++;
+        return Deaths[(int)(Math.Abs(seed) * 7919) % have];
+    }
 
     readonly Dictionary<string, VatCrowd> crowds = new();
     readonly Dictionary<int, Gait> gaits = new();
@@ -130,8 +144,8 @@ public partial class CrowdView : Node3D
             {
                 // Burst apart: nothing is left to fall (the gore threw it).
                 if (e.Burst) return;
-                role = "die";
-                t = e.DieT * Math.Max(1, asset.Duration("die") / (Ai.DieTime * 0.62));
+                role = DeathOf(asset, e.Seed);
+                t = e.DieT * Math.Max(1, asset.Duration(role) / (Ai.DieTime * 0.62));
                 // Summons fade; the rest fall and stay.
                 if (e.Disposition == Disposition.Ally) dissolve = Smooth(e.DieT, Ai.DieTime * 0.55, Ai.DieTime);
                 else if (e.DieT >= Ai.DieTime - 0.12) { LayOut(e, g.Facing); return; }
@@ -186,11 +200,11 @@ public partial class CrowdView : Node3D
         }
         float sc = (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual);
         // Struck: a squash, and a flinch along the blow, gone with the flash.
-        float f = e.State == EnemyState.Dying ? 0 : (float)e.Flash;
+        float f = e.State == EnemyState.Dying ? 0 : (float)e.Flash * (1 - Still);
         var at = new Vector3((float)(e.X + e.LastDx * f * 0.14), (float)y, (float)(e.Z + e.LastDz * f * 0.14));
         var basis = new Godot.Basis(Vector3.Up, (float)(Math.PI / 2 - g.Facing)) * Godot.Basis.FromScale(new Vector3(sc * (1 + f * 0.1f), sc * (1 - f * 0.1f), sc * (1 + f * 0.1f)));
         float frozen = e.Status.Has(StatusKind.Frozen) ? 1 : e.Status[StatusKind.Chill] is { } chill ? (float)Math.Min(0.5, chill.Stacks * 0.09) : 0;
-        float burning = e.Status.Has(StatusKind.Burn) ? 1 : 0;
+        float burning = e.Status.Has(StatusKind.Burn) ? 1 - 0.8f * Still : 0;
         var (tint, glow) = Visuals.Tint(e.Def.Visual);
         // A kind's own colour on a shared rig, and a champion's Signs (combat's, agreed with animation).
         if (e.Def.Tint is var (tr, tg, tb)) tint *= new Color((float)tr, (float)tg, (float)tb);
@@ -215,7 +229,7 @@ public partial class CrowdView : Node3D
         var (tint, glow) = Visuals.Tint(e.Def.Visual);
         if (e.Def.Tint is var (tr, tg, tb)) tint *= new Color((float)tr, (float)tg, (float)tb);
         if (e.Def.Glow is { } dg) glow = Math.Max(glow, (float)dg);
-        corpses.Add(new Corpse(e.Def.Visual, (float)e.X, (float)e.Z, (float)facing, (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time));
+        corpses.Add(new Corpse(e.Def.Visual, DeathOf(Crowd(e.Def.Visual).Asset, e.Seed), (float)e.X, (float)e.Z, (float)facing, (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time));
         while (corpses.Count > CorpseMax) corpses.RemoveAt(0);
     }
 
@@ -236,7 +250,7 @@ public partial class CrowdView : Node3D
             float k = 1 - 0.5f * Smooth(age, 0.3, 1.3) - 0.15f * Smooth(age, 1.3, lie);
             var tint = c.Tint * new Color(k * 0.88f, k * 0.92f, k, 1);
             tint.A = 1;
-            crowd.Push(new Transform3D(basis, at), "die", crowd.Asset.Duration("die") * 0.999, 0, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0, 0, 0, tint, c.Glow);
+            crowd.Push(new Transform3D(basis, at), c.Role, crowd.Asset.Duration(c.Role) * 0.999, 0, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0, 0, 0, tint, c.Glow);
         }
     }
 

@@ -278,11 +278,56 @@ public static class Sfx
 
     /* --------------------------------------------------------- pickups --- */
 
-    public static void Xp(int streak)
+    /// <summary>The ladder past its clamp, two octaves on to three: only a lodestone's sweep climbs it.</summary>
+    static readonly int[] HighLadder = [0, 3, 5, 7, 10, 12, 15, 17, 19, 22, 24, 27, 29, 31, 34, 36];
+
+    /// <summary>The ember stones as a phrase the player conducts by walking (S-02): each stone (or a
+    /// handful taken in one frame, merged into one louder voice) a step up the score's D minor
+    /// pentatonic from D6, round and clear (a sine and its third harmonic, a twin a few cents
+    /// sharp). At the top it holds and shimmers an octave over; a bar nearly full adds a soft fifth.
+    /// A lodestone's sweep may climb a third octave.</summary>
+    public static void Xp(int step, int merged, bool nearFull, bool sweep)
     {
         if (A is not { } a || !a.Gate("xp", 8, 100)) return;
-        double f = 1150 * Semis(Math.Min(24, streak) * 0.5);
-        a.Play(new Tone { F = f, F2 = f * 1.5, D = 0.05, G = 0.02 });
+        var ladder = sweep ? HighLadder : Ladder;
+        int top = ladder.Length - 1;
+        double f = 1174.66 * Semis(ladder[Math.Clamp(step, 0, top)]);
+        double g = 0.036 * Math.Min(2.83, Math.Sqrt(Math.Max(1, merged)));
+        a.Play(new Fm { F = f, Ratio = 3.0, Index = 0.3, A = 0.002, D = 0.09, G = g });
+        a.Play(new Tone { F = f, A = 0.002, D = 0.09, G = g * 0.5, Detune = 7 });
+        if (step > top) a.Play(new Tone { F = f * 2, A = 0.004, D = 0.14, G = g * 0.3, Verb = 0.4 });
+        if (nearFull) a.Play(new Tone { F = f * 1.5, A = 0.003, D = 0.1, G = g * 0.35 });
+    }
+
+    /// <summary>A lodestone taken: the field breathed in (a rush of air rising) under a quick run up
+    /// the ladder, before the stones pour in and carry it on.</summary>
+    public static void Lodestone()
+    {
+        if (A is not { } a) return;
+        double t = Now;
+        a.Play(new Hiss { T = t, A = 0.55, D = 0.25, G = 0.09, Lp = 300, Lp2 = 3500, Brown = true, Bus = Bus.Ui });
+        for (int i = 0; i < 8; i++)
+            a.Play(new Fm { T = t + i * 0.045, F = 1174.66 * Semis(Ladder[i]), Ratio = 3.0, Index = 0.3, A = 0.002, D = 0.12, G = 0.03, Verb = 0.3, Bus = Bus.Ui });
+    }
+
+    /// <summary>A crowd going down at once: one falling layer under the separate kills, louder the
+    /// more fell in the moment (S-08).</summary>
+    public static void CrowdFall(int n)
+    {
+        if (A is not { } a || !a.Gate("crowdfall", 1, 70)) return;
+        a.Play(new Hiss { D = 0.18 + 0.02 * Math.Min(8, n), G = Math.Min(0.11, 0.02 + 0.008 * n), Lp = 800, Brown = true });
+    }
+
+    /// <summary>A swell as a crowd melts (S-08): a sub thump and a root and fifth a step further up
+    /// the ladder at each of the four thresholds, so a cleared swarm is heard rising to a peak.</summary>
+    public static void Swell(int tier)
+    {
+        if (A is not { } a) return;
+        double t = Now, f = 587.33 * Semis(Ladder[Math.Min(Ladder.Length - 1, 3 + tier * 2)]);
+        a.Play(new Tone { T = t, F = 60, F2 = 35, D = 0.12 + 0.03 * tier, G = 0.28 + 0.05 * tier, Bus = Bus.Ui });
+        a.Play(new Hiss { T = t, D = 0.3, G = 0.04 + 0.02 * tier, Lp = 800, Brown = true, Bus = Bus.Ui });
+        a.Play(new Fm { T = t, F = f, Ratio = 2.01, Index = 0.6, A = 0.05, D = 0.8, G = 0.032 + 0.008 * tier, Verb = 0.6, Bus = Bus.Ui });
+        a.Play(new Fm { T = t + 0.03, F = f * 1.5, Ratio = 2.01, Index = 0.5, A = 0.05, D = 0.8, G = 0.024 + 0.006 * tier, Verb = 0.6, Bus = Bus.Ui });
     }
 
     public static void Gold()
@@ -312,14 +357,20 @@ public static class Sfx
 
     /* ---------------------------------------------------------- growth --- */
 
-    public static void LevelUp()
+    /// <summary>The most repeated reward, dark then light (S-04): the minor figure quick, landing on a
+    /// held major third and fifth above it (the old Picardy cadence), so it resolves upward and
+    /// reads as a gain. A milestone (a blessing next) has the evolution's low saw under it.</summary>
+    public static void LevelUp(bool milestone = false)
     {
         if (A is not { } a) return;
-        double b = 587.33;
-        int[] steps = [0, 3, 7, 12, 15];
-        for (int i = 0; i < steps.Length; i++) a.Play(new Fm { T = Now + i * 0.075, F = b * Semis(steps[i]), Ratio = 3.5, Index = 0.35, D = 1.3, G = 0.05, Verb = 0.6 });
+        double b = 587.33, t = Now;
+        int[] dark = [0, 3, 7];
+        for (int i = 0; i < dark.Length; i++) a.Play(new Fm { T = t + i * 0.05, F = b * Semis(dark[i]), Ratio = 3.5, Index = 0.35, D = 0.6, G = 0.045, Verb = 0.5 });
+        foreach (var s in new[] { 12, 16, 19 })
+            a.Play(new Fm { T = t + 0.16, F = b * Semis(s), Ratio = 3.5, Index = 0.3, A = 0.01, D = 1.5, G = 0.04, Verb = 0.65 });
         a.Play(new Tone { F = 146.8, A = 0.2, D = 1.6, G = 0.1, Type = Wave.Triangle });
         a.Play(new Hiss { A = 0.3, D = 0.9, G = 0.025, Hp = 6500 });
+        if (milestone) a.Play(new Tone { T = t + 0.16, F = 73.4, A = 0.25, D = 2.0, G = 0.12, Type = Wave.Saw, Lp = 400, Lp2 = 1400 });
     }
 
     public static void Evolve()

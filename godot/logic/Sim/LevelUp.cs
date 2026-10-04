@@ -615,7 +615,7 @@ public static class LevelUp
         if (ready != null)
         {
             var evo = EarnedBranches(b, ready.Id)[0];
-            b.Evolve(ready.Id, evo.Id);
+            b.Evolve(ready.Id, evo.Id, chest: true);
             got.Add(new ChestItem(ChestItemKind.Evolution, ready.Id, evo.Name, evo.Art ?? ready.Def.Art, ready.Rank, ready.Rank, Rarity.Legendary, ready.School, ready.Def.Name));
         }
         for (int i = 0; i < count; i++)

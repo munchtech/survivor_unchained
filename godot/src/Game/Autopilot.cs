@@ -41,6 +41,8 @@ public sealed class Autopilot
         Move = (0, 0);
         if (g.Overlay == "draft") { g.Pick(0); return; }
         if (g.Overlay == "dialogue") { g.Advance(); return; }
+        // A chest opening is watched to its end (pictures of it).
+        if (g.Overlay == "chest") return;
         // A night's result is read, then left as a player leaves it (closing it as a screen
         // stranded the survivor on the empty field).
         if (g.Overlay == "arena") { if ((resultT += dt) > 5) { resultT = 0; Controls.Instance.Press(Act.Confirm); } return; }

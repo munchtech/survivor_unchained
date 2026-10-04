@@ -48,6 +48,9 @@ public partial class WorldScene : Node3D, IZoneLook
     /// speed. The fight itself is paused by SimPaused.</summary>
     public float Hold;
     double acc, hitstop, hitstopCd, fightTime, viewTime, damageFlash, slowmo, fall;
+
+    /// <summary>The world slowed to under a third for a while (an evolution's first volley).</summary>
+    public void Slow(double seconds) => slowmo = Math.Max(slowmo, seconds);
     /// <summary>The night's peak in real seconds: the world slows hard as what ruled it falls
     /// and eases back to full speed (docs/EXPERIENCE_AUDIT.md, finding 2).</summary>
     const double Fall = 2.2;
@@ -185,6 +188,7 @@ public partial class WorldScene : Node3D, IZoneLook
             Perf.End(Perf.Part.Player);
             if (Showcase == null && !CameraHeld) cam.Update((float)dt, (float)p.X, y, (float)p.Z, (float)p.Vx, (float)p.Vz);
             Perf.Begin(Perf.Part.Crowd);
+            Crowd.Still = Hold;
             Crowd.Update(b, HeightAt, viewTime);
             Perf.End(Perf.Part.Crowd);
             Fx.PlayerPos = new Vector3((float)p.X, y, (float)p.Z);

@@ -1022,6 +1022,15 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
 
     int chestsOpened;
 
+    /// <summary>A chest of n things opened at her feet, a hoard if asked (--chest: pictures of the opening).</summary>
+    public void ChestAt(int n, bool hoard)
+    {
+        if (B == null) return;
+        var got = LevelUp.OpenChest(B, n);
+        chestsOpened++;
+        G.Chest(new ChestOpened(B.Player.X + 0.8, B.Player.Z + 0.6, chestsOpened, got, hoard ? $"{BossName}'s hoard" : null, chestsOpened));
+    }
+
     void OnKill(Enemy e, bool byPlayer)
     {
         // (Let go of the fallen: the pool gives the same body to the next of the horde.)

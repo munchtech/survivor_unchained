@@ -23,8 +23,13 @@ public sealed class SoundBridge
     readonly Synth a;
     public readonly Ambience Ambience;
     public readonly Music Music;
-    int xpStreak;
-    double xpT, hostilesNear, beatT;
+    int xpStep, swellTier = -1;
+    double xpT, hostilesNear, beatT, sweepT, swellT, now;
+    /// <summary>The player's kills in the last second and a half, for the swell (S-08).</summary>
+    readonly Queue<double> recent = new();
+    static readonly int[] SwellAt = [15, 40, 80, 150];
+    /// <summary>A crowd melted past a threshold (0..3): the world's response (a kick, a rumble).</summary>
+    public Action<int>? Swelled;
     string? prevOverlay;
 
     /// <summary>A cinematic's music, over whatever the moment would choose (null: none).</summary>
@@ -48,6 +53,7 @@ public sealed class SoundBridge
             double d = Math.Sqrt((x - px) * (x - px) + (z - pz) * (z - pz));
             return new Sfx.Where(Math.Clamp((x - px) / 18, -0.8, 0.8), Math.Max(0, 1 - d / 32));
         }
+        int stones = 0, fell = 0;
         foreach (var e in evs)
         {
             switch (e)
@@ -55,7 +61,10 @@ public sealed class SoundBridge
                 case Ev.Hit h when !h.Dot:
                     if (h.Blocked) Sfx.Blocked(At(h.X, h.Z)); else Sfx.Hit(h.School, h.Crit, At(h.X, h.Z));
                     break;
-                case Ev.Kill k when k.Def != "mirror": Sfx.Kill(k.Family, k.Elite, k.Boss, At(k.X, k.Z)); break;
+                case Ev.Kill k when k.Def != "mirror":
+                    Sfx.Kill(k.Family, k.Elite, k.Boss, At(k.X, k.Z));
+                    if (k.ByPlayer) { fell++; recent.Enqueue(now); }
+                    break;
                 case Ev.PlayerHit ph:
                     if (ph.Dodged) Sfx.Dodge(); else if (ph.Blocked) Sfx.Blocked(); else Sfx.Hurt(ph.Dot ? ph.Amount * 0.4 : ph.Amount);
                     break;
@@ -70,22 +79,44 @@ public sealed class SoundBridge
                 case Ev.PerfectDodge: Sfx.Perfect(); break;
                 case Ev.Ability ab: Sfx.Art(ab.Id); break;
                 case Ev.Spawn sp: Sfx.Spawn(sp.Style, At(sp.X, sp.Z)); break;
-                case Ev.LevelUp: Sfx.LevelUp(); break;
-                case Ev.Evolve: Sfx.Evolve(); break;
+                case Ev.LevelUp: Sfx.LevelUp(b != null && LevelUp.BlessingNext(b)); break;
+                case Ev.Evolve ev when !ev.Chest: Sfx.Evolve(); break;
                 case Ev.Victory: Sfx.Fall(); break;
                 case Ev.Pickup p:
                     switch (p.Kind)
                     {
-                        case PickupKind.Ember: xpStreak++; xpT = 0.7; Sfx.Xp(xpStreak); break;
+                        case PickupKind.Ember: stones++; break;
                         case PickupKind.Gold: Sfx.Gold(); break;
                         case PickupKind.Heal: Sfx.Heal(); break;
-                        case PickupKind.Chest or PickupKind.Relic: Sfx.Loot(true); break;
-                        case PickupKind.Magnet: Sfx.Dash(); break;
+                        // (A chest sounds as it opens: ChestCeremony.)
+                        case PickupKind.Relic: Sfx.Loot(true); break;
+                        case PickupKind.Magnet: Sfx.Lodestone(); sweepT = 3; xpStep = Math.Max(xpStep, 8); break;
                     }
                     break;
                 case Ev.Sound snd when snd.Id == "door": Sfx.Door(); break;
                 case Ev.Sound snd when snd.Id.StartsWith("tell"): Sfx.Tell(snd.Id); break;
             }
+        }
+        // The stones taken this frame are one voice, a step or a few up the ladder (S-02).
+        if (stones > 0)
+        {
+            bool nearFull = b != null && b.EmberNext > 0 && b.EmberXp / b.EmberNext > 0.85;
+            Sfx.Xp(xpStep, stones, nearFull, sweepT > 0);
+            xpStep += Math.Min(stones, 3);
+            xpT = 0.8;
+        }
+        // A crowd going down together is heard as one; past each threshold in a second and a half,
+        // a swell, a step higher for each higher threshold, never the same one twice in the window.
+        if (fell >= 4) Sfx.CrowdFall(fell);
+        while (recent.Count > 0 && now - recent.Peek() > 1.5) recent.Dequeue();
+        int tier = -1;
+        for (int i = 0; i < SwellAt.Length; i++) if (recent.Count >= SwellAt[i]) tier = i;
+        if (tier >= 0 && (swellT <= 0 || tier > swellTier))
+        {
+            Sfx.Swell(tier);
+            Swelled?.Invoke(tier);
+            swellTier = tier;
+            swellT = 1.5;
         }
     }
 
@@ -134,8 +165,11 @@ public sealed class SoundBridge
             strode += moved;
             if (strode > 1.7) { strode = 0; Sfx.Step(Ground(s.Zone)); }
         }
+        now += dt;
         xpT -= dt;
-        if (xpT <= 0) xpStreak = 0;
+        if (xpT <= 0) xpStep = 0;
+        sweepT -= dt;
+        if ((swellT -= dt) <= 0) swellTier = -1;
         // Screens opening and closing.
         var o = s.Overlay;
         if (o != prevOverlay)

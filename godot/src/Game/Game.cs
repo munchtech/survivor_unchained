@@ -318,6 +318,9 @@ public partial class Game : Node, IZoneHost
     void LeaveZone()
     {
         later.Clear();
+        // A chest opening does not outlive its place.
+        chestsWaiting.Clear();
+        if (chestShown != null) { chestShown.QueueFree(); chestShown = null; if (hudMode == "chest") hudMode = null; }
         // A cinematic does not outlive its place.
         if (cine != null) { var c = cine; cine = null; c.Finish(); }
         zone?.Dispose();
@@ -592,7 +595,14 @@ public partial class Game : Node, IZoneHost
                     break;
                 case Ev.Discovery d:
                     if (!World.Codex.Contains(d.Id)) World.Codex.Add(d.Id);
-                    if (Content.Discoveries.All.FirstOrDefault(x => x.Id == d.Id) is { } pair) Toast(new Toast(ToastKind.Lore, pair.Name, "A new discovery, remembered in the codex", null, null, 9));
+                    if (Content.Discoveries.All.FirstOrDefault(x => x.Id == d.Id) is { } pair) Toast(new Toast(ToastKind.Lore, $"Discovery: {pair.Name}", pair.Description, null, null, 9));
+                    break;
+                case Ev.Evolve ev:
+                    // It clicked: its place on the bar crowned; drafted, the world slows for a breath
+                    // as the new thing fires its first (a chest's waits for the chest to close).
+                    if (ev.Chest) break;
+                    hud.Crown(ev.Weapon);
+                    scene?.Slow(0.6);
                     break;
                 case Ev.Bark bk:
                     scene?.Voices.Bark(bk.Text, new Vector3((float)bk.X, (float)scene.HeightAt(bk.X, bk.Z), (float)bk.Z), bk.Speaker, bk.Speaker == null);
@@ -711,6 +721,7 @@ public partial class Game : Node, IZoneHost
             Perf.End(Perf.Part.Sound);
         }
         if (Mode != "play") return;
+        UpdateChest();
         UpdateDraft(dt);
         hudT -= dt;
         if (hudT <= 0)
@@ -802,7 +813,7 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
-    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, dieDone;
+    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, dieDone, chestDone;
     double blastT = 0.5, marksT = 1;
 
     void Tour(double dt)
@@ -846,6 +857,14 @@ public partial class Game : Node, IZoneHost
         {
             minuteDone = true;
             mr.SkipTo(Args.Num("minute", 29.9f) * 60);
+        }
+        // --chest 1,3,5! [--chest-at T]: chests of those sizes opened at her feet T seconds in, one
+        // after another (! a boss's hoard), for pictures of the opening.
+        if (!chestDone && Args.Get("chest") is string chs && zone is ArenaRun car && Battle != null && Journey.Playtime >= Args.Num("chest-at", 3))
+        {
+            chestDone = true;
+            foreach (var one in chs.Split(','))
+                if (int.TryParse(one.TrimEnd('!'), out var cn)) car.ChestAt(cn, one.EndsWith('!'));
         }
         if (!giveDone && Args.Get("give") is string give && Battle is { } gb)
         {
