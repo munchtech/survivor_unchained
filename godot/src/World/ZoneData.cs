@@ -26,11 +26,14 @@ public sealed class ZoneData
     /// height sample is, its edge and its streams (Maps/ArenaGen.cs); null elsewhere.</summary>
     public readonly SurvivorUnchained.Maps.ArenaPlace? Place;
     public readonly Image? Splat2;
+    public readonly Image? Splat3;
     /// <summary>An arena's grass as the meadow shader reads paint: G where none grows.</summary>
     public readonly Image? GrassMask;
     public readonly double[]? Inside;
     public readonly List<(double X, double Z)> Rim = new();
     public readonly List<(double X, double Z, double Hw)[]> Streams = new();
+    public readonly List<(double X, double Z, double Hw)[]> Rails = new();
+    public readonly List<(double X, double Z, double R)> Vents = new();
 
     public sealed record FloraGroup(string Kind, string Piece, Transform3D[] At, KitLook.Look Look);
     public sealed record LightSpec(Vector3 At, Color Color, float Intensity, float Distance, float Flicker, bool On);
@@ -112,6 +115,7 @@ public sealed class ZoneData
         Splat = Image.CreateFromData(m.SplatRes, m.SplatRes, false, Image.Format.Rgba8, m.Splat);
         Place = m.Place;
         if (m.Splat2 != null) Splat2 = Image.CreateFromData(m.SplatRes, m.SplatRes, false, Image.Format.Rgba8, m.Splat2);
+        if (m.Splat3 != null) Splat3 = Image.CreateFromData(m.SplatRes, m.SplatRes, false, Image.Format.Rgba8, m.Splat3);
         if (m.Grass != null)
         {
             var g = new byte[m.Grass.Length * 4];
@@ -121,6 +125,8 @@ public sealed class ZoneData
         Inside = m.Inside;
         Rim.AddRange(m.Rim);
         Streams.AddRange(m.Streams);
+        Rails.AddRange(m.Rails);
+        Vents.AddRange(m.Vents);
         var groups = new Dictionary<(string Kind, string Piece, int Bx, int Bz), List<Transform3D>>();
         foreach (var f in m.Flora)
         {
@@ -133,8 +139,12 @@ public sealed class ZoneData
         foreach (var (key, list) in groups)
         {
             var k = m.Kinds[key.Kind];
-            var look = new KitLook.Look((float)k.Wind, k.LeavesA is string a ? new Color(a).SrgbToLinear() : null,
-                k.LeavesB is string b ? new Color(b).SrgbToLinear() : null, (float)k.LeavesAmount, (float)k.Moss);
+            // An ember arena's crowns are dark and cold against the night:
+            // they frame the fight and never outshine it.
+            bool arena = m.Place != null;
+            var look = new KitLook.Look((float)k.Wind, arena ? new Color("#24382e").SrgbToLinear() : k.LeavesA is string a ? new Color(a).SrgbToLinear() : null,
+                arena ? new Color("#2e3a26").SrgbToLinear() : k.LeavesB is string b ? new Color(b).SrgbToLinear() : null, arena ? 0.7f : (float)k.LeavesAmount, (float)k.Moss,
+                arena ? 0.42f : 1f);
             Flora.Add(new FloraGroup(key.Kind, key.Piece, list.ToArray(), look));
         }
         foreach (var p in m.Props)

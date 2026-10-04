@@ -247,10 +247,11 @@ public abstract partial class Overlay : Control
         AddChild(row);
     }
 
-    /// <summary>A pane on a page: an ornate frame at a place, with a column inside it.</summary>
+    /// <summary>A pane on a page, at a place, with a column inside it: no frame unless one is
+    /// asked for (the page's one hero plate, say), so frames are not nested in frames.</summary>
     protected static VBoxContainer Pane(Control parent, Rect2 at, StyleBox? box = null, int gap = Style.Gap3)
     {
-        var p = Style.Panel(box ?? Style.Plate(20));
+        var p = Style.Panel(box ?? Style.Column(20));
         p.Position = at.Position;
         p.Size = at.Size;
         p.MouseFilter = MouseFilterEnum.Ignore;

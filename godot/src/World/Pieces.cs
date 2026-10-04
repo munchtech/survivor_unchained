@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Godot;
 using static SurvivorUnchained.View.Made;
@@ -16,7 +16,7 @@ namespace SurvivorUnchained.View;
 /// (Made.Surface): headstones and graves, a crypt, ruined walls, pillars
 /// and rubble, iron fences, the Watch's lamp posts, bones.
 /// </summary>
-public static class Pieces
+public static partial class Pieces
 {
     static Dictionary<string, float[]>? sizes;
 
@@ -30,6 +30,8 @@ public static class Pieces
     /// what is spread over it on it, and out of the water.</summary>
     public static Node3D? For(string pack, string name, int seed = 0, float scale = 1, Func<Vector3, float>? ground = null)
     {
+        // The arenas' own pieces (Pieces.Arena.cs) have no KayKit size: they are made to their own.
+        if (pack == "arena") return Arena(name, seed, ground);
         if (!Sizes.TryGetValue($"{pack}/{name}", out var s)) return null;
         var box = new Aabb(new Vector3(s[0], s[1], s[2]), new Vector3(s[3] - s[0], s[4] - s[1], s[5] - s[2]));
         Node3D? made = (pack, name) switch
