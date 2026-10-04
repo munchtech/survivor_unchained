@@ -117,8 +117,9 @@ never typed. All caps only for one- or two-word labels.
   themselves through their frame material before anything else, and drawing
   the language in code made the game say "Survivor Unchained" before any art
   landed.
-- **Pages**: the day's book (pack, self, arts, journal, map) and the stores
-  are full pages, not windows (`Overlay.Page`): the world darkens behind
+- **Pages and panels**: reading and planning screens are full pages, and
+  what is tweaked mid-play is a side panel (`Overlay.SidePanel`) with the
+  world in view (section 6, "Page or panel"). A full page (`Overlay.Page`): the world darkens behind
   (`Backdrop`, an ember glow at the foot), a header band runs across the top
   (the book's tabs at its left, the title plaque in the middle, Close at the
   right), and the screen hands back a 1840 × 920 content area at (40, 112)
@@ -417,17 +418,42 @@ it; Close at the band's right.
 showing them; turning pages keeps the player's place (Hick: five clear
 choices at the top, depth behind each).
 
+**Page or panel, screen by screen** (the owner: "full page screens in general
+aren't really great on some things"). The test is the job: a screen opened to
+**read, plan or find** at leisure, with nothing in the world to watch, earns
+the whole screen; a screen opened to **tweak mid-play or glance at** keeps the
+world in view. And the world: every screen pauses it **only in a fight** (an
+arena, the night's road), where the horde would not wait; elsewhere the world
+goes on behind it (the owner's rule). The pause menu always stops it.
+
+| Screen | Form | Why |
+|---|---|---|
+| Pack | **Panel at the right** (880 wide); the thing read closely at the left; the survivor steps aside into the gap (the camera's `ScreenShift`) | The most-used screen mid-play: swap a ring, drink, compare a drop. Diablo IV, PoE and Last Epoch all keep the inventory as a side panel with the hero in view; the gear is seen on the survivor in the world as it changes |
+| Self | Full page | A planning sheet: four attributes with previews, traits for the build, every number with its sources. Too much to read in a panel without hiding the reasons, and it is not tweaked in the heat of play |
+| Arts | Full page | Mastery and facets are planned, changed only "where it is safe" (D4's and PoE's skill trees are full screen) |
+| Journal | Full page (the open book) | Reading at leisure |
+| Map | Full page | Opened to find something: the whole screen is the map (D4, Elden Ring). The glance is the minimap's job |
+| Shop, storeroom | Full page | Trading is deliberate, in a safe place, comparison-heavy across three things (their wares, your pack, the thing in hand), and the merchant is a person on the page. Nothing in the world to watch |
+| Pause | Side column | The world stays in view, paused (D4, Elden Ring) |
+| Conversation, draft | Over the world | The person, or the fire, is the scene |
+| Last Lamp, Wayfinder's table | Windows | A quick choice in the place itself |
+| Arena's end, chapter's end, creation | Full page | Moments, not tools: they are the screen |
+
 ### 6.1 Pack (`Pack.cs`, **rebuilt**)
 **The job**: answer "is this better?" and "what do I do with it?".
-**Composition** (second pass, `pack_b_two_panes` over `pack_a_box` and
-`pack_c_hero_centre`): two panes across the page. Left, the survivor large
-with what they wear round them in slots (head, amulet, body, cloak at the
-left; weapon, off-hand, two rings, relic at the right) and their standing on
-a slab beneath; right, the filters along the top, what they carry in a well
-of 112 px slots, gold and how full the pack is, and the chosen thing read
-closely with the worn thing beside it. **Why**: the owner's "a big dark
-mostly-empty box with small items"; the slots are now as large as D4's and
-the figure is the page's anchor.
+**Composition** (third pass: a panel, see "Page or panel" above; the second
+pass's `pack_b_two_panes` became the panel's halves stacked): a panel down the
+right. At its head the book's tabs, Close, the plaque and who the survivor
+is; then the survivor drawn with what they wear round them in 72 px slots
+(head, amulet, body, cloak at the left; weapon, off-hand, two rings, relic at
+the right), their standing in a well beneath; then the filters and sort, what
+they carry in a well of 84 px slots (8 by 3), gold and how full the pack is.
+The thing chosen (or focused, with a pad) is read closely at the screen's
+left over the world, the worn thing's card under it; the survivor stands in
+the gap between, in the world, wearing what they wear. **Why**: the owner's
+"a big dark mostly-empty box with small items" first, then "full page screen
+in general aren't really great on some things": the pack is the screen the
+player opens in the middle of play.
 **Design**: the survivor and what they wear on the left, with their
 **standing**, which shows what a hovered or focused thing would change
 ("Health 212 to 236 better"); what they carry on the right with **filters**

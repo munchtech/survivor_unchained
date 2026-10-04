@@ -182,6 +182,71 @@ public abstract partial class Overlay : Control
         return content;
     }
 
+    /// <summary>Where the survivor should stand across the screen while this is open, in
+    /// pixels from the middle (a side panel: beside it, in view). 0 leaves them centred.</summary>
+    public virtual float CameraShift => 0;
+
+    /// <summary>
+    /// A panel down one side of the screen (docs/UI_DESIGN.md 6, "Page or panel"):
+    /// for what is tweaked mid-play, where the world should stay in view (Diablo
+    /// IV, PoE, Last Epoch keep the pack and the character beside the world). The
+    /// world is shaded only toward the panel; the HUD steps away; the head carries
+    /// the book's tabs, Close and the title plaque. Returns the content area.
+    /// </summary>
+    protected Control SidePanel(string title, string? sub, bool right, float width, Action? close = null, string? closeKey = null)
+    {
+        HideHud();
+        var shade = new TextureRect
+        {
+            Texture = new GradientTexture2D
+            {
+                Gradient = new Gradient { Colors = new[] { new Color(0.02f, 0.015f, 0.03f, 0), new Color(0.02f, 0.015f, 0.03f, 0.25f), new Color(0.02f, 0.015f, 0.03f, 0.85f) }, Offsets = new[] { 0f, 0.4f, 1f } },
+                FillFrom = new Vector2(right ? 0 : 1, 0), FillTo = new Vector2(right ? 1 : 0, 0), Width = 256, Height = 4,
+            },
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
+        };
+        Style.Fill(shade);
+        AddChild(shade);
+        float x = right ? 1920 - width - 16 : 16;
+        var plate = Style.Panel(Style.Plate(0));
+        plate.Position = new Vector2(x, 16);
+        plate.Size = new Vector2(width, 1048);
+        plate.MouseFilter = MouseFilterEnum.Stop;
+        AddChild(plate);
+        if (InBook) BookTabs(new Vector2(x + 28, 36));
+        var btn = Nav.Skip(CloseButton(closeKey ?? (Toggle is Act t ? G.Key(t) : "Esc"), close ?? G.CloseOverlay));
+        btn.Position = new Vector2(x + width - 28 - btn.CustomMinimumSize.X, 36);
+        AddChild(btn);
+        var plaque = new Plaque(title, 30, 110);
+        AddChild(plaque);
+        plaque.Position = new Vector2(x + (width - plaque.CustomMinimumSize.X) / 2, 84);
+        float top = 132;
+        if (sub != null)
+        {
+            var s = Style.Label(sub, Style.TextItalic, Style.Small, Style.InkDim, false, HorizontalAlignment.Center);
+            s.Position = new Vector2(x, 128);
+            s.Size = new Vector2(width, 22);
+            AddChild(s);
+            top = 158;
+        }
+        var content = new Control { Position = new Vector2(x + 26, top), Size = new Vector2(width - 52, 1064 - top - 70), MouseFilter = MouseFilterEnum.Ignore };
+        AddChild(content);
+        sideX = x; sideW = width;
+        return content;
+    }
+
+    float sideX, sideW;
+
+    /// <summary>A side panel's prompts, along its foot.</summary>
+    protected void SideFooter(Control row)
+    {
+        if (row is BoxContainer b) b.Alignment = BoxContainer.AlignmentMode.Center;
+        if (row is Label l) l.HorizontalAlignment = HorizontalAlignment.Center;
+        row.Position = new Vector2(sideX + 20, 1010);
+        row.Size = new Vector2(sideW - 40, 32);
+        AddChild(row);
+    }
+
     /// <summary>A pane on a page: an ornate frame at a place, with a column inside it.</summary>
     protected static VBoxContainer Pane(Control parent, Rect2 at, StyleBox? box = null, int gap = Style.Gap3)
     {

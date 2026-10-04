@@ -25,6 +25,9 @@ public sealed class FollowCamera
     /// <summary>How much of the shake the player wants (settings: 0..1).</summary>
     public float ShakeScale = 1;
     public Vector3? FocusOverride;
+    /// <summary>Where the survivor should stand across the screen, in pixels from its middle at
+    /// 1080 high (a side panel open: they step aside so they stay in view beside it).</summary>
+    public float ScreenShift;
     float overrideBlend, leadX, leadZ, shakeT;
     Vector3 look;
     bool initialised;
@@ -57,6 +60,9 @@ public sealed class FollowCamera
         look = new Vector3(Damp(look.X, f.X, 7, dt), Damp(look.Y, f.Y, 4, dt), Damp(look.Z, f.Z, 7, dt));
         Distance = Damp(Distance, TargetDistance, 1.6f, dt);
         Trauma = Mathf.Max(0, Trauma - dt * 1.4f);
+        // The view slides sideways, the angle unchanged: pixels to metres at the survivor's distance.
+        float perPx = 2 * Distance * Mathf.Tan(Mathf.DegToRad(Camera.Fov) / 2) / 1080;
+        Camera.HOffset = Damp(Camera.HOffset, -ScreenShift * perPx, 6, dt);
         shakeT += dt;
         Place();
     }
