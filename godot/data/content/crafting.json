@@ -18,6 +18,26 @@
  "remakeCap": 3,
  "remakeHeat": 4,
  "rekindle": { "shards": 3, "gold": 20, "goldStep": 20 },
+ "_brews": "Wenna's draughts: cheaper than Harlan's (a health draught is 15 there), never stronger. The moonpetal draught (60%) has combat's yes.",
+ "brews": [
+  { "draught": "health_draught", "takes": { "bitterroot": 2 }, "gold": 4, "crafter": "wenna" },
+  { "draught": "antidote", "takes": { "bitterroot": 1 }, "gold": 3, "crafter": "wenna", "say": "brew.antidote" },
+  { "draught": "moonpetal_draught", "takes": { "moonpetal": 1 }, "gold": 10, "crafter": "wenna", "moment": "brew.moonpetal" }
+ ],
+ "flask": { "item": "wennas_flask", "draught": "health_draught", "material": "bitterroot", "per": 1, "upto": 3, "gold": 120, "crafter": "wenna" },
+ "_commission": "Brannoc's 'make me one': Uncommon, the material's affix at grade I, full heat, ready the next morning. Gold is what the piece would fetch.",
+ "commission": {
+  "crafter": "brannoc", "iron": 2, "rarity": 1, "days": 1,
+  "patterns": [
+   { "id": "leather_cap" }, { "id": "iron_helm" }, { "id": "padded_jerkin" }, { "calling": true },
+   { "id": "chain_shirt", "when": { "rel": { "npc": "brannoc", "axis": "respect", "gte": 20 } }, "needs": "respect 20" },
+   { "id": "watch_buckler", "when": { "rel": { "npc": "brannoc", "axis": "respect", "gte": 20 } }, "needs": "respect 20" }
+  ]
+ },
+ "settings": {
+  "greymuzzle_fang": { "affix": "greymuzzles", "crafter": "brannoc", "moment": "fang", "mark": "greymuzzle_fang", "kinds": ["weapon", "amulet"], "gold": 0 }
+ },
+ "_crafters": "Conversations hold the words said in them: Brannoc's fang node, Maeca's braid (dialogue.json, maeca: shed_fur_offer, shed_fur_braid) and her fang.seen (a once-only 'said' in npcs.json). Here are the lines said at a bench and written on what is made.",
  "materials": {
   "wolf_pelt": { "qty": 3, "into": ["of_the_wolf", "wolfbane"], "crafter": "brannoc", "marks": "wolf_pelts" },
   "boar_hide": { "qty": 3, "into": ["sturdy", "of_the_hearth", "surefooted"], "crafter": "brannoc" },
@@ -31,7 +51,7 @@
   "brannoc": {
    "name": "Brannoc",
    "place": "Brannoc's Smithy",
-   "verbs": ["temper", "workIn", "cage", "remake", "rekindle", "breakDown"],
+   "verbs": ["temper", "workIn", "cage", "remake", "rekindle", "breakDown", "commission", "set"],
    "when": { "met": "brannoc" },
    "closed": { "time": "night" },
    "closedLine": "Forge is banked. Come back by day.",
@@ -54,17 +74,18 @@
     "history.cage": ["A coal from {night}, caged by {who}, day {day}"],
     "history.remake": ["Remade on Brannoc's anvil, day {day}"],
     "fang.choice": ["Set this in something."],
-    "fang.give.before": ["(He holds it up to the forge-light and turns it.)"],
-    "fang.give": ["Worn flat on the one side. He chewed on that side."],
     "fang.set": ["Set. It'll bite for you now."],
-    "history.fang": ["Set with Greymuzzle's fang on Brannoc's anvil, day {day}"]
+    "history.fang": ["Set with Greymuzzle's fang on Brannoc's anvil, day {day}"],
+    "commission.take": ["Tomorrow. Early."],
+    "commission.ready": ["Yours. Don't bend it."],
+    "history.commission": ["Made for you on Brannoc's anvil, day {day}"]
    },
    "easier": [
     { "when": { "rel": { "npc": "brannoc", "axis": "respect", "gte": 20 } }, "heatTop": -1, "line": "He takes his time over it." },
     { "when": { "rel": { "npc": "brannoc", "axis": "respect", "gte": 40 } }, "temperIron": -1, "line": "He has iron to spare for you." }
    ]
   },
-"maeca": {
+  "maeca": {
    "name": "Maeca",
    "place": "the Blind",
    "verbs": [],
@@ -73,28 +94,35 @@
    "respectFromCraft": 0,
    "easier": [],
    "lines": {
-    "shedFur.offer": ["They've been leaving fur on the thorn by the Blind. For you, I think. Give me an evening."],
-    "shedFur.braid.before": ["(She sits with her back to the fire and braids it on her knee, grey and grey and white, the way you'd braid a child's hair. She doesn't talk. When it's done she bites the end off.)"],
-    "shedFur.braid": ["Next to the skin. They'll know you in the dark."],
-    "history.shedFur": ["Braided by Maeca from what the Pack shed, day {day}"],
-    "fang.seen": ["That's his. Wear it where I can't see it."]
+    "history.shedFur": ["Braided by Maeca from what the Pack shed, day {day}"]
    }
   },
   "wenna": {
    "name": "Old Wenna",
    "place": "Wenna's Remedies",
-   "verbs": ["workIn"],
-   "when": { "all": [{ "met": "wenna" }, { "any": [{ "fact": "stream.clear", "eq": true }, { "fact": "beasts.outcome", "eq": "cured" }] }] },
-   "closedLine": "I've half the Verge coughing, child. Bring me a clean stream and I'll stitch your coat.",
+   "verbs": ["brew", "workIn", "buy"],
+   "grows": "affection",
+   "when": { "met": "wenna" },
+   "gates": {
+    "workIn": { "when": { "any": [{ "fact": "stream.clear", "eq": true }, { "fact": "beasts.outcome", "eq": "cured" }] }, "line": "I've half the Verge coughing, child. Bring me a clean stream and I'll stitch your coat." }
+   },
    "respectPerCraft": 1,
    "respectFromCraft": 10,
    "lines": {
     "greet": ["Sit. Not there— that's Tam's chest-rub. What is it, child?", "Kettle's on, still's not. Quick, child.", "Bitterroot, moonpetal, and mind the shelf— it's older than you."],
-    "brew": ["Bitterroot, boiled twice. Hold your nose.", "Drink it cold. It's worse, and it works.", "Antidote. You won't need it till you do."],
+    "brew": ["Bitterroot, boiled twice. Hold your nose.", "Drink it cold. It's worse, and it works."],
+    "brew.antidote": ["Antidote. You won't need it till you do."],
     "first.brew": ["Bitter's the point, child— the body hates it, and gets up to get away from it. Drink."],
-    "flask.sale": ["A flask. Pewter, a lid that fits, my mark on the bottom. Rook fills it every night you sleep under her roof. A hundred and twenty, and it's cheap."]
+    "brew.moonpetal": ["Moonpetal. Opens at night, shuts at dawn— like some I could name. Drink it cold."],
+    "flask.sale": ["A flask. Pewter, a lid that fits, my mark on the bottom. Rook fills it every night you sleep under her roof. A hundred and twenty, and it's cheap."],
+    "flask.filled": ["Rook has filled Wenna's flask by the fire: {n} draughts. The bitterroot's gone into it."],
+    "flask.dry": ["Wenna's flask is dry, and there's no bitterroot to fill it. Rook shakes it at you on your way past."],
+    "first.workIn": ["There. Bitterroot in the lining— don't pick at it— keeps your blood where it belongs. Off you go, child."],
+    "workIn": ["Stitched. Don't wash it.", "In it goes. Smells foul; works.", "Done, child. Next."]
    },
-   "easier": []
+   "easier": [
+    { "when": { "any": [{ "rel": { "npc": "wenna", "axis": "trust", "gte": 30 } }, { "rel": { "npc": "wenna", "axis": "affection", "gte": 30 } }] }, "entryGrade": 1, "needs": "trust or affection 30", "line": "She takes more care over yours." }
+   ]
   }
  },
  "night": {

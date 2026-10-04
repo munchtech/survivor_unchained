@@ -13,7 +13,7 @@ namespace SurvivorUnchained.Tests;
 /// silent bug in play; here it is a red line.</summary>
 public class ContentTests
 {
-    static readonly HashSet<string> Actions = ["trade", "rest", "stash", "maps", "sell", "craft", "leave", "fortune", "bounty", "sellpelts", "reforge", "travel_verge"];
+    static readonly HashSet<string> Actions = ["trade", "rest", "stash", "maps", "sell", "craft", "still", "leave", "fortune", "bounty", "sellpelts", "reforge", "travel_verge"];
 
     static void WalkChanges(IEnumerable<Change>? list, Action<Change> fn)
     {

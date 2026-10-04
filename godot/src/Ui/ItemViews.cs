@@ -26,6 +26,7 @@ public static class ItemViews
         ["lockpick"] = "Opens simple locks.",
         ["scholar_lens"] = "Old script becomes legible through it.",
         ["wolf_fang"] = "A statement to any wolf that sees it.",
+        ["greymuzzle_fang"] = "The Pack knows it by sight.",
         ["fireproof"] = "Fire finds little purchase.",
         ["digger_lamp"] = "The lamplings know whose it is.",
         ["moon_touched"] = "Something in the grove marked you.",

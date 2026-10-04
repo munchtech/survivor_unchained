@@ -337,16 +337,22 @@ public sealed partial class Journey
 
     /* -------------------------------------------------------------- gear -- */
 
-    int Draughts => Inventory.Count(Ch, "health_draught");
+    const string Draught = "health_draught", Moonpetal = "moonpetal_draught";
 
-    /// <summary>R: drink a health draught.</summary>
+    /// <summary>The draughts the draught key can drink, of either kind (the HUD's count).</summary>
+    public int Draughts => Inventory.Count(Ch, Draught) + Inventory.Count(Ch, Moonpetal);
+
+    /// <summary>R: drink a draught: the one that fits the wound. The moonpetal (60%) only for a deep
+    /// one, 55% of health or more gone, so a rare draught is not spent on a scratch (combat's rule).</summary>
     public void Quaff(Battle? b)
     {
         if (b == null || !b.Player.Alive) return;
         if (Draughts == 0) { Warn("No draughts left"); return; }
         if (b.Player.Hp >= b.MaxHp - 0.5) { Warn("You are unhurt"); return; }
-        Inventory.Take(Ch, "health_draught", 1);
-        b.HealPlayer(b.MaxHp * (Items.Get("health_draught").Consumable?.Heal ?? 0.4), "draught");
+        bool deep = 1 - b.Player.Hp / b.MaxHp >= 0.55, moon = Inventory.Count(Ch, Moonpetal) > 0, plain = Inventory.Count(Ch, Draught) > 0;
+        string pick = (deep && moon) || !plain ? Moonpetal : Draught;
+        Inventory.Take(Ch, pick, 1);
+        b.HealPlayer(b.MaxHp * (Items.Get(pick).Consumable?.Heal ?? 0.4), "draught");
         OnTouch();
     }
 
@@ -778,6 +784,8 @@ public sealed partial class Journey
             var names = who.Count == 1 ? who[0] : $"{string.Join(", ", who.Take(who.Count - 1))} and {who[^1]}";
             lines.Add($"By breakfast, {names} had heard that you {ev.Text}.");
         }
+        if (Flask() is { } flask) lines.Add(flask);
+        Crafting.Morning(World);
         if (lines.Count == 0) lines.Add("A quiet night. Rook's bread is hot, and nobody died.");
         OnTouch();
         return lines;

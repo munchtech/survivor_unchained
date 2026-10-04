@@ -329,8 +329,14 @@ public abstract class ZoneRuntime
     protected string? FirstTime(NpcDef def, bool dark) =>
         def.Said?.FirstOrDefault(l => l.Once == true && (l.Night == null || l.Night == dark)
             && !W.Npc(def.Id).Flag(SaidKey(l.Text)).Truthy && Rules.Test(l.When, C))?.Text;
-    /// <summary>Remember that a once-only line has been said.</summary>
-    protected void MarkSaid(NpcDef def, string text) => W.Npc(def.Id).Flags[SaidKey(text)] = true;
+    /// <summary>Remember that a once-only line has been said, and do what saying it does.</summary>
+    protected void MarkSaid(NpcDef def, string text)
+    {
+        var n = W.Npc(def.Id);
+        if (n.Flag(SaidKey(text)).Truthy) return;
+        n.Flags[SaidKey(text)] = true;
+        if (def.Said?.FirstOrDefault(l => l.Once == true && l.Text == text)?.Effects is { Count: > 0 } fx) Rules.Apply(fx, C);
+    }
     static string SaidKey(string text) => "said:" + VoiceLines.Hash(text);
     /// <summary>A person's actor told what to say about how things stand.</summary>
     protected void Wire(NpcActor a, Func<bool> dark)

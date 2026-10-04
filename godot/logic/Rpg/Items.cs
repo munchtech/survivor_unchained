@@ -72,6 +72,8 @@ public sealed class AffixDef
     public string? Grants;
     /// <summary>The least rarity it rolls on (skills come only on fine gear).</summary>
     public int MinRarity;
+    /// <summary>Given, never rolled: a trophy's power set into a piece (Greymuzzle's fang).</summary>
+    public bool Unique;
     /// <summary>What it gives the night's ember beyond numbers (docs/SKILLS_DESIGN.md,
     /// "Gear and the ember"): spark, reroll, refusal, roads, omens, or stand:PASSIVE,
     /// which counts as that passive in an evolution's recipe. One to an item,
@@ -188,6 +190,11 @@ public static class Items
         new() { Id = "of_the_art", Name = "of the Art", Prefix = false, Slots = [ItemKind.Ring, ItemKind.Amulet, ItemKind.Head, ItemKind.Relic],
             Mods = t => [M(Stat.AbilityCooldown, ModKind.More, -(0.05 + t * 0.03)), M(Stat.AbilityPower, ModKind.Inc, 0.05 + t * 0.05)],
             Text = t => $"Your art {Pct(0.05 + t * 0.03)} sooner and {Pct(0.05 + t * 0.05)} stronger" },
+
+        /* Set, never rolled: a trophy's power in a piece (docs/CRAFTING_DESIGN.md 10.1). */
+        new() { Id = "greymuzzles", Name = "Greymuzzle's", Prefix = true, Slots = [ItemKind.Weapon, ItemKind.Amulet], Unique = true,
+            Mods = _ => [M(Stat.VsOf(Family.Wolf), ModKind.Flat, 0.3), M(Stat.VsOf(Family.Beast), ModKind.Flat, 0.3), M(Stat.VsOf(Family.Boar), ModKind.Flat, 0.3)],
+            Text = _ => "+30% damage to wolves and beasts" },
 
         /* Skills worn: fine gear that fights for you. */
         new() { Id = "of_motes", Name = "of Seeking Motes", Prefix = false, Slots = [ItemKind.Amulet, ItemKind.Relic, ItemKind.Ring], Grants = "seeking_motes", MinRarity = 2,

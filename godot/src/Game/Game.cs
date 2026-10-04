@@ -713,7 +713,7 @@ public partial class Game : Node, IZoneHost
             using var _ = new Perf.Span(Perf.Part.Hud);
             hudT = 1.0 / 12;
             var ch = Journey.Ch;
-            hud.Frame(Battle, ch.Gold, Inventory.Count(ch, "health_draught"), (ch.Level, ch.Xp / Character.XpForLevel(ch.Level)));
+            hud.Frame(Battle, ch.Gold, Journey.Draughts, (ch.Level, ch.Xp / Character.XpForLevel(ch.Level)));
             hud.MapFrame(MiniView());
             if (zone is ArenaRun ar && Battle is { } cb2)
             {
