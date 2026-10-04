@@ -175,6 +175,8 @@ public partial class Game : Node, IZoneHost
             var spec = Arenas.FromTable(o, "waystation", at0.X, at0.Z, at0.Facing);
             // --boss DEF[:NAME]: a story's foe at the half hour (pictures of Grimtunnel, of Greymuzzle).
             if (Args.Get("boss") is string bo) { var bp = bo.Split(':'); spec.Boss = bp[0]; if (bp.Length > 1) spec.BossName = bp[1].Replace('_', ' '); }
+            // --spare: the story lets it go (Greymuzzle spared).
+            spec.Spare = Args.Has("spare");
             Arenas.Begin(World, spec);
         }
         if (z != "lowford")

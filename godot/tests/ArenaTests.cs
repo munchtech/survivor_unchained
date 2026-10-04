@@ -94,7 +94,7 @@ public class ArenaTests
             Assert.True(h.Health > last.Health && h.Damage > last.Damage, $"flat at {m}");
             // No cliff: no minute more than a tenth harder than the one before.
             Assert.True(h.Damage / last.Damage < 1.1 && h.Health / last.Health < 1.1, $"a cliff at {m}");
-            Assert.True(h.Pace <= 1.3);
+            Assert.True(h.Pace <= 1.15);
             last = h;
         }
         // Two hours past the half hour, blows land many times as hard as at the half hour:
@@ -122,7 +122,7 @@ public class ArenaTests
             Assert.Equal(k, s.Zone.DarkSworn);
         }
         var sworn = s.Host.Announced.Where(a => a.Kicker == "The long night").Select(a => a.Title).ToList();
-        Assert.Contains("The dark swears the Oath of the Hunt", sworn);
+        Assert.Contains("The dark swears the Oath of Embers", sworn);
         Assert.DoesNotContain(sworn, t => t.Contains("Iron") || t.Contains("Moonless"));
         Assert.Contains("The dark deepens", sworn);
         // Their rules hold from then on, and what they pay is paid.

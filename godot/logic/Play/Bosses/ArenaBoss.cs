@@ -12,6 +12,8 @@ public interface IBossArena
     int Tier { get; }
     /// <summary>Who it is here (the Pack's ruler is Greymuzzle in his Hollow, the Pack-Mother at the table).</summary>
     string BossName { get; }
+    /// <summary>The story lets it go at the end rather than die.</summary>
+    bool Spare { get; }
     bool Sworn(string oath);
     double R();
     Enemy? Spawn(string def, double x, double z, bool elite = false, SpawnStyle? style = null);

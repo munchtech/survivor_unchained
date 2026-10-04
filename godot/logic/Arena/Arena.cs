@@ -50,6 +50,9 @@ public sealed class ArenaSpec
     /// <summary>Who comes at the half hour, if not what rules the people (a named
     /// foe of the story: Greymuzzle, Redcowl).</summary>
     public string? Boss, BossName, BossTitle;
+    /// <summary>The boss is brought down and let go, not killed (Greymuzzle, when the story
+    /// allows it: docs/STORY_BIBLE.md, "The nights").</summary>
+    public bool Spare;
 
     /// <summary>The ground (always by night: the ember burns only in the dark).</summary>
     public MapSpec Map => new() { Seed = Seed, Tier = Tier, Theme = Theme, Night = true, Oaths = Oaths, Name = Name, Arena = true, People = People };
