@@ -311,7 +311,12 @@ public class CinematicTests
         var said = Enumerable.Range(1, 4).Select(Woke).ToList();
         Assert.Equal(4, said.Distinct().Count());
         Assert.Contains("A carter found you on the Old Road", said[0]);
-        Assert.Contains("Someone always does.", said[2]);
+        Assert.Contains("...Well. Someone did.", said[2]);
+        Assert.Contains("The carter sends his regards.", said[3]);
+        // "Someone always does" is Vonnra's, in the fortune (C09 shot 7), and nobody else's.
+        foreach (var (_, c) in Dialogue.All.Where(kv => kv.Key != "vonnra"))
+            foreach (var n in c.Nodes.Values)
+                foreach (var v in n.Text) Assert.DoesNotContain("Someone always does", v.Text);
         s.World.Facts["player.just_died"] = true;
         Assert.Contains("I never asked his name", Talk(Convo("chid"), s.C, "Which carter")!.Text);
         // And somebody in the street notices there are no carts.
@@ -336,7 +341,7 @@ public class CinematicTests
         Assert.Contains("The Pack's loud tonight.", Said("maeca", s, true));
         s.World.Facts["beasts.outcome"] = "slaughtered";
         Assert.DoesNotContain("The Pack's loud tonight.", Said("maeca", s, true));
-        Assert.Contains("Nothing calls in the Hollow now. Nothing.", Said("maeca", s, false));
+        Assert.Contains("Nothing calls in the Hollow now.", Said("maeca", s, true));
         Assert.DoesNotContain("They drank from the stream and fell down.", Said("tam", s, false));
         // Brannoc lied to still thinks she is on the road.
         s.World.Facts["nell.told"] = "lie";
@@ -355,5 +360,35 @@ public class CinematicTests
         foreach (var v in Convo("maeca").Nodes["first"].Text) Assert.DoesNotContain("Ashford", v.Text);
         Assert.DoesNotContain("Ashford", Lore.Person("maeca")!.Title);
         Assert.Contains("Ashford was.", Convo("rook").Nodes["valley"].Text[0].Text);
+        // "Comes back" is the ledger's word; the Wayfinder does not spend it on meeting.
+        Assert.DoesNotContain("comes back", Convo("wayfinder").Nodes["first"].Text[0].Text);
+    }
+
+    [Fact]
+    public void Grimtunnel_never_finishes_surface_meat_at_her_after_the_ford()
+    {
+        // C03: he smells downstairs on her and cannot finish the word. From then on
+        // he never does (C12 and every arena); Snib, who has not smelled her, does.
+        foreach (var n in Convo("cin_dig_boils_over").Nodes.Values)
+            foreach (var v in n.Text) Assert.DoesNotContain("surface-meat", v.Text, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("surface-m—", Convo("cin_heart_goes_down").Nodes.Values.SelectMany(n => n.Text).Select(v => v.Text).Single(t => t.StartsWith("Finders keepers")));
+    }
+
+    [Fact]
+    public void Brannoc_says_twelve_once_in_a_playthrough()
+    {
+        // Twelve irons, and a girl of twelve he made: said the first time she passes
+        // the forge after the truth, and never again.
+        var p = Route.New();
+        p.W.Facts["nell.told"] = "gone";
+        p.Enter("waystation");
+        var smith = p.Zone!.Actors["brannoc"];
+        Assert.Equal("Twelve, I made.", smith.Urgent!());
+        Assert.DoesNotContain("Twelve, I made.", smith.Said!());
+        smith.Spoken!("Twelve, I made.");
+        Assert.Null(smith.Urgent!());
+        p.Leave();
+        p.Enter("waystation");
+        Assert.Null(p.Zone!.Actors["brannoc"].Urgent!());
     }
 }

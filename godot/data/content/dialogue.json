@@ -829,7 +829,7 @@
    },
    "valley": {
     "id": "valley",
-    "text": "Ashford was. Half of it went to the Morrow in one night, pet, and the other half the year after, coughing. Don't ask Holloway about it. Don't ask Maeca. And don't ask me twice.",
+    "text": "Ashford was. Half of it went to the Morrow in one night, pet, and the other half the year after, coughing. Don't ask Holloway about it. Don't ask Maeca. Don't ask a Kerchief, if you meet one. And don't ask me twice.",
     "choices": [
      {
       "text": "Something else.",
@@ -6092,7 +6092,7 @@
    },
    "fever": {
     "id": "fever",
-    "text": "The year after Ashford went into the ground. Half the valley coughing green and the other half burying them. \"Gone to the Morrow,\" they say up here, like it's a walk. They died, child. Same smell as your bottle. Same smell exactly. ...I've roots on the boil.",
+    "text": "The year after Ashford went into the ground. Coughing green, then the sweats, then the— well. \"Gone to the Morrow,\" they say up here, like it's a walk. They died, child. Same smell as your bottle. Same smell exactly. ...I've roots on the boil.",
     "choices": [
      {
       "text": "Something else.",
@@ -11523,14 +11523,14 @@
        "fact": "player.deaths",
        "gte": 4
       },
-      "text": "Up again. Up's good. (He has the kettle on already.) The carter brought you in, before you ask. You'll be sore a day or two. Whatever did it has your things."
+      "text": "Up again. (He has the kettle on already.) The carter sends his regards. You'll be sore a day or two. Whatever did it has your things."
      },
      {
       "when": {
        "fact": "player.deaths",
        "eq": 3
       },
-      "text": "You're up. A carter brought you in. (He isn't looking at you.) Well. Someone did. Someone always does. You'll be sore a day or two, and whatever did this still has your things."
+      "text": "You're up. A carter brought you in. (He isn't looking at you.) ...Well. Someone did. You'll be sore a day or two, and whatever did this still has your things."
      },
      {
       "when": {
@@ -12019,10 +12019,10 @@
         "eq": true
        }
       },
-      "text": "I sang it flat. I always have. There's always somebody who has the tune. (He is quiet, which he never is.) She was very light. ...Sit down a minute. Not on the step. Here. By me."
+      "text": "I sang it flat. I always have. There's always somebody who has the tune. (He is quiet, which he never is.) She was very light. ...Sit down a minute. (He moves up the bench, though there's nobody else on it.)"
      },
      {
-      "text": "We buried Nell behind the shrine, next to old Ashe. Brannoc made the marker himself. Iron. Of course, iron. (He is quiet, which he never is.) She was very light. ...Sit down a minute. Not on the step. Here. By me."
+      "text": "We buried Nell behind the shrine, next to old Ashe. Brannoc made the marker himself. Iron. Of course, iron. (He is quiet, which he never is.) She was very light. ...Sit down a minute. (He moves up the bench, though there's nobody else on it.)"
      }
     ],
     "effects": [
@@ -14225,6 +14225,14 @@
       "goto": "supper"
      },
      {
+      "text": "What do you make of Vonnra, the toll-keeper?",
+      "show": {
+       "met": "vonnra"
+      },
+      "once": "vonnra",
+      "goto": "vonnra"
+     },
+     {
       "text": "What do you want, Dame Keegan?",
       "once": "t_keegan",
       "goto": "t_keegan"
@@ -14836,6 +14844,20 @@
     "choices": [
      {
       "text": "Goodnight.",
+      "end": true
+     }
+    ]
+   },
+   "vonnra": {
+    "id": "vonnra",
+    "text": "Ash-of-Morrow. A peculiar sort of surname: a kenning, almost. The ash of the morning; what is left when the morning has burned down. ...I have no opinion of her. Chapter two forbids opinions about civilians. I have several.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
       "end": true
      }
     ]
@@ -19949,7 +19971,7 @@
   "nodes": {
    "first": {
     "id": "first",
-    "text": "You've the look of someone who comes back. Good. The other sort only ever buy the one map. I'm Ysolde Marrow, and I draw maps of the places the road forgets: woods that eat their own paths, barrows that open after dark, ravines the Kerchiefs think are theirs. Each one sworn under an oath. Each one ruled by something that won't want you there.",
+    "text": "You've the look of someone who'll want a second map. Good. Most only ever buy the one. I'm Ysolde Marrow, and I draw maps of the places the road forgets: woods that eat their own paths, barrows that open after dark, ravines the Kerchiefs think are theirs. Each one sworn under an oath. Each one ruled by something that won't want you there.",
     "choices": [
      {
       "text": "Show me your maps.",
@@ -20576,10 +20598,10 @@
         }
        ]
       },
-      "text": "Surface-meat! You broke my PUMP. ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT."
+      "text": "Surface-m— ...You broke my PUMP. ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT."
      },
      {
-      "text": "Surface-meat! Killing my lads, are we? ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT."
+      "text": "Surface-m— ...Killing my lads, are we? ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT."
      }
     ],
     "next": "quiet"
