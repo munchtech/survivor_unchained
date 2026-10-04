@@ -795,7 +795,7 @@ public sealed class Verge : ZoneRuntime
             {
                 TurnHostile("roost.hostile");
                 // Only the living burn: teamsters already freed, or already
-                // starved in their cages, are not put in the fire by it.
+                // dead of the cold in their cages, are not put in the fire by it.
                 if (!Enumerable.Range(0, cageNodes.Length).All(CageOpen) && F("caravan.survivors").IsNull)
                 {
                     G.Apply($$"""

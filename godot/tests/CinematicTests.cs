@@ -54,7 +54,7 @@ public class CinematicTests
             Assert.All(lines, l => Assert.NotEqual("", l.Speaker));
             Assert.Equal(Convo(id).Nodes.Count, lines.Count);
         }
-        Assert.Equal(["cin_drowned_fire.bedroll", "cin_drowned_fire.prints", "cin_drowned_fire.frost"], Lines("cin_drowned_fire", Q()).Select(l => l.Id));
+        Assert.Equal(["cin_drowned_fire.bedroll", "cin_drowned_fire.prints", "cin_drowned_fire.lamp", "cin_drowned_fire.call", "cin_drowned_fire.frost"], Lines("cin_drowned_fire", Q()).Select(l => l.Id));
     }
 
     [Fact]
@@ -362,6 +362,18 @@ public class CinematicTests
         Assert.Contains("Ashford was.", Convo("rook").Nodes["valley"].Text[0].Text);
         // "Comes back" is the ledger's word; the Wayfinder does not spend it on meeting.
         Assert.DoesNotContain("comes back", Convo("wayfinder").Nodes["first"].Text[0].Text);
+    }
+
+    [Fact]
+    public void The_voice_that_calls_her_up_the_road_opens_the_fortune()
+    {
+        // Bible, "Who tells it": Vonnra calls the survivor up the road at the waking,
+        // unnamed, and opens the fortune with the same words.
+        var call = Convo("cin_drowned_fire").Nodes["call"];
+        Assert.Equal("far_voice", call.Speaker);
+        Assert.DoesNotContain("Vonnra", Lore.Speakers["far_voice"].Name);
+        Assert.Contains("No charge, this once.", call.Text[0].Text);
+        foreach (var v in Convo("vonnra").Nodes["fortune"].Text) Assert.Contains("No charge, this once.", v.Text);
     }
 
     [Fact]
