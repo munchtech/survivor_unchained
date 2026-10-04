@@ -174,6 +174,9 @@ public sealed class Verge : ZoneRuntime
         {
             Id = id, Name = name, Sub = $"Tier {tier} · held by {Maps.MapOffers.People(people).Name}", Seed = seed, Tier = tier, People = people,
             Theme = people == "dead" ? "blight" : "wood", Story = true, Boss = boss, BossName = bossName, BossTitle = bossTitle,
+            // The story's nights are twenty minutes, the table's thirty (the owner: the story is to be
+            // two fifths of the game early on): the same night, told quicker (ArenaRun.Minute).
+            Minutes = 20,
             ReturnZone = "verge", ReturnX = p.X, ReturnZ = p.Z, ReturnFacing = p.Facing, OnWin = onWin, OnLose = onLose,
         };
     }

@@ -105,8 +105,13 @@ public static class Arenas
 
     /// <summary>Experience for the time survived (past the half hour too): more
     /// the harder the arena, a purse for the win.</summary>
-    public static double XpFor(ArenaSpec spec, double seconds, bool won) =>
-        Math.Round(seconds / 60 * 30 * (1 + 0.3 * (spec.Tier - 1)) + (won ? 300 * spec.Tier : 0));
+    public static double XpFor(ArenaSpec spec, double seconds, bool won)
+    {
+        // A shorter night is the same night told quicker: its minutes before the boss count as a
+        // table night's would, so a story night teaches as much (past the boss, real minutes).
+        double end = spec.Minutes * 60, night = Math.Min(seconds, end) * 30 / spec.Minutes + Math.Max(0, seconds - end);
+        return Math.Round(night / 60 * 30 * (1 + 0.3 * (spec.Tier - 1)) + (won ? 300 * spec.Tier : 0));
+    }
 
     /// <summary>The skills a run discovered: every combat skill carried at the
     /// end (evolved or not), and the halves of any union made. Only combat
