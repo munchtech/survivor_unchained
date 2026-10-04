@@ -200,7 +200,7 @@ public sealed class Verge : ZoneRuntime
             {
                 bool running = F("dig.pump").Str is not ("broken" or "blown" or "moved");
                 string pump = running ? """{ "set": { "dig.pump": "blown" } }, { "quest": { "id": "beasts", "entry": "pump_blown" } }, """ : "";
-                return Story("dig_boils", "The Dig Boils Over", "lamplings", 739, "grimtunnel_roused", "Grimtunnel", "Finders Keepers",
+                return Story("dig_boils", "The Dig Boils Over", "lamplings", 739, "grimtunnel_roused", "Grimtunnel", "Ever So Grateful",
                     $$"""[{ "set": { "dig.broken": true } }, {{pump}}{ "quest": { "id": "beasts", "entry": "dig_overrun" } }, {{Hist("broke_dig", "held the Dig's edge by night until nothing more came up, and drove Grimtunnel back down", ["beasts", "lampling"], 2, """{ "respect": 10 }""", """{ "wenna": { "respect": 20 }, "maeca": { "respect": 20 } }""")}}]""",
                     """[{ "quest": { "id": "beasts", "entry": "dig_held" } }]""");
             });
@@ -912,7 +912,7 @@ public sealed class Verge : ZoneRuntime
         {
             var blind = V("blind");
             var a = new NpcActor(Lore.Npcs["maeca"], G.Look, G.Rng, new Spot { X = blind.X + 2.6, Z = blind.Z + 4.2, Facing = 0.4 });
-            a.Said = () => SaidNow(a.Def, false);
+            Wire(a, () => false);
             Actors["maeca"] = a;
             Interactables.Add(new() { Id = "talk:maeca", X = a.X, Z = a.Z, R = 2.8, Verb = "Talk", Name = "Maeca Barefoot", Act = () => G.Talk("maeca") });
         }

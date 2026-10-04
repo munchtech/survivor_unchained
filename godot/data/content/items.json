@@ -554,7 +554,7 @@
     "holy_light",
     "warden_iron"
    ],
-   "lore": "The iron cage of the lamp the Ford-Warden carried. Under the socket, cut clean and new, a smith's mark: a ring with a hammer across it. It was made to hold ember, not oil. Whatever burned in it went down a hole in Grimtunnel's arms. The cage still remembers the light."
+   "lore": "The iron cage of the lamp the Ford-Warden carried. Under the socket, cut clean and new, a smith's mark: a ring with a hammer across it. There is no well in it for oil, and no wick. Whatever burned in it went down a hole in Grimtunnel's arms. The cage still remembers the light."
   },
   "bone_charm": {
    "id": "bone_charm",
@@ -1026,7 +1026,7 @@
    "icon": "bomb",
    "value": 30,
    "stack": 5,
-   "description": "A crate-charge of unstable ember. Something could be blown open with this. Or up. It is warm, and warmer when you are afraid.",
+   "description": "A crate-charge of unstable ember. Something could be blown open with this. Or up. It is warm, like a stone a hand has only just let go of.",
    "tags": [
     "explosive"
    ]
