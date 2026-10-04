@@ -4644,7 +4644,7 @@
       }
      },
      {
-      "notice": "You slept well, for once. (Warmed: +8% damage, +5% speed, one day)"
+      "notice": "You slept well, for once."
      }
     ],
     "next": "blind_dark"
@@ -15984,7 +15984,7 @@
       }
      },
      {
-      "notice": "You feel good. Better than good. (Warmed: +8% damage, +5% speed, one day)"
+      "notice": "You feel good. Better than good."
      }
     ],
     "next": "morning"

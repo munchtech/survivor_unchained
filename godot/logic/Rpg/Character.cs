@@ -542,10 +542,9 @@ public static class Character
                 case ConditionId.Blightsick: st.Add(new(Stat.Regen, ModKind.Flat, -0.8, "cond:blightsick")); break;
                 case ConditionId.Blessed: st.Add(new(Stat.DamageOf(School.Holy), ModKind.Inc, 0.15, "cond:blessed")); break;
                 case ConditionId.Rested: st.Add(new(Stat.MaxHealth, ModKind.Inc, 0.05, "cond:rested")); break;
-                case ConditionId.Warmed:
-                    st.Add(new(Stat.Damage, ModKind.Inc, 0.08, "cond:warmed"));
-                    st.Add(new(Stat.MoveSpeed, ModKind.Inc, 0.05, "cond:warmed"));
-                    break;
+                // Warmed (a love scene's night) only says the night happened: the owner's call, so
+                // sex earns nothing in a fight (Australia's R18+; docs/legal/LEGAL_BRIEF.md, issue 7).
+                case ConditionId.Warmed: break;
             }
         }
         return kit;
