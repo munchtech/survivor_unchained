@@ -46,14 +46,14 @@ The owner asks: "accurate, efficient, on track, manage and engineer context. del
 
 ## Roster
 
-The main session keeps this current. It is the address list for SendMessage.
+The main session keeps this current. It is the address list for SendMessage. Retired agents' ids are not listed: a message to one wakes it.
 
 | Area | Agent | Status page |
 |---|---|---|
 | Voice (Voicebox evaluation, VO) | a2da9a388ceb1b987 | docs/team/voice.md |
-| Story and writing | (successor starting) | docs/team/story.md |
-| Combat, bosses, balance | (successor starting) | docs/team/combat.md |
-| Animation | (successor starting) | docs/team/animation.md |
-| UI design (and the UI merge) | (successor starting) | docs/team/ui_design.md |
-| UI art | (successor starting) | docs/team/ui_art.md |
+| Story and writing | a7622ae77d19e31dc | docs/team/story.md |
+| Combat, bosses, balance | a09c5a65f5a84319e | docs/team/combat.md |
+| Animation | aa4f5fc266b043035 | docs/team/animation.md |
+| UI design (and the UI merge) | a5629aff0f215ea4a | docs/team/ui_design.md |
+| UI art | a72467cac33063d3a | docs/team/ui_art.md |
 | Heroine outfits | main session | — |
