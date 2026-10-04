@@ -272,5 +272,53 @@ public class StoryLint
         Assert.True(slots >= 3, $"{slots} slots");
     }
 
+    [Fact]
+    public void No_genre_word_gets_into_the_valleys_mouth()
+    {
+        // The bible ("The nights", rule 5): Greymuzzle is the old dog-wolf, never an alpha; no warlords,
+        // no gangers. Only words are read: a string with a space in it, so ids like "alpha_dead" pass.
+        var genre = new Regex(@"\b(alpha|warlord|ganger)s?\b", RegexOptions.IgnoreCase);
+        var found = new List<string>();
+        void Read(JsonElement e, string where)
+        {
+            if (e.ValueKind == JsonValueKind.Object) foreach (var p in e.EnumerateObject()) Read(p.Value, $"{where}.{p.Name}");
+            else if (e.ValueKind == JsonValueKind.Array) { int i = 0; foreach (var x in e.EnumerateArray()) Read(x, $"{where}[{i++}]"); }
+            else if (e.ValueKind == JsonValueKind.String && e.GetString()!.Contains(' ') && genre.Match(e.GetString()!) is { Success: true } m)
+                found.Add($"{where}: \"{m.Value}\"");
+        }
+        foreach (var f in ContentFiles.Append("items.json").Append("crafting.json")) Read(Content(f), f);
+        // The zone scripts say things too (the deeds a fight writes down).
+        // Read where the scripts put words: a deed's text, a line said, an announcement.
+        var said = new Regex(@"(?:Hist\(\s*""[^""]*"",\s*|Say\(\s*\$?|Announcement\(\s*\$?)""([^""]*)""");
+        foreach (var (file, text) in Code.Value)
+            foreach (Match lit in said.Matches(text))
+                if (genre.Match(lit.Groups[1].Value) is { Success: true } m) found.Add($"{file}: \"{m.Value}\"");
+        Assert.Empty(found);
+    }
+
+    [Fact]
+    public void The_table_names_its_maps_in_the_valleys_words_for_their_people()
+    {
+        // The bible's place words ("The nights"): a map's name says whose ground it is, and no
+        // genre word gets on to the Wayfinder's sheets.
+        var words = new Dictionary<string, string[]>
+        {
+            ["dead"] = ["Howes", "Lows", "Barrows", "Lych-Way", "Chesters", "Burying-Ground"],
+            ["pack"] = ["Dene", "Clough", "Holt", "Shaw", "Brake", "Den"],
+            ["kerchiefs"] = ["Ruts", "Drove", "Cutting", "Ravine", "Waggon-Way", "Gap"],
+            ["lamplings"] = ["Sump", "Delph", "Sough", "Spoil", "Workings"],
+        };
+        var seen = new HashSet<string>();
+        for (int day = 1; day <= 40; day++)
+            foreach (var o in SurvivorUnchained.Maps.MapOffers.Today(day, 1 + day % 5, day % 3))
+            {
+                Assert.Matches(@"^The [A-Z][\w']+ [A-Z][\w-]+$", o.Spec.Name);
+                Assert.Contains(o.Spec.Name.Split(' ')[^1], words[o.People]);
+                Assert.DoesNotMatch(@"Weeping|Whispering|Bleeding|Moonless|Ashen|Alpha|Warlord", o.Spec.Name);
+                seen.Add(o.Spec.Name);
+            }
+        Assert.True(seen.Count > 40, $"{seen.Count} names in forty days");
+    }
+
     static Ctx Ctx() => Lore.Context(WorldState.Fresh(1), H.Survivor());
 }

@@ -61,7 +61,9 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Skills look and feel (VFX, under the main session) | a63cd93fc73d5ed79 | docs/team/skills.md |
 | Cinematics production | a3058a45eee41d695 | docs/team/cinematics.md |
 | Performance | a7145e18b3eb78294 | docs/team/performance.md |
-| Arena art | a52b851395b3ab3f4 | docs/team/arena_art.md |
+| Arena art | a26767f7f9955cb56 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | ab82cbe99e2937ddd | docs/team/hero_male.md |
 | Heroine face, hair and character creation's Look | ade92e8285938438f | docs/team/face.md |
+| Asset provenance (what isn't ours, licences, credits, replacement plan) | a80ff0c7fd988b178 | docs/team/provenance.md |
+| Legal and Steam compliance (AI disclosure, mature content, licences, brief for a lawyer) | aa12c130ddf4b904c | docs/team/legal.md |
 | Heroine outfits | main session | — |

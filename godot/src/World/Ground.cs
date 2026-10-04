@@ -41,15 +41,25 @@ public static class Ground
         arrays[(int)Mesh.ArrayType.Vertex] = verts;
         arrays[(int)Mesh.ArrayType.Normal] = normals;
         arrays[(int)Mesh.ArrayType.Index] = idx;
-        // An arena's ground knows, vertex by vertex, how far inside its ring it is.
+        // An arena's ground knows, vertex by vertex, how far inside its ring it
+        // is: eased in COLOR (the dark past it), and in metres in CUSTOM0, a float,
+        // because the lip is drawn along it as a line a hand wide.
+        var flags = (Mesh.ArrayFormat)0;
         if (z.Inside is double[] inside)
         {
             var cols = new Color[n * n];
-            for (int k = 0; k < cols.Length; k++) cols[k] = new Color(Mathf.SmoothStep(-16f, -3f, (float)inside[k]), 0, 0);
+            var metres = new float[n * n];
+            for (int k = 0; k < cols.Length; k++)
+            {
+                cols[k] = new Color(Mathf.SmoothStep(-16f, -3f, (float)inside[k]), 0, 0);
+                metres[k] = (float)inside[k];
+            }
             arrays[(int)Mesh.ArrayType.Color] = cols;
+            arrays[(int)Mesh.ArrayType.Custom0] = metres;
+            flags = (Mesh.ArrayFormat)((long)Mesh.ArrayCustomFormat.RFloat << (int)Mesh.ArrayFormat.FormatCustom0Shift);
         }
         var mesh = new ArrayMesh();
-        mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
+        mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays, null, null, flags);
         if (z.Place != null)
         {
             mesh.SurfaceSetMaterial(0, ArenaGround.Material(z));

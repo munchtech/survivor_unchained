@@ -2022,7 +2022,9 @@ public sealed partial class Battle
         w.Mods.Damage *= 1 + LevelUp.HoneStep;
     }
 
-    public void Evolve(string id, string branch)
+    /// <summary>A weapon becomes its evolution (out of a chest, the chest tells it: no
+    /// announcement of its own).</summary>
+    public void Evolve(string id, string branch, bool chest = false)
     {
         var w = Weapons.Find(x => x.Id == id);
         if (w == null) return;
@@ -2033,8 +2035,8 @@ public sealed partial class Battle
         foreach (var t in evo.Triggers) AddTrigger(t, $"evo:{evo.Id}", 1, w.Id);
         // It shows what it has become at once: the first volley is now.
         w.Timer = 0;
-        Events.Emit(new Ev.Evolve { Weapon = w.Id, Into = evo.Id });
-        Events.Emit(new Ev.Announce { Kicker = $"{w.Def.Name} evolves", Title = evo.Name, Subtitle = evo.Description, Tone = Tone.Boon });
+        Events.Emit(new Ev.Evolve { Weapon = w.Id, Into = evo.Id, Chest = chest });
+        if (!chest) Events.Emit(new Ev.Announce { Kicker = $"{w.Def.Name} evolves", Title = evo.Name, Subtitle = evo.Description, Tone = Tone.Boon });
     }
 
     public void AddBoon(string id)
@@ -2103,8 +2105,9 @@ public sealed partial class Battle
             if (a == null || b == null) continue;
             Discoveries.Add(d.Id);
             d.Apply(a, b, this);
+            // Told at the side (the host's toast), not across the middle of the fight: a pair that
+            // quietly does more is not one of the night's big moments.
             Events.Emit(new Ev.Discovery { Id = d.Id });
-            Events.Emit(new Ev.Announce { Kicker = "Discovery", Title = d.Name, Subtitle = d.Description, Tone = Tone.Boon });
         }
     }
 

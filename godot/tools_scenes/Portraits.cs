@@ -157,7 +157,7 @@ public partial class Portraits : Node3D
         var eyes = People.HerEyes(her);
         string view = job.ContainsKey("view") ? (string)job["view"] : "face";
         // (the look a little under her eyes; how tall a slice of her the frame holds)
-        var (lift, tall, dist) = view switch { "bust" => (-0.12f, 0.62f, 1.6f), "head" => (-0.06f, 0.4f, 1.5f), _ => (-0.03f, 0.26f, 1.3f) };
+        var (lift, tall, dist) = view switch { "bust" => (-0.12f, 0.62f, 1.6f), "head" => (-0.06f, 0.4f, 1.5f), "eyes" => (0f, 0.12f, 1.3f), _ => (-0.03f, 0.26f, 1.3f) };
         // (a cut that hangs behind her, seen in profile: the frame moved back to hold it)
         float back = job.ContainsKey("back") ? (float)job["back"] : 0;
         var look = eyes + new Vector3(0, lift, 0) - her.Root.GlobalBasis.Z.Normalized() * back;

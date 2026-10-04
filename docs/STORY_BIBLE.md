@@ -1153,6 +1153,23 @@ the story's view of them, so that the nights tell the story the days write.
   chesters; dene, clough, holt, shaw; ruts, drove, cutting, gap; sump, delph,
   sough, spoil. The adjectives too: Lampless (from the Order's call), Quiet
   (the dead are "quiet"), and Praying (Tam's word, which Act 3 pays).
+  - Built (`ArenaPlaces.Names`, `Adjectives`, `Moods`; arena art's places):
+    a map is named for its people's ground, "The {adjective} {place}", and
+    the adjective sets its look (Lampless darker, Drowned in water, Burnt
+    smoky):
+    - the Risen: Lampless, Quiet, Morrow, Drowned, Burnt, Cold; howes, lows,
+      barrows, the lych-way, chesters, the burying-ground;
+    - the Pack: Grey, Deep, Thorn, Bracken, Drowned, Whelping, Bitter; dene,
+      clough, holt, shaw, brake, den;
+    - the Kerchiefs: Red, Salt, Toll, Gallows, Hungry, Widow's, Drowned (the
+      hungry gap is the farmer's name for the lean weeks of spring, when the
+      winter's stores are gone and nothing new is up); ruts, drove, cutting,
+      ravine, waggon-way, gap;
+    - the Lamplings: Praying, Gold, Warm, Black, Deep, Lamplit, Drowned;
+      sump, delph, sough, spoil, workings (never "Dig": the Dig is
+      Grimtunnel's).
+  - Never a weeping, whispering, ashen or moonless place (Moonless is an
+    oath's name). `StoryLint` holds the place words.
 
   **The atlas is other places,** never these walked by day (there is no
   arena by day). They are the places the road forgets, in Ysolde's hand.

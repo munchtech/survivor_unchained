@@ -76,6 +76,8 @@ public sealed class MapBuild
     /// <summary>An arena's second paint, as Splat: R wet, G the ember's char,
     /// B trodden, A the ground's second material (ArenaGen).</summary>
     public byte[]? Splat2;
+    /// <summary>An arena's third paint: R moss, G the slurry's glow (ArenaGen).</summary>
+    public byte[]? Splat3;
     /// <summary>An arena's grass, one byte a texel as Splat: how thick it grows.</summary>
     public byte[]? Grass;
     /// <summary>An arena's edge, all the way round: (x, z) every two degrees.</summary>
@@ -83,6 +85,10 @@ public sealed class MapBuild
     /// <summary>Still water laid in an arena (a stream's course): points along
     /// its middle, each with its half-width; the water's top is HeightAt + Depth.</summary>
     public List<(double X, double Z, double Hw)[]> Streams = new();
+    /// <summary>Rails laid in an arena (the Dig's): points along their middle, a metre apart.</summary>
+    public List<(double X, double Z, double Hw)[]> Rails = new();
+    /// <summary>Where an arena breathes smoke up out of the ground (the Dig's pit): middle and radius.</summary>
+    public List<(double X, double Z, double R)> Vents = new();
     /// <summary>An arena's metres inside its edge (negative outside), as the heights.</summary>
     public double[]? Inside;
     public required List<Area> Areas;

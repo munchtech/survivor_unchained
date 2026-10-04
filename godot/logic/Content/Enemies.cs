@@ -123,6 +123,23 @@ public readonly record struct LevelScale(double Health, double Damage, double Xp
 
 public static class Enemies
 {
+    /// <summary>A foe as a sentence names it, for "Brought down by ...": a named one by its name
+    /// ("Whitethroat", "the Pack-Mother", "the Herald of the Pack"), any other as one of its kind
+    /// ("a Kerchief Footpad", "an Ironbound Risen").</summary>
+    public static string Called(string? title, string name)
+    {
+        if (!string.IsNullOrEmpty(title))
+        {
+            if (title.StartsWith("Herald of ")) return "the " + title;
+            foreach (var lead in new[] { "The ", "A ", "An " })
+                if (title.StartsWith(lead)) return char.ToLowerInvariant(title[0]) + title[1..];
+            return title;
+        }
+        if (name.Length == 0) return "the dark";
+        if (name.StartsWith("The ")) return "the " + name[4..];
+        return ("AEIOU".Contains(char.ToUpperInvariant(name[0])) ? "an " : "a ") + name;
+    }
+
     static readonly Resists Undead = new() { [School.Frost] = 0.25, [School.Shadow] = 0.35, [School.Holy] = -0.5, [School.Fire] = -0.15 };
     static readonly Resists Beast = new() { [School.Fire] = -0.25, [School.Nature] = 0.2 };
     static readonly Resists Kerchief = new();
