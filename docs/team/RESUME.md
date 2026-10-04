@@ -31,6 +31,18 @@ All the leads' paused branches are merged (597 tests green), except two whose ow
 7. **The owner lives in the United States.**
 8. **The hymn at Nell's grave:** the owner will make it in Suno.
 
+## Handoffs ready: start their successors when the GPU is free
+
+These are past their memory limit. Each has a handoff in docs/handoff/<area>.md, and their branches are merged:
+- animation (67cb4f2c);
+- performance (a3513e14);
+- crafting (fdb62e76);
+- UI art (bfa7bdb);
+- skills (0a7e8eff);
+- face (5fd76deb).
+
+The combat successor is already running (design only).
+
 ## Paused work that needs the GPU or Godot
 
 The owner is using the GPU. No Godot, no ComfyUI, no Blender until the owner says so. Waiting on that:

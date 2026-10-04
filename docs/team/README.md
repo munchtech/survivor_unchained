@@ -52,7 +52,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 |---|---|---|
 | Voice (paused by the owner: no placeholders; final voices from ElevenLabs later) | a501b387a90d78b4e | docs/team/voice.md |
 | Story and writing | a73ca9d35d0c487a9 | docs/team/story.md |
-| Combat, encounters, bosses, balance | a1d4562f44c7f6feb | docs/team/combat.md |
+| Combat, encounters, bosses, balance | a708da2c97bf85c95 | docs/team/combat.md |
 | Animation | a435f4dd0ac80df75 | docs/team/animation.md |
 | UI design (character creation first) | a26f87c39952dcd9c | docs/team/ui_design.md |
 | UI art | a1a394643aabfb169 | docs/team/ui_art.md |
