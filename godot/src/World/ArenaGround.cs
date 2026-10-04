@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text.Json;
 using Godot;
 
@@ -26,13 +26,16 @@ public static class ArenaGround
     {
         // turf, bare, way, grave, ash, rubble, face
         ["barrow"] = [(0.07f, 0.55f), (0.06f, 0.5f), (0.095f, 0.5f), (0.035f, 0.7f), (0.04f, 0.6f), (0.085f, 0.45f), (0.05f, 0.6f)],
-        // litter, moss, roots, mud, bed, needles, face: umber, not green
-        ["hollow"] = [(0.055f, 0.6f), (0.05f, 0.45f), (0.07f, 0.6f), (0.03f, 0.7f), (0.085f, 0.55f), (0.065f, 0.6f), (0.06f, 0.55f)],
+        // litter, rot, roots, mud, bed, needles, face: the leaves warm and
+        // red-brown against the cold night, the runs and banks black, the
+        // stream's stones the palest thing on the ground (moss is the shader's)
+        ["hollow"] = [(0.08f, 1.0f), (0.045f, 0.85f), (0.065f, 0.8f), (0.026f, 0.8f), (0.1f, 0.6f), (0.085f, 0.9f), (0.07f, 0.7f)],
         // verge, churn, ruts, wet, camp, metal, face
         ["ruts"] = [(0.065f, 0.6f), (0.05f, 0.65f), (0.045f, 0.6f), (0.04f, 0.65f), (0.06f, 0.55f), (0.08f, 0.5f), (0.055f, 0.55f)],
-        // clay, spoil, rubble, slurry, dry, burnt, face: ochre clay, never a red
-        // near her hair's
-        ["dig"] = [(0.06f, 0.42f), (0.032f, 0.4f), (0.08f, 0.45f), (0.042f, 0.55f), (0.07f, 0.45f), (0.035f, 0.5f), (0.06f, 0.5f)],
+        // clay, spoil, ballast, slurry, rust, burnt, face: ochre clay and stone
+        // stained rust in drifts, the spoil heaps coal-black, the cut walls
+        // ochre; rust, never a red near her hair's
+        ["dig"] = [(0.1f, 0.95f), (0.038f, 0.35f), (0.05f, 0.6f), (0.045f, 0.8f), (0.075f, 0.85f), (0.035f, 0.5f), (0.08f, 0.9f)],
     };
 
     /// <summary>The standing water's tint, place by place.</summary>
@@ -40,6 +43,17 @@ public static class ArenaGround
     {
         ["barrow"] = new Color(0.62f, 0.64f, 0.66f), ["hollow"] = new Color(0.6f, 0.6f, 0.5f),
         ["ruts"] = new Color(0.62f, 0.6f, 0.56f), ["dig"] = new Color(0.7f, 0.6f, 0.46f),
+    };
+
+    /// <summary>A place's moss, and how much its slurry glows (the Dig cooks
+    /// it; it lies in the Dig's pools and runs in the Hollow's stream).</summary>
+    static readonly Dictionary<string, (Color Moss, float Slurry)> Growth = new()
+    {
+        // (sRGB: the shader takes them as colours.) The barrow's is lichen, grey.
+        ["barrow"] = (new Color("#3d4230"), 0f),
+        ["hollow"] = (new Color("#304620"), 0.55f),
+        ["ruts"] = (new Color("#3b4826"), 0f),
+        ["dig"] = (new Color("#3d4228"), 0.22f),
     };
 
     public static ShaderMaterial Material(ZoneData z)
@@ -50,6 +64,10 @@ public static class ArenaGround
         mat.SetShaderParameter("noise_tex", NoiseTex.Get());
         mat.SetShaderParameter("splat", Mipped(z.Splat));
         mat.SetShaderParameter("splat2", Mipped(z.Splat2!));
+        if (z.Splat3 != null) mat.SetShaderParameter("splat3", Mipped(z.Splat3));
+        var (moss, slurry) = Growth[place.Id];
+        mat.SetShaderParameter("moss_color", moss);
+        mat.SetShaderParameter("slurry_glow", slurry);
         mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>($"{dir}/albedo.jpg"));
         mat.SetShaderParameter("g_nor", GD.Load<TextureLayered>($"{dir}/normal.jpg"));
         mat.SetShaderParameter("g_arh", GD.Load<TextureLayered>($"{dir}/arh.jpg"));
