@@ -11,7 +11,7 @@ Voice id in the game: `ysolde`. 26 takes to record (3,142 characters; about 9,42
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Ysolde Marrow, the Wayfinder`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, Edinburgh Scottish). Female, 50s. Studio quality. Persona: an Edinburgh cartographer. A woman in her fifties, a cartographer from Edinburgh in Scotland, with a crisp, educated Edinburgh Scottish accent. Brisk, bookish and dry, with a gallows sense of humour. Thick Edinburgh Scottish accent. No reverb or effects.
+Native English (British, Edinburgh Scottish). Female, 50s. Studio quality. Persona: an Edinburgh cartographer. A woman in her fifties, a cartographer from Edinburgh in Scotland, with a crisp, educated Edinburgh Scottish accent. Brisk, bookish and dry, with a gallows sense of humour. Broad Edinburgh Scottish accent. No reverb or effects.
 ```
 
 Preview text:

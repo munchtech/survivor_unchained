@@ -123,7 +123,7 @@
  "dlg.cin_behind_the_door.redi.0": {"emo": "ancient, final", "intent": "go back", "pace": "very slow", "vol": "quiet", "say": "Redi.", "note": "Latin: RED-ee."},
  "dlg.cin_behind_the_door.redi.1": {"emo": "ancient, final", "intent": "go back", "pace": "very slow", "vol": "quiet"},
  "dlg.cin_road_back.place.0": {"emo": "grief, plain", "intent": "Brannoc at the ford", "pace": "slow", "vol": "quiet"},
- "dlg.cin_road_back.wat.0": {"emo": "grief, recognition", "intent": "he names the carter", "pace": "very slow", "vol": "hushed"},
+ "dlg.cin_road_back.wat.0": {"emo": "grief, recognition", "intent": "he names the carter", "pace": "very slow", "vol": "quiet", "note": "Quiet and low, the voice nearly going; no whisper (a whispered bass loses him)."},
  "say.dabd6c78b40d": {"emo": "plain", "intent": "reads a dead man and his last words", "pace": "slow", "vol": "quiet", "note": "The book's three lines read as written words, plainly, one after another."},
  "say.178e6dd0ad78": {"emo": "plain", "intent": "a dead man speaks to you alone", "pace": "slow", "vol": "hushed", "note": "A hush: one of his four whispers.", "whisper": true},
  "say.b81f9a1e8df8": {"emo": "dry, broken, dead", "intent": "the watchman's warning", "pace": "slow", "vol": "hushed"},

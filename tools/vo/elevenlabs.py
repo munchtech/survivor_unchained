@@ -37,7 +37,7 @@ SHEET = {"narrator": "The narrator.", "rook": "Mother Rook", "holloway": "Captai
 # Held for the story lead's review (a7622ae77d19e31dc): whole parts, and kinds of line.
 HOLD_VOICES: dict = {}
 # Packets the story lead has checked and marked final (voice: date).
-FINAL = {"narrator": "2026-10-03", "rook": "2026-10-03"}
+FINAL = {"narrator": "2026-10-03", "rook": "2026-10-03", "holloway": "2026-10-03", "brannoc": "2026-10-03"}
 # Lines waiting on the story lead or the owner: (id prefix, why).
 HOLD_LINES = (("dlg.keegan.vonnra.", "the story lead's confirmation of Keegan's kenning"),)
 TAG = {"beat": "…", "breath": "[inhales]", "laugh": "[laughs]", "laughs": "[laughs]", "chuckle": "[chuckles]",
@@ -125,10 +125,11 @@ def brief(voice: str, v: dict) -> str:
     # Maya1's description names the persona in the clause that is not about the voice.
     clauses = v.get("maya", "").split(". ")[0].split(", ")
     persona = next((c for c in reversed(clauses) if "voice" not in c), v["name"])
-    # A softened, flattened or tinged accent is asked for lightly, or Voice Design lays it on thick.
+    # The accents are a palette, not a caricature (VOICES.md): broad at most,
+    # and a softened, flattened or tinged one asked for lightly.
     light = any(w in v.get("accent", "").lower() for w in ("tinge", "soft", "flatten", "worn", "light"))
     accent = (f"Crisp {region}." if "Pronunciation" in region or "upper-class" in region
-              else f"{'Light' if light else 'Thick'} {region} accent." if region != "British" else "")
+              else f"{'Light' if light else 'Broad'} {region} accent." if region != "British" else "")
     native = f"Native English (British, {region})." if region != "British" else "Native English (British)."
     return (f"{native} {sex}, {ages}. Studio quality. "
             f"Persona: {persona}. {v['design']} {accent} No reverb or effects.").replace("  ", " ")

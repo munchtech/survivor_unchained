@@ -11,7 +11,7 @@ Voice id in the game: `grimtunnel`. 7 takes to record (442 characters; about 1,3
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Grimtunnel`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, London). Male, ageless, not human. Studio quality. Persona: Goblin character. A big, gleeful goblin boss with a gravelly, oily, low voice and a rough London accent, cackling and greedy, savouring every word. Thick London accent. No reverb or effects.
+Native English (British, London). Male, ageless, not human. Studio quality. Persona: Goblin character. A big, gleeful goblin boss with a gravelly, oily, low voice and a rough London accent, cackling and greedy, savouring every word. Broad London accent. No reverb or effects.
 ```
 
 Preview text:

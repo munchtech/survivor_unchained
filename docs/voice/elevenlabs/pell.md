@@ -11,7 +11,7 @@ Voice id in the game: `pell`. 31 takes to record (3,605 characters; about 10,815
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Pell Varrow`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, London). Male, 40s. Studio quality. Persona: a precise London factor. A forty-year-old London merchant's factor with a soft, precise, smooth tenor and a clipped upper-middle-class London accent, a little nasal. Smiling, polite and quietly calculating; every word chosen as if it will be written down. Thick London accent. No reverb or effects.
+Native English (British, London). Male, 40s. Studio quality. Persona: a precise London factor. A forty-year-old London merchant's factor with a soft, precise, smooth tenor and a clipped upper-middle-class London accent, a little nasal. Smiling, polite and quietly calculating; every word chosen as if it will be written down. Broad London accent. No reverb or effects.
 ```
 
 Preview text:

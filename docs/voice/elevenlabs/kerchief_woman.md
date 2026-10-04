@@ -11,7 +11,7 @@ Voice id in the game: `kerchief_woman`. 1 take to record (11 characters; about 3
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU A Kerchief woman`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, Scottish). Female, 40s. Studio quality. Persona: a hard refugee. A hard, weary woman in her forties with a rough Scottish accent, one of a camp of hungry refugees, low and blunt. Thick Scottish accent. No reverb or effects.
+Native English (British, Scottish). Female, 40s. Studio quality. Persona: a hard refugee. A hard, weary woman in her forties with a rough Scottish accent, one of a camp of hungry refugees, low and blunt. Broad Scottish accent. No reverb or effects.
 ```
 
 Preview text:

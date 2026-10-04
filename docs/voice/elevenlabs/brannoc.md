@@ -1,17 +1,19 @@
 # Brannoc: ElevenLabs packet
 
-Voice id in the game: `brannoc`. 49 takes to record (2,197 characters; about 6,591 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `brannoc`. 49 takes to record (2,197 characters; about 6,591 credits at three tries a line). Status: **final** (the story lead, 2026-10-03): record it.
 
 ## Who they are
 
 **Brannoc** (smith). Fewest words in town: fragments, two sentences at the most, the hammer under everything. Talks about iron the way other people talk about weather. Never small talk, never thanks anyone in words (once: when he is told his daughter's end was quick). The only question he ever asks is about Nell; when he stops hammering, the narrator says so, because it is the loudest thing he does. *Casting:* 50, Cornish, deep and slow.
+
+*Wants:* before the truth, to work, and his girl safe at her aunt's in Low Kiln. *Hides:* before the truth, the fear he won't name: he has been stopping every carter on the south road to ask, which is why his one question comes out with too many words. After the truth (C08) he hides nothing: each line in that stretch is a man holding a weight he made himself; the irons were his.
 
 ## Casting the voice
 
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Brannoc`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, Cornish). Male, 50s. Studio quality. Persona: a Cornish blacksmith. A fifty-two-year-old blacksmith from Cornwall with a very deep, slow, rough bass voice and a broad Cornish West Country accent with a rolled 'r'. Few words, heavy and blunt, each one set down like iron on an anvil. Thick Cornish accent. No reverb or effects.
+Native English (British, Cornish). Male, 50s. Studio quality. Persona: a Cornish blacksmith. A fifty-two-year-old blacksmith from Cornwall with a very deep, slow, rough bass voice and a broad Cornish accent with a burred West Country 'r'. Few words, heavy and blunt, each one set down like iron on an anvil. Broad Cornish accent. No reverb or effects.
 ```
 
 Preview text:
@@ -20,7 +22,7 @@ Preview text:
 Steel or fur? Iron's good this year. Good ore, from the north, before the road shut. Won't see the like again.
 ```
 
-In the Voice Library instead: search for *Cornish*, *male*, *50*, and listen for this: A fifty-two-year-old blacksmith from Cornwall with a very deep, slow, rough bass voice and a broad Cornish West Country accent with a rolled 'r'. Use only voices whose library licence allows commercial use.
+In the Voice Library instead: search for *Cornish*, *male*, *50*, and listen for this: A fifty-two-year-old blacksmith from Cornwall with a very deep, slow, rough bass voice and a broad Cornish accent with a burred West Country 'r'. Use only voices whose library licence allows commercial use.
 
 ## Settings
 
@@ -58,10 +60,11 @@ Subtitle: You know the place.
 ### 2. `dlg.cin_road_back.wat.0.wav`
 
 *Where:* dialogue.json cin_road_back/wat#0
-*Played:* grief, recognition; doing: he names the carter; pace: very slow; volume: hushed.
+*Played:* grief, recognition; doing: he names the carter; pace: very slow; volume: quiet.
+*Note:* Quiet and low, the voice nearly going; no whisper (a whispered bass loses him).
 
 ```
-[grief, recognition, whispers] ...Wat.
+[grief, recognition, quietly] ...Wat.
 ```
 Subtitle: ...Wat.
 
@@ -341,7 +344,7 @@ Subtitle: ...Had the reins. She'd want the reins. Always wanted the reins.
 *Where:* dialogue.json brannoc/nell_ditch#1; part 2 of 2: narrator: He puts the hammer down. You have never seen him put the hammer down. / **brannoc: ...Had the reins. She'd want the reins. Always wanted the reins.**
 *Played:* stunned, flat; doing: learns she died; pace: very slow; volume: quiet.
 *Hides:* he suspects whose coin paid for the irons
-*Note:* He does not break. Narrator: the hammer goes down, which you have never seen. 'Had the reins.' barely voiced. Narrator: the long breath (so none in his read). Flat facts about his daughter; the love is only in saying 'the reins' again.
+*Note:* He does not break. The narrator only puts the hammer down. 'Had the reins.' barely voiced. The long breath through the nose is his, between 'Had the reins.' and 'She'd want the reins.' Flat facts about his daughter; the love is only in saying 'the reins' again.
 
 ```
 [stunned, flat, quietly] ...Had the reins. [a long breath, through the nose] She'd want the reins. Always wanted the reins.
@@ -396,11 +399,11 @@ Subtitle: Got up, and you put her down. ...Was it quick?
 ### 32. `dlg.brannoc.nell_quick.0.p1.wav`
 
 *Where:* dialogue.json brannoc/nell_quick#0; part 2 of 4: narrator: A long time. / **brannoc: ...Thank you.** / narrator: The forge ticks as it cools. / brannoc: Forge is shut. Go on.
-*Played:* grief and gratitude; doing: the one thank you; pace: very slow; volume: hushed.
-*Note:* The only thanks he gives in the game. Narrator holds the long time. '...Thank you.' barely there, deep and cracked. Narrator: the forge cools. 'Forge is shut. Go on.' quiet.
+*Played:* grief and gratitude; doing: the one thank you; pace: very slow; volume: quiet.
+*Note:* The only thanks he gives in the game, and it must sound like him: no whisper. Narrator holds the long time. '...Thank you.' quiet and low, deep, the voice nearly going. Narrator: the forge cools. 'Forge is shut. Go on.' quiet.
 
 ```
-[grief and gratitude, whispers] ...Thank you.
+[grief and gratitude, quietly] ...Thank you.
 ```
 Subtitle: ...Thank you.
 
@@ -567,7 +570,7 @@ Subtitle: Low Kiln's three days. She'll be there by now.
 *Where:* npcs.json brannoc.said[1]
 *Played:* flat; doing: the irons he made; pace: slow; volume: quiet.
 *Hides:* what the irons were for
-*Note:* The second 'Twelve.' quieter.
+*Note:* Once only. Barely voiced, to the iron, not to her: twelve irons, and a girl of twelve he made.
 
 ```
 [flat, quietly] Twelve, I made.

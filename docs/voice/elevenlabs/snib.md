@@ -11,7 +11,7 @@ Voice id in the game: `snib`. 15 takes to record (2,199 characters; about 6,597 
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Snib`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, London). Male, ageless, not human. Studio quality. Persona: Goblin character. A small, nervous goblin-like creature with a high, thin, fast, squeaky voice and a rough London accent. Panicky and talking too fast, stressing odd words. Thick London accent. No reverb or effects.
+Native English (British, London). Male, ageless, not human. Studio quality. Persona: Goblin character. A small, nervous goblin-like creature with a high, thin, fast, squeaky voice and a rough London accent. Panicky and talking too fast, stressing odd words. Broad London accent. No reverb or effects.
 ```
 
 Preview text:

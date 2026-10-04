@@ -11,7 +11,7 @@ Voice id in the game: `redcowl`. 40 takes to record (3,806 characters; about 11,
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Redcowl`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, Scottish). Male, 40s. Studio quality. Persona: a bandit chief. A big, burly bandit chief in his forties with a deep, booming chest voice and a hard, broad Scottish accent. He laughs loud and easy, then turns cold and dangerous in the same breath. Commanding and rough. Thick Scottish accent. No reverb or effects.
+Native English (British, Scottish). Male, 40s. Studio quality. Persona: a bandit chief. A big, burly bandit chief in his forties with a deep, booming chest voice and a hard, broad Scottish accent. He laughs loud and easy, then turns cold and dangerous in the same breath. Commanding and rough. Broad Scottish accent. No reverb or effects.
 ```
 
 Preview text:

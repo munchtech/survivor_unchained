@@ -11,7 +11,7 @@ Voice id in the game: `jory`. 14 takes to record (877 characters; about 2,631 cr
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Jory Coyle`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, Bristol). Male, a child of about 17. Studio quality. Persona: a seventeen-year-old Bristol boy. A seventeen-year-old boy from Bristol in the West Country of England, with a young, quiet, unsteady tenor voice and a soft Bristolian accent. Shaken, speaking in short sentences. Thick Bristol accent. No reverb or effects.
+Native English (British, Bristol). Male, a child of about 17. Studio quality. Persona: a seventeen-year-old Bristol boy. A seventeen-year-old boy from Bristol in the West Country of England, with a young, quiet, unsteady tenor voice and a soft Bristolian accent. Shaken, speaking in short sentences. Broad Bristol accent. No reverb or effects.
 ```
 
 Preview text:

@@ -11,7 +11,7 @@ Voice id in the game: `wenna`. 33 takes to record (3,978 characters; about 11,93
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU Old Wenna`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, Somerset, West Country). Female, 70s. Studio quality. Persona: a West Country village herbalist. An old woman in her seventies, a village herbalist from Somerset in the West Country of England, with a broad rural West Country accent and a rolled 'r'. A thin, cracked, creaky old voice, brisk and impatient, speeding up when she gets interested. Rude but kind. Thick Somerset, West Country accent. No reverb or effects.
+Native English (British, Somerset, West Country). Female, 70s. Studio quality. Persona: a West Country village herbalist. An old woman in her seventies, a village herbalist from Somerset in the West Country of England, with a broad rural West Country accent and a rolled 'r'. A thin, cracked, creaky old voice, brisk and impatient, speeding up when she gets interested. Rude but kind. Broad Somerset, West Country accent. No reverb or effects.
 ```
 
 Preview text:

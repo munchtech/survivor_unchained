@@ -1,10 +1,12 @@
 # Captain Holloway: ElevenLabs packet
 
-Voice id in the game: `holloway`. 64 takes to record (7,712 characters; about 23,136 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `holloway`. 64 takes to record (7,712 characters; about 23,136 credits at three tries a line). Status: **final** (the story lead, 2026-10-03): record it.
 
 ## Who they are
 
 **Captain Holloway** (the Watch). A quartermaster who was made a captain: numbers, lists, what things cost ("eleven men, four can hold a spear the right way round"). Clipped, tired, contractions, anger held one notch below the surface. Says "proof", never "evidence". Never says sorry; the nearest he gets is paying for something. Goes very quiet whenever Ashford or Maeca comes up. *Casting:* 45, Lancashire flattened by the army; hoarse from shouting.
+
+*Wants:* to keep the town alive on eleven men and a year without pay, and to be left to count it. *Hides:* he signed for the Ashford garrison's boots, and the boots never came; Maeca's bare feet are his doing, as he sees it. Later, the letter under his cup is from the north, asking for "the one from the ford", which means you; every time he looks at you after that, he is deciding whether to answer it.
 
 ## Casting the voice
 
@@ -97,7 +99,7 @@ Subtitle: The water's clean and the wolves are back in the deep wood. I was wron
 *Where:* dialogue.json holloway/hub#1
 *Played:* grief held down; doing: a man of his was killed; pace: slow; volume: quiet.
 *Wants:* not to show it
-*Note:* Quartermaster's list for a dead man. 'by the bad leg' barely steady. 'I'd give a month's pay to hear him hum.' cracks just slightly. Then forced back to business: 'Five a pelt, still. What do you want?'
+*Note:* Quartermaster's list for a dead man. 'by the bad leg' barely steady. No crack: 'I'd give a month's pay to hear him hum.' is the grief itself (paying is the nearest he gets to sorry), flatter and slower than the rest. Then straight back to business: 'Five a pelt, still. What do you want?'
 
 ```
 [grief held down, quietly] You heard. Aldo. Wife at Low Kiln, a bad knee, and a habit of humming on the wall that I told him twice to stop. They took him off it by the bad leg. I'd give a month's pay to hear him hum. Five a pelt, still. What do you want?
@@ -276,11 +278,11 @@ Subtitle: ...New ones. From a sick wood. Then the pelts buy me nothing, and you'
 ### 21. `dlg.holloway.defied.0.wav`
 
 *Where:* dialogue.json holloway/defied#0
-*Played:* contempt, threat; doing: throws you out; pace: measured; volume: raised.
-*Note:* 'Out of my sight.' sharp. The threat cold and almost pleasant at the end.
+*Played:* cold; doing: throws you out; pace: measured; volume: level.
+*Note:* His anger stays one notch below the surface; he doesn't shout at a person. 'Out of my sight.' sharp but level. The threat about the cell-rats almost pleasant.
 
 ```
-[contempt, threat, loudly] Out of my sight. And if I see you near my gate with a blade out, you'll find out how the cells feel on a cold night, and how the cell-rats feel about fresh meat.
+[cold] Out of my sight. And if I see you near my gate with a blade out, you'll find out how the cells feel on a cold night, and how the cell-rats feel about fresh meat.
 ```
 Subtitle: Out of my sight. And if I see you near my gate with a blade out, you'll find out how the cells feel on a cold night, and how the cell-rats feel about fresh meat.
 
@@ -621,7 +623,8 @@ Subtitle: So somebody had oil. And a reason. ...I'll send two men down with a ca
 
 *Where:* dialogue.json holloway/letter#0; part 1 of 3: **holloway: Mine. From the north, about the north.** / narrator: The cup doesn't move. / holloway: Read your own post, if anybody writes to you.
 *Played:* closed, curt; doing: won't discuss the letter; pace: measured; volume: quiet.
-*Note:* 'Mine.' hard. Narrator: the cup doesn't move. Brusque dismissal.
+*Hides:* the letter is about you: the north asks for "the one from the ford"
+*Note:* 'Mine.' hard. Narrator: the cup doesn't move. 'Read your own post, if anybody writes to you.' is curt cover; he looks at you a beat too long before it.
 
 ```
 [closed, curt, quietly] Mine. From the north, about the north.
@@ -632,7 +635,8 @@ Subtitle: Mine. From the north, about the north.
 
 *Where:* dialogue.json holloway/letter#0; part 3 of 3: holloway: Mine. From the north, about the north. / narrator: The cup doesn't move. / **holloway: Read your own post, if anybody writes to you.**
 *Played:* closed, curt; doing: won't discuss the letter; pace: measured; volume: quiet.
-*Note:* 'Mine.' hard. Narrator: the cup doesn't move. Brusque dismissal.
+*Hides:* the letter is about you: the north asks for "the one from the ford"
+*Note:* 'Mine.' hard. Narrator: the cup doesn't move. 'Read your own post, if anybody writes to you.' is curt cover; he looks at you a beat too long before it.
 
 ```
 [closed, curt, quietly] Read your own post, if anybody writes to you.
@@ -749,7 +753,7 @@ Subtitle: Corran's in the ground. That's one debt paid.
 
 *Where:* npcs.json holloway.said[3]
 *Played:* weary, grateful; doing: one caravan came home; pace: measured; volume: level.
-*Note:* 'One.' heavy; 'I'll take it.' accepting.
+*Note:* 'One caravan' weighed; 'I'll take it.' accepting.
 
 ```
 [weary, grateful] One caravan home. I'll take it.

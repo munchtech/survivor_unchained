@@ -11,7 +11,7 @@ Voice id in the game: `guard`. 12 takes to record (510 characters; about 1,530 c
 In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below as the text; generate, listen to the three, and regenerate until one is this person. Save it as `SU A Watchman at the gate`. Never describe a voice as sounding like a real person.
 
 ```
-Native English (British, northern English). Male, 30s. Studio quality. Persona: a northern town guard. A tired town guard in his thirties with a plain, gruff baritone and a flat northern English accent. Bored and matter-of-fact. Thick northern English accent. No reverb or effects.
+Native English (British, northern English). Male, 30s. Studio quality. Persona: a northern town guard. A tired town guard in his thirties with a plain, gruff baritone and a flat northern English accent. Bored and matter-of-fact. Broad northern English accent. No reverb or effects.
 ```
 
 Preview text:
