@@ -155,10 +155,68 @@ def reach_coals(rig):
                                                   "note": "keyed (C01): kneeling, the right hand held out over the fire, palm down"})
 
 
-ALL = (("lie_side_wake", lie_side_wake), ("sit_back_heels", sit_back_heels), ("reach_coals", reach_coals))
+# ---------------------------------------------------------------- gestures --
+# Laid over whatever she is doing (Gestures.cs: only each bone's change from
+# the first frame is added), so one nod serves her standing, on the log or
+# kneeling on her heels. Keyed from a plain stance; only the back, the
+# shoulders, the neck and the head move, the arms riding the chest.
+
+def _still(**over):
+    pose = {"foot_l": {"pos": (0.12, 0, 0.02), "rot": (8, 0, 0)}, "foot_r": {"pos": (-0.12, 0, -0.02), "rot": (-8, 0, 0)},
+            "hand_l": arm((0.06, -0.44, 0.06), (0.6, -0.4, -0.5)), "hand_r": arm((-0.06, -0.44, 0.06), (-0.6, -0.4, -0.5)),
+            "fingers_l": RELAXED, "fingers_r": RELAXED}
+    pose.update(over)
+    return pose
+
+
+def nod(rig):
+    """A nod: the head goes down eight degrees, the chin a little in, and
+    stays there for a breath before it comes up; a yes, or an acceptance."""
+    keys = [
+        (0, _still(), "ease"),
+        (7, _still(neck=(0, 3, 0), head=(0, 5, 0)), "ease"),
+        (19, _still(neck=(0, 3.5, 0), head=(0, 5.5, 0)), "ease"),
+        (31, _still(), "ease"),
+    ]
+    return build("nod", rig, keys, meta={"layer": "gesture", "note": "the head down 8 degrees, held 0.4 s"})
+
+
+def exhale(rig):
+    """The long breath out: a short lift as the breath comes in, then over
+    1.2 s the chest sinks, the shoulders drop and roll forward and the head
+    goes down with them. It holds there till the next cue lets it go."""
+    keys = [
+        (0, _still(), "ease"),
+        (9, _still(spine=(0, -2, 0), neck=(0, -1, 0), clav_l=(3, -1), clav_r=(3, -1)), "ease"),
+        (45, _still(spine=(0, 4, 0), neck=(0, 2, 0), head=(0, 3, 0), clav_l=(-4, 3), clav_r=(-4, 3)), "ease"),
+    ]
+    return build("exhale", rig, keys, meta={"layer": "gesture", "hold": True, "note": "the shoulders settle over 1.2 s, held"})
+
+
+def shiver(rig):
+    """The cold goes through her: the shoulders snap up four centimetres
+    round the neck, the back hunches, two fast shudders, and they ease back
+    down."""
+    def up(raise_, roll=0.0):
+        return _still(spine=(0, 3, roll), neck=(0, 4, 0), head=(0, -2, 0), clav_l=(raise_, 4), clav_r=(raise_, 4))
+    keys = [
+        (0, _still(), "linear"),
+        (3, up(15), "auto"),
+        (5, up(11, 2), "auto"),
+        (7, up(16, -2), "auto"),
+        (9, up(11, 1.5), "auto"),
+        (11, up(15, -1.5), "auto"),
+        (20, up(7), "auto"),
+        (32, _still(), "ease"),
+    ]
+    return build("shiver", rig, keys, meta={"layer": "gesture", "note": "the shoulders up 4 cm, a fast double tremor"})
+
+
+ALL = (("lie_side_wake", lie_side_wake), ("sit_back_heels", sit_back_heels), ("reach_coals", reach_coals),
+       ("nod", nod), ("exhale", exhale), ("shiver", shiver))
 # Judged on sheets (still to be judged in the cinematic itself). Anything
 # else here is work in progress, built only when named.
-JUDGED = {"lie_side_wake", "sit_back_heels", "reach_coals"}
+JUDGED = {"lie_side_wake", "sit_back_heels", "reach_coals", "nod", "exhale", "shiver"}
 
 
 def clips(rig, want):

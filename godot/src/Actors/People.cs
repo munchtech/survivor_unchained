@@ -104,7 +104,7 @@ public static class People
         var p = body switch { SurvivorUnchained.Play.Loadouts.HerBody => Woman(look), "heroine" => Heroine(look), "hero" => Hero(look), "anime" => Her(look), _ => Build(look) };
         if (body == "hero" && look.Face != null) HerFace(p, look.Face);
         // Her own clips are chosen by her calling, which her outfit says.
-        if (body == "heroine") p.Calling = HerClips.Calling(look.Outfit);
+        if (p.Own != null) p.Calling = HerClips.Calling(look.Outfit);
         // Her body wears her calling's outfit, cut from it.
         if (body == "heroine" && look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string her) HerOutfit(p, her[4..]);
         // Her hair, a mesh of its own: the style chosen if it is one of hers;
@@ -155,16 +155,20 @@ public static class People
         /// by its view, whether it goes unarmed: the townsfolk, who play
         /// their own clips (FolkClips) where they have them.</summary>
         public bool Kit, Woman, Folk;
+        /// <summary>The survivor's own clips (hers or his), when they have them.</summary>
+        public OwnClips? Own;
+        /// <summary>Gestures laid over whatever plays (a nod, an exhale).</summary>
+        public Gestures? Gestures;
     }
 
-    /// <summary>The clip a person plays for one the game names: the heroine's
-    /// own where she has it ("her/..."), the library's otherwise.</summary>
+    /// <summary>The clip a person plays for one the game names: a survivor's
+    /// own where they have it ("her/...", "him/..."), the library's otherwise.</summary>
     public static string Clip(Person p, string name)
     {
-        if (p.Body != "heroine") return p.Folk && FolkClips.For(p.Woman, name) is string folk ? folk : Resolve(name);
-        // (One of hers asked for by her own name.)
-        if (name.StartsWith(HerClips.Prefix)) return HerClips.Has(name[HerClips.Prefix.Length..]) ? name : Resolve("Idle");
-        return HerClips.For(p.Calling, p.Kind, name) is string her ? her : Resolve(name);
+        if (p.Own is not { } own) return p.Folk && FolkClips.For(p.Woman, name) is string folk ? folk : Resolve(name);
+        // (One of their own asked for by its own name.)
+        if (own.Owns(name)) return own.Has(name[own.Prefix.Length..]) ? name : Resolve("Idle");
+        return own.For(p.Calling, p.Kind, name) is string mine ? mine : Resolve(name);
     }
 
     /// <summary>A person, put together: returns its root (add it to the
@@ -275,6 +279,8 @@ public static class People
         var person = new Person { Root = root, Skeleton = skel, Anim = new AnimationPlayer(), Body = "heroine" };
         person.Pose = new HerPose();
         skel.AddChild(person.Pose);
+        person.Gestures = new Gestures();
+        skel.AddChild(person.Gestures);
         int headBone = skel.FindBone("Head");
         if (headBone >= 0) skel.SkeletonUpdated += () => person.HeadPose = skel.GetBoneGlobalPose(headBone);
         skel.AddChild(new HerJiggle());
@@ -291,7 +297,11 @@ public static class People
         person.Anim.RootNode = "..";
         person.Anim.AddAnimationLibrary("", Clips());
         // Her own clips beside the library's (tools/anim).
-        if (HerClips.Library() is AnimationLibrary her) person.Anim.AddAnimationLibrary("her", her);
+        if (OwnClips.Her.Library() is AnimationLibrary her)
+        {
+            person.Own = OwnClips.Her;
+            person.Anim.AddAnimationLibrary(OwnClips.Her.Name, her);
+        }
         return person;
     }
 
@@ -310,6 +320,8 @@ public static class People
         // clear of his lats rather than in, his hips square.
         person.Pose = new HerPose { ArmsIn = -5f, HipTilt = 0f, NeckPitch = HisNeckPitch };
         skel.AddChild(person.Pose);
+        person.Gestures = new Gestures();
+        skel.AddChild(person.Gestures);
         int headBone = skel.FindBone("Head");
         if (headBone >= 0) skel.SkeletonUpdated += () => person.HeadPose = skel.GetBoneGlobalPose(headBone);
         skel.AddChild(new HerFaceLife());
@@ -324,6 +336,12 @@ public static class People
         root.AddChild(person.Anim);
         person.Anim.RootNode = "..";
         person.Anim.AddAnimationLibrary("", Clips());
+        // His own clips beside the library's (tools/anim: hers, given a man's carriage).
+        if (OwnClips.Him.Library() is AnimationLibrary him)
+        {
+            person.Own = OwnClips.Him;
+            person.Anim.AddAnimationLibrary(OwnClips.Him.Name, him);
+        }
         return person;
     }
 

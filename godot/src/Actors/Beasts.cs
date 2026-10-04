@@ -40,7 +40,9 @@ public static class Beasts
 
     const string Hips = "Becken_Wolf_Skeleton", Chest = "Brust_Wolf_Skeleton", Neck = "Hals_Wolf_Skeleton", Head = "Kopf_Wolf_Skeleton",
         Jaw = "Unterkiefer_Wolf_Skeleton", Tail = "Schwanz_Wolf_Skeleton", ForeL = "Oberarm_L_Wolf_Skeleton", ForeR = "Oberarm_R_Wolf_Skeleton",
-        HindL = "Oberschenkel_L_Wolf_Skeleton", HindR = "Oberschenkel_R_Wolf_Skeleton";
+        HindL = "Oberschenkel_L_Wolf_Skeleton", HindR = "Oberschenkel_R_Wolf_Skeleton",
+        ForeLowL = "Unterarm_L_Wolf_Skeleton", ForeLowR = "Unterarm_R_Wolf_Skeleton",
+        HindLowL = "Unterschenkel_L_Wolf_Skeleton", HindLowR = "Unterschenkel_R_Wolf_Skeleton";
 
     static readonly Def Wolf = new("beast_wolf", "res://art/beasts/wolf.glb", 0.95f, Hips, Head, new()
     {
@@ -75,6 +77,7 @@ public static class Beasts
                 .Bone(Neck, -0.62 * up - 0.1 * note).Bone(Head, -0.55 * up - 0.12 * note + shake)
                 .Bone(Jaw, 0.08 * up + 0.22 * note + shake * 1.5).Bone(Tail, -0.25 * up);
         }, Hold: true),
+        // Three ways down, so a pack's dead do not lie alike (VatAsset.Death).
         // Over onto its side, legs gone slack.
         new("die", "Wolf_Idle_", 2.0, 0.9, t =>
         {
@@ -83,12 +86,35 @@ public static class Beasts
                 .Shift(Hips, 0, -0.2 * e, 0).Bone(Neck, 0.3 * e).Bone(Head, 0.2 * e).Bone(Jaw, 0.35 * e)
                 .Bone(ForeL, -0.5 * e).Bone(ForeR, 0.3 * e).Bone(HindL, 0.4 * e).Bone(HindR, -0.3 * e).Bone(Tail, 0.5 * e);
         }, Hold: true),
+        // Dropped where it ran: the legs go from under it and it skids in on
+        // its chest, a foreleg out in front and the other folded under, the
+        // hind legs splayed behind, the chin along the ground.
+        new("die2", "Wolf_Idle_", 2.0, 0.7, t =>
+        {
+            double e = Ease(t, 1.8), skid = Ease(t, 1.2);
+            return new Vat.Moves { Move = new(0, (float)(-0.27 * e), (float)(0.25 * skid)) }
+                .Bone(Neck, 0.85 * e, 0.25 * e).Bone(Head, 0.1 * e, 0, 0.35 * e).Bone(Jaw, 0.25 * e)
+                .Bone(ForeL, -1.35 * e, 0, 0.12 * e).Bone(ForeR, 0.6 * e, 0, -0.15 * e).Bone(ForeLowR, -1.9 * e)
+                .Bone(HindL, 0.95 * e, 0, 0.22 * e).Bone(HindR, 0.75 * e, 0, -0.35 * e).Bone(HindLowL, 0.15 * e).Bone(HindLowR, 0.3 * e)
+                .Bone(Tail, 0.6 * e);
+        }, Hold: true),
+        // Twisted over onto its other side and curled, the head thrown back
+        // and the legs drawn in.
+        new("die3", "Wolf_Idle_", 2.0, 0.9, t =>
+        {
+            double e = Ease(t, 1.4), twist = Math.Sin(Math.Min(1, t * 1.6) * Math.PI);
+            return new Vat.Moves { Turn = new(0, (float)(0.3 * twist), (float)(-1.45 * e)), Move = new(0, (float)(-0.05 * e), 0) }
+                .Shift(Hips, 0, -0.12 * e, 0).Bone(Chest, 0, 0.2 * e).Bone(Neck, -0.55 * e).Bone(Head, -0.35 * e).Bone(Jaw, 0.4 * e)
+                .Bone(ForeL, 0.7 * e).Bone(ForeR, 0.5 * e).Bone(ForeLowL, -0.9 * e).Bone(ForeLowR, -0.7 * e)
+                .Bone(HindL, -0.7 * e).Bone(HindR, -0.5 * e).Bone(HindLowL, 0.8 * e).Bone(HindLowR, 0.6 * e).Bone(Tail, -0.4 * e, 0.6 * e);
+        }, Hold: true),
     });
 
     /* -------------------------------------------------------------- boar -- */
 
     const string BHips = "Hips_04", BChest = "Spine1_06", BHead = "Head_021", BForeL = "LEFT_FrontLeg_HipSHJnt_08", BForeR = "RIGHT_FrontLeg_HipSHJnt_013",
-        BHindR = "RIGHT_HindLeg_HipSHJnt_046", BTail = "Tail_01_01SHJnt_00";
+        BHindR = "RIGHT_HindLeg_HipSHJnt_046", BTail = "Tail_01_01SHJnt_00", BHindL = "LEFT_HindLeg_HipSHJnt_041",
+        BKneeL = "LEFT_FrontLeg_KneeSHJnt_09", BKneeR = "RIGHT_FrontLeg_KneeSHJnt_014", BHockL = "LEFT_HindLeg_Knee1SHJnt_042", BHockR = "RIGHT_HindLeg_Knee1SHJnt_047";
 
     static readonly Def Boar = new("beast_boar", "res://art/beasts/boar.glb", 0.9f, BHips, BHead, new()
     {
@@ -113,10 +139,25 @@ public static class Beasts
             double k = Math.Sin(t * Math.PI);
             return new Vat.Moves().Bone(BChest, 0, 0, 0.12 * k).Bone(BHead, -0.3 * k);
         }, Hold: true),
+        // Three ways down (VatAsset.Death): keeled over onto one side, onto
+        // the other with the legs gone stiff, or sunk onto its belly.
         new("die", "Armature|observing", 2.5, 0.8, t =>
         {
             double e = Ease(t, 1.4);
             return new Vat.Moves { Turn = new(0, 0, (float)(-1.5 * e)) }.Shift(BHips, 0, -0.15 * e, 0).Bone(BHead, 0.3 * e).Bone(BForeL, 0.6 * e).Bone(BHindR, -0.5 * e);
+        }, Hold: true),
+        new("die2", "Armature|observing", 2.5, 0.8, t =>
+        {
+            double e = Ease(t, 1.4);
+            return new Vat.Moves { Turn = new(0, 0, (float)(1.5 * e)) }.Shift(BHips, 0, -0.15 * e, 0).Bone(BHead, -0.35 * e).Bone(BChest, 0, 0, -0.1 * e)
+                .Bone(BForeL, -0.45 * e).Bone(BForeR, -0.6 * e).Bone(BHindL, 0.5 * e).Bone(BHindR, 0.35 * e).Bone(BTail, 0.5 * e);
+        }, Hold: true),
+        new("die3", "Armature|observing", 2.5, 0.8, t =>
+        {
+            double e = Ease(t, 1.6);
+            return new Vat.Moves { Turn = new(0, 0, (float)(0.42 * e)), Move = new(0, (float)(-0.26 * e), 0) }.Bone(BHead, 0.45 * e, 0.35 * e, 0.3 * e)
+                .Bone(BForeL, 0.9 * e).Bone(BForeR, 0.8 * e).Bone(BKneeL, -1.8 * e).Bone(BKneeR, -1.6 * e)
+                .Bone(BHindL, -0.8 * e).Bone(BHindR, -0.7 * e).Bone(BHockL, 1.6 * e).Bone(BHockR, 1.5 * e).Bone(BTail, 0.4 * e);
         }, Hold: true),
     });
 
@@ -152,6 +193,20 @@ public static class Beasts
             w = w * w * (3 - 2 * w);
             return new Vat.Moves().Bone(LArmL, 0, -1.15 * w).Bone(LArmR, 0, 1.15 * w);
         }),
+        // Pitched onto its face, falling faster as it goes, the lamp first.
+        new("die2", "Idle", 1.8, 0.7, t =>
+        {
+            double k = Math.Min(1, t * 1.4), fall = k * k, e = Ease(t, 1.6);
+            return new Vat.Moves { Turn = new((float)(1.42 * fall), 0, 0), Move = new(0, (float)(0.08 * fall), 0) }
+                .Bone(LLegL, -0.3 * e).Bone(LLegR, -0.2 * e).Bone(LHead, -0.3 * fall).Bone(LSpine, 0.15 * e);
+        }, Hold: true),
+        // Folded over where it stood and down onto its side, curled.
+        new("die3", "Idle", 1.8, 0.8, t =>
+        {
+            double k = Math.Min(1, t * 1.5), fall = k * k, e = Ease(t, 1.6);
+            return new Vat.Moves { Turn = new(0, 0, (float)(1.4 * fall)), Move = new((float)(-0.05 * fall), (float)(0.1 * fall), 0) }
+                .Bone(LLegL, -0.9 * e).Bone(LLegR, -1.0 * e).Bone(LSpine, 0.5 * e).Bone(LChest, 0.2 * e).Bone(LHead, 0.35 * e);
+        }, Hold: true),
         // Up out of the ground, clawing at the edge of the hole.
         new("rise", "Idle", 1.8, 0.66, t =>
         {
