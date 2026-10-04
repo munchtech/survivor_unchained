@@ -1,0 +1,26 @@
+{
+  "seed": 1300,
+  "people": {
+    "her": "a young woman with long damp dark red hair, bare arms, a fitted leather and steel armoured bodice with round steel pauldrons, a sword and a round shield",
+    "warden": "the Ford-Warden, a hooded drowned giant with a long beard heavy with river water, eyes of fading cold blue light under the hood, in his left fist a lamp that is a square cage of black forged iron with a cold pale blue flame",
+    "grim": "Grimtunnel, a squat long-armed goblin-like lampling with warty grey toad skin and a wide grin, a small warm orange lamp strapped to his forehead and another hanging from his belt",
+    "heart": "the Warden's heart, a fist-sized stone full of brilliant cold white-blue light, water running off it",
+    "ford": "a dark misty river ford in the last hour of night"
+  },
+  "shots": {
+    "1": "medium close-up of the hooded head and shoulders of {warden} at the instant a blow lands on his hood, a spray of sparks; the blue light in his eyes guttering; motion, impact",
+    "2": "low medium long shot at water level: {warden} gone down on his knees in the river, his greatsword falling from his right hand and sinking, his left arm still held up with the blue lamp clear of the water, steady; {ford}",
+    "3": "low close-up looking up past the blue iron lamp at {warden} on his knees, his head lowered, looking at the lamp not at anyone, tired, his lamp arm beginning to shake",
+    "3b": "medium close-up of {her} in cold blue lamplight, looking up at someone huge before her and nodding once, slowly, with mercy, sword lowered",
+    "4": "insert: a huge armoured fist lowering a square black iron lamp into black river water, the cold blue flame hissing out in a puff of steam; darkness",
+    "5": "low wide shot from behind {her}: the giant folded forward face down in the river, still, mist closing over him; under the water at his chest a cold light beginning to glow",
+    "6": "medium shot pushing in: {heart} rising slowly out of black water into the air, turning, cold light spilling over the mist and the ripples",
+    "7": "over the shoulder of {her}: {heart} drifting through the misty air toward her like a thing finding its way, her bare hand rising into frame toward it",
+    "8": "extreme close-up side view: a woman's fingertips and {heart} a hand's breadth apart in the dark, its cold light leaning toward her fingers like a flame in a draught",
+    "9": "medium shot: the mud bursting up beneath a woman's reaching hand, {grim} erupting up to his waist out of the riverbed in a spray of mud and gravel and snatching {heart} out of the air, hugging it to his chest with glee",
+    "10": "medium shot from a woman's eye height looking down at {grim} half out of the mud, the stolen heart's cold light straining out of his arms toward camera; his little orange head lamp shining up into camera; he has gone still and dipped his head in something very near a bow",
+    "11": "medium shot: {grim} diving head first down into the churned mud of the riverbed clutching the glowing stolen heart, looking back over his shoulder, the light showing through the mud as he goes down",
+    "12": "extreme long shot from high over the river bank looking west along a dark river: the ford small in the middle of the frame with a tiny figure standing in it, cold blue lamps on iron posts along the road either side of the river all dipping at once; rings shivering across the water; the lowest edge of the sky going grey",
+    "13": "medium shot pulling up and back: {her} standing alone in the shallow ford in the grey before dawn, mist on the water"
+  }
+}
