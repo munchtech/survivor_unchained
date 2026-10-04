@@ -258,11 +258,18 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         _ => ("Something gathers itself in the dark.", "tell"),
     };
 
+    /// <summary>The night builds into a landmark (the experience lead's run-ups: into each herald, and
+    /// the long push): there the crowd brings its throwers and rallying voices forward, and its
+    /// champions twice as often, signed, so the danger rises with the numbers.</summary>
+    bool Building => !won && !bossUp && pacing.Building(Seconds);
+
     /// <summary>A kind from the people, weighted: those that joined long ago more often.</summary>
     string Pick()
     {
         var open = escalation.Kinds(Minute).ToList();
-        double W((string Def, double Weight, double From) h) => h.Weight * (1 + (Minute - h.From) / 8);
+        bool building = Building;
+        double W((string Def, double Weight, double From) h) => h.Weight * (1 + (Minute - h.From) / 8)
+            * (building && (Enemies.Get(h.Def).Ranged != null || Enemies.Get(h.Def).Aura != null) ? 2 : 1);
         double r = R() * open.Sum(W);
         foreach (var h in open) { r -= W(h); if (r <= 0) return h.Def; }
         return open[0].Def;
@@ -414,11 +421,13 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             double a = R() * Math.PI * 2, d = R() * spread;
             double sx = x + Math.Cos(a) * d, sz = z + Math.Sin(a) * d;
             if (!map.CanStand(sx, sz) || B!.Collision.Blocked(sx, sz, 0.6)) continue;
-            // Now and then one of them a champion (more under the oath of champions, and as the minutes go).
-            if (Spawn(def, sx, sz, R() < 0.012 * elites * (1 + Minute / 12)) is { } e)
+            // Now and then one of them a champion (more under the oath of champions, and as the minutes
+            // go; twice as often as the night builds into a landmark).
+            if (Spawn(def, sx, sz, R() < 0.012 * elites * (1 + Minute / 12) * (Building ? 2 : 1)) is { } e)
             {
-                // A champion in the crowd wears a Sign from the tenth minute above the first tier.
-                if (e.Elite && Spec.Tier >= 2 && Minute >= 10) Sign(e, 1);
+                // A champion in the crowd wears a Sign from the tenth minute above the first tier, and
+                // in any run-up.
+                if (e.Elite && (Spec.Tier >= 2 && Minute >= 10 || Building)) Sign(e, 1);
                 o.Add(e);
             }
         }
@@ -448,8 +457,9 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             // herald's duel; spikes oftener while it builds into a landmark.
             if (pacing.Breather(Seconds) || pacing.Hush(Seconds) || heraldAt > 0) B.Charges.Calm(B, 0.5);
             B.Charges.SpikeEvery = pacing.Building(Seconds) ? (18, 26) : (40, 55);
+            B.Charges.Pincer = pacing.Building(Seconds);
         }
-        else B.Charges.SpikeEvery = (40, 55);
+        else { B.Charges.SpikeEvery = (40, 55); B.Charges.Pincer = false; }
         // The first of them in sight at once: the night used to open on an empty field for its
         // first half minute while the horde walked in from out of sight.
         if (!opened && Seconds > 1.5)
@@ -517,9 +527,52 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         // (No core where one could not stand: the great blessing comes all the same.)
         if (!great15 && !kindled && Minute >= 15 && !bossUp) Midnight(false);
         Minibosses();
+        Forerunners();
         if (!runUp && !won && Seconds >= End - 120) RunUp();
         if (makingWay.Count > 0) MakingWay();
         if (!bossUp && !won && Seconds >= End) Boss();
+    }
+
+    /* -------------------------------------------------- the forerunners -- */
+
+    /* The run-ups (the experience lead's: into each herald, and the long push) were the calmest
+     * stretches of the night: at those minutes the crowd melts as fast as it comes, so more of it
+     * asks nothing. What rules the people sends its forerunners ahead of each landmark instead: a
+     * pair of signed champions from two sides at once, twice in each run-up, so the stretch asks
+     * where to stand and what the build does to one, as the landmark will. */
+    int forerunWave = -1;
+    double forerunNext;
+
+    void Forerunners()
+    {
+        if (!Building || MinibossUp || heraldAt > 0)
+        {
+            if (!Building) forerunWave = -1;
+            return;
+        }
+        if (forerunWave < 0) { forerunWave = 0; forerunNext = Seconds + 8; }
+        if (forerunWave >= 2 || Seconds < forerunNext) return;
+        forerunWave++;
+        forerunNext = Seconds + 45 / Pace;
+        double a = R() * Math.Tau;
+        for (int k = 0; k < 2; k++)
+        {
+            if (Around(a + k * Math.PI, 18) is not var (x, z)) continue;
+            var c = Spawn(Strongest(), x, z, true);
+            if (c == null) continue;
+            // Half a herald each (at a champion's half again they melted like the crowd round them).
+            c.MaxHp = c.Hp = c.MaxHp * (2 + Spec.Tier) / 2;
+            c.Damage *= 1.2;
+            Sign(c, Math.Max(1, SignsFor(false)));
+        }
+        Shout(people.Id switch
+        {
+            "pack" => "Two of the Pack's best, from either side: they come ahead of what is coming.",
+            "dead" => "Two of the old guard rise, one each side of you.",
+            "lamplings" => "Two gangers come up, one each side, lamps lit.",
+            "kerchiefs" => "Two of the Kerchiefs' hard men, from either side.",
+            _ => "Two of them, from either side.",
+        });
     }
 
     /* ---------------------------------------------------- the Kindling -- */

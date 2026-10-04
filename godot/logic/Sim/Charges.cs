@@ -33,6 +33,10 @@ public sealed class ChargeDirector
     /// <summary>Seconds between spikes: about one a minute, oftener while the night builds
     /// into a landmark (ArenaPacing.Building), where the danger should rise with the numbers.</summary>
     public (double Min, double Max) SpikeEvery = (40, 55);
+    /// <summary>A spike's runs come in pairs from two sides (a pincer): while the night builds into
+    /// a landmark, so the run-ups ask where to stand as well as how many.</summary>
+    public bool Pincer;
+    double pincerAngle = double.NaN, pincerT;
 
     public Beat Now { get; private set; } = Beat.Wave;
     /// <summary>Its own stream, so the beat it keeps never moves anything else's dice.</summary>
@@ -136,6 +140,15 @@ public sealed class ChargeDirector
         // One after another in a wave, so each lane is read before the next; a ripple in a spike.
         double gap = Now == Beat.Spike ? 0.12 : 0.7;
         if (live >= cap || b.Time - lastStart < gap) return Refuse(e, retry);
+        // A pincer: each run in a spike from the side the last was not (for a moment; then whoever is ready).
+        double a = Math.Atan2(e.Z - b.Player.Z, e.X - b.Player.X);
+        if (Pincer && Now == Beat.Spike && !double.IsNaN(pincerAngle) && b.Time < pincerT)
+        {
+            double d = Math.Abs(Math.Atan2(Math.Sin(a - pincerAngle), Math.Cos(a - pincerAngle)));
+            if (d < Math.PI * 0.6) return Refuse(e, retry);
+        }
+        pincerAngle = a;
+        pincerT = b.Time + 0.8;
         live++; Started++;
         lastStart = b.Time;
         return true;
