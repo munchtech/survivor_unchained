@@ -1,6 +1,6 @@
 # Vonnra Ash-of-Morrow: ElevenLabs packet
 
-Voice id in the game: `vonnra`. 103 takes to record (9,065 characters; about 27,195 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `vonnra`. 103 takes to record (9,057 characters; about 27,171 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -57,6 +57,7 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 *Wants:* the risen traveller up the road and into her town before dawn
 *Hides:* that she made them
 *Note:* Far off and thinned by the cold, never raised; the frost carries it, close as if at the shoulder. The pause before 'No charge' is her deciding to. The game adds the distance (the 'far' effect): record it dry and close.
+*Length:* the cut is timed to it: 3.0–3.6 s (distant but every word clear; the outdoor tail after it is welcome), first sound to last word.
 
 ```
 [kindly, unhurried, quietly] Come up, traveller… ...No charge, this once.
@@ -512,22 +513,22 @@ Subtitle: And you. You came up the Low Ford road at night, and the lamps lit for
 ### 42. `dlg.vonnra.f_below.0.p0.wav`
 
 *Where:* dialogue.json vonnra/f_below#0; part 1 of 2: **vonnra: Last. Under the Verge, something is turning over in its sleep, and under a farm past the O…** / narrator: The roof shivers under the table, and the glass of her lamp rings in its frame. The flame …
-*Played:* hushed dread; doing: the thing below; pace: very slow; volume: hushed.
-*Note:* The deepest reading. Unhurried images; 'they think it will be grateful' with pity. Trails off on the door, deliberately.
+*Played:* hushed dread; doing: the thing below; pace: very slow; volume: quiet.
+*Note:* The deepest reading: slower and lower, never whispered (a whisper turns her breathy). Unhurried images; 'they think it will be grateful' with pity. The roof shivers, and she does not finish: trails off on the door, deliberately.
 
 ```
-[hushed dread, whispers] Last. Under the Verge, something is turning over in its sleep, and under a farm past the Old Road, something is knocking to be let in. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside...
+[hushed dread, quietly] Last. Under the Verge, something is turning over in its sleep, and under a farm past the Old Road, something is knocking to be let in. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside...
 ```
 Subtitle: Last. Under the Verge, something is turning over in its sleep, and under a farm past the Old Road, something is knocking to be let in. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside...
 
 ### 43. `dlg.vonnra.f_below.1.p0.wav`
 
 *Where:* dialogue.json vonnra/f_below#1; part 1 of 2: **vonnra: Last. Under the Verge, something is turning over in its sleep. The little lamp-people are …** / narrator: The roof shivers under the table, and the glass of her lamp rings in its frame. The flame …
-*Played:* hushed dread; doing: the thing below; pace: very slow; volume: hushed.
-*Note:* As f_below.0.
+*Played:* hushed dread; doing: the thing below; pace: very slow; volume: quiet.
+*Note:* The deepest reading: slower and lower, never whispered (a whisper turns her breathy). Unhurried images; 'they think it will be grateful' with pity. The roof shivers, and she does not finish: trails off on the door, deliberately.
 
 ```
-[hushed dread, whispers] Last. Under the Verge, something is turning over in its sleep. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside...
+[hushed dread, quietly] Last. Under the Verge, something is turning over in its sleep. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside...
 ```
 Subtitle: Last. Under the Verge, something is turning over in its sleep. The little lamp-people are digging down to it with the Warden's heart in their arms, and they think it will be grateful. And the door in the hillside...
 
@@ -873,267 +874,267 @@ Subtitle: I have not finished reading.
 
 One take for each name the creation screen suggests. The game splices it into every line where she says the survivor's name (marked *The name* above); a name the player types that is not on this list leaves the pause empty. Keep each the same in tone, so it fits all of them.
 
-### 74. `name.vonnra.Ashe.wav`
+### 74. `name.vonnra.Alder.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Ashe.
+[level, exact, quietly] Alder.
 ```
-Subtitle: Ashe.
+Subtitle: Alder.
 
-### 75. `name.vonnra.Brannagh.wav`
+### 75. `name.vonnra.Bryony.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Brannagh.
+[level, exact, quietly] Bryony.
 ```
-Subtitle: Brannagh.
+Subtitle: Bryony.
 
-### 76. `name.vonnra.Corwen.wav`
+### 76. `name.vonnra.Cass.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Corwen.
+[level, exact, quietly] Cass.
 ```
-Subtitle: Corwen.
+Subtitle: Cass.
 
 ### 77. `name.vonnra.Dace.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Dace.
+[level, exact, quietly] Dace.
 ```
 Subtitle: Dace.
 
 ### 78. `name.vonnra.Edda.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Edda.
+[level, exact, quietly] Edda.
 ```
 Subtitle: Edda.
 
 ### 79. `name.vonnra.Fen.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Fen.
+[level, exact, quietly] Fen.
 ```
 Subtitle: Fen.
 
 ### 80. `name.vonnra.Garrow.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Garrow.
+[level, exact, quietly] Garrow.
 ```
 Subtitle: Garrow.
 
-### 81. `name.vonnra.Hollis.wav`
+### 81. `name.vonnra.Hester.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Hollis.
+[level, exact, quietly] Hester.
 ```
-Subtitle: Hollis.
+Subtitle: Hester.
 
-### 82. `name.vonnra.Isolde.wav`
+### 82. `name.vonnra.Ilse.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Isolde.
+[level, exact, quietly] Ilse.
 ```
-Subtitle: Isolde.
+Subtitle: Ilse.
 
 ### 83. `name.vonnra.Jessamy.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Jessamy.
+[level, exact, quietly] Jessamy.
 ```
 Subtitle: Jessamy.
 
-### 84. `name.vonnra.Kell.wav`
+### 84. `name.vonnra.Kit.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Kell.
+[level, exact, quietly] Kit.
 ```
-Subtitle: Kell.
+Subtitle: Kit.
 
 ### 85. `name.vonnra.Lorne.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Lorne.
+[level, exact, quietly] Lorne.
 ```
 Subtitle: Lorne.
 
 ### 86. `name.vonnra.Maren.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Maren.
+[level, exact, quietly] Maren.
 ```
 Subtitle: Maren.
 
 ### 87. `name.vonnra.Nolly.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Nolly.
+[level, exact, quietly] Nolly.
 ```
 Subtitle: Nolly.
 
-### 88. `name.vonnra.Orrin.wav`
+### 88. `name.vonnra.Orla.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Orrin.
+[level, exact, quietly] Orla.
 ```
-Subtitle: Orrin.
+Subtitle: Orla.
 
 ### 89. `name.vonnra.Pim.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Pim.
+[level, exact, quietly] Pim.
 ```
 Subtitle: Pim.
 
 ### 90. `name.vonnra.Quill.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Quill.
+[level, exact, quietly] Quill.
 ```
 Subtitle: Quill.
 
 ### 91. `name.vonnra.Rhosyn.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Rhosyn.
+[level, exact, quietly] Rhosyn.
 ```
 Subtitle: Rhosyn.
 
 ### 92. `name.vonnra.Sabre.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Sabre.
+[level, exact, quietly] Sabre.
 ```
 Subtitle: Sabre.
 
-### 93. `name.vonnra.Tamsin.wav`
+### 93. `name.vonnra.Tegan.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Tamsin.
+[level, exact, quietly] Tegan.
 ```
-Subtitle: Tamsin.
+Subtitle: Tegan.
 
 ### 94. `name.vonnra.Ulla.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Ulla.
+[level, exact, quietly] Ulla.
 ```
 Subtitle: Ulla.
 
 ### 95. `name.vonnra.Voss.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Voss.
+[level, exact, quietly] Voss.
 ```
 Subtitle: Voss.
 
 ### 96. `name.vonnra.Wren.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Wren.
+[level, exact, quietly] Wren.
 ```
 Subtitle: Wren.
 
 ### 97. `name.vonnra.Yarrow.wav`
 
 *Where:* Front.cs Names (the creation screen)
-*Played:* warm, unsettling; doing: says your name; pace: slow; volume: quiet.
-*Note:* The only warmth anywhere in her part, and it should frighten. Said as if she had always known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and the name before 'Your chapter is written.'
+*Played:* level, exact; doing: a name read from her ledger; pace: slow; volume: quiet.
+*Note:* Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has always had it; that is what frightens. The same take goes into the accusation ('Sit down, ...'), the door ('That is all I see for free, ...') and her greeting ever after ('... Your chapter is written.').
 
 ```
-[warm, unsettling, quietly] Yarrow.
+[level, exact, quietly] Yarrow.
 ```
 Subtitle: Yarrow.
 

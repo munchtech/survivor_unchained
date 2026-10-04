@@ -80,10 +80,11 @@ Subtitle: Prints in the frost, your own. They come up from the river. None go do
 *The same words are also* `say.e6fc0151e69a.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json cin_drowned_fire/lamp#0
 *Played:* plain; doing: a lamp, and a voice up the road; pace: slow; volume: quiet.
-*Note:* Plain and quiet; no pause needed.
+*Note:* Plain and quiet. A small breath at the comma before 'and a voice': the cut goes from the far lamp to her there.
+*Length:* the cut is timed to it: 8.0–9.0 s (a small breath at the comma before 'and a voice'), first sound to last word.
 
 ```
-[quietly] Far up the road one lamp burns high in the dark, and a voice comes down to you over the frost, close as if she stood at your shoulder.
+[quietly] Far up the road one lamp burns high in the dark, [inhales] and a voice comes down to you over the frost, close as if she stood at your shoulder.
 ```
 Subtitle: Far up the road one lamp burns high in the dark, and a voice comes down to you over the frost, close as if she stood at your shoulder.
 

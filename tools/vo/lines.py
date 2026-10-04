@@ -85,10 +85,11 @@ def name_elided(s: str, mark: str = "") -> tuple[str, bool]:
 # (VO_CAST.md, "The survivor's name"; the game splices it, VoiceOver).
 NAME_VOICES = {"vonnra"}
 NAME_MARK = "‖"
-NAME_DIRECTION = {"vonnra": {"emo": "warm, unsettling", "intent": "says your name", "pace": "slow", "vol": "quiet",
-                             "note": "The only warmth anywhere in her part, and it should frighten. Said as if she had always "
-                                     "known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and "
-                                     "the name before 'Your chapter is written.'"}}
+NAME_DIRECTION = {"vonnra": {"emo": "level, exact", "intent": "a name read from her ledger", "pace": "slow", "vol": "quiet",
+                             "note": "Level, exact, unhurried: a name read from her ledger. Not warm, but known, as if she has "
+                                     "always had it; that is what frightens. The same take goes into the accusation ('Sit "
+                                     "down, ...'), the door ('That is all I see for free, ...') and her greeting ever after "
+                                     "('... Your chapter is written.')."}}
 FRONT = os.path.join(ROOT, "godot", "src", "Ui", "Front.cs")
 
 
