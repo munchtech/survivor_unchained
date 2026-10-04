@@ -657,16 +657,19 @@ SPEC = {
     "plumleather": ("Leather026", (0.5, 0.4, 0.75), 44, 3, 0.0, None),
     "blackleather": ("Leather026", (1, 1, 1), 26, 3, 0.0, None),
     "brownleather": ("Leather037", (1, 0.8, 0.68), 30, 3, 0.0, None),
-    "lace": ("rough_linen", (1.0, 1.0, 1.0), 235, 14, 0.0, 0.5, 0.85),
+    "lace": ("rough_linen", (1.652, 1.379, 1.12), 235, 14, 0.0, 0.5, 0.85),
     "darkpurple": ("Leather026", (0.55, 0.2, 0.9), 26, 3, 0.0, 0.35),
-    "satin": ("rough_linen", (1.0, 1.0, 1.0), 238, 10, 0.0, 0.3),
+    "satin": ("rough_linen", (1.652, 1.379, 1.12), 235, 10, 0.0, 0.3),
     "greenleather": ("Leather026", (0.42, 0.85, 0.45), 52, 3, 0.0, None),
     "bronze": ("Metal048C", (0.72, 0.58, 0.46), 95, 3, 1.0, 0.42),
     "ink": ("rough_linen", (0.22, 0.26, 0.34), 22, 10, 0.0, 0.65),
-    "stocking": ("rough_linen", (1.0, 1.0, 1.02), 230, 14, 0.0, 0.45, 0.42),
-    "bone": ("rough_linen", (0.92, 0.84, 0.68), 178, 12, 0.0, 0.5),
-    "browncloth": ("rough_linen", (0.66, 0.5, 0.36), 112, 6, 0.0, 0.8),
+    "stocking": ("rough_linen", (1.624, 1.356, 1.11), 232, 14, 0.0, 0.45, 0.42),
+    # (the linen scan is blue, about (145, 171, 205): these two are tinted from
+    # it to a colour, warm ivory and a light saddle brown)
+    "bone": ("rough_linen", (1.376, 1.099, 0.779), 183, 12, 0.0, 0.5),
+    "browncloth": ("rough_linen", (0.564, 0.374, 0.224), 64, 18, 0.0, 0.8),
     "forestleather": ("Leather026", (0.42, 0.66, 0.42), 40, 3, 0.0, None),
+    "thread": ("rough_linen", (1.349, 1.034, 0.682), 170, 60, 0.0, 0.5),
 }
 MATS = {}
 
@@ -813,7 +816,7 @@ def edge_loops(tris):
     return loops
 
 
-def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0.012):
+def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0.012, stitch=False):
     """A sheet's cut outline made fair and bound: each edge loop eased into
     one smooth curve, the sheet's own edge points moved onto it, and a
     rolled edge laid along it that covers the cut, as a garment's edges are
@@ -868,6 +871,11 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         moved |= fix
         beads.append(tube(f"{name}_bind{k}" if k else f"{name}_bind", cur, nrm, outward, key, width, height, overhang, thick,
                           pos, at[:, 3:3 + NB]))
+        if stitch:
+            # (sewn through the binding, along its inner shoulder)
+            c0 = cur + outward * (overhang - width / 2) + nrm * (thick / 2)
+            line = c0 - outward * (width / 2) * 0.45 + nrm * ((thick / 2 + height) * 0.893 + 0.0001)
+            beads += stitches(f"{name}_stitch{k}", line, nrm, tg, pos, at[:, 3:3 + NB], closed=True)
     # The points next to the edge eased, so the sheet meets its new edge
     # without a crease.
     A = adjacency(len(pos), tris)
@@ -912,6 +920,158 @@ def domes(name, pts, nrms, mkey, r=0.0028, src=None):
     obj = finish(name, pp, sw[j].astype(float), tt, mkey, 0.0, 0.0, 10 ** 7)
     obj["hides"] = True
     return [obj]
+
+
+def grommets(name, pts, nrms, mkey, r_out=0.0036, r_in=0.0018, height=0.0014, hole="blackleather"):
+    """Eyelets as a corsetier sets them: a rolled metal ring at each point,
+    standing on its normal, with the dark of the hole inside it (a dome
+    reads as a stud, not as a hole a lace goes through)."""
+    nu, nv = 20, 8
+    R0, rw, rh = (r_out + r_in) / 2, (r_out - r_in) / 2, height / 2
+    P2, T2, C2, H2, HT = [], [], [], [], []
+    for p0, n in zip(pts, nrms):
+        n = n / np.linalg.norm(n)
+        t = np.cross(n, [0, 0, 1.0]) if abs(n[2]) < 0.9 else np.cross(n, [1.0, 0, 0])
+        t /= np.linalg.norm(t)
+        b = np.cross(n, t)
+        o = sum(len(x) for x in P2)
+        q, cen = [], []
+        for i in range(nu):
+            radial = np.cos(2 * np.pi * i / nu) * t + np.sin(2 * np.pi * i / nu) * b
+            for j in range(nv):
+                th = 2 * np.pi * j / nv
+                q.append(p0 + n * rh + radial * (R0 + rw * np.cos(th)) + n * rh * np.sin(th))
+                cen.append(p0 + n * rh + radial * R0)
+        tri = []
+        for i in range(nu):
+            i1 = (i + 1) % nu
+            for j in range(nv):
+                j1 = (j + 1) % nv
+                a_, b_, c_, d_ = o + i * nv + j, o + i * nv + j1, o + i1 * nv + j, o + i1 * nv + j1
+                tri += [(a_, c_, b_), (b_, c_, d_)]
+        P2.append(np.array(q))
+        T2.append(np.array(tri))
+        C2.append(np.array(cen))
+        ho = sum(len(x) for x in H2)
+        H2.append(np.array([p0 + n * rh * 0.5] + [p0 + n * rh * 0.5 + (np.cos(2 * np.pi * i / nu) * t + np.sin(2 * np.pi * i / nu) * b)
+                                                  * (r_in + rw * 0.5) for i in range(nu)]))
+        tr = np.array([(ho, ho + 1 + i, ho + 1 + (i + 1) % nu) for i in range(nu)])
+        if (vertex_normals(H2[-1], tr - ho) @ n).mean() < 0:
+            tr = tr[:, ::-1]
+        HT.append(tr)
+    pp, tt, cc = np.vstack(P2), np.vstack(T2), np.vstack(C2)
+    if ((pp - cc) * vertex_normals(pp, tt)).sum(1).mean() < 0:
+        tt = tt[:, ::-1]
+    hp, ht = np.vstack(H2), np.vstack(HT)
+    made = []
+    for nm, q, tr, key in ((name, pp, tt, mkey), (name + "_holes", hp, ht, hole)):
+        _, j = cKDTree(P).query(q)
+        made.append(finish(nm, q, W[j].astype(float), tr, key, 0.0, 0.0, 10 ** 7))
+    for o_ in made:
+        o_["hides"] = False
+    return made
+
+
+def cord(name, pts, mkey, r=0.0014, nv=10):
+    """A round cord (a lace, a bow) along points given densely, as they are
+    (taut, not laid on her). It hides nothing of her: what shows between
+    the laces is her skin."""
+    c = np.asarray(pts, float)
+    nrm = np.array([SKIN_BVH.find_nearest(Vector(p))[1][:] for p in c])
+    tg = np.gradient(c, axis=0)
+    tg /= np.linalg.norm(tg, axis=1)[:, None] + 1e-12
+    nrm = nrm - tg * (nrm * tg).sum(1)[:, None]
+    nrm /= np.linalg.norm(nrm, axis=1)[:, None] + 1e-12
+    obj = tube(name, c, nrm, np.cross(nrm, tg), mkey, 2 * r, r, r, 0.0, P, W.astype(float), closed=False, nv=nv)
+    obj["hides"] = False
+    return [obj]
+
+
+def bezier(p0, p1, p2, step=0.0012):
+    """Points along a quadratic curve from p0 to p2 drawn toward p1."""
+    n = max(4, int((np.linalg.norm(p1 - p0) + np.linalg.norm(p2 - p1)) / step))
+    t = np.linspace(0, 1, n)[:, None]
+    return (1 - t) ** 2 * p0 + 2 * (1 - t) * t * p1 + t ** 2 * p2
+
+
+def stitches(name, line, nrm, tg, src_pos, src_wt, step=0.004, length=0.0026, width=0.00065, height=0.0004, closed=False,
+             mkey="thread"):
+    """Saddle stitching along a line laid on a surface (`nrm` its normal,
+    `tg` the line's way): a dash of waxed thread every `step`, its ends sunk
+    into the leather, every one exactly in line and evenly spaced, as a
+    careful hand sews. (Painted stitches, laid out from screen derivatives,
+    wandered and broke at the texture's seams.)"""
+    line, nrm, tg = (np.asarray(x, float) for x in (line, nrm, tg))
+    if closed:
+        line, nrm, tg = np.vstack([line, line[:1]]), np.vstack([nrm, nrm[:1]]), np.vstack([tg, tg[:1]])
+    d = np.r_[0, np.cumsum(np.linalg.norm(np.diff(line, axis=0), axis=1))]
+    if len(line) < 2 or d[-1] < 3 * step:
+        return []
+    n_ = int(d[-1] / step)
+    ss = (np.arange(n_) + 0.5) * d[-1] / n_
+    c = np.stack([np.interp(ss, d, line[:, k]) for k in range(3)], 1)
+    nn = np.stack([np.interp(ss, d, nrm[:, k]) for k in range(3)], 1)
+    nn /= np.linalg.norm(nn, axis=1)[:, None] + 1e-12
+    tt = np.stack([np.interp(ss, d, tg[:, k]) for k in range(3)], 1)
+    tt -= nn * (tt * nn).sum(1)[:, None]
+    tt /= np.linalg.norm(tt, axis=1)[:, None] + 1e-12
+    bb = np.cross(nn, tt)
+    nu, nv = 4, 4
+    ph = np.linspace(0, 2 * np.pi, nu, endpoint=False) + np.pi / 4
+    tv = np.linspace(-1, 1, nv + 1)[1:-1]
+    ring = np.sqrt(1 - tv ** 2)
+    base = c - nn * height * 0.35
+    # (per stitch: an end, nv-1 rings of nu, the other end)
+    ends0 = base - tt * length / 2
+    ends1 = base + tt * length / 2
+    rings = (base[:, None, None, :] + tt[:, None, None, :] * (tv * length / 2)[None, :, None, None]
+             + (np.cos(ph)[None, None, :, None] * bb[:, None, None, :] * width / 2
+                + np.sin(ph)[None, None, :, None] * nn[:, None, None, :] * height) * ring[None, :, None, None])
+    per = 2 + (nv - 1) * nu
+    pts = np.concatenate([ends0[:, None], rings.reshape(len(c), -1, 3), ends1[:, None]], 1).reshape(-1, 3)
+    tri = [(0, 1 + (j + 1) % nu, 1 + j) for j in range(nu)]
+    for k in range(nv - 2):
+        a0, b0 = 1 + k * nu, 1 + (k + 1) * nu
+        tri += [t for j in range(nu) for t in ((a0 + j, a0 + (j + 1) % nu, b0 + j), (b0 + j, a0 + (j + 1) % nu, b0 + (j + 1) % nu))]
+    last = 1 + (nv - 2) * nu
+    tri += [(per - 1, last + j, last + (j + 1) % nu) for j in range(nu)]
+    tri = np.array(tri)
+    tris = (tri[None] + (np.arange(len(c)) * per)[:, None, None]).reshape(-1, 3)
+    cen = np.repeat(base, per, 0)
+    if ((pts - cen) * vertex_normals(pts, tris)).sum(1).mean() < 0:
+        tris = tris[:, ::-1]
+    _, j = cKDTree(src_pos).query(pts)
+    obj = finish(name, pts, np.asarray(src_wt, float)[j], tris, mkey, 0.0, 0.0, 10 ** 7, scraps=False)
+    obj["hides"] = False
+    return [obj]
+
+
+def studs_on(name, objs, aims, mkey, r=0.0026):
+    """Rivets set on the outer face of pieces already made (a belt, a strap),
+    where a ray from outside toward each aim (origin, target) first meets
+    them: the visible fixing of one piece to another."""
+    vs, fs = [], []
+    for o in objs:
+        base = len(vs)
+        vs += [tuple(o.matrix_world @ v.co) for v in o.data.vertices]
+        fs += [[base + i for i in p.vertices] for p in o.data.polygons]
+    tree = BVHTree.FromPolygons(vs, fs)
+    pts, nrms = [], []
+    for org, tgt in aims:
+        d = Vector(tuple(np.asarray(tgt) - np.asarray(org))).normalized()
+        hit = tree.ray_cast(Vector(tuple(org)), d, 2.0)
+        if hit[0] is not None:
+            n = np.array(hit[1][:])
+            if n @ np.array(d[:]) > 0:
+                n = -n
+            pts.append(np.array(hit[0][:]) + n * 0.0002)
+            nrms.append(n)
+    if not pts:
+        return []
+    made = domes(name, pts, nrms, mkey, r=r)
+    for o_ in made:
+        o_["hides"] = False
+    return made
 
 
 def sunburst(name, centre, nrm, up, radius, mkey, rays=12, thick=0.0035, boss=None):
@@ -1415,9 +1575,12 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
             bspec = (tkey, max(w, 0.005), max(h, 0.0006), 0.0018)
         else:
             bspec = (mkey, 0.0045, 0.0005, 0.0015)
-        pos, beads = bind_edges(name, pos, at, tris, bspec[0], bspec[1], bspec[2], bspec[3], thick)
+        pos, beads = bind_edges(name, pos, at, tris, bspec[0], bspec[1], bspec[2], bspec[3], thick,
+                                stitch=kind(mkey) == "leather")
         trim = None
     made = [finish(name, pos, at[:, 3:3 + NB], tris, mkey, thick, bevel, budget or (8000 if dome else 3000))] + beads
+    if any("_stitch" in o.name for o in beads):
+        made[0]["geo_stitch"] = True
     if bridge:
         made += crotch_bridge(name, pos, tris, gap_at, mkey, thick, bevel, trim, lift)
     if studs:
@@ -1517,7 +1680,7 @@ def steady_on_breasts(wt, least=0.01):
     return wt
 
 
-def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000):
+def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
     """A sheet made a piece: her weights, its texture laid out at true size,
     a thickness and a rounded edge, bound to her skeleton. The sheet is
     first thinned to `budget` triangles (cut from a finely divided skin,
@@ -1529,7 +1692,25 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000):
         print("DROPPED", int((~okp).sum()), "broken points of", name)
         tris = tris[okp[tris].all(1)]
         pos = np.where(okp[:, None], pos, 0.0)
-    tris = islands(pos, tris)
+    # (scraps a cut leaves are dropped; a piece made of many small parts
+    # on purpose, stitches, keeps them all)
+    if scraps:
+        tris = islands(pos, tris)
+    # Its true edge, the sheet's border before it is thickened (both faces of
+    # it): the shader's stitching and worn edges are measured from this. A
+    # guess from its shape took any crease for an edge, and stitched rings
+    # round them in the middle of a panel.
+    e_ = np.sort(np.vstack([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]]), 1)
+    uk_, cnt_ = np.unique(e_, axis=0, return_counts=True)
+    be = uk_[cnt_ == 1]
+    rim = None
+    if len(be):
+        t_ = np.linspace(0, 1, 4, endpoint=False)
+        a_, b_ = pos[be[:, 0]], pos[be[:, 1]]
+        rim = (a_[:, None] + (b_ - a_)[:, None] * t_[None, :, None]).reshape(-1, 3)
+        rn = vertex_normals(pos, tris)[np.repeat(be[:, 0], len(t_))]
+        rim = np.vstack([rim, rim + rn * thick])
+        rim = rim[np.isfinite(rim).all(1)]
     # Over her breasts a piece moves with her body and breasts, never her
     # arms: her skin at the outer curve of each breast is partly her arm's,
     # and a garment taking that from it is dragged out of shape when her arm
@@ -1547,6 +1728,8 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000):
     me.update()
     obj = bpy.data.objects.new(name, me)
     bpy.context.collection.objects.link(obj)
+    if rim is not None and len(rim):
+        obj["rim"] = rim.astype(np.float32).ravel().tolist()
     groups = {}
     for i in range(len(wt)):
         top = np.argsort(-wt[i])[:4]
@@ -1733,6 +1916,8 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
     """A strap as a strap is made: a ribbon of even width laid along a
     smooth curve on her skin, so its edges are two clean parallel lines.
     It moves with the skin under each point of it."""
+    # (columns fine enough that a trim along its edges is a clean line)
+    cols = max(cols, int(np.ceil(width / 0.0015)) + 1)
     c = on_surface(ctrl, step=0.003)
     if not snap:
         # Taut, as given (it bridges a hollow rather than sinking into it).
@@ -1760,12 +1945,22 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
     if (nor * np.repeat(nrm, cols, 0)).sum(1).mean() < 0:
         tris = tris[:, ::-1]
         nor = -nor
-    _, j = cKDTree(P).query(pos)
+    # (one set of weights across its width, eased along it: it moves as a strap)
+    wt = soft_weights(pos).reshape(len(c), cols, -1)
+    wt[:] = wt.mean(1, keepdims=True)
+    for _ in range(6):
+        wt[1:-1] = (wt[:-2] + 2 * wt[1:-1] + wt[2:]) / 4
     edge = np.tile(width / 2 - np.abs(off), len(c))
-    at = np.hstack([nor, W[j].astype(float), edge[:, None]])
+    at = np.hstack([nor, wt.reshape(len(pos), -1), edge[:, None]])
     made = trimmed(name, pos, at, tris, mkey, thick, 0.0008, trim, budget=10 ** 7)
     for o in made:
         o["hides"] = True
+    if kind(mkey) == "leather" and width >= 0.012:
+        inset = 0.0028
+        for k, sgn in enumerate((1, -1)):
+            ln = c + nrm * (lift + thick + 0.0001) + bn * (sgn * (width / 2 - inset))
+            made += stitches(f"{name}_stitch{k}", ln, nrm, tg, pos, at[:, 3:3 + NB])
+        made[0]["geo_stitch"] = True
     return made
 
 
@@ -1919,18 +2114,24 @@ def fringe(hem, strips, depth, notch=0.18):
     return f
 
 
-def hanging(name, a0, a1, z_top, hem, mkey, flare=0.15, lift=0.01, gap=0.012, thick=0.0025, trim=None, nu=56):
+def hanging(name, a0, a1, z_top, hem, mkey, flare=0.15, lift=0.01, gap=0.012, thick=0.0025, trim=None, nu=56, snug=None):
     """Cloth hanging from her hips, all round her between the angles a0 and
     a1 (radians; 0 her front, rising toward her left): at each angle it
     falls from the hips, flaring out by `flare` a metre of fall, and never
     nearer her than `gap` (so it goes over her thighs, not into them). Its
     hem is `hem(u)`, u from -1 at a0 to 1 at a1. It is weighted to the
     pelvis at the top and more and more to the thigh on its side below the
-    hip, so it swings with her stride."""
-    ring = (np.abs(Z - z_top) < 0.008) & (ARMW["l"] + ARMW["r"] < 0.3)
-    cy = (Y[ring].min() + Y[ring].max()) / 2
-    zs = np.arange(z_top, min(hem(u) for u in np.linspace(-1, 1, 41)) - 0.03, -0.006)
+    hip, so it swings with her stride.
+    `z_top` may be a function of the angle (a plate hung from under a belt
+    follows the belt's line). With `snug` it is tucked: only `snug` off her at
+    its top, easing to `gap` over its first 5 cm, and its top edge (hidden
+    under what it hangs from) is not trimmed."""
     a = np.linspace(a0, a1, nu)
+    top = np.asarray(z_top(a), float) if callable(z_top) else np.full(nu, float(z_top))
+    zmax = float(top.max())
+    ring = (np.abs(Z - zmax) < 0.008) & (ARMW["l"] + ARMW["r"] < 0.3)
+    cy = (Y[ring].min() + Y[ring].max()) / 2
+    zs = np.arange(zmax, min(hem(u) for u in np.linspace(-1, 1, 41)) - 0.03, -0.006)
     body = (ARMW["l"] + ARMW["r"] < 0.3) & (wsum("Head") < 0.3)
     ang = np.arctan2(X, -(Y - cy))
     rad = np.hypot(X, Y - cy)
@@ -1945,15 +2146,19 @@ def hanging(name, a0, a1, z_top, hem, mkey, flare=0.15, lift=0.01, gap=0.012, th
             if w.any():
                 R[k, j] = rad[m][w].max()
     R[0] = np.where(np.isnan(R[0]), np.nanmax(R[0]), R[0])
+    # (her radius at each angle's own top, from the levels measured there)
+    R_top = np.array([np.interp(top[j], zs[::-1], np.where(np.isnan(R[::-1, j]), R[0, j], R[::-1, j])) for j in range(nu)])
     for k in range(1, len(zs)):
         R[k] = np.where(np.isnan(R[k]), 0, R[k])
-    hang = (R[0] + lift)[None, :] + flare * (z_top - zs)[:, None]
-    r = np.maximum(hang, R + gap)
+    fall = np.maximum(top[None, :] - zs[:, None], 0)
+    clear = gap if snug is None else snug + (gap - snug) * ramp(fall, 0.0, 0.05)
+    hang = (R_top + lift)[None, :] + flare * fall
+    r = np.maximum(hang, R + clear)
     r = np.maximum.accumulate(r, axis=0)
     for _ in range(6):
         r[1:-1] = (r[:-2] + 2 * r[1:-1] + r[2:]) / 4
         r[:, 1:-1] = (r[:, :-2] + 2 * r[:, 1:-1] + r[:, 2:]) / 4
-        r = np.maximum(r, R + gap)
+        r = np.maximum(r, R + clear)
     zz = np.repeat(zs[:, None], nu, 1)
     aa = np.repeat(a[None, :], len(zs), 0)
     pos = np.stack([r * np.sin(aa), cy - r * np.cos(aa), zz], -1).reshape(-1, 3)
@@ -1966,7 +2171,10 @@ def hanging(name, a0, a1, z_top, hem, mkey, flare=0.15, lift=0.01, gap=0.012, th
     u = (aa.ravel() - a0) / (a1 - a0) * 2 - 1
     zb = np.array([hem(x) for x in u])
     arc = np.minimum(aa.ravel() - a0, a1 - aa.ravel()) * r.ravel()
-    f = np.minimum.reduce([pos[:, 2] - zb, z_top - pos[:, 2] + 0.002, arc])
+    top_at = np.repeat(top[None, :], len(zs), 0).ravel()
+    f = np.minimum.reduce([pos[:, 2] - zb, top_at - pos[:, 2] + 0.002, arc])
+    # (a tucked top is hidden: its trim would only stand into what hides it)
+    f_trim = np.minimum(pos[:, 2] - zb, arc) if snug is not None else f
     hip = head("thigh_l")[2]
     leg = 0.85 * ramp(hip - pos[:, 2], 0.0, 0.45)
     side = 1 / (1 + np.exp(-pos[:, 0] / 0.035))
@@ -1979,7 +2187,7 @@ def hanging(name, a0, a1, z_top, hem, mkey, flare=0.15, lift=0.01, gap=0.012, th
     d, j = cKDTree(P[body]).query(pos)
     near = 1 - ramp(d, gap + 0.004, 0.06)
     wt = wt * (1 - near[:, None]) + W[body][j] * near[:, None]
-    attr = np.hstack([nor, wt, f[:, None]])
+    attr = np.hstack([nor, wt, f_trim[:, None]])
     if os.environ.get("HANGDEBUG"):
         print("HANGDEBUG", name, "grid z %.3f..%.3f" % (pos[:, 2].min(), pos[:, 2].max()), "kept pts", int((f >= 0).sum()), "of", len(f),
               "zb %.3f..%.3f" % (zb.min(), zb.max()), "kept z %.3f..%.3f" % (pos[f >= 0, 2].min(), pos[f >= 0, 2].max()) if (f >= 0).any() else "")
@@ -2132,13 +2340,19 @@ def warden():
         top = front_point(pk[0] - sg * 0.004, pk[2] - 0.012)
         straps.append([top, np.array([sg * (abs(pk[0]) - 0.01), -0.05, 1.53]), np.array([sg * 0.11, 0.03, 1.565]),
                        np.array([sg * 0.1, 0.11, 1.47]), np.array([sg * 0.085, 0.125, back_z])])
+    strap_objs = [o for k, cv in enumerate(straps) for o in ribbon(f"warden.strap{k}", cv, 0.018, "darkleather", thick=0.003,
+                                                                  trim=gold(0.003))]
+    backstrap = girdle("warden.backstrap", lambda a_: np.full_like(a_, back_z), 0.022, "darkleather", lift=0.003, thick=0.003,
+                       trim=gold(0.003), arc=(1.2, 2 * np.pi - 1.2), mask=arms < 0.3)
+    belt = girdle("warden.belt", belt_z, 0.05, "darkleather", lift=0.006, thick=0.005, trim=gold(0.005))
     out = [
         *cups,
-        *[o for k, cv in enumerate(straps) for o in ribbon(f"warden.strap{k}", cv, 0.018, "darkleather", thick=0.003,
-                                                          trim=gold(0.003))],
-        *girdle("warden.backstrap", lambda a_: np.full_like(a_, back_z), 0.022, "darkleather", lift=0.003, thick=0.003,
-                trim=gold(0.003), arc=(1.2, 2 * np.pi - 1.2), mask=arms < 0.3),
-        *girdle("warden.belt", belt_z, 0.05, "darkleather", lift=0.006, thick=0.005, trim=gold(0.005)),
+        *strap_objs,
+        *backstrap,
+        *belt,
+        # Each strap riveted where it meets the strap round her back.
+        *studs_on("warden.strap_rivets", strap_objs + backstrap,
+                  [((sg * 0.085, 0.7, back_z + 0.003), (sg * 0.085, 0.0, back_z + 0.003)) for sg in (1, -1)], "gold", r=0.003),
         *sunburst("warden.buckle", buckle_at + buckle_n * 0.009, buckle_n, np.array([0, 0, 1.0]), 0.034, "gold",
                   boss="steel"),
         *sunburst("warden.gore", gore_at, np.array([0, -1.0, 0.25]), np.array([0, 0, 1.0]), 0.019, "gold", rays=8,
@@ -2146,8 +2360,11 @@ def warden():
 
         # Beneath, a thong: a narrow front (under the fauld) and a string
         # down the back from the belt.
+        # (its front starts well under the plates' tucked tops, and lies
+        # close, so they hang clear of it)
         *piece("warden.thong", AND(FRONT - 0.3, np.minimum(0.012 + 0.42 * np.maximum(Z - CROTCH, 0), 0.034) - np.abs(X),
-                                   (under_belt + 0.01) - Z, Z - (CROTCH - 0.03)), "darkleather", lift=0.002, smooth=2, soften=0),
+                                   (bz0 - 0.04) - Z, Z - (CROTCH - 0.03)), "darkleather", lift=0.0012, thick=0.0018, smooth=2,
+               soften=0),
         *ribbon("warden.thong_back", thong_path(under_belt + 0.06), 0.02, "darkleather", lift=0.003, thick=0.003, snap=False),
     ]
     # A skirt of steel plates hung all round from the belt, each its own (her
@@ -2156,16 +2373,30 @@ def warden():
     # shorter behind (the lower curve of her cheeks glimpsed below them); a
     # second row behind the gaps, a little shorter and darker, so nothing
     # shows through them.
+    # Each plate's top is tucked up under the belt all along the belt's own
+    # line (it rises over her hips and behind), snug there, so the plate
+    # comes out from under the belt's edge as if part of it, then flares
+    # clear of her thighs. Two gold rivets on the belt fix each plate of
+    # the front row.
     plates = 12
     step = 2 * np.pi / plates
-    for row, (lift_, drop, key, w_) in enumerate(((0.021, 0.0, "steel", 0.47), (0.015, 0.02, "darksteel", 0.4))):
+    ring = (np.abs(Z - bz0) < 0.01) & (arms < 0.3)
+    cy = (Y[ring].min() + Y[ring].max()) / 2
+    aims = []
+    for row, (snug, drop, key, w_, th_) in enumerate(((0.003, 0.0, "steel", 0.47, 0.0025), (0.0008, 0.02, "darksteel", 0.4, 0.002))):
         for k in range(plates):
             ac = (k + 0.5 * row) * step
             fr_ = (1 + np.cos(ac)) / 2
             hem = CROTCH - 0.06 * fr_ + 0.035 * (1 - fr_) + drop
-            out += hanging(f"warden.skirt{row}_{k}", ac - step * w_, ac + step * w_, under_belt + 0.004,
-                           lambda u, h=hem: h + 0.022 * u * u, key, flare=0.14, lift=lift_, gap=0.016, thick=0.0025,
-                           trim=gold(0.006) if row == 0 else None)
+            out += hanging(f"warden.skirt{row}_{k}", ac - step * w_, ac + step * w_, lambda a_: belt_z(a_) - 0.018,
+                           lambda u, h=hem: h + 0.022 * u * u, key, flare=0.14, lift=snug, gap=0.016 - 0.004 * row, thick=th_,
+                           trim=gold(0.006) if row == 0 else None, snug=snug)
+            if row == 0:
+                for da in (-0.5, 0.5):
+                    a_ = ac + da * step * w_
+                    z_ = float(belt_z(a_)) - 0.013
+                    aims.append(((0.7 * np.sin(a_), cy - 0.7 * np.cos(a_), z_), (0.0, cy, z_)))
+    out += studs_on("warden.skirt_rivets", belt, aims, "gold", r=0.0028)
     for sd, sg in (("l", 1), ("r", -1)):
         out += [
             *piece(f"warden.pauldron_{sd}", cap(shoulder(sd), 0.11), "steel", lift=0.012, thick=0.004, smooth=14, trim=gold(0.01), studs="gold"),
@@ -2246,7 +2477,7 @@ def arcanist():
     for sd in "lr":
         out += [
             *piece(f"arcanist.glove_{sd}", limb(sd, WRIST_S - 0.08, 9.9, legs=False), "blackleather", lift=0.0012, thick=0.001, bevel=0.0004, trim=gold(0.008), edge=30, soften=12),
-            *piece(f"arcanist.stocking_{sd}", AND(LEGW[sd] - 0.5, stock_top(sd) - Z, (X * (1 if sd == "l" else -1) - 0.004) * 0.3), "stocking", lift=0.0012, thick=0.0, bevel=0.0, soften=10),
+            *piece(f"arcanist.stocking_{sd}", AND(LEGW[sd] - 0.5, stock_top(sd) - Z, (X * (1 if sd == "l" else -1) - 0.004) * 0.3, (KNEE_S - 0.03) - LEG_S[sd]), "stocking", lift=0.0012, thick=0.0, bevel=0.0, soften=10),
             *girdle(f"arcanist.lace_{sd}", stock_band, 0.03, "satin", lift=0.003, thick=0.0018,
                     trim=("satin", 0.0035, 0.0006, 0.0012), mask=(LEGW[sd] > 0.6) & (Z < CROTCH + 0.02) & (X * (1 if sd == "l" else -1) > 0.002)),
             *piece(f"arcanist.boot_{sd}", limb(sd, KNEE_S - 0.05, 9.9, front_dip=-0.03), "blackleather", lift=0.005, smooth=8, iron=300, hull=LEG_S[sd] - ANKLE_S - 0.03, trim=gold(0.008), edge=30),
@@ -2263,13 +2494,15 @@ def leg_z(sd, s0):
 
 
 def ranger():
-    """The stalker: one fitted bodysuit of brown leather, a corset that
-    holds her: strapless, a sweetheart line over her breasts (hugged tight,
-    on their perfect form), her shoulders and the top of her chest bare,
-    laced up the front over a strip of her skin, cinched, and on down over
-    her crotch: cut high over her right hip to a thong behind, so her right
-    hip and cheek are bare; her left leg in a light tan pant leg into her
-    boot. A belt slung round her hips with a bronze buckle; a buckled strap
+    """The stalker: a corset that holds her. It is strapless, with a
+    sweetheart line over her breasts (hugged tight, on their perfect form),
+    leaving her shoulders and the top of her chest bare. It is laced up the
+    front over a strip of her skin and tied in a bow, and runs on down over
+    her crotch. On her right it is cut away from her waist: a straight line
+    in front to just shy of her crotch, and behind a line over the top of
+    her cheek into a thong, so her right hip and cheek are bare. Her left
+    leg is in a light brown pant leg, tucked up under the corset and down
+    into her boot. A belt slung round her hips with a bronze buckle; a buckled strap
     cinched high on her bare right thigh; bronze lames at her left
     shoulder, bronze bracers, fingerless gloves; knee boots with folded
     cuffs, the right one laced up the front. Corset, gloves and boots of
@@ -2285,51 +2518,123 @@ def ranger():
 
     nx, nzn = abs(NIPPLE["r"][0]), NIPPLE["r"][2]
     ax_ = np.abs(X)
-    # The sweetheart: an arc over each breast, well above the nipple, down
-    # to a point between them; behind, a straight band round her back.
-    # (round her side at her nipple's height, under her arm, so the whole of
-    # each breast is held; the band behind is lower)
-    sweet = PchipInterpolator([0.0, 0.025, nx * 0.6, nx, nx + 0.04, nx + 0.09, nx + 0.14],
-                              [nzn - 0.014, nzn - 0.004, nzn + 0.026, nzn + 0.034, nzn + 0.03, nzn + 0.012, nzn + 0.0],
-                              extrapolate=True)
-    top_z = sweet(np.minimum(ax_, nx + 0.14)) * FRONT + (UNDERBUST + 0.06) * (1 - FRONT)
-    # Below, each leg's opening a single smooth line round her hip, by the
-    # angle round her (0 her front, pi behind): on her right, from her crotch
-    # up over her hip bone, high at her side, and down across her cheek to
-    # the top of the cleft (her right hip and cheek bare); on her left, a
-    # cheeky seat (the lower curve of her cheek bare). Between her legs, a
-    # narrow strip, widening a little in front.
+
+    def smin(a, b, k=0.004):
+        m = np.minimum(a, b)
+        return m - k * np.log(np.exp(-(a - m) / k) + np.exp(-(b - m) / k))
+
+    # The top: a sweetheart over her breasts, well above each nipple, down to
+    # a point between them; then, by the angle round her chest, down under
+    # her arm (below all the skin her arm moves, so the edge is this line and
+    # never the ragged edge of her arm's weights) into a straight band round
+    # her back. The two met by a smooth minimum: one fair curve.
+    sweet = PchipInterpolator([0.0, 0.025, nx * 0.6, nx, nx + 0.04, nx + 0.09],
+                              [nzn - 0.014, nzn - 0.004, nzn + 0.026, nzn + 0.034, nzn + 0.03, nzn + 0.02])
+    round_ = np.degrees(np.abs(np.arctan2(X, -(Y + 0.03))))
+    under_arm = PchipInterpolator([0, 50, 62, 72, 82, 92, 104, 118, 180],
+                                  [1.8, 1.8, nzn + 0.05, nzn + 0.025, nzn, nzn - 0.03, UNDERBUST + 0.062, UNDERBUST + 0.06,
+                                   UNDERBUST + 0.06])(round_)
+    top_z = smin(sweet(np.minimum(ax_, nx + 0.09)), under_arm)
+    # Below, her right is cut away. In front the corset keeps only her abs:
+    # its edge runs up from just shy of her crotch along the groove at their
+    # outer edge (found on her: about 7 cm out from her middle, narrowing
+    # toward her crotch), then curves out round her side at her lower ribs.
+    # Behind, from there it runs level, then curves down over the top of her
+    # cheek to her middle above the cleft, and a thong runs down it. Her
+    # whole right hip, flank and cheek are bare. Her left is a cheeky seat
+    # over the top of her pant leg.
     ang = np.abs(np.arctan2(X, -(Y - CROTCH_Y)))
-    edge_r = CROTCH + PchipInterpolator([0, 0.5, 1.1, 1.57, 2.1, 2.6, np.pi], [0.02, 0.12, 0.19, 0.21, 0.19, 0.15, 0.13])(ang)
+    rise_ = Z - CROTCH
+    hug = PchipInterpolator([-0.035, 0.0, 0.02, 0.04, 0.07, 0.1, 0.16, 0.22, 0.25, 0.27, 0.29, 0.31],
+                            [0.012, 0.016, 0.026, 0.045, 0.063, 0.072, 0.075, 0.077, 0.08, 0.095, 0.13, 0.2])
+    right_front = hug(np.clip(rise_, -0.035, 0.31)) + X
+    waist_w = 0.14
+    u_ = np.clip(-X / waist_w, 0, 1)
+    right_back = Z - (CROTCH + 0.185 + 0.08 * np.sqrt(np.clip(1 - (1 - u_) ** 2, 0, 1)))
+    right = right_front * FRONT + right_back * (1 - FRONT)
     edge_l = CROTCH + PchipInterpolator([0, 0.6, 1.2, 1.57, 2.1, 2.6, np.pi], [-0.02, 0.0, 0.03, 0.05, 0.065, 0.06, 0.055])(ang)
     rise = np.maximum(Z - CROTCH, 0)
-    strip = (0.012 + 0.3 * rise) * FRONT + (0.009 + 0.05 * rise) * (1 - FRONT) - ax_
-    legs = OR(Z - np.where(X < 0, edge_r, edge_l), strip)
-    # (her breasts always held, however near her arms they come)
-    not_arms = np.where(wsum("breast_l", "breast_r") > 0.03, 1.0, 0.5 - arms)
+    # (between her legs a narrow strip, a little wider in front; behind, a
+    # thong down her cleft)
+    strip = (0.012 + 0.3 * rise) * FRONT + (0.008 + 0.035 * rise) * (1 - FRONT) - ax_
+    legs = OR(np.where(X < 0, right, Z - edge_l), strip)
+    # (her breasts always held; elsewhere never her arm, the cut eased so it
+    # can never be ragged)
+    not_arms = np.where(wsum("breast_l", "breast_r") > 0.03, 1.0, smooth_field(0.5 - arms, 30))
     body = AND(top_z - Z, Z - (CROTCH - 0.025), not_arms, legs)
-    # Its front laced across a strip of her skin from under her breasts to
-    # her waist.
-    lace_top, lace_bot = UNDERBUST - 0.012, float(belt_z(0.0)) + 0.02
-    gap = np.where((Z < lace_top) & (Z > lace_bot) & (FRONT > 0.5), ax_ - 0.007, 1.0)
+    # Its front is laced over a strip of her skin, from under her breasts to
+    # above her belt. The skin shows in a gap between bound edges, with
+    # bronze eyelets either side. The lace crosses between them over her
+    # skin, with a bar across the foot, and is tied at the top in a bow
+    # under her breasts.
+    lace_top, lace_bot = UNDERBUST - 0.008, CROTCH + 0.118
+    half = 0.011
+    gap = np.where((Z < lace_top + 0.018) & (Z > lace_bot - 0.03) & (FRONT > 0.5), ax_ - half, 1.0)
     corset = AND(body, gap)
     lift, thick = 0.0035, 0.003
-    rows = np.linspace(lace_top - 0.008, lace_bot + 0.008, 8)
-    holes = {}
+    rows = np.linspace(lace_top - 0.012, lace_bot + 0.012, 9)
+    eye, enrm = {1: [], -1: []}, {1: [], -1: []}
     for sg in (1, -1):
-        e = []
         for z in rows:
-            q = front_point(sg * 0.0125, z)
+            q = front_point(sg * (half + 0.0085), z)
             n = np.array(SKIN_BVH.find_nearest(Vector(q))[1][:])
-            e.append((q + n * (lift + thick + 0.0008), n))
-        holes[sg] = e
-    eyelets = [q for sg in (1, -1) for q, _ in holes[sg]]
-    enorm = [n for sg in (1, -1) for _, n in holes[sg]]
+            eye[sg].append(q + n * (lift + thick + 0.0003))
+            enrm[sg].append(n)
+
+    def at_eye(sg, i):
+        return eye[sg][i] + enrm[sg][i] * 0.0007
+
     laces = []
-    for i in range(len(rows) - 1):
+    nf = (enrm[1][-1] + enrm[-1][-1]) / 2
+    laces += cord("ranger.lace_foot", bezier(at_eye(1, -1), (at_eye(1, -1) + at_eye(-1, -1)) / 2 + nf * 0.003, at_eye(-1, -1)),
+                  "darkleather")
+    for i in range(len(rows) - 1, 0, -1):
         for sg in (1, -1):
-            laces += ribbon(f"ranger.lace{i}{'ab'[sg > 0]}", [holes[sg][i][0], holes[-sg][i + 1][0]], 0.0035, "darkleather",
-                            lift=0.0008, thick=0.0012, snap=False)
+            # Each pair crosses at its middle, one over the other by turns
+            # (a Bezier's middle is half its control's offset).
+            a_, b_ = at_eye(sg, i), at_eye(-sg, i - 1)
+            nm = (enrm[sg][i] + enrm[-sg][i - 1]) / 2
+            up_ = 0.0044 if (sg > 0) == (i % 2 == 0) else -0.0012
+            laces += cord(f"ranger.lace{i}{'ab'[sg > 0]}", bezier(a_, (a_ + b_) / 2 + nm * (0.0016 + up_), b_), "darkleather")
+    # The bow: a knot just above the top eyelets, two loops, two tails.
+    knot = front_point(0.0, rows[0] + 0.013)
+    kn = np.array(SKIN_BVH.find_nearest(Vector(knot))[1][:])
+    knot = knot + kn * (lift + thick + 0.0035)
+    up_v = np.array([0, 0, 1.0]) - kn * kn[2]
+    up_v /= np.linalg.norm(up_v)
+    side_v = np.cross(up_v, kn)
+    side_v *= np.sign(side_v[0])
+    tips, tip_dirs = [], []
+    for sg in (1, -1):
+        a_ = at_eye(sg, 0)
+        laces += cord(f"ranger.lace_top{'ab'[sg > 0]}", bezier(a_, (a_ + knot) / 2 + kn * 0.003, knot), "darkleather")
+        ph = np.linspace(0, 2 * np.pi, 64)
+        loop = (knot[None] + side_v[None] * (sg * 0.019 * (1 - np.cos(ph)))[:, None]
+                + up_v[None] * (0.009 * np.sin(ph) - 0.005 * (1 - np.cos(ph)))[:, None]
+                + kn[None] * (0.0035 * (1 - np.cos(ph)))[:, None])
+        laces += cord(f"ranger.bow{'ab'[sg > 0]}", loop, "darkleather", r=0.0014)
+        tail = []
+        for t in np.linspace(0, 1, 40):
+            z = knot[2] - 0.1 * t
+            q = front_point(sg * (0.004 + 0.024 * t + 0.003 * np.sin(t * 6)), z)
+            qn = np.array(SKIN_BVH.find_nearest(Vector(q))[1][:])
+            tail.append(q + qn * (lift + thick + 0.0048 - 0.0008 * t))
+        tail[0] = knot
+        tail = np.array(tail)
+        laces += cord(f"ranger.tail{'ab'[sg > 0]}", tail[:-3], "darkleather", r=0.0014)
+        laces += cord(f"ranger.aglet{'ab'[sg > 0]}", tail[-4:], "bronze", r=0.0019)
+    knot_ = domes("ranger.lace_knot", [knot - kn * 0.001], [kn], "darkleather", r=0.0042)
+    for o_ in knot_:
+        o_["hides"] = False
+    laces += knot_
+
+    def belt_lift(a):
+        # Over the corset and pant (her left, her front) it clears them; on
+        # her bare right hip and cheek it lies close to her skin.
+        am = (np.asarray(a) + np.pi) % (2 * np.pi) - np.pi
+        over = np.where(am >= 0, 1 - ramp(am, 2.75, 3.05), ramp(am, -0.75, -0.45))
+        return 0.0045 + 0.0065 * over
+
     # The belt and its buckle; the strap on her right thigh.
     bfront = front_point(0.035, float(belt_z(0.2)))
     bn_ = np.array(SKIN_BVH.find_nearest(Vector(bfront))[1][:])
@@ -2338,22 +2643,32 @@ def ranger():
     tn_ = np.array(SKIN_BVH.find_nearest(Vector(tpt))[1][:])
     fingers = wsum(*[n for n in BONES if n.split("_")[0] in ("index", "middle", "ring", "pinky", "thumb") and n.split("_")[1] in ("02", "03")])
     tops = {"r": KNEE_S - 0.03, "l": KNEE_S + 0.1}
+    # Her left leg in light brown cloth. Its top reaches up under the
+    # corset's edge all the way round, so no skin shows between them; its
+    # foot goes down into her boot. Both ends are hidden, so neither is bound.
+    pant = AND(X - 0.004, (edge_l + 0.03) - Z, (tops["l"] + 0.06) - LEG_S["l"], 0.3 - ARMW["l"])
     out = [
         *piece("ranger.corset", corset, "forestleather", lift=lift, thick=thick, smooth=8, iron=60, soften=20, slot="right",
                trim=edge(0.006), filled=True, keep_off=("Head", "neck_01")),
-        *domes("ranger.eyelets", eyelets, enorm, "bronze", r=0.0026),
+        *grommets("ranger.eyelets", eye[1] + eye[-1], enrm[1] + enrm[-1], "bronze"),
         *laces,
-        *girdle("ranger.belt", belt_z, 0.042, "brownleather", lift=0.011, thick=0.004, trim=edge(0.005)),
+        *girdle("ranger.belt", belt_z, 0.042, "brownleather", lift=belt_lift, thick=0.004),
         *frame("ranger.buckle", bfront + bn_ * 0.022, bn_, np.array([0, 0, 1.0]), 0.042, 0.052, "bronze", r=0.0028),
         *girdle("ranger.thighstrap", lambda a: np.full_like(a, tz), 0.028, "brownleather", lift=0.003, thick=0.003,
-                trim=edge(0.004), mask=(LEGW["r"] > 0.6) & (np.abs(Z - tz) < 0.05)),
+                mask=(LEGW["r"] > 0.6) & (np.abs(Z - tz) < 0.05)),
         *frame("ranger.thighbuckle", tpt + tn_ * 0.008, tn_, np.array([0, 0, 1.0]), 0.03, 0.036, "bronze", r=0.0022),
-        # Her left leg in light tan leather, from under the corset's edge
-        # into her boot.
-        # (its top up under the corset in front, below her cheek behind)
-        *piece("ranger.pant", limb("l", -0.1, tops["l"] + 0.06, front_dip=-0.19), "browncloth", lift=0.0025, thick=0.0025,
-               smooth=6, soften=8, trim=edge(0.004, "brownleather")),
+        *piece("ranger.pant", pant, "browncloth", lift=0.0008, thick=0.001, smooth=6, soften=8, slot="right", bind=False),
     ]
+    seam = []
+    legl = LEGW["l"] > 0.6
+    for z in np.linspace(CROTCH + 0.07, leg_z("l", tops["l"]) - 0.01, 40):
+        m = legl & (np.abs(Z - z) < 0.004)
+        if m.sum() > 3:
+            seam.append(P[m][np.argmax(X[m])])
+    seam = np.array(seam)
+    for _ in range(4):
+        seam[1:-1] = (seam[:-2] + 2 * seam[1:-1] + seam[2:]) / 4
+    out += ribbon("ranger.pant_seam", list(seam), 0.005, "brownleather", lift=0.0022, thick=0.0012)
     sh = shoulder("l")
     for k, (dz, r, lft) in enumerate(((0.0, 0.11, 0.024), (-0.045, 0.1, 0.019), (-0.09, 0.09, 0.014), (-0.13, 0.08, 0.009))):
         c = sh + np.array([0.02 * k, 0, dz])
@@ -2484,6 +2799,23 @@ def back_string(z0, z1, n=12):
     return out
 
 
+def soft_weights(pts, src_idx=None, sigma=0.015, k=16):
+    """Bone weights from her skin near each point, averaged over a couple of
+    centimetres: smooth from point to point. (Taken from each point's
+    nearest skin, a belt bridging her hollows took bones in jumps, and
+    crumpled when she moved.)"""
+    sp = P if src_idx is None else P[src_idx]
+    sw = W if src_idx is None else W[src_idx]
+    tree = cKDTree(sp)
+    out = np.zeros((len(pts), W.shape[1]))
+    for a in range(0, len(pts), 3000):
+        dd, jj = tree.query(pts[a:a + 3000], k=k)
+        ww = np.exp(-(dd / sigma) ** 2) + 1e-9
+        ww /= ww.sum(1, keepdims=True)
+        out[a:a + 3000] = np.einsum("pk,pkb->pb", ww, sw[jj].astype(float))
+    return out / (out.sum(1, keepdims=True) + 1e-12)
+
+
 def girdle(name, zfun, width, mkey, lift=0.004, thick=0.004, trim=None, rows=9, nu=160, mask=None, gap=None, arc=None, flare=0.0, span=None):
     """A belt round her, its middle at height zfun(angle) (angle 0 her
     front, rising toward her left), `width` tall, pulled taut over her
@@ -2497,18 +2829,51 @@ def girdle(name, zfun, width, mkey, lift=0.004, thick=0.004, trim=None, rows=9, 
     else:
         zc, half = zfun(a), np.full(nu, width / 2)
     zs, _, R, cxy = hull_radius_grid((zc - half).min() - 0.01, (zc + half).max() + 0.01, nu, mask=mask, angles=a)
+    # The hull's corners shift from level to level, and a belt laid on them
+    # creases along them (thin bright lines in its shine). So: eased round
+    # her and up her, then lifted back out by however far that brought it
+    # inside the hull anywhere near, eased too. Fair, and never in her.
+    from scipy.ndimage import gaussian_filter, maximum_filter
+    run_a = max(np.abs(np.diff(a)).mean() * float(np.mean(R)), 1e-4)
+    sg_ = (0.008 / 0.004, 0.02 / run_a)
+    md = ("nearest", "wrap" if arc is None else "nearest")
+    R_s = gaussian_filter(R, sg_, mode=md)
+    lack = maximum_filter(np.maximum(R - R_s, 0), size=(5, max(3, int(0.03 / run_a))), mode=md)
+    R = R_s + gaussian_filter(lack, sg_, mode=md) * 1.1
+    # (rows fine enough that a trim band cut along the edge is a clean line)
+    rows = max(rows, int(np.ceil(width / 0.0016)) | 1)
     off = np.linspace(-1, 1, rows)
     pos = np.zeros((rows, nu, 3))
+    # (`lift` may be a function of the angle: a belt over a garment on one
+    # side and bare skin on the other stands off each by what is under it)
+    lift_a = lift(a) if callable(lift) else lift
     for k, o in enumerate(off):
         z = zc + o * half
         r = np.array([np.interp(z[j], zs, R[:, j]) for j in range(nu)])
-        rl = r + lift + flare * k / (rows - 1)
+        rl = r + lift_a + flare * k / (rows - 1)
         pos[k] = np.stack([cxy[0] + rl * np.sin(a), cxy[1] - rl * np.cos(a), z], -1)
     for _ in range(3):
         if arc is None:
             pos = (np.roll(pos, 1, 1) + 2 * pos + np.roll(pos, -1, 1)) / 4
         else:
             pos[:, 1:-1] = (pos[:, :-2] + 2 * pos[:, 1:-1] + pos[:, 2:]) / 4
+    seams = []
+    if kind(mkey) == "leather" and width >= 0.012:
+        inset = 0.003 if width < 0.03 else 0.0038
+        for sgn in (1, -1):
+            o_ = sgn * (1 - inset / np.maximum(half, inset * 2))
+            z = zc + o_ * half
+            r = np.array([np.interp(z[j], zs, R[:, j]) for j in range(nu)])
+            rl = r + lift_a + flare * (o_ + 1) / 2
+            ln = np.stack([cxy[0] + rl * np.sin(a), cxy[1] - rl * np.cos(a), z], -1)
+            for _ in range(3):
+                if arc is None:
+                    ln = (np.roll(ln, 1, 0) + 2 * ln + np.roll(ln, -1, 0)) / 4
+                else:
+                    ln[1:-1] = (ln[:-2] + 2 * ln[1:-1] + ln[2:]) / 4
+            radial = np.stack([np.sin(a), -np.cos(a), np.zeros_like(a)], -1)
+            tgl = np.gradient(ln, axis=0)
+            seams.append((ln + radial * (thick + 0.0001), radial, tgl))
     pos = pos.reshape(-1, 3)
     idx = np.arange(rows * nu).reshape(rows, nu)
     if arc is None:
@@ -2524,17 +2889,28 @@ def girdle(name, zfun, width, mkey, lift=0.004, thick=0.004, trim=None, rows=9, 
         tris = tris[:, ::-1]
         nor = -nor
     src = np.where(mask)[0] if mask is not None else np.arange(len(P))
-    _, j = cKDTree(P[src]).query(pos)
-    j = src[j]
+    # (one set of weights across its width, eased along it: it moves as a belt)
+    wt = soft_weights(pos, src).reshape(rows, nu, -1)
+    wt[:] = wt.mean(0, keepdims=True)
+    for _ in range(12):
+        if arc is None:
+            wt = (np.roll(wt, 1, 1) + 2 * wt + np.roll(wt, -1, 1)) / 4
+        else:
+            wt[:, 1:-1] = (wt[:, :-2] + 2 * wt[:, 1:-1] + wt[:, 2:]) / 4
+    wt = wt.reshape(len(pos), -1)
     edge = ((1 - np.abs(off))[:, None] * half[None, :]).ravel()
     if arc is not None:
         run = np.abs(np.diff(a)).mean() * np.mean(R)
         col = np.tile(np.arange(nu), rows)
         edge = np.minimum(edge, np.minimum(col, nu - 1 - col) * run)
-    at = np.hstack([nor, W[j].astype(float), edge[:, None]])
+    at = np.hstack([nor, wt, edge[:, None]])
     made = trimmed(name, pos, at, tris, mkey, thick, 0.0008, trim, budget=10 ** 7)
     for o in made:
         o["hides"] = True
+    for k, (ln, rn, tgl) in enumerate(seams):
+        made += stitches(f"{name}_stitch{k}", ln, rn, tgl, pos, at[:, 3:3 + NB], closed=arc is None)
+    if seams:
+        made[0]["geo_stitch"] = True
     print("GIRDLE", name)
     return made
 
@@ -2699,7 +3075,7 @@ OUTFITS = {"warden": warden, "arcanist": arcanist, "ranger": ranger, "reaver": r
 # satin: clean). Fur and sheer stockings have shaders of their own.
 KIND = {"steel": "metal", "darksteel": "metal", "gold": "metal", "bronze": "metal", "rust": "metal",
         "velvet": "cloth", "arcvelvet": "cloth", "linen": "cloth", "lace": "cloth", "ink": "cloth",
-        "browncloth": "cloth", "satin": "gloss", "bone": "leather", "fur": "fur", "stocking": "sheer"}
+        "browncloth": "cloth", "thread": "gloss", "satin": "gloss", "bone": "leather", "fur": "fur", "stocking": "sheer"}
 
 
 def kind(key):
@@ -2736,49 +3112,34 @@ def detail(objs, rays=20, reach=0.03):
         me.calc_loop_triangles()
         V = np.array([(o.matrix_world @ v.co)[:] for v in me.vertices])
         Nv = np.array([(o.matrix_world.to_3x3() @ v.normal).normalized()[:] for v in me.vertices])
-        # The rim: faces that stand square to the sheet round them (the
-        # sheet's own way there: the main axis of the normals of the faces
-        # near by, either side of it alike), or the sheet's own border if it
-        # has no rim. Not square to her skin: under a garment shaped to a
-        # perfect form her skin may lie any way.
-        fc = np.array([np.mean([V[i] for i in p.vertices], 0) for p in me.polygons])
-        fn = np.array([(o.matrix_world.to_3x3() @ p.normal).normalized()[:] for p in me.polygons])
-        fc = np.where(np.isfinite(fc), fc, 0.0)
-        fn = np.where(np.isfinite(fn), fn, 0.0)
-        _, nbr = cKDTree(fc).query(fc, k=min(32, len(fc)))
-        _, vec = np.linalg.eigh(np.einsum("fki,fkj->fij", fn[nbr], fn[nbr]))
-        rimf = np.abs((fn * vec[:, :, -1]).sum(1)) < 0.5
-        rimv = np.unique(np.concatenate([list(me.polygons[i].vertices) for i in np.nonzero(rimf)[0]])) if rimf.any() else np.array([], int)
-        if len(rimv) < 3:
-            ek = {}
-            for p in me.polygons:
-                vs = list(p.vertices)
-                for a, b in zip(vs, vs[1:] + vs[:1]):
-                    k = (min(a, b), max(a, b))
-                    ek[k] = ek.get(k, 0) + 1
-            rimv = np.unique([v for k, c in ek.items() if c == 1 for v in k]).astype(int)
-        # (a broken point, no number at all, is far from every edge and sees the sky)
+        # The edge: a sheet knows its own (finish() kept its border). A closed
+        # piece (a cord, a rolled binding, a rivet) has none: guessed from its
+        # shape, its curve read as edges and drew stitches across it.
         fin = np.isfinite(V).all(1)
-        rimv = rimv[fin[rimv]]
         dist = np.full(len(V), 0.05)
-        if len(rimv):
-            dist[fin] = cKDTree(V[rimv]).query(V[fin])[0]
+        if "rim" in o.keys():
+            M = np.array(o.matrix_world)
+            rp = np.array(o["rim"].to_list() if hasattr(o["rim"], "to_list") else o["rim"], float).reshape(-1, 3)
+            rp = rp @ M[:3, :3].T + M[:3, 3]
+            dist[fin] = cKDTree(rp).query(V[fin])[0]
+            del o["rim"]
         V = np.where(fin[:, None], V, 0.0)
         Nv = np.where(np.isfinite(Nv).all(1)[:, None], Nv, [0.0, 0.0, 1.0])
         # Convexity: how far each point stands out from the middle of its neighbours, along its normal.
-        nb = [[] for _ in range(len(V))]
-        for e in me.edges:
-            a, b = e.vertices
-            nb[a].append(b)
-            nb[b].append(a)
-        conv = np.zeros(len(V))
-        for i, n_ in enumerate(nb):
-            if n_:
-                d = V[n_].mean(0) - V[i]
-                el = np.linalg.norm(V[n_] - V[i], axis=1).mean() + 1e-6
-                conv[i] = -(d @ Nv[i]) / el
+        ev = np.zeros(len(me.edges) * 2, np.int32)
+        me.edges.foreach_get("vertices", ev)
+        ev = ev.reshape(-1, 2)
+        A = sparse.coo_matrix((np.ones(2 * len(ev)), (np.r_[ev[:, 0], ev[:, 1]], np.r_[ev[:, 1], ev[:, 0]])),
+                              shape=(len(V), len(V))).tocsr()
+        deg = np.asarray(A.sum(1)).ravel()
+        has = deg > 0
+        mean_nb = lambda x: np.where(has if x.ndim == 1 else has[:, None], (A @ x) / np.maximum(deg, 1)[(slice(None),) + (None,) * (x.ndim - 1)], x)
+        d = mean_nb(V) - V
+        el = np.array([np.linalg.norm(V[A.indices[A.indptr[i]:A.indptr[i + 1]]] - V[i], axis=1).mean() if deg[i] else 1.0
+                       for i in range(len(V))]) + 1e-6
+        conv = np.where(has, -(d * Nv).sum(1) / el, 0.0)
         for _ in range(3):
-            conv = np.array([0.5 * conv[i] + 0.5 * conv[n_].mean() if n_ else conv[i] for i, n_ in enumerate(nb)])
+            conv = 0.5 * conv + 0.5 * mean_nb(conv)
         conv = np.tanh(conv * 4) * 0.5 + 0.5
         ao = np.ones(len(V))
         for i in range(len(V)):
@@ -2793,6 +3154,10 @@ def detail(objs, rays=20, reach=0.03):
                 if bvh.ray_cast(org, Vector(d), reach)[0] is None:
                     seen += w
             ao[i] = seen / max(tot, 1e-6)
+        # (each point's few rays are noisy: eased over its neighbours, or a
+        # smooth plate reads blotched)
+        for _ in range(8):
+            ao = 0.5 * ao + 0.5 * mean_nb(ao)
         loops = np.zeros(len(me.loops), np.int32)
         me.loops.foreach_get("vertex_index", loops)
         du = me.uv_layers.new(name="detail")
@@ -2801,7 +3166,8 @@ def detail(objs, rays=20, reach=0.03):
         me.uv_layers[0].active_render = True
         rnd = (zlib.crc32(o.name.split(".")[-1].split("_")[0].encode()) % 1000) / 1000.0
         col = me.color_attributes.new("detail", "FLOAT_COLOR", "POINT")
-        col.data.foreach_set("color", np.c_[ao, np.full(len(V), rnd), np.zeros(len(V)), np.ones(len(V))].astype(np.float32).ravel())
+        painted = 0.0 if o.get("geo_stitch") else 1.0
+        col.data.foreach_set("color", np.c_[ao, np.full(len(V), rnd), np.full(len(V), painted), np.ones(len(V))].astype(np.float32).ravel())
         me.color_attributes.active_color = col
     print("DETAIL", len(objs), "pieces")
 

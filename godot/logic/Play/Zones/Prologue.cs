@@ -400,7 +400,7 @@ public sealed class Prologue : ZoneRuntime
         switch (Now)
         {
             case Stage.Wake:
-                if (stageT > 1.2) Tip("move", "Move", "The dead are climbing out of the ground around your fire. Keep moving — your weapon strikes on its own.", ["W", "A", "S", "D"], 11);
+                if (stageT > 1.2) Tip("move", "Move", "Keep moving. Your weapon strikes on its own.", ["W", "A", "S", "D"], 11);
                 if (stageT > 3) { Go(Stage.Rising); spawnT = 0; }
                 break;
             case Stage.Rising:

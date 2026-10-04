@@ -49,7 +49,7 @@ public class VoiceTests
                 return v < n.Text.Count ? n.Text[v].Text : null;
             case "bark":
                 var npc = Lore.Person(p[1]);
-                var list = p[2] == "night" ? npc?.NightBarks : npc?.Barks;
+                var list = p[2] switch { "night" => npc?.NightBarks, "said" => npc?.Said?.Select(l => l.Text).ToList(), _ => npc?.Barks };
                 int b = int.Parse(p[3]);
                 return list != null && b < list.Count ? list[b] : null;
             case "guard":

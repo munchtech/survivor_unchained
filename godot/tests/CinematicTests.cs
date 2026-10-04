@@ -269,4 +269,91 @@ public class CinematicTests
         Assert.True(s.World.Fact("sella.felt_cold").Truthy);
         Assert.True(s.World.Fact("sella.cold_sold").Truthy);
     }
+
+    [Fact]
+    public void Chid_never_tells_a_mourner_what_she_saw()
+    {
+        // The burial morning: nothing from Chid about it until she has stood at
+        // the grave, and then not what she saw there.
+        var s = Q();
+        Talk(Convo("chid"), s.C, "goodbye");
+        s.World.Facts["nell.told"] = "gone";
+        Simulation.AdvanceDay(s.C, () => 0.5);
+        Assert.True(s.World.Fact("nell.burying").Truthy);
+        Assert.NotEqual("cb_nell", new DialogueRunner(Convo("chid"), s.C).Start()!.Node.Id);
+        Rules.Apply(E("{ zone: { id: 'waystation', key: 'burial', value: true } }"), s.C);
+        var at = new DialogueRunner(Convo("chid"), s.C).Start()!;
+        Assert.Equal("cb_nell", at.Node.Id);
+        Assert.StartsWith("I sang it flat.", at.Text);
+        // Kept away, she hears it from him the next day.
+        var away = Q();
+        Talk(Convo("chid"), away.C, "goodbye");
+        away.World.Facts["nell.told"] = "gone";
+        Simulation.AdvanceDay(away.C, () => 0.5);
+        Simulation.AdvanceDay(away.C, () => 0.5);
+        Assert.StartsWith("We buried Nell", new DialogueRunner(Convo("chid"), away.C).Start()!.Text);
+    }
+
+    [Fact]
+    public void The_carter_wears_thinner_with_every_death()
+    {
+        // LINE_NOTES 4.1: the same white lie, until it can be asked about.
+        var s = Q();
+        Talk(Convo("chid"), s.C, "goodbye");
+        string Woke(int deaths)
+        {
+            s.World.Facts["player.deaths"] = deaths;
+            s.World.Facts["player.just_died"] = true;
+            var p = new DialogueRunner(Convo("chid"), s.C).Start()!;
+            Assert.Equal("woke", p.Node.Id);
+            return p.Text;
+        }
+        var said = Enumerable.Range(1, 4).Select(Woke).ToList();
+        Assert.Equal(4, said.Distinct().Count());
+        Assert.Contains("A carter found you on the Old Road", said[0]);
+        Assert.Contains("Someone always does.", said[2]);
+        s.World.Facts["player.just_died"] = true;
+        Assert.Contains("I never asked his name", Talk(Convo("chid"), s.C, "Which carter")!.Text);
+        // And somebody in the street notices there are no carts.
+        Assert.Contains(Lore.FolkLines, l => l.Text.Contains("who keeps bringing that one in") && l.When != null);
+    }
+
+    static List<string> Said(string npc, Setup s, bool dark) =>
+        Lore.Person(npc)!.Said!.Where(l => (l.Night == null || l.Night == dark) && Rules.Test(l.When, s.C)).Select(l => l.Text).ToList();
+
+    [Fact]
+    public void The_town_stops_saying_what_has_stopped_being_true()
+    {
+        // LINE_NOTES 10: a person's barks follow what the survivor settled.
+        var s = Q();
+        Assert.Contains("Late. Jory's never late.", Said("harlan", s, false));
+        Assert.DoesNotContain(Lore.Person("harlan")!.Barks, b => b.Contains("Jory"));
+        s.World.Facts["caravan.survivors"] = "rescued";
+        Assert.DoesNotContain("Late. Jory's never late.", Said("harlan", s, false));
+        Assert.Contains("He sleeps with the lamp lit. So do I, now.", Said("harlan", s, true));
+        Assert.DoesNotContain(Said("harlan", s, true), l => l.Contains("hated the dark"));
+        // The Pack: loud while it lives, and a Hollow with nothing in it after.
+        Assert.Contains("The Pack's loud tonight.", Said("maeca", s, true));
+        s.World.Facts["beasts.outcome"] = "slaughtered";
+        Assert.DoesNotContain("The Pack's loud tonight.", Said("maeca", s, true));
+        Assert.Contains("Nothing calls in the Hollow now. Nothing.", Said("maeca", s, false));
+        Assert.DoesNotContain("They drank from the stream and fell down.", Said("tam", s, false));
+        // Brannoc lied to still thinks she is on the road.
+        s.World.Facts["nell.told"] = "lie";
+        Assert.Contains("Low Kiln's three days. She'll be there by now.", Said("brannoc", s, false));
+    }
+
+    [Fact]
+    public void Nobody_says_an_answer_before_its_act()
+    {
+        // The bible's first rule holds for the interface too (LINE_NOTES 4.4), and
+        // the nemesis never wears a name the story has spent (4.2).
+        var risen = Callings.Trait("risen_once")!.Text;
+        Assert.DoesNotContain("died", risen);
+        Assert.StartsWith("You fell, and got up again.", risen);
+        // Maeca keeps Ashford until it is earned: not on meeting, not on her plate.
+        foreach (var v in Convo("maeca").Nodes["first"].Text) Assert.DoesNotContain("Ashford", v.Text);
+        Assert.DoesNotContain("Ashford", Lore.Person("maeca")!.Title);
+        Assert.Contains("Ashford was.", Convo("rook").Nodes["valley"].Text[0].Text);
+    }
 }
