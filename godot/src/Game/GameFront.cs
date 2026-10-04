@@ -93,6 +93,7 @@ public partial class Game
     // of her, 0.55 head and shoulders, 1 her face): asked, and as it is now.
     float figTurn, figTurnNow, figZoom;
     CameraAttributesPractical? portrait;
+    SpotLight3D? keyLight;
 
     /// <summary>How near the figure is asked to be framed (0 all of her, 1 her face).</summary>
     public float FigureZoom => figZoom;
@@ -125,8 +126,8 @@ public partial class Game
         var eyes = People.EyesOf(figure.Person);
         var dir = new Vector3(fullPos.X - eyes.X, 0, fullPos.Z - eyes.Z).Normalized();
         // Head and shoulders, then her face: the look a little under the eyes, the lens longer.
-        Vector3 bustLook = eyes + new Vector3(0, -0.26f, 0), faceLook = eyes + new Vector3(0, -0.035f, 0);
-        Vector3 bustPos = bustLook + dir * 2.0f + new Vector3(0, 0.1f, 0), facePos = faceLook + dir * 0.95f + new Vector3(0, 0.015f, 0);
+        Vector3 bustLook = eyes + new Vector3(0, -0.16f, 0), faceLook = eyes + new Vector3(0, -0.05f, 0);
+        Vector3 bustPos = bustLook + dir * 1.75f + new Vector3(0, 0.08f, 0), facePos = faceLook + dir * 1.3f + new Vector3(0, 0.02f, 0);
         float z = figZoom;
         Vector3 pos, look;
         float fov;
@@ -138,9 +139,25 @@ public partial class Game
         else
         {
             float t = Smooth((z - 0.55f) / 0.45f);
-            pos = bustPos.Lerp(facePos, t); look = bustLook.Lerp(faceLook, t); fov = Mathf.Lerp(26, 19, t);
+            pos = bustPos.Lerp(facePos, t); look = bustLook.Lerp(faceLook, t); fov = Mathf.Lerp(26, 20, t);
         }
         Pose(pos, look, false, fov, Mathf.Lerp(1, 0.08f, Mathf.Clamp(z * 1.6f, 0, 1)));
+        // A portrait's key light, the nearer the brighter: soft and warm, up and
+        // to the camera's right, so her face can be judged and not only the fire's side of it.
+        if (keyLight == null)
+        {
+            keyLight = new SpotLight3D
+            {
+                LightColor = new Color(1f, 0.86f, 0.72f), SpotAngle = 22, SpotRange = 8, SpotAttenuation = 0.6f, ShadowEnabled = true,
+                LightSize = 0.4f, LightSpecular = 0.6f, LightCullMask = 2,
+            };
+            scene.AddChild(keyLight);
+        }
+        var right = dir.Cross(Vector3.Up).Normalized();
+        var at = eyes + dir * 2.2f - right * 1.1f + Vector3.Up * 0.9f;
+        keyLight.GlobalPosition = at;
+        keyLight.LookAt(eyes + Vector3.Down * 0.15f);
+        keyLight.LightEnergy = Mathf.Lerp(keyLight.LightEnergy, 0.12f + 0.85f * z, 1 - Mathf.Exp(-3f * (float)dt));
         // A close portrait: what is behind her softened, the more the nearer.
         if (z > 0.05f)
         {
@@ -160,6 +177,8 @@ public partial class Game
     {
         figTurn = figTurnNow = figZoom = 0;
         figureBody = "";
+        keyLight?.QueueFree();
+        keyLight = null;
         if (camera.Attributes == portrait) camera.Attributes = null;
     }
 
@@ -190,9 +209,14 @@ public partial class Game
             var a = SurvivorUnchained.Rpg.Callings.Archetype(arch);
             draft.Archetype = arch; draft.WeaponItem = a.Weapons[0]; draft.Ability = a.Abilities[0]; draft.Palette = a.Palettes[0].Id; draft.Model = a.Model;
         }
+        // --step N --part N (pictures of a step, and of the look's part).
+        if (Args.Get("step") is string st && int.TryParse(st, out var sn)) draft.Step = Math.Clamp(sn, 0, 4);
+        if (Args.Get("part") is string pt && int.TryParse(pt, out var pn)) draft.Section = pn;
         DressFigure(draft);
         PoseCreate();
-        screens.Show(new CreateScreen(this, draft));
+        var create = new CreateScreen(this, draft);
+        screens.Show(create);
+        create.FrameForStep();
     }
 
     public void CancelCreation()

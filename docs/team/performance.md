@@ -2,6 +2,8 @@
 
 Status page for the performance lead (agent a9586a5171413db0b, branch `worktree-agent-a9586a5171413db0b`).
 The audit, with every number and how to reproduce it: `docs/PERF_AUDIT.md`.
+**Handed off (context past 500k): a successor starts from `docs/handoff/performance.md`.**
+Merged with the integration branch at 535bb60; 539 tests pass.
 
 ## Current state (2026-10-04, stopped at the owner's usage limit)
 

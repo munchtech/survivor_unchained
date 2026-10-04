@@ -140,7 +140,7 @@ public static class People
         /// <summary>Her hair's meshes (one hairstyle), and its style.</summary>
         public readonly List<MeshInstance3D> Hair = new();
         public string HairStyle = "";
-        /// <summary>The paint on her face (Lore.Paints), or none.</summary>
+        /// <summary>The paint on her face (Lore.Her.Paints), or none.</summary>
         public string? Paint;
         /// <summary>Her head's pose as she is drawn (her corrective layer
         /// included, which a pose read in _Process is not), skeleton space.</summary>
@@ -432,7 +432,7 @@ public static class People
 
     static Shader? paintShader;
 
-    /// <summary>Paint on her face (Lore.Paints: art/people/paint/ID.png, laid
+    /// <summary>Paint on her face (Lore.Her.Paints: art/people/paint/ID.png, laid
     /// out on her head's own paint by tools/assets/heroine_paint.py): drawn
     /// over her skin as a pass of its own, so it lies on the skin rather than
     /// in it, with its own sheen (chalky woad, waxy kohl, bright leaf), and
@@ -440,7 +440,7 @@ public static class People
     public static void HerPaint(Person p, string? paint)
     {
         p.Paint = paint;
-        var def = paint == null ? null : SurvivorUnchained.World.Lore.Paints.FirstOrDefault(x => x.Id == paint);
+        var def = paint == null ? null : SurvivorUnchained.World.Lore.Her.Paints.FirstOrDefault(x => x.Id == paint);
         var file = def == null ? "" : $"res://art/people/paint/{def.Id}.png";
         foreach (var mi in p.Meshes)
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)

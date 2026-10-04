@@ -86,7 +86,7 @@ public class LoadoutTests
         var p = Loadouts.Of(ch).Person;
         Assert.Equal("braid", p.Hair);
         Assert.Equal(0.6, p.Face!["eyes_tilt"]);
-        Assert.Equal(World.Lore.Eyes.First(e => e.Id == "cornflower").Color, p.Eyes);
+        Assert.Equal(World.Lore.Her.Eyes.First(e => e.Id == "cornflower").Color, p.Eyes);
         Assert.Equal("woad", p.Paint);
         // Her own eyes (as painted) and bare skin carry nothing.
         ch.Eyes = "moss"; ch.Paint = null;
@@ -102,15 +102,18 @@ public class LoadoutTests
     public void Her_looks_are_whole()
     {
         // Every slider has its words and a range about her own face; every face starts from known sliders.
-        var ids = World.Lore.Sliders.Select(s => s.Id).ToHashSet();
+        var her = World.Lore.Her;
+        var ids = her.Sliders.Select(s => s.Id).ToHashSet();
         Assert.Equal(25, ids.Count);
-        Assert.All(World.Lore.Sliders, s => Assert.True(s.Min <= 0 && s.Max > 0 && s.Low != "" && s.High != ""));
-        Assert.All(World.Lore.Faces, f => Assert.All(f.Shape, kv =>
+        Assert.All(her.Sliders, s => Assert.True(s.Min <= 0 && s.Max > 0 && s.Low != "" && s.High != ""));
+        Assert.All(her.Faces, f => Assert.All(f.Shape, kv =>
         {
-            var s = World.Lore.Sliders.First(x => x.Id == kv.Key);
+            var s = her.Sliders.First(x => x.Id == kv.Key);
             Assert.InRange(kv.Value, s.Min, s.Max);
         }));
-        Assert.Equal(new[] { "long", "ponytail", "braid", "bob", "pixie" }, World.Lore.HerHairs.Select(h => h.Id));
-        Assert.Contains(World.Lore.Paints, p => p.Id == "none");
+        Assert.Equal(new[] { "long", "ponytail", "braid", "bob", "pixie" }, her.Cuts.Select(h => h.Id));
+        Assert.Contains(her.Paints, p => p.Id == "none");
+        // A man (a kit body until the male hero's is worn) is shaped without one.
+        Assert.Null(Loadouts.HeroKit(Sex.Male));
     }
 }
