@@ -239,7 +239,9 @@ public partial class PlayerView : Node3D
                 Upper("Spell_Simple_Shoot", 1.8);
                 break;
             case "grapple" or "grapple_miss":
-                Upper("OverhandThrow", 2.2);
+                // (Hers: the chain loosed like a thrown knife; a haul that
+                // follows plays over it.)
+                if (!UpperHer("throw", 1.6)) Upper("OverhandThrow", 2.2);
                 break;
             case "warcry" or "sprint" or "cinder_trail" or "wraith_walk":
                 if (!Busy) Upper("Punch_Cross", 1.4);
@@ -348,14 +350,22 @@ public partial class PlayerView : Node3D
         // A charge behind the shield; a haul on the chain, blade first.
         if (b.Art.Rush != rushSeen)
         {
+            var was = rushSeen;
             rushSeen = b.Art.Rush;
             if (rushSeen is { } rk)
             {
                 Rotation = new Vector3(0, Mathf.Atan2((float)b.Art.RushDX, (float)b.Art.RushDZ), 0);
+                aim = 0;
                 var rush = rk == Content.AbilityKind.BullRush ? "Shield_Dash" : "Sword_Dash";
                 bool own = People.Clip(person, rush).StartsWith(HerClips.Prefix);
                 Full(rush, own ? 1.0 : rk == Content.AbilityKind.BullRush ? 1.5 : 2.2);
+                // Her charge's plant and shove show, then give way if she runs on.
+                if (rk == Content.AbilityKind.BullRush) artTail = time + b.Art.RushT + 0.25;
             }
+            // Hauled all the way in: the blow she lands with (hers held in
+            // the air until now, for however long the haul took).
+            else if (was == Content.AbilityKind.Grapple && FullHer("chain_strike", 1, false))
+                artTail = time + 0.3;
         }
         // Weapon swings: the blade drives the arm. Hers alternate as the
         // arcs do (the first from her left), the wide arcs her heavy cut.

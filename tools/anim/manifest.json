@@ -8,8 +8,8 @@
   "Kimodo": "NVIDIA Kimodo-SOMA-RP-v1.1, NVIDIA Open Model License: generated motion (tools/anim/kimodo_gen.py).",
   "SAM 3D Body": "Meta SAM 3D Body (SAM License) with the Momentum Human Rig (Apache 2.0): motion from video (tools/anim/video_motion.py); test footage from Pexels (Pexels licence), each clip's URL in its row."
  },
- "made": 61,
- "planned": 63,
+ "made": 64,
+ "planned": 64,
  "clips": [
   {
    "clip": "idle_warden",
@@ -434,26 +434,38 @@
   {
    "clip": "bull_rush",
    "plays_for": "the bull rush art (0.4 s)",
-   "status": "fallback",
+   "status": "made",
    "fallback": "Shield_Dash",
-   "made_by": "Mixamo 'Sword And Shield Run' (downloaded, not yet retargeted)",
-   "source": "",
-   "licence": "",
+   "made_by": "keyed: one charging stride cycle (the gait solver) into a planted shove",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 1.0,
+   "layer": "full"
   },
   {
    "clip": "chain_haul",
-   "plays_for": "hauled in on the chain, blade first",
-   "status": "fallback",
+   "plays_for": "hauled in on the chain, held until she arrives",
+   "status": "made",
    "fallback": "Sword_Dash",
-   "made_by": "Mixamo 'Great Sword Slide Attack' (downloaded, not yet retargeted)",
-   "source": "",
-   "licence": "",
+   "made_by": "keyed: yanked off her feet and flown in, axe cocked",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 0.8,
+   "layer": "full"
+  },
+  {
+   "clip": "chain_strike",
+   "plays_for": "the blow she lands with off the chain",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "keyed: feet down, axe over and down two-handed",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 0.867,
+   "layer": "full"
   },
   {
    "clip": "sword_back",

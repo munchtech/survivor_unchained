@@ -78,8 +78,7 @@ arcanist; hunting bow (a crossbow, held pistol-fashion) and the knife belt
 
 Everything below is **made** and wired into the game unless marked
 **planned**; anything without a clip of hers plays from the Universal
-Animation Library through `HerPose` as before (the bull rush and chain
-haul, for now). `tools/anim/manifest.json` is the live list,
+Animation Library through `HerPose` as before. `tools/anim/manifest.json` is the live list,
 with each clip's source, licence and length.
 
 ### 4.1 Locomotion
@@ -178,6 +177,16 @@ then follows through and recovers; played at 1.6×.
 - PlayerView picks between them by her travel against her facing, turns
   her for it, and holds her facing in the air. Each art's landing gives
   way to her run as soon as she moves (`ArtTail`).
+- `bull_rush` (9 m in 0.4 s): one driving stride cycle from the gait
+  solver, pitched hard over it, the left shoulder and shield leading, the
+  sword trailing low behind; at 0.4 s the lead foot slams down and the
+  shield punches out, then the rebound into her guard.
+- `chain_haul` / `chain_strike`: yanked off her feet by the chain arm and
+  flown in nearly flat, legs trailing, the axe cocked high behind her
+  head, held for however long the haul takes (28 m/s, 0.08 to 0.4 s); as
+  the haul ends PlayerView plays the strike: feet swung down, the axe over
+  and down two-handed, landing in the second frame, as the game's blow
+  does on arrival.
 
 ## 5. In the game
 
@@ -224,5 +233,7 @@ fire, the flourishes, the breaks, the caught breath, a stop).
   and her own performance captured on video (SAM 3D Body) would be better.
 - The walk is never seen for more than a few frames, so it has no clip:
   the run blends from standing.
-- The bull rush and the chain haul still play the library's clips.
+- The arts are keyed (no capture fitted the game's timing; Mixamo's vault
+  was a vault over an obstacle). Kimodo's takes of the same prompts are
+  being judged against them.
 - Folk and the crowd keep the library.
