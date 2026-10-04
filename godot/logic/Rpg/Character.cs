@@ -95,8 +95,8 @@ public sealed class CharacterData
     public bool? Beard;
     public double? Figure;
     /// <summary>A woman's face, eyes and face paint (her body's own: Loadouts.HerBody):
-    /// her face's sliders (Lore.Sliders, -1 to 1; none set is her own face), her
-    /// eyes' colour (Lore.Eyes) and the paint she wears (Lore.Paints).</summary>
+    /// her face's sliders (Lore.Hero's, -1 to 1; none set is her own face), her
+    /// eyes' colour and the paint she wears (both Lore.Hero's).</summary>
     public Dictionary<string, double>? Face;
     public string? Eyes, Paint;
     public int Level = 1;
