@@ -25,9 +25,10 @@ Branch: `worktree-agent-a7622ae77d19e31dc`.
   - Brannoc's "Twelve, I made." said once in a playthrough.
   - §17 marks the lines to record exactly as written ("protect").
 - **In progress:** the ElevenLabs packets, read line by line (WRITING_PASS §18).
-  - **Final:** the narrator and Rook (voice branch b54e729, data 50f6f33). The
-    hymn stays held for the owner.
-  - **Next, in recording order:** Holloway, Brannoc, Sella, Vonnra, Harlan.
+  - **Final:** the narrator and Rook (voice branch b54e729, data 50f6f33);
+    Holloway and Brannoc (voice lead a501b387a90d78b4e, fe070ed), with
+    direction fixes sent. The hymn stays held for the owner.
+  - **Next, in recording order:** Sella, Vonnra, Harlan.
 
 ## Key decisions (why)
 
