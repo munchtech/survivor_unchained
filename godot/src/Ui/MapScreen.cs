@@ -137,39 +137,93 @@ public partial class MapScreen : Overlay
         return tex;
     }
 
-    /// <summary>Paper over what has not been walked, with holes where you went.</summary>
+    /// <summary>
+    /// The land not yet walked, as a cartographer leaves it: the same sheet,
+    /// blank and older (mottled, foxed, browned toward its edge), and where
+    /// what you know ends, an ink wash that has bled into the paper and dried
+    /// with a darker tide line, ragged as a brush leaves it. The walked land
+    /// shows through clean. Opaque wherever nothing was walked: no ink shows
+    /// through. (Was a flat dark at 94%: the owner, "it needs to look better".)
+    /// </summary>
     static ImageTexture Fog(string seen, int n)
     {
-        const int F = 300;
-        var img = Image.CreateEmpty(F, F, false, Image.Format.Rgba8);
+        const int F = 600;
         float c = F / (float)n;
-        var alpha = new float[F * F];
-        Array.Fill(alpha, 1f);
+        var known = new float[F * F];
         for (int j = 0; j < n; j++)
             for (int i = 0; i < n; i++)
             {
                 if (j * n + i >= seen.Length || seen[j * n + i] != '1') continue;
-                float cx = (i + 0.5f) * c, cy = (j + 0.5f) * c, rr = c * 1.35f;
+                float cx = (i + 0.5f) * c, cy = (j + 0.5f) * c, rr = c * 1.3f;
                 for (int y = (int)(cy - rr); y <= (int)(cy + rr); y++)
                     for (int x = (int)(cx - rr); x <= (int)(cx + rr); x++)
                     {
                         if (x < 0 || y < 0 || x >= F || y >= F) continue;
                         float d = new Vector2(x - cx, y - cy).Length() / rr;
-                        float hole = 1 - Mathf.SmoothStep(0.45f, 1f, d);
-                        alpha[y * F + x] = Math.Min(alpha[y * F + x], 1 - hole);
+                        known[y * F + x] = Math.Max(known[y * F + x], 1 - Mathf.SmoothStep(0.5f, 1f, d));
                     }
             }
-        for (int pass = 0; pass < 3; pass++) alpha = Blur(alpha, F, 3);
-        // Opaque and flat where nothing was walked: the same dark as past the paper's edge,
-        // so the two meet without a seam and no ink shows through (at 94% with grain it did).
+        for (int pass = 0; pass < 3; pass++) known = Blur(known, F, 5);
+        // How near the known land is, broadly: the sheet is lit round what you know and browns away from it.
+        var near = Blur(Blur(known, F, 28), F, 28);
+        var px = new byte[F * F * 4];
         for (int y = 0; y < F; y++)
             for (int x = 0; x < F; x++)
-                img.SetPixel(x, y, Dark with { A = Mathf.Clamp(alpha[y * F + x] * 1.04f, 0, 1) });
-        return ImageTexture.CreateFromImage(img);
+            {
+                float u = x / (float)F, v = y / (float)F;
+                // The edge of the known, made ragged by the brush: a broad wobble and a fine one.
+                float rag = (Fbm(u * 5, v * 5, 3) - 0.5f) * 0.7f + (Fbm(u * 38, v * 38, 2) - 0.5f) * 0.16f;
+                float k = Mathf.Clamp(known[y * F + x] + rag, 0, 1);
+                float cover = 1 - Mathf.SmoothStep(0.34f, 0.5f, k);
+                if (cover <= 0.001f) continue;
+                // The blank sheet: mottled with age, foxed here and there, a fibre grain, browner toward its edge.
+                float mottle = Fbm(u * 5 + 11, v * 5 + 3, 4);
+                float lit = Mathf.SmoothStep(0f, 0.45f, near[y * F + x]);
+                var paper = new Vector3(214, 198, 160).Lerp(new Vector3(178, 154, 112), Mathf.SmoothStep(0.35f, 0.8f, mottle));
+                paper = paper.Lerp(paper * new Vector3(0.66f, 0.6f, 0.52f), (1 - lit) * 0.75f);
+                float fox = Mathf.SmoothStep(0.74f, 0.86f, Fbm(u * 26 + 5, v * 26 + 9, 2));
+                paper = paper.Lerp(new Vector3(150, 104, 58), fox * 0.45f);
+                float grain = (float)(Hash(x, y) - 0.5) * 7 + (float)(Hash(x / 3, y * 2) - 0.5) * 5;
+                float edge = Mathf.Min(Mathf.Min(u, 1 - u), Mathf.Min(v, 1 - v));
+                paper = paper.Lerp(new Vector3(96, 62, 30), (1 - Mathf.SmoothStep(0f, 0.09f, edge)) * 0.6f);
+                // The surveyor's lines across the blank: sixteen rhumbs from the middle and a circle, faint.
+                float du = u - 0.5f, dv = v - 0.5f, rad = Mathf.Sqrt(du * du + dv * dv);
+                float rhumb = rad * F * Mathf.Abs(Mathf.Sin(8 * Mathf.Atan2(dv, du))) / 8;
+                float line = Mathf.Max(1 - Mathf.SmoothStep(0.3f, 1.1f, rhumb), 1 - Mathf.SmoothStep(0.4f, 1.3f, Mathf.Abs(rad - 0.42f) * F));
+                paper = paper.Lerp(new Vector3(110, 76, 42), line * 0.22f * Mathf.SmoothStep(0.02f, 0.1f, rad));
+                // The wash where knowledge ends: sepia bleeding outward, its tide line darkest.
+                float tide = Mathf.Exp(-Mathf.Pow((k - 0.31f) / 0.05f, 2));
+                float bleed = Mathf.SmoothStep(0.06f, 0.33f, k) * (1 - Mathf.SmoothStep(0.33f, 0.4f, k));
+                paper = paper.Lerp(new Vector3(120, 84, 48), bleed * 0.35f).Lerp(new Vector3(74, 46, 22), tide * 0.55f);
+                paper += new Vector3(grain, grain, grain * 0.8f);
+                int o = (y * F + x) * 4;
+                px[o] = (byte)Math.Clamp(paper.X, 0, 255);
+                px[o + 1] = (byte)Math.Clamp(paper.Y, 0, 255);
+                px[o + 2] = (byte)Math.Clamp(paper.Z, 0, 255);
+                px[o + 3] = (byte)Math.Clamp(cover * 255, 0, 255);
+            }
+        return ImageTexture.CreateFromImage(Image.CreateFromData(F, F, false, Image.Format.Rgba8, px));
     }
 
-    /// <summary>Unwalked land and past the paper's edge: one dark.</summary>
-    static readonly Color Dark = new(0.075f, 0.062f, 0.058f);
+    /// <summary>Smooth value noise, summed over octaves (0 to 1).</summary>
+    static float Fbm(float x, float y, int octaves)
+    {
+        float sum = 0, amp = 0.5f, norm = 0;
+        for (int o = 0; o < octaves; o++)
+        {
+            int x0 = (int)Mathf.Floor(x), y0 = (int)Mathf.Floor(y);
+            float tx = x - x0, ty = y - y0;
+            tx = tx * tx * (3 - 2 * tx); ty = ty * ty * (3 - 2 * ty);
+            float a = (float)Hash(x0, y0), b = (float)Hash(x0 + 1, y0), c = (float)Hash(x0, y0 + 1), d = (float)Hash(x0 + 1, y0 + 1);
+            sum += amp * Mathf.Lerp(Mathf.Lerp(a, b, tx), Mathf.Lerp(c, d, tx), ty);
+            norm += amp;
+            amp *= 0.5f; x *= 2.03f; y *= 2.03f;
+        }
+        return sum / norm;
+    }
+
+    /// <summary>The table the sheet lies on, past the paper's edge: dark leather, lit a little in the middle.</summary>
+    static readonly Color Dark = new(0.075f, 0.058f, 0.048f);
 
     /// <summary>A box blur of a square field, across then down.</summary>
     static float[] Blur(float[] a, int n, int r)
@@ -269,10 +323,21 @@ public partial class MapScreen : Overlay
         var frame = new Control { Position = Vector2.Zero, Size = new Vector2(1920, 1080), ClipContents = true, MouseFilter = MouseFilterEnum.Stop };
         AddChild(frame);
         MoveChild(frame, 1);
-        // Past the drawing's edge is the same dark as the unwalked land, so the known world floats in it.
-        frame.AddChild(new ColorRect { Color = Dark, Size = new Vector2(1920, 1080), MouseFilter = MouseFilterEnum.Ignore });
+        // Past the paper's edge, the table it lies on: dark leather, a little lit where the map lies.
+        frame.AddChild(new TextureRect
+        {
+            Texture = new GradientTexture2D
+            {
+                Gradient = new Gradient { Colors = new[] { Dark.Lightened(0.12f), Dark, Dark.Darkened(0.45f) }, Offsets = new[] { 0f, 0.55f, 1f } },
+                Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.4f, 0.55f), FillTo = new Vector2(1.1f, 1.1f), Width = 256, Height = 256,
+            },
+            Size = new Vector2(1920, 1080), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore,
+        });
         world = new Control { Size = new Vector2(F, F), MouseFilter = MouseFilterEnum.Ignore };
         frame.AddChild(world);
+        // The sheet's shadow on the table.
+        for (int i = 6; i >= 1; i--)
+            world.AddChild(new ColorRect { Color = new Color(0, 0, 0, 0.09f), Position = new Vector2(-i * 2.5f + 4, -i * 2.5f + 8), Size = new Vector2(F + i * 5, F + i * 5), MouseFilter = MouseFilterEnum.Ignore });
         // The expand mode first: a control is never smaller than its minimum, and the drawing's own is 1600.
         world.AddChild(new TextureRect { ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, Texture = Drawing(scene.Data), Size = new Vector2(F, F), MouseFilter = MouseFilterEnum.Ignore, TextureFilter = TextureFilterEnum.LinearWithMipmaps });
         // Clipped to the paper: a tree on its edge would hang its crown into the dark past it.
@@ -460,7 +525,7 @@ public partial class MapScreen : Overlay
         // The point the pan names sits at the middle of the part of the screen the map shows through.
         var centre = View.Position + View.Size / 2;
         world.Position = centre - (new Vector2(0.5f, 0.5f) - pan) * frame * zoom;
-        foreach (var c in world.GetChildren()) if (c is Control mk && mk is not TextureRect && mk is not MapInk && mk != ring) mk.Scale = new Vector2(1 / zoom, 1 / zoom);
+        foreach (var c in world.GetChildren()) if (c is Control mk && mk is not TextureRect && mk is not ColorRect && mk is not MapInk && mk != ring) mk.Scale = new Vector2(1 / zoom, 1 / zoom);
     }
 
     /// <summary>

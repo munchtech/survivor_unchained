@@ -35,9 +35,11 @@ SHEET = {"narrator": "The narrator.", "rook": "Mother Rook", "holloway": "Captai
          "kerchief_woman": "The Kerchiefs.", "lampling": "The babbling lampling.", "jory": "Jory Coyle.",
          "ysolde": "Ysolde Marrow", "watchman": "Nell, Wat, Corran."}
 # Held for the story lead's review (a7622ae77d19e31dc): whole parts, and kinds of line.
-HOLD_VOICES = {"chid": "the story editor's review of section 17", "maeca": "the story editor's review of section 17",
-               "ysolde": "the story editor's review of section 17"}
-HOLD_LINES = (("bark.", ".said."), ("cbark.", "grimtunnel"), ("cbark.", "barrow_lord"))
+HOLD_VOICES: dict = {}
+# Packets the story lead has checked and marked final (voice: date).
+FINAL = {"narrator": "2026-10-03", "rook": "2026-10-03"}
+# Lines waiting on the story lead or the owner: (id prefix, why).
+HOLD_LINES = (("dlg.keegan.vonnra.", "the story lead's confirmation of Keegan's kenning"),)
 TAG = {"beat": "…", "breath": "[inhales]", "laugh": "[laughs]", "laughs": "[laughs]", "chuckle": "[chuckles]",
        "sigh": "[sighs]", "sighs": "[sighs]", "sniff": "[sniffs]", "gasp": "[gasps]", "silence": "[long pause]", "name": "",
        "whisper": "[whispers]"}
@@ -65,9 +67,9 @@ def held(line: dict, voice: str) -> str | None:
         return "the owner's choice of how the hymn is sung (README)"
     if voice in HOLD_VOICES:
         return HOLD_VOICES[voice]
-    for a, b in HOLD_LINES:
-        if line["id"].startswith(a) and (b in line["id"] or any(s["voice"] == b for s in line["segments"])):
-            return "the story editor's review of section 17"
+    for prefix, why in HOLD_LINES:
+        if line["id"].startswith(prefix):
+            return why
     return None
 
 
@@ -84,10 +86,19 @@ def words(t: str) -> list[str]:
     return re.findall(r"[a-z']+", re.sub(r"\[[^\]]*\]", " ", t.lower()))
 
 
-def paste(seg_text: str, d: dict, narrator_aside: bool, plain: bool = False) -> str:
+ACTED = {"a sniff": "sniffs", "a laugh": "laughs", "a sigh": "sighs", "a gasp": "gasps"}
+
+
+def acted_tag(m) -> str:
+    inner = m.group(1).strip()
+    inner = ACTED.get(inner, inner)
+    return "[" + re.sub(r"^sung\b", "singing", inner) + "]"
+
+
+def paste(seg_text: str, d: dict, narrator_aside: bool, plain: bool = False, acted: str | None = None) -> str:
     """What to paste into ElevenLabs: a direction tag, then the words with
     the writer's beats as audio tags where a beats part says exactly them."""
-    text = seg_text
+    text = re.sub(r"\[([^\]]+)\]", acted_tag, acted) if acted else seg_text
     if not narrator_aside:
         for part in (d.get("beats") or "").split("|"):
             if words(part) and words(part) == words(seg_text):
@@ -95,8 +106,11 @@ def paste(seg_text: str, d: dict, narrator_aside: bool, plain: bool = False) -> 
                 break
     text = re.sub(r"\s+", " ", text).replace(" …", "…").strip()
     text = re.sub(r"[.,;:]…", "…", text)
+    text = re.sub(r"…[,;:]", "…", text)
     how = [] if narrator_aside or plain else [re.split(r";", d.get("emo", ""))[0].strip()]
     vol = "quiet" if narrator_aside else d.get("vol", "level")
+    if plain and vol == "hushed" and not d.get("whisper"):
+        vol = "quiet"  # the narrator whispers only where his direction says so
     if VOL_TAG.get(vol):
         how.append(VOL_TAG[vol])
     tag = ", ".join(h for h in how if h)
@@ -150,18 +164,29 @@ def file_name(line: dict, part: int) -> str:
 
 def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
     v = cast()[voice]
-    es = entries(man, voice)
+    es, first = [], {}
+    for e in entries(man, voice):
+        key = e["seg"].get("acted", e["seg"]["text"])
+        if key in first:
+            first[key]["also"].append(file_name(e["line"], e["part"]))
+            continue
+        e["also"] = []
+        first[key] = e
+        es.append(e)
     chars = sum(len(e["seg"]["text"]) for e in es)
     holds = [e for e in es if held(e["line"], voice)]
     spoken = " ".join(e["seg"]["text"] for e in es)
     lex = {k: x for k, x in lexicon().get("say", {}).items() if k != x and re.search(rf"(?<![\w']){re.escape(k)}(?![\w'])", spoken)}
     w = [f"# {v['name']}: ElevenLabs packet", "",
          f"Voice id in the game: `{voice}`. {len(es)} takes to record ({chars:,} characters; about {chars * 3:,} credits at three "
-         f"tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.", ""]
+         f"tries a line). " + (f"Status: **final** (the story lead, {FINAL[voice]}): record it." if voice in FINAL else
+                                    "Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final."), ""]
     if holds:
-        why = sorted({held(e['line'], voice) for e in holds})
-        w += [f"**Hold {len(holds)} of these** (marked HOLD below) until {', '.join(why)} is back; the rest can be recorded now.", ""]
-    w += ["## Who they are", "", sheet(voice) or v["design"], "",
+        w += [f"**Hold {len(holds)} of these** (marked HOLD below, with why); the rest can be recorded now.", ""]
+    w += ["## Who they are", "", sheet(voice) or v["design"], ""]
+    if v.get("wants") or v.get("hides"):
+        w += [f"*Wants:* {v.get('wants', '')}. *Hides:* {v.get('hides', '')}.", ""]
+    w += [
           "## Casting the voice", "",
           "In ElevenLabs: **Voices → Add a new voice → Voice Design**. Paste this as the description, and the preview text below "
           "as the text; generate, listen to the three, and regenerate until one is this person. Save it as "
@@ -202,8 +227,10 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
         d = l.get("direction") or {}
         aside = s["voice"] == "narrator" and l["voice"] != "narrator"
         hold = held(l, voice)
-        w.append(f"### {n}. `{file_name(l, k)}`" + ("  HOLD" if hold else ""))
+        w.append(f"### {n}. `{file_name(l, k)}`" + (f"  HOLD: {hold}" if hold else ""))
         w.append("")
+        if e["also"]:
+            w.append(f"*The same words are also* {', '.join(f'`{x}`' for x in e['also'])}*: record once; the importer copies the take.*")
         ctx = f"{l.get('where', '')}"
         if len(l["segments"]) > 1:
             ctx += f"; part {k + 1} of {len(l['segments'])}: " + " / ".join(
@@ -220,7 +247,7 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
             for key, label in (("wants", "Wants"), ("hides", "Hides"), ("note", "Note")):
                 if d.get(key):
                     w.append(f"*{label}:* {d[key]}")
-        w += ["", "```", paste(s["text"], d, aside, plain=voice == "narrator"), "```", f"Subtitle: {s['text']}", ""]
+        w += ["", "```", paste(s["text"], d, aside, plain=voice == "narrator", acted=s.get("acted")), "```", f"Subtitle: {s['text']}", ""]
     return "\n".join(w) + "\n", {"voice": voice, "name": v["name"], "takes": len(es), "chars": chars, "held": len(holds)}
 
 

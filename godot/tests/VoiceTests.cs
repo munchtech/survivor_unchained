@@ -31,7 +31,11 @@ public class VoiceTests
         var lit = new Regex(@"""((?:[^""\\]|\\.)*)""");
         foreach (var f in Directory.EnumerateFiles(LogicDir, "*.cs", SearchOption.AllDirectories))
             foreach (Match m in lit.Matches(File.ReadAllText(f)))
-                all.Add(Regex.Unescape(m.Groups[1].Value));
+            {
+                // A verbatim regex (@"\w") is no spoken line, and not a C# escape either.
+                try { all.Add(Regex.Unescape(m.Groups[1].Value)); }
+                catch (RegexParseException) { all.Add(m.Groups[1].Value); }
+            }
         return all;
     }
 

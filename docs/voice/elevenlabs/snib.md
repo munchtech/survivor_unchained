@@ -1,6 +1,6 @@
 # Snib: ElevenLabs packet
 
-Voice id in the game: `snib`. 14 takes to record (2,137 characters; about 6,411 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `snib`. 15 takes to record (2,199 characters; about 6,597 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -190,7 +190,16 @@ Subtitle: Slurry! What is left when the stones are cooked. Pipe takes it down to
 
 ## In a fight
 
-### 14. `cbark.746d49e0a695.wav`
+### 14. `cbark.6c1ce83b343d.wav`
+
+*Where:* godot/logic/Play/Bosses/ArenaBosses.cs
+
+```
+"Snib will tell Boss you said hello. Snib will NOT tell Boss."
+```
+Subtitle: "Snib will tell Boss you said hello. Snib will NOT tell Boss."
+
+### 15. `cbark.746d49e0a695.wav`
 
 *Where:* godot/logic/Play/Zones/Verge.cs
 *Played:* panicky bluster; doing: Snib shouts a warning; pace: quick; volume: shout.

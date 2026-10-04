@@ -1,6 +1,6 @@
 # Townswoman, young: ElevenLabs packet
 
-Voice id in the game: `folk_f2`. 47 takes to record (3,042 characters; about 9,126 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `folk_f2`. 47 takes to record (3,056 characters; about 9,168 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -511,7 +511,7 @@ Subtitle: They say a cart went out of the east gate the night Pell vanished, and
 *Played:* warning, kindly; doing: the lamps; pace: measured; volume: level.
 
 ```
-[warning, kindly] Lamps are lit. Stay where they reach, or it's the Morrow for you.
+[warning, kindly] No carter's been up the Old Road in a month. So who keeps bringing that one in?
 ```
-Subtitle: Lamps are lit. Stay where they reach, or it's the Morrow for you.
+Subtitle: No carter's been up the Old Road in a month. So who keeps bringing that one in?
 

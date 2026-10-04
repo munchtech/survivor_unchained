@@ -174,12 +174,25 @@ def main(argv):
                 ears = produce.Ears()
             tmp = os.path.join(FINALS, "_check.wav")
             to_wav(m["file"], tmp)
-            rep = ears.hear(tmp, m["text"], m["voice"])
+            rep = ears.hear(tmp, re.sub(r"\s\+\s", " and ", m["text"]), m["voice"])
             if rep["faults"] and not a.force:
                 wrong.append((m, rep["faults"], rep["said"]))
                 continue
         to_wav(m["file"], final_path(m["line"], m["part"], len(by_id[m["line"]]["segments"])))
         kept.append(m)
+    # One take serves every part with the same words in the same voice (the packets list them once).
+    same: dict = {}
+    for l in man:
+        for i, s in enumerate(l.get("segments") or []):
+            same.setdefault((s["voice"], s.get("acted", s["text"])), []).append((l["id"], i, len(l["segments"])))
+    for m in list(kept):
+        seg = by_id[m["line"]]["segments"][m["part"]]
+        src = final_path(m["line"], m["part"], len(by_id[m["line"]]["segments"]))
+        for lid, i, n in same.get((seg["voice"], seg.get("acted", seg["text"])), []):
+            dst = final_path(lid, i, n)
+            if (lid, i) != (m["line"], m["part"]) and not os.path.exists(dst):
+                shutil.copyfile(src, dst)
+                kept.append({**m, "line": lid, "part": i, "copy": True})
     for m, faults, said in wrong:
         print(f"  words differ in {os.path.basename(m['file'])}: {faults[:6]}\n      heard: {said}\n      wants: {m['text']}")
     done, partial, waiting = [], [], []
