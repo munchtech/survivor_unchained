@@ -52,6 +52,9 @@ public sealed class Chart
     [JsonIgnore] public MapSpec Map => new()
     {
         Seed = Seed, Tier = Tier, Theme = Theme, Night = false, Name = Name, Arena = false, People = People,
+        // The experience lead's shape: three clearings before the ruler's at tiers 1-2, four at 3-5,
+        // five from 6; an altar (the map's event) in each but the first, to three.
+        Clearings = Tier <= 2 ? 3 : Tier <= 5 ? 4 : 5, AltarCount = Tier <= 2 ? 1 : Tier <= 5 ? 2 : 3,
         Oaths = Rolled.Where(m => m.Oath != null).Select(m => m.Oath!).ToList(),
     };
 
@@ -192,6 +195,36 @@ public static class Atlas
     /// <summary>The highest tier cleared of any people, and the points the first clears gave.</summary>
     public static int Best(World.WorldState w) => (int)w.Fact("atlas.best").Number;
     public static int Points(World.WorldState w) => (int)w.Fact("atlas.points").Number;
+
+    /* The atlas's biases (the experience lead's first five): a point a rank, three ranks each,
+     * bought with the points the first clears give. Hooks only for now; the table shows them. */
+    public const string PeoplesRoad = "peoples_road", TwiceLit = "twice_lit", KeepersDue = "keepers_due", RulersHoard = "rulers_hoard", MarkedMen = "marked_men";
+    public const int MaxRank = 3;
+
+    /// <summary>The biases, as the atlas shows them: id, name, what a rank does.</summary>
+    public static readonly (string Id, string Name, string Rank)[] Biases =
+    [
+        (PeoplesRoad, "The people's road", "A fifth more of the charts that drop are of the people you follow"),
+        (TwiceLit, "Twice lit", "A third more chance that a second altar's lighting brings its people's question too"),
+        (KeepersDue, "The keeper's due", "An altar's keeper carries one thing more"),
+        (RulersHoard, "The ruler's hoard", "A map's ruler leaves one thing more"),
+        (MarkedMen, "Marked men", "Half again the chance that a magic or rare pack's leader carries one thing more"),
+    ];
+
+    public static int Rank(World.WorldState w, string bias) => (int)w.Fact($"atlas.bias.{bias}").Number;
+    public static int Unspent(World.WorldState w) => Points(w) - Biases.Sum(b => Rank(w, b.Id));
+
+    /// <summary>A rank more in a bias, for a point: false if none is to spend or it is at three.</summary>
+    public static bool Raise(World.WorldState w, string bias)
+    {
+        if (Unspent(w) <= 0 || Rank(w, bias) >= MaxRank || Biases.All(b => b.Id != bias)) return false;
+        w.Facts[$"atlas.bias.{bias}"] = Rank(w, bias) + 1;
+        return true;
+    }
+
+    /// <summary>The people the road follows (null: none chosen).</summary>
+    public static string? Road(World.WorldState w) => w.Fact("atlas.road").IsNull ? null : w.Fact("atlas.road").Str;
+    public static void Follow(World.WorldState w, string people) => w.Facts["atlas.road"] = people;
 
     /// <summary>A map's ruler is down: its (people, tier) is marked. True if it is the first time.</summary>
     public static bool Complete(World.WorldState w, Chart c)

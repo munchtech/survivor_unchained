@@ -6,7 +6,7 @@ namespace SurvivorUnchained.Sim;
 
 /// <summary>What one thing out of a chest is: an evolution, a rank in a combat skill, a rank
 /// in a passive, or (when nothing is left to raise) gold and a draught.</summary>
-public enum ChestItemKind { Evolution, Rank, Passive, Gold }
+public enum ChestItemKind { Evolution, Rank, Passive, Gold, Gear }
 
 /// <summary>One thing out of a chest, as its opening shows it: what it raised, its name and
 /// glyph, the ranks it went between, how rare it reads, its school (a combat skill's), and for

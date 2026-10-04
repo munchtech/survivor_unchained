@@ -104,7 +104,7 @@ public static class MapSim
         var nav = new NavField(map, b, map.Boss.X, map.Boss.Z);
         double along = 0;
         var p = b.Player;
-        double t = 0, lastKill = 0, lastPack = 0, stuck = 0, bestToGo = double.MaxValue;
+        double t = 0, lastKill = 0, lastPack = 0, stuck = 0, bestToGo = double.MaxValue, clearedAt = -1;
         int holds = 0;
         int lastCleared = 0;
         var kills = new List<double>();
@@ -153,8 +153,9 @@ public static class MapSim
             host.Pass(Dt);
             r.LowHp = Math.Min(r.LowHp, p.Hp / b.MaxHp);
             if (zone.PacksCleared > lastCleared) { packs.Add(t - lastPack); lastPack = t; lastCleared = zone.PacksCleared; }
-            // Cleared: walk to the way out and take it.
-            if (zone.Cleared && !zone.Over) zone.Leave();
+            // Cleared: what the ruler left picked up (a few seconds), then the way out.
+            if (zone.Cleared && clearedAt < 0) clearedAt = t;
+            if (zone.Cleared && !zone.Over && t - clearedAt > 8) zone.Leave();
             if (!p.Alive) break;
             // MAP_TRACE=1: where the hands are every ten seconds (why a map was not finished).
             if (trace && (int)(t / 10) != (int)((t + Dt) / 10))
@@ -163,7 +164,7 @@ public static class MapSim
         }
         r.Cleared = zone.Cleared;
         r.Closed = !zone.Cleared && (zone.Falls >= MapRun.FallsAllowed || !p.Alive);
-        r.Minutes = t / 60;
+        r.Minutes = (clearedAt >= 0 ? clearedAt : t) / 60;
         r.Falls = zone.Falls;
         r.Kills = zone.Kills;
         r.PacksCleared = zone.PacksCleared;
