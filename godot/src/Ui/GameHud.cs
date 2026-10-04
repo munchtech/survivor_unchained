@@ -35,11 +35,15 @@ public partial class GameHud : CanvasLayer
     int shownLevel;
     bool shownEmber = true;
     double levelPop;
-    TextureRect hpFill = null!;
-    ColorRect hpTrail = null!, hpShield = null!, hpLow = null!;
-    Label hpText = null!;
+    // Health as a globe at the console's left end (docs/UI_DESIGN.md, "HUD").
+    Globe globe = null!;
     HBoxContainer statuses = null!;
     Control heart = null!;
+    /// <summary>The console's span: as wide as the skills it holds (six places by night, what is carried by day),
+    /// the globe at its left end, the art's ring at its right.</summary>
+    float consoleX = 600, consoleW = 720;
+    int consolePlaces;
+    Control consolePlate = null!, arsenal = null!, hands = null!;
     float hpShown = 1, trailShown = 1, trailWait;
     HBoxContainer boons = null!, weapons = null!;
     readonly Dictionary<string, WeaponSlot> slots = new();
@@ -163,6 +167,17 @@ public partial class GameHud : CanvasLayer
 
     /// <summary>A round medallion rimmed in gold (the ember's, the heart's);
     /// painted (hud/NAME.png, drawn larger than the medallion, centred on it) when there is art.</summary>
+    /// <summary>A painted casing laid over a bar (bars/casing.png, casing_boss.png): forged iron
+    /// round the groove, reaching a little past it, its middle open so the fill shows. Added
+    /// after the bar so it sits over the fill's edge; nothing when there is no art.</summary>
+    static void Casing(Control parent, Control bar, string id)
+    {
+        if (!UiArt.Has(id)) return;
+        var c = new Panel { Position = bar.Position, Size = bar.Size, MouseFilter = Control.MouseFilterEnum.Ignore };
+        c.AddThemeStyleboxOverride("panel", UiArt.Frame(id, new StyleBoxEmpty()));
+        parent.AddChild(c);
+    }
+
     static Panel Medal(Control parent, Vector2 at, float size, Color inner, string? art = null)
     {
         var p = new Panel { Position = at, Size = new Vector2(size, size), MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -197,6 +212,7 @@ public partial class GameHud : CanvasLayer
         var track = new Panel { Position = new Vector2(x + 30, 23), Size = new Vector2(w - 30, 12), MouseFilter = Control.MouseFilterEnum.Ignore, ClipContents = true };
         track.AddThemeStyleboxOverride("panel", UiArt.Frame("bar_track", Style.Box(Hex("#120c0a"), new Color(0.85f, 0.71f, 0.42f, 0.28f), 1, 5, 0)));
         combat.AddChild(track);
+        Casing(combat, track, "bar_casing");
         emberFill = Fill("ember_fill", [Hex("#6a1e04"), Hex("#c24a0a"), Hex("#ff8a2a"), Hex("#ffd070")], [0, 0.45f, 0.85f, 1]);
         emberFill.Position = new Vector2(1, 1);
         emberFill.Size = new Vector2(0, 10);
@@ -243,41 +259,28 @@ public partial class GameHud : CanvasLayer
 
     void BuildVitals()
     {
-        var v = Box(play, 34, 1080 - 36 - 70, 396, 70);
+        // The console: a forged plate along the foot, under the skills, the globe and the ring at its ends.
+        var plate = new Panel { Position = new Vector2(consoleX, 1080 - 98), Size = new Vector2(consoleW, 130), MouseFilter = Control.MouseFilterEnum.Ignore };
+        plate.AddThemeStyleboxOverride("panel", UiArt.Frame("console", OrnateBox.Make(OrnateBox.Kind.Plate, 0)));
+        combat.AddChild(plate);
+        consolePlate = plate;
+        globe = new Globe(66) { Position = new Vector2(consoleX - 150, 1080 - 156) };
+        globe.PivotOffset = globe.Size / 2;
+        heart = globe;
+        play.AddChild(globe);
+        // What is on you (burning, shielded, quickened), over the globe.
         statuses = Style.H(6);
-        statuses.Position = new Vector2(43, 0);
-        v.AddChild(statuses);
-        var bar = new Panel { Position = new Vector2(34, 38), Size = new Vector2(362, 26), ClipContents = true, MouseFilter = Control.MouseFilterEnum.Ignore };
-        bar.AddThemeStyleboxOverride("panel", UiArt.Frame("bar_track", Style.Box(Hex("#160a0a"), new Color(0.85f, 0.71f, 0.42f, 0.32f), 1, 4, 0)));
-        v.AddChild(bar);
-        hpTrail = new ColorRect { Color = Hex("#e8c07a") with { A = 0.85f }, Position = new Vector2(1, 1), Size = new Vector2(360, 24), MouseFilter = Control.MouseFilterEnum.Ignore };
-        bar.AddChild(hpTrail);
-        hpFill = Fill("health_fill", [Hex("#ff6a5a"), Hex("#d2262c"), Hex("#8a0e16")], [0, 0.35f, 1], true);
-        hpFill.Position = new Vector2(1, 1); hpFill.Size = new Vector2(360, 24);
-        bar.AddChild(hpFill);
-        hpShield = new ColorRect { Color = Hex("#9ad4ff"), Position = new Vector2(1, 1), Size = new Vector2(0, 7), MouseFilter = Control.MouseFilterEnum.Ignore };
-        bar.AddChild(hpShield);
-        for (int i = 1; i < 4; i++) bar.AddChild(new ColorRect { Color = new Color(0, 0, 0, 0.4f), Position = new Vector2(362 * i / 4f, 0), Size = new Vector2(1, 26), MouseFilter = Control.MouseFilterEnum.Ignore });
-        hpLow = new ColorRect { Color = new Color(1, 0.24f, 0.24f, 0), Size = new Vector2(362, 26), MouseFilter = Control.MouseFilterEnum.Ignore };
-        bar.AddChild(hpLow);
-        hpText = Style.Label("", Style.UiHeavy, 16, Hex("#fff4ea"), false, HorizontalAlignment.Center);
-        hpText.Size = new Vector2(362, 26);
-        hpText.VerticalAlignment = VerticalAlignment.Center;
-        bar.AddChild(hpText);
-        var h = Medal(v, new Vector2(0, 30), 41, Hex("#3a0c10"), "medal_heart");
-        heart = h;
-        h.PivotOffset = new Vector2(20.5f, 20.5f);
-        var g = Glyphs.Icon("heart", 22, Hex("#ffb0a8"));
-        g.Position = new Vector2(9.5f, 9.5f); g.Size = new Vector2(22, 22);
-        h.AddChild(g);
+        statuses.Position = new Vector2(consoleX - 150, 1080 - 156 - 40);
+        play.AddChild(statuses);
     }
 
     void BuildArsenal()
     {
         var col = Style.V(12);
         col.Alignment = BoxContainer.AlignmentMode.End;
-        col.Position = new Vector2(460, 1080 - 26 - 140);
-        col.Size = new Vector2(1000, 140);
+        col.Position = new Vector2(consoleX, 1080 - 14 - 150);
+        col.Size = new Vector2(consoleW, 150);
+        arsenal = col;
         combat.AddChild(col);
         boons = Style.H(5);
         boons.Alignment = BoxContainer.AlignmentMode.Center;
@@ -289,11 +292,13 @@ public partial class GameHud : CanvasLayer
 
     void BuildHands()
     {
-        var h = Style.H(19);
-        h.Alignment = BoxContainer.AlignmentMode.End;
-        h.Position = new Vector2(1920 - 36 - 420, 1080 - 19 - 130);
-        h.Size = new Vector2(420, 130);
+        // The art's ring at the console's right end, the draught and the dash beside it.
+        var h = Style.H(22);
+        h.Alignment = BoxContainer.AlignmentMode.Begin;
+        h.Position = new Vector2(consoleX + consoleW + 14, 1080 - 14 - 150);
+        h.Size = new Vector2(460, 150);
         combat.AddChild(h);
+        hands = h;
         Control Hand(Control art, Act key, string label, out Label name)
         {
             var v = Style.V(8);
@@ -309,10 +314,27 @@ public partial class GameHud : CanvasLayer
             h.AddChild(v);
             return v;
         }
-        dashPips = Style.H(5);
-        Hand(dashPips, Act.Dash, "Dash", out _);
+        const float R = 116;
+        var ab = new Control { CustomMinimumSize = new Vector2(R, R), MouseFilter = Control.MouseFilterEnum.Ignore };
+        abilityRing = new Ring { Size = new Vector2(R, R), MouseFilter = Control.MouseFilterEnum.Ignore };
+        ab.AddChild(abilityRing);
+        // The art's ring painted over the drawn one (hud/ring_art.png, a ring with an empty middle).
+        if (UiArt.Art("hud/ring_art.png") is { } ringArt)
+        {
+            var rr = new TextureRect { Texture = ringArt, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = Control.MouseFilterEnum.Ignore, Size = ringArt.GetSize() * (R / 89f) };
+            rr.Position = (new Vector2(R, R) - rr.Size) / 2;
+            ab.AddChild(rr);
+        }
+        abilityGlyph = Glyphs.Icon("shield", 54);
+        abilityGlyph.Position = new Vector2((R - 54) / 2, (R - 54) / 2); abilityGlyph.Size = new Vector2(54, 54);
+        ab.AddChild(abilityGlyph);
+        abilityCd = Style.Label("", Style.Display, 28, Colors.White, false, HorizontalAlignment.Center);
+        abilityCd.Size = new Vector2(R, R);
+        abilityCd.VerticalAlignment = VerticalAlignment.Center;
+        ab.AddChild(abilityCd);
+        Hand(ab, Act.Ability, "", out abilityName);
         var q = new Panel { CustomMinimumSize = new Vector2(60, 60), MouseFilter = Control.MouseFilterEnum.Ignore };
-        q.AddThemeStyleboxOverride("panel", Style.Box(Hex("#1a1620"), Style.Line, 1, 9, 0));
+        q.AddThemeStyleboxOverride("panel", OrnateBox.Make(OrnateBox.Kind.Slab, 0));
         var qi = ItemPhotos.Icon("potion", 50, Hex("#ff8a80"));
         qi.Position = new Vector2(5, 3); qi.Size = new Vector2(50, 50);
         q.AddChild(qi);
@@ -320,24 +342,8 @@ public partial class GameHud : CanvasLayer
         quickQty.Position = new Vector2(44, 40);
         q.AddChild(quickQty);
         quick = Hand(q, Act.Ultimate, "Draught", out _);
-        var ab = new Control { CustomMinimumSize = new Vector2(89, 89), MouseFilter = Control.MouseFilterEnum.Ignore };
-        abilityRing = new Ring { Size = new Vector2(89, 89), MouseFilter = Control.MouseFilterEnum.Ignore };
-        ab.AddChild(abilityRing);
-        // The art's ring painted over the drawn one (hud/ring_art.png, a ring with an empty middle).
-        if (UiArt.Art("hud/ring_art.png") is { } ringArt)
-        {
-            var rr = new TextureRect { Texture = ringArt, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = Control.MouseFilterEnum.Ignore, Size = ringArt.GetSize() };
-            rr.Position = (new Vector2(89, 89) - rr.Size) / 2;
-            ab.AddChild(rr);
-        }
-        abilityGlyph = Glyphs.Icon("shield", 41);
-        abilityGlyph.Position = new Vector2(24, 24); abilityGlyph.Size = new Vector2(41, 41);
-        ab.AddChild(abilityGlyph);
-        abilityCd = Style.Label("", Style.Display, 22, Colors.White, false, HorizontalAlignment.Center);
-        abilityCd.Size = new Vector2(89, 89);
-        abilityCd.VerticalAlignment = VerticalAlignment.Center;
-        ab.AddChild(abilityCd);
-        Hand(ab, Act.Ability, "", out abilityName);
+        dashPips = Style.H(5);
+        Hand(dashPips, Act.Dash, "Dash", out _);
     }
 
     static readonly string[] Numerals = ["I", "II", "III", "IV", "V"];
@@ -408,7 +414,7 @@ public partial class GameHud : CanvasLayer
         hintBox = Style.Panel(UiArt.Frame("hint", Style.Box(Hex("#e6d6b0"), new Color(0.35f, 0.24f, 0.08f, 0.45f), 1, 4, 14)));
         // Pinned by its foot above the vitals; grows upward with its words.
         hintBox.AnchorTop = hintBox.AnchorBottom = 1;
-        hintBox.OffsetLeft = 34; hintBox.OffsetBottom = -134;
+        hintBox.OffsetLeft = 34; hintBox.OffsetBottom = -196;
         hintBox.GrowVertical = Control.GrowDirection.Begin;
         hintBox.CustomMinimumSize = new Vector2(396, 0);
         hintBox.Visible = false;
@@ -464,6 +470,7 @@ public partial class GameHud : CanvasLayer
         var track = new Panel { Position = new Vector2(0, 58), Size = new Vector2(w, 16), ClipContents = true, MouseFilter = Control.MouseFilterEnum.Ignore };
         track.AddThemeStyleboxOverride("panel", UiArt.Frame("bar_track_boss", Style.Box(Hex("#140808"), Style.GoldDim, 1, 3, 0)));
         bossBox.AddChild(track);
+        Casing(bossBox, track, "bar_casing_boss");
         bossTrack = track;
         bossTrail = new ColorRect { Color = Hex("#e8c07a"), Position = new Vector2(1, 1), Size = new Vector2(w - 2, 14), MouseFilter = Control.MouseFilterEnum.Ignore };
         track.AddChild(bossTrail);
@@ -516,13 +523,17 @@ public partial class GameHud : CanvasLayer
     {
         if (b == null) return;
         combat.Visible = b.Combat;
+        // In a fight the globe is the console's left end; at peace, with no console, it keeps to the corner.
+        var at = b.Combat ? new Vector2(consoleX - 150, 1080 - 156) : new Vector2(30, 1080 - 30 - globe.Size.Y);
+        if (globe.Position != at) { globe.Position = at; statuses.Position = at + new Vector2(0, -40); }
         var p = b.Player;
         double max = b.MaxHp;
         float k = (float)Math.Clamp(p.Hp / max, 0, 1);
         hpShown = k;
-        hpFill.Size = new Vector2(360 * k, 24);
-        hpShield.Size = new Vector2(360 * (float)Math.Clamp(p.Shield / max, 0, 1), 7);
-        hpText.Text = $"{Math.Ceiling(Math.Max(p.Hp, 0))}  /  {Math.Round(max)}";
+        globe.Level = k;
+        globe.Shield = (float)Math.Clamp(p.Shield / max, 0, 1);
+        globe.Number = $"{Math.Ceiling(Math.Max(p.Hp, 0))}";
+        globe.QueueRedraw();
         foreach (var c in statuses.GetChildren()) c.QueueFree();
         void Status(string glyph, double left, bool good)
         {
@@ -588,8 +599,22 @@ public partial class GameHud : CanvasLayer
             slot.Show(w.Art, ItemViews.SchoolColors[w.School], b.WeaponReady(w), w.Rank, Weapons.MaxRank, w.Evolution != null, canEvolve);
         }
         foreach (var id in slots.Keys.Where(x => !alive.Contains(x)).ToList()) { slots[id].QueueFree(); slots.Remove(id); }
-        // At night the empty places promise six; by day there are only what is carried.
+        // At night the empty places promise six; by day there are only what is carried, and the console fits them.
         int empties = weapons.GetChildren().OfType<EmptySlot>().Count(), want = ember ? Math.Max(0, 6 - b.Weapons.Count) : 0;
+        int places = Math.Max(2, b.Weapons.Count + want);
+        if (places != consolePlaces)
+        {
+            consolePlaces = places;
+            consoleW = Math.Max(300, places * 77 + 70);
+            consoleX = (1920 - consoleW) / 2;
+            consolePlate.Position = new Vector2(consoleX, 1080 - 98);
+            consolePlate.Size = new Vector2(consoleW, 130);
+            arsenal.Position = new Vector2(consoleX, 1080 - 14 - 150);
+            arsenal.Size = new Vector2(consoleW, 150);
+            hands.Position = new Vector2(consoleX + consoleW + 14, 1080 - 14 - 150);
+            globe.Position = new Vector2(consoleX - 150, 1080 - 156);
+            statuses.Position = globe.Position + new Vector2(0, -40);
+        }
         for (int j = empties; j < want; j++) weapons.AddChild(new EmptySlot());
         foreach (var c in weapons.GetChildren().OfType<EmptySlot>().Skip(want)) c.QueueFree();
 
@@ -1007,15 +1032,17 @@ public partial class GameHud : CanvasLayer
         underFill.Color = underK < 0.35f ? Hex("#ff5a4a").Lerp(Colors.White, 0.25f * Mathf.Max(0, Mathf.Sin(Time.GetTicksMsec() / 1000f * 7))) : Hex("#e8383a");
         underShield.Size = new Vector2(74 * underShieldK, 3);
         // The trail behind health catches up after a moment.
-        float trail = hpTrail.Size.X / 360;
+        float trail = globe.Trail;
         if (trail > hpShown) { trailWait += dt; trailShown = trailWait > 0.35f ? Mathf.MoveToward(trail, hpShown, dt * 1.6f) : trail; }
         else { trailWait = 0; trailShown = hpShown; }
-        hpTrail.Size = new Vector2(360 * trailShown, 24);
+        globe.Trail = trailShown;
         bool low = hpShown < 0.35f && combat.Visible;
         float now = Time.GetTicksMsec() / 1000f;
-        float beat = low ? 1 + 0.12f * Mathf.Max(0, Mathf.Sin(now * 7)) : 1;
+        // Low, the globe beats like a heart and its glass flushes.
+        float beat = low ? 1 + 0.06f * Mathf.Max(0, Mathf.Sin(now * 7)) : 1;
         heart.Scale = new Vector2(beat, beat);
-        hpLow.Color = new Color(1, 0.24f, 0.24f, low ? 0.15f + 0.15f * Mathf.Sin(now * 7) : 0);
+        globe.Pulse = low ? 0.5f + 0.5f * Mathf.Sin(now * 7) : 0;
+        globe.QueueRedraw();
         if (levelPop > 0) { levelPop = Math.Max(0, levelPop - delta / 0.6); float sc = 1 + 0.9f * (float)(levelPop * levelPop); emberLevel.Scale = new Vector2(sc, sc); }
         if (pullT >= 0)
         {
@@ -1120,7 +1147,9 @@ public partial class EmptySlot : Panel
     {
         CustomMinimumSize = new Vector2(67, 67);
         MouseFilter = MouseFilterEnum.Ignore;
-        AddThemeStyleboxOverride("panel", Style.Box(new Color(0.08f, 0.07f, 0.09f, 0.55f), Style.Line with { A = 0.12f }, 1, 7, 0));
+        // A place to come: the empty well (frames/slot.png) when painted, quieter than a held skill.
+        AddThemeStyleboxOverride("panel", UiArt.Frame("slot", Style.Box(new Color(0.08f, 0.07f, 0.09f, 0.55f), Style.Line with { A = 0.12f }, 1, 7, 0)));
+        if (UiArt.Has("slot")) SelfModulate = new Color(1, 1, 1, 0.7f);
     }
 }
 

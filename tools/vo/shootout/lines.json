@@ -8,7 +8,9 @@
    "act": "He is furious and holding it down: low, clipped, biting each word, a dangerous pause after 'So.', and the swear at the end landing hard and quiet.",
    "emo": [0, 0.75, 0, 0, 0.2, 0, 0, 0.05], "exag": 0.75,
    "dia": "[S1] Dealt with. That's what you said. I paid you thirty of the Watch's gold for dealt with, and this morning I had a drover bleeding on my gate. (sighs) So. Tell me why you shouldn't spend the night in the fucking cells.",
-   "orpheus": ["leo", "Dealt with. That's what you said. I paid you thirty of the Watch's gold for dealt with, and this morning I had a drover bleeding on my gate. <sigh> So. Tell me why you shouldn't spend the night in the fucking cells."]
+   "orpheus": ["leo", "Dealt with. That's what you said. I paid you thirty of the Watch's gold for dealt with, and this morning I had a drover bleeding on my gate. <sigh> So. Tell me why you shouldn't spend the night in the fucking cells."],
+   "maya": ["Realistic male voice in the 40s age with british accent, a hard army captain from the north of England. Low pitch, hoarse gravelly timbre, slow measured pacing, angry tone at medium intensity, held down.",
+            "Dealt with. That's what you said. I paid you thirty of the Watch's gold for dealt with, and this morning I had a drover bleeding on my gate. <sigh> So. <angry> Tell me why you shouldn't spend the night in the fucking cells."]
   },
   "2_intimate": {
    "id": "dlg.sella.free.0", "voice": "sella", "room": "inn", "vol": "quiet",
@@ -17,7 +19,9 @@
    "act": "She is close and quiet, unsure of herself for once: the first two sentences soft and warm, then a nervous little laugh before 'Don't look at me like that', and the last sentence almost a plea.",
    "emo": [0.2, 0, 0.1, 0.1, 0, 0.2, 0, 0.4], "exag": 0.35,
    "dia": "[S1] Put your purse away. Tonight I'm not working. (laughs) Don't look at me like that. Don't make it strange.",
-   "orpheus": ["tara", "Put your purse away. Tonight I'm not working. <chuckle> Don't look at me like that. Don't make it strange."]
+   "orpheus": ["tara", "Put your purse away. Tonight I'm not working. <chuckle> Don't look at me like that. Don't make it strange."],
+   "maya": ["Realistic female voice in the 20s age with british accent, a London girl. Normal pitch, soft breathy timbre, slow intimate pacing, shy tone at low intensity.",
+            "Put your purse away. Tonight I'm not working. <giggle> Don't look at me like that. <sigh> Don't make it strange."]
   },
   "3_wry": {
    "id": "dlg.rook.runs.0", "voice": "rook", "room": "inn", "vol": "level",
@@ -26,7 +30,9 @@
    "act": "She is sly and amused, enjoying herself: each verdict drier than the last, a scornful lift on 'with interest', and a short laugh on the out-breath at the end.",
    "emo": [0.45, 0, 0, 0, 0.05, 0, 0.1, 0.4], "exag": 0.55,
    "dia": "[S1] Holloway thinks he does. Vonra knows she does. Pell's got it written down in a book somewhere, with interest. And I feed all three of them, so you can draw your own conclusions. (laughs)",
-   "orpheus": ["leah", "Holloway thinks he does. Vonra knows she does. Pell's got it written down in a book somewhere, with interest. And I feed all three of them, so you can draw your own conclusions. <chuckle>"]
+   "orpheus": ["leah", "Holloway thinks he does. Vonra knows she does. Pell's got it written down in a book somewhere, with interest. And I feed all three of them, so you can draw your own conclusions. <chuckle>"],
+   "maya": ["Realistic female voice in the 60s age with british accent, a sharp Yorkshire innkeeper. Low pitch, husky timbre, conversational pacing, sarcastic tone at medium intensity.",
+            "Holloway thinks he does. Vonra knows she does. Pell's got it written down in a book somewhere, <sarcastic> with interest. And I feed all three of them, so you can draw your own conclusions. <chuckle>"]
   },
   "4_grief": {
    "id": "dlg.brannoc.nell_ditch.1", "voice": "brannoc", "room": "forge", "vol": "quiet",
@@ -35,7 +41,9 @@
    "act": "He has just learned his daughter is dead. Barely voiced and very slow, a long breath before the second sentence, his voice cracking with grief on 'Always wanted the reins'.",
    "emo": [0, 0, 0.6, 0, 0, 0.4, 0, 0], "exag": 0.45,
    "dia": "[S1] (sighs) Had the reins. She'd want the reins. Always wanted the reins.",
-   "orpheus": ["dan", "<sigh> Had the reins. She'd want the reins. <sniffle> Always wanted the reins."]
+   "orpheus": ["dan", "<sigh> Had the reins. She'd want the reins. <sniffle> Always wanted the reins."],
+   "maya": ["Realistic male voice in the 50s age with british accent, a West Country blacksmith. Low pitch, deep rough timbre, very slow pacing, sad tone at high intensity.",
+            "<sigh> Had the reins. She'd want the reins. <cry> Always wanted the reins."]
   },
   "5_shout": {
    "id": "dlg.redcowl.trick.0", "voice": "redcowl", "room": "camp", "vol": "shout",
@@ -44,7 +52,9 @@
    "act": "A bandit chief bellowing at his camp in sudden alarm: shouting at the top of his voice, urgent and rough.",
    "emo": [0, 0.45, 0, 0.35, 0, 0, 0.2, 0], "exag": 0.95,
    "dia": "[S1] Pack it up! Pack it up! Leave the heavy stuff!",
-   "orpheus": ["leo", "Pack it up! Pack it up! Leave the heavy stuff!"]
+   "orpheus": ["leo", "Pack it up! Pack it up! Leave the heavy stuff!"],
+   "maya": ["Realistic male voice in the 40s age with scottish accent, a bandit chief. Low pitch, rough gravelly timbre, fast pacing, shouting tone at high intensity.",
+            "<angry> Pack it up! Pack it up! Leave the heavy stuff!"]
   }
  }
 }

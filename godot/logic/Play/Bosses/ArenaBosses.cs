@@ -233,9 +233,9 @@ public sealed class BarrowLord : ArenaBoss
                 {
                     holdT = 12 * Cadence;
                     var p = B.Player;
-                    // His orders are in the old empire's tongue, one word each
-                    // (docs/VOICES.md); what they mean is shown by what follows.
-                    A.Bark(E.X, E.Z, "\"Sta!\"", "The Barrow Lord");
+                    // His orders are in the old empire's tongue, one word each and
+                    // plural, to his dead (docs/VOICES.md); what follows shows what they mean.
+                    A.Bark(E.X, E.Z, "\"Tenete!\"", "The Barrow Lord");
                     var b = Band(p.X, p.Z, 4.5, 6.5, 1.5, 0.8, "Hold!", School.Shadow);
                     b.Slow = 0.05; b.SlowFor = 1.2;
                     return false;
@@ -248,7 +248,7 @@ public sealed class BarrowLord : ArenaBoss
     void CloseUp()
     {
         var p = B.Player;
-        A.Bark(E.X, E.Z, "\"Iunge!\"", "The Barrow Lord");
+        A.Bark(E.X, E.Z, "\"Iungite!\"", "The Barrow Lord");
         double a = Math.Atan2(E.Z - p.Z, E.X - p.X);
         double cx = p.X + Math.Cos(a) * 9, cz = p.Z + Math.Sin(a) * 9;
         double sx = -Math.Sin(a), sz = Math.Cos(a);
@@ -571,8 +571,9 @@ public sealed class Grimtunnel : ArenaBoss
         downT = 0;
         e.TakenMul = 0;
         e.Hp = 1;
-        // He goes down delighted, never beaten: he is wanted below (docs/STORY_BIBLE.md, "The nights").
-        A.Bark(e.X, e.Z, "\"Ha! Keep upstairs, surface-meat! I'm wanted DOWNSTAIRS!\"", "Grimtunnel");
+        // He goes down delighted, never beaten: he is wanted below (docs/STORY_BIBLE.md,
+        // "The nights"). Since C03 he cannot finish "surface-meat" at her: she smells of downstairs.
+        A.Bark(e.X, e.Z, "\"Ha! Keep upstairs, surface-m— you! I'm wanted DOWNSTAIRS!\"", "Grimtunnel");
         B.Events.Emit(new Ev.Focus { X = e.X, Z = e.Z, Duration = 1.6 });
     }
 

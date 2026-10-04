@@ -137,6 +137,27 @@ the generated lines that move like people lose the accent, and the ones
 that keep the accent move like readers. Nothing has shipped into the game,
 and nothing will until a take passes your ear.
 
+## Round two, and the decision
+
+A second round (October 2026) tried Voicebox's engines (Qwen3-TTS,
+Chatterbox, Chatterbox Turbo with tags, LuxTTS, TADA), Maya1 (voices
+designed from a sentence, with emotion tags), Dia2 and VibeVoice. It was
+stopped part-way when the owner chose the route, so its takes are not in
+this pack. What it showed before it stopped:
+
+- **Maya1's performance converted into the cast voice** was the first take
+  heard as English (1.0) that also moves like a person (pace change 0.22,
+  two breaths, words right), at some cost in clarity (naturalness 3.45).
+- **Maya1 on its own and Voicebox's Qwen3** are British and clean
+  (naturalness 4.3 to 4.4), and still read like readers (pace 0.04 to 0.12).
+- **Chatterbox Turbo** stopped the take at a tag in mid-line.
+
+None of it reaches a movie actor. **The decision (the owner's): final voices
+are made in ElevenLabs, one character at a time, directed by packets in
+`docs/voice/elevenlabs/`. Every line meanwhile has a local placeholder,
+Maya1 converted into the cast voice, marked as a placeholder until its
+final replaces it.**
+
 ## If none of these is good enough
 
 They may not be: the bar is a human performance, and every file here is

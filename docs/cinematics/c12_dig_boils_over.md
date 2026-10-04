@@ -39,7 +39,7 @@ light cold blue through his hide.
 |---|---|---|---|---|---|
 | 1 | LS | 24 | Static, low; a long shake (0.5) | The ground between her and the horde splits in a line; the lamplings scatter from it, squealing, lamps bobbing. `WorldRate` 0.3. | 3.0 |
 | 2 | MS | 35 | Static, low, up at him | Grimtunnel hauls himself up out of the crack, scale 2.1: blue light in the seams of his hide, his head-lamp burning. Line G4. | 4.0 |
-| 3 | MCU | 50 | Handheld (0.4) | He spreads his arms like a man welcoming guests. Title: **GRIMTUNNEL** / *Finders Keepers* (his own words at the ford, C03). Play. | 2.0 |
+| 3 | MCU | 50 | Handheld (0.4) | He spreads his arms like a man welcoming guests. Title: **GRIMTUNNEL** / *Ever So Grateful* (his own words at the ford, C03; Act 3 pays it: "Why isn't it grateful?"). Play. | 2.0 |
 
 ## Retreat
 
@@ -56,8 +56,8 @@ family, bigger and lower, a cackle, a cave reverb).
 
 | VO id | When | Line | Note |
 |---|---|---|---|
-| `cin_dig_boils_over.pump#0` (pump broken, blown or moved) | Arrival | Surface-meat! You broke my PUMP. ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT. | Outrage, then calm: a believer remembering his faith. |
-| `cin_dig_boils_over.pump#1` | Arrival | Surface-meat! Killing my lads, are we? ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT. | |
+| `cin_dig_boils_over.pump#0` (pump broken, blown or moved) | Arrival | Surface-m— ...You broke my PUMP. ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT. | He starts the old insult and can't finish it (C03: she smells of downstairs); outrage, then calm: a believer remembering his faith. |
+| `cin_dig_boils_over.pump#1` | Arrival | Surface-m— ...Killing my lads, are we? ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT. | |
 | `cin_dig_boils_over.quiet` | Retreat | I told it about you! It went ever so QUIET! | Delighted, as if he has a present for her; homely ("ever so", as in C03). Shouted up the hole as he falls. |
 
 ## Performance

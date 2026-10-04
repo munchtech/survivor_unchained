@@ -98,10 +98,13 @@ them. Nothing in `dialogue.json` was changed.
   vocative ("Late, {name}.", "{name}. Your chapter is written."), the voice
   leaves it out and the subtitle keeps it (19 lines). Two lines lose more
   than a word, and want a voiced alternative:
-  - `vonnra.f_accuse`: her only answer to the accusation *is* the name.
-    Recorded as "...Sit down. I have not finished reading.", the moment
-    survives only on screen. Suggest a voiced form that does the same work
-    without the name, or keep this line unvoiced and let the silence play.
+  - `vonnra.f_accuse` (and `vonnra.f_door.0`, `vonnra.hub.0`): her only
+    answer to the accusation *is* the name. The writer's decision: record
+    "...Sit down," and "I have not finished reading." as two takes split at
+    the name's pause, and the name as its own take in her voice, one per
+    name the creation screen suggests (a typed name is spoken at play time,
+    or the pause plays empty). Never "traveller". To do: the name takes and
+    the splice in `VoiceOver`.
   - `wayfinder.margin_name`: "{name}." is the act of writing it down; the
     voice starts at the narrator's aside.
 - **Lines with a number from the world** ({day}, {gold}, {fact:...}) are
@@ -131,5 +134,13 @@ them. Nothing in `dialogue.json` was changed.
   minded."); the Warden's is not. Both want a human, or music.
 - **Narration that quotes a person** inside it (Maeca's words on the walk
   to the Blind and in the dark; Sella's in the blue room) is read by the narrator,
-  quotes and all. Splitting those quotes out to their speakers, as was done
-  for Jory and the dead, would need `segments` in the direction file.
+  quotes and all. The writer wants the quoted words in their speaker's voice
+  (Sella's "You told me anyway" in `sella.free_night.1`) and the rest with the
+  narrator; that needs `segments` in the direction file. The dead Watchman's
+  belt-book stays the narrator's, read as writing; only "It broke its own
+  lamps, coming for me. Twice." is the Watchman's (Corran: grey-bearded,
+  dry, worn out, not ghostly).
+- **Beats.** Directed lines now carry the writer's beats where they matter
+  (`beats` in the direction files: `[beat]`, `[breath]`, `[laugh]`, `|` where
+  the narrator cuts in, `[name]` for a spliced name), for the acting models
+  to turn into their own tags.

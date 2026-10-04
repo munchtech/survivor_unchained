@@ -60,10 +60,9 @@ public partial class TitleScreen : Overlay
             brand.AddChild(b1);
             brand.AddChild(Style.Label("U N C H A I N E D", Style.Display, 54, new Color("#d8a050")));
         }
-        var rule = new ColorRect { Color = Style.Gold, CustomMinimumSize = new Vector2(420, 1), MouseFilter = MouseFilterEnum.Ignore };
-        brand.AddChild(Style.Gap(12));
-        brand.AddChild(rule);
-        brand.AddChild(Style.Gap(8));
+        // The house's rule under the name: gold running out from an ember stone at either end.
+        brand.AddChild(Style.Gap(4));
+        brand.AddChild(new Plaque("", 14, 182));
         brand.AddChild(Style.Label("The run ends. The story doesn't.", Style.TextItalic, 23, new Color("#e8dcc6")));
         AddChild(brand);
 
@@ -89,7 +88,7 @@ public partial class TitleScreen : Overlay
             box.Position = new Vector2(540, panel == "controls" ? 90 : panel == "credits" ? 300 : 500);
             box.CustomMinimumSize = new Vector2(panel == "controls" ? 820 : panel == "credits" ? 760 : 560, 0);
             Nav.Scope = box;
-            var v = Style.V(8, Style.Cap(panel switch { "load" => "Journeys", "settings" => "Settings", "controls" => "Controls", _ => "Credits" }, 16));
+            var v = Style.V(10, new Plaque(panel switch { "load" => "Journeys", "settings" => "Settings", "controls" => "Controls", _ => "Credits" }, 26, 50));
             switch (panel)
             {
                 case "load":
@@ -249,63 +248,108 @@ public partial class CreateScreen : Overlay
     protected override void Build()
     {
         var a = Callings.Archetype(d.Archetype);
-        // As tall as its step needs (the long Name step scrolls); never a half-empty plate.
-        var left = Style.Panel(Style.Plate(20));
-        left.Position = new Vector2(40, 40);
-        left.Size = new Vector2(520, d.Step == 3 ? 1000 : 0);
-        AddChild(left);
-        var col = Style.V(10);
-        left.AddChild(col);
-        col.AddChild(Style.Label("By the fire on the Low Ford road", Style.TextItalic, 16, new Color("#c8a878")));
-        col.AddChild(Style.Cap("Who sits here?", 22));
-        var steps = Style.H(4);
-        bool pad = Controls.Instance.UsingPad;
-        steps.AddChild(pad ? Style.PadButton("LB") : Style.Key(G.Key(Act.TabPrev)));
-        for (int i = 0; i < Steps.Length; i++)
-        {
-            int s = i;
-            steps.AddChild(Nav.Skip(Style.Button($"{Numerals[i]}  {Steps[i]}", () => Set(() => d.Step = s), d.Step == i, true)));
-        }
-        steps.AddChild(pad ? Style.PadButton("RB") : Style.Key(G.Key(Act.TabNext)));
-        col.AddChild(steps);
-        col.AddChild(Style.Rule());
+        // A forged column down the left, the figure by the fire in the middle, the choice read
+        // closely on the right (docs/UI_DESIGN.md, "Creation").
+        var column = Style.Panel(Style.Plate(0));
+        column.Position = new Vector2(-30, -30);
+        column.Size = new Vector2(620, 1140);
+        AddChild(column);
+        var col = Style.V(Style.Gap3);
+        col.Position = new Vector2(52, 44);
+        col.Size = new Vector2(486, 1000);
+        AddChild(col);
+        col.AddChild(Style.Label("By the fire on the Low Ford road", Style.TextItalic, Style.Body, new Color("#c8a878")));
+        col.AddChild(new Plaque("Who sits here?", 30, 30));
+        col.AddChild(StepRoad());
         var body = d.Step switch { 0 => Calling(), 1 => Arms(a), 2 => Origin(), _ => NameLook(a) };
-        col.AddChild(d.Step == 3 ? Style.Scroll(body) : body);
-        col.AddChild(Style.Gap(Style.Gap2));
+        var sc = Style.Scroll(body);
+        sc.SizeFlagsVertical = SizeFlags.ExpandFill;
+        col.AddChild(sc);
         var foot = Style.H(10, Nav.Id(Style.Button(d.Step > 0 ? "Back" : "Leave", () => { if (d.Step > 0) Set(() => d.Step--); else G.CancelCreation(); }), "back"));
         foot.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill });
         foot.AddChild(d.Step < 3 ? Nav.Id(Style.Button($"Next: {Steps[d.Step + 1]}", () => Set(() => d.Step++), true), "next") : Nav.Id(Style.Button("Begin the journey", Begin, true), "begin"));
         col.AddChild(foot);
 
-        var right = Style.Panel(Style.Box(new Color(0.05f, 0.04f, 0.06f, 0.82f), Style.Line, 1, 6, 22));
-        right.Position = new Vector2(1400, 120);
-        right.Size = new Vector2(480, 0);
-        right.CustomMinimumSize = new Vector2(480, 0);
+        var right = Style.Panel(Style.Plate(24));
+        right.Position = new Vector2(1380, 110);
+        right.Size = new Vector2(500, 0);
+        right.CustomMinimumSize = new Vector2(500, 0);
         right.AddChild(d.Step switch { 0 => CallingDetail(a), 1 => ArmsDetail(), 2 => OriginDetail(), _ => Summary(a) });
         AddChild(right);
 
-        var cap = Style.V(0, Style.Label(d.Name.Trim() == "" ? "Nameless" : d.Name.Trim(), Style.Display, 30, Style.GoldHi, false, HorizontalAlignment.Center),
-            Style.Label($"{Callings.Background(d.Background).Name} {a.Name}", Style.TextItalic, 17, Style.Ink, false, HorizontalAlignment.Center));
-        cap.Position = new Vector2(760, 960);
-        cap.Size = new Vector2(560, 80);
+        // Who they are becoming, on a banner at the figure's feet.
+        var cap = Style.Panel(OrnateBox.Make(OrnateBox.Kind.Banner, 20), Style.V(0, Style.Label(d.Name.Trim() == "" ? "NAMELESS" : d.Name.Trim().ToUpperInvariant(), Style.Display, 30, Style.GoldHi, false, HorizontalAlignment.Center),
+            Style.Label($"{Callings.Background(d.Background).Name} {a.Name}", Style.TextItalic, Style.Body, Style.Ink, false, HorizontalAlignment.Center)));
+        cap.CustomMinimumSize = new Vector2(380, 0);
         AddChild(cap);
+        cap.Position = new Vector2(1010 - 190, 960);
     }
 
+    /// <summary>The four steps as a road of medallions: done in gold, this one lit, the rest dark.</summary>
+    Control StepRoad()
+    {
+        bool pad = Controls.Instance.UsingPad;
+        var road = Style.H(0);
+        road.Alignment = BoxContainer.AlignmentMode.Center;
+        var lb = pad ? Style.PadButton("LB") : Style.Key(G.Key(Act.TabPrev));
+        lb.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+        road.AddChild(lb);
+        for (int i = 0; i < Steps.Length; i++)
+        {
+            int st = i;
+            bool here = d.Step == i, done = i < d.Step;
+            var b = Style.Button("", () => Set(() => d.Step = st), false, true);
+            foreach (var x in new[] { "normal", "hover", "pressed" }) b.AddThemeStyleboxOverride(x, new StyleBoxEmpty());
+            var v = Style.V(2);
+            v.MouseFilter = MouseFilterEnum.Ignore;
+            var mc = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+            mc.AddChild(new Medallion(here ? 52 : 44, Numerals[i])
+            {
+                Ring = here ? Style.Ember : done ? Style.Gold : Style.InkFaint, Ink = here ? Style.EmberHi : done ? Style.GoldHi : Style.InkDim,
+                Core = done || here ? new Color("#3a2210") : new Color("#120f14"), Lit = here,
+            });
+            v.AddChild(mc);
+            v.AddChild(Style.Label(Steps[i], Style.UiBold, Style.Caption, here ? Style.EmberHi : done ? Style.GoldHi : Style.InkDim, false, HorizontalAlignment.Center));
+            v.Size = new Vector2(84, 80);
+            b.AddChild(v);
+            b.CustomMinimumSize = new Vector2(84, 80);
+            road.AddChild(Nav.Skip(b));
+            if (i < Steps.Length - 1)
+            {
+                var line = new ColorRect { Color = i < d.Step ? Style.Gold : Style.Line, CustomMinimumSize = new Vector2(16, 2), SizeFlagsVertical = SizeFlags.ShrinkBegin, MouseFilter = MouseFilterEnum.Ignore };
+                var lw = new MarginContainer { MouseFilter = MouseFilterEnum.Ignore };
+                lw.AddThemeConstantOverride("margin_top", 26);
+                lw.AddChild(line);
+                road.AddChild(lw);
+            }
+        }
+        var rb = pad ? Style.PadButton("RB") : Style.Key(G.Key(Act.TabNext));
+        rb.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+        road.AddChild(rb);
+        return road;
+    }
+
+    /// <summary>A choice as a crested card: its mark on a medallion, its name, its words; the one taken lit in ember.</summary>
     static Button Choice(string glyph, string name, string tag, bool on, Action act, Color? tagColor = null)
     {
         var b = Style.Button("", act);
-        b.CustomMinimumSize = new Vector2(440, 70);
+        b.CustomMinimumSize = new Vector2(470, 92);
         Nav.Id(b, $"choice:{name}");
-        if (on)
-        {
-            b.AddThemeStyleboxOverride("normal", UiArt.Frame("row_on", Style.Box(new Color("#3a2614"), Style.LineHi, 2, 4)));
-            b.SetMeta("on", true);
-        }
-        var row = Style.H(12, Glyphs.Icon(glyph, 30, on ? Style.EmberHi : Style.Gold));
-        var words = Style.V(0, Style.Label(name, Style.Display, 18, on ? Colors.White : Style.GoldHi), Style.Label(tag, Style.Ui, Style.Caption, tagColor ?? Style.InkDim, true));
+        var box = OrnateBox.Make(OrnateBox.Kind.Card, 0, on ? Style.Ember : Style.GoldDim);
+        box.Crest = on ? 40 : 0;
+        box.Glow = on ? 0.8f : 0;
+        var hover = OrnateBox.Make(OrnateBox.Kind.Card, 0, on ? Style.EmberHi : Style.Gold);
+        hover.Crest = 40;
+        b.AddThemeStyleboxOverride("normal", box);
+        b.AddThemeStyleboxOverride("hover", hover);
+        b.AddThemeStyleboxOverride("pressed", hover);
+        if (on) b.SetMeta("on", true);
+        var row = Style.H(14, new Medallion(64, "", glyph) { Ring = on ? Style.Ember : Style.Gold, Ink = on ? Style.EmberHi : Style.GoldHi, Lit = on });
+        var words = Style.V(0, Style.Label(name.ToUpperInvariant(), Style.Display, 21, on ? Colors.White : Style.GoldHi), Style.Label(tag, Style.Ui, Style.Small, tagColor ?? Style.InkDim, true));
         words.CustomMinimumSize = new Vector2(360, 0);
+        words.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         row.AddChild(words);
-        row.Position = new Vector2(12, 8);
+        row.Position = new Vector2(14, 14);
         row.MouseFilter = MouseFilterEnum.Ignore;
         b.AddChild(row);
         return b;

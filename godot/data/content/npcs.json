@@ -149,7 +149,7 @@
      }
     },
     {
-     "text": "One caravan home. One. I'll take it.",
+     "text": "One caravan home. I'll take it.",
      "night": false,
      "when": {
       "fact": "caravan.survivors",
@@ -256,8 +256,8 @@
      }
     },
     {
-     "text": "Nothing calls in the Hollow now. Nothing.",
-     "night": false,
+     "text": "Nothing calls in the Hollow now.",
+     "night": true,
      "when": {
       "fact": "beasts.outcome",
       "eq": "slaughtered"
@@ -395,7 +395,7 @@
    ],
    "said": [
     {
-     "text": "Oh, Mam.",
+     "text": "Man owed me a leg, pal. Bad debt, now.",
      "night": true,
      "when": {
       "fact": "redcowl",
@@ -436,7 +436,7 @@
     "facing": -1.5707963267948966
    },
    "barks": [
-    "Salt and iron, friend. Cloth, when I can get it."
+    "Salt and iron, friend. Good honest salt."
    ],
    "nightBarks": [
     "I keep the books by candlelight. Helps me not think."
@@ -649,7 +649,7 @@
      }
     },
     {
-     "text": "Water's sweet. Sweet! I'd forgotten.",
+     "text": "Water's sweet again. I'd forgotten it could be.",
      "night": false,
      "when": {
       "all": [
@@ -759,10 +759,18 @@
      }
     },
     {
-     "text": "Ground knocks under our barn. Pa says pipes. We've got no pipes.",
+     "text": "Still knocking under our floor. Pa's stopped saying it's moles.",
      "when": {
-      "fact": "tremor.felt",
-      "eq": true
+      "all": [
+       {
+        "fact": "tam.tock",
+        "eq": true
+       },
+       {
+        "fact": "tremor.felt",
+        "eq": true
+       }
+      ]
      }
     }
    ]
@@ -823,7 +831,7 @@
      }
     },
     {
-     "text": "Twelve, I made. Twelve.",
+     "text": "Twelve, I made.",
      "night": false,
      "when": {
       "any": [
@@ -836,7 +844,8 @@
         "eq": "risen"
        }
       ]
-     }
+     },
+     "once": true
     },
     {
      "text": "Forge is lit. Don't come in.",
@@ -945,7 +954,7 @@
    ],
    "said": [
     {
-     "text": "Chapter four. Chapter four. ...Good morning.",
+     "text": "Chapter four. Chapter four. ...Good day.",
      "night": false,
      "when": {
       "fact": "keegan.saw_risen",

@@ -844,12 +844,7 @@
    }
   },
   {
-   "text": "Lamps are lit. Stay where they reach, or it's the Morrow for you.",
-   "watch": true,
-   "night": true
-  },
-  {
-   "text": "No carts on the Old Road since the wolves. So who keeps bringing that one in?",
+   "text": "No carter's been up the Old Road in a month. So who keeps bringing that one in?",
    "when": {
     "fact": "player.deaths",
     "gte": 2
