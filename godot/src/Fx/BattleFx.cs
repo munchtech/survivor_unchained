@@ -614,9 +614,11 @@ public partial class BattleFx : Node3D
                     {
                         // A champion's fall is brief and no wider than its body's reach (the experience
                         // director's rule: about 3 m, a flash under 0.15 s, the dust down in 0.6 s, never
-                        // bigger than a level-up); only the boss's may fill the screen.
+                        // bigger than a level-up). A boss's is the fall's (Ev.Victory): its light and rings,
+                        // with no flat blast of its own under them (one fourteen metres across filled the peak).
                         Flash(V(e.X, gy + 1.5, e.Z), pal.Light, e.Boss ? 16 : 10, e.Boss ? 0.6f : 0.15f, e.Boss ? 12 : 8);
-                        if (!Blast(e.X, e.Z, e.School, e.Boss ? 6 : 2.4f, e.Boss ? 1.1f : 0.6f, e.Boss ? 1.5f : 1.1f)) Nova(e.X, e.Z, e.Boss ? 5 : 3, pal.Glow, 0.45f);
+                        if (e.Boss) Waves.Add(V(e.X, gy + 0.5, e.Z), 7, 0.5f, pal.Glow, 0.8f);
+                        else if (!Blast(e.X, e.Z, e.School, 2.4f, 0.6f, 1.1f)) Nova(e.X, e.Z, 3, pal.Glow, 0.45f);
                         Cam?.AddTrauma(0.35f);
                     }
                     break;

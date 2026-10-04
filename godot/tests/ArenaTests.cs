@@ -259,8 +259,13 @@ public class ArenaTests
             Assert.True(fell, "the fall was not told");
             var p = s.B.Player;
             Assert.Contains(s.B.Enemies.Living(), e => !e.Elite && e.Status.Has(StatusKind.Fear) && (e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z) < 32 * 32);
+            // The way out waits until the fall has landed; a story's night needs none.
+            var way = s.Zone.Interactables.FirstOrDefault(i => i.Id == "way_out");
+            if (story) Assert.Null(way);
+            else Assert.False(way!.When!(), "the way out's prompt stood over the fall");
             Run(s, 8);
             Assert.Equal(story, s.Zone.Over);
+            if (!story) Assert.True(way!.When!());
             if (story) Assert.True(s.Host.ArenaResult!.Won);
         }
     }

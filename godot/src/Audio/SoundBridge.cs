@@ -140,8 +140,8 @@ public sealed class SoundBridge
         var o = s.Overlay;
         if (o != prevOverlay)
         {
-            if (o != null && o is not ("dialogue" or "draft" or "chapter")) Sfx.Open();
-            else if (o == null && prevOverlay is not (null or "dialogue")) Sfx.Close();
+            if (o != null && o is not ("dialogue" or "draft" or "chapter" or "chest")) Sfx.Open();
+            else if (o == null && prevOverlay is not (null or "dialogue" or "chest")) Sfx.Close();
             if (o == "chapter") Sfx.Stinger("story");
             prevOverlay = o;
         }
@@ -178,7 +178,8 @@ public sealed class SoundBridge
             }
         }
         else beatT = 0;
-        a.DuckMusic(o == "dialogue" ? 0.55f : o != null && o != "draft" ? 0.7f : 1);
+        // A chest opening has the room: the score steps well back for its jingle.
+        a.DuckMusic(o == "dialogue" ? 0.55f : o == "chest" ? 0.3f : o != null && o != "draft" ? 0.7f : 1);
         Music.Update(dt);
         Ambience.Set(s.Mode == "play" && s.Ambience != null ? s.Ambience(s.Px, s.Pz) : s.Mode == "title" ? TitleAir : new AmbienceMix());
         Ambience.Update(dt);

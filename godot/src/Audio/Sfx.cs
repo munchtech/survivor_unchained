@@ -348,6 +348,92 @@ public static class Sfx
         a.Play(new Hiss { T = t + 0.3, A = 0.6, D = 2.4, G = 0.03, Hp = 7000, Bus = Bus.Ui });
     }
 
+    /* ----------------------------------------------------------- a chest --- */
+
+    /// <summary>The score's key, D minor, as a pentatonic ladder (semitones): what a chest's
+    /// things land on, one step each, so the opening is a phrase and not a row of dings.</summary>
+    static readonly int[] Ladder = [0, 3, 5, 7, 10, 12, 15, 17, 19, 22, 24];
+
+    /// <summary>A chest held before it bursts: the wood strains, the lid knocks against its lock,
+    /// a low swell rises under it. The fight is held down for the whole opening (its own sounds
+    /// are on the interface bus, round the duck).</summary>
+    public static void ChestShake(double seconds, double whole)
+    {
+        if (A is not { } a) return;
+        double t = Now;
+        a.DuckSfx(0.2f, whole);
+        a.Play(new Hiss { T = t, A = seconds, D = 0.2, G = 0.07, Lp = 180, Lp2 = 2400, Brown = true, Bus = Bus.Ui });
+        a.Play(new Tone { T = t, F = 55, F2 = 98, Glide = seconds, A = seconds, D = 0.25, G = 0.13, Type = Wave.Saw, Lp = 150, Lp2 = 900, Bus = Bus.Ui });
+        a.Play(new Clip { T = t, Of = "creak", G = 0.28, Pitch = 0.72, Bus = Bus.Ui });
+        for (int i = 0; i < 4; i++)
+            a.Play(new Clip { T = t + seconds * (0.22 + i * 0.2), Of = "impactWood_medium", G = 0.07 + i * 0.04, Pitch = R(0.95, 1.2), Bus = Bus.Ui });
+    }
+
+    /// <summary>The lid thrown back and the light out of it: a blow from under, the wood's
+    /// clap, a bright rush of air, and the jingle the chest's size earns: one thing, a bell
+    /// figure; three, a drum and a held chord; five or a hoard, a choir and a gong.</summary>
+    public static void ChestBurst(int count)
+    {
+        if (A is not { } a) return;
+        double t = Now;
+        a.Play(new Tone { T = t, F = 70, F2 = 30, D = 0.5, G = 0.42, Bus = Bus.Ui });
+        a.Play(new Clip { T = t, Of = "impactWood_medium", G = 0.45, Pitch = 0.7, Bus = Bus.Ui });
+        a.Play(new Hiss { T = t, A = 0.01, D = 0.7, G = 0.07, Hp = 5000, Verb = 0.5, Bus = Bus.Ui });
+        double d = 293.66;
+        if (count >= 5)
+        {
+            // A choir's chord swelling (detuned saws, soft), a gong under it.
+            foreach (var s in new[] { 0, 7, 12, 16, 19 })
+                for (int k = 0; k < 2; k++)
+                    a.Play(new Tone { T = t + 0.05, F = d * Semis(s), Type = Wave.Saw, A = 0.6, Hold = 1.2, D = 1.6, G = 0.022, Lp = 600, Lp2 = 2200, Detune = k == 0 ? -9 : 9, Verb = 0.8, Bus = Bus.Music });
+            a.Play(new Fm { T = t, F = 98, Ratio = 1.41, Index = 3.2, A = 0.01, D = 3.2, G = 0.12, Verb = 0.6, Bus = Bus.Ui });
+            a.Play(new Fm { T = t, F = 196, Ratio = 2.76, Index = 1.4, A = 0.01, D = 2.4, G = 0.05, Verb = 0.6, Bus = Bus.Ui });
+        }
+        else if (count >= 3)
+        {
+            // A drum (two strokes) and a warm held chord.
+            for (int i = 0; i < 2; i++)
+            {
+                a.Play(new Tone { T = t + 0.12 + i * 0.16, F = 110, F2 = 52, D = 0.35, G = 0.3, Bus = Bus.Ui });
+                a.Play(new Hiss { T = t + 0.12 + i * 0.16, D = 0.12, G = 0.05, Bp = 900, Q = 1.2, Bus = Bus.Ui });
+            }
+            foreach (var s in new[] { 0, 7, 12, 15 })
+                a.Play(new Tone { T = t + 0.1, F = d * Semis(s), Type = Wave.Triangle, A = 0.25, Hold = 0.6, D = 1.0, G = 0.03, Verb = 0.7, Bus = Bus.Music });
+        }
+        else
+        {
+            // A small bell figure, rising.
+            int[] s = [0, 7, 12];
+            for (int i = 0; i < s.Length; i++)
+                a.Play(new Fm { T = t + 0.06 + i * 0.09, F = 2 * d * Semis(s[i]), Ratio = 3.01, Index = 0.6, D = 0.9, G = 0.035, Verb = 0.6, Bus = Bus.Ui });
+        }
+    }
+
+    /// <summary>A thing out of a chest lands in its place: a clunk, and a bell one step further up
+    /// the ladder than the last. An evolution lands on the night's chord instead, held.</summary>
+    public static void ChestLand(int step, bool evolution)
+    {
+        if (A is not { } a) return;
+        double t = Now;
+        a.Play(new Clip { T = t, Of = "impactMetal_medium", G = 0.14, Pitch = R(0.85, 0.95), Lp = 3000, Bus = Bus.Ui });
+        a.Play(new Tone { T = t, F = 140, F2 = 70, D = 0.12, G = 0.14, Bus = Bus.Ui });
+        double f = 587.33 * Semis(Ladder[Math.Clamp(step, 0, Ladder.Length - 1)]);
+        a.Play(new Fm { T = t, F = f, Ratio = 3.5, Index = 0.45, D = 1.1, G = 0.05, Verb = 0.6, Bus = Bus.Ui });
+        a.Play(new Fm { T = t + 0.012, F = f * 2, Ratio = 2.01, Index = 0.3, D = 0.6, G = 0.018, Verb = 0.6, Bus = Bus.Ui });
+        if (!evolution) return;
+        int[] s = [0, 7, 12, 16, 19, 24];
+        for (int i = 0; i < s.Length; i++)
+            a.Play(new Fm { T = t + 0.05 + i * 0.07, F = 293.66 * Semis(s[i]), Ratio = 2.01, Index = 0.8, A = 0.02, D = 2.4, G = 0.04, Verb = 0.8, Bus = Bus.Music });
+        a.Play(new Tone { T = t, F = 73.4, A = 0.15, D = 2.2, G = 0.14, Type = Wave.Saw, Lp = 400, Lp2 = 1400, Bus = Bus.Ui });
+    }
+
+    /// <summary>A reel's icon turning over: a dry tick, quieter as it slows.</summary>
+    public static void ChestTick(double g)
+    {
+        if (A is not { } a || !a.Gate("chestTick", 3, 60)) return;
+        a.Play(new Clip { Of = "tick", G = 0.05 * g, Pitch = R(1.3, 1.5), Bus = Bus.Ui });
+    }
+
     /// <summary>The fight's noise held down for a big moment (an evolution, a chest), so it is heard.</summary>
     public static void Moment(double seconds, float depth = 0.4f) => A?.DuckSfx(depth, seconds);
 

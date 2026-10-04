@@ -52,7 +52,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     readonly ArenaPacing pacing;
     bool hushed, opened;
     double heraldAt;
-    bool herald10, herald20, great15, bossUp, won, over;
+    bool herald10, herald20, great15, bossUp, won, over, wayShown;
     double nextHerald, pulseT;
     (double X, double Z)? way;
     Enemy? boss, herald;
@@ -1005,15 +1005,22 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         return o;
     }
 
-    /// <summary>A chest: upgrades, an evolution first if one is earned.</summary>
+    /// <summary>A chest: upgrades, an evolution first if one is earned, opened as a moment of
+    /// its own (the host stages it). One, three or five things; a boss's hoard more.</summary>
     bool OnPickup(Pickup p)
     {
         if (p.Kind != PickupKind.Chest || B == null) return true;
-        int n = p.Ref == "boss" ? (int)p.Value : p.Ref == "small" ? 1 : 1 + (R() < 0.3 ? 1 : 0) + (R() < 0.1 ? 1 : 0);
+        // (Two rolls, as the old count took, so the night's dice after it fall as they did.)
+        double roll = R();
+        R();
+        int n = p.Ref == "boss" ? (int)p.Value : p.Ref == "small" ? 1 : LevelUp.ChestCount(roll);
         var got = LevelUp.OpenChest(B, n);
-        G.Announce(new Announcement("A chest", string.Join(" · ", got), "reward", 2.8));
+        chestsOpened++;
+        G.Chest(new ChestOpened(p.X, p.Z, p.Id, got, p.Ref == "boss" ? $"{BossName}'s hoard" : null, chestsOpened));
         return true;
     }
+
+    int chestsOpened;
 
     void OnKill(Enemy e, bool byPlayer)
     {
@@ -1045,15 +1052,21 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         Arenas.Won(G.Journey, Spec);
         // A story's night is over at its boss's fall: its people draw back into the dark.
         if (Spec.Story) { bossShare = 0; MakeWay(0); }
-        way = map.CanStand(x, z) ? (x, z) : (B!.Player.X, B.Player.Z);
-        var (wx, wz) = way.Value;
-        G.Look.AddLight(wx, 2.2, wz, "#8ab4ff", 3.2, 14, 0.08, 0.14, "#b8d0ff");
-        Interactables.Add(new Interactable
+        // The way out opens where it fell (a story's night lets her go by itself: it needs none).
+        // Its prompt waits until the fall has landed: a button over her at the peak spoiled it.
+        if (!Spec.Story)
         {
-            Id = "way_out", X = wx, Z = wz, R = 2.6, Verb = "Leave", Name = "The way out",
-            Hint = () => Spec.Story ? "Won" : $"Won. Or stay: {Clock(Seconds - End)} {Past}",
-            Act = Leave,
-        });
+            way = map.CanStand(x, z) ? (x, z) : (B!.Player.X, B.Player.Z);
+            var (wx, wz) = way.Value;
+            G.Look.AddLight(wx, 2.2, wz, "#8ab4ff", 3.2, 14, 0.08, 0.14, "#b8d0ff");
+            Interactables.Add(new Interactable
+            {
+                Id = "way_out", X = wx, Z = wz, R = 2.6, Verb = "Leave", Name = "The way out",
+                Hint = () => $"Won. Or stay: {Clock(Seconds - End)} {Past}",
+                When = () => wayShown, Act = Leave,
+            });
+            G.After(2.6, () => wayShown = true);
+        }
         // The night's peak: the world slows on the fall, and the people break and run for a
         // breath before they gather again (docs/EXPERIENCE_AUDIT.md, finding 2).
         B!.Events.Emit(new Ev.Victory { X = x, Z = z });
@@ -1070,7 +1083,8 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             G.After(2.4, () => { if (B != null && !over) foreach (var k in B.Pickups.Items) if (k.Alive) k.Pulled = true; });
             G.After(7, () => { if (won && !over) Finish(); });
         }
-        G.Announce(new Announcement($"{Spec.Name} is won", Spec.Story ? "The night is over, and it lets you go." : "The way out is open. Or stay: the night does not end, and it only gets harder.", "reward", 4, "Victory"));
+        // The words a beat after the blow, as time comes back, not over the flash.
+        G.After(0.8, () => G.Announce(new Announcement($"{Spec.Name} is won", Spec.Story ? "The night is over, and it lets you go." : "The way out is open. Or stay: the night does not end, and it only gets harder.", "reward", 4, "Victory")));
         Objectives();
     }
 
@@ -1110,7 +1124,8 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         if (way is var (wx, wz) && (pulseT -= dt) <= 0)
         {
             pulseT = 1.3;
-            B.Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = wx, Z = wz, Radius = 2.4, Duration = 1.2, Hostile = false });
+            // A band of light, not a filling disc: the field round it stays readable.
+            B.Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Ring, X = wx, Z = wz, Inner = 1.9, Radius = 2.4, Duration = 1.2, Hostile = false });
         }
         if (boss is { Alive: true } b && b.State != EnemyState.Dying)
             G.SetBoss(script != null ? script.Bar(BossName, script is Grimtunnel g ? $"{BossTitle} · {(g.Ganger ? "lamp" : "lamps")}: {g.Lamps}" : BossTitle) : new BossBar(BossName, BossTitle, b.Hp, b.MaxHp));
@@ -1137,12 +1152,13 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         };
         if (won)
         {
-            if (!Spec.Story) steps.Add(new Step($"Stay as long as you dare: {Clock(Seconds - End)} {Past}", Optional: true));
-            if (bossUp) steps.Add(new Step($"{BossName} has come again", Optional: true));
+            // A story's night is over at the fall: nothing comes again.
+            if (Spec.Story) steps.Add(new Step("The night lets you go", Optional: true));
             else
             {
+                steps.Add(new Step($"Stay as long as you dare: {Clock(Seconds - End)} {Past}", Optional: true));
                 int back = (int)Math.Max(0, nextReturn - Seconds);
-                steps.Add(new Step($"{BossName} comes again in {back / 60}:{back % 60:00}", Optional: true));
+                steps.Add(new Step(bossUp ? $"{BossName} has come again" : $"{BossName} comes again in {back / 60}:{back % 60:00}", Optional: true));
             }
             if (dark.Count > 0 || deeper > 0)
                 steps.Add(new Step($"The dark has sworn {string.Join(", ", dark.Select(o => o.Name.Replace("Oath of ", "")))}{(deeper > 0 ? $", and deepened {deeper} times" : "")}", Optional: true));

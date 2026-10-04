@@ -43,7 +43,11 @@ public partial class WorldScene : Node3D, IZoneLook
     /// <summary>Heavy blows hold the fight still for a moment (off with the screen's shake).</summary>
     public bool Hitstop = true;
     public double Time { get; private set; }
-    double acc, hitstop, hitstopCd, fightTime, damageFlash, slowmo, fall;
+    /// <summary>How still the world is held (0 none, 1 all but stopped): the survivor and the crowd
+    /// keep a breath of motion while what is staged over them (a chest opening) moves at full
+    /// speed. The fight itself is paused by SimPaused.</summary>
+    public float Hold;
+    double acc, hitstop, hitstopCd, fightTime, viewTime, damageFlash, slowmo, fall;
     /// <summary>The night's peak in real seconds: the world slows hard as what ruled it falls
     /// and eases back to full speed (docs/EXPERIENCE_AUDIT.md, finding 2).</summary>
     const double Fall = 2.2;
@@ -173,12 +177,15 @@ public partial class WorldScene : Node3D, IZoneLook
         {
             var p = b.Player;
             float y = (float)HeightAt(p.X, p.Z);
+            // The living's own clock: the fight's, all but stopped while the world is held.
+            double viewDt = fightDt * (1 - 0.97 * Math.Clamp(Hold, 0, 1));
+            viewTime += viewDt;
             Perf.Begin(Perf.Part.Player);
-            Player?.Update(b, fightDt, fightTime, HeightAt);
+            Player?.Update(b, viewDt, viewTime, HeightAt);
             Perf.End(Perf.Part.Player);
             if (Showcase == null && !CameraHeld) cam.Update((float)dt, (float)p.X, y, (float)p.Z, (float)p.Vx, (float)p.Vz);
             Perf.Begin(Perf.Part.Crowd);
-            Crowd.Update(b, HeightAt, fightTime);
+            Crowd.Update(b, HeightAt, viewTime);
             Perf.End(Perf.Part.Crowd);
             Fx.PlayerPos = new Vector3((float)p.X, y, (float)p.Z);
             Perf.Begin(Perf.Part.Fx);

@@ -186,6 +186,8 @@ public partial class Game : Node, IZoneHost
             if (Args.Get("boss") is string bo) { var bp = bo.Split(':'); spec.Boss = bp[0]; if (bp.Length > 1) spec.BossName = bp[1].Replace('_', ' '); }
             // --spare: the story lets it go (Greymuzzle spared).
             spec.Spare = Args.Has("spare");
+            // --story: told as a story's night (twenty minutes, over at its boss's fall), for pictures of its end.
+            if (Args.Has("story")) { spec.Story = true; spec.Minutes = 20; }
             Arenas.Begin(World, spec);
         }
         if (z != "lowford")
@@ -297,8 +299,11 @@ public partial class Game : Node, IZoneHost
         var s = result.Spec;
         // A tome left blank is written with the first of what it offered.
         if (result.Inscribed == null && result.TomeChoices.Count > 0) Arenas.Inscribe(Journey, result, result.TomeChoices[0]);
-        screens.Close();
+        // The result stays up until the fade has gone dark: closed first, the emptied field showed
+        // between it and the road.
+        bool leaving = !inTransit;
         Travel(s.ReturnZone, null, null, new Arrival(s.ReturnX, s.ReturnZ, s.ReturnFacing));
+        if (leaving) Wait(0.8, () => screens.Close());
     }
 
     ZoneRuntime Make(string id, ZoneMeta meta) => id switch
