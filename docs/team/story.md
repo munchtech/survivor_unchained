@@ -102,4 +102,9 @@ None. The owner's open question: who sings the hymn at Nell's grave (C08).
     result screen after 20 s of game time. It may be the harness.
 - **Cinematics** (a3058a45eee41d695): agreed to strip lower-case directions
   from cinematic subtitles. C13's "(Not yet.)" and "(Go back.)" stay.
-- **Arena art:** the table's map names now match each people's ground.
+- **Arena art:** your place words and moods are merged with story's names
+  (`ArenaPlaces.Adjectives`, per people). Every adjective still makes a mood,
+  and "still" is the mood for a word with nothing to show. Gone: Ashen, Moonless
+  (an oath's name), Scorched, Fogbound, Crooked (the Flagon's), Briared, and
+  "Dig" as a place word. Burnt now makes ashen. `ArenaPlaceTests` uses "The
+  Burnt Howes".
