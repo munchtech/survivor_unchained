@@ -1,6 +1,7 @@
 """The townsfolk's own clips: captured and generated motion retargeted onto
 the kit's bodies (the game's women and men, People.Build), packed into
-godot/art/anim/folk.res for People.Clip (FolkClips.cs).
+godot/art/anim/folk.res for People.Clip (FolkClips.cs); and the walking
+dead's own gait, keyed (dead.py), which the crowd bakes (Vat.cs).
 
     python tools/anim/folk.py [names]
 
@@ -21,6 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import dead  # noqa: E402
 from build import GODOT  # noqa: E402
 from clips.generated import make  # noqa: E402
 from keyed import Rig  # noqa: E402
@@ -74,6 +76,14 @@ def build(want):
             made.append(clip.name)
             print(f"  {clip.name:16s} {clip.frames:4d} frames {clip.length:5.2f} s  speed {clip.meta.get('speed', 0):.2f}  "
                   f"({time.time() - t0:.1f} s)")
+        # The dead's own motion, keyed (dead.py).
+        for name, fn in dead.KEYED.items():
+            if want and not any(w in name for w in want):
+                continue
+            clip = fn(f"{sex}_{name}", rig)
+            write_clip(clip, sk, OUT)
+            made.append(clip.name)
+            print(f"  {clip.name:16s} {clip.frames:4d} frames {clip.length:5.2f} s  speed {clip.meta.get('speed', 0):.2f}  (keyed)")
     return made
 
 
@@ -87,5 +97,7 @@ def pack():
 
 
 if __name__ == "__main__":
-    build([a for a in sys.argv[1:] if not a.startswith("--")])
-    pack()
+    # (A name that matches nothing packs nothing: the library is every clip
+    # in out/folk, and a fresh checkout has none there yet.)
+    if build([a for a in sys.argv[1:] if not a.startswith("--")]) and "--no-pack" not in sys.argv:
+        pack()
