@@ -57,6 +57,7 @@ public static class Grass
         arrays[(int)Mesh.ArrayType.Index] = idx.ToArray();
         blade.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
 
+        // (Wider cells at the lower qualities: fewer tufts, a thinner meadow.)
         int n = (int)(radius * 2 / cell);
         var at = new System.Collections.Generic.List<Transform3D>(n * n);
         var rng = new RandomNumberGenerator { Seed = 7 };

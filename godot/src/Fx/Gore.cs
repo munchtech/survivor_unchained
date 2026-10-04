@@ -169,7 +169,44 @@ public partial class Gore : Node3D
         public Blood? Blood;
     }
 
-    readonly Dictionary<Kind, MultiMesh> meshes = new();
+    /// <summary>One kind of piece: its MultiMesh and the floats behind it,
+    /// changed here and handed over once a frame (a call into the engine for
+    /// every piece in the air or on the ground, every frame, cost more).</summary>
+    sealed class GibMeshes
+    {
+        public required MultiMesh Mesh;
+        public required float[] Buffer;
+        public required int Stride;
+        public bool Dirty;
+
+        public void Place(int slot, Transform3D t)
+        {
+            int o = slot * Stride;
+            var b = t.Basis;
+            var f = Buffer;
+            f[o] = b.X.X; f[o + 1] = b.Y.X; f[o + 2] = b.Z.X; f[o + 3] = t.Origin.X;
+            f[o + 4] = b.X.Y; f[o + 5] = b.Y.Y; f[o + 6] = b.Z.Y; f[o + 7] = t.Origin.Y;
+            f[o + 8] = b.X.Z; f[o + 9] = b.Y.Z; f[o + 10] = b.Z.Z; f[o + 11] = t.Origin.Z;
+            Dirty = true;
+        }
+
+        public void Tint(int slot, Color c)
+        {
+            if (Stride < 16) return;
+            int o = slot * Stride + 12;
+            Buffer[o] = c.R; Buffer[o + 1] = c.G; Buffer[o + 2] = c.B; Buffer[o + 3] = c.A;
+            Dirty = true;
+        }
+
+        public void Flush()
+        {
+            if (!Dirty) return;
+            Dirty = false;
+            RenderingServer.MultimeshSetBuffer(Mesh.GetRid(), Buffer);
+        }
+    }
+
+    readonly Dictionary<Kind, GibMeshes> meshes = new();
     readonly Dictionary<Kind, Stack<int>> free = new();
     readonly List<Gib> live = new();
 
@@ -192,12 +229,15 @@ public partial class Gore : Node3D
     void Add(Kind kind, Mesh mesh, int n, bool colors)
     {
         var mm = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseColors = colors, InstanceCount = n, VisibleInstanceCount = n, Mesh = mesh };
+        // Every piece put away to begin with (scaled to nothing), white.
+        var pieces = new GibMeshes { Mesh = mm, Buffer = new float[n * (colors ? 16 : 12)], Stride = colors ? 16 : 12 };
         var zero = new Transform3D(Godot.Basis.FromScale(Vector3.Zero), Vector3.Zero);
-        for (int i = 0; i < n; i++) { mm.SetInstanceTransform(i, zero); if (colors) mm.SetInstanceColor(i, Colors.White); }
+        for (int i = 0; i < n; i++) { pieces.Place(i, zero); pieces.Tint(i, Colors.White); }
+        pieces.Flush();
         var inst = new MultiMeshInstance3D { Multimesh = mm, CastShadow = GeometryInstance3D.ShadowCastingSetting.On, Layers = 1 };
         inst.CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f));
         AddChild(inst);
-        meshes[kind] = mm;
+        meshes[kind] = pieces;
         var s = new Stack<int>();
         for (int i = n - 1; i >= 0; i--) s.Push(i);
         free[kind] = s;
@@ -239,7 +279,7 @@ public partial class Gore : Node3D
             Retire(old);
             slot = free[kind].Pop();
         }
-        if (kind == Kind.Meat) meshes[kind].SetInstanceColor(slot, tint ?? Colors.White);
+        if (kind == Kind.Meat) meshes[kind].Tint(slot, tint ?? Colors.White);
         live.Add(new Gib
         {
             Kind = kind, Slot = slot, P = at, V = v, Axis = new Vector3(R() - 0.5f, R() - 0.5f, R() - 0.5f).Normalized(),
@@ -249,7 +289,7 @@ public partial class Gore : Node3D
 
     void Retire(Gib g)
     {
-        meshes[g.Kind].SetInstanceTransform(g.Slot, new Transform3D(Godot.Basis.FromScale(Vector3.Zero), Vector3.Zero));
+        meshes[g.Kind].Place(g.Slot, new Transform3D(Godot.Basis.FromScale(Vector3.Zero), Vector3.Zero));
         free[g.Kind].Push(g.Slot);
         live.Remove(g);
     }
@@ -375,14 +415,16 @@ public partial class Gore : Node3D
             float sink = Math.Max(0, g.Age - (g.Life - 2.5f)) * 0.35f;
             var p = new Vector3(g.P.X, Math.Max(g.P.Y, ground + g.R) - sink, g.P.Z);
             var scale = g.Kind == Kind.Bone ? new Vector3(g.Size * 0.55f, g.Size * 1.6f, g.Size * 0.55f) : Vector3.One * g.Size;
-            meshes[g.Kind].SetInstanceTransform(g.Slot, new Transform3D(new Godot.Basis(g.Axis, g.Ang) * Godot.Basis.FromScale(scale), p));
+            meshes[g.Kind].Place(g.Slot, new Transform3D(new Godot.Basis(g.Axis, g.Ang) * Godot.Basis.FromScale(scale), p));
         }
+        foreach (var m in meshes.Values) m.Flush();
     }
 
     /// <summary>A new place: nothing of the last one's dead comes along.</summary>
     public void Clear()
     {
         for (int i = live.Count - 1; i >= 0; i--) Retire(live[i]);
+        foreach (var m in meshes.Values) m.Flush();
         foreach (var s in splats) s.Decal.Visible = false;
     }
 }

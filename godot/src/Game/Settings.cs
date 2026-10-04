@@ -12,6 +12,8 @@ namespace SurvivorUnchained.Play;
 public sealed class Settings
 {
     public string Quality = "high";
+    /// <summary>The world's resolution: native, or drawn smaller and brought up by FSR 2.2 (quality, balanced, performance).</summary>
+    public string Scale = "native";
     public string Sound = "on";
     public string Gore = "full";
     public string Motion = "full";
@@ -31,6 +33,9 @@ public sealed class Settings
         var s = Read();
         // Tools taking pictures are taken as having agreed (the web game's ?manual).
         if (Args.Has("shot")) s.Mature = true;
+        // --quality Q: a run at that quality whatever was saved (measuring, pictures).
+        if (Args.Get("quality") is { } q) s.Quality = q;
+        if (Args.Get("scale") is { } sc) s.Scale = sc;
         return s;
     }
 
@@ -63,7 +68,8 @@ public sealed class Settings
     /// <summary>A window or the whole screen (not in runs without a screen).</summary>
     public void ApplyWindow()
     {
-        if (DisplayServer.GetName() == "headless" || OS.GetCmdlineUserArgs().Length > 0 && Args.Has("shot")) return;
+        // Measured runs (--perf) keep the window they were given unless asked for the whole screen.
+        if (DisplayServer.GetName() == "headless" || OS.GetCmdlineUserArgs().Length > 0 && (Args.Has("shot") || Args.Has("perf") && !Args.Has("fullscreen"))) return;
         DisplayServer.WindowSetMode(Fullscreen ? DisplayServer.WindowMode.Fullscreen : DisplayServer.WindowMode.Windowed);
     }
 }

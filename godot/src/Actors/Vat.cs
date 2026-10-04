@@ -819,12 +819,18 @@ public static class Vat
 
 /// <summary>
 /// One kind of creature, drawn as many times as there are of it this frame:
-/// a MultiMesh of its bake, filled from scratch every frame.
+/// a MultiMesh of its bake, filled from scratch every frame. The frame's
+/// bodies are written into one array and handed over in a single call: three
+/// calls into the engine for each body (its place, tint and clip) cost more
+/// than the rest of the crowd's frame.
 /// </summary>
 public partial class VatCrowd : MultiMeshInstance3D
 {
     public readonly VatAsset Asset;
-    int count, capacity;
+    int count, capacity, shown;
+    float[] buffer = Array.Empty<float>();
+    /// <summary>A body's floats: its transform (12), colour (4) and custom data (4), as Godot lays a MultiMesh's buffer out.</summary>
+    const int Stride = 20;
 
     public VatCrowd(VatAsset asset)
     {
@@ -840,6 +846,8 @@ public partial class VatCrowd : MultiMeshInstance3D
     void Grow(int n)
     {
         capacity = n;
+        // Keep what is already placed this frame.
+        Array.Resize(ref buffer, n * Stride);
         Multimesh = new MultiMesh
         {
             TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseColors = true, UseCustomData = true,
@@ -852,26 +860,25 @@ public partial class VatCrowd : MultiMeshInstance3D
     /// <summary>One body this frame, `t` seconds into its role's clip.</summary>
     public void Push(Transform3D at, string role, double t, float flash, float dissolve, float frozen, float burning, Color tint, float glow)
     {
-        if (count >= capacity)
-        {
-            // Keep what is already placed this frame when growing.
-            var old = Multimesh;
-            Grow(capacity * 2);
-            for (int i = 0; i < count; i++)
-            {
-                Multimesh.SetInstanceTransform(i, old.GetInstanceTransform(i));
-                Multimesh.SetInstanceColor(i, old.GetInstanceColor(i));
-                Multimesh.SetInstanceCustomData(i, old.GetInstanceCustomData(i));
-            }
-        }
-        int k = count++;
+        if (count >= capacity) Grow(capacity * 2);
+        int o = count++ * Stride;
         var (f0, f1, blend) = Asset.Frame(role, t);
         static int Q(float v, int max) => (int)Math.Round(Math.Clamp(v, 0, 1) * max);
         int word = Q(flash, 255) | Q(dissolve, 255) << 8 | Q(frozen, 15) << 16 | Q(burning, 15) << 20;
-        Multimesh.SetInstanceTransform(k, at);
-        Multimesh.SetInstanceColor(k, new Color(tint.R, tint.G, tint.B, glow));
-        Multimesh.SetInstanceCustomData(k, new Color(f0, f1, blend, word));
+        var b = at.Basis;
+        var buf = buffer;
+        buf[o] = b.X.X; buf[o + 1] = b.Y.X; buf[o + 2] = b.Z.X; buf[o + 3] = at.Origin.X;
+        buf[o + 4] = b.X.Y; buf[o + 5] = b.Y.Y; buf[o + 6] = b.Z.Y; buf[o + 7] = at.Origin.Y;
+        buf[o + 8] = b.X.Z; buf[o + 9] = b.Y.Z; buf[o + 10] = b.Z.Z; buf[o + 11] = at.Origin.Z;
+        buf[o + 12] = tint.R; buf[o + 13] = tint.G; buf[o + 14] = tint.B; buf[o + 15] = glow;
+        buf[o + 16] = f0; buf[o + 17] = f1; buf[o + 18] = blend; buf[o + 19] = word;
     }
 
-    public void End() => Multimesh.VisibleInstanceCount = count;
+    public void End()
+    {
+        // Nothing of this kind now or last frame: nothing to send.
+        if (count == 0 && shown == 0) return;
+        RenderingServer.MultimeshSetBuffer(Multimesh.GetRid(), new ReadOnlySpan<float>(buffer, 0, capacity * Stride));
+        Multimesh.VisibleInstanceCount = shown = count;
+    }
 }

@@ -96,6 +96,7 @@ public partial class Game : Node, IZoneHost
         AddChild(new Shots());
         synth = new Synth();
         AddChild(synth);
+        if (Perf.On) MeasureWith(new Perf());
         sound = new SoundBridge(synth);
         voice = new VoiceOver();
         AddChild(voice);
@@ -217,7 +218,7 @@ public partial class Game : Node, IZoneHost
         s.ApplyWindow();
         cam.ShakeScale = s.ShakeLevel;
         if (scene != null) { scene.Fx.Gore.Level = s.GoreLevel; scene.Hitstop = s.Hitstop; }
-        air.Quality(s.Quality);
+        Graphics.Apply(s, air, GetViewport(), scene);
         AudioServer.SetBusVolumeDb(0, s.Volume <= 0 ? -80 : Mathf.LinearToDb(s.Volume));
         voice?.Apply();
     }
@@ -334,6 +335,7 @@ public partial class Game : Node, IZoneHost
         // An arena is only ever entered from the story: one left behind is over.
         if (id != "arena") World.Arena = null;
         else if (World.Arena == null) { id = "waystation"; at = Waystation.AtTable; }
+        ulong t0 = Time.GetTicksUsec();
         if (scene == null || scene.Data.Id != id || scene.Battle != null) Stage(id);
         else RemoveFigure();
         zone = Make(id, scene!.Data.Meta);
@@ -341,6 +343,8 @@ public partial class Game : Node, IZoneHost
         air.Set(zone.AtmosphereFor(time));
         scene.View.SetNight(time == TimeOfDay.Night);
         EnterPlay(zone, from, at);
+        // --perf: how long the place took to stand up (the frame it happens in holds that long).
+        if (Perf.On) GD.Print($"perf zone {id} built in {(Time.GetTicksUsec() - t0) / 1000.0:0} ms (at {Time.GetTicksMsec() / 1000.0:0.0}s since launch)");
     }
 
     void EnterPlay(ZoneRuntime z, string? from, Arrival? at)
@@ -616,7 +620,9 @@ public partial class Game : Node, IZoneHost
             }
             autosaveT += dt;
             if (autosaveT > 90 && Overlay == null && !inTransit) { autosaveT = 0; Save("auto"); }
+            Perf.Begin(Perf.Part.Zone);
             zone.Frame(dt);
+            Perf.End(Perf.Part.Zone);
             RunLater(dt);
         }
         else if (auto != null && Mode != "play") AutoFront();
@@ -658,14 +664,17 @@ public partial class Game : Node, IZoneHost
             var sb = Battle;
             var at = sb != null ? new Vector3((float)sb.Player.X, 0, (float)sb.Player.Z) : showNow.Look;
             var time = Journey is { } jn ? zone?.TimeOf(jn.World) ?? jn.World.Time : TimeOfDay.Night;
+            Perf.Begin(Perf.Part.Sound);
             sound.Update(dt, new SoundState(Mode, zone?.Id, time, at.X, at.Z, sb, bossUp, Mode == "play" ? Overlay : screens.Current?.Kind,
                 zone != null ? zone.Ambience : null, zone != null ? zone.MusicMood : null));
+            Perf.End(Perf.Part.Sound);
         }
         if (Mode != "play") return;
         UpdateDraft(dt);
         hudT -= dt;
         if (hudT <= 0)
         {
+            using var _ = new Perf.Span(Perf.Part.Hud);
             hudT = 1.0 / 12;
             var ch = Journey.Ch;
             hud.Frame(Battle, ch.Gold, Inventory.Count(ch, "health_draught"), (ch.Level, ch.Xp / Character.XpForLevel(ch.Level)));
@@ -911,6 +920,64 @@ public partial class Game : Node, IZoneHost
         var (drawn, dead) = scene!.Crowd.Counts;
         var (gibs, splats) = scene.Fx.Gore.Counts;
         GD.Print($"[{scene.Time,6:0.0}s] {zone?.Id} hp {p?.Hp:0}/{b?.MaxHp:0} ember {b?.EmberLevel} kills {b?.KillCount} foes {foes} (drawn {drawn}, lying {dead}, gibs {gibs}, blood {splats}) at {p?.X:0},{p?.Z:0} {Overlay} {dbg}{FrameCost()}{(synth.Live ? $" | sound {sound.Music.Mood} voices {synth.Voices} mix {synth.MixCost / Math.Max(1e-9, synth.Mixed) * 100:0}% heard {synth.Mixed:0}s skips {synth.Skips} queue {synth.Queue / synth.Rate * 1000:0}ms" : "")}");
+    }
+
+    /// <summary>--perf: the frame measured (Perf.cs), with the game's own
+    /// numbers beside it: the horde, the dead, the gore, the sound's voices.</summary>
+    void MeasureWith(Perf perf)
+    {
+        AddChild(perf);
+        Perf.CounterNames = ["foes", "drawn", "lying", "gibs", "blood", "voices"];
+        Perf.Counters = a =>
+        {
+            a[0] = Battle?.Enemies.Count ?? 0;
+            if (scene != null)
+            {
+                var (drawn, dead) = scene.Crowd.Counts;
+                var (gibs, splats) = scene.Fx.Gore.Counts;
+                a[1] = drawn; a[2] = dead; a[3] = gibs; a[4] = splats;
+            }
+            a[5] = synth.Live ? synth.Voices : 0;
+        };
+        Perf.Note = () => $"{zone?.Id} foes {Battle?.Enemies.Count ?? 0} ember {Battle?.EmberLevel} kills {Battle?.KillCount} " +
+                          (zone?.Debug() is { Count: > 0 } d ? string.Join(" ", d.Take(3).Select(kv => $"{kv.Key}={kv.Value}")) : "");
+        // --perf-off A,B: things taken out of the picture, to see what each costs
+        // by the difference (never for play): her, crowd, grass, flora, props,
+        // landmarks, ground, water, fires, fx, hud, lamps, lampshadows,
+        // sunshadows, ssao, volfog, fog, glow, taa, msaa, fxaa.
+        if (Args.Get("perf-off") is not string off) return;
+        var what = off.Split(',').ToHashSet();
+        perf.Each = () =>
+        {
+            if (scene == null) return;
+            if (what.Contains("her") && scene.Player != null) scene.Player.Visible = false;
+            if (what.Contains("crowd")) scene.Crowd.Visible = false;
+            if (what.Contains("fx")) scene.Fx.Visible = false;
+            if (what.Contains("hud")) hud.Visible = false;
+            foreach (var c in scene.View.GetChildren())
+            {
+                if (c is not Node3D n) continue;
+                string nm = n.Name;
+                bool named = nm is "Grass" or "Flora" or "Props" or "Landmarks" or "Ground" or "Water" or "Fires" or "Lights";
+                if (what.Contains("grass") && nm == "Grass" || what.Contains("flora") && nm == "Flora" || what.Contains("props") && nm == "Props" ||
+                    what.Contains("landmarks") && nm == "Landmarks" || what.Contains("ground") && nm == "Ground" || what.Contains("water") && nm == "Water" ||
+                    what.Contains("fires") && nm == "Fires" || what.Contains("lamps") && nm == "Lights" ||
+                    // The pieces set down one by one (an arena's cover, a runtime's props).
+                    what.Contains("pieces") && !named)
+                    n.Visible = false;
+                if (what.Contains("lampshadows") && nm == "Lights")
+                    foreach (var l in n.GetChildren()) if (l is OmniLight3D o) o.ShadowEnabled = false;
+            }
+            if (what.Contains("sunshadows")) air.Key.ShadowEnabled = false;
+            if (what.Contains("ssao")) air.Env.SsaoEnabled = false;
+            if (what.Contains("volfog")) air.Env.VolumetricFogEnabled = false;
+            if (what.Contains("fog")) air.Env.FogEnabled = false;
+            if (what.Contains("glow")) air.Env.GlowEnabled = false;
+            var vp = GetViewport();
+            if (what.Contains("taa")) vp.UseTaa = false;
+            if (what.Contains("msaa")) vp.Msaa3D = Viewport.Msaa.Disabled;
+            if (what.Contains("fxaa")) vp.ScreenSpaceAA = Viewport.ScreenSpaceAAEnum.Disabled;
+        };
     }
 
     /// <summary>What was put off, in game time: it waits while a menu, a

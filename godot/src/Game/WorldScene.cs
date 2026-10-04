@@ -104,10 +104,14 @@ public partial class WorldScene : Node3D, IZoneLook
                 if (Pressed(Act.Dash)) b.Dash(mx, mz);
                 if (Pressed(Act.Ability)) b.UseAbility(mx, mz);
                 OnStep(Step);
+                Perf.Begin(Perf.Part.Sim);
                 b.Tick(Step, mx, mz);
+                Perf.End(Perf.Part.Sim);
                 var evs = b.Events.Drain();
                 if (evs.Count == 0) continue;
+                Perf.Begin(Perf.Part.Fx);
                 Fx.Handle(evs, b);
+                Perf.End(Perf.Part.Fx);
                 Weigh(evs, b);
                 frameEvents.AddRange(evs);
                 foreach (var e in evs)
@@ -157,11 +161,17 @@ public partial class WorldScene : Node3D, IZoneLook
         {
             var p = b.Player;
             float y = (float)HeightAt(p.X, p.Z);
+            Perf.Begin(Perf.Part.Player);
             Player?.Update(b, fightDt, fightTime, HeightAt);
+            Perf.End(Perf.Part.Player);
             if (Showcase == null) cam.Update((float)dt, (float)p.X, y, (float)p.Z, (float)p.Vx, (float)p.Vz);
+            Perf.Begin(Perf.Part.Crowd);
             Crowd.Update(b, HeightAt, fightTime);
+            Perf.End(Perf.Part.Crowd);
             Fx.PlayerPos = new Vector3((float)p.X, y, (float)p.Z);
+            Perf.Begin(Perf.Part.Fx);
             Fx.Update(b, fightDt, fightTime);
+            Perf.End(Perf.Part.Fx);
             RenderingServer.GlobalShaderParameterSet("survivor", new Vector4((float)p.X, y + 1.1f, (float)p.Z, 1));
             // The meadow grows round the survivor as they go.
             var at = new Vector2((float)p.X, (float)p.Z);
