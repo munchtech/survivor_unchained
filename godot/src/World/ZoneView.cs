@@ -98,8 +98,6 @@ public partial class ZoneView : Node3D
         }
         for (int i = 0; i < lights.Count; i++) SetLit(i, z.Lights[i].On);
         SetNight(false);
-        // The plain pieces drawn together, now that what is hidden here is hidden.
-        Landmarks.Merge();
     }
 
     OmniLight3D MakeLight(ZoneData.LightSpec l)
