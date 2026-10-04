@@ -66,12 +66,24 @@ a7622ae77d19e31dc; handoff in `docs/handoff/story.md`).
     smooth. The hurt goes in the corners.
   - Re-take places.0, which now says "Last till the dead of night".
 - **New lines for every packet:** the night talk (npcs.json `said`, appended).
+- **Changed lines in packets:**
+  - Chid `cb_nemesis_slain.0` (no longer Keegan's "Not there").
+  - Sella `say_calling.2`, "Something on you's smouldering, love." Sella's
+    packet is final, so tell voice.
+
+## Act 1 pass (done)
+
+- Every quoted phrase in the bible's seed list is in the game's text.
+- Every line about her body heat holds at the time it can be said.
+- The signatures stay their owners'; a test holds them.
 
 ## Next
 
-1. An Act 1 pass for breadcrumbs and routes, against the bible's seed table.
-2. C01 to C04: the cinematics lead's line asks, when they come.
-3. C14's data, when story fights get an ally. Act 2, when the owner asks.
+1. The result screen's words, when the experience successor sends UI's slots.
+2. C14: `brannoc.road`, the `nell.burial` variant and a RouteTests play, once
+   combat's successor builds the fight (combat handoff, queue item 5).
+3. C01 to C04: the cinematics lead's line asks, when they come.
+4. Crafting phase 3: Vonnra's binding lines. Act 2, when the owner asks.
 
 ## Blockers
 
