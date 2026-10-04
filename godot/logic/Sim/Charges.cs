@@ -30,6 +30,9 @@ public sealed class ChargeDirector
     public bool Spikes;
     /// <summary>The people's tell before a spike: a line said over the survivor, and its sound.</summary>
     public string? Tell, TellSound;
+    /// <summary>Seconds between spikes: about one a minute, oftener while the night builds
+    /// into a landmark (ArenaPacing.Building), where the danger should rise with the numbers.</summary>
+    public (double Min, double Max) SpikeEvery = (40, 55);
 
     public Beat Now { get; private set; } = Beat.Wave;
     /// <summary>Its own stream, so the beat it keeps never moves anything else's dice.</summary>
@@ -79,7 +82,7 @@ public sealed class ChargeDirector
             case Beat.Spike: if (beatT <= 0) Go(Beat.Lull, 5 + 2 * rng.Next()); break;
         }
         if (!Spikes || Now is Beat.Warn or Beat.Spike || b.Time < calmUntil) return;
-        spikeT -= dt;
+        spikeT = Math.Min(spikeT - dt, SpikeEvery.Max);
         if (spikeT > 0) return;
         // A spike with nobody to run it is a tell for nothing: wait until there are enough.
         if (able < 3) { spikeT = 5; return; }
@@ -89,21 +92,23 @@ public sealed class ChargeDirector
     void Go(Beat beat, double t) { Now = beat; beatT = t; }
 
     /// <summary>The people's tell, then the spike.</summary>
-    void Warn(Battle b)
+    void Warn(Battle b, bool quiet = false)
     {
         Go(Beat.Warn, 1.3);
-        spikeT = 32 + 16 * rng.Next();
+        spikeT = SpikeEvery.Min + (SpikeEvery.Max - SpikeEvery.Min) * rng.Next();
+        if (quiet) return;
         var p = b.Player;
         if (Tell != null) b.Events.Emit(new Ev.Bark { X = p.X, Z = p.Z + 3, Text = Tell });
         b.Events.Emit(new Ev.Sound { Id = TellSound ?? "tell", X = p.X, Z = p.Z });
     }
 
-    /// <summary>A set piece wants the spike now (a people's own turn): the tell, then the run.</summary>
-    public void Spike(Battle b)
+    /// <summary>A set piece wants the spike now (a people's own turn): the tell (unless the
+    /// set piece gives its own), then the run.</summary>
+    public void Spike(Battle b, bool quiet = false)
     {
         if (!On || Now is Beat.Warn or Beat.Spike) return;
         calmUntil = -1;
-        Warn(b);
+        Warn(b, quiet);
     }
 
     /// <summary>A breather, the hush, a herald's duel: no lanes from the crowd for a while.</summary>
@@ -127,7 +132,7 @@ public sealed class ChargeDirector
         }
         int cap = b.Time < calmUntil ? 0 : Now switch { Beat.Wave => Cap, Beat.Spike => SpikeCap, _ => 0 };
         // One after another in a wave, so each lane is read before the next; a ripple in a spike.
-        double gap = Now == Beat.Spike ? 0.12 : 0.5;
+        double gap = Now == Beat.Spike ? 0.12 : 0.7;
         if (live >= cap || b.Time - lastStart < gap) return Refuse(b, e);
         live++; Started++;
         lastStart = b.Time;

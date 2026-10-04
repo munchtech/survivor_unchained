@@ -276,6 +276,14 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         }
         B.Charges.Cap = ChargeCap();
         B.Charges.Spikes = !bossUp;
+        if (!won && !bossUp)
+        {
+            // The night's shape (ArenaPacing): no lanes from the crowd in a breather, the hush or a
+            // herald's duel; spikes oftener while it builds into a landmark.
+            if (pacing.Breather(Seconds) || pacing.Hush(Seconds) || heraldAt > 0) B.Charges.Calm(B, 0.5);
+            B.Charges.SpikeEvery = pacing.Building(Seconds) ? (18, 26) : (40, 55);
+        }
+        else B.Charges.SpikeEvery = (40, 55);
         // The horde kept up: groups from out of sight, all round.
         spawnT -= dt;
         if (spawnT <= 0 && alive < Target() && !bossUp)
@@ -470,6 +478,8 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         }
         // Each is led by a captain who carries a chest: answering the question pays.
         G.After(1.5, () => Captain(a));
+        // And the people's runners go with it, together (its own tell has been given).
+        G.After(1.6, () => { if (B != null && !over) B.Charges.Spike(B, quiet: true); });
     }
 
     /// <summary>The captain of a people's own turn: a champion of the strongest kind in the field, with a chest.</summary>
