@@ -51,7 +51,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Area | Agent | Status page |
 |---|---|---|
 | Voice (ElevenLabs packets, placeholders) | a501b387a90d78b4e | docs/team/voice.md |
-| Story and writing | a7622ae77d19e31dc | docs/team/story.md |
+| Story and writing | a035208561a66c171 | docs/team/story.md |
 | Combat, encounters, bosses, balance | ac4ec5bbd2763a0df | docs/team/combat.md |
 | Animation | a1e3002b800ee55ac | docs/team/animation.md |
 | UI design (character creation first) | ac76f400913a109cd | docs/team/ui_design.md |
