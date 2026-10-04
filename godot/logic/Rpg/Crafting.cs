@@ -399,6 +399,8 @@ public static class Crafting
         int to = it.Rarity + 1;
         if (it.Heat == null) { q.Blocked = "That's somebody's work. Leave it be."; return q; }
         if (to > Rules.RemakeCap) { q.Blocked = "There's no better pattern he knows. Not yet."; return q; }
+        // Remade iron cools overnight: one remake a piece a day (it also spreads a weapon's climb over days).
+        bool cooling = it.Remade == x.World.Day;
         var step = Rules.Remake[Math.Clamp(to - 1, 0, Rules.Remake.Count - 1)];
         q.Title = $"Remake as {Items.RarityNames[to].ToLowerInvariant()}";
         q.Takes[Iron] = step.Iron;
@@ -407,6 +409,7 @@ public static class Crafting
         var def = Items.Get(it.Def);
         q.After = def.Weapon != null && def.Weapon.Rank + (to - def.Rarity) <= Inventory.GearRankCap
             ? $"A seam opens; it comes into the night a rank higher" : "A seam opens";
+        if (cooling) q.Blocked = "Remade this morning. Iron wants a night to cool. Tomorrow.";
         Afford(x, q);
         return q;
     }
@@ -494,6 +497,7 @@ public static class Crafting
             {
                 int add = -cost;
                 it.Rarity++;
+                it.Remade = x.World.Day;
                 it.Heat = (it.Heat ?? 0) + add;
                 it.HeatFull = (it.HeatFull ?? 0) + add;
                 (it.History ??= new()).Add(History(x, q.Crafter, "remake", "Remade by {who}, day {day}"));

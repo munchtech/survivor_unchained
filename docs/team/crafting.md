@@ -18,13 +18,18 @@ Design: `docs/CRAFTING_DESIGN.md` (sections 1–20; 19 is what was seen, 20 the 
 - **Also fixed**: plurals for materials (`Items.Several`); a banked forge quotes but refuses; the
   arena's end shows carried and spilled materials as slots; old iron's icon remade.
 - **Endgame designed** (design 20): the scars pay fire, the atlas pays iron and bases; two kits;
-  item level and grade caps; sigils (proposal); chart verbs at Ysolde's table.
+  item level and grade caps; sigils (proposal); chart verbs at Ysolde's table. Combat agreed
+  chart heat and a pin, item level on map drops, map materials tallied like nights, two kits;
+  sigils await combat's successor's hook check.
+- **The economy is simulated** (`tests/CraftingEconomy.cs`, design 19.2) on combat's post-cut
+  numbers, and tuned: break down halved, a shard per 12 ember, remake to Epic 18 iron and 200
+  gold, one remake a piece a day. Every target holds **if arena champions pay a tenth of the
+  day's gold** (a Kerchief night still pays 2.5k–3.3k; asked of combat, not yet built).
 
 ## Next, in order
 
-1. **The economy simulation** (`CraftingEconomy` test, design 13.3–13.4). Combat's cuts are
-   merged (fodder gold 2%, gear from carriers only). Combat was asked for gold and gear per won
-   night after the cuts; use their numbers or re-measure with `CRAFT_PROBE=1`.
+1. **Champion gold in arenas at a tenth**: combat's one line (`Rules.FodderGold`'s use in
+   `Battle.KillEnemy`); combat's successor to build, or crafting with their yes.
 2. **Phase 2**: Wenna's still-room (brewing, the flask, tinctures after the cure), commissions,
    the fang set and shed fur. The story lead writes the lines once told the hooks (sent).
 3. **Phase 3**: Vonnra's binding, Snib's slurry. Asked the story lead whether Vonnra's role moves.
@@ -40,6 +45,7 @@ Design: `docs/CRAFTING_DESIGN.md` (sections 1–20; 19 is what was seen, 20 the 
 - **The night pays at its end, and a fall spills half** (owner approved).
 - **Remake costs old iron as well as gold** (owner approved).
 - **The anvil works one seam at a time**: all crafts at once was a wall of refusals.
+- **One remake a piece a day**: iron cools overnight; spreads the weapon's climb over days.
 - **The scars pay fire, the atlas pays iron**: each arena supplies the other's crafts.
 
 ## Agreed with others

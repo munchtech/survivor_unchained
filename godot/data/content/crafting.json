@@ -2,7 +2,7 @@
  "_doc": "Crafting's numbers (docs/CRAFTING_DESIGN.md). Index by rarity: Common, Uncommon, Rare, Epic, Legendary, Storied. Temper's steps are to grade II, III, IV; remake's to Uncommon, Rare, Epic.",
  "heat": [6, 10, 14, 18, 22, 22],
  "heatSpread": 0.2,
- "breakDown": [1, 2, 4, 6, 9, 0],
+ "breakDown": [1, 1, 2, 3, 5, 0],
  "temper": [
   { "iron": 2, "gold": 10, "heat": [2, 4] },
   { "iron": 4, "gold": 25, "heat": [3, 5] },
@@ -13,7 +13,7 @@
  "remake": [
   { "iron": 4, "gold": 30 },
   { "iron": 8, "gold": 75 },
-  { "iron": 14, "gold": 160 }
+  { "iron": 18, "gold": 200 }
  ],
  "remakeCap": 3,
  "remakeHeat": 4,
@@ -72,7 +72,7 @@
  },
  "night": {
   "emberFrom": 10,
-  "emberPer": 8,
+  "emberPer": 12,
   "minutesPer": 2,
   "storyBonus": 2,
   "cap": 8,

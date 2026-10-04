@@ -182,10 +182,10 @@ question ("do I have enough?") answerable at a glance.
 | Rarity | Seams (affix places) | Grade cap at the forge | Heat at drop (±20%) | Break down yields |
 |---|---|---|---|---|
 | Common (0) | 0 | – | 6 | 1 old iron |
-| Uncommon (1) | 1 | II | 10 | 2 |
-| Rare (2) | 2 | III | 14 | 4 |
-| Epic (3) | 3 | IV | 18 | 6 |
-| Legendary (4) | 3 | IV | 22 | 9 |
+| Uncommon (1) | 1 | II | 10 | 1 |
+| Rare (2) | 2 | III | 14 | 2 |
+| Epic (3) | 3 | IV | 18 | 3 |
+| Legendary (4) | 3 | IV | 22 | 5 |
 | Storied (5) | 3 | IV | 22 | cannot be broken down |
 
 - **Grades** are the affix tiers the game already has (0 to 3), shown as I to
@@ -247,7 +247,7 @@ skills it already gives:
 **Ember shards, carried out.**
 
 ```
-shards = floor(max(0, ember - 10) / 8) + (tier - 1) + floor(minutesPast / 2) + (won story fight ? 2 : 0)
+shards = floor(max(0, ember - 10) / 12) + (tier - 1) + floor(minutesPast / 2) + (won story fight ? 2 : 0)
 ```
 
 `ember` is the ember level at the end; `minutesPast` the minutes stayed after
@@ -312,7 +312,7 @@ will be after** (the affix line before and after, the grade's number).
 | **Temper** | one affix up one grade, to the piece's cap (5.1) | to II: 2 old iron, 10 gold · to III: 4 iron, 25 gold · to IV: 7 iron, 50 gold | to II: 2–4 · III: 3–5 · IV: 4–6 |
 | **Work in** | a material becomes its answer (table below) in an open seam, or in place of an affix the survivor chooses (that affix is lost); it enters at grade I (II on an Epic, III on a Legendary) | the material (table) + 15 gold + 10 a rarity step | 4–6 |
 | **Cage a coal** | a kindled affix: **three are offered** from those that fit the piece, leaning toward the stand-ins the survivor's skills evolve with; the one taken goes in the seam its old coal held, or an open seam, or in place of a chosen affix. Rare and up. | 4 ember shards + 30 gold; another three: 1 ember shard | 5–7 |
-| **Remake** | the piece made again on a better pattern: rarity +1, a seam opens, +4 heat; a weapon's rank +1 (to four). To Epic at most in Act 1. | to Uncommon: 4 old iron, 30 gold · Rare: 8, 75 · Epic: 14, 160 | none |
+| **Remake** | the piece made again on a better pattern: rarity +1, a seam opens, +4 heat; a weapon's rank +1 (to four). To Epic at most in Act 1. One remake a piece a day: "Iron wants a night to cool." | to Uncommon: 4 old iron, 30 gold · Rare: 8, 75 · Epic: 18, 200 | none |
 | **Rekindle** | heat + half the piece's starting heat (rounded up) | 3 ember shards and 20 gold the first time; each time after, the shards double and the gold rises by 20 (3, 6, 12, 24...) | – |
 | **Break down** | section 5.2 | – | – |
 
@@ -721,6 +721,8 @@ steeping; the seeds' lines.
 15. **The anvil works one seam at a time** (seen in the running game, 19.1):
     every craft for every seam at once was a wall of refusals. A seam is
     chosen and only its crafts are offered (Last Epoch's forge).
+16. **One remake a piece a day** (19.2): a Kerchief night's purse remade the starting weapon from Uncommon to Epic in one visit; remade iron cooling overnight spreads the climb over days, as the targets ask, and is the smith's own reason.
+17. **Break down yields halved; a shard per 12 ember, not 8** (19.2): measured, iron and shards piled up unspent (190 iron and 100 shards by Act 1's end).
 
 ---
 
@@ -760,10 +762,40 @@ What looked wrong, and what was done about it:
 Still to see: the forge after a craft (the line Brannoc says, the gauge
 after), the pack's break down by mouse, a real arena's end with a fall.
 
-### 19.2 The economy
+### 19.2 The economy (`tests/CraftingEconomy.cs`)
 
-*(The simulation, section 13.4: not yet run. Combat's cuts are in:
-arena fodder pays 2% gold; gear comes only from carriers.)*
+Act 1 as ten days, a won night each (tiers 1, 2, 3 by thirds; the four
+peoples in turn; a story night in three), eight seeds. Faucets: combat's
+sweep at `71608a4` (deft bot; fodder gold 2%, gear from carriers only): ember
+57/62/67, champions 864/1052/1079, Kerchief nights 2,570–3,320 gold, the
+others 11–22; about 13 pieces of gear a night by the arena's own drop rule;
+by day a few of the Verge's beasts, 80 gold of quests and 50 of the story's
+prices. The spender wears what is finer, breaks down the rest, and crafts
+on what it wears: remake the weapon, temper the lowest grade, fill open
+seams, cage up to two coals, rekindle a cold piece.
+
+| Measure | Target | Before tuning | After (today's gold) | After (champion gold at a tenth) |
+|---|---|---|---|---|
+| First craft | day 1–2 | 1 | 1 | 1 |
+| Crafts a day (median, max) | 2–5 | 1 (23) | 2 (14) | 2 (11) |
+| Weapon rare / epic | day 3–4 / 6–8 | 4 / 4 | 4 / 5 | 4 / 8 |
+| Pieces the forge finished | 0–2 | 7–8 (measured loosely) | 2 | 1 |
+| Gold spent on crafting | 30–60% | 17% | 19% | 67% |
+| Shards a won night | 4–8 | 9 | 7 | 7 |
+| Unspent at the end: iron, shards | – | 190, 100 | – | 52, 77 |
+
+**Findings.**
+- **Gold is the one faucet crafting cannot hold.** A Kerchief night pays
+  2,500–3,300 gold (its champions keep the day's gold rate), the rest of a
+  ten-day act pays about 1,500, and crafting's prices were set against the
+  second. With champions at a tenth in arenas (combat's one line, at
+  `Rules.FodderGold`'s use in `Battle.KillEnemy`), the Kerchiefs stay the
+  gold night (about 300, three times an ordinary one) and every target holds.
+  **Asked of combat.** The test holds the targets on that economy.
+- **Iron and shards were too generous** for their sinks: decision 17.
+- **A remake a day** (decision 16).
+- **Shards still gather** (77 by Act 1's end). Phase 3's binding (a shard a
+  grade), redraws and the endgame's charts draw on them; re-measure then.
 
 ---
 
