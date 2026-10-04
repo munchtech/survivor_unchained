@@ -136,6 +136,9 @@ public static class Crafting
 
     static string Line(string affix, int tier) => Items.Affix(affix)?.Text(tier) ?? affix;
 
+    /// <summary>"an epic", "a rare".</summary>
+    public static string Article(string word) => (word.Length > 0 && "aeiou".Contains(char.ToLowerInvariant(word[0])) ? "an " : "a ") + word;
+
     static bool Fits(ItemDef def, string affix) => Items.Affix(affix) is { } a && a.Slots.Contains(def.Kind);
 
     /* ---------------------------------------------------------- crafters -- */
@@ -162,6 +165,22 @@ public static class Crafting
         return (h, i);
     }
 
+    /// <summary>A crafter's terms, those given now and those still to earn: each with what it
+    /// does and the standing it asks ("respect 20"), so the forge can show the way up.</summary>
+    public static List<(string Line, string Effect, string? Needs, bool Met)> TermLadder(string crafter, Ctx c)
+    {
+        var o = new List<(string, string, string?, bool)>();
+        foreach (var e in Crafter(crafter)?.Easier ?? new())
+        {
+            var fx = new List<string>();
+            if (e.HeatTop < 0) fx.Add($"his crafts cost up to {-e.HeatTop} heat less");
+            if (e.TemperIron < 0) fx.Add($"tempering takes {Items.Several(Iron, -e.TemperIron)} less");
+            string? needs = e.When?.Rel is { Gte: double g } r ? $"{r.Axis.ToString().ToLowerInvariant()} {g:0}" : null;
+            o.Add((e.Line ?? "", string.Join("; ", fx), needs, World.Rules.Test(e.When, c)));
+        }
+        return o;
+    }
+
     /// <summary>What the crafter's terms are now, in words.</summary>
     public static List<string> TermLines(string crafter, Ctx c) =>
         (Crafter(crafter)?.Easier ?? new()).Where(e => e.Line != null && World.Rules.Test(e.When, c)).Select(e => e.Line!).ToList();
@@ -176,8 +195,10 @@ public static class Crafting
     static void Afford(CraftCtx x, Quote q)
     {
         if (q.Blocked != null) return;
+        // A banked forge quotes, so the survivor can plan by night, but does nothing.
+        if (q.Crafter != "" && Closed(q.Crafter, x.Ctx) is { } shut) { q.Blocked = shut; return; }
         foreach (var (m, n) in q.Takes)
-            if (Inventory.Count(x.Ch, m) < n) { q.Blocked = $"Needs {n} {(Items.Find(m)?.Name ?? m).ToLowerInvariant()}; you have {Inventory.Count(x.Ch, m)}."; return; }
+            if (Inventory.Count(x.Ch, m) < n) { q.Blocked = $"Needs {Items.Several(m, n)}; you have {Inventory.Count(x.Ch, m)}."; return; }
         if (x.Ch.Gold < q.Gold) q.Blocked = $"{q.Gold} gold; you have {Math.Floor(x.Ch.Gold)}.";
     }
 
@@ -204,7 +225,7 @@ public static class Crafting
         Hot(it, q);
         if (q.Blocked != null) return q;
         if (def?.Kindled != null || def?.Grants != null) { q.Blocked = "A coal or a worn skill has no grades."; return q; }
-        if (a.Tier >= Cap(it)) { q.Blocked = $"Grade {Grade(a.Tier)} is as high as a {Inventory.RarityName(it).ToLowerInvariant()} piece goes."; return q; }
+        if (a.Tier >= Cap(it)) { q.Blocked = $"Grade {Grade(a.Tier)} is as high as {Article(Inventory.RarityName(it).ToLowerInvariant())} piece goes."; return q; }
         var step = Rules.Temper[Math.Clamp(a.Tier, 0, Rules.Temper.Count - 1)];
         q.After = Line(a.Id, a.Tier + 1);
         q.Title = $"Temper to grade {Grade(a.Tier + 1)}";

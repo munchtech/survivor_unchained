@@ -433,6 +433,9 @@ None of them says it.
 - **Redcowl** (Dunstan Cutwell). *Face:* the bandit chief with cages. *Secret:*
   the leader of Ashford's dispossessed, who kept his prisoners fed and who
   would, if anyone asked him straight, fight the Dig before the Watch would.
+  If the teamsters die in his cages, hunger is not what kills them: it is the
+  cold at night. His people's children sleep by the fires, and the cages are not
+  by the fires. Holloway says so, and Harlan hears it ("They were fed").
   Never says "Ashford", and lets nobody say it twice. *Ends:* killed in Act 1;
   holds the breakthrough's mouth with his people and the six crates and dies
   in it; takes the Waystation's gate after Holloway; hanged.
@@ -606,6 +609,13 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
   through the east gate", and `vonnra.ledger_read` says the caravan never came
   through it: her own clerk sent it away. `vonnra.jessop`: "Clerks go south,
   traveller. It is the direction they fall in."
+- Her night bark: "I count the lights on the ford road, every night. Somebody
+  should." She counts her own work: the lights that go out are her ledger's
+  struck lines (C09).
+- The free things she gives (the call, `vonnra.ford`, the coin, the fortune)
+  are each priced and then waived ("That would be five gold. This once, no
+  charge."), so they stay owed. `vonnra.vault` is the one thing she never
+  prices. Act 3: the toll she waived was the survivor's life.
 - `vonnra.f_accuse`: told to her face, she says neither yes nor no; she calls
   the survivor by name for the first time ("Sit down, {name}. I have not
   finished reading."), and does from then on. Fact `vonnra.accused`.
@@ -762,6 +772,14 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
   room is not quite quiet."), Blasting Ember ("warm, like a stone a hand has only
   just let go of"), the slurry ("a little like a wound"); the Warden's Lamp-Iron
   has "no well in it for oil, and no wick" (shown, never stated).
+- The forge (crafting, `CRAFTING_DESIGN.md` §10.4):
+  - a caged coal takes a long time to go dark, and when it does it is the
+    shape of a thumbprint;
+  - Brannoc says "Wants out. They all do.", and looks at his two irons;
+  - each caged coal's history names the night it came from.
+  At the bottom of the stair, where the Morrow's praying turns out to be names,
+  every caged coal the survivor carries gains a name.
+- Arena words: "Praying" in a scar's name; "Quiet" for the dead.
 
 **Below** (pays: Act 2, the breakthrough; Act 3)
 - `quests.json` vault entries, `Verge.cs` vaultdoor: seven notches, one
@@ -1024,8 +1042,7 @@ player used all game. After C they open, and the survivor is the boss in every
 one. The endgame's two kinds of arena (section 2, "Pacing") exist after every
 ending. After B they are the Wayfinder's book, the nights that were, drawn and
 kept and played as what they were. That keeps B's cost in the world and the
-nights in the game. (Recommended; the owner's call, since it touches the
-endgame's frame.)
+nights in the game. (The owner's decision, 4 October: yes.)
 
 **The epilogue.** A page per person and place, worked out from the world, the
 way `Chapter.cs` writes Act 1's: who lived, who rules the gate, what the
@@ -1122,6 +1139,36 @@ the story's view of them, so that the nights tell the story the days write.
   survivor holds. Name it in their words (a carrier), not a genre's.
 - **Two peoples at war in one arena:** the Kerchiefs against the lamplings is
   Act 2's truth (Redcowl fights the Dig); it fits from Act 2, not before.
+- **Each scar is its people's own ground** (arena art's places):
+  - the Risen: the Legion's barrow field and its straight road, VII and the
+    seven-notch sigil, always dark (only the Verge's door wakes violet), and
+    empty rusted lamp-posts (the Watch's oil ran out);
+  - the Pack: the Hollow, sick and not wicked, with no human bones;
+  - the Kerchiefs: the ruts below the Roost, a refugee camp that robs, with
+    COYLE crates but never the six B.E. crates (their fate is the player's);
+  - the Lamplings: the Dig, gold open lamps, and their dead in small bundles
+    waiting at the pit mouth.
+
+  The table's place words are the valley's: howes, lows, the lych-way,
+  chesters; dene, clough, holt, shaw; ruts, drove, cutting, gap; sump, delph,
+  sough, spoil. The adjectives too: Lampless (from the Order's call), Quiet
+  (the dead are "quiet"), and Praying (Tam's word, which Act 3 pays).
+
+  **The atlas is other places,** never these walked by day (there is no
+  arena by day). They are the places the road forgets, in Ysolde's hand.
+- **The night's minibosses keep five rules:**
+  1. The Legion's dead speak the old tongue, like their lord (the Decurion's
+     "Scuta!", the Signifer's "Signa!").
+  2. The Kerchiefs never name the town they lost, and no text about them says
+     "Ashford". There was no battle there: the ground fell. "Against something
+     pikes are no use against" is as far as it goes.
+  3. In the Dig, "Boss" means Grimtunnel and nobody else. Its table boss is
+     Gutterwick, "Second-Best in the Dig". The lamplings' titles are the
+     empire's, worn down ("the Perfect of Fuses").
+  4. The ford has no bell. The Legion marched to horns and standards.
+  5. Names follow the valley's habit for its animals (Greymuzzle,
+     Whitethroat, Greenbelly, Old Blue). No genre words: no "Alpha", no
+     "Warlord".
 - **The ending decides the nights** (section 8):
   - after re-forging, the scars open, and the player knows what they are;
   - after breaking the chain, the valley's scars close, and the endgame's

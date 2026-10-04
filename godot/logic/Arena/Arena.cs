@@ -105,8 +105,13 @@ public static class Arenas
 
     /// <summary>Experience for the time survived (past the half hour too): more
     /// the harder the arena, a purse for the win.</summary>
-    public static double XpFor(ArenaSpec spec, double seconds, bool won) =>
-        Math.Round(seconds / 60 * 30 * (1 + 0.3 * (spec.Tier - 1)) + (won ? 300 * spec.Tier : 0));
+    public static double XpFor(ArenaSpec spec, double seconds, bool won)
+    {
+        // A shorter night is the same night told quicker: its minutes before the boss count as a
+        // table night's would, so a story night teaches as much (past the boss, real minutes).
+        double end = spec.Minutes * 60, night = Math.Min(seconds, end) * 30 / spec.Minutes + Math.Max(0, seconds - end);
+        return Math.Round(night / 60 * 30 * (1 + 0.3 * (spec.Tier - 1)) + (won ? 300 * spec.Tier : 0));
+    }
 
     /// <summary>The skills a run discovered: every combat skill carried at the
     /// end (evolved or not), and the halves of any union made. Only combat
@@ -146,7 +151,7 @@ public static class Arenas
     /// <summary>The arena is over (the way out taken, or the survivor fallen):
     /// they take out what they learned and earned; lost, the story is told so,
     /// and a story fight waits at the table.</summary>
-    public static ArenaResult Finish(Journey j, Battle b, ArenaSpec spec, bool won)
+    public static ArenaResult Finish(Journey j, Battle b, ArenaSpec spec, bool won, string? killer = null)
     {
         var ch = j.Ch;
         double xp = XpFor(spec, b.Time, won);
@@ -182,6 +187,20 @@ public static class Arenas
         }
         bool longest = b.Time / 60 > w.Fact("arena.longest").Number;
         if (longest) w.Facts["arena.longest"] = Math.Round(b.Time / 60, 2);
+        // The last night, for the town to talk about (docs/EXPERIENCE_AUDIT.md: Hades' house
+        // reacts to every run; ours said one line). The story writes what is said of it.
+        w.Facts["arena.last.people"] = spec.People;
+        w.Facts["arena.last.won"] = won;
+        w.Facts["arena.last.fell"] = !b.Player.Alive;
+        w.Facts["arena.last.story"] = spec.Story;
+        w.Facts["arena.last.tier"] = spec.Tier;
+        w.Facts["arena.last.minutes"] = Math.Round(b.Time / 60, 1);
+        w.Facts["arena.last.past"] = Math.Round(Math.Max(0, b.Time / 60 - spec.Minutes), 1);
+        w.Facts["arena.last.day"] = w.Day;
+        w.Facts["arena.last.longest"] = longest;
+        w.Facts["arena.last.killer"] = !b.Player.Alive && killer != null ? killer : null;
+        if (!b.Player.Alive) w.Facts["arena.fell"] = w.Fact("arena.fell").Number + 1;
+        w.Facts["arena.nights"] = w.Fact("arena.nights").Number + 1;
         w.Arena = null;
         return new ArenaResult(spec, won, b.Time, b.KillCount, b.EmberLevel, xp, b.GoldTotal, fresh, levels, longest, null, taught)
         {

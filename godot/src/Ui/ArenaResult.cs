@@ -78,9 +78,7 @@ public partial class ArenaResultScreen : Overlay
         outv.AddChild(Line("book", $"{r.Xp:N0} experience" + (r.LevelsGained > 0 ? $"  ·  you are level {G.Journey.Ch.Level} now" : ""), r.LevelsGained > 0 ? Style.Good : Style.Ink));
         if (r.Gold > 0) outv.AddChild(Line("coin", $"{r.Gold:N0} gold", Style.GoldHi));
         // What the night left in the fist, for the Waystation's hands; on a fall, what spilled.
-        static string Stack(System.Collections.Generic.Dictionary<string, int> d) => string.Join(", ", d.Select(kv => $"{kv.Value} {(Rpg.Items.Find(kv.Key)?.Name ?? kv.Key).ToLowerInvariant()}"));
-        if (r.Carried.Count > 0) outv.AddChild(Line("embers", $"Carried out: {Stack(r.Carried)}", Style.EmberHi));
-        if (r.Spilled.Count > 0) outv.AddChild(Line("embers", $"Spilled when you fell: {Stack(r.Spilled)}", Style.InkDim));
+        if (r.Carried.Count > 0 || r.Spilled.Count > 0) outv.AddChild(Haul(r));
         // A tome won is the survivor's to write: one of what burned here.
         if (r.Inscribed is { } tome) outv.AddChild(Line("book", $"A tome: {Weapons.All[tome].Name}", new Color("#b8a8d8")));
         else if (r.TomeChoices.Count > 0)
@@ -180,6 +178,38 @@ public partial class ArenaResultScreen : Overlay
     }
 
     static Control Line(string glyph, string text, Color c) => Style.H(8, Glyphs.Icon(glyph, 20, c), Style.Label(text, Style.UiBold, Style.Body, c));
+
+    /// <summary>What the night left in the fist (ember shards, the people's own), as the things
+    /// themselves, for the Waystation's hands; on a fall, what spilled, greyed beside it
+    /// (docs/CRAFTING_DESIGN.md 6.1: the run's last decision, shown as what it cost).</summary>
+    static Control Haul(ArenaResult r)
+    {
+        static Control Things(System.Collections.Generic.Dictionary<string, int> d, bool lost)
+        {
+            var h = Style.H(Style.Gap2);
+            foreach (var (m, n) in d)
+            {
+                var def = Rpg.Items.Get(m);
+                var slot = ItemViews.Slot(new Rpg.ItemInstance { Def = m, Qty = n, Rarity = def.Rarity }, 60);
+                slot.MouseFilter = MouseFilterEnum.Ignore;
+                var name = Style.Label(lost ? (def.Plural ?? def.Name.ToLowerInvariant()) : (n == 1 ? def.Name.ToLowerInvariant() : def.Plural ?? def.Name.ToLowerInvariant()),
+                    Style.Ui, Style.Caption, lost ? Style.InkFaint : Style.Ink, true, HorizontalAlignment.Center);
+                var cell = Style.V(2, slot, name);
+                cell.CustomMinimumSize = new Vector2(76, 0);
+                if (lost) cell.Modulate = new Color(1, 1, 1, 0.45f);
+                h.AddChild(cell);
+            }
+            return h;
+        }
+        var v = Style.V(4);
+        var row = Style.H(Style.Gap4);
+        if (r.Carried.Count > 0)
+            row.AddChild(Style.V(4, Style.Label("CARRIED OUT, FOR THE WAYSTATION'S HANDS", Style.UiHeavy, Style.Badge, Style.EmberHi), Things(r.Carried, false)));
+        if (r.Spilled.Count > 0)
+            row.AddChild(Style.V(4, Style.Label("SPILLED WHEN YOU FELL", Style.UiHeavy, Style.Badge, Style.InkDim), Things(r.Spilled, true)));
+        v.AddChild(row);
+        return v;
+    }
 
     static Control Skill(string id, bool fresh)
     {

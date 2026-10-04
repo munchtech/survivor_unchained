@@ -166,6 +166,15 @@
 		"loop": false,
 		"source": "keyed (tools/anim)"
 	},
+	"death_back": {
+		"hold": true,
+		"layer": "full",
+		"length": 1.33333337306976,
+		"licence": "own work",
+		"loop": false,
+		"note": "keyed: struck from in front, onto her back, held",
+		"source": "keyed (tools/anim)"
+	},
 	"get_up": {
 		"layer": "full",
 		"length": 1.46666669845581,

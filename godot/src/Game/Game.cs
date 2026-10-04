@@ -131,7 +131,7 @@ public partial class Game : Node, IZoneHost
         Begin(new CreationChoice
         {
             // --palette ID: the calling's colours (its first, undyed, by default).
-            Name = Args.Get("name") ?? "Ashe", Archetype = arch, Background = Args.Get("bg") ?? "hunter",
+            Name = Args.Get("name") ?? "Wren", Archetype = arch, Background = Args.Get("bg") ?? "hunter",
             Palette = a.Palettes.Any(p => p.Id == Args.Get("palette")) ? Args.Get("palette")! : a.Palettes[0].Id,
             WeaponItem = Args.Get("weapon") ?? a.Weapons[0], Ability = a.Abilities[0],
             // --sex female [--hair STYLE --figure F --skin ID]: a woman survivor.
@@ -151,13 +151,18 @@ public partial class Game : Node, IZoneHost
                 foreach (var f in parts[1].Split('+')) ArtBook.Choose(ch, parts[0], f);
             }
         }
-        // --items A,B[:RARITY]: those things in the pack from the start (pictures of the pack, the shop).
+        // --items A,B[:RARITY],C*N: those things in the pack from the start, N of them for a
+        // stack (pictures of the pack, the shop, the forge with a stocked pouch).
         if (Args.Get("items") is string items)
             foreach (var spec in items.Split(','))
             {
                 var parts = spec.Split(':');
-                Journey.GiveItem(parts[0], 1, parts.Length > 1 && int.TryParse(parts[1], out var r) ? r : null);
+                var idq = parts[0].Split('*');
+                int qty = idq.Length > 1 && int.TryParse(idq[1], out var nq) ? nq : 1;
+                Journey.GiveItem(idq[0], qty, parts.Length > 1 && int.TryParse(parts[1], out var r) ? r : null);
             }
+        // --gold N: that much gold in the purse (pictures of a counter with money to spend).
+        if (Args.Has("gold")) Journey.Ch.Gold = Args.Num("gold", 0);
         // --xp N: that much experience at once (pictures of the self with points to spend).
         if (Args.Has("xp")) Character.GainXp(Journey.Ch, Args.Num("xp", 0));
         var z = Args.Get("zone") ?? "lowford";
@@ -350,11 +355,14 @@ public partial class Game : Node, IZoneHost
         ulong t0 = Time.GetTicksUsec();
         if (scene == null || scene.Data.Id != id || scene.Battle != null) Stage(id);
         else RemoveFigure();
+        Perf.Lap("the rest of the stage (lights, fires)");
         zone = Make(id, scene!.Data.Meta);
         var time = zone.TimeOf(World);
         air.Set(zone.AtmosphereFor(time));
         scene.View.SetNight(time == TimeOfDay.Night);
+        Perf.Lap("the zone's runtime and its air");
         EnterPlay(zone, from, at);
+        Perf.Lap("play: the crowd's kinds made ready (bakes)");
         // --perf: how long the place took to stand up (the frame it happens in holds that long).
         if (Perf.On) GD.Print($"perf zone {id} built in {(Time.GetTicksUsec() - t0) / 1000.0:0} ms (at {Time.GetTicksMsec() / 1000.0:0.0}s since launch)");
     }
@@ -371,6 +379,7 @@ public partial class Game : Node, IZoneHost
         var start = at ?? z.ArrivalFrom(from);
         var meta = scene.Data.Meta;
         var b = Journey.StartBattle(z.Combat, meta.Collision(), scene.HeightAt, start.X, start.Z, start.Facing, (uint)Rng.Next(), arena: z is ArenaRun, ember: z.Ember);
+        Perf.Lap("play: the fight begun");
         // An arena is seen from higher and further out: the whole of the fight.
         var (pitch, dist) = z.Camera is var (cp, cd) ? (Mathf.DegToRad((float)cp), (float)cd) : camHome;
         // --cam still wins: it is for close pictures, arenas included.
@@ -378,8 +387,10 @@ public partial class Game : Node, IZoneHost
         cam.Pitch = pitch;
         cam.Distance = cam.TargetDistance = dist;
         scene.StartBattle(b, Loadouts.Of(Journey.Ch));
+        Perf.Lap("play: the survivor stood up");
         HookBattle(b);
         z.Begin(b);
+        Perf.Lap("play: the zone begun (its people, its pieces)");
         scene.Crowd.Prepare(z.Creatures.Select(c => Content.Enemies.Get(c).Visual));
         hud.ZoneInfo(z.Name, z.Region, World.Day, z.TimeOf(World));
         World.Facts["player.zone"] = z.Id;
@@ -604,6 +615,8 @@ public partial class Game : Node, IZoneHost
             case Ev.Telegraph t when t.Boss && t.Label is { Length: > 0 } l: Shots.Want(l, Math.Min(0.7, t.Duration * 0.6)); break;
             case Ev.Break: Shots.Want("break", 0.3); break;
             case Ev.Focus: Shots.Want("focus", 1.0); break;
+            // The fall, as a run of frames through its slow motion and after.
+            case Ev.Victory: for (int i = 0; i < 12; i++) Shots.Want("fall", 0.05 + i * 0.25); break;
         }
     }
 
@@ -639,6 +652,8 @@ public partial class Game : Node, IZoneHost
             Perf.Begin(Perf.Part.Zone);
             zone.Frame(dt);
             Perf.End(Perf.Part.Zone);
+            // An arena's camera breathes with its night (unless a conversation has it, or --cam fixed it).
+            if (zone is ArenaRun ar && hudMode == null && camSaved == null && !Args.Has("cam")) cam.TargetDistance = (float)ar.CameraDistance;
             RunLater(dt);
         }
         else if (auto != null && Mode != "play") AutoFront();
@@ -782,7 +797,7 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
-    bool hordeDone, dropsDone, castDone, giveDone, minuteDone;
+    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, dieDone;
     double blastT = 0.5, marksT = 1;
 
     void Tour(double dt)
@@ -901,6 +916,14 @@ public partial class Game : Node, IZoneHost
             cb.Aim = null;
             cb.UseAbility(Args.Has("still") ? 0 : 1, 0);
         }
+        // --die T: T seconds in, a risen at arm's length before her (--behind:
+        // at her back) fells her where she stands (a picture of her fall).
+        if (!dieDone && Args.Has("die") && Battle is { } kb && Journey.Playtime >= Args.Num("die", 1))
+        {
+            dieDone = true;
+            var killer = kb.SpawnEnemy("risen", kb.Player.X, kb.Player.Z + (Args.Has("behind") ? -1.2 : 1.2));
+            kb.HurtPlayerRaw(kb.Player.Hp + 1e6, School.Physical, "test", killer);
+        }
         if (Args.Get("open") is not string want) return;
         tourT -= dt;
         if (tourT > 0) return;
@@ -927,7 +950,12 @@ public partial class Game : Node, IZoneHost
         else if (next == "draft" && Battle is { } b) { b.GainEmber(b.EmberNext); }
         // A won arena's end, with a sample tally (pictures of the result screen; in an arena).
         else if (next == "result" && World.Arena is { } spec && Battle is { } rb)
-            ArenaOver(new ArenaResult(spec, true, 2134, rb.KillCount + 1840, Math.Max(rb.EmberLevel, 27), 1460, 212, Content.Weapons.Pool.Take(2).ToList(), 1, true));
+            ArenaOver(new ArenaResult(spec, true, 2134, rb.KillCount + 1840, Math.Max(rb.EmberLevel, 27), 1460, 212, Content.Weapons.Pool.Take(2).ToList(), 1, true)
+            {
+                // --fell: the same night, fallen past the half hour: half of it spilled.
+                Carried = Args.Has("fell") ? new() { ["ember_shard"] = 3, ["wolf_pelt"] = 2, ["boar_hide"] = 1 } : new() { ["ember_shard"] = 7, ["wolf_pelt"] = 4, ["boar_hide"] = 3 },
+                Spilled = Args.Has("fell") ? new() { ["ember_shard"] = 4, ["wolf_pelt"] = 2, ["boar_hide"] = 2 } : new(),
+            });
         else Open(next);
     }
 
