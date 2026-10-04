@@ -58,7 +58,7 @@
         {"do": "music", "mood": "silence"},
         {"do": "fire", "light": 0, "flames": 0.12},
         {"do": "light", "light": 0, "level": 0.34, "color": "#ff7430", "rate": 0.45},
-        {"do": "frost", "where": {"mark": "frost"}, "size": 44, "clear": {"mark": "fire"}, "radius": 3.4, "amount": 0.4},
+        {"do": "frost", "where": {"mark": "frost"}, "size": 44, "clear": {"mark": "fire"}, "radius": 3.4, "amount": 0.4, "trail": [{"mark": "verge"}, {"mark": "trail_in"}, [-9.0, 90.3]]},
         {"do": "prints", "from": {"mark": "verge"}, "to": {"mark": "trail_in"}, "stride": 0.8},
         {"do": "prints", "from": {"mark": "trail_in"}, "to": [-9.0, 90.3], "stride": 0.8},
         {"do": "glow", "name": "tower", "where": {"abs": [3.0, 44.0, -260.0]}, "color": "#ffc870", "size": 0.7, "clear": true, "under": [5.0, 40.0]},
@@ -100,7 +100,7 @@
       "dur": 3.0,
       "still": 2.0,
       "note": "From above, close: her hand in the ash at the edge of the coals, closer than anyone could bear. It does not pull back. (Kimodo reach_coals, when it comes, opens it toward them.)",
-      "cam": {"pos": [-9.83, 1.25, 90.85], "at": [-9.95, 0.0, 90.84], "lens": 28, "focus": 1.18, "fstop": 2.0},
+      "cam": {"pos": [-9.7, 1.25, 90.87], "at": [-9.82, 0.0, 90.86], "lens": 28, "focus": 1.18, "fstop": 2.0},
       "cues": [
         {"at": 0.3, "do": "sfx", "name": "cloth_water", "gain": 0.3}
       ]

@@ -131,19 +131,18 @@ public class CinemaTests
     }
 
     [Fact]
-    public void The_opening_is_narration_but_for_the_voice_up_the_road()
+    public void The_opening_is_narration_and_the_voice_up_the_road_is_never_named()
     {
-        // The narrator may be recast (the timing follows the take, the subtitle stays
-        // narration while the speaker is listed). The one voice in it that is not
-        // narration is the call up the road: Vonnra, never named (docs/STORY_BIBLE.md,
-        // "Who tells it").
+        // The narrator may be recast (the timing follows the take; the subtitle stays
+        // narration while the speaker is listed). The one other voice is the call up
+        // the road, Vonnra's, never named (docs/STORY_BIBLE.md, "Who tells it"): the
+        // line before it introduces her, so it reads as narration too, unnamed.
         var f = CineFile.Load("c01");
         var ctx = Make("hunter", "Wren", 1).C;
         var lines = Lay(f).Cues.Where(c => c.Cue.Do == "line").Select(c => CineLines.Find(c.Cue.Str("id")!, ctx)).ToList();
-        var call = Assert.Single(lines, l => l.SpeakerId == "far_voice");
-        Assert.DoesNotContain("far_voice", f.Narrators);
-        Assert.Equal("A voice up the road", call.Speaker);
-        Assert.All(lines.Where(l => l != call), l => Assert.Contains(l.SpeakerId, f.Narrators));
+        Assert.Single(lines, l => l.SpeakerId == "far_voice");
+        Assert.All(lines, l => Assert.Contains(l.SpeakerId, f.Narrators));
+        Assert.Equal(lines.Count - 1, lines.Count(l => l.SpeakerId == "narrator"));
     }
 
     [Fact]

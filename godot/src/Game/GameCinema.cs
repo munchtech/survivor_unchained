@@ -529,6 +529,11 @@ public partial class Game
                     var at = places.Resolve(c.Get("where"));
                     float size = (float)c.Num("size", 40), rad = (float)c.Num("radius", 3);
                     Vector2? hole = c.Has("clear") && places.Resolve(c.Get("clear")) is V3 h ? new Vector2((float)h.X, (float)h.Z) : null;
+                    // "trail": the places someone walked through it; the frost is knocked off the
+                    // grass along it, so the way they came reads as a dark line from far off.
+                    var trail = new List<Vector2>();
+                    if (c.Get("trail") is { ValueKind: JsonValueKind.Array } tr)
+                        foreach (var e in tr.EnumerateArray()) { var q = places.Resolve(e); trail.Add(new Vector2((float)q.X, (float)q.Z)); }
                     int n = Math.Max(1, (int)Math.Ceiling(size / 6));
                     float tile = size / n;
                     for (int i = 0; i < n; i++)
@@ -538,7 +543,7 @@ public partial class Game
                             float cx = x0 + tile / 2, cz = z0 + tile / 2;
                             var d = new Decal
                             {
-                                TextureAlbedo = Frost(new Vector2(x0, z0), tile, new Vector2((float)at.X, (float)at.Z), size, hole, rad),
+                                TextureAlbedo = Frost(new Vector2(x0, z0), tile, new Vector2((float)at.X, (float)at.Z), size, hole, rad, trail),
                                 Size = new Vector3(tile, 1.4f, tile), Position = new Vector3(cx, (float)g.scene!.HeightAt(cx, cz) + 0.35f, cz),
                                 AlbedoMix = (float)c.Num("amount", 0.4), CullMask = 1, UpperFade = 0.1f, LowerFade = 0.1f,
                             };
@@ -663,7 +668,7 @@ public partial class Game
         /// <summary>One tile of frost as a decal's picture (its corner and size in the
         /// world): a thin rime broken by noise, thinning to the patch's edge, and
         /// cleared in a soft ring where a fire keeps it off.</summary>
-        static ImageTexture Frost(Vector2 corner, float tile, Vector2 centre, float size, Vector2? hole, float radius)
+        static ImageTexture Frost(Vector2 corner, float tile, Vector2 centre, float size, Vector2? hole, float radius, List<Vector2> trail)
         {
             const int N = 96;
             var img = Image.CreateEmpty(N, N, false, Image.Format.Rgba8);
@@ -676,6 +681,12 @@ public partial class Game
                     var off = (w - centre).Abs() / (size / 2);
                     a *= Mathf.Clamp((1 - Mathf.Max(off.X, off.Y)) / 0.2f, 0, 1);
                     if (hole is Vector2 hc) a *= Mathf.SmoothStep(radius * 0.7f, radius * 1.4f, w.DistanceTo(hc));
+                    for (int k = 0; k + 1 < trail.Count; k++)
+                    {
+                        var ab = trail[k + 1] - trail[k];
+                        float s = Mathf.Clamp((w - trail[k]).Dot(ab) / Mathf.Max(ab.LengthSquared(), 1e-4f), 0, 1);
+                        a *= Mathf.SmoothStep(0.22f, 0.5f, w.DistanceTo(trail[k] + ab * s));
+                    }
                     img.SetPixel(x, y, new Color(0.70f, 0.75f, 0.80f, a));
                 }
             return ImageTexture.CreateFromImage(img);

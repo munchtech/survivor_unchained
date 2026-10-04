@@ -111,11 +111,11 @@ places, and each one has a timeline the game plays. The chain:
 
 ## The scripts
 
-State on 2026-10-03 (see `docs/team/cinematics.md`):
+State on 2026-10-04 (see `docs/team/cinematics.md`):
 
 | Id | Shooting script | Boards | Animatic | In the game |
 |---|---|---|---|---|
-| C01 The Drowned Fire | to write from its timeline | style chosen, frames to make | to cut | timeline `c01.json` plays on a new journey; framing in its first previs pass |
+| C01 The Drowned Fire | `c01.md`, written from its timeline | style chosen, frames to make | tool written (`animatic.py`), to cut | `c01.json` plays on a new journey; previs pass 3 reads, with stand-in motion |
 | C02 None Cross After Dark | to write | to make | to cut (with the Prologue) | not yet |
 | C03 The Heart Goes Down | to write | to make | to cut (with the Prologue) | not yet |
 | C04 First Light | to write | to make | to cut (with the Prologue) | not yet |
