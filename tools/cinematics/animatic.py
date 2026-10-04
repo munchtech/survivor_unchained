@@ -47,6 +47,7 @@ FFMPEG = os.environ.get("FFMPEG") or next(
     (p for p in [r"C:\Users\munch\vo-tools\ffmpeg\bin\ffmpeg.exe"] if os.path.exists(p)), "ffmpeg")
 
 W, H, FPS, SR = 1920, 1080, 24, 48000
+CRF = 24
 ASPECT = 2.39
 PIC_H = int(round(W / ASPECT))           # 803: the picture between the bars
 BAR = (H - PIC_H) // 2                    # 138
@@ -512,7 +513,8 @@ def music_bed(mood, n):
         for start in np.arange(0, n / SR, beat):
             k = int(round(start / beat))
             seg = tone(58 if k % 4 == 0 else 52, 34, D=0.5, G=0.32 if k % 4 == 0 else 0.18)
-            seg = seg + hiss(D=0.12, G=0.08, Lp=300, Brown=True)[: len(seg)] if len(seg) > 1 else seg
+            thud = hiss(D=0.12, G=0.08, Lp=300, Brown=True)
+            seg[: len(thud)] += thud[: len(seg)]
             j = int(start * SR)
             out[j:j + len(seg)] += seg[: max(0, n - j)]
         for f in ((41.2, 61.7, 77.8) if mood == "boss" else (55.0, 65.4)):
@@ -639,7 +641,15 @@ def render(items, ctx, out):
     encode(out, cuts, subs, titles, audio, total)
 
 
-NAMES = {"ford_warden": "The Ford-Warden", "grimtunnel": "Grimtunnel", "guard": "Watchman", "rook": "Mother Rook"}
+def speaker_names():
+    """Who a speaker id is on screen, as the game names them (npcs.json: speakers, then npcs)."""
+    d = load_json(os.path.join(GODOT, "data", "content", "npcs.json"))
+    names = {k: v.get("name") for k, v in d.get("npcs", {}).items() if isinstance(v, dict)}
+    names.update({k: v.get("name") for k, v in d.get("speakers", {}).items() if isinstance(v, dict)})
+    return {k: v for k, v in names.items() if v}
+
+
+NAMES = speaker_names()
 
 
 def write_cutlist(out, cuts, total):
@@ -666,7 +676,7 @@ def encode(out, cuts, subs, titles, audio, total):
         w.setframerate(SR)
         w.writeframes((np.clip(audio, -1, 1) * 32767).astype("<i2").tobytes())
     proc = subprocess.Popen([FFMPEG, "-y", "-v", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS),
-                             "-i", "-", "-i", wav, "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p",
+                             "-i", "-", "-i", wav, "-c:v", "libx264", "-preset", "medium", "-crf", str(CRF), "-pix_fmt", "yuv420p",
                              "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", out], stdin=subprocess.PIPE)
     cache = {}
     frames = int(math.ceil(total * FPS))
@@ -744,8 +754,10 @@ def main():
     ap.add_argument("--facts", default="")
     ap.add_argument("--index", default=os.path.join(GODOT, "data", "vo", "index.json"))
     ap.add_argument("--plan", action="store_true", help="print the schedule only")
+    ap.add_argument("--crf", type=int, default=24, help="x264 quality: 28 keeps a committed cut small")
     a = ap.parse_args()
-    global INDEX
+    global INDEX, CRF
+    CRF = a.crf
     INDEX = load_json(a.index)["lines"]
     ctx = Ctx(a.calling, a.background, a.hair, a.sex, [f for f in a.facts.split(",") if f])
     if a.plan:
