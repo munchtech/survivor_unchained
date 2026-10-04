@@ -838,6 +838,7 @@
    "file": "narrator/dlg.cin_drowned_fire.bedroll.0.ogg",
    "hash": "24c69afd4e5e",
    "placeholder": true,
+   "read": 2.59,
    "sec": 2.59,
    "segs": [
     [
@@ -853,12 +854,12 @@
    "file": "narrator/dlg.cin_drowned_fire.frost.0.ogg",
    "hash": "1096c4f7e3e0",
    "placeholder": true,
-   "read": 3.51,
-   "sec": 3.51,
+   "read": 3.15,
+   "sec": 3.15,
    "segs": [
     [
      0.0,
-     3.511,
+     3.15,
      0.0,
      1.0
     ]
@@ -885,12 +886,12 @@
    "file": "narrator/dlg.cin_first_light.back.0.ogg",
    "hash": "a9b2d8ab716a",
    "placeholder": true,
-   "read": 4.63,
-   "sec": 4.63,
+   "read": 4.15,
+   "sec": 4.15,
    "segs": [
     [
      0.0,
-     4.634,
+     4.152,
      0.0,
      1.0
     ]
@@ -965,12 +966,12 @@
    "file": "grimtunnel/dlg.cin_heart_goes_down.downstairs.0.ogg",
    "hash": "ca65f966df2d",
    "placeholder": true,
-   "read": 6.4,
-   "sec": 6.65,
+   "read": 4.16,
+   "sec": 4.41,
    "segs": [
     [
      0.0,
-     6.398,
+     4.159,
      0.0,
      1.0
     ]
@@ -981,12 +982,12 @@
    "file": "grimtunnel/dlg.cin_heart_goes_down.grateful.0.ogg",
    "hash": "d6a6b3a4b868",
    "placeholder": true,
-   "read": 6.61,
-   "sec": 6.86,
+   "read": 4.3,
+   "sec": 4.55,
    "segs": [
     [
      0.0,
-     6.612,
+     4.298,
      0.0,
      1.0
     ]
@@ -997,12 +998,12 @@
    "file": "warden_man/dlg.cin_heart_goes_down.morning.0.ogg",
    "hash": "f7a2a69e2307",
    "placeholder": true,
-   "read": 1.7,
-   "sec": 1.7,
+   "read": 1.55,
+   "sec": 1.55,
    "segs": [
     [
      0.0,
-     1.697,
+     1.548,
      0.0,
      1.0
     ]
@@ -1013,12 +1014,12 @@
    "file": "grimtunnel/dlg.cin_heart_goes_down.nobodys.0.ogg",
    "hash": "676eeb4cf137",
    "placeholder": true,
-   "read": 4.85,
-   "sec": 5.1,
+   "read": 3.15,
+   "sec": 3.4,
    "segs": [
     [
      0.0,
-     4.853,
+     3.154,
      0.0,
      1.0
     ]
@@ -1077,12 +1078,12 @@
    "file": "warden/dlg.cin_none_cross.lie_down.0.ogg",
    "hash": "d918c7cc3d98",
    "placeholder": true,
-   "read": 2.23,
-   "sec": 3.88,
+   "read": 1.45,
+   "sec": 3.1,
    "segs": [
     [
      0.0,
-     3.634,
+     2.852,
      0.0,
      1.0
     ]
@@ -1093,12 +1094,12 @@
    "file": "warden/dlg.cin_none_cross.none.0.ogg",
    "hash": "7a9cdb2c49b5",
    "placeholder": true,
-   "read": 5.56,
-   "sec": 7.21,
+   "read": 3.61,
+   "sec": 5.26,
    "segs": [
     [
      0.0,
-     6.961,
+     5.015,
      0.0,
      1.0
     ]
