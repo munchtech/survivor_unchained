@@ -497,6 +497,7 @@ public partial class Game : Node, IZoneHost
 
     (Vector3 Pos, Vector3 Look) showT, showNow;
     bool showing;
+    float showFov = 34, showBreath = 1;
 
     public void Showcase((double X, double Y, double Z)? pos, (double X, double Y, double Z) look = default)
     {
@@ -505,9 +506,12 @@ public partial class Game : Node, IZoneHost
         Pose(new Vector3((float)x, (float)y, (float)z), new Vector3((float)look.X, (float)look.Y, (float)look.Z));
     }
 
-    /// <summary>A held camera, drifting to its mark (snap: there at once).</summary>
-    void Pose(Vector3 pos, Vector3 look, bool snap = false)
+    /// <summary>A held camera, drifting to its mark (snap: there at once); its
+    /// field of view (narrower for a close portrait), and how much it breathes.</summary>
+    void Pose(Vector3 pos, Vector3 look, bool snap = false, float fov = 34, float breath = 1)
     {
+        showFov = fov;
+        showBreath = breath;
         showT = (pos, look);
         if (snap) showNow = showT;
         else if (!showing) showNow = (camera.GlobalPosition, look);
@@ -643,15 +647,19 @@ public partial class Game : Node, IZoneHost
                 if (Enum.TryParse<Act>(fk.Split(',')[keyI++], true, out var fa)) controls.Press(fa);
             }
         }
+        // The figure being made: turned, and framed as near as asked.
+        if (Mode == "create") UpdateCreate(dt);
         // A held camera drifts toward its mark, breathing a little.
         if (showing)
         {
-            float breathe = Mathf.Sin((float)scene.Time * 0.35f) * 0.08f;
+            float breathe = Mathf.Sin((float)scene.Time * 0.35f) * 0.08f * showBreath;
             var target = showT.Pos + new Vector3(breathe, breathe * 0.5f, 0);
             float k1 = 1 - Mathf.Exp(-1.8f * (float)dt), k2 = 1 - Mathf.Exp(-2.2f * (float)dt);
             showNow = (showNow.Pos.Lerp(target, k1), showNow.Look.Lerp(showT.Look, k2));
             scene.Showcase = showNow;
+            camera.Fov = Mathf.Lerp(camera.Fov, showFov, k1);
         }
+        else if (camera.Fov != 34) camera.Fov = 34;
         scene.Update(dt);
         CinemaFrame(dt);
         // The survivor's place on screen, for the health drawn under them; the prompt's thing; what matters off screen.
