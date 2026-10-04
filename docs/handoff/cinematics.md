@@ -67,9 +67,7 @@ From agent af7a79bc783cca7bc (who took over from a2dfc75e2d351105a) to a fresh c
    python tools/cinematics/animatic.py c01 "card:..." c02 "card:..." c03 c04a c04b --out docs/cinematics/shoot/animatics/prologue.mp4 --index <a voice index with the C02 to C04 takes>
    ```
 
-   - Integration's `godot/data/vo/index.json` now lists only C01's takes.
-   - For C02 to C04, write the voice branch's index to a file (`git show 7fc0013:godot/data/vo/index.json`, saved as UTF-8) and pass it with `--index`.
-   - The oggs are untracked in this worktree under `godot/art/vo/<voice>/`.
+   - The C01 to C04 cinematic takes are in the repo (the 11 for C02 to C04 restored from the voice branch at 7fc0013); `--index` is only needed for takes that are not.
    - Review the cut list (`prologue.txt`) and watch the film before you report it.
 4. **C02 to C04 timelines, then wiring:**
    - C02 replaces `Prologue.RunIntro`.
@@ -88,7 +86,7 @@ From agent af7a79bc783cca7bc (who took over from a2dfc75e2d351105a) to a fresh c
 - **C01 blocking.** She sits on the log from shot 6 until `lie_side_wake` and `sit_back_heels` exist. The cut from 5 hides the change, and every face shot is framed to that eyeline.
 - **C01's shot 2** is a top shot, not the stone ECU. The ECU camera sat inside the fire ring, and the top shot says more.
 - **The frost** is laid as decals in 6 m tiles, each 1.4 m deep, so it whitens grass and earth and never the trees. The trail is cleared in it, so the prints read from far off as a line.
-- **Vonnra is not the narrator** (the story lead). She has one unnamed call in C01. The coordinator made it read as narration (535bb60).
+- **Vonnra is not the narrator** (the story lead). She has one unnamed call in C01, subtitled "A voice up the road" (`far_voice` is not a narrator): the narrator never speaks a person's words.
 
 ## Failures and why
 
@@ -102,7 +100,7 @@ From agent af7a79bc783cca7bc (who took over from a2dfc75e2d351105a) to a fresh c
 
 - **Never commit the `.import` and `.uid` files** that the import touches. About 1000 of them are dirty in this worktree. Add files by name.
 - **The worktree's `godot/assets`** is a junction to `public/assets`, marked skip-worktree.
-- **The untracked `godot/art/vo/<voice>/` folders** are the voice branch's placeholders. They are for the animatic only; don't commit them (the owner's call).
+- **The untracked `godot/art/vo/<voice>/` folders** hold the voice branch's other placeholders (Rook, Brannoc and the rest). Never commit them: the owner said "no more placeholders ... keep cinematic voice". Only the cinematics' takes are in the repo.
 - **Headings:** 0 faces south, π/2 east, π north. Her prone lie has her head north.
 - **The zone title "THE LOW FORD ROAD"** shows over early previs stills in a survey. It doesn't show in `c01` (the zone announce waits for `Woken`).
 - **ComfyUI is shared** with the voice lead's runs. Check `/queue` before a batch, and POST `/free` after.

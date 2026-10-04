@@ -24,7 +24,7 @@ Agent af7a79bc783cca7bc (succeeded a2dfc75e2d351105a on 4 October), branch `work
   - The cinematic survivor also has the folk clips.
   - `--cinebones` prints bone places at each still, for framing on them.
 - **`tools/cinematics/animatic.py` is written** (with `--plan`). It lays boards (or slates) on CineSchedule's clock, with VO, subtitles, temp SFX (Sfx.Cine's recipes), music beds and ambience, then encodes through ffmpeg. It has not yet been run end to end.
-- **Narration:** Vonnra is not the narrator (story). C01's `narrators` holds `["narrator", "far_voice"]` (the coordinator, 535bb60), so the call up the road reads unnamed, in italics.
+- **Narration:** Vonnra is not the narrator (story). The call up the road is subtitled "A voice up the road", never named (`far_voice` is not among C01's `narrators`).
 
 ## Next
 
@@ -45,7 +45,7 @@ Agent af7a79bc783cca7bc (succeeded a2dfc75e2d351105a on 4 October), branch `work
 ## Blockers
 
 - **Motion:** none of the C01 to C04 clips exist. All the prompts are in `tools/anim/kimodo_gen.py` (f802ed3), and they wait on the owner's Kimodo run, which the main session was asked for.
-- **Voice:** C02 to C04's cinematic placeholder takes were left out of the integration branch, so in the game those lines are timed at reading pace. The takes are still on the voice branch at 7fc0013.
+
 - **Set dressing and systems:** wetness, the weed, breath smoke, ember VFX, the bedroll, the background items, and frost that cracks.
 
 ## Notes for others
