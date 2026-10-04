@@ -27,6 +27,9 @@ ComfyUI with the prompt and seed recorded beside them.
              stone is the heart icon)
   pieces     frames modelled as reliefs: the page header, the attribute pillar, the crested card
              and row, the banner, the open book, the ribbon, the plaque's rule
+  pages      the page's pieces as reliefs: the header band (leather and a forged rail), the backdrop's
+             grain and edges, the column divider and its stone, the section mark, the hero plate, the
+             light card (after pieces: the header is the page's now)
   items      the items' painted icons
   cursors    the pointer, the hand, the refusal
   arrow      the survivor's arrow on the minimap
@@ -122,6 +125,12 @@ def g_pieces():
     import pieces
     for n in pieces.BUILD:
         pieces.build(n)
+
+
+def g_pages():
+    import pages
+    for n in pages.BUILD:
+        pages.build(n)
 
 
 def g_items():
