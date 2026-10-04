@@ -17,6 +17,9 @@ public sealed partial class Journey
 
     readonly Rng craftRng = new((uint)Environment.TickCount);
 
+    /// <summary>What the crafter said over the last craft (the bench shows it); null until one is done.</summary>
+    public Said? CraftSaid { get; set; }
+
     /// <summary>Do a quoted craft on a piece the survivor has; what it did, said. False if it could not be done.</summary>
     public bool Work(string uid, Quote q, Battle? b)
     {
@@ -27,6 +30,7 @@ public sealed partial class Journey
         string before = Inventory.Name(it);
         int heat = it.Heat ?? 0;
         if (!Crafting.Do(Craft, it, q, craftRng)) { Warn("It could not be done."); return false; }
+        if (q.Crafter != "") CraftSaid = Crafting.Speak(Craft, q.Crafter, q.Verb);
         var def = Items.Get(it.Def);
         string? sub = q.Verb switch
         {
@@ -47,10 +51,12 @@ public sealed partial class Journey
         return true;
     }
 
-    /// <summary>What the arena's end carried out goes in the pouch.</summary>
-    public void Carry(Crafting.NightYield y)
+    /// <summary>What the arena's end carried out goes in the pouch; the night's name is kept
+    /// with the shards, so a coal caged from them says where it came from.</summary>
+    public void Carry(Crafting.NightYield y, string? night = null)
     {
         foreach (var (m, n) in y.Kept) Inventory.AddToPack(Ch, Inventory.Make(Ch, m, n));
+        if (night != null && y.Kept.ContainsKey(Crafting.Shard)) World.Facts["shards.from"] = night;
         OnTouch();
     }
 }

@@ -170,7 +170,7 @@
     {"id": "ochre", "name": "Hunter's ochre", "words": "A band of red earth across the eyes, temple to temple, laid on with two fingers.", "rough": 0.8},
     {"id": "ash", "name": "Ash", "words": "Grey from a dead fire, thumbed under the eyes. Mourning, or a promise.", "rough": 0.9},
     {"id": "blood", "name": "Blood oath", "words": "Three fingers of blood drawn down over her left eye, brow to jaw.", "rough": 0.5},
-    {"id": "gilt", "name": "Gilt", "words": "Flakes of gold leaf over her cheekbones and the bridge of her nose.", "rough": 0.3, "metal": 1.0}
+    {"id": "gilt", "name": "Gilt", "words": "Gold leaf pressed along her cheekbones, torn at its edges.", "rough": 0.3, "metal": 1.0}
    ],
    "faces": [
     {"id": "own", "name": "As she is", "words": "Her own face, as the road left it.", "shape": {}},

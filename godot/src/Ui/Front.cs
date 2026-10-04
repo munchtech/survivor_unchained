@@ -117,9 +117,46 @@ public partial class TitleScreen : Overlay
             box.AddChild(v);
             AddChild(box);
         }
-        var foot = Style.Label("BETA  ·  THE FIRST CHAPTER", Style.UiBold, Style.Badge, Style.InkFaint);
+        var (built, stale) = Made;
+        var foot = Style.Label($"BETA  ·  THE FIRST CHAPTER{(built is DateTime t ? $"  ·  BUILT {t:d MMMM, HH:mm}".ToUpperInvariant() : "")}", Style.UiBold, Style.Badge, Style.InkFaint);
         foot.Position = new Vector2(134, 1040);
         AddChild(foot);
+        if (stale)
+        {
+            var warn = Style.Label("This build is older than the game's code, so the newest work is not in it. Open the project in Godot and press Play (it builds first).",
+                Style.UiBold, Style.Caption, Style.EmberHi, true);
+            warn.Position = new Vector2(134, 1000);
+            warn.Size = new Vector2(900, 0);
+            AddChild(warn);
+        }
+    }
+
+    static (DateTime?, bool)? build;
+
+    /// <summary>When the game's code was last built, and whether any of it has changed since:
+    /// run from the project manager, Godot starts the last build without making a new one, and
+    /// the owner once looked for work that was not in the build they ran. (Godot loads the code
+    /// from memory, so the build is read from where the editor writes it; an exported game has
+    /// neither, and says nothing.)</summary>
+    static (DateTime?, bool) Made => build ??= ReadBuild();
+
+    static (DateTime?, bool) ReadBuild()
+    {
+        try
+        {
+            var dll = ProjectSettings.GlobalizePath("res://.godot/mono/temp/bin/Debug/SurvivorUnchained.dll");
+            if (!System.IO.File.Exists(dll)) return (null, false);
+            var t = System.IO.File.GetLastWriteTime(dll);
+            bool stale = false;
+            foreach (var dir in new[] { "res://src", "res://logic" })
+            {
+                var path = ProjectSettings.GlobalizePath(dir);
+                if (System.IO.Directory.Exists(path) && System.IO.Directory.EnumerateFiles(path, "*.cs", System.IO.SearchOption.AllDirectories)
+                    .Any(f => System.IO.File.GetLastWriteTime(f) > t.AddMinutes(1))) stale = true;
+            }
+            return (t, stale);
+        }
+        catch (Exception) { return (null, false); }
     }
 
     static readonly string[] Credits =
@@ -185,6 +222,8 @@ public sealed class CreationDraft
     public int Step;
     public string Name = "", Archetype = "warden", WeaponItem = "worn_oathblade", Ability = "shield_bash", Background = "hunter";
     public string Palette = "steel", Model = "knight", Cloak = "calling", Skin = "fair", Hair = "as_is", HairStyle = "long";
+    /// <summary>A hero's own beard (Lore.Hero's beards: the male hero's), or "".</summary>
+    public string BeardStyle = "";
     public bool Headgear = true, Beard = true;
     /// <summary>The survivor is the heroine, unless a man is chosen.</summary>
     public Sex Sex = Sex.Female;
@@ -193,7 +232,7 @@ public sealed class CreationDraft
     /// (her own face where none is moved) and the face it started from.</summary>
     public string Eyes = "moss", Paint = "none", FaceShape = "own";
     public Dictionary<string, double> Face = new();
-    /// <summary>The look step's part (body, hair, face, paint) and the face's group of sliders.</summary>
+    /// <summary>The look step's part (hair, face, shape, paint, body) and the face's group of sliders.</summary>
     public int Section, FaceGroup;
 
     public CreationChoice Choice() => new()
@@ -203,11 +242,12 @@ public sealed class CreationDraft
         // (a hero's own body's face, eyes and paint: Loadouts.HeroKit)
         Face = Loadouts.HeroKit(Sex) != null ? new Dictionary<string, double>(Face) : null,
         Eyes = Loadouts.HeroKit(Sex) != null ? Eyes : null, Paint = Loadouts.HeroKit(Sex) != null ? Paint : null,
+        BeardStyle = Loadouts.HeroKit(Sex) is { Beards.Count: > 0 } && BeardStyle != "" ? BeardStyle : null,
     };
 
     /// <summary>The figure by the fire is built again when this changes (who
     /// they are, what they wear and hold); a man's hair and skin are his clothes' kit.</summary>
-    public string BodyKey => $"{Archetype}|{Model}|{WeaponItem}|{Palette}|{Headgear}|{Cloak}|{Sex}|{Figure}|{Beard}" + (Sex == Sex.Male ? $"|{Skin}|{Hair}|{HairStyle}" : "");
+    public string BodyKey => $"{Archetype}|{Model}|{WeaponItem}|{Palette}|{Headgear}|{Cloak}|{Sex}|{Figure}|{Beard}" + (Sex == Sex.Male ? $"|{Skin}|{Hair}|{HairStyle}|{BeardStyle}" : "");
 
     /// <summary>What the figure looks like: changes when this does (her hair,
     /// skin, eyes, face and paint are changed on her where she stands).</summary>
@@ -224,6 +264,7 @@ public sealed class CreationDraft
             HairStyle = sx == Sex.Female ? Loadouts.HerHair(HairStyle) : kit.Cuts.Any(c => c.Id == HairStyle) ? HairStyle : kit.Cuts[0].Id;
             Eyes = kit.Eyes.FirstOrDefault()?.Id ?? "";
             Paint = kit.Paints.FirstOrDefault()?.Id ?? "none";
+            BeardStyle = kit.Beards.FirstOrDefault()?.Id ?? "";
             FaceShape = kit.Faces.FirstOrDefault()?.Id ?? "";
             Face = new Dictionary<string, double>(kit.Faces.FirstOrDefault()?.Shape ?? new());
         }
@@ -233,10 +274,11 @@ public sealed class CreationDraft
 
 /// <summary>
 /// Making the survivor, by the fire (the web game's screens/Create.tsx).
-/// Five steps, each a question the world will ask again later: Calling (how
-/// do you fight?), Arms (with what, and what do your hands do?), Origin
-/// (where are you from?), Look (what does she look like?), Name (who are
-/// you?). The figure by the fire changes as you choose, and can be turned
+/// Five steps, each a question the world will ask again later: Calling (who
+/// sits here, a woman or a man, and how do they fight?), Look (what does she
+/// look like? second, so no one misses it), Arms (with what, and what do
+/// their hands do?), Origin (where are they from?), Name (who are they?).
+/// The figure by the fire changes as you choose, and can be turned
 /// (drag, or the right stick) and brought near (the wheel, or the right
 /// stick) to her face; the panel on the right says what each choice means.
 /// Enter or A on a choice takes it; on the one already taken, it moves on
@@ -247,9 +289,10 @@ public partial class CreateScreen : Overlay
     public override string Kind => "create";
     public override bool Dismissable => false;
     readonly CreationDraft d;
-    static readonly string[] Steps = { "Calling", "Arms", "Origin", "Look", "Name" };
+    static readonly string[] Steps = { "Calling", "Look", "Arms", "Origin", "Name" };
     static readonly string[] Numerals = { "I", "II", "III", "IV", "V" };
-    const int LookStep = 3, NameStep = 4;
+    /// <summary>The look comes straight after the calling: the calling dresses her, then she is shaped.</summary>
+    public const int CallingStep = 0, LookStep = 1, ArmsStep = 2, OriginStep = 3, NameStep = 4;
     static readonly Dictionary<string, string> ClassGlyph = new() { ["warden"] = "shield", ["reaver"] = "axe", ["arcanist"] = "staff", ["stalker"] = "bow" };
     static readonly Dictionary<string, string> BgGlyph = new() { ["hunter"] = "claw", ["scholar"] = "book", ["outcast"] = "mask", ["devout"] = "sun" };
     // Never a name the story has spent or nearly spent (Ashe, Kell, Orrin; Ysolde, Brannoc, Corran, Holloway, Tam).
@@ -261,10 +304,12 @@ public partial class CreateScreen : Overlay
     void Set(Action change)
     {
         int step = d.Step, section = d.Section;
+        string cut = d.HairStyle;
         change();
         G.DressFigure(d);
-        // A new step or part frames the figure for it (the look's parts come near: her hair, her face).
-        if (d.Step != step || d.Section != section) G.FrameFigure(SectionZoom(), SectionTurn());
+        // A new step or part frames the figure for it (the look's parts come near: her hair, her face);
+        // a new cut turns her so it shows (a braid down her back is seen from behind).
+        if (d.Step != step || d.Section != section || d.HairStyle != cut) G.FrameFigure(SectionZoom(), SectionTurn());
         Refresh();
     }
 
@@ -309,7 +354,7 @@ public partial class CreateScreen : Overlay
         col.AddChild(new Plaque("Who sits here?", 30, 30));
         col.AddChild(StepRoad());
         if (d.Step == LookStep) col.AddChild(SectionTabs());
-        var body = d.Step switch { 0 => Calling(), 1 => Arms(a), 2 => Origin(), LookStep => Look(a), _ => NamePage(a) };
+        var body = d.Step switch { CallingStep => Calling(), LookStep => Look(a), ArmsStep => Arms(a), OriginStep => Origin(), _ => NamePage(a) };
         var sc = Style.Scroll(body);
         sc.SizeFlagsVertical = SizeFlags.ExpandFill;
         col.AddChild(sc);
@@ -318,14 +363,16 @@ public partial class CreateScreen : Overlay
         if (was > 0) Callable.From(() => { if (IsInstanceValid(sc)) sc.ScrollVertical = (int)was; }).CallDeferred();
         var foot = Style.H(10, Nav.Id(Style.Button(d.Step > 0 ? "Back" : "Leave", () => { if (d.Step > 0) Set(() => d.Step--); else G.CancelCreation(); }), "back"));
         foot.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill });
-        foot.AddChild(d.Step < NameStep ? Nav.Id(Style.Button($"Next: {Steps[d.Step + 1]}", () => Set(() => d.Step++), true), "next") : Nav.Id(Style.Button("Begin the journey", Begin, true), "begin"));
+        // (from the calling, the button names what the look holds, so no one walks past it)
+        string next = d.Step + 1 == LookStep ? $"Next: {Their.ToLowerInvariant()} hair, face and paint" : $"Next: {Steps[Math.Min(d.Step + 1, NameStep)]}";
+        foot.AddChild(d.Step < NameStep ? Nav.Id(Style.Button(next, () => Set(() => d.Step++), true), "next") : Nav.Id(Style.Button("Begin the journey", Begin, true), "begin"));
         col.AddChild(foot);
 
         var right = Style.Panel(Style.Plate(24));
         right.Position = new Vector2(1380, 110);
         right.Size = new Vector2(500, 0);
         right.CustomMinimumSize = new Vector2(500, 0);
-        right.AddChild(d.Step switch { 0 => CallingDetail(a), 1 => ArmsDetail(), 2 => OriginDetail(), LookStep => LookDetail(a), _ => Summary(a) });
+        right.AddChild(d.Step switch { CallingStep => CallingDetail(a), LookStep => LookDetail(a), ArmsStep => ArmsDetail(), OriginStep => OriginDetail(), _ => Summary(a) });
         AddChild(right);
 
         // Who they are becoming, on a banner at the figure's feet.
@@ -406,12 +453,57 @@ public partial class CreateScreen : Overlay
         return b;
     }
 
+    /// <summary>Who sits here (a woman or a man: the first thing anyone asks), and how they fight.</summary>
     Control Calling()
     {
         var v = Style.V(6);
+        var who = Style.H(8);
+        foreach (var sx in new[] { Sex.Female, Sex.Male })
+        {
+            var b = Nav.Id(Style.Segment(sx == Sex.Male ? "A man" : "A woman", d.Sex == sx, () => Set(() => d.SetSex(sx))), $"sex:{sx}");
+            b.CustomMinimumSize = new Vector2(231, 42);
+            Style.Font(b, Style.Display, 18, d.Sex == sx ? new Color("#2a1a0c") : Style.GoldHi, false);
+            if (d.Sex == sx) b.SetMeta("on", true);
+            who.AddChild(b);
+        }
+        v.AddChild(who);
+        v.AddChild(Style.Gap(4));
         foreach (var (id, a) in Callings.Archetypes)
             v.AddChild(Choice(ClassGlyph.GetValueOrDefault(id, "sword"), a.Name, a.Tagline, d.Archetype == id, () => Set(() => ChooseArchetype(id))));
+        v.AddChild(Style.Gap(14));
+        v.AddChild(LookInvite());
         return v;
+    }
+
+    /// <summary>The look, offered under the callings: her portrait in its ring and what can be
+    /// shaped, so the step that makes her theirs is seen before anyone walks past it.</summary>
+    Button LookInvite()
+    {
+        var b = Style.Button("", () => Set(() => { d.Step = LookStep; d.Section = 0; }));
+        b.CustomMinimumSize = new Vector2(470, 132);
+        Nav.Id(b, "invite:look");
+        var box = OrnateBox.Make(OrnateBox.Kind.Card, 0, Style.Ember);
+        box.Glow = 0.5f;
+        var hover = OrnateBox.Make(OrnateBox.Kind.Card, 0, Style.EmberHi);
+        hover.Crest = 40;
+        hover.Glow = 0.9f;
+        b.AddThemeStyleboxOverride("normal", box);
+        b.AddThemeStyleboxOverride("hover", hover);
+        b.AddThemeStyleboxOverride("pressed", hover);
+        var face = new Cameo(Art("look"), "", false, () => { }, 100, null, "mask") { MouseFilter = MouseFilterEnum.Ignore };
+        bool pad = Controls.Instance.UsingPad;
+        var words = Style.V(2,
+            Style.Label($"II  ·  {Their} look".ToUpperInvariant(), Style.Display, 21, Style.GoldHi),
+            Style.Label($"{Their} hair and its colour, {Their.ToLowerInvariant()} face and eyes, the paint on it, {Their.ToLowerInvariant()} skin.", Style.Ui, Style.Small, Style.Ink, true),
+            Style.H(6, pad ? Style.PadButton("RB") : Style.Key(G.Key(Act.TabNext)), Style.Label($"Shape {(Her ? "her" : "him")}", Style.TextItalic, Style.Caption, Style.EmberHi)));
+        words.CustomMinimumSize = new Vector2(330, 0);
+        words.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        var row = Style.H(10, face, words);
+        row.Position = new Vector2(8, 4);
+        row.MouseFilter = MouseFilterEnum.Ignore;
+        foreach (var c in new Control[] { words }) c.MouseFilter = MouseFilterEnum.Ignore;
+        b.AddChild(row);
+        return b;
     }
 
     Control Arms(Archetype a)
@@ -467,10 +559,10 @@ public partial class CreateScreen : Overlay
         v.AddChild(Style.SubLabel(d.Sex == Sex.Female ? "Who she is" : "Who he is"));
         var bg = Callings.Background(d.Background);
         var ab = Abilities.ById(d.Ability);
-        v.AddChild(Recall(0, ClassGlyph.GetValueOrDefault(d.Archetype, "sword"), a.Name, a.Tagline));
-        v.AddChild(Recall(1, ab.Icon, Items.Get(d.WeaponItem).Name, $"and {ab.Name} in hand"));
-        v.AddChild(Recall(2, BgGlyph.GetValueOrDefault(d.Background, "map"), bg.Name, bg.Summary));
+        v.AddChild(Recall(CallingStep, ClassGlyph.GetValueOrDefault(d.Archetype, "sword"), a.Name, a.Tagline));
         v.AddChild(Recall(LookStep, "mask", d.Sex == Sex.Female ? "Her look" : "His look", LookWords()));
+        v.AddChild(Recall(ArmsStep, ab.Icon, Items.Get(d.WeaponItem).Name, $"and {ab.Name} in hand"));
+        v.AddChild(Recall(OriginStep, BgGlyph.GetValueOrDefault(d.Background, "map"), bg.Name, bg.Summary));
         return v;
     }
 

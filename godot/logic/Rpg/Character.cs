@@ -34,6 +34,8 @@ public sealed class ItemInstance
     public List<string>? Marks;
     /// <summary>How often its three coals have been drawn again today.</summary>
     public int? Draw;
+    /// <summary>The day it was last remade: a remade piece cools overnight before the next.</summary>
+    public int? Remade;
 }
 
 public enum ConditionId { Wounded, Blightsick, Poisoned, Blessed, Rested, Wolfscent, Hunted, Warmed }
@@ -93,6 +95,8 @@ public sealed class CharacterData
     public Sex? Sex;
     public string? HairStyle;
     public bool? Beard;
+    /// <summary>A hero's own beard (Lore.Hero's beards), where their body has them.</summary>
+    public string? BeardStyle;
     public double? Figure;
     /// <summary>A woman's face, eyes and face paint (her body's own: Loadouts.HerBody):
     /// her face's sliders (Lore.Hero's, -1 to 1; none set is her own face), her
@@ -137,7 +141,7 @@ public sealed class CharacterData
 public sealed class CreationChoice
 {
     public string Name = "", Archetype = "warden", Background = "hunter", Palette = "", WeaponItem = "", Ability = "";
-    public string? Model, Cloak, Skin, Hair, HairStyle, Eyes, Paint;
+    public string? Model, Cloak, Skin, Hair, HairStyle, Eyes, Paint, BeardStyle;
     public bool? Headgear, Beard;
     public Sex? Sex;
     public double? Figure;
@@ -386,7 +390,7 @@ public static class Character
             Id = $"hero-{ToBase36(s)}", Name = string.IsNullOrWhiteSpace(c.Name) ? "Nameless" : c.Name.Trim(),
             Archetype = c.Archetype, Background = c.Background, Model = c.Model ?? a.Model, Palette = c.Palette,
             Headgear = c.Headgear ?? true, Cloak = c.Cloak, Skin = c.Skin, Hair = c.Hair, Sex = c.Sex, HairStyle = c.HairStyle,
-            Beard = c.Beard, Figure = c.Figure, Attributes = Callings.StartAttributes(c.Archetype),
+            Beard = c.Beard, BeardStyle = c.BeardStyle, Figure = c.Figure, Attributes = Callings.StartAttributes(c.Archetype),
             // (only the sliders moved from her own face are kept)
             Face = c.Face?.Where(f => Math.Abs(f.Value) > 1e-3).ToDictionary(f => f.Key, f => Math.Round(Math.Clamp(f.Value, -1, 1), 3)) is { Count: > 0 } face ? face : null,
             Eyes = c.Eyes, Paint = c.Paint == "none" ? null : c.Paint,

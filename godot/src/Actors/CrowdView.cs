@@ -179,8 +179,9 @@ public partial class CrowdView : Node3D
                 t = time;
                 break;
             case EnemyState.Casting:
+                // A cast of its own (a howl, a rally) from its start; a stand-in windup loops.
                 role = asset.Clips.ContainsKey("cast") ? "cast" : "windup";
-                t = time;
+                t = role == "cast" ? e.AnimT : time;
                 break;
             case EnemyState.Lunging:
                 role = "move";

@@ -89,6 +89,18 @@ public partial class MapTableScreen : Overlay
         }
     }
 
+    /// <summary>What answers a people, as gear is named: "Wolfbane gear, or gear of the Wolf"
+    /// (a prefix goes before "gear", a suffix after it).</summary>
+    static string Bane(string[] lean)
+    {
+        var names = lean.Select(a => SurvivorUnchained.Rpg.Items.Affix(a)?.Name ?? a).ToList();
+        var before = names.Where(n => !n.StartsWith("of ")).ToList();
+        var parts = new System.Collections.Generic.List<string>();
+        if (before.Count > 0) parts.Add(string.Join(" or ", before) + " gear");
+        parts.AddRange(names.Where(n => n.StartsWith("of ")).Select(n => "gear " + n));
+        return string.Join(", or ", parts);
+    }
+
     /// <summary>One map: a sheet of parchment in a wooden frame, lettered by the Wayfinder.</summary>
     Control Sheet(MapOffer o, Vector2 pos, Vector2 size, float tiltDeg)
     {
@@ -110,8 +122,8 @@ public partial class MapTableScreen : Overlay
             Style.H(8, Style.Label($"TIER {o.Spec.Tier}", Style.UiHeavy, Style.Caption, InkSoft, false, HorizontalAlignment.Left, false), Style.Gems(System.Math.Min(o.Spec.Tier - 1, 5), 6)),
             L(o.Spec.Name.ToUpperInvariant(), Style.Display, 30, Ink),
             L($"Held by {people.Name}", Style.TextItalic, Style.Body, Ink),
-            L($"Ruled by {people.BossName}", Style.Text, Style.Small, InkSoft),
-            L($"Their bane: {string.Join(", ", people.Lean.Select(a => SurvivorUnchained.Rpg.Items.Affix(a)?.Name ?? a))} gear", Style.TextItalic, Style.Caption, Answer),
+            L($"Ruled by {MapOffers.InSentence(people.BossName)}",Style.Text, Style.Small, InkSoft),
+            L($"Their bane: {Bane(people.Lean)}", Style.TextItalic, Style.Caption, Answer),
             Style.Rule());
         if (o.Spec.Oaths.Count == 0) v.AddChild(L("Sworn under no oath.", Style.TextItalic, Style.Small, InkSoft));
         foreach (var id in o.Spec.Oaths)

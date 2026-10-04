@@ -141,13 +141,9 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     /// <summary>Always night: the ember burns only in the dark.</summary>
     public override TimeOfDay TimeOf(WorldState w) => TimeOfDay.Night;
 
-    /// <summary>An arena's night is brighter than the wood's: the fight is seen
-    /// from high up, and has to read out to the edges of the picture.</summary>
-    static readonly AtmospherePreset Night = Atmospheres.Night with
-    {
-        KeyIntensity = 4.4, HemiIntensity = 1.6, EnvIntensity = 0.95, FogDensity = 0.004, Exposure = 1.7, RimStrength = 0.75,
-    };
-    public override AtmospherePreset AtmosphereFor(TimeOfDay t) => t == TimeOfDay.Night ? Night : base.AtmosphereFor(t);
+    /// <summary>An arena's night is its place's own (Maps/ArenaPlaces.cs).</summary>
+    public override AtmospherePreset AtmosphereFor(TimeOfDay t) =>
+        t == TimeOfDay.Night && map.Place is { } place ? place.Night : base.AtmosphereFor(t);
     public override Arrival ArrivalFrom(string? from) => new(0, 0, 0);
 
     public override void Begin(Battle b)
@@ -156,7 +152,10 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         // The people's own cover: graves, walls, rubble, lanterns.
         foreach (var pc in map.Pieces) G.Look.AddProp(pc.Id, pc.X, pc.Z, pc.Rot, pc.Scale);
         b.Rules = MapOffers.Rules(Spec.Map);
-        b.Rules.FodderGold = 0.02;
+        // A fiftieth still paid a Kerchief night 1.6k-2.1k gold from its forty thousand dead, and a
+        // three-hundredth 530-690 (crafting's probes, against an economy that holds at 350-450).
+        b.Rules.FodderGold = 0.0015;
+        b.Rules.ChampionGold = 0.07;
         // A shorter night pays its ember quicker, so its boss meets the build a table's would.
         b.Rules.EmberGain *= Pace;
         // The survivor's light reaches further here (the camera is further out); a moonless oath still halves it.
@@ -742,7 +741,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         };
         if (!quiet) B.Events.Emit(new Ev.Bark { X = p.X, Z = p.Z + 3, Text = sign });
         G.Look.AddLight(p.X + Math.Cos(signAngle) * 26, 2.5, p.Z + Math.Sin(signAngle) * 26, "#ff6a3a", 3.2, 16, 0.25, 0.12, "#ff8a5a");
-        if (!quiet) G.Announce(again ? new Announcement($"{BossName} stirs again", "It comes from where the sign was, stronger", "danger", 2.6)
+        if (!quiet) G.Announce(again ? new Announcement($"{BossName} stirs again", "From where the sign was, and stronger", "danger", 2.6)
             : new Announcement(Nears, "It comes from where the sign was", "danger", 2.6));
     }
 
@@ -911,7 +910,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         bossUp = false;
         boss = null;
         eventT = 20;
-        G.Announce(new Announcement($"{BossName} is beaten again", "It will come again, stronger.", "reward", 3.4));
+        G.Announce(new Announcement($"{BossName} is down again", "Back soon, and stronger.", "reward", 3.4));
         Objectives();
     }
 
@@ -1155,9 +1154,10 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         bool goesDown = script is Grimtunnel { Ganger: false };
         var steps = new List<Step>
         {
-            won ? new Step(goesDown ? $"{BossName} is driven back down: the arena is won" : $"{BossName} is beaten: the arena is won", Done: true)
-            : bossUp ? new Step($"{BossName} has come: {(goesDown ? "drive him back down" : "beat it")}")
-            : new Step($"Survive: {left / 60}:{left % 60:00} until {BossName} comes"),
+            // "Down" holds for every end a fight has: killed, let go, laid down, or sent back down the hole.
+            won ? new Step(goesDown ? $"{BossName} is driven back down: the night is held" : $"{BossName} is down: the night is held", Done: true)
+            : bossUp ? new Step($"{BossName} has come: {(goesDown ? "drive him back down" : "end it")}")
+            : new Step($"Survive: {left / 60}:{left % 60:00} until {Maps.MapOffers.InSentence(BossName)} comes"),
         };
         if (won)
         {

@@ -1,4 +1,4 @@
-"""His face painted: photographic skin, brows, lashes and lips for the head
+﻿"""His face painted: photographic skin, brows, lashes and lips for the head
 hero_male_head.py made, by the local ComfyUI. heroine_face.py's way, for him.
 
     blender -b tools/comfy/out/heroes/hero_male_built.blend --python tools/assets/hero_male_face.py -- tools/assets/hero_male_face
@@ -34,17 +34,17 @@ import comfy  # noqa: E402
 OUT = os.path.abspath(sys.argv[sys.argv.index("--") + 1])
 os.makedirs(OUT, exist_ok=True)
 SIZE = 4096                        # his head's texture (hero_male_head.py's HSIZE)
-SCALE = 0.27                       # metres across each drawing
+SCALE = 0.29                       # metres across each drawing
 DRAW = 1536                        # its pixels across
-CENTRE = Vector((0.0, -0.03, 1.835))
+CENTRE = Vector((0.0, -0.03, 1.845))
 VIEWS = {"front": 0.0, "left": 55.0, "right": -55.0}
 DENOISE = 0.45                     # more and his features move away from his head's
 SEED = 7
-PROMPT = ("Photograph, {view} of the face of a rugged, strikingly handsome man in his early thirties, a warrior, weathered lightly "
-          "tanned skin with visible pores and fine lines at the corners of his eyes, thick straight dark brown eyebrows, deep-set grey "
-          "eyes, short dark eyelashes, bare clean eyelids, firm natural lips, freshly clean-shaven smooth jaw and cheeks with no beard and "
-          "no stubble, completely bald smooth shaved head, calm intent neutral expression, flat even soft studio lighting with no "
-          "shadows, plain grey background, sharp focus, high detail.")
+PROMPT = ("Photograph, {view} of the face of a strikingly handsome, rugged man in his late twenties, a warrior, healthy lightly "
+          "tanned skin with natural texture and visible pores, strong straight dark brown eyebrows, deep-set steel grey eyes, short dark "
+          "eyelashes, bare clean eyelids, firm well-shaped lips, smooth freshly shaven jaw, cheeks and upper lip, completely bald smooth "
+          "shaved head, calm confident neutral expression, flat even soft studio lighting with no shadows, plain grey background, sharp "
+          "focus, high detail.")
 VIEW_WORDS = {"front": "straight-on front view", "left": "three-quarter view", "right": "three-quarter view"}
 
 head = bpy.data.objects["HeroHead"]
@@ -152,7 +152,10 @@ def delit(name):
     him)."""
     from scipy import ndimage
     paint, drawn = load(os.path.join(OUT, f"painted_{name}.png")), load(os.path.join(OUT, f"drawn_{name}.png"))
-    sg = DRAW / 25
+    # (Only the broadest of it: his brows and the hollows of his face are
+    # Krea's, far heavier than the drawing's, and a finer cut took them for
+    # light and lifted them out, leaving MakeHuman's face.)
+    sg = DRAW / 10
     broad_p = np.stack([ndimage.gaussian_filter(paint[..., k], sg) for k in range(3)], 2)
     broad_d = np.stack([ndimage.gaussian_filter(drawn[..., k], sg) for k in range(3)], 2)
     return np.clip(paint / np.maximum(broad_p, 1e-3) * broad_d, 0, 1)
@@ -219,10 +222,14 @@ def match(src, ref, m):
 
 
 if __name__ == "__main__":
-    draw()
+    # (REUSE=1: the drawings and paintings already made laid back again.)
+    reuse = os.environ.get("REUSE") == "1"
+    if not reuse:
+        draw()
     for name in VIEWS:
-        paint(name)
-        print("PAINTED", name)
+        if not reuse:
+            paint(name)
+            print("PAINTED", name)
     rows, cols, T, tri, bary, V, N, P, Nt = texels()
     base = np.array(head.data.materials[0].node_tree.nodes["Image Texture"].image.pixels[:], np.float32).reshape(SIZE, SIZE, 4)
     cols_v, weights = {}, {}

@@ -177,9 +177,9 @@ public static class Vat
         return asset;
     }
 
-    /// <summary>A crowd person's clip: the dead's own where they have one, the library's otherwise.</summary>
+    /// <summary>A crowd person's clip: the crowd's own where it has one (FolkClips.Crowd), the library's otherwise.</summary>
     static string Clip(People.Person person, string clip) =>
-        person.Kit && FolkClips.Undead(person.Woman, !person.Folk, clip) is string dead ? dead : People.Resolve(clip);
+        person.Kit && FolkClips.Crowd(person.Woman, !person.Folk, clip) is string own ? own : People.Resolve(clip);
 
     static bool Armed(World.Held? arms) => arms?.Right != null || arms?.Left != null || arms?.Forearm != null;
 
@@ -187,7 +187,7 @@ public static class Vat
     /// metres a second at its own size (0: not known, the library's clips).</summary>
     static float Pace(Visuals.Spec spec)
     {
-        if (spec.Person == null || FolkClips.Undead(spec.Person.Sex == Rpg.Sex.Female, Armed(spec.Arms), spec.Clips.Move) is not string move) return 0;
+        if (spec.Person == null || FolkClips.Crowd(spec.Person.Sex == Rpg.Sex.Female, Armed(spec.Arms), spec.Clips.Move) is not string move) return 0;
         // (The body stands 1.04 times its skeleton, at the kind's scale.)
         return FolkClips.Speed(move) * 1.04f * (float)spec.Scale;
     }
@@ -725,7 +725,7 @@ public static class Vat
     // its clips and seconds of sampling; read back, a few milliseconds). Bump
     // Version whenever what a bake holds or how it is made changes (Visuals,
     // Beasts, this file).
-    const int Version = 8;
+    const int Version = 9;
     static string CachePath(string key) => $"user://vat/{key}.v{Version}.bin";
 
     static byte[] Bytes<T>(T[] a) where T : struct => System.Runtime.InteropServices.MemoryMarshal.AsBytes(a.AsSpan()).ToArray();

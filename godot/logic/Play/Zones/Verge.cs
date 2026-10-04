@@ -160,13 +160,14 @@ public sealed class Verge : ZoneRuntime
         Interactables.Add(new Interactable
         {
             Id = $"night:{id}", X = at.X, Z = at.Z, R = r, Verb = verb, Name = name, When = when,
-            Hint = () => W.Time == TimeOfDay.Night ? "An ember arena: the story remembers how it goes" : "Only after dark",
+            Hint = () => W.Time == TimeOfDay.Night ? "An ember arena: won or lost, the valley hears of it" : "Only after dark",
             Locked = () => W.Time == TimeOfDay.Night ? null : "It is the night's fight. Come back after dark.",
             Act = () => G.EnterArena(spec()),
         });
     }
 
-    ArenaSpec Story(string id, string name, string people, int seed, string boss, string bossName, string bossTitle, string onWin, string onLose)
+    ArenaSpec Story(string id, string name, string people, int seed, string boss, string bossName, string bossTitle, string onWin, string onLose,
+        string endWon, string endLost)
     {
         var p = B!.Player;
         int tier = Math.Max(1, Math.Min(4, 1 + (W.Day - 1) / 2 + (int)F("arena.best").Number / 2));
@@ -178,6 +179,7 @@ public sealed class Verge : ZoneRuntime
             // two fifths of the game early on): the same night, told quicker (ArenaRun.Minute).
             Minutes = 20,
             ReturnZone = "verge", ReturnX = p.X, ReturnZ = p.Z, ReturnFacing = p.Facing, OnWin = onWin, OnLose = onLose,
+            EndWon = endWon, EndLost = endLost,
         };
     }
 
@@ -196,8 +198,12 @@ public sealed class Verge : ZoneRuntime
                 var spec = Story("hollow_by_night", "The Hollow by Night", "pack", 311, "boss_pack", "Greymuzzle", "Who Kept the Cold Off",
                     spare
                         ? $$"""[{ "set": { "greymuzzle": "spared" } }, {{Hist("spared_greymuzzle", "brought Greymuzzle down in his own Hollow by night, and let him get up and go to his sick", ["beasts", "wolves"], 2, null, """{ "maeca": { "affection": 15, "respect": 20 } }""")}}]"""
-                        : $$"""[{ "set": { "greymuzzle": "dead", "hollow.hostile": true } }, { "add": { "beasts.population": -30 } }, { "quest": { "id": "beasts", "entry": "alpha_dead" } }, { "give": "greymuzzle_fang" }, {{Hist("killed_greymuzzle", "killed Greymuzzle, the old alpha of the Pack, in his own Hollow by night", ["beasts", "wolves"], 2, null, """{ "maeca": { "affection": -50, "respect": -20 }, "holloway": { "respect": 20 } }""")}}]""",
-                    """[{ "add": { "beasts.population": 10 } }, { "set": { "hollow.hostile": true } }, { "quest": { "id": "beasts", "entry": "hollow_lost" } }]""");
+                        : $$"""[{ "set": { "greymuzzle": "dead", "hollow.hostile": true } }, { "add": { "beasts.population": -30 } }, { "quest": { "id": "beasts", "entry": "alpha_dead" } }, { "give": "greymuzzle_fang" }, {{Hist("killed_greymuzzle", "killed Greymuzzle, the Pack's old dog-wolf, in his own Hollow by night", ["beasts", "wolves"], 2, null, """{ "maeca": { "affection": -50, "respect": -20 }, "holloway": { "respect": 20 } }""")}}]""",
+                    """[{ "add": { "beasts.population": 10 } }, { "set": { "hollow.hostile": true } }, { "quest": { "id": "beasts", "entry": "hollow_lost" } }]""",
+                    spare
+                        ? "Behind you, in the den's mouth, an old wolf is breathing. You leave him to it."
+                        : "The Hollow is quiet. The only breath in it is yours, and it does not show in the cold.",
+                    "You come to at the Hollow's mouth with your collar wet from a wolf's jaws. Nothing ate you. Something carried you out.");
                 spec.Spare = spare;
                 return spec;
             });
@@ -206,7 +212,9 @@ public sealed class Verge : ZoneRuntime
             () => !KerchiefsFriendly() && F("redcowl").Str is not ("dead" or "tricked") && !F("roost.cleared").Truthy,
             () => Story("roost_raid", "Raid on the Roost", "kerchiefs", 523, "boss_kerchiefs", "Redcowl", "Of the Kerchiefs",
                 $$"""[{ "set": { "redcowl": "dead", "roost.cleared": true, "roost.hostile": true } }, { "quest": { "id": "caravan", "entry": "roost_raided" } }, { "if": { "fact": "redcowl.ashford_said", "eq": true }, "then": [{ "set": { "redcowl.last_words": "ashford" } }], "else": [{ "set": { "redcowl.last_words": "leg" } }] }, {{PackLed}}, {{Hist("killed_redcowl", "took Redcowl's Roost by night and killed him in it", ["kerchief", "caravan"], 2, """{ "fear": 10 }""", """{ "holloway": { "respect": 25 }, "rav": { "affection": -20 } }""")}}]""",
-                """[{ "set": { "roost.hostile": true } }, { "quest": { "id": "caravan", "entry": "roost_repelled" } }]"""));
+                """[{ "set": { "roost.hostile": true } }, { "quest": { "id": "caravan", "entry": "roost_repelled" } }]""",
+                "The red hat lies in the mud. By the fires, someone is telling the children to hush, and they do.",
+                "You come to on the road below the Roost, laid out straight with your hands on your chest, the way the Kerchiefs lay out their dead."));
         // When the Dig turns on you, it boils over after dark.
         StoryFight("dig", dig, 7, "Hold the Dig's edge", "The Dig",
             () => F("dig.hostile").Truthy && !F("dig.broken").Truthy,
@@ -216,14 +224,18 @@ public sealed class Verge : ZoneRuntime
                 string pump = running ? """{ "set": { "dig.pump": "blown" } }, { "quest": { "id": "beasts", "entry": "pump_blown" } }, """ : "";
                 return Story("dig_boils", "The Dig Boils Over", "lamplings", 739, "grimtunnel_roused", "Grimtunnel", "Ever So Grateful",
                     $$"""[{ "set": { "dig.broken": true } }, {{pump}}{ "quest": { "id": "beasts", "entry": "dig_overrun" } }, {{Hist("broke_dig", "held the Dig's edge by night until nothing more came up, and drove Grimtunnel back down", ["beasts", "lampling"], 2, """{ "respect": 10 }""", """{ "wenna": { "respect": 20 }, "maeca": { "respect": 20 } }""")}}]""",
-                    """[{ "quest": { "id": "beasts", "entry": "dig_held" } }]""");
+                    """[{ "quest": { "id": "beasts", "entry": "dig_held" } }]""",
+                    "Nothing more comes up. A long way under your feet, the ground goes still, the way a room does when someone has said your name.",
+                    "When you come to, they have gone back down the hole, and taken their own dead with them.");
             });
         // The Sealed Vault: with the sigil's fragment, the door wakes after dark.
         StoryFight("vault", vault, 5, "Set the sigil in the door", "The Sealed Door",
             () => Quest("vault", "fragment") && !F("vault.opened").Truthy,
             () => Story("vault_opened", "Behind the Sealed Door", "dead", 947, "boss_dead", "The Barrow Lord", "Of the Seventh Legion",
                 $$"""[{ "set": { "vault.opened": true } }, { "quest": { "id": "vault", "entry": "opened" } }, {{Hist("opened_vault", "opened the old empire's door in the Verge and came back out of it", ["vault", "mystery"], 3, """{ "fear": 5, "respect": 10 }""", """{ "vonnra": { "trust": -10 }, "chid": { "respect": 15 } }""")}}]""",
-                """[{ "quest": { "id": "vault", "entry": "shut" } }]"""));
+                """[{ "quest": { "id": "vault", "entry": "shut" } }]""",
+                "The dead stand aside and let you up the stair. They did not do that for the last one.",
+                "The dead carry you back up the stair and put you out, the way you would put out a cat."));
     }
 
     /* ------------------------------------------------------ ember scars -- */
@@ -856,7 +868,7 @@ public sealed class Verge : ZoneRuntime
         if (e.Tag == "greymuzzle")
         {
             greymuzzle = null;
-            G.Apply($$"""[{ "set": { "greymuzzle": "dead" } }, { "quest": { "id": "beasts", "entry": "alpha_dead" } }, {{Hist("killed_greymuzzle", "killed Greymuzzle, the old alpha of the Pack", ["beasts", "wolves"], 2, null, """{ "maeca": { "affection": -50, "respect": -20 }, "holloway": { "respect": 20 } }""")}}]""");
+            G.Apply($$"""[{ "set": { "greymuzzle": "dead" } }, { "quest": { "id": "beasts", "entry": "alpha_dead" } }, {{Hist("killed_greymuzzle", "killed Greymuzzle, the Pack's old dog-wolf", ["beasts", "wolves"], 2, null, """{ "maeca": { "affection": -50, "respect": -20 }, "holloway": { "respect": 20 } }""")}}]""");
             G.SetBoss(null);
         }
         if (e.Tag == "redcowl")
