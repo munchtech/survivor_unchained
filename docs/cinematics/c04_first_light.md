@@ -155,7 +155,7 @@ Conversation `cin_first_light`.
 |---|---|---|---|---|
 | `cin_first_light.back` | A4 | `narrator` | *The sun clears the trees, and the ember goes back into the ground.* | As weather. "Back" is the only weighted word, and only a little. |
 | `cin_first_light.face` | A7 | `narrator` | *You try to call up your mother's face, and find it is not quite where you left it.* | The prologue's own line. The most important line in the opening. No weight on it at all. Then silence. |
-| `cin_first_light.baking` | B1 | `narrator` | *Somewhere up the street, someone is baking.* | Warmer than any line of the night. The camera can't smell; the narrator can. |
+| `cin_first_light.baking` | B1 | `narrator` | *Somewhere up the street, someone is baking.* | Said as plainly as every line of the night: the warmth is in the words and in the morning round them (a door, a cart, birds), never in his voice (`VOICES.md`, the narrator). The camera can't smell; the narrator can. |
 | `cin_first_light.dawn` | B2 | `guard` | Dawn arrivals. We don't get many that live. | Flat, to his mate, a thing said every week. (The guard bark in `npcs.json` says the same.) |
 
 The mechanics the prologue's dawn line used to explain ("What you carry, and what

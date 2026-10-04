@@ -1254,3 +1254,5 @@ changed:
 - **Rook's gossip** no longer repeats her callback's joke: "Jory Coyle's home,
   asleep in my good room with the lamp lit, and Harlan's been up my stairs four
   times to look at him."
+- **Sella's night barks** both opened "Rook's walls are thin": `bark.sella.night.1`
+  is now "I've a bath going cold upstairs. Shame to waste it."
