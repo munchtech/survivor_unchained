@@ -126,6 +126,40 @@ diamonds. In art, rarity rises in *richness* as well as hue:
   #0b0a0d, the brightest highlight #fff2d8.
 - **Don't** strobe or animate (the code animates; art is still).
 
+### 2.6 The soul, as painted (locked)
+**Brannoc's iron, the binders' gold, the Morrow's light.** The interface is
+smith's work from the Waystation, not a jeweller's: the same hand that forged
+the twelve lamp-irons for the Low Ford.
+
+- **The iron** is strap iron drawn out under the hammer, ragged at its edges,
+  planished, never milled. Frames *hang*: a plate or a card is held at its top
+  corners by lamp-iron brackets (scrolls curling outward, as the brackets of
+  the Waystation's signs do) and nailed at its foot.
+- **The gold** is the binders': a thin twisted wire set into the strap, and
+  the square coin with its quatrefoil hole, nailed at every corner.
+- **The light** is the Morrow's. Ember sleeps in the coins' holes (a dull
+  smoulder, never a flat fill: it must never read as a sign) and wakes where
+  there is power: the ember bar, the primary action, the focus, the draft,
+  the evolution. By day it sleeps; at night it burns.
+- **The emblem** is the opened link: one link of the seven-link chain pried
+  apart, ember at the break. It rides the top of every draft card, stands at
+  the head of the art's ring of seven links, and divides the great headings.
+- **Rarity is a road through the world**: common is plain road iron; uncommon
+  the Verge (bramble, thorn, moss); rare the Low Ford at night (river rime,
+  cold blue); epic the binders (violet stones, square-cut sigil lines);
+  legendary the Order of the Morning Light (dawn gold, lamp flames); the
+  evolution the chain breaking, gilded, ember pouring from the breaks.
+- **Paper** is the Waystation's ledger: deckled, foxed at the rims, iron
+  corner caps, a nail and a drop of wax.
+- **The hand**: every painted piece is painted on the local Krea with the
+  darkbrush LoRA over a forged guide that fixes its geometry, then cleaned in
+  `tools/uiforge` (silhouette, calm middles, light in the holes, the house
+  grade). Exact shapes too small to paint (pad buttons, map marks, keycaps,
+  cursors, the interface's own marks) are forged in the same light
+  (`tools/uiforge/matcaps`) so the two halves are one family.
+
+Before and after, every screen at 1920×1080 (the drawn look left, the art right): `docs/concepts/ui/style/` (`tools/uiforge/compare.py`).
+
 ---
 
 ## 3. Tools and workflows
@@ -313,6 +347,26 @@ finest thing in the night: gilded, a broken chain, light through the breaks.
 | Pointer | `cursors/pointer.png` | 32×32 (32) | Shown as drawn (not halved). Tip at (3, 2) |
 | Hand | `cursors/hand.png` | 32×32 | Over anything to press. Fingertip at (11, 2) |
 | Forbidden | `cursors/forbidden.png` | 32×32 | Over what cannot be done. Centre at (16, 16) |
+
+### 4.8 As delivered (the art pass)
+Where the delivered art differs from the tables above (`UiArt.cs` and
+`tools/comfy/ui_assets.json` agree with this list):
+
+| Asset | Change | Why |
+|---|---|---|
+| Plate | margins 64, `Tile`, `Out: 12`, `Clear: 21` | The corner coins and brackets need room; the strap repeats rather than stretches; content keeps its old 21 px |
+| Paper, tooltips, buttons, row, toast, prompt, bar groove, map frame | `Tile` | Hammered iron and laid paper stretched look smeared; repeated, they look made |
+| Hint | margins 40, `Tile`, `Clear: 14` | The nail and the wax sit in the corners; the text keeps its old distance |
+| Cards | 736×1000, margins 64 80 64 64, `Out: 24` | The card hangs from brackets that reach past it; the row is spaced 52 (not 28) when painted |
+| Map frame | `Out: 8`, laid over the map's edge (not under it) | The wooden frame overlaps the map as a real frame does |
+| Level medallion | 116 (58 shown) | At 70 it covered the bar's word beside it |
+| The art's ring | 220 (110 shown), open below 79% | Six of the binders' coins and the seventh link, pried open, round the ready-ring |
+| Bar casings (new) | `bars/casing.png`, `bars/casing_boss.png`, laid over the bars by `GameHud.Casing` | Forged iron round the groove; the boss's with horned ends. Drawn only when present |
+| Fills | 512 wide | A longer repeat: the slag and the motes do not visibly repeat along a 900 px bar |
+| Empty skill places | use `frames/slot.png` (at 70%) | A place to come, in the same iron as a held skill |
+
+Stat icons (5.5) are not made: they are not wired, and wiring them changes the
+standing's layout (the designer's). Everything else in sections 4 and 5 is in place.
 
 ---
 

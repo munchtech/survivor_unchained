@@ -136,7 +136,8 @@ public partial class DraftPanel : Control
             col.AddChild(tip);
         }
         col.AddChild(Style.Gap(Style.Gap5));
-        var row = Style.H(28);
+        // Painted cards reach past their edges (the brackets they hang from): spaced so they do not touch.
+        var row = Style.H(UiArt.Has("card_0") ? 52 : 28);
         row.Alignment = BoxContainer.AlignmentMode.Center;
         row.CustomMinimumSize = new Vector2(0, CardH + 16);
         col.AddChild(row);
@@ -260,6 +261,10 @@ public partial class DraftPanel : Control
         b.AddChild(panel);
         panel.SetMeta("rc", rc);
         panel.SetMeta("frame", crown ? "card_evolve" : $"card_{Math.Min(r, 4)}");
+        // A painted card has no glow of its own: its rarity's, when lifted, is drawn behind it.
+        var glow = new Panel { MouseFilter = MouseFilterEnum.Ignore, ShowBehindParent = true, Name = "Glow" };
+        Style.Fill(glow);
+        panel.AddChild(glow);
         var v2 = Style.V(Style.Gap2);
         v2.Position = new Vector2(22, 20);
         v2.Size = new Vector2(CardW - 44, CardH - 36);
@@ -358,7 +363,16 @@ public partial class DraftPanel : Control
             s.Crest = 120;
             s.Glow = on ? 1.4f : 0;
             s.Top = new Color("#211c26").Lerp(rc, 0.05f);
-            panel.AddThemeStyleboxOverride("panel", UiArt.Has((string)panel.GetMeta("frame")) ? UiArt.Frame((string)panel.GetMeta("frame"), s) : s);
+            bool art = UiArt.Has((string)panel.GetMeta("frame"));
+            panel.AddThemeStyleboxOverride("panel", art ? UiArt.Frame((string)panel.GetMeta("frame"), s) : s);
+            if (panel.GetNodeOrNull<Panel>("Glow") is { } glow)
+            {
+                var g = Style.Box(new Color(0, 0, 0, 0), new Color(0, 0, 0, 0), 0, 10, 0);
+                g.ShadowColor = on ? edge with { A = 0.45f } : new Color(0, 0, 0, 0.7f);
+                g.ShadowSize = on ? 34 : 18;
+                glow.AddThemeStyleboxOverride("panel", g);
+                glow.Visible = art;
+            }
             if (b.FindChild("Medal", true, false) is Medallion m) { m.Lit = on; m.QueueRedraw(); }
             panel.SelfModulate = banishing && on ? new Color(1.15f, 0.8f, 0.75f) : Colors.White;
             b.GetNode<Label>("Ban").Visible = banishing && on;

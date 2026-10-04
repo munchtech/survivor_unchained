@@ -167,6 +167,17 @@ public partial class GameHud : CanvasLayer
 
     /// <summary>A round medallion rimmed in gold (the ember's, the heart's);
     /// painted (hud/NAME.png, drawn larger than the medallion, centred on it) when there is art.</summary>
+    /// <summary>A painted casing laid over a bar (bars/casing.png, casing_boss.png): forged iron
+    /// round the groove, reaching a little past it, its middle open so the fill shows. Added
+    /// after the bar so it sits over the fill's edge; nothing when there is no art.</summary>
+    static void Casing(Control parent, Control bar, string id)
+    {
+        if (!UiArt.Has(id)) return;
+        var c = new Panel { Position = bar.Position, Size = bar.Size, MouseFilter = Control.MouseFilterEnum.Ignore };
+        c.AddThemeStyleboxOverride("panel", UiArt.Frame(id, new StyleBoxEmpty()));
+        parent.AddChild(c);
+    }
+
     static Panel Medal(Control parent, Vector2 at, float size, Color inner, string? art = null)
     {
         var p = new Panel { Position = at, Size = new Vector2(size, size), MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -201,6 +212,7 @@ public partial class GameHud : CanvasLayer
         var track = new Panel { Position = new Vector2(x + 30, 23), Size = new Vector2(w - 30, 12), MouseFilter = Control.MouseFilterEnum.Ignore, ClipContents = true };
         track.AddThemeStyleboxOverride("panel", UiArt.Frame("bar_track", Style.Box(Hex("#120c0a"), new Color(0.85f, 0.71f, 0.42f, 0.28f), 1, 5, 0)));
         combat.AddChild(track);
+        Casing(combat, track, "bar_casing");
         emberFill = Fill("ember_fill", [Hex("#6a1e04"), Hex("#c24a0a"), Hex("#ff8a2a"), Hex("#ffd070")], [0, 0.45f, 0.85f, 1]);
         emberFill.Position = new Vector2(1, 1);
         emberFill.Size = new Vector2(0, 10);
@@ -458,6 +470,7 @@ public partial class GameHud : CanvasLayer
         var track = new Panel { Position = new Vector2(0, 58), Size = new Vector2(w, 16), ClipContents = true, MouseFilter = Control.MouseFilterEnum.Ignore };
         track.AddThemeStyleboxOverride("panel", UiArt.Frame("bar_track_boss", Style.Box(Hex("#140808"), Style.GoldDim, 1, 3, 0)));
         bossBox.AddChild(track);
+        Casing(bossBox, track, "bar_casing_boss");
         bossTrack = track;
         bossTrail = new ColorRect { Color = Hex("#e8c07a"), Position = new Vector2(1, 1), Size = new Vector2(w - 2, 14), MouseFilter = Control.MouseFilterEnum.Ignore };
         track.AddChild(bossTrail);
@@ -1129,7 +1142,9 @@ public partial class EmptySlot : Panel
     {
         CustomMinimumSize = new Vector2(67, 67);
         MouseFilter = MouseFilterEnum.Ignore;
-        AddThemeStyleboxOverride("panel", Style.Box(new Color(0.08f, 0.07f, 0.09f, 0.55f), Style.Line with { A = 0.12f }, 1, 7, 0));
+        // A place to come: the empty well (frames/slot.png) when painted, quieter than a held skill.
+        AddThemeStyleboxOverride("panel", UiArt.Frame("slot", Style.Box(new Color(0.08f, 0.07f, 0.09f, 0.55f), Style.Line with { A = 0.12f }, 1, 7, 0)));
+        if (UiArt.Has("slot")) SelfModulate = new Color(1, 1, 1, 0.7f);
     }
 }
 
