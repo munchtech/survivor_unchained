@@ -107,7 +107,14 @@ public class LoadoutTests
         // Every slider has its words and a range about her own face; every face starts from known sliders.
         var her = World.Lore.Her;
         var ids = her.Sliders.Select(s => s.Id).ToHashSet();
-        Assert.Equal(25, ids.Count);
+        // (tools/assets/face_shapes.py's SLIDERS, written by face_looks.py: every part of her face, her ears and her neck)
+        Assert.Equal(47, ids.Count);
+        // (eight groups of at most eight: creation's Shape part shows a group whole, unscrolled)
+        var groups = her.Sliders.GroupBy(s => s.Group).ToList();
+        Assert.Equal(new[] { "Head", "Brows", "Eyes", "Nose", "Cheeks", "Mouth", "Jaw", "Ears and neck" }, groups.Select(g => g.Key));
+        Assert.All(groups, g => Assert.InRange(g.Count(), 1, 8));
+        Assert.Contains("forehead_height", ids);
+        Assert.Contains("chin_width", ids);
         Assert.All(her.Sliders, s => Assert.True(s.Min <= 0 && s.Max > 0 && s.Low != "" && s.High != ""));
         Assert.All(her.Faces, f => Assert.All(f.Shape, kv =>
         {

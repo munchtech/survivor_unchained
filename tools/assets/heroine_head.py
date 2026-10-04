@@ -46,44 +46,15 @@ from bl_ext.user_default.mpfb.services.humanservice import HumanService  # noqa:
 
 DATA = os.path.join(bpy.utils.user_resource("EXTENSIONS"), ".user", "user_default", "mpfb", "data")
 
-# MakeHuman's woman: young, slim, ideal proportions; her face is fitted to
-# the heroine's after.
-MACROS = {"gender": 0.0, "age": 0.5, "muscle": 0.75, "weight": 0.5, "proportions": 1.0, "height": 0.5, "cupsize": 0.5,
-          "firmness": 0.5, "race": {"african": 0.0, "asian": 0.0, "caucasian": 1.0}}
-# Her parts, MakeHuman's own (all CC0): kind, asset.
-# (Her brows are made for heroine_face.py to paint over, and are in her
-# face's paint once it has: then not written for the game.)
-PARTS = [("eyes", "high-poly"), ("eyebrows", "eyebrow010"), ("eyelashes", "eyelashes03"), ("teeth", "teeth_base"),
-         ("tongue", "tongue01")]
-EYES = "green"
-SKIN = ("skins", "toigo_light_skin_female_ginger")
-# (Her hairstyles are tools/assets/heroine_hair.py's, made on this head.)
+# Her face as data (MakeHuman's woman, her face's targets, her build at
+# her neck and her sliders), shared with face_lab.py and face_fit.py.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import face_shapes as fs  # noqa: E402
 
-# Her face: MakeHuman's woman shaped by its targets (each with its weight;
-# "X-" is both sides). Every slider moves her from here.
-FACE = {"head-age-decr": 0.35, "head-fat-decr": 0.2, "X-eye-scale-incr": 0.35, "X-eye-corner2-up": 0.35, "eyebrows-angle-up": 0.3,
-        "nose-scale-horiz-decr": 0.65, "nose-point-up": 0.3, "nose-point-width-decr": 0.3, "nose-hump-decr": 0.45, "nose-scale-vert-decr": 0.3,
-        "mouth-upperlip-volume-incr": 0.75, "mouth-lowerlip-volume-incr": 0.8, "mouth-cupidsbow-incr": 0.5, "mouth-angles-up": 0.2,
-        "X-cheek-bones-incr": 0.15, "X-cheek-volume-incr": 0.5, "chin-bones-incr": 0.1, "chin-width-incr": 0.3, "chin-height-decr": 0.25,
-        "chin-triangle": 0.2, "chin-prominent-incr": 0.15}
-# Her sliders, for the game to shape her face with: each a shape key one
-# way (name+) and the other (name-), from MakeHuman's targets.
-SLIDERS = {
-    "eyes_size": ("X-eye-scale-incr", "X-eye-scale-decr"), "eyes_spacing": ("X-eye-trans-out", "X-eye-trans-in"),
-    "eyes_height": ("X-eye-trans-up", "X-eye-trans-down"), "eyes_tilt": ("X-eye-corner2-up", "X-eye-corner2-down"),
-    "eyes_open": ("X-eye-height2-incr", "X-eye-height2-decr"), "brows_height": ("eyebrows-trans-up", "eyebrows-trans-down"),
-    "brows_arch": ("eyebrows-angle-up", "eyebrows-angle-down"), "nose_width": ("nose-scale-horiz-incr", "nose-scale-horiz-decr"),
-    "nose_length": ("nose-scale-vert-incr", "nose-scale-vert-decr"), "nose_tip": ("nose-point-up", "nose-point-down"),
-    "nose_bridge": ("nose-hump-incr", "nose-hump-decr"), "nostrils": ("nose-flaring-incr", "nose-flaring-decr"),
-    "lips_upper": ("mouth-upperlip-volume-incr", "mouth-upperlip-volume-decr"),
-    "lips_lower": ("mouth-lowerlip-volume-incr", "mouth-lowerlip-volume-decr"),
-    "mouth_width": ("mouth-scale-horiz-incr", "mouth-scale-horiz-decr"), "mouth_corners": ("mouth-angles-up", "mouth-angles-down"),
-    "cupids_bow": ("mouth-cupidsbow-incr", "mouth-cupidsbow-decr"), "cheekbones": ("X-cheek-bones-incr", "X-cheek-bones-decr"),
-    "cheeks": ("X-cheek-volume-incr", "X-cheek-volume-decr"), "jaw": ("chin-bones-incr", "chin-bones-decr"),
-    "chin_width": ("chin-width-incr", "chin-width-decr"), "chin_length": ("chin-height-incr", "chin-height-decr"),
-    "chin_forward": ("chin-prominent-incr", "chin-prominent-decr"), "ears_size": ("X-ear-scale-incr", "X-ear-scale-decr"),
-    "ears_pointed": ("X-ear-shape-pointed", None),
-}
+MACROS, PARTS, EYES, SKIN, FACE, BUILD = fs.MACROS, fs.PARTS, fs.EYES, fs.SKIN, fs.FACE, fs.BUILD
+# (Her brows are made for heroine_face.py to paint over, and are in her
+# face's paint once it has: then not written for the game. Her hairstyles
+# are tools/assets/heroine_hair.py's, made on this head.)
 # Her expressions (MakeHuman's expression units), for blinking, speaking and
 # her scenes: each a shape key from nothing to full.
 EXPRESSIONS = {
@@ -281,35 +252,39 @@ for _f in os.listdir(os.path.join(_TDIR, "expression", "units", "caucasian")):
     TARGET["x:" + _f[:-10]] = os.path.join(_TDIR, "expression", "units", "caucasian", _f)
 
 
-def sides(names):
-    """Target names, "X-" ones as both sides."""
-    out = []
-    for n in names:
-        out += [n.replace("X-", "l-", 1), n.replace("X-", "r-", 1)] if n.startswith("X-") else [n]
-    return out
+sides = fs.sides
 
 
+# (her face's sculpts, ours, are laid on her points once MakeHuman's are
+# read, below: MV_HM)
 for _t, _v in FACE.items():
+    if _t in fs.SCULPTS:
+        continue
     for _n in sides([_t]):
         TargetService.load_target(hm, TARGET[_n], weight=_v)
 # Every slider's and expression's targets too, at nothing (so they change
-# nothing yet), for what each does to her to be read off later.
+# nothing yet), for what each does to her to be read off later: each key
+# its targets with their weights (a slider's reach is in them:
+# face_shapes.slider_keys), or a sculpt of ours (face_shapes.SCULPTS).
+# (Her neck's sliders are not keys of her head: her bones shape her neck,
+# HerPose in the game, so what she wears at her throat follows it.)
 SHAPES = {}
-for _k, (_up, _down) in SLIDERS.items():
-    SHAPES[_k + "+"] = sides([_up])
-    if _down:
-        SHAPES[_k + "-"] = sides([_down])
+for _k in fs.SLIDERS:
+    if _k in fs.BONE_SLIDERS:
+        continue
+    _plus, _minus = fs.slider_keys(_k)
+    SHAPES[_k + "+"] = {n: w for t, w in _plus.items() for n in sides([t])}
+    SHAPES[_k + "-"] = {n: w for t, w in _minus.items() for n in sides([t])}
 for _k, _ts in EXPRESSIONS.items():
-    SHAPES[_k] = ["x:" + t for t in _ts]
+    SHAPES[_k] = {"x:" + t: 1.0 for t in _ts}
 # MakeHuman's woman is longer and slimmer of neck and lower of shoulder than
 # she is, and where her hair hid her skin there is nothing of hers to fit
-# to: her build set by these (her face is placed on hers, so a shorter neck
+# to: her build set by BUILD (her face is placed on hers, so a shorter neck
 # lifts the muscles of her shoulders toward her head).
-BUILD = {"measure-neck-height-decr": 0.9, "measure-neck-circ-incr": 0.5, "neck-back-scale-depth-incr": 0.3}
 for _t, _v in BUILD.items():
     TargetService.load_target(hm, TARGET[_t], weight=_v)
 SK = {}
-for _t in sorted({t for ts in SHAPES.values() for t in ts}):
+for _t in sorted({t for ts in SHAPES.values() for t in ts if t not in fs.SCULPTS}):
     SK[_t] = TargetService.load_target(hm, TARGET[_t], weight=0.0, name="sk_" + _t.replace(":", "_")).name
 proxies = {}
 for kind, name in PARTS:
@@ -336,6 +311,16 @@ def grab(o):
 
 
 MV, MF, MU = grab(hm)
+# (as MakeHuman has her, before she is placed on hers: what our sculpts are made on)
+MV_HM = MV.copy()
+# Her face's own sculpts (a narrower chin): made on her points as MakeHuman
+# has them, its targets laid. (Her eyes, brows and lashes, fitted already,
+# are far from what they move.)
+for _t, _v in FACE.items():
+    if _t in fs.SCULPTS:
+        MV = MV + _v * fs.SCULPTS[_t](MV_HM, fs.anatomy(MV_HM))
+        print("SCULPT", _t, _v)
+MV_HM = MV.copy()
 _body = hm.vertex_groups["body"].index
 _inbody = np.array([any(g.group == _body for g in v.groups) for v in hm.data.vertices])
 keep = [i for i, f in enumerate(MF) if _inbody[f].all()]
@@ -387,7 +372,7 @@ MV = place(MV)
 # ---- the region made anew (her head, and her body above CUT), each face
 # quartered (linearly, so the surface keeps its shape and the eyes, brows
 # and lashes, fitted to it, still sit right) for the detail of her skin.
-def subdivide(V, F, U):
+def subdivide(V, F, U, smooth=None):
     used = sorted({i for f in F for i in f})
     idx = {o: n for n, o in enumerate(used)}
     rows, cols, vals = list(range(len(used))), used[:], [1.0] * len(used)
@@ -416,12 +401,76 @@ def subdivide(V, F, U):
             nF.append([idx[f[i]], mids[i], c, mids[i - 1]])
             nU.append(np.array([uv[i], (uv[i] + uv[(i + 1) % k]) / 2, cuv, (uv[i - 1] + uv[i]) / 2]))
     Sub = sp.csr_matrix((vals, (rows, cols)), shape=(n, len(V)))
-    return Sub, nF, nU
+    if smooth is None:
+        return Sub, nF, nU
+    # Smoothed as Catmull and Clark smooth (its points where their rules put
+    # them, all of it still linear in MakeHuman's points, so every shape key
+    # made through it agrees): the facets of MakeHuman's coarse face, which
+    # its quartering kept, lit as lumps and creases in the game's light.
+    # Each point as much as `smooth` says (none round her eyes, where her
+    # lids must stay on the eyeballs fitted to them), and none on the
+    # region's edge.
+    nv = len(V)
+    faces_of, edges_of, eface = {}, {}, {}
+    for fi, f in enumerate(F):
+        for i in range(len(f)):
+            a, b = f[i], f[(i + 1) % len(f)]
+            faces_of.setdefault(a, []).append(fi)
+            e = (min(a, b), max(a, b))
+            edges_of.setdefault(a, set()).add(e)
+            edges_of.setdefault(b, set()).add(e)
+            eface.setdefault(e, []).append(fi)
+    boundary = {v for e, fs in eface.items() if len(fs) == 1 for v in e}
+
+    def face_point(fi):
+        f = F[fi]
+        return {i: 1.0 / len(f) for i in f}
+
+    def add(acc, d, w):
+        for i, x in d.items():
+            acc[i] = acc.get(i, 0.0) + x * w
+    rows, cols, vals = [], [], []
+    S = Sub.tolil()
+    for o in used:
+        w = float(smooth[o]) if o not in boundary else 0.0
+        if w <= 0:
+            continue
+        nn = len(edges_of[o])
+        cc = {}
+        for fi in faces_of[o]:
+            add(cc, face_point(fi), 1.0 / len(faces_of[o]) / nn)
+        for a, b in edges_of[o]:
+            add(cc, {a: 0.5, b: 0.5}, 2.0 / len(edges_of[o]) / nn)
+        add(cc, {o: 1.0}, (nn - 3.0) / nn)
+        r = idx[o]
+        S[r, :] = S[r, :] * (1 - w)
+        for i, x in cc.items():
+            S[r, i] += w * x
+    for e, fs in eface.items():
+        if len(fs) != 2:
+            continue
+        w = min(float(smooth[e[0]]), float(smooth[e[1]]))
+        if w <= 0:
+            continue
+        cc = {}
+        add(cc, {e[0]: 0.25, e[1]: 0.25}, 1.0)
+        add(cc, face_point(fs[0]), 0.25)
+        add(cc, face_point(fs[1]), 0.25)
+        r = emid[e]
+        S[r, :] = S[r, :] * (1 - w)
+        for i, x in cc.items():
+            S[r, i] += w * x
+    return S.tocsr(), nF, nU
 
 
 _fc = np.array([MV[f].mean(0) for f in MF])
 _region = [i for i, f in enumerate(MF) if (g_cut(MV[f]) > -0.10).any()]
-SUB, RF, RU = subdivide(MV, [MF[i] for i in _region], [MU[i] for i in _region])
+# (smoothed but round her eyes: from nothing within 1.4 cm of each eye's
+# middle to all of it by 2.4 cm, so her lids stay on her eyeballs)
+_ev0 = place(grab(proxies[dict(PARTS)["eyes"]])[0])
+_eye_c = [_ev0[_ev0[:, 0] * sd > 0].mean(0) for sd in (1, -1)]
+_smooth = smooth01((np.min([np.linalg.norm(MV - c, axis=1) for c in _eye_c], 0) - 0.014) / 0.010)
+SUB, RF, RU = subdivide(MV, [MF[i] for i in _region], [MU[i] for i in _region], smooth=_smooth)
 RV0 = SUB @ MV
 print("REGION", len(RV0), "points,", len(RF), "faces")
 
@@ -1121,31 +1170,45 @@ col = sample(MH_TEX, (HTU1[t_] * b_[:, :, None]).sum(1))[:, :3]
 _neck = s_split(P_) < 0.04
 mh_mean, mh_std = col[_neck].mean(0), col[_neck].std(0)
 col = HER_MEAN + (col - mh_mean) * np.clip(HER_STD / (mh_std + 1e-6), 0.7, 1.4)
+# Over the 3 cm above SPLIT, eased into her own skin's (the same whatever
+# her face's paint).
+_near = s_split(P_) < 0.03
+_, _, dist, _, huv = on_skin(P_[_near], 0.05, sure=True)
+_hc = sample(TEX, huv)[:, :3]
+_mix = ((1 - smooth01(s_split(P_[_near]) / 0.03)) * (dist < 0.01) * ((np.abs(_hc - HER_MEAN) / HER_STD).max(1) < 4.0))[:, None]
+_inside = np.zeros((HSIZE, HSIZE), bool)
+_inside[r_, c_] = True
+HEAD_BASE = col
+HEAD_R, HEAD_C = r_, c_                     # (her head's texels: r_ and c_ are used again further on)
 # Her face as tools/assets/heroine_face.py painted it (a photograph's skin,
 # brows, lashes and lips, by the local ComfyUI), over MakeHuman's by its alpha.
-FACE_PAINT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "heroine_face", "face_paint.png")
-if os.path.exists(FACE_PAINT):
+FACE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "heroine_face")
+FACE_PAINT = os.path.join(FACE_DIR, "face_paint.png")
+
+
+def head_paint(face_paint, path):
+    """Her head's texture with a face's paint laid over (none: MakeHuman's
+    skin in her colouring), eased into her own skin at her neck, written to `path`."""
     from PIL import Image
-    _fp = np.asarray(Image.open(FACE_PAINT).convert("RGBA"), np.float32)[::-1] / 255
-    if _fp.shape[0] == HSIZE:
-        _a = _fp[r_, c_, 3:4]
-        col = col * (1 - _a) + _fp[r_, c_, :3] * _a
-        print("FACE PAINT laid over %d%% of her head" % (100 * (_a > 0.5).mean()))
-# Over the 3 cm above SPLIT, eased into her own skin's.
-near = s_split(P_) < 0.03
-_, _, dist, _, huv = on_skin(P_[near], 0.05, sure=True)
-hc_ = sample(TEX, huv)[:, :3]
-mix = (1 - smooth01(s_split(P_[near]) / 0.03)) * (dist < 0.01) * ((np.abs(hc_ - HER_MEAN) / HER_STD).max(1) < 4.0)
-mix = mix[:, None]
-col[near] = col[near] * (1 - mix) + hc_ * mix
-himg = np.zeros((HSIZE, HSIZE, 4), np.float32)
-himg[..., 3] = 1
-himg[r_, c_, :3] = col
-inside = np.zeros((HSIZE, HSIZE), bool)
-inside[r_, c_] = True
-himg = pad(himg, inside)
+    c = HEAD_BASE.copy()
+    if face_paint and os.path.exists(face_paint):
+        fp = np.asarray(Image.open(face_paint).convert("RGBA"), np.float32)[::-1] / 255
+        if fp.shape[0] == HSIZE:
+            a = fp[HEAD_R, HEAD_C, 3:4]
+            c = c * (1 - a) + fp[HEAD_R, HEAD_C, :3] * a
+            print("FACE PAINT %s laid over %d%% of her head" % (os.path.basename(face_paint), 100 * (a > 0.5).mean()))
+    c[_near] = c[_near] * (1 - _mix) + _hc * _mix
+    img = np.zeros((HSIZE, HSIZE, 4), np.float32)
+    img[..., 3] = 1
+    img[HEAD_R, HEAD_C, :3] = c
+    save_image(pad(img, _inside), path)
+
+
+# (HEAD_UNPAINTED=1: left in MakeHuman's skin, for heroine_face.py to paint
+# anew when her face's shape has changed: laid on the new shape, the old
+# paint's brows and lips sit off it, and a painting over it copies them.)
 hpath = os.path.join(TEXDIR, "heroine_head.jpg")
-save_image(himg, hpath)
+head_paint(None if os.environ.get("HEAD_UNPAINTED") else FACE_PAINT, hpath)
 
 head.data.materials[0] = textured("skin_head", hpath)
 print("HEAD paint from", os.path.basename(_mh_png))
@@ -1261,20 +1324,31 @@ _basis = np.array([v.co[:] for v in hm.data.shape_keys.reference_key.data])
 _to_world = (S * R) @ np.array(hm.matrix_world)[:3, :3]
 
 
+_anat = fs.anatomy(MV_HM)
+
+
 def base_delta(targets):
+    """How a key's targets (each at its weight) move every point of
+    MakeHuman's, in her world: its targets' moves, and our sculpts', made
+    on her points as MakeHuman has them and turned and scaled as she was
+    placed."""
     d = np.zeros_like(_basis)
-    for t in targets:
+    ds = np.zeros_like(_basis)
+    for t, w in targets.items():
+        if t in fs.SCULPTS:
+            ds += w * fs.SCULPTS[t](MV_HM, _anat)
+            continue
         kd = np.zeros(len(_basis) * 3)
         _keys[SK[t]].data.foreach_get("co", kd)
-        d += kd.reshape(-1, 3) - _basis
-    return d @ _to_world.T
+        d += w * (kd.reshape(-1, 3) - _basis)
+    return d @ _to_world.T + ds @ (S * R).T
 
 
 _hold = smooth01(s_split(HEAD_V) / 0.02)[:, None]
 # MakeHuman's targets for the size and place of her eyes move their sockets
 # and not the eyes in them: for those each eye is moved and scaled as the
 # skin round it is (a best fit of its rim), so it stays in its socket.
-EYE_FOLLOW = ("eyes_size", "eyes_spacing", "eyes_height")
+EYE_FOLLOW = ("eyes_size", "eyes_spacing", "eyes_height", "eyes_depth", "face_width")
 _eye_obj = next(o for o, (kind, _) in zip(parts, PARTS) if kind == "eyes")
 _ev = np.array([v.co[:] for v in _eye_obj.data.vertices])
 _eyes = []
@@ -1340,6 +1414,19 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import heroine_face_fixes  # noqa: E402
 shutil.copy(hpath, heroine_face_fixes.RAW)
 heroine_face_fixes.fix(head, hpath)
+# Her other faces' paints (heroine_face/face_paint_<id>.png, each painted on
+# her head shaped as that face: face_presets.py), each her head's texture of
+# its own (head_tex/heroine_head_<id>.jpg), put right as hers is; the game
+# lays the one of the face chosen.
+if not os.environ.get("HEAD_UNPAINTED"):
+    for _f in sorted(os.listdir(FACE_DIR)):
+        if _f.startswith("face_paint_") and _f.endswith(".png"):
+            _id = _f[len("face_paint_"):-4]
+            _p = os.path.join(TEXDIR, f"heroine_head_{_id}.jpg")
+            head_paint(os.path.join(FACE_DIR, _f), _p)
+            _raw = heroine_face_fixes.RAW.replace(".jpg", f"_{_id}.jpg")
+            shutil.copy(_p, _raw)
+            heroine_face_fixes.fix(head, _p, raw=_raw)
 for _im in bpy.data.images:
     if bpy.path.abspath(_im.filepath) == hpath:
         if _im.packed_file:

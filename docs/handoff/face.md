@@ -1,175 +1,189 @@
-# Handoff: the heroine's face, hair and character creation's Look
+# Handoff: the heroine's face, hair and creation's Look
 
-From agent abfa9bb430ec2391e, at about 440k tokens, to a fresh successor. Read `docs/team/README.md` first, then this page, then `docs/team/face.md` (status) and `docs/FACE_RESEARCH.md` (the science).
+From agent ade92e8285938438f, well past 500k tokens, to a fresh successor.
+Read `docs/team/README.md` first, then this page, then `docs/team/face.md` (status) and `docs/FACE_RESEARCH.md` (the science).
+Branch `worktree-agent-ade92e8285938438f`. The integration branch is merged in at 45b60cbc.
 
-## The owner's words (2026-10-04, after trying the Look step)
-- "weird hair strands in her neck"
-- "all of the pre made faces are kinda ugly"
-- "some things not editable like forehead etc."
-- "i managed to get one kind of pretty but chin can't get any narrower etc"
-- "look up beauty science and proportions and fix that stuff"
-- "the customizations don't do enough to change"
-- Their screenshot shows a harsh, ragged hairline across her forehead.
-- Added later: "for premade faces generate beautiful ones with our local ai hookup if possible".
+## The owner's words
+- "weird hair strands in her neck"; a harsh, ragged hairline.
+- "all of the pre made faces are kinda ugly"; "for premade faces generate beautiful ones with our local ai hookup if possible".
+- "some things not editable like forehead etc."; "chin can't get any narrower"; "the customizations don't do enough to change".
+- "look up beauty science and proportions and fix that stuff".
+- Later: "some sort of semblance of a face should exist at anything other than completely max zoom", meaning the game's own camera range. His screenshot showed her face as a red-orange blur.
+- The bar: AAA, "never settle", sex appeal "tho not at the cost of looking bad".
 
-The coordinator's notes on the AI faces:
-- Generate front and three-quarter references with the local ComfyUI.
-- Fit her shape keys to each, by eye or by landmarks.
-- Paint each preset's skin from the same image, as her face paint was made.
-- Keep them tasteful and varied across ethnicities, and judge at full resolution.
-- Free ComfyUI's models after each batch.
+## The brief
+1. Wire the sliders into the head build.
+2. Fix the neck strands.
+3. Make a soft hairline.
+4. Make the pre-made faces, each fitted to its own beautiful AI reference.
+5. The game side: `looks.json`, `People.HerSliders` and the Look step.
+6. Check creation at 1920x1080.
 
-## The full brief
-1. **Research** facial attractiveness and write `docs/FACE_RESEARCH.md` with sources. **Done.**
-2. **Controls that do enough and cover everything:**
-   - forehead height and slope, temples, brow ridge;
-   - cheekbone height, width and prominence, cheek fullness;
-   - jaw width and angle; chin width, length and projection (much narrower possible);
-   - nose bridge, width, tip and length; lips separately; mouth width;
-   - eye size, spacing, tilt and depth; ear shape; neck length and width.
+The coordinator added:
+- the default face must be clearly beautiful first;
+- judge faces in game, with hair, at the Look close-up and at the play zooms;
+- every preset its own face;
+- a side-by-side before going wide;
+- her face must read at play zoom.
 
-   Use MakeHuman targets where they exist and procedural Blender sculpts where they don't. Each range should be wide enough to matter but tasteful, capped only where she truly breaks. Check both ends and the middle in renders.
-3. **8 to 10 presets,** each genuinely beautiful and distinct (ethnicities, bone structures), judged at full resolution. She must look stunning by default.
-4. **Hair:**
-   - fix the stray strands at her neck in every style;
-   - a soft, natural hairline (density and alpha falloff, baby hairs, no ragged cut).
-5. **In the game:** check creation at 1920x1080. Tell the owner to run a fresh build to see new C#: open the project in the Godot editor and press Play, or `dotnet build godot/SurvivorUnchained.csproj`.
+## The coordinator's critique of the presets, and where it stands
+- **The critique** (on `scratchpad/face2/cmp_k16a.jpg`): all presets came out almost the same face:
+  - thin, flat lips;
+  - small plain eyes with no lid crease or lash line;
+  - a long egg skull and a heavy lower face;
+  - no brow shape.
 
-**Coordination:**
-- **UI design** owns creation's layout. Its lead is retired, so you may adjust Front.cs and CreateLook.cs's Look step for new controls, keeping its design.
-- **The main session** owns `heroine_outfits.py`; don't change it. Tell the main session when head or neck changes affect outfits (the arcanist's collar and choker).
-- **The male hero lead** (ae2de192cce8298ca) reuses her slider set; tell it what you add.
+  The fit's 0.2 slider differences drawn out 1.6 times weren't enough, and a two-view landmark fit can't see those features.
+- **Where it stands:**
+  - The default face is still not clearly beautiful (FACE v3 below).
+  - The presets have been changed from fits to art-directed settings: `tools/assets/heroine_face/presets.json`. Each has large distinct sliders, its own skin and eyes, and its own face painting.
+  - Two presets are painted (vixen and sunborn). None has been seen in game yet.
+  - The side-by-side for the coordinator is **not yet made**.
 
-**Rules:**
-- The GPU is shared: wait for an empty ComfyUI queue and free its models after.
-- The drive is tight: write nothing large and clean scratch.
-- Keep tests green, use British spelling, commit and push at milestones with render sheets.
+## The FACE v3 plan (the next step; hold it until the coordinator says the GPU is free)
+FACE v3 is in `tools/assets/face_shapes.py` FACE, committed but **not built**.
 
-## Done (branch `worktree-agent-abfa9bb430ec2391e`, pushed)
-- **`docs/FACE_RESEARCH.md`** covers:
-  - averageness, symmetry and feminine cues (Cunningham 1986);
-  - the 36% and 46% ratios (Pallett 2010);
-  - lips 1:1.6 to 1:2;
-  - canthal tilt;
-  - thirds and fifths, and the golden-ratio myth (Holland 2008);
-  - BG3, Cyberpunk 2077, Black Desert, Elden Ring and Dragon's Dogma 2 compared;
-  - the preset method.
-- **`tools/assets/face_shapes.py`:** her face as plain data.
-  - MACROS, PARTS, FACE and BUILD, copied from heroine_head.py, which does not read them yet.
-  - `FIT_TARGETS`: 122 MakeHuman targets.
-  - **`SLIDERS`:** 47 sliders in 8 groups (Head, Eyes, Nose, Cheeks, Mouth, Jaw, Ears, Neck), each with a "+" and "-" target set.
-  - **`REACH`:** how far each key goes, calibrated from renders at ±1 and ±2 (`docs/team/face_sheets/cal_*.jpg`). Ears and neck are not yet checked.
-  - `SCULPT_WANTED`: where MakeHuman falls short.
-  - `SCULPTS["sculpt-chin-narrow"]`: a smooth field that narrows the chin to a soft V with no crease. It is good at 1.5 (`face_sheets/chin_sculpt.jpg`) and is used by the `chin_width` slider's "-" side. This answers the chin complaint.
-  - `anatomy(P)` finds the nose tip, chin point and mouth height from the points.
-- **`tools/assets/face_refs.py`:** local Krea 2 turbo paints reference portraits, front and three-quarter side by side, beauty-campaign framing, four seeds. It frees the GPU after. Only `FACES["heroine"]` exists; its four seeds are all stunning (`face_sheets/refs_heroine.jpg`).
-- **`tools/assets/face_lab.py`** (Blender) builds MakeHuman's woman with any target weights (and sculpts). It has two modes:
-  - `render` writes views at any angles plus a `_cams.json`;
-  - `anchor` ray-casts MediaPipe landmarks from a render onto her mesh, storing each landmark's surface point and every target's move of it.
-- **`tools/assets/face_fit.py`** runs in its own venv, `%LOCALAPPDATA%\facefit\.venv` (Python 3.11, mediapipe 0.10+, scipy, pillow); the model is at `%LOCALAPPDATA%\facefit\models\face_landmarker.task`.
-  - `marks` reads landmarks.
-  - `fit` takes anchor sets by commas: the front set first, then sets at other turns, which the three-quarter view is matched to. It fits bounded least squares, in picture x and y only, with each view's pose solved.
-  - `--hold depth,forward,backward,prognathism,prominent,push` keeps the depth targets at zero. The two views can't judge depth, and unheld they gave her a Pinocchio nose in profile.
-  - Self-test error: 0.1 to 0.35 mm. Against the heroine references: about 1 mm front and 1.4 mm at three-quarter.
-- **`tools/assets/heroine_face/fit_heroine_candidate.json`:** the candidate new default face. It is the average of the four held fits plus research tweaks (fuller lips with the lower fuller, a finer tip, a slight eye lift, a slimmer lower face). It applies over MakeHuman's bare woman, *replacing* FACE. See `face_sheets/candidate_face.jpg`: oval, slimmer, better proportioned than the old face. The profile chin is still a little soft.
-- **Sheets:** `docs/team/face_sheets/` (refs, fit against refs, candidate, chin sculpt, calibration).
+Its changes from v2 came from a measurement against her reference (`scratchpad/face2/measure.py`, MediaPipe ratios, FACE_RESEARCH.md):
+- the brows were 20% too close to the eyes;
+- the lower lip was 29% too full against the upper (she should be 1:1.6);
+- eye-to-mouth was 8% long.
 
-## Not done (in order)
-1. **The default face.**
-   - Judge the candidate against the reference; nudge the chin projection and jaw-to-neck line in profile by hand.
-   - Better: add a profile view to `face_refs.py`'s frame (three panels: front, three-quarter, profile) and anchor a set at 90° so the fit sees depth.
-   - Then put it into `face_shapes.FACE`. Mind that the fit is over the *bare* woman, with `"-": true` in lab files.
-   - Make heroine_head.py import face_shapes (MACROS, FACE, BUILD, PARTS, SLIDERS) instead of its own copies.
-2. **Remaining sculpts** (`SCULPT_WANTED`):
-   - brow ridge: MakeHuman's moves the brows off her face;
-   - eye depth: push1 barely shows;
-   - eyes following `head-scale-horiz`: add it to heroine_head.py's EYE_FOLLOW.
+So v3:
+- raises the brows (`eyebrows-trans-up` 1.15) and the mouth;
+- fills the upper lip and thins the lower;
+- makes the cheeks less hollow;
+- tapers the jaw a little less and lengthens the chin;
+- trims the eyes slightly.
 
-   Check ears and neck renders and set their REACH.
-3. **heroine_head.py with the new sliders.**
-   - Build each key from `slider_keys(name)`.
-   - Sculpts: compute the delta on MakeHuman's points in its own world (the lab's frame), then through `_to_world` and `SUB` as targets go.
-   - **Neck keys** belong on her body, below SPLIT. The head's `_hold` zeroes them at SPLIT. Make neck width a shared smooth field over head and body (shared points get the same move). Make neck length a Head-bone offset in `HerPose` (a SkeletonModifier3D), which avoids skew.
-   - Then the rebuild chain, in order:
-     1. `heroine_head.py`, which writes `heroine_built.blend`. That file lives in the main checkout's `tools/comfy/out/heroes/`, a shared path outside git; back it up first.
-     2. `heroine_face.py` (Krea repaint of her face, which must match the new shape). Consider a better prompt: the refs' beauty framing.
-     3. heroine_face_fixes (run inside the head build).
-     4. `heroine_hair.py` (all 5 styles).
-     5. `heroine_paint.py`.
-     6. **The main session** runs `heroine_outfits.py --body godot/art/people/heroine.glb`. That run is what writes heroine.glb; tell them. Her neck is slimmer, so the collar and choker need refitting.
-4. **Hair follows the head:** the hair cards need the same shape keys as the head where it moves her scalp (forehead, temples, face width). Use the nearest scalp point's delta per card point, in heroine_hair.py. `People.HerFace` already sets keys on every mesh that has them.
-5. **Neck strands:** in Blender at rest no strand passes through her neck (all 5 styles; scratch `face/hair/_s.jpg`). So it is likely at run time:
-   - `heroine_hair.py rig()` eases weights from Head to her body over 6 cm below her jaw, so as her head turns the strands near her neck stretch through it;
-   - or the HairSway or chain swings them in.
+The head is also smoothed now (Catmull-Clark through `subdivide(..., smooth=)`, but not round the eyes), because MakeHuman's facets lit as lumps and creases.
 
-   Reproduce it in Godot with FaceSheet: `CAM=head`, `YAW=90/180`, `CLIP` at several seek times, and the Hair section's turn of -0.95 rad. Then fix it, for example by keeping cards rooted on the head Head-weighted to their tips, or by pushing strands out of a neck capsule in the shader.
-6. **Hairline:** the owner saw a ragged, harsh line. Today: `hairline_z` is a fixed curve; `hairline_hairs` are short cards, alpha-tested; `cap()` fades over 1.6 cm. Make it:
-   - an irregular, natural hairline, with a widow's-peak option and soft temples;
-   - a density falloff, with fine baby-hair cards at 30 to 50% opacity (the shader uses alpha hash);
-   - the cap's fade longer and noisier.
+Steps:
+1. `scratchpad/face2/chain_face.ps1 -seeds 11,7 -prefix paintD`. This builds her head unpainted (`HEAD_UNPAINTED=1`), then Krea paints it at two seeds (`paint_seeds.ps1`). Pick the front you like (`painted_front.png`).
+2. `scratchpad/face2/finish.ps1 -paint paintD_s11` (or s7). This copies the paint and runs `heroine_head.py`, `heroine_features.py`, `heroine_hair.py` (all 5 styles, saved into the blend) and Godot's `--import`.
+3. Judge her at the Look close-up:
+   - `scratchpad/face2/shot.ps1 NAME 8 --new --sex female --step 3 --part 2 [--hair ponytail] [--face s=v,...]`, which writes `godot/.shots/NAME.png`;
+   - FaceSheet: `fs.ps1 variants.json OUT face 0 1920x1080` with `REST=1`;
+   - `measure.py ref.png:left imgs...`.
+4. Iterate by sliders with `--face` (no rebuild needed). When it's right, fold it into FACE with `face_plus.py` and rebuild (steps 1 and 2).
+5. Still wrong at v2, to fix:
+   - the mouth bulges forward: try `lips_forward` -, or `mouth-scale-depth-decr`;
+   - a pale rim shows above the upper lip, where paint and geometry disagree after the shape change; v3's repaint should cure it;
+   - the nose reads long.
+6. Presets:
+   - repaint vixen with `scratchpad/face2/paint_presets.py vixen` (her shape was softened after she was painted; she read gaunt and older);
+   - paint the rest the same way: `paint_presets.py highborn doe moonlit saffron wildling hardwon fey`. Fey needs her new references first (`face_refs.py OUT fey`, already rewritten: young, fair-haired);
+   - rebuild the head, which writes every `head_tex/heroine_head_<id>.jpg`;
+   - shoot `--preset vixen --skin rose --eyes flint` and `--preset sunborn --skin deep --eyes sloe`.
+7. Make the side-by-side: default, vixen and sunborn, each reference beside its in-game Look close-up. Send it to the coordinator before going wide.
+8. Then:
+   - commit art;
+   - message the main session to run `heroine_outfits.py --body` on this worktree's `tools/comfy/out/heroes/heroine_built.blend`;
+   - tell UI design to rerun `heroine_paint.py` and `creation_portraits.py face/hair/paint`;
+   - tell the male hero lead (ab82cbe99e2937ddd) the final slider set.
 
-   Check every style at full resolution.
-7. **Presets (8 to 10):**
-   - Add to `face_refs.FACES` with distinct ethnicities and bone structures, for example: the heroine (Celtic, freckled); Nordic; Mediterranean; East Asian; South Asian; West African; Afro-Caribbean; Latina; Slavic; fey (high cheekbones, pointed ears).
-   - Paint them, pick a seed, anchor, then fit (with `--hold`).
-   - **Map the fit to sliders:** a least-squares fit from target weights to `slider_keys` combinations, or fit directly with the slider keys as the "targets" (`face_lab` anchors any target list, including sculpt names).
-   - Write them to `godot/data/content/looks.json` `heroes.female.faces`. Its sliders have id, name, group, low, high, min and max. Replace the old 25 with the new set.
-   - The coordinator suggests painting each preset's skin from its reference. That needs a per-preset face texture: think about cost. A tone-and-freckles parameter on the skin shader may be enough.
-8. **Game side:**
-   - `People.HerSliders` (People.cs about line 337) lists slider ids; it must match the head's keys.
-   - CreateLook.cs `HeroFace` groups the sliders by `Group`. With 8 groups, make sure the group segments fit: a second row, or a scroll.
-   - FaceSheet (`godot/tools_scenes/FaceSheet.cs`, run via `face_sheet.gd` with `SHEET`, `OUT`, `CAM`, `YAW`) renders every slider at its ends and middle.
-   - Tests: `dotnet test` in `godot/tests`.
-   - Check creation at 1920x1080 (`--new --step 3 --part N`; see `docs/team/ui_design.md`).
-   - Tell the male hero lead the final slider ids.
+## Play-zoom readability (built; the shots are not yet reviewed)
+- The camera:
+  - `FollowCamera`: Fov 34, pitch 64°;
+  - arena distance 22 to 31 m (`ArenaRun.CameraNear` and `CameraFar`), 12.5 m in talks;
+  - no player zoom.
+
+  Her head is about 10 px across.
+- Built:
+  - `tools/assets/heroine_features.py` draws `head_tex/heroine_features.png` (1K): eyes, lash line and brows in red; lips in green; big and soft so they survive mipmaps.
+  - `heroine_skin.gdshader` darkens and reddens by that mask, by screen size (`far_from` 3.5, `far_to` 6, `far_dark` 0.78, `far_lips`).
+  - `heroine_eye.gdshader` darkens the white when far.
+  - `People.Skin` gives the head the mask, hers only.
+- **Not yet judged:** `godot/.shots/arenaF_c12.5.png`, `arenaF_c22.png`, `arenaF_c27.png` and `arenaF_c31.png` (an arena run, `--quick warden --sex female --zone arena --auto idle --cam D`), and the crop sheet `scratchpad/face2/arenaF.jpg`.
+- Next: review them. Tune `far_from`, `far_to` and `far_dark` (People.Skin can set them). Check that her hair doesn't swallow her face, and that the warden outfit doesn't either.
+
+## Art on disk, not committed
+Kept in this worktree, mid-iteration. It will be rebuilt by the steps above. A backup copy is in `scratchpad/face2/wip_art/`.
+- `godot/art/people/head_tex/`:
+  - `heroine_head.jpg` and `heroine_graft.jpg` (FACE v2, smoothed, paint `paintC_s11`);
+  - `heroine_features.png` and its `.import` (BC, mipmaps; that `.import` is committed);
+  - `heroine_head_vixen.jpg` and `heroine_head_sunborn.jpg`.
+- `godot/art/people/heroine_hair_*.gltf`, `.bin` and `.chain.json` (all 5 styles, with slider keys).
+- `tools/assets/heroine_face/`: `face_paint.png` (v2), `face_paint_vixen.png` and `face_paint_sunborn.png`.
+- `tools/comfy/out/heroes/` (gitignored, this worktree only):
+  - `heroine_body.blend` (copied from the main checkout: it is the head build's input);
+  - `heroine_built.blend` (v2, hair saved);
+  - `heroine_unpainted.blend`;
+  - `heroine_built_before.blend` (the old shared one, as it was).
+
+  **A successor in a new worktree must copy this folder** (copy, never move). Without it, copy `heroine_body.blend` from the main checkout's `tools/comfy/out/heroes/`.
+- `godot/art/people/heroine.glb` is git's. The head build writes its own; restore it with `git checkout` before committing. The main session's `--body` run makes the real one.
+- In `godot/`: `assets` is a junction to `public/assets`, hidden with `git update-index --skip-worktree godot/assets`. `godot/.godot` is a copied import cache.
+
+## Done (pushed)
+- **Head:**
+  - `heroine_head.py` reads `face_shapes.py`: FACE (sculpts allowed), 45 slider keys from `slider_keys` with reach, and sculpts through `base_delta`;
+  - the eyes follow for size, spacing, height, depth and face width;
+  - every `face_paint_<id>.png` is laid as `heroine_head_<id>.jpg`.
+- **Neck:** `neck_width` and `neck_length` move bones (`HerPose.NeckWidth`/`NeckLength`), so collars follow.
+- **Face paint** (`heroine_face.py`):
+  - the references' beauty prompt;
+  - MakeHuman's freckles closed out of the drawing;
+  - nothing painted above the hairline;
+  - `FACE_LAY_ONLY`, `FACE_SHAPE`, `FACE_WHO` and `FACE_SEED`.
+- **Hair** (`heroine_hair.py`):
+  - the hairline is `face_shapes.HAIRLINE`: round her temples, in front of and round her ears, slightly uneven; the temples were bald before;
+  - her ears are found by their own keys;
+  - roots thin out toward the hairline; fine hairs, then faint baby hairs (vertex alpha; `heroine_hair.gdshader` multiplies by `COLOR.a`);
+  - the cap fade is 2.5 cm and uneven;
+  - hair keeps 1.6 cm clear of her neck (this is the neck strands fix: they lay on her neck and drew into it as she turned);
+  - gathered hair goes up round her ears, and no strand runs down over her face;
+  - the hair carries her head's slider keys (sparse);
+  - the blend is saved without the keys.
+- **Fixes:** the lips fix no longer paints near her nostrils.
+- **Game:**
+  - `People.HerSliders` holds the 47 sliders;
+  - `looks.json` is written by `tools/assets/face_looks.py` from `face_shapes.py` and `presets.json`: 8 groups of at most 8, as UI design asked;
+  - `FaceShape` is carried from the draft into `CharacterData` and `PersonSpec`, and on to `People.HerHeadPaint`;
+  - her face is more matte (rough 0.6).
+- **Tools:**
+  - `face_presets.py` (fit, presets, lab), `face_looks.py`, `heroine_features.py`;
+  - the lab's proxies follow its targets;
+  - FaceSheet's `REST`, `PLAIN` (1 grey, 2 normals), `HIDE`, `LIGHTS` and `FSDEBUG`;
+  - the creation shot flags `--face`, `--preset`, `--hair`, `--skin` and `--eyes`.
 
 ## Decisions (and why)
-- **Presets come from AI references fitted by landmarks:** the owner asked for it, and it matches the BG3 and Dragon's Dogma lesson (a curated, real-looking base).
-- **One data module** (`face_shapes.py`) is shared by the build, the lab and the fit, so they can't drift.
-- **Reach is calibrated per side** (`REACH`). The UI's min/max become plain ±1, so the whole slider is useful and no hand-capped stubs remain.
-- **Sculpts replace MakeHuman targets that crease** (`chin-triangle`, and `chin-width-decr` past about 1).
+- **Presets are art-directed with their own paintings.** The landmark fit gave near-identical faces.
+- **Faces are judged in game, not in the lab.** Bald MakeHuman lab renders hide nothing and flatter nothing.
+- **Neck by bones.** The outfits needn't be refitted.
+- **One hairline for hair and paint.**
+- **Head smoothing is linear (through SUB),** so every shape key still agrees with it.
 
-## Failures and why
-- **The first fit gave nonsense weights,** for three reasons:
-  1. Lab `positions()` evaluated with the helper-mask modifier on, so the vertex numbering was wrong.
-  2. The camera matrix was read before `view_layer.update()`, so it was stale.
-  3. MediaPipe's depth was mixed in, but it is on a different scale.
-
-  All are fixed. Pose is also solved about the face's centroid.
-- **A three-quarter view fitted against front anchors gave about 4 mm error.** The landmarks slide along the cheek outline, so it now uses matched-turn anchor sets.
-- **Unheld depth targets** pushed the nose out (`nose-scale-depth` at 0.6), so they are held.
-
-## Gotchas
-- **This worktree's Bash** refuses commands that use shell variables, `xargs`, `cd ..` or heredocs feeding Python. Use PowerShell with `$vars`, or plain commands with literal paths.
-- **Blender:** `C:\Users\munch\Tools\blender-4.5.14-windows-x64\blender.exe`.
-  - MPFB assets: `%APPDATA%\Blender Foundation\Blender\4.5\extensions\.user\user_default\mpfb\data`.
-  - Targets: `...\extensions\user_default\mpfb\data\targets`.
-- **The lab's eye, brow and lash proxies don't follow targets.** Judge eye sliders by the skin; heroine_head.py's `eye_follow` handles the real eyes.
-- **ComfyUI** (127.0.0.1:8188):
-  - `/free` answers with an empty body; `comfy.post` chokes on it, so `face_refs.free()` posts directly.
-  - The queue was empty when I used it, and I freed it after each batch.
-  - Run it with `python tools/assets/face_refs.py <out> [names]`.
-- **This worktree has no `godot/.godot` import cache.** The first Godot run imports about 2,900 files (slow, and it uses disk). The retired UI lead's worktree has a cache.
-- **heroine.glb** in git comes from the outfits `--body` export, not from heroine_head.py's own export, which lacks the outfit-hiding vertex colours.
+## Failures and gotchas
+- **The temple's white band in FaceSheet is its back light (`LIGHTS=b`), not a crease.** I proved it with `PLAIN=2` normals and the light switches. Don't chase it in the mesh.
+- **Krea sometimes paints swept-back hair on her bald head** in the side views. That is why paint above the hairline is faded out.
+- **`heroine_head.py` reuses `r_` and `c_` later.** Keep using `HEAD_R` and `HEAD_C` in `head_paint`.
+- **The Bash sandbox** refuses shell variables, heredocs feeding Python and `cd` elsewhere. Use PowerShell, or write scripts to scratch.
+- **A Godot import rewrites some tracked `.import` files.** Check out those under `paint/` before merging.
+- **A test sometimes fails under CPU load** (a timing test). It passes when rerun.
+- **ComfyUI is shared.** Free it with `POST /free` only when the job running is not someone else's.
+- **Don't run GPU work** (Godot, Blender, ComfyUI) until the coordinator says the owner is done with it.
 
 ## Collaborators
-- **Main session:** outfits, the roster, merging.
-- **Male hero lead** (ae2de192cce8298ca): reuses the slider set.
-- **UI design:** retired; its notes are in `docs/team/ui_design.md` and `docs/handoff/ui_design.md`.
-- **UI art** (a72467cac33063d3a): cameo portraits for faces and cuts; tell it when the presets change.
+- **Main session:** outfits (`heroine_outfits.py --body`), merging.
+- **UI design** (a69858664f1d3dd29):
+  - the Look parts are Hair, Face, Shape, Paint and Body;
+  - preset `skin` and `eyes` fields;
+  - brows dyed from the paint;
+  - `creation_portraits.py`.
+- **Male hero** (ab82cbe99e2937ddd):
+  - imports `face_shapes` (SLIDERS, REACH, slider_keys); its MACROS and FACE are hers;
+  - his skin layers (relief, shadow) are off by default for her;
+  - the head-only settings in `People.Skin` are hers alone (`who == "heroine"`).
 
 ## Files to read first
-- `docs/FACE_RESEARCH.md`
-- `docs/team/face.md`
 - `tools/assets/face_shapes.py`
-- `tools/assets/heroine_head.py`, especially:
-  - `FACE`/`SLIDERS` (lines 60 to 90);
-  - `fit` (about 432);
-  - the shapes section (about 1250 to 1330: `base_delta`, `eye_follow`, `_hold`).
-- `tools/assets/heroine_hair.py`: `hairline_z`, `roots`, `hairline_hairs`, `cap`, `rig`.
-- `godot/src/Actors/People.cs`: `HerFace`, `HerHair`, `HerSliders`.
-- `godot/src/Ui/CreateLook.cs`: `HeroFace`, `SliderRow`.
-- `godot/data/content/looks.json`
-- Scratch, `%TEMP%\claude\...\scratchpad\face\`:
-  - `refs/`, `lab/` (renders, anchors `an_bare/a_*.npz`, fits);
-  - helpers: `anchor.ps1` (render, landmarks, anchors at several turns), `calib.py` and `calsheet.py` (slider calibration), `sheet.py`, `compare.py`, `combine.py`, `variants.py`, `hairlook.py`.
+- `tools/assets/heroine_face/presets.json`
+- `tools/assets/heroine_head.py`: FACE loading, `subdivide`, `head_paint`, the shapes section
+- `tools/assets/heroine_face.py`
+- `tools/assets/heroine_hair.py`: `hairline_hairs`, `roots`, `drape`, `follow_head`
+- `godot/src/Actors/People.cs`: `HerFace`, `HerRestyle`, `HerHeadPaint`, `Skin`
+- `godot/shaders/heroine_skin.gdshader`
+- `scratchpad/face2/`: the scripts named above, `refs/` (the AI references; `refs_pick/` the chosen ones), `an_her/` (anchors), `wip_art/`
+
+HANDOFF READY: docs/handoff/face.md on worktree-agent-ade92e8285938438f@<this commit>

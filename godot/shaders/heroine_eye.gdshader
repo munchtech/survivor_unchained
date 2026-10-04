@@ -44,6 +44,10 @@ uniform float lids = 0.7;
 // radii) and how bright.
 uniform vec2 catch_at = vec2(-0.34, -0.36);
 uniform float catchlight = 0.9;
+// How small on screen the eye goes from itself to one dark mark: from a
+// pixel covering 2^far_from of its paint's texels to 2^far_to.
+uniform float far_from = 4.0;
+uniform float far_to = 6.0;
 
 varying float under_lid;
 varying float corner;
@@ -93,7 +97,16 @@ void fragment() {
 	// (pinker toward the corners, where the white is thinner over the blood)
 	col = mix(col, col * vec3(1.0, 0.8, 0.78), corner * white * 0.6);
 	float shade = (1.0 - lids * under_lid) * (1.0 - 0.5 * corner);
-	ALBEDO = col * shade;
+	// Small on screen (the game's camera, her eye a pixel or two), the eye
+	// read as one dark mark, as an eye at a distance does (lashes and the
+	// shadow of the lid over it), not a white fleck: the white darkened
+	// toward the iris's own darkness, the more the smaller (by how many of
+	// the paint's texels a pixel covers).
+	vec2 tx = UV * vec2(textureSize(eye, 0));
+	float lod = 0.5 * log2(max(dot(dFdx(tx), dFdx(tx)), dot(dFdy(tx), dFdy(tx))));
+	float far = smoothstep(far_from, far_to, lod);
+	col = mix(col, ir * tint * 0.6, far * white);
+	ALBEDO = col * shade * (1.0 - 0.35 * far);
 	ALPHA = texture(eye, UV).a;
 	ALPHA_SCISSOR_THRESHOLD = 0.5;
 	// Wet: a sharp, bright highlight off the cornea's dome over the iris.
