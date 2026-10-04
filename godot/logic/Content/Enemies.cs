@@ -126,8 +126,8 @@ public static class Enemies
         new() { Id = "grimtunnel", Name = "Grimtunnel", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "grimtunnel", Scale = 1.9,
             Health = 400, Speed = 5, Damage = 10, Radius = 0.7, Xp = 0, Behavior = Behavior.Stationary, Resists = new() { [School.Fire] = 0.5 },
             Note = "The Boss of the Dig. Wears three lamps and a grudge. Took the Ford-Warden's heart out from under you and went back down the hole with it." },
-        new() { Id = "grimtunnel_roused", Name = "Grimtunnel, Roused", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "grimtunnel", Scale = 2.1,
-            Health = 460, Speed = 3.3, Damage = 16, Radius = 0.8, Mass = 8, Xp = 40, Gold = 12, Behavior = Behavior.Chase, Resists = new() { [School.Fire] = 0.5, [School.Frost] = -0.2 },
+        new() { Id = "grimtunnel_roused", Name = "Grimtunnel, Roused", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "grimtunnel", Scale = 2.4,
+            Health = 460, Speed = 3.3, Damage = 16, Radius = 1.0, Mass = 14, Xp = 40, Gold = 12, Behavior = Behavior.Chase, Resists = new() { [School.Fire] = 0.5, [School.Frost] = -0.2 },
             Ranged = new() { Range = 11, Cooldown = 4.5, Speed = 8, School = School.Fire, Lob = true, Zone = new(2.2, 3.5, 0.4), Art = "firepot" },
             Elite = true, AttackEvery = 1.2,
             Note = "Out of his hole and in a temper. The three lamps swing as he comes, and every one of them is lit." },
@@ -178,6 +178,32 @@ public static class Enemies
             Lunge = new(8.5, 5.0, 0.7, 0.45, 18),
             Elite = true, Loot = "elite", AttackEvery = 1.0,
             Note = "Plants its feet, picks you, and comes straight down the line. Step off the line." },
+
+        /* ------------------------------------- what rules a people, at the half hour -- */
+        // The arena's bosses (Play/Bosses/ArenaBosses.cs): their people's champion's body made
+        // half again as big, so the thing the fight is about is the thing the eye finds; health
+        // as the champion's, multiplied by the boss contract (ArenaBoss.HealthMul).
+        new() { Id = "boss_pack", Name = "The Pack-Mother", Family = Family.Wolf, Faction = Faction.Pack, Visual = "wolf_alpha", Scale = 2.15,
+            Health = 520, Speed = 5.4, Damage = 18, Radius = 1.2, Mass = 14, Xp = 55, Resists = Beast, Behavior = Behavior.Pack,
+            Lunge = new(9, 4.8, 0.6, 0.45, 19),
+            Elite = true, Loot = "alpha", AttackEvery = 0.8,
+            Note = "She does not chase. She howls, the Pack wheels round behind you, and she runs the gap they leave. Go through the wolves, never the gap. Fire stops her howling." },
+        new() { Id = "boss_dead", Name = "The Barrow Lord", Family = Family.Undead, Faction = Faction.Dead, Visual = "skeleton_warrior_elite", Scale = 2.05,
+            // Not the dead's frost and shadow: every school can lay him down in time; holy twice as fast.
+            Health = 420, Speed = 2.6, Damage = 22, Radius = 1.1, Mass = 14, Xp = 40, Gold = 12, Resists = new() { [School.Holy] = -0.5, [School.Fire] = -0.15 }, Behavior = Behavior.Chase,
+            Lunge = new(8, 5.5, 0.75, 0.5, 17),
+            Elite = true, Loot = "elite", AttackEvery = 1.1,
+            Note = "A legion's officer who heard the order to stand and never heard another. He fights in walls of his dead. Put down, he gets up again, unless someone stands over him until he stays down." },
+        new() { Id = "boss_lamplings", Name = "The Ganger", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "lampling_sapper", Scale = 2.2,
+            Health = 460, Speed = 3.3, Damage = 16, Radius = 0.95, Mass = 12, Xp = 40, Gold = 12, Behavior = Behavior.Chase, Resists = new() { [School.Fire] = 0.5, [School.Frost] = -0.2 },
+            Ranged = new() { Range = 11, Cooldown = 4.5, Speed = 8, School = School.Fire, Lob = true, Zone = new(2.2, 3.5, 0.4), Art = "firepot" },
+            Elite = true, AttackEvery = 1.2,
+            Note = "Foreman of a Dig gang, the biggest of them and the loudest. Where it stands the ground is not to be trusted: it goes under, comes up under you, and leaves holes. Frost catches it in the dirt." },
+        new() { Id = "boss_kerchiefs", Name = "The Red Hand", Family = Family.Kerchief, Faction = Faction.Kerchief, Visual = "kerchief_enforcer", Scale = 1.9,
+            Health = 480, Speed = 3.4, Damage = 22, Radius = 1.1, Mass = 14, Xp = 45, Gold = 20, Behavior = Behavior.Chase,
+            Lunge = new(8.5, 5.0, 0.7, 0.45, 18),
+            Elite = true, Loot = "elite", AttackEvery = 1.0,
+            Note = "He takes a toll: your best weapon, for a while, and a runner to carry it off. Catch the runner. Lightning makes him drop it." },
 
         /* ---------------------------------------------------- your own, raised -- */
         new() { Id = "spirit_wolf", Name = "Spirit Wolf", Family = Family.Wolf, Faction = Faction.Ally, Visual = "wolf_spirit",

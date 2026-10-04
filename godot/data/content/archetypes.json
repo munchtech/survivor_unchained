@@ -684,7 +684,7 @@
    "id": "risen_once",
    "name": "Risen Once",
    "source": "world",
-   "text": "You have died and come back. The dead are quieter around you: +10% resistance to shadow.",
+   "text": "You fell, and got up again. The dead are quieter around you: +10% resistance to shadow.",
    "mods": [
     {
      "stat": "resist.shadow",

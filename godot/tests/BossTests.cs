@@ -20,22 +20,23 @@ public class BossTests
 {
     sealed record Fight(Battle B, ArenaRun Zone, HeadlessHost Host, Journey J);
 
-    /// <summary>An arena of `people` brought to the edge of the half hour, the survivor kept alive.</summary>
-    static Fight At30(string people, int seed = 3, int tier = 1)
+    /// <summary>An arena of `people` brought to the edge of the half hour, the survivor kept alive.
+    /// `game`: the battle's hooks wired as the game wires them (BattleHooks.Following), not shared.</summary>
+    static Fight At30(string people, int seed = 3, int tier = 1, bool game = false, string? boss = null, string? bossName = null)
     {
         var a = Callings.Archetype("warden");
         var j = Journey.Begin(new CreationChoice
         {
             Name = "Bot", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
         }, (uint)seed);
-        var spec = new ArenaSpec { Id = "table:test", Name = "Test", Seed = seed, Tier = tier, People = people };
+        var spec = new ArenaSpec { Id = "table:test", Name = "Test", Seed = seed, Tier = tier, People = people, Boss = boss, BossName = bossName };
         Arenas.Begin(j.World, spec);
         var map = MapGen.Generate(spec.Map);
         var host = new HeadlessHost(j, seed);
         var zone = new ArenaRun(host, map, spec);
         var at = zone.ArrivalFrom(null);
         var b = j.StartBattle(true, map.Meta.Collision(), map.Ground.HeightAt, at.X, at.Z, at.Facing, (uint)seed, arena: true);
-        b.Hooks = zone.Hooks;
+        b.Hooks = game ? BattleHooks.Following(zone.Hooks) : zone.Hooks;
         host.Battle = b;
         zone.Begin(b);
         b.GreatOwed = 0;
@@ -76,6 +77,63 @@ public class BossTests
         Assert.True(f.Host.Boss is { IsBoss: true });
         // On the picture: no further than the contract's 12-14 m (it walks in a little).
         Assert.True(Math.Sqrt(Math.Pow(boss.X - f.B.Player.X, 2) + Math.Pow(boss.Z - f.B.Player.Z, 2)) < 16);
+    }
+
+    /// <summary>The game copied the zone's hooks when the battle began, before the boss
+    /// came, so no boss script ran on screen while every test passed.</summary>
+    [Theory]
+    [InlineData("pack")]
+    [InlineData("kerchiefs")]
+    public void The_boss_fights_its_own_fight_in_the_game_too(string people)
+    {
+        var f = At30(people, game: true);
+        var boss = Boss(f);
+        var s = f.Zone.BossScript!;
+        Step(f, 12, _ =>
+        {
+            if (boss.Alive && boss.TakenMul > 0) f.B.HitEnemy(boss, boss.MaxHp * 0.002, School.Fire, [Tag.Fire], new HitOpts { NoCrit = true });
+        });
+        Assert.True(s.FightT > 10);
+        Assert.True(boss.HpFloor > 0);
+        // A stagger reaches the script through the game's hooks.
+        for (int i = 0; i < 12 && boss.StaggeredT <= 0; i++) f.B.ApplyStatus(boss, new StatusPayload(StatusKind.Stun, 1, 1, 2), 10);
+        Assert.True(boss.StaggeredT > 0);
+    }
+
+    /// <summary>A channel broken from inside its own move (the howl hurt enough) ended the
+    /// move under the script's feet, and the next tick threw (the sweep found it).</summary>
+    [Fact]
+    public void Her_howl_hurt_short_stops_cleanly()
+    {
+        var f = At30("pack");
+        var boss = Boss(f);
+        var s = f.Zone.BossScript!;
+        for (int i = 0; i < 60 * 90 && s.Channel == null; i++)
+            Step(f, 1 / 60.0, _ => { if (s.PhaseIx == 0 && boss.TakenMul > 0) f.B.HitEnemy(boss, boss.MaxHp * 0.01, School.Physical, [Tag.Physical], new HitOpts { NoCrit = true }); });
+        Assert.Equal(1, s.PhaseIx);
+        Assert.NotNull(s.Channel);
+        Step(f, 1 / 60.0, _ => f.B.HitEnemy(boss, boss.MaxHp * 0.07, School.Physical, [Tag.Physical], new HitOpts { NoCrit = true }));
+        Step(f, 2);
+        Assert.Null(s.Channel);
+        Assert.True(boss.Alive);
+    }
+
+    [Fact]
+    public void Every_hook_the_game_wraps_asks_the_zone_when_called()
+    {
+        var zone = new BattleHooks();
+        var h = BattleHooks.Following(zone);
+        foreach (var field in typeof(BattleHooks).GetFields()) Assert.NotNull(field.GetValue(h));
+        bool ticked = false, hit = false, staggered = false;
+        zone.BossTick = (_, _) => ticked = true;
+        zone.OnBossHit = (_, _, _) => hit = true;
+        zone.OnBossStagger = _ => staggered = true;
+        var b = BattleTests.Arena(31);
+        var e = b.SpawnEnemy("wolf", b.Player.X + 5, b.Player.Z, new Battle.SpawnOpts())!;
+        Assert.True(h.BossTick!(e, 0.1));
+        h.OnBossHit!(e, School.Fire, 1);
+        h.OnBossStagger!(e);
+        Assert.True(ticked && hit && staggered);
     }
 
     [Fact]
@@ -135,7 +193,8 @@ public class BossTests
     [Fact]
     public void Grimtunnel_goes_back_down_the_hole_and_never_dies()
     {
-        var f = At30("lamplings");
+        // His own night (the Dig Boils Over): the table's Lamplings field the Ganger.
+        var f = At30("lamplings", boss: "grimtunnel_roused", bossName: "Grimtunnel");
         var boss = Boss(f);
         bool killed = false;
         Step(f, 260, _ =>
@@ -147,6 +206,26 @@ public class BossTests
         Assert.False(killed);
         // His chest is thrown up out of the dust.
         Assert.Contains(f.B.Pickups.Items, p => p.Alive && p.Kind == PickupKind.Chest && p.Ref == "boss");
+    }
+
+    /// <summary>The story keeps Grimtunnel and his name for his own night and Act 3
+    /// (docs/STORY_BIBLE.md): a table arena fields a foreman of the Dig, who can die.</summary>
+    [Fact]
+    public void The_tables_lamplings_field_the_ganger_never_grimtunnel()
+    {
+        var f = At30("lamplings");
+        var boss = Boss(f);
+        Assert.Equal("boss_lamplings", boss.Def.Id);
+        Assert.DoesNotContain("Grimtunnel", boss.Named?.Title ?? "");
+        Assert.True(((Grimtunnel)f.Zone.BossScript!).Ganger);
+        bool killed = false;
+        Step(f, 260, _ =>
+        {
+            if (boss.Alive && boss.Boss) f.B.HitEnemy(boss, boss.MaxHp * 0.05, School.Physical, [Tag.Physical], new HitOpts { NoCrit = true });
+            foreach (var ev in f.B.Events.Drain()) killed |= ev is Ev.Kill { Boss: true };
+        });
+        Assert.True(f.Zone.Won);
+        Assert.True(killed);
     }
 
     [Fact]

@@ -485,6 +485,11 @@
       "goto": "runs"
      },
      {
+      "text": "What's up the valley?",
+      "once": "valley",
+      "goto": "valley"
+     },
+     {
       "text": "Something else.",
       "goto": "hub"
      }
@@ -821,6 +826,20 @@
      }
     ],
     "next": "hub"
+   },
+   "valley": {
+    "id": "valley",
+    "text": "Ashford was. Half of it went to the Morrow in one night, pet, and the other half the year after, coughing. Don't ask Holloway about it. Don't ask Maeca. And don't ask me twice.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye, Rook.",
+      "end": true
+     }
+    ]
    }
   }
  },
@@ -3859,7 +3878,7 @@
       "text": "That cloak's made of wolves. I can smell it from here, and so can they. Maeca Barefoot. What do you want?"
      },
      {
-      "text": "Another blade for Holloway's bounty? The wolves aren't the problem. They're what the problem looks like from the road. Maeca Barefoot, of the Ashford garrison. What's left of it."
+      "text": "Another blade for Holloway's bounty? The Pack aren't the problem. They're what the problem looks like from the road. Maeca. Barefoot, before you ask."
      }
     ],
     "effects": [
@@ -4546,7 +4565,7 @@
         }
        ]
       },
-      "text": "Off in the Hollow the Pack is loud, a long tangle of voices, and she stops with her hands on your buckle and listens, and then she laughs: a short surprised sound, as if she'd trodden on something. \"They're eating,\" she says, and pulls you down onto the hides. Her hands are hard and careful, the way they are with a snare, and then they're not careful. The fire goes down to embers. Neither of you feeds it. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you."
+      "text": "Off in the Hollow the Pack is loud, a long tangle of voices, and she stops with her hands on your buckle and listens, and then she laughs: a short surprised sound, as if she'd trodden on something. \"They're eating.\" She pulls you down onto the hides. Her hands are hard and careful, the way they are with a snare, and then they're not careful. The fire goes down to embers. Neither of you feeds it. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you."
      },
      {
       "text": "She doesn't talk, and then neither of you needs to. She undoes your boots before anything else, and sets them side by side outside the hides, and that seems to be a decision. Her hands are hard and careful, the way they are with a snare: slow, listening, ready to stop. They become sure. Once, far off, the Pack calls, and she goes still against you until it's done. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you."
@@ -4726,7 +4745,7 @@
         "gte": 1
        }
       },
-      "text": "She goes out by the east gate without a lamp, and you follow her along the Old Road past the wreck, by starlight and the white of the frost. She walks barefoot on ground that would cut you through your boots, and doesn't make a sound. Once she stops, and you stop, and somewhere off in the Hollow a wolf calls and is answered. \"Him,\" she says. \"And the bitch with the white foot. Eating.\" She walks on."
+      "text": "She goes out by the east gate without a lamp, and you follow her along the Old Road past the wreck, by starlight and the white of the frost. She walks barefoot on ground that would cut you through your boots, and doesn't make a sound. Once she stops, and you stop, and somewhere off in the Hollow a wolf calls and is answered. \"Him. And the bitch with the white foot.\" She walks on."
      },
      {
       "text": "The Old Road, the wreck, the frost. You know the way now, and she lets you walk in front, which she has never done."
@@ -4865,7 +4884,7 @@
         }
        ]
       },
-      "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. Outside, in the frost, you hear them come: soft feet, a long way round, and then a sigh, and then another. The Pack, lying down round the Blind in the dark. She lifts her head. \"They don't do that,\" she says. \"Not for me. Not for anyone.\" She lies back down. \"You walk quiet. You came into my Hollow and knelt to him and he let you. You never talk about before.\" A pause. \"What were you?\""
+      "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. Outside, in the frost, you hear them come: soft feet, a long way round, and then a sigh, and then another. The Pack, lying down round the Blind in the dark. She lifts her head. \"They don't do that. Not for me. Not for anyone.\" She lies back down, her ear where it was. \"You walk quiet. You came into my Hollow and knelt to him, and he let you. You never talk about before.\" Against your chest you feel her lips move, without a sound. \"What were you?\""
      },
      {
       "when": {
@@ -4885,7 +4904,7 @@
         }
        ]
       },
-      "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. \"You walk quiet,\" she says. \"You never talk about before.\" A pause. \"What were you?\""
+      "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. \"You walk quiet. You never talk about before.\" Against your chest you feel her lips move, without a sound. \"What were you?\""
      },
      {
       "text": "The fire's down to embers. Far off, the Pack is quiet."
@@ -5775,6 +5794,11 @@
       "goto": "fever"
      },
      {
+      "text": "Tallow lamps? Everyone else burns ember.",
+      "once": "tallow",
+      "goto": "tallow"
+     },
+     {
       "text": "What do you sell?",
       "action": "trade"
      },
@@ -6068,7 +6092,7 @@
    },
    "fever": {
     "id": "fever",
-    "text": "The year after Ashford went into the ground. Half the valley coughing green and the other half burying them. Same smell as your bottle, child. Same smell exactly. ...I've roots on the boil.",
+    "text": "The year after Ashford went into the ground. Half the valley coughing green and the other half burying them. \"Gone to the Morrow,\" they say up here, like it's a walk. They died, child. Same smell as your bottle. Same smell exactly. ...I've roots on the boil.",
     "choices": [
      {
       "text": "Something else.",
@@ -6181,6 +6205,20 @@
    "t_wenna": {
     "id": "t_wenna",
     "text": "Three husbands. Buried two, lost one at cards. The one I lost at cards was the best of them, and I've never forgiven the man who won him.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "tallow": {
+    "id": "tallow",
+    "text": "I burn fat, child. Fat's honest. Fat was a pig.",
     "choices": [
      {
       "text": "Something else.",
@@ -11167,6 +11205,23 @@
          "eq": true
         }
        }
+      },
+      {
+       "any": [
+        {
+         "not": {
+          "fact": "nell.burying",
+          "eq": true
+         }
+        },
+        {
+         "zone": {
+          "id": "waystation",
+          "key": "burial",
+          "eq": true
+         }
+        }
+       ]
       }
      ]
     },
@@ -11465,6 +11520,27 @@
     "text": [
      {
       "when": {
+       "fact": "player.deaths",
+       "gte": 4
+      },
+      "text": "Up again. Up's good. (He has the kettle on already.) The carter brought you in, before you ask. You'll be sore a day or two. Whatever did it has your things."
+     },
+     {
+      "when": {
+       "fact": "player.deaths",
+       "eq": 3
+      },
+      "text": "You're up. A carter brought you in. (He isn't looking at you.) Well. Someone did. Someone always does. You'll be sore a day or two, and whatever did this still has your things."
+     },
+     {
+      "when": {
+       "fact": "player.deaths",
+       "eq": 2
+      },
+      "text": "You're awake! A carter found you. The same carter, as it happens; he's starting to think you're doing it on purpose. (He laughs, and stops.) You'll be sore a day or two. Whatever did this is still out there. It'll have your things."
+     },
+     {
+      "when": {
        "fact": "shrine.lit",
        "eq": true
       },
@@ -11493,6 +11569,15 @@
        }
       ],
       "end": true
+     },
+     {
+      "text": "Which carter, Chid?",
+      "show": {
+       "fact": "player.deaths",
+       "gte": 3
+      },
+      "once": "carter",
+      "goto": "carter"
      },
      {
       "text": "Where did I fall?",
@@ -11527,7 +11612,7 @@
    },
    "shrine": {
     "id": "shrine",
-    "text": "The flame. It blessed people. Kept the dead lying down where you'd put them. Then the Order left and the flame went out, and I've been... trying. With prayers. And candles. And a bellows, once. That was a bad day.",
+    "text": "The flame. It blessed people. Kept the dead lying down where you'd put them. It was never for seeing by, you know; it was for keeping company. Then the Order left and the flame went out, and I've been... trying. With prayers. And candles. And a bellows, once. That was a bad day.",
     "choices": [
      {
       "text": "Something else.",
@@ -11925,7 +12010,21 @@
    },
    "cb_nell": {
     "id": "cb_nell",
-    "text": "We buried Nell behind the shrine, next to old Ashe. Brannoc made the marker himself. Iron. Of course, iron. (He is quiet, which he never is.) She was very light. ...Sit down a minute. Not there. There.",
+    "text": [
+     {
+      "when": {
+       "zone": {
+        "id": "waystation",
+        "key": "burial",
+        "eq": true
+       }
+      },
+      "text": "I sang it flat. I always have. There's always somebody who has the tune. (He is quiet, which he never is.) She was very light. ...Sit down a minute. Not on the step. Here. By me."
+     },
+     {
+      "text": "We buried Nell behind the shrine, next to old Ashe. Brannoc made the marker himself. Iron. Of course, iron. (He is quiet, which he never is.) She was very light. ...Sit down a minute. Not on the step. Here. By me."
+     }
+    ],
     "effects": [
      {
       "npcFlag": {
@@ -11936,6 +12035,20 @@
      }
     ],
     "next": "hub"
+   },
+   "carter": {
+    "id": "carter",
+    "text": "...You know, I never asked his name. I should ask his name. Next time. (He puts a cup in your hands.) Drink that. It's only hot water. There's nothing in it but hot.",
+    "choices": [
+     {
+      "text": "Thank you, Chid.",
+      "end": true
+     },
+     {
+      "text": "Where did I fall?",
+      "goto": "where"
+     }
+    ]
    }
   }
  },
@@ -19836,7 +19949,7 @@
   "nodes": {
    "first": {
     "id": "first",
-    "text": "You've the look of someone who walks toward trouble on purpose. Good. I'm Ysolde Marrow, and I draw maps of the places the road forgets: woods that eat their own paths, barrows that open after dark, ravines the Kerchiefs think are theirs. Each one sworn under an oath. Each one ruled by something that won't want you there.",
+    "text": "You've the look of someone who comes back. Good. The other sort only ever buy the one map. I'm Ysolde Marrow, and I draw maps of the places the road forgets: woods that eat their own paths, barrows that open after dark, ravines the Kerchiefs think are theirs. Each one sworn under an oath. Each one ruled by something that won't want you there.",
     "choices": [
      {
       "text": "Show me your maps.",

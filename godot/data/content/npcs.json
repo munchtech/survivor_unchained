@@ -45,6 +45,24 @@
     "Bed's warm if you want it. Stew's gone.",
     "Quietly, now. People are sleeping.",
     "Going up to Sella's? Wipe your boots twice. She's particular about her floor and nothing else."
+   ],
+   "said": [
+    {
+     "text": "Harlan's not eating. I've sent bread. He's sent it back.",
+     "night": false,
+     "when": {
+      "fact": "caravan.survivors",
+      "eq": "dead"
+     }
+    },
+    {
+     "text": "Hook's empty. I know. Leave it.",
+     "night": false,
+     "when": {
+      "fact": "nell.buried",
+      "eq": true
+     }
+    }
    ]
   },
   "holloway": {
@@ -83,7 +101,6 @@
     "facing": 0.6
    },
    "barks": [
-    "Five a pelt. Fifty for the old grey one.",
     "Keep to the road, and keep your blade where I can see it.",
     "Three caravans this month. Three."
    ],
@@ -93,12 +110,58 @@
     "Go to bed, traveller.",
     "Every night I bury somebody's son. Go home.",
     "Quiet on the wall. I hate it quiet."
+   ],
+   "said": [
+    {
+     "text": "Five a pelt. Fifty for the old grey one.",
+     "night": false,
+     "when": {
+      "not": {
+       "fact": "beasts.outcome",
+       "exists": true
+      }
+     }
+    },
+    {
+     "text": "Pelt book's closed. I'll not miss writing in it.",
+     "night": false,
+     "when": {
+      "all": [
+       {
+        "fact": "beasts.outcome",
+        "exists": true
+       },
+       {
+        "not": {
+         "fact": "beasts.outcome",
+         "eq": "ignored"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "text": "Corran's in the ground. That's one debt paid.",
+     "night": false,
+     "when": {
+      "fact": "corran.home",
+      "eq": true
+     }
+    },
+    {
+     "text": "One caravan home. One. I'll take it.",
+     "night": false,
+     "when": {
+      "fact": "caravan.survivors",
+      "eq": "rescued"
+     }
+    }
    ]
   },
   "maeca": {
    "id": "maeca",
    "name": "Maeca Barefoot",
-   "title": "Last of the Ashford Garrison",
+   "title": "Hunter, of the Hollow",
    "role": "Hunter",
    "model": "rogue",
    "show": [
@@ -129,15 +192,77 @@
     "facing": -1.5707963267948966
    },
    "barks": [
-    "They're not hunting. They're running.",
-    "Something's got the whole wood on edge.",
     "Mind the east road after dark."
    ],
    "nightBarks": [
     "Hear that? No. Neither do I. That's what worries me.",
-    "One more, then I sleep.",
-    "The Pack's loud tonight.",
-    "Somewhere out there an old wolf's coughing. Listen."
+    "One more, then I sleep."
+   ],
+   "said": [
+    {
+     "text": "They're not hunting. They're running.",
+     "night": false,
+     "when": {
+      "not": {
+       "fact": "beasts.outcome",
+       "exists": true
+      }
+     }
+    },
+    {
+     "text": "Something's got the whole wood on edge.",
+     "night": false,
+     "when": {
+      "not": {
+       "fact": "beasts.outcome",
+       "exists": true
+      }
+     }
+    },
+    {
+     "text": "The Pack's loud tonight.",
+     "night": true,
+     "when": {
+      "not": {
+       "fact": "beasts.outcome",
+       "eq": "slaughtered"
+      }
+     }
+    },
+    {
+     "text": "Somewhere out there an old wolf's coughing. Listen.",
+     "night": true,
+     "when": {
+      "not": {
+       "fact": "beasts.outcome",
+       "exists": true
+      }
+     }
+    },
+    {
+     "text": "Hear that? They're hunting again. Deer.",
+     "night": true,
+     "when": {
+      "fact": "beasts.outcome",
+      "eq": "cured"
+     }
+    },
+    {
+     "text": "The Pack's lying up by the east wall. Leave them be.",
+     "night": true,
+     "when": {
+      "fact": "beasts.outcome",
+      "eq": "allied"
+     }
+    },
+    {
+     "text": "Nothing calls in the Hollow now. Nothing.",
+     "night": false,
+     "when": {
+      "fact": "beasts.outcome",
+      "eq": "slaughtered"
+     }
+    }
    ]
   },
   "chid": {
@@ -171,7 +296,6 @@
     "facing": 0.7853981633974483
    },
    "barks": [
-    "It used to work, you know. The shrine.",
     "The light's patient. I'm trying to be.",
     "Morning comes. It always has. I should know."
    ],
@@ -180,6 +304,42 @@
     "I leave a candle lit. Somebody might need it.",
     "Can't sleep either?",
     "The dark's only the part of the day that hasn't happened yet. ...It's taking its time tonight."
+   ],
+   "said": [
+    {
+     "text": "It used to work, you know. The shrine.",
+     "night": false,
+     "when": {
+      "not": {
+       "fact": "shrine.lit",
+       "eq": true
+      }
+     }
+    },
+    {
+     "text": "It works! It works. I keep checking.",
+     "night": false,
+     "when": {
+      "fact": "shrine.lit",
+      "eq": true
+     }
+    },
+    {
+     "text": "Up and about! Up's very good.",
+     "night": false,
+     "when": {
+      "fact": "player.deaths",
+      "gte": 1
+     }
+    },
+    {
+     "text": "Two candles in for her. One's for Brannoc; don't tell him.",
+     "night": true,
+     "when": {
+      "fact": "nell.buried",
+      "eq": true
+     }
+    }
    ]
   },
   "rav": {
@@ -232,6 +392,16 @@
     "The best stories come after the third cup.",
     "Pull up a stool. Mind the blood.",
     "Last orders were an hour ago. I'm the only one who heard them."
+   ],
+   "said": [
+    {
+     "text": "Oh, Mam.",
+     "night": true,
+     "when": {
+      "fact": "redcowl",
+      "eq": "dead"
+     }
+    }
    ]
   },
   "harlan": {
@@ -266,15 +436,104 @@
     "facing": -1.5707963267948966
    },
    "barks": [
-    "Late. Jory's never late.",
-    "Salt, iron, cloth. Whatever you need, when the wagons come.",
-    "Somebody knows something."
+    "Salt and iron, friend. Cloth, when I can get it."
    ],
    "nightBarks": [
-    "I keep the books by candlelight. Helps me not think.",
-    "Every wagon on that road's his, in the dark.",
-    "Can't sleep. Won't.",
-    "Jory hated the dark. Hated it. Slept with a candle till he was fourteen."
+    "I keep the books by candlelight. Helps me not think."
+   ],
+   "said": [
+    {
+     "text": "Late. Jory's never late.",
+     "night": false,
+     "when": {
+      "not": {
+       "fact": "caravan.survivors",
+       "exists": true
+      }
+     }
+    },
+    {
+     "text": "Salt, iron, cloth. Whatever you need, when the wagons come.",
+     "night": false,
+     "when": {
+      "not": {
+       "fact": "caravan.survivors",
+       "exists": true
+      }
+     }
+    },
+    {
+     "text": "Somebody knows something.",
+     "night": false,
+     "when": {
+      "not": {
+       "fact": "caravan.survivors",
+       "exists": true
+      }
+     }
+    },
+    {
+     "text": "Every wagon on that road's his, in the dark.",
+     "night": true,
+     "when": {
+      "not": {
+       "fact": "caravan.survivors",
+       "eq": "rescued"
+      }
+     }
+    },
+    {
+     "text": "Can't sleep. Won't.",
+     "night": true,
+     "when": {
+      "not": {
+       "fact": "caravan.survivors",
+       "exists": true
+      }
+     }
+    },
+    {
+     "text": "Jory hated the dark. Hated it. Slept with a candle till he was fourteen.",
+     "night": true,
+     "when": {
+      "not": {
+       "fact": "caravan.survivors",
+       "eq": "rescued"
+      }
+     }
+    },
+    {
+     "text": "Jory's asleep in Rook's good room. I keep going to look.",
+     "night": false,
+     "when": {
+      "fact": "caravan.survivors",
+      "eq": "rescued"
+     }
+    },
+    {
+     "text": "He sleeps with the lamp lit. So do I, now.",
+     "night": true,
+     "when": {
+      "fact": "caravan.survivors",
+      "eq": "rescued"
+     }
+    },
+    {
+     "text": "Coyle and Nephew, the new sign was going to say. Coyle and—",
+     "night": false,
+     "when": {
+      "fact": "caravan.survivors",
+      "eq": "dead"
+     }
+    },
+    {
+     "text": "Mister Coyle, he calls me. In my own shop.",
+     "night": false,
+     "when": {
+      "fact": "jory.knows_be",
+      "eq": true
+     }
+    }
    ]
   },
   "pell": {
@@ -360,15 +619,75 @@
     "facing": 1.8849555921538759
    },
    "barks": [
-    "The animals were never like this. Never.",
-    "Bitterroot, bitterroot. Always need more.",
-    "The water tastes wrong this year."
+    "Bitterroot, bitterroot. Always need more."
    ],
    "nightBarks": [
     "Moon's up. Good for picking. Bad for knees.",
     "Mind the nettles in the dark.",
     "Night air's full of things. Some of them are herbs.",
     "Nightshade's out. So are the idiots."
+   ],
+   "said": [
+    {
+     "text": "The animals were never like this. Never.",
+     "night": false,
+     "when": {
+      "not": {
+       "fact": "stream.clear",
+       "eq": true
+      }
+     }
+    },
+    {
+     "text": "The water tastes wrong this year.",
+     "night": false,
+     "when": {
+      "not": {
+       "fact": "stream.clear",
+       "eq": true
+      }
+     }
+    },
+    {
+     "text": "Water's sweet. Sweet! I'd forgotten.",
+     "night": false,
+     "when": {
+      "all": [
+       {
+        "fact": "stream.clear",
+        "eq": true
+       },
+       {
+        "any": [
+         {
+          "fact": "beasts.outcome",
+          "eq": "cured"
+         },
+         {
+          "fact": "beasts.outcome",
+          "eq": "allied"
+         }
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "text": "Clean water, and nothing left in the wood to drink it.",
+     "night": false,
+     "when": {
+      "all": [
+       {
+        "fact": "stream.clear",
+        "eq": true
+       },
+       {
+        "fact": "beasts.outcome",
+        "eq": "slaughtered"
+       }
+      ]
+     }
+    }
    ]
   },
   "tam": {
@@ -404,9 +723,48 @@
     "facing": 2.5132741228718345
    },
    "barks": [
-    "They drank from the stream and fell down.",
-    "Pa says stay in town.",
-    "I told the Watch. The Watch laughed."
+    "Pa says stay in town."
+   ],
+   "said": [
+    {
+     "text": "They drank from the stream and fell down.",
+     "when": {
+      "not": {
+       "fact": "beasts.outcome",
+       "exists": true
+      }
+     }
+    },
+    {
+     "text": "I told the Watch. The Watch laughed.",
+     "when": {
+      "not": {
+       "fact": "beasts.outcome",
+       "exists": true
+      }
+     }
+    },
+    {
+     "text": "The stream's clear and Pa says I was right, and I was.",
+     "when": {
+      "fact": "beasts.outcome",
+      "eq": "cured"
+     }
+    },
+    {
+     "text": "Somebody killed all the wolves. Even the ones that were only sick.",
+     "when": {
+      "fact": "beasts.outcome",
+      "eq": "slaughtered"
+     }
+    },
+    {
+     "text": "Ground knocks under our barn. Pa says pipes. We've got no pipes.",
+     "when": {
+      "fact": "tremor.felt",
+      "eq": true
+     }
+    }
    ]
   },
   "brannoc": {
@@ -454,6 +812,40 @@
     "Fire keeps me company.",
     "Banked. Go away.",
     "Two on the rack. Leave them."
+   ],
+   "said": [
+    {
+     "text": "Low Kiln's three days. She'll be there by now.",
+     "night": false,
+     "when": {
+      "fact": "nell.told",
+      "eq": "lie"
+     }
+    },
+    {
+     "text": "Twelve, I made. Twelve.",
+     "night": false,
+     "when": {
+      "any": [
+       {
+        "fact": "nell.told",
+        "eq": "gone"
+       },
+       {
+        "fact": "nell.told",
+        "eq": "risen"
+       }
+      ]
+     }
+    },
+    {
+     "text": "Forge is lit. Don't come in.",
+     "night": true,
+     "when": {
+      "fact": "nell.buried",
+      "eq": true
+     }
+    }
    ]
   },
   "vonnra": {
@@ -550,6 +942,16 @@
     "Something moved out there. Probably.",
     "Stand back from the gate, please.",
     "I am not frightened of the dark. I am merely monitoring it very closely."
+   ],
+   "said": [
+    {
+     "text": "Chapter four. Chapter four. ...Good morning.",
+     "night": false,
+     "when": {
+      "fact": "keegan.saw_risen",
+      "eq": true
+     }
+    }
    ]
   },
   "sella": {
