@@ -2466,7 +2466,20 @@ def arcanist():
                        [0.0, nx_ * 0.42, nx_ * 0.62, 0.05])
     plunge = np.where(FRONT > 0.5, np.abs(X) - v_half, 1.0)
     plunge = np.where(Z < v_lo, 1.0, plunge)
-    corset = AND(neck_top - Z, OR(Z - 1.13, leotard), sleeve("l"), sleeve("r"), plunge)
+    # Its leg lines and plunge are cut exactly once it is shaped (cut on her
+    # skin and then smoothed, they wandered); her skin's field is left a
+    # little wider there, so the exact lines decide.
+    corset = AND(neck_top - Z, OR(Z - 1.13, leotard + 0.02), sleeve("l"), sleeve("r"), plunge + 0.02)
+
+    def exact(q):
+        qx, qy, qz = q[:, 0], q[:, 1], q[:, 2]
+        fr = ramp(-(qy - CROTCH_Y), -0.03, 0.03)
+        r = qz - CROTCH
+        wq = (0.0095 + 0.42 * np.maximum(r, 0)) * fr + (-0.01 + 1.5 * np.maximum(r - 0.13, 0)) * (1 - fr)
+        legs = np.maximum(qz - 1.13, wq - np.abs(qx))
+        vh = np.interp(qz, [v_lo, (NIPPLE["r"][2] + v_lo) / 2, NIPPLE["r"][2] + 0.03, v_hi], [0.0, nx_ * 0.42, nx_ * 0.62, 0.05])
+        pl = np.where((fr > 0.5) & (qz >= v_lo), np.abs(qx) - vh, 1.0)
+        return np.minimum(legs, pl)
     belt_z = 1.0 + 0.035 * X / 0.18
     belt = AND(0.016 - np.abs(Z - belt_z), 0.3 - arms)
     bones = OR(*[front_line(x, UNDERBUST - 0.022, x * 0.8, 1.025 - 0.025 * (abs(x) < 0.05), 0.009)
@@ -2482,7 +2495,7 @@ def arcanist():
         *ribbon("arcanist.thong", back_string(CROTCH + 0.155, CROTCH + 0.012), 0.016, "plumleather", lift=0.003, thick=0.003,
                trim=gold(0.004), snap=False),
         *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, iron=60, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80,
-               bridge=True),
+               bridge=True, cut=exact),
         *piece("arcanist.choker", choker, "blackleather", lift=0.002, soften=0, keep_off=("Head",)),
         *witch_hat("arcanist.hat", "plumleather", "darkpurple"),
     ]
