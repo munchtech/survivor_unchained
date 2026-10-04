@@ -94,7 +94,7 @@ public partial class BattleFx
         // one white haze. Their marks above are enough.)
         var (book, tint) = art switch
         {
-            "moon" or "moon_brand" => ("arcane_burst", new Color(1.2f, 1.1f, 1.3f, 0.9f)),
+            "moon" or "moon_brand" => ("moon_burst", new Color(0.9f, 0.85f, 1.1f, 0.85f)),
             "umbral" or "ruin" or "siphon" or "tether" or "tether2" or "tether_mark" => ("shadow_burst", new Color(1.3f, 1.2f, 1.4f, 0.9f)),
             _ => ((string?)null, Colors.White),
         };
@@ -356,7 +356,9 @@ public partial class BattleFx
                 float s = 0.8f * Mathf.Sqrt(g);
                 var tint = art == "chakram_hail" ? Palette.Of(School.Frost).Glow * 0.5f : new Color(0.9f, 0.95f, 0.92f);
                 Shade(at, 1.4f * s, 0.5f);
-                rings.Add(new Transform3D(new Godot.Basis(Vector3.Up, (float)(now * 22)).Scaled(Vector3.One * s), at), tint);
+                rings.Add(new Transform3D(new Godot.Basis(Vector3.Up, (float)(now * 22)).Scaled(Vector3.One * s), at), tint * 0.8f);
+                // The wind it rides, whipping round its rim.
+                SpinArcs(at, 0.62f * s, (float)(now * 26 + p.Id), 0.09f * s, art == "chakram_hail" ? Hdr("#cfeaff", 1f) : Hdr("#e6fff4", 1f), 2.4f);
                 // Gale Chakram rides the wind: a pale curl of air behind it.
                 Ribbons.Feed(key, at, 0.55f * s, 0.25f, art == "chakram_hail" ? Hdr("#bfe6ff", 1f) : Hdr("#e8f8f0", 1f), art == "chakram_razor" ? 1.6f : 1.1f,
                     art == "chakram_hail" ? Ribbons.Style.Frost : art == "chakram_razor" ? Ribbons.Style.Steel : Ribbons.Style.Wisp);
@@ -617,7 +619,8 @@ public partial class BattleFx
                 var gold = Hdr("#ffd27a", 1f);
                 AddFront(ground, r, 0.4f, 0.42f * g, gold, 3f, Ribbons.Style.Glow, 0.1f);
                 for (int k = 1; k < rings; k++) AddFront(ground, r * (1 - 0.18f * k), 0.4f + 0.08f * k, 0.22f, gold, 1.8f, Ribbons.Style.Glow, 0.1f);
-                Books.Spawn("holy_burst", ground + Vector3.Up * 0.5f, r * 0.6f, 0.45f, new Color(1.1f, 1.0f, 0.75f, 0.8f), flat: true, sizeEnd: r * 1.5f);
+                // Dawn's ring itself, filmed (LTX): a thin line of white-gold racing out, the middle left dark.
+                Books.Spawn("holy_ring", ground + Vector3.Up * 0.5f, r * 0.7f, 0.5f, new Color(1f, 0.85f, 0.55f, 0.85f), flat: true, sizeEnd: r * 2.3f);
                 // Rays: short strokes of light thrown outward along the ground.
                 int n = 10 + rings * 4;
                 for (int i = 0; i < n; i++)
@@ -640,12 +643,14 @@ public partial class BattleFx
             {
                 // The arc is swept round at the edge of its reach, twice, crimson in shadow.
                 var at = ground + Vector3.Up * 1.0f;
-                var core = Hdr("#ffb0c0", 2.4f);
                 var glow = art == "nova_harrow" ? Hdr("#9a5cff", 2.4f) : Hdr("#c4142a", 2.4f);
                 float facing = R() * Mathf.Tau;
-                Hits.Arc(at, facing, r, 0.28f, false, core, glow);
-                Hits.Arc(at, facing + Mathf.Pi, r, 0.28f, false, core, glow);
-                if (rings > 1) Hits.Arc(at, facing + Mathf.Pi / 2, r * 0.75f, 0.32f, true, core, glow * 0.7f);
+                // A scythe swept all the way round at the edge of its reach: the blade's
+                // crescent (Blades), crimson, with a darker one inside it a breath behind.
+                var hue = art == "nova_harrow" ? Hdr("#8a4aff", 1.1f) : Hdr("#e01a2a", 1.1f);
+                Blades.Add(at, facing, r, Mathf.Tau * 1.02f, false, 0.16f, 0.24f, hue, 0.4f * Mathf.Min(g, 1.3f));
+                Blades.Add(at + Vector3.Down * 0.1f, facing + Mathf.Pi, r * 0.8f, Mathf.Tau * 0.8f, false, 0.18f, 0.2f, hue * 0.55f, 0.3f, 0.04f);
+                if (rings > 1) Blades.Add(at, facing + Mathf.Pi / 2, r * 0.6f, Mathf.Tau * 0.9f, true, 0.16f, 0.2f, hue * 0.7f, 0.35f, 0.08f);
                 AddFront(ground, r, 0.3f, 0.3f * g, new Color(glow.R / 3, glow.G / 3, glow.B / 3), 1.8f, Ribbons.Style.Wisp, 0.6f);
                 // What it takes, drawn back in to the survivor.
                 int n = Math.Min(30, (int)(12 * g));
@@ -701,6 +706,8 @@ public partial class BattleFx
                 var top = ground + new Vector3((R() - 0.5f) * 3, small ? 9 : 16, (R() - 0.5f) * 3);
                 var col = Hdr("#8ab4ff", 1f);
                 Ribbons.Bolt(top, ground + Vector3.Up * 0.2f, (clap ? 0.55f : small ? 0.22f : 0.38f) * g, clap ? 0.3f : 0.22f, col, 4f, small ? 1 : 3, 0.18f);
+                // Its glow round the thread, so the strike reads as a blow of light, not a hairline.
+                Ribbons.Bolt(top, ground + Vector3.Up * 0.2f, (clap ? 1.4f : small ? 0.6f : 1f) * g, 0.14f, Hdr("#2a5cff", 1f), 1.3f, 0, 0.16f);
                 // The fork it throws along the ground where it lands.
                 for (int i = 0; i < (clap ? 5 : 3); i++)
                 {
@@ -708,7 +715,9 @@ public partial class BattleFx
                     double x = e.X + Mathf.Cos(a) * d, z = e.Z + Mathf.Sin(a) * d;
                     Ribbons.Bolt(ground + Vector3.Up * 0.25f, V(x, Y(x, z) + 0.2, z), 0.12f * g, 0.16f, col, 2.6f, 0, 0.3f);
                 }
-                Blast(e.X, e.Z, School.Storm, Mathf.Max(1.1f, r) * (clap ? 1.3f : 1), 0.55f, light: small);
+                // The filmed burst only for the clap: under every bolt it filled the ground pale blue.
+                Blast(e.X, e.Z, School.Storm, Mathf.Max(1.1f, r) * (clap ? 1.3f : 0.8f), 0.45f, light: !clap);
+                Scars.Add("scorch", ground, Mathf.Max(0.6f, r * 0.45f), 3f, 0);
                 if (clap) { Waves.Add(ground + Vector3.Up * 0.3f, r * 2.2f, 0.4f, pal.Glow, 1.2f); Cam?.AddTrauma(0.12f); }
                 Flash(ground + Vector3.Up * 3, pal.Light, small ? 6 : 12 * g, 0.22f, small ? 8 : 14);
                 return;
@@ -718,7 +727,10 @@ public partial class BattleFx
                 // A moon falling: a pale streak down out of the dark, and the burst where it breaks.
                 var top = ground + new Vector3(-2.5f, 14, 1.5f);
                 Ribbons.Line(new[] { top, top.Lerp(ground, 0.5f), ground + Vector3.Up * 0.3f }, 0.45f * g, 0.25f, Hdr("#c8b8ff", 1f), 2.6f, Ribbons.Style.Glow, new[] { 0f, 0.6f, 1f });
-                Blast(e.X, e.Z, School.Arcane, Mathf.Max(1.2f, r), 0.6f);
+                // The moon breaks into stardust (filmed, LTX), its light thrown out in a ring.
+                Books.Spawn("moon_burst", ground + Vector3.Up * 0.6f, r * 0.8f, 0.7f, new Color(0.95f, 0.9f, 1.15f, 0.9f), flat: true, sizeEnd: r * 2.6f);
+                Flash(ground + Vector3.Up * 1.5f, new Color(0.75f, 0.7f, 1f), 7, 0.3f, r * 3);
+                Scars.Add("runes", ground, r * 0.6f, 1.2f, -0.7f);
                 AddFront(ground, r * 1.3f, 0.35f, 0.25f * g, Hdr("#c8b8ff", 1f), 2.2f, Ribbons.Style.Glow, 0.2f);
                 return;
             }
@@ -769,8 +781,34 @@ public partial class BattleFx
         for (int i = 0; i < 9; i++) mid[i] = a.Lerp(b, i / 8f);
         var even = new float[9];
         for (int i = 0; i < 9; i++) even[i] = i == 0 ? 0.3f : i == 8 ? 0.2f : 1;
-        Ribbons.Line(mid, w * 1.6f, life, col, 1.2f, sun ? Ribbons.Style.Glow : Ribbons.Style.Flame, even);
-        Ribbons.Line(mid, w * 0.45f, life * 0.9f, sun ? Hdr("#fff4d8", 1f) : Hdr("#e0ffd0", 1f), 3f, Ribbons.Style.Bolt, even);
+        if (sun)
+        {
+            Ribbons.Line(mid, w * 1.6f, life, col, 1.2f, Ribbons.Style.Glow, even);
+            Ribbons.Line(mid, w * 0.45f, life * 0.9f, Hdr("#fff4d8", 1f), 3f, Ribbons.Style.Bolt, even);
+        }
+        else
+        {
+            // A lance of the green: a thin bright heart, a deep green haze, and two
+            // living vines twisting round it (a wide lime bar read as a laser).
+            Ribbons.Line(mid, w * 1.1f, life, Hdr("#1fae4a", 1f), 1.1f, Ribbons.Style.Wisp, even);
+            Ribbons.Line(mid, w * 0.3f, life * 0.9f, Hdr("#c8ffb0", 1f), 3f, Ribbons.Style.Bolt, even);
+            var axis = (b - a).Normalized();
+            var side = axis.Cross(Vector3.Up).Normalized();
+            for (int v = 0; v < 2; v++)
+            {
+                var vine = new Vector3[17];
+                var vw = new float[17];
+                for (int i = 0; i < 17; i++)
+                {
+                    float u = i / 16f, turn = u * 7f * Mathf.Pi + v * Mathf.Pi;
+                    vine[i] = a.Lerp(b, u) + (side * Mathf.Cos(turn) + Vector3.Up * Mathf.Sin(turn)) * w * 0.55f;
+                    vw[i] = i == 0 || i == 16 ? 0 : 1;
+                }
+                Ribbons.Line(vine, w * 0.22f, life, Hdr("#5aff7a", 1f), 2.2f, Ribbons.Style.Steel, vw);
+            }
+            for (int i = 0; i < 10; i++)
+                Smoke.Spawn(a.Lerp(b, R()), new Vector3((R() - 0.5f) * 2, 0.5f + R(), (R() - 0.5f) * 2), 0.8f + R() * 0.5f, 0.09f, new Color("#3f8a2a"), new Color("#26501a"), 0.07f, gravity: 2, sprite: Sprites.Of("dirt"), spinV: 5);
+        }
         Sparks.Spawn(a, Vector3.Zero, life * 0.6f, 0.9f * g, pal.Core * 0.7f, pal.Glow * 0.2f, 0.4f, sprite: Sprites.Of("flare"));
         Sparks.Spawn(b, Vector3.Zero, life * 0.6f, 0.7f * g, pal.Core * 0.5f, pal.Glow * 0.2f, 0.3f, sprite: Sprites.Of("flare"));
         for (int i = 0; i < 14; i++)
@@ -1139,8 +1177,21 @@ public partial class BattleFx
         {
             var a = V(p[k], Y(p[k], p[k + 1]) + 1.5, p[k + 1]);
             var bb = V(p[k + 2], Y(p[k + 2], p[k + 3]) + 1.3, p[k + 3]);
-            if (e.School == School.Storm) Ribbons.Bolt(a, bb, 0.22f * g, 0.2f, col, 3.2f, art == "arc_fork" ? 2 : 1, 0.22f);
-            else Ribbons.Line(new[] { a, (a + bb) / 2 + Vector3.Up * 0.4f, bb }, 0.12f * g, 0.25f, col, 2.2f, Ribbons.Style.Wisp);
+            if (e.School == School.Storm)
+            {
+                // A real arc: a white-hot forking thread in a blue glow that flickers
+                // (a lone thread read as a pale string), a crackle where it bites.
+                Ribbons.Bolt(a, bb, 0.34f * g, 0.22f, Hdr("#6c9cff", 1f), 4.2f, art == "arc_fork" ? 3 : 2, 0.24f);
+                Ribbons.Bolt(a, bb, 0.9f * g, 0.16f, Hdr("#2a5cff", 1f), 1.3f, 0, 0.2f);
+                for (int i = 0; i < 4; i++)
+                {
+                    var tip = bb + new Vector3((R() - 0.5f) * 1.2f, (R() - 0.3f) * 0.8f, (R() - 0.5f) * 1.2f);
+                    Ribbons.Bolt(bb, tip, 0.1f * g, 0.12f, Hdr("#9ac0ff", 1f), 3f, 0, 0.35f);
+                }
+                Sparks.Spawn(bb, Vector3.Zero, 0.12f, 0.75f * g, Hdr("#a8c8ff", 1.6f), Hdr("#3a6aff", 0.6f), 0.3f, sprite: Sprites.Of("spark"), spinV: 0);
+                continue;
+            }
+            Ribbons.Line(new[] { a, (a + bb) / 2 + Vector3.Up * 0.4f, bb }, 0.12f * g, 0.25f, col, 2.2f, Ribbons.Style.Wisp);
             Sparks.Spawn(bb, Vector3.Zero, 0.1f, 0.7f * g, pal.Core * 0.8f, pal.Glow * 0.2f, 0.25f, sprite: Sprites.Of("flare"));
         }
         if (e.School == School.Storm) Flash(V(p[^2], Y(p[^2], p[^1]) + 2, p[^1]), pal.Light, 7 * g, 0.18f, 9);

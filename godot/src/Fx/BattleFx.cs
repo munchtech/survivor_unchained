@@ -586,7 +586,7 @@ public partial class BattleFx : Node3D
                         break;
                     }
                     if (e.Blocked) { Hits.Text(at, "blocked", new Color(0.7f, 0.75f, 0.8f), 44); Burst(at, School.Physical, 5, 3, 2, 0.06f); break; }
-                    Hits.Number(at, (int)Math.Round(e.Amount), e.Crit);
+                    Hits.Tally(e.Target, at, e.Amount, e.MaxHp, e.Crit);
                     if (e.Art != null) Impact(e, at);
                     else Burst(at, e.School, e.Crit ? 10 : 4, e.Crit ? 5 : 3, size: e.Crit ? 0.12f : 0.08f);
                     if (e.Family != null)
@@ -1130,6 +1130,7 @@ public partial class BattleFx : Node3D
         Pickups(b, now);
         StepFronts(fdt);
         Blades.Step(fdt);
+        Hits.Flush(b0 is { } hb ? V(hb.Player.X, Y(hb.Player.X, hb.Player.Z) + 1.0, hb.Player.Z) : null);
         StepSpikes(fdt);
         Ribbons.Step(fdt, GetViewport()?.GetCamera3D());
         Sparks.Step(fdt);
