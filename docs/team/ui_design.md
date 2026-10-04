@@ -1,45 +1,47 @@
 # UI design (and the UI merge): status
 
-Agent a5629aff0f215ea4a (handed off: `docs/handoff/ui_design.md`), branch
-`worktree-agent-a5629aff0f215ea4a` (includes the integration branch at d2a2eab). Predecessors' handoffs: `docs/handoff/ui_design.md` (second design pass), `docs/handoff/ui_art.md`.
+Agent ac76f400913a109cd (successor to a5629aff0f215ea4a, whose handoff is `docs/handoff/ui_design.md`),
+branch `worktree-agent-ac76f400913a109cd` (includes the integration branch at 780e256 and 51350b1).
 
-## Current state
-- **UI merge** pushed (c14b3a2, a fast-forward for the integration branch); the painted art fills the
-  redesign's layouts. 462 tests green.
-- **The owner's answers, acted on**:
-  - Pause: screens pause the world only in a fight (`zone.Combat`: arenas, the night's road); the pause
-    menu always does.
-  - Page or panel decided screen by screen (UI_DESIGN 6): the **pack is a right-hand panel** with the
-    world in view, the thing read closely at the left, the camera stepping the survivor into the gap
-    (`FollowCamera.ScreenShift`). Self, arts, journal, map, shop, storeroom stay full pages (reasons there).
-  - Unwalked map land: the same sheet left blank and older (mottled, foxed, browning away from the
-    known, faint rhumb lines), an ink wash with a tide line where the known ends, the sheet on a leather
-    table with its shadow.
-  - Self stays its own screen.
-  - Painted art wherever better: every Ornate look gives way to its painted piece by name (plate, well,
-    slab, crest_card, paper, banner), plus ribbon, plaque_rule, medallion ring, globe rim and glass.
-- **Rebuilt into the house's language**: the chapter's end (the survivor's open book), the Wayfinder's
-  table (map sheets in the painted wooden frames on his table, oaths as wax seals), the Last Lamp
-  (three crested choices).
-- Focus routes: `--navcheck` audits each screen when shot; every audited screen reaches everything.
+## Current state: the heroine's character creation (stopped mid-way at the owner's usage limit)
+Built and pushed (472 tests green), **not yet seen right on screen**:
+- **Saved and worn**: `CharacterData`/`CreationChoice` keep `Face` (slider -> value, only those moved),
+  `Eyes`, `Paint`; `PersonSpec` carries `Face`, `Eyes`, `EyeRing`, `Paint`; `Loadouts.Of` gives her
+  her hairstyle at last (`Loadouts.HerHair`: hers, or an old save's cut mapped to the nearest).
+- **Data** (`data/content/looks.json`): `herHairs` (5 cuts with words), `eyes` (9, iris + ring
+  colour, in-world names), `paints` (8 with sheen/metal), `faces` (7 presets), `sliders` (25, grouped
+  Eyes/Nose/Mouth/Jaw, end words, tasteful `min`/`max` judged from renders), 5 more hair colours.
+- **View** (`src/Actors/People.cs`): `LookOf(spec)`, `HerRestyle` (hair cut/colour, skin, eyes, face,
+  paint changed on her where she stands), `HerEyes`/`EyesOf` (read after her corrective layer via
+  `SkeletonUpdated`), `HerPaint` (a next pass, `shaders/heroine_paint.gdshader`), `EyeColour`.
+- **Eye shader**: iris recolour (`recolour`, `iris_colour`, `ring_colour`): fibres kept, verified on
+  all 9 colours in renders.
+- **Creation** (`Ui/Front.cs`, new `Ui/CreateLook.cs`): five steps (Calling, Arms, Origin, **Look**,
+  Name); Look has parts Body/Hair/Face/Paint (him: Body/Hair) on LT/RT; cameos for cuts, faces and
+  paints (`art/ui/create/*.png`, glyph until painted; cuts dyed live by a mask), beads for colours
+  (eyes drawn as her own iris, `shaders/ui_iris.gdshader`), `Groove` sliders; drag/wheel/double
+  click and the right stick (`Controls.Look`) turn her and frame her (`GameFront.UpdateCreate`:
+  full, head and shoulders, face; longer lens, DOF behind her). Defaults to the heroine. Name step
+  reads back each step. The figure slider is gone (no effect on her body).
+- Tools: `tools_scenes/face_sheet.gd` + `FaceSheet.cs` (her looks side by side via the real code).
+
+## Next (in order)
+1. **Shoot the Look step** (`--new --keys TabNext,TabNext,TabNext[,SubNext...]`; the first shots
+   only reached step II: the key tour needs longer `--seconds` or a `--step` arg) and fix what shows.
+2. **Face paint art**: write `tools/assets/heroine_paint.py` (head UV <- cylindrical face sheet
+   reprojection from heroine.glb; brush-stroke designs) -> `art/people/paint/<id>.png`; plus a
+   **brow dye** layer (her brows are painted copper in the head texture, wrong with other hair colours).
+3. **Cameo portraits**: render via FaceSheet (hair cuts in grey + `_mask`, faces, paints), paint them
+   over, register in `tools/comfy/ui_assets.json` and UI_ART_BRIEF for the UI art lead.
+4. Pad focus audit of the Look step; UI_DESIGN 7.2 rewritten.
+5. Then the handoff's list: announcements, item card, journal deeds/codex, HUD dash and draught.
 
 ## Key decisions
-- The globe is the health; the painted health bar, casing and heart medal are not shown.
-- Draft: the crested card's medallion and glow kept, worn by the painted card; words 40 px inside.
-- The map stays full bleed; `map_frame` frames the Wayfinder's maps.
-- The code draws only what changes in play (arcs, liquid levels, numbers, accents); the rest is paint.
-
-## Next
-0. **The heroine's character creation** (the owner: hair and face can't be customised): live 3D
-   preview, turn and zoom to the face, her five hairstyles and colour, skin, eyes, face shaping,
-   paint; saved and applied in play. Scoped in `docs/handoff/ui_design.md` section 4.
-1. Done: full shot pass `m8` (all screens, mouse and pad): no errors, every focus route complete.
-2. Still in the old look: announcements (bare text over the world), the item card's own layout,
-   the journal's deeds and codex inside the book; the dash pips and draught box on the HUD.
-3. Re-make `docs/ui_review/` (before / first / second / third pass) once the above land.
-4. UI_DESIGN section 10: the feel work's chest panel, text size, hold-to-read, accessibility.
+- Creation opens on the heroine (the docs call the survivor "the heroine"; a man remains a choice).
+- Slider ends are capped where the shape keys break (renders): e.g. cheeks +0.25, eyes_height +0.25.
+- Face paint is a separate pass over her skin, so the skin shader (main session's) is untouched.
 
 ## Notes for other areas
-- UI art (a72467cac33063d3a): build on this branch; brief 4.9 lists every piece the layouts ask for.
-- Shots: `--shot NAME --seconds S --navcheck` prints each open screen's focus audit as `nav ...`.
-- The session scratchpad is shared between agents: mine is `scratchpad/uilead/`.
+- Main session: long/ponytail show a pale strip at her left temple; brows don't follow hair colour.
+- UI art (a72467cac33063d3a): cameo portraits and a swatch setting will be registered (step 3).
+- Scratchpad: mine is `scratchpad/uid2/` (`shot.ps1`, `fs.ps1` face sheets, `crop*.py`).

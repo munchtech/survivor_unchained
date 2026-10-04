@@ -1132,9 +1132,13 @@ public partial class BattleFx : Node3D
     }
 
     /// <summary>Ground left burning, blighted, hallowed: a disc for each while it lasts.</summary>
+    readonly HashSet<int> zonesAlive = new();
+    readonly List<int> zonesGone = new();
+
     void Zones(Battle b, double now)
     {
-        var alive = new HashSet<int>();
+        var alive = zonesAlive;
+        alive.Clear();
         foreach (var z in b.Zones.Living())
         {
             alive.Add(z.Id);
@@ -1164,7 +1168,8 @@ public partial class BattleFx : Node3D
                 Sparks.Spawn(V(x, Y(x, zz) + 0.1, zz), new Vector3(0, 0.8f + R(), 0), 0.8f, 0.07f, z.Owner == Sim.Side.Enemy ? Palette.HostileRim : pal.Glow, pal.Dim, 0.01f, drag: 1);
             }
         }
-        var gone = new List<int>();
+        var gone = zonesGone;
+        gone.Clear();
         foreach (var (id, m) in zoneMarks) if (!alive.Contains(id)) { m.Active = false; m.Decal.Visible = false; gone.Add(id); }
         foreach (var id in gone) zoneMarks.Remove(id);
         GroundsGone(alive);
@@ -1185,33 +1190,33 @@ public partial class BattleFx : Node3D
             float trail = 1;
             // Lifted to head height: from above, the bodies it passes through would hide it.
             if (!hostile && Flight(p, at + Vector3.Up * 0.55f, heading, now, dt)) continue;
-            if (art.StartsWith("axe"))
+            if (art.StartsWith("axe", StringComparison.Ordinal))
             {
                 // Laid flat and whirling about its middle, as an axe thrown to spin.
                 var basis = new Godot.Basis(Vector3.Up, -(float)(now * 16 + p.Id)) * new Godot.Basis(Vector3.Right, Mathf.Pi / 2) * Godot.Basis.FromScale(Vector3.One * 1.3f);
                 axes.Add(new Transform3D(basis, at), hostile ? new Color(0.6f, 0.5f, 0.45f) : Colors.White);
                 trail = 0.45f;
             }
-            else if (art.StartsWith("dagger"))
+            else if (art.StartsWith("dagger", StringComparison.Ordinal))
             {
                 // Point first along its flight, turning a little about its length.
                 var basis = new Godot.Basis(Vector3.Up, heading) * new Godot.Basis(Vector3.Right, Mathf.Pi / 2) * new Godot.Basis(Vector3.Up, (float)(now * 9 + p.Id));
                 daggers.Add(new Transform3D(basis, at), hostile ? new Color(0.6f, 0.5f, 0.45f) : Colors.White);
                 trail = 0.35f;
             }
-            else if (art.StartsWith("arrow") || art == "bolt_bone")
+            else if (art.StartsWith("arrow", StringComparison.Ordinal) || art == "bolt_bone")
             {
                 var basis = new Godot.Basis(Vector3.Up, heading);
                 steel.Add(new Transform3D(basis, at), hostile ? new Color(0.5f, 0.42f, 0.36f) : new Color(0.75f, 0.72f, 0.68f));
                 trail = 0.3f;
             }
-            else if (art.StartsWith("disc") || art.StartsWith("chakram"))
+            else if (art.StartsWith("disc", StringComparison.Ordinal) || art.StartsWith("chakram", StringComparison.Ordinal))
             {
-                float s = art.StartsWith("disc") ? 1.1f : 0.8f;
+                float s = art.StartsWith("disc", StringComparison.Ordinal) ? 1.1f : 0.8f;
                 rings.Add(new Transform3D(new Godot.Basis(Vector3.Up, (float)(now * 16)).Scaled(Vector3.One * s), at), pal.Glow * 0.5f);
                 trail = 0.5f;
             }
-            else if (art.StartsWith("shard") || art == "spear_ice")
+            else if (art.StartsWith("shard", StringComparison.Ordinal) || art == "spear_ice")
             {
                 float s = art == "spear_ice" ? 2.4f : 1;
                 var basis = new Godot.Basis(Vector3.Up, heading) * new Godot.Basis(Vector3.Right, Mathf.Pi / 2);
@@ -1228,7 +1233,7 @@ public partial class BattleFx : Node3D
             }
             else
             {
-                float size = art is "mote" or "mote_cascade" or "mote_star" or "ember_seeker" ? 0.34f : art is "star" ? 1.0f : art is "cinder" or "living_flame" ? 0.7f : art.StartsWith("herd") ? 0.6f : art.StartsWith("crescent") ? 1.0f : 0.5f;
+                float size = art is "mote" or "mote_cascade" or "mote_star" or "ember_seeker" ? 0.34f : art is "star" ? 1.0f : art is "cinder" or "living_flame" ? 0.7f : art.StartsWith("herd", StringComparison.Ordinal) ? 0.6f : art.StartsWith("crescent", StringComparison.Ordinal) ? 1.0f : 0.5f;
                 var core = hostile ? Palette.HostileRim : pal.Core;
                 // A small hot core in a wider, faint halo: a big bright core
                 // only blooms into a featureless disc that hides the fight.
@@ -1250,6 +1255,8 @@ public partial class BattleFx : Node3D
     }
 
     static readonly Color[] EmberTiers = { new(2.4f, 1.0f, 0.25f), new(2.6f, 1.7f, 0.45f), new(2.8f, 2.6f, 1.6f), new(1.6f, 2.2f, 2.8f) };
+    // (An array made for each ember on the ground every frame was most of what the effects threw away.)
+    static readonly float[] EmberSizes = { 0.16f, 0.21f, 0.27f, 0.34f };
 
     void Pickups(Battle b, double now)
     {
@@ -1264,7 +1271,7 @@ public partial class BattleFx : Node3D
                 case PickupKind.Ember:
                 {
                     int tier = Math.Clamp(p.Tier, 0, 3);
-                    float s = new[] { 0.16f, 0.21f, 0.27f, 0.34f }[tier];
+                    float s = EmberSizes[tier];
                     embers.Add(new Transform3D(spin.Scaled(Vector3.One * s), V(p.X, gy + 0.45 + bob, p.Z)), EmberTiers[tier] * 0.5f);
                     break;
                 }

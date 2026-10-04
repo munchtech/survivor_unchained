@@ -1,3 +1,4 @@
+using System.Linq;
 using SurvivorUnchained.Play;
 using SurvivorUnchained.Rpg;
 using Xunit;
@@ -58,12 +59,58 @@ public class LoadoutTests
         Assert.Equal(Loadouts.HerBody, p.Body);
         // Her own outfit for her calling, not the Quaternius clothes.
         Assert.Equal(new[] { Loadouts.HerOutfit(archetype) }, p.Outfit!);
-        // Her hair is her own: no hairstyle goes over it (its colour still dyes it).
-        Assert.Null(p.Hair);
+        // Her hair is one of her own cuts: an older save's cut becomes the nearest of hers.
+        Assert.Equal("bob", p.Hair);
         // The calling's first colours are its own, undyed: her suit as it was made.
         Assert.Null(p.Dye);
         Assert.False(p.Beard);
         Assert.Equal(1.2, p.Figure);
         Assert.False(string.IsNullOrEmpty(Loadouts.Of(ch).Arms.Right));
+    }
+
+    [Fact]
+    public void Her_cut_face_eyes_and_paint_are_kept_and_worn()
+    {
+        var a = Callings.Archetype("warden");
+        var face = new System.Collections.Generic.Dictionary<string, double> { ["eyes_tilt"] = 0.6, ["jaw"] = 0, ["lips_lower"] = 2 };
+        var ch = Character.Create(new CreationChoice
+        {
+            Name = "E", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
+            Sex = Sex.Female, HairStyle = "braid", Eyes = "cornflower", Paint = "woad", Face = face,
+        }, 1, 7);
+        // Saved: only what moved from her own face, each within its range.
+        Assert.Equal(2, ch.Face!.Count);
+        Assert.Equal(1, ch.Face["lips_lower"]);
+        Assert.Equal("cornflower", ch.Eyes);
+        Assert.Equal("woad", ch.Paint);
+        var p = Loadouts.Of(ch).Person;
+        Assert.Equal("braid", p.Hair);
+        Assert.Equal(0.6, p.Face!["eyes_tilt"]);
+        Assert.Equal(World.Lore.Eyes.First(e => e.Id == "cornflower").Color, p.Eyes);
+        Assert.Equal("woad", p.Paint);
+        // Her own eyes (as painted) and bare skin carry nothing.
+        ch.Eyes = "moss"; ch.Paint = null;
+        Assert.Null(Loadouts.Of(ch).Person.Eyes);
+        Assert.Null(Loadouts.Of(ch).Person.Paint);
+        // A man has none of hers.
+        var him = Character.Create(new CreationChoice { Name = "F", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0], Sex = Sex.Male, Eyes = "cornflower", Face = face }, 1, 7);
+        Assert.Null(Loadouts.Of(him).Person.Face);
+        Assert.Null(Loadouts.Of(him).Person.Eyes);
+    }
+
+    [Fact]
+    public void Her_looks_are_whole()
+    {
+        // Every slider has its words and a range about her own face; every face starts from known sliders.
+        var ids = World.Lore.Sliders.Select(s => s.Id).ToHashSet();
+        Assert.Equal(25, ids.Count);
+        Assert.All(World.Lore.Sliders, s => Assert.True(s.Min <= 0 && s.Max > 0 && s.Low != "" && s.High != ""));
+        Assert.All(World.Lore.Faces, f => Assert.All(f.Shape, kv =>
+        {
+            var s = World.Lore.Sliders.First(x => x.Id == kv.Key);
+            Assert.InRange(kv.Value, s.Min, s.Max);
+        }));
+        Assert.Equal(new[] { "long", "ponytail", "braid", "bob", "pixie" }, World.Lore.HerHairs.Select(h => h.Id));
+        Assert.Contains(World.Lore.Paints, p => p.Id == "none");
     }
 }

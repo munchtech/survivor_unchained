@@ -48,16 +48,24 @@ public static class Loadouts
         return $"#{C(16):x2}{C(8):x2}{C(0):x2}";
     }
 
-    /// <summary>A woman survivor's own body (People.Woman, rigged to the same
-    /// skeleton): her hair and her close-fitting suit are her own, the suit
-    /// dyed the calling's cloth. The Quaternius clothes are cut for the
-    /// Quaternius bodies, so nothing goes over it: no hood, no hairstyle.</summary>
+    /// <summary>A woman survivor's own body (the heroine, rigged to the same
+    /// skeleton): her outfit, hairstyles, face and eyes are her own. The
+    /// Quaternius clothes and hair are cut for the Quaternius bodies, so none
+    /// of them goes over her, and no hood.</summary>
     public const string HerBody = "woman";
 
     /// <summary>A woman survivor's outfit for her calling, as the view knows
     /// it ("her:" and its name: People.HerOutfit; the stalker wears the
     /// ranger's).</summary>
     public static string HerOutfit(string archetype) => "her:" + (archetype == "stalker" ? "ranger" : archetype);
+
+    /// <summary>Her hairstyle: the one chosen if it is one of hers (Lore.HerHairs),
+    /// the nearest of hers to an older save's cut, her first otherwise.</summary>
+    public static string HerHair(string? style)
+    {
+        if (Lore.HerHairs.Any(h => h.Id == style)) return style!;
+        return style switch { "Hair_BuzzedFemale" or "Hair_Buzzed" or "none" => "pixie", "Hair_Buns" => "bob", _ => Lore.HerHairs[0].Id };
+    }
 
     /// <summary>The survivor as their character sheet has them.</summary>
     public static Loadout Of(CharacterData ch)
@@ -73,12 +81,18 @@ public static class Loadouts
         string? skin = Lore.Skins.FirstOrDefault(s => s.Id == ch.Skin)?.Color;
         string? hair = Lore.Hairs.FirstOrDefault(x => x.Id == ch.Hair)?.Color;
         string? cloak = ch.Cloak == "none" ? null : Lore.CloakDyes.FirstOrDefault(d => d.Id == ch.Cloak)?.Color;
+        var eyes = Lore.Eyes.FirstOrDefault(e => e.Id == ch.Eyes);
         var person = new PersonSpec
         {
             Sex = sex, Body = her ? HerBody : null, Outfit = her ? new List<string> { HerOutfit(ch.Archetype) } : OutfitOf(ch.Archetype, sex, hood),
-            Hair = her || hood || ch.HairStyle == "none" ? null : ch.HairStyle ?? Lore.HairStyles(sex)[0],
+            Hair = her ? HerHair(ch.HairStyle) : hood || ch.HairStyle == "none" ? null : ch.HairStyle ?? Lore.HairStyles(sex)[0],
             Beard = sex == Sex.Male && (ch.Beard ?? true),
             HairColor = string.IsNullOrEmpty(hair) ? null : hair, Skin = string.IsNullOrEmpty(skin) ? null : skin, Figure = ch.Figure,
+            // Her face, eyes and paint are her body's own.
+            Face = her && ch.Face is { Count: > 0 } face ? new Dictionary<string, double>(face) : null,
+            Eyes = her && eyes != null && eyes.Color != "" ? eyes.Color : null,
+            EyeRing = her && eyes != null && eyes.Ring != "" ? eyes.Ring : null,
+            Paint = her && Lore.Paints.Any(p => p.Id == ch.Paint && p.Id != "none") ? ch.Paint : null,
             // The calling's colours dye the cloth; trousers take the darker
             // colour (or the cloth's, darker still).
             Dye = pal.Paint.TryGetValue("cloth", out var cloth)
