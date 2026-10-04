@@ -151,6 +151,10 @@ The coordinator's notes on the AI faces:
   - Run it with `python tools/assets/face_refs.py <out> [names]`.
 - **This worktree has no `godot/.godot` import cache.** The first Godot run imports about 2,900 files (slow, and it uses disk). The retired UI lead's worktree has a cache.
 - **heroine.glb** in git comes from the outfits `--body` export, not from heroine_head.py's own export, which lacks the outfit-hiding vertex colours.
+- **Import settings to keep** (the performance lead, a7145e18b3eb78294, on its branch `worktree-agent-a7145e18b3eb78294`), so her detail holds at every zoom. When you re-export, keep the `.import` files as they are:
+  - `heroine.glb.import` has `import_script/path="res://tools_scenes/import_mipmaps.gd"`, which gives embedded images mipmaps.
+  - Every texture of hers (head_tex, paint, skin_pores, outfit_tex) has `mipmaps/generate=true` and `detect_3d/compress_to=0`. Give any new texture the same.
+  - The hairstyles' `.gltf.import` files have `meshes/generate_lods=false`: Godot's LOD thins hair cards.
 
 ## Collaborators
 - **Main session:** outfits, the roster, merging.
