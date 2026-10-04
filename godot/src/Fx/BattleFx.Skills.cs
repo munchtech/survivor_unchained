@@ -76,6 +76,7 @@ public partial class BattleFx
                 Sparks.Spawn(at, Vector3.Zero, 0.16f, 0.7f * g, art == "dagger_blood" ? Blood : SteelWhite * 0.8f, null, 0.8f * g, sprite: Sprites.Of("scratch"), spinV: 0);
                 break;
             case "disc" or "disc_aegis" or "disc_reckon":
+                if (e.Crit) Books.Spawn("gold_flare", at + Vector3.Up * 0.3f, 0.6f * g, 0.3f, new Color(1f, 0.85f, 0.55f, 0.85f), sizeEnd: 1.4f * g);
                 Sparks.Spawn(at, Vector3.Zero, 0.18f, 1.1f * g, OathGold, OathGold * 0.2f, 0.3f, sprite: Sprites.Range("star").First + 3 + 1, spinV: 2);
                 break;
             case "mote" or "mote_cascade" or "mote_star":
@@ -95,7 +96,7 @@ public partial class BattleFx
         var (book, tint) = art switch
         {
             "moon" or "moon_brand" => ("moon_burst", new Color(0.9f, 0.85f, 1.1f, 0.85f)),
-            "umbral" or "ruin" or "siphon" or "tether" or "tether2" or "tether_mark" => ("shadow_burst", new Color(1.3f, 1.2f, 1.4f, 0.9f)),
+            "umbral" or "ruin" or "siphon" or "tether" or "tether2" or "tether_mark" => ("shadow_wisps", new Color(1.2f, 1.1f, 1.4f, 0.9f)),
             _ => ((string?)null, Colors.White),
         };
         if (book != null) Books.Spawn(book, at, 0.25f * g, 0.3f, tint, sizeEnd: (0.55f + share * 0.5f) * g);
@@ -637,6 +638,7 @@ public partial class BattleFx
                 }
                 Scars.Add("sigil", ground, r * 0.7f, art == "nova_sun" ? 3 : 1.4f, 0.6f);
                 Flash(ground + Vector3.Up * 1.5f, h.Light, 7, 0.4f, r * 2.5f);
+                Books.Spawn("gold_flare", ground + Vector3.Up * 1.4f, r * 0.35f, 0.35f, new Color(1f, 0.85f, 0.55f, 0.8f), sizeEnd: r * 0.9f);
                 return true;
             }
             case "nova_blood" or "nova_rend" or "nova_harrow":
@@ -809,7 +811,8 @@ public partial class BattleFx
             for (int i = 0; i < 10; i++)
                 Smoke.Spawn(a.Lerp(b, R()), new Vector3((R() - 0.5f) * 2, 0.5f + R(), (R() - 0.5f) * 2), 0.8f + R() * 0.5f, 0.09f, new Color("#3f8a2a"), new Color("#26501a"), 0.07f, gravity: 2, sprite: Sprites.Of("dirt"), spinV: 5);
         }
-        Sparks.Spawn(a, Vector3.Zero, life * 0.6f, 0.9f * g, pal.Core * 0.7f, pal.Glow * 0.2f, 0.4f, sprite: Sprites.Of("flare"));
+        if (sun) Sparks.Spawn(a, Vector3.Zero, life * 0.6f, 0.9f * g, pal.Core * 0.7f, pal.Glow * 0.2f, 0.4f, sprite: Sprites.Of("flare"));
+        else Books.Spawn("leaf_burst", a, 1.6f * g, 0.45f, new Color(0.8f, 1.2f, 0.8f, 0.85f), sizeEnd: 0.6f * g);
         Sparks.Spawn(b, Vector3.Zero, life * 0.6f, 0.7f * g, pal.Core * 0.5f, pal.Glow * 0.2f, 0.3f, sprite: Sprites.Of("flare"));
         for (int i = 0; i < 14; i++)
         {
@@ -1073,6 +1076,7 @@ public partial class BattleFx
                 case Inside.Roots when R() < 0.35f:
                     // Thorns: brambles break the ground and sink again, here and there.
                     Erupt(x, zz, 0, 0.45f, 3, SpikeKind.Thorn, 0.9f, 1.6f, Hdr("#4ec85a", 1f));
+                    Books.Spawn("bramble_burst", foot + Vector3.Up * 0.1f, 1.2f, 1.4f, new Color(0.9f, 1.2f, 0.9f, 0.8f), flat: true, sizeEnd: 1.6f);
                     break;
                 default:
                     // Thorns: a green glint where a bramble catches the light.

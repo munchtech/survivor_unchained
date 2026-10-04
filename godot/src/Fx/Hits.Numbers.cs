@@ -25,6 +25,8 @@ public partial class Hits
         public int Target;
         public double Sum, Born;
         public bool Crit, Heavy;
+        /// <summary>Damage over time's own colour (its school's); none for a blow.</summary>
+        public Color? Tint;
     }
 
     struct Waiting
@@ -33,6 +35,7 @@ public partial class Hits
         public Vector3 At;
         public double Amount, MaxHp;
         public bool Crit;
+        public Color? Tint;
     }
 
     readonly Tallied[] tallies = new Tallied[64];
@@ -44,23 +47,25 @@ public partial class Hits
     static int[] InitTallyOf()
     {
         var a = new int[64];
-        Array.Fill(a, -1);
+        Array.Fill(a, int.MinValue);
         return a;
     }
 
     /// <summary>The label `i` is being reused: whatever target it was counting for lets it go.</summary>
     void Untally(int i)
     {
-        if (i < tallyOf.Length && tallyOf[i] >= 0)
+        if (i < tallyOf.Length && tallyOf[i] != int.MinValue)
         {
             if (labelOfTarget.TryGetValue(tallyOf[i], out int j) && j == i) labelOfTarget.Remove(tallyOf[i]);
-            tallyOf[i] = -1;
+            tallyOf[i] = int.MinValue;
         }
     }
 
-    /// <summary>A hit on `target` for this frame's numbers (shown at Flush).</summary>
-    public void Tally(int target, Vector3 at, double amount, double maxHp, bool crit)
+    /// <summary>A hit on `target` for this frame's numbers (shown at Flush). Damage over
+    /// time passes its school's colour as `dot`, and sums into a number of its own.</summary>
+    public void Tally(int target, Vector3 at, double amount, double maxHp, bool crit, Color? dot = null)
     {
+        if (dot != null) { target = ~target; crit = false; }
         // Still counting for this target: it sums, at once and whatever the budget.
         if (labelOfTarget.TryGetValue(target, out int i) && numbers[i].T < 1 && clock - tallies[i].Born < Beat)
         {
@@ -84,7 +89,7 @@ public partial class Hits
                 waiting[k] = w;
                 return;
             }
-        waiting.Add(new Waiting { Target = target, At = at, Amount = amount, MaxHp = maxHp, Crit = crit });
+        waiting.Add(new Waiting { Target = target, At = at, Amount = amount, MaxHp = maxHp, Crit = crit, Tint = dot });
     }
 
     /// <summary>Show this frame's new numbers: her crits always, then the biggest, eight at most; `her` is where she stands.</summary>
@@ -107,7 +112,7 @@ public partial class Hits
                     at = new Vector3(h.X + off.X * ClearOfHer, at.Y, h.Z + off.Z * ClearOfHer);
                 }
             }
-            var t = new Tallied { Target = w.Target, Sum = w.Amount, Born = clock, Crit = w.Crit, Heavy = w.MaxHp > 0 && w.Amount > w.MaxHp * 0.2 };
+            var t = new Tallied { Target = w.Target, Sum = w.Amount, Born = clock, Crit = w.Crit, Heavy = w.MaxHp > 0 && w.Amount > w.MaxHp * 0.2, Tint = w.Tint };
             int i = Show(at, "", Colors.White, 60);
             tallies[i] = t;
             tallyOf[i] = w.Target;
@@ -124,8 +129,9 @@ public partial class Hits
         var l = numbers[i].Label;
         int n = (int)Math.Round(t.Sum);
         l.Text = t.Crit ? $"{n}!" : n.ToString();
-        l.Modulate = t.Crit ? new Color(1.6f, 1.15f, 0.4f) : new Color(1, 0.94f, 0.86f);
-        l.FontSize = (t.Crit ? 80 : 58) + (t.Heavy ? 18 : 0);
+        l.Modulate = t.Tint ?? (t.Crit ? new Color(1.6f, 1.15f, 0.4f) : new Color(1, 0.94f, 0.86f));
+        // What burns or bleeds a body is told smaller than the blows themselves.
+        l.FontSize = t.Tint != null ? 44 : (t.Crit ? 80 : 58) + (t.Heavy ? 18 : 0);
     }
 
     void StepTally(double dt) => clock += dt;

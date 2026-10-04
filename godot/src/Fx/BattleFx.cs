@@ -601,7 +601,10 @@ public partial class BattleFx : Node3D
                     var at = V(e.X, Y(e.X, e.Z) + 1.0, e.Z);
                     if (e.Dot)
                     {
-                        if (R() < 0.35f) Hits.Text(at, ((int)Math.Round(e.Amount)).ToString(), new Color(0.85f, 0.8f, 0.72f, 0.85f), 40);
+                        // Summed per body per beat like the blows, in the colour of what is doing it.
+                        var dc = Palette.Of(e.School).Glow;
+                        float dm = Mathf.Max(dc.R, Mathf.Max(dc.G, dc.B));
+                        Hits.Tally(e.Target, at, e.Amount, e.MaxHp, false, new Color(dc.R / dm * 1.1f, dc.G / dm * 1.1f, dc.B / dm * 1.1f, 0.9f));
                         break;
                     }
                     if (e.Blocked) { Hits.Text(at, "blocked", new Color(0.7f, 0.75f, 0.8f), 44); Burst(at, School.Physical, 5, 3, 2, 0.06f); break; }
