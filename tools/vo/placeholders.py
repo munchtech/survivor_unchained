@@ -20,6 +20,7 @@ shared card only ever holds one of them.
 from __future__ import annotations
 
 import argparse
+import glob
 import hashlib
 import json
 import os
@@ -247,16 +248,24 @@ def main(argv):
     ap.add_argument("--redo", action="store_true", help="make placeholders again for lines that have one")
     ap.add_argument("--refault", action="store_true", help="judge the words of every placeholder again from what Whisper "
                                                                 "heard, with the lexicon as it is now (no GPU)")
+    ap.add_argument("--faulted", action="store_true", help="with --redo: only placeholders whose words were wrong")
+    ap.add_argument("--first-round", type=int, default=1, help="start at this round (new seeds: a redo of a line already "
+                                                                    "tried for three rounds starts at 4)")
+    ap.add_argument("--remix", action="store_true", help="mix these placeholders again from their takes, as the mix is now "
+                                                         "(timing, squeeze, the name's place); no GPU")
     ap.add_argument("--check", nargs=2, help=argparse.SUPPRESS)
     a = ap.parse_args(argv)
     if a.check:
         return run_check(*a.check)
     if a.refault:
         return refault()
+    if a.remix:
+        return remix(a.ids)
     man = lines_mod.merge(lines_mod.build())
     by_id = {l["id"]: l for l in man}
     todo = [l for l in man if l["status"] != "skip"
             and (l["status"] in ("todo", "stale", "failed") or (a.redo and (l.get("take") or {}).get("placeholder") and not (l.get("take") or {}).get("final_parts")))
+            and (not a.faulted or word_faults(l.get("take") or {}))
             and (not a.ids or any(l["id"] == p or l["id"].startswith(p) for p in a.ids))
             and (not a.voice or any(s["voice"] == a.voice for s in l["segments"]))
             and all(os.path.exists(os.path.join(REFS, f"{s['voice']}.flac")) for s in l["segments"])]
@@ -277,9 +286,10 @@ def main(argv):
         by_line = {l["id"]: l for l in group}
         best: dict[tuple, dict] = {}
         nudge: dict[str, int] = {}
-        pending = [j for l in group for j in segment_jobs(l, 1)]
-        for rnd in range(1, a.rounds + 1):
-            if rnd > 1:
+        first = a.first_round
+        pending = [j for l in group for j in segment_jobs(l, first)]
+        for rnd in range(first, first + a.rounds):
+            if rnd > first:
                 pending = [j for l in group for j in segment_jobs(l, rnd, nudge.get(l["id"], 0))
                            if (l["id"], j["part"]) not in best or best[(l["id"], j["part"])]["faults"]]
             if not pending:
@@ -314,9 +324,10 @@ def main(argv):
             if now["hash"] != l["hash"]:
                 log(f"  {l['id']}: its words changed during the run; next time")
                 continue
-            take = produce.finish(now, picks, log)
+            take = produce.finish(now, picks, log, squeeze=True)
             take.update(model="maya1 performance + seed-vc", placeholder=True)
-            faults = [f for p in picks for f in p["faults"]]
+            # The length is judged again on the finished mix (take["timing"]).
+            faults = [f for p in picks for f in p["faults"] if not f.startswith(TIMING)]
             if faults:
                 take["faults"] = faults
             now.update(take=take, status="done", placeholder=True)
@@ -357,6 +368,53 @@ def refault():
         print("  " + w)
 
 
+TIMING = ("long:", "short:")
+
+
+def word_faults(take: dict) -> list[str]:
+    """A take's faults that are about the words (not its length)."""
+    return [f for f in take.get("faults", []) if not f.startswith(TIMING)]
+
+
+def _src(path: str | None) -> str | None:
+    """A take's file, or the one it was renamed to when the work files were
+    keyed by what was asked (p0_vc_r1.wav became p0_vc_r1_<key>.wav)."""
+    if not path:
+        return None
+    if os.path.exists(path):
+        return path
+    alt = glob.glob(glob.escape(os.path.splitext(path)[0]) + "_*.wav")
+    return alt[0] if len(alt) == 1 else None
+
+
+def remix(prefixes: list[str]):
+    """Placeholders mixed again from the takes they were made from, as the
+    mix now stands: a cut's timing (pauses, and the squeeze), the name's
+    place, the read's length. The words are not judged again."""
+    man = lines_mod.merge(lines_mod.build())
+    n = 0
+    for l in man:
+        t = l.get("take") or {}
+        if not t.get("placeholder") or t.get("final_parts") or t.get("hash") != l["hash"]:
+            continue
+        if prefixes and not any(l["id"] == p or l["id"].startswith(p) for p in prefixes):
+            continue
+        parts = [dict(p, src=_src(p.get("src"))) for p in t.get("parts") or []]
+        if len(parts) != len(l["segments"]) or not all(p["src"] for p in parts):
+            print(f"  {l['id']}: its takes are gone, or its parts changed; redo it instead")
+            continue
+        picks = [{**p, "path": p["src"], "words_per_sec": p.get("wps", 0), "faults": []} for p in parts]
+        new = produce.finish(l, picks, print, squeeze=True)
+        new.update(model=t.get("model", "maya1 performance + seed-vc"), placeholder=True)
+        if word_faults(t):
+            new["faults"] = word_faults(t)
+        l["take"] = new
+        n += 1
+    lines_mod.save(man)
+    produce.write_index(man)
+    print(f"{n} placeholders mixed again")
+
+
 def rank(p: dict) -> tuple:
     """Fewest faults first; then, for a line timed to a cut, the nearest to its window."""
     return len(p["faults"]), p.get("off_by", 0.0)
@@ -370,7 +428,7 @@ def timed(line: dict, cand: dict, nudge: dict):
     if not win or len(line["segments"]) != 1:
         return
     try:
-        _, _, read, _ = produce.fit(line, [cand])
+        _, _, read, _, _ = produce.fit(line, [cand])
     except Exception as e:  # a take the mix cannot read is judged on its words alone
         cand["faults"] = cand["faults"] + [f"unmixed: {type(e).__name__}"]
         return
