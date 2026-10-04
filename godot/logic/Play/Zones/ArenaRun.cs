@@ -156,6 +156,8 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         // The people's own cover: graves, walls, rubble, lanterns.
         foreach (var pc in map.Pieces) G.Look.AddProp(pc.Id, pc.X, pc.Z, pc.Rot, pc.Scale);
         b.Rules = MapOffers.Rules(Spec.Map);
+        sworn = MapOffers.Rules(Spec.Map);
+        Dusk();
         // A fiftieth still paid a Kerchief night 1.6k-2.1k gold from its forty thousand dead, and a
         // three-hundredth 530-690 (crafting's probes, against an economy that holds at 350-450).
         b.Rules.FodderGold = 0.0015;
@@ -199,11 +201,41 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     double Beyond => Math.Max(0, Seconds - End) / 60;
     // A tier is three creature levels: the survivor's own pace (levels 1, 4, 7 for tiers 1 to 3),
     // so a tier at the survivor's level is a fair night and one above it a hard one.
-    // Dusk: the tier's strength (and an oath's levels) comes in over the first three minutes,
-    // so a night is not lost before the ember has given anything to choose.
-    int Level() => Math.Max(1, Spec.Tier * 3 - 2 + levels + (int)(Minute / 2.5) + (int)(Beyond / 2) - Math.Max(0, (int)Math.Ceiling(3 - Minute)));
+    // Dusk: the tier's strength (and an oath's levels) comes in over the first three minutes (five
+    // from the third tier), so a night is not lost before the ember has given anything to choose.
+    int Level() => Math.Max(1, Spec.Tier * 3 - 2 + levels + (int)(Minute / 2.5) + (int)(Beyond / 2) - Math.Max(0, (int)Math.Ceiling(DuskMinutes - Minute)));
+    double DuskMinutes => Asks ? 5 : 3;
     /// <summary>What an ordinary creature's health is divided by at a minute.</summary>
     public static double FodderEase(double minute) => 1 + 0.08 * minute;
+
+    /// <summary>From the third tier the night asks the draft. The experience lead's brief: there a
+    /// careless draft should lose noticeably more often than a planned one, while below it choice is
+    /// expression (a random drafter won as often as a greedy one at tiers 1-3, 85% to 83%). So from
+    /// the third tier the crowd softens less with the minutes (it tests the build's reach), its blows
+    /// grow from the eighth minute to twice by the half hour (a build that cannot clear is touched
+    /// more), and champions, heralds and minibosses come a quarter stronger from the sixth (they test
+    /// what it does to one). Dusk is longer there too, so the night is lost to the draft, not to the
+    /// first minutes. Measured (docs/team/combat.md): planned 87%, careless 70%, from 93% and 87%.</summary>
+    bool Asks => Spec.Tier >= 3;
+    double EaseFor(double m) => Asks ? 1 + 0.08 * m * 0.4 : FodderEase(m);
+
+    /// <summary>The table's oaths as sworn, and whether dusk is over.</summary>
+    MapRules sworn = new();
+    bool dusked;
+
+    /// <summary>Dusk for the oaths' bites too: what their blows carry (poison, the winter's crawl) and
+    /// the blight's cut to mending come in over the first three minutes, as their levels do. At
+    /// tier 3 the blight's poison and cut from the first blow felled a fifth of the runs in minutes
+    /// 1-5, before a draft had made anything to answer it with.</summary>
+    void Dusk()
+    {
+        if (B == null || dusked) return;
+        double k = Math.Clamp(Minute / 3, 0, 1);
+        if (k >= 1) dusked = true;
+        B.Rules.HealCut = sworn.HealCut * k;
+        B.Rules.HitPoison = sworn.HitPoison && k >= 0.5;
+        B.Rules.HitChill = sworn.HitChill && k >= 0.5;
+    }
 
     /// <summary>How many the horde is kept at (a dark bargain struck asks for more of them).</summary>
     // Before the boss, the night's shape (ArenaPacing) swells and thins the line.
@@ -289,7 +321,10 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     /// miniboss's whistle, the ground opening) are the crowd too.</summary>
     void Harden(Enemy e, bool champion)
     {
-        if (!champion && !e.Elite) e.MaxHp = e.Hp = e.MaxHp / FodderEase(Math.Min(Minute, 30));
+        if (!champion && !e.Elite) e.MaxHp = e.Hp = e.MaxHp / EaseFor(Math.Min(Minute, 30));
+        if (Asks && !champion && !e.Elite) e.Damage *= 1 + Math.Clamp((Math.Min(Minute, 30) - 8) / 22, 0, 1);
+        // (Not the boss: its contract sets its own health.)
+        if (Asks && (champion || e.Elite) && e.Def.Id != BossDef && Minute >= 6) { e.MaxHp = e.Hp = e.MaxHp * 1.25; e.Damage *= 1.25; }
         if (Beyond > 0)
         {
             var (hp, dmg, pace) = Hardening(Beyond);
@@ -408,6 +443,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             if (e.Def.Aura != null) auraAlive++;
         }
         aliveNow = alive;
+        Dusk();
         B.Charges.Cap = ChargeCap();
         B.Charges.Spikes = !bossUp;
         if (!won && !bossUp)

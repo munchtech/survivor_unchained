@@ -41,8 +41,9 @@ public sealed class PackMother : ArenaBoss
     public override School Weakness => School.Fire;
     public override string WeaknessText => $"Fire breaks {Her} moon-howl";
     // Measured (docs/team/combat.md): at 12 + 2 a tier a par build broke her for 63% of
-    // her health over the floors and won in 69 s; the contract asks 90-120.
-    public override double HealthMul(int tier) => 30 + 5 * tier;
+    // her health over the floors and won in 69 s; the contract asks 90-120. At 30 + 5 a tier,
+    // with the miniboss chests' cards, 78 s.
+    public override double HealthMul(int tier) => 37 + 6.2 * tier;
     /// <summary>Greymuzzle is a he; the Pack-Mother a she.</summary>
     bool He => A.BossName == "Greymuzzle";
     string Her => He ? "his" : "her";
@@ -233,7 +234,8 @@ public sealed class BarrowLord : ArenaBoss
 
     // Undead resist frost and shadow; on him they do not, so every school can lay him down in time.
     // 9 + 1.5 a tier measured 80 s and a 14% Break with his laying-down; the contract asks 90-120.
-    public override double HealthMul(int tier) => 13 + 2.2 * tier;
+    // 13 + 2.2 a tier, with the miniboss chests' cards: 81 s.
+    public override double HealthMul(int tier) => 15.5 + 2.6 * tier;
 
     protected override void Enter(int phase)
     {
@@ -665,8 +667,8 @@ public sealed class RedHand : ArenaBoss
     ];
     public override School Weakness => School.Storm;
     public override string WeaknessText => "Storm makes his thief drop what he took";
-    // 12 + 2 a tier measured 72 s and a 15% Break.
-    public override double HealthMul(int tier) => 21 + 3.5 * tier;
+    // 12 + 2 a tier measured 72 s and a 15% Break; 21 + 3.5 a tier, with the miniboss chests' cards, 79 s.
+    public override double HealthMul(int tier) => 26 + 4.3 * tier;
     protected override string HardName => "Everything Owed";
     double tollT = 10, volleyT = 5, cageT = 3, maulT = 2, sweepT = 4;
     bool levy, everything;

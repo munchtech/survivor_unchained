@@ -291,8 +291,9 @@ public static class Enemies
             Lesson = "Five bolts in a fan. Stand in a gap, or close on it.",
             Note = "The Legion called its bolt-engine a scorpion. This one has carried his for two thousand years and no longer needs it: he looses five where it loosed one, and he has not forgotten how to keep his distance." },
         new() { Id = "mb_decurion", Name = "The Decurion", Family = Family.Undead, Faction = Faction.Dead, Visual = "skeleton_warrior", Scale = 1.65, Tint = (1.05, 0.85, 0.7),
-            // (Measured: 49 s, 123 at the slowest, behind a three-quarter shield: now three fifths, as a champion's.)
-            Health = 560, Speed = 2.4, Damage = 16, Radius = 0.95, Mass = 8, Xp = 40, Resists = Undead, Behavior = Behavior.Guard,
+            // (Measured: 49 s, 123 at the slowest, behind a three-quarter shield: now three fifths, as a champion's;
+            // still 43 s at 560 and 54 s at 460 once the third tier's minibosses came a quarter stronger.)
+            Health = 380, Speed = 2.4, Damage = 16, Radius = 0.95, Mass = 8, Xp = 40, Resists = Undead, Behavior = Behavior.Guard,
             Guard = new(1.6, 0.6), Lunge = new(7, 6, 0.8, 0.45, 14), Summon = new(14, 4, "risen_warrior", 1.4, SpawnStyle.Rise, 3, Word: "Scuta!"),
             Elite = true, Miniboss = true, Loot = "miniboss", AttackEvery = 1.2,
             Lesson = "Shields to the front. Go round them.",
@@ -303,7 +304,8 @@ public static class Enemies
             Lesson = "Many dead in one body. It comes apart, and its parts come apart.",
             Note = "A whole barrow walking. It falls on what is near it, and when it is broken it is not finished." },
         new() { Id = "mb_drowned_reeve", Name = "The Weed-Wife", Family = Family.Undead, Faction = Faction.Dead, Visual = "skeleton_mage", Scale = 1.6, Tint = (0.55, 0.8, 0.9), Glow = 0.08,
-            Health = 560, Speed = 2.1, Damage = 12, Radius = 0.85, Mass = 6, Xp = 40, Resists = Undead, Behavior = Behavior.Caster,
+            // (Measured: 44 s, 173 at the slowest: a caster that keeps its distance is a chase at 560.)
+            Health = 400, Speed = 2.1, Damage = 12, Radius = 0.85, Mass = 6, Xp = 40, Resists = Undead, Behavior = Behavior.Caster,
             Ranged = new() { Range = 10, Cooldown = 2.8, Speed = 7, School = School.Frost, Count = 3, Spread = 0.35, Slow = (0.6, 1.4), Art = "frost_orb" },
             Trail = new(0.6, 1.5, 4, 0.25, School.Frost), Bite = StatusKind.Chill, Elite = true, Miniboss = true, Loot = "miniboss",
             Lesson = "The river's cold walks with her. Keep off her wet ground.",
@@ -333,13 +335,15 @@ public static class Enemies
             Lesson = "She sends the little ones up first, all round you. They run fast and die quick.",
             Note = "Mother of every wick in her tunnel, and she has a great many tunnels. She calls; the ground answers." },
         new() { Id = "mb_bombardier", Name = "The Chucker", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "lampling_sapper", Scale = 1.6, Tint = (1.2, 0.85, 0.65),
-            Health = 420, Speed = 2.7, Damage = 10, Radius = 0.8, Mass = 4, Xp = 40, Behavior = Behavior.Ranged, Resists = new() { [School.Fire] = 0.5, [School.Frost] = -0.3 },
+            // (Measured: 47 s at 420, 102 at the slowest.)
+            Health = 300, Speed = 2.7, Damage = 10, Radius = 0.8, Mass = 4, Xp = 40, Behavior = Behavior.Ranged, Resists = new() { [School.Fire] = 0.5, [School.Frost] = -0.3 },
             Ranged = new() { Range = 10, Cooldown = 3.4, Speed = 8, School = School.Fire, Lob = true, Count = 3, Spread = 0.45, Zone = new(1.8, 3.5, 0.35), Art = "firepot" },
             Burst = new(3, 1.2, 0.8, School.Fire, StatusKind.Burn), Elite = true, Miniboss = true, Loot = "miniboss",
             Lesson = "Three pots at a time. Where they land, it burns.",
             Note = "The Dig's best thrower, which is to say its worst neighbour. Three pots in the air before the first has landed." },
         new() { Id = "mb_lamplighter", Name = "The Lamplighter", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "lampling", Scale = 1.7, Tint = (0.8, 0.95, 1.4), Glow = 0.45,
-            Health = 480, Speed = 2.6, Damage = 9, Radius = 0.85, Mass = 5, Xp = 40, Behavior = Behavior.Ranged, Resists = new() { [School.Fire] = 0.5, [School.Frost] = -0.3 },
+            // (Measured: 35 s at 480.)
+            Health = 380, Speed = 2.6, Damage = 9, Radius = 0.85, Mass = 5, Xp = 40, Behavior = Behavior.Ranged, Resists = new() { [School.Fire] = 0.5, [School.Frost] = -0.3 },
             Ranged = new() { Range = 10, Cooldown = 3.0, Speed = 9, School = School.Fire, Count = 5, Spread = 0.22, Art = "cinder" },
             Aura = new(8, 9, 4, Ward: 0.3, Word: "Light!"), Elite = true, Miniboss = true, Loot = "miniboss",
             Lesson = "Five flames in a fan, and its light wards the diggers near it.",
@@ -371,7 +375,8 @@ public static class Enemies
             Aura = new(8, 9, 4, Haste: 1.2, Word: "Drum"), Loot = "kerchief",
             Note = "The levy marched to a drum. They still do, to rob a wagon, and they come quicker for it. The drumming stops when it dies." },
         new() { Id = "mb_firepot_nan", Name = "Firepot Nan", Family = Family.Kerchief, Faction = Faction.Kerchief, Visual = "kerchief_hooded", Scale = 1.5, Tint = (1.1, 0.85, 0.75),
-            Health = 400, Speed = 3.2, Damage = 10, Radius = 0.75, Mass = 4, Xp = 40, Gold = 15, Resists = Kerchief, Behavior = Behavior.Ranged,
+            // (Measured: 35 s at 400, 134 at the slowest: the third minute's build has little to reach her with.)
+            Health = 300, Speed = 3.2, Damage = 10, Radius = 0.75, Mass = 4, Xp = 40, Gold = 15, Resists = Kerchief, Behavior = Behavior.Ranged,
             Ranged = new() { Range = 10, Cooldown = 3.2, Speed = 8.5, School = School.Fire, Lob = true, Count = 3, Spread = 0.45, Zone = new(1.7, 3.5, 0.3), Art = "firepot" },
             Elite = true, Miniboss = true, Loot = "miniboss",
             Lesson = "Three pots at once, and the throwers follow her. Close on her through the gaps.",

@@ -882,6 +882,17 @@
    "stack": 99,
    "description": "Nails, buckles, a blade's broken half. What gear comes to when it is broken down, and what Brannoc tempers and remakes with."
   },
+  "wayfinder_chart": {
+   "id": "wayfinder_chart",
+   "name": "Wayfinder's Chart",
+   "kind": "tool",
+   "rarity": 0,
+   "icon": "map",
+   "value": 25,
+   "stack": 1,
+   "description": "A way through somewhere bad, inked on hide. Take it to the Wayfinder's table to walk it; it is used up when you do.",
+   "lore": "The Wayfinder's hand, or a copy of it. The marks in the margin are what the last one to walk it met."
+  },
   "health_draught": {
    "id": "health_draught",
    "name": "Health Draught",

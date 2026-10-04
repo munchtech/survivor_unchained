@@ -183,6 +183,8 @@ public sealed class WorldState
     public Dictionary<string, ShopState> Shops = new();
     /// <summary>The ember arena begun (Arena/Arena.cs), until it is over.</summary>
     public Arena.ArenaSpec? Arena;
+    /// <summary>The Wayfinder's chart being walked, while it is (docs/SKILLS_DESIGN.md §17).</summary>
+    public Maps.Chart? Map;
     /// <summary>Story fights lost, waiting at the Wayfinder's table to be taken again.</summary>
     public List<Arena.ArenaSpec> Rematches = new();
 

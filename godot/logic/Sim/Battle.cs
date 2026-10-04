@@ -84,6 +84,9 @@ public sealed class MapRules
     /// full). An arena's thousand champions at the day's rate paid a Kerchief night 2.5k-3.3k gold,
     /// more than the rest of Act 1 together; there it is a tenth (crafting's measure).</summary>
     public double ChampionGold = 1;
+    /// <summary>A map's suffixes on the survivor: armour counted for less, a dash slower to come
+    /// back, regeneration, and what a draught mends (docs/SKILLS_DESIGN.md §17.2).</summary>
+    public double ArmourMul = 1, DashRecharge = 1, RegenMul = 1, DraughtMul = 1;
 }
 
 public sealed class BattleHooks
@@ -415,7 +418,7 @@ public sealed partial class Battle
         int maxCharges = RoundInt(st.Get(Stat.DashCharges));
         if (p.DashCharges < maxCharges)
         {
-            p.DashRecharge += dt * DashHaste() / st.Get(Stat.DashCooldown);
+            p.DashRecharge += dt * DashHaste() * Rules.DashRecharge / st.Get(Stat.DashCooldown);
             if (p.DashRecharge >= Abilities.Dash.Recharge) { p.DashRecharge = 0; p.DashCharges++; }
         }
 
@@ -424,7 +427,7 @@ public sealed partial class Battle
         if (blockRank > 0 && p.BlockT > 0) p.BlockT = Math.Max(0, p.BlockT - dt);
 
         // Regeneration and hazards on the survivor.
-        double regen = st.Get(Stat.Regen);
+        double regen = st.Get(Stat.Regen) * Rules.RegenMul;
         if (regen > 0 && p.Hp < MaxHp) HealPlayer(regen * dt, "regen", true);
         // Bitterroot draws it: what burns or poisons the survivor wears off twice as fast.
         double cure = Boons.ContainsKey("recovery") ? 2 : 1;
@@ -1072,7 +1075,7 @@ public sealed partial class Battle
             });
         }
         double dmg = amount;
-        double armor = st.Get(Stat.Armor);
+        double armor = st.Get(Stat.Armor) * Rules.ArmourMul;
         foreach (var z in Zones.Items) if (z.Alive && z.Armor > 0 && Dist(z.X, z.Z, p.X, p.Z) < z.Radius) armor += z.Armor;
         dmg *= 1 - StatBlock.ArmorReduction(armor);
         dmg *= 1 - Clamp(st.GetRaw(Stat.ResistOf(school)), -1, 0.8);
@@ -1100,7 +1103,7 @@ public sealed partial class Battle
         var p = Player;
         if (!p.Alive || p.Iframes > 0 || p.Leap != null) return;
         var st = Stats;
-        double dmg = amount * (1 - StatBlock.ArmorReduction(st.Get(Stat.Armor))) * (1 - Clamp(st.GetRaw(Stat.ResistOf(school)), -1, 0.8));
+        double dmg = amount * (1 - StatBlock.ArmorReduction(st.Get(Stat.Armor) * Rules.ArmourMul)) * (1 - Clamp(st.GetRaw(Stat.ResistOf(school)), -1, 0.8));
         if (p.BulwarkT > 0) dmg *= Has("unmoving") ? 0.2 : 0.35;
         if (Art.WraithT > 0) dmg *= 0.5;
         string source = school switch { School.Fire => "burning ground", School.Frost => "frozen ground", School.Nature => "foul ground", _ => "bad ground" };
@@ -1273,7 +1276,7 @@ public sealed partial class Battle
     {
         var p = Player;
         if (!p.Alive) return;
-        double h = amount * Stats.Get(Stat.Healing) * (1 - Rules.HealCut);
+        double h = amount * Stats.Get(Stat.Healing) * (1 - Rules.HealCut) * (source == "draught" ? Rules.DraughtMul : 1);
         double before = p.Hp;
         p.Hp = Math.Min(MaxHp, p.Hp + h);
         if (!silent && p.Hp - before > 0.5) Events.Emit(new Ev.PlayerHeal { Amount = p.Hp - before });

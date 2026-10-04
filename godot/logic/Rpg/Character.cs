@@ -34,6 +34,8 @@ public sealed class ItemInstance
     public List<string>? Marks;
     /// <summary>How often its three coals have been drawn again today.</summary>
     public int? Draw;
+    /// <summary>A Wayfinder's chart: the map it opens (docs/SKILLS_DESIGN.md §17.2).</summary>
+    public Maps.Chart? Chart;
 }
 
 public enum ConditionId { Wounded, Blightsick, Poisoned, Blessed, Rested, Wolfscent, Hunted, Warmed }

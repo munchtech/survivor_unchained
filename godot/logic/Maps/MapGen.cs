@@ -70,6 +70,9 @@ public sealed class MapBuild
     public required Dictionary<string, FloraKind> Kinds;
     public required List<Area> Areas;
     public required List<PackSpot> Packs;
+    /// <summary>The ways between the clearings, in order: from area k to area k + 1, point by point
+    /// (where to walk, and how wide it is).</summary>
+    public List<(double X, double Z, double Hw)[]> Ways = new();
     /// <summary>Can the survivor stand here: res by res, 1 m apart, as the heights.</summary>
     public required bool[] Walkable;
     public Area Start => Areas[0];
@@ -613,7 +616,7 @@ public static class MapGen
         return new MapBuild
         {
             Spec = spec, Meta = meta, Ground = ground, SplatRes = SplatRes, Splat = splat, Flora = flora, Props = props, Pieces = pieces,
-            Kinds = kinds, Areas = areas, Packs = packs, Walkable = walk,
+            Kinds = kinds, Areas = areas, Packs = packs, Walkable = walk, Ways = ways,
         };
     }
 

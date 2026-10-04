@@ -99,7 +99,10 @@ public abstract class ArenaBoss
     /// <summary>Brought to its end (held at one) and past the last phase's floor: a boss that ends
     /// otherwise than dying starts its end only now, or a strong build skipped the last floor
     /// (the Barrow Lord was laid down in about 35 s).</summary>
-    protected bool Spent(Enemy e) => Last && e.Hp <= 1.5 && PhaseT >= Current.Floor;
+    protected bool Spent(Enemy e) => Last && e.Hp <= 1.5 && PhaseT >= Current.Floor * FloorScale;
+    /// <summary>The floors over the night's: a map is ten minutes, not thirty, so its ruler's
+    /// gates are shorter there (docs/SKILLS_DESIGN.md §17.3).</summary>
+    public double FloorScale = 1;
 
     /// <summary>The boss's tick: the gate, the enrages, then its moves.</summary>
     public bool Tick(Enemy e, double dt)
@@ -121,10 +124,10 @@ public abstract class ArenaBoss
         {
             e.HpFloor = Math.Max(1, ph.Mark * e.MaxHp);
             bool atMark = e.Hp <= e.HpFloor + 0.5;
-            if ((atMark && PhaseT >= ph.Floor) || (ph.Ceiling > 0 && PhaseT >= ph.Ceiling)) { Turn(e); return true; }
+            if ((atMark && PhaseT >= ph.Floor * FloorScale) || (ph.Ceiling > 0 && PhaseT >= ph.Ceiling)) { Turn(e); return true; }
         }
         // The last phase keeps its floor too; then it dies (or holds at one, for a boss that ends otherwise).
-        else e.HpFloor = DiesAtZero && PhaseT >= ph.Floor ? 0 : 1;
+        else e.HpFloor = DiesAtZero && PhaseT >= ph.Floor * FloorScale ? 0 : 1;
         if (!Soft && FightT >= 180)
         {
             Soft = true;
