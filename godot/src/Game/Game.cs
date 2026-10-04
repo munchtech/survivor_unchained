@@ -742,6 +742,9 @@ public partial class Game : Node, IZoneHost
     /// <summary>How long the camera stays turned to a boss (Ev.Focus).</summary>
     double focusT;
 
+    /// <summary>Quitting: what was fetched ahead let go while the engine is still whole.</summary>
+    public override void _ExitTree() => Prefetch.Release();
+
     public override void _Process(double delta)
     {
         // Something over the game has the buttons: pad buttons mean their menu meaning first.

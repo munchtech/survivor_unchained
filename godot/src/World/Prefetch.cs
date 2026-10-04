@@ -59,6 +59,17 @@ public static class Prefetch
         asked.Clear();
     }
 
+    /// <summary>All of it let go, while the engine is still whole (the game
+    /// calls this as it leaves the tree). Held by C# to the very end, it was
+    /// disposed only once the engine had begun to come apart, and now and then
+    /// the game crashed as it quit (two runs in twenty).</summary>
+    public static void Release()
+    {
+        Collect();
+        foreach (var r in kept.Values) r.Dispose();
+        kept.Clear();
+    }
+
     static List<string>? wardrobe;
 
     /// <summary>Every file a townsperson can be made from: both bodies, every
