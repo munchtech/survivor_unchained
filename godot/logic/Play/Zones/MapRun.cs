@@ -146,6 +146,9 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         base.Begin(b);
         b.Rules = Chart.Rules();
         b.InBounds = map.CanStand;
+        // What the gear inscribes works here, and only here (the scars' kit carries coals).
+        var kit = Character.Kit(G.Journey.Ch);
+        b.Wear(kit.Marks, kit.SkillMods);
         // Packs charge in waves of two, and only once roused; no spikes but the altar's event.
         b.Charges.Spikes = false;
         b.Charges.Cap = 2;

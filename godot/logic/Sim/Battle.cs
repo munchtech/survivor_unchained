@@ -539,6 +539,7 @@ public sealed partial class Battle
         double x0 = p.X, z0 = p.Z;
         Events.Emit(new Ev.Dash { X0 = x0, Z0 = z0, X1 = x0 + p.DashDX * Abilities.Dash.Distance, Z1 = z0 + p.DashDZ * Abilities.Dash.Distance });
         Fire(TriggerEvent.Dash, new ProcCtx { X = p.X, Z = p.Z });
+        OpenGate(x0, z0);
         return true;
     }
 
@@ -574,6 +575,22 @@ public sealed partial class Battle
     {
         if (a == b) return false;
         return (War.TryGetValue(a, out var wa) && Array.IndexOf(wa, b) >= 0) || (War.TryGetValue(b, out var wb) && Array.IndexOf(wb, a) >= 0);
+    }
+
+    /// <summary>The farthest the survivor's side can hurt within r.</summary>
+    public Enemy? FarthestHostile(double x, double z, double r)
+    {
+        Enemy? best = null;
+        double bd = -1;
+        Spatial.Query(x, z, r, q);
+        foreach (var id in q)
+        {
+            var e = Enemies.Items[id];
+            if (!Targetable(e)) continue;
+            double d = (e.X - x) * (e.X - x) + (e.Z - z) * (e.Z - z);
+            if (d <= r * r && d > bd) { bd = d; best = e; }
+        }
+        return best;
     }
 
     public Enemy? NearestHostile(double x, double z, double r, Func<Enemy, bool>? filter = null)
@@ -1951,6 +1968,7 @@ public sealed partial class Battle
     {
         if (!Content.Weapons.All.ContainsKey(id) || Weapons.Exists(w => w.Id == id) || Weapons.Count >= Content.Weapons.MaxWeapons) return null;
         var w = new WeaponInst(id, rank, Weapons.Count);
+        if (SkillMods.TryGetValue(id, out var sm)) Marks.Fold(w.Mods, sm);
         Weapons.Add(w);
         foreach (var t in w.Def.Triggers) AddTrigger(t, $"weapon:{id}", 1, id);
         CheckDiscoveries();
