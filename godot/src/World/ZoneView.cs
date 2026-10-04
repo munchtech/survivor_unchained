@@ -146,6 +146,29 @@ public partial class ZoneView : Node3D
         if (flames.TryGetValue(light, out var f)) f.Position = at;
     }
 
+    /// <summary>A light turned up or down (a cinematic's grade: the camp's fire
+    /// burned down to embers), its colour changed, its flicker slowed; 1 is as built.</summary>
+    public void SetLevel(int light, float level, Color? color = null, float flickerRate = 1)
+    {
+        if (light < 0 || light >= lights.Count) return;
+        levels[light] = (level, flickerRate);
+        if (color is Color c) lights[light].LightColor = c;
+        if (specs[light].Flicker <= 0) lights[light].LightEnergy = specs[light].Intensity / Mathf.Pi * level;
+    }
+
+    readonly Dictionary<int, (float Level, float Rate)> levels = new();
+
+    /// <summary>A fire's flames scaled (0: embers only); its embers and smoke stay.</summary>
+    public void SetFire(int light, float flames)
+    {
+        foreach (var (l, fire) in fires)
+        {
+            if (l != light || fire.GetNodeOrNull<Node3D>("Flames") is not Node3D f) continue;
+            f.Visible = flames > 0.02f;
+            f.Scale = new Vector3(Mathf.Sqrt(Mathf.Max(flames, 0.02f)), Mathf.Max(flames, 0.02f), Mathf.Sqrt(Mathf.Max(flames, 0.02f)));
+        }
+    }
+
     /// <summary>A turning piece (the pump's wheel) stops.</summary>
     public void Stop(string node) => stopped.Add(node);
 
@@ -246,8 +269,10 @@ public partial class ZoneView : Node3D
             var l = specs[i];
             if (l.Flicker <= 0) continue;
             float ph = phases[i];
-            float f = 1 + (Mathf.Sin(t * 8.3f + ph) * 0.5f + Mathf.Sin(t * 19.7f + ph * 1.7f) * 0.3f + Mathf.Sin(t * 3.1f + ph) * 0.2f) * l.Flicker;
-            lights[i].LightEnergy = l.Intensity / Mathf.Pi * f;
+            var (level, rate) = levels.TryGetValue(i, out var lv) ? lv : (1f, 1f);
+            float ft = t * rate;
+            float f = 1 + (Mathf.Sin(ft * 8.3f + ph) * 0.5f + Mathf.Sin(ft * 19.7f + ph * 1.7f) * 0.3f + Mathf.Sin(ft * 3.1f + ph) * 0.2f) * l.Flicker;
+            lights[i].LightEnergy = l.Intensity / Mathf.Pi * f * level;
             lights[i].Position = l.At + new Vector3(0, Mathf.Sin(t * 11 + ph) * 0.03f * l.Flicker, 0);
         }
     }

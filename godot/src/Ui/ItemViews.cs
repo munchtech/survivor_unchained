@@ -240,10 +240,23 @@ public static class ItemViews
         if (def.Weapon is { } iw && Weapons.All.TryGetValue(iw.Id, out var w))
             v.AddChild(Style.H(6, Glyphs.Icon(w.Art, 15, SchoolColors[w.School]), Style.Label($"{w.Name} · rank {iw.Rank} · {w.School.ToString().ToLowerInvariant()}", Style.UiBold, 14, SchoolColors[w.School])));
         v.AddChild(Style.Label(def.Description, Style.Text, Style.Small, Style.Ink, true));
-        var lines = Inventory.Lines(it).Where(l => l != "").ToList();
-        if (lines.Count > 0) v.AddChild(Style.V(1, lines.Select(l => (Control)Style.Label(l, Style.UiBold, Style.Caption, new Color("#9ad8ff"), true)).ToArray()));
+        // Each affix with its grade (I to IV: docs/CRAFTING_DESIGN.md 5.1); coals and worn skills have none.
+        var lines = it.Affixes.Select(a => (Def: Items.Affix(a.Id), a.Tier)).Where(x => x.Def != null && x.Def.Text(x.Tier) != "").ToList();
+        if (lines.Count > 0)
+            v.AddChild(Style.V(1, lines.Select(x =>
+            {
+                var text = Style.Label(x.Def!.Text(x.Tier), Style.UiBold, Style.Caption, x.Def.Kindled != null ? Style.EmberHi : new Color("#9ad8ff"), true);
+                if (x.Def.Kindled != null || x.Def.Grants != null) return (Control)text;
+                var grade = Style.Label(Crafting.Grade(x.Tier), Style.Display, 12, Style.GoldDim);
+                grade.CustomMinimumSize = new Vector2(22, 0);
+                return Style.H(4, grade, text);
+            }).ToArray()));
+        if (it.Heat != null && Crafting.OpenSeams(it) is int open && open > 0)
+            v.AddChild(Style.Label(open == 1 ? "An open seam: something can be worked into it" : $"{open} open seams: things can be worked into it", Style.TextItalic, Style.Caption, Style.GoldDim, true));
+        if (it.Heat is int heat)
+            v.AddChild(Style.Label(heat > 0 ? $"Heat {heat} of {it.HeatFull ?? heat}: it can still be worked" : "Set: nothing more can be worked into it", Style.UiBold, Style.Caption, heat > 0 ? Style.Ember : Style.InkDim));
         if (def.Downside != null) v.AddChild(Style.Label(def.Downside, Style.UiBold, Style.Caption, Style.Bad, true));
-        foreach (var t in def.Tags ?? new())
+        foreach (var t in (def.Tags ?? new()).Concat(it.Marks ?? new()).Distinct())
             if (TagLines.TryGetValue(t, out var tl)) v.AddChild(Style.H(6, Glyphs.Icon("eye", 14, Style.Gold), Style.Label(tl, Style.TextItalic, Style.Caption, Style.GoldHi, true)));
         if (def.Lore != null) v.AddChild(Style.Label(def.Lore, Style.TextItalic, Style.Caption, Style.InkDim, true));
         if (it.History is { Count: > 0 } h) v.AddChild(Style.V(1, h.Select(x => (Control)Style.Label(x, Style.TextItalic, Style.Caption, Style.InkFaint, true)).ToArray()));

@@ -1,0 +1,70 @@
+{
+ "_doc": "Crafting's numbers (docs/CRAFTING_DESIGN.md). Index by rarity: Common, Uncommon, Rare, Epic, Legendary, Storied. Temper's steps are to grade II, III, IV; remake's to Uncommon, Rare, Epic.",
+ "heat": [6, 10, 14, 18, 22, 22],
+ "heatSpread": 0.2,
+ "breakDown": [1, 2, 4, 6, 9, 0],
+ "temper": [
+  { "iron": 2, "gold": 10, "heat": [2, 4] },
+  { "iron": 4, "gold": 25, "heat": [3, 5] },
+  { "iron": 7, "gold": 50, "heat": [4, 6] }
+ ],
+ "workIn": { "gold": 15, "goldPerRarity": 10, "heat": [4, 6] },
+ "cage": { "shards": 4, "gold": 30, "redraw": 1, "offered": 3, "minRarity": 2, "heat": [5, 7] },
+ "remake": [
+  { "iron": 4, "gold": 30 },
+  { "iron": 8, "gold": 75 },
+  { "iron": 14, "gold": 160 }
+ ],
+ "remakeCap": 3,
+ "remakeHeat": 4,
+ "rekindle": { "shards": 3, "gold": 20, "goldStep": 20 },
+ "materials": {
+  "wolf_pelt": { "qty": 3, "into": ["of_the_wolf", "wolfbane"], "crafter": "brannoc", "marks": "wolf_pelts" },
+  "boar_hide": { "qty": 3, "into": ["sturdy", "of_the_hearth", "surefooted"], "crafter": "brannoc" },
+  "kerchief_cloth": { "qty": 4, "into": ["watchmans"], "crafter": "brannoc" },
+  "bone_dust": { "qty": 3, "into": ["of_the_grave", "gravebane"], "crafter": "brannoc" },
+  "ember_shard": { "qty": 2, "into": ["of_the_salamander", "lampsnuffer", "of_the_lantern"], "crafter": "brannoc" },
+  "bitterroot": { "qty": 3, "into": ["of_the_physician"], "crafter": "wenna" },
+  "moonpetal": { "qty": 1, "into": ["of_mending"], "crafter": "wenna" }
+ },
+ "crafters": {
+  "brannoc": {
+   "name": "Brannoc",
+   "place": "Brannoc's Smithy",
+   "verbs": ["temper", "workIn", "cage", "remake", "rekindle", "breakDown"],
+   "when": { "met": "brannoc" },
+   "closed": { "time": "night" },
+   "closedLine": "Forge is banked. Come back by day.",
+   "respectPerCraft": 1,
+   "respectFromCraft": 15,
+   "easier": [
+    { "when": { "rel": { "npc": "brannoc", "axis": "respect", "gte": 20 } }, "heatTop": -1, "line": "He takes his time over it." },
+    { "when": { "rel": { "npc": "brannoc", "axis": "respect", "gte": 40 } }, "temperIron": -1, "line": "He has iron to spare for you." }
+   ]
+  },
+  "wenna": {
+   "name": "Old Wenna",
+   "place": "Wenna's Remedies",
+   "verbs": ["workIn"],
+   "when": { "all": [{ "met": "wenna" }, { "any": [{ "fact": "stream.clear", "eq": true }, { "fact": "beasts.outcome", "eq": "cured" }] }] },
+   "closedLine": "I've half the Verge coughing, child. Bring me a clean stream and I'll stitch your coat.",
+   "respectPerCraft": 1,
+   "respectFromCraft": 10,
+   "easier": []
+  }
+ },
+ "night": {
+  "emberFrom": 10,
+  "emberPer": 8,
+  "minutesPer": 2,
+  "storyBonus": 2,
+  "cap": 8,
+  "fellKeeps": 0.5,
+  "peoples": {
+   "pack": [{ "family": "wolf", "material": "wolf_pelt", "per": 150 }, { "family": "boar", "material": "boar_hide", "per": 150 }],
+   "dead": [{ "family": "undead", "material": "bone_dust", "per": 150 }],
+   "lamplings": [{ "family": "lampling", "material": "ember_shard", "per": 200 }],
+   "kerchiefs": [{ "family": "kerchief", "material": "kerchief_cloth", "per": 150 }]
+  }
+ }
+}

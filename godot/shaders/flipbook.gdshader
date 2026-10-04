@@ -62,6 +62,9 @@ void fragment() {
 	// free to put anything under a fully clear texel, and that would show
 	// the square of the cell; this keeps only what the alpha allows.
 	c.rgb = min(c.rgb, vec3(c.a));
+	// And round, whatever the atlas holds: the tool refuses a cell with light
+	// at its edge, and this makes sure no square can show at any turn or size.
+	c *= 1.0 - smoothstep(0.86, 0.99, length(UV * 2.0 - 1.0));
 	float fade = tint.a;
 	if (lie < 0.5 && soft > 0.0) {
 		float d = textureLod(depth_tex, SCREEN_UV, 0.0).r;

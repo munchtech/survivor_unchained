@@ -31,7 +31,7 @@ public sealed class Expedition
     public double Hp;
 }
 
-public sealed class Journey
+public sealed partial class Journey
 {
     public CharacterData Ch;
     public WorldState World;
@@ -238,15 +238,16 @@ public sealed class Journey
         {
             // Gear on the ground was rolled when it fell; its light said how good it is.
             int? rolled = p.Kind == PickupKind.Item && Items.Find(p.Ref)?.Base != null ? p.Tier : null;
-            return GiveItem(p.Ref, Math.Max(1, MathX.RoundInt(p.Value)), rolled, p.Lean);
+            return GiveItem(p.Ref, Math.Max(1, MathX.RoundInt(p.Value)), rolled, p.Lean, dropped: true);
         }
         return true;
     }
 
     /// <summary>Something found in the field. False if there is no room.</summary>
-    public bool GiveItem(string defId, int qty = 1, int? rarity = null, IReadOnlyCollection<string>? lean = null)
+    /// <param name="dropped">It fell in the world (its heat is rolled: docs/CRAFTING_DESIGN.md 5.1).</param>
+    public bool GiveItem(string defId, int qty = 1, int? rarity = null, IReadOnlyCollection<string>? lean = null, bool dropped = false)
     {
-        var it = Inventory.Make(Ch, defId, qty, rarity, lean: lean);
+        var it = Inventory.Make(Ch, defId, qty, rarity, lean: lean, dropped: dropped);
         var def = Items.Get(defId);
         if (!Inventory.AddToPack(Ch, it)) { OnToast(new Toast(ToastKind.Warning, "Your pack is full", def.Name)); return false; }
         OnToast(new Toast(ToastKind.Loot, $"{Inventory.Name(it)}{(qty > 1 ? $" ×{qty}" : "")}",
@@ -415,6 +416,12 @@ public sealed class Journey
 
     public void Drop(string uid)
     {
+        if (Inventory.FromPouch(uid) is { } mat && Ch.Materials.Remove(mat))
+        {
+            OnToast(new Toast(ToastKind.World, $"Left behind: {Items.Get(mat).Name}"));
+            OnTouch();
+            return;
+        }
         if (Inventory.Find(Ch, uid) is not { InPack: true } loc) return;
         if (StillNeeded(loc.Item)) { Warn("You might need that"); return; }
         Ch.Pack[loc.Index] = null;
@@ -557,20 +564,6 @@ public sealed class Journey
                         """);
                 return true;
             }
-            case "reforge":
-            {
-                var wpn = Ch.Equipment.Weapon;
-                if (wpn == null) return true;
-                if (wpn.Rarity >= 4) { Warn("Brannoc: \"There is nothing more I can do to that.\""); return true; }
-                int cost = 40 * (wpn.Rarity + 1);
-                if (Ch.Gold < cost) { Warn($"Reforging costs {cost} gold"); return true; }
-                Ch.Gold -= cost;
-                wpn.Rarity++;
-                (wpn.History ??= new()).Add($"Reforged by Brannoc, day {w.Day}");
-                OnToast(new Toast(ToastKind.Loot, $"{Inventory.Name(wpn)} reforged", "A grade truer, by day and by night.", Items.Get(wpn.Def).Icon, wpn.Rarity));
-                RefreshKit(b);
-                return true;
-            }
         }
         return true;
     }
@@ -669,7 +662,7 @@ public sealed class Journey
             var it = World.Shops.GetValueOrDefault(shop)?.Stock.FirstOrDefault(x => x.Uid == uid);
             return it == null ? null : Math.Max(1, (int)Math.Ceiling(UnitValue(it) * def.Markup * PriceMod(shop)));
         }
-        var mine = Ch.Pack.FirstOrDefault(x => x?.Uid == uid);
+        var mine = Ch.Pack.FirstOrDefault(x => x?.Uid == uid) ?? Inventory.Pouch(Ch).FirstOrDefault(x => x.Uid == uid);
         if (mine == null) return null;
         var kind = Items.Get(mine.Def).Kind;
         if (!def.BuysAll && !def.Buys.Contains(kind.Key())) return null;
@@ -702,9 +695,19 @@ public sealed class Journey
     {
         var price = PriceOf(shop, uid, false);
         if (price == null) { Warn("They will not buy that"); return; }
-        int i = Ch.Pack.FindIndex(x => x?.Uid == uid);
-        var it = Ch.Pack[i]!;
-        Ch.Pack[i] = null;
+        ItemInstance it;
+        if (Inventory.FromPouch(uid) is { } mat)
+        {
+            // Out of the pouch, the whole of it: a stack on their counter.
+            it = Inventory.Make(Ch, mat, Ch.Materials.GetValueOrDefault(mat));
+            Ch.Materials.Remove(mat);
+        }
+        else
+        {
+            int i = Ch.Pack.FindIndex(x => x?.Uid == uid);
+            it = Ch.Pack[i]!;
+            Ch.Pack[i] = null;
+        }
         Ch.Gold += price.Value;
         Ch.Stats.GoldEarned += price.Value;
         World.Shops.GetValueOrDefault(shop)?.Stock.Add(it);

@@ -134,6 +134,9 @@ public static class Probe
         var rng = new Rng((uint)seed * 31 + 5);
         int horde = (int)(22 + 7.5 * minute);
         b.Hooks.OnPlayerDeath = _ => true;
+        // The horde's charges as an arena of the fifteenth minute's tier runs them (Sim/Charges.cs).
+        b.Charges.Cap = 3;
+        b.Charges.Spikes = true;
 
         double Tick(double seconds, int keep, Enemy? champion)
         {

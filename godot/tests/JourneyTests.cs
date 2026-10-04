@@ -93,7 +93,8 @@ public class JourneyTests
     {
         var (j, _) = Make();
         j.Ch.Gold = 51;
-        j.GiveItem("wolf_pelt", 2);
+        // Something in the pack to take (materials are in the pouch, which a nemesis leaves be).
+        j.GiveItem("copper_ring");
         var b = Fight(j);
         var wolf = b.SpawnEnemy("wolf", 3, 3)!;
         b.Player.LastKiller = wolf;
@@ -143,7 +144,8 @@ public class JourneyTests
     {
         var (j, _) = Make();
         j.GiveItem("wolf_pelt", 3);
-        var pelt = j.Ch.Pack.First(p => p?.Def == "wolf_pelt")!;
+        // Sold from the pouch, the whole stack.
+        var pelt = Inventory.Pouch(j.Ch).First(p => p.Def == "wolf_pelt");
         if (!Lore.Shops.ContainsKey("brannoc")) return;
         j.OpenShop("brannoc", new Random(1));
         j.Ch.Gold = 0;

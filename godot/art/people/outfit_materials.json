@@ -92,7 +92,7 @@
   "repeats": 12
  },
  "browncloth": {
-  "kind": "cloth",
+  "kind": "twill",
   "repeats": 18
  },
  "forestleather": {

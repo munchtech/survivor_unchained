@@ -596,6 +596,7 @@
    "name": "Wolfhide Cloak",
    "kind": "cloak",
    "rarity": 2,
+   "workable": true,
    "icon": "pelt",
    "value": 90,
    "description": "+20 maximum health. +8% speed. 15% less damage from beasts.",
@@ -862,6 +863,16 @@
    "value": 3,
    "stack": 20,
    "description": "Cut from a Kerchief. Proof, of a sort."
+  },
+  "old_iron": {
+   "id": "old_iron",
+   "name": "Old Iron",
+   "kind": "material",
+   "rarity": 0,
+   "icon": "iron",
+   "value": 5,
+   "stack": 99,
+   "description": "Nails, buckles, a blade's broken half. What gear comes to when it is broken down, and what Brannoc tempers and remakes with."
   },
   "health_draught": {
    "id": "health_draught",
