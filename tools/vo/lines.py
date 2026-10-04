@@ -51,7 +51,8 @@ def text_hash(s: str) -> str:
 NPC_VOICE = {"survivor": "lampling", "wayfinder": "ysolde", "board": None, "greymuzzle": "narrator"}
 # Named speakers of the zone code's lines and barks.
 SPEAKER_VOICE = {"The Ford-Warden": "warden", "Grimtunnel": "grimtunnel", "Snib": "snib",
-                 "The dead Watchman": "watchman", "The bones": "bones", "Jory Coyle": "jory"}
+                 "The dead Watchman": "watchman", "The bones": "bones", "Jory Coyle": "jory",
+                 "A Kerchief woman": "kerchief_woman"}
 # A conversation node's own speaker (the cinematics name theirs).
 NODE_VOICE = {"ford_warden": "warden", "barrow_lord": "barrow_lord", "kerchief_woman": "kerchief_woman", "guard": "guard"}
 
