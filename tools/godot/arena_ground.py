@@ -49,8 +49,8 @@ PLACES = {
     # The Pack's Hollow: a sunk bowl of old wood, the leaf litter of years, roots
     # breaking through, the stream the Dig's slurry runs in.
     'hollow': [
-        ('litter', 'forest_leaves_03'),     # dark, rotted leaves
-        ('moss', 'brown_mud_leaves_01'),    # moss over wet mud
+        ('litter', 'dry_decay_leaves'),     # the fallen leaves of years, red-brown
+        ('rot', 'forest_leaves_03'),        # older, darker, rotted down (moss is the shader's)
         ('roots', 'roots'),                 # where the great trees' roots surface
         ('mud', 'mud_forest'),              # trodden black mud: the den's runs, the banks
         ('bed', 'river_small_rocks'),       # the stream's bed
@@ -71,13 +71,13 @@ PLACES = {
     # The Lamplings' dig: ember-stained clay, black spoil, broken stone, the
     # slurry the Dig cooks running where it was spilled.
     'dig': [
-        ('clay', 'red_mud_stones'),         # the valley's ember clay
+        ('clay', 'dry_ground_rocks'),       # the working's floor: ochre clay and broken stone
         ('spoil', 'gravel_stones'),         # black spoil, tipped
-        ('rubble', 'rocks_ground_06'),      # broken stone
+        ('ballast', 'stony_dirt_path'),     # broken stone: the rails' bed, the blast drifts
         ('slurry', 'brown_mud_03'),         # spilled slurry, glossy (the shader wets it)
-        ('dry', 'dry_mud_field_001'),       # baked clay
+        ('rust', 'red_dirt_mud_01'),        # clay stained rust by the ember, in drifts
         ('burnt', 'burned_ground_01'),      # ember-burnt
-        ('face', 'quarry_wall'),
+        ('face', 'excavated_soil_wall'),    # the working's cut walls
     ],
 }
 
