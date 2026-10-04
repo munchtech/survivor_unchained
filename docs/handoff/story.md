@@ -162,7 +162,7 @@ work, safety, the roster), then this page, then the files in section 9.
   - the endgame has two kinds of arena: permanent (the Wayfinder's atlas, the
     build game) and a night's scar (the survivors' game);
   - both exist after every ending. After B they are "the Wayfinder's book of
-    the nights that were". That is recommended, and is the owner's call.
+    the nights that were". The owner said yes on 4 October.
 - **The endless hour is truly endless:** the dawn is on the other side of the
   open way out.
 - **Chid carries the survivor in after every death;** the carter is his lie.
@@ -239,8 +239,8 @@ bible §1 and §5.
 
 1. The hymn at Nell's grave (C08) must be sung. Who sings it: Eleven Music, a
    singer we have the rights to, or a licensed synth? See the voice README.
-2. After ending B, are the endgame nights the Wayfinder's book of the nights
-   that were? (Recommended; bible §8.)
+2. Decided (4 October): after ending B, the endgame is the Wayfinder's book of
+   the nights that were.
 
 ## 9. Read these first
 
