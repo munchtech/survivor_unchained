@@ -229,14 +229,45 @@ public class ArenaTests
         Assert.True(deeper);
     }
 
+    /// <summary>At about six minutes the people ask their own question, with a tell first:
+    /// for the Risen, the ground marked in a ring round the survivor and the dead coming up
+    /// out of every mark at once, and a captain with a chest leading them.</summary>
+    [Fact]
+    public void The_people_ask_their_own_question_with_a_tell_first()
+    {
+        var s = Make(Spec("dead"));
+        s.B.Player.Iframes = 1e9;
+        s.B.Time = 5.4 * 60;
+        int marks = 0;
+        for (double t = 0; t < 140 && !s.Barks.Contains("The ground cracks in a ring round you."); t += 1 / 60.0)
+        {
+            s.Zone.Step(1 / 60.0);
+            s.B.Tick(1 / 60.0, 0, 0);
+            foreach (var ev in s.B.Events.Drain())
+            {
+                if (ev is Ev.Bark bk) s.Barks.Add(bk.Text);
+                if (ev is Ev.Telegraph { Kind: TelegraphKind.Ground }) marks++;
+            }
+            s.Host.Pass(1 / 60.0);
+        }
+        Assert.Contains("The ground cracks in a ring round you.", s.Barks);
+        Assert.True(marks >= 10, $"{marks} marks");
+        var p = s.B.Player;
+        int Near() => s.B.Enemies.Living().Count(e => e.Def.Id.StartsWith("risen") && (e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z) < 12 * 12);
+        int before = Near();
+        Run(s, 1.6);
+        Assert.True(Near() >= before + 8, $"{before} then {Near()} risen within twelve paces");
+        Assert.Contains(s.B.Enemies.Living(), e => e.Elite);
+    }
+
     [Fact]
     public void Under_the_oath_of_champions_they_come_two_at_a_time()
     {
         var s = Make(Spec("pack", false, "champions"));
         s.B.Player.Iframes = 1e9;
         s.B.Time = 240;
-        // The ring first, then the champions.
-        Run(s, 150);
+        // From the eighth minute a champion's turn comes in every three (ArenaPacing).
+        for (int i = 0; i < 16 && !s.Barks.Contains("Champions of the Pack: they carry something."); i++) Run(s, 30);
         Assert.Contains("Champions of the Pack: they carry something.", s.Barks);
         Assert.True(s.B.Enemies.Living().Count(e => e.Elite) >= 2);
     }
