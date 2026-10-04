@@ -380,7 +380,8 @@ public partial class BattleFx : Node3D
         // The air thrown out.
         if (On('w')) Waves.Add(ground + Vector3.Up * 0.35f, r * 1.7f, 0.35f, pal.Glow, school == School.Holy ? 0.6f : 1);
         // The burst, flat on the ground and above the grass.
-        var tint = school == School.Frost ? new Color(glow * 0.8f, glow * 0.92f, glow * 1.15f, 1) : new Color(glow, glow, glow, 1);
+        var tint = school == School.Frost ? new Color(glow * 0.8f, glow * 0.92f, glow * 1.15f, 1)
+            : school == School.Fire ? new Color(glow * 1.05f, glow * 0.72f, glow * 0.45f, 1) : new Color(glow, glow, glow, 1);
         if (On('b')) Books.Spawn(BlastOf(school), ground + Vector3.Up * 0.55f, r * 1.2f, life, tint, flat: true, sizeEnd: r * 2.4f);
         // What it throws.
         int n = On('d') ? Math.Min(48, 12 + (int)(r * 8)) : 0;
@@ -496,7 +497,7 @@ public partial class BattleFx : Node3D
                 // A blow coming, filling as it comes: a bright front at its edge and a sparse hatch behind
                 // it, so the crowd still reads through (a solid fill hid the fight).
                 else if (kind == 1) a = r < 0.97f ? 0.08f + (Mathf.PosMod((u - v) * 6f, 1f) < 0.22f ? 0.2f : 0) + 0.72f * Mathf.SmoothStep(0.8f, 0.95f, r) : Mathf.Clamp((1 - r) / 0.03f, 0, 1);
-                else if (kind == 2) { float e = Mathf.Abs(u); a = (Mathf.Clamp(1 - Mathf.Abs(e - 0.88f) / 0.1f, 0, 1) + 0.22f) * Mathf.Clamp((1 - Mathf.Abs(v)) / 0.05f, 0, 1); }
+                else if (kind == 2) { float e = Mathf.Abs(u); a = (Mathf.Clamp(1 - Mathf.Abs(e - 0.88f) / 0.08f, 0, 1) + (e < 0.86f ? (Mathf.PosMod((u + v * 4) * 5f, 1f) < 0.25f ? 0.28f : 0.06f) : 0)) * Mathf.Clamp((1 - Mathf.Abs(v)) / 0.05f, 0, 1); }
                 // This ground stays bad: hatched, with its edge.
                 else if (kind == 3) a = r < 0.97f ? (Mathf.PosMod((u + v) * 7f, 1f) < 0.3f ? 0.38f : 0.08f) + Mathf.Clamp(1 - Mathf.Abs(r - 0.92f) / 0.05f, 0, 1) : 0;
                 // Stand here: a dashed ring.
@@ -607,7 +608,12 @@ public partial class BattleFx : Node3D
                         Hits.Tally(e.Target, at, e.Amount, e.MaxHp, false, new Color(dc.R / dm * 1.1f, dc.G / dm * 1.1f, dc.B / dm * 1.1f, 0.9f));
                         break;
                     }
-                    if (e.Blocked) { Hits.Text(at, "blocked", new Color(0.7f, 0.75f, 0.8f), 44); Burst(at, School.Physical, 5, 3, 2, 0.06f); break; }
+                    if (e.Blocked)
+                    {
+                        if (time - lastBlocked > 0.35) { lastBlocked = time; Hits.Text(at, "blocked", new Color(0.7f, 0.75f, 0.8f), 44); }
+                        Burst(at, School.Physical, 5, 3, 2, 0.06f);
+                        break;
+                    }
                     Hits.Tally(e.Target, at, e.Amount, e.MaxHp, e.Crit);
                     if (e.Art != null) Impact(e, at);
                     else Burst(at, e.School, e.Crit ? 10 : 4, e.Crit ? 5 : 3, size: e.Crit ? 0.12f : 0.08f);
@@ -719,6 +725,7 @@ public partial class BattleFx : Node3D
                     float gy = Y(e.X, e.Z), r = (float)e.Radius;
                     var pal = Palette.Of(e.School);
                     Cam?.AddTrauma((float)Math.Min(0.3, 0.05 + e.Power * 0.1));
+                    if (e.School == School.Physical && e.Art == null) Slammed(e.X, e.Z, r);
                     if (Blast(e.X, e.Z, e.School, r, 0.8f + r * 0.08f)) break;
                     Flash(V(e.X, gy + 1.2, e.Z), pal.Light, 10 + (float)e.Power * 10, 0.35f, r * 3 + 3);
                     Nova(e.X, e.Z, r * 1.15f, pal.Glow, 0.3f);
@@ -795,8 +802,10 @@ public partial class BattleFx : Node3D
                 }
                 case Ev.Telegraph e:
                 {
-                    var col = e.Hostile ? Palette.Telegraph(e.Kind) : Palette.Of(School.Holy).Glow;
-                    if (e.Shape == TelegraphShape.Line) Lane(e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1), col, (float)e.Duration, e.Id);
+                    var col = e.Hostile ? Palette.Telegraph(e.Kind) : e.Faction is { } pf ? People(pf) : Palette.Of(School.Holy).Glow;
+                    if (!e.Hostile && e.Faction is { } rf && e.Shape == TelegraphShape.Ring) Rally(e, col);
+                    else if (e.Hostile && e.Faction is { } sf && e.Kind == TelegraphKind.Ground && e.Id == -1 && e.Shape == TelegraphShape.Circle) Summoning(e, People(sf));
+                    else if (e.Shape == TelegraphShape.Line) Lane(e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1), col, (float)e.Duration, e.Id);
                     else if (e.Shape == TelegraphShape.Cone) ConeMark(e.X, e.Z, (float)e.Radius, e.Angle ?? 0, e.Arc ?? Math.PI / 2, col, (float)e.Duration, e.Id);
                     else if (e.Shape == TelegraphShape.Ring) BandMark(e.X, e.Z, e.Inner, (float)e.Radius, col, (float)e.Duration, e.Id);
                     else if (e.Hostile && e.Kind != TelegraphKind.Blow)
@@ -1280,6 +1289,7 @@ public partial class BattleFx : Node3D
     void Projectiles(Battle b, float dt, double now)
     {
         shades.Begin(); orbs.Begin(); steel.Begin(); axes.Begin(); daggers.Begin(); shards.Begin(); rings.Begin(); kegs.Begin();
+        Buffs(b);
         foreach (var p in b.Projectiles.Living())
         {
             var art = p.Art;
@@ -1292,6 +1302,7 @@ public partial class BattleFx : Node3D
             float trail = 1;
             // Lifted to head height: from above, the bodies it passes through would hide it.
             if (!hostile && Flight(p, at + Vector3.Up * 0.55f, heading, now, dt)) continue;
+            if (hostile && HostileFlight(p, at + Vector3.Up * 0.3f, heading, (float)now)) continue;
             if (art.StartsWith("axe", StringComparison.Ordinal))
             {
                 // Laid flat and whirling about its middle, as an axe thrown to spin.

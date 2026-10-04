@@ -98,7 +98,8 @@ void fragment() {
 	vec3 deep = hue * hue * 0.35;
 	vec3 hot = mix(hue, vec3(1.0), 0.75) * 2.4;
 	vec3 smear = mix(deep, hue, smoothstep(0.15, 0.95, across) * mix(1.0, 0.45, tc));
-	vec3 light = smear * body * 0.8 + hot * (edge * 1.3 + halo * 0.4);
+	// Held low: on a dark ground the exposure climbs, and a brighter smear washed to cream.
+	vec3 light = smear * body * 0.55 + hot * (edge * 1.3 + halo * 0.35);
 	light *= keep;
 	// The dark bed under it: the smear's shape, a little softer, so the light reads over pale bodies.
 	float bed = smoothstep(inner - 0.07, inner + depth * 0.5, y) * (1.0 - smoothstep(EDGE_R, EDGE_R + 0.07, y)) * step(0.001, depth);

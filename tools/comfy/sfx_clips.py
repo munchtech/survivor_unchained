@@ -33,6 +33,9 @@ SOUNDS = {
                   "silence.", 3, (405, 406)),
     "tell_whistle": ("A shrill hollow bone whistle is blown twice in the dark, eerie and piercing, echoing across a "
                      "graveyard, then silence.", 3, (407, 408)),
+    # The dead's tell (combat moved it from the drum): an old war horn, twice, from far off.
+    "tell_horn": ("An old cracked war horn made of a hollowed bone is blown twice, long, low and mournful, from far "
+                  "away across a misty barrow field at night, the deep notes echoing, then silence.", 4, (409, 410)),
 }
 
 

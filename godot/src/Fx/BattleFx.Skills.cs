@@ -28,7 +28,7 @@ public partial class BattleFx
     /// <summary>Trails of what flies, bolts, threads (Ribbons).</summary>
     public readonly Ribbons Ribbons = new();
     int hitBudget, killBudget;
-    double lastFall = -1;
+    double lastFall = -1, lastBlocked = -1;
 
     /// <summary>How much bigger and brighter a skill is drawn at its rank: a
     /// rank-8 skill a third again its rank-1 self.</summary>
@@ -95,7 +95,7 @@ public partial class BattleFx
         // one white haze. Their marks above are enough.)
         var (book, tint) = art switch
         {
-            "moon" or "moon_brand" => ("moon_burst", new Color(0.9f, 0.85f, 1.1f, 0.85f)),
+            "moon" or "moon_brand" => ("moon_burst", new Color(0.55f, 0.45f, 1.05f, 0.75f)),
             "umbral" or "ruin" or "siphon" or "tether" or "tether2" or "tether_mark" => ("shadow_wisps", new Color(1.2f, 1.1f, 1.4f, 0.9f)),
             _ => ((string?)null, Colors.White),
         };
@@ -210,7 +210,7 @@ public partial class BattleFx
         // The blade's own hue (kept below the tone curve's white-out, so it
         // stays a colour: the edge is the only white), how deep its smear
         // reaches in from the edge, and how fast it crosses its arc.
-        Color hue = Hdr("#ffaa40", 1.05f);
+        Color hue = Hdr("#ff9a30", 1.05f);
         float depth = 0.3f, sweep = 0.085f, drain = 0.17f;
         // A full turn only for a blade that really goes all the way round (the Cleaver's wide chop is not one).
         bool heavy = false, spin = art == "slash_spin" || e.Arc > 5.5;
@@ -361,7 +361,7 @@ public partial class BattleFx
                 // The wind it rides, whipping round its rim.
                 SpinArcs(at, 0.62f * s, (float)(now * 26 + p.Id), 0.09f * s, art == "chakram_hail" ? Hdr("#cfeaff", 1f) : Hdr("#e6fff4", 1f), 2.4f);
                 // Gale Chakram rides the wind: a pale curl of air behind it.
-                Ribbons.Feed(key, at, 0.55f * s, 0.25f, art == "chakram_hail" ? Hdr("#bfe6ff", 1f) : Hdr("#e8f8f0", 1f), art == "chakram_razor" ? 1.6f : 1.1f,
+                Ribbons.Feed(key, at, 0.45f * s, 0.13f, art == "chakram_hail" ? Hdr("#8fd0ff", 1f) : Hdr("#a8f0d0", 1f), art == "chakram_razor" ? 1.4f : 1f,
                     art == "chakram_hail" ? Ribbons.Style.Frost : art == "chakram_razor" ? Ribbons.Style.Steel : Ribbons.Style.Wisp);
                 return true;
             }
@@ -455,7 +455,7 @@ public partial class BattleFx
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 0.5f), at), lantern ? Hdr("#e8fff4", 3f) : pal.Core * 0.7f);
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 1.8f), at), rim * 0.2f);
                 if (!lantern) Body(at, s * 1.6f, "umbral", art == "siphon" ? Hdr("#c050ff", 1.2f) : Hdr("#9a50ff", 1.2f), (float)now * 3 + p.Id);
-                Ribbons.Feed(key, at, 0.62f * s, ruin ? 0.55f : 0.42f, new Color(rim.R / 3, rim.G / 3, rim.B / 3), 1.6f, Ribbons.Style.Wisp);
+                Ribbons.Feed(key, at, 0.5f * s, ruin ? 0.28f : 0.18f, new Color(rim.R / 3, rim.G / 3, rim.B / 3), 1.6f, Ribbons.Style.Wisp);
                 // The tether: a thread back to the hand that cast it.
                 if (art.StartsWith("tether") && b0 != null)
                 {
@@ -650,7 +650,7 @@ public partial class BattleFx
                 // A scythe swept all the way round at the edge of its reach: the blade's
                 // crescent (Blades), crimson, with a darker one inside it a breath behind.
                 var hue = art == "nova_harrow" ? Hdr("#8a4aff", 1.1f) : Hdr("#e01a2a", 1.1f);
-                Blades.Add(at, facing, r, Mathf.Tau * 1.02f, false, 0.16f, 0.24f, hue, 0.4f * Mathf.Min(g, 1.3f));
+                Blades.Add(at, facing, r, Mathf.Tau * 1.02f, false, 0.16f, 0.24f, hue, 0.3f * Mathf.Min(g, 1.3f));
                 Blades.Add(at + Vector3.Down * 0.1f, facing + Mathf.Pi, r * 0.8f, Mathf.Tau * 0.8f, false, 0.18f, 0.2f, hue * 0.55f, 0.3f, 0.04f);
                 if (rings > 1) Blades.Add(at, facing + Mathf.Pi / 2, r * 0.6f, Mathf.Tau * 0.9f, true, 0.16f, 0.2f, hue * 0.7f, 0.35f, 0.08f);
                 AddFront(ground, r, 0.3f, 0.3f * g, new Color(glow.R / 3, glow.G / 3, glow.B / 3), 1.8f, Ribbons.Style.Wisp, 0.6f);
@@ -685,7 +685,7 @@ public partial class BattleFx
         {
             // The survivor's own marks are quiet: a thin ring, so they never read as a threat.
             var pal = Palette.Of(e.School);
-            if (art != "slash_quake") Ring(e.X, e.Z, r, pal.Glow * 0.35f, (float)e.Delay, true);
+            if (art != "slash_quake") Ring(e.X, e.Z, r, pal.Glow * 0.3f, (float)e.Delay, false);
             var ev = e;
             pending.Add((time + e.Delay, () => Landing(ev)));
         }
@@ -730,7 +730,7 @@ public partial class BattleFx
                 var top = ground + new Vector3(-2.5f, 14, 1.5f);
                 Ribbons.Line(new[] { top, top.Lerp(ground, 0.5f), ground + Vector3.Up * 0.3f }, 0.45f * g, 0.25f, Hdr("#c8b8ff", 1f), 2.6f, Ribbons.Style.Glow, new[] { 0f, 0.6f, 1f });
                 // The moon breaks into stardust (filmed, LTX), its light thrown out in a ring.
-                Books.Spawn("moon_burst", ground + Vector3.Up * 0.6f, r * 0.8f, 0.7f, new Color(0.95f, 0.9f, 1.15f, 0.9f), flat: true, sizeEnd: r * 2.6f);
+                Books.Spawn("moon_burst", ground + Vector3.Up * 0.6f, r * 0.8f, 0.7f, new Color(0.6f, 0.5f, 1.1f, 0.85f), flat: true, sizeEnd: r * 2.6f);
                 Flash(ground + Vector3.Up * 1.5f, new Color(0.75f, 0.7f, 1f), 7, 0.3f, r * 3);
                 Scars.Add("runes", ground, r * 0.6f, 1.2f, -0.7f);
                 AddFront(ground, r * 1.3f, 0.35f, 0.25f * g, Hdr("#c8b8ff", 1f), 2.2f, Ribbons.Style.Glow, 0.2f);
