@@ -93,6 +93,12 @@ None. One question for the owner: who sings the hymn (C08).
 
 - **Main session:** C01's call should carry the label "A voice up the road".
 - **Crafting:** call the endgame's "sigils" Marks; the sigil is the Legion's.
+  Phase 2's lines went to the new lead, a7debf1459f14dfe7, to wire verbatim:
+  - Wenna's tinctures, brewing and moonpetal;
+  - the flask report;
+  - Brannoc's commissions;
+  - the fang choice;
+  - the shed-fur braid's card.
 - **Experience:** your `arena.last.*` facts are read now. `arena.last.ago` is
   new (Arena.cs, plus the daily rule `arena.ago`).
 - **Combat and arena art:** the renames and the scars' places are in, as sent.
