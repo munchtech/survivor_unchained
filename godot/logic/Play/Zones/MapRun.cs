@@ -117,7 +117,11 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         Charts.Kinds(people, Chart.Tier).Select(k => k.Def)
             .Concat(rival != null ? Charts.Kinds(rival, Chart.Tier).Select(k => k.Def) : [])
             .Concat(Charts.Guardians(people, Chart.Tier)).Append(people.Champion).Append(people.Boss).Distinct().ToList();
-    public override TimeOfDay TimeOf(WorldState w) => TimeOfDay.Dusk;
+    /// <summary>By day: the maps are the day's build in the day's world, and a pack must be read
+    /// before it is woken (at dusk the way was black past the start's fire).</summary>
+    public override TimeOfDay TimeOf(WorldState w) => TimeOfDay.Day;
+    /// <summary>A pack and the ground round it in view: higher than the road's, nearer than a night's.</summary>
+    public override (double Pitch, double Distance)? Camera => (62, 24);
     public override Arrival ArrivalFrom(string? from) => new(map.Start.X, map.Start.Z, 0);
 
     /// <summary>The map's clock and how it stands.</summary>

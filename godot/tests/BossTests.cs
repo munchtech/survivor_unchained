@@ -22,14 +22,14 @@ public class BossTests
 
     /// <summary>An arena of `people` brought to the edge of the half hour, the survivor kept alive.
     /// `game`: the battle's hooks wired as the game wires them (BattleHooks.Following), not shared.</summary>
-    static Fight At30(string people, int seed = 3, int tier = 1, bool game = false, string? boss = null, string? bossName = null, bool spare = false)
+    static Fight At30(string people, int seed = 3, int tier = 1, bool game = false, string? boss = null, string? bossName = null, bool spare = false, string[]? oaths = null)
     {
         var a = Callings.Archetype("warden");
         var j = Journey.Begin(new CreationChoice
         {
             Name = "Bot", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
         }, (uint)seed);
-        var spec = new ArenaSpec { Id = "table:test", Name = "Test", Seed = seed, Tier = tier, People = people, Boss = boss, BossName = bossName, Spare = spare };
+        var spec = new ArenaSpec { Id = "table:test", Name = "Test", Seed = seed, Tier = tier, People = people, Boss = boss, BossName = bossName, Spare = spare, Oaths = (oaths ?? []).ToList() };
         Arenas.Begin(j.World, spec);
         var map = MapGen.Generate(spec.Map);
         var host = new HeadlessHost(j, seed);
@@ -305,6 +305,36 @@ public class BossTests
         var chest = f.B.Pickups.Items.FirstOrDefault(p => p.Alive && p.Kind == PickupKind.Chest && p.Ref == "boss");
         Assert.NotNull(chest);
         Assert.True(chest!.Value >= 5);
+    }
+
+    /// <summary>The oaths on a boss (docs/bosses/SURVIVORS_BOSSES.md 0.12): one visible change each,
+    /// said on its card. The winter's chill rides its heavy blows, the embers' fire is left where
+    /// they land, the iron slows its stagger, the vigil shortens its floors.</summary>
+    [Fact]
+    public void The_oaths_sworn_change_the_boss_and_its_card_says_so()
+    {
+        var f = At30("dead", oaths: ["winter", "embers", "iron", "vigil"]);
+        var s = f.Zone.BossScript!;
+        Assert.Contains("chill", s.Sworn());
+        Assert.Contains("fire", s.Sworn());
+        Assert.Equal(2 / 3.0, s.FloorScale, 3);
+        Assert.Equal(2 / 3.0, f.B.Rules.StaggerTaken, 3);
+        // Its marked blows: the heavy ones chill, and each leaves fire where it lands.
+        bool chilled = false, fire = false;
+        var boss = Boss(f);
+        Step(f, 40, _ =>
+        {
+            // Kept at a spear's throw, so it throws (its pilum: a heavy blow).
+            f.B.Player.X = boss.X + 9; f.B.Player.Z = boss.Z;
+            foreach (var bl in f.B.Blows) chilled |= bl.Slow > 0 && bl.Damage >= boss.Damage * 1.5;
+            fire |= f.B.Zones.Living().Any(z => z.Owner == Side.Enemy && z.School == School.Fire);
+        });
+        Assert.True(chilled);
+        Assert.True(fire);
+        // Unsworn, none of it.
+        var g = At30("dead");
+        Assert.Equal("", g.Zone.BossScript!.Sworn());
+        Assert.Equal(1, g.Zone.BossScript.FloorScale);
     }
 
     [Fact]

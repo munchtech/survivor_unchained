@@ -835,7 +835,15 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             if (map.CanStand(x, z)) Spawn(escort, x, z);
         }
         B.Events.Emit(new Ev.Shake { Amount = 0.45 });
-        G.Announce(new Announcement(BossName, script != null ? $"{BossTitle} · Weakness: {script.WeaknessText}" : BossTitle, "danger", 3.4,
+        // The champions' oath: a champion of its people stands beside it, signed.
+        if (Spec.Oaths.Contains("champions") && Around(signAngle + 0.6, 13) is var (lx, lz) && Spawn(Strongest(), lx, lz, true) is { } lieutenant)
+        {
+            lieutenant.MaxHp = lieutenant.Hp = lieutenant.MaxHp * 2;
+            Sign(lieutenant, SignsFor(false));
+            chests.Add(lieutenant.Id);
+        }
+        string sworn = script?.Sworn() ?? "";
+        G.Announce(new Announcement(BossName, (script != null ? $"{BossTitle} · Weakness: {script.WeaknessText}" : BossTitle) + (sworn.Length > 0 ? $" · Sworn: {sworn}" : ""), "danger", 3.4,
             again ? (returns == 1 ? "Again" : $"Again, the {Ordinal(returns + 1)} time") : Comes));
         Objectives();
     }
@@ -995,7 +1003,13 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     bool IBossArena.Spare => Spec.Spare;
     bool IBossArena.Sworn(string oath) => Spec.Oaths.Contains(oath);
     double IBossArena.R() => R();
-    Enemy? IBossArena.Spawn(string def, double x, double z, bool elite, SpawnStyle? style) => Spawn(def, x, z, elite, style);
+    Enemy? IBossArena.Spawn(string def, double x, double z, bool elite, SpawnStyle? style)
+    {
+        var e = Spawn(def, x, z, elite, style);
+        // The swarm's oath: what the boss calls comes half again as many.
+        if (e != null && !elite && Spec.Oaths.Contains("swarm") && R() < 0.5) Spawn(def, x + (R() - 0.5) * 1.6, z + (R() - 0.5) * 1.6, false, style);
+        return e;
+    }
     bool IBossArena.CanStand(double x, double z) => map.CanStand(x, z) && !B!.Collision.Blocked(x, z, 0.6);
     void IBossArena.Say(string title, string? sub, string tone) => G.Announce(new Announcement(title, sub ?? "", tone, 2.4));
     void IBossArena.Bark(double x, double z, string text, string? speaker) => B?.Events.Emit(new Ev.Bark { X = x, Z = z, Text = text, Speaker = speaker });

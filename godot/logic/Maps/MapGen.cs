@@ -618,7 +618,10 @@ public static class MapGen
         foreach (var a in areas) placesJson[$"area{a.Index}"] = new { x = a.X, z = a.Z };
         var meta = new ZoneMeta
         {
-            Id = spec.Arena ? "arena" : "map", Size = Size, Res = Res, SplatRes = SplatRes, Leaves = spec.Theme == "autumn" ? 0.5 : spec.Arena ? 0.22 : 0.42, BlightGlow = "#9aff4a",
+            Id = spec.Arena ? "arena" : "map", Size = Size, Res = Res, SplatRes = SplatRes, Leaves = spec.Theme == "autumn" ? 0.5 : spec.Arena ? 0.22 : 0.42,
+            // A map is walked by day, where the night's bright veins read as neon over the whole of its
+            // ruler's clearing: there they smoulder.
+            BlightGlow = spec.Arena || spec.Night ? "#9aff4a" : "#3d6420",
             Bound = half - 4,
             Start = new Start { X = st.X, Z = st.Z, Facing = areas.Count > 1 ? Math.Atan2(areas[1].X - st.X, areas[1].Z - st.Z) : 0 },
             Atmosphere = spec.Night ? Atmospheres.Night : Atmospheres.Day,
