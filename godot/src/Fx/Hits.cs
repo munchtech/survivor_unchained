@@ -13,7 +13,10 @@ public partial class Hits : Node3D
     readonly List<GpuParticles3D> sprays = new();
     readonly List<(Label3D Label, float T)> numbers = new();
     readonly List<(MeshInstance3D Mesh, ShaderMaterial Mat, float T, float Life)> arcs = new();
-    int nextSpray, nextNumber, nextArc;
+    /// <summary>A boss's words: its moves' names and the BREAK. Their own few, held as long as
+    /// the mark they name: in the numbers' pool, a fast build's hits took them in a frame.</summary>
+    readonly List<(Label3D Label, float T, float Life, Vector3 At)> words = new();
+    int nextSpray, nextNumber, nextArc, nextWord;
     readonly RandomNumberGenerator rng = new() { Seed = 5 };
 
     public override void _Ready()
@@ -47,6 +50,18 @@ public partial class Hits : Node3D
             };
             AddChild(l);
             numbers.Add((l, 1));
+        }
+        for (int i = 0; i < 8; i++)
+        {
+            var l = new Label3D
+            {
+                Billboard = BaseMaterial3D.BillboardModeEnum.Enabled, NoDepthTest = true, FontSize = 64, OutlineSize = 18,
+                PixelSize = 0.006f, OutlineModulate = new Color(0.06f, 0.02f, 0.01f), Visible = false,
+                Shaded = false, RenderPriority = 12, OutlineRenderPriority = 11,
+            };
+            if (UiFont() is { } font) l.Font = font;
+            AddChild(l);
+            words.Add((l, 1, 1, Vector3.Zero));
         }
         var shader = GD.Load<Shader>("res://shaders/slash.gdshader");
         for (int i = 0; i < 10; i++)
@@ -100,6 +115,22 @@ public partial class Hits : Node3D
     public void Number(Vector3 at, int amount, bool crit) =>
         Text(at, crit ? $"{amount}!" : amount.ToString(), crit ? new Color(1.6f, 1.15f, 0.4f) : new Color(1, 0.94f, 0.86f), crit ? 88 : 60);
 
+    /// <summary>A boss's word over its mark: steady for `life` seconds, then gone in a breath.</summary>
+    public void Word(Vector3 at, string text, Color color, int size, float life)
+    {
+        int i = nextWord++ % words.Count;
+        var l = words[i].Label;
+        l.Text = text;
+        l.FontSize = size;
+        l.Modulate = color;
+        l.GlobalPosition = at;
+        l.Visible = true;
+        words[i] = (l, 0, Mathf.Max(0.6f, life), at);
+    }
+
+    /// <summary>The interface's heavy face, so a move's name reads as the HUD does.</summary>
+    static Font? UiFont() => SurvivorUnchained.Ui.Style.UiHeavy;
+
     /// <summary>A word or number that rises from where something happened and fades.</summary>
     public void Text(Vector3 at, string text, Color color, int size = 60)
     {
@@ -143,6 +174,19 @@ public partial class Hits : Node3D
             l.OutlineModulate = new Color(l.OutlineModulate, c.A);
             if (t >= 1) l.Visible = false;
             numbers[i] = (l, t);
+        }
+        for (int i = 0; i < words.Count; i++)
+        {
+            var (l, t, life, at) = words[i];
+            if (t >= 1) continue;
+            t += dt / life;
+            // In quickly, a slow lift while it holds, out over its last fifth.
+            float a = Mathf.Min(1, t * life / 0.12f) * (t < 0.8f ? 1 : 1 - (t - 0.8f) / 0.2f);
+            l.GlobalPosition = at + Vector3.Up * 0.35f * t;
+            var c = l.Modulate; c.A = a; l.Modulate = c;
+            l.OutlineModulate = new Color(l.OutlineModulate, a);
+            if (t >= 1) l.Visible = false;
+            words[i] = (l, t, life, at);
         }
         for (int i = 0; i < arcs.Count; i++)
         {

@@ -806,7 +806,9 @@ public partial class Game : Node, IZoneHost
                 var parts = evo[0].Split(':');
                 int r = parts.Length > 1 && int.TryParse(parts[1], out var rv) ? rv : 1;
                 if (parts[0].StartsWith('+')) { for (int i = 0; i < r; i++) gb.AddBoon(parts[0][1..]); continue; }
-                gb.AddWeapon(parts[0], r);
+                // One already in hand (the calling's own) is ranked up to it instead.
+                if (gb.Weapons.Find(x => x.Id == parts[0]) is { } held) held.Rank = Math.Max(held.Rank, r);
+                else gb.AddWeapon(parts[0], r);
                 if (evo.Length > 1) gb.Evolve(parts[0], evo[1]);
             }
             gb.GreatOwed = 0;
