@@ -1,6 +1,6 @@
 {
  "_": "Every piece of painted interface art the game loads (godot/src/Ui/UiArt.cs), with where it goes, the size of the file (twice the size shown, for 4K), its nine-slice margins in shown pixels, how it is cut, and a prompt to start from. Read by tools/comfy/ui_art.py; specified in docs/UI_ART_BRIEF.md. Since the art pass: every asset is made by tools/uiforge/build.py (see docs/UI_ART_BRIEF.md 2.6); 'out' is how far a frame reaches past its control (UiArt.Slice Out), 'clear' how far content keeps from the edge, 'tile' that its edges and middle repeat.",
- "style": "Dark fantasy video game user interface asset, front orthographic view, centred on a pure black background, hand-painted forged blackened iron with thin inlaid gold filigree, worn and battle-scarred, soft light from the upper left, AAA game UI art in the style of Diablo IV and Hades, crisp edges, no text, no letters, no numbers.",
+ "style": "Dark fantasy video game user interface asset, front orthographic view, centred on a pure black background, hand-painted forged blackened iron with thin inlaid gold filigree, worn and battle-scarred, soft light from the upper left, AAA game UI art with painterly brushwork and deep shadow, crisp edges, no text, no letters, no numbers.",
  "assets": [
   {
    "id": "plate",
@@ -1185,7 +1185,7 @@
     256
    ],
    "tint": "full colour; greyed by the code when not ready",
-   "prompt": "A single bold dark fantasy game skill icon of {name}, hand painted, glowing, strong clean silhouette, on a pure black background, no frame, no text, in the style of Diablo IV skill icons."
+   "prompt": "A single bold dark fantasy game skill icon of {name}, hand painted, glowing, strong clean silhouette, on a pure black background, no frame, no text, painterly brushwork, ember glow."
   },
   "item": {
    "dir": "icons/item",
@@ -1194,7 +1194,7 @@
     256
    ],
    "tint": "full colour",
-   "prompt": "A single dark fantasy game item icon of {name}, hand painted, three-quarter view, soft light from the upper left, on a pure black background, no frame, no text, in the style of Diablo IV item icons."
+   "prompt": "A single dark fantasy game item icon of {name}, hand painted, three-quarter view, soft light from the upper left, on a pure black background, no frame, no text, painterly brushwork."
   },
   "map": {
    "dir": "icons/map",

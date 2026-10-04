@@ -14,6 +14,8 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 GODOT = os.environ.get("GODOT", r"C:\Users\munch\Desktop\Godot_v4.5.1-stable_mono_win64\Godot_v4.5.1-stable_mono_win64_console.exe")
 
 ITEMS = "chain_shirt:2,silver_ring:3,wolf_pelt,iron_helm:1,health_draught,ember_shard:4,hunting_bow:5,ember_staff:0,moonsilver_circlet:4,ashen_plate:3"
+# The materials and oddments whose icons were painted from words.
+MATS = "thornseed_pouch,wolf_pelt,boar_hide,bitterroot,bone_dust,blasting_ember,wolfhide_cloak,ember_shard"
 
 SCREENS = {
     "title": (7, []),
@@ -24,6 +26,7 @@ SCREENS = {
     "draft": (7, ["--quick", "reaver", "--zone", "arena", "--open", "draft"]),
     "draft_pad": (8, ["--quick", "arcanist", "--zone", "arena", "--open", "draft", "--pad", "--keys", "Right"]),
     "pack": (6, ["--quick", "warden", "--zone", "waystation", "--items", ITEMS, "--open", "inventory"]),
+    "pack_mats": (6, ["--quick", "warden", "--zone", "waystation", "--items", MATS, "--open", "inventory"]),
     "pack_pad": (7, ["--quick", "warden", "--zone", "waystation", "--items", ITEMS, "--open", "inventory", "--pad", "--keys", "Right,Right"]),
     "self": (6, ["--quick", "warden", "--zone", "waystation", "--open", "character"]),
     "arts": (6, ["--quick", "arcanist", "--zone", "waystation", "--open", "arts"]),
