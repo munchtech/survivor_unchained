@@ -78,6 +78,7 @@ public static class SettingsPanel
             return r;
         }
         v.AddChild(Row("Picture", ["low", "medium", "high"], s.Quality, x => s.Quality = x));
+        v.AddChild(Row("Upscaling (FSR 2)", ["native", "quality", "balanced", "performance"], s.Scale, x => s.Scale = x));
         v.AddChild(Row("Sound", ["on", "quiet", "off"], s.Sound, x => s.Sound = x));
         var voices = Row("Voices", ["on", "off"], s.Voices ? "on" : "off", x => s.Voices = x == "on");
         voices.AddChild(new Control { CustomMinimumSize = new Vector2(10, 0), MouseFilter = Control.MouseFilterEnum.Ignore });
@@ -87,7 +88,7 @@ public static class SettingsPanel
         v.AddChild(Row("Gore", ["full", "reduced", "off"], s.Gore, x => s.Gore = x));
         v.AddChild(Row("Screen shake", ["full", "reduced", "off"], s.Motion, x => s.Motion = x));
         v.AddChild(Row("Health under you", ["on", "off"], s.UnderBar ? "on" : "off", x => s.UnderBar = x == "on"));
-        v.AddChild(Style.Label("Lower settings trade shadow detail, grass and ambient occlusion for speed. Reduced gore keeps a little blood and throws nothing. Screen shake off also stops the world holding still on a heavy blow. Health under you draws your health beneath your feet in a night's fight.",
+        v.AddChild(Style.Label("Lower pictures trade shadow detail, grass, sparks and ambient occlusion for speed. Upscaling draws the world at fewer pixels and brings it up to your screen; the interface stays sharp. Reduced gore keeps a little blood and throws nothing. Screen shake off also stops the world holding still on a heavy blow. Health under you draws your health beneath your feet in a night's fight.",
             Style.TextItalic, Style.Caption, Style.InkDim, true));
         return v;
     }

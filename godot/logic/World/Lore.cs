@@ -39,6 +39,12 @@ public sealed class PersonSpec
     public bool? Beard;
     public double? Figure, Head;
     public Dye? Dye;
+    /// <summary>Her face (her body's own): its sliders, -1 to 1 about her own.</summary>
+    public Dictionary<string, double>? Face;
+    /// <summary>Her eyes' colour and the ring round their pupils (null: as painted).</summary>
+    public string? Eyes, EyeRing;
+    /// <summary>The paint on her face (Lore.Paints), or none.</summary>
+    public string? Paint;
 }
 
 public sealed class Held { public string? Right, Left, Forearm; }
@@ -96,7 +102,39 @@ public sealed class FolkLine
 
 public sealed class Concern { public string Text = ""; public Cond? When; public bool? Died; }
 
-public sealed class LookChoice { public string Id = "", Name = "", Color = ""; }
+public sealed class LookChoice
+{
+    public string Id = "", Name = "", Color = "";
+    /// <summary>An eye's second colour, the ring round its pupil ("" none).</summary>
+    public string Ring = "";
+}
+
+/// <summary>One of her own hairstyles (the view's heroine_hair_ID), and how it is worn.</summary>
+public sealed class HairCut { public string Id = "", Name = "", Words = ""; }
+
+/// <summary>Paint on her face (the view's art/people/paint/ID.png): how it reads,
+/// and what it is made of (its sheen, and metal for leaf).</summary>
+public sealed class FacePaint
+{
+    public string Id = "", Name = "", Words = "";
+    public double Rough = 0.7, Metal;
+}
+
+/// <summary>One of her face's sliders (the view's shape keys ID+ and ID-): its
+/// group, the words for its two ends, and how far it goes each way (within
+/// -1 to 1: as far as it still looks like her).</summary>
+public sealed class FaceSlider
+{
+    public string Id = "", Name = "", Group = "", Low = "", High = "";
+    public double Min = -1, Max = 1;
+}
+
+/// <summary>A face to start from: her face's sliders (-1 to 1), set together.</summary>
+public sealed class FaceShape
+{
+    public string Id = "", Name = "", Words = "";
+    public Dictionary<string, double> Shape = new();
+}
 
 public static class Lore
 {
@@ -116,8 +154,12 @@ public static class Lore
 
     sealed class LooksFile
     {
-        public List<LookChoice> Cloaks = new(), Skins = new(), Hairs = new();
+        public List<LookChoice> Cloaks = new(), Skins = new(), Hairs = new(), Eyes = new();
         public Dictionary<string, List<string>> HairStyles = new();
+        public List<HairCut> HerHairs = new();
+        public List<FacePaint> Paints = new();
+        public List<FaceShape> Faces = new();
+        public List<FaceSlider> Sliders = new();
     }
 
     static Dictionary<string, QuestDef>? quests;
@@ -144,6 +186,13 @@ public static class Lore
     public static List<LookChoice> Skins => L.Skins;
     public static List<LookChoice> Hairs => L.Hairs;
     public static List<string> HairStyles(Sex sex) => L.HairStyles[sex.Key()];
+    /// <summary>Her own hairstyles, the first hers unless another is chosen.</summary>
+    public static List<HairCut> HerHairs => L.HerHairs;
+    public static List<LookChoice> Eyes => L.Eyes;
+    public static List<FacePaint> Paints => L.Paints;
+    /// <summary>Faces to start from (the first her own), and her face's sliders by group.</summary>
+    public static List<FaceShape> Faces => L.Faces;
+    public static List<FaceSlider> Sliders => L.Sliders;
     public static Dictionary<string, List<Concern>> Concerns => concerns ??= Json.Parse<Dictionary<string, List<Concern>>>(Json.ReadContent("concerns.json"));
 
     /// <summary>Anyone who can be spoken to, in town or on the road.</summary>

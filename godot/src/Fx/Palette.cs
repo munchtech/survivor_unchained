@@ -48,8 +48,17 @@ public static class Palette
         TelegraphKind.Ground => TeleGround, TelegraphKind.Safe => TeleSafe, TelegraphKind.Wall => TeleWall, _ => TeleBlow,
     };
 
-    /// <summary>The school a projectile or ground effect is, from its art.</summary>
+    static readonly System.Collections.Generic.Dictionary<string, School> ofArt = new();
+
+    /// <summary>The school a projectile or ground effect is, from its art
+    /// (asked of every one in flight every frame: each art's answer is kept).</summary>
     public static School OfArt(string art)
+    {
+        if (ofArt.TryGetValue(art, out var s)) return s;
+        return ofArt[art] = Read(art);
+    }
+
+    static School Read(string art)
     {
         if (Regex.IsMatch(art, "cinder|star|flame|fire|pyre|ember|firepot")) return School.Fire;
         if (Regex.IsMatch(art, "shard|frost|ice|hail|spear_ice|deep")) return School.Frost;

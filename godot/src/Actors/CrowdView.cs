@@ -17,7 +17,19 @@ public partial class CrowdView : Node3D
 {
     const double RiseTime = 1.1;
     const double CorpseLie = 16, CorpseSink = 3;
-    const int CorpseMax = 160;
+    /// <summary>The most bodies left lying (fewer at the lower qualities).</summary>
+    public int CorpseMax = 160;
+    bool shadows = true;
+    /// <summary>Whether the crowd casts shadows (not at the lowest quality).</summary>
+    public bool Shadows
+    {
+        get => shadows;
+        set
+        {
+            shadows = value;
+            foreach (var c in crowds.Values) c.CastShadow = value ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off;
+        }
+    }
 
     /// <summary>A creature's own walk clock and heading, kept between frames.</summary>
     sealed class Gait
@@ -53,6 +65,7 @@ public partial class CrowdView : Node3D
     {
         if (crowds.TryGetValue(visual, out var c)) return c;
         c = new VatCrowd(Vat.Of(Visuals.Of(visual), this));
+        if (!shadows) c.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
         AddChild(c);
         crowds[visual] = c;
         return c;
@@ -74,7 +87,7 @@ public partial class CrowdView : Node3D
         living = 0;
         foreach (var e in b.Enemies.Items)
         {
-            if (!e.Alive || e.Def.Visual.StartsWith("view:")) continue;
+            if (!e.Alive || e.Def.Visual.StartsWith("view:", StringComparison.Ordinal)) continue;
             Draw(e, heightAt);
         }
         // The dead after the living.
@@ -196,7 +209,7 @@ public partial class CrowdView : Node3D
         if (!laidOut.Add((e.Id, e.Seed))) return;
         var (tint, glow) = Visuals.Tint(e.Def.Visual);
         corpses.Add(new Corpse(e.Def.Visual, (float)e.X, (float)e.Z, (float)facing, (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time));
-        if (corpses.Count > CorpseMax) corpses.RemoveAt(0);
+        while (corpses.Count > CorpseMax) corpses.RemoveAt(0);
     }
 
     void DrawCorpses(Func<double, double, double> heightAt)
