@@ -114,6 +114,17 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         Objectives();
     }
 
+    /// <summary>The clock moved on to `seconds` (pictures and probes of the boss): what that
+    /// stretch would have brought (its heralds, the fifteenth minute's great blessing, the
+    /// opening one) is passed over rather than all arriving at once.</summary>
+    public void SkipTo(double seconds)
+    {
+        if (B == null) return;
+        B.Time = seconds;
+        herald10 = Minute >= 10; herald20 = Minute >= 20; great15 = Minute >= 15;
+        B.GreatOwed = 0;
+    }
+
     /* ---------------------------------------------------------- the horde -- */
 
     double R() => G.Rng.NextDouble();
