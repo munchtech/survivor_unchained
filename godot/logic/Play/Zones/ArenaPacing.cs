@@ -85,6 +85,16 @@ public sealed class ArenaPacing
     /// <summary>The hush before the boss: the people hold back and no turn comes.</summary>
     public bool Hush(double seconds) => seconds < end && M(seconds) >= 28.5;
 
+    /// <summary>A build into a landmark (into each herald, and the long push before the boss):
+    /// where the danger should rise as well as the numbers (the charge director's spikes).
+    /// Measured, more fodder alone did not make these stretches harder.</summary>
+    public bool Building(double seconds)
+    {
+        if (seconds >= end || heraldUp) return false;
+        double m = M(seconds);
+        return m is >= 7.5 and < 10 or >= 17.5 and < 20 or >= 25 and < 28.5;
+    }
+
     /// <summary>A herald has come: its duel is the thing on the field.</summary>
     public void HeraldCame() => heraldUp = true;
 

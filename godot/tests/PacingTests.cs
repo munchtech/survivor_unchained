@@ -35,6 +35,19 @@ public class PacingTests
     }
 
     [Fact]
+    public void The_danger_builds_into_each_landmark_and_never_in_the_hush()
+    {
+        var p = new ArenaPacing(S(30));
+        Assert.True(p.Building(S(9)));
+        Assert.True(p.Building(S(19)));
+        Assert.True(p.Building(S(27)));
+        Assert.False(p.Building(S(12)));
+        Assert.False(p.Building(S(29)));
+        p.HeraldCame();
+        Assert.False(p.Building(S(19)));
+    }
+
+    [Fact]
     public void The_shape_reshapes_the_night_and_does_not_make_it_harder_or_easier()
     {
         var p = new ArenaPacing(S(30));
