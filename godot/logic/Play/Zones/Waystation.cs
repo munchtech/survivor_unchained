@@ -129,7 +129,7 @@ public sealed class Waystation : ZoneRuntime
     {
         var look = G.Look;
         foreach (var def in Lore.Npcs.Values.Append(Lore.Outsiders["jory"]).Append(Lore.Outsiders["wayfinder"]))
-            Actors[def.Id] = new NpcActor(def, look, G.Rng) { Said = () => SaidNow(def, Dark) };
+            Wire(Actors[def.Id] = new NpcActor(def, look, G.Rng), () => Dark);
         for (int i = 0; i < Lore.Guards.Count; i++)
         {
             var g = Lore.Guards[i];
