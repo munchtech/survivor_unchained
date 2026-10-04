@@ -19,6 +19,7 @@ extends SceneTree
 #                                          outfit parts, comma-separated); clips "folk/<name>"
 #   MODEL=hero                             the hero, with his clips ("him/<name>", art/anim/hero.res)
 #   NOHERPOSE=1                            without her corrective pose layer
+#   GESTURE=her/nod GESTUREAT=s            a gesture laid over the clip (Gestures.cs) s seconds in
 #   FULL=1                                 save every frame as its own picture too (out_NN.png)
 var clip = ""
 var out = ""
@@ -94,9 +95,14 @@ func _init():
 	# game lays a swing over her run: the spine up, filtered, at OVERSPEED,
 	# fired OVERAT seconds in).
 	if env("OVER", "") != "": overlay(env("OVER", ""))
+	if env("GESTURE", "") != "":
+		var gsk: Skeleton3D = her.find_children("*", "Skeleton3D", true, false)[0]
+		gestures = load("res://src/Actors/Gestures.cs").new()
+		gsk.add_child(gestures)
 	stage(root)
 
 var tree: AnimationTree
+var gestures = null
 
 func overlay(over):
 	ap.stop()
@@ -367,6 +373,8 @@ func _process(delta):
 	var k = frame - warm - 1
 	if tree != null and k == int(float(env("OVERAT", "0")) * 30):
 		tree.set("parameters/shot/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+	if gestures != null and k == int(float(env("GESTUREAT", "0")) * 30):
+		gestures.Play(ap.get_animation(env("GESTURE", "")), 1.0, env("HOLD", "") != "")
 	if k % step == 0:
 		# DEBUG=bone: print where that bone is and which way its axes point.
 		if env("DEBUG", "") != "":

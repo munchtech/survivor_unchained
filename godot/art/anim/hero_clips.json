@@ -175,6 +175,15 @@
 		"note": "keyed: struck from in front, onto her back, held",
 		"source": "keyed (tools/anim)"
 	},
+	"exhale": {
+		"hold": true,
+		"layer": "gesture",
+		"length": 1.5,
+		"licence": "own work",
+		"loop": false,
+		"note": "the shoulders settle over 1.2 s, held",
+		"source": "keyed (tools/anim)"
+	},
 	"get_up": {
 		"layer": "full",
 		"length": 1.46666669845581,
@@ -276,6 +285,14 @@
 		"note": "keyed (C01): on her right side, then up onto the elbow",
 		"source": "keyed (tools/anim)"
 	},
+	"nod": {
+		"layer": "gesture",
+		"length": 1.03333330154419,
+		"licence": "own work",
+		"loop": false,
+		"note": "the head down 8 degrees, held 0.4 s",
+		"source": "keyed (tools/anim)"
+	},
 	"reach_coals": {
 		"hold": true,
 		"layer": "full",
@@ -368,6 +385,14 @@
 		"speed": 5.1,
 		"steps": 2.0,
 		"weapon": "sword+shield"
+	},
+	"shiver": {
+		"layer": "gesture",
+		"length": 1.06666672229767,
+		"licence": "own work",
+		"loop": false,
+		"note": "the shoulders up 4 cm, a fast double tremor",
+		"source": "keyed (tools/anim)"
 	},
 	"sit_back_heels": {
 		"hold": true,
