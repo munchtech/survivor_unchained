@@ -162,8 +162,12 @@ public partial class CrowdView : Node3D
                 {
                     // Its own walk clock, run faster or slower with its pace:
                     // time times pace would leap to a new pose at every change of speed.
+                    // A walk whose pace is known keeps its feet on the ground at any size and speed.
                     role = "move";
-                    g.Phase += dt * Math.Clamp(speed / Math.Max(0.5, e.Def.Speed), 0.6, 1.6);
+                    double size = (e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual);
+                    g.Phase += dt * (asset.Pace > 0
+                        ? Math.Clamp(speed / (asset.Pace * size), 0.5, 1.8)
+                        : Math.Clamp(speed / Math.Max(0.5, e.Def.Speed), 0.6, 1.6));
                     t = g.Phase;
                 }
                 else { role = "idle"; t = time + e.Seed * 9; }

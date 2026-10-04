@@ -57,6 +57,21 @@ public static class FolkClips
             "PickUp" or "PickUp_Table" => "pick_up",
             _ => null,
         };
+        return Named(woman, want);
+    }
+
+    /// <summary>The walking dead's own motion (tools/anim/dead.py) for one the
+    /// game names, or null: the crowd's Risen lurch at its pace rather than
+    /// skating on the library's slow zombie walk (armed, the weapon hangs
+    /// and the other hand reaches).</summary>
+    public static string? Undead(bool woman, bool armed, string game) => game switch
+    {
+        "Zombie_Walk_Fwd_Loop" or "Zombie_Walk_Fwd" or "Walking_D_Skeletons" => Named(woman, armed ? "lurch_armed" : "lurch"),
+        _ => null,
+    };
+
+    static string? Named(bool woman, string? want)
+    {
         if (want == null || Library() is not { } l) return null;
         var name = (woman ? "f_" : "m_") + want;
         return l.HasAnimation(name) ? Prefix + name : null;
