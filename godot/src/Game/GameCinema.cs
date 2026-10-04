@@ -1,0 +1,575 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
+using Godot;
+using SurvivorUnchained.Cinema;
+using SurvivorUnchained.Sim;
+using SurvivorUnchained.Sound;
+using SurvivorUnchained.Ui;
+using SurvivorUnchained.View;
+using SurvivorUnchained.World;
+
+namespace SurvivorUnchained.Play;
+
+/* The cinematic player: a timeline (godot/data/cinematics/<id>.json, played
+ * by logic/Cinema) put on the screen in the zone that is running. The world
+ * is held under it (Battle.WorldRate), the controls captured, the HUD gone
+ * behind the bars. Its cast are its own: the survivor is played by a double
+ * built from her loadout (the game's own figure waits, hidden, and takes her
+ * place at the end mark), the dead it raises are spawned into the fight, so
+ * they are there when play begins. Its camera replaces the follow camera
+ * and hands back into it. Holding interact or pause skips it to its end. */
+public partial class Game
+{
+    Cine? cine;
+    /// <summary>Started by --quick: no cinematic plays unless --cine names it.</summary>
+    bool quick;
+
+    /// <summary>A cinematic playing (null: none).</summary>
+    public bool InCinematic => cine != null;
+
+    /// <summary>A cinematic from the data, played now in the zone that is
+    /// running; done when it hands back (or is skipped). False if it cannot
+    /// play here (no scene, no such file), and the zone does without.</summary>
+    public bool Cinematic(string id, Action? done = null)
+    {
+        if (scene?.Battle is not { } b || cine != null) return false;
+        // --nocine, or a quick start: the zone's captions instead (pictures of play from the first frame).
+        if (Args.Has("nocine") || (quick && Args.Get("cine") != id)) return false;
+        CineFile file;
+        try { file = CineFile.Load(id); }
+        catch (Exception e) { GD.PushWarning($"cinema: {id} not played ({e.Message})"); return false; }
+        // A timeline that cannot be laid out is not played (its schedule is built
+        // before anything on screen changes), and the zone does without.
+        try { cine = new Cine(this, file, b, done); }
+        catch (Exception e) { GD.PushError($"cinema: {id} not played: {e.Message}"); cine = null; return false; }
+        return true;
+    }
+
+    /// <summary>Each frame, after the world is drawn: the camera, the cast, the cues.</summary>
+    void CinemaFrame(double dt)
+    {
+        if (cine == null) return;
+        cine.Frame(dt);
+        if (cine.Over) { var c = cine; cine = null; c.Finish(); }
+    }
+
+    sealed class Cine
+    {
+        readonly Game g;
+        readonly CineFile file;
+        readonly Battle b;
+        readonly Action? done;
+        readonly CinePlayer player;
+        readonly CinePlaces places;
+        readonly CinemaBars bars = new();
+        readonly Dictionary<string, PersonView> people = new();
+        readonly Dictionary<string, Enemy> enemies = new();
+        readonly List<Tween> tweens = new();
+        readonly List<Move> moves = new();
+        readonly Dictionary<string, Dictionary<string, float>> faces = new();
+        readonly bool seen;
+        readonly Ctx ctx;
+        (float Fov, Camera3D.KeepAspectEnum Keep, float Near, CameraAttributes? Attr) saved;
+        CameraAttributesPractical dof = new();
+        double skipHeld;
+        int stillShot = -1, camShot = -1;
+        readonly Dictionary<string, V3> camFixed = new();
+        public bool Over { get; private set; }
+        public bool ZoneHeld => file.World.ZoneHeld;
+
+        sealed record Tween(double T0, double T1, Action<double> Apply);
+        sealed record Move(string Actor, Vector3 From, Vector3 To, double T0, double T1, double Heading);
+
+        public Cine(Game g, CineFile file, Battle b, Action? done)
+        {
+            this.g = g;
+            this.file = file;
+            this.b = b;
+            this.done = done;
+            ctx = g.Journey.Ctx;
+            var cc = CineLines.Context(g.Journey.Ch, g.Journey.World.Facts.Where(kv => kv.Value.Truthy).Select(kv => kv.Key));
+            player = new CinePlayer(new CineSchedule(file, cc, id => CineLines.Seconds(CineLines.Find(id, ctx))));
+            places = new CinePlaces(file, (x, z) => g.scene!.HeightAt(x, z), ActorAt);
+            seen = Settings.Current.SeenCinematics.Contains(file.Id);
+            g.AddChild(bars);
+            var cam = g.camera;
+            saved = (cam.Fov, cam.KeepAspect, cam.Near, cam.Attributes);
+            cam.Near = 0.04f;
+            g.controls.Captured = true;
+            g.hud.ShowPlay(false);
+            g.hud.Prompt(g.promptShown = null);
+            g.SetHint(null);
+            g.scene!.CameraHeld = true;
+            if (g.scene.Player != null) g.scene.Player.Hidden = true;
+            b.WorldRate = file.World.Rate; b.WorldRateT = 1e9;
+            foreach (var (name, c) in file.Cast) Cast(name, c);
+            GD.Print($"cinema: {file.Id} ({player.S.Length:0.0} s, {player.S.Shots.Count} shots)");
+            Dispatch(player.Advance(0));
+        }
+
+        /* --------------------------------------------------------- the cast -- */
+
+        void Cast(string name, CineCast c)
+        {
+            if (c.Kind == "survivor")
+            {
+                var lo = Loadouts.Of(g.Journey.Ch);
+                var v = new PersonView(lo.Person, new Held { Right = lo.Arms.Right, Left = lo.Arms.Left, Forearm = lo.Arms.Forearm }, 0.8) { Name = "CineSurvivor" };
+                g.scene!.AddChild(v);
+                people[name] = v;
+                if (c.Mark != null) Place(name, places.Resolve(MarkEl(c.Mark)), file.Mark(c.Mark).Heading);
+                v.Cue(lo.Arms.Idle, 0, 1, 0);
+            }
+            else if (c.Kind == "npc" && c.Def != null && Lore.Person(c.Def) is { } def)
+            {
+                var v = new PersonView(def.Person ?? new PersonSpec(), def.Arms, 0.8 * (def.Scale ?? 1)) { Name = "Cine_" + name };
+                g.scene!.AddChild(v);
+                people[name] = v;
+                if (c.Mark != null) Place(name, places.Resolve(MarkEl(c.Mark)), file.Mark(c.Mark).Heading);
+                v.Cue("Idle_Loop", 0, 1, 0);
+            }
+        }
+
+        static JsonElement MarkEl(string mark) => JsonDocument.Parse($"{{\"mark\":\"{mark}\"}}").RootElement;
+
+        void Place(string actor, V3 at, double heading, bool visible = true)
+        {
+            if (people.TryGetValue(actor, out var v)) v.Place(at.X, at.Y, at.Z, heading, visible);
+        }
+
+        /// <summary>Where someone is now, for the camera: their feet, or a bone.</summary>
+        V3? ActorAt(string name, string? bone)
+        {
+            if (people.TryGetValue(name, out var v))
+            {
+                var p = v.GlobalPosition;
+                if (bone != null)
+                {
+                    var sk = v.Person.Skeleton;
+                    int i = sk.FindBone(bone switch { "head" or "eyes" => "Head", "hand_r" => "hand_r", "hand_l" => "hand_l", "chest" => "spine_03", _ => bone });
+                    if (i >= 0) p = sk.GlobalTransform * sk.GetBoneGlobalPose(i).Origin;
+                    if (bone == "eyes") p += new Vector3(0, 0.07f, 0);
+                }
+                return new V3(p.X, p.Y, p.Z);
+            }
+            if (enemies.TryGetValue(name, out var e)) return new V3(e.X, g.scene!.HeightAt(e.X, e.Z) + (bone == "head" ? 1.6 : 0), e.Z);
+            return null;
+        }
+
+        /* ------------------------------------------------------------ frame -- */
+
+        public void Frame(double dt)
+        {
+            Skipping(dt);
+            if (Over) return;
+            Dispatch(player.Advance(dt));
+            double t = player.T;
+            foreach (var tw in tweens.ToList())
+            {
+                double k = tw.T1 <= tw.T0 ? 1 : Math.Clamp((t - tw.T0) / (tw.T1 - tw.T0), 0, 1);
+                tw.Apply(k);
+                if (k >= 1) tweens.Remove(tw);
+            }
+            foreach (var m in moves.ToList())
+            {
+                double k = Math.Clamp((t - m.T0) / Math.Max(0.01, m.T1 - m.T0), 0, 1);
+                var p = m.From.Lerp(m.To, (float)CineCamera.Ease("inout", k));
+                if (people.TryGetValue(m.Actor, out var v)) v.Place(p.X, g.scene!.HeightAt(p.X, p.Z), p.Z, m.Heading, true);
+                if (k >= 1) moves.Remove(m);
+            }
+            foreach (var v in people.Values) v.Advance(dt);
+            Camera(dt);
+            var shot = player.Shot.Shot;
+            // --shot NAME --until S: each shot's standing frame saved as it passes (the previs boards).
+            var span = player.Shot;
+            if (span.Index != stillShot && player.Local >= (shot.Still ?? span.Dur * 0.6))
+            {
+                stillShot = span.Index;
+                Shots.Want($"{file.Id}_s{shot.Id}", 0.05);
+            }
+            bars.Frame((float)player.Bars, shot.Black ? 1 : 0);
+            if (player.Done) Over = true;
+        }
+
+        void Skipping(double dt)
+        {
+            bool held = g.controls.Held(Act.Interact) || g.controls.Held(Act.Pause);
+            if (held && player.CanSkip(seen)) skipHeld += dt;
+            else skipHeld = Math.Max(0, skipHeld - dt * 3);
+            bars.Skip((float)(skipHeld / file.Skip.Hold));
+            if (skipHeld < file.Skip.Hold) return;
+            // Straight to the end: what lasts is done, nothing is heard.
+            Dispatch(player.SkipToEnd(), skipping: true);
+            g.voice.Stop();
+            Over = true;
+        }
+
+        void Camera(double dt)
+        {
+            // A place on someone is taken where they are as the shot begins (a camera
+            // is set up on its marks), unless it says "track" (it follows them).
+            if (camShot != player.Shot.Index) { camShot = player.Shot.Index; camFixed.Clear(); }
+            var pose = player.Camera(e =>
+            {
+                if (e.ValueKind != JsonValueKind.Object || !e.TryGetProperty("actor", out _) || e.TryGetProperty("track", out _)) return places.Resolve(e);
+                var key = e.GetRawText();
+                return camFixed.TryGetValue(key, out var p) ? p : camFixed[key] = places.Resolve(e);
+            });
+            if (pose.Black || pose.Hold) return;
+            var cam = g.camera;
+            Vector3 pos = V(pose.Pos), at = V(pose.At);
+            float hfov = (float)pose.Hfov;
+            if (pose.FollowK > 0 && EndPoint() is Vector3 end)
+            {
+                var (fp, fl) = g.cam.PoseFor(end);
+                float k = (float)pose.FollowK;
+                pos = pos.Lerp(fp, k);
+                at = at.Lerp(fl, k);
+                hfov = Mathf.Lerp(hfov, FollowHfov(), k);
+            }
+            if (pose.Handheld > 0)
+            {
+                // A hand on the camera: slow drift and a little tremor, the same at the same moment.
+                float t = (float)player.T, s = (float)pose.Handheld;
+                float N(float a) => Mathf.Sin(t * 1.3f + a) * 0.6f + Mathf.Sin(t * 3.7f + a * 2.1f) * 0.3f + Mathf.Sin(t * 9.1f + a * 0.7f) * 0.1f;
+                pos += new Vector3(N(1), N(2), N(3)) * 0.03f * s;
+                at += new Vector3(N(4), N(5), N(6)) * 0.05f * s;
+            }
+            var basis = Godot.Basis.LookingAt(at - pos, Vector3.Up);
+            if (pose.Roll != 0) basis = basis.Rotated(basis.Z, Mathf.DegToRad((float)pose.Roll));
+            cam.GlobalTransform = new Transform3D(basis, pos);
+            cam.KeepAspect = Camera3D.KeepAspectEnum.Width;
+            cam.Fov = hfov;
+            if (pose.Focus is double f && pose.FollowK < 0.5)
+            {
+                // Depth of field from the lens: sharp across what f-number and distance allow, soft beyond.
+                double mm = pose.Lens, n = pose.Fstop, coc = 0.03;
+                double h = mm * mm / (n * coc) / 1000;
+                double near = h * f / (h + f), far = h > f ? h * f / (h - f) : 1e4;
+                dof.DofBlurNearEnabled = true;
+                dof.DofBlurNearDistance = (float)Math.Max(0.02, near);
+                dof.DofBlurNearTransition = (float)Math.Max(0.02, near * 0.5);
+                dof.DofBlurFarEnabled = true;
+                dof.DofBlurFarDistance = (float)Math.Min(far, 500);
+                dof.DofBlurFarTransition = (float)Math.Max(0.1, (far - f) * 1.5 + f * 0.25);
+                dof.DofBlurAmount = 0.12f;
+                cam.Attributes = dof;
+            }
+            else cam.Attributes = saved.Attr;
+        }
+
+        float FollowHfov()
+        {
+            var size = g.GetViewport().GetVisibleRect().Size;
+            return Mathf.RadToDeg(2 * Mathf.Atan(Mathf.Tan(Mathf.DegToRad(saved.Fov) / 2) * size.X / size.Y));
+        }
+
+        Vector3? EndPoint()
+        {
+            if (file.End.Her is not string m) return null;
+            var p = places.Resolve(MarkEl(m));
+            return new Vector3((float)p.X, (float)g.scene!.HeightAt(p.X, p.Z), (float)p.Z);
+        }
+
+        static Vector3 V(V3 v) => new((float)v.X, (float)v.Y, (float)v.Z);
+
+        /* ------------------------------------------------------------- cues -- */
+
+        void Dispatch(List<TimedCue> cues, bool skipping = false)
+        {
+            foreach (var tc in cues)
+            {
+                try { Do(tc, skipping); }
+                catch (Exception e) { GD.PushWarning($"cinema {file.Id} shot {tc.Shot.Shot.Id}: {tc.Cue.Do} failed: {e.Message}"); }
+            }
+        }
+
+        void Do(TimedCue tc, bool skipping)
+        {
+            var c = tc.Cue;
+            double t0 = tc.T, over = c.Num("over");
+            switch (c.Do)
+            {
+                case "line":
+                {
+                    var l = CineLines.Find(c.Str("id")!, ctx);
+                    if (l.Raw == "") break;
+                    var take = g.voice.Say(l.VoId, l.Raw);
+                    bars.Say(l.Text, l.Speaker, (take?.Sec ?? CineLines.Reading(l.Text)) + c.Num("linger", 0.7));
+                    break;
+                }
+                case "music":
+                {
+                    var mood = c.Str("mood") ?? "silence";
+                    g.sound.CineMood = mood == "game" ? null : Enum.Parse<Mood>(mood, true);
+                    double from = g.sound.CineIntensity, to = c.Num("intensity", 0.5);
+                    if (over > 0) tweens.Add(new Tween(t0, t0 + over, k => g.sound.CineIntensity = from + (to - from) * k));
+                    else g.sound.CineIntensity = to;
+                    break;
+                }
+                case "sfx":
+                {
+                    double pan = 0;
+                    if (c.Has("where")) pan = Pan(places.Resolve(c.Get("where")));
+                    Sfx.Cine(c.Str("name")!, c.Num("gain", 1), c.Num("pan", pan));
+                    break;
+                }
+                case "place":
+                {
+                    var at = c.Has("where") ? places.Resolve(c.Get("where")) : places.Resolve(MarkEl(c.Str("mark")!));
+                    double heading = c.Has("heading") ? c.Num("heading") : c.Str("mark") is string mk ? file.Mark(mk).Heading : 0;
+                    Place(c.Actor, at, heading, c.Bool("visible", true));
+                    break;
+                }
+                case "hide":
+                    if (people.TryGetValue(c.Actor, out var hv)) hv.Visible = !c.Bool("hidden", true);
+                    break;
+                case "anim":
+                {
+                    if (!people.TryGetValue(c.Actor, out var v)) break;
+                    var clip = c.Str("clip")!;
+                    if (clip == "@idle") clip = Loadouts.Of(g.Journey.Ch).Arms.Idle;
+                    v.Cue(clip, c.Num("from"), c.Num("speed", 1), c.Num("blend", 0.2));
+                    break;
+                }
+                case "move":
+                {
+                    if (!people.TryGetValue(c.Actor, out var v)) break;
+                    var to = places.Resolve(c.Has("to") && c.Get("to").ValueKind != JsonValueKind.String ? c.Get("to") : MarkEl(c.Str("to")!));
+                    var from = v.GlobalPosition;
+                    var dest = V(to);
+                    double heading = c.Has("heading") ? c.Num("heading") : Math.Atan2(dest.X - from.X, dest.Z - from.Z);
+                    moves.Add(new Move(c.Actor, from, dest, t0, t0 + c.Num("dur", 1), heading));
+                    if (c.Str("clip") is string mc) v.Cue(mc, 0, c.Num("speed", 1), 0.25);
+                    break;
+                }
+                case "look":
+                {
+                    if (!people.TryGetValue(c.Actor, out var v)) break;
+                    var at = places.Resolve(c.Get("where"));
+                    float from = v.Rotation.Y, to = Mathf.Atan2((float)at.X - v.GlobalPosition.X, (float)at.Z - v.GlobalPosition.Z);
+                    to = from + Mathf.Wrap(to - from, -Mathf.Pi, Mathf.Pi);
+                    tweens.Add(new Tween(t0, t0 + Math.Max(over, 0.01), k => v.Rotation = new Vector3(0, Mathf.Lerp(from, to, (float)CineCamera.Ease("inout", k)), 0)));
+                    break;
+                }
+                case "face":
+                {
+                    if (!people.TryGetValue(c.Actor, out var v) || c.Get("keys").ValueKind != JsonValueKind.Object) break;
+                    var now = faces.TryGetValue(c.Actor, out var f) ? f : faces[c.Actor] = new();
+                    var start = new Dictionary<string, float>(now);
+                    var want = c.Get("keys").EnumerateObject().ToDictionary(p => p.Name, p => (float)p.Value.GetDouble());
+                    tweens.Add(new Tween(t0, t0 + over, k =>
+                    {
+                        foreach (var (name, target) in want)
+                        {
+                            float a = start.TryGetValue(name, out var s) ? s : 0;
+                            now[name] = Mathf.Lerp(a, target, (float)CineCamera.Ease("inout", k));
+                        }
+                        People.HerFace(v.Person, now);
+                    }));
+                    break;
+                }
+                case "gaze":
+                {
+                    if (Life(c.Actor) is not { } life) break;
+                    var look = c.Get("look");
+                    if (look.ValueKind == JsonValueKind.Array) life.Look = new Vector2((float)look[0].GetDouble(), (float)look[1].GetDouble());
+                    if (c.Has("wander")) life.Wander = (float)c.Num("wander");
+                    if (c.Bool("snap", true)) life.Snap();
+                    break;
+                }
+                case "lids":
+                {
+                    if (Life(c.Actor) is not { } life) break;
+                    if (c.Get("value").ValueKind != JsonValueKind.Number) { life.Lids = null; break; }
+                    float from = life.Lids ?? 0, to = (float)c.Num("value");
+                    tweens.Add(new Tween(t0, t0 + over, k => life.Lids = Mathf.Lerp(from, to, (float)k)));
+                    break;
+                }
+                case "light":
+                {
+                    int i = (int)c.Num("light");
+                    float from = (float)c.Num("from", 1), to = (float)c.Num("level", 1), rate = (float)c.Num("rate", 1);
+                    Color? col = c.Str("color") is string hex ? new Color(hex) : null;
+                    if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => g.scene!.View.SetLevel(i, Mathf.Lerp(from, to, (float)k), col, rate)));
+                    else g.scene!.View.SetLevel(i, to, col, rate);
+                    break;
+                }
+                case "lit":
+                    g.scene!.View.SetLit((int)c.Num("light"), c.Bool("on", true));
+                    break;
+                case "fire":
+                    g.scene!.View.SetFire((int)c.Num("light"), (float)c.Num("flames", 1));
+                    break;
+                case "atmosphere":
+                {
+                    var to = Atmospheres.ByName(c.Str("preset")!);
+                    if (over > 0 && !skipping && c.Str("from") is string fromName)
+                    {
+                        var from = Atmospheres.ByName(fromName);
+                        double last = -1;
+                        tweens.Add(new Tween(t0, t0 + over, k => { if (k - last > 0.02 || k >= 1) { last = k; g.SetAtmosphere(Atmospheres.Blend(from, to, k), k >= 1); } }));
+                    }
+                    else g.SetAtmosphere(to);
+                    break;
+                }
+                case "spawn":
+                {
+                    var at = places.Resolve(c.Has("where") ? c.Get("where") : MarkEl(c.Str("mark") ?? c.Actor));
+                    var style = c.Str("style") switch { "rise" => SpawnStyle.Rise, "burrow" => SpawnStyle.Burrow, _ => SpawnStyle.Walk };
+                    var e = b.SpawnEnemy(c.Str("def") ?? file.Cast.GetValueOrDefault(c.Actor)?.Def ?? "risen", at.X, at.Z, new Battle.SpawnOpts { Style = style, Level = (int)c.Num("level", 1) });
+                    if (e != null) enemies[c.Actor] = e;
+                    break;
+                }
+                case "world":
+                    b.WorldRate = c.Num("rate"); b.WorldRateT = 1e9;
+                    break;
+                case "vfx":
+                {
+                    var at = c.Has("where") ? places.Resolve(c.Get("where")) : default;
+                    switch (c.Str("kind"))
+                    {
+                        case "shake": g.cam.AddTrauma((float)c.Num("amount", 0.4)); break;
+                        case "nova": b.Events.Emit(new Ev.Nova { X = at.X, Z = at.Z, Radius = c.Num("radius", 2), School = Enum.Parse<School>(c.Str("school") ?? "frost", true), Duration = c.Num("dur", 0.9) }); break;
+                        case "burst": b.Events.Emit(new Ev.Explosion { X = at.X, Z = at.Z, Radius = c.Num("radius", 1.2), School = Enum.Parse<School>(c.Str("school") ?? "physical", true), Power = c.Num("power", 0.5) }); break;
+                    }
+                    break;
+                }
+                case "title":
+                    g.hud.Announce(new Announcement(c.Str("title") ?? "", c.Str("sub"), c.Str("kind") ?? "danger", c.Num("seconds", 3.4)));
+                    break;
+                case "event":
+                    g.zone?.CineEvent(c.Str("name") ?? "");
+                    break;
+                case "hold":
+                {
+                    // What a hand holds: a piece, nothing, or her own again ("@own").
+                    if (!people.TryGetValue(c.Actor, out var v)) break;
+                    var arms = Loadouts.Of(g.Journey.Ch).Arms;
+                    foreach (var slot in c.Str("slot") is "all" or null ? new[] { "handslot.r", "handslot.l", "forearm.l" } : new[] { c.Str("slot")! })
+                    {
+                        string? piece = c.Str("piece") switch
+                        {
+                            "@own" => slot switch { "handslot.l" => arms.Left, "forearm.l" => arms.Forearm, _ => arms.Right },
+                            var s => s,
+                        };
+                        v.Hold(slot, null, piece);
+                    }
+                    break;
+                }
+                case "prop":
+                {
+                    // A thing set down for the scene: her weapon leaning on the log.
+                    var arms = Loadouts.Of(g.Journey.Ch).Arms;
+                    string? piece = c.Str("piece") switch { "@weapon" => arms.Right ?? arms.Left, "@shield" => arms.Forearm, var s => s };
+                    string name = c.Str("name") ?? piece ?? "prop";
+                    if (props.Remove(name, out var old)) old.QueueFree();
+                    if (piece == null || !Arms.All.ContainsKey(piece) || c.Bool("remove")) break;
+                    var node = Arms.Make(piece);
+                    var at = places.Resolve(c.Get("where"));
+                    node.Position = V(at);
+                    var r = c.Get("rot");
+                    if (r.ValueKind == JsonValueKind.Array) node.RotationDegrees = new Vector3((float)r[0].GetDouble(), (float)r[1].GetDouble(), (float)r[2].GetDouble());
+                    node.Scale = Vector3.One * (float)c.Num("scale", 1);
+                    g.scene!.AddChild(node);
+                    props[name] = node;
+                    break;
+                }
+                case "prints":
+                {
+                    // Wet bootprints along a line, left and right in turn (ground decals until the zone has its own).
+                    var a = places.Resolve(c.Get("from"));
+                    var z = places.Resolve(c.Get("to"));
+                    double stride = c.Num("stride", 0.78), len = (z - a).Length;
+                    var dir = (z - a).Unit;
+                    var side = new V3(-dir.Z, 0, dir.X);
+                    float yaw = Mathf.Atan2((float)dir.X, (float)dir.Z);
+                    int n = (int)(len / stride);
+                    for (int i = 0; i <= n; i++)
+                    {
+                        var p = a + dir * (i * stride) + side * ((i % 2 == 0 ? 1 : -1) * 0.12);
+                        var d = new Decal
+                        {
+                            TextureAlbedo = Footprint(i % 2 == 0), Size = new Vector3(0.13f, 0.4f, 0.3f),
+                            Position = new Vector3((float)p.X, (float)g.scene!.HeightAt(p.X, p.Z), (float)p.Z),
+                            Rotation = new Vector3(0, yaw + Mathf.Pi, 0), AlbedoMix = (float)c.Num("dark", 0.85), CullMask = 1,
+                        };
+                        g.scene.AddChild(d);
+                        prints.Add(d);
+                    }
+                    break;
+                }
+                case "bars" or "fade" or "wet":
+                    // The bars and black follow the shots; wetness waits on its system (docs/cinematics/README.md section 6, 7).
+                    break;
+            }
+        }
+
+        readonly Dictionary<string, Node3D> props = new();
+        readonly List<Decal> prints = new();
+        static readonly Dictionary<bool, ImageTexture> printTex = new();
+
+        /// <summary>A boot's print, dark and wet: a sole and a heel, soft at the edges.</summary>
+        static ImageTexture Footprint(bool left)
+        {
+            if (printTex.TryGetValue(left, out var t)) return t;
+            const int W = 32, H = 96;
+            var img = Image.CreateEmpty(W, H, false, Image.Format.Rgba8);
+            for (int y = 0; y < H; y++)
+                for (int x = 0; x < W; x++)
+                {
+                    float u = (x + 0.5f) / W * 2 - 1, v = (y + 0.5f) / H;
+                    // The sole (toe end at the top, turned a little in), then a gap, then the heel.
+                    float sole = 1 - ((u - (left ? -0.08f : 0.08f) * (1 - v)) * (u - (left ? -0.08f : 0.08f) * (1 - v)) / 0.8f + (v - 0.3f) * (v - 0.3f) / 0.075f);
+                    float heel = 1 - (u * u / 0.62f + (v - 0.8f) * (v - 0.8f) / 0.018f);
+                    float a = Mathf.Clamp(Mathf.Max(sole, heel) * 3, 0, 1);
+                    img.SetPixel(x, y, new Color(0.03f, 0.035f, 0.04f, a * 0.85f));
+                }
+            return printTex[left] = ImageTexture.CreateFromImage(img);
+        }
+
+        HerFaceLife? Life(string actor) =>
+            people.TryGetValue(actor, out var v) ? v.Person.Skeleton.GetNodeOrNull<HerFaceLife>("HerFaceLife") : null;
+
+        /// <summary>Left or right of the camera, for a sound placed in the world (-1..1).</summary>
+        double Pan(V3 at)
+        {
+            var cam = g.camera.GlobalTransform;
+            var rel = cam.Basis.Inverse() * (V(at) - cam.Origin);
+            return Math.Clamp(rel.X / Math.Max(1, rel.Length()) * 1.5, -1, 1);
+        }
+
+        /* --------------------------------------------------------- the end -- */
+
+        public void Finish()
+        {
+            var p = b.Player;
+            if (file.End.Her is string m)
+            {
+                var (x, _, z, heading) = file.Mark(m);
+                p.X = x; p.Z = z; p.Facing = heading; p.Vx = p.Vz = 0;
+            }
+            foreach (var v in people.Values) v.QueueFree();
+            foreach (var n in props.Values) n.QueueFree();
+            props.Clear();
+            // Her prints stay: they are in the frost whether it played or not.
+            people.Clear();
+            var cam = g.camera;
+            cam.Fov = saved.Fov; cam.KeepAspect = saved.Keep; cam.Near = saved.Near; cam.Attributes = saved.Attr;
+            g.scene!.CameraHeld = false;
+            if (g.scene.Player != null) g.scene.Player.Hidden = false;
+            g.cam.Snap((float)p.X, (float)g.scene.HeightAt(p.X, p.Z), (float)p.Z);
+            b.WorldRate = 1; b.WorldRateT = 0;
+            g.sound.CineMood = null;
+            g.controls.Captured = false;
+            g.controls.ClearLatches();
+            g.hud.ShowPlay(true);
+            bars.QueueFree();
+            if (!Settings.Current.SeenCinematics.Contains(file.Id)) { Settings.Current.SeenCinematics.Add(file.Id); Settings.Current.Save(); }
+            GD.Print($"cinema: {file.Id} {(player.Skipped ? "skipped" : "done")}");
+            done?.Invoke();
+        }
+    }
+}

@@ -28,6 +28,8 @@ public partial class Game
             return true;
         }
         if (inTransit || Mode != "play") return false;
+        // A cinematic hears only the held skip (GameCinema), never a menu.
+        if (cine != null) return true;
         if (hudMode is "draft" or "dialogue") return hud.Key(a);
         switch (a)
         {

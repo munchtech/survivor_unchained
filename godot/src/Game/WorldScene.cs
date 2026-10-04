@@ -29,6 +29,8 @@ public partial class WorldScene : Node3D, IZoneLook
     public bool SimPaused;
     /// <summary>A held camera (the title, a cutscene) instead of the follow camera.</summary>
     public (Vector3 Pos, Vector3 Look)? Showcase;
+    /// <summary>A cinematic has the camera: the follow camera waits.</summary>
+    public bool CameraHeld;
     /// <summary>What the survivor is asked to do (the controls, or the autopilot).</summary>
     public Func<(double X, double Z)> Move = () => (0, 0);
     public Func<Act, bool> Pressed = _ => false;
@@ -158,7 +160,7 @@ public partial class WorldScene : Node3D, IZoneLook
             var p = b.Player;
             float y = (float)HeightAt(p.X, p.Z);
             Player?.Update(b, fightDt, fightTime, HeightAt);
-            if (Showcase == null) cam.Update((float)dt, (float)p.X, y, (float)p.Z, (float)p.Vx, (float)p.Vz);
+            if (Showcase == null && !CameraHeld) cam.Update((float)dt, (float)p.X, y, (float)p.Z, (float)p.Vx, (float)p.Vz);
             Crowd.Update(b, HeightAt, fightTime);
             Fx.PlayerPos = new Vector3((float)p.X, y, (float)p.Z);
             Fx.Update(b, fightDt, fightTime);

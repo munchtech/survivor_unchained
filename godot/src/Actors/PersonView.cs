@@ -121,6 +121,28 @@ public partial class PersonView : Node3D, INpcView
         actLeft = double.MaxValue;
     }
 
+    /// <summary>Played by a cinematic's clock (CinemaDirector): its own animation
+    /// clock, moved only by Advance, so the performance keeps to the timeline.</summary>
+    public bool Cinema { get; private set; }
+
+    /// <summary>A clip from a moment in it, at a speed (0 holds that frame), blended in.</summary>
+    public void Cue(string clip, double from, double speed, double blend)
+    {
+        Cinema = true;
+        var name = People.Clip(person, clip);
+        if (!person.Anim.HasAnimation(name)) { GD.PushWarning($"cinema: no clip {clip}"); return; }
+        person.Anim.CallbackModeProcess = AnimationMixer.AnimationCallbackModeProcess.Manual;
+        person.Anim.Play(name, blend);
+        person.Anim.SpeedScale = (float)speed;
+        person.Anim.Seek(from, true);
+        Native(name);
+        holding = true;
+        actLeft = double.MaxValue;
+    }
+
+    /// <summary>The cinematic's clock moved on.</summary>
+    public void Advance(double dt) { if (Cinema) person.Anim.Advance(dt); }
+
     public void Locomotion(double speed)
     {
         if (holding) return;
@@ -198,6 +220,7 @@ public partial class PersonView : Node3D, INpcView
             hp.Lower += (native - hp.Lower) * k;
             hp.Upper += (native - hp.Upper) * k;
         }
+        if (Cinema) return;
         if (actLeft > 0 && !holding)
         {
             actLeft -= delta;

@@ -27,6 +27,10 @@ public sealed class SoundBridge
     double xpT, hostilesNear, beatT;
     string? prevOverlay;
 
+    /// <summary>A cinematic's music, over whatever the moment would choose (null: none).</summary>
+    public Mood? CineMood;
+    public double CineIntensity;
+
     public SoundBridge(Synth a)
     {
         this.a = a;
@@ -155,8 +159,10 @@ public sealed class SoundBridge
         else if (s.Zone == "waystation") mood = s.Time == TimeOfDay.Night ? Mood.Night : Mood.Town;
         else if (s.Time == TimeOfDay.Night || s.Zone == "lowford") mood = Mood.Night;
         else mood = Mood.Explore;
+        // A cinematic scores itself: its mood and intensity, silence included.
+        if (CineMood is Mood cm) mood = cm;
         Music.Set(mood);
-        Music.Intensity = s.Boss ? 1 : Math.Min(1, hostilesNear / 18);
+        Music.Intensity = CineMood != null ? CineIntensity : s.Boss ? 1 : Math.Min(1, hostilesNear / 18);
         // Close to the end, your own heart: faster the worse it gets.
         double hp = b != null && s.Mode == "play" && b.Combat && b.Player.Alive && o == null ? b.Player.Hp / b.MaxHp : 1;
         if (hp < 0.3)
