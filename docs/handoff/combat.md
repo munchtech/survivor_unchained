@@ -49,7 +49,23 @@ In order, from the coordinator:
    - **The boss floor.** A late `--give` build at tier 1 killed the Barrow Lord in about 35 s, under the 45–60 s floor for an absurd build. The autopilot took no blow in the whole fight.
 3. **The full balance sweep, and the long night's tail.** The deft bot's best is +53 minutes past; try a 0.004 quadratic health term so great builds reach +60–75.
 4. **Then the maps** (§17.7), with the experience lead (shape and loop) and crafting (chart items).
-5. **Then:**
+5. **The story lead's brief for C14, "The Road Back"** (`a035208561a66c171`; script in `docs/cinematics/c14_road_back.md`). Fit it into the queue; build it before the maps if story needs it for Act 1.
+   - **The fight:** story fight `night:road_back`, that night only, when `nell.road` = "with". Story writes `brannoc.road` once the fight exists.
+   - **Setting:** people dead, 20 minutes. The place is the Low Ford road at the wagon and ditch: the prologue's Lowford zone at night if it can be reused, otherwise an arena dressed as the road (arena art's call).
+   - **Boss: Wat,** "Over the Ford by Dark":
+     - a big drowned carter: a drowned or risen rig, carter's coat, a copper toll-token in his hatband;
+     - the cold trail;
+     - silent, with no barks;
+     - lesson: "He walks where the water was. Keep off the wet."
+   - **Ally: Brannoc** with his hammer:
+     - holds the edge of the lantern's light and never chases;
+     - never dies (goes down on one knee, gets up);
+     - his kills are not credited to the survivor;
+     - his blow's word is "Down."
+   - **Outcomes:** OnWin sets `nell.brought_home` true and gives nothing. OnLose sets nothing.
+   - **Hooks for the cinematics lead's C14 cues:** spawn at the boss's arrival, and dawn at the win.
+   - Tell story when it exists. They will add `brannoc.road`, the `nell.burial` morning variant and a RouteTests play.
+6. **Then:**
    - oaths on bosses (iron halves `StaggerTaken`);
    - ground hazards hurting the horde at half;
    - the Kindling at minute 15;
