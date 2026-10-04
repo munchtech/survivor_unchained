@@ -1,0 +1,124 @@
+{
+  "id": "c02",
+  "title": "None Cross After Dark",
+  "script": "docs/cinematics/shoot/c02.md",
+  "conversation": "cin_none_cross",
+  "zone": "lowford",
+  "draft": "Animatic draft from the written script: cameras unsurveyed, cast and wiring to come (docs/handoff/cinematics.md).",
+  "bars": {"in": 0.6, "out": 0.8},
+  "skip": {"from": 1.5, "hold": 0.8},
+  "world": {"rate": 0.001, "zoneHeld": true},
+  "marks": {
+    "her": [2.5, -31.0, 3.1416],
+    "p0": [0.0, -33.5],
+    "bed": [6.0, -46.0],
+    "warden_end": [3.0, -33.2, 0.0],
+    "pool": [8.0, -51.0]
+  },
+  "cast": {
+    "her": {"kind": "survivor", "mark": "her"}
+  },
+  "shots": [
+    {
+      "id": "1", "type": "MLS", "dur": 4.0,
+      "note": "Behind her at the water's edge, looking north: the near post at frame left, the ford opening ahead in mist, the two far posts. In the pool to the right an arm stands up out of the river holding a lamp.",
+      "cam": {"pos": [2.5, 1.4, -28.0], "at": [3.0, 0.5, -45.0], "lens": 28},
+      "cues": [
+        {"do": "music", "mood": "silence"},
+        {"at": 0.3, "do": "sfx", "name": "drip", "gain": 0.4}
+      ]
+    },
+    {
+      "id": "2", "type": "LS", "dur": 4.0,
+      "note": "At the water's surface west of the stones, looking east across the pool: the drowned standing in their rows, heads bowed, facing away. The mist moves; they do not. The lamp-arm in the middle distance.",
+      "cam": {"pos": {"abs": [-3.0, -0.95, -50.0]}, "at": {"abs": [8.0, -0.2, -50.0]}, "lens": 35},
+      "cues": []
+    },
+    {
+      "id": "3", "type": "INSERT", "dur": 3.5,
+      "note": "The fist and the lamp: an ancient gauntlet, black with river and grown with weed, gripping a lamp-iron that is new, unrusted, its edges still sharp from the forge. Blue light in it, steady. Below, the surface trembles in time with a sound.",
+      "cam": {"pos": {"abs": [5.2, -0.4, -44.8]}, "at": {"abs": [6.0, 0.4, -46.0]}, "lens": 135, "move": {"push": 0.3, "ease": "linear"}},
+      "cues": []
+    },
+    {
+      "id": "4", "type": "CU", "dur": 4.0, "fit": ["cin_none_cross.call"], "tail": 0.4,
+      "note": "Her face, listening. W1 rises from under the water, sung: the Order's evening call, slowed to a dirge, heard through water.",
+      "cam": {"pos": {"actor": "her", "bone": "head", "off": [0.1, 0.0, -1.0]}, "at": {"actor": "her", "bone": "eyes"}, "lens": 85, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
+      "cues": [
+        {"at": 0.3, "do": "line", "id": "cin_none_cross.call"},
+        {"do": "face", "keys": {"brows_up": 0.2}, "over": 0.8},
+        {"do": "gaze", "look": [0, -0.1]}
+      ]
+    },
+    {
+      "id": "5", "type": "LS", "dur": 5.0,
+      "note": "Low over the pool by his head: he rises, the head first, water sheeting off hood and beard; sits up like a drowned man sitting up, a pause; stands, and keeps standing, taller than the far posts. The lamp never touches the water.",
+      "cam": {"pos": {"abs": [8.5, -0.85, -44.0]}, "at": {"abs": [6.0, 1.5, -46.0]}, "lens": 24},
+      "cues": [
+        {"do": "music", "mood": "mystery", "intensity": 0.35, "over": 4.0},
+        {"do": "sfx", "name": "water_close", "gain": 0.6}
+      ]
+    },
+    {
+      "id": "6", "type": "MS", "dur": 4.0,
+      "note": "Tracking backward ahead of him at waist height: he wades to her, not fast, the greatsword dragging on the stones, the lamp in his left. He stops an arm's length from her.",
+      "cam": {"pos": {"abs": [3.5, 1.3, -36.0]}, "at": {"abs": [5.0, 3.0, -42.0]}, "lens": 35, "move": {"pos": {"abs": [3.2, 1.3, -33.0]}, "at": {"abs": [3.2, 3.2, -35.5]}, "ease": "inout"}},
+      "cues": [
+        {"do": "music", "mood": "mystery", "intensity": 0.6, "over": 4.0}
+      ]
+    },
+    {
+      "id": "7", "type": "2S", "dur": 4.0,
+      "note": "Profile, both in frame: he bends a long way down and lifts the lamp to her face, the way a keeper of a crossing looks at a traveller. Halfway up the lamp-arm trembles, once, badly. He steadies it. (Calling: the warden's shield between them, the reaver's chin up, the arcanist's fire meeting his blue, the stalker's arrow on his eye.)",
+      "cam": {"pos": {"abs": [-1.5, 1.4, -32.0]}, "at": {"abs": [2.8, 1.9, -32.2]}, "lens": 50},
+      "cues": [
+        {"do": "music", "mood": "mystery", "intensity": 0.8, "over": 3.5},
+        {"at": 2.0, "do": "sfx", "name": "hit", "gain": 0.25}
+      ]
+    },
+    {
+      "id": "8", "type": "ECU", "dur": 3.5, "fit": ["cin_none_cross.lie_down"], "tail": 1.4,
+      "note": "Her face in the lamp's light: the flame small in each eye, the wet hair, the green weed the light finds and holds on. Close enough to her lips that breath would show; none does. Blue on one side of her face, her ember's red faint on the other. W2, very quietly, off.",
+      "cam": {"pos": {"actor": "her", "bone": "head", "off": [0.05, 0.0, -0.6]}, "at": {"actor": "her", "bone": "eyes"}, "lens": 135, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
+      "cues": [
+        {"do": "music", "mood": "silence"},
+        {"at": 0.9, "do": "line", "id": "cin_none_cross.lie_down"},
+        {"at": 0.9, "do": "face", "keys": {"brows_sad": 0.35}, "over": 1.5}
+      ]
+    },
+    {
+      "id": "9", "type": "CU", "dur": 3.0,
+      "note": "Low, up at him past the lamp: his face under the hood lit from below, the beard streaming, two points of blue for eyes. He holds the look a full second, then straightens.",
+      "cam": {"pos": {"abs": [2.6, 1.2, -32.0]}, "at": {"abs": [3.0, 4.2, -33.6]}, "lens": 85},
+      "cues": []
+    },
+    {
+      "id": "10", "type": "LS", "dur": 2.5,
+      "note": "Low on the water behind his legs, looking east down the pool: every one of the drowned turns its face toward her at once, a wave down the rows.",
+      "cam": {"pos": {"abs": [2.0, -0.7, -36.0]}, "at": {"abs": [9.0, 0.3, -50.0]}, "lens": 35},
+      "cues": [
+        {"at": 0.4, "do": "sfx", "name": "rasp", "gain": 0.5}
+      ]
+    },
+    {
+      "id": "11", "type": "LS", "dur": 4.5, "fit": ["cin_none_cross.none"], "tail": 0.6,
+      "note": "Low on the near bank, the whole ford: W3. The three posts' flames lean toward him at once, like grass in a wind: he is drinking them. Ice runs out from each post across the water. The drowned lift their heads. Title: THE FORD-WARDEN / Keeper of the Low Crossing.",
+      "cam": {"pos": [-6.0, 0.5, -27.0], "at": {"abs": [3.0, 1.5, -40.0]}, "lens": 24},
+      "cues": [
+        {"at": 0.2, "do": "line", "id": "cin_none_cross.none"},
+        {"at": 0.2, "do": "music", "mood": "boss", "intensity": 1.0},
+        {"at": 0.2, "do": "sfx", "name": "frost_crack", "gain": 0.9},
+        {"at": 1.6, "do": "title", "title": "The Ford-Warden", "sub": "Keeper of the Low Crossing", "kind": "danger", "seconds": 3.2}
+      ]
+    },
+    {
+      "id": "12", "type": "MS", "dur": 2.0,
+      "note": "He sets his guard. Pull back and up into the follow camera. Bars out; the boss bar and the lamps' tip come up. Control.",
+      "cam": {"pos": [2.5, 1.8, -27.5], "at": {"abs": [3.0, 2.0, -33.2]}, "lens": 35, "move": {"pos": [2.5, 9.0, -20.0], "ease": "inout", "follow": true}},
+      "cues": [
+        {"at": "end", "do": "event", "name": "warden_up"}
+      ]
+    }
+  ],
+  "end": {"her": "her", "camera": "follow"}
+}

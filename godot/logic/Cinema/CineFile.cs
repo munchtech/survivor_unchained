@@ -184,13 +184,13 @@ public sealed class CineCue
     {
         "apply" => true,
         "drop" => false,
-        _ => Do is "place" or "spawn" or "world" or "light" or "lit" or "atmosphere" or "event" or "fire" or "hide" or "prints",
+        _ => Do is "place" or "spawn" or "world" or "light" or "lit" or "atmosphere" or "event" or "fire" or "hide" or "prints" or "frost",
     };
 
     /// <summary>The kinds of cue the player knows (the tests hold every cue to them).</summary>
     public static readonly HashSet<string> Kinds =
     [
         "line", "music", "sfx", "place", "anim", "move", "face", "gaze", "lids", "look", "light", "lit", "fire",
-        "atmosphere", "vfx", "spawn", "world", "bars", "title", "event", "fade", "hide", "wet", "hold", "prop", "prints",
+        "atmosphere", "vfx", "spawn", "world", "bars", "title", "event", "fade", "hide", "wet", "hold", "prop", "prints", "glow", "frost",
     ];
 }

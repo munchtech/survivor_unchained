@@ -36,6 +36,8 @@ public sealed class ArenaSpec
     public int Seed = 1;
     public int Tier = 1;
     public string Theme = "wood";
+    /// <summary>The place's mood (Maps/ArenaPlaces.Moods); empty, it is read from the name.</summary>
+    public string Mood = "";
     /// <summary>Who fills it (Maps/MapOffers.Peoples).</summary>
     public string People = "pack";
     public List<string> Oaths = new();
@@ -55,7 +57,7 @@ public sealed class ArenaSpec
     public bool Spare;
 
     /// <summary>The ground (always by night: the ember burns only in the dark).</summary>
-    public MapSpec Map => new() { Seed = Seed, Tier = Tier, Theme = Theme, Night = true, Oaths = Oaths, Name = Name, Arena = true, People = People };
+    public MapSpec Map => new() { Seed = Seed, Tier = Tier, Theme = Theme, Night = true, Oaths = Oaths, Name = Name, Arena = true, People = People, Mood = Mood };
 }
 
 /// <summary>How an arena ended, and what came out of it.</summary>
@@ -88,7 +90,7 @@ public static class Arenas
     public static ArenaSpec FromTable(MapOffer o, string zone, double x, double z, double facing) => new()
     {
         Id = $"table:{o.Spec.Seed}", Name = o.Spec.Name, Sub = $"Tier {o.Spec.Tier} · held by {MapOffers.People(o.People).Name}",
-        Seed = o.Spec.Seed, Tier = o.Spec.Tier, Theme = o.Spec.Theme, People = o.People, Oaths = o.Spec.Oaths.ToList(),
+        Seed = o.Spec.Seed, Tier = o.Spec.Tier, Theme = o.Spec.Theme, Mood = o.Spec.Mood, People = o.People, Oaths = o.Spec.Oaths.ToList(),
         ReturnZone = zone, ReturnX = x, ReturnZ = z, ReturnFacing = facing,
     };
 
@@ -97,7 +99,7 @@ public static class Arenas
     /// second loss tells it nothing; a win still counts.</summary>
     public static ArenaSpec Again(ArenaSpec lost, string zone, double x, double z, double facing) => new()
     {
-        Id = lost.Id, Name = lost.Name, Sub = lost.Sub, Seed = lost.Seed + 1, Tier = lost.Tier, Theme = lost.Theme,
+        Id = lost.Id, Name = lost.Name, Sub = lost.Sub, Seed = lost.Seed + 1, Tier = lost.Tier, Theme = lost.Theme, Mood = lost.Mood,
         People = lost.People, Oaths = lost.Oaths.ToList(), Minutes = lost.Minutes, Story = true, OnWin = lost.OnWin, OnLose = null,
         Boss = lost.Boss, BossName = lost.BossName, BossTitle = lost.BossTitle,
         ReturnZone = zone, ReturnX = x, ReturnZ = z, ReturnFacing = facing,
@@ -176,7 +178,7 @@ public static class Arenas
         // What the night leaves in the survivor's fist, for the Waystation's hands: walked
         // out, all of it; fallen, half.
         var carry = Crafting.Night(spec.People, spec.Tier, spec.Story, b.EmberLevel, Math.Max(0, b.Time / 60 - spec.Minutes), won, !b.Player.Alive, b.ChampionsByFamily);
-        j.Carry(carry);
+        j.Carry(carry, spec.Name);
         var w = j.World;
         if (!won)
         {
@@ -199,6 +201,9 @@ public static class Arenas
         w.Facts["arena.last.day"] = w.Day;
         w.Facts["arena.last.longest"] = longest;
         w.Facts["arena.last.killer"] = !b.Player.Alive && killer != null ? killer : null;
+        // How long ago it was: 0 the night itself, 1 the day after (a daily rule counts it on),
+        // so the town talks about the night just past and not one from last week.
+        w.Facts["arena.last.ago"] = 0;
         if (!b.Player.Alive) w.Facts["arena.fell"] = w.Fact("arena.fell").Number + 1;
         w.Facts["arena.nights"] = w.Fact("arena.nights").Number + 1;
         w.Arena = null;

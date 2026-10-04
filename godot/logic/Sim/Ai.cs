@@ -222,6 +222,7 @@ public static class Ai
                     e.State = EnemyState.Casting;
                     e.Cast = CastKind.Raise;
                     e.StateT = 1.5;
+                    e.AnimT = 0;
                     b.Events.Emit(new Ev.Telegraph { Id = e.Id, Shape = TelegraphShape.Ring, X = e.X, Z = e.Z, Radius = raise.Range, Duration = 1.5, Hostile = true });
                     b.Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = "Rise..." });
                     return;

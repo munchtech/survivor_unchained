@@ -61,7 +61,7 @@ public partial class ArenaResultScreen : Overlay
             Stat("hourglass", r.Seconds, Clock, r.Won ? "survived" : "held out", 0.2),
             Stat("skull", r.Kills, x => $"{x:N0}", "slain", 0.45),
             Stat("flame", r.EmberLevel, x => $"{x:0}", "ember", 0.7));
-        if (r.Won && beyond >= 1) tally.AddChild(Stat("moon", beyond, Clock, "past the half hour", 0.95));
+        if (r.Won && beyond >= 1) tally.AddChild(Stat("moon", beyond, Clock, "past the dead of night", 0.95));
         tally.Alignment = BoxContainer.AlignmentMode.Center;
         wrap.AddChild(tally);
         if (r.Longest && r.Seconds > 120) wrap.AddChild(Style.Label("Your longest in any arena yet", Style.TextItalic, Style.Lead, Style.EmberHi, false, HorizontalAlignment.Center));

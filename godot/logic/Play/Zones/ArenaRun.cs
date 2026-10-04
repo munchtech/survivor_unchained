@@ -141,13 +141,9 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     /// <summary>Always night: the ember burns only in the dark.</summary>
     public override TimeOfDay TimeOf(WorldState w) => TimeOfDay.Night;
 
-    /// <summary>An arena's night is brighter than the wood's: the fight is seen
-    /// from high up, and has to read out to the edges of the picture.</summary>
-    static readonly AtmospherePreset Night = Atmospheres.Night with
-    {
-        KeyIntensity = 4.4, HemiIntensity = 1.6, EnvIntensity = 0.95, FogDensity = 0.004, Exposure = 1.7, RimStrength = 0.75,
-    };
-    public override AtmospherePreset AtmosphereFor(TimeOfDay t) => t == TimeOfDay.Night ? Night : base.AtmosphereFor(t);
+    /// <summary>An arena's night is its place's own (Maps/ArenaPlaces.cs).</summary>
+    public override AtmospherePreset AtmosphereFor(TimeOfDay t) =>
+        t == TimeOfDay.Night && map.Place is { } place ? place.Night : base.AtmosphereFor(t);
     public override Arrival ArrivalFrom(string? from) => new(0, 0, 0);
 
     public override void Begin(Battle b)
@@ -156,7 +152,10 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         // The people's own cover: graves, walls, rubble, lanterns.
         foreach (var pc in map.Pieces) G.Look.AddProp(pc.Id, pc.X, pc.Z, pc.Rot, pc.Scale);
         b.Rules = MapOffers.Rules(Spec.Map);
-        b.Rules.FodderGold = 0.02;
+        // A fiftieth still paid a Kerchief night 1.6k-2.1k gold from its forty thousand dead, and a
+        // three-hundredth 530-690 (crafting's probes, against an economy that holds at 350-450).
+        b.Rules.FodderGold = 0.0015;
+        b.Rules.ChampionGold = 0.07;
         // A shorter night pays its ember quicker, so its boss meets the build a table's would.
         b.Rules.EmberGain *= Pace;
         // The survivor's light reaches further here (the camera is further out); a moonless oath still halves it.

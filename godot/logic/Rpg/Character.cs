@@ -34,6 +34,8 @@ public sealed class ItemInstance
     public List<string>? Marks;
     /// <summary>How often its three coals have been drawn again today.</summary>
     public int? Draw;
+    /// <summary>The day it was last remade: a remade piece cools overnight before the next.</summary>
+    public int? Remade;
 }
 
 public enum ConditionId { Wounded, Blightsick, Poisoned, Blessed, Rested, Wolfscent, Hunted, Warmed }
