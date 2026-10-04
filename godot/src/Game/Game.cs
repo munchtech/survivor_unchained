@@ -425,7 +425,7 @@ public partial class Game : Node, IZoneHost
         h.OnPlayerDeath = killer =>
         {
             if (zh.OnPlayerDeath?.Invoke(killer) == true) return true;
-            OnDeath(killer?.Named?.Title ?? killer?.Def.Name ?? "the dark");
+            OnDeath(killer == null ? "the dark" : Content.Enemies.Called(killer.Named?.Title, killer.Def.Name));
             return false;
         };
         b.Hooks = h;

@@ -450,8 +450,8 @@ he sells **slurry jars** (30 gold, three a day). Steeping a piece:
 
 A steeped piece is **slurried** (green-black veins, a sick glow at night), set
 (heat 0), and cannot be steeped again. The card says all of this before the
-jar is opened, in Snib's voice ("It's the GOOD stuff. Mostly. Snib would not
-drink it."). **Why**: C7; the only way past the forge's ceiling, and a moral
+jar is opened, in Snib's voice ("It is the GOOD stuff. Snib would not drink
+it. Snib would not drink the bad stuff EITHER."; `crafting.json`, `snib`). **Why**: C7; the only way past the forge's ceiling, and a moral
 one: the gamble exists because the stream is poisoned, and curing the stream
 closes it (the jars already bought keep).
 
@@ -892,7 +892,7 @@ the ceilings rise, each by a hand the story gives:
 | **The forge's cap follows the hands** | grade V at the Vigil's armourers (Act 2), VI on Heartwrought (Act 3); the forge never passes what the piece's item level allows; the bright grade stays one above the forge, and only the slurry (or its endgame heir, 20.5) gives it | Brannoc, the Vigil, the Morrow | the story |
 | **Remake to Legendary** | at Brannoc's respect 40 (Act 2), costing the people's rare material from a map boss | Brannoc | atlas bosses |
 | **Binding** | the build's engine: the offensive affixes (fire, crit, haste, reach), which the forge never makes, are moved from donor drops onto the piece kept; donors are the atlas's flood of gear | Vonnra (or her book) | map drops |
-| **Marks** (proposal, combat's yes needed) | a fourth kind of seam content that changes how one day skill behaves in maps: Oathblade's arc wider and it bleeds; a bolt that forks; a chain that returns. Dropped by map bosses, one people's kind each; inscribed in an open seam; one per piece, three per kit; Vonnra: "It is marked. It will not forget." | Vonnra, from the binders' book (the items plan's Marks) | map bosses |
+| **Marks** (proposal, combat's yes needed) | a fourth kind of seam content that changes how one day skill behaves in maps: Oathblade's arc wider and it bleeds; a bolt that forks; a chain that returns. Dropped by map bosses, one people's kind each; inscribed in an open seam; one per piece, three per kit; Vonnra: "Marked. It will do it that way now, until it breaks." | Vonnra, from the binders' book (the items plan's Marks) | map bosses |
 | **Heat** | unchanged: the budget that stops "craft the best and done"; higher grades cost more heat (V: 6–8, VI: 7–9), so a map piece is a set of choices, not a checklist | – | – |
 
 **Why marks** (and not "sigils", which the canon keeps for the Legion's seven-notch sigils that hold the chain): Path of Exile's build depth is in what changes a skill

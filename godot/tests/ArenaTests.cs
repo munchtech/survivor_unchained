@@ -160,7 +160,7 @@ public class ArenaTests
             s.B.HitEnemy(again, again.MaxHp * 0.25, School.Physical, [Tag.Physical]);
             Run(s, 0.5);
         }
-        Assert.Contains(s.Host.Announced, a => a.Title.EndsWith("is beaten again"));
+        Assert.Contains(s.Host.Announced, a => a.Title.EndsWith("is down again"));
         Assert.Null(s.Host.ArenaResult);
         Assert.True(s.B.Pickups.Items.Count(p => p.Alive && p.Kind == PickupKind.Chest && p.Ref == "boss") > chests);
     }
@@ -507,6 +507,19 @@ public class ArenaTests
     }
 
     [Fact]
+    public void What_brought_her_down_is_named_as_a_sentence_names_it()
+    {
+        // "Brought down by a Kerchief Footpad at 12:30": one of a kind takes an article, a name does not.
+        Assert.Equal("a Kerchief Footpad", Enemies.Called(null, "Kerchief Footpad"));
+        Assert.Equal("an Ironbound Risen", Enemies.Called(null, "Ironbound Risen"));
+        Assert.Equal("Whitethroat", Enemies.Called("Whitethroat", "Whitethroat"));
+        Assert.Equal("the Pack-Mother", Enemies.Called("The Pack-Mother", "The Pack-Mother"));
+        Assert.Equal("the Herald of the Pack", Enemies.Called("Herald of the Pack", "Longtooth Wolf"));
+        Assert.Equal("a babbling lampling", Enemies.Called("A babbling lampling", "Lampling Tunneler"));
+        Assert.Equal("the Pack-Mother", MapOffers.InSentence("The Pack-Mother"));
+    }
+
+    [Fact]
     public void The_town_can_talk_about_the_last_night()
     {
         var s = Make(Spec("kerchiefs"));
@@ -570,6 +583,8 @@ public class ArenaTests
         var again = Arenas.Again(s.J.World.Rematches[0], "waystation", 1, 2, 0);
         Assert.Null(again.OnLose);
         Assert.NotNull(again.OnWin);
+        // Its lost line says where she comes to, and a rematch sends her back to the table instead.
+        Assert.Null(again.EndLost);
         var next = Make(again, s.J);
         next.B.Player.Iframes = 1e9;
         next.B.Time = 1800;

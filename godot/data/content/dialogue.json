@@ -1310,7 +1310,7 @@
         }
        ]
       },
-      "locked": "Bring pelts or the alpha's fang",
+      "locked": "Bring pelts, or Greymuzzle's fang",
       "goto": "bounty"
      },
      {
@@ -1699,7 +1699,7 @@
         }
        ]
       },
-      "locked": "Bring pelts or the alpha's fang",
+      "locked": "Bring pelts, or Greymuzzle's fang",
       "goto": "bounty"
      },
      {
@@ -2267,7 +2267,7 @@
         }
        ]
       },
-      "locked": "Bring pelts or the alpha's fang",
+      "locked": "Bring pelts, or Greymuzzle's fang",
       "goto": "bounty"
      },
      {
@@ -2573,7 +2573,7 @@
         }
        ]
       },
-      "locked": "Bring pelts or the alpha's fang",
+      "locked": "Bring pelts, or Greymuzzle's fang",
       "goto": "bounty"
      },
      {
@@ -4578,13 +4578,6 @@
     "id": "blind",
     "speaker": "narrator",
     "text": [
-     {
-      "when": {
-       "fact": "settings.intimacy",
-       "eq": "full"
-      },
-      "text": "[explicit scene: Maeca and {name}, the Hunters' Blind in the Verge at night, a lean-to of hides and a fire the size of a hat; wordless, wary, careful hands that become sure ones, frost outside and the Pack audible far off; her trust given like a held breath let go — to be written]"
-     },
      {
       "when": {
        "all": [
@@ -15063,7 +15056,7 @@
         }
        ]
       },
-      "text": "WOLF BOUNTY — five gold the pelt, fifty for the grey alpha. Capt. Holloway, the Watch."
+      "text": "WOLF BOUNTY — five gold the pelt, fifty for the old grey dog-wolf. Capt. Holloway, the Watch."
      },
      {
       "when": {
@@ -15943,13 +15936,6 @@
     "text": [
      {
       "when": {
-       "fact": "settings.intimacy",
-       "eq": "full"
-      },
-      "text": "[explicit scene: Sella and {name}, the blue room at the top of Rook's stairs, by lamplight; warm, unhurried and funny, a professional who enjoys her work, tenderness showing at the edges and quickly put away; ends with her asleep across you and the sun up — to be written]"
-     },
-     {
-      "when": {
        "all": [
         {
          "npcFlag": {
@@ -16428,13 +16414,6 @@
     "id": "free_night",
     "speaker": "narrator",
     "text": [
-     {
-      "when": {
-       "fact": "settings.intimacy",
-       "eq": "full"
-      },
-      "text": "[explicit scene: Sella and {name}, the blue room, not for money for the first time; slower and less sure than her working nights, the professional's patter dropping away, laughter and then none; a door she locks herself — to be written]"
-     },
      {
       "when": {
        "fact": "sella.told_knowing",

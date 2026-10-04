@@ -51,7 +51,7 @@ public partial class ArenaResultScreen : Overlay
         bool fell = G.Battle?.Player.Alive == false;
         // The verdict on a banner, the arena's name under it.
         var banner = Style.Panel(OrnateBox.Make(OrnateBox.Kind.Banner, 30, r.Won ? Style.Gold : Style.BloodHi),
-            Style.Label(!r.Won ? "THE EMBER GUTTERS" : fell ? "WON, AND HELD TO THE LAST" : "THE ARENA IS WON", Style.Display, 40, r.Won ? new Color("#ffe6b8") : Style.BloodHi, false, HorizontalAlignment.Center));
+            Style.Label(!r.Won ? "THE EMBER GUTTERS" : fell ? "WON, AND HELD TO THE LAST" : "THE NIGHT IS HELD", Style.Display, 40, r.Won ? new Color("#ffe6b8") : Style.BloodHi, false, HorizontalAlignment.Center));
         banner.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
         wrap.AddChild(banner);
         wrap.AddChild(Style.Label(r.Spec.Name, Style.TextItalic, Style.Lead, Style.GoldHi, false, HorizontalAlignment.Center));
@@ -64,7 +64,7 @@ public partial class ArenaResultScreen : Overlay
         if (r.Won && beyond >= 1) tally.AddChild(Stat("moon", beyond, Clock, "past the dead of night", 0.95));
         tally.Alignment = BoxContainer.AlignmentMode.Center;
         wrap.AddChild(tally);
-        if (r.Longest && r.Seconds > 120) wrap.AddChild(Style.Label("Your longest in any arena yet", Style.TextItalic, Style.Lead, Style.EmberHi, false, HorizontalAlignment.Center));
+        if (r.Longest && r.Seconds > 120) wrap.AddChild(Style.Label("Your longest night yet", Style.TextItalic, Style.Lead, Style.EmberHi, false, HorizontalAlignment.Center));
         // How it ended, and how near it came (docs/feel S-16: the end tells the run's story).
         var story = Story();
         if (story != "") wrap.AddChild(Style.Label(story, Style.TextItalic, Style.Body, r.Won ? Style.Ink : Style.BloodHi, true, HorizontalAlignment.Center));
@@ -130,10 +130,14 @@ public partial class ArenaResultScreen : Overlay
         stayCard.Modulate = new Color(1, 1, 1, 0.85f);
         two.AddChild(stayCard);
 
+        // A story night ends on the narrator's line for how it went (docs/WRITING_PASS.md §20), and a
+        // lost one says beneath it where it waits; a table night ends with the Wayfinder, who writes it down.
         string after = r.Spec.Story
-            ? r.Won ? "The story goes on." : "The story goes on without the win. The Wayfinder will let you take this fight again."
-            : r.Won ? "The Wayfinder will want to hear of it." : "The Wayfinder's table will have other maps.";
+            ? r.Won ? r.Spec.EndWon ?? "The valley will hear of it." : r.Spec.EndLost ?? "The valley will hear of it."
+            : r.Won ? "The Wayfinder will want it for her margins." : "The Wayfinder's table will have other maps.";
         wrap.AddChild(Style.Label(after, Style.TextItalic, Style.Body, Style.Ink, true, HorizontalAlignment.Center));
+        if (r.Spec.Story && !r.Won)
+            wrap.AddChild(Style.Label("The fight waits on the Wayfinder's table, to be taken again.", Style.TextItalic, Style.Caption, Style.InkDim, true, HorizontalAlignment.Center));
         var go = Style.Button("", () => G.LeaveArena(r), true);
         var gr = Style.H(8, Style.Prompt(Act.Confirm), Style.Label("Back to the road", Style.UiBold, Style.Body, new Color("#ffe4b0")));
         gr.MouseFilter = MouseFilterEnum.Ignore;
@@ -156,7 +160,7 @@ public partial class ArenaResultScreen : Overlay
         if (G.LastFall is var (killer, at) && G.Battle?.Player.Alive == false) parts.Add($"Brought down by {killer} at {Clock(at)}");
         if (!r.Won)
         {
-            if (r.Seconds < end) { int m = (int)Math.Ceiling((end - r.Seconds) / 60); parts.Add($"{m} minute{(m == 1 ? "" : "s")} before {boss} would have come"); }
+            if (r.Seconds < end) { int m = (int)Math.Ceiling((end - r.Seconds) / 60); parts.Add($"{m} minute{(m == 1 ? "" : "s")} before {SurvivorUnchained.Maps.MapOffers.InSentence(boss)} would have come"); }
             else parts.Add($"{boss} still stands");
         }
         return string.Join(";  ", parts) + (parts.Count > 0 ? "." : "");

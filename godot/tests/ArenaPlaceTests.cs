@@ -93,7 +93,7 @@ public class ArenaPlaceTests
                 Assert.Contains(words, w => o.Spec.Name.EndsWith(" " + w));
                 Assert.NotEqual("", ArenaPlaces.MoodOf(o.Spec.Name));
             }
-        Assert.Equal("ashen", ArenaPlaces.For(new MapSpec { Arena = true, People = "dead", Name = "The Ashen Howes" }).Mood);
+        Assert.Equal("ashen", ArenaPlaces.For(new MapSpec { Arena = true, People = "dead", Name = "The Burnt Howes" }).Mood);
         Assert.Equal("drowned", ArenaPlaces.For(new MapSpec { Arena = true, People = "pack", Name = "The Drowned Dene" }).Mood);
         // A moonless night is darker than the place's own.
         var lit = ArenaPlaces.For(new MapSpec { Arena = true, People = "pack", Name = "The Broken Dene" });

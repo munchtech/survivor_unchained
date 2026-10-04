@@ -57,6 +57,12 @@ the game: no content JSON, code or existing doc has been edited.
 
 ## The love scenes and the explicit slots
 
+> **Superseded, 4 October.** The base game is not explicit (the legal lead,
+> `docs/legal/LEGAL_BRIEF.md` issue 6; the bible, "Intimate scenes: fade to
+> black"). No `[explicit scene: ...]` slot goes into the game's data. When
+> these drafts are taken into `dialogue.json`, drop every slot and keep the
+> cut-away. `StoryLint` fails if one lands. The beat sheets stay here as notes.
+
 Every love scene has a full lead-in with a last place to stop, a cut-away
 moment (sensual, close, ending before the act), and a full aftermath, where
 the arc moves. Each also has an `[explicit scene: ...]` slot behind

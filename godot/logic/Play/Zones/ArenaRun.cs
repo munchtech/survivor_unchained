@@ -741,7 +741,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         };
         if (!quiet) B.Events.Emit(new Ev.Bark { X = p.X, Z = p.Z + 3, Text = sign });
         G.Look.AddLight(p.X + Math.Cos(signAngle) * 26, 2.5, p.Z + Math.Sin(signAngle) * 26, "#ff6a3a", 3.2, 16, 0.25, 0.12, "#ff8a5a");
-        if (!quiet) G.Announce(again ? new Announcement($"{BossName} stirs again", "It comes from where the sign was, stronger", "danger", 2.6)
+        if (!quiet) G.Announce(again ? new Announcement($"{BossName} stirs again", "From where the sign was, and stronger", "danger", 2.6)
             : new Announcement(Nears, "It comes from where the sign was", "danger", 2.6));
     }
 
@@ -910,7 +910,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         bossUp = false;
         boss = null;
         eventT = 20;
-        G.Announce(new Announcement($"{BossName} is beaten again", "It will come again, stronger.", "reward", 3.4));
+        G.Announce(new Announcement($"{BossName} is down again", "Back soon, and stronger.", "reward", 3.4));
         Objectives();
     }
 
@@ -1134,9 +1134,10 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         bool goesDown = script is Grimtunnel { Ganger: false };
         var steps = new List<Step>
         {
-            won ? new Step(goesDown ? $"{BossName} is driven back down: the arena is won" : $"{BossName} is beaten: the arena is won", Done: true)
-            : bossUp ? new Step($"{BossName} has come: {(goesDown ? "drive him back down" : "beat it")}")
-            : new Step($"Survive: {left / 60}:{left % 60:00} until {BossName} comes"),
+            // "Down" holds for every end a fight has: killed, let go, laid down, or sent back down the hole.
+            won ? new Step(goesDown ? $"{BossName} is driven back down: the night is held" : $"{BossName} is down: the night is held", Done: true)
+            : bossUp ? new Step($"{BossName} has come: {(goesDown ? "drive him back down" : "end it")}")
+            : new Step($"Survive: {left / 60}:{left % 60:00} until {Maps.MapOffers.InSentence(BossName)} comes"),
         };
         if (won)
         {

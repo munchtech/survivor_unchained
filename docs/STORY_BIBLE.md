@@ -1153,6 +1153,23 @@ the story's view of them, so that the nights tell the story the days write.
   chesters; dene, clough, holt, shaw; ruts, drove, cutting, gap; sump, delph,
   sough, spoil. The adjectives too: Lampless (from the Order's call), Quiet
   (the dead are "quiet"), and Praying (Tam's word, which Act 3 pays).
+  - Built (`ArenaPlaces.Names`, `Adjectives`, `Moods`; arena art's places):
+    a map is named for its people's ground, "The {adjective} {place}", and
+    the adjective sets its look (Lampless darker, Drowned in water, Burnt
+    smoky):
+    - the Risen: Lampless, Quiet, Morrow, Drowned, Burnt, Cold; howes, lows,
+      barrows, the lych-way, chesters, the burying-ground;
+    - the Pack: Grey, Deep, Thorn, Bracken, Drowned, Whelping, Bitter; dene,
+      clough, holt, shaw, brake, den;
+    - the Kerchiefs: Red, Salt, Toll, Gallows, Hungry, Widow's, Drowned (the
+      hungry gap is the farmer's name for the lean weeks of spring, when the
+      winter's stores are gone and nothing new is up); ruts, drove, cutting,
+      ravine, waggon-way, gap;
+    - the Lamplings: Praying, Gold, Warm, Black, Deep, Lamplit, Drowned;
+      sump, delph, sough, spoil, workings (never "Dig": the Dig is
+      Grimtunnel's).
+  - Never a weeping, whispering, ashen or moonless place (Moonless is an
+    oath's name). `StoryLint` holds the place words.
 
   **The atlas is other places,** never these walked by day (there is no
   arena by day). They are the places the road forgets, in Ysolde's hand.
@@ -1278,18 +1295,26 @@ holds one object instead (Sella's bolt going home; Maeca's boots side by side
 outside the hides; Keegan's armour laid out in order; two cups at Rav's, one
 full; Ysolde's spectacles folded on the twelfth drawing).
 
-### Intimate scenes and the explicit slots
+### Intimate scenes: fade to black
 
-The game will have a setting for intimate scenes (show in full, or cut
-away), offered in the settings and when such a scene begins. Content reads
-it as the fact `settings.intimacy`: `"full"` shows the full scene; anything
-else (or nothing) shows the cut-away. **The lead wires the setting; nothing
-in the game writes the fact yet.** Every intimate scene is written in full
-before and after, with a cut-away version of the moment itself, and an
-explicit-variant slot keyed to `settings.intimacy == "full"` that holds a
-placeholder for the owner's writer:
+**The base game is not explicit** (the legal lead, `docs/legal/LEGAL_BRIEF.md`
+issue 6). Explicit sex would make it Adult Only on Steam: hidden by default,
+a slower review, and the payment processors' rules. Every intimate scene is
+written in full before and after, and the moment itself fades: close and
+sensual, ending before the act. That cut-away is the scene, for everyone.
+- No explicit slot or placeholder ships in the game's data, and nothing is
+  keyed to `settings.intimacy`. `StoryLint` fails if one lands.
+- The three Act 1 slots were removed on 4 October.
+- If explicit scenes are ever wanted, it is the owner's decision with the
+  lawyer: a separate Adult Only DLC with its own survey, so the base game
+  stays in the normal store.
+- **Still the owner's call:** whether a love scene's "Warmed" buff comes off
+  the scene (Australia's R18+). Leave it until they decide.
 
-| Slot | Node | Who, where, tone |
+The planned scenes, kept as notes (the beat sheets are in
+`docs/romance/scenes/`). None of this is game data:
+
+| Scene | Node | Who, where, tone |
 |---|---|---|
 | 1 | `sella.night` | Sella and the survivor, the blue room at the top of Rook's stairs, by lamplight; warm, unhurried and funny, tenderness at the edges and quickly put away; ends with her asleep across you and the sun up. |
 | 2 | `maeca.blind` | Maeca and the survivor, the Hunters' Blind in the Verge at night; wordless, wary, careful hands that become sure ones, frost outside, the Pack far off. |
@@ -1298,8 +1323,7 @@ placeholder for the owner's writer:
 | 5 | `rav.night` (Act 2) | Rav and the survivor, the back room of the Crooked Flagon after closing; funny until his fingers find the survivor's wrist. |
 | 6 | `wayfinder.night` (Act 2) | Ysolde and the survivor, her rooms over the map table; she draws them after. |
 
-Each slot's text starts `[explicit scene:` so it can be found and tested
-for; replace the whole placeholder with the scene.
+When the Act 2 scenes are written, write the cut-away and nothing past it.
 
 ## 12. Facts the story keeps
 

@@ -19,8 +19,17 @@ Design: `docs/CRAFTING_DESIGN.md` (sections 1–20; 19 is what was seen and meas
 
 ## Next, in order
 
-1. **Phase 3**: Vonnra's binding at the toll-house table (her words without the survivor's name;
-   ask the story lead `a73ca9d35d0c487a9`), Snib's slurry while the pump runs, the seeds' lines.
+1. **Phase 3, in progress** (paused for the owner). The rules are in: `Crafting.Bind`/`Donors`,
+   `BuyJar`/`Buy`, `Steep` (odds, the bright grade V, three slurry affixes), Snib's "slurry" action
+   (buys a jar, the talk goes on), Vonnra's "craft" choice. The story lead's words are merged in from
+   `worktree-agent-a73ca9d35d0c487a9@d132033f`, but the conflict in `crafting.json` was resolved to
+   ours. **Exact next step:** copy their `crafters.vonnra.lines` and `crafters.snib.lines` verbatim
+   into our entries (`git show d132033f:godot/data/content/crafting.json`), keeping our `verbs`.
+   - Vonnra: their `when` (met and `toll.paid`) and `closedLine`; place "The Toll Tower"; `bind.coal` becomes `bind.caged`; her easier line from `terms.accused`.
+   - Snib: `when` (met, pump not broken/blown/moved) and `closedLine`. The outcome "slurry" becomes "affix" (`steep.affix`). The jar's lore is their `jar` line.
+   - Slurry affixes: "seeping" becomes **Fevered** (`fevered`), "green_veined" becomes **Pipe-Lad's** (`pipe_lads`).
+   - Their choice for Vonnra: "Can you move what's in one thing into another?". Snib's "Sell me a jar of that." should open **his bench** (`forge:snib`: a jar tile and a Steep tile with the odds, his `first.steep` lines), not just buy.
+   - Then: the forge's Bind section (donors per seam, a two-step confirm because the donor is unmade), the pack's Steep (two-step, odds shown, outcome said), a `slurry_jar` painted icon, `CraftersTests` for bind and steep, and pictures.
 2. **Endgame** (design 20.6): combat's maps and Marks hook exist (09b6b03, 5c50de1). Two kits; item
    level and grade caps; chart verbs at Ysolde's table (`ItemInstance.Chart`, quality field ready);
    Marks on the item side (`CombatKit.Marks`, `CombatKit.SkillMods`, grade 0–5 to strength 0–1; four
