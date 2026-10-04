@@ -427,7 +427,7 @@ Subtitle: And a ledger, with your name in it, in Pell's small tidy hand. You wer
 
 *Where:* dialogue.json vonnra/f_pell#3
 *Played:* measured warning; doing: Pell fled; pace: slow; volume: quiet.
-*Note:* 'He will not forget you.' quiet.
+*Note:* 'He took his books with him.' plain. 'You are in them.' quiet: the warning is in the last four words.
 
 ```
 [measured warning, quietly] And an empty warehouse, and a man on a fast horse who will not stop until he is somewhere that has never heard of the Coyle Company. He took his books with him. You are in them.
@@ -572,7 +572,7 @@ Subtitle: Then it is still there. That is all. I will say it again, because it b
 
 *Where:* dialogue.json vonnra/cb_vault3#0
 *Played:* cool, menacing; doing: silence has a price; pace: slow; volume: quiet.
-*Note:* 'It is. For now.' Then quiet menace. 'You will find I collect.' softly.
+*Note:* 'Yours, for now.' cool. Then quiet menace. 'You will find I collect.' softly.
 
 ```
 [cool, menacing, quietly] Yours, for now. Payment, always, traveller; even for silence. You will find I collect.
@@ -714,33 +714,33 @@ Subtitle: And six crates going home to a man who knows where they go next. You t
 ### 61. `dlg.vonnra.f_ember.2.wav`
 
 *Where:* dialogue.json vonnra/f_ember#2
-*Played:* cold; doing: the crates burned; pace: slow; volume: quiet.
-*Note:* 'Everyone did.' quiet.
+*Played:* cold approval; doing: the crates drowned; pace: slow; volume: quiet.
+*Note:* 'where nothing will ever buy them' plain. 'That is the first thing you have thrown away that I approve of.' cold, and as near to a compliment as she comes.
 
 ```
-[cold, quietly] And six crates at the bottom of a stream, where nothing will ever buy them. That is the first thing you have thrown away that I approve of.
+[cold approval, quietly] And six crates at the bottom of a stream, where nothing will ever buy them. That is the first thing you have thrown away that I approve of.
 ```
 Subtitle: And six crates at the bottom of a stream, where nothing will ever buy them. That is the first thing you have thrown away that I approve of.
 
 ### 62. `dlg.vonnra.f_ember.3.wav`
 
 *Where:* dialogue.json vonnra/f_ember#3
-*Played:* foreboding; doing: the crates wait; pace: slow; volume: quiet.
-*Note:* 'Someone always does.' quiet.
+*Played:* cold; doing: the crates burned; pace: slow; volume: quiet.
+*Note:* 'Everyone did.' quiet.
 
 ```
-[foreboding, quietly] And six crates that went up with the Roost. You will have heard it from the wall. Everyone did.
+[cold, quietly] And six crates that went up with the Roost. You will have heard it from the wall. Everyone did.
 ```
 Subtitle: And six crates that went up with the Roost. You will have heard it from the wall. Everyone did.
 
 ### 63. `dlg.vonnra.f_ember.4.wav`
 
 *Where:* dialogue.json vonnra/f_ember#4
-*Played:* foreboding; doing: the crates wait; pace: slow; volume: quiet.
-*Note:* 'Someone always does.' quiet.
+*Played:* dry, knowing; doing: the crates sold on; pace: slow; volume: quiet.
+*Note:* 'sold to whoever paid for them first' flat. 'I think you know who that was.' quiet: she does, and so do you.
 
 ```
-[foreboding, quietly] And six crates gone down the south road with the rest of the cargo, sold to whoever paid for them first. I think you know who that was.
+[dry, knowing, quietly] And six crates gone down the south road with the rest of the cargo, sold to whoever paid for them first. I think you know who that was.
 ```
 Subtitle: And six crates gone down the south road with the rest of the cargo, sold to whoever paid for them first. I think you know who that was.
 
