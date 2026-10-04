@@ -58,6 +58,17 @@ sealed class FakeHost : IZoneHost
     public (double X, double Z)? Revival;
     public void Showcase((double X, double Y, double Z)? pos, (double X, double Y, double Z) look = default) => Held = pos;
     public void Capture(bool on) => Captured = on;
+    /// <summary>The cinematics this host plays (none unless set): each started is
+    /// kept with its hand-back and its marks, for the test to play out.</summary>
+    public Func<string, bool>? Plays;
+    public readonly List<(string Id, Action? Done, IReadOnlyDictionary<string, double[]>? Marks)> Cines = new();
+    public bool Cinematic(string id, Action? done = null, IReadOnlyDictionary<string, double[]>? marks = null)
+    {
+        if (Plays?.Invoke(id) != true) return false;
+        Cines.Add((id, done, marks));
+        return true;
+    }
+    public bool CanCinematic(string id) => Plays?.Invoke(id) == true;
     public void SetDraftTip(string tip) => DraftTip = tip;
     public void Revived(double x, double z) => Revival = (x, z);
     public string KeyLabel(string action) => action.ToUpperInvariant()[..1];

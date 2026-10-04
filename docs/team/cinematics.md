@@ -1,63 +1,43 @@
 # Cinematics: status
 
-Agent af7a79bc783cca7bc (succeeded a2dfc75e2d351105a on 4 October), branch `worktree-agent-af7a79bc783cca7bc`. The brief: shooting scripts, boards and animatics for C01 to C14, and the in-engine cinematic player. Pipeline and timeline format: `docs/cinematics/shoot/README.md`. Handoff: `docs/handoff/cinematics.md`.
+Agent a3058a45eee41d695 (succeeded af7a79bc783cca7bc on 4 October), branch `worktree-agent-a3058a45eee41d695`. The brief: shooting scripts, boards and animatics for C01 to C14, and the in-engine cinematic player. Pipeline and timeline format: `docs/cinematics/shoot/README.md`. Predecessor's handoff: `docs/handoff/cinematics.md`.
 
-## State (4 October)
+## State (4 October, paused for the owner)
 
-- **C01 is reframed (previs pass 3) and its shooting script is written** (`shoot/c01.md`).
-  - Every shot from the handoff's fix list now reads in the engine:
-    - 2 is now a top shot of her by the embers, and 4 a hand insert from above;
-    - 6 to 8b are framed to her eyeline seated on the log (`her/sit_log`), until Kimodo's lying-to-sitting clips land;
-    - 10 turns to R1 and stands; 11 is wide enough for all of her.
-  - The story lead's call up the road is framed as 8a and 8b:
-    - 8a is an ELS from the road at z 5 north to the ford's three blue lamps, with one gold lamp high over the gate;
-    - the narration runs over the cut into 8b's CU, and the call comes there.
-  - It runs 68.5 s with today's placeholders.
-- **Frost and the trail read.** New cues:
-  - `frost`: a rime in knee-deep tiles, cleared round the fire and along her `trail`;
-  - `glow`: a far light, with a dark tower under it;
-  - each print has a trampled patch.
-- **Player:**
-  - a line can run over a cut (a shot fits a line begun earlier);
-  - a cue can wait for a line (`"after:conv.node+0.5"`);
-  - lines are timed on the take's `read`, with the room's tail playing on.
-  - The cinematic survivor also has the folk clips.
-  - `--cinebones` prints bone places at each still, for framing on them.
-- **The Prologue animatic is cut:** `docs/cinematics/shoot/animatics/prologue.mp4` (C01, C02, C03, C04 A and B, with cards for the play between). Its cut list is `prologue.txt`. It was made by `tools/cinematics/animatic.py`: boards on CineSchedule's clock, with the placeholder VO, subtitles, temp SFX (Sfx.Cine's recipes), temp music beds and ambience.
-- **Boards: C01 to C04 are made** (54 frames, `shoot/boards/<id>/`, from `shoot/boards/<id>.json` through `tools/cinematics/boards.py`), in ink and grey marker with colour only in the light. Weak frames still to remake:
-  - C01 s10 (she sits rather than whips round) and s11 (she is drawn twice);
-  - C02 s3 (drawn as two panels) and the Warden's scale in s7 and s12 (he should be nearly three times her height);
-  - C03 s6 (the heart is held in hands; it should rise alone), s11 (Grimtunnel crawls; he should dive) and s13 (she is drawn twice).
-- **C02 to C04 timelines are drafts** (`c02.json`, `c03.json`, `c04a.json`, `c04b.json`, each with a `draft` note). They are cut from the written scripts for the animatic. Their cameras are unsurveyed, and they are not yet wired into the zones.
-- **Narration:** Vonnra is not the narrator (story). The call up the road is subtitled "A voice up the road", never named (`far_voice` is not among C01's `narrators`).
+- **C02 to C04 are surveyed and wired into the game** (previs pass 1, stand-in motion):
+  - **C02** plays at the ford in place of `RunIntro`. It has its own Warden (a `boss` cast): he lies under the river with his lamp held up, rises, wades to her and lifts the lamp. The drowned are `extras` that turn in a wave. `warden_up` spawns the fight's Warden on `warden_end`, facing her.
+  - **C03** plays where he falls, in place of `RunVictory`'s staging. The zone passes marks `w` and `her`; she is put 4 m south of him. Grimtunnel is spawned by the cinematic and burrowed by the zone's events; the heart is an `orb` cast. `Taken()` and `Dawnbreak()` run at the hand-back, so a skip sets them too. The dawn is begun to 0.2 and held there.
+  - **C04 A** plays when she reaches the north bank (or 25 s after C03), with a south variant (fact `prologue.dawn_south`). Its `douse` event calls `Douse(false)`.
+  - **C04 B** plays on the first Waystation arrival, in place of the caption and the zone title. It has its own Rook; the zone's is hidden by `rook_cine`.
+  - Tests cover C02's wiring both ways. The Prologue tests still pass without a screen.
+- **Player additions:** `boss`, `extras` and `orb` casts; a `lamp` cue; `tilt` on `place`; a `light` on `glow`; free moves to `abs`; tagged and neutral spawns; part-way atmosphere blends (`k0`, `k1`); `--stills N` for motion checks. Name plates and barks are hidden during cinematics. LayToIdle no longer loops. The Warden's lamp is now an open cage with a visible flame.
+- **Subtitles:** lower-case (directions) are stripped and "sung" sets italics (agreed with story, bfecf70).
+- **The animatic was watched through:** about 35 of 54 boards are weak (the list is under Next).
 
-## Next
+## Next, in order
 
-1. Watch the animatic and judge its pacing. Remake the weak boards (listed above), then recut.
-2. Survey the C02 to C04 sets in the engine (`_survey.json`; the tests skip it), set the draft timelines' cameras on what is really there, and write `shoot/c02.md` to `c04.md` from them.
-3. Wire C02 to C04 into the game:
-   - C02 replaces `RunIntro`. It needs a `boss` cast kind on `WardenView`, the zone's view hidden while it plays, and the `warden_up` event to spawn him at (3, -33.2).
-   - C03 replaces `RunVictory`'s staging.
-   - C04 A replaces `Douse`'s caption, with the `douse` event.
-   - C04 B plays on the first Waystation arrival.
+1. **Exact next step:** C04 B's shot B4a. The glow for the toll tower's window lamp was just moved to (30.9, 7.9, -6.6). Look at `scratchpad/cin2/s5_c04b.jpg`, or re-render with `python <scratchpad>/cin2/prev.py c04b s5 40 --zone waystation --only B4a`, and confirm that it sits in the upper window. Then render all of C04 B once and check it.
+2. Write `shoot/c02.md`, `c03.md`, `c04a.md` and `c04b.md` from the timelines as they now play, with each change from the written script and its reason. Update the table in `shoot/README.md`.
+3. Remake the weak boards. Use the engine stills as staging references (img2img on Krea), so the scale and framing match the surveyed cameras. The weak boards are:
+   - C01: s2, s8, s8b (the head is cropped), s10, s11 and s12 (she is drawn twice);
+   - C02: s1, s5, s9 and s11 (Victorian street lamps), s3 (two panels), s4, s7 (scale), s10 and s12;
+   - C03: s1, s5, s6 and s8 (the heart is held), s9, s10, s11 (he crawls), s12 (bridges) and s13 (twice);
+   - C04 A: A1 (walks the wrong way), A4, A5, A6, A7 and A8 (twice);
+   - C04 B: B3 (cheering), B4 (smiling), B4b (stained glass) and B5 (twice).
+
+   Describe the Warden as a hooded giant in a ranger's leathers and old mail, not a robed wizard.
+4. Block animation's three C01 clips (`her/lie_side_wake`, `sit_back_heels` and `reach_coals`, now merged) into C01's shots 2 to 8b.
+5. Recut the Prologue animatic (the command and cards are in `animatics/prologue.txt`).
 
 ## Key decisions
 
-- **Cues are timed from their own shot, and a shot fits its line.** A retime is one line, and a new take recuts itself.
-- **Shots are cut to the voice lead's target windows, not to the placeholders.** A take that runs long lengthens its shot.
-- **The survivor is a double built from her loadout.**
-- **A camera on a person is set where the person is as the shot begins** (`track` follows them).
-- **Board language:** monochrome ink, with colour only for the three story lights.
-- **The opening is not played on `--quick`** (only with `--cine c01`).
+- **The cinematic owns the boss's body while it plays.** The zone hides its own and takes him back at the mark where the cinematic leaves him. One body is on screen, and the fight starts where the picture ended.
+- **C03 is framed relative to where he falls,** with her placed to the south. The cameras are offsets from `w`, so they hold wherever the fight ends.
+- **Gameplay stays in zone code.** Spawns, burrows, Apply effects and Douse run through `event` cues, so a skip still does them.
+- **The stand-in clips are chosen from the kit by bone checks:** Spell_Simple_Idle tilted for the lamp-arm in the river, Idle_Torch for the lamp lift, and Fixing_Kneeling for the kneel.
 
-## Blockers
+## Blockers and notes for others
 
-- **Motion:** none of the C01 to C04 clips exist. All the prompts are in `tools/anim/kimodo_gen.py` (f802ed3), and they wait on the owner's Kimodo run, which the main session was asked for.
-
-- **Set dressing and systems:** wetness, the weed, breath smoke, ember VFX, the bedroll, the background items, and frost that cracks.
-
-## Notes for others
-
-- **Voice (a501b387a90d78b4e):** the windows are agreed; C01's lamp and call windows are 8.0 to 9.0 s and 3.0 to 3.6 s.
-- **UI:** `CinemaBars` is ready for your styling.
-- **Combat:** C10 to C14 need boss spawn and death hooks that call `Game.Cinematic(id, done)`.
+- **Animation (a435f4dd0ac80df75):** still needed from Kimodo: the Warden's lie_arm_up, rise_stiff, wade_drag, bend_lift and kneel_fall; Grimtunnel's burst, sniff and dive; and C04's wade_out, flask_drink, walk_uphill and unfold_arms.
+- **Art and boss look:** the Warden's ranger hood doesn't take the dye and reads white under the moon. The heart orb is a plain sphere; it should be a faceted stone.
+- **Voice:** none needed now. No new placeholders were added.

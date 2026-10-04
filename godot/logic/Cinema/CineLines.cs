@@ -6,8 +6,9 @@ using SurvivorUnchained.World;
 namespace SurvivorUnchained.Cinema;
 
 /// <summary>A line a cinematic says: its recording's id, the words as written
-/// (what the take was made from) and as shown, and who says it (null: the narrator).</summary>
-public sealed record CineLine(string Id, string VoId, string Raw, string Text, string? Speaker, string? SpeakerId);
+/// (what the take was made from) and as shown, who says it (null: the narrator),
+/// and whether it is sung (its subtitle is set in italics).</summary>
+public sealed record CineLine(string Id, string VoId, string Raw, string Text, string? Speaker, string? SpeakerId, bool Sung = false);
 
 /// <summary>
 /// A cinematic's lines, read from the conversation that holds them
@@ -28,8 +29,32 @@ public static class CineLines
         string raw = n.Text.Count > 0 ? n.Text[i].Text : "";
         string who = n.Speaker ?? c.Npc;
         string? name = who == "narrator" ? null : Lore.NameOf(who);
-        return new CineLine(id, VoiceLines.Dialogue(conv, node, i), raw, Dialogue.Template(raw, ctx), name, who);
+        var (shown, sung) = Subtitle(Dialogue.Template(raw, ctx));
+        return new CineLine(id, VoiceLines.Dialogue(conv, node, i), raw, shown, name, who, sung);
     }
+
+    /// <summary>The words as the subtitle shows them. A lower-case (parenthesis)
+    /// is how the line is said (docs/VOICES.md, as the VO pipeline reads it), so
+    /// it is dropped here; a capitalised one, such as a translation, stays. The
+    /// text keeps both, because the takes are matched to the words as written.
+    /// A direction that says the line is sung sets it in italics.</summary>
+    public static (string Text, bool Sung) Subtitle(string text)
+    {
+        bool sung = false;
+        var shown = Direction.Replace(text, m =>
+        {
+            if (!char.IsLower(m.Groups[1].Value.TrimStart()[0])) return m.Value;
+            if (m.Value.Contains("sung", StringComparison.OrdinalIgnoreCase)) sung = true;
+            return " ";
+        });
+        shown = Spaces.Replace(shown, " ").Trim();
+        // A direction just before a comma leaves a gap; an ellipsis keeps its own.
+        shown = shown.Replace(" ,", ",").Replace(" ?", "?").Replace(" !", "!");
+        return (shown, sung);
+    }
+
+    static readonly System.Text.RegularExpressions.Regex Direction = new(@"\s*\(\s*([^()\s][^()]*)\)\s*");
+    static readonly System.Text.RegularExpressions.Regex Spaces = new(@"[ \t]{2,}");
 
     /// <summary>How long a line runs, for the cut: its take's voice when there is
     /// one made from these words (Read, without the room's tail, which plays on

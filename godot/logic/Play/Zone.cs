@@ -105,8 +105,11 @@ public interface IZoneHost
     void EnterArena(Arena.ArenaSpec spec) { }
     /// <summary>A cinematic (godot/data/cinematics/ID.json) played now, `done`
     /// when it hands back or is skipped. False where none can play (no
-    /// screen, the tests): the zone then says its lines as captions.</summary>
-    bool Cinematic(string id, Action? done = null) => false;
+    /// screen, the tests): the zone then says its lines as captions. `marks`
+    /// moves the file's marks to where things really are (where a boss fell).</summary>
+    bool Cinematic(string id, Action? done = null, IReadOnlyDictionary<string, double[]>? marks = null) => false;
+    /// <summary>Whether that cinematic would play here now (a zone waits for its moment only if so).</summary>
+    bool CanCinematic(string id) => false;
 }
 
 /// <summary>The zone's look, as a runtime reaches into it.</summary>

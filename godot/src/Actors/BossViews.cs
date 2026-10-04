@@ -19,11 +19,15 @@ public partial class WardenView : Node3D, IBossView
 {
     readonly PersonView view;
     readonly OmniLight3D light;
-    readonly Node3D lamp;
+    readonly Node3D lamp, flame;
     readonly List<StandardMaterial3D> eyes = new(), skin = new();
     string pose = "";
     double heading, time, flash;
     public double Glow { get; set; } = 1;
+    /// <summary>Whether his lamp burns (it goes out in the river in C03).</summary>
+    public bool LampLit { get; set; } = true;
+    /// <summary>The body, for a cinematic that moves and poses him itself.</summary>
+    public PersonView Body => view;
     const float Size = 2.6f;
 
     public WardenView()
@@ -49,12 +53,37 @@ public partial class WardenView : Node3D, IBossView
         view.Person.Skeleton.AddChild(at);
         lamp = new Node3D { Position = new Vector3(0, -0.1f, 0) };
         at.AddChild(lamp);
-        var iron = new StandardMaterial3D { AlbedoColor = new Color("#2a2622"), Metallic = 0.6f, Roughness = 0.5f };
-        lamp.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(0.12f, 0.16f, 0.12f), Material = iron }, Position = new Vector3(0, -0.14f, 0) });
-        lamp.AddChild(new MeshInstance3D
+        // A lamp-iron, new black iron in the old fist: an open cage, so the flame shows.
+        var iron = new StandardMaterial3D { AlbedoColor = new Color("#1e1c1a"), Metallic = 0.7f, Roughness = 0.38f };
+        void Iron(Mesh m, Vector3 at) { m.SurfaceSetMaterial(0, iron); lamp.AddChild(new MeshInstance3D { Mesh = m, Position = at }); }
+        Iron(new BoxMesh { Size = new Vector3(0.13f, 0.018f, 0.13f) }, new Vector3(0, -0.06f, 0));
+        Iron(new BoxMesh { Size = new Vector3(0.13f, 0.02f, 0.13f) }, new Vector3(0, -0.22f, 0));
+        Iron(new CylinderMesh { TopRadius = 0.02f, BottomRadius = 0.06f, Height = 0.045f, RadialSegments = 4 }, new Vector3(0, -0.03f, 0));
+        foreach (var (x, z) in new[] { (-1, -1), (-1, 1), (1, -1), (1, 1) })
+            Iron(new BoxMesh { Size = new Vector3(0.012f, 0.16f, 0.012f) }, new Vector3(x * 0.058f, -0.14f, z * 0.058f));
+        Iron(new TorusMesh { InnerRadius = 0.022f, OuterRadius = 0.032f, Rings = 12, RingSegments = 6 }, new Vector3(0, 0.0f, 0));
+        flame = new Node3D { Position = new Vector3(0, -0.15f, 0) };
+        lamp.AddChild(flame);
+        flame.AddChild(new MeshInstance3D
         {
-            Mesh = new SphereMesh { Radius = 0.045f, Height = 0.1f, Material = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(1.4f, 2.4f, 3.2f) } },
-            Position = new Vector3(0, -0.14f, 0), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            Mesh = new SphereMesh { Radius = 0.026f, Height = 0.075f, Material = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(1.4f, 2.4f, 3.2f) } },
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+        });
+        flame.AddChild(new MeshInstance3D
+        {
+            Mesh = new QuadMesh { Size = Vector2.One * 0.3f },
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            MaterialOverride = new StandardMaterial3D
+            {
+                ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+                BlendMode = BaseMaterial3D.BlendModeEnum.Add, BillboardMode = BaseMaterial3D.BillboardModeEnum.Enabled,
+                AlbedoTexture = new GradientTexture2D
+                {
+                    Gradient = new Gradient { Colors = [new Color(1, 1, 1, 1), new Color(1, 1, 1, 0.15f), new Color(1, 1, 1, 0)], Offsets = [0, 0.25f, 1] },
+                    Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f), Width = 64, Height = 64,
+                },
+                AlbedoColor = new Color(0.55f, 0.8f, 1f, 0.6f),
+            },
         });
         light = new OmniLight3D { LightColor = new Color("#8ac8ff"), OmniRange = 16, OmniAttenuation = 1.3f, LightEnergy = 0, ShadowEnabled = true };
         AddChild(light);
@@ -99,13 +128,30 @@ public partial class WardenView : Node3D, IBossView
         flash = Math.Max(flash - dt * 6, e?.Flash ?? 0);
         foreach (var m in skin) m.Emission = new Color(1f, 0.8f, 0.6f) * (float)(flash * 0.25);
         double g = Glow * (pose == "sleep" ? 0.35 : 1) * (pose == "dead" ? 0 : 1);
-        foreach (var m in eyes) m.EmissionEnergyMultiplier = (float)(1.2 + g * 2.4 + Math.Sin(time * 5) * g * 0.5);
+        Light(g, (float)y);
+        lamp.Visible = pose != "dead" || g > 0.01;
+        flame.Visible = LampLit && g > 0.01;
+    }
+
+    /// <summary>A cinematic's frame: the eyes and the lamp at the glow it sets,
+    /// wherever the cinematic has put the body.</summary>
+    public void Shine(double dt)
+    {
+        time += dt;
+        Visible = true;
+        Light(Glow, view.GlobalPosition.Y);
+        lamp.Visible = true;
+        flame.Visible = LampLit && Glow > 0.01;
+    }
+
+    void Light(double g, float ground)
+    {
+        foreach (var m in eyes) m.EmissionEnergyMultiplier = (float)(g <= 0.001 ? 0 : 1.2 + g * 2.4 + Math.Sin(time * 5) * g * 0.5);
         // The light is the lamp in his fist, hung a little out from the body.
-        double i = g * (5 + Math.Sin(time * 3.1) * 0.8 + (pose == "channel" ? 4 + Math.Sin(time * 14) * 2 : 0));
+        double i = LampLit ? g * (5 + Math.Sin(time * 3.1) * 0.8 + (pose == "channel" ? 4 + Math.Sin(time * 14) * 2 : 0)) : 0;
         light.LightEnergy = (float)(i / Math.PI);
         var at = lamp.GlobalPosition;
-        light.GlobalPosition = new Vector3(at.X, Mathf.Max(at.Y, (float)y + 1.2f) + 0.8f, at.Z);
-        lamp.Visible = pose != "dead" || g > 0.01;
+        light.GlobalPosition = new Vector3(at.X, Mathf.Max(at.Y, ground + 1.2f) + 0.8f, at.Z);
     }
 
     // Explicit, so they do not shadow Godot's own Hide() and Dispose().
@@ -174,6 +220,23 @@ public partial class OrbView : Node3D, IOrb
             CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
         };
         AddChild(ball);
+        // A soft halo about it, as a bright thing has in mist.
+        AddChild(new MeshInstance3D
+        {
+            Mesh = new QuadMesh { Size = Vector2.One * (float)size * 7 },
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            MaterialOverride = new StandardMaterial3D
+            {
+                ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+                BlendMode = BaseMaterial3D.BlendModeEnum.Add, BillboardMode = BaseMaterial3D.BillboardModeEnum.Enabled,
+                AlbedoTexture = new GradientTexture2D
+                {
+                    Gradient = new Gradient { Colors = [new Color(1, 1, 1, 1), new Color(1, 1, 1, 0.2f), new Color(1, 1, 1, 0)], Offsets = [0, 0.2f, 1] },
+                    Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f), Width = 64, Height = 64,
+                },
+                AlbedoColor = new Color(new Color(color), 0.5f),
+            },
+        });
         light = new OmniLight3D { LightColor = new Color(color), OmniRange = 14, OmniAttenuation = 1.3f };
         AddChild(light);
         Visible = false;
@@ -189,5 +252,8 @@ public partial class OrbView : Node3D, IOrb
     }
 
     public double Light { set => light.LightEnergy = (float)(value / Math.PI); }
+
+    /// <summary>Turning slowly where it hangs (a cinematic's frame).</summary>
+    public void Turn(double dt) => ball.RotateY((float)(dt * 1.4));
     void IOrb.Dispose() => QueueFree();
 }
