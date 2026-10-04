@@ -95,9 +95,24 @@
    "color": "#5e3e28"
   },
   {
+   "id": "chestnut",
+   "name": "Chestnut",
+   "color": "#6a3a1c"
+  },
+  {
    "id": "auburn",
    "name": "Auburn",
    "color": "#8e3e20"
+  },
+  {
+   "id": "strawberry",
+   "name": "Strawberry",
+   "color": "#b8643a"
+  },
+  {
+   "id": "honey",
+   "name": "Honey",
+   "color": "#b08848"
   },
   {
    "id": "fair",
@@ -105,10 +120,85 @@
    "color": "#d8b870"
   },
   {
+   "id": "platinum",
+   "name": "Platinum",
+   "color": "#d8d0c0"
+  },
+  {
    "id": "grey",
    "name": "Grey",
    "color": "#a8a4a0"
   }
+ ],
+ "eyes": [
+  { "id": "moss", "name": "Moss", "color": "", "ring": "" },
+  { "id": "hazel", "name": "Hazel", "color": "#6e6630", "ring": "#9c6224" },
+  { "id": "wolf", "name": "Wolf's gold", "color": "#c07018", "ring": "#c8862c" },
+  { "id": "peat", "name": "Peat", "color": "#3e2614", "ring": "#5a3618" },
+  { "id": "sloe", "name": "Sloe", "color": "#2c1c14", "ring": "#3a2416" },
+  { "id": "cornflower", "name": "Cornflower", "color": "#40689c", "ring": "#8c8058" },
+  { "id": "flint", "name": "Flint", "color": "#727c84", "ring": "#8a8672" },
+  { "id": "frost", "name": "Frost", "color": "#8cb2cc", "ring": "#a8bcc4" },
+  { "id": "heather", "name": "Heather", "color": "#6c4c8c", "ring": "#94708c" }
+ ],
+ "herHairs": [
+  { "id": "long", "name": "Loose", "words": "Long past her shoulders, parted on the left, most of it down her back." },
+  { "id": "ponytail", "name": "Tail", "words": "Drawn back off her face and tied high; the tail swings as she moves." },
+  { "id": "braid", "name": "Braid", "words": "Tied low at the nape, then one thick plait down her back, out of a blade's way." },
+  { "id": "bob", "name": "Bob", "words": "Cut blunt at the chin, parted on the left, falling round her face." },
+  { "id": "pixie", "name": "Cropped", "words": "Short, close to the head: nothing for a hand to catch." }
+ ],
+ "paints": [
+  { "id": "none", "name": "Bare", "words": "Her own face, nothing on it." },
+  { "id": "kohl", "name": "Kohl", "words": "Soot and tallow smudged round the eyes and drawn out to a point.", "rough": 0.55 },
+  { "id": "rouge", "name": "Kohl and rouge", "words": "Kohl, and her lips stained the red of crushed rosehip.", "rough": 0.45 },
+  { "id": "woad", "name": "Woad", "words": "The old blue of the hill people, banded over her brow and down her cheeks.", "rough": 0.85 },
+  { "id": "ochre", "name": "Hunter's ochre", "words": "A band of red earth across the eyes, temple to temple, laid on with two fingers.", "rough": 0.8 },
+  { "id": "ash", "name": "Ash", "words": "Grey from a dead fire, thumbed under the eyes. Mourning, or a promise.", "rough": 0.9 },
+  { "id": "blood", "name": "Blood oath", "words": "Three fingers of blood drawn down over her left eye, brow to jaw.", "rough": 0.5 },
+  { "id": "gilt", "name": "Gilt", "words": "Flakes of gold leaf over her cheekbones and the bridge of her nose.", "rough": 0.3, "metal": 1.0 }
+ ],
+ "faces": [
+  { "id": "own", "name": "As she is", "words": "Her own face, as the road left it.", "shape": {} },
+  { "id": "highborn", "name": "Highborn", "words": "Fine-boned and narrow, a long straight nose: a face for a portrait in a hall.",
+   "shape": { "nose_width": -0.5, "nose_bridge": 0.3, "cheekbones": 0.3, "cheeks": -0.4, "jaw": -0.5, "chin_width": -0.5, "eyes_tilt": 0.4, "brows_arch": 0.3, "lips_upper": -0.2 } },
+  { "id": "vixen", "name": "Vixen", "words": "Eyes tilted up under heavy lids, a full mouth, a small sharp chin.",
+   "shape": { "eyes_tilt": 0.8, "eyes_open": -0.5, "lips_upper": 0.6, "lips_lower": 0.7, "cupids_bow": 0.6, "nose_tip": 0.4, "nose_width": -0.3, "chin_width": -0.6, "cheeks": -0.3, "brows_arch": 0.4, "mouth_corners": 0.2 } },
+  { "id": "doe", "name": "Doe", "words": "Wide soft eyes, a small nose, a gentle jaw. People trust her before they should.",
+   "shape": { "eyes_size": 0.6, "eyes_open": 0.3, "eyes_tilt": -0.2, "nose_width": -0.4, "nose_length": -0.4, "cheeks": 0.2, "cheekbones": -0.3, "jaw": -0.4, "lips_lower": 0.5, "chin_length": -0.3, "brows_arch": 0.2 } },
+  { "id": "hardwon", "name": "Hard-won", "words": "A strong jaw, low straight brows, the bridge of a nose that has been broken.",
+   "shape": { "jaw": 0.8, "chin_width": 0.3, "chin_forward": 0.5, "brows_height": -0.6, "brows_arch": -0.4, "nose_bridge": 0.6, "nose_width": 0.3, "lips_upper": -0.4, "eyes_open": -0.3, "cheekbones": 0.2, "cheeks": -0.6 } },
+  { "id": "fey", "name": "Fey", "words": "Wide-set eyes, a pointed chin, and ears that come to a point. The old blood shows.",
+   "shape": { "ears_pointed": 1, "ears_size": 0.4, "eyes_spacing": 0.4, "eyes_size": 0.4, "eyes_tilt": 0.6, "brows_arch": 0.5, "brows_height": 0.4, "nose_width": -0.6, "nose_tip": 0.3, "chin_width": -0.8, "jaw": -0.6, "cheekbones": 0.3, "cheeks": -0.5 } },
+  { "id": "wildling", "name": "Wildling", "words": "A wide mouth made for laughing, a broad nose, cheekbones from the hill country.",
+   "shape": { "mouth_width": 0.6, "lips_lower": 0.6, "lips_upper": 0.4, "nose_width": 0.4, "nose_tip": 0.2, "cheekbones": 0.3, "jaw": 0.3, "eyes_tilt": 0.3, "brows_height": -0.3 } }
+ ],
+ "sliders": [
+  { "id": "eyes_size", "name": "Size", "group": "Eyes", "low": "Small", "high": "Large", "min": -0.8, "max": 0.8 },
+  { "id": "eyes_spacing", "name": "Set", "group": "Eyes", "low": "Close", "high": "Wide", "min": -1, "max": 0.6 },
+  { "id": "eyes_height", "name": "Height", "group": "Eyes", "low": "Low", "high": "High", "min": -0.5, "max": 0.25 },
+  { "id": "eyes_tilt", "name": "Tilt", "group": "Eyes", "low": "Downturned", "high": "Upturned" },
+  { "id": "eyes_open", "name": "Lids", "group": "Eyes", "low": "Hooded", "high": "Open", "min": -1, "max": 0.5 },
+  { "id": "brows_height", "name": "Brow height", "group": "Eyes", "low": "Low", "high": "High", "min": -0.8, "max": 0.8 },
+  { "id": "brows_arch", "name": "Brow arch", "group": "Eyes", "low": "Straight", "high": "Arched", "min": -0.5, "max": 0.5 },
+  { "id": "nose_width", "name": "Width", "group": "Nose", "low": "Narrow", "high": "Broad", "min": -1, "max": 0.8 },
+  { "id": "nose_length", "name": "Length", "group": "Nose", "low": "Short", "high": "Long", "min": -0.7, "max": 0.8 },
+  { "id": "nose_tip", "name": "Tip", "group": "Nose", "low": "Down", "high": "Upturned", "min": -0.6, "max": 0.6 },
+  { "id": "nose_bridge", "name": "Bridge", "group": "Nose", "low": "Straight", "high": "Aquiline", "min": -1, "max": 0.8 },
+  { "id": "nostrils", "name": "Nostrils", "group": "Nose", "low": "Fine", "high": "Flared" },
+  { "id": "lips_upper", "name": "Upper lip", "group": "Mouth", "low": "Thin", "high": "Full" },
+  { "id": "lips_lower", "name": "Lower lip", "group": "Mouth", "low": "Thin", "high": "Full" },
+  { "id": "mouth_width", "name": "Width", "group": "Mouth", "low": "Narrow", "high": "Wide", "min": -0.8, "max": 0.8 },
+  { "id": "mouth_corners", "name": "Corners", "group": "Mouth", "low": "Down", "high": "Up", "min": -0.6, "max": 0.6 },
+  { "id": "cupids_bow", "name": "Cupid's bow", "group": "Mouth", "low": "Soft", "high": "Sharp" },
+  { "id": "cheekbones", "name": "Cheekbones", "group": "Jaw", "low": "Soft", "high": "High", "min": -1, "max": 0.3 },
+  { "id": "cheeks", "name": "Cheeks", "group": "Jaw", "low": "Hollow", "high": "Full", "min": -1, "max": 0.25 },
+  { "id": "jaw", "name": "Jaw", "group": "Jaw", "low": "Soft", "high": "Strong" },
+  { "id": "chin_width", "name": "Chin width", "group": "Jaw", "low": "Pointed", "high": "Broad", "min": -1, "max": 0.35 },
+  { "id": "chin_length", "name": "Chin length", "group": "Jaw", "low": "Short", "high": "Long", "min": -0.6, "max": 0.3 },
+  { "id": "chin_forward", "name": "Chin", "group": "Jaw", "low": "Back", "high": "Forward", "min": -0.8, "max": 0.8 },
+  { "id": "ears_size", "name": "Ears", "group": "Jaw", "low": "Small", "high": "Large" },
+  { "id": "ears_pointed", "name": "Ear tips", "group": "Jaw", "low": "Round", "high": "Pointed", "min": 0 }
  ],
  "hairStyles": {
   "male": [

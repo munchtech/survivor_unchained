@@ -325,11 +325,31 @@ public static class Sfx
     public static void Evolve()
     {
         if (A is not { } a) return;
+        a.DuckSfx(0.4f, 1.2);
         double b = 293.66;
         int[] steps = [0, 7, 12, 16, 19, 24];
         for (int i = 0; i < steps.Length; i++) a.Play(new Fm { T = Now + i * 0.09, F = b * Semis(steps[i]), Ratio = 2.01, Index = 0.8, D = 2.2, G = 0.045, Verb = 0.7 });
         a.Play(new Tone { F = 73.4, A = 0.3, D = 2.4, G = 0.16, Type = Wave.Saw, Lp = 400, Lp2 = 1400 });
     }
+
+    /// <summary>What ruled the night falls: the fight's noise drops away, a blow from under the
+    /// ground, the night's chord rising and held, a shimmer as the ember leaves it. (Its own
+    /// sounds go round the duck, on the music and interface buses.)</summary>
+    public static void Fall()
+    {
+        if (A is not { } a) return;
+        double t = Now;
+        a.DuckSfx(0.3f, 1.9);
+        a.Play(new Tone { T = t, F = 55, F2 = 22, D = 2.4, G = 0.45, Bus = Bus.Ui });
+        a.Play(new Hiss { T = t, D = 1.8, G = 0.15, Lp = 900, Lp2 = 80, Brown = true, Bus = Bus.Ui });
+        int[] s = [0, 7, 12, 16, 19, 24];
+        for (int i = 0; i < s.Length; i++)
+            a.Play(new Fm { T = t + 0.35 + i * 0.11, F = 146.83 * Semis(s[i]), Ratio = 2.01, Index = 0.7, A = 0.08, D = 3.2, G = 0.045, Verb = 0.8, Bus = Bus.Music });
+        a.Play(new Hiss { T = t + 0.3, A = 0.6, D = 2.4, G = 0.03, Hp = 7000, Bus = Bus.Ui });
+    }
+
+    /// <summary>The fight's noise held down for a big moment (an evolution, a chest), so it is heard.</summary>
+    public static void Moment(double seconds, float depth = 0.4f) => A?.DuckSfx(depth, seconds);
 
     public static void Discovery()
     {
@@ -475,6 +495,36 @@ public static class Sfx
         double f = good ? 659.25 : 415.3;
         a.Play(new Fm { F = f, Ratio = 2, Index = 0.4, D = 0.6, G = 0.03, Bus = Bus.Ui, Verb = 0.5 });
         a.Play(new Fm { T = Now + 0.1, F = good ? f * Semis(4) : f * Semis(-3), Ratio = 2, Index = 0.4, D = 0.7, G = 0.025, Bus = Bus.Ui, Verb = 0.5 });
+    }
+
+    /// <summary>A people's tell, a moment before its rush (combat's charge
+    /// director): the Pack's howl, the Kerchiefs' drum, a Lampling's fuse, the
+    /// barrow's whistle. Recorded takes (tools/comfy/sfx_clips.py), heard over
+    /// the fight and never quite the same twice; a made sound if a take is
+    /// missing, so a tell is never silent.</summary>
+    public static void Tell(string id)
+    {
+        if (A is not { } a || !a.Gate("tell", 1, 900)) return;
+        if (Recordings.Has(id))
+        {
+            a.Play(new Clip { Of = id, G = id == "tell_fuse" ? 0.5 : 0.62, Pitch = R(0.94, 1.05), Verb = id == "tell_fuse" ? 0.15 : 0.45 });
+            return;
+        }
+        switch (id)
+        {
+            case "tell_howl":
+                a.Play(new Tone { F = 420, F2 = 620, D = 1.6, G = 0.08, Type = Wave.Triangle, Verb = 0.6 });
+                break;
+            case "tell_drum":
+                for (int i = 0; i < 3; i++) a.Play(new Tone { T = Now + i * 0.42, F = 70, F2 = 42, D = 0.5, G = 0.3, Verb = 0.4 });
+                break;
+            case "tell_fuse":
+                a.Play(new Hiss { D = 1.1, G = 0.08, Hp = 3500, Verb = 0.1 });
+                break;
+            default:
+                a.Play(new Fm { F = 1900, Ratio = 2.01, Index = 0.4, D = 0.6, G = 0.05, Verb = 0.6 });
+                break;
+        }
     }
 
     public static void Door()

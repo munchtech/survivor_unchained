@@ -305,6 +305,12 @@ public partial class PlayerView : Node3D
                 dead = true;
                 tree.Active = false;
                 var death = People.Clip(person, "Death_A");
+                // Struck down from in front, she goes over onto her back;
+                // from behind, or by what was in her (poison, burning), she
+                // folds forward onto her face.
+                if (her && p.FellTo == null && p.LastKiller is { } k && HerClips.Has("death_back")
+                    && (k.X - p.X) * Mathf.Sin(Rotation.Y) + (k.Z - p.Z) * Mathf.Cos(Rotation.Y) > 0)
+                    death = HerClips.Prefix + "death_back";
                 person.Anim.Play(death, 0.1);
                 if (person.Pose != null) person.Pose.Native = death.StartsWith(HerClips.Prefix) ? 1 : 0;
                 if (carriage != null) carriage.Aim = carriage.Bank = carriage.Tilt = 0;

@@ -47,7 +47,7 @@ public partial class BattleFx : Node3D
     bool mirror;
 
     // What is in the air, and what lies on the ground.
-    Batch orbs = null!, steel = null!, axes = null!, daggers = null!, shards = null!, rings = null!, embers = null!, coins = null!, flasks = null!, lodestones = null!, sacks = null!, chests = null!, kegs = null!, lootBeams = null!;
+    Batch shades = null!, orbs = null!, steel = null!, axes = null!, daggers = null!, shards = null!, rings = null!, embers = null!, coins = null!, flasks = null!, lodestones = null!, sacks = null!, chests = null!, kegs = null!, lootBeams = null!;
     /// <summary>How far above the ground the middle of a sack and a chest sits.</summary>
     float sackUp, chestUp;
     readonly Dictionary<int, float> trailAcc = new();
@@ -115,6 +115,8 @@ public partial class BattleFx : Node3D
         // What the survivor sends flying is drawn over the crowd it flies through.
         var over = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/spark_over.gdshader") };
         over.SetShaderParameter("sprites", Sprites.Array);
+        // The dark under them, drawn first, so a light over the pale dead still shows.
+        shades = Add(new Batch(new QuadMesh { Size = Vector2.One }, 600, new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/spark_shade.gdshader"), RenderPriority = -1 }));
         orbs = Add(new Batch(new QuadMesh { Size = Vector2.One }, 1400, over));
         steel = Add(new Batch(new BoxMesh { Size = new Vector3(0.06f, 0.04f, 0.6f) }, 600, Glowing(0.25f, 0.3f, 0.7f)));
         // What is thrown is the weapon in hand (Arms), not a stick of light.
@@ -335,6 +337,8 @@ public partial class BattleFx : Node3D
         float gy = Y(x, z), r = radius;
         var pal = Palette.Of(school);
         var ground = V(x, gy, z);
+        // A short blow is short in every layer: its light and its dust gone with it.
+        bool brief = life <= 0.65f;
 
         if (light)
         {
@@ -389,13 +393,13 @@ public partial class BattleFx : Node3D
             // Thin and soon gone: smoke that lingers hides the next fight.
             var smoke = school == School.Shadow ? new Color(0.5f, 0.35f, 0.7f, 0.5f) : school == School.Physical ? new Color(0.75f, 0.62f, 0.5f, 0.45f) : new Color(0.45f, 0.42f, 0.4f, 0.42f);
             for (int i = 0; i < 4; i++)
-                Smoke.Spawn(ground + new Vector3((R() - 0.5f) * r * 0.6f, 0.6f + R() * 0.4f, (R() - 0.5f) * r * 0.6f), new Vector3((R() - 0.5f) * 0.6f, 0.8f + R() * 0.6f, (R() - 0.5f) * 0.6f), 1.2f + R() * 0.6f, r * 0.35f, smoke, smoke * 0.6f, r * 0.8f, drag: 1.2f, alpha: smoke.A);
+                Smoke.Spawn(ground + new Vector3((R() - 0.5f) * r * 0.6f, 0.6f + R() * 0.4f, (R() - 0.5f) * r * 0.6f), new Vector3((R() - 0.5f) * 0.6f, 0.8f + R() * 0.6f, (R() - 0.5f) * 0.6f), brief ? 0.5f + R() * 0.15f : 1.2f + R() * 0.6f, r * 0.35f, smoke, smoke * 0.6f, r * 0.8f, drag: 1.2f, alpha: smoke.A);
         }
         else if (school == School.Frost)
             for (int i = 0; i < 3; i++)
                 Smoke.Spawn(ground + new Vector3((R() - 0.5f) * r * 0.8f, 0.4f, (R() - 0.5f) * r * 0.8f), new Vector3(0, 0.25f, 0), 1.4f, r * 0.4f, new Color(0.75f, 0.85f, 1f), new Color(0.6f, 0.7f, 0.9f), r * 0.9f, drag: 1.5f, alpha: 0.18f);
         // Its light.
-        if (On('l')) Flash(ground + Vector3.Up * 1.4f, pal.Light, 12 * glow, 0.3f + r * 0.04f, r * 3 + 4);
+        if (On('l')) Flash(ground + Vector3.Up * 1.4f, pal.Light, 12 * glow, brief ? 0.15f : 0.3f + r * 0.04f, r * 3 + 4);
         // And what it leaves behind.
         var (mark, size, last, spin) = ScarOf(school);
         if (On('m')) Scars.Add(mark, ground, r * size, last, spin);
@@ -608,8 +612,11 @@ public partial class BattleFx : Node3D
                     Smoke.Spawn(V(e.X, gy + 0.3, e.Z), new Vector3(0, 0.5f, 0), 0.9f, 0.5f, new Color("#3a3430"), new Color("#1a1816"), 1.3f, alpha: 0.35f);
                     if (e.Elite || e.Boss)
                     {
-                        Flash(V(e.X, gy + 1.5, e.Z), pal.Light, 16, 0.6f, 12);
-                        if (!Blast(e.X, e.Z, e.School, e.Boss ? 6 : 3.5f, 1.1f, 1.5f)) Nova(e.X, e.Z, 5, pal.Glow, 0.45f);
+                        // A champion's fall is brief and no wider than its body's reach (the experience
+                        // director's rule: about 3 m, a flash under 0.15 s, the dust down in 0.6 s, never
+                        // bigger than a level-up); only the boss's may fill the screen.
+                        Flash(V(e.X, gy + 1.5, e.Z), pal.Light, e.Boss ? 16 : 10, e.Boss ? 0.6f : 0.15f, e.Boss ? 12 : 8);
+                        if (!Blast(e.X, e.Z, e.School, e.Boss ? 6 : 2.4f, e.Boss ? 1.1f : 0.6f, e.Boss ? 1.5f : 1.1f)) Nova(e.X, e.Z, e.Boss ? 5 : 3, pal.Glow, 0.45f);
                         Cam?.AddTrauma(0.35f);
                     }
                     break;
@@ -799,6 +806,37 @@ public partial class BattleFx : Node3D
                         Sparks.Spawn(p + new Vector3(Mathf.Cos(a) * 0.8f, 0.2f, Mathf.Sin(a) * 0.8f), new Vector3(Mathf.Cos(a) * 0.5f, 3 + R() * 4, Mathf.Sin(a) * 0.5f), 1.2f, glint ? 0.3f : 0.1f, new Color(2.4f, 1.9f, 1.1f), new Color(2.2f, 0.6f, 0.1f), 0.02f, 0, 1.5f,
                             sprite: glint ? Sprites.Of("star") : 0, spinV: 3);
                     }
+                    break;
+                }
+                case Ev.Victory v:
+                {
+                    // The night's peak, in layers (it plays in the fall's slow motion, so it
+                    // lingers): a white-gold flash that lights the field, a column of the ember
+                    // leaving what ruled it, three shockwaves (rings, never a filled disc), embers rising
+                    // slowly, a dark ring of dust thrown out, and the camera's biggest kick.
+                    float gy = Y(v.X, v.Z);
+                    var at = V(v.X, gy, v.Z);
+                    var gold = new Color(2.6f, 1.9f, 1.0f);
+                    Flash(at + Vector3.Up * 3, new Color("#ffe6b0"), 42, 1.8f, 28);
+                    Pillar(at, 34, 1.1f, gold * 0.8f, 1.6f);
+                    Pillar(at, 22, 0.35f, new Color(3, 2.8f, 2.4f), 0.9f);
+                    Waves.Add(at + Vector3.Up * 0.4f, 9, 0.7f, gold, 1);
+                    Waves.Add(at + Vector3.Up * 0.6f, 15, 1.1f, new Color(2.2f, 1.2f, 0.5f), 0.8f);
+                    Waves.Add(at + Vector3.Up * 0.8f, 22, 1.6f, new Color(1.6f, 0.8f, 0.4f), 0.5f);
+                    for (int i = 0; i < 90; i++)
+                    {
+                        float a = R() * Mathf.Tau, d = R() * 2.2f;
+                        bool glint = i % 3 == 0;
+                        Sparks.Spawn(at + new Vector3(Mathf.Cos(a) * d, 0.4f + R() * 1.5f, Mathf.Sin(a) * d), new Vector3(Mathf.Cos(a) * (0.6f + R()), 2.5f + R() * 5, Mathf.Sin(a) * (0.6f + R())),
+                            1.6f + R() * 1.4f, glint ? 0.28f : 0.1f, new Color(2.6f, 1.6f, 0.5f), new Color(2.0f, 0.5f, 0.1f), 0.02f, -0.4f, 0.7f, sprite: glint ? Sprites.Of("star") : 0, spinV: 2);
+                    }
+                    for (int i = 0; i < 16; i++)
+                    {
+                        float a = i / 16f * Mathf.Tau;
+                        Smoke.Spawn(at + new Vector3(Mathf.Cos(a) * 1.5f, 0.4f, Mathf.Sin(a) * 1.5f), new Vector3(Mathf.Cos(a) * 9, 0.6f, Mathf.Sin(a) * 9), 1.4f, 1.2f,
+                            new Color("#3a3430"), new Color("#1a1816"), 2.4f, alpha: 0.4f);
+                    }
+                    Cam?.AddTrauma(0.6f);
                     break;
                 }
                 case Ev.Evolve or Ev.Discovery:
@@ -1065,6 +1103,8 @@ public partial class BattleFx : Node3D
         Projectiles(b, fdt, now);
         Pickups(b, now);
         StepFronts(fdt);
+        StepSweeps(fdt);
+        StepSpikes(fdt);
         Ribbons.Step(fdt, GetViewport()?.GetCamera3D());
         Sparks.Step(fdt);
         Books.Step(fdt);
@@ -1123,12 +1163,17 @@ public partial class BattleFx : Node3D
     }
 
     /// <summary>Ground left burning, blighted, hallowed: a disc for each while it lasts.</summary>
+    readonly HashSet<int> zonesAlive = new();
+    readonly List<int> zonesGone = new();
+
     void Zones(Battle b, double now)
     {
-        var alive = new HashSet<int>();
+        var alive = zonesAlive;
+        alive.Clear();
         foreach (var z in b.Zones.Living())
         {
             alive.Add(z.Id);
+            if (z.Owner != Sim.Side.Enemy && SkillGround(z, now)) continue;
             var school = Palette.OfArt(z.Art);
             var col = z.Owner == Sim.Side.Enemy ? Palette.HostileDanger * 0.6f : Palette.Of(school).Glow * 0.5f;
             // Hallowed and arcane ground is a turning circle of runes, burning
@@ -1154,14 +1199,16 @@ public partial class BattleFx : Node3D
                 Sparks.Spawn(V(x, Y(x, zz) + 0.1, zz), new Vector3(0, 0.8f + R(), 0), 0.8f, 0.07f, z.Owner == Sim.Side.Enemy ? Palette.HostileRim : pal.Glow, pal.Dim, 0.01f, drag: 1);
             }
         }
-        var gone = new List<int>();
+        var gone = zonesGone;
+        gone.Clear();
         foreach (var (id, m) in zoneMarks) if (!alive.Contains(id)) { m.Active = false; m.Decal.Visible = false; gone.Add(id); }
         foreach (var id in gone) zoneMarks.Remove(id);
+        GroundsGone(alive);
     }
 
     void Projectiles(Battle b, float dt, double now)
     {
-        orbs.Begin(); steel.Begin(); axes.Begin(); daggers.Begin(); shards.Begin(); rings.Begin(); kegs.Begin();
+        shades.Begin(); orbs.Begin(); steel.Begin(); axes.Begin(); daggers.Begin(); shards.Begin(); rings.Begin(); kegs.Begin();
         foreach (var p in b.Projectiles.Living())
         {
             var art = p.Art;
@@ -1174,33 +1221,33 @@ public partial class BattleFx : Node3D
             float trail = 1;
             // Lifted to head height: from above, the bodies it passes through would hide it.
             if (!hostile && Flight(p, at + Vector3.Up * 0.55f, heading, now, dt)) continue;
-            if (art.StartsWith("axe"))
+            if (art.StartsWith("axe", StringComparison.Ordinal))
             {
                 // Laid flat and whirling about its middle, as an axe thrown to spin.
                 var basis = new Godot.Basis(Vector3.Up, -(float)(now * 16 + p.Id)) * new Godot.Basis(Vector3.Right, Mathf.Pi / 2) * Godot.Basis.FromScale(Vector3.One * 1.3f);
                 axes.Add(new Transform3D(basis, at), hostile ? new Color(0.6f, 0.5f, 0.45f) : Colors.White);
                 trail = 0.45f;
             }
-            else if (art.StartsWith("dagger"))
+            else if (art.StartsWith("dagger", StringComparison.Ordinal))
             {
                 // Point first along its flight, turning a little about its length.
                 var basis = new Godot.Basis(Vector3.Up, heading) * new Godot.Basis(Vector3.Right, Mathf.Pi / 2) * new Godot.Basis(Vector3.Up, (float)(now * 9 + p.Id));
                 daggers.Add(new Transform3D(basis, at), hostile ? new Color(0.6f, 0.5f, 0.45f) : Colors.White);
                 trail = 0.35f;
             }
-            else if (art.StartsWith("arrow") || art == "bolt_bone")
+            else if (art.StartsWith("arrow", StringComparison.Ordinal) || art == "bolt_bone")
             {
                 var basis = new Godot.Basis(Vector3.Up, heading);
                 steel.Add(new Transform3D(basis, at), hostile ? new Color(0.5f, 0.42f, 0.36f) : new Color(0.75f, 0.72f, 0.68f));
                 trail = 0.3f;
             }
-            else if (art.StartsWith("disc") || art.StartsWith("chakram"))
+            else if (art.StartsWith("disc", StringComparison.Ordinal) || art.StartsWith("chakram", StringComparison.Ordinal))
             {
-                float s = art.StartsWith("disc") ? 1.1f : 0.8f;
+                float s = art.StartsWith("disc", StringComparison.Ordinal) ? 1.1f : 0.8f;
                 rings.Add(new Transform3D(new Godot.Basis(Vector3.Up, (float)(now * 16)).Scaled(Vector3.One * s), at), pal.Glow * 0.5f);
                 trail = 0.5f;
             }
-            else if (art.StartsWith("shard") || art == "spear_ice")
+            else if (art.StartsWith("shard", StringComparison.Ordinal) || art == "spear_ice")
             {
                 float s = art == "spear_ice" ? 2.4f : 1;
                 var basis = new Godot.Basis(Vector3.Up, heading) * new Godot.Basis(Vector3.Right, Mathf.Pi / 2);
@@ -1217,7 +1264,7 @@ public partial class BattleFx : Node3D
             }
             else
             {
-                float size = art is "mote" or "mote_cascade" or "mote_star" or "ember_seeker" ? 0.34f : art is "star" ? 1.0f : art is "cinder" or "living_flame" ? 0.7f : art.StartsWith("herd") ? 0.6f : art.StartsWith("crescent") ? 1.0f : 0.5f;
+                float size = art is "mote" or "mote_cascade" or "mote_star" or "ember_seeker" ? 0.34f : art is "star" ? 1.0f : art is "cinder" or "living_flame" ? 0.7f : art.StartsWith("herd", StringComparison.Ordinal) ? 0.6f : art.StartsWith("crescent", StringComparison.Ordinal) ? 1.0f : 0.5f;
                 var core = hostile ? Palette.HostileRim : pal.Core;
                 // A small hot core in a wider, faint halo: a big bright core
                 // only blooms into a featureless disc that hides the fight.
@@ -1235,10 +1282,12 @@ public partial class BattleFx : Node3D
             trailAcc[p.Id] = acc;
         }
         if (trailAcc.Count > 2000) trailAcc.Clear();
-        orbs.End(); steel.End(); axes.End(); daggers.End(); shards.End(); rings.End(); kegs.End();
+        shades.End(); orbs.End(); steel.End(); axes.End(); daggers.End(); shards.End(); rings.End(); kegs.End();
     }
 
     static readonly Color[] EmberTiers = { new(2.4f, 1.0f, 0.25f), new(2.6f, 1.7f, 0.45f), new(2.8f, 2.6f, 1.6f), new(1.6f, 2.2f, 2.8f) };
+    // (An array made for each ember on the ground every frame was most of what the effects threw away.)
+    static readonly float[] EmberSizes = { 0.16f, 0.21f, 0.27f, 0.34f };
 
     void Pickups(Battle b, double now)
     {
@@ -1253,7 +1302,7 @@ public partial class BattleFx : Node3D
                 case PickupKind.Ember:
                 {
                     int tier = Math.Clamp(p.Tier, 0, 3);
-                    float s = new[] { 0.16f, 0.21f, 0.27f, 0.34f }[tier];
+                    float s = EmberSizes[tier];
                     embers.Add(new Transform3D(spin.Scaled(Vector3.One * s), V(p.X, gy + 0.45 + bob, p.Z)), EmberTiers[tier] * 0.5f);
                     break;
                 }

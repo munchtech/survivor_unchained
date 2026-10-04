@@ -322,7 +322,7 @@ def part_fx(line: dict, seg: dict) -> str | None:
     return None if kind == "none" else kind
 
 
-def mix(line: dict, picks: list[dict], max_gap: float = 1.6) -> tuple:
+def mix(line: dict, picks: list[dict], max_gap: float = 1.6, speed: float = 1.0) -> tuple:
     """The line's parts edited, toned and placed: (audio, marks, read), where
     `read` is the voice's own length without the room's decay."""
     voices = cast()
@@ -333,22 +333,32 @@ def mix(line: dict, picks: list[dict], max_gap: float = 1.6) -> tuple:
         room = "close" if seg["voice"] == "narrator" else d.get("room", v.get("room", "close"))
         vol = "level" if seg["voice"] == "narrator" and line["voice"] != "narrator" else lines_mod.part_direction(line, seg).get("vol", "level")
         info: dict = {}
-        x = post.master(pick["path"], room, v.get("sex", "m"), part_fx(line, seg), vol=vol, max_gap=max_gap, info=info)
+        x = post.master(pick["path"], room, v.get("sex", "m"), part_fx(line, seg), vol=vol, max_gap=max_gap, info=info, speed=speed)
         parts.append((x, room))
         read += info["read"]
     audio, marks = post.assemble(parts, gap=GAP, vol=d.get("vol", "level"))
     return audio, marks, round(read + GAP * (len(parts) - 1), 2)
 
 
-def fit(line: dict, picks: list[dict]) -> tuple:
+# The most a placeholder is squeezed to fit its cut (Praat's overlap-add).
+MIN_SPEED = 0.65
+
+
+def fit(line: dict, picks: list[dict], squeeze: bool = False) -> tuple:
     """mix(), with the pauses tightened while the read is longer than the
-    window its cut is timed to (direction `time`: [shortest, longest] s)."""
+    window its cut is timed to (direction `time`: [shortest, longest] s);
+    then, for a placeholder (`squeeze`), the read itself made quicker.
+    Returns (audio, marks, read, the pause cap, the speed)."""
     win = (line.get("direction") or {}).get("time")
     for g in FIT_GAPS if win else FIT_GAPS[:1]:
         audio, marks, read = mix(line, picks, g)
         if not win or read <= win[1]:
             break
-    return audio, marks, read, g
+    speed = 1.0
+    if squeeze and win and read > win[1]:
+        speed = round(max(MIN_SPEED, (win[1] - 0.05) / read), 3)
+        audio, marks, read = mix(line, picks, g, speed)
+    return audio, marks, read, g, speed
 
 
 def timing(line: dict, read: float) -> str | None:
@@ -359,9 +369,11 @@ def timing(line: dict, read: float) -> str | None:
     return f"{'long' if read > win[1] else 'short'}: {read:.1f} s, the cut wants {win[0]}–{win[1]} s"
 
 
-def finish(line: dict, picks: list[dict], log) -> dict:
+def finish(line: dict, picks: list[dict], log, squeeze: bool = False) -> dict:
+    """The line mixed from its picked parts, written into the game; the
+    take's record. `squeeze`: a placeholder may be made quicker to fit its cut."""
     d = line.get("direction", {})
-    audio, marks, read, gap = fit(line, picks)
+    audio, marks, read, gap, speed = fit(line, picks, squeeze)
     target = -17.0 if line["voice"] == "narrator" else VOL_LUFS.get(d.get("vol", "level"), -16.0)
     audio = post.loudness(audio, target)
     rel = f"{line['voice']}/{line['id']}.ogg"
@@ -385,6 +397,8 @@ def finish(line: dict, picks: list[dict], log) -> dict:
         take["time"] = d["time"]
         if gap < FIT_GAPS[0]:
             take["pauses_capped"] = gap
+        if speed != 1.0:
+            take["speed"] = speed
         off = timing(line, read)
         if off:
             take["timing"] = off

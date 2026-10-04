@@ -148,6 +148,73 @@ def death(rig):
     return build("death", rig, keys, meta={"layer": "full", "hold": True})
 
 
+def _back_pose(settle=0.0):
+    """On her back where she fell, a knee fallen out, an arm flung up past
+    her head, the other limp at her side, the face turned away."""
+    return {
+        "hips": {"pos": (0.0, -0.95, -0.62), "rot": (-6, -88, -4)},
+        "spine": (4, 4 - 2 * settle, -6), "neck": (10, 6, 0), "head": (34 + 4 * settle, -8, 10),
+        "foot_l": {"pos": (0.04, 0.07, -0.02), "rot": (60, -30, 50), "pole": (1, 0.15, 0.3)},
+        "foot_r": {"pos": (-0.17, 0.07, 0.31), "rot": (-24, -55, -10), "pole": (-0.4, 1, 0)},
+        "hand_l": {"pos": (0.52, 0.05, -1.30), "pole": (1, 0.4, 0), "knuckles": (0.4, 0, -1)},
+        "hand_r": {"pos": (-0.40, 0.04, -0.62), "pole": (-1, 0.4, 0), "knuckles": (-0.2, 0, 1)},
+        "fingers_l": "open", "fingers_r": "relaxed",
+    }
+
+
+def death_back(rig):
+    """A blow from in front that takes her: the chest caved, the head
+    snapped back, a stagger back on the right foot, the knees go, she sits
+    down hard and the back hits, the legs bounced up by it; then limp."""
+    keys = [
+        # The blow: chest punched in, the head thrown back, arms up and out
+        # with it.
+        (0, body({"foot_l": {"pos": (0.13, 0, 0.12), "rot": (10, 0, 0)}, "foot_r": {"pos": (-0.15, 0, -0.06), "rot": (-14, 0, 0)},
+                  "hips": {"pos": (0, -0.08, 0.06)}},
+                 hips=(0, -10, 0), spine=(0, -16, 0), neck=(0, -8, 0), head=(0, -18, 0), clav_l=(12, 10), clav_r=(12, 10),
+                 hand_l=arm((0.16, -0.34, 0.24), (0.9, -0.6, -0.2)), hand_r=arm((-0.16, -0.36, 0.22), (-0.9, -0.6, -0.2)),
+                 fingers_l="spread", fingers_r="relaxed"), "fast"),
+        # The stagger back: the right foot caught behind her, the body
+        # still going.
+        (5, body({"foot_l": {"pos": (0.14, 0.04, 0.16), "rot": (10, -10, 0), "toe": 0},
+                  "foot_r": {"pos": (-0.16, 0, -0.42), "rot": (-16, 0, 0)},
+                  "hips": {"pos": (0, -0.20, -0.20)}},
+                 hips=(0, -16, 4), spine=(-4, -14, 4), neck=(0, -6, 0), head=(0, -16, 0), clav_l=(16, 4), clav_r=(16, 4),
+                 hand_l=arm((0.40, -0.22, 0.18), (0.9, -0.2, -0.3)), hand_r=arm((-0.40, -0.26, 0.16), (-0.9, -0.2, -0.3)),
+                 fingers_l="spread", fingers_r="open"), "auto"),
+        # The knees go: down over the back foot.
+        (10, body({"foot_l": {"pos": (0.16, 0.0, 0.10), "rot": (14, 0, 0)},
+                   "foot_r": {"pos": (-0.17, 0, -0.40), "rot": (-16, 0, 0), "pole": (-0.4, 0.2, 1)},
+                   "hips": {"pos": (0, -0.55, -0.42)}},
+                  hips=(0, -24, 6), spine=(-4, -12, 6), neck=(0, 4, 0), head=(0, 6, 0), clav_l=(10, 0), clav_r=(10, 0),
+                  hand_l=arm((0.46, -0.36, -0.04), (0.9, 0.2, -0.4)), hand_r=arm((-0.46, -0.38, -0.06), (-0.9, 0.2, -0.4)),
+                  fingers_l="open", fingers_r="open"), "auto"),
+        # Sat down hard, the feet thrown out in front.
+        (13, body({"foot_l": {"pos": (0.20, 0.02, 0.12), "rot": (16, -30, 0), "pole": (0.3, 1, 0.3)},
+                   "foot_r": {"pos": (-0.18, 0.03, 0.02), "rot": (-16, -30, 0), "pole": (-0.3, 1, 0.3)},
+                   "hips": {"pos": (0, -0.92, -0.58)}},
+                  hips=(0, -36, 4), spine=(-4, -4, 4), neck=(0, 10, 0), head=(0, 16, 0), clav_l=(14, 0), clav_r=(14, 0),
+                  hand_l=arm((0.80, -0.10, 0.20), (0.9, 0.3, -0.4)), hand_r=arm((-0.80, -0.14, 0.18), (-0.9, 0.3, -0.4)),
+                  fingers_l="open", fingers_r="open"), "linear"),
+        # The back hits: the head whipped back, the legs bounced up.
+        (17, {"hips": {"pos": (0.0, -0.97, -0.64), "rot": (0, -84, 0)},
+              "spine": (0, -2, 0), "neck": (0, -6, 0), "head": (6, -14, 4),
+              "foot_l": {"pos": (0.22, 0.30, 0.34), "rot": (20, -70, 10), "pole": (0.4, 1, 0.3)},
+              "foot_r": {"pos": (-0.18, 0.40, 0.38), "rot": (-16, -70, -10), "pole": (-0.3, 1, 0.3)},
+              "hand_l": {"pos": (0.62, 0.10, -1.10), "pole": (1, 0.4, 0), "knuckles": (0.4, 0, -1)},
+              "hand_r": {"pos": (-0.66, 0.10, -0.90), "pole": (-1, 0.4, 0), "knuckles": (-0.4, 0, -1)},
+              "fingers_l": "spread", "fingers_r": "spread"}, "auto"),
+        # Bounced: the head comes up and turns, the legs fall.
+        (21, merge(_back_pose(), hips={"pos": (0.0, -0.93, -0.63), "rot": (-4, -84, -2)}, head=(24, 6, 8),
+                   foot_l={"pos": (0.10, 0.14, 0.04), "rot": (45, -40, 35), "pole": (1, 0.5, 0.3)},
+                   foot_r={"pos": (-0.17, 0.14, 0.32), "rot": (-20, -60, -10), "pole": (-0.3, 1, 0)}), "auto"),
+        (27, _back_pose(), "ease"),
+        (40, _back_pose(1.0), "ease"),
+    ]
+    return build("death_back", rig, keys, meta={"layer": "full", "hold": True,
+                                                 "note": "keyed: struck from in front, onto her back, held"})
+
+
 def get_up(rig):
     """From where the fall left her: a push up on the hands, a knee under
     her, a breath on one knee, and up, shaking it off."""
@@ -379,7 +446,7 @@ def daggers_heavy(rig):
     return build("daggers_heavy", rig, keys, lead=STRIKE, meta={"layer": "upper", "contact": 3 / 30, "weapon": "daggers"})
 
 
-ALL = (("dash", dash), ("hit", hit), ("death", death), ("get_up", get_up), ("cast_bolt", cast_bolt),
+ALL = (("dash", dash), ("hit", hit), ("death", death), ("death_back", death_back), ("get_up", get_up), ("cast_bolt", cast_bolt),
        ("cast_raise", cast_raise), ("cast_flick", cast_flick), ("crossbow_shoot", crossbow_shoot), ("throw", throw),
        ("warcry", warcry), ("daggers_back", daggers_back), ("daggers_fore", daggers_fore),
        ("daggers_heavy", daggers_heavy))

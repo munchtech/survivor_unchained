@@ -51,6 +51,9 @@ public static class Recordings
     }
 
     /// <summary>A take of a family, not the one played last; null if there is none.</summary>
+    /// <summary>Whether there are takes of a family.</summary>
+    public static bool Has(string family) { Load(); return families.ContainsKey(family); }
+
     public static Take? Pick(string family)
     {
         if (!families.TryGetValue(family, out var takes)) return null;

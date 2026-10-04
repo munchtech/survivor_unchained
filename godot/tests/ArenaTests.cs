@@ -223,10 +223,46 @@ public class ArenaTests
         s.B.Time = 15 * 60;
         Run(s, 0.1);
         Assert.Equal(1, s.B.GreatOwed);
-        Assert.Contains(s.Host.Announced, a => a.Title == "The fifteenth minute");
+        Assert.Contains(s.Host.Announced, a => a.Title == "Halfway through the dark");
         bool deeper = false;
         for (int k = 0; k < 30 && !deeper; k++) deeper = LevelUp.Draft(s.B, 3).Any(o => o.Id == first[0].Id && o.To == 2 && o.Text.StartsWith("Rank 2:"));
         Assert.True(deeper);
+    }
+
+    /// <summary>The boss's fall is the night's peak: the view is told (it slows the world and
+    /// turns to it) and the people break and run. A story night then gives up its spoils and
+    /// ends on its beat; a table night goes on into the long night.</summary>
+    [Fact]
+    public void The_fall_is_the_peak_and_a_story_night_ends_on_its_beat()
+    {
+        foreach (bool story in new[] { true, false })
+        {
+            var s = Make(Spec(story: story));
+            s.B.Player.Iframes = 1e9;
+            s.B.Time = 1800;
+            Run(s, 1);
+            bool fell = false;
+            var boss = Boss(s);
+            for (int i = 0; i < 400 && !s.Zone.Won; i++)
+            {
+                if (boss.Alive && boss.State != EnemyState.Dying) s.B.HitEnemy(boss, boss.MaxHp * 0.25, School.Physical, [Tag.Physical]);
+                for (double t = 0; t < 0.5; t += 1 / 60.0)
+                {
+                    s.Zone.Step(1 / 60.0);
+                    s.Zone.Frame(1 / 60.0);
+                    s.B.Tick(1 / 60.0, 0, 0);
+                    foreach (var ev in s.B.Events.Drain()) fell |= ev is Ev.Victory;
+                    s.Host.Pass(1 / 60.0);
+                }
+            }
+            Assert.True(s.Zone.Won);
+            Assert.True(fell, "the fall was not told");
+            var p = s.B.Player;
+            Assert.Contains(s.B.Enemies.Living(), e => !e.Elite && e.Status.Has(StatusKind.Fear) && (e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z) < 32 * 32);
+            Run(s, 8);
+            Assert.Equal(story, s.Zone.Over);
+            if (story) Assert.True(s.Host.ArenaResult!.Won);
+        }
     }
 
     /// <summary>At about six minutes the people ask their own question, with a tell first:
@@ -237,6 +273,8 @@ public class ArenaTests
     {
         var s = Make(Spec("dead"));
         s.B.Player.Iframes = 1e9;
+        // (Nothing of hers to kill them: the count is of what rises, not of what she mows.)
+        foreach (var w in s.B.Weapons.ToList()) s.B.RemoveWeapon(w.Id);
         s.B.Time = 5.4 * 60;
         int marks = 0;
         for (double t = 0; t < 140 && !s.Barks.Contains("The ground cracks in a ring round you."); t += 1 / 60.0)
@@ -299,7 +337,8 @@ public class ArenaTests
         int Ranks() => s.B.Weapons.Sum(w => w.Rank) + s.B.Boons.Values.Sum();
         int ranks = Ranks();
         s.B.Time = 240;
-        Run(s, 60 * 5);
+        // From the eighth minute a champion's turn comes in every three (ArenaPacing).
+        for (int i = 0; i < 18 && !s.Barks.Any(b => b.StartsWith("A champion of")); i++) Run(s, 30);
         Assert.Contains(s.Barks, b => b.StartsWith("A champion of"));
         // Every champion still standing falls, and every chest is walked to.
         foreach (var e in s.B.Enemies.Living().Where(e => e.Elite).ToList()) s.B.HitEnemy(e, 1e9, School.Physical, [Tag.Physical]);
@@ -358,6 +397,96 @@ public class ArenaTests
         Assert.True(s.J.World.Fact("arena.longest").Number > 50);
     }
 
+    /* -------------------------------------------- the night's stretches -- */
+
+    /// <summary>The owner: mechanics "don't appear till certain mini bosses and minion types show
+    /// up". The Pack's tuskers do not run in the horde until Old Tusk has come, named, his lesson
+    /// said; then they do.</summary>
+    [Fact]
+    public void The_tuskers_come_only_after_Old_Tusk_has_shown_them()
+    {
+        var s = Make(Spec("pack"));
+        s.B.Player.Iframes = 1e9;
+        s.B.Time = 2.6 * 60;
+        bool boarBefore = false;
+        for (double t = 0; t < 90 && !s.Host.Announced.Any(a => a.Title == "Old Tusk"); t += 1)
+        {
+            Run(s, 1);
+            // (He comes with a few of his own beside him: those count from his coming.)
+            if (!s.Host.Announced.Any(a => a.Title == "Old Tusk")) boarBefore |= s.B.Enemies.Living().Any(e => e.Def.Id == "boar");
+        }
+        Assert.False(boarBefore);
+        var came = s.Host.Announced.Single(a => a.Title == "Old Tusk");
+        Assert.Equal(Enemies.Get("mb_old_tusk").Lesson, came.Sub);
+        Assert.Contains(s.B.Enemies.Living(), e => e.Def.Id == "mb_old_tusk" && e.Elite);
+        // Its bar, as a herald's, and then its kind in the crowd.
+        Run(s, 1);
+        Assert.Equal("Old Tusk", s.Host.Boss?.Name);
+        Run(s, 40);
+        Assert.Contains(s.B.Enemies.Living(), e => e.Def.Id == "boar" && !e.Elite);
+    }
+
+    /// <summary>Champions from the second tier wear their people's Signs: named for them,
+    /// coloured, with the verb.</summary>
+    [Fact]
+    public void A_champions_turn_brings_a_signed_champion_from_the_second_tier()
+    {
+        var spec = Spec("dead");
+        spec.Tier = 2;
+        var s = Make(spec);
+        s.B.Player.Iframes = 1e9;
+        s.B.Time = 8 * 60;
+        for (int i = 0; i < 16 && !s.B.Enemies.Living().Any(e => e.Elite && e.Def.Signs.Length > 0); i++) Run(s, 30);
+        var champ = s.B.Enemies.Living().First(e => e.Elite && e.Def.Signs.Length > 0);
+        Assert.Contains(Signs.Get(champ.Def.Signs[0]).Name, champ.Def.Name);
+        Assert.NotNull(champ.Def.Tint);
+    }
+
+    /// <summary>Crafting's measure: the Kerchiefs' horde paid tens of thousands of gold a night and
+    /// the crowd's champions hundreds of pieces of gear. Now the rank and file drop a fiftieth of
+    /// their gold, and gear comes only from what carries a chest.</summary>
+    [Fact]
+    public void An_arenas_horde_pays_a_little_gold_and_its_crowd_champions_no_gear()
+    {
+        var s = Make(Spec("kerchiefs"));
+        var b = s.B;
+        int gold = 0, items = 0;
+        for (int i = 0; i < 400; i++)
+        {
+            var e = b.SpawnEnemy("footpad", b.Player.X + 30, b.Player.Z, new Battle.SpawnOpts { Elite = i % 20 == 0 })!;
+            b.KillEnemy(e, true, null);
+        }
+        foreach (var k in b.Pickups.Living()) { if (k.Kind == PickupKind.Gold) gold++; if (k.Kind == PickupKind.Item) items++; }
+        // 380 footpads at the day's rate would drop about 250 purses; 20 champions keep theirs.
+        Assert.InRange(gold, 1, 40);
+        Assert.Equal(0, items);
+    }
+
+    /// <summary>The story's nights are twenty minutes: the same night told quicker. Its boss comes at
+    /// the twentieth minute, the ember comes half again as fast, and when the boss falls the night
+    /// is over: no long night after it, its people drawing back.</summary>
+    [Fact]
+    public void A_story_night_is_twenty_minutes_and_ends_on_its_boss()
+    {
+        var spec = Spec(story: true);
+        spec.Minutes = 20;
+        var s = Make(spec);
+        s.B.Player.Iframes = 1e9;
+        s.B.AddWeapon("seeking_motes", 2);
+        s.B.AddBoon("might");
+        Assert.Equal(1.5, s.B.Rules.EmberGain, 6);
+        s.B.Time = 19.99 * 60;
+        Run(s, 1);
+        Assert.NotNull(s.Host.Boss);
+        Assert.Contains(s.Host.Announced, a => a.Kicker == "The dead of night");
+        Defeat(s);
+        Assert.True(s.Zone.Won);
+        Assert.Equal(1.0, s.B.Rules.EmberGain, 6);
+        Run(s, 6 * 60 + 30);
+        Assert.DoesNotContain(s.Host.Announced, a => a.Kicker == "The long night");
+        Assert.True(Hostile(s.B) < 20, $"{Hostile(s.B)} still in the field");
+    }
+
     [Fact]
     public void Fallen_after_the_win_it_is_still_won()
     {
@@ -374,6 +503,24 @@ public class ArenaTests
         Assert.False(s.J.World.Fact("test.lost").Truthy);
         Assert.Empty(s.J.World.Rematches);
         Assert.Equal("won", s.J.World.Fact($"arena.{s.Spec.Id}").Str);
+    }
+
+    [Fact]
+    public void The_town_can_talk_about_the_last_night()
+    {
+        var s = Make(Spec("kerchiefs"));
+        s.B.Time = 12.5 * 60;
+        s.B.Player.Alive = false;
+        s.Zone.OnDeath("a Kerchief Bruiser");
+        Run(s, 3);
+        var w = s.J.World;
+        Assert.Equal("kerchiefs", w.Fact("arena.last.people").Str);
+        Assert.False(w.Fact("arena.last.won").Truthy);
+        Assert.True(w.Fact("arena.last.fell").Truthy);
+        Assert.Equal("a Kerchief Bruiser", w.Fact("arena.last.killer").Str);
+        Assert.Equal(12.5, w.Fact("arena.last.minutes").Number, 1);
+        Assert.Equal(1, w.Fact("arena.nights").Number);
+        Assert.Equal(1, w.Fact("arena.fell").Number);
     }
 
     [Fact]
@@ -420,12 +567,28 @@ public class ArenaTests
         Assert.Equal(level, s.J.Ch.Level);
     }
 
+    /// <summary>A night opens close on the survivor, so she is seen, and the camera stands back
+    /// as the horde grows, so the fight is; the boss is framed from further still.</summary>
+    [Fact]
+    public void The_camera_opens_close_and_stands_back_as_the_horde_grows()
+    {
+        var s = Make(Spec());
+        s.B.Player.Iframes = 1e9;
+        Run(s, 10);
+        Assert.InRange(s.Zone.CameraDistance, 22, 24);
+        s.B.Time = 22 * 60;
+        Run(s, 40);
+        Assert.True(Hostile(s.B) > 90, $"{Hostile(s.B)} alive");
+        Assert.InRange(s.Zone.CameraDistance, 24.5, 31);
+    }
+
     [Fact]
     public void Nothing_carries_the_survivor_out_of_the_arena()
     {
         var s = Make(Spec());
         Assert.NotNull(s.B.InBounds);
         Assert.False(s.B.InBounds!(140, 0));
-        Assert.Equal((64.0, 31.0), s.Zone.Camera);
+        // It opens close on the survivor; the camera pulls back as the horde grows (CameraDistance).
+        Assert.Equal((64.0, 22.0), s.Zone.Camera);
     }
 }

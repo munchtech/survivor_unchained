@@ -16,8 +16,22 @@ namespace SurvivorUnchained.View;
 public partial class CrowdView : Node3D
 {
     const double RiseTime = 1.1;
-    const double CorpseLie = 16, CorpseSink = 3;
-    const int CorpseMax = 160;
+    // The dead lie longer where there are few of them (the story's fights) and are taken back
+    // sooner in a horde, where the living must stand out (docs/EXPERIENCE_AUDIT.md, finding 3).
+    const double CorpseLie = 18, CorpseLieCrowded = 8, CorpseSink = 2.5;
+    /// <summary>The most bodies left lying (fewer at the lower qualities).</summary>
+    public int CorpseMax = 160;
+    bool shadows = true;
+    /// <summary>Whether the crowd casts shadows (not at the lowest quality).</summary>
+    public bool Shadows
+    {
+        get => shadows;
+        set
+        {
+            shadows = value;
+            foreach (var c in crowds.Values) c.CastShadow = value ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off;
+        }
+    }
 
     /// <summary>A creature's own walk clock and heading, kept between frames.</summary>
     sealed class Gait
@@ -53,6 +67,7 @@ public partial class CrowdView : Node3D
     {
         if (crowds.TryGetValue(visual, out var c)) return c;
         c = new VatCrowd(Vat.Of(Visuals.Of(visual), this));
+        if (!shadows) c.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
         AddChild(c);
         crowds[visual] = c;
         return c;
@@ -74,7 +89,7 @@ public partial class CrowdView : Node3D
         living = 0;
         foreach (var e in b.Enemies.Items)
         {
-            if (!e.Alive || e.Def.Visual.StartsWith("view:")) continue;
+            if (!e.Alive || e.Def.Visual.StartsWith("view:", StringComparison.Ordinal)) continue;
             Draw(e, heightAt);
         }
         // The dead after the living.
@@ -149,8 +164,12 @@ public partial class CrowdView : Node3D
                 {
                     // Its own walk clock, run faster or slower with its pace:
                     // time times pace would leap to a new pose at every change of speed.
+                    // A walk whose pace is known keeps its feet on the ground at any size and speed.
                     role = "move";
-                    g.Phase += dt * Math.Clamp(speed / Math.Max(0.5, e.Def.Speed), 0.6, 1.6);
+                    double size = (e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual);
+                    g.Phase += dt * (asset.Pace > 0
+                        ? Math.Clamp(speed / (asset.Pace * size), 0.5, 1.8)
+                        : Math.Clamp(speed / Math.Max(0.5, e.Def.Speed), 0.6, 1.6));
                     t = g.Phase;
                 }
                 else { role = "idle"; t = time + e.Seed * 9; }
@@ -173,6 +192,9 @@ public partial class CrowdView : Node3D
         float frozen = e.Status.Has(StatusKind.Frozen) ? 1 : e.Status[StatusKind.Chill] is { } chill ? (float)Math.Min(0.5, chill.Stacks * 0.09) : 0;
         float burning = e.Status.Has(StatusKind.Burn) ? 1 : 0;
         var (tint, glow) = Visuals.Tint(e.Def.Visual);
+        // A kind's own colour on a shared rig, and a champion's Signs (combat's, agreed with animation).
+        if (e.Def.Tint is var (tr, tg, tb)) tint *= new Color((float)tr, (float)tg, (float)tb);
+        if (e.Def.Glow is { } dg) glow = Math.Max(glow, (float)dg);
         if (e.Elite) { glow = Math.Max(glow, 0.05f); tint *= new Color(1.08f, 1.02f, 0.92f); }
         if (e.Named != null) { glow = 0.25f; tint *= new Color(1.3f, 0.75f, 0.6f); }
         if (e.Disposition == Disposition.Neutral && !e.Provoked) tint *= new Color(0.95f, 0.95f, 0.95f);
@@ -191,22 +213,28 @@ public partial class CrowdView : Node3D
     {
         if (!laidOut.Add((e.Id, e.Seed))) return;
         var (tint, glow) = Visuals.Tint(e.Def.Visual);
+        if (e.Def.Tint is var (tr, tg, tb)) tint *= new Color((float)tr, (float)tg, (float)tb);
+        if (e.Def.Glow is { } dg) glow = Math.Max(glow, (float)dg);
         corpses.Add(new Corpse(e.Def.Visual, (float)e.X, (float)e.Z, (float)facing, (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time));
-        if (corpses.Count > CorpseMax) corpses.RemoveAt(0);
+        while (corpses.Count > CorpseMax) corpses.RemoveAt(0);
     }
 
     void DrawCorpses(Func<double, double, double> heightAt)
     {
-        corpses.RemoveAll(c => time - c.Born >= CorpseLie + CorpseSink);
+        double lie = CorpseLieCrowded + (CorpseLie - CorpseLieCrowded) * Math.Clamp(1 - (corpses.Count - 30) / 70.0, 0, 1);
+        corpses.RemoveAll(c => time - c.Born >= lie + CorpseSink);
         foreach (var c in corpses)
         {
             var crowd = Crowd(c.Visual);
             double age = time - c.Born;
-            float sink = Smooth(age, CorpseLie, CorpseLie + CorpseSink);
+            float sink = Smooth(age, lie, lie + CorpseSink);
             var at = new Vector3(c.X, (float)heightAt(c.X, c.Z) - sink * 1.1f * c.Scale, c.Z);
             var basis = new Godot.Basis(Vector3.Up, Mathf.Pi / 2 - c.Facing) * Godot.Basis.FromScale(Vector3.One * c.Scale);
-            // Dead flesh greys a little as it lies.
-            var tint = c.Tint * (1 - (float)Math.Min(0.25, age * 0.02));
+            // The dead go dark and a little cold as soon as they are down, so the living read
+            // at a glance against them (the risen are pale: a body the same grey as the walking
+            // ones made the horde twice its size). Then they darken on as they lie.
+            float k = 1 - 0.5f * Smooth(age, 0.3, 1.3) - 0.15f * Smooth(age, 1.3, lie);
+            var tint = c.Tint * new Color(k * 0.88f, k * 0.92f, k, 1);
             tint.A = 1;
             crowd.Push(new Transform3D(basis, at), "die", crowd.Asset.Duration("die") * 0.999, 0, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0, 0, 0, tint, c.Glow);
         }
