@@ -223,6 +223,16 @@
 		"loop": false,
 		"source": "keyed (tools/anim)"
 	},
+	"leap": {
+		"changes": "retargeted to her skeleton, feet locked, retimed, in place",
+		"layer": "full",
+		"length": 1.10000002384186,
+		"licence": "Mixamo (Adobe)",
+		"loop": false,
+		"note": "Mixamo 'Standing Melee Run Jump Attack' (axe running jump attack), the flight retimed to the art's",
+		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: run_jump_attack.bvh",
+		"speed": 0.0
+	},
 	"reaver_show": {
 		"layer": "full",
 		"length": 2.40000009536743,
