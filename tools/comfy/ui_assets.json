@@ -1,122 +1,1149 @@
 {
-  "_": "Every piece of painted interface art the game loads (godot/src/Ui/UiArt.cs), with where it goes, the size of the file (twice the size shown, for 4K), its nine-slice margins in shown pixels, how it is cut, and a prompt to start from. Read by tools/comfy/ui_art.py; specified in docs/UI_ART_BRIEF.md.",
-  "style": "Dark fantasy video game user interface asset, front orthographic view, centred on a pure black background, hand-painted forged blackened iron with thin inlaid gold filigree, worn and battle-scarred, soft light from the upper left, AAA game UI art in the style of Diablo IV and Hades, crisp edges, no text, no letters, no numbers.",
-  "assets": [
-    {"id": "plate", "file": "frames/plate.png", "size": [512, 512], "margins": [28, 28, 28, 28], "kind": "frame", "aspect": "1:1 (Square)",
-     "prompt": "An empty square window frame: a dark iron border with riveted corner plates shaped like small shield bosses, a thin gold inlay line running inside the border, the inside plain flat dark charcoal iron with faint hammer marks, symmetrical."},
-    {"id": "paper", "file": "frames/paper.png", "size": [512, 512], "margins": [32, 32, 32, 32], "kind": "frame", "aspect": "1:1 (Square)",
-     "prompt": "An empty sheet of old warm cream parchment with a deckled, slightly burnt and darkened edge, faint foxing, the middle clean and even for writing, flat lay, symmetrical."},
-    {"id": "tooltip", "file": "frames/tooltip.png", "size": [256, 256], "margins": [16, 16, 16, 16], "kind": "frame", "aspect": "1:1 (Square)",
-     "prompt": "An empty small square tooltip frame: very dark smooth iron, a single thin gold hairline border with tiny corner studs, the inside nearly black and perfectly plain."},
-    {"id": "tooltip_worn", "file": "frames/tooltip_worn.png", "size": [256, 256], "margins": [16, 16, 16, 16], "kind": "frame", "aspect": "1:1 (Square)",
-     "prompt": "An empty small square tooltip frame: very dark smooth iron, a dull pewter grey hairline border with tiny corner studs, quieter and flatter than gold, the inside nearly black and plain."},
-    {"id": "button", "file": "frames/button.png", "size": [192, 64], "margins": [12, 10, 12, 10], "kind": "frame", "aspect": "3:2 (Photo)",
-     "prompt": "A wide flat rectangular button plate of dark violet-black iron with a thin gold rim and softly bevelled edges, plain inside, symmetrical."},
-    {"id": "button_hover", "file": "frames/button_hover.png", "size": [192, 64], "margins": [12, 10, 12, 10], "kind": "frame", "aspect": "3:2 (Photo)",
-     "prompt": "A wide flat rectangular button plate of dark iron, slightly lighter, with a bright warm gold rim catching the light, a faint ember glow along the inner edge, plain inside, symmetrical."},
-    {"id": "button_pressed", "file": "frames/button_pressed.png", "size": [192, 64], "margins": [12, 10, 12, 10], "kind": "frame", "aspect": "3:2 (Photo)",
-     "prompt": "A wide flat rectangular button plate of dark iron pressed in, inner shadow along the top edge, bright gold rim, plain inside, symmetrical."},
-    {"id": "button_disabled", "file": "frames/button_disabled.png", "size": [192, 64], "margins": [12, 10, 12, 10], "kind": "frame", "aspect": "3:2 (Photo)",
-     "prompt": "A wide flat rectangular button plate of dull grey-black iron with a faded tarnished rim, matte and lifeless, plain inside, symmetrical."},
-    {"id": "button_primary", "file": "frames/button_primary.png", "size": [192, 64], "margins": [12, 10, 12, 10], "kind": "frame", "aspect": "3:2 (Photo)",
-     "prompt": "A wide flat rectangular button plate of dark bronze with a glowing ember-orange core seam and a gold rim, warm and inviting, plain inside, symmetrical."},
-    {"id": "button_primary_hover", "file": "frames/button_primary_hover.png", "size": [192, 64], "margins": [12, 10, 12, 10], "kind": "frame", "aspect": "3:2 (Photo)",
-     "prompt": "A wide flat rectangular button plate of dark bronze glowing brighter, ember light rising from the inner edges, a bright gold rim, plain inside, symmetrical."},
-    {"id": "button_primary_pressed", "file": "frames/button_primary_pressed.png", "size": [192, 64], "margins": [12, 10, 12, 10], "kind": "frame", "aspect": "3:2 (Photo)",
-     "prompt": "A wide flat rectangular button plate of dark bronze pressed in, a hot ember glow, inner shadow at the top, bright gold rim, plain inside, symmetrical."},
-    {"id": "segment_on", "file": "frames/segment_on.png", "size": [128, 48], "margins": [10, 8, 10, 8], "kind": "frame", "aspect": "3:2 (Photo)",
-     "prompt": "A small flat pill-shaped tag of polished warm gold leaf over iron, softly bevelled, plain and bright inside so dark letters read on it, symmetrical."},
-    {"id": "tab", "file": "frames/tab.png", "size": [160, 72], "margins": [14, 10, 14, 6], "kind": "frame", "aspect": "3:2 (Photo)",
-     "prompt": "A ledger tab of dark iron and old leather, rounded at the top corners and flat at the bottom, a thin gold edge, plain inside."},
-    {"id": "tab_on", "file": "frames/tab_on.png", "size": [160, 72], "margins": [14, 10, 14, 6], "kind": "frame", "aspect": "3:2 (Photo)",
-     "prompt": "A ledger tab of warm dark bronze, rounded at the top corners and flat at the bottom, a bright gold edge and a faint ember glow, plain inside."},
-    {"id": "row_on", "file": "frames/row_on.png", "size": [512, 96], "margins": [12, 10, 12, 10], "kind": "frame", "aspect": "16:9 (Widescreen)",
-     "prompt": "A long flat chosen-row plate of dark warm brown iron with a bright gold border and a soft ember glow at both ends, plain inside."},
-    {"id": "keycap", "file": "frames/keycap.png", "size": [48, 48], "margins": [6, 6, 6, 6], "kind": "frame", "aspect": "1:1 (Square)",
-     "prompt": "A single small square keyboard key cap of black iron with a thin dim gold edge, slightly domed, plain face, front view."},
-    {"id": "focus", "file": "frames/focus.png", "size": [128, 128], "margins": [14, 14, 14, 14], "kind": "frame", "aspect": "1:1 (Square)",
-     "prompt": "A square selection ring of glowing ember-gold light, thin bright line with a soft warm glow around it, the inside completely empty and black, small bright sparks at the four corners."},
-    {"id": "slot", "file": "frames/slot.png", "size": [160, 160], "margins": [10, 10, 10, 10], "kind": "frame", "aspect": "1:1 (Square)",
-     "prompt": "An empty square inventory slot sunk into dark iron, a recessed well with an inner shadow, a thin dim iron rim, plain dark inside."},
-    {"id": "slot_0", "file": "frames/slot_common.png", "size": [160, 160], "margins": [10, 10, 10, 10], "kind": "frame", "aspect": "1:1 (Square)",
-     "prompt": "An empty square inventory slot sunk into dark iron with a thin pale bone-grey inner rim, plain dark inside."},
-    {"id": "slot_1", "file": "frames/slot_uncommon.png", "size": [160, 160], "margins": [10, 10, 10, 10], "kind": "frame", "aspect": "1:1 (Square)",
-     "prompt": "An empty square inventory slot sunk into dark iron with a thin moss-green inner rim and the faintest green glow inside the corners, plain dark inside."},
-    {"id": "slot_2", "file": "frames/slot_rare.png", "size": [160, 160], "margins": [10, 10, 10, 10], "kind": "frame", "aspect": "1:1 (Square)",
-     "prompt": "An empty square inventory slot sunk into dark iron with a cold sapphire-blue inner rim and a faint blue glow in the corners, plain dark inside."},
-    {"id": "slot_3", "file": "frames/slot_epic.png", "size": [160, 160], "margins": [10, 10, 10, 10], "kind": "frame", "aspect": "1:1 (Square)",
-     "prompt": "An empty square inventory slot sunk into dark iron with a violet amethyst inner rim, small violet gems at the corners and a violet glow, plain dark inside."},
-    {"id": "slot_4", "file": "frames/slot_legendary.png", "size": [160, 160], "margins": [10, 10, 10, 10], "kind": "frame", "aspect": "1:1 (Square)",
-     "prompt": "An empty square inventory slot sunk into dark iron with an ornate burnished amber-orange rim, small flame-shaped corner pieces and a warm orange glow, plain dark inside."},
-    {"id": "slot_5", "file": "frames/slot_relic.png", "size": [160, 160], "margins": [10, 10, 10, 10], "kind": "frame", "aspect": "1:1 (Square)",
-     "prompt": "An empty square inventory slot sunk into dark iron with a cracked blood-orange rim leaking ember light through the cracks, small corner sigils, plain dark inside."},
-    {"id": "card_0", "file": "frames/card_common.png", "size": [640, 904], "margins": [40, 56, 40, 40], "kind": "frame", "aspect": "3:4 (Portrait Standard)",
-     "prompt": "An empty tall card frame for a level-up choice: blackened iron border with a thin bone-grey inlay, a small dark gem at the top centre, plain dark inside, symmetrical."},
-    {"id": "card_1", "file": "frames/card_uncommon.png", "size": [640, 904], "margins": [40, 56, 40, 40], "kind": "frame", "aspect": "3:4 (Portrait Standard)",
-     "prompt": "An empty tall card frame: blackened iron border with moss-green inlay and thorny vine corners, a small green gem at the top centre, plain dark inside, symmetrical."},
-    {"id": "card_2", "file": "frames/card_rare.png", "size": [640, 904], "margins": [40, 56, 40, 40], "kind": "frame", "aspect": "3:4 (Portrait Standard)",
-     "prompt": "An empty tall card frame: blackened iron border with cold sapphire-blue inlay and frost-edged corners, a blue gem at the top centre, plain dark inside, symmetrical."},
-    {"id": "card_3", "file": "frames/card_epic.png", "size": [640, 904], "margins": [40, 56, 40, 40], "kind": "frame", "aspect": "3:4 (Portrait Standard)",
-     "prompt": "An empty tall card frame: blackened iron border with violet inlay, ornate corner filigree and a glowing amethyst at the top centre, plain dark inside, symmetrical."},
-    {"id": "card_4", "file": "frames/card_legendary.png", "size": [640, 904], "margins": [40, 56, 40, 40], "kind": "frame", "aspect": "3:4 (Portrait Standard)",
-     "prompt": "An empty tall card frame: blackened iron border with rich burnished gold and amber filigree, flame-wrought corners, a glowing ember gem at the top centre, plain dark inside, symmetrical."},
-    {"id": "card_evolve", "file": "frames/card_evolution.png", "size": [640, 904], "margins": [40, 56, 40, 40], "kind": "frame", "aspect": "3:4 (Portrait Standard)",
-     "prompt": "An empty tall card frame: gilded gold border with a broken chain worked around it, ember light pouring from the breaks, a radiant sun-gem at the top centre, plain dark inside, symmetrical."},
-    {"id": "toast", "file": "frames/toast.png", "size": [256, 96], "margins": [14, 10, 10, 10], "kind": "frame", "aspect": "16:9 (Widescreen)",
-     "prompt": "A small wide notification plate of dark iron, darker at the right where it fades, a thin gold edge, plain inside."},
-    {"id": "prompt", "file": "frames/prompt.png", "size": [256, 80], "margins": [22, 12, 22, 12], "kind": "frame", "aspect": "16:9 (Widescreen)",
-     "prompt": "A small rounded pill-shaped plate of dark iron with a thin gold rim and rounded ends, plain inside, symmetrical."},
-    {"id": "hint", "file": "frames/hint.png", "size": [512, 256], "margins": [16, 16, 16, 16], "kind": "frame", "aspect": "16:9 (Widescreen)",
-     "prompt": "A small note of warm cream parchment pinned at the top left corner by an iron tack, deckled darker edges, the middle clean for writing."},
-    {"id": "chip", "file": "frames/chip.png", "size": [64, 64], "margins": [8, 8, 8, 8], "kind": "frame", "aspect": "1:1 (Square)",
-     "prompt": "A small round-cornered dark iron badge with a thin dim gold rim, plain dark inside."},
-    {"id": "weapon_slot", "file": "frames/weapon_slot.png", "size": [134, 134], "margins": [12, 12, 12, 12], "kind": "frame", "aspect": "1:1 (Square)",
-     "prompt": "A square skill slot of dark iron with bevelled edges, a thin gold rim and small rivets at the corners, a recessed plain dark centre."},
-    {"id": "map_frame", "file": "frames/map_frame.png", "size": [256, 256], "margins": [20, 20, 20, 20], "kind": "frame", "aspect": "1:1 (Square)",
-     "prompt": "A square frame of dark carved wood with brass corner caps, like the frame of a pinned map on a table, the inside plain warm parchment."},
-    {"id": "bar_track", "file": "bars/track.png", "size": [128, 32], "margins": [8, 6, 8, 6], "kind": "frame", "aspect": "16:9 (Widescreen)",
-     "prompt": "An empty long thin recessed bar groove in dark iron, rounded ends with small gold caps, the inside empty and black."},
-    {"id": "bar_track_boss", "file": "bars/track_boss.png", "size": [256, 40], "margins": [24, 8, 24, 8], "kind": "frame", "aspect": "16:9 (Widescreen)",
-     "prompt": "An empty long boss health bar casing of black iron with horned skull end caps and red-gold trim, the inside empty and black."},
-    {"id": "ember_fill", "file": "bars/ember_fill.png", "size": [128, 20], "kind": "strip", "aspect": "16:9 (Widescreen)",
-     "prompt": "A seamless horizontal strip of glowing molten ember, orange and gold, slow swirling fire, tileable left to right, filling the frame edge to edge."},
-    {"id": "experience_fill", "file": "bars/experience_fill.png", "size": [128, 20], "kind": "strip", "aspect": "16:9 (Widescreen)",
-     "prompt": "A seamless horizontal strip of pale moonlit blue light with faint drifting motes, cool and calm, tileable left to right, filling the frame edge to edge."},
-    {"id": "health_fill", "file": "bars/health_fill.png", "size": [128, 48], "kind": "strip", "aspect": "16:9 (Widescreen)",
-     "prompt": "A seamless horizontal strip of deep glossy blood red liquid, brighter at the top edge, darker at the bottom, tileable left to right, filling the frame edge to edge."},
-    {"id": "medal_level", "file": "hud/medal_level.png", "size": [140, 140], "kind": "cut", "aspect": "1:1 (Square)",
-     "prompt": "A round medallion of blackened iron with a gold rim and a smouldering ember-orange core, the centre flat and dark enough for a number, front view."},
-    {"id": "medal_heart", "file": "hud/medal_heart.png", "size": [128, 128], "kind": "cut", "aspect": "1:1 (Square)",
-     "prompt": "A round medallion of blackened iron with a gold rim and a deep red anatomical heart in relief at its centre, front view."},
-    {"id": "ring_art", "file": "hud/ring_art.png", "size": [200, 200], "kind": "cut", "aspect": "1:1 (Square)",
-     "prompt": "A thick round ring of blackened iron with gold inlay and four small runes at the quarters, the centre a perfectly empty black hole, front view."},
-    {"id": "minimap_frame", "file": "minimap/frame.png", "size": [480, 480], "kind": "cut", "aspect": "1:1 (Square)",
-     "prompt": "An empty circular minimap frame ring: a thick round band of blackened iron with gold inlay, four small compass studs at north east south west, the north stud a small gold arrowhead, the centre empty and pure black."},
-    {"id": "minimap_you", "file": "minimap/you.png", "size": [48, 48], "kind": "cut", "aspect": "1:1 (Square)",
-     "prompt": "A small blood-red arrowhead pointing straight up, iron edged, like a map pin, front view."},
-    {"id": "rule", "file": "ornaments/rule.png", "size": [960, 24], "kind": "cut", "aspect": "21:9 (Ultrawide)",
-     "prompt": "A thin horizontal gold filigree divider line that fades out at both ends, a small ember gem in the middle."},
-    {"id": "flourish", "file": "ornaments/flourish.png", "size": [720, 64], "kind": "cut", "aspect": "21:9 (Ultrawide)",
-     "prompt": "An ornate symmetrical gold filigree flourish for under a heading, scrolling vines meeting at a small broken chain link in the middle."},
-    {"id": "logo", "file": "title/logo.png", "size": [1400, 440], "kind": "cut", "aspect": "21:9 (Ultrawide)", "style": false,
-     "prompt": "A dark fantasy game title logo reading \"SURVIVOR UNCHAINED\" in carved gold Roman capital letters with a broken iron chain worked through the letters, glowing embers, on black."},
-    {"id": "cursor_pointer", "file": "cursors/pointer.png", "size": [32, 32], "kind": "cut", "aspect": "1:1 (Square)", "full": true,
-     "prompt": "A small dark fantasy mouse pointer: a gauntleted iron arrow tip pointing to the upper left, gold edge, crisp."},
-    {"id": "cursor_hand", "file": "cursors/hand.png", "size": [32, 32], "kind": "cut", "aspect": "1:1 (Square)", "full": true,
-     "prompt": "A small dark fantasy pointing hand cursor in an iron gauntlet, the index finger pointing up, gold edge, crisp."},
-    {"id": "cursor_forbidden", "file": "cursors/forbidden.png", "size": [32, 32], "kind": "cut", "aspect": "1:1 (Square)", "full": true,
-     "prompt": "A small round iron ring with a red slash across it, a forbidden sign, crisp."}
-  ],
-  "icon_sets": {
-    "glyph": {"dir": "icons/glyph", "size": [256, 256], "tint": "white value art; the code colours it",
-      "prompt": "A single bold dark fantasy game icon of {name}, painted in light greys and white only on a pure black background, strong clean silhouette, no frame, no text."},
-    "glyph_color": {"dir": "icons/glyph_color", "size": [256, 256], "tint": "full colour; greyed by the code when not ready",
-      "prompt": "A single bold dark fantasy game skill icon of {name}, hand painted, glowing, strong clean silhouette, on a pure black background, no frame, no text, in the style of Diablo IV skill icons."},
-    "item": {"dir": "icons/item", "size": [256, 256], "tint": "full colour",
-      "prompt": "A single dark fantasy game item icon of {name}, hand painted, three-quarter view, soft light from the upper left, on a pure black background, no frame, no text, in the style of Diablo IV item icons."},
-    "map": {"dir": "icons/map", "size": [64, 64], "tint": "full colour",
-      "prompt": "A tiny map marker icon of {name} drawn in dark brown ink on a pale parchment disc, bold and simple, front view."},
-    "prompt": {"dir": "icons/prompt", "size": [68, 52], "tint": "full colour",
-      "prompt": "A game controller button prompt icon: {name}, dark rounded button, clean and flat, front view, on a pure black background."}
+ "_": "Every piece of painted interface art the game loads (godot/src/Ui/UiArt.cs), with where it goes, the size of the file (twice the size shown, for 4K), its nine-slice margins in shown pixels, how it is cut, and a prompt to start from. Read by tools/comfy/ui_art.py; specified in docs/UI_ART_BRIEF.md. Since the art pass: every asset is made by tools/uiforge/build.py (see docs/UI_ART_BRIEF.md 2.6); 'out' is how far a frame reaches past its control (UiArt.Slice Out), 'clear' how far content keeps from the edge, 'tile' that its edges and middle repeat.",
+ "style": "Dark fantasy video game user interface asset, front orthographic view, centred on a pure black background, hand-painted forged blackened iron with thin inlaid gold filigree, worn and battle-scarred, soft light from the upper left, AAA game UI art in the style of Diablo IV and Hades, crisp edges, no text, no letters, no numbers.",
+ "assets": [
+  {
+   "id": "plate",
+   "file": "frames/plate.png",
+   "size": [
+    512,
+    512
+   ],
+   "margins": [
+    64,
+    64,
+    64,
+    64
+   ],
+   "kind": "frame",
+   "aspect": "1:1 (Square)",
+   "prompt": "An empty square window frame: a dark iron border with riveted corner plates shaped like small shield bosses, a thin gold inlay line running inside the border, the inside plain flat dark charcoal iron with faint hammer marks, symmetrical.",
+   "out": 12,
+   "clear": 21,
+   "tile": true,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "paper",
+   "file": "frames/paper.png",
+   "size": [
+    512,
+    512
+   ],
+   "margins": [
+    32,
+    32,
+    32,
+    32
+   ],
+   "kind": "frame",
+   "aspect": "1:1 (Square)",
+   "prompt": "An empty sheet of old warm cream parchment with a deckled, slightly burnt and darkened edge, faint foxing, the middle clean and even for writing, flat lay, symmetrical.",
+   "tile": true,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "tooltip",
+   "file": "frames/tooltip.png",
+   "size": [
+    256,
+    256
+   ],
+   "margins": [
+    16,
+    16,
+    16,
+    16
+   ],
+   "kind": "frame",
+   "aspect": "1:1 (Square)",
+   "prompt": "An empty small square tooltip frame: very dark smooth iron, a single thin gold hairline border with tiny corner studs, the inside nearly black and perfectly plain.",
+   "tile": true,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "tooltip_worn",
+   "file": "frames/tooltip_worn.png",
+   "size": [
+    256,
+    256
+   ],
+   "margins": [
+    16,
+    16,
+    16,
+    16
+   ],
+   "kind": "frame",
+   "aspect": "1:1 (Square)",
+   "prompt": "An empty small square tooltip frame: very dark smooth iron, a dull pewter grey hairline border with tiny corner studs, quieter and flatter than gold, the inside nearly black and plain.",
+   "tile": true,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "button",
+   "file": "frames/button.png",
+   "size": [
+    192,
+    64
+   ],
+   "margins": [
+    12,
+    10,
+    12,
+    10
+   ],
+   "kind": "frame",
+   "aspect": "3:2 (Photo)",
+   "prompt": "A wide flat rectangular button plate of dark violet-black iron with a thin gold rim and softly bevelled edges, plain inside, symmetrical.",
+   "tile": true,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "button_hover",
+   "file": "frames/button_hover.png",
+   "size": [
+    192,
+    64
+   ],
+   "margins": [
+    12,
+    10,
+    12,
+    10
+   ],
+   "kind": "frame",
+   "aspect": "3:2 (Photo)",
+   "prompt": "A wide flat rectangular button plate of dark iron, slightly lighter, with a bright warm gold rim catching the light, a faint ember glow along the inner edge, plain inside, symmetrical.",
+   "tile": true,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "button_pressed",
+   "file": "frames/button_pressed.png",
+   "size": [
+    192,
+    64
+   ],
+   "margins": [
+    12,
+    10,
+    12,
+    10
+   ],
+   "kind": "frame",
+   "aspect": "3:2 (Photo)",
+   "prompt": "A wide flat rectangular button plate of dark iron pressed in, inner shadow along the top edge, bright gold rim, plain inside, symmetrical.",
+   "tile": true,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "button_disabled",
+   "file": "frames/button_disabled.png",
+   "size": [
+    192,
+    64
+   ],
+   "margins": [
+    12,
+    10,
+    12,
+    10
+   ],
+   "kind": "frame",
+   "aspect": "3:2 (Photo)",
+   "prompt": "A wide flat rectangular button plate of dull grey-black iron with a faded tarnished rim, matte and lifeless, plain inside, symmetrical.",
+   "tile": true,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "button_primary",
+   "file": "frames/button_primary.png",
+   "size": [
+    192,
+    64
+   ],
+   "margins": [
+    12,
+    10,
+    12,
+    10
+   ],
+   "kind": "frame",
+   "aspect": "3:2 (Photo)",
+   "prompt": "A wide flat rectangular button plate of dark bronze with a glowing ember-orange core seam and a gold rim, warm and inviting, plain inside, symmetrical.",
+   "tile": true,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "button_primary_hover",
+   "file": "frames/button_primary_hover.png",
+   "size": [
+    192,
+    64
+   ],
+   "margins": [
+    12,
+    10,
+    12,
+    10
+   ],
+   "kind": "frame",
+   "aspect": "3:2 (Photo)",
+   "prompt": "A wide flat rectangular button plate of dark bronze glowing brighter, ember light rising from the inner edges, a bright gold rim, plain inside, symmetrical.",
+   "tile": true,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "button_primary_pressed",
+   "file": "frames/button_primary_pressed.png",
+   "size": [
+    192,
+    64
+   ],
+   "margins": [
+    12,
+    10,
+    12,
+    10
+   ],
+   "kind": "frame",
+   "aspect": "3:2 (Photo)",
+   "prompt": "A wide flat rectangular button plate of dark bronze pressed in, a hot ember glow, inner shadow at the top, bright gold rim, plain inside, symmetrical.",
+   "tile": true,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "segment_on",
+   "file": "frames/segment_on.png",
+   "size": [
+    128,
+    48
+   ],
+   "margins": [
+    10,
+    8,
+    10,
+    8
+   ],
+   "kind": "frame",
+   "aspect": "3:2 (Photo)",
+   "prompt": "A small flat pill-shaped tag of polished warm gold leaf over iron, softly bevelled, plain and bright inside so dark letters read on it, symmetrical.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "tab",
+   "file": "frames/tab.png",
+   "size": [
+    160,
+    72
+   ],
+   "margins": [
+    14,
+    10,
+    14,
+    6
+   ],
+   "kind": "frame",
+   "aspect": "3:2 (Photo)",
+   "prompt": "A ledger tab of dark iron and old leather, rounded at the top corners and flat at the bottom, a thin gold edge, plain inside.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "tab_on",
+   "file": "frames/tab_on.png",
+   "size": [
+    160,
+    72
+   ],
+   "margins": [
+    14,
+    10,
+    14,
+    6
+   ],
+   "kind": "frame",
+   "aspect": "3:2 (Photo)",
+   "prompt": "A ledger tab of warm dark bronze, rounded at the top corners and flat at the bottom, a bright gold edge and a faint ember glow, plain inside.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "row_on",
+   "file": "frames/row_on.png",
+   "size": [
+    512,
+    96
+   ],
+   "margins": [
+    12,
+    10,
+    12,
+    10
+   ],
+   "kind": "frame",
+   "aspect": "16:9 (Widescreen)",
+   "prompt": "A long flat chosen-row plate of dark warm brown iron with a bright gold border and a soft ember glow at both ends, plain inside.",
+   "tile": true,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "keycap",
+   "file": "frames/keycap.png",
+   "size": [
+    48,
+    48
+   ],
+   "margins": [
+    6,
+    6,
+    6,
+    6
+   ],
+   "kind": "frame",
+   "aspect": "1:1 (Square)",
+   "prompt": "A single small square keyboard key cap of black iron with a thin dim gold edge, slightly domed, plain face, front view.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "focus",
+   "file": "frames/focus.png",
+   "size": [
+    128,
+    128
+   ],
+   "margins": [
+    14,
+    14,
+    14,
+    14
+   ],
+   "kind": "frame",
+   "aspect": "1:1 (Square)",
+   "prompt": "A square selection ring of glowing ember-gold light, thin bright line with a soft warm glow around it, the inside completely empty and black, small bright sparks at the four corners.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "slot",
+   "file": "frames/slot.png",
+   "size": [
+    160,
+    160
+   ],
+   "margins": [
+    10,
+    10,
+    10,
+    10
+   ],
+   "kind": "frame",
+   "aspect": "1:1 (Square)",
+   "prompt": "An empty square inventory slot sunk into dark iron, a recessed well with an inner shadow, a thin dim iron rim, plain dark inside.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "slot_0",
+   "file": "frames/slot_common.png",
+   "size": [
+    160,
+    160
+   ],
+   "margins": [
+    10,
+    10,
+    10,
+    10
+   ],
+   "kind": "frame",
+   "aspect": "1:1 (Square)",
+   "prompt": "An empty square inventory slot sunk into dark iron with a thin pale bone-grey inner rim, plain dark inside.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "slot_1",
+   "file": "frames/slot_uncommon.png",
+   "size": [
+    160,
+    160
+   ],
+   "margins": [
+    10,
+    10,
+    10,
+    10
+   ],
+   "kind": "frame",
+   "aspect": "1:1 (Square)",
+   "prompt": "An empty square inventory slot sunk into dark iron with a thin moss-green inner rim and the faintest green glow inside the corners, plain dark inside.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "slot_2",
+   "file": "frames/slot_rare.png",
+   "size": [
+    160,
+    160
+   ],
+   "margins": [
+    10,
+    10,
+    10,
+    10
+   ],
+   "kind": "frame",
+   "aspect": "1:1 (Square)",
+   "prompt": "An empty square inventory slot sunk into dark iron with a cold sapphire-blue inner rim and a faint blue glow in the corners, plain dark inside.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "slot_3",
+   "file": "frames/slot_epic.png",
+   "size": [
+    160,
+    160
+   ],
+   "margins": [
+    10,
+    10,
+    10,
+    10
+   ],
+   "kind": "frame",
+   "aspect": "1:1 (Square)",
+   "prompt": "An empty square inventory slot sunk into dark iron with a violet amethyst inner rim, small violet gems at the corners and a violet glow, plain dark inside.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "slot_4",
+   "file": "frames/slot_legendary.png",
+   "size": [
+    160,
+    160
+   ],
+   "margins": [
+    10,
+    10,
+    10,
+    10
+   ],
+   "kind": "frame",
+   "aspect": "1:1 (Square)",
+   "prompt": "An empty square inventory slot sunk into dark iron with an ornate burnished amber-orange rim, small flame-shaped corner pieces and a warm orange glow, plain dark inside.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "slot_5",
+   "file": "frames/slot_relic.png",
+   "size": [
+    160,
+    160
+   ],
+   "margins": [
+    10,
+    10,
+    10,
+    10
+   ],
+   "kind": "frame",
+   "aspect": "1:1 (Square)",
+   "prompt": "An empty square inventory slot sunk into dark iron with a cracked blood-orange rim leaking ember light through the cracks, small corner sigils, plain dark inside.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "card_0",
+   "file": "frames/card_common.png",
+   "size": [
+    736,
+    1000
+   ],
+   "margins": [
+    64,
+    80,
+    64,
+    64
+   ],
+   "kind": "frame",
+   "aspect": "3:4 (Portrait Standard)",
+   "prompt": "An empty tall card frame for a level-up choice: blackened iron border with a thin bone-grey inlay, a small dark gem at the top centre, plain dark inside, symmetrical.",
+   "out": 24,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "card_1",
+   "file": "frames/card_uncommon.png",
+   "size": [
+    736,
+    1000
+   ],
+   "margins": [
+    64,
+    80,
+    64,
+    64
+   ],
+   "kind": "frame",
+   "aspect": "3:4 (Portrait Standard)",
+   "prompt": "An empty tall card frame: blackened iron border with moss-green inlay and thorny vine corners, a small green gem at the top centre, plain dark inside, symmetrical.",
+   "out": 24,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "card_2",
+   "file": "frames/card_rare.png",
+   "size": [
+    736,
+    1000
+   ],
+   "margins": [
+    64,
+    80,
+    64,
+    64
+   ],
+   "kind": "frame",
+   "aspect": "3:4 (Portrait Standard)",
+   "prompt": "An empty tall card frame: blackened iron border with cold sapphire-blue inlay and frost-edged corners, a blue gem at the top centre, plain dark inside, symmetrical.",
+   "out": 24,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "card_3",
+   "file": "frames/card_epic.png",
+   "size": [
+    736,
+    1000
+   ],
+   "margins": [
+    64,
+    80,
+    64,
+    64
+   ],
+   "kind": "frame",
+   "aspect": "3:4 (Portrait Standard)",
+   "prompt": "An empty tall card frame: blackened iron border with violet inlay, ornate corner filigree and a glowing amethyst at the top centre, plain dark inside, symmetrical.",
+   "out": 24,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "card_4",
+   "file": "frames/card_legendary.png",
+   "size": [
+    736,
+    1000
+   ],
+   "margins": [
+    64,
+    80,
+    64,
+    64
+   ],
+   "kind": "frame",
+   "aspect": "3:4 (Portrait Standard)",
+   "prompt": "An empty tall card frame: blackened iron border with rich burnished gold and amber filigree, flame-wrought corners, a glowing ember gem at the top centre, plain dark inside, symmetrical.",
+   "out": 24,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "card_evolve",
+   "file": "frames/card_evolution.png",
+   "size": [
+    736,
+    1000
+   ],
+   "margins": [
+    64,
+    80,
+    64,
+    64
+   ],
+   "kind": "frame",
+   "aspect": "3:4 (Portrait Standard)",
+   "prompt": "An empty tall card frame: gilded gold border with a broken chain worked around it, ember light pouring from the breaks, a radiant sun-gem at the top centre, plain dark inside, symmetrical.",
+   "out": 24,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "toast",
+   "file": "frames/toast.png",
+   "size": [
+    256,
+    96
+   ],
+   "margins": [
+    14,
+    10,
+    10,
+    10
+   ],
+   "kind": "frame",
+   "aspect": "16:9 (Widescreen)",
+   "prompt": "A small wide notification plate of dark iron, darker at the right where it fades, a thin gold edge, plain inside.",
+   "tile": true,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "prompt",
+   "file": "frames/prompt.png",
+   "size": [
+    256,
+    80
+   ],
+   "margins": [
+    22,
+    12,
+    22,
+    12
+   ],
+   "kind": "frame",
+   "aspect": "16:9 (Widescreen)",
+   "prompt": "A small rounded pill-shaped plate of dark iron with a thin gold rim and rounded ends, plain inside, symmetrical.",
+   "tile": true,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "hint",
+   "file": "frames/hint.png",
+   "size": [
+    512,
+    256
+   ],
+   "margins": [
+    40,
+    40,
+    40,
+    40
+   ],
+   "kind": "frame",
+   "aspect": "16:9 (Widescreen)",
+   "prompt": "A small note of warm cream parchment pinned at the top left corner by an iron tack, deckled darker edges, the middle clean for writing.",
+   "clear": 14,
+   "tile": true,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "chip",
+   "file": "frames/chip.png",
+   "size": [
+    64,
+    64
+   ],
+   "margins": [
+    8,
+    8,
+    8,
+    8
+   ],
+   "kind": "frame",
+   "aspect": "1:1 (Square)",
+   "prompt": "A small round-cornered dark iron badge with a thin dim gold rim, plain dark inside.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "weapon_slot",
+   "file": "frames/weapon_slot.png",
+   "size": [
+    134,
+    134
+   ],
+   "margins": [
+    12,
+    12,
+    12,
+    12
+   ],
+   "kind": "frame",
+   "aspect": "1:1 (Square)",
+   "prompt": "A square skill slot of dark iron with bevelled edges, a thin gold rim and small rivets at the corners, a recessed plain dark centre.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "map_frame",
+   "file": "frames/map_frame.png",
+   "size": [
+    256,
+    256
+   ],
+   "margins": [
+    20,
+    20,
+    20,
+    20
+   ],
+   "kind": "frame",
+   "aspect": "1:1 (Square)",
+   "prompt": "A square frame of dark carved wood with brass corner caps, like the frame of a pinned map on a table, the inside plain warm parchment.",
+   "tile": true,
+   "out": 8,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "bar_track",
+   "file": "bars/track.png",
+   "size": [
+    128,
+    32
+   ],
+   "margins": [
+    8,
+    6,
+    8,
+    6
+   ],
+   "kind": "frame",
+   "aspect": "16:9 (Widescreen)",
+   "prompt": "An empty long thin recessed bar groove in dark iron, rounded ends with small gold caps, the inside empty and black.",
+   "tile": true,
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "bar_track_boss",
+   "file": "bars/track_boss.png",
+   "size": [
+    256,
+    40
+   ],
+   "margins": [
+    24,
+    8,
+    24,
+    8
+   ],
+   "kind": "frame",
+   "aspect": "16:9 (Widescreen)",
+   "prompt": "An empty long boss health bar casing of black iron with horned skull end caps and red-gold trim, the inside empty and black.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "ember_fill",
+   "file": "bars/ember_fill.png",
+   "size": [
+    512,
+    20
+   ],
+   "kind": "strip",
+   "aspect": "16:9 (Widescreen)",
+   "prompt": "A seamless horizontal strip of glowing molten ember, orange and gold, slow swirling fire, tileable left to right, filling the frame edge to edge.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "experience_fill",
+   "file": "bars/experience_fill.png",
+   "size": [
+    512,
+    20
+   ],
+   "kind": "strip",
+   "aspect": "16:9 (Widescreen)",
+   "prompt": "A seamless horizontal strip of pale moonlit blue light with faint drifting motes, cool and calm, tileable left to right, filling the frame edge to edge.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "health_fill",
+   "file": "bars/health_fill.png",
+   "size": [
+    512,
+    48
+   ],
+   "kind": "strip",
+   "aspect": "16:9 (Widescreen)",
+   "prompt": "A seamless horizontal strip of deep glossy blood red liquid, brighter at the top edge, darker at the bottom, tileable left to right, filling the frame edge to edge.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "medal_level",
+   "file": "hud/medal_level.png",
+   "size": [
+    116,
+    116
+   ],
+   "kind": "cut",
+   "aspect": "1:1 (Square)",
+   "prompt": "A round medallion of blackened iron with a gold rim and a smouldering ember-orange core, the centre flat and dark enough for a number, front view.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "medal_heart",
+   "file": "hud/medal_heart.png",
+   "size": [
+    128,
+    128
+   ],
+   "kind": "cut",
+   "aspect": "1:1 (Square)",
+   "prompt": "A round medallion of blackened iron with a gold rim and a deep red anatomical heart in relief at its centre, front view.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "ring_art",
+   "file": "hud/ring_art.png",
+   "size": [
+    220,
+    220
+   ],
+   "kind": "cut",
+   "aspect": "1:1 (Square)",
+   "prompt": "A thick round ring of blackened iron with gold inlay and four small runes at the quarters, the centre a perfectly empty black hole, front view.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "minimap_frame",
+   "file": "minimap/frame.png",
+   "size": [
+    480,
+    480
+   ],
+   "kind": "cut",
+   "aspect": "1:1 (Square)",
+   "prompt": "An empty circular minimap frame ring: a thick round band of blackened iron with gold inlay, four small compass studs at north east south west, the north stud a small gold arrowhead, the centre empty and pure black.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "minimap_you",
+   "file": "minimap/you.png",
+   "size": [
+    48,
+    48
+   ],
+   "kind": "cut",
+   "aspect": "1:1 (Square)",
+   "prompt": "A small blood-red arrowhead pointing straight up, iron edged, like a map pin, front view.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "rule",
+   "file": "ornaments/rule.png",
+   "size": [
+    960,
+    24
+   ],
+   "kind": "cut",
+   "aspect": "21:9 (Ultrawide)",
+   "prompt": "A thin horizontal gold filigree divider line that fades out at both ends, a small ember gem in the middle.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "flourish",
+   "file": "ornaments/flourish.png",
+   "size": [
+    720,
+    64
+   ],
+   "kind": "cut",
+   "aspect": "21:9 (Ultrawide)",
+   "prompt": "An ornate symmetrical gold filigree flourish for under a heading, scrolling vines meeting at a small broken chain link in the middle.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "logo",
+   "file": "title/logo.png",
+   "size": [
+    1400,
+    440
+   ],
+   "kind": "cut",
+   "aspect": "21:9 (Ultrawide)",
+   "style": false,
+   "prompt": "A dark fantasy game title logo reading \"SURVIVOR UNCHAINED\" in carved gold Roman capital letters with a broken iron chain worked through the letters, glowing embers, on black.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "cursor_pointer",
+   "file": "cursors/pointer.png",
+   "size": [
+    32,
+    32
+   ],
+   "kind": "cut",
+   "aspect": "1:1 (Square)",
+   "full": true,
+   "prompt": "A small dark fantasy mouse pointer: a gauntleted iron arrow tip pointing to the upper left, gold edge, crisp.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "cursor_hand",
+   "file": "cursors/hand.png",
+   "size": [
+    32,
+    32
+   ],
+   "kind": "cut",
+   "aspect": "1:1 (Square)",
+   "full": true,
+   "prompt": "A small dark fantasy pointing hand cursor in an iron gauntlet, the index finger pointing up, gold edge, crisp.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "cursor_forbidden",
+   "file": "cursors/forbidden.png",
+   "size": [
+    32,
+    32
+   ],
+   "kind": "cut",
+   "aspect": "1:1 (Square)",
+   "full": true,
+   "prompt": "A small round iron ring with a red slash across it, a forbidden sign, crisp.",
+   "made_by": "tools/uiforge/build.py"
+  },
+  {
+   "id": "bar_casing",
+   "file": "bars/casing.png",
+   "size": [
+    128,
+    48
+   ],
+   "margins": [
+    16,
+    8,
+    16,
+    8
+   ],
+   "out": 6,
+   "tile": true,
+   "kind": "frame",
+   "made_by": "tools/uiforge/build.py",
+   "prompt": "Forged iron round a bar's groove, hollow, the twisted wire along it, a rivet at each end (GameHud.Casing)."
+  },
+  {
+   "id": "bar_casing_boss",
+   "file": "bars/casing_boss.png",
+   "size": [
+    640,
+    128
+   ],
+   "margins": [
+    64,
+    24,
+    64,
+    24
+   ],
+   "out": 64,
+   "out_y": 24,
+   "tile": true,
+   "kind": "frame",
+   "made_by": "tools/uiforge/build.py",
+   "prompt": "The boss's bar: a channel of black iron with red-gold trim, a horned ram's skull at each end."
+  },
+  {
+   "id": "well",
+   "file": "frames/well.png",
+   "size": [
+    256,
+    256
+   ],
+   "margins": [
+    12,
+    12,
+    12,
+    12
+   ],
+   "kind": "frame",
+   "tile": true,
+   "aspect": "1:1 (Square)",
+   "prompt": "An empty sunken tray cut into blackened forged iron: the rim a thin lip of planished strap catching light along its foot, the floor flat and nearly black with faint hammer marks, no ornament, seen from the front.",
+   "where": "Grids and lists inside a plate: the pack's and stores' slot wells, the map's list, the journal's list (Style.Well). Shown 200x120 to 1100x560; sunk below the plate, so darker than it and lit along its foot, not its top",
+   "made_by": "not yet made"
+  },
+  {
+   "id": "slab",
+   "file": "frames/slab.png",
+   "size": [
+    256,
+    256
+   ],
+   "margins": [
+    14,
+    14,
+    14,
+    14
+   ],
+   "kind": "frame",
+   "tile": true,
+   "aspect": "1:1 (Square)",
+   "prompt": "An empty flat raised plate of dark forged iron with a bevelled edge lit from the upper left, a thin dull gold hairline inset from the edge, the face plain and quiet, no corner ornament.",
+   "where": "Groups inside a plate (Style.Slab): the standing's groups, the trait cards, the stores' sub-plates, the map's tools, the draft's build strip. Raised above the plate: lit top edge, no corner brackets (those belong to plates)",
+   "made_by": "not yet made"
+  },
+  {
+   "id": "header",
+   "file": "frames/header.png",
+   "size": [
+    512,
+    200
+   ],
+   "margins": [
+    0,
+    0,
+    0,
+    12
+   ],
+   "kind": "frame",
+   "tile": true,
+   "aspect": "21:9 (Ultrawide)",
+   "prompt": "A horizontal band of dark forged iron strap running edge to edge, its lower edge a hammered lip with a thin gold wire set into it, the face plain and dark, seamless left to right.",
+   "where": "The band across the top of every full page (Overlay.Page): 1928x100 shown, the book's tabs at its left, the title plaque in the middle, Close at the right. Only the foot carries a border (12); it repeats along its length",
+   "made_by": "not yet made"
+  },
+  {
+   "id": "banner",
+   "file": "frames/banner.png",
+   "size": [
+    512,
+    192
+   ],
+   "margins": [
+    24,
+    14,
+    24,
+    14
+   ],
+   "kind": "frame",
+   "aspect": "21:9 (Ultrawide)",
+   "prompt": "An empty horizontal nameplate of dark oxblood-stained iron hung from two lamp-iron brackets at its top corners, a gold wire border, a single small ember stone at the top centre, the face plain.",
+   "where": "Verdicts and names cut in metal: the arena's end (THE ARENA IS WON, 470x100), the speaker's name in a conversation, who the survivor is becoming in creation. The words are drawn by the code: keep the face calm",
+   "made_by": "not yet made"
+  },
+  {
+   "id": "pillar",
+   "file": "frames/pillar.png",
+   "size": [
+    424,
+    728
+   ],
+   "margins": [
+    32,
+    100,
+    32,
+    36
+   ],
+   "kind": "frame",
+   "out": 12,
+   "clear": 14,
+   "aspect": "3:4 (Portrait Standard)",
+   "prompt": "An empty tall upright iron plaque like a narrow standing stele: a round crest socket at its head for a medallion, lamp-iron brackets at the top corners, nailed at the foot with two of the binders' square coins, the face plain dark iron.",
+   "where": "Self: the four attributes (Might, Finesse, Wits, Resolve) as pillars, 188x340 shown (212x364 with the 12 they may reach past it). The code puts a 120 px medallion with the number at the head (keep a round seat for it 10-130 px down), the name, the words and a + button below",
+   "made_by": "not yet made"
+  },
+  {
+   "id": "console",
+   "file": "frames/console.png",
+   "size": [
+    512,
+    308
+   ],
+   "margins": [
+    48,
+    28,
+    48,
+    28
+   ],
+   "kind": "frame",
+   "tile": true,
+   "out": 12,
+   "clear": 0,
+   "aspect": "16:9 (Widescreen)",
+   "prompt": "A low wide plate of blackened forged iron like the top of a smith's anvil bench, a hammered lip with gold wire along its top edge, its ends turned down where they meet round fittings, the face plain dark, seamless left to right.",
+   "where": "The HUD's console along the foot (GameHud.BuildVitals): the skills stand on it, the health globe at its left end and the art's ring at its right. 130 high, 300-720 wide with the skill count; its foot runs off the screen (only the top ~98 px show). Ends 48 wide to meet the globe and the ring",
+   "made_by": "not yet made"
+  },
+  {
+   "id": "book_open",
+   "file": "book/open.png",
+   "size": [
+    3400,
+    1704
+   ],
+   "kind": "cut",
+   "aspect": "16:9 (Widescreen)",
+   "prompt": "A large leather-bound journal lying open, seen from directly above: tooled oxblood leather cover with worn gold-capped corners, two cream parchment pages curving down into the spine, the thickness of the leaves at the edges, the pages blank.",
+   "where": "The Journal (OpenBook): the whole book, 1700x852 shown. The pages' words sit 78 px in from the cover's outer edge and 34 from the spine, 68 from top and foot: keep the pages blank and even there. The ribbons (sections) are drawn by the code over the top edge",
+   "made_by": "not yet made"
+  },
+  {
+   "id": "medallion_ring",
+   "file": "medallion/ring.png",
+   "size": [
+    440,
+    440
+   ],
+   "kind": "cut",
+   "aspect": "1:1 (Square)",
+   "prompt": "A round ring of blackened forged iron bound with twisted gold wire, four of the binders' square coins nailed on it at the diagonals, front view, the centre empty.",
+   "where": "Every medallion (Ornate Medallion, 44-220 shown): levels, attributes, the arts' grid and great medallion, facet sockets, creation's step road, the result's numbers, the draft cards' icon discs. Drawn into the medallion's box: the band from 80% to 100% of the half size, transparent inside 78% (the code's core shows there, in the school's or rarity's colour, with a hairline of it just inside the ring). A progress arc is drawn by the code at 88%",
+   "made_by": "not yet made"
+  },
+  {
+   "id": "globe_rim",
+   "file": "hud/globe_rim.png",
+   "size": [
+    288,
+    288
+   ],
+   "kind": "cut",
+   "aspect": "1:1 (Square)",
+   "prompt": "A heavy round rim of forged iron like the collar of a lamp, gold wire inlaid round it, a lamp-iron bracket at its top, front view, the centre empty.",
+   "where": "The health globe's rim (Ornate Globe, 144 shown, the liquid's radius 66): the band from radius 66 to 72 shown (92-100% of the half size), may reach in to 60; transparent inside so the liquid shows. A shield's arc is drawn by the code just outside it",
+   "made_by": "not yet made"
+  },
+  {
+   "id": "globe_glass",
+   "file": "hud/globe_glass.png",
+   "size": [
+    288,
+    288
+   ],
+   "kind": "cut",
+   "aspect": "1:1 (Square)",
+   "prompt": "The reflections on a round glass vessel seen from the front: a soft curved highlight at the upper left, a thin bright rim of light at the lower right, everything else fully transparent.",
+   "where": "Over the health globe's liquid, under its number (144 shown): highlights only, mostly transparent; the liquid's level, colour and trail are the code's",
+   "made_by": "not yet made"
   }
+ ],
+ "icon_sets": {
+  "glyph": {
+   "dir": "icons/glyph",
+   "size": [
+    256,
+    256
+   ],
+   "tint": "white value art; the code colours it",
+   "prompt": "A single bold dark fantasy game icon of {name}, painted in light greys and white only on a pure black background, strong clean silhouette, no frame, no text."
+  },
+  "glyph_color": {
+   "dir": "icons/glyph_color",
+   "size": [
+    256,
+    256
+   ],
+   "tint": "full colour; greyed by the code when not ready",
+   "prompt": "A single bold dark fantasy game skill icon of {name}, hand painted, glowing, strong clean silhouette, on a pure black background, no frame, no text, in the style of Diablo IV skill icons."
+  },
+  "item": {
+   "dir": "icons/item",
+   "size": [
+    256,
+    256
+   ],
+   "tint": "full colour",
+   "prompt": "A single dark fantasy game item icon of {name}, hand painted, three-quarter view, soft light from the upper left, on a pure black background, no frame, no text, in the style of Diablo IV item icons."
+  },
+  "map": {
+   "dir": "icons/map",
+   "size": [
+    64,
+    64
+   ],
+   "tint": "full colour",
+   "prompt": "A tiny map marker icon of {name} drawn in dark brown ink on a pale parchment disc, bold and simple, front view."
+  },
+  "prompt": {
+   "dir": "icons/prompt",
+   "size": [
+    68,
+    52
+   ],
+   "tint": "full colour",
+   "prompt": "A game controller button prompt icon: {name}, dark rounded button, clean and flat, front view, on a pure black background."
+  }
+ }
 }

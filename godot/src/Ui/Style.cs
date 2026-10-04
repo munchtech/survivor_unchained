@@ -76,23 +76,16 @@ public static class Style
         return b;
     }
 
-    /// <summary>An iron plate with a gold hairline and a shadow under it.</summary>
-    public static StyleBox Plate(int pad = 18)
-    {
-        var b = Box(new Color(0.09f, 0.08f, 0.105f, 0.97f), Line, 1, 6, pad);
-        b.ShadowColor = new Color(0, 0, 0, 0.6f);
-        b.ShadowSize = 18;
-        b.ShadowOffset = new Vector2(0, 6);
-        return UiArt.Frame("plate", b);
-    }
+    /// <summary>A forged iron plate: gradient, bevel, inset hairline, bracketed corners (Ornate.cs).</summary>
+    public static StyleBox Plate(int pad = 18) => UiArt.Frame("plate", OrnateBox.Make(OrnateBox.Kind.Plate, pad));
 
-    public static StyleBox Paper(int pad = 22)
-    {
-        var b = Box(new Color("#e4d6b6"), new Color(0.35f, 0.24f, 0.08f, 0.35f), 1, 4, pad);
-        b.ShadowColor = new Color(0, 0, 0, 0.6f);
-        b.ShadowSize = 18;
-        return UiArt.Frame("paper", b);
-    }
+    public static StyleBox Paper(int pad = 22) => UiArt.Frame("paper", OrnateBox.Make(OrnateBox.Kind.Paper, pad));
+
+    /// <summary>Iron sunk into a plate: where a grid or a list sits.</summary>
+    public static StyleBox Well(int pad = 12) => UiArt.Frame("well", OrnateBox.Make(OrnateBox.Kind.Well, pad));
+
+    /// <summary>A quieter plate inside a plate (a group, a card's body).</summary>
+    public static StyleBox Slab(int pad = 14) => UiArt.Frame("slab", OrnateBox.Make(OrnateBox.Kind.Slab, pad));
 
     /// <summary>The ring round what has focus: ember-gold, a soft glow, seen from a sofa.</summary>
     public static StyleBox FocusFrame()

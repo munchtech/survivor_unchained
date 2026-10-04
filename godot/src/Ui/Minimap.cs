@@ -126,7 +126,12 @@ public partial class Minimap : Control
     {
         var (glyph, color) = Look(kind);
         if (UiArt.Icon("map", kind.ToString().ToLowerInvariant()) is { } art)
-            return new TextureRect { Texture = art, CustomMinimumSize = new Vector2(size, size), Size = new Vector2(size, size), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered, MouseFilter = MouseFilterEnum.Ignore };
+        {
+            // Sized after the expand mode is set: before it, the texture's own size is the minimum.
+            var t = new TextureRect { ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered, Texture = art, CustomMinimumSize = new Vector2(size, size), MouseFilter = MouseFilterEnum.Ignore };
+            t.Size = new Vector2(size, size);
+            return t;
+        }
         // A pale disc under the ink, so a mark reads on dark ground and on paper alike.
         var holder = new Control { CustomMinimumSize = new Vector2(size, size), Size = new Vector2(size, size), MouseFilter = MouseFilterEnum.Ignore };
         var back = new Panel { Size = new Vector2(size, size), MouseFilter = MouseFilterEnum.Ignore };
