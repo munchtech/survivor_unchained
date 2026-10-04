@@ -634,7 +634,16 @@ minute), which needs the fight to keep them. **Why**: the end of half an hour is
 (peak-end).
 
 ### 7.10 The chapter's end
-The survivor's book read back from the world. Enter keeps walking.
+**Done** (the third pass): the survivor's own book lying open on the dark,
+the same book as the journal, so the chapter closes in the hand that kept
+it. Over it, "THE END OF THE FIRST CHAPTER", the place on its plaque and the
+survivor's epithet. The left leaf: what was done (each thread with its
+verdict and its last beats) and what still waits; the right leaf: who
+remembers you and how, what the world says you did, and the tally (days,
+level, slain, falls, gold) on medallions at its foot. Keep walking or return
+to the fire beneath; Enter keeps walking. **Why**: a chapter's end is a
+moment, not a form; read back from the world in the survivor's own book, it
+is felt as theirs (peak-end).
 
 ---
 
