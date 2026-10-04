@@ -187,8 +187,17 @@ public partial class ChestCeremony : Control
         // Light leaking from the seam under the lid, then pouring out of the open mouth.
         seamMat = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = Colors.Black };
         chest.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = new Vector3(1.045f, 0.02f, 0.645f) }, MaterialOverride = seamMat, Position = new Vector3(0, 0.262f, 0), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
-        mouthMat = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = Colors.Black };
-        chest.AddChild(new MeshInstance3D { Mesh = new PlaneMesh { Size = new Vector2(0.94f, 0.54f) }, MaterialOverride = mouthMat, Position = new Vector3(0, 0.256f, 0), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
+        // The light inside: hottest at its heart, deep amber at the walls (a flat fill read as a card).
+        mouthMat = new StandardMaterial3D
+        {
+            ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = Colors.Black,
+            AlbedoTexture = new GradientTexture2D
+            {
+                Gradient = new Gradient { Colors = new[] { new Color(1f, 0.92f, 0.7f), new Color(0.95f, 0.55f, 0.18f), new Color(0.35f, 0.1f, 0.02f) }, Offsets = new[] { 0f, 0.45f, 1f } },
+                Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1.05f, 0.5f), Width = 64, Height = 64,
+            },
+        };
+        chest.AddChild(new MeshInstance3D { Mesh = new PlaneMesh { Size = new Vector2(0.94f, 0.54f) }, MaterialOverride = mouthMat, Position = new Vector3(0, 0.274f, 0), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off });
         light = new OmniLight3D { LightColor = gold ? new Color("#ffcf6a") : new Color("#ffb860"), OmniRange = 7, LightEnergy = 0, ShadowEnabled = false, Position = new Vector3(0, 0.9f, 0) };
         chest.AddChild(light);
         // On the people's layer, which the marks on the ground do not paint: a burnt patch under
@@ -229,7 +238,7 @@ public partial class ChestCeremony : Control
         float leak = burst ? 0 : k * k * 3.2f * (0.8f + 0.2f * Mathf.Sin((float)t * 50));
         seamMat.AlbedoColor = new Color(1.0f, 0.75f, 0.35f) * leak;
         float pour = burst ? (closing ? 1 - Smooth(closeT / Outro) : 1) * (1.8f + 0.25f * Mathf.Sin((float)real * 6)) : 0;
-        mouthMat.AlbedoColor = (gold ? new Color(1.1f, 0.9f, 0.45f) : new Color(1.1f, 0.75f, 0.35f)) * pour;
+        mouthMat.AlbedoColor = (gold ? new Color(1.1f, 1.0f, 0.75f) : new Color(1.1f, 0.9f, 0.7f)) * (pour * 0.75f);
         light.LightEnergy = burst ? 2.6f * (closing ? 1 - Smooth(closeT / Outro) : 1) : k * k * 2.2f;
     }
 
@@ -311,7 +320,8 @@ public partial class ChestCeremony : Control
         int n = reels.Count;
         float gap = n <= 5 ? 200 : Math.Min(200, 1560f / n);
         float cx = Mathf.Clamp(mouth.X, 140 + gap * (n - 1) / 2, 1780 - gap * (n - 1) / 2);
-        float cy = Math.Max(300, mouth.Y - 250);
+        // Clear of the top bars (a herald's or a boss's name and health sit there).
+        float cy = Math.Max(390, mouth.Y - 250);
         for (int i = 0; i < n; i++)
         {
             var r = reels[i];

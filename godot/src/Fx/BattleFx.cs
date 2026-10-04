@@ -224,7 +224,8 @@ public partial class BattleFx : Node3D
     {
         float k = count >= 5 ? 1.5f : count >= 3 ? 1.2f : 1f;
         Flash(at + Vector3.Up * 1.4f, color, 12 * k, 0.7f, 10);
-        Pillar(at, 8 * k, 0.32f * k, color * 0.8f, 1.2f);
+        // (Short and soft: the reels rise through it, and a long white column hid them and the plaque.)
+        Pillar(at, 6 * k, 0.26f * k, color * 0.45f, 0.6f);
         Waves.Add(at + Vector3.Up * 0.3f, 4 * k, 0.55f, color, 0.6f);
         for (int i = 0; i < (int)(46 * k); i++)
         {

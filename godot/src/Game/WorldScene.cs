@@ -179,7 +179,9 @@ public partial class WorldScene : Node3D, IZoneLook
             if (e is Ev.Kill k && k.ByPlayer && (k.Boss || k.Elite)) s = Math.Max(s, k.Boss ? 0.14 : 0.08);
             else if (e is Ev.Hit h && h.Crit && !h.Dot && h.MaxHp > 0 && h.Amount >= h.MaxHp * 0.35) s = Math.Max(s, 0.045);
             else if (e is Ev.PlayerHit ph && ph.Amount > b.MaxHp * 0.12) s = Math.Max(s, 0.07);
-            else if (e is Ev.Ability a && a.Id == "shield_bash") s = Math.Max(s, 0.05);
+            // Her arts land with their own weight (S-17): the leap's landing, the rush's stop, the bash.
+            else if (e is Ev.Ability a && a.Id is "shield_bash" or "bull_rush") s = Math.Max(s, 0.05);
+            else if (e is Ev.Ability l && l.Id == "leap") s = Math.Max(s, 0.06);
         }
         if (s > 0) { hitstop = s; hitstopCd = s + 0.3; }
     }

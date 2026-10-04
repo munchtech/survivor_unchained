@@ -216,7 +216,9 @@ public partial class CrowdView : Node3D
         float sc = (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual);
         // Struck: a squash, and a flinch along the blow, gone with the flash.
         float f = e.State == EnemyState.Dying ? 0 : (float)e.Flash * (1 - Still);
-        var at = new Vector3((float)(e.X + e.LastDx * f * 0.14), (float)y, (float)(e.Z + e.LastDz * f * 0.14));
+        // The flinch along the blow: big enough to read from thirty metres up, twice on a critical (S-17).
+        float push = e.LastCrit ? 0.45f : 0.25f;
+        var at = new Vector3((float)(e.X + e.LastDx * f * push), (float)y, (float)(e.Z + e.LastDz * f * push));
         var basis = new Godot.Basis(Vector3.Up, (float)(Math.PI / 2 - g.Facing)) * Godot.Basis.FromScale(new Vector3(sc * (1 + f * 0.1f), sc * (1 - f * 0.1f), sc * (1 + f * 0.1f)));
         float frozen = e.Status.Has(StatusKind.Frozen) ? 1 : e.Status[StatusKind.Chill] is { } chill ? (float)Math.Min(0.5, chill.Stacks * 0.09) : 0;
         float burning = e.Status.Has(StatusKind.Burn) ? 1 - 0.8f * Still : 0;

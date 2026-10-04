@@ -589,13 +589,28 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>The pad's rumble (S-14).</summary>
     public readonly Haptics Haptics = new();
-    double critFeltAt;
+    double critFeltAt, kickedAt;
 
     /// <summary>What of the fight is felt through the pad: weight on the low motor (a blow taken, a
     /// champion or boss down), snap on the high (a critical, a dodge slipped at the last moment).</summary>
     void Feel(CombatEvent e, ref int crits)
     {
         var b = Battle;
+        // Her own heavy blows lean the view toward where they landed (S-17): her arts' impacts,
+        // a big blast, a critical that takes a third of something big. Never on the crowd's
+        // small deaths (late in a night every critical kills), and not oftener than a third of a second.
+        double now = Time.GetTicksMsec() / 1000.0;
+        if (b != null && now - kickedAt > 0.33)
+        {
+            Vector3? toward = e switch
+            {
+                Ev.Ability { Id: "leap" or "bull_rush" or "shield_bash" } a => new Vector3((float)(a.X - b.Player.X), 0, (float)(a.Z - b.Player.Z)) is var d && d.LengthSquared() > 0.01f ? d : new Vector3(Mathf.Cos((float)a.Angle), 0, Mathf.Sin((float)a.Angle)),
+                Ev.Explosion x when x.Power > 1 => new Vector3((float)(x.X - b.Player.X), 0, (float)(x.Z - b.Player.Z)),
+                Ev.Hit h when h.Crit && !h.Dot && h.MaxHp > b.MaxHp * 2 && h.Amount >= h.MaxHp * 0.35 => new Vector3((float)(h.X - b.Player.X), 0, (float)(h.Z - b.Player.Z)),
+                _ => null,
+            };
+            if (toward is { } tw) { cam.Kick(tw, e is Ev.Ability ? 0.3f : 0.22f); kickedAt = now; }
+        }
         switch (e)
         {
             case Ev.Hit h when h.Crit && !h.Dot && crits++ == 0 && Time.GetTicksMsec() / 1000.0 - critFeltAt > 0.25:
@@ -643,6 +658,8 @@ public partial class Game : Node, IZoneHost
                     if (ev.Chest) break;
                     hud.Crown(ev.Weapon);
                     scene?.Slow(0.6);
+                    Shots.Want("evolve", 0.25);
+                    Shots.Want("evolve", 0.9);
                     break;
                 case Ev.Bark bk:
                     scene?.Voices.Bark(bk.Text, new Vector3((float)bk.X, (float)scene.HeightAt(bk.X, bk.Z), (float)bk.Z), bk.Speaker, bk.Speaker == null);
