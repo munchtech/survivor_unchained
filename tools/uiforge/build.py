@@ -14,7 +14,8 @@ ComfyUI with the prompt and seed recorded beside them.
              HUD's console, the well and the slab
   paper      the ledger paper and the hint note
   cards      the draft's cards, painted over forged guides
-  painted    the map's frame, the boss's casing, logo, ornaments
+  painted    the map's frame, the boss's casing, ornaments
+  logo       the title's logo, modelled as a relief (Cinzel's letters in forged steel, the chain)
   light      the focus ring and the bars' fills
   prompts    the pad's buttons, forged
   mapmarks   the map's marks, in ink on parchment
@@ -67,9 +68,15 @@ def g_cards():
 def g_painted():
     import fitall
     # The minimap's rim and the art's ring are Blender pieces (chrome); the medallions are
-    # reliefs (medals). Only what is still painted from text is fitted here.
-    for n in ("mapframe", "bosscasing", "logo", "rule", "flourish"):
+    # reliefs (medals), and so is the logo (logo). Only what is still painted from text is
+    # fitted here.
+    for n in ("mapframe", "bosscasing", "rule", "flourish"):
         fitall.GROUPS[n]()
+
+
+def g_logo():
+    import logo
+    logo.main()
 
 
 def g_light():
