@@ -60,10 +60,9 @@ public partial class TitleScreen : Overlay
             brand.AddChild(b1);
             brand.AddChild(Style.Label("U N C H A I N E D", Style.Display, 54, new Color("#d8a050")));
         }
-        var rule = new ColorRect { Color = Style.Gold, CustomMinimumSize = new Vector2(420, 1), MouseFilter = MouseFilterEnum.Ignore };
-        brand.AddChild(Style.Gap(12));
-        brand.AddChild(rule);
-        brand.AddChild(Style.Gap(8));
+        // The house's rule under the name: gold running out from an ember stone at either end.
+        brand.AddChild(Style.Gap(4));
+        brand.AddChild(new Plaque("", 14, 182));
         brand.AddChild(Style.Label("The run ends. The story doesn't.", Style.TextItalic, 23, new Color("#e8dcc6")));
         AddChild(brand);
 
@@ -89,7 +88,7 @@ public partial class TitleScreen : Overlay
             box.Position = new Vector2(540, panel == "controls" ? 90 : panel == "credits" ? 300 : 500);
             box.CustomMinimumSize = new Vector2(panel == "controls" ? 820 : panel == "credits" ? 760 : 560, 0);
             Nav.Scope = box;
-            var v = Style.V(8, Style.Cap(panel switch { "load" => "Journeys", "settings" => "Settings", "controls" => "Controls", _ => "Credits" }, 16));
+            var v = Style.V(10, new Plaque(panel switch { "load" => "Journeys", "settings" => "Settings", "controls" => "Controls", _ => "Credits" }, 26, 50));
             switch (panel)
             {
                 case "load":
