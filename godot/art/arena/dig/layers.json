@@ -12,12 +12,12 @@
   },
   {
    "name": "spoil",
-   "source": "gravel_stones",
-   "metres": 2.0,
+   "source": "gray_rocks",
+   "metres": 1.8,
    "mean": [
-    0.07927,
-    0.07826,
-    0.07336
+    0.19301,
+    0.17018,
+    0.13271
    ]
   },
   {

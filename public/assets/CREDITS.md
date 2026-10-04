@@ -288,3 +288,5 @@ Parts of the game were made with generative AI during development. This is to be
 
 - `basis_transcoder.js` / `.wasm`, from three.js's examples (Binomial LLC), Apache License 2.0 -> `public/assets/basis`, for the KTX2 textures.
 - The npm packages in `package.json`: three (MIT), postprocessing (Zlib), n8ao (CC0), preact and @preact/signals (MIT), meshoptimizer (MIT), @fontsource (the same OFL fonts), and Electron (MIT, with Chromium's notices) for the desktop wrapper.
+- grassy_cobblestone: Poly Haven (https://polyhaven.com/a/grassy_cobblestone), CC0
+- gray_rocks: Poly Haven (https://polyhaven.com/a/gray_rocks), CC0
