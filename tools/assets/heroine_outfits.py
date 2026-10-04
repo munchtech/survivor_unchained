@@ -424,6 +424,22 @@ for _b in ("breast_l", "breast_r"):
     W[:, _others] = (W[:, _others] * _scale[:, None]).astype(W.dtype)
     W[:, _bi] = _new.astype(W.dtype)
 print("BREAST WEIGHTS eased at", int((np.abs(W - W_AUTHORED).sum(1) > 1e-4).sum()), "points")
+# All her skin's weights eased over about 1.5 cm (but her hands' and head's,
+# which shape fingers and a face), and cut to four bones smoothly: her
+# skin's weights jump from point to point, and where a garment's eased
+# edge lay on them, her skin moved by another rule and came through the
+# edge in steps when she moved. Garments take these, so the two agree.
+_keep = wsum(*[n for n in BONES if n.split("_")[0] in ("hand", "index", "middle", "ring", "pinky", "thumb", "Head")]) > 0.05
+_el = np.linalg.norm(P[TRI[:, 0]] - P[TRI[:, 1]], axis=1)
+_rounds = int(np.clip((0.015 / float(np.median(_el))) ** 2, 0, 80))
+_W = W.copy()
+for _ in range(_rounds):
+    _W = ADJ @ _W
+W = np.where(_keep[:, None], W, _W)
+_fifth = -np.partition(-W, 4, axis=1)[:, 4]
+W = np.maximum(W - _fifth[:, None], 0)
+W = W / np.maximum(W.sum(1, keepdims=True), 1e-9)
+print("SKIN WEIGHTS eased over", _rounds, "rounds, all but", int(_keep.sum()), "points of her hands and head")
 
 
 # Within 4 cm of the skin heroine_head.py made anew over her shoulders
@@ -603,8 +619,9 @@ BREAST_HOLD = (_c, _R, _ax_hold)
 
 def ideal_breasts(surface, full=0.05, fade=0.09):
     """A surface with her breasts made the perfect form: each point of each
-    breast sent out along the line from the form's centre to the form (only
-    out, never in), fully within `full` of her nipple, fading to her own
+    breast sent out along its normal to the form (only out, never in, and
+    only where the form is near her), fully within `full` of her nipple,
+    fading to her own
     shape by `fade`, so whatever is cut from it is uniform over her breasts
     (no lumps, no nipples) and still meets her skin at its edges."""
     c, R, ax, form = BREAST_FORM
@@ -621,7 +638,14 @@ def ideal_breasts(surface, full=0.05, fade=0.09):
         w = np.clip((fade - d) / (fade - full), 0, 1)
         w = w * w * (3 - 2 * w)
         mine = (surface[:, 0] * sg > 0.0) & (r_ell < 1.0) & (w > 0)
-        out[mine] = (q[mine] + (on[mine] - q[mine]) * w[mine, None]) * flip
+        # Out along her skin's own normal, and only where the form is a few
+        # millimetres off her: past where it was fitted (toward her arms) it
+        # only carries on from its edge, and her skin sent out to it there,
+        # sideways along the line from its centre, folded over itself.
+        n_q = N * flip
+        g = np.maximum(((on - q) * n_q).sum(1), 0)
+        k = np.clip((0.008 - g) / 0.004, 0, 1)
+        out[mine] = (q[mine] + n_q[mine] * (g * w * k)[mine, None]) * flip
     return out
 
 
@@ -900,8 +924,8 @@ def tube(name, curve, nrm, outward, mkey, width, height, overhang, thick, src_po
     """A rolled edge along a line: a flattened tube `width` across, centred
     so it reaches `overhang` past the line on its `outward` side, and stands
     `height` proud of a sheet `thick` thick lying under it (half its
-    height above the sheet, wrapping its cut edge). Weights from the
-    nearest point of the sheet it binds."""
+    height above the sheet, wrapping its cut edge). Weights from the sheet
+    it binds, one set to each ring."""
     n = len(curve)
     c0 = curve + outward * (overhang - width / 2) + nrm * (thick / 2)
     rw, rh = width / 2, thick / 2 + height
@@ -931,8 +955,21 @@ def tube(name, curve, nrm, outward, mkey, width, height, overhang, thick, src_po
     vn = vertex_normals(pts, tris)
     if ((pts - cen) * vn).sum(1).mean() < 0:
         tris = tris[:, ::-1]
-    _, j = cKDTree(src_pos).query(pts)
-    obj = finish(name, pts, src_wt[j], tris, mkey, 0.0, 0.0, 10 ** 7)
+    # One set of weights to each ring of it, from the sheet within about a
+    # centimetre of the ring (weighed by nearness), eased along it: each
+    # point taking its nearest point of the sheet's, it kinked where that
+    # point changed, as she moved.
+    kk = min(24, len(src_pos))
+    d_, j_ = cKDTree(src_pos).query(c0, k=kk)
+    d_, j_ = np.reshape(d_, (len(c0), kk)), np.reshape(j_, (len(c0), kk))
+    g_ = np.exp(-0.5 * (d_ / 0.006) ** 2) + 1e-12
+    ring = (np.asarray(src_wt, float)[j_] * g_[:, :, None]).sum(1) / g_.sum(1)[:, None]
+    for _ in range(8):
+        ring = (np.roll(ring, 1, 0) + 2 * ring + np.roll(ring, -1, 0)) / 4 if closed else             np.vstack([ring[:1], (ring[:-2] + 2 * ring[1:-1] + ring[2:]) / 4, ring[-1:]])
+    wt = np.repeat(ring, nv, 0)
+    if not closed:
+        wt = np.vstack([wt, ring[[0, -1]]])
+    obj = finish(name, pts, wt, tris, mkey, 0.0, 0.0, 10 ** 7)
     obj["hides"] = False
     return obj
 
@@ -1009,15 +1046,23 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
         # The sheet's edge points onto the fair line, and anything of the
         # sheet still standing out past it (scraps, pinched corners) pulled
         # back inside it.
+        # (each edge point to its own place on the line, the line being its
+        # loop eased: sent to the nearest place instead, neighbours landed
+        # on one spot, their triangles fell flat, and thickened they stood
+        # out as spikes and steps along her neckline)
         lt = cKDTree(cur)
-        _, jj = lt.query(pos[loop])
-        pos[loop] = cur[jj]
+        run = np.r_[0, np.cumsum(seg)]                     # (each point's way along its loop)
+        tt = np.linspace(0, run[-1], len(cur), endpoint=False)
+        cw = np.vstack([cur, cur[:1]])
+        tw = np.r_[tt, run[-1]]
+        pos[loop] = np.stack([np.interp(run[:-1], tw, cw[:, k]) for k in range(3)], 1)
         moved[loop] = True
         dn, jn = lt.query(pos)
         near_ = dn < 0.025
         out_ = ((pos - cur[jn]) * outward[jn]).sum(1)
-        fix = near_ & (out_ > 0)
-        pos[fix] -= outward[jn[fix]] * out_[fix][:, None]
+        fix = near_ & (out_ > -0.0003)
+        fix[loop] = False
+        pos[fix] -= outward[jn[fix]] * (out_[fix] + 0.0003)[:, None]
         moved |= fix
         beads.append(tube(f"{name}_bind{k}" if k else f"{name}_bind", cur, nrm, outward, key, width, height, overhang, thick,
                           pos, at[:, 3:3 + NB]))
@@ -1198,8 +1243,13 @@ def stitches(name, line, nrm, tg, src_pos, src_wt, step=0.004, length=0.0026, wi
     cen = np.repeat(base, per, 0)
     if ((pts - cen) * vertex_normals(pts, tris)).sum(1).mean() < 0:
         tris = tris[:, ::-1]
-    _, j = cKDTree(src_pos).query(base)
-    obj = finish(name, pts, np.repeat(np.asarray(src_wt, float)[j], per, 0), tris, mkey, 0.0, 0.0, 10 ** 7, scraps=False)
+    # (each stitch weighed as the binding's rings are, so it stays on them)
+    kk = min(24, len(src_pos))
+    d_, j_ = cKDTree(src_pos).query(base, k=kk)
+    d_, j_ = np.reshape(d_, (len(base), kk)), np.reshape(j_, (len(base), kk))
+    g_ = np.exp(-0.5 * (d_ / 0.006) ** 2) + 1e-12
+    w_ = (np.asarray(src_wt, float)[j_] * g_[:, :, None]).sum(1) / g_.sum(1)[:, None]
+    obj = finish(name, pts, np.repeat(w_, per, 0), tris, mkey, 0.0, 0.0, 10 ** 7, scraps=False)
     obj["hides"] = False
     return [obj]
 
@@ -1764,7 +1814,7 @@ def piece(name, field, mkey, lift=0.003, thick=0.003, smooth=0, bevel=0.0012, tr
     # piece's own (a rolled hem). Sheer and painted pieces are left as cut.
     beads = []
     # (eased before its edge is bound, so the binding moves as the edge does)
-    at[:, 3:3 + NB] = eased_weights(pos, tris, at[:, 3:3 + NB])
+    at[:, 3:3 + NB] = four_bones(eased_weights(pos, tris, at[:, 3:3 + NB]))
     if bind and len(SPEC[mkey]) < 7 and mkey != "ink":
         if trim:
             tkey, w, h, tt = trim
@@ -1859,16 +1909,21 @@ ARM_BONES = [BI[n] for n in BONES if n.split("_")[0] in ("clavicle", "upperarm",
 BREAST_BONES = [BI[n] for n in ("breast_l", "breast_r") if n in BI]
 
 
-def steady_on_breasts(wt, least=0.01):
-    """Weights with her arms' share taken off wherever her breasts have any
-    (that share given to the rest, in proportion; her upper chest's bone if
-    nothing else is left)."""
+def steady_on_breasts(wt, least=0.01, full=0.1):
+    """Weights with her arms' share taken off where her breasts have any:
+    none at `least` of her breasts' weight, all of it by `full` (that share
+    given to the rest, in proportion; her upper chest's bone if nothing else
+    is left). (Taken off all at once at a line, the line stepped the
+    arcanist's neckline when she moved.)"""
     wt = np.array(wt, float)
-    on = wt[:, BREAST_BONES].sum(1) > least
+    b = wt[:, BREAST_BONES].sum(1)
+    on = b > least
     if not on.any():
         return wt
+    k = np.clip((b[on] - least) / (full - least), 0, 1)
+    k = k * k * (3 - 2 * k)
     w = wt[on].copy()
-    w[:, ARM_BONES] = 0
+    w[:, ARM_BONES] *= (1 - k)[:, None]
     tot = w.sum(1)
     empty = tot < 1e-6
     w[empty, BI["spine_03"]] = 1
@@ -1877,7 +1932,21 @@ def steady_on_breasts(wt, least=0.01):
     return wt
 
 
-def eased_weights(pos, tris, wt, over=0.015):
+def four_bones(wt):
+    """At most four bones to a point, as the game takes them, cut smoothly:
+    every weight less the point's fifth largest. (Left to the exporter,
+    which keeps each point's four largest, neighbours kept different fours
+    where a fourth and a fifth crossed, and an edge stepped there when she
+    moved.)"""
+    wt = np.array(wt, float)
+    if wt.shape[1] <= 4:
+        return wt
+    fifth = -np.partition(-wt, 4, axis=1)[:, 4]
+    wt = np.maximum(wt - fifth[:, None], 0)
+    return wt / np.maximum(wt.sum(1, keepdims=True), 1e-9)
+
+
+def eased_weights(pos, tris, wt, over=0.008):
     """Weights eased over about `over` of a sheet: her skin's weights are
     uneven from point to point, and an edge that took them as they are was
     pulled into steps and tears when she moved (her belts were, before
@@ -1962,6 +2031,10 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
     # (scraps a cut leaves are dropped; a piece made of many small parts
     # on purpose, stitches, keeps them all)
     if scraps:
+        # (points on top of each other made one, and the flat triangles
+        # between them dropped: they have no facing, and thickened, stood
+        # out as spikes)
+        pos, wt, tris = weld(pos, np.asarray(wt, float), tris, r=0.0002)
         tris = islands(pos, tris)
         pos, wt, tris = pinholes_filled(name, pos, wt, tris)
     # Its true edge, the sheet's border before it is thickened (both faces of
@@ -1993,6 +2066,7 @@ def finish(name, pos, wt, tris, mkey, thick, bevel, budget=3000, scraps=True):
         _, jz = cKDTree(P).query(pos[tot < 0.01])
         wt = wt.copy()
         wt[tot < 0.01] = W[jz]
+    wt = four_bones(wt)
     me = bpy.data.meshes.new(name)
     me.from_pydata([tuple(p) for p in pos], [], tris.tolist())
     me.update()
@@ -3581,7 +3655,11 @@ if BODY_OUT:
         # from (a nipple's tip under a plate cup), from behind too. Never
         # more: skin hidden past a piece's edge shows as a hole in her.
         _, jj = cKDTree(P).query(np.array([(body.matrix_world @ v.co)[:] for v in me.vertices]))
-        proud = (((P - P_FILLED) * N).sum(1)[jj] > 0.0005) & (P[jj, 2] > CROTCH + 0.12)
+        # (and all of each nipple's disc, under whatever covers it: hidden only
+        # at the tip, the skin round the tip came through a plate cup as she
+        # ran, the plate and her breast swinging a little apart)
+        disc = np.minimum(*[np.linalg.norm(P[jj] - q, axis=1) for q in NIPPLE.values()]) < 0.028
+        proud = ((((P - P_FILLED) * N).sum(1)[jj] > 0.0005) & (P[jj, 2] > CROTCH + 0.12)) | disc
         for v in me.vertices:
             co = body.matrix_world @ v.co
             n = (mw3 @ v.normal).normalized()
