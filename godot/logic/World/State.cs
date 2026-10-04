@@ -169,6 +169,9 @@ public sealed class WorldState
     public Dictionary<string, Dictionary<string, Fact>> Zones = new();
     public CorpseState? Corpse;
     public NemesisState? Nemesis;
+    /// <summary>What a night with the ember lit outside an arena (the prologue's) has taught,
+    /// banked until its dawn (Journey.Douse).</summary>
+    public double NightLessons;
     /// <summary>Discoveries recorded in the codex.</summary>
     public List<string> Codex = new();
     /// <summary>Bestiary kill counts by creature.</summary>

@@ -85,7 +85,11 @@ public sealed class SoundBridge
                 case Ev.Pickup p:
                     switch (p.Kind)
                     {
-                        case PickupKind.Ember: stones++; break;
+                        case PickupKind.Ember:
+                            stones++;
+                            // The hoard stone taken: the jackpot's breath, and the high ladder open.
+                            if (p.Amount >= 100) { Sfx.Lodestone(); sweepT = 3; xpStep = Math.Max(xpStep, 8); }
+                            break;
                         case PickupKind.Gold: Sfx.Gold(); break;
                         case PickupKind.Heal: Sfx.Heal(); break;
                         // (A chest sounds as it opens: ChestCeremony.)

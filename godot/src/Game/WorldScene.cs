@@ -49,6 +49,10 @@ public partial class WorldScene : Node3D, IZoneLook
     public float Hold;
     double acc, hitstop, hitstopCd, fightTime, viewTime, damageFlash, slowmo, fall;
 
+    /// <summary>A dash or an art pressed a little early, kept until it can fire (seconds left).</summary>
+    double dashHeld, artHeld;
+    const double Buffer = 0.12;
+
     /// <summary>The world slowed to under a third for a while (an evolution's first volley).</summary>
     public void Slow(double seconds) => slowmo = Math.Max(slowmo, seconds);
     /// <summary>The night's peak in real seconds: the world slows hard as what ruled it falls
@@ -109,6 +113,8 @@ public partial class WorldScene : Node3D, IZoneLook
         double falling = fall > 0 ? 0.1 + 0.9 * Math.Pow(1 - fall / Fall, 2.2) : 1;
         double fightDt = held ? dt * 0.08 : slowmo > 0 ? dt * Math.Min(0.3, falling) : dt * falling;
         fightTime += fightDt;
+        // A press kept from before a pause (a draft, a chest) is not spent after it.
+        if (SimPaused) dashHeld = artHeld = 0;
         if (b != null && !SimPaused)
         {
             acc += Math.Min(fightDt, 0.1);
@@ -116,8 +122,13 @@ public partial class WorldScene : Node3D, IZoneLook
             {
                 acc -= Step;
                 var (mx, mz) = Move();
-                if (Pressed(Act.Dash)) b.Dash(mx, mz);
-                if (Pressed(Act.Ability)) b.UseAbility(mx, mz);
+                // A press a little early is kept for 120 ms and fires the moment it can, in the
+                // direction held then (S-05): the dash is where timing lives, and a dropped press
+                // cost most exactly when it mattered.
+                if (Pressed(Act.Dash)) dashHeld = Buffer;
+                if (dashHeld > 0) dashHeld = b.Dash(mx, mz) ? 0 : dashHeld - Step;
+                if (Pressed(Act.Ability)) artHeld = Buffer;
+                if (artHeld > 0) artHeld = b.UseAbility(mx, mz) ? 0 : artHeld - Step;
                 OnStep(Step);
                 Perf.Begin(Perf.Part.Sim);
                 b.Tick(Step, mx, mz);

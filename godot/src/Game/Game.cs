@@ -100,6 +100,9 @@ public partial class Game : Node, IZoneHost
         AddChild(synth);
         if (Perf.On) MeasureWith(new Perf());
         sound = new SoundBridge(synth);
+        // A crowd melting past a threshold: a kick of the camera and a tick in the hands, a step
+        // bigger at each (S-08), never on an ordinary kill.
+        sound.Swelled = tier => { cam.AddTrauma(0.08f + 0.04f * tier); Haptics.Add(0.2f * (tier + 1), 0.2f, 0.04f); };
         voice = new VoiceOver();
         AddChild(voice);
         // The interface: every button ticks under the pointer and clicks.
@@ -579,15 +582,47 @@ public partial class Game : Node, IZoneHost
 
     /* ------------------------------------------------------------ frame -- */
 
+    /// <summary>The pad's rumble (S-14).</summary>
+    public readonly Haptics Haptics = new();
+    double critFeltAt;
+
+    /// <summary>What of the fight is felt through the pad: weight on the low motor (a blow taken, a
+    /// champion or boss down), snap on the high (a critical, a dodge slipped at the last moment).</summary>
+    void Feel(CombatEvent e, ref int crits)
+    {
+        var b = Battle;
+        switch (e)
+        {
+            case Ev.Hit h when h.Crit && !h.Dot && crits++ == 0 && Time.GetTicksMsec() / 1000.0 - critFeltAt > 0.25:
+                critFeltAt = Time.GetTicksMsec() / 1000.0;
+                Haptics.Add(0, 0.2f, 0.03f);
+                break;
+            case Ev.PerfectDodge: Haptics.Add(0.3f, 0.5f, 0.06f); break;
+            case Ev.PlayerHit ph when !ph.Dodged && !ph.Blocked && !ph.Dot && b != null:
+                Haptics.Add(0.25f + 0.45f * (float)Math.Min(1, ph.Amount / (b.MaxHp * 0.15)), 0.3f, 0.12f, blow: true);
+                break;
+            case Ev.LevelUp:
+                Haptics.Add(0.4f, 0, 0.08f);
+                Haptics.After(0.14, 0.5f, 0, 0.08f);
+                break;
+            case Ev.Kill k when k.ByPlayer && k.Elite && !k.Boss: Haptics.Add(0.7f, 0, 0.15f); break;
+            case Ev.Victory: Haptics.Add(1, 0.4f, 0.4f, peak: true); break;
+            case Ev.PlayerDeath: Haptics.Add(1, 0, 0.4f, blow: true, peak: true); break;
+            case Ev.Evolve { Chest: false }: Haptics.Add(0.6f, 0.4f, 0.25f); break;
+        }
+    }
+
     void OnEvents(List<CombatEvent> evs)
     {
         Journey.BankArt(Battle);
         Journey.BankGold(Battle);
         sound.Events(evs, Battle);
         zone?.Events(evs);
+        int crits = 0;
         foreach (var e in evs)
         {
             if (Shots.On("boss")) BossShot(e);
+            Feel(e, ref crits);
             switch (e)
             {
                 case Ev.Announce an:
@@ -716,6 +751,7 @@ public partial class Game : Node, IZoneHost
             var at = sb != null ? new Vector3((float)sb.Player.X, 0, (float)sb.Player.Z) : showNow.Look;
             var time = Journey is { } jn ? zone?.TimeOf(jn.World) ?? jn.World.Time : TimeOfDay.Night;
             Perf.Begin(Perf.Part.Sound);
+            Haptics.Update(dt, Settings.Current.Rumble, controls.UsingPad);
             sound.Update(dt, new SoundState(Mode, zone?.Id, time, at.X, at.Z, sb, bossUp, Mode == "play" ? Overlay : screens.Current?.Kind,
                 zone != null ? zone.Ambience : null, zone != null ? zone.MusicMood : null));
             Perf.End(Perf.Part.Sound);
@@ -1026,7 +1062,7 @@ public partial class Game : Node, IZoneHost
         var b = Battle;
         var p = b?.Player;
         int foes = b?.Enemies.Count ?? 0;
-        var dbg = zone?.Debug() is { Count: > 0 } d ? string.Join(" ", d.Take(4).Select(kv => $"{kv.Key}={kv.Value}")) : "";
+        var dbg = zone?.Debug() is { Count: > 0 } d ? string.Join(" ", d.Take(6).Select(kv => $"{kv.Key}={kv.Value}")) : "";
         var (drawn, dead) = scene!.Crowd.Counts;
         var (gibs, splats) = scene.Fx.Gore.Counts;
         GD.Print($"[{scene.Time,6:0.0}s] {zone?.Id} hp {p?.Hp:0}/{b?.MaxHp:0} ember {b?.EmberLevel} kills {b?.KillCount} foes {foes} (drawn {drawn}, lying {dead}, gibs {gibs}, blood {splats}) at {p?.X:0},{p?.Z:0} {Overlay} {dbg}{FrameCost()}{(synth.Live ? $" | sound {sound.Music.Mood} voices {synth.Voices} mix {synth.MixCost / Math.Max(1e-9, synth.Mixed) * 100:0}% heard {synth.Mixed:0}s skips {synth.Skips} queue {synth.Queue / synth.Rate * 1000:0}ms" : "")}");
