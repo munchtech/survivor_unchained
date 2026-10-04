@@ -129,7 +129,10 @@ public static class Probe
     {
         var people = MapOffers.People(peopleId);
         double minute = b.Time / 60;
-        var kinds = people.Arena.Where(h => h.From <= minute).Select(h => h.Def).Where(d => Enemies.Get(d).Ranged == null).ToList();
+        // The yardstick is the people's rank and file as the day knows them (Denizens.Horde), not
+        // the arena's growing roster: a new kind of splitter or guard would otherwise move every
+        // path's number with it, and the bounds would measure the roster, not the paths.
+        var kinds = people.Horde.Select(h => h.Def).Where(d => Enemies.Get(d).Ranged == null && people.Arena.Any(a => a.Def == d && a.From <= minute)).ToList();
         if (kinds.Count == 0) kinds = [people.Arena[0].Def];
         var rng = new Rng((uint)seed * 31 + 5);
         int horde = (int)(22 + 7.5 * minute);
