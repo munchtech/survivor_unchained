@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using SurvivorUnchained.Core;
 
@@ -40,6 +40,7 @@ public sealed class Dig : ArenaShape
         rails = B.Curve(lipX, lipZ, ex, ez, Rng.Range(-8, 8), 1.1, 0, 1);
         railsF = B.PathField(rails);
         B.Lane(rails);
+        B.Rails.Add(rails);
         // Spoil heaps, toward the edge.
         for (int t = 0; t < 200 && heaps.Count < 6; t++)
         {
@@ -113,19 +114,28 @@ public sealed class Dig : ArenaShape
             if (d > s.R + 3) continue;
             double k = 1 - MathX.Smoothstep(s.R * 0.5, s.R + 1.2, d + n1 * 1.4 + n2 * 0.6);
             p.L3 = Math.Max(p.L3, k);
-            p.Wet = Math.Max(p.Wet, 1 - MathX.Smoothstep(s.R * 0.3, s.R * 0.9, d + n1 * 1.2));
+            double wet = 1 - MathX.Smoothstep(s.R * 0.3, s.R * 0.9, d + n1 * 1.2);
+            p.Wet = Math.Max(p.Wet, wet);
+            // The slurry's own light in the pools, faint, deepest in the middle.
+            p.Glow = Math.Max(p.Glow, 1 - MathX.Smoothstep(s.R * 0.15, s.R * 0.75, d + n1 * 1.2));
         }
+        // The clay stained rust by the ember, in the planned patches and in
+        // broad drifts across the working, so the floor is never one colour.
+        p.L4 = MathX.Smoothstep(0.25, 0.6, Noise.Noise(x * 0.03 - 17, z * 0.03 + 5) + n1 * 0.3 + n2 * 0.25) * 0.6;
         foreach (var bk in bakes)
         {
             double d = MathX.Dist(x, z, bk.X, bk.Z);
             if (d < bk.R + 2) p.L4 = Math.Max(p.L4, (1 - MathX.Smoothstep(bk.R * 0.4, bk.R, d + n1 * 2.5)) * 0.9);
         }
-        // Burnt round the pit's mouth; burnt where the blasting was.
+        p.L4 *= 1 - p.L3;
+        // Burnt round the pit's mouth (and, in an ashen dig, where the blasting was).
         double dp = MathX.Dist(x, z, pitX, pitZ);
-        p.L5 = Math.Max(MathX.Smoothstep(0.55, 0.85, Noise.Noise(x * 0.05 - 7, z * 0.05 + 7)) * (Ashen ? 1 : 0.6), 1 - MathX.Smoothstep(PitR + 1, PitR + 8, dp + n1 * 2));
-        // The pit's mouth: charred round its lip, and glowing whole down inside it.
-        p.Char = Math.Max(p.Char, 0.85 * (1 - MathX.Smoothstep(PitR - 0.5, PitR + 3.5, dp + n1 * 1.5)));
-        p.Char = Math.Max(p.Char, 1 - MathX.Smoothstep(PitR - 3.5, PitR - 1.5, dp));
+        p.L5 = Math.Max(Ashen ? MathX.Smoothstep(0.55, 0.85, Noise.Noise(x * 0.05 - 7, z * 0.05 + 7)) : 0, 1 - MathX.Smoothstep(PitR + 1, PitR + 8, dp + n1 * 2));
+        // The pit: its lip charred; its walls bare rock, lit red by what is down
+        // there (the pit's light); its floor, eight metres down, glowing whole.
+        // A throat with fire at the bottom, never a pool of it.
+        p.Char = Math.Max(p.Char, 0.85 * (1 - MathX.Smoothstep(PitR - 0.5, PitR + 3.5, dp + n1 * 1.5)) * MathX.Smoothstep(PitR - 1.5, PitR - 0.5, dp));
+        if (dp < PitR - 4) p.Char = Math.Max(p.Char, 0.9 + 0.1 * (1 - MathX.Smoothstep(0, PitR - 4, dp)));
         if (Drowned) p.Wet = Math.Max(p.Wet, MathX.Smoothstep(0.35, 0.7, Noise.Noise(x * 0.05 - 9, z * 0.05)) * 0.7);
     }
 
@@ -155,16 +165,17 @@ public sealed class Dig : ArenaShape
     {
         // --------------------------------------------------------- the pit --
         // Its glow from below, red; the lamps round its lip, gold.
-        B.Glow(pitX, pitZ, "#ff5a1e", 26, height: -4, flicker: 0.3);
+        // Its light down on the floor, lighting the walls red from below.
+        B.Glow(pitX, pitZ, "#ff5a1e", 16, height: -5.5, flicker: 0.3);
+        B.Vents.Add((pitX, pitZ, PitR - 3));
         double face = ArenaGen.Builder.Facing(pitX, pitZ, 0, 0);
         var (ux, uz) = ArenaGen.Builder.Along(face);
-        // The headframe's legs either side of the lip, and a winding post (built later as one piece).
+        // The headframe over the throat, its back-stays out past the edge.
+        B.Piece("arena/headframe", pitX, pitZ, face);
+        double fx0 = Math.Sin(face), fz0 = Math.Cos(face);
         foreach (int side in new[] { -1, 1 })
-        {
-            double lx = pitX + ux * side * (PitR + 0.8), lz = pitZ + uz * side * (PitR + 0.8);
-            B.Piece("halloween/post", lx, lz, face, 2.0);
-            B.Block(lx, lz, 0.5);
-        }
+            foreach (int fore in new[] { -1, 1 })
+                B.Block(pitX + ux * side * 5.6 + fx0 * fore * 5.6, pitZ + uz * side * 5.6 + fz0 * fore * 5.6, 0.5);
         // Their own dead, wrapped small, waiting at the mouth to be carried down
         // ("Nobody's! Nobody's lost!").
         for (int k = 0; k < 4; k++)
@@ -182,16 +193,19 @@ public sealed class Dig : ArenaShape
         }
 
         // ---------------------------------------------------------- the rails --
-        // Carts stopped on them, one turned over off them.
+        // Tubs stopped on them: a train of them near the pit, full, and one
+        // here and there across the working where it was left.
+        int train = rails.Length / 4 + Rng.Int(0, 6);
         for (int k = 0; k < rails.Length; k++)
         {
-            if (k % 26 != 13) continue;
+            bool inTrain = k >= train && k < train + 8 && (k - train) % 2 == 0;
+            if (!inTrain && k % 23 != 17) continue;
             var (x, z, _) = rails[k];
-            if (B.In(x, z) < 10) continue;
+            if (B.In(x, z) < 6 || MathX.Dist(x, z, pitX, pitZ) < PitR + 3) continue;
             var (nx, nz, _) = rails[Math.Min(k + 1, rails.Length - 1)];
             double rot = Math.Atan2(nx - x, nz - z);
-            B.Piece("props/Stall_Cart_Empty", x, z, rot + Math.PI / 2, 0.9);
-            B.Slab(x, z, 0.9, 1.4, rot);
+            B.Piece("arena/tub", x, z, rot);
+            B.Slab(x, z, 0.6, 0.85, rot);
         }
 
         // ----------------------------------------------------------- cover --
