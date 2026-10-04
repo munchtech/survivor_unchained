@@ -5,9 +5,10 @@ Status page for the gameplay experience director (agent `a33f58e68e89e3ccf`, bra
 owner's structure, the music by beat and the plan by owner); evidence frames are in
 `docs/experience/`.
 
-## Current state (2026-10-04, stopped at the owner's usage limit)
+## Current state (2026-10-04, handed off past 500k context)
 
-Merged the integration branch at `81429e6`. Tests green (521). Pushed.
+Merged the integration branch at `535bb60`. Tests green (539). Pushed. **Handed off:**
+`docs/handoff/experience.md` is the successor's brief.
 
 **Done and in the game:**
 - **The night's shape** (`ArenaPacing.cs`): a sawtooth into each landmark, breathers, a herald's

@@ -43,6 +43,9 @@
  "scroll": 5,
  "select": 8,
  "switch": 7,
+ "tell_drum": 2,
+ "tell_fuse": 1,
+ "tell_howl": 2,
  "tick": 3,
  "toggle": 4
 }
