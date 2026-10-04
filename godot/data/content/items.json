@@ -510,7 +510,7 @@
    "tags": [
     "digger_lamp"
    ],
-   "lore": "He dropped it going down the hole at the Low Ford. It is still warm, and it is still his, and he will want it back."
+   "lore": "He dropped it going down the hole at the Low Ford. It is still warm, and it is still his, and he will want it back. Scratched round the rim, small, in lampling letters, over and over: DOWNSTAIRS. DOWNSTAIRS. DOWNSTAIRS."
   },
   "wardens_lampiron": {
    "id": "wardens_lampiron",
@@ -554,7 +554,7 @@
     "holy_light",
     "warden_iron"
    ],
-   "lore": "The iron cage of the lamp the Ford-Warden carried. Under the socket, cut clean and new, a smith's mark: a ring with a hammer across it. Whatever burned in it went down a hole in Grimtunnel's arms. The cage still remembers the light."
+   "lore": "The iron cage of the lamp the Ford-Warden carried. Under the socket, cut clean and new, a smith's mark: a ring with a hammer across it. It was made to hold ember, not oil. Whatever burned in it went down a hole in Grimtunnel's arms. The cage still remembers the light."
   },
   "bone_charm": {
    "id": "bone_charm",
@@ -851,7 +851,7 @@
    "icon": "ember",
    "value": 18,
    "stack": 20,
-   "description": "A stone that kept some of its light. It does not keep forever."
+   "description": "A stone that kept some of its light. It does not keep forever. Hold it to your ear in a quiet room, and the room is not quite quiet."
   },
   "kerchief_cloth": {
    "id": "kerchief_cloth",
@@ -937,7 +937,7 @@
    "rarity": 1,
    "icon": "vial_orange",
    "value": 0,
-   "description": "Warm, faintly glowing sludge scraped from a pipe.",
+   "description": "Warm, faintly glowing sludge scraped from a pipe. It smells like a chapel lamp, and a little like a wound.",
    "needed": {
     "not": {
      "knows": "root_cause"
@@ -1026,7 +1026,7 @@
    "icon": "bomb",
    "value": 30,
    "stack": 5,
-   "description": "A crate-charge of unstable ember. Something could be blown open with this. Or up.",
+   "description": "A crate-charge of unstable ember. Something could be blown open with this. Or up. It is warm, and warmer when you are afraid.",
    "tags": [
     "explosive"
    ]

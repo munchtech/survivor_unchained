@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SurvivorUnchained.Core;
 using SurvivorUnchained.Sim;
 using SurvivorUnchained.World;
@@ -194,6 +195,9 @@ public sealed class NpcActor
     public bool Talking, Hidden;
     /// <summary>After dark: they say different things.</summary>
     public bool Night;
+    /// <summary>What they would say now about how things stand (the zone's
+    /// reading of npcs.json "said"); half their barks, when there is any.</summary>
+    public Func<IReadOnlyList<string>>? Said;
     string pose;
     double barkT;
 
@@ -248,7 +252,9 @@ public sealed class NpcActor
         if (barkT <= 0 && !Talking && d < 9 && d > 2.5)
         {
             barkT = 30 + rng.NextDouble() * 30;
-            var pool = Night && Def.NightBarks is { Count: > 0 } nb ? nb : Def.Barks;
+            IReadOnlyList<string> pool = Night && Def.NightBarks is { Count: > 0 } nb ? nb : Def.Barks;
+            var said = Said?.Invoke();
+            if (said is { Count: > 0 } && (pool.Count == 0 || rng.NextDouble() < 0.5)) pool = said;
             if (pool.Count > 0) look.Bark(pool[rng.Next(pool.Count)], X, y + (Def.Scale ?? 1) * 0.4 - 0.2, Z, voice: Def.Id);
         }
     }
@@ -302,6 +308,11 @@ public abstract class ZoneRuntime
         if (!conds.TryGetValue(condJson, out var c)) conds[condJson] = c = Json.Parse<Cond>(condJson);
         return Rules.Test(c, C);
     }
+    /// <summary>A person's "said" lines that hold now, by day or after dark.</summary>
+    protected IReadOnlyList<string> SaidNow(NpcDef def, bool dark) =>
+        def.Said is { Count: > 0 } s
+            ? s.Where(l => (l.Night == null || l.Night == dark) && Rules.Test(l.When, C)).Select(l => l.Text).ToList()
+            : Array.Empty<string>();
     protected bool Knows(string k) => Rules.Test(new Cond { Knows = k }, C);
     protected bool HasItem(string def) => Rules.Test(new Cond { HasItem = def }, C);
     protected bool Quest(string id, string entry) => Rules.Test(new Cond { Quest = new QuestCond { Id = id, Entry = entry } }, C);
