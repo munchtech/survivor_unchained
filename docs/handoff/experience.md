@@ -176,8 +176,15 @@ of the genre, and raise it.
     and Signs;
   - sent: choice deciding survival from tier 3 (random drafting wins as often as greedy at tiers
     1–3), and the endgame design.
-- **Story** `a035208561a66c171` (successor to `a7622ae77d19e31dc`): reactions to `arena.last.*`,
-  and the wording of the "half hour" strings. The defaults are in combat's hands.
+- **Story** `a035208561a66c171` (successor to `a7622ae77d19e31dc`): **both briefs done**, at
+  `worktree-agent-a035208561a66c171@38d4291`, merged at the coordinator's next round.
+  - **The town reacts:** 29 barks across 13 people on `arena.last.*`, said that night and the
+    morning after, then dropped. A new fact, `arena.last.ago`, starts at 0 and gains 1 each dawn.
+    The test is `CinematicTests.The_town_talks_about_the_night_just_past_and_then_lets_it_go`.
+  - **Still seeds:** tier, minutes, day and killer.
+  - **The "half hour" strings** are worded by the night.
+  - **Offer:** they will write the result screen's words (titles, the night's one-line story,
+    the Wayfinder's verdict) once you send the slots. Send them with UI's design.
 - **UI design** `ac76f400913a109cd`: one bark at a time, the result as the night's story, the
   table saying what a map pays, the pause rule. Character creation comes first for them.
 - **Skills (VFX)** `a8bafe3cd8a229639`: zones with no fill, at most 35% coverage, never red or
