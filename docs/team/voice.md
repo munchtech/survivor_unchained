@@ -37,6 +37,12 @@ Read this with the predecessor's handoff, `docs/handoff/voice.md`. Where the two
 
 ## Next
 
+0. **Before the first final is imported, build in the legal lead's four ElevenLabs rules** (aa12c130ddf4b904c; the full list is in `docs/handoff/voice.md`, Next 0):
+   - no ElevenLabs output into any local model (is the importer's Whisper word check allowed? asked);
+   - record the plan and model for each take; paid plans only;
+   - Voice Design, not Library, for the love routes and the narrator;
+   - keep the masters untouched;
+   - placeholders must not ship unannounced.
 1. **Commit placeholder batches as they land:** `git add godot/art/vo godot/data/vo tools/vo/manifest.json tools/vo/refs`, after `dotnet test`. Then send the cinematics lead the commit and the `read` values.
 2. **Apply sign-offs:** add each voice the story lead signs to `FINAL`, apply their notes, and regenerate the packets.
 3. **Owner's takes:** import them when they arrive and report what is missing.

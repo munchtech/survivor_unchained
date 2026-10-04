@@ -71,6 +71,24 @@ For the agent taking over voice for Survivor Unchained.
 
 ### Next
 
+0. **First: the legal lead's ElevenLabs rules** (aa12c130ddf4b904c, 4 October; sources: the Terms of 31 Mar 2026, the Prohibited Use Policy of 17 Aug 2026, the Voice Library Addendum of 6 Mar 2026). Build them in before the owner's first takes are imported.
+   1. **No ElevenLabs output into any local model** (Policy 9(k), 9(l)): no Seed-VC or Voicebox reference, no cloning profile, no fine-tuning, no dataset. Finals and placeholder references stay strictly apart.
+      - Today nothing feeds finals to Seed-VC or Voicebox. `post.py` is plain signal processing.
+      - **Open question:** `import_takes.py` runs Whisper, UTMOS and a speaker embedding on each take (`produce.Ears().hear`) to check the words. I asked the legal lead whether that counts as "input for any machine learning". Until they answer, make the check opt-in (`--check`), so the default never runs a model on a final.
+      - `finals/` must never become a `refs/` or casting source.
+   2. **Only takes made on a paid plan are usable commercially.** Free-plan and beta-feature output is not.
+      - Add `--plan` (required; refuse `free`) and `--model` (default `eleven_v4`) to `import_takes.py`.
+      - Record both in each imported take, e.g. `take["elevenlabs"] = {"plan", "model", "voice_id"?, "library_notice_days"?}`.
+   3. **Sexual content: Voice Design voices, not Voice Library ones.** Library voices are real people's cloned voices; an owner can turn on live moderation or withdraw the voice after notice. Takes already made stay usable.
+      - In `elevenlabs.py`, drop the "Voice Library instead" paragraph for the narrator, Sella, Maeca, Keegan, Rav and Ysolde (the love routes), and say why.
+      - Elsewhere, ask the owner to note a Library voice's ID and notice period, and record them on import.
+   4. **Keep the masters as downloaded** (policy 9(e)): never strip ElevenLabs markings or metadata.
+      - `to_wav` converts MP3s with ffmpeg, so first copy each original untouched into `VO_WORK/masters/`.
+      - The mixed oggs in the game are fine.
+   5. **Placeholders shipping:** Maya1 and Seed-VC audio in a build is pre-generated AI audio for Steam's disclosure. Finals must replace every placeholder before launch, or a build flag must drop them.
+      - `VoTake.Placeholder` is in the index, so `VoiceOver` can skip placeholders in a release build.
+      - Ask the main session which they want for the beta.
+
 1. **Commit placeholder batches as they land.** Run `dotnet test` first, then `git add godot/art/vo godot/data/vo tools/vo/manifest.json tools/vo/refs`.
    - After each batch, read from `tools/vo/manifest.json`: placeholders by voice, takes with word `faults`, and each timed line's `take.read` against `direction.time`. Send the timed ones to the cinematics lead.
    - Re-run `--refault` after any lexicon change.
