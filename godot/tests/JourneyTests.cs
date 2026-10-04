@@ -110,6 +110,7 @@ public class JourneyTests
         Assert.Contains(j.Ch.Conditions, c => c.Id == ConditionId.Wounded);
         Assert.Contains("risen_once", j.Ch.Traits);
         Assert.True(j.World.Fact("player.just_died").Truthy);
+        Assert.Equal(1, j.World.Fact("player.deaths").Number);
         Assert.Contains(j.World.History, h => h.Id.StartsWith("fell_"));
         Assert.Null(j.Expedition);
     }

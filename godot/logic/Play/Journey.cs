@@ -308,7 +308,8 @@ public sealed class Journey
               { "if": { "not": { "trait": "risen_once" } }, "then": [{ "trait": "risen_once" }] },
               { "history": { "id": "fell_{{w.Day}}_{{deaths}}", "text": "fell in {{zoneName}} to {{Esc(killer)}}", "tags": ["death"], "spread": 2,
                 "sentiment": { "respect": -3 }, "reactions": { "chid": { "affection": 10 } } } },
-              { "set": { "player.just_died": true } }
+              { "set": { "player.just_died": true } },
+              { "add": { "player.deaths": 1 } }
             ]
             """);
         Expedition = null;
@@ -323,9 +324,11 @@ public sealed class Journey
         {
             Family.Wolf => ["Ash-Fang", "Hollow-Eye", "Old Greyback", "Split-Ear"],
             Family.Boar => ["Old Tusk", "the Hedge-Breaker"],
-            Family.Kerchief => ["Red Wat", "Knuckles Marro", "Sly Dell"],
+            // Never a name the story has spent: Wat is the drowned carter, and the
+            // dead watchman at the ford is Corran.
+            Family.Kerchief => ["Red Hob", "Knuckles Marro", "Sly Dell"],
             Family.Lampling => ["Wick", "Soot-Tooth"],
-            Family.Undead => ["the Unburied", "the Drowned Watchman"],
+            Family.Undead => ["the Unburied", "the Ditch-Walker"],
             _ => ["the Thing in the Wood"],
         };
         return list[rng.Next(list.Length)];
