@@ -2557,7 +2557,7 @@ Subtitle: She is not looking at your palm.
 
 ### 235. `dlg.vonnra.f_accuse.0.p0.wav`
 
-*Where:* dialogue.json vonnra/f_accuse#0; part 1 of 2: **narrator: For the first time she looks at your face and not at your hand. It goes on long enough tha…** / vonnra: ...Sit down. I have not finished reading.
+*Where:* dialogue.json vonnra/f_accuse#0; part 1 of 3: **narrator: For the first time she looks at your face and not at your hand. It goes on long enough tha…** / vonnra: ...Sit down. / vonnra: I have not finished reading.
 *Played:* the narrator's aside inside someone else's line: plain, quiet, observant; the narrator never shows a feeling.
 
 ```

@@ -11,8 +11,8 @@
  "dlg.sella.rook.0": {"emo": "wry affection", "intent": "about Rook", "pace": "measured", "vol": "level", "note": "A list of Rook's virtues, fond. 'I've had worse mothers.' a joke with a bruise in it."},
  "dlg.sella.buyers.0": {"emo": "frank, knowing", "intent": "who buys what she hears", "pace": "measured", "vol": "quiet", "note": "'Clever.' approving. Brisk list of buyers. Vonnra said with respect and unease. A pause; then a promise with a hook: 'Nobody has. Yet.'"},
  "dlg.sella.price.0": {"emo": "frank, warm, businesslike", "intent": "her terms", "pace": "measured", "vol": "quiet", "note": "Terms without coyness. Humour on the bath. The last two sentences sincere, a professional's care."},
- "dlg.sella.morning.0": {"emo": "fond, teasing", "intent": "you're a habit", "pace": "measured", "vol": "level", "note": "Pleased. Rook's complaint relayed with relish. Brisk send-off with a dark joke."},
- "dlg.sella.morning.1": {"emo": "fond, teasing", "intent": "morning after", "pace": "measured", "vol": "quiet", "note": "'Not badly.' kind. 'the pieces are what I like.' warm double meaning."},
+ "dlg.sella.morning.0": {"emo": "fond, uneasy under it", "intent": "she noticed the body's hours", "pace": "measured", "vol": "quiet", "hides": "she knows who pays for a thing like this, and unless she has stopped selling you, Vonnra will have it by noon", "note": "The first time anyone says it (the bible's 'body's hours'). Narrator: her palm on your breastbone. 'cold as the river all night' puzzled, half a joke she doesn't quite make; 'warm as toast' a shade too bright. '...Rook's got a word for that. It's not a nice word.' quieter; not looking at you, because she's already counting it: as near as she comes to warning you. 'Get up and eat something.' brisk care, and real."},
+ "dlg.sella.morning.1": {"emo": "fond, teasing", "intent": "you're a habit", "pace": "measured", "vol": "level", "note": "Rook's complaint relayed with relish; a brisk send-off with a dark joke."},
  "dlg.sella.cb_tricked_redcowl.0": {"emo": "admiring, flirtatious", "intent": "praises your lie", "pace": "measured", "vol": "level", "note": "'You'd do well upstairs' a compliment between professionals."},
  "dlg.sella.cb_exposed_pell.0": {"emo": "dry, unsentimental", "intent": "Pell's gone", "pace": "measured", "vol": "level", "note": "Deadpan."},
  "dlg.sella.cb_burned_roost.0": {"emo": "guarded, cool", "intent": "she's heard", "pace": "slow", "vol": "quiet", "note": "A pause. 'I don't judge' a professional reflex. 'But I heard.' cool and pointed."},
@@ -36,7 +36,7 @@
  "bark.sella.day.1": {"emo": "amused", "pace": "measured", "vol": "level"},
  "bark.sella.day.2": {"emo": "amused", "pace": "measured", "vol": "level"},
  "bark.sella.night.0": {"emo": "teasing", "pace": "measured", "vol": "quiet"},
- "bark.sella.night.1": {"emo": "teasing", "pace": "measured", "vol": "quiet"},
+ "bark.sella.night.1": {"emo": "teasing", "pace": "measured", "vol": "quiet", "note": "An invitation dressed as thrift."},
  "bark.sella.night.2": {"emo": "teasing", "pace": "measured", "vol": "quiet"},
  "bark.sella.night.3": {"emo": "teasing", "pace": "measured", "vol": "quiet"}
 }

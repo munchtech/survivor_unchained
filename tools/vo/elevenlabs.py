@@ -37,7 +37,7 @@ SHEET = {"narrator": "The narrator.", "rook": "Mother Rook", "holloway": "Captai
 # Held for the story lead's review (a7622ae77d19e31dc): whole parts, and kinds of line.
 HOLD_VOICES: dict = {}
 # Packets the story lead has checked and marked final (voice: date).
-FINAL = {"narrator": "2026-10-03", "rook": "2026-10-03", "holloway": "2026-10-03", "brannoc": "2026-10-03"}
+FINAL = {"narrator": "2026-10-03", "rook": "2026-10-03", "holloway": "2026-10-03", "brannoc": "2026-10-03", "sella": "2026-10-03"}
 # Lines waiting on the story lead or the owner: (id prefix, why).
 HOLD_LINES = (("dlg.keegan.vonnra.", "the story lead's confirmation of Keegan's kenning"),)
 TAG = {"beat": "…", "breath": "[inhales]", "laugh": "[laughs]", "laughs": "[laughs]", "chuckle": "[chuckles]",
@@ -184,6 +184,8 @@ def scene(l: dict) -> str:
         return "Said in passing"
     if i.startswith("cbark."):
         return "In a fight"
+    if i.startswith("name."):
+        return "The survivor's name"
     return "Passers-by"
 
 
@@ -260,7 +262,11 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
         if sec != section:
             section = sec
             w += [f"## {sec}", ""]
-        d = l.get("direction") or {}
+            if sec == "The survivor's name":
+                w += ["One take for each name the creation screen suggests. The game splices it into every line where she "
+                      "says the survivor's name (marked *The name* above); a name the player types that is not on this list "
+                      "leaves the pause empty. Keep each the same in tone, so it fits all of them.", ""]
+        d = lines_mod.part_direction(l, s)
         aside = s["voice"] == "narrator" and l["voice"] != "narrator"
         hold = held(l, voice)
         w.append(f"### {n}. `{file_name(l, k)}`" + (f"  HOLD: {hold}" if hold else ""))
@@ -285,7 +291,17 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
                     w.append(f"*{label}:* {d[key]}")
             if length_note(l, s):
                 w.append(length_note(l, s))
-        w += ["", "```", paste(s["text"], d, aside, plain=voice == "narrator", acted=s.get("acted")), "```", f"Subtitle: {s['text']}", ""]
+        text = paste(s["text"], d, aside, plain=voice == "narrator", acted=s.get("acted"))
+        at = l.get("name_at")
+        if at is not None and k == at - 1:
+            w.append("*The name:* the survivor's name (one of her name takes, at the end of this packet) is spliced in straight "
+                     "after this take, so end it leading into a name, not closing the sentence.")
+            text = re.sub(r"[.…]+$", ",", text)
+        elif at is not None and k == at:
+            w.append("*The name:* her take of the survivor's name plays just before this one; start as if she had that moment "
+                     "said it." if k == 0 else "*The name:* the survivor's name comes just before this take, in the pause; "
+                     "start as if she had just said it.")
+        w += ["", "```", text, "```", f"Subtitle: {s['text']}", ""]
     return "\n".join(w) + "\n", {"voice": voice, "name": v["name"], "takes": len(es), "chars": chars, "held": len(holds)}
 
 

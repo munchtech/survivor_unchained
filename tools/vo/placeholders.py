@@ -103,7 +103,7 @@ def segment_jobs(line: dict, rnd: int, nudge: int = 0) -> list[dict]:
     d = line.get("direction", {})
     jobs = []
     for i, seg in enumerate(line["segments"]):
-        sd = produce.NARRATOR_ASIDE if seg["voice"] == "narrator" and line["voice"] != "narrator" else d
+        sd = produce.NARRATOR_ASIDE if seg["voice"] == "narrator" and line["voice"] != "narrator" else lines_mod.part_direction(line, seg)
         text = produce.prepare(tagged(seg["text"], sd) if seg["voice"] != "narrator" or line["voice"] == "narrator" else seg["text"])[0]
         desc = description(voices[seg["voice"]], sd, nudge)
         parts = chunks(text)

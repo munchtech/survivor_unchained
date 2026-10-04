@@ -70,7 +70,7 @@ By how much each voice is heard, and where the player meets it first:
 |---|---|---|---|
 | [The narrator](narrator.md) | 269 | 27,374 |  |
 | [Sella](sella.md) | 95 | 9,821 |  |
-| [Vonnra Ash-of-Morrow](vonnra.md) | 76 | 8,878 |  |
+| [Vonnra Ash-of-Morrow](vonnra.md) | 102 | 9,021 |  |
 | [Captain Holloway](holloway.md) | 64 | 7,712 |  |
 | [Harlan Coyle](harlan.md) | 63 | 7,141 |  |
 | [Mother Rook](rook.md) | 45 | 6,073 |  |

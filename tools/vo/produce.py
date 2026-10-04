@@ -295,6 +295,8 @@ def char_marks(raw: str, segs: list[dict]) -> list[tuple[float, float]]:
     for s in segs:
         probe = s["text"][: min(24, len(s["text"]))]
         k = raw.find(probe, cur)
+        if k < 0:  # a part cut short where the name was ("Sit down." of "Sit down, {name}.")
+            k = raw.find(probe[:10], cur)
         if k < 0:
             k = cur
         end = raw.find(")", k) + 1 if s["voice"] == "narrator" and raw[max(0, k - 1):k] == "(" else k + len(s["text"])
@@ -329,7 +331,7 @@ def mix(line: dict, picks: list[dict], max_gap: float = 1.6) -> tuple:
     for seg, pick in zip(line["segments"], picks):
         v = voices[seg["voice"]]
         room = "close" if seg["voice"] == "narrator" else d.get("room", v.get("room", "close"))
-        vol = "level" if seg["voice"] == "narrator" and line["voice"] != "narrator" else d.get("vol", "level")
+        vol = "level" if seg["voice"] == "narrator" and line["voice"] != "narrator" else lines_mod.part_direction(line, seg).get("vol", "level")
         info: dict = {}
         x = post.master(pick["path"], room, v.get("sex", "m"), part_fx(line, seg), vol=vol, max_gap=max_gap, info=info)
         parts.append((x, room))
@@ -374,6 +376,11 @@ def finish(line: dict, picks: list[dict], log) -> dict:
             "made": time.strftime("%Y-%m-%d"), "read": read}
     if line.get("sex"):
         take["sex"] = line["sex"]
+    if line.get("name_at") is not None:
+        # Where the survivor's name is spliced in (VoiceOver): before the
+        # first part, or at the end of the part before it, in its pause.
+        k = line["name_at"]
+        take["name_at"] = 0.0 if k == 0 else round(marks[k - 1][1], 3)
     if d.get("time"):
         take["time"] = d["time"]
         if gap < FIT_GAPS[0]:
@@ -395,6 +402,8 @@ def write_index(manifest_lines: list[dict]):
                 e["sex"] = t["sex"]
             if t.get("read"):
                 e["read"] = t["read"]
+            if t.get("name_at") is not None and l.get("name_at") is not None:
+                e["name"] = t["name_at"]
             if t.get("placeholder"):
                 e["placeholder"] = True
             idx["lines"][l["id"]] = e

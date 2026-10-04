@@ -19,6 +19,9 @@ Line ids:
   folk.<i>                     a passer-by (folk.json)
   say.<hash>                   the narrator, or a voice, from the zone code
   cbark.<hash>                 a named voice in a fight (the zone code)
+  name.<voice>.<Name>          the survivor's name in that voice, spliced into
+                               the lines that say it (one per name the creation
+                               screen suggests)
 
 The game finds a line's take by id, or, for lines written in code, by the
 hash of the text it is about to show; either way it plays a take only if the
@@ -57,21 +60,73 @@ SPEAKER_VOICE = {"The Ford-Warden": "warden", "Grimtunnel": "grimtunnel", "Snib"
 NODE_VOICE = {"ford_warden": "warden", "barrow_lord": "barrow_lord", "kerchief_woman": "kerchief_woman", "guard": "guard"}
 
 
-def name_elided(s: str) -> tuple[str, bool]:
+def name_elided(s: str, mark: str = "") -> tuple[str, bool]:
     """A line with the survivor's name in it, said without the name (the
-    subtitle still shows it). False when the name cannot be lifted out cleanly."""
+    subtitle still shows it). False when the name cannot be lifted out
+    cleanly. `mark` is left where the name was, for a voice that splices it
+    back in (NAME_VOICES)."""
     if "{name}" not in s:
         return s, True
     t = s
-    t = re.sub(r",\s*\{name\}\s*([.,:;!?])", r"\1", t)       # "Late, {name}." -> "Late."
-    t = re.sub(r"^\{name\}[.:,]\s*", "", t)                  # "{name}. Your chapter..." -> "Your chapter..."
-    t = re.sub(r"([.!?]\s+)\{name\}[.:,]\s*", r"\1", t)      # "... Go home, {name}." handled above; mid-line vocative
-    t = re.sub(r"\b([Aa]nd) \{name\}:\s*", r"\1 ", t)                # "And {name}: run." -> "And run."
+    t = re.sub(r",\s*\{name\}\s*([.,:;!?])", lambda m: m.group(1) + mark, t)       # "Late, {name}." -> "Late."
+    t = re.sub(r"^\{name\}[.:,]\s*", mark, t)                                      # "{name}. Your chapter..." -> "Your chapter..."
+    t = re.sub(r"([.!?]\s+)\{name\}[.:,]\s*", lambda m: m.group(1) + mark, t)      # mid-line vocative
+    t = re.sub(r"\b([Aa]nd) \{name\}:\s*", lambda m: m.group(1) + " " + mark, t)   # "And {name}: run." -> "And run."
     if "{name}" in t:
         return s, False
     # A sentence may now start in lower case.
-    t = re.sub(r"(^|[.!?]\s+)([a-z])", lambda m: m.group(1) + m.group(2).upper(), t)
+    t = re.sub(r"(^|[.!?]\s+|" + re.escape(mark or "\0") + r"\s*)([a-z])", lambda m: m.group(1) + m.group(2).upper(), t)
     return t, True
+
+
+# Voices that say the survivor's name: the line is recorded in two takes,
+# split where the name goes, and the name is its own take in that voice
+# (VO_CAST.md, "The survivor's name"; the game splices it, VoiceOver).
+NAME_VOICES = {"vonnra"}
+NAME_MARK = "‖"
+NAME_DIRECTION = {"vonnra": {"emo": "warm, unsettling", "intent": "says your name", "pace": "slow", "vol": "quiet",
+                             "note": "The only warmth anywhere in her part, and it should frighten. Said as if she had always "
+                                     "known it: the same take goes into 'Sit down, ...', 'That is all I see for free, ...' and "
+                                     "the name before 'Your chapter is written.'"}}
+FRONT = os.path.join(ROOT, "godot", "src", "Ui", "Front.cs")
+
+
+def suggested_names() -> list[str]:
+    """The names the creation screen offers (Front.cs Names)."""
+    m = re.search(r"string\[\]\s+Names\s*=\s*\{([^}]*)\}", open(FRONT, encoding="utf-8").read())
+    names = re.findall(r'"([^"]+)"', m.group(1)) if m else []
+    assert names, "the creation screen's names were not found in Front.cs"
+    return names
+
+
+def part_direction(line: dict, seg: dict) -> dict:
+    """How one part of a line is played. A person's words quoted inside the
+    narration of their scene ("Don't," she says) are theirs, not the
+    narrator's: the line's `quote` direction, over its own. (The narrator's
+    asides inside a person's line are produce.NARRATOR_ASIDE.)"""
+    d = line.get("direction") or {}
+    if seg["voice"] not in (line["voice"], "narrator") and d.get("quote"):
+        return {**{k: v for k, v in d.items() if k not in ("quote", "note", "beats", "hides", "wants")}, **d["quote"]}
+    return d
+
+
+def split_at_name(segs: list[dict]) -> tuple[list[dict], int | None]:
+    """The parts, the one with the name mark split in two where the name
+    goes; and the index of the part the name comes before."""
+    out, at = [], None
+    for s in segs:
+        if NAME_MARK not in s["text"]:
+            out.append(s)
+            continue
+        before, after = (x.strip() for x in s["text"].split(NAME_MARK, 1))
+        acted = s.get("acted", s["text"])
+        a_before, a_after = (x.strip() for x in acted.split(NAME_MARK, 1)) if NAME_MARK in acted else (before, after)
+        if before:
+            out.append({k: v for k, v in {"voice": s["voice"], "text": before, "acted": a_before if a_before != before else None}.items() if v})
+        at = len(out)
+        if after:
+            out.append({k: v for k, v in {"voice": s["voice"], "text": after, "acted": a_after if a_after != after else None}.items() if v})
+    return out, at
 
 
 def segments(text: str, voice: str, owner: str | None = None) -> list[dict]:
@@ -297,7 +352,8 @@ def build() -> list[dict]:
         l["hash"] = text_hash(l["text"])
         if l.get("skip"):
             continue
-        said, ok = name_elided(l["text"])
+        splice = l["voice"] in NAME_VOICES
+        said, ok = name_elided(l["text"], NAME_MARK if splice else "")
         if not ok:
             l["skip"] = "the survivor's name is part of the sentence"
             continue
@@ -312,8 +368,15 @@ def build() -> list[dict]:
             owner = NPC_VOICE.get(npc, npc)
             owner = owner if owner in cast_voices() else None
         l["segments"] = segments(said, l["voice"], owner)
+        if splice and NAME_MARK in said:
+            l["segments"], l["name_at"] = split_at_name(l["segments"])
         if not l["segments"]:
             l["skip"] = "nothing to say"
+    for voice in sorted(NAME_VOICES):
+        for n in suggested_names():
+            t = f"{n}."
+            lines.append({"id": f"name.{voice}.{n}", "kind": "name", "voice": voice, "text": t, "hash": text_hash(t),
+                          "where": "Front.cs Names (the creation screen)", "segments": [{"voice": voice, "text": t}]})
     return lines
 
 
@@ -364,7 +427,7 @@ def merge(lines: list[dict]) -> list[dict]:
     out = []
     for l in lines:
         prev = old.get(l["id"], {})
-        d = directions.get(l["id"])
+        d = directions.get(l["id"]) or (NAME_DIRECTION.get(l["voice"]) if l.get("kind") == "name" else None)
         if d:
             l["direction"] = {k: v for k, v in d.items() if k not in ("segments", "voice", "skip")}
             if "voice" in d:
@@ -439,6 +502,9 @@ def impact(l: dict) -> tuple:
     if i.startswith("dlg."):
         npc = i.split(".")[1]
         return (4, NPC_ORDER.index(npc) if npc in NPC_ORDER else len(NPC_ORDER), 0)
+    if i.startswith("name."):  # straight after the speaker's conversations
+        npc = i.split(".")[1]
+        return (4, NPC_ORDER.index(npc) if npc in NPC_ORDER else len(NPC_ORDER), 1)
     if i.startswith(("bark.", "guard.")):
         return (5, 0, 0)
     if i.startswith("cbark."):
