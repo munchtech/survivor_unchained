@@ -142,9 +142,13 @@ public partial class Hits : Node3D
     static Font? UiFont() => SurvivorUnchained.Ui.Style.UiHeavy;
 
     /// <summary>A word or number that rises from where something happened and fades.</summary>
-    public void Text(Vector3 at, string text, Color color, int size = 60)
+    public void Text(Vector3 at, string text, Color color, int size = 60) => Show(at, text, color, size);
+
+    /// <summary>As Text, saying which of the pool's labels it took.</summary>
+    int Show(Vector3 at, string text, Color color, int size)
     {
         int i = nextNumber++ % numbers.Count;
+        Untally(i);
         var l = numbers[i].Label;
         l.Text = text;
         l.FontSize = size;
@@ -152,6 +156,7 @@ public partial class Hits : Node3D
         l.GlobalPosition = at + new Vector3(rng.RandfRange(-0.3f, 0.3f), 0, 0);
         l.Visible = true;
         numbers[i] = (l, 0);
+        return i;
     }
 
     /// <summary>The blade's arc round `at`, facing `facing`, sweeping over
@@ -173,6 +178,7 @@ public partial class Hits : Node3D
 
     public override void _Process(double delta)
     {
+        StepTally(delta);
         float dt = (float)delta;
         for (int i = 0; i < numbers.Count; i++)
         {
