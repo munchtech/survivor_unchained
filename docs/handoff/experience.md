@@ -82,8 +82,16 @@ Merged with the integration branch at `f56ee42`. 567 tests green.
    poses (30 bodies, no neighbours alike), arena art's places (the barrow near-black: its successor
    is briefed), combat's run-ups (re-run the stretch table: target 10–20% under half in each
    run-up, wins within two points of 93%) and maps (median clear 9–10 min at tiers 1–2).
-2. **Stage the map's strongbox and ruler's fall:** combat appends `ChestItemKind.Gear`; give it a
-   colour and detail in `ChestCeremony.ColourOf/DetailOf`, and a smaller fall for maps.
+2. **Stage the map's strongbox and ruler's fall.** Combat's maps are built to our shape
+   (`worktree-agent-a1d4562f44c7f6feb@1b0f8bf1`, not yet merged here): 3/4/5 clearings by tier,
+   clears in 9.8/10.3/11.9 min, a pack every 12–16 s, the ruler 59–70 s, no packs on the last way,
+   the ruler's sign at its edge, the event (the people's question at the lit altar, about 50 s)
+   ending in a strongbox that calls `G.Chest(new ChestOpened(x, z, n, items, "The strongbox", n))`
+   with `ChestItemKind.Gear` items (a chart shows as a Gear item). Give Gear a colour (its rarity)
+   and detail (its rarity's name, "a chart" for charts) in `ChestCeremony.ColourOf/DetailOf`, and
+   stage the ruler's fall (`Ev.Victory`) smaller than the night's. The atlas: `Atlas.Biases`,
+   `Rank`, `Raise`, `Unspent`, `Road`/`Follow`. Picture: `--zone map --tier 1 --people dead`
+   (`--at boss` to start by the ruler).
 3. **A whole night at full resolution** on the autopilot (it now watches chests and leaves
    results): judge the swell, the evolution, the chest in context. The chest's frames are tagged
    (`NAME_chest_N`, `NAME_evolve_N`).
