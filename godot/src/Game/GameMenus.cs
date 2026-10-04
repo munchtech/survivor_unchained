@@ -137,6 +137,7 @@ public partial class Game
             screen?.Report(lines);
             air.Set(zone!.AtmosphereFor(TimeOfDay.Day));
             scene?.View.SetNight(false);
+            scene?.View.SetDusk(false);
             hud.ZoneInfo(zone.Name, zone.Region, w.Day, TimeOfDay.Day);
             Save("rest");
             hud.Fade(0, 0.6);

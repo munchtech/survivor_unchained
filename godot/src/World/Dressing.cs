@@ -162,12 +162,16 @@ public static class Dressing
         return root;
     }
 
-    /// <summary>The side of the squares the kit pieces are gathered in (--prop-cell, for measuring).</summary>
-    static float PropCell => Args.Num("prop-cell", 32);
+    /// <summary>The side of the squares the kit pieces are gathered in
+    /// (--prop-cell to measure others). Measured in the Waystation by day:
+    /// 24 m drew 13% fewer shadow draws than 32 m (each square is drawn into
+    /// every lamp's and cascade's view it touches, so smaller squares are
+    /// culled more tightly), and 16 m was no better for having more squares.</summary>
+    static float PropCell => Args.Num("prop-cell", 24);
 
     /// <summary>The world kits' pieces, placed one by one in the web game
     /// (the houses and walls too, which it merges): here each piece's parts
-    /// as MultiMeshes, one per 32 m bucket so what is off screen is culled.</summary>
+    /// as MultiMeshes, one per square (PropCell) so what is out of view is culled.</summary>
     public static Node3D Props(ZoneData z)
     {
         var root = new Node3D { Name = "Props" };

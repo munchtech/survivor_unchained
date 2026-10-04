@@ -5,10 +5,13 @@
     python tools/perf/sweep.py SCENARIO scale native,quality,balanced,performance
     python tools/perf/sweep.py SCENARIO prop-cell 32,48,64,1000
     python tools/perf/sweep.py SCENARIO engine "--render-thread safe|--render-thread separate"
-    [--build DIR] [--wait S] [--tag T]
+    python tools/perf/sweep.py SCENARIO flag "--merge-landmarks|--perf-off lamps"   # the game's own options, as given
+    [--build DIR] [--wait S] [--tag T] [--repeat N]
 
 A plain run (nothing changed) comes first, as the reference for the
-differences. Results land beside run.py's (godot/.shots/perf).
+differences. With --repeat, the whole set runs N times over, each set in
+turn, so what else the machine is doing weighs on every case alike.
+Results land beside run.py's (godot/.shots/perf).
 """
 import os
 import sys
@@ -31,8 +34,9 @@ def main():
     build = opt("--build", None)
     wait = int(opt("--wait", "30"))
     tag = opt("--tag", "sw")
+    repeat = int(opt("--repeat", "1"))
     scenario, kind, values = argv[0], argv[1], argv[2]
-    sep = "|" if kind == "engine" else ","
+    sep = "|" if kind in ("engine", "flag") else ","
     rows = []
     cases = [("ref", [], "high", [])] if kind not in ("quality",) else []
     for v in values.split(sep):
@@ -47,13 +51,16 @@ def main():
             cases.append((f"cell{name}", ["--prop-cell", v], "high", []))
         elif kind == "engine":
             cases.append((f"eng_{name}", [], "high", v.split()))
-    for label, extra, quality, engine in cases:
-        R.ENGINE[:] = engine
-        t = f"{tag}_{label}"
-        print(f"{scenario} {t}", flush=True)
-        r = R.run(scenario, t, "2560x1440", quality, extra, wait, build)
-        if r:
-            rows.append((t, r))
+        elif kind == "flag":
+            cases.append((f"f_{name}", v.split(), "high", []))
+    for rep in range(repeat):
+        for label, extra, quality, engine in cases:
+            R.ENGINE[:] = engine
+            t = f"{tag}_{label}" + (str(rep) if repeat > 1 else "")
+            print(f"{scenario} {t}", flush=True)
+            r = R.run(scenario, t, "2560x1440", quality, extra, wait, build)
+            if r:
+                rows.append((t, r))
     print()
     R.table(rows)
 

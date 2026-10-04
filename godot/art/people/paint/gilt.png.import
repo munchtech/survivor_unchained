@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/gilt.png-dbda2b5d1e1ceb69d8ddd2ef367027fd.cte
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
