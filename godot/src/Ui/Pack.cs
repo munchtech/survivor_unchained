@@ -59,47 +59,51 @@ public partial class InventoryScreen : Overlay
 
     CharacterData Ch => G.Journey.Ch;
 
+    /// <summary>The pack is a panel at the right; the survivor stands in view between it and the
+    /// thing read closely at the left.</summary>
+    public override float CameraShift => -188;
+    const float PanelW = 880;
+
     protected override void Build()
     {
         var ch = Ch;
         if (!seeded) { seeded = true; foreach (var it in Carried(ch)) seen.Add(it.Uid); }
-        // A full page: the survivor as they stand on the left, what they carry on the right.
-        var page = Page("Pack");
+        // A panel at the right (docs/UI_DESIGN.md 6, "Page or panel"): the pack is what is tweaked
+        // mid-play, so the world stays in view, as in Diablo IV, PoE and Last Epoch.
+        var area = SidePanel("Pack", $"{ch.Name}  ·  Level {ch.Level} {Callings.Background(ch.Background).Name} {Callings.Archetype(ch.Archetype).Name}", true, PanelW);
+        var v = Style.V(Style.Gap2);
+        v.Size = area.Size;
+        area.AddChild(v);
 
-        // The survivor, large, with what they wear round them; their standing beneath.
-        var you = Pane(page, new Rect2(0, 0, 780, 920));
-        var name = Style.H(12, Style.Label(ch.Name, Style.Display, 30, Style.GoldHi),
-            Style.Label($"Level {ch.Level} {Callings.Background(ch.Background).Name} {Callings.Archetype(ch.Archetype).Name}", Style.TextItalic, Style.Small, Style.InkDim));
-        name.Alignment = BoxContainer.AlignmentMode.Center;
-        you.AddChild(name);
-        var doll = Style.H(Style.Gap4, Column(Left, ch), Figure(ch), Column(Right, ch));
+        // What they wear, round them.
+        var doll = Style.H(Style.Gap3, Column(Left, ch), Figure(ch, 300, 376), Column(Right, ch));
         doll.Alignment = BoxContainer.AlignmentMode.Center;
-        you.AddChild(doll);
-        you.AddChild(new Section("Standing", "hover a thing to see what it would change"));
-        var standWell = Style.Panel(Style.Well(14));
+        v.AddChild(doll);
+        var standWell = Style.Panel(Style.Well(10));
         stats = Style.V(2);
         standWell.AddChild(stats);
-        you.AddChild(standWell);
+        v.AddChild(standWell);
         ShowStats(null);
 
         // What they carry.
-        var carried = Pane(page, new Rect2(810, 0, 1030, 920));
-        carried.AddChild(FilterRow());
-        var well = Style.Panel(Style.Well(12));
+        v.AddChild(FilterRow());
+        var well = Style.Panel(Style.Well(10));
         var centre = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
-        centre.AddChild(ItemViews.Grid(ch.Pack, 8, 112, it => it.Uid == sel, null, it => Select(it.Uid), Primary, Hover, "pack", Leave, SetupCell));
+        centre.AddChild(ItemViews.Grid(ch.Pack, 8, 84, it => it.Uid == sel, null, it => Select(it.Uid), Primary, Hover, "pack", Leave, SetupCell));
         well.AddChild(centre);
-        carried.AddChild(well);
-        carried.AddChild(Style.H(18,
+        v.AddChild(well);
+        v.AddChild(Style.H(18,
             Style.H(4, Glyphs.Icon("coin", 18, Style.GoldHi), Style.Label($"{Math.Floor(ch.Gold)} gold", Style.UiBold, Style.Body, Style.GoldHi)),
             Style.Label($"{ch.Pack.Count(p => p != null)} of {ch.Pack.Count} carried", Style.Ui, Style.Small, Style.InkDim)));
-        carried.AddChild(new Section("Read closely"));
+
+        // The thing chosen, read closely, at the left over the world: beside the survivor, not under the panel.
         inspect = Style.V(Style.Gap2);
-        inspect.SizeFlagsVertical = SizeFlags.ExpandFill;
-        carried.AddChild(inspect);
+        inspect.Position = new Vector2(40, 120);
+        inspect.Size = new Vector2(480, 900);
+        AddChild(inspect);
         ShowInspect(sel != null ? Inventory.Find(ch, sel)?.Item : null);
-        foot = new Control { CustomMinimumSize = new Vector2(1840, 30), MouseFilter = MouseFilterEnum.Ignore };
-        PageFooter(foot);
+        foot = new Control { CustomMinimumSize = new Vector2(PanelW - 40, 30), MouseFilter = MouseFilterEnum.Ignore };
+        SideFooter(foot);
         Footer();
     }
 
@@ -110,7 +114,7 @@ public partial class InventoryScreen : Overlay
 
     Control Column(EquipSlot[] slots, CharacterData ch)
     {
-        var v = Style.V(Style.Gap3);
+        var v = Style.V(Style.Gap1);
         v.Alignment = BoxContainer.AlignmentMode.Center;
         foreach (var s in slots)
         {
@@ -118,7 +122,7 @@ public partial class InventoryScreen : Overlay
             var (name, glyph) = Slots[s];
             var slot = s;
             Action? off = it != null && slot != EquipSlot.Weapon ? () => G.Gear((j, b) => j.Unequip(slot, b)) : null;
-            var view = ItemViews.Slot(it, 104, it != null && it.Uid == sel, null, false, it != null ? () => Select(it.Uid) : null, off,
+            var view = ItemViews.Slot(it, 72, it != null && it.Uid == sel, null, false, it != null ? () => Select(it.Uid) : null, off,
                 over => Hover(it, over), glyph, name, $"eq:{slot}");
             // Dragged from the pack, a thing that fits is worn here; dragged away from here, it is taken off.
             view.Drag = it != null && slot != EquipSlot.Weapon ? $"eq:{slot}:{it.Uid}" : null;
@@ -327,13 +331,7 @@ public partial class InventoryScreen : Overlay
     {
         if (!IsInstanceValid(inspect)) return;
         foreach (var c in inspect.GetChildren()) { inspect.RemoveChild(c); c.QueueFree(); }
-        if (it == null)
-        {
-            inspect.AddChild(Style.Gap(Style.Gap4));
-            inspect.AddChild(Style.Label(Controls.Instance.UsingPad ? "Move over a thing to read it." : "Choose a thing to read it closely; drag it onto yourself to wear it.", Style.Text, Style.Body, Style.Ink, true, HorizontalAlignment.Center));
-            inspect.AddChild(Style.Label("Gear stays with you. Ember fades when you rest; what you carry, and what you wear, does not.", Style.TextItalic, Style.Caption, Style.InkDim, true, HorizontalAlignment.Center));
-            return;
-        }
+        if (it == null) return;
         var loc = Inventory.Find(Ch, it.Uid);
         if (loc == null) return;
         var def = Items.Get(it.Def);
@@ -349,22 +347,19 @@ public partial class InventoryScreen : Overlay
         // Gear in the pack reads beside what it would replace: the ARPGs' side by side.
         if (loc.InPack && Items.SlotFor(def) != null)
         {
-            var pair = Style.H(Style.Gap3, ItemViews.Card(it, Ch, true, acts, 580));
+            inspect.AddChild(ItemViews.Card(it, Ch, true, acts, 480));
             var worn = ItemViews.Against(it, Ch);
-            var side = Style.V(4, Style.Label("WORN NOW", Style.UiHeavy, Style.Badge, Style.InkDim));
-            if (worn != null) side.AddChild(ItemViews.Card(worn, Ch, false, null, 380, true));
+            inspect.AddChild(Style.Label("WORN NOW", Style.UiHeavy, Style.Badge, Style.InkDim));
+            if (worn != null) inspect.AddChild(ItemViews.Card(worn, Ch, false, null, 480, true));
             else
             {
                 var empty = Style.Panel(Style.Slab(16), Style.Label("Nothing in that place: wearing it is all gain.", Style.TextItalic, Style.Small, Style.InkDim, true));
-                empty.CustomMinimumSize = new Vector2(380, 0);
-                side.AddChild(empty);
+                empty.CustomMinimumSize = new Vector2(480, 0);
+                inspect.AddChild(empty);
             }
-            pair.AddChild(side);
-            inspect.AddChild(Style.Scroll(pair));
             return;
         }
-        var card = ItemViews.Card(it, Ch, loc.InPack, acts, 980);
-        inspect.AddChild(Style.Scroll(card));
+        inspect.AddChild(ItemViews.Card(it, Ch, loc.InPack, acts, 480));
     }
 
     void Footer()
@@ -375,11 +370,11 @@ public partial class InventoryScreen : Overlay
         if (leaving != null && Inventory.Find(Ch, leaving) is { } l)
             f = Style.H(Style.Gap5, Style.Hint(Act.Alt, $"again to leave {Inventory.Name(l.Item)} behind for good", Style.Bad), Style.Hint(Act.Cancel, "Keep it"));
         else if (Controls.Instance.UsingPad)
-            f = Overlay.Footer((Act.Confirm, "Wear, use or take off"), (Act.Alt, "Leave behind"), (Act.Alt2, "Sort"), (Act.SubNext, "Filter"), (Act.TabNext, "Next page"), (Act.Cancel, "Close"));
-        else f = MouseFooter("Right-click or double-click to wear or use", "drag onto yourself to wear, off to take off", "hover to compare");
+            f = Overlay.Footer((Act.Confirm, "Wear or use"), (Act.Alt, "Leave"), (Act.Alt2, "Sort"), (Act.SubNext, "Filter"), (Act.Cancel, "Close"));
+        else f = MouseFooter("Right-click to wear or use", "drag to wear or take off", "hover to compare");
         if (f is BoxContainer bc) bc.Alignment = BoxContainer.AlignmentMode.Center;
         if (f is Label lb) lb.HorizontalAlignment = HorizontalAlignment.Center;
-        f.Size = new Vector2(1840, 30);
+        f.Size = foot.CustomMinimumSize;
         foot.AddChild(f);
     }
 

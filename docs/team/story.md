@@ -24,7 +24,11 @@ Branch: `worktree-agent-a7622ae77d19e31dc`.
   - three soul-test lines remade;
   - Brannoc's "Twelve, I made." said once in a playthrough.
   - §17 marks the lines to record exactly as written ("protect").
-- **In progress:** the voice director's next batch (Vonnra and the fortune).
+- **In progress:** the ElevenLabs packets, read line by line (WRITING_PASS §18).
+  - Narrator: notes sent (tool splits, no feelings, pauses as "…", no whispers in
+    love scenes). Final after regeneration and a diff.
+  - Rook: final once three lines are regenerated.
+  - Next: Holloway, Brannoc, Sella, Vonnra, Harlan.
 
 ## Key decisions (why)
 

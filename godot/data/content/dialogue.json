@@ -398,7 +398,7 @@
        "fact": "caravan.survivors",
        "eq": "rescued"
       },
-      "text": "Jory Coyle's home and sleeping in my good room with the lamp lit, and Harlan's tried to pay me for it twice. The wolves are another matter: Holloway's paying for pelts, Maeca says they're sick, and the Penhale boy says they drink from the stream and fall down. Pick one."
+      "text": "Jory Coyle's home, asleep in my good room with the lamp lit, and Harlan's been up my stairs four times to look at him. The wolves are another matter: Holloway's paying for pelts, Maeca says they're sick, and the Penhale boy says they drink from the stream and fall down. Pick one."
      },
      {
       "when": {
@@ -5167,7 +5167,7 @@
    "blind2_feet": {
     "id": "blind2_feet",
     "speaker": "narrator",
-    "text": "You take one in your hands. The sole is hard as boot leather, and scarred: old white lines across the ball of the foot, a ridge along the heel where something cut it to the bone a long time ago and it healed badly in the cold. She lets you hold it. She lets you hold the other. She lies very still, the way she lay still when the Pack called, and doesn't say anything for a long time. (Into the dark, very low:) \"Your hands are colder than my feet.\" (A pause.) \"Hold them anyway. ...Nobody's held those.\"",
+    "text": "You take one in your hands. The sole is hard as boot leather, and scarred: old white lines across the ball of the foot, a ridge along the heel where something cut it to the bone a long time ago and it healed badly in the cold. She lets you hold it. She lets you hold the other. She lies very still, the way she lay still when the Pack called, and doesn't say anything for a long time. Then, into the dark, very low: \"Your hands are colder than my feet.\" She doesn't take them back. \"Hold them anyway. ...Nobody's held those.\"",
     "effects": [
      {
       "rel": {
@@ -5207,7 +5207,7 @@
       "text": "Walking away's a skill. Most never learn it. They stay till it's too late, out of pride."
      },
      {
-      "text": "Lamps. Nobody coming. (A long breath.) I held a cave mouth three days for nobody coming. We'd have got on."
+      "text": "Lamps. Nobody coming. (a long breath) I held a cave mouth three days for nobody coming. We'd have got on."
      }
     ],
     "effects": [
@@ -5254,7 +5254,7 @@
    },
    "blind3_m_no": {
     "id": "blind3_m_no",
-    "text": "No. (Not unkind.) Don't make it a story. Not yet.",
+    "text": "No. (not unkind) Don't make it a story. Not yet.",
     "choices": [
      {
       "text": "(Go.)",
@@ -6523,7 +6523,7 @@
    "fetch": {
     "id": "fetch",
     "speaker": "narrator",
-    "text": "You walk the boy as far as the fence where his Pa lost the goat, and his Pa out of the trees on the other side. He calls you several things on the way, and one of them is a fool. He comes.",
+    "text": "You walk the boy as far as the fence where his Pa lost the goat, and go on into the trees for his Pa. He calls you several things on the way back, and one of them is a fool. But he comes.",
     "effects": [
      {
       "set": {
@@ -7364,7 +7364,7 @@
       "text": "(He puts the hammer down, and looks at the two irons still on the rack, and then he doesn't look at anything.) ...Had the reins. She'd want the reins. Always wanted the reins."
      },
      {
-      "text": "(He puts the hammer down. You have never seen him put the hammer down.) ...Had the reins. (A long breath, through the nose.) She'd want the reins. Always wanted the reins."
+      "text": "(He puts the hammer down. You have never seen him put the hammer down.) ...Had the reins. (a long breath, through the nose) She'd want the reins. Always wanted the reins."
      }
     ],
     "choices": [
@@ -10981,7 +10981,7 @@
    "back_room": {
     "id": "back_room",
     "speaker": "narrator",
-    "text": "Behind the Crooked Flagon there's a lean-to with a lamp, a scrubbed table, a shelf of jars (one of them moving), and a sail-needle stuck in a cork like a trophy. Rav is sitting on the table with his feet on a stool and two cups already poured.",
+    "text": "Behind the Crooked Flagon there's a lean-to with a lamp, a scrubbed table, a shelf of jars, one of them moving, and a sail-needle stuck in a cork like a trophy. Rav is sitting on the table with his feet on a stool and two cups already poured.",
     "effects": [
      {
       "set": {
@@ -11093,7 +11093,7 @@
    },
    "came_back_sit": {
     "id": "came_back_sit",
-    "text": "(A breath out through his nose.) Aye. Well. Sit, then.",
+    "text": "(a breath out through his nose) Aye. Well. Sit, then.",
     "next": "hub"
    },
    "came_back_sorry": {
@@ -14673,7 +14673,7 @@
    },
    "supper_letters": {
     "id": "supper_letters",
-    "text": "(She doesn't answer for so long that you think she won't.) That is a possibility I have considered. (Very precisely.) I have considered it every month for two years, on the day the post does not come. I have written it down and crossed it out. That was an example of correctio. ...Thank you for saying it. Nobody else will. They think I am funny. I am funny. I am also not a fool.",
+    "text": "(She doesn't answer for so long that you think she won't.) That is a possibility I have considered. (very precisely) I have considered it every month for two years, on the day the post does not come. I have written it down and crossed it out. That was an example of correctio. ...Thank you for saying it. Nobody else will. They think I am funny. I am funny. I am also not a fool.",
     "effects": [
      {
       "rel": {
@@ -18360,7 +18360,7 @@
    },
    "trick": {
     "id": "trick",
-    "text": "The Watch. Holloway hasn't got the men to— (a whistle, from the ridge; the whole camp stops) —PACK IT UP! PACK IT UP! Leave the heavy stuff!",
+    "text": "The Watch. Holloway hasn't got the men to— (A whistle from the ridge. The whole camp stops.) —PACK IT UP! PACK IT UP! Leave the heavy stuff!",
     "effects": [
      {
       "set": {
@@ -18670,7 +18670,7 @@
    },
    "ashford": {
     "id": "ashford",
-    "text": "(The laugh goes out of him like a lamp.) Don't. (Quiet.) You get to say that once in my camp. You've said it.",
+    "text": "(The laugh goes out of him like a lamp.) Don't. (quietly) You get to say that once in my camp. You've said it.",
     "effects": [
      {
       "set": {

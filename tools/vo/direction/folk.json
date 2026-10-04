@@ -1,975 +1,112 @@
 {
- "folk.0": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "gruff greeting",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.1": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "irritable warning",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.2": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "outraged, haggling",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.3": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "grumbling",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.4": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "wry, weathered",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.5": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "suspicious",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.6": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "weary",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.7": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "sharp, territorial",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.8": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "squeamish",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.9": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "amused gossip",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.10": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "dry joke",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.11": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "kindly warning",
-  "pace": "measured",
-  "vol": "quiet"
- },
- "folk.12": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "uneasy",
-  "pace": "measured",
-  "vol": "quiet"
- },
- "folk.13": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "quiet warning",
-  "pace": "measured",
-  "vol": "quiet"
- },
- "folk.14": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "startled, then deflated",
-  "pace": "measured",
-  "vol": "quiet"
- },
- "folk.15": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "sour, then grudging",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.16": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "grumbling",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.17": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "scornful joke",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.18": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "sly gossip",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.19": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "dry joke",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.20": {
-  "voices": [
-   "folk_f2"
-  ],
-  "emo": "bitter joke",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.21": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "fond, wry",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.22": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "knowing gossip",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.23": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "rueful",
-  "pace": "measured",
-  "vol": "quiet"
- },
- "folk.24": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "grim humour",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.25": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "sad, respectful",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.26": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "weary contempt",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.27": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "blunt, apologetic",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.28": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "impressed, wary",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.29": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "curious, hopeful",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.30": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "wondering",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.31": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "outraged",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.32": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "practical",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.33": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "uneasy, knowing",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.34": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "frightened",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.35": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "pitying",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.36": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "grateful",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.37": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "uneasy",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.38": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "amazed",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.39": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "wary, half joking",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.40": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "grudging, hopeful",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.41": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "astonished",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.42": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "suspicious, dry",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.43": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "accusing",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.44": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "accusing, amused",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.45": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "pitying",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.46": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "sad gossip",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.47": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "fearful gossip",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.48": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "joyful",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.49": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "pitying",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.50": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "disgusted",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.51": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "insinuating",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.52": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "grumbling",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.53": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "grumbling",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.54": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "awed, uneasy",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.55": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "sceptical",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.56": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "incredulous",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.57": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "accusing",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.58": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "admiring",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.59": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "scandalised",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.60": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "frightened, hushed",
-  "pace": "measured",
-  "vol": "quiet"
- },
- "folk.61": {
-  "voices": [
-   "folk_f1"
-  ],
-  "emo": "moved, wondering",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.62": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "curious",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.63": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "teasing",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.64": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "relieved, wondering",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.65": {
-  "voices": [
-   "folk_child_f",
-   "folk_child_m"
-  ],
-  "emo": "excited, child",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.66": {
-  "voices": [
-   "folk_child_f",
-   "folk_child_m"
-  ],
-  "emo": "playful, child",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.67": {
-  "voices": [
-   "folk_child_f",
-   "folk_child_m"
-  ],
-  "emo": "shy, child",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.68": {
-  "voices": [
-   "folk_child_f",
-   "folk_child_m"
-  ],
-  "emo": "eager, child",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.69": {
-  "voices": [
-   "folk_child_f",
-   "folk_child_m"
-  ],
-  "emo": "awed, child",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.70": {
-  "voices": [
-   "folk_child_f",
-   "folk_child_m"
-  ],
-  "emo": "awed, child",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.71": {
-  "voices": [
-   "guard",
-   "guard_f"
-  ],
-  "emo": "curt",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.72": {
-  "voices": [
-   "guard",
-   "guard_f"
-  ],
-  "emo": "curt",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.73": {
-  "voices": [
-   "guard",
-   "guard_f"
-  ],
-  "emo": "curt",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.74": {
-  "voices": [
-   "guard",
-   "guard_f"
-  ],
-  "emo": "rough",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.75": {
-  "voices": [
-   "guard",
-   "guard_f"
-  ],
-  "emo": "threatening",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.76": {
-  "voices": [
-   "guard",
-   "guard_f"
-  ],
-  "emo": "tired",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.77": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "relieved gossip",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.78": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "scandalised gossip",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.79": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "frightened whisper",
-  "pace": "measured",
-  "vol": "quiet"
- },
- "folk.80": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "hushed, scared",
-  "pace": "measured",
-  "vol": "quiet"
- },
- "folk.81": {
-  "voices": [
-   "guard",
-   "guard_f"
-  ],
-  "emo": "uneasy",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.82": {
-  "voices": [
-   "folk_f2"
-  ],
-  "emo": "approving",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.83": {
-  "voices": [
-   "folk_child_f",
-   "folk_child_m"
-  ],
-  "emo": "awed, child",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.84": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "nervous warning",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.85": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "terrified politeness",
-  "pace": "measured",
-  "vol": "quiet"
- },
- "folk.86": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "horrified gossip",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.87": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "sad gossip",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.88": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "uneasy",
-  "pace": "measured",
-  "vol": "quiet"
- },
- "folk.89": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "bawdy gossip",
-  "pace": "measured",
-  "vol": "quiet"
- },
- "folk.90": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "dry joke",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.91": {
-  "voices": [
-   "folk_m1"
-  ],
-  "emo": "dry joke",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.92": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "proud",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.93": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "gruff kindness",
-  "pace": "measured",
-  "vol": "quiet"
- },
- "folk.94": {
-  "voices": [
-   "guard",
-   "guard_f"
-  ],
-  "emo": "rough threat",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.95": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "amused gossip",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.96": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "quiet, sad",
-  "pace": "measured",
-  "vol": "quiet"
- },
- "folk.97": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "tender",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.98": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "sad, pitying",
-  "pace": "measured",
-  "vol": "quiet"
- },
- "folk.99": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "grumbling",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.100": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "uneasy",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.101": {
-  "voices": [
-   "folk_f1"
-  ],
-  "emo": "astonished",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.102": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "bitter",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.103": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "gossip, a little sad",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.104": {
-  "voices": [
-   "folk_f2",
-   "folk_m1"
-  ],
-  "emo": "scandalised whisper",
-  "pace": "measured",
-  "vol": "quiet"
- },
- "folk.105": {
-  "voices": [
-   "folk_f1",
-   "folk_m2"
-  ],
-  "emo": "scornful",
-  "pace": "measured",
-  "vol": "level"
- },
- "folk.106": {
-  "voices": [
-   "guard",
-   "guard_f"
-  ],
-  "emo": "uneasy",
-  "pace": "measured",
-  "vol": "level"
- },
- "guard.0": {
-  "emo": "bored, matter-of-fact",
-  "pace": "measured",
-  "vol": "level"
- },
- "guard.1": {
-  "emo": "bored, matter-of-fact",
-  "pace": "measured",
-  "vol": "level"
- },
- "guard.2": {
-  "emo": "bored, matter-of-fact",
-  "pace": "measured",
-  "vol": "level"
- }
+ "folk.0": {"voices": ["folk_f2", "folk_m1"], "emo": "gruff greeting", "pace": "measured", "vol": "level"},
+ "folk.1": {"voices": ["folk_f1", "folk_m2"], "emo": "irritable warning", "pace": "measured", "vol": "level"},
+ "folk.2": {"voices": ["folk_f2", "folk_m1"], "emo": "outraged, haggling", "pace": "measured", "vol": "level"},
+ "folk.3": {"voices": ["folk_f1", "folk_m2"], "emo": "grumbling", "pace": "measured", "vol": "level"},
+ "folk.4": {"voices": ["folk_f2", "folk_m1"], "emo": "wry, weathered", "pace": "measured", "vol": "level"},
+ "folk.5": {"voices": ["folk_f1", "folk_m2"], "emo": "suspicious", "pace": "measured", "vol": "level"},
+ "folk.6": {"voices": ["folk_f2", "folk_m1"], "emo": "weary", "pace": "measured", "vol": "level"},
+ "folk.7": {"voices": ["folk_f1", "folk_m2"], "emo": "sharp, territorial", "pace": "measured", "vol": "level"},
+ "folk.8": {"voices": ["folk_f2", "folk_m1"], "emo": "squeamish", "pace": "measured", "vol": "level"},
+ "folk.9": {"voices": ["folk_f1", "folk_m2"], "emo": "amused gossip", "pace": "measured", "vol": "level"},
+ "folk.10": {"voices": ["folk_f2", "folk_m1"], "emo": "dry joke", "pace": "measured", "vol": "level"},
+ "folk.11": {"voices": ["folk_f1", "folk_m2"], "emo": "kindly warning", "pace": "measured", "vol": "quiet"},
+ "folk.12": {"voices": ["folk_f2", "folk_m1"], "emo": "uneasy", "pace": "measured", "vol": "quiet"},
+ "folk.13": {"voices": ["folk_f1", "folk_m2"], "emo": "quiet warning", "pace": "measured", "vol": "quiet"},
+ "folk.14": {"voices": ["folk_f2", "folk_m1"], "emo": "startled, then deflated", "pace": "measured", "vol": "quiet"},
+ "folk.15": {"voices": ["folk_f1", "folk_m2"], "emo": "sour, then grudging", "pace": "measured", "vol": "level"},
+ "folk.16": {"voices": ["folk_f2", "folk_m1"], "emo": "grumbling", "pace": "measured", "vol": "level"},
+ "folk.17": {"voices": ["folk_f1", "folk_m2"], "emo": "scornful joke", "pace": "measured", "vol": "level"},
+ "folk.18": {"voices": ["folk_f2", "folk_m1"], "emo": "sly gossip", "pace": "measured", "vol": "level"},
+ "folk.19": {"voices": ["folk_f1", "folk_m2"], "emo": "dry joke", "pace": "measured", "vol": "level"},
+ "folk.20": {"voices": ["folk_f2"], "emo": "bitter joke", "pace": "measured", "vol": "level"},
+ "folk.21": {"voices": ["folk_f1", "folk_m2"], "emo": "fond, wry", "pace": "measured", "vol": "level"},
+ "folk.22": {"voices": ["folk_f2", "folk_m1"], "emo": "knowing gossip", "pace": "measured", "vol": "level"},
+ "folk.23": {"voices": ["folk_f1", "folk_m2"], "emo": "rueful", "pace": "measured", "vol": "quiet"},
+ "folk.24": {"voices": ["folk_f2", "folk_m1"], "emo": "grim humour", "pace": "measured", "vol": "level"},
+ "folk.25": {"voices": ["folk_f1", "folk_m2"], "emo": "sad, respectful", "pace": "measured", "vol": "level"},
+ "folk.26": {"voices": ["folk_f2", "folk_m1"], "emo": "weary contempt", "pace": "measured", "vol": "level"},
+ "folk.27": {"voices": ["folk_f1", "folk_m2"], "emo": "blunt, apologetic", "pace": "measured", "vol": "level"},
+ "folk.28": {"voices": ["folk_f2", "folk_m1"], "emo": "impressed, wary", "pace": "measured", "vol": "level"},
+ "folk.29": {"voices": ["folk_f1", "folk_m2"], "emo": "curious, hopeful", "pace": "measured", "vol": "level"},
+ "folk.30": {"voices": ["folk_f2", "folk_m1"], "emo": "wondering", "pace": "measured", "vol": "level"},
+ "folk.31": {"voices": ["folk_f1", "folk_m2"], "emo": "outraged", "pace": "measured", "vol": "level"},
+ "folk.32": {"voices": ["folk_f2", "folk_m1"], "emo": "practical", "pace": "measured", "vol": "level"},
+ "folk.33": {"voices": ["folk_f1", "folk_m2"], "emo": "uneasy, knowing", "pace": "measured", "vol": "level"},
+ "folk.34": {"voices": ["folk_f2", "folk_m1"], "emo": "frightened", "pace": "measured", "vol": "level"},
+ "folk.35": {"voices": ["folk_f1", "folk_m2"], "emo": "pitying", "pace": "measured", "vol": "level"},
+ "folk.36": {"voices": ["folk_f2", "folk_m1"], "emo": "grateful", "pace": "measured", "vol": "level"},
+ "folk.37": {"voices": ["folk_f1", "folk_m2"], "emo": "uneasy", "pace": "measured", "vol": "level"},
+ "folk.38": {"voices": ["folk_f2", "folk_m1"], "emo": "amazed", "pace": "measured", "vol": "level"},
+ "folk.39": {"voices": ["folk_f1", "folk_m2"], "emo": "wary, half joking", "pace": "measured", "vol": "level"},
+ "folk.40": {"voices": ["folk_f2", "folk_m1"], "emo": "grudging, hopeful", "pace": "measured", "vol": "level"},
+ "folk.41": {"voices": ["folk_f1", "folk_m2"], "emo": "astonished", "pace": "measured", "vol": "level"},
+ "folk.42": {"voices": ["folk_f2", "folk_m1"], "emo": "suspicious, dry", "pace": "measured", "vol": "level"},
+ "folk.43": {"voices": ["folk_f1", "folk_m2"], "emo": "accusing", "pace": "measured", "vol": "level"},
+ "folk.44": {"voices": ["folk_f2", "folk_m1"], "emo": "accusing, amused", "pace": "measured", "vol": "level"},
+ "folk.45": {"voices": ["folk_f1", "folk_m2"], "emo": "pitying", "pace": "measured", "vol": "level"},
+ "folk.46": {"voices": ["folk_f2", "folk_m1"], "emo": "sad gossip", "pace": "measured", "vol": "level"},
+ "folk.47": {"voices": ["folk_f1", "folk_m2"], "emo": "fearful gossip", "pace": "measured", "vol": "level"},
+ "folk.48": {"voices": ["folk_f2", "folk_m1"], "emo": "joyful", "pace": "measured", "vol": "level"},
+ "folk.49": {"voices": ["folk_f1", "folk_m2"], "emo": "pitying", "pace": "measured", "vol": "level"},
+ "folk.50": {"voices": ["folk_f2", "folk_m1"], "emo": "disgusted", "pace": "measured", "vol": "level"},
+ "folk.51": {"voices": ["folk_f1", "folk_m2"], "emo": "insinuating", "pace": "measured", "vol": "level"},
+ "folk.52": {"voices": ["folk_f2", "folk_m1"], "emo": "grumbling", "pace": "measured", "vol": "level"},
+ "folk.53": {"voices": ["folk_f1", "folk_m2"], "emo": "grumbling", "pace": "measured", "vol": "level"},
+ "folk.54": {"voices": ["folk_f2", "folk_m1"], "emo": "awed, uneasy", "pace": "measured", "vol": "level"},
+ "folk.55": {"voices": ["folk_f1", "folk_m2"], "emo": "sceptical", "pace": "measured", "vol": "level"},
+ "folk.56": {"voices": ["folk_f2", "folk_m1"], "emo": "incredulous", "pace": "measured", "vol": "level"},
+ "folk.57": {"voices": ["folk_f1", "folk_m2"], "emo": "accusing", "pace": "measured", "vol": "level"},
+ "folk.58": {"voices": ["folk_f2", "folk_m1"], "emo": "admiring", "pace": "measured", "vol": "level"},
+ "folk.59": {"voices": ["folk_f1", "folk_m2"], "emo": "scandalised", "pace": "measured", "vol": "level"},
+ "folk.60": {"voices": ["folk_f2", "folk_m1"], "emo": "frightened, hushed", "pace": "measured", "vol": "quiet"},
+ "folk.61": {"voices": ["folk_f1"], "emo": "moved, wondering", "pace": "measured", "vol": "level"},
+ "folk.62": {"voices": ["folk_f2", "folk_m1"], "emo": "curious", "pace": "measured", "vol": "level"},
+ "folk.63": {"voices": ["folk_f1", "folk_m2"], "emo": "teasing", "pace": "measured", "vol": "level"},
+ "folk.64": {"voices": ["folk_f2", "folk_m1"], "emo": "relieved, wondering", "pace": "measured", "vol": "level"},
+ "folk.65": {"voices": ["folk_child_f", "folk_child_m"], "emo": "excited, child", "pace": "measured", "vol": "level"},
+ "folk.66": {"voices": ["folk_child_f", "folk_child_m"], "emo": "playful, child", "pace": "measured", "vol": "level"},
+ "folk.67": {"voices": ["folk_child_f", "folk_child_m"], "emo": "shy, child", "pace": "measured", "vol": "level"},
+ "folk.68": {"voices": ["folk_child_f", "folk_child_m"], "emo": "eager, child", "pace": "measured", "vol": "level"},
+ "folk.69": {"voices": ["folk_child_f", "folk_child_m"], "emo": "awed, child", "pace": "measured", "vol": "level"},
+ "folk.70": {"voices": ["folk_child_f", "folk_child_m"], "emo": "awed, child", "pace": "measured", "vol": "level"},
+ "folk.71": {"voices": ["guard", "guard_f"], "emo": "curt", "pace": "measured", "vol": "level"},
+ "folk.72": {"voices": ["guard", "guard_f"], "emo": "curt", "pace": "measured", "vol": "level"},
+ "folk.73": {"voices": ["guard", "guard_f"], "emo": "curt", "pace": "measured", "vol": "level"},
+ "folk.74": {"voices": ["guard", "guard_f"], "emo": "rough", "pace": "measured", "vol": "level"},
+ "folk.75": {"voices": ["guard", "guard_f"], "emo": "threatening", "pace": "measured", "vol": "level"},
+ "folk.76": {"voices": ["guard", "guard_f"], "emo": "tired", "pace": "measured", "vol": "level"},
+ "folk.77": {"voices": ["folk_f1", "folk_m2"], "emo": "relieved gossip", "pace": "measured", "vol": "level"},
+ "folk.78": {"voices": ["folk_f2", "folk_m1"], "emo": "scandalised gossip", "pace": "measured", "vol": "level"},
+ "folk.79": {"voices": ["folk_f1", "folk_m2"], "emo": "frightened whisper", "pace": "measured", "vol": "quiet"},
+ "folk.80": {"voices": ["folk_f2", "folk_m1"], "emo": "hushed, scared", "pace": "measured", "vol": "quiet"},
+ "folk.81": {"voices": ["guard", "guard_f"], "emo": "uneasy", "pace": "measured", "vol": "level"},
+ "folk.82": {"voices": ["folk_f2"], "emo": "approving", "pace": "measured", "vol": "level"},
+ "folk.83": {"voices": ["folk_child_f", "folk_child_m"], "emo": "awed, child", "pace": "measured", "vol": "level"},
+ "folk.84": {"voices": ["folk_f2", "folk_m1"], "emo": "nervous warning", "pace": "measured", "vol": "level"},
+ "folk.85": {"voices": ["folk_f1", "folk_m2"], "emo": "terrified politeness", "pace": "measured", "vol": "quiet"},
+ "folk.86": {"voices": ["folk_f2", "folk_m1"], "emo": "horrified gossip", "pace": "measured", "vol": "level"},
+ "folk.87": {"voices": ["folk_f1", "folk_m2"], "emo": "sad gossip", "pace": "measured", "vol": "level"},
+ "folk.88": {"voices": ["folk_f2", "folk_m1"], "emo": "uneasy", "pace": "measured", "vol": "quiet"},
+ "folk.89": {"voices": ["folk_f1", "folk_m2"], "emo": "bawdy gossip", "pace": "measured", "vol": "quiet"},
+ "folk.90": {"voices": ["folk_f2", "folk_m1"], "emo": "dry joke", "pace": "measured", "vol": "level"},
+ "folk.91": {"voices": ["folk_m1"], "emo": "dry joke", "pace": "measured", "vol": "level"},
+ "folk.92": {"voices": ["folk_f2", "folk_m1"], "emo": "proud", "pace": "measured", "vol": "level"},
+ "folk.93": {"voices": ["folk_f1", "folk_m2"], "emo": "gruff kindness", "pace": "measured", "vol": "quiet"},
+ "folk.94": {"voices": ["guard", "guard_f"], "emo": "rough threat", "pace": "measured", "vol": "level"},
+ "folk.95": {"voices": ["folk_f1", "folk_m2"], "emo": "amused gossip", "pace": "measured", "vol": "level"},
+ "folk.96": {"voices": ["folk_f2", "folk_m1"], "emo": "quiet, sad", "pace": "measured", "vol": "quiet"},
+ "folk.97": {"voices": ["folk_f1", "folk_m2"], "emo": "tender", "pace": "measured", "vol": "level"},
+ "folk.98": {"voices": ["folk_f2", "folk_m1"], "emo": "sad, pitying", "pace": "measured", "vol": "quiet"},
+ "folk.99": {"voices": ["folk_f1", "folk_m2"], "emo": "grumbling", "pace": "measured", "vol": "level"},
+ "folk.100": {"voices": ["folk_f2", "folk_m1"], "emo": "uneasy", "pace": "measured", "vol": "level"},
+ "folk.101": {"voices": ["folk_f1"], "emo": "astonished", "pace": "measured", "vol": "level"},
+ "folk.102": {"voices": ["folk_f2", "folk_m1"], "emo": "bitter", "pace": "measured", "vol": "level"},
+ "folk.103": {"voices": ["folk_f1", "folk_m2"], "emo": "gossip, a little sad", "pace": "measured", "vol": "level"},
+ "folk.104": {"voices": ["folk_f2", "folk_m1"], "emo": "scandalised whisper", "pace": "measured", "vol": "quiet"},
+ "folk.105": {"voices": ["folk_f1", "folk_m2"], "emo": "scornful", "pace": "measured", "vol": "level"},
+ "folk.106": {"voices": ["guard", "guard_f"], "emo": "uneasy", "pace": "measured", "vol": "level"},
+ "guard.0": {"emo": "bored, matter-of-fact", "pace": "measured", "vol": "level"},
+ "guard.1": {"emo": "bored, matter-of-fact", "pace": "measured", "vol": "level"},
+ "guard.2": {"emo": "bored, matter-of-fact", "pace": "measured", "vol": "level"}
 }
