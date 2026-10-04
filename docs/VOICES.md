@@ -42,6 +42,10 @@ Rules for everyone:
 - One person's signature phrase is nobody else's: "Someone always does" is
   Vonnra's (the fortune turns on it), "before you ask" is Maeca's, "Not there...
   Here." is Keegan's.
+- Inside a person's line, a parenthesis in lower case is how the line is said
+  ("(a sniff)", "(quietly)", "(sung, under the water)"): the actor plays it and
+  nobody reads it aloud. A parenthesis that is a capitalised sentence is the
+  narrator's ("(He looks at his hands.)").
 - Inside narration, a quoted line is spoken by its speaker. A bare "she says"
   is cut, so the subtitle and the voice agree; a tag that carries manner ("says
   into your ear") stays, read by the narrator.

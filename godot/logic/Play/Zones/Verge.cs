@@ -358,7 +358,7 @@ public sealed class Verge : ZoneRuntime
             if (!StreamClean()) SpawnGroup("wolf_blighted", 3, hollow.X, hollow.Z, 6, "hollow", 8);
             if (HollowCalm()) G.Say("The wolves watch you come. None of them move to stop you.", null, 4);
             else if (Test("""{ "hasTag": "wolf_pelts" }""") && !F("pack.allied").Truthy) G.Say("They smell the cloak before they see you. Every wolf in the Hollow is on its feet.", null, 4);
-            else if (F("wolf.blood").Truthy && Knows("hint.greymuzzle")) G.Say("They smell the blood on you before they see you. Maeca said none since you last slept.", null, 5);
+            else if (F("wolf.blood").Truthy && Knows("hint.greymuzzle")) G.Say("They smell the blood on you before they see you: one of theirs, since you last slept.", null, 5);
             else G.Say("Low growling from every side of the Hollow.", null, 3);
         }
         // Redcowl's Roost.
@@ -404,7 +404,7 @@ public sealed class Verge : ZoneRuntime
             sinkSpawned = true;
             G.Apply("""[{ "quest": { "id": "below", "status": "active", "entry": "sinkhole" } }, { "quest": { "id": "below", "entry": "tremor" } }]""");
             B.Events.Emit(new Ev.Shake { Amount = 0.9 });
-            G.Say("The ground shivers. At the bottom of the pit lies something pale and segmented, bigger than a house, and — probably — dead.", null, 6);
+            G.Say("The ground shivers. At the bottom of the pit lies something pale and segmented, bigger than a house. It does not move. You watch it long enough to be sure, and you are not.", null, 6);
             if (Knows("faith"))
                 G.After(6.5, () =>
                 {
