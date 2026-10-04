@@ -60,6 +60,8 @@ public partial class Game : Node, IZoneHost
     ZoneRuntime? zone;
     Saves saves = null!;
     Interactable? near;
+    /// <summary>What the prompt is for now (the autopilot waits for the right one before it presses).</summary>
+    public string? Prompted => near?.Id;
     PromptView? promptShown;
     string? hudMode;
     readonly List<(double T, Action Fn)> later = new();
