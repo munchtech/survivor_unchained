@@ -147,3 +147,9 @@ Cut to loop and made mono at 24 kHz (the game plays each wide, its right side ha
 - stone_pathway_02: Poly Haven (https://polyhaven.com/a/stone_pathway_02), CC0
 - withered_grass: Poly Haven (https://polyhaven.com/a/withered_grass), CC0
 - wood_chips: Poly Haven (https://polyhaven.com/a/wood_chips), CC0
+- dry_decay_leaves: Poly Haven (https://polyhaven.com/a/dry_decay_leaves), CC0
+- excavated_soil_wall: Poly Haven (https://polyhaven.com/a/excavated_soil_wall), CC0
+- mud_cracked_dry_03: Poly Haven (https://polyhaven.com/a/mud_cracked_dry_03), CC0
+- red_dirt_mud_01: Poly Haven (https://polyhaven.com/a/red_dirt_mud_01), CC0
+- stony_dirt_path: Poly Haven (https://polyhaven.com/a/stony_dirt_path), CC0
+- dry_ground_rocks: Poly Haven (https://polyhaven.com/a/dry_ground_rocks), CC0
