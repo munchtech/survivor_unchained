@@ -687,7 +687,8 @@ thanked me. They do, the first time. They're frightened." (The handbook's
 text is in `docs/cinematics/act2_outline.md`, C21.) Her respect and trust,
 and whether the survivor lies to her now, decide: she steps aside and comes
 north (her companion route; at Silverstair she breaks with the Vigil); she
-stands at the gate to return the survivor to the dark (a night duel: kill her,
+stands at the gate to return the survivor to the dark (a duel at first light, by
+the handbook's seventh article, when the ember has gone out of the survivor: kill her,
 or spare her and leave her disgraced); or she lets them pass and writes to
 the chapterhouse, which already knows.
 
@@ -922,6 +923,60 @@ tallow candle; in C it lights itself.
 | Chid | Dark at dawn; the link; ages with the coin; kneels or will not | the ending, the coin |
 | Vonnra | Binds the survivor; refused; becomes the link; dies at the bottom | `vonnra.accused`, the ending |
 | The Waystation | Keeps its lamps; loses them; lives under a new god | the ending |
+
+### The nights: what a fight may change
+
+The systems are the systems agent's (`docs/bosses/`, `docs/bestiary/`). This is
+the story's view of them, so that the nights tell the story the days write.
+
+- **What an arena is.** The survivor is the brightest thing in the dark, and the
+  light in her is the valley's dead. Everything that has lost a light comes to
+  it; the more she carries, the more come. The arena's rising horde is that,
+  and nothing about it needs saying before Act 3. **The Dawn as every arena's
+  end** is the world's own rule (the ember drains at sunrise) and is right; after
+  C43 every dawn is the night's dead going home.
+- **Bosses speak as themselves.** A story boss's lines are its cinematic's
+  (C10 to C14): Greymuzzle wordless, Redcowl's bairns and his last words,
+  Grimtunnel's faith, the Barrow Lord's two words, Wat's silence. No generic
+  taunts. Titles are the valley's words: *Who Kept the Cold Off*, *Of the
+  Kerchiefs*, *Finders Keepers*, *Of the Seventh Legion*, *Over the Ford by
+  Dark*.
+- **Grimtunnel never dies in an arena.** Confirmed: he is at the bottom of the
+  stair in Act 3 with the heart. Every fight with him ends with him driven back
+  down the hole, delighted. A table arena may field a lampling foreman, never
+  him, and never his name.
+- **Keegan's duel is at first light,** not by night. Her handbook's seventh
+  article says the return is made "at dawn, when it is weakest", and she does it
+  by the book: the ember has gone out of the survivor, who is ordinary and
+  warm, her breath smoking, and fights with what she carries. It is a day fight
+  without ember, which is the point: the knight chose the hour the book chose,
+  and it is the hour the survivor is most nearly alive.
+- **New outcomes from fights,** taken or trimmed:
+  - *Greymuzzle let go:* yes, narrowly. Only if she knelt and promised (C05) and
+    the stream already runs clear. At the end of the Hollow by night he goes
+    down, and does not die: he gets up, slowly, and goes to the den among his
+    sick, and she lets him. `greymuzzle` = `spared`; `beasts.outcome` stays
+    `cured`; Maeca hears of it, and it is the one fight that raises her regard.
+    C10 gains that variant (his eye on the den, then on her, and he walks).
+  - *The crates blown in the Roost fight:* yes, as the value that already exists:
+    `be.crates` = `burned`, with its consequences (Act 2's breakthrough is
+    narrower; the army has no powder). No new value.
+  - *The pump broken or blown by how the Slurry Engine ends:* yes, as
+    `dig.pump` = `broken` or `blown`. No new value.
+  - *Edric lost if the Keeper escapes* (Silverstair): yes. `edric.freed` stays
+    unset, and Ysolde's ends narrow to "dies at Silverstair" or "keeps
+    selling".
+- **Banes learned by day** (Maeca's fed fires, Chid's standard, Grimtunnel's own
+  lamp): yes. They are story knowledge, earned in conversation, and the day half
+  arming the night is the shape of the game.
+- **Thieves:** a lampling that takes ember stones off the ground is true to the
+  lamplings, who carry their dead down on purpose ("Nobody's!"). Never what the
+  survivor holds. Name it in their words (a carrier), not a genre's.
+- **Two peoples at war in one arena:** the Kerchiefs against the lamplings is
+  Act 2's truth (Redcowl fights the Dig); it fits from Act 2, not before.
+- **The ending decides the nights** (section 8): after re-forging, the scars
+  open and the player knows what they are; after breaking the chain they never
+  open again; after taking the light, the survivor is the boss in every one.
 
 ## 10. The consequence ledger
 

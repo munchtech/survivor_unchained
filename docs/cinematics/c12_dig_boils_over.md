@@ -39,7 +39,7 @@ light cold blue through his hide.
 |---|---|---|---|---|---|
 | 1 | LS | 24 | Static, low; a long shake (0.5) | The ground between her and the horde splits in a line; the lamplings scatter from it, squealing, lamps bobbing. `WorldRate` 0.3. | 3.0 |
 | 2 | MS | 35 | Static, low, up at him | Grimtunnel hauls himself up out of the crack, scale 2.1: blue light in the seams of his hide, his head-lamp burning. Line G4. | 4.0 |
-| 3 | MCU | 50 | Handheld (0.4) | He spreads his arms like a man welcoming guests. Title: **GRIMTUNNEL** / *Come Up Out of the Dark*. Play. | 2.0 |
+| 3 | MCU | 50 | Handheld (0.4) | He spreads his arms like a man welcoming guests. Title: **GRIMTUNNEL** / *Finders Keepers* (his own words at the ford, C03). Play. | 2.0 |
 
 ## Retreat
 

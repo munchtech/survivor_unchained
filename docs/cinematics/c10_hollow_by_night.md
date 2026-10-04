@@ -56,6 +56,22 @@ shadows, the ember's red on her.
 | 4a | LS | 50 | Static, past his head toward the den | *(Not if she promised.)* The den's mouth in the moonlight. Nothing comes out of it. | 2.0 |
 | 5 | to the reckoning | | | The arena's way out opens; the win's reckoning comes up. | 1.0 |
 
+### Variant: let go
+
+Only if she knelt and promised in C05 (`promise.pack`) and the stream already
+runs clear (`stream.clear`): the fight can end without his death
+(`greymuzzle` = `spared`, a systems change: `STORY_BIBLE.md`, "The nights").
+Shots 1 to 3 as above. Then:
+
+| # | Shot | Lens | Camera | Framing and action | Dur. |
+|---|---|---|---|---|---|
+| 4 | CU | 100 | As 2 | His eye goes to the den, and back to her, and stays. She lowers her weapon. | 3.0 |
+| 5 | LS | 35 | Static, low, behind her | He gets up, slowly, the way an old animal does, back legs first. He walks past her to the den without looking at her again, and lies down among his sick in the mouth of it. The ring of wolves goes in after him, one by one. | 6.0 |
+| 6 | to the reckoning | | | The Hollow empty but for her. | 1.0 |
+
+No flute note. From the den, the thin whine of shot 4a, and this time something
+answers it.
+
 ## Performance
 
 **Greymuzzle.** Old and certain; he limps a little on the left fore. Dying, he
