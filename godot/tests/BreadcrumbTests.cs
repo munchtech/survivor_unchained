@@ -199,6 +199,9 @@ public class BreadcrumbTests
         Assert.Contains("Brannoc banked his forge", string.Join(" ", Day(s)));
         Assert.True(s.World.Fact("nell.buried").Truthy);
         Meet(s, "chid");
+        // Not on the burial morning (she may yet go and stand with them); the day after.
+        Assert.NotEqual("cb_nell", new DialogueRunner(Convo("chid"), s.C).Start()!.Node.Id);
+        Day(s);
         Assert.Contains("We buried Nell", new DialogueRunner(Convo("chid"), s.C).Start()!.Text);
         // He asks once.
         Assert.NotEqual("nell", new DialogueRunner(Convo("brannoc"), s.C).Start()!.Node.Id);

@@ -31,7 +31,9 @@ drowned to rise, and the living who come at night to lie down; and when he
 dies he asks, in a tired man's voice, whether it is morning. ("Morning" was the
 Order's word for its light: the thing under the ground.) The valley still calls its hills "the
 Morrow" without knowing why: Morrow pippins, Morrow cloth, Vonnra
-Ash-of-Morrow.
+Ash-of-Morrow. And it says the dead have "gone to the Morrow", which is the
+plain truth said as an idiom, so nobody hears it (Rook says it; Wenna, who
+says "died", won't).
 
 **Ember is the Morrow's light,** and its pain. It leaks up through the ground
 as stone and dust. The Order burned it in its chapel lamps and called it the
@@ -301,7 +303,11 @@ None of them says it.
   of the Order's day, near two hundred years old, who cannot stay dead and does
   not age. He wrote the note in Ashe's trunk ("Keep the lights lit. — C.") to a
   friend. He has seen the dead get up before; he knows what the survivor is, and
-  is the gentlest person who knows. *Ends:* see the endings: goes dark at dawn;
+  is the gentlest person who knows. Every time the survivor dies, it is Chid who
+  goes out and carries them in, by night as readily as by day: "a carter found
+  you" is his white lie, and it wears thinner with every death (`chid.woke`,
+  `chid.carter`; a folk line asks who, since no carts run on the Old Road).
+  *Ends:* see the endings: goes dark at dawn;
   lies down in the chain in the survivor's place; is given the coin and ages
   at last; kneels to a new god, or will not.
 - **Vonnra Ash-of-Morrow.** *Face:* toll-keeper, far seer, the one who reads
@@ -526,7 +532,10 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
   well. You look extremely well. ...I've got to go and read something." (The
   contraction is the tell.)
 - `keegan.say_calling` (arcanist): "The Vigil kept a ledger of— never mind."
-- `wayfinder.notes`: "You come back more often than most... So has he."
+- `wayfinder.first`: "You've the look of someone who comes back." `wayfinder.notes`:
+  "You come back more often than most... So has he."
+- `archetypes.json` `risen_once` says what happened ("You fell, and got up
+  again."), never what it means: the interface keeps the bible's first rule.
   `wayfinder.margin`: how she writes the survivor down: their name, "Nobody",
   or "Lark". Fact `wayfinder.name` decides the name in Sallow's ledger.
 
@@ -542,10 +551,20 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
   like that any more. Nobody's made a C like that in... well. Ages."
 - `chid.cb_core_stolen`: the heart "was one of the old ones. They're not meant
   to be carried about."
+- `chid.shrine`: the flame "was never for seeing by... it was for keeping
+  company" (the Order burned the dead for company). `chid.woke` and
+  `chid.carter`: the carter wears thin ("Someone always does"; "I never asked
+  his name"), and the hot water with "nothing in it but hot" for a cold body.
+  `chid.cb_nell`, if she stood at the grave: "There's always somebody who has
+  the tune" (Vonnra's alto; he has heard the binders sing it for longer than
+  he admits to).
 
 **Ashford, the boots** (pays: Act 2, Holloway's letter and the boots)
-- `maeca.first`, `maeca.barefoot`, `maeca.signed`: boots signed for, never
-  came; "Somebody with a good hand and a ledger."
+- `maeca.barefoot`, `maeca.signed`: boots signed for, never came; "Somebody
+  with a good hand and a ledger." Maeca never says "Ashford" on meeting, and
+  her plate says "Hunter, of the Hollow": the player hears the word from Rook
+  (`rook.valley`: "Don't ask Holloway about it. Don't ask Maeca."), Wenna and
+  Holloway first, and puts her boots and his count together themselves.
 - `holloway.maeca`, `holloway.ashford`: "I counted boots for the Ashford
   garrison, once, and I was good at it."
 - `pell.t_pell`: his sister wrote the week before the Fall that the garrison's
@@ -636,6 +655,17 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
 - C14: Brannoc walking down a road lit by his own irons; Wat and the carters
   risen out of the river; Brannoc watching Wat's light go into her hands (Act
   3); Wat's toll-token (C27); Chid at the gate at sunrise, seeing her breath.
+
+**Ember is the dead** (pays: Act 3, the bottom of the stair)
+- The twenty seeds already in the text: `docs/editorial/THE_EMBER_REVEAL.md` §5.
+- The idiom: "gone to the Morrow" (`rook.valley`; `folk.json`, Old Oswin and the
+  night watch's curfew line), and Wenna refusing it (`wenna.fever`: "They died,
+  child.").
+- `wenna.tallow`: "I burn fat, child. Fat's honest. Fat was a pig." Her lamps are
+  tallow, never ember, and she never says why.
+- `items.json`: the Ember Shard ("Hold it to your ear in a quiet room, and the
+  room is not quite quiet."), Blasting Ember ("warmer when you are afraid"), the
+  slurry ("a little like a wound").
 
 **Below** (pays: Act 2, the breakthrough; Act 3)
 - `quests.json` vault entries, `Verge.cs` vaultdoor: seven notches, one
@@ -934,17 +964,26 @@ the story's view of them, so that the nights tell the story the days write.
   it; the more she carries, the more come. The arena's rising horde is that,
   and nothing about it needs saying before Act 3. **The Dawn as every arena's
   end** is the world's own rule (the ember drains at sunrise) and is right; after
-  C43 every dawn is the night's dead going home.
+  C43 every dawn is the night's dead going home. The same goes for the hour past
+  the half hour: if it ends (the owner's call), it ends at dawn, the light coming
+  across the ground and the ember going out of everything, the survivor's too.
 - **Bosses speak as themselves.** A story boss's lines are its cinematic's
   (C10 to C14): Greymuzzle wordless, Redcowl's bairns and his last words,
-  Grimtunnel's faith, the Barrow Lord's two words, Wat's silence. No generic
-  taunts. Titles are the valley's words: *Who Kept the Cold Off*, *Of the
-  Kerchiefs*, *Finders Keepers*, *Of the Seventh Legion*, *Over the Ford by
-  Dark*.
-- **Grimtunnel never dies in an arena.** Confirmed: he is at the bottom of the
-  stair in Act 3 with the heart. Every fight with him ends with him driven back
-  down the hole, delighted. A table arena may field a lampling foreman, never
-  him, and never his name.
+  Grimtunnel's faith, the Barrow Lord's one-word orders, Wat's silence. No
+  generic taunts. Titles are the valley's words: *Who Kept the Cold Off*, *Of
+  the Kerchiefs*, *Finders Keepers*, *Of the Seventh Legion*, *Over the Ford by
+  Dark*. The table bosses keep the same rule: the Barrow Lord gives his orders
+  in the old tongue, one word each (*Sta*, *Iunge*, *Testudo*; *Nondum* and
+  *Redi* are C13's), and what follows shows what they mean.
+- **Grimtunnel never dies in an arena.** Confirmed, and built: he is at the
+  bottom of the stair in Act 3 with the heart. Every fight with him, the Dig's
+  table arenas included, ends with him going back down the hole, delighted, not
+  beaten ("Ha! Keep upstairs, surface-meat! I'm wanted DOWNSTAIRS!"), and Snib
+  getting the last word. The fight is won; he is not.
+- **The Barrow Lord is laid down, not killed.** At the end he will not lie down
+  until the survivor stands over him, and holy (the Order's school) does it
+  twice as fast. "Lie down" is the Order's word for the dead (the hymn, C02,
+  C08): an arena teaches it with the hands before the story says it.
 - **Keegan's duel is at first light,** not by night. Her handbook's seventh
   article says the return is made "at dawn, when it is weakest", and she does it
   by the book: the ember has gone out of the survivor, who is ordinary and

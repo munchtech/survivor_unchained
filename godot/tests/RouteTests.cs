@@ -613,4 +613,54 @@ public class RouteTests
         p.Sleep();
         Assert.Equal("dig", p.S("be.crates"));
     }
+
+    /* ---------------------------------------- what is given, not bought -- */
+
+    [Fact]
+    public void Wenna_gives_her_mask_to_the_scholar_who_cleaned_her_stream()
+    {
+        // B1's road, played to the end; then the mask, earned by the cure alone
+        // (WRITING_PASS section 16; the explorer's search rarely gets this deep).
+        var p = Route.New("scholar");
+        p.Talk("rook", "talk");
+        p.Talk("holloway", "wolves");
+        p.Talk("maeca", "driving them out");
+        p.Talk("tam", "listening");
+        p.Enter("verge");
+        p.Use("sample");
+        p.Use("pipe");
+        p.Leave();
+        p.Talk("wenna", "water from the stream");
+        p.Enter("verge");
+        p.Walk("pump");
+        p.Talk("snib", "sinkhole");
+        p.Leave();
+        p.Sleeps(2);
+        Assert.Equal("cured", p.S("beasts.outcome"));
+        Assert.True(p.W.Npc("wenna").Affection < 20);
+        Assert.Contains("You cleaned my stream", p.Talk("wenna", "beaked mask").Last!.Text);
+        Assert.Equal(1, p.Count("blightward_mask"));
+    }
+
+    [Fact]
+    public void Keegan_sups_with_whoever_read_the_watchmans_book_and_found_Ashe()
+    {
+        // The road to Keegan's supper (WRITING_PASS section 16), every step played:
+        // the dead watchman's book (read in the prologue), Ashe's trunk in the
+        // Quiet Garden and Rook asked about it, both told to Keegan, the dinner
+        // she refuses, and back after dark.
+        var p = Route.New("scholar");
+        p.Enter("waystation");
+        p.Use("garden");
+        p.Leave();
+        p.Talk("rook", "grave in the garden");
+        Assert.True(p.Knows("lore.ashe"));
+        p.Talk("keegan", "Ford-Warden");
+        p.Talk("keegan", "Captain Ashe");
+        p.Talk("keegan", "dinner");
+        Assert.DoesNotContain(p.Offered("keegan"), c => c.Contains("Have you eaten"));
+        p.Night();
+        p.Talk("keegan", "Have you eaten");
+        Assert.True(p.F("keegan.supper").Truthy);
+    }
 }
