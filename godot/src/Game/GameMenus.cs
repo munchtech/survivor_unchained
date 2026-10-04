@@ -72,7 +72,9 @@ public partial class Game
             Journey.Walk(zone.Id, extent, b.Player.X, b.Player.Z);
         }
         screens.Show(o);
-        scene.SimPaused = true;
+        // The pause menu stops the world; any other screen only in a fight (an arena, the night's
+        // road), where the horde would not wait. Elsewhere the world goes on behind it (the owner).
+        scene.SimPaused = o is PauseScreen || zone?.Combat == true;
         controls.Captured = true;
         hud.Prompt(promptShown = null);
     }
