@@ -19,7 +19,7 @@ public partial class Scars : Node3D
     {
         ["scorch"] = (5f, 0.35f), ["crack"] = (0f, 0f), ["blight"] = (0.6f, 0.5f), ["frost"] = (0.5f, 0.4f),
         // A sigil burns gold, not white: brighter, past the tone curve's knee, it read as peach.
-        ["sigil"] = (1.5f, 0.7f), ["runes"] = (3f, 0.8f), ["roots"] = (4f, 0.7f),
+        ["sigil"] = (1.5f, 0.7f), ["runes"] = (1.6f, 0.7f), ["roots"] = (4f, 0.7f),
     };
 
     /// <summary>How far each mark covers the ground: the dark ones less, or

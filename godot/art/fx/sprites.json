@@ -1,6 +1,6 @@
 {
  "size": 256,
- "layers": 68,
+ "layers": 78,
  "groups": {
   "smoke": [
    0,
@@ -64,6 +64,46 @@
   ],
   "scratch": [
    67,
+   1
+  ],
+  "sun_disc": [
+   68,
+   1
+  ],
+  "dawn_sigil": [
+   69,
+   1
+  ],
+  "frost_star": [
+   70,
+   1
+  ],
+  "rune_ring": [
+   71,
+   1
+  ],
+  "umbral": [
+   72,
+   1
+  ],
+  "ward_disc": [
+   73,
+   1
+  ],
+  "crescent": [
+   74,
+   1
+  ],
+  "ember_coal": [
+   75,
+   1
+  ],
+  "wisp": [
+   76,
+   1
+  ],
+  "blood_drop": [
+   77,
    1
   ]
  }

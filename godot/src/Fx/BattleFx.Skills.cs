@@ -27,7 +27,8 @@ public partial class BattleFx
 {
     /// <summary>Trails of what flies, bolts, threads (Ribbons).</summary>
     public readonly Ribbons Ribbons = new();
-    int hitBudget;
+    int hitBudget, killBudget;
+    double lastFall = -1;
 
     /// <summary>How much bigger and brighter a skill is drawn at its rank: a
     /// rank-8 skill a third again its rank-1 self.</summary>
@@ -81,17 +82,19 @@ public partial class BattleFx
                 Sparks.Spawn(at, Vector3.Zero, 0.16f, 0.8f * g, art == "mote_cascade" ? FenLight : Hdr("#e070ff", 2.6f), null, 0.2f, sprite: Sprites.Range("star").First + 2 + 1, spinV: 3);
                 break;
             case "shard" or "shard_deep" or "spear_ice":
-                Sparks.Spawn(at, Vector3.Zero, 0.2f, 0.9f * g, Hdr("#bfe8ff", 2.4f), null, 0.3f, sprite: Sprites.Range("star").First + 1, spinV: 1);
+                // A star of frost where it strikes, blue, gone in a breath.
+                Sparks.Spawn(at, Vector3.Zero, 0.22f, 0.45f * g, Hdr("#a8dcff", 1.7f), Hdr("#3d8cff", 0.8f), 0.75f * g, sprite: Sprites.Of("frost_star"), spinV: 1.5f);
                 // Where it breaks, the cold takes the ground under the body: a few points of ice.
                 Erupt(e.X, e.Z, 0.1f, 0.55f + share * 0.4f, 3 + (int)(share * 4), SpikeKind.Ice, 0.55f * g, 0.6f, IceDeep);
                 break;
         }
-        // The skill's own burst at the body, small: a mote breaks in violet, a disc in gold, a shard in rime.
+        // The skill's own burst at the body, small: a moon breaks in violet. (A disc's gold
+        // burst at every bounce through a crowd piled into one cream glow; its star is enough.)
+        // (Motes and shards hit too often for a filmed burst each: a crowd of them read as
+        // one white haze. Their marks above are enough.)
         var (book, tint) = art switch
         {
-            "mote" or "mote_cascade" or "mote_star" or "moon" or "moon_brand" => ("arcane_burst", new Color(1.2f, 1.1f, 1.3f, 0.9f)),
-            "disc" or "disc_aegis" or "disc_reckon" => ("holy_burst", new Color(1.2f, 1.1f, 0.85f, 0.9f)),
-            "shard" or "shard_deep" or "spear_ice" => ("frost_burst", new Color(0.55f, 0.8f, 1.3f, 0.9f)),
+            "moon" or "moon_brand" => ("arcane_burst", new Color(1.2f, 1.1f, 1.3f, 0.9f)),
             "umbral" or "ruin" or "siphon" or "tether" or "tether2" or "tether_mark" => ("shadow_burst", new Color(1.3f, 1.2f, 1.4f, 0.9f)),
             _ => ((string?)null, Colors.White),
         };
@@ -290,7 +293,7 @@ public partial class BattleFx
             case "arrow" or "arrow_mark":
             {
                 var basis = new Godot.Basis(Vector3.Up, heading);
-                steel.Add(new Transform3D(basis, at), art == "arrow_mark" ? new Color(1.2f, 0.8f, 0.6f) : new Color(0.9f, 0.88f, 0.82f));
+                steel.Add(new Transform3D(basis.Scaled(Vector3.One * 1.15f * Mathf.Sqrt(g)), at), art == "arrow_mark" ? new Color(1.2f, 0.75f, 0.55f) : new Color(1f, 0.97f, 0.92f));
                 // A thin bright streak behind it, a glint at its head: an arrow is read by
                 // its line (a wide pale one read as chalk).
                 Ribbons.Feed(key, at, 0.11f * g, 0.13f, art == "arrow_mark" ? Hdr("#ff8a4a", 1f) : Hdr("#ffe8c0", 1f), 2.4f, Ribbons.Style.Steel);
@@ -327,7 +330,9 @@ public partial class BattleFx
                 var gold = aegis ? Hdr("#c8dcff", 0.8f) : Hdr("#ffa62e", 0.75f);
                 var edge = aegis ? Hdr("#cfe0ff", 1f) : Hdr("#ffc04a", 1f);
                 float spin = (float)(now * 16 + p.Id);
-                rings.Add(new Transform3D(new Godot.Basis(Vector3.Up, spin).Scaled(Vector3.One * s), at), gold);
+                // Its face: a sawblade of sunlight (painted, tools/comfy/fx_sprites.py), turning.
+                // Held dim, so its grooves and teeth show rather than a filled sun.
+                Body(at, 1.05f * s, aegis ? "ward_disc" : "sun_disc", gold * 0.6f, spin * 1.3f);
                 // The sun it carries: a hot gold heart, kept small and coloured (a wide
                 // white halo read as a cream doughnut), on a dark bed.
                 Shade(at, 1.7f * s, 0.6f);
@@ -394,7 +399,7 @@ public partial class BattleFx
                 Shade(at, s * 2.4f, 0.6f);
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 0.6f), at), Moon);
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 2.2f), at), Hdr("#9a7aff", 1f) * 0.25f);
-                Sparks.Spawn(at, Vector3.Zero, 0.06f, s * 1.1f, Moon * 0.35f, null, s * 1.1f, sprite: Sprites.Of("twirl"), spinV: 0);
+                Body(at, s * 1.2f, "crescent", Moon * 0.5f, (float)now * 2 + p.Id);
                 Ribbons.Feed(key, at, 0.45f * g, 0.36f, Hdr("#b8a8ff", 1f), 2.2f, Ribbons.Style.Glow);
                 return true;
             }
@@ -407,6 +412,7 @@ public partial class BattleFx
                 Shade(at, s * 2.2f, 0.5f);
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 0.34f), at), star ? Hdr("#fff0d0", 2.6f) : Hdr("#ffc860", 2.1f));
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 1.5f), at), Hdr("#ff5a10", 1.6f) * 0.2f);
+                Body(at, s * 0.75f, "ember_coal", star ? Hdr("#ffb060", 1.6f) : Hdr("#ff7a28", 1.5f), (float)now * 5 + p.Id);
                 Ribbons.Feed(key, at, 0.55f * s, star ? 0.4f : 0.28f, Hdr("#ff8a2a", 1f), 2.4f, Ribbons.Style.Flame);
                 if (p.Weapon == "frostfire_comet") Ribbons.Feed(key ^ 0x55aa, at + Vector3.Up * 0.05f, 0.35f * s, 0.35f, Hdr("#a8dcff", 1f), 2f, Ribbons.Style.Frost);
                 trailAcc.TryGetValue(p.Id, out var acc);
@@ -445,6 +451,7 @@ public partial class BattleFx
                 Shade(at, s * 2.4f, 0.75f);
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 0.5f), at), lantern ? Hdr("#e8fff4", 3f) : pal.Core * 0.7f);
                 orbs.Add(new Transform3D(Godot.Basis.Identity.Scaled(Vector3.One * s * 1.8f), at), rim * 0.2f);
+                if (!lantern) Body(at, s * 1.6f, "umbral", art == "siphon" ? Hdr("#c050ff", 1.2f) : Hdr("#9a50ff", 1.2f), (float)now * 3 + p.Id);
                 Ribbons.Feed(key, at, 0.62f * s, ruin ? 0.55f : 0.42f, new Color(rim.R / 3, rim.G / 3, rim.B / 3), 1.6f, Ribbons.Style.Wisp);
                 // The tether: a thread back to the hand that cast it.
                 if (art.StartsWith("tether") && b0 != null)
@@ -496,6 +503,15 @@ public partial class BattleFx
             Ribbons.Now(arc, width, color, energy, Ribbons.Style.Steel, DiscArc);
         }
     }
+
+    /// <summary>A painted body for this frame (a sprite of tools/comfy/fx_sprites.py),
+    /// `size` across, turned to `turn` radians.</summary>
+    void Body(Vector3 at, float size, string sprite, Color color, float turn) =>
+        Sparks.Spawn(new Sparks.P
+        {
+            At = at, Life = 0.035f, Size = size, SizeEnd = size, Color = color, ColorEnd = color, Alpha = 1,
+            Sprite = Sprites.Range(sprite).First + 1, Spin = Mathf.PosMod(turn, Mathf.Tau) + 0.001f, SpinV = 0.001f,
+        });
 
     /// <summary>A dark soft bed under a bright core (drawn first), so it shows over the pale dead.</summary>
     void Shade(Vector3 at, float size, float a) =>
@@ -570,8 +586,8 @@ public partial class BattleFx
                 var ice = Hdr("#9fe0ff", 1f);
                 AddFront(ground, r, 0.45f, 0.5f * g, ice, 2.2f, Ribbons.Style.Frost);
                 if (rings > 1) AddFront(ground, r * 0.7f, 0.55f, 0.3f, ice, 1.4f, Ribbons.Style.Frost);
-                // The burst is a breath of cold, not a white-out: blue, thin, gone in half a second.
-                Books.Spawn("frost_burst", ground + Vector3.Up * 0.4f, r * 0.8f, 0.45f, new Color(0.35f, 0.65f, 1.25f, 0.5f), flat: true, sizeEnd: r * 1.8f);
+                // No filmed burst: the front, the ice and the cold it rolls out are the blow
+                // (the burst, however faint, washed the whole crowd blue-white).
                 Waves.Add(ground + Vector3.Up * 0.3f, r * 1.2f, 0.4f, f.Glow, 0.8f);
                 // Ice flung low over the ground, and the cold rolling out after it.
                 int n = Math.Min(40, (int)(14 * g + r * 3));
@@ -591,7 +607,7 @@ public partial class BattleFx
                 // The front leaves ice standing in it: a ring of crystal points, leaning out, gone in a second.
                 Erupt(e.X, e.Z, r * 0.35f, r * 0.95f, 14 + rings * 5, SpikeKind.Ice, 1.0f * g, 0.95f, IceDeep);
                 // Rime left on the ground, briefly (held for seconds it was a carpet of white).
-                Scars.Add("frost", ground, r * 0.8f, 1.6f, 0);
+                Scars.Add("frost", ground, r * 0.7f, 1.2f, 0);
                 Flash(ground + Vector3.Up * 1.2f, f.Light, 6, 0.35f, r * 2.5f);
                 return true;
             }
@@ -798,6 +814,53 @@ public partial class BattleFx
         return m;
     }
 
+    /// <summary>An arrow, point down +Z, 0.95 m long about its origin: a dark
+    /// shaft, a bright steel head, pale fletching (crossed, both faces), in
+    /// vertex colour that the instance's colour tints (a bare stick of steel
+    /// read as a stick).</summary>
+    static ArrayMesh Arrow()
+    {
+        var v = new System.Collections.Generic.List<Vector3>();
+        var c = new System.Collections.Generic.List<Color>();
+        void Tri(Vector3 a, Vector3 b, Vector3 d, Color col) { v.Add(a); v.Add(b); v.Add(d); c.Add(col); c.Add(col); c.Add(col); }
+        void Quad(Vector3 a, Vector3 b, Vector3 d, Vector3 e, Color col) { Tri(a, b, d, col); Tri(a, d, e, col); }
+        var wood = new Color(0.42f, 0.3f, 0.2f);
+        var steel = new Color(1.6f, 1.55f, 1.45f);
+        var feather = new Color(1f, 0.96f, 0.9f);
+        const float W = 0.022f, Z0 = -0.48f, Z1 = 0.3f;
+        // The shaft: four sides of a thin box, and the head a four-sided point,
+        // each face both ways round (no winding to get wrong at this size).
+        var s = new[] { new Vector3(-W, -W, 0), new Vector3(W, -W, 0), new Vector3(W, W, 0), new Vector3(-W, W, 0) };
+        for (int i = 0; i < 4; i++)
+        {
+            var a = s[i]; var b = s[(i + 1) % 4];
+            Quad(a with { Z = Z0 }, b with { Z = Z0 }, b with { Z = Z1 }, a with { Z = Z1 }, wood);
+            Quad(a with { Z = Z1 }, b with { Z = Z1 }, b with { Z = Z0 }, a with { Z = Z0 }, wood);
+        }
+        const float H = 0.06f, Tip = 0.47f;
+        var hb = new[] { new Vector3(0, -H * 0.5f, Z1), new Vector3(H, 0, Z1), new Vector3(0, H * 0.5f, Z1), new Vector3(-H, 0, Z1) };
+        var tip = new Vector3(0, 0, Tip);
+        for (int i = 0; i < 4; i++) { Tri(hb[i], hb[(i + 1) % 4], tip, steel); Tri(tip, hb[(i + 1) % 4], hb[i], steel); }
+        // Fletching: two crossed vanes at the tail, drawn both ways round.
+        const float F = 0.07f, F0 = -0.47f, F1 = -0.3f;
+        foreach (var side in new[] { Vector3.Up, Vector3.Right })
+        {
+            var p = new[] { new Vector3(0, 0, F0) - side * F, new Vector3(0, 0, F1) - side * 0.02f, new Vector3(0, 0, F1) + side * 0.02f, new Vector3(0, 0, F0) + side * F };
+            Quad(p[0], p[1], p[2], p[3], feather);
+            Quad(p[3], p[2], p[1], p[0], feather);
+        }
+        var arrays = new Godot.Collections.Array();
+        arrays.Resize((int)Mesh.ArrayType.Max);
+        arrays[(int)Mesh.ArrayType.Vertex] = v.ToArray();
+        arrays[(int)Mesh.ArrayType.Color] = c.ToArray();
+        var m = new ArrayMesh();
+        m.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
+        var st = new SurfaceTool();
+        st.CreateFrom(m, 0);
+        st.GenerateNormals();
+        return st.Commit();
+    }
+
     /// <summary>A lance of ice in flight: a six-sided crystal, a long point ahead
     /// and a short one behind, one unit long down +Y about its origin (a wedge
     /// read as a white bar).</summary>
@@ -924,7 +987,8 @@ public partial class BattleFx
             var fillTex = inside switch
             {
                 Inside.Runes => Premul(Sprites.Runes(0)),
-                Inside.Embers => Premul(Sprites.Burning),
+                // Burning ground is fire in its cracks (a spread of flame was one blob under her).
+                Inside.Embers => veinTex,
                 Inside.Roots => Premul(GD.Load<Texture2D>("res://art/fx/marks/roots_emit.png")),
                 _ => veinTex,
             };

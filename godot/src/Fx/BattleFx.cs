@@ -119,7 +119,7 @@ public partial class BattleFx : Node3D
         // The dark under them, drawn first, so a light over the pale dead still shows.
         shades = Add(new Batch(new QuadMesh { Size = Vector2.One }, 600, new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/spark_shade.gdshader"), RenderPriority = -1 }));
         orbs = Add(new Batch(new QuadMesh { Size = Vector2.One }, 1400, over));
-        steel = Add(new Batch(new BoxMesh { Size = new Vector3(0.06f, 0.04f, 0.6f) }, 600, Glowing(0.25f, 0.3f, 0.7f)));
+        steel = Add(new Batch(Arrow(), 600, Glowing(0.3f, 0.35f, 0.5f)));
         // What is thrown is the weapon in hand (Arms), not a stick of light.
         axes = Add(new Batch(Weapon("viking_axe", 0.85f), 400, null));
         daggers = Add(new Batch(Weapon("dagger_b", 0.5f), 600, null));
@@ -208,6 +208,11 @@ public partial class BattleFx : Node3D
 
     public void Flash(Vector3 at, Color color, float peak, float life, float range = 9)
     {
+        // Lights share: each one already lit dims the next, so a crowd's worth of
+        // blows lights the pale dead no brighter than a few (they washed to cream).
+        int lit = 0;
+        foreach (var f in flashes) if (f.T < 0.5f) lit++;
+        peak /= 1 + 0.6f * lit;
         int best = 0;
         for (int i = 1; i < flashes.Count; i++) if (flashes[i].Light.LightEnergy < flashes[best].Light.LightEnergy) best = i;
         var l = flashes[best].Light;
@@ -304,7 +309,7 @@ public partial class BattleFx : Node3D
     /// cores keep their detail rather than burning to white.</summary>
     static float GlowOf(School s) => s switch
     {
-        School.Fire => 1.8f, School.Shadow => 1.6f, School.Nature => 1.35f, School.Arcane => 1.35f,
+        School.Fire => 1.3f, School.Shadow => 1.6f, School.Nature => 1.35f, School.Arcane => 1.0f,
         School.Frost => 0.7f, School.Storm => 1.15f, School.Holy => 1.05f, _ => 1f,
     };
 
@@ -352,7 +357,7 @@ public partial class BattleFx : Node3D
             return true;
         }
         // The instant: brighter than anything else in the frame, gone in a breath.
-        if (On('f')) Sparks.Spawn(ground + Vector3.Up * 0.9f, Vector3.Zero, 0.07f, r * 0.5f, new Color(1.8f, 1.7f, 1.6f), pal.Core * 0.5f, r * 1.1f, alpha: 0.8f);
+        if (On('f')) Sparks.Spawn(ground + Vector3.Up * 0.9f, Vector3.Zero, 0.07f, r * 0.4f, new Color(1.8f, 1.7f, 1.6f), pal.Glow * 0.4f, r * 0.8f, alpha: 0.8f);
         // The air thrown out.
         if (On('w')) Waves.Add(ground + Vector3.Up * 0.35f, r * 1.7f, 0.35f, pal.Glow, school == School.Holy ? 0.6f : 1);
         // The burst, flat on the ground and above the grass.
@@ -392,12 +397,13 @@ public partial class BattleFx : Node3D
         else if (school is School.Fire or School.Physical or School.Shadow)
         {
             // Thin and soon gone: smoke that lingers hides the next fight.
-            var smoke = school == School.Shadow ? new Color(0.5f, 0.35f, 0.7f, 0.5f) : school == School.Physical ? new Color(0.75f, 0.62f, 0.5f, 0.45f) : new Color(0.45f, 0.42f, 0.4f, 0.42f);
+            // Steel's dust is the ground's brown, not tan: tan puffs over the pale dead read as cream.
+            var smoke = school == School.Shadow ? new Color(0.5f, 0.35f, 0.7f, 0.5f) : school == School.Physical ? new Color(0.42f, 0.34f, 0.26f, 0.38f) : new Color(0.45f, 0.42f, 0.4f, 0.42f);
             for (int i = 0; i < 4; i++)
                 Smoke.Spawn(ground + new Vector3((R() - 0.5f) * r * 0.6f, 0.6f + R() * 0.4f, (R() - 0.5f) * r * 0.6f), new Vector3((R() - 0.5f) * 0.6f, 0.8f + R() * 0.6f, (R() - 0.5f) * 0.6f), brief ? 0.5f + R() * 0.15f : 1.2f + R() * 0.6f, r * 0.35f, smoke, smoke * 0.6f, r * 0.8f, drag: 1.2f, alpha: smoke.A);
         }
         else if (school == School.Frost)
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < (brief ? 1 : 3); i++)
                 Smoke.Spawn(ground + new Vector3((R() - 0.5f) * r * 0.8f, 0.4f, (R() - 0.5f) * r * 0.8f), new Vector3(0, 0.25f, 0), 1.4f, r * 0.4f, new Color(0.75f, 0.85f, 1f), new Color(0.6f, 0.7f, 0.9f), r * 0.9f, drag: 1.5f, alpha: 0.18f);
         // Its light.
         if (On('l')) Flash(ground + Vector3.Up * 1.4f, pal.Light, 12 * glow, brief ? 0.15f : 0.3f + r * 0.04f, r * 3 + 4);
@@ -566,6 +572,7 @@ public partial class BattleFx : Node3D
     {
         b0 = b;
         hitBudget = 28;
+        killBudget = 6;
         foreach (var ev in events)
         {
             switch (ev)
@@ -606,10 +613,22 @@ public partial class BattleFx : Node3D
                     var away = new Vector3((float)e.Dx, 0, (float)e.Dz);
                     if (away.LengthSquared() < 0.01f) away = Vector3.Forward;
                     Gore.Kill(V(e.X, gy + 0.7 * e.Scale, e.Z), (float)e.Scale, View.Gore.Of(e.Family, e.Def), e.Family == Family.Undead, e.Burst, away.Normalized());
-                    Burst(at, e.School, e.Elite ? 40 : 10, e.Elite ? 7 : 4, 3, life: 0.6f);
-                    for (int i = 0; i < (e.Elite ? 14 : 4); i++)
-                        Sparks.Spawn(V(e.X + (R() - 0.5) * 0.6, gy + 0.5, e.Z + (R() - 0.5) * 0.6), new Vector3(0, 1.4f + R() * 1.5f, 0), 1 + R() * 0.6f, 0.07f,
-                            new Color(2.4f, 1.1f, 0.3f), new Color(1.6f, 0.3f, 0.05f), 0.02f, 0, 0.8f);
+                    // A crowd cut down at once is told by its first few deaths in a frame; the
+                    // rest fall with their gore alone (every death's burst of light together
+                    // read as one cream blob over the crowd). What steel kills throws bone
+                    // and grit, not light.
+                    bool told = e.Elite || e.Boss || killBudget-- > 0;
+                    if (told)
+                    {
+                        if (e.School == School.Physical)
+                            for (int i = 0; i < (e.Elite ? 18 : 6); i++)
+                                Smoke.Spawn(at, new Vector3((R() - 0.5f) * 5, 2 + R() * 3, (R() - 0.5f) * 5), 0.6f + R() * 0.3f, 0.06f + R() * 0.05f,
+                                    new Color("#bfb6a2"), gravity: 12, sprite: Sprites.Of("dirt"), spinV: 6);
+                        else Burst(at, e.School, e.Elite ? 30 : 7, e.Elite ? 7 : 4, 3, life: 0.5f);
+                        for (int i = 0; i < (e.Elite ? 12 : 3); i++)
+                            Sparks.Spawn(V(e.X + (R() - 0.5) * 0.6, gy + 0.5, e.Z + (R() - 0.5) * 0.6), new Vector3(0, 1.4f + R() * 1.5f, 0), 0.8f + R() * 0.5f, 0.06f,
+                                new Color(2.2f, 0.9f, 0.25f), new Color(1.4f, 0.25f, 0.05f), 0.02f, 0, 0.8f);
+                    }
                     if (e.Family == Family.Undead)
                         for (int i = 0; i < 6; i++) Smoke.Spawn(V(e.X, gy + 0.6, e.Z), new Vector3((R() - 0.5f) * 3, 2 + R() * 2, (R() - 0.5f) * 3), 0.9f, 0.2f, new Color("#d8d2c0"), gravity: 9, sprite: Sprites.Of("dirt"), spinV: 3);
                     Smoke.Spawn(V(e.X, gy + 0.3, e.Z), new Vector3(0, 0.5f, 0), 0.9f, 0.5f, new Color("#3a3430"), new Color("#1a1816"), 1.3f, alpha: 0.35f);
@@ -618,8 +637,12 @@ public partial class BattleFx : Node3D
                         // A champion's fall is brief and no wider than its body's reach (the experience
                         // director's rule: about 3 m, a flash under 0.15 s, the dust down in 0.6 s, never
                         // bigger than a level-up); only the boss's may fill the screen.
-                        Flash(V(e.X, gy + 1.5, e.Z), pal.Light, e.Boss ? 16 : 10, e.Boss ? 0.6f : 0.15f, e.Boss ? 12 : 8);
-                        if (!Blast(e.X, e.Z, e.School, e.Boss ? 6 : 2.4f, e.Boss ? 1.1f : 0.6f, e.Boss ? 1.5f : 1.1f)) Nova(e.X, e.Z, e.Boss ? 5 : 3, pal.Glow, 0.45f);
+                        // Champions falling together are told by the first: the rest burst light and
+                        // small (eight full blasts at once washed the whole crowd white).
+                        bool first = e.Boss || time - lastFall > 0.3;
+                        if (first) lastFall = time;
+                        Flash(V(e.X, gy + 1.5, e.Z), pal.Light, e.Boss ? 16 : first ? 10 : 4, e.Boss ? 0.6f : 0.15f, e.Boss ? 12 : 8);
+                        if (!Blast(e.X, e.Z, e.School, e.Boss ? 6 : first ? 2f : 1.3f, e.Boss ? 1.1f : 0.55f, e.Boss ? 1.5f : 0.8f, light: !e.Boss && !first)) Nova(e.X, e.Z, e.Boss ? 5 : 3, pal.Glow, 0.45f);
                         Cam?.AddTrauma(0.35f);
                     }
                     break;
