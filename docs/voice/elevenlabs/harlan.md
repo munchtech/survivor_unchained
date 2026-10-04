@@ -1,8 +1,6 @@
 # Harlan Coyle: ElevenLabs packet
 
-Voice id in the game: `harlan`. 64 takes to record (7,245 characters; about 21,735 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
-
-**Hold 10 of these** (marked HOLD below) until the story editor's review of section 17 is back; the rest can be recorded now.
+Voice id in the game: `harlan`. 63 takes to record (7,141 characters; about 21,423 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -467,6 +465,7 @@ Subtitle: A mage! There's a thing I've never sold. Can it find a lost wagon? No?
 
 ### 38. `dlg.harlan.say_calling.3.wav`
 
+*The same words are also* `dlg.harlan.say_calling.4.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json harlan/say_calling#3
 *Played:* wistful, apologetic; doing: reminded of Jory; pace: measured; volume: quiet.
 *Note:* The association slips out. Apology.
@@ -476,18 +475,7 @@ Subtitle: A mage! There's a thing I've never sold. Can it find a lost wagon? No?
 ```
 Subtitle: You've quiet feet. My nephew's somewhere quiet. ...Forgive me. Everything makes me think of him.
 
-### 39. `dlg.harlan.say_calling.4.wav`
-
-*Where:* dialogue.json harlan/say_calling#4
-*Played:* wistful, apologetic; doing: reminded of Jory; pace: measured; volume: quiet.
-*Note:* The association slips out. Apology.
-
-```
-[wistful, apologetic, quietly] You've quiet feet. My nephew's somewhere quiet. ...Forgive me. Everything makes me think of him.
-```
-Subtitle: You've quiet feet. My nephew's somewhere quiet. ...Forgive me. Everything makes me think of him.
-
-### 40. `dlg.harlan.jory_now.0.p0.wav`
+### 39. `dlg.harlan.jory_now.0.p0.wav`
 
 *Where:* dialogue.json harlan/jory_now#0; part 1 of 3: **harlan: He asked me what was in the crates. I told him salt.** / narrator: He looks at his hands. / harlan: He didn't believe me. First time in his life. ...That's the worst of it, friend. He always…
 *Played:* shame; doing: Jory doesn't believe him now; pace: slow; volume: quiet.
@@ -498,7 +486,7 @@ Subtitle: You've quiet feet. My nephew's somewhere quiet. ...Forgive me. Everyth
 ```
 Subtitle: He asked me what was in the crates. I told him salt.
 
-### 41. `dlg.harlan.jory_now.0.p2.wav`
+### 40. `dlg.harlan.jory_now.0.p2.wav`
 
 *Where:* dialogue.json harlan/jory_now#0; part 3 of 3: harlan: He asked me what was in the crates. I told him salt. / narrator: He looks at his hands. / **harlan: He didn't believe me. First time in his life. ...That's the worst of it, friend. He always…**
 *Played:* shame; doing: Jory doesn't believe him now; pace: slow; volume: quiet.
@@ -509,7 +497,7 @@ Subtitle: He asked me what was in the crates. I told him salt.
 ```
 Subtitle: He didn't believe me. First time in his life. ...That's the worst of it, friend. He always did.
 
-### 42. `dlg.harlan.jory_now.1.wav`
+### 41. `dlg.harlan.jory_now.1.wav`
 
 *Where:* dialogue.json harlan/jory_now#1
 *Played:* fond, guilty; doing: Jory trusts him; pace: measured; volume: quiet.
@@ -520,7 +508,7 @@ Subtitle: He didn't believe me. First time in his life. ...That's the worst of i
 ```
 Subtitle: Sleeps with the lamp lit. Eats like a horse. Asked me last night what was in the crates. I told him salt. He believed me; he always does. ...That's the worst of it, friend. He always does.
 
-### 43. `dlg.harlan.t_harlan.0.wav`
+### 42. `dlg.harlan.t_harlan.0.wav`
 
 *Where:* dialogue.json harlan/t_harlan#0
 *Played:* tender memory; doing: how Jory came to him; pace: slow; volume: quiet.
@@ -531,7 +519,7 @@ Subtitle: Sleeps with the lamp lit. Eats like a horse. Asked me last night what 
 ```
 Subtitle: His mother was my sister. She went with the fever year, and he came to me at eight with a bundle and a cough, and the first thing he ever said to me was "Do you have a horse?" ...I had six. He named all of them wrong.
 
-### 44. `dlg.harlan.roost.0.p1.wav`
+### 43. `dlg.harlan.roost.0.p1.wav`
 
 *Where:* dialogue.json harlan/roost#0; part 2 of 6: narrator: He sits down, which you haven't seen him do. / **harlan: Three. In cages.** / narrator: He's counting something on his fingers, and he stops. / harlan: Is one of them young? Fair, freckled, a mouth on him that'll get him— / narrator: He stops that too. / harlan: Get him out. Whatever it costs. Whatever they want, I'll pay it twice.
 *Played:* shaken, desperate; doing: Jory may be caged; pace: slow; volume: quiet.
@@ -543,7 +531,7 @@ Subtitle: His mother was my sister. She went with the fever year, and he came to
 ```
 Subtitle: Three. In cages.
 
-### 45. `dlg.harlan.roost.0.p3.wav`
+### 44. `dlg.harlan.roost.0.p3.wav`
 
 *Where:* dialogue.json harlan/roost#0; part 4 of 6: narrator: He sits down, which you haven't seen him do. / harlan: Three. In cages. / narrator: He's counting something on his fingers, and he stops. / **harlan: Is one of them young? Fair, freckled, a mouth on him that'll get him—** / narrator: He stops that too. / harlan: Get him out. Whatever it costs. Whatever they want, I'll pay it twice.
 *Played:* shaken, desperate; doing: Jory may be caged; pace: slow; volume: quiet.
@@ -555,7 +543,7 @@ Subtitle: Three. In cages.
 ```
 Subtitle: Is one of them young? Fair, freckled, a mouth on him that'll get him—
 
-### 46. `dlg.harlan.roost.0.p5.wav`
+### 45. `dlg.harlan.roost.0.p5.wav`
 
 *Where:* dialogue.json harlan/roost#0; part 6 of 6: narrator: He sits down, which you haven't seen him do. / harlan: Three. In cages. / narrator: He's counting something on his fingers, and he stops. / harlan: Is one of them young? Fair, freckled, a mouth on him that'll get him— / narrator: He stops that too. / **harlan: Get him out. Whatever it costs. Whatever they want, I'll pay it twice.**
 *Played:* shaken, desperate; doing: Jory may be caged; pace: slow; volume: quiet.
@@ -567,7 +555,7 @@ Subtitle: Is one of them young? Fair, freckled, a mouth on him that'll get him�
 ```
 Subtitle: Get him out. Whatever it costs. Whatever they want, I'll pay it twice.
 
-### 47. `dlg.harlan.ledger_early.0.p1.wav`
+### 46. `dlg.harlan.ledger_early.0.p1.wav`
 
 *Where:* dialogue.json harlan/ledger_early#0; part 2 of 4: narrator: He reads, and his finger stops on a line. / **harlan: That's the night. That's the night Jory's wagons went. Forty to "R." Ten to Jessop: that's…** / narrator: He looks up. / harlan: For what road? Who's "R."? ...Find out who "R." is, friend. Please. Then take that to Holl…
 *Played:* shock, fury restrained; doing: the ledger shows the night; pace: measured; volume: quiet.
@@ -578,7 +566,7 @@ Subtitle: Get him out. Whatever it costs. Whatever they want, I'll pay it twice.
 ```
 Subtitle: That's the night. That's the night Jory's wagons went. Forty to "R." Ten to Jessop: that's Vonnra's clerk. "For the road."
 
-### 48. `dlg.harlan.ledger_early.0.p3.wav`
+### 47. `dlg.harlan.ledger_early.0.p3.wav`
 
 *Where:* dialogue.json harlan/ledger_early#0; part 4 of 4: narrator: He reads, and his finger stops on a line. / harlan: That's the night. That's the night Jory's wagons went. Forty to "R." Ten to Jessop: that's… / narrator: He looks up. / **harlan: For what road? Who's "R."? ...Find out who "R." is, friend. Please. Then take that to Holl…**
 *Played:* shock, fury restrained; doing: the ledger shows the night; pace: measured; volume: quiet.
@@ -589,7 +577,7 @@ Subtitle: That's the night. That's the night Jory's wagons went. Forty to "R." T
 ```
 Subtitle: For what road? Who's "R."? ...Find out who "R." is, friend. Please. Then take that to Holloway, not to me. If I knew, I'd do something I'd hang for.
 
-### 49. `dlg.harlan.crates.0.p1.wav`
+### 48. `dlg.harlan.crates.0.p1.wav`
 
 *Where:* dialogue.json harlan/crates#0; part 2 of 4: narrator: His face does what it does whenever anyone says those two letters. / **harlan: ...Are they. With the bandit.** / narrator: He's already reaching for paper. / harlan: Thank you, friend. Leave that with me. Paid for is paid for.
 *Played:* uneasy, then too brisk; doing: the crates; pace: measured; volume: quiet.
@@ -600,7 +588,7 @@ Subtitle: For what road? Who's "R."? ...Find out who "R." is, friend. Please. Th
 ```
 Subtitle: ...Are they. With the bandit.
 
-### 50. `dlg.harlan.crates.0.p3.wav`
+### 49. `dlg.harlan.crates.0.p3.wav`
 
 *Where:* dialogue.json harlan/crates#0; part 4 of 4: narrator: His face does what it does whenever anyone says those two letters. / harlan: ...Are they. With the bandit. / narrator: He's already reaching for paper. / **harlan: Thank you, friend. Leave that with me. Paid for is paid for.**
 *Played:* uneasy, then too brisk; doing: the crates; pace: measured; volume: quiet.
@@ -611,7 +599,7 @@ Subtitle: ...Are they. With the bandit.
 ```
 Subtitle: Thank you, friend. Leave that with me. Paid for is paid for.
 
-### 51. `dlg.harlan.be_dig.0.p1.wav`
+### 50. `dlg.harlan.be_dig.0.p1.wav`
 
 *Where:* dialogue.json harlan/be_dig#0; part 2 of 2: narrator: He takes a long time to answer. / **harlan: I sell salt to people who salt things. I sell iron to people who hit things. I don't ask t…**
 *Played:* defensive guilt; doing: justifies selling to the Dig; pace: slow; volume: quiet.
@@ -622,7 +610,7 @@ Subtitle: Thank you, friend. Leave that with me. Paid for is paid for.
 ```
 Subtitle: I sell salt to people who salt things. I sell iron to people who hit things. I don't ask the salt what it's for, friend. ...Is there anything else? Only I've stock to count.
 
-### 52. `dlg.harlan.cb_jory_knows.0.p1.wav`
+### 51. `dlg.harlan.cb_jory_knows.0.p1.wav`
 
 *Where:* dialogue.json harlan/cb_jory_knows#0; part 2 of 2: narrator: He doesn't say good morning. / **harlan: He knows. You told him. ...I'd have told him myself. One day. When it didn't matter any mo…**
 *Played:* hurt, ashamed; doing: you told Jory; pace: slow; volume: quiet.
@@ -635,17 +623,17 @@ Subtitle: He knows. You told him. ...I'd have told him myself. One day. When it 
 
 ## Said in passing
 
-### 53. `bark.harlan.day.0.wav`
+### 52. `bark.harlan.day.0.wav`
 
 *Where:* npcs.json harlan.barks[0]
 *Played:* patter; pace: brisk; volume: raised.
 
 ```
-[patter, loudly] Salt and iron, friend. Cloth, when I can get it.
+[patter, loudly] Salt and iron, friend. Good honest salt.
 ```
-Subtitle: Salt and iron, friend. Cloth, when I can get it.
+Subtitle: Salt and iron, friend. Good honest salt.
 
-### 54. `bark.harlan.night.0.wav`
+### 53. `bark.harlan.night.0.wav`
 
 *Where:* npcs.json harlan.nightBarks[0]
 *Played:* tired; pace: measured; volume: quiet.
@@ -655,7 +643,7 @@ Subtitle: Salt and iron, friend. Cloth, when I can get it.
 ```
 Subtitle: I keep the books by candlelight. Helps me not think.
 
-### 55. `bark.harlan.said.0.wav`  HOLD
+### 54. `bark.harlan.said.0.wav`
 
 *Where:* npcs.json harlan.said[0]
 *Played:* worried; doing: Jory is late; pace: measured; volume: level.
@@ -666,7 +654,7 @@ Subtitle: I keep the books by candlelight. Helps me not think.
 ```
 Subtitle: Late. Jory's never late.
 
-### 56. `bark.harlan.said.1.wav`  HOLD
+### 55. `bark.harlan.said.1.wav`
 
 *Where:* npcs.json harlan.said[1]
 *Played:* merchant's patter; doing: trade; pace: brisk; volume: level.
@@ -677,7 +665,7 @@ Subtitle: Late. Jory's never late.
 ```
 Subtitle: Salt, iron, cloth. Whatever you need, when the wagons come.
 
-### 57. `bark.harlan.said.2.wav`  HOLD
+### 56. `bark.harlan.said.2.wav`
 
 *Where:* npcs.json harlan.said[2]
 *Played:* suspicious, bitter; doing: someone knows about the caravan; pace: measured; volume: quiet.
@@ -688,7 +676,7 @@ Subtitle: Salt, iron, cloth. Whatever you need, when the wagons come.
 ```
 Subtitle: Somebody knows something.
 
-### 58. `bark.harlan.said.3.wav`  HOLD
+### 57. `bark.harlan.said.3.wav`
 
 *Where:* npcs.json harlan.said[3]
 *Played:* haunted; doing: every wagon might be Jory's; pace: slow; volume: quiet.
@@ -699,7 +687,7 @@ Subtitle: Somebody knows something.
 ```
 Subtitle: Every wagon on that road's his, in the dark.
 
-### 59. `bark.harlan.said.4.wav`  HOLD
+### 58. `bark.harlan.said.4.wav`
 
 *Where:* npcs.json harlan.said[4]
 *Played:* exhausted, stubborn; doing: he won't sleep; pace: slow; volume: quiet.
@@ -710,7 +698,7 @@ Subtitle: Every wagon on that road's his, in the dark.
 ```
 Subtitle: Can't sleep. Won't.
 
-### 60. `bark.harlan.said.5.wav`  HOLD
+### 59. `bark.harlan.said.5.wav`
 
 *Where:* npcs.json harlan.said[5]
 *Played:* grief, fond; doing: Jory and the dark; pace: slow; volume: quiet.
@@ -721,7 +709,7 @@ Subtitle: Can't sleep. Won't.
 ```
 Subtitle: Jory hated the dark. Hated it. Slept with a candle till he was fourteen.
 
-### 61. `bark.harlan.said.6.wav`  HOLD
+### 60. `bark.harlan.said.6.wav`
 
 *Where:* npcs.json harlan.said[6]
 *Played:* relief, tender; doing: Jory is home; pace: measured; volume: quiet.
@@ -732,7 +720,7 @@ Subtitle: Jory hated the dark. Hated it. Slept with a candle till he was fourtee
 ```
 Subtitle: Jory's asleep in Rook's good room. I keep going to look.
 
-### 62. `bark.harlan.said.7.wav`  HOLD
+### 61. `bark.harlan.said.7.wav`
 
 *Where:* npcs.json harlan.said[7]
 *Played:* quiet, wry; doing: the lamp; pace: measured; volume: quiet.
@@ -743,7 +731,7 @@ Subtitle: Jory's asleep in Rook's good room. I keep going to look.
 ```
 Subtitle: He sleeps with the lamp lit. So do I, now.
 
-### 63. `bark.harlan.said.8.wav`  HOLD
+### 62. `bark.harlan.said.8.wav`
 
 *Where:* npcs.json harlan.said[8]
 *Played:* grief; doing: the sign that won't be made; pace: slow; volume: quiet.
@@ -754,7 +742,7 @@ Subtitle: He sleeps with the lamp lit. So do I, now.
 ```
 Subtitle: Coyle and Nephew, the new sign was going to say. Coyle and—
 
-### 64. `bark.harlan.said.9.wav`  HOLD
+### 63. `bark.harlan.said.9.wav`
 
 *Where:* npcs.json harlan.said[9]
 *Played:* amused, proud; doing: Jory calls him Mister Coyle; pace: measured; volume: level.

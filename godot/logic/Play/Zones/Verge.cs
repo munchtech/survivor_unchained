@@ -184,9 +184,20 @@ public sealed class Verge : ZoneRuntime
         // The Beast Problem, settled with blood: the Pack hunted in its own Hollow.
         StoryFight("hollow", hollow, 6.5, "Hunt the Pack", "Wolf Hollow",
             () => !WolvesFriendly() && !HollowCalm() && F("greymuzzle").Str != "dead",
-            () => Story("hollow_by_night", "The Hollow by Night", "pack", 311, "boss_pack", "Greymuzzle", "Who Kept the Cold Off",
-                $$"""[{ "set": { "greymuzzle": "dead", "hollow.hostile": true } }, { "add": { "beasts.population": -30 } }, { "quest": { "id": "beasts", "entry": "alpha_dead" } }, { "give": "greymuzzle_fang" }, {{Hist("killed_greymuzzle", "killed Greymuzzle, the old alpha of the Pack, in his own Hollow by night", ["beasts", "wolves"], 2, null, """{ "maeca": { "affection": -50, "respect": -20 }, "holloway": { "respect": 20 } }""")}}]""",
-                """[{ "add": { "beasts.population": 10 } }, { "set": { "hollow.hostile": true } }, { "quest": { "id": "beasts", "entry": "hollow_lost" } }]"""));
+            () =>
+            {
+                // Greymuzzle let go (docs/STORY_BIBLE.md, "The nights"), narrowly: only if she knelt
+                // and promised and the stream already runs clean. He goes down, gets up and goes to
+                // his sick; beasts.outcome stands; Maeca hears of it, the one fight that raises her regard.
+                bool spare = F("promise.pack").Truthy && !F("promise.broken").Truthy && StreamClean();
+                var spec = Story("hollow_by_night", "The Hollow by Night", "pack", 311, "boss_pack", "Greymuzzle", "Who Kept the Cold Off",
+                    spare
+                        ? $$"""[{ "set": { "greymuzzle": "spared" } }, {{Hist("spared_greymuzzle", "brought Greymuzzle down in his own Hollow by night, and let him get up and go to his sick", ["beasts", "wolves"], 2, null, """{ "maeca": { "affection": 15, "respect": 20 } }""")}}]"""
+                        : $$"""[{ "set": { "greymuzzle": "dead", "hollow.hostile": true } }, { "add": { "beasts.population": -30 } }, { "quest": { "id": "beasts", "entry": "alpha_dead" } }, { "give": "greymuzzle_fang" }, {{Hist("killed_greymuzzle", "killed Greymuzzle, the old alpha of the Pack, in his own Hollow by night", ["beasts", "wolves"], 2, null, """{ "maeca": { "affection": -50, "respect": -20 }, "holloway": { "respect": 20 } }""")}}]""",
+                    """[{ "add": { "beasts.population": 10 } }, { "set": { "hollow.hostile": true } }, { "quest": { "id": "beasts", "entry": "hollow_lost" } }]""");
+                spec.Spare = spare;
+                return spec;
+            });
         // The Missing Caravan, by force: Redcowl's camp taken in the dark.
         StoryFight("roost", roost, 7, "Raid the Roost", "Redcowl's Roost",
             () => !KerchiefsFriendly() && F("redcowl").Str is not ("dead" or "tricked") && !F("roost.cleared").Truthy,
@@ -358,7 +369,7 @@ public sealed class Verge : ZoneRuntime
             if (!StreamClean()) SpawnGroup("wolf_blighted", 3, hollow.X, hollow.Z, 6, "hollow", 8);
             if (HollowCalm()) G.Say("The wolves watch you come. None of them move to stop you.", null, 4);
             else if (Test("""{ "hasTag": "wolf_pelts" }""") && !F("pack.allied").Truthy) G.Say("They smell the cloak before they see you. Every wolf in the Hollow is on its feet.", null, 4);
-            else if (F("wolf.blood").Truthy && Knows("hint.greymuzzle")) G.Say("They smell the blood on you before they see you. Maeca said none since you last slept.", null, 5);
+            else if (F("wolf.blood").Truthy && Knows("hint.greymuzzle")) G.Say("They smell the blood on you before they see you: one of theirs, since you last slept.", null, 5);
             else G.Say("Low growling from every side of the Hollow.", null, 3);
         }
         // Redcowl's Roost.
@@ -404,7 +415,7 @@ public sealed class Verge : ZoneRuntime
             sinkSpawned = true;
             G.Apply("""[{ "quest": { "id": "below", "status": "active", "entry": "sinkhole" } }, { "quest": { "id": "below", "entry": "tremor" } }]""");
             B.Events.Emit(new Ev.Shake { Amount = 0.9 });
-            G.Say("The ground shivers. At the bottom of the pit lies something pale and segmented, bigger than a house, and — probably — dead.", null, 6);
+            G.Say("The ground shivers. At the bottom of the pit lies something pale and segmented, bigger than a house. It does not move. You watch it long enough to be sure, and you are not.", null, 6);
             if (Knows("faith"))
                 G.After(6.5, () =>
                 {

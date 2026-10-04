@@ -1,6 +1,6 @@
 # The Ford-Warden: ElevenLabs packet
 
-Voice id in the game: `warden`. 9 takes to record (201 characters; about 603 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `warden`. 7 takes to record (178 characters; about 534 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
@@ -27,7 +27,7 @@ In the Voice Library instead: search for *inhuman*, *male*, *ageless*, and liste
 - Model: **Eleven v4** (`eleven_v4`): the most emotive, and it follows the audio tags in square brackets.
 - Stability: **45** (lower is more expressive and less steady; raise it if the voice drifts from line to line). Similarity: **75**.
 - One line at a time, as below; regenerate until the read matches the direction. Two regenerations of the same text are free within two hours.
-- Download as **WAV** (from History if the download button gives MP3; MP3 at 192 kbps also works). Save each take into one folder under the exact name given, e.g. `~/Downloads/su_vo/dlg.cin_none_cross.call.0.p1.wav`.
+- Download as **WAV** (from History if the download button gives MP3; MP3 at 192 kbps also works). Save each take into one folder under the exact name given, e.g. `~/Downloads/su_vo/dlg.cin_none_cross.call.0.wav`.
 
 Then bring them into the game (it trims, levels, mixes and replaces the placeholders, and lists what is missing or wrong):
 
@@ -41,19 +41,20 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 
 ## Cinematic: none cross
 
-### 1. `dlg.cin_none_cross.call.0.p1.wav`
+### 1. `dlg.cin_none_cross.call.0.wav`
 
-*Where:* dialogue.json cin_none_cross/call#0; part 2 of 2: narrator: sung, under the water / **warden: Lamps are lit... stay where they reach...**
+*Where:* dialogue.json cin_none_cross/call#0
 *Played:* eerie, singing; doing: the Warden sings under the water; pace: very slow; volume: hushed.
 *Note:* Sung low and far off, as if through water.
 
 ```
-[eerie, singing, whispers] Lamps are lit... stay where they reach...
+[eerie, singing, whispers] [singing, under the water] Lamps are lit... stay where they reach...
 ```
 Subtitle: Lamps are lit... stay where they reach...
 
 ### 2. `dlg.cin_none_cross.lie_down.0.wav`
 
+*The same words are also* `cbark.d918c7cc3d98.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json cin_none_cross/lie_down#0
 *Played:* vast, gentle; doing: the Warden's lullaby; pace: very slow; volume: quiet.
 
@@ -77,6 +78,7 @@ Subtitle: NONE. CROSS. AFTER DARK.
 
 ### 4. `dlg.cin_heart_goes_down.morning.0.wav`
 
+*The same words are also* `cbark.f7a2a69e2307.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json cin_heart_goes_down/morning#0
 *Played:* dazed, enormous; doing: the dying Warden; pace: very slow; volume: quiet.
 
@@ -109,18 +111,7 @@ Subtitle: RISE, YOU WHO DROWNED HERE.
 ```
 Subtitle: Lamps are lit... stay where they reach...
 
-### 7. `cbark.d918c7cc3d98.wav`
-
-*Where:* godot/logic/Play/Zones/Prologue.cs
-*Played:* inhuman, calm; doing: the Warden's order; pace: slow; volume: quiet.
-*Note:* Two words, final.
-
-```
-[inhuman, calm, quietly] Lie down.
-```
-Subtitle: Lie down.
-
-### 8. `cbark.a5b5efc70a27.wav`
+### 7. `cbark.a5b5efc70a27.wav`
 
 *Where:* godot/logic/Play/Zones/Prologue.cs
 *Played:* vast, final; doing: the Warden's law; pace: slow; volume: shout.
@@ -130,15 +121,4 @@ Subtitle: Lie down.
 [vast, final, shouting] NONE CROSS AFTER DARK.
 ```
 Subtitle: NONE CROSS AFTER DARK.
-
-### 9. `cbark.f7a2a69e2307.wav`
-
-*Where:* godot/logic/Play/Zones/Prologue.cs
-*Played:* lost, plaintive; doing: the Warden asks; pace: slow; volume: quiet.
-*Note:* A drowned thing's question.
-
-```
-[lost, plaintive, quietly] Is it morning?
-```
-Subtitle: Is it morning?
 

@@ -177,6 +177,8 @@ public partial class Game : Node, IZoneHost
             var spec = Arenas.FromTable(o, "waystation", at0.X, at0.Z, at0.Facing);
             // --boss DEF[:NAME]: a story's foe at the half hour (pictures of Grimtunnel, of Greymuzzle).
             if (Args.Get("boss") is string bo) { var bp = bo.Split(':'); spec.Boss = bp[0]; if (bp.Length > 1) spec.BossName = bp[1].Replace('_', ' '); }
+            // --spare: the story lets it go (Greymuzzle spared).
+            spec.Spare = Args.Has("spare");
             Arenas.Begin(World, spec);
         }
         if (z != "lowford")
@@ -851,12 +853,13 @@ public partial class Game : Node, IZoneHost
                 Mark(new Battle.EnemyBlow { Shape = TelegraphShape.Circle, Kind = TelegraphKind.Wall, X = px + 7, Z = pz - 1, Radius = 2, Label = "wall" });
             }
         }
-        // --cast T: the art in hand used once, T seconds in (a picture of it).
+        // --cast T: the art in hand used once, T seconds in (a picture of it);
+        // --still: used standing, with no push (a vault then springs back).
         if (!castDone && Args.Has("cast") && Battle is { } cb && Journey.Playtime >= Args.Num("cast", 1))
         {
             castDone = true;
             cb.Aim = null;
-            cb.UseAbility(1, 0);
+            cb.UseAbility(Args.Has("still") ? 0 : 1, 0);
         }
         if (Args.Get("open") is not string want) return;
         tourT -= dt;

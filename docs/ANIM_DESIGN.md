@@ -78,8 +78,7 @@ arcanist; hunting bow (a crossbow, held pistol-fashion) and the knife belt
 
 Everything below is **made** and wired into the game unless marked
 **planned**; anything without a clip of hers plays from the Universal
-Animation Library through `HerPose` as before (the leap and vault, the
-bull rush and chain haul). `tools/anim/manifest.json` is the live list,
+Animation Library through `HerPose` as before. `tools/anim/manifest.json` is the live list,
 with each clip's source, licence and length.
 
 ### 4.1 Locomotion
@@ -166,6 +165,44 @@ then follows through and recovers; played at 1.6×.
 - Talk, gestures, kneel, emotes (planned; folk are Quaternius bodies and
   keep the library for now).
 
+### 4.6 Arts (`tools/anim/clips/arts.py`)
+- `vault` (moving: she vaults on the way she runs): a split leap, the
+  front leg straight out and the back one stretched long, the arms in
+  opposition; down on the lead foot into the next stride. 0.32 s in the
+  air, as the game flies her.
+- `vault_back` (standing: she springs back from her facing): off both
+  feet laid back, knees tucked to her chest, eyes kept on what she leaves;
+  a low three-point landing, right knee all but down, left hand on the
+  ground, the blade arm swept out behind; then up into her guard.
+- PlayerView picks between them by her travel against her facing, turns
+  her for it, and holds her facing in the air. Each art's landing gives
+  way to her run as soon as she moves (`ArtTail`).
+- `bull_rush` (9 m in 0.4 s): one driving stride cycle from the gait
+  solver, pitched hard over it, the left shoulder and shield leading, the
+  sword trailing low behind; at 0.4 s the lead foot slams down and the
+  shield punches out, then the rebound into her guard.
+- `chain_haul` / `chain_strike`: yanked off her feet by the chain arm and
+  flown in nearly flat, legs trailing, the axe cocked high behind her
+  head, held for however long the haul takes (28 m/s, 0.08 to 0.4 s); as
+  the haul ends PlayerView plays the strike: feet swung down, the axe over
+  and down two-handed, landing in the second frame, as the game's blow
+  does on arrival.
+
+### 4.7 Townsfolk (`tools/anim/folk.py`, `godot/art/anim/folk.res`)
+Unarmed people on the kit's bodies play their own clips where they have
+them (`FolkClips`, through `People.Clip`), each made twice, for the women's
+and the men's skeletons (their rests differ from the library's by up to
+23 degrees at the neck, so one set would not sit right on both):
+- `walk`: hers Mixamo's feminine walk (one whole cycle, closed on itself),
+  his Kimodo's easy stride; played at the rate that keeps the feet planted.
+- `idle` (Mixamo's weight shift), `talk` (hers Kimodo, both hands; his
+  Mixamo's conversation), `arms_crossed` (Kimodo), `sit_chair`, `sit_floor`
+  (Mixamo): loops.
+- `cheer` (hers both arms, his a fist), `wave`, `work` (Kimodo), `pick_up`
+  (Mixamo): played once.
+Before, the library had them nod `Yes` for a cheer or a wave and crouch to
+sit on the floor.
+
 ## 5. In the game
 
 - Her clips are one library, `godot/art/anim/heroine.res` ("her/..."),
@@ -211,6 +248,8 @@ fire, the flourishes, the breaks, the caught breath, a stop).
   and her own performance captured on video (SAM 3D Body) would be better.
 - The walk is never seen for more than a few frames, so it has no clip:
   the run blends from standing.
-- The leap, the vault, the bull rush and the chain haul still play the
-  library's clips.
-- Folk and the crowd keep the library.
+- The arts are keyed (no capture fitted the game's timing; Mixamo's vault
+  was a vault over an obstacle). Kimodo's takes of the same prompts are
+  being judged against them.
+- The crowd (VAT-baked) keeps the library; so do armed people (guards,
+  bosses) and running townsfolk.

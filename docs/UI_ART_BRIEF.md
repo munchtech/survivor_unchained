@@ -382,7 +382,7 @@ lamp-iron brackets, the binders' wire and coins, the ember asleep in the coins.
 | Well | `frames/well.png` | 256×256 (128) | 12 12 12 12, tiled | A tray sunk into a plate for a grid or a list (`Style.Well`): the pack's, stores' and storeroom's slot wells, the map's list, the journal's list. Shown 200×120 to 1100×560. Sunk, so darker than the plate and lit along its **foot**, not its top; no brackets |
 | Slab | `frames/slab.png` | 256×256 (128) | 14 14 14 14, tiled | A raised group inside a plate (`Style.Slab`): the standing's groups, the stores' sub-plates, the map's tools, the draft's build strip. Lit top edge, a dull hairline, **no brackets or coins** (those mark a plate) |
 | Page header | `frames/header.png` | 512×200 (256×100) | 0 0 0 12, tiled | The band across the top of every full page (`Overlay.Page`), 1928×100: the book's tabs at its left, the title plaque in the middle, Close at the right. Only its foot is a border; it repeats along its length, so no ornament may land mid-band |
-| Banner | `frames/banner.png` | 512×192 (256×96) | 24 14 24 14 | A verdict or a name cut in metal (`OrnateBox.Kind.Banner`): THE ARENA IS WON (470×100), who the survivor is becoming in creation (380×100), a speaker's name in conversation (250×64). Oxblood-stained iron, hung from two brackets, an ember stone at the top's middle; the words are the code's |
+| Banner | `frames/banner.png` | 512×192 (256×96) | 24 14 24 14, tiled | A verdict or a name cut in metal (`OrnateBox.Kind.Banner`): THE ARENA IS WON (470×100), who the survivor is becoming in creation (380×100), a speaker's name in conversation (250×64). Oxblood-stained iron, hung from two brackets; the ember stone at the top's middle and the words are the code's (paint no centre ornament: it repeats) |
 | Attribute pillar | `frames/pillar.png` | 424×728 (212×364) | 32 100 32 36, `Out: 12`, `Clear: 14` | Self's four attributes, 188×340 each (with the 12 the brackets may reach past it). A narrow standing stele: a round seat at its head (10-130 px down) for the 120 px medallion with the number, the name and words below, a + button at its foot when there are points to spend. The code draws an ember hairline when points wait: keep the iron neutral |
 | HUD console | `frames/console.png` | 512×308 (256×154) | 48 28 48 28, tiled, `Out: 12` | The plate along the HUD's foot (`GameHud.BuildVitals`) the skills stand on, 130 high and 300-720 wide with the skill count; only its top ~98 px are on the screen. Its ends meet the health globe (left) and the art's ring (right): turn them down into round fittings. Plain middle: the skill sockets sit on it |
 | Open book | `book/open.png` | 3400×1704 (1700×852) | whole | The Journal (`OpenBook`): the leather cover and both pages. The words sit 78 px in from the cover's outer edges, 34 from the spine, 68 from top and foot: keep the pages blank and even there. The silk ribbons (the sections) are drawn over its top edge by the code |
@@ -390,12 +390,18 @@ lamp-iron brackets, the binders' wire and coins, the ember asleep in the coins.
 | Globe rim | `hud/globe_rim.png` | 288×288 (144) | whole | The health globe's rim (`Globe`, liquid radius 66): the band from 92% to 100% of the half size (may reach in to 83%), transparent inside. A lamp-iron bracket at its top is welcome; the shield's arc is drawn just outside it by the code |
 | Globe glass | `hud/globe_glass.png` | 288×288 (144) | whole | Over the liquid, under the number: the glass's reflections only (a soft highlight upper left, a thin rim of light lower right), the rest transparent. The liquid's level, colour, trail and pulse are the code's |
 
-Drawn by the code and **not** asked for by name yet (say if you want to paint
-them, and the hook is added): the crested card used by the arts' facets and
-creation's choices (`OrnateBox.Kind.Card` with a crest band in the school's or
-rarity's colour, 287×280 and 470×92); the Journal's silk ribbons (`RibbonBox`,
-132×66-86, one silk per section); the title plaque's gold rules and ember stones
-(`Plaque`; a title without words already uses `ornaments/rule.png`).
+| Crested card | `frames/crest_card.png` | 600×700 (300×350) | 40 72 40 40, tiled, `Out: 10` | Every crested choice (`OrnateBox.Kind.Card`): the arts' facet cards (287×280), creation's calling cards (470×92), the Last Lamp's choices (300×330), a Self pillar until `pillar.png` exists. **Neutral iron**: the code tints the crest band (the top 70-120 px) and a hairline in the rarity or school, and glows it when lifted |
+| Crested row | `frames/crest_row.png` | 600×184 (300×92) | 40 36 40 28, tiled, `Out: 8` | A crested card too low for `crest_card`'s slice (creation's calling cards, 470×92): the code picks it by height. A short crest strip along its top, tinted by the code |
+| Ribbon | `book/ribbon.png` | 264×172 (132×86) | whole, stretched | The Journal's section ribbons (`RibbonBox`), 132×66-86. Paint it **pale ivory**: the code dyes it each section's colour (red, green, blue, gold) and casts its shadow |
+| Plaque rule | `ornaments/plaque_rule.png` | 480×24 (240×12) | whole, stretched | The rules either side of every page's name (`Plaque`): drawn to the title's right as painted, mirrored to its left, the ember stone toward the words; stretched 90-180 px, so the wire must stretch cleanly |
+
+**The owner on painted art** ("painted art is generally better right? ... I want
+the best"): paint and model **every** frame and ornament; the code draws only
+what changes as you play (progress arcs, levels of liquid, numbers, the accent
+of a rarity or school). Every drawn look in `Ornate.cs` (plate, well, slab,
+crested card, paper, banner) now gives way to its painted piece by name
+wherever it is used, including where the code makes it directly (the HUD's
+console wears the painted plate until `console.png` exists).
 
 Pieces that changed their place in the redesign:
 

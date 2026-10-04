@@ -50,6 +50,10 @@ public sealed class PackMother : ArenaBoss
     double driveT = 6, biteT = 3, howlT, shakeT = 2, lungeT = 4;
     double howlHp;
     bool lastPack;
+    /// <summary>Let go (the story's Greymuzzle, spared): he goes down and does not die.</summary>
+    protected override bool DiesAtZero => !A.Spare;
+    bool lettingGo;
+    double goT;
 
     protected override void Enter(int phase)
     {
@@ -59,6 +63,8 @@ public sealed class PackMother : ArenaBoss
 
     protected override bool Act(Enemy e, double dt)
     {
+        if (lettingGo) return LetGo(e, dt);
+        if (A.Spare && e.Hp <= 1.5 && PhaseIx == 2) { StartLetGo(e); return true; }
         if (Running(e, dt)) return true;
         var (dx, dz, d) = ToPlayer();
         var p = B.Player;
@@ -158,6 +164,45 @@ public sealed class PackMother : ArenaBoss
         double x1 = E.X + dx / d * len, z1 = E.Z + dz / d * len;
         Lane(E.X, E.Z, x1, z1, 2.2, 0.8, 1.6, "Lunge");
         Hold(0.8, () => DashTo(x1, z1, 0.35, () => Chain(n - 1)));
+    }
+
+    /// <summary>Greymuzzle let go (docs/STORY_BIBLE.md, "The nights": only if she knelt and
+    /// promised and the stream already runs clean): he goes down, and does not die; he gets
+    /// up, slowly, and goes to the den among his sick, and she lets him. No words: he has none.</summary>
+    void StartLetGo(Enemy e)
+    {
+        lettingGo = true;
+        goT = 0;
+        Channel = null;
+        e.Hp = 1;
+        e.TakenMul = 0;
+        // Out of the fight: nothing of hers is aimed at him now.
+        e.Disposition = Disposition.Neutral;
+        e.State = EnemyState.Stunned;
+        e.StateT = 2.4;
+        e.Vx = e.Vz = 0;
+        A.Bark(e.X, e.Z, "He goes down, and does not stay down.", null);
+        B.Events.Emit(new Ev.Focus { X = e.X, Z = e.Z, Duration = 2.4 });
+    }
+
+    bool LetGo(Enemy e, double dt)
+    {
+        goT += dt;
+        e.TakenMul = 0;
+        if (goT < 2.4) { e.Vx = e.Vz = 0; e.State = EnemyState.Stunned; e.StateT = Math.Max(e.StateT, dt * 2); return true; }
+        if (goT - dt < 2.4)
+        {
+            // Up, and away from her, to the edge of the light: slowly, an old wolf's walk.
+            var (dx, dz, _) = ToPlayer();
+            e.State = EnemyState.Active;
+            A.Bark(e.X, e.Z, "He gets up, slowly, and goes to his sick. You let him.", null);
+            DashTo(E.X - dx * 12, E.Z - dz * 12, 6);
+        }
+        if (Running(e, dt) && goT < 8.6) return true;
+        double x = e.X, z = e.Z;
+        B.Enemies.Release(e);
+        A.Won(x, z);
+        return true;
     }
 
     protected override void OnSoft() { driveT = Math.Min(driveT, 4); }

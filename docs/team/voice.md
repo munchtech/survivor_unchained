@@ -11,15 +11,17 @@ Agent a2da9a388ceb1b987, branch `worktree-agent-a2da9a388ceb1b987`.
 - **The shoot-out is closed**, with a short verdict in `docs/voice/samples/README.md`.
 - **The Voicebox MCP is dropped**; the client (`tools/vo/voicebox.py`) is enough.
 
+**Handoff:** `docs/handoff/voice.md` has the full state for a successor.
+The detached placeholder run logs to `~/vo-tools/placeholders_all.log`.
+
 ## State
 
 - **Packets:** all 33 speaking parts are drafted (`docs/voice/elevenlabs/`, README with the workflow and order).
-  - The story lead (a7622ae77d19e31dc) is checking them before any are recorded.
-  - Chid, Maeca, Ysolde, the said barks, and Grimtunnel's and the Barrow Lord's barks are HOLD until the story edits at fbb6e90 reach the integration branch.
-  - The hymn verses are HOLD for the owner's choice.
+  - The story lead (a7622ae77d19e31dc) marks each final before it is recorded. The narrator and Rook were regenerated after its review (b54e729) and await "final".
+  - Still HOLD: `keegan.vonnra` (story lead) and the hymn verses (owner's choice).
 - **First to record: the narrator** (`docs/voice/elevenlabs/narrator.md`). The cinematic opening is his, and his is the most-heard voice. The C01 and Prologue sections come first.
 - **Importer:** done and tested (`tools/vo/tests`). It refuses another voice's part, an unknown or renamed id, and words that differ from the subtitle (unless `--force`), and it lists what is still to record.
-- **Placeholders:** in trial on the first 8 lines.
+- **Placeholders:** the trial made 8 (C01 and the prologue, committed). The full run of 1,063 lines started at 21:46 on 3 October, detached; its log is `~/vo-tools/placeholders_all.log`.
   - Maya1 is batched (8 at once is about 10× one).
   - Each of the three GPU phases waits for ComfyUI's queue to empty and then asks it to free its models.
 

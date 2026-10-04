@@ -635,10 +635,10 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
      * and not only bigger numbers:
      *
      *   the horde    hardens by the minute (Hardening): smoothly, with no cliff,
-     *                for the first three quarters of an hour past the half hour,
-     *                where a great build has its hour; then compounding, so no
-     *                build, however broken, holds for ever. A little quicker too,
-     *                to a ceiling (pace a player can still read).
+     *                for the first hour past the half hour, where a great build
+     *                has its hour; then compounding, so no build, however
+     *                broken, holds for ever. A little quicker too, to a low
+     *                ceiling (pace a player can still read and outrun).
      *   the dark     swears one more of the table's oaths every five minutes
      *                (DarkDeck: each a new question with its answers, named as it
      *                comes, listed with the run's own, and paying what it pays at
@@ -652,9 +652,12 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
      * their caps, nothing kills without a mark, every new pressure is announced
      * with what it asks. */
 
-    /// <summary>The order the dark swears the table's oaths: a verb, then a number, then a
-    /// verb, so each five minutes asks something new (the table's own are passed over).</summary>
-    static readonly string[] DarkDeck = ["hunt", "embers", "champions", "winter", "vigil", "ruin", "iron", "blight", "swarm", "deep"];
+    /// <summary>The order the dark swears the table's oaths (the table's own are passed over):
+    /// first the questions of where to stand, read on the ground (burning dead, champions,
+    /// bursting dead, the horde's turns twice as often); then pace and number (the hunt,
+    /// the swarm); last those that grind (the winter's crawl, iron skin, the blight's
+    /// poison and cut mending, levels). An early winter or iron walled the sweep's runs.</summary>
+    static readonly string[] DarkDeck = ["embers", "champions", "ruin", "vigil", "hunt", "swarm", "winter", "iron", "blight", "deep"];
     /// <summary>A returning boss's health, and its blows, over the first's, per return.</summary>
     public const double ReturnGrowth = 0.35, ReturnBite = 0.25;
     double nextDark, nextReturn, firstBossHp, firstBossDmg;
@@ -669,9 +672,10 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     /// its blows and its pace, over what it would have been at the half hour.</summary>
     public static (double Health, double Damage, double Pace) Hardening(double m)
     {
-        // Compounding from three quarters of an hour past: a fortieth a minute.
-        double press = m > 45 ? Math.Pow(1.025, m - 45) : 1;
-        return ((1 + 0.1 * m + 0.006 * m * m) * press, (1 + 0.035 * m) * press, 1 + Math.Min(0.3, 0.005 * m));
+        // Compounding from an hour past: three hundredths a minute, so by two hours past
+        // nothing stands (measured: docs/team/combat.md).
+        double press = m > 60 ? Math.Pow(1.03, m - 60) : 1;
+        return ((1 + 0.1 * m + 0.006 * m * m) * press, (1 + 0.035 * m) * press, 1 + Math.Min(0.15, 0.004 * m));
     }
 
     void LongNight()
@@ -759,6 +763,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     Battle IBossArena.B => B!;
     int IBossArena.Tier => Spec.Tier;
     string IBossArena.BossName => BossName;
+    bool IBossArena.Spare => Spec.Spare;
     bool IBossArena.Sworn(string oath) => Spec.Oaths.Contains(oath);
     double IBossArena.R() => R();
     Enemy? IBossArena.Spawn(string def, double x, double z, bool elite, SpawnStyle? style) => Spawn(def, x, z, elite, style);

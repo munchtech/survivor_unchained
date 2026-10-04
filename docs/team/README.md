@@ -50,10 +50,15 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 
 | Area | Agent | Status page |
 |---|---|---|
-| Voice (Voicebox evaluation, VO) | a2da9a388ceb1b987 | docs/team/voice.md |
+| Voice (ElevenLabs packets, placeholders) | a501b387a90d78b4e | docs/team/voice.md |
 | Story and writing | a7622ae77d19e31dc | docs/team/story.md |
-| Combat, bosses, balance | a09c5a65f5a84319e | docs/team/combat.md |
-| Animation | aa4f5fc266b043035 | docs/team/animation.md |
-| UI design (and the UI merge) | a5629aff0f215ea4a | docs/team/ui_design.md |
+| Combat, encounters, bosses, balance | ac4ec5bbd2763a0df | docs/team/combat.md |
+| Animation | a1e3002b800ee55ac | docs/team/animation.md |
+| UI design (character creation first) | ac76f400913a109cd | docs/team/ui_design.md |
 | UI art | a72467cac33063d3a | docs/team/ui_art.md |
+| Crafting (research, design, build) | a7862117a0240deb5 | docs/team/crafting.md |
+| Gameplay experience director | a33f58e68e89e3ccf | docs/team/experience.md |
+| Skills look and feel (VFX, under the main session) | a8bafe3cd8a229639 | docs/team/skills.md |
+| Cinematics production | a2dfc75e2d351105a | docs/team/cinematics.md |
+| Performance | a9586a5171413db0b | docs/team/performance.md |
 | Heroine outfits | main session | — |
