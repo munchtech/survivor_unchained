@@ -23,7 +23,8 @@ public partial class StillRoom : Overlay
     public StillRoom(Game g, string crafter) : base(g)
     {
         this.crafter = crafter;
-        Nav.Prefer = "brew:0";
+        // --focus ID (with --pad): that press has the focus first (pictures).
+        Nav.Prefer = Args.Get("focus") ?? "brew:0";
         g.Journey.CraftSaid = null;
     }
 
@@ -52,7 +53,7 @@ public partial class StillRoom : Overlay
         var f = Crafting.Rules.Flask;
         if (f.Crafter == crafter)
         {
-            v.AddChild(new Section("Her flask", Crafting.HasFlask(Ch) ? "yours" : "the end of brewing"));
+            v.AddChild(new Section("Her flask", Crafting.HasFlask(Ch) ? "yours: Rook fills it while you sleep" : "Rook fills it while you sleep"));
             v.AddChild(Flask(f));
         }
         if (Crafting.Does(crafter, Verb.WorkIn))
@@ -116,7 +117,20 @@ public partial class StillRoom : Overlay
         }
         h.AddChild(presses);
         slab.AddChild(h);
+        // Just brewed: the row warms and cools, as the still does.
+        if (poured == r.Draught) Glow(slab);
         return slab;
+    }
+
+    /// <summary>The draught just brewed, for its row's moment when the panel is built again.</summary>
+    string? poured;
+
+    static void Glow(Control row)
+    {
+        var flare = new Panel { MouseFilter = MouseFilterEnum.Ignore, Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add } };
+        flare.AddThemeStyleboxOverride("panel", Style.Box(new Color(0.55f, 0.75f, 0.45f, 0.35f), new Color(0.85f, 1f, 0.7f, 0.8f), 2, 5, 0));
+        row.AddChild(flare);
+        flare.CreateTween().TweenProperty(flare, "modulate:a", 0f, 1.0).SetDelay(0.1).SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
     }
 
     Control Flask(FlaskRules f)
@@ -198,8 +212,10 @@ public partial class StillRoom : Overlay
         b.Pressed += () =>
         {
             if (!q.Ok) { Sound.Sfx.Deny(); return; }
-            (q.Verb == Verb.Buy ? (Action)(() => Sound.Sfx.Loot(true)) : Sound.Sfx.Discovery)();
+            (q.Verb == Verb.Buy ? (Action)(() => Sound.Sfx.Loot(true)) : Sound.Sfx.Pour)();
+            poured = q.Verb == Verb.Brew ? q.Def : null;
             if (G.Journey.Make(q)) Refresh();
+            poured = null;
         };
         return b;
     }

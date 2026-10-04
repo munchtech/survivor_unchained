@@ -6983,6 +6983,16 @@
       "action": "craft"
      },
      {
+      "text": "Greymuzzle's fang. Will you set it?",
+      "when": {
+       "hasItem": "greymuzzle_fang"
+      },
+      "show": {
+       "hasItem": "greymuzzle_fang"
+      },
+      "goto": "fang"
+     },
+     {
       "text": "Those lamp-irons on the rack?",
       "once": "irons",
       "goto": "irons"

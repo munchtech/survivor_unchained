@@ -159,8 +159,22 @@ public partial class Game : Node, IZoneHost
                 var parts = spec.Split(':');
                 var idq = parts[0].Split('*');
                 int qty = idq.Length > 1 && int.TryParse(idq[1], out var nq) ? nq : 1;
-                Journey.GiveItem(idq[0], qty, parts.Length > 1 && int.TryParse(parts[1], out var r) ? r : null);
+                int? rar = parts.Length > 1 && int.TryParse(parts[1], out var r) ? r : null;
+                // iron_helm:3:of_the_wolf@1+of_the_lantern@2 : a piece with just those affixes, at those grades.
+                if (parts.Length > 2)
+                {
+                    var affixes = parts[2].Split('+').Select(a => a.Split('@')).Select(a => new AffixRoll { Id = a[0], Tier = a.Length > 1 && int.TryParse(a[1], out var t) ? t : 0 }).ToList();
+                    Inventory.AddToPack(Journey.Ch, Inventory.Make(Journey.Ch, idq[0], rarity: rar, affixes: affixes));
+                }
+                else Journey.GiveItem(idq[0], qty, rar);
             }
+        // --facts k=v,k=v: the world as a later day would have it (pictures: --facts stream.clear=true);
+        // a number or true/false is read as one, anything else as words; --met a,b: those people known.
+        if (Args.Get("facts") is string facts)
+            foreach (var kv in facts.Split(',').Select(f => f.Split('=', 2)).Where(f => f.Length == 2))
+                World.Facts[kv[0]] = kv[1] is "true" or "false" ? kv[1] == "true"
+                    : double.TryParse(kv[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var fn) ? fn : kv[1];
+        if (Args.Get("met") is string met) foreach (var n in met.Split(',')) World.Npc(n).Flags["met"] = true;
         // --gold N: that much gold in the purse (pictures of a counter with money to spend).
         if (Args.Has("gold")) Journey.Ch.Gold = Args.Num("gold", 0);
         // --xp N: that much experience at once (pictures of the self with points to spend).

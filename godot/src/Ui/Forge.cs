@@ -264,10 +264,12 @@ public partial class ForgeScreen : Overlay
     static bool Plain(AffixDef? d) => d != null && d.Kindled == null && d.Grants == null;
 
     /// <summary>The seam most worth working when a piece is put down: an affix that can still be
-    /// tempered, else an open seam, else the first.</summary>
-    static int DefaultSeam(ItemInstance it)
+    /// tempered, else an open seam, else the first. A hand that only works things in (Wenna's)
+    /// starts at the open seam, never offering to work over what the piece has.</summary>
+    int DefaultSeam(ItemInstance it)
     {
         int cap = Crafting.Cap(it);
+        if (!Crafting.Does(crafter, Verb.Temper) && Crafting.OpenSeams(it) > 0) return it.Affixes.Count;
         for (int k = 0; k < it.Affixes.Count; k++)
             if (Plain(Items.Affix(it.Affixes[k].Id)) && it.Affixes[k].Tier < cap) return k;
         return Crafting.OpenSeams(it) > 0 ? it.Affixes.Count : 0;
@@ -502,7 +504,7 @@ public partial class ForgeScreen : Overlay
             var q = Crafting.Set(X, it, trophy, crafter);
             q.Before = null;
             q.After = $"{q.After}. It leads the piece's name, spends no heat and takes no seam.";
-            v.AddChild(Craft("Set it", q, () => Work(q, () => { Sound.Sfx.Anvil(3); Sound.Sfx.Discovery(); }), $"Set {td.Name.ToLowerInvariant()} in it", ItemPhotos.Icon(td.Icon, 44, Style.InkDim), "set"));
+            v.AddChild(Craft("Set it", q, () => Work(q, () => { Sound.Sfx.Anvil(3); Sound.Sfx.Discovery(); }), $"Set {td.Name} in it", ItemPhotos.Icon(td.Icon, 44, Style.InkDim), "set"));
         }
         return v;
     }
@@ -575,7 +577,7 @@ public partial class ForgeScreen : Overlay
             return;
         }
         body.AddChild(new Section($"{Style.Cap1(His)} patterns", $"choose one  ·  more as {His} respect grows"));
-        var grid = new GridContainer { Columns = 6, MouseFilter = MouseFilterEnum.Ignore };
+        var grid = new GridContainer { Columns = 7, MouseFilter = MouseFilterEnum.Ignore };
         grid.AddThemeConstantOverride("h_separation", Style.Gap3);
         grid.AddThemeConstantOverride("v_separation", Style.Gap2);
         int i = 0;
@@ -584,7 +586,7 @@ public partial class ForgeScreen : Overlay
             var d = Items.Get(def);
             string id = def;
             var cell = Style.V(2);
-            cell.CustomMinimumSize = new Vector2(132, 0);
+            cell.CustomMinimumSize = new Vector2(118, 0);
             var view = ItemViews.Slot(new ItemInstance { Def = def, Rarity = c.Rarity }, 84, pattern == def, null, !open, open ? () => { pattern = id; Sound.Sfx.Click(); Refresh(); } : () => Sound.Sfx.Deny(), null,
                 over => Tip(null, over), null, null, $"pattern:{i++}");
             if (!open) view.Modulate = new Color(1, 1, 1, 0.35f);
@@ -734,21 +736,39 @@ public partial class ForgeScreen : Overlay
     void Strike()
     {
         if (struck is not { } s || Chosen is not { } it || it.Uid != s.Uid) { struck = null; return; }
-        struck = null;
-        gauge?.Burn(s.Heat);
-        if (!rows.TryGetValue(s.Seam, out var r)) return;
-        var (row, badge) = r;
-        GetTree().CreateTimer(0.03).Timeout += () =>
+        if (striking || !IsInsideTree()) return;
+        striking = true;
+        // A craft can build the page more than once (the gear folded back into the fight, then the
+        // pack touched): the moment plays once, a moment later, on the page as it stands then.
+        GetTree().CreateTimer(0.05).Timeout += () =>
         {
-            if (!IsInstanceValid(row) || !IsInstanceValid(badge)) return;
+            striking = false;
+            if (!IsInsideTree() || struck is not { } now) return;
+            struck = null;
+            if (IsInstanceValid(gauge) && gauge!.IsInsideTree()) gauge.Burn(now.Heat);
+            if (!rows.TryGetValue(now.Seam, out var r) || !IsInstanceValid(r.Row) || !r.Row.IsInsideTree()) return;
+            var (row, badge) = r;
             badge.PivotOffset = badge.Size / 2;
             badge.Scale = Vector2.One * 1.4f;
             badge.CreateTween().TweenProperty(badge, "scale", Vector2.One, 0.4).SetTrans(Tween.TransitionType.Back).SetEase(Tween.EaseType.Out);
-            row.Modulate = new Color(1.9f, 1.45f, 1.05f);
-            row.CreateTween().TweenProperty(row, "modulate", Colors.White, 0.7).SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
-            Sparks(row, badge.Position + badge.Size / 2, s.Verb == Verb.Cage);
+            // The row flares as the iron does under the hammer, and cools.
+            var flare = new Panel { MouseFilter = MouseFilterEnum.Ignore, Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add } };
+            flare.AddThemeStyleboxOverride("panel", Style.Box(new Color(1f, 0.55f, 0.18f, 0.5f), new Color(1f, 0.85f, 0.5f, 0.9f), 2, 5, 0));
+            row.AddChild(flare);
+            flare.CreateTween().TweenProperty(flare, "modulate:a", 0f, 0.9).SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
+            flare.GetTree().CreateTimer(1.0).Timeout += () => { if (IsInstanceValid(flare)) flare.QueueFree(); };
+            Sparks(row, badge.Position + badge.Size / 2, now.Verb == Verb.Cage);
         };
     }
+
+    bool striking;
+
+    static GradientTexture2D? spark;
+    static GradientTexture2D Spark => spark ??= new GradientTexture2D
+    {
+        Width = 10, Height = 30, Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(0.5f, 0f),
+        Gradient = new Gradient { Colors = new[] { Colors.White, Colors.White with { A = 0.55f }, Colors.White with { A = 0 } }, Offsets = new[] { 0f, 0.35f, 1f } },
+    };
 
     /// <summary>A burst of sparks off the anvil at a point in a control (embers for a coal).</summary>
     static void Sparks(Control at, Vector2 local, bool ember)
@@ -762,10 +782,13 @@ public partial class ForgeScreen : Overlay
         };
         var p = new CpuParticles2D
         {
-            Amount = ember ? 46 : 38, Lifetime = 0.75, OneShot = true, Explosiveness = 0.92f, Emitting = false,
-            Direction = new Vector2(0.3f, -1), Spread = 70, Gravity = new Vector2(0, ember ? 160 : 620),
-            InitialVelocityMin = 140, InitialVelocityMax = 420, DampingMin = 20, DampingMax = 60,
-            ScaleAmountMin = 1.6f, ScaleAmountMax = 3.6f, ColorRamp = ramp, Position = local, ZIndex = 30,
+            Amount = ember ? 70 : 64, Lifetime = 0.95, OneShot = true, Explosiveness = 0.95f, Emitting = false,
+            Direction = new Vector2(0.35f, -1), Spread = 75, Gravity = new Vector2(0, ember ? 140 : 700),
+            InitialVelocityMin = 200, InitialVelocityMax = 560, DampingMin = 30, DampingMax = 80,
+            ScaleAmountMin = 0.55f, ScaleAmountMax = 1.15f, ColorRamp = ramp, Position = local, ZIndex = 30,
+            Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add },
+            // Streaks, not squares: a soft spindle of light along the way each spark flies.
+            Texture = Spark, ParticleFlagAlignY = true,
         };
         at.AddChild(p);
         p.Emitting = true;
@@ -876,19 +899,25 @@ public partial class HeatGauge : HBoxContainer
     public void Burn(int before)
     {
         if (before == heat) return;
+        // A preview already up (the focus stayed on the press) waits its turn.
+        if (preview) { pending = (lo, hi, grows); preview = false; }
         burnFrom = before;
         burnT = 0;
+        Say();
         cells.QueueRedraw();
     }
 
     int burnFrom = -1;
     double burnT;
+    (int Lo, int Hi, bool Grows)? pending;
 
     /// <summary>Show what a craft may cost (lo to hi), or add (negative); a remake grows the
     /// piece's full heat as well, a rekindle only refills it.</summary>
     public void Preview(int lo, int hi, bool grows = false)
     {
         if (lo == 0 && hi == 0) { Clear(); return; }
+        // The heat a craft just took is seen go first; what the next would take, after.
+        if (burnFrom >= 0) { pending = (lo, hi, grows); return; }
         this.lo = lo;
         this.hi = hi;
         this.grows = grows;
@@ -899,6 +928,7 @@ public partial class HeatGauge : HBoxContainer
 
     public void Clear()
     {
+        pending = null;
         if (!preview) return;
         preview = false;
         Say();
@@ -909,6 +939,13 @@ public partial class HeatGauge : HBoxContainer
     {
         if (heat <= 0 && !(preview && lo < 0)) { words.Text = "Set: nothing more can be worked into it"; words.AddThemeColorOverride("font_color", Style.InkDim); return; }
         words.AddThemeColorOverride("font_color", Style.EmberHi);
+        // Just worked: what it took, said while the cells burn out.
+        if (burnFrom >= 0 && !preview)
+        {
+            words.Text = burnFrom > heat ? $"{burnFrom - heat} heat spent: {heat} of {full}" : $"+{heat - burnFrom} heat: {heat} of {full}";
+            if (heat == 0) words.Text = "Set: the last of its heat spent";
+            return;
+        }
         if (!preview) { words.Text = $"Heat {heat} of {full}"; return; }
         if (lo < 0) { words.Text = $"+{NewHeat - heat} heat: {NewHeat} of {Grown}"; return; }
         int left = Math.Max(0, heat - hi), most = Math.Max(0, heat - lo);
@@ -926,7 +963,12 @@ public partial class HeatGauge : HBoxContainer
         if (burnFrom >= 0)
         {
             burnT += delta;
-            if (burnT > 1.1) burnFrom = -1;
+            if (burnT > 1.6)
+            {
+                burnFrom = -1;
+                Say();
+                if (pending is { } p) { pending = null; Preview(p.Lo, p.Hi, p.Grows); }
+            }
             cells.QueueRedraw();
         }
         if (preview && (lo < 0 || hi > lo)) cells.QueueRedraw();
