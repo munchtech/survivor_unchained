@@ -222,6 +222,8 @@ public sealed class CreationDraft
     public int Step;
     public string Name = "", Archetype = "warden", WeaponItem = "worn_oathblade", Ability = "shield_bash", Background = "hunter";
     public string Palette = "steel", Model = "knight", Cloak = "calling", Skin = "fair", Hair = "as_is", HairStyle = "long";
+    /// <summary>A hero's own beard (Lore.Hero's beards: the male hero's), or "".</summary>
+    public string BeardStyle = "";
     public bool Headgear = true, Beard = true;
     /// <summary>The survivor is the heroine, unless a man is chosen.</summary>
     public Sex Sex = Sex.Female;
@@ -230,7 +232,7 @@ public sealed class CreationDraft
     /// (her own face where none is moved) and the face it started from.</summary>
     public string Eyes = "moss", Paint = "none", FaceShape = "own";
     public Dictionary<string, double> Face = new();
-    /// <summary>The look step's part (body, hair, face, paint) and the face's group of sliders.</summary>
+    /// <summary>The look step's part (hair, face, shape, paint, body) and the face's group of sliders.</summary>
     public int Section, FaceGroup;
 
     public CreationChoice Choice() => new()
@@ -240,11 +242,12 @@ public sealed class CreationDraft
         // (a hero's own body's face, eyes and paint: Loadouts.HeroKit)
         Face = Loadouts.HeroKit(Sex) != null ? new Dictionary<string, double>(Face) : null,
         Eyes = Loadouts.HeroKit(Sex) != null ? Eyes : null, Paint = Loadouts.HeroKit(Sex) != null ? Paint : null,
+        BeardStyle = Loadouts.HeroKit(Sex) is { Beards.Count: > 0 } && BeardStyle != "" ? BeardStyle : null,
     };
 
     /// <summary>The figure by the fire is built again when this changes (who
     /// they are, what they wear and hold); a man's hair and skin are his clothes' kit.</summary>
-    public string BodyKey => $"{Archetype}|{Model}|{WeaponItem}|{Palette}|{Headgear}|{Cloak}|{Sex}|{Figure}|{Beard}" + (Sex == Sex.Male ? $"|{Skin}|{Hair}|{HairStyle}" : "");
+    public string BodyKey => $"{Archetype}|{Model}|{WeaponItem}|{Palette}|{Headgear}|{Cloak}|{Sex}|{Figure}|{Beard}" + (Sex == Sex.Male ? $"|{Skin}|{Hair}|{HairStyle}|{BeardStyle}" : "");
 
     /// <summary>What the figure looks like: changes when this does (her hair,
     /// skin, eyes, face and paint are changed on her where she stands).</summary>
@@ -261,6 +264,7 @@ public sealed class CreationDraft
             HairStyle = sx == Sex.Female ? Loadouts.HerHair(HairStyle) : kit.Cuts.Any(c => c.Id == HairStyle) ? HairStyle : kit.Cuts[0].Id;
             Eyes = kit.Eyes.FirstOrDefault()?.Id ?? "";
             Paint = kit.Paints.FirstOrDefault()?.Id ?? "none";
+            BeardStyle = kit.Beards.FirstOrDefault()?.Id ?? "";
             FaceShape = kit.Faces.FirstOrDefault()?.Id ?? "";
             Face = new Dictionary<string, double>(kit.Faces.FirstOrDefault()?.Shape ?? new());
         }
