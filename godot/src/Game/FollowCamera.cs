@@ -49,6 +49,15 @@ public sealed class FollowCamera
 
     static float Damp(float a, float b, float lambda, float dt) => (float)MathX.Damp(a, b, lambda, dt);
 
+    /// <summary>Where the camera settles over someone standing still at this
+    /// point (no lead, no shake): what a cinematic hands back into.</summary>
+    public (Vector3 Pos, Vector3 Look) PoseFor(Vector3 at)
+    {
+        var l = at + new Vector3(0, 0.8f, 0);
+        float cp = Mathf.Cos(Pitch), sp = Mathf.Sin(Pitch);
+        return (new Vector3(l.X + Mathf.Sin(Yaw) * cp * TargetDistance, l.Y + sp * TargetDistance, l.Z + Mathf.Cos(Yaw) * cp * TargetDistance), l);
+    }
+
     public void Update(float dt, float x, float y, float z, float vx, float vz)
     {
         if (!initialised) Snap(x, y, z);

@@ -122,6 +122,7 @@ public partial class Game : Node, IZoneHost
     /// <summary>A stock survivor straight into the game (tools and tests).</summary>
     void Quick()
     {
+        quick = true;
         var arch = Args.Get("quick") is string q && q is "warden" or "reaver" or "arcanist" or "stalker" ? q : "warden";
         var a = Callings.Archetype(arch);
         Begin(new CreationChoice
@@ -183,6 +184,8 @@ public partial class Game : Node, IZoneHost
         }
         else EnterZone(z, null, at);
         hud.Fade(0, 0.5);
+        // --cine ID: that cinematic played here at once (pictures of it, its previs).
+        if (Args.Get("cine") is string cid && cine == null) Cinematic(cid);
         Save("new");
         // --pull T: the table's first arena taken T seconds in (pictures of the pull).
         if (Args.Has("pull")) Wait(Args.Num("pull", 1), () => SetOut(SurvivorUnchained.Maps.MapOffers.Today(World.Day, 1, 0)[0]));
@@ -297,6 +300,8 @@ public partial class Game : Node, IZoneHost
     void LeaveZone()
     {
         later.Clear();
+        // A cinematic does not outlive its place.
+        if (cine != null) { var c = cine; cine = null; c.Finish(); }
         zone?.Dispose();
         zone = null;
         if (scene != null) { scene.QueueFree(); RemoveChild(scene); }
@@ -322,7 +327,7 @@ public partial class Game : Node, IZoneHost
         AddChild(scene);
         scene.Move = () => auto?.Move ?? (controls.Captured ? (0, 0) : (controls.MoveX, controls.MoveZ));
         scene.Pressed = a => (auto?.Take(a) ?? false) || (!controls.Captured && controls.Pressed(a));
-        scene.OnStep = dt => zone?.Step(dt);
+        scene.OnStep = dt => { if (cine is not { ZoneHeld: true }) zone?.Step(dt); };
         scene.OnEvents = OnEvents;
         ApplySettings();
         return scene;
@@ -518,7 +523,7 @@ public partial class Game : Node, IZoneHost
     void UpdateInteraction()
     {
         var b = Battle;
-        if (b == null || zone == null || Overlay != null || !b.Player.Alive || inTransit)
+        if (b == null || zone == null || Overlay != null || !b.Player.Alive || inTransit || cine != null)
         {
             near = null;
             if (promptShown != null) hud.Prompt(promptShown = null);
@@ -641,6 +646,7 @@ public partial class Game : Node, IZoneHost
             scene.Showcase = showNow;
         }
         scene.Update(dt);
+        CinemaFrame(dt);
         // The survivor's place on screen, for the health drawn under them; the prompt's thing; what matters off screen.
         if (Mode == "play" && Battle is { } fb2)
         {

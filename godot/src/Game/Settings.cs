@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Godot;
 
 namespace SurvivorUnchained.Play;
@@ -22,6 +23,8 @@ public sealed class Settings
     /// <summary>The recorded voices on (subtitles show either way), and how loud, 0..1.</summary>
     public bool Voices = true;
     public float VoiceVolume = 1;
+    /// <summary>Cinematics seen on this machine: they can be skipped from their first frame.</summary>
+    public List<string> SeenCinematics = new();
 
     const string File = "user://settings.json";
     public static Settings Current { get; private set; } = Load();

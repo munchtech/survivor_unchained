@@ -385,6 +385,75 @@ public static class Sfx
         }
     }
 
+    /// <summary>A cinematic's sound, by its cue name: made here for what the
+    /// recordings lack (water closing over a head, a drip on stone, an owl,
+    /// frost cracking), or a recording by its family's name. Temp sound,
+    /// until the cinematics' own recordings come (docs/team/cinematics.md).</summary>
+    public static void Cine(string name, double gain = 1, double pan = 0)
+    {
+        if (A is not { } a) return;
+        double t = Now, g = gain;
+        switch (name)
+        {
+            case "water_close":
+                // Under: a muffled closing, a weight, bubbles going up past the ear.
+                a.Play(new Hiss { T = t, A = 0.04, D = 1.6, G = 0.32 * g, Lp = 520, Lp2 = 110, Brown = true });
+                a.Play(new Tone { T = t, F = 58, F2 = 34, D = 1.3, G = 0.42 * g });
+                for (int i = 0; i < 9; i++)
+                {
+                    double bt = t + 0.12 + i * R(0.06, 0.14);
+                    a.Play(new Tone { T = bt, F = R(260, 420), F2 = R(700, 1100), D = R(0.04, 0.08), G = 0.035 * g * (1 - i / 11.0), Lp = 1400, Pan = R(-0.3, 0.3) });
+                }
+                break;
+            case "drip":
+                a.Play(new Tone { T = t, F = R(1250, 1500), F2 = R(520, 640), D = 0.09, G = 0.11 * g, Verb = 0.35, Pan = pan });
+                a.Play(new Tone { T = t + 0.004, F = 2700, F2 = 1800, D = 0.03, G = 0.04 * g, Pan = pan });
+                break;
+            case "owl":
+                foreach (var (dt, f) in new[] { (0.0, 392.0), (0.62, 349.0), (0.9, 349.0) })
+                    a.Play(new Tone { T = t + dt, F = f, F2 = f * 0.94, Type = Wave.Triangle, A = 0.06, D = 0.34, G = 0.045 * g, Lp = 900, Verb = 0.8, Bus = Bus.Amb, Pan = pan });
+                break;
+            case "frost_crack":
+                // Frost splitting in a line: a run of small cracks, then the ground giving.
+                for (int i = 0; i < 14; i++)
+                    a.Play(new Hiss { T = t + i * R(0.03, 0.07), D = R(0.02, 0.05), G = R(0.05, 0.11) * g, Bp = R(1800, 4200), Q = 4, Pan = pan + R(-0.15, 0.15) });
+                a.Play(new Tone { T = t + 0.55, F = 46, F2 = 28, D = 1.1, G = 0.5 * g });
+                a.Play(new Hiss { T = t + 0.55, D = 0.9, G = 0.18 * g, Lp = 260, Lp2 = 90, Brown = true });
+                break;
+            case "roots":
+                for (int i = 0; i < 7; i++)
+                    a.Play(new Hiss { T = t + i * R(0.08, 0.16), D = R(0.06, 0.12), G = 0.06 * g, Bp = R(500, 1100), Q = 2.5, Brown = true, Pan = pan });
+                break;
+            case "rasp":
+                // A breath with no breath in it.
+                a.Play(new Hiss { T = t, A = 0.35, D = 1.2, G = 0.07 * g, Bp = 850, Bp2 = 600, Q = 1.6, Brown = true, Pan = pan });
+                break;
+            case "breath_out":
+                a.Play(new Hiss { T = t, A = 0.25, D = 1.4, G = 0.05 * g, Bp = 1500, Bp2 = 900, Q = 0.9, Pan = pan });
+                break;
+            case "cloth_water":
+                a.Play(new Hiss { T = t, A = 0.05, D = 0.9, G = 0.06 * g, Bp = 2400, Q = 0.7, Pan = pan });
+                for (int i = 0; i < 4; i++) a.Play(new Tone { T = t + 0.2 + i * R(0.12, 0.2), F = R(1100, 1500), F2 = R(500, 700), D = 0.07, G = 0.05 * g, Verb = 0.3, Pan = pan });
+                break;
+            case "hit":
+                // As the weapon comes up: a deep drum under a scrape of metal.
+                a.Play(new Tone { T = t, F = 62, F2 = 33, D = 1.5, G = 0.55 * g });
+                a.Play(new Hiss { T = t, D = 0.5, G = 0.2 * g, Lp = 400, Lp2 = 100, Brown = true });
+                a.Play(new Hiss { T = t + 0.02, A = 0.05, D = 0.9, G = 0.06 * g, Bp = 3400, Bp2 = 2600, Q = 7, Verb = 0.5 });
+                a.Play(new Tone { T = t, F = 110, Type = Wave.Saw, D = 1.8, G = 0.05 * g, Lp = 700, Lp2 = 200, Bus = Bus.Music, Verb = 0.6 });
+                break;
+            case "drone":
+                // The Night's root, bowed and breathing, up from nothing over four seconds.
+                foreach (var f in new[] { 55.0, 82.41, 110.0 })
+                    a.Play(new Tone { T = t, F = f, Type = Wave.Saw, A = 4, Hold = 3, D = 4, G = 0.045 * g, Lp = 260, Lp2 = 520, Detune = R(-7, 7), Bus = Bus.Music, Verb = 0.7 });
+                a.Play(new Hiss { T = t, A = 4, D = 6, G = 0.035 * g, Bp = 700, Q = 1.2, Bus = Bus.Music, Verb = 0.6 });
+                break;
+            default:
+                a.Play(new Clip { T = t, Of = name, G = 0.3 * g, Pan = pan });
+                break;
+        }
+    }
+
     public static void Death()
     {
         if (A is not { } a) return;
