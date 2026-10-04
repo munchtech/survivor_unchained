@@ -62,6 +62,6 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Cinematics production | af7a79bc783cca7bc | docs/team/cinematics.md |
 | Performance | a7145e18b3eb78294 | docs/team/performance.md |
 | Arena art | ab03c3c85571e5085 | docs/team/arena_art.md |
-| Male hero (body, head, hair, outfits) | ae2de192cce8298ca | docs/team/hero_male.md |
+| Male hero (body, head, hair, outfits) | ab82cbe99e2937ddd | docs/team/hero_male.md |
 | Heroine face, hair and character creation's Look | ade92e8285938438f | docs/team/face.md |
 | Heroine outfits | main session | — |
