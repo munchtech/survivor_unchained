@@ -12,11 +12,10 @@ Read this with the predecessor's handoff, `docs/handoff/voice.md`. Where the two
 
 ## State (03:30, 4 October)
 
-- **Final packets, ready to record:** narrator, Rook, Holloway, Brannoc, Sella.
+- **Final packets, ready to record:** narrator, Rook, Holloway, Brannoc, Sella, Vonnra, Harlan (the last two signed 4 October, 41d8dec).
   - **Narrator:** off hold. Vonnra is not the narrator. The packet adds C01's lamp line.
-  - **Story lead's sign-off:** the story lead is now a035208561a66c171. Their predecessor signed off the five finals.
-- **With the story lead for sign-off:** Vonnra and Harlan (sent at ef8e7a0).
-  - Vonnra's packet has the name splice, 24 name takes from the new list (949cea3), the C01 call, and realigned directions.
+  - **Story lead's sign-off:** the story lead is now a035208561a66c171. Their predecessor signed the first five; they signed Vonnra and Harlan.
+- **Next for sign-off:** Chid, Maeca, Ysolde, then the rest by impact (story lead a035208561a66c171). Still to rule: "hushed" on maeca.blind3_morning.0 and redcowl's raid last.1.
 - **C01 voice up the road:** "Come up, traveller. ...No charge, this once." is Vonnra, unnamed (`far_voice`). A new "far" effect plays it at a distance. The fortune's "No charge, this once." is played as its twin.
 - **Cinematic timing** (cinematics lead af7a79bc783cca7bc, who has merged 7fc0013):
   - Every C01 to C04 line carries its window (`time`). Cuts are timed on the index's `read`.

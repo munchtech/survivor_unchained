@@ -29,17 +29,16 @@ For the agent taking over voice for Survivor Unchained.
   - Don't rewrite dialogue: words are the story lead's.
   - Never clone a real person. Never print or commit secrets.
 
-## Where it stands (03:20, 4 October; pushed at 209479d)
+## Where it stands (03:40, 4 October; pushed at 41d8dec)
 
 ### Done
 
-- **Final packets, ready to record:** narrator, Rook, Holloway, Brannoc, Sella. Each is in `FINAL` in `tools/vo/elevenlabs.py`, with every one of the story lead's notes applied.
+- **Final packets, ready to record:** narrator, Rook, Holloway, Brannoc, Sella, Vonnra, Harlan (the last two signed by the new story lead on 4 October, 41d8dec). Each is in `FINAL` in `tools/vo/elevenlabs.py`, with every one of the story lead's notes applied.
 - **The narrator's hold is lifted.** The owner asked whether Vonnra should be the narrator; the story lead said no.
   - She gives one unnamed call up the road at waking instead, `dlg.cin_drowned_fire.call.0`: "Come up, traveller. ...No charge, this once."
   - It is spoken by `far_voice`, which maps to `vonnra`. It plays through a new "far" effect.
   - The fortune's "No charge, this once." is played as its twin.
-- **With the new story lead for sign-off:** Vonnra and Harlan, sent at ef8e7a0 to a035208561a66c171.
-  - On reply, add each voice to `FINAL`, apply the notes, and regenerate with `python tools/vo/elevenlabs.py`.
+- **Next for sign-off:** Chid, Maeca, Ysolde, then the rest by impact. Send each to the story lead (a035208561a66c171); on reply, add the voice to `FINAL`, apply the notes, and regenerate with `python tools/vo/elevenlabs.py`.
 - **Vonnra's spoken name.**
   - f_accuse.0, f_door.0 and hub.0 are recorded without the name and split where it goes (`lines.NAME_VOICES`, `split_at_name`).
   - There is one take per name the creation screen suggests: `name.vonnra.<Name>`, 24 names read from `godot/src/Ui/Front.cs` `Names`. The list changed at 949cea3; the default name is now Wren.
@@ -77,7 +76,7 @@ For the agent taking over voice for Survivor Unchained.
    - Re-run `--refault` after any lexicon change.
 2. **Listen in game once Vonnra's lines exist.** Run with `--quick --cine <id> --shot vo --until 60 --record <wav>` and check the log's `voice <id> ... with the name`.
    - Note: this worktree has no Godot import cache. A full import needs about 1.6 GB, and C: was at 99% (12 GB free at 03:15). The game plays non-imported oggs through `AudioStreamOggVorbis.LoadFromFile`, and an export imports them.
-3. **Packets, in recording order:** Vonnra and Harlan (with the story lead), then Chid, Maeca, Ysolde, then the rest by impact.
+3. **Packets, in recording order:** Chid, Maeca, Ysolde, then the rest by impact.
    - Run the stale-note check before sending each one: quoted words in a note that aren't in the line, beats that don't match, and "hushed" on a voice that shouldn't whisper.
    - Still open from that check: maeca.blind3_morning.0 and redcowl's raid last.1 are "hushed". Ask the story lead.
 4. **The owner's takes:** run `python tools/vo/import_takes.py <folder> --voice <v>`, listen, and report what is missing to the main session.
@@ -138,3 +137,7 @@ For the agent taking over voice for Survivor Unchained.
 6. `tools/vo/elevenlabs.py` (`FINAL`, `HOLD_VOICES`, `length_note`, the name notes) and `tools/vo/import_takes.py`.
 7. `godot/src/Audio/VoiceOver.cs` (the splice) and `godot/logic/World/VoiceLines.cs`.
 8. `docs/VOICES.md`, `docs/VO_CAST.md`, `docs/STORY_BIBLE.md` section 2 ("Who tells it").
+
+## Note on the run and the newest directions
+
+The run started at 03:02, before Vonnra's and Harlan's final notes (41d8dec) and three changed lines. Their placeholders from this run use the directions as they stood at 03:02; the changed lines are skipped and made next time. When the run ends, `python tools/vo/placeholders.py dlg.vonnra name.vonnra dlg.harlan --redo` remakes them on the final directions.
