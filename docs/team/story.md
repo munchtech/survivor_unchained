@@ -91,7 +91,9 @@ before recording. Agent a73ca9d35d0c487a9, branch `worktree-agent-a73ca9d35d0c48
 2. C14: Brannoc's dusk choice (`brannoc.road`), the `nell.burial` variant, the
    night's last lines and a RouteTests play, once combat builds the fight.
 3. C01 to C04: the cinematics lead's line asks, when they come.
-4. Crafting phase 3: wire-up questions only; the lines are written.
+4. Crafting phase 3: all lines sent to the crafting lead (a7debf1459f14dfe7),
+   who is wiring them, slurry affix names included (Fevered, of the Sump,
+   Pipe-Lad's). Answer wire-up questions only.
 5. Act 2's text, when the owner asks.
 
 ## Blockers
