@@ -48,6 +48,9 @@ public sealed class HeadlessHost : IZoneHost
     public string KeyLabel(string action) => action;
     public void AnnounceZone() { }
     public void ArenaOver(Arena.ArenaResult r) => Result = r;
+    /// <summary>A chest opened (its contents, for a test to read).</summary>
+    public Action<ChestOpened>? Opened;
+    public void Chest(ChestOpened c) => Opened?.Invoke(c);
 
     /// <summary>Run what was put off, as time passes.</summary>
     public void Pass(double dt)

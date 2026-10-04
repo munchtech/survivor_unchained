@@ -270,6 +270,9 @@ public sealed partial class Journey
     /// things into the pack. False leaves it on the ground (a full pack).</summary>
     public bool PickedUp(Pickup p)
     {
+        // A chart carries its map in its name until it is in the pack.
+        if (p.Kind == PickupKind.Item && p.Ref != null && Maps.Charts.FromRef(p.Ref) is { } chart)
+            return GiveChart(chart);
         if (p.Kind is PickupKind.Item or PickupKind.Material or PickupKind.Quest && p.Ref != null)
         {
             // Gear on the ground was rolled when it fell; its light said how good it is.
@@ -281,6 +284,18 @@ public sealed partial class Journey
 
     /// <summary>Something found in the field. False if there is no room.</summary>
     /// <param name="dropped">It fell in the world (its heat is rolled: docs/CRAFTING_DESIGN.md 5.1).</param>
+    /// <summary>A Wayfinder's chart into the pack.</summary>
+    public bool GiveChart(Maps.Chart chart)
+    {
+        var it = Inventory.Make(Ch, Maps.Charts.Item, 1, chart.Rarity);
+        it.Chart = chart;
+        it.Name = Maps.Charts.Title(chart);
+        if (!Inventory.AddToPack(Ch, it)) { OnToast(new Toast(ToastKind.Warning, "Your pack is full", it.Name)); return false; }
+        OnToast(new Toast(ToastKind.Loot, it.Name, Items.Get(Maps.Charts.Item).Description, Items.Get(Maps.Charts.Item).Icon, it.Rarity));
+        OnTouch();
+        return true;
+    }
+
     public bool GiveItem(string defId, int qty = 1, int? rarity = null, IReadOnlyCollection<string>? lean = null, bool dropped = false)
     {
         var it = Inventory.Make(Ch, defId, qty, rarity, lean: lean, dropped: dropped);

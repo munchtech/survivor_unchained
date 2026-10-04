@@ -245,6 +245,9 @@ public static class Firing
             pr.Knockback = w.Num(s => s.Knockback) ?? 0;
             pr.Chakram = chakram;
             pr.GroundOnHit = w.GroundOf;
+            // The Falling Star (a Mark): the cinder's blast leaves the ground burning.
+            if (pr.GroundOnHit == null && w.Id == "cinderfall" && b.Marked(Marks.FallingStar, out double star))
+                pr.GroundOnHit = new GroundSpec(1.8, Marks.Lerp(1, 4, star), 0.25);
             pr.Rank = w.Rank;
             pr.BossDamage = w.BossDamage;
             pr.AimAlongVelocity();
@@ -277,6 +280,13 @@ public static class Firing
         double spread = w.Num(s => s.Spread) ?? 0.16;
         double a0 = Math.Atan2(t.Z - p.Z, t.X - p.X);
         for (int i = 0; i < n; i++) Launch(b, w, a0 + (i - (n - 1) / 2.0) * spread, target: t.Id);
+        // The Ravine (a Mark): a second volley at the farthest in reach, a part as strong.
+        if (w.Id == "volley" && b.Marked(Marks.Ravine, out double ravine) && b.FarthestHostile(p.X, p.Z, RangeOf(w)) is { } far && far != t)
+        {
+            double af = Math.Atan2(far.Z - p.Z, far.X - p.X), k = Marks.Lerp(0.2, 0.9, ravine);
+            for (int i = 0; i < n; i++)
+                if (Launch(b, w, af + (i - (n - 1) / 2.0) * spread, target: far.Id) is { } pr) pr.Damage *= k;
+        }
         // Arrowfall: the volley also rains on the densest knot of the crowd.
         if (w.Num(s => s.Strikes) is { } strikes && strikes != 0)
             StormAt(b, w, (int)strikes, w.Num(s => s.StormRadius) ?? 5, 1.3, w.Damage * 0.6);
@@ -402,6 +412,9 @@ public static class Firing
         if (b.Time < w.ActiveT) return false;
         if (b.NearestHostile(b.Player.X, b.Player.Z, 10) == null) return false;
         int n = CountOf(b, w);
+        // The Gyre (a Mark): an axe more for every few close by, to three more.
+        if (w.Id == "axe_gyre" && b.Marked(Marks.Gyre, out double gyre))
+            n += Math.Min(3, (int)(b.HostilesInRadius(b.Player.X, b.Player.Z, 5).Count / Marks.Lerp(6, 3, gyre)));
         double life = DurationOf(b, w, w.Num(s => s.Duration) ?? 3);
         double radius = AreaOf(b, w, w.Num(s => s.OrbitRadius) ?? 2);
         double speed = w.Num(s => s.OrbitSpeed) ?? 4;

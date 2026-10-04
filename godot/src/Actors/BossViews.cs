@@ -114,6 +114,51 @@ public partial class WardenView : Node3D, IBossView
 }
 
 /// <summary>A bright thing with a light of its own (the Warden's heart).</summary>
+/// <summary>The Kindling's ember-core (shaders/ember_core.gdshader): a dark crust knobbled out of a
+/// sphere, its fissures glowing from inside and widening as it is broken, its own warm light.</summary>
+public partial class EmberCoreView : Node3D, IOrb
+{
+    readonly MeshInstance3D lump;
+    readonly ShaderMaterial mat;
+    readonly OmniLight3D light;
+
+    public EmberCoreView(double size)
+    {
+        mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/ember_core.gdshader") };
+        lump = new MeshInstance3D
+        {
+            Mesh = new SphereMesh { Radius = (float)size, Height = (float)size * 2, RadialSegments = 40, Rings = 20 },
+            MaterialOverride = mat,
+        };
+        AddChild(lump);
+        light = new OmniLight3D { LightColor = new Color("#ff7a2a"), OmniRange = 9, OmniAttenuation = 1.6f, LightEnergy = 1.4f, ShadowEnabled = false };
+        light.Position = new Vector3(0, (float)size * 1.2f, 0);
+        AddChild(light);
+        Visible = false;
+    }
+
+    bool IOrb.Visible { get => Visible; set => Visible = value; }
+
+    public void Place(double x, double y, double z, double spin, double scale)
+    {
+        Position = new Vector3((float)x, (float)y, (float)z);
+        lump.Rotation = new Vector3(0, (float)spin, 0);
+        lump.Scale = Vector3.One * (float)scale;
+    }
+
+    public double Light
+    {
+        set
+        {
+            float heat = Mathf.Clamp((float)value, 0, 1);
+            mat.SetShaderParameter("heat", heat);
+            light.LightEnergy = 1.2f + 3.5f * heat;
+        }
+    }
+
+    void IOrb.Dispose() => QueueFree();
+}
+
 public partial class OrbView : Node3D, IOrb
 {
     readonly MeshInstance3D ball;

@@ -170,7 +170,7 @@ public partial class Game : Node, IZoneHost
         if (Args.Has("xp")) Character.GainXp(Journey.Ch, Args.Num("xp", 0));
         var z = Args.Get("zone") ?? "lowford";
         Arrival? at = null;
-        if (Args.Get("at") is string s)
+        if (Args.Get("at") is string s && s != "boss")
         {
             var p = s.Split(',');
             at = new Arrival(double.Parse(p[0], System.Globalization.CultureInfo.InvariantCulture), double.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture));
@@ -196,6 +196,19 @@ public partial class Game : Node, IZoneHost
             // --story: told as a story's night (twenty minutes, over at its boss's fall), for pictures of its end.
             if (Args.Has("story")) { spec.Story = true; spec.Minutes = 20; }
             Arenas.Begin(World, spec);
+        }
+        // --zone map [--tier T --people ID --mods a+b --seed N]: straight into a Wayfinder's map.
+        if (z == "map")
+            World.Map = new SurvivorUnchained.Maps.Chart
+            {
+                Tier = (int)Args.Num("tier", 1), People = Args.Get("people") ?? "pack", Seed = (int)Args.Num("seed", 1234),
+                Mods = (Args.Get("mods") ?? "").Split('+', StringSplitOptions.RemoveEmptyEntries).ToList(), Name = "The Test Map",
+            };
+        // --at boss: on a map, at the edge of its ruler's clearing (pictures of the ruler's fight).
+        if (z == "map" && Args.Get("at") == "boss")
+        {
+            var bc = SurvivorUnchained.Maps.MapGen.Generate(World.Map!.Map).Boss;
+            at = new Arrival(bc.X, bc.Z - bc.R + 1);
         }
         if (z != "lowford")
         {
@@ -288,6 +301,16 @@ public partial class Game : Node, IZoneHost
         Travel("arena", spec.Name, spec.Sub != "" ? spec.Sub : "Ember arena", null, pull: true);
     }
 
+    /// <summary>Into a Wayfinder's map: the chart is used up as it opens (docs/SKILLS_DESIGN.md §17).</summary>
+    public void EnterMap(SurvivorUnchained.Maps.Chart chart)
+    {
+        if (inTransit || zone is MapRun || zone is ArenaRun) return;
+        CloseOverlay();
+        Save("map");
+        World.Map = chart;
+        Travel("map", chart.Name, "A Wayfinder's map");
+    }
+
     /// <summary>The arena is over: what came of it, and then back to the story.</summary>
     public void ArenaOver(ArenaResult result)
     {
@@ -319,6 +342,7 @@ public partial class Game : Node, IZoneHost
         "waystation" => new Waystation(this, meta),
         "verge" => new Verge(this, meta),
         "arena" => new ArenaRun(this, currentMap!, World.Arena!),
+        "map" => new MapRun(this, currentMap!, World.Map!),
         _ => throw new ArgumentException($"no zone {id}"),
     };
 
@@ -350,6 +374,7 @@ public partial class Game : Node, IZoneHost
         // An arena is made from its seed each time it is entered.
         ZoneData data;
         if (id == "arena") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(World.Arena!.Map); data = new ZoneData(currentMap); }
+        else if (id == "map") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(World.Map!.Map); data = new ZoneData(currentMap); }
         else { currentMap = null; data = new ZoneData(id); }
         scene = new WorldScene(data, cam);
         AddChild(scene);

@@ -34,6 +34,8 @@ public sealed class ItemInstance
     public List<string>? Marks;
     /// <summary>How often its three coals have been drawn again today.</summary>
     public int? Draw;
+    /// <summary>A Wayfinder's chart: the map it opens (docs/SKILLS_DESIGN.md §17.2).</summary>
+    public Maps.Chart? Chart;
     /// <summary>The day it was last remade: a remade piece cools overnight before the next.</summary>
     public int? Remade;
 }
@@ -365,6 +367,11 @@ public sealed class CombatKit
     public AbilityKind Ability;
     public int ArtRank = 1;
     public List<string> Facets = new();
+    /// <summary>The Marks the gear carries (docs/items/CATALOGUE.md §4), each at its strength 0-1, and
+    /// numbers on single skills, by skill id: worn in the Wayfinder's maps (Battle.Wear). Crafting
+    /// fills them from the items.</summary>
+    public Dictionary<string, double> Marks = new();
+    public Dictionary<string, WeaponMods> SkillMods = new();
     public HashSet<string> GearIds = new();
     public HashSet<StatusKind> GearStatuses = new();
     public int StartLevels, Revives, Rerolls = 3;
