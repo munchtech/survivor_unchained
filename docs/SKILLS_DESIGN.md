@@ -857,7 +857,51 @@ returns now grow by a rule a player can learn, and the oaths that grind come
 last. The compounding waits an hour so the long tail belongs to great
 builds and great hands; after it, nothing holds for ever, as asked.
 
-### 16.4 Decisions the studies left open
+### 16.4 The charge director
+
+The owner: **"in our charge mechanic once quite a few overlapping constantly.
+periods of that are exciting, non stop can be a little weird."** Each tusker
+and lunger used to run its lane as soon as its own cooldown was up, so a thick
+field became a lattice of red lanes that never stopped.
+
+`Sim/Charges.cs` (`Battle.Charges`) decides when a non-boss creature may
+start a run. Ai asks it before any wind-up.
+
+- **Waves:** each wave lasts 5–9 s and allows `2 + tier / 2` runs at once
+  (at most 4). Runs start 0.7 s apart, so each lane is read before the next.
+- **Lulls:** 3–6 s between waves, with no run started.
+- **Spikes:** one every 40–55 s, or every 18–26 s while the night builds into
+  a landmark (`ArenaPacing.Building`). Each comes after the people's tell:
+  - the Pack: a howl;
+  - the dead: a drum;
+  - the Lamplings: fuses;
+  - the Kerchiefs: a whistle.
+
+  The tell sounds 1.3 s ahead. Then for 3.5 s more than twice the wave's
+  number may run, in a ripple 0.12 s apart, and a lull follows.
+- **The night's shape:**
+  - a people's own turn opens a spike;
+  - breathers, the hush and a herald's duel are calm;
+  - a boss allows one crowd run at a time and no spikes;
+  - the long night adds one run a wave per ten minutes, up to three.
+- **Refusals and exemptions:**
+  - a refused creature walks on and asks again within a second;
+  - champions keep a small allowance of their own;
+  - bosses are never asked.
+- **The same director caps the horde's other marks:**
+  - 8 tunnellers under the ground;
+  - 8 death bursts fusing;
+  - 24 patches of the horde's burning ground, the oldest going out first.
+
+It keeps its own random stream, so it moves no other dice.
+
+| The Pack, tier 2, deft hands, 24 runs | Before | After |
+|---|---|---|
+| Charges a minute (minutes 6–30) | 123–184 | 42–59 |
+| Most at once | 15–22 | 5–7 (in spikes) |
+| Seconds a minute with three or more lanes | 24–31 | 7–12 |
+
+### 16.5 Decisions the studies left open
 
 Recorded here because this area owns them; the story's are the bible's
 ("The nights") and are followed.

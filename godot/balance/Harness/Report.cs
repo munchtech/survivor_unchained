@@ -128,6 +128,18 @@ public static class Report
         }
         sb.AppendLine();
 
+        // The horde's charges, and how near the survivor came to falling (docs/SKILLS_DESIGN.md, "Encounters").
+        sb.AppendLine("### Encounters over the minutes (means; dipped: runs below half health that minute)\n");
+        Head(sb, "minute", "charges/min", "most at once", "s with 3+ at once", "spikes", "dipped below ½");
+        foreach (int m in new[] { 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 35, 40, 45 })
+        {
+            var at = runs.Where(r => r.ByMinute.Count >= m).Select(r => r.ByMinute[m - 1]).ToList();
+            if (at.Count == 0) continue;
+            Row(sb, m, F(at.Average(x => x.Charges)), F(at.Average(x => x.ChargePeak)), F(at.Average(x => x.Overlap)), F(at.Average(x => x.Spikes), "0.00"),
+                Pct(at.Count(x => x.LowHp < 0.5) / (double)at.Count));
+        }
+        sb.AppendLine();
+
         // Every card: how often offered, taken, and how runs that took it went.
         // Runs that took a card by the fifteenth minute against those that had not (nearly
         // every run lives that long, so long runs, which take more cards, do not flatter it).
