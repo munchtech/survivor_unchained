@@ -71,6 +71,45 @@ PROMPTS = {
     "work": ("A person stands at a table and works at something with both hands", 4.0, 3),
     # The walking dead (the crowd's shamble).
     "shamble": ("A person shambles forward slowly, dragging the left foot, arms hanging limp", 6.0, 3),
+    "shamble_lurch": ("A zombie lurches forward on stiff legs, swaying, both arms reaching out in front", 6.0, 5),
+
+    # Her deaths, to set beside the keyed ones.
+    "death_back": ("A person is hit hard in the chest, staggers back one step and collapses onto their back and lies still", 4.0, 9),
+    "death_front": ("A person is hit hard in the back, drops to their knees and falls forward onto their face and lies still", 4.0, 9),
+
+    # Combat's new minions and heavies (docs/team/combat.md).
+    "kneel_shoot": ("A person drops to one knee, raises a crossbow to the shoulder, aims and shoots", 4.0, 7),
+    "slam": ("A big heavy man raises both fists high above his head and slams them down onto the ground", 3.0, 7),
+
+    # The cinematics (docs/team/cinematics.md), C01: the survivor wakes.
+    "lie_side_wake": ("A person lies completely still on their right side on the ground, then slowly and wearily pushes up onto one elbow", 7.0, 13),
+    "sit_back_heels": ("A person lying propped on one elbow slowly sits up and settles back to kneel on their heels, looking down at their hands", 6.0, 13),
+    "letter": ("A kneeling person takes a folded letter from inside their coat, unfolds it, reads it, folds it again and puts it back", 8.0, 13),
+    "kneel_to_stand_snap": ("A kneeling person snaps their head round to look behind them and springs to their feet in one movement without using their hands", 3.0, 13),
+    "take_from_log": ("A person grabs a sword leaning against a log at hip height and turns round holding it ready to fight", 3.0, 13),
+    "cup_hands": ("A kneeling person cups both hands in front of their chest, looks down into them and waits", 4.0, 13),
+    # C02: the Warden in the ford, and the drowned.
+    "lie_arm_up": ("A person lies still on their back with the left forearm held straight up", 4.0, 13),
+    "rise_stiff": ("An old man lying on his back slowly sits up and then stiffly gets to his feet, like getting out of a cold bath", 7.0, 13),
+    "wade_drag": ("A big man wades slowly forward through deep water, dragging a heavy sword behind him in the right hand", 6.0, 13),
+    "bend_lift": ("A tall man bends a long way down and lifts a lamp up to a face low in front of him, tilting his head", 4.0, 13),
+    "bowed_turn": ("A person stands still with the head bowed, then slowly turns the head to the left", 5.0, 13),
+    # C03.
+    "kneel_fall": ("A big man drops to his knees holding his left arm up, slowly lowers the arm, and folds forward to lie face down", 7.0, 13),
+    "reach_flinch": ("A woman slowly reaches one hand toward something floating in front of her chest, then flinches back", 4.0, 13),
+    "burst_hug": ("A crouching person bursts upward, snatches something with both hands and hugs it to their chest", 3.0, 13),
+    "sniff": ("A person sniffs the air twice, head raised", 2.5, 13),
+    "laugh": ("A person laughs so hard their shoulders and belly shake", 3.0, 13),
+    "dive": ("A person dives head first down toward the ground", 2.5, 13),
+    # C04: the morning, the walk to the Waystation.
+    "wade_out": ("A woman wades out of shin-deep water and steps up onto a bank", 5.0, 13),
+    "sun_face": ("A woman stands still with her face tilted up to the sun and her eyes closed, breathing slowly", 5.0, 13),
+    "flask_drink": ("A person lifts a flask hanging on a cord, pulls the cork out with their teeth, sniffs it and takes a long drink", 6.0, 13),
+    "walk_uphill": ("A tired person walks slowly up a hill, leaning forward", 6.0, 13),
+    "unfold_arms": ("A person standing with arms folded unfolds them and lets them hang", 3.0, 13),
+    "ladder": ("A man carrying a long ladder on his shoulder walks, stops and turns round", 5.0, 13),
+    "well_bucket": ("A woman hauls a bucket up out of a well and pauses, holding it", 5.0, 13),
+    "child_run": ("A child runs forward happily", 4.0, 13),
 }
 
 
