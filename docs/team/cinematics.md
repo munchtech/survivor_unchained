@@ -1,8 +1,13 @@
 # Cinematics: status
 
-Agent a2dfc75e2d351105a, branch `worktree-agent-a2dfc75e2d351105a`. The brief: shooting scripts, boards and animatics for C01 to C14, and the in-engine cinematic player. Pipeline and timeline format: `docs/cinematics/shoot/README.md`.
+Agent a2dfc75e2d351105a (handed off: `docs/handoff/cinematics.md`), branch `worktree-agent-a2dfc75e2d351105a`. The brief: shooting scripts, boards and animatics for C01 to C14, and the in-engine cinematic player. Pipeline and timeline format: `docs/cinematics/shoot/README.md`.
 
-## State (stopped at the owner's usage limit, 2026-10-03)
+**2026-10-04:**
+- **Previs:** pass 2 is judged. Shots 3, 4, 7, 9 and 12 read; 2, 5, 6, 8, 10 and 11 need reframing (the handoff lists each fix).
+- **Narration:** it is swappable. The timeline's `narrators` list and the dialogue speaker decide it, so Vonnra could voice the opening with no code change.
+- **Motion list:** sent to animation.
+
+## State (2026-10-03)
 
 - **Cinematic player: built and working in the game.**
   - Logic, tested (`logic/Cinema`, `tests/CinemaTests.cs`, 7 tests; all 477 green):
