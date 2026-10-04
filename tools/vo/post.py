@@ -331,15 +331,29 @@ def limit(x: np.ndarray, ceiling_db: float) -> np.ndarray:
 
 # ------------------------------------------------------------ the whole --
 
+def tempo(x: np.ndarray, factor: float) -> np.ndarray:
+    """Speech made shorter (factor < 1) or longer at the same pitch: Praat's
+    overlap-add (PSOLA), which keeps a voice's grain better than a phase
+    vocoder. Only placeholders are squeezed to fit a cut; a final is
+    recorded to length."""
+    import parselmouth
+    from parselmouth.praat import call
+    snd = parselmouth.Sound(np.asarray(x, dtype=np.float64), sampling_frequency=SR)
+    out = call(snd, "Lengthen (overlap-add)", 60, 600, float(factor))
+    return np.asarray(out.values[0], dtype=x.dtype)
+
+
 def master(path: str, room: str = "close", sex: str = "m", kind: str | None = None, seed: int = 7, vol: str = "level",
-           max_gap: float = 1.6, info: dict | None = None) -> np.ndarray:
+           max_gap: float = 1.6, info: dict | None = None, speed: float = 1.0) -> np.ndarray:
     """One take, edited and toned, before it is placed and levelled with its
     line. `max_gap` caps the pauses inside it (a cut timed to the line asks
-    for less); `info` gets the read's own length, first sound to last word,
-    without any room's decay."""
+    for less); `speed` below 1 squeezes it (placeholders only); `info` gets
+    the read's own length, first sound to last word, without any room's decay."""
     x = load(path)
     x = clean(x)
     x = edit(x, max_gap=max_gap)
+    if abs(speed - 1.0) > 1e-3:
+        x = tempo(x, speed)
     x = tone(x, sex, vol)
     if info is not None:
         info["read"] = len(x) / SR * STRETCH.get(kind or "", 1.0)

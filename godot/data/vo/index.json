@@ -1,9 +1,844 @@
 {
  "lines": {
+  "dlg.brannoc.first.0": {
+   "file": "brannoc/dlg.brannoc.first.0.ogg",
+   "hash": "27a3071537e8",
+   "placeholder": true,
+   "read": 12.41,
+   "sec": 12.96,
+   "segs": [
+    [
+     0.0,
+     12.414,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "brannoc"
+  },
+  "dlg.brannoc.first.1": {
+   "file": "brannoc/dlg.brannoc.first.1.ogg",
+   "hash": "077cab2c4c7f",
+   "placeholder": true,
+   "read": 8.1,
+   "sec": 8.65,
+   "segs": [
+    [
+     0.0,
+     8.098,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "brannoc"
+  },
+  "dlg.brannoc.hub.0": {
+   "file": "brannoc/dlg.brannoc.hub.0.ogg",
+   "hash": "319a5e6d38e8",
+   "placeholder": true,
+   "read": 3.21,
+   "sec": 3.76,
+   "segs": [
+    [
+     0.0,
+     3.211,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "brannoc"
+  },
+  "dlg.brannoc.hub.1": {
+   "file": "brannoc/dlg.brannoc.hub.1.ogg",
+   "hash": "17170247cccf",
+   "placeholder": true,
+   "read": 8.2,
+   "sec": 8.75,
+   "segs": [
+    [
+     0.0,
+     5.283,
+     0.0,
+     0.843
+    ],
+    [
+     5.663,
+     8.202,
+     0.854,
+     1.0
+    ]
+   ],
+   "voice": "brannoc"
+  },
+  "dlg.chid.before.0": {
+   "file": "chid/dlg.chid.before.0.ogg",
+   "hash": "8f159f840711",
+   "placeholder": true,
+   "read": 21.92,
+   "sec": 23.02,
+   "segs": [
+    [
+     0.0,
+     21.92,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.below.0": {
+   "file": "chid/dlg.chid.below.0.ogg",
+   "hash": "b568f5857704",
+   "placeholder": true,
+   "read": 9.04,
+   "sec": 10.14,
+   "segs": [
+    [
+     0.0,
+     9.044,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.blessed.0": {
+   "file": "chid/dlg.chid.blessed.0.ogg",
+   "hash": "af4eff5d17b3",
+   "placeholder": true,
+   "read": 3.24,
+   "sec": 4.34,
+   "segs": [
+    [
+     0.0,
+     3.239,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.carter.0": {
+   "file": "chid/dlg.chid.carter.0.ogg",
+   "hash": "0cf9c31ab979",
+   "placeholder": true,
+   "read": 14.98,
+   "sec": 17.18,
+   "segs": [
+    [
+     0.0,
+     5.457,
+     0.0,
+     0.424
+    ],
+    [
+     6.937,
+     10.242,
+     0.43,
+     0.612
+    ],
+    [
+     10.622,
+     16.082,
+     0.618,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.cb_core_stolen.0": {
+   "file": "chid/dlg.chid.cb_core_stolen.0.ogg",
+   "hash": "6b0d529c0d9e",
+   "placeholder": true,
+   "read": 14.68,
+   "sec": 15.78,
+   "segs": [
+    [
+     0.0,
+     14.675,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.cb_nell.0": {
+   "file": "chid/dlg.chid.cb_nell.0.ogg",
+   "hash": "e4a24375abb0",
+   "placeholder": true,
+   "read": 23.23,
+   "sec": 25.43,
+   "segs": [
+    [
+     0.0,
+     9.104,
+     0.0,
+     0.348
+    ],
+    [
+     10.584,
+     14.483,
+     0.353,
+     0.512
+    ],
+    [
+     14.863,
+     20.203,
+     0.517,
+     0.715
+    ],
+    [
+     21.683,
+     25.428,
+     0.72,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.cb_nell.1": {
+   "file": "chid/dlg.chid.cb_nell.1.ogg",
+   "hash": "51f4ec35ffea",
+   "placeholder": true,
+   "read": 25.4,
+   "sec": 27.6,
+   "segs": [
+    [
+     0.0,
+     12.713,
+     0.0,
+     0.442
+    ],
+    [
+     14.193,
+     17.383,
+     0.446,
+     0.583
+    ],
+    [
+     17.763,
+     22.451,
+     0.587,
+     0.756
+    ],
+    [
+     23.931,
+     27.6,
+     0.76,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.cb_nemesis_slain.0": {
+   "file": "chid/dlg.chid.cb_nemesis_slain.0.ogg",
+   "hash": "625fb6df475f",
+   "placeholder": true,
+   "read": 7.42,
+   "sec": 8.52,
+   "segs": [
+    [
+     0.0,
+     7.419,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.cb_opened_vault.0": {
+   "file": "chid/dlg.chid.cb_opened_vault.0.ogg",
+   "hash": "e5236e2141fc",
+   "placeholder": true,
+   "read": 11.79,
+   "sec": 12.89,
+   "segs": [
+    [
+     0.0,
+     11.795,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.cb_vault2.0": {
+   "file": "chid/dlg.chid.cb_vault2.0.ogg",
+   "hash": "df1d1f634cbc",
+   "placeholder": true,
+   "read": 9.64,
+   "sec": 10.74,
+   "segs": [
+    [
+     0.0,
+     9.636,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.first.0": {
+   "file": "chid/dlg.chid.first.0.ogg",
+   "hash": "ed40ef545d97",
+   "placeholder": true,
+   "read": 13.73,
+   "sec": 14.83,
+   "segs": [
+    [
+     0.0,
+     13.735,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.first.1": {
+   "file": "chid/dlg.chid.first.1.ogg",
+   "hash": "b83b9938f8e5",
+   "placeholder": true,
+   "read": 11.42,
+   "sec": 12.52,
+   "segs": [
+    [
+     0.0,
+     11.424,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.hub.0": {
+   "file": "chid/dlg.chid.hub.0.ogg",
+   "hash": "b29dc632c9e7",
+   "placeholder": true,
+   "read": 5.63,
+   "sec": 6.73,
+   "segs": [
+    [
+     0.0,
+     5.627,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.hub.1": {
+   "file": "chid/dlg.chid.hub.1.ogg",
+   "hash": "5a711a681371",
+   "placeholder": true,
+   "read": 3.86,
+   "sec": 4.96,
+   "segs": [
+    [
+     0.0,
+     3.863,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.lit.0": {
+   "file": "chid/dlg.chid.lit.0.ogg",
+   "hash": "d60834b1151a",
+   "placeholder": true,
+   "read": 11.95,
+   "sec": 13.05,
+   "segs": [
+    [
+     0.0,
+     11.947,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.long.0": {
+   "file": "chid/dlg.chid.long.0.ogg",
+   "hash": "874a78eb3430",
+   "placeholder": true,
+   "read": 12.52,
+   "sec": 13.62,
+   "segs": [
+    [
+     0.0,
+     12.519,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.names.0": {
+   "file": "chid/dlg.chid.names.0.ogg",
+   "hash": "859bdabbb02b",
+   "placeholder": true,
+   "read": 29.47,
+   "sec": 30.57,
+   "segs": [
+    [
+     0.0,
+     29.467,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.note.0": {
+   "file": "chid/dlg.chid.note.0.ogg",
+   "hash": "451907b700ae",
+   "placeholder": true,
+   "read": 26.39,
+   "sec": 29.69,
+   "segs": [
+    [
+     0.0,
+     0.75,
+     0.0,
+     0.035
+    ],
+    [
+     2.23,
+     5.325,
+     0.039,
+     0.194
+    ],
+    [
+     5.705,
+     15.401,
+     0.198,
+     0.523
+    ],
+    [
+     16.881,
+     18.06,
+     0.527,
+     0.565
+    ],
+    [
+     18.44,
+     28.587,
+     0.569,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.relight.0": {
+   "file": "narrator/dlg.chid.relight.0.ogg",
+   "hash": "a0ef88db0a35",
+   "placeholder": true,
+   "read": 19.23,
+   "sec": 19.23,
+   "segs": [
+    [
+     0.0,
+     19.23,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "dlg.chid.say_calling.0": {
+   "file": "chid/dlg.chid.say_calling.0.ogg",
+   "hash": "a16b2b1a4052",
+   "placeholder": true,
+   "read": 12.28,
+   "sec": 13.38,
+   "segs": [
+    [
+     0.0,
+     12.283,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.say_calling.1": {
+   "file": "chid/dlg.chid.say_calling.1.ogg",
+   "hash": "27f99a5a7197",
+   "placeholder": true,
+   "read": 8.19,
+   "sec": 9.29,
+   "segs": [
+    [
+     0.0,
+     8.185,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.say_calling.2": {
+   "file": "chid/dlg.chid.say_calling.2.ogg",
+   "hash": "e7572696ac6d",
+   "placeholder": true,
+   "read": 18.35,
+   "sec": 19.45,
+   "segs": [
+    [
+     0.0,
+     18.354,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.say_calling.3": {
+   "file": "chid/dlg.chid.say_calling.3.ogg",
+   "hash": "44b5844b0e6e",
+   "placeholder": true,
+   "read": 6.05,
+   "sec": 7.15,
+   "segs": [
+    [
+     0.0,
+     6.049,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.say_calling.4": {
+   "file": "chid/dlg.chid.say_calling.4.ogg",
+   "hash": "44b5844b0e6e",
+   "placeholder": true,
+   "read": 6.66,
+   "sec": 7.76,
+   "segs": [
+    [
+     0.0,
+     6.659,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.shrine.0": {
+   "file": "chid/dlg.chid.shrine.0.ogg",
+   "hash": "066a424e0790",
+   "placeholder": true,
+   "read": 26.46,
+   "sec": 27.56,
+   "segs": [
+    [
+     0.0,
+     26.46,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.t_chid.0": {
+   "file": "chid/dlg.chid.t_chid.0.ogg",
+   "hash": "2b2589197807",
+   "placeholder": true,
+   "read": 16.6,
+   "sec": 17.7,
+   "segs": [
+    [
+     0.0,
+     16.602,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.vault.0": {
+   "file": "chid/dlg.chid.vault.0.ogg",
+   "hash": "477f41006d93",
+   "placeholder": true,
+   "read": 17.4,
+   "sec": 18.5,
+   "segs": [
+    [
+     0.0,
+     17.403,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.warden.0": {
+   "file": "chid/dlg.chid.warden.0.ogg",
+   "hash": "ee3f454ca1dd",
+   "placeholder": true,
+   "read": 19.06,
+   "sec": 20.16,
+   "segs": [
+    [
+     0.0,
+     19.064,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.where.0": {
+   "file": "chid/dlg.chid.where.0.ogg",
+   "hash": "a30c98d73a31",
+   "placeholder": true,
+   "read": 13.13,
+   "sec": 14.23,
+   "segs": [
+    [
+     0.0,
+     13.131,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.woke.0": {
+   "file": "chid/dlg.chid.woke.0.ogg",
+   "hash": "199201986ccf",
+   "placeholder": true,
+   "read": 10.6,
+   "sec": 12.8,
+   "segs": [
+    [
+     0.0,
+     0.915,
+     0.0,
+     0.068
+    ],
+    [
+     2.395,
+     5.178,
+     0.075,
+     0.308
+    ],
+    [
+     5.558,
+     11.696,
+     0.316,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.woke.1": {
+   "file": "chid/dlg.chid.woke.1.ogg",
+   "hash": "cb5b8b7f7b23",
+   "placeholder": true,
+   "read": 12.6,
+   "sec": 14.8,
+   "segs": [
+    [
+     0.0,
+     2.66,
+     0.0,
+     0.222
+    ],
+    [
+     4.14,
+     5.727,
+     0.228,
+     0.392
+    ],
+    [
+     6.107,
+     13.7,
+     0.399,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.woke.2": {
+   "file": "chid/dlg.chid.woke.2.ogg",
+   "hash": "7f1fa2785a09",
+   "placeholder": true,
+   "read": 18.56,
+   "sec": 20.76,
+   "segs": [
+    [
+     0.0,
+     9.892,
+     0.0,
+     0.502
+    ],
+    [
+     11.372,
+     14.264,
+     0.506,
+     0.606
+    ],
+    [
+     14.644,
+     19.656,
+     0.61,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.woke.3": {
+   "file": "chid/dlg.chid.woke.3.ogg",
+   "hash": "96a4ef5952c7",
+   "placeholder": true,
+   "read": 19.67,
+   "sec": 20.77,
+   "segs": [
+    [
+     0.0,
+     19.672,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.chid.woke.4": {
+   "file": "chid/dlg.chid.woke.4.ogg",
+   "hash": "ed2a2096c663",
+   "placeholder": true,
+   "read": 19.21,
+   "sec": 20.31,
+   "segs": [
+    [
+     0.0,
+     19.21,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.cin_behind_the_door.nondum.0": {
+   "file": "barrow_lord/dlg.cin_behind_the_door.nondum.0.ogg",
+   "hash": "cad83a173168",
+   "placeholder": true,
+   "read": 1.12,
+   "sec": 2.52,
+   "segs": [
+    [
+     0.0,
+     1.121,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "barrow_lord"
+  },
+  "dlg.cin_behind_the_door.nondum.1": {
+   "file": "barrow_lord/dlg.cin_behind_the_door.nondum.1.ogg",
+   "hash": "04cabffa7c4f",
+   "placeholder": true,
+   "read": 1.09,
+   "sec": 2.49,
+   "segs": [
+    [
+     0.0,
+     1.092,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "barrow_lord"
+  },
+  "dlg.cin_behind_the_door.redi.0": {
+   "file": "barrow_lord/dlg.cin_behind_the_door.redi.0.ogg",
+   "hash": "752675633e10",
+   "placeholder": true,
+   "read": 0.94,
+   "sec": 2.34,
+   "segs": [
+    [
+     0.0,
+     0.938,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "barrow_lord"
+  },
+  "dlg.cin_behind_the_door.redi.1": {
+   "file": "barrow_lord/dlg.cin_behind_the_door.redi.1.ogg",
+   "hash": "dd9f960807f3",
+   "placeholder": true,
+   "read": 0.93,
+   "sec": 2.33,
+   "segs": [
+    [
+     0.0,
+     0.934,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "barrow_lord"
+  },
+  "dlg.cin_dig_boils_over.pump.0": {
+   "file": "grimtunnel/dlg.cin_dig_boils_over.pump.0.ogg",
+   "hash": "3ce536ba62d6",
+   "placeholder": true,
+   "read": 12.54,
+   "sec": 13.94,
+   "segs": [
+    [
+     0.0,
+     12.539,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "grimtunnel"
+  },
+  "dlg.cin_dig_boils_over.pump.1": {
+   "file": "grimtunnel/dlg.cin_dig_boils_over.pump.1.ogg",
+   "hash": "a375e22b3e06",
+   "placeholder": true,
+   "read": 10.62,
+   "sec": 12.02,
+   "segs": [
+    [
+     0.0,
+     10.616,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "grimtunnel"
+  },
+  "dlg.cin_dig_boils_over.quiet.0": {
+   "file": "grimtunnel/dlg.cin_dig_boils_over.quiet.0.ogg",
+   "hash": "2cb194c7f6c6",
+   "placeholder": true,
+   "read": 4.7,
+   "sec": 6.1,
+   "segs": [
+    [
+     0.0,
+     4.702,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "grimtunnel"
+  },
   "dlg.cin_drowned_fire.bedroll.0": {
    "file": "narrator/dlg.cin_drowned_fire.bedroll.0.ogg",
    "hash": "24c69afd4e5e",
    "placeholder": true,
+   "read": 2.59,
    "sec": 2.59,
    "segs": [
     [
@@ -19,11 +854,12 @@
    "file": "narrator/dlg.cin_drowned_fire.frost.0.ogg",
    "hash": "1096c4f7e3e0",
    "placeholder": true,
-   "sec": 3.74,
+   "read": 3.15,
+   "sec": 3.15,
    "segs": [
     [
      0.0,
-     3.736,
+     3.15,
      0.0,
      1.0
     ]
@@ -34,11 +870,1000 @@
    "file": "narrator/dlg.cin_drowned_fire.prints.0.ogg",
    "hash": "2d8b284f0b0e",
    "placeholder": true,
-   "sec": 9.14,
+   "read": 6.95,
+   "sec": 6.95,
    "segs": [
     [
      0.0,
-     9.142,
+     6.953,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "dlg.cin_first_light.back.0": {
+   "file": "narrator/dlg.cin_first_light.back.0.ogg",
+   "hash": "a9b2d8ab716a",
+   "placeholder": true,
+   "read": 4.15,
+   "sec": 4.15,
+   "segs": [
+    [
+     0.0,
+     4.152,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "dlg.cin_first_light.baking.0": {
+   "file": "narrator/dlg.cin_first_light.baking.0.ogg",
+   "hash": "f3b5d8b3409e",
+   "placeholder": true,
+   "read": 2.98,
+   "sec": 2.98,
+   "segs": [
+    [
+     0.0,
+     2.977,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "dlg.cin_first_light.dawn.0": {
+   "file": "guard/dlg.cin_first_light.dawn.0.ogg",
+   "hash": "720af83233d0",
+   "placeholder": true,
+   "read": 2.89,
+   "sec": 2.99,
+   "segs": [
+    [
+     0.0,
+     2.89,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "guard"
+  },
+  "dlg.cin_first_light.face.0": {
+   "file": "narrator/dlg.cin_first_light.face.0.ogg",
+   "hash": "8ae8a60be36e",
+   "placeholder": true,
+   "read": 5.12,
+   "sec": 5.12,
+   "segs": [
+    [
+     0.0,
+     5.12,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "dlg.cin_forty_one_mouths.them_first.0": {
+   "file": "kerchief_woman/dlg.cin_forty_one_mouths.them_first.0.ogg",
+   "hash": "3bf0d0b0d0da",
+   "placeholder": true,
+   "read": 1.41,
+   "sec": 1.59,
+   "segs": [
+    [
+     0.0,
+     1.408,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "kerchief_woman"
+  },
+  "dlg.cin_heart_goes_down.downstairs.0": {
+   "file": "grimtunnel/dlg.cin_heart_goes_down.downstairs.0.ogg",
+   "hash": "ca65f966df2d",
+   "placeholder": true,
+   "read": 4.16,
+   "sec": 4.41,
+   "segs": [
+    [
+     0.0,
+     4.159,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "grimtunnel"
+  },
+  "dlg.cin_heart_goes_down.grateful.0": {
+   "file": "grimtunnel/dlg.cin_heart_goes_down.grateful.0.ogg",
+   "hash": "d6a6b3a4b868",
+   "placeholder": true,
+   "read": 4.3,
+   "sec": 4.55,
+   "segs": [
+    [
+     0.0,
+     4.298,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "grimtunnel"
+  },
+  "dlg.cin_heart_goes_down.morning.0": {
+   "file": "warden_man/dlg.cin_heart_goes_down.morning.0.ogg",
+   "hash": "f7a2a69e2307",
+   "placeholder": true,
+   "read": 1.55,
+   "sec": 1.55,
+   "segs": [
+    [
+     0.0,
+     1.548,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "warden_man"
+  },
+  "dlg.cin_heart_goes_down.nobodys.0": {
+   "file": "grimtunnel/dlg.cin_heart_goes_down.nobodys.0.ogg",
+   "hash": "676eeb4cf137",
+   "placeholder": true,
+   "read": 3.15,
+   "sec": 3.4,
+   "segs": [
+    [
+     0.0,
+     3.154,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "grimtunnel"
+  },
+  "dlg.cin_iron_marker.verse1.0": {
+   "file": "chid/dlg.cin_iron_marker.verse1.0.ogg",
+   "hash": "605aa6fae0ef",
+   "placeholder": true,
+   "read": 18.68,
+   "sec": 19.78,
+   "segs": [
+    [
+     0.0,
+     18.68,
+     0.046,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.cin_iron_marker.verse2.0": {
+   "file": "chid/dlg.cin_iron_marker.verse2.0.ogg",
+   "hash": "445bda17c9b2",
+   "placeholder": true,
+   "read": 19.87,
+   "sec": 20.97,
+   "segs": [
+    [
+     0.0,
+     19.865,
+     0.046,
+     1.0
+    ]
+   ],
+   "voice": "chid"
+  },
+  "dlg.cin_none_cross.call.0": {
+   "file": "warden/dlg.cin_none_cross.call.0.ogg",
+   "hash": "1d16761f7ebe",
+   "placeholder": true,
+   "read": 7.54,
+   "sec": 9.19,
+   "segs": [
+    [
+     0.0,
+     8.937,
+     0.369,
+     1.0
+    ]
+   ],
+   "voice": "warden"
+  },
+  "dlg.cin_none_cross.lie_down.0": {
+   "file": "warden/dlg.cin_none_cross.lie_down.0.ogg",
+   "hash": "d918c7cc3d98",
+   "placeholder": true,
+   "read": 1.45,
+   "sec": 3.1,
+   "segs": [
+    [
+     0.0,
+     2.852,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "warden"
+  },
+  "dlg.cin_none_cross.none.0": {
+   "file": "warden/dlg.cin_none_cross.none.0.ogg",
+   "hash": "7a9cdb2c49b5",
+   "placeholder": true,
+   "read": 3.61,
+   "sec": 5.26,
+   "segs": [
+    [
+     0.0,
+     5.015,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "warden"
+  },
+  "dlg.cin_raid_on_the_roost.bairns.0": {
+   "file": "redcowl/dlg.cin_raid_on_the_roost.bairns.0.ogg",
+   "hash": "9b65d78c63fc",
+   "placeholder": true,
+   "read": 8.53,
+   "sec": 8.71,
+   "segs": [
+    [
+     0.0,
+     8.533,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "redcowl"
+  },
+  "dlg.cin_raid_on_the_roost.bairns.1": {
+   "file": "redcowl/dlg.cin_raid_on_the_roost.bairns.1.ogg",
+   "hash": "96303d9e498c",
+   "placeholder": true,
+   "read": 9.72,
+   "sec": 9.9,
+   "segs": [
+    [
+     0.0,
+     9.718,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "redcowl"
+  },
+  "dlg.cin_raid_on_the_roost.last.0": {
+   "file": "redcowl/dlg.cin_raid_on_the_roost.last.0.ogg",
+   "hash": "1504d8df43a2",
+   "placeholder": true,
+   "read": 5.0,
+   "sec": 5.18,
+   "segs": [
+    [
+     0.0,
+     5.003,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "redcowl"
+  },
+  "dlg.cin_raid_on_the_roost.last.1": {
+   "file": "redcowl/dlg.cin_raid_on_the_roost.last.1.ogg",
+   "hash": "00ac7277a0e7",
+   "placeholder": true,
+   "read": 4.88,
+   "sec": 5.06,
+   "segs": [
+    [
+     0.0,
+     4.88,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "redcowl"
+  },
+  "dlg.cin_road_back.place.0": {
+   "file": "brannoc/dlg.cin_road_back.place.0.ogg",
+   "hash": "3e5a03fa0c92",
+   "placeholder": true,
+   "read": 1.62,
+   "sec": 2.17,
+   "segs": [
+    [
+     0.0,
+     1.617,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "brannoc"
+  },
+  "dlg.cin_road_back.wat.0": {
+   "file": "brannoc/dlg.cin_road_back.wat.0.ogg",
+   "hash": "cef4693f7e9c",
+   "placeholder": true,
+   "read": 0.79,
+   "sec": 1.34,
+   "segs": [
+    [
+     0.0,
+     0.79,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "brannoc"
+  },
+  "dlg.rook.c.0": {
+   "file": "rook/dlg.rook.c.0.ogg",
+   "hash": "2da01f8b530e",
+   "placeholder": true,
+   "read": 11.77,
+   "sec": 12.15,
+   "segs": [
+    [
+     0.0,
+     11.773,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.cb_burned_roost.0": {
+   "file": "rook/dlg.rook.cb_burned_roost.0.ogg",
+   "hash": "8758bed3bd8e",
+   "placeholder": true,
+   "read": 7.42,
+   "sec": 7.8,
+   "segs": [
+    [
+     0.0,
+     7.419,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.cb_freed_teamsters.0": {
+   "file": "rook/dlg.rook.cb_freed_teamsters.0.ogg",
+   "hash": "5a6a25481b33",
+   "placeholder": true,
+   "read": 9.97,
+   "sec": 10.35,
+   "segs": [
+    [
+     0.0,
+     9.973,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.cb_nemesis_slain.0": {
+   "file": "rook/dlg.rook.cb_nemesis_slain.0.ogg",
+   "hash": "1c31b8fcd66c",
+   "placeholder": true,
+   "read": 7.23,
+   "sec": 7.61,
+   "segs": [
+    [
+     0.0,
+     7.226,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.cb_opened_vault.0": {
+   "file": "rook/dlg.rook.cb_opened_vault.0.ogg",
+   "hash": "450afc5c6c12",
+   "placeholder": true,
+   "read": 9.81,
+   "sec": 10.19,
+   "segs": [
+    [
+     0.0,
+     9.81,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.cb_shrine_lit.0": {
+   "file": "rook/dlg.rook.cb_shrine_lit.0.ogg",
+   "hash": "14f9fba3db7d",
+   "placeholder": true,
+   "read": 12.54,
+   "sec": 12.92,
+   "segs": [
+    [
+     0.0,
+     12.539,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.cb_told_brannoc.0": {
+   "file": "rook/dlg.rook.cb_told_brannoc.0.ogg",
+   "hash": "2cfcc50ab6dd",
+   "placeholder": true,
+   "read": 20.21,
+   "sec": 20.97,
+   "segs": [
+    [
+     0.0,
+     2.483,
+     0.0,
+     0.143
+    ],
+    [
+     3.243,
+     6.256,
+     0.147,
+     0.362
+    ],
+    [
+     6.636,
+     20.591,
+     0.366,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.clerk.0": {
+   "file": "rook/dlg.rook.clerk.0.ogg",
+   "hash": "dd4777a109f7",
+   "placeholder": true,
+   "read": 19.09,
+   "sec": 19.47,
+   "segs": [
+    [
+     0.0,
+     19.092,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.first.0": {
+   "file": "rook/dlg.rook.first.0.ogg",
+   "hash": "ab138606fcd5",
+   "placeholder": true,
+   "read": 15.77,
+   "sec": 16.15,
+   "segs": [
+    [
+     0.0,
+     15.771,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.first.1": {
+   "file": "rook/dlg.rook.first.1.ogg",
+   "hash": "72f8af6d9303",
+   "placeholder": true,
+   "read": 8.78,
+   "sec": 9.16,
+   "segs": [
+    [
+     0.0,
+     8.781,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.firstlamp.0": {
+   "file": "rook/dlg.rook.firstlamp.0.ogg",
+   "hash": "9f825941b981",
+   "placeholder": true,
+   "read": 23.51,
+   "sec": 23.89,
+   "segs": [
+    [
+     0.0,
+     23.51,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.ford.0": {
+   "file": "rook/dlg.rook.ford.0.ogg",
+   "hash": "ca49ad246f2f",
+   "placeholder": true,
+   "read": 21.13,
+   "sec": 21.51,
+   "segs": [
+    [
+     0.0,
+     21.13,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.ford2.0": {
+   "file": "rook/dlg.rook.ford2.0.ogg",
+   "hash": "cdaca17da245",
+   "placeholder": true,
+   "read": 6.75,
+   "sec": 7.13,
+   "segs": [
+    [
+     0.0,
+     6.755,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.hub.0": {
+   "file": "rook/dlg.rook.hub.0.ogg",
+   "hash": "c70369651abe",
+   "placeholder": true,
+   "read": 4.01,
+   "sec": 4.39,
+   "segs": [
+    [
+     0.0,
+     4.005,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.hub.1": {
+   "file": "rook/dlg.rook.hub.1.ogg",
+   "hash": "64317d3b36f0",
+   "placeholder": true,
+   "read": 5.43,
+   "sec": 5.81,
+   "segs": [
+    [
+     0.0,
+     5.427,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.hub.2": {
+   "file": "rook/dlg.rook.hub.2.ogg",
+   "hash": "f950621b8c2d",
+   "placeholder": true,
+   "read": 2.21,
+   "sec": 2.59,
+   "segs": [
+    [
+     0.0,
+     2.212,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.lamp.0": {
+   "file": "rook/dlg.rook.lamp.0.ogg",
+   "hash": "0d0953135dd4",
+   "placeholder": true,
+   "read": 15.49,
+   "sec": 15.87,
+   "segs": [
+    [
+     0.0,
+     15.486,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.rumours.0": {
+   "file": "rook/dlg.rook.rumours.0.ogg",
+   "hash": "af40ea665b43",
+   "placeholder": true,
+   "read": 16.33,
+   "sec": 16.71,
+   "segs": [
+    [
+     0.0,
+     16.333,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.rumours.1": {
+   "file": "rook/dlg.rook.rumours.1.ogg",
+   "hash": "da6b8ad9eac8",
+   "placeholder": true,
+   "read": 11.6,
+   "sec": 11.98,
+   "segs": [
+    [
+     0.0,
+     11.598,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.rumours.2": {
+   "file": "rook/dlg.rook.rumours.2.ogg",
+   "hash": "a18fd86ae808",
+   "placeholder": true,
+   "read": 11.6,
+   "sec": 11.98,
+   "segs": [
+    [
+     0.0,
+     11.598,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.rumours.3": {
+   "file": "rook/dlg.rook.rumours.3.ogg",
+   "hash": "c6b04e0665f4",
+   "placeholder": true,
+   "read": 16.74,
+   "sec": 17.12,
+   "segs": [
+    [
+     0.0,
+     16.737,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.rumours.4": {
+   "file": "rook/dlg.rook.rumours.4.ogg",
+   "hash": "de2ecc34be82",
+   "placeholder": true,
+   "read": 17.71,
+   "sec": 18.09,
+   "segs": [
+    [
+     0.0,
+     17.705,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.rumours.5": {
+   "file": "rook/dlg.rook.rumours.5.ogg",
+   "hash": "75107d8ef7b6",
+   "placeholder": true,
+   "read": 17.83,
+   "sec": 18.21,
+   "segs": [
+    [
+     0.0,
+     17.833,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.rumours.6": {
+   "file": "rook/dlg.rook.rumours.6.ogg",
+   "hash": "08931872159a",
+   "placeholder": true,
+   "read": 16.42,
+   "sec": 16.8,
+   "segs": [
+    [
+     0.0,
+     16.417,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.runs.0": {
+   "file": "rook/dlg.rook.runs.0.ogg",
+   "hash": "248b7b127f5d",
+   "placeholder": true,
+   "read": 13.56,
+   "sec": 13.94,
+   "segs": [
+    [
+     0.0,
+     13.56,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.say_calling.0": {
+   "file": "rook/dlg.rook.say_calling.0.ogg",
+   "hash": "4350c00c3c5f",
+   "placeholder": true,
+   "read": 5.2,
+   "sec": 5.58,
+   "segs": [
+    [
+     0.0,
+     5.201,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.say_calling.1": {
+   "file": "rook/dlg.rook.say_calling.1.ogg",
+   "hash": "d21ec2b012cf",
+   "placeholder": true,
+   "read": 5.3,
+   "sec": 5.68,
+   "segs": [
+    [
+     0.0,
+     5.299,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.say_calling.2": {
+   "file": "rook/dlg.rook.say_calling.2.ogg",
+   "hash": "9ff7fa65bc14",
+   "placeholder": true,
+   "read": 6.3,
+   "sec": 6.68,
+   "segs": [
+    [
+     0.0,
+     6.304,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.say_calling.3": {
+   "file": "rook/dlg.rook.say_calling.3.ogg",
+   "hash": "c2dd69edf1b8",
+   "placeholder": true,
+   "read": 8.16,
+   "sec": 8.54,
+   "segs": [
+    [
+     0.0,
+     8.156,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.say_calling.4": {
+   "file": "rook/dlg.rook.say_calling.4.ogg",
+   "hash": "c2dd69edf1b8",
+   "placeholder": true,
+   "read": 7.59,
+   "sec": 7.97,
+   "segs": [
+    [
+     0.0,
+     7.593,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.say_woman.0": {
+   "file": "rook/dlg.rook.say_woman.0.ogg",
+   "hash": "9dc1b66b7ad4",
+   "placeholder": true,
+   "read": 12.34,
+   "sec": 12.72,
+   "segs": [
+    [
+     0.0,
+     12.336,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.t_rook.0": {
+   "file": "rook/dlg.rook.t_rook.0.ogg",
+   "hash": "20fdbe03033c",
+   "placeholder": true,
+   "read": 14.82,
+   "sec": 15.2,
+   "segs": [
+    [
+     0.0,
+     14.815,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.town.0": {
+   "file": "rook/dlg.rook.town.0.ogg",
+   "hash": "5388cad4478f",
+   "placeholder": true,
+   "read": 14.63,
+   "sec": 15.01,
+   "segs": [
+    [
+     0.0,
+     14.629,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.valley.0": {
+   "file": "rook/dlg.rook.valley.0.ogg",
+   "hash": "006ee63d998c",
+   "placeholder": true,
+   "read": 15.01,
+   "sec": 15.39,
+   "segs": [
+    [
+     0.0,
+     15.012,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "dlg.rook.wanted.0": {
+   "file": "rook/dlg.rook.wanted.0.ogg",
+   "hash": "837676bbf56f",
+   "placeholder": true,
+   "read": 7.08,
+   "sec": 7.46,
+   "segs": [
+    [
+     0.0,
+     7.082,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "rook"
+  },
+  "say.005625eee2b8": {
+   "file": "narrator/say.005625eee2b8.ogg",
+   "hash": "005625eee2b8",
+   "placeholder": true,
+   "read": 6.66,
+   "sec": 6.66,
+   "segs": [
+    [
+     0.0,
+     6.664,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.060466d9cefd": {
+   "file": "narrator/say.060466d9cefd.ogg",
+   "hash": "060466d9cefd",
+   "placeholder": true,
+   "read": 15.52,
+   "sec": 15.52,
+   "segs": [
+    [
+     0.0,
+     15.523,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.0622cbb5851c": {
+   "file": "narrator/say.0622cbb5851c.ogg",
+   "hash": "0622cbb5851c",
+   "placeholder": true,
+   "read": 8.43,
+   "sec": 8.43,
+   "segs": [
+    [
+     0.0,
+     8.429,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.0663505a2971": {
+   "file": "narrator/say.0663505a2971.ogg",
+   "hash": "0663505a2971",
+   "placeholder": true,
+   "read": 12.79,
+   "sec": 12.79,
+   "segs": [
+    [
+     0.0,
+     12.794,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.0b5e75f9dfa0": {
+   "file": "narrator/say.0b5e75f9dfa0.ogg",
+   "hash": "0b5e75f9dfa0",
+   "placeholder": true,
+   "read": 6.6,
+   "sec": 6.6,
+   "segs": [
+    [
+     0.0,
+     6.598,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.1096c4f7e3e0": {
+   "file": "narrator/say.1096c4f7e3e0.ogg",
+   "hash": "1096c4f7e3e0",
+   "placeholder": true,
+   "read": 3.8,
+   "sec": 3.8,
+   "segs": [
+    [
+     0.0,
+     3.796,
      0.0,
      1.0
     ]
@@ -60,6 +1885,230 @@
    ],
    "voice": "narrator"
   },
+  "say.1a1877c48374": {
+   "file": "jory/say.1a1877c48374.ogg",
+   "hash": "1a1877c48374",
+   "placeholder": true,
+   "read": 4.22,
+   "sec": 4.6,
+   "segs": [
+    [
+     0.0,
+     4.215,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "jory"
+  },
+  "say.1a95cdeef839": {
+   "file": "narrator/say.1a95cdeef839.ogg",
+   "hash": "1a95cdeef839",
+   "placeholder": true,
+   "read": 9.64,
+   "sec": 9.64,
+   "segs": [
+    [
+     0.0,
+     9.636,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.1e2fc7986134": {
+   "file": "narrator/say.1e2fc7986134.ogg",
+   "hash": "1e2fc7986134",
+   "placeholder": true,
+   "read": 11.72,
+   "sec": 11.72,
+   "segs": [
+    [
+     0.0,
+     11.721,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.20b15596c09c": {
+   "file": "narrator/say.20b15596c09c.ogg",
+   "hash": "20b15596c09c",
+   "placeholder": true,
+   "read": 23.55,
+   "sec": 23.55,
+   "segs": [
+    [
+     0.0,
+     23.545,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.20dc615919d1": {
+   "file": "narrator/say.20dc615919d1.ogg",
+   "hash": "20dc615919d1",
+   "placeholder": true,
+   "read": 7.72,
+   "sec": 7.72,
+   "segs": [
+    [
+     0.0,
+     7.725,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.2133e8a51219": {
+   "file": "narrator/say.2133e8a51219.ogg",
+   "hash": "2133e8a51219",
+   "placeholder": true,
+   "read": 7.76,
+   "sec": 7.76,
+   "segs": [
+    [
+     0.0,
+     7.755,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.24c69afd4e5e": {
+   "file": "narrator/say.24c69afd4e5e.ogg",
+   "hash": "24c69afd4e5e",
+   "placeholder": true,
+   "read": 2.65,
+   "sec": 2.65,
+   "segs": [
+    [
+     0.0,
+     2.649,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.26621b48a47e": {
+   "file": "narrator/say.26621b48a47e.ogg",
+   "hash": "26621b48a47e",
+   "placeholder": true,
+   "read": 11.76,
+   "sec": 11.76,
+   "segs": [
+    [
+     0.0,
+     11.756,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.2b72fa1dd85e": {
+   "file": "narrator/say.2b72fa1dd85e.ogg",
+   "hash": "2b72fa1dd85e",
+   "placeholder": true,
+   "read": 15.52,
+   "sec": 15.52,
+   "segs": [
+    [
+     0.0,
+     15.521,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.2d8b284f0b0e": {
+   "file": "narrator/say.2d8b284f0b0e.ogg",
+   "hash": "2d8b284f0b0e",
+   "placeholder": true,
+   "read": 6.75,
+   "sec": 6.75,
+   "segs": [
+    [
+     0.0,
+     6.753,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.33579e176a7e": {
+   "file": "narrator/say.33579e176a7e.ogg",
+   "hash": "33579e176a7e",
+   "placeholder": true,
+   "read": 8.19,
+   "sec": 8.19,
+   "segs": [
+    [
+     0.0,
+     8.185,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.384c340b6b6d": {
+   "file": "narrator/say.384c340b6b6d.ogg",
+   "hash": "384c340b6b6d",
+   "placeholder": true,
+   "read": 11.16,
+   "sec": 11.16,
+   "segs": [
+    [
+     0.0,
+     11.161,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.3869640818fe": {
+   "file": "narrator/say.3869640818fe.ogg",
+   "hash": "3869640818fe",
+   "placeholder": true,
+   "read": 7.5,
+   "sec": 7.5,
+   "segs": [
+    [
+     0.0,
+     7.5,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.3bf0d0b0d0da": {
+   "file": "kerchief_woman/say.3bf0d0b0d0da.ogg",
+   "hash": "3bf0d0b0d0da",
+   "placeholder": true,
+   "read": 1.36,
+   "sec": 1.54,
+   "segs": [
+    [
+     0.0,
+     1.358,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "kerchief_woman"
+  },
   "say.3dcd3f3caa00": {
    "file": "narrator/say.3dcd3f3caa00.ogg",
    "hash": "3dcd3f3caa00",
@@ -75,6 +2124,86 @@
    ],
    "voice": "narrator"
   },
+  "say.3eba0841cd10": {
+   "file": "narrator/say.3eba0841cd10.ogg",
+   "hash": "3eba0841cd10",
+   "placeholder": true,
+   "read": 7.74,
+   "sec": 7.74,
+   "segs": [
+    [
+     0.0,
+     7.741,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.3ff82d4e2ac7": {
+   "file": "narrator/say.3ff82d4e2ac7.ogg",
+   "hash": "3ff82d4e2ac7",
+   "placeholder": true,
+   "read": 7.77,
+   "sec": 7.77,
+   "segs": [
+    [
+     0.0,
+     7.765,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.48cdd82e6c0b": {
+   "file": "narrator/say.48cdd82e6c0b.ogg",
+   "hash": "48cdd82e6c0b",
+   "placeholder": true,
+   "read": 8.89,
+   "sec": 8.89,
+   "segs": [
+    [
+     0.0,
+     8.892,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.4acad56ca838": {
+   "file": "narrator/say.4acad56ca838.ogg",
+   "hash": "4acad56ca838",
+   "placeholder": true,
+   "read": 8.0,
+   "sec": 8.0,
+   "segs": [
+    [
+     0.0,
+     8.001,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.4c984565e1f9": {
+   "file": "bones/say.4c984565e1f9.ogg",
+   "hash": "4c984565e1f9",
+   "placeholder": true,
+   "read": 4.67,
+   "sec": 4.67,
+   "segs": [
+    [
+     0.0,
+     4.667,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "bones"
+  },
   "say.4d8a46e7502e": {
    "file": "narrator/say.4d8a46e7502e.ogg",
    "hash": "4d8a46e7502e",
@@ -84,6 +2213,390 @@
     [
      0.0,
      7.245,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.52d0f1dfa274": {
+   "file": "narrator/say.52d0f1dfa274.ogg",
+   "hash": "52d0f1dfa274",
+   "placeholder": true,
+   "read": 6.65,
+   "sec": 6.65,
+   "segs": [
+    [
+     0.0,
+     6.652,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.546ec60933f6": {
+   "file": "narrator/say.546ec60933f6.ogg",
+   "hash": "546ec60933f6",
+   "placeholder": true,
+   "read": 25.04,
+   "sec": 25.04,
+   "segs": [
+    [
+     0.0,
+     25.043,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.66cdbe61b828": {
+   "file": "narrator/say.66cdbe61b828.ogg",
+   "hash": "66cdbe61b828",
+   "placeholder": true,
+   "read": 13.31,
+   "sec": 13.31,
+   "segs": [
+    [
+     0.0,
+     13.305,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.6947705bd0e4": {
+   "file": "narrator/say.6947705bd0e4.ogg",
+   "hash": "6947705bd0e4",
+   "placeholder": true,
+   "read": 9.46,
+   "sec": 9.46,
+   "segs": [
+    [
+     0.0,
+     9.462,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.6e1fab16785e": {
+   "file": "narrator/say.6e1fab16785e.ogg",
+   "hash": "6e1fab16785e",
+   "placeholder": true,
+   "read": 12.71,
+   "sec": 12.71,
+   "segs": [
+    [
+     0.0,
+     12.713,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.6ea507a14576": {
+   "file": "narrator/say.6ea507a14576.ogg",
+   "hash": "6ea507a14576",
+   "placeholder": true,
+   "read": 3.3,
+   "sec": 3.3,
+   "segs": [
+    [
+     0.0,
+     3.299,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.7197a1b189a3": {
+   "file": "narrator/say.7197a1b189a3.ogg",
+   "hash": "7197a1b189a3",
+   "placeholder": true,
+   "read": 6.13,
+   "sec": 6.13,
+   "segs": [
+    [
+     0.0,
+     6.131,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.75abd0854536": {
+   "file": "narrator/say.75abd0854536.ogg",
+   "hash": "75abd0854536",
+   "placeholder": true,
+   "read": 3.7,
+   "sec": 3.7,
+   "segs": [
+    [
+     0.0,
+     3.698,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.769a1c759f88": {
+   "file": "narrator/say.769a1c759f88.ogg",
+   "hash": "769a1c759f88",
+   "placeholder": true,
+   "read": 4.37,
+   "sec": 4.37,
+   "segs": [
+    [
+     0.0,
+     4.372,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.77eb67f9e183": {
+   "file": "narrator/say.77eb67f9e183.ogg",
+   "hash": "77eb67f9e183",
+   "placeholder": true,
+   "read": 6.22,
+   "sec": 6.22,
+   "segs": [
+    [
+     0.0,
+     6.223,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.82b1e8294244": {
+   "file": "narrator/say.82b1e8294244.ogg",
+   "hash": "82b1e8294244",
+   "placeholder": true,
+   "read": 5.71,
+   "sec": 5.71,
+   "segs": [
+    [
+     0.0,
+     5.71,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.84f6c2c74004": {
+   "file": "narrator/say.84f6c2c74004.ogg",
+   "hash": "84f6c2c74004",
+   "placeholder": true,
+   "read": 14.25,
+   "sec": 14.25,
+   "segs": [
+    [
+     0.0,
+     14.245,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.8591ecfe4019": {
+   "file": "narrator/say.8591ecfe4019.ogg",
+   "hash": "8591ecfe4019",
+   "placeholder": true,
+   "read": 10.7,
+   "sec": 10.7,
+   "segs": [
+    [
+     0.0,
+     10.703,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.8b004f74544d": {
+   "file": "narrator/say.8b004f74544d.ogg",
+   "hash": "8b004f74544d",
+   "placeholder": true,
+   "read": 8.53,
+   "sec": 8.53,
+   "segs": [
+    [
+     0.0,
+     8.533,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.8c1f7c369819": {
+   "file": "narrator/say.8c1f7c369819.ogg",
+   "hash": "8c1f7c369819",
+   "placeholder": true,
+   "read": 10.4,
+   "sec": 10.4,
+   "segs": [
+    [
+     0.0,
+     10.403,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.8c74ea2b0476": {
+   "file": "narrator/say.8c74ea2b0476.ogg",
+   "hash": "8c74ea2b0476",
+   "placeholder": true,
+   "read": 24.53,
+   "sec": 24.53,
+   "segs": [
+    [
+     0.0,
+     24.532,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.8e845892b699": {
+   "file": "narrator/say.8e845892b699.ogg",
+   "hash": "8e845892b699",
+   "placeholder": true,
+   "read": 11.95,
+   "sec": 11.95,
+   "segs": [
+    [
+     0.0,
+     11.947,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.9757e1dab88e": {
+   "file": "narrator/say.9757e1dab88e.ogg",
+   "hash": "9757e1dab88e",
+   "placeholder": true,
+   "read": 9.72,
+   "sec": 9.72,
+   "segs": [
+    [
+     0.0,
+     9.718,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.a4755c96100b": {
+   "file": "narrator/say.a4755c96100b.ogg",
+   "hash": "a4755c96100b",
+   "placeholder": true,
+   "read": 16.54,
+   "sec": 16.54,
+   "segs": [
+    [
+     0.0,
+     16.544,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.a49e30d2ba1e": {
+   "file": "narrator/say.a49e30d2ba1e.ogg",
+   "hash": "a49e30d2ba1e",
+   "placeholder": true,
+   "read": 7.0,
+   "sec": 7.0,
+   "segs": [
+    [
+     0.0,
+     6.999,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.a5b99f61e011": {
+   "file": "narrator/say.a5b99f61e011.ogg",
+   "hash": "a5b99f61e011",
+   "placeholder": true,
+   "read": 15.6,
+   "sec": 15.6,
+   "segs": [
+    [
+     0.0,
+     15.599,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.ac8270282f9f": {
+   "file": "narrator/say.ac8270282f9f.ogg",
+   "hash": "ac8270282f9f",
+   "placeholder": true,
+   "read": 4.34,
+   "sec": 4.34,
+   "segs": [
+    [
+     0.0,
+     4.342,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.b40ac14379d8": {
+   "file": "narrator/say.b40ac14379d8.ogg",
+   "hash": "b40ac14379d8",
+   "placeholder": true,
+   "read": 10.15,
+   "sec": 10.15,
+   "segs": [
+    [
+     0.0,
+     10.147,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.b76e3053dc5f": {
+   "file": "narrator/say.b76e3053dc5f.ogg",
+   "hash": "b76e3053dc5f",
+   "placeholder": true,
+   "read": 16.13,
+   "sec": 16.13,
+   "segs": [
+    [
+     0.0,
+     16.126,
      0.0,
      1.0
     ]
@@ -105,6 +2618,54 @@
    ],
    "voice": "watchman"
   },
+  "say.c4d495431666": {
+   "file": "narrator/say.c4d495431666.ogg",
+   "hash": "c4d495431666",
+   "placeholder": true,
+   "read": 3.73,
+   "sec": 3.73,
+   "segs": [
+    [
+     0.0,
+     3.735,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.cc4a3505429e": {
+   "file": "narrator/say.cc4a3505429e.ogg",
+   "hash": "cc4a3505429e",
+   "placeholder": true,
+   "read": 3.81,
+   "sec": 3.81,
+   "segs": [
+    [
+     0.0,
+     3.805,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.cfa493798ba7": {
+   "file": "narrator/say.cfa493798ba7.ogg",
+   "hash": "cfa493798ba7",
+   "placeholder": true,
+   "read": 7.05,
+   "sec": 7.05,
+   "segs": [
+    [
+     0.0,
+     7.053,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
   "say.dabd6c78b40d": {
    "file": "narrator/say.dabd6c78b40d.ogg",
    "hash": "dabd6c78b40d",
@@ -114,6 +2675,134 @@
     [
      0.0,
      40.823,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.e08ae8c1e46c": {
+   "file": "narrator/say.e08ae8c1e46c.ogg",
+   "hash": "e08ae8c1e46c",
+   "placeholder": true,
+   "read": 7.15,
+   "sec": 7.15,
+   "segs": [
+    [
+     0.0,
+     7.149,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.e6c4fb3a8998": {
+   "file": "narrator/say.e6c4fb3a8998.ogg",
+   "hash": "e6c4fb3a8998",
+   "placeholder": true,
+   "read": 12.2,
+   "sec": 12.2,
+   "segs": [
+    [
+     0.0,
+     12.202,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.f1bc8c3f22ed": {
+   "file": "narrator/say.f1bc8c3f22ed.ogg",
+   "hash": "f1bc8c3f22ed",
+   "placeholder": true,
+   "read": 10.69,
+   "sec": 10.69,
+   "segs": [
+    [
+     0.0,
+     10.691,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.f1f67faea5fb": {
+   "file": "narrator/say.f1f67faea5fb.ogg",
+   "hash": "f1f67faea5fb",
+   "placeholder": true,
+   "read": 7.55,
+   "sec": 7.55,
+   "segs": [
+    [
+     0.0,
+     7.547,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.f45eec417fcc": {
+   "file": "narrator/say.f45eec417fcc.ogg",
+   "hash": "f45eec417fcc",
+   "placeholder": true,
+   "read": 10.58,
+   "sec": 10.58,
+   "segs": [
+    [
+     0.0,
+     10.577,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.f67dd9f6e97c": {
+   "file": "narrator/say.f67dd9f6e97c.ogg",
+   "hash": "f67dd9f6e97c",
+   "placeholder": true,
+   "read": 7.22,
+   "sec": 7.22,
+   "segs": [
+    [
+     0.0,
+     7.22,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.fccd00002739": {
+   "file": "narrator/say.fccd00002739.ogg",
+   "hash": "fccd00002739",
+   "placeholder": true,
+   "read": 5.62,
+   "sec": 5.62,
+   "segs": [
+    [
+     0.0,
+     5.619,
+     0.0,
+     1.0
+    ]
+   ],
+   "voice": "narrator"
+  },
+  "say.ff981a5b72be": {
+   "file": "narrator/say.ff981a5b72be.ogg",
+   "hash": "ff981a5b72be",
+   "placeholder": true,
+   "read": 11.26,
+   "sec": 11.26,
+   "segs": [
+    [
+     0.0,
+     11.262,
      0.0,
      1.0
     ]

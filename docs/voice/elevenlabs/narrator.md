@@ -1,6 +1,6 @@
 # The narrator: ElevenLabs packet
 
-Voice id in the game: `narrator`. 269 takes to record (27,374 characters; about 82,122 credits at three tries a line). Status: **final** (the story lead, 2026-10-03): record it.
+Voice id in the game: `narrator`. 269 takes to record (27,374 characters; about 82,122 credits at three tries a line). Status: **on hold**: the owner has asked whether Vonnra should be the narrator (the voice that calls the survivor to town in the prologue), given her twist; the story lead is deciding. Do not record any of it yet.
 
 ## Who they are
 
