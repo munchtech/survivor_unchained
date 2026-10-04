@@ -441,9 +441,11 @@ public class QuestTests
         Assert.DoesNotContain("[explicit scene", p.Text);
         Assert.True(s.World.Fact("maeca.lover").Truthy);
         Assert.Contains(s.Ch.Conditions, c => c.Id == ConditionId.Warmed);
+        // No setting shows more: the moment itself fades for everyone.
         s.World.Facts["settings.intimacy"] = "full";
         p = Talk(Convo("maeca"), s.C, "big enough for two", "take her hand");
-        Assert.StartsWith("[explicit scene", p!.Text);
+        Assert.Equal("blind", p!.Node.Id);
+        Assert.DoesNotContain("[explicit", p.Text);
     }
 
     [Fact]

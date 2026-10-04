@@ -66,9 +66,9 @@ has the same shape:
    on nights that are wrong for them (§1.5, §2.5, §3.5), and the scene treats
    that as a kindness, not a failure.
 3. **The moment**: the cut-away, which is sensual and close and ends before
-   the act itself. Beside it sits the `[explicit scene: ...]` slot behind
-   `settings.intimacy == "full"`, and in the scene files a beat sheet for
-   the owner's writer.
+   the act itself. It is the whole of the moment, for everyone: no explicit
+   slot goes into the game (superseded 4 October; see `README.md`). The
+   scene files' beat sheets stay as notes.
 4. **The aftermath**, written in full: lying awake, what is said in the
    dark, the morning. **The arc moves in the aftermath.** Facts are set
    there, and confidences are given there.
