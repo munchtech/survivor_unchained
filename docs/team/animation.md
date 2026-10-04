@@ -41,7 +41,9 @@ Branch `worktree-agent-a1e3002b800ee55ac`. Agent a1e3002b800ee55ac has handed of
 ## Next
 
 1. Corpse variety for the experience director: die, die2 and die3 per crowd rig, the risen and the wolves first. They'll wire the pick by seed.
-2. The male hero's library: "him/", `hero.res`, masculine carriage. hero.glb is pushed on `worktree-agent-ae2de192cce8298ca@6df994d`.
+2. The male hero's library: "him/", `hero.res`, masculine carriage.
+   - hero.glb is on `worktree-agent-ae2de192cce8298ca@6df994d`, and its skeleton is fixed.
+   - The lead is now ab82cbe99e2937ddd. Once his clips land, they wire `People.Hero` to HisClips and drop their NeckPitch patch.
 3. The cinematics' hand-keyed clips, then their Kimodo clips.
 4. Combat's kneel_shoot and slam once Kimodo has run.
 5. Polish: chain_strike's crouch on landing, and a heavier flinch over runs.

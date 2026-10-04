@@ -83,8 +83,10 @@ f802ed3, a9fa480, b2a69f6, 3053106, eeadae6 and 809c358.
    - Wolves: `Vat.Moves` in `Beasts.cs`.
    - Their offer is to wire the pick by seed in CrowdView and LayOut themselves.
    - Judge: in a 30-body frame, no two neighbours share a pose. Bump `Vat.Version`.
-2. **The male hero's library** (ae2de192cce8298ca):
+2. **The male hero's library** (male hero lead ab82cbe99e2937ddd, who took over from ae2de192cce8298ca):
    - His body is `godot/art/people/hero.glb` on `worktree-agent-ae2de192cce8298ca@6df994d`: 65 UAL bones, a T-pose, pelvis at 1.118, 1.98 m tall.
+   - His skeleton is fixed: their head rebuild moves no bone, and they will say if one does.
+   - When his first clips land, send them the HisClips entry point. They will wire `People.Hero` to it and drop their 22-degree NeckPitch patch.
    - Dump his skeleton: `anim_skeleton.gd -- tools/anim/data/hero_skeleton.json res://art/people/hero.glb`.
    - Make `build.py --body hero` produce `hero.res` + `hero_clips.json`, prefix "him/", with a `HisClips` like HerClips.
    - Give him masculine numbers: a wider stance, no contrapposto or hip sway, heavier weight. Re-solve and re-judge the four arts on him.
@@ -150,7 +152,7 @@ f802ed3, a9fa480, b2a69f6, 3053106, eeadae6 and 809c358.
 - Cinematics: af7a79bc783cca7bc (`docs/team/cinematics.md`, `godot/data/cinematics/c01.json`).
 - Combat: the successor of ac4ec5bbd2763a0df (`docs/handoff/combat.md`).
 - Experience director: ad1f5623590e09883.
-- Male hero: ae2de192cce8298ca (`docs/team/hero_male.md`).
+- Male hero: ab82cbe99e2937ddd (`docs/team/hero_male.md`), who took over from ae2de192cce8298ca.
 - Performance: a9586a5171413db0b (HerPose's cached bone indices; keep them).
 
 ## 9. Read first
