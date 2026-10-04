@@ -4,7 +4,7 @@
   "script": "docs/cinematics/shoot/c04.md",
   "conversation": "cin_first_light",
   "zone": "waystation",
-  "draft": "Animatic draft from the written script (part B, the Waystation): cameras unsurveyed, townsfolk and wiring to come.",
+  "draft": "Previs pass 1: surveyed in the Waystation at dawn; the zone's own Rook and Watch are framed where they stand. Townsfolk who stop and turn, Rook's look to the tower, and the lamp's smoke are to come.",
   "bars": {"in": 0, "out": 0.8},
   "skip": {"from": 1.5, "hold": 0.8},
   "world": {"rate": 0, "zoneHeld": true},
@@ -13,17 +13,27 @@
     "square": [0.0, 7.0, 3.1416],
     "g1": [-4.6, 34.6, 0.0],
     "rook": [-11.3, 11.0, 1.5708],
-    "tower": [33.0, -8.0]
+    "tower": [33.0, -8.0],
+    "window": [30.9, 7.9, -6.6],
+    "rook2": [-10.3, 12.2, 2.04]
   },
   "cast": {
-    "her": {"kind": "survivor", "mark": "gate"}
+    "her": {"kind": "survivor", "mark": "gate"},
+    "rook": {"kind": "npc", "def": "rook", "mark": "rook2"}
   },
   "shots": [
     {
-      "id": "B1", "type": "ELS", "dur": 7.0, "fit": ["cin_first_light.baking"], "tail": 1.5,
+      "id": "B1",
+      "type": "ELS",
+      "dur": 7.0,
+      "fit": ["cin_first_light.baking"],
+      "tail": 1.5,
       "note": "Crane down from 5 m to 1.8 m just inside the south gate, looking north up the road: roofs, a dozen chimneys smoking straight up, the square, the well; right, the toll tower with the sun on it and in its upper window, very small, a lamp still burning, pale in daylight. She walks in under the camera and on up the road. N7. Title: CHAPTER ONE / The Waystation.",
       "cam": {"pos": [0.0, 5.0, 37.0], "at": [6.0, 4.0, -8.0], "lens": 24, "move": {"pos": [0.0, 1.8, 36.0], "ease": "slow"}},
       "cues": [
+        {"do": "event", "name": "rook_cine"},
+        {"do": "anim", "actor": "rook", "clip": "Idle_FoldArms_Loop", "blend": 0},
+        {"do": "glow", "name": "towerlamp", "where": {"abs": [30.9, 7.9, -6.6]}, "color": "#ffd9a0", "size": 0.07, "energy": 2.2, "spread": 5, "halo": 0.3},
         {"do": "music", "mood": "town", "intensity": 0.4},
         {"do": "move", "to": [0.0, 26.0], "dur": 7.0, "clip": "Walk_Formal_Loop", "speed": 0.8},
         {"at": 0.8, "do": "sfx", "name": "creak", "gain": 0.6},
@@ -32,15 +42,22 @@
       ]
     },
     {
-      "id": "B2", "type": "MS", "dur": 3.5, "fit": ["cin_first_light.dawn"], "tail": 0.6,
+      "id": "B2",
+      "type": "MS",
+      "dur": 3.5,
+      "fit": ["cin_first_light.dawn"],
+      "tail": 0.6,
       "note": "Behind the west guard, his shoulder in frame: he watches her go. GD1, to the other guard, not to her, flat, a thing said every week; and watches her too long after.",
-      "cam": {"pos": [-5.4, 1.75, 33.4], "at": [0.0, 1.4, 24.0], "lens": 50},
+      "cam": {"pos": [-5.0, 2.0, 35.8], "at": [-1.0, 1.5, 26.0], "lens": 50},
       "cues": [
-        {"at": 0.4, "do": "line", "id": "cin_first_light.dawn"}
+        {"at": 0.4, "do": "line", "id": "cin_first_light.dawn"},
+        {"do": "move", "to": [0.0, 21.5], "dur": 3.5, "clip": "Walk_Formal_Loop", "speed": 0.8}
       ]
     },
     {
-      "id": "B3", "type": "MLS", "dur": 5.0,
+      "id": "B3",
+      "type": "MLS",
+      "dur": 5.0,
       "note": "Tracking behind her at her pace, over her shoulder, north: ahead of her people stop and look: the man with the ladder turns so it swings; the woman at the well holds the bucket halfway; the child runs. Nobody speaks.",
       "cam": {"pos": [0.6, 1.7, 26.0], "at": [0.0, 1.4, 10.0], "lens": 35, "move": {"pos": [0.6, 1.7, 13.0], "at": [0.0, 1.4, -2.0], "ease": "linear"}},
       "cues": [
@@ -50,27 +67,42 @@
       ]
     },
     {
-      "id": "B4", "type": "MS", "dur": 4.0,
+      "id": "B4",
+      "type": "MS",
+      "dur": 4.0,
       "note": "Beside the inn door, Rook in the foreground right, soft at first: focus pulls from her folded arms to the survivor stopping at the square's edge, looking round at the faces. Rook looks at her; then up, east, at the toll tower. (Hunter: the look holds a beat longer, and her arms tighten.)",
-      "cam": {"pos": [-12.6, 1.6, 12.6], "at": [0.0, 1.5, 7.0], "lens": 50, "focus": 1.4, "fstop": 2.8, "move": {"focus": 13.0, "start": 0.8, "end": 2.2, "ease": "inout"}},
+      "cam": {"pos": [-11.1, 1.7, 13.3], "at": [0.0, 1.4, 7.0], "lens": 35, "focus": 1.3, "fstop": 2.8, "move": {"focus": 12.5, "start": 0.8, "end": 2.2, "ease": "inout"}},
       "cues": [
-        {"at": 2.6, "do": "music", "mood": "silence"}
+        {"at": 2.6, "do": "music", "mood": "silence"},
+        {"at": 2.6, "do": "look", "actor": "rook", "where": {"abs": [30.9, 7.9, -6.6]}, "over": 0.5}
       ]
     },
     {
-      "id": "B4a", "type": "CU", "dur": 1.5,
-      "note": "From beside Rook, her eyeline, compressed: the tower's upper window, the lamp on the sill pale in the sun, goes out. A thread of smoke.",
-      "cam": {"pos": [-11.0, 1.7, 11.0], "at": [33.0, 12.0, -8.0], "lens": 200},
-      "cues": []
+      "id": "B4a",
+      "type": "CU",
+      "dur": 1.5,
+      "note": "From the square by her, compressed: the tower's upper window, the lamp on the sill pale in the sun, goes out. A thread of smoke. (Rook's own eyeline is blocked by the roofs; this is the nearest clear line.)",
+      "cam": {"pos": [4.0, 1.8, 8.0], "at": {"abs": [30.9, 7.9, -6.6]}, "lens": 135},
+      "still": 0.3,
+      "cues": [
+        {"at": 0.6, "do": "glow", "name": "towerlamp", "remove": true}
+      ]
     },
     {
-      "id": "B4b", "type": "MS", "dur": 2.0,
+      "id": "B4b",
+      "type": "MS",
+      "dur": 2.0,
       "note": "As B4: Rook looks back at the survivor, and unfolds her arms.",
-      "cam": {"pos": [-12.6, 1.6, 12.6], "at": [0.0, 1.5, 7.0], "lens": 50},
-      "cues": []
+      "cam": {"pos": [-11.1, 1.7, 13.3], "at": [0.0, 1.4, 7.0], "lens": 35, "focus": 1.3, "fstop": 2.8},
+      "cues": [
+        {"do": "look", "actor": "rook", "where": [0.0, 1.4, 7.0], "over": 0.5},
+        {"at": 0.8, "do": "anim", "actor": "rook", "clip": "Idle_Loop", "blend": 0.6}
+      ]
     },
     {
-      "id": "B5", "type": "MLS", "dur": 3.0,
+      "id": "B5",
+      "type": "MLS",
+      "dur": 3.0,
       "note": "Rise and swing into the follow camera: the square, the survivor in it, Rook at her door. Bars out; Rook's mark comes up. Control. (No zone title: the chapter's card was it.)",
       "cam": {"pos": [3.0, 1.8, 11.5], "at": [0.0, 1.2, 7.0], "lens": 35, "move": {"pos": [0.0, 9.0, 16.0], "ease": "inout", "follow": true}},
       "cues": [

@@ -422,13 +422,18 @@ public sealed class Waystation : ZoneRuntime
         SetNight(nightNow);
         Presence();
         G.SetObjectives(Objectives.Of(C));
-        G.AnnounceZone();
         if (!F("waystation.visited").Truthy)
         {
             W.Facts["waystation.visited"] = true;
+            // C04 B (docs/cinematics/shoot/c04b.md): the first arrival, at first light.
+            // Its chapter card is the place's title, so there is no other.
+            if (G.Cinematic("c04b", () => { rookByCine = false; Presence(); })) return;
+            G.AnnounceZone();
             G.After(2.5, () => G.Say("The Waystation: walls, smoke, the smell of bread. People stop to look at you. News travels fast here.", null, 5));
+            return;
         }
-        else if (!F("maps.told").Truthy && F("prologue.done").Truthy)
+        G.AnnounceZone();
+        if (!F("maps.told").Truthy && F("prologue.done").Truthy)
         {
             // Once the town knows you: someone new on the Old Road, selling maps.
             W.Facts["maps.told"] = true;
@@ -436,9 +441,18 @@ public sealed class Waystation : ZoneRuntime
         }
     }
 
+    /// <summary>C04 B plays Rook with its own: ours steps out of the picture until it hands back.</summary>
+    bool rookByCine;
+
+    public override void CineEvent(string name)
+    {
+        if (name == "rook_cine") rookByCine = true;
+    }
+
     public override void Frame(double dt)
     {
         if (B == null) return;
+        if (rookByCine && Actors.TryGetValue("rook", out var rook)) rook.Hidden = true;
         double px = B.Player.X, pz = B.Player.Z;
         foreach (var a in Actors.Values) a.Update(dt, px, pz);
         foreach (var a in guards) a.Update(dt, px, pz);

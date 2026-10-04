@@ -2,45 +2,35 @@
   "id": "_survey",
   "title": "survey",
   "conversation": "",
-  "zone": "lowford",
+  "zone": "waystation",
   "bars": {"in": 0, "out": 0},
   "skip": {"from": 0, "hold": 0.8},
   "world": {"rate": 0, "zoneHeld": true},
   "marks": {
-    "her": [2.5, -31.0, 3.1416]
+    "her": [0.0, 7.0, 3.1416]
   },
   "cast": {
-    "her": {"kind": "survivor", "mark": "her"},
-    "warden": {"kind": "boss", "glow": 0.6}
+    "her": {"kind": "survivor", "mark": "her"}
   },
   "shots": [
-    {"id": "A", "dur": 1.0, "still": 0.8, "note": "Idle_Torch",
-     "cam": {"pos": [6.0, 3.0, -21.0], "at": [6.0, 2.0, -28.0], "lens": 35},
-     "cues": [
-       {"do": "place", "actor": "warden", "where": [6.0, 0, -28.0], "heading": 0},
-       {"do": "anim", "actor": "warden", "clip": "Idle_Torch", "from": 0.5, "speed": 0, "blend": 0}
-     ]},
-    {"id": "B", "dur": 1.0, "still": 0.8, "note": "Spell_Simple_Idle",
-     "cam": {"pos": [6.0, 3.0, -21.0], "at": [6.0, 2.0, -28.0], "lens": 35},
-     "cues": [{"do": "anim", "actor": "warden", "clip": "Spell_Simple_Idle_Loop", "from": 0.5, "speed": 0, "blend": 0}]},
-    {"id": "C", "dur": 1.0, "still": 0.8, "note": "Idle_Rail_Call",
-     "cam": {"pos": [6.0, 3.0, -21.0], "at": [6.0, 2.0, -28.0], "lens": 35},
-     "cues": [{"do": "anim", "actor": "warden", "clip": "Idle_Rail_Call", "from": 1.0, "speed": 0, "blend": 0}]},
-    {"id": "D", "dur": 1.0, "still": 0.8, "note": "Interact",
-     "cam": {"pos": [6.0, 3.0, -21.0], "at": [6.0, 2.0, -28.0], "lens": 35},
-     "cues": [{"do": "anim", "actor": "warden", "clip": "Interact", "from": 1.0, "speed": 0, "blend": 0}]},
-    {"id": "E", "dur": 1.0, "still": 0.8, "note": "Idle_Lantern",
-     "cam": {"pos": [6.0, 3.0, -21.0], "at": [6.0, 2.0, -28.0], "lens": 35},
-     "cues": [{"do": "anim", "actor": "warden", "clip": "Idle_Lantern", "from": 1.0, "speed": 0, "blend": 0}]},
-    {"id": "F", "dur": 1.0, "still": 0.8, "note": "Push",
-     "cam": {"pos": [6.0, 3.0, -21.0], "at": [6.0, 2.0, -28.0], "lens": 35},
-     "cues": [{"do": "anim", "actor": "warden", "clip": "Push", "from": 1.0, "speed": 0, "blend": 0}]},
-    {"id": "G", "dur": 1.0, "still": 0.8, "note": "Fixing_Kneeling",
-     "cam": {"pos": [6.0, 3.0, -21.0], "at": [6.0, 2.0, -28.0], "lens": 35},
-     "cues": [{"do": "anim", "actor": "warden", "clip": "Fixing_Kneeling", "from": 1.0, "speed": 0, "blend": 0}]},
-    {"id": "H", "dur": 1.0, "still": 0.8, "note": "Swim_Idle",
-     "cam": {"pos": [6.0, 3.0, -21.0], "at": [6.0, 2.0, -28.0], "lens": 35},
-     "cues": [{"do": "anim", "actor": "warden", "clip": "Swim_Idle_Loop", "from": 1.0, "speed": 0, "blend": 0}]}
+    {"id": "A", "dur": 1.0, "still": 0.8, "note": "the toll tower from Rook's door",
+     "cam": {"pos": [-11.0, 1.7, 11.0], "at": [33.0, 10.0, -8.0], "lens": 50},
+     "cues": [{"do": "atmosphere", "preset": "dawn"}]},
+    {"id": "B", "dur": 1.0, "still": 0.8, "note": "the toll tower from the south-west, its south face",
+     "cam": {"pos": [24.0, 3.0, 10.0], "at": [33.0, 9.0, -8.0], "lens": 35},
+     "cues": []},
+    {"id": "C", "dur": 1.0, "still": 0.8, "note": "B1 crane top: inside the south gate, north",
+     "cam": {"pos": [0.0, 5.0, 37.0], "at": [12.0, 4.0, -8.0], "lens": 24},
+     "cues": []},
+    {"id": "D", "dur": 1.0, "still": 0.8, "note": "behind the west guard",
+     "cam": {"pos": [-5.2, 1.9, 36.6], "at": [-1.0, 1.4, 26.0], "lens": 50},
+     "cues": []},
+    {"id": "E", "dur": 1.0, "still": 0.8, "note": "beside the inn door, Rook right",
+     "cam": {"pos": [-13.4, 1.7, 11.8], "at": [0.0, 1.5, 10.6], "lens": 40},
+     "cues": []},
+    {"id": "F", "dur": 1.0, "still": 0.8, "note": "the tower top close",
+     "cam": {"pos": [-11.0, 1.7, 11.0], "at": [33.0, 13.0, -8.0], "lens": 135},
+     "cues": []}
   ],
   "end": {"her": "her", "camera": "follow"}
 }

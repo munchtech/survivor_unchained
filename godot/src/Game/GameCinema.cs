@@ -183,7 +183,7 @@ public partial class Game
                 var o = new OrbView(c.Color ?? "#bfe6ff", c.Size) { Name = "Cine_" + name };
                 g.scene!.AddChild(o);
                 orbs[name] = o;
-                orbLight[name] = 16 * c.Glow;
+                orbLight[name] = 6 * c.Glow;
                 ((IOrb)o).Light = orbLight[name];
                 if (c.Mark != null) Place(name, places.Resolve(MarkEl(c.Mark)), 0, false);
             }
@@ -444,7 +444,7 @@ public partial class Game
                     {
                         if (c.Has("lit")) o.Visible = c.Bool("lit", true);
                         if (!c.Has("glow")) break;
-                        double from = orbLight[c.Actor], to = 16 * c.Num("glow");
+                        double from = orbLight[c.Actor], to = 6 * c.Num("glow");
                         void Set(double l) { orbLight[c.Actor] = l; ((IOrb)o).Light = l; }
                         if (over > 0 && !skipping) tweens.Add(new Tween(t0, t0 + over, k => Set(from + (to - from) * k)));
                         else Set(to);
@@ -533,12 +533,24 @@ public partial class Game
                     break;
                 case "atmosphere":
                 {
+                    // A blend of a part of the way, "k0" to "k1" (a dawn begun in one
+                    // cinematic and finished in the next); a skip lands on k1.
                     var to = Atmospheres.ByName(c.Str("preset")!);
-                    if (over > 0 && !skipping && c.Str("from") is string fromName)
+                    double k0 = c.Num("k0"), k1 = c.Num("k1", 1);
+                    if (c.Str("from") is string fromName)
                     {
                         var from = Atmospheres.ByName(fromName);
-                        double last = -1;
-                        tweens.Add(new Tween(t0, t0 + over, k => { if (k - last > 0.02 || k >= 1) { last = k; g.SetAtmosphere(Atmospheres.Blend(from, to, k), k >= 1); } }));
+                        if (over > 0 && !skipping)
+                        {
+                            double last = -1;
+                            tweens.Add(new Tween(t0, t0 + over, k =>
+                            {
+                                if (k - last <= 0.02 && k < 1) return;
+                                last = k;
+                                g.SetAtmosphere(Atmospheres.Blend(from, to, k0 + (k1 - k0) * k), k >= 1);
+                            }));
+                        }
+                        else g.SetAtmosphere(k1 >= 1 ? to : Atmospheres.Blend(from, to, k1));
                     }
                     else g.SetAtmosphere(to);
                     break;

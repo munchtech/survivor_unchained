@@ -94,6 +94,10 @@ public class StoryLint
 
     static void ReadCode(Uses u)
     {
+        // A cinematic reads facts too: a shot or a cue "when" the survivor has one (or has not: "!fact").
+        foreach (var f in System.IO.Directory.GetFiles(System.IO.Path.Combine(SurvivorUnchained.Core.DataFiles.Dir, "cinematics"), "*.json"))
+            foreach (Match m in Regex.Matches(System.IO.File.ReadAllText(f), @"""facts""\s*:\s*\[([^\]]*)\]"))
+                foreach (var k in All(m.Groups[1].Value, @"""!?([\w.]+)""")) u.FactsRead.Add(k);
         foreach (var (file, t) in Code.Value)
         {
             // Facts: the JSON embedded in scripts, and the scripts' own reads and
