@@ -518,7 +518,7 @@ Subtitle: I am not frightened of the dark. I am merely monitoring it very closel
 
 *Where:* npcs.json keegan.said[0]
 *Played:* absorbed, then polite; doing: reading her book; pace: measured; volume: level.
-*Note:* Muttering 'Chapter four' twice, then a startled, proper 'Good morning.'
+*Note:* Muttering 'Chapter four' twice, then a startled, proper 'Good day.'
 
 ```
 [absorbed, then polite] Chapter four. Chapter four. ...Good day.

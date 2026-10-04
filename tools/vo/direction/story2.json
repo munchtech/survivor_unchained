@@ -47,7 +47,7 @@
  "bark.brannoc.said.0": {"emo": "flat, hopeful", "intent": "Nell on the road", "pace": "slow", "vol": "level", "note": "Few words; the hope hidden in the counting."},
  "bark.brannoc.said.1": {"emo": "flat", "intent": "the irons he made", "pace": "slow", "vol": "quiet", "hides": "what the irons were for", "note": "Once only. Barely voiced, to the iron, not to her: twelve irons, and a girl of twelve he made."},
  "bark.brannoc.said.2": {"emo": "gruff, closed", "intent": "keep out", "pace": "slow", "vol": "level", "note": "A door shut."},
- "bark.keegan.said.0": {"emo": "absorbed, then polite", "intent": "reading her book", "pace": "measured", "vol": "level", "note": "Muttering 'Chapter four' twice, then a startled, proper 'Good morning.'"},
+ "bark.keegan.said.0": {"emo": "absorbed, then polite", "intent": "reading her book", "pace": "measured", "vol": "level", "note": "Muttering 'Chapter four' twice, then a startled, proper 'Good day.'"},
  "folk.107": {"voices": ["folk_f1", "folk_m2"], "emo": "gossip, matter-of-fact", "intent": "a death in town", "pace": "measured", "vol": "level"},
  "folk.108": {"voices": ["folk_f2", "folk_m1"], "emo": "warning, kindly", "intent": "the lamps", "pace": "measured", "vol": "level"},
  "folk.109": {"voices": ["folk_f1", "folk_m1"], "emo": "puzzled, uneasy", "intent": "the carter nobody sees", "pace": "measured", "vol": "level", "note": "A real question to a neighbour."},

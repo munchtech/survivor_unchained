@@ -46,7 +46,7 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 *Where:* dialogue.json snib/first#0
 *Played:* panicky bluster; doing: stops you at the pump; pace: quick; volume: shout.
 *Wants:* you gone, and to look important
-*Note:* 'Oi! OI!' squeaky shouting. Self-important 'Foreman's orders!'. A pause; proud: 'Snib is the foreman.' Fussy. The self-contradiction on 'It does, actually.' deflating, then 'But quick.'
+*Note:* 'Oi! OI!' squeaky shouting. Self-important 'Foreman's orders!'. A pause; proud: 'Snib is the foreman.' Fussy. 'Snib does not know who.' then, deflating, 'Snib knows exactly who.' Then 'What do you want? Quick.'
 
 ```
 [panicky bluster, shouting] Oi! OI! Surface-meat! No surface-meat past the pump! Foreman's orders! ...Snib is the foreman. Snib. Pump is BROKEN. Somebody broke it. Snib does not know who. Snib knows exactly who. What do you want? Quick.

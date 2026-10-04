@@ -46,7 +46,7 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 *Where:* dialogue.json pell/first#0
 *Played:* smooth, smiling, insincere sympathy; doing: introduces himself; pace: measured; volume: level.
 *Wants:* your custom and your trust
-*Note:* Precise and pleased with himself. The sympathy for Coyle practised: 'Terrible. Terrible.' the second a touch too relished.
+*Note:* Precise and pleased with himself. The sympathy for Coyle practised: 'Terrible business' smooth, and the last 'Terrible.' a touch too relished.
 
 ```
 [smooth, smiling, insincere sympathy] Pell Varrow. Factor. If it can be bought, stored or sold in the Waystation, it's been through my books at least once. Terrible business, Coyle's wagons. Terrible.

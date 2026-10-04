@@ -1,5 +1,5 @@
 {
- "dlg.pell.first.0": {"emo": "smooth, smiling, insincere sympathy", "intent": "introduces himself", "pace": "measured", "vol": "level", "wants": "your custom and your trust", "note": "Precise and pleased with himself. The sympathy for Coyle practised: 'Terrible. Terrible.' the second a touch too relished."},
+ "dlg.pell.first.0": {"emo": "smooth, smiling, insincere sympathy", "intent": "introduces himself", "pace": "measured", "vol": "level", "wants": "your custom and your trust", "note": "Precise and pleased with himself. The sympathy for Coyle practised: 'Terrible business' smooth, and the last 'Terrible.' a touch too relished."},
  "dlg.pell.hub.0": {"emo": "nervous politeness", "intent": "afraid of you", "pace": "quick", "vol": "level", "note": "Narrator: the smile too quick. Over-polite, a little high; 'specifically' crisp."},
  "dlg.pell.hub.1": {"emo": "dry wit", "intent": "greets you", "pace": "measured", "vol": "level", "note": "A smile in the voice on 'simply being seen with me'."},
  "dlg.pell.caravan.0": {"emo": "smooth, faux concern, sly", "intent": "angles to buy Coyle out", "pace": "measured", "vol": "level", "note": "'one hears' distancing. Faux sorrow. 'As a friend.' silky. The last sentence a little too knowing."},

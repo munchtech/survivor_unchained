@@ -122,24 +122,24 @@ Subtitle: Hello again! The light's patient. I'm trying to be.
 ### 7. `dlg.chid.woke.0.p0.wav`
 
 *Where:* dialogue.json chid/woke#0; part 1 of 3: **chid: Up again.** / narrator: He has the kettle on already. / chid: The carter sends his regards. You'll be sore a day or two. Whatever did it has your things…
-*Played:* relieved joy, then gentle worry; doing: you woke after dying; pace: quick then slower; volume: level.
+*Played:* fond, practised; doing: you woke again; pace: measured; volume: quiet.
 *Wants:* you to rest and believe the flame saved you
-*Note:* 'Good. Good!' overflowing. Awe and a catch on 'the flame... the flame kept you'. Quieter and serious for the warning; 'They always keep something' with old knowledge he doesn't notice.
+*Note:* Not the first time: 'Up again.' easy, fond. Narrator: the kettle already on. 'The carter sends his regards.' the lie, dry and practised now, a joke he hopes you'll take. Then plain and practical for the warning.
 
 ```
-[relieved joy, then gentle worry] Up again.
+[fond, practised, quietly] Up again.
 ```
 Subtitle: Up again.
 
 ### 8. `dlg.chid.woke.0.p2.wav`
 
 *Where:* dialogue.json chid/woke#0; part 3 of 3: chid: Up again. / narrator: He has the kettle on already. / **chid: The carter sends his regards. You'll be sore a day or two. Whatever did it has your things…**
-*Played:* relieved joy, then gentle worry; doing: you woke after dying; pace: quick then slower; volume: level.
+*Played:* fond, practised; doing: you woke again; pace: measured; volume: quiet.
 *Wants:* you to rest and believe the flame saved you
-*Note:* 'Good. Good!' overflowing. Awe and a catch on 'the flame... the flame kept you'. Quieter and serious for the warning; 'They always keep something' with old knowledge he doesn't notice.
+*Note:* Not the first time: 'Up again.' easy, fond. Narrator: the kettle already on. 'The carter sends his regards.' the lie, dry and practised now, a joke he hopes you'll take. Then plain and practical for the warning.
 
 ```
-[relieved joy, then gentle worry] The carter sends his regards. You'll be sore a day or two. Whatever did it has your things.
+[fond, practised, quietly] The carter sends his regards. You'll be sore a day or two. Whatever did it has your things.
 ```
 Subtitle: The carter sends his regards. You'll be sore a day or two. Whatever did it has your things.
 
@@ -148,7 +148,7 @@ Subtitle: The carter sends his regards. You'll be sore a day or two. Whatever di
 *Where:* dialogue.json chid/woke#1; part 1 of 3: **chid: You're up. A carter brought you in.** / narrator: He isn't looking at you. / chid: ...Well. Someone did. You'll be sore a day or two, and whatever did this still has your th…
 *Played:* relieved, flustered; doing: you woke after dying; pace: measured; volume: quiet.
 *Wants:* you to rest
-*Note:* Gentle; trails off on 'and... well.' with an embarrassed little laugh. Serious and quiet for the warning.
+*Note:* Gentle. Narrator: he isn't looking at you. '...Well. Someone did.' the lie slipping, an embarrassed little laugh in it. Serious and quiet for the warning.
 
 ```
 [relieved, flustered, quietly] You're up. A carter brought you in.
@@ -160,7 +160,7 @@ Subtitle: You're up. A carter brought you in.
 *Where:* dialogue.json chid/woke#1; part 3 of 3: chid: You're up. A carter brought you in. / narrator: He isn't looking at you. / **chid: ...Well. Someone did. You'll be sore a day or two, and whatever did this still has your th…**
 *Played:* relieved, flustered; doing: you woke after dying; pace: measured; volume: quiet.
 *Wants:* you to rest
-*Note:* Gentle; trails off on 'and... well.' with an embarrassed little laugh. Serious and quiet for the warning.
+*Note:* Gentle. Narrator: he isn't looking at you. '...Well. Someone did.' the lie slipping, an embarrassed little laugh in it. Serious and quiet for the warning.
 
 ```
 [relieved, flustered, quietly] ...Well. Someone did. You'll be sore a day or two, and whatever did this still has your things.
@@ -466,7 +466,7 @@ Subtitle: It's a lovely old hand, whoever it was. Nobody makes a C like that any
 *Played:* quiet grief, held; doing: after the burial he sang at; pace: slow; volume: quiet.
 *Wants:* to look after the one who put her down
 *Hides:* he knows what the irons are for; 'somebody' is Vonnra's alto
-*Note:* Light and offhand on the singing; 'I always have' is older than he looks, and he doesn't notice saying it. Narrator plain; three seconds of silence. 'She was very light' barely voiced, one catch on 'light', no sob. 'By me.' quiet, almost asking.
+*Note:* Light and offhand on the singing; 'I always have' is older than he looks, and he doesn't notice saying it. Narrator plain; three seconds of silence. 'She was very light' barely voiced, one catch on 'light', no sob. '...Sit down a minute.' quiet, almost asking: he is the one who needs the company.
 
 ```
 [quiet grief, held, quietly] I sang it flat… I always have. [inhales] There's always somebody who has the tune.
@@ -480,10 +480,10 @@ Subtitle: I sang it flat. I always have. There's always somebody who has the tun
 *Played:* quiet grief, held; doing: after the burial he sang at; pace: slow; volume: quiet.
 *Wants:* to look after the one who put her down
 *Hides:* he knows what the irons are for; 'somebody' is Vonnra's alto
-*Note:* Light and offhand on the singing; 'I always have' is older than he looks, and he doesn't notice saying it. Narrator plain; three seconds of silence. 'She was very light' barely voiced, one catch on 'light', no sob. 'By me.' quiet, almost asking.
+*Note:* Light and offhand on the singing; 'I always have' is older than he looks, and he doesn't notice saying it. Narrator plain; three seconds of silence. 'She was very light' barely voiced, one catch on 'light', no sob. '...Sit down a minute.' quiet, almost asking: he is the one who needs the company.
 
 ```
-[quiet grief, held, quietly] She was very light. ...Sit down a minute.
+[quiet grief, held, quietly] [long pause] She was very light. [inhales] ...Sit down a minute.
 ```
 Subtitle: She was very light. ...Sit down a minute.
 
@@ -493,7 +493,7 @@ Subtitle: She was very light. ...Sit down a minute.
 *Played:* quiet grief, held; doing: they buried Nell; pace: slow; volume: quiet.
 *Wants:* to look after the one who put her down
 *Hides:* he knows what the irons are for, and he was at the ford the night she got up
-*Note:* 'Of course, iron' fond: the half-second before it holds the sting (iron is what drowned her), so don't play the irony. Narrator plain, no sorrow; then three seconds of silence. 'She was very light' barely voiced, one catch allowed on 'light', no sob. His ordinary self comes back on 'Not on the step'; under the care he is the one who needs the company, and 'By me.' is quiet, almost asking.
+*Note:* 'Of course, iron' fond: the half-second before it holds the sting (iron is what drowned her), so don't play the irony. Narrator plain, no sorrow; then three seconds of silence. 'She was very light' barely voiced, one catch allowed on 'light', no sob. '...Sit down a minute.' quiet, almost asking: under the care he is the one who needs the company.
 
 ```
 [quiet grief, held, quietly] We buried Nell behind the shrine, next to old Ashe… Brannock made the marker himself. Iron… Of course, iron.

@@ -1,5 +1,5 @@
 {
- "dlg.snib.first.0": {"emo": "panicky bluster", "intent": "stops you at the pump", "pace": "quick", "vol": "shout", "wants": "you gone, and to look important", "note": "'Oi! OI!' squeaky shouting. Self-important 'Foreman's orders!'. A pause; proud: 'Snib is the foreman.' Fussy. The self-contradiction on 'It does, actually.' deflating, then 'But quick.'"},
+ "dlg.snib.first.0": {"emo": "panicky bluster", "intent": "stops you at the pump", "pace": "quick", "vol": "shout", "wants": "you gone, and to look important", "note": "'Oi! OI!' squeaky shouting. Self-important 'Foreman's orders!'. A pause; proud: 'Snib is the foreman.' Fussy. 'Snib does not know who.' then, deflating, 'Snib knows exactly who.' Then 'What do you want? Quick.'"},
  "dlg.snib.hub.0": {"emo": "grumpy pride", "intent": "still here", "pace": "quick", "vol": "level", "note": "Two self-important statements."},
  "dlg.snib.ember.0": {"emo": "nervous babble", "intent": "tells too much", "pace": "quick", "vol": "level", "note": "'KNOW' stressed. Babbling the chain of who pays who faster and faster. A pause; panicked: 'Snib did not say any of this.'"},
  "dlg.snib.poison.0": {"emo": "defensive, fervent", "intent": "justifies the pump", "pace": "quick", "vol": "level", "note": "Dismissive. Then the Boss's fervour quoted, 'DOWN' stressed, eyes wide. Callous last line."},
@@ -37,7 +37,7 @@
  "bark.tam.day.2": {"emo": "earnest", "pace": "quick", "vol": "level"},
  "bark.jory.day.0": {"emo": "shaken", "pace": "measured", "vol": "quiet"},
  "bark.jory.day.1": {"emo": "wry, tired", "pace": "measured", "vol": "quiet"},
- "bark.jory.day.2": {"emo": "haunted", "pace": "slow", "vol": "quiet", "note": "'Was.' alone, chilling."},
+ "bark.jory.day.2": {"emo": "haunted", "pace": "slow", "vol": "quiet", "note": "'Were.' alone, chilling."},
  "cbark.345352a478c0": {"emo": "vast, commanding", "intent": "the Warden raises the drowned", "pace": "slow", "vol": "shout", "note": "A tolling command, enormous and slow. Each word a bell."},
  "cbark.a5b5efc70a27": {"emo": "vast, final", "intent": "the Warden's law", "pace": "slow", "vol": "shout", "note": "Each word a bell stroke."},
  "cbark.0f6d39685290": {"emo": "gleeful greed", "intent": "Grimtunnel steals the heart", "pace": "quick", "vol": "raised", "note": "'Oho!' cackling. Gloating; 'Nobody's!' a crow of delight."},

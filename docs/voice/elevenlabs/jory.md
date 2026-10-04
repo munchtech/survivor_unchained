@@ -195,7 +195,7 @@ Subtitle: Uncle keeps hugging me. It's a lot.
 
 *Where:* npcs.json jory.barks[2]
 *Played:* haunted; pace: slow; volume: quiet.
-*Note:* 'Was.' alone, chilling.
+*Note:* 'Were.' alone, chilling.
 
 ```
 [haunted, quietly] There were four of us. Were.

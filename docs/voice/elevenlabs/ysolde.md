@@ -51,10 +51,10 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 *Played:* brisk, dry, bookish; doing: sells her maps; pace: brisk; volume: level.
 *Wants:* a customer who'll come back
 *Hides:* she sells the names of those who come back, to feed her brother in his cage
-*Note:* Brisk Edinburgh. The joke about the other sort is dry, a cartographer's sales line, no relish. 'barrows' a touch faster, no weight: it's her brother's. The last two sentences drier and darker.
+*Note:* Brisk Edinburgh. 'Most only ever buy the one.' dry, a cartographer's sales line, no relish. 'barrows' a touch faster, no weight: it's her brother's. The last two sentences drier and darker.
 
 ```
-[brisk, dry, bookish] You've the look of someone who'll want a second map. Good. Most only ever buy the one. I'm Ee-zolda Marrow, and I draw maps of the places the road forgets: woods that eat their own paths, barrows that open after dark, ravines the Kerchiefs think are theirs. Each one sworn under an oath. Each one ruled by something that won't want you there.
+[brisk, dry, bookish] You've the look of someone who'll want a second map… Good. Most only ever buy the one. [inhales] I'm Ee-zolda Marrow, and I draw maps of the places the road forgets: woods that eat their own paths, barrows that open after dark, ravines the Kerchiefs think are theirs… Each one sworn under an oath. Each one ruled by something that won't want you there.
 ```
 Subtitle: You've the look of someone who'll want a second map. Good. Most only ever buy the one. I'm Ysolde Marrow, and I draw maps of the places the road forgets: woods that eat their own paths, barrows that open after dark, ravines the Kerchiefs think are theirs. Each one sworn under an oath. Each one ruled by something that won't want you there.
 

@@ -140,7 +140,7 @@ Subtitle: Ha! Look at the size of you. I've a dozen lads would follow you for th
 
 *Where:* dialogue.json redcowl/first#4
 *Played:* rough humour, protective threat; doing: a woman in his camp; pace: measured; volume: level.
-*Note:* Coarse joke about his lads. A hard edge on 'where I've told them'. Then 'Talk.'
+*Note:* Coarse joke at his sentries' expense. 'Which is it?' a hard edge under the amusement: he means to find out.
 
 ```
 [rough humour, protective threat] Red-cowl. You're standing in my camp, which means my sentries are drunk or you're interesting. Which is it?
@@ -272,7 +272,7 @@ Subtitle: —PACK IT UP! PACK IT UP! Leave the heavy stuff!
 
 *Where:* dialogue.json redcowl/cages#0
 *Played:* hard logic, then hurt; doing: why the cages; pace: measured; volume: level.
-*Note:* A hard man's arithmetic. 'worth-nothings' bitter, 'lass'. A pause; then defensive, almost wounded: 'I feed them before I feed my own.'
+*Note:* A hard man's arithmetic. 'worth-nothings' bitter, 'lass'. A pause; then defensive, almost wounded: '...Ask them if they're hungry.'
 
 ```
 [hard logic, then hurt] Because a man in a cage is worth something to somebody, and a man in a ditch is worth nothing to anybody. I've buried enough worth-nothings for one life, lass. ...Ask them if they're hungry.
