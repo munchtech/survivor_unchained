@@ -76,6 +76,23 @@ public static class Report
             if (toBoss.Count > 0) sb.AppendLine($"\nFell to the boss: {toBoss.Count}, with a median {Pct(Median(toBoss.Select(r => r.BossLeft)))} of it left.");
             sb.AppendLine();
         }
+        // Each people's boss: how its fights went, and whether its marked blows were read.
+        var met = runs.Where(r => r.BossPhase >= 0).ToList();
+        if (met.Count > 0)
+        {
+            sb.AppendLine("### The bosses\n");
+            Head(sb, "people", "fights", "won", "fell to it", "TTK (s)", "TTK p10-p90 (s)", "grew wild", "blows landed / marked", "Break (of health)", "staggers", "phase reached");
+            foreach (var g in met.GroupBy(r => r.Spec.People).OrderBy(g => g.Key))
+            {
+                var l = g.ToList();
+                var ttk = l.Where(r => r.Won && r.BossTtk != null).Select(r => r.BossTtk!.Value).OrderBy(x => x).ToList();
+                string spread = ttk.Count == 0 ? "–" : $"{F(ttk[(int)(ttk.Count * 0.1)], "0")}-{F(ttk[Math.Min(ttk.Count - 1, (int)(ttk.Count * 0.9))], "0")}";
+                Row(sb, g.Key, l.Count, Pct(Rate(l, r => r.Won)), Pct(Rate(l, r => r.BossLeft >= 0)), F(Median(ttk), "0"), spread, Pct(Rate(l, r => r.BossSoft)),
+                    $"{l.Sum(r => r.BossLanded)} / {l.Sum(r => r.BossMarked)}", Pct(Median(l.Select(r => r.BossBreak))), F(Median(l.Select(r => (double)r.BossStaggers)), "0"),
+                    F(Median(l.Select(r => (double)r.BossPhase + 1)), "0"));
+            }
+            sb.AppendLine();
+        }
         if (runs.Select(r => r.Spec.Policy).Distinct().Count() > 1 && runs.Select(r => r.Spec.Calling).Distinct().Count() > 1)
             Summary(sb, "calling · policy", runs.GroupBy(r => $"{r.Spec.Calling} · {r.Spec.Policy}"));
 

@@ -121,15 +121,14 @@ public sealed class PackMother : ArenaBoss
         ChannelProgress = 0;
         howlHp = e.Hp;
         A.Bark(e.X, e.Z, "She sits back and howls at the moon.", "The Pack-Mother");
-        double laneT = 0.4;
+        double nextLane = 0.4;
         Hold(8, () => { Channel = null; }, t =>
         {
             ChannelProgress = t / 8;
             if (howlHp - E.Hp >= E.MaxHp * 0.06) { BreakChannel(E, "Hurt enough to stop"); return false; }
-            laneT -= 1 / 60.0;
-            if (laneT <= 0)
+            if (t >= nextLane)
             {
-                laneT = 1.6;
+                nextLane += 1.6;
                 var p = B.Player;
                 double a = A.R() * Math.PI * 2;
                 double x0 = p.X + Math.Cos(a) * 12, z0 = p.Z + Math.Sin(a) * 12;
@@ -176,6 +175,8 @@ public sealed class BarrowLord : ArenaBoss
     double layT, layHeld;
     bool laying;
     int risings;
+    /// <summary>He is down at one and must be stood over (the bots read it as a player does).</summary>
+    public bool Laying => laying;
 
     // Undead resist frost and shadow; on him they do not, so every school can lay him down in time.
     public override double HealthMul(int tier) => 9 + 1.5 * tier;
@@ -361,6 +362,8 @@ public sealed class Grimtunnel : ArenaBoss
     readonly double[] lampHp = new double[3];
     int flaring = -1;
     double flareT;
+    /// <summary>The lamp flaring now (-1: none): hit him while it does to break it.</summary>
+    public int Flaring => flaring;
     readonly System.Collections.Generic.List<(double X, double Z, int Id, int Mark)> pits = new();
     bool goingDown;
     double downT;
@@ -589,6 +592,8 @@ public sealed class RedHand : ArenaBoss
     bool levy, everything;
     Enemy? thief;
     WeaponInst? taken;
+    /// <summary>The footpad running with the survivor's weapon, while he runs.</summary>
+    public Enemy? Thief => thief;
     readonly System.Collections.Generic.List<int> posts = new();
     double postsT;
 

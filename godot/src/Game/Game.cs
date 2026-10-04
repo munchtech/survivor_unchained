@@ -371,19 +371,18 @@ public partial class Game : Node, IZoneHost
 
     void HookBattle(Battle b)
     {
+        // The zone's hooks as they are when called (its boss's are set only when the boss comes).
         var zh = zone!.Hooks;
-        b.Hooks = new BattleHooks
+        var h = BattleHooks.Following(zh);
+        h.OnKill = (e, byPlayer) => { Journey.Killed(e, byPlayer); zh.OnKill?.Invoke(e, byPlayer); };
+        h.OnPickup = p => (zh.OnPickup == null || zh.OnPickup(p)) && Journey.PickedUp(p);
+        h.OnPlayerDeath = killer =>
         {
-            OnLoot = zh.OnLoot, BossTick = zh.BossTick, OnHitProp = zh.OnHitProp,
-            OnKill = (e, byPlayer) => { Journey.Killed(e, byPlayer); zh.OnKill?.Invoke(e, byPlayer); },
-            OnPickup = p => (zh.OnPickup == null || zh.OnPickup(p)) && Journey.PickedUp(p),
-            OnPlayerDeath = killer =>
-            {
-                if (zh.OnPlayerDeath?.Invoke(killer) == true) return true;
-                OnDeath(killer?.Named?.Title ?? killer?.Def.Name ?? "the dark");
-                return false;
-            },
+            if (zh.OnPlayerDeath?.Invoke(killer) == true) return true;
+            OnDeath(killer?.Named?.Title ?? killer?.Def.Name ?? "the dark");
+            return false;
         };
+        b.Hooks = h;
     }
 
     /// <summary>Travel: fade, build the next place, arrive.</summary>
@@ -455,7 +454,12 @@ public partial class Game : Node, IZoneHost
         hud.Say(text, who, take != null ? Math.Max(seconds, take.Sec + 0.8) : seconds);
     }
     public void Toast(Toast t) { hud.Toast(t); sound.Toast(t); }
-    public void Announce(Announcement a) { hud.Announce(a); sound.Announce(a, bossUp); }
+    public void Announce(Announcement a)
+    {
+        hud.Announce(a);
+        sound.Announce(a, bossUp);
+        if (Shots.On("boss")) Shots.Want("say_" + a.Title, 0.6);
+    }
     public void After(double seconds, Action fn) => later.Add((seconds, fn));
     public bool GiveItem(string def, int qty = 1, int? rarity = null) => Journey.GiveItem(def, qty, rarity);
     public void ReturnItem(ItemInstance it) => Journey.ReturnItem(it);
@@ -544,6 +548,7 @@ public partial class Game : Node, IZoneHost
         zone?.Events(evs);
         foreach (var e in evs)
         {
+            if (Shots.On("boss")) BossShot(e);
             switch (e)
             {
                 case Ev.Announce an:
@@ -567,6 +572,18 @@ public partial class Game : Node, IZoneHost
                     focusT = f.Duration;
                     break;
             }
+        }
+    }
+
+    /// <summary>--on boss: a frame of each boss move as it is marked, its Break, its
+    /// stagger, its arrival and what is announced (Shots.Want).</summary>
+    static void BossShot(CombatEvent e)
+    {
+        switch (e)
+        {
+            case Ev.Telegraph t when t.Boss && t.Label is { Length: > 0 } l: Shots.Want(l, Math.Min(0.7, t.Duration * 0.6)); break;
+            case Ev.Break: Shots.Want("break", 0.3); break;
+            case Ev.Focus: Shots.Want("focus", 1.0); break;
         }
     }
 

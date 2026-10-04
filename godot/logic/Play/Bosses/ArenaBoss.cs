@@ -228,6 +228,8 @@ public abstract class ArenaBoss
             e.Anim = EnemyAnim.Windup;
         }
         bool go = move.Each?.Invoke(move.T) ?? true;
+        // The move ended itself (a channel broken from inside it): nothing is left to finish.
+        if (move == null) return true;
         if (!go || move.T >= move.Dur)
         {
             var m = move;
