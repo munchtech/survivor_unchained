@@ -596,6 +596,8 @@ public partial class Game : Node, IZoneHost
             case Ev.Telegraph t when t.Boss && t.Label is { Length: > 0 } l: Shots.Want(l, Math.Min(0.7, t.Duration * 0.6)); break;
             case Ev.Break: Shots.Want("break", 0.3); break;
             case Ev.Focus: Shots.Want("focus", 1.0); break;
+            // The fall, as a run of frames through its slow motion and after.
+            case Ev.Victory: for (int i = 0; i < 12; i++) Shots.Want("fall", 0.05 + i * 0.25); break;
         }
     }
 
@@ -629,6 +631,8 @@ public partial class Game : Node, IZoneHost
             autosaveT += dt;
             if (autosaveT > 90 && Overlay == null && !inTransit) { autosaveT = 0; Save("auto"); }
             zone.Frame(dt);
+            // An arena's camera breathes with its night (unless a conversation has it, or --cam fixed it).
+            if (zone is ArenaRun ar && hudMode == null && camSaved == null && !Args.Has("cam")) cam.TargetDistance = (float)ar.CameraDistance;
             RunLater(dt);
         }
         else if (auto != null && Mode != "play") AutoFront();

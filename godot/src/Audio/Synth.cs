@@ -74,6 +74,11 @@ public partial class Synth : Node
     static readonly float[] Send = { 0.2f, 0.55f, 0.3f, 0.08f };
     public float Master = 0.85f;
     float duck = 1, duckNow = 1, masterNow;
+    /// <summary>The fight's own noise held down under a big moment (the boss's fall, an
+    /// evolution, a chest): its depth, until when (seconds on the mixer's clock), and now.</summary>
+    volatile float sfxDuck = 1;
+    double sfxDuckUntil;
+    float sfxDuckNow = 1;
     readonly Dictionary<string, Queue<ulong>> gates = new();
     public static readonly float[] White = NoiseBuffer(false), Brown = NoiseBuffer(true);
     static readonly Random rng = new();
@@ -171,6 +176,14 @@ public partial class Synth : Node
     /// <summary>Lower the music under a conversation or a menu.</summary>
     public void DuckMusic(float k) => duck = k;
 
+    /// <summary>Hold the fight's sounds down under a big moment for a while, so the moment is
+    /// heard (docs/feel/SUGGESTIONS.md S-03): about a tenth of a second down, half a second back.</summary>
+    public void DuckSfx(float k, double seconds)
+    {
+        sfxDuckUntil = Now + seconds;
+        sfxDuck = k;
+    }
+
     float voiceMusic = 1, voiceAmb = 1, voiceMusicNow = 1, voiceAmbNow = 1;
     /// <summary>Lower the music and the world's noise while someone speaks
     /// (VoiceOver): quickly down when a line starts, slowly back after.</summary>
@@ -234,6 +247,8 @@ public partial class Synth : Node
         {
             double t = (clock + i) / Rate;
             duckNow += (duck - duckNow) * 0.00006f;
+            float sfxTo = t < sfxDuckUntil ? sfxDuck : 1;
+            sfxDuckNow += (sfxTo - sfxDuckNow) * (sfxTo < sfxDuckNow ? 0.00022f : 0.00005f);
             masterNow += (Master - masterNow) * 0.0002f;
             // About 0.12 s down, 0.6 s back up.
             voiceMusicNow += (voiceMusic - voiceMusicNow) * (voiceMusic < voiceMusicNow ? 0.00019f : 0.000038f);
@@ -245,7 +260,7 @@ public partial class Synth : Node
                 if (t < voice.Start) continue;
                 if (t > voice.End) { voices.RemoveAt(v); continue; }
                 float s = voice.Sample(t, dt);
-                float bus = Level[(int)voice.Bus] * (voice.Bus == Bus.Music ? duckNow * voiceMusicNow : voice.Bus == Bus.Amb ? voiceAmbNow : 1);
+                float bus = Level[(int)voice.Bus] * (voice.Bus == Bus.Music ? duckNow * voiceMusicNow : voice.Bus == Bus.Amb ? voiceAmbNow : voice.Bus == Bus.Sfx ? sfxDuckNow : 1);
                 float l = s * voice.L * bus, r = s * voice.R * bus;
                 dl += l; dr += r;
                 float send = Send[(int)voice.Bus] + voice.Verb;

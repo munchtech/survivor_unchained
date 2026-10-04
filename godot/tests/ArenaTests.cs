@@ -229,6 +229,42 @@ public class ArenaTests
         Assert.True(deeper);
     }
 
+    /// <summary>The boss's fall is the night's peak: the view is told (it slows the world and
+    /// turns to it) and the people break and run. A story night then gives up its spoils and
+    /// ends on its beat; a table night goes on into the long night.</summary>
+    [Fact]
+    public void The_fall_is_the_peak_and_a_story_night_ends_on_its_beat()
+    {
+        foreach (bool story in new[] { true, false })
+        {
+            var s = Make(Spec(story: story));
+            s.B.Player.Iframes = 1e9;
+            s.B.Time = 1800;
+            Run(s, 1);
+            bool fell = false;
+            var boss = Boss(s);
+            for (int i = 0; i < 400 && !s.Zone.Won; i++)
+            {
+                if (boss.Alive && boss.State != EnemyState.Dying) s.B.HitEnemy(boss, boss.MaxHp * 0.25, School.Physical, [Tag.Physical]);
+                for (double t = 0; t < 0.5; t += 1 / 60.0)
+                {
+                    s.Zone.Step(1 / 60.0);
+                    s.Zone.Frame(1 / 60.0);
+                    s.B.Tick(1 / 60.0, 0, 0);
+                    foreach (var ev in s.B.Events.Drain()) fell |= ev is Ev.Victory;
+                    s.Host.Pass(1 / 60.0);
+                }
+            }
+            Assert.True(s.Zone.Won);
+            Assert.True(fell, "the fall was not told");
+            var p = s.B.Player;
+            Assert.Contains(s.B.Enemies.Living(), e => !e.Elite && e.Status.Has(StatusKind.Fear) && (e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z) < 32 * 32);
+            Run(s, 8);
+            Assert.Equal(story, s.Zone.Over);
+            if (story) Assert.True(s.Host.ArenaResult!.Won);
+        }
+    }
+
     /// <summary>At about six minutes the people ask their own question, with a tell first:
     /// for the Risen, the ground marked in a ring round the survivor and the dead coming up
     /// out of every mark at once, and a captain with a chest leading them.</summary>
@@ -299,7 +335,8 @@ public class ArenaTests
         int Ranks() => s.B.Weapons.Sum(w => w.Rank) + s.B.Boons.Values.Sum();
         int ranks = Ranks();
         s.B.Time = 240;
-        Run(s, 60 * 5);
+        // From the eighth minute a champion's turn comes in every three (ArenaPacing).
+        for (int i = 0; i < 18 && !s.Barks.Any(b => b.StartsWith("A champion of")); i++) Run(s, 30);
         Assert.Contains(s.Barks, b => b.StartsWith("A champion of"));
         // Every champion still standing falls, and every chest is walked to.
         foreach (var e in s.B.Enemies.Living().Where(e => e.Elite).ToList()) s.B.HitEnemy(e, 1e9, School.Physical, [Tag.Physical]);
@@ -438,12 +475,28 @@ public class ArenaTests
         Assert.Equal(level, s.J.Ch.Level);
     }
 
+    /// <summary>A night opens close on the survivor, so she is seen, and the camera stands back
+    /// as the horde grows, so the fight is; the boss is framed from further still.</summary>
+    [Fact]
+    public void The_camera_opens_close_and_stands_back_as_the_horde_grows()
+    {
+        var s = Make(Spec());
+        s.B.Player.Iframes = 1e9;
+        Run(s, 10);
+        Assert.InRange(s.Zone.CameraDistance, 22, 24);
+        s.B.Time = 22 * 60;
+        Run(s, 40);
+        Assert.True(Hostile(s.B) > 90, $"{Hostile(s.B)} alive");
+        Assert.InRange(s.Zone.CameraDistance, 24.5, 31);
+    }
+
     [Fact]
     public void Nothing_carries_the_survivor_out_of_the_arena()
     {
         var s = Make(Spec());
         Assert.NotNull(s.B.InBounds);
         Assert.False(s.B.InBounds!(140, 0));
-        Assert.Equal((64.0, 31.0), s.Zone.Camera);
+        // It opens close on the survivor; the camera pulls back as the horde grows (CameraDistance).
+        Assert.Equal((64.0, 22.0), s.Zone.Camera);
     }
 }

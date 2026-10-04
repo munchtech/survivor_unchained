@@ -16,7 +16,9 @@ namespace SurvivorUnchained.View;
 public partial class CrowdView : Node3D
 {
     const double RiseTime = 1.1;
-    const double CorpseLie = 16, CorpseSink = 3;
+    // The dead lie longer where there are few of them (the story's fights) and are taken back
+    // sooner in a horde, where the living must stand out (docs/EXPERIENCE_AUDIT.md, finding 3).
+    const double CorpseLie = 18, CorpseLieCrowded = 8, CorpseSink = 2.5;
     const int CorpseMax = 160;
 
     /// <summary>A creature's own walk clock and heading, kept between frames.</summary>
@@ -197,16 +199,20 @@ public partial class CrowdView : Node3D
 
     void DrawCorpses(Func<double, double, double> heightAt)
     {
-        corpses.RemoveAll(c => time - c.Born >= CorpseLie + CorpseSink);
+        double lie = CorpseLieCrowded + (CorpseLie - CorpseLieCrowded) * Math.Clamp(1 - (corpses.Count - 30) / 70.0, 0, 1);
+        corpses.RemoveAll(c => time - c.Born >= lie + CorpseSink);
         foreach (var c in corpses)
         {
             var crowd = Crowd(c.Visual);
             double age = time - c.Born;
-            float sink = Smooth(age, CorpseLie, CorpseLie + CorpseSink);
+            float sink = Smooth(age, lie, lie + CorpseSink);
             var at = new Vector3(c.X, (float)heightAt(c.X, c.Z) - sink * 1.1f * c.Scale, c.Z);
             var basis = new Godot.Basis(Vector3.Up, Mathf.Pi / 2 - c.Facing) * Godot.Basis.FromScale(Vector3.One * c.Scale);
-            // Dead flesh greys a little as it lies.
-            var tint = c.Tint * (1 - (float)Math.Min(0.25, age * 0.02));
+            // The dead go dark and a little cold as soon as they are down, so the living read
+            // at a glance against them (the risen are pale: a body the same grey as the walking
+            // ones made the horde twice its size). Then they darken on as they lie.
+            float k = 1 - 0.5f * Smooth(age, 0.3, 1.3) - 0.15f * Smooth(age, 1.3, lie);
+            var tint = c.Tint * new Color(k * 0.88f, k * 0.92f, k, 1);
             tint.A = 1;
             crowd.Push(new Transform3D(basis, at), "die", crowd.Asset.Duration("die") * 0.999, 0, sink > 0.6f ? (sink - 0.6f) * 2.5f : 0, 0, 0, tint, c.Glow);
         }

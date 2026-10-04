@@ -89,6 +89,9 @@ public static class Ev
     public sealed class Shake : CombatEvent { public double Amount; }
     /// <summary>The camera turned to something for a moment (a boss's arrival, its fall).</summary>
     public sealed class Focus : CombatEvent { public double X, Z, Duration; }
+    /// <summary>What ruled the night has fallen where it stood: the night's peak (the view
+    /// slows the world, turns to it and lets it land; the people break and run).</summary>
+    public sealed class Victory : CombatEvent { public double X, Z; }
     /// <summary>A boss's phase broken: the damage past its mark, shown as one number.</summary>
     public sealed class Break : CombatEvent { public double X, Z, Amount; public int Enemy; }
     public sealed class Sound : CombatEvent { public string Id = ""; public double? X, Z, Volume; }

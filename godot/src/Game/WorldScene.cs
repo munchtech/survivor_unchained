@@ -43,7 +43,10 @@ public partial class WorldScene : Node3D, IZoneLook
     /// <summary>Heavy blows hold the fight still for a moment (off with the screen's shake).</summary>
     public bool Hitstop = true;
     public double Time { get; private set; }
-    double acc, hitstop, hitstopCd, fightTime, damageFlash, slowmo;
+    double acc, hitstop, hitstopCd, fightTime, damageFlash, slowmo, fall;
+    /// <summary>The night's peak in real seconds: the world slows hard as what ruled it falls
+    /// and eases back to full speed (docs/EXPERIENCE_AUDIT.md, finding 2).</summary>
+    const double Fall = 2.2;
     List<CombatEvent> frameEvents = new();
     public const double Step = 1.0 / 60;
 
@@ -94,7 +97,10 @@ public partial class WorldScene : Node3D, IZoneLook
         if (held) hitstop -= dt;
         // A perfect dodge: the world slows round you for a breath.
         if (slowmo > 0) slowmo -= dt;
-        double fightDt = held ? dt * 0.08 : slowmo > 0 ? dt * 0.3 : dt;
+        if (fall > 0) fall -= dt;
+        // The fall eases from a tenth of the speed back to all of it, the last of it quickest.
+        double falling = fall > 0 ? 0.1 + 0.9 * Math.Pow(1 - fall / Fall, 2.2) : 1;
+        double fightDt = held ? dt * 0.08 : slowmo > 0 ? dt * Math.Min(0.3, falling) : dt * falling;
         fightTime += fightDt;
         if (b != null && !SimPaused)
         {
@@ -139,7 +145,11 @@ public partial class WorldScene : Node3D, IZoneLook
     /// quick succession, so a crowd going down does not stutter.</summary>
     void Weigh(List<CombatEvent> evs, Battle b)
     {
-        foreach (var e in evs) if (e is Ev.PerfectDodge && Hitstop) slowmo = 0.38;
+        foreach (var e in evs)
+        {
+            if (e is Ev.PerfectDodge && Hitstop) slowmo = 0.38;
+            if (e is Ev.Victory && Hitstop) fall = Fall;
+        }
         if (hitstopCd > 0 || !Hitstop) return;
         double s = 0;
         foreach (var e in evs)
