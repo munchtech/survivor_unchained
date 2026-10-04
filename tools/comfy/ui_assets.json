@@ -1001,7 +1001,8 @@
    "aspect": "21:9 (Ultrawide)",
    "prompt": "An empty horizontal nameplate of dark oxblood-stained iron hung from two lamp-iron brackets at its top corners, a gold wire border, a single small ember stone at the top centre, the face plain.",
    "where": "Verdicts and names cut in metal: the arena's end (THE ARENA IS WON, 470x100), the speaker's name in a conversation, who the survivor is becoming in creation. The words are drawn by the code: keep the face calm",
-   "made_by": "not yet made"
+   "made_by": "not yet made",
+   "tile": true
   },
   {
    "id": "pillar",
@@ -1116,7 +1117,8 @@
    "aspect": "3:4 (Portrait Standard)",
    "prompt": "An empty upright card of blackened forged iron hung from two lamp-iron brackets, a crest panel across its head with a round seat at its middle, a binders' square coin nailed at each foot corner, the face plain and dark, symmetrical.",
    "where": "Every crested choice (OrnateBox Card): the arts' facet cards (287x280), creation's calling cards (470x92), the Last Lamp's choices (300x330), a Self pillar until frames/pillar.png exists. Neutral iron: the code tints the crest band (top 70-120 px) and a hairline in the rarity or school, and glows it when lifted",
-   "made_by": "not yet made"
+   "made_by": "not yet made",
+   "tile": true
   },
   {
    "id": "ribbon",
@@ -1142,6 +1144,27 @@
    "aspect": "21:9 (Ultrawide)",
    "prompt": "A thin horizontal gold wire rule running from a small cut ember stone at its left end out to a fine point at its right end, front view, on pure black.",
    "where": "The title plaque's rules (Plaque) either side of every page's name: drawn to the right of the title as painted and mirrored to its left, the stone toward the words; stretched to 90-180 px long, so the wire must stretch cleanly",
+   "made_by": "not yet made"
+  },
+  {
+   "id": "crest_row",
+   "file": "frames/crest_row.png",
+   "size": [
+    600,
+    184
+   ],
+   "margins": [
+    40,
+    36,
+    40,
+    28
+   ],
+   "kind": "frame",
+   "tile": true,
+   "out": 8,
+   "aspect": "21:9 (Ultrawide)",
+   "prompt": "An empty wide low plate of blackened forged iron, a short crest strip along its top edge, lamp-iron brackets at its top corners, the face plain and dark, seamless left to right.",
+   "where": "A crested card too low for crest_card's slice: creation's calling cards (470x92) and any row-shaped choice. Neutral iron, the code tints its crest strip and hairline",
    "made_by": "not yet made"
   }
  ],

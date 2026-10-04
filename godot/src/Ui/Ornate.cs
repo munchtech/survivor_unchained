@@ -131,7 +131,10 @@ public partial class OrnateBox : StyleBox
     /// </summary>
     bool Painted(Rid ci, Rect2 r)
     {
-        if (!UiArt.Frames.TryGetValue(ArtId(Look), out var sl) || UiArt.Tex(sl.File) is not { } tex) return false;
+        if (!UiArt.Frames.TryGetValue(ArtId(Look), out var sl)) return false;
+        // A card lower than its slice's top and foot (a row of a list) wears the row's slice.
+        if (Look == Kind.Card && r.Size.Y < sl.T + sl.B - 2 * sl.Oy && UiArt.Frames.TryGetValue("crest_row", out var row)) sl = row;
+        if (UiArt.Tex(sl.File) is not { } tex) return false;
         var at = r.GrowIndividual(sl.Out, sl.Oy, sl.Out, sl.Oy);
         var mode = sl.Tile ? RenderingServer.NinePatchAxisMode.TileFit : RenderingServer.NinePatchAxisMode.Stretch;
         RenderingServer.CanvasItemAddNinePatch(ci, at, new Rect2(Vector2.Zero, tex.GetSize()), tex.GetRid(), new Vector2(sl.L, sl.T), new Vector2(sl.R, sl.B), mode, mode, true, Colors.White);
@@ -144,6 +147,8 @@ public partial class OrnateBox : StyleBox
             var inner = r.Grow(-Math.Max(4, Math.Min(sl.L - sl.Out, sl.T - sl.Oy) * 0.6f));
             Outline(ci, inner.Position.X, inner.Position.Y, inner.End.X, inner.End.Y, Accent with { A = Accent.A * 0.5f }, 1);
         }
+        // The banner's ember stone at the top's middle: one stone, so the code's, not the nine-slice's.
+        if (Look == Kind.Banner) Stone(ci, new Vector2(r.GetCenter().X, r.Position.Y + 1), 6, Style.Ember);
         return true;
     }
 
