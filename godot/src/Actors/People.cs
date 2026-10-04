@@ -427,7 +427,7 @@ public static class People
             var key = src.ResourceName;
             if (!outfitTable.ContainsKey(key)) continue;
             var entry = outfitTable[key].AsGodotDictionary();
-            int kind = (string)entry["kind"] switch { "leather" => 0, "metal" => 1, "cloth" => 2, "gloss" => 3, _ => -1 };
+            int kind = (string)entry["kind"] switch { "leather" => 0, "metal" => 1, "cloth" => 2, "gloss" => 3, "twill" => 4, _ => -1 };
             if (kind < 0) continue;
             var m = new ShaderMaterial { Shader = outfitShader };
             m.SetShaderParameter("kind", kind);
