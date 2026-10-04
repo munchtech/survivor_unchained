@@ -140,7 +140,8 @@ public partial class Portraits : Node3D
         at++;
         if (at >= jobs.Count) { GetTree().Quit(); return; }
         var job = jobs[at];
-        string fit = job.ContainsKey("outfit") ? (string)job["outfit"] : "reaver";
+        // (one of her callings' own outfits, always: another name would build her bare)
+        string fit = job.ContainsKey("outfit") && (string)job["outfit"] is "warden" or "reaver" or "arcanist" or "ranger" ? (string)job["outfit"] : "ranger";
         bool fresh = her == null || fit != outfit;
         if (fresh) Dress(fit);
         Put(job);

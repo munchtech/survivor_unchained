@@ -33,9 +33,10 @@ OUT_SIZE = 512      # written
 # Grey hair: the cameo multiplies it by the dye at twice its value (ui_cameo.gdshader).
 GREY = '#808080'
 # How each kind is framed (Portraits.cs views) and turned (degrees; her right cheek toward us).
-# Her shoulders bare in the face's pictures (the stalker's outfit shows none of itself so high, and
-# her head is up in its idle); the hair's go lower, so she wears the warden's mail there.
-OUTFIT = 'stalker'
+# She is always dressed in one of her callings' own outfits (People.HerOutfit's names: warden,
+# reaver, arcanist, ranger; any other name builds her bare). The face's pictures: the ranger's,
+# which leaves her neck clear and holds her head up in its idle. The hair's go lower: the warden's.
+OUTFIT = 'ranger'
 HAIR_OUTFIT = 'warden'
 VIEW = {'hair': ('head', -40), 'face': ('face', -14), 'paint': ('face', -10), 'look': ('head', -22)}
 # A cut that hangs behind her is seen nearer her profile.
