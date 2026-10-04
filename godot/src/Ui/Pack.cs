@@ -316,16 +316,35 @@ public partial class InventoryScreen : Overlay
         if (sel == it.Uid) sel = null;
         Sound.Sfx.Shatter();
         // The HUD's toasts are hidden under the pack: what it came to is said where it was read.
-        broke = (Inventory.Name(it), string.Join(" and ", q.Gives.Select(kv => Items.Several(kv.Key, kv.Value))), q.Gives.Keys.First(), Time.GetTicksMsec());
+        broke = ($"Broken down: {Inventory.Name(it)}", $"{Style.Cap1(string.Join(" and ", q.Gives.Select(kv => Items.Several(kv.Key, kv.Value))))}, into the pouch for the forge.",
+            Items.Get(q.Gives.Keys.First()).Icon, Time.GetTicksMsec());
         // Only the pack changed: the figure is not dressed again (that rebuilds her, and she blinks out).
         G.Journey.Work(it.Uid, q, G.Battle);
         Refresh();
     }
 
-    /// <summary>What was just broken down, and what it came to (said in the reading place).</summary>
-    (string Name, string Gives, string Icon, ulong At)? broke;
+    /// <summary>What was just done to a thing and what it came to (broken down, steeped), said in the
+    /// reading place: the HUD's toasts are under the pack.</summary>
+    (string Title, string Sub, string Icon, ulong At)? broke;
 
-    void Select(string uid) { sel = sel == uid ? null : uid; leaving = null; breaking = null; Refresh(); }
+    string? steeping;
+
+    /// <summary>Steeping, by the survivor's own hand (docs/CRAFTING_DESIGN.md 9): the odds said, asked
+    /// once, done the second time; what it came to said after. Never in an arena.</summary>
+    void Steep(ItemInstance it)
+    {
+        var q = Crafting.Steep(G.Journey.Craft, it);
+        if (!q.Ok || G.Journey.InArena) { Sound.Sfx.Deny(); return; }
+        if (steeping != it.Uid) { steeping = it.Uid; breaking = null; leaving = null; Sound.Sfx.Hover(); ShowInspect(it); return; }
+        steeping = null;
+        Sound.Sfx.Pour();
+        if (!G.Journey.Work(it.Uid, q, G.Battle)) return;
+        broke = ($"Steeped: {Inventory.Name(it)}", G.Journey.CraftSaid?.After ?? "Green-black veins. It is set for good.", Items.Get(it.Def).Icon, Time.GetTicksMsec());
+        sel = null;
+        Refresh();
+    }
+
+    void Select(string uid) { sel = sel == uid ? null : uid; leaving = null; breaking = null; steeping = null; Refresh(); }
 
     void Primary(ItemInstance it)
     {
@@ -371,11 +390,11 @@ public partial class InventoryScreen : Overlay
         // Shown for a few seconds, however often the page is built again meanwhile.
         if (it == null && broke is { } b && Time.GetTicksMsec() - b.At < 3000)
         {
-            var words = Style.V(1, Style.Label($"Broken down: {b.Name}", Style.UiBold, Style.Body, Style.Ink, true),
-                Style.Label($"{Style.Cap1(b.Gives)}, into the pouch for the forge.", Style.TextItalic, Style.Small, Style.InkDim, true));
+            var words = Style.V(1, Style.Label(b.Title, Style.UiBold, Style.Body, Style.Ink, true),
+                Style.Label(b.Sub, Style.TextItalic, Style.Small, Style.InkDim, true));
             words.CustomMinimumSize = new Vector2(380, 0);
             words.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-            var row = Style.H(Style.Gap3, ItemPhotos.Icon(Items.Get(b.Icon).Icon, 48, Style.InkDim), words);
+            var row = Style.H(Style.Gap3, ItemPhotos.Icon(b.Icon, 48, Style.InkDim), words);
             var note = Style.Panel(Style.Slab(14), row);
             note.CustomMinimumSize = new Vector2(480, 0);
             inspect.AddChild(note);
@@ -409,11 +428,19 @@ public partial class InventoryScreen : Overlay
                 if (breaking == it.Uid) bb.AddThemeColorOverride("font_color", Style.Bad);
                 acts.AddChild(bb);
             }
+            // A jar of the Dig's slurry carried: the one gamble, by the survivor's own hand.
+            if (!G.Journey.InArena && Inventory.Count(Ch, Crafting.Rules.Slurry.Jar) > 0 && Crafting.Steep(G.Journey.Craft, it) is { Ok: true })
+            {
+                var sb = Style.Button(steeping == it.Uid ? "Steep it, for good" : "Steep in slurry", () => Steep(it), false, true);
+                if (steeping == it.Uid) sb.AddThemeColorOverride("font_color", Style.Bad);
+                acts.AddChild(sb);
+            }
         }
         // Gear in the pack reads beside what it would replace: the ARPGs' side by side.
         if (loc.InPack && Items.SlotFor(def) != null)
         {
             inspect.AddChild(ItemViews.Card(it, Ch, true, acts, 480));
+            SteepOdds(it);
             var worn = ItemViews.Against(it, Ch);
             inspect.AddChild(Style.Label("WORN NOW", Style.UiHeavy, Style.Badge, Style.InkDim));
             if (worn != null) inspect.AddChild(ItemViews.Card(worn, Ch, false, null, 480, true));
@@ -426,6 +453,20 @@ public partial class InventoryScreen : Overlay
             return;
         }
         inspect.AddChild(ItemViews.Card(it, Ch, loc.InPack, acts, 480));
+        SteepOdds(it);
+    }
+
+    /// <summary>Asked to steep: everything it could come to, said before the jar is opened (design 9).</summary>
+    void SteepOdds(ItemInstance it)
+    {
+        if (steeping != it.Uid) return;
+        var lines = Style.V(2, Style.Label("Opened, the jar does one of these, and the piece is set for good after:", Style.UiBold, Style.Small, Style.Ink, true));
+        foreach (var (o, p) in Crafting.Odds())
+            lines.AddChild(Style.Label($"{p:0%}  {o switch { "up" => "one of its powers a grade past what the forge can do", "affix" => "a slurry power past its seams, strong, with a price", "nothing" => "only the veins", _ => "one of its powers a grade lower" }}",
+                Style.Ui, Style.Small, o == "down" ? Style.Bad : new Color("#a8e08a"), true));
+        var slab = Style.Panel(Style.Box(new Color("#121a10"), new Color("#4a7a3a") with { A = 0.7f }, 1, 5, 12), lines);
+        slab.CustomMinimumSize = new Vector2(480, 0);
+        inspect.AddChild(slab);
     }
 
     void Footer()
@@ -451,9 +492,10 @@ public partial class InventoryScreen : Overlay
             case Act.SubNext: filter = (filter + 1) % Filters.Length; Sound.Sfx.Page(); Refresh(); return true;
             case Act.SubPrev: filter = (filter + Filters.Length - 1) % Filters.Length; Sound.Sfx.Page(); Refresh(); return true;
             case Act.Alt2: Sort(); return true;
-            case Act.Cancel when leaving != null || breaking != null:
+            case Act.Cancel when leaving != null || breaking != null || steeping != null:
                 leaving = null;
                 breaking = null;
+                steeping = null;
                 Footer();
                 ShowInspect(Selected);
                 return true;

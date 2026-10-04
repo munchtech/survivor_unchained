@@ -34,10 +34,16 @@ public sealed partial class Journey
         // A trophy set has its own words, said the once ("fang.set").
         string? moment = q.Verb == Verb.Set && Crafting.Rules.Settings.GetValueOrDefault(q.Def ?? "") is { } s ? $"{s.Moment}.set" : null;
         if (q.Crafter != "") CraftSaid = Crafting.Speak(Craft, q.Crafter, q.Verb, moment);
+        // The slurry's outcome is said as what the survivor sees (the story lead's narration), after
+        // whatever Snib says over it.
+        string? seen = q.Verb == Verb.Steep ? Crafting.Line(Crafting.Rules.Slurry.Crafter, $"steep.{q.Outcome}") : null;
+        if (seen != null) CraftSaid = (CraftSaid ?? new Said(null, null, null)) with { After = seen };
         var def = Items.Get(it.Def);
         string? sub = q.Verb switch
         {
-            Verb.BreakDown => string.Join(", ", q.Gives.Select(kv => $"{kv.Value} {Items.Get(kv.Key).Name}")),
+            Verb.BreakDown => string.Join(" and ", q.Gives.Select(kv => Items.Several(kv.Key, kv.Value))),
+            Verb.Steep => seen ?? "Steeped: it is set for good.",
+            Verb.Bind => $"{q.After}. What it came from is gone.",
             Verb.Remake => $"{Inventory.RarityName(it)} now. A seam opens.",
             Verb.Rekindle => $"Heat {it.Heat} of {it.HeatFull}",
             Verb.Cage when q.Affix == null => "Three more coals",

@@ -200,13 +200,13 @@ public static class Items
             Text = _ => "+30% damage to wolves and beasts" },
 
         /* The slurry's, past the seams (design 9): strong, and each with its price. */
-        new() { Id = "seeping", Name = "Seeping", Prefix = true, Unique = true, Slurry = true,
+        new() { Id = "fevered", Name = "Fevered", Prefix = true, Unique = true, Slurry = true,
             Slots = [ItemKind.Weapon, ItemKind.Offhand, ItemKind.Head, ItemKind.Body, ItemKind.Cloak, ItemKind.Amulet, ItemKind.Ring, ItemKind.Relic],
             Mods = _ => [M(Stat.Damage, ModKind.Inc, 0.2), M(Stat.Healing, ModKind.Inc, -0.15)], Text = _ => "+20% damage; you mend 15% less" },
         new() { Id = "of_the_sump", Name = "of the Sump", Prefix = false, Unique = true, Slurry = true,
             Slots = [ItemKind.Weapon, ItemKind.Offhand, ItemKind.Head, ItemKind.Body, ItemKind.Cloak, ItemKind.Amulet, ItemKind.Ring, ItemKind.Relic],
             Mods = _ => [M(Stat.Area, ModKind.Inc, 0.25), M(Stat.MoveSpeed, ModKind.Inc, -0.1)], Text = _ => "+25% area; you are 10% slower" },
-        new() { Id = "green_veined", Name = "Green-Veined", Prefix = true, Unique = true, Slurry = true,
+        new() { Id = "pipe_lads", Name = "Pipe-Lad's", Prefix = true, Unique = true, Slurry = true,
             Slots = [ItemKind.Weapon, ItemKind.Offhand, ItemKind.Head, ItemKind.Body, ItemKind.Cloak, ItemKind.Amulet, ItemKind.Ring, ItemKind.Relic],
             Mods = _ => [M(Stat.CritChance, ModKind.Flat, 0.15), M(Stat.MaxHealth, ModKind.Inc, -0.1)], Text = _ => "+15% critical chance; 10% less health" },
 
