@@ -56,4 +56,6 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Animation | aa4f5fc266b043035 | docs/team/animation.md |
 | UI design (and the UI merge) | a5629aff0f215ea4a | docs/team/ui_design.md |
 | UI art | a72467cac33063d3a | docs/team/ui_art.md |
+| Crafting (research, design, build) | a7862117a0240deb5 | docs/team/crafting.md |
+| Gameplay experience director | a33f58e68e89e3ccf | docs/team/experience.md |
 | Heroine outfits | main session | — |
