@@ -25,10 +25,9 @@ Branch: `worktree-agent-a7622ae77d19e31dc`.
   - Brannoc's "Twelve, I made." said once in a playthrough.
   - §17 marks the lines to record exactly as written ("protect").
 - **In progress:** the ElevenLabs packets, read line by line (WRITING_PASS §18).
-  - Narrator: notes sent (tool splits, no feelings, pauses as "…", no whispers in
-    love scenes). Final after regeneration and a diff.
-  - Rook: final once three lines are regenerated.
-  - Next: Holloway, Brannoc, Sella, Vonnra, Harlan.
+  - **Final:** the narrator and Rook (voice branch b54e729, data 50f6f33). The
+    hymn stays held for the owner.
+  - **Next, in recording order:** Holloway, Brannoc, Sella, Vonnra, Harlan.
 
 ## Key decisions (why)
 
@@ -83,5 +82,8 @@ None.
     fail the soul test (bible: titles are the valley's words). I'll write
     replacements if you want them.
   - There is no Dawn at 60:00 (the owner's decision), and the story agrees.
+  - The Red Hand's "The toll bell, three times." is a sound cue, not speech: a
+    cracked hand bell rung three times. "Toll's due." is being cast (a Kerchief
+    enforcer, not Redcowl's voice).
 - **Art:** Wenna's shop burns tallow, never ember. Maeca's plate reads "Hunter, of
   the Hollow".
