@@ -360,6 +360,7 @@ public partial class Game : Node, IZoneHost
         var time = zone.TimeOf(World);
         air.Set(zone.AtmosphereFor(time));
         scene.View.SetNight(time == TimeOfDay.Night);
+        scene.View.SetDusk(time == TimeOfDay.Dusk);
         Perf.Lap("the zone's runtime and its air");
         EnterPlay(zone, from, at);
         Perf.Lap("play: the crowd's kinds made ready (bakes)");
