@@ -1229,6 +1229,11 @@
    "name": "Behind the Sealed Door",
    "title": "Cinematic",
    "glyph": "skull"
+  },
+  "far_voice": {
+   "name": "A voice up the road",
+   "title": "",
+   "glyph": "moon"
   }
  },
  "guards": [

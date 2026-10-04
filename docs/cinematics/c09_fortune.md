@@ -42,6 +42,7 @@ through, and one that is not.
   read back. If she pays attention, she also learns where Vonnra's sight comes
   from.
 - **Pays:**
+  - C01's call up the road: "No charge, this once." opens the reading, the voice that called her up the road now across a table (bible, "Who tells it");
   - the whole of Act 1, reading by reading;
   - Sella's buyers ("Vonnra pays for all of it"), paid in the reading of her past
     if she told Sella that past while Sella was still selling her
