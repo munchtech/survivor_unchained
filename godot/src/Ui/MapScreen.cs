@@ -381,7 +381,7 @@ public partial class MapScreen : Overlay
         AddChild(north);
 
         // The list: where to go, what has been found, what to beware of; each line glides the map to it.
-        var col = Pane(page, new Rect2(1420, 0, 420, 920), Style.Plate(18), Style.Gap2);
+        var col = Pane(page, new Rect2(1420, 0, 420, 920), Style.Column(18), Style.Gap2);
         col.AddChild(new Section("Where to go", "nearest first"));
         var list = Style.V(2);
         var p0 = G.Battle?.Player;

@@ -400,6 +400,7 @@ public partial class Globe : Control
 public partial class Backdrop : Control
 {
     public float Strength = 0.88f;
+    static Shader? blur;
 
     public Backdrop(Action? onClick = null, float strength = 0.88f)
     {
@@ -407,11 +408,19 @@ public partial class Backdrop : Control
         Style.Fill(this);
         MouseFilter = MouseFilterEnum.Stop;
         if (onClick != null) GuiInput += e => { if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) onClick(); };
+        // The world behind, out of focus and darkened (shaders/ui_backdrop.gdshader): the page
+        // sits in the place the survivor stands, never on flat black.
+        blur ??= GD.Load<Shader>("res://shaders/ui_backdrop.gdshader");
+        var world = new ColorRect { Material = new ShaderMaterial { Shader = blur }, MouseFilter = MouseFilterEnum.Ignore };
+        ((ShaderMaterial)world.Material).SetShaderParameter("dim", Mathf.Lerp(1.1f, 0.62f, strength));
+        Style.Fill(world);
+        AddChild(world);
         var dark = new TextureRect
         {
             Texture = new GradientTexture2D
             {
-                Gradient = new Gradient { Colors = new[] { new Color(0.03f, 0.02f, 0.04f, strength * 0.72f), new Color(0.02f, 0.015f, 0.03f, strength) }, Offsets = new[] { 0.2f, 1f } },
+                // (the blurred world is already dim: the shade only deepens toward the edges, where it frames the page)
+                Gradient = new Gradient { Colors = new[] { new Color(0.03f, 0.02f, 0.04f, strength * 0.12f), new Color(0.02f, 0.015f, 0.03f, strength * 0.7f) }, Offsets = new[] { 0.2f, 1f } },
                 Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.45f), FillTo = new Vector2(1.05f, 1.05f), Width = 256, Height = 256,
             },
             StretchMode = TextureRect.StretchModeEnum.Scale, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = MouseFilterEnum.Ignore,
@@ -422,7 +431,7 @@ public partial class Backdrop : Control
         {
             Texture = new GradientTexture2D
             {
-                Gradient = new Gradient { Colors = new[] { new Color(1, 0.42f, 0.12f, 0.16f), new Color(1, 0.42f, 0.12f, 0) }, Offsets = new[] { 0f, 1f } },
+                Gradient = new Gradient { Colors = new[] { new Color(1, 0.42f, 0.12f, 0.08f), new Color(1, 0.42f, 0.12f, 0) }, Offsets = new[] { 0f, 1f } },
                 FillFrom = new Vector2(0.5f, 1), FillTo = new Vector2(0.5f, 0.6f), Width = 16, Height = 128,
             },
             StretchMode = TextureRect.StretchModeEnum.Scale, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = MouseFilterEnum.Ignore,

@@ -610,9 +610,11 @@ public partial class Game : Node, IZoneHost
                     scene?.Slow(0.6);
                     break;
                 case Ev.Bark bk:
-                    scene?.Voices.Bark(bk.Text, new Vector3((float)bk.X, (float)scene.HeightAt(bk.X, bk.Z), (float)bk.Z), bk.Speaker, bk.Speaker == null);
-                    // A named voice in a fight (the Warden, Grimtunnel) is heard over everything.
-                    if (bk.Speaker != null) voice.Shout(bk.Text);
+                    // A named voice in a fight (the Warden, Grimtunnel) is heard over everything, when its line shows
+                    // (one of theirs at a time: the next waits for the last to be said).
+                    var said = bk.Text;
+                    scene?.Voices.Bark(bk.Text, new Vector3((float)bk.X, (float)scene.HeightAt(bk.X, bk.Z), (float)bk.Z), bk.Speaker, bk.Speaker == null,
+                        shown: bk.Speaker != null ? () => voice.Shout(said)?.Sec ?? 0 : null);
                     break;
                 case Ev.PlayerHit ph when ph.Dodged && Battle is { } b:
                     scene?.Voices.Bark("Dodged", new Vector3((float)b.Player.X, (float)scene.HeightAt(b.Player.X, b.Player.Z), (float)b.Player.Z), null, true);
@@ -818,7 +820,7 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
-    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, dieDone, chestDone;
+    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, dieDone, chestDone, barksDone;
     double blastT = 0.5, marksT = 1;
 
     void Tour(double dt)
@@ -952,6 +954,18 @@ public partial class Game : Node, IZoneHost
             dieDone = true;
             var killer = kb.SpawnEnemy("risen", kb.Player.X, kb.Player.Z + (Args.Has("behind") ? -1.2 : 1.2));
             kb.HurtPlayerRaw(kb.Player.Hp + 1e6, School.Physical, "test", killer);
+        }
+        // --barks T: T seconds in, a crowd of lines at once by her (pictures of them waiting their
+        // turns and standing clear of each other): one voice's three, two others close by, an alert.
+        if (!barksDone && Args.Has("barks") && Battle is { } wb && Journey.Playtime >= Args.Num("barks", 1))
+        {
+            barksDone = true;
+            double x = wb.Player.X, z = wb.Player.Z;
+            foreach (var t in new[] { "Lamps are lit... stay where they reach...", "Lie down.", "NONE CROSS AFTER DARK." })
+                wb.Events.Emit(new Ev.Bark { X = x + 2, Z = z - 1, Text = t, Speaker = "The Ford-Warden" });
+            wb.Events.Emit(new Ev.Bark { X = x - 1.5, Z = z - 0.5, Text = "Something moves in the reeds." });
+            wb.Events.Emit(new Ev.Bark { X = x - 0.5, Z = z - 1.2, Text = "Hold the line!", Speaker = "Brannoc" });
+            wb.Events.Emit(new Ev.Bark { X = x, Z = z, Text = "Blocked" });
         }
         if (Args.Get("open") is not string want) return;
         tourT -= dt;
