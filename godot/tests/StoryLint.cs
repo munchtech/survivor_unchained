@@ -211,8 +211,7 @@ public class StoryLint
         "player.zone", "map.drawn",
         // The last night, for the town to talk about (docs/EXPERIENCE_AUDIT.md, finding 5): the
         // story's lines read them next; take each off this list as it is read.
-        "arena.last.people", "arena.last.won", "arena.last.fell", "arena.last.story", "arena.last.tier", "arena.last.minutes",
-        "arena.last.past", "arena.last.day", "arena.last.longest", "arena.last.killer",
+        "arena.last.tier", "arena.last.minutes", "arena.last.day", "arena.last.killer",
     ];
 
     [Fact]
