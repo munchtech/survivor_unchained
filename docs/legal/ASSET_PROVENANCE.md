@@ -73,7 +73,7 @@ By file count (tracked files, without Godot's `.import` files):
    - The licensor's own words contradict the label. The legal lead has ruled it a blocker.
 2. **The heroine's body (PE-06), and with it the cameos and her outfits' fit, UNKNOWN.**
    - She was made from the owner's "234.glb", and what generated it is not recorded.
-   - Its texture was JPEG. That rules out our ComfyUI TRELLIS 2 saves (three PNGs) and make3d's Hunyuan3D-2 output (PNG).
+   - Its texture was JPEG. That points away from our ComfyUI TRELLIS 2 saves (three PNGs) and make3d's Hunyuan3D-2 output (PNG), unless it was saved again in another tool; it doesn't rule them out.
    - The owner's Desktop held a Meshy image-to-model result at the time.
    - The input picture is unrecorded too. The owner's reference sheet is a render-like red-haired woman in a bodysuit, also of unknown origin.
    - If it came from Hunyuan3D-2, that licence excludes the EU, UK and South Korea. If it came from Meshy, Meshy's plan terms decide who owns it. If the picture was someone else's art or a real person, the body must be remade.
