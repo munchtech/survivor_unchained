@@ -35,7 +35,7 @@ SHEET = {"narrator": "The narrator.", "rook": "Mother Rook", "holloway": "Captai
          "kerchief_woman": "The Kerchiefs.", "lampling": "The babbling lampling.", "jory": "Jory Coyle.",
          "ysolde": "Ysolde Marrow", "watchman": "Nell, Wat, Corran.", "warden_man": "The Ford-Warden."}
 # Held for the story lead's review (a7622ae77d19e31dc): whole parts, and kinds of line.
-HOLD_VOICES: dict = {}
+HOLD_VOICES: dict = {"narrator": "the owner has asked whether Vonnra should be the narrator (the voice that calls the survivor to town in the prologue), given her twist; the story lead is deciding"}
 # Packets the story lead has checked and marked final (voice: date).
 FINAL = {"narrator": "2026-10-03", "rook": "2026-10-03", "holloway": "2026-10-03", "brannoc": "2026-10-03", "sella": "2026-10-03"}
 # Lines waiting on the story lead or the owner: (id prefix, why).
@@ -210,9 +210,10 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
     lex = {k: x for k, x in lexicon().get("say", {}).items() if k != x and re.search(rf"(?<![\w']){re.escape(k)}(?![\w'])", spoken)}
     w = [f"# {v['name']}: ElevenLabs packet", "",
          f"Voice id in the game: `{voice}`. {len(es)} take{'s' if len(es) != 1 else ''} to record ({chars:,} characters; about {chars * 3:,} credits at three "
-         f"tries a line). " + (f"Status: **final** (the story lead, {FINAL[voice]}): record it." if voice in FINAL else
-                                    "Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final."), ""]
-    if holds:
+         f"tries a line). " + (f"Status: **on hold**: {HOLD_VOICES[voice]}. Do not record any of it yet." if voice in HOLD_VOICES else
+                               f"Status: **final** (the story lead, {FINAL[voice]}): record it." if voice in FINAL else
+                               "Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final."), ""]
+    if holds and voice not in HOLD_VOICES:
         w += [f"**Hold {len(holds)} of these** (marked HOLD below, with why); the rest can be recorded now.", ""]
     w += ["## Who they are", "", sheet(voice) or v["design"], ""]
     if v.get("wants") or v.get("hides"):
@@ -268,7 +269,7 @@ def packet(voice: str, man: list[dict]) -> tuple[str, dict]:
                       "leaves the pause empty. Keep each the same in tone, so it fits all of them.", ""]
         d = lines_mod.part_direction(l, s)
         aside = s["voice"] == "narrator" and l["voice"] != "narrator"
-        hold = held(l, voice)
+        hold = held(l, voice) if voice not in HOLD_VOICES else None  # a whole part on hold says so once, at the top
         w.append(f"### {n}. `{file_name(l, k)}`" + (f"  HOLD: {hold}" if hold else ""))
         w.append("")
         if e["also"]:
