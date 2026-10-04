@@ -801,6 +801,37 @@ public partial class BattleFx : Node3D
                     }
                     break;
                 }
+                case Ev.Victory v:
+                {
+                    // The night's peak, in layers (it plays in the fall's slow motion, so it
+                    // lingers): a white-gold flash that lights the field, a column of the ember
+                    // leaving what ruled it, three shockwaves (rings, never a filled disc), embers rising
+                    // slowly, a dark ring of dust thrown out, and the camera's biggest kick.
+                    float gy = Y(v.X, v.Z);
+                    var at = V(v.X, gy, v.Z);
+                    var gold = new Color(2.6f, 1.9f, 1.0f);
+                    Flash(at + Vector3.Up * 3, new Color("#ffe6b0"), 42, 1.8f, 28);
+                    Pillar(at, 34, 1.1f, gold * 0.8f, 1.6f);
+                    Pillar(at, 22, 0.35f, new Color(3, 2.8f, 2.4f), 0.9f);
+                    Waves.Add(at + Vector3.Up * 0.4f, 9, 0.7f, gold, 1);
+                    Waves.Add(at + Vector3.Up * 0.6f, 15, 1.1f, new Color(2.2f, 1.2f, 0.5f), 0.8f);
+                    Waves.Add(at + Vector3.Up * 0.8f, 22, 1.6f, new Color(1.6f, 0.8f, 0.4f), 0.5f);
+                    for (int i = 0; i < 90; i++)
+                    {
+                        float a = R() * Mathf.Tau, d = R() * 2.2f;
+                        bool glint = i % 3 == 0;
+                        Sparks.Spawn(at + new Vector3(Mathf.Cos(a) * d, 0.4f + R() * 1.5f, Mathf.Sin(a) * d), new Vector3(Mathf.Cos(a) * (0.6f + R()), 2.5f + R() * 5, Mathf.Sin(a) * (0.6f + R())),
+                            1.6f + R() * 1.4f, glint ? 0.28f : 0.1f, new Color(2.6f, 1.6f, 0.5f), new Color(2.0f, 0.5f, 0.1f), 0.02f, -0.4f, 0.7f, sprite: glint ? Sprites.Of("star") : 0, spinV: 2);
+                    }
+                    for (int i = 0; i < 16; i++)
+                    {
+                        float a = i / 16f * Mathf.Tau;
+                        Smoke.Spawn(at + new Vector3(Mathf.Cos(a) * 1.5f, 0.4f, Mathf.Sin(a) * 1.5f), new Vector3(Mathf.Cos(a) * 9, 0.6f, Mathf.Sin(a) * 9), 1.4f, 1.2f,
+                            new Color("#3a3430"), new Color("#1a1816"), 2.4f, alpha: 0.4f);
+                    }
+                    Cam?.AddTrauma(0.6f);
+                    break;
+                }
                 case Ev.Evolve or Ev.Discovery:
                 {
                     var p = PlayerPos;

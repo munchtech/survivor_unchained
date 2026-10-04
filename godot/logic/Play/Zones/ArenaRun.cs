@@ -50,7 +50,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     /// <summary>The night's shape before the boss: how full the field is kept, its breathers,
     /// and which turn comes next (ArenaPacing; the experience lead's).</summary>
     readonly ArenaPacing pacing;
-    bool hushed;
+    bool hushed, opened;
     double heraldAt;
     bool herald10, herald20, great15, bossUp, won, over;
     double nextHerald, pulseT;
@@ -83,7 +83,16 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     public override IReadOnlyList<string> Creatures => people.Arena.Select(h => h.Def).Concat(people.Stretches.Select(s => s.Miniboss))
         .Append(people.Champion).Append(BossDef).Distinct().ToList();
     /// <summary>Higher and further out: the whole of the fight in view.</summary>
-    public override (double Pitch, double Distance)? Camera => (64, 31);
+    public override (double Pitch, double Distance)? Camera => (64, CameraNear);
+
+    /// <summary>How far out the camera stands now. A night begins close on the survivor, so
+    /// she is seen, and pulls back as the horde grows, so the fight is (docs/EXPERIENCE_AUDIT.md,
+    /// finding 3); it comes in a little in the hush and stands back for what rules the night.
+    /// Eased slowly, so it breathes with the night rather than with every swarm.</summary>
+    public double CameraDistance { get; private set; } = CameraNear;
+    const double CameraNear = 22, CameraFar = 31;
+    double crowdSeen;
+    int aliveNow;
     public override bool Ember => true;
     public bool Over => over;
     /// <summary>What comes at the half hour: the story's named foe, or what rules the people.</summary>
@@ -395,6 +404,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             if (e.Def.Ranged != null) rangedAlive++;
             if (e.Def.Aura != null) auraAlive++;
         }
+        aliveNow = alive;
         B.Charges.Cap = ChargeCap();
         B.Charges.Spikes = !bossUp;
         if (!won && !bossUp)
@@ -405,6 +415,15 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             B.Charges.SpikeEvery = pacing.Building(Seconds) ? (18, 26) : (40, 55);
         }
         else B.Charges.SpikeEvery = (40, 55);
+        // The first of them in sight at once: the night used to open on an empty field for its
+        // first half minute while the horde walked in from out of sight.
+        if (!opened && Seconds > 1.5)
+        {
+            opened = true;
+            double a0 = R() * Math.PI * 2;
+            for (int k = 0; k < 3; k++)
+                if (Around(a0 + k * 2.1, 12 + R() * 3) is var (ox, oz)) Group(Pick(), 4 + (int)(R() * 3), ox, oz, 2.5);
+        }
         // The horde kept up: groups from out of sight, all round (a story's night, won, is over).
         spawnT -= dt;
         if (won && Spec.Story) { }
@@ -1035,8 +1054,23 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             Hint = () => Spec.Story ? "Won" : $"Won. Or stay: {Clock(Seconds - End)} {Past}",
             Act = Leave,
         });
-        B!.Events.Emit(new Ev.Shake { Amount = 0.35 });
-        G.Announce(new Announcement($"{Spec.Name} is won", "The way out is open. Or stay: the night does not end, and it only gets harder.", "reward", 4, "Victory"));
+        // The night's peak: the world slows on the fall, and the people break and run for a
+        // breath before they gather again (docs/EXPERIENCE_AUDIT.md, finding 2).
+        B!.Events.Emit(new Ev.Victory { X = x, Z = z });
+        B.Events.Emit(new Ev.Focus { X = x, Z = z, Duration = 2.2 });
+        var p = B.Player;
+        foreach (var o in B.Enemies.Living())
+            if (o.Disposition == Disposition.Hostile && !o.Elite && o.State != EnemyState.Dying && (o.X - p.X) * (o.X - p.X) + (o.Z - p.Z) * (o.Z - p.Z) < 32 * 32)
+                o.Status[StatusKind.Fear] = new StatusSlot(3.5, 1, 1, 0);
+        B.Events.Emit(new Ev.Shake { Amount = 0.35 });
+        // A story night ends on its beat (the bible, section 2): once the fall has landed, the
+        // night gives up its spoils to the survivor, and then lets them go.
+        if (Spec.Story)
+        {
+            G.After(2.4, () => { if (B != null && !over) foreach (var k in B.Pickups.Items) if (k.Alive) k.Pulled = true; });
+            G.After(7, () => { if (won && !over) Finish(); });
+        }
+        G.Announce(new Announcement($"{Spec.Name} is won", Spec.Story ? "The night is over, and it lets you go." : "The way out is open. Or stay: the night does not end, and it only gets harder.", "reward", 4, "Victory"));
         Objectives();
     }
 
@@ -1048,16 +1082,16 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
 
     public override bool OnDeath(string killer)
     {
-        if (!over) Finish();
+        if (!over) Finish(killer);
         return true;
     }
 
-    void Finish()
+    void Finish(string? killer = null)
     {
         if (B == null) return;
         over = true;
         G.SetBoss(null);
-        var result = Arenas.Finish(G.Journey, B, Spec, won);
+        var result = Arenas.Finish(G.Journey, B, Spec, won, killer);
         G.After(B.Player.Alive ? 0.6 : 2.2, () => G.ArenaOver(result));
     }
 
@@ -1066,6 +1100,12 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     public override void Frame(double dt)
     {
         if (B == null || over) return;
+        crowdSeen += (aliveNow - crowdSeen) * Math.Min(1, dt / 5);
+        double t = Math.Clamp((crowdSeen - 30) / 190, 0, 1);
+        double want = CameraNear + (CameraFar - CameraNear) * t * t * (3 - 2 * t);
+        if (bossUp) want = Math.Max(want, CameraFar + 2);
+        else if (won) want = Math.Min(34, Math.Max(want, CameraFar));
+        CameraDistance += (want - CameraDistance) * Math.Min(1, dt / 2.5);
         // The way out, pulsing on the ground where the boss fell.
         if (way is var (wx, wz) && (pulseT -= dt) <= 0)
         {
