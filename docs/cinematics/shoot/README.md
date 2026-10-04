@@ -115,7 +115,7 @@ State on 2026-10-04 (see `docs/team/cinematics.md`):
 
 | Id | Shooting script | Boards | Animatic | In the game |
 |---|---|---|---|---|
-| C01 The Drowned Fire | `c01.md`, written from its timeline | made (`boards/c01/`) | in `animatics/prologue.mp4` | `c01.json` plays on a new journey; previs pass 3 reads, with stand-in motion |
-| C02 None Cross After Dark | to write | to make | to cut (with the Prologue) | not yet |
-| C03 The Heart Goes Down | to write | to make | to cut (with the Prologue) | not yet |
-| C04 First Light | to write | to make | to cut (with the Prologue) | not yet |
+| C01 The Drowned Fire | `c01.md`, written from its timeline | made (`boards/c01/`); s2, s8, s8b, s10, s11, s12 to remake | in `animatics/prologue.mp4` | `c01.json` plays on a new journey; previs pass 3, stand-in motion |
+| C02 None Cross After Dark | `c02.md`, written from its timeline | made; most to remake (the Warden's scale and look) | in the Prologue cut (draft cameras) | plays at the ford in place of `RunIntro`; previs pass 1, surveyed |
+| C03 The Heart Goes Down | `c03.md`, written from its timeline | made; most to remake | in the Prologue cut (draft cameras) | plays where the Warden falls; previs pass 1, surveyed |
+| C04 First Light | `c04a.md`, `c04b.md`, written from their timelines | made; A1, A4 to A8, B3, B4, B4b, B5 to remake | in the Prologue cut (draft cameras) | A on the north bank, B on the first arrival; previs pass 1, surveyed |
