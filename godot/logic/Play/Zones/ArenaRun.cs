@@ -415,12 +415,16 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             // Named, so its body glows as a named thing's does and its blows carry its name.
             boss.Named = new Named { Title = BossName };
             boss.MaxHp = boss.Hp = boss.MaxHp * (script?.HealthMul(Spec.Tier) ?? 12 + 2 * Spec.Tier);
-            // Come again, it is the first fight's length and a part more each time (its blows
-            // harden with the night, as everything does); not the night's hardening on its
-            // health too, which would make a quarter hour's return a ten-minute wall.
-            if (!again) firstBossHp = boss.MaxHp;
-            else boss.MaxHp = boss.Hp = firstBossHp * (1 + ReturnGrowth * returns);
             boss.Damage *= script?.DamageMul ?? 1.3;
+            // Come again, it is the first fight and a part more each time, by a rule the player
+            // can learn, not the night's hardening and its levels on top of the boss's own (that
+            // made the first return a wall: the sweep's runs fell to it more than to anything).
+            if (!again) { firstBossHp = boss.MaxHp; firstBossDmg = boss.Damage; }
+            else
+            {
+                boss.MaxHp = boss.Hp = firstBossHp * (1 + ReturnGrowth * returns);
+                boss.Damage = firstBossDmg * (1 + ReturnBite * returns);
+            }
             if (script != null)
             {
                 script.Begin(boss);
@@ -475,9 +479,9 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     /// <summary>The order the dark swears the table's oaths: a verb, then a number, then a
     /// verb, so each five minutes asks something new (the table's own are passed over).</summary>
     static readonly string[] DarkDeck = ["hunt", "embers", "champions", "winter", "vigil", "ruin", "iron", "blight", "swarm", "deep"];
-    /// <summary>A returning boss's health over the first's, per return.</summary>
-    public const double ReturnGrowth = 0.35;
-    double nextDark, nextReturn, firstBossHp;
+    /// <summary>A returning boss's health, and its blows, over the first's, per return.</summary>
+    public const double ReturnGrowth = 0.35, ReturnBite = 0.25;
+    double nextDark, nextReturn, firstBossHp, firstBossDmg;
     bool returnSigned;
     int returns;
     /// <summary>How many times what rules the people has come again (and been beaten, if it is down).</summary>

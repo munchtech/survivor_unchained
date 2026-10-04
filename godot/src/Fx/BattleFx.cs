@@ -53,7 +53,7 @@ public partial class BattleFx : Node3D
     readonly Dictionary<int, float> trailAcc = new();
 
     static Texture2D? ringTex, discTex, laneTex, hatchTex, dashTex, wallTex;
-    static readonly Dictionary<int, Texture2D> coneTex = new();
+    static readonly Dictionary<int, Texture2D> coneTex = new(), bandTex = new();
 
     sealed class Mark
     {
@@ -477,7 +477,7 @@ public partial class BattleFx : Node3D
     static Texture2D ConeTexture(int arc)
     {
         if (coneTex.TryGetValue(arc, out var t)) return t;
-        const int N = 128;
+        const int N = 192;
         float half = arc * Mathf.Pi / 360f;
         var img = Image.CreateEmpty(N, N, false, Image.Format.Rgba8);
         for (int y = 0; y < N; y++)
@@ -486,14 +486,50 @@ public partial class BattleFx : Node3D
                 float u = (x + 0.5f) / N * 2 - 1, v = (y + 0.5f) / N * 2 - 1;
                 float r = Mathf.Sqrt(u * u + v * v), ang = Mathf.Abs(Mathf.Atan2(u, v));
                 float a = 0;
-                if (r < 0.97f && ang <= half)
+                // Eased at its sides and its rim, so a wide cone has no steps along them.
+                float inside = Mathf.Clamp((half - ang) * r / 0.016f + 0.5f, 0, 1) * Mathf.Clamp((0.97f - r) / 0.016f + 0.5f, 0, 1);
+                if (inside > 0)
                 {
-                    float edge = Mathf.Max(Mathf.Clamp(1 - Mathf.Abs(r - 0.9f) / 0.07f, 0, 1), Mathf.Clamp(1 - (half - ang) * r / 0.05f, 0, 1));
-                    a = 0.18f + 0.82f * edge;
+                    float edge = Mathf.Max(Mathf.Clamp(1 - Mathf.Abs(r - 0.9f) / 0.07f, 0, 1), Mathf.Clamp(1 - Mathf.Abs(half - ang) * r / 0.05f, 0, 1));
+                    a = (0.18f + 0.82f * edge) * inside;
                 }
                 img.SetPixel(x, y, new Color(a, a, a, a));
             }
         return coneTex[arc] = ImageTexture.CreateFromImage(img);
+    }
+
+    /// <summary>A band: the ground between two circles filled, edged at both, and the
+    /// inside left clear (the inside is where to stand; two rings with a wash over the
+    /// whole disc said the opposite).</summary>
+    static Texture2D BandTexture(int innerPct)
+    {
+        if (bandTex.TryGetValue(innerPct, out var t)) return t;
+        const int N = 192;
+        float inner = innerPct / 100f * 0.97f, outer = 0.97f;
+        var img = Image.CreateEmpty(N, N, false, Image.Format.Rgba8);
+        for (int y = 0; y < N; y++)
+            for (int x = 0; x < N; x++)
+            {
+                float u = (x + 0.5f) / N * 2 - 1, v = (y + 0.5f) / N * 2 - 1;
+                float r = Mathf.Sqrt(u * u + v * v), a = 0;
+                // Its edges eased over a texel and a half, or a band ten paces across shows steps.
+                float inside = Mathf.Clamp((r - inner) / 0.016f + 0.5f, 0, 1) * Mathf.Clamp((outer - r) / 0.016f + 0.5f, 0, 1);
+                if (inside > 0)
+                {
+                    float edge = Mathf.Max(Mathf.Clamp(1 - Mathf.Abs(r - inner) / 0.035f, 0, 1), Mathf.Clamp(1 - Mathf.Abs(outer - r) / 0.035f, 0, 1));
+                    a = (0.3f + 0.7f * edge) * inside;
+                }
+                img.SetPixel(x, y, new Color(a, a, a, a));
+            }
+        return bandTex[innerPct] = ImageTexture.CreateFromImage(img);
+    }
+
+    void BandMark(double x, double z, double inner, float outer, Color color, float life, int? key = null)
+    {
+        if (key is int k && keyed.TryGetValue(k, out var old)) { old.Active = false; old.Decal.Visible = false; if (old.Fill != null) old.Fill.Visible = false; }
+        int pct = (int)Math.Round(Math.Clamp(inner / Math.Max(0.01, outer), 0, 0.95) * 20) * 5;
+        var m = Ground(x, z, outer, BandTexture(pct), color, life);
+        if (key is int k2) keyed[k2] = m;
     }
 
     /// <summary>A cone on the ground from (x, z), pointing at `angle` (radians, in the plane), `radius` long.</summary>
@@ -684,11 +720,7 @@ public partial class BattleFx : Node3D
                     var col = e.Hostile ? Palette.Telegraph(e.Kind) : Palette.Of(School.Holy).Glow;
                     if (e.Shape == TelegraphShape.Line) Lane(e.X, e.Z, e.X1 ?? e.X, e.Z1 ?? e.Z, (float)(e.Width ?? 1), col, (float)e.Duration, e.Id);
                     else if (e.Shape == TelegraphShape.Cone) ConeMark(e.X, e.Z, (float)e.Radius, e.Angle ?? 0, e.Arc ?? Math.PI / 2, col, (float)e.Duration, e.Id);
-                    else if (e.Shape == TelegraphShape.Ring)
-                    {
-                        Ring(e.X, e.Z, (float)e.Radius, col, (float)e.Duration, false, e.Id);
-                        if (e.Inner > 0.5) Ring(e.X, e.Z, (float)e.Inner, col, (float)e.Duration, false, e.Id + 500000);
-                    }
+                    else if (e.Shape == TelegraphShape.Ring) BandMark(e.X, e.Z, e.Inner, (float)e.Radius, col, (float)e.Duration, e.Id);
                     else if (e.Hostile && e.Kind != TelegraphKind.Blow)
                     {
                         if (keyed.TryGetValue(e.Id, out var old)) { old.Active = false; old.Decal.Visible = false; if (old.Fill != null) old.Fill.Visible = false; }
@@ -696,17 +728,22 @@ public partial class BattleFx : Node3D
                         keyed[e.Id] = Ground(e.X, e.Z, (float)e.Radius, tex, col, (float)e.Duration);
                     }
                     else Ring(e.X, e.Z, (float)e.Radius, col, (float)e.Duration, true, e.Id);
-                    // A boss's move, named over its mark for as long as the mark stands (a lane or a
-                    // cone from the boss is named over the boss, where the eye already is).
+                    // A boss's move, named over the boss for as long as its mark stands: who is doing
+                    // it, where the eye already is (over the mark, it sat on the survivor's head).
                     if (e.Label is { Length: > 0 } label)
-                        Hits.Word(V(e.X, Y(e.X, e.Z) + 3.4, e.Z), label.ToUpperInvariant(), WordColour(col), 46, (float)Math.Min(2.5, e.Duration + 0.3));
+                    {
+                        double lx = e.ByX ?? e.X, lz = e.ByZ ?? e.Z;
+                        Hits.Word(V(lx, Y(lx, lz) + 4.4, lz), label.ToUpperInvariant(), WordColour(col), 70, (float)Math.Min(2.5, e.Duration + 0.3));
+                    }
                     break;
                 }
                 case Ev.Break br:
                 {
                     // A phase broken past its mark: the surplus as one big number.
-                    var at = V(br.X, Y(br.X, br.Z) + 2.6, br.Z);
-                    Hits.Word(at, $"BREAK {Math.Round(br.Amount):N0}", new Color(2.4f, 1.9f, 0.6f), 84, 2.2f);
+                    // High over the boss and alone: the moves' names it would sit among are put away.
+                    var at = V(br.X, Y(br.X, br.Z) + 5.2, br.Z);
+                    Hits.ClearWords();
+                    Hits.Word(at, $"BREAK {Math.Round(br.Amount):N0}", new Color(2.4f, 1.9f, 0.6f), 104, 2.4f);
                     Flash(at, new Color("#ffd46a"), 8, 0.5f, 9);
                     Cam?.AddTrauma(0.35f);
                     break;

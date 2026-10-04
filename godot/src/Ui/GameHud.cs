@@ -768,7 +768,7 @@ public partial class GameHud : CanvasLayer
     }
 
     string bossMarks = "";
-    ColorRect? bossStagger;
+    ColorRect? bossStagger, bossStaggerGroove;
 
     public void Boss(BossBar? bar)
     {
@@ -795,14 +795,19 @@ public partial class GameHud : CanvasLayer
                 bossTrack.AddChild(mark);
             }
         }
-        // The stagger bar: a thin line under the health, filled by what would lock a lesser creature.
+        // The stagger bar: a thin line under the health, filled by what would lock a lesser
+        // creature. Its groove shows from the first second, so the player learns it is there.
+        // (It sat inside the health track, which clips, and was never seen.)
         if (bossStagger == null)
         {
-            bossStagger = new ColorRect { Color = Hex("#e8c860"), Position = new Vector2(0, 17), Size = new Vector2(0, 4), MouseFilter = Control.MouseFilterEnum.Ignore };
-            bossTrack.AddChild(bossStagger);
+            bossStaggerGroove = new ColorRect { Color = Hex("#1a1410") with { A = 0.85f }, Position = new Vector2(1, 76), Size = new Vector2(w, 5), MouseFilter = Control.MouseFilterEnum.Ignore };
+            bossBox.AddChild(bossStaggerGroove);
+            bossStagger = new ColorRect { Color = Hex("#e8c860"), Position = new Vector2(1, 76), Size = new Vector2(0, 5), MouseFilter = Control.MouseFilterEnum.Ignore };
+            bossBox.AddChild(bossStagger);
         }
+        bossStaggerGroove!.Visible = bar.IsBoss;
         bossStagger.Visible = bar.IsBoss && bar.Stagger > 0;
-        bossStagger.Size = new Vector2(w * (float)Math.Clamp(bar.Stagger, 0, 1), 4);
+        bossStagger.Size = new Vector2(w * (float)Math.Clamp(bar.Stagger, 0, 1), 5);
         bossStagger.Color = bar.Stagger >= 1 ? Hex("#fff0a0") : Hex("#e8c860");
         bossChannelBox.Visible = bar.Channel != null;
         if (bar.Channel is var (label, prog))

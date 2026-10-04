@@ -172,7 +172,10 @@ public partial class Game : Node, IZoneHost
             if (Args.Get("oaths") is string oa) o.Spec.Oaths = oa.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
             if (Args.Has("tier")) o.Spec.Tier = (int)Args.Num("tier", 1);
             var at0 = Waystation.AtTable;
-            Arenas.Begin(World, Arenas.FromTable(o, "waystation", at0.X, at0.Z, at0.Facing));
+            var spec = Arenas.FromTable(o, "waystation", at0.X, at0.Z, at0.Facing);
+            // --boss DEF[:NAME]: a story's foe at the half hour (pictures of Grimtunnel, of Greymuzzle).
+            if (Args.Get("boss") is string bo) { var bp = bo.Split(':'); spec.Boss = bp[0]; if (bp.Length > 1) spec.BossName = bp[1].Replace('_', ' '); }
+            Arenas.Begin(World, spec);
         }
         if (z != "lowford")
         {
@@ -753,7 +756,7 @@ public partial class Game : Node, IZoneHost
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
     bool hordeDone, dropsDone, castDone, giveDone, minuteDone;
-    double blastT = 0.5;
+    double blastT = 0.5, marksT = 1;
 
     void Tour(double dt)
     {
@@ -824,6 +827,26 @@ public partial class Game : Node, IZoneHost
                 var school = Enum.Parse<School>(parts[0], true);
                 float r = parts.Length > 1 ? float.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture) : 2.5f;
                 scene.Fx.Blast(bb.Player.X + 2, bb.Player.Z - 1, school, r);
+            }
+        }
+        // --marks: every telegraph the bosses use, round the survivor every four seconds, harmless
+        // and named for where it points (a picture that checks the drawing: is the cone east?).
+        if (Args.Has("marks") && Battle is { } mb)
+        {
+            marksT -= dt;
+            if (marksT <= 0)
+            {
+                marksT = 4;
+                double px = mb.Player.X, pz = mb.Player.Z;
+                Battle.EnemyBlow Mark(Battle.EnemyBlow b) { b.Delay = 3.5; return mb.Blow(b); }
+                Mark(new Battle.EnemyBlow { Shape = TelegraphShape.Cone, X = px + 2, Z = pz, Radius = 6, Angle = 0, Arc = Math.PI / 2, Label = "cone +x" });
+                Mark(new Battle.EnemyBlow { Shape = TelegraphShape.Cone, X = px - 2, Z = pz, Radius = 5, Angle = Math.PI / 2, Arc = Math.PI / 3, Label = "cone +z" });
+                Mark(new Battle.EnemyBlow { Shape = TelegraphShape.Line, X = px - 9, Z = pz - 6, X1 = px + 9, Z1 = pz - 6, Width = 2, Label = "lane" });
+                Mark(new Battle.EnemyBlow { Shape = TelegraphShape.Ring, X = px, Z = pz, Inner = 9, Radius = 11, Label = "band" });
+                Mark(new Battle.EnemyBlow { Shape = TelegraphShape.Circle, X = px - 7, Z = pz + 5, Radius = 2, Label = "blow" });
+                Mark(new Battle.EnemyBlow { Shape = TelegraphShape.Circle, Kind = TelegraphKind.Ground, X = px + 7, Z = pz + 5, Radius = 2, Label = "ground" });
+                Mark(new Battle.EnemyBlow { Shape = TelegraphShape.Circle, Kind = TelegraphKind.Safe, X = px - 7, Z = pz - 1, Radius = 2, Label = "safe" });
+                Mark(new Battle.EnemyBlow { Shape = TelegraphShape.Circle, Kind = TelegraphKind.Wall, X = px + 7, Z = pz - 1, Radius = 2, Label = "wall" });
             }
         }
         // --cast T: the art in hand used once, T seconds in (a picture of it).

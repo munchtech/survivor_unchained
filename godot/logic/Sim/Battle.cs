@@ -671,7 +671,9 @@ public sealed partial class Battle
         e.Hp -= dmg;
         // A boss's gate: it stops at its phase's mark; the rest is its Break.
         if (e.HpFloor > 0 && e.Hp < e.HpFloor) { e.Overflow += e.HpFloor - e.Hp; e.Hp = e.HpFloor; }
-        e.Flash = 1;
+        // A boss struck many times a second would never stop flashing white and its body
+        // would be lost in it: a softer flash, so it stays itself under the build's blows.
+        e.Flash = e.Boss ? Math.Max(e.Flash, 0.4) : 1;
         e.LastSchool = school;
         // Which way the blow was going: its own, or away from the survivor.
         double dx = o.DirX, dz = o.DirZ;
@@ -973,7 +975,9 @@ public sealed partial class Battle
     /// doing broken, and then resists for 15 s.</summary>
     public void AddStagger(Enemy e, double amount)
     {
-        if (!e.Boss || e.StaggeredT > 0 || !e.Alive) return;
+        // Untouchable (a phase turning, laid down, going down the hole) is not staggerable:
+        // a stagger spent there was a quarter more damage nobody could deal.
+        if (!e.Boss || e.StaggeredT > 0 || !e.Alive || e.TakenMul <= 0) return;
         e.Stagger += amount * (e.StaggerResistT > 0 ? 0.25 : 1) * Rules.StaggerTaken;
         if (e.Stagger < 1) return;
         e.Stagger = 0;
@@ -1432,6 +1436,7 @@ public sealed partial class Battle
         {
             Id = 900000 + blowIds++, Shape = b.Shape, Kind = b.Kind, X = b.X, Z = b.Z, X1 = b.X1, Z1 = b.Z1, Radius = b.Radius, Inner = b.Inner,
             Width = b.Width, Angle = b.Angle, Arc = b.Arc, Duration = b.Delay, Hostile = true, Boss = b.From?.Boss == true, Label = b.Label,
+            ByX = b.From?.X, ByZ = b.From?.Z,
         });
         return b;
     }

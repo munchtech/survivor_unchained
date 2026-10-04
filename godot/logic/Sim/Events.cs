@@ -64,6 +64,8 @@ public static class Ev
         public double Inner;
         /// <summary>A boss's: drawn above the survivor's own effects, and named over the boss.</summary>
         public bool Boss; public string? Label;
+        /// <summary>Who marked it, where it stood (its name is said over it, not over the survivor).</summary>
+        public double? ByX, ByZ;
     }
 
     public sealed class Spawn : CombatEvent { public int Enemy; public double X, Z; public string Def = ""; public SpawnStyle Style; }

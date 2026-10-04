@@ -232,7 +232,7 @@ public static class ArenaSim
         if (zone.BossScript is { } bs)
         {
             r.BossLanded = b.BossBlowsTaken;
-            r.BossBreak = bs.BreakSum / Math.Max(1, bs.E.MaxHp);
+            r.BossBreak = bs.BreakSum / Math.Max(1, bs.MaxHp);
             r.BossPhase = bs.PhaseIx;
             r.BossSoft = bs.Soft;
         }
