@@ -2,7 +2,7 @@
 
 Agent a3058a45eee41d695 (succeeded af7a79bc783cca7bc on 4 October), branch `worktree-agent-a3058a45eee41d695`. The brief: shooting scripts, boards and animatics for C01 to C14, and the in-engine cinematic player. Pipeline and timeline format: `docs/cinematics/shoot/README.md`. Predecessor's handoff: `docs/handoff/cinematics.md`.
 
-## State (4 October, paused for the owner)
+## State (4 October; handed off: `docs/handoff/cinematics.md`)
 
 - **C02 to C04 are surveyed and wired into the game** (previs pass 1, stand-in motion):
   - **C02** plays at the ford in place of `RunIntro`. It has its own Warden (a `boss` cast): he lies under the river with his lamp held up, rises, wades to her and lifts the lamp. The drowned are `extras` that turn in a wave. `warden_up` spawns the fight's Warden on `warden_end`, facing her.
@@ -11,14 +11,15 @@ Agent a3058a45eee41d695 (succeeded af7a79bc783cca7bc on 4 October), branch `work
   - **C04 B** plays on the first Waystation arrival, in place of the caption and the zone title. It has its own Rook; the zone's is hidden by `rook_cine`.
   - Tests cover C02's wiring both ways. The Prologue tests still pass without a screen.
 - **Player additions:** `boss`, `extras` and `orb` casts; a `lamp` cue; `tilt` on `place`; a `light` on `glow`; free moves to `abs`; tagged and neutral spawns; part-way atmosphere blends (`k0`, `k1`); `--stills N` for motion checks. Name plates and barks are hidden during cinematics. LayToIdle no longer loops. The Warden's lamp is now an open cage with a visible flame.
+- **Shooting scripts** for C02, C03, C04 A and C04 B are written from the timelines as they play (`shoot/c02.md` to `c04b.md`).
+- **C03's sounds** (`kneel_water`, `sink`, `lamp_out`, `heart_hum`, `burst`, `sniff`, `groan`) are made in `Sfx.Cine` and the animatic.
 - **Subtitles:** lower-case (directions) are stripped and "sung" sets italics (agreed with story, bfecf70).
 - **The animatic was watched through:** about 35 of 54 boards are weak (the list is under Next).
 
 ## Next, in order
 
 1. **Exact next step:** C04 B's shot B4a. The glow for the toll tower's window lamp was just moved to (30.9, 7.9, -6.6). Look at `scratchpad/cin2/s5_c04b.jpg`, or re-render with `python <scratchpad>/cin2/prev.py c04b s5 40 --zone waystation --only B4a`, and confirm that it sits in the upper window. Then render all of C04 B once and check it.
-2. Write `shoot/c02.md`, `c03.md`, `c04a.md` and `c04b.md` from the timelines as they now play, with each change from the written script and its reason. Update the table in `shoot/README.md`.
-3. Remake the weak boards. Use the engine stills as staging references (img2img on Krea), so the scale and framing match the surveyed cameras. The weak boards are:
+2. Remake the weak boards. Use the engine stills as staging references (img2img on Krea), so the scale and framing match the surveyed cameras. The weak boards are:
    - C01: s2, s8, s8b (the head is cropped), s10, s11 and s12 (she is drawn twice);
    - C02: s1, s5, s9 and s11 (Victorian street lamps), s3 (two panels), s4, s7 (scale), s10 and s12;
    - C03: s1, s5, s6 and s8 (the heart is held), s9, s10, s11 (he crawls), s12 (bridges) and s13 (twice);
@@ -26,8 +27,8 @@ Agent a3058a45eee41d695 (succeeded af7a79bc783cca7bc on 4 October), branch `work
    - C04 B: B3 (cheering), B4 (smiling), B4b (stained glass) and B5 (twice).
 
    Describe the Warden as a hooded giant in a ranger's leathers and old mail, not a robed wizard.
-4. Block animation's three C01 clips (`her/lie_side_wake`, `sit_back_heels` and `reach_coals`, now merged) into C01's shots 2 to 8b.
-5. Recut the Prologue animatic (the command and cards are in `animatics/prologue.txt`).
+3. Block animation's three C01 clips (`her/lie_side_wake`, `sit_back_heels` and `reach_coals`, now merged) into C01's shots 2 to 8b.
+4. Recut the Prologue animatic (the command and cards are in `animatics/prologue.txt`).
 
 ## Key decisions
 

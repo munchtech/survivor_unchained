@@ -1,7 +1,7 @@
 {
   "id": "c04a",
   "title": "First Light",
-  "script": "docs/cinematics/shoot/c04.md",
+  "script": "docs/cinematics/shoot/c04a.md",
   "conversation": "cin_first_light",
   "zone": "lowford",
   "draft": "Previs pass 1: surveyed on the north bank at dawn, stand-in motion and effects (Kimodo's wade_out, sun_face, flask_drink and walk_uphill, the ember draining, breath-smoke) to come.",

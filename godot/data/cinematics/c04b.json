@@ -1,7 +1,7 @@
 {
   "id": "c04b",
   "title": "First Light",
-  "script": "docs/cinematics/shoot/c04.md",
+  "script": "docs/cinematics/shoot/c04b.md",
   "conversation": "cin_first_light",
   "zone": "waystation",
   "draft": "Previs pass 1: surveyed in the Waystation at dawn; the zone's own Rook and Watch are framed where they stand. Townsfolk who stop and turn, Rook's look to the tower, and the lamp's smoke are to come.",

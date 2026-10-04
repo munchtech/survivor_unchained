@@ -468,6 +468,31 @@ def sfx(name, g=1.0, pan=0.0):
         for f in (55.0, 82.41, 110.0):
             at(0, tone(f, Type="saw", A=4, Hold=3, D=4, G=0.045 * g, Lp=260, Lp2=520, Detune=R(-7, 7), Verb=0.7))
         at(0, hiss(A=4, D=6, G=0.035 * g, Bp=700, Q=1.2, Verb=0.6))
+    elif name == "kneel_water":
+        at(0, tone(90, 46, D=0.5, G=0.32 * g, Pan=pan))
+        at(0, hiss(A=0.01, D=0.7, G=0.13 * g, Bp=1200, Bp2=500, Q=0.8, Pan=pan))
+    elif name == "sink":
+        for i in range(6):
+            at(i * R(0.12, 0.22), tone(R(220, 320), R(600, 900), D=R(0.06, 0.1), G=0.04 * g * (1 - i / 8), Lp=1600, Pan=pan))
+        at(0, tone(70, 40, D=0.6, G=0.18 * g))
+    elif name == "lamp_out":
+        at(0, hiss(A=0.005, D=0.9, G=0.12 * g, Bp=4200, Bp2=2200, Q=1.2, Pan=pan))
+        at(0, tone(420, 160, D=0.08, G=0.08 * g, Pan=pan))
+    elif name == "heart_hum":
+        at(0, tone(740, 752, A=0.8, Hold=1.6, D=1.4, G=0.035 * g, Verb=0.6, Pan=pan))
+        at(0.2, tone(1110, 1122, A=0.9, Hold=1.2, D=1.4, G=0.014 * g, Verb=0.6, Pan=pan))
+    elif name == "burst":
+        at(0, tone(72, 30, D=0.8, G=0.6 * g))
+        at(0, hiss(A=0.005, D=1.0, G=0.3 * g, Lp=900, Lp2=200, Brown=True, Pan=pan))
+        for i in range(10):
+            at(0.15 + i * R(0.04, 0.09), hiss(D=R(0.02, 0.05), G=R(0.03, 0.07) * g, Bp=R(1500, 3500), Q=3, Pan=pan + R(-0.3, 0.3)))
+    elif name == "sniff":
+        at(0, hiss(A=0.02, D=0.12, G=0.07 * g, Bp=2600, Q=1.4, Pan=pan))
+        at(0.16, hiss(A=0.02, D=0.1, G=0.06 * g, Bp=2900, Q=1.4, Pan=pan))
+    elif name == "groan":
+        at(0, tone(31, 27, A=1.0, Hold=1.6, D=1.4, G=0.5 * g))
+        at(0.6, tone(52, 44, Type="saw", A=0.8, Hold=1.4, D=1.2, G=0.06 * g, Lp=320, Lp2=180, Verb=0.5))
+        at(0.4, hiss(A=1.0, D=2.0, G=0.06 * g, Lp=220, Lp2=90, Brown=True))
     else:
         rec = recording(name)
         if rec is None:
