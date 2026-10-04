@@ -800,7 +800,10 @@ public sealed class Prologue : ZoneRuntime
         if (woke) return;
         G.Say("Your bedroll has not been slept in.", null, 3);
         G.After(3.2, () => G.Say("Prints in the frost, your own. They come up from the river. None go down to it.", null, 5));
-        G.After(8.4, () => G.Say("Past the firelight, the frost is breaking.", null, 3.5));
+        G.After(8.4, () => G.Say("Far up the road one lamp burns high in the dark, and a voice comes down to you over the frost, close as if she stood at your shoulder.", null, 5.5));
+        // Vonnra, unnamed: the fortune opens on the same words (docs/STORY_BIBLE.md, "Who tells it").
+        G.After(14.1, () => G.Say("Come up, traveller. ...No charge, this once.", "A voice up the road", 4));
+        G.After(18.3, () => G.Say("Past the firelight, the frost is breaking.", null, 3.5));
     }
 
     /// <summary>Awake by the fire, the dead coming up: the night begins.</summary>

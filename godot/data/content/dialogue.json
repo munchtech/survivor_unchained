@@ -20325,6 +20325,18 @@
     "id": "prints",
     "speaker": "narrator",
     "text": "Prints in the frost, your own. They come up from the river. None go down to it.",
+    "next": "lamp"
+   },
+   "lamp": {
+    "id": "lamp",
+    "speaker": "narrator",
+    "text": "Far up the road one lamp burns high in the dark, and a voice comes down to you over the frost, close as if she stood at your shoulder.",
+    "next": "call"
+   },
+   "call": {
+    "id": "call",
+    "speaker": "far_voice",
+    "text": "Come up, traveller. ...No charge, this once.",
     "next": "frost"
    },
    "frost": {

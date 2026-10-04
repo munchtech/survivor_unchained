@@ -152,7 +152,7 @@ survivor tells her what the Morrow is saying: "...No. I wanted the lamps to stay
 lit. That is all I ever wanted. I wanted it to be morning." Her "seeing" is
 what she has bought: say it as sight, and let the narrator notice where her
 eyes are. *Casting:* 60s, clipped and unplaceable (old empire), a low alto
-with a little air. The most important casting in the game.
+with a little air. The most important casting in the game. She is heard once before the player meets her, unnamed: the voice up the road at the waking (C01, speaker `far_voice`), "Come up, traveller. ...No charge, this once.", recorded far off and thinned by the cold. The fortune opens on the same words.
 
 **Dame Keegan Orme** (the Argent Vigil, probationary). Over-articulated and
 earnest, a lecturer's projection; no contractions while she is on duty,
