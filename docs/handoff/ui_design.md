@@ -215,4 +215,4 @@ Also added: 5 hair colours (chestnut, strawberry, honey, platinum, plus the old 
    `ui_cameo.gdshader`, `ui_iris.gdshader`.
 6. `docs/UI_DESIGN.md` (1.3, 6, 7.2) and `docs/UI_ART_BRIEF.md` (4.9).
 
-HANDOFF READY: docs/handoff/ui_design.md on worktree-agent-ac76f400913a109cd@(see the commit that adds this line)
+HANDOFF READY: docs/handoff/ui_design.md on worktree-agent-ac76f400913a109cd@0b6e24b
