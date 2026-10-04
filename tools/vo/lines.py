@@ -52,7 +52,7 @@ NPC_VOICE = {"survivor": "lampling", "wayfinder": "ysolde", "board": None, "grey
 # Named speakers of the zone code's lines and barks.
 SPEAKER_VOICE = {"The Ford-Warden": "warden", "Grimtunnel": "grimtunnel", "Snib": "snib",
                  "The dead Watchman": "watchman", "The bones": "bones", "Jory Coyle": "jory",
-                 "A Kerchief woman": "kerchief_woman"}
+                 "A Kerchief woman": "kerchief_woman", "The Barrow Lord": "barrow_lord"}
 # A conversation node's own speaker (the cinematics name theirs).
 NODE_VOICE = {"ford_warden": "warden", "barrow_lord": "barrow_lord", "kerchief_woman": "kerchief_woman", "guard": "guard"}
 
@@ -74,27 +74,70 @@ def name_elided(s: str) -> tuple[str, bool]:
     return t, True
 
 
-def segments(text: str, voice: str) -> list[dict]:
-    """Split a line where the narrator speaks inside it: (stage directions)
-    are the narrator's, the rest is the owner's."""
-    out = []
-    pos = 0
-    for m in re.finditer(r"\(([^)]*)\)", text):
-        before = text[pos:m.start()].strip()
-        if before:
-            out.append({"voice": voice, "text": before})
-        inner = m.group(1).strip()
-        if inner:
-            out.append({"voice": "narrator", "text": inner})
-        pos = m.end()
-    rest = text[pos:].strip()
-    if rest:
-        out.append({"voice": voice, "text": rest})
-    # A narrator line has no owner to hand back to.
-    if voice == "narrator":
-        merged = " ".join(s["text"] for s in out)
-        return [{"voice": "narrator", "text": merged}] if merged else []
+def segments(text: str, voice: str, owner: str | None = None) -> list[dict]:
+    """Split a line into who says what (docs/VOICES.md):
+
+    - in a person's line, a capitalised (parenthesis.) is the narrator's, and a
+      lower-case (parenthesis) is how the person says it: no one reads it
+      aloud; it becomes an acted tag in their take (`acted`);
+    - in narration inside a person's conversation (`owner`), a "quote" is
+      that person speaking; the narrator reads the rest.
+    """
+    out: list[dict] = []
+
+    def add(v: str, said: str, acted: str):
+        said, acted = said.strip(), acted.strip()
+        if not said:
+            if acted and out and out[-1]["voice"] == v:  # a direction after the words
+                out[-1]["acted"] = (out[-1].get("acted", out[-1]["text"]) + " " + acted).strip()
+            return
+        if out and out[-1]["voice"] == v:
+            prev = out[-1]
+            prev["acted"] = f"{prev.get('acted', prev['text'])} {acted}"
+            prev["text"] = f"{prev['text']} {said}"
+        else:
+            out.append({"voice": v, "text": said, "acted": acted})
+
+    if voice != "narrator":
+        pos, pending = 0, ""
+        for m in re.finditer(r"\(([^)]*)\)", text):
+            inner = m.group(1).strip()
+            before = text[pos:m.start()]
+            if inner[:1].islower():
+                # How it is said: kept in the acted text, out of the words.
+                pending += before + f" [{inner}] "
+                if before.strip():
+                    add(voice, before, pending)
+                    pending = ""
+            else:
+                add(voice, before, pending + before)
+                pending = ""
+                if inner:
+                    add("narrator", inner, inner)
+            pos = m.end()
+        add(voice, text[pos:], pending + text[pos:])
+    else:
+        merged = re.sub(r"\(([^)]*)\)", r"\1", text)
+        if owner and owner != "narrator":
+            pos = 0
+            for m in re.finditer('"([^"]+)"|“([^”]+)”', merged):
+                add("narrator", merged[pos:m.start()], merged[pos:m.start()])
+                q = (m.group(1) or m.group(2)).strip()
+                add(owner, q, q)
+                pos = m.end()
+            add("narrator", merged[pos:], merged[pos:])
+        else:
+            add("narrator", merged, merged)
+    for s in out:
+        s["text"] = re.sub(r"\s+", " ", s["text"]).strip()
+        s["acted"] = re.sub(r"\s+", " ", s.get("acted", "")).strip()
+        if s["acted"] == s["text"]:
+            s.pop("acted")
     return out
+
+
+def cast_voices() -> set:
+    return set(json.load(open(os.path.join(HERE, "cast.json"), encoding="utf-8"))["voices"])
 
 
 def variants(t):
@@ -225,6 +268,21 @@ def from_code(lines: list):
                     if speaker is None:
                         line["skip"] = "a fight's caption, not a voice"
                     lines.append(line)
+            # A boss's own barks (IBossArena.Bark(x, z, text, speaker)): shouted like any named bark.
+            for m in re.finditer(r"\b\w+\.Bark\(", src):
+                args, _ = _args(src, m.end() - 1)
+                if not args or len(args) < 4 or not re.fullmatch(_STR, args[3].strip()):
+                    continue
+                speaker = _unescape(args[3].strip())
+                for t in (_unescape(s) for s in re.findall(_STR, args[2])):
+                    if t in seen:
+                        continue
+                    seen.add(t)
+                    line = {"id": f"cbark.{text_hash(t)}", "kind": "combat", "voice": SPEAKER_VOICE.get(speaker),
+                            "text": t, "who": speaker, "where": rel}
+                    if line["voice"] is None:
+                        line["skip"] = f"no voice cast for {speaker}"
+                    lines.append(line)
 
 
 def build() -> list[dict]:
@@ -246,7 +304,12 @@ def build() -> list[dict]:
         if "{" in said:
             l["skip"] = "a number from the world"
             continue
-        l["segments"] = segments(said, l["voice"])
+        owner = None
+        if l["id"].startswith("dlg.") and l["voice"] == "narrator":
+            npc = l["id"].split(".")[1]
+            owner = NPC_VOICE.get(npc, npc)
+            owner = owner if owner in cast_voices() else None
+        l["segments"] = segments(said, l["voice"], owner)
         if not l["segments"]:
             l["skip"] = "nothing to say"
     return lines

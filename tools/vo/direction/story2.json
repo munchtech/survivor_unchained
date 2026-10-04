@@ -60,7 +60,7 @@
  "cbark.f7a2a69e2307": {"emo": "lost, plaintive", "intent": "the Warden asks", "pace": "slow", "vol": "quiet", "note": "A drowned thing's question."},
  "cbark.676eeb4cf137": {"emo": "gleeful", "intent": "finds an unclaimed lamp", "pace": "quick", "vol": "raised", "note": "Delighted, goblinish."},
  "cbark.ca65f966df2d": {"emo": "sly, sniffing", "intent": "smells you", "pace": "slow", "vol": "level", "note": "Close and pleased."},
- "cbark.d6a6b3a4b868": {"emo": "gleeful", "intent": "steals and runs", "pace": "quick", "vol": "level", "note": "Cut off mid-word, a sniff, then smug: delighted, never beaten.", "beats": "Finders keepers, surface-m— [sniff] ...Downstairs'll be ever so grateful.", "segments": [{"voice": "grimtunnel", "text": "Finders keepers, surface-m— ...Downstairs'll be ever so grateful."}]},
+ "cbark.d6a6b3a4b868": {"emo": "gleeful", "intent": "steals and runs", "pace": "quick", "vol": "level", "note": "Cut off mid-word, a sniff, then smug: delighted, never beaten.", "beats": "Finders keepers, surface-m— [sniff] ...Downstairs'll be ever so grateful."},
  "say.f45eec417fcc": {"emo": "plain", "intent": "the Kerchief camp is ordinary", "pace": "measured", "vol": "quiet", "note": "The narrator never shows a feeling; the ordinary details do it."},
  "say.2133e8a51219": {"emo": "plain", "intent": "a woman feeds the caged", "pace": "measured", "vol": "quiet", "note": "No comment in the voice."},
  "say.3bf0d0b0d0da": {"emo": "plain, firm", "intent": "the caged eat first", "pace": "measured", "vol": "level", "note": "Two words, matter-of-fact, Scots."},

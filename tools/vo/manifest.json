@@ -23793,7 +23793,38 @@
     "vol": "quiet",
     "note": "Plain and close."
    },
-   "status": "todo"
+   "status": "done",
+   "take": {
+    "file": "narrator/dlg.cin_drowned_fire.bedroll.0.ogg",
+    "hash": "24c69afd4e5e",
+    "sec": 2.59,
+    "segs": [
+     [
+      0.0,
+      2.592,
+      0.0,
+      1.0
+     ]
+    ],
+    "model": "maya1 performance + seed-vc",
+    "parts": [
+     {
+      "voice": "narrator",
+      "src": "C:\\Users\\munch/vo-tools\\work\\placeholders\\dlg.cin_drowned_fire.bedroll.0\\p0_vc_r1.wav",
+      "seed": 1,
+      "score": 0,
+      "similarity": 0.794,
+      "utmos": 4.05,
+      "accent": "england",
+      "wps": 0.0,
+      "said": "Your bedroll has not been slept in.",
+      "style": "placeholder: Maya1 performance, Seed-VC"
+     }
+    ],
+    "made": "2026-10-03",
+    "placeholder": true
+   },
+   "placeholder": true
   },
   {
    "id": "dlg.cin_drowned_fire.prints.0",
@@ -23815,7 +23846,38 @@
     "vol": "quiet",
     "note": "'None go down to it.' alone, very quiet."
    },
-   "status": "todo"
+   "status": "done",
+   "take": {
+    "file": "narrator/dlg.cin_drowned_fire.prints.0.ogg",
+    "hash": "2d8b284f0b0e",
+    "sec": 9.14,
+    "segs": [
+     [
+      0.0,
+      9.142,
+      0.0,
+      1.0
+     ]
+    ],
+    "model": "maya1 performance + seed-vc",
+    "parts": [
+     {
+      "voice": "narrator",
+      "src": "C:\\Users\\munch/vo-tools\\work\\placeholders\\dlg.cin_drowned_fire.prints.0\\p0_vc_r1.wav",
+      "seed": 1,
+      "score": 0,
+      "similarity": 0.771,
+      "utmos": 4.19,
+      "accent": "england",
+      "wps": 0.0,
+      "said": "prints in the frost, your own. They come up from the river. None go down to it.",
+      "style": "placeholder: Maya1 performance, Seed-VC"
+     }
+    ],
+    "made": "2026-10-03",
+    "placeholder": true
+   },
+   "placeholder": true
   },
   {
    "id": "dlg.cin_drowned_fire.frost.0",
@@ -23836,7 +23898,38 @@
     "pace": "slow",
     "vol": "quiet"
    },
-   "status": "todo"
+   "status": "done",
+   "take": {
+    "file": "narrator/dlg.cin_drowned_fire.frost.0.ogg",
+    "hash": "1096c4f7e3e0",
+    "sec": 3.74,
+    "segs": [
+     [
+      0.0,
+      3.736,
+      0.0,
+      1.0
+     ]
+    ],
+    "model": "maya1 performance + seed-vc",
+    "parts": [
+     {
+      "voice": "narrator",
+      "src": "C:\\Users\\munch/vo-tools\\work\\placeholders\\dlg.cin_drowned_fire.frost.0\\p0_vc_r1.wav",
+      "seed": 1,
+      "score": 0,
+      "similarity": 0.666,
+      "utmos": 4.03,
+      "accent": "newzealand",
+      "wps": 0.0,
+      "said": "past the firelight the frost is breaking",
+      "style": "placeholder: Maya1 performance, Seed-VC"
+     }
+    ],
+    "made": "2026-10-03",
+    "placeholder": true
+   },
+   "placeholder": true
   },
   {
    "id": "ply.cin_drowned_fire.frost.0",
@@ -31923,7 +32016,42 @@
     "vol": "quiet",
     "note": "The book's lines read as written words, each more unsettled; 'singing in the water' nearly a whisper."
    },
-   "status": "todo"
+   "status": "done",
+   "take": {
+    "file": "narrator/say.dabd6c78b40d.ogg",
+    "hash": "dabd6c78b40d",
+    "sec": 40.82,
+    "segs": [
+     [
+      0.0,
+      40.823,
+      0.0,
+      1.0
+     ]
+    ],
+    "model": "maya1 performance + seed-vc",
+    "parts": [
+     {
+      "voice": "narrator",
+      "src": "C:\\Users\\munch/vo-tools\\work\\placeholders\\say.dabd6c78b40d\\p0_vc_r2.wav",
+      "seed": 2,
+      "score": 0,
+      "similarity": 0.813,
+      "utmos": 3.64,
+      "accent": "england",
+      "wps": 0.0,
+      "said": "A watchman, grey -bearded and a long time dead, sitting against the post as if he had only stopped for breath. Something has had his eyes. In his belt book, three lines in a hand that worsens as it goes. Lamps at the low ford lit again, and not by us. Not oil, wrong colour. sent Danit for the captain. Danit not back. The warden is walking. I can hear it singing in the water.",
+      "style": "placeholder: Maya1 performance, Seed-VC"
+     }
+    ],
+    "made": "2026-10-03",
+    "placeholder": true,
+    "faults": [
+     "dannet->danit",
+     "dannet->danit"
+    ]
+   },
+   "placeholder": true
   },
   {
    "id": "say.178e6dd0ad78",
@@ -31945,7 +32073,38 @@
     "pace": "slow",
     "vol": "hushed"
    },
-   "status": "todo"
+   "status": "done",
+   "take": {
+    "file": "narrator/say.178e6dd0ad78.ogg",
+    "hash": "178e6dd0ad78",
+    "sec": 5.15,
+    "segs": [
+     [
+      0.0,
+      5.153,
+      0.0,
+      1.0
+     ]
+    ],
+    "model": "maya1 performance + seed-vc",
+    "parts": [
+     {
+      "voice": "narrator",
+      "src": "C:\\Users\\munch/vo-tools\\work\\placeholders\\say.178e6dd0ad78\\p0_vc_r1.wav",
+      "seed": 1,
+      "score": 0,
+      "similarity": 0.72,
+      "utmos": 4.02,
+      "accent": "england",
+      "wps": 0.0,
+      "said": "And for you alone, the dead man's jaw moves.",
+      "style": "placeholder: Maya1 performance, Seed-VC"
+     }
+    ],
+    "made": "2026-10-03",
+    "placeholder": true
+   },
+   "placeholder": true
   },
   {
    "id": "say.b81f9a1e8df8",
@@ -31967,7 +32126,38 @@
     "pace": "slow",
     "vol": "hushed"
    },
-   "status": "todo"
+   "status": "done",
+   "take": {
+    "file": "watchman/say.b81f9a1e8df8.ogg",
+    "hash": "b81f9a1e8df8",
+    "sec": 6.37,
+    "segs": [
+     [
+      0.0,
+      6.369,
+      0.0,
+      1.0
+     ]
+    ],
+    "model": "maya1 performance + seed-vc",
+    "parts": [
+     {
+      "voice": "watchman",
+      "src": "C:\\Users\\munch/vo-tools\\work\\placeholders\\say.b81f9a1e8df8\\p0_vc_r1.wav",
+      "seed": 1,
+      "score": 0,
+      "similarity": 0.838,
+      "utmos": 3.99,
+      "accent": "england",
+      "wps": 0.0,
+      "said": "It broke its own lamps, coming for me. Twice.",
+      "style": "placeholder: Maya1 performance, Seed-VC"
+     }
+    ],
+    "made": "2026-10-03",
+    "placeholder": true
+   },
+   "placeholder": true
   },
   {
    "id": "say.3dcd3f3caa00",
@@ -31990,7 +32180,38 @@
     "vol": "quiet",
     "note": "Matter-of-fact; the second sentence lands harder by being plainer."
    },
-   "status": "todo"
+   "status": "done",
+   "take": {
+    "file": "narrator/say.3dcd3f3caa00.ogg",
+    "hash": "3dcd3f3caa00",
+    "sec": 5.11,
+    "segs": [
+     [
+      0.0,
+      5.108,
+      0.0,
+      1.0
+     ]
+    ],
+    "model": "maya1 performance + seed-vc",
+    "parts": [
+     {
+      "voice": "narrator",
+      "src": "C:\\Users\\munch/vo-tools\\work\\placeholders\\say.3dcd3f3caa00\\p0_vc_r1.wav",
+      "seed": 1,
+      "score": 0,
+      "similarity": 0.794,
+      "utmos": 3.98,
+      "accent": "england",
+      "wps": 0.0,
+      "said": "The fire is almost out. It will not hold them back.",
+      "style": "placeholder: Maya1 performance, Seed-VC"
+     }
+    ],
+    "made": "2026-10-03",
+    "placeholder": true
+   },
+   "placeholder": true
   },
   {
    "id": "say.4d8a46e7502e",
@@ -32013,7 +32234,38 @@
     "vol": "quiet",
     "note": "'For now.' on its own, dry. The road north plainly, a little warmer."
    },
-   "status": "todo"
+   "status": "done",
+   "take": {
+    "file": "narrator/say.4d8a46e7502e.ogg",
+    "hash": "4d8a46e7502e",
+    "sec": 7.24,
+    "segs": [
+     [
+      0.0,
+      7.245,
+      0.0,
+      1.0
+     ]
+    ],
+    "model": "maya1 performance + seed-vc",
+    "parts": [
+     {
+      "voice": "narrator",
+      "src": "C:\\Users\\munch/vo-tools\\work\\placeholders\\say.4d8a46e7502e\\p0_vc_r1.wav",
+      "seed": 1,
+      "score": 0,
+      "similarity": 0.816,
+      "utmos": 4.12,
+      "accent": "england",
+      "wps": 0.0,
+      "said": "The ground goes still, for now, the road runs north toward the waystation.",
+      "style": "placeholder: Maya1 performance, Seed-VC"
+     }
+    ],
+    "made": "2026-10-03",
+    "placeholder": true
+   },
+   "placeholder": true
   },
   {
    "id": "say.2b72fa1dd85e",

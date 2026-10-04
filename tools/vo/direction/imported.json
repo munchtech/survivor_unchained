@@ -1,132 +1,15 @@
 {
- "dlg.vonnra.fortune.2": {
-  "emo": "expectant calm",
-  "intent": "to read the result of her own work",
-  "pace": "slow",
-  "vol": "level",
-  "wants": "to read the result of her own work",
-  "note": "Practical and exact about the hand. 'I have been waiting to see how it came out' is literal, and she lets it sound like ordinary curiosity.",
-  "intensity": 3,
-  "from": "cloud voice pass"
- },
- "dlg.vonnra.f_ember.5": {
-  "emo": "dark certainty",
-  "intent": "to warn that the trade will finish itself",
-  "pace": "slow",
-  "vol": "level",
-  "wants": "to warn that the trade will finish itself",
-  "note": "'Someone always does' is a law she lives by. Neither threat nor regret; a ledger fact.",
-  "intensity": 3,
-  "from": "cloud voice pass"
- },
- "dlg.vonnra.f_ember.6": {
-  "emo": "oblique warning",
-  "intent": "to plant a question they have not asked",
-  "pace": "slow",
-  "vol": "quiet",
-  "wants": "to plant a question they have not asked",
-  "note": "She knows what B.E. means and lets the letters hang unread. 'Someone always does' is quiet and certain.",
-  "intensity": 3,
-  "from": "cloud voice pass"
- },
- "dlg.sella.morning.3": {
-  "emo": "affectionate mischief",
-  "intent": "to send them off without admitting she cares",
-  "pace": "measured",
-  "vol": "quiet",
-  "wants": "to send them off without admitting she cares",
-  "note": "Morning-after banter, frank and funny. 'The pieces are what I like' is bawdy and also a real wish for them to come back alive.",
-  "intensity": 2,
-  "from": "cloud voice pass"
- },
- "dlg.sella.past.4": {
-  "emo": "fond surprise",
-  "intent": "to know them a little",
-  "pace": "measured",
-  "vol": "level",
-  "wants": "to know them a little",
-  "note": "She listens properly and enjoys the picture of them young. 'I'd have guessed, but not that' is warm and slightly puzzled. What is said here may be sold, and she knows it.",
-  "intensity": 2,
-  "from": "cloud voice pass"
- },
- "dlg.sella.past.5": {
-  "emo": "admiring warmth",
-  "intent": "to approve of their escape",
-  "pace": "brisk",
-  "vol": "quiet",
-  "wants": "to approve of their escape",
-  "note": "A gentle tease ('cloister rat'), then 'Good for you, love' warmly meant: she knows about getting out.",
-  "intensity": 2,
-  "from": "cloud voice pass"
- },
- "dlg.sella.past.6": {
-  "emo": "kinship",
-  "intent": "to share a secret back",
-  "pace": "measured",
-  "vol": "quiet",
-  "wants": "to share a secret back",
-  "note": "The pause is her low laugh. 'Takes one to know one' hints at her own past, unexplained. 'Don't tell Rook' is a shared joke.",
-  "intensity": 2,
-  "from": "cloud voice pass"
- },
- "dlg.sella.past.7": {
-  "emo": "moved",
-  "intent": "to honour what they told her",
-  "pace": "slow",
-  "vol": "quiet",
-  "wants": "to honour what they told her",
-  "note": "She is quiet a moment before the second sentence. 'Saddest thing' is said without performance; the last clause keeps it from tipping into pity.",
-  "intensity": 3,
-  "from": "cloud voice pass"
- },
- "dlg.snib.first.1": {
-  "emo": "panicked bluster",
-  "intent": "to stop the intruder and look important",
-  "pace": "measured",
-  "vol": "shout",
-  "wants": "to stop the intruder and look important",
-  "note": "Big shout on 'OI!', a lamp-ring on the stressed words. Then the self-introduction is proud and small. 'It does, actually' is the contradiction gag: a sudden honest deflation before 'But quick'.",
-  "intensity": 5,
-  "from": "cloud voice pass"
- },
- "dlg.snib.hub.1": {
-  "emo": "nervous pride",
-  "intent": "to sound in charge of a change he fears",
-  "pace": "quick",
-  "vol": "level",
-  "wants": "to sound in charge of a change he fears",
-  "note": "'Boss likes deeper' is brave; 'Boss has not SAID he likes it' is the panic underneath. Settle back into 'Foreman is still foreman' as reassurance to himself.",
-  "intensity": 3,
-  "from": "cloud voice pass"
- },
- "dlg.snib.hub.2": {
-  "emo": "grudging recognition",
-  "intent": "to show nothing has changed and he is in charge",
-  "pace": "quick",
-  "vol": "level",
-  "wants": "to show nothing has changed and he is in charge",
-  "note": "Weary self-important routine, two status reports.",
-  "intensity": 2,
-  "from": "cloud voice pass"
- },
- "say.48cdd82e6c0b": {
-  "emo": "wary, plain",
-  "intent": "to make the player feel one charge's weight in the hand",
-  "pace": "slow",
-  "vol": "quiet",
-  "wants": "to make the player feel one charge's weight in the hand",
-  "note": "Low and close, as if not to wake them. A small pause before 'the way they have waited for everyone': the crates are patient, and that is the threat.",
-  "intensity": 2,
-  "from": "cloud voice pass"
- },
- "say.4acad56ca838": {
-  "emo": "held breath",
-  "intent": "to let the relief arrive in the silence",
-  "pace": "slow",
-  "vol": "quiet",
-  "wants": "to let the relief arrive in the silence",
-  "note": "'One at a time' is a held breath; 'not go off' lands flat and quiet, almost dry. No triumph.",
-  "intensity": 2,
-  "from": "cloud voice pass"
- }
+ "dlg.vonnra.fortune.2": {"emo": "expectant calm", "intent": "to read the result of her own work", "pace": "slow", "vol": "level", "wants": "to read the result of her own work", "note": "Practical and exact about the hand. 'I have been waiting to see how it came out' is literal, and she lets it sound like ordinary curiosity.", "intensity": 3, "from": "cloud voice pass"},
+ "dlg.vonnra.f_ember.5": {"emo": "dark certainty", "intent": "to warn that the trade will finish itself", "pace": "slow", "vol": "level", "wants": "to warn that the trade will finish itself", "note": "'Someone always does' is a law she lives by. Neither threat nor regret; a ledger fact.", "intensity": 3, "from": "cloud voice pass"},
+ "dlg.vonnra.f_ember.6": {"emo": "oblique warning", "intent": "to plant a question they have not asked", "pace": "slow", "vol": "quiet", "wants": "to plant a question they have not asked", "note": "She knows what B.E. means and lets the letters hang unread. 'Someone always does' is quiet and certain.", "intensity": 3, "from": "cloud voice pass"},
+ "dlg.sella.morning.3": {"emo": "affectionate mischief", "intent": "to send them off without admitting she cares", "pace": "measured", "vol": "quiet", "wants": "to send them off without admitting she cares", "note": "Morning-after banter, frank and funny. 'The pieces are what I like' is bawdy and also a real wish for them to come back alive.", "intensity": 2, "from": "cloud voice pass"},
+ "dlg.sella.past.4": {"emo": "fond surprise", "intent": "to know them a little", "pace": "measured", "vol": "level", "wants": "to know them a little", "note": "She listens properly and enjoys the picture of them young. 'I'd have guessed, but not that' is warm and slightly puzzled. What is said here may be sold, and she knows it.", "intensity": 2, "from": "cloud voice pass"},
+ "dlg.sella.past.5": {"emo": "admiring warmth", "intent": "to approve of their escape", "pace": "brisk", "vol": "quiet", "wants": "to approve of their escape", "note": "A gentle tease ('cloister rat'), then 'Good for you, love' warmly meant: she knows about getting out.", "intensity": 2, "from": "cloud voice pass"},
+ "dlg.sella.past.6": {"emo": "kinship", "intent": "to share a secret back", "pace": "measured", "vol": "quiet", "wants": "to share a secret back", "note": "The pause is her low laugh. 'Takes one to know one' hints at her own past, unexplained. 'Don't tell Rook' is a shared joke.", "intensity": 2, "from": "cloud voice pass"},
+ "dlg.sella.past.7": {"emo": "moved", "intent": "to honour what they told her", "pace": "slow", "vol": "quiet", "wants": "to honour what they told her", "note": "She is quiet a moment before the second sentence. 'Saddest thing' is said without performance; the last clause keeps it from tipping into pity.", "intensity": 3, "from": "cloud voice pass"},
+ "dlg.snib.first.1": {"emo": "panicked bluster", "intent": "to stop the intruder and look important", "pace": "measured", "vol": "shout", "wants": "to stop the intruder and look important", "note": "Big shout on 'OI!', a lamp-ring on the stressed words. Then the self-introduction is proud and small. 'It does, actually' is the contradiction gag: a sudden honest deflation before 'But quick'.", "intensity": 5, "from": "cloud voice pass"},
+ "dlg.snib.hub.1": {"emo": "nervous pride", "intent": "to sound in charge of a change he fears", "pace": "quick", "vol": "level", "wants": "to sound in charge of a change he fears", "note": "'Boss likes deeper' is brave; 'Boss has not SAID he likes it' is the panic underneath. Settle back into 'Foreman is still foreman' as reassurance to himself.", "intensity": 3, "from": "cloud voice pass"},
+ "dlg.snib.hub.2": {"emo": "grudging recognition", "intent": "to show nothing has changed and he is in charge", "pace": "quick", "vol": "level", "wants": "to show nothing has changed and he is in charge", "note": "Weary self-important routine, two status reports.", "intensity": 2, "from": "cloud voice pass"},
+ "say.48cdd82e6c0b": {"emo": "wary, plain", "intent": "to make the player feel one charge's weight in the hand", "pace": "slow", "vol": "quiet", "wants": "to make the player feel one charge's weight in the hand", "note": "Low and close, as if not to wake them. A small pause before 'the way they have waited for everyone': the crates are patient, and that is the threat.", "intensity": 2, "from": "cloud voice pass"},
+ "say.4acad56ca838": {"emo": "held breath", "intent": "to let the relief arrive in the silence", "pace": "slow", "vol": "quiet", "wants": "to let the relief arrive in the silence", "note": "'One at a time' is a held breath; 'not go off' lands flat and quiet, almost dry. No triumph.", "intensity": 2, "from": "cloud voice pass"}
 }
