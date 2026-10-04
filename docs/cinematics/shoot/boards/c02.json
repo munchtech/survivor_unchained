@@ -1,0 +1,23 @@
+{
+  "seed": 1200,
+  "people": {
+    "her": "a young woman with long damp dark red hair with a strand of green river weed in it, bare arms, a fitted leather and steel armoured bodice with round steel pauldrons, a sword and a round shield",
+    "warden": "the Ford-Warden, a hooded drowned giant nearly three times a man's height, a long beard heavy with river water and weed, two points of cold blue light for eyes deep under the hood, a greatsword in his right hand, and in his left fist a lamp that is a square cage of new black forged iron with a cold pale blue flame",
+    "ford": "a shallow stony river ford at night with thick mist lying on the water, iron lamp posts burning with cold pale blue flames",
+    "drowned": "rows of drowned dead villagers standing waist deep in the dark water, soaked, weed hanging on them, heads bowed"
+  },
+  "shots": {
+    "1": "medium long shot from behind {her} standing at the water's edge beside an iron lamp post with a cold pale blue flame at frame left, looking north across {ford}; to the right, in a deep pool, one huge gauntleted arm stands straight up out of the river holding a square black iron lamp with a cold pale blue flame clear of the water",
+    "2": "wide shot at water level across a dark misty pool: {drowned}, facing away from camera in ragged rows, utterly still in moving mist; in the middle distance a single huge arm stands up out of the water holding a lamp with a cold pale blue flame",
+    "3": "a single panel, extreme close-up insert: one ancient armoured gauntlet, black with river slime and hung with weed, rising out of dark water and gripping a lamp that is a square cage of clean new black forged iron with sharp unrusted edges and a small cold pale blue flame inside; the water surface below trembling in rings; nothing else in frame",
+    "4": "close-up of {her} listening, very still, head tilted, eyes on something out in the river; cold pale blue light on her face from the side, mist behind her",
+    "5": "low wide shot just above the water: {warden} rising up out of the river, water sheeting off his hood and beard, sitting up like a drowned man and then standing, towering taller than the lamp posts, the lamp held high and clear of the water; mist",
+    "6": "medium shot, the camera backing away ahead of him: {warden} wading through the ford toward camera, his greatsword dragging through the water and on the stones behind him, the blue lamp in his left fist lighting the mist",
+    "7": "profile two-shot by a misty river ford at night showing their huge difference in size: {warden} is a giant nearly three times her height, bending far down from above over {her} who stands only as tall as his waist; he lifts his square black iron lamp with its cold pale blue flame down to her upturned face to look at her; she holds her round shield up between them and does not step back",
+    "8": "extreme close-up of a young woman's face filling the frame, eyes and nose and lips only, lit by a cold pale blue lamp held very close: a tiny blue flame reflected in each of her eyes, wet dark red hair across her brow, a strand of green river weed caught in the blue light; her lips parted and no breath showing at all; faint warm red on the other cheek",
+    "9": "low angle close-up looking up past a square black iron lamp with a cold pale blue flame at {warden}: his face under the deep hood lit from below, the beard streaming with water, two points of cold blue light for eyes",
+    "10": "low wide shot on the water from behind a giant's legs looking down a misty pool: {drowned}, all turning their heads at once toward camera in a wave down the rows",
+    "11": "low wide shot from the riverbank of the whole ford: {warden} standing in the river facing {her} on the near bank; the cold blue flames of the three lamp posts all leaning toward him at once like grass in a wind; ice spreading out across the black water from each post; {drowned} lifting their heads",
+    "12": "medium wide shot pulling up and back over a misty river ford at night: {warden}, a giant nearly three times her height, setting his greatsword in guard in the water, the single square black iron lamp with its cold pale blue flame in his left fist; {her} small before him with her round shield raised; blue lamp posts and mist around them"
+  }
+}

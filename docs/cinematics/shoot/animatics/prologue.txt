@@ -1,0 +1,62 @@
+   time    dur  shot
+   0.00   0.50  c01 s0 HOLD
+   0.50   3.50  c01 s1 BLACK
+   4.00   3.50  c01 s2 TOP
+   7.50   4.00  c01 s3 CU
+  11.50   3.00  c01 s4 INSERT
+  14.50   3.50  c01 s5 MS
+  18.00   7.00  c01 s6 MCU
+  25.00   8.25  c01 s7 OTS
+  33.25   4.00  c01 s8 CU
+  37.25   4.30  c01 s8a ELS
+  41.55  12.45  c01 s8b CU
+  54.00   5.00  c01 s9 LS
+  59.00   2.50  c01 s10 MCU
+  61.50   3.50  c01 s11 MLS
+  65.00   3.50  c01 s12 MLS
+  68.50   3.00  [card] In play: the night on the Low Ford road. The risen, the overturned wagon, the dead watchman, the Barrow. Then water, and a cold blue light.
+  71.50   4.00  c02 s1 MLS
+  75.50   4.00  c02 s2 LS
+  79.50   3.50  c02 s3 INSERT
+  83.00   8.24  c02 s4 CU
+  91.24   5.00  c02 s5 LS
+  96.24   4.00  c02 s6 MS
+ 100.24   4.00  c02 s7 2S
+ 104.24   3.75  c02 s8 ECU
+ 107.99   3.00  c02 s9 CU
+ 110.99   2.50  c02 s10 LS
+ 113.49   4.50  c02 s11 LS
+ 117.99   2.00  c02 s12 MS
+ 119.99   3.00  [card] In play: the Ford-Warden, and the three lamps.
+ 122.99   2.00  c03 s1 MCU
+ 124.99   4.00  c03 s2 MLS
+ 128.99   4.55  c03 s3 CU
+ 133.54   2.50  c03 s3b MCU
+ 136.04   2.50  c03 s4 INSERT
+ 138.54   4.00  c03 s5 LS
+ 142.54   4.00  c03 s6 MS
+ 146.54   3.50  c03 s7 OTS
+ 150.04   2.00  c03 s8 ECU
+ 152.04   4.05  c03 s9 MS
+ 156.09   7.16  c03 s10 MS
+ 163.25   5.30  c03 s11 MS
+ 168.55   5.00  c03 s12 ELS
+ 173.55   2.00  c03 s13 MS
+ 175.55   3.00  [card] In play: grey light. She crosses the ford.
+ 178.55   4.00  c04a sA1 MS
+ 182.55   5.00  c04a sA2 ELS
+ 187.55   3.50  c04a sA3 MS
+ 191.05   5.00  c04a sA4 MLS
+ 196.05   5.50  c04a sA5 CU
+ 201.55   5.00  c04a sA6 MCU
+ 206.55   8.52  c04a sA7 CU
+ 215.07   5.50  c04a sA8 LS
+ 220.57   3.00  [card] The road north. The Waystation's gate.
+ 223.57   7.00  c04b sB1 ELS
+ 230.57   3.89  c04b sB2 MS
+ 234.46   5.00  c04b sB3 MLS
+ 239.46   4.00  c04b sB4 MS
+ 243.46   1.50  c04b sB4a CU
+ 244.96   2.00  c04b sB4b MS
+ 246.96   3.00  c04b sB5 MLS
+ 249.96  end

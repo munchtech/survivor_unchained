@@ -1156,6 +1156,29 @@ the story's view of them, so that the nights tell the story the days write.
 
   **The atlas is other places,** never these walked by day (there is no
   arena by day). They are the places the road forgets, in Ysolde's hand.
+- **The town talks about your nights** (`npcs.json` `said`, keyed to
+  `arena.last.*`). It talks the night itself (`arena.last.ago` 0) and the
+  morning after (1), and then lets it go; `CinematicTests` proves that someone
+  speaks after every kind of night. The lines are seeds, and none says what
+  the horde is:
+  - Holloway counts her in ("One in. Count's right, for once.").
+  - Rook puts the night's ember on her slate: somebody's light, burned to wait
+    up for her.
+  - Chid, at her first fall, "Colder than usual, I mean": he knows she is
+    always cold at night. After a long night, "like moths round a candle".
+  - Maeca, after a Pack night: mine don't run at fire. With the Pack dead:
+    "So what were you killing?"
+  - Rav, after a Kerchief night: "Don't tell me whose". With Redcowl dead:
+    "not enough Kerchiefs left to bleed like that".
+  - Brannoc watches the hills for his irons' blue: "Open lamps. Not mine."
+  - Wenna smells hot stone on her: "the fever year".
+  - Sella: "I pay better than the Wayfinder". Two people buy what she
+    remembers.
+  - Ysolde keeps "a column" for those who go down and come out. The column is
+    what she sells.
+  - Pell keeps a column for the ember she burns. Keegan makes "a perfectly
+    ordinary note". Vonnra, at a fall: "A light went out on the hill tonight.
+    Not for long."
 - **The night's minibosses keep five rules:**
   1. The Legion's dead speak the old tongue, like their lord (the Decurion's
      "Scuta!", the Signifer's "Signa!").

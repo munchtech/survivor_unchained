@@ -63,6 +63,22 @@
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_pick_up.bvh",
 		"speed": 0.0
 	},
+	"f_rally": {
+		"layer": "full",
+		"length": 1.56666672229767,
+		"licence": "own work",
+		"loop": false,
+		"note": "a caster's rally",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"f_rally_armed": {
+		"layer": "full",
+		"length": 1.56666672229767,
+		"licence": "own work",
+		"loop": false,
+		"note": "a caster's rally, armed",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
 	"f_sit_chair": {
 		"changes": "retargeted to her skeleton, feet locked, looped, in place",
 		"layer": "full",
@@ -186,6 +202,22 @@
 		"note": "townsfolk (men)",
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_pick_up.bvh",
 		"speed": 0.0
+	},
+	"m_rally": {
+		"layer": "full",
+		"length": 1.56666672229767,
+		"licence": "own work",
+		"loop": false,
+		"note": "a caster's rally",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"m_rally_armed": {
+		"layer": "full",
+		"length": 1.56666672229767,
+		"licence": "own work",
+		"loop": false,
+		"note": "a caster's rally, armed",
+		"source": "keyed (tools/anim/crowd.py)"
 	},
 	"m_sit_chair": {
 		"changes": "retargeted to her skeleton, feet locked, looped, in place",

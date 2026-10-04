@@ -36,6 +36,8 @@ public sealed class ItemInstance
     public int? Draw;
     /// <summary>A Wayfinder's chart: the map it opens (docs/SKILLS_DESIGN.md §17.2).</summary>
     public Maps.Chart? Chart;
+    /// <summary>The day it was last remade: a remade piece cools overnight before the next.</summary>
+    public int? Remade;
 }
 
 public enum ConditionId { Wounded, Blightsick, Poisoned, Blessed, Rested, Wolfscent, Hunted, Warmed }

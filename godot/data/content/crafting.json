@@ -2,7 +2,7 @@
  "_doc": "Crafting's numbers (docs/CRAFTING_DESIGN.md). Index by rarity: Common, Uncommon, Rare, Epic, Legendary, Storied. Temper's steps are to grade II, III, IV; remake's to Uncommon, Rare, Epic.",
  "heat": [6, 10, 14, 18, 22, 22],
  "heatSpread": 0.2,
- "breakDown": [1, 2, 4, 6, 9, 0],
+ "breakDown": [1, 1, 2, 3, 5, 0],
  "temper": [
   { "iron": 2, "gold": 10, "heat": [2, 4] },
   { "iron": 4, "gold": 25, "heat": [3, 5] },
@@ -13,7 +13,7 @@
  "remake": [
   { "iron": 4, "gold": 30 },
   { "iron": 8, "gold": 75 },
-  { "iron": 14, "gold": 160 }
+  { "iron": 18, "gold": 200 }
  ],
  "remakeCap": 3,
  "remakeHeat": 4,
@@ -37,10 +37,48 @@
    "closedLine": "Forge is banked. Come back by day.",
    "respectPerCraft": 1,
    "respectFromCraft": 15,
+   "lines": {
+    "greet": ["On the anvil.", "Forge is hot. Show me.", "Dry day. Iron'll take the heat."],
+    "temper": ["Three. ...Four.", "Five.", "Two. Enough."],
+    "first.workIn": ["What it came off, it guards against. Old rule."],
+    "workIn": ["It'll take.", "Stitched. Riveted. It'll hold."],
+    "first.cage.before": ["The coal takes a long time to go dark in its cage. When it does, it is the shape of a thumbprint."],
+    "first.cage": ["Wants out. They all do."],
+    "first.cage.after": ["His eyes go to the two irons on his rack, and come back."],
+    "cage": ["Caged. Quiet now.", "It'll sit."],
+    "first.remake": ["Old iron's good iron. Just tired."],
+    "remake": ["Better pattern. Same iron."],
+    "first.rekindle": ["Heat comes back. Costs more each time. Like anything."],
+    "rekindle": ["Hot again."],
+    "breakDown": ["Back to iron.", "Scrap."],
+    "history.cage": ["A coal from {night}, caged by {who}, day {day}"],
+    "history.remake": ["Remade on Brannoc's anvil, day {day}"],
+    "fang.choice": ["Set this in something."],
+    "fang.give.before": ["(He holds it up to the forge-light and turns it.)"],
+    "fang.give": ["Worn flat on the one side. He chewed on that side."],
+    "fang.set": ["Set. It'll bite for you now."],
+    "history.fang": ["Set with Greymuzzle's fang on Brannoc's anvil, day {day}"]
+   },
    "easier": [
     { "when": { "rel": { "npc": "brannoc", "axis": "respect", "gte": 20 } }, "heatTop": -1, "line": "He takes his time over it." },
     { "when": { "rel": { "npc": "brannoc", "axis": "respect", "gte": 40 } }, "temperIron": -1, "line": "He has iron to spare for you." }
    ]
+  },
+"maeca": {
+   "name": "Maeca",
+   "place": "the Blind",
+   "verbs": [],
+   "when": { "fact": "pack.allied", "eq": true },
+   "respectPerCraft": 0,
+   "respectFromCraft": 0,
+   "easier": [],
+   "lines": {
+    "shedFur.offer": ["They've been leaving fur on the thorn by the Blind. For you, I think. Give me an evening."],
+    "shedFur.braid.before": ["(She sits with her back to the fire and braids it on her knee, grey and grey and white, the way you'd braid a child's hair. She doesn't talk. When it's done she bites the end off.)"],
+    "shedFur.braid": ["Next to the skin. They'll know you in the dark."],
+    "history.shedFur": ["Braided by Maeca from what the Pack shed, day {day}"],
+    "fang.seen": ["That's his. Wear it where I can't see it."]
+   }
   },
   "wenna": {
    "name": "Old Wenna",
@@ -50,12 +88,18 @@
    "closedLine": "I've half the Verge coughing, child. Bring me a clean stream and I'll stitch your coat.",
    "respectPerCraft": 1,
    "respectFromCraft": 10,
+   "lines": {
+    "greet": ["Sit. Not there— that's Tam's chest-rub. What is it, child?", "Kettle's on, still's not. Quick, child.", "Bitterroot, moonpetal, and mind the shelf— it's older than you."],
+    "brew": ["Bitterroot, boiled twice. Hold your nose.", "Drink it cold. It's worse, and it works.", "Antidote. You won't need it till you do."],
+    "first.brew": ["Bitter's the point, child— the body hates it, and gets up to get away from it. Drink."],
+    "flask.sale": ["A flask. Pewter, a lid that fits, my mark on the bottom. Rook fills it every night you sleep under her roof. A hundred and twenty, and it's cheap."]
+   },
    "easier": []
   }
  },
  "night": {
   "emberFrom": 10,
-  "emberPer": 8,
+  "emberPer": 12,
   "minutesPer": 2,
   "storyBonus": 2,
   "cap": 8,

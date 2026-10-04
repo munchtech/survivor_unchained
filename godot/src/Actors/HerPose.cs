@@ -18,6 +18,10 @@ public partial class HerPose : SkeletonModifier3D
     public float ArmsIn = 9f;
     /// <summary>Degrees of hip tilt (the shoulders answer at half).</summary>
     public float HipTilt = 3.5f;
+    /// <summary>Degrees the neck is bowed forward: a body whose neck leans
+    /// further forward at rest than the library's (the hero's) has his head
+    /// thrown back by its clips without it.</summary>
+    public float NeckPitch = 0f;
     /// <summary>How much of what is playing is her own (tools/anim, made on
     /// her skeleton): 0 a library clip, wholly corrected; 1 her own, left as
     /// made. Split in two because the body's halves can play different
@@ -36,7 +40,7 @@ public partial class HerPose : SkeletonModifier3D
     // The bones it moves, found once (asking the skeleton for every bone's
     // name each frame made a string of each, and a frame's worth of garbage).
     Skeleton3D? found;
-    int pelvis = -1, upperL = -1, upperR = -1, spine3 = -1;
+    int pelvis = -1, upperL = -1, upperR = -1, spine3 = -1, neck = -1;
     int[] fingers = System.Array.Empty<int>();
 
     void Find(Skeleton3D sk)
@@ -46,6 +50,7 @@ public partial class HerPose : SkeletonModifier3D
         upperL = sk.FindBone("upperarm_l");
         upperR = sk.FindBone("upperarm_r");
         spine3 = sk.FindBone("spine_03");
+        neck = sk.FindBone("neck_01");
         var list = new System.Collections.Generic.List<int>();
         for (int b = 0; b < sk.GetBoneCount(); b++)
         {
@@ -79,6 +84,7 @@ public partial class HerPose : SkeletonModifier3D
         {
             Turn(sk, upperL, Vector3.Forward, -ArmsIn * arms);
             Turn(sk, upperR, Vector3.Forward, ArmsIn * arms);
+            if (NeckPitch != 0) Turn(sk, neck, Vector3.Right, NeckPitch * arms);
         }
         if (lib > 0)
         {
