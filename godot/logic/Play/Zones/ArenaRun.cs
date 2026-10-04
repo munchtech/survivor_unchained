@@ -899,16 +899,16 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
 
     public override bool OnDeath(string killer)
     {
-        if (!over) Finish();
+        if (!over) Finish(killer);
         return true;
     }
 
-    void Finish()
+    void Finish(string? killer = null)
     {
         if (B == null) return;
         over = true;
         G.SetBoss(null);
-        var result = Arenas.Finish(G.Journey, B, Spec, won);
+        var result = Arenas.Finish(G.Journey, B, Spec, won, killer);
         G.After(B.Player.Alive ? 0.6 : 2.2, () => G.ArenaOver(result));
     }
 

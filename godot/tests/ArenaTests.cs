@@ -377,6 +377,24 @@ public class ArenaTests
     }
 
     [Fact]
+    public void The_town_can_talk_about_the_last_night()
+    {
+        var s = Make(Spec("kerchiefs"));
+        s.B.Time = 12.5 * 60;
+        s.B.Player.Alive = false;
+        s.Zone.OnDeath("a Kerchief Bruiser");
+        Run(s, 3);
+        var w = s.J.World;
+        Assert.Equal("kerchiefs", w.Fact("arena.last.people").Str);
+        Assert.False(w.Fact("arena.last.won").Truthy);
+        Assert.True(w.Fact("arena.last.fell").Truthy);
+        Assert.Equal("a Kerchief Bruiser", w.Fact("arena.last.killer").Str);
+        Assert.Equal(12.5, w.Fact("arena.last.minutes").Number, 1);
+        Assert.Equal(1, w.Fact("arena.nights").Number);
+        Assert.Equal(1, w.Fact("arena.fell").Number);
+    }
+
+    [Fact]
     public void Falling_keeps_what_was_earned_and_a_story_fight_waits_to_be_taken_again()
     {
         var s = Make(Spec(story: true));
