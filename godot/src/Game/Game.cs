@@ -348,6 +348,10 @@ public partial class Game : Node, IZoneHost
         ZoneData data;
         if (id == "arena") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(World.Arena!.Map); data = new ZoneData(currentMap); }
         else { currentMap = null; data = new ZoneData(id); }
+        // What it is built from, loaded all at once on the worker threads first.
+        Perf.Lap("prefetch", true);
+        Prefetch.Zone(data, Journey != null ? Loadouts.Of(Journey.Ch).Person : null, folk: id != "arena");
+        Perf.Lap("what it is built from, fetched on the worker threads");
         scene = new WorldScene(data, cam);
         AddChild(scene);
         scene.Move = () => auto?.Move ?? (controls.Captured ? (0, 0) : (controls.MoveX, controls.MoveZ));
