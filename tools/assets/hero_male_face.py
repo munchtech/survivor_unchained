@@ -264,3 +264,10 @@ if __name__ == "__main__":
     from PIL import Image
     Image.fromarray((out[::-1] * 255 + 0.5).astype(np.uint8)).save(os.path.join(OUT, "face_paint.png"))
     print("FACE PAINT", os.path.join(OUT, "face_paint.png"), "%d%% of his head painted" % (100 * (cover > 0.5).mean()))
+    # Where each part of MakeHuman's layout ("mh") was painted in this
+    # packing: hero_male_head.py finds the paint through it when his head
+    # is packed anew.
+    me = head.data
+    L = np.array([t.loops[:] for t in me.loop_triangles])
+    np.savez_compressed(os.path.join(OUT, "face_paint_uv.npz"), mh=np.array([d.uv[:] for d in me.uv_layers["mh"].data])[L],
+                        packed=np.array([d.uv[:] for d in me.uv_layers[0].data])[L])
