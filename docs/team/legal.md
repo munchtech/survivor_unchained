@@ -14,10 +14,12 @@ Agent aa12c130ddf4b904c, branch `worktree-agent-aa12c130ddf4b904c` (worktree `.c
   - licence notices and credits shipped;
   - the boar;
   - the base bodies' source pictures;
+  - the owner's confirmation that he owns The Ember Watch;
   - explicit-scene placeholders out of release data;
   - placeholder voices replaced or dropped.
 - **Biggest business risk:** the Krea 2 licence allows commercial use of outputs only under US$1M company revenue, and is revocable on 30 days' notice.
-- **Not yet verified by me:** whether any nipple, areola or crotch shows in motion with jiggle on. I asked for a motion check in the checklist. Also open: the provenance auditor's final `ASSET_PROVENANCE.md`; its early findings are ruled on in brief issue 5.
+- **Provenance reviewed:** `ASSET_PROVENANCE.md` and `REPLACEMENT_PLAN.md` (c009fdfd on `worktree-agent-a80ff0c7fd988b178`). The rulings are in brief issue 5, and I agree with the plan's order.
+- **Not yet verified by me:** whether any nipple, areola or crotch shows in motion with jiggle on. I asked for a motion check in the checklist.
 
 ## Key decisions (with why)
 
@@ -28,7 +30,7 @@ Agent aa12c130ddf4b904c, branch `worktree-agent-aa12c130ddf4b904c` (worktree `.c
 
 ## Next
 
-1. Review `ASSET_PROVENANCE.md` when it lands (`worktree-agent-a80ff0c7fd988b178`), and rule on every row in the brief.
+1. Re-rule when the owner answers the provenance questions (234.glb, the reference sheet, the hero's and woman's pictures, The Ember Watch, the names).
 2. Standing check: review new tools and assets as leads add them. Read status pages at milestones.
 3. When the main session has time: render a motion and jiggle check of each outfit, or ask for one.
 4. Before launch: review the credits screen, the `licences/` folder and the `.pck` listing.
