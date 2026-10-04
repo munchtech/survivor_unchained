@@ -611,13 +611,25 @@ the thing read closely on the right, with how full each is; a click, A, or a
 drag moves a thing across.
 
 ### 7.7 The Last Lamp
-Sleep (with its price), wait for night, not yet; refused, it says why ("You
-need 5 gold; you have 2"). The morning on paper at body size.
+**Done** (the third pass): a window in the place itself, the world in view
+round it: the lamp's name on its plaque, Mother Rook's line, and the choices
+as three **crested cards**, each with its sign on a medallion (the moon, the
+hourglass, the way out), what it does in a line, and its price on a coin tag;
+sleeping is the lit one. Refused, the card is greyed with the reason on it
+("You need 5 gold; you have 2"). The morning after is read on paper.
+**Why**: a choice of three with consequences is read best as three things
+side by side (Hick, recognition); the window keeps the inn in view.
 
 ### 7.8 The Wayfinder's table
-Three maps as cards: tier with diamonds, name, who holds it and what rules
-it, their bane, the oaths (asks, gives, what answers them), Enter at the
-foot. The plate fits.
+**Done** (the third pass): what it is, three map sheets in their wooden
+frames (the painted `map_frame`) lying a little askew on the Wayfinder's dark
+table, each lettered by hand with its tier, its place, who holds it and who
+rules it, their bane, and each oath **sealed in wax** beside its terms (asks
+in red, gives in green, what answers it); the Wayfinder's compass in each
+sheet's corner; Enter the arena on the table under each. The story's lost
+fights wait on a slab along the table's foot. **Why**: a choice among three
+places is a choice among maps; drawn as maps it says what it is before a
+word is read, and the oaths as seals make a map's price felt.
 
 ### 7.9 The arena's end
 **Composition** (second pass, `result_b_spoils` over `result_a_boxes`): the
