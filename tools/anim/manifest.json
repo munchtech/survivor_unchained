@@ -8,8 +8,8 @@
   "Kimodo": "NVIDIA Kimodo-SOMA-RP-v1.1, NVIDIA Open Model License: generated motion (tools/anim/kimodo_gen.py).",
   "SAM 3D Body": "Meta SAM 3D Body (SAM License) with the Momentum Human Rig (Apache 2.0): motion from video (tools/anim/video_motion.py); test footage from Pexels (Pexels licence), each clip's URL in its row."
  },
- "made": 64,
- "planned": 64,
+ "made": 65,
+ "planned": 65,
  "clips": [
   {
    "clip": "idle_warden",
@@ -697,7 +697,7 @@
   },
   {
    "clip": "death",
-   "plays_for": "falls",
+   "plays_for": "falls (struck from behind, or by poison or fire)",
    "status": "made",
    "fallback": "Death01",
    "made_by": "keyed",
@@ -705,6 +705,18 @@
    "licence": "own work",
    "changes": "",
    "length": 1.133,
+   "layer": "full"
+  },
+  {
+   "clip": "death_back",
+   "plays_for": "falls (struck from in front): onto her back",
+   "status": "made",
+   "fallback": "Death01",
+   "made_by": "keyed",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 1.333,
    "layer": "full"
   },
   {

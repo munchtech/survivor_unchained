@@ -120,4 +120,25 @@ public class WaystationTests
         Assert.Contains("rook", s.Host.Talked);
         Assert.True(s.J.Ch.Gold >= 25);
     }
+
+    /// <summary>The markers over people's heads are worked out when something may have
+    /// changed them, not every frame (performance): one a conversation clears is gone
+    /// the very frame the conversation ends, and one for someone not yet met shows at once.</summary>
+    [Fact]
+    public void A_marker_clears_the_frame_its_conversation_ends()
+    {
+        var s = Make();
+        s.Zone.Frame(1 / 30.0);
+        char? Mark(string id) => s.Host.FakeLook.LastPlates.SingleOrDefault(p => p.Id == id)?.Marker;
+        var who = s.Zone.Actors.Keys.First(id => !s.Zone.Actors[id].Hidden && Mark(id) == '!');
+        // What the conversation does (met), then what the game does as it ends (Touched).
+        s.J.World.Npc(who).Flags["met"] = true;
+        s.Zone.Touched();
+        s.Zone.Frame(1 / 30.0);
+        Assert.Null(Mark(who));
+        // And the slow check catches what nothing announced.
+        s.J.World.Npc(who).Flags["met"] = false;
+        Run(s, 2.2);
+        Assert.Equal('!', Mark(who));
+    }
 }

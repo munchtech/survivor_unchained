@@ -57,6 +57,8 @@ public sealed class ItemDef
     /// <summary>A named piece the Waystation's hands may still work (one of their own making):
     /// plain bases and weapons always may (docs/CRAFTING_DESIGN.md, "Which pieces can be worked").</summary>
     public bool Workable;
+    /// <summary>The name of several, in running text ("wolf pelts", "old iron"): a material's.</summary>
+    public string? Plural;
 }
 
 public sealed class AffixDef
@@ -112,6 +114,14 @@ public static class Items
 
     public static ItemDef Get(string id) => All.TryGetValue(id, out var d) ? d : throw new KeyNotFoundException($"unknown item {id}");
     public static ItemDef? Find(string id) => All.TryGetValue(id, out var d) ? d : null;
+
+    /// <summary>So many of a thing, in running text: "1 wolf pelt", "3 wolf pelts", "4 old iron".</summary>
+    public static string Several(string id, int n)
+    {
+        var d = Find(id);
+        string one = (d?.Name ?? id).ToLowerInvariant();
+        return $"{n} {(n == 1 ? one : d?.Plural ?? one)}";
+    }
 
     static StatMod M(string stat, ModKind kind, double value) => new(stat, kind, value, "item");
     static string Pct(double v) => $"{MathX.RoundInt(v * 100)}%";

@@ -51,7 +51,16 @@ Research: `docs/CRAFTING_RESEARCH.md` (29 games, lessons C1–C30). Design:
 
 ## Agreed with others
 
-- **Combat** (`ac4ec5bbd2763a0df`) said yes to every hook (design 12). It is cutting arena fodder gold to 2% and gear to champion events, heralds, minibosses and bosses, and will send its miniboss def ids for `night.peoples` (+2 material each, plus their own rare drop).
+- **Combat** (`ac4ec5bbd2763a0df`) said yes to every hook (design 12). Its fixes are built (`worktree-agent-ac4ec5bbd2763a0df@71608a4`, not yet merged here):
+  - `MapRules.FodderGold = 0.02`;
+  - gear only from carriers.
+- **Miniboss ids** to wire into `night.peoples` (+2 material each, plus a rare drop of their own). All are `Elite`, `Miniboss`, `Loot = "miniboss"`, five a night plus two in the long push, and the harness reports `MinibossesMet` and `Minibosses`:
+  - pack: `mb_old_tusk`, `mb_whitethroat`, `mb_blight_mother`, `mb_outflow_sow`, `mb_caller`;
+  - dead: `mb_old_quarrel`, `mb_decurion`, `mb_the_heap`, `mb_drowned_reeve`, `mb_ford_bell`;
+  - lamplings: `mb_wick_mother`, `mb_bombardier`, `mb_lamplighter`, `mb_fuse_boss`, `mb_gaffer`;
+  - kerchiefs: `mb_firepot_nan`, `mb_pike_captain`, `mb_barn_door`, `mb_levy_sergeant`, `mb_drum_major`.
+- **Story nights are now 20 minutes** and end at the boss. The yield already reads `spec.Minutes`; re-check the shard numbers with the new length.
+- **Owed to combat: an answer on maps.** `SKILLS_DESIGN.md` §17 on its branch proposes a chart item: tier 1–16, a people, a seed, plain/fine/rare, mods that pay quantity and rarity, quality to 20. Crafting would roll, add, seal and remove mods and add quality, from the people's materials and heat; §17.5 pays materials per champion and miniboss. Read it, say what to change, and fold it into the design as a later phase. The experience lead owns the loop.
 - **Story** (`a7622ae77d19e31dc`): not yet told. They need to approve or rewrite:
   - Brannoc's "Can you work my gear?";
   - his forge lines;

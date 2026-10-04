@@ -31,6 +31,11 @@ public sealed class CineFile
     /// (h above the ground there).</summary>
     public Dictionary<string, double[]> Marks = new();
     public Dictionary<string, CineCast> Cast = new();
+    /// <summary>Whose lines are read as narration: in italics, unnamed. The voice
+    /// is the node's speaker in dialogue.json, so a narration recast (Vonnra
+    /// calling the survivor home, if the story lead decides it) is a change to
+    /// the speaker there and to this list, and nothing else.</summary>
+    public List<string> Narrators = ["narrator"];
     public List<CineShot> Shots = new();
     /// <summary>Where it leaves things: the survivor's mark, and how the game's camera takes over.</summary>
     public CineEnd End = new();

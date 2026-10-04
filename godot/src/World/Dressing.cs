@@ -179,6 +179,9 @@ public static class Dressing
             if (!groups.TryGetValue(k, out var list)) groups[k] = list = new();
             list.Add(at);
         }
+        // (Each piece's file loaded first, so the time it takes shows apart from placing them.)
+        foreach (var ((id, _, _), _) in groups) { int sl = id.IndexOf('/'); PartsOf(id[..sl], id[(sl + 1)..]); }
+        Perf.Lap("props: their files loaded");
         foreach (var ((id, _, _), list) in groups)
         {
             int slash = id.IndexOf('/');

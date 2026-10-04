@@ -93,6 +93,21 @@ public static class Report
             }
             sb.AppendLine();
         }
+        // The minibosses: met, killed, how long they took, and who they killed.
+        var mbs = runs.SelectMany(r => r.MinibossesMet).GroupBy(d => d).ToList();
+        if (mbs.Count > 0)
+        {
+            sb.AppendLine("### The minibosses\n");
+            Head(sb, "miniboss", "met", "killed", "TTK (s)", "TTK p90 (s)", "minute killed", "runs it ended");
+            foreach (var g in mbs.OrderBy(g => g.Key))
+            {
+                var kills = runs.SelectMany(r => r.Minibosses).Where(m => m.Def == g.Key).ToList();
+                var ttk = kills.Select(m => m.Ttk).OrderBy(x => x).ToList();
+                Row(sb, g.Key, g.Count(), kills.Count, F(Median(ttk), "0"), ttk.Count == 0 ? "–" : F(ttk[Math.Min(ttk.Count - 1, (int)(ttk.Count * 0.9))], "0"),
+                    F(Median(kills.Select(m => m.At))), runs.Count(r => r.Died && r.KilledBy == g.Key));
+            }
+            sb.AppendLine();
+        }
         // The long night: how far past the half hour the won runs got, and what ended them.
         var night = runs.Where(r => r.Won && r.Spec.Beyond > 0).ToList();
         if (night.Count > 0)

@@ -1,59 +1,53 @@
 # UI art: status
 
-Agent a72467cac33063d3a. Branch `worktree-agent-a72467cac33063d3a` (= predecessor's
-`worktree-agent-abd496197891ea843` + this work). Handoff from before: `docs/handoff/ui_art.md`.
+Agent a72467cac33063d3a. Branch `worktree-agent-a72467cac33063d3a` (merges the integration branch and
+the UI design lead's). Handoff from before: `docs/handoff/ui_art.md`. One rebuild: `python tools/uiforge/build.py`.
 
-## State (stopped at the owner's usage limit)
+## State (stopped at the owner's usage limit, 2026-10-04)
 
-- **Medallions remade as reliefs** (item 1 of the list): new `tools/uiforge/relief.py` (a piece
-  modelled as a height field + PBR maps in numpy) and `blender_relief.py` (one vertex per render
-  pixel, rendered in Cycles under the house light from `blender_frames`), then a light paint-over
-  (`paintover.py`, 0.26-0.30) with the wire, the chain and the number's well protected.
-  - `hud/medal_level.png`: the Legion's seal. Planished iron ring, forge-welded at its foot, the
-    binders' twisted wire, seven notches at the inner edge (the binders' seven keys), a dark well
-    for the number with the ember smouldering in the gap at its foot.
-  - `hud/medal_heart.png`: a bezel with a heart-shaped hollow, an iron chain coiled round it in a
-    channel, one link pried open at the head with ember at the break (each link of the chain is
-    anchored in a heart: STORY_BIBLE).
-  - `icons/glyph_color/heart.png`: the heart-stone the code lays over the heart medal (22 px):
-    a heart-cut ruby, faceted, lit inside. Only that HUD uses the `heart` key.
-  - Built by `python tools/uiforge/build.py medals` (`tools/uiforge/medals.py`).
-- **Not yet seen in the running game.** Judged only in mock-ups at shown size over a game shot.
-- `build.py painted` no longer runs fitall's `minimap` and `medals` groups: they would have
-  overwritten the Blender minimap rim and art ring with the old AI cut-outs on a full rebuild.
+- **Every piece the redesign asks for is made and seen in game** (shots `godot/.shots/m3_*`):
+  `medallion/ring.png`, `hud/globe_rim.png` + `globe_glass.png`, `frames/console.png`, `well.png`,
+  `slab.png`, `header.png`, `pillar.png`, `crest_card.png`, `crest_row.png`, `banner.png`,
+  `book/open.png`, `book/ribbon.png`, `ornaments/plaque_rule.png`; draft cards lengthened to
+  736x1096 (320x500 shown, one to one). The level medallion is the Legion's seal (seven notches).
+- **Stat marks made as assets** (not wired; the designer's call): `icons/glyph/stat_<Stat enum,
+  lower case>.png` (maxhealth, armor, regen, healing, dodge, damage, critchance, critdamage, cooldown,
+  area, movespeed, dashcharges, pickupradius, xpgain, goldgain), value art the code tints, in
+  `valueglyphs.STATS` (built with `build.py glyphs`). Wiring: `Glyphs.Icon($"stat_{stat.ToString().ToLower()}", 16, ...)`.
+- **Icon remake in progress** (`tools/uiforge/emblems.py`): each icon modelled as shapes, lit, set in
+  its school's glow (the guide), painted over on the Krea at 0.5, cut on the guide's silhouette.
+  Designs written: mirror, wraith, leap, blink, smoke, echo, feint, hourglass, embers (arts) and
+  aegis, howl, expand, retaura, frostaura, pyre, risen, herd, tether, umbral, consecrate, drain, static,
+  book. Painted so far: mirror and wraith (seed 1200, in `tools/comfy/out/uiforge/emblems/`). The
+  painted mirror is far better than the old figure; the wraith's silhouette is mushy (see Next).
+  **No icon file is replaced yet.**
+- Weak items: second takes from words prepared (`items.T2I`: pelt, hide, root, seed, dust, bomb);
+  not painted yet.
+- How everything is made: `relief.py` + `blender_relief.py` (reliefs), `medals.py` (round),
+  `pieces.py` (shaped frames), `chrome.py` (Blender curve frames), `emblems.py` (icons).
 
 ## Next (in order)
 
-0. **Merge the UI design lead's branch** `worktree-agent-a5629aff0f215ea4a@ed542b3` (pushed; not yet
-   merged here). Per its message: health is now a globe, so the health bar, its casing and
-   `medal_heart` are no longer shown (the heart medal and stone above are then unused; the stone
-   may suit the globe). New pieces asked for by name (UI_ART_BRIEF 4.9, ui_assets.json "not yet
-   made"): `frames/well`, `slab`, `header`, `banner`, `pillar` (Self), `console` (HUD band),
-   `book/open.png`, `medallion/ring.png` (every design medallion, middle open from 78%),
-   `hud/globe_rim.png`, `hud/globe_glass.png`. `map_frame` now frames the Wayfinder's table's maps.
-   Draft cards are 320x500 now (the painted card stretches 48 px in the middle: refit).
-   `relief.py` suits the globe rim and the medallion ring directly. Do these before the list below.
-1. Import and screenshot the HUD at 1920x1080 (`python tools/uiforge/shots.py --prefix m1`);
-   check the level number in the well, the heart's beat, both by day and night. Judge
-   "do we have soul?" at shown size; iterate (the level band is dark at 58 px; the chain may want
-   more contrast).
-2. Skill icons that show a person (leap, smoke, mirror, echo, wraith, feint) and the soft ones at
-   17 px. Seen at 40/17 px (contact sheet): many more read as smoke blobs (tether, tether2,
-   tether_mark, umbral, siphon, zone_blight*, risen, herd*). Consider remaking the family as
-   relief emblems + paint-over rather than text-to-image.
-3. Weak item icons (pelt, hide, dust, seed, root). 4. Uncommon/rare cards louder.
-5. Logo as a relief (`relief.py` suits letters). 6. Stat icons as assets in `icons/glyph/stat_*`.
-7. Hover states screenshotted.
+1. Emblems: lower the whole-shape halo for dark schools (0.35 to ~0.15) so silhouettes are dark
+   against black with a rim, not a purple fog (wraith); then `python tools/uiforge/emblems.py --many`
+   (one queued graph for all: the queue is shared with long LTX video jobs, one i2i job waited 15 min).
+   Pick per key with `look_em`-style sheets at 128/44/17 px, `emblems.fit(key, src)` to write the icon,
+   record picks in emblems.py. Judge each against the old icon; keep the better.
+2. Then the rest of the soft icons (zone_*, nova_*, tether2/_mark, siphon, herd_great/_hunt, command,
+   kindling, living_flame, scent, execute, beam_*...).
+3. `python -c "import items; items.t2i()"` then pick and `items.fit(key, (1100, j))`.
+4. Portrait cards for character creation when the UI design successor (ac76f400913a109cd) registers them.
+5. Logo as a relief; hover-state shots (the shot harness has `--keys` for the pad, no hover yet).
 
 ## Key decisions
 
-- Reliefs over Blender curve specs for round, exact pieces: a height field gives any form
-  (notches, links, facets, ragged edges) with real light, and stays scriptable.
-- The heart's stone is the icon, the setting is the medal: the code draws the icon over it.
-- Paint-over caches by the render's content hash, so a changed model is painted afresh.
+- Reliefs for exact, scriptable forms with real light; paint-over only adds the hand (0.15-0.3).
+- Icons: the thing itself, never a person; silhouette from the model, hand from the paint.
+- Paint-over caches by the render's content hash; emissive and small parts are protected.
+- `krea.i2i_many`: many paintings in one queued graph (one place in the shared queue).
 
 ## Notes for other areas
 
-- UI design (a5629aff0f215ea4a): no UI code touched here. Its merge is pushed (ed542b3); merge it first.
-- Raw renders and paintings: `tools/comfy/out/uiforge/relief/` and `.../paintover/` (ignored).
-  Copied the predecessor's `tools/comfy/out/uiforge/` into this worktree (613 MB) so builds reuse it.
+- ComfyUI had crashed on 2026-10-04; it is running again (someone restarted it before my start did).
+- UI design: the mirrored plaque rule is drawn through the title (`Plaque._Draw`), reported.
+- Raw renders/paintings: `tools/comfy/out/uiforge/{relief,paintover,emblems}/` (ignored, on this PC).

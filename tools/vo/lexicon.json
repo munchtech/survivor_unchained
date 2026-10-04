@@ -54,7 +54,8 @@
    "brannick",
    "brannoch",
    "brandock",
-   "brennock"
+   "brennock",
+   "branagh"
   ],
   "redcowl": [
    "red cowl",
@@ -140,7 +141,9 @@
    "aumery",
    "awmery",
    "emery",
-   "aubrey"
+   "aubrey",
+   "omri",
+   "aumry"
   ],
   "snib": [
    "snib",
@@ -151,7 +154,8 @@
    "wenna",
    "wena",
    "venna",
-   "winna"
+   "winna",
+   "wenner"
   ],
   "rav": [
    "rav",
@@ -250,6 +254,31 @@
    "kiln",
    "kill",
    "killn"
+  ],
+  "ashe": [
+   "ash"
+  ],
+  "redi": [
+   "ready",
+   "reddy"
+  ],
+  "c": [
+   "sea",
+   "see"
+  ],
+  "one": [
+   "won"
+  ],
+  "saw": [
+   "sore"
+  ],
+  "chid will": [
+   "chiddle"
+  ],
+  "m": [
+   "him",
+   "mm",
+   "em"
   ]
  }
 }

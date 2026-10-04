@@ -72,6 +72,7 @@ public sealed class SoundBridge
                 case Ev.Spawn sp: Sfx.Spawn(sp.Style, At(sp.X, sp.Z)); break;
                 case Ev.LevelUp: Sfx.LevelUp(); break;
                 case Ev.Evolve: Sfx.Evolve(); break;
+                case Ev.Victory: Sfx.Fall(); break;
                 case Ev.Pickup p:
                     switch (p.Kind)
                     {
@@ -83,6 +84,7 @@ public sealed class SoundBridge
                     }
                     break;
                 case Ev.Sound snd when snd.Id == "door": Sfx.Door(); break;
+                case Ev.Sound snd when snd.Id.StartsWith("tell"): Sfx.Tell(snd.Id); break;
             }
         }
     }

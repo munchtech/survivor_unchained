@@ -352,6 +352,11 @@ public abstract class ZoneRuntime
     public virtual void Step(double dt) { }
     /// <summary>Each rendered frame.</summary>
     public virtual void Frame(double dt) { }
+    /// <summary>Something the survivor did may have changed how things stand here
+    /// (a conversation closed, something was used, a screen shut): what is
+    /// worked out only now and then (the markers over people's heads) is worked
+    /// out again before the next frame.</summary>
+    public virtual void Touched() { }
     public virtual void Events(IReadOnlyList<CombatEvent> evs) { }
     /// <summary>The time of day the zone shows, from the world.</summary>
     public virtual TimeOfDay TimeOf(WorldState w) => w.Time;

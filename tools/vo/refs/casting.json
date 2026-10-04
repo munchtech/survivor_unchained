@@ -565,5 +565,20 @@
    "accent heard as england (0.61), want scotland"
   ],
   "said": "Tull's due. Same as last month and the month before. Put it in the hand and walk on."
+ },
+ "warden_man": {
+  "seed": 1,
+  "score": 6.515,
+  "clean": "1/12",
+  "utmos": 4.15,
+  "accent": {
+   "england": 1.0,
+   "us": 0.0,
+   "scotland": 0.0
+  },
+  "f0": 100.0,
+  "wps": 3.0,
+  "bad": [],
+  "said": "Is it morning? I kept the lamps. Someone has to keep the lamps or nobody knows where the water is."
  }
 }
