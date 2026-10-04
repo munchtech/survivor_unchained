@@ -1094,7 +1094,11 @@ contradiction. It raised four things; each is settled here.
   until someone moves, breaks or blows the pump; Act 2 reads it ("still
   running at the act's end"). [DATA, done; `CinematicTests.The_pump_runs_until_someone_stops_it_and_the_burial_is_one_morning`]
 
-## 17. The editorial's cheap seeds, and the voice director's first reads (3 October)
+## 17. The editorial's cheap seeds, the town noticing, and the voice director's first reads (3 October)
+
+What is in the data now, after the story editor's round five on this pass. All
+[DATA, done] unless marked. Lines the editor asked to protect, and that are to be
+recorded exactly as written, are marked *(protect)*.
 
 **The explorer's full run** (16 survivors, 645,549 states, 30 minutes) found
 nothing: no softlock, dead end, contradiction, gate that can never be met, or
@@ -1107,72 +1111,116 @@ played end to end through the game's own conversations and interactables:
 road, with Wenna's affection under 20) and
 `RouteTests.Keegan_sups_with_whoever_read_the_watchmans_book_and_found_Ashe`.
 
-The seeds from `docs/editorial/` that were still only on paper, each held to
-the soul test and `VOICES.md`. All [DATA, done] unless marked.
+**The editorial's seeds:**
 
-- **"Gone to the Morrow"** (I-22): the valley's word for dying is the god's
-  name. Rook (`rook.valley`, from "Tell me about the Waystation": "Ashford was.
-  Half of it went to the Morrow in one night, pet..."), two folk lines (Old
-  Oswin by day; the night watch's "Lamps are lit. Stay where they reach, or
-  it's the Morrow for you."), and Wenna refusing it (`wenna.fever`: "They died,
-  child.").
-- **Wenna's tallow** (`wenna.tallow`, "Tallow lamps? Everyone else burns
-  ember."): "I burn fat, child. Fat's honest. Fat was a pig." The art should
-  give her shop tallow candles, never an ember lamp.
+- **"Gone to the Morrow"** (I-22): the valley's word for dying is the god's name.
+  Three uses, no more:
+  - Rook (`rook.valley`, from "Tell me about the Waystation": "Ashford was.
+    *(protect)* Half of it went to the Morrow in one night, pet... Don't ask
+    Holloway about it. Don't ask Maeca. Don't ask a Kerchief, if you meet one.
+    And don't ask me twice."). The pair the player should connect is hidden in
+    a list.
+  - Old Oswin in the folk lines *(protect)*.
+  - Wenna refusing it (`wenna.fever`: "Coughing green, then the sweats, then
+    the— well. "Gone to the Morrow," they say up here, like it's a walk. They
+    died, child.").
+  - The idiom never sits beside the Order's call and is never a threat.
+- **Wenna's tallow** (`wenna.tallow`): "I burn fat, child. Fat's honest. Fat was a
+  pig." *(protect)* The art should give her shop tallow candles, never an ember
+  lamp.
 - **Chid's flame** (`chid.shrine`): "It was never for seeing by, you know; it was
-  for keeping company."
-- **The ember items' lore** (LINE_NOTES 6.2): the Ember Shard, Blasting Ember and
-  the slurry each carry one deniable line. Grimtunnel's Spare Lamp has
-  "DOWNSTAIRS" scratched round its rim, over and over (the believer's seed, 6.3),
-  and the Warden's Lamp-Iron "was made to hold ember, not oil" (6.4).
-- **The carter wears thin** (I-10, LINE_NOTES 4.1): `player.deaths` is counted at
-  every fall (`Journey.Fell`). `chid.woke` changes at the second, third and
-  fourth death; from the third, "Which carter, Chid?" (`chid.carter`: "I never
-  asked his name."). A folk line from the second: "No carts on the Old Road since
-  the wolves. So who keeps bringing that one in?" The truth (bible, Chid): he
-  carries the survivor in himself. [CODE and DATA, done;
+  for keeping company." *(protect)*
+- **Item lore** (LINE_NOTES 6.2 to 6.4), each line deniable, nothing stated:
+  - the Ember Shard's quiet room *(protect)*;
+  - Blasting Ember, "warm, like a stone a hand has only just let go of";
+  - the slurry, "a little like a wound";
+  - Grimtunnel's Spare Lamp, with "DOWNSTAIRS" scratched round its rim;
+  - the Warden's Lamp-Iron, with "no well in it for oil, and no wick".
+- **The carter wears thin** (I-10, LINE_NOTES 4.1). [CODE and DATA, done;
   `CinematicTests.The_carter_wears_thinner_with_every_death`]
-- **The nemesis names** (LINE_NOTES 4.2): "Red Wat" is now "Red Hob", "the Drowned
-  Watchman" is "the Ditch-Walker": Wat and Corran are never a monster's name.
-  [CODE, done]
-- **The trait says what happened, not what it means** (Problem 4, LINE_NOTES
-  4.4): `risen_once` reads "You fell, and got up again."
-- **Maeca keeps Ashford** (LINE_NOTES §5): her first line ends "Maeca. Barefoot,
-  before you ask.", and her plate is "Hunter, of the Hollow". The word is earned
-  from Rook, Wenna and Holloway first.
-- **The narrator and the tutorial** (LINE_NOTES 2.8): the first hint is only
-  "Keep moving. Your weapon strikes on its own."; C01's frost line already says
-  the dead are rising. [CODE, done]
-- **The town notices** (I-15, LINE_NOTES 10): a person's barks can hold only while
-  the world is a certain way (`npcs.json` `"said"`: `{text, when, night}`; the
-  zone offers them for half of a person's barks while any hold;
-  `ZoneRuntime.SaidNow`; voice ids `bark.<npc>.said.<i>`). Every bark that stopped
-  being true moved there with the condition that keeps it true (Harlan's lines
-  about a boy not yet home; the Pack loud in a Hollow with nothing left in it;
-  Tam's wolves falling down; the shrine that "used to work"), and each person
-  gained a line for what the survivor settled: Harlan, Rook, Holloway, Maeca,
-  Chid, Wenna, Tam, Brannoc ("Low Kiln's three days. She'll be there by now."),
-  Keegan and Rav ("Oh, Mam."). New barks are twelve words or fewer. [CODE and
-  DATA, done; `CinematicTests.The_town_stops_saying_what_has_stopped_being_true`]
-- **Funerals said "this morning" for ever after**: Aldo's and Nell's folk lines
-  now say what happened, not when.
+  - `player.deaths` is counted at every fall (`Journey.Fell`).
+  - The second death: "(He laughs, and stops.)"
+  - The third: "(He isn't looking at you.) ...Well. Someone did."
+  - The fourth and after: "The carter sends his regards."
+  - From the third: "Which carter, Chid?" (`chid.carter`: "I never asked his
+    name... Next time... There's nothing in it but hot." *(protect)*).
+  - A folk line from the second: "No carter's been up the Old Road in a month.
+    So who keeps bringing that one in?"
+  - The truth (bible, Chid): he carries the survivor in himself.
+- **The nemesis names** (LINE_NOTES 4.2): "Red Hob" and "the Ditch-Walker"; Wat
+  and Corran are never a monster's name. [CODE, done]
+- **The trait** (Problem 4, LINE_NOTES 4.4): `risen_once` reads "You fell, and got
+  up again."
+- **Maeca keeps Ashford** (LINE_NOTES §5).
+  - Her first line ends "Maeca. Barefoot, before you ask.", and her plate is
+    "Hunter, of the Hollow".
+  - The word is earned from Rook, Wenna and Holloway first.
+- **Keegan names the kenning** (THE_EMBER_REVEAL §5.2), in `keegan.vonnra`, once
+  she has met Vonnra: "Ash-of-Morrow. A peculiar sort of surname: a kenning,
+  almost. The ash of the morning; what is left when the morning has burned
+  down. ...I have no opinion of her. Chapter two forbids opinions about
+  civilians. I have several."
+- **The first hint** (LINE_NOTES 2.8) is only "Keep moving. Your weapon strikes on
+  its own." [CODE, done]
 
-From the voice director's reads (Chid, Maeca, the Wayfinder):
+**The town notices** (I-15, LINE_NOTES 10). [CODE and DATA, done;
+`CinematicTests.The_town_stops_saying_what_has_stopped_being_true`,
+`Brannoc_says_twelve_once_in_a_playthrough`]
 
-- **Bare speech tags go** where the voice carries the speaker: Maeca's walk, her
-  first night and the third night's question. Tags that carry manner stay
-  ("says into your ear"). On the third night the pause before "What were you?"
-  is shown ("Against your chest you feel her lips move, without a sound."): she
-  is counting the heart she tells you about at dawn.
-- **Chid after the burial** (`chid.cb_nell`): never on the burial morning before
-  it, and to a survivor who stood at the grave, not what she saw: "I sang it
-  flat. I always have. There's always somebody who has the tune." It ends "Sit
-  down a minute. Not on the step. Here. By me.": Keegan's supper owns "Not
-  there... Here.", and Chid's care is his own need for company. [`CinematicTests.Chid_never_tells_a_mourner_what_she_saw`]
-- **The Wayfinder's opener** said what any game's could. Now: "You've the look of
-  someone who comes back. Good. The other sort only ever buy the one map."
-- **The arena bosses' barks** keep the bible's rule that bosses speak as
-  themselves: the Barrow Lord's orders are one word each in the old tongue
-  (*Sta*, *Iunge*, *Testudo*), and Grimtunnel goes down the hole delighted ("Ha!
-  Keep upstairs, surface-meat! I'm wanted DOWNSTAIRS!"). [CODE, done]
+- How it works: a person's `said` barks (`npcs.json`: `{text, when, night,
+  once}`) hold only while the world is a certain way.
+  - The zone offers them for half of that person's barks.
+  - A `once` line is said at the first chance it holds, and never again
+    (`ZoneRuntime.Wire`, `FirstTime`, `MarkSaid`).
+  - Voice ids are `bark.<npc>.said.<i>`.
+- Every bark that stopped being true moved there, with the condition that keeps
+  it true.
+- Each person gained a line for what the survivor settled. Protected:
+  - Brannoc: "Low Kiln's three days. She'll be there by now." *(protect)*
+  - Brannoc: "Forge is lit. Don't come in." *(protect)*
+  - Brannoc, once: "Twelve, I made."
+  - Rook: "Hook's empty. I know. Leave it." *(protect)*
+  - Harlan: "Coyle and Nephew, the new sign was going to say. Coyle and—"
+    *(protect)*
+  - Harlan: "Mister Coyle, he calls me. In my own shop." *(protect)*
+  - Harlan: "He sleeps with the lamp lit. So do I, now." *(protect)*
+  - Wenna: "Clean water, and nothing left in the wood to drink it." *(protect)*
+  - Chid: "Two candles in for her. One's for Brannoc; don't tell him."
+    *(protect)*
+  - Rav, after Redcowl's death: "Man owed me a leg, pal. Bad debt, now."
+  - Tam, after he has told it (`tam.tock`) and the ground has moved: "Still
+    knocking under our floor. Pa's stopped saying it's moles."
+- Repeating a word for weight is Chid's and Keegan's only (`VOICES.md`).
+- **Funerals** stop saying "this morning" for ever: "Wouldn't let anyone spell
+  him." *(protect)*
 
+**From the voice director's reads** (Chid, Maeca, the Wayfinder):
+
+- **Bare speech tags go** where the voice carries the speaker. Tags that carry
+  manner stay.
+- On the third night the pause before "What were you?" is shown: "Against your
+  chest you feel her lips move, without a sound." *(protect)* She is counting
+  the heart she tells you about at dawn.
+- **Chid after the burial** (`chid.cb_nell`). [`CinematicTests.Chid_never_tells_a_mourner_what_she_saw`]
+  - Never on the burial morning before it.
+  - To a survivor who stood at the grave: "I sang it flat. I always have.
+    There's always somebody who has the tune." *(protect)*
+  - Both variants end: "...Sit down a minute. (He moves up the bench, though
+    there's nobody else on it.)"
+- **The Wayfinder's opener**: "You've the look of someone who'll want a second
+  map. Good. Most only ever buy the one." "Comes back" is the ledger's word, and
+  she never spends it on meeting.
+- **The bosses speak as themselves.** [CODE, done;
+  `CinematicTests.Grimtunnel_never_finishes_surface_meat_at_her_after_the_ford`]
+  - The Barrow Lord's orders go to his dead, so they are plural: *Tenete*,
+    *Iungite*, *Testudo*.
+  - Grimtunnel's title is *Ever So Grateful*.
+  - Since C03 he never finishes "surface-meat" at her: "Ha! Keep upstairs,
+    surface-m— you! I'm wanted DOWNSTAIRS!" C12 reads "Surface-m— ...You broke
+    my PUMP."
+  - Snib's line is protected *(protect)*.
+
+**Signature phrases are not shared** (`VOICES.md`):
+- "Someone always does" is Vonnra's (C09 turns on it);
+- "before you ask" is Maeca's;
+- "Not there... Here." is Keegan's.

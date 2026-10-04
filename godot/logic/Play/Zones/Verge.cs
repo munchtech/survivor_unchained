@@ -184,13 +184,13 @@ public sealed class Verge : ZoneRuntime
         // The Beast Problem, settled with blood: the Pack hunted in its own Hollow.
         StoryFight("hollow", hollow, 6.5, "Hunt the Pack", "Wolf Hollow",
             () => !WolvesFriendly() && !HollowCalm() && F("greymuzzle").Str != "dead",
-            () => Story("hollow_by_night", "The Hollow by Night", "pack", 311, "wolf_alpha", "Greymuzzle", "Who Kept the Cold Off",
+            () => Story("hollow_by_night", "The Hollow by Night", "pack", 311, "boss_pack", "Greymuzzle", "Who Kept the Cold Off",
                 $$"""[{ "set": { "greymuzzle": "dead", "hollow.hostile": true } }, { "add": { "beasts.population": -30 } }, { "quest": { "id": "beasts", "entry": "alpha_dead" } }, { "give": "greymuzzle_fang" }, {{Hist("killed_greymuzzle", "killed Greymuzzle, the old alpha of the Pack, in his own Hollow by night", ["beasts", "wolves"], 2, null, """{ "maeca": { "affection": -50, "respect": -20 }, "holloway": { "respect": 20 } }""")}}]""",
                 """[{ "add": { "beasts.population": 10 } }, { "set": { "hollow.hostile": true } }, { "quest": { "id": "beasts", "entry": "hollow_lost" } }]"""));
         // The Missing Caravan, by force: Redcowl's camp taken in the dark.
         StoryFight("roost", roost, 7, "Raid the Roost", "Redcowl's Roost",
             () => !KerchiefsFriendly() && F("redcowl").Str is not ("dead" or "tricked") && !F("roost.cleared").Truthy,
-            () => Story("roost_raid", "Raid on the Roost", "kerchiefs", 523, "enforcer", "Redcowl", "Of the Kerchiefs",
+            () => Story("roost_raid", "Raid on the Roost", "kerchiefs", 523, "boss_kerchiefs", "Redcowl", "Of the Kerchiefs",
                 $$"""[{ "set": { "redcowl": "dead", "roost.cleared": true, "roost.hostile": true } }, { "quest": { "id": "caravan", "entry": "roost_raided" } }, { "if": { "fact": "redcowl.ashford_said", "eq": true }, "then": [{ "set": { "redcowl.last_words": "ashford" } }], "else": [{ "set": { "redcowl.last_words": "leg" } }] }, {{PackLed}}, {{Hist("killed_redcowl", "took Redcowl's Roost by night and killed him in it", ["kerchief", "caravan"], 2, """{ "fear": 10 }""", """{ "holloway": { "respect": 25 }, "rav": { "affection": -20 } }""")}}]""",
                 """[{ "set": { "roost.hostile": true } }, { "quest": { "id": "caravan", "entry": "roost_repelled" } }]"""));
         // When the Dig turns on you, it boils over after dark.
@@ -200,14 +200,14 @@ public sealed class Verge : ZoneRuntime
             {
                 bool running = F("dig.pump").Str is not ("broken" or "blown" or "moved");
                 string pump = running ? """{ "set": { "dig.pump": "blown" } }, { "quest": { "id": "beasts", "entry": "pump_blown" } }, """ : "";
-                return Story("dig_boils", "The Dig Boils Over", "lamplings", 739, "grimtunnel_roused", "Grimtunnel", "Finders Keepers",
+                return Story("dig_boils", "The Dig Boils Over", "lamplings", 739, "grimtunnel_roused", "Grimtunnel", "Ever So Grateful",
                     $$"""[{ "set": { "dig.broken": true } }, {{pump}}{ "quest": { "id": "beasts", "entry": "dig_overrun" } }, {{Hist("broke_dig", "held the Dig's edge by night until nothing more came up, and drove Grimtunnel back down", ["beasts", "lampling"], 2, """{ "respect": 10 }""", """{ "wenna": { "respect": 20 }, "maeca": { "respect": 20 } }""")}}]""",
                     """[{ "quest": { "id": "beasts", "entry": "dig_held" } }]""");
             });
         // The Sealed Vault: with the sigil's fragment, the door wakes after dark.
         StoryFight("vault", vault, 5, "Set the sigil in the door", "The Sealed Door",
             () => Quest("vault", "fragment") && !F("vault.opened").Truthy,
-            () => Story("vault_opened", "Behind the Sealed Door", "dead", 947, "barrow_knight", "The Barrow Lord", "Of the Seventh Legion",
+            () => Story("vault_opened", "Behind the Sealed Door", "dead", 947, "boss_dead", "The Barrow Lord", "Of the Seventh Legion",
                 $$"""[{ "set": { "vault.opened": true } }, { "quest": { "id": "vault", "entry": "opened" } }, {{Hist("opened_vault", "opened the old empire's door in the Verge and came back out of it", ["vault", "mystery"], 3, """{ "fear": 5, "respect": 10 }""", """{ "vonnra": { "trust": -10 }, "chid": { "respect": 15 } }""")}}]""",
                 """[{ "quest": { "id": "vault", "entry": "shut" } }]"""));
     }
@@ -912,7 +912,7 @@ public sealed class Verge : ZoneRuntime
         {
             var blind = V("blind");
             var a = new NpcActor(Lore.Npcs["maeca"], G.Look, G.Rng, new Spot { X = blind.X + 2.6, Z = blind.Z + 4.2, Facing = 0.4 });
-            a.Said = () => SaidNow(a.Def, false);
+            Wire(a, () => false);
             Actors["maeca"] = a;
             Interactables.Add(new() { Id = "talk:maeca", X = a.X, Z = a.Z, R = 2.8, Verb = "Talk", Name = "Maeca Barefoot", Act = () => G.Talk("maeca") });
         }

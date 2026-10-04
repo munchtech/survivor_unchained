@@ -647,7 +647,7 @@ SPEC = {
     "gold": ("Metal048C", (1.0, 0.92, 0.8), None, 3, 1.0, None),
     "rust": ("Metal053C", (1, 1, 1), None, 2.5, 0.8, None),
     "leather": ("Leather037", (1, 1, 1), None, 4, 0.0, None),
-    "darkleather": ("Leather034C", (1, 1, 1), None, 3, 0.0, None),
+    "darkleather": ("Leather026", (1.0, 0.8, 0.65), 30, 3, 0.0, None),
     "redleather": ("Leather024", (1, 1, 1), None, 4, 0.0, None),
     "oldleather": ("Leather014", (1, 1, 1), None, 4, 0.0, None),
     "velvet": ("velour_velvet", (0.32, 0.1, 0.45), None, 5, 0.0, None),
@@ -881,8 +881,11 @@ def bind_edges(name, pos, at, tris, key, width, height, overhang, thick, sigma=0
     A = adjacency(len(pos), tris)
     near = (A @ moved.astype(float)) > 0
     near &= ~moved
+    nor_e = vertex_normals(pos, tris)
     for _ in range(6):
-        pos = np.where(near[:, None], 0.5 * pos + 0.5 * (A @ pos), pos)
+        d_ = 0.5 * (A @ pos - pos)
+        d_ -= nor_e * (d_ * nor_e).sum(1)[:, None]
+        pos = np.where(near[:, None], pos + d_, pos)
     print("BOUND", name, len(loops), "edge loops")
     return pos, beads
 
@@ -915,9 +918,14 @@ def domes(name, pts, nrms, mkey, r=0.0028, src=None):
     cen = np.repeat(np.array(pts), nu * nv + 1, 0)
     if ((pp - cen) * vertex_normals(pp, tt)).sum(1).mean() < 0:
         tt = tt[:, ::-1]
-    sp, sw = (P, W) if src is None else src
-    _, j = cKDTree(sp).query(pp)
-    obj = finish(name, pp, sw[j].astype(float), tt, mkey, 0.0, 0.0, 10 ** 7)
+    # (each moves as one piece: its centre's weights for all of it)
+    cen_ = np.array(pts, float)
+    if src is None:
+        wc = soft_weights(cen_)
+    else:
+        _, jc = cKDTree(src[0]).query(cen_)
+        wc = np.asarray(src[1], float)[jc]
+    obj = finish(name, pp, np.repeat(wc, nu * nv + 1, 0), tt, mkey, 0.0, 0.0, 10 ** 7)
     obj["hides"] = True
     return [obj]
 
@@ -964,9 +972,9 @@ def grommets(name, pts, nrms, mkey, r_out=0.0036, r_in=0.0018, height=0.0014, ho
         tt = tt[:, ::-1]
     hp, ht = np.vstack(H2), np.vstack(HT)
     made = []
-    for nm, q, tr, key in ((name, pp, tt, mkey), (name + "_holes", hp, ht, hole)):
-        _, j = cKDTree(P).query(q)
-        made.append(finish(nm, q, W[j].astype(float), tr, key, 0.0, 0.0, 10 ** 7))
+    wc = soft_weights(np.array(pts, float))
+    for nm, q, tr, key, per in ((name, pp, tt, mkey, nu * nv), (name + "_holes", hp, ht, hole, nu + 1)):
+        made.append(finish(nm, q, np.repeat(wc, per, 0), tr, key, 0.0, 0.0, 10 ** 7))
     for o_ in made:
         o_["hides"] = False
     return made
@@ -1040,8 +1048,8 @@ def stitches(name, line, nrm, tg, src_pos, src_wt, step=0.004, length=0.0026, wi
     cen = np.repeat(base, per, 0)
     if ((pts - cen) * vertex_normals(pts, tris)).sum(1).mean() < 0:
         tris = tris[:, ::-1]
-    _, j = cKDTree(src_pos).query(pts)
-    obj = finish(name, pts, np.asarray(src_wt, float)[j], tris, mkey, 0.0, 0.0, 10 ** 7, scraps=False)
+    _, j = cKDTree(src_pos).query(base)
+    obj = finish(name, pts, np.repeat(np.asarray(src_wt, float)[j], per, 0), tris, mkey, 0.0, 0.0, 10 ** 7, scraps=False)
     obj["hides"] = False
     return [obj]
 
@@ -1111,8 +1119,8 @@ def sunburst(name, centre, nrm, up, radius, mkey, rays=12, thick=0.0035, boss=No
     tris = np.array(tris)
     if (vertex_normals(pts, tris) @ n).mean() < 0:
         tris = tris[:, ::-1]
-    _, j = cKDTree(P).query(pts)
-    made = [finish(name, pts, W[j].astype(float), tris, mkey, thick, thick * 0.4, 10 ** 7)]
+    wc = soft_weights(np.array([centre]), sigma=radius, k=32)
+    made = [finish(name, pts, np.repeat(wc, len(pts), 0), tris, mkey, thick, thick * 0.4, 10 ** 7)]
     made += domes(name + "_boss", [centre + n * thick], [n], boss or mkey, r=radius * 0.38)
     for o_ in made:
         o_["hides"] = False
@@ -1162,8 +1170,8 @@ def fangs(name, pts, outs, downs, mkey, length=0.026, base=0.0045, curl=0.35, rn
     pp, tt = np.vstack(P2), np.vstack(T2)
     if (vertex_normals(pp, tt) * (pp - np.repeat(np.array(pts), (nv + 1) * nu + 1, 0))).sum(1).mean() < 0:
         tt = tt[:, ::-1]
-    _, j = cKDTree(P).query(pp)
-    obj = finish(name, pp, W[j].astype(float), tt, mkey, 0.0, 0.0, 10 ** 7)
+    wc = soft_weights(np.array(pts, float))
+    obj = finish(name, pp, np.repeat(wc, (nv + 1) * nu + 1, 0), tt, mkey, 0.0, 0.0, 10 ** 7)
     obj["hides"] = False
     return [obj]
 
@@ -1187,8 +1195,9 @@ def frame(name, centre, nrm, up, w, h, mkey, r=0.002, corner=0.004, lift=0.0):
     out = np.cross(nr, tg)
     if ((pts - pts.mean(0)) * out).sum(1).mean() < 0:
         out = -out
-    _, j = cKDTree(P).query(pts)
-    return [tube(name, pts, nr, out, mkey, 2 * r, 0.0, r, 2 * r, P, W.astype(float))]
+    c_ = pts.mean(0)
+    wc = soft_weights(c_[None], sigma=max(w, h) / 2, k=32)
+    return [tube(name, pts, nr, out, mkey, 2 * r, 0.0, r, 2 * r, c_[None], wc)]
 
 
 # ----------------------------------------------------------------- pieces --
@@ -1954,7 +1963,7 @@ def ribbon(name, ctrl, width, mkey, lift=0.0035, thick=0.0025, cols=5, trim=None
     at = np.hstack([nor, wt.reshape(len(pos), -1), edge[:, None]])
     made = trimmed(name, pos, at, tris, mkey, thick, 0.0008, trim, budget=10 ** 7)
     for o in made:
-        o["hides"] = True
+        o["hides"] = False
     if kind(mkey) == "leather" and width >= 0.012:
         inset = 0.0028
         for k, sgn in enumerate((1, -1)):
@@ -2186,7 +2195,7 @@ def hanging(name, a0, a1, z_top, hem, mkey, flare=0.15, lift=0.01, gap=0.012, th
     # her skin there does, springs and all, so she cannot slide through it.
     d, j = cKDTree(P[body]).query(pos)
     near = 1 - ramp(d, gap + 0.004, 0.06)
-    wt = wt * (1 - near[:, None]) + W[body][j] * near[:, None]
+    wt = wt * (1 - near[:, None]) + soft_weights(pos, np.where(body)[0], sigma=0.02) * near[:, None]
     attr = np.hstack([nor, wt, f_trim[:, None]])
     if os.environ.get("HANGDEBUG"):
         print("HANGDEBUG", name, "grid z %.3f..%.3f" % (pos[:, 2].min(), pos[:, 2].max()), "kept pts", int((f >= 0).sum()), "of", len(f),
@@ -2468,9 +2477,10 @@ def arcanist():
     global GARTER_Z
     GARTER_Z = CROTCH + 0.2
     out = [
-        *ribbon("arcanist.thong", thong_path(CROTCH + 0.155), 0.016, "plumleather", lift=0.003, thick=0.003,
+        *ribbon("arcanist.thong", back_string(CROTCH + 0.155, CROTCH + 0.012), 0.016, "plumleather", lift=0.003, thick=0.003,
                trim=gold(0.004), snap=False),
-        *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80),
+        *piece("arcanist.corset", corset, "plumleather", lift=0.0035, smooth=8, iron=60, trim=gold(0.008), keep_off=("Head",), filled=True, edge=120, soften=80,
+               bridge=True),
         *piece("arcanist.choker", choker, "blackleather", lift=0.002, soften=0, keep_off=("Head",)),
         *witch_hat("arcanist.hat", "plumleather", "darkpurple"),
     ]
@@ -2545,18 +2555,17 @@ def ranger():
     # over the top of her pant leg.
     ang = np.abs(np.arctan2(X, -(Y - CROTCH_Y)))
     rise_ = Z - CROTCH
-    hug = PchipInterpolator([-0.035, 0.0, 0.02, 0.04, 0.07, 0.1, 0.16, 0.22, 0.25, 0.27, 0.29, 0.31],
-                            [0.012, 0.016, 0.026, 0.045, 0.063, 0.072, 0.075, 0.077, 0.08, 0.095, 0.13, 0.2])
-    right_front = hug(np.clip(rise_, -0.035, 0.31)) + X
-    waist_w = 0.14
-    u_ = np.clip(-X / waist_w, 0, 1)
-    right_back = Z - (CROTCH + 0.185 + 0.08 * np.sqrt(np.clip(1 - (1 - u_) ** 2, 0, 1)))
+    hug = PchipInterpolator([-0.035, 0.0, 0.02, 0.04, 0.07, 0.1, 0.16, 0.22, 0.28, 0.33, 0.37, 0.40],
+                            [0.012, 0.016, 0.026, 0.045, 0.063, 0.072, 0.075, 0.077, 0.08, 0.092, 0.13, 0.2])
+    right_front = hug(np.clip(rise_, -0.035, 0.40)) + X
+    u_ = np.clip(-X / 0.13, 0, 1)
+    right_back = Z - (CROTCH + 0.31 + 0.095 * u_ ** 0.9)
     right = right_front * FRONT + right_back * (1 - FRONT)
     edge_l = CROTCH + PchipInterpolator([0, 0.6, 1.2, 1.57, 2.1, 2.6, np.pi], [-0.02, 0.0, 0.03, 0.05, 0.065, 0.06, 0.055])(ang)
     rise = np.maximum(Z - CROTCH, 0)
     # (between her legs a narrow strip, a little wider in front; behind, a
     # thong down her cleft)
-    strip = (0.012 + 0.3 * rise) * FRONT + (0.008 + 0.035 * rise) * (1 - FRONT) - ax_
+    strip = (0.012 + 0.3 * rise) * FRONT + np.minimum(0.008 + 0.07 * rise, 0.018) * (1 - FRONT) - ax_
     legs = OR(np.where(X < 0, right, Z - edge_l), strip)
     # (her breasts always held; elsewhere never her arm, the cut eased so it
     # can never be ragged)
@@ -2569,8 +2578,8 @@ def ranger():
     # under her breasts.
     lace_top, lace_bot = UNDERBUST - 0.008, CROTCH + 0.118
     half = 0.011
-    gap = np.where((Z < lace_top + 0.018) & (Z > lace_bot - 0.03) & (FRONT > 0.5), ax_ - half, 1.0)
-    corset = AND(body, gap)
+    gap = np.where((Z < lace_top + 0.018) & (Z > lace_bot - 0.045) & (FRONT > 0.5), ax_ - half, 1.0)
+    corset = body
     lift, thick = 0.0035, 0.003
     rows = np.linspace(lace_top - 0.012, lace_bot + 0.012, 9)
     eye, enrm = {1: [], -1: []}, {1: [], -1: []}
@@ -2649,7 +2658,7 @@ def ranger():
     pant = AND(X - 0.004, (edge_l + 0.03) - Z, (tops["l"] + 0.06) - LEG_S["l"], 0.3 - ARMW["l"])
     out = [
         *piece("ranger.corset", corset, "forestleather", lift=lift, thick=thick, smooth=8, iron=60, soften=20, slot="right",
-               trim=edge(0.006), filled=True, keep_off=("Head", "neck_01")),
+               trim=edge(0.006), filled=True, keep_off=("Head", "neck_01"), edge=6, cut=gap),
         *grommets("ranger.eyelets", eye[1] + eye[-1], enrm[1] + enrm[-1], "bronze"),
         *laces,
         *girdle("ranger.belt", belt_z, 0.042, "brownleather", lift=belt_lift, thick=0.004),
@@ -2906,7 +2915,7 @@ def girdle(name, zfun, width, mkey, lift=0.004, thick=0.004, trim=None, rows=9, 
     at = np.hstack([nor, wt, edge[:, None]])
     made = trimmed(name, pos, at, tris, mkey, thick, 0.0008, trim, budget=10 ** 7)
     for o in made:
-        o["hides"] = True
+        o["hides"] = False
     for k, (ln, rn, tgl) in enumerate(seams):
         made += stitches(f"{name}_stitch{k}", ln, rn, tgl, pos, at[:, 3:3 + NB], closed=arc is None)
     if seams:
@@ -3138,7 +3147,8 @@ def detail(objs, rays=20, reach=0.03):
         el = np.array([np.linalg.norm(V[A.indices[A.indptr[i]:A.indptr[i + 1]]] - V[i], axis=1).mean() if deg[i] else 1.0
                        for i in range(len(V))]) + 1e-6
         conv = np.where(has, -(d * Nv).sum(1) / el, 0.0)
-        for _ in range(3):
+        el_med = float(np.median(el)) if len(el) else 0.002
+        for _ in range(int(np.clip((0.012 / max(el_med, 1e-4)) ** 2, 3, 120))):
             conv = 0.5 * conv + 0.5 * mean_nb(conv)
         conv = np.tanh(conv * 4) * 0.5 + 0.5
         ao = np.ones(len(V))
@@ -3156,7 +3166,8 @@ def detail(objs, rays=20, reach=0.03):
             ao[i] = seen / max(tot, 1e-6)
         # (each point's few rays are noisy: eased over its neighbours, or a
         # smooth plate reads blotched)
-        for _ in range(8):
+        el_mean = float(np.median(el)) if len(el) else 0.002
+        for _ in range(int(np.clip((0.015 / max(el_mean, 1e-4)) ** 2, 8, 200))):
             ao = 0.5 * ao + 0.5 * mean_nb(ao)
         loops = np.zeros(len(me.loops), np.int32)
         me.loops.foreach_get("vertex_index", loops)

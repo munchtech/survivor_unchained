@@ -31,9 +31,17 @@ Rules for everyone:
   reach for their mother when something is unbearable.
 - The player's lines are short, plain and a little dry. They never make a
   speech.
-- A bark is twelve words or fewer. A bark that stops being true when a thread
-  is settled goes in the person's `said` list with the condition that keeps it
-  true, beside a line for how it ended.
+- A bark is said to the air as the survivor passes: a breath or two, never a
+  speech (aim for twelve words; Keegan's "monitoring it very closely" earns its
+  fourteen). A bark that stops being true when a thread is settled goes in the
+  person's `said` list with the condition that keeps it true, beside a line for
+  how it ended.
+- Repeating a word for weight ("It works! It works.", "Chapter four. Chapter
+  four.") is Chid's (his sentences double back) and Keegan's (repetition is a
+  figure, and figures are her trade). Nobody else leans on it.
+- One person's signature phrase is nobody else's: "Someone always does" is
+  Vonnra's (the fortune turns on it), "before you ask" is Maeca's, "Not there...
+  Here." is Keegan's.
 - Inside narration, a quoted line is spoken by its speaker. A bare "she says"
   is cut, so the subtitle and the voice agree; a tag that carries manner ("says
   into your ear") stays, read by the narrator.
@@ -169,7 +177,8 @@ breath ("The pump does not pump itself. It does, actually."). Loyal to
 lamp ring on stressed words.
 
 **Grimtunnel** (Boss of the Dig). Oily, gleeful, possessive: "Nobody's!",
-"surface-meat", "downstairs" for the deep. Under the greed, faith: he is
+"surface-meat" (never finished at the survivor once he has smelled downstairs
+on her in C03: "surface-m—"), "downstairs" for the deep. Under the greed, faith: he is
 carrying a god its heart, and when anything touches that he goes toad-still
 and very nearly bows, then covers it with a grin. He believes the thing below
 will be grateful, and says so. *Casting:* Snib's family, bigger, lower, a
@@ -237,3 +246,63 @@ quieter.
 
 **The notice board.** Notices in notice voice: capitals for the important
 word, initials for signatures, and the town's graffiti underneath.
+
+## Making the voices: Voicebox
+
+[Voicebox](https://github.com/jamiepine/voicebox) (MIT) is a local voice
+studio over several open engines, with a REST API and an MCP server. The
+voice tooling drives it through `tools/vo/voicebox.py`, a thin client with
+no dependencies beyond Python's standard library, tested against a fake
+server (`python -m unittest discover -s tools/vo/tests`).
+
+| Engine (`--engine`) | What it does | Licence of the weights |
+|---|---|---|
+| `qwen` | Qwen3-TTS 1.7B: clones a voice from a clip | Apache 2.0 |
+| `chatterbox` | Chatterbox (multilingual): clones | MIT |
+| `chatterbox_turbo` | Chatterbox Turbo: clones, and acts inline tags (`[sigh]`, `[laugh]`, `[chuckle]`, `[gasp]`, `[cough]`) | MIT |
+| `luxtts` | LuxTTS: clones, 48 kHz, light | Apache 2.0 |
+| `tada` | HumeAI TADA 1B: clones, long takes | Llama 3.2 community licence |
+| `kokoro` | Kokoro: stock voices only | Apache 2.0 |
+| `qwen_custom_voice` | Qwen CustomVoice: stock voices that take a spoken instruction ("quietly, close to tears") | Apache 2.0 |
+
+### Running it
+
+The backend runs headless from a source checkout (no app needed):
+
+```sh
+# once: clone https://github.com/jamiepine/voicebox to ~/vo-tools/voicebox-src, then
+uv venv ~/vo-tools/voicebox --python 3.12
+uv pip install --python ~/vo-tools/voicebox/Scripts/python.exe torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+# its backend/requirements.txt, with misaki[en] instead of misaki[en,ja,zh] and without unidic-lite
+# (the Japanese extras do not build on Windows), then:
+uv pip install --python ~/vo-tools/voicebox/Scripts/python.exe --no-deps chatterbox-tts hume-tada
+
+# each session (from the checkout):
+HF_TOKEN_PATH=~/vo-tools/voicebox-data/no-token HF_HUB_DISABLE_IMPLICIT_TOKEN=1 \
+  ~/vo-tools/voicebox/Scripts/python.exe -m backend.main --port 17493 --data-dir ~/vo-tools/voicebox-data
+```
+
+`~/vo-tools/scripts/voicebox_serve.sh` does the second part. The models
+download on first use (`POST /models/download`). The card is shared with
+ComfyUI: `python tools/vo/voicebox.py free` unloads every Voicebox model
+when a session is done. `POST /shutdown` stops the server.
+
+### The client
+
+```sh
+python tools/vo/voicebox.py engines                      # engines, downloaded/loaded
+python tools/vo/voicebox.py voices                       # profiles
+python tools/vo/voicebox.py profile rook tools/vo/refs/rook.flac "the words in the clip" --engine chatterbox_turbo
+python tools/vo/voicebox.py say rook "Sit down before you fall down. [chuckle]" --out take.wav
+python tools/vo/voicebox.py scene scene.json --out takes/   # [{"voice", "text", "engine"?, "instruct"?, "seed"?, "id"?}]
+python tools/vo/voicebox.py free
+```
+
+From Python: `Voicebox().generate(voice, text, out, engine=..., instruct=..., seed=...)`,
+`make_profile(name, [(clip, words)])`, `scene(lines, out_dir)`.
+
+**Only clone what we have the right to:** the cast's designed references
+in `tools/vo/refs/` (made by VoxCPM2 from text descriptions), the owner's
+own recordings, performances the owner approves, or a dataset whose
+licence allows cloning (record it beside the clip). Never a real actor or
+any other identifiable person.

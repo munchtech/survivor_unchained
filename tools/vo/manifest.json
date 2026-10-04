@@ -19,8 +19,10 @@
     "intent": "takes charge of a bloodied stranger",
     "pace": "brisk",
     "vol": "level",
-    "wants": "you sat down before you fall down",
-    "note": "'Well.' a beat of sizing you up. Brisk gossip about Chid, a dry edge on 'bleeding on my step'. Bossy and warm on the last sentence, a laugh on the out-breath."
+    "wants": "to take charge of you, and to see who you are",
+    "hides": "Vonnra pays her for news of Low Ford arrivals, double for this one",
+    "note": "'Well.' a beat, looking you over. On the Chid sentence she watches your face for how you take 'blue lights going out'. A dry edge on 'bleeding on my step'. No laugh at the end: a breath, and the warmth is in the order itself.",
+    "beats": "Well. [beat] The one who walked up from the Low Ford at dawn. Chid came in babbling about blue lights going out at the crossing, and here you are, bleeding on my step. I'm Rook. This is the Last Lamp. [breath] Sit down before you fall down."
    },
    "status": "todo"
   },
@@ -537,8 +539,18 @@
    "id": "ply.rook.town.1",
    "kind": "choice",
    "voice": "survivor",
-   "text": "Something else.",
+   "text": "What's up the valley?",
    "where": "dialogue.json rook/town choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "5833bd991ce4",
+   "status": "skip"
+  },
+  {
+   "id": "ply.rook.town.2",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Something else.",
+   "where": "dialogue.json rook/town choice 2",
    "skip": "the survivor's replies are voiced in a later pass",
    "hash": "002c896f4190",
    "status": "skip"
@@ -1210,6 +1222,50 @@
     "note": "Not looking at you. 'Good.' thick. 'it was never going to be me' honest. Then brusque kindness to hide it: she wants something to do with her hands."
    },
    "status": "todo"
+  },
+  {
+   "id": "dlg.rook.valley.0",
+   "kind": "dialogue",
+   "voice": "rook",
+   "text": "Ashford was. Half of it went to the Morrow in one night, pet, and the other half the year after, coughing. Don't ask Holloway about it. Don't ask Maeca. And don't ask me twice.",
+   "where": "dialogue.json rook/valley#0",
+   "hash": "dc45d521fde6",
+   "segments": [
+    {
+     "voice": "rook",
+     "text": "Ashford was. Half of it went to the Morrow in one night, pet, and the other half the year after, coughing. Don't ask Holloway about it. Don't ask Maeca. And don't ask me twice."
+    }
+   ],
+   "direction": {
+    "emo": "flat, closing a door",
+    "intent": "what happened to Ashford",
+    "pace": "measured",
+    "vol": "quiet",
+    "hides": "she lost people there too",
+    "note": "No warmth to spare. 'Ashford was.' on its own. The 'pet' is habit, not softness. The three 'don't ask' each firmer; the last a closed door.",
+    "beats": "Ashford was. [beat] Half of it went to the Morrow in one night, pet, and the other half the year after, coughing. [breath] Don't ask Holloway about it. Don't ask Maeca. [beat] And don't ask me twice."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "ply.rook.valley.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Something else.",
+   "where": "dialogue.json rook/valley choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "002c896f4190",
+   "status": "skip"
+  },
+  {
+   "id": "ply.rook.valley.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Goodbye, Rook.",
+   "where": "dialogue.json rook/valley choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "1c0c858a32d4",
+   "status": "skip"
   },
   {
    "id": "dlg.holloway.first.0",
@@ -1937,8 +1993,9 @@
     "intent": "confronts your lie",
     "pace": "slow",
     "vol": "level",
-    "wants": "an answer",
-    "note": "Quiet anger one notch below the surface. Mock-quote 'dealt with'. 'So.' then the swear lands hard and low, not shouted."
+    "wants": "his gold's worth, and the truth",
+    "hides": "he has been paying for something himself for ten years; some of the anger is at himself for trusting you",
+    "note": "Quiet anger one notch below the surface; he never raises his voice and swears rarely, so when he does it lands. Mock-quote 'dealt with'. 'So.' then the swear lands hard and low, not shouted."
    },
    "status": "todo"
   },
@@ -3240,8 +3297,10 @@
     "intent": "finds a fellow hunter",
     "pace": "measured",
     "vol": "quiet",
-    "wants": "someone who'll see what she sees",
-    "note": "Half-voice, level. A flicker of interest on 'Hunter?'. 'They're running.' plain and certain. Dry on 'before you ask'."
+    "wants": "someone who reads ground the way she does",
+    "hides": "the Pack are hers",
+    "note": "Level, a hunter's half-voice. 'Hunter?' barely a question: she is confirming what she has read, no surprise. 'They're running.' plain and certain. 'before you ask' dry, said a thousand times, not a joke she enjoys.",
+    "beats": "You walk like someone who's followed a thing to its den. [beat] Hunter? [beat] Then you've seen it too, out there. They're not hunting. [beat] They're running. [breath] Maeca. [beat] Barefoot, before you ask."
    },
    "status": "todo"
   },
@@ -3263,7 +3322,10 @@
     "intent": "you wear wolves",
     "pace": "measured",
     "vol": "quiet",
-    "note": "Quiet and final. 'and so can they' a warning. 'What do you want?' cold."
+    "wants": "you out of her Hollow",
+    "hides": "those were her Pack",
+    "note": "Quiet and final. 'and so can they' a fact, which is what makes it the threat. 'What do you want?' drops, no question lift.",
+    "beats": "That cloak's made of wolves. I can smell it from here, [beat] and so can they. Maeca Barefoot. What do you want?"
    },
    "status": "todo"
   },
@@ -3271,21 +3333,24 @@
    "id": "dlg.maeca.first.2",
    "kind": "dialogue",
    "voice": "maeca",
-   "text": "Another blade for Holloway's bounty? The wolves aren't the problem. They're what the problem looks like from the road. Maeca Barefoot, of the Ashford garrison. What's left of it.",
+   "text": "Another blade for Holloway's bounty? The Pack aren't the problem. They're what the problem looks like from the road. Maeca. Barefoot, before you ask.",
    "where": "dialogue.json maeca/first#2",
-   "hash": "a1575d9fbafa",
+   "hash": "721a9687d0f6",
    "segments": [
     {
      "voice": "maeca",
-     "text": "Another blade for Holloway's bounty? The wolves aren't the problem. They're what the problem looks like from the road. Maeca Barefoot, of the Ashford garrison. What's left of it."
+     "text": "Another blade for Holloway's bounty? The Pack aren't the problem. They're what the problem looks like from the road. Maeca. Barefoot, before you ask."
     }
    ],
    "direction": {
-    "emo": "weary contempt, then bitter",
+    "emo": "weary contempt",
     "intent": "dismisses another bounty-hunter",
     "pace": "measured",
     "vol": "quiet",
-    "note": "Flat contempt for the bounty. The rule about the problem said plainly. 'What's left of it.' three words, quiet, closed."
+    "wants": "to be taken seriously about the cause",
+    "hides": "she is all that is left of the Ashford garrison",
+    "note": "Flat contempt for the bounty; the rule about the problem said plainly. 'before you ask' dry, said a thousand times.",
+    "beats": "Another blade for Holloway's bounty? [beat] The Pack aren't the problem. They're what the problem looks like from the road. [breath] Maeca. [beat] Barefoot, before you ask."
    },
    "status": "todo"
   },
@@ -4165,13 +4230,13 @@
    "id": "dlg.maeca.blind.1",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "Off in the Hollow the Pack is loud, a long tangle of voices, and she stops with her hands on your buckle and listens, and then she laughs: a short surprised sound, as if she'd trodden on something. \"They're eating,\" she says, and pulls you down onto the hides. Her hands are hard and careful, the way they are with a snare, and then they're not careful. The fire goes down to embers. Neither of you feeds it. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you.",
+   "text": "Off in the Hollow the Pack is loud, a long tangle of voices, and she stops with her hands on your buckle and listens, and then she laughs: a short surprised sound, as if she'd trodden on something. \"They're eating.\" She pulls you down onto the hides. Her hands are hard and careful, the way they are with a snare, and then they're not careful. The fire goes down to embers. Neither of you feeds it. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you.",
    "where": "dialogue.json maeca/blind#1",
-   "hash": "70c93469fb02",
+   "hash": "5e7f9e3a11c1",
    "segments": [
     {
      "voice": "narrator",
-     "text": "Off in the Hollow the Pack is loud, a long tangle of voices, and she stops with her hands on your buckle and listens, and then she laughs: a short surprised sound, as if she'd trodden on something. \"They're eating,\" she says, and pulls you down onto the hides. Her hands are hard and careful, the way they are with a snare, and then they're not careful. The fire goes down to embers. Neither of you feeds it. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you."
+     "text": "Off in the Hollow the Pack is loud, a long tangle of voices, and she stops with her hands on your buckle and listens, and then she laughs: a short surprised sound, as if she'd trodden on something. \"They're eating.\" She pulls you down onto the hides. Her hands are hard and careful, the way they are with a snare, and then they're not careful. The fire goes down to embers. Neither of you feeds it. Later, under the hides, she sleeps like a hunter: lightly, one hand on the crossbow and the other on you."
     }
    ],
    "direction": {
@@ -4462,13 +4527,21 @@
    "id": "dlg.maeca.blind_walk.0",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "She goes out by the east gate without a lamp, and you follow her along the Old Road past the wreck, by starlight and the white of the frost. She walks barefoot on ground that would cut you through your boots, and doesn't make a sound. Once she stops, and you stop, and somewhere off in the Hollow a wolf calls and is answered. \"Him,\" she says. \"And the bitch with the white foot. Eating.\" She walks on.",
+   "text": "She goes out by the east gate without a lamp, and you follow her along the Old Road past the wreck, by starlight and the white of the frost. She walks barefoot on ground that would cut you through your boots, and doesn't make a sound. Once she stops, and you stop, and somewhere off in the Hollow a wolf calls and is answered. \"Him. And the bitch with the white foot.\" She walks on.",
    "where": "dialogue.json maeca/blind_walk#0",
-   "hash": "4cfe43fbd764",
+   "hash": "8bf3617437fb",
    "segments": [
     {
      "voice": "narrator",
-     "text": "She goes out by the east gate without a lamp, and you follow her along the Old Road past the wreck, by starlight and the white of the frost. She walks barefoot on ground that would cut you through your boots, and doesn't make a sound. Once she stops, and you stop, and somewhere off in the Hollow a wolf calls and is answered. \"Him,\" she says. \"And the bitch with the white foot. Eating.\" She walks on."
+     "text": "She goes out by the east gate without a lamp, and you follow her along the Old Road past the wreck, by starlight and the white of the frost. She walks barefoot on ground that would cut you through your boots, and doesn't make a sound. Once she stops, and you stop, and somewhere off in the Hollow a wolf calls and is answered."
+    },
+    {
+     "voice": "maeca",
+     "text": "Him. And the bitch with the white foot."
+    },
+    {
+     "voice": "narrator",
+     "text": "She walks on."
     }
    ],
    "direction": {
@@ -4476,7 +4549,8 @@
     "intent": "the walk to the Blind",
     "pace": "slow",
     "vol": "quiet",
-    "note": "Starlit, careful. Maeca's quoted words in her own soft half-voice if read; the narrator keeps it plain."
+    "note": "Narrator plain and starlit; a beat before 'and is answered'. Maeca just above a breath, naming neighbours by their voices. Narrator plain: the narrator never shows a feeling.",
+    "beats": "...a wolf calls [beat] and is answered. | Him. [beat] And the bitch with the white foot. | She walks on."
    },
    "status": "todo"
   },
@@ -4494,11 +4568,12 @@
     }
    ],
    "direction": {
-    "emo": "quiet warmth",
+    "emo": "plain",
     "intent": "she lets you lead",
     "pace": "slow",
     "vol": "quiet",
-    "note": "The last clause a small gift."
+    "note": "Narrator plain: the narrator never shows a feeling. The gift is the fact itself; don't lean on it.",
+    "beats": "The Old Road, the wreck, the frost. [beat] You know the way now, and she lets you walk in front, [beat] which she has never done."
    },
    "status": "todo"
   },
@@ -4559,6 +4634,13 @@
      "text": "She holds out her hand. That's all."
     }
    ],
+   "direction": {
+    "emo": "plain",
+    "intent": "she holds out her hand",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "The narrator never shows a feeling. 'That's all.' plain; the weight is the fact."
+   },
    "status": "todo"
   },
   {
@@ -4713,11 +4795,12 @@
     }
    ],
    "direction": {
-    "emo": "intimate, uneasy",
+    "emo": "level, nearly funny",
     "intent": "you're cold",
     "pace": "slow",
     "vol": "hushed",
-    "note": "A small chill under the warmth."
+    "note": "The inversion (your skin colder than her feet) is nearly funny: straight and level, don't darken it. The last sentence hangs, not drops: the player's choice follows.",
+    "beats": "Afterwards, in the dark under the hides, she puts her feet against your legs, [beat] and flinches: [beat] you're colder than they are. She starts to take them back—"
    },
    "status": "todo"
   },
@@ -4725,21 +4808,43 @@
    "id": "dlg.maeca.blind_dark.1",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. Outside, in the frost, you hear them come: soft feet, a long way round, and then a sigh, and then another. The Pack, lying down round the Blind in the dark. She lifts her head. \"They don't do that,\" she says. \"Not for me. Not for anyone.\" She lies back down. \"You walk quiet. You came into my Hollow and knelt to him and he let you. You never talk about before.\" A pause. \"What were you?\"",
+   "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. Outside, in the frost, you hear them come: soft feet, a long way round, and then a sigh, and then another. The Pack, lying down round the Blind in the dark. She lifts her head. \"They don't do that. Not for me. Not for anyone.\" She lies back down, her ear where it was. \"You walk quiet. You came into my Hollow and knelt to him, and he let you. You never talk about before.\" Against your chest you feel her lips move, without a sound. \"What were you?\"",
    "where": "dialogue.json maeca/blind_dark#1",
-   "hash": "9a328d297b3d",
+   "hash": "bc1d5dcb96d4",
    "segments": [
     {
      "voice": "narrator",
-     "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. Outside, in the frost, you hear them come: soft feet, a long way round, and then a sigh, and then another. The Pack, lying down round the Blind in the dark. She lifts her head. \"They don't do that,\" she says. \"Not for me. Not for anyone.\" She lies back down. \"You walk quiet. You came into my Hollow and knelt to him and he let you. You never talk about before.\" A pause. \"What were you?\""
+     "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. Outside, in the frost, you hear them come: soft feet, a long way round, and then a sigh, and then another. The Pack, lying down round the Blind in the dark. She lifts her head."
+    },
+    {
+     "voice": "maeca",
+     "text": "They don't do that. Not for me. Not for anyone."
+    },
+    {
+     "voice": "narrator",
+     "text": "She lies back down, her ear where it was."
+    },
+    {
+     "voice": "maeca",
+     "text": "You walk quiet. You came into my Hollow and knelt to him, and he let you. You never talk about before."
+    },
+    {
+     "voice": "narrator",
+     "text": "Against your chest you feel her lips move, without a sound."
+    },
+    {
+     "voice": "maeca",
+     "text": "What were you?"
     }
    ],
    "direction": {
-    "emo": "hushed wonder",
-    "intent": "the Pack lies down round you",
+    "emo": "hushed, careful",
+    "intent": "the Pack lies down round you; she asks what you were",
     "pace": "slow",
     "vol": "hushed",
-    "note": "Very quiet. The Pack's arrival a held breath."
+    "hides": "she is counting your heart between her sentences; it is slow, and at night it can stop for a count of seven",
+    "note": "Narrator plain, the Pack's arrival a held breath. Maeca flat on 'They don't do that', because she can't afford the wonder. 'What were you?' careful, not curious: no stress on 'were', even weight, asked to the dark, after a real count of about three seconds.",
+    "beats": "...listening the way she listens to the Hollow. [breath] Outside, in the frost, you hear them come: soft feet, a long way round, [beat] and then a sigh, [beat] and then another. ... [beat] She lifts her head. | They don't do that. [beat] Not for me. Not for anyone. | She lies back down, her ear where it was. | You walk quiet. You came into my Hollow and knelt to him, and he let you. [beat] You never talk about before. | Against your chest you feel her lips move, without a sound. | [silence 3 s] What were you?"
    },
    "status": "todo"
   },
@@ -4747,20 +4852,35 @@
    "id": "dlg.maeca.blind_dark.2",
    "kind": "dialogue",
    "voice": "narrator",
-   "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. \"You walk quiet,\" she says. \"You never talk about before.\" A pause. \"What were you?\"",
+   "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. \"You walk quiet. You never talk about before.\" Against your chest you feel her lips move, without a sound. \"What were you?\"",
    "where": "dialogue.json maeca/blind_dark#2",
-   "hash": "5ec8dd1ef737",
+   "hash": "bc2ce580f6f1",
    "segments": [
     {
      "voice": "narrator",
-     "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow. \"You walk quiet,\" she says. \"You never talk about before.\" A pause. \"What were you?\""
+     "text": "Later, with the fire down, she lies with her head on your chest, listening the way she listens to the Hollow."
+    },
+    {
+     "voice": "maeca",
+     "text": "You walk quiet. You never talk about before."
+    },
+    {
+     "voice": "narrator",
+     "text": "Against your chest you feel her lips move, without a sound."
+    },
+    {
+     "voice": "maeca",
+     "text": "What were you?"
     }
    ],
    "direction": {
-    "emo": "intimate, curious",
+    "emo": "hushed, careful",
     "intent": "she asks what you were",
     "pace": "slow",
-    "vol": "hushed"
+    "vol": "hushed",
+    "hides": "she is counting your heart between her sentences",
+    "note": "As blind_dark.1 without the Pack. 'What were you?' careful, no stress on 'were', after a real count of about three seconds.",
+    "beats": "...listening the way she listens to the Hollow. | You walk quiet. You never talk about before. | Against your chest you feel her lips move, without a sound. | [silence 3 s] What were you?"
    },
    "status": "todo"
   },
@@ -5582,28 +5702,38 @@
    "id": "ply.wenna.hub.7",
    "kind": "choice",
    "voice": "survivor",
-   "text": "What do you sell?",
+   "text": "Tallow lamps? Everyone else burns ember.",
    "where": "dialogue.json wenna/hub choice 7",
    "skip": "the survivor's replies are voiced in a later pass",
-   "hash": "2bf073baef48",
+   "hash": "3699c5b88f51",
    "status": "skip"
   },
   {
    "id": "ply.wenna.hub.8",
    "kind": "choice",
    "voice": "survivor",
-   "text": "Is there anyone, Wenna? Family?",
+   "text": "What do you sell?",
    "where": "dialogue.json wenna/hub choice 8",
    "skip": "the survivor's replies are voiced in a later pass",
-   "hash": "3b992bd53f0b",
+   "hash": "2bf073baef48",
    "status": "skip"
   },
   {
    "id": "ply.wenna.hub.9",
    "kind": "choice",
    "voice": "survivor",
-   "text": "Goodbye.",
+   "text": "Is there anyone, Wenna? Family?",
    "where": "dialogue.json wenna/hub choice 9",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "3b992bd53f0b",
+   "status": "skip"
+  },
+  {
+   "id": "ply.wenna.hub.10",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Goodbye.",
+   "where": "dialogue.json wenna/hub choice 10",
    "skip": "the survivor's replies are voiced in a later pass",
    "hash": "619bc388fc15",
    "status": "skip"
@@ -5887,13 +6017,13 @@
    "id": "dlg.wenna.mask.0",
    "kind": "dialogue",
    "voice": "wenna",
-   "text": "My blightward. I made it the fever year. Stuff the beak with bitterroot and you can walk through air that'd drop a horse. Take it. I'm too old to go where it's needed.",
+   "text": "My blightward. I made it the fever year. Stuff the beak with bitterroot and you can walk through air that'd drop a horse. You cleaned my stream, child. Take it. ...Something down there's still cooking, and I'm too old to go where it's needed.",
    "where": "dialogue.json wenna/mask#0",
-   "hash": "aff1bbbb9f80",
+   "hash": "342b821c0655",
    "segments": [
     {
      "voice": "wenna",
-     "text": "My blightward. I made it the fever year. Stuff the beak with bitterroot and you can walk through air that'd drop a horse. Take it. I'm too old to go where it's needed."
+     "text": "My blightward. I made it the fever year. Stuff the beak with bitterroot and you can walk through air that'd drop a horse. You cleaned my stream, child. Take it. ...Something down there's still cooking, and I'm too old to go where it's needed."
     }
    ],
    "direction": {
@@ -5902,6 +6032,30 @@
     "pace": "measured",
     "vol": "level",
     "note": "Pride in her work. 'Take it.' abrupt; 'I'm too old...' rueful, honest."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "dlg.wenna.mask.1",
+   "kind": "dialogue",
+   "voice": "wenna",
+   "text": "My blightward. I made it the fever year. Stuff the beak with bitterroot and you can walk through air that'd drop a horse. Take it. I'm too old to go where it's needed.",
+   "where": "dialogue.json wenna/mask#1",
+   "hash": "aff1bbbb9f80",
+   "segments": [
+    {
+     "voice": "wenna",
+     "text": "My blightward. I made it the fever year. Stuff the beak with bitterroot and you can walk through air that'd drop a horse. Take it. I'm too old to go where it's needed."
+    }
+   ],
+   "direction": {
+    "emo": "brisk, matter-of-fact",
+    "intent": "gives you her plague mask",
+    "pace": "measured",
+    "vol": "level",
+    "hides": "what the fever year cost her",
+    "note": "A herbwife's practical pride in the bitterroot. 'Take it.' an order. 'I'm too old to go where it's needed.' plain, no self-pity.",
+    "beats": "My blightward. I made it the fever year. Stuff the beak with bitterroot and you can walk through air that'd drop a horse. [beat] Take it. I'm too old to go where it's needed."
    },
    "status": "todo"
   },
@@ -5929,13 +6083,13 @@
    "id": "dlg.wenna.fever.0",
    "kind": "dialogue",
    "voice": "wenna",
-   "text": "The year after Ashford went into the ground. Half the valley coughing green and the other half burying them. Same smell as your bottle, child. Same smell exactly. ...I've roots on the boil.",
+   "text": "The year after Ashford went into the ground. Half the valley coughing green and the other half burying them. \"Gone to the Morrow,\" they say up here, like it's a walk. They died, child. Same smell as your bottle. Same smell exactly. ...I've roots on the boil.",
    "where": "dialogue.json wenna/fever#0",
-   "hash": "f7d9db8b5181",
+   "hash": "895fa5a2e883",
    "segments": [
     {
      "voice": "wenna",
-     "text": "The year after Ashford went into the ground. Half the valley coughing green and the other half burying them. Same smell as your bottle, child. Same smell exactly. ...I've roots on the boil."
+     "text": "The year after Ashford went into the ground. Half the valley coughing green and the other half burying them. \"Gone to the Morrow,\" they say up here, like it's a walk. They died, child. Same smell as your bottle. Same smell exactly. ...I've roots on the boil."
     }
    ],
    "direction": {
@@ -6204,6 +6358,49 @@
    "voice": "survivor",
    "text": "Goodbye.",
    "where": "dialogue.json wenna/t_wenna choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "619bc388fc15",
+   "status": "skip"
+  },
+  {
+   "id": "dlg.wenna.tallow.0",
+   "kind": "dialogue",
+   "voice": "wenna",
+   "text": "I burn fat, child. Fat's honest. Fat was a pig.",
+   "where": "dialogue.json wenna/tallow#0",
+   "hash": "bd6c185c4736",
+   "segments": [
+    {
+     "voice": "wenna",
+     "text": "I burn fat, child. Fat's honest. Fat was a pig."
+    }
+   ],
+   "direction": {
+    "emo": "tart, dry",
+    "intent": "her candles are honest",
+    "pace": "measured",
+    "vol": "level",
+    "note": "Somerset bluntness. 'Fat was a pig.' as plain fact, a dry relish.",
+    "beats": "I burn fat, child. [beat] Fat's honest. Fat was a pig."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "ply.wenna.tallow.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Something else.",
+   "where": "dialogue.json wenna/tallow choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "002c896f4190",
+   "status": "skip"
+  },
+  {
+   "id": "ply.wenna.tallow.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Goodbye.",
+   "where": "dialogue.json wenna/tallow choice 1",
    "skip": "the survivor's replies are voiced in a later pass",
    "hash": "619bc388fc15",
    "status": "skip"
@@ -7602,11 +7799,13 @@
     }
    ],
    "direction": {
-    "emo": "grief, stunned",
+    "emo": "stunned, flat",
     "intent": "learns she died",
     "pace": "very slow",
     "vol": "quiet",
-    "note": "Narrator gives the look at the irons. Then barely voiced: 'Had the reins.' A breath. Fond, broken: 'Always wanted the reins.'"
+    "hides": "he suspects whose coin paid for the irons",
+    "note": "He does not break. Narrator gives the look at the irons. Then facts about his daughter, flat: 'Had the reins.' barely voiced. The love is only in saying 'the reins' again. No breath of his own: the narrator describes it.",
+    "beats": "...Had the reins. She'd want the reins. Always wanted the reins."
    },
    "status": "todo"
   },
@@ -7636,11 +7835,13 @@
     }
    ],
    "direction": {
-    "emo": "grief, stunned",
+    "emo": "stunned, flat",
     "intent": "learns she died",
     "pace": "very slow",
     "vol": "quiet",
-    "note": "Narrator: the hammer goes down, which you have never seen. 'Had the reins.' barely voiced. Narrator: the long breath. Fond, broken: 'Always wanted the reins.'"
+    "hides": "he suspects whose coin paid for the irons",
+    "note": "He does not break. Narrator: the hammer goes down, which you have never seen. 'Had the reins.' barely voiced. Narrator: the long breath (so none in his read). Flat facts about his daughter; the love is only in saying 'the reins' again.",
+    "beats": "...Had the reins. | She'd want the reins. Always wanted the reins."
    },
    "status": "todo"
   },
@@ -11826,8 +12027,10 @@
     "intent": "greets a fellow of his dead Order",
     "pace": "quick",
     "vol": "raised",
-    "wants": "you to stay and be his friend",
-    "note": "Bursting on 'Oh!' and 'Lit!'; tumbling 'sit down, sit, sit'. Rueful little laugh on 'which is fair'. 'It used to work.' drops, honest and a bit sad."
+    "wants": "company, a lit Order lamp, family",
+    "hides": "what he is, how old, what the lamps burn",
+    "note": "The catch of joy on 'Lit!'. No rue on 'which is fair': he likes the name, and the laugh is delight on the out-breath. 'It used to work.' cheerful and practical, like a man reporting a broken pump; the sadness belongs to the listener. Chid is never cynical and never self-pitying.",
+    "beats": "Oh! [beat] A lantern of the Order! [breath] Lit! Oh, sit down, sit, sit. I'm Chid. They call me the Fool, which is fair. [laugh] This is the shrine of the Morning Light. [beat] It used to work."
    },
    "status": "todo"
   },
@@ -11850,7 +12053,9 @@
     "pace": "quick",
     "vol": "level",
     "wants": "company",
-    "note": "Bright 'Oh!'. Cheerful self-mockery on 'which is fair'. Drop on 'It used to work.'"
+    "hides": "what he is, how old, what the lamps burn",
+    "note": "Bright 'Oh!'. He likes the name 'the Fool'; the laugh is delight. 'It used to work.' cheerful and practical.",
+    "beats": "Oh! A visitor. [beat] Hello! I'm Chid. They call me the Fool, which is fair. [laugh] This is the shrine of the Morning Light. [beat] It used to work."
    },
    "status": "todo"
   },
@@ -12092,14 +12297,21 @@
    "id": "dlg.chid.woke.0",
    "kind": "dialogue",
    "voice": "chid",
-   "text": "You're awake! Good. Good! A carter found you on the Old Road and brought you here, and the flame... the flame kept you. I watched it. You'll be sore a day or two. Whatever did this to you is still out there, {name}. It'll have your things. They always keep something.",
+   "text": "Up again. Up's good. (He has the kettle on already.) The carter brought you in, before you ask. You'll be sore a day or two. Whatever did it has your things.",
    "where": "dialogue.json chid/woke#0",
-   "hash": "96a4ef5952c7",
-   "name_elided": true,
+   "hash": "b3da04b18270",
    "segments": [
     {
      "voice": "chid",
-     "text": "You're awake! Good. Good! A carter found you on the Old Road and brought you here, and the flame... The flame kept you. I watched it. You'll be sore a day or two. Whatever did this to you is still out there. It'll have your things. They always keep something."
+     "text": "Up again. Up's good."
+    },
+    {
+     "voice": "narrator",
+     "text": "He has the kettle on already."
+    },
+    {
+     "voice": "chid",
+     "text": "The carter brought you in, before you ask. You'll be sore a day or two. Whatever did it has your things."
     }
    ],
    "direction": {
@@ -12116,13 +12328,21 @@
    "id": "dlg.chid.woke.1",
    "kind": "dialogue",
    "voice": "chid",
-   "text": "Oh, you're awake. A carter found you on the Old Road and brought you in, and I didn't know what else to do, so I prayed at the shrine and... well. Here you are. You'll be sore a day or two. Whatever did this is still out there. It'll have your things.",
+   "text": "You're up. A carter brought you in. (He isn't looking at you.) Well. Someone did. Someone always does. You'll be sore a day or two, and whatever did this still has your things.",
    "where": "dialogue.json chid/woke#1",
-   "hash": "ed2a2096c663",
+   "hash": "f48d8a0d87c9",
    "segments": [
     {
      "voice": "chid",
-     "text": "Oh, you're awake. A carter found you on the Old Road and brought you in, and I didn't know what else to do, so I prayed at the shrine and... well. Here you are. You'll be sore a day or two. Whatever did this is still out there. It'll have your things."
+     "text": "You're up. A carter brought you in."
+    },
+    {
+     "voice": "narrator",
+     "text": "He isn't looking at you."
+    },
+    {
+     "voice": "chid",
+     "text": "Well. Someone did. Someone always does. You'll be sore a day or two, and whatever did this still has your things."
     }
    ],
    "direction": {
@@ -12132,6 +12352,86 @@
     "vol": "quiet",
     "wants": "you to rest",
     "note": "Gentle; trails off on 'and... well.' with an embarrassed little laugh. Serious and quiet for the warning."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "dlg.chid.woke.2",
+   "kind": "dialogue",
+   "voice": "chid",
+   "text": "You're awake! A carter found you. The same carter, as it happens; he's starting to think you're doing it on purpose. (He laughs, and stops.) You'll be sore a day or two. Whatever did this is still out there. It'll have your things.",
+   "where": "dialogue.json chid/woke#2",
+   "hash": "7f1fa2785a09",
+   "segments": [
+    {
+     "voice": "chid",
+     "text": "You're awake! A carter found you. The same carter, as it happens; he's starting to think you're doing it on purpose."
+    },
+    {
+     "voice": "narrator",
+     "text": "He laughs, and stops."
+    },
+    {
+     "voice": "chid",
+     "text": "You'll be sore a day or two. Whatever did this is still out there. It'll have your things."
+    }
+   ],
+   "direction": {
+    "emo": "cheerful, a shade less convinced",
+    "intent": "you woke again (the second death)",
+    "pace": "quick",
+    "vol": "level",
+    "hides": "he carries you in himself, and what the flame costs",
+    "note": "The lie wears thin: brighter than he feels. The joke about the carter, then the narrator: he laughs, and stops. The rest practical.",
+    "beats": "You're awake! A carter found you. The same carter, as it happens; he's starting to think you're doing it on purpose. [laugh] | You'll be sore a day or two. Whatever did this is still out there. It'll have your things."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "dlg.chid.woke.3",
+   "kind": "dialogue",
+   "voice": "chid",
+   "text": "You're awake! Good. Good! A carter found you on the Old Road and brought you here, and the flame... the flame kept you. I watched it. You'll be sore a day or two. Whatever did this to you is still out there, {name}. It'll have your things. They always keep something.",
+   "where": "dialogue.json chid/woke#3",
+   "hash": "96a4ef5952c7",
+   "name_elided": true,
+   "segments": [
+    {
+     "voice": "chid",
+     "text": "You're awake! Good. Good! A carter found you on the Old Road and brought you here, and the flame... The flame kept you. I watched it. You'll be sore a day or two. Whatever did this to you is still out there. It'll have your things. They always keep something."
+    }
+   ],
+   "direction": {
+    "emo": "relief, joy",
+    "intent": "you woke at the shrine",
+    "pace": "quick",
+    "vol": "level",
+    "hides": "what the flame costs",
+    "note": "Tumbling relief; a catch on 'The flame kept you.' 'I watched it.' quiet wonder. Then practical.",
+    "beats": "You're awake! Good. Good! A carter found you on the Old Road and brought you here, and the flame... [beat] The flame kept you. I watched it. [breath] You'll be sore a day or two. Whatever did this to you is still out there. It'll have your things. They always keep something."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "dlg.chid.woke.4",
+   "kind": "dialogue",
+   "voice": "chid",
+   "text": "Oh, you're awake. A carter found you on the Old Road and brought you in, and I didn't know what else to do, so I prayed at the shrine and... well. Here you are. You'll be sore a day or two. Whatever did this is still out there. It'll have your things.",
+   "where": "dialogue.json chid/woke#4",
+   "hash": "ed2a2096c663",
+   "segments": [
+    {
+     "voice": "chid",
+     "text": "Oh, you're awake. A carter found you on the Old Road and brought you in, and I didn't know what else to do, so I prayed at the shrine and... well. Here you are. You'll be sore a day or two. Whatever did this is still out there. It'll have your things."
+    }
+   ],
+   "direction": {
+    "emo": "relieved, sheepish",
+    "intent": "you woke after his prayer",
+    "pace": "measured",
+    "vol": "level",
+    "note": "'Oh, you're awake.' soft surprise. The prayer told shyly; 'well.' a little shrug. 'Here you are.' warm.",
+    "beats": "Oh, you're awake. A carter found you on the Old Road and brought you in, and I didn't know what else to do, so I prayed at the shrine and... [beat] well. Here you are. You'll be sore a day or two. Whatever did this is still out there. It'll have your things."
    },
    "status": "todo"
   },
@@ -12149,18 +12449,28 @@
    "id": "ply.chid.woke.1",
    "kind": "choice",
    "voice": "survivor",
-   "text": "Where did I fall?",
+   "text": "Which carter, Chid?",
    "where": "dialogue.json chid/woke choice 1",
    "skip": "the survivor's replies are voiced in a later pass",
-   "hash": "e0d49ad97393",
+   "hash": "5828610d9d77",
    "status": "skip"
   },
   {
    "id": "ply.chid.woke.2",
    "kind": "choice",
    "voice": "survivor",
-   "text": "You look like you've seen this before.",
+   "text": "Where did I fall?",
    "where": "dialogue.json chid/woke choice 2",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "e0d49ad97393",
+   "status": "skip"
+  },
+  {
+   "id": "ply.chid.woke.3",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "You look like you've seen this before.",
+   "where": "dialogue.json chid/woke choice 3",
    "skip": "the survivor's replies are voiced in a later pass",
    "hash": "4145007a548a",
    "status": "skip"
@@ -12234,13 +12544,13 @@
    "id": "dlg.chid.shrine.0",
    "kind": "dialogue",
    "voice": "chid",
-   "text": "The flame. It blessed people. Kept the dead lying down where you'd put them. Then the Order left and the flame went out, and I've been... trying. With prayers. And candles. And a bellows, once. That was a bad day.",
+   "text": "The flame. It blessed people. Kept the dead lying down where you'd put them. It was never for seeing by, you know; it was for keeping company. Then the Order left and the flame went out, and I've been... trying. With prayers. And candles. And a bellows, once. That was a bad day.",
    "where": "dialogue.json chid/shrine#0",
-   "hash": "351ec318329d",
+   "hash": "066a424e0790",
    "segments": [
     {
      "voice": "chid",
-     "text": "The flame. It blessed people. Kept the dead lying down where you'd put them. Then the Order left and the flame went out, and I've been... trying. With prayers. And candles. And a bellows, once. That was a bad day."
+     "text": "The flame. It blessed people. Kept the dead lying down where you'd put them. It was never for seeing by, you know; it was for keeping company. Then the Order left and the flame went out, and I've been... trying. With prayers. And candles. And a bellows, once. That was a bad day."
     }
    ],
    "direction": {
@@ -12982,9 +13292,42 @@
    "id": "dlg.chid.cb_nell.0",
    "kind": "dialogue",
    "voice": "chid",
-   "text": "We buried Nell behind the shrine, next to old Ashe. Brannoc made the marker himself. Iron. Of course, iron. (He is quiet, which he never is.) She was very light. ...Sit down a minute. Not there. There.",
+   "text": "I sang it flat. I always have. There's always somebody who has the tune. (He is quiet, which he never is.) She was very light. ...Sit down a minute. Not on the step. Here. By me.",
    "where": "dialogue.json chid/cb_nell#0",
-   "hash": "f12f4d95ba76",
+   "hash": "f4ac03e2f73a",
+   "segments": [
+    {
+     "voice": "chid",
+     "text": "I sang it flat. I always have. There's always somebody who has the tune."
+    },
+    {
+     "voice": "narrator",
+     "text": "He is quiet, which he never is."
+    },
+    {
+     "voice": "chid",
+     "text": "She was very light. ...Sit down a minute. Not on the step. Here. By me."
+    }
+   ],
+   "direction": {
+    "emo": "quiet grief, held",
+    "intent": "after the burial he sang at",
+    "pace": "slow",
+    "vol": "quiet",
+    "wants": "to look after the one who put her down",
+    "hides": "he knows what the irons are for; 'somebody' is Vonnra's alto",
+    "note": "Light and offhand on the singing; 'I always have' is older than he looks, and he doesn't notice saying it. Narrator plain; three seconds of silence. 'She was very light' barely voiced, one catch on 'light', no sob. 'By me.' quiet, almost asking.",
+    "beats": "I sang it flat. [beat] I always have. [breath] There's always somebody who has the tune. | [silence 3 s] She was very light. [breath] ...Sit down a minute. [beat] Not on the step. [beat] Here. [beat] By me."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "dlg.chid.cb_nell.1",
+   "kind": "dialogue",
+   "voice": "chid",
+   "text": "We buried Nell behind the shrine, next to old Ashe. Brannoc made the marker himself. Iron. Of course, iron. (He is quiet, which he never is.) She was very light. ...Sit down a minute. Not on the step. Here. By me.",
+   "where": "dialogue.json chid/cb_nell#1",
+   "hash": "c443bedd4d7f",
    "segments": [
     {
      "voice": "chid",
@@ -12996,17 +13339,72 @@
     },
     {
      "voice": "chid",
-     "text": "She was very light. ...Sit down a minute. Not there. There."
+     "text": "She was very light. ...Sit down a minute. Not on the step. Here. By me."
     }
    ],
    "direction": {
-    "emo": "quiet grief",
+    "emo": "quiet grief, held",
     "intent": "they buried Nell",
     "pace": "slow",
     "vol": "quiet",
-    "note": "No cheer at all. 'Iron. Of course, iron.' fond and sad. Long silence. 'She was very light.' barely voiced. Then trying to look after you."
+    "wants": "to look after the one who put her down",
+    "hides": "he knows what the irons are for, and he was at the ford the night she got up",
+    "note": "'Of course, iron' fond: the half-second before it holds the sting (iron is what drowned her), so don't play the irony. Narrator plain, no sorrow; then three seconds of silence. 'She was very light' barely voiced, one catch allowed on 'light', no sob. His ordinary self comes back on 'Not on the step'; under the care he is the one who needs the company, and 'By me.' is quiet, almost asking.",
+    "beats": "We buried Nell behind the shrine, next to old Ashe. [beat] Brannoc made the marker himself. Iron. [beat] Of course, iron. | [silence 3 s] She was very light. [breath] ...Sit down a minute. [beat] Not on the step. [beat] Here. [beat] By me."
    },
    "status": "todo"
+  },
+  {
+   "id": "dlg.chid.carter.0",
+   "kind": "dialogue",
+   "voice": "chid",
+   "text": "...You know, I never asked his name. I should ask his name. Next time. (He puts a cup in your hands.) Drink that. It's only hot water. There's nothing in it but hot.",
+   "where": "dialogue.json chid/carter#0",
+   "hash": "0cf9c31ab979",
+   "segments": [
+    {
+     "voice": "chid",
+     "text": "...You know, I never asked his name. I should ask his name. Next time."
+    },
+    {
+     "voice": "narrator",
+     "text": "He puts a cup in your hands."
+    },
+    {
+     "voice": "chid",
+     "text": "Drink that. It's only hot water. There's nothing in it but hot."
+    }
+   ],
+   "direction": {
+    "emo": "light, distracted",
+    "intent": "the carter who keeps finding you",
+    "pace": "measured",
+    "vol": "quiet",
+    "hides": "there is no carter, or none he can name",
+    "note": "Musing, light; he doesn't hear what he's saying. Narrator: the cup. Then fussing kindness; 'There's nothing in it but hot.' a small reassurance.",
+    "beats": "...You know, I never asked his name. [beat] I should ask his name. Next time. | Drink that. It's only hot water. [beat] There's nothing in it but hot."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "ply.chid.carter.0",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Thank you, Chid.",
+   "where": "dialogue.json chid/carter choice 0",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "f07989822f7d",
+   "status": "skip"
+  },
+  {
+   "id": "ply.chid.carter.1",
+   "kind": "choice",
+   "voice": "survivor",
+   "text": "Where did I fall?",
+   "where": "dialogue.json chid/carter choice 1",
+   "skip": "the survivor's replies are voiced in a later pass",
+   "hash": "e0d49ad97393",
+   "status": "skip"
   },
   {
    "id": "dlg.vonnra.first.0",
@@ -15383,12 +15781,13 @@
     }
    ],
    "direction": {
-    "emo": "stillness, then a terrible calm",
+    "emo": "listening very hard, caught for once",
     "intent": "accused, she answers with your name",
     "pace": "very slow",
     "vol": "quiet",
     "wants": "you to sit and hear the rest",
-    "note": "The narrator holds the long look. Her line is the only answer she gives: not denial, not admission. '...Sit down.' low and even, a pause where the name is. 'I have not finished reading.' quietly in command."
+    "note": "The narrator holds the long look. Not denial, not admission. A breath before 'Sit down' (she is alive, and it is cold). The name is spliced in at the pause, its own take in her voice: the only warmth anywhere in her part, and it should frighten. 'I have not finished reading.' quietly in command. Never 'traveller'.",
+    "beats": "[breath] ...Sit down. [name] I have not finished reading."
    },
    "status": "todo"
   },
@@ -18208,12 +18607,14 @@
     }
    ],
    "direction": {
-    "emo": "shy, defensive",
-    "intent": "offers herself freely",
+    "emo": "plain, then strained",
+    "intent": "offers herself freely, which she has never done",
     "pace": "slow",
     "vol": "quiet",
-    "wants": "you not to make it a transaction",
-    "note": "A beat where the name would be. 'Tonight I'm not working.' uncertain. A pause; defensive, embarrassed: 'Don't make it strange.'"
+    "wants": "you to stay without it turning into business or a fuss",
+    "hides": "her fear that it means something",
+    "note": "Not shy: she has never done this. 'Put your purse away.' brisk, a professional's habit; a beat; 'Tonight I'm not working.' plainly, as if it cost nothing. 'Don't look at me like that.' a small laugh at herself; 'Don't make it strange.' is where the strain shows.",
+    "beats": "Put your purse away. [beat] Tonight I'm not working. ...Don't look at me like that. [laugh] Don't make it strange."
    },
    "status": "todo"
   },
@@ -18257,7 +18658,15 @@
    "segments": [
     {
      "voice": "narrator",
-     "text": "She doesn't talk the way she talks for money. She doesn't talk at all, at first. She undresses you as if she's never done it before, which is absurd, and she knows it's absurd, and halfway through she laughs into your neck and can't stop. Then she does stop, and the laugh goes somewhere else. She's slower than on her working nights, and less sure, and once she stops altogether with her forehead against yours and just breathes, and you wait, and she goes on. The lamp burns down on its own. Nobody turns it. In the dark, much later, she says into your shoulder, \"You told me anyway,\" and nothing else, and then she sleeps."
+     "text": "She doesn't talk the way she talks for money. She doesn't talk at all, at first. She undresses you as if she's never done it before, which is absurd, and she knows it's absurd, and halfway through she laughs into your neck and can't stop. Then she does stop, and the laugh goes somewhere else. She's slower than on her working nights, and less sure, and once she stops altogether with her forehead against yours and just breathes, and you wait, and she goes on. The lamp burns down on its own. Nobody turns it. In the dark, much later, she says into your shoulder,"
+    },
+    {
+     "voice": "sella",
+     "text": "You told me anyway,"
+    },
+    {
+     "voice": "narrator",
+     "text": "and nothing else, and then she sleeps."
     }
    ],
    "direction": {
@@ -18265,7 +18674,7 @@
     "intent": "a night Sella gives",
     "pace": "slow",
     "vol": "hushed",
-    "note": "Slower and softer than her paid night. 'which she has never done' a small revelation."
+    "note": "The narrator's, hushed and unhurried: the one night that isn't work, so no patter. Narrator plain: the narrator never shows a feeling. Her four words are hers, said into your shoulder."
    },
    "status": "todo"
   },
@@ -19536,7 +19945,8 @@
     "intent": "you said no",
     "pace": "measured",
     "vol": "quiet",
-    "note": "The joke nearly managed. 'I don't ask twice.' Narrator: the pat. Brisk kindness."
+    "note": "'Your loss, love. Literally; I'm worth a fortune.' a real joke, with a laugh. '...No, it's all right.' a beat, 'It is.': convincing herself. 'I don't ask twice.' is pride. Narrator: the pat. Brisk kindness.",
+    "beats": "Your loss, love. Literally; I'm worth a fortune. [laugh] | ...No, it's all right. [beat] It is. I'll not ask twice. I don't ask twice. | Go on. Rook's stew's still warm."
    },
    "status": "todo"
   },
@@ -19623,7 +20033,9 @@
     "emo": "moved, wondering",
     "intent": "nobody does that",
     "pace": "slow",
-    "vol": "quiet"
+    "vol": "quiet",
+    "note": "Quiet, wondering.",
+    "beats": "I keep thinking about you sitting on my bed telling me where you're from. Knowing who'd hear it by morning. | Nobody does that. [beat] Nobody's ever done that."
    },
    "status": "todo"
   },
@@ -22543,22 +22955,24 @@
    "id": "dlg.wayfinder.first.0",
    "kind": "dialogue",
    "voice": "ysolde",
-   "text": "You've the look of someone who walks toward trouble on purpose. Good. I'm Ysolde Marrow, and I draw maps of the places the road forgets: woods that eat their own paths, barrows that open after dark, ravines the Kerchiefs think are theirs. Each one sworn under an oath. Each one ruled by something that won't want you there.",
+   "text": "You've the look of someone who comes back. Good. The other sort only ever buy the one map. I'm Ysolde Marrow, and I draw maps of the places the road forgets: woods that eat their own paths, barrows that open after dark, ravines the Kerchiefs think are theirs. Each one sworn under an oath. Each one ruled by something that won't want you there.",
    "where": "dialogue.json wayfinder/first#0",
-   "hash": "4243c82b9252",
+   "hash": "5d13fe890be6",
    "segments": [
     {
      "voice": "ysolde",
-     "text": "You've the look of someone who walks toward trouble on purpose. Good. I'm Ysolde Marrow, and I draw maps of the places the road forgets: woods that eat their own paths, barrows that open after dark, ravines the Kerchiefs think are theirs. Each one sworn under an oath. Each one ruled by something that won't want you there."
+     "text": "You've the look of someone who comes back. Good. The other sort only ever buy the one map. I'm Ysolde Marrow, and I draw maps of the places the road forgets: woods that eat their own paths, barrows that open after dark, ravines the Kerchiefs think are theirs. Each one sworn under an oath. Each one ruled by something that won't want you there."
     }
    ],
    "direction": {
-    "emo": "brisk, wry, bookish",
+    "emo": "brisk, dry, bookish",
     "intent": "sells her maps",
     "pace": "brisk",
     "vol": "level",
-    "wants": "a customer who comes back",
-    "note": "Brisk Edinburgh. 'Good.' approving. A lively catalogue of places, relishing each. The last two sentences drier and darker."
+    "wants": "a customer who'll come back",
+    "hides": "she sells the names of those who come back, to feed her brother in his cage",
+    "note": "Brisk Edinburgh. The joke about the other sort is dry, a cartographer's sales line, no relish. 'barrows' a touch faster, no weight: it's her brother's. The last two sentences drier and darker.",
+    "beats": "You've the look of someone who comes back. [beat] Good. The other sort only ever buy the one map. [breath] I'm Ysolde Marrow, and I draw maps of the places the road forgets: woods that eat their own paths, barrows that open after dark, ravines the Kerchiefs think are theirs. [beat] Each one sworn under an oath. Each one ruled by something that won't want you there."
    },
    "status": "todo"
   },
@@ -23172,11 +23586,14 @@
     }
    ],
    "direction": {
-    "emo": "brisk, tidy",
+    "emo": "brisk, practised",
     "intent": "asks your name for the margin",
     "pace": "brisk",
     "vol": "level",
-    "note": "Proud of her tidiness. Narrator: the pen. 'Speaking of which.' The question light."
+    "wants": "your name",
+    "hides": "where it goes",
+    "note": "Light because practised. 'put you down' means write, and also the other thing: she never hears the second meaning. Narrator: the pen.",
+    "beats": "Who came back, from where, how long they lasted, what they carried out. [beat] Name first; [beat] I'm a tidy woman. | Speaking of which. [beat] How do I put you down?"
    },
    "status": "todo"
   },
@@ -23283,7 +23700,8 @@
     "intent": "writes Nobody",
     "pace": "measured",
     "vol": "level",
-    "note": "'Nobody.' Narrator: without blinking. A dry joke with a chill."
+    "note": "On audio the capital N vanishes: give the second 'Nobody' the same name-shape and weight she gave it as she wrote it, with a tiny beat before it; then 'More than most' lands the joke. Deadpan, no chill added.",
+    "beats": "Nobody. | You'd be surprised how often [beat] Nobody comes back. [beat] More than most."
    },
    "status": "todo"
   },
@@ -23325,11 +23743,13 @@
     }
    ],
    "direction": {
-    "emo": "playful",
+    "emo": "dry, quick",
     "intent": "names you Lark",
     "pace": "measured",
     "vol": "level",
-    "note": "Narrator for the look. 'Lark.' decided. Fond teasing."
+    "hides": "by making a name up she chooses not to sell you: a kindness she won't own",
+    "note": "Edinburgh dry and quick, not fond teasing. The kindness is in the choice, not the voice.",
+    "beats": "Lark. [beat] You look like a Lark. Larks get up early, [beat] and make a great deal of noise about it."
    },
    "status": "todo"
   },
@@ -24302,31 +24722,55 @@
    "status": "todo"
   },
   {
-   "id": "bark.holloway.day.0",
+   "id": "bark.rook.said.0",
    "kind": "bark",
-   "voice": "holloway",
-   "text": "Five a pelt. Fifty for the old grey one.",
-   "where": "npcs.json holloway.barks[0]",
-   "hash": "a20883ce1674",
+   "voice": "rook",
+   "text": "Harlan's not eating. I've sent bread. He's sent it back.",
+   "where": "npcs.json rook.said[0]",
+   "hash": "285d40099805",
    "segments": [
     {
-     "voice": "holloway",
-     "text": "Five a pelt. Fifty for the old grey one."
+     "voice": "rook",
+     "text": "Harlan's not eating. I've sent bread. He's sent it back."
     }
    ],
    "direction": {
-    "emo": "curt",
-    "pace": "brisk",
-    "vol": "level"
+    "emo": "worried, dry",
+    "intent": "Harlan is grieving",
+    "pace": "measured",
+    "vol": "level",
+    "note": "Said to nobody; 'He's sent it back.' flat, a little hurt."
    },
    "status": "todo"
   },
   {
-   "id": "bark.holloway.day.1",
+   "id": "bark.rook.said.1",
+   "kind": "bark",
+   "voice": "rook",
+   "text": "Hook's empty. I know. Leave it.",
+   "where": "npcs.json rook.said[1]",
+   "hash": "9772c9014184",
+   "segments": [
+    {
+     "voice": "rook",
+     "text": "Hook's empty. I know. Leave it."
+    }
+   ],
+   "direction": {
+    "emo": "quiet, closed",
+    "intent": "Nell's hook by the door",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "'I know. Leave it.' stops the subject dead."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.holloway.day.0",
    "kind": "bark",
    "voice": "holloway",
    "text": "Keep to the road, and keep your blade where I can see it.",
-   "where": "npcs.json holloway.barks[1]",
+   "where": "npcs.json holloway.barks[0]",
    "hash": "76cb0c873489",
    "segments": [
     {
@@ -24342,11 +24786,11 @@
    "status": "todo"
   },
   {
-   "id": "bark.holloway.day.2",
+   "id": "bark.holloway.day.1",
    "kind": "bark",
    "voice": "holloway",
    "text": "Three caravans this month. Three.",
-   "where": "npcs.json holloway.barks[2]",
+   "where": "npcs.json holloway.barks[1]",
    "hash": "d23edebad5cd",
    "segments": [
     {
@@ -24462,51 +24906,100 @@
    "status": "todo"
   },
   {
+   "id": "bark.holloway.said.0",
+   "kind": "bark",
+   "voice": "holloway",
+   "text": "Five a pelt. Fifty for the old grey one.",
+   "where": "npcs.json holloway.said[0]",
+   "hash": "a20883ce1674",
+   "segments": [
+    {
+     "voice": "holloway",
+     "text": "Five a pelt. Fifty for the old grey one."
+    }
+   ],
+   "direction": {
+    "emo": "businesslike",
+    "intent": "the pelt bounty",
+    "pace": "measured",
+    "vol": "level",
+    "note": "A notice read aloud by a man who wrote it."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.holloway.said.1",
+   "kind": "bark",
+   "voice": "holloway",
+   "text": "Pelt book's closed. I'll not miss writing in it.",
+   "where": "npcs.json holloway.said[1]",
+   "hash": "fffee6c4730e",
+   "segments": [
+    {
+     "voice": "holloway",
+     "text": "Pelt book's closed. I'll not miss writing in it."
+    }
+   ],
+   "direction": {
+    "emo": "dry relief",
+    "intent": "the bounty's done",
+    "pace": "measured",
+    "vol": "level",
+    "note": "A tired half-smile in it."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.holloway.said.2",
+   "kind": "bark",
+   "voice": "holloway",
+   "text": "Corran's in the ground. That's one debt paid.",
+   "where": "npcs.json holloway.said[2]",
+   "hash": "8645e757e3c8",
+   "segments": [
+    {
+     "voice": "holloway",
+     "text": "Corran's in the ground. That's one debt paid."
+    }
+   ],
+   "direction": {
+    "emo": "grim, private",
+    "intent": "Corran buried",
+    "pace": "slow",
+    "vol": "quiet",
+    "hides": "the debt is his own",
+    "note": "To himself. 'That's one debt paid.' flat."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.holloway.said.3",
+   "kind": "bark",
+   "voice": "holloway",
+   "text": "One caravan home. One. I'll take it.",
+   "where": "npcs.json holloway.said[3]",
+   "hash": "4d5bb6d3738b",
+   "segments": [
+    {
+     "voice": "holloway",
+     "text": "One caravan home. One. I'll take it."
+    }
+   ],
+   "direction": {
+    "emo": "weary, grateful",
+    "intent": "one caravan came home",
+    "pace": "measured",
+    "vol": "level",
+    "note": "'One.' heavy; 'I'll take it.' accepting."
+   },
+   "status": "todo"
+  },
+  {
    "id": "bark.maeca.day.0",
    "kind": "bark",
    "voice": "maeca",
-   "text": "They're not hunting. They're running.",
-   "where": "npcs.json maeca.barks[0]",
-   "hash": "64254c5f8f98",
-   "segments": [
-    {
-     "voice": "maeca",
-     "text": "They're not hunting. They're running."
-    }
-   ],
-   "direction": {
-    "emo": "terse",
-    "pace": "measured",
-    "vol": "quiet"
-   },
-   "status": "todo"
-  },
-  {
-   "id": "bark.maeca.day.1",
-   "kind": "bark",
-   "voice": "maeca",
-   "text": "Something's got the whole wood on edge.",
-   "where": "npcs.json maeca.barks[1]",
-   "hash": "9a51ffc389ec",
-   "segments": [
-    {
-     "voice": "maeca",
-     "text": "Something's got the whole wood on edge."
-    }
-   ],
-   "direction": {
-    "emo": "terse",
-    "pace": "measured",
-    "vol": "quiet"
-   },
-   "status": "todo"
-  },
-  {
-   "id": "bark.maeca.day.2",
-   "kind": "bark",
-   "voice": "maeca",
    "text": "Mind the east road after dark.",
-   "where": "npcs.json maeca.barks[2]",
+   "where": "npcs.json maeca.barks[0]",
    "hash": "09809a3777e1",
    "segments": [
     {
@@ -24562,11 +25055,55 @@
    "status": "todo"
   },
   {
-   "id": "bark.maeca.night.2",
+   "id": "bark.maeca.said.0",
+   "kind": "bark",
+   "voice": "maeca",
+   "text": "They're not hunting. They're running.",
+   "where": "npcs.json maeca.said[0]",
+   "hash": "64254c5f8f98",
+   "segments": [
+    {
+     "voice": "maeca",
+     "text": "They're not hunting. They're running."
+    }
+   ],
+   "direction": {
+    "emo": "certain, quiet",
+    "intent": "the wolves are running",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Half-voice, plain fact."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.maeca.said.1",
+   "kind": "bark",
+   "voice": "maeca",
+   "text": "Something's got the whole wood on edge.",
+   "where": "npcs.json maeca.said[1]",
+   "hash": "9a51ffc389ec",
+   "segments": [
+    {
+     "voice": "maeca",
+     "text": "Something's got the whole wood on edge."
+    }
+   ],
+   "direction": {
+    "emo": "uneasy, watchful",
+    "intent": "the wood is wrong",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Listening while she says it."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.maeca.said.2",
    "kind": "bark",
    "voice": "maeca",
    "text": "The Pack's loud tonight.",
-   "where": "npcs.json maeca.nightBarks[2]",
+   "where": "npcs.json maeca.said[2]",
    "hash": "c00286bfa701",
    "segments": [
     {
@@ -24575,18 +25112,20 @@
     }
    ],
    "direction": {
-    "emo": "tired",
-    "pace": "slow",
-    "vol": "quiet"
+    "emo": "quiet, attentive",
+    "intent": "the Pack tonight",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Neighbours, not beasts."
    },
    "status": "todo"
   },
   {
-   "id": "bark.maeca.night.3",
+   "id": "bark.maeca.said.3",
    "kind": "bark",
    "voice": "maeca",
    "text": "Somewhere out there an old wolf's coughing. Listen.",
-   "where": "npcs.json maeca.nightBarks[3]",
+   "where": "npcs.json maeca.said[3]",
    "hash": "2641e766392d",
    "segments": [
     {
@@ -24595,9 +25134,77 @@
     }
    ],
    "direction": {
-    "emo": "tired",
+    "emo": "attentive, tender",
+    "intent": "an old wolf coughing",
     "pace": "slow",
-    "vol": "quiet"
+    "vol": "quiet",
+    "note": "'Listen.' almost a whisper."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.maeca.said.4",
+   "kind": "bark",
+   "voice": "maeca",
+   "text": "Hear that? They're hunting again. Deer.",
+   "where": "npcs.json maeca.said[4]",
+   "hash": "c4a2770e964a",
+   "segments": [
+    {
+     "voice": "maeca",
+     "text": "Hear that? They're hunting again. Deer."
+    }
+   ],
+   "direction": {
+    "emo": "quiet satisfaction",
+    "intent": "the Pack hunts again",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "'Deer.' a small, private pleasure."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.maeca.said.5",
+   "kind": "bark",
+   "voice": "maeca",
+   "text": "The Pack's lying up by the east wall. Leave them be.",
+   "where": "npcs.json maeca.said[5]",
+   "hash": "89a2b8ca9914",
+   "segments": [
+    {
+     "voice": "maeca",
+     "text": "The Pack's lying up by the east wall. Leave them be."
+    }
+   ],
+   "direction": {
+    "emo": "plain, protective",
+    "intent": "the Pack lying up",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "'Leave them be.' quiet and final."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.maeca.said.6",
+   "kind": "bark",
+   "voice": "maeca",
+   "text": "Nothing calls in the Hollow now. Nothing.",
+   "where": "npcs.json maeca.said[6]",
+   "hash": "6d925073bca2",
+   "segments": [
+    {
+     "voice": "maeca",
+     "text": "Nothing calls in the Hollow now. Nothing."
+    }
+   ],
+   "direction": {
+    "emo": "flat, hollow",
+    "intent": "the Hollow is empty",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "The second 'Nothing.' quieter. No tears in it."
    },
    "status": "todo"
   },
@@ -24605,13 +25212,13 @@
    "id": "bark.chid.day.0",
    "kind": "bark",
    "voice": "chid",
-   "text": "It used to work, you know. The shrine.",
+   "text": "The light's patient. I'm trying to be.",
    "where": "npcs.json chid.barks[0]",
-   "hash": "000148f173f5",
+   "hash": "6c06e290b89c",
    "segments": [
     {
      "voice": "chid",
-     "text": "It used to work, you know. The shrine."
+     "text": "The light's patient. I'm trying to be."
     }
    ],
    "direction": {
@@ -24625,28 +25232,8 @@
    "id": "bark.chid.day.1",
    "kind": "bark",
    "voice": "chid",
-   "text": "The light's patient. I'm trying to be.",
-   "where": "npcs.json chid.barks[1]",
-   "hash": "6c06e290b89c",
-   "segments": [
-    {
-     "voice": "chid",
-     "text": "The light's patient. I'm trying to be."
-    }
-   ],
-   "direction": {
-    "emo": "gently rueful",
-    "pace": "measured",
-    "vol": "level"
-   },
-   "status": "todo"
-  },
-  {
-   "id": "bark.chid.day.2",
-   "kind": "bark",
-   "voice": "chid",
    "text": "Morning comes. It always has. I should know.",
-   "where": "npcs.json chid.barks[2]",
+   "where": "npcs.json chid.barks[1]",
    "hash": "73f7e02abbeb",
    "segments": [
     {
@@ -24655,10 +25242,9 @@
     }
    ],
    "direction": {
-    "emo": "cheerful, and older than he sounds",
+    "emo": "gently rueful",
     "pace": "measured",
-    "vol": "level",
-    "note": "'I should know.' slips out lightly."
+    "vol": "level"
    },
    "status": "todo"
   },
@@ -24740,6 +25326,94 @@
     "pace": "slow",
     "vol": "quiet",
     "note": "The Order's saying, then a little laugh at the long night."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.chid.said.0",
+   "kind": "bark",
+   "voice": "chid",
+   "text": "It used to work, you know. The shrine.",
+   "where": "npcs.json chid.said[0]",
+   "hash": "000148f173f5",
+   "segments": [
+    {
+     "voice": "chid",
+     "text": "It used to work, you know. The shrine."
+    }
+   ],
+   "direction": {
+    "emo": "cheerful",
+    "intent": "the shrine used to work",
+    "pace": "measured",
+    "vol": "level",
+    "note": "Cheerful and practical, like a broken pump."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.chid.said.1",
+   "kind": "bark",
+   "voice": "chid",
+   "text": "It works! It works. I keep checking.",
+   "where": "npcs.json chid.said[1]",
+   "hash": "8e0aceab0ac4",
+   "segments": [
+    {
+     "voice": "chid",
+     "text": "It works! It works. I keep checking."
+    }
+   ],
+   "direction": {
+    "emo": "delighted",
+    "intent": "the shrine works again",
+    "pace": "quick",
+    "vol": "raised",
+    "note": "Bursting; 'I keep checking.' sheepish delight."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.chid.said.2",
+   "kind": "bark",
+   "voice": "chid",
+   "text": "Up and about! Up's very good.",
+   "where": "npcs.json chid.said[2]",
+   "hash": "e659e5d245a1",
+   "segments": [
+    {
+     "voice": "chid",
+     "text": "Up and about! Up's very good."
+    }
+   ],
+   "direction": {
+    "emo": "bright, fond",
+    "intent": "you're up",
+    "pace": "quick",
+    "vol": "level",
+    "note": "'Up's very good.' a little joke at himself."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.chid.said.3",
+   "kind": "bark",
+   "voice": "chid",
+   "text": "Two candles in for her. One's for Brannoc; don't tell him.",
+   "where": "npcs.json chid.said[3]",
+   "hash": "fcbbcb72eecc",
+   "segments": [
+    {
+     "voice": "chid",
+     "text": "Two candles in for her. One's for Brannoc; don't tell him."
+    }
+   ],
+   "direction": {
+    "emo": "quiet, tender",
+    "intent": "candles for Nell",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "'don't tell him.' a small conspiracy."
    },
    "status": "todo"
   },
@@ -24944,56 +25618,38 @@
    "status": "todo"
   },
   {
+   "id": "bark.rav.said.0",
+   "kind": "bark",
+   "voice": "rav",
+   "text": "Oh, Mam.",
+   "where": "npcs.json rav.said[0]",
+   "hash": "53c3e0b44309",
+   "segments": [
+    {
+     "voice": "rav",
+     "text": "Oh, Mam."
+    }
+   ],
+   "direction": {
+    "emo": "grief, sudden",
+    "intent": "his mother",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Two words escaping him; barely voiced."
+   },
+   "status": "todo"
+  },
+  {
    "id": "bark.harlan.day.0",
    "kind": "bark",
    "voice": "harlan",
-   "text": "Late. Jory's never late.",
+   "text": "Salt and iron, friend. Cloth, when I can get it.",
    "where": "npcs.json harlan.barks[0]",
-   "hash": "8fdc56f91ae2",
+   "hash": "72218ecb6aab",
    "segments": [
     {
      "voice": "harlan",
-     "text": "Late. Jory's never late."
-    }
-   ],
-   "direction": {
-    "emo": "patter",
-    "pace": "brisk",
-    "vol": "raised"
-   },
-   "status": "todo"
-  },
-  {
-   "id": "bark.harlan.day.1",
-   "kind": "bark",
-   "voice": "harlan",
-   "text": "Salt, iron, cloth. Whatever you need, when the wagons come.",
-   "where": "npcs.json harlan.barks[1]",
-   "hash": "16477f9eb05c",
-   "segments": [
-    {
-     "voice": "harlan",
-     "text": "Salt, iron, cloth. Whatever you need, when the wagons come."
-    }
-   ],
-   "direction": {
-    "emo": "patter",
-    "pace": "brisk",
-    "vol": "raised"
-   },
-   "status": "todo"
-  },
-  {
-   "id": "bark.harlan.day.2",
-   "kind": "bark",
-   "voice": "harlan",
-   "text": "Somebody knows something.",
-   "where": "npcs.json harlan.barks[2]",
-   "hash": "b90c03c37a4e",
-   "segments": [
-    {
-     "voice": "harlan",
-     "text": "Somebody knows something."
+     "text": "Salt and iron, friend. Cloth, when I can get it."
     }
    ],
    "direction": {
@@ -25024,11 +25680,77 @@
    "status": "todo"
   },
   {
-   "id": "bark.harlan.night.1",
+   "id": "bark.harlan.said.0",
+   "kind": "bark",
+   "voice": "harlan",
+   "text": "Late. Jory's never late.",
+   "where": "npcs.json harlan.said[0]",
+   "hash": "8fdc56f91ae2",
+   "segments": [
+    {
+     "voice": "harlan",
+     "text": "Late. Jory's never late."
+    }
+   ],
+   "direction": {
+    "emo": "worried",
+    "intent": "Jory is late",
+    "pace": "measured",
+    "vol": "level",
+    "note": "Trying to sound unworried and failing."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.harlan.said.1",
+   "kind": "bark",
+   "voice": "harlan",
+   "text": "Salt, iron, cloth. Whatever you need, when the wagons come.",
+   "where": "npcs.json harlan.said[1]",
+   "hash": "16477f9eb05c",
+   "segments": [
+    {
+     "voice": "harlan",
+     "text": "Salt, iron, cloth. Whatever you need, when the wagons come."
+    }
+   ],
+   "direction": {
+    "emo": "merchant's patter",
+    "intent": "trade",
+    "pace": "brisk",
+    "vol": "level",
+    "note": "Habit, a shopkeeper's call."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.harlan.said.2",
+   "kind": "bark",
+   "voice": "harlan",
+   "text": "Somebody knows something.",
+   "where": "npcs.json harlan.said[2]",
+   "hash": "b90c03c37a4e",
+   "segments": [
+    {
+     "voice": "harlan",
+     "text": "Somebody knows something."
+    }
+   ],
+   "direction": {
+    "emo": "suspicious, bitter",
+    "intent": "someone knows about the caravan",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "Muttered."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.harlan.said.3",
    "kind": "bark",
    "voice": "harlan",
    "text": "Every wagon on that road's his, in the dark.",
-   "where": "npcs.json harlan.nightBarks[1]",
+   "where": "npcs.json harlan.said[3]",
    "hash": "4e6c6b1d708e",
    "segments": [
     {
@@ -25037,18 +25759,20 @@
     }
    ],
    "direction": {
-    "emo": "tired",
-    "pace": "measured",
-    "vol": "quiet"
+    "emo": "haunted",
+    "intent": "every wagon might be Jory's",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "To himself."
    },
    "status": "todo"
   },
   {
-   "id": "bark.harlan.night.2",
+   "id": "bark.harlan.said.4",
    "kind": "bark",
    "voice": "harlan",
    "text": "Can't sleep. Won't.",
-   "where": "npcs.json harlan.nightBarks[2]",
+   "where": "npcs.json harlan.said[4]",
    "hash": "4d09c6c5ccc1",
    "segments": [
     {
@@ -25057,18 +25781,20 @@
     }
    ],
    "direction": {
-    "emo": "tired",
-    "pace": "measured",
-    "vol": "quiet"
+    "emo": "exhausted, stubborn",
+    "intent": "he won't sleep",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "'Won't.' a small defiance."
    },
    "status": "todo"
   },
   {
-   "id": "bark.harlan.night.3",
+   "id": "bark.harlan.said.5",
    "kind": "bark",
    "voice": "harlan",
    "text": "Jory hated the dark. Hated it. Slept with a candle till he was fourteen.",
-   "where": "npcs.json harlan.nightBarks[3]",
+   "where": "npcs.json harlan.said[5]",
    "hash": "5a10804c1a17",
    "segments": [
     {
@@ -25077,9 +25803,99 @@
     }
    ],
    "direction": {
-    "emo": "tired",
+    "emo": "grief, fond",
+    "intent": "Jory and the dark",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Fond memory with the fear under it."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.harlan.said.6",
+   "kind": "bark",
+   "voice": "harlan",
+   "text": "Jory's asleep in Rook's good room. I keep going to look.",
+   "where": "npcs.json harlan.said[6]",
+   "hash": "ce06052b3b40",
+   "segments": [
+    {
+     "voice": "harlan",
+     "text": "Jory's asleep in Rook's good room. I keep going to look."
+    }
+   ],
+   "direction": {
+    "emo": "relief, tender",
+    "intent": "Jory is home",
     "pace": "measured",
-    "vol": "quiet"
+    "vol": "quiet",
+    "note": "'I keep going to look.' a happy confession."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.harlan.said.7",
+   "kind": "bark",
+   "voice": "harlan",
+   "text": "He sleeps with the lamp lit. So do I, now.",
+   "where": "npcs.json harlan.said[7]",
+   "hash": "b1e614f5ec05",
+   "segments": [
+    {
+     "voice": "harlan",
+     "text": "He sleeps with the lamp lit. So do I, now."
+    }
+   ],
+   "direction": {
+    "emo": "quiet, wry",
+    "intent": "the lamp",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "'So do I, now.' a small admission."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.harlan.said.8",
+   "kind": "bark",
+   "voice": "harlan",
+   "text": "Coyle and Nephew, the new sign was going to say. Coyle and—",
+   "where": "npcs.json harlan.said[8]",
+   "hash": "a5952d006a6e",
+   "segments": [
+    {
+     "voice": "harlan",
+     "text": "Coyle and Nephew, the new sign was going to say. Coyle and—"
+    }
+   ],
+   "direction": {
+    "emo": "grief",
+    "intent": "the sign that won't be made",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "He breaks off on the second 'Coyle and'; the cut is the line."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.harlan.said.9",
+   "kind": "bark",
+   "voice": "harlan",
+   "text": "Mister Coyle, he calls me. In my own shop.",
+   "where": "npcs.json harlan.said[9]",
+   "hash": "e332f1fb91ce",
+   "segments": [
+    {
+     "voice": "harlan",
+     "text": "Mister Coyle, he calls me. In my own shop."
+    }
+   ],
+   "direction": {
+    "emo": "amused, proud",
+    "intent": "Jory calls him Mister Coyle",
+    "pace": "measured",
+    "vol": "level",
+    "note": "Mock outrage, delighted underneath."
    },
    "status": "todo"
   },
@@ -25227,53 +26043,13 @@
    "id": "bark.wenna.day.0",
    "kind": "bark",
    "voice": "wenna",
-   "text": "The animals were never like this. Never.",
-   "where": "npcs.json wenna.barks[0]",
-   "hash": "fa55ee3450a2",
-   "segments": [
-    {
-     "voice": "wenna",
-     "text": "The animals were never like this. Never."
-    }
-   ],
-   "direction": {
-    "emo": "irritable",
-    "pace": "brisk",
-    "vol": "level"
-   },
-   "status": "todo"
-  },
-  {
-   "id": "bark.wenna.day.1",
-   "kind": "bark",
-   "voice": "wenna",
    "text": "Bitterroot, bitterroot. Always need more.",
-   "where": "npcs.json wenna.barks[1]",
+   "where": "npcs.json wenna.barks[0]",
    "hash": "bc6055d2dcb8",
    "segments": [
     {
      "voice": "wenna",
      "text": "Bitterroot, bitterroot. Always need more."
-    }
-   ],
-   "direction": {
-    "emo": "irritable",
-    "pace": "brisk",
-    "vol": "level"
-   },
-   "status": "todo"
-  },
-  {
-   "id": "bark.wenna.day.2",
-   "kind": "bark",
-   "voice": "wenna",
-   "text": "The water tastes wrong this year.",
-   "where": "npcs.json wenna.barks[2]",
-   "hash": "73ad7155b48a",
-   "segments": [
-    {
-     "voice": "wenna",
-     "text": "The water tastes wrong this year."
     }
    ],
    "direction": {
@@ -25364,31 +26140,99 @@
    "status": "todo"
   },
   {
-   "id": "bark.tam.day.0",
+   "id": "bark.wenna.said.0",
    "kind": "bark",
-   "voice": "tam",
-   "text": "They drank from the stream and fell down.",
-   "where": "npcs.json tam.barks[0]",
-   "hash": "03bd67195780",
+   "voice": "wenna",
+   "text": "The animals were never like this. Never.",
+   "where": "npcs.json wenna.said[0]",
+   "hash": "fa55ee3450a2",
    "segments": [
     {
-     "voice": "tam",
-     "text": "They drank from the stream and fell down."
+     "voice": "wenna",
+     "text": "The animals were never like this. Never."
     }
    ],
    "direction": {
-    "emo": "earnest",
-    "pace": "quick",
-    "vol": "level"
+    "emo": "uneasy",
+    "intent": "the animals are wrong",
+    "pace": "measured",
+    "vol": "level",
+    "note": "'Never.' a herbwife's certainty."
    },
    "status": "todo"
   },
   {
-   "id": "bark.tam.day.1",
+   "id": "bark.wenna.said.1",
+   "kind": "bark",
+   "voice": "wenna",
+   "text": "The water tastes wrong this year.",
+   "where": "npcs.json wenna.said[1]",
+   "hash": "73ad7155b48a",
+   "segments": [
+    {
+     "voice": "wenna",
+     "text": "The water tastes wrong this year."
+    }
+   ],
+   "direction": {
+    "emo": "suspicious",
+    "intent": "the water",
+    "pace": "measured",
+    "vol": "level",
+    "note": "Tart, sure of herself."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.wenna.said.2",
+   "kind": "bark",
+   "voice": "wenna",
+   "text": "Water's sweet. Sweet! I'd forgotten.",
+   "where": "npcs.json wenna.said[2]",
+   "hash": "972060ca49f8",
+   "segments": [
+    {
+     "voice": "wenna",
+     "text": "Water's sweet. Sweet! I'd forgotten."
+    }
+   ],
+   "direction": {
+    "emo": "delighted",
+    "intent": "the water is sweet again",
+    "pace": "measured",
+    "vol": "raised",
+    "note": "'Sweet!' a cackle of pleasure."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.wenna.said.3",
+   "kind": "bark",
+   "voice": "wenna",
+   "text": "Clean water, and nothing left in the wood to drink it.",
+   "where": "npcs.json wenna.said[3]",
+   "hash": "c372f8ba4f0a",
+   "segments": [
+    {
+     "voice": "wenna",
+     "text": "Clean water, and nothing left in the wood to drink it."
+    }
+   ],
+   "direction": {
+    "emo": "bitter, dry",
+    "intent": "clean water, no wolves",
+    "pace": "slow",
+    "vol": "level",
+    "note": "Dry and sad."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.tam.day.0",
    "kind": "bark",
    "voice": "tam",
    "text": "Pa says stay in town.",
-   "where": "npcs.json tam.barks[1]",
+   "where": "npcs.json tam.barks[0]",
    "hash": "db7f2a2f7d32",
    "segments": [
     {
@@ -25404,11 +26248,33 @@
    "status": "todo"
   },
   {
-   "id": "bark.tam.day.2",
+   "id": "bark.tam.said.0",
+   "kind": "bark",
+   "voice": "tam",
+   "text": "They drank from the stream and fell down.",
+   "where": "npcs.json tam.said[0]",
+   "hash": "03bd67195780",
+   "segments": [
+    {
+     "voice": "tam",
+     "text": "They drank from the stream and fell down."
+    }
+   ],
+   "direction": {
+    "emo": "earnest",
+    "intent": "what he saw",
+    "pace": "quick",
+    "vol": "level",
+    "note": "A boy insisting."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.tam.said.1",
    "kind": "bark",
    "voice": "tam",
    "text": "I told the Watch. The Watch laughed.",
-   "where": "npcs.json tam.barks[2]",
+   "where": "npcs.json tam.said[1]",
    "hash": "0745e881518c",
    "segments": [
     {
@@ -25417,9 +26283,77 @@
     }
    ],
    "direction": {
-    "emo": "earnest",
+    "emo": "aggrieved",
+    "intent": "nobody believed him",
     "pace": "quick",
-    "vol": "level"
+    "vol": "level",
+    "note": "Hurt pride."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.tam.said.2",
+   "kind": "bark",
+   "voice": "tam",
+   "text": "The stream's clear and Pa says I was right, and I was.",
+   "where": "npcs.json tam.said[2]",
+   "hash": "b0b338a80178",
+   "segments": [
+    {
+     "voice": "tam",
+     "text": "The stream's clear and Pa says I was right, and I was."
+    }
+   ],
+   "direction": {
+    "emo": "triumphant",
+    "intent": "he was right",
+    "pace": "quick",
+    "vol": "raised",
+    "note": "'and I was.' a boy's triumph."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.tam.said.3",
+   "kind": "bark",
+   "voice": "tam",
+   "text": "Somebody killed all the wolves. Even the ones that were only sick.",
+   "where": "npcs.json tam.said[3]",
+   "hash": "eacb8ed970ca",
+   "segments": [
+    {
+     "voice": "tam",
+     "text": "Somebody killed all the wolves. Even the ones that were only sick."
+    }
+   ],
+   "direction": {
+    "emo": "troubled",
+    "intent": "the wolves were all killed",
+    "pace": "measured",
+    "vol": "level",
+    "note": "Upset, not sure he's allowed to be."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.tam.said.4",
+   "kind": "bark",
+   "voice": "tam",
+   "text": "Ground knocks under our barn. Pa says pipes. We've got no pipes.",
+   "where": "npcs.json tam.said[4]",
+   "hash": "43ed263fee88",
+   "segments": [
+    {
+     "voice": "tam",
+     "text": "Ground knocks under our barn. Pa says pipes. We've got no pipes."
+    }
+   ],
+   "direction": {
+    "emo": "spooked, earnest",
+    "intent": "knocking under the barn",
+    "pace": "quick",
+    "vol": "level",
+    "note": "'We've got no pipes.' the point he's sure of."
    },
    "status": "todo"
   },
@@ -25600,6 +26534,73 @@
     "emo": "tired",
     "pace": "slow",
     "vol": "quiet"
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.brannoc.said.0",
+   "kind": "bark",
+   "voice": "brannoc",
+   "text": "Low Kiln's three days. She'll be there by now.",
+   "where": "npcs.json brannoc.said[0]",
+   "hash": "3c86104754fe",
+   "segments": [
+    {
+     "voice": "brannoc",
+     "text": "Low Kiln's three days. She'll be there by now."
+    }
+   ],
+   "direction": {
+    "emo": "flat, hopeful",
+    "intent": "Nell on the road",
+    "pace": "slow",
+    "vol": "level",
+    "note": "Few words; the hope hidden in the counting."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.brannoc.said.1",
+   "kind": "bark",
+   "voice": "brannoc",
+   "text": "Twelve, I made. Twelve.",
+   "where": "npcs.json brannoc.said[1]",
+   "hash": "c8d5e774c239",
+   "segments": [
+    {
+     "voice": "brannoc",
+     "text": "Twelve, I made. Twelve."
+    }
+   ],
+   "direction": {
+    "emo": "flat",
+    "intent": "the irons he made",
+    "pace": "slow",
+    "vol": "quiet",
+    "hides": "what the irons were for",
+    "note": "The second 'Twelve.' quieter."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.brannoc.said.2",
+   "kind": "bark",
+   "voice": "brannoc",
+   "text": "Forge is lit. Don't come in.",
+   "where": "npcs.json brannoc.said[2]",
+   "hash": "c6f980458a67",
+   "segments": [
+    {
+     "voice": "brannoc",
+     "text": "Forge is lit. Don't come in."
+    }
+   ],
+   "direction": {
+    "emo": "gruff, closed",
+    "intent": "keep out",
+    "pace": "slow",
+    "vol": "level",
+    "note": "A door shut."
    },
    "status": "todo"
   },
@@ -25880,6 +26881,28 @@
     "emo": "earnest, tired",
     "pace": "measured",
     "vol": "level"
+   },
+   "status": "todo"
+  },
+  {
+   "id": "bark.keegan.said.0",
+   "kind": "bark",
+   "voice": "keegan",
+   "text": "Chapter four. Chapter four. ...Good morning.",
+   "where": "npcs.json keegan.said[0]",
+   "hash": "c4a43e0f0e37",
+   "segments": [
+    {
+     "voice": "keegan",
+     "text": "Chapter four. Chapter four. ...Good morning."
+    }
+   ],
+   "direction": {
+    "emo": "absorbed, then polite",
+    "intent": "reading her book",
+    "pace": "measured",
+    "vol": "level",
+    "note": "Muttering 'Chapter four' twice, then a startled, proper 'Good morning.'"
    },
    "status": "todo"
   },
@@ -27378,13 +28401,13 @@
    "id": "folk.25.f",
    "kind": "folk",
    "voice": "folk_f1",
-   "text": "They buried Aldo this morning. The Captain carried the front of the coffin himself.",
+   "text": "The Captain carried the front of Aldo's coffin himself. Wouldn't let anyone spell him.",
    "where": "folk.json lines[25]",
-   "hash": "06e08816060a",
+   "hash": "3ba9fa5e5400",
    "segments": [
     {
      "voice": "folk_f1",
-     "text": "They buried Aldo this morning. The Captain carried the front of the coffin himself."
+     "text": "The Captain carried the front of Aldo's coffin himself. Wouldn't let anyone spell him."
     }
    ],
    "sex": "f",
@@ -27399,13 +28422,13 @@
    "id": "folk.25.m",
    "kind": "folk",
    "voice": "folk_m2",
-   "text": "They buried Aldo this morning. The Captain carried the front of the coffin himself.",
+   "text": "The Captain carried the front of Aldo's coffin himself. Wouldn't let anyone spell him.",
    "where": "folk.json lines[25]",
-   "hash": "06e08816060a",
+   "hash": "3ba9fa5e5400",
    "segments": [
     {
      "voice": "folk_m2",
-     "text": "They buried Aldo this morning. The Captain carried the front of the coffin himself."
+     "text": "The Captain carried the front of Aldo's coffin himself. Wouldn't let anyone spell him."
     }
    ],
    "sex": "m",
@@ -30339,13 +31362,13 @@
    "id": "folk.97.f",
    "kind": "folk",
    "voice": "folk_f1",
-   "text": "They buried Brannoc's girl behind the shrine this morning. Chid sang. Chid can't sing. Nobody minded.",
+   "text": "They buried Brannoc's girl behind the shrine. Chid sang. Chid can't sing. Nobody minded.",
    "where": "folk.json lines[97]",
-   "hash": "cd6780493636",
+   "hash": "55afb9228f12",
    "segments": [
     {
      "voice": "folk_f1",
-     "text": "They buried Brannoc's girl behind the shrine this morning. Chid sang. Chid can't sing. Nobody minded."
+     "text": "They buried Brannoc's girl behind the shrine. Chid sang. Chid can't sing. Nobody minded."
     }
    ],
    "sex": "f",
@@ -30360,13 +31383,13 @@
    "id": "folk.97.m",
    "kind": "folk",
    "voice": "folk_m2",
-   "text": "They buried Brannoc's girl behind the shrine this morning. Chid sang. Chid can't sing. Nobody minded.",
+   "text": "They buried Brannoc's girl behind the shrine. Chid sang. Chid can't sing. Nobody minded.",
    "where": "folk.json lines[97]",
-   "hash": "cd6780493636",
+   "hash": "55afb9228f12",
    "segments": [
     {
      "voice": "folk_m2",
-     "text": "They buried Brannoc's girl behind the shrine this morning. Chid sang. Chid can't sing. Nobody minded."
+     "text": "They buried Brannoc's girl behind the shrine. Chid sang. Chid can't sing. Nobody minded."
     }
    ],
    "sex": "m",
@@ -30735,6 +31758,151 @@
    "status": "todo"
   },
   {
+   "id": "folk.107.f",
+   "kind": "folk",
+   "voice": "folk_f1",
+   "text": "Old Oswin's gone to the Morrow. Sat down in his chair after his dinner and went.",
+   "where": "folk.json lines[107]",
+   "hash": "bfb6f6a16e24",
+   "segments": [
+    {
+     "voice": "folk_f1",
+     "text": "Old Oswin's gone to the Morrow. Sat down in his chair after his dinner and went."
+    }
+   ],
+   "sex": "f",
+   "direction": {
+    "emo": "gossip, matter-of-fact",
+    "intent": "a death in town",
+    "pace": "measured",
+    "vol": "level"
+   },
+   "status": "todo"
+  },
+  {
+   "id": "folk.107.m",
+   "kind": "folk",
+   "voice": "folk_m2",
+   "text": "Old Oswin's gone to the Morrow. Sat down in his chair after his dinner and went.",
+   "where": "folk.json lines[107]",
+   "hash": "bfb6f6a16e24",
+   "segments": [
+    {
+     "voice": "folk_m2",
+     "text": "Old Oswin's gone to the Morrow. Sat down in his chair after his dinner and went."
+    }
+   ],
+   "sex": "m",
+   "direction": {
+    "emo": "gossip, matter-of-fact",
+    "intent": "a death in town",
+    "pace": "measured",
+    "vol": "level"
+   },
+   "status": "todo"
+  },
+  {
+   "id": "folk.108.f",
+   "kind": "folk",
+   "voice": "folk_f2",
+   "text": "Lamps are lit. Stay where they reach, or it's the Morrow for you.",
+   "where": "folk.json lines[108]",
+   "hash": "86e6404b5e35",
+   "segments": [
+    {
+     "voice": "folk_f2",
+     "text": "Lamps are lit. Stay where they reach, or it's the Morrow for you."
+    }
+   ],
+   "sex": "f",
+   "direction": {
+    "emo": "warning, kindly",
+    "intent": "the lamps",
+    "pace": "measured",
+    "vol": "level"
+   },
+   "status": "todo"
+  },
+  {
+   "id": "folk.108.m",
+   "kind": "folk",
+   "voice": "folk_m1",
+   "text": "Lamps are lit. Stay where they reach, or it's the Morrow for you.",
+   "where": "folk.json lines[108]",
+   "hash": "86e6404b5e35",
+   "segments": [
+    {
+     "voice": "folk_m1",
+     "text": "Lamps are lit. Stay where they reach, or it's the Morrow for you."
+    }
+   ],
+   "sex": "m",
+   "direction": {
+    "emo": "warning, kindly",
+    "intent": "the lamps",
+    "pace": "measured",
+    "vol": "level"
+   },
+   "status": "todo"
+  },
+  {
+   "id": "folk.109.f",
+   "kind": "folk",
+   "voice": "folk_f1",
+   "text": "No carts on the Old Road since the wolves. So who keeps bringing that one in?",
+   "where": "folk.json lines[109]",
+   "hash": "c9a139438bc7",
+   "segments": [
+    {
+     "voice": "folk_f1",
+     "text": "No carts on the Old Road since the wolves. So who keeps bringing that one in?"
+    }
+   ],
+   "sex": "f",
+   "direction": {
+    "emo": "puzzled, uneasy",
+    "intent": "the carter nobody sees",
+    "pace": "measured",
+    "vol": "level",
+    "note": "A real question to a neighbour."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "folk.109.m",
+   "kind": "folk",
+   "voice": "folk_m1",
+   "text": "No carts on the Old Road since the wolves. So who keeps bringing that one in?",
+   "where": "folk.json lines[109]",
+   "hash": "c9a139438bc7",
+   "segments": [
+    {
+     "voice": "folk_m1",
+     "text": "No carts on the Old Road since the wolves. So who keeps bringing that one in?"
+    }
+   ],
+   "sex": "m",
+   "direction": {
+    "emo": "puzzled, uneasy",
+    "intent": "the carter nobody sees",
+    "pace": "measured",
+    "vol": "level",
+    "note": "A real question to a neighbour."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "cbark.f05d6c69fe0b",
+   "kind": "combat",
+   "voice": null,
+   "text": "The toll missed.",
+   "who": null,
+   "where": "godot/logic/Play/Bosses/ArenaBosses.cs",
+   "skip": "a fight's caption, not a voice",
+   "hash": "f05d6c69fe0b",
+   "status": "skip"
+  },
+  {
    "id": "say.dabd6c78b40d",
    "kind": "say",
    "voice": "narrator",
@@ -30908,11 +32076,11 @@
     }
    ],
    "direction": {
-    "emo": "quiet grief, held down",
+    "emo": "plain, restrained",
     "intent": "the first dead you killed was a child",
     "pace": "slow",
     "vol": "quiet",
-    "note": "No sentiment in the voice; let the facts do it. Slight catch before 'twelve at most'. 'and new boots' soft, almost to itself."
+    "note": "The narrator never shows a feeling: plain, the same pace throughout, and the facts do the grief. No catch before 'twelve at most'; 'and new boots' no softer than the rest. That restraint is the scene."
    },
    "status": "todo"
   },
@@ -31032,48 +32200,93 @@
    "status": "todo"
   },
   {
-   "id": "say.656db5d6ed09",
+   "id": "say.8c74ea2b0476",
    "kind": "say",
    "voice": "narrator",
-   "text": "As the sun clears the trees, the ember in you gutters and goes out, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again, from nothing. You try to call up your mother's face, and find it is not quite where you left it.",
+   "text": "As the sun clears the trees, the ember goes out of you and back into the ground, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again, from nothing. You try to call up your mother's face, and find it is not quite where you left it.",
    "who": null,
    "where": "godot/logic/Play/Zones/Prologue.cs",
-   "hash": "656db5d6ed09",
+   "hash": "8c74ea2b0476",
    "segments": [
     {
      "voice": "narrator",
-     "text": "As the sun clears the trees, the ember in you gutters and goes out, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again, from nothing. You try to call up your mother's face, and find it is not quite where you left it."
+     "text": "As the sun clears the trees, the ember goes out of you and back into the ground, and everything it gave you goes with it. What you carry, and what you have learned, are still yours. When the dark comes again, it will burn again, from nothing. You try to call up your mother's face, and find it is not quite where you left it."
     }
    ],
    "direction": {
-    "emo": "gentle loss, unsettling",
-    "intent": "the ember fades and takes something of you with it",
+    "emo": "plain, quiet",
+    "intent": "dawn takes the ember back",
     "pace": "slow",
     "vol": "quiet",
-    "note": "The prologue's last word. Even and kind through the rules of it; then much quieter for the mother's face. 'not quite where you left it' almost tender, and wrong."
+    "note": "The narrator never shows a feeling. The rules plainly; 'from nothing.' level. The last sentence about the mother's face no softer than the rest: the fact does it."
    },
    "status": "todo"
   },
   {
-   "id": "say.dc2a27b5c742",
+   "id": "say.24c69afd4e5e",
    "kind": "say",
    "voice": "narrator",
-   "text": "The fire has burned low. Out in the dark, the ground is moving.",
+   "text": "Your bedroll has not been slept in.",
    "who": null,
    "where": "godot/logic/Play/Zones/Prologue.cs",
-   "hash": "dc2a27b5c742",
+   "hash": "24c69afd4e5e",
    "segments": [
     {
      "voice": "narrator",
-     "text": "The fire has burned low. Out in the dark, the ground is moving."
+     "text": "Your bedroll has not been slept in."
     }
    ],
    "direction": {
-    "emo": "hushed unease",
-    "intent": "wakes the survivor into danger",
+    "emo": "plain",
+    "intent": "you were not here",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "One plain fact."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "say.2d8b284f0b0e",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "Prints in the frost, your own. They come up from the river. None go down to it.",
+   "who": null,
+   "where": "godot/logic/Play/Zones/Prologue.cs",
+   "hash": "2d8b284f0b0e",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Prints in the frost, your own. They come up from the river. None go down to it."
+    }
+   ],
+   "direction": {
+    "emo": "plain, uneasy",
+    "intent": "your own prints",
     "pace": "slow",
     "vol": "quiet",
-    "note": "First words of the game. Low and close. A breath after 'burned low'; 'the ground is moving' plainly, not spooky."
+    "note": "A beat before 'None go down to it.'"
+   },
+   "status": "todo"
+  },
+  {
+   "id": "say.1096c4f7e3e0",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "Past the firelight, the frost is breaking.",
+   "who": null,
+   "where": "godot/logic/Play/Zones/Prologue.cs",
+   "hash": "1096c4f7e3e0",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "Past the firelight, the frost is breaking."
+    }
+   ],
+   "direction": {
+    "emo": "plain",
+    "intent": "dawn",
+    "pace": "measured",
+    "vol": "quiet"
    },
    "status": "todo"
   },
@@ -31179,6 +32392,52 @@
    "status": "skip"
   },
   {
+   "id": "cbark.db6c2c28509f",
+   "kind": "combat",
+   "voice": "warden",
+   "text": "Lamps are lit... stay where they reach...",
+   "who": "The Ford-Warden",
+   "where": "godot/logic/Play/Zones/Prologue.cs",
+   "hash": "db6c2c28509f",
+   "segments": [
+    {
+     "voice": "warden",
+     "text": "Lamps are lit... stay where they reach..."
+    }
+   ],
+   "direction": {
+    "emo": "eerie, distant",
+    "intent": "the Warden's call",
+    "pace": "slow",
+    "vol": "hushed",
+    "note": "Drawn out, from under the water."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "cbark.d918c7cc3d98",
+   "kind": "combat",
+   "voice": "warden",
+   "text": "Lie down.",
+   "who": "The Ford-Warden",
+   "where": "godot/logic/Play/Zones/Prologue.cs",
+   "hash": "d918c7cc3d98",
+   "segments": [
+    {
+     "voice": "warden",
+     "text": "Lie down."
+    }
+   ],
+   "direction": {
+    "emo": "inhuman, calm",
+    "intent": "the Warden's order",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "Two words, final."
+   },
+   "status": "todo"
+  },
+  {
    "id": "cbark.a5b5efc70a27",
    "kind": "combat",
    "voice": "warden",
@@ -31202,48 +32461,95 @@
    "status": "todo"
   },
   {
-   "id": "cbark.0f6d39685290",
+   "id": "cbark.f7a2a69e2307",
    "kind": "combat",
-   "voice": "grimtunnel",
-   "text": "Oho! A Warden's heart, still warm! Nobody's, is it? Nobody's!",
-   "who": "Grimtunnel",
+   "voice": "warden",
+   "text": "Is it morning?",
+   "who": "The Ford-Warden",
    "where": "godot/logic/Play/Zones/Prologue.cs",
-   "hash": "0f6d39685290",
+   "hash": "f7a2a69e2307",
    "segments": [
     {
-     "voice": "grimtunnel",
-     "text": "Oho! A Warden's heart, still warm! Nobody's, is it? Nobody's!"
+     "voice": "warden",
+     "text": "Is it morning?"
     }
    ],
    "direction": {
-    "emo": "gleeful greed",
-    "intent": "Grimtunnel steals the heart",
-    "pace": "quick",
-    "vol": "raised",
-    "note": "'Oho!' cackling. Gloating; 'Nobody's!' a crow of delight."
+    "emo": "lost, plaintive",
+    "intent": "the Warden asks",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "A drowned thing's question."
    },
    "status": "todo"
   },
   {
-   "id": "cbark.dccea938a9f4",
+   "id": "cbark.676eeb4cf137",
    "kind": "combat",
    "voice": "grimtunnel",
-   "text": "Finders keepers, surface-meat. The Deep Dig thanks you!",
+   "text": "Ooh, still lit! Nobody's, is it? Nobody's!",
    "who": "Grimtunnel",
    "where": "godot/logic/Play/Zones/Prologue.cs",
-   "hash": "dccea938a9f4",
+   "hash": "676eeb4cf137",
    "segments": [
     {
      "voice": "grimtunnel",
-     "text": "Finders keepers, surface-meat. The Deep Dig thanks you!"
+     "text": "Ooh, still lit! Nobody's, is it? Nobody's!"
     }
    ],
    "direction": {
-    "emo": "gloating mockery",
-    "intent": "Grimtunnel escapes",
-    "pace": "measured",
+    "emo": "gleeful",
+    "intent": "finds an unclaimed lamp",
+    "pace": "quick",
     "vol": "raised",
-    "note": "Sneering 'surface-meat'. A cackle on 'thanks you'."
+    "note": "Delighted, goblinish."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "cbark.ca65f966df2d",
+   "kind": "combat",
+   "voice": "grimtunnel",
+   "text": "...You smell like downstairs.",
+   "who": "Grimtunnel",
+   "where": "godot/logic/Play/Zones/Prologue.cs",
+   "hash": "ca65f966df2d",
+   "segments": [
+    {
+     "voice": "grimtunnel",
+     "text": "...You smell like downstairs."
+    }
+   ],
+   "direction": {
+    "emo": "sly, sniffing",
+    "intent": "smells you",
+    "pace": "slow",
+    "vol": "level",
+    "note": "Close and pleased."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "cbark.d6a6b3a4b868",
+   "kind": "combat",
+   "voice": "grimtunnel",
+   "text": "Finders keepers, surface-m— (a sniff) ...Downstairs'll be ever so grateful.",
+   "who": "Grimtunnel",
+   "where": "godot/logic/Play/Zones/Prologue.cs",
+   "hash": "d6a6b3a4b868",
+   "segments": [
+    {
+     "voice": "grimtunnel",
+     "text": "Finders keepers, surface-m— ...Downstairs'll be ever so grateful."
+    }
+   ],
+   "direction": {
+    "emo": "gleeful",
+    "intent": "steals and runs",
+    "pace": "quick",
+    "vol": "level",
+    "note": "Cut off mid-word, a sniff, then smug: delighted, never beaten.",
+    "beats": "Finders keepers, surface-m— [sniff] ...Downstairs'll be ever so grateful."
    },
    "status": "todo"
   },
@@ -31340,25 +32646,71 @@
    "status": "todo"
   },
   {
-   "id": "say.74fcfb5cdf24",
+   "id": "say.f45eec417fcc",
    "kind": "say",
    "voice": "narrator",
-   "text": "Red cloth at every tent. They see your colours and go back to their dice.",
+   "text": "Red cloth at every tent, washing on a line, children with a wooden sword. They see your colours and go back to what they were doing.",
    "who": null,
    "where": "godot/logic/Play/Zones/Verge.cs",
-   "hash": "74fcfb5cdf24",
+   "hash": "f45eec417fcc",
    "segments": [
     {
      "voice": "narrator",
-     "text": "Red cloth at every tent. They see your colours and go back to their dice."
+     "text": "Red cloth at every tent, washing on a line, children with a wooden sword. They see your colours and go back to what they were doing."
     }
    ],
    "direction": {
-    "emo": "easing tension",
-    "intent": "the Kerchiefs take you for a friend",
+    "emo": "plain",
+    "intent": "the Kerchief camp is ordinary",
     "pace": "measured",
     "vol": "quiet",
-    "note": "Tense first half, relaxed on 'go back to their dice'."
+    "note": "The narrator never shows a feeling; the ordinary details do it."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "say.2133e8a51219",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "By the cages a woman is passing stew in through the bars. Her own child holds up a bowl beside her.",
+   "who": null,
+   "where": "godot/logic/Play/Zones/Verge.cs",
+   "hash": "2133e8a51219",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "By the cages a woman is passing stew in through the bars. Her own child holds up a bowl beside her."
+    }
+   ],
+   "direction": {
+    "emo": "plain",
+    "intent": "a woman feeds the caged",
+    "pace": "measured",
+    "vol": "quiet",
+    "note": "No comment in the voice."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "say.3bf0d0b0d0da",
+   "kind": "say",
+   "voice": "kerchief_woman",
+   "text": "Them first.",
+   "who": "A Kerchief woman",
+   "where": "godot/logic/Play/Zones/Verge.cs",
+   "hash": "3bf0d0b0d0da",
+   "segments": [
+    {
+     "voice": "kerchief_woman",
+     "text": "Them first."
+    }
+   ],
+   "direction": {
+    "emo": "plain, firm",
+    "intent": "the caged eat first",
+    "pace": "measured",
+    "vol": "level",
+    "note": "Two words, matter-of-fact, Scots."
    },
    "status": "todo"
   },
@@ -32216,6 +33568,30 @@
     "pace": "measured",
     "vol": "quiet",
     "note": "Quiet, careful, like a lockpick's breath."
+   },
+   "status": "todo"
+  },
+  {
+   "id": "say.546ec60933f6",
+   "kind": "say",
+   "voice": "narrator",
+   "text": "The whole town is in the Quiet Garden, round a fresh grave beside the old captain's stone. Brannoc kneels at its head with an iron marker and his hammer: three strokes, iron into earth. Rook sets the inn's lamp at its foot, lit, in broad daylight, and steps back, and back.",
+   "who": null,
+   "where": "godot/logic/Play/Zones/Waystation.cs",
+   "hash": "546ec60933f6",
+   "segments": [
+    {
+     "voice": "narrator",
+     "text": "The whole town is in the Quiet Garden, round a fresh grave beside the old captain's stone. Brannoc kneels at its head with an iron marker and his hammer: three strokes, iron into earth. Rook sets the inn's lamp at its foot, lit, in broad daylight, and steps back, and back."
+    }
+   ],
+   "direction": {
+    "emo": "plain, still",
+    "intent": "Nell's burial",
+    "pace": "slow",
+    "vol": "quiet",
+    "note": "The narrator never shows a feeling. Three strokes, each its own beat. 'and steps back, and back.' level.",
+    "beats": "...Brannoc kneels at its head with an iron marker and his hammer: three strokes, [beat] iron into earth. [beat] Rook sets the inn's lamp at its foot, lit, in broad daylight, and steps back, [beat] and back."
    },
    "status": "todo"
   },
