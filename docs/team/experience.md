@@ -4,9 +4,13 @@ Status page for the gameplay experience director (agent `ad1f5623590e09883`, bra
 `worktree-agent-ad1f5623590e09883`; successor to `a33f58e68e89e3ccf`). The audit is
 `docs/EXPERIENCE_AUDIT.md`; evidence frames are in `docs/experience/`.
 
-## Current state (2026-10-04)
+## Current state (2026-10-04, handed off past 500k context)
 
-Merged the integration branch at `f56ee42`. Tests green (567). Pushed.
+Merged the integration branch at `f56ee42`. Tests green (567). Pushed. **Handed off:**
+`docs/handoff/experience.md` is the successor's brief. Since the list below: S-17 (her blows
+lean the camera, arts' hit-stop, a bigger flinch); the chest judged in a real night (its mouth's
+light, a softer column, the fan clear of the bars); the night re-measured (the run-ups carry no
+danger: briefed to combat, taken).
 
 **Done since the handoff (all seen at 1920×1080):**
 - **Verified:** the opening groups (in sight by 6 s), the camera (22 m early, about 31 m at minute
@@ -45,12 +49,12 @@ nights, about two after each story night. Playtests now measure it (`TimeIn`).
 
 1. **Judge in play once merged:** skills' fixes (the pyre square, the Hallowed Ground, hostile
    marks), animation's death poses, arena art's new grounds and crypt-free places, combat's maps.
-2. **Re-measure the night** with combat's charge director, kinds and minibosses: do the build-ups
-   carry danger now? (At the start, no run dipped below half health in the long push.)
-3. **A full night at full resolution** with the autopilot, judging the chest, swell and evolution
-   as they happen, not staged.
+2. **Re-run the stretch table** when combat's run-ups land (measured: 7–10 5%, 17–20 3%,
+   25–28 2% under half health; target 10–20% each, wins within two points of 93%).
+3. **A full night at full resolution** with the autopilot, judging the swell and evolution in
+   context (the chest was judged in a real night).
 4. **The map's staging** when combat's maps land: the ruler's fall smaller than the night's, the
-   strongbox through the chest ceremony (a gear kind).
+   strongbox through the chest ceremony (`ChestItemKind.Gear`, combat's).
 
 ## Decisions
 
