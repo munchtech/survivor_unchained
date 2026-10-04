@@ -147,6 +147,64 @@ def rally(name, rig: Rig, armed=False) -> Clip:
     return build(name, rig, keys, meta=meta)
 
 
+# --------------------------------------------------------------------- the slam --
+def slam(name, rig: Rig, armed=False) -> Clip:
+    """A heavy's slam, the cast it makes before the ground breaks round it
+    (combat's SlamSpec: a windup of 1.0 to 1.1 s, the blow landing at its
+    end): a crouch to gather, both fists (armed: the axe, the shield arm
+    braced low) driven up as high as they go, the body arched back on its
+    toes for a beat; then it jack-knifes and the fists come down onto the
+    ground in front, the knees going with them, at 0.95 s, and stay there."""
+    P, H = _kit(rig)
+    feet = {"foot_l": {"pos": P(0.17, 0, 0.12), "rot": (12, 0, 0)}, "foot_r": {"pos": P(-0.18, 0, -0.10), "rot": (-14, 0, 0)}}
+    wide = {"foot_l": {"pos": P(0.20, 0, 0.16), "rot": (14, 0, 0)}, "foot_r": {"pos": P(-0.20, 0, -0.12), "rot": (-16, 0, 0)}}
+
+    def fists(v_l, v_r, pole_l=(0.8, -0.3, -0.4), pole_r=(-0.8, -0.3, -0.4), knuckles=None):
+        if armed:
+            # The axe in the right fist, the haft led by the fist; the shield arm braced low across.
+            hand_r = arm(v_r, pole_r, blade=knuckles or (0.0, 0.6, 0.8))
+            hand_l = arm((-0.10, -0.30, 0.22), (0.9, -0.4, -0.3))
+            return {"hand_l": hand_l, "hand_r": hand_r, "fingers_l": "fist", "fingers_r": "grip"}
+        return {"hand_l": arm(v_l, pole_l), "hand_r": arm(v_r, pole_r), "fingers_l": "fist", "fingers_r": "fist"}
+
+    def down(y):
+        """The fists on the ground before the feet (armed: the axe head down flat in front)."""
+        if armed:
+            return {"hand_r": {"frame": "char", "pos": P(-0.06, y, 0.46), "pole": (-0.8, 0.4, -0.3), "blade": (0.0, -0.15, 1.0)},
+                    "hand_l": arm((-0.10, -0.30, 0.22), (0.9, -0.4, -0.3)), "fingers_l": "fist", "fingers_r": "grip"}
+        return {"hand_l": {"frame": "char", "pos": P(0.09, y, 0.42), "pole": (0.8, 0.4, -0.3), "knuckles": (0.0, -0.4, 0.9)},
+                "hand_r": {"frame": "char", "pos": P(-0.09, y, 0.42), "pole": (-0.8, 0.4, -0.3), "knuckles": (0.0, -0.4, 0.9)},
+                "fingers_l": "fist", "fingers_r": "fist"}
+
+    keys = [
+        # The gather: down into the knees, the fists low and in, the chest over them.
+        (0, {**feet, "hips": {"pos": H(0, 0.86, -0.02), "rot": (0, 14, 0)}, "spine": (0, 16, 0), "neck": (0, -6, 0), "head": (0, -10, 0),
+             **fists((-0.06, -0.40, 0.18), (0.06, -0.40, 0.18), knuckles=(0.0, -0.2, 1.0))}, "ease"),
+        # Up: the fists driven up in front of the face.
+        (9, {**wide, "hips": {"pos": H(0, 0.90, -0.02), "rot": (0, 0, 0)}, "spine": (0, -4, 0), "neck": (0, -4, 0), "head": (0, -8, 0),
+             "clav_l": (12, 4), "clav_r": (12, 4),
+             **fists((-0.08, 0.16, 0.26), (0.08, 0.16, 0.26), knuckles=(0.0, 0.9, 0.3))}, "auto"),
+        # As high as they go, arched back on the toes.
+        (21, {**wide, "hips": {"pos": H(0, 0.95, -0.06), "rot": (0, -8, 0)}, "spine": (0, -16, 0), "neck": (0, -6, 0), "head": (0, -14, 0),
+              "clav_l": (24, -4), "clav_r": (24, -4),
+              **fists((-0.06, 0.48, -0.04), (0.06, 0.48, -0.04), (0.6, 0.2, 1.0), (-0.6, 0.2, 1.0), knuckles=(0.0, 0.5, -0.85))}, "auto"),
+        # The hang.
+        (27, {**wide, "hips": {"pos": H(0, 0.96, -0.08), "rot": (0, -11, 0)}, "spine": (0, -20, 0), "neck": (0, -6, 0), "head": (0, -14, 0),
+              "clav_l": (26, -6), "clav_r": (26, -6),
+              **fists((-0.05, 0.47, -0.10), (0.05, 0.47, -0.10), (0.6, 0.2, 1.0), (-0.6, 0.2, 1.0), knuckles=(0.0, 0.3, -0.95))}, "linear"),
+        # Down: folded over into a squat, the fists into the ground before the feet.
+        (29, {**wide, "hips": {"pos": H(0, 0.42, -0.14), "rot": (0, 56, 0)}, "spine": (0, 34, 0), "neck": (0, 2, 0), "head": (0, -8, 0),
+              "clav_l": (-4, 16), "clav_r": (-4, 16), **down(0.14)}, "fast"),
+        (34, {**wide, "hips": {"pos": H(0, 0.38, -0.15), "rot": (0, 60, 0)}, "spine": (0, 36, 0), "neck": (0, 4, 0), "head": (0, -6, 0),
+              "clav_l": (-6, 18), "clav_r": (-6, 18), **down(0.08)}, "ease"),
+        (45, {**wide, "hips": {"pos": H(0, 0.40, -0.15), "rot": (0, 58, 0)}, "spine": (0, 34, 0), "neck": (0, 4, 0), "head": (0, -8, 0),
+              "clav_l": (-4, 16), "clav_r": (-4, 16), **down(0.09)}, "ease"),
+    ]
+    keys = _in_char(rig, keys)
+    return build(name, rig, keys, meta={"layer": "full", "hold": True, "source": "keyed (tools/anim/crowd.py)",
+                                        "note": "a heavy's slam: up overhead, down onto the ground at 0.95 s" + (", armed" if armed else "")})
+
+
 # ------------------------------------------------------------------ the fallen --
 # Three ways down, so a field of the dead is not one body printed thirty
 # times: over onto the back, onto the face, and in a heap on the side. Each
@@ -474,6 +532,7 @@ def die_side(name, rig: Rig, armed=False, pistol=False) -> Clip:
 # name: function(name, rig) -> Clip, for each body.
 KEYED = {"lurch": lurch, "lurch_armed": lambda name, rig: lurch(name, rig, armed=True),
          "rally": rally, "rally_armed": lambda name, rig: rally(name, rig, armed=True),
+         "slam": slam, "slam_armed": lambda name, rig: slam(name, rig, armed=True),
          "die_back": die_back, "die_front": die_front, "die_side": die_side,
          "die_back_armed": lambda name, rig: die_back(name, rig, armed=True),
          "die_front_armed": lambda name, rig: die_front(name, rig, armed=True),
