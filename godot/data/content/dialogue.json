@@ -5594,11 +5594,28 @@
      {
       "text": "That beaked mask on the wall...",
       "when": {
-       "rel": {
-        "npc": "wenna",
-        "axis": "affection",
-        "gte": 20
-       }
+       "any": [
+        {
+         "rel": {
+          "npc": "wenna",
+          "axis": "affection",
+          "gte": 20
+         }
+        },
+        {
+         "all": [
+          {
+           "history": "stream_cleared"
+          },
+          {
+           "not": {
+            "fact": "beasts.outcome",
+            "eq": "exploited"
+           }
+          }
+         ]
+        }
+       ]
       },
       "locked": "She does not know you well enough",
       "once": "mask",
@@ -5718,11 +5735,28 @@
      {
       "text": "That beaked mask on the wall...",
       "when": {
-       "rel": {
-        "npc": "wenna",
-        "axis": "affection",
-        "gte": 20
-       }
+       "any": [
+        {
+         "rel": {
+          "npc": "wenna",
+          "axis": "affection",
+          "gte": 20
+         }
+        },
+        {
+         "all": [
+          {
+           "history": "stream_cleared"
+          },
+          {
+           "not": {
+            "fact": "beasts.outcome",
+            "eq": "exploited"
+           }
+          }
+         ]
+        }
+       ]
       },
       "locked": "She does not know you well enough",
       "once": "mask",
@@ -5999,7 +6033,17 @@
    },
    "mask": {
     "id": "mask",
-    "text": "My blightward. I made it the fever year. Stuff the beak with bitterroot and you can walk through air that'd drop a horse. Take it. I'm too old to go where it's needed.",
+    "text": [
+     {
+      "when": {
+       "history": "stream_cleared"
+      },
+      "text": "My blightward. I made it the fever year. Stuff the beak with bitterroot and you can walk through air that'd drop a horse. You cleaned my stream, child. Take it. ...Something down there's still cooking, and I'm too old to go where it's needed."
+     },
+     {
+      "text": "My blightward. I made it the fever year. Stuff the beak with bitterroot and you can walk through air that'd drop a horse. Take it. I'm too old to go where it's needed."
+     }
+    ],
     "effects": [
      {
       "give": "blightward_mask"
@@ -14051,14 +14095,14 @@
          "rel": {
           "npc": "keegan",
           "axis": "respect",
-          "gte": 30
+          "gte": 25
          }
         },
         {
          "rel": {
           "npc": "keegan",
           "axis": "affection",
-          "gte": 15
+          "gte": 10
          }
         }
        ]

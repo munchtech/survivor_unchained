@@ -167,6 +167,57 @@ public class CinematicTests
     }
 
     [Fact]
+    public void Wenna_gives_her_mask_to_whoever_cleaned_her_stream()
+    {
+        var s = Q();
+        Talk(Convo("wenna"), s.C, "goodbye");
+        var mask = () => Greet(Convo("wenna"), s.C).Choices.Single(c => c.Text.Contains("beaked mask"));
+        Assert.False(mask().Enabled);
+        Rules.Apply(E("{ history: { id: 'stream_cleared', text: 'stopped the poison in the Thornhollow stream', tags: ['deed'], spread: 2 } }"), s.C);
+        s.World.Facts["beasts.outcome"] = "cured";
+        Assert.True(mask().Enabled);
+        Assert.Contains("You cleaned my stream", Talk(Convo("wenna"), s.C, "beaked mask")!.Text);
+        // Sold to Pell, it is not cleaned; it is bought.
+        var p = Q();
+        Talk(Convo("wenna"), p.C, "goodbye");
+        Rules.Apply(E("{ history: { id: 'stream_cleared', text: 'stopped the poison in the Thornhollow stream', tags: ['deed'], spread: 2 } }"), p.C);
+        p.World.Facts["beasts.outcome"] = "exploited";
+        Assert.False(Greet(Convo("wenna"), p.C).Choices.Single(c => c.Text.Contains("beaked mask")).Enabled);
+    }
+
+    [Fact]
+    public void Keegan_sups_with_whoever_listened_to_her()
+    {
+        // The road (WRITING_PASS.md): the Warden's lore told her (+15 respect),
+        // Ashe asked after (+10), and one dinner eaten with her (+10 affection).
+        var s = Q("scholar");
+        Talk(Convo("keegan"), s.C, "bye");
+        s.Ch.Knowledge.Add("lore.warden");
+        s.Ch.Knowledge.Add("lore.ashe");
+        Talk(Convo("keegan"), s.C, "ford-warden");
+        var k = s.World.Npc("keegan");
+        Talk(Convo("keegan"), s.C, "ashe");
+        Talk(Convo("keegan"), s.C, "dinner");
+        s.World.Time = TimeOfDay.Night;
+        var supper = Greet(Convo("keegan"), s.C).Choices.Single(c => c.Text.Contains("Have you eaten"));
+        Assert.True(supper.Enabled, $"respect {k.Respect}, affection {k.Affection}");
+    }
+
+    [Fact]
+    public void The_pump_runs_until_someone_stops_it_and_the_burial_is_one_morning()
+    {
+        var s = Q();
+        Simulation.AdvanceDay(s.C, () => 0.5);
+        Assert.Equal("running", s.World.Fact("dig.pump").Str);
+        s.World.Facts["nell.told"] = "gone";
+        Simulation.AdvanceDay(s.C, () => 0.5);
+        Assert.True(s.World.Fact("nell.burying").Truthy);
+        Simulation.AdvanceDay(s.C, () => 0.5);
+        Assert.False(s.World.Fact("nell.burying").Truthy);
+        Assert.True(s.World.Fact("nell.buried").Truthy);
+    }
+
+    [Fact]
     public void The_voices_keep_their_rules_once_heard_aloud()
     {
         // VOICES.md: Jory has the cage in everything he says, and never says "cage".
