@@ -1095,7 +1095,7 @@ SUBJECT = {
 }
 
 
-LOOK = ("A single bold painted emblem for a dark fantasy game skill icon, in the style of Diablo IV skill icons, hand painted, "
+LOOK = ("A single bold painted emblem for a dark fantasy game skill icon, hand-painted with painterly brushwork, "
         "one strong clear silhouette, dramatic light from the upper left, its glow fading to pure black at the edges, on a pure "
         "black background, no frame, no border, no text: ")
 

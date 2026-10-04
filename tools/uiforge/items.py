@@ -16,7 +16,7 @@ import krea
 PHOTOS = os.path.join(os.environ.get("APPDATA", ""), "Godot", "app_userdata", "Survivor Unchained", "icons")
 GUIDES = os.path.join(krea.OUT, "item_guides")
 
-LOOK = ("A single dark fantasy game item icon, hand painted in the style of Diablo IV item icons, the object alone, "
+LOOK = ("A single dark fantasy game item icon, hand-painted with painterly brushwork, the object alone, "
         "three-quarter view, soft warm light from the upper left, a crisp clear silhouette, on a pure black background, "
         "no frame, no text: ")
 

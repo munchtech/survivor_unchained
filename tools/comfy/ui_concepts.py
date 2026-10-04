@@ -222,8 +222,8 @@ class Canvas:
 
 
 STYLE = ("A screenshot of a dark fantasy action RPG's user interface, {what}. Forged black iron panels with thin gold "
-         "filigree trim and corner ornaments, ember-orange glow, warm parchment, hand-painted, AAA game UI in the style of "
-         "Diablo IV and Hades, crisp edges, sharp and legible, high detail.")
+         "filigree trim and corner ornaments, ember-orange glow, warm parchment, hand-painted, AAA game UI with "
+         "painterly brushwork and deep shadow, crisp edges, sharp and legible, high detail.")
 
 
 def paint(path, prompt, denoise, seed):
