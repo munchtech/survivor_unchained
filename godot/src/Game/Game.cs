@@ -151,13 +151,18 @@ public partial class Game : Node, IZoneHost
                 foreach (var f in parts[1].Split('+')) ArtBook.Choose(ch, parts[0], f);
             }
         }
-        // --items A,B[:RARITY]: those things in the pack from the start (pictures of the pack, the shop).
+        // --items A,B[:RARITY],C*N: those things in the pack from the start, N of them for a
+        // stack (pictures of the pack, the shop, the forge with a stocked pouch).
         if (Args.Get("items") is string items)
             foreach (var spec in items.Split(','))
             {
                 var parts = spec.Split(':');
-                Journey.GiveItem(parts[0], 1, parts.Length > 1 && int.TryParse(parts[1], out var r) ? r : null);
+                var idq = parts[0].Split('*');
+                int qty = idq.Length > 1 && int.TryParse(idq[1], out var nq) ? nq : 1;
+                Journey.GiveItem(idq[0], qty, parts.Length > 1 && int.TryParse(parts[1], out var r) ? r : null);
             }
+        // --gold N: that much gold in the purse (pictures of a counter with money to spend).
+        if (Args.Has("gold")) Journey.Ch.Gold = Args.Num("gold", 0);
         // --xp N: that much experience at once (pictures of the self with points to spend).
         if (Args.Has("xp")) Character.GainXp(Journey.Ch, Args.Num("xp", 0));
         var z = Args.Get("zone") ?? "lowford";
@@ -945,7 +950,12 @@ public partial class Game : Node, IZoneHost
         else if (next == "draft" && Battle is { } b) { b.GainEmber(b.EmberNext); }
         // A won arena's end, with a sample tally (pictures of the result screen; in an arena).
         else if (next == "result" && World.Arena is { } spec && Battle is { } rb)
-            ArenaOver(new ArenaResult(spec, true, 2134, rb.KillCount + 1840, Math.Max(rb.EmberLevel, 27), 1460, 212, Content.Weapons.Pool.Take(2).ToList(), 1, true));
+            ArenaOver(new ArenaResult(spec, true, 2134, rb.KillCount + 1840, Math.Max(rb.EmberLevel, 27), 1460, 212, Content.Weapons.Pool.Take(2).ToList(), 1, true)
+            {
+                // --fell: the same night, fallen past the half hour: half of it spilled.
+                Carried = Args.Has("fell") ? new() { ["ember_shard"] = 3, ["wolf_pelt"] = 2, ["boar_hide"] = 1 } : new() { ["ember_shard"] = 7, ["wolf_pelt"] = 4, ["boar_hide"] = 3 },
+                Spilled = Args.Has("fell") ? new() { ["ember_shard"] = 4, ["wolf_pelt"] = 2, ["boar_hide"] = 2 } : new(),
+            });
         else Open(next);
     }
 
