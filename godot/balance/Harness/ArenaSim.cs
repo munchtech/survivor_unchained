@@ -17,10 +17,10 @@ namespace SurvivorUnchained.Balance;
 /// whether the hands are deft (they read lunges, pots and burning ground as a
 /// player who knows the fight does: a death is then the game's, not the bot's).</summary>
 public sealed record RunSpec(int Seed, string Calling, string Policy, int Tier = 1, string People = "pack", string[]? Oaths = null,
-    double Cap = 40, double Beyond = 0, int Weapon = 0, int Art = 0, int Level = 1, bool Deft = false)
+    double Cap = 40, double Beyond = 0, int Weapon = 0, int Art = 0, int Level = 1, bool Deft = false, double Minutes = 30)
 {
     public string Key => $"{Calling}/{Policy}/t{Tier}/{People}/s{Seed}/w{Weapon}" + (Level > 1 ? $"/L{Level}" : "") + (Deft ? "/deft" : "") +
-        (Oaths is { Length: > 0 } ? $"/{string.Join("+", Oaths)}" : "");
+        (Oaths is { Length: > 0 } ? $"/{string.Join("+", Oaths)}" : "") + (Minutes != 30 ? $"/m{Minutes:0}" : "");
 }
 
 /// <summary>A minute of the fight, as the harness saw it.</summary>
@@ -67,6 +67,9 @@ public sealed class RunResult
     public bool BossSoft;
     /// <summary>The long night: the boss's returns that came, and the dark's oaths sworn.</summary>
     public int Returns, Dark;
+    /// <summary>The minibosses met (by def) and those killed: how long each took, and the minute.</summary>
+    public List<string> MinibossesMet = new();
+    public List<(string Def, double Ttk, double At)> Minibosses = new();
     /// <summary>What the night pays (for the crafting economy, docs/CRAFTING_DESIGN.md):
     /// the gold picked up, the champions slain, and the slain by family.</summary>
     public double Gold;
@@ -144,7 +147,9 @@ public static class ArenaSim
         while (j.Ch.Level < spec.Level) Character.GainXp(j.Ch, Character.XpForLevel(j.Ch.Level) - j.Ch.Xp + 1);
         switch (spec.Calling) { case "arcanist": j.Ch.Attributes.Wits += j.Ch.Points; break; case "stalker": j.Ch.Attributes.Finesse += j.Ch.Points; break; default: j.Ch.Attributes.Might += j.Ch.Points; break; }
         j.Ch.Points = 0;
-        var arena = new ArenaSpec { Id = "table:bot", Name = "The Harness", Seed = spec.Seed, Tier = spec.Tier, People = spec.People, Oaths = (spec.Oaths ?? []).ToList() };
+        // (A night shorter than the table's is a story's: it ends on its boss.)
+        var arena = new ArenaSpec { Id = "table:bot", Name = "The Harness", Seed = spec.Seed, Tier = spec.Tier, People = spec.People, Oaths = (spec.Oaths ?? []).ToList(),
+            Minutes = spec.Minutes, Story = spec.Minutes != 30 };
         Arenas.Begin(j.World, arena);
         var map = MapGen.Generate(arena.Map);
         var host = new HeadlessHost(j, spec.Seed);
@@ -182,7 +187,10 @@ public static class ArenaSim
             {
                 switch (ev)
                 {
-                    case Ev.Spawn s: firstHit.Remove(s.Enemy); break;
+                    case Ev.Spawn s:
+                        firstHit.Remove(s.Enemy);
+                        if (Enemies.Get(s.Def).Miniboss) r.MinibossesMet.Add(s.Def);
+                        break;
                     case Ev.Hit h when h.Amount > 0 && !firstHit.ContainsKey(h.Target): firstHit[h.Target] = t; break;
                     case Ev.Kill k when k.ByPlayer:
                         r.KillsBy[k.Family.ToString()] = r.KillsBy.GetValueOrDefault(k.Family.ToString()) + 1;
@@ -194,6 +202,7 @@ public static class ArenaSim
                             else if (k.Elite)
                             {
                                 elite.Add(ttk);
+                                if (Enemies.Get(k.Def).Miniboss) r.Minibosses.Add((k.Def, ttk, t / 60));
                                 if (b.Enemies.Items[k.Enemy].Named?.Title?.StartsWith("Herald") == true) r.HeraldTtk.Add(ttk);
                             }
                             else fodder.Add(ttk);

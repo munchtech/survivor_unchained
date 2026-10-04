@@ -186,6 +186,9 @@ public partial class CrowdView : Node3D
         float frozen = e.Status.Has(StatusKind.Frozen) ? 1 : e.Status[StatusKind.Chill] is { } chill ? (float)Math.Min(0.5, chill.Stacks * 0.09) : 0;
         float burning = e.Status.Has(StatusKind.Burn) ? 1 : 0;
         var (tint, glow) = Visuals.Tint(e.Def.Visual);
+        // A kind's own colour on a shared rig, and a champion's Signs (combat's, agreed with animation).
+        if (e.Def.Tint is var (tr, tg, tb)) tint *= new Color((float)tr, (float)tg, (float)tb);
+        if (e.Def.Glow is { } dg) glow = Math.Max(glow, (float)dg);
         if (e.Elite) { glow = Math.Max(glow, 0.05f); tint *= new Color(1.08f, 1.02f, 0.92f); }
         if (e.Named != null) { glow = 0.25f; tint *= new Color(1.3f, 0.75f, 0.6f); }
         if (e.Disposition == Disposition.Neutral && !e.Provoked) tint *= new Color(0.95f, 0.95f, 0.95f);
@@ -204,6 +207,8 @@ public partial class CrowdView : Node3D
     {
         if (!laidOut.Add((e.Id, e.Seed))) return;
         var (tint, glow) = Visuals.Tint(e.Def.Visual);
+        if (e.Def.Tint is var (tr, tg, tb)) tint *= new Color((float)tr, (float)tg, (float)tb);
+        if (e.Def.Glow is { } dg) glow = Math.Max(glow, (float)dg);
         corpses.Add(new Corpse(e.Def.Visual, (float)e.X, (float)e.Z, (float)facing, (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual), tint, glow * 0.3f, time));
         while (corpses.Count > CorpseMax) corpses.RemoveAt(0);
     }
