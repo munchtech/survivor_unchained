@@ -291,35 +291,3 @@ in `tools/vo/refs/` (made by VoxCPM2 from text descriptions), the owner's
 own recordings, performances the owner approves, or a dataset whose
 licence allows cloning (record it beside the clip). Never a real actor or
 any other identifiable person.
-
-### The MCP server (for the owner to approve)
-
-Voicebox also serves MCP at `/mcp` while the backend runs: an agent can then
-speak a line in a profile's voice (`voicebox_speak`), list the voices
-(`voicebox_list_profiles`), and transcribe audio (`voicebox_transcribe`,
-`voicebox_list_captures`). It adds nothing the client above cannot do; it
-is a convenience for agents that would rather call a tool than run a
-script. Registering it changes Claude Code's configuration, so it is the
-owner's call. To add it for this project only:
-
-```sh
-claude mcp add voicebox --scope project --transport http http://127.0.0.1:17493/mcp --header "X-Voicebox-Client-Id: claude-code"
-```
-
-which writes this to `.mcp.json` at the repository root:
-
-```json
-{
-  "mcpServers": {
-    "voicebox": {
-      "type": "http",
-      "url": "http://127.0.0.1:17493/mcp",
-      "headers": { "X-Voicebox-Client-Id": "claude-code" }
-    }
-  }
-}
-```
-
-It only works while the backend is running; with it stopped the tools
-fail and nothing else is affected. `claude mcp remove voicebox --scope
-project` takes it out again.
