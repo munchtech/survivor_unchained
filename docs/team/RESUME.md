@@ -25,7 +25,7 @@ Merge each, then run `dotnet test` and push.
 | Face | worktree-agent-ade92e8285938438f@9dc74eda | FACE v3 and its paint; art not committed yet |
 | Arena art | worktree-agent-a26767f7f9955cb56@e10255f0 | Judge the new spoil and road; the Dig pass; the moonless fix |
 | Story | worktree-agent-a73ca9d35d0c487a9@0a65f095 | Idle: waiting on others |
-| Cinematics | worktree-agent-a3058a45eee41d695 | Check its status page |
+| Cinematics | worktree-agent-a3058a45eee41d695@d7e56082 | Confirm the toll-tower lamp in C04 B's shot B4a, then write shoot/c02 to c04b.md |
 
 ## The heroine's outfits (main session)
 
