@@ -1,0 +1,74 @@
+{
+ "layers": [
+  {
+   "name": "clay",
+   "source": "dry_ground_rocks",
+   "metres": 4.0,
+   "mean": [
+    0.30252,
+    0.17493,
+    0.07819
+   ]
+  },
+  {
+   "name": "spoil",
+   "source": "gray_rocks",
+   "metres": 1.8,
+   "mean": [
+    0.19301,
+    0.17018,
+    0.13271
+   ]
+  },
+  {
+   "name": "ballast",
+   "source": "stony_dirt_path",
+   "metres": 2.17,
+   "mean": [
+    0.0678,
+    0.03853,
+    0.01949
+   ]
+  },
+  {
+   "name": "slurry",
+   "source": "brown_mud_03",
+   "metres": 1.3,
+   "mean": [
+    0.08915,
+    0.06973,
+    0.04545
+   ]
+  },
+  {
+   "name": "rust",
+   "source": "red_dirt_mud_01",
+   "metres": 1.5,
+   "mean": [
+    0.21101,
+    0.08934,
+    0.03665
+   ]
+  },
+  {
+   "name": "burnt",
+   "source": "burned_ground_01",
+   "metres": 1.0,
+   "mean": [
+    0.12779,
+    0.09533,
+    0.06836
+   ]
+  },
+  {
+   "name": "face",
+   "source": "excavated_soil_wall",
+   "metres": 2.0,
+   "mean": [
+    0.15083,
+    0.07502,
+    0.02366
+   ]
+  }
+ ]
+}

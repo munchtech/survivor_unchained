@@ -18,6 +18,10 @@ public partial class HerPose : SkeletonModifier3D
     public float ArmsIn = 9f;
     /// <summary>Degrees of hip tilt (the shoulders answer at half).</summary>
     public float HipTilt = 3.5f;
+    /// <summary>Degrees the neck is bowed forward: a body whose neck leans
+    /// further forward at rest than the library's (the hero's) has his head
+    /// thrown back by its clips without it.</summary>
+    public float NeckPitch = 0f;
     /// <summary>How much of what is playing is her own (tools/anim, made on
     /// her skeleton): 0 a library clip, wholly corrected; 1 her own, left as
     /// made. Split in two because the body's halves can play different
@@ -91,6 +95,7 @@ public partial class HerPose : SkeletonModifier3D
         {
             Turn(sk, upperL, Vector3.Forward, -ArmsIn * arms);
             Turn(sk, upperR, Vector3.Forward, ArmsIn * arms);
+            if (NeckPitch != 0) Turn(sk, neck, Vector3.Right, NeckPitch * arms);
         }
         if (lib > 0)
         {

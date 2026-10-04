@@ -210,12 +210,13 @@ public partial class Plaque : Control
         float x0 = (w - tw) / 2;
         float l = x0 - 14, r = x0 + tw + 14;
         // Painted rules (ornaments/plaque_rule.png: the ember stone at its left end, the gold running
-        // out to its right): to the right of the title as drawn, to the left mirrored.
+        // out to its right): to the right of the title as drawn, to the left mirrored. A negative
+        // width flips the picture but keeps the rect's corner, so the mirrored one starts len to the left.
         if (UiArt.Art("ornaments/plaque_rule.png") is { } rule)
         {
             float h = rule.GetHeight(), len = Mathf.Max(0, l - 4);
             DrawTextureRect(rule, new Rect2(r, y - h / 2, len, h), false);
-            DrawTextureRect(rule, new Rect2(l, y - h / 2, -len, h), false);
+            DrawTextureRect(rule, new Rect2(l - len, y - h / 2, -len, h), false);
             return;
         }
         DrawLine(new Vector2(8, y), new Vector2(l - 10, y), Style.Gold with { A = 0.8f }, 1.5f, true);
@@ -331,6 +332,17 @@ public partial class Globe : Control
     public string Number = "";
     public float Pulse;
     readonly float r;
+    // What was last drawn: the HUD asks every frame, and a redraw rebuilt every polygon.
+    (float, float, float, string, float, Color) drawn = (float.NaN, 0, 0, "", 0, default);
+
+    /// <summary>Redrawn only if what it shows has changed since it was last drawn.</summary>
+    public void Changed()
+    {
+        var now = (Level, Trail, Shield, Number, Pulse, Liquid);
+        if (now == drawn) return;
+        drawn = now;
+        QueueRedraw();
+    }
 
     public Globe(float radius)
     {
@@ -399,6 +411,7 @@ public partial class Globe : Control
 public partial class Backdrop : Control
 {
     public float Strength = 0.88f;
+    static Shader? blur;
 
     public Backdrop(Action? onClick = null, float strength = 0.88f)
     {
@@ -406,11 +419,19 @@ public partial class Backdrop : Control
         Style.Fill(this);
         MouseFilter = MouseFilterEnum.Stop;
         if (onClick != null) GuiInput += e => { if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) onClick(); };
+        // The world behind, out of focus and darkened (shaders/ui_backdrop.gdshader): the page
+        // sits in the place the survivor stands, never on flat black.
+        blur ??= GD.Load<Shader>("res://shaders/ui_backdrop.gdshader");
+        var world = new ColorRect { Material = new ShaderMaterial { Shader = blur }, MouseFilter = MouseFilterEnum.Ignore };
+        ((ShaderMaterial)world.Material).SetShaderParameter("dim", Mathf.Lerp(1.1f, 0.62f, strength));
+        Style.Fill(world);
+        AddChild(world);
         var dark = new TextureRect
         {
             Texture = new GradientTexture2D
             {
-                Gradient = new Gradient { Colors = new[] { new Color(0.03f, 0.02f, 0.04f, strength * 0.72f), new Color(0.02f, 0.015f, 0.03f, strength) }, Offsets = new[] { 0.2f, 1f } },
+                // (the blurred world is already dim: the shade only deepens toward the edges, where it frames the page)
+                Gradient = new Gradient { Colors = new[] { new Color(0.03f, 0.02f, 0.04f, strength * 0.12f), new Color(0.02f, 0.015f, 0.03f, strength * 0.7f) }, Offsets = new[] { 0.2f, 1f } },
                 Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.45f), FillTo = new Vector2(1.05f, 1.05f), Width = 256, Height = 256,
             },
             StretchMode = TextureRect.StretchModeEnum.Scale, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = MouseFilterEnum.Ignore,
@@ -421,7 +442,7 @@ public partial class Backdrop : Control
         {
             Texture = new GradientTexture2D
             {
-                Gradient = new Gradient { Colors = new[] { new Color(1, 0.42f, 0.12f, 0.16f), new Color(1, 0.42f, 0.12f, 0) }, Offsets = new[] { 0f, 1f } },
+                Gradient = new Gradient { Colors = new[] { new Color(1, 0.42f, 0.12f, 0.08f), new Color(1, 0.42f, 0.12f, 0) }, Offsets = new[] { 0f, 1f } },
                 FillFrom = new Vector2(0.5f, 1), FillTo = new Vector2(0.5f, 0.6f), Width = 16, Height = 128,
             },
             StretchMode = TextureRect.StretchModeEnum.Scale, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = MouseFilterEnum.Ignore,

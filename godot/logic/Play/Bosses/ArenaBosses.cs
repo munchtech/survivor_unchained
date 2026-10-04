@@ -41,8 +41,9 @@ public sealed class PackMother : ArenaBoss
     public override School Weakness => School.Fire;
     public override string WeaknessText => $"Fire breaks {Her} moon-howl";
     // Measured (docs/team/combat.md): at 12 + 2 a tier a par build broke her for 63% of
-    // her health over the floors and won in 69 s; the contract asks 90-120.
-    public override double HealthMul(int tier) => 30 + 5 * tier;
+    // her health over the floors and won in 69 s; the contract asks 90-120. At 30 + 5 a tier,
+    // with the miniboss chests' cards, 78 s; at 37 + 6.2 a tier, with the Kindling's chest and card, 76.
+    public override double HealthMul(int tier) => 41 + 6.8 * tier;
     /// <summary>Greymuzzle is a he; the Pack-Mother a she.</summary>
     bool He => A.BossName == "Greymuzzle";
     string Her => He ? "his" : "her";
@@ -64,7 +65,7 @@ public sealed class PackMother : ArenaBoss
     protected override bool Act(Enemy e, double dt)
     {
         if (lettingGo) return LetGo(e, dt);
-        if (A.Spare && e.Hp <= 1.5 && PhaseIx == 2) { StartLetGo(e); return true; }
+        if (A.Spare && Spent(e)) { StartLetGo(e); return true; }
         if (Running(e, dt)) return true;
         var (dx, dz, d) = ToPlayer();
         var p = B.Player;
@@ -233,7 +234,8 @@ public sealed class BarrowLord : ArenaBoss
 
     // Undead resist frost and shadow; on him they do not, so every school can lay him down in time.
     // 9 + 1.5 a tier measured 80 s and a 14% Break with his laying-down; the contract asks 90-120.
-    public override double HealthMul(int tier) => 13 + 2.2 * tier;
+    // 13 + 2.2 a tier, with the miniboss chests' cards: 81 s; 15.5 + 2.6 with the Kindling's: 80 s.
+    public override double HealthMul(int tier) => 17 + 2.9 * tier;
 
     protected override void Enter(int phase)
     {
@@ -244,7 +246,7 @@ public sealed class BarrowLord : ArenaBoss
     protected override bool Act(Enemy e, double dt)
     {
         if (laying) return Lay(e, dt);
-        if (e.Hp <= 1.5 && PhaseIx == Phases.Length - 1) { StartLay(e); return true; }
+        if (Spent(e)) { StartLay(e); return true; }
         if (Running(e, dt)) return true;
         var (dx, dz, d) = ToPlayer();
         lineT -= dt; pilumT -= dt; testudoT -= dt; gladiusT -= dt; holdT -= dt;
@@ -454,7 +456,7 @@ public sealed class Grimtunnel : ArenaBoss
     protected override bool Act(Enemy e, double dt)
     {
         if (goingDown) return GoDown(e, dt);
-        if (!ganger && e.Hp <= 1.5 && PhaseIx == Phases.Length - 1) { StartDown(e); return true; }
+        if (!ganger && Spent(e)) { StartDown(e); return true; }
         if (dazeT > 0) { dazeT -= dt; e.TakenMul = 1.5; e.Vx = e.Vz = 0; e.State = EnemyState.Stunned; e.StateT = Math.Max(e.StateT, dt * 2); return true; }
         // Under the ground he is still in reach, at half.
         e.TakenMul = under ? 0.5 : 1;
@@ -665,8 +667,9 @@ public sealed class RedHand : ArenaBoss
     ];
     public override School Weakness => School.Storm;
     public override string WeaknessText => "Storm makes his thief drop what he took";
-    // 12 + 2 a tier measured 72 s and a 15% Break.
-    public override double HealthMul(int tier) => 21 + 3.5 * tier;
+    // 12 + 2 a tier measured 72 s and a 15% Break; 21 + 3.5 a tier, with the miniboss chests' cards, 79 s;
+    // 26 + 4.3 with the Kindling's chest and card, 73 s.
+    public override double HealthMul(int tier) => 29 + 4.7 * tier;
     protected override string HardName => "Everything Owed";
     double tollT = 10, volleyT = 5, cageT = 3, maulT = 2, sweepT = 4;
     bool levy, everything;

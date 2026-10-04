@@ -107,8 +107,22 @@ def arc_of(v):
     return (az, el, r)
 
 
+def manly(g: Gait) -> Gait:
+    """A calling's run as the hero runs it: the same carriage, a man's
+    weight. The hips held square (a fraction of her roll and shift, none
+    of her line-walking), the shoulders turning more against them, the
+    elbows out and the shoulders up, a deeper drop and a longer contact as
+    the weight lands."""
+    return replace(g, hip_roll=g.hip_roll * 0.3, hip_shift=g.hip_shift * 0.4, hip_yaw=g.hip_yaw * 0.8,
+                   chest_yaw=g.chest_yaw * 1.3, width=max(g.width, 0.065), drop=g.drop + 0.015, bob=g.bob * 0.9,
+                   duty=min(0.4, g.duty + 0.02), elbow_out=g.elbow_out + 0.12,
+                   shoulders=(g.shoulders[0] + 2, g.shoulders[1] + 3))
+
+
 def pose_at(g: Gait, rig: Rig, ph):
-    """Her pose at a phase of the cycle (0 = left foot lands)."""
+    """Her pose at a phase of the cycle (0 = left foot lands); his, as he runs it (manly)."""
+    if getattr(rig, "body", "her") == "him":
+        g = manly(g)
     c = math.cos(2 * math.pi * ph)
     d2 = g.duty / 2
     # Pelvis: lowest in the middle of each plant, highest in flight.

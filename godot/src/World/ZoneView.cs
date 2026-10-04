@@ -59,7 +59,10 @@ public partial class ZoneView : Node3D
         Landmarks = new Landmarks(z);
         AddChild(Landmarks.Root);
         Perf.Lap("landmarks");
-        if (grassAround is Vector2 at) GrowGrass(at, grassRadius);
+        // An ember arena's ring, its mist and its streams.
+        if (z.Place != null) { AddChild(ArenaEdge.Build(z)); Perf.Lap("arena edge"); }
+        // (An arena whose place grows none, the Dig, has no meadow at all.)
+        if (grassAround is Vector2 at && (z.Place == null || ArenaGround.GrowsGrass(z.Place.Id))) GrowGrass(at, grassRadius);
         Perf.Lap("grass");
 
         var meta = z.Meta;
@@ -98,8 +101,6 @@ public partial class ZoneView : Node3D
         }
         for (int i = 0; i < lights.Count; i++) SetLit(i, z.Lights[i].On);
         SetNight(false);
-        // The plain pieces drawn together, now that what is hidden here is hidden.
-        Landmarks.Merge();
     }
 
     OmniLight3D MakeLight(ZoneData.LightSpec l)
@@ -113,8 +114,8 @@ public partial class ZoneView : Node3D
             // three.js's intensity I lights to I/pi what Godot's energy E lights to E.
             LightEnergy = l.Intensity / Mathf.Pi,
             OmniRange = l.Distance > 0 ? l.Distance : 60, OmniAttenuation = 1.7f,
-            // The big lights (fires, lanterns) cast shadows near the camera (not at the lowest quality).
-            ShadowEnabled = l.Intensity >= 8 && SurvivorUnchained.Play.Graphics.Current.LampShadows, DistanceFadeShadow = 28, DistanceFadeEnabled = true,
+            // The big lights (fires, lanterns) cast shadows near the camera, at dusk and by night (Shadows).
+            ShadowEnabled = CastsShadow(l), DistanceFadeShadow = 28, DistanceFadeEnabled = true,
             DistanceFadeBegin = 45, DistanceFadeLength = 20, LightVolumetricFogEnergy = 1.2f,
         };
         lights.Add(light);
@@ -211,6 +212,31 @@ public partial class ZoneView : Node3D
         foreach (var n in Data.Meta.NightNodes) if (Node(n) is Node3D node) node.Visible = on;
         foreach (var (l, p) in moths) p.Emitting = on && lit[l];
         foreach (var c in chimneys) Campfire.ChimneyLook(c, on);
+        Shadows();
+    }
+
+    bool dusk, lampShadows = SurvivorUnchained.Play.Graphics.Current.LampShadows;
+
+    /// <summary>Whether it is dusk (the game's clock): the lamps cast shadows then, as by night.</summary>
+    public void SetDusk(bool on)
+    {
+        dusk = on;
+        Shadows();
+    }
+
+    /// <summary>The big lamps and fires cast shadows only at dusk and by night
+    /// (the owner's call): by day their light is faint beside the sun's, and
+    /// in town their shadows were two thirds of every frame's shadow draws.
+    /// Never at the lowest quality.</summary>
+    bool CastsShadow(ZoneData.LightSpec l) => l.Intensity >= 8 && lampShadows && (Night || dusk);
+
+    void Shadows()
+    {
+        for (int i = 0; i < lights.Count; i++)
+        {
+            bool cast = CastsShadow(specs[i]);
+            if (lights[i].ShadowEnabled != cast) lights[i].ShadowEnabled = cast;
+        }
     }
 
     /// <summary>How far the blight has drawn back (0..1): the ground's veins
@@ -281,10 +307,11 @@ public partial class ZoneView : Node3D
         if (healed != 0) SetHeal(healed);
     }
 
-    /// <summary>Whether the big lamps cast shadows (the picture's quality).</summary>
+    /// <summary>Whether the big lamps may cast shadows (the picture's quality).</summary>
     public void LampShadows(bool on)
     {
-        for (int i = 0; i < lights.Count; i++) lights[i].ShadowEnabled = on && specs[i].Intensity >= 8;
+        lampShadows = on;
+        Shadows();
     }
 
     /// <summary>The meadow's middle, every frame: the shader moves the tufts.</summary>

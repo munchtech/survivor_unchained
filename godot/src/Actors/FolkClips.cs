@@ -60,15 +60,35 @@ public static class FolkClips
         return Named(woman, want);
     }
 
-    /// <summary>The walking dead's own motion (tools/anim/dead.py) for one the
-    /// game names, or null: the crowd's Risen lurch at its pace rather than
+    /// <summary>The crowd's own motion (tools/anim/crowd.py) for one the game
+    /// names, or null: the Risen's lurch at the crowd's pace rather than
     /// skating on the library's slow zombie walk (armed, the weapon hangs
-    /// and the other hand reaches).</summary>
-    public static string? Undead(bool woman, bool armed, string game) => game switch
+    /// and the other hand reaches); a caster's rally, the weapon or the fist
+    /// thrust up and shaken.</summary>
+    public static string? Crowd(bool woman, bool armed, string game) => game switch
     {
         "Zombie_Walk_Fwd_Loop" or "Zombie_Walk_Fwd" or "Walking_D_Skeletons" => Named(woman, armed ? "lurch_armed" : "lurch"),
+        "Rally" => Named(woman, armed ? "rally_armed" : "rally"),
         _ => null,
     };
+
+    /// <summary>The crowd's three ways to fall (crowd.py), for the roles
+    /// "die", "die2" and "die3": over onto the back, onto the face, and in
+    /// a heap on the side; or null where the library has none. A field of
+    /// the dead picks among them so no two neighbours lie alike.</summary>
+    public static string[]? Deaths(bool woman, bool armed, bool pistol = false)
+    {
+        var all = new[] { "die_back", "die_front", "die_side" };
+        var named = new string[all.Length];
+        for (int i = 0; i < all.Length; i++)
+        {
+            // Armed, what is held is laid flat with the hand (a crossbow on its side), not stood on end.
+            var n = (pistol ? Named(woman, all[i] + "_pistol") : null) ?? (armed ? Named(woman, all[i] + "_armed") : null) ?? Named(woman, all[i]);
+            if (n == null) return null;
+            named[i] = n;
+        }
+        return named;
+    }
 
     static string? Named(bool woman, string? want)
     {

@@ -28,6 +28,18 @@ uniform float far_from = 3.5;
 uniform float far_to = 6.0;
 uniform float far_dark = 0.78;
 uniform vec3 far_lips : source_color = vec3(0.62, 0.16, 0.15);
+// A body's own relief, baked from its sculpt (the hero's: every muscle and
+// vein his reduced mesh has only in paint), the pores laid over it.
+uniform sampler2D relief : hint_normal, filter_linear_mipmap_anisotropic;
+uniform bool has_relief = false;
+// A man's shaved shadow (the hero's: People.HisShadow): where his beard and
+// his hair grow (shadow_mask, red his beard's ground, green his scalp's),
+// each as dark as chosen, of the hair's own colour; stubble, not a stain:
+// the darkening broken into the stubs of hairs.
+uniform sampler2D shadow_mask : hint_default_black, filter_linear_mipmap;
+uniform float beard_shadow = 0.0;
+uniform float scalp_shadow = 0.0;
+uniform vec3 shadow_colour : source_color = vec3(0.16, 0.12, 0.1);
 
 void fragment() {
 	ALBEDO = texture(paint, UV).rgb * tone;
@@ -38,9 +50,27 @@ void fragment() {
 	ALBEDO *= 1.0 - far_dark * f.x;
 	ALBEDO = mix(ALBEDO, far_lips * tone, 0.75 * f.y);
 	vec4 q = texture(pores, UV * pore_scale);
-	NORMAL_MAP = q.rgb;
-	NORMAL_MAP_DEPTH = pore_depth;
-	ROUGHNESS = clamp(rough + (q.a - 0.5) * 0.3, 0.0, 1.0);
+	float stubble = 0.0;
+	if (beard_shadow > 0.0 || scalp_shadow > 0.0) {
+		vec2 g = texture(shadow_mask, UV).rg;
+		// (the stubs: the pore tile's grain, finer, as dots)
+		float stubs = smoothstep(0.3, 0.7, texture(pores, UV * pore_scale * 2.7 + vec2(0.37, 0.11)).a);
+		stubble = clamp(g.r * beard_shadow + g.g * scalp_shadow, 0.0, 1.0) * mix(0.55, 1.0, stubs);
+		ALBEDO = mix(ALBEDO, ALBEDO * shadow_colour * 2.4, stubble * 0.85);
+	}
+	if (has_relief) {
+		// The two reliefs as one (each from its x and y, as Godot keeps a
+		// normal map): the pores' slopes added to the body's, at their depth.
+		vec2 a = texture(relief, UV).xy * 2.0 - 1.0;
+		vec2 b = (q.xy * 2.0 - 1.0) * pore_depth;
+		vec3 n = normalize(vec3(a + b, sqrt(max(0.0, 1.0 - dot(a, a)))));
+		NORMAL_MAP = vec3(n.xy * 0.5 + 0.5, 1.0);
+		NORMAL_MAP_DEPTH = 1.0;
+	} else {
+		NORMAL_MAP = q.rgb;
+		NORMAL_MAP_DEPTH = pore_depth;
+	}
+	ROUGHNESS = clamp(rough + (q.a - 0.5) * 0.3 + stubble * 0.15, 0.0, 1.0);
 	SPECULAR = shine;
 	SSS_STRENGTH = scatter;
 	RIM = 0.25;

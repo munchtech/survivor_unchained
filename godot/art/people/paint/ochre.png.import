@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/ochre.png-1bd04396d93913a0fd270a2be108feca.ct
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0

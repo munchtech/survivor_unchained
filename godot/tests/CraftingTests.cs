@@ -123,6 +123,26 @@ public class CraftingTests
     }
 
     [Fact]
+    public void The_crafter_speaks_over_a_craft_and_a_caged_coal_names_its_night()
+    {
+        var j = Make();
+        var it = Piece(j, "iron_helm", 2, ("hale", 0));
+        Give(j, Crafting.Shard, 20);
+        j.Carry(new Crafting.NightYield(new() { [Crafting.Shard] = 1 }, new()), "The Ashen Fen");
+        var coal = Crafting.Coals(j.Ch, it, j.World.Day)[0];
+        Assert.True(j.Work(it.Uid, Crafting.Cage(j.Craft, it, coal), null));
+        Assert.Equal($"A coal from the Ashen Fen, caged by Brannoc, day {j.World.Day}", it.History![^1]);
+        // The first cage has its own words, with narration round them; the next is the verb's own.
+        Assert.Equal("Wants out. They all do.", j.CraftSaid!.Line);
+        Assert.NotNull(j.CraftSaid.Before);
+        Assert.NotNull(j.CraftSaid.After);
+        var again = Crafting.Coals(j.Ch, it, j.World.Day)[0];
+        Assert.True(j.Work(it.Uid, Crafting.Cage(j.Craft, it, again), null));
+        Assert.Null(j.CraftSaid!.Before);
+        Assert.Contains(j.CraftSaid.Line, Crafting.Crafter("brannoc")!.Lines["cage"]);
+    }
+
+    [Fact]
     public void A_piece_has_heat_by_its_rarity_rolled_where_it_fell()
     {
         var j = Make();
@@ -264,7 +284,7 @@ public class CraftingTests
         var j = Make();
         var w = j.Ch.Equipment.Weapon!;
         int rank = Character.Kit(j.Ch).Weapons.First(x => x.Id == Items.Get(w.Def).Weapon!.Id).Rank;
-        Give(j, Crafting.Iron, 40);
+        Give(j, Crafting.Iron, 60);
         var q = Crafting.Remake(j.Craft, w);
         Assert.True(q.Ok, q.Blocked);
         Assert.True(j.Work(w.Uid, q, null));
@@ -276,12 +296,16 @@ public class CraftingTests
         // A weapon takes a slayer in its new seam.
         Give(j, "wolf_pelt", 3);
         Assert.True(j.Work(w.Uid, Crafting.WorkIn(j.Craft, w, "wolf_pelt", "wolfbane"), null));
+        // Remade iron cools overnight: one remake a piece a day.
+        Assert.Contains("Tomorrow", Crafting.Remake(j.Craft, w).Blocked);
+        j.World.Day++;
         Assert.True(j.Work(w.Uid, Crafting.Remake(j.Craft, w), null));
+        j.World.Day++;
         Assert.True(j.Work(w.Uid, Crafting.Remake(j.Craft, w), null));
         Assert.Equal(3, w.Rarity);
         // Epic is the forge's last pattern in Act 1.
         Assert.False(Crafting.Remake(j.Craft, w).Ok);
-        Assert.Contains(w.History!, h => h.StartsWith("Remade by Brannoc"));
+        Assert.Contains(w.History!, h => h.StartsWith("Remade on Brannoc's anvil"));
     }
 
     [Fact]
@@ -318,11 +342,11 @@ public class CraftingTests
         var it = Piece(j, "silver_ring", 2, ("keen", 1), ("of_refusal", 0));
         var q = Crafting.BreakDown(j.Craft, it);
         Assert.True(q.Ok);
-        Assert.Equal(4, q.Gives[Crafting.Iron]);
+        Assert.Equal(2, q.Gives[Crafting.Iron]);
         Assert.Equal(1, q.Gives[Crafting.Shard]);
         Assert.True(j.Work(it.Uid, q, null));
         Assert.Null(Inventory.Find(j.Ch, it.Uid));
-        Assert.Equal(4, Inventory.Count(j.Ch, Crafting.Iron));
+        Assert.Equal(2, Inventory.Count(j.Ch, Crafting.Iron));
         Assert.Equal(1, Inventory.Count(j.Ch, Crafting.Shard));
         Assert.False(Crafting.BreakDown(j.Craft, j.Ch.Equipment.Weapon!).Ok);
         Assert.False(Crafting.BreakDown(j.Craft, Piece(j, "wardens_lampiron", 3)).Ok);
@@ -363,13 +387,14 @@ public class CraftingTests
     }
 
     [Fact]
-    public void Wenna_will_not_work_gear_while_the_stream_is_green()
+    public void Wenna_brews_from_the_start_but_will_not_work_gear_while_the_stream_is_green()
     {
         var j = Make();
         j.World.Npc("wenna").Flags["met"] = true;
-        Assert.NotNull(Crafting.Closed("wenna", j.Ctx));
+        Assert.Null(Crafting.Closed("wenna", j.Ctx, Verb.Brew));
+        Assert.NotNull(Crafting.Closed("wenna", j.Ctx, Verb.WorkIn));
         j.World.Facts["stream.clear"] = true;
-        Assert.Null(Crafting.Closed("wenna", j.Ctx));
+        Assert.Null(Crafting.Closed("wenna", j.Ctx, Verb.WorkIn));
     }
 
     [Fact]
@@ -377,20 +402,21 @@ public class CraftingTests
     {
         var champs = new Dictionary<Family, int> { [Family.Wolf] = 950, [Family.Boar] = 220 };
         var y = Crafting.Night("pack", 1, false, 52, 0, true, false, champs);
-        Assert.Equal(5, y.Kept[Crafting.Shard]);
+        // Ember 52: (52 - 10) / 12 = 3.
+        Assert.Equal(3, y.Kept[Crafting.Shard]);
         Assert.Equal(6, y.Kept["wolf_pelt"]);
         Assert.Equal(1, y.Kept["boar_hide"]);
         Assert.Empty(y.Spilled);
         // Five minutes past the half hour: two more; a story fight won: two more; tier three: two more.
-        Assert.Equal(5 + 2 + 2 + 2, Crafting.Night("pack", 3, true, 52, 5, true, false, champs).Kept[Crafting.Shard]);
+        Assert.Equal(3 + 2 + 2 + 2, Crafting.Night("pack", 3, true, 52, 5, true, false, champs).Kept[Crafting.Shard]);
         // Fallen there: half of everything.
         var fell = Crafting.Night("pack", 3, true, 52, 5, true, true, champs);
-        Assert.Equal(5, fell.Kept[Crafting.Shard]);
-        Assert.Equal(6, fell.Spilled[Crafting.Shard]);
+        Assert.Equal(4, fell.Kept[Crafting.Shard]);
+        Assert.Equal(5, fell.Spilled[Crafting.Shard]);
         Assert.Equal(3, fell.Kept["wolf_pelt"]);
         // Lost: no minutes past and no story bonus.
-        var lost = Crafting.Night("dead", 1, true, 20, 0, false, true, new Dictionary<Family, int> { [Family.Undead] = 400 });
-        Assert.Equal(0, lost.Kept.GetValueOrDefault(Crafting.Shard));
+        var lost = Crafting.Night("dead", 1, true, 34, 0, false, true, new Dictionary<Family, int> { [Family.Undead] = 400 });
+        Assert.Equal(1, lost.Kept.GetValueOrDefault(Crafting.Shard));
         Assert.Equal(1, lost.Spilled[Crafting.Shard]);
         Assert.Equal(1, lost.Kept["bone_dust"]);
         // Capped at eight a kind.

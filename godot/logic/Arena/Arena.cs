@@ -36,6 +36,8 @@ public sealed class ArenaSpec
     public int Seed = 1;
     public int Tier = 1;
     public string Theme = "wood";
+    /// <summary>The place's mood (Maps/ArenaPlaces.Moods); empty, it is read from the name.</summary>
+    public string Mood = "";
     /// <summary>Who fills it (Maps/MapOffers.Peoples).</summary>
     public string People = "pack";
     public List<string> Oaths = new();
@@ -53,9 +55,12 @@ public sealed class ArenaSpec
     /// <summary>The boss is brought down and let go, not killed (Greymuzzle, when the story
     /// allows it: docs/STORY_BIBLE.md, "The nights").</summary>
     public bool Spare;
+    /// <summary>A story night's last line, won and lost: the narrator's, where the result
+    /// would otherwise say only that the story goes on (docs/WRITING_PASS.md §20).</summary>
+    public string? EndWon, EndLost;
 
     /// <summary>The ground (always by night: the ember burns only in the dark).</summary>
-    public MapSpec Map => new() { Seed = Seed, Tier = Tier, Theme = Theme, Night = true, Oaths = Oaths, Name = Name, Arena = true, People = People };
+    public MapSpec Map => new() { Seed = Seed, Tier = Tier, Theme = Theme, Night = true, Oaths = Oaths, Name = Name, Arena = true, People = People, Mood = Mood };
 }
 
 /// <summary>How an arena ended, and what came out of it.</summary>
@@ -88,7 +93,7 @@ public static class Arenas
     public static ArenaSpec FromTable(MapOffer o, string zone, double x, double z, double facing) => new()
     {
         Id = $"table:{o.Spec.Seed}", Name = o.Spec.Name, Sub = $"Tier {o.Spec.Tier} · held by {MapOffers.People(o.People).Name}",
-        Seed = o.Spec.Seed, Tier = o.Spec.Tier, Theme = o.Spec.Theme, People = o.People, Oaths = o.Spec.Oaths.ToList(),
+        Seed = o.Spec.Seed, Tier = o.Spec.Tier, Theme = o.Spec.Theme, Mood = o.Spec.Mood, People = o.People, Oaths = o.Spec.Oaths.ToList(),
         ReturnZone = zone, ReturnX = x, ReturnZ = z, ReturnFacing = facing,
     };
 
@@ -97,9 +102,12 @@ public static class Arenas
     /// second loss tells it nothing; a win still counts.</summary>
     public static ArenaSpec Again(ArenaSpec lost, string zone, double x, double z, double facing) => new()
     {
-        Id = lost.Id, Name = lost.Name, Sub = lost.Sub, Seed = lost.Seed + 1, Tier = lost.Tier, Theme = lost.Theme,
+        Id = lost.Id, Name = lost.Name, Sub = lost.Sub, Seed = lost.Seed + 1, Tier = lost.Tier, Theme = lost.Theme, Mood = lost.Mood,
         People = lost.People, Oaths = lost.Oaths.ToList(), Minutes = lost.Minutes, Story = true, OnWin = lost.OnWin, OnLose = null,
         Boss = lost.Boss, BossName = lost.BossName, BossTitle = lost.BossTitle,
+        // The fight is the same fight, spared or not; its lost line says where she comes to,
+        // which is no longer where this one sends her back.
+        Spare = lost.Spare, EndWon = lost.EndWon,
         ReturnZone = zone, ReturnX = x, ReturnZ = z, ReturnFacing = facing,
     };
 
@@ -151,9 +159,14 @@ public static class Arenas
     /// <summary>The arena is over (the way out taken, or the survivor fallen):
     /// they take out what they learned and earned; lost, the story is told so,
     /// and a story fight waits at the table.</summary>
+    /// <summary>How often a table's night won gives a tome (a story fight always does); the table says so.</summary>
+    public const double TableTome = 0.35;
+
     public static ArenaResult Finish(Journey j, Battle b, ArenaSpec spec, bool won, string? killer = null)
     {
         var ch = j.Ch;
+        // A fall is told by its killer: the zone hears of it before the battle marks the survivor dead.
+        bool fell = killer != null || !b.Player.Alive;
         double xp = XpFor(spec, b.Time, won);
         var fresh = new List<string>();
         foreach (var id in Skills(b))
@@ -163,7 +176,7 @@ public static class Arenas
         // A story fight won gives a tome (a table's, now and then): blank, to be
         // written with one of what burned here, the survivor's choice of up to three.
         var choices = new List<string>();
-        if (won && (spec.Story || b.Rng.Next() < 0.35))
+        if (won && (spec.Story || b.Rng.Next() < TableTome))
             choices = Skills(b).Where(id => SkillBook.CanLearn(ch, id))
                 .OrderByDescending(id => b.Weapons.FirstOrDefault(w => w.Id == id)?.Rank ?? 8).Take(3).ToList();
         // What was made here for the first time goes in the codex, recipe and all.
@@ -175,8 +188,8 @@ public static class Arenas
         j.BankGold(b);
         // What the night leaves in the survivor's fist, for the Waystation's hands: walked
         // out, all of it; fallen, half.
-        var carry = Crafting.Night(spec.People, spec.Tier, spec.Story, b.EmberLevel, Math.Max(0, b.Time / 60 - spec.Minutes), won, !b.Player.Alive, b.ChampionsByFamily);
-        j.Carry(carry);
+        var carry = Crafting.Night(spec.People, spec.Tier, spec.Story, b.EmberLevel, Math.Max(0, b.Time / 60 - spec.Minutes), won, fell, b.ChampionsByFamily);
+        j.Carry(carry, spec.Name);
         var w = j.World;
         if (!won)
         {
@@ -191,15 +204,18 @@ public static class Arenas
         // reacts to every run; ours said one line). The story writes what is said of it.
         w.Facts["arena.last.people"] = spec.People;
         w.Facts["arena.last.won"] = won;
-        w.Facts["arena.last.fell"] = !b.Player.Alive;
+        w.Facts["arena.last.fell"] = fell;
         w.Facts["arena.last.story"] = spec.Story;
         w.Facts["arena.last.tier"] = spec.Tier;
         w.Facts["arena.last.minutes"] = Math.Round(b.Time / 60, 1);
         w.Facts["arena.last.past"] = Math.Round(Math.Max(0, b.Time / 60 - spec.Minutes), 1);
         w.Facts["arena.last.day"] = w.Day;
         w.Facts["arena.last.longest"] = longest;
-        w.Facts["arena.last.killer"] = !b.Player.Alive && killer != null ? killer : null;
-        if (!b.Player.Alive) w.Facts["arena.fell"] = w.Fact("arena.fell").Number + 1;
+        w.Facts["arena.last.killer"] = fell ? killer : null;
+        // How long ago it was: 0 the night itself, 1 the day after (a daily rule counts it on),
+        // so the town talks about the night just past and not one from last week.
+        w.Facts["arena.last.ago"] = 0;
+        if (fell) w.Facts["arena.fell"] = w.Fact("arena.fell").Number + 1;
         w.Facts["arena.nights"] = w.Fact("arena.nights").Number + 1;
         w.Arena = null;
         return new ArenaResult(spec, won, b.Time, b.KillCount, b.EmberLevel, xp, b.GoldTotal, fresh, levels, longest, null, taught)

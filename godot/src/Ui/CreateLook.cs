@@ -10,10 +10,13 @@ using SurvivorUnchained.World;
 
 namespace SurvivorUnchained.Ui;
 
-/* Creation's fourth step, the look (docs/UI_DESIGN.md 7.2): the body, hair,
- * face and paint, each a part of its own on the triggers, the figure framed
- * for it (all of them, head and shoulders, the face) and turned or brought
- * near by hand. A hero's own body (the heroine's; the male hero's when he has
+/* Creation's second step, the look (docs/UI_DESIGN.md 7.2): the hair, face,
+ * shape, paint and body, each a part of its own on the triggers, the figure
+ * framed for it (head and shoulders, the face, all of them) and turned or
+ * brought near by hand. The face is chosen whole (faces to start from, the
+ * eyes) in one part and shaped by hand in the next, which has the column to
+ * itself so every group's sliders show at once. Hair comes first: it is what a player looks for, and it shows
+ * at once that she is theirs to shape. A hero's own body (the heroine's; the male hero's when he has
  * one: Loadouts.HeroKit) offers its own cuts, faces, eyes and paints, as
  * cameos (a portrait in an iron ring, painted from the model:
  * art/ui/create/SEX/); colours are beads (irises drawn as irises); the face's
@@ -31,17 +34,18 @@ public partial class CreateScreen
     /// <summary>What their own body offers to be shaped with (null: a kit body).</summary>
     HeroLook? Kit => Loadouts.HeroKit(d.Sex);
     string[] Sections => Kit is { } k
-        ? new[] { "Body", "Hair" }.Concat(k.Sliders.Count > 0 || k.Faces.Count > 1 || k.Eyes.Count > 1 ? new[] { "Face" } : Array.Empty<string>())
-            .Concat(k.Paints.Count > 1 ? new[] { "Paint" } : Array.Empty<string>()).ToArray()
-        : new[] { "Body", "Hair" };
+        ? new[] { "Hair" }.Concat(k.Faces.Count > 1 || k.Eyes.Count > 1 ? new[] { "Face" } : Array.Empty<string>())
+            .Concat(k.Sliders.Count > 0 ? new[] { "Shape" } : Array.Empty<string>())
+            .Concat(k.Paints.Count > 1 ? new[] { "Paint" } : Array.Empty<string>()).Append("Body").ToArray()
+        : new[] { "Hair", "Body" };
     string Section => Sections[Math.Clamp(d.Section, 0, Sections.Length - 1)];
     /// <summary>A cameo's picture under art/ui/create/, by the survivor's sex.</summary>
     string Art(string key) => $"{d.Sex.Key()}/{key}";
 
     /// <summary>How near each part frames the figure, and how far she is turned for it
     /// (her hair seen from the side, where a cut shows).</summary>
-    float SectionZoom() => d.Step != LookStep ? 0 : Section switch { "Hair" => 0.55f, "Face" or "Paint" => 1f, _ => 0f };
-    float SectionTurn() => d.Step == LookStep && Section == "Hair" ? -0.95f : 0;
+    float SectionZoom() => d.Step != LookStep ? 0 : Section switch { "Hair" => 0.55f, "Face" or "Shape" or "Paint" => 1f, _ => 0f };
+    float SectionTurn() => d.Step != LookStep || Section != "Hair" ? 0 : d.HairStyle switch { "ponytail" => -1.4f, "braid" => -1.75f, _ => -0.95f };
 
     /// <summary>The figure framed for the step and part as they are now.</summary>
     public void FrameForStep() => G.FrameFigure(SectionZoom(), SectionTurn());
@@ -90,7 +94,7 @@ public partial class CreateScreen
             int at = i;
             bool on = d.Section == i;
             var b = Style.Button("", () => Set(() => d.Section = at), false, true);
-            b.CustomMinimumSize = new Vector2(Sections.Length > 2 ? 96 : 140, 40);
+            b.CustomMinimumSize = new Vector2(Sections.Length > 4 ? 82 : Sections.Length > 2 ? 96 : 140, 40);
             foreach (var x in new[] { "normal", "hover", "pressed" }) b.AddThemeStyleboxOverride(x, new StyleBoxEmpty());
             Nav.Skip(b);
             var v = Style.V(3, Style.Label(Sections[i].ToUpperInvariant(), Style.Display, 16, on ? Style.EmberHi : Style.GoldDim, false, HorizontalAlignment.Center));
@@ -113,18 +117,20 @@ public partial class CreateScreen
         ("Hair", { } k) => HeroHair(k),
         ("Hair", null) => KitHair(a),
         ("Face", { } k) => HeroFace(k),
+        ("Shape", { } k) => HeroShape(k),
         ("Paint", { } k) => HeroPaint(k),
         _ => LookBody(a),
     };
 
     Control LookBody(Archetype a)
     {
-        var v = Style.V(8, Style.SubLabel("Body"));
-        var body = Style.H(6);
-        foreach (var sx in new[] { Sex.Female, Sex.Male })
-            body.AddChild(Nav.Id(Style.Segment(sx == Sex.Male ? "Man" : "Woman", d.Sex == sx, () => Set(() => d.SetSex(sx))), $"sex:{sx}"));
-        if (!Her && Kit == null) body.AddChild(Nav.Id(Style.Segment(d.Beard ? "Bearded" : "Clean-shaven", d.Beard, () => Set(() => d.Beard = !d.Beard)), "beard"));
-        v.AddChild(body);
+        // (a woman or a man is chosen on the first step, with the calling)
+        var v = Style.V(8);
+        if (!Her && Kit == null)
+        {
+            v.AddChild(Style.SubLabel("Beard"));
+            v.AddChild(Nav.Id(Style.Segment(d.Beard ? "Bearded" : "Clean-shaven", d.Beard, () => Set(() => d.Beard = !d.Beard)), "beard"));
+        }
         v.AddChild(Style.SubLabel("Skin"));
         v.AddChild(Beads(Lore.Skins, d.Skin, id => d.Skin = id, Bead.Kind.Skin, "#f2c4a8"));
         v.AddChild(Style.SubLabel($"Colours of {Their.ToLowerInvariant()} outfit"));
@@ -142,12 +148,21 @@ public partial class CreateScreen
     Control HeroHair(HeroLook k)
     {
         var v = Style.V(8, Style.SubLabel($"{Their} hair"));
-        var row = new HFlowContainer();
-        row.AddThemeConstantOverride("h_separation", 6);
+        // (large: a cut is told by its shape, which a small picture loses)
+        var row = Grid(3);
         var dye = HairColour();
         foreach (var cut in k.Cuts)
-            row.AddChild(new Cameo(Art($"hair_{cut.Id}"), cut.Name, d.HairStyle == cut.Id, () => Set(() => d.HairStyle = cut.Id), 82, dye, "lock"));
+            row.AddChild(new Cameo(Art($"hair_{cut.Id}"), cut.Name, d.HairStyle == cut.Id, () => Set(() => d.HairStyle = cut.Id), 136, dye, "lock"));
         v.AddChild(row);
+        if (k.Beards.Count > 0)
+        {
+            // His beard, as his cuts: cameos dyed his hair's colour.
+            v.AddChild(Style.SubLabel("Beard"));
+            var beards = Grid(4);
+            foreach (var b in k.Beards)
+                beards.AddChild(new Cameo(Art($"beard_{b.Id}"), b.Name, d.BeardStyle == b.Id, () => Set(() => d.BeardStyle = b.Id), 100, dye, "mask"));
+            v.AddChild(beards);
+        }
         v.AddChild(Style.Gap(4));
         v.AddChild(Style.SubLabel("Colour"));
         v.AddChild(Beads(Lore.Hairs, d.Hair, id => d.Hair = id, Bead.Kind.Hair, OwnHair().ToHtml(false)));
@@ -173,18 +188,16 @@ public partial class CreateScreen
         return v;
     }
 
-    /// <summary>Faces to start from, the eyes' colour, and the face shaped by hand.</summary>
+    /// <summary>Faces to start from (a face may bring its own skin and eyes), and the eyes' colour.</summary>
     Control HeroFace(HeroLook k)
     {
         var v = Style.V(8);
         if (k.Faces.Count > 1)
         {
             v.AddChild(Style.SubLabel($"{Their} face"));
-            var grid = new GridContainer { Columns = 4 };
-            grid.AddThemeConstantOverride("h_separation", 8);
-            grid.AddThemeConstantOverride("v_separation", 4);
+            var grid = Grid(4);
             foreach (var f in k.Faces)
-                grid.AddChild(new Cameo(Art($"face_{f.Id}"), f.Name, d.FaceShape == f.Id, () => Set(() => { d.FaceShape = f.Id; d.Face = new Dictionary<string, double>(f.Shape); }), 92, null, "mask"));
+                grid.AddChild(new Cameo(Art($"face_{f.Id}"), f.Name, d.FaceShape == f.Id, () => Set(() => Choose(f)), 100, null, "mask"));
             v.AddChild(grid);
         }
         if (k.Eyes.Count > 1)
@@ -192,24 +205,49 @@ public partial class CreateScreen
             v.AddChild(Style.SubLabel("Eyes"));
             v.AddChild(Beads(k.Eyes, d.Eyes, id => d.Eyes = id, Bead.Kind.Eye, ""));
         }
-        if (k.Sliders.Count == 0) return v;
-        // Shaped by hand: a group of sliders at a time.
+        if (k.Sliders.Count > 0)
+            v.AddChild(Style.Label("Shape it by hand in the next part.", Style.TextItalic, Style.Caption, Style.InkDim));
+        return v;
+    }
+
+    /// <summary>A face to start from, taken: its shape, and its skin and eyes where it has its own.</summary>
+    void Choose(FaceShape f)
+    {
+        d.FaceShape = f.Id;
+        d.Face = new Dictionary<string, double>(f.Shape);
+        if (f.Skin is { } skin && Lore.Skins.Any(s => s.Id == skin)) d.Skin = skin;
+        if (f.Eyes is { } eyes && Kit is { } k && k.Eyes.Any(e => e.Id == eyes)) d.Eyes = eyes;
+    }
+
+    /// <summary>The face shaped by hand: its groups as tabs, four to a row, and the
+    /// group's sliders under them; the column to itself, so none is hidden.</summary>
+    Control HeroShape(HeroLook k)
+    {
+        var v = Style.V(8);
         var groups = k.Sliders.Select(s => s.Group).Distinct().ToArray();
         int g = Math.Clamp(d.FaceGroup, 0, groups.Length - 1);
-        var head = Style.H(6, Style.SubLabel("Shape it"));
-        head.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill });
+        v.AddChild(Style.SubLabel($"Shape {Their.ToLowerInvariant()} face"));
+        var tabs = new GridContainer { Columns = Math.Min(4, groups.Length) };
+        tabs.AddThemeConstantOverride("h_separation", 6);
+        tabs.AddThemeConstantOverride("v_separation", 6);
         for (int i = 0; i < groups.Length; i++)
         {
             int at = i;
-            head.AddChild(Nav.Id(Style.Segment(groups[i], g == i, () => Set(() => d.FaceGroup = at)), $"group:{groups[i]}"));
+            var seg = Nav.Id(Style.Segment(groups[i], g == i, () => Set(() => d.FaceGroup = at)), $"group:{groups[i]}");
+            seg.CustomMinimumSize = new Vector2(114, 34);
+            tabs.AddChild(seg);
         }
-        v.AddChild(head);
+        v.AddChild(tabs);
+        v.AddChild(Style.Gap(4));
         foreach (var s in k.Sliders.Where(s => s.Group == groups[g]))
             v.AddChild(SliderRow(s));
         var preset = k.Faces.FirstOrDefault(f => f.Id == d.FaceShape) ?? k.Faces.FirstOrDefault();
         if (Shaped(k, preset))
+        {
+            v.AddChild(Style.Gap(4));
             v.AddChild(Nav.Id(Style.Button(preset != null ? $"Back to {preset.Name.ToLowerInvariant()}" : $"Back to {Their.ToLowerInvariant()} own face",
                 () => Set(() => d.Face = new Dictionary<string, double>(preset?.Shape ?? new())), false, true), "unshape"));
+        }
         return v;
     }
 
@@ -240,13 +278,21 @@ public partial class CreateScreen
     Control HeroPaint(HeroLook k)
     {
         var v = Style.V(8, Style.SubLabel($"Paint on {Their.ToLowerInvariant()} face"));
-        var grid = new GridContainer { Columns = 4 };
-        grid.AddThemeConstantOverride("h_separation", 8);
-        grid.AddThemeConstantOverride("v_separation", 4);
+        // (large: kohl and ash are fine lines a small picture loses)
+        var grid = Grid(3);
         foreach (var p in k.Paints)
-            grid.AddChild(new Cameo(Art($"paint_{p.Id}"), p.Name, d.Paint == p.Id, () => Set(() => d.Paint = p.Id), 92, null, "mask"));
+            grid.AddChild(new Cameo(Art($"paint_{p.Id}"), p.Name, d.Paint == p.Id, () => Set(() => d.Paint = p.Id), 136, null, "mask"));
         v.AddChild(grid);
         return v;
+    }
+
+    /// <summary>A grid of cameos, so many to a row.</summary>
+    static GridContainer Grid(int columns)
+    {
+        var g = new GridContainer { Columns = columns };
+        g.AddThemeConstantOverride("h_separation", columns > 3 ? 6 : 10);
+        g.AddThemeConstantOverride("v_separation", 2);
+        return g;
     }
 
     /* ---------------------------------------------------------- colours -- */
@@ -294,6 +340,12 @@ public partial class CreateScreen
                 var f = k.Faces.FirstOrDefault(x => x.Id == d.FaceShape) ?? k.Faces.FirstOrDefault();
                 (title, name, words) = ($"{Their} face", (f?.Name ?? "Their own") + (Shaped(k, f) ? ", shaped" : ""), f?.Words ?? "");
                 break;
+            case "Shape" when k != null:
+                var sf = k.Faces.FirstOrDefault(x => x.Id == d.FaceShape) ?? k.Faces.FirstOrDefault();
+                var groups = k.Sliders.Select(s => s.Group).Distinct().ToArray();
+                (title, name, words) = ($"{Their} face", (sf?.Name ?? "Their own") + (Shaped(k, sf) ? ", shaped" : ""),
+                    groups.Length > 0 ? $"{groups[Math.Clamp(d.FaceGroup, 0, groups.Length - 1)]}: each slider runs from one end to the other, {Their.ToLowerInvariant()} chosen face at its middle." : "");
+                break;
             case "Paint" when k != null:
                 var p = k.Paints.FirstOrDefault(x => x.Id == d.Paint) ?? k.Paints[0];
                 (title, name, words) = ("Paint", p.Name, p.Words);
@@ -328,6 +380,7 @@ public partial class CreateScreen
         string cut = k != null ? k.Cuts.FirstOrDefault(h => h.Id == d.HairStyle)?.Name ?? d.HairStyle : HairNames.GetValueOrDefault(d.HairStyle, d.HairStyle);
         yield return ("Hair", $"{cut}, {Of(Lore.Hairs, d.Hair).ToLowerInvariant()}");
         if (k == null) yield break;
+        if (k.Beards.Count > 0) yield return ("Beard", k.Beards.FirstOrDefault(b => b.Id == d.BeardStyle)?.Name ?? k.Beards[0].Name);
         var f = k.Faces.FirstOrDefault(x => x.Id == d.FaceShape) ?? k.Faces.FirstOrDefault();
         if (f != null || k.Sliders.Count > 0) yield return ("Face", (f?.Name ?? "Their own") + (Shaped(k, f) ? ", shaped" : ""));
         if (k.Eyes.Count > 0) yield return ("Eyes", Of(k.Eyes, d.Eyes));
@@ -374,7 +427,7 @@ public partial class Cameo : Button
             m.SetShaderParameter("lit", on ? 1f : 0f);
             var pic = new TextureRect
             {
-                Texture = art, Material = m, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale,
+                Texture = art, Material = m, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, TextureFilter = TextureFilterEnum.LinearWithMipmaps,
                 Size = new Vector2(size, size) * 0.86f, Position = new Vector2(size, size) * 0.07f, MouseFilter = MouseFilterEnum.Ignore,
             };
             ring.AddChild(pic);

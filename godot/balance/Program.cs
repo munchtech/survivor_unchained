@@ -18,6 +18,8 @@ using SurvivorUnchained.Rpg;
  *   arena   whole arenas, played by the Pilot, drafted by a policy
  *   probe   builds drafted to an ember level and put through the standard test
  *   report  a summary of runs saved before (arena's .jsonl)
+ *   map     the Wayfinder's maps, played by the Pilot's hands with a day build
+ *           (--tiers 1,2,3 --people all --seeds N --level L|tier --gear R --mods a+b --cap MIN)
  *
  * Options: --callings warden,reaver|all  --policies greedy,random,path:steel|paths
  *          --seeds N  --seed0 S  --tier T (or --tiers 1,2,3)  --people pack,dead|all
@@ -43,6 +45,7 @@ switch (cmd)
     case "probe": ProbeAll(); break;
     case "weapons": WeaponsAll(); break;
     case "report": Console.WriteLine(Report.Arena(Load(opt.Get("in", "balance.jsonl")))); break;
+    case "map": Maps(); break;
     default:
         Console.WriteLine("dotnet run -c Release --project godot/balance -- arena|probe|report [options]  (see Program.cs)");
         break;
@@ -113,6 +116,46 @@ void Arena()
     var md = Report.Arena(results.OrderBy(r => r.Spec.Key).ToList());
     File.WriteAllText(Path.ChangeExtension(outPath, ".md"), md);
     if (opt.Has("csv")) Report.Csv(results.OrderBy(r => r.Spec.Key).ToList(), opt.Get("csv", "out/csv"));
+    Console.WriteLine(md);
+}
+
+/* The Wayfinder's maps: each calling with its own path's day skills at the level's rank and plain
+ * gear at a rarity, walking the way to the ruler. --level tier puts the survivor at the map's
+ * creature level (8 + 2 x tier), capped at the character's 30. */
+void Maps()
+{
+    var peoples = opt.List("people", "all") is ["all"] ? MapOffers.Peoples.Select(p => p.Id).ToArray() : opt.List("people", "all");
+    int seeds = opt.Int("seeds", 2), seed0 = opt.Int("seed0", 1);
+    var tiers = opt.List("tiers", "1").Select(int.Parse).ToArray();
+    var mods = opt.Get("mods", "") is { Length: > 0 } m ? m.Split('+') : Array.Empty<string>();
+    var specs = new List<MapRunSpec>();
+    foreach (var c in Callers())
+        foreach (int tier in tiers)
+            foreach (var people in peoples)
+                for (int s = 0; s < seeds; s++)
+                {
+                    int level = opt.Get("level", "tier") == "tier" ? Math.Min(30, 8 + 2 * tier) : opt.Int("level", 10);
+                    specs.Add(new MapRunSpec(seed0 + s, c, tier, people, level, opt.Int("gear", 2), mods, opt.Get("bot", "deft") == "deft", opt.Double("cap", 25)));
+                }
+    Console.WriteLine($"{specs.Count} maps, {opt.Int("par", 16)} at a time");
+    var results = new ConcurrentBag<MapRunResult>();
+    var sw = Stopwatch.StartNew();
+    int done = 0;
+    var gate = new object();
+    Parallel.ForEach(specs, new ParallelOptions { MaxDegreeOfParallelism = opt.Int("par", 16) }, spec =>
+    {
+        MapRunResult r;
+        try { r = MapSim.Play(spec); }
+        catch (Exception e) { Console.Error.WriteLine($"{spec.Key}: {e}"); return; }
+        results.Add(r);
+        lock (gate)
+        {
+            done++;
+            Console.WriteLine($"[{done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}: {(r.Cleared ? $"cleared {r.Minutes:0.0}" : r.Closed ? $"closed {r.Minutes:0.0} ({r.KilledBy})" : $"walking {r.Minutes:0.0}")} falls {r.Falls} packs {r.PacksCleared}/{r.Packs} boss {(r.BossTtk is double bt ? $"{bt:0}s" : $"phase {r.BossPhase} left {r.BossLeft:0.00}")} low {r.LowHp:0.00}  {r.Build}");
+        }
+    });
+    var md = MapSim.Report(results.OrderBy(r => r.Spec.Key).ToList());
+    if (opt.Has("out")) File.WriteAllText(opt.Get("out", "maps.md"), md);
     Console.WriteLine(md);
 }
 

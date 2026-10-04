@@ -1,0 +1,74 @@
+{
+ "layers": [
+  {
+   "name": "turf",
+   "source": "withered_grass",
+   "metres": 2.0,
+   "mean": [
+    0.41664,
+    0.29551,
+    0.19427
+   ]
+  },
+  {
+   "name": "bare",
+   "source": "ground_grey",
+   "metres": 1.0,
+   "mean": [
+    0.2937,
+    0.25843,
+    0.21603
+   ]
+  },
+  {
+   "name": "way",
+   "source": "grassy_cobblestone",
+   "metres": 2.0,
+   "mean": [
+    0.19297,
+    0.13533,
+    0.08463
+   ]
+  },
+  {
+   "name": "grave",
+   "source": "brown_mud_02",
+   "metres": 1.3,
+   "mean": [
+    0.07616,
+    0.05972,
+    0.03946
+   ]
+  },
+  {
+   "name": "ash",
+   "source": "burned_ground_01",
+   "metres": 1.0,
+   "mean": [
+    0.12779,
+    0.09533,
+    0.06836
+   ]
+  },
+  {
+   "name": "rubble",
+   "source": "rocky_trail",
+   "metres": 2.0,
+   "mean": [
+    0.29483,
+    0.21816,
+    0.14849
+   ]
+  },
+  {
+   "name": "face",
+   "source": "dark_rock",
+   "metres": 2.421,
+   "mean": [
+    0.01548,
+    0.01185,
+    0.0089
+   ]
+  }
+ ]
+}

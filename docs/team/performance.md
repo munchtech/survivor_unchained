@@ -1,71 +1,49 @@
 # Performance
 
-Status page for the performance lead (agent a9586a5171413db0b, branch `worktree-agent-a9586a5171413db0b`).
-The audit, with every number and how to reproduce it: `docs/PERF_AUDIT.md`.
-**Handed off (context past 500k): a successor starts from `docs/handoff/performance.md`.**
-Merged with the integration branch at 535bb60; 539 tests pass.
+Status page for the performance lead (agent a7145e18b3eb78294, branch `worktree-agent-a7145e18b3eb78294`).
+Method and older numbers: `docs/PERF_AUDIT.md`; the predecessor's handoff: `docs/handoff/performance.md`.
+**Paused at the owner's request (2026-10-04); the next step is at the bottom.**
 
-## Current state (2026-10-04, stopped at the owner's usage limit)
+## Done this round (all pushed; 566 tests pass)
 
-- **Harness:**
-  - in the game: `--perf NAME` (`godot/src/Perf.cs`), with time and garbage per part of the frame, load-time laps (`perf lap ...`) and first frame since launch;
-  - runners: `tools/perf/run.py` (scenarios; A/B with kept builds via `--builds`; engine options via `--engine`) and `tools/perf/sweep.py` (one thing changed per run: `off`, `quality`, `scale`, `prop-cell`, `engine`);
-  - new scenarios: `dense` (tier 3, 27:30, the 320 cap), `herald` (20:00 arrival) and `boss` (its arrival inside the recording).
-- **A/B, base vs optimised effects and crowd** (same merged code otherwise; main thread):
-
-  | scenario | main thread | parts | garbage |
-  |---|---|---|---|
-  | hub | 5.94 → 4.37 ms | fx 1.08 → 0.13 | |
-  | Verge | 1.86 → 0.97 ms | fx 0.79 → 0.09 | |
-  | arena at 20 min | 4.01 → 2.91 ms | crowd 1.17 → 0.51, fx 1.73 → 1.40 | 51 → 30 KB/frame |
-  | horde 600 | 2.67 → 2.58 ms | | 45 → 23 KB/frame |
-  | boss | 2.80 → 2.84 ms | (unchanged) | |
-
-  GPU numbers were swamped by other sessions all night (GPU 40–100% busy, up to 15 GB of VRAM taken); only the CPU side is trustworthy.
-- **Hub attribution** (one thing taken out per run; hub ref: renderer CPU 14.1 ms, shadow draws 5893):
-
-  | taken out | shadow draws | renderer CPU |
-  |---|---|---|
-  | lamp shadows | 1873 | 7.9 ms |
-  | props | 3196 | 6.4 ms |
-  | sun shadows | 3985 | — |
-  | landmarks | 5718 | — |
-  | flora, pieces | about the same | — |
-
-  **The town's lamps cast cube-map shadows by day, and that is most of the hub's shadow draws.** The rest of the sweep (her, grass, SSAO, volumetric fog, prop squares, render thread) was stopped part way.
-- **Waystation load: about 15 s.**
-  - props: 4.0 s
-  - play: 8.5 s (the survivor, the folk, bakes)
-  - lights and fires: 1.3 s
-  - landmarks: 0.6 s
-  - flora: 0.5 s
-  - Finer laps are now in the code, not yet run.
-- **Committed this round:**
-  - the town's markers are worked out on events (the story lead's spec, agreed). A conversation ending, something used and a screen closing call `ZoneRuntime.Touched()`; a change in the time of day and a 2 s safety tick also trigger it. The plates set their words only when they change;
-  - a new test, `A_marker_clears_the_frame_its_conversation_ends`;
-  - the landmark merge (`Landmarks.Merge`) is in, but **off unless `--merge-landmarks`**: not yet measured or looked at. Kit-shader pieces are never merged, because their sway, jitter and foot come from their own model space.
+| commit | what | measured (2560x1440, optimised C#, CPU side unless said) |
+|---|---|---|
+| cacfb96 | Ribbons: one surface each, written in place | dense fight: effects' garbage 53-79 to under 2 KB/frame, fx 0.25-0.5 ms less |
+| 943c56f | Gore and effect batches tell the engine only what changed | fx 0.73-0.75 to 0.55-0.57 ms at 20 min |
+| ce5784d | HUD chips rebuilt only on change; globe redrawn on change | HUD 0.17-0.51 to 0.05-0.08 ms/frame, spikes gone |
+| 581be7b | Props in 24 m squares; landmark merge removed | Waystation shadow draws 6,070 to 5,300; the merge saved nothing and cost 0.2-3.3 s of load |
+| 2b298e7 | Lamp shadows only at dusk and night (owner's call) | town by day: shadow draws 5,350 to 1,890, renderer CPU 9-12 to 7 ms, GPU 5.7 to 3.9 ms |
+| 29b5ae5b | Heroine detail at every zoom: mipmaps on all her textures, hair LODs off, MSAA 4x again, FXAA off, skin SSS kept at low | MSAA 4x costs 0.3-0.5 ms GPU over 2x; crops at 12.5/23/31 m crisper and steadier |
+| 8a770667 | Release builds ignore developer switches; unused bodies, packs, tools and placeholder voices excluded; ExportTests guards it | not yet proved by an export (templates) |
 
 ## Key decisions
 
-- Measure at the owner's screen (2560x1440), windowed, vsync off, with an optimised C# build (`-p:Optimize=true --no-incremental`), in a user folder of its own (`godot/override.cfg`, not committed).
-- Compare builds A/B, interleaved, and trust CPU-side numbers while the GPU is shared.
-- At default settings, change only what draws the same pixels. Anything visible goes to its owner.
+- Measure at 2560x1440, vsync off, optimised C# (`-p:Optimize=true --no-incremental`), own user folder (`godot/override.cfg`), builds interleaved. The GPU is shared: trust CPU-side numbers unless it was quiet.
+- Visual checks with `--fixed-fps 60` screenshots at the same moment, A against A to get the noise floor (moths, flames and walkers vary run to run).
+- The heroine (owner's rule): no tier trades her detail. Her textures are lossless with mipmaps and `detect_3d/compress_to=0`; `heroine.glb` gets its embedded images' mipmaps from `tools_scenes/import_mipmaps.gd`; her hair has no LODs.
 
-## Next
+## In progress
 
-1. **Ribbons `Buffer.Flush`.** The skills lead pushed `worktree-agent-a8bafe3cd8a229639@db4e375` and is keeping out of `Ribbons.cs` for me. Merge that branch, then make each Buffer a single surface at `Capacity` with region updates and a degenerate tail. Keep the layout (Vertex, Color, UV, UV2) and the look.
-2. **Finish the sweeps** (`scratchpad/perf_sweeps.sh`: hub off, prop-cell, engine; dense off, quality, scale; hub quality), ideally when the GPU is quiet.
-3. **Props.** Choose the square size from `--prop-cell`.
-4. **Lamp shadows by day.** Propose to the main session: shadows only at dusk and night, or lamps off by day. That's a visible choice, with a saving of about 4,000 shadow draws and 6 ms of renderer CPU in the town.
-5. **Landmark merge.** Measure it with `--merge-landmarks`, look at it at full resolution, then make it default.
-6. **Load times.** Run the finer laps, then attack the 4 s props load and the 8.5 s play start.
-7. **Quality tiers and FSR.** Measure them and look at each.
-8. **Outfit merge and LOD.** Measure the main session's work when it says it's in.
+- **Prefetch** (`perf-prefetch-wip@25479894`, NOT for merging). Loads a place's scenes on the worker threads first. The Waystation goes from 10.7-15.5 s to 3.4-5.1 s. But the game crashes on quit about 1 run in 10 (DisposablesTracker disposing a freed RefCounted). Loading everything before the build did not fix it (2 in 20). Scripts: `scratchpad/perf2/crashloop.ps1`. The base build crashed 0 in 10.
+- **Export proof** waits on the export templates (the coordinator is asking the owner). The legal lead (aab20546fe06daa89) wants the zipped pack listing.
+
+## Next (in order)
+
+1. **Prefetch crash.** Run the GDScript-only hold (`load_threaded_request` and get on the 131 scenes, held in a GDScript array, then quit) 20 times.
+   - If it crashes, the loader is at fault: load in parallel from C# without `load_threaded_*` (`GD.Load` on .NET thread-pool threads).
+   - If not, hold the fetched resources in GDScript instead of a C# dictionary.
+   - Pass: 0 in 20.
+2. **Export.** Once the templates are in, `--export-pack Windows out.zip`. List it, check none of the excluded paths appear and that `art/**.json` ships, then send the listing to the legal lead. Run the release build to confirm `--body hero` does nothing.
+3. **Tiers.**
+   - Low's sun split: two cascades put her in a 7-70 m cascade; set split 1 to about 0.5.
+   - Medium's MSAA: off leaves her edges to TAA; measure 2x.
+   - Then measure each tier and FSR at full resolution.
+4. Heroine outfits (merged at 87ad2f1): measure `--perf-off her` against ref.
+5. Load times beyond prefetch: first-launch VAT bakes and item photos.
 
 ## Notes for other areas
 
-- **Main session:** lamp shadows by day (above). For the heroine, measure with `--perf-off her` once the outfit merge and LOD are in.
-- **Skills (a8bafe3cd8a229639):** Ribbons is next for me. Your Spikes and shade batches will go through the harness.
-- **Combat (ac4ec5bbd2763a0df):** the crowd view now costs 0.5 ms at 212 foes, down from 1.2. The endless scenario (`--minute 45` without the boss killed) froze: kills and the clock stood still for 30 s. Worth a look.
-- **UI (ac76f400913a109cd):** the new "Upscaling (FSR 2)" row is under Picture. `Voices.Plates` no longer rebuilds text each frame. The HUD costs 0.2–0.4 ms and 3 KB of garbage a frame (the globe redraws every frame).
-- **Animation (a1e3002b800ee55ac):** `HerPose` caches its bones (told).
+- **Main session:** confirm `art/vo/*` stays out of release builds (placeholder voices; the subtitles stand). FSR can't spare the heroine (one viewport), so it stays opt-in with native as the default.
+- **Face lead (successor):** keep her `.import` settings as they are (`docs/handoff/face.md` records them).
+- **UI:** HUD chips and globe changed in `GameHud.cs`/`Ornate.cs` (UI lead agreed): order and look unchanged.
+- **Skills (a63cd93fc73d5ed79):** Ribbons Buffer rewritten; Capacity is still 9,000 verts per buffer.

@@ -4,6 +4,19 @@ using SurvivorUnchained.Content;
 
 namespace SurvivorUnchained.Sim;
 
+/// <summary>What one thing out of a chest is: an evolution, a rank in a combat skill, a rank
+/// in a passive, or (when nothing is left to raise) gold and a draught.</summary>
+public enum ChestItemKind { Evolution, Rank, Passive, Gold, Gear }
+
+/// <summary>One thing out of a chest, as its opening shows it: what it raised, its name and
+/// glyph, the ranks it went between, how rare it reads, its school (a combat skill's), and for
+/// an evolution what it grew from.</summary>
+public sealed record ChestItem(ChestItemKind Kind, string Id, string Name, string Icon, int From, int To, Rarity Rarity, School? School, string? Before);
+
+/// <summary>A chest opened: where it lay, what came out, whose hoard it was (a boss's, else
+/// null), and how many chests this night has opened (later ones open quicker).</summary>
+public sealed record ChestOpened(double X, double Z, int Seed, IReadOnlyList<ChestItem> Items, string? Hoard, int Opened);
+
 /// <summary>What the draft remembers between drafts: what it showed last (so a
 /// reroll shows something new), how long since anything rare, how long a
 /// weapon ready to evolve has waited for its passive, and how many cards this
@@ -198,7 +211,7 @@ public static class LevelUp
     {
         var m = b.Drafting;
         if (m.Cards > 0) return m.Cards;
-        if (GreatNext(b)) return m.Cards = m.Greats >= 1 || b.Omens ? 4 : 3;
+        if (GreatNext(b)) return m.Cards = (m.Greats >= 1 || b.Omens ? 4 : 3) + b.GreatExtra;
         double luck = b.Stats.Get(Stat.Luck);
         return m.Cards = 3 + (SkillNext(b) && (b.Roads || b.Rng.Next() < 1 - 1 / System.Math.Max(1, luck)) ? 1 : 0);
     }
@@ -586,28 +599,52 @@ public static class LevelUp
         new Offer { Kind = OfferKind.Gold, Id = "gold", Rarity = Rarity.Common, Title = "Scavenged Coin", Text = "+25 gold.", Icon = "coin", Blessing = blessing, Great = great },
     ];
 
+    /// <summary>A chest's size before luck, as the genre's chests pay: one thing most often,
+    /// three now and then, five rarely (docs/feel/SUGGESTIONS.md, S-09). The odds keep a chest
+    /// worth 1.4 things on average, as the old 1 + 30% + 10% did, so the night is not re-priced;
+    /// what changes is the jackpot. A roll in [0, 1).</summary>
+    public static int ChestCount(double roll) => roll < 0.04 ? 5 : roll < 0.16 ? 3 : 1;
+
     /// <summary>A chest opened in an arena: an evolution earned comes out
     /// first (and costs the chest nothing), then ranks in what the survivor
-    /// carries. What it gave, by name.</summary>
-    public static List<string> OpenChest(Battle b, int count)
+    /// carries. What it gave, one thing at a time, for its opening to show.</summary>
+    public static List<ChestItem> OpenChest(Battle b, int count)
     {
-        var got = new List<string>();
+        var got = new List<ChestItem>();
         var ready = b.Weapons.Find(w => EarnedBranches(b, w.Id).Count > 0);
         if (ready != null)
         {
             var evo = EarnedBranches(b, ready.Id)[0];
-            b.Evolve(ready.Id, evo.Id);
-            got.Add(evo.Name);
+            b.Evolve(ready.Id, evo.Id, chest: true);
+            got.Add(new ChestItem(ChestItemKind.Evolution, ready.Id, evo.Name, evo.Art ?? ready.Def.Art, ready.Rank, ready.Rank, Rarity.Legendary, ready.School, ready.Def.Name));
         }
         for (int i = 0; i < count; i++)
         {
             var ranks = b.Weapons.Where(w => w.Rank < Content.Weapons.MaxRank).Select(w => (w.Id, Name: w.Evolution?.Name ?? w.Def.Name, Weapon: true))
                 .Concat(b.Boons.Where(kv => Boons.All.TryGetValue(kv.Key, out var d) && d.Kind == BoonKind.Passive && kv.Value < d.Max)
                     .Select(kv => (Id: kv.Key, Name: Boons.All[kv.Key].Name, Weapon: false))).ToList();
-            if (ranks.Count == 0) { b.HealPlayer(b.MaxHp * 0.3, "chest"); b.GoldGained += 25; got.Add("gold and a draught"); break; }
+            if (ranks.Count == 0)
+            {
+                b.HealPlayer(b.MaxHp * 0.3, "chest");
+                b.GoldGained += 25;
+                got.Add(new ChestItem(ChestItemKind.Gold, "gold", "Gold and a draught", "coin", 0, 0, Rarity.Common, null, null));
+                break;
+            }
             var pick = ranks[b.Rng.Int(0, ranks.Count - 1)];
-            if (pick.Weapon) b.RankWeapon(pick.Id); else b.AddBoon(pick.Id);
-            got.Add(pick.Name);
+            if (pick.Weapon)
+            {
+                var w = b.Weapons.Find(x => x.Id == pick.Id)!;
+                int from = w.Rank;
+                b.RankWeapon(pick.Id);
+                got.Add(new ChestItem(ChestItemKind.Rank, w.Id, pick.Name, w.Art, from, w.Rank, Rarity.Uncommon, w.School, null));
+            }
+            else
+            {
+                int from = b.Boons.GetValueOrDefault(pick.Id);
+                b.AddBoon(pick.Id);
+                var d = Boons.All[pick.Id];
+                got.Add(new ChestItem(ChestItemKind.Passive, pick.Id, pick.Name, d.Icon, from, b.Boons.GetValueOrDefault(pick.Id), d.Rarity, null, null));
+            }
         }
         return got;
     }
@@ -640,7 +677,7 @@ public static class LevelUp
         var m = b.Drafting;
         m.Cards = 0;
         m.Shown.Clear();
-        if (great) { b.GreatOwed = System.Math.Max(0, b.GreatOwed - 1); m.Greats++; }
+        if (great) { b.GreatOwed = System.Math.Max(0, b.GreatOwed - 1); m.Greats++; b.GreatExtra = 0; }
         else if (blessing) { if (b.PendingBlessings.Count > 0) b.PendingBlessings.RemoveAt(0); }
         else b.PendingLevels = System.Math.Max(0, b.PendingLevels - 1);
     }

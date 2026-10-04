@@ -63,12 +63,15 @@ SKIN = ("skins", "young_caucasian_male")
 # angles, a strong chin with a faint cleft; high cheekbones over lean cheeks;
 # a heavy brow, low over deep-set, narrowed eyes; a straight nose with a
 # break in its bridge; a wide mouth, the lower lip the fuller.
-FACE = {"head-square": 0.45, "head-scale-vert-decr": 0.25, "forehead-scale-vert-decr": 0.3, "head-fat-decr": 0.4,
-        "head-back-scale-depth-incr": 0.15,
+# (His skull rounded, not boxed: head-square flattens its crown, so less of
+# it, and head-oval lifts the crown back; his jaw keeps its width from
+# chin-bones.)
+FACE = {"head-square": 0.2, "head-oval": 0.2, "head-scale-vert-decr": 0.2, "forehead-scale-vert-decr": 0.3, "head-fat-decr": 0.4,
+        "head-back-scale-depth-incr": 0.2,
         "chin-width-incr": 0.45, "chin-bones-incr": 0.9, "chin-prominent-incr": 0.35, "chin-height-incr": 0.05, "chin-cleft-incr": 0.25,
         "X-cheek-bones-incr": 0.65, "X-cheek-volume-decr": 0.6, "forehead-nubian-incr": 0.3,
         "eyebrows-trans-down": 0.35, "eyebrows-trans-forward": 0.5, "eyebrows-angle-down": 0.15,
-        "X-eye-height2-decr": 0.3, "X-eye-push1-in": 0.25, "X-eye-scale-decr": 0.05,
+        "X-eye-height2-decr": 0.15, "X-eye-push1-in": 0.25,
         "nose-hump-incr": 0.2, "nose-width1-incr": 0.25, "nose-point-width-decr": 0.1, "nose-scale-depth-incr": 0.1,
         "mouth-scale-horiz-incr": 0.18, "mouth-lowerlip-volume-incr": 0.3, "mouth-upperlip-volume-incr": 0.05}
 # His sliders, for the game to shape his face with: each a shape key one
@@ -105,6 +108,7 @@ EXPRESSIONS = {
 # corner under his jaw at 1.70 m, the hollow of his nape at 1.76 m. Both
 # lean as his neck does (rising behind, 0.54 m a metre).
 SPLIT_Z, CUT_Z, LEAN = 1.696, 1.662, 0.54
+HEAD_SCALE = 1.06
 
 
 def cut_z(P):
@@ -313,6 +317,9 @@ def grab(o):
 MV, MF, MU = grab(hm)
 _body = hm.vertex_groups["body"].index
 _inbody = np.array([any(g.group == _body for g in v.groups) for v in hm.data.vertices])
+# (His ears, as MakeHuman marks them.)
+_earg = hm.vertex_groups["ears"].index
+EARS_MH = np.array([max([g.weight for g in v.groups if g.group == _earg], default=0.0) for v in hm.data.vertices])
 keep = [i for i, f in enumerate(MF) if _inbody[f].all()]
 MF = [MF[i] for i in keep]
 MU = [MU[i] for i in keep]
@@ -323,7 +330,9 @@ print("MAKEHUMAN", len(MV), "points,", len(MF), "faces of skin")
 _top = MV[_inbody, 2].max()
 mn, mc = nose_chin(MV[_inbody & (MV[:, 2] > _top - 0.28)])
 hn, hc = her_face_landmarks()
-S = np.linalg.norm(hn - hc) / np.linalg.norm(mn - mc)
+# (A size larger than his sculpt's face: on his shoulders and his neck, a
+# wrestler's, the sculpt's own head looked small.)
+S = HEAD_SCALE * np.linalg.norm(hn - hc) / np.linalg.norm(mn - mc)
 R = np.eye(3)
 T = hn - S * mn
 _hf = np.where(~RED[HTP] & (_tc[:, 2] > hc[2] - 0.003) & (_tc[:, 2] < 1.88) & (_tc[:, 1] < 0) & (np.abs(_tc[:, 0]) < 0.08))[0]
@@ -399,6 +408,66 @@ _region = [i for i, f in enumerate(MF) if (g_cut(MV[f]) > -0.10).any()]
 SUB, RF, RU = subdivide(MV, [MF[i] for i in _region], [MU[i] for i in _region])
 RV0 = SUB @ MV
 print("REGION", len(RV0), "points,", len(RF), "faces")
+
+
+# ---- his skull rounded: quartered linearly, MakeHuman's coarse crown kept
+# its facets, and bald, they showed against the sky as flat runs and
+# corners. Smoothed (Taubin's way, which keeps its size) over his cranium
+# only: above his brow and behind his ears, never his face, his ears, or
+# the neck that is fitted to his own after.
+def find_ears(V):
+    """His ears' middles: each side's outermost point near his eyes' height,
+    a little in from its rim."""
+    eye_z = float(place(grab(proxies["high-poly"])[0])[:, 2].mean())
+    side = (np.abs(V[:, 0]) > 0.05) & (np.abs(V[:, 2] - (eye_z - 0.02)) < 0.04)
+    ears = []
+    for sg in (-1, 1):
+        m = side & (np.sign(V[:, 0]) == sg)
+        ears.append(V[m][np.argmax(np.abs(V[m, 0]))] - [sg * 0.012, 0, 0])
+    return eye_z, ears
+
+
+EYE_Z, EARS = find_ears(RV0)
+
+
+# How much each point of the region is ear (MakeHuman's own marking, eased
+# a ring or two past its edge, so what is done round them fades).
+def _ring_avg(F, n):
+    e = np.array([(f[i], f[(i + 1) % len(f)]) for f in F for i in range(len(f))])
+    A = sp.coo_matrix((np.ones(len(e)), (e[:, 0], e[:, 1])), shape=(n, n)).tocsr()
+    A = ((A + A.T) > 0).astype(float)
+    return sp.diags(1 / np.maximum(np.asarray(A.sum(1)).ravel(), 1)) @ A
+
+
+EAR_RV = SUB @ EARS_MH
+_A_ears = _ring_avg(RF, len(RV0))
+for _ in range(3):
+    EAR_RV = np.maximum(EAR_RV, _A_ears @ EAR_RV)
+EAR_RV = np.clip(EAR_RV, 0, 1)
+
+
+def cranium_smoothed(V, F):
+    eye_z, ears = EYE_Z, EARS
+    ear_y = float(np.mean([e[1] for e in ears]))
+    up = smooth01((V[:, 2] - (eye_z + 0.045)) / 0.03)
+    back = smooth01((V[:, 1] - (ear_y + 0.025)) / 0.02)
+    w = np.maximum(up, back) * smooth01(s_split(V) / 0.05 - 0.6)
+    w *= 1 - EAR_RV
+    e = np.array([(f[i], f[(i + 1) % len(f)]) for f in F for i in range(len(f))])
+    A = sp.coo_matrix((np.ones(len(e)), (e[:, 0], e[:, 1])), shape=(len(V), len(V))).tocsr()
+    A = ((A + A.T) > 0).astype(float)
+    A = sp.diags(1 / np.maximum(np.asarray(A.sum(1)).ravel(), 1)) @ A
+    w = w[:, None]
+    V = V.copy()
+    V0 = V.copy()
+    for _ in range(60):
+        V = V + 0.5 * w * (A @ V - V)
+        V = V - 0.53 * w * (A @ V - V)
+    print("CRANIUM smoothed over %d points, moved %.1f mm at most" % ((w > 0.5).sum(), 1000 * np.linalg.norm(V - V0, axis=1).max()))
+    return V
+
+
+RV0 = cranium_smoothed(RV0, RF)
 
 
 # ---- fitted to his skin: as near hers as it can be where she has skin,
@@ -799,6 +868,7 @@ print("SEWN: %d strip faces between %d of his points and %d of the graft's" % (l
 hv = sorted(head_v)
 hmap = {o: n for n, o in enumerate(hv)}
 HEAD_V = RV[hv]
+EAR_HEAD = EAR_RV[hv]
 HEAD_FACES = [[hmap[i] for i in RF[fi]] for fi in HEAD_F]
 HEAD_UV = [RU[fi] for fi in HEAD_F]
 
@@ -1010,6 +1080,53 @@ def textured(name, path, alpha=False, rough=0.5):
     return m
 
 
+# ---- his body's paint cleaned (tools/assets/hero_male_skin.py): the
+# sculpt's baked highlights and its hair's streaks taken out, before
+# anything is painted from it. Saved beside the paint baked, and drawn in
+# its place.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import hero_male_skin  # noqa: E402
+
+_r, _c, _t, _b = raster(HUV[HTL], (IMG.size[0], IMG.size[1]))
+_P = (HV[HT[_t]] * _b[:, :, None]).sum(1)
+# Where the sculpt's long hair lay on him: his neck, the tops of his
+# shoulders and his upper chest and back, above his nipples and inside his
+# deltoids (his arms, out level in his rest pose, are not in it).
+_HAIR = smooth01((_P[:, 2] - 1.45) / 0.04) * (1 - smooth01((np.abs(_P[:, 0]) - 0.24) / 0.05))
+# (Flecks may be lifted anywhere; dark streaks only where his hair lay; his
+# nails, pale by right, kept.)
+_n, _most = hero_male_skin.clean(TEX, _P, _r, _c, dark_zone=_HAIR > 0.5, keep=(np.abs(_P[:, 0]) > 0.85) | (_P[:, 2] < 0.05))
+print("SKIN cleaned: %d texels eased, %.2f at most" % (_n, _most))
+hero_male_skin.even(TEX, _P, _r, _c, _HAIR)
+# (His neck's one tone, which his graft and head are brought to as well
+# (hero_male_skin.one_tone), and his body's skin within 8 cm of CUT eased
+# to it, so where they are sewn no line shows.)
+NECK_TONE = np.median(TEX[_r, _c, :3][(_HAIR > 0.9) & (np.abs(g_cut(_P)) < 0.06)], 0)
+_wc = (1 - smooth01(np.abs(g_cut(_P)) / 0.08)) * (1 - smooth01((np.abs(_P[:, 0]) - 0.22) / 0.06))
+_nc = _wc > 0.01
+TEX[_r[_nc], _c[_nc], :3] = (TEX[_r[_nc], _c[_nc], :3] * (1 - _wc[_nc, None])
+                             + hero_male_skin.one_tone(TEX[_r[_nc], _c[_nc], :3], _P[_nc], NECK_TONE, np.zeros(_nc.sum())) * _wc[_nc, None])
+print("NECK tone %s, his skin within 8 cm of CUT eased to it" % np.round(NECK_TONE, 3))
+# His relief, the same way: the bake's stray slopes laid flat.
+NIMG = next(n.image for n in hme.materials[0].node_tree.nodes if n.type == "TEX_IMAGE" and n.image
+            and n.image.colorspace_settings.name == "Non-Color")
+NTEX = np.array(NIMG.pixels[:], np.float32).reshape(NIMG.size[1], NIMG.size[0], 4)
+# (Where his hair lay, his relief broad only: its strands were moulded in.)
+hero_male_skin.clean_relief(NTEX, _P, _r, _c, keep=np.zeros(len(_P), bool), hair=_HAIR)
+del _P, _HAIR
+# (Both padded afresh from the faces out: the bake's margins round each
+# island carried the flecks and slopes cleaned away inside it.)
+_cov = np.zeros(TEX.shape[:2], bool)
+_cov[_r, _c] = True
+for _img in (TEX, NTEX):
+    _img[:] = pad(_img, _cov)
+_im_dir = os.path.dirname(bpy.path.abspath(IMG.filepath))
+for _bi, _arr, _name in ((IMG, TEX, "hero_body_paint_clean.png"), (NIMG, NTEX, "hero_body_normal_clean.png")):
+    save_image(_arr, os.path.join(_im_dir, _name))
+    _bi.filepath = os.path.join(_im_dir, _name)
+    _bi.reload()
+del NTEX, _cov
+
 # Her skin's colour, on his neck and shoulders (well clear of his hair).
 _ft = FIT_T[(_tc[FIT_T, 2] > 1.52) & (_tc[FIT_T, 2] < 1.66)]
 HER_SKIN = sample(TEX, HUV[HTL[_ft]].mean(1))[:, :3]
@@ -1048,6 +1165,9 @@ inside[r_, c_] = True
 # (and none within 5 texels of what was not: the soft edges of that paint)
 known &= ~ndimage.binary_dilation(inside & ~known, iterations=5)
 gimg = pad(fill_in(gimg, known, inside), inside)
+# (one skin with his body's and his head's: hero_male_skin.one_tone)
+gimg[r_, c_, :3] = hero_male_skin.one_tone(gimg[r_, c_, :3], P_, NECK_TONE, np.zeros(len(P_)))
+gimg = pad(gimg, inside)
 print("GRAFT paint: %d%% from his skin, the rest filled in" % (100 * known[r_, c_].mean()))
 gpath = os.path.join(TEXDIR, "hero_graft.jpg")
 save_image(gimg, gpath)
@@ -1063,6 +1183,11 @@ MH_TEX = load_png(_mh_png)
 bpy.ops.object.select_all(action="DESELECT")
 head.select_set(True)
 bpy.context.view_layer.objects.active = head
+# (MakeHuman's own layout kept beside it, as "mh", for the face's paint:
+# hero_male_face.py records which packed place each part of it was laid
+# in, so a packing made anew, as his head's shape changes, never moves it.)
+head.data.uv_layers.new(name="mh", do_init=True)
+head.data.uv_layers.active_index = 0
 bpy.ops.object.mode_set(mode="EDIT")
 bpy.ops.mesh.select_all(action="SELECT")
 bpy.ops.uv.select_all(action="SELECT")
@@ -1074,6 +1199,7 @@ HSIZE = 4096
 HT2, HTU2 = triangles(HEAD_FACES, HEAD_UV2)
 _, HTU1 = triangles(HEAD_FACES, HEAD_UV)
 r_, c_, t_, b_ = raster(HTU2, (HSIZE, HSIZE))
+EAR_T = (EAR_HEAD[HT2[t_]] * b_).sum(1)
 P_ = (HEAD_V[HT2[t_]] * b_[:, :, None]).sum(1)
 col = sample(MH_TEX, (HTU1[t_] * b_[:, :, None]).sum(1))[:, :3]
 # MakeHuman's colouring made hers: its neck's mean and spread made his neck's.
@@ -1094,40 +1220,158 @@ def scalp(P):
     and a half above it."""
     line = _eye_z + 0.075 - 0.75 * (P[:, 1] - _front - 0.015)
     w = smooth01((P[:, 2] - line) / 0.015)
-    ear = (np.abs(P[:, 0]) > 0.062) & (np.abs(P[:, 2] - (_eye_z - 0.02)) < 0.045) & (np.abs(P[:, 1] - (_front + 0.12)) < 0.045)
-    return w * ~ear
+    return w
 
 
-_sw = scalp(P_)[:, None]
-# (Its grain found in the texture itself, as an image: the fine detail of
-# what is there, its broad colour taken out, a third of it kept, a shaved
+# Where his beard grows, the same: MakeHuman's man has a shadow of stubble
+# painted on, and he is drawn clean-shaven (his stubble and beards are
+# chosen in the game). His beard's ground: his jaw and cheeks below his
+# cheekbones, up his sideburns to the front of his ears, his upper lip below
+# his nose, and under his jaw, but not his lips.
+_nose = HEAD_V[np.argmin(HEAD_V[:, 1])]
+_teeth = place(grab(proxies["teeth_base"])[0])
+_mouth = np.array([0.0, _teeth[:, 1].min() - 0.008, float(np.median(_teeth[_teeth[:, 1] < _teeth[:, 1].min() + 0.01, 2]))])
+_side = np.abs(HEAD_V[:, 0]) > 0.068
+_ear_y = HEAD_V[_side & (np.abs(HEAD_V[:, 2] - _eye_z) < 0.03), 1].min()
+print("BEARD ground: nose tip %s, mouth %s, ears from y %.3f" % (np.round(_nose, 3), np.round(_mouth, 3), _ear_y))
+
+
+def beard(P):
+    """How much of a point is where his beard grows (0 to 1, soft at its edges)."""
+    ax = np.abs(P[:, 0])
+    # Its upper edge: under his nose over his lip, at his nose's base across
+    # his cheeks, up to his eyes' height at his sideburns.
+    top = (_nose[2] - 0.021 + 0.016 * smooth01((ax - 0.02) / 0.014)
+           + (_eye_z - _nose[2] + 0.005) * smooth01((ax - 0.052) / 0.012))
+    w = smooth01((top - P[:, 2]) / 0.01)
+    w *= 1 - smooth01((P[:, 1] - (_ear_y - 0.012)) / 0.01)          # in front of his ears
+    lip = ((P[:, 0] / 0.027) ** 2 + ((P[:, 2] - _mouth[2]) / 0.0115) ** 2 + ((P[:, 1] - _mouth[1]) / 0.03) ** 2)
+    w *= smooth01((lip - 1.0) / 0.35)                                 # not his lips
+    return w
+
+
+# (his ears left as MakeHuman painted them, softly: a hard edge here showed
+# as a flat patch with stepped edges on his ear)
+_sw = (scalp(P_) * (1 - EAR_T))[:, None]
+_bw = beard(P_)[:, None]
+# (Their grain found in the texture itself, as an image: the fine detail of
+# what is there, its broad colour taken out, a part of it kept, a shaved
 # head's faint grain.)
 _tmp = np.zeros((HSIZE, HSIZE, 3), np.float32)
 _tmp[r_, c_] = col
 _ins = np.zeros((HSIZE, HSIZE), bool)
 _ins[r_, c_] = True
 _tmp = pad(_tmp, _ins)
-_grain = (_tmp - ndimage.gaussian_filter(_tmp, (8, 8, 0)))[r_, c_]
-col = col * (1 - _sw) + (HER_MEAN + 0.3 * _grain) * _sw
+_broad = ndimage.gaussian_filter(_tmp, (8, 8, 0))[r_, c_]
+_grain = _tmp[r_, c_] - _broad
 del _tmp
-print("SCALP cleared over %d%% of his head" % (100 * (_sw > 0.5).mean()))
+# (Bare too below his hairline on the sides of his head and behind his
+# ears, down his nape to SPLIT, all but his beard's ground and his ears:
+# MakeHuman's buzz cut reached lower than his hairline and left pale
+# stubble at his temples and nape. His face's paint is laid over after;
+# his shaved shadow keeps to his hairline.)
+_side = np.maximum(smooth01((np.abs(P_[:, 0]) - 0.05) / 0.012), smooth01((P_[:, 1] - (_ear_y + 0.02)) / 0.03))
+_bare = np.maximum(_sw, (_side * (1 - _bw[:, 0]) * (1 - EAR_T))[:, None])
+col = col * (1 - _bare) + (HER_MEAN + 0.3 * _grain) * _bare
+# (His beard's ground keeps its own broad colour, the warmth of his lips and
+# cheeks, only lightened back to his skin's where the stubble darkened it.)
+_lift = np.clip(HER_MEAN - _broad, 0, None) * 0.8
+col = col * (1 - _bw) + (_broad + _lift + 0.25 * _grain) * _bw
+print("SCALP cleared over %d%% of his head; BEARD ground over %d%%" % (100 * (_sw > 0.5).mean(), 100 * (_bw > 0.5).mean()))
+# The two grounds as a map for the game (his head's UV): red his beard's,
+# green his scalp's, for shaders/heroine_skin.gdshader to lay a shaved
+# shadow on (People.HisShadow).
+_mask = np.zeros((HSIZE, HSIZE, 4), np.float32)
+_mask[..., 3] = 1
+_mask[r_, c_, 0] = _bw[:, 0]
+_mask[r_, c_, 1] = _sw[:, 0]
 # His face as tools/assets/hero_male_face.py painted it (a photograph's skin,
 # brows, lashes and lips, by the local ComfyUI), over MakeHuman's by its alpha.
+# Its edge softened (where a view stopped seeing him it was cut in steps),
+# and kept off his ears, which MakeHuman painted whole.
 FACE_PAINT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hero_male_face", "face_paint.png")
 if os.path.exists(FACE_PAINT):
     from PIL import Image
     _fp = np.asarray(Image.open(FACE_PAINT).convert("RGBA"), np.float32)[::-1] / 255
     if _fp.shape[0] == HSIZE:
-        _a = _fp[r_, c_, 3:4]
-        col = col * (1 - _a) + _fp[r_, c_, :3] * _a
+        # (Each texel's place in the paint: by MakeHuman's layout, through
+        # the packing it was painted in, face_paint_uv.npz.)
+        _fuv = os.path.join(os.path.dirname(FACE_PAINT), "face_paint_uv.npz")
+        if os.path.exists(_fuv):
+            # (MakeHuman's layout gives his head a small corner of the
+            # square, its triangles a few texels across: each texel's own
+            # triangle found among those nearest, not by rounding.)
+            _z = np.load(_fuv)
+            _mh = (HTU1[t_] * b_[:, :, None]).sum(1)
+            _tri = _z["mh"]
+            _, _cand = cKDTree(_tri.mean(1)).query(_mh, k=12)
+            _best = np.full(len(_mh), -np.inf)
+            _k = _cand[:, 0].copy()
+            _bw2 = np.zeros((len(_mh), 3))
+            for _j in range(_cand.shape[1]):
+                _tm = _tri[_cand[:, _j]]
+                _v0, _v1, _v2 = _tm[:, 1] - _tm[:, 0], _tm[:, 2] - _tm[:, 0], _mh - _tm[:, 0]
+                _den = _v0[:, 0] * _v1[:, 1] - _v1[:, 0] * _v0[:, 1]
+                _den = np.where(np.abs(_den) < 1e-14, 1e-14, _den)
+                _bv = (_v2[:, 0] * _v1[:, 1] - _v1[:, 0] * _v2[:, 1]) / _den
+                _bw_ = (_v0[:, 0] * _v2[:, 1] - _v2[:, 0] * _v0[:, 1]) / _den
+                _b3 = np.stack([1 - _bv - _bw_, _bv, _bw_], 1)
+                _score = _b3.min(1)
+                _take = _score > _best
+                _best[_take], _k[_take], _bw2[_take] = _score[_take], _cand[_take, _j], _b3[_take]
+            _bw2 = np.clip(_bw2, 0, 1)
+            _bw2 /= _bw2.sum(1, keepdims=True)
+            _at = (_z["packed"][_k] * _bw2[:, :, None]).sum(1)
+            print("FACE PAINT: %d%% of his head's texels inside a triangle of it" % (100 * (_best > -1e-3).mean()))
+            print("FACE PAINT found through MakeHuman's layout (%d triangles)" % len(_z["mh"]))
+        else:
+            _at = (HTU2[t_] * b_[:, :, None]).sum(1)
+        _fpx = sample(_fp, _at)
+        # Its edge softened (where a view stopped seeing him it was cut in
+        # steps), and kept off his ears.
+        _alpha = np.zeros((HSIZE, HSIZE), np.float32)
+        _alpha[r_, c_] = _fpx[:, 3]
+        _in = _ins.astype(np.float32)
+        _soft = ndimage.gaussian_filter(_alpha, 5) / np.maximum(ndimage.gaussian_filter(_in, 5), 1e-6)
+        # (His face only: Krea painted a buzz cut's pale stubble on his
+        # temples above his ears and on his scalp, and he is bare there.)
+        # (On the sides of his head, wide of his brows' tails, his hairline
+        # comes down to the top of his ear; behind his ear it is nape.)
+        _temple = (smooth01((np.abs(P_[:, 0]) - 0.058) / 0.008) * smooth01((P_[:, 2] - _eye_z) / 0.012)
+                   * smooth01((P_[:, 1] - (_ear_y - 0.03)) / 0.012)
+                   + smooth01((P_[:, 1] - (_ear_y + 0.005)) / 0.02) * smooth01((P_[:, 2] - (_eye_z - 0.06)) / 0.02))
+        _dom = (1 - _sw[:, 0]) * (1 - np.clip(_temple, 0, 1))
+        _a = (np.minimum(_fpx[:, 3], _soft[r_, c_]) * (1 - EAR_T) * _dom)[:, None]
+        col = col * (1 - _a) + _fpx[:, :3] * _a
         print("FACE PAINT laid over %d%% of his head" % (100 * (_a > 0.5).mean()))
+        del _soft, _alpha
+# His brows (painted with his face) marked for the game to dye them his
+# hair's colour (People.HisShadow): blue in the map, as much as each texel
+# is darker than his brow's bare skin, in the band above his eyes.
+_ax = np.abs(P_[:, 0])
+_bz = (smooth01((P_[:, 2] - (_eye_z + 0.012)) / 0.006) * (1 - smooth01((P_[:, 2] - (_eye_z + 0.05)) / 0.01))
+       * (1 - smooth01((_ax - 0.068) / 0.01)) * (1 - smooth01((P_[:, 1] - (_ear_y - 0.015)) / 0.01)))
+_lum = col @ np.array([0.3, 0.59, 0.11])
+_fore = (P_[:, 2] > _eye_z + 0.055) & (P_[:, 2] < _eye_z + 0.08) & (_ax < 0.04) & (P_[:, 1] < _ear_y - 0.01)
+_brow = np.clip((np.median(_lum[_fore]) - _lum) / 0.22, 0, 1) * _bz
+_mask[r_, c_, 2] = _brow
+BROW_PAINT = (col * _brow[:, None]).sum(0) / max(_brow.sum(), 1e-6)
+print("BROWS marked over %d texels, painted %s (People.HisBrowPaint)" % ((_brow > 0.5).sum(), "#%02x%02x%02x" % tuple(
+    int(round(255 * v)) for v in np.clip(BROW_PAINT, 0, 1))))
+save_image(pad(_mask, _ins), os.path.join(TEXDIR, "hero_shadow.png"))
 # Over the 3 cm above SPLIT, eased into his own skin's.
 near = s_split(P_) < 0.03
 _, _, dist, _, huv = on_skin(P_[near], 0.05, sure=True)
 hc_ = sample(TEX, huv)[:, :3]
-mix = (1 - smooth01(s_split(P_[near]) / 0.03)) * (dist < 0.01) * ((np.abs(hc_ - HER_MEAN) / HER_STD).max(1) < 4.0)
+# (His skin there is clean now, hero_male_skin.py: taken wherever it is
+# near, the ease smooth, not cut in scallops where his old hair's paint was.)
+mix = (1 - smooth01(s_split(P_[near]) / 0.03)) * (1 - smooth01((dist - 0.01) / 0.01))
 mix = mix[:, None]
 col[near] = col[near] * (1 - mix) + hc_ * mix
+# All of it one skin with his body's (hero_male_skin.one_tone): his face and
+# ears keep some warmth of their own, and all their features.
+_face_w = np.maximum(_a[:, 0] if os.path.exists(FACE_PAINT) else 0.0, EAR_T)
+col = hero_male_skin.one_tone(col, P_, NECK_TONE, _face_w, keep=0.3)
 himg = np.zeros((HSIZE, HSIZE, 4), np.float32)
 himg[..., 3] = 1
 himg[r_, c_, :3] = col
@@ -1136,6 +1380,7 @@ inside[r_, c_] = True
 himg = pad(himg, inside)
 hpath = os.path.join(TEXDIR, "hero_head.jpg")
 save_image(himg, hpath)
+HEAD_TEXELS = (r_.copy(), c_.copy(), P_.copy())
 
 head.data.materials[0] = textured("skin_head", hpath)
 print("HEAD paint from", os.path.basename(_mh_png))
@@ -1296,6 +1541,20 @@ def _his_landmarks(h):
 heroine_face_fixes.landmarks = _his_landmarks
 shutil.copy(hpath, heroine_face_fixes.RAW)
 heroine_face_fixes.fix(head, hpath)
+# (Her nostrils' shading, on his larger nose, also reached a few of the
+# faces beside it, and laid its deep red on his cheek and lip in small hard
+# diamonds: anything it darkened hard away from his nostrils given back.)
+from PIL import Image  # noqa: E402
+_fixed = np.asarray(Image.open(hpath).convert("RGB"), np.float32) / 255
+_raw = np.asarray(Image.open(heroine_face_fixes.RAW).convert("RGB"), np.float32) / 255
+_hr, _hc, _hp = HEAD_TEXELS
+_hr = HSIZE - 1 - _hr
+_drop = (_raw[_hr, _hc] - _fixed[_hr, _hc]) @ np.array([0.3, 0.59, 0.11])
+_nost = (((_hp[:, 0]) / 0.024) ** 2 + ((_hp[:, 2] - (_nose[2] - 0.012)) / 0.016) ** 2 + ((_hp[:, 1] - (_nose[1] + 0.022)) / 0.03) ** 2) < 1
+_back = (_drop > 0.06) & ~_nost
+_fixed[_hr[_back], _hc[_back]] = _raw[_hr[_back], _hc[_back]]
+Image.fromarray((_fixed * 255 + 0.5).astype(np.uint8)).save(hpath, quality=92)
+print("NOSE shading kept to his nostrils: %d texels given back" % _back.sum())
 for _im in bpy.data.images:
     if bpy.path.abspath(_im.filepath) == hpath:
         if _im.packed_file:
@@ -1321,6 +1580,13 @@ def export(objs, path, **kw):
     bpy.ops.export_scene.gltf(filepath=path, use_selection=True, export_skins=True, export_animations=False, export_yup=True, **kw)
 
 
+# (MakeHuman's layout is the face tool's, not the game's.)
+head.data.uv_layers.remove(head.data.uv_layers["mh"])
 _game_parts = [o for o in parts if not (o.name == "HeroBrows" and os.path.exists(FACE_PAINT))]
-export([him, head] + _game_parts, os.path.join(ART, "hero.glb"), export_format="GLB")
+# (Its paint as WebP: his three 4K maps as PNG made a 38 MB file.)
+# (His tangents written with him, as Blender baked his relief against
+# them: Godot's own, made afresh from his split normals and seams, turned
+# some of his small islands' relief into hard-edged patches.)
+export([him, head] + _game_parts, os.path.join(ART, "hero.glb"), export_format="GLB", export_image_format="WEBP", export_image_quality=92,
+       export_tangents=True)
 print("WRITTEN", OUT_BLEND, "and", ART)

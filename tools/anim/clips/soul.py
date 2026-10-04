@@ -37,7 +37,9 @@ def feet_of(rig, base, f=0):
         j = rig.I[f"foot_{side}"]
         a = p[0, j]
         fwd = g[0, j]
-        out[f"foot_{side}"] = {"pos": (float(a[0]), float(a[1] - rig.prest[j][1]), float(a[2]))}
+        # (Less the body's own widening, which the solver adds back: they already stand where they stand.)
+        s = 1 if side == "l" else -1
+        out[f"foot_{side}"] = {"pos": (float(a[0]) - s * rig.feet_out, float(a[1] - rig.prest[j][1]), float(a[2]))}
     return out
 
 
@@ -216,11 +218,21 @@ def arcanist_break(rig):
         a = math.radians(roll)
         return {"arc": arc_of((-0.16, -0.28, 0.12)), "pole": (-0.8, -0.3, -0.6), "frame": "chest",
                 "blade": _n(-0.12, 1.0, 0.18), "knuckles": _n(math.sin(a), 0.0, math.cos(a)), "twist": 0.6}
+    if rig.body == "him":
+        # His: a hand to the back of his neck, kneading it, the head rolled
+        # forward and aside into it.
+        neck = rig.prest[rig.I["neck_01"]]
+        rub = {"pos": (0.05, float(neck[1]) + 0.02, float(neck[2]) - 0.10), "pole": (1.0, 0.4, 0.2), "knuckles": (-0.3, 0.3, 0.9)}
+        first = (18, over("arcanist", hand_l=rub, head=(-4, 12, -6), fingers_l="relaxed"), "ease")
+        second = (28, over("arcanist", hand_l={**rub, "pos": (0.02, float(neck[1]) + 0.04, float(neck[2]) - 0.11)}, head=(-6, 14, -10)), "ease")
+    else:
+        # A strand tucked behind her ear.
+        first = (18, over("arcanist", hand_l=tuck, head=(-6, 4, 8), fingers_l="relaxed"), "ease")
+        second = (28, over("arcanist", hand_l={**tuck, "pos": (0.14, 1.60, -0.02)}, head=(-6, 4, 8)), "ease")
     keys = [
         (0, over("arcanist"), "auto"),
-        # A strand tucked behind her ear.
-        (18, over("arcanist", hand_l=tuck, head=(-6, 4, 8), fingers_l="relaxed"), "ease"),
-        (28, over("arcanist", hand_l={**tuck, "pos": (0.14, 1.60, -0.02)}, head=(-6, 4, 8)), "ease"),
+        first,
+        second,
         # Up at the sky, the staff turning in her fingers.
         (44, over("arcanist", head=(10, -24, 0), hand_r=staff(-40)), "ease"),
         (60, over("arcanist", head=(14, -26, 0), hand_r=staff(30)), "auto"),
@@ -285,19 +297,27 @@ def stalker_break(rig):
 
 def catch_breath(rig):
     """Hands down onto her knees, the back heaving with three hard breaths,
-    then up, a hand pushing the hair back."""
+    then up, a hand pushing the hair back.
+
+    Hands and head are placed from the body's own knees and head (hers are
+    narrower and lower than the hero's)."""
+    # How much further out the knees are, and the head higher and forward, than hers.
+    kx = float(rig.prest[rig.I["calf_l"]][0]) + 0.6 * rig.feet_out - 0.103
+    head = rig.prest[rig.I["Head"]]
+    hy, hz = float(head[1]) - 1.666, float(head[2]) + 0.036
+
     def bent(b, up=0.0):
         return {
             "hips": {"pos": (0, -0.14 + 0.1 * up, -0.08), "rot": (0, 18 - 14 * up, 0)},
             "spine": (0, 30 - 26 * up + 5 * b, 0), "neck": (0, -18 + 10 * up, 0), "head": (0, -12 + 6 * up - 4 * b, 0),
             "clav_l": (6 * b, 2), "clav_r": (6 * b, 2),
             "foot_l": {"pos": (0.16, 0, 0.06), "rot": (10, 0, 0)}, "foot_r": {"pos": (-0.17, 0, -0.04), "rot": (-12, 0, 0)},
-            "hand_l": {"pos": (0.12, 0.56, 0.24), "pole": (0.9, 0.2, -0.3), "knuckles": (0.2, -0.6, 0.75)},
-            "hand_r": {"pos": (-0.13, 0.55, 0.22), "pole": (-0.9, 0.2, -0.3), "knuckles": (-0.2, -0.6, 0.75)},
+            "hand_l": {"pos": (0.12 + kx, 0.56, 0.24), "pole": (0.9, 0.2, -0.3), "knuckles": (0.2, -0.6, 0.75)},
+            "hand_r": {"pos": (-0.13 - kx, 0.55, 0.22), "pole": (-0.9, 0.2, -0.3), "knuckles": (-0.2, -0.6, 0.75)},
             "fingers_l": "relaxed", "fingers_r": "grip",
         }
     upright = body(stance(0.05), spine=(0, 2, 0), head=(-6, -6, 4),
-                   hand_l={"pos": (0.10, 1.66, 0.06), "pole": (1.0, 0.3, -0.2), "knuckles": (0.0, 0.4, -0.9)},
+                   hand_l={"pos": (0.10, 1.66 + hy, 0.06 + hz), "pole": (1.0, 0.3, -0.2), "knuckles": (0.0, 0.4, -0.9)},
                    hand_r=arm((0.02, -0.36, 0.10), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="grip")
     keys = [
         (0, body(stance(0.06), spine=(0, 8, 0), hand_l=arm((-0.02, -0.34, 0.12), (0.6, -0.4, -0.5)),

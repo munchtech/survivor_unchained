@@ -8,8 +8,8 @@
   "Kimodo": "NVIDIA Kimodo-SOMA-RP-v1.1, NVIDIA Open Model License: generated motion (tools/anim/kimodo_gen.py).",
   "SAM 3D Body": "Meta SAM 3D Body (SAM License) with the Momentum Human Rig (Apache 2.0): motion from video (tools/anim/video_motion.py); test footage from Pexels (Pexels licence), each clip's URL in its row."
  },
- "made": 65,
- "planned": 65,
+ "made": 71,
+ "planned": 71,
  "clips": [
   {
    "clip": "idle_warden",
@@ -718,6 +718,78 @@
    "changes": "",
    "length": 1.333,
    "layer": "full"
+  },
+  {
+   "clip": "lie_side_wake",
+   "plays_for": "C01: on her side, up onto the elbow",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "keyed",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 7.0,
+   "layer": "full"
+  },
+  {
+   "clip": "sit_back_heels",
+   "plays_for": "C01: from the elbow to kneeling on her heels",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "keyed",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 6.0,
+   "layer": "full"
+  },
+  {
+   "clip": "reach_coals",
+   "plays_for": "C01: kneeling, a hand held out over the fire",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "keyed",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 4.2,
+   "layer": "full"
+  },
+  {
+   "clip": "nod",
+   "plays_for": "cinematics: a nod, laid over any pose (Gestures)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "keyed",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 1.033,
+   "layer": "gesture"
+  },
+  {
+   "clip": "exhale",
+   "plays_for": "cinematics: the long breath out, held, laid over any pose",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "keyed",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 1.5,
+   "layer": "gesture"
+  },
+  {
+   "clip": "shiver",
+   "plays_for": "cinematics: a shiver, laid over any pose",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "keyed",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 1.067,
+   "layer": "gesture"
   },
   {
    "clip": "get_up",

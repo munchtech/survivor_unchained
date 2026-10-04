@@ -22,14 +22,14 @@ public class BossTests
 
     /// <summary>An arena of `people` brought to the edge of the half hour, the survivor kept alive.
     /// `game`: the battle's hooks wired as the game wires them (BattleHooks.Following), not shared.</summary>
-    static Fight At30(string people, int seed = 3, int tier = 1, bool game = false, string? boss = null, string? bossName = null, bool spare = false)
+    static Fight At30(string people, int seed = 3, int tier = 1, bool game = false, string? boss = null, string? bossName = null, bool spare = false, string[]? oaths = null)
     {
         var a = Callings.Archetype("warden");
         var j = Journey.Begin(new CreationChoice
         {
             Name = "Bot", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0],
         }, (uint)seed);
-        var spec = new ArenaSpec { Id = "table:test", Name = "Test", Seed = seed, Tier = tier, People = people, Boss = boss, BossName = bossName, Spare = spare };
+        var spec = new ArenaSpec { Id = "table:test", Name = "Test", Seed = seed, Tier = tier, People = people, Boss = boss, BossName = bossName, Spare = spare, Oaths = (oaths ?? []).ToList() };
         Arenas.Begin(j.World, spec);
         var map = MapGen.Generate(spec.Map);
         var host = new HeadlessHost(j, seed);
@@ -147,16 +147,27 @@ public class BossTests
         Assert.False(herald!.Boss);
     }
 
-    [Fact]
-    public void A_boss_cannot_be_rushed_past_its_floors()
+    /// <summary>Every ruler, wired as the game wires it, against an absurd build that also does
+    /// each end's chore at once (stands over the Barrow Lord, chases Grimtunnel to his hole): a
+    /// late build killed the Barrow Lord in about 35 s, since his laying-down, Grimtunnel's going
+    /// down and Greymuzzle's going did not wait for the last phase's floor.</summary>
+    [Theory]
+    [InlineData("pack", null, null, false)]
+    [InlineData("pack", "boss_pack", "Greymuzzle", true)]
+    [InlineData("dead", null, null, false)]
+    [InlineData("lamplings", null, null, false)]
+    [InlineData("lamplings", "grimtunnel_roused", "Grimtunnel", false)]
+    [InlineData("kerchiefs", null, null, false)]
+    public void A_boss_cannot_be_rushed_past_its_floors(string people, string? def, string? name, bool spare)
     {
-        var f = At30("kerchiefs");
+        var f = At30(people, game: true, boss: def, bossName: name, spare: spare);
         var boss = Boss(f);
         double start = f.B.Time;
-        // An absurd build: everything it has, every tick.
+        // An absurd build: everything it has, every tick, and always where the end asks to be.
         Step(f, 200, _ =>
         {
-            if (boss.Alive && boss.State != EnemyState.Dying) f.B.HitEnemy(boss, boss.MaxHp * 0.2, School.Physical, [Tag.Physical], new HitOpts { NoCrit = true });
+            if (boss.Alive && boss.Boss && boss.State != EnemyState.Dying) f.B.HitEnemy(boss, boss.MaxHp * 0.2, School.Holy, [Tag.Holy], new HitOpts { NoCrit = true });
+            if (boss.Alive && boss.Boss) { f.B.Player.X = boss.X + 1; f.B.Player.Z = boss.Z; }
         });
         Assert.True(f.Zone.Won);
         double took = f.B.Time - start;
@@ -294,6 +305,36 @@ public class BossTests
         var chest = f.B.Pickups.Items.FirstOrDefault(p => p.Alive && p.Kind == PickupKind.Chest && p.Ref == "boss");
         Assert.NotNull(chest);
         Assert.True(chest!.Value >= 5);
+    }
+
+    /// <summary>The oaths on a boss (docs/bosses/SURVIVORS_BOSSES.md 0.12): one visible change each,
+    /// said on its card. The winter's chill rides its heavy blows, the embers' fire is left where
+    /// they land, the iron slows its stagger, the vigil shortens its floors.</summary>
+    [Fact]
+    public void The_oaths_sworn_change_the_boss_and_its_card_says_so()
+    {
+        var f = At30("dead", oaths: ["winter", "embers", "iron", "vigil"]);
+        var s = f.Zone.BossScript!;
+        Assert.Contains("chill", s.Sworn());
+        Assert.Contains("fire", s.Sworn());
+        Assert.Equal(2 / 3.0, s.FloorScale, 3);
+        Assert.Equal(2 / 3.0, f.B.Rules.StaggerTaken, 3);
+        // Its marked blows: the heavy ones chill, and each leaves fire where it lands.
+        bool chilled = false, fire = false;
+        var boss = Boss(f);
+        Step(f, 40, _ =>
+        {
+            // Kept at a spear's throw, so it throws (its pilum: a heavy blow).
+            f.B.Player.X = boss.X + 9; f.B.Player.Z = boss.Z;
+            foreach (var bl in f.B.Blows) chilled |= bl.Slow > 0 && bl.Damage >= boss.Damage * 1.5;
+            fire |= f.B.Zones.Living().Any(z => z.Owner == Side.Enemy && z.School == School.Fire);
+        });
+        Assert.True(chilled);
+        Assert.True(fire);
+        // Unsworn, none of it.
+        var g = At30("dead");
+        Assert.Equal("", g.Zone.BossScript!.Sworn());
+        Assert.Equal(1, g.Zone.BossScript.FloorScale);
     }
 
     [Fact]

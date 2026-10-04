@@ -1,54 +1,49 @@
 # Male hero: status
 
-Agent ae2de192cce8298ca, branch `worktree-agent-ae2de192cce8298ca`. Paused for the owner's usage limit, with the drive at 99%.
+Agent ab82cbe99e2937ddd, branch `worktree-agent-ab82cbe99e2937ddd` (took over from ae2de192cce8298ca; read `docs/handoff/hero_male.md`).
 
-## The brief (from the main session)
-Make the man the player can be the heroine's equal: AAA, with soul, rugged and attractive. Build him from the owner's AccuRIG actor (`C:\Users\munch\Desktop\ComfyUI_00008-reduced\`) in phases, each checked in full-resolution renders:
-1. Inspect the actor.
-2. Make him playable: animation, skin, eyes, a head with expressions, hair cards with physics, and a beard.
-3. Hook him into the game: the Look step, save and load, and lookdev.
-4. Cut his four callings' outfits from his own body, in a male outfit tool. Don't edit `heroine_outfits.py`.
+## Current state (paused for the owner, 2026-10-04)
+- **In the game, gated** behind `--body hero`, as before. The committed `hero.glb` is still the predecessor's (e7709bd). My rebuilt head is not committed yet: its face tone is unfinished.
+- **His head tool, reworked this session** (`tools/assets/hero_male_head.py`):
+  - **Skull rounded:** less `head-square`, plus `head-oval`, and Taubin smoothing over the cranium only, so the crown's facets are gone.
+  - **Body paint and relief cleaned** by the new `tools/assets/hero_male_skin.py`, judged in 3D, not texture space:
+    - the sculpt's white flecks and its hair's dark streaks are removed;
+    - the neck is evened where the sculpt's hair lay;
+    - the relief's stray slopes on tiny islands are flattened, and the hair strands moulded into his neck are blurred out. These caused the "hard collarbone highlights": they were relief, not paint.
+  - **Seams:** the neck, graft and head are brought to one tone (`one_tone`), so there's no line at his nape or under his jaw.
+  - **Ears:** MakeHuman's own `ears` group keeps scalp clearing and face paint off them. This fixes the white fleck and the stepped patches.
+  - **Face paint kept to his face:** off his scalp and the temples above his ears, where Krea painted pale stubble. It's found through MakeHuman's UV layout (`face_paint_uv.npz`, written by `hero_male_face.py`), so repacking the head never misplaces it.
+  - **Brows marked** in `hero_shadow.png`'s blue channel, so the shader can dye them to his hair colour (not wired yet).
+  - **Nose shading kept to the nostrils:** red flecks from heroine_face_fixes on his cheek are given back.
+  - **Tangents exported** with him.
+- **Skin values:** `rough=0.62, shine=0.32` reads right in lookdev. They're not yet in People.cs or lookdev.gd.
 
-## What the actor is
-- **The source.** The owner made Krea 2 turnarounds of a bald bodybuilder (`Krea2_turbo_00237-240`). TRELLIS 2 turned them into `ComfyUI_00008.glb`: 700k triangles, with 4K paint, ORM and normal maps. A reduced copy (600k) was rigged in AccuRIG with a full CC_Base skeleton of 101 bones, posed in a T-pose.
-- **Missing.** The FBX has no paint, its UVs no longer fit the paint, and it has no expressions: the ExpressionFrameMap is AccuRIG's empty default.
-- **Quality.** The body sculpt is good: defined muscle, hands, feet and ears. The face is crude: the eyes and lips are moulded shut and painted on. The paint is flat, with a dark patch on the throat and a smooth "doll" crotch.
+## Next (exact)
+1. **Fix the last build.**
+   - It fails in `heroine_face_fixes.lips`, because no red lip is found: `one_tone` (with the region weights just added to `hero_male_skin.broad`) moved his lips' hue.
+   - Fix: run `one_tone` after `heroine_face_fixes.fix()`, on the fixed paint, or keep the lips (`lips` group) out of it.
+   - Then judge his face against his neck unlit (scratch `albedo.py`). His Krea face is olive beside the tan neck.
+2. Render lit sheets in Godot (front, 3/4, side, back, chest, full body). Commit `hero.glb` only once it's better everywhere than e7709bd.
+3. Put his skin values in People.Hero and lookdev.gd. Wire the brow dye and stubble (`People.HisShadow`).
+4. Merge the animation lead's `worktree-agent-a435f4dd0ac80df75@72ab9a8`: his own `him/` library and `OwnClips.Him` in People.Hero.
+5. Hair and beards, the base garment, the four outfits, then the Look step.
 
-## Done (tools committed; outputs not committed because of the disk)
-- **`tools/assets/hero_male_body.py`** builds his body (about 85 s).
-  - It welds AccuRIG's split points, reduces him to 110k symmetric triangles and unwraps him afresh.
-  - It bakes his 4K paint and 4K normal map from the full sculpt.
-  - It puts him on the UAL skeleton the build_heroine way, at 1.98 m (she is 1.87 m).
-  - Checked in Blender: the bake keeps every muscle. With his arms down the shoulders deform acceptably, with a slight crease at the rear deltoid.
-- **`tools/assets/hero_male_head.py`** builds his head. It is `heroine_head.py` adapted:
-  - a MakeHuman man's head shaped by `FACE`: square jaw, cheekbones, heavy brow, deep-set eyes;
-  - placed on his face (scale 1.018, 3.3 mm from his sculpt) and sewn to his own neck between `SPLIT` and `CUT` (checked: a clean join);
-  - the painted-on buzz cut cleared from his scalp;
-  - 65 shape keys: the heroine's sliders, plus `chin_cleft` and `brow_ridge`, and her expressions;
-  - eyes, brows, lashes, teeth and tongue.
-  - It writes `godot/art/people/hero.glb` and `head_tex/hero_*.jpg`. These are local and not committed yet (large).
-- **`tools/assets/hero_male_face.py`** is `heroine_face.py` with his prompt: a rugged, clean-shaven warrior with grey eyes. The flat drawings are made. The Krea paint was stopped before it ran.
+## Key decisions
+- **Body paint is cleaned in 3D** (centimetre cells through him). His unwrap's islands are too small to judge a texel by its neighbours in the texture.
+- **One skin tone from neck to scalp,** with his face keeping only a little of its own broad colour.
+- **No new committed art until it's better than the last everywhere,** at full resolution.
 
-## Next
-1. Run `hero_male_face.py`, then re-run `hero_male_head.py`; check the face at full resolution.
-2. Then build the rest:
-   - his iris (a `heroine_eyes.py` variant);
-   - in `heroine_skin.gdshader`, a default-off macro normal map (he needs his baked normals);
-   - in the same shader, a stubble and shaved-scalp shadow layer;
-   - in `People.cs`, Hero, HisHair, HisFace and HisOutfit; `Loadouts.HisBody = "man"`;
-   - lookdev via `BODY=hero`.
-3. Hair cards and beards (a `heroine_hair.py` variant), then the four outfits.
-4. Commit `hero.glb` once there is disk space.
+## Collaborators
+- **UI design (a69858664f1d3dd29) agreed the male Look fields:**
+  - `heroes.male` in looks.json, the same shape as hers plus `beards` [{id, name, words}];
+  - `BeardStyle` (string) on CharacterData, CreationChoice and PersonSpec;
+  - `HairStyle` from his `cuts`; `Face`, `Eyes` and `Paint` as hers;
+  - cameos in `art/ui/create/male/`.
+  Tell them when `heroes.male` and his builder land.
+- **Heroine face (ade92e8285938438f):** import `face_shapes.py` (SLIDERS, REACH, slider_keys, SCULPTS). Don't copy it. Skip the Neck group. Check jaw_width ±2 and face_shape on a man. Final list to follow.
+- **Animation:** his library is done. See Next 4.
+- **Legal (aa12c130ddf4b904c):** answered the content and sources questions. Send renders per outfit as they land.
 
-## Rebuild
-1. `blender -b --python tools/assets/hero_male_body.py -- <fbx> public/assets/people/UAL1.glb C:/Users/munch/Desktop/ComfyUI_00008.glb tools/comfy/out/heroes/hero_male_body.blend`
-2. `blender -b tools/comfy/out/heroes/hero_male_body.blend --python tools/assets/hero_male_head.py -- tools/comfy/out/heroes/hero_male_built.blend godot/art/people`
-
-## Agreed with others
-- **Animation (a1e3002b800ee55ac)** will build his own library with `build.py --body hero`: `hero.res` with the prefix `him/`, and `HisClips` mirroring `HerClips`. They need his skeleton dumped by `anim_skeleton.gd` once `hero.glb` is pushed, so ping them. Until then her clips work as a stopgap if HisPose offsets the pelvis.
-- **UI design (ac76f400913a109cd)**: sent the proposal. It is `Body = "man"`, a `BeardStyle` string, and face sliders in her dictionary. Not yet answered.
-
-## Gotchas
-- **Fresh worktree.** Junction `godot/assets` to `public/assets`, and copy the `.import` and `.uid` files from the main checkout. The Godot import dirties many `.import` files: never commit those.
-- **MakeHuman skins.** Every MakeHuman skin, male or female, has a buzz cut painted on its scalp; `scalp()` in the head tool clears it.
-- **Scratch file names.** Don't name a scratch script `inspect.py`: it shadows Python's own module.
+## Notes
+- Scratch helpers: `ld.py` (Godot lookdev), `sheet.py`, `albedo.py` (unlit Blender), `probe.py`, `front_proj.py`. They live in this session's scratchpad, not the repo.
+- The rebuilt-but-uncommitted head is in the worktree (`godot/art/people/hero.glb`, `tools/comfy/out/heroes/hero_male_built.blend`).

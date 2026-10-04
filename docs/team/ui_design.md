@@ -1,48 +1,50 @@
-# UI design (and the UI merge): status
+# UI design (character creation first): status
 
-Agent ac76f400913a109cd, branch `worktree-agent-ac76f400913a109cd` (integration branch merged in at 765a575).
-Predecessor's handoff: `docs/handoff/ui_design.md`.
+Agent a26f87c39952dcd9c, branch `worktree-agent-a26f87c39952dcd9c`. It has the integration branch merged in, plus the predecessor's tip (a69858664f1d3dd29@29792ce3).
+The predecessor's handoff, `docs/handoff/ui_design.md`, is the full brief.
 
-## How the owner reaches character customisation
-**New Journey, then step IV "Look"** on the road of medallions at the top left (click it, or Next three
-times, or `]` / RB). Its parts are Body, Hair, Face and Paint (click the tabs, or `,` `.` / LT RT). The
-figure turns when you drag her, and the mouse wheel or a double click brings the camera to her face.
-- **Why the owner may not see it:** the main checkout's built C# (`godot/.godot/mono/temp/bin/Debug/
-  SurvivorUnchained.dll`, 10/3 23:43) is older than the creation work. Started from the Godot project
-  manager's Run, or the game exe, it runs that old build (four steps, no Look). Fix: open the project in
-  the Godot editor and press Play (it builds first), or run `dotnet build godot/SurvivorUnchained.csproj`
-  once and then start the game. New textures (the face paint) are imported when the editor opens.
-- Checked in this worktree with the integration branch merged in: the five steps show and the Look step
-  works (shots `godot/.shots/c2_part*.png`, `c3_part*.png`). A key-tour shot from the title stayed on
-  step I, because the tour's presses arrived before the fade into creation. That is a harness timing
-  issue, not a player bug; use `--new --step 3 --part N` for shots.
+## Current state (paused by the owner, 4 October)
+- The worktree is set up:
+  - `godot/assets` is a junction with skip-worktree;
+  - `override.cfg` sets the user folder `SurvivorUnchainedUiLead4`;
+  - the build and headless import are done.
+- Shot tools are in `scratchpad/uid4/` (`shot.ps1`, `edlib.py`), pointed at this worktree.
+- **`godot/licences/` holds the upstream texts, unchanged:**
+  - Godot 4.5.1-stable `LICENSE.txt` and `COPYRIGHT.txt`, as `GODOT_*`;
+  - .NET runtime `release/8.0` `LICENSE.TXT` and `THIRD-PARTY-NOTICES.TXT`, as `DOTNET_*`;
+  - the three `OFL-*.txt`, copied from `godot/art/fonts`.
+  Nothing ships them yet.
 
-## Current state (pushed, 520 tests green)
-- Saved and worn: her cut, hair and eye colour, face (25 sliders, 7 faces), paint; skin as before.
-- Look data is per hero body: `looks.json` `heroes.female` (`Lore.Hero(sex)`, `Loadouts.HeroKit`).
-  The male hero (ae2de192cce8298ca) can fill `heroes.male` and change `HeroKit` to give him the same step.
-- Face paint art: `tools/assets/heroine_paint.py` (unrolls her face from heroine.glb, paints 7 designs,
-  lays them on her UVs) -> `art/people/paint/*.png` (BC7, mipmaps). Rerun it when her head is rebuilt.
-  **Not yet seen on her in the game**, and the brow layer (`paint/brows.png`) is **not wired** yet.
-- Creation: portrait key light and DOF when near; hair turned to show the cut; `--step N --part N`.
+## Next: the licences screen (the exact next step)
+1. Merge `origin/claude/vigilant-galileo-l6jqyx` again. It now has the performance lead's export work, so re-read `godot/export_presets.cfg` and `tools/godot/export.sh` before touching them.
+2. In `godot/logic`, write `Credits.Parse(md)`: `public/assets/CREDITS.md` becomes sections, groups and entries, made player-facing.
+   - Drop backticked paths, `-> file` tails, the fetch-tool note and the web-only section.
+   - Keep any Sketchfab line that `sketchfab.mjs` appends at the end.
+   - Don't ship CREDITS.md itself: its review notes (the boar's "personal use", PE-05 and PE-06) must not reach the `.pck`.
+3. A golden-file test writes `godot/data/credits.json` (for the screen) and `godot/licences/CREDITS.txt` from it when `WRITE_CREDITS=1`. Otherwise it fails if either is stale, or if any CC BY or OFL link in CREDITS.md is missing.
+4. Add `licences/README.txt`: an index of the folder plus the AI-use line from CREDITS.md's AI section.
+5. Export:
+   - add `licences/*` to `include_filter`, so the game can show the texts;
+   - make `export.sh` copy `godot/licences/` beside each build.
+6. `Ui/CreditsScreen.cs`, the page style (Backdrop, frameless `Style.Column`):
+   - a section index on the left, the scrolling credits on the right;
+   - Godot's MIT text and its components from `Engine.GetCopyrightInfo()`;
+   - the .NET and OFL texts read from `res://licences`;
+   - "Open the licences folder" via `OS.ShellOpen`.
+7. Hook it up:
+   - `Game.Open("credits")` keeps the world paused like the pause menu, and its close returns to the pause menu;
+   - the title's Credits item opens it, and its close returns to the title;
+   - the pause menu gets "Credits and licences";
+   - `--open credits` for shots.
+8. Take shots at 1920x1080. Then send the wording to the **legal lead, aab20546fe06daa89**, before pushing the screen.
 
-## Next (in order)
-1. See each paint on her in game (FaceSheet with `"paint"`, then the Look step) and tune.
-2. Wire the brows: a pass under the paint, dyed her hair's colour (`People.HerPaint`/`HerRestyle`).
-3. Cameo portraits for cuts, faces, paints (FaceSheet renders: cuts in grey plus `_mask`); register
-   them for the UI art lead (`tools/comfy/ui_assets.json`, UI_ART_BRIEF).
-4. Reply to the male hero lead with the field names (`CharacterData.Face/Eyes/Paint`,
-   `HairStyle`, `Lore.Hero`), and agree `BeardStyle`.
-5. The experience director's four findings (barks overlap, the result screen as the night's story,
-   the table says what a map pays, pausing only in arenas and on the night road), then the handoff's
-   list (announcements, item card, journal, HUD dash and draught).
+After that, in the handoff's order: the UI art lead's six pieces, the map result and atlas, the portrait reruns, and the pack's two bugs.
+
+## Waiting on others
+- **Face lead (ade92e8285938438f):** the new head. After `heroine.glb`, rerun `heroine_paint.py`, then `creation_portraits.py`.
+- **Male hero (ab82cbe99e2937ddd):** `heroes.male` and his builder. Then run `creation_portraits.py --sex male`.
 
 ## Key decisions
-- Creation opens on the heroine. Slider ends capped where her shape keys break. Paint is a pass of its
-  own over her skin (the skin shader is untouched). Look is per hero body, not per sex.
-
-## Notes for other areas
-- Main session: at close range her long and ponytail hairlines show a hard cap edge and a bare strip
-  at her left temple, and strands clip into her neck.
-- Voice lead: the `Names` list in Front.cs is unchanged (it carries one recorded take per name).
-- Scratchpad: `scratchpad/uid2/` (`shot.ps1`, `fs.ps1` face sheets, `crop*.py`, `paintsheet.py`).
+- Look is step II: the calling dresses her, then she is shaped.
+- Portraits are rendered from the game, so they stay true when her head changes.
+- The licence texts are the upstream files, byte for byte, from the tags that match what ships (Godot 4.5.1, .NET 8).

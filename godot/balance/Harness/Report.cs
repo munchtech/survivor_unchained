@@ -74,6 +74,9 @@ public static class Report
                 Row(sb, [b5 < 6 ? $"{b5 * 5}-{b5 * 5 + 5}" : "the boss", .. tiers.Select(t => (object)lost.Count(r => r.Spec.Tier == t && (r.BossLeft >= 0 ? 6 : (int)Math.Min(5, r.Minutes / 5)) == b5))]);
             var toBoss = lost.Where(r => r.BossLeft >= 0).ToList();
             if (toBoss.Count > 0) sb.AppendLine($"\nFell to the boss: {toBoss.Count}, with a median {Pct(Median(toBoss.Select(r => r.BossLeft)))} of it left.");
+            var kindled = runs.Where(r => r.CoreBroken != null).ToList();
+            if (kindled.Count > 0)
+                sb.AppendLine($"\nThe Kindling's core broken within its minute: {string.Join(", ", kindled.GroupBy(r => r.Spec.Policy).OrderBy(g => g.Key).Select(g => $"{g.Key} {Pct(Rate(g.ToList(), r => r.CoreBroken == true))}"))} (of {kindled.Count} that met it).");
             sb.AppendLine();
         }
         // Each people's boss: how its fights went, and whether its marked blows were read.

@@ -15,7 +15,7 @@ namespace SurvivorUnchained.Tests;
 /// <summary>An ember arena, run without a screen (Arena/Arena.cs, Play/Zones/ArenaRun.cs).</summary>
 public class ArenaTests
 {
-    sealed record Setup(Journey J, FakeHost Host, ArenaRun Zone, Battle B, MapBuild Map, ArenaSpec Spec)
+    internal sealed record Setup(Journey J, FakeHost Host, ArenaRun Zone, Battle B, MapBuild Map, ArenaSpec Spec)
     {
         /// <summary>What was called out over the fight.</summary>
         public readonly List<string> Barks = new();
@@ -28,7 +28,7 @@ public class ArenaTests
         OnWin = """[{ "set": { "test.won": true } }]""", OnLose = """[{ "set": { "test.lost": true } }]""",
     };
 
-    static Setup Make(ArenaSpec spec, Journey? j = null)
+    internal static Setup Make(ArenaSpec spec, Journey? j = null)
     {
         var a = Callings.Archetype("warden");
         j ??= Journey.Begin(new CreationChoice
@@ -160,7 +160,7 @@ public class ArenaTests
             s.B.HitEnemy(again, again.MaxHp * 0.25, School.Physical, [Tag.Physical]);
             Run(s, 0.5);
         }
-        Assert.Contains(s.Host.Announced, a => a.Title.EndsWith("is beaten again"));
+        Assert.Contains(s.Host.Announced, a => a.Title.EndsWith("is down again"));
         Assert.Null(s.Host.ArenaResult);
         Assert.True(s.B.Pickups.Items.Count(p => p.Alive && p.Kind == PickupKind.Chest && p.Ref == "boss") > chests);
     }
@@ -218,15 +218,56 @@ public class ArenaTests
         s.B.PendingBlessings.Add(4);
         for (int k = 0; k < 20; k++) Assert.DoesNotContain(LevelUp.Draft(s.B, 3), o => Boons.IsGreat(o.Id) && o.From == 0);
         s.B.PendingBlessings.Clear();
-        // The fifteenth minute: a second, which may be the first deepened.
+        // The fifteenth minute: a second, which may be the first deepened (the Kindling's minute
+        // passed with its core left standing).
         s.B.Player.Iframes = 1e9;
-        s.B.Time = 15 * 60;
-        Run(s, 0.1);
+        s.B.Time = 14.5 * 60;
+        Run(s, 61);
         Assert.Equal(1, s.B.GreatOwed);
         Assert.Contains(s.Host.Announced, a => a.Title == "Halfway through the dark");
         bool deeper = false;
         for (int k = 0; k < 30 && !deeper; k++) deeper = LevelUp.Draft(s.B, 3).Any(o => o.Id == first[0].Id && o.To == 2 && o.Text.StartsWith("Rank 2:"));
         Assert.True(deeper);
+    }
+
+    /// <summary>The Kindling (docs/bosses/SURVIVORS_BOSSES.md 9): in the breath before the fifteenth
+    /// minute an ember-core comes up, and beside it the ruler's own creature with a verb of its
+    /// ruler's. Broken within the minute, the great blessing comes a card richer; the keeper carries
+    /// a chest; the blessing is owed either way.</summary>
+    [Theory]
+    [InlineData("pack", "lt_pack")]
+    [InlineData("dead", "lt_dead")]
+    [InlineData("lamplings", "lt_lamplings")]
+    [InlineData("kerchiefs", "lt_kerchiefs")]
+    public void The_kindling_puts_a_core_and_the_rulers_keeper_before_the_great_blessing(string people, string keeperDef)
+    {
+        var s = Make(Spec(people));
+        s.B.GreatOwed = 0;
+        s.B.Player.Iframes = 1e9;
+        s.B.Time = 14.5 * 60;
+        Run(s, 0.2);
+        var core = s.B.Enemies.Living().Single(e => e.Def.Id == "ember_core");
+        var keeper = s.B.Enemies.Living().Single(e => e.Def.Id == keeperDef);
+        Assert.Equal(keeper.MaxHp / 2, core.MaxHp, 3);
+        Assert.Equal(0, s.B.GreatOwed);
+        Assert.Contains(keeperDef, s.Zone.Creatures);
+        // Broken in time: the blessing is owed, and a card richer.
+        s.B.HitEnemy(core, core.MaxHp * 2, School.Physical, [Tag.Physical], new HitOpts { NoCrit = true });
+        Run(s, 0.2);
+        Assert.Equal(1, s.B.GreatOwed);
+        Assert.True(s.Zone.CoreBroken);
+        int cards = LevelUp.Count(s.B);
+        Assert.Equal(4, cards);
+        // Left standing, it cools after its minute, and the blessing is the night's as it was.
+        var t = Make(Spec(people));
+        t.B.GreatOwed = 0;
+        t.B.Player.Iframes = 1e9;
+        t.B.Time = 14.5 * 60;
+        Run(t, 61);
+        Assert.Equal(1, t.B.GreatOwed);
+        Assert.False(t.Zone.CoreBroken);
+        Assert.DoesNotContain(t.B.Enemies.Living(), e => e.Def.Id == "ember_core");
+        Assert.Equal(3, LevelUp.Count(t.B));
     }
 
     /// <summary>The boss's fall is the night's peak: the view is told (it slows the world and
@@ -259,8 +300,13 @@ public class ArenaTests
             Assert.True(fell, "the fall was not told");
             var p = s.B.Player;
             Assert.Contains(s.B.Enemies.Living(), e => !e.Elite && e.Status.Has(StatusKind.Fear) && (e.X - p.X) * (e.X - p.X) + (e.Z - p.Z) * (e.Z - p.Z) < 32 * 32);
+            // The way out waits until the fall has landed; a story's night needs none.
+            var way = s.Zone.Interactables.FirstOrDefault(i => i.Id == "way_out");
+            if (story) Assert.Null(way);
+            else Assert.False(way!.When!(), "the way out's prompt stood over the fall");
             Run(s, 8);
             Assert.Equal(story, s.Zone.Over);
+            if (!story) Assert.True(way!.When!());
             if (story) Assert.True(s.Host.ArenaResult!.Won);
         }
     }
@@ -443,8 +489,8 @@ public class ArenaTests
     }
 
     /// <summary>Crafting's measure: the Kerchiefs' horde paid tens of thousands of gold a night and
-    /// the crowd's champions hundreds of pieces of gear. Now the rank and file drop a fiftieth of
-    /// their gold, and gear comes only from what carries a chest.</summary>
+    /// the crowd's champions hundreds of pieces of gear. Now the rank and file drop a three-hundredth
+    /// of their gold and champions a tenth, and gear comes only from what carries a chest.</summary>
     [Fact]
     public void An_arenas_horde_pays_a_little_gold_and_its_crowd_champions_no_gear()
     {
@@ -457,8 +503,9 @@ public class ArenaTests
             b.KillEnemy(e, true, null);
         }
         foreach (var k in b.Pickups.Living()) { if (k.Kind == PickupKind.Gold) gold++; if (k.Kind == PickupKind.Item) items++; }
-        // 380 footpads at the day's rate would drop about 250 purses; 20 champions keep theirs.
-        Assert.InRange(gold, 1, 40);
+        // 380 footpads and 20 champions at the day's rate would drop about 220 purses: now a
+        // three-hundredth of the crowd's and a tenth of the champions', one or two.
+        Assert.InRange(gold, 0, 8);
         Assert.Equal(0, items);
     }
 
@@ -506,6 +553,19 @@ public class ArenaTests
     }
 
     [Fact]
+    public void What_brought_her_down_is_named_as_a_sentence_names_it()
+    {
+        // "Brought down by a Kerchief Footpad at 12:30": one of a kind takes an article, a name does not.
+        Assert.Equal("a Kerchief Footpad", Enemies.Called(null, "Kerchief Footpad"));
+        Assert.Equal("an Ironbound Risen", Enemies.Called(null, "Ironbound Risen"));
+        Assert.Equal("Whitethroat", Enemies.Called("Whitethroat", "Whitethroat"));
+        Assert.Equal("the Pack-Mother", Enemies.Called("The Pack-Mother", "The Pack-Mother"));
+        Assert.Equal("the Herald of the Pack", Enemies.Called("Herald of the Pack", "Longtooth Wolf"));
+        Assert.Equal("a babbling lampling", Enemies.Called("A babbling lampling", "Lampling Tunneler"));
+        Assert.Equal("the Pack-Mother", MapOffers.InSentence("The Pack-Mother"));
+    }
+
+    [Fact]
     public void The_town_can_talk_about_the_last_night()
     {
         var s = Make(Spec("kerchiefs"));
@@ -521,6 +581,30 @@ public class ArenaTests
         Assert.Equal(12.5, w.Fact("arena.last.minutes").Number, 1);
         Assert.Equal(1, w.Fact("arena.nights").Number);
         Assert.Equal(1, w.Fact("arena.fell").Number);
+    }
+
+    [Fact]
+    public void A_fall_after_the_win_spills_half_of_what_the_night_gave()
+    {
+        // The game's order: the zone hears of the fall while the battle still has the survivor
+        // standing (it marks them dead only after). A fall must still spill half (the owner's rule).
+        var s = Make(Spec("pack"));
+        s.Zone.SkipTo(34 * 60);
+        s.Zone.WinNow();
+        int before = Inventory.Count(s.J.Ch, Crafting.Shard);
+        var all = Crafting.Night("pack", 1, false, s.B.EmberLevel, 4, true, false, s.B.ChampionsByFamily);
+        Assert.True(all.Kept[Crafting.Shard] >= 2);
+        Assert.True(s.B.Player.Alive);
+        s.Zone.OnDeath("a Longtooth Wolf");
+        Run(s, 3);
+        var r = s.Host.ArenaResult!;
+        Assert.True(r.Won);
+        Assert.Equal(all.Kept[Crafting.Shard] / 2, r.Carried[Crafting.Shard]);
+        Assert.Equal(all.Kept[Crafting.Shard] - all.Kept[Crafting.Shard] / 2, r.Spilled[Crafting.Shard]);
+        Assert.Equal(before + all.Kept[Crafting.Shard] / 2, Inventory.Count(s.J.Ch, Crafting.Shard));
+        Assert.True(s.J.World.Fact("arena.last.fell").Truthy);
+        Assert.Equal("a Longtooth Wolf", s.J.World.Fact("arena.last.killer").Str);
+        Assert.Equal(1, s.J.World.Fact("arena.fell").Number);
     }
 
     [Fact]
@@ -545,6 +629,8 @@ public class ArenaTests
         var again = Arenas.Again(s.J.World.Rematches[0], "waystation", 1, 2, 0);
         Assert.Null(again.OnLose);
         Assert.NotNull(again.OnWin);
+        // Its lost line says where she comes to, and a rematch sends her back to the table instead.
+        Assert.Null(again.EndLost);
         var next = Make(again, s.J);
         next.B.Player.Iframes = 1e9;
         next.B.Time = 1800;

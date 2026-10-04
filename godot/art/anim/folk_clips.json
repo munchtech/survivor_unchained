@@ -19,6 +19,87 @@
 		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: cheer_2.bvh",
 		"speed": 0.0
 	},
+	"f_die_back": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"note": "the crowd's death: struck in front, over onto its back",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"f_die_back_armed": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"note": "the crowd's death: struck in front, over onto its back, armed",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"f_die_back_pistol": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"note": "the crowd's death: struck in front, over onto its back, armed",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"f_die_front": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"note": "the crowd's death: to its knees and over onto its face",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"f_die_front_armed": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"note": "the crowd's death: to its knees and over onto its face, armed",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"f_die_front_pistol": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"note": "the crowd's death: to its knees and over onto its face, armed",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"f_die_side": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"note": "the crowd's death: the knees fold and it goes down in a heap on its side",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"f_die_side_armed": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"note": "the crowd's death: the knees fold and it goes down in a heap on its side, armed",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"f_die_side_pistol": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"note": "the crowd's death: the knees fold and it goes down in a heap on its side, armed",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
 	"f_idle": {
 		"changes": "retargeted to her skeleton, feet locked, looped, in place",
 		"layer": "full",
@@ -62,6 +143,22 @@
 		"note": "townsfolk (women)",
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_pick_up.bvh",
 		"speed": 0.0
+	},
+	"f_rally": {
+		"layer": "full",
+		"length": 1.56666672229767,
+		"licence": "own work",
+		"loop": false,
+		"note": "a caster's rally",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"f_rally_armed": {
+		"layer": "full",
+		"length": 1.56666672229767,
+		"licence": "own work",
+		"loop": false,
+		"note": "a caster's rally, armed",
+		"source": "keyed (tools/anim/crowd.py)"
 	},
 	"f_sit_chair": {
 		"changes": "retargeted to her skeleton, feet locked, looped, in place",
@@ -143,6 +240,87 @@
 		"source": "Kimodo-SOMA-RP (NVIDIA, NVIDIA Open Model License): generated: cheer_0.bvh",
 		"speed": 0.0
 	},
+	"m_die_back": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"note": "the crowd's death: struck in front, over onto its back",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"m_die_back_armed": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"note": "the crowd's death: struck in front, over onto its back, armed",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"m_die_back_pistol": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"note": "the crowd's death: struck in front, over onto its back, armed",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"m_die_front": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"note": "the crowd's death: to its knees and over onto its face",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"m_die_front_armed": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"note": "the crowd's death: to its knees and over onto its face, armed",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"m_die_front_pistol": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"note": "the crowd's death: to its knees and over onto its face, armed",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"m_die_side": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"note": "the crowd's death: the knees fold and it goes down in a heap on its side",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"m_die_side_armed": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"note": "the crowd's death: the knees fold and it goes down in a heap on its side, armed",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"m_die_side_pistol": {
+		"hold": true,
+		"layer": "full",
+		"length": 0.800000011920929,
+		"licence": "own work",
+		"loop": false,
+		"note": "the crowd's death: the knees fold and it goes down in a heap on its side, armed",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
 	"m_idle": {
 		"changes": "retargeted to her skeleton, feet locked, looped, in place",
 		"layer": "full",
@@ -186,6 +364,22 @@
 		"note": "townsfolk (men)",
 		"source": "Mixamo (Adobe): used in the game under Mixamo's terms, raw files not redistributed: folk_pick_up.bvh",
 		"speed": 0.0
+	},
+	"m_rally": {
+		"layer": "full",
+		"length": 1.56666672229767,
+		"licence": "own work",
+		"loop": false,
+		"note": "a caster's rally",
+		"source": "keyed (tools/anim/crowd.py)"
+	},
+	"m_rally_armed": {
+		"layer": "full",
+		"length": 1.56666672229767,
+		"licence": "own work",
+		"loop": false,
+		"note": "a caster's rally, armed",
+		"source": "keyed (tools/anim/crowd.py)"
 	},
 	"m_sit_chair": {
 		"changes": "retargeted to her skeleton, feet locked, looped, in place",

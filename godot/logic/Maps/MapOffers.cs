@@ -56,7 +56,7 @@ public static class MapOffers
         new("hunt", "Oath of the Hunt", "They are a fifth faster", "More ember and gear", Ember: 1.25, Gear: 1.2,
             Answer: "pace, a vault or a chain, things that hold them", Lean: ["fleet", "surefooted"], Rule: r => r.FoeSpeed = 1.2),
         new("iron", "Oath of Iron", "They shrug off a third of any blow that is not a critical", "Gear finer still", Gear: 1.5,
-            Answer: "critical strikes", Lean: ["keen", "cruel"], Rule: r => r.IronSkin = 0.33),
+            Answer: "critical strikes", Lean: ["keen", "cruel"], Rule: r => { r.IronSkin = 0.33; r.StaggerTaken = 2 / 3.0; }),
         new("moonless", "Oath of the Moonless", "Your light carries half as far", "Champions, and what they carry", Elites: 1.3, Gear: 1.3,
             Answer: "a lantern's reach", Lean: ["of_the_lantern"], Rule: r => r.Light = 0.5),
         new("ruin", "Oath of Ruin", "Their dead may burst where they fall", "Half again the ember", Ember: 1.5,
@@ -90,7 +90,7 @@ public static class MapOffers
                 new(22, "mb_ford_bell", ["grave_caller", "risen_bell"], ["gravebound", "bannered"]), // the bell
             ]),
         new("lamplings", "the Lamplings", new[] { ("lampling", 5.0), ("lampling_sapper", 1.5) }, "boss_lamplings", "Gutterwick", "Second-Best in the Dig", ["lampsnuffer", "of_the_salamander"],
-            [("lampling", 5, 0), ("lampling_wick", 3, 3), ("lampling_sapper", 3.5, 7), ("lampling_lamp", 1.5, 12), ("lampling_fuse", 1.2, 16)], "lampling",
+            [("lampling", 5, 0), ("lampling_wick", 3, 3), ("lampling_sapper", 3.5, 7), ("lampling_lamp", 1.5, 12), ("lampling_fuse", 1.2, 16)], "lampling_ganger",
             ["swift"],
             [
                 new(3, "mb_wick_mother", ["lampling_wick"], []),                   // the swarm from below
@@ -125,8 +125,24 @@ public static class MapOffers
         return r;
     }
 
-    static readonly string[] Adjectives = { "Weeping", "Ashen", "Thorned", "Drowned", "Moonless", "Broken", "Gallows", "Whispering", "Hollow", "Bleeding", "Crooked", "Silent" };
-    static readonly string[] Places = { "Wood", "Thicket", "Glade", "Tangle", "Barrow-Wood", "Deepwood", "Fen", "Holt", "Wilds", "Brake" };
+    /// <summary>A name as it is written inside a sentence: "until the Pack-Mother comes".</summary>
+    public static string InSentence(string name) => name.StartsWith("The ") ? "the " + name[4..] : name;
+
+    static string[] WordsFor((string Place, string[] Words)[] table, string people) =>
+        table.First(n => n.Place == ArenaPlaces.IdFor(people)).Words;
+
+    /// <summary>A map's name, in the valley's own words for its people's ground (ArenaPlaces):
+    /// what the place is like, which makes its look, and where its people live, so a Risen
+    /// map is a barrow and never a fen.</summary>
+    public static string Name(string people, Rng rng) =>
+        $"The {rng.Pick(WordsFor(ArenaPlaces.Adjectives, people))} {PlaceWord(rng, people)}";
+
+    static string PlaceWord(Rng rng, string people) => rng.Pick(WordsFor(ArenaPlaces.Names, people));
+
+    /// <summary>A name given to another people's place (an offer whose people
+    /// were changed): its adjective kept, its place word theirs.</summary>
+    public static string Renamed(string name, string people, int seed) =>
+        $"{string.Join(' ', name.Split(' ').SkipLast(1))} {PlaceWord(new Rng((uint)seed), people)}";
 
     /// <summary>The maps the table offers today: three, each of its own
     /// people and oaths, the tier the survivor has earned (and one higher).</summary>
@@ -145,7 +161,7 @@ public static class MapOffers
             var spec = new MapSpec
             {
                 Seed = rng.Int(1, int.MaxValue - 1), Tier = t, Theme = theme, Oaths = oaths, Night = true,
-                Name = $"The {rng.Pick(Adjectives)} {rng.Pick(Places)}",
+                Name = Name(people.Id, rng),
             };
             list.Add(new MapOffer(spec, people.Id));
         }

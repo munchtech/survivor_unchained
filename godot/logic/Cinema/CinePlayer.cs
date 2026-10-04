@@ -49,24 +49,48 @@ public sealed class CineSchedule
         File = f;
         double t = 0;
         int order = 0;
+        // Where each line said so far ends: a line can run on over a cut (a shot
+        // may fit a line begun before it), and a cue can wait for one ("after:id").
+        var ends = new Dictionary<string, double>();
         foreach (var shot in f.Shots)
         {
             if (shot.When != null && !shot.When.Holds(ctx)) continue;
             var cues = shot.Cues.Where(c => c.When == null || c.When.Holds(ctx)).ToList();
             double dur = shot.Dur;
+            foreach (var c in cues.Where(c => c.Do == "line"))
+                ends[c.Str("id")!] = t + At(c.At, shot.Dur, t, ends, wait: true) + lineSeconds(c.Str("id")!);
             foreach (var id in shot.Fit ?? new())
             {
-                var line = cues.FirstOrDefault(c => c.Do == "line" && c.Str("id") == id)
-                    ?? throw new FormatException($"{f.Id} shot {shot.Id}: fits {id}, which it does not say");
-                dur = Math.Max(dur, Offset(line.At, shot.Dur) + lineSeconds(id) + shot.Tail);
+                if (!ends.TryGetValue(id, out var end)) throw new FormatException($"{f.Id} shot {shot.Id}: fits {id}, which it does not say");
+                dur = Math.Max(dur, end - t + shot.Tail);
             }
             var span = new ShotSpan(shot, Shots.Count, t, dur);
             Shots.Add(span);
-            foreach (var c in cues) Cues.Add(new TimedCue(t + Offset(c.At, dur), order++, c, span));
+            foreach (var c in cues)
+            {
+                double ct = t + At(c.At, dur, t, ends);
+                if (c.Do == "line") ends[c.Str("id")!] = ct + lineSeconds(c.Str("id")!);
+                Cues.Add(new TimedCue(ct, order++, c, span));
+            }
             t += dur;
         }
         Length = t;
         Cues.Sort((a, b) => a.T != b.T ? a.T.CompareTo(b.T) : a.Order.CompareTo(b.Order));
+    }
+
+    /// <summary>A cue's time in its shot: as Offset, or "after:conversation.node+0.4",
+    /// that long after a line already said ends (its take), from this shot's start.</summary>
+    static double At(JsonElement at, double dur, double shotStart, Dictionary<string, double> ends, bool wait = false)
+    {
+        if (at.ValueKind != JsonValueKind.String || !at.GetString()!.StartsWith("after:")) return Offset(at, dur);
+        var s = at.GetString()![6..].Replace(" ", "");
+        // Ids hold no signs, so the first sign after the conversation's dot begins the offset.
+        int k = s.IndexOfAny(['+', '-'], Math.Max(0, s.IndexOf('.')));
+        string id = k > 0 ? s[..k] : s;
+        double add = k > 0 ? double.Parse(s[k..], CultureInfo.InvariantCulture) : 0;
+        if (!ends.TryGetValue(id, out var end)) throw new FormatException($"waits for {id}, which is not said before it");
+        // Before the shot is fitted, a wait is not cut short by the length written.
+        return Math.Clamp(end + add - shotStart, 0, wait ? double.MaxValue : dur);
     }
 
     /// <summary>A time in a shot: seconds from its start, or "end", "end-0.8" from its end.</summary>
@@ -104,7 +128,7 @@ public sealed class CineSchedule
 public static class CineCamera
 {
     /// <summary>A full-frame focal length as horizontal field of view (degrees):
-    /// 50 mm is 39.6°, the scripts' table (docs/cinematics/README.md section 4).</summary>
+    /// 50 mm is 39.6Â°, the scripts' table (docs/cinematics/README.md section 4).</summary>
     public static double Hfov(double mm) => 2 * Math.Atan(36 / (2 * mm)) * 180 / Math.PI;
 
     public static double Ease(string ease, double k)

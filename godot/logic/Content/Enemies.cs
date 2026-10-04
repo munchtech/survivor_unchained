@@ -123,6 +123,23 @@ public readonly record struct LevelScale(double Health, double Damage, double Xp
 
 public static class Enemies
 {
+    /// <summary>A foe as a sentence names it, for "Brought down by ...": a named one by its name
+    /// ("Whitethroat", "the Pack-Mother", "the Herald of the Pack"), any other as one of its kind
+    /// ("a Kerchief Footpad", "an Ironbound Risen").</summary>
+    public static string Called(string? title, string name)
+    {
+        if (!string.IsNullOrEmpty(title))
+        {
+            if (title.StartsWith("Herald of ")) return "the " + title;
+            foreach (var lead in new[] { "The ", "A ", "An " })
+                if (title.StartsWith(lead)) return char.ToLowerInvariant(title[0]) + title[1..];
+            return title;
+        }
+        if (name.Length == 0) return "the dark";
+        if (name.StartsWith("The ")) return "the " + name[4..];
+        return ("AEIOU".Contains(char.ToUpperInvariant(name[0])) ? "an " : "a ") + name;
+    }
+
     static readonly Resists Undead = new() { [School.Frost] = 0.25, [School.Shadow] = 0.35, [School.Holy] = -0.5, [School.Fire] = -0.15 };
     static readonly Resists Beast = new() { [School.Fire] = -0.25, [School.Nature] = 0.2 };
     static readonly Resists Kerchief = new();
@@ -197,7 +214,9 @@ public static class Enemies
 
         /* ------------------------------------------------------------ Kerchiefs -- */
         new() { Id = "footpad", Name = "Kerchief Footpad", Family = Family.Kerchief, Faction = Faction.Kerchief, Visual = "kerchief_rogue",
-            Health = 36, Speed = 4.2, Damage = 10, Radius = 0.48, Xp = 5, Gold = 2, Resists = Kerchief, Behavior = Behavior.Chase,
+            // (36 health and 10 a blow made the Kerchiefs the hardest people by a distance: at the third
+            // tier half the nights against them fell, against one in ten for the Lamplings.)
+            Health = 31, Speed = 4.2, Damage = 9, Radius = 0.48, Xp = 5, Gold = 2, Resists = Kerchief, Behavior = Behavior.Chase,
             Loot = "kerchief",
             Note = "Red cloth over the face and quick hands under it. They rob the dead first and the living second, which is at least an order." },
         new() { Id = "pillager", Name = "Kerchief Pillager", Family = Family.Kerchief, Faction = Faction.Kerchief, Visual = "kerchief_hooded",
@@ -291,8 +310,9 @@ public static class Enemies
             Lesson = "Five bolts in a fan. Stand in a gap, or close on it.",
             Note = "The Legion called its bolt-engine a scorpion. This one has carried his for two thousand years and no longer needs it: he looses five where it loosed one, and he has not forgotten how to keep his distance." },
         new() { Id = "mb_decurion", Name = "The Decurion", Family = Family.Undead, Faction = Faction.Dead, Visual = "skeleton_warrior", Scale = 1.65, Tint = (1.05, 0.85, 0.7),
-            // (Measured: 49 s, 123 at the slowest, behind a three-quarter shield: now three fifths, as a champion's.)
-            Health = 560, Speed = 2.4, Damage = 16, Radius = 0.95, Mass = 8, Xp = 40, Resists = Undead, Behavior = Behavior.Guard,
+            // (Measured: 49 s, 123 at the slowest, behind a three-quarter shield: now three fifths, as a champion's;
+            // still 43 s at 560 and 54 s at 460 once the third tier's minibosses came a quarter stronger.)
+            Health = 380, Speed = 2.4, Damage = 16, Radius = 0.95, Mass = 8, Xp = 40, Resists = Undead, Behavior = Behavior.Guard,
             Guard = new(1.6, 0.6), Lunge = new(7, 6, 0.8, 0.45, 14), Summon = new(14, 4, "risen_warrior", 1.4, SpawnStyle.Rise, 3, Word: "Scuta!"),
             Elite = true, Miniboss = true, Loot = "miniboss", AttackEvery = 1.2,
             Lesson = "Shields to the front. Go round them.",
@@ -303,7 +323,8 @@ public static class Enemies
             Lesson = "Many dead in one body. It comes apart, and its parts come apart.",
             Note = "A whole barrow walking. It falls on what is near it, and when it is broken it is not finished." },
         new() { Id = "mb_drowned_reeve", Name = "The Weed-Wife", Family = Family.Undead, Faction = Faction.Dead, Visual = "skeleton_mage", Scale = 1.6, Tint = (0.55, 0.8, 0.9), Glow = 0.08,
-            Health = 560, Speed = 2.1, Damage = 12, Radius = 0.85, Mass = 6, Xp = 40, Resists = Undead, Behavior = Behavior.Caster,
+            // (Measured: 44 s, 173 at the slowest: a caster that keeps its distance is a chase at 560.)
+            Health = 400, Speed = 2.1, Damage = 12, Radius = 0.85, Mass = 6, Xp = 40, Resists = Undead, Behavior = Behavior.Caster,
             Ranged = new() { Range = 10, Cooldown = 2.8, Speed = 7, School = School.Frost, Count = 3, Spread = 0.35, Slow = (0.6, 1.4), Art = "frost_orb" },
             Trail = new(0.6, 1.5, 4, 0.25, School.Frost), Bite = StatusKind.Chill, Elite = true, Miniboss = true, Loot = "miniboss",
             Lesson = "The river's cold walks with her. Keep off her wet ground.",
@@ -333,13 +354,15 @@ public static class Enemies
             Lesson = "She sends the little ones up first, all round you. They run fast and die quick.",
             Note = "Mother of every wick in her tunnel, and she has a great many tunnels. She calls; the ground answers." },
         new() { Id = "mb_bombardier", Name = "The Chucker", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "lampling_sapper", Scale = 1.6, Tint = (1.2, 0.85, 0.65),
-            Health = 420, Speed = 2.7, Damage = 10, Radius = 0.8, Mass = 4, Xp = 40, Behavior = Behavior.Ranged, Resists = new() { [School.Fire] = 0.5, [School.Frost] = -0.3 },
+            // (Measured: 47 s at 420, 102 at the slowest.)
+            Health = 300, Speed = 2.7, Damage = 10, Radius = 0.8, Mass = 4, Xp = 40, Behavior = Behavior.Ranged, Resists = new() { [School.Fire] = 0.5, [School.Frost] = -0.3 },
             Ranged = new() { Range = 10, Cooldown = 3.4, Speed = 8, School = School.Fire, Lob = true, Count = 3, Spread = 0.45, Zone = new(1.8, 3.5, 0.35), Art = "firepot" },
             Burst = new(3, 1.2, 0.8, School.Fire, StatusKind.Burn), Elite = true, Miniboss = true, Loot = "miniboss",
             Lesson = "Three pots at a time. Where they land, it burns.",
             Note = "The Dig's best thrower, which is to say its worst neighbour. Three pots in the air before the first has landed." },
         new() { Id = "mb_lamplighter", Name = "The Lamplighter", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "lampling", Scale = 1.7, Tint = (0.8, 0.95, 1.4), Glow = 0.45,
-            Health = 480, Speed = 2.6, Damage = 9, Radius = 0.85, Mass = 5, Xp = 40, Behavior = Behavior.Ranged, Resists = new() { [School.Fire] = 0.5, [School.Frost] = -0.3 },
+            // (Measured: 35 s at 480.)
+            Health = 380, Speed = 2.6, Damage = 9, Radius = 0.85, Mass = 5, Xp = 40, Behavior = Behavior.Ranged, Resists = new() { [School.Fire] = 0.5, [School.Frost] = -0.3 },
             Ranged = new() { Range = 10, Cooldown = 3.0, Speed = 9, School = School.Fire, Count = 5, Spread = 0.22, Art = "cinder" },
             Aura = new(8, 9, 4, Ward: 0.3, Word: "Light!"), Elite = true, Miniboss = true, Loot = "miniboss",
             Lesson = "Five flames in a fan, and its light wards the diggers near it.",
@@ -371,7 +394,8 @@ public static class Enemies
             Aura = new(8, 9, 4, Haste: 1.2, Word: "Drum"), Loot = "kerchief",
             Note = "The levy marched to a drum. They still do, to rob a wagon, and they come quicker for it. The drumming stops when it dies." },
         new() { Id = "mb_firepot_nan", Name = "Firepot Nan", Family = Family.Kerchief, Faction = Faction.Kerchief, Visual = "kerchief_hooded", Scale = 1.5, Tint = (1.1, 0.85, 0.75),
-            Health = 400, Speed = 3.2, Damage = 10, Radius = 0.75, Mass = 4, Xp = 40, Gold = 15, Resists = Kerchief, Behavior = Behavior.Ranged,
+            // (Measured: 35 s at 400, 134 at the slowest: the third minute's build has little to reach her with.)
+            Health = 300, Speed = 3.2, Damage = 10, Radius = 0.75, Mass = 4, Xp = 40, Gold = 15, Resists = Kerchief, Behavior = Behavior.Ranged,
             Ranged = new() { Range = 10, Cooldown = 3.2, Speed = 8.5, School = School.Fire, Lob = true, Count = 3, Spread = 0.45, Zone = new(1.7, 3.5, 0.3), Art = "firepot" },
             Elite = true, Miniboss = true, Loot = "miniboss",
             Lesson = "Three pots at once, and the throwers follow her. Close on her through the gaps.",
@@ -425,6 +449,45 @@ public static class Enemies
             Lunge = new(8.5, 5.0, 0.7, 0.45, 18),
             Elite = true, Loot = "elite", AttackEvery = 1.0,
             Note = "He takes a toll: your best weapon, for a while, and a runner to carry it off. Catch the runner. Lightning makes him drop it." },
+
+        // The Lamplings' champion, until the Blasting-Cart has its art: a ganger of the Dig. Their
+        // heralds were a lampling's body at twenty health, down in four seconds (every other people's
+        // herald took twenty to forty), so their nights asked nothing of a draft's single-target reach.
+        new() { Id = "lampling_ganger", Name = "Ganger of the Dig", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "lampling", Scale = 1.35, Tint = (1.15, 1.02, 0.86), Glow = 0.12,
+            Health = 460, Speed = 3.4, Damage = 14, Radius = 0.75, Mass = 5, Xp = 40, Behavior = Behavior.Tunneler, Resists = new() { [School.Fire] = 0.3, [School.Frost] = -0.3 },
+            Slam = new(3, 7, 1.0, 2.6, 1.2, Self: true), Elite = true, AttackEvery = 1.1, Loot = "elite",
+            Note = "One of the Dig's gangers: a pick, a lamp, and a gang under the ground behind it." },
+
+        /* ------------------------------------------- the Kindling (minute 15) -- */
+        // (docs/bosses/SURVIVORS_BOSSES.md 9.) The heart of the ember scar the arena was opened from,
+        // and round it what rules the people's own creature, with one of its ruler's verbs: the
+        // night's first verse of its boss. Drawn by the zone (an orb and its light), not the crowd.
+        new() { Id = "ember_core", Name = "The Ember-Core", Family = Family.Elemental, Faction = Faction.Wild, Visual = "view:ember_core",
+            Health = 100, Speed = 0, Damage = 0, Radius = 1.2, Mass = 999, Xp = 0, Behavior = Behavior.Stationary, AttackEvery = 1e9,
+            Note = "Raw ember the size of a cart wheel, come up out of the scar the arena was opened from. Broken quickly, it gives more than it takes." },
+        new() { Id = "lt_pack", Name = "The Pack-Mother's Yearling", Family = Family.Wolf, Faction = Faction.Pack, Visual = "wolf_alpha", Scale = 1.2, Tint = (1.12, 0.98, 0.86),
+            Health = 400, Speed = 5.0, Damage = 14, Radius = 0.75, Mass = 4, Xp = 30, Resists = Beast, Behavior = Behavior.Pack,
+            Lunge = new(10, 5, 0.8, 0.45, 18), Summon = new(13, 5, "wolf", 1.3, SpawnStyle.Walk, 10, AtTarget: true, Max: 15, Word: "A rising howl"),
+            Elite = true, Tags = [Tag.Nature], AttackEvery = 0.9,
+            Lesson = "She herds as her mother will: the wolves close round you, and she runs the gap. Go through the wolves.",
+            Note = "Her mother's eldest, and as sure as her already of where you will run." },
+        new() { Id = "lt_dead", Name = "The Barrow Lord's Hornblower", Family = Family.Undead, Faction = Faction.Dead, Visual = "skeleton_warrior_elite", Scale = 1.3, Tint = (0.95, 1.02, 0.84),
+            Health = 420, Speed = 2.4, Damage = 16, Radius = 0.85, Mass = 6, Xp = 30, Resists = Undead, Behavior = Behavior.Guard,
+            Guard = new(1.6, 0.5), Summon = new(13, 4, "risen_warrior", 1.3, SpawnStyle.Rise, 8, AtTarget: true, Max: 12, Word: "Iungite!"),
+            Elite = true, AttackEvery = 1.2,
+            Lesson = "A horn, and shields rise in a line. Go round the line's end.",
+            Note = "He blew the Seventh's calls at the ford, and he blows them still. The dead dress their line to him." },
+        new() { Id = "lt_lamplings", Name = "The Sapper-Foreman", Family = Family.Lampling, Faction = Faction.Lampling, Visual = "lampling_sapper", Scale = 1.4, Tint = (0.92, 0.98, 1.3), Glow = 0.35,
+            Health = 380, Speed = 3.4, Damage = 12, Radius = 0.8, Mass = 5, Xp = 30, Behavior = Behavior.Tunneler, Resists = new() { [School.Fire] = 0.3, [School.Frost] = -0.3 },
+            Slam = new(3.2, 6, 1.0, 3, 1.3, Self: true, Word: "Up!"), Elite = true, AttackEvery = 1.1,
+            Lesson = "A mound runs at you, and it bursts up where it stops. Be gone from there.",
+            Note = "One lamp, and the Dig's way of coming up out of the ground. Gutterwick taught it, and it shows." },
+        new() { Id = "lt_kerchiefs", Name = "The Toll-Taker", Family = Family.Kerchief, Faction = Faction.Kerchief, Visual = "kerchief_enforcer", Scale = 1.3, Tint = (1.08, 1.06, 0.8),
+            Health = 420, Speed = 3.8, Damage = 15, Radius = 0.8, Mass = 6, Xp = 30, Gold = 15, Resists = Kerchief, Behavior = Behavior.Chase,
+            Lunge = new(8, 5, 0.8, 0.4, 16), Summon = new(13, 3, "footpad", 1.2, SpawnStyle.Walk, 10, AtTarget: true, Max: 9, Word: "Toll!"),
+            Elite = true, AttackEvery = 1.0,
+            Lesson = "It takes the Red Hand's toll before he does, and its runners come for what you carry.",
+            Note = "Keeps the Red Hand's tally of who has paid. Everyone owes." },
 
         /* ---------------------------------------------------- your own, raised -- */
         new() { Id = "spirit_wolf", Name = "Spirit Wolf", Family = Family.Wolf, Faction = Faction.Ally, Visual = "wolf_spirit",

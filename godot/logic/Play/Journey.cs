@@ -154,6 +154,7 @@ public sealed partial class Journey
             Hp = exp != null ? Math.Min(exp.Hp, kit.Stats.Get(Stat.MaxHealth)) : null,
         });
         b.EmberOn = combat && (arena || ember);
+        EmberLit = b.EmberOn && !arena;
         b.Night = arena || ember || World.Time == TimeOfDay.Night;
         GearWeapons = kit.Weapons.Select(w => w.Id).ToHashSet();
         b.Favours.UnionWith(Callings.Archetype(Ch.Archetype).Favours);
@@ -182,12 +183,42 @@ public sealed partial class Journey
         return b;
     }
 
-    /// <summary>The dawn: the ember goes out, and what it built with it.</summary>
-    public void Douse(Battle b)
+    /// <summary>The kinds of play that tell the story (the rest are the endgame's arenas: table
+    /// nights, ember scars, maps).</summary>
+    public static readonly string[] StoryModes = ["prologue", "town", "wild", "story night"];
+
+    /// <summary>Time played, booked to its kind of play.</summary>
+    public void Clock(double dt, string mode) => World.TimeIn[mode] = World.TimeIn.GetValueOrDefault(mode) + dt;
+
+    /// <summary>The story's share of the time played so far (0..1), with the town counted as story
+    /// (its people, its quests) and without it (only the prologue, the wild and the story's nights).</summary>
+    public (double WithTown, double Strict) StoryShare
+    {
+        get
+        {
+            double all = World.TimeIn.Values.Sum();
+            if (all <= 0) return (0, 0);
+            double story = StoryModes.Sum(m => World.TimeIn.GetValueOrDefault(m));
+            return (story / all, (story - World.TimeIn.GetValueOrDefault("town")) / all);
+        }
+    }
+
+    /// <summary>The ember burns here and this is no arena (the prologue's night): what kills teach
+    /// is banked for the dawn.</summary>
+    public bool EmberLit { get; private set; }
+
+    /// <summary>The dawn: the ember goes out, and what it built with it; what the night taught is
+    /// paid. The levels it came to.</summary>
+    public int Douse(Battle b)
     {
         var kit = Character.Kit(Ch);
         b.Douse(kit.Weapons);
         GearWeapons = kit.Weapons.Select(w => w.Id).ToHashSet();
+        EmberLit = false;
+        if (World.NightLessons <= 0) return 0;
+        int levels = Character.GainXp(Ch, World.NightLessons);
+        World.NightLessons = 0;
+        return levels;
     }
 
     /// <summary>Leaving a zone: the wounds come along (an arena's are left in it).</summary>
@@ -211,7 +242,12 @@ public sealed partial class Journey
         // An arena pays its experience at the end, for the time survived; a
         // fight in the story teaches as it goes, the more the stronger the foe.
         if (InArena) return;
-        int levels = Character.GainXp(Ch, 2 * e.Def.Xp * Content.Enemies.ScaleFor(e.Level).Xp * (e.Boss ? 3 : e.Elite ? 2 : 1));
+        double xp = 2 * e.Def.Xp * Content.Enemies.ScaleFor(e.Level).Xp * (e.Boss ? 3 : e.Elite ? 2 : 1);
+        // While the ember drafts outside an arena (the prologue's night) the lessons wait for dawn:
+        // a character level popping up while the ember levelled taught two systems at once in the
+        // first minute (docs/EXPERIENCE_AUDIT.md, finding 4).
+        if (EmberLit) { World.NightLessons += xp; return; }
+        int levels = Character.GainXp(Ch, xp);
         if (levels > 0)
         {
             OnAnnounce(new Announcement($"Level {Ch.Level}", Ch.TraitPicks > 0 ? "A new trait can be chosen (C)" : "Attribute points to spend (C)", "boon", 3.2, "You grow stronger"));
@@ -234,6 +270,9 @@ public sealed partial class Journey
     /// things into the pack. False leaves it on the ground (a full pack).</summary>
     public bool PickedUp(Pickup p)
     {
+        // A chart carries its map in its name until it is in the pack.
+        if (p.Kind == PickupKind.Item && p.Ref != null && Maps.Charts.FromRef(p.Ref) is { } chart)
+            return GiveChart(chart);
         if (p.Kind is PickupKind.Item or PickupKind.Material or PickupKind.Quest && p.Ref != null)
         {
             // Gear on the ground was rolled when it fell; its light said how good it is.
@@ -245,6 +284,18 @@ public sealed partial class Journey
 
     /// <summary>Something found in the field. False if there is no room.</summary>
     /// <param name="dropped">It fell in the world (its heat is rolled: docs/CRAFTING_DESIGN.md 5.1).</param>
+    /// <summary>A Wayfinder's chart into the pack.</summary>
+    public bool GiveChart(Maps.Chart chart)
+    {
+        var it = Inventory.Make(Ch, Maps.Charts.Item, 1, chart.Rarity);
+        it.Chart = chart;
+        it.Name = Maps.Charts.Title(chart);
+        if (!Inventory.AddToPack(Ch, it)) { OnToast(new Toast(ToastKind.Warning, "Your pack is full", it.Name)); return false; }
+        OnToast(new Toast(ToastKind.Loot, it.Name, Items.Get(Maps.Charts.Item).Description, Items.Get(Maps.Charts.Item).Icon, it.Rarity));
+        OnTouch();
+        return true;
+    }
+
     public bool GiveItem(string defId, int qty = 1, int? rarity = null, IReadOnlyCollection<string>? lean = null, bool dropped = false)
     {
         var it = Inventory.Make(Ch, defId, qty, rarity, lean: lean, dropped: dropped);
@@ -337,16 +388,22 @@ public sealed partial class Journey
 
     /* -------------------------------------------------------------- gear -- */
 
-    int Draughts => Inventory.Count(Ch, "health_draught");
+    const string Draught = "health_draught", Moonpetal = "moonpetal_draught";
 
-    /// <summary>R: drink a health draught.</summary>
+    /// <summary>The draughts the draught key can drink, of either kind (the HUD's count).</summary>
+    public int Draughts => Inventory.Count(Ch, Draught) + Inventory.Count(Ch, Moonpetal);
+
+    /// <summary>R: drink a draught: the one that fits the wound. The moonpetal (60%) only for a deep
+    /// one, 55% of health or more gone, so a rare draught is not spent on a scratch (combat's rule).</summary>
     public void Quaff(Battle? b)
     {
         if (b == null || !b.Player.Alive) return;
         if (Draughts == 0) { Warn("No draughts left"); return; }
         if (b.Player.Hp >= b.MaxHp - 0.5) { Warn("You are unhurt"); return; }
-        Inventory.Take(Ch, "health_draught", 1);
-        b.HealPlayer(b.MaxHp * (Items.Get("health_draught").Consumable?.Heal ?? 0.4), "draught");
+        bool deep = 1 - b.Player.Hp / b.MaxHp >= 0.55, moon = Inventory.Count(Ch, Moonpetal) > 0, plain = Inventory.Count(Ch, Draught) > 0;
+        string pick = (deep && moon) || !plain ? Moonpetal : Draught;
+        Inventory.Take(Ch, pick, 1);
+        b.HealPlayer(b.MaxHp * (Items.Get(pick).Consumable?.Heal ?? 0.4), "draught");
         OnTouch();
     }
 
@@ -533,6 +590,14 @@ public sealed partial class Journey
         var w = World;
         switch (action)
         {
+            // Snib's jars, bought in his hearing (docs/CRAFTING_DESIGN.md 9): the talk goes on.
+            case "slurry":
+            {
+                var q = Crafting.BuyJar(Craft);
+                if (!q.Ok) { Warn(q.Blocked!); return true; }
+                Make(q);
+                return true;
+            }
             case "sellpelts":
             {
                 int pelts = Inventory.Count(Ch, "wolf_pelt"), hides = Inventory.Count(Ch, "boar_hide");
@@ -778,6 +843,8 @@ public sealed partial class Journey
             var names = who.Count == 1 ? who[0] : $"{string.Join(", ", who.Take(who.Count - 1))} and {who[^1]}";
             lines.Add($"By breakfast, {names} had heard that you {ev.Text}.");
         }
+        if (Flask() is { } flask) lines.Add(flask);
+        Crafting.Morning(World);
         if (lines.Count == 0) lines.Add("A quiet night. Rook's bread is hot, and nobody died.");
         OnTouch();
         return lines;

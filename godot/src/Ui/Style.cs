@@ -84,8 +84,47 @@ public static class Style
     /// <summary>Iron sunk into a plate: where a grid or a list sits.</summary>
     public static StyleBox Well(int pad = 12) => UiArt.Frame("well", OrnateBox.Make(OrnateBox.Kind.Well, pad));
 
-    /// <summary>A quieter plate inside a plate (a group, a card's body).</summary>
-    public static StyleBox Slab(int pad = 14) => UiArt.Frame("slab", OrnateBox.Make(OrnateBox.Kind.Slab, pad));
+    static ImageTexture? column;
+
+    /// <summary>A column on a page, with no frame: dark glass over the blurred world, a gold
+    /// hairline along its top, darkest where its words begin and fading down, so the space
+    /// under what it holds is never a flat black box. Frames are for what is acted on.</summary>
+    public static StyleBox Column(int pad = 20)
+    {
+        if (column == null)
+        {
+            const int w = 64, h = 256;
+            var img = Image.CreateEmpty(w, h, false, Image.Format.Rgba8);
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                {
+                    float fy = (y - 2) / (float)(h - 3), fx = Math.Min(x, w - 1 - x) / (w * 0.06f);
+                    // (fading in at the sides over a few pixels' worth of the width, so its edges are soft)
+                    float side = Math.Clamp(fx, 0, 1);
+                    float a = y < 2 ? 0.55f * side : (0.66f - 0.5f * MathF.Pow(fy, 0.8f)) * side;
+                    img.SetPixel(x, y, y < 2 ? new Color(GoldDim, a) : new Color(0.03f, 0.024f, 0.036f, a));
+                }
+            column = ImageTexture.CreateFromImage(img);
+        }
+        var b = new StyleBoxTexture { Texture = column, TextureMarginTop = 2 };
+        b.ContentMarginLeft = b.ContentMarginRight = pad;
+        b.ContentMarginTop = pad + 2;
+        b.ContentMarginBottom = pad;
+        return b;
+    }
+
+    /// <summary>A group inside a column (a calling, a group of numbers, a quiet note): no iron,
+    /// only a wash a shade lighter than the column and a gold hairline over it, so groups read
+    /// as groups without a frame in a frame.</summary>
+    public static StyleBox Slab(int pad = 14)
+    {
+        var b = new StyleBoxFlat { BgColor = new Color(0.1f, 0.085f, 0.11f, 0.5f), BorderColor = GoldDim with { A = 0.35f }, CornerDetail = 4 };
+        b.SetBorderWidth(Side.Top, 1);
+        b.SetCornerRadiusAll(3);
+        b.ContentMarginLeft = b.ContentMarginRight = pad;
+        b.ContentMarginTop = b.ContentMarginBottom = pad * 3 / 4f;
+        return b;
+    }
 
     /// <summary>The ring round what has focus: ember-gold, a soft glow, seen from a sofa.</summary>
     public static StyleBox FocusFrame()

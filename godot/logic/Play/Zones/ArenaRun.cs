@@ -52,7 +52,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     readonly ArenaPacing pacing;
     bool hushed, opened;
     double heraldAt;
-    bool herald10, herald20, great15, bossUp, won, over;
+    bool herald10, herald20, great15, bossUp, won, over, wayShown;
     double nextHerald, pulseT;
     (double X, double Z)? way;
     Enemy? boss, herald;
@@ -81,7 +81,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     public override string? Region => Spec.Sub != "" ? Spec.Sub : $"Tier {Spec.Tier} · {people.Name}";
     public override bool Combat => true;
     public override IReadOnlyList<string> Creatures => people.Arena.Select(h => h.Def).Concat(people.Stretches.Select(s => s.Miniboss))
-        .Append(people.Champion).Append(BossDef).Distinct().ToList();
+        .Append(people.Champion).Append(BossDef).Append(KeeperOf(people.Id)).Distinct().ToList();
     /// <summary>Higher and further out: the whole of the fight in view.</summary>
     public override (double Pitch, double Distance)? Camera => (64, CameraNear);
 
@@ -141,13 +141,9 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     /// <summary>Always night: the ember burns only in the dark.</summary>
     public override TimeOfDay TimeOf(WorldState w) => TimeOfDay.Night;
 
-    /// <summary>An arena's night is brighter than the wood's: the fight is seen
-    /// from high up, and has to read out to the edges of the picture.</summary>
-    static readonly AtmospherePreset Night = Atmospheres.Night with
-    {
-        KeyIntensity = 4.4, HemiIntensity = 1.6, EnvIntensity = 0.95, FogDensity = 0.004, Exposure = 1.7, RimStrength = 0.75,
-    };
-    public override AtmospherePreset AtmosphereFor(TimeOfDay t) => t == TimeOfDay.Night ? Night : base.AtmosphereFor(t);
+    /// <summary>An arena's night is its place's own (Maps/ArenaPlaces.cs).</summary>
+    public override AtmospherePreset AtmosphereFor(TimeOfDay t) =>
+        t == TimeOfDay.Night && map.Place is { } place ? place.Night : base.AtmosphereFor(t);
     public override Arrival ArrivalFrom(string? from) => new(0, 0, 0);
 
     public override void Begin(Battle b)
@@ -156,7 +152,12 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         // The people's own cover: graves, walls, rubble, lanterns.
         foreach (var pc in map.Pieces) G.Look.AddProp(pc.Id, pc.X, pc.Z, pc.Rot, pc.Scale);
         b.Rules = MapOffers.Rules(Spec.Map);
-        b.Rules.FodderGold = 0.02;
+        sworn = MapOffers.Rules(Spec.Map);
+        Dusk();
+        // A fiftieth still paid a Kerchief night 1.6k-2.1k gold from its forty thousand dead, and a
+        // three-hundredth 530-690 (crafting's probes, against an economy that holds at 350-450).
+        b.Rules.FodderGold = 0.0015;
+        b.Rules.ChampionGold = 0.07;
         // A shorter night pays its ember quicker, so its boss meets the build a table's would.
         b.Rules.EmberGain *= Pace;
         // The survivor's light reaches further here (the camera is further out); a moonless oath still halves it.
@@ -179,7 +180,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     {
         if (B == null) return;
         B.Time = seconds;
-        herald10 = Minute >= 10; herald20 = Minute >= 20; great15 = Minute >= 15;
+        herald10 = Minute >= 10; herald20 = Minute >= 20; great15 = Minute >= 15; kindled = Minute >= 14.5;
         pacing.SkipTo(seconds);
         escalation.SkipTo(Minute);
         hushed = pacing.Hush(seconds);
@@ -196,11 +197,41 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     double Beyond => Math.Max(0, Seconds - End) / 60;
     // A tier is three creature levels: the survivor's own pace (levels 1, 4, 7 for tiers 1 to 3),
     // so a tier at the survivor's level is a fair night and one above it a hard one.
-    // Dusk: the tier's strength (and an oath's levels) comes in over the first three minutes,
-    // so a night is not lost before the ember has given anything to choose.
-    int Level() => Math.Max(1, Spec.Tier * 3 - 2 + levels + (int)(Minute / 2.5) + (int)(Beyond / 2) - Math.Max(0, (int)Math.Ceiling(3 - Minute)));
+    // Dusk: the tier's strength (and an oath's levels) comes in over the first three minutes (five
+    // from the third tier), so a night is not lost before the ember has given anything to choose.
+    int Level() => Math.Max(1, Spec.Tier * 3 - 2 + levels + (int)(Minute / 2.5) + (int)(Beyond / 2) - Math.Max(0, (int)Math.Ceiling(DuskMinutes - Minute)));
+    double DuskMinutes => Asks ? 5 : 3;
     /// <summary>What an ordinary creature's health is divided by at a minute.</summary>
     public static double FodderEase(double minute) => 1 + 0.08 * minute;
+
+    /// <summary>From the third tier the night asks the draft. The experience lead's brief: there a
+    /// careless draft should lose noticeably more often than a planned one, while below it choice is
+    /// expression (a random drafter won as often as a greedy one at tiers 1-3, 85% to 83%). So from
+    /// the third tier the crowd softens less with the minutes (it tests the build's reach), its blows
+    /// grow from the eighth minute to twice by the half hour (a build that cannot clear is touched
+    /// more), and champions, heralds and minibosses come a quarter stronger from the sixth (they test
+    /// what it does to one). Dusk is longer there too, so the night is lost to the draft, not to the
+    /// first minutes. Measured (docs/team/combat.md): planned 87%, careless 70%, from 93% and 87%.</summary>
+    bool Asks => Spec.Tier >= 3;
+    double EaseFor(double m) => Asks ? 1 + 0.08 * m * 0.4 : FodderEase(m);
+
+    /// <summary>The table's oaths as sworn, and whether dusk is over.</summary>
+    MapRules sworn = new();
+    bool dusked;
+
+    /// <summary>Dusk for the oaths' bites too: what their blows carry (poison, the winter's crawl) and
+    /// the blight's cut to mending come in over the first three minutes, as their levels do. At
+    /// tier 3 the blight's poison and cut from the first blow felled a fifth of the runs in minutes
+    /// 1-5, before a draft had made anything to answer it with.</summary>
+    void Dusk()
+    {
+        if (B == null || dusked) return;
+        double k = Math.Clamp(Minute / 3, 0, 1);
+        if (k >= 1) dusked = true;
+        B.Rules.HealCut = sworn.HealCut * k;
+        B.Rules.HitPoison = sworn.HitPoison && k >= 0.5;
+        B.Rules.HitChill = sworn.HitChill && k >= 0.5;
+    }
 
     /// <summary>How many the horde is kept at (a dark bargain struck asks for more of them).</summary>
     // Before the boss, the night's shape (ArenaPacing) swells and thins the line.
@@ -286,7 +317,10 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     /// miniboss's whistle, the ground opening) are the crowd too.</summary>
     void Harden(Enemy e, bool champion)
     {
-        if (!champion && !e.Elite) e.MaxHp = e.Hp = e.MaxHp / FodderEase(Math.Min(Minute, 30));
+        if (!champion && !e.Elite) e.MaxHp = e.Hp = e.MaxHp / EaseFor(Math.Min(Minute, 30));
+        if (Asks && !champion && !e.Elite) e.Damage *= 1 + Math.Clamp((Math.Min(Minute, 30) - 8) / 22, 0, 1);
+        // (Not the boss: its contract sets its own health.)
+        if (Asks && (champion || e.Elite) && e.Def.Id != BossDef && Minute >= 6) { e.MaxHp = e.Hp = e.MaxHp * 1.25; e.Damage *= 1.25; }
         if (Beyond > 0)
         {
             var (hp, dmg, pace) = Hardening(Beyond);
@@ -405,6 +439,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             if (e.Def.Aura != null) auraAlive++;
         }
         aliveNow = alive;
+        Dusk();
         B.Charges.Cap = ChargeCap();
         B.Charges.Spikes = !bossUp;
         if (!won && !bossUp)
@@ -476,18 +511,96 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         // A story's night ends on its beat: no long night after it (the experience lead's loop; the
         // bible's pacing). The long night is the table's, where staying is the point.
         if (won && !Spec.Story) LongNight();
-        if (!great15 && Minute >= 15 && !bossUp)
-        {
-            great15 = true;
-            B.GreatOwed++;
-            // And a banish with it: by now the build knows what it does not want.
-            B.Banishes++;
-            G.Announce(new Announcement(Middle, "A great blessing", "reward", 2.6));
-        }
+        // The Kindling: at the fourteen and a half minute's breath, the ember-core and its keeper.
+        if (!kindled && !great15 && Minute >= 14.5 && !bossUp && !won) Kindle();
+        if (kindled && !great15) Kindling();
+        // (No core where one could not stand: the great blessing comes all the same.)
+        if (!great15 && !kindled && Minute >= 15 && !bossUp) Midnight(false);
         Minibosses();
         if (!runUp && !won && Seconds >= End - 120) RunUp();
         if (makingWay.Count > 0) MakingWay();
         if (!bossUp && !won && Seconds >= End) Boss();
+    }
+
+    /* ---------------------------------------------------- the Kindling -- */
+
+    /* The fifteenth minute's great blessing was an announcement; it is a moment now, and the
+     * boss's first verse (docs/bosses/SURVIVORS_BOSSES.md 9). In the breath before it an
+     * ember-core comes up out of the scar the arena was opened from, and beside it what rules
+     * the people's own creature, wearing one of its ruler's verbs: the night teaches its boss's
+     * language before the boss. Broken within the minute, the core makes the great blessing a
+     * card richer; the keeper carries a full chest. The blessing is owed whatever happens. */
+
+    Enemy? core, keeper;
+    double coreSeed, kindledAt;
+    bool kindled;
+    IOrb? coreOrb;
+    int coreLight = -1;
+    /// <summary>Broken in time (null: not yet, or never came).</summary>
+    public bool? CoreBroken { get; private set; }
+
+    /// <summary>A fifth of what its ruler will have at the half hour, at this minute's level: the
+    /// keeper's health, and the core's.</summary>
+    double KeeperHealth() =>
+        Enemies.Get(BossDef).Health * Enemies.ScaleFor(Level()).Health * (ArenaBosses.For(BossDef, this)?.HealthMul(Spec.Tier) ?? 12 + 2 * Spec.Tier) / 5;
+
+    static string KeeperOf(string people) => people switch { "dead" => "lt_dead", "lamplings" => "lt_lamplings", "kerchiefs" => "lt_kerchiefs", _ => "lt_pack" };
+
+    void Kindle()
+    {
+        kindled = true;
+        kindledAt = Seconds;
+        var p = B!.Player;
+        // Toward the middle of the arena from where she stands, near enough to be in the picture.
+        if (Around(Math.Atan2(-p.Z, -p.X), 8) is not var (x, z)) { kindled = false; Midnight(false); return; }
+        core = B.SpawnEnemy("ember_core", x, z, new Battle.SpawnOpts { Level = Level(), Style = SpawnStyle.Rise, Faction = Enemies.Get(people.Champion).Faction });
+        if (core == null) { kindled = false; Midnight(false); return; }
+        double hp = KeeperHealth();
+        // (Its keeper's health measured broken in time by one planned draft in six: half of it.)
+        core.MaxHp = core.Hp = hp / 2;
+        core.AttackT = 1e9;
+        core.Named = new Named { Title = "The ember-core" };
+        coreSeed = core.Seed;
+        if (Around(Math.Atan2(z - p.Z, x - p.X) + 0.6, 12) is var (kx, kz) && Spawn(KeeperOf(people.Id), kx, kz, true) is { } k)
+        {
+            k.MaxHp = k.Hp = hp;
+            k.Named = new Named { Title = k.Def.Name };
+            chests.Add(k.Id);
+            keeper = k;
+        }
+        coreOrb = G.Look.EmberCore(0.95);
+        B.Charges.Calm(B, 8);
+        B.Events.Emit(new Ev.Focus { X = x, Z = z, Duration = 1.4 });
+        B.Events.Emit(new Ev.Shake { Amount = 0.3 });
+        G.Announce(new Announcement("The ember-core", "Break it within the minute, and the great blessing comes richer", "reward", 3.2, keeper?.Def.Name));
+    }
+
+    bool CoreUp => core is { Alive: true } c && c.Seed == coreSeed && c.State != EnemyState.Dying;
+
+    void Kindling()
+    {
+        if (!CoreUp) { CoreBroken = true; B!.GreatExtra = 1; Midnight(true); return; }
+        if (Seconds - kindledAt >= 60)
+        {
+            // It cools, and goes back into the ground: the blessing is the night's as it was.
+            B!.Events.Emit(new Ev.Explosion { X = core!.X, Z = core.Z, Radius = 2.5, School = School.Fire, Power = 0.6 });
+            B.Enemies.Release(core);
+            CoreBroken = false;
+            Midnight(false);
+        }
+    }
+
+    /// <summary>The night's great blessing, and a banish with it (by now the build knows what it does not want).</summary>
+    void Midnight(bool rich)
+    {
+        great15 = true;
+        B!.GreatOwed++;
+        B.Banishes++;
+        coreOrb?.Dispose();
+        coreOrb = null;
+        if (coreLight >= 0) G.Look.SetLit(coreLight, false);
+        if (rich && core != null) B.Events.Emit(new Ev.Explosion { X = core.X, Z = core.Z, Radius = 4, School = School.Fire, Power = 1.4 });
+        G.Announce(new Announcement(Middle, rich ? "The core broken: a great blessing, and a choice more" : "A great blessing", "reward", 2.6));
     }
 
     /// <summary>The minute's turn: a ring, a champion, a stampede, a swarm.</summary>
@@ -742,7 +855,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         };
         if (!quiet) B.Events.Emit(new Ev.Bark { X = p.X, Z = p.Z + 3, Text = sign });
         G.Look.AddLight(p.X + Math.Cos(signAngle) * 26, 2.5, p.Z + Math.Sin(signAngle) * 26, "#ff6a3a", 3.2, 16, 0.25, 0.12, "#ff8a5a");
-        if (!quiet) G.Announce(again ? new Announcement($"{BossName} stirs again", "It comes from where the sign was, stronger", "danger", 2.6)
+        if (!quiet) G.Announce(again ? new Announcement($"{BossName} stirs again", "From where the sign was, and stronger", "danger", 2.6)
             : new Announcement(Nears, "It comes from where the sign was", "danger", 2.6));
     }
 
@@ -800,7 +913,15 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             if (map.CanStand(x, z)) Spawn(escort, x, z);
         }
         B.Events.Emit(new Ev.Shake { Amount = 0.45 });
-        G.Announce(new Announcement(BossName, script != null ? $"{BossTitle} · Weakness: {script.WeaknessText}" : BossTitle, "danger", 3.4,
+        // The champions' oath: a champion of its people stands beside it, signed.
+        if (Spec.Oaths.Contains("champions") && Around(signAngle + 0.6, 13) is var (lx, lz) && Spawn(Strongest(), lx, lz, true) is { } lieutenant)
+        {
+            lieutenant.MaxHp = lieutenant.Hp = lieutenant.MaxHp * 2;
+            Sign(lieutenant, SignsFor(false));
+            chests.Add(lieutenant.Id);
+        }
+        string sworn = script?.Sworn() ?? "";
+        G.Announce(new Announcement(BossName, (script != null ? $"{BossTitle} · Weakness: {script.WeaknessText}" : BossTitle) + (sworn.Length > 0 ? $" · Sworn: {sworn}" : ""), "danger", 3.4,
             again ? (returns == 1 ? "Again" : $"Again, the {Ordinal(returns + 1)} time") : Comes));
         Objectives();
     }
@@ -854,9 +975,10 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     public static (double Health, double Damage, double Pace) Hardening(double m)
     {
         // Compounding from an hour past: three hundredths a minute, so by two hours past
-        // nothing stands (measured: docs/team/combat.md).
+        // nothing stands (measured: docs/team/combat.md). The square's 0.004 (from 0.006) gives
+        // the tail to good builds: the median run past the half hour went 22 -> 26 minutes.
         double press = m > 60 ? Math.Pow(1.03, m - 60) : 1;
-        return ((1 + 0.1 * m + 0.006 * m * m) * press, (1 + 0.035 * m) * press, 1 + Math.Min(0.15, 0.004 * m));
+        return ((1 + 0.1 * m + 0.004 * m * m) * press, (1 + 0.035 * m) * press, 1 + Math.Min(0.15, 0.004 * m));
     }
 
     void LongNight()
@@ -911,7 +1033,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         bossUp = false;
         boss = null;
         eventT = 20;
-        G.Announce(new Announcement($"{BossName} is beaten again", "It will come again, stronger.", "reward", 3.4));
+        G.Announce(new Announcement($"{BossName} is down again", "Back soon, and stronger.", "reward", 3.4));
         Objectives();
     }
 
@@ -959,11 +1081,21 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     bool IBossArena.Spare => Spec.Spare;
     bool IBossArena.Sworn(string oath) => Spec.Oaths.Contains(oath);
     double IBossArena.R() => R();
-    Enemy? IBossArena.Spawn(string def, double x, double z, bool elite, SpawnStyle? style) => Spawn(def, x, z, elite, style);
+    Enemy? IBossArena.Spawn(string def, double x, double z, bool elite, SpawnStyle? style)
+    {
+        var e = Spawn(def, x, z, elite, style);
+        // The swarm's oath: what the boss calls comes half again as many.
+        if (e != null && !elite && Spec.Oaths.Contains("swarm") && R() < 0.5) Spawn(def, x + (R() - 0.5) * 1.6, z + (R() - 0.5) * 1.6, false, style);
+        return e;
+    }
     bool IBossArena.CanStand(double x, double z) => map.CanStand(x, z) && !B!.Collision.Blocked(x, z, 0.6);
     void IBossArena.Say(string title, string? sub, string tone) => G.Announce(new Announcement(title, sub ?? "", tone, 2.4));
     void IBossArena.Bark(double x, double z, string text, string? speaker) => B?.Events.Emit(new Ev.Bark { X = x, Z = z, Text = text, Speaker = speaker });
     double IBossArena.HordeShare { set => bossShare = value; }
+    /// <summary>The night won where the survivor stands, its boss passed over (pictures of the long
+    /// night, and of a fall after the win: --minute 34 --won --die 40).</summary>
+    public void WinNow() { if (!won && !over && B != null) Victory(B.Player.X, B.Player.Z); }
+
     void IBossArena.Won(double x, double z)
     {
         if (over || !bossUp) return;
@@ -1005,14 +1137,30 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         return o;
     }
 
-    /// <summary>A chest: upgrades, an evolution first if one is earned.</summary>
+    /// <summary>A chest: upgrades, an evolution first if one is earned, opened as a moment of
+    /// its own (the host stages it). One, three or five things; a boss's hoard more.</summary>
     bool OnPickup(Pickup p)
     {
         if (p.Kind != PickupKind.Chest || B == null) return true;
-        int n = p.Ref == "boss" ? (int)p.Value : p.Ref == "small" ? 1 : 1 + (R() < 0.3 ? 1 : 0) + (R() < 0.1 ? 1 : 0);
+        // (Two rolls, as the old count took, so the night's dice after it fall as they did.)
+        double roll = R();
+        R();
+        int n = p.Ref == "boss" ? (int)p.Value : p.Ref == "small" ? 1 : LevelUp.ChestCount(roll);
         var got = LevelUp.OpenChest(B, n);
-        G.Announce(new Announcement("A chest", string.Join(" · ", got), "reward", 2.8));
+        chestsOpened++;
+        G.Chest(new ChestOpened(p.X, p.Z, p.Id, got, p.Ref == "boss" ? $"{BossName}'s hoard" : null, chestsOpened));
         return true;
+    }
+
+    int chestsOpened;
+
+    /// <summary>A chest of n things opened at her feet, a hoard if asked (--chest: pictures of the opening).</summary>
+    public void ChestAt(int n, bool hoard)
+    {
+        if (B == null) return;
+        var got = LevelUp.OpenChest(B, n);
+        chestsOpened++;
+        G.Chest(new ChestOpened(B.Player.X + 0.8, B.Player.Z + 0.6, chestsOpened, got, hoard ? $"{BossName}'s hoard" : null, chestsOpened));
     }
 
     void OnKill(Enemy e, bool byPlayer)
@@ -1045,15 +1193,21 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         Arenas.Won(G.Journey, Spec);
         // A story's night is over at its boss's fall: its people draw back into the dark.
         if (Spec.Story) { bossShare = 0; MakeWay(0); }
-        way = map.CanStand(x, z) ? (x, z) : (B!.Player.X, B.Player.Z);
-        var (wx, wz) = way.Value;
-        G.Look.AddLight(wx, 2.2, wz, "#8ab4ff", 3.2, 14, 0.08, 0.14, "#b8d0ff");
-        Interactables.Add(new Interactable
+        // The way out opens where it fell (a story's night lets her go by itself: it needs none).
+        // Its prompt waits until the fall has landed: a button over her at the peak spoiled it.
+        if (!Spec.Story)
         {
-            Id = "way_out", X = wx, Z = wz, R = 2.6, Verb = "Leave", Name = "The way out",
-            Hint = () => Spec.Story ? "Won" : $"Won. Or stay: {Clock(Seconds - End)} {Past}",
-            Act = Leave,
-        });
+            way = map.CanStand(x, z) ? (x, z) : (B!.Player.X, B.Player.Z);
+            var (wx, wz) = way.Value;
+            G.Look.AddLight(wx, 2.2, wz, "#8ab4ff", 3.2, 14, 0.08, 0.14, "#b8d0ff");
+            Interactables.Add(new Interactable
+            {
+                Id = "way_out", X = wx, Z = wz, R = 2.6, Verb = "Leave", Name = "The way out",
+                Hint = () => $"Won. Or stay: {Clock(Seconds - End)} {Past}",
+                When = () => wayShown, Act = Leave,
+            });
+            G.After(2.6, () => wayShown = true);
+        }
         // The night's peak: the world slows on the fall, and the people break and run for a
         // breath before they gather again (docs/EXPERIENCE_AUDIT.md, finding 2).
         B!.Events.Emit(new Ev.Victory { X = x, Z = z });
@@ -1070,7 +1224,8 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
             G.After(2.4, () => { if (B != null && !over) foreach (var k in B.Pickups.Items) if (k.Alive) k.Pulled = true; });
             G.After(7, () => { if (won && !over) Finish(); });
         }
-        G.Announce(new Announcement($"{Spec.Name} is won", Spec.Story ? "The night is over, and it lets you go." : "The way out is open. Or stay: the night does not end, and it only gets harder.", "reward", 4, "Victory"));
+        // The words a beat after the blow, as time comes back, not over the flash.
+        G.After(0.8, () => G.Announce(new Announcement($"{Spec.Name} is won", Spec.Story ? "The night is over, and it lets you go." : "The way out is open. Or stay: the night does not end, and it only gets harder.", "reward", 4, "Victory")));
         Objectives();
     }
 
@@ -1110,12 +1265,25 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         if (way is var (wx, wz) && (pulseT -= dt) <= 0)
         {
             pulseT = 1.3;
-            B.Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = wx, Z = wz, Radius = 2.4, Duration = 1.2, Hostile = false });
+            // A band of light, not a filling disc: the field round it stays readable.
+            B.Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Ring, X = wx, Z = wz, Inner = 1.9, Radius = 2.4, Duration = 1.2, Hostile = false });
+        }
+        // The core: a lump of raw ember, pulsing, brighter as it is broken.
+        if (coreOrb != null && core != null)
+        {
+            double ct = Seconds, hurt = 1 - core.Hp / Math.Max(1, core.MaxHp);
+            coreOrb.Visible = true;
+            coreOrb.Place(core.X, G.Look.HeightAt(core.X, core.Z) + 0.45, core.Z, ct * 0.15, 1 + 0.03 * Math.Sin(ct * 5.1) + 0.12 * hurt);
+            coreOrb.Light = Math.Min(1, hurt + 0.08 * Math.Sin(ct * 5.1));
         }
         if (boss is { Alive: true } b && b.State != EnemyState.Dying)
             G.SetBoss(script != null ? script.Bar(BossName, script is Grimtunnel g ? $"{BossTitle} · {(g.Ganger ? "lamp" : "lamps")}: {g.Lamps}" : BossTitle) : new BossBar(BossName, BossTitle, b.Hp, b.MaxHp));
+        else if (CoreUp && core is { } cc)
+            G.SetBoss(new BossBar("The ember-core", $"Break it: {Math.Max(0, 60 - (Seconds - kindledAt)):0} s", cc.Hp, cc.MaxHp, IsBoss: false));
         else if (herald is { Alive: true } h && h.State != EnemyState.Dying)
             G.SetBoss(new BossBar(h.Named?.Title ?? $"Herald of {people.Name}", h.Def.Signs.Length > 0 ? string.Join(", ", h.Def.Signs.Select(s => Signs.Get(s).Name)) : people.Name, h.Hp, h.MaxHp, IsBoss: false));
+        else if (keeper is { Alive: true } kp && kp.State != EnemyState.Dying && kp.Named != null)
+            G.SetBoss(new BossBar(kp.Def.Name, kp.Def.Lesson, kp.Hp, kp.MaxHp, IsBoss: false));
         else if (MinibossUp && miniboss is { } mb)
             G.SetBoss(new BossBar(mb.Def.Name, mb.Def.Lesson.Length > 0 ? mb.Def.Lesson : people.Name, mb.Hp, mb.MaxHp, IsBoss: false));
         else G.SetBoss(null);
@@ -1131,18 +1299,20 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         bool goesDown = script is Grimtunnel { Ganger: false };
         var steps = new List<Step>
         {
-            won ? new Step(goesDown ? $"{BossName} is driven back down: the arena is won" : $"{BossName} is beaten: the arena is won", Done: true)
-            : bossUp ? new Step($"{BossName} has come: {(goesDown ? "drive him back down" : "beat it")}")
-            : new Step($"Survive: {left / 60}:{left % 60:00} until {BossName} comes"),
+            // "Down" holds for every end a fight has: killed, let go, laid down, or sent back down the hole.
+            won ? new Step(goesDown ? $"{BossName} is driven back down: the night is held" : $"{BossName} is down: the night is held", Done: true)
+            : bossUp ? new Step($"{BossName} has come: {(goesDown ? "drive him back down" : "end it")}")
+            : new Step($"Survive: {left / 60}:{left % 60:00} until {Maps.MapOffers.InSentence(BossName)} comes"),
         };
         if (won)
         {
-            if (!Spec.Story) steps.Add(new Step($"Stay as long as you dare: {Clock(Seconds - End)} {Past}", Optional: true));
-            if (bossUp) steps.Add(new Step($"{BossName} has come again", Optional: true));
+            // A story's night is over at the fall: nothing comes again.
+            if (Spec.Story) steps.Add(new Step("The night lets you go", Optional: true));
             else
             {
+                steps.Add(new Step($"Stay as long as you dare: {Clock(Seconds - End)} {Past}", Optional: true));
                 int back = (int)Math.Max(0, nextReturn - Seconds);
-                steps.Add(new Step($"{BossName} comes again in {back / 60}:{back % 60:00}", Optional: true));
+                steps.Add(new Step(bossUp ? $"{BossName} has come again" : $"{BossName} comes again in {back / 60}:{back % 60:00}", Optional: true));
             }
             if (dark.Count > 0 || deeper > 0)
                 steps.Add(new Step($"The dark has sworn {string.Join(", ", dark.Select(o => o.Name.Replace("Oath of ", "")))}{(deeper > 0 ? $", and deepened {deeper} times" : "")}", Optional: true));
@@ -1155,6 +1325,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
 
     public override Dictionary<string, object?> Debug() => new()
     {
-        ["minute"] = Math.Round(Minute, 1), ["alive"] = B?.Enemies.Living().Count() ?? 0, ["target"] = Target(), ["level"] = Level(), ["ember"] = B?.EmberLevel,
+        ["minute"] = Math.Round(Minute, 1), ["alive"] = B?.Enemies.Living().Count() ?? 0, ["target"] = Target(), ["level"] = Level(),
+        ["stones"] = B?.EmbersLying, ["hoard"] = B?.HoardStone is { } h ? Math.Round(h.Value) : 0, ["ember"] = B?.EmberLevel,
     };
 }
