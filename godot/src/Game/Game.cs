@@ -765,7 +765,7 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
-    bool hordeDone, dropsDone, castDone, giveDone, minuteDone;
+    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, dieDone;
     double blastT = 0.5, marksT = 1;
 
     void Tour(double dt)
@@ -883,6 +883,14 @@ public partial class Game : Node, IZoneHost
             castDone = true;
             cb.Aim = null;
             cb.UseAbility(Args.Has("still") ? 0 : 1, 0);
+        }
+        // --die T: T seconds in, a risen at arm's length before her (--behind:
+        // at her back) fells her where she stands (a picture of her fall).
+        if (!dieDone && Args.Has("die") && Battle is { } kb && Journey.Playtime >= Args.Num("die", 1))
+        {
+            dieDone = true;
+            var killer = kb.SpawnEnemy("risen", kb.Player.X, kb.Player.Z + (Args.Has("behind") ? -1.2 : 1.2));
+            kb.HurtPlayerRaw(kb.Player.Hp + 1e6, School.Physical, "test", killer);
         }
         if (Args.Get("open") is not string want) return;
         tourT -= dt;
