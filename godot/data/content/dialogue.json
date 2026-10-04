@@ -1310,7 +1310,7 @@
         }
        ]
       },
-      "locked": "Bring pelts or the alpha's fang",
+      "locked": "Bring pelts, or Greymuzzle's fang",
       "goto": "bounty"
      },
      {
@@ -1699,7 +1699,7 @@
         }
        ]
       },
-      "locked": "Bring pelts or the alpha's fang",
+      "locked": "Bring pelts, or Greymuzzle's fang",
       "goto": "bounty"
      },
      {
@@ -2267,7 +2267,7 @@
         }
        ]
       },
-      "locked": "Bring pelts or the alpha's fang",
+      "locked": "Bring pelts, or Greymuzzle's fang",
       "goto": "bounty"
      },
      {
@@ -2573,7 +2573,7 @@
         }
        ]
       },
-      "locked": "Bring pelts or the alpha's fang",
+      "locked": "Bring pelts, or Greymuzzle's fang",
       "goto": "bounty"
      },
      {
@@ -14894,7 +14894,7 @@
         }
        ]
       },
-      "text": "WOLF BOUNTY — five gold the pelt, fifty for the grey alpha. Capt. Holloway, the Watch."
+      "text": "WOLF BOUNTY — five gold the pelt, fifty for the old grey dog-wolf. Capt. Holloway, the Watch."
      },
      {
       "when": {

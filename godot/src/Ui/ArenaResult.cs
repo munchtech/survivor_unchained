@@ -101,7 +101,7 @@ public partial class ArenaResultScreen : Overlay
         bool fell = G.Battle?.Player.Alive == false;
         // The verdict on a banner, the arena's name under it.
         var banner = Style.Panel(OrnateBox.Make(OrnateBox.Kind.Banner, 30, r.Won ? Style.Gold : Style.BloodHi),
-            Style.Label(!r.Won ? "THE EMBER GUTTERS" : fell ? "WON, AND HELD TO THE LAST" : "THE ARENA IS WON", Style.Display, 40, r.Won ? new Color("#ffe6b8") : Style.BloodHi, false, HorizontalAlignment.Center));
+            Style.Label(!r.Won ? "THE EMBER GUTTERS" : fell ? "WON, AND HELD TO THE LAST" : "THE NIGHT IS HELD", Style.Display, 40, r.Won ? new Color("#ffe6b8") : Style.BloodHi, false, HorizontalAlignment.Center));
         banner.SizeFlagsHorizontal = SizeFlags.ShrinkCenter;
         wrap.AddChild(banner);
         wrap.AddChild(Style.Label(r.Spec.Name, Style.TextItalic, Style.Lead, Style.GoldHi, false, HorizontalAlignment.Center));
@@ -117,9 +117,9 @@ public partial class ArenaResultScreen : Overlay
         tally.Alignment = BoxContainer.AlignmentMode.Center;
         wrap.AddChild(tally);
         if (r.Longest && r.Seconds > 120)
-            wrap.AddChild(Beat(Style.Label("Your longest in any arena yet", Style.TextItalic, Style.Lead, Style.EmberHi, false, HorizontalAlignment.Center), cue, Sound.Sfx.Discovery));
+            wrap.AddChild(Beat(Style.Label("Your longest night yet", Style.TextItalic, Style.Lead, Style.EmberHi, false, HorizontalAlignment.Center), cue, Sound.Sfx.Discovery));
         cue += 0.4;
-        // (how it ended, in a line, comes last: below)
+        // (how it ended and how near it came, in a line, comes last: below; docs/feel S-16)
         var story = Story();
 
         var two = Style.H(18);
@@ -131,7 +131,7 @@ public partial class ArenaResultScreen : Overlay
         // you: a level, a tome).
         var outv = Style.V(8, new Section("What you take out"));
         void Next(Control c, System.Action? sound, double gap = 0.42) { outv.AddChild(Beat(c, cue, sound)); cue += gap; }
-        Next(Line("book", $"{r.Xp:N0} experience", Style.Ink), () => Sound.Sfx.Xp(6));
+        Next(Line("book", $"{r.Xp:N0} experience", Style.Ink), () => Sound.Sfx.Xp(6, 1, false, false));
         if (r.Gold > 0) Next(Line("coin", $"{r.Gold:N0} gold", Style.GoldHi), Sound.Sfx.Gold);
         // What the night left in the fist, for the Waystation's hands; on a fall, what spilled.
         if (r.Carried.Count > 0 || r.Spilled.Count > 0) Next(Haul(r), () => Sound.Sfx.Loot(), 0.55);
@@ -144,7 +144,7 @@ public partial class ArenaResultScreen : Overlay
             Next(Style.Label("What was discovered here can be learned for the day: from tomes, and from your calling as you grow.", Style.TextItalic, Style.Caption, Style.InkDim, true), null, 0.3);
         }
         if (r.Taught is { } taught) Next(Line("book", $"Your calling taught you {Weapons.All[taught].Name}", Style.Good), Sound.Sfx.Discovery);
-        if (r.LevelsGained > 0) Next(Line("star", $"Level {G.Journey.Ch.Level}" + (r.LevelsGained > 1 ? $": {r.LevelsGained} levels in one night" : ""), Style.Good), Sound.Sfx.LevelUp, 0.6);
+        if (r.LevelsGained > 0) Next(Line("star", $"Level {G.Journey.Ch.Level}" + (r.LevelsGained > 1 ? $": {r.LevelsGained} levels in one night" : ""), Style.Good), () => Sound.Sfx.LevelUp(), 0.6);
         // A tome won is the survivor's to write: one of what burned here (the best of a night, last).
         if (r.Inscribed is { } tome) Next(Line("book", $"A tome: {Weapons.All[tome].Name}", new Color("#b8a8d8")), () => Sound.Sfx.Loot(true), 0.6);
         else if (r.TomeChoices.Count > 0)
@@ -190,14 +190,22 @@ public partial class ArenaResultScreen : Overlay
         cue += 1.4;
         two.AddChild(Card(stay, Style.Slab(18)));
 
-        // Beat four: how it went, in a line; what comes of it; and back to the road.
+        // Beat four: how it went, in a line; then a story night's narrator line for how it went
+        // (docs/WRITING_PASS.md §20), a lost one saying where it waits; a table night ends with the
+        // Wayfinder, who writes it down; and back to the road.
         string after = r.Spec.Story
-            ? r.Won ? "The story goes on." : "The story goes on without the win. The Wayfinder will let you take this fight again."
-            : r.Won ? "The Wayfinder will want to hear of it." : "The Wayfinder's table will have other maps.";
+            ? r.Won ? r.Spec.EndWon ?? "The valley will hear of it." : r.Spec.EndLost ?? "The valley will hear of it."
+            : r.Won ? "The Wayfinder will want it for her margins." : "The Wayfinder's table will have other maps.";
         if (story != "") wrap.AddChild(Beat(Style.Label(story, Style.TextItalic, Style.Body, r.Won ? Style.Ink : Style.BloodHi, true, HorizontalAlignment.Center), cue, Sound.Sfx.Page));
         cue += 0.5;
         wrap.AddChild(Beat(Style.Label(after, Style.TextItalic, Style.Body, Style.Ink, true, HorizontalAlignment.Center), cue));
         cue += 0.3;
+        if (r.Spec.Story && !r.Won)
+        {
+            wrap.AddChild(Beat(Style.Label("The fight waits on the Wayfinder's table, to be taken again.", Style.TextItalic, Style.Caption, Style.InkDim, true, HorizontalAlignment.Center), cue));
+            cue += 0.3;
+        }
+        // (the autopilot's Confirm, like a player's, first tells the rest, then leaves)
         var go = Style.Button("", () => { if (Told) G.LeaveArena(r); else told = true; }, true);
         var gr = Style.H(8, Style.Prompt(Act.Confirm), Style.Label("Back to the road", Style.UiBold, Style.Body, new Color("#ffe4b0")));
         gr.MouseFilter = MouseFilterEnum.Ignore;
@@ -220,7 +228,7 @@ public partial class ArenaResultScreen : Overlay
         if (G.LastFall is var (killer, at) && G.Battle?.Player.Alive == false) parts.Add($"Brought down by {killer} at {Clock(at)}");
         if (!r.Won)
         {
-            if (r.Seconds < end) { int m = (int)Math.Ceiling((end - r.Seconds) / 60); parts.Add($"{m} minute{(m == 1 ? "" : "s")} before {boss} would have come"); }
+            if (r.Seconds < end) { int m = (int)Math.Ceiling((end - r.Seconds) / 60); parts.Add($"{m} minute{(m == 1 ? "" : "s")} before {SurvivorUnchained.Maps.MapOffers.InSentence(boss)} would have come"); }
             else parts.Add($"{boss} still stands");
         }
         return string.Join(";  ", parts) + (parts.Count > 0 ? "." : "");

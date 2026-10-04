@@ -597,6 +597,14 @@ public static class People
             OutfitMaterials(mi);
         }
         scene.Free();
+        // Plate holds her: under the warden's formed cups her breasts swing
+        // less and never squash (metal does not give); cloth and leather move
+        // with her as her own skin does.
+        if (p.Skeleton.GetNodeOrNull<HerJiggle>("HerJiggle") is HerJiggle jig)
+        {
+            jig.Amount = set == "warden" ? 0.55f : 1f;
+            jig.Squash = set == "warden" ? 0f : 1f;
+        }
         // Her skin under the outfit's fitted pieces is not drawn: each
         // outfit marks it in one channel of her vertex colours.
         int ch = System.Array.IndexOf(OutfitChannels, set);
