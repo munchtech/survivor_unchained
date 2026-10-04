@@ -34,6 +34,9 @@ public sealed class VoTake
     /// <summary>'f' or 'm' where the line is one of several takes of the same
     /// words by different passers-by.</summary>
     public string? Sex;
+    /// <summary>A stand-in made locally until the final take (recorded by
+    /// hand in ElevenLabs, tools/vo/import_takes.py) replaces it.</summary>
+    public bool Placeholder;
 }
 
 public sealed class VoIndex

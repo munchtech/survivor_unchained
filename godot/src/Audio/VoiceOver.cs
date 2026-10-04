@@ -121,7 +121,7 @@ public partial class VoiceOver : Node
         line.Play();
         Current = take;
         CurrentId = id;
-        GD.Print($"voice {id} ({take.Sec:0.0} s)");
+        GD.Print($"voice {id} ({take.Sec:0.0} s{(take.Placeholder ? ", placeholder" : "")})");
         return take;
     }
 
