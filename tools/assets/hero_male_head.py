@@ -1322,5 +1322,6 @@ def export(objs, path, **kw):
 
 
 _game_parts = [o for o in parts if not (o.name == "HeroBrows" and os.path.exists(FACE_PAINT))]
-export([him, head] + _game_parts, os.path.join(ART, "hero.glb"), export_format="GLB")
+# (Its paint as WebP: his three 4K maps as PNG made a 38 MB file.)
+export([him, head] + _game_parts, os.path.join(ART, "hero.glb"), export_format="GLB", export_image_format="WEBP", export_image_quality=92)
 print("WRITTEN", OUT_BLEND, "and", ART)
