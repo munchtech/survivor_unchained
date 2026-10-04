@@ -1,0 +1,39 @@
+{
+ "layers": [
+  {
+   "name": "clay",
+   "source": "red_mud_stones",
+   "metres": 1.5
+  },
+  {
+   "name": "spoil",
+   "source": "gravel_stones",
+   "metres": 2.0
+  },
+  {
+   "name": "rubble",
+   "source": "rocks_ground_06",
+   "metres": 3.0
+  },
+  {
+   "name": "slurry",
+   "source": "brown_mud_03",
+   "metres": 1.3
+  },
+  {
+   "name": "dry",
+   "source": "dry_mud_field_001",
+   "metres": 3.0
+  },
+  {
+   "name": "burnt",
+   "source": "burned_ground_01",
+   "metres": 1.0
+  },
+  {
+   "name": "face",
+   "source": "quarry_wall",
+   "metres": 1.8
+  }
+ ]
+}

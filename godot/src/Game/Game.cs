@@ -174,6 +174,10 @@ public partial class Game : Node, IZoneHost
             if (Args.Get("people") is string pe) o = o with { People = pe };
             if (Args.Get("oaths") is string oa) o.Spec.Oaths = oa.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
             if (Args.Has("tier")) o.Spec.Tier = (int)Args.Num("tier", 1);
+            // --theme ID --seed N: that ground (pictures of each arena's look, the same place each time).
+            if (Args.Get("theme") is string th) o.Spec.Theme = th;
+            if (Args.Has("seed")) o.Spec.Seed = (int)Args.Num("seed", 1);
+            if (Args.Get("mood") is string mo) o.Spec.Mood = mo;
             var at0 = Waystation.AtTable;
             var spec = Arenas.FromTable(o, "waystation", at0.X, at0.Z, at0.Facing);
             // --boss DEF[:NAME]: a story's foe at the half hour (pictures of Grimtunnel, of Greymuzzle).
@@ -351,6 +355,7 @@ public partial class Game : Node, IZoneHost
         zone = Make(id, scene!.Data.Meta);
         var time = zone.TimeOf(World);
         air.Set(zone.AtmosphereFor(time));
+        air.Air(scene!.Data.Place?.Air);
         scene.View.SetNight(time == TimeOfDay.Night);
         EnterPlay(zone, from, at);
     }

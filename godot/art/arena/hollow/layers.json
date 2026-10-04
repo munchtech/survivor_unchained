@@ -1,0 +1,39 @@
+{
+ "layers": [
+  {
+   "name": "litter",
+   "source": "forest_leaves_03",
+   "metres": 2.3
+  },
+  {
+   "name": "moss",
+   "source": "brown_mud_leaves_01",
+   "metres": 1.3
+  },
+  {
+   "name": "roots",
+   "source": "roots",
+   "metres": 1.67
+  },
+  {
+   "name": "mud",
+   "source": "mud_forest",
+   "metres": 2.35
+  },
+  {
+   "name": "bed",
+   "source": "river_small_rocks",
+   "metres": 2.9
+  },
+  {
+   "name": "needles",
+   "source": "forest_leaves_04",
+   "metres": 1.5
+  },
+  {
+   "name": "face",
+   "source": "mossy_rock",
+   "metres": 3.0
+  }
+ ]
+}

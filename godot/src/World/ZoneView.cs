@@ -54,6 +54,8 @@ public partial class ZoneView : Node3D
         AddChild(props);
         Landmarks = new Landmarks(z);
         AddChild(Landmarks.Root);
+        // An ember arena's ring, its mist and its streams.
+        if (z.Place != null) AddChild(ArenaEdge.Build(z));
         if (grassAround is Vector2 at) GrowGrass(at, grassRadius);
 
         var meta = z.Meta;

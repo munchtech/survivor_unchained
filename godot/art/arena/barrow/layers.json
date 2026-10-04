@@ -1,0 +1,39 @@
+{
+ "layers": [
+  {
+   "name": "turf",
+   "source": "withered_grass",
+   "metres": 2.0
+  },
+  {
+   "name": "bare",
+   "source": "ground_grey",
+   "metres": 1.0
+  },
+  {
+   "name": "way",
+   "source": "stone_pathway_02",
+   "metres": 1.95
+  },
+  {
+   "name": "grave",
+   "source": "brown_mud_02",
+   "metres": 1.3
+  },
+  {
+   "name": "ash",
+   "source": "burned_ground_01",
+   "metres": 1.0
+  },
+  {
+   "name": "rubble",
+   "source": "rocky_trail",
+   "metres": 2.0
+  },
+  {
+   "name": "face",
+   "source": "dark_rock",
+   "metres": 2.421
+  }
+ ]
+}

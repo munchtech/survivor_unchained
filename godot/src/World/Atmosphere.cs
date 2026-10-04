@@ -109,10 +109,26 @@ public partial class Atmosphere : Node3D
         Env.FogLightColor = C(p.FogColor);
         Env.FogDensity = (float)(p.FogDensity * p.FogDensity * FogMatchDistance);
         Env.VolumetricFogAlbedo = C(p.FogColor).Lightened(0.5f);
+        Env.VolumetricFogDensity = 0.0012f;
+        // An ember arena's own air: smoke or dust hanging in it.
+        if (air is { } a)
+        {
+            Env.VolumetricFogDensity = 0.0012f * (float)a.Haze;
+            Env.VolumetricFogAlbedo = C(a.HazeColor).Lightened(0.35f);
+        }
         Env.TonemapExposure = (float)p.Exposure * ExposureScale;
         var rim = C(p.Rim).SrgbToLinear();
         RenderingServer.GlobalShaderParameterSet("body_rim", new Vector4(rim.R, rim.G, rim.B, (float)p.RimStrength));
         if (grade) Env.AdjustmentColorCorrection = GradeLut(p.Grade, Mute);
+    }
+
+    SurvivorUnchained.Maps.ArenaAir? air;
+
+    /// <summary>A place's own air (an ember arena's), or none; applied with the next Set.</summary>
+    public void Air(SurvivorUnchained.Maps.ArenaAir? a)
+    {
+        air = a;
+        Set(Current);
     }
 
     /// <summary>The picture's quality: lower trades ambient occlusion, the air's

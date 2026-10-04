@@ -41,8 +41,20 @@ public static class Ground
         arrays[(int)Mesh.ArrayType.Vertex] = verts;
         arrays[(int)Mesh.ArrayType.Normal] = normals;
         arrays[(int)Mesh.ArrayType.Index] = idx;
+        // An arena's ground knows, vertex by vertex, how far inside its ring it is.
+        if (z.Inside is double[] inside)
+        {
+            var cols = new Color[n * n];
+            for (int k = 0; k < cols.Length; k++) cols[k] = new Color(Mathf.SmoothStep(-16f, -3f, (float)inside[k]), 0, 0);
+            arrays[(int)Mesh.ArrayType.Color] = cols;
+        }
         var mesh = new ArrayMesh();
         mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
+        if (z.Place != null)
+        {
+            mesh.SurfaceSetMaterial(0, ArenaGround.Material(z));
+            return Finish(z, mesh);
+        }
 
         var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/terrain.gdshader") };
         var splat = ImageTexture.CreateFromImage(WithMips(z.Splat));
@@ -59,6 +71,12 @@ public static class Ground
         foreach (var l in meta.RootElement.GetProperty("layers").EnumerateArray()) scales.Add(1f / l.GetProperty("metres").GetSingle());
         mat.SetShaderParameter("g_scale", scales);
         mesh.SurfaceSetMaterial(0, mat);
+        return Finish(z, mesh);
+    }
+
+    static MeshInstance3D Finish(ZoneData z, ArrayMesh mesh)
+    {
+        int n = z.Res;
         var ground = new MeshInstance3D { Mesh = mesh, Name = "Ground", CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         // What falls lands on it: the same heights as a physics heightmap
         // (one sample a metre here, as the zone's grid is).

@@ -82,8 +82,13 @@ public static class MapOffers
         return r;
     }
 
-    static readonly string[] Adjectives = { "Weeping", "Ashen", "Thorned", "Drowned", "Moonless", "Broken", "Gallows", "Whispering", "Hollow", "Bleeding", "Crooked", "Silent" };
-    static readonly string[] Places = { "Wood", "Thicket", "Glade", "Tangle", "Barrow-Wood", "Deepwood", "Fen", "Holt", "Wilds", "Brake" };
+    /// <summary>What a place is like; each word makes its look (ArenaPlaces.Moods).</summary>
+    static readonly string[] Adjectives = ArenaPlaces.Moods.Select(m => m.Word).ToArray();
+
+    /// <summary>What a place is called: the word for where its people live
+    /// (ArenaPlaces.Names), so a Risen map is a barrow and never a fen.</summary>
+    static string PlaceWord(Rng rng, string people) =>
+        rng.Pick(ArenaPlaces.Names.First(n => n.Place == ArenaPlaces.IdFor(people)).Words);
 
     /// <summary>The maps the table offers today: three, each of its own
     /// people and oaths, the tier the survivor has earned (and one higher).</summary>
@@ -102,7 +107,7 @@ public static class MapOffers
             var spec = new MapSpec
             {
                 Seed = rng.Int(1, int.MaxValue - 1), Tier = t, Theme = theme, Oaths = oaths, Night = true,
-                Name = $"The {rng.Pick(Adjectives)} {rng.Pick(Places)}",
+                Name = $"The {rng.Pick(Adjectives)} {PlaceWord(rng, people.Id)}",
             };
             list.Add(new MapOffer(spec, people.Id));
         }

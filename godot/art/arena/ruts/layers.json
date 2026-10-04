@@ -1,0 +1,39 @@
+{
+ "layers": [
+  {
+   "name": "verge",
+   "source": "grass_path_3",
+   "metres": 1.0
+  },
+  {
+   "name": "churn",
+   "source": "brown_mud_03",
+   "metres": 1.3
+  },
+  {
+   "name": "ruts",
+   "source": "muddy_tracks",
+   "metres": 2.25
+  },
+  {
+   "name": "wet",
+   "source": "brown_mud_02",
+   "metres": 1.3
+  },
+  {
+   "name": "camp",
+   "source": "wood_chips",
+   "metres": 2.0
+  },
+  {
+   "name": "metal",
+   "source": "gravel_road",
+   "metres": 2.0
+  },
+  {
+   "name": "face",
+   "source": "rocky_terrain",
+   "metres": 90.0
+  }
+ ]
+}
