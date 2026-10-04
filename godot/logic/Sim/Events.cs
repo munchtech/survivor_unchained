@@ -10,6 +10,12 @@ namespace SurvivorUnchained.Sim;
 public abstract class CombatEvent { }
 
 public enum TelegraphShape { Circle, Line, Cone, Ring }
+
+/// <summary>What a telegraph says (docs/bosses/MECHANICS.md section 2), in colour and
+/// edge both: a blow is coming here (amber, filled), this ground stays bad
+/// (violet, hatched), stand here (pale blue, dashed), this will be solid (grey,
+/// a hard edge).</summary>
+public enum TelegraphKind { Blow, Ground, Safe, Wall }
 public enum SpawnStyle { Rise, Burrow, Walk, Drop }
 public enum Tone { Danger, Info, Boon, Story }
 
@@ -32,6 +38,8 @@ public static class Ev
     public sealed class PlayerHit : CombatEvent
     {
         public double X, Z, Amount; public School School; public string Source = ""; public bool Dodged, Blocked;
+        /// <summary>Damage over time (poison, burning), said once a second: quieter than a blow.</summary>
+        public bool Dot;
     }
 
     /// <summary>A ward took the blow (or some of it); Broke: and is gone.</summary>
@@ -51,6 +59,11 @@ public static class Ev
     {
         public int Id; public TelegraphShape Shape; public double X, Z; public double? X1, Z1; public double Radius;
         public double? Width, Angle, Arc; public double Duration; public bool Hostile;
+        public TelegraphKind Kind;
+        /// <summary>A ring's inner edge (a band, not a disc).</summary>
+        public double Inner;
+        /// <summary>A boss's: drawn above the survivor's own effects, and named over the boss.</summary>
+        public bool Boss; public string? Label;
     }
 
     public sealed class Spawn : CombatEvent { public int Enemy; public double X, Z; public string Def = ""; public SpawnStyle Style; }
@@ -67,6 +80,10 @@ public static class Ev
     public sealed class Bark : CombatEvent { public double X, Z; public string Text = ""; public string? Speaker; }
     public sealed class Announce : CombatEvent { public string Title = ""; public string? Subtitle, Kicker; public Tone? Tone; }
     public sealed class Shake : CombatEvent { public double Amount; }
+    /// <summary>The camera turned to something for a moment (a boss's arrival, its fall).</summary>
+    public sealed class Focus : CombatEvent { public double X, Z, Duration; }
+    /// <summary>A boss's phase broken: the damage past its mark, shown as one number.</summary>
+    public sealed class Break : CombatEvent { public double X, Z, Amount; public int Enemy; }
     public sealed class Sound : CombatEvent { public string Id = ""; public double? X, Z, Volume; }
 }
 

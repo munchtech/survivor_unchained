@@ -224,7 +224,7 @@ public static class ArenaSim
         r.Ember = b.EmberLevel;
         r.DamageTaken = b.DamageTaken;
         r.LowHp = r.ByMinute.Count > 0 ? r.ByMinute.Min(x => x.LowHp) : 1;
-        r.KilledBy = r.Died ? p.LastKiller?.Def.Id ?? "?" : "";
+        r.KilledBy = r.Died ? p.FellTo ?? p.LastKiller?.Def.Id ?? "?" : "";
         r.DamageBy = new Dictionary<string, double>(b.DamageBy);
         r.Build = Describe(b);
         return r;
