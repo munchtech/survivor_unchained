@@ -59,7 +59,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | Crafting (research, design, build) | a97e32948c5bf419d | docs/team/crafting.md |
 | Gameplay experience director | a33f58e68e89e3ccf | docs/team/experience.md |
 | Skills look and feel (VFX, under the main session) | a8bafe3cd8a229639 | docs/team/skills.md |
-| Cinematics production | a2dfc75e2d351105a | docs/team/cinematics.md |
+| Cinematics production | af7a79bc783cca7bc | docs/team/cinematics.md |
 | Performance | a9586a5171413db0b | docs/team/performance.md |
 | Arena art | ab03c3c85571e5085 | docs/team/arena_art.md |
 | Male hero (body, head, hair, outfits) | ae2de192cce8298ca | docs/team/hero_male.md |
