@@ -127,8 +127,12 @@ work, safety, the roster), then this page, then the files in section 9.
    - the Wayfinder on a new longest;
    - Holloway after a boss.
 
-   The target: after any night, someone says something. StoryLint fails on a
-   fact read before it's written, so wait for the push.
+   The target: after any night, someone says something.
+   - The facts are pushed on `worktree-agent-a33f58e68e89e3ccf@e908434`, for
+     the main session to merge. Start once they're on the integration branch.
+   - StoryLint lists them as seeds. Take each off the `Seeds` list as a line
+     reads it; the test enforces that.
+   - `arena.nights` and `arena.fell` are counts the code already reads.
 3. **Word the night's announcements by the night, not the clock.** Story
    nights are 20 minutes, so no "half hour". Combat (`ac4ec5bbd2763a0df`) is
    building the one clock and will send the strings. I suggested defaults to
