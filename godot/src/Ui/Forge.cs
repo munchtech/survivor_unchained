@@ -37,7 +37,13 @@ public partial class ForgeScreen : Overlay
     string? closed;
 
     // --focus ID: that control has the focus first (with --pad, pictures of a craft's heat shown).
-    public ForgeScreen(Game g, string crafter) : base(g) { this.crafter = crafter; Nav.Prefer = Args.Get("focus") ?? "worn:0"; }
+    public ForgeScreen(Game g, string crafter) : base(g)
+    {
+        this.crafter = crafter;
+        Nav.Prefer = Args.Get("focus") ?? "worn:0";
+        // Sitting down at the bench: a greeting, not what was said over the last craft.
+        g.Journey.CraftSaid = null;
+    }
 
     CharacterData Ch => G.Journey.Ch;
     CraftCtx X => G.Journey.Craft;
@@ -103,8 +109,13 @@ public partial class ForgeScreen : Overlay
                 v.AddChild(Style.Label("He likes work: every craft he does for you raises his respect a little.", Style.TextItalic, Style.Caption, Style.InkDim, true));
         }
         v.AddChild(Style.Gap(4));
-        // What it is all made of, in his words.
-        v.AddChild(Style.Panel(Style.Slab(12), Style.Label("“Iron for the shape. Fur for the kind.”", Style.TextItalic, Style.Body, Style.Ink, true, HorizontalAlignment.Center)));
+        // What he says: over the last craft done, or a greeting (the story lead's words, in data).
+        var said = G.Journey.CraftSaid ?? new Said(null, Crafting.Line(crafter, "greet", G.Journey.World.Day), null);
+        var box = Style.V(Style.Gap1);
+        if (said.Before != null) box.AddChild(Style.Label(said.Before, Style.TextItalic, Style.Small, Style.InkDim, true, HorizontalAlignment.Center));
+        if (said.Line != null) box.AddChild(Style.Label($"“{said.Line}”", Style.TextItalic, Style.Body, Style.Ink, true, HorizontalAlignment.Center));
+        if (said.After != null) box.AddChild(Style.Label(said.After, Style.TextItalic, Style.Small, Style.InkDim, true, HorizontalAlignment.Center));
+        if (box.GetChildCount() > 0) v.AddChild(Style.Panel(Style.Slab(12), box));
     }
 
     /* --------------------------------------------------------- the bench -- */
@@ -414,7 +425,7 @@ public partial class ForgeScreen : Overlay
         }
         if (Crafting.Does(crafter, Verb.BreakDown))
         {
-            var q = Crafting.BreakDown(X, it);
+            var q = Crafting.BreakDown(X, it, crafter);
             string gives = string.Join(" and ", q.Gives.Select(kv => Items.Several(kv.Key, kv.Value)));
             bool worn = Inventory.Find(Ch, it.Uid) is { InPack: false };
             row.AddChild(Tile(breaking ? "Break it down for good?" : "Break down", $"For {gives}. It cannot be undone.", q, () =>

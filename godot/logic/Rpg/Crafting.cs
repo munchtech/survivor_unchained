@@ -39,7 +39,15 @@ public sealed class CrafterDef
     /// <summary>Their respect rises with work brought, a little a craft, to a limit.</summary>
     public int RespectPerCraft, RespectFromCraft;
     public List<Easier> Easier = new();
+    /// <summary>What they say (the story lead's words, in data): "greet" on sitting down at
+    /// their bench; a verb's key ("temper") after that craft, in turn; "first.VERB" the first
+    /// time, with "first.VERB.before" and ".after" as narration round it; "history.VERB" the
+    /// line a craft writes on the piece ({who}, {day}, {night}).</summary>
+    public Dictionary<string, List<string>> Lines = new();
 }
+
+/// <summary>What a crafter said over a craft: narration before, their words, narration after.</summary>
+public sealed record Said(string? Before, string? Line, string? After);
 public sealed class NightPeople { public string Family = "", Material = ""; public int Per = 150; }
 public sealed class NightRules
 {
@@ -156,6 +164,36 @@ public static class Crafting
     }
 
     public static bool Does(string crafter, Verb v) => Crafter(crafter)?.Verbs.Contains(v.Key()) == true;
+
+    /// <summary>One of a crafter's lines for a moment, the pick-th in turn (null if none written).</summary>
+    public static string? Line(string crafter, string key, int pick = 0) =>
+        Crafter(crafter)?.Lines.GetValueOrDefault(key) is { Count: > 0 } l ? l[Math.Abs(pick) % l.Count] : null;
+
+    /// <summary>What the crafter says over a craft just done: the first time each verb is done for
+    /// the survivor, its own line (and narration); after, the verb's lines in turn.</summary>
+    public static Said? Speak(CraftCtx x, string crafter, Verb v)
+    {
+        if (Crafter(crafter) is null) return null;
+        string key = v.Key();
+        var n = x.World.Npc(crafter);
+        string flag = $"first.{key}";
+        if (!n.Flag(flag).Truthy && Line(crafter, flag) is { } first)
+        {
+            n.Flags[flag] = true;
+            return new Said(Line(crafter, $"{flag}.before"), first, Line(crafter, $"{flag}.after"));
+        }
+        n.Flags[flag] = true;
+        return Line(crafter, key, (int)n.Flag("crafted").Number) is { } l ? new Said(null, l, null) : null;
+    }
+
+    /// <summary>The line a craft writes on a piece, in the crafter's hand if they have one.</summary>
+    static string History(CraftCtx x, string crafter, string key, string fallback)
+    {
+        string who = Crafter(crafter)?.Name ?? crafter;
+        // The night the coal came out of: what lets Act 3 name it.
+        string night = x.World.Fact("shards.from").Str is { Length: > 0 } s ? (s.StartsWith("The ") ? "the " + s[4..] : s) : "the night";
+        return (Line(crafter, $"history.{key}") ?? fallback).Replace("{who}", who).Replace("{day}", $"{x.World.Day}").Replace("{night}", night);
+    }
 
     static (int HeatTop, int TemperIron) Terms(string crafter, Ctx c)
     {
@@ -390,9 +428,9 @@ public static class Crafting
     }
 
     /// <summary>Break down: old iron for a piece not kept (and a shard back for a coal in it).</summary>
-    public static Quote BreakDown(CraftCtx x, ItemInstance it)
+    public static Quote BreakDown(CraftCtx x, ItemInstance it, string crafter = "")
     {
-        var q = Begin(Verb.BreakDown, "", "Break down");
+        var q = Begin(Verb.BreakDown, crafter, "Break down");
         var def = Items.Get(it.Def);
         bool gear = Items.SlotFor(def) != null;
         int iron = Rules.BreakDown[RarityIx(it.Rarity)];
@@ -415,7 +453,6 @@ public static class Crafting
     {
         if (!q.Ok) return false;
         var ch = x.Ch;
-        var w = x.World;
         if (q.Verb == Verb.BreakDown)
         {
             if (Inventory.Find(ch, it.Uid) is not { InPack: true } loc) return false;
@@ -429,7 +466,6 @@ public static class Crafting
         foreach (var (m, n) in q.Takes) Inventory.Take(ch, m, n);
         ch.Gold -= q.Gold;
         int cost = q.HeatLo == q.HeatHi ? q.HeatLo : rng.Int(q.HeatLo, q.HeatHi);
-        string who = Crafter(q.Crafter)?.Name ?? q.Crafter;
         switch (q.Verb)
         {
             case Verb.Temper:
@@ -451,7 +487,7 @@ public static class Crafting
                 var roll = new AffixRoll { Id = q.Affix, Tier = 0 };
                 if (q.Index >= 0) it.Affixes[q.Index] = roll; else it.Affixes.Add(roll);
                 it.Draw = 0;
-                (it.History ??= new()).Add($"A coal from the night caged in it by {who}, day {w.Day}");
+                (it.History ??= new()).Add(History(x, q.Crafter, "cage", "A coal from {night}, caged by {who}, day {day}"));
                 break;
             }
             case Verb.Remake:
@@ -460,7 +496,7 @@ public static class Crafting
                 it.Rarity++;
                 it.Heat = (it.Heat ?? 0) + add;
                 it.HeatFull = (it.HeatFull ?? 0) + add;
-                (it.History ??= new()).Add($"Remade by {who}, day {w.Day}");
+                (it.History ??= new()).Add(History(x, q.Crafter, "remake", "Remade by {who}, day {day}"));
                 cost = 0;
                 break;
             }

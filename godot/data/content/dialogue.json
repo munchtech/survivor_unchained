@@ -6852,7 +6852,7 @@
       "goto": "cloak"
      },
      {
-      "text": "Can you work my gear?",
+      "text": "Will you work my gear?",
       "action": "craft"
      },
      {
@@ -6948,7 +6948,7 @@
       "goto": "cloak"
      },
      {
-      "text": "Can you work my gear?",
+      "text": "Will you work my gear?",
       "action": "craft"
      },
      {
@@ -7031,7 +7031,7 @@
       "goto": "cloak"
      },
      {
-      "text": "Can you work my gear?",
+      "text": "Will you work my gear?",
       "action": "craft"
      },
      {
