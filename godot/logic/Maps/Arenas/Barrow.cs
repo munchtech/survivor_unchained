@@ -25,8 +25,8 @@ public sealed class Barrow : ArenaShape
     readonly List<(double X, double Z, double R)> rubble = new();
     double doorAng, gateAng;
 
-    bool Ashen => B.Place.Is("ashen");
-    bool Drowned => B.Place.Is("drowned");
+    bool Ashen => B.Place.HasMood("ashen");
+    bool Drowned => B.Place.HasMood("drowned");
 
     public override void Plan()
     {
@@ -281,9 +281,9 @@ public sealed class Barrow : ArenaShape
             }
             else
             {
-                // A great stone fallen face-up, its dead about it.
+                // A great headstone alone, its lesser markers about it.
                 double rot = Rng.Range(0, Math.PI * 2);
-                B.Piece("halloween/gravestone", x, z, rot, Rng.Range(1.3, 1.5));
+                B.Piece("halloween/gravestone", x, z, rot, Rng.Range(1.15, 1.3));
                 B.Block(x, z, 1.0);
                 for (int g = 0; g < 2; g++)
                 {

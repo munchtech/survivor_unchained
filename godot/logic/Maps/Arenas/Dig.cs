@@ -24,8 +24,8 @@ public sealed class Dig : ArenaShape
     readonly List<(double X, double Z, double R)> pools = new();
     readonly List<(double X, double Z, double R)> bakes = new();
 
-    bool Drowned => B.Place.Is("drowned");
-    bool Ashen => B.Place.Is("ashen");
+    bool Drowned => B.Place.HasMood("drowned");
+    bool Ashen => B.Place.HasMood("ashen");
 
     public override void Plan()
     {

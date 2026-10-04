@@ -21,8 +21,8 @@ public sealed class Ruts : ArenaShape
     const double CampR = 12;
     readonly List<(double X, double Z)> wrecks = new();
 
-    bool Drowned => B.Place.Is("drowned");
-    bool Gallows => B.Place.Is("gallows");
+    bool Drowned => B.Place.HasMood("drowned");
+    bool Gallows => B.Place.HasMood("gallows");
 
     public override void Plan()
     {

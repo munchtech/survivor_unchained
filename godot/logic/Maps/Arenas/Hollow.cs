@@ -21,7 +21,7 @@ public sealed class Hollow : ArenaShape
     double denX, denZ;
     readonly List<(double Ang, double X, double Z)> greats = new();
 
-    bool Drowned => B.Place.Is("drowned");
+    bool Drowned => B.Place.HasMood("drowned");
     bool Autumn => B.Spec.Theme == "autumn";
 
     public override void Plan()

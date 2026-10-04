@@ -25,7 +25,7 @@ public sealed record ArenaAir(
 /// <summary>An arena's place: which ground, which shapes, which night.</summary>
 public sealed record ArenaPlace(string Id, string People, string Mood, AtmospherePreset Night, ArenaAir Air)
 {
-    public bool Is(string mood) => Mood == mood;
+    public bool HasMood(string mood) => Mood == mood;
 }
 
 public static class ArenaPlaces
