@@ -80,21 +80,31 @@ void fragment() {
 		c = mix(c, min(dye_color * (lum / dye_lum), vec3(1.0)), m);
 	}
 	c *= COLOR.rgb;
-	// Frozen: pale and icy.
-	c = mix(c, vec3(0.62, 0.82, 1.0) * (0.55 + dot(c, vec3(0.33))), fx.z * 0.75);
+	float rim = 1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0);
+	vec3 sky = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
+	float up = clamp(dot(NORMAL, sky), 0.0, 1.0);
+	// Frozen: a cool cast at the body's own value (no brightening), frost settled on what faces
+	// up, and ice at the edge (emission below). Mixing to a pale blue turned the already-pale
+	// risen chalk-white in a Hoarfrost crowd, and the skill's own ring and ice were lost in it.
+	float lum = dot(c, vec3(0.2126, 0.7152, 0.0722));
+	c = mix(c, vec3(0.55, 0.78, 1.0) * lum * 1.34, fx.z * 0.3);
+	c = mix(c, vec3(0.78, 0.88, 1.0) * max(lum, 0.2), fx.z * up * up * 0.25);
 	ALBEDO = c;
 	ROUGHNESS = roughness;
 	METALLIC = metallic;
 	RIM = rim_amount;
 	RIM_TINT = rim_tint;
-	float rim = 1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0);
 	vec3 e = glow_color;
 	// Struck: a warm flare that lives at the rim, so the body keeps its shape
 	// from thirty metres up, with only an instant's glow across the whole of it
 	// (a full white-hot body bloomed the pale risen into blobs).
 	float hot = fx.x * fx.x;
 	e += vec3(1.0, 0.86, 0.72) * (hot * hot * 0.75 + fx.x * (0.1 + rim * rim * 1.8));
-	e += vec3(1.0, 0.42, 0.1) * fx.w * (0.45 + 0.35 * sin(vat_local.y * 9.0 + TIME * 11.0));
+	// Burning: fire at the edges and along the top, flickering up the body, not the whole of it
+	// lit orange (a Cinderfall crowd went cream); the ice's rim the same way.
+	float flicker = 0.55 + 0.45 * sin(vat_local.y * 9.0 + vat_local.x * 5.0 + TIME * 11.0);
+	e += vec3(1.0, 0.42, 0.1) * fx.w * (rim * rim * 1.2 + up * up * 0.45) * flicker;
+	e += vec3(0.5, 0.78, 1.15) * fx.z * rim * rim * 0.6;
 	e += c * COLOR.a;
 	// Ember at the dissolve's edge.
 	if (fx.y > 0.0) e += vec3(1.0, 0.45, 0.12) * smoothstep(fx.y + 0.12, fx.y, dn) * 3.0;

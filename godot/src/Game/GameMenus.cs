@@ -174,7 +174,7 @@ public partial class Game
         if (chestsWaiting.Count == 0 || Overlay != null || inTransit || cine != null || scene == null || Battle is not { } b) return;
         hudMode = "chest";
         scene.SimPaused = true;
-        chestShown = new ChestCeremony(chestsWaiting.Dequeue(), b, scene, cam, hud);
+        chestShown = new ChestCeremony(chestsWaiting.Dequeue(), b, scene, cam, hud, Haptics);
         hud.Over(chestShown);
     }
 

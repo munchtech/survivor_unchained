@@ -18,6 +18,8 @@ public sealed class Settings
     public string Sound = "on";
     public string Gore = "full";
     public string Motion = "full";
+    /// <summary>The pad's rumble: full, low or off (S-14).</summary>
+    public string Rumble = "full";
     public bool Fullscreen = true;
     /// <summary>The survivor's health drawn under them in a night's fight.</summary>
     public bool UnderBar = true;

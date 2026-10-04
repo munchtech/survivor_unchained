@@ -1353,9 +1353,12 @@ public partial class BattleFx : Node3D
         shades.End(); orbs.End(); steel.End(); axes.End(); daggers.End(); shards.End(); rings.End(); kegs.End();
     }
 
-    static readonly Color[] EmberTiers = { new(2.4f, 1.0f, 0.25f), new(2.6f, 1.7f, 0.45f), new(2.8f, 2.6f, 1.6f), new(1.6f, 2.2f, 2.8f) };
+    // Ember by worth, kept saturated: the brighter tiers were near-white in every channel and bloomed
+    // to cream "popcorn" on the ground. Orange, amber, gold, a cold blue for the rare great stone,
+    // and the hoard stone's deep red (Battle.Hoard).
+    static readonly Color[] EmberTiers = { new(2.4f, 0.9f, 0.2f), new(2.6f, 1.45f, 0.3f), new(2.6f, 2.0f, 0.45f), new(0.5f, 1.3f, 2.8f), new(2.8f, 0.35f, 0.3f) };
     // (An array made for each ember on the ground every frame was most of what the effects threw away.)
-    static readonly float[] EmberSizes = { 0.16f, 0.21f, 0.27f, 0.34f };
+    static readonly float[] EmberSizes = { 0.16f, 0.21f, 0.27f, 0.34f, 0.5f };
 
     void Pickups(Battle b, double now)
     {
@@ -1369,8 +1372,14 @@ public partial class BattleFx : Node3D
             {
                 case PickupKind.Ember:
                 {
-                    int tier = Math.Clamp(p.Tier, 0, 3);
+                    int tier = Math.Clamp(p.Tier, 0, 4);
                     float s = EmberSizes[tier];
+                    if (tier == 4)
+                    {
+                        // The hoard stone: bigger, beating like a heart, with a red beam to find it by.
+                        s *= 1 + 0.12f * Mathf.Sin((float)now * 5);
+                        lootBeams.Add(new Transform3D(Godot.Basis.Identity.Scaled(new Vector3(1.3f, 4.5f, 1.3f)), V(p.X, gy + 2.25, p.Z)), new Color("#ff3a2a"));
+                    }
                     embers.Add(new Transform3D(spin.Scaled(Vector3.One * s), V(p.X, gy + 0.45 + bob, p.Z)), EmberTiers[tier] * 0.5f);
                     break;
                 }

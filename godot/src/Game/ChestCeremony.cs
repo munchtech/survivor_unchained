@@ -26,6 +26,7 @@ public partial class ChestCeremony : Control
     readonly WorldScene scene;
     readonly FollowCamera cam;
     readonly GameHud hud;
+    readonly Haptics haptics;
     readonly Vector3 at;
     readonly float lie;
     readonly double speed;
@@ -65,13 +66,14 @@ public partial class ChestCeremony : Control
         public Vector2 Pos;
     }
 
-    public ChestCeremony(ChestOpened c, Battle b, WorldScene scene, FollowCamera cam, GameHud hud)
+    public ChestCeremony(ChestOpened c, Battle b, WorldScene scene, FollowCamera cam, GameHud hud, Haptics haptics)
     {
         this.c = c;
         this.b = b;
         this.scene = scene;
         this.cam = cam;
         this.hud = hud;
+        this.haptics = haptics;
         count = c.Items.Count;
         at = new Vector3((float)c.X, (float)scene.HeightAt(c.X, c.Z), (float)c.Z);
         lie = c.Seed * 2.4f;
@@ -251,6 +253,7 @@ public partial class ChestCeremony : Control
         Sfx.ChestBurst(c.Hoard != null ? Math.Max(5, count) : count);
         scene.Fx.ChestBurst(at + Vector3.Up * 0.3f, gold ? new Color(2.8f, 2.2f, 1.1f) : new Color(2.6f, 1.8f, 0.8f), c.Hoard != null ? Math.Max(5, count) : count);
         cam.AddTrauma(count >= 5 || c.Hoard != null ? 0.32f : 0.2f);
+        haptics.Add(count >= 5 || c.Hoard != null ? 0.7f : 0.5f, 0.3f, 0.18f);
         foreach (var r in reels) r.M.Visible = true;
     }
 
@@ -267,6 +270,7 @@ public partial class ChestCeremony : Control
         r.Ring.Start();
         if (!sound) return;
         Sfx.ChestLand(reels.IndexOf(r), r.It.Kind == ChestItemKind.Evolution);
+        haptics.Add(r.It.Kind == ChestItemKind.Evolution ? 0.5f : 0.1f, 0.3f, r.It.Kind == ChestItemKind.Evolution ? 0.2f : 0.04f);
         if (r.It.Kind == ChestItemKind.Evolution)
         {
             scene.Fx.Flash(at + Vector3.Up * 2, Gilt, 14, 0.8f, 12);
