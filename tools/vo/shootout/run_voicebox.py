@@ -33,13 +33,19 @@ TURBO_TAG = {"sniffle": "sniff", "giggle": "laugh", "angry": "", "sarcastic": ""
 
 
 def turbo_text(L: dict) -> str:
-    """Orpheus's tagged script in Chatterbox Turbo's bracket tags."""
+    """Orpheus's tagged script in Chatterbox Turbo's bracket tags. Turbo
+    tends to end the take at a tag in mid-line (the first round lost
+    everything after Holloway's [sigh]), so only a tag at either end is kept."""
     text = L["orpheus"][1]
 
     def tag(m):
         t = TURBO_TAG.get(m.group(1), m.group(1))
         return f"[{t}]" if t else ""
-    return re.sub(r"\s+", " ", re.sub(r"<(\w+)>", tag, text)).strip()
+    text = re.sub(r"\s+", " ", re.sub(r"<(\w+)>", tag, text)).strip()
+    head = re.match(r"^(\[[\w ]+\])\s*", text)
+    tail = re.search(r"\s*(\[[\w ]+\])$", text)
+    core = re.sub(r"\s*\[[\w ]+\]\s*", " ", text[head.end() if head else 0: tail.start() if tail else len(text)]).strip()
+    return " ".join(x for x in ((head.group(1) if head else ""), core, (tail.group(1) if tail else "")) if x)
 
 
 def acted_ref(key: str) -> str | None:

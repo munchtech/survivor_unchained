@@ -100,3 +100,23 @@ speaker doesn't hear the second meaning. No winks, no extra weight.
   kindness she won't own. "Lark. [beat] You look like a Lark. Larks get up
   early, [beat] and make a great deal of noise about it." Edinburgh dry and
   quick, not fond teasing.
+
+## Later corrections (story lead, with the text pushed on worktree-agent-a7622ae77d19e31dc @ 3f14126)
+
+- `maeca.first.2` changed again: no "Ashford" on meeting. It ends "...They're
+  what the problem looks like from the road. [breath] Maeca. [beat] Barefoot,
+  before you ask." Her plate reads "Hunter, of the Hollow".
+- `chid.cb_nell` (both variants) now ends "...Sit down a minute. [beat] Not
+  on the step. [beat] Here. [beat] By me." Under the care he is the one who
+  needs the company; "By me." quiet, almost asking.
+- `chid.woke`: three new variants first (4th+, 3rd, 2nd death); the old two
+  are now `.3` and `.4`. The lie wears thin: each a shade less convinced. New
+  node `chid.carter`. New `rook.valley`, `wenna.tallow`; `wenna.fever` and
+  `chid.shrine` reworded.
+- `bark.<npc>.said.<i>`: new conditional barks for most of the town; stale
+  day/night barks of Harlan, Maeca, Holloway, Chid, Wenna and Tam moved to
+  "said", so their day/night indices shifted (lines.py must learn `said`).
+- `folk.25`, `folk.97` reworded; `folk.107` to `folk.109` new.
+- Boss cbarks: the Barrow Lord "Sta!" and "Iunge!" (a dry, enormous whisper);
+  Grimtunnel "Ha! Keep upstairs, surface-meat! I'm wanted DOWNSTAIRS!",
+  delighted, never beaten.
