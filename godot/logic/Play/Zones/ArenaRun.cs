@@ -66,6 +66,9 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     bool reprised;
     int nightTurn, auraAlive;
     readonly HashSet<int> chests = new();
+    /// <summary>Those carrying a small chest (one card): the minibosses. A full chest each made the
+    /// night's builds a tenth stronger at the boss (measured: the boss fell 12-25 s sooner).</summary>
+    readonly HashSet<int> smallChests = new();
     /// <summary>The boss's script (its phases, moves and weakness), the bearing its sign
     /// came from, and the share of its number the horde is kept at while it lives.</summary>
     ArenaBoss? script;
@@ -97,12 +100,9 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     /// <summary>How much faster than a table's thirty minutes this night runs.</summary>
     double Pace => 30 / Spec.Minutes;
     double End => Spec.Minutes * 60;
-    /// <summary>What the night calls the boss's coming and its middle: a table's by its half hour,
-    /// a story's in the story lead's words.</summary>
-    string Nears => Spec.Story ? "It is nearly here" : "The half hour nears";
-    string Comes => Spec.Story ? "The night's end" : "The half hour";
-    string Past => Spec.Story ? "past its coming" : "past the half hour";
-    string Middle => Spec.Story ? "Halfway through the dark" : "The fifteenth minute";
+    /// <summary>What every night calls the boss's coming and its middle, in the story lead's one
+    /// voice (the valley's idioms are plain truth; this one is).</summary>
+    const string Nears = "The dead of night nears", Comes = "The dead of night", Past = "past the dead of night", Middle = "Halfway through the dark";
     static string Cap(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
 
     public ArenaRun(IZoneHost host, MapBuild map, ArenaSpec spec) : base(host, map.Meta)
@@ -212,7 +212,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     (string Tell, string Sound) SpikeTell() => people.Id switch
     {
         "pack" => ("The wolves give tongue, and the tuskers lower their heads.", "tell_howl"),
-        "dead" => ("A drum, twice. The dead set their feet.", "tell_drum"),
+        "dead" => ("A horn, twice. The dead set their feet.", "tell_horn"),
         "lamplings" => ("Fuses spit, all round you.", "tell_fuse"),
         "kerchiefs" => ("A whistle, and a shout: \"Now!\"", "tell_whistle"),
         _ => ("Something gathers itself in the dark.", "tell"),
@@ -327,7 +327,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         e.MaxHp = e.Hp = e.MaxHp * (1.6 + 0.6 * Spec.Tier) * (1 + Beyond / 10);
         Sign(e, signs);
         e.Named = new Named { Title = e.Def.Name };
-        chests.Add(e.Id);
+        smallChests.Add(e.Id);
         miniboss = e;
         minibossSeed = e.Seed;
         B!.Charges.Calm(B, 6);
@@ -892,7 +892,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         bossUp = false;
         boss = null;
         eventT = 20;
-        G.Announce(new Announcement($"{BossName} is beaten again", $"It will come again in a quarter hour, stronger", "reward", 3.4));
+        G.Announce(new Announcement($"{BossName} is beaten again", "It will come again, stronger.", "reward", 3.4));
         Objectives();
     }
 
@@ -970,8 +970,8 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
         // Gear from what carries something (a champion's turn, a captain, a herald, a miniboss),
         // never from the champions that turn up in the crowd: those were hundreds a night, and the
         // items plan wants a handful (docs/CRAFTING_DESIGN.md).
-        bool carrier = chests.Remove(e.Id);
-        if (carrier) o.Add(new Loot(PickupKind.Chest, null, 1, true));
+        bool small = smallChests.Remove(e.Id), carrier = chests.Remove(e.Id) || small;
+        if (carrier) o.Add(new Loot(PickupKind.Chest, small ? "small" : null, 1, true));
         if (carrier && e != boss && R() < 0.6 * gear)
             o.Add(new Loot(PickupKind.Item, PlainGear[(int)(R() * PlainGear.Length)], 1, true, Rarity(gear), lean));
         if (e == boss)
@@ -990,7 +990,7 @@ public sealed class ArenaRun : ZoneRuntime, IBossArena
     bool OnPickup(Pickup p)
     {
         if (p.Kind != PickupKind.Chest || B == null) return true;
-        int n = p.Ref == "boss" ? (int)p.Value : 1 + (R() < 0.3 ? 1 : 0) + (R() < 0.1 ? 1 : 0);
+        int n = p.Ref == "boss" ? (int)p.Value : p.Ref == "small" ? 1 : 1 + (R() < 0.3 ? 1 : 0) + (R() < 0.1 ? 1 : 0);
         var got = LevelUp.OpenChest(B, n);
         G.Announce(new Announcement("A chest", string.Join(" · ", got), "reward", 2.8));
         return true;

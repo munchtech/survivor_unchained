@@ -387,7 +387,7 @@ public static class Ai
             b.Events.Emit(new Ev.Telegraph
             {
                 Id = e.Id, Shape = TelegraphShape.Ring, X = e.X, Z = e.Z, Inner = Math.Max(0, aura.Radius - 0.6), Radius = aura.Radius, Duration = 0.7,
-                Hostile = false, Label = aura.Word.Length > 0 ? aura.Word : null, ByX = e.X, ByZ = e.Z,
+                Hostile = false, Label = aura.Word.Length > 0 ? aura.Word : null, ByX = e.X, ByZ = e.Z, Faction = e.Faction,
             });
             return true;
         }
@@ -400,7 +400,7 @@ public static class Ai
             for (int i = 0; i < su.Count; i++)
             {
                 var (x, z) = CallPoint(e, su, i);
-                b.Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = x, Z = z, Radius = 0.8, Duration = su.Cast, Hostile = true, Kind = TelegraphKind.Ground });
+                b.Events.Emit(new Ev.Telegraph { Id = -1, Shape = TelegraphShape.Circle, X = x, Z = z, Radius = 0.8, Duration = su.Cast, Hostile = true, Kind = TelegraphKind.Ground, Faction = e.Faction });
             }
             if (su.Word.Length > 0) b.Events.Emit(new Ev.Bark { X = e.X, Z = e.Z, Text = su.Word });
             return true;
@@ -416,7 +416,7 @@ public static class Ai
             b.Events.Emit(new Ev.Telegraph
             {
                 Id = e.Id, Shape = TelegraphShape.Circle, X = sx, Z = sz, Radius = sl.Radius, Duration = sl.Windup, Hostile = true,
-                Label = sl.Word.Length > 0 ? sl.Word : null, ByX = e.X, ByZ = e.Z,
+                Label = sl.Word.Length > 0 ? sl.Word : null, ByX = e.X, ByZ = e.Z, Faction = e.Faction,
             });
             b.EnemyStrike(sx, sz, sl.Radius, e.Damage * sl.DamagePct, sl.School, sl.Windup);
             return true;

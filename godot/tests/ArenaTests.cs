@@ -223,7 +223,7 @@ public class ArenaTests
         s.B.Time = 15 * 60;
         Run(s, 0.1);
         Assert.Equal(1, s.B.GreatOwed);
-        Assert.Contains(s.Host.Announced, a => a.Title == "The fifteenth minute");
+        Assert.Contains(s.Host.Announced, a => a.Title == "Halfway through the dark");
         bool deeper = false;
         for (int k = 0; k < 30 && !deeper; k++) deeper = LevelUp.Draft(s.B, 3).Any(o => o.Id == first[0].Id && o.To == 2 && o.Text.StartsWith("Rank 2:"));
         Assert.True(deeper);
@@ -441,7 +441,7 @@ public class ArenaTests
         s.B.Time = 19.99 * 60;
         Run(s, 1);
         Assert.NotNull(s.Host.Boss);
-        Assert.Contains(s.Host.Announced, a => a.Kicker == "The night's end");
+        Assert.Contains(s.Host.Announced, a => a.Kicker == "The dead of night");
         Defeat(s);
         Assert.True(s.Zone.Won);
         Assert.Equal(1.0, s.B.Rules.EmberGain, 6);

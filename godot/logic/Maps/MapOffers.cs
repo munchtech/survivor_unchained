@@ -69,7 +69,7 @@ public static class MapOffers
     {
         // Each night's stretches at 3, 7, 12, 16 and 22 minutes: just after the experience lead's
         // releases (ArenaPacing), one verb each, shown first on a miniboss.
-        new("pack", "the Pack", new[] { ("wolf", 5.0), ("wolf_blighted", 2.0), ("boar", 1.0) }, "boss_pack", "The Pack-Mother", "Alpha of the Deep Wood", ["wolfbane", "of_the_wolf"],
+        new("pack", "the Pack", new[] { ("wolf", 5.0), ("wolf_blighted", 2.0), ("boar", 1.0) }, "boss_pack", "The Pack-Mother", "Who Keeps the Den", ["wolfbane", "of_the_wolf"],
             [("wolf", 5, 0), ("boar", 2, 3), ("wolf_runner", 2.5, 7), ("wolf_blighted", 3, 12), ("boar_slurry", 1.5, 16), ("wolf_howler", 0.4, 22)], "wolf_alpha",
             ["swift"],
             [
@@ -89,7 +89,7 @@ public static class MapOffers
                 new(16, "mb_drowned_reeve", ["drowned"], ["rimed"]),              // the cold
                 new(22, "mb_ford_bell", ["grave_caller", "risen_bell"], ["gravebound", "bannered"]), // the bell
             ]),
-        new("lamplings", "the Lamplings", new[] { ("lampling", 5.0), ("lampling_sapper", 1.5) }, "boss_lamplings", "The Ganger", "Foreman of the Deep Dig", ["lampsnuffer", "of_the_salamander"],
+        new("lamplings", "the Lamplings", new[] { ("lampling", 5.0), ("lampling_sapper", 1.5) }, "boss_lamplings", "Gutterwick", "Second-Best in the Dig", ["lampsnuffer", "of_the_salamander"],
             [("lampling", 5, 0), ("lampling_wick", 3, 3), ("lampling_sapper", 3.5, 7), ("lampling_lamp", 1.5, 12), ("lampling_fuse", 1.2, 16)], "lampling",
             ["swift"],
             [
@@ -99,7 +99,7 @@ public static class MapOffers
                 new(16, "mb_fuse_boss", ["lampling_fuse"], ["volatile"]),          // the crates
                 new(22, "mb_gaffer", [], ["brood"]),                               // the ground opens
             ]),
-        new("kerchiefs", "the Kerchiefs", new[] { ("footpad", 5.0), ("pillager", 2.0), ("bruiser", 1.2) }, "boss_kerchiefs", "The Red Hand", "Warlord of the Ravine", ["watchmans", "sturdy"],
+        new("kerchiefs", "the Kerchiefs", new[] { ("footpad", 5.0), ("pillager", 2.0), ("bruiser", 1.2) }, "boss_kerchiefs", "The Red Hand", "Who Takes What Is Owed", ["watchmans", "sturdy"],
             [("footpad", 5, 0), ("pillager", 2.5, 3), ("levy_pike", 2, 7), ("bruiser", 1.5, 12), ("levy_crossbow", 1.5, 16), ("kerchief_drummer", 0.3, 22)], "enforcer",
             ["swift"],
             [
