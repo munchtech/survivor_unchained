@@ -45,10 +45,15 @@ SCENARIOS = {
     "arena_open": (HER + ["--zone", "arena", "--tier", "2", "--auto"], 6, 60),
     # Twenty minutes in with a mid-game build: the horde near its cap.
     "arena_mid": (HER + ["--zone", "arena", "--tier", "2", "--minute", "20", "--give", MID, "--auto"], 20, 40),
-    # The boss: the clock set just short of the half hour.
-    "boss": (HER + ["--zone", "arena", "--tier", "2", "--minute", "29.9", "--give", LATE, "--auto"], 12, 40),
+    # The boss: the clock set short of the half hour, so its arrival falls in the recording.
+    "boss": (HER + ["--zone", "arena", "--tier", "2", "--minute", "29.8", "--give", LATE, "--auto"], 6, 45),
+    # A herald's arrival (the twentieth minute) in the recording.
+    "herald": (HER + ["--zone", "arena", "--tier", "2", "--minute", "19.85", "--give", MID, "--auto"], 5, 30),
     # Endless at its densest: the clock past forty minutes (the horde at its cap, tier 3), a late build.
     "endless": (HER + ["--zone", "arena", "--tier", "3", "--minute", "45", "--give", LATE, "--auto"], 25, 40),
+    # The horde at the cap before the boss (320 at tier 3), a late build: the densest fight
+    # that needs no boss killed first.
+    "dense": (HER + ["--zone", "arena", "--tier", "3", "--minute", "27.5", "--give", LATE, "--auto"], 25, 40),
     # The same, the dead people (the risen; the most bodies on the ground).
     "endless_dead": (HER + ["--zone", "arena", "--tier", "3", "--people", "dead", "--minute", "45", "--give", LATE, "--auto"], 25, 40),
     # A crowd of 600 put round her (--horde), for the horde alone.
@@ -92,6 +97,8 @@ def quiet(wait):
 
 
 BIN = os.path.join(GAME, ".godot", "mono", "temp", "bin", "Debug")
+# Options for the engine itself (before the game's "--"), e.g. --engine "--render-thread separate".
+ENGINE = []
 
 
 def use_build(folder):
@@ -110,10 +117,20 @@ def run(name, tag, res, quality, extra, wait=0, build=None):
         use_build(build)
     busy, mem, rivals = quiet(wait)
     print(f"  GPU before: {busy}% busy, {mem} MB used, {rivals} other games running")
-    cmd = [GODOT, "--path", GAME, "--resolution", res, "--", *args, "--quality", quality,
+    cmd = [GODOT, "--path", GAME, "--resolution", res, *ENGINE, "--", *args, "--quality", quality,
            "--perf", out, "--perf-warm", str(warm), "--perf-for", str(span), *extra]
     t0 = time.time()
-    log = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=warm + span + 600)
+    try:
+        log = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=warm + span + 240)
+    except subprocess.TimeoutExpired as e:
+        # The console wrapper is gone; the game itself may not be.
+        subprocess.run(["powershell", "-NoProfile", "-Command",
+                        f"Get-CimInstance Win32_Process -Filter \"Name like 'Godot%'\" | Where-Object {{ $_.CommandLine -like '*--perf {out} *' }} | ForEach-Object {{ Stop-Process -Id $_.ProcessId -Force }}"],
+                       capture_output=True, timeout=60)
+        out_text = e.stdout.decode("utf-8", "replace") if isinstance(e.stdout, bytes) else (e.stdout or "")
+        print(f"  {out}: timed out after {time.time() - t0:.0f}s")
+        print("\n".join(l for l in out_text.splitlines()[-15:]))
+        return None
     took = time.time() - t0
     lines = [l for l in log.stdout.splitlines() if l.startswith("perf") or "ERROR" in l or "baked" in l]
     for l in lines[:60]:
@@ -168,6 +185,7 @@ def main():
             return v
         return default
     tag = opt("--tag", "")
+    ENGINE.extend(opt("--engine", "").split())
     res = opt("--res", "2560x1440")
     quality = opt("--quality", "high")
     repeat = int(opt("--repeat", "1"))

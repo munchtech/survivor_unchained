@@ -350,11 +350,14 @@ public partial class Game : Node, IZoneHost
         ulong t0 = Time.GetTicksUsec();
         if (scene == null || scene.Data.Id != id || scene.Battle != null) Stage(id);
         else RemoveFigure();
+        Perf.Lap("the rest of the stage (lights, fires)");
         zone = Make(id, scene!.Data.Meta);
         var time = zone.TimeOf(World);
         air.Set(zone.AtmosphereFor(time));
         scene.View.SetNight(time == TimeOfDay.Night);
+        Perf.Lap("the zone's runtime and its air");
         EnterPlay(zone, from, at);
+        Perf.Lap("play: the crowd's kinds made ready (bakes)");
         // --perf: how long the place took to stand up (the frame it happens in holds that long).
         if (Perf.On) GD.Print($"perf zone {id} built in {(Time.GetTicksUsec() - t0) / 1000.0:0} ms (at {Time.GetTicksMsec() / 1000.0:0.0}s since launch)");
     }
@@ -371,6 +374,7 @@ public partial class Game : Node, IZoneHost
         var start = at ?? z.ArrivalFrom(from);
         var meta = scene.Data.Meta;
         var b = Journey.StartBattle(z.Combat, meta.Collision(), scene.HeightAt, start.X, start.Z, start.Facing, (uint)Rng.Next(), arena: z is ArenaRun, ember: z.Ember);
+        Perf.Lap("play: the fight begun");
         // An arena is seen from higher and further out: the whole of the fight.
         var (pitch, dist) = z.Camera is var (cp, cd) ? (Mathf.DegToRad((float)cp), (float)cd) : camHome;
         // --cam still wins: it is for close pictures, arenas included.
@@ -378,8 +382,10 @@ public partial class Game : Node, IZoneHost
         cam.Pitch = pitch;
         cam.Distance = cam.TargetDistance = dist;
         scene.StartBattle(b, Loadouts.Of(Journey.Ch));
+        Perf.Lap("play: the survivor stood up");
         HookBattle(b);
         z.Begin(b);
+        Perf.Lap("play: the zone begun (its people, its pieces)");
         scene.Crowd.Prepare(z.Creatures.Select(c => Content.Enemies.Get(c).Visual));
         hud.ZoneInfo(z.Name, z.Region, World.Day, z.TimeOf(World));
         World.Facts["player.zone"] = z.Id;

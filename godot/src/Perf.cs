@@ -45,13 +45,38 @@ public partial class Perf : Node
     static readonly string[] PartNames = { "sim", "player", "crowd", "fx", "hud", "sound", "zone" };
     static readonly double[] partMs = new double[Parts];
     static readonly long[] partFrom = new long[Parts];
+    /// <summary>What each part allocated on the main thread, over the whole recording.</summary>
+    static readonly long[] partAlloc = new long[Parts], partAllocFrom = new long[Parts];
     static bool live;
     static readonly double TickMs = 1000.0 / Stopwatch.Frequency;
     /// <summary>The frame's first process callback (Start), on the stopwatch's clock.</summary>
     static long frameFrom;
 
-    public static void Begin(Part p) { if (live) partFrom[(int)p] = Stopwatch.GetTimestamp(); }
-    public static void End(Part p) { if (live) partMs[(int)p] += (Stopwatch.GetTimestamp() - partFrom[(int)p]) * TickMs; }
+    public static void Begin(Part p)
+    {
+        if (!live) return;
+        partFrom[(int)p] = Stopwatch.GetTimestamp();
+        partAllocFrom[(int)p] = GC.GetAllocatedBytesForCurrentThread();
+    }
+
+    public static void End(Part p)
+    {
+        if (!live) return;
+        partMs[(int)p] += (Stopwatch.GetTimestamp() - partFrom[(int)p]) * TickMs;
+        partAlloc[(int)p] += GC.GetAllocatedBytesForCurrentThread() - partAllocFrom[(int)p];
+    }
+
+    static long lapFrom;
+
+    /// <summary>--perf: a step of a long piece of work (building a place) and how long it
+    /// took since the last lap; `start` begins a new run of laps.</summary>
+    public static void Lap(string what, bool start = false)
+    {
+        if (!On) return;
+        long now = Stopwatch.GetTimestamp();
+        if (!start) GD.Print($"perf lap {what}: {(now - lapFrom) * TickMs:0} ms");
+        lapFrom = Stopwatch.GetTimestamp();
+    }
 
     /// <summary>A part timed to the end of a block (`using var _ = new Perf.Span(...)`).</summary>
     public readonly struct Span : IDisposable
@@ -82,7 +107,7 @@ public partial class Perf : Node
     int lastGen0, lastGen1, lastGen2;
     double lastPipes, coldPipes;
     TimeSpan pauseAtStart;
-    bool recording;
+    bool recording, firstFrame;
     Rid vp;
     readonly List<Frame> frames = new(16384);
     /// <summary>Each frame's parts (Parts to a frame) and counters (CounterNames.Length to a frame).</summary>
@@ -131,6 +156,8 @@ public partial class Perf : Node
         double ms = (now - last) * TickMs, main = (now - frameFrom) * TickMs;
         last = now;
         t += delta;
+        // How long from launch to the first frame drawn (the engine's clock starts with the process).
+        if (!firstFrame) { firstFrame = true; GD.Print($"perf {name}: first frame at {Time.GetTicksMsec() / 1000.0:0.0}s since launch"); }
         Each();
         long alloc = GC.GetTotalAllocatedBytes(false), mainAlloc = GC.GetAllocatedBytesForCurrentThread();
         int g0 = GC.CollectionCount(0), g1 = GC.CollectionCount(1), g2 = GC.CollectionCount(2);
@@ -316,6 +343,7 @@ public partial class Perf : Node
         P("cpu_main_ms", N(frames.Average(x => x.Main)));
         P("cpu_main_p99_ms", N(frames.Select(x => x.Main).OrderBy(x => x).ElementAt((int)(frames.Count * 0.99))));
         for (int i = 0; i < Parts; i++) P("cpu_" + PartNames[i] + "_ms", N(PartMean(0, frames.Count, i)));
+        for (int i = 0; i < Parts; i++) P("alloc_" + PartNames[i] + "_kb_frame", N(partAlloc[i] / 1024.0 / Math.Max(1, frames.Count)));
         P("cpu_physics_max_ms", N(frames.Average(x => x.Physics)));
         P("cpu_render_ms", N(frames.Average(x => x.RenderCpu)));
         P("cpu_setup_ms", N(frames.Average(x => x.Setup)));
@@ -370,6 +398,7 @@ public partial class Perf : Node
         }
         using (var f = FileAccess.Open($"{dir}/{name}.csv", FileAccess.ModeFlags.Write)) f?.StoreString(c.ToString());
         GD.Print($"perf {name} done: {Summary(0, frames.Count)}");
+        GD.Print($"perf {name} alloc by part (KB/frame): " + string.Join(" ", Enumerable.Range(0, Parts).Select(i => $"{PartNames[i]} {partAlloc[i] / 1024.0 / Math.Max(1, frames.Count):0.0}")));
         GD.Print($"perf {name}: {hitches.Count} hitches; wrote {dir}/{name}.json");
         foreach (var h in hitches.Take(12)) GD.Print($"perf hitch {h}");
         if (Args.Has("perf-dump")) Dump();
