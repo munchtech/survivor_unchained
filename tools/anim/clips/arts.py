@@ -92,7 +92,7 @@ def vault_back(rig):
             **_feet((0.20, 0.0, 0.30), (-0.13, 0.05, -0.40), (18, 0, 0), (-14, 62, 0), rtoe=60,
                     lpole=(0.5, 0.1, 1), rpole=(-0.2, -0.4, 1)),
             "fingers_l": "spread", "fingers_r": "grip"}
-    hand_down = {"pos": (0.24, 0.20, 0.36), "pole": (0.7, 0.5, -0.2), "knuckles": (0.2, -0.3, 0.9)}
+    hand_down = {"pos": (0.26, 0.20, 0.44), "pole": (0.8, 0.4, -0.2), "knuckles": (0.1, -0.95, 0.3)}
     keys = [
         # Off both feet, already tipping back, the arms coming up before her.
         (0, body({**_hips(0, -0.04, 0.06), **_feet((0.11, 0.06, 0.14), (-0.11, 0.03, 0.06), (6, 45, 0), (-6, 50, 0)),
@@ -103,12 +103,12 @@ def vault_back(rig):
         # chin down to keep her eyes on it, the blades out before her.
         (3, body({**_hips(0, 0.04, 0.0), **_feet((0.12, 0.52, 0.30), (-0.11, 0.44, 0.22), (6, 50, 0), (-6, 55, 0),
                                                   lpole=(0.3, 0.6, 1), rpole=(-0.3, 0.6, 1)),
-                  "hand_l": arm((0.30, 0.04, 0.30), (0.8, -0.2, -0.4)), "hand_r": arm((-0.30, 0.0, 0.30), (-0.8, -0.2, -0.4)),
+                  "hand_l": arm((0.30, -0.22, 0.28), (0.8, -0.2, -0.4)), "hand_r": arm((-0.30, -0.26, 0.26), (-0.8, -0.2, -0.4)),
                   "fingers_l": "spread", "fingers_r": "grip"},
                  hips=(0, -38, 0), spine=(0, -10, 0), neck=(0, 14, 0), head=(0, 30, 0)), "ease"),
         (5, body({**_hips(0, 0.05, -0.02), **_feet((0.13, 0.62, 0.30), (-0.12, 0.56, 0.24), (8, 45, 0), (-6, 50, 0),
                                                   lpole=(0.3, 0.6, 1), rpole=(-0.3, 0.6, 1)),
-                  "hand_l": arm((0.34, 0.0, 0.26), (0.8, -0.2, -0.4)), "hand_r": arm((-0.34, 0.02, 0.28), (-0.8, -0.2, -0.4)),
+                  "hand_l": arm((0.32, -0.26, 0.24), (0.8, -0.2, -0.4)), "hand_r": arm((-0.32, -0.22, 0.26), (-0.8, -0.2, -0.4)),
                   "fingers_l": "spread", "fingers_r": "grip"},
                  hips=(0, -44, 4), spine=(0, -8, -3), neck=(0, 16, 0), head=(0, 30, 0)), "auto"),
         # Out of the tuck, legs reaching down for the ground, the body coming
@@ -118,15 +118,15 @@ def vault_back(rig):
                   "fingers_l": "spread", "fingers_r": "grip"},
                  hips=(0, -4, 0), spine=(2, 8, -2), neck=(0, 0, 0), head=(0, 0, 0)), "auto"),
         # Down, hard.
-        (10, body({**land, **_hips(0.02, -0.50, -0.02), "hand_l": {**hand_down, "pos": (0.24, 0.30, 0.38)},
-                   "hand_r": arm((-0.46, -0.06, -0.10), (-0.6, 0.1, -0.6))},
-                  hips=(-10, 24, 0), spine=(8, 24, -6), neck=(0, -12, 0), head=(6, -30, 0)), "fast"),
-        (13, body({**land, "hand_l": hand_down, "hand_r": arm((-0.48, 0.0, -0.18), (-0.6, 0.1, -0.6))},
-                  hips=(-10, 30, 0), spine=(8, 26, -6), neck=(0, -14, 0), head=(6, -34, 0)), "ease"),
+        (10, body({**land, **_hips(0.02, -0.50, -0.02), "hand_l": {**hand_down, "pos": (0.26, 0.32, 0.46)},
+                   "hand_r": arm((-0.30, -0.22, -0.30), (-0.7, 0.3, -0.4))},
+                  hips=(-10, 28, 0), spine=(8, 30, -6), neck=(0, -18, 0), head=(6, -36, 0)), "fast"),
+        (13, body({**land, "hand_l": hand_down, "hand_r": arm((-0.26, -0.32, -0.26), (-0.7, 0.3, -0.4))},
+                  hips=(-10, 40, 0), spine=(8, 40, -6), neck=(0, -28, 0), head=(6, -56, 0)), "ease"),
         # Held: still, low, breathing; the head turns a touch as she reads it.
-        (26, body({**land, **_hips(0.02, -0.56, -0.04), "hand_l": {**hand_down, "pos": (0.24, 0.21, 0.36)},
-                   "hand_r": arm((-0.47, 0.02, -0.16), (-0.6, 0.1, -0.6))},
-                  hips=(-8, 29, 0), spine=(10, 24, -6), neck=(0, -14, 0), head=(-8, -32, 0)), "ease"),
+        (26, body({**land, **_hips(0.02, -0.56, -0.04), "hand_l": {**hand_down, "pos": (0.26, 0.21, 0.44)},
+                   "hand_r": arm((-0.27, -0.30, -0.27), (-0.7, 0.3, -0.4))},
+                  hips=(-8, 39, 0), spine=(10, 38, -6), neck=(0, -28, 0), head=(-10, -54, 0)), "ease"),
         # Up into her guard.
         (38, body({**_hips(0.0, -0.08, 0.0), **_feet((0.16, 0.0, 0.14), (-0.15, 0.0, -0.12), (14, 0, 0), (-16, 0, 0)),
                    "hand_l": arm((0.10, -0.26, 0.20), (0.6, -0.4, -0.5)), "hand_r": arm((-0.10, -0.24, 0.18), (-0.6, -0.4, -0.5)),
@@ -137,11 +137,12 @@ def vault_back(rig):
 
 
 ALL = (("vault", vault), ("vault_back", vault_back))
+# Judged on sheets and in the game. Any other clip here is work in progress:
+# built only when named, so a full build (and the game, which plays anything
+# in her library at once) leaves it out.
+JUDGED = {"vault", "vault_back"}
 
 
 def clips(rig, want):
-    # Not yet judged good enough for the game (HerClips would play them at
-    # once): built only when named, so a full build leaves them out.
-    if not want:
-        return []
-    return [f(rig) for name, f in ALL if any(w in name for w in want)]
+    return [f(rig) for name, f in ALL
+            if (want and any(w in name for w in want)) or (not want and name in JUDGED)]

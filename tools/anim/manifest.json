@@ -8,8 +8,8 @@
   "Kimodo": "NVIDIA Kimodo-SOMA-RP-v1.1, NVIDIA Open Model License: generated motion (tools/anim/kimodo_gen.py).",
   "SAM 3D Body": "Meta SAM 3D Body (SAM License) with the Momentum Human Rig (Apache 2.0): motion from video (tools/anim/video_motion.py); test footage from Pexels (Pexels licence), each clip's URL in its row."
  },
- "made": 59,
- "planned": 62,
+ "made": 61,
+ "planned": 63,
  "clips": [
   {
    "clip": "idle_warden",
@@ -409,15 +409,27 @@
   },
   {
    "clip": "vault",
-   "plays_for": "the vault art (0.32 s)",
-   "status": "fallback",
+   "plays_for": "the vault art moving (0.32 s)",
+   "status": "made",
    "fallback": "Jump_Start",
-   "made_by": "Mixamo 'Jumping Over Into Combat' (downloaded, not yet retargeted)",
-   "source": "",
-   "licence": "",
+   "made_by": "keyed: a split leap (Mixamo's 'Jumping Over Into Combat' rejected: a sideways vault over an obstacle)",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
    "changes": "",
-   "length": null,
-   "layer": ""
+   "length": 0.533,
+   "layer": "full"
+  },
+  {
+   "clip": "vault_back",
+   "plays_for": "the vault art standing, a spring back (0.32 s)",
+   "status": "made",
+   "fallback": "Jump_Start",
+   "made_by": "keyed: a tucked back spring into a three-point landing",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 1.267,
+   "layer": "full"
   },
   {
    "clip": "bull_rush",

@@ -499,6 +499,22 @@
 		"loop": false,
 		"source": "keyed (tools/anim)"
 	},
+	"vault": {
+		"layer": "full",
+		"length": 0.533333361148834,
+		"licence": "own work",
+		"loop": false,
+		"note": "keyed: split leap on the run, 0.32 s flight",
+		"source": "keyed (tools/anim)"
+	},
+	"vault_back": {
+		"layer": "full",
+		"length": 1.26666665077209,
+		"licence": "own work",
+		"loop": false,
+		"note": "keyed: back spring, 0.32 s flight, three-point landing",
+		"source": "keyed (tools/anim)"
+	},
 	"warcry": {
 		"layer": "upper",
 		"length": 0.800000011920929,
