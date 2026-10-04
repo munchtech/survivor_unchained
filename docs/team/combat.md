@@ -5,60 +5,69 @@ Status page for the combat lead.
 - **Branch:** `worktree-agent-a1d4562f44c7f6feb`.
 - **Read first:** `docs/handoff/combat.md` (the predecessor's knowledge), then `docs/SKILLS_DESIGN.md` §16–17.
 
-## Current state (2026-10-04)
+## Current state (2026-10-04, paused for the owner's machine)
 
-Tests green. Everything below is pushed.
+Tests green (585). Everything is pushed, and the integration branch is merged in. One piece of work is parked on the side branch `combat-wip-runups`; see Next, item 1.
 
-**Done this session:**
-- **The boss floor** (§16.1): the Barrow Lord's laying-down, Grimtunnel's going down and Greymuzzle's going skipped the last phase's floor (a strong build: about 35 s). Every ending now waits for it. A test drives an absurd build at all six rulers through the game's wiring: 60–77 s.
-- **Re-measured after the last tuning:**
-  - the Pack-Mother, Barrow Lord and Red Hand still ran 78–81 s, so they were raised by about a fifth;
-  - the slowest minibosses were softened: the Decurion 560 → 380, the Weed-Wife 560 → 400, the Chucker 420 → 300, the Lamplighter 480 → 380, Firepot Nan 400 → 300.
-- **The tier-3 brief** (§16.9): from the third tier the night asks the draft. Dusk lasts five minutes. The crowd's easing is at two fifths. Its blows grow to twice by the half hour. Champions, heralds and minibosses are a quarter stronger from the sixth minute.
-- **Dusk for the oaths' bites** (§16.7): the blight's poison and cut to mending, and the winter's crawl, come in over dusk. At tier 3 the blight alone had felled 6 of 32 runs in minutes 1–5.
-- **Crafting's gold**: arena champions pay 0.07 of their gold and fodder 0.0015; bosses and minibosses pay in full (crafting's probe: a Kerchief night about 350–450).
-- **Maps built** (§17.8): `MapRun`, charts and mods, packs by tier, magic and rare packs, altar keepers, the ruler on map floors, loot and charts, three falls, and the atlas's record. The harness has a `map` command. The game has `--zone map [--tier --people --mods --seed --at boss]` and `Game.EnterMap(chart)`.
-- **A flaky map test** made deterministic: no wall clock.
-
-**Measured** (deft bot, table oaths, 8 seeds a tier, 192 runs):
-
-| | Before (`5cdc32f`) | Now |
-|---|---|---|
-| Won, tier 3 (greedy / random) | 69% / 75% (6 seeds); 83% / 85% overall | 87% / 71% |
-| Won, tiers 1 / 2 (greedy / random) | 94% / 88% overall | 96% / 84%, 93% / 84% |
-| Falls before minute 5, tier 3 | 6 of 32 | 2 of 64 |
-| Boss TTK (Pack / Barrow / Gutterwick / Red Hand) | 78 / 81 / 104 / 79 s | 82 / 86 / 95 / 81 s (the slowest random runs now finish past the cap) |
-| Maps, tiers 1 / 2 / 3, day build at the map's level | – | 93% / 90% / 84% cleared, 11.7–13.2 min, ruler 60–65 s |
+**Done this session** (§16.1, §16.7, §16.9, §17.8 in SKILLS_DESIGN):
+- **Boss floors hold for every ending.** The test drives an absurd build through the game's wiring: 60–77 s.
+- **Oaths on bosses:** winter, embers, blight, ruin, vigil, iron, champions and swarm, each named on the boss's card.
+- **The tier-3 brief:**
+  - from tier 3, dusk is 5 minutes, the crowd eases at 2/5, its blows grow to ×2, and champions are ×1.25;
+  - the oaths' bites (poison, cut mending, chill) come in over dusk.
+  - Measured: planned 87% against careless 71% at 8 seeds, and 85% / 62% at 32 seeds. The experience director accepted it.
+- **The Kindling at minute 15:** an ember-core plus the ruler's keeper (`lt_*`).
+  - The core broken within its minute adds a card to the great blessing; the keeper carries a full chest.
+  - Planned drafts break it 54% of the time, careless ones 30%.
+  - The core is drawn by `EmberCoreView` and `shaders/ember_core.gdshader`.
+- **Peoples evened out:**
+  - footpads are 31 health and 9 damage a blow;
+  - the Lamplings' champion is `lampling_ganger`;
+  - the Pack-Mother, the Barrow Lord and the Red Hand are stronger (boss kills take 80–88 s);
+  - five slow minibosses are softened.
+- **The long night's square is 0.004:** the median run goes 26 min past the half hour.
+- **Gold, for crafting:** arena fodder 0.0015, champions 0.07.
+- **Marks:** `Sim/Marks.cs`, `CombatKit.Marks` and `CombatKit.SkillMods`, with crafting's first four Marks.
+- **Maps, in the experience lead's shape:**
+  - `MapRun`, `Charts`, the `Atlas` with its five biases, and the strongbox event through `G.Chest`;
+  - played by day;
+  - `--zone map [--tier --people --mods --at boss]`;
+  - harness: `map --tiers 1,2,3 --people all`.
+  - Measured: 9.8 / 10.3 / 11.9 min to clear, 100% / 96% / about 90% cleared, the ruler in 59–70 s.
 
 ## Next (in order)
 
-1. **The long night's tail:** done; the square is 0.004 (median past the half hour 22 -> 26 minutes). The dark's oaths and the crowd end it, not the square.
-2. **Pictures of maps** at full resolution: the start, a pack waking, an altar's event, the ruler (`--zone map --at boss`).
-3. **Maps, next:**
-   - agree the length and rhythm with the experience lead (they run at the top of 8–12 minutes, with a pack every 14 s against their 20–40);
-   - the atlas's biases (with experience);
-   - chart crafting and the Marks hook (`CombatKit.SkillMods`, Mark ids read by behaviours), with crafting `a7debf1459f14dfe7`. Their four first Marks are of the Ravine, of the Falling Star, of the Open Gate and of the Gyre.
-4. **Then:**
-   - oaths on bosses (iron halves `StaggerTaken`);
-   - ground hazards hurting the horde at half;
-   - the Kindling at minute 15;
-   - the Ford-Warden echo;
-   - weight as a number;
-   - Signs Warded, Mending, Leader.
+1. **The run-ups (the experience director's brief, in `docs/handoff/experience.md`).**
+   - The target, while `pacing.Building` (7.5–10, 17.5–20, 25–28.5): 10–20% of runs under half health in each run-up, 3–5% under a quarter, and wins within two points.
+   - Measure it with `python <scratchpad>/combat2_stretch.py out/X.jsonl`, on a 192-night sweep (tiers 1–3, 8 seeds, table oaths, deft).
+   - Today: 10% / 2% / 4% under half.
+   - Branch `combat-wip-runups` (e63e74fd) has four levers: pincer spikes, signed champions ×2, ranged and aura kinds ×2, and forerunners (two signed half-heralds from either side).
+   - The results so far: 9% / 2% / 8%, with wins falling 89% → 84%. Fodder melts at these minutes, so count does nothing.
+   - The exact next step: try a forerunner pair *once* per run-up at herald strength (×(4 + tier)) instead of twice at half, and drop the champion-share lever. Re-measure. If wins hold within two points, merge it in.
+2. **Animation's ask** (`a435f4dd0ac80df75`): a `RangedSpec.Aim` wind-up, about 0.55 s for crossbows. The shooter plants and faces in Windup with `AnimT = 0`, then shoots. It doubles as a dodge window. This is a small change in `Sim/Ai.cs` Shoot; give the levy crossbows and the Scorpion an Aim.
+3. **The Kerchiefs at tier 3** stay the hardest people (68% / 50%). Under iron, blight and embers they win 18–41%. The Lamplings stay the easiest (87% / 81%).
+4. **Then:** ground hazards hurting the horde at half, the Ford-Warden echo, weight as a number, and the Signs Warded, Mending and Leader.
 
 ## Key decisions
 
-- **From the third tier the night tests the draft;** below it, choice is expression. Stronger levers cost the planned draft as much as the careless one, so they were not used.
-- **A night is lost to the draft, not to its first minutes:** the oaths' bites come in over dusk.
-- **One ruler health for maps (3.5× its body):** the night's per-ruler multipliers fit the ember's builds, not a day build.
-- **Maps thin MapGen's pack spots** (three in four clearings' spots, one in three of the way's) rather than changing the generator, so nights and pictures keep their ground.
+- **From tier 3 the night tests the draft;** below it, choice is expression. Stronger levers cost the planned draft too.
+- **A night is lost to the draft, not to its first minutes.**
+- **Maps use one ruler health (3.5× its body) on 0.65 floors.** Packs are thinned from MapGen's spots (0.8 in clearings, 0.62 on the ways). The last way before the ruler is empty.
+- **Endings that are not deaths wait for the last floor** (`ArenaBoss.Spent`).
 
 ## Notes for other areas
 
-- **Experience (`a33f58e68e89e3ccf` or successor):** maps run 11.7–13.2 minutes with a pack about every 14 s; the levers are `MapRun`'s thinning and MapGen's 16 clearings. Your call on the shape.
+- **Experience (successor of `ad1f5623590e09883`):**
+  - the strongbox emits `ChestOpened` with `ChestItemKind.Gear`, ready for staging;
+  - the ruler's fall emits `Ev.Victory`;
+  - the API is `Atlas.Biases`, `Rank`, `Raise`, `Unspent`, `Road`, `Follow`.
 - **Crafting (`a7debf1459f14dfe7`):**
-  - maps pay gold at the day's rate: about 700 a Kerchief map, about 25 for the others;
-  - charts are `wayfinder_chart` items with `ItemInstance.Chart`;
-  - the moonpetal draught is agreed at 60%, drunk when 55% or more is missing.
-- **UI:** a chart's name is `Charts.Title`; `MapResult` holds a map's outcome; there is no result screen yet (a cleared map travels back to the Waystation).
-- **Story:** the chart item's text and the mods' names are placeholders in the house voice and want your pass: `wayfinder_chart` in items.json, and `Charts.All`.
+  - the Marks API is above;
+  - the moonpetal draught is agreed at 60%, drunk when 55% or more is missing;
+  - a Kerchief map pays about 500 gold at the day's rate.
+- **Skills VFX:** the ember-core could use sparks and heat haze; its view is `EmberCoreView` in `src/Actors/BossViews.cs`.
+- **Story:** placeholders need your pass:
+  - names and lines for the Kindling (`ember_core`, the `lt_*` keepers);
+  - the `lampling_ganger`;
+  - the forerunners' shouts (still on the WIP branch);
+  - the chart mods' names.
