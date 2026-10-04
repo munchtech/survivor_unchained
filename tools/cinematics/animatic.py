@@ -130,6 +130,25 @@ def take_of(vo_id, raw):
     return t if t and t.get("hash") == text_hash(raw) else None
 
 
+def subtitle(raw):
+    """The words as the subtitle shows them (CineLines.Subtitle): a lower-case
+    (parenthesis) is how the line is said and is dropped; a capitalised one,
+    such as a translation, stays. A direction saying it is sung sets italics."""
+    sung = False
+
+    def cut(m):
+        nonlocal sung
+        if not m.group(1).lstrip()[:1].islower():
+            return m.group(0)
+        if "sung" in m.group(0).lower():
+            sung = True
+        return " "
+    shown = re.sub(r"\s*\(\s*([^()\s][^()]*)\)\s*", cut, raw)
+    shown = re.sub(r"[ \t]{2,}", " ", shown).strip()
+    shown = shown.replace(" ,", ",").replace(" ?", "?").replace(" !", "!")
+    return shown, sung
+
+
 def line_seconds(line_id):
     vo, raw, _ = find_line(line_id)
     if raw == "":
@@ -137,7 +156,7 @@ def line_seconds(line_id):
     t = take_of(vo, raw)
     if t:
         return t.get("read") or t["sec"]
-    return reading(raw)
+    return reading(subtitle(raw)[0])
 
 
 def offset(at, dur):
@@ -622,12 +641,13 @@ def render(items, ctx, out):
                 if raw == "":
                     continue
                 take = take_of(vo, raw)
-                secs = (take["sec"] if take else reading(raw)) + c.get("linger", 0.7)
+                shown, sung = subtitle(raw)
+                secs = (take["sec"] if take else reading(shown)) + c.get("linger", 0.7)
                 if take:
                     x = decode(os.path.join(GODOT, "art", "vo", take["file"]))
                     audio[i:i + len(x)] += x[: n_audio - i]
                 name = None if who in narrators else (NAMES.get(who) or who.replace("_", " ").title())
-                subs.append((t, t + secs, raw, name))
+                subs.append((t, t + secs, shown, name, sung))
             elif c["do"] == "sfx":
                 x = sfx(c["name"], c.get("gain", 1.0), c.get("pan", 0.0))
                 audio[i:i + len(x)] += x[: n_audio - i]
@@ -723,10 +743,10 @@ def encode(out, cuts, subs, titles, audio, total):
                         od.text(((W - F_SUB.getlength(sub)) / 2, H / 2 + 10), sub, font=F_SUB, fill=(200, 186, 150, al))
                     frame.paste(ov, (0, 0), ov)
                     d = ImageDraw.Draw(frame)
-        for a, b, raw, name in subs:
+        for a, b, raw, name, sung in subs:
             if a <= t < b:
                 k = min(1.0, (b - t) / 0.25)
-                f = F_ITAL if name is None else F_WORDS
+                f = F_ITAL if name is None or sung else F_WORDS
                 lines = wrap(raw, f, 1100)[:2]
                 base = H - BAR + max(12, (BAR - 40 * len(lines)) / 2) + (8 if name else 0)
                 col = tuple(int(c * k) for c in (236, 228, 212))
