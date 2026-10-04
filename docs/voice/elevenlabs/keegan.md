@@ -1,8 +1,8 @@
 # Dame Keegan Orme: ElevenLabs packet
 
-Voice id in the game: `keegan`. 45 takes to record (4,801 characters; about 14,403 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
+Voice id in the game: `keegan`. 44 takes to record (4,924 characters; about 14,772 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
-**Hold 1 of these** (marked HOLD below) until the story editor's review of section 17 is back; the rest can be recorded now.
+**Hold 1 of these** (marked HOLD below, with why); the rest can be recorded now.
 
 ## Who they are
 
@@ -223,6 +223,7 @@ Subtitle: Arcanist. The Vigil kept a ledger of— never mind. Good morning. It i
 
 ### 17. `dlg.keegan.say_calling.3.wav`
 
+*The same words are also* `dlg.keegan.say_calling.4.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json keegan/say_calling#3
 *Played:* pride, then honest; doing: pretends she noticed you; pace: measured; volume: level.
 *Note:* Prim claim; a pause; honest and small: 'I did not know.'
@@ -232,18 +233,7 @@ Subtitle: Arcanist. The Vigil kept a ledger of— never mind. Good morning. It i
 ```
 Subtitle: You have been standing there for some time. I knew. I was merely being polite. ...I did not know.
 
-### 18. `dlg.keegan.say_calling.4.wav`
-
-*Where:* dialogue.json keegan/say_calling#4
-*Played:* pride, then honest; doing: pretends she noticed you; pace: measured; volume: level.
-*Note:* Prim claim; a pause; honest and small: 'I did not know.'
-
-```
-[pride, then honest] You have been standing there for some time. I knew. I was merely being polite. ...I did not know.
-```
-Subtitle: You have been standing there for some time. I knew. I was merely being polite. ...I did not know.
-
-### 19. `dlg.keegan.dinner.0.wav`
+### 18. `dlg.keegan.dinner.0.wav`
 
 *Where:* dialogue.json keegan/dinner#0
 *Played:* flustered, tempted; doing: fraternisation; pace: quick; volume: level.
@@ -254,7 +244,7 @@ Subtitle: You have been standing there for some time. I knew. I was merely being
 ```
 Subtitle: Chapter eleven. Fraternisation. I have not read it. ...That is a lie. I have read it four times. The answer is no. The answer is very nearly no. Good day.
 
-### 20. `dlg.keegan.t_keegan.0.wav`
+### 19. `dlg.keegan.t_keegan.0.wav`
 
 *Where:* dialogue.json keegan/t_keegan#0
 *Played:* earnest longing, then comic; doing: what she wants; pace: measured; volume: level.
@@ -265,7 +255,7 @@ Subtitle: Chapter eleven. Fraternisation. I have not read it. ...That is a lie. 
 ```
 Subtitle: To be confirmed. To kneel, and have a knight I respect touch my shoulder with a sword and say "Dame Keegan" without the bracket. ...And a bath. The Vigil frowns on baths. Chapter nine. I have underlined it in protest.
 
-### 21. `dlg.keegan.say_risen.0.p0.wav`
+### 20. `dlg.keegan.say_risen.0.p0.wav`
 
 *Where:* dialogue.json keegan/say_risen#0; part 1 of 3: **keegan: I am told you were carried into the shrine under a sheet.** / narrator: She looks at you very carefully, from your boots upwards, and back down. / keegan: You look well. You look extremely well. ...I've got to go and read something. I— I have to…
 *Played:* dawning fear, composure cracking; doing: sees the sign; pace: measured then quick; volume: level.
@@ -277,7 +267,7 @@ Subtitle: To be confirmed. To kneel, and have a knight I respect touch my should
 ```
 Subtitle: I am told you were carried into the shrine under a sheet.
 
-### 22. `dlg.keegan.say_risen.0.p2.wav`
+### 21. `dlg.keegan.say_risen.0.p2.wav`
 
 *Where:* dialogue.json keegan/say_risen#0; part 3 of 3: keegan: I am told you were carried into the shrine under a sheet. / narrator: She looks at you very carefully, from your boots upwards, and back down. / **keegan: You look well. You look extremely well. ...I've got to go and read something. I— I have to…**
 *Played:* dawning fear, composure cracking; doing: sees the sign; pace: measured then quick; volume: level.
@@ -289,7 +279,7 @@ Subtitle: I am told you were carried into the shrine under a sheet.
 ```
 Subtitle: You look well. You look extremely well. ...I've got to go and read something. I— I have to go and read something. Good day.
 
-### 23. `dlg.keegan.supper.0.p0.wav`
+### 22. `dlg.keegan.supper.0.p0.wav`
 
 *Where:* dialogue.json keegan/supper#0; part 1 of 3: **keegan: I have not. I am on watch.** / narrator: She looks at the bread in her hand, which she has evidently been holding for some time. / keegan: Chapter eleven, paragraph six permits "a meal taken in company for the purposes of morale"…
 *Played:* flustered propriety, pleased; doing: invites you to supper, by the book; pace: measured; volume: level.
@@ -300,7 +290,7 @@ Subtitle: You look well. You look extremely well. ...I've got to go and read som
 ```
 Subtitle: I have not. I am on watch.
 
-### 24. `dlg.keegan.supper.0.p2.wav`
+### 23. `dlg.keegan.supper.0.p2.wav`
 
 *Where:* dialogue.json keegan/supper#0; part 3 of 3: keegan: I have not. I am on watch. / narrator: She looks at the bread in her hand, which she has evidently been holding for some time. / **keegan: Chapter eleven, paragraph six permits "a meal taken in company for the purposes of morale"…**
 *Played:* flustered propriety, pleased; doing: invites you to supper, by the book; pace: measured; volume: level.
@@ -311,7 +301,7 @@ Subtitle: I have not. I am on watch.
 ```
 Subtitle: Chapter eleven, paragraph six permits "a meal taken in company for the purposes of morale". I have read it very carefully. It does not say whose morale. ...Sit. Not there; that stone is the one the gate was built on, and it is older than manners. Here.
 
-### 25. `dlg.keegan.supper_wends.0.p0.wav`
+### 24. `dlg.keegan.supper_wends.0.p0.wav`
 
 *Where:* dialogue.json keegan/supper_wends#0; part 1 of 3: **keegan: Rhetoric, to the sons and daughters of people who could afford it. I was very good. I was …** / narrator: She smiles at the road. / keegan: I taught them chiasmus. "The Vigil keeps the gate, and the gate keeps the Vigil." It has k…
 *Played:* proud, then rueful; doing: her old life; pace: measured; volume: level.
@@ -322,7 +312,7 @@ Subtitle: Chapter eleven, paragraph six permits "a meal taken in company for the
 ```
 Subtitle: Rhetoric, to the sons and daughters of people who could afford it. I was very good. I was the youngest lecturer they had ever had, and they told me so every morning, in case I forgot and became the oldest.
 
-### 26. `dlg.keegan.supper_wends.0.p2.wav`
+### 25. `dlg.keegan.supper_wends.0.p2.wav`
 
 *Where:* dialogue.json keegan/supper_wends#0; part 3 of 3: keegan: Rhetoric, to the sons and daughters of people who could afford it. I was very good. I was … / narrator: She smiles at the road. / **keegan: I taught them chiasmus. "The Vigil keeps the gate, and the gate keeps the Vigil." It has k…**
 *Played:* proud, then rueful; doing: her old life; pace: measured; volume: level.
@@ -333,7 +323,7 @@ Subtitle: Rhetoric, to the sons and daughters of people who could afford it. I w
 ```
 Subtitle: I taught them chiasmus. "The Vigil keeps the gate, and the gate keeps the Vigil." It has kept neither. ...That was a joke. It was not a good one. It's late.
 
-### 27. `dlg.keegan.supper_age.0.p0.wav`
+### 26. `dlg.keegan.supper_age.0.p0.wav`
 
 *Where:* dialogue.json keegan/supper_age#0; part 1 of 3: **keegan: Twenty-six. The handbook says that is old for a probationer. The handbook says a great man…** / narrator: She looks at you sidelong. / keegan: How old are you? No. Do not answer. I should only write it down.
 *Played:* dry, warming; doing: her age; pace: measured; volume: level.
@@ -344,7 +334,7 @@ Subtitle: I taught them chiasmus. "The Vigil keeps the gate, and the gate keeps 
 ```
 Subtitle: Twenty-six. The handbook says that is old for a probationer. The handbook says a great many things. Some of them are true.
 
-### 28. `dlg.keegan.supper_age.0.p2.wav`
+### 27. `dlg.keegan.supper_age.0.p2.wav`
 
 *Where:* dialogue.json keegan/supper_age#0; part 3 of 3: keegan: Twenty-six. The handbook says that is old for a probationer. The handbook says a great man… / narrator: She looks at you sidelong. / **keegan: How old are you? No. Do not answer. I should only write it down.**
 *Played:* dry, warming; doing: her age; pace: measured; volume: level.
@@ -355,29 +345,18 @@ Subtitle: Twenty-six. The handbook says that is old for a probationer. The handb
 ```
 Subtitle: How old are you? No. Do not answer. I should only write it down.
 
-### 29. `dlg.keegan.supper_letters.0.p1.wav`
+### 28. `dlg.keegan.supper_letters.0.p1.wav`
 
-*Where:* dialogue.json keegan/supper_letters#0; part 2 of 4: narrator: She doesn't answer for so long that you think she won't. / **keegan: That is a possibility I have considered.** / narrator: Very precisely. / keegan: I have considered it every month for two years, on the day the post does not come. I have …
+*Where:* dialogue.json keegan/supper_letters#0; part 2 of 2: narrator: She doesn't answer for so long that you think she won't. / **keegan: That is a possibility I have considered. I have considered it every month for two years, o…**
 *Played:* composed hurt; doing: the letters don't come; pace: slow; volume: quiet.
 *Note:* Narrator holds the silence. Very precise, very hurt. 'That was an example of correctio.' brittle. Thanks sincere. 'I am also not a fool.' quiet and firm.
 
 ```
-[composed hurt, quietly] That is a possibility I have considered.
+[composed hurt, quietly] That is a possibility I have considered. [very precisely] I have considered it every month for two years, on the day the post does not come. I have written it down and crossed it out. That was an example of correctio. ...Thank you for saying it. Nobody else will. They think I am funny. I am funny. I am also not a fool.
 ```
-Subtitle: That is a possibility I have considered.
+Subtitle: That is a possibility I have considered. I have considered it every month for two years, on the day the post does not come. I have written it down and crossed it out. That was an example of correctio. ...Thank you for saying it. Nobody else will. They think I am funny. I am funny. I am also not a fool.
 
-### 30. `dlg.keegan.supper_letters.0.p3.wav`
-
-*Where:* dialogue.json keegan/supper_letters#0; part 4 of 4: narrator: She doesn't answer for so long that you think she won't. / keegan: That is a possibility I have considered. / narrator: Very precisely. / **keegan: I have considered it every month for two years, on the day the post does not come. I have …**
-*Played:* composed hurt; doing: the letters don't come; pace: slow; volume: quiet.
-*Note:* Narrator holds the silence. Very precise, very hurt. 'That was an example of correctio.' brittle. Thanks sincere. 'I am also not a fool.' quiet and firm.
-
-```
-[composed hurt, quietly] I have considered it every month for two years, on the day the post does not come. I have written it down and crossed it out. That was an example of correctio. ...Thank you for saying it. Nobody else will. They think I am funny. I am funny. I am also not a fool.
-```
-Subtitle: I have considered it every month for two years, on the day the post does not come. I have written it down and crossed it out. That was an example of correctio. ...Thank you for saying it. Nobody else will. They think I am funny. I am funny. I am also not a fool.
-
-### 31. `dlg.keegan.supper_read.0.p1.wav`
+### 29. `dlg.keegan.supper_read.0.p1.wav`
 
 *Where:* dialogue.json keegan/supper_read#0; part 2 of 4: narrator: She is very obviously delighted, and very obviously trying not to be. / **keegan: Chapter nine. On bathing. "The knight shall wash at need, and not for pleasure, the body b…** / narrator: She reads you chapter twelve, on the care of the blade, all of it, by the light of the gat… / keegan: ...You did not fall asleep. Nobody has ever not fallen asleep.
 *Played:* delight trying to hide; doing: she reads to you; pace: measured; volume: level.
@@ -388,7 +367,7 @@ Subtitle: I have considered it every month for two years, on the day the post do
 ```
 Subtitle: Chapter nine. On bathing. "The knight shall wash at need, and not for pleasure, the body being a lamp and not a garden." I have underlined "garden". In protest.
 
-### 32. `dlg.keegan.supper_read.0.p3.wav`
+### 30. `dlg.keegan.supper_read.0.p3.wav`
 
 *Where:* dialogue.json keegan/supper_read#0; part 4 of 4: narrator: She is very obviously delighted, and very obviously trying not to be. / keegan: Chapter nine. On bathing. "The knight shall wash at need, and not for pleasure, the body b… / narrator: She reads you chapter twelve, on the care of the blade, all of it, by the light of the gat… / **keegan: ...You did not fall asleep. Nobody has ever not fallen asleep.**
 *Played:* delight trying to hide; doing: she reads to you; pace: measured; volume: level.
@@ -399,7 +378,7 @@ Subtitle: Chapter nine. On bathing. "The knight shall wash at need, and not for 
 ```
 Subtitle: ...You did not fall asleep. Nobody has ever not fallen asleep.
 
-### 33. `dlg.keegan.supper_ch4.0.p1.wav`
+### 31. `dlg.keegan.supper_ch4.0.p1.wav`
 
 *Where:* dialogue.json keegan/supper_ch4#0; part 2 of 3: narrator: She closes the book. / **keegan: No.** / narrator: She says it gently, and then she doesn't say anything else for a while, and her hand stays…
 *Played:* gentle refusal; doing: not chapter four; pace: slow; volume: quiet.
@@ -410,7 +389,7 @@ Subtitle: ...You did not fall asleep. Nobody has ever not fallen asleep.
 ```
 Subtitle: No.
 
-### 34. `dlg.keegan.supper_hand.0.p1.wav`
+### 32. `dlg.keegan.supper_hand.0.p1.wav`
 
 *Where:* dialogue.json keegan/supper_hand#0; part 2 of 4: narrator: You put your hand over hers on the stone. She lets it stay there for a count of three. / **keegan: I am on duty.** / narrator: She takes her hand back. Then, without looking, she puts it back, under yours, for another… / keegan: ...That was epizeuxis. The same thing, twice, at once, for emphasis. Goodnight.
 *Played:* shy, moved; doing: her hand; pace: slow; volume: quiet.
@@ -421,7 +400,7 @@ Subtitle: No.
 ```
 Subtitle: I am on duty.
 
-### 35. `dlg.keegan.supper_hand.0.p3.wav`
+### 33. `dlg.keegan.supper_hand.0.p3.wav`
 
 *Where:* dialogue.json keegan/supper_hand#0; part 4 of 4: narrator: You put your hand over hers on the stone. She lets it stay there for a count of three. / keegan: I am on duty. / narrator: She takes her hand back. Then, without looking, she puts it back, under yours, for another… / **keegan: ...That was epizeuxis. The same thing, twice, at once, for emphasis. Goodnight.**
 *Played:* shy, moved; doing: her hand; pace: slow; volume: quiet.
@@ -432,7 +411,7 @@ Subtitle: I am on duty.
 ```
 Subtitle: ...That was epizeuxis. The same thing, twice, at once, for emphasis. Goodnight.
 
-### 36. `dlg.keegan.supper_end.0.p0.wav`
+### 34. `dlg.keegan.supper_end.0.p0.wav`
 
 *Where:* dialogue.json keegan/supper_end#0; part 1 of 3: **keegan: Goodnight.** / narrator: As you go: / keegan: It was good for morale. Mine. I checked.
 *Played:* pleased, shy; doing: goodnight; pace: measured; volume: quiet.
@@ -443,7 +422,7 @@ Subtitle: ...That was epizeuxis. The same thing, twice, at once, for emphasis. G
 ```
 Subtitle: Goodnight.
 
-### 37. `dlg.keegan.supper_end.0.p2.wav`
+### 35. `dlg.keegan.supper_end.0.p2.wav`
 
 *Where:* dialogue.json keegan/supper_end#0; part 3 of 3: keegan: Goodnight. / narrator: As you go: / **keegan: It was good for morale. Mine. I checked.**
 *Played:* pleased, shy; doing: goodnight; pace: measured; volume: quiet.
@@ -454,9 +433,18 @@ Subtitle: Goodnight.
 ```
 Subtitle: It was good for morale. Mine. I checked.
 
+### 36. `dlg.keegan.vonnra.0.wav`  HOLD: the story lead's confirmation of Keegan's kenning
+
+*Where:* dialogue.json keegan/vonnra#0
+
+```
+Ash-of-Morrow. A peculiar sort of surname: a kenning, almost. The ash of the morning; what is left when the morning has burned down. ...I have no opinion of her. Chapter two forbids opinions about civilians. I have several.
+```
+Subtitle: Ash-of-Morrow. A peculiar sort of surname: a kenning, almost. The ash of the morning; what is left when the morning has burned down. ...I have no opinion of her. Chapter two forbids opinions about civilians. I have several.
+
 ## Said in passing
 
-### 38. `bark.keegan.day.0.wav`
+### 37. `bark.keegan.day.0.wav`
 
 *Where:* npcs.json keegan.barks[0]
 *Played:* earnest; pace: measured; volume: raised.
@@ -466,7 +454,7 @@ Subtitle: It was good for morale. Mine. I checked.
 ```
 Subtitle: None pass north. Not yet.
 
-### 39. `bark.keegan.day.1.wav`
+### 38. `bark.keegan.day.1.wav`
 
 *Where:* npcs.json keegan.barks[1]
 *Played:* earnest; pace: measured; volume: raised.
@@ -476,7 +464,7 @@ Subtitle: None pass north. Not yet.
 ```
 Subtitle: You are not ready for what is beyond there.
 
-### 40. `bark.keegan.day.2.wav`
+### 39. `bark.keegan.day.2.wav`
 
 *Where:* npcs.json keegan.barks[2]
 *Played:* earnest; pace: measured; volume: raised.
@@ -486,7 +474,7 @@ Subtitle: You are not ready for what is beyond there.
 ```
 Subtitle: Probationary. It is a real title.
 
-### 41. `bark.keegan.night.0.wav`
+### 40. `bark.keegan.night.0.wav`
 
 *Where:* npcs.json keegan.nightBarks[0]
 *Played:* earnest, tired; pace: measured; volume: level.
@@ -496,7 +484,7 @@ Subtitle: Probationary. It is a real title.
 ```
 Subtitle: Night watch. Probationary night watch.
 
-### 42. `bark.keegan.night.1.wav`
+### 41. `bark.keegan.night.1.wav`
 
 *Where:* npcs.json keegan.nightBarks[1]
 *Played:* earnest, tired; pace: measured; volume: level.
@@ -506,7 +494,7 @@ Subtitle: Night watch. Probationary night watch.
 ```
 Subtitle: Something moved out there. Probably.
 
-### 43. `bark.keegan.night.2.wav`
+### 42. `bark.keegan.night.2.wav`
 
 *Where:* npcs.json keegan.nightBarks[2]
 *Played:* earnest, tired; pace: measured; volume: level.
@@ -516,7 +504,7 @@ Subtitle: Something moved out there. Probably.
 ```
 Subtitle: Stand back from the gate, please.
 
-### 44. `bark.keegan.night.3.wav`
+### 43. `bark.keegan.night.3.wav`
 
 *Where:* npcs.json keegan.nightBarks[3]
 *Played:* earnest, tired; pace: measured; volume: level.
@@ -526,14 +514,14 @@ Subtitle: Stand back from the gate, please.
 ```
 Subtitle: I am not frightened of the dark. I am merely monitoring it very closely.
 
-### 45. `bark.keegan.said.0.wav`  HOLD
+### 44. `bark.keegan.said.0.wav`
 
 *Where:* npcs.json keegan.said[0]
 *Played:* absorbed, then polite; doing: reading her book; pace: measured; volume: level.
 *Note:* Muttering 'Chapter four' twice, then a startled, proper 'Good morning.'
 
 ```
-[absorbed, then polite] Chapter four. Chapter four. ...Good morning.
+[absorbed, then polite] Chapter four. Chapter four. ...Good day.
 ```
-Subtitle: Chapter four. Chapter four. ...Good morning.
+Subtitle: Chapter four. Chapter four. ...Good day.
 

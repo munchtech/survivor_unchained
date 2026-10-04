@@ -66,7 +66,8 @@ def description(vdef: dict, d: dict) -> str:
     keep = [x for x in rest.rstrip(".").split(", ") if "pitch" in x or "timbre" in x]
     pace = d.get("pace", "measured")
     keep.append(f"{PACE_WORD[next((k for k in PACE_WORD if k in pace), 'measured')]} pacing")
-    emo = re.split(r",| then ", d.get("emo", "") or "")[0].strip() or "plain"
+    # The narrator never shows a feeling (the story lead's rule): his tone is always plain.
+    emo = "plain" if vdef.get("name") == "The narrator" else re.split(r",| then ", d.get("emo", "") or "")[0].strip() or "plain"
     vol = d.get("vol", "level")
     keep.append(f"{emo} tone at {INTENSITY.get(vol, 'medium')} intensity")
     if vol == "hushed":

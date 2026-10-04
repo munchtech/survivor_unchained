@@ -1,12 +1,10 @@
 # Grimtunnel: ElevenLabs packet
 
-Voice id in the game: `grimtunnel`. 10 takes to record (518 characters; about 1,554 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
-
-**Hold 3 of these** (marked HOLD below) until the story editor's review of section 17 is back; the rest can be recorded now.
+Voice id in the game: `grimtunnel`. 7 takes to record (442 characters; about 1,326 credits at three tries a line). Status: **draft**, until the story lead (a7622ae77d19e31dc) checks every line and marks it final.
 
 ## Who they are
 
-**Grimtunnel** (Boss of the Dig). Oily, gleeful, possessive: "Nobody's!", "surface-meat", "downstairs" for the deep. Under the greed, faith: he is carrying a god its heart, and when anything touches that he goes toad-still and very nearly bows, then covers it with a grin. He believes the thing below will be grateful, and says so. *Casting:* Snib's family, bigger, lower, a cackle, a cave reverb that gets wetter as he goes down.
+**Grimtunnel** (Boss of the Dig). Oily, gleeful, possessive: "Nobody's!", "surface-meat" (never finished at the survivor once he has smelled downstairs on her in C03: "surface-m—"), "downstairs" for the deep. Under the greed, faith: he is carrying a god its heart, and when anything touches that he goes toad-still and very nearly bows, then covers it with a grin. He believes the thing below will be grateful, and says so. *Casting:* Snib's family, bigger, lower, a cackle, a cave reverb that gets wetter as he goes down.
 
 ## Casting the voice
 
@@ -45,6 +43,7 @@ Each: what is going on, how it is played, then the text to paste (the bracketed 
 
 ### 1. `dlg.cin_heart_goes_down.nobodys.0.wav`
 
+*The same words are also* `cbark.676eeb4cf137.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json cin_heart_goes_down/nobodys#0
 *Played:* gleeful greed; doing: Grimtunnel finds the heart; pace: quick; volume: raised.
 *Note:* Cackling delight.
@@ -56,6 +55,7 @@ Subtitle: Ooh, still lit! Nobody's, is it? Nobody's!
 
 ### 2. `dlg.cin_heart_goes_down.downstairs.0.wav`
 
+*The same words are also* `cbark.ca65f966df2d.wav`*: record once; the importer copies the take.*
 *Where:* dialogue.json cin_heart_goes_down/downstairs#0
 *Played:* sly, sniffing; doing: Grimtunnel smells you; pace: slow; volume: quiet.
 *Note:* A sniff; creepy and pleased.
@@ -65,53 +65,43 @@ Subtitle: Ooh, still lit! Nobody's, is it? Nobody's!
 ```
 Subtitle: ...You smell like downstairs.
 
-### 3. `dlg.cin_heart_goes_down.grateful.0.p0.wav`
+### 3. `dlg.cin_heart_goes_down.grateful.0.wav`
 
-*Where:* dialogue.json cin_heart_goes_down/grateful#0; part 1 of 3: **grimtunnel: Finders keepers, surface-m—** / narrator: a sniff / grimtunnel: ...Downstairs'll be ever so grateful.
+*The same words are also* `cbark.d6a6b3a4b868.wav`*: record once; the importer copies the take.*
+*Where:* dialogue.json cin_heart_goes_down/grateful#0
 *Played:* gloating, then reverent; doing: he takes it down; pace: measured; volume: level.
 *Note:* Cut off by his own sniff; then oily reverence.
 
 ```
-[gloating, then reverent] Finders keepers, surface-m—
+[gloating, then reverent] Finders keepers, surface-m— [sniffs] ...Downstairs'll be ever so grateful.
 ```
-Subtitle: Finders keepers, surface-m—
-
-### 4. `dlg.cin_heart_goes_down.grateful.0.p2.wav`
-
-*Where:* dialogue.json cin_heart_goes_down/grateful#0; part 3 of 3: grimtunnel: Finders keepers, surface-m— / narrator: a sniff / **grimtunnel: ...Downstairs'll be ever so grateful.**
-*Played:* gloating, then reverent; doing: he takes it down; pace: measured; volume: level.
-*Note:* Cut off by his own sniff; then oily reverence.
-
-```
-[gloating, then reverent] ...Downstairs'll be ever so grateful.
-```
-Subtitle: ...Downstairs'll be ever so grateful.
+Subtitle: Finders keepers, surface-m— ...Downstairs'll be ever so grateful.
 
 ## Cinematic: dig boils over
 
-### 5. `dlg.cin_dig_boils_over.pump.0.wav`
+### 4. `dlg.cin_dig_boils_over.pump.0.wav`
 
 *Where:* dialogue.json cin_dig_boils_over/pump#0
 *Played:* furious, then gleeful; doing: Grimtunnel's pump; pace: quick; volume: shout.
 *Note:* 'PUMP' stressed. Then oily calm: 'Downstairs is PATIENT.'
 
 ```
-[furious, then gleeful, shouting] Surface-meat! You broke my PUMP. ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT.
+[furious, then gleeful, shouting] Surface-m— ...You broke my PUMP. ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT.
 ```
-Subtitle: Surface-meat! You broke my PUMP. ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT.
+Subtitle: Surface-m— ...You broke my PUMP. ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT.
 
-### 6. `dlg.cin_dig_boils_over.pump.1.wav`
+### 5. `dlg.cin_dig_boils_over.pump.1.wav`
 
 *Where:* dialogue.json cin_dig_boils_over/pump#1
 *Played:* furious, then gleeful; doing: Grimtunnel's lads; pace: quick; volume: shout.
 *Note:* As pump.0.
 
 ```
-[furious, then gleeful, shouting] Surface-meat! Killing my lads, are we? ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT.
+[furious, then gleeful, shouting] Surface-m— ...Killing my lads, are we? ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT.
 ```
-Subtitle: Surface-meat! Killing my lads, are we? ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT.
+Subtitle: Surface-m— ...Killing my lads, are we? ...Doesn't matter. Downstairs doesn't mind. Downstairs is PATIENT.
 
-### 7. `dlg.cin_dig_boils_over.quiet.0.wav`
+### 6. `dlg.cin_dig_boils_over.quiet.0.wav`
 
 *Where:* dialogue.json cin_dig_boils_over/quiet#0
 *Played:* delighted, unnerving; doing: he told it about you; pace: quick; volume: raised.
@@ -124,36 +114,12 @@ Subtitle: I told it about you! It went ever so QUIET!
 
 ## In a fight
 
-### 8. `cbark.676eeb4cf137.wav`  HOLD
+### 7. `cbark.9fbae2a7c31b.wav`
 
-*Where:* godot/logic/Play/Zones/Prologue.cs
-*Played:* gleeful; doing: finds an unclaimed lamp; pace: quick; volume: raised.
-*Note:* Delighted, goblinish.
+*Where:* godot/logic/Play/Bosses/ArenaBosses.cs
 
 ```
-[gleeful, loudly] Ooh, still lit! Nobody's, is it? Nobody's!
+"Ha! Keep upstairs, surface-m— you! I'm wanted DOWNSTAIRS!"
 ```
-Subtitle: Ooh, still lit! Nobody's, is it? Nobody's!
-
-### 9. `cbark.ca65f966df2d.wav`  HOLD
-
-*Where:* godot/logic/Play/Zones/Prologue.cs
-*Played:* sly, sniffing; doing: smells you; pace: slow; volume: level.
-*Note:* Close and pleased.
-
-```
-[sly, sniffing] ...You smell like downstairs.
-```
-Subtitle: ...You smell like downstairs.
-
-### 10. `cbark.d6a6b3a4b868.wav`  HOLD
-
-*Where:* godot/logic/Play/Zones/Prologue.cs
-*Played:* gleeful; doing: steals and runs; pace: quick; volume: level.
-*Note:* Cut off mid-word, a sniff, then smug: delighted, never beaten.
-
-```
-[gleeful] Finders keepers, surface-m— [sniffs] ...Downstairs'll be ever so grateful.
-```
-Subtitle: Finders keepers, surface-m— ...Downstairs'll be ever so grateful.
+Subtitle: "Ha! Keep upstairs, surface-m— you! I'm wanted DOWNSTAIRS!"
 
