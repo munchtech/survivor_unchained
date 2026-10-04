@@ -48,10 +48,16 @@ places, and each one has a timeline the game plays. The chain:
 ```
 
 - **Times.** A cue's `at` is seconds from its shot's start, or `"end-0.8"`
-  from its end. A shot that `fit`s a line lasts at least until that line's
-  take ends, plus its `tail`. A longer take therefore makes a longer shot,
-  and everything after it moves with it. The take's length is read from
-  `godot/data/vo/index.json`. A line with no take is timed at a reading pace.
+  from its end, or `"after:conversation.node+0.5"`: that long after a line
+  already said ends. A shot that `fit`s a line lasts at least until that
+  line's take ends, plus its `tail`; the line may have begun in an earlier
+  shot, so a line can run on over a cut (C01 8a to 8b). A longer take
+  therefore makes a longer shot, and everything after it moves with it. The
+  take's length is its `read` in `godot/data/vo/index.json` (the voice
+  without the room's tail, which plays on over what follows; `sec` for a
+  take made before `read` was measured). Shots are written to the voice
+  lead's target windows; a take that runs long lengthens its shot. A line
+  with no take is timed at a reading pace.
 - **Places.** `[x, h, z]` is h above the ground. `{"abs": [x,y,z]}` is an
   exact point (use it over water). `{"mark": m, "off": [dx,dh,dz]}` and
   `{"mark": m, "y": Y}` are taken from a mark. `{"actor": a, "bone": "head"}`
@@ -79,8 +85,15 @@ places, and each one has a timeline the game plays. The chain:
     blink again), `wet`.
   - Light and air: `light` (`light`, `intensity`, `color`, `over`), `lit`,
     `fire` (the campfire's size), `atmosphere`.
-  - Effects and the world: `vfx`, `prints` (wet bootprints `from` `to`), `spawn` (an enemy into the fight, `style`
-    rise), `world` (`rate`).
+  - Effects and the world: `vfx`, `prints` (wet bootprints `from` `to`,
+    each with a soft trampled patch so the trail reads through frost),
+    `frost` (a thin rime about `where`, `size` across, cleared within
+    `radius` of `clear`; laid in knee-deep tiles so it never touches the
+    trees; it stays, as the prints do), `glow` (a light seen far off: a
+    point and a halo of `color` and `size`; `clear` carries it through the
+    mist; `under: [w, h]` sets it on a dark tower against the sky; for this
+    cinematic only), `spawn` (an enemy into the fight, `style` rise),
+    `world` (`rate`).
   - Frame: `bars`, `fade`, `title` (a title card), `hide`.
   - The game: `event` (a hook in the zone's code).
 

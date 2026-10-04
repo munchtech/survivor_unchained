@@ -31,12 +31,14 @@ public static class CineLines
         return new CineLine(id, VoiceLines.Dialogue(conv, node, i), raw, Dialogue.Template(raw, ctx), name, who);
     }
 
-    /// <summary>How long a line runs: its take when there is one made from these
-    /// words, else a slow narrator's pace (about 2.6 words a second).</summary>
+    /// <summary>How long a line runs, for the cut: its take's voice when there is
+    /// one made from these words (Read, without the room's tail, which plays on
+    /// over what follows; the whole file for a take made before Read was
+    /// measured), else a slow narrator's pace (about 2.6 words a second).</summary>
     public static double Seconds(CineLine l)
     {
         if (l.Raw == "") return 0;
-        if (VoiceLines.Take(l.VoId, l.Raw) is { } take) return take.Sec;
+        if (VoiceLines.Take(l.VoId, l.Raw) is { } take) return take.Read > 0 ? take.Read : take.Sec;
         return Reading(l.Text);
     }
 

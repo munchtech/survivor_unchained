@@ -131,14 +131,38 @@ public class CinemaTests
     }
 
     [Fact]
-    public void The_opening_is_narration_whoever_voices_it()
+    public void The_opening_is_narration_but_for_the_voice_up_the_road()
     {
-        // C01's voice may be recast (Vonnra calling her home): the timing follows
-        // the take, and the subtitle stays narration while the speaker is listed.
+        // The narrator may be recast (the timing follows the take, the subtitle stays
+        // narration while the speaker is listed). The one voice in it that is not
+        // narration is the call up the road: Vonnra, never named (docs/STORY_BIBLE.md,
+        // "Who tells it").
         var f = CineFile.Load("c01");
         var ctx = Make("hunter", "Wren", 1).C;
-        foreach (var c in Lay(f).Cues.Where(c => c.Cue.Do == "line"))
-            Assert.Contains(CineLines.Find(c.Cue.Str("id")!, ctx).SpeakerId, f.Narrators);
+        var lines = Lay(f).Cues.Where(c => c.Cue.Do == "line").Select(c => CineLines.Find(c.Cue.Str("id")!, ctx)).ToList();
+        var call = Assert.Single(lines, l => l.SpeakerId == "far_voice");
+        Assert.DoesNotContain("far_voice", f.Narrators);
+        Assert.Equal("A voice up the road", call.Speaker);
+        Assert.All(lines.Where(l => l != call), l => Assert.Contains(l.SpeakerId, f.Narrators));
+    }
+
+    [Fact]
+    public void A_line_can_run_over_a_cut_and_a_cue_can_wait_for_it()
+    {
+        // The far lamp's line begins on the wide shot and ends on her close-up; the
+        // call waits for it, and the close-up holds until the call is said.
+        var f = CineFile.Parse("""
+            { "id": "t", "conversation": "cin_drowned_fire", "shots": [
+              { "id": "1", "dur": 2, "cues": [ { "at": 0.5, "do": "line", "id": "cin_drowned_fire.lamp" } ] },
+              { "id": "2", "dur": 1, "fit": ["cin_drowned_fire.lamp", "cin_drowned_fire.call"], "tail": 0.5,
+                "cues": [ { "at": "after:cin_drowned_fire.lamp+0.4", "do": "line", "id": "cin_drowned_fire.call" } ] } ] }
+            """);
+        var s = new CineSchedule(f, new CineContext(), id => id.EndsWith(".lamp") ? 6.0 : 3.0);
+        Assert.Equal(2.0, s.Shots[1].Start, 6);
+        Assert.Equal(6.9, s.Cues.First(c => c.Cue.Str("id") == "cin_drowned_fire.call").T, 6);
+        Assert.Equal(6.9 + 3.0 + 0.5, s.Length, 6);
+        var bad = CineFile.Parse("""{ "id": "u", "shots": [ { "id": "1", "dur": 1, "fit": ["x.y"], "cues": [] } ] }""");
+        Assert.Throws<FormatException>(() => new CineSchedule(bad, new CineContext(), _ => 1));
     }
 
     [Fact]
