@@ -545,7 +545,7 @@ public sealed class HollowByNight : StoryFight
             // moves), then marked longer. The words and the lane at once were four things to read in 1.7 s.
             if (drives++ == 0)
             {
-                A.Say("The drive", "The gap is where she runs: go through the wolves", "danger");
+                A.Say("The drive", "Out of her line, into the wolves", "danger");
                 sayT = 1.0;
                 return;
             }

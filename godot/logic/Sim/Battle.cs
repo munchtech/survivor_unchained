@@ -1166,7 +1166,7 @@ public sealed partial class Battle
 
     /// <summary>"You go cold. Then the ember catches." The cold's beat before the fire, and how long its
     /// front takes to run out to its edge (eased out, as a blast's air is; the look's FireRun).</summary>
-    public const double RiseCold = 0.35, RiseRun = 0.3;
+    public const double RiseCold = 0.25, RiseRun = 0.3;
 
     /// <summary>Cold, Then Not's fire on its way out from where she got up.</summary>
     sealed class RiseFireState

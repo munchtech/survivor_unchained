@@ -73,7 +73,7 @@ public sealed class DigBoilsOver : StoryFight
     };
     public override string BossAt => "boss_at";
     public override string BossStart => "boss_start";
-    public override string ShutSight => "Behind you, the tub-way falls in.";
+    public override string ShutSight => "Behind you, the ground you came along from the pump-house slumps into the pit.";
     public override string Sign => "Under the lip, something knocks twice. A line of blue light shows in the ground.";
     public override string BossDef => "grimtunnel_roused";
     public override string? Cinematic => "c12";
@@ -160,7 +160,7 @@ public sealed class DigBoilsOver : StoryFight
                     var (mx, mz) = Mouth(s);
                     A.Group("lampling", 2 + A.Tier, mx, mz, 2, SpawnStyle.Burrow);
                 }
-                if (!told && s.Windlass.At(B)) { told = true; A.Say("Stand by the windlass", "Your weapons break the one you stand by", "info"); }
+                if (!told && s.Windlass.At(B)) { told = true; A.Say("Stand at the windlass", "Close enough to touch, and your weapons break it", "info"); }
                 if (s.Windlass.Step(B, dt, 874000 + i)) Fell(s);
             }
             if (Up(mother, motherSeed)) A.Goal = shafts.All(s => s.Windlass.Broken) || Dist(mother!.X, mother.Z, p.X, p.Z) < 5 ? (mother!.X, mother.Z) : NextWindlass();
@@ -267,7 +267,7 @@ public sealed class DigBoilsOver : StoryFight
                 tubT = roof ? 5.5 : 8;
                 tubs++;
                 Tub(p.X);
-                if (tubs == RoofTubs) A.Bark(c.X, c.Z, "The brake-house lamp goes out. Up top, somebody is climbing down onto the rails.", null);
+                if (tubs == RoofTubs) A.Bark(c.X, c.Z, "The rails go quiet. Down off the brake-house roof comes the Chucker, a pot in each hand.", null);
             }
         }
 
@@ -303,7 +303,7 @@ public sealed class DigBoilsOver : StoryFight
         }
 
         public override BossBar? Bar => Up(chucker, chuckSeed)
-            ? new BossBar(chucker!.Def.Name, chucker.Def.Lesson, chucker.Hp, chucker.MaxHp, IsBoss: false, Shielded: chucker.TakenMul < 1)
+            ? new BossBar(chucker!.Def.Name, tubs < RoofTubs ? "Out of reach on the roof until the tubs stop" : chucker.Def.Lesson, chucker.Hp, chucker.MaxHp, IsBoss: false, Shielded: chucker.TakenMul < 1)
             : null;
     }
 
