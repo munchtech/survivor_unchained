@@ -13,6 +13,11 @@ job and give it back the moment the job ends; while you wait, do light work
 gpu:   one holder. ComfyUI, TRELLIS, MoGe, and big Blender bakes or renders.
 godot: three holders (each needs 5 GB of RAM free). Godot runs for pictures or clips (dotnet test needs none).
 
+Waiters are served in the order they first asked: whoever has asked longest
+gets the next free turn, and giving a turn back then taking it again puts you
+at the back. Asking again (or --wait) keeps your place; a place nobody has
+asked for in 90 s lapses.
+
 Run it from any worktree by its full path in the main checkout:
 C:/Users/munch/Desktop/survivorsunchained/tools/turn.py
 """
@@ -28,6 +33,43 @@ HOME = Path.home() / ".su_turns"
 SLOTS = {"gpu": 1, "godot": 3}
 STALE = 3 * 3600  # a holder that never gave its turn back (crashed or forgotten)
 LEAST_RAM = {"gpu": 0, "godot": 5}  # GB free needed, beyond the turn itself
+FRESH = 90  # seconds a place in the queue lasts without being asked again
+
+
+def queue(kind, who):
+    """Records that `who` is waiting for `kind` and returns the waiters, oldest
+    first. (The fastest to ask used to win: one lead polling every few seconds
+    took the GPU straight back while others waited an hour.)"""
+    q = HOME / f"want_{kind}"
+    q.mkdir(parents=True, exist_ok=True)
+    me = q / ("".join(c if c.isalnum() else "_" for c in who)[:80] + ".json")
+    now = time.time()
+    try:
+        first = json.loads(me.read_text())["first"]
+    except (OSError, ValueError, KeyError):
+        first = now
+    me.write_text(json.dumps({"who": who, "first": first, "last": now}))
+    out = []
+    for f in q.glob("*.json"):
+        try:
+            w = json.loads(f.read_text())
+        except (OSError, ValueError):
+            continue
+        if now - w.get("last", 0) > FRESH:
+            f.unlink(missing_ok=True)
+        else:
+            out.append((w["first"], w["who"], f))
+    return sorted(out)
+
+
+def leave_queue(kind, who):
+    q = HOME / f"want_{kind}"
+    for f in q.glob("*.json") if q.exists() else []:
+        try:
+            if json.loads(f.read_text()).get("who") == who:
+                f.unlink(missing_ok=True)
+        except (OSError, ValueError):
+            pass
 
 
 def free_ram_gb():
@@ -65,7 +107,13 @@ def try_take(kind, who):
             (d / "who.json").unlink(missing_ok=True)
             d.rmdir()
     if free_ram_gb() < LEAST_RAM[kind]:
+        queue(kind, who)
         return f"only {free_ram_gb():.1f} GB of RAM free"
+    names = [w for _, w, _ in queue(kind, who)]
+    ahead = names[:names.index(who)] if who in names else []
+    if len(ahead) >= SLOTS[kind] - len(holders(kind)):
+        return "queued behind " + ", ".join(ahead) if ahead else "held by " + "; ".join(
+            f"{w['who']} for {(time.time() - w['since']) / 60:.0f} min" for _, w in holders(kind))
     for i in range(SLOTS[kind]):
         d = HOME / f"{kind}.{i}"
         try:
@@ -73,6 +121,7 @@ def try_take(kind, who):
         except FileExistsError:
             continue
         (d / "who.json").write_text(json.dumps({"who": who, "since": time.time()}))
+        leave_queue(kind, who)
         return None
     return "held by " + "; ".join(f"{w['who']} for {(time.time() - w['since']) / 60:.0f} min" for _, w in holders(kind))
 
@@ -102,6 +151,17 @@ def show():
         hs = holders(kind)
         print(f"{kind}: " + ("free" if not hs else "; ".join(
             f"{w['who']} for {(time.time() - w['since']) / 60:.0f} min" for _, w in hs)))
+        q = HOME / f"want_{kind}"
+        ws = []
+        for f in q.glob("*.json") if q.exists() else []:
+            try:
+                w = json.loads(f.read_text())
+                if time.time() - w["last"] <= FRESH:
+                    ws.append((w["first"], w["who"]))
+            except (OSError, ValueError, KeyError):
+                pass
+        if ws:
+            print(f"  waiting: " + "; ".join(f"{w} ({(time.time() - t) / 60:.0f} min)" for t, w in sorted(ws)))
 
 
 if __name__ == "__main__":
