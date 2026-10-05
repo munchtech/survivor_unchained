@@ -725,6 +725,9 @@ public partial class StashScreen : Overlay
 
     public StashScreen(Game g) : base(g) { Nav.Prefer = "mine:0"; }
 
+    /// <summary>Rook's words over a shelf just sold.</summary>
+    string? said;
+
     VBoxContainer inspect = null!;
 
     /// <summary>What is hovered or focused, read in the pack's pane rather than in a tip over the slots.</summary>
@@ -766,11 +769,14 @@ public partial class StashScreen : Overlay
             {
                 if (!Crafting.BuyShelf(G.Journey.Craft)) { Sound.Sfx.Deny(); return; }
                 Sound.Sfx.Loot(false);
+                said = Crafting.ShelfSaid(G.Journey.World);
                 Refresh();
             }, false, true);
             buy.Disabled = !can;
             store.AddChild(Style.H(Style.Gap3, buy, Style.Label(can ? $"{WorldState.Shelf} more places" : $"{price} gold; you have {Math.Floor(ch.Gold)}", Style.TextItalic, Style.Small, can ? Style.InkDim : Style.Bad)));
         }
+        // What Rook said over the shelf she just sold.
+        if (said != null) store.AddChild(Style.Label($"“{said}”", Style.TextItalic, Style.Body, Style.Ink, true));
         var mine = Pane(page, new Rect2(1170, 0, 670, 920));
         mine.AddChild(new Section("Your pack", $"{ch.Pack.Count(p => p != null)} of {ch.Pack.Count}"));
         var mwell = Style.Panel(Style.Well(12));

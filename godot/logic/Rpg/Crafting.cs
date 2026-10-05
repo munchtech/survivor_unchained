@@ -48,6 +48,7 @@ public sealed class MarkRules
 public sealed class MarkDrop { public string Item = "", Mark = ""; }
 /// <summary>Rook's shelves (the storeroom grows by shelves of 24): the price of each after the first, then
 /// of every one beyond those, and the most there can be.</summary>
+public sealed class RookLines { public string? Shelf, ShelfMore; }
 public sealed class ShelfRules { public string Seller = "rook"; public List<int> Prices = new() { 300, 1000, 2500 }; public int Then = 5000, Most = 8; }
 /// <summary>The one gamble (design 9): jars sold while the pump runs, and what steeping does, by weight.</summary>
 public sealed class SlurryRules
@@ -109,6 +110,8 @@ public sealed class NightRules
     /// GlassFrom, once the stream is cured, scar-glass, one and another each GlassEvery minutes more.</summary>
     public int DeepFrom = 30, GlassFrom = 60, GlassEvery = 60;
     public string Glass = "scar_glass";
+    /// <summary>Said at the night's end the first time scar-glass is carried out (the story lead's).</summary>
+    public string? GlassFirst;
     public double FellKeeps = 0.5;
     public Dictionary<string, List<NightPeople>> Peoples = new();
 }
@@ -133,6 +136,8 @@ public sealed class CraftingRules
     public MarkRules Mark = new();
     public ChartRules Charts = new();
     public ShelfRules Shelves = new();
+    /// <summary>Rook's words over a shelf sold: the first, then any after (the story lead's).</summary>
+    public RookLines Rook = new();
     public SlurryRules Slurry = new();
     public Dictionary<string, MaterialRule> Materials = new();
     public Dictionary<string, CrafterDef> Crafters = new();
@@ -792,6 +797,9 @@ public static partial class Crafting
         for (int i = 0; i < World.WorldState.Shelf; i++) x.World.Stash.Add(null);
         return true;
     }
+
+    /// <summary>What Rook says over the shelf just sold: the second shelf's line, then the later ones'.</summary>
+    public static string? ShelfSaid(WorldState w) => w.Shelves <= 2 ? Rules.Rook.Shelf : Rules.Rook.ShelfMore ?? Rules.Rook.Shelf;
 
     /* ------------------------------------------------------------- marks -- */
 

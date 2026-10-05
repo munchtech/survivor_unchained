@@ -123,6 +123,10 @@ T2I = {
                  "side, flecked with grave soil and rust, a faint pale light along the bend",
     "red_cord": "a length of faded red cord lying in a loose S curve with a long row of small tight knots tied along "
                 "it at even intervals, frayed ends, nothing else",
+    # The crafting lead's (design 20.5): what a deep scar leaves past the hour once the stream is clean.
+    # Its lore (the story lead's): "the blue of the ford lamps, and it is never quite cold".
+    "scar_glass": "a jagged shard of dark smoky glass, nearly black, a cold pale blue glow like a lamp flame trapped "
+                  "deep inside it, a thin crust of scorched earth and ash on one edge",
     # The crafting lead's (design 9): Snib's jar of the Dig's slurry. No photograph (it has no model).
     "slurry_jar": "a squat grimy grey stoneware crock, its lid lashed down with twine, a crude X scratched deep into its "
                   "belly, sickly bright green light leaking out through the scratch and a crack under the lid, thick "

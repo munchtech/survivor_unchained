@@ -1281,7 +1281,8 @@
    "icon": "scar_glass",
    "value": 60,
    "stack": 10,
-   "description": "What a deep scar leaves for one who stays past the hour, once the stream runs clean. Steep a piece in it, from the pack: a grade past what the forge can do, or something strong with a price, or only the veins, or a grade lost. It sets the piece for good."
+   "description": "Steep a piece of gear in it by hand, as in a slurry jar: a grade past the forge, a power with a price, only the veins, or a grade lost. A night's scar leaves a piece for every hour you stay past winning it.",
+   "lore": "Ground that a scar burned until it ran, gone to dark glass. It only forms where somebody stayed too long. Held to the light it is the blue of the ford lamps, and it is never quite cold."
   },
   "mark_hunt_bone": {
    "id": "mark_hunt_bone",

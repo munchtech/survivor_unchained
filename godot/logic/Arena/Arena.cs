@@ -85,6 +85,8 @@ public sealed record ArenaResult(ArenaSpec Spec, bool Won, double Seconds, int K
     /// people's own), and what they spilled falling (docs/CRAFTING_DESIGN.md 6.1).</summary>
     public Dictionary<string, int> Carried { get; init; } = new();
     public Dictionary<string, int> Spilled { get; init; } = new();
+    /// <summary>What the haul looked like, said once (the first scar-glass carried out).</summary>
+    public string? HaulSeen { get; init; }
     /// <summary>A story fight lost: she wakes in town a day on (the owner's decision), not where
     /// she was pulled from (Journey.WakeAfterLoss).</summary>
     public bool WakesInTown => Spec.Story && !Won;
@@ -208,6 +210,13 @@ public static class Arenas
         var carry = Crafting.Night(spec.People, spec.Tier, spec.Story, b.EmberLevel, Math.Max(0, b.Time / 60 - spec.Minutes), won, fell, b.ChampionsByFamily, b.MinibossesByFamily,
             cured: j.World.Fact("stream.clear").Truthy || j.World.Fact("beasts.outcome").Str == "cured");
         j.Carry(carry, spec.Name);
+        // The first scar-glass carried out is said, once (the story lead's words).
+        string? glassSeen = null;
+        if (carry.Kept.ContainsKey(Crafting.Rules.Night.Glass) && !j.World.Fact("glass.seen").Truthy)
+        {
+            j.World.Facts["glass.seen"] = true;
+            glassSeen = Crafting.Rules.Night.GlassFirst;
+        }
         var w = j.World;
         if (!won)
         {
@@ -239,7 +248,7 @@ public static class Arenas
         w.Arena = null;
         return new ArenaResult(spec, won, b.Time, b.KillCount, b.EmberLevel, xp, b.GoldTotal, fresh, levels, longest, null, taught)
         {
-            TomeChoices = choices, Recorded = recorded, Carried = carry.Kept, Spilled = carry.Spilled,
+            TomeChoices = choices, Recorded = recorded, Carried = carry.Kept, Spilled = carry.Spilled, HaulSeen = glassSeen,
         };
     }
 }

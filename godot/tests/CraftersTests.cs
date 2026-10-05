@@ -565,8 +565,12 @@ public class CraftersTests
             double gold = p.J.Ch.Gold;
             Assert.True(Crafting.BuyShelf(p.J.Craft));
             Assert.Equal(gold - price, p.J.Ch.Gold);
+            // Rook's words over it: the second shelf's, then the later ones' (the story lead's).
+            Assert.Equal(paid.Count == 0 ? Crafting.Rules.Rook.Shelf : Crafting.Rules.Rook.ShelfMore, Crafting.ShelfSaid(p.W));
             paid.Add(price);
         }
+        Assert.NotNull(Crafting.Rules.Rook.Shelf);
+        Assert.NotNull(Crafting.Rules.Night.GlassFirst);
         // To the most there can be, each dearer than the last or as dear; the second is about a Kerchief night's gold.
         Assert.Equal(Crafting.Rules.Shelves.Most, p.W.Shelves);
         Assert.Equal(Crafting.Rules.Shelves.Most * WorldState.Shelf, p.W.Stash.Count);
