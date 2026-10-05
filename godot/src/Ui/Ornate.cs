@@ -475,7 +475,8 @@ public partial class Backdrop : Control
             Texture = new GradientTexture2D
             {
                 Gradient = new Gradient { Colors = new[] { new Color(1, 0.42f, 0.12f, 0.08f), new Color(1, 0.42f, 0.12f, 0) }, Offsets = new[] { 0f, 1f } },
-                FillFrom = new Vector2(0.5f, 1), FillTo = new Vector2(0.5f, 0.6f), Width = 16, Height = 128,
+                // (on a page it keeps to the foot: the vellum carries the page, the warmth sits low)
+                FillFrom = new Vector2(0.5f, 1), FillTo = new Vector2(0.5f, page ? 0.8f : 0.6f), Width = 16, Height = 128,
             },
             StretchMode = TextureRect.StretchModeEnum.Scale, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = MouseFilterEnum.Ignore,
         };

@@ -391,14 +391,15 @@ def backdrop_edges(W=1920, H=1080):
     a_smoke = dens * 0.55
     # Low: the ember's light along the foot, in pools, and lighting the smoke that lies there.
     pools = F.fbm(h, w, scale=260, octaves=2, seed=97) * 0.5 + 0.5
-    low = np.clip((v - 0.5) / 0.5, 0, 1) ** 2.0 * (0.45 + 0.8 * pools)
+    # (low and quiet, under the last 160 px above the foot band: firelight at the foot, not a wash)
+    low = np.clip((v - 0.78) / 0.16, 0, 1) ** 1.6 * (0.55 + 0.6 * pools)
     # The smoke is the house's cool iron-black (a warm brown one muddied the whole page); the
     # ember is saturated and low, so it reads as light on the dark and not as a brown wash.
-    ember = np.array([1.0, 0.32, 0.06], np.float32)
+    ember = np.array([1.0, 0.48, 0.12], np.float32)
     dark = np.array([0.03, 0.026, 0.042], np.float32)
     lit = np.array([0.30, 0.13, 0.05], np.float32)
     smoke_col = dark * (1 - low[..., None]) + lit * low[..., None]
-    a_ember = low * 0.42
+    a_ember = low * 0.22
     a = a_smoke + a_ember * (1 - a_smoke)
     rgb = (smoke_col * a_smoke[..., None] + ember * (a_ember * (1 - a_smoke))[..., None]) / np.maximum(a[..., None], 1e-4)
     # The lamp: a broad pool of warm light from above and a little left, where the page is read,
