@@ -89,17 +89,36 @@ def free():
     urllib.request.urlopen(req).read()
 
 
+# One front view only, her face large in the frame, for TRELLIS to make her
+# head of (face_trellis.py) and for her face to be painted with (heroine_face.py
+# FACE_REF): `--front`.
+FRONT = ("A high-end beauty campaign photograph for a luxury cosmetics brand: a straight-on front view head-and-shoulders "
+         "portrait of one breathtakingly beautiful, alluring young woman, looking straight into the camera, her face square to "
+         "it and level, filling the frame. Her hair is pulled back sleekly off her face and ears into a low knot, her hairline "
+         "and forehead visible. Bare shoulders. Serene, seductive neutral expression, full lips softly closed. A clearly "
+         "defined upper eyelid crease, long dark lashes and a soft lash line, groomed brows, a soft lip tint, subtle elegant "
+         "makeup. Soft even beauty-dish light from the front, no harsh shadows, plain warm-grey studio background. Shot on an "
+         "85mm lens at eye level, sharp focus, luminous skin with fine natural texture. {who}")
+
 if __name__ == "__main__":
-    out = os.path.abspath(sys.argv[1])
+    front = "--front" in sys.argv
+    args = [a for a in sys.argv[1:] if a != "--front"]
+    seeds = SEEDS
+    if "--seeds" in args:
+        k = args.index("--seeds")
+        seeds = [int(s) for s in args[k + 1].split(",")]
+        args = args[:k] + args[k + 2:]
+    out = os.path.abspath(args[0])
     os.makedirs(out, exist_ok=True)
-    names = sys.argv[2:] or list(FACES)
+    names = args[1:] or list(FACES)
     try:
         for name in names:
-            for seed in SEEDS:
+            for seed in seeds:
                 dst = os.path.join(out, f"{name}_{seed}.png")
                 if os.path.exists(dst):
                     continue
-                got = comfy.run(graph(FRAME.format(who=FACES[name]), seed, f"face_ref_{name}"), out)
+                text = (FRONT if front else FRAME).format(who=FACES[name])
+                got = comfy.run(graph(text, seed, f"face_ref_{name}", size=(1024, 1536) if front else (1536, 1024)), out)
                 os.replace(got[0], dst)
                 print("REF", dst)
     finally:

@@ -208,6 +208,46 @@ def paint(name):
     return dst
 
 
+def from_reference(ref):
+    """The front painted with her reference itself (FACE_REF): its face
+    warped onto the front drawing, landmark to landmark (MediaPipe's, read
+    off both; a thin-plate spline between), now that her head is shaped
+    as the reference's face (face_wrap.py). Every lid's fold, the lips'
+    border and the brows' hairs are the photograph's own."""
+    import json
+    import subprocess
+
+    from PIL import Image
+    from scipy import ndimage
+    from scipy.interpolate import RBFInterpolator
+    py = os.path.join(os.environ.get("LOCALAPPDATA", ""), "facefit", ".venv", "Scripts", "python.exe")
+    fit = os.path.join(os.path.dirname(os.path.abspath(__file__)), "face_fit.py")
+    pts = {}
+    for name, path in (("drawn", os.path.join(OUT, "drawn_front.png")), ("ref", ref)):
+        js = os.path.join(OUT, f"marks_{name}.json")
+        subprocess.run([py, fit, "marks", path, js, "whole"], capture_output=True)
+        if not os.path.exists(js):
+            raise SystemExit(f"no face found in {path}")
+        pts[name] = np.array(json.load(open(js))["points"])
+    src = Image.open(ref).convert("RGB")
+    sw, sh = src.size
+    # (from each pixel of the drawing to where the reference has it: on a
+    # coarse grid, then smoothly between)
+    tps = RBFInterpolator(pts["drawn"], pts["ref"], kernel="thin_plate_spline", smoothing=2.0)
+    step = 8
+    gy, gx = np.mgrid[0:DRAW:step, 0:DRAW:step]
+    g = tps(np.c_[gx.ravel(), gy.ravel()].astype(float)).reshape(gx.shape + (2,))
+    fx = ndimage.zoom(g[..., 0], step, order=1)[:DRAW, :DRAW]
+    fy = ndimage.zoom(g[..., 1], step, order=1)[:DRAW, :DRAW]
+    a = np.asarray(src, np.float32)
+    out = np.stack([ndimage.map_coordinates(a[..., k], [np.clip(fy, 0, sh - 1), np.clip(fx, 0, sw - 1)], order=1) for k in range(3)], 2)
+    dst = os.path.join(OUT, "painted_front.png")
+    Image.fromarray(np.clip(out, 0, 255).astype(np.uint8)).save(dst)
+    err = np.linalg.norm(tps(pts["drawn"]) - pts["ref"], axis=1)
+    print("REFERENCE laid on the front drawing: %d landmarks, %.1f px off (rms)" % (len(err), np.sqrt((err ** 2).mean())))
+    return dst
+
+
 # ----------------------------------------------------------- laid back --
 def load(path):
     from PIL import Image
@@ -312,7 +352,10 @@ if __name__ == "__main__":
         draw()
         try:
             for name in VIEWS:
-                paint(name)
+                if name == "front" and os.environ.get("FACE_REF"):
+                    from_reference(os.environ["FACE_REF"])
+                else:
+                    paint(name)
                 print("PAINTED", name)
         finally:
             free()

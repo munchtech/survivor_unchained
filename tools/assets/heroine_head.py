@@ -250,6 +250,7 @@ for _root, _, _files in os.walk(_TDIR):
             TARGET.setdefault(_f[:-10], os.path.join(_root, _f))
 for _f in os.listdir(os.path.join(_TDIR, "expression", "units", "caucasian")):
     TARGET["x:" + _f[:-10]] = os.path.join(_TDIR, "expression", "units", "caucasian", _f)
+TARGET.update(fs.portrait_paths())
 
 
 sides = fs.sides
@@ -257,11 +258,14 @@ sides = fs.sides
 
 # (her face's sculpts, ours, are laid on her points once MakeHuman's are
 # read, below: MV_HM)
+_PORTRAIT_KEYS = []
 for _t, _v in FACE.items():
     if _t in fs.SCULPTS:
         continue
     for _n in sides([_t]):
-        TargetService.load_target(hm, TARGET[_n], weight=_v)
+        _kb = TargetService.load_target(hm, TARGET[_n], weight=_v)
+        if _t.startswith("portrait-"):
+            _PORTRAIT_KEYS.append(_kb.name)
 # Every slider's and expression's targets too, at nothing (so they change
 # nothing yet), for what each does to her to be read off later: each key
 # its targets with their weights (a slider's reach is in them:
@@ -311,6 +315,15 @@ def grab(o):
 
 
 MV, MF, MU = grab(hm)
+# (and without her portrait (face_wrap.py), for her head's size and place:
+# a face of another make, laid on by its own landmarks, would size her
+# whole head by its own nose and chin)
+for _k in _PORTRAIT_KEYS:
+    hm.data.shape_keys.key_blocks[_k].value = 0.0
+MV_PLACE = grab(hm)[0] if _PORTRAIT_KEYS else MV
+for _k in _PORTRAIT_KEYS:
+    hm.data.shape_keys.key_blocks[_k].value = 1.0
+bpy.context.view_layer.update()
 # (as MakeHuman has her, before she is placed on hers: what our sculpts are made on)
 MV_HM = MV.copy()
 # Her face's own sculpts (a narrower chin): made on her points as MakeHuman
@@ -331,15 +344,15 @@ print("MAKEHUMAN", len(MV), "points,", len(MF), "faces of skin")
 # ---- her face's place: scale from nose to chin, then turned and moved
 # till its surface lies on hers (an ICP at that scale).
 _top = MV[_inbody, 2].max()
-mn, mc = nose_chin(MV[_inbody & (MV[:, 2] > _top - 0.28)])
+mn, mc = nose_chin(MV_PLACE[_inbody & (MV_PLACE[:, 2] > _top - 0.28)])
 hn, hc = her_face_landmarks()
 S = np.linalg.norm(hn - hc) / np.linalg.norm(mn - mc)
 R = np.eye(3)
 T = hn - S * mn
 _hf = np.where(~RED[HTP] & (_tc[:, 2] > hc[2] - 0.003) & (_tc[:, 2] < 1.80) & (_tc[:, 1] < 0) & (np.abs(_tc[:, 0]) < 0.075))[0]
 _fbvh = BVHTree.FromPolygons([tuple(p) for p in HV], HT[_hf].tolist())
-_cand = MV[np.where(_inbody & (MV[:, 2] > mc[2] - 0.003) & (MV[:, 2] < mn[2] + 0.07) & (MV[:, 1] < mn[1] + 0.06)
-                    & (np.abs(MV[:, 0]) < 0.06))[0]]
+_cand = MV_PLACE[np.where(_inbody & (MV_PLACE[:, 2] > mc[2] - 0.003) & (MV_PLACE[:, 2] < mn[2] + 0.07)
+                          & (MV_PLACE[:, 1] < mn[1] + 0.06) & (np.abs(MV_PLACE[:, 0]) < 0.06))[0]]
 for _ in range(30):
     p = (S * (R @ _cand.T)).T + T
     q, k = [], []

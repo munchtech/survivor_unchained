@@ -113,6 +113,7 @@ public static class People
         if (body == "heroine")
         {
             HerHair(p, HerHairs.Contains(look.Hair) ? look.Hair! : HerHairs[0], look.HairColor ?? HerHairColour);
+            HerScalp(p, look.HairColor ?? HerHairColour);
             if (look.Face != null) HerFace(p, look.Face);
             HerPaint(p, look.Paint, look.HairColor);
             p.FaceShape = look.FaceShape;                 // (its painting laid as her skin was made: Skin)
@@ -625,9 +626,29 @@ public static class People
                 }
                 else if (mi.GetSurfaceOverrideMaterial(s) is StandardMaterial3D b && b.ResourceName == "brows") b.AlbedoColor = colour.Darkened(0.45f);
             }
+        HerScalp(p, colour);
         HerFace(p, look.Face ?? new Dictionary<string, float>(), whole: true);
         if (look.Paint != p.Paint || look.HairColor != p.Brow) HerPaint(p, look.Paint, look.HairColor);
         if (look.FaceShape != p.FaceShape) HerHeadPaint(p, look.FaceShape);
+    }
+
+    /// <summary>Her scalp under her hair darkened to her hair's colour
+    /// (head_tex/heroine_shadow.png from tools/assets/heroine_features.py:
+    /// green from her hairline up), so between the cards there is hair, not
+    /// skin: bare, her scalp read as a pale, bald brow, worst under dark hair.</summary>
+    public static void HerScalp(Person p, Color hair)
+    {
+        const string file = "res://art/people/head_tex/heroine_shadow.png";
+        if (!ResourceLoader.Exists(file)) return;
+        var mask = GD.Load<Texture2D>(file);
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+            {
+                if (mi.Mesh.SurfaceGetMaterial(s)?.ResourceName != "skin_head" || mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial m) continue;
+                m.SetShaderParameter("shadow_mask", mask);
+                m.SetShaderParameter("scalp_shadow", 1.0f);
+                m.SetShaderParameter("shadow_colour", hair.Darkened(0.3f));
+            }
     }
 
     /// <summary>Her head's painting for a face she started from (Lore.Her's

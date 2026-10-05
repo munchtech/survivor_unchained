@@ -43,13 +43,18 @@ FACE = {"head-age-decr": 0.619, "head-age-incr": 0.121, "head-diamond": 0.322, "
         "nose-trans-down": 0.372, "nose-volume-decr": 0.327, "nose-volume-incr": 0.068, "nose-width2-incr": 0.047,
         "nose-width3-incr": 0.025, "X-cheek-bones-decr": 0.031, "X-cheek-bones-incr": 0.404, "X-cheek-trans-down": 0.263,
         "X-cheek-trans-up": 0.705, "X-cheek-volume-decr": 0.096, "mouth-angles-up": 0.391,
-        "mouth-cupidsbow-incr": 1.15, "mouth-lowerlip-height-incr": 0.4, "mouth-lowerlip-volume-incr": 0.198,
+        "mouth-cupidsbow-incr": 0.4, "mouth-lowerlip-height-incr": 0.4, "mouth-lowerlip-volume-incr": 0.198,
         "mouth-lowerlip-width-incr": 0.101, "mouth-scale-depth-decr": 0.3, "mouth-scale-horiz-decr": 0.118,
         "mouth-scale-horiz-incr": 0.592, "mouth-trans-backward": 0.32, "mouth-trans-down": 0.147, "mouth-trans-up": 0.6,
-        "mouth-upperlip-height-incr": 0.3, "mouth-upperlip-middle-up": 0.6, "mouth-upperlip-volume-incr": 0.879,
+        "mouth-upperlip-height-incr": 0.3, "mouth-upperlip-middle-up": 0.2, "mouth-upperlip-volume-incr": 0.45,
         "mouth-upperlip-width-decr": 0.024, "mouth-upperlip-width-incr": 0.12, "chin-bones-decr": 1.35,
         "chin-height-decr": 0.062, "chin-jaw-drop-decr": 0.211, "chin-prominent-incr": 0.3,
-        "chin-width-decr": 0.7, "sculpt-chin-narrow": 0.75}
+        "chin-width-decr": 0.7, "sculpt-chin-narrow": 0.75,
+        # Then her whole face laid on the head TRELLIS made of her reference
+        # (face_wrap.py, from all of the above): its volumes, which no
+        # target above could give. (Her cupid's bow and upper lip eased off for it:
+        # at full they pinched a notch under her nose that its surface could not lay flat.)
+        "portrait-heroine": 1.0}
 # Her build where her head meets her body (MakeHuman's woman is longer and
 # slimmer of neck than she was made).
 BUILD = {"measure-neck-height-decr": 0.9, "measure-neck-circ-incr": 0.5, "neck-back-scale-depth-incr": 0.3}
@@ -246,7 +251,21 @@ def target_paths():
                 out.setdefault(f[:-10], os.path.join(root, f))
     for f in os.listdir(os.path.join(tdir, "expression", "units", "caucasian")):
         out["x:" + f[:-10]] = os.path.join(tdir, "expression", "units", "caucasian", f)
+    out.update(portrait_paths())
     return out
+
+
+# Our own targets: each a face's whole shape laid on her from a head that
+# TRELLIS made of its portrait (tools/assets/face_wrap.py), named
+# portrait-<face>. Her own is in FACE; the presets' are shape keys of their own.
+PORTRAITS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "heroine_face", "targets")
+
+
+def portrait_paths():
+    """Our portrait targets by name ("portrait-<face>")."""
+    if not os.path.isdir(PORTRAITS):
+        return {}
+    return {f.split(".target")[0]: os.path.join(PORTRAITS, f) for f in os.listdir(PORTRAITS) if ".target" in f}
 
 
 def _smooth(x):
