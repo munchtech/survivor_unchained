@@ -4,7 +4,7 @@
   "script": "docs/cinematics/shoot/c04b.md",
   "conversation": "cin_first_light",
   "zone": "waystation",
-  "draft": "Previs pass 1: surveyed in the Waystation at dawn; the zone's own Rook and Watch are framed where they stand. Townsfolk who stop and turn, Rook's look to the tower, and the lamp's smoke are to come.",
+  "draft": "Previs pass 1: surveyed in the Waystation at dawn; the zone's own Rook and Watch are framed where they stand. The tower's lamp is the keeper's lamp-iron on the sill, and goes out with a thread of smoke. Townsfolk who stop and turn are to come.",
   "bars": {"in": 0, "out": 0.8},
   "skip": {"from": 1.5, "hold": 0.8},
   "world": {"rate": 0, "zoneHeld": true},
@@ -14,8 +14,8 @@
     "g1": [-4.6, 34.6, 0.0],
     "rook": [-11.3, 11.0, 1.5708],
     "tower": [33.0, -8.0],
-    "window": [30.9, 7.9, -6.6],
-    "rook2": [-10.3, 12.2, 2.04]
+    "rook2": [-10.3, 12.2, 2.04],
+    "lamp": [30.95, -7.0]
   },
   "cast": {
     "her": {"kind": "survivor", "mark": "gate"},
@@ -28,12 +28,12 @@
       "dur": 7.0,
       "fit": ["cin_first_light.baking"],
       "tail": 1.5,
-      "note": "Crane down from 5 m to 1.8 m just inside the south gate, looking north up the road: roofs, a dozen chimneys smoking straight up, the square, the well; right, the toll tower with the sun on it and in its upper window, very small, a lamp still burning, pale in daylight. She walks in under the camera and on up the road. N7. Title: CHAPTER ONE / The Waystation.",
-      "cam": {"pos": [0.0, 5.0, 37.0], "at": [6.0, 4.0, -8.0], "lens": 24, "move": {"pos": [0.0, 1.8, 36.0], "ease": "slow"}},
+      "note": "Crane down from 12 m to 1.8 m just inside the south gate, looking north up the road: roofs, a dozen chimneys smoking straight up, the square, the well; right, on the skyline, the toll tower, and in its upper window, very small, a lamp still burning, pale in daylight (the roofs take it as the crane comes down). She walks in under the camera and on up the road. N7. Title: CHAPTER ONE / The Waystation.",
+      "cam": {"pos": [0.0, 12.0, 38.0], "at": [10.0, 5.0, -8.0], "lens": 24, "move": {"pos": [0.0, 1.8, 36.0], "at": [6.0, 4.0, -8.0], "ease": "slow"}},
       "cues": [
         {"do": "event", "name": "rook_cine"},
         {"do": "anim", "actor": "rook", "clip": "Idle_FoldArms_Loop", "blend": 0},
-        {"do": "glow", "name": "towerlamp", "where": {"abs": [30.9, 7.9, -6.6]}, "color": "#ffd9a0", "size": 0.07, "energy": 2.2, "spread": 5, "halo": 0.3},
+        {"do": "glow", "name": "towerlamp", "where": {"mark": "lamp", "y": 7.12}, "lantern": 1.8, "turn": 30, "color": "#ffd9a0", "size": 0.035, "energy": 2.4, "spread": 7, "halo": 0.35},
         {"do": "music", "mood": "town", "intensity": 0.4},
         {"do": "move", "to": [0.0, 26.0], "dur": 7.0, "clip": "Walk_Formal_Loop", "speed": 0.8},
         {"at": 0.8, "do": "sfx", "name": "creak", "gain": 0.6},
@@ -70,30 +70,30 @@
       "id": "B4",
       "type": "MS",
       "dur": 4.0,
-      "note": "Beside the inn door, Rook in the foreground right, soft at first: focus pulls from her folded arms to the survivor stopping at the square's edge, looking round at the faces. Rook looks at her; then up, east, at the toll tower. (Hunter: the look holds a beat longer, and her arms tighten.)",
-      "cam": {"pos": [-11.1, 1.7, 13.3], "at": [0.0, 1.4, 7.0], "lens": 35, "focus": 1.3, "fstop": 2.8, "move": {"focus": 12.5, "start": 0.8, "end": 2.2, "ease": "inout"}},
+      "note": "Over Rook's right shoulder at the inn door, low, her head and folded arms soft in the left third: focus pulls from her to the survivor stopping at the square's edge, right of centre, looking round at the faces. Behind the survivor and above, the toll tower. Rook looks at her; then lifts her head to the tower. (Hunter: the look holds a beat longer, and her arms tighten.)",
+      "cam": {"pos": [-11.1, 1.5, 13.1], "at": [-1.64, 1.6, 5.71], "lens": 35, "focus": 1.1, "fstop": 2.8, "move": {"focus": 12.5, "start": 0.8, "end": 2.2, "ease": "inout"}},
       "cues": [
         {"at": 2.6, "do": "music", "mood": "silence"},
-        {"at": 2.6, "do": "look", "actor": "rook", "where": {"abs": [30.9, 7.9, -6.6]}, "over": 0.5}
+        {"at": 2.6, "do": "look", "actor": "rook", "where": {"mark": "lamp", "y": 7.12}, "over": 0.5}
       ]
     },
     {
       "id": "B4a",
       "type": "CU",
-      "dur": 1.5,
-      "note": "From the square by her, compressed: the tower's upper window, the lamp on the sill pale in the sun, goes out. A thread of smoke. (Rook's own eyeline is blocked by the roofs; this is the nearest clear line.)",
-      "cam": {"pos": [4.0, 1.8, 8.0], "at": {"abs": [30.9, 7.9, -6.6]}, "lens": 135},
+      "dur": 2.6,
+      "note": "From the square by her, compressed: the tower's upper window, the keeper's lamp-iron standing on the sill, its flame pale in the shade, goes out. A thread of smoke climbs the glass. (Rook's own eyeline is blocked by the roofs; this is the nearest clear line.)",
+      "cam": {"pos": [4.0, 1.8, 8.0], "at": {"mark": "lamp", "y": 7.45}, "lens": 280},
       "still": 0.3,
       "cues": [
-        {"at": 0.6, "do": "glow", "name": "towerlamp", "remove": true}
+        {"at": 0.7, "do": "glow", "name": "towerlamp", "out": true, "smoke": 1.9}
       ]
     },
     {
       "id": "B4b",
       "type": "MS",
       "dur": 2.0,
-      "note": "As B4: Rook looks back at the survivor, and unfolds her arms.",
-      "cam": {"pos": [-11.1, 1.7, 13.3], "at": [0.0, 1.4, 7.0], "lens": 35, "focus": 1.3, "fstop": 2.8},
+      "note": "Reverse: Rook's single from the square, her eyeline just off the lens to the right. Her eyes come down from the tower to the survivor, and she unfolds her arms.",
+      "cam": {"pos": [-8.4, 1.3, 11.8], "at": {"actor": "rook", "bone": "chest", "off": [0, 0.24, 0]}, "lens": 45, "focus": {"actor": "rook", "bone": "head"}, "fstop": 2.8},
       "cues": [
         {"do": "look", "actor": "rook", "where": [0.0, 1.4, 7.0], "over": 0.5},
         {"at": 0.8, "do": "anim", "actor": "rook", "clip": "Idle_Loop", "blend": 0.6}

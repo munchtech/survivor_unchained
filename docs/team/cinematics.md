@@ -1,8 +1,14 @@
 # Cinematics: status
 
-Agent a3058a45eee41d695 (succeeded af7a79bc783cca7bc on 4 October), branch `worktree-agent-a3058a45eee41d695`. The brief: shooting scripts, boards and animatics for C01 to C14, and the in-engine cinematic player. Pipeline and timeline format: `docs/cinematics/shoot/README.md`. Predecessor's handoff: `docs/handoff/cinematics.md`.
+Agent a79b6d8c81e14dc63 (succeeded a3058a45eee41d695 on 4 October), branch `worktree-agent-a79b6d8c81e14dc63`. The brief: shooting scripts, boards and animatics for C01 to C14, and the in-engine cinematic player. Pipeline and timeline format: `docs/cinematics/shoot/README.md`. Predecessor's handoff: `docs/handoff/cinematics.md`.
 
-## State (4 October; handed off: `docs/handoff/cinematics.md`)
+## State (4 October)
+
+- **C04 B is checked at full size and reframed** (`shoot/c04b.md`):
+  - the toll tower's lamp is the keeper's lamp-iron (the Warden's pattern) standing on the window's sill (mark `lamp`); at B4a it goes out and a thread of smoke climbs the glass (`glow` `lantern`, `out`, `smoke`);
+  - B1's crane starts at 12 m, the only height from the gate where the tower and its lamp show over the roofs;
+  - B4 is over Rook's shoulder with the survivor and the tower on one line; B4b is now Rook's single (the reverse).
+- **The Warden's hood no longer reads white.** His dye is measured against brighter paint in `WardenView`, so the hood and mantle come out dark under the moon. His own model is still to come.
 
 - **C02 to C04 are surveyed and wired into the game** (previs pass 1, stand-in motion):
   - **C02** plays at the ford in place of `RunIntro`. It has its own Warden (a `boss` cast): he lies under the river with his lamp held up, rises, wades to her and lifts the lamp. The drowned are `extras` that turn in a wave. `warden_up` spawns the fight's Warden on `warden_end`, facing her.
@@ -18,7 +24,7 @@ Agent a3058a45eee41d695 (succeeded af7a79bc783cca7bc on 4 October), branch `work
 
 ## Next, in order
 
-1. **Exact next step:** C04 B's shot B4a. The glow for the toll tower's window lamp was just moved to (30.9, 7.9, -6.6). Look at `scratchpad/cin2/s5_c04b.jpg`, or re-render with `python <scratchpad>/cin2/prev.py c04b s5 40 --zone waystation --only B4a`, and confirm that it sits in the upper window. Then render all of C04 B once and check it.
+1. The C10, C11 and C13 changes from the approved boss redesign (see Incoming), with the combat lead's hook ids.
 2. Remake the weak boards. Use the engine stills as staging references (img2img on Krea), so the scale and framing match the surveyed cameras. The weak boards are:
    - C01: s2, s8, s8b (the head is cropped), s10, s11 and s12 (she is drawn twice);
    - C02: s1, s5, s9 and s11 (Victorian street lamps), s3 (two panels), s4, s7 (scale), s10 and s12;
@@ -44,5 +50,5 @@ Agent a3058a45eee41d695 (succeeded af7a79bc783cca7bc on 4 October), branch `work
 ## Blockers and notes for others
 
 - **Animation (a435f4dd0ac80df75):** still needed from Kimodo: the Warden's lie_arm_up, rise_stiff, wade_drag, bend_lift and kneel_fall; Grimtunnel's burst, sniff and dive; and C04's wade_out, flask_drink, walk_uphill and unfold_arms.
-- **Art and boss look:** the Warden's ranger hood doesn't take the dye and reads white under the moon. The heart orb is a plain sphere; it should be a faceted stone.
+- **Art and boss look:** the Warden's hood is darkened in `WardenView` until his own model exists. The heart orb is a plain sphere; it should be a faceted stone.
 - **Voice:** none needed now. No new placeholders were added.

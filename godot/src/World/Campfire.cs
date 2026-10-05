@@ -237,6 +237,33 @@ public static class Campfire
         return smoke;
     }
 
+    /// <summary>A wick just put out (the tower's lamp in C04): a thread of smoke, thin
+    /// where it leaves the flame and wavering as it climbs and opens. It stops
+    /// coming after a breath or two and the last of it thins away.</summary>
+    public static GpuParticles3D WickSmoke(Color col)
+    {
+        var p = new ParticleProcessMaterial
+        {
+            EmissionShape = ParticleProcessMaterial.EmissionShapeEnum.Point,
+            Direction = Vector3.Up, Spread = 2, InitialVelocityMin = 0.46f, InitialVelocityMax = 0.52f,
+            DampingMin = 0.06f, DampingMax = 0.1f, Gravity = new Vector3(0.03f, 0.02f, 0.01f),
+            // Sized in the mesh (a billboard ignores the process scale); it opens as it climbs.
+            ScaleCurve = Curve((0, 0.45f), (0.4f, 1.3f), (1, 3.6f)),
+            AngleMin = -180, AngleMax = 180, AngularVelocityMin = -30, AngularVelocityMax = 30,
+            // Straight while it is hot, then it starts to curl.
+            TurbulenceEnabled = true, TurbulenceNoiseStrength = 1.2f, TurbulenceNoiseScale = 0.5f, TurbulenceNoiseSpeed = new Vector3(0, 0.3f, 0),
+            TurbulenceInfluenceMin = 0.05f, TurbulenceInfluenceMax = 0.09f, TurbulenceInfluenceOverLife = Curve((0, 0f), (0.35f, 0.12f), (1, 0.6f)),
+        };
+        var a = col.SrgbToLinear();
+        p.ColorRamp = Ramp((0, a with { A = 0 }), (0.04f, a with { A = 0.9f }), (0.5f, a with { A = 0.6f }), (1, a with { A = 0 }));
+        return new GpuParticles3D
+        {
+            Name = "WickSmoke", Amount = 130, Lifetime = 2.4, ProcessMaterial = p, Emitting = true,
+            DrawPass1 = new QuadMesh { Size = new Vector2(0.06f, 0.06f), Material = Sprite(Sprites.Puff, false) },
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+        };
+    }
+
     public static void ChimneyLook(GpuParticles3D smoke, bool night)
     {
         // The web game's colours (linear here, its alpha along the life).

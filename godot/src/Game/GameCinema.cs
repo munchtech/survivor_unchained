@@ -692,20 +692,47 @@ public partial class Game
                     // road): a point of its colour and a halo, for this cinematic only. "clear"
                     // carries it through the mist; without it the air takes it as it takes all else.
                     string name = c.Str("name") ?? $"glow{props.Count}";
+                    // "out": the flame is put out and the lamp stays, a thread of smoke going up from it.
+                    if (c.Bool("out"))
+                    {
+                        if (props.TryGetValue(name, out var lit) && lit.GetNodeOrNull<Node3D>("Flame") is { } fl)
+                        {
+                            var smoke = Smoke(fl.GlobalPosition, (float)c.Num("smoke", 1.6), new Color(c.Str("smokeColor") ?? "#78746f"));
+                            fl.QueueFree();
+                            g.scene!.AddChild(smoke);
+                            if (props.Remove(name + ".smoke", out var was)) was.QueueFree();
+                            props[name + ".smoke"] = smoke;
+                        }
+                        break;
+                    }
                     if (props.Remove(name, out var old)) old.QueueFree();
                     if (c.Bool("remove")) break;
                     var col = new Color(c.Str("color") ?? "#ffcf80");
                     float size = (float)c.Num("size", 0.3), energy = (float)c.Num("energy", 3);
                     bool clear = c.Bool("clear");
                     var root = new Node3D { Position = V(places.Resolve(c.Get("where"))) };
-                    var lin = col.SrgbToLinear() * energy;
-                    root.AddChild(new MeshInstance3D
+                    var fire = new Node3D { Name = "Flame" };
+                    root.AddChild(fire);
+                    // "lantern": the keeper's lamp-iron about the flame, at that scale (the
+                    // tower's window lamp): the place is the flame's, the iron is built round it.
+                    if (c.Has("lantern"))
                     {
-                        Mesh = new SphereMesh { Radius = size, Height = size * 2, RadialSegments = 12, Rings = 6 },
+                        float ls = (float)c.Num("lantern", 2);
+                        var iron = LampIron.Make();
+                        iron.Scale = Vector3.One * ls;
+                        iron.Position = new Vector3(0, -LampIron.FlameY * ls, 0);
+                        iron.RotationDegrees = new Vector3(0, (float)c.Num("turn", 0), 0);
+                        root.AddChild(iron);
+                    }
+                    var lin = col.SrgbToLinear() * energy;
+                    fire.AddChild(new MeshInstance3D
+                    {
+                        // In a lamp it is a flame, taller than it is wide.
+                        Mesh = new SphereMesh { Radius = size, Height = size * (c.Has("lantern") ? 3.4f : 2), RadialSegments = 12, Rings = 6 },
                         CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
                         MaterialOverride = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(lin.R, lin.G, lin.B), DisableFog = clear },
                     });
-                    root.AddChild(new MeshInstance3D
+                    fire.AddChild(new MeshInstance3D
                     {
                         Mesh = new QuadMesh { Size = Vector2.One * size * (float)c.Num("spread", 9) },
                         CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
@@ -718,7 +745,7 @@ public partial class Game
                     });
                     // "light": it lights what is near it too (a lamp held to a face), within "range".
                     if (c.Has("light"))
-                        root.AddChild(new OmniLight3D { LightColor = col, LightEnergy = (float)c.Num("light"), OmniRange = (float)c.Num("range", 4), OmniAttenuation = 1.4f });
+                        fire.AddChild(new OmniLight3D { LightColor = col, LightEnergy = (float)c.Num("light"), OmniRange = (float)c.Num("range", 4), OmniAttenuation = 1.4f });
                     // "under": [width, height], the dark of what the light is set in (a tower against the sky).
                     if (c.Get("under") is { ValueKind: JsonValueKind.Array } u)
                     {
@@ -749,6 +776,15 @@ public partial class Game
             Gradient = new Gradient { Colors = [new Color(1, 1, 1, 1), new Color(1, 1, 1, 0.25f), new Color(1, 1, 1, 0)], Offsets = [0, 0.18f, 1] },
             Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f), Width = 64, Height = 64,
         };
+        /// <summary>A thread of smoke from a wick just put out, at the flame's place, for
+        /// "seconds"; then it stops coming and the last of it thins away.</summary>
+        static GpuParticles3D Smoke(Vector3 at, float seconds, Color col)
+        {
+            var p = Campfire.WickSmoke(col);
+            p.Position = at;
+            p.TreeEntered += () => p.GetTree().CreateTimer(seconds).Timeout += () => { if (GodotObject.IsInstanceValid(p)) p.Emitting = false; };
+            return p;
+        }
         readonly List<Decal> prints = new();
         static readonly Dictionary<bool, ImageTexture> printTex = new();
 

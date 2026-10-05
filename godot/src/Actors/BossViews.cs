@@ -29,6 +29,10 @@ public partial class WardenView : Node3D, IBossView
     /// <summary>The body, for a cinematic that moves and poses him itself.</summary>
     public PersonView Body => view;
     const float Size = 2.6f;
+    /// <summary>His kit's colour: wool and leather dark with the river.</summary>
+    static readonly Color Soaked = new("#3a3e44");
+    /// <summary>The ranger's cloth band (People's MI_Ranger), measured against brighter paint.</summary>
+    static readonly People.DyeMask SoakedMask = new(new Vector2(0.17f, 0.45f), new Vector2(0.25f, 1), new Vector2(0.03f, 1), 0.3f);
 
     public WardenView()
     {
@@ -48,21 +52,23 @@ public partial class WardenView : Node3D, IBossView
                     if (m.ResourceName.Contains("Eye")) { m.Emission = new Color("#7ac8ff"); eyes.Add(m); }
                     else { m.Emission = Colors.Black; skin.Add(m); }
                 }
+        // His kit's cloth is the ranger's green paint dyed, and the dye is as bright as
+        // the paint under it over the mask's brightness. The ranger's mask is set for a
+        // townsman's dark green, so the hood's and mantle's light greens came out near
+        // white, and read as a white cowl round the face C02 holds in close-up. Until he
+        // has his own model (docs/art/MODELS_TO_MAKE.md), his dye is measured against
+        // brighter paint, so all of it comes out dark with the river.
+        foreach (var mi in view.Person.Meshes)
+            for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial dyed && dyed.ResourceName == "MI_Ranger")
+                    People.SetDye(dyed, SoakedMask, Soaked);
         // The lantern hangs from the left fist.
         var at = new BoneAttachment3D { BoneName = "hand_l" };
         view.Person.Skeleton.AddChild(at);
-        lamp = new Node3D { Position = new Vector3(0, -0.1f, 0) };
+        lamp = LampIron.Make();
+        lamp.Position = new Vector3(0, -0.1f, 0);
         at.AddChild(lamp);
-        // A lamp-iron, new black iron in the old fist: an open cage, so the flame shows.
-        var iron = new StandardMaterial3D { AlbedoColor = new Color("#1e1c1a"), Metallic = 0.7f, Roughness = 0.38f };
-        void Iron(Mesh m, Vector3 at) { m.SurfaceSetMaterial(0, iron); lamp.AddChild(new MeshInstance3D { Mesh = m, Position = at }); }
-        Iron(new BoxMesh { Size = new Vector3(0.13f, 0.018f, 0.13f) }, new Vector3(0, -0.06f, 0));
-        Iron(new BoxMesh { Size = new Vector3(0.13f, 0.02f, 0.13f) }, new Vector3(0, -0.22f, 0));
-        Iron(new CylinderMesh { TopRadius = 0.02f, BottomRadius = 0.06f, Height = 0.045f, RadialSegments = 4 }, new Vector3(0, -0.03f, 0));
-        foreach (var (x, z) in new[] { (-1, -1), (-1, 1), (1, -1), (1, 1) })
-            Iron(new BoxMesh { Size = new Vector3(0.012f, 0.16f, 0.012f) }, new Vector3(x * 0.058f, -0.14f, z * 0.058f));
-        Iron(new TorusMesh { InnerRadius = 0.022f, OuterRadius = 0.032f, Rings = 12, RingSegments = 6 }, new Vector3(0, 0.0f, 0));
-        flame = new Node3D { Position = new Vector3(0, -0.15f, 0) };
+        flame = new Node3D { Position = new Vector3(0, LampIron.FlameY, 0) };
         lamp.AddChild(flame);
         flame.AddChild(new MeshInstance3D
         {
@@ -157,6 +163,39 @@ public partial class WardenView : Node3D, IBossView
     // Explicit, so they do not shadow Godot's own Hide() and Dispose().
     void IBossView.Hide() => Visible = false;
     void IBossView.Dispose() => QueueFree();
+}
+
+/// <summary>
+/// A keeper's lamp-iron: black iron, an open cage so the flame shows, hung by a
+/// ring at the top. The Warden carries one, and the same pattern burns in the
+/// toll tower's window (C04) and stands on Vonnra's table (C09), so the eye can
+/// tie them together before anyone says so. The flame is the caller's.
+/// </summary>
+public static class LampIron
+{
+    /// <summary>Where the flame sits, from the ring at the top (the origin).</summary>
+    public const float FlameY = -0.15f;
+    /// <summary>The underside of the base: set it here to stand the lamp on a sill.</summary>
+    public const float FootY = -0.23f;
+    static StandardMaterial3D? iron;
+
+    public static Node3D Make()
+    {
+        iron ??= new StandardMaterial3D { AlbedoColor = new Color("#1e1c1a"), Metallic = 0.7f, Roughness = 0.38f };
+        var lamp = new Node3D { Name = "LampIron" };
+        void Iron(Mesh m, Vector3 at)
+        {
+            m.SurfaceSetMaterial(0, iron);
+            lamp.AddChild(new MeshInstance3D { Mesh = m, Position = at });
+        }
+        Iron(new BoxMesh { Size = new Vector3(0.13f, 0.018f, 0.13f) }, new Vector3(0, -0.06f, 0));
+        Iron(new BoxMesh { Size = new Vector3(0.13f, 0.02f, 0.13f) }, new Vector3(0, -0.22f, 0));
+        Iron(new CylinderMesh { TopRadius = 0.02f, BottomRadius = 0.06f, Height = 0.045f, RadialSegments = 4 }, new Vector3(0, -0.03f, 0));
+        foreach (var (x, z) in new[] { (-1, -1), (-1, 1), (1, -1), (1, 1) })
+            Iron(new BoxMesh { Size = new Vector3(0.012f, 0.16f, 0.012f) }, new Vector3(x * 0.058f, -0.14f, z * 0.058f));
+        Iron(new TorusMesh { InnerRadius = 0.022f, OuterRadius = 0.032f, Rings = 12, RingSegments = 6 }, new Vector3(0, 0.0f, 0));
+        return lamp;
+    }
 }
 
 /// <summary>A bright thing with a light of its own (the Warden's heart).</summary>
