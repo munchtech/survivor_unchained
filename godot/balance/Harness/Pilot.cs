@@ -96,7 +96,13 @@ public static class Pilot
         double far = Math.Sqrt(p.X * p.X + p.Z * p.Z);
         if (far > 60 && onward == null && goal == null) { mx = mx * 0.3 - p.X / far; mz = mz * 0.3 - p.Z / far; }
         if (deft) Deft(b, press.Count >= 2 || stone != null, ref mx, ref mz);
-        if (b.Collision.Blocked(p.X + mx * 0.1, p.Z + mz * 0.1, p.Radius)) (mx, mz) = (-mz, mx);
+        if (b.Collision.Blocked(p.X + mx * 0.1, p.Z + mz * 0.1, p.Radius))
+        {
+            // On a story night's way: the nearest turn that is clear, either hand, or straight on and
+            // let the wall slide her (a quarter turn left, always, pressed her into a wall's corner).
+            if (goal != null) (mx, mz) = Clearest(b, mx, mz);
+            else (mx, mz) = (-mz, mx);
+        }
         // The boss's own fight, read last: it overrules the crowd.
         if (ReadsBosses && (boss != null || b.Blows.Count > 0)) Boss(b, boss, deft, ref mx, ref mz, goal);
         double ml = Math.Sqrt(mx * mx + mz * mz);
@@ -197,6 +203,21 @@ public static class Pilot
     /// shared with the game's autopilot).</summary>
     public static void Boss(Battle b, ArenaBoss? boss, bool deft, ref double mx, ref double mz, (double X, double Z)? goal = null) =>
         BossSense.Steer(b, boss, deft, Reach(b), ref mx, ref mz, goal);
+
+    /// <summary>The way on nearest the one wanted that a step down it is clear; straight on if none is.</summary>
+    static (double X, double Z) Clearest(Battle b, double mx, double mz)
+    {
+        var p = b.Player;
+        double ml = Math.Max(1e-6, Math.Sqrt(mx * mx + mz * mz));
+        mx /= ml; mz /= ml;
+        foreach (double deg in (double[])[30, -30, 60, -60, 90, -90])
+        {
+            double a = deg * Math.PI / 180, c = Math.Cos(a), s = Math.Sin(a);
+            double rx = mx * c - mz * s, rz = mx * s + mz * c;
+            if (!b.Collision.Blocked(p.X + rx * 0.25, p.Z + rz * 0.25, p.Radius * 0.9)) return (rx, rz);
+        }
+        return (mx, mz);
+    }
 
     static double Dist(double ax, double az, double bx, double bz) => Math.Sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
 }

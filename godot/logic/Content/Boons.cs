@@ -255,8 +255,8 @@ public static class Boons
         new() { Id = "glass_cannon", Name = "Burn Bright", Icon = "flame", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing,
             Text = "45% more damage, and 35% less health. Burn bright, burn short.",
             Mods = r => r >= 2
-                ? [More(Stat.Damage, 0.45, "syn:glass"), More(Stat.MaxHealth, -0.35, "syn:glass"), More(Stat.CritDamage, 0.3, "syn:glass")]
-                : [More(Stat.Damage, 0.45, "syn:glass"), More(Stat.MaxHealth, -0.35, "syn:glass")],
+                ? [More(Stat.Damage, 0.45, "syn:glass_cannon"), More(Stat.MaxHealth, -0.35, "syn:glass_cannon"), More(Stat.CritDamage, 0.3, "syn:glass_cannon")]
+                : [More(Stat.Damage, 0.45, "syn:glass_cannon"), More(Stat.MaxHealth, -0.35, "syn:glass_cannon")],
             DeeperText = ["Critical strikes land 30% harder.", "A perfect dodge mends 8% of your health."],
             Deeper = [[], [T(TriggerEvent.PerfectDodge, [new Effect.Heal(0.08, Basis.MaxHp)])]] },
 
