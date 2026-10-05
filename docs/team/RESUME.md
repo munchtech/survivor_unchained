@@ -45,7 +45,10 @@ These are past their memory limit. Each has a handoff in docs/handoff/<area>.md,
 - crafting (fdb62e76);
 - UI art (bfa7bdb);
 - skills (0a7e8eff);
-- face (5fd76deb).
+- face (5fd76deb);
+- cinematics (81b25319);
+- story (a8b5aa71);
+- UI design (fcec91aa).
 
 The combat successor is already running (design only).
 
