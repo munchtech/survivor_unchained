@@ -1556,6 +1556,28 @@ wound or things lost.
     Not* ("You go cold. Then the ember catches.") and the art *Not Yet*
     ("Something answers for you: not yet. You get up."), learned from *The
     Keeper's Office*, which Chid gives her in Act 2 (the bible, section 7).
+  - The art's text: "Held in your art's place, it asks nothing of your hands
+    and gives them nothing. Once a fight, a blow that would end you does not:
+    you go down, something answers for you, not yet, and you are up with half
+    your health. Once a fight, however many ways you carry it." The
+    blessing's ranks: up at half and burning; up whole; up whole, the dash
+    with her, and a moment longer before anything can touch her.
+  - The book (combat's item `keepers_office`): "A small book of the Order's
+    watch-hours, read to pieces. Whoever wrote it makes their Cs the old way.
+    The last page has two lines on it and nothing else: Is it morning? Not
+    yet."
+  - **Chid's gift, written and waiting for the item** to reach the
+    integration branch (`chid.office`, an entry once `chapter.done`, and a
+    variant of `carried_chid` after a lost Act 2 fight if she has no book):
+    - "(He has a small book in both hands, held the way you hold a bird.) I
+      want you to have this. It's only an old office: the watch-hours, what
+      the keepers said at night. Nobody's said them in a long while. (He opens
+      it at the last page, and doesn't look at it.) There's a bit at the end.
+      You'll know it when you need it. ...Not now. It reads better in the
+      dark."
+    - "Who wrote it?": "Oh, a keeper. One of the old ones. Lovely hand,
+      hasn't he? Nobody makes a C like that any more." (His own words about
+      the note in Ashe's trunk, said again without noticing: Act 3.)
 - **The clock's words** (`Journey.DayLines`, experience's code):
   - dusk: "Lamps are lit. Stay where they reach." Then the night's fight:
     - the Hollow: "Out past the lamps, the Pack has stopped howling.";
