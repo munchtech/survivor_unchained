@@ -359,6 +359,18 @@ public partial class Game : Node, IZoneHost
         // The result stays up until the fade has gone dark: closed first, the emptied field showed
         // between it and the road.
         bool leaving = !inTransit;
+        if (result.WakesInTown)
+        {
+            // A story night lost (the owner: "having to die for a time"): carried home, she wakes
+            // at the inn a day on, with a day to make ready before she tries again.
+            var lines = Journey.WakeAfterLoss(null, Rng.NextDouble);
+            Travel("waystation", "The Last Lamp", $"Day {World.Day}", null, from: "carried");
+            if (leaving) Wait(0.8, () => screens.Close());
+            if (leaving) Wait(2.8, () => Morning(lines));
+            return;
+        }
+        // Back into the same night, with time to hear the town or go straight on to another fight.
+        Journey.BackFromFight();
         Travel(s.ReturnZone, null, null, new Arrival(s.ReturnX, s.ReturnZ, s.ReturnFacing));
         if (leaving) Wait(0.8, () => screens.Close());
     }
@@ -422,6 +434,7 @@ public partial class Game : Node, IZoneHost
         hud.Prompt(promptShown = null);
         SetBoss(null);
         hud.Hint(CurrentHint = null);
+        objectivesBase = new();
         hud.Objectives(new());
         cam.FocusOverride = null;
     }
@@ -456,6 +469,7 @@ public partial class Game : Node, IZoneHost
         else RemoveFigure();
         Perf.Lap("the rest of the stage (lights, fires)");
         zone = Make(id, scene!.Data.Meta);
+        StopBlend();
         var time = zone.TimeOf(World);
         air.Set(zone.AtmosphereFor(time));
         air.Air(scene!.Data.Place?.Air);
@@ -518,12 +532,12 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>Travel; pulled (into an arena), the world swirls in and burns
     /// away instead of fading.</summary>
-    void Travel(string to, string? caption, string? sub, Arrival? at, bool pull = false)
+    void Travel(string to, string? caption, string? sub, Arrival? at, bool pull = false, string? from = null)
     {
         // One journey, one new place, one save: a second press at the gate waits.
         if (inTransit) return;
         inTransit = true;
-        var from = zone?.Id;
+        from ??= zone?.Id;
         Journey.Capture(Battle);
         if (scene != null) scene.SimPaused = true;
         controls.Captured = true;
@@ -592,7 +606,7 @@ public partial class Game : Node, IZoneHost
     public bool GiveItem(string def, int qty = 1, int? rarity = null) => Journey.GiveItem(def, qty, rarity);
     public void ReturnItem(ItemInstance it) => Journey.ReturnItem(it);
     public void SetBoss(BossBar? bar) { hud.Boss(bar); bossUp = bar is { IsBoss: true }; }
-    public void SetObjectives(List<Tracked> list) => hud.Objectives(list);
+    public void SetObjectives(List<Tracked> list) { objectivesBase = list; RefreshObjectives(); }
     public void SetHint(Hint? hint) => hud.Hint(CurrentHint = hint);
     public void SetAtmosphere(AtmospherePreset p, bool rebuild = true) => air.Set(p, rebuild);
     public void Capture(bool on) => controls.Captured = on;
@@ -802,6 +816,8 @@ public partial class Game : Node, IZoneHost
                 ArenaRun run => run.Spec.Story ? "story night" : "table night",
                 _ => zone.Id switch { "lowford" => "prologue", "waystation" => "town", "map" => "map", _ => "wild" },
             });
+            // The day's own clock: free play moves it, and each turn is staged (GameClock).
+            TickDay(dt);
             UpdateInteraction();
             // The ground walked, on the map's fog.
             fogT -= dt;
