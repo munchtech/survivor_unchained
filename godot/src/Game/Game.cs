@@ -361,12 +361,13 @@ public partial class Game : Node, IZoneHost
         bool leaving = !inTransit;
         if (result.WakesInTown)
         {
-            // A story night lost (the owner: "having to die for a time"): carried home, she wakes
-            // at the inn a day on, with a day to make ready before she tries again.
-            var lines = Journey.WakeAfterLoss(null, Rng.NextDouble);
-            Travel("waystation", "The Last Lamp", $"Day {World.Day}", null, from: "carried");
+            // A story night lost (the owner: "having to die for a time"): carried home in the dark,
+            // she wakes on Chid's bench in the shrine a day on, as from any fall, and he tells her
+            // what it cost; the town's morning comes after him.
+            var lines = Journey.WakeAfterLoss(s, null, Rng.NextDouble);
+            Travel("waystation", "The shrine", $"Day {World.Day}", null, from: "death");
             if (leaving) Wait(0.8, () => screens.Close());
-            if (leaving) Wait(2.8, () => Morning(lines));
+            Wait(3.9, () => { talkDone = () => Morning(lines); Talk("chid"); });
             return;
         }
         // Back into the same night, with time to hear the town or go straight on to another fight.
@@ -436,6 +437,7 @@ public partial class Game : Node, IZoneHost
         hud.Prompt(promptShown = null);
         SetBoss(null);
         hud.Hint(CurrentHint = null);
+        objectivesBase = new();
         hud.Objectives(new());
         cam.FocusOverride = null;
     }

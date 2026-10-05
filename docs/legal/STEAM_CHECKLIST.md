@@ -169,7 +169,11 @@ For the release as exported now (8a770667: no placeholder voices, no hero body),
 > - Code and writing were written with Claude (Anthropic) under the owner's direction.
 
 **Add each line only when what it covers ships:**
-- **The hero** (when `hero.glb` ships): "the heroes' face paint", and his body in the 3D line. If the owner confirms it, add the "Mystic XXX" LoRA by alcaitiff (Civitai) to the images line. Credit isn't required, but it is accurate.
+- **The hero** (when `hero.glb` ships): "the heroes' face paint", and his body in the 3D line. If the owner confirms it, add the "Mystic XXX" LoRA by alcaitiff (Civitai) to the images line. Credit isn't required, but it is accurate. Put "and the hero's" back in two other credits lines too:
+  - the Reallusion AccuRIG line;
+  - the MakeHuman heads line.
+
+  Both drop it while he is excluded (UI design, after a185aea3).
 - **Voices** (when finals ship): "Character voices are synthetic voices designed with ElevenLabs. No real person's voice is cloned." Add "voices" to the opening sentence.
 - **Music** (when the hymn ships): "The graveside hymn was generated with Suno from lyrics written for the game." Add "music" to the opening sentence.
 

@@ -75,6 +75,7 @@ public static class Standings
         if (Q("caravan", "wreck") || Q("caravan", "roost_found") || F(c, "kerchief.raids").Number > 0 || (w.Npcs.TryGetValue("redcowl", out var rc) && rc.Flag("met").Truthy))
         {
             if (Is(c, "redcowl", "dead")) o.Add(new("kerchief", "The Kerchiefs", "Broken", StandingTone.Gone, "Redcowl is dead. What is left of them has scattered."));
+            else if (Is(c, "redcowl", "spared")) o.Add(new("kerchief", "The Kerchiefs", "In your debt", StandingTone.Friend, "You let Redcowl get up. He has taken his people off the Old Road, and he pays his debts."));
             else if (F(c, "roost.hostile").Truthy) o.Add(new("kerchief", "The Kerchiefs", "At war", StandingTone.Hostile, "You broke the peace at the Roost. Every red rag in the Verge knows it."));
             else if (KerchiefsFriendly(c))
             {

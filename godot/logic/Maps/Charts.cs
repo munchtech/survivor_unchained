@@ -138,10 +138,9 @@ public static class Charts
         }
     }
 
-    static readonly string[] Adjectives = { "Weeping", "Ashen", "Thorned", "Drowned", "Broken", "Gallows", "Whispering", "Hollow", "Bleeding", "Crooked", "Silent", "Sunken" };
-    static readonly string[] Places = { "Wood", "Thicket", "Glade", "Tangle", "Barrow-Wood", "Deepwood", "Fen", "Holt", "Wilds", "Brake", "Hollow", "Dene" };
-
-    static string NameOf(Chart c, Rng rng) => $"The {rng.Pick(Adjectives)} {rng.Pick(Places)}";
+    /// <summary>A chart is named as the table's maps are, in the valley's words for its people's
+    /// ground (ArenaPlaces, story's): never a weeping wood or a whispering fen.</summary>
+    static string NameOf(Chart c, Rng rng) => MapOffers.Name(c.People, rng);
 
     /// <summary>A chart as a pickup carries it (Pickup.Ref): read back by FromRef when it is picked up.</summary>
     public static string Ref(Chart c) => $"chart:{c.Tier}:{c.People}:{c.Seed}:{c.Rarity}:{string.Join(",", c.Mods)}:{c.Theme}:{c.Name}";

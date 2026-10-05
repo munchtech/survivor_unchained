@@ -369,6 +369,14 @@ public sealed partial class Journey
 
     static string Esc(string s) => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
 
+    /// <summary>A story fight lost (the owner, 4 October): the night is gone, and she wakes in
+    /// town the next morning on Chid's bench, carried home in the dark. Call it as she wakes; Chid's
+    /// conversation tells the waking for the fight she lost (docs/WRITING_PASS.md §22). It costs
+    /// the night, and nothing else: no gold, no wound, nothing carried off.</summary>
+    public void CarriedHome(SurvivorUnchained.Arena.ArenaSpec spec) => Apply($$"""
+        [{ "set": { "player.just_died": true, "player.carried_home": "{{Esc(spec.Id)}}" } }, { "add": { "player.deaths": 1 } }]
+        """);
+
     /// <summary>What the thing that killed you is called now.</summary>
     static string NemesisName(Family family, Random rng)
     {

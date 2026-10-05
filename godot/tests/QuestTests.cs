@@ -271,6 +271,8 @@ public class QuestTests
         Assert.Matches("water running clear", string.Join(" ", read));
         Assert.Matches("strongbox go the other way", string.Join(" ", read));
         p = r.Choose(p.Choices[0].Index).Next;
+        // The door, then the first chart, then the book closes.
+        while (p!.Choices.Count == 0) p = r.Advance();
         var end = r.Choose(p!.Choices[0].Index);
         Assert.Equal("fortune", end.Action);
         Assert.True(s.World.Fact("chapter.done").Bool);

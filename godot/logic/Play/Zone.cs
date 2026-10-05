@@ -110,7 +110,8 @@ public interface IZoneHost
     /// <summary>She fell in a story night (docs/design/STORY_NIGHTS_AND_TIME.md, "Falling and getting
     /// up"): the host stages it and calls `rise` (back to the checkpoint) or `letGo` (the night lost),
     /// and the night waits until it does. A host without a stage gets her up while she has rises
-    /// left, after a beat, and lets the night go when she has none.</summary>
+    /// left, after a beat, and lets the night go when she has none. A rise's words are
+    /// Journey.RiseLine (counted, so the host asks for them once a rise).</summary>
     void StoryFall(int risesLeft, Action rise, Action letGo) => After(1.0, risesLeft > 0 ? rise : letGo);
     /// <summary>A cinematic (godot/data/cinematics/ID.json) played now, `done`
     /// when it hands back or is skipped. False where none can play (no

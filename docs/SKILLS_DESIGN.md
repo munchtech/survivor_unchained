@@ -1152,14 +1152,13 @@ it for story etc"**.
 - **Everywhere else:** none. A fall ends the fight. This covers story fights
   from Act 2, the table's nights, the scars and the atlas's maps. The maps'
   three falls are gone.
-- **The exception is one power, Cold, Then Not.** Carried, it gets her up in
+- **The exception is one power with two names.** Carried, it gets her up in
   place with half her health.
 - **One rise a fight, however many ways she has it.** In Act 1 the story's
   own rise counts as one of those ways.
 
-**Cold, Then Not.** The words are the night's own, from the great blessing
-that already had them: "You go cold; then the ember catches." It is what she
-is, a dead woman the ember keeps getting up. It comes two ways, and each
+**Cold, Then Not, and Not Yet.** It is what she is: a dead woman who keeps
+getting up. The story lead named its two ways in. It comes two ways, and each
 costs her a power:
 - **In the ember's draft** (every night: table, scar, story), it is a
   legendary great blessing, as before. It is rare by its rarity, and taking it
@@ -1167,27 +1166,29 @@ costs her a power:
   - The second rank still gets her up whole.
   - The third no longer gets her up twice. She rises with her dash whole and
     is untouchable a moment longer.
-- **Learned by day, it is an art.** It is held in the art's place (one art is
-  carried), so the price is her art: she goes into the fight without her
-  bash, vault or smoke.
+- **Learned by day, it is the art Not Yet.** The name is the Order's answer at
+  the end of a watch ("Is it morning?" "Not yet.") and the Legion's Nondum.
+  It is held in the art's place (one art is carried), so the price is her
+  art: she goes into the fight without her bash, vault or smoke.
   - It is the one way to have it on a map, where nothing is drafted.
   - It is the one way to bring it into a story night from its first second.
-  - Story and crafting choose where it is learned: a manual, Chid's order, or
-    a trainer.
+  - It is learned from *The Keeper's Office* (`keepers_office`), a book of the
+    Order's watch-hours. Chid gives it from Act 2's first morning, and at his
+    waking after an Act 2 fight is lost (the story lead's node to write).
 
 **What went:** Second Wind, a trait any survivor could pick at a level-up,
 which gave a free rise once a night. Its job is Cold, Then Not's now.
 
 **Built:**
-- the art (`AbilityKind.ColdThenNot`, `cold_then_not`, which sets the kit's
-  one rise);
+- the art (`AbilityKind.ColdThenNot`, `cold_then_not`, shown as Not Yet, which
+  sets the kit's one rise) and its book (`keepers_office`);
 - one rise a fight (`PlayerState.Rose`: any rise spends every source, and a
   blessing taken after it arms nothing);
 - `MapRun.FallsAllowed = 1`;
 - the story's rise (`STORY_BOSSES.md` §0.4, §5.1).
 
-**Not built:** the art's look (the skills VFX lead), and its manual and where
-it is learned (story and crafting).
+**Not built:** the art's look (the skills VFX lead), and Chid's node that gives
+the book (the story lead).
 
 ---
 
