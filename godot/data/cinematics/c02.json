@@ -30,8 +30,7 @@
       "cues": [
         {"do": "music", "mood": "silence"},
         {"do": "event", "name": "warden_cine"},
-        {"do": "place", "actor": "warden", "where": {"abs": [2.6, -1.75, -44.5]}, "heading": -1.5708, "tilt": -90},
-        {"do": "glow", "name": "lamp", "where": {"abs": [6.45, 0.12, -44.0]}, "color": "#8ac8ff", "size": 0.06, "energy": 4, "spread": 7, "halo": 0.6, "light": 1.6, "range": 6},
+        {"do": "place", "actor": "warden", "where": {"abs": [2.6, -1.2, -44.5]}, "heading": -1.5708, "tilt": -90},
         {"do": "anim", "actor": "warden", "clip": "Spell_Simple_Idle_Loop", "from": 0.5, "speed": 0, "blend": 0},
         {"do": "move", "to": "her", "dur": 3.0, "clip": "Walk_Formal_Loop", "speed": 0.8},
         {"at": 3.0, "do": "anim", "clip": "@idle", "blend": 0.5},
@@ -51,7 +50,7 @@
       "type": "INSERT",
       "dur": 3.5,
       "note": "The fist and the lamp: an ancient gauntlet, black with river and grown with weed, gripping a lamp-iron that is new, unrusted, its edges still sharp from the forge. Blue light in it, steady. Below, the surface trembles in time with a sound.",
-      "cam": {"pos": {"abs": [5.2, -0.45, -42.1]}, "at": {"abs": [6.45, 0.0, -44.0]}, "lens": 85, "move": {"push": 0.25, "ease": "linear"}},
+      "cam": {"pos": {"abs": [5.2, -0.45, -42.1]}, "at": {"actor": "warden", "bone": "hand_l", "off": [0, -0.35, 0]}, "lens": 85, "move": {"push": 0.25, "ease": "linear"}},
       "cues": []
     },
     {
@@ -76,11 +75,10 @@
       "cam": {"pos": {"abs": [2.4, -0.7, -40.2]}, "at": {"abs": [5.0, 1.5, -44.5]}, "lens": 24},
       "still": 4.2,
       "cues": [
-        {"do": "glow", "name": "lamp", "remove": true},
         {"do": "place", "actor": "warden", "where": {"abs": [5.0, -2.2, -44.5]}, "heading": -0.6, "tilt": 0},
         {"do": "move", "actor": "warden", "to": {"abs": [5.0, -1.35, -44.5]}, "dur": 1.2, "heading": -0.6},
         {"do": "lamp", "actor": "warden", "glow": 1.0, "over": 2.0},
-        {"do": "anim", "actor": "warden", "clip": "LayToIdle", "from": 0, "speed": 0.45, "blend": 0},
+        {"do": "anim", "actor": "warden", "clip": "folk/m_rise_stiff", "from": 0, "speed": 1, "blend": 0},
         {"do": "music", "mood": "mystery", "intensity": 0.35, "over": 4.0},
         {"do": "sfx", "name": "water_close", "gain": 0.6}
       ]
@@ -105,7 +103,7 @@
       "note": "Profile from the west, both in frame: he bends a long way down and lifts the lamp to her face, the way a keeper of a crossing looks at a traveller. Halfway up the lamp-arm trembles, once, badly. He steadies it. (Calling: the warden's shield between them, the reaver's chin up, the arcanist's fire meeting his blue, the stalker's arrow on his eye.)",
       "cam": {"pos": [-2.0, 1.3, -26.8], "at": {"abs": [2.7, 1.1, -32.0]}, "lens": 28},
       "cues": [
-        {"do": "anim", "actor": "warden", "clip": "Idle_Torch", "speed": 0.4, "blend": 0.4, "from": 0.4},
+        {"do": "anim", "actor": "warden", "clip": "folk/m_bend_lift", "from": 0, "speed": 1, "blend": 0.4},
         {"do": "gaze", "look": [0, -0.6]},
         {"do": "face", "keys": {"brows_up": 0, "squint": 0.3}, "over": 0.6},
         {"do": "music", "mood": "mystery", "intensity": 0.8, "over": 3.5},
@@ -122,7 +120,7 @@
       "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [-0.45, -0.03, -0.95]}, "at": {"actor": "her", "bone": "eyes", "off": [0, -0.035, 0]}, "lens": 135, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.0},
       "cues": [
         {"do": "music", "mood": "silence"},
-        {"do": "glow", "name": "held", "where": {"abs": [2.85, 1.05, -31.45]}, "color": "#8ac8ff", "size": 0.05, "energy": 3, "spread": 5, "halo": 0.5, "light": 2.0, "range": 2.2},
+        {"do": "glow", "name": "held", "where": {"abs": [2.83, 1.0, -31.05]}, "color": "#8ac8ff", "size": 0.001, "energy": 3, "spread": 0.001, "halo": 0, "light": 2.0, "range": 2.2},
         {"at": 0.9, "do": "line", "id": "cin_none_cross.lie_down"},
         {"at": 0.9, "do": "face", "keys": {"brows_sad": 0.35, "squint": 0.15}, "over": 1.5},
         {"at": "after:cin_none_cross.lie_down+0.5", "do": "lids", "value": 1, "over": 0.08},

@@ -337,7 +337,7 @@ sealed class Playthrough
                 foreach (var it in stock.Where(i => StoryItems.Contains(i.Def) && Inventory.Count(J.Ch, i.Def) == 0).GroupBy(i => i.Def).Select(g => g.First()))
                     if (J.PriceOf(Npc!, it.Uid, true) is int price && price <= J.Ch.Gold)
                         list.Add(new Step($"buy:{it.Def}", $"Buy {it.Def} from {Npc} for {price} gold"));
-                foreach (var it in J.Ch.Pack.Where(i => i != null && StoryItems.Contains(i.Def) && Items.Get(i.Def).Kind is ItemKind.Quest or ItemKind.Material).GroupBy(i => i!.Def).Select(g => g.First()!))
+                foreach (var it in Inventory.Everything(J.Ch).Where(i => Inventory.Holds(J.Ch, i.Uid) && StoryItems.Contains(i.Def) && Items.Get(i.Def).Kind is ItemKind.Quest or ItemKind.Material).GroupBy(i => i.Def).Select(g => g.First()))
                     if (J.PriceOf(Npc!, it.Uid, false) is int price)
                         list.Add(new Step($"sell:{it.Def}", $"Sell {it.Def} to {Npc} for {price} gold"));
                 list.Add(new Step("leave", $"Leave {Npc}'s wares"));
@@ -408,7 +408,7 @@ sealed class Playthrough
                 }
                 if (key.StartsWith("sell:"))
                 {
-                    var it = J.Ch.Pack.FirstOrDefault(i => i?.Def == key[5..]);
+                    var it = Inventory.Everything(J.Ch).FirstOrDefault(i => i.Def == key[5..] && Inventory.Holds(J.Ch, i.Uid));
                     if (it == null) return null;
                     J.Sell(Npc!, it.Uid);
                     return Stay;

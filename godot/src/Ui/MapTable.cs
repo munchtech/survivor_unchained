@@ -289,7 +289,17 @@ public partial class MapTableScreen : Overlay
         }
         var go = Nav.Id(Style.Button("Set it on the table", () => SetOut(chosen.Uid), true), "chart:set");
         go.CustomMinimumSize = new Vector2(0, 44);
-        v.AddChild(go);
+        // Worked first, if she will (crafting's, design 20.4): ink, burn and redraw, pin, scrape, annotate.
+        if (SurvivorUnchained.Rpg.Crafting.Closed(SurvivorUnchained.Rpg.Crafting.Rules.Charts.Crafter, G.Journey.Ctx) == null)
+        {
+            string uid = chosen.Uid;
+            var work = Nav.Id(Style.Button("Work it first", () => { ForgeScreen.PutDown = uid; Sound.Sfx.Page(); G.Open($"forge:{SurvivorUnchained.Rpg.Crafting.Rules.Charts.Crafter}"); }, false), "chart:work");
+            work.CustomMinimumSize = new Vector2(0, 44);
+            var both = Style.H(Style.Gap2, work, go);
+            go.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+            v.AddChild(both);
+        }
+        else v.AddChild(go);
         v.AddChild(Ink_("The chart is used up as its map opens.", Style.TextItalic, Style.Caption, InkSoft, HorizontalAlignment.Center));
     }
 

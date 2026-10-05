@@ -207,6 +207,40 @@ public static class Style
         return b;
     }
 
+    static Theme? pageTheme;
+
+    /// <summary>What every screen's controls take unless they say otherwise: a scroll bar as a
+    /// slim dark rail with a gold grip, lit when held (the engine's grey bar was the last stock
+    /// thing left on the pages).</summary>
+    public static Theme PageTheme
+    {
+        get
+        {
+            if (pageTheme != null) return pageTheme;
+            var t = new Theme();
+            var rail = new StyleBoxFlat { BgColor = new Color(0, 0, 0, 0.3f), CornerDetail = 4 };
+            rail.SetCornerRadiusAll(4);
+            rail.ContentMarginLeft = rail.ContentMarginRight = 4;
+            rail.ContentMarginTop = rail.ContentMarginBottom = 2;
+            static StyleBoxFlat Grip(Color c)
+            {
+                var g = new StyleBoxFlat { BgColor = c, BorderColor = new Color("#2a1c0c"), CornerDetail = 4 };
+                g.SetCornerRadiusAll(4);
+                g.SetBorderWidthAll(1);
+                return g;
+            }
+            foreach (var type in new[] { "VScrollBar", "HScrollBar" })
+            {
+                t.SetStylebox("scroll", type, rail);
+                t.SetStylebox("scroll_focus", type, rail);
+                t.SetStylebox("grabber", type, Grip(GoldDim with { A = 0.9f }));
+                t.SetStylebox("grabber_highlight", type, Grip(Gold));
+                t.SetStylebox("grabber_pressed", type, Grip(GoldHi));
+            }
+            return pageTheme = t;
+        }
+    }
+
     /// <summary>A level from nothing to full (the settings' volumes): a gold
     /// groove that fills from the left, and its value in words beside it.
     /// `change` runs as it moves, `done` when it is let go.</summary>
@@ -420,4 +454,102 @@ public static class Style
     public static Control Gap(float h) => new Control { CustomMinimumSize = new Vector2(0, h), MouseFilter = Control.MouseFilterEnum.Ignore };
 
     public static string Cap1(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
+    /// <summary>The first letter small, the rest as written ("Foreman of the Dig" after a comma).</summary>
+    public static string Lower1(string s) => s.Length == 0 ? s : char.ToLowerInvariant(s[0]) + s[1..];
+
+    /// <summary>A press for what cannot be undone (break down, unmake, steep): it is held, not clicked,
+    /// and does its work when full ("Hold: Break down"). Never a second dialog. See HoldButton.</summary>
+    public static HoldButton HoldButton(string text, Action onDone, bool danger = true, bool small = true)
+    {
+        var b = new HoldButton(danger);
+        b.Text = $"Hold: {text}";
+        var look = Button("", null, false, small);
+        foreach (var s in new[] { "normal", "hover", "pressed", "disabled", "focus" })
+            b.AddThemeStyleboxOverride(s, look.GetThemeStylebox(s));
+        foreach (var c in new[] { "font_color", "font_hover_color", "font_pressed_color", "font_disabled_color" })
+            b.AddThemeColorOverride(c, look.GetThemeColor(c));
+        b.AddThemeFontOverride("font", look.GetThemeFont("font"));
+        b.AddThemeFontSizeOverride("font_size", look.GetThemeFontSize("font_size"));
+        look.Free();
+        b.Done += onDone;
+        return b;
+    }
+}
+
+/// <summary>
+/// Hold to confirm (UI design's rule for every screen's irreversible acts; the salvage press of
+/// Destiny 2 and Diablo IV): the press fills from left to right over <see cref="Time"/> while it is
+/// held (the mouse held on it, A or the confirm key held while it has the focus); let go early and the
+/// fill drains away and nothing happens; full, it flashes and Done fires once. A tap only nudges
+/// the fill, the hint that it must be held. Its look is the button's own boxes plus one fill
+/// (<see cref="Fill"/>), so the art pass can replace it in one place.
+/// </summary>
+public partial class HoldButton : Button
+{
+    public const double Time = 0.8, Drain = 0.25;
+    public event Action? Done;
+    /// <summary>The fill: a light laid over the press, added to it (blood for what cannot be undone, ember for the rest).</summary>
+    public readonly ColorRect Fill;
+    readonly float alpha;
+    double p, flash;
+    /// <summary>Done, and not yet let go: held on, it does not fill again.</summary>
+    bool fired;
+    bool mouse;
+
+    public HoldButton(bool danger)
+    {
+        FocusMode = FocusModeEnum.None;
+        MouseDefaultCursorShape = CursorShape.PointingHand;
+        alpha = 0.55f;
+        Fill = new ColorRect
+        {
+            Color = (danger ? Style.BloodHi : Style.Ember) with { A = alpha }, MouseFilter = MouseFilterEnum.Ignore,
+            Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add },
+        };
+        AddChild(Fill);
+        ButtonDown += () => { mouse = true; if (!Disabled) Sound.Sfx.Hover(); };
+        ButtonUp += () => mouse = false;
+        // A click that was not held: a nudge, and nothing else.
+        Pressed += Nudge;
+        Nav.Mark(this, "hold", Nudge);
+    }
+
+    /// <summary>A tap: the fill jumps a little and drains, as a hint that it must be held.</summary>
+    public void Nudge() { if (!Disabled && !fired && p < 0.18) p = 0.18; }
+
+    bool Held()
+    {
+        if (Disabled || !IsVisibleInTree()) return false;
+        if (mouse) return true;
+        for (Node? n = GetParent(); n != null; n = n.GetParent())
+            if (n is Overlay o) return o.Focused(this) && Play.Controls.Instance.Held(Play.Act.Confirm);
+        return false;
+    }
+
+    public override void _Process(double delta)
+    {
+        bool held = Held();
+        if (flash > 0)
+        {
+            // Full: a short flash, then it is done.
+            flash -= delta;
+            Fill.Color = Fill.Color with { A = alpha + (1 - alpha) * (float)Math.Max(0, flash / 0.18) };
+            if (flash <= 0) { p = 0; Fill.Color = Fill.Color with { A = alpha }; Done?.Invoke(); }
+        }
+        else if (held && !fired)
+        {
+            p = Math.Min(1, p + delta / Time);
+            if (p >= 1) { flash = 0.18; fired = true; }
+        }
+        else if (!held)
+        {
+            fired = false;
+            if (p > 0) p = Math.Max(0, p - delta / Drain);
+        }
+        // The fill inside the press's border, growing from its left edge.
+        float w = (float)(Size.X - 4) * (float)(flash > 0 ? 1 : p);
+        Fill.Position = new Vector2(2, 2);
+        Fill.Size = new Vector2(Math.Max(0, w), Math.Max(0, Size.Y - 4));
+        Fill.Visible = w > 0.5f;
+    }
 }

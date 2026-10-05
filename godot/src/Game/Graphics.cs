@@ -22,7 +22,7 @@ public static class Graphics
     /// <summary>One step of quality: what each part of the picture is drawn with.</summary>
     public sealed record Tier(
         bool Ssao, RenderingServer.EnvironmentSsaoQuality SsaoQuality, bool VolumetricFog,
-        int SunShadowSize, RenderingServer.ShadowQuality SunFilter, bool SunFourSplits,
+        int SunShadowSize, RenderingServer.ShadowQuality SunFilter, bool SunFourSplits, float SunSplit,
         bool LampShadows, RenderingServer.ShadowQuality LampFilter,
         Viewport.Msaa Msaa, RenderingServer.SubSurfaceScatteringQuality Skin,
         float GrassCell, float Effects, bool CrowdShadows, int Corpses, float LodThreshold);
@@ -32,7 +32,7 @@ public static class Graphics
     /// project's msaa_3d=2 is 4x in Godot's count, not 2x).</summary>
     public static readonly Tier High = new(
         true, RenderingServer.EnvironmentSsaoQuality.Medium, true,
-        4096, RenderingServer.ShadowQuality.SoftMedium, true,
+        4096, RenderingServer.ShadowQuality.SoftMedium, true, 0.1f,
         true, RenderingServer.ShadowQuality.SoftLow,
         Viewport.Msaa.Msaa4X, RenderingServer.SubSurfaceScatteringQuality.Low,
         0.3f, 1f, true, 160, 1f);
@@ -46,7 +46,13 @@ public static class Graphics
 
     public static readonly Tier Low = Medium with
     {
-        Ssao = false, SunShadowSize = 2048, SunFilter = RenderingServer.ShadowQuality.SoftVeryLow, SunFourSplits = false,
+        // Two cascades, not four, with the first reaching 35 m (half the 70 m the
+        // sun's shadows reach): she stands 12.5 to 31 m from the camera at every
+        // zoom short of the farthest, so she stays in a cascade as fine as High's
+        // (the atlas kept at 4096) and only the world beyond goes coarser. With
+        // the split at 7 m and a 2048 atlas she sat in a 7-70 m cascade, her own
+        // shadows four times coarser.
+        Ssao = false, SunFilter = RenderingServer.ShadowQuality.SoftVeryLow, SunFourSplits = false, SunSplit = 0.5f,
         // (Skin keeps its scattering: it is her own, and costs only the pixels she covers.)
         LampShadows = false,
         GrassCell = 0.45f, Effects = 0.5f, CrowdShadows = false, Corpses = 60, LodThreshold = 2.5f,
@@ -73,6 +79,7 @@ public static class Graphics
         RenderingServer.DirectionalSoftShadowFilterSetQuality(t.SunFilter);
         RenderingServer.PositionalSoftShadowFilterSetQuality(t.LampFilter);
         air.Key.DirectionalShadowMode = t.SunFourSplits ? DirectionalLight3D.ShadowMode.Parallel4Splits : DirectionalLight3D.ShadowMode.Parallel2Splits;
+        air.Key.DirectionalShadowSplit1 = t.SunSplit;
         RenderingServer.SubSurfaceScatteringSetQuality(t.Skin);
         vp.MeshLodThreshold = t.LodThreshold;
 

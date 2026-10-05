@@ -50,6 +50,7 @@ switch (cmd)
     case "report": Console.WriteLine(Report.Arena(Load(opt.Get("in", "balance.jsonl")))); break;
     case "map": Maps(); break;
     case "story": Story(); break;
+    case "place": Place(); break;
     default:
         Console.WriteLine("dotnet run -c Release --project godot/balance -- arena|probe|report [options]  (see Program.cs)");
         break;
@@ -123,6 +124,35 @@ void Arena()
     Console.WriteLine(md);
 }
 
+/* A story fight's place drawn in text, a metre a character (north up): its spaces (a letter each),
+ * its walls (#), its shut gates (=) and its named points (digits, with a legend). For checking an
+ * outline before arena art builds to it. */
+void Place()
+{
+    var ids = new Dictionary<string, string> { ["hollow"] = "hollow_by_night", ["roost"] = "roost_raid", ["dig"] = "dig_boils", ["vault"] = "vault_opened" };
+    var fight = SurvivorUnchained.Play.Story.StoryScripts.For(ids[opt.Get("fight", "hollow")]) ?? throw new ArgumentException("no such fight");
+    var pl = fight.Place;
+    var (x0, z0, x1, z1) = pl.Bounds(3);
+    var c = new SurvivorUnchained.Sim.CollisionWorld(400);
+    pl.Build(c);
+    var pts = pl.Points.ToList();
+    const string marks = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    for (double z = Math.Ceiling(z1); z >= Math.Floor(z0); z -= 1)
+    {
+        var row = new System.Text.StringBuilder();
+        for (double x = Math.Floor(x0); x <= Math.Ceiling(x1); x += 1)
+        {
+            int pi = pts.FindIndex(p => Math.Abs(p.Value.X - x) < 0.5 && Math.Abs(p.Value.Z - z) < 0.5);
+            if (pi >= 0) { row.Append(marks[pi % marks.Length]); continue; }
+            string? space = pl.SpaceAt(x, z);
+            bool gate = c.Within(x, z, 0.5).Any(k => k.Tag?.StartsWith("gate:") == true);
+            row.Append(gate ? '=' : space != null ? char.ToLower(space[0]) == 'f' ? ',' : '.' : c.Blocked(x, z, 0.3) ? '#' : ' ');
+        }
+        Console.WriteLine($"{z,5} {row}");
+    }
+    for (int i = 0; i < pts.Count; i++) Console.WriteLine($"  {marks[i % marks.Length]} {pts[i].Key} ({pts[i].Value.X}, {pts[i].Value.Z})");
+}
+
 /* The story's nights: each fight with its stages and boss, by each pair of hands and draft. */
 void Story()
 {
@@ -141,7 +171,7 @@ void Story()
                     foreach (var h in hands)
                         for (int s = 0; s < seeds; s++)
                             specs.Add(new StoryRunSpec(seed0 + s, c, pol, f, tier, level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), h == "deft",
-                                opt.Has("act2"), opt.Get("choice", "spare"), opt.Double("cap", 25)));
+                                opt.Has("act2"), opt.Get("choice", "spare"), opt.Double("cap", 25), opt.Has("crates"), h == "naive", opt.Has("learned")));
     Console.WriteLine($"{specs.Count} story nights, {opt.Int("par", 16)} at a time");
     var results = new ConcurrentBag<StoryRunResult>();
     var sw = Stopwatch.StartNew();

@@ -144,7 +144,7 @@ public partial class PlayerView : Node3D
             tree.CallbackModeProcess = AnimationMixer.AnimationCallbackModeProcess.Manual;
         }
         person.Root.AddChild(tree);
-        Light = new OmniLight3D { LightColor = new Color("#ffb070"), LightEnergy = LightBase / Mathf.Pi, OmniRange = 11, OmniAttenuation = 1.4f, ShadowEnabled = false };
+        Light = new OmniLight3D { LightColor = new Color("#ffb070"), LightEnergy = LightBase / Mathf.Pi, OmniRange = 11, OmniAttenuation = 1.4f, ShadowEnabled = false, Position = new Vector3(0, 2.4f, 0.4f) };
         AddChild(Light);
         Reflections = new Reflections(lo);
         AddChild(Reflections);
@@ -163,6 +163,12 @@ public partial class PlayerView : Node3D
         heading = old.heading;
         speed = old.speed;
         Visible = old.Visible;
+        // Her carried light as it was: a new one lit her from her feet, at its first strength,
+        // for the frame before its first update, and she flashed pale.
+        Light.LightEnergy = old.Light.LightEnergy;
+        Light.OmniRange = old.Light.OmniRange;
+        time = old.time;
+        flare = old.flare;
         tree.Advance(0);
     }
 

@@ -103,7 +103,9 @@ public partial class WorldScene : Node3D, IZoneLook
         Player = new PlayerView(lo);
         AddChild(Player);
         // The new figure stands where the old one stood, facing its way, already posed.
-        if (old != null) { Player.Follow(old); old.QueueFree(); }
+        // The old one goes out of sight now: freed at the frame's end, it was drawn over the new
+        // one for that frame, and the two showed through each other.
+        if (old != null) { Player.Follow(old); old.Visible = false; old.QueueFree(); }
     }
 
     string look = "";
@@ -329,5 +331,14 @@ public partial class WorldScene : Node3D, IZoneLook
         var o = new OrbView(color, size);
         AddChild(o);
         return o;
+    }
+
+    public IOrb Piece(string id, double scale)
+    {
+        var node = Dressing.Piece(id) ?? (id.Split('/') is [var pack, var name] ? Pieces.For(pack, name, 0, 1) : null);
+        if (node == null) return Orb("#8a5a2a", scale * 0.35);
+        var v = new PieceView(node);
+        AddChild(v);
+        return v;
     }
 }

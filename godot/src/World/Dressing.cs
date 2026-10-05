@@ -17,15 +17,28 @@ public static class Dressing
 
     static readonly Dictionary<string, List<(Mesh Mesh, Transform3D Local)>> parts = new();
 
+    /// <summary>A piece's file: a photoscan (art/world) or a kit piece.</summary>
+    static string FileOf(string kit, string piece) =>
+        piece.StartsWith("scan:") ? $"res://art/world/{piece[5..]}.glb" : $"res://assets/env/{kit}/{piece}.gltf";
+
+    /// <summary>Every file the place's flora and props are made from (Prefetch asks for them ahead).</summary>
+    public static IEnumerable<string> Files(ZoneData z)
+    {
+        foreach (var g in z.Flora) yield return FileOf("nature", g.Piece);
+        foreach (var (id, _) in z.Props)
+        {
+            int slash = id.IndexOf('/');
+            if (slash > 0) yield return FileOf(id[..slash], id[(slash + 1)..]);
+        }
+    }
+
     /// <summary>The meshes of a kit piece, with where each sits in it.</summary>
     static List<(Mesh Mesh, Transform3D Local)> PartsOf(string kit, string piece)
     {
         var key = $"{kit}/{piece}";
         if (parts.TryGetValue(key, out var list)) return list;
         list = new();
-        // A photoscan (art/world) or a kit piece.
-        var path = piece.StartsWith("scan:") ? $"res://art/world/{piece[5..]}.glb" : $"res://assets/env/{key}.gltf";
-        var scene = GD.Load<PackedScene>(path).Instantiate<Node3D>();
+        var scene = GD.Load<PackedScene>(FileOf(kit, piece)).Instantiate<Node3D>();
         void Walk(Node n, Transform3D at)
         {
             foreach (var c in n.GetChildren())

@@ -143,22 +143,7 @@ public partial class Game
             pos = bustPos.Lerp(facePos, t); look = bustLook.Lerp(faceLook, t); fov = Mathf.Lerp(26, 20, t);
         }
         Pose(pos, look, false, fov, Mathf.Lerp(1, 0.08f, Mathf.Clamp(z * 1.6f, 0, 1)));
-        // A portrait's key light, the nearer the brighter: soft and warm, up and
-        // to the camera's right, so her face can be judged and not only the fire's side of it.
-        if (keyLight == null)
-        {
-            keyLight = new SpotLight3D
-            {
-                LightColor = new Color(1f, 0.86f, 0.72f), SpotAngle = 22, SpotRange = 8, SpotAttenuation = 0.6f, ShadowEnabled = true,
-                LightSize = 0.4f, LightSpecular = 0.6f, LightCullMask = 2,
-            };
-            scene.AddChild(keyLight);
-        }
-        var right = dir.Cross(Vector3.Up).Normalized();
-        var at = eyes + dir * 2.2f - right * 1.1f + Vector3.Up * 0.9f;
-        keyLight.GlobalPosition = at;
-        keyLight.LookAt(eyes + Vector3.Down * 0.15f);
-        keyLight.LightEnergy = Mathf.Lerp(keyLight.LightEnergy, 0.12f + 0.85f * z, 1 - Mathf.Exp(-3f * (float)dt));
+        PortraitLight(dt, eyes, dir, z, y);
         // A close portrait: what is behind her softened, the more the nearer.
         if (z > 0.05f)
         {
@@ -173,13 +158,93 @@ public partial class Game
         static float Smooth(float t) { t = Mathf.Clamp(t, 0, 1); return t * t * (3 - 2 * t); }
     }
 
-    /// <summary>Creation is over (begun or left): the camera as it was.</summary>
+    SpotLight3D? fillLight, edgeLight, rimLight;
+    float[]? rig;
+    OmniLight3D? herFire, fireSrc;
+    uint fireMask;
+
+    /// <summary>
+    /// Her light as she is made: a portrait's three points, coming up as the camera comes near,
+    /// so a face is judged by the light faces are judged in. The whole figure keeps the fire's
+    /// light as the scene has it; at head and shoulders and nearer:
+    ///   - the key, soft and frontal, a little above her eyes and to the side away from the fire;
+    ///   - a gentle fill from the fire's side, cooler, so the far side of her face never falls to black;
+    ///   - the fire's orange off her face, kept only as a warm edge along her cheek and hair on its side;
+    ///   - a faint cool rim from behind on the other side, to lift her off the dark trees.
+    /// The rig lights only the figure (layer 2): the camp keeps its own light.
+    /// </summary>
+    void PortraitLight(double dt, Vector3 eyes, Vector3 dir, float z, float ground)
+    {
+        static float Smooth(float t) { t = Mathf.Clamp(t, 0, 1); return t * t * (3 - 2 * t); }
+        // How much of the portrait's light: none for her whole figure, all of it from head and shoulders in.
+        float p = Smooth((z - 0.15f) / 0.45f);
+        float k = 1 - Mathf.Exp(-4f * (float)dt);
+        var camLeft = dir.Cross(Vector3.Up).Normalized();
+        SpotLight3D Spot(Color c, float angle, bool shadow, float specular)
+        {
+            var l = new SpotLight3D
+            {
+                LightColor = c, SpotAngle = angle, SpotRange = 8, SpotAttenuation = 0.4f, ShadowEnabled = shadow,
+                LightSize = shadow ? 0.6f : 0, ShadowBlur = 1.5f, LightSpecular = specular, LightCullMask = 2, LightEnergy = 0,
+            };
+            scene!.AddChild(l);
+            return l;
+        }
+        void Aim(Light3D l, Vector3 at, Vector3 target, float energy)
+        {
+            l.GlobalPosition = at;
+            l.LookAt(target);
+            l.LightEnergy = Mathf.Lerp(l.LightEnergy, energy, k);
+        }
+        keyLight ??= Spot(new Color(1f, 0.93f, 0.86f), 20, true, 0.45f);
+        fillLight ??= Spot(new Color(0.88f, 0.92f, 1f), 26, false, 0.1f);
+        edgeLight ??= Spot(new Color(1f, 0.56f, 0.26f), 24, false, 0.35f);
+        rimLight ??= Spot(new Color(0.72f, 0.82f, 1f), 24, false, 0.5f);
+        // --rig K,F,E,R: the four lights' strengths at the face, for judging them (pictures).
+        if (rig == null)
+        {
+            rig = new[] { 1.15f, 0.22f, 0.8f, 0.55f };
+            if (Args.Get("rig") is string rs)
+                foreach (var (v, i) in rs.Split(',').Select((v, i) => (v, i)))
+                    if (i < 4 && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var f)) rig[i] = f;
+        }
+        Aim(keyLight, eyes + dir * 1.9f - camLeft * 1.0f + Vector3.Up * 0.85f, eyes + Vector3.Down * 0.05f, 0.15f + rig[0] * p);
+        Aim(fillLight, eyes + dir * 1.8f + camLeft * 1.1f, eyes + Vector3.Down * 0.08f, rig[1] * p);
+        Aim(edgeLight, eyes - dir * 1.3f + camLeft * 1.4f + Vector3.Up * 0.35f, eyes + Vector3.Down * 0.1f, rig[2] * p);
+        Aim(rimLight, eyes - dir * 1.6f - camLeft * 1.0f + Vector3.Up * 1.1f, eyes + Vector3.Down * 0.12f, rig[3] * p);
+
+        // The fire lights her through a stand-in that fades as the portrait comes up; the fire
+        // itself no longer reaches her (layer 2), so the camp around her stays as it is.
+        if (fireSrc == null && scene!.View.LightNear(new Vector3(Fire.X, ground, Fire.Y), 4) is { } src)
+        {
+            fireSrc = src;
+            fireMask = src.LightCullMask;
+            src.LightCullMask = fireMask & ~2u;
+            herFire = new OmniLight3D
+            {
+                LightColor = src.LightColor, OmniRange = src.OmniRange, OmniAttenuation = src.OmniAttenuation,
+                ShadowEnabled = src.ShadowEnabled, LightSpecular = src.LightSpecular, LightCullMask = 2,
+            };
+            scene.AddChild(herFire);
+        }
+        if (herFire != null && fireSrc != null && IsInstanceValid(fireSrc))
+        {
+            herFire.GlobalPosition = fireSrc.GlobalPosition;
+            herFire.LightColor = fireSrc.LightColor;
+            herFire.LightEnergy = fireSrc.LightEnergy * (1 - p);
+        }
+    }
+
+    /// <summary>Creation is over (begun or left): the camera and the fire as they were.</summary>
     void EndCreate()
     {
         figTurn = figTurnNow = figZoom = 0;
         figureBody = "";
-        keyLight?.QueueFree();
-        keyLight = null;
+        foreach (var l in new Light3D?[] { keyLight, fillLight, edgeLight, rimLight, herFire }) l?.QueueFree();
+        keyLight = fillLight = edgeLight = rimLight = null;
+        herFire = null;
+        if (fireSrc != null && IsInstanceValid(fireSrc)) fireSrc.LightCullMask = fireMask;
+        fireSrc = null;
         if (camera.Attributes == portrait) camera.Attributes = null;
     }
 

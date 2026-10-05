@@ -34,7 +34,7 @@ public partial class ZoneView : Node3D
     readonly List<GpuParticles3D> chimneys = new();
     readonly List<(int Light, GpuParticles3D Moths)> moths = new();
     readonly ShaderMaterial ground;
-    MultiMeshInstance3D? grass;
+    MultiMeshInstance3D? grass, leaves;
     readonly Node3D props;
     double time;
     public bool Night { get; private set; }
@@ -60,7 +60,15 @@ public partial class ZoneView : Node3D
         AddChild(Landmarks.Root);
         Perf.Lap("landmarks");
         // An ember arena's ring, its mist and its streams.
-        if (z.Place != null) { AddChild(ArenaEdge.Build(z)); Perf.Lap("arena edge"); }
+        if (z.Place != null)
+        {
+            var edge = ArenaEdge.Build(z);
+            AddChild(edge);
+            // A story place's gates, found by name as the night opens them (Show).
+            foreach (var c in edge.GetChildren())
+                if (c is Node3D n3 && n3.Name.ToString().StartsWith("gate_")) Landmarks.Nodes["gate:" + n3.Name.ToString()[5..]] = n3;
+            Perf.Lap("arena edge");
+        }
         // (An arena whose place grows none, the Dig, has no meadow at all.)
         if (grassAround is Vector2 at && (z.Place == null || ArenaGround.GrowsGrass(z.Place.Id))) GrowGrass(at, grassRadius);
         Perf.Lap("grass");
@@ -76,8 +84,8 @@ public partial class ZoneView : Node3D
         {
             // The web game's ring of stones round it goes; the scanned pit takes its place.
             var fat = new Vector3((float)f.X, (float)f.Y, (float)f.Z);
-            HideLandmarksNear(fat, 0.85f * (float)f.Size);
-            var fire = Campfire.Build(fat, (float)f.Size, ring: true);
+            if (f.Ring) HideLandmarksNear(fat, 0.85f * (float)f.Size);
+            var fire = Campfire.Build(fat, (float)f.Size, ring: f.Ring);
             fx.AddChild(fire);
             fires.Add((f.Light, fire));
             // The web game marks a fire's flame with a glowing ball; here the
@@ -204,6 +212,21 @@ public partial class ZoneView : Node3D
         foreach (var c in fire.GetChildren()) if (c is GpuParticles3D p) p.Emitting = on;
     }
 
+    /// <summary>The lit light nearest a place, within so far (creation's portrait takes the fire's
+    /// light off her face, and lays its own warm edge in its place).</summary>
+    public OmniLight3D? LightNear(Vector3 at, float within)
+    {
+        OmniLight3D? best = null;
+        float d = within;
+        for (int i = 0; i < lights.Count; i++)
+        {
+            if (!lit[i]) continue;
+            float di = lights[i].GlobalPosition.DistanceTo(at);
+            if (di < d) { d = di; best = lights[i]; }
+        }
+        return best;
+    }
+
     /// <summary>After dark or not: night-only pieces show, moths come to the
     /// lamps, chimney smoke goes dark.</summary>
     public void SetNight(bool on)
@@ -286,10 +309,14 @@ public partial class ZoneView : Node3D
     public void GrowGrass(Vector2 at, float radius = 40)
     {
         grass?.QueueFree();
+        leaves?.QueueFree();
         grass = Grass.Build(Data, at, radius, grassCell);
         grassAt = at;
         grassRadius = radius;
         AddChild(grass);
+        // An arena's fallen leaves, following her as its grass does.
+        leaves = Grass.Leaves(Data, at, radius, grassCell);
+        if (leaves != null) AddChild(leaves);
     }
 
     float grassCell = 0.3f, grassRadius = 40;
@@ -315,7 +342,11 @@ public partial class ZoneView : Node3D
     }
 
     /// <summary>The meadow's middle, every frame: the shader moves the tufts.</summary>
-    public void FollowGrass(Vector2 at) => grass?.Multimesh.Mesh.SurfaceGetMaterial(0)?.Set("shader_parameter/centre", at);
+    public void FollowGrass(Vector2 at)
+    {
+        grass?.Multimesh.Mesh.SurfaceGetMaterial(0)?.Set("shader_parameter/centre", at);
+        leaves?.Multimesh.Mesh.SurfaceGetMaterial(0)?.Set("shader_parameter/centre", at);
+    }
 
     public override void _Process(double delta)
     {

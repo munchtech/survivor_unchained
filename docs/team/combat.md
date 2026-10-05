@@ -1,73 +1,65 @@
 # Combat: skills, enemies, encounters, bosses, balance
 
 Status page for the combat lead.
-- **Agent:** `a708da2c97bf85c95` (successor to `a1d4562f44c7f6feb`).
-- **Branch:** `worktree-agent-a708da2c97bf85c95`.
-- **Read first:**
-  1. `docs/handoff/combat.md`: the predecessor's knowledge.
-  2. `docs/design/STORY_BOSSES.md`: the current work. §8 says what is built and what is left.
-  3. `docs/SKILLS_DESIGN.md` §16–17, with §16.10 on getting up.
+- **Agent:** `a5115633c7006e4d4`, successor to `afe45df4957917614`. **Handed off:** `docs/handoff/combat.md` is the successor's brief.
+- **Branch:** `worktree-agent-a5115633c7006e4d4`.
+- **Read first:** `docs/handoff/combat.md`, then `docs/design/STORY_BOSSES.md` §0.
 
-## Current state (2026-10-04)
+## Current state (2026-10-05)
 
-**Handed off:** `docs/handoff/combat.md` is the successor's brief.
+- **The Hollow and the Roost were seen at 1920x1080.**
+  - Greymuzzle's moves read, but his ring didn't read as a wall: it is now thirty strong with a pale line where a step further is a shove.
+  - The drive's first lesson is now said before its lane is marked.
+  - The Roost reads as a crowd in the dark until arena art builds it.
+- **The harness was mended.** These were flattering the old numbers:
+  - the boss's first life is now a first meeting;
+  - the hands read the crowd's marked circles;
+  - a steering bug pinned them at the den's middle;
+  - one lunge was missed the same way in every run;
+  - named foes and bosses could leave the place.
+- **The Dig Boils Over is built** (`Dig.cs`, `GrimtunnelStory.cs`) with the story's words, and is half tuned.
+- **Tests:** 681, all green.
 
-**The machine is the owner's.** No Godot, GPU, Blender or sweeps. Code, `dotnet build` and `dotnet test` only; a few dozen headless nights at a time, at most.
+**Measured** (r4, 64 nights a row, plain hands):
 
-**Story nights are built, with the Hollow by Night as the template.** The owner approved the design. STORY_BOSSES §8 has the detail.
-- **The runtime:** `StoryNight`.
-  - Three stages ended by goals, each with a crowd and an ember floor.
-  - A checkpoint at each stage and at the boss.
-  - Greymuzzle as a `StoryBoss`: the Pack's ring, the moon-howl's cold, fed fires, his age, and his end.
-- **The harness:** `story`. `BossSense` and the `Pilot` read the stage's goal and the ring.
-- **Tests:** all 653 green.
-- **The owner's rise rule** (SKILLS_DESIGN §16.10):
-  - One rise in Act 1's story fights; none after, unless she carries the one power.
-  - That power is the art Not Yet (from Chid's *The Keeper's Office*) or the great blessing Cold, Then Not.
-  - One rise a fight. A fall ends a map.
-  - The Second Wind trait is gone.
-- **First runs** (tier 1, small samples):
-  - plain hands won 75%, deft 92%;
-  - the boss took 2.5–3.5 minutes;
-  - **the way in was 1.6 minutes against a target of 6–9**;
-  - the way in was too dangerous (50–63% of runs under half health, against 20–35%).
+| Fight | Won (greedy / random) | Boss first life | Under half on the way in | Way in | Boss (greedy) |
+|---|---|---|---|---|---|
+| Hollow | 73–80% / 69–80% | 59–75% (target 55–70) | 11–28% (20–35) | 4.6–5.8 min | 2.8–3.6 min |
+| Roost | 89–92% / 81–91% | 67–84% | **38–56% (20–35)** | 3.3–5.5 min | 2.5–3.5 min |
+| Dig (dig10, 32 a row) | 81–91% / 50–88% | 44–88% | **31–56%** | 3.8–4.5 min | 3.0–5.6 min; 16/256 still run to the cap |
+
+- **The Hollow's won is below 90%:** the rise saves a third of those who fall at Greymuzzle.
+- **The Roost's dips are too many,** mostly at the levy and the Pike-Captain.
 
 ## Next (in order)
 
-1. **When the machine is free: tune the Hollow** (STORY_BOSSES §8.3):
-   - give each stage more to do, not more health;
-   - move the danger from the way in to the boss;
-   - look at tiers 3 and 4;
-   - check it in the game (§8.4 lists what to look at).
-2. **The Roost, the Dig and the Vault**, in the Hollow's shape. Redcowl's spared end plays `.spared` then `.flit`.
-3. **The run-ups re-measure:** `combat-wip-runups@e63e74fd`; the next step is in the handoff §4.1.
-4. **The Kerchiefs at tier 3** (68% / 50%), and **the Lamplings** not separating careless from planned drafts.
-5. **The rest of the bestiary:** ground hazards at half, the Ford-Warden echo, weight as a number, the Signs Warded, Mending and Leader, Echoes.
+1. **The Hollow's won ≥90%.** Consider scaling story bosses' blows to her health band.
+2. **The Roost's way-in dips.**
+3. **Finish the Dig:** the cap runs, dips, tests, and seeing it at the screen.
+4. **The Vault.**
+5. **Cinematics' boss hooks** (marks, and the spared part at the choice).
+6. The run-ups, the Kerchiefs at tier 3, the Lamplings, the bestiary.
 
 ## Key decisions
 
-- **A story night's yardstick is a table night's twelfth minute** (ember about 30, about 32 cards), not its twentieth. Measured: a table night kills 20,000 by minute 20. A twelve-minute night cannot feed the ember that, and should not try.
-- **Each stage has a finite crowd, softened by the minute it stands for, and an ember floor at its end.** A quick stage is not a weaker night, and nothing is farmed.
-- **The build is a journal of its verbs.** A checkpoint plays it again through the same verbs, so nothing new added to a verb is forgotten by a restore.
-- **A story's outcome is never decided by the build by accident:** crates go by a prompt, Greymuzzle by a choice, posts by where she stands.
-- **Arts are bound by the spaces open now.** A blink carried a bot over a shut gate.
-- **Getting up is one rise a fight, for a price,** however many ways she carries it.
-- **Inherited:**
-  - from tier 3 the night tests the draft;
-  - endings that are not deaths wait for the last floor;
-  - maps use one ruler health (3.5× its body) on 0.65 floors.
+- **A boss's first life is measured as a first meeting;** after a fall, the hands know it.
+- **Hands are fixed before bosses are tuned to them.**
+- **The night holds its named foes and boss inside the place, past the shut gate.**
+- **Dashes carry over gaps** (cracks, sinkholes), and knockback stops at walls.
+- **No padding:** stages are bounded by beats (cadences, a roof held for ten tubs, waves from the steps), never by health alone.
+- **A story night is the same fight at every tier.**
 
 ## Notes for other areas
 
-- **Experience (`ab406cf9ddd22b03b`):**
-  - StoryNight calls your `StoryFall(risesLeft, rise, letGo)`; risesLeft is 1 at most, and 0 from Act 2.
-  - The night measured about 5 minutes, not 12, because the way in is short. I'll lengthen it, but the 40% sums should wait for the tuned numbers.
-  - `--stage N` starts a story night at a stage.
-- **Story (`a54dc034ed29f2e02`):** the spare fields are in `StoryFights.Spec` (thanks), so Greymuzzle's choice is live where she promised. Still owed: Chid's node giving `keepers_office`.
-- **Arena art (`a26767f7f9955cb56`):** build the Hollow's place to `HollowByNight.Ground` (`Play/Story/Hollow.cs`): spaces as capsules, the two gates, and every point. The walls stand invisible in the old arena until then. The deadfalls need wood and fire.
-- **Skills VFX (`a63cd93fc73d5ed79`):** the look of Not Yet, a fed deadfall, the cold's band, and the pale-blue "His age" ring.
-- **Cinematics:** the hooks tried are `c10_arrival`, `c10_end` and `c10_spared`, only where `CanCinematic` finds them. Name the real ids.
-- **Crafting (`a7debf1459f14dfe7`):**
-  - a story night now pays XP for its own minutes;
-  - `keepers_office` is a value-0 tome, given, never sold;
-  - maps: a fall ends the map, so the three-falls economy is gone.
+- **Experience:**
+  - the Dig is ready to look at: `--night dig`;
+  - `--stage N` now hands her the floors' build;
+  - the ring line and thirty wolves are ready to judge.
+- **Arena art:** the Dig's outline is `DigBoilsOver.Ground` (`place --fight dig`). The crack runs from (10.2,-20) to (16.8,-34), and Snib's heap is at (23,-36), outside.
+- **Skills:**
+  - `RiseCold` is 0.25 (your call);
+  - looks are wanted for Grimtunnel's mound (`GrimtunnelStory.Under`), the tubs (`TubWay.Tub`), the barrel (an `IZoneLook.Piece`), and gaps (`Collider.Gap`).
+- **Animation:**
+  - slam and shot plants are in (`Ai.SlamPlant` 0.65, `ShotPlant` 0.7);
+  - `levy_crossbow` and `mb_levy_sergeant` now use `kerchief_crossbow`.
+- **Story:** your four lines are in.

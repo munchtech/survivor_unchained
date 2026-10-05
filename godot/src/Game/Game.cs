@@ -176,11 +176,18 @@ public partial class Game : Node, IZoneHost
                 var idq = parts[0].Split('*');
                 int qty = idq.Length > 1 && int.TryParse(idq[1], out var nq) ? nq : 1;
                 int? rar = parts.Length > 1 && int.TryParse(parts[1], out var r) ? r : null;
-                // iron_helm:3:of_the_wolf@1+of_the_lantern@2 : a piece with just those affixes, at those grades.
+                // iron_helm:3:of_the_wolf@1+of_the_lantern@2 : a piece with just those affixes, at those grades;
+                // a fourth part marks it (iron_helm:3:hale@4+fevered@0:slurried : steeped, and so set).
                 if (parts.Length > 2)
                 {
-                    var affixes = parts[2].Split('+').Select(a => a.Split('@')).Select(a => new AffixRoll { Id = a[0], Tier = a.Length > 1 && int.TryParse(a[1], out var t) ? t : 0 }).ToList();
-                    Inventory.AddToPack(Journey.Ch, Inventory.Make(Journey.Ch, idq[0], rarity: rar, affixes: affixes));
+                    var affixes = parts[2].Split('+', StringSplitOptions.RemoveEmptyEntries).Select(a => a.Split('@')).Select(a => new AffixRoll { Id = a[0], Tier = a.Length > 1 && int.TryParse(a[1], out var t) ? t : 0 }).ToList();
+                    var made = Inventory.Make(Journey.Ch, idq[0], rarity: rar, affixes: affixes);
+                    if (parts.Length > 3)
+                    {
+                        made.Marks = parts[3].Split('+', StringSplitOptions.RemoveEmptyEntries).ToList();
+                        if (Crafting.Slurried(made)) made.Heat = 0;
+                    }
+                    Inventory.AddToPack(Journey.Ch, made);
                 }
                 else Journey.GiveItem(idq[0], qty, rar);
             }
@@ -222,6 +229,8 @@ public partial class Game : Node, IZoneHost
             spec.Spare = Args.Has("spare");
             // --story: told as a story's night (twenty minutes, over at its boss's fall), for pictures of its end.
             if (Args.Has("story")) { spec.Story = true; spec.Minutes = 20; }
+            // --night hollow|roost|dig|vault: that story fight's own night (pictures of its place; --stage N for later stages).
+            if (Args.Get("night") is string nt) spec = SurvivorUnchained.Play.StoryFights.Spec(nt, Journey.Ctx, "waystation", at0.X, at0.Z, at0.Facing);
             Arenas.Begin(World, spec);
         }
         // --zone map [--tier T --people ID --mods a+b --seed N]: straight into a Wayfinder's map.
@@ -250,17 +259,24 @@ public partial class Game : Node, IZoneHost
             // Skipping ahead: the prologue counts as done.
             World.Facts["prologue.done"] = true;
             World.Time = Enum.TryParse<TimeOfDay>(Args.Get("time") ?? "day", true, out var t) ? t : TimeOfDay.Day;
-            // --clock S: the day's clock at S seconds of free play since dawn, running (pictures of its
-            // turns: 585 is a quarter minute before dusk, 1065 before the night's end).
+            // --clock S: the day's clock running, S seconds past dawn (pictures of its turns: 590 is ten
+            // seconds before dusk, 710 before nightfall, 890 before the nudge, 1070 before the night passes;
+            // run with --fixed-fps 60, or the first frame's load is counted as play).
             if (Args.Has("clock"))
             {
-                World.Clock = Args.Num("clock", 0);
-                World.Time = DayClock.At(World.Clock);
                 World.Facts["clock.started"] = true;
+                World.Clock = Args.Num("clock", 0);
+                World.Time = SurvivorUnchained.World.DayClock.At(World.Clock);
             }
             EnterZone(z, "lowford", at);
         }
         else EnterZone(z, null, at);
+        // --near ID: stood a few steps from that person (pictures of what shows over their head).
+        if (Args.Get("near") is string nearId && zone != null && zone.Actors.TryGetValue(nearId, out var na) && Battle is { } nb)
+        {
+            nb.Player.X = na.X + 2.2;
+            nb.Player.Z = na.Z + 3.2;
+        }
         hud.Fade(0, 0.5);
         // --cine ID: that cinematic played here at once (pictures of it, its previs).
         if (Args.Get("cine") is string cid && cine == null) Cinematic(cid);
@@ -406,17 +422,19 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>The survivor as the map opened: what it paid is read against this at its end.</summary>
     CharacterData? mapStart;
+    List<ItemInstance?>? mapStash;
 
     MapRun StartMap()
     {
         mapStart = SurvivorUnchained.Core.Json.Clone(Journey.Ch);
+        mapStash = World.Stash.ToList();
         return new MapRun(this, currentMap!, World.Map!);
     }
 
     /// <summary>A map is over: what it paid on its own page, the world held behind it.</summary>
     public void MapOver(MapResult r, bool alive)
     {
-        var spoils = SurvivorUnchained.Maps.MapSpoils.Between(mapStart ?? Journey.Ch, Journey.Ch);
+        var spoils = SurvivorUnchained.Maps.MapSpoils.Between(mapStart ?? Journey.Ch, Journey.Ch, mapStash ?? World.Stash, World.Stash);
         Wait(alive ? 1.0 : 2.2, () =>
         {
             if (scene == null || zone is not MapRun) return;
@@ -467,6 +485,10 @@ public partial class Game : Node, IZoneHost
         if (id == "arena") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(World.Arena!.Map); data = new ZoneData(currentMap); }
         else if (id == "map") { currentMap = SurvivorUnchained.Maps.MapGen.Generate(World.Map!.Map); data = new ZoneData(currentMap); }
         else { currentMap = null; data = new ZoneData(id); }
+        // The kit's textures it is built from, decoded side by side first.
+        Perf.Lap("prefetch", true);
+        Prefetch.Zone(data, Journey != null ? Loadouts.Of(Journey.Ch).Person : null, folk: id != "arena");
+        Perf.Lap("its textures, decoded on worker threads");
         scene = new WorldScene(data, cam);
         AddChild(scene);
         scene.Move = () => auto?.Move ?? (controls.Captured ? (0, 0) : (controls.MoveX, controls.MoveZ));
@@ -760,7 +782,7 @@ public partial class Game : Node, IZoneHost
         int crits = 0;
         foreach (var e in evs)
         {
-            if (Shots.On("boss")) BossShot(e);
+            if (Shots.On("boss") || Shots.On("casts")) BossShot(e);
             Feel(e, ref crits);
             switch (e)
             {
@@ -806,11 +828,16 @@ public partial class Game : Node, IZoneHost
     }
 
     /// <summary>--on boss: a frame of each boss move as it is marked, its Break, its
-    /// stagger, its arrival and what is announced (Shots.Want).</summary>
+    /// stagger, its arrival and what is announced (Shots.Want). --on casts: a run of
+    /// frames, fifteen a second, through each creature's marked cast and a second after
+    /// it (judging a slam or a call as the player sees it).</summary>
     static void BossShot(CombatEvent e)
     {
         switch (e)
         {
+            case Ev.Telegraph t when Shots.On("casts") && t.Id >= 0 && t.Hostile:
+                for (int i = 0; i * (1 / 15.0) < t.Duration + 1; i++) Shots.Want($"cast{t.Id}", i / 15.0);
+                break;
             case Ev.Telegraph t when t.Boss && t.Label is { Length: > 0 } l: Shots.Want(l, Math.Min(0.7, t.Duration * 0.6)); break;
             case Ev.Break: Shots.Want("break", 0.3); break;
             case Ev.Focus: Shots.Want("focus", 1.0); break;
@@ -904,6 +931,7 @@ public partial class Game : Node, IZoneHost
             }
             else hud.PromptAt(null);
             hud.Beyond(Overlay == null ? Offscreen(fb2) : new());
+            hud.Ground(Overlay == null ? Labels(fb2) : new());
         }
         {
             var sb = Battle;
@@ -983,6 +1011,49 @@ public partial class Game : Node, IZoneHost
             Add(e.X, e.Z, "skull", Style.EmberHi);
         foreach (var p in b.Pickups.Living().Where(p => p.Kind == PickupKind.Chest).OrderBy(p => (p.X - px) * (p.X - px) + (p.Z - pz) * (p.Z - pz)).Take(2))
             Add(p.X, p.Z, "relic", Style.GoldHi);
+        // A Legendary lying untaken: the screen's edge points to it, in its amber (docs/design/LOOT_DESIGN.md §8.2).
+        foreach (var p in b.Pickups.Living().Where(p => p.Loot is (int)LootTier.Legendary or (int)LootTier.Storied && p.Look != Verdict.Hidden))
+            Add(p.X, p.Z, "sun", Style.RarityOf(p.Loot == (int)LootTier.Storied ? 5 : 4));
+        return o;
+    }
+
+    /// <summary>Loot's names on the ground (docs/design/LOOT_DESIGN.md §8.1): what the filter shows, Rare
+    /// and up wherever it lies on screen, the rest only near her, so a horde's floor is not a page of text.</summary>
+    List<Ui.GroundLabel> Labels(Battle b)
+    {
+        var o = new List<Ui.GroundLabel>();
+        if (scene == null) return o;
+        var view = new Rect2(Vector2.Zero, GetViewport().GetVisibleRect().Size);
+        double px = b.Player.X, pz = b.Player.Z;
+        foreach (var p in b.Pickups.Items)
+        {
+            if (!p.Alive || p.Look == Verdict.Hidden || p.Kind is PickupKind.Ember or PickupKind.Gold or PickupKind.Chest or PickupKind.Heal or PickupKind.Magnet) continue;
+            // What a zone laid down by hand (a quest thing, a story's drop) is labelled by what it is.
+            LootTier tier;
+            if (p.Loot >= 0) tier = (LootTier)p.Loot;
+            else if (p.Ref != null && Items.Find(p.Ref) is { } d0) tier = Drops.TierOf(d0, p.Tier);
+            else continue;
+            double d2 = (p.X - px) * (p.X - px) + (p.Z - pz) * (p.Z - pz);
+            if (tier < LootTier.Rare && d2 > 10 * 10 || tier >= LootTier.Material && d2 > 8 * 8) continue;
+            var w = new Vector3((float)p.X, (float)scene.HeightAt(p.X, p.Z) + 0.4f, (float)p.Z);
+            if (camera.IsPositionBehind(w)) continue;
+            var sp = camera.UnprojectPosition(w);
+            if (!view.HasPoint(sp)) continue;
+            string text = p.Payload is ItemInstance it ? Inventory.Name(it) : p.Ref != null && Items.Find(p.Ref) is { } def ? (p.Value > 1 ? Items.Several(def.Id, (int)p.Value) : def.Name) : "";
+            if (text.Length == 0) continue;
+            var col = tier switch
+            {
+                LootTier.Set => new Color("#3fd6c0"),
+                LootTier.Material or LootTier.Draught => Style.InkDim,
+                LootTier.Chart or LootTier.Book => new Color("#e8d8b0"),
+                LootTier.Quest => Style.GoldHi,
+                LootTier.Legendary => Style.RarityOf(4),
+                LootTier.Storied => Style.RarityOf(5),
+                _ => Style.RarityOf((int)tier),
+            };
+            int loud = tier >= LootTier.Legendary && tier <= LootTier.Storied ? 3 : p.Look == Verdict.Emphasised || tier is LootTier.Epic or LootTier.Set ? 2 : tier >= LootTier.Material || tier == LootTier.Common ? 0 : 1;
+            o.Add(new Ui.GroundLabel(sp, text, col, loud, tier == LootTier.Set));
+        }
         return o;
     }
 
@@ -1009,9 +1080,17 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
-    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone;
+    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone, fallDone, litDone;
     int dieIx;
     double blastT = 0.5, marksT = 1;
+    int lootI, hoardI;
+    double hoardT = 1.5;
+    double lootT = 1.5;
+    static readonly (string Def, int? Rarity, Verdict Look)[] LootRing =
+    [
+        ("leather_cap", 0, Verdict.Hidden), ("iron_helm", 0, Verdict.Shown), ("copper_ring", 1, Verdict.Shown), ("chain_shirt", 2, Verdict.Shown),
+        ("iron_helm", 3, Verdict.Emphasised), ("watch_coif", null, Verdict.Emphasised), ("drowned_coat", null, Verdict.Emphasised),
+    ];
 
     void Tour(double dt)
     {
@@ -1047,6 +1126,30 @@ public partial class Game : Node, IZoneHost
                 if (k != null) { k.Tier = kinds[i] == PickupKind.Ember ? i : 2; k.Vx = k.Vz = 0; k.Age = -600; }
             }
         }
+        // --loot [legendary]: a drop of every tier landing round her a beat apart, each with its light and
+        // its sound, a hidden Common among them (pictures and ears for docs/design/LOOT_DESIGN.md §8);
+        // "legendary": only the Legendary, for its moment.
+        if (Args.Has("loot") && Battle is { } lootB && lootI < LootRing.Length && (lootT -= dt) <= 0)
+        {
+            lootT = 0.9;
+            var (def, rarity, look) = LootRing[Args.Get("loot") == "legendary" ? LootRing.Length - 1 : lootI];
+            lootI = Args.Get("loot") == "legendary" ? LootRing.Length : lootI + 1;
+            var it = Rpg.Inventory.Make(Journey.Ch, def, rarity: rarity, level: (int)Args.Num("level", 5));
+            double a = lootI * Math.Tau / LootRing.Length, d = 4.5;
+            lootB.Spill(new Loot(PickupKind.Item, def, 1, true, it.Rarity, null, it, (int)Rpg.Drops.TierOf(it), look), lootB.Player.X + Math.Cos(a) * d, lootB.Player.Z + Math.Sin(a) * d);
+        }
+        // --hoard [N]: N story bosses' hoards rolled by the real drop roll at her feet, two seconds apart
+        // (the first pays the certain Legendary): pictures of a hoard as the filter judges it.
+        if (Args.Has("hoard") && Battle is { } hoardB && hoardI < (int)Args.Num("hoard", 1) && (hoardT -= dt) <= 0)
+        {
+            hoardT = 2;
+            hoardI++;
+            foreach (var l in Journey.Drops(new DropCtx { Source = DropSource.Boss, Level = (int)Args.Num("level", 5), People = Args.Get("people") ?? "pack", StoryBoss = true, R = Rng.NextDouble }))
+            {
+                double a = Rng.NextDouble() * Math.Tau, d = 2 + Rng.NextDouble() * 3;
+                hoardB.Spill(l, hoardB.Player.X + Math.Cos(a) * d, hoardB.Player.Z + Math.Sin(a) * d);
+            }
+        }
         // --give A,B[:RANK][@EVOLUTION],+PASSIVE[:RANK]: a build in hand from the start
         // (pictures of weapons, of the draft with an arsenal), the arena's opening blessing passed over.
         // --minute M: the arena's clock set to M minutes (pictures of its boss: --minute 29.9); --won: and the night won.
@@ -1057,11 +1160,18 @@ public partial class Game : Node, IZoneHost
             if (Args.Has("won")) mr.WinNow();
         }
         // --stage N: a story night begun at its Nth stage (from 0; its stage count is the boss), the
-        // ground behind opened (pictures and play of a stage or the boss: --stage 3).
+        // ground behind opened and the build the stages before would have left her (pictures and play of a
+        // stage or the boss: --stage 3).
         if (!minuteDone && Args.Has("stage") && zone is StoryNight sn2 && Battle != null)
         {
             minuteDone = true;
-            sn2.SkipTo((int)Args.Num("stage", 0));
+            sn2.SkipTo((int)Args.Num("stage", 0), floors: true);
+        }
+        // --lit: a story night's deadfalls all burning (pictures of them alight).
+        if (!litDone && Args.Has("lit") && zone is StoryNight sn3 && Battle != null)
+        {
+            litDone = true;
+            foreach (var f in sn3.Fires) { f.Lit = 9999; f.EverLit = true; scene.SetLit(f.Light, true); }
         }
         // --chest 1,3,5! [--chest-at T]: chests of those sizes opened at her feet T seconds in, one
         // after another (! a boss's hoard), for pictures of the opening.
@@ -1249,7 +1359,9 @@ public partial class Game : Node, IZoneHost
     void ClickAt(string spec)
     {
         bool right = spec.StartsWith('r');
-        var xy = spec.TrimStart('r').Split(':');
+        // hX:Y: pressed and held a second before it is let go (pictures of a hold-to-confirm press).
+        bool hold = spec.StartsWith('h');
+        var xy = spec.TrimStart('r', 'h').Split(':');
         if (xy.Length != 2 || !float.TryParse(xy[0], System.Globalization.CultureInfo.InvariantCulture, out var x)
             || !float.TryParse(xy[1], System.Globalization.CultureInfo.InvariantCulture, out var y)) return;
         var at = new Vector2(x, y);
@@ -1259,7 +1371,8 @@ public partial class Game : Node, IZoneHost
         vp.PushInput(new InputEventMouseMotion { Position = at, GlobalPosition = at });
         var button = right ? MouseButton.Right : MouseButton.Left;
         vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = true });
-        vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = false });
+        if (hold) GetTree().CreateTimer(1.0).Timeout += () => vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = false });
+        else vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = false });
         GD.Print($"click {spec}");
     }
 
@@ -1338,6 +1451,48 @@ public partial class Game : Node, IZoneHost
         };
         Perf.Note = () => $"{zone?.Id} foes {Battle?.Enemies.Count ?? 0} ember {Battle?.EmberLevel} kills {Battle?.KillCount} " +
                           (zone?.Debug() is { Count: > 0 } d ? string.Join(" ", d.Take(3).Select(kv => $"{kv.Key}={kv.Value}")) : "");
+        // --perf-flip A,B [--perf-flip-every S]: these taken out every other S
+        // seconds (default 1) and put back, the frame's "flip" counter 1 while
+        // out. One run measures both ways under the same load from the GPU's
+        // other users (it is shared): her, furshadow (her fur's shadows), crowd,
+        // grass, sunshadows, ssao, msaa;
+        // or quality:Q, scale:S (that quality or resolution while out).
+        if (Args.Get("perf-flip") is string flips)
+        {
+            var flipped = flips.Split(',').ToHashSet();
+            double every = Args.Num("perf-flip-every", 1);
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            bool outNow = false, wasOut = false;
+            string q0 = Settings.Current.Quality, s0 = Settings.Current.Scale;
+            string? qOut = flipped.FirstOrDefault(f => f.StartsWith("quality:"))?[8..], sOut = flipped.FirstOrDefault(f => f.StartsWith("scale:"))?[6..];
+            Perf.CounterNames = [.. Perf.CounterNames, "flip"];
+            var counters = Perf.Counters;
+            Perf.Counters = a => { counters(a); a[^1] = outNow ? 1 : 0; };
+            perf.Each = () =>
+            {
+                if (scene == null) return;
+                outNow = (int)(clock.Elapsed.TotalSeconds / every) % 2 == 1;
+                bool on = !outNow;
+                if ((qOut ?? sOut) != null && outNow != wasOut)
+                {
+                    Settings.Current.Quality = outNow ? qOut ?? q0 : q0;
+                    Settings.Current.Scale = outNow ? sOut ?? s0 : s0;
+                    Graphics.Apply(Settings.Current, air, GetViewport(), scene);
+                }
+                wasOut = outNow;
+                if (flipped.Contains("her") && scene.Player != null) scene.Player.Visible = on;
+                if (flipped.Contains("furshadow") && scene.Player != null)
+                    foreach (var n in scene.Player.FindChildren("*fur*", "MeshInstance3D", true, false))
+                        ((MeshInstance3D)n).CastShadow = on ? GeometryInstance3D.ShadowCastingSetting.On : GeometryInstance3D.ShadowCastingSetting.Off;
+                if (flipped.Contains("crowd")) scene.Crowd.Visible = on;
+                if (flipped.Contains("grass") && scene.View.GetNodeOrNull<Node3D>("Grass") is { } g) g.Visible = on;
+                var t = Graphics.Current;
+                if (flipped.Contains("sunshadows")) air.Key.ShadowEnabled = on;
+                if (flipped.Contains("ssao")) air.Env.SsaoEnabled = on && t.Ssao;
+                if (flipped.Contains("msaa")) GetViewport().Msaa3D = on ? t.Msaa : Viewport.Msaa.Disabled;
+            };
+            return;
+        }
         // --perf-off A,B: things taken out of the picture, to see what each costs
         // by the difference (never for play): her, crowd, grass, flora, props,
         // landmarks, ground, water, fires, fx, hud, lamps, lampshadows,
