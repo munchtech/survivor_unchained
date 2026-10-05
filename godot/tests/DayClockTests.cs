@@ -187,7 +187,8 @@ public class DayClockTests
         var b = j.StartBattle(true, new CollisionWorld(60), (_, _) => 0, 0, 0, 0, 3, arena: true);
         var lost = Arenas.Finish(j, b, spec, won: false);
         Assert.True(lost.WakesInTown);
-        Assert.Contains(j.World.Rematches, r => r.Id == "dig_boils");
+        Assert.DoesNotContain(j.World.Rematches, r => r.Id == "dig_boils");
+        Assert.Contains(StoryFights.Open(j.Ctx), f => f.Id == "dig");
         var table = new ArenaSpec { Id = "table:1", Name = "Table", People = "pack" };
         Arenas.Begin(j.World, table);
         var b2 = j.StartBattle(true, new CollisionWorld(60), (_, _) => 0, 0, 0, 0, 3, arena: true);

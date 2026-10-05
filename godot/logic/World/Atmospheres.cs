@@ -38,11 +38,15 @@ public static class Atmospheres
         },
     };
 
+    // The golden hour going blue: a low warm sun with long shadows, the shade lifted toward violet,
+    // and the light between day's and the moon's. The day's clock shows it every evening; at 18
+    // degrees and half the light it was darker than the night itself (the sun grazing the ground,
+    // the wood's long shadows over all of it: the Verge went black).
     public static readonly AtmospherePreset Dusk = new(
-        new SkySettings("#141a36", "#b0583a", "#120c0c", "#ff8a4a", 7, 0.25, 0),
-        "#ffae70", 2.3, 18, 200, 0.78,
-        "#5a5a90", "#2a1a10", 0.7, 0.7, "#3a2a34", 0.0085, 1.05, "#ffb884", 0.32,
-        new([0.03, 0.02, 0.05], [1.0, 1.0, 1.02], [1.05, 1.0, 0.95], "#4a4a8a", "#ffb070", 0.2, 1.0, 0.12, 1.16));
+        new SkySettings("#24305a", "#c07850", "#16141a", "#ffa060", 7, 0.15, 0),
+        "#ffc890", 4.4, 34, 200, 0.72,
+        "#7088c8", "#3a2c20", 1.3, 0.6, "#4a4a62", 0.005, 1.45, "#ffbe8a", 0.32,
+        new([0.02, 0.022, 0.05], [1.0, 1.0, 1.02], [1.02, 1.0, 0.98], "#40508a", "#ffb878", 0.16, 0.98, 0.12, 1.12));
 
     public static readonly AtmospherePreset Dawn = new(
         new SkySettings("#3b5a8f", "#f2b48a", "#2a2220", "#ffd2a0", 6, 0, 0),
