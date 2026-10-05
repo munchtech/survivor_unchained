@@ -6,7 +6,7 @@ Status page for the gameplay experience director (agent `ab406cf9ddd22b03b`, bra
 
 ## Current state (2026-10-04)
 
-Took over from `ad1f5623590e09883`. Tests green (624). The owner approved the story nights and the
+Took over from `ad1f5623590e09883`. Tests green (631). The owner approved the story nights and the
 day's clock (`docs/design/STORY_NIGHTS_AND_TIME.md`, decisions at its top). **Limit for now: no
 Godot or GPU**, code and `dotnet test` only.
 
@@ -25,8 +25,12 @@ Godot or GPU**, code and `dotnet test` only.
 - **A night left alone** passes at 6 minutes (nudge at 3): fade, a day on, no inn's rest.
 - **The skips:** the inn's sleep (next morning, healed) and "wait for nightfall" set the clock.
 - **Back from a fight:** the same night with at least 3 minutes left (several fights by intent).
-- **A story fight lost** (`ArenaResult.WakesInTown`): she wakes at the Last Lamp a day on,
-  healed, with the morning's news (`Journey.WakeAfterLoss`, Waystation arrival `carried`).
+- **A story fight lost** (`ArenaResult.WakesInTown`): she wakes on Chid's bench in the shrine a
+  day on, healed (`Journey.WakeAfterLoss` calls story's `CarriedHome`); Chid's conversation tells
+  the waking for that fight, then the town's morning lines.
+- **Story's final words** in `Journey.DayLines`; a rise counted (`RiseLine`, story.rises); a
+  second fight answered the same night says "straight on" (`FoughtTonight`); the night's card
+  lists "Also out tonight".
 - **StoryFights** (`Play/StoryFights.cs`): the four fights out of the Verge so the night can call
   them from anywhere; the Verge builds its interactables from it.
 - **Seam for combat:** `IZoneHost.StoryFall(risesLeft, rise, letGo)`; one rise in Act 1 only.
@@ -37,7 +41,7 @@ Godot or GPU**, code and `dotnet test` only.
 2. Dusk in town (the call, then the line) and in the Verge (the line only); the night's
    announcement and the "Tonight" entry; Answer from town and from the wood.
 3. The night passing: the fade, "Dawn · Day N", the lines, the scars going out in the Verge.
-4. A story fight lost: the result, then the Last Lamp's door at dawn, healed, with the lines.
+4. A story fight lost: the result, the shrine at dawn, Chid's waking, then the morning lines.
 5. Pausing: the clock still in talk, the pack, the map, the shop, the rest page and cutscenes.
 6. The Verge at a turn: Maeca and the night packs only change on re-entry (judge if it jars).
 
@@ -62,9 +66,8 @@ picture). Scratchpad tools in `experience/` point here.
 
 ## Notes for other areas
 
-- **Story** (`a54dc034ed29f2e02`): owns OnSpare and the spare choice (Greymuzzle, Redcowl), now
-  in `StoryFights.Spec`; the four `EndLost` lines need rewriting (she wakes in town a day on); the
-  placeholders `DayLines.Nudge` and `DayLines.Carried`; the `Called` rules to check.
+- **Story** (`a54dc034ed29f2e02`): its spare choices and lost lines are ported into
+  `StoryFights.Spec` (`415e16f3`); edit the story fights' specs there, not in the Verge.
 - **Combat** (`a708da2c97bf85c95`): `StoryFall` and `StoryFights` are pushed; `ClockRuns` is
   false by default, so the story-night runtime needs nothing for the clock.
 
