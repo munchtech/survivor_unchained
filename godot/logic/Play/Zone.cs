@@ -31,6 +31,15 @@ public sealed class Interactable
     public Action Act = () => { };
 }
 
+/// <summary>One answer to a StoryChoice: its id, the words on its key, and what choosing it does.</summary>
+public sealed record ChoiceAnswer(string Id, string Verb, Action Act);
+
+/// <summary>A choice the story puts to her wherever she stands (Redcowl on his knee, Greymuzzle on his
+/// side): who it is about, the line that names it, and its answers in order, each on its own key. It is
+/// not a prompt to walk to: a player across the ground answers it from there (the experience director's
+/// finding: at 3.4 m, a player at the far side of the camp stalled at his sliver of health). X, Z: him.</summary>
+public sealed record StoryChoice(string Who, string Title, IReadOnlyList<ChoiceAnswer> Answers, double X, double Z);
+
 public readonly record struct Arrival(double X, double Z, double Facing = 0);
 
 public enum MarkKind { Place, Quest, Turn, Exit, Danger, Person, Mystery }
@@ -165,6 +174,9 @@ public interface IZoneLook
     /// <summary>The Kindling's ember-core: a lump of raw ember, split by glowing fissures that widen
     /// as it is broken (Light: 0 whole, 1 nearly broken). A plain orb where nothing better is drawn.</summary>
     IOrb EmberCore(double size) => Orb("#ff7a2a", size * 0.45);
+    /// <summary>A kit piece that moves (Snib's barrel rolling): placed, turned and scaled as an orb is.
+    /// A plain orb where nothing better is drawn.</summary>
+    IOrb Piece(string id, double scale) => Orb("#8a5a2a", scale * 0.35);
 }
 
 /// <summary>A boss's own view: a pose (sleep, wake, walk, windup, cleave,
@@ -184,6 +196,8 @@ public interface IOrb
 {
     bool Visible { get; set; }
     void Place(double x, double y, double z, double spin, double scale);
+    /// <summary>Turned to face that way (yaw), where it can be.</summary>
+    void Face(double yaw) { }
     double Light { set; }
     void Dispose();
 }
@@ -316,6 +330,16 @@ public abstract class ZoneRuntime
     /// behind the fade, not the first time one walks on).</summary>
     public virtual IReadOnlyList<string> Creatures => Array.Empty<string>();
     public readonly List<Interactable> Interactables = new();
+    /// <summary>The choice the story is putting to her now, if any (it waits until she answers).</summary>
+    public StoryChoice? Choice { get; protected set; }
+    /// <summary>She answered the choice (a key, a click, the autopilot, a test): it goes, and its answer is
+    /// done. An answer it does not have is ignored.</summary>
+    public void Answer(string id)
+    {
+        if (Choice?.Answers.FirstOrDefault(a => a.Id == id) is not { } a) return;
+        Choice = null;
+        a.Act();
+    }
     /// <summary>People standing here, by id.</summary>
     public readonly Dictionary<string, NpcActor> Actors = new();
     public BattleHooks Hooks = new();

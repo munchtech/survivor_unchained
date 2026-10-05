@@ -26,9 +26,21 @@ CALLINGS = {"warden": "run_warden", "arcanist": "run_arcanist", "reaver": "run_r
 def sprint(rig, run):
     """The sprint for one of her runs (run_<calling>[_<weapon>])."""
     g, arms, weapon = RUNS[run]
+    # The arms drive further, but the elbow stays bent, as a sprinter's does:
+    # an arm flung out straight behind her has no hinge to read, and the
+    # forearm rolled over as it bent again.
+    I = rig.I
+    reach = 0.85 * sum(float(np.linalg.norm(rig.prest[I[b]] - rig.prest[I[a]]))
+                       for a, b in (("upperarm_r", "lowerarm_r"), ("lowerarm_r", "hand_r")))
+
+    def held(v):
+        v = np.array(v, float)
+        n = float(np.linalg.norm(v))
+        return tuple(v * min(1.0, reach / n))
+
     s = replace(g, arms=arms, speed=g.speed * 1.45, duty=g.duty - 0.05, lean=g.lean + 8, kick=g.kick + 0.06,
                 knee=g.knee + 0.06, reach=g.reach + 0.08, bob=g.bob + 0.01,
-                arm_fwd=tuple(np.array(g.arm_fwd) * [1, 0.8, 1.2]), arm_back=tuple(np.array(g.arm_back) * [1, 1.1, 1.25]))
+                arm_fwd=held(np.array(g.arm_fwd) * [1, 0.8, 1.2]), arm_back=held(np.array(g.arm_back) * [1, 1.1, 1.25]))
     return run_cycle("sprint" + run[3:], rig, s, {"weapon": weapon})
 
 
@@ -57,7 +69,7 @@ def stop(rig, calling, side):
         (15, p(0.20, 0.06, 0.0, 0, -0.05, 0.06, 4, brot=0), "auto"),
         (24, p(0.16, 0.00, 0.0, 0, -0.04, 0.03, 1, brot=0), "ease"),
     ]
-    return build(f"stop_{calling}_{side}", rig, keys, meta={"layer": "full"})
+    return build(f"stop_{calling}_{side}", rig, keys, meta={"layer": "full", "weapon": idle.IDLES[f"idle_{calling}"][2]})
 
 
 def clips(rig, want):

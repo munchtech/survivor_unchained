@@ -518,20 +518,25 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         Luck = B!.Stats.Get(Stat.Luck), Rarity = Chart.RarityBonus, Quantity = Chart.Quantity, Extra = extra, Tier = Chart.Tier, R = R,
     });
 
-    /// <summary>The people's material, as a day's kill drops it; a champion or keeper more.</summary>
+    /// <summary>The people's material, as their carriers leave it. In the atlas the Dig's lamplings carry
+    /// its picks and nails, old iron: their ember shards are the night's (docs/CRAFTING_DESIGN.md 20.1,
+    /// fire is the scars' and iron the atlas's; a lamplings' map paid 73 shards, a long scar's worth).</summary>
     static string? Material(Enemy e) => e.Def.Family switch
     {
         Family.Wolf => "wolf_pelt", Family.Boar => "boar_hide", Family.Kerchief => "kerchief_cloth",
-        Family.Lampling => "ember_shard", Family.Undead => "bone_dust", _ => null,
+        Family.Lampling => Crafting.Iron, Family.Undead => "bone_dust", _ => null,
     };
 
     IEnumerable<Loot> OnLoot(Enemy e)
     {
         var o = new List<Loot>();
         double q = Chart.Quantity;
+        // From what visibly carries it (crafting's measure, design 20.7): the ruler three, a keeper two, a
+        // pack's leader one, the rank and file none, more under the chart's quantity. A quarter of every
+        // kill paid 75-100 a map, where a night pays at most eight of a kind and a pin takes two.
         if (Material(e) is { } m)
         {
-            int n = e == boss ? 5 : carriers.ContainsKey(e.Id) ? 2 : R() < 0.25 * q ? 1 : 0;
+            int n = (int)Math.Floor((e == boss ? 3 : carriers.TryGetValue(e.Id, out int g) ? g >= 3 ? 2 : 1 : 0) * q + (e == boss || carriers.ContainsKey(e.Id) ? R() : 0));
             if (n > 0) o.Add(new Loot(PickupKind.Material, m, n));
         }
         if (e == boss)
@@ -576,8 +581,9 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     }
 
     /// <summary>The event's strongbox: three to five things at the map's level (the atlas's "the
-    /// keeper's due" adds), now and then a chart; flung out round it, and its opening shown.</summary>
-    void Strongbox(double x, double z)
+    /// keeper's due" adds), now and then a chart; flung out round it, and its opening shown
+    /// (told: false spills it unshown, for a whole map cleared at once).</summary>
+    void Strongbox(double x, double z, bool told = true)
     {
         var loot = Gear(DropSource.Strongbox, levelUp: 1);
         if (R() < 0.25 * Chart.Quantity) loot.Add(new Loot(PickupKind.Item, Charts.Ref(Charts.Roll(rng, Chart.Tier, Chart.People, Chart.RarityBonus)), 1, true, 2));
@@ -585,15 +591,36 @@ public sealed class MapRun : ZoneRuntime, IBossArena
         foreach (var l in loot)
         {
             double a = R() * Math.Tau, d = 1.2 + R() * 1.6;
-            B!.Spill(l with { Persistent = true }, x + Math.Cos(a) * d, z + Math.Sin(a) * d);
+            double px = x + Math.Cos(a) * d, pz = z + Math.Sin(a) * d;
+            if (B!.Spill(l with { Persistent = true }, px, pz) is { } pk) { px = pk.X; pz = pk.Z; }
             if (l.Ref == null || l.Kind == PickupKind.Material) continue;
             var chart = Charts.FromRef(l.Ref);
             var def = Items.Find(chart != null ? Charts.Item : l.Ref);
+            // Where it lies: its opening ends with each thing going down to its place on the ground.
             shown.Add(new ChestItem(ChestItemKind.Gear, def?.Id ?? l.Ref, chart != null ? Charts.Title(chart) : def?.Name ?? l.Ref, def?.Icon ?? "chest", 0, 0,
-                (Rarity)Math.Clamp(l.Rarity ?? 0, 0, 4), null, null));
+                (Rarity)Math.Clamp(l.Rarity ?? 0, 0, 4), null, null, px, pz));
         }
+        if (!told) return;
         opened++;
         G.Chest(new ChestOpened(x, z, opened, shown, "The strongbox", opened));
+    }
+
+    /// <summary>The whole map as a thorough survivor leaves it, at once: every pack and keeper set
+    /// down and felled by her hand, the event's strongbox spilled at its altar, the ruler called and
+    /// felled, and the gold drawn to her. What a map pays, seen without the walk (--clear T in the
+    /// game; probes of the atlas's economy).</summary>
+    public void ClearNow()
+    {
+        if (B == null || over || cleared) return;
+        foreach (var k in packs) if (!k.Placed) Place(k);
+        foreach (var a in altars) if (!a.Placed) Place(a);
+        foreach (var e in B.Enemies.Living().ToList())
+            if (e.Disposition == Disposition.Hostile && e.State != EnemyState.Dying) B.KillEnemy(e, true, null);
+        foreach (var a in altars) a.Lit = true;
+        if (altars.FirstOrDefault() is { } first) { eventLit = true; Strongbox(first.Area.X, first.Area.Z, told: false); }
+        if (!bossUp) Ruler(false);
+        if (boss is { } b) B.KillEnemy(b, true, null);
+        foreach (var p in B.Pickups.Items) if (p.Alive && p.Kind == PickupKind.Gold) p.Pulled = true;
     }
 
     void OnKill(Enemy e, bool byPlayer)

@@ -171,6 +171,7 @@ public partial class WorldScene : Node3D, IZoneLook
         {
             var evs = frameEvents;
             frameEvents = new();
+            using var _ = new Perf.Span(Perf.Part.Events);
             OnEvents(evs);
         }
     }
@@ -334,5 +335,14 @@ public partial class WorldScene : Node3D, IZoneLook
         var o = new OrbView(color, size);
         AddChild(o);
         return o;
+    }
+
+    public IOrb Piece(string id, double scale)
+    {
+        var node = Dressing.Piece(id) ?? (id.Split('/') is [var pack, var name] ? Pieces.For(pack, name, 0, 1) : null);
+        if (node == null) return Orb("#8a5a2a", scale * 0.35);
+        var v = new PieceView(node);
+        AddChild(v);
+        return v;
     }
 }

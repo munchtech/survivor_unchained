@@ -214,6 +214,34 @@ public class StoryNightTests
         Assert.True(n.Host.Result.WakesInTown);
     }
 
+    /// <summary>Let go, the night stands down at once while its result comes on its own beat: her weapons quiet,
+    /// nothing marked or thrown left, every creature still where it stands and none of them a foe. (It ran on
+    /// under the fall's shade, her weapons still hitting, until the result came up.)</summary>
+    [Fact]
+    public void A_night_let_go_stands_down_until_its_result()
+    {
+        var n = Hollow(before: j => j.World.Facts["chapter.done"] = true);
+        Step(n, 6);
+        Assert.Contains(n.B.Enemies.Living(), e => e.Disposition == Disposition.Hostile);
+        n.B.Player.Iframes = 0;
+        n.B.HurtPlayer(n.B.MaxHp * 9, School.Physical, "test", null);
+        // The host lets it go a second on (no rise past Act 1); then the result two seconds after that.
+        Step(n, 1.2, keep: false);
+        Assert.True(n.Zone.Over);
+        Assert.Null(n.Host.Result);
+        Assert.False(n.B.Combat);
+        var at = n.B.Enemies.Living().ToDictionary(e => e.Id, e => (e.X, e.Z));
+        Step(n, 1, keep: false, until: () => n.Host.Result != null);
+        Assert.DoesNotContain(n.B.Enemies.Living(), e => n.B.HostileToPlayer(e) || n.B.Targetable(e));
+        Assert.Empty(n.B.Blows);
+        Assert.Empty(n.B.Projectiles.Living());
+        foreach (var e in n.B.Enemies.Living().Where(e => at.ContainsKey(e.Id)))
+            Assert.True(Math.Abs(e.X - at[e.Id].X) + Math.Abs(e.Z - at[e.Id].Z) < 0.05, $"{e.Def.Id} moved");
+        Step(n, 3, keep: false);
+        Assert.NotNull(n.Host.Result);
+        Assert.False(n.Host.Result!.Won);
+    }
+
     [Fact]
     public void Past_Act_1_a_fall_loses_the_night_unless_she_carries_the_rise()
     {
@@ -306,10 +334,22 @@ public class StoryNightTests
         Step(n, 400, each: _ =>
         {
             if (boss.Alive && boss.TakenMul > 0) n.B.HitEnemy(boss, boss.MaxHp * 0.02, School.Physical, [Tag.Physical], new HitOpts { NoCrit = true });
-        }, until: () => n.Zone.Interactables.Any(i => i.Id == "story:let_go"));
-        var choice = n.Zone.Interactables.First(i => i.Id == (letGo ? "story:let_go" : "story:finish"));
-        Assert.Equal("Let him go", n.Zone.Interactables.First(i => i.Id == "story:let_go").Verb);
-        choice.Act();
+        }, until: () => n.Zone.Choice != null);
+        var c = n.Zone.Choice!;
+        Assert.Equal("Greymuzzle", c.Who);
+        Assert.Equal("Let him go, or finish it", c.Title);
+        Assert.Equal(["let_go", "finish"], c.Answers.Select(a => a.Id));
+        Assert.Equal("Let him go", c.Answers[0].Verb);
+        n.Zone.Answer("nonsense");
+        Assert.Same(c, n.Zone.Choice);
+        // Left waiting, it waits; nothing comes at her while she weighs it.
+        double hp = n.B.Player.Hp;
+        Step(n, 20);
+        Assert.Same(c, n.Zone.Choice);
+        Assert.Equal(hp, n.B.Player.Hp, 3);
+        Assert.Empty(n.B.Enemies.Living().Where(e => !e.Scripted && e.State != EnemyState.Dying && n.B.HostileToPlayer(e) && !e.Status.Has(StatusKind.Fear)).Select(e => e.Def.Id));
+        n.Zone.Answer(letGo ? "let_go" : "finish");
+        Assert.Null(n.Zone.Choice);
         Step(n, 12, until: () => n.Zone.Won);
         Assert.True(n.Zone.Won);
         Assert.Equal(letGo ? "spared" : "dead", n.J.World.Fact("greymuzzle").Str);

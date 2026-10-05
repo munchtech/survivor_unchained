@@ -26,6 +26,9 @@ namespace SurvivorUnchained.Play.Story;
 public sealed class HollowByNight : StoryFight
 {
     public override string Id => "hollow_by_night";
+    /// <summary>Built to this outline by arena art (Maps/Arenas/HollowNight.cs): its deadfalls, root
+    /// plate, reeds and cover are its own.</summary>
+    public override bool PlaceBuilt => true;
 
     // The way runs up the screen, away from the camera (which stands to the +z side): in at
     // the clough at the bottom, the den's mouth at the top of the picture, where the boss
@@ -74,6 +77,10 @@ public sealed class HollowByNight : StoryFight
     public override string? Cinematic => "c10";
     public override StoryBoss Boss(IStoryArena a) => new Greymuzzle(a);
     public override string[] Fires => ["fire:a", "fire:b", "fire:c", "fire:d", "fire:e", "fire:f"];
+    /// <summary>The Pack bites at its full weight: its wolves in twos and threes are the Hollow's danger, as the
+    /// Kerchiefs' pots and pikes are the Roost's. (With its named foes' fists slowed, three nights in a hundred
+    /// dipped under half on the way in at the story's usual three quarters: a stroll.)</summary>
+    public override double CrowdTeeth => 1.0;
     /// <summary>Maeca's fed fires (bane.fires): a deadfall fed burns longer.</summary>
     public override double Burns(IStoryArena a) => a.Fact("bane.fires") ? 35 : 20;
 
@@ -452,11 +459,16 @@ public sealed class HollowByNight : StoryFight
         const int Drives = 7;
         /// <summary>Her yearlings take blows for her while she runs her drive: she is open when she misses.</summary>
         const double Guarded = 0.08, Opened = 2.0, Pant = 2.5;
+        /// <summary>Her drive's lane, over her bite: the gap is hers, and caught in it is a wound. (At 4.5 her
+        /// fists did eight times the drive's harm; with a named foe's fists slowed, the stage hurt no one.)</summary>
+        const double DriveTeeth = 7;
 
         protected override void Open()
         {
             var (x, z) = A.Place["den"];
-            white = A.Foe("mb_whitethroat", x, z + 6, 9, "The Pack");
+            // She lives through her seven drives: a practised reader made her miss, and her pants (twice taken) ended
+            // the stage in under a minute, three drives short (the experience director's 1:40 drive at the screen).
+            white = A.Foe("mb_whitethroat", x, z + 6, 12, "The Pack");
             // Her teeth between drives are not the lesson: the drive is (its lane keeps its weight).
             if (white != null) white.Damage *= 0.35;
             if (white != null)
@@ -473,6 +485,15 @@ public sealed class HollowByNight : StoryFight
         /// does not think, and a pant must not last as long as a stun-lock.)</summary>
         bool Run(Enemy e, double dt)
         {
+            // The first drive's lesson is said while she crouches across from her, before its lane is marked.
+            if (sayT > 0)
+            {
+                e.Vx = e.Vz = 0;
+                e.State = EnemyState.Windup;
+                e.Anim = EnemyAnim.Windup;
+                e.Facing = Math.Atan2(B.Player.Z - e.Z, B.Player.X - e.X);
+                return true;
+            }
             if (pantT > 0)
             {
                 e.Vx = e.Vz = 0;
@@ -532,19 +553,38 @@ public sealed class HollowByNight : StoryFight
                 double a = away + (k / (double)Math.Max(1, n - 1) - 0.5) * Math.PI * arc;
                 A.Group("wolf", 1, p.X + Math.Cos(a) * 10, p.Z + Math.Sin(a) * 10, 0.4);
             }
+            // The first is a lesson: said first, alone, while she crouches (a second to read it before anything
+            // moves), then marked longer. The words and the lane at once were four things to read in 1.7 s.
+            if (drives++ == 0)
+            {
+                A.Say("The drive", "Out of her line, into the wolves", "danger");
+                sayT = 1.0;
+                return;
+            }
             A.Bark(w.X, w.Z, "A rising howl: the Pack wheels.", null);
-            // The first is a lesson: marked longer, and said.
-            mark = drives == 0 ? 1.7 : 1.0;
-            if (drives == 0) A.Say("The drive", "The gap is where she runs: go through the wolves", "danger");
-            drives++;
+            Mark(1.0);
+        }
+
+        /// <summary>A second's lesson before the first drive's lane (0: none waiting).</summary>
+        double sayT;
+
+        /// <summary>Her lane, aimed at her now, and her run down it after `seconds`.</summary>
+        void Mark(double seconds)
+        {
+            var p = B.Player;
+            var w = white!;
+            mark = seconds;
             double dx = p.X - w.X, dz = p.Z - w.Z, d = Math.Max(0.5, Math.Sqrt(dx * dx + dz * dz));
             double len = Math.Min(18, d + 6);
+            // Her run ends inside the place: run out past its wall, she stood outside it out of reach, and the
+            // stage never ended (one night in thirty, in the harness).
+            while (len > 3 && !A.Place.Inside(w.X + dx / d * len, w.Z + dz / d * len, 1.5)) len -= 0.5;
             laneX0 = w.X; laneZ0 = w.Z; laneX1 = w.X + dx / d * len; laneZ1 = w.Z + dz / d * len;
             hit = false;
             lane = B.Blow(new Battle.EnemyBlow
             {
                 Shape = TelegraphShape.Line, X = laneX0, Z = laneZ0, X1 = laneX1, Z1 = laneZ1, Width = 2.4, Delay = mark,
-                Damage = w.Damage * 4.5, Source = w.Def.Name, From = w, Label = "The drive",
+                Damage = w.Damage * DriveTeeth, Source = w.Def.Name, From = w, Label = "The drive",
             });
             // Missed if she is out of the lane when it lands (a dash through it is a miss as well).
             var marked = lane;
@@ -562,7 +602,8 @@ public sealed class HollowByNight : StoryFight
         protected override void Tick(double dt)
         {
             if (!Up(this.white, whiteSeed) || this.white is not { } white) { Done = true; return; }
-            if (!called && white.Hp < white.MaxHp * 0.25 && runT < 0 && pantT <= 0)
+            if (sayT > 0 && (sayT -= dt) <= 0) Mark(1.7);
+            if (!called && white.Hp < white.MaxHp * 0.25 && runT < 0 && pantT <= 0 && sayT <= 0)
             {
                 called = true;
                 var p = B.Player;
@@ -585,7 +626,7 @@ public sealed class HollowByNight : StoryFight
             }
             A.Goal = Ringed ? null : (white!.X, white.Z);
             if (pantT > 0 && (pantT -= dt) <= 0 && white.State == EnemyState.Recover) white.State = EnemyState.Active;
-            if (!spent && drives >= Drives && runT < 0 && pantT <= 0)
+            if (!spent && drives >= Drives && runT < 0 && pantT <= 0 && sayT <= 0)
             {
                 spent = true;
                 A.Say("Whitethroat is spent", "She has nothing left to run with", "boon");
@@ -599,7 +640,7 @@ public sealed class HollowByNight : StoryFight
                 A.Say("The whole Pack wheels", "Wider and quicker: still through the wolves, never the gap", "danger");
             }
             driveT -= dt;
-            if (!spent && driveT <= 0 && runT < 0 && pantT <= 0)
+            if (!spent && driveT <= 0 && runT < 0 && pantT <= 0 && sayT <= 0)
             {
                 driveT = wheeled ? 9 : 11;
                 Drive_();

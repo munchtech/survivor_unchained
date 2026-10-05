@@ -42,6 +42,8 @@ public sealed class RangedSpec
     /// <summary>Seconds planted and aiming before it looses (a crossbow's kneel): its aim is fixed
     /// as it begins, so stepping off the line in time is a dodge, as a lunge's wind-up is. 0: none.</summary>
     public double Aim;
+    /// <summary>Its own copy (a story's named foe throwing further than the table's).</summary>
+    public RangedSpec Clone() => (RangedSpec)MemberwiseClone();
 }
 
 public sealed record LungeSpec(double Range, double Cooldown, double Windup, double Time, double Speed);
@@ -332,6 +334,13 @@ public static class Enemies
             Trail = new(0.6, 1.5, 4, 0.25, School.Frost), Bite = StatusKind.Chill, Elite = true, Miniboss = true, Loot = "miniboss",
             Lesson = "The river's cold walks with her. Keep off her wet ground.",
             Note = "The river has had her longer than the ford's new dead, and the weed has grown through her. She brings the cold up out of the water with her, and it stays where she walks." },
+        // The Legion's standard, planted (the Vault's hall, the Barrow Lord's testudo): a part, not a fighter. While
+        // it stands the dead round it are quicker and harder to hurt; holy and fire break it the sooner.
+        new() { Id = "legion_standard", Name = "The Standard", Family = Family.Undead, Faction = Faction.Dead, Visual = "view:standard",
+            Health = 260, Speed = 0, Damage = 0, Radius = 0.6, Mass = 999, Xp = 6, Behavior = Behavior.Stationary, AttackEvery = 1e9,
+            Resists = new() { [School.Holy] = -0.5, [School.Fire] = -0.5, [School.Frost] = 0.25, [School.Shadow] = 0.35 },
+            Aura = new(6, 4.5, 7, Haste: 1.3, Ward: 0.25),
+            Note = "VII on a pole, on a rag that was red once. The dead never followed a man: they followed this." },
         new() { Id = "mb_ford_bell", Name = "The Signifer", Family = Family.Undead, Faction = Faction.Dead, Visual = "skeleton_mage", Scale = 1.5, Tint = (1.2, 1.0, 0.7), Glow = 0.1,
             Health = 520, Speed = 2.2, Damage = 9, Radius = 0.8, Mass = 5, Xp = 40, Resists = Undead, Behavior = Behavior.Ranged,
             Aura = new(7, 11, 4.5, Haste: 1.3, Ward: 0.25, Word: "Signa!"), Raise = new(8, 3, "risen", 8), Elite = true, Miniboss = true, Loot = "miniboss",
@@ -384,7 +393,7 @@ public static class Enemies
             Note = "A tunnel-gang's gaffer, as broad as the tunnels. It goes under, comes up beside you, and brings its gang up with it." },
 
         // The Kerchiefs.
-        new() { Id = "levy_crossbow", Name = "Levy Crossbow", Family = Family.Kerchief, Faction = Faction.Kerchief, Visual = "kerchief_hooded", Scale = 0.98, Tint = (0.8, 0.85, 0.95),
+        new() { Id = "levy_crossbow", Name = "Levy Crossbow", Family = Family.Kerchief, Faction = Faction.Kerchief, Visual = "kerchief_crossbow", Scale = 0.98, Tint = (0.8, 0.85, 0.95),
             Health = 28, Speed = 3.0, Damage = 7, Radius = 0.48, Xp = 6, Gold = 2, Resists = Kerchief, Behavior = Behavior.Ranged,
             Ranged = new() { Range = 10, Cooldown = 3.6, Speed = 12, School = School.Physical, Count = 3, Spread = 0.22, Art = "bolt_bone", Aim = 0.55 }, Loot = "kerchief",
             Note = "The levy kept its crossbows when it lost everything else. Three bolts in a fan, and gaps between them wide enough to stand in." },
@@ -414,7 +423,7 @@ public static class Enemies
             Guard = new(1.8, 0.8), Slam = new(4.5, 6, 1.1, 2.4, 1.6, Word: "Down!"), Elite = true, Miniboss = true, Loot = "miniboss", AttackEvery = 1.3,
             Lesson = "Nothing goes through that door from the front. Go round it, and off the ground it brings down.",
             Note = "Carries a barn door. The barn it came off is gone, with the farm and the rest of the street, and he will not put down what is left." },
-        new() { Id = "mb_levy_sergeant", Name = "The Levy Sergeant", Family = Family.Kerchief, Faction = Faction.Kerchief, Visual = "kerchief_hooded", Scale = 1.55, Tint = (0.85, 0.85, 1.0),
+        new() { Id = "mb_levy_sergeant", Name = "The Levy Sergeant", Family = Family.Kerchief, Faction = Faction.Kerchief, Visual = "kerchief_crossbow", Scale = 1.55, Tint = (0.85, 0.85, 1.0),
             Health = 480, Speed = 3.0, Damage = 10, Radius = 0.78, Mass = 5, Xp = 40, Gold = 15, Resists = Kerchief, Behavior = Behavior.Ranged,
             Ranged = new() { Range = 11, Cooldown = 2.8, Speed = 13, School = School.Physical, Count = 5, Spread = 0.18, Art = "bolt_bone", Aim = 0.55 },
             Summon = new(15, 3, "levy_crossbow", 1.2, SpawnStyle.Walk, 12, AtTarget: true, Max: 9, Word: "Loose!"), Elite = true, Miniboss = true, Loot = "miniboss",

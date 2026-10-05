@@ -21,6 +21,8 @@ public partial class EdgeMarks : Control
 
     public EdgeMarks() { MouseFilter = MouseFilterEnum.Ignore; }
 
+    static GradientTexture2D? soft;
+
     public void Show(IEnumerable<Beyond> list)
     {
         marks.Clear();
@@ -45,6 +47,25 @@ public partial class EdgeMarks : Control
             var dir = d.Normalized();
             float a = Mathf.Lerp(0.7f, 1f, m.Near);
             var c = m.Color with { A = a };
+            // A Legendary lying untaken: UI art's amber chevron, turned to point at it, breathing with
+            // the pillar's light, its glow thrown round it (docs/design/LOOT_DESIGN.md §8.2).
+            if (m.Glyph == "legendary" && UiArt.Art("hud/pointer_legendary.png") is { } chevron)
+            {
+                float t = Time.GetTicksMsec() / 1000f, breath = 0.85f + 0.15f * Mathf.Sin(t * 3.2f);
+                var s = chevron.GetSize() * (1.4f + 0.1f * Mathf.Sin(t * 3.2f));
+                // (a soft light, never a disc with an edge)
+                soft ??= new GradientTexture2D
+                {
+                    Width = 64, Height = 64, Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.5f), FillTo = new Vector2(1, 0.5f),
+                    Gradient = new Gradient { Colors = new[] { Colors.White, Colors.White with { A = 0.3f }, Colors.White with { A = 0 } }, Offsets = new[] { 0f, 0.45f, 1f } },
+                };
+                DrawTextureRect(soft, new Rect2(p - new Vector2(46, 46), new Vector2(92, 92)), false, m.Color with { A = 0.4f * breath });
+                DrawSetTransform(p, dir.Angle());
+                DrawTextureRect(chevron, new Rect2(-s / 2, s), false, Colors.White with { A = breath });
+                DrawSetTransform(Vector2.Zero);
+                QueueRedraw();
+                continue;
+            }
             // The arrow, pointing out.
             var tip = p + dir * 30;
             var side = new Vector2(-dir.Y, dir.X) * 9;

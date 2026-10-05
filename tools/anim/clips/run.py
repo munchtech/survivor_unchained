@@ -35,19 +35,36 @@ def _perp(up_deg, out=0.0):
     return tuple(v / np.linalg.norm(v))
 
 
-def blade_carry(back=105, fwd=45, out=-0.3):
-    """A blade carried in the swinging hand, angled up from straight ahead by
-    `fwd` degrees as the hand comes forward and by `back` (past upright,
-    trailing over the shoulder) as it goes behind, so it never passes
-    through her; tipped out by `out`."""
-    lo, hi = back, fwd
+def blade_carry(out=-1.0, up_back=0.35, up_fwd=0.5, swing=None):
+    """A blade carried in the swinging hand as a running hand carries one:
+    the wrist straight in the grip and the forearm rolled so the thumb side
+    faces out and up (`out`: -1 her right, +1 her left), so the blade rides
+    out and ahead of her, rising as the fist comes through and dipping as
+    it goes back, never across her legs. `swing`: the fist's own path (back,
+    forward: from the shoulder, in the chest's frame, as for her right hand),
+    held steadier than the free arm's: a hand behind her with the wrist
+    straight can only point a blade down or across her, so a long blade's
+    hand stays at her side. (Keyed by direction, up over her shoulder behind
+    her, it asked a wrist bent back past what one can, and the hand flapped
+    from one side to the other.)"""
     def f(ph, k, hand):
-        a = lo + (hi - lo) * k
         hand = dict(hand)
-        hand.update({"blade": _dir(a, out), "knuckles": _perp(a, out), "frame": "chest", "twist": 0.5})
+        hand.update({"thumb": (out, up_back + (up_fwd - up_back) * k, 0.0), "frame": "chest", "twist": 0.5})
+        if swing is not None:
+            e = k * k * (3 - 2 * k)
+            back, fwd = np.array(swing[0], float), np.array(swing[1], float)
+            v = (back + (fwd - back) * e) * [-out, 1, 1]
+            v[1] += 0.03 * math.sin(math.pi * k)
+            hand["arc"] = arc_of(v)
         hand["pole"] = tuple(np.array(hand["pole"]))
         return hand
     return f
+
+
+# The long blades' hands: the sword at her side and ahead; the reaver's axe
+# pumped harder, but still never far behind her.
+SWORD_SWING = ((0.0, -0.34, 0.0), (0.02, -0.20, 0.27))
+AXE_SWING = ((0.02, -0.30, -0.08), (0.0, -0.10, 0.31))
 
 
 def shield_guard(side="l"):
@@ -99,13 +116,13 @@ STALKER = Gait(frames=20, speed=SPEED, duty=0.34, drop=0.14, bob=0.035, lean=26,
 
 # The runs the game asks for: calling and what is in hand.
 RUNS = {
-    "run_warden": (WARDEN, {"r": blade_carry(105, 45, -0.3), "l": shield_guard()}, "sword+shield"),
-    "run_reaver": (REAVER, {"r": blade_carry(110, 55, -0.3)}, "axe"),
-    "run_reaver_axes": (REAVER, {"r": blade_carry(110, 55, -0.3), "l": blade_carry(110, 55, 0.3)}, "axes"),
+    "run_warden": (WARDEN, {"r": blade_carry(swing=SWORD_SWING), "l": shield_guard()}, "sword+shield"),
+    "run_reaver": (REAVER, {"r": blade_carry(up_fwd=0.75, swing=AXE_SWING)}, "axe"),
+    "run_reaver_axes": (REAVER, {"r": blade_carry(up_fwd=0.75, swing=AXE_SWING), "l": blade_carry(1.0, up_fwd=0.75, swing=AXE_SWING)}, "axes"),
     "run_arcanist": (ARCANIST, {"r": staff_hold()}, "staff"),
-    "run_arcanist_wand": (ARCANIST, {"r": blade_carry(100, 20, -0.2)}, "wand"),
+    "run_arcanist_wand": (ARCANIST, {"r": blade_carry()}, "wand"),
     "run_stalker": (STALKER, {"r": crossbow_low()}, "crossbow"),
-    "run_stalker_daggers": (STALKER, {"r": blade_carry(115, 25, -0.25), "l": blade_carry(115, 25, 0.25)}, "daggers"),
+    "run_stalker_daggers": (STALKER, {"r": blade_carry(), "l": blade_carry(1.0)}, "daggers"),
 }
 
 

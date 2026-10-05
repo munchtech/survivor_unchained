@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using SurvivorUnchained.Maps;
 using SurvivorUnchained.Rpg;
@@ -39,6 +40,14 @@ public class MapSpoilsTests
         Assert.Equal(360, s.Gold);
         // What she walked in with is not what the map paid.
         Assert.Empty(MapSpoils.Between(after, after).Gear);
+        // What the end of the map sent to Rook's storeroom is still its pay, and the page knows where it went.
+        var shelf = new List<ItemInstance?> { null, null };
+        var sent = Inventory.Make(after, "chain_shirt", rarity: 3);
+        var later = new List<ItemInstance?> { sent, null };
+        var t = MapSpoils.Between(before, after, shelf, later);
+        Assert.Contains(t.Gear, g => g.Uid == sent.Uid);
+        Assert.Contains(sent.Uid, t.Stored);
+        Assert.Empty(MapSpoils.Between(after, after, later, later).Gear);
     }
 
     [Fact]
@@ -68,5 +77,8 @@ public class MapSpoilsTests
         Assert.Equal("The Hollow Dene, tier 2: cleared, the first time: a point for the atlas", MapSpoils.AtlasLine(c, true, true));
         Assert.Equal("The Hollow Dene, tier 2: cleared", MapSpoils.AtlasLine(c, true, false));
         Assert.Equal("The Hollow Dene, tier 2: closed, Gutterwick still standing", MapSpoils.AtlasLine(c, false, false));
+        // (a ruler with a title is named mid-sentence as one: "the Barrow Lord", never "The Barrow Lord")
+        var d = new Chart { Tier = 1, People = "dead", Name = "The Lampless Howes" };
+        Assert.Equal("The Lampless Howes, tier 1: closed, the Barrow Lord still standing", MapSpoils.AtlasLine(d, false, false));
     }
 }

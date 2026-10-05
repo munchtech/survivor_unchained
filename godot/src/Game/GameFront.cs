@@ -338,11 +338,25 @@ public partial class Game
         });
     }
 
+    /// <summary>--load FILE: a journey read from a save file as it stands (pictures of a later day:
+    /// the journal written, people met), and never saved over (Save keeps out of it).</summary>
+    void LoadFile(string path)
+    {
+        var d = Saves.Parse(System.IO.File.ReadAllText(path));
+        if (d == null) return;
+        Journey = Journey.From(d, 0);
+        Hook();
+        EnterZone(d.Location.Zone == "map" ? "waystation" : d.Location.Zone, null, new Arrival(d.Location.X, d.Location.Z, d.Location.Facing));
+        hud.Fade(0, 0.5);
+    }
+
     public void QuitToTitle()
     {
         Save("quit");
         screens.Close();
         hudMode = null;
+        // (notices held over a fall or a chest are not carried into the next journey)
+        hud.HoldToasts = false;
         hud.Fade(1, 0.6);
         Wait(0.65, ShowTitle);
     }

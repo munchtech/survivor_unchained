@@ -34,14 +34,24 @@ public class CraftingEconomy(ITestOutputHelper log)
         public int Crafts, FirstCraftDay = -1, WeaponRare = -1, WeaponEpic = -1;
         public readonly List<int> CraftsByDay = new();
         public readonly List<int> ShardsByNight = new();
-        public int Worked;
+        public int Worked, IronLeft, PeoplesLeft;
         public readonly Dictionary<string, int> ByPiece = new();
         public string Log = "";
     }
 
     /// <summary>One Act 1, <paramref name="days"/> long, a night every day; <paramref name="championGold"/>
     /// scales the gold arena champions drop (1: today).</summary>
-    static Tally Play(int days, int[] kerchiefGold, uint seed, bool stay)
+    /// <summary>The loot lead's drop rule (a9a9c345a35e1fcad): a carrier's roll is gear 45% of the time; a roll that is
+    /// not gear may give one of its people's material or an old iron (the rates crafting asked for, below), the boss
+    /// its people's material besides. False: the arena's rule before it (gear 60%, nothing else).</summary>
+    // The rates asked of the loot lead (measured here, October 2026): a non-gear roll gives one of the people's
+    // material 10% of the time and an old iron 20%, the boss one material. At 1 and 50% (and the boss 2) iron and
+    // the people's material piled up unspent (85 and 166 by Act 1's end, against 59 and 62 before fewer drops);
+    // at none, iron fell to 27 and every target still held. ECON_MAT, ECON_IRON, ECON_BOSS sweep them.
+    static readonly double MaterialChance = Env("ECON_MAT", 0.1), IronChance = Env("ECON_IRON", 0.2), BossMaterial = Env("ECON_BOSS", 1);
+    static double Env(string k, double d) => Environment.GetEnvironmentVariable(k) is string s ? double.Parse(s, System.Globalization.CultureInfo.InvariantCulture) : d;
+
+    static Tally Play(int days, int[] kerchiefGold, uint seed, bool stay, bool fewer = true)
     {
         var a = Callings.Archetype("warden");
         var j = Journey.Begin(new CreationChoice { Name = "Ashe", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0] }, seed);
@@ -70,8 +80,15 @@ public class CraftingEconomy(ITestOutputHelper log)
             gold += people == "kerchiefs" ? kerchiefGold[tier - 1] : OtherGold[tier - 1];
             var drops = new List<ItemInstance>();
             int carriers = 20;
+            string material = people switch { "pack" => "wolf_pelt", "dead" => "bone_dust", "lamplings" => "ember_shard", _ => "kerchief_cloth" };
             for (int k = 0; k < carriers; k++)
-                if (rng.Next() < 0.6) drops.Add(Inventory.Make(j.Ch, PlainGear[rng.Int(0, PlainGear.Length - 1)], rarity: Rarity(rng, tier, 1), seed: (uint)rng.Int(1, int.MaxValue - 1), dropped: true));
+                if (rng.Next() < (fewer ? 0.45 : 0.6)) drops.Add(Inventory.Make(j.Ch, PlainGear[rng.Int(0, PlainGear.Length - 1)], rarity: Rarity(rng, tier, 1), seed: (uint)rng.Int(1, int.MaxValue - 1), dropped: true));
+                else if (fewer)
+                {
+                    if (rng.Next() < MaterialChance) Give(j, material, 1);
+                    if (rng.Next() < IronChance) Give(j, Crafting.Iron, 1);
+                }
+            if (fewer && BossMaterial > 0) Give(j, material, (int)BossMaterial);
             for (int k = 0; k < 2 + tier / 2; k++)
                 drops.Add(Inventory.Make(j.Ch, PlainGear[rng.Int(0, PlainGear.Length - 1)], rarity: Math.Max(1, Rarity(rng, tier, 1.5)), seed: (uint)rng.Int(1, int.MaxValue - 1), dropped: true));
             // By day: a few of the Verge's beasts, the quests' gold, the story's prices.
@@ -118,6 +135,8 @@ public class CraftingEconomy(ITestOutputHelper log)
         }
         // Fully worked by the forge: worked three times or more, every seam filled and at the piece's cap
         // (a lucky drop already at its cap is the world's doing, not the forge's).
+        t.IronLeft = Inventory.Count(j.Ch, Crafting.Iron);
+        t.PeoplesLeft = new[] { "wolf_pelt", "boar_hide", "bone_dust", "kerchief_cloth" }.Sum(m => Inventory.Count(j.Ch, m));
         t.Worked = Items.EquipSlots.Select(s => j.Ch.Equipment[s]).Count(it => it != null && Crafting.Seams(it) > 0 && t.ByPiece.GetValueOrDefault(it.Uid) >= 3 && Crafting.OpenSeams(it) == 0
             && it.Affixes.All(x => Items.Affix(x.Id) is { } d && (d.Kindled != null || d.Grants != null || x.Tier >= Crafting.Cap(it))));
         return t;
@@ -179,14 +198,18 @@ public class CraftingEconomy(ITestOutputHelper log)
         Assert.Equal(0.07, rules.ChampionGold, 6);
         Assert.Equal(0.0015, rules.FodderGold, 6);
         var runs = Enumerable.Range(0, 8).Select(s => Play(days, KerchiefGold, (uint)(101 + s * 7), s % 2 == 0)).ToList();
+        // Before the loot lead's fewer drops (every carrier's roll gear 60% of the time, nothing else), for comparison.
+        var more = Enumerable.Range(0, 8).Select(s => Play(days, KerchiefGold, (uint)(101 + s * 7), s % 2 == 0, fewer: false)).ToList();
         // What the old rates paid a Kerchief night (champions in full, fodder at 2%), for comparison.
         var before = Enumerable.Range(0, 8).Select(s => Play(days, [2570, 3320, 2796], (uint)(101 + s * 7), s % 2 == 0)).ToList();
         void Report(string name, List<Tally> rs) => log.WriteLine(
             $"{name}: first craft day {Med(rs.Select(r => r.FirstCraftDay))}, crafts a day {Med(rs.SelectMany(r => r.CraftsByDay)):0.0} (max {rs.SelectMany(r => r.CraftsByDay).Max()}), " +
             $"weapon rare day {Med(rs.Select(r => r.WeaponRare))}, epic day {Med(rs.Select(r => r.WeaponEpic))}, fully worked {Med(rs.Select(r => r.Worked))}, " +
-            $"gold spent {Med(rs.Select(r => r.Spent / Math.Max(1, r.Earned))):0%} of {Med(rs.Select(r => r.Earned)):0} earned, shards a night {Med(rs.SelectMany(r => r.ShardsByNight))}");
+            $"gold spent {Med(rs.Select(r => r.Spent / Math.Max(1, r.Earned))):0%} of {Med(rs.Select(r => r.Earned)):0} earned, shards a night {Med(rs.SelectMany(r => r.ShardsByNight))}, " +
+            $"left at the end: iron {Med(rs.Select(r => (double)r.IronLeft)):0}, the people's {Med(rs.Select(r => (double)r.PeoplesLeft)):0}");
         Report("before the arena's gold was cut", before);
-        Report("an arena's gold today", runs);
+        Report("before fewer drops", more);
+        Report("today (fewer drops, materials and iron in their place)", runs);
         log.WriteLine(runs[0].Log);
 
         // The targets (design 13.3), on what an arena pays now (a Kerchief night about 350-375 gold;

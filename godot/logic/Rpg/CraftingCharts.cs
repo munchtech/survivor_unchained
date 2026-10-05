@@ -34,6 +34,9 @@ public static partial class Crafting
     /// <summary>The heat a chart has left (one from before charts had heat is full).</summary>
     public static int ChartHeatLeft(ItemInstance it) => it.Heat ?? (it.Chart is { } c ? ChartHeat(c) : 0);
 
+    /// <summary>"the Pack's ground", "the Lamplings' ground".</summary>
+    public static string Ground(string people) => MapOffers.People(people).Name is var n && n.EndsWith("s") ? $"{n}' ground" : $"{n}'s ground";
+
     /// <summary>The material a people's ground pays, which pins a mod on its chart (a Pack chart: wolf pelts).</summary>
     public static string PeoplesMaterial(string people) =>
         Rules.Night.Peoples.GetValueOrDefault(people)?.FirstOrDefault()?.Material ?? Shard;
@@ -122,7 +125,7 @@ public static partial class Crafting
         q.Donor = from?.Uid;
         q.After = $"{Math.Min(r.QualityMax, c.Quality + r.QualityStep)}% more found";
         if (c.Quality >= r.QualityMax) q.Blocked = $"As full of notes as a chart gets: {r.QualityMax}% more found.";
-        else if (from?.Chart is not { } f || from.Uid == it.Uid || f.People != c.People) q.Blocked = $"Another chart of {MapOffers.People(c.People).Name}'s ground to write from.";
+        else if (from?.Chart is not { } f || from.Uid == it.Uid || f.People != c.People) q.Blocked = $"Another chart of {Ground(c.People)} to write from.";
         else if (!Inventory.Holds(x.Ch, from.Uid)) q.Blocked = "Carry it with you.";
         Afford(x, q);
         return q;

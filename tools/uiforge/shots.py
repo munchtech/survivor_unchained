@@ -1,6 +1,6 @@
 """Pictures of every screen the interface art touches, at 1920x1080.
 
-    python tools/uiforge/shots.py [NAME ...] [--prefix P] [--godot EXE]
+    python tools/uiforge/shots.py [NAME ...] [--prefix P] [--res 2560x1440] [--no-import]
 
 Runs the game once per screen (docs/UI_ART_BRIEF.md section 6) and leaves
 the pictures in godot/.shots/ as P_NAME.png. With no names, all of them.
@@ -44,13 +44,19 @@ SCREENS = {
 }
 
 
+RES = "1920x1080"
+
+
 def run(name, prefix):
     secs, args = SCREENS[name]
     shot = f"{prefix}_{name}" if prefix else name
-    cmd = [GODOT, "--path", os.path.join(ROOT, "godot"), "--resolution", "1920x1080", "--",
+    cmd = [GODOT, "--path", os.path.join(ROOT, "godot"), "--resolution", RES, "--",
            "--shot", shot, "--seconds", str(secs)] + args
-    r = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
     path = os.path.join(ROOT, "godot", ".shots", shot + ".png")
+    # A run that fails (out of memory on a busy machine) must not pass off the last picture as new.
+    if os.path.exists(path):
+        os.remove(path)
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
     ok = os.path.exists(path)
     print(f"{name:12} {'ok ' if ok else 'MISSING'} {path}", flush=True)
     if not ok:
@@ -64,9 +70,17 @@ def main():
         i = args.index("--prefix")
         prefix = args[i + 1]
         del args[i:i + 2]
+    global RES
+    if "--res" in args:
+        i = args.index("--res")
+        RES = args[i + 1]
+        del args[i:i + 2]
+    skip = "--no-import" in args
+    args = [a for a in args if a != "--no-import"]
     names = args or list(SCREENS)
     # Imported art loads from its import, so changed art must be imported again first.
-    subprocess.run([GODOT, "--headless", "--path", os.path.join(ROOT, "godot"), "--import"], capture_output=True, timeout=900)
+    if not skip:
+        subprocess.run([GODOT, "--headless", "--path", os.path.join(ROOT, "godot"), "--import"], capture_output=True, timeout=900)
     for n in names:
         run(n, prefix)
 

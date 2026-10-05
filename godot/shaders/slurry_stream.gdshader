@@ -56,7 +56,9 @@ void fragment() {
 
 	// The slurry's light: threads drawn out along the current, slow, in the middle.
 	float mid = smoothstep(0.1, 0.85, UV2.x);
-	vec2 tp = vec2(UV.x * 0.55, UV.y * 0.07 - TIME * speed * 0.035);
+	// (Drawn out two to one, no more: stretched further they read from the camera as streaks of
+	// speed, not slurry curling in a slow current.)
+	vec2 tp = vec2(UV.x * 0.4, UV.y * 0.2 - TIME * speed * 0.035);
 	float thread = texture(noise_tex, tp).r * 0.65 + texture(noise_tex, tp * vec2(2.3, 1.7) + 0.41).g * 0.35;
 	thread = smoothstep(0.55, 0.82, thread);
 	float pulse = 0.75 + 0.25 * sin(TIME * 0.6 + UV.y * 0.08);

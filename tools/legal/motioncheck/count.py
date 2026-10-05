@@ -19,6 +19,7 @@ import os
 import sys
 
 import numpy as np
+from scipy import ndimage
 from PIL import Image, ImageDraw, ImageFont
 
 folder = sys.argv[1]
@@ -141,6 +142,7 @@ def place(xs, ys, tips, bones):
 
 os.makedirs(os.path.join(folder, 'crops'), exist_ok=True)
 rows = []
+dents = {}  # outfit: [(px, frame name, (x, y))], each frame's largest patch of deep-tucked skin
 # best[outfit][(side, edge)] = (cm, frame name, (x, y)); edge '' is the breast's closest of all
 best = {}
 for f in sorted(glob.glob(os.path.join(folder, '*_[0-9][0-9].png'))):
@@ -170,6 +172,13 @@ for f in sorted(glob.glob(os.path.join(folder, '*_[0-9][0-9].png'))):
                 if key not in ob or ds[k] < ob[key][0]:
                     ob[key] = (float(ds[k]), name, (int(xs[k]), int(ys[k])))
     rows.append((name, areola_px, gen_px, deep_px, ring_px, dmin, per.get('breast_l', math.inf), per.get('breast_r', math.inf)))
+    deep = (depth > 0.5) | tnear
+    if deep.sum() >= least:
+        lab, n = ndimage.label(deep)
+        sizes = ndimage.sum(deep, lab, range(1, n + 1))
+        k = int(np.argmax(sizes)) + 1
+        cy, cx = ndimage.center_of_mass(deep, lab, k)
+        dents.setdefault(outfit, []).append((int(sizes[k - 1]), name, (int(cx), int(cy))))
     if areola_px >= least or gen_px >= least or deep_px >= least:
         fy, fx = np.nonzero((dist < AREOLA) | gen | (depth > 0.5) | tnear)
         box = (max(fx.min() - 70, 0), max(fy.min() - 70, 0), min(fx.max() + 70, im.width), min(fy.max() + 70, im.height))
@@ -217,7 +226,13 @@ for outfit in sorted({r[0].split('_')[0] for r in rows}):
             if (s, e) in ob:
                 v, nm, _ = ob[(s, e)]
                 lines.append('      %-12s %s  in %s' % (e, margin(v), nm))
-    for r in [r for r in rs if r in af or r in gf or r in tf][:16]:
+    for i, (px, nm, loc) in enumerate(sorted(dents.get(outfit, []), reverse=True)[:6]):
+        lines.append('  tucked skin in view: %d px around (%d, %d) in %s (crop tuck_%s_%d.png)' % (px, loc[0], loc[1], nm, outfit, i))
+        im = Image.open(os.path.join(folder, nm)).convert('RGB')
+        x, y = loc
+        labelled(im, (max(x - 120, 0), max(y - 90, 0), min(x + 120, im.width), min(y + 90, im.height)),
+                 os.path.join(folder, 'crops', 'tuck_%s_%d.png' % (outfit, i)), ring=loc)
+    for r in [r for r in rs if r in af or r in gf][:16]:
         lines.append('  flagged: %s (areola %d px, genital %d px, tucked %d px)' % (r[0], r[1], r[2], r[3]))
 open(os.path.join(folder, 'summary.txt'), 'w').write('\n'.join(lines) + '\n')
 print('\n'.join(lines))

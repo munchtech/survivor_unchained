@@ -16,9 +16,12 @@ namespace SurvivorUnchained.Balance;
 /// <summary>One story night to play: which fight, who, how they draft, how hard; whether it is past
 /// Act 1 (no rise of its own), and what she chooses at the boss's side where the story lets her.</summary>
 public sealed record StoryRunSpec(int Seed, string Calling, string Policy, string Fight = "hollow", int Tier = 1, int Level = 1, bool Deft = false,
-    bool Act2 = false, string Choice = "spare", double Cap = 25, bool Crates = false, bool Naive = false)
+    bool Act2 = false, string Choice = "spare", double Cap = 25, bool Crates = false, bool Naive = false, bool Learned = false, bool Banes = false)
 {
-    public string Key => $"{Fight}/{Calling}/{Policy}/t{Tier}/s{Seed}" + (Level > 1 ? $"/L{Level}" : "") + (Deft ? "/deft" : "") + (Act2 ? "/act2" : "") + $"/{Choice}" + (Crates ? "/crates" : "") + (Naive ? "/naive" : "");
+    public string Key => $"{Fight}/{Calling}/{Policy}/t{Tier}/s{Seed}" + (Level > 1 ? $"/L{Level}" : "") + (Deft ? "/deft" : "") + (Act2 ? "/act2" : "") + $"/{Choice}" + (Crates ? "/crates" : "") + (Naive ? "/naive" : "") + (Learned ? "/learned" : "") + (Banes ? "/banes" : "");
+    /// <summary>Plain and naive hands meet the boss for the first time on its first life (BossSense.Meeting);
+    /// deft hands, and any with --learned, know it already.</summary>
+    public bool Meets => !Deft && !Learned;
 }
 
 public sealed class StoryRunResult
@@ -34,9 +37,20 @@ public sealed class StoryRunResult
     public int BossMarked, BossLanded, BossPhase = -1;
     public double BossBreak;
     public bool BossSoft;
+    /// <summary>Each of the boss's phase turns on its last life: the fight's seconds then, and the share of its
+    /// health it had left (above the phase's mark: the turn came at the phase's ceiling, not its health).</summary>
+    public List<(double T, double Hp)> BossTurns = new();
+    /// <summary>The boss's fight on its last life, in seconds (BossSeconds counts every life).</summary>
+    public double BossLife;
     public string KilledBy = "", Build = "";
     /// <summary>Where the night stood when it ended or was cut off (a stage that would not end).</summary>
     public string Where = "";
+    /// <summary>Each fall: the part of the night, and at the boss its phase, its fight's seconds and how much of
+    /// it was left; her health then (whether a fall was the build's or the hands').</summary>
+    public List<string> FellAt = new();
+    /// <summary>Her health as the boss's ground opened, and how far her weapons reach then (a blade build's
+    /// fight is at his flank, a bow's at range).</summary>
+    public double MaxHpAtBoss, ReachAtBoss;
     /// <summary>What hurt her, by part of the night ("stage 2", "boss") and source, as a share of her
     /// health: where the danger is.</summary>
     public Dictionary<string, Dictionary<string, double>> HurtBy = new();
@@ -65,6 +79,8 @@ public static class StorySim
         if (spec.Act2) j.World.Facts["chapter.done"] = true;
         // Where the story lets her choose (Greymuzzle: she knelt and promised, the stream is clean).
         if (spec.Choice != "none") { j.World.Facts["promise.pack"] = true; j.World.Facts["stream.clear"] = true; }
+        // The banes learned by day (Chid's pole): known, and taken up where the fight offers them.
+        if (spec.Banes) j.World.Facts["bane.pole"] = true;
         var arena = StoryFights.Spec(spec.Fight, j.Ctx, "verge", 0, 0, 0);
         arena.Tier = spec.Tier;
         Arenas.Begin(j.World, arena);
@@ -78,6 +94,8 @@ public static class StorySim
         zone.Begin(b);
 
         var pick = Picker.Make(spec.Policy);
+        SurvivorUnchained.Play.Bosses.BossSense.Meeting? meeting = null;
+        bool met = false;
         var rng = new Rng((uint)(spec.Seed * 7919 + 17));
         var drafts = new RunResult { Spec = new RunSpec(spec.Seed, spec.Calling, spec.Policy) };
         var r = new StoryRunResult { Spec = spec };
@@ -86,6 +104,7 @@ public static class StorySim
         NavField? nav = null;
         double navX = 0, navZ = 0, navT = 0;
         int openedAt = -1;
+        SurvivorUnchained.Play.Bosses.ArenaBoss? lifeOf = null;
         var path = new List<(double X, double Z)>();
         int pathI = 0;
         double progressT = 0, bestToGo = double.MaxValue;
@@ -98,7 +117,8 @@ public static class StorySim
             // The stage's goal, walked to the way a player would (round the walls, through the gates).
             (double X, double Z)? way = null;
             // A run that fires the crates goes to them first, while they are offered.
-            var goal = spec.Crates && zone.Interactables.FirstOrDefault(i => i.Id == "story:crates") is { } cr ? (cr.X, cr.Z) : zone.Goal;
+            var goal = spec.Crates && zone.Interactables.FirstOrDefault(i => i.Id == "story:crates") is { } cr ? (cr.X, cr.Z)
+                : spec.Banes && zone.Interactables.FirstOrDefault(i => i.Id == "story:standard") is { } sd ? (sd.X, sd.Z) : zone.Goal;
             if (goal is var (wx, wz))
             {
                 navT -= ArenaSim.Dt;
@@ -131,9 +151,15 @@ public static class StorySim
                     way = (pl.X + dx / dl * 3, pl.Z + dz / dl * 3);
                 }
             }
-            if (trace && ((int)(t / 5) != (int)((t - ArenaSim.Dt) / 5) || Environment.GetEnvironmentVariable("STORY_TICKS") is string tk0 && t > double.Parse(tk0) && t < double.Parse(tk0) + 8 && (int)(t * 4) != (int)((t - ArenaSim.Dt) * 4))) Console.Error.WriteLine($"{t / 60:0.00} {zone.Now} {zone.BeatIx} at ({b.Player.X:0.0},{b.Player.Z:0.0}) d {zone.Place.Dist(b.Player.X, b.Player.Z):0.00} way {way} goal {zone.Goal} | {zone.Beat?.Goal} | {(zone.Beat?.Bar is { } bar ? $"{bar.Name} {bar.Hp:0}/{bar.MaxHp:0}" : "")} ember {b.EmberLevel} hp {b.Player.Hp:0}/{b.MaxHp:0} shut {zone.Debug()["shut"]} open {zone.Debug()["open"]}{(zone.Now == StoryNight.Stage.Boss && zone.BossScript is { } bsx && bsx.E != null ? $" | boss {bsx.E.Hp:0}/{bsx.E.MaxHp:0} at ({bsx.E.X:0},{bsx.E.Z:0}) ph {bsx.PhaseIx} t {bsx.FightT:0} {bsx.E.State} {bsx.E.Disposition} taken {bsx.E.TakenMul:0.00} floor {bsx.E.HpFloor:0}" : "")}");
-            var (mx, mz) = Pilot.Steer(b, spec.Deft, zone.BossScript, goal: way, naive: spec.Naive);
+            if (trace && ((int)(t / 5) != (int)((t - ArenaSim.Dt) / 5) || Environment.GetEnvironmentVariable("STORY_TICKS") is string tk0 && t > double.Parse(tk0) && t < double.Parse(tk0) + 8 && (int)(t * 4) != (int)((t - ArenaSim.Dt) * 4))) Console.Error.WriteLine($"{t / 60:0.00} {zone.Now} {zone.BeatIx} at ({b.Player.X:0.0},{b.Player.Z:0.0}) d {zone.Place.Dist(b.Player.X, b.Player.Z):0.00} way {way} goal {zone.Goal} | {zone.Beat?.Goal} | {(zone.Beat?.Bar is { } bar ? $"{bar.Name} {bar.Hp:0}/{bar.MaxHp:0}" : "")} ember {b.EmberLevel} hp {b.Player.Hp:0}/{b.MaxHp:0} shut {zone.Debug()["shut"]} open {zone.Debug()["open"]}{(zone.Now == StoryNight.Stage.Boss && zone.BossScript is { } bsx && bsx.E != null ? $" | boss {bsx.E.Hp:0}/{bsx.E.MaxHp:0} at ({bsx.E.X:0},{bsx.E.Z:0}) ph {bsx.PhaseIx} t {bsx.FightT:0} {bsx.E.State} {bsx.E.Disposition} taken {bsx.E.TakenMul:0.00} floor {bsx.E.HpFloor:0}{(bsx.Soft ? " soft" : "")}{(bsx.Hard ? " hard" : "")}{(bsx is SurvivorUnchained.Play.Bosses.IBound ib && !ib.Inside(bsx.E.X, bsx.E.Z, 0) ? " OUTSIDE-BOUND" : "")}" : "")}");
+            // The boss's first life is a first meeting with it; a fall there teaches it.
+            if (zone.Now == StoryNight.Stage.Boss && !met) { met = true; if (spec.Meets) meeting = new(); }
+            Pilot.Debug = trace && Environment.GetEnvironmentVariable("STORY_TICKS") is string tk3 && t > double.Parse(tk3) && t < double.Parse(tk3) + 8 && (int)(t * 4) != (int)((t - ArenaSim.Dt) * 4);
+            var (mx, mz) = Pilot.Steer(b, spec.Deft, zone.BossScript, goal: way, naive: spec.Naive, strikes: true, first: meeting);
             if (trace && ((int)(t / 5) != (int)((t - ArenaSim.Dt) / 5) || Environment.GetEnvironmentVariable("STORY_TICKS") is string tk && t > double.Parse(tk) && t < double.Parse(tk) + 0.25)) Console.Error.WriteLine($"   steer ({mx:0.00},{mz:0.00}) way {way} zones {b.Zones.Living().Count()} pickups {b.Pickups.Living().Count()} blows {b.Blows.Count} slow {b.Player.SlowF:0.00} speed {b.Stats.Get(Stat.MoveSpeed):0.00} bulwark {b.Player.BulwarkT:0.0} dash {b.Player.DashT:0.00} leap {b.Player.Leap != null} vel ({b.Player.Vx:0.00},{b.Player.Vz:0.00}) still {b.Player.StillT:0.0} hurt {b.Player.HurtT:0.00}");
+            if (trace && Environment.GetEnvironmentVariable("STORY_TICKS") is string tk2 && t > double.Parse(tk2) && t < double.Parse(tk2) + 8 && (int)(t * 4) != (int)((t - ArenaSim.Dt) * 4))
+                foreach (var k in b.Pickups.Living().Where(k => Math.Abs(k.X - b.Player.X) + Math.Abs(k.Z - b.Player.Z) < 6))
+                    Console.Error.WriteLine($"   PICKUP {k.Kind} at ({k.X:0.0},{k.Z:0.0}) value {k.Value:0.0}");
             if (trace && (int)(t / 30) != (int)((t - ArenaSim.Dt) / 30))
                 foreach (var c in b.Collision.Within(b.Player.X, b.Player.Z, 2.5))
                     Console.Error.WriteLine($"   PROBE {c.Kind} {c.Tag} at ({c.X:0.0},{c.Z:0.0}) r {c.R:0.0} hw {c.Hw:0.0} hd {c.Hd:0.0} soft {c.Soft} canstand {map.CanStand(b.Player.X + mx, b.Player.Z + mz)}");
@@ -141,9 +167,23 @@ public static class StorySim
                 foreach (var e in b.Enemies.Living().Where(e => Math.Abs(e.X - b.Player.X) + Math.Abs(e.Z - b.Player.Z) < 3))
                     Console.Error.WriteLine($"   NEAR {e.Def.Id} {e.Disposition} {e.State} at ({e.X:0.0},{e.Z:0.0}) r {e.Radius:0.0} scripted {e.Scripted}");
             Pilot.Act(b, j, mx, mz);
+            int fallsBefore = zone.Falls;
+            var bossBefore = zone.BossScript;
             zone.Step(ArenaSim.Dt);
             zone.Frame(ArenaSim.Dt);
             b.Tick(ArenaSim.Dt, mx, mz);
+            if (zone.Falls > fallsBefore && zone.Now == StoryNight.Stage.Boss) meeting = null;
+            // Its phases on this life (a rise brings a new one, from its first phase).
+            if (zone.Now == StoryNight.Stage.Boss && zone.BossScript is { E: { } be } bt)
+            {
+                if (bt != lifeOf) { lifeOf = bt; r.BossTurns.Clear(); }
+                if (bt.PhaseIx > r.BossTurns.Count) r.BossTurns.Add((Math.Round(bt.FightT, 1), Math.Round(be.Hp / Math.Max(1, bt.MaxHp), 3)));
+                r.BossLife = bt.FightT;
+            }
+            if (zone.Falls > fallsBefore)
+                r.FellAt.Add(zone.Now == StoryNight.Stage.Boss && bossBefore?.E is { } fe
+                    ? $"boss ph{bossBefore.PhaseIx + 1} t{bossBefore.FightT:0} left {fe.Hp / Math.Max(1, fe.MaxHp):0%} max {b.MaxHp:0}"
+                    : $"stage {zone.BeatIx + 1} at {t / 60:0.0} max {b.MaxHp:0}");
             foreach (var ev in b.Events.Drain())
             {
                 if (ev is Ev.Telegraph { Boss: true, Kind: TelegraphKind.Blow } && zone.Now == StoryNight.Stage.Boss) r.BossMarked++;
@@ -155,19 +195,23 @@ public static class StorySim
                     by[src] = by.GetValueOrDefault(src) + hit.Amount / Math.Max(1, b.MaxHp);
                 }
                 // STORY_TRACE=KEY: what lands on her, and the night's turns (why a run fell).
-                if (trace && ev is Ev.PlayerHit ph) Console.Error.WriteLine($"{t / 60:0.000} {zone.Now,-7} {ph.Source,-24} {ph.Amount,6:0} {(ph.Dodged ? "dodged" : ph.Blocked ? "blocked" : "")} hp {b.Player.Hp:0}/{b.MaxHp:0}");
+                if (trace && ev is Ev.PlayerHit ph) Console.Error.WriteLine($"{t / 60:0.000} {zone.Now,-7} {(ph.Label is { } phl ? ph.Source + ": " + phl : ph.Source),-36} {ph.Amount,6:0} {(ph.Dodged ? "dodged" : ph.Blocked ? "blocked" : "")} hp {b.Player.Hp:0}/{b.MaxHp:0}");
                 if (trace && ev is Ev.Announce an) Console.Error.WriteLine($"{t / 60:0.000} {zone.Now,-7} ** {an.Title} {an.Subtitle}");
             }
             host.Pass(ArenaSim.Dt);
             j.BankArt(b);
             ArenaSim.Drafts(b, pick, rng, drafts, null);
-            if (r.CardsAtBoss < 0 && zone.Now == StoryNight.Stage.Boss) r.CardsAtBoss = drafts.Cards;
+            if (r.CardsAtBoss < 0 && zone.Now == StoryNight.Stage.Boss) { r.CardsAtBoss = drafts.Cards; r.MaxHpAtBoss = b.MaxHp; r.ReachAtBoss = Pilot.Reach(b); }
             // Her choice at his side, by the run's own; and the crates, fired or left, by the run's own.
-            var offer = zone.Interactables.FirstOrDefault(i => i.Id == (spec.Choice == "finish" ? "story:finish" : "story:let_go"))
-                ?? zone.Interactables.FirstOrDefault(i => i.Id is "story:let_go" or "story:finish");
-            offer?.Act();
+            if (zone.Choice is { } choice)
+            {
+                string want = spec.Choice == "finish" ? "finish" : "let_go";
+                zone.Answer(choice.Answers.Any(a => a.Id == want) ? want : choice.Answers[0].Id);
+            }
             if (spec.Crates && zone.Interactables.FirstOrDefault(i => i.Id == "story:crates") is { } crates
                 && Math.Abs(crates.X - b.Player.X) + Math.Abs(crates.Z - b.Player.Z) < 6) crates.Act();
+            if (spec.Banes && zone.Interactables.FirstOrDefault(i => i.Id == "story:standard") is { } lift
+                && Math.Abs(lift.X - b.Player.X) + Math.Abs(lift.Z - b.Player.Z) < 3) lift.Act();
             t += ArenaSim.Dt;
             if (trace && !outside && !zone.Place.Inside(b.Player.X, b.Player.Z, -0.6))
             {

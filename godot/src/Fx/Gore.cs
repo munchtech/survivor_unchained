@@ -102,8 +102,14 @@ public partial class Gore : Node3D
         }
     }
 
-    /// <summary>A ragged blot with droplets thrown round it; wet (smooth) where the blood is.</summary>
-    static (ImageTexture Albedo, ImageTexture Orm) SplatTextures()
+    static (ImageTexture Albedo, ImageTexture Orm)? splatTextures;
+
+    /// <summary>A ragged blot with droplets thrown round it; wet (smooth) where
+    /// the blood is. Painted once a session (a quarter of a second, pixel by
+    /// pixel), not again at every place entered.</summary>
+    static (ImageTexture Albedo, ImageTexture Orm) SplatTextures() => splatTextures ??= PaintSplat();
+
+    static (ImageTexture Albedo, ImageTexture Orm) PaintSplat()
     {
         const int N = 256;
         var img = Image.CreateEmpty(N, N, true, Image.Format.Rgba8);
@@ -448,10 +454,16 @@ public partial class Gore : Node3D
                 Splash(at.X + Mathf.Cos(a) * d, at.Z + Mathf.Sin(a) * d, 0.7f + R() * 0.9f, blood, 50 + R() * 20);
             }
         }
-        else
-            for (int i = 0; i < 10; i++)
-                matter.Spawn(new Sparks.P { At = at + Vector3.Up * 0.4f, V = new Vector3((R() - 0.5f) * 3, 1 + R() * 2, (R() - 0.5f) * 3), Gravity = 2, Drag = 1.5f, Life = 1.2f, Size = 0.4f, SizeEnd = 1.1f, Color = new Color("#8a8272"), ColorEnd = new Color("#4a463e"), Alpha = 0.3f });
+        // The dry dead burst into the dust of old bone: earth-dark, low and soon down, and told by the
+        // first few bursts in a frame. (Pale, a metre across and a second long, every burst hung a
+        // grey cloud over the crowd, and a shadow bolt or a moon read as grey smoke.)
+        else if (dustBudget-- > 0)
+            for (int i = 0; i < 5; i++)
+                matter.Spawn(new Sparks.P { At = at + Vector3.Up * 0.3f, V = new Vector3((R() - 0.5f) * 3, 0.6f + R() * 1.2f, (R() - 0.5f) * 3), Gravity = 2, Drag = 2f, Life = 0.7f, Size = 0.3f, SizeEnd = 0.75f, Color = new Color("#5a5348"), ColorEnd = new Color("#2e2a24"), Alpha = 0.28f });
     }
+
+    /// <summary>How many more bursts this frame raise their dust.</summary>
+    int dustBudget = 4;
 
     /// <summary>Pieces in the air or on the ground, and blood on it (for the log).</summary>
     public (int Gibs, int Splats) Counts
@@ -462,6 +474,7 @@ public partial class Gore : Node3D
     public void Step(float dt)
     {
         time += dt;
+        dustBudget = 4;
         foreach (var s in splats) if (s.Shown) Shape(s);
         for (int i = live.Count - 1; i >= 0; i--)
         {

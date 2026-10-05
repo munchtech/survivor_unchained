@@ -1,43 +1,36 @@
 # Skills: how every skill looks, sounds and feels
 
-Status page for the skills lead (a94ac6b67f1279213, branch `worktree-agent-a94ac6b67f1279213`).
+Status page for the skills lead (a191ed81e2df462cf, branch `worktree-agent-a191ed81e2df462cf`; took
+over from abc6bbe020c7fe287). Tools and sheets live in the session scratchpad's `vfx/` (see the
+handoff).
 
-## Current state (2026-10-04, handed off at the context limit)
+## Current state (2026-10-05, handed off)
 
-Tests green (661). Everything is committed and pushed. No job of mine is running, and ComfyUI is
-free of my work. Sheets for the main session are in `scratchpad/vfx/` (listed in the handoff).
+Tests green (747). Pushed, last `8f84a1fc`; the handoff is `docs/handoff/skills.md`.
 
-- **The main session's three findings, seen at 1920×1080 in a packed crowd:**
-  - Damage numbers: **fixed.** Four new a frame, twelve on screen, none laid over one still
-    rising (summed per target was not enough: a packed crowd still wore a number on every body).
-  - Hoarfrost: **fixed.** The crowd is not white; with the experience director's status look
-    (their branch, `a3d42f7d`) frozen bodies read as cold blue.
-  - The motes' and the disc's bloom over her: **fixed for what is mine.** Lights lit within
-    4 m of her fade (a champion falling at her elbow lit her white); filmed bursts' smoke is
-    cleared over her too; a champion's fall is 3 m; the disc is held down as it leaves her
-    hand. What is left near her is the experience director's struck flare (a body struck hard
-    goes white) and the crit "sparks" burst.
-- **The rise is built and seen** (`src/Fx/BattleFx.Rise.cs`, on `Ev.Rise`):
-  - the cold: ice at her feet, frost glints on her, the world slowed;
-  - Cold, Then Not: a ragged ring of fire runs out as far as it burns (`shaders/fire_ring.gdshader`),
-    a band of char with embers behind it, a smouldering ring left (Krea mark `smoulder`);
-  - Not Yet: a watch-lamp over her and the watch's hours (Krea, one-frame flipbook `watch_dial`)
-    held round her at the waist, turning back;
-  - a grace ring at her feet gutters as her untouchable time runs out; its own sound (`Sfx.Rise`).
-- **Enemy looks** (batch 10 re-shot as `dig4`, `kerch3`, `dead3`, `pack3`): rallies and summons read.
-  Hostile marks were cream rings on the Dig's clay: now held to 0.28 of their old strength (a
-  boss's 0.5). Seen at 0.38; 0.28 is not yet seen.
-- Her dash is a streak, not a string of pearls (built, not yet seen close). The dry dead's bone
-  dust is grey and budgeted (it hung cream clouds over every kill).
+- **Loot's light, remade** (`BattleFx.Loot.cs`, `shaders/loot_beam.gdshader`). Seen at 1920×1080
+  by day and by night, with the labels and the edge pointer:
+  - Every light is a quad upright on the screen: a hairline core in gaussian glows and a pool at
+    its foot. The old world-upright tubes leaned and swelled into a cream bar.
+  - Rare is a low blue glow; Epic a violet line with motes; Set two twisting strands; Legendary and
+    Storied a pillar past the screen's top.
+  - Lights grow as their thing lands. A Legendary's light falls onto it, then the pillar stands.
+- **Every other column of light** (`BattleFx.Pillar`: a strike from the sky, a level, an evolution,
+  a chest, the night won) is now a shaft in the same batch, held to the knee. The evolution's was a
+  solid cream bar.
+- **Cold, Then Not's wall** stands on cards turned to the camera; it is deeper orange. Seen.
+- **The Dig** (`Fx/MineTub.cs`, `BattleFx.Dig.cs`): a real tub with spoil and a lamp. Grimtunnel is
+  sunk in a mound of the Dig's clay. Seen.
+- **Hallowed Ground**: a ring of runes in the air (`shaders/rune_ring.gdshader`); holy blasts are
+  gold. **Grave Tether**: a violet coil with rose motes running back. **Burning ground** stands in
+  low flame. **The chakram's face** is worn steel (it read as a white cog). All seen.
 
 ## Next step (exact)
 
-1. Shoot `dig5` and the dash (any `--auto` run) to see hostile marks at 0.28 and the dash streak.
-2. Gale Chakram: cut `gale_ring_1_1_0.png` (five blades in a ring) and `wind_swirl_2_2_0.png` into
-   the sprite array (`fx_sprites.py cut`), import, and draw the chakram as `Body(..., "gale_ring")`.
-3. `gpu_horn` when 11 GB of RAM is free (it never was today). ComfyUI's queue had no war horn job.
-4. Cinderfall's blast blooms cream round her; Umbral Bolt and Moonbrand read as grey smoke; then
-   the rest of the table below.
+1. Moonbrand near her (lavender); the Firepot burst itself (still a soft orange fireball).
+2. Evolutions and unions, the arts, sound per skill.
+3. Combat's fed deadfall and "His age" ring; the Legendary's heavier fall arc (optional).
+4. See the night's victory column and a chest's (built, not yet shot).
 
 ## Grades (now)
 
@@ -50,7 +43,7 @@ free of my work. Sheets for the main session are in `scratchpad/vfx/` (listed in
 | Axe Gyre | 3 | 4 | 3 | 3 | 3 | ok |
 | Judgement Disc | 3 | 3 | 3 | 4 | 3 | ok |
 | Seeking Motes | 3 | 4 | 3 | 4 | 3 | ok |
-| Cinderfall | 3 | 3 | 4 | 4 | 2 | ok |
+| Cinderfall | 3 | 4 | 4 | 4 | 3 | ok |
 | Rimeshard | 3 | 4 | 3 | 4 | 3 | ok |
 | Volley | 3 | 4 | 3 | 3 | 3 | ok |
 | Knifestorm | 3 | 4 | 3 | 3 | 3 | ok |
@@ -60,30 +53,52 @@ free of my work. Sheets for the main session are in `scratchpad/vfx/` (listed in
 | Verdant Lance | 4 | 4 | 3 | 4 | 3 | ok |
 | Reaving Arc | 4 | 4 | 4 | 4 | 3 | ok |
 | Thunderhead | 3 | 3 | 3 | 4 | 3 | ok |
-| Gale Chakram | 2 | 3 | 2 | 2 | 2 | ok |
-| Umbral Bolt | 2 | 2 | 2 | 2 | 2 | ok |
-| Moonbrand | 2 | 2 | 2 | 3 | 2 | ok |
+| Gale Chakram | 4 | 4 | 3 | 4 | 4 | ok |
+| Umbral Bolt | 3 | 4 | 3 | 4 | 3 | ok |
+| Moonbrand | 3 | 3 | 3 | 4 | 3 | ok |
+| Iron Palms | 4 | 4 | 3 | 4 | 3 | ok |
+| Spirit Herd | 4 | 4 | 3 | 4 | 3 | ok |
+| Firepot | 3 | 3 | 3 | 3 | 3 | ok |
+| Grave Tether | 3 | 3 | 3 | 4 | 3 | ok |
+| Hallowed Ground | 4 | 4 | 3 | 4 | 3 | ok |
 | Cold, Then Not (rise) | 4 | 4 | 4 | 4 | 3 | ok |
 | Not Yet (rise) | 4 | 3 | 3 | 4 | 3 | ok |
+| Loot's light | 4 | 4 | 4 | — | 4 | ok |
 
 ## Key decisions
 
+- **Loot's light is upright on the screen, not in the world**: a world-upright pillar leans and
+  swells under a pitched camera.
+- **Light is gaussians, never an edge**: a hairline core, deeper-coloured glows and a pool. By day,
+  a little of the ground behind is covered so the colour holds.
+- **Arrivals follow the pickup's age**, not the drop event: the event fires where it spawns, and the
+  thing slides on from there.
+- **Fire standing up faces the camera**: a cylinder's edge-on sides read as a smooth stripe.
+- **Measure colour, don't guess**: AgX turns wide orange at about 1 into apricot. Sample the frame.
 - **Hues below the tone curve's knee**: AgX turns coloured light over about 2 to cream.
-- **A crowd is told by its first few**: deaths, falls, flashes, dust and numbers are budgeted.
+- **A crowd is told by its first few**: deaths, falls, flashes, dust, numbers and ward winks are budgeted.
 - **Nothing lights her but her own moments**: lights fade near her; effects are cleared over her.
-- **Danger keeps its language**, hatched and never solid, held near the ground's lit value.
-- **Ground marks hide under a packed crowd**: what must be seen is held in the air (the dial).
-- **Fire from above is a ragged edge, not torches**: a field shader, not upright sprites.
-- **Never a hooked cross**: a four-armed turning blade reads as one. Five blades.
+- **Danger keeps its language**: her grounds sit under it, at half while a boss is up.
+- **A decal's emission ignores alpha**: dim it in its colour.
+- **What is thrown is a thing, not light**: the chakram is worn steel with a honed edge.
+
+## Judgements needed (the experience director is paused)
+
+- **Elites flash white en masse**: the struck flare's cap of three a frame exempts elites. Eight
+  elite risen hit by one Iron Palms or Hallowed Ground all go white
+  (`vfx/sw1/sw1_iron_palms.png`). Cap elites too, or keep the exemption? (The cap is in
+  `CrowdView.cs`, the experience director's rule.)
+- **The Legendary's foot by night**: its lamp and pool make a broad warm glow on the ground, about
+  300 px across. It reads as "something burns there". Keep it, or go smaller?
 
 ## Notes for other areas
 
-- **Combat** (`a708da2c97bf85c95`): `Ev.Rise` is emitted in `HurtPlayer`'s rise (no mechanics
-  changed; `RiseRadius` factored out). Proposal: its fire lands each body as the front reaches it
-  (front runs 0.3 s game time) or ~0.15 s after the rise; `Ev.Rise.Delay` is there for it.
-- **Experience** (`ab406cf9ddd22b03b`): the status look agrees with my frames. The struck flare
-  turns many bodies white at once under one big blow (the rise, Cinderfall): budget its
-  whole-body term? `--fall-at T` gives a killing blow for pictures.
-- **Arena art** (`a26767f7f9955cb56`): Dig crop sent (`scratchpad/vfx/dig_crop_for_arena.png`).
-- **Everyone**: disk C: fell to under 2 GB mid-run today and truncated frames. Old `.shots` folders
-  in retired worktrees hold about 15 GB.
+- **UI design** (`a4fdbc49786ba8b7f`): the ground labels sit over the new lights and read well. A
+  Rare's label covers most of its low glow; that is acceptable, since the glow is the find-me and
+  the name is the what. The Legendary label's own glow is a soft rectangle; it might sit better as an
+  ellipse.
+- **Performance** (`a0eb8c612c94d4aa5`): loot is one instanced batch of quads (one per Rare+ item,
+  plus a strike per falling Legendary) and at most two OmniLights. The wall is one 160-quad mesh.
+  Each Dig tub carries one small OmniLight (four tubs at most).
+- **Combat**: `--tubs` runs a tub past her for pictures. The tub runs at combat's 16 m/s.
+- **Animation**: `CrowdView` sinks a script's Under body by its size (Grimtunnel 0.54 m deeper).

@@ -65,12 +65,14 @@ esac
 COMBAT="sword_back sword_fore sword_heavy axe_back axe_fore axe_heavy axes_left axes_right axes_heavy daggers_back daggers_fore daggers_heavy chain_strike cast_bolt cast_flick cast_raise crossbow_shoot throw warcry hit nod exhale shiver catch_breath reach_coals"
 TRAVEL="dash leap vault vault_back bull_rush chain_haul"
 LOW="death death_back get_up lie_side_wake sit_log sit_back_heels"
+# CLIPS="a b ...": only those clips (to re-run a finding's clips on a new build).
+want() { [ -z "${CLIPS:-}" ] || [[ " $CLIPS " == *" $1 "* ]]; }
 for o in ${ONLY:-warden arcanist ranger reaver}; do
   case $o in ranger) c=stalker;; *) c=$o;; esac
   OWN="idle_$c idle_${c}_break ${c}_show stop_${c}_l stop_${c}_r run_$c sprint_$c"
   case $c in reaver) OWN="$OWN run_reaver_axes sprint_reaver_axes";; stalker) OWN="$OWN run_stalker_daggers sprint_stalker_daggers";; arcanist) OWN="$OWN run_arcanist_wand sprint_arcanist_wand";; esac
-  for clip in $OWN $COMBAT; do shoot "$o" "$clip" "$STAND" "" 10; done
-  for clip in $TRAVEL; do shoot "$o" "$clip" "$STAND" 1 10; done
-  for clip in $LOW; do shoot "$o" "$clip" "$FLOOR" 1 10; done
+  for clip in $OWN $COMBAT; do want "$clip" && shoot "$o" "$clip" "$STAND" "" 10; done
+  for clip in $TRAVEL; do want "$clip" && shoot "$o" "$clip" "$STAND" 1 10; done
+  for clip in $LOW; do want "$clip" && shoot "$o" "$clip" "$FLOOR" 1 10; done
 done
 echo MOTIONDONE

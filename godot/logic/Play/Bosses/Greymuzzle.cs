@@ -27,7 +27,7 @@ namespace SurvivorUnchained.Play.Bosses;
 ///                or dead
 /// He is wordless: what is heard is the Pack.
 /// </summary>
-public sealed class Greymuzzle : StoryBoss
+public sealed class Greymuzzle : StoryBoss, IBound
 {
     public Greymuzzle(IStoryArena a) : base(a) { }
 
@@ -45,17 +45,19 @@ public sealed class Greymuzzle : StoryBoss
     public override string ReEntry => "The ring forms again, and the old wolf walks out through it.";
     // The table's Pack-Mother is 41 + 6.8 a tier against a thirtieth-minute build in about 85 s. Here
     // the build is a table's twelfth minute and the fight three to four minutes, his time at the den
-    // with it. The same at every tier: his level grows him, and the night eases the tiers (TierEase).
-    public override double HealthMul(int tier) => 88;
-    // His blows at a story night's build (a table's twelfth minute, not its thirtieth). With his teeth in his
-    // marked moves and not a brawl (Stalk), each must mean it: a lunge a third of her health.
-    public override double DamageMul => 2.3;
+    // with it. The same at every tier: his level grows him, and the night eases the tiers (TierEase, BossEase).
+    public override double HealthMul(int tier) => 100;
+    // His teeth are in his marked moves and not a brawl (Stalk), so each must mean it: a lunge about a third of
+    // her calling's own health, the hamstring's lunge after it given time to be walked out of lamed.
+    public override double Teeth => 0.38;
     protected override bool DiesAtZero => false;
 
     /// <summary>The den floor's middle, and the den's mouth (the place's points).</summary>
     (double X, double Z) C => S.Place["den"];
     (double X, double Z) Mouth => S.Place["den_mouth"];
-    /// <summary>Just in front of the den's mouth, where he stands to howl.</summary>
+    /// <summary>In front of the den's mouth, where he stands to howl: out far enough that his flanks are open
+    /// ground (2.2 m out, behind a guard 4 m out, they were a metre's pocket against the ring, and a blade
+    /// never reached him in the Moon: it ran to its ceiling, and left On His Feet twice as long).</summary>
     (double X, double Z) Porch
     {
         get
@@ -63,9 +65,12 @@ public sealed class Greymuzzle : StoryBoss
             var (mx, mz) = Mouth;
             var (cx, cz) = C;
             double d = Math.Max(0.1, Dist(mx, mz, cx, cz));
-            return (mx + (cx - mx) / d * 2.2, mz + (cz - mz) / d * 2.2);
+            return (mx + (cx - mx) / d * PorchOut, mz + (cz - mz) / d * PorchOut);
         }
     }
+
+    /// <summary>How far out of the mouth he stands at the den, and how far before him his guard stands.</summary>
+    const double PorchOut = 3.5, GuardOut = 2.4;
 
     /* ------------------------------------------------------------ the ring -- */
 
@@ -77,7 +82,11 @@ public sealed class Greymuzzle : StoryBoss
         public double FromX, FromZ, ToX, ToZ, RunT = -1;
     }
     readonly List<Wolf> ring = new(), guard = new();
-    double ringR = 12, biteT = 9, shoveT, biteGrace, frostR = 99, frostDrawT;
+    /// <summary>The ring's wolves once it has broken and come in: ordinary wolves, but still his Pack.</summary>
+    readonly List<(Enemy E, double Seed)> loose = new();
+    double ringR = 12, biteT = 9, shoveT, biteGrace, frostR = 99, frostDrawT, ringDrawT;
+    /// <summary>The dashes its edge is drawn in.</summary>
+    const int RingMarks = 36;
     bool ringBroken, longHunt, lyingDown;
     int lunges;
     double lungeT = 4, hamT = 3, howlT, sortieT, shakeT = 2, chainT = 3, turnT = 10, howlHp;
@@ -86,7 +95,8 @@ public sealed class Greymuzzle : StoryBoss
     bool moonCleared;
     bool atDen;
 
-    public const int RingWolves = 20;
+    /// <summary>Shoulder to shoulder as near as a crowd allows (twenty stood four metres apart).</summary>
+    public const int RingWolves = 30;
     /// <summary>The ring's reach round a fed fire: its light and a metre (two more with the bane).</summary>
     double FireRoom => Bane ? 7 : 1;
     bool Bane => S.Fact("bane.fires");
@@ -193,6 +203,21 @@ public sealed class Greymuzzle : StoryBoss
                 if (biteGrace <= 0) biteGrace = 2;
             }
         biteGrace -= dt;
+        // The ring's edge on the ground, where a step further is a shove: a pale line round the den floor that
+        // bows out round every fed fire. Seen at the screen, twenty wolves twelve metres out read as a scatter
+        // of wolves at the picture's edges, not as a wall.
+        if (!lyingDown && (ringDrawT -= dt) <= 0)
+        {
+            ringDrawT = 0.5;
+            for (int k = 0; k < RingMarks; k++)
+            {
+                double a0 = k * Math.PI * 2 / RingMarks, a1 = (k + 0.62) * Math.PI * 2 / RingMarks;
+                double r0 = RingAt(a0) - 0.8, r1 = RingAt(a1) - 0.8;
+                B.Events.Emit(new Ev.Telegraph { Id = 882000 + k, Shape = TelegraphShape.Line, Kind = TelegraphKind.Wall,
+                    X = C.X + Math.Cos(a0) * r0, Z = C.Z + Math.Sin(a0) * r0, X1 = C.X + Math.Cos(a1) * r1, Z1 = C.Z + Math.Sin(a1) * r1,
+                    Width = 0.3, Duration = 0.6, Hostile = true });
+            }
+        }
         // The cold: while he howls it closes in from the ring, and only a fed fire's light is clear.
         if (Channel != null && PhaseIx == 1)
         {
@@ -240,15 +265,16 @@ public sealed class Greymuzzle : StoryBoss
         }
     }
 
-    /// <summary>Five of the Pack in an arc before the den's mouth, open at both ends.</summary>
+    /// <summary>Five of the Pack shoulder to shoulder in a short arc before him, open at both ends: his front is
+    /// walled, his flanks are a blade's way in.</summary>
     void Guard()
     {
-        var (mx, mz) = Mouth;
-        double toC = Math.Atan2(C.Z - mz, C.X - mx);
+        var (px, pz) = Porch;
+        double toC = Math.Atan2(C.Z - pz, C.X - px);
         for (int k = 0; k < 5; k++)
         {
-            double a = toC + (k - 2) * 0.42;
-            double x = mx + Math.Cos(a) * 4.2, z = mz + Math.Sin(a) * 4.2;
+            double a = toC + (k - 2) * 0.3;
+            double x = px + Math.Cos(a) * GuardOut, z = pz + Math.Sin(a) * GuardOut;
             var e = B.SpawnEnemy("wolf", x, z, new Battle.SpawnOpts { Level = S.Level, Disposition = Disposition.Neutral, Faction = Faction.Pack, Style = SpawnStyle.Walk });
             if (e == null) continue;
             var w = new Wolf { E = e, Seed = e.Seed, FromX = x, FromZ = z, Angle = a };
@@ -284,18 +310,18 @@ public sealed class Greymuzzle : StoryBoss
                 return true;
             default:
                 if (!ringBroken && e.Hp < e.MaxHp * 0.15) BreakRing();
-                if (d < 5.5 && shakeT <= 0) { shakeT = 6 * Cadence; Hold(1.0); Cone(5, 120, 1.0, 1.8, "Shake"); return true; }
+                // The shake is his heaviest blow, so it is marked as one (1.2 s: SURVIVORS_BOSSES.md 0.9).
+                if (d < 5.5 && shakeT <= 0) { shakeT = 6 * Cadence; Hold(1.2); Cone(5, 120, 1.2, 1.8, "Shake"); return true; }
                 if (chainT <= 0) { chainT = (Hard ? 3 : 8) * Cadence; Chain(3, () => Pant(3)); return true; }
                 return Stalk(e, dt, dx, dz, d);
         }
     }
 
-    double nipT, side = 1, sideT;
+    double side = 1, sideT;
 
     /// <summary>Between his moves he circles her at seven to nine metres, limping: an old wolf keeps a
-    /// young one at the end of his reach and goes in only when he means it (a marked move). Walked
-    /// into, he snaps: a third of his blow, now and then (a blade at his flank is not punished for it). His teeth are in his moves, not in a
-    /// brawl she cannot read.</summary>
+    /// young one at the end of his reach and goes in only when he means it (a marked move). Pressed
+    /// close, he breaks off round her; walked into across his path, he snaps (StoryBoss.Cuff).</summary>
     bool Stalk(Enemy e, double dt, double dx, double dz, double d)
     {
         if ((sideT -= dt) <= 0) { sideT = 3 + S.R() * 3; side = S.R() < 0.5 ? -1 : 1; }
@@ -303,19 +329,31 @@ public sealed class Greymuzzle : StoryBoss
         double vx = dx * radial - dz * side * 0.8, vz = dz * radial + dx * side * 0.8;
         double vl = Math.Max(1e-6, Math.Sqrt(vx * vx + vz * vz)), sp = e.Speed * 0.75;
         double nx = e.X + vx / vl * sp * dt, nz = e.Z + vz / vl * sp * dt;
-        // The ring is his wall too: he turns along it, not into it.
-        if (!Inside(nx, nz, 1.6)) { side = -side; sideT = 2; nx = e.X; nz = e.Z; }
+        // The ring is his wall too: he slips along it, not into it; only cornered (with nowhere along it to
+        // go) does he turn on her. (Stopped dead at it, a blade that followed him there pinned him, and was
+        // snapped at every second and a half.)
+        bool backed = !Inside(nx, nz, 1.6);
+        if (backed)
+        {
+            double rx = e.X - C.X, rz = e.Z - C.Z, rl = Math.Max(0.01, Math.Sqrt(rx * rx + rz * rz));
+            double tx = -rz / rl, tz = rx / rl;
+            if (tx * dx + tz * dz > 0) { tx = -tx; tz = -tz; }
+            // Along it, and a little in off it, so the slip does not carry him out onto it (more, if a body
+            // pressed against him has already put him there).
+            double lean = Inside(e.X, e.Z, 1.6) ? 0.3 : 1;
+            tx -= rx / rl * lean; tz -= rz / rl * lean;
+            double tl = Math.Sqrt(tx * tx + tz * tz);
+            tx /= tl; tz /= tl;
+            double sx = e.X + tx * sp * dt, sz = e.Z + tz * sp * dt;
+            if (Inside(sx, sz, 1.6) || Dist(sx, sz, C.X, C.Z) < rl) { vx = tx; vz = tz; vl = 1; nx = sx; nz = sz; backed = false; }
+            else { side = -side; sideT = 2; nx = e.X; nz = e.Z; }
+        }
         e.X = nx; e.Z = nz;
         B.Collision.Resolve(ref e.X, ref e.Z, e.Radius);
         e.Vx = vx / vl * sp; e.Vz = vz / vl * sp;
-        e.Facing = Math.Atan2(dz, dx);
         e.State = EnemyState.Active;
         e.Anim = EnemyAnim.Move;
-        if ((nipT -= dt) <= 0 && d < e.Radius + B.Player.Radius + 0.7)
-        {
-            nipT = 1.5;
-            B.HurtPlayer(e.Damage * 0.3, School.Physical, Who, e);
-        }
+        Cuff(e, dt, vx, vz, dx, dz, d, backed, 0.3, 1.5);
         return true;
     }
 
@@ -349,15 +387,24 @@ public sealed class Greymuzzle : StoryBoss
         }
     }
 
-    /// <summary>A lane through her and four metres past; he runs it. Every second one, he pants.</summary>
+    /// <summary>A lane through her and four metres past; he runs it. Every second one, he pants. On her lamed
+    /// he takes his time, and the lane is marked long enough to be limped out of: the hamstring's price is the
+    /// lunge's threat, not a second wound she cannot answer (marked as any other, a lamed walk never cleared
+    /// it, and one bite cost her half her health).</summary>
     void Lunge()
     {
         var (dx, dz, d) = ToPlayer();
         double len = Math.Min(16, d + 4);
         double x1 = E.X + dx * len, z1 = E.Z + dz * len;
-        Lane(E.X, E.Z, x1, z1, 2.2, 0.9, 1.6, "Lunge");
-        Hold(0.9, () => DashTo(x1, z1, 0.35, () => { if (++lunges % 2 == 0) Pant(2.5); }));
+        double mark = B.Player.SlowT > 0 ? LamedMark : 0.9;
+        Lane(E.X, E.Z, x1, z1, 2.2, mark, 1.6, "Lunge");
+        Hold(mark, () => DashTo(x1, z1, 0.35, () => { if (++lunges % 2 == 0) Pant(2.5); else Hold(Landing); }));
     }
+
+    /// <summary>The lunge's mark on her lamed; and how long he stands where a lunge ends, landed heavy on the
+    /// bad leg: a blade's moment at his flank between his pants (he keeps away otherwise, and blade builds
+    /// took half again as long to bring him down as bows did).</summary>
+    const double LamedMark = 1.4, Landing = 0.6;
 
     /// <summary>A snap at her legs. It is how an old wolf hunts: lamed, she is his, and his lunge comes
     /// while she is slow (the hamstring answered by staying out of his reach, or by the dash).</summary>
@@ -459,8 +506,9 @@ public sealed class Greymuzzle : StoryBoss
         double dx = tx - E.X, dz = tz - E.Z, d = Math.Max(0.5, Math.Sqrt(dx * dx + dz * dz));
         double len = Math.Min(14, d + 3);
         double x1 = E.X + dx / d * len, z1 = E.Z + dz / d * len;
-        // On his feet the old way is quicker and wider: he has nothing left to save it for.
-        double mark = PhaseIx == 2 ? 0.7 : 0.8, width = PhaseIx == 2 ? 2.6 : 2.2;
+        // On his feet the old way is wider: he has nothing left to save it for. (Not quicker: a single blow is
+        // never marked under 0.8 s, SURVIVORS_BOSSES.md 0.9, and his chain at 0.7 could not be walked.)
+        double mark = 0.8, width = PhaseIx == 2 ? 2.6 : 2.2;
         Lane(E.X, E.Z, x1, z1, width, mark, 1.6, "Lunge");
         Hold(mark, () => DashTo(x1, z1, 0.35, () => Chain(n - 1, then)));
     }
@@ -474,7 +522,7 @@ public sealed class Greymuzzle : StoryBoss
         foreach (var w in ring)
         {
             if (!Here(w)) continue;
-            if (n++ < 12) { w.E.Scripted = false; w.E.Disposition = Disposition.Hostile; w.E.Target = -1; }
+            if (n++ < 12) { w.E.Scripted = false; w.E.Disposition = Disposition.Hostile; w.E.Target = -1; loose.Add((w.E, w.Seed)); }
             else B.Enemies.Release(w.E);
         }
         ring.Clear();
@@ -508,13 +556,30 @@ public sealed class Greymuzzle : StoryBoss
         e.State = EnemyState.Idle;
         e.Anim = EnemyAnim.Idle;
         e.Disposition = Disposition.Neutral;
+        // What he had marked goes with him (his pant's ring lay on under the choice).
+        B.CancelBlows();
         B.Events.Emit(new Ev.Focus { X = e.X, Z = e.Z, Duration = 2.4 });
         S.Bark(e.X, e.Z, "His legs go. He lies on his side, breathing hard, and the ring lies down where it stands.", null);
-        if (S.CanSpare)
+        // A broken ring's wolves lie down where they stand too: the fight is over, however long she takes to
+        // choose (they fought on, and a player weighing his life was bitten while she did).
+        foreach (var (le, seed) in loose)
         {
-            S.Offer("let_go", e.X, e.Z, S.SpareVerb, "Greymuzzle", () => Choose(true));
-            S.Offer("finish", e.X, e.Z, "Finish it", "Greymuzzle", () => Choose(false));
+            if (!le.Alive || le.Seed != seed || le.State == EnemyState.Dying) continue;
+            le.Scripted = true;
+            le.Target = -1;
+            S.Script(le, (x, _) =>
+            {
+                x.Provoked = false;
+                x.Disposition = Disposition.Neutral;
+                x.Vx = x.Vz = 0;
+                x.State = EnemyState.Idle;
+                x.Anim = EnemyAnim.Idle;
+                return true;
+            });
         }
+        // Her choice, named on the screen and answered from wherever she stands (not a prompt at his side).
+        if (S.CanSpare)
+            S.Ask("Greymuzzle", $"{S.SpareVerb}, or finish it", e.X, e.Z, new ChoiceAnswer("let_go", S.SpareVerb, () => Choose(true)), new ChoiceAnswer("finish", "Finish it", () => Choose(false)));
         else if (A.Spare) Choose(true);
         else Choose(false);
     }
@@ -523,8 +588,7 @@ public sealed class Greymuzzle : StoryBoss
 
     void Choose(bool spare)
     {
-        S.Withdraw("let_go");
-        S.Withdraw("finish");
+        S.Unask();
         if (!spare)
         {
             E.HpFloor = 0;
@@ -562,10 +626,11 @@ public sealed class Greymuzzle : StoryBoss
     public override void Clear()
     {
         foreach (var w in ring.Concat(guard)) if (Here(w)) B.Enemies.Release(w.E);
+        foreach (var (le, seed) in loose) if (le.Alive && le.Seed == seed && le.State != EnemyState.Dying) B.Enemies.Release(le);
         ring.Clear();
         guard.Clear();
-        S.Withdraw("let_go");
-        S.Withdraw("finish");
+        loose.Clear();
+        S.Unask();
         if (longHunt) { B.Rules.Light /= 0.5; longHunt = false; }
     }
 
@@ -578,6 +643,8 @@ public sealed class Greymuzzle : StoryBoss
     /// <summary>Inside the ring, with a margin: a step past it is a shove.</summary>
     public bool Inside(double x, double z, double margin) => ringBroken || lyingDown || Dist(x, z, C.X, C.Z) < RingAt(Math.Atan2(z - C.Z, x - C.X)) - margin;
     public IReadOnlyList<Deadfall> Fires => S.Fires;
+    /// <summary>Where the guard before the den stands (a wall of the Pack: round its ends, not into it).</summary>
+    public IEnumerable<(double X, double Z)> Guarding => guard.Where(Here).Select(w => (w.E.X, w.E.Z));
     /// <summary>The den floor's middle: the ring stands round it.</summary>
     public (double X, double Z) Middle => C;
 

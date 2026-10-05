@@ -49,8 +49,10 @@ PLACES = {
     # The Pack's Hollow: a sunk bowl of old wood, the leaf litter of years, roots
     # breaking through, the stream the Dig's slurry runs in.
     'hollow': [
-        ('litter', 'leaves_forest_ground'), # this year's fallen leaves, rust and pale, on black: leaves read as leaves from 30 m
-        ('rot', 'forest_leaves_03'),        # older, darker, rotted down (moss is the shader's)
+        # (Not leaves_forest_ground: its pale chips on black read as gravel from 30 m. Nor
+        # forest_leaves_03: small leaves, speckled pale, the same.)
+        ('litter', 'dry_decay_leaves'),     # the leaves of years, red-brown, whole: leaves read as leaves from 30 m
+        ('rot', 'forest_ground_06'),        # rotted down to black earth between the drifts (moss is the shader's)
         ('roots', 'roots'),                 # where the great trees' roots surface
         ('mud', 'mud_forest'),              # trodden black mud: the den's runs, the banks
         ('bed', 'river_small_rocks'),       # the stream's bed

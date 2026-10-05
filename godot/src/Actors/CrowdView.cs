@@ -91,6 +91,9 @@ public partial class CrowdView : Node3D
 
     public CrowdView() { Name = "Crowd"; }
 
+    /// <summary>Whether a creature is under the ground by its script's say (set by the view; null: none is).</summary>
+    public static Func<Enemy, bool>? Under;
+
     /// <summary>How many are standing, and lying (for the log).</summary>
     public (int Living, int Dead) Counts => (living, corpses.Count);
 
@@ -98,7 +101,16 @@ public partial class CrowdView : Node3D
     /// the first wolf does not hitch the frame.</summary>
     public void Prepare(IEnumerable<string> visuals)
     {
-        foreach (var v in visuals) if (!v.StartsWith("view:")) Crowd(v);
+        var kinds = new List<string>();
+        foreach (var v in visuals) if (!v.StartsWith("view:")) kinds.Add(v);
+        // The people still to be baked (a first launch) are built from the
+        // kit's models: their textures decoded side by side first, not one by
+        // one as each model loads.
+        var files = new List<string>();
+        foreach (var v in kinds)
+            if (Visuals.Of(v) is { Person: { } person } spec && !Vat.Ready(spec)) files.AddRange(People.Files(person));
+        if (files.Count > 0) Prefetch.Scenes(files);
+        foreach (var v in kinds) Crowd(v);
     }
 
     VatCrowd Crowd(string visual)
@@ -146,8 +158,11 @@ public partial class CrowdView : Node3D
     /// <summary>Bodies flashed white this frame, and how many may be: past it, a flash stays at the
     /// rim (the shader's whole-body white needs a flash over this).</summary>
     int whiteFlashes;
-    const int WhiteFlashes = 4;
-    const float FlashRimOnly = 0.55f;
+    const int WhiteFlashes = 3;
+    /// <summary>The flare the rest keep, at the rim only. At 0.55 the rim's term alone turned pale
+    /// bodies (the Risen) into cream ghosts at thirty metres (seen from above, most of a body is
+    /// rim): seven at once round one Iron Palms, struck again each frame as they flew.</summary>
+    const float FlashRimOnly = 0.12f;
 
     void Draw(Enemy e, Func<double, double, double> heightAt)
     {
@@ -260,13 +275,21 @@ public partial class CrowdView : Node3D
             double turn = Math.Atan2(Math.Sin(aim - g.Facing), Math.Cos(aim - g.Facing));
             g.Facing += turn * Math.Min(1, dt * (free ? 9 : 18));
         }
+        // Gone along under the ground by its script (Grimtunnel's Under): drawn burrowing, as the
+        // burrowed are (its back, hat and lamp above the earth), while the effects heave the mound.
         float sc = (float)(e.Def.Scale ?? 1) * Beasts.Size(e.Def.Visual);
+        // (Sunk by its size: at a lampling's quarter metre a foreman of twice its size still walked
+        // the dirt whole.)
+        if (e.State == EnemyState.Active && Under?.Invoke(e) == true) { role = "burrow"; y -= 0.25 + 0.32 * Math.Max(0, sc - 1); t = time + e.Seed * 3; }
         // Struck: a squash, and a flinch along the blow, gone with the flash.
         float f = e.State == EnemyState.Dying ? 0 : (float)e.Flash * (1 - Still);
         // The struck flare's instant of white across the whole body is for a few at once (and any
         // champion or ruler); the rest keep it at the rim. A blast that hits sixty at once turned
         // sixty bodies white in the same frame.
-        if (f > FlashRimOnly && !e.Elite && !e.Boss && e.Named == null && ++whiteFlashes > WhiteFlashes) f = FlashRimOnly;
+        // The flinch keeps the whole blow; only the light is held back (a crowd's struck all read by
+        // their flinch, a few by their flare).
+        float flare = f;
+        if (f > FlashRimOnly && !e.Elite && !e.Boss && e.Named == null && ++whiteFlashes > WhiteFlashes) flare = FlashRimOnly;
         // The flinch along the blow: big enough to read from thirty metres up, twice on a critical (S-17).
         float push = e.LastCrit ? 0.45f : 0.25f;
         var at = new Vector3((float)(e.X + e.LastDx * f * push), (float)y, (float)(e.Z + e.LastDz * f * push));
@@ -286,7 +309,7 @@ public partial class CrowdView : Node3D
             else glow = Math.Max(glow, 0.06f);
         }
         if (e.Disposition == Disposition.Neutral && !e.Provoked) tint *= new Color(0.95f, 0.95f, 0.95f);
-        crowd.Push(new Transform3D(basis, at), role, t, f, dissolve, frozen, burning, tint, glow);
+        crowd.Push(new Transform3D(basis, at), role, t, flare, dissolve, frozen, burning, tint, glow);
         living++;
     }
 

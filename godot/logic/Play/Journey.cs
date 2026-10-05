@@ -47,6 +47,9 @@ public sealed partial class Journey
     /// <summary>Notices for the interface (the game shows them).</summary>
     public Action<Toast> OnToast = _ => { };
     public Action<Announcement> OnAnnounce = _ => { };
+    /// <summary>The first Legendary (or Storied) piece this world has ever seen taken, and where it lay:
+    /// the experience director stages its moment on it (docs/design/LOOT_DESIGN.md §8.2).</summary>
+    public Action<ItemInstance, double, double> FirstLegendaryTaken = (_, _, _) => { };
     /// <summary>Something the interface shows changed (the pack, the gold).</summary>
     public Action OnTouch = () => { };
 
@@ -143,6 +146,8 @@ public sealed partial class Journey
     /// <param name="ember">The ember burns here (the night: the prologue, an arena).</param>
     public Battle StartBattle(bool combat, CollisionWorld col, Func<double, double, double> heightAt, double x, double z, double facing, uint seed, bool arena = false, bool ember = false)
     {
+        // The kit goes on with the place: the night's wherever the ember burns, where its coals work.
+        Kits.Wear(Ch, combat && (arena || ember) ? KitKind.Night : KitKind.Day);
         var kit = Character.Kit(Ch);
         InArena = arena;
         var exp = combat && !arena ? Expedition : null;
@@ -274,7 +279,16 @@ public sealed partial class Journey
         if (p.Kind == PickupKind.Item && p.Ref != null && Maps.Charts.FromRef(p.Ref) is { } chart)
             return GiveChart(chart);
         // Gear rolled whole where it fell (Rpg/Loot.cs) is taken as it is.
-        if (p.Payload is ItemInstance whole) return Take(whole);
+        if (p.Payload is ItemInstance whole)
+        {
+            if (!Take(whole)) return false;
+            if (!World.FirstLegendaryTaken && Rpg.Drops.TierOf(whole) is LootTier.Legendary or LootTier.Storied)
+            {
+                World.FirstLegendaryTaken = true;
+                FirstLegendaryTaken(whole, p.X, p.Z);
+            }
+            return true;
+        }
         if (p.Kind is PickupKind.Item or PickupKind.Material or PickupKind.Quest && p.Ref != null)
         {
             // Gear on the ground was rolled when it fell; its light said how good it is. A ruler's
