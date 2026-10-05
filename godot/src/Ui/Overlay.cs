@@ -179,6 +179,16 @@ public abstract partial class Overlay : Control
         var btn = Nav.Skip(CloseButton(closeKey ?? (Toggle is Act t ? G.Key(t) : "Esc"), close ?? G.CloseOverlay));
         btn.Position = new Vector2(1880 - btn.CustomMinimumSize.X, 30);
         AddChild(btn);
+        // The foot band (frames/footer.png), the header's match: the page is bound top and bottom.
+        // Laid before the content, so a pane's faded foot runs over its top edge rather than under it.
+        if (UiArt.Has("footer"))
+        {
+            var foot = Style.Panel(UiArt.Frame("footer", new StyleBoxEmpty()));
+            foot.Position = new Vector2(-4, 1016);
+            foot.Size = new Vector2(1928, 68);
+            foot.MouseFilter = MouseFilterEnum.Ignore;
+            AddChild(foot);
+        }
         var content = new Control { Position = new Vector2(40, 112), Size = new Vector2(1840, 920), MouseFilter = MouseFilterEnum.Ignore };
         AddChild(content);
         return content;
@@ -292,7 +302,8 @@ public abstract partial class Overlay : Control
     {
         if (row is BoxContainer b) b.Alignment = BoxContainer.AlignmentMode.Center;
         if (row is Label l) l.HorizontalAlignment = HorizontalAlignment.Center;
-        row.Position = new Vector2(40, 1040);
+        // (on the foot band's leather when there is one, below its rail)
+        row.Position = new Vector2(40, UiArt.Has("footer") ? 1044 : 1040);
         row.Size = new Vector2(1840, 32);
         AddChild(row);
     }

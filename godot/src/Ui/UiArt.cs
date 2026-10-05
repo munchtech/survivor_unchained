@@ -50,6 +50,8 @@ public static class UiArt
         ["well"] = new("frames/well.png", 12, 12, 12, 12, Tile: true),
         ["slab"] = new("frames/slab.png", 14, 14, 14, 14, Tile: true),
         ["header"] = new("frames/header.png", 0, 0, 0, 12, Tile: true),
+        // Its match along the page's foot, the prompts set on its leather.
+        ["footer"] = new("frames/footer.png", 0, 12, 0, 0, Tile: true),
         // The page's pieces (tools/uiforge/pages.py): the rail between a page's columns (its stone is
         // drawn at the middle by Overlay), the plate round the survivor's figure on the pack and the
         // self, and the light card for tooltips and the result's cards.
