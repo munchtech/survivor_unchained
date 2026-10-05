@@ -39,6 +39,8 @@ public partial class Game
         bool free = FreePlay;
         if (free)
             foreach (var t in Journey.PassTime(dt)) OnClock(t);
+        // The dial by the place's name: where the clock runs, dimmed while it stands still.
+        hud.Clock(zone?.ClockRuns == true ? World.Clock : null, free && Journey.ClockStarted);
         BlendAir(dt);
         Answering(dt, free);
     }

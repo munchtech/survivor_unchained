@@ -37,6 +37,14 @@ public static class Prefetch
             if (w.EndsWith(".glb")) scenes.Add($"res://assets/weapons/{w}");
         if (her != null) scenes.AddRange(People.Files(her));
         if (folk) scenes.AddRange(Wardrobe());
+        Scenes(scenes);
+    }
+
+    /// <summary>These scenes' textures decoded side by side, held until this
+    /// frame's building is done: a place's, or the crowd's people about to be
+    /// baked from their models (an arena's are not in its own list).</summary>
+    public static void Scenes(IEnumerable<string> scenes)
+    {
         // Each scene's header read once a session, side by side (some 3 ms a
         // file, 200 files in town).
         var unread = new List<string>();

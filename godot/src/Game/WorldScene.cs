@@ -87,6 +87,9 @@ public partial class WorldScene : Node3D, IZoneLook
         look = Loadouts.Look(lo);
         AddChild(Player);
         var p = b.Player;
+        // Facing the way she arrives (her facing otherwise follows only her steps, and she
+        // stood facing south wherever she came in until she moved).
+        Player.Face((float)p.Facing, new Vector3((float)p.X, (float)HeightAt(p.X, p.Z), (float)p.Z));
         cam.Snap((float)p.X, (float)HeightAt(p.X, p.Z), (float)p.Z);
         return b;
     }
@@ -168,6 +171,7 @@ public partial class WorldScene : Node3D, IZoneLook
         {
             var evs = frameEvents;
             frameEvents = new();
+            using var _ = new Perf.Span(Perf.Part.Events);
             OnEvents(evs);
         }
     }
@@ -331,5 +335,14 @@ public partial class WorldScene : Node3D, IZoneLook
         var o = new OrbView(color, size);
         AddChild(o);
         return o;
+    }
+
+    public IOrb Piece(string id, double scale)
+    {
+        var node = Dressing.Piece(id) ?? (id.Split('/') is [var pack, var name] ? Pieces.For(pack, name, 0, 1) : null);
+        if (node == null) return Orb("#8a5a2a", scale * 0.35);
+        var v = new PieceView(node);
+        AddChild(v);
+        return v;
     }
 }

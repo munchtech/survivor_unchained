@@ -56,6 +56,7 @@ public partial class GameHud : CanvasLayer
     TextureRect abilityGlyph = null!;
     Label abilityCd = null!, abilityName = null!;
     Label zoneName = null!;
+    DayDial dial = null!;
     HBoxContainer zoneSub = null!;
     VBoxContainer objectives = null!, toasts = null!;
     PanelContainer promptBox = null!, hintBox = null!;
@@ -93,7 +94,10 @@ public partial class GameHud : CanvasLayer
     Minimap minimap = null!;
     VBoxContainer corner = null!;
     // Discoveries in a burst become one toast that grows.
-    (PanelContainer Box, ToastKind Kind, List<string> Names, double At)? lastToast;
+    (Notice Box, ToastKind Kind, List<string> Names, double At)? lastToast;
+    TipLine? tipLine;
+    /// <summary>The fight is close round her (four or more near): a tip keeps small and high until a lull.</summary>
+    bool busy;
     // The bar eased every frame toward its true value (docs/feel S-06): shown, wanted, the level's flash.
     float barShown, barWant, barFlash;
     bool barEmber = true;
@@ -425,6 +429,8 @@ public partial class GameHud : CanvasLayer
         zoneSub = Style.H(6);
         zoneSub.Alignment = BoxContainer.AlignmentMode.End;
         c.AddChild(zoneSub);
+        dial = new DayDial { Visible = false, SizeFlagsVertical = Control.SizeFlags.ShrinkEnd };
+        zoneSub.AddChild(dial);
         c.AddChild(Style.Gap(10));
         objectives = Style.V(3);
         c.AddChild(objectives);
@@ -545,7 +551,25 @@ public partial class GameHud : CanvasLayer
     /* ------------------------------------------------------------- state -- */
 
     /// <summary>The play HUD shown or not (the title and creation have none).</summary>
-    public void ShowPlay(bool on) => play.Visible = on;
+    Tween? playFade;
+
+    /// <summary>The play's HUD shown or hidden; shown with a fade (seconds),
+    /// it comes in over a cinematic's blend into play rather than at once.</summary>
+    public void ShowPlay(bool on, float fade = 0)
+    {
+        playFade?.Kill();
+        playFade = null;
+        if (!on || fade <= 0 || play.Visible)
+        {
+            play.Visible = on;
+            play.Modulate = Colors.White;
+            return;
+        }
+        play.Visible = true;
+        play.Modulate = new Color(1, 1, 1, 0);
+        playFade = play.CreateTween();
+        playFade.TweenProperty(play, "modulate:a", 1f, fade).SetTrans(Tween.TransitionType.Sine).SetEase(Tween.EaseType.InOut);
+    }
 
     public void SetBruise(float v) => ((ShaderMaterial)bruise.Material).SetShaderParameter("amount", v);
 
@@ -566,6 +590,8 @@ public partial class GameHud : CanvasLayer
         var at = b.Combat ? new Vector2(consoleX - 150, 1080 - 156) : new Vector2(30, 1080 - 30 - globe.Size.Y);
         if (globe.Position != at) { globe.Position = at; statuses.Position = at + new Vector2(0, -40); }
         var p = b.Player;
+        // (only while a tip is up: the count is not free)
+        busy = tipLine != null && b.Combat && b.HostilesInRadius(p.X, p.Z, 9).Count >= 4;
         double max = b.MaxHp;
         float k = (float)Math.Clamp(p.Hp / max, 0, 1);
         hpShown = k;
@@ -783,9 +809,56 @@ public partial class GameHud : CanvasLayer
     public void ZoneInfo(string name, string? region, int day, TimeOfDay time)
     {
         zoneName.Text = name.ToUpperInvariant();
-        foreach (var c in zoneSub.GetChildren()) c.QueueFree();
-        zoneSub.AddChild(Glyphs.Icon(time == TimeOfDay.Night ? "moon" : "sun", 15, time == TimeOfDay.Night ? Hex("#b8ccff") : Hex("#ffd890")));
+        foreach (var c in zoneSub.GetChildren()) if (c != dial) c.QueueFree();
+        // Where the clock runs, its dial says the time of day; elsewhere a sun or a moon.
+        if (!dial.Visible) zoneSub.AddChild(Glyphs.Icon(time == TimeOfDay.Night ? "moon" : "sun", 15, time == TimeOfDay.Night ? Hex("#b8ccff") : Hex("#ffd890")));
         zoneSub.AddChild(Style.Label($"{time}  ·  Day {day}" + (region != null ? $"  ·  {region}" : ""), Style.Ui, 17, Style.Ink with { A = 0.85f }));
+    }
+
+    FallChoices? fall;
+
+    /// <summary>The fall's two choices over the darkened world (null clears them).</summary>
+    public void Fall(int? risesLeft, Action? rise = null, Action? letGo = null)
+    {
+        if (fall != null && IsInstanceValid(fall)) fall.QueueFree();
+        fall = null;
+        // The play's HUD steps back while the choice waits, as under a conversation: the two
+        // choices are the brightest things on the screen (the bars and the ember sat over them).
+        play.Modulate = risesLeft != null ? new Color(1, 1, 1, 0.4f) : Colors.White;
+        if (risesLeft is not int n || rise == null || letGo == null) return;
+        fall = new FallChoices(n, rise, letGo);
+        root.AddChild(fall);
+    }
+
+    StoryChoices? choice;
+
+    /// <summary>A choice the story puts to her, over the live world: each answer on its key (null clears it).</summary>
+    public void Choice(StoryChoice? c, Act[] keys, Action<int> pick)
+    {
+        if (choice != null && IsInstanceValid(choice)) choice.QueueFree();
+        choice = null;
+        if (c == null) return;
+        choice = new StoryChoices(c, keys, pick);
+        root.AddChild(choice);
+    }
+
+    /// <summary>The answer whose key is held (-1: none), and how far to choosing it (0 to 1).</summary>
+    public void ChoiceHeld(int i, double k)
+    {
+        if (choice != null && IsInstanceValid(choice)) choice.Held(i, (float)Math.Clamp(k, 0, 1));
+    }
+
+    /// <summary>The day's clock on its dial by the place's name (null: where the clock does not run).</summary>
+    public void Clock(double? clock, bool running)
+    {
+        bool on = clock != null;
+        if (on != dial.Visible)
+        {
+            dial.Visible = on;
+            // (the sun or moon glyph it stands in for comes or goes with it)
+            if (zoneSub.GetChildCount() > 1 && zoneSub.GetChild(1) is TextureRect g) g.Visible = !on;
+        }
+        if (clock is double c) dial.Set(c, running);
     }
 
     public void Objectives(List<Tracked> list)
@@ -871,30 +944,44 @@ public partial class GameHud : CanvasLayer
             && now - lt.At < 2.5 && IsInstanceValid(lt.Box) && lt.Names.Count < 5)
         {
             lt.Names.Add(t.Text);
-            if (lt.Box.FindChild("Title", true, false) is Label title) title.Text = string.Join(", ", lt.Names);
-            lt.Box.SetMeta("t", 0.06);
+            lt.Box.Title.Text = string.Join(", ", lt.Names);
+            lt.Box.T = Math.Min(lt.Box.T, 0.5);
             lastToast = lt with { At = now };
             return;
         }
+        // Words on the world, no box (the owner: "the item toasts could be transparent and stylized"):
+        // the icon small, the name in its colour, the count after it.
         var (glyph, color) = ToastLook.GetValueOrDefault(t.Kind, ("arcane", Style.Gold));
         if (t.Rarity is int r) color = Style.RarityOf(r);
-        var box = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(408, 0) };
-        var s = Style.Box(new Color(0.047f, 0.04f, 0.055f, 0.82f), color, 0, 4, 8);
-        s.BorderWidthLeft = 3;
-        box.AddThemeStyleboxOverride("panel", UiArt.Frame("toast", s));
-        var row = Style.H(10, t.Icon != null ? ItemPhotos.Icon(t.Icon, 40, color) : Glyphs.Icon(glyph, 22, color));
-        var head = Style.Label(t.Text, t.Kind == ToastKind.Quest ? Style.Display : Style.UiBold, 17, t.Kind == ToastKind.Quest ? Style.GoldHi : t.Rarity != null ? color : Hex("#f0e6d2"), true);
-        head.Name = "Title";
-        var words = Style.V(0, head);
-        if (!string.IsNullOrEmpty(t.Sub)) words.AddChild(Style.Label(t.Sub, Style.TextItalic, Style.Caption, Hex("#b8ab96"), true));
-        words.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
-        row.AddChild(words);
-        box.AddChild(row);
-        box.SetMeta("t", 0.0);
-        box.SetMeta("life", t.Life ?? 5.0);
+        if (t.Kind == ToastKind.Quest) color = Style.GoldHi;
+        else if (t.Rarity == null && t.Kind is not (ToastKind.Warning or ToastKind.Level or ToastKind.Gold)) color = Hex("#f0e6d2");
+        bool grand = t.Rarity >= 4, noted = grand || t.Rarity >= 2 || t.Kind is ToastKind.Quest or ToastKind.Level;
+        Control icon = t.Icon != null ? ItemPhotos.Icon(t.Icon, grand ? 40 : 30, color) : Glyphs.Icon(glyph, 18, color);
+        icon.CustomMinimumSize = t.Icon != null ? new Vector2(grand ? 40 : 30, grand ? 40 : 30) : new Vector2(18, 18);
+        var box = new Notice(icon, t.Text, t.Sub, color, noted, grand, t.Life ?? (grand ? 8 : t.Kind == ToastKind.Quest ? 6 : 4.5));
         toasts.AddChild(box);
+        // The newest first, the rest stepping down under it.
+        toasts.MoveChild(box, 0);
         lastToast = (box, t.Kind, new List<string> { t.Text }, now);
-        while (toasts.GetChildCount() > 6) toasts.GetChild(0).Free();
+        // (five at most: the column keeps clear of the health orb)
+        while (toasts.GetChildCount() > 5) toasts.GetChild(toasts.GetChildCount() - 1).Free();
+    }
+
+    /// <summary>Where the banner's words stand on the screen while it shows (the lines said over
+    /// heads keep out of it: a howl's caption printed beside the banner's own line read as one).</summary>
+    public static Rect2? Banner { get; private set; }
+
+    /// <summary>How far down the top of the screen is the HUD's (the ember, the clock, a boss's bar).</summary>
+    public static float TopClear { get; private set; } = 118;
+
+    /// <summary>The toasts wait (unseen, their time not running) while this is set.</summary>
+    public bool HoldToasts;
+
+    Rect2 BannerRect()
+    {
+        float w = Math.Max(annTitle.GetCombinedMinimumSize().X, Math.Max(annSub.GetCombinedMinimumSize().X, annKicker.Visible ? annKicker.GetCombinedMinimumSize().X : 0));
+        w = Math.Min(1200, w + 40);
+        return new Rect2(960 - w / 2, announce.Position.Y, w, announce.GetCombinedMinimumSize().Y);
     }
 
     public void Announce(Announcement a)
@@ -964,18 +1051,18 @@ public partial class GameHud : CanvasLayer
 
     public void Hint(Hint? h)
     {
+        bool same = hintView != null && h != null && hintView.Id == h.Id;
         hintView = h;
-        hintBox.Visible = h != null;
-        foreach (var c in hintBox.GetChildren()) { hintBox.RemoveChild(c); c.QueueFree(); }
+        hintBox.Visible = false;
+        // The tip, centred in the upper third and set on the world itself (the owner: "a centered
+        // attention grabbing thing that is also not on a cheap looking backdrop").
+        if (same && tipLine != null && IsInstanceValid(tipLine)) return;
+        if (tipLine != null && IsInstanceValid(tipLine)) tipLine.QueueFree();
+        tipLine = null;
         if (h == null) return;
-        var ink = Style.ParchmentInk;
-        var v = Style.V(5, Style.H(6, Glyphs.Icon("scroll", 17, Hex("#6a3a14")), Style.Label(h.Title.ToUpperInvariant(), Style.Display, 15, Hex("#6a3a14"), false, HorizontalAlignment.Left, false)),
-            Style.Label(h.Text, Style.Text, 19, ink, true, HorizontalAlignment.Left, false));
-        // A known width, so the words wrap before the box is measured.
-        v.GetChild<Control>(1).CustomMinimumSize = new Vector2(396 - 28, 0);
-        if (h.Keys.Count > 0) v.AddChild(Style.H(6, HintKeys(h.Keys).ToArray()));
-        hintBox.AddChild(v);
-        hintBox.OffsetTop = hintBox.OffsetBottom;
+        Control? keys = h.Keys.Count > 0 ? Style.H(6, HintKeys(h.Keys).ToArray()) : null;
+        tipLine = new TipLine(h.Title, h.Text, keys) { Position = new Vector2(960, 1080 * 0.17f), Small = busy };
+        play.AddChild(tipLine);
     }
 
     static readonly string[] PadNames = ["A", "B", "X", "Y", "LB", "RB", "LT", "RT", "View", "Menu"];
@@ -1028,7 +1115,16 @@ public partial class GameHud : CanvasLayer
     public void Beyond(List<Beyond> list) => edges.Show(list);
 
     /// <summary>Loot's names on the ground, each frame.</summary>
-    public void Ground(List<GroundLabel> list) => ground.Show(list);
+    public void Ground(List<GroundLabel> list)
+    {
+        // The HUD's own words own their ground: labels give way under them.
+        ground.KeepOut.Clear();
+        if (tipLine != null && IsInstanceValid(tipLine)) ground.KeepOut.Add(tipLine.Area.Grow(12));
+        if (corner.IsVisibleInTree()) ground.KeepOut.Add(corner.GetGlobalRect().Grow(8));
+        if (toasts.GetChildCount() > 0) ground.KeepOut.Add(toasts.GetGlobalRect().Grow(8));
+        if (announce.Modulate.A > 0.05f) ground.KeepOut.Add(announce.GetGlobalRect());
+        ground.Show(list);
+    }
 
     /// <summary>Where the thing the prompt is for stands on screen (null: the prompt keeps its place).</summary>
     public void PromptAt(Vector2? at) => promptAnchor = at;
@@ -1132,15 +1228,17 @@ public partial class GameHud : CanvasLayer
         else announce.Modulate = Colors.Transparent;
         // Nothing big over a choice being made.
         if (draft != null || talk != null) { announce.Modulate = Colors.Transparent; subtitle.Modulate = Colors.Transparent; }
+        Banner = announce.Modulate.A > 0.05f ? BannerRect() : null;
+        TopClear = bossBox.Visible ? bossBox.GetGlobalRect().End.Y + 8 : 118;
         foreach (var c in toasts.GetChildren())
         {
-            if (c is not Control box) continue;
-            double t = (double)box.GetMeta("t") + delta, life = (double)box.GetMeta("life");
-            box.SetMeta("t", t);
-            float k = (float)(t / life);
-            box.Modulate = Colors.White with { A = k < 0.05f ? k / 0.05f : k > 0.88f ? (1 - k) / 0.12f : 1 };
-            if (t >= life) box.QueueFree();
+            if (c is not Notice n) continue;
+            // Held while a chest's opening says the same things over the world; told after it, whole.
+            n.Modulate = HoldToasts ? Colors.Transparent : Colors.White;
+            if (!HoldToasts && !n.Step(delta)) n.QueueFree();
         }
+        // A tip keeps small and high while the fight is close round her, and comes to its size in a lull.
+        if (tipLine != null && IsInstanceValid(tipLine)) tipLine.Small = busy;
         // The bar flows toward its value; a level's flash fades over a tenth of a second.
         barShown = barShown > barWant + 0.5f ? Mathf.MoveToward(barShown, barWant, dt * 6) : barShown + (barWant - barShown) * (1 - Mathf.Exp(-18 * dt));
         float fw = (760 * K - 32) * Mathf.Clamp(barShown, 0, 1);

@@ -1,39 +1,33 @@
 # UI design: status
 
-Agent aab47bfdab5955dac (handing off), on branch `worktree-agent-aab47bfdab5955dac`, which has the integration branch merged. The full brief for a successor is in `docs/handoff/ui_design.md`.
+Agent a565196002a51af40, on branch `worktree-agent-a565196002a51af40` (integration merged). Pictures: `docs/ui_review/build7/` (latest), build6 and earlier before it.
 
-## Current state
-- **Layouts approved by the owner** ("the ui layouts look better"). They were revised for no dead space.
-  - Research: `docs/design/UI_RESEARCH.md`.
-  - Greyboxes: `docs/ui_review/greybox/`, drawn by `python tools/uigreybox/screens.py OUTDIR`.
-  - Nothing is built in the game yet. That's next.
-- **Seen in the game at 1920x1080 and fixed:**
-  - the Look's face light (portrait rig, `GameFront.PortraitLight`);
-  - the pack's swap flash;
-  - the arena cards' centring;
-  - the licences index (legal passed the screen);
-  - the day clock's words, its key and the dawn fade;
-  - a slim scroll bar on every screen (`Style.PageTheme`), and `FadeEnds` for long readings.
-- **Seen and still poor** (fold into the build):
-  - the map result: two big half-empty boxes, and its telling runs past 9 s;
-  - the Wayfinder's table and atlas: an old iron plate with the HUD showing round it, and the atlas page's "used up" line clipped;
-  - Self, Pack, Forge: dead space, which the approved layouts answer.
+## Current state (built, seen at 1080 and 1440)
+- **The day's book** (Pack, Self, Arts) is one 900 px right-hand panel over the live world, tabs on UI art's chain.
+- **Results** (map and night) are one fitted panel told down the page in centred registers, never two columns:
+  - the verdict, the place, the tally as a ledger line;
+  - **What came out** (map): the best six finds laid out large (84 px tiles), each named in its tier colour with what it is in small capitals above the name; a chart is a find; the rest as small tiles in one row under them;
+  - what was carried out and the gold as one ledger line of counted things (spilled greyed behind a rule; breaks onto a second line rather than widening the panel);
+  - **The atlas** across the panel (peoples head the columns, tiers run down).
+  - The night's result the same: what you take out as ledger lines, what stays as a centred row of medallions going to ash.
+- **The fall:** the world darkens and the HUD steps back to 40%; "Get up" and "Let the night go" mirror about her, on one baseline. Notices are held from the fall until she gets up, or, on a loss, until Chid has spoken (`GameHud.HoldToasts`). A long notice sets its words under its title (560 px).
+- **Journal:** the book is 1440 wide (a reading measure) and hugs the open section's writing (520 to 852 tall, measured until it holds); the sections are the house's tabs as type; no watermark; People has no tinted rows; Deeds ends in a ledger line; the Codex is a ledger of arts with what each takes, the discoveries beside the beasts.
+- **Map:** the map's window (1040) and the list (440) centred together between the bands; the list is type with distances in a right-aligned column, hugging its lines; zoom and find-me are words in its foot.
+- **The dial by night** reads at 1080 and 1440 (build7/9).
+- **The map's names** are set clear of each other as it moves (`Declutter`); the kit switch is seen on the Pack (build7/18).
 
-## Next
-1. Build the approved layouts in the game with plain tonal styles, calling UI art's frame names: Self, Pack (with the stores tabs), Storeroom (shelves: crafting's logic is at af01b0d61ef656dd4@012403dd), Trader, and the bench (two panels, smith in the world).
-2. Experience's asks (ab406cf9ddd22b03b): the day dial by the zone name, and the fall's two choices as a held moment, not the use-key prompt.
-3. The map result and the table/atlas, in the same restraint.
-4. Heroine portraits after her new head (`heroine_paint.py`, `creation_portraits.py`); the male hero's Look with ab82cbe99e2937ddd.
+## Next (the handoff, section 4, has the detail)
+1. The old screens, shot and judged (build7/20 to 23): pause as a fitted panel with the chain; rest as a held moment in type; the chapter's tally as a ledger line; creation's rows, card and buttons as type.
+2. Portraits when the face lead says her head has landed; the male Look when he resumes.
 
 ## Key decisions
-- **One frame per screen.** Inside it: tone, spacing, type and rules. Colour is rarity, state, or the one primary action.
-- **Panels hug their contents.** A surface that must run on tapers into the world behind it.
-- **Counters are two fitted panels**, theirs left and yours right, with the keeper live in the world between them.
-- **No inspect panels.** A hover or focus card opens on the world side, with the worn piece beside it.
-- **Irreversible acts are held.** Crafting built `Style.HoldButton`.
-- **Portrait light only at head and shoulders and nearer.** The fire reaches her through a stand-in light, so the camp keeps its light.
+- One frame per screen; inside it only type, rules and space. Colour means tier, state or the one action.
+- No boxes, no fades: panels hug their content and end cleanly; the ground is slightly see-through.
+- A results page is registers down the page, not columns: no column can run short.
+- Cards open beside the item. A spend previews until kept. What can't be undone is held.
+- Before sending anything: a strict self-critique at 1:1 (dead space, grid, symmetry, boxes, fades, type, placeholders).
 
 ## Notes for other areas
-- **Everyone:** the game's Alegreya Sans has no →, ←, ▲ or ● glyphs. Use Alegreya (serif) or draw them.
-- **Loot lead (a9a9c345a35e1fcad):** the stores (pouch, satchel, key ring) are tabs over one row in the Pack and at every counter. The filter sits beside Sort.
-- **UI art (a0bff3ffe4d3ad748):** needs a taper (the side panel and page ground fading at the foot), tab_hover and tab_pressed, and chains used with purpose.
+- **Combat / experience:** after a story fall is let go, the fight runs on for 2.2 s under the shade before the result (her skills still strike, the boss's move words show): `StoryNight.Finish`'s `G.After` stops while the sim is paused, so the UI can't hold it still. In the rise run, her body wasn't visible between the fall's choices once (build4 had her there).
+- **UI art:** `book/ribbon.png` is no longer used (the Journal's sections are type). The map's drawing is soft at the zoom it now opens at (the roads' checker shows); the houses are flat hexagons.
+- **Developer switches added:** `--load FILE` (a save read as it stands, never written back), `--journal people|deeds|codex`, `--finds N` with `--open mapresult`.

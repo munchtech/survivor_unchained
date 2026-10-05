@@ -70,6 +70,14 @@ public partial class Shots : Node
         live.wanted.Add((live.time + inSeconds, tag));
     }
 
+    /// <summary>The run ends this many seconds on (sooner than --until: a whole night ends at its result).</summary>
+    public static void EndIn(double seconds)
+    {
+        if (live == null) return;
+        live.until = (float)(live.time + seconds);
+        live.count = System.Math.Min(live.count, live.taken);
+    }
+
     public override void _Ready()
     {
         name = Args.Get("shot") ?? "";

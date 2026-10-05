@@ -135,9 +135,8 @@ public partial class OrnateBox : StyleBox
         // A card lower than its slice's top and foot (a row of a list) wears the row's slice.
         if (Look == Kind.Card && r.Size.Y < sl.T + sl.B - 2 * sl.Oy && UiArt.Frames.TryGetValue("crest_row", out var row)) sl = row;
         if (UiArt.Tex(sl.File) is not { } tex) return false;
-        var at = r.GrowIndividual(sl.Out, sl.Oy, sl.Out, sl.Oy);
-        var mode = sl.Tile ? RenderingServer.NinePatchAxisMode.TileFit : RenderingServer.NinePatchAxisMode.Stretch;
-        RenderingServer.CanvasItemAddNinePatch(ci, at, new Rect2(Vector2.Zero, tex.GetSize()), tex.GetRid(), new Vector2(sl.L, sl.T), new Vector2(sl.R, sl.B), mode, mode, true, Colors.White);
+        // (its material, if it has one, laid at 1:1 under the slice's edge)
+        UiArt.DrawSlice(ci, r, sl, tex, sl.Ground != null ? UiArt.Tex(sl.Ground) : null);
         if (Look == Kind.Card)
         {
             float h = Math.Min(Crest, r.Size.Y * 0.3f);
@@ -461,13 +460,16 @@ public partial class Backdrop : Control
         blur ??= GD.Load<Shader>("res://shaders/ui_backdrop.gdshader");
         var world = new ColorRect { Material = new ShaderMaterial { Shader = blur }, MouseFilter = MouseFilterEnum.Ignore };
         ((ShaderMaterial)world.Material).SetShaderParameter("dim", Mathf.Lerp(1.1f, 0.62f, strength));
+        // A full page sees the world through it a little (the owner: "slightly see through"): a lighter
+        // blur, so what is sensed through the page is the place, not a smear.
+        if (page) { ((ShaderMaterial)world.Material).SetShaderParameter("blur", 1.8f); ((ShaderMaterial)world.Material).SetShaderParameter("dim", 0.82f); }
         Style.Fill(world);
         AddChild(world);
         // A full page is the day's book's own page (page/vellum.png): the binders' black vellum,
         // the world felt through it only where its lamps are bright.
         if (page && UiArt.Art("page/vellum.png") is { } skin)
         {
-            var v = new TextureRect { Texture = skin, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Tile, MouseFilter = MouseFilterEnum.Ignore, Modulate = new Color(1, 1, 1, 0.9f) };
+            var v = new TextureRect { Texture = skin, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Tile, MouseFilter = MouseFilterEnum.Ignore, Modulate = new Color(1, 1, 1, 0.85f) };
             Style.Fill(v);
             AddChild(v);
             // The binding stands above the page: the header's shade falls a hand's width down it,
@@ -541,6 +543,8 @@ public partial class OpenBook : Control
     public readonly Control Right = new() { MouseFilter = MouseFilterEnum.Ignore };
     /// <summary>The cover's margin round the pages, and the pages' margin round their words.</summary>
     const float Cover = 26, Margin = 52, Gutter = 34;
+    /// <summary>The book's height round its words: the cover, the pages' margins, the leaf's foot.</summary>
+    public const float Chrome = Cover * 2 + Margin * 1.6f + 30;
     static readonly Color Leather = new("#3b1d14"), LeatherDeep = new("#1e0d08"), Gold = new("#b8893a"), Paper = new("#e9ddc1"), PaperDeep = new("#c7b28a");
 
     public OpenBook(Vector2 size)
@@ -560,7 +564,7 @@ public partial class OpenBook : Control
     public override void _Draw()
     {
         var s = Size;
-        if (UiArt.Art("book/open.png") is { } art) { DrawTextureRect(art, new Rect2(Vector2.Zero, s), false); return; }
+        if (UiArt.Art("book/open.png") is { } art) { Painted(art, s); return; }
         // The shadow it casts on the table.
         for (int i = 6; i >= 1; i--)
             DrawRect(new Rect2(new Vector2(-i * 3, i * 4), s + new Vector2(i * 6, i * 2)), new Color(0, 0, 0, 0.07f));
@@ -587,6 +591,24 @@ public partial class OpenBook : Control
         // The spine's fold.
         DrawPolygon(new[] { new Vector2(half - 3, top), new Vector2(half + 3, top), new Vector2(half + 3, foot), new Vector2(half - 3, foot) },
             new[] { new Color(0.2f, 0.12f, 0.06f, 0.7f), new Color(0.2f, 0.12f, 0.06f, 0.7f), new Color(0.2f, 0.12f, 0.06f, 0.7f), new Color(0.2f, 0.12f, 0.06f, 0.7f) });
+    }
+
+    /// <summary>The painted book at any size up to its own (it is painted at twice the screen's
+    /// 1700 x 852): its corners and edges whole, its pages cut to the size about the spine and the
+    /// middle, never squashed, so a book that hugs a short page keeps its grain and its iron.</summary>
+    void Painted(Texture2D art, Vector2 s)
+    {
+        var a = art.GetSize();
+        float k = a.X / 1700f;
+        const float m = 64;
+        float hw = Math.Max(0, s.X / 2 - m) * k, hh = Math.Max(0, s.Y / 2 - m) * k;
+        float[] dx = { 0, m, s.X - m, s.X }, dy = { 0, m, s.Y - m, s.Y };
+        (float, float)[] sx = { (0, m * k), (a.X / 2 - hw, a.X / 2 + hw), (a.X - m * k, a.X) };
+        (float, float)[] sy = { (0, m * k), (a.Y / 2 - hh, a.Y / 2 + hh), (a.Y - m * k, a.Y) };
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
+                DrawTextureRectRegion(art, new Rect2(dx[i], dy[j], dx[i + 1] - dx[i], dy[j + 1] - dy[j]),
+                    new Rect2(sx[i].Item1, sy[j].Item1, sx[i].Item2 - sx[i].Item1, sy[j].Item2 - sy[j].Item1));
     }
 
     /// <summary>A page: parchment, darker into the spine and at its outer edge, with a grain.</summary>
@@ -619,34 +641,5 @@ public partial class OpenBook : Control
             var p = r.Position + new Vector2(rng.Randf() * r.Size.X, rng.Randf() * r.Size.Y);
             DrawRect(new Rect2(p, new Vector2(rng.RandfRange(1, 3), 1)), new Color(0.45f, 0.32f, 0.16f, rng.RandfRange(0.04f, 0.12f)));
         }
-    }
-}
-
-/// <summary>A silk ribbon bookmark: a band with a notched tail, its colour its section.</summary>
-public partial class RibbonBox : StyleBox
-{
-    public Color Silk = new("#8a2a1a");
-    public bool Raised;
-
-    public RibbonBox() { ContentMarginLeft = ContentMarginRight = 10; ContentMarginTop = 6; ContentMarginBottom = 26; }
-
-    public override void _Draw(Rid ci, Rect2 r)
-    {
-        var c = Raised ? Silk.Lightened(0.12f) : Silk;
-        // Painted silk (book/ribbon.png, pale, its tail notched), dyed the section's colour by the code.
-        if (UiArt.Art("book/ribbon.png") is { } silk)
-        {
-            RenderingServer.CanvasItemAddTextureRect(ci, new Rect2(r.Position + new Vector2(3, 3), r.Size), silk.GetRid(), false, new Color(0, 0, 0, 0.3f));
-            RenderingServer.CanvasItemAddTextureRect(ci, r, silk.GetRid(), false, c.Lightened(0.25f));
-            return;
-        }
-        float notch = 12;
-        var pts = new[] { r.Position, new Vector2(r.End.X, r.Position.Y), r.End, new Vector2(r.Position.X + r.Size.X / 2, r.End.Y - notch), new Vector2(r.Position.X, r.End.Y) };
-        // A shadow on the page, then the silk with its sheen down the middle.
-        RenderingServer.CanvasItemAddPolygon(ci, Array.ConvertAll(pts, p => p + new Vector2(3, 3)), new[] { new Color(0, 0, 0, 0.3f) });
-        RenderingServer.CanvasItemAddPolygon(ci, pts, new[] { c.Lightened(0.15f), c.Lightened(0.15f), c.Darkened(0.3f), c.Darkened(0.1f), c.Darkened(0.3f) });
-        RenderingServer.CanvasItemAddLine(ci, r.Position + new Vector2(r.Size.X * 0.3f, 0), new Vector2(r.Position.X + r.Size.X * 0.3f, r.End.Y - notch * 1.4f), c.Lightened(0.35f) with { A = 0.35f }, 2);
-        RenderingServer.CanvasItemAddLine(ci, r.Position + new Vector2(3, 0), new Vector2(r.Position.X + 3, r.End.Y - 2), c.Darkened(0.4f) with { A = 0.5f }, 1);
-        RenderingServer.CanvasItemAddLine(ci, new Vector2(r.End.X - 3, r.Position.Y), new Vector2(r.End.X - 3, r.End.Y - 2), c.Darkened(0.4f) with { A = 0.5f }, 1);
     }
 }

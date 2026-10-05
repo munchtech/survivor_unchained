@@ -287,6 +287,21 @@ All eleven share one replacement path: our own weapons modelled in Blender to ou
 | AU-03 | `godot/art/sound/tell_drum_0/1.wav`, `tell_howl_0/1.wav`, `tell_fuse_0.wav`; since added: `tell_fuse_1`, `tell_whistle_0/1` (8 takes in the release pack, 4 Oct; legal: same LTX terms, prompts name no work) | Combat tells | LTX 2.5's audio (`tools/comfy/sfx_clips.py`) | LTX-2.x Community License | No (AI disclosure) | Yes | medium: AI-03 | Record or synthesise. Combat lead |
 | AU-04 | `godot/art/vo/**/*.ogg` (19), `godot/data/vo/index.json` | Placeholder voice takes for cinematic lines | Maya1 acts the line, Seed-VC converts it to the part's voice, designed by VoxCPM2 from a text description (all 37 references in `tools/vo/refs` are seeded designs; none is cloned); Whisper checks the words | Maya1 Apache-2.0; Seed-VC GPL-3.0 (code; outputs not covered); VoxCPM2 Apache-2.0 | No | Yes | low (licence). The owner wants no placeholders; they are AI and must be disclosed while they ship | Final takes recorded in ElevenLabs on a paid plan, keeping each voice's licence record, or by actors with signed releases. Voice lead |
 | AU-05 | `godot/src/Audio/*` | The synthesised sounds and music | Written for the game | Our work | No | Yes | none | |
+| AU-06 | `godot/art/sound/chainLink_0..7.wav`, `chainDrag_0/1.wav`, `chainSettle_0/1.wav` (12 takes, 5 Oct) | The tab chain's clinks, drag and settle (`Sfx.ChainSlide`) | Cut, pitched down and layered by `tools/uiforge/chainsfx.py` from CC0 recordings fetched by the main session on 5 Oct (`tools/comfy/in/sfx/SOURCES.md`): "80 CC0 RPG SFX" by rubberduck (chain_01..03), "Chain winch sounds" by bart (winch Marker #8, #9), Kenney's RPG Audio (metalClick, metalLatch) and Impact Sounds (impactMetal_heavy_000, _001). File hashes below | CC0 | No | Yes | low | The owner's own recording of a real chain, which replaces these when it comes. UI art |
+
+AU-06's source files (SHA-256 of each file as fetched; the zips' hashes are in `tools/comfy/in/sfx/SOURCES.md`):
+
+| File | Page | Author | Licence | Fetched | SHA-256 |
+|---|---|---|---|---|---|
+| oga_80-CC0-RPG-SFX_0/chain_01.ogg | https://opengameart.org/content/80-cc0-rpg-sfx | rubberduck | CC0 | 2026-10-05 | d376caf0f61384b1d2e0b447f64f06be56d0ee0622ba70dd01cfdd78b3a10687 |
+| oga_80-CC0-RPG-SFX_0/chain_02.ogg | https://opengameart.org/content/80-cc0-rpg-sfx | rubberduck | CC0 | 2026-10-05 | dd3b753e54fd4e6ed94c36231d1950fafd681ff4a93462cfa3980099a6454ecb |
+| oga_80-CC0-RPG-SFX_0/chain_03.ogg | https://opengameart.org/content/80-cc0-rpg-sfx | rubberduck | CC0 | 2026-10-05 | ae2247dc68aa85bca15d87355353b5858441644b6a65172e9659f4d0819b42d6 |
+| oga_winch/winch - Marker #8.wav | https://opengameart.org/content/chain-winch-sounds | bart | CC0 | 2026-10-05 | c4b71e1fc97c878f01144c6ac99353eee54f6d19e7c1c6c484f1025282928411 |
+| oga_winch/winch - Marker #9.wav | https://opengameart.org/content/chain-winch-sounds | bart | CC0 | 2026-10-05 | 85277a66cf95ba97a13c289226dcac14e5c7c824e7a5b1108fae86818dde6bb6 |
+| kenney_rpg-audio/Audio/metalClick.ogg | https://kenney.nl/assets/rpg-audio | Kenney Vleugels (Kenney.nl) | CC0 1.0 | 2026-10-05 | 9851a69d0c613e13bceef08060ecc4148f098ef487927cbebe270d642398a3b3 |
+| kenney_rpg-audio/Audio/metalLatch.ogg | https://kenney.nl/assets/rpg-audio | Kenney Vleugels (Kenney.nl) | CC0 1.0 | 2026-10-05 | ba9ba60b172b3ebc131a940f25793cd2e207aca7af73dc80d637277f060f1708 |
+| kenney_impact-sounds/Audio/impactMetal_heavy_000.ogg | https://kenney.nl/assets/impact-sounds | Kenney Vleugels (Kenney.nl) | CC0 1.0 | 2026-10-05 | e07045693e4a2b3d165c424e3dab4c781d9ff8880a386880ac89a51315d7f831 |
+| kenney_impact-sounds/Audio/impactMetal_heavy_001.ogg | https://kenney.nl/assets/impact-sounds | Kenney Vleugels (Kenney.nl) | CC0 1.0 | 2026-10-05 | 83554049f81f4db9209379e103c30bfa63f65c42189a03f300b045c2c82e23ae |
 
 ### AI generators (AI): the tools behind the assets above
 

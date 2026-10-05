@@ -29,9 +29,11 @@ public static class Palette
         Set(School.Frost, "#f0fbff", 3, "#6cc8ff", 2.4f, "#a8c8d8", "#8fd0ff");
         Set(School.Storm, "#ffffff", 4, "#8ab4ff", 3, "#5a6a9a", "#9ab8ff");
         Set(School.Nature, "#e8ffd0", 3, "#7aff4a", 2.4f, "#3a5a2a", "#9aff6a");
-        Set(School.Arcane, "#fff0ff", 3.2f, "#c870ff", 2.8f, "#4a3a6a", "#cc88ff");
+        // Arcane's and shadow's hearts are violet, not white: past the tone curve's knee a pale
+        // core reads as cream or grey over the pale dead, and the school is lost.
+        Set(School.Arcane, "#e6b8ff", 2.0f, "#c870ff", 2.8f, "#4a3a6a", "#cc88ff");
         Set(School.Holy, "#fffbe8", 3.6f, "#ffd46a", 2.8f, "#b8a070", "#ffe0a0");
-        Set(School.Shadow, "#e8d8ff", 2.4f, "#8a4aff", 2.6f, "#1a1024", "#9a5cff");
+        Set(School.Shadow, "#b48cff", 1.7f, "#8a4aff", 2.6f, "#1a1024", "#9a5cff");
     }
 
     public static Hues Of(School s) => schools[(int)s];

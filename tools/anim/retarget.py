@@ -27,7 +27,7 @@ from pathlib import Path
 import numpy as np
 
 import bvh as bvhlib
-from rig import Clip, Skeleton, qbetween, qinv, qmul, qnorm, qrot, qslerp, two_bone_ik
+from rig import Clip, Skeleton, qaxis, qbetween, qinv, qmul, qnorm, qrot, qslerp, two_bone_ik
 
 MOCAP = Path(r"C:\Users\munch\Tools\mocap")
 
@@ -640,5 +640,76 @@ def lean_neck(rig, local):
     return L
 
 
+def spread_twist(sk: Skeleton, local, share=0.5):
+    """A take's forearm roll moved half into the forearm. Performers' rigs
+    put the roll of the forearm (the radius turning over the ulna) at the
+    wrist; on her, with no twist bones, all of it at the wrist wrings the
+    skin there like a sweet wrapper. Half in the forearm spreads it; the
+    hand's turn in the world is unchanged."""
+    L = local.copy()
+    for side in "lr":
+        la, ha = sk.i(f"lowerarm_{side}"), sk.i(f"hand_{side}")
+        axis = sk.rest_pos[ha] / np.linalg.norm(sk.rest_pos[ha])
+        rest = sk.rest_rot[ha]
+        for t in range(L.shape[0]):
+            d = qmul(L[t, ha], qinv(rest))  # the hand's turn from rest, in the forearm's frame
+            v = d[:3]
+            p = axis * np.dot(v, axis)
+            tw = np.array([p[0], p[1], p[2], d[3]])
+            n = np.linalg.norm(tw)
+            if n < 1e-9:
+                continue
+            tw = tw / n
+            if tw[3] < 0:
+                tw = -tw
+            part = qslerp(np.array([0, 0, 0, 1.0]), tw, share)
+            L[t, la] = qmul(L[t, la], part)
+            L[t, ha] = qmul(qinv(part), L[t, ha])
+    return L
+
+
+def keep_wrists(sk: Skeleton, local):
+    """A take's wrists brought within what a wrist can do (keyed.Rig's
+    range: far toward the palm and back, little to either side), read on
+    the wrist's own axes, which turn with the forearm's roll. A performer's
+    hand on another body's arm can land past them (her hands are smaller
+    and her forearms shorter); the hand then falls a little short."""
+    from keyed import Rig
+    L = local.copy()
+    for side in "lr":
+        ha = sk.i(f"hand_{side}")
+        mid = sk.i(f"middle_01_{side}")
+        y = sk.rest_pos[mid] / np.linalg.norm(sk.rest_pos[mid])
+        z = np.array([0, 0, 1.0]) - y * y[2]
+        z = z / np.linalg.norm(z)
+        x = np.cross(y, z)
+        sgn = 1.0 if side == "r" else -1.0
+        rest = sk.rest_rot[ha]
+        for t in range(L.shape[0]):
+            dh = qmul(qinv(rest), L[t, ha])
+            tw = np.array([*(y * np.dot(dh[:3], y)), dh[3]])
+            n = np.linalg.norm(tw)
+            if n < 1e-9:
+                continue
+            tw = tw / n
+            s = qmul(qinv(tw), dh)
+            if s[3] < 0:
+                s = -s
+            a = 2 * math.acos(min(1.0, s[3]))
+            if a < 1e-6 or np.linalg.norm(s[:3]) < 1e-9:
+                continue
+            ax = s[:3] / np.linalg.norm(s[:3])
+            d = math.degrees(a)
+            flex, dev = d * float(np.dot(ax, z)) * sgn, d * float(np.dot(ax, x))
+            f2, d2 = Rig._wrist_clamp(Rig, flex, dev)
+            if (f2, d2) == (flex, dev):
+                continue
+            v = f2 * sgn * z + d2 * x
+            ang = float(np.linalg.norm(v))
+            s2 = qaxis(v / ang, ang) if ang > 1e-6 else np.array([0, 0, 0, 1.0])
+            L[t, ha] = qmul(rest, qmul(tw, s2))
+    return L
+
+
 def clip_from(name, sk, local, pos, loop=False, meta=None):
-    return Clip(name, 30, local, pos, loop=loop, meta=meta or {})
+    return Clip(name, 30, keep_wrists(sk, spread_twist(sk, local)), pos, loop=loop, meta=meta or {})

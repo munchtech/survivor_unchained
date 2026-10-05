@@ -195,6 +195,31 @@ public class CinemaTests
         Assert.Throws<FormatException>(() => new CineSchedule(bad, new CineContext(), _ => 1));
     }
 
+    /// <summary>The owner: a cinematic that hands back to play leaves her where
+    /// play picks her up, facing the same way, with no snap and no cut. Its
+    /// end pose is the end mark (where a skip puts her, and the follow camera's
+    /// aim), her own body takes the last shot from a cut, and that shot blends
+    /// into the game's camera for half a second or more.</summary>
+    [Fact]
+    public void A_cinematic_that_ends_in_play_hands_her_over_where_it_leaves_her()
+    {
+        var ending = All().Where(f => f.End.Her != null).ToList();
+        Assert.Contains(ending, f => f.Id == "c01");
+        foreach (var f in ending)
+            foreach (var calling in new[] { "warden", "arcanist" })
+            {
+                var s = Lay(f, calling);
+                var end = f.Mark(f.End.Her!);
+                var pose = CineHandover.EndPose(s);
+                Assert.True(pose != null, $"{f.Id}: never puts her on a mark");
+                var (x, z, heading) = pose!.Value;
+                Assert.True(Math.Abs(x - end.X) + Math.Abs(z - end.Z) < 0.3, $"{f.Id} ({calling}): leaves her at ({x:0.0}, {z:0.0}), but play takes her up at its end mark ({end.X:0.0}, {end.Z:0.0})");
+                Assert.True(CineHandover.Turn(heading, end.Heading) < 35, $"{f.Id} ({calling}): leaves her facing {heading:0.00}, but its end mark faces {end.Heading:0.00}");
+                Assert.True(CineHandover.PlaysLastShot(s), $"{f.Id}: her own body does not take the last shot from its cut (a \"play\" cue at 0)");
+                Assert.True(CineHandover.Blend(s) >= 0.5, $"{f.Id}: the last shot cuts to the game's camera (a follow move of 0.5 s or more, to its end)");
+            }
+    }
+
     [Fact]
     public void A_shot_for_one_calling_is_played_only_for_it()
     {

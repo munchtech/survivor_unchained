@@ -1,62 +1,50 @@
 # Performance
 
-Status page for the performance lead (agent a56abaf3a104be675, branch `worktree-agent-a56abaf3a104be675`).
-**Handed off (context past 500k): a successor starts from `docs/handoff/performance.md`.** The method and older numbers are in `docs/PERF_AUDIT.md`.
+Status page for the performance lead (agent a0eb8c612c94d4aa5, branch `worktree-agent-a0eb8c612c94d4aa5`; took over from a56abaf3a104be675 on 2026-10-05). The handoff is `docs/handoff/performance.md`; the method and older numbers are in `docs/PERF_AUDIT.md`.
 
 ## Current state (2026-10-05)
 
-- **Release build: proved and accepted by the legal lead.**
-  - The listing is `docs/legal/records/RELEASE_PACK_LISTING.txt`.
-  - Nothing excluded ships. Every dependency and every file read with FileAccess ships.
-  - The release build ignores the developer switches (`--body hero`, `--quick`, `--shot`, `--perf`) and plays.
-  - `tools/godot/pack_listing.py` re-lists and checks the pack before an upload, as the checklist now asks.
-- **Load times: the quit crash is fixed.**
-  - The old prefetch fetched whole scenes through Godot's threaded loader and crashed on quit, 3 runs in 11.
-  - Now only the kit's KTX2 textures are transcoded, on .NET threads, and handed to the resource cache.
-  - Quit crashes: 0 in 20, the same as the base build.
-  - Waystation build: 10.4-10.8 s down to about 7 s; with the dependency reads in parallel (f16890ab), 4.3-5.8 s.
-  - Arena build: 6.5 s down to 4.5-5.2 s.
-  - The prefetch WIP branch is merged and replaced.
-- **Low tier:** her shadows now match High's (merged from perf-tiers-wip). It costs 0.5 ms more than the old Low, and Low still saves 1.8 ms against High.
-- **WIP, not for merging until verified:** `perf-loads-wip@65259ada`.
-  - Effects' meshes and blood splat made once a session (0.7 s at each place entered).
-  - `--travel ZONE@S`.
-  - Older VAT bakes swept (1.9 GB on this machine).
-  - Mipmaps and BC7/BC5 for the photoscans. Their textures have no mipmaps (probed); not yet seen in pictures. Agree this with arena art.
-- **Paired measurement on a shared GPU.** `--perf-flip X` takes X out every other second, and `tools/perf/flip.py` reads both halves of the same run.
+- **Release build: proved and accepted by the legal lead.** The listing is `docs/legal/records/RELEASE_PACK_LISTING.txt`; `tools/godot/pack_listing.py` re-lists and checks it before an upload.
+- **Loads (perf-loads-wip, verified and landed):**
+  - **The photoscans (art/world/*.glb) now have mipmaps and BC7/BC5** (`tools_scenes/import_world.gd`). Arena art agreed after before/after pictures. At the game camera (23 and 31 m) the difference is about 1/255, invisible.
+    - The arena's VRAM drops 2,226 to 1,998 MB.
+    - The arena's flora lap drops 1.5-2.2 s to 0.87-1.02 s, from three interleaved runs each.
+  - **Effects' meshes and the blood splat are made once a session.** A second entry's "rest of the stage" drops 0.5-0.84 s to 0.15-0.18 s.
+  - **Older VAT bakes are swept** before a new one is written: 903 MB of v7-v11 down to the v13 set.
+  - **`--travel ZONE@S[,ZONE@S...]`** chains entries, to measure warm and repeat builds.
+- **Measure the C# as players run it.** The editor's game DLL is a Debug build (`/optimize-`); a release export is optimised. Kept builds for A/B runs: `dotnet build -p:Optimize=true --no-incremental` (MSBuild doesn't notice the property alone). C#-heavy costs (bakes, sim, crowd) read high in Debug.
+- **Paired measurement on a shared GPU:** `--perf-flip X` takes X out every other second, and `tools/perf/flip.py` reads both halves of the same run.
 
-## Measured (2560x1440, paired flips; "dense" is tier 3 at 27.5 min, ~340 foes)
+## Measured (2560x1440; "dense" is tier 3 at 27.5 min, ~340 foes)
 
-| what | GPU cost | notes |
+| what | cost | notes |
 |---|---|---|
-| Medium vs High | -1.0 ms | |
-| Low vs High | -1.8 ms | the old Low: -2.3 ms |
-| FSR quality / balanced / performance vs native | -1.4 / -1.8 / -2.0 ms | her frame-to-frame flicker doubles (0.29 to 0.55-0.64), so FSR stays opt-in |
-| MSAA 2x at Medium | +0.4 ms (quiet GPU) to +0.9 ms (busy) | her edges nearly as steady as High's: 5 flickering pixels against High's 2 and plain Medium's 8 |
-| SMAA at Medium (with TAA) | +0.07 ms | worse: 100 flickering pixels. SMAA on jittered frames fights TAA. Rejected |
-| her, by calling (town / dense) | warden 0.60/0.68, reaver 0.84/1.06, arcanist 0.50, stalker 0.61 ms | reaver: 21 fur shells, 2.5M primitives |
-| her fur's shadows (reaver) | 0.15-0.25 ms | 42 shadow draws |
-| grass (barrow, 2.8M prims / hollow, 0.8M) | 0.72 / 0.4 ms | off-view tussocks cost nothing (an early-out saved 0.03 ms, so it was removed) |
+| Medium / Low vs High | -1.0 / -1.8 ms GPU | |
+| FSR quality / balanced / performance | -1.4 / -1.8 / -2.0 ms GPU | doubles the flicker round her, so it stays opt-in |
+| her, by calling (town / dense) | warden 0.60/0.68, reaver 0.84/1.06 ms GPU | outfits 375k-708k triangles, kept |
+| grass (barrow / hollow) | 0.72 / 0.4 ms GPU | |
+| arena first build (Debug C#) | 3.6-6.8 s | her 1.2-2.3 s, flora 0.9 s (was 1.5-2.2), the rest of the stage 0.6-1.1 s, fresh bakes 2.0-2.6 s |
+| Waystation, entered second (warm) | 1.9-2.8 s | her 0.27-0.43 s; its people 0.54-1.6 s; its textures 0.4-0.8 s |
+| first-launch bakes (Debug C#) | wolf 1.2-1.6 s, boar 0.74-0.94 s | 74% of it is skinning frames (C# math), 2% posing |
 
 ## Key decisions
 
-- **Measure with paired flips while the GPU is shared.** Draw counts are exact. Plain A/B GPU numbers swing by 2x.
-- **Load by decoding textures ourselves, not with Godot's threaded loader.** The threaded loader crashed on quit in 4.5.1, and identical textures come from the same transcoder.
-- **Her detail is never traded by a tier.** Her outfits are 375k-708k triangles with no LODs. That is kept: the owner's rule.
-- **Heavy work takes turns** (`tools/turn.py take godot`), and profiling happens only while holding one.
+- **Paired flips for GPU costs** while the GPU is shared. Draw counts are exact; plain A/B GPU numbers swing by 2x.
+- **No Godot threaded loader.** It crashed on quit in 4.5.1; we decode textures on .NET threads ourselves.
+- **Her detail is never traded by a tier.** No LODs on her, all her fur shells, her textures lossless (the owner's rule).
+- **Medium stays without MSAA (closed, 2026-10-05).** The owner took the main session's recommendation. MSAA 2x steadies her edges at 23 m (5 flickering pixels against 8), but it costs 0.4-0.9 ms, half of what Medium saves.
+- **Invisible changes only**, unless the owner or the owning lead agrees.
 
 ## Next
 
-1. **Medium's edges: the owner's call** (asked of the main session). Without MSAA, her hair rims and sword shimmer a little at 23 m (8 pixels against High's 2). MSAA 2x fixes most of it (5) but costs 0.4-0.9 ms, about half of what Medium saves. It is unchanged until decided.
-2. Verify and land `perf-loads-wip` (how: `docs/handoff/performance.md`, In progress).
-3. Load: her build ("the survivor stood up", 2.0-2.5 s; re-profile after the main session's TuckSkin), and the arena's flora (1.4-1.7 s: the photoscans).
-4. First-launch VAT bakes: 2.0 s fresh against 0.1 s cached at the arena's start, and more mid-fight.
-5. Hitches in the dense fight: a 22-39 ms main-thread spike now and then (one with a gen-1 GC), outside the timed parts.
-6. Arena art's Hollow by Night story place: six deadfalls with lights, and gate lights.
+1. First-launch VAT bakes: measure them optimised; skin the frames on worker threads (byte-identical); pre-read the cached kinds before they're needed mid-fight.
+2. Her first build (1.2-2.3 s, nearly all resource loading: heroine.glb is 73 MB imported). Her warm build is already 0.3-0.4 s.
+3. The dense fight's 22-39 ms main-thread spikes (profile under way).
+4. Hollow by Night (`--night hollow`), and loot's drop beams and light pillars once they land.
 
 ## Notes for other areas
 
-- **Legal:** re-list the pack before every upload with `python tools/godot/pack_listing.py Windows`.
-- **Arena art:** grass costs 0.72 ms in the barrow; your call on the blade count. The photoscans' textures (art/world) have no mipmaps: probed as RGB8 1K, none. Read from 20-50 pixels away, they should alias, though I haven't yet seen it in pictures. A fix waits on `perf-loads-wip` for your word.
-- **Skills:** BattleFx's pickup and weapon meshes and Gore's splat are made once a session on `perf-loads-wip` (0.7 s at each place entered).
-- **Main session / heroine outfits:** her outfits are heavy (warden 708k triangles, ranger 651k). She costs 0.5-1.1 ms of GPU. Nothing is traded, as the rule says.
+- **Arena art:** the photoscans' mipmaps and BC7/BC5 have landed, as agreed. Re-shoot the arenas after your next merge and tell me if any scan blocks up or changes colour.
+- **Skills:** BattleFx's pickup and weapon meshes and Gore's splat are made once a session now (kept by item and size in `BattleFx.Kept`), not again at every place entered.
+- **Creatures:** the new boar's normal map goes in as a compile-time variant (`VAT_NORMAL`). Every other kind's pipeline stays as it is.
+- **Legal:** re-list the pack before every upload: `python tools/godot/pack_listing.py Windows`.

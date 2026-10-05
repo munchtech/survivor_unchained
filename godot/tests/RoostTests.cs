@@ -199,8 +199,7 @@ public class RoostTests
         Step(n, 400, each: _ =>
         {
             if (boss.Alive && boss.TakenMul > 0) n.B.HitEnemy(boss, boss.MaxHp * 0.02, School.Physical, [Tag.Physical], new HitOpts { NoCrit = true });
-            var choice = n.Zone.Interactables.FirstOrDefault(i => i.Id == "story:finish");
-            choice?.Act();
+            if (n.Zone.Choice != null) n.Zone.Answer("finish");
         }, until: () => n.Zone.Won);
         Assert.True(n.Zone.Won);
         Assert.InRange(n.B.Time - t0, 80, 220);
@@ -210,7 +209,8 @@ public class RoostTests
         Assert.Empty(n.B.Collision.ByTag("carts").Concat(n.B.Collision.ByTag("cage")));
     }
 
-    /// <summary>At his knee, the owner's choice: spare him, or finish it. The outcome is the one she chose.</summary>
+    /// <summary>At his knee, the owner's choice: spare him, or finish it. It is put to her wherever she stands,
+    /// named; the outcome is the one she chose.</summary>
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -223,13 +223,23 @@ public class RoostTests
         Step(n, 400, each: _ =>
         {
             if (boss.Alive && boss.TakenMul > 0) n.B.HitEnemy(boss, boss.MaxHp * 0.02, School.Physical, [Tag.Physical], new HitOpts { NoCrit = true });
-        }, until: () => n.Zone.Interactables.Any(i => i.Id == "story:let_go"));
-        Assert.Equal("Spare him", n.Zone.Interactables.First(i => i.Id == "story:let_go").Verb);
-        n.Zone.Interactables.First(i => i.Id == (spare ? "story:let_go" : "story:finish")).Act();
+        }, until: () => n.Zone.Choice != null);
+        var c = n.Zone.Choice!;
+        Assert.Equal("Redcowl", c.Who);
+        Assert.Equal("Spare him, or finish it", c.Title);
+        Assert.Equal(["Spare him", "Finish it"], c.Answers.Select(a => a.Verb));
+        // Nothing near him to walk to: the choice is answered from anywhere.
+        Assert.Empty(n.Zone.Interactables.Where(i => i.Id.StartsWith("story:")));
+        // Left waiting, it waits, and his lot keep back from her.
+        Step(n, 20);
+        Assert.Same(c, n.Zone.Choice);
+        Assert.False(n.Zone.Won);
+        Assert.Empty(n.B.Enemies.Living().Where(e => !e.Scripted && e.State != EnemyState.Dying && n.B.HostileToPlayer(e) && !e.Status.Has(StatusKind.Fear)).Select(e => $"{e.Def.Id} {e.State} {e.Disposition} at ({e.X:0},{e.Z:0})"));
+        n.Zone.Answer(spare ? "let_go" : "finish");
+        Assert.Null(n.Zone.Choice);
         Step(n, 12, until: () => n.Zone.Won);
         Assert.True(n.Zone.Won);
         Assert.Equal(spare ? "spared" : "dead", n.J.World.Fact("redcowl").Str);
-        Assert.Empty(n.Zone.Interactables.Where(i => i.Id.StartsWith("story:")));
     }
 
     /// <summary>The cage: ten posts round her with one gap facing him. A post gives to her standing by it

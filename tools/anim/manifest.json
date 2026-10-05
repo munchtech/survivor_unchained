@@ -8,7 +8,7 @@
   "Kimodo": "NVIDIA Kimodo-SOMA-RP-v1.1, NVIDIA Open Model License: generated motion (tools/anim/kimodo_gen.py).",
   "SAM 3D Body": "Meta SAM 3D Body (SAM License) with the Momentum Human Rig (Apache 2.0): motion from video (tools/anim/video_motion.py); test footage from Pexels (Pexels licence), each clip's URL in its row."
  },
- "made": 71,
+ "made": 79,
  "planned": 71,
  "clips": [
   {
@@ -116,7 +116,7 @@
    "source": "keyed (tools/anim)",
    "licence": "own work",
    "changes": "",
-   "length": 3.467,
+   "length": 4.133,
    "layer": "full"
   },
   {
@@ -464,7 +464,7 @@
    "source": "keyed (tools/anim)",
    "licence": "own work",
    "changes": "",
-   "length": 0.867,
+   "length": 0.9,
    "layer": "full"
   },
   {
@@ -725,7 +725,7 @@
    "status": "made",
    "fallback": "-",
    "made_by": "keyed",
-   "source": "keyed (tools/anim)",
+   "source": "keyed (tools/anim/clips/story.py)",
    "licence": "own work",
    "changes": "",
    "length": 7.0,
@@ -737,7 +737,7 @@
    "status": "made",
    "fallback": "-",
    "made_by": "keyed",
-   "source": "keyed (tools/anim)",
+   "source": "keyed (tools/anim/clips/story.py)",
    "licence": "own work",
    "changes": "",
    "length": 6.0,
@@ -861,6 +861,102 @@
    "licence": "own work",
    "changes": "",
    "length": 3.0,
+   "layer": "full"
+  },
+  {
+   "clip": "cup_hands",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 3.5,
+   "layer": "full"
+  },
+  {
+   "clip": "flask_drink",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "keyed over 100STYLE Neutral_ID frames 655-1368 (60 fps)",
+   "licence": "CC BY 4.0",
+   "changes": "retargeted to her skeleton, feet locked, centred; back, head and arms keyed over",
+   "length": 11.633,
+   "layer": "full"
+  },
+  {
+   "clip": "kneel_to_stand_snap",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "keyed (tools/anim/clips/story.py)",
+   "licence": "own work",
+   "changes": "",
+   "length": 3.3,
+   "layer": "full"
+  },
+  {
+   "clip": "letter",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 7.667,
+   "layer": "full"
+  },
+  {
+   "clip": "take_from_log",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "keyed (tools/anim)",
+   "licence": "own work",
+   "changes": "",
+   "length": 2.0,
+   "layer": "full"
+  },
+  {
+   "clip": "wade",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "100STYLE Neutral_FW frames 799-883 (60 fps)",
+   "licence": "CC BY 4.0",
+   "changes": "retargeted to her skeleton, feet locked, travel taken out, looped (seam spread)",
+   "length": 1.4,
+   "layer": "full"
+  },
+  {
+   "clip": "walk_tired",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "100STYLE Neutral_FW frames 799-883 (60 fps)",
+   "licence": "CC BY 4.0",
+   "changes": "retargeted to her skeleton, feet locked, travel taken out, looped (seam spread)",
+   "length": 1.4,
+   "layer": "full"
+  },
+  {
+   "clip": "walk_uphill",
+   "plays_for": "(not in the plan)",
+   "status": "made",
+   "fallback": "-",
+   "made_by": "",
+   "source": "100STYLE Neutral_FW frames 799-883 (60 fps)",
+   "licence": "CC BY 4.0",
+   "changes": "retargeted to her skeleton, feet locked, travel taken out, looped (seam spread)",
+   "length": 1.4,
    "layer": "full"
   }
  ]

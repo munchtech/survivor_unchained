@@ -88,8 +88,20 @@ public partial class Game
         // (the credits are opened from the pause menu, and the world waits for them as it does for it)
         scene.SimPaused = o is PauseScreen or CreditsScreen || zone?.Ember == true;
         cam.ScreenShift = o.CameraShift;
+        cam.ScreenNear = o.CameraNear;
+        LookFor(o.CameraLook);
         controls.Captured = true;
         hud.Prompt(promptShown = null);
+    }
+
+    bool screenLook;
+
+    /// <summary>The view looks where a screen asks (a counter's keeper), and back at the survivor
+    /// when it closes; a cutscene's own framing is never taken from it.</summary>
+    void LookFor((double X, double Z)? at)
+    {
+        if (at is { } p && scene != null) { cam.FocusOverride = new Godot.Vector3((float)p.X, (float)scene.HeightAt(p.X, p.Z) + 0.8f, (float)p.Z); screenLook = true; }
+        else if (screenLook) { cam.FocusOverride = null; screenLook = false; }
     }
 
     /// <summary>The credits and licences, from the title or the pause menu; closing them goes back there.</summary>
@@ -106,6 +118,8 @@ public partial class Game
         // A shop, the pack or a rest may have changed what people's markers say.
         zone?.Touched();
         cam.ScreenShift = 0;
+        cam.ScreenNear = 1;
+        LookFor(null);
         if (scene != null && hudMode == null) scene.SimPaused = false;
         controls.Captured = false;
         controls.ClearLatches();
@@ -196,6 +210,8 @@ public partial class Game
     /* ------------------------------------------------------------ draft -- */
 
     List<Offer> offers = new();
+    /// <summary>The draft on the table now (the autopilot reads it).</summary>
+    public IReadOnlyList<Offer> Offers => offers;
 
     void UpdateDraft(double dt)
     {
@@ -224,6 +240,7 @@ public partial class Game
         var tip = draftTip;
         draftTip = null;
         string? great = LevelUp.GreatNext(b) ? b.Time < 60 ? "Dusk: the ember wakes, and any of them is yours" : "Midnight: a second, or the first deepened" : null;
+        using var _ = new Perf.Span(Perf.Part.DraftUi);
         hud.Draft(new DraftView(LevelUp.DraftLevel(b), LevelUp.BlessingNext(b), list, b.Rerolls, b.Banishes, LevelUp.Queued(b), tip,
             LevelUp.BuildTags(b), Pick, Reroll, Banish, great, b, LevelUp.CanSkip(b) ? Skip : null));
     }

@@ -188,6 +188,23 @@ public partial class Voices : Node3D
         var cam = GetViewport()?.GetCamera3D();
         if (cam == null) return;
         var placed = new List<Rect2>();
+        // The name plates first, as they stand on the screen: a line never prints over someone's name
+        // (crafting's finding at the forge); it is lifted clear of it as of an older line.
+        if (display != null && plates.Count > 0)
+        {
+            float vpH = GetViewport().GetVisibleRect().Size.Y;
+            // (a fixed-size Label3D's font pixel on the screen)
+            float k = 0.0007f / (2 * Mathf.Tan(Mathf.DegToRad(cam.Fov) / 2)) * vpH;
+            foreach (var (n, m) in plates.Values)
+            {
+                if (!n.Visible || n.Text == "" || cam.IsPositionBehind(n.Position)) continue;
+                var c = cam.UnprojectPosition(n.Position);
+                var lines = n.Text.Split('\n');
+                float w = lines.Max(l => display.GetStringSize(l, HorizontalAlignment.Left, -1, n.FontSize).X) * k, h = lines.Length * n.FontSize * 1.3f * k;
+                placed.Add(new Rect2(c - new Vector2(w / 2, h / 2), new Vector2(w, h)).Grow(4));
+                if (m.Visible) placed.Add(new Rect2(c - new Vector2(m.FontSize * k / 2, m.Offset.Y * k + m.FontSize * k / 2), new Vector2(m.FontSize * k, m.FontSize * k)));
+            }
+        }
         float ease = 1 - Mathf.Exp(-10f * (float)delta);
         foreach (var b in barks)
         {
@@ -197,6 +214,14 @@ public partial class Voices : Node3D
             var size = b.Box.GetCombinedMinimumSize();
             // (rising a little as it is said)
             var at = cam.UnprojectPosition(head) - new Vector2(size.X / 2, size.Y + (float)Math.Min(b.T, 3) * 6);
+            // A speaker at the top of the screen says it under their feet, not under the HUD's bars
+            // nor over the name of the move they make (held just under the bars: Hits.UnderTheBars).
+            float top = Ui.GameHud.TopClear + 66;
+            if (at.Y < top) at.Y = Math.Max(top, cam.UnprojectPosition(b.At).Y + 14);
+            at.X = Mathf.Clamp(at.X, 16, 1904 - size.X);
+            // Never inside the banner's words, nor beside them on their line (read across, a howl's
+            // caption and the banner's title made one sentence): under them (over them is the boss's bar).
+            if (Ui.GameHud.Banner is Rect2 band && band.GrowIndividual(140, 6, 140, 6).Intersects(new Rect2(at, size))) at.Y = band.End.Y + 10;
             float want = 0;
             for (int pass = 0; pass < 8; pass++)
             {

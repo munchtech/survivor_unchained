@@ -31,7 +31,7 @@ public partial class ChestCeremony : Control
     readonly float lie;
     readonly double speed;
     readonly int count;
-    readonly bool gold;
+    readonly bool gold, bare;
 
     Node3D chest = null!;
     Node3D? lid;
@@ -78,6 +78,7 @@ public partial class ChestCeremony : Control
         at = new Vector3((float)c.X, (float)scene.HeightAt(c.X, c.Z), (float)c.Z);
         lie = c.Seed * 2.4f;
         gold = c.Items.Any(i => i.Kind == ChestItemKind.Evolution);
+        bare = c.Bare;
         speed = c.Opened >= 3 && c.Hoard == null && count < 5 ? 1.7 : 1;
         Style.Fill(this);
         MouseFilter = MouseFilterEnum.Ignore;
@@ -98,11 +99,24 @@ public partial class ChestCeremony : Control
         ChestItemKind.Evolution => it.Before != null ? $"{it.Before} evolves" : "Evolution",
         ChestItemKind.Rank => it.From <= 0 ? "New" : $"Rank {it.From} to {it.To}",
         ChestItemKind.Passive => it.From <= 0 ? "New passive" : $"Rank {it.From} to {it.To}",
+        // Gear says what its tooltip will ("Rare Head"); a chart is a chart.
+        ChestItemKind.Gear => it.Id == Maps.Charts.Item ? "A Wayfinder's chart"
+            : $"{Rpg.Items.RarityNames[Math.Clamp((int)it.Rarity, 0, Rpg.Items.RarityNames.Count - 1)]} {(Rpg.Items.Find(it.Id) is { } d ? ItemViews.KindName(d.Kind) : "find")}",
         _ => "Coin, and breath back",
     };
 
+    /// <summary>Where a thing goes as the opening closes: gear down to where it lies on the ground
+    /// (it is there to be picked up, not on the bar), the rest home to its place on the bar.</summary>
+    Vector2 HomeOf(ChestItem it)
+    {
+        if (it.X is not double x || it.Z is not double z) return hud.PlaceOf(it.Id);
+        var w = new Vector3((float)x, (float)scene.HeightAt(x, z) + 0.35f, (float)z);
+        return cam.Camera.IsPositionBehind(w) ? hud.PlaceOf(it.Id) : cam.Camera.UnprojectPosition(w);
+    }
+
     public override void _Ready()
     {
+        hud.HoldToasts = true;
         BuildChest();
         // The edges of the world go dark round the chest: the eye goes where the light is.
         shade = new TextureRect
@@ -128,12 +142,13 @@ public partial class ChestCeremony : Control
         for (int i = 0; i < count; i++)
         {
             var it = c.Items[i];
-            float s = it.Kind == ChestItemKind.Evolution ? size + 26 : size;
+            float s = it.Kind == ChestItemKind.Evolution || bare ? size + 26 : size;
             var m = new Medallion((int)s, "", pool[i % pool.Count]) { Ring = Style.GoldDim, Ink = new Color("#e8dcc4"), Core = new Color("#1c1410"), Visible = false };
             m.Size = new Vector2(s, s);
             m.PivotOffset = new Vector2(s / 2, s / 2);
             var ring = new Shine { Size = new Vector2(s * 3, s * 3), Colour = ColourOf(it) };
-            var plate = Plate(it, count > 5 ? 160 : 190);
+            // Shown alone, its name is the kicker over it: the plate says only what it is.
+            var plate = Plate(it, bare ? 520 : count > 5 ? 160 : 190, !bare);
             plate.Modulate = Colors.Transparent;
             AddChild(ring);
             AddChild(m);
@@ -142,7 +157,7 @@ public partial class ChestCeremony : Control
             land += NextReel + (it.Kind == ChestItemKind.Evolution ? EvoHold : 0);
         }
         string title = c.Hoard ?? (count >= 5 ? "A hoard" : count >= 3 ? "A rich chest" : "A chest");
-        kicker = new Plaque(title, count >= 5 || c.Hoard != null ? 34 : 28, count >= 5 ? 120 : 80, gold ? Gilt : Style.GoldHi) { Modulate = Colors.Transparent };
+        kicker = new Plaque(title, count >= 5 || c.Hoard != null ? 34 : 28, count >= 5 ? 120 : 80, gold ? Gilt : bare && count > 0 ? ColourOf(c.Items[0]).Lightened(0.15f) : Style.GoldHi) { Modulate = Colors.Transparent };
         AddChild(kicker);
         hint = Style.Hint(Act.Confirm, "Skip");
         hint.Modulate = Colors.Transparent;
@@ -153,25 +168,37 @@ public partial class ChestCeremony : Control
         cam.FocusOverride = at + Vector3.Up * 0.4f;
         near = Math.Min(savedDistance, count >= 5 || c.Hoard != null ? 13.5f : 12);
         cam.TargetDistance = near;
-        Sfx.ChestShake(Shake / speed, Total / speed + Outro);
+        // (a lock rattling, only where there is a chest)
+        if (!bare) Sfx.ChestShake(Shake / speed, Total / speed + Outro);
     }
 
     /// <summary>When the last reel stops, and how long the whole is held after.</summary>
     double LastLand => reels.Count > 0 ? reels[^1].Land : Shake + 0.6;
     double Total => LastLand + (count >= 5 || c.Hoard != null ? 1.8 : count >= 3 ? 1.3 : 0.9);
 
-    static Control Plate(ChestItem it, float width)
+    static Control Plate(ChestItem it, float width, bool named = true)
     {
         var col = ColourOf(it);
         var v = Style.V(2);
         v.CustomMinimumSize = new Vector2(width, 0);
         v.Size = new Vector2(width, 60);
-        var name = Style.Label(it.Name, Style.Display, it.Kind == ChestItemKind.Evolution ? 22 : 19, it.Kind == ChestItemKind.Evolution ? Gilt : Style.GoldHi, true, HorizontalAlignment.Center);
+        // Gear's name in its rarity's colour, as everywhere loot is named.
+        var ink = it.Kind switch { ChestItemKind.Evolution => Gilt, ChestItemKind.Gear => col.Lightened(0.15f), _ => Style.GoldHi };
+        var name = Style.Label(it.Name, Style.Display, it.Kind == ChestItemKind.Evolution ? 22 : 19, ink, true, HorizontalAlignment.Center);
         name.CustomMinimumSize = new Vector2(width, 0);
+        name.Visible = named;
         v.AddChild(name);
         var detail = Style.Label(DetailOf(it).ToUpperInvariant(), Style.UiHeavy, Style.Badge, col.Lightened(0.2f), true, HorizontalAlignment.Center);
         detail.CustomMinimumSize = new Vector2(width, 0);
         v.AddChild(detail);
+        // What it does, read where the eye already is (a Legendary's power).
+        if (it.Says is { Length: > 0 } says)
+        {
+            var line = Style.Label(says, Style.TextItalic, 21, new Color("#e8dcc6"), true, HorizontalAlignment.Center);
+            line.CustomMinimumSize = new Vector2(width, 0);
+            line.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+            v.AddChild(line);
+        }
         v.MouseFilter = MouseFilterEnum.Ignore;
         return v;
     }
@@ -209,6 +236,8 @@ public partial class ChestCeremony : Control
         }
         Lift(chest);
         scene.AddChild(chest);
+        // Shown alone: no chest, only its light where the thing lay.
+        if (bare) foreach (var k in chest.GetChildren()) if (k != light && k is Node3D n3) n3.Visible = false;
         Place(0);
     }
 
@@ -274,15 +303,16 @@ public partial class ChestCeremony : Control
         r.M.Ring = col;
         r.M.Ink = col.Lightened(0.2f);
         r.M.Core = col.Darkened(0.82f);
-        r.M.Lit = r.It.Kind == ChestItemKind.Evolution;
+        r.M.Lit = r.It.Kind == ChestItemKind.Evolution || bare;
         r.M.QueueRedraw();
         r.Ring.Start();
         if (!sound) return;
         Sfx.ChestLand(reels.IndexOf(r), r.It.Kind == ChestItemKind.Evolution);
-        haptics.Add(r.It.Kind == ChestItemKind.Evolution ? 0.5f : 0.1f, 0.3f, r.It.Kind == ChestItemKind.Evolution ? 0.2f : 0.04f);
-        if (r.It.Kind == ChestItemKind.Evolution)
+        bool big = r.It.Kind == ChestItemKind.Evolution || bare;
+        haptics.Add(big ? 0.5f : 0.1f, 0.3f, big ? 0.2f : 0.04f);
+        if (big)
         {
-            scene.Fx.Flash(at + Vector3.Up * 2, Gilt, 14, 0.8f, 12);
+            scene.Fx.Flash(at + Vector3.Up * 2, bare ? ColourOf(r.It) : Gilt, 14, 0.8f, 12);
             cam.AddTrauma(0.18f);
         }
     }
@@ -320,8 +350,9 @@ public partial class ChestCeremony : Control
         int n = reels.Count;
         float gap = n <= 5 ? 200 : Math.Min(200, 1560f / n);
         float cx = Mathf.Clamp(mouth.X, 140 + gap * (n - 1) / 2, 1780 - gap * (n - 1) / 2);
-        // Clear of the top bars (a herald's or a boss's name and health sit there).
-        float cy = Math.Max(390, mouth.Y - 250);
+        // Over her head, not across it (she stands at the chest, and the middle name sat on her
+        // face), and clear of the top bars (a herald's or a boss's name and health sit there).
+        float cy = Math.Max(GameHud.TopClear + 150, mouth.Y - 340);
         for (int i = 0; i < n; i++)
         {
             var r = reels[i];
@@ -353,9 +384,9 @@ public partial class ChestCeremony : Control
             }
             if (closing)
             {
-                // Home to its place on the bar, shrinking as it goes.
+                // Home to its place on the bar (or down to the ground it lies on), shrinking as it goes.
                 float k = Smooth(closeT / Outro);
-                pos = pos.Lerp(hud.PlaceOf(r.It.Id), k);
+                pos = pos.Lerp(HomeOf(r.It), k);
                 scale *= 1 - 0.65f * k;
                 r.Plate.Modulate = Colors.White with { A = 1 - Smooth(closeT / (Outro * 0.5)) };
                 r.M.Modulate = Colors.White with { A = 1 - Smooth((closeT - Outro * 0.7) / (Outro * 0.3)) };
@@ -376,6 +407,7 @@ public partial class ChestCeremony : Control
             scene.Hold = 0;
             chest.QueueFree();
             Done = true;
+            hud.HoldToasts = false;
             // An evolution out of it: crowned on the bar as it arrives, and the world slowed for a
             // breath as the new thing fires its first.
             foreach (var r in reels) if (r.It.Kind == ChestItemKind.Evolution) { hud.Crown(r.It.Id); scene.Slow(0.6); }
@@ -387,6 +419,7 @@ public partial class ChestCeremony : Control
         // Left early (a zone changed under it): nothing of it stays in the world.
         if (IsInstanceValid(chest) && !chest.IsQueuedForDeletion()) chest.QueueFree();
         scene.Hold = 0;
+        hud.HoldToasts = false;
     }
 
     /// <summary>A ring of light thrown out from a thing as it lands.</summary>

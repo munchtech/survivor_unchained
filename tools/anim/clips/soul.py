@@ -99,11 +99,18 @@ def warden_show(rig):
     lf = f["foot_l"]["pos"]
     step = {"foot_l": {"pos": (lf[0], 0.0, lf[2] + 0.22), "rot": (8, 0, 0)}, "foot_r": f["foot_r"],
             "hips": {"pos": (0, -0.08, 0.10), "rot": (-10, 8, 0)}}
-    guard = {**step, "spine": (-8, 8, 0), "head": (14, 10, 0),
-             "hand_l": {"arc": arc_of((-0.14, -0.10, 0.30)), "pole": (1.0, -0.3, -0.3), "frame": "chest",
+    # The sword cocked high over her right shoulder, ready to come over the
+    # rim: the fist above the shoulder, the elbow out to the side, the blade
+    # back over her shoulder at a slant, its line clear against the sky
+    # from the front; her chin up, eyes over the rim. The forearm rises
+    # beside her head, never across her face. (Kept low and close in, the
+    # arm folded and the forearm came up across her face; pointed at the
+    # camera, the blade crossed her face and read as nothing.)
+    guard = {**step, "spine": (-8, 8, 0), "head": (12, -10, 0),
+             "hand_l": {"arc": arc_of((-0.14, -0.13, 0.30)), "pole": (1.0, -0.3, -0.3), "frame": "chest",
                         "blade": _n(-0.2, 0.9, 0.4), "twist": 0.3},
-             "hand_r": {"arc": arc_of((0.10, 0.06, 0.24)), "pole": (-0.9, 0.3, -0.3), "frame": "chest",
-                        "blade": _n(0.15, 0.05, 1.0), "twist": 0.5},
+             "hand_r": {"arc": arc_of((-0.14, 0.29, -0.04)), "pole": (-1.0, -0.2, -0.2), "frame": "chest",
+                        "blade": _n(0.28, 0.02, 0.96), "twist": 0.5},
              "fingers_l": "fist", "fingers_r": "grip"}
     keys = [
         (0, over("warden"), "auto"),
@@ -112,7 +119,7 @@ def warden_show(rig):
         (50, {**guard, "spine": (-8, 9, 0)}, "ease"),
         (70, over("warden"), "ease"),
     ]
-    return build("warden_show", rig, keys, base=base, meta={"layer": "full"})
+    return build("warden_show", rig, keys, base=base, meta={"layer": "full", "weapon": "sword+shield"})
 
 
 def arcanist_show(rig):
@@ -138,7 +145,7 @@ def arcanist_show(rig):
                           "knuckles": _n(0.6, 0.35, 0.7)}, fingers_l="spread"), "ease"),
         (78, over("arcanist"), "ease"),
     ]
-    return build("arcanist_show", rig, keys, base=base, meta={"layer": "full"})
+    return build("arcanist_show", rig, keys, base=base, meta={"layer": "full", "weapon": "staff"})
 
 
 def reaver_show(rig):
@@ -160,7 +167,7 @@ def reaver_show(rig):
         (60, over("reaver", hips={"rot": (8, 0, 4)}, spine=(4, -4, 0), head=(-6, -14, -4)), "ease"),
         (72, over("reaver"), "ease"),
     ]
-    return build("reaver_show", rig, keys, base=base, meta={"layer": "full"})
+    return build("reaver_show", rig, keys, base=base, meta={"layer": "full", "weapon": "axe"})
 
 
 def stalker_show(rig):
@@ -183,7 +190,7 @@ def stalker_show(rig):
         (74, aim(0), "ease"),
         (90, over("stalker"), "ease"),
     ]
-    return build("stalker_show", rig, keys, base=base, meta={"layer": "full"})
+    return build("stalker_show", rig, keys, base=base, meta={"layer": "full", "weapon": "crossbow"})
 
 
 # ----------------------------------------------------------------- breaks --
@@ -208,7 +215,7 @@ def warden_break(rig):
                           "blade": _n(-0.55, 0.35, 0.75), "twist": 0.6}), "ease"),
         (100, over("warden"), "ease"),
     ]
-    return build("idle_warden_break", rig, keys, base=base, meta={"layer": "full"})
+    return build("idle_warden_break", rig, keys, base=base, meta={"layer": "full", "weapon": "sword+shield"})
 
 
 def arcanist_break(rig):
@@ -226,11 +233,17 @@ def arcanist_break(rig):
         first = (18, over("arcanist", hand_l=rub, head=(-4, 12, -6), fingers_l="relaxed"), "ease")
         second = (28, over("arcanist", hand_l={**rub, "pos": (0.02, float(neck[1]) + 0.04, float(neck[2]) - 0.11)}, head=(-6, 14, -10)), "ease")
     else:
-        # A strand tucked behind her ear.
+        # A strand tucked behind her ear: the hand comes up before her
+        # shoulder, fingers up, palm to her, then back over the ear (it turns
+        # on the way, not at the top).
+        tuck = {"pos": (0.13, 1.62, 0.04), "pole": (1.0, 0.2, -0.3), "knuckles": (-0.25, 0.8, -0.55)}
         first = (18, over("arcanist", hand_l=tuck, head=(-6, 4, 8), fingers_l="relaxed"), "ease")
         second = (28, over("arcanist", hand_l={**tuck, "pos": (0.14, 1.60, -0.02)}, head=(-6, 4, 8)), "ease")
+    rising = (9, over("arcanist", hand_l={"pos": (0.16, 1.38, 0.16), "pole": (1.0, -0.3, -0.3), "knuckles": (-0.1, 0.9, 0.3)},
+                      fingers_l="relaxed"), "auto")
     keys = [
         (0, over("arcanist"), "auto"),
+        *([rising] if rig.body != "him" else []),
         first,
         second,
         # Up at the sky, the staff turning in her fingers.
@@ -239,15 +252,20 @@ def arcanist_break(rig):
         (74, over("arcanist", head=(8, -20, 0), hand_r=staff(-20)), "ease"),
         (100, over("arcanist"), "ease"),
     ]
-    return build("idle_arcanist_break", rig, keys, base=base, meta={"layer": "full"})
+    return build("idle_arcanist_break", rig, keys, base=base, meta={"layer": "full", "weapon": "staff"})
 
 
 def reaver_break(rig):
     base = idle.base_of(rig, "reaver")
     def spin(a):
+        # The axe rocked over and back in the fist by the forearm's roll, the
+        # wrist straight, its head sweeping round her fist and back: a twirl.
+        # (Keyed as a wheel spun twice round, it asked the hand to turn a
+        # full turn about the haft, which no wrist can; the hand rolled over
+        # in a frame.)
         r = math.radians(a)
         return {"arc": arc_of((-0.16, -0.24, 0.30)), "pole": (-0.8, -0.4, -0.2), "frame": "chest",
-                "blade": _n(-0.2, math.cos(r), math.sin(r)), "twist": 0.7}
+                "thumb": (-math.sin(r), math.cos(r), 0.2), "twist": 0.7}
     keys = [
         (0, over("reaver"), "auto"),
         # Her neck rolled, slow, a crack at the end of it.
@@ -255,13 +273,13 @@ def reaver_break(rig):
         (18, over("reaver", head=(14, 4, 0)), "auto"),
         (26, over("reaver", head=(0, -14, -14)), "auto"),
         (32, over("reaver", head=(-10, 0, 0)), "ease"),
-        # The axe off her shoulder and spun in the wrist, twice round.
-        (40, over("reaver", hand_r=spin(-120)), "auto"),
-        (46, over("reaver", hand_r=spin(-30)), "linear"),
-        (50, over("reaver", hand_r=spin(60)), "linear"),
-        (54, over("reaver", hand_r=spin(150)), "linear"),
-        (58, over("reaver", hand_r=spin(240)), "linear"),
-        (62, over("reaver", hand_r=spin(330)), "auto"),
+        # The axe off her shoulder and twirled in the fist, over and back, twice.
+        (40, over("reaver", hand_r=spin(-75)), "auto"),
+        (45, over("reaver", hand_r=spin(70)), "auto"),
+        (50, over("reaver", hand_r=spin(-70)), "auto"),
+        (55, over("reaver", hand_r=spin(70)), "auto"),
+        (60, over("reaver", hand_r=spin(-40)), "auto"),
+        (64, over("reaver", hand_r=spin(10)), "auto"),
         (70, over("reaver", hips={"rot": (6, 0, 3)}), "ease"),
         # Shaking out the left hand.
         (78, over("reaver", hand_l={"arc": arc_of((-0.04, -0.40, 0.10)), "pole": (0.4, 0, -1), "frame": "chest"},
@@ -270,7 +288,7 @@ def reaver_break(rig):
                   fingers_l="spread"), "auto"),
         (100, over("reaver"), "ease"),
     ]
-    return build("idle_reaver_break", rig, keys, base=base, meta={"layer": "full"})
+    return build("idle_reaver_break", rig, keys, base=base, meta={"layer": "full", "weapon": "axe"})
 
 
 def stalker_break(rig):
@@ -292,7 +310,7 @@ def stalker_break(rig):
         (110, over("stalker", foot_l=f["foot_l"], foot_r=f["foot_r"]), "ease"),
         (120, over("stalker"), "ease"),
     ]
-    return build("idle_stalker_break", rig, keys, base=base, meta={"layer": "full"})
+    return build("idle_stalker_break", rig, keys, base=base, meta={"layer": "full", "weapon": "crossbow"})
 
 
 def catch_breath(rig):
@@ -328,8 +346,18 @@ def catch_breath(rig):
         (48, bent(-0.6), "auto"),
         (60, bent(0.9), "auto"),
         (74, bent(-0.3, up=0.4), "auto"),
-        (90, upright, "ease"),
-        (104, body(stance(0.05), hand_l=arm((-0.02, -0.38, 0.06), (0.6, -0.4, -0.5)),
+        # Up off the knee, the hand rising before her chest, fingers up, palm
+        # toward her, before it goes into her hair (it turns over on the way,
+        # not in a flick at the top).
+        (86, body(stance(0.05), spine=(0, 6, 0), head=(-4, 0, 2),
+                  hand_l={"pos": (0.13, 1.30 + hy, 0.22 + hz), "pole": (0.9, -0.2, -0.3), "knuckles": (0.05, 0.9, 0.35)},
+                  hand_r=arm((0.02, -0.36, 0.10), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="grip"), "auto"),
+        (98, upright, "ease"),
+        # Down again round the front of her, not back through her shoulder.
+        (110, body(stance(0.05), spine=(0, 3, 0), head=(-3, -2, 2),
+                   hand_l={"pos": (0.16, 1.24 + hy, 0.20 + hz), "pole": (0.9, -0.3, -0.3), "knuckles": (0.1, 0.55, 0.8)},
+                   hand_r=arm((0.02, -0.37, 0.08), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="grip"), "auto"),
+        (124, body(stance(0.05), hand_l=arm((-0.02, -0.38, 0.06), (0.6, -0.4, -0.5)),
                    hand_r=arm((0.02, -0.38, 0.06), (-0.6, -0.4, -0.5)), fingers_l="relaxed", fingers_r="grip"), "ease"),
     ]
     return build("catch_breath", rig, keys, meta={"layer": "full"})

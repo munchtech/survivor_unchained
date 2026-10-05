@@ -21,6 +21,8 @@ public partial class Flipbooks : Node3D
         ["fire_blast"] = (0.45f, 0.5f), ["fire_loop"] = (0.85f, 0.4f), ["frost_burst"] = (0.3f, 0.5f),
         ["storm_strike"] = (0.7f, 0.3f), ["holy_burst"] = (0.55f, 0.5f), ["shadow_burst"] = (0.3f, 0.5f),
         ["nature_burst"] = (0.6f, 0.5f), ["blood_burst"] = (0f, 0.3f), ["blood_splat"] = (0f, 0.3f), ["blood_spray"] = (0f, 0.3f),
+        // Shadow's wisps drink the light: dark laid over the world, a little glow of their own.
+        ["shadow_wisps"] = (0.12f, 0.5f),
         ["dust_ring"] = (0f, 0.6f), ["smoke_puff"] = (0f, 0.8f), ["sparks"] = (1f, 0.2f), ["ember_motes"] = (1f, 0.3f), ["arcane_burst"] = (0.6f, 0.5f),
         // Not Yet's watch dial (one painted frame): light only.
         ["watch_dial"] = (1f, 0f),

@@ -150,8 +150,19 @@ def pose_at(g: Gait, rig: Rig, ph):
         k = 0.5 - 0.5 * math.cos(2 * math.pi * (ph - off - 0.5))  # 1: this arm fully forward
         fwd = np.array(g.arm_fwd) * [s * -1, 1, 1]
         back = np.array(g.arm_back) * [s * 1, 1, 1]
-        # The fist travels on a shallow arc, a touch higher through the middle.
-        v = back + (fwd - back) * _ease(k)
+        # The fist swings on an arc about the shoulder, the arm's reach
+        # changing only as the elbow opens and closes (a straight line from
+        # behind to in front would fold the arm up through the shoulder and
+        # spin the forearm), a touch higher through the middle.
+        e = _ease(k)
+        nb, nf = np.linalg.norm(back), np.linalg.norm(fwd)
+        db, df = back / nb, fwd / nf
+        ang = math.acos(max(-1.0, min(1.0, float(np.dot(db, df)))))
+        if ang > 1e-4:
+            d = (math.sin((1 - e) * ang) * db + math.sin(e * ang) * df) / math.sin(ang)
+        else:
+            d = db
+        v = d * (nb + (nf - nb) * e)
         v[1] += 0.04 * math.sin(math.pi * k)
         hand = {"arc": arc_of(v), "pole": (s * g.elbow_out, -0.2, -1.0)}
         if side in g.arms:
@@ -168,11 +179,10 @@ def _ease(k):
 
 
 def run_cycle(name, rig: Rig, g: Gait, meta=None) -> Clip:
+    from keyed import solve_frames
     n = g.frames
-    rot = np.empty((n + 1, len(rig.sk), 4))
-    pos = np.empty((n + 1, len(rig.sk), 3))
-    for f in range(n + 1):
-        rot[f], pos[f] = rig.solve(pose_at(g, rig, f / n))
+    rot, pos = solve_frames(rig, [pose_at(g, rig, f / n) for f in range(n + 1)], loop=True,
+                            weapon=(meta or {}).get("weapon", ""))
     m = {"layer": "full", "speed": g.speed, "cycle": n / 30.0, "steps": 2,
          "source": "keyed (tools/anim/gait.py)", "licence": "own work"}
     m.update(meta or {})

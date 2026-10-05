@@ -43,7 +43,9 @@ public sealed class MenuList
             row.AddChild(Style.Label(label.ToUpperInvariant(), Style.Display, size, on ? new Color("#fff2d8") : primary ? Style.GoldHi : new Color("#cbbd9f")));
             if (sub != null) row.AddChild(Style.Label(sub, Style.TextItalic, Style.Small, new Color("#a89c84")));
             b.AddChild(row);
-            b.MouseEntered += () => { if (Focus != index) { Focus = index; refresh(); } };
+            // Only a hand that moves the mouse takes the focus: a new button built under a resting pointer
+            // (every rebuild) would otherwise take it back from the keys at once.
+            b.MouseEntered += () => { if (Focus != index && Nav.MouseMoved) { Focus = index; refresh(); } };
             b.Pressed += act;
             if (on) row.AddChild(Style.Prompt(Act.Confirm));
             v.AddChild(b);
