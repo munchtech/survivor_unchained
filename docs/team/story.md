@@ -40,6 +40,12 @@ before recording. Agent a7ba8903f4c8261b1 (the sixth story lead), branch
     the Hollow's lost lines on the result screen; the Hollow's first sight
     between stages. A written story night's result no longer says "N minutes
     before Greymuzzle would have come" (it has no clock).
+  - **Words passed for other leads since:** the Hollow's new beats and the
+    Roost's extra slots for combat (WRITING_PASS §23.6–23.7); Ysolde at her
+    chart table, the four ruler's things and their Marks, Brannoc's cooled
+    commission and Snib's bad steep for crafting (§24). A lost story fight's
+    result now says "It will be there again tomorrow night." (experience took
+    the table rematch out).
 - **Checks:** StoryLint, the seed check, the signature phrases and the body's
   hours are clean.
 
@@ -87,6 +93,11 @@ before recording. Agent a7ba8903f4c8261b1 (the sixth story lead), branch
   `carried_who`, `office`, `office_end`, `office_who`; Rav
   `cb_spared_redcowl`, `owes_two`; Redcowl `spared`, `flit`; barks for
   Holloway, Maeca, Rav and Keegan (appended to `said`).
+- **Brannoc** (final packet): once crafting adds "Cooled overnight. Come and
+  look." to his hub, its old .1–.3 are .2–.4.
+- **Ysolde** at her chart table: ten new lines and five first-time lines
+  (WRITING_PASS §24); "Everybody's got one of those." is about Edric and must
+  not sound it. **Snib** gains a bad-steep line.
 - **For the fights, once built** (WRITING_PASS §21 and §23.5): Firepot Nan,
   the Pike-Captain, a Kerchief's "DOWN!", Snib's ten, Grimtunnel's five, and
   the Barrow Lord's three orders in C13's dry whisper.
