@@ -61,7 +61,7 @@ def build(want):
     made = []
     for sex, sk_file in (("f", "folk_female_skeleton.json"), ("m", "folk_male_skeleton.json")):
         sk = Skeleton.load(DATA / sk_file)
-        rig = Rig(sk)
+        rig = Rig(sk, grips=False)
         for name, rows in FOLK.items():
             if want and not any(w in name for w in want):
                 continue

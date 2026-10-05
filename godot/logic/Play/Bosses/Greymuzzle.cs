@@ -82,6 +82,8 @@ public sealed class Greymuzzle : StoryBoss, IBound
         public double FromX, FromZ, ToX, ToZ, RunT = -1;
     }
     readonly List<Wolf> ring = new(), guard = new();
+    /// <summary>The ring's wolves once it has broken and come in: ordinary wolves, but still his Pack.</summary>
+    readonly List<(Enemy E, double Seed)> loose = new();
     double ringR = 12, biteT = 9, shoveT, biteGrace, frostR = 99, frostDrawT, ringDrawT;
     /// <summary>The dashes its edge is drawn in.</summary>
     const int RingMarks = 36;
@@ -520,7 +522,7 @@ public sealed class Greymuzzle : StoryBoss, IBound
         foreach (var w in ring)
         {
             if (!Here(w)) continue;
-            if (n++ < 12) { w.E.Scripted = false; w.E.Disposition = Disposition.Hostile; w.E.Target = -1; }
+            if (n++ < 12) { w.E.Scripted = false; w.E.Disposition = Disposition.Hostile; w.E.Target = -1; loose.Add((w.E, w.Seed)); }
             else B.Enemies.Release(w.E);
         }
         ring.Clear();
@@ -554,13 +556,30 @@ public sealed class Greymuzzle : StoryBoss, IBound
         e.State = EnemyState.Idle;
         e.Anim = EnemyAnim.Idle;
         e.Disposition = Disposition.Neutral;
+        // What he had marked goes with him (his pant's ring lay on under the choice).
+        B.CancelBlows();
         B.Events.Emit(new Ev.Focus { X = e.X, Z = e.Z, Duration = 2.4 });
         S.Bark(e.X, e.Z, "His legs go. He lies on his side, breathing hard, and the ring lies down where it stands.", null);
-        if (S.CanSpare)
+        // A broken ring's wolves lie down where they stand too: the fight is over, however long she takes to
+        // choose (they fought on, and a player weighing his life was bitten while she did).
+        foreach (var (le, seed) in loose)
         {
-            S.Offer("let_go", e.X, e.Z, S.SpareVerb, "Greymuzzle", () => Choose(true));
-            S.Offer("finish", e.X, e.Z, "Finish it", "Greymuzzle", () => Choose(false));
+            if (!le.Alive || le.Seed != seed || le.State == EnemyState.Dying) continue;
+            le.Scripted = true;
+            le.Target = -1;
+            S.Script(le, (x, _) =>
+            {
+                x.Provoked = false;
+                x.Disposition = Disposition.Neutral;
+                x.Vx = x.Vz = 0;
+                x.State = EnemyState.Idle;
+                x.Anim = EnemyAnim.Idle;
+                return true;
+            });
         }
+        // Her choice, named on the screen and answered from wherever she stands (not a prompt at his side).
+        if (S.CanSpare)
+            S.Ask("Greymuzzle", $"{S.SpareVerb}, or finish it", e.X, e.Z, new ChoiceAnswer("let_go", S.SpareVerb, () => Choose(true)), new ChoiceAnswer("finish", "Finish it", () => Choose(false)));
         else if (A.Spare) Choose(true);
         else Choose(false);
     }
@@ -569,8 +588,7 @@ public sealed class Greymuzzle : StoryBoss, IBound
 
     void Choose(bool spare)
     {
-        S.Withdraw("let_go");
-        S.Withdraw("finish");
+        S.Unask();
         if (!spare)
         {
             E.HpFloor = 0;
@@ -608,10 +626,11 @@ public sealed class Greymuzzle : StoryBoss, IBound
     public override void Clear()
     {
         foreach (var w in ring.Concat(guard)) if (Here(w)) B.Enemies.Release(w.E);
+        foreach (var (le, seed) in loose) if (le.Alive && le.Seed == seed && le.State != EnemyState.Dying) B.Enemies.Release(le);
         ring.Clear();
         guard.Clear();
-        S.Withdraw("let_go");
-        S.Withdraw("finish");
+        loose.Clear();
+        S.Unask();
         if (longHunt) { B.Rules.Light /= 0.5; longHunt = false; }
     }
 

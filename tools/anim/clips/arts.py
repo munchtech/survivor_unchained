@@ -186,8 +186,12 @@ def bull_rush(rig):
         keys.append((f, pose, "linear"))
     shove_l = {"arc": arc_of((-0.10, 0.02, 0.44)), "pole": (1.0, -0.2, -0.3), "frame": "chest",
                "blade": _n(-0.1, 0.85, 0.5), "twist": 0.3}
+    # The sword drawn back behind her as the shield goes in, the wrist
+    # straight and the blade trailing where the arm takes it; it comes over
+    # the top into the guard as she recovers. (Held upright while the arm
+    # swung from behind her to the front, the hand rolled over in a frame.)
     sword_up = {"arc": arc_of((-0.18, -0.20, -0.06)), "pole": (-0.7, 0.0, -0.3), "frame": "chest",
-                "blade": _n(-0.3, 0.75, -0.55), "twist": 0.5}
+                "thumb": (-0.4, 0.6, -0.7), "twist": 0.5}
     plant = {"foot_l": {"pos": (0.12, 0.0, 0.56), "rot": (10, 0, 0), "pole": (0.2, 0, 1)},
              "foot_r": {"pos": (-0.14, 0.06, -0.46), "rot": (-16, 40, 0), "toe": 40},
              "fingers_l": "fist", "fingers_r": "grip"}
@@ -209,7 +213,7 @@ def bull_rush(rig):
                   hips=(-6, 6, 0), spine=(-8, 2, 0), neck=(0, -2, 0), head=(8, -4, 0)), "auto"),
         (30, GUARD, "ease"),
     ]
-    return build("bull_rush", rig, keys, meta={"layer": "full", "note": "keyed: 0.4 s shield charge, then the plant and shove"})
+    return build("bull_rush", rig, keys, meta={"layer": "full", "weapon": "sword+shield", "note": "keyed: 0.4 s shield charge, then the plant and shove"})
 
 
 # ------------------------------------------------------------ chain haul --
@@ -258,7 +262,7 @@ def chain_haul(rig):
         (18, _flight(2.0), "auto"),
         (24, _flight(3.0), "ease"),
     ]
-    return build("chain_haul", rig, keys, meta={"layer": "full", "note": "keyed: yanked off her feet and flown in on the chain, held"})
+    return build("chain_haul", rig, keys, meta={"layer": "full", "weapon": "axe", "note": "keyed: yanked off her feet and flown in on the chain, held"})
 
 
 def chain_strike(rig):
@@ -274,15 +278,25 @@ def chain_strike(rig):
                   "hand_l": {"arc": arc_of((0.02, 0.26, 0.24)), "pole": (0.6, -0.4, -0.4), "frame": "chest", "twist": 0.3},
                   "fingers_l": "grip", "fingers_r": "grip"},
                  hips=(0, 26, 0), spine=(0, 8, 0), neck=(0, -16, 0), head=(0, -24, 0)), "linear"),
+        # Coming down: the arms out before her at the height of her
+        # shoulders, the haft forward, the head of the axe still above it.
+        # (Over the top to buried in one frame, the hands turned over in it.)
+        (2, body({"hips": {"pos": (0.0, -0.26, 0.10)},
+                  "foot_l": {"pos": (0.22, 0.04, 0.22), "rot": (16, 4, 0)},
+                  "foot_r": {"pos": (-0.22, 0.06, -0.23), "rot": (-23, 24, 0)},
+                  "hand_r": {**both, "arc": arc_of((-0.03, 0.06, 0.44)), "blade": _n(-0.05, 0.35, 0.94)},
+                  "hand_l": {"arc": arc_of((0.04, 0.02, 0.40)), "pole": (0.6, -0.4, -0.4), "frame": "chest", "twist": 0.3},
+                  "fingers_l": "grip", "fingers_r": "grip"},
+                 hips=(0, 30, 0), spine=(0, 18, 0), neck=(0, -17, 0), head=(0, -25, 0)), "linear"),
         # The blow: down hard into a wide crouch, the axe buried low before her.
-        (2, body({"hips": {"pos": (0.0, -0.30, 0.10)},
+        (3, body({"hips": {"pos": (0.0, -0.30, 0.10)},
                   "foot_l": {"pos": (0.24, 0.0, 0.24), "rot": (18, 0, 0)},
                   "foot_r": {"pos": (-0.24, 0.02, -0.26), "rot": (-26, 20, 0), "toe": 20},
                   "hand_r": {**both, "arc": arc_of((-0.02, -0.22, 0.44)), "blade": _n(0.0, -0.75, 0.65)},
                   "hand_l": {"arc": arc_of((0.06, -0.26, 0.38)), "pole": (0.6, -0.4, -0.4), "frame": "chest", "twist": 0.3},
                   "fingers_l": "grip", "fingers_r": "grip", "clav_l": (-4, 14), "clav_r": (-4, 14)},
                  hips=(0, 34, 0), spine=(0, 30, 0), neck=(0, -18, 0), head=(0, -26, 0)), "ease"),
-        (5, body({"hips": {"pos": (0.0, -0.34, 0.10)},
+        (6, body({"hips": {"pos": (0.0, -0.34, 0.10)},
                   "foot_l": {"pos": (0.24, 0.0, 0.24), "rot": (18, 0, 0)},
                   "foot_r": {"pos": (-0.24, 0.02, -0.26), "rot": (-26, 20, 0), "toe": 20},
                   "hand_r": {**both, "arc": arc_of((-0.02, -0.28, 0.42)), "blade": _n(0.0, -0.85, 0.5)},
@@ -290,16 +304,16 @@ def chain_strike(rig):
                   "fingers_l": "grip", "fingers_r": "grip", "clav_l": (-4, 16), "clav_r": (-4, 16)},
                  hips=(0, 38, 0), spine=(0, 32, 0), neck=(0, -20, 0), head=(0, -28, 0)), "ease"),
         # Wrenched free and up, the free hand back to its fist.
-        (14, body({"hips": {"pos": (0.0, -0.18, 0.04)},
+        (15, body({"hips": {"pos": (0.0, -0.18, 0.04)},
                    "foot_l": {"pos": (0.20, 0.0, 0.20), "rot": (16, 0, 0)},
                    "foot_r": {"pos": (-0.21, 0.0, -0.20), "rot": (-24, 0, 0)},
                    "hand_r": {**both, "arc": arc_of((-0.10, -0.26, 0.20)), "blade": _n(-0.3, 0.6, 0.7)},
                    "hand_l": {"arc": arc_of((0.04, -0.30, 0.16)), "pole": (0.7, -0.5, -0.3), "frame": "chest", "twist": 0.4},
                    "fingers_l": "fist", "fingers_r": "grip"},
                   hips=(0, 16, 0), spine=(0, 12, 0), neck=(0, -8, 0), head=(0, -10, 0)), "auto"),
-        (26, AXE_GUARD, "ease"),
+        (27, AXE_GUARD, "ease"),
     ]
-    return build("chain_strike", rig, keys, meta={"layer": "full", "contact": 2 / 30,
+    return build("chain_strike", rig, keys, meta={"layer": "full", "contact": 3 / 30, "weapon": "axe",
                                                    "note": "keyed: the haul's landing blow, two-handed"})
 
 

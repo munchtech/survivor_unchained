@@ -45,8 +45,19 @@ public static class ArenaGround
         // clay, spoil, ballast, slurry, rust, burnt, face: ochre clay and stone
         // stained rust in drifts, the spoil heaps coal-black, the cut walls
         // ochre; rust, never a red near her hair's
-        ["dig"] = [new(0.1f, 0.95f, Lift: 0.02f, Bump: 0.08f), new(0.05f, 0.35f, Con: 1.5f, Lift: 0.04f, Bump: 0.12f, Size: 1.3f), new(0.05f, 0.6f, Lift: 0.01f, Bump: 0.06f), new(0.045f, 0.8f, Lift: -0.05f),
-            new(0.075f, 0.85f), new(0.035f, 0.5f), new(0.08f, 0.9f)],
+        // (The spoil a shade lighter than coal, 0.075: at 0.05 the moon's light and shade on a
+        // tip's flanks fell below black, and a heap read as a flat hole.)
+        // (The clay lighter, 0.13, so the black tips, the rails and the Lamplings stand out on it,
+        // as the concept's do: at 0.1 the working was one dark brown field.)
+        ["dig"] = [new(0.13f, 0.95f, Lift: 0.02f, Bump: 0.08f), new(0.075f, 0.35f, Con: 1.4f, Lift: 0.04f, Bump: 0.12f, Size: 1.3f),
+            // (The broken stone grey-brown over the clay, not black: its drifts read as dark blots.)
+            new(0.09f, 0.35f, Lift: 0.01f, Bump: 0.06f),
+            // (The slurry's mud only a little darker than the clay: at 0.045 every spill was a black
+            // ring and black stains round its pool.)
+            new(0.085f, 0.7f, Lift: -0.05f),
+            // (The rust as light as the clay and lying at its height: the stain is a shift of
+            // hue, never a darker blot with a ledge round it, which read as camouflage.)
+            new(0.12f, 0.85f, Con: 1.0f, Lift: 0.02f, Bump: 0.08f), new(0.035f, 0.5f), new(0.08f, 0.9f)],
     };
 
     /// <summary>The standing water's tint, place by place.</summary>
@@ -80,6 +91,7 @@ public static class ArenaGround
         var (moss, slurry, fox) = Growth[place.Id];
         mat.SetShaderParameter("moss_color", moss);
         mat.SetShaderParameter("slurry_glow", slurry);
+        mat.SetShaderParameter("slurry_body", place.Id == "dig" ? 1f : 0f);
         mat.SetShaderParameter("fox_glow", fox);
         mat.SetShaderParameter("lip_glow", z.Story ? 0.3f : 1f);
         mat.SetShaderParameter("face_skip_b", place.Id == "dig" ? 1f : 0f);
@@ -142,7 +154,9 @@ public static class ArenaGround
     {
         // The barrow field's long dead grass, olive-brown and its tips gone
         // to pale straw under the moon: the field's whole face.
-        ["barrow"] = new(1f, 26, 0.016f, 0.42f, new(0.4f, 0.9f), 1.3f, "#0c0a07", "#54482f", "#b09a72", "#3e462a", 0.25f),
+        // (Its tips warm and mid-toned: pale straw tips under a blue moon read from above as a
+        // field of grey stars, one sticker per tussock.)
+        ["barrow"] = new(1f, 26, 0.016f, 0.42f, new(0.4f, 0.9f), 1.3f, "#0c0a07", "#4e3e26", "#8c7448", "#3e462a", 0.3f),
         // Sparse and low where the canopy opens.
         ["hollow"] = new(0.5f, 12, 0.02f, 0.55f, new(0.2f, 0.45f), 0.8f, "#0a0b07", "#38402a", "#6c7048", "#2e4626", 0.6f),
         // The verges: greener, trodden shorter toward the road.

@@ -406,6 +406,8 @@ public partial class Game : Node, IZoneHost
         scene.SimPaused = true;
         controls.Captured = true;
         hud.Prompt(promptShown = null);
+        // --end (pictures of a whole night): its result, and the run ends there rather than at --until.
+        if (Args.Has("end")) { Shots.Want("result", 1.5); Shots.EndIn(3); }
     }
 
     /// <summary>Out of the arena, to where the story left off.</summary>
@@ -450,7 +452,7 @@ public partial class Game : Node, IZoneHost
         "verge" => new Verge(this, meta),
         // A story fight with its own stages and boss is a story night; the rest are the table's.
         "arena" => World.Arena!.Story && SurvivorUnchained.Play.Story.StoryScripts.For(World.Arena.Id) is { } fight
-            ? new StoryNight(this, currentMap!, World.Arena, fight) : new ArenaRun(this, currentMap!, World.Arena!),
+            ? new StoryNight(this, currentMap!, World.Arena, fight) { BossStartsAt = Args.Num("bosshp", 1) } : new ArenaRun(this, currentMap!, World.Arena!),
         "map" => StartMap(),
         _ => throw new ArgumentException($"no zone {id}"),
     };
@@ -530,8 +532,11 @@ public partial class Game : Node, IZoneHost
         Perf.Lap("its textures, decoded on worker threads");
         scene = new WorldScene(data, cam);
         AddChild(scene);
-        scene.Move = () => auto?.Move ?? PlayMove();
-        scene.Pressed = a => (auto?.Take(a) ?? false) || (!controls.Captured && controls.Pressed(a));
+        // (a story night let go stands still until its result: StoryNight.StandDown)
+        scene.Move = () => zone is StoryNight { Over: true } ? (0, 0) : auto?.Move ?? PlayMove();
+        // While a story's choice waits, its keys are its own: her art is not cast by the key that answers it.
+        scene.Pressed = a => choiceUp != null && Array.IndexOf(ChoiceKeys, a) >= 0 ? Swallow(a)
+            : (auto?.Take(a) ?? false) || (!controls.Captured && controls.Pressed(a));
         scene.OnStep = dt => { if (cine is not { ZoneHeld: true }) zone?.Step(dt); };
         scene.OnEvents = OnEvents;
         ApplySettings();
@@ -746,7 +751,8 @@ public partial class Game : Node, IZoneHost
     void UpdateInteraction()
     {
         var b = Battle;
-        if (b == null || zone == null || Overlay != null || !b.Player.Alive || inTransit || cine != null)
+        // (a story's choice waiting has the keys: no prompt beside it)
+        if (b == null || zone == null || Overlay != null || !b.Player.Alive || inTransit || cine != null || zone.Choice != null)
         {
             near = null;
             if (promptShown != null) hud.Prompt(promptShown = null);
@@ -916,6 +922,7 @@ public partial class Game : Node, IZoneHost
             // The day's own clock: free play moves it, and each turn is staged (GameClock).
             TickDay(dt);
             UpdateInteraction();
+            UpdateChoice(dt);
             // The ground walked, on the map's fog.
             fogT -= dt;
             if (fogT <= 0 && Battle is { } fb)
@@ -933,6 +940,9 @@ public partial class Game : Node, IZoneHost
             // An arena's camera breathes with its night (unless a conversation has it, or --cam fixed it).
             if (zone is ArenaRun ar && hudMode == null && camSaved == null && !Args.Has("cam")) cam.TargetDistance = (float)ar.CameraDistance;
             if (zone is StoryNight sn && hudMode == null && camSaved == null && !Args.Has("cam")) cam.TargetDistance = (float)sn.CameraDistance;
+            // A story night's boss kept in frame with her (FollowCamera.Toward).
+            cam.Toward = zone is StoryNight bn && bn.Now == StoryNight.Stage.Boss && bn.BossScript?.E is { Alive: true } be && be.State != SurvivorUnchained.Sim.EnemyState.Dying
+                ? new Vector3((float)be.X, 0, (float)be.Z) : null;
             Perf.Begin(Perf.Part.Later);
             RunLater(dt);
             Perf.End(Perf.Part.Later);
@@ -1184,8 +1194,8 @@ public partial class Game : Node, IZoneHost
         }
         // --loot [legendary]: a drop of every tier landing round her a beat apart, each with its light and
         // its sound, a hidden Common among them (pictures and ears for docs/design/LOOT_DESIGN.md §8);
-        // "legendary": only the Legendary, for its moment.
-        if (Args.Has("loot") && Battle is { } lootB && lootI < LootRing.Length && (lootT -= dt) <= 0)
+        // "legendary": only the Legendary, for its moment (--loot-at T: the first T seconds in, for pictures of its fall).
+        if (Args.Has("loot") && Battle is { } lootB && lootI < LootRing.Length && Journey.Playtime >= Args.Num("loot-at", 0) && (lootT -= dt) <= 0)
         {
             lootT = 0.9;
             var (def, rarity, look) = LootRing[Args.Get("loot") == "legendary" ? LootRing.Length - 1 : lootI];

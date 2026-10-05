@@ -105,6 +105,10 @@ public static class BossSense
             case GrimtunnelStory { Flaring: >= 0, Under: false } gl when gl.E.Alive:
                 goal = (gl.E.X, gl.E.Z, Math.Max(2.2, Math.Min(reach * 0.7, 6)));
                 break;
+            // Dazed where he came up (the ground marks it safe): in on him while it lasts, as a player is.
+            case GrimtunnelStory { Dazed: true, Under: false } gd when gd.E.Alive:
+                goal = (gd.E.X, gd.E.Z, Math.Max(2.2, Math.Min(reach * 0.7, 6)));
+                break;
             case GrimtunnelStory { BarrelStill: true, BarrelAt: var (brx, brz), Under: false } gb when gb.E.Alive:
             {
                 double ux = brx - gb.E.X, uz = brz - gb.E.Z, ul = Math.Max(0.01, Math.Sqrt(ux * ux + uz * uz));
@@ -118,6 +122,13 @@ public static class BossSense
                 break;
             case BarrowLord { Laying: true } bl:
                 goal = (bl.E.X, bl.E.Z, 1.6);
+                break;
+            // The Barrow Lord down: stand over him. In his testudo: in on the standard at its heart.
+            case BarrowLordStory { Laying: true } bls:
+                goal = (bls.E.X, bls.E.Z, 1.6);
+                break;
+            case BarrowLordStory { Standard: { } st }:
+                goal = (st.X, st.Z, Math.Max(2.2, Math.Min(reach * 0.7, 5)));
                 break;
             case Grimtunnel { Flaring: >= 0 } g when g.E.Alive:
                 goal = (g.E.X, g.E.Z, Math.Max(2.2, Math.Min(reach * 0.7, 6)));

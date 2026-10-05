@@ -210,6 +210,8 @@ public partial class Game
     /* ------------------------------------------------------------ draft -- */
 
     List<Offer> offers = new();
+    /// <summary>The draft on the table now (the autopilot reads it).</summary>
+    public IReadOnlyList<Offer> Offers => offers;
 
     void UpdateDraft(double dt)
     {

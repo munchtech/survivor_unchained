@@ -37,9 +37,12 @@ public sealed class Barrow : ArenaShape
         way = B.Curve(nx * off - dx * 140, nz * off - dz * 140, nx * off + dx * 140, nz * off + dz * 140, 0, 2.7, 0.12);
         wayF = B.PathField(way);
         B.Lane(way);
-        // Where the road meets the edge: the door at one end, the gate at the other.
-        doorAng = EdgeBearing(nx * off, nz * off, dx, dz);
-        gateAng = EdgeBearing(nx * off, nz * off, -dx, -dz);
+        // Where the road meets the edge: the door at one end, the gate at the other. The howe
+        // at the road's end away from the camera (the camera stands to +z, and the road runs
+        // along (dx, dz) with dz >= 0, so its -z end is the top of the picture): there it is
+        // seen whole, never under the HUD behind her.
+        doorAng = EdgeBearing(nx * off, nz * off, -dx, -dz);
+        gateAng = EdgeBearing(nx * off, nz * off, dx, dz);
         var (doorX, doorZ) = B.AtEdge(doorAng, 7);
         // The door's own barrow, the biggest, across the road's end.
         mounds.Add((doorX, doorZ, wayAng + Math.PI / 2, 15, 9, 3.4));

@@ -48,7 +48,9 @@ public sealed class Dig : ArenaShape
             double x = Math.Cos(a) * rr, z = Math.Sin(a) * rr, r = Rng.Range(6, 9.5);
             if (B.At(railsF, x, z) * 1.1 < r + 3 || MathX.Dist(x, z, pitX, pitZ) < PitR + r + 4) continue;
             if (heaps.Exists(h => MathX.Dist(h.X, h.Z, x, z) < h.R + r + 3)) continue;
-            heaps.Add((x, z, r, Rng.Range(2.4, 3.6)));
+            // (Steep, at the rock's angle of rest: at two or three metres over eight across, a
+            // tip read from the camera as a flat black field.)
+            heaps.Add((x, z, r, r * Rng.Range(0.5, 0.6)));
         }
         // Slurry spilled and pooling in the low places; baked clay where it dried.
         for (int k = 0; k < (Drowned ? 9 : 5); k++)
@@ -63,7 +65,10 @@ public sealed class Dig : ArenaShape
         }
     }
 
-    public override bool Closed(double x, double z) => MathX.Dist(x, z, pitX, pitZ) < PitR;
+    /// <summary>The pit, and the tips above their aprons: a heap of loose rock is climbed by
+    /// nobody, and the fight goes round it.</summary>
+    public override bool Closed(double x, double z) =>
+        MathX.Dist(x, z, pitX, pitZ) < PitR || heaps.Exists(h => MathX.Dist(x, z, h.X, h.Z) < h.R * 0.72);
 
     public override double Relief(double x, double z)
     {
@@ -100,19 +105,22 @@ public sealed class Dig : ArenaShape
     public override void Paint(double x, double z, double inn, ref ArenaPaint p)
     {
         double n1 = Noise.Noise(x * 0.09, z * 0.09), n2 = Noise.Noise(x * 0.23 + 4, z * 0.23);
-        // Spoil (the ground's second material) tipped in heaps and spread round them.
+        // Spoil (the ground's second material) tipped in heaps, and only a fringe of it spread
+        // round them (spread four metres out, the tips ran together into one black field).
         p.BaseB = 0;
         foreach (var hp in heaps)
         {
             double d = MathX.Dist(x, z, hp.X, hp.Z);
-            if (d < hp.R + 6) p.BaseB = Math.Max(p.BaseB, 1 - MathX.Smoothstep(hp.R * 0.7, hp.R + 4, d + n1 * 2));
+            if (d < hp.R + 4) p.BaseB = Math.Max(p.BaseB, 1 - MathX.Smoothstep(hp.R * 0.85, hp.R + 1.5, d + n1 * 1.5 + n2 * 0.5));
         }
         // The rails' bed of broken stone.
         double rf = B.At(railsF, x, z) + n2 * 0.15;
         p.L2 = 1 - MathX.Smoothstep(0.9, 1.6, rf);
         p.Trod = (1 - MathX.Smoothstep(0.8, 2.5, rf)) * 0.5;
-        // Broken stone in a few drifts, where the rock was blasted.
-        p.L2 = Math.Max(p.L2, MathX.Smoothstep(0.55, 0.8, Noise.Noise(x * 0.035 + 13, z * 0.035 - 1) + n2 * 0.15) * 0.85);
+        // Broken stone in a few drifts, where the rock was blasted: thick in the middle, thinning
+        // out stone by stone (the ground's blend by height scatters a graded drift's stones; cut
+        // at a narrow threshold, each drift was a grey blot with a hard edge).
+        p.L2 = Math.Max(p.L2, MathX.Smoothstep(0.45, 0.95, Noise.Noise(x * 0.035 + 13, z * 0.035 - 1) + n2 * 0.25 + n1 * 0.1) * 0.8);
         foreach (var s in pools)
         {
             double d = MathX.Dist(x, z, s.X, s.Z);
@@ -135,16 +143,17 @@ public sealed class Dig : ArenaShape
             double d = MathX.Dist(x, z, bk.X, bk.Z);
             if (d < bk.R + 2) drift = Math.Max(drift, 1 - MathX.Smoothstep(bk.R * 0.3, bk.R, d + n1 * 2.5));
         }
-        p.L4 = MathX.Smoothstep(0.42, 0.62, n4 * 0.6 + n3 * 0.4 + drift * 0.45 - 0.2) * (0.35 + 0.6 * drift);
+        // (Graded wide, so the clay goes over to rust through its own grain, the ground's blend
+        // by height: cut at a narrow threshold, each stain was a hard-edged blob, camouflage.)
+        p.L4 = MathX.Smoothstep(0.1, 0.9, n4 * 0.6 + n3 * 0.25 + drift * 0.5 - 0.1) * (0.3 + 0.5 * drift);
         p.L4 *= 1 - p.L3;
         // Burnt round the pit's mouth (and, in an ashen dig, where the blasting was).
         double dp = MathX.Dist(x, z, pitX, pitZ);
         p.L5 = Math.Max(Ashen ? MathX.Smoothstep(0.55, 0.85, Noise.Noise(x * 0.05 - 7, z * 0.05 + 7)) : 0, 1 - MathX.Smoothstep(PitR + 1, PitR + 8, dp + n1 * 2));
-        // The pit: its lip charred; its walls bare rock, lit red by what is down
-        // there (the pit's light); its floor, eight metres down, glowing whole.
-        // A throat with fire at the bottom, never a pool of it.
+        // The pit: its lip charred. Its walls and the fire on its floor are the throat's own
+        // (arena/throat): painted on the ground's steps, the floor's glow read as a pool of
+        // fire with a stepped edge, level with the working. A throat with fire at the bottom.
         p.Char = Math.Max(p.Char, 0.85 * (1 - MathX.Smoothstep(PitR - 0.5, PitR + 3.5, dp + n1 * 1.5)) * MathX.Smoothstep(PitR - 1.5, PitR - 0.5, dp));
-        if (dp < PitR - 4) p.Char = Math.Max(p.Char, 0.9 + 0.1 * (1 - MathX.Smoothstep(0, PitR - 4, dp)));
         if (Drowned) p.Wet = Math.Max(p.Wet, MathX.Smoothstep(0.35, 0.7, Noise.Noise(x * 0.05 - 9, z * 0.05)) * 0.7);
         // Dry grass where nobody walks: along the working's edge, round the tips' feet, between
         // the stones; never on the rails' bed, in the slurry or the char.
@@ -154,7 +163,10 @@ public sealed class Dig : ArenaShape
             double d = MathX.Dist(x, z, hp.X, hp.Z);
             feet = Math.Max(feet, (1 - MathX.Smoothstep(1.5, 4, Math.Abs(d - hp.R - 1.2))));
         }
-        double wild = Math.Max(MathX.Smoothstep(16, 5, inn), feet * 0.9);
+        // And in broad drifts over the floor between the workings (the working is old; the
+        // grass has had years): without them its floor was one bare field of clay.
+        double drifts = 0.75 * MathX.Smoothstep(0.05, 0.45, Noise.Noise(x * 0.04 - 11, z * 0.04 + 19) + n1 * 0.2);
+        double wild = Math.Max(Math.Max(MathX.Smoothstep(16, 5, inn), feet * 0.9), drifts);
         p.Grass = wild * MathX.Smoothstep(0.35, 0.7, Noise.Noise(x * 0.09 + 31, z * 0.09 - 7) * 0.7 + n2 * 0.3 + 0.15)
             * (1 - p.L2 * 0.9) * (1 - p.L3) * (1 - p.Trod) * (1 - p.L5);
     }
@@ -185,9 +197,11 @@ public sealed class Dig : ArenaShape
     {
         // --------------------------------------------------------- the pit --
         // Its glow from below, red; the lamps round its lip, gold.
-        // Its light down on the floor, lighting the walls red from below.
-        B.Glow(pitX, pitZ, "#ff5a1e", 16, height: -5.5, flicker: 0.3);
+        // Its light down on the floor, lighting the walls red from below; the throat over the
+        // ground's own steps.
+        B.Glow(pitX, pitZ, "#ff5a1e", 16, height: 1.5, flicker: 0.3);
         B.Vents.Add((pitX, pitZ, PitR - 3));
+        B.Piece("arena/throat", pitX, pitZ, 0);
         double face = ArenaGen.Builder.Facing(pitX, pitZ, 0, 0);
         var (ux, uz) = ArenaGen.Builder.Along(face);
         // The headframe over the throat, its back-stays out past the edge.
@@ -240,6 +254,10 @@ public sealed class Dig : ArenaShape
             B.Piece("arena/tub", x, z, rot);
             B.Slab(x, z, 0.6, 0.85, rot);
         }
+
+        // ------------------------------------------------------- the tips --
+        // Each heap's lumps of blasted rock and coal, as the tubs tipped them.
+        foreach (var hp in heaps) B.Piece("arena/spoil", hp.X, hp.Z, Rng.Range(0, Math.PI * 2), hp.R / 8);
 
         // ----------------------------------------------------------- cover --
         // Rubble, barrels of blasting ember, timber shoring: low, and lit.

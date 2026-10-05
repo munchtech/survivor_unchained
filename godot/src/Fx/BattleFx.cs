@@ -419,14 +419,16 @@ public partial class BattleFx : Node3D
         }
         // The instant: brighter than anything else in the frame, gone in a breath.
         // Fire's is yellow-hot, never white: a white instant over the pale dead read as a cream disc.
-        bool fire = school == School.Fire;
-        if (On('f')) Sparks.Spawn(ground + Vector3.Up * 0.9f, Vector3.Zero, 0.07f, r * (fire ? 0.3f : 0.4f), fire ? new Color(1.9f, 0.95f, 0.22f) : new Color(1.8f, 1.7f, 1.6f), pal.Glow * 0.4f, r * (fire ? 0.6f : 0.8f), alpha: fire ? 0.7f : 0.8f);
+        bool fire = school == School.Fire, holy = school == School.Holy;
+        // Holy's is gold: white, it and its burst left cream discs under Hallowed Ground's crowd.
+        if (On('f')) Sparks.Spawn(ground + Vector3.Up * 0.9f, Vector3.Zero, 0.07f, r * (fire ? 0.3f : 0.4f), fire ? new Color(1.9f, 0.95f, 0.22f) : holy ? new Color(1.5f, 1.15f, 0.55f) : new Color(1.8f, 1.7f, 1.6f), pal.Glow * 0.4f, r * (fire ? 0.6f : 0.8f), alpha: fire || holy ? 0.7f : 0.8f);
         // The air thrown out.
         if (On('w')) Waves.Add(ground + Vector3.Up * 0.35f, r * 1.7f, 0.35f, pal.Glow, school == School.Holy ? 0.6f : 1);
         // The burst, flat on the ground and above the grass.
         var tint = school == School.Frost ? new Color(glow * 0.8f, glow * 0.92f, glow * 1.15f, 1)
             // Fire's heart held to yellow (its filmed white core, tinted warm-pale, bloomed cream).
-            : fire ? new Color(glow * 1.0f, glow * 0.6f, glow * 0.3f, 1) : new Color(glow, glow, glow, 1);
+            : fire ? new Color(glow * 1.0f, glow * 0.6f, glow * 0.3f, 1)
+            : holy ? new Color(glow * 0.95f, glow * 0.7f, glow * 0.32f, 0.85f) : new Color(glow, glow, glow, 1);
         if (On('b')) Books.Spawn(BlastOf(school), ground + Vector3.Up * 0.55f, r * 1.2f, life, tint, flat: true, sizeEnd: r * 2.4f);
         // What it throws.
         int n = On('d') ? Math.Min(48, 12 + (int)(r * 8)) : 0;
@@ -494,21 +496,6 @@ public partial class BattleFx : Node3D
     {
         var m = Ground(x, z, radius, ringTex!, color, life, 3);
         m.Grow = true;
-    }
-
-    /// <summary>A column of light from the ground (a strike from the sky, a level gained).</summary>
-    void Pillar(Vector3 at, float height, float radius, Color color, float life)
-    {
-        var (m, mat, _, _) = beams[nextBeam];
-        m.Position = at + Vector3.Up * height / 2;
-        m.Rotation = Vector3.Zero;
-        m.Scale = new Vector3(radius, height, radius);
-        m.Visible = true;
-        mat.SetShaderParameter("color", new Vector3(color.R, color.G, color.B));
-        mat.SetShaderParameter("energy", 1f);
-        mat.SetShaderParameter("taper", 1f);
-        beams[nextBeam] = (m, mat, 0, life);
-        nextBeam = (nextBeam + 1) % beams.Count;
     }
 
     /// <summary>A band of light between two points (a beam, a bolt of lightning's leg).</summary>
@@ -962,8 +949,8 @@ public partial class BattleFx : Node3D
                     var at = V(v.X, gy, v.Z);
                     var gold = new Color(2.6f, 1.9f, 1.0f);
                     Flash(at + Vector3.Up * 3, new Color("#ffe6b0"), 42, 1.8f, 28);
-                    Pillar(at, 34, 1.1f, gold * 0.8f, 1.6f);
-                    Pillar(at, 22, 0.35f, new Color(3, 2.8f, 2.4f), 0.9f);
+                    // (One column, gold: its white core read as a cream bar.)
+                    Pillar(at, 34, 1.1f, gold, 1.6f);
                     Waves.Add(at + Vector3.Up * 0.4f, 9, 0.7f, gold, 1);
                     Waves.Add(at + Vector3.Up * 0.6f, 15, 1.1f, new Color(2.2f, 1.2f, 0.5f), 0.8f);
                     Waves.Add(at + Vector3.Up * 0.8f, 22, 1.6f, new Color(1.6f, 0.8f, 0.4f), 0.5f);
@@ -1508,7 +1495,7 @@ public partial class BattleFx : Node3D
                     {
                         // The hoard stone: bigger, beating like a heart, with a red beam to find it by.
                         s *= 1 + 0.12f * Mathf.Sin((float)now * 5);
-                        Column(p.X, gy, p.Z, 4.5f, 0.2f, StoriedRed, 0.7f);
+                        HoardLight(p.X, gy, p.Z);
                     }
                     embers.Add(new Transform3D(spin.Scaled(Vector3.One * s), V(p.X, gy + 0.45 + bob, p.Z)), EmberTiers[tier]);
                     break;

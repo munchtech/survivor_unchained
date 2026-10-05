@@ -11,16 +11,17 @@ namespace SurvivorUnchained.Play;
 /// <summary>
 /// A crude player, for testing and for pictures (the web game's
 /// game/autopilot.ts): walks the prologue from the fire down the road, fights
-/// on the way, opens the watchman's chest, takes the first card of every
-/// draft, and out in a fight circles a patch of ground keeping the crowd in
-/// front of it. It is not good at the game; it shows the game runs.
+/// on the way, opens the watchman's chest, drafts as the harness's sensible
+/// player does (--draft first for the old first card), and out in a fight
+/// circles a patch of ground keeping the crowd in front of it. It is not good
+/// at the game; it shows the game runs.
 /// </summary>
 public sealed class Autopilot
 {
     readonly Game g;
     readonly HashSet<Act> pressed = new();
     int wp = 1;
-    double t, orbit, dashT, abilityT, drinkT, stuckT, sideT, lastX, lastZ, postT, resultT;
+    double t, orbit, dashT, abilityT, drinkT, stuckT, sideT, lastX, lastZ, postT, resultT, choiceT;
     int side = 1;
     (double X, double Z, double R)? territory;
     /// <summary>Take the drafts and otherwise stand still (--auto idle): the worst player.</summary>
@@ -32,6 +33,9 @@ public sealed class Autopilot
 
     public Autopilot(Game game) { g = game; }
 
+    readonly Picker picker = Picker.Make(Args.Get("draft") ?? "greedy");
+    readonly SurvivorUnchained.Core.Rng rng = new(7);
+
     /// <summary>A press the survivor makes this step (taken once).</summary>
     public bool Take(Act a) => pressed.Remove(a);
     void Press(Act a) => pressed.Add(a);
@@ -40,7 +44,8 @@ public sealed class Autopilot
     {
         t += dt;
         Move = (0, 0);
-        if (g.Overlay == "draft") { g.Pick(0); return; }
+        // Drafted as a player would (the harness's greedy taste), or --draft first|random|path:ID.
+        if (g.Overlay == "draft" && g.Battle is { } db) { g.Pick(Math.Clamp(picker.Choose(db, g.Offers.ToList(), rng), 0, Math.Max(0, g.Offers.Count - 1))); return; }
         // A line is read at a reader's pace (pictures of conversations need the line on screen).
         if (g.Overlay == "dialogue") { if ((lineT += dt) > 2.4) { lineT = 0; g.Advance(); } return; }
         lineT = 0;
@@ -50,6 +55,17 @@ public sealed class Autopilot
         // stranded the survivor on the empty field).
         if (g.Overlay == "arena") { if ((resultT += dt) > 5) { resultT = 0; Controls.Instance.Press(Act.Confirm); } return; }
         if (g.Overlay != null) { g.CloseOverlay(); return; }
+        // A choice the story puts to her is read a while (pictures of it), then answered as --knee says
+        // (spare, finish), or with its first answer: a run never stalls at his knee.
+        if (g.Zone?.Choice is { } choice)
+        {
+            if ((choiceT += dt) < 3.5) return;
+            choiceT = 0;
+            string want = Args.Get("knee") == "finish" ? "finish" : "let_go";
+            g.AnswerChoice(Math.Max(0, choice.Answers.ToList().FindIndex(a => a.Id == want)));
+            return;
+        }
+        choiceT = 0;
         var b = g.Battle;
         var z = g.Zone;
         if (b == null || z == null || !b.Player.Alive || g.InTransit || Idle) return;
