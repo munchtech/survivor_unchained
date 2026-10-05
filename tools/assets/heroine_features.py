@@ -133,14 +133,14 @@ print("FEATURES", path, "eyes and brows %d texels, lips %d" % ((out[..., 0] > 0.
 # hair, not her skin, and her hairline reads as hair growing (bare skin
 # there read as a bald brow, and a pale scalp worst under dark hair). From
 # her hairline (face_shapes.HAIRLINE, as her hair is grown) up, eased in
-# from 4 mm under it over 14 mm, as hair thickens at a real hairline (a
+# from a centimetre under it over 16 mm, as hair thickens at a real hairline (a
 # soft painted edge under its fine hairs, not a line where the cards begin).
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import face_shapes as fs  # noqa: E402
 eye_z = EV[:, 2].mean()
 theta = np.arctan2(P[:, 0], -(P[:, 1] - 0.0))
 rise = P[:, 2] - (eye_z + fs.hairline_height(theta))
-scalp = smooth((rise + 0.004) / 0.014)
+scalp = smooth((rise + 0.010) / 0.016)
 sh = np.zeros((SIZE, SIZE, 4), np.float32)
 sh[rows, cols, 1] = scalp
 sh[..., 3] = 1

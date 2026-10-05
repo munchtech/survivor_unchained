@@ -668,6 +668,7 @@ public static class People
         const string file = "res://art/people/head_tex/heroine_shadow.png";
         if (!ResourceLoader.Exists(file)) return;
         var mask = GD.Load<Texture2D>(file);
+        int set = 0;
         foreach (var mi in p.Meshes)
             for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
             {
@@ -675,7 +676,9 @@ public static class People
                 m.SetShaderParameter("shadow_mask", mask);
                 m.SetShaderParameter("scalp_shadow", 1.0f);
                 m.SetShaderParameter("shadow_colour", hair.Darkened(0.3f));
+                set++;
             }
+        if (Args.Has("shot")) GD.Print($"HerScalp: {set} surfaces");
     }
 
     /// <summary>Her face as one she started from (Lore.Her's faces): its

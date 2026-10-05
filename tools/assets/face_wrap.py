@@ -6,13 +6,17 @@ on that head's surface, and written as a MakeHuman target of our own
 it loads MakeHuman's own). Her topology, rig, UVs and expressions are kept;
 only where her points lie changes.
 
-    blender -b --python tools/assets/face_wrap.py -- <shape.glb> <painted.glb> <out.target> [--check <dir>]
+    blender -b --python tools/assets/face_wrap.py -- <shape.glb> <painted.glb> <out.target> [--check <dir>] [--photo <ref.png>]
+
+--photo: the reference TRELLIS was made of; her mouth is then as wide and
+tall, and where, as the photograph's (across her face; its depth TRELLIS's).
 
 shape.glb: TRELLIS's surface. painted.glb: the same, with its colours (by
 which its hair is told from its skin). With --check, clay renders of her
 before and after and of TRELLIS's head, and its hair as read.
 WRAP_HAIR_DEPTH (metres, 0.005) is how far under its hair her skull lies;
-WRAP_EYE_OPEN (0.92) how open her eyes are against its.
+WRAP_EYE_OPEN (0.92) how open her eyes are against its, and WRAP_EYE_MIN (0.86)
+the least they are against hers (TRELLIS closes some eyes to slits).
 
 Why: MakeHuman's targets move a face's outlines; fitted to a reference by
 its landmarks they could not give full lips, soft full cheeks and a fine
@@ -69,6 +73,7 @@ from bl_ext.user_default.mpfb.services.targetservice import TargetService  # noq
 ARGS = sys.argv[sys.argv.index("--") + 1:]
 SHAPE, PAINTED, OUT = (os.path.abspath(a) for a in ARGS[:3])
 CHECK = os.path.abspath(ARGS[ARGS.index("--check") + 1]) if "--check" in ARGS else None
+PHOTO = os.path.abspath(ARGS[ARGS.index("--photo") + 1]) if "--photo" in ARGS else None
 WORK = CHECK or os.path.dirname(OUT)
 os.makedirs(WORK, exist_ok=True)
 FACEFIT_PY = os.path.join(os.environ.get("LOCALAPPDATA", ""), "facefit", ".venv", "Scripts", "python.exe")
@@ -419,10 +424,33 @@ shape_ob.data.update()
 TBVH = BVHTree.FromObject(shape_ob, bpy.context.evaluated_depsgraph_get())
 TTREE = cKDTree(TVh)
 
+# With --photo (the reference TRELLIS was made of): her mouth as the
+# photograph has it, across her face (its landmarks laid on TRELLIS's head
+# by her eyes' corners and her nose; their depth TRELLIS's): TRELLIS's mouth
+# was a little narrower, and her face is painted with the photograph itself. (Not her eyes: read off a photograph, MediaPipe draws an eye's rim
+# at its lash line, a fifth taller than off clay.)
+Lph = None
+if PHOTO:
+    _js = os.path.join(WORK, "photo_marks.json")
+    if os.path.exists(_js):
+        os.remove(_js)
+    subprocess.run([FACEFIT_PY, os.path.join(HERE, "face_fit.py"), "marks", PHOTO, _js, "whole"], capture_output=True)
+    _p = np.array(json.load(open(_js))["points"])[:n_l]
+    _p = np.c_[_p[:, 0], -_p[:, 1]]
+    _st = [i for i in (33, 133, 362, 263, 168, 6, 197, 195, 5, 4, 1, 2) if ok_t[i]]
+    _s2, _R2, _t2 = umeyama(np.c_[_p[_st], np.zeros(len(_st))], np.c_[Lt[_st][:, [0, 2]], np.zeros(len(_st))], np.ones(len(_st)))
+    _m = (_s2 * np.c_[_p, np.zeros(len(_p))] @ _R2.T + _t2)[:, :2]
+    Lph = Lt.copy()
+    Lph[:n_l, 0], Lph[:n_l, 2] = _m[:, 0], _m[:, 1]
+    _d = (Lph - Lt)[LIPS][:, [0, 2]]
+    print("PHOTO: its lips %.1f mm from TRELLIS's (rms); its mouth %.2f as wide" % (
+        1000 * np.sqrt((_d ** 2).sum(1).mean()), np.ptp(Lph[[61, 291], 0]) / np.ptp(Lt[[61, 291], 0])))
+
 # Where TRELLIS's head is hair, not skin (its colours: unlike her cheeks'
 # and forehead's): her skull lies under it, a little in (HAIR_DEPTH).
 HAIR_DEPTH = float(os.environ.get("WRAP_HAIR_DEPTH", "0.005"))
 EYE_OPEN = float(os.environ.get("WRAP_EYE_OPEN", "0.92"))
+EYE_MIN = float(os.environ.get("WRAP_EYE_MIN", "0.86"))
 _ca = paint_ob.data.color_attributes[0]
 _cols = np.zeros(len(_ca.data) * 4)
 _ca.data.foreach_get("color", _cols)
@@ -499,10 +527,14 @@ for ring in (EYE_A, EYE_B):
     Xa = np.c_[src, np.ones(len(src))]
     M = np.linalg.lstsq(Xa, dst, rcond=None)[0]                       # (3 x 2: dst = [x z 1] M)
     # (and a little less open, about the opening's middle: as TRELLIS's,
-    # her lids showed white above her iris, and she stared)
+    # her lids showed white above her iris, and she stared; but never
+    # nearly shut: TRELLIS closes some of its eyes to slits, 0.5 to 0.7 as
+    # tall as hers, where its photograph's are open)
     cz = float((Xa @ M)[:, 1].mean())
-    M[:, 1] *= EYE_OPEN
-    M[2, 1] += cz * (1 - EYE_OPEN)
+    tall = np.ptp((Xa @ M)[:, 1]) / max(np.ptp(src[:, 1]), 1e-6)
+    k = float(np.clip(tall * EYE_OPEN, EYE_MIN, 1.05) / tall)
+    M[:, 1] *= k
+    M[2, 1] += cz * (1 - k)
     dy = float(np.median(Lt[rg, 1] - L0[rg, 1]))
     eye_c.append((c0, r0))
     eye_map.append((M, dy))
@@ -533,7 +565,16 @@ lm_w[[i for i in LIPS if i < n_l]] = 1.6
 rows = np.arange(n_l)[hit[:n_l] & ok_t[:n_l] & (lm_w > 0)]
 Bm = sp.coo_matrix((bary[rows].ravel(), (np.repeat(np.arange(len(rows)), 3), loc[tri[rows]].ravel())), shape=(len(rows), n)).tocsr()
 wa = lm_w[rows]
-Lgoal = Lt[rows]
+Lgoal = Lt[rows].copy()
+if Lph is not None:
+    # (her mouth as wide and as tall, and where, as the photograph's: an
+    # affine map across her face of TRELLIS's lips onto the photograph's,
+    # so their outline keeps TRELLIS's smooth shape: taken point by point,
+    # the photograph's landmarks kinked her lips' border)
+    _lr = np.isin(rows, LIPS)
+    _li = [i for i in LIPS if ok_t[i]]
+    _A = np.linalg.lstsq(np.c_[Lt[_li][:, [0, 2]], np.ones(len(_li))], Lph[_li][:, [0, 2]], rcond=None)[0]
+    Lgoal[np.ix_(_lr, [0, 2])] = np.c_[Lt[rows[_lr]][:, [0, 2]], np.ones(_lr.sum())] @ _A
 L0r = (P[tri[rows]] * bary[rows][:, :, None]).sum(1)
 D = np.zeros((n, 3))
 K_LM, K_HOLD, K_EYE = 3.0, 20.0, 30.0

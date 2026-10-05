@@ -1447,7 +1447,7 @@ if not os.environ.get("HEAD_UNPAINTED"):
             head_paint(os.path.join(FACE_DIR, _f), _p)
             _raw = heroine_face_fixes.RAW.replace(".jpg", f"_{_id}.jpg")
             shutil.copy(_p, _raw)
-            heroine_face_fixes.fix(head, _p, raw=_raw)
+            heroine_face_fixes.fix(head, _p, raw=_raw, key=f"face_{_id}")
 for _im in bpy.data.images:
     if bpy.path.abspath(_im.filepath) == hpath:
         if _im.packed_file:

@@ -244,23 +244,34 @@ def draw():
             o.hide_render = False
 
 
-def paint(name):
-    """A drawing painted over by Krea 2 (turbo, local)."""
-    img = comfy.upload(os.path.join(OUT, f"drawn_{name}.png"))
-    g = {
+def paint_graph(name, path, text, denoise):
+    """Krea 2 (turbo, local) painting over a picture, as a ComfyUI graph."""
+    img = comfy.upload(path)
+    return {
         "1": {"class_type": "UNETLoader", "inputs": {"unet_name": "krea2_turbo_fp8_scaled.safetensors", "weight_dtype": "default"}},
         "2": {"class_type": "CLIPLoader", "inputs": {"clip_name": "qwen3vl_4b_fp8_scaled.safetensors", "type": "krea2", "device": "default"}},
         "3": {"class_type": "VAELoader", "inputs": {"vae_name": "qwen_image_vae.safetensors"}},
-        "4": {"class_type": "CLIPTextEncode", "inputs": {"text": PROMPT.format(view=VIEW_WORDS[name]), "clip": ["2", 0]}},
+        "4": {"class_type": "CLIPTextEncode", "inputs": {"text": text, "clip": ["2", 0]}},
         "5": {"class_type": "ConditioningZeroOut", "inputs": {"conditioning": ["4", 0]}},
         "6": {"class_type": "LoadImage", "inputs": {"image": img}},
         "7": {"class_type": "VAEEncode", "inputs": {"pixels": ["6", 0], "vae": ["3", 0]}},
         "8": {"class_type": "KSampler", "inputs": {"model": ["1", 0], "positive": ["4", 0], "negative": ["5", 0], "latent_image": ["7", 0],
                                                     "seed": SEED, "steps": 8, "cfg": 1.0, "sampler_name": "euler", "scheduler": "simple",
-                                                    "denoise": DENOISE}},
+                                                    "denoise": denoise}},
         "9": {"class_type": "VAEDecode", "inputs": {"samples": ["8", 0], "vae": ["3", 0]}},
         "10": {"class_type": "SaveImage", "inputs": {"images": ["9", 0], "filename_prefix": f"heroine_face_{name}"}},
     }
+
+
+# Her skin's grain over her reference (from_reference): a close photograph's.
+DETAIL_PROMPT = ("An extreme close-up high-end beauty photograph of a young woman's face from the front, natural real skin with "
+                 "fine pores, faint fine vellus hair and delicate light freckles across her nose and cheeks, soft even studio light, "
+                 "razor sharp focus, high detail, no retouching.")
+
+
+def paint(name):
+    """A drawing painted over by Krea 2 (turbo, local)."""
+    g = paint_graph(name, os.path.join(OUT, f"drawn_{name}.png"), PROMPT.format(view=VIEW_WORDS[name]), DENOISE)
     got = comfy.run(g, OUT)
     dst = os.path.join(OUT, f"painted_{name}.png")
     os.replace(got[0], dst)
@@ -305,6 +316,36 @@ def from_reference(ref):
     a = np.asarray(src, np.float32)
     out = np.stack([ndimage.map_coordinates(a[..., k], [np.clip(fy, 0, sh - 1), np.clip(fx, 0, sw - 1)], order=1) for k in range(3)], 2)
     dst = os.path.join(OUT, "painted_front.png")
+    Image.fromarray(np.clip(out, 0, 255).astype(np.uint8)).save(dst)
+    # Her skin's fine grain: the photograph, warped to her, is a little soft
+    # at her head's size (a face 600 pixels across laid over 1500 texels), and
+    # she read airbrushed. Krea paints it over lightly at full size, and only
+    # its finest detail (pores, freckles, the grain of skin) is added back:
+    # every colour and feature stays the photograph's.
+    if float(os.environ.get("FACE_DETAIL", "0.3")) > 0:
+        Image.fromarray(np.clip(out, 0, 255).astype(np.uint8)).save(os.path.join(OUT, "drawn_detail.png"))
+        g = paint_graph("detail", os.path.join(OUT, "drawn_detail.png"), DETAIL_PROMPT, float(os.environ.get("FACE_DETAIL", "0.3")))
+        got = comfy.run(g, OUT)
+        kre = np.asarray(Image.open(got[0]).convert("RGB").resize((DRAW, DRAW), Image.LANCZOS), np.float32)
+        os.replace(got[0], os.path.join(OUT, "painted_detail.png"))
+        fine = kre - np.stack([ndimage.gaussian_filter(kre[..., k], 2.5) for k in range(3)], 2)
+        lum = fine @ np.array([0.3, 0.59, 0.11])
+        out = out + np.clip(lum, -40, 40)[..., None] * 0.9 + (fine - lum[..., None]) * 0.4
+        print("DETAIL from Krea over the reference: fine grain %.1f levels (rms)" % np.sqrt((lum ** 2).mean()))
+    # Her brows' hairs drawn crisper (an unsharp mask over them only, found
+    # in the reference by its landmarks and warped as it was): laid on her
+    # head at her head's size they read as a soft smudge at the Look's close-up.
+    from PIL import ImageDraw
+    bm = Image.new("L", (sw, sh), 0)
+    bd = ImageDraw.Draw(bm)
+    for ring in (BROW_A, BROW_B):
+        q = pts["ref"][ring]
+        c = q.mean(0)
+        bd.polygon([tuple(v) for v in c + (q - c) * np.array([1.25, 1.9])], fill=255)
+    bm = ndimage.gaussian_filter(np.asarray(bm, np.float32) / 255, 6)
+    bmask = ndimage.map_coordinates(bm, [np.clip(fy, 0, sh - 1), np.clip(fx, 0, sw - 1)], order=1)[..., None]
+    soft = np.stack([ndimage.gaussian_filter(out[..., k], 1.6) for k in range(3)], 2)
+    out = out + (out - soft) * 1.1 * bmask
     Image.fromarray(np.clip(out, 0, 255).astype(np.uint8)).save(dst)
     err = np.linalg.norm(tps(pts["drawn"]) - pts["ref"], axis=1)
     print("REFERENCE laid on the front drawing: %d landmarks, %.1f px off (rms)" % (len(err), np.sqrt((err ** 2).mean())))

@@ -4,7 +4,9 @@ and draped by their own weight over her head, shoulders and back.
     blender -b tools/comfy/out/heroes/heroine_built.blend --python tools/assets/heroine_hair.py -- godot/art/people [atlas] [style ...]
 
 With HAIR_BLEND=<blend> the styles are kept in a blend too (heroine_built.blend
-itself, before heroine_outfits.py, sizes her hats over her long hair).
+itself, before heroine_outfits.py, sizes her hats over her long hair). With
+HAIR_DUMP=<prefix>, Loose's guide strands are saved as <prefix>_<layer>.npz
+(to hunt strays).
 
 The strands are drawn once into an atlas (godot/art/people/head_tex/
 hair_strands.png): columns of fine strands, each a clump of a kind (dense,
@@ -424,7 +426,7 @@ def onto(Q, want, lying):
     return flat.reshape(Q.shape)
 
 
-def cards(P, width, columns, off, root=None, narrow=0.55):
+def cards(P, width, columns, off, root=None, narrow=0.55, face=None):
     """A card along each guide: a strip of the atlas (a column chosen from
     `columns`) as wide as `width` at its root, narrowing to its tip, facing
     out from her, three points across: where it lies on her, curved round her
@@ -445,6 +447,10 @@ def cards(P, width, columns, off, root=None, narrow=0.55):
     radial /= np.linalg.norm(radial, axis=2)[:, :, None]
     near_head = COLLIDE_HEAD[idx].mean(1).reshape(S, K)[:, :, None]
     out = out * (1 - near_head) + radial * near_head
+    if face is not None:
+        # (turned toward where it is seen from: a lock hanging beside her
+        # cheek faced out sideways, edge on to anyone before her, and vanished)
+        out = out * 0.3 + np.asarray(face, float)[None, None] * 0.7
     for _ in range(3):                                           # smoothed along the strand: no twisting
         out[:, 1:-1] = (out[:, :-2] + 2 * out[:, 1:-1] + out[:, 2:]) / 4
     out /= np.linalg.norm(out, axis=2)[:, :, None] + 1e-9
@@ -482,8 +488,13 @@ def cards(P, width, columns, off, root=None, narrow=0.55):
     # (wound to face out from her, as their normals do)
     q1 = np.stack([base + K + k, base + K + k + 1, base + k + 1, base + k], -1).reshape(-1, 4)
     q2 = np.stack([base + 2 * K + k, base + 2 * K + k + 1, base + K + k + 1, base + K + k], -1).reshape(-1, 4)
+    # (how far along it each point is from its root, in metres, and how far
+    # over her hairline its root is: for its root's fade at her hairline)
+    arc = np.c_[np.zeros(S), np.cumsum(np.linalg.norm(np.diff(P, axis=1), axis=2), 1)]
     return dict(V=V.reshape(-1, 3), N=N.reshape(-1, 3), UV=np.c_[u.ravel(), v.ravel()], F=np.vstack([q1, q2]),
-                along=np.tile(f, 3 * S), card=np.repeat(RNG.random(S), 3 * K), at=np.concatenate([P, P, P], 1).reshape(-1, 3))
+                along=np.tile(f, 3 * S), card=np.repeat(RNG.random(S), 3 * K), at=np.concatenate([P, P, P], 1).reshape(-1, 3),
+                arc=np.concatenate([arc, arc, arc], 1).ravel(), length=np.repeat(arc[:, -1], 3 * K),
+                root_rise=np.repeat(rise(P[:, 0]), 3 * K))
 
 
 # ---------------------------------------------------------------- styles --
@@ -534,7 +545,9 @@ def style_long():
                                               (0.007, (0.014, 0.022), range(3, 11), 0.011, 0.54),
                                               (0.008, (0.012, 0.018), range(6, 14), 0.015, 0.54)):
         pts, nrm = roots(spacing, above=0.004)
-        side = part_side(pts)
+        # (which side of her parting, the parting a little uneven: a straight
+        # seam of cards' roots read as a hard pale line)
+        side = part_side(pts + np.c_[RNG.normal(0, 0.003, len(pts)), np.zeros((len(pts), 2))])
         # Away from the parting and back over her head (her forehead's hair
         # swept back, not let fall over her face), then down.
         sweep = np.c_[side * 0.8, np.full(len(pts), 0.7), np.full(len(pts), -0.2)]
@@ -759,7 +772,34 @@ def gathered(T, layers, points=18, reach=0.012, lift=0.0):
         out.append(cards(P, RNG.uniform(*width, len(pts)), list(cols), off, root=np.clip(rise(pts) / 0.03, 0.35, 1.0)))
         print("  gathered: %d cards" % len(pts))
     out += hairline_hairs(comb, sides=no_part)
+    out += tendrils()
     return out
+
+
+def tendrils(per_side=9):
+    """A few fine locks left loose at her temples, falling past her cheeks
+    to her jaw, softly waved: drawn back, her hair framed nothing, and she
+    read slicked, bald-browed."""
+    pts, nrm = roots(0.003, above=0.0, below=0.025)
+    th = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
+    ok = (th > 45) & (th < 78) & (pts[:, 2] > EYE_Z + 0.005) & (pts[:, 2] < EYE_Z + 0.05)
+    pick = []
+    for sd in (1, -1):
+        cand = np.where(ok & (np.sign(pts[:, 0]) == sd))[0]
+        if len(cand):
+            pick += list(RNG.choice(cand, min(per_side, len(cand)), replace=False))
+    if not pick:
+        return []
+    pts, nrm = pts[pick], nrm[pick]
+    sweep = np.c_[np.sign(pts[:, 0]) * 0.35, np.full(len(pts), -0.3), -np.ones(len(pts))]
+    dirs = combed(pts, nrm, sweep)
+    L = RNG.uniform(0.11, 0.17, len(pts))
+    P = drape_lengths(pts - nrm * 0.001, dirs, L, 0.004, points=16)
+    P = wave(P, 0.005, 0.07, pts)
+    c = cards(P, RNG.uniform(0.007, 0.013, len(pts)), list(range(8, 15)), 0.004, narrow=0.65, face=(0.0, -1.0, 0.0))
+    c["alpha"] = np.repeat(RNG.uniform(0.75, 1.0, len(pts)), 3 * 16)
+    print("  tendrils: %d cards" % len(pts))
+    return [c]
 
 
 def frame(P):
@@ -1094,9 +1134,16 @@ def build(style):
         V.append(c["V"]), N.append(c["N"]), UV.append(c["UV"])
         F.extend((c["F"] + base).tolist())
         M.extend([mat] * len(c["F"]))
-        # (its alpha: how much of it shows, the baby hairs at her hairline faint)
-        C.append(np.c_[np.zeros(len(c["V"])), c["card"], np.full(len(c["V"]), 1.0 if mat == 1 else 0.0),
-                       c.get("alpha", np.ones(len(c["V"])))])
+        # (its alpha: how much of it shows, the baby hairs at her hairline
+        # faint; and every card faded in from its root over 8 mm, or a third
+        # of it if shorter, so her hairline melts into her skin and her
+        # parting into her hair, not a row of cards' ends: a wig's edge at
+        # the Look's close-up)
+        alpha = c.get("alpha", np.ones(len(c["V"])))
+        if mat == 0 and "arc" in c:
+            ramp = np.clip(c["arc"] / np.minimum(0.008, c["length"] / 3 + 1e-6), 0, 1)
+            alpha = alpha * ramp * ramp * (3 - 2 * ramp)
+        C.append(np.c_[np.zeros(len(c["V"])), c["card"], np.full(len(c["V"]), 1.0 if mat == 1 else 0.0), alpha])
         base += len(c["V"])
     # How deep in her hair each point is: darker the more hair lies over it
     # (out from her, within 2.5 cm), and a little at the root.

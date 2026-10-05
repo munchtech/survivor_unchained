@@ -148,10 +148,24 @@ def sample(head, a):
     return col / np.maximum(cnt, 1)[:, None]
 
 
+# Another of her faces (a preset's key, face_<id>) her head is put right as,
+# for that face's paint: its nose's shadows where its nose is (fix's `key`).
+SHAPE_KEY = None
+
+
+def shaped(head):
+    """Her head's points in the world, as SHAPE_KEY shapes them (if any)."""
+    mw = np.array(head.matrix_world)
+    V = np.array([v.co[:] for v in head.data.vertices])
+    kb = head.data.shape_keys.key_blocks if head.data.shape_keys else {}
+    if SHAPE_KEY and SHAPE_KEY in kb:
+        V = V + np.array([d.co[:] for d in kb[SHAPE_KEY].data]) - np.array([d.co[:] for d in kb[0].data])
+    return V @ mw[:3, :3].T + mw[:3, 3]
+
+
 def landmarks(head):
     """Her head's points in the world, her eyes' height and her face's front."""
-    mw = head.matrix_world
-    P = np.array([(mw @ v.co)[:] for v in head.data.vertices])
+    P = shaped(head)
     eyes = [o for o in head.users_scene[0].objects if o.name == "HeroineEyes"]
     ez = float(np.mean([(eyes[0].matrix_world @ v.co)[2] for v in eyes[0].data.vertices])) if eyes else P[:, 2].max() - 0.12
     return P, ez, P[:, 1].min()
@@ -204,8 +218,16 @@ def nose(head, a, size=41, freckle=160, rays=96, reach=0.02):
     # hemisphere, out to 2 cm), on her nose's base and wings only (not the
     # corners of her eyes, which her eyes' own shading darkens).
     bvh = BVHTree.FromPolygons([tuple(q) for q in P], [tuple(p.vertices) for p in me.polygons])
+    # (its normals from its points as shaped, out from her as Blender's are)
+    N = np.zeros_like(P)
+    for p in me.polygons:
+        vs = list(p.vertices)
+        N[vs] += np.cross(P[vs[1]] - P[vs[0]], P[vs[-1]] - P[vs[0]])
+    N /= np.linalg.norm(N, axis=1)[:, None] + 1e-12
     mw3 = head.matrix_world.to_3x3()
-    N = np.array([(mw3 @ v.normal).normalized()[:] for v in me.vertices])
+    own = np.array([(mw3 @ v.normal)[:] for v in me.vertices])
+    if (N * own).sum(1).mean() < 0:
+        N = -N
     near = (P[:, 2] < ez - 0.022) & (P[:, 2] > ez - 0.065) & (np.abs(P[:, 0]) < 0.034) & (P[:, 1] < front + 0.05)
     rng = np.random.default_rng(3)
     dirs = rng.normal(size=(rays, 3))
@@ -232,8 +254,7 @@ def front_view(head, a, faces, res=0.0001):
     every tenth of a millimetre): at each pixel the nearest face of those
     given, and her paint's colour there (each face's UVs blended across it)."""
     me = head.data
-    mw = head.matrix_world
-    P = np.array([(mw @ v.co)[:] for v in me.vertices])
+    P = shaped(head)
     uv = me.uv_layers.active.data
     vs_all = np.unique(np.concatenate([list(p.vertices) for p in faces]))
     x0, z0 = P[vs_all, 0].min(), P[vs_all, 2].min()
@@ -321,12 +342,14 @@ def lips(head, a):
     print("LIPS:", int(band.sum()), "pixels of a pale line between her lips;", len(hit), "faces,", int(pale.sum()), "texels given her lips' colour")
 
 
-def fix(head, path, raw=None):
+def fix(head, path, raw=None, key=None):
     """All her face's paint put right, the file at `path` (her head's) in
     place, from its raw copy (made from it the first time; `raw` another
-    than RAW, for another face's paint)."""
+    than RAW, for another face's paint, and `key` that face's shape key)."""
     import shutil
     from PIL import Image
+    global SHAPE_KEY
+    SHAPE_KEY = key
     raw = raw or RAW
     if not os.path.exists(raw):
         os.makedirs(os.path.dirname(raw), exist_ok=True)
