@@ -198,8 +198,11 @@ public sealed class WorldState
     /// <summary>Story fights lost, waiting at the Wayfinder's table to be taken again.</summary>
     public List<Arena.ArenaSpec> Rematches = new();
 
-    public const int StashSize = 48;
-    static List<ItemInstance?> NewStash() { var s = new List<ItemInstance?>(StashSize); for (int i = 0; i < StashSize; i++) s.Add(null); return s; }
+    /// <summary>A shelf of Rook's storeroom: one comes with the room, more are bought from her
+    /// (Crafting.ShelfPrice). A save from before shelves kept 48 places: two shelves.</summary>
+    public const int Shelf = 24;
+    public int Shelves => System.Math.Max(1, Stash.Count / Shelf);
+    static List<ItemInstance?> NewStash() { var s = new List<ItemInstance?>(Shelf); for (int i = 0; i < Shelf; i++) s.Add(null); return s; }
 
     public static WorldState Fresh(uint seed) => new() { Seed = seed };
 

@@ -41,6 +41,9 @@ public sealed class ItemInstance
     /// <summary>A trophy's power set into it (an affix id: Greymuzzle's fang), outside its seams:
     /// no grades, no heat, and its name leads the piece's.</summary>
     public string? Setting;
+    /// <summary>The level it was made at, where that was a Wayfinder's map (docs/CRAFTING_DESIGN.md 20.3):
+    /// the harder the map, the more often its grades rolled the finer of its rarity's two. Null by day.</summary>
+    public int? Level;
 }
 
 public enum ConditionId { Wounded, Blightsick, Poisoned, Blessed, Rested, Wolfscent, Hunted, Warmed }
@@ -178,12 +181,14 @@ public static class Inventory
     /// <param name="lean">Affixes it is likelier to roll (what answers the map it fell in).</param>
     /// <param name="dropped">It fell in the world: its heat is rolled (made or bought, it is full).</param>
     public static ItemInstance Make(CharacterData? ch, string defId, int qty = 1, int? rarity = null, uint? seed = null, List<AffixRoll>? affixes = null,
-        IReadOnlyCollection<string>? lean = null, bool dropped = false)
+        IReadOnlyCollection<string>? lean = null, bool dropped = false, int? level = null)
     {
         var def = Items.Get(defId);
         string uid = ch != null ? $"i{ch.NextUid++}" : $"i{loose.Next(1_000_000_000):x}";
-        var it = new ItemInstance { Uid = uid, Def = defId, Qty = qty, Rarity = rarity ?? def.Rarity, Affixes = affixes ?? new() };
+        var it = new ItemInstance { Uid = uid, Def = defId, Qty = qty, Rarity = rarity ?? def.Rarity, Affixes = affixes ?? new(), Level = def.Base ? level : null };
         if (Crafting.Workable(def)) it.Heat = it.HeatFull = Crafting.HeatAtMaking(it.Rarity, dropped ? new Rng(seed ?? (uint)loose.Next(1_000_000_000)) : null);
+        // A ruler's thing carries its Mark at the grade it fell at (its rarity, I to VI).
+        if (affixes == null && Crafting.MarkOf(defId) is { } mark) it.Affixes.Add(new AffixRoll { Id = mark, Tier = Math.Clamp(it.Rarity, 0, 5) });
         if (def.Base && affixes == null)
         {
             var rng = new Rng(seed ?? (uint)loose.Next(1_000_000_000));
@@ -209,7 +214,9 @@ public static class Inventory
                 foreach (var c in cands) { roll -= W(c); if (roll <= 0) { a = c; break; } }
                 picked.Add(a.Id);
                 if (a.Prefix) hasPrefix = true; else hasSuffix = true;
-                it.Affixes.Add(new AffixRoll { Id = a.Id, Tier = Math.Max(0, Math.Min(3, it.Rarity - 1 + rng.Int(0, 1))) });
+                // A rarity rolls one of two grades; made at a map's level, the finer comes oftener (a coin by day).
+                int finer = it.Level is int lv ? (rng.Next() < Crafting.FinerGrade(lv) ? 1 : 0) : rng.Int(0, 1);
+                it.Affixes.Add(new AffixRoll { Id = a.Id, Tier = Math.Max(0, Math.Min(3, it.Rarity - 1 + finer)) });
             }
         }
         return it;
@@ -518,6 +525,11 @@ public static class Character
             foreach (var ar in it.Affixes)
                 if (Items.Affix(ar.Id)?.Grants is { } g && kit.Weapons.All(w => w.Id != g) && kit.Weapons.Count < Content.Weapons.MaxWeapons)
                     kit.Weapons.Add((g, 1 + ar.Tier / 2));
+            // Marks, worn into the maps (Battle.Wear): one to a piece, three at once, and the same Mark
+            // twice is the finer of the two (design 20.3).
+            if (it.Affixes.FirstOrDefault(ar => Items.Affix(ar.Id)?.Mark == true) is { } mk
+                && (kit.Marks.ContainsKey(mk.Id) || kit.Marks.Count < Crafting.Rules.Mark.Worn))
+                kit.Marks[mk.Id] = Math.Max(kit.Marks.GetValueOrDefault(mk.Id), Items.MarkStrength(mk.Tier));
             if (def.Weapon != null && s is EquipSlot.Weapon or EquipSlot.Offhand)
             {
                 // Mastery: every 60 kills with a weapon starts it a rank higher, to +2.

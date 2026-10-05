@@ -42,6 +42,9 @@ public abstract partial class Overlay : Control
         Theme = Style.PageTheme;
     }
 
+    /// <summary>The keys or the pad have their focus on this control (a hold-to-confirm press asks).</summary>
+    public bool Focused(Control c) => Nav.Enabled && Nav.KeyMode && Nav.Current?.C == c;
+
     public override void _Ready()
     {
         // A screen opened from the pad starts with its focus shown.

@@ -176,11 +176,18 @@ public partial class Game : Node, IZoneHost
                 var idq = parts[0].Split('*');
                 int qty = idq.Length > 1 && int.TryParse(idq[1], out var nq) ? nq : 1;
                 int? rar = parts.Length > 1 && int.TryParse(parts[1], out var r) ? r : null;
-                // iron_helm:3:of_the_wolf@1+of_the_lantern@2 : a piece with just those affixes, at those grades.
+                // iron_helm:3:of_the_wolf@1+of_the_lantern@2 : a piece with just those affixes, at those grades;
+                // a fourth part marks it (iron_helm:3:hale@4+fevered@0:slurried : steeped, and so set).
                 if (parts.Length > 2)
                 {
-                    var affixes = parts[2].Split('+').Select(a => a.Split('@')).Select(a => new AffixRoll { Id = a[0], Tier = a.Length > 1 && int.TryParse(a[1], out var t) ? t : 0 }).ToList();
-                    Inventory.AddToPack(Journey.Ch, Inventory.Make(Journey.Ch, idq[0], rarity: rar, affixes: affixes));
+                    var affixes = parts[2].Split('+', StringSplitOptions.RemoveEmptyEntries).Select(a => a.Split('@')).Select(a => new AffixRoll { Id = a[0], Tier = a.Length > 1 && int.TryParse(a[1], out var t) ? t : 0 }).ToList();
+                    var made = Inventory.Make(Journey.Ch, idq[0], rarity: rar, affixes: affixes);
+                    if (parts.Length > 3)
+                    {
+                        made.Marks = parts[3].Split('+', StringSplitOptions.RemoveEmptyEntries).ToList();
+                        if (Crafting.Slurried(made)) made.Heat = 0;
+                    }
+                    Inventory.AddToPack(Journey.Ch, made);
                 }
                 else Journey.GiveItem(idq[0], qty, rar);
             }
@@ -264,6 +271,12 @@ public partial class Game : Node, IZoneHost
             EnterZone(z, "lowford", at);
         }
         else EnterZone(z, null, at);
+        // --near ID: stood a few steps from that person (pictures of what shows over their head).
+        if (Args.Get("near") is string nearId && zone != null && zone.Actors.TryGetValue(nearId, out var na) && Battle is { } nb)
+        {
+            nb.Player.X = na.X + 2.2;
+            nb.Player.Z = na.Z + 3.2;
+        }
         hud.Fade(0, 0.5);
         // --cine ID: that cinematic played here at once (pictures of it, its previs).
         if (Args.Get("cine") is string cid && cine == null) Cinematic(cid);

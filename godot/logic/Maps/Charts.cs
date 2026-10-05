@@ -34,6 +34,8 @@ public sealed class Chart
     public List<string> Mods = new();
     /// <summary>Crafting's: one more percent found a point, to 20.</summary>
     public int Quality;
+    /// <summary>Crafting's: the mod held through a burn and redraw at the Wayfinder's table (one a chart).</summary>
+    public string? Pinned;
     public string Name = "";
     public string Theme = "wood";
 
