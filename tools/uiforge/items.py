@@ -113,14 +113,16 @@ T2I = {
     "bomb": "a small iron-bound wooden crate charge, orange ember light glowing through the gaps between its slats, a "
             "short lit fuse sparking on top",
     # The crafting lead's Marks (design 20.3): what each people's map ruler leaves, carrying how it fought.
-    "hunt_bone": "a long pale bone gnawed by a great wolf's teeth into a deliberate spiralling pattern of grooves, "
-                 "a few grey wolf hairs caught in the grooves, a faint cold silver light in the deepest score",
+    # The story lead's Tally-Bone, Bent Barrow-Nail and Muster-Cord (seed 1110: the first takes missed the notches,
+    # the bend and the knots).
+    "hunt_bone": "a straight pale bone tally stick lying diagonally, its whole length cut with dozens of deep dark "
+                 "parallel notches in a neat row like a ladder, tooth-gnawed ends, a few grey wolf hairs",
     "lamp_glass": "a cracked curved shard of thick amber lamp glass with a blackened brass rim, a tiny ember-orange "
                   "flame still burning inside the crack, soot streaks",
-    "gate_nail": "a long square-headed iron coffin nail bent nearly double, flecked with grave soil and rust, a faint "
-                 "pale holy light glowing along the bend",
-    "red_cord": "a short length of faded red cloth cord tied with many tight knots in a row, frayed ends, a small iron "
-                "ring threaded on it",
+    "gate_nail": "a long square iron door nail bent double into a tight U shape, its square head and point side by "
+                 "side, flecked with grave soil and rust, a faint pale light along the bend",
+    "red_cord": "a length of faded red cord lying in a loose S curve with a long row of small tight knots tied along "
+                "it at even intervals, frayed ends, nothing else",
     # The crafting lead's (design 9): Snib's jar of the Dig's slurry. No photograph (it has no model).
     "slurry_jar": "a squat grimy grey stoneware crock, its lid lashed down with twine, a crude X scratched deep into its "
                   "belly, sickly bright green light leaking out through the scratch and a crack under the lid, thick "
@@ -133,6 +135,8 @@ OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
 PICKS: dict = {
     # Painted from words (T2I), where the photograph was a poor start.
     "hide": (1100, 1), "root": (1100, 2), "seed": (1100, 3), "dust": (1100, 0), "bomb": (1100, 1), "pelt": (1110, 2),
+    # The crafting lead's: Snib's jar, and the four rulers' things that carry a Mark.
+    "slurry_jar": (1100, 0), "lamp_glass": (1100, 1), "hunt_bone": (1120, 2), "gate_nail": (1110, 0), "red_cord": (1110, 1),
 }
 
 

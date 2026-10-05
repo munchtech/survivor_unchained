@@ -1262,7 +1262,9 @@ public partial class Game : Node, IZoneHost
     void ClickAt(string spec)
     {
         bool right = spec.StartsWith('r');
-        var xy = spec.TrimStart('r').Split(':');
+        // hX:Y: pressed and held a second before it is let go (pictures of a hold-to-confirm press).
+        bool hold = spec.StartsWith('h');
+        var xy = spec.TrimStart('r', 'h').Split(':');
         if (xy.Length != 2 || !float.TryParse(xy[0], System.Globalization.CultureInfo.InvariantCulture, out var x)
             || !float.TryParse(xy[1], System.Globalization.CultureInfo.InvariantCulture, out var y)) return;
         var at = new Vector2(x, y);
@@ -1272,7 +1274,8 @@ public partial class Game : Node, IZoneHost
         vp.PushInput(new InputEventMouseMotion { Position = at, GlobalPosition = at });
         var button = right ? MouseButton.Right : MouseButton.Left;
         vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = true });
-        vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = false });
+        if (hold) GetTree().CreateTimer(1.0).Timeout += () => vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = false });
+        else vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = false });
         GD.Print($"click {spec}");
     }
 

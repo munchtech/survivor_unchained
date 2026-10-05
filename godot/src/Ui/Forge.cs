@@ -109,6 +109,7 @@ public partial class ForgeScreen : Overlay
         Bench(Pane(page, new Rect2(1420, 0, 420, 920)));
         PageFooter(Controls.Instance.UsingPad
             ? Footer((Act.Confirm, "Choose, or do it"), (Act.Cancel, "Close"))
+            : Charting ? MouseFooter("Click a chart to lay it on the table, then an oath", "every working says what it takes and what it will do before you press", "its heat is its budget, as a piece's is")
             : MouseFooter("Click a piece to put it on the anvil, then a seam", "every craft says what it takes and what it will make before you press", "nothing is ever broken by a craft"));
         Strike();
     }
@@ -368,7 +369,7 @@ public partial class ForgeScreen : Overlay
         var names = Style.V(Style.Gap1);
         names.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         names.AddChild(Style.Label(Inventory.Name(it), Style.TextBold, 26, col, true));
-        string what = it.Chart is { } ch ? $"{(ch.Rarity switch { 2 => "A rare chart", 1 => "A fine chart", _ => "A plain chart" })}, tier {ch.Tier}: {Maps.MapOffers.People(ch.People).Name}'s ground"
+        string what = it.Chart is { } ch ? $"{(ch.Rarity switch { 2 => "A rare chart", 1 => "A fine chart", _ => "A plain chart" })}, tier {ch.Tier}: {Crafting.Ground(ch.People)}"
             : $"{Inventory.RarityName(it)} {def.Kind.ToString().ToLowerInvariant()}";
         var kind = Style.H(Style.Gap2, Style.Label(what, Style.Ui, Style.Small, Style.InkDim), Style.Gems(it.Rarity, 7));
         // Made for you this morning: said where the piece is named, the first time it is seen.
@@ -441,7 +442,7 @@ public partial class ForgeScreen : Overlay
         string rarity = Inventory.RarityName(it).ToLowerInvariant();
         bool bright = !open && !mark && a!.Tier >= Crafting.Bright;
         string note = open ? (Crafting.Does(crafter, Verb.Cage) ? "work a material in, or cage a coal" : Crafting.Does(crafter, Verb.WorkIn) ? "work a material in"
-                : Crafting.Does(crafter, Verb.Bind) ? "bind a power into it" : "empty")
+                : Crafting.Does(crafter, Verb.Mark) ? "bind a power into it, or write a mark" : Crafting.Does(crafter, Verb.Bind) ? "bind a power into it" : "empty")
             : coal ? $"{ad!.Name}: a caged coal, it shapes the ember's draft"
             : skill ? $"{ad!.Name}: a worn skill, it has no grades"
             : slurry ? $"{ad!.Name}: the slurry's, past its seams; it has no grades"

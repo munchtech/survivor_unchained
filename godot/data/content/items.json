@@ -1277,7 +1277,7 @@
    "name": "Tally-Bone",
    "kind": "trophy",
    "rarity": 1,
-   "icon": "bone",
+   "icon": "hunt_bone",
    "value": 40,
    "description": "A deer's shinbone from a Pack ruler's den, scored end to end with toothmarks in close, even rows, the way a shepherd notches a stick to count. Vonnra can read the hunt in it, and mark a piece you wear with it.",
    "tags": ["mark"]
@@ -1287,7 +1287,7 @@
    "name": "Cracked Lamp-Glass",
    "kind": "trophy",
    "rarity": 1,
-   "icon": "lantern",
+   "icon": "lamp_glass",
    "value": 40,
    "description": "A lamp's chimney-glass from a lampling ruler, cracked from top to bottom. What was lit in it fell a long way once and went on burning where it landed. It is still warm. Vonnra can mark a piece you wear with it.",
    "tags": ["mark"]
@@ -1297,7 +1297,7 @@
    "name": "Bent Barrow-Nail",
    "kind": "trophy",
    "rarity": 1,
-   "icon": "key",
+   "icon": "gate_nail",
    "value": 40,
    "description": "A square iron nail as long as your hand, from a barrow door, bent double. Somebody nailed that door shut a long time ago. It was opened from inside. Vonnra can mark a piece you wear with it.",
    "tags": ["mark"]
@@ -1307,7 +1307,7 @@
    "name": "Muster-Cord",
    "kind": "trophy",
    "rarity": 1,
-   "icon": "kerchief",
+   "icon": "red_cord",
    "value": 40,
    "description": "A length of red cord, knotted once for every name at a muster. Nobody untied the knots for the ones who did not come home. Vonnra can read the crowd in it, and mark a piece you wear with it.",
    "tags": ["mark"]

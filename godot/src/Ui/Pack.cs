@@ -756,6 +756,7 @@ public partial class StashScreen : Overlay
         // More shelves than the page holds scroll (UI design's shelf pages will replace this).
         var shelves = Style.Scroll(well);
         shelves.CustomMinimumSize = new Vector2(0, Mathf.Min(760, w.Stash.Count / 8 * 124 + 24));
+        shelves.SizeFlagsVertical = SizeFlags.ShrinkBegin;
         store.AddChild(shelves);
         // Another shelf, bought from Rook (the owner's: shelves of 24).
         if (Crafting.ShelfPrice(G.Journey.Craft) is int price)

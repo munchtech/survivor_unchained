@@ -205,7 +205,7 @@ public static class Arenas
         j.BankGold(b);
         // What the night leaves in the survivor's fist, for the Waystation's hands: walked
         // out, all of it; fallen, half.
-        var carry = Crafting.Night(spec.People, spec.Tier, spec.Story, b.EmberLevel, Math.Max(0, b.Time / 60 - spec.Minutes), won, fell, b.ChampionsByFamily);
+        var carry = Crafting.Night(spec.People, spec.Tier, spec.Story, b.EmberLevel, Math.Max(0, b.Time / 60 - spec.Minutes), won, fell, b.ChampionsByFamily, b.MinibossesByFamily);
         j.Carry(carry, spec.Name);
         var w = j.World;
         if (!won)

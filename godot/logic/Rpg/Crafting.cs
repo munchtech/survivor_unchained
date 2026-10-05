@@ -104,7 +104,7 @@ public sealed record Said(string? Before, string? Line, string? After);
 public sealed class NightPeople { public string Family = "", Material = ""; public int Per = 150; }
 public sealed class NightRules
 {
-    public int EmberFrom = 10, EmberPer = 8, MinutesPer = 2, StoryBonus = 2, Cap = 8;
+    public int EmberFrom = 10, EmberPer = 8, MinutesPer = 2, StoryBonus = 2, Cap = 8, Miniboss = 2;
     public double FellKeeps = 0.5;
     public Dictionary<string, List<NightPeople>> Peoples = new();
 }
@@ -1148,7 +1148,7 @@ public static partial class Crafting
         new[] { Shard }.Concat((Rules.Night.Peoples.GetValueOrDefault(people) ?? new()).Select(p => p.Material)).Distinct().ToList();
 
     public static NightYield Night(string people, int tier, bool story, int ember, double minutesPast, bool won, bool fell,
-        IReadOnlyDictionary<Family, int> champions)
+        IReadOnlyDictionary<Family, int> champions, IReadOnlyDictionary<Family, int>? minibosses = null)
     {
         var r = Rules.Night;
         var all = new Dictionary<string, int>();
@@ -1157,7 +1157,8 @@ public static partial class Crafting
             + (won ? (int)Math.Floor(Math.Max(0, minutesPast) / Math.Max(1, r.MinutesPer)) : 0) + (won && story ? r.StoryBonus : 0));
         foreach (var p in r.Peoples.GetValueOrDefault(people) ?? new())
             if (EnumKey<Family>.TryParse(p.Family, out var fam))
-                Add(p.Material, Math.Min(r.Cap, champions.GetValueOrDefault(fam) / Math.Max(1, p.Per)));
+                // The champions' tally, to the cap; a miniboss of the people carries out two more besides.
+                Add(p.Material, Math.Min(r.Cap, champions.GetValueOrDefault(fam) / Math.Max(1, p.Per)) + r.Miniboss * (minibosses?.GetValueOrDefault(fam) ?? 0));
         var kept = new Dictionary<string, int>();
         var spilled = new Dictionary<string, int>();
         foreach (var (m, n) in all)

@@ -277,6 +277,8 @@ public sealed partial class Battle
     public readonly Dictionary<Family, int> KillsByFamily = new();
     /// <summary>Champions slain, by family: what a night's people yield to crafting (docs/CRAFTING_DESIGN.md 6.1).</summary>
     public readonly Dictionary<Family, int> ChampionsByFamily = new();
+    /// <summary>Minibosses slain, by family: each carries out two of its people's material (crafting's, design 6.1).</summary>
+    public readonly Dictionary<Family, int> MinibossesByFamily = new();
     public double DamageTaken, GoldGained;
     /// <summary>How much of GoldGained is already in the survivor's purse.</summary>
     public double GoldBanked;
@@ -824,6 +826,7 @@ public sealed partial class Battle
             KillCount++;
             KillsByFamily[e.Def.Family] = KillsByFamily.GetValueOrDefault(e.Def.Family) + 1;
             if (e.Elite && !e.Boss) ChampionsByFamily[e.Def.Family] = ChampionsByFamily.GetValueOrDefault(e.Def.Family) + 1;
+            if (e.Def.Miniboss && !e.Boss) MinibossesByFamily[e.Def.Family] = MinibossesByFamily.GetValueOrDefault(e.Def.Family) + 1;
         }
         // A body comes apart under a blow of three times what it had left, or
         // twice on a critical; fire does it its own way (no burst).
