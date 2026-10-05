@@ -48,10 +48,12 @@ public partial class Game
         {
             case ClockTurn.Day:
                 Turn(TimeOfDay.Day, 40);
+                Shots.Want("day", 20);
                 break;
             case ClockTurn.Dusk:
             {
                 Turn(TimeOfDay.Dusk, 60);
+                Shots.Want("dusk", 1.5); Shots.Want("dusk", 6.5); Shots.Want("dusk", 30); Shots.Want("dusk", 59);
                 // The town's own evening call, heard in the town; then, anywhere, what the night holds.
                 var tonight = Journey.Tonight;
                 double gap = 0;
@@ -62,6 +64,7 @@ public partial class Game
             case ClockTurn.Night:
             {
                 Turn(TimeOfDay.Night, 50);
+                Shots.Want("night", 1.0); Shots.Want("night", 25); Shots.Want("night", 52);
                 var tonight = Journey.Tonight;
                 Announce(new Announcement("Night", tonight?.Place ?? "The ember is coming up", "zone", 3.6));
                 Save("night");
@@ -69,6 +72,7 @@ public partial class Game
             }
             case ClockTurn.Nudge:
                 Say(Journey.DayLines.Nudge, null, 4);
+                Shots.Want("nudge", 1.0);
                 break;
             case ClockTurn.NightOver:
                 NightPasses();
@@ -119,6 +123,7 @@ public partial class Game
         controls.Captured = true;
         hud.Prompt(promptShown = null);
         hud.Fade(1, 1.2, "Dawn", $"Day {World.Day + 1}");
+        Shots.Want("dawnfade", 1.25);
         Wait(1.3, () =>
         {
             dawnBreaking = false;
@@ -127,6 +132,7 @@ public partial class Game
             SetTimeOutright(TimeOfDay.Dawn);
             Save("dawn");
             hud.Fade(0, 1.4);
+            Shots.Want("dawn", 1.6); Shots.Want("dawn", 6);
             controls.Captured = false;
             controls.ClearLatches();
             Morning(lines);

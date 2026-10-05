@@ -237,11 +237,27 @@ public partial class Game : Node, IZoneHost
             var bc = SurvivorUnchained.Maps.MapGen.Generate(World.Map!.Map).Boss;
             at = new Arrival(bc.X, bc.Z - bc.R + 1);
         }
+        // --night ID: straight into a story fight by night (a StoryFights id: hollow, roost, dig, vault),
+        // back to the Verge at its place after (pictures of a story night, its falls and its loss).
+        if (Args.Get("night") is string nid && StoryFights.Get(nid) is { } nf)
+        {
+            var spot = ZoneMeta.Load("verge").Place("V", nf.Spot);
+            Arenas.Begin(World, StoryFights.Spec(nid, Journey.Ctx, "verge", spot.X, spot.Z, 0));
+            z = "arena";
+        }
         if (z != "lowford")
         {
             // Skipping ahead: the prologue counts as done.
             World.Facts["prologue.done"] = true;
             World.Time = Enum.TryParse<TimeOfDay>(Args.Get("time") ?? "day", true, out var t) ? t : TimeOfDay.Day;
+            // --clock S: the day's clock at S seconds of free play since dawn, running (pictures of its
+            // turns: 585 is a quarter minute before dusk, 1065 before the night's end).
+            if (Args.Has("clock"))
+            {
+                World.Clock = Args.Num("clock", 0);
+                World.Time = DayClock.At(World.Clock);
+                World.Facts["clock.started"] = true;
+            }
             EnterZone(z, "lowford", at);
         }
         else EnterZone(z, null, at);
@@ -367,7 +383,7 @@ public partial class Game : Node, IZoneHost
             var lines = Journey.WakeAfterLoss(s, null, Rng.NextDouble);
             Travel("waystation", "The shrine", $"Day {World.Day}", null, from: "death");
             if (leaving) Wait(0.8, () => screens.Close());
-            Wait(3.9, () => { talkDone = () => Morning(lines); Talk("chid"); });
+            Wait(3.9, () => { talkDone = () => { Morning(lines); Shots.Want("morning", 1.5); }; Talk("chid"); Shots.Want("chid", 0.8); });
             return;
         }
         // Back into the same night, with time to hear the town or go straight on to another fight.
@@ -986,7 +1002,8 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>--open KIND (or 'all'): the screens opened in turn, for
     /// pictures and for runs that check each builds (--bare hides the world).</summary>
-    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, dieDone, chestDone, barksDone;
+    bool hordeDone, dropsDone, castDone, giveDone, minuteDone, chestDone, barksDone, answerDone;
+    int dieIx;
     double blastT = 0.5, marksT = 1;
 
     void Tour(double dt)
@@ -1123,11 +1140,20 @@ public partial class Game : Node, IZoneHost
         }
         // --die T: T seconds in, a risen at arm's length before her (--behind:
         // at her back) fells her where she stands (a picture of her fall).
-        if (!dieDone && Args.Has("die") && Battle is { } kb && Journey.Playtime >= Args.Num("die", 1))
+        // --die T1,T2: again at each time listed (a story night's falls: the rise, then the loss).
+        var dies = (Args.Get("die") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries);
+        if (dieIx < dies.Length && Battle is { } kb && kb.Player.Alive
+            && Journey.Playtime >= double.Parse(dies[dieIx] == "" ? "1" : dies[dieIx], System.Globalization.CultureInfo.InvariantCulture))
         {
-            dieDone = true;
+            dieIx++;
             var killer = kb.SpawnEnemy("risen", kb.Player.X, kb.Player.Z + (Args.Has("behind") ? -1.2 : 1.2));
             kb.HurtPlayerRaw(kb.Player.Hp + 1e6, School.Physical, "test", killer);
+        }
+        // --answer T: the night answered T seconds in, as if the key were held (pictures of the pull).
+        if (!answerDone && Args.Has("answer") && Journey.Playtime >= Args.Num("answer", 1) && World.Time == TimeOfDay.Night && zone is { ClockRuns: true })
+        {
+            answerDone = true;
+            AnswerNight();
         }
         // --barks T: T seconds in, a crowd of lines at once by her (pictures of them waiting their
         // turns and standing clear of each other): one voice's three, two others close by, an alert.
@@ -1273,7 +1299,7 @@ public partial class Game : Node, IZoneHost
         var dbg = zone?.Debug() is { Count: > 0 } d ? string.Join(" ", d.Take(6).Select(kv => $"{kv.Key}={kv.Value}")) : "";
         var (drawn, dead) = scene!.Crowd.Counts;
         var (gibs, splats) = scene.Fx.Gore.Counts;
-        GD.Print($"[{scene.Time,6:0.0}s] {zone?.Id} hp {p?.Hp:0}/{b?.MaxHp:0} ember {b?.EmberLevel} kills {b?.KillCount} foes {foes} (drawn {drawn}, lying {dead}, gibs {gibs}, blood {splats}) at {p?.X:0},{p?.Z:0} {Overlay} {dbg}{FrameCost()}{(synth.Live ? $" | sound {sound.Music.Mood} voices {synth.Voices} mix {synth.MixCost / Math.Max(1e-9, synth.Mixed) * 100:0}% heard {synth.Mixed:0}s skips {synth.Skips} queue {synth.Queue / synth.Rate * 1000:0}ms" : "")}");
+        GD.Print($"[{scene.Time,6:0.0}s] {zone?.Id} hp {p?.Hp:0}/{b?.MaxHp:0} ember {b?.EmberLevel} kills {b?.KillCount} foes {foes} (drawn {drawn}, lying {dead}, gibs {gibs}, blood {splats}) at {p?.X:0},{p?.Z:0} {Overlay} clock {World.Time} {World.Clock:0.0}s day {World.Day} {dbg}{FrameCost()}{(synth.Live ? $" | sound {sound.Music.Mood} voices {synth.Voices} mix {synth.MixCost / Math.Max(1e-9, synth.Mixed) * 100:0}% heard {synth.Mixed:0}s skips {synth.Skips} queue {synth.Queue / synth.Rate * 1000:0}ms" : "")}");
     }
 
     /// <summary>--perf: the frame measured (Perf.cs), with the game's own
