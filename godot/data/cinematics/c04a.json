@@ -144,8 +144,9 @@
       "type": "LS",
       "dur": 5.5,
       "note": "Low behind her on the road, looking north up the hill: she walks away from camera into the light; at the top of the hill the gate stands open. Bars out over the last 0.8 s; then the Douse announcement and the day tip.",
-      "cam": {"pos": {"mark": "road", "off": [0.6, 0.6, 3.0]}, "at": [0.0, 4.0, -110.0], "lens": 28},
+      "cam": {"pos": {"mark": "road", "off": [0.6, 0.6, 3.0]}, "at": [0.0, 4.0, -110.0], "lens": 28, "move": {"start": "end-1.5", "ease": "inout", "follow": true}},
       "cues": [
+        {"at": 0.0, "do": "play"},
         {"do": "move", "to": "top", "dur": 5.5, "clip": "Walk_Formal_Loop", "speed": 0.8},
         {"at": 1.0, "do": "music", "mood": "explore", "intensity": 0.35, "over": 2.0},
         {"at": "end", "do": "event", "name": "douse"}

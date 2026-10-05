@@ -206,6 +206,6 @@ public sealed class CineCue
     [
         "line", "music", "sfx", "place", "anim", "move", "face", "gaze", "lids", "look", "light", "lit", "fire",
         "atmosphere", "vfx", "spawn", "world", "bars", "title", "event", "fade", "hide", "wet", "hold", "prop", "prints", "glow", "frost",
-        "lamp", "head",
+        "lamp", "head", "play",
     ];
 }

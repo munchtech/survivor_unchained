@@ -60,9 +60,11 @@ public sealed class FollowCamera
         return kick * k;
     }
 
+    /// <summary>Straight to where it settles over someone standing at this
+    /// point on the ground (as PoseFor: a cinematic's blend lands on it).</summary>
     public void Snap(float x, float y, float z)
     {
-        look = new Vector3(x, y, z);
+        look = new Vector3(x, y + 0.8f, z);
         Distance = TargetDistance;
         initialised = true;
         Place();

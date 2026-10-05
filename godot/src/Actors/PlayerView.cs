@@ -195,6 +195,20 @@ public partial class PlayerView : Node3D
     /// <summary>Out of the picture while a cinematic's double plays her.</summary>
     public bool Hidden;
 
+    /// <summary>Handed her body by a cinematic: she stands where its double
+    /// stood, facing as it faced (heading as NpcActor turns: 0 south, pi/2
+    /// east), already moving at `moving` m/s if it was walking. Her facing
+    /// otherwise follows only her own steps, so it would keep whatever it was
+    /// before the cinematic (C01 handed her back facing south, not north).</summary>
+    public void Face(float facing, Vector3 at, float moving = 0)
+    {
+        Position = at;
+        Rotation = new Vector3(0, facing, 0);
+        heading = facing;
+        speed = lastSpeed = moving;
+        aim = aimHold = 0;
+    }
+
     void Upper(string clip, double speed)
     {
         upper.Animation = People.Clip(person, clip);
