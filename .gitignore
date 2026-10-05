@@ -29,3 +29,5 @@ public/assets/**/*.uid
 
 # tools/anim's working files (clips as JSON, contact sheets); the game ships godot/art/anim
 /tools/anim/out/
+
+tools/uigreybox/fonts/
