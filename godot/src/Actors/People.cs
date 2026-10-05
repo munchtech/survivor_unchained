@@ -117,6 +117,8 @@ public static class People
         if (her)
         {
             HerHair(p, HerHairs.Contains(look.Hair) ? look.Hair! : HerHairs[0], look.HairColor ?? HerHairColour);
+            HerScalp(p, look.HairColor ?? HerHairColour);
+            HerFaceKey(p, look.FaceShape);
             Perf.Lap("play: her hair");
             if (look.Face != null) HerFace(p, look.Face);
             HerPaint(p, look.Paint, look.HairColor);
@@ -666,9 +668,52 @@ public static class People
                 }
                 else if (mi.GetSurfaceOverrideMaterial(s) is StandardMaterial3D b && b.ResourceName == "brows") b.AlbedoColor = colour.Darkened(0.45f);
             }
+        HerScalp(p, colour);
         HerFace(p, look.Face ?? new Dictionary<string, float>(), whole: true);
+        HerFaceKey(p, look.FaceShape);
         if (look.Paint != p.Paint || look.HairColor != p.Brow) HerPaint(p, look.Paint, look.HairColor);
         if (look.FaceShape != p.FaceShape) HerHeadPaint(p, look.FaceShape);
+    }
+
+    /// <summary>Her scalp under her hair darkened to her hair's colour
+    /// (head_tex/heroine_shadow.png from tools/assets/heroine_features.py:
+    /// green from her hairline up), so between the cards there is hair, not
+    /// skin: bare, her scalp read as a pale, bald brow, worst under dark hair.</summary>
+    public static void HerScalp(Person p, Color hair)
+    {
+        const string file = "res://art/people/head_tex/heroine_shadow.png";
+        if (!ResourceLoader.Exists(file)) return;
+        var mask = GD.Load<Texture2D>(file);
+        int set = 0;
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+            {
+                if (mi.Mesh.SurfaceGetMaterial(s)?.ResourceName != "skin_head" || mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial m) continue;
+                m.SetShaderParameter("shadow_mask", mask);
+                m.SetShaderParameter("scalp_shadow", 1.0f);
+                m.SetShaderParameter("shadow_colour", hair.Darkened(0.3f));
+                set++;
+            }
+        if (Args.Has("shot")) GD.Print($"HerScalp: {set} surfaces");
+    }
+
+    /// <summary>Her face as one she started from (Lore.Her's faces): its
+    /// whole shape, a key of its own on her head, its parts and her hair
+    /// (face_&lt;id&gt;, tools/assets/heroine_head.py: from her own face to it,
+    /// laid on a head TRELLIS made of its portrait), the others off; none, her own.</summary>
+    public static void HerFaceKey(Person p, string? face)
+    {
+        var want = face is { Length: > 0 } ? "face_" + face : null;
+        foreach (var mi in p.Meshes)
+        {
+            if (mi.Mesh is not ArrayMesh am) continue;
+            for (int i = 0; i < am.GetBlendShapeCount(); i++)
+            {
+                // (not the face_width and face_shape sliders' keys: theirs end in + or -)
+                var name = am.GetBlendShapeName(i).ToString();
+                if (name.StartsWith("face_") && !name.EndsWith('+') && !name.EndsWith('-')) mi.SetBlendShapeValue(i, name == want ? 1f : 0f);
+            }
+        }
     }
 
     /// <summary>Her head's painting for a face she started from (Lore.Her's
@@ -874,7 +919,15 @@ public static class People
     /// edge on (shaders/heroine_skin.gdshader).</summary>
     static readonly (float Rough, float Shine, float Edge) HisSkin = (0.62f, 0.3f, 0.45f);
 
-    static Color SkinTone(Look look) => look.Skin is Color tone ? tone.Lerp(Colors.White, 0.35f) : new Color(1.0f, 0.86f, 0.74f);
+    /// <summary>Her skin's tone: the one chosen, or her own, barely warmed.
+    /// (Her face is painted from her reference photograph now, its own
+    /// peach: warmed as much as the old pale paint was, under the portrait's
+    /// warm key she read a uniform orange-pink, like a doll. A tone chosen is
+    /// eased toward white the less the darker it is: eased as far as a fair
+    /// one, a brown or olive skin read pale and pink beside the faces painted
+    /// from photographs of women of that colouring.)</summary>
+    static Color SkinTone(Look look) =>
+        look.Skin is Color tone ? tone.Lerp(Colors.White, 0.35f * Mathf.Clamp(tone.Luminance * 1.1f, 0.25f, 1f)) : new Color(1.0f, 0.93f, 0.87f);
 
     static Shader? skinShader2;
     static readonly Dictionary<Mesh, float> poreScales = new();

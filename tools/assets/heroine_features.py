@@ -127,6 +127,41 @@ os.makedirs(OUT, exist_ok=True)
 path = os.path.join(OUT, "heroine_features.png")
 Image.fromarray((out[::-1] * 255 + 0.5).astype(np.uint8)).save(path)
 print("FEATURES", path, "eyes and brows %d texels, lips %d" % ((out[..., 0] > 0.3).sum(), (out[..., 1] > 0.3).sum()))
+
+# Her scalp, under her hair (green, as the shader's shadow_mask has it): the
+# game darkens it to her hair's colour, so between her hair's cards there is
+# hair, not her skin, and her hairline reads as hair growing (bare skin
+# there read as a bald brow, and a pale scalp worst under dark hair). From
+# her hairline (face_shapes.HAIRLINE, as her hair is grown) up, eased in
+# from a centimetre under it over 16 mm, as hair thickens at a real hairline (a
+# soft painted edge under its fine hairs, not a line where the cards begin).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import face_shapes as fs  # noqa: E402
+eye_z = EV[:, 2].mean()
+theta = np.arctan2(P[:, 0], -(P[:, 1] - 0.0))
+rise = P[:, 2] - (eye_z + fs.hairline_height(theta))
+# (faint from 1.6 cm under her hairline, most of it in its last centimetre:
+# the hair thinning out into her skin, not a band where the cards end)
+scalp = smooth((rise + 0.016) / 0.022) ** 2
+# Not her ears (what her ears' own keys move, and 6 mm round them): darkened
+# with her scalp they turned the colour of her hair.
+from scipy.spatial import cKDTree  # noqa: E402
+_kb = me.shape_keys.key_blocks if me.shape_keys else {}
+_base = np.array([d.co[:] for d in _kb[0].data]) if _kb else None
+_ear = np.zeros(len(V), bool)
+for _name, _min in (("ears_out+", 0.0005), ("ears_pointed+", 0.0003), ("ears_lobes+", 0.0003)):
+    if _name in _kb:
+        _ear |= np.linalg.norm(np.array([d.co[:] for d in _kb[_name].data]) - _base, axis=1) > _min
+if _ear.any():
+    _d = cKDTree(V[_ear]).query(P)[0]
+    scalp *= smooth((_d - 0.002) / 0.006)
+sh = np.zeros((SIZE, SIZE, 4), np.float32)
+sh[rows, cols, 1] = scalp
+sh[..., 3] = 1
+sh[..., 1] = np.clip(ndimage.gaussian_filter(sh[..., 1], 1.5) * inside + (1 - inside) * ndimage.grey_dilation(sh[..., 1], size=(5, 5)), 0, 1)
+spath = os.path.join(OUT, "heroine_shadow.png")
+Image.fromarray((sh[::-1] * 255 + 0.5).astype(np.uint8)).save(spath)
+print("SCALP", spath, "%d texels" % (sh[..., 1] > 0.5).sum())
 if os.environ.get("FEATURES_PREVIEW"):
     # (her paint with the mask over it: darkened where red, reddened where green)
     small = np.array(Image.fromarray((np.clip(paint[::-1], 0, 1) * 255).astype(np.uint8)).resize((SIZE, SIZE)), np.float32) / 255

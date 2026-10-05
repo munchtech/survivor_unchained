@@ -297,6 +297,9 @@ public partial class Game
         var create = new CreateScreen(this, draft);
         screens.Show(create);
         create.FrameForStep();
+        // --turn DEGREES: the figure turned so far on the turntable (pictures of her from the side).
+        if (Args.Get("turn") is string tn && double.TryParse(tn, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var deg))
+            Turntable(Mathf.DegToRad((float)deg), 0);
     }
 
     public void CancelCreation()

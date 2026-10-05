@@ -4,7 +4,9 @@ and draped by their own weight over her head, shoulders and back.
     blender -b tools/comfy/out/heroes/heroine_built.blend --python tools/assets/heroine_hair.py -- godot/art/people [atlas] [style ...]
 
 With HAIR_BLEND=<blend> the styles are kept in a blend too (heroine_built.blend
-itself, before heroine_outfits.py, sizes her hats over her long hair).
+itself, before heroine_outfits.py, sizes her hats over her long hair). With
+HAIR_DUMP=<prefix>, Loose's guide strands are saved as <prefix>_<layer>.npz
+(to hunt strays).
 
 The strands are drawn once into an atlas (godot/art/people/head_tex/
 hair_strands.png): columns of fine strands, each a clump of a kind (dense,
@@ -185,6 +187,7 @@ def _key_moves(name):
 # in front of them, over them and behind them.
 EAR = (_key_moves("ears_out+") > 0.0005) | (_key_moves("ears_pointed+") > 0.0003) | (_key_moves("ears_lobes+") > 0.0003)
 EAR_TREE = cKDTree(HP[EAR]) if EAR.any() else None
+EAR_V = EAR_TREE.query(HP)[0] < 0.006 if EAR_TREE is not None else np.zeros(len(HP), bool)
 # Her neck, between her jaw and her shoulders (her skin there facing out,
 # not up or down), which hair hanging by it is kept well clear of: lying on
 # it, a strand read as a scratch on her skin, and as her head turned, the
@@ -210,11 +213,33 @@ def scalp(below=0.0):
     c = HP[T].mean(1)
     theta = np.arctan2(c[:, 0] - CENTRE[0], -(c[:, 1] - CENTRE[1]))
     ear = EAR_TREE.query(c)[0] < 0.006 if EAR_TREE is not None else (np.abs(c[:, 0]) > 0.079) & (c[:, 2] < EYE_Z + 0.05)
-    # (her outside only: not the inside of her mouth and nose, deep in her head)
+    # (her outside only: not the inside of her mouth, nose or ears, deep in
+    # her head. Facing away from her middle is not enough: shaped from her
+    # reference, the roof of her mouth lies behind her middle, under her
+    # nape's hairline, and hair grew from it out under her jaw. Her outside
+    # is as far out as her head goes that way, at that height, her ears
+    # aside, within 6 mm; and never near the middle of her head below her
+    # crown, where only her mouth's inside is.)
     n = np.cross(HP[T[:, 1]] - HP[T[:, 0]], HP[T[:, 2]] - HP[T[:, 0]])
     r = c - CENTRE
     outside = (np.linalg.norm(r, axis=1) > 0.06) & ((n * r).sum(1) > 0)
-    return T[(c[:, 2] > hairline_z(theta) - below) & ~ear & outside]
+    core = (np.hypot(r[:, 0], r[:, 1]) < 0.045) & (c[:, 2] < EYE_Z + 0.06)
+    return T[(c[:, 2] > hairline_z(theta) - below) & ~ear & outside & ~core & (depth_in(c) < 0.006)]
+
+
+def depth_in(c):
+    """How far each point lies inside her head's outline round her middle
+    (at its own height and angle; her ears not part of the outline)."""
+    ok = ~EAR_V
+    th = np.degrees(np.arctan2(HP[ok, 0] - CENTRE[0], -(HP[ok, 1] - CENTRE[1])))
+    rr = np.hypot(HP[ok, 0] - CENTRE[0], HP[ok, 1] - CENTRE[1])
+    key = lambda t, z: (np.floor((t + 180) / 5).astype(int) % 72) * 1000 + np.floor(z / 0.005).astype(int) % 1000
+    outer = {}
+    for k, r_ in zip(key(th, HP[ok, 2]), rr):
+        outer[k] = max(outer.get(k, 0.0), r_)
+    tc = np.degrees(np.arctan2(c[:, 0] - CENTRE[0], -(c[:, 1] - CENTRE[1])))
+    rc = np.hypot(c[:, 0] - CENTRE[0], c[:, 1] - CENTRE[1])
+    return np.array([outer.get(k, r_) - r_ for k, r_ in zip(key(tc, c[:, 2]), rc)])
 
 
 def roots(spacing, above=0.0, below=None, soft=0.0):
@@ -401,7 +426,7 @@ def onto(Q, want, lying):
     return flat.reshape(Q.shape)
 
 
-def cards(P, width, columns, off, root=None, narrow=0.55):
+def cards(P, width, columns, off, root=None, narrow=0.55, face=None):
     """A card along each guide: a strip of the atlas (a column chosen from
     `columns`) as wide as `width` at its root, narrowing to its tip, facing
     out from her, three points across: where it lies on her, curved round her
@@ -422,6 +447,10 @@ def cards(P, width, columns, off, root=None, narrow=0.55):
     radial /= np.linalg.norm(radial, axis=2)[:, :, None]
     near_head = COLLIDE_HEAD[idx].mean(1).reshape(S, K)[:, :, None]
     out = out * (1 - near_head) + radial * near_head
+    if face is not None:
+        # (turned toward where it is seen from: a lock hanging beside her
+        # cheek faced out sideways, edge on to anyone before her, and vanished)
+        out = out * 0.3 + np.asarray(face, float)[None, None] * 0.7
     for _ in range(3):                                           # smoothed along the strand: no twisting
         out[:, 1:-1] = (out[:, :-2] + 2 * out[:, 1:-1] + out[:, 2:]) / 4
     out /= np.linalg.norm(out, axis=2)[:, :, None] + 1e-9
@@ -459,8 +488,13 @@ def cards(P, width, columns, off, root=None, narrow=0.55):
     # (wound to face out from her, as their normals do)
     q1 = np.stack([base + K + k, base + K + k + 1, base + k + 1, base + k], -1).reshape(-1, 4)
     q2 = np.stack([base + 2 * K + k, base + 2 * K + k + 1, base + K + k + 1, base + K + k], -1).reshape(-1, 4)
+    # (how far along it each point is from its root, in metres, and how far
+    # over her hairline its root is: for its root's fade at her hairline)
+    arc = np.c_[np.zeros(S), np.cumsum(np.linalg.norm(np.diff(P, axis=1), axis=2), 1)]
     return dict(V=V.reshape(-1, 3), N=N.reshape(-1, 3), UV=np.c_[u.ravel(), v.ravel()], F=np.vstack([q1, q2]),
-                along=np.tile(f, 3 * S), card=np.repeat(RNG.random(S), 3 * K), at=np.concatenate([P, P, P], 1).reshape(-1, 3))
+                along=np.tile(f, 3 * S), card=np.repeat(RNG.random(S), 3 * K), at=np.concatenate([P, P, P], 1).reshape(-1, 3),
+                arc=np.concatenate([arc, arc, arc], 1).ravel(), length=np.repeat(arc[:, -1], 3 * K),
+                root_rise=np.repeat(rise(P[:, 0]), 3 * K))
 
 
 # ---------------------------------------------------------------- styles --
@@ -510,27 +544,34 @@ def style_long():
                                               (0.008, (0.020, 0.030), range(0, 8), 0.007, 0.52),
                                               (0.007, (0.014, 0.022), range(3, 11), 0.011, 0.54),
                                               (0.008, (0.012, 0.018), range(6, 14), 0.015, 0.54)):
-        pts, nrm = roots(spacing, above=0.01)
-        side = part_side(pts)
+        pts, nrm = roots(spacing, above=0.004)
+        # (which side of her parting, the parting a little uneven: a straight
+        # seam of cards' roots read as a hard pale line)
+        side = part_side(pts + np.c_[RNG.normal(0, 0.003, len(pts)), np.zeros((len(pts), 2))])
         # Away from the parting and back over her head (her forehead's hair
         # swept back, not let fall over her face), then down.
         sweep = np.c_[side * 0.8, np.full(len(pts), 0.7), np.full(len(pts), -0.2)]
         back = pts[:, 1] > 0.03
         sweep[back] = np.c_[np.zeros(back.sum()), np.ones(back.sum()) * 0.6, -np.ones(back.sum())]
-        # A few locks by her temples falling in front of her shoulders, to
-        # frame her face.
-        front = (pts[:, 1] < 0.0) & (np.abs(pts[:, 0]) > 0.055) & (pts[:, 2] < EYE_Z + 0.06) & (RNG.random(len(pts)) < 0.5)
+        # Her face framed: the hair over her temples and the sides of her
+        # forehead falling forward of her ears, down past her cheeks and in
+        # front of her shoulders (kept off her face: off_face), not all swept
+        # back off it (slicked to her crown, she read bald-browed).
+        front = ((pts[:, 1] < 0.005) & (np.abs(pts[:, 0]) > 0.042) & (pts[:, 2] < EYE_Z + 0.075) & (pts[:, 2] > EYE_Z)
+                 & (RNG.random(len(pts)) < 0.8))      # (from her temples, not by her ears: swept out from there they stood off her jaw)
         front &= off > 0.005                                     # (not her base layer's)
         sweep[front] = np.c_[np.sign(pts[front, 0]) * 0.9, -np.full(front.sum(), 0.15), -np.ones(front.sum())]
         dirs = combed(pts, nrm, sweep)
         start = pts - nrm * 0.002                  # (the root a little under her scalp: its card's end hidden)
         L = length * RNG.uniform(0.85, 1.08, len(pts))
-        L[front] = RNG.uniform(0.28, 0.34, front.sum())         # (to her collarbones)
-        # Laid on her head till behind her ears (her front's and top's), then let fall.
+        L[front] = RNG.uniform(0.30, 0.40, front.sum())         # (past her collarbones)
+        # Laid on her head till behind her ears (her front's and top's), then
+        # let fall; with some body on top, lifted off her by her parting.
         lie_for = np.clip(0.04 - pts[:, 1], 0, 0.14) + np.clip(pts[:, 2] - (EYE_Z + 0.06), 0, 0.1) * 0.6
         lie_for = np.maximum(lie_for, 0.05)
-        lie_for[front] = 0.05
-        P = drape_lengths(start, dirs, L, off, comb=comb_long, lie_for=lie_for)
+        lie_for[front] = 0.025
+        body = 0.006 * np.clip((pts[:, 2] - (EYE_Z + 0.07)) / 0.04, 0, 1) * np.clip(1 - np.abs(pts[:, 0] - 0.022) / 0.06, 0, 1)
+        P = drape_lengths(start, dirs, L, off, comb=comb_long, lie_for=lie_for, lift=body)
         P = wave(P, 0.007, 0.15, pts)
         # (any strand gone astray, far off her, left out)
         far = COLLIDE.query(P.reshape(-1, 3))[0].reshape(P.shape[:2]).max(1) > 0.12
@@ -538,6 +579,8 @@ def style_long():
             print("  left out %d astray" % far.sum())
             P, pts, front = P[~far], pts[~far], front[~far]
         near = np.clip(rise(pts) / 0.03, 0.35, 1.0)              # (finer at their roots near her hairline)
+        if os.environ.get("HAIR_DUMP"):
+            np.savez(os.environ["HAIR_DUMP"] + "_%d.npz" % len(layers), P=P, pts=pts, front=front)
         layers.append(cards(P, RNG.uniform(*width, len(pts)), list(cols), off, root=near))
         print("  layer: %d cards" % len(pts))
     layers += hairline_hairs(comb_long)
@@ -556,7 +599,7 @@ def style_long():
     return layers
 
 
-def hairline_hairs(comb, spacing=0.0032, points=8, sides=None):
+def hairline_hairs(comb, spacing=0.0026, points=8, sides=None):
     """Her hairline, soft as a real one is, not the cards' ends in a row:
     fine short hairs lying on her scalp the way it is combed, thinning out
     toward its edge; and over its edge baby hairs, finer, shorter and fainter
@@ -576,7 +619,7 @@ def hairline_hairs(comb, spacing=0.0032, points=8, sides=None):
     print("  hairline: %d cards" % len(pts))
     # Baby hairs: about her hairline's edge (6 mm either side), short, fine
     # and faint, each a little off the way it is combed, some curling.
-    pts, nrm = roots(0.0042, above=-0.006, below=0.006)
+    pts, nrm = roots(0.0034, above=-0.006, below=0.006)
     n, k = len(pts), 6
     turn = RNG.normal(0, 0.45, n) + np.where(RNG.random(n) < 0.15, RNG.normal(0, 1.0, n), 0)
 
@@ -604,6 +647,11 @@ def comb_long(p, side=None):
     straight back off her hairline (each hair leaving it, not running along it)."""
     sd = (part_side(p) if side is None else side) * 0.7 * np.clip(rise(p) / 0.04, 0.2, 1.0)
     w = np.c_[sd, np.full(len(p), 0.8), -np.clip((0.06 - (p[:, 2] - EYE_Z)) * 12, 0.2, 1.5)]
+    # (in front of her ears, below her temples, straight down: combed back
+    # there, it met her ear and was turned out sideways, standing off her jaw)
+    th = np.degrees(np.abs(np.arctan2(p[:, 0] - CENTRE[0], -(p[:, 1] - CENTRE[1]))))
+    down = np.clip((EYE_Z + 0.015 - p[:, 2]) / 0.015, 0, 1) * np.clip(1 - np.abs(th - 80) / 25, 0, 1)
+    w = w * (1 - down)[:, None] + np.array([0.0, 0.15, -1.0]) * down[:, None]
     return w / np.linalg.norm(w, axis=1)[:, None]
 
 
@@ -621,10 +669,12 @@ def off_face(P, step):
     P[..., 0] = np.where(m, np.where(x < 0, -1, 1) * out, x)
 
 
-def drape_lengths(start, dirs, L, off, points=24, comb=None, lie_for=None):
+def drape_lengths(start, dirs, L, off, points=24, comb=None, lie_for=None, lift=0.0):
     """Strands of several lengths let fall together: their links scaled to
     each (so all have as many points); with `comb`, each first laid along her
-    scalp for `lie_for` metres."""
+    scalp for `lie_for` metres, rising `lift` more off her as it goes (some
+    body to the hair, each strand its own)."""
+    lift = np.broadcast_to(np.asarray(lift, float), (len(start),))
     S = len(start)
     out = np.zeros((S, points, 3))
     # (grouped by length, in bins, each bin draped as one)
@@ -637,7 +687,7 @@ def drape_lengths(start, dirs, L, off, points=24, comb=None, lie_for=None):
             seg = Lm / (points - 1)
             steps = np.minimum((lie_for[m] / seg).astype(int), points - 4)
             # (lying flatter than it hangs: combed hair lies close on the head)
-            pinned = (lie(start[m], dirs[m], comb, np.full(m.sum(), seg), steps, 0.003 + (off - 0.003) * 0.75), steps)
+            pinned = (lie(start[m], dirs[m], comb, np.full(m.sum(), seg), steps, 0.003 + (off - 0.003) * 0.75, lift=lift[m]), steps)
         out[m] = drape(start[m], dirs[m], Lm, points=points, offset=off, pinned=pinned, extra=off_face)
     return out
 
@@ -713,7 +763,7 @@ def gathered(T, layers, points=18, reach=0.012, lift=0.0):
     comb = toward(T)
     out = []
     for spacing, width, cols, off in layers:
-        pts, nrm = roots(spacing, above=0.01)
+        pts, nrm = roots(spacing, above=0.004)
         L = np.linalg.norm(T - pts, axis=1) * 1.6 + 0.02          # (more than enough: each stops at the tie)
         P = lie(pts - nrm * 0.002, combed(pts, nrm, comb(pts)), comb, L / (points - 1), np.full(len(pts), points - 1), off,
                 side=no_part(pts), stop=lambda q: np.linalg.norm(q - T, axis=1) < reach,
@@ -722,7 +772,34 @@ def gathered(T, layers, points=18, reach=0.012, lift=0.0):
         out.append(cards(P, RNG.uniform(*width, len(pts)), list(cols), off, root=np.clip(rise(pts) / 0.03, 0.35, 1.0)))
         print("  gathered: %d cards" % len(pts))
     out += hairline_hairs(comb, sides=no_part)
+    out += tendrils()
     return out
+
+
+def tendrils(per_side=9):
+    """A few fine locks left loose at her temples, falling past her cheeks
+    to her jaw, softly waved: drawn back, her hair framed nothing, and she
+    read slicked, bald-browed."""
+    pts, nrm = roots(0.003, above=0.0, below=0.025)
+    th = np.degrees(np.abs(np.arctan2(pts[:, 0] - CENTRE[0], -(pts[:, 1] - CENTRE[1]))))
+    ok = (th > 45) & (th < 78) & (pts[:, 2] > EYE_Z + 0.005) & (pts[:, 2] < EYE_Z + 0.05)
+    pick = []
+    for sd in (1, -1):
+        cand = np.where(ok & (np.sign(pts[:, 0]) == sd))[0]
+        if len(cand):
+            pick += list(RNG.choice(cand, min(per_side, len(cand)), replace=False))
+    if not pick:
+        return []
+    pts, nrm = pts[pick], nrm[pick]
+    sweep = np.c_[np.sign(pts[:, 0]) * 0.35, np.full(len(pts), -0.3), -np.ones(len(pts))]
+    dirs = combed(pts, nrm, sweep)
+    L = RNG.uniform(0.11, 0.17, len(pts))
+    P = drape_lengths(pts - nrm * 0.001, dirs, L, 0.004, points=16)
+    P = wave(P, 0.005, 0.07, pts)
+    c = cards(P, RNG.uniform(0.007, 0.013, len(pts)), list(range(8, 15)), 0.004, narrow=0.65, face=(0.0, -1.0, 0.0))
+    c["alpha"] = np.repeat(RNG.uniform(0.75, 1.0, len(pts)), 3 * 16)
+    print("  tendrils: %d cards" % len(pts))
+    return [c]
 
 
 def frame(P):
@@ -935,7 +1012,7 @@ def style_bob():
     for spacing, width, cols, off in ((0.009, (0.026, 0.034), range(0, 6), 0.003),
                                       (0.008, (0.018, 0.026), range(0, 9), 0.007),
                                       (0.007, (0.012, 0.020), range(3, 12), 0.011)):
-        pts, nrm = roots(spacing, above=0.01)
+        pts, nrm = roots(spacing, above=0.004)
         lie_for = np.maximum(np.clip(pts[:, 2] - (EYE_Z + 0.04), 0, 0.1) * 0.8, 0.04)
         P = drape_lengths(pts - nrm * 0.002, combed(pts, nrm, comb_bob(pts)), np.full(len(pts), 0.34), off,
                           comb=comb_bob, lie_for=lie_for)
@@ -971,7 +1048,7 @@ def style_pixie():
     for spacing, width, cols, off in ((0.008, (0.014, 0.022), range(0, 6), 0.002),
                                       (0.007, (0.010, 0.016), range(3, 12), 0.004),
                                       (0.007, (0.008, 0.013), range(6, 14), 0.006)):
-        pts, nrm = roots(spacing, above=0.008)
+        pts, nrm = roots(spacing, above=0.003)
         top = np.clip((pts[:, 2] - (EYE_Z + 0.05)) / 0.05, 0, 1) + np.clip(-pts[:, 1] / 0.06, 0, 1) * 0.5
         top = np.clip(top, 0, 1)
         L = (0.028 + 0.06 * top) * RNG.uniform(0.85, 1.1, len(pts))
@@ -999,8 +1076,10 @@ def cap(comb, sides=part_side):
     """Her scalp under the hair, a millimetre out from it: no skin shows
     between the cards, and her parting is a parting. Its UVs run along the way
     her hair is combed (the atlas's scalp strands lie that way), a tile every
-    2.5 cm; faded out over two and a half centimetres at her hairline,
-    unevenly (its alpha)."""
+    2.5 cm; faded out over its first 6 mm over her hairline, unevenly (its
+    alpha): her skin under it is darkened to her hair's colour there
+    (People.HerScalp), and a long fade, its alpha hashed, read as a speckled,
+    pixelated edge."""
     from scipy.sparse import coo_matrix, identity
     from scipy.sparse.linalg import spsolve
     T = scalp(below=0.012)                       # (on past her hairline, unseen there: no edge to it)
@@ -1011,12 +1090,12 @@ def cap(comb, sides=part_side):
     V = HP[used] + HN[used] * 0.001
     N = HN[used]
     theta = np.arctan2(V[:, 0] - CENTRE[0], -(V[:, 1] - CENTRE[1]))
-    # (over 2.5 cm, unevenly: a few millimetres of slow waves either way,
+    # (unevenly: a millimetre or two of slow waves either way,
     # so its fade is no line round her head)
     r = np.random.default_rng(5)
     wav = sum(0.0018 * np.sin(V @ (u / np.linalg.norm(u)) * 2 * np.pi / lam + ph)
               for u, lam, ph in zip(r.normal(size=(4, 3)), (0.011, 0.017, 0.023, 0.031), r.uniform(0, 6.3, 4)))
-    fade = np.clip((V[:, 2] - hairline_z(theta) + wav) / 0.025, 0, 1)
+    fade = np.clip((V[:, 2] - hairline_z(theta) - 0.002 + 0.5 * wav) / 0.006, 0, 1)
     # Along the combing (v) and across it (u), each edge as long in them as
     # along and across the combing there (least squares). Across, the same
     # way on both sides of her parting (mirrored there, not torn).
@@ -1055,9 +1134,16 @@ def build(style):
         V.append(c["V"]), N.append(c["N"]), UV.append(c["UV"])
         F.extend((c["F"] + base).tolist())
         M.extend([mat] * len(c["F"]))
-        # (its alpha: how much of it shows, the baby hairs at her hairline faint)
-        C.append(np.c_[np.zeros(len(c["V"])), c["card"], np.full(len(c["V"]), 1.0 if mat == 1 else 0.0),
-                       c.get("alpha", np.ones(len(c["V"])))])
+        # (its alpha: how much of it shows, the baby hairs at her hairline
+        # faint; and every card faded in from its root over 8 mm, or a third
+        # of it if shorter, so her hairline melts into her skin and her
+        # parting into her hair, not a row of cards' ends: a wig's edge at
+        # the Look's close-up)
+        alpha = c.get("alpha", np.ones(len(c["V"])))
+        if mat == 0 and "arc" in c:
+            ramp = np.clip(c["arc"] / np.minimum(0.008, c["length"] / 3 + 1e-6), 0, 1)
+            alpha = alpha * ramp * ramp * (3 - 2 * ramp)
+        C.append(np.c_[np.zeros(len(c["V"])), c["card"], np.full(len(c["V"]), 1.0 if mat == 1 else 0.0), alpha])
         base += len(c["V"])
     # How deep in her hair each point is: darker the more hair lies over it
     # (out from her, within 2.5 cm), and a little at the root.
@@ -1148,7 +1234,7 @@ def follow_head(o, at):
     o.data.vertices.foreach_get("co", V0)
     made = []
     for k in kb[1:]:
-        if not k.name.endswith(("+", "-")):                     # (her sliders', not her expressions')
+        if not k.name.endswith(("+", "-")) and not k.name.startswith("face_"):   # (her sliders' and faces', not her expressions')
             continue
         co = np.zeros(len(HP) * 3)
         k.data.foreach_get("co", co)
