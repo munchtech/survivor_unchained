@@ -69,7 +69,7 @@ The main session keeps this current. It is the address list for SendMessage. Ret
 | UI art (paused; handoff ready at cd0f4ab6) | — | docs/team/ui_art.md |
 | Crafting (research, design, build) (paused; handoff ready at ed429efb) | — | docs/team/crafting.md |
 | Gameplay experience director (paused; handoff ready at b170d13e) | — | docs/team/experience.md |
-| Skills look and feel (VFX, under the main session) | a191ed81e2df462cf | docs/team/skills.md |
+| Skills look and feel (VFX, under the main session) | ad059388f00c19f9f | docs/team/skills.md |
 | Cinematics production | a7a4c20bcfd7ccfd3 | docs/team/cinematics.md |
 | Performance | a0eb8c612c94d4aa5 | docs/team/performance.md |
 | Arena art | aba487928a1515c93 | docs/team/arena_art.md |
