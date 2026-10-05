@@ -216,6 +216,14 @@ public static class Arenas
         // What the night leaves in the survivor's fist, for the Waystation's hands: walked
         // out, all of it; fallen, half.
         var carry = Crafting.Night(spec.People, spec.Tier, spec.Story, b.EmberLevel, Math.Max(0, b.Time / 60 - spec.Minutes), won, fell, b.ChampionsByFamily);
+        // What the carriers left in place of gear joins the tally, spilled as the rest is (LOOT_DESIGN §5).
+        foreach (var (m, n) in j.NightTally)
+        {
+            int kept = fell ? n / 2 : n;
+            if (kept > 0) carry.Kept[m] = carry.Kept.GetValueOrDefault(m) + kept;
+            if (n - kept > 0) carry.Spilled[m] = carry.Spilled.GetValueOrDefault(m) + n - kept;
+        }
+        j.NightTally.Clear();
         j.Carry(carry, spec.Name);
         var w = j.World;
         if (!won)

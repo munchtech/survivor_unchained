@@ -33,7 +33,8 @@ The owner, 5 October:
 3. **Fewer drops, better drops, the rest is crafting.** Gear comes only from what visibly carries
    it (champions, minibosses, heralds, bosses, strongboxes, the Verge's elites). About a third fewer
    gear drops than today; each roll is likelier to be good, and Commons thin out as levels rise.
-   A carrier that drops no gear drops the people's material or old iron instead.
+   A carrier that drops no gear now and then leaves its people's material or old iron, at rates
+   crafting measured; in the night's arenas these join the tally at the night's end.
 4. **Legendaries are rare, early and certain once.** About one gear roll in 230. The first story
    boss a survivor beats drops one for certain (Diablo III's first-kill rule); a visible tally,
    "the dark's debt", guarantees one at the 120th roll without one. Four of the first eight can
@@ -281,17 +282,21 @@ arenas, now everywhere.
 
 | Source | Gear rolls (today) | Gear rolls (now) | If no gear | Floor and quality |
 |---|---|---|---|---|
-| Arena champion, captain, keeper | 1 at 60% | 1 at 45% | the people's material ×1–2, or old iron (30%) | – |
-| Arena miniboss | 1 at 60% | 1 | + 1 material | Uncommon; Rare+ ×1.5 |
-| Arena herald, lieutenant | 1 at 60% | 1 | + 1–2 materials | Uncommon; Rare+ ×1.5 |
-| Arena or story boss's hoard | 2 + tier/2 | 2, 3 from tier 3 | + 2–3 materials | first roll Rare; Rare+ ×2; Legendary ×4 |
-| Verge elite | 1 | 1 at 70% | the people's material | – |
-| Map pack carrier (grade 1 / 2) | 1 / 2 | 1 at 55% / 1 + 40% | material | – / Rare+ ×1.3 |
-| Map keeper (grade 3) | 2+ | 2 | + material | first Uncommon; Rare+ ×1.4 |
-| Map ruler | 3–5 | 3 + quantity | + 3 materials | first Rare; Rare+ ×2; Legendary ×4 |
+| Arena champion, captain, keeper | 1 at 60% | 1 at 45% | the people's material (10%), old iron (20%): to the night's end tally | – |
+| Arena miniboss | 1 at 60% | 1 | – (crafting's tally pays +2 at the end) | Uncommon; Rare+ ×1.5 |
+| Arena herald, lieutenant | 1 at 60% | 1 | – | Uncommon; Rare+ ×1.5 |
+| Arena or story boss's hoard | 2 + tier/2 | 2, 3 from tier 3 | + 1 material, to the tally | first roll Rare; Rare+ ×2; Legendary ×4 |
+| Verge elite | 1 | 1 at 70% | the people's material (10%), old iron (20%), on the ground | – |
+| Map pack carrier (grade 1 / 2) | 1 / 2 | 1 at 55% / 2 at 70% | material (10%), iron (20%); the map's per-kill materials as before | – / Rare+ ×1.3 |
+| Map keeper (grade 3) | 2+ | 2 | the map's per-kill materials | first Uncommon; Rare+ ×1.4 |
+| Map ruler | 3–5 | 3 + quantity | the map's per-kill materials (5) | first Rare; Rare+ ×2; Legendary ×4 |
 | Map strongbox | 3–5 | 2 + quantity | + 2 materials | first Uncommon; Rare+ ×1.5 |
 
-About a third fewer gear drops than today, each one likelier to be Rare or better. A chart's
+About a third fewer gear drops than today, each one likelier to be Rare or better. The materials in
+gear's place are crafting's measured rates (`CraftingEconomy`): a tenth the people's material, a
+fifth old iron, which leaves Act 1's stores about where they were; more piled up and meant nothing.
+In the night's arenas they are not dropped but join the night's end tally (crafting decision 7: no
+confetti, the tally is the moment), and a fall spills half of them as it does the rest. A chart's
 **quantity** adds rolls and its **rarity** multiplies Rare+ weights, as now. The survivor's
 **luck** raises Rare+ weights by half of what it adds (luck 1.4: ×1.2), never the count.
 

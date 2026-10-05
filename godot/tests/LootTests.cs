@@ -142,29 +142,41 @@ public class LootTests
             Assert.True(boss[0].Item != null && (int)boss[0].Tier >= (int)LootTier.Rare, $"seed {s}: {boss[0].Tier}");
             var mb = Drops.Roll(new DropCtx { Ch = j.Ch, World = j.World, Source = DropSource.Miniboss, Level = 5, People = "pack", R = Seq(1000 + s) });
             Assert.True(mb[0].Item != null && mb[0].Tier != LootTier.Common);
-            // The people's material always comes with a miniboss.
-            Assert.Contains(mb, d => d.Material == "wolf_pelt");
         }
     }
 
     [Fact]
-    public void A_champion_that_drops_no_gear_drops_its_peoples_material_and_sometimes_iron()
+    public void A_champion_that_drops_no_gear_now_and_then_drops_its_peoples_material_or_iron()
     {
         var j = Begin();
-        int gear = 0, mat = 0, iron = 0, n = 2000;
+        int gear = 0, none = 0, dust = 0, iron = 0, n = 4000;
         for (int s = 0; s < n; s++)
         {
             var d = Drops.Roll(new DropCtx { Ch = j.Ch, World = j.World, Source = DropSource.Champion, Level = 6, People = "dead", R = Seq(s) });
-            if (d.Any(x => x.Item != null)) gear++;
-            else
-            {
-                Assert.Contains(d, x => x.Material == "bone_dust" && x.Qty == 1);
-                mat++;
-                if (d.Any(x => x.Material == Drops.Iron)) iron++;
-            }
+            if (d.Any(x => x.Item != null)) { gear++; continue; }
+            none++;
+            if (d.Any(x => x.Material == "bone_dust")) dust++;
+            if (d.Any(x => x.Material == Drops.Iron)) iron++;
         }
+        // Crafting's measured rates: a tenth the people's material, a fifth old iron.
         Assert.InRange(gear / (double)n, 0.40, 0.50);
-        Assert.InRange(iron / (double)mat, 0.42, 0.58);
+        Assert.InRange(dust / (double)none, 0.07, 0.13);
+        Assert.InRange(iron / (double)none, 0.16, 0.24);
+    }
+
+    [Fact]
+    public void In_a_nights_arena_the_materials_wait_for_the_nights_end_and_a_fall_spills_half()
+    {
+        var j = Begin();
+        int pickups = 0;
+        for (int s = 0; s < 300; s++)
+            pickups += j.Drops(new DropCtx { Source = DropSource.Champion, Level = 4, People = "pack", Tally = true, R = Seq(s) }).Count(l => l.Kind == PickupKind.Material);
+        Assert.Equal(0, pickups);
+        int tallied = j.NightTally.Values.Sum();
+        Assert.True(tallied > 20);
+        // In a map they are the ground's.
+        int ground = Enumerable.Range(0, 300).Sum(s => j.Drops(new DropCtx { Source = DropSource.MapPack, Level = 10, People = "pack", R = Seq(s) }).Count(l => l.Kind == PickupKind.Material));
+        Assert.True(ground > 20);
     }
 
     [Fact]

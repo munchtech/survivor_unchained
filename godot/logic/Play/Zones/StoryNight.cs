@@ -556,7 +556,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
     List<Loot> Gear(int level, DropSource source) => G.Journey.Drops(new DropCtx
     {
         Source = source, Level = level, People = Spec.People, Lean = lean, Luck = B!.Stats.Get(Stat.Luck), Tier = Spec.Tier,
-        StoryBoss = source == DropSource.Boss, R = R,
+        Tally = true, StoryBoss = source == DropSource.Boss, R = R,
     });
 
     IEnumerable<Loot> OnLoot(Enemy e)

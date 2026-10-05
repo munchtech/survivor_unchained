@@ -26,9 +26,19 @@ public sealed partial class Journey
         // paying is said in its own words.
         if (rolled.Any(r => r.Tier is LootTier.Legendary or LootTier.Storied))
             OnAnnounce(new Announcement(owed ? Rpg.Drops.DebtPaid : Rpg.Drops.NamedFalls, "", "reward", 3.2));
+        // In the night's arenas the materials are the night's end tally, not the ground's (crafting decision 7).
+        if (x.Tally)
+        {
+            foreach (var r in rolled.Where(r => r.Material != null)) NightTally[r.Material!] = NightTally.GetValueOrDefault(r.Material!) + r.Qty;
+            rolled = rolled.Where(r => r.Material == null).ToList();
+        }
         // Its landing heard from the tier the survivor chose (the jackpots always).
         return Rpg.Drops.AsLoot(rolled, Judge).Select(l => l with { Quiet = l.Tier is int t && !Ch.Filter.Heard((LootTier)t) }).ToList();
     }
+
+    /// <summary>The materials the night's carriers left in place of gear, paid at its end with the rest
+    /// of the night's yield (and half spilled on a fall).</summary>
+    public Dictionary<string, int> NightTally { get; } = new();
 
     /// <summary>The filter's word on a piece where it falls; a first sighting is remembered.</summary>
     public Verdict Judge(ItemInstance it)
