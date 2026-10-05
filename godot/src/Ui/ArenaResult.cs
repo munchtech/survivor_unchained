@@ -138,7 +138,7 @@ public partial class ArenaResultScreen : TellingScreen
         // (docs/WRITING_PASS.md §20), a lost one saying where it waits; a table night ends with the
         // Wayfinder, who writes it down; and back to the road.
         string after = r.Spec.Story
-            ? r.Won ? r.Spec.EndWon ?? "The valley will hear of it." : r.Spec.EndLost ?? "The valley will hear of it."
+            ? r.Won ? (r.Spec.Spared ? r.Spec.EndSpared : null) ?? r.Spec.EndWon ?? "The valley will hear of it." : r.Spec.EndLost ?? "The valley will hear of it."
             : r.Won ? "The Wayfinder will want it for her margins." : "The Wayfinder's table will have other maps.";
         if (story != "") wrap.AddChild(Beat(Style.Label(story, Style.TextItalic, Style.Body, r.Won ? Style.Ink : Style.BloodHi, true, HorizontalAlignment.Center), cue, Sound.Sfx.Page));
         cue += 0.5;

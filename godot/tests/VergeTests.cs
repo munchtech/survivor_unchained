@@ -160,6 +160,144 @@ public class VergeTests
 
     static bool Quest(Journey j, string id, string entry) => j.World.Quests.TryGetValue(id, out var q) && q.Entries.Contains(entry);
 
+    static SurvivorUnchained.Arena.ArenaSpec Fight(Journey j, string id)
+    {
+        var night = Make(TimeOfDay.Night, j);
+        night.Zone.Interactables.Single(i => i.Id == $"night:{id}").Act();
+        return night.Host.Entered!;
+    }
+
+    [Fact]
+    public void Redcowl_on_his_knee_is_hers_to_spare_or_finish()
+    {
+        // The owner, 4 October: "Spare him" or "Finish it". Nothing chooses for her.
+        var s = Make();
+        s.J.Apply("""[{ "quest": { "id": "caravan", "status": "active", "entry": "roost_found" } }]""");
+        var spec = Fight(s.J, "roost");
+        Assert.Equal("Spare him", spec.SpareVerb);
+        Assert.NotNull(spec.OnSpare);
+        Assert.False(spec.Spare);
+        // Spared: he lives, owes her, and takes his people off the Old Road; the camp is hers to go through.
+        SurvivorUnchained.Arena.Arenas.Won(s.J, spec, spared: true);
+        var w = s.J.World;
+        Assert.True(spec.Spared);
+        Assert.Equal("spared", w.Fact("redcowl").Str);
+        Assert.True(w.Fact("roost.cleared").Truthy);
+        Assert.False(w.Fact("roost.hostile").Truthy);
+        Assert.True(w.Fact("redcowl.last_words").IsNull);
+        Assert.True(Quest(s.J, "caravan", "roost_spared"));
+        Assert.False(Quest(s.J, "caravan", "roost_raided"));
+        Assert.Contains(w.History, h => h.Id == "spared_redcowl");
+        Assert.Contains("does not limp", spec.EndSpared);
+        Assert.False(Make(TimeOfDay.Night, s.J).Zone.Interactables.Single(i => i.Id == "night:roost").When!());
+        Assert.Contains(Standings.Of(s.J.Ctx), x => x.Id == "kerchief" && x.Word == "In your debt");
+        // The town sees them go, and Rav has two cups out.
+        Assert.Contains(Simulation.AdvanceDay(s.J.Ctx, () => 0.5).Lines, l => l.Contains("would not get on a cart"));
+        w.Npc("rav").Flags["met"] = true;
+        var rav = H.Talk(Dialogue.Find("rav")!, s.J.Ctx, "two he owes");
+        Assert.Contains("terrible payer", rav!.Text);
+        // A rematch from the table is the same choice.
+        Assert.Equal(spec.OnSpare, SurvivorUnchained.Arena.Arenas.Again(spec, "waystation", 0, 0, 0).OnSpare);
+
+        // Finished: C11's last words, and the red hat in the mud.
+        var k = Make();
+        var kill = Fight(k.J, "roost");
+        SurvivorUnchained.Arena.Arenas.Won(k.J, kill, spared: false);
+        Assert.False(kill.Spared);
+        Assert.Equal("dead", k.J.World.Fact("redcowl").Str);
+        Assert.Equal("leg", k.J.World.Fact("redcowl.last_words").Str);
+        Assert.True(Quest(k.J, "caravan", "roost_raided"));
+        // And left unsaid (today's runtime), he dies, as he always has.
+        var t = Make();
+        SurvivorUnchained.Arena.Arenas.Won(t.J, Fight(t.J, "roost"));
+        Assert.Equal("dead", t.J.World.Fact("redcowl").Str);
+    }
+
+    [Fact]
+    public void Spared_he_takes_the_crates_he_swore_to_keep_and_leaves_the_rest()
+    {
+        var s = Make();
+        s.J.World.Facts["be.crates"] = "redcowl";
+        SurvivorUnchained.Arena.Arenas.Won(s.J, Fight(s.J, "roost"), spared: true);
+        // The Act 2 army's powder goes with him; nobody else will settle them.
+        s.J.World.Facts["chapter.done"] = true;
+        Simulation.AdvanceDay(s.J.Ctx, () => 0.5);
+        Assert.Equal("redcowl", s.J.World.Fact("be.crates").Str);
+        // Unclaimed, they wait in the empty Roost with the Coyle cargo, and the Watch has them at the act's end.
+        var u = Make();
+        SurvivorUnchained.Arena.Arenas.Won(u.J, Fight(u.J, "roost"), spared: true);
+        u.J.World.Facts["chapter.done"] = true;
+        Simulation.AdvanceDay(u.J.Ctx, () => 0.5);
+        Assert.Equal("watch", u.J.World.Fact("be.crates").Str);
+    }
+
+    [Fact]
+    public void Greymuzzle_let_go_is_her_choice_and_finishing_him_breaks_the_promise()
+    {
+        var s = Make();
+        s.J.World.Facts["hollow.hostile"] = true;
+        s.J.World.Facts["promise.pack"] = true;
+        s.J.World.Facts["stream.clear"] = true;
+        var spec = Fight(s.J, "hollow");
+        Assert.Equal("Let him go", spec.SpareVerb);
+        // Today's runtime lets him go by itself, as before.
+        SurvivorUnchained.Arena.Arenas.Won(s.J, spec);
+        Assert.Equal("spared", s.J.World.Fact("greymuzzle").Str);
+        Assert.Contains("old wolf is breathing", spec.EndSpared);
+        // "Finish it" breaks the promise she knelt to make.
+        var k = Make();
+        k.J.World.Facts["hollow.hostile"] = true;
+        k.J.World.Facts["promise.pack"] = true;
+        k.J.World.Facts["stream.clear"] = true;
+        SurvivorUnchained.Arena.Arenas.Won(k.J, Fight(k.J, "hollow"), spared: false);
+        Assert.Equal("dead", k.J.World.Fact("greymuzzle").Str);
+        Assert.True(k.J.World.Fact("promise.broken").Truthy);
+        // Without the promise and the clean stream there is no choice to make.
+        var n = Make();
+        n.J.World.Facts["hollow.hostile"] = true;
+        Assert.Null(Fight(n.J, "hollow").OnSpare);
+    }
+
+    [Fact]
+    public void A_lost_story_fight_wakes_her_on_Chids_bench_the_next_morning()
+    {
+        // The owner, 4 October: the night is lost, Chid carries her home, and she wakes in town.
+        foreach (var (id, people, morning, wakes, chid) in new[]
+        {
+            ("hollow", "pack", "stopped, all at once", "wolf's spit", "Maeca"),
+            ("roost", "kerchiefs", "the slow kind", "the way the Kerchiefs lay out their dead", "stitched up half of it"),
+            ("dig", "lamplings", "where the wall's lamps reach", "little hands", "kettle"),
+            ("vault", "dead", "like a door shutting", "a mailed hand", "very old book"),
+        })
+        {
+            var s = Make();
+            s.J.World.Facts["hollow.hostile"] = true;
+            s.J.World.Facts["dig.hostile"] = true;
+            s.J.Apply("""[{ "quest": { "id": "vault", "status": "active", "entry": "fragment" } }]""");
+            var spec = Fight(s.J, id);
+            SurvivorUnchained.Arena.Arenas.Begin(s.J.World, spec);
+            var b = s.J.StartBattle(true, new CollisionWorld(60), (_, _) => 0, 0, 0, 0, 3, arena: true);
+            SurvivorUnchained.Arena.Arenas.Finish(s.J, b, spec, won: false);
+            Assert.StartsWith("The last thing you know", spec.EndLost);
+            // The town has its morning, and she wakes into it.
+            Assert.Contains(Simulation.AdvanceDay(s.J.Ctx, () => 0.5).Lines, l => l.Contains(morning));
+            s.J.CarriedHome(spec);
+            var r = new DialogueRunner(Dialogue.Find("chid")!, s.J.Ctx);
+            var p = r.Start()!;
+            Assert.Equal("carried", p.Node.Id);
+            Assert.Contains(wakes, p.Text);
+            p = r.Advance()!;
+            Assert.Contains(chid, p.Text);
+            Assert.Contains("A carter, I expect", p.Text);
+            Assert.DoesNotContain("your things", p.Text);
+            Assert.Equal(people, s.J.World.Fact("arena.last.people").Str);
+            // Told once: the next time she falls in the world, Chid's ordinary waking.
+            Assert.True(s.J.World.Fact("player.carried_home").IsNull);
+            s.J.World.Facts["player.just_died"] = true;
+            Assert.Equal("woke", new DialogueRunner(Dialogue.Find("chid")!, s.J.Ctx).Start()!.Node.Id);
+        }
+    }
+
     [Fact]
     public void The_wreck_gives_up_the_manifest_once()
     {

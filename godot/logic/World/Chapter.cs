@@ -68,6 +68,7 @@ public static class Chapter
             "crates_redcowl", "crates_harlan", "crates_sunk", "jory_told", "pell_exposed", "pell_joined", "pell_given", "pell_hunted"]);
         if (S(w, "redcowl") == "tricked") beats.Add("You bluffed the Kerchiefs out of their own camp.");
         if (S(w, "redcowl") == "dead") beats.Add("Redcowl is dead.");
+        if (S(w, "redcowl") == "spared") beats.Add("You had Redcowl on his knee, and let him get up. He took his people off the Old Road.");
         // Taken from his bed is not fled: the journal's own line says where Redcowl looked.
         if (S(w, "caravan.pell") == "fled" && S(w, "pell.fate") != "taken") beats.Add("Pell Varrow fled the Waystation in the night.");
         return new Thread("caravan", q.Name, verdict, tone, outcome, beats);
