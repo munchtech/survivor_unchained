@@ -278,7 +278,10 @@ public static class ArenaGen
             // A story place is small, and its edge is its banks: the char keeps to their feet.
             double inward = Outline != null ? 1 - MathX.Smoothstep(0.2, 1.4 + finger * 0.15, inn + n * 0.8)
                 : 1 - MathX.Smoothstep(1.5, 4.5 + finger, inn + n * 1.6);
-            double outward = MathX.Smoothstep(-12, -3, inn + n * 2);
+            // (And up them no further than the lip: past it the banks and the wood over them are
+            // the place's walls, seen whole in every frame. Charred twelve metres out, they were a
+            // black field of coal and ash either side of the fight.)
+            double outward = Outline != null ? MathX.Smoothstep(-4.5, -2.2, inn + n * 1.2) : MathX.Smoothstep(-12, -3, inn + n * 2);
             // Never past 0.85: what is hotter than that (a pit's mouth) glows whole.
             return MathX.Clamp01(inward * outward) * 0.85;
         }

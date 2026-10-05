@@ -43,6 +43,17 @@ public sealed class HollowNight : ArenaShape
 
     (double X, double Z) Pt(string id) => P[id];
 
+    /// <summary>Whether a tree standing here would screen the place from the camera: the camera
+    /// stands to the +z side, so a crown from four to sixteen metres up covers the ground two to
+    /// eight metres short of its trunk, toward -z, three metres either side.</summary>
+    bool Screens(double x, double z)
+    {
+        for (double k = 1; k <= 9; k += 2)
+            for (double s = -3; s <= 3; s += 3)
+                if (P.Dist(x + s, z - k) < 6) return true;
+        return false;
+    }
+
     /// <summary>Kept clear: every point the fight is staged from.</summary>
     bool NearPoint(double x, double z, double r) => P.Points.Values.Any(p => MathX.Dist(p.X, p.Z, x, z) < r);
 
@@ -166,7 +177,9 @@ public sealed class HollowNight : ArenaShape
         if (x < -6 && z > 4)
         {
             double wc = Math.Abs(x - cx) + n2 * 0.6 + n3 * 0.3;
-            double bed = 1 - MathX.Smoothstep(1.0, 2.0, wc);
+            // Half buried: the leaves drift into it, and its stones stand up out of them in
+            // stretches (a clean band of stones four metres wide read as a gravel road).
+            double bed = (1 - MathX.Smoothstep(0.5, 1.5, wc)) * (0.45 + 0.55 * MathX.Smoothstep(-0.25, 0.3, n1 + n3 * 0.4));
             p.L4 = Math.Max(p.L4, bed * MathX.Smoothstep(-44, -40, -z) * (1 - MathX.Smoothstep(-12, -8, -z)));
         }
         // Old Blue's rocks: bare stone on top, scree round their feet.
@@ -258,12 +271,20 @@ public sealed class HollowNight : ArenaShape
         // wide would black it out.)
         // Bare trees read from above as tangles over the fight; the crowns stand back.
         double keep = d < 11 ? 0 : d < 18 ? 0.22 : d < 32 ? 0.34 : 0.15;
-        if (Rng.Chance(keep)) B.Put(Rng.Pick(new[] { "pine", "broadleaf", "pine", "broadleaf" }), x, z, 0.9 + Math.Min(0.6, d * 0.02));
+        // (None on the camera's side where its crown would stand between the camera and the
+        // place or its banks: seen from above, a crown nearer the camera than the ground is a
+        // black hole in the bottom of the frame. Low wood there instead: fallen trunks, stumps,
+        // ferns, so the bank reads as wood going on.)
+        if (Rng.Chance(keep))
+        {
+            if (!Screens(x, z)) B.Put(Rng.Pick(new[] { "pine", "broadleaf", "pine", "broadleaf" }), x, z, 0.9 + Math.Min(0.6, d * 0.02));
+            else B.Put(Rng.Pick(new[] { "scan_trunk", "scan_stump", "scan_fern", "scan_shrub", "dead" }), x, z, Rng.Range(0.9, 1.3), 0.2);
+        }
         if (d < 11 && Rng.Chance(0.5)) B.Put(Rng.Pick(new[] { "scan_fern", "scan_fern", "scan_shrub", "fern", "bramble", "scan_shrub" }), x + Rng.Range(-1, 1), z + Rng.Range(-1, 1), Rng.Range(1.0, 1.6));
         // (Roots and stumps on the lips; rock only a little way back, and small: a big mossed
-        // slab on a lip leans out over the fight from the arena camera.)
+        // slab on a lip leans out over the fight from the arena camera, pale over the dark.)
         if (d < 7 && Rng.Chance(0.16)) B.Put(Rng.Pick(new[] { "scan_root", "scan_root", "scan_stump", "scan_branches" }), x, z, Rng.Range(0.9, 1.4), 0.15);
-        if (d > 3 && d < 9 && Rng.Chance(0.05)) B.Put("scan_mossrock", x, z, Rng.Range(0.55, 0.8), 0.3);
+        if (d > 3 && d < 9 && Rng.Chance(0.05)) B.Put("scan_mossrock", x, z, Rng.Range(0.35, 0.5), 0.3);
     }
 
     public override void Fringe(double x, double z, double inn)
@@ -277,7 +298,8 @@ public sealed class HollowNight : ArenaShape
     {
         if (NearPoint(x, z, 2.5) || Stream(x, z) < 1.1) return;
         double patch = Noise.Noise(x * 0.07 + 31, z * 0.07 - 17);
-        if (patch < -0.1 && Rng.Chance(0.4)) B.Put(Rng.Chance(0.6) ? "scan_bark" : "scan_moss", x, z, Rng.Range(0.8, 1.2), 0.02);
+        // (Bark and twigs; the moss is the ground's own cushions; scanned clumps read as plastic.)
+        if (patch < -0.1 && Rng.Chance(0.4)) B.Put(Rng.Chance(0.6) ? "scan_bark" : "scan_branches", x, z, Rng.Range(0.8, 1.2), 0.02);
         if (patch > 0.3 && Rng.Chance(0.2)) B.Put("scan_fern", x, z, Rng.Range(0.7, 1.0));
         if (Stream(x, z) < 2.4 && Rng.Chance(0.35)) B.Put(Rng.Pick(new[] { "scan_stones", "scan_stones", "scan_fern" }), x, z, Rng.Range(0.7, 1.1), 0.05);
         if (Rng.Chance(0.03)) B.Put(Rng.Pick(new[] { "mushroom", "scan_branches", "scan_bark" }), x, z);
@@ -289,6 +311,8 @@ public sealed class HollowNight : ArenaShape
         // Old Blue's rocks: boulders shouldered against each knoll's back, scree at its foot.
         foreach (var r in rocks)
         {
+            // The knoll itself, bare stone over the rise (its top where he stands).
+            B.Piece("arena/knoll", r.X, r.Z, Rng.Range(0, Math.PI * 2));
             for (int k = 0; k < 3; k++)
             {
                 double a = Rng.Range(0, Math.PI * 2), rr = r.R + Rng.Range(0.2, 0.9);

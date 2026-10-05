@@ -68,6 +68,11 @@ uniform float lip_at = 1.8;
 uniform float lip_glow = 1.0;
 // How far in from the edge the ground is heat-killed (metres): a story place is small.
 uniform float scorch_reach = 11.0;
+// How far out past the edge it is heat-killed (metres).
+uniform float scorch_out = 1000.0;
+// How much darker the ground lies past the edge: a story place's banks and the wood over
+// them are its walls, seen close, and must read as wood, not as a void.
+uniform float past_dark = 0.6;
 
 varying vec3 w_pos;
 varying vec3 w_nrm;
@@ -254,13 +259,16 @@ void fragment() {
 				if (b2 < db) { db = b2; rb = qb; hb = pb; }
 			}
 		float dome = (1.0 - clamp(da, 0.0, 1.0)) * 0.6 + (1.0 - clamp(db, 0.0, 1.0)) * 0.4;
-		// Solid where the paint is deep; toward its edge the mat breaks into separate round
-		// cushions, each there or not by its own hash, so the edge is a scatter of moss and
-		// never a line round a painted island.
-		float inner = smoothstep(0.62, 0.82, s3.r + (nM.g - 0.5) * 0.2);
-		float pres = smoothstep(-0.04, 0.08, s3.r * 1.15 + (nM.g - 0.5) * 0.25 + (0.5 - hgt) * 0.1 - hb.y * 0.6 - 0.18);
-		float cushion = 1.0 - smoothstep(0.3, 0.7, db);
-		mo = max(inner, pres * cushion);
+		// Moss is cushions, never a mat with a line round it: each cushion (a forearm across,
+		// and a hand across between them) is there or not by its own hash against how deep
+		// the paint is, so a patch thins toward its edge into separate round cushions with the
+		// litter between them, and only its deepest heart closes solid. (A threshold on the
+		// paint itself drew the noise's smooth contour: a cut-out of green carpet.)
+		float m = s3.r + (nM.g - 0.5) * 0.2 + (0.5 - hgt) * 0.1;
+		float core = smoothstep(0.86, 0.98, m);
+		float big = step(0.22 + 0.55 * hb.y, m) * (1.0 - smoothstep(0.22, 0.55, db));
+		float small = step(0.12 + 0.7 * ha.y, m) * (1.0 - smoothstep(0.2, 0.5, da));
+		mo = max(core, max(big, small * 0.9));
 		vec3 mc = moss_color * mix(vec3(1.25, 1.1, 0.6), vec3(0.8, 1.0, 0.95), hb.x) * (0.75 + 0.5 * ha.y);
 		// Velvet, not bubbles: the domes shade the cushion gently, and a fine fibre runs
 		// through it (from thirty metres up, strong round highlights read as bubble wrap).
@@ -315,6 +323,8 @@ void fragment() {
 	float ch = s2.g;
 	float inn = w_inn + (nM.r - 0.5) * 2.2 + (nF.g - 0.5) * 0.25;
 	float scorch = 1.0 - smoothstep(2.0 * scorch_reach / 11.0, scorch_reach, inn + (nL.g - 0.5) * 7.0 * scorch_reach / 11.0);
+	// (A story place's banks are heat-killed only at their feet: up them, the wood.)
+	scorch *= smoothstep(-scorch_out - 1.5, -scorch_out, inn);
 	float lum0 = dot(albedo, vec3(0.2126, 0.7152, 0.0722));
 	albedo = mix(albedo, vec3(lum0) * vec3(1.05, 0.9, 0.74) * 0.72, scorch * 0.8);
 	float charred = smoothstep(0.15, 0.6, ch + (nF.b - 0.5) * 0.3);
@@ -351,7 +361,10 @@ void fragment() {
 		rough = mix(rough, mix(0.9, 0.98, ash), charred);
 		// The line: a white-hot thread a few fingers wide in a red breath,
 		// broken where the noise along it dips.
-		float on = smoothstep(0.32, 0.55, n_on + (nF.r - 0.5) * 0.2);
+		// (Along a story place's banks it burns in short stretches, a few in a bank's length:
+		// unbroken, it ran up both sides of every frame as a red rule.)
+		float on_at = 0.32 + 0.3 * (1.0 - lip_glow);
+		float on = smoothstep(on_at, on_at + 0.23, n_on + (nF.r - 0.5) * 0.2);
 		float core = 0.035 + 0.05 * nF.b;
 		float line = (1.0 - smoothstep(core * 0.5, core + px * 0.7, abs(dl))) * on;
 		float halo = exp(-abs(dl) / 0.22) * on;
@@ -386,7 +399,7 @@ void fragment() {
 
 	// Past the ring the night closes in: the place goes on, darker.
 	float past = 1.0 - smoothstep(0.0, 1.0, w_in);
-	albedo *= 1.0 - 0.6 * past;
+	albedo *= 1.0 - past_dark * past;
 
 	ALBEDO = albedo;
 	ROUGHNESS = clamp(rough, 0.04, 1.0);

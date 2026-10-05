@@ -30,11 +30,9 @@ public static class ArenaEdge
             // sheet of flowing water over the fight read as a smear from the arena camera.)
             if (z.Story) continue;
             root.AddChild(Stream(z, s));
-            // Mist lying along it, in two sheets, the lower thicker (none in a story place: its
-            // stream runs through the fight, and mist over a fight hides it).
-            if (z.Story) continue;
-            foreach (var (lift, op) in new[] { (0.45f, 0.16f), (1.3f, 0.08f) })
-                root.AddChild(MistSheet(z, s, 3.5f, lift, op, new Color(place.Air.MistColor)));
+            // (No sheets of mist along it: from the arena camera two sheets over the water hid its
+            // stones and its light under one grey smear, streaked like a blur of speed. The
+            // place's mist lies in its low ground as a fog, the water's among it.)
         }
         foreach (var r in z.Rails) root.AddChild(Rails(z, r));
         foreach (var v in z.Vents) root.AddChild(Vent(z, v, ember, new Color(place.Air.HazeColor)));

@@ -119,7 +119,8 @@ public partial class Atmosphere : Node3D
             // Under a canopy the moon's breadth softens a shadow by how far its caster stands
             // over the ground (PCSS): the pools get a soft rim from leaves nine metres up, and
             // the shadows at the living's feet stay sharp.
-            if (a.Dapple > 0) Key.LightAngularDistance = 2.5f;
+            // (At 2.5° the pools washed out into a general shading.)
+            if (a.Dapple > 0) Key.LightAngularDistance = 1.2f;
         }
         Env.TonemapExposure = (float)p.Exposure * ExposureScale;
         var rim = C(p.Rim).SrgbToLinear();

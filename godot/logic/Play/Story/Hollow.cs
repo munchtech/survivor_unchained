@@ -26,6 +26,9 @@ namespace SurvivorUnchained.Play.Story;
 public sealed class HollowByNight : StoryFight
 {
     public override string Id => "hollow_by_night";
+    /// <summary>Built to this outline by arena art (Maps/Arenas/HollowNight.cs): its deadfalls, root
+    /// plate, reeds and cover are its own.</summary>
+    public override bool PlaceBuilt => true;
 
     // The way runs up the screen, away from the camera (which stands to the +z side): in at
     // the clough at the bottom, the den's mouth at the top of the picture, where the boss

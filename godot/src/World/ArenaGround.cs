@@ -37,7 +37,8 @@ public static class ArenaGround
         // one from the arena camera. Whole red-brown leaves read as leaves; a scan of pale
         // chips on black read as gravel however it was toned.) The rot is black earth.
         ["hollow"] = [new(0.095f, 1.0f, Con: 1.1f, Lift: 0.02f, Size: 1.35f), new(0.04f, 0.85f, Con: 1.1f), new(0.075f, 0.8f, Lift: 0.03f, Bump: 0.1f, Size: 1.3f),
-            new(0.03f, 0.8f, Lift: -0.03f), new(0.1f, 0.6f, Lift: -0.05f, Bump: 0.08f), new(0.085f, 0.9f, Con: 0.9f, Lift: 0.01f, Size: 1.4f), new(0.07f, 0.7f)],
+            // (The mud trodden smooth: at the scan's own contrast the den's floor read as asphalt.)
+            new(0.035f, 0.8f, Con: 0.75f, Lift: -0.03f), new(0.1f, 0.6f, Lift: -0.05f, Bump: 0.08f), new(0.085f, 0.9f, Con: 0.9f, Lift: 0.01f, Size: 1.4f), new(0.07f, 0.7f)],
         // verge, churn, ruts, wet, camp, metal, face
         ["ruts"] = [new(0.065f, 0.6f, Lift: 0.04f, Bump: 0.06f), new(0.05f, 0.65f), new(0.045f, 0.6f, Lift: -0.02f, Bump: 0.08f), new(0.04f, 0.65f, Lift: -0.04f),
             new(0.06f, 0.55f, Lift: 0.01f), new(0.08f, 0.5f, Lift: 0.01f, Bump: 0.06f), new(0.055f, 0.55f)],
@@ -83,6 +84,8 @@ public static class ArenaGround
         mat.SetShaderParameter("lip_glow", z.Story ? 0.3f : 1f);
         mat.SetShaderParameter("face_skip_b", place.Id == "dig" ? 1f : 0f);
         mat.SetShaderParameter("scorch_reach", z.Story ? 3.5f : 11f);
+        mat.SetShaderParameter("past_dark", z.Story ? 0.25f : 0.6f);
+        mat.SetShaderParameter("scorch_out", z.Story ? 3f : 1000f);
         mat.SetShaderParameter("g_alb", GD.Load<TextureLayered>($"{dir}/albedo.jpg"));
         mat.SetShaderParameter("g_nor", GD.Load<TextureLayered>($"{dir}/normal.jpg"));
         mat.SetShaderParameter("g_arh", GD.Load<TextureLayered>($"{dir}/arh.jpg"));

@@ -105,10 +105,12 @@ public sealed class Hollow : ArenaShape
         // bowl where the canopy keeps it damp; never on the bed or the runs.
         // (Small and broken: moss holds to what keeps it damp, the roots' sides and the banks,
         // and a few hollows; big open islands of it read as green paint from the camera.)
-        double isle = MathX.Smoothstep(0.55, 0.7, Noise.Noise(x * 0.17 + 70, z * 0.17 - 31) + n2 * 0.25);
+        // (The paint is how thick the cushions stand, the shader's: graded, so an island thins
+        // out into scattered cushions.)
+        double isle = MathX.Smoothstep(0.45, 0.8, Noise.Noise(x * 0.17 + 70, z * 0.17 - 31) + n2 * 0.25);
         double banks = (1 - MathX.Smoothstep(1.5, 2.3, f + n1 * 0.5)) * MathX.Smoothstep(1.05, 1.3, f);
         double byRoots = (1 - MathX.Smoothstep(0.7, 1.8, B.At(rootsF, x, z) + n1 * 0.4)) * MathX.Smoothstep(-0.1, 0.3, n2);
-        p.Moss = Math.Max(Math.Max(isle * 0.7, byRoots * 0.8), banks * MathX.Smoothstep(0.0, 0.35, n2));
+        p.Moss = Math.Max(Math.Max(isle * 0.6, byRoots * 0.8), banks * MathX.Smoothstep(0.0, 0.35, n2));
         // Roots.
         double rf = B.At(rootsF, x, z) + n2 * 0.25;
         p.L2 = (1 - MathX.Smoothstep(0.6, 1.0, rf)) * (1 - p.L4);
@@ -150,8 +152,8 @@ public sealed class Hollow : ArenaShape
         double f = B.At(streamF, x, z);
         if (f < 1.0) return;
         double patch = Noise.Noise(x * 0.07 + 31, z * 0.07 - 17);
-        // Litter: bark, twigs, moss in the hollows; ferns where the light comes down.
-        if (patch < -0.15 && Rng.Chance(0.35)) B.Put(Rng.Chance(0.6) ? "scan_bark" : "scan_moss", x, z, Rng.Range(0.8, 1.2), 0.02);
+        // Litter: bark and twigs in the hollows; ferns where the light comes down.
+        if (patch < -0.15 && Rng.Chance(0.35)) B.Put(Rng.Chance(0.6) ? "scan_bark" : "scan_branches", x, z, Rng.Range(0.8, 1.2), 0.02);
         if (patch > 0.35 && Rng.Chance(0.18)) B.Put("scan_fern", x, z, Rng.Range(0.7, 1.0));
         if (f < 2.2 && Rng.Chance(0.3)) B.Put(Rng.Pick(new[] { "scan_stones", "scan_grass", "scan_fern" }), x, z, Rng.Range(0.7, 1.1), 0.05);
         if (B.At(rootsF, x, z) < 0.8 && Rng.Chance(0.35)) B.Put(Rng.Pick(new[] { "scan_root", "scan_root", "scan_branches" }), x, z, Rng.Range(0.8, 1.2), 0.08);
@@ -189,16 +191,8 @@ public sealed class Hollow : ArenaShape
             double rot = Math.Atan2(bx0 - ax0, bz0 - az0) + Math.PI / 2;
             B.PutAt("scan_root", (ax0 + bx0) / 2, (az0 + bz0) / 2, rot + Rng.Range(-0.3, 0.3), 1.1 + hw0 * 1.1, 0.12);
         }
-        // Moss grown up into cushions on the wettest islands.
-        for (int t = 0; t < 260; t++)
-        {
-            double a = Rng.Range(0, Math.PI * 2), rr = Rng.Range(6, ArenaGen.R);
-            double x = Math.Cos(a) * rr, z = Math.Sin(a) * rr;
-            if (!B.CanStand(x, z) || B.At(streamF, x, z) < 1.1) continue;
-            double isle = Noise.Noise(x * 0.11 + 70, z * 0.11 - 31);
-            if (isle < 0.4) continue;
-            B.Put("scan_moss", x, z, Rng.Range(0.9, 1.5), 0.05);
-        }
+        // (No scanned moss scattered over the islands: from the camera its clumps were rings of
+        // flat bright green, plastic. The ground's own cushions are the moss.)
 
         // ------------------------------------------------- the edge's places --
         // The great trees round the rim.

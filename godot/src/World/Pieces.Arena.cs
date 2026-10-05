@@ -25,6 +25,7 @@ public static partial class Pieces
             "timber" => Timber(seed),
             "cookpot" => CookPot(),
             "winch" => Winch(),
+            "knoll" => Knoll(seed, ground),
             _ => null,
         };
         if (made != null) made.Name = "arena_" + name;
@@ -291,6 +292,39 @@ public static partial class Pieces
     /// silver, its limbs snapped to stubs; the brash it dropped heaped at its crown end. Dry, and
     /// pale against the dark litter, so from thirty metres up it reads as the thing that will
     /// burn. Its length along X, the brash at +X; knee high.</summary>
+    /// <summary>A knoll of bare rock, as Old Blue's three are in the clough: the ground's rise
+    /// (HollowNight's relief) sheathed in stone, its top a worn table he stands up on to howl,
+    /// its sides broken in ledges down into the litter, its rim ragged. Its origin is the
+    /// rise's top; its foot finds the ground all round (the probe), sunk a hand into it. From
+    /// above it reads as rock standing out of the leaves, never as a grey disc painted on them.</summary>
+    static Node3D Knoll(int seed, Func<Vector3, float>? ground)
+    {
+        float G(float x, float z) => ground?.Invoke(new Vector3(x, 0, z)) ?? -0.8f;
+        var rock = new Build();
+        const float R = 2.5f;
+        float s0 = seed * 0.37f;
+        // The profile, from the middle of the top out and down; a height under 0 is how far down
+        // toward the ground it goes (0 the top, -1 its foot in the ground).
+        var prof = Pts(0, -1.05f, R * 1.08f, -1.05f, R * 1.02f, -0.75f, R * 0.93f, -0.5f, R * 0.88f, -0.28f, R * 0.74f, -0.1f, R * 0.5f, 0.03f, 0, 0.05f);
+        Vector3 Shape(Vector3 p)
+        {
+            float a = Mathf.Atan2(p.Z, p.X), r = new Vector2(p.X, p.Z).Length();
+            // A ragged rim, two scales of it.
+            float rim = 1 + 0.2f * (Noise(Mathf.Cos(a) * 1.6f + s0, Mathf.Sin(a) * 1.6f) - 0.5f) * 2 + 0.07f * (Noise(Mathf.Cos(a) * 5 + s0, Mathf.Sin(a) * 5 + 3) - 0.5f) * 2;
+            // Ledges: the sides step in where the stone splits along its bedding.
+            float down = Mathf.Clamp(-p.Y, 0, 1.05f);
+            float ledge = 1 - 0.07f * Mathf.Sin(down * 11 + Noise(p.X * 0.8f + s0, p.Z * 0.8f) * 4);
+            var xz = new Vector2(p.X, p.Z) * rim * (down > 0.05f ? ledge : 1);
+            float top = 0.05f * (Noise(p.X * 1.4f + s0, p.Z * 1.4f) - 0.5f) * Mathf.Min(1, r / R);
+            float y = p.Y >= 0 ? p.Y + top : Mathf.Lerp(top, G(xz.X, xz.Y) - 0.12f, down);
+            return new Vector3(xz.X, y, xz.Y);
+        }
+        Lathe(rock, prof, 36, warp: Shape);
+        // (Darker than the boulders' scan as shot: pale, the three read as the brightest things
+        // in the clough, over her.)
+        return Hold((rock.Mesh(true), Surface("rock_boulder_dry", 1.4f, "#6c706c")));
+    }
+
     static Node3D Deadfall(int seed)
     {
         var wood = new Build();
