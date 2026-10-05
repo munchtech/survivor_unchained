@@ -51,6 +51,8 @@ public partial class Game
         // line printed over the still-moving fight before its result). The notices wait, their time
         // not running, and are told whole after: on getting up, or once she wakes from the loss.
         hud.HoldToasts = true;
+        // She goes down where she stands (the fight only holds her at a breath of life).
+        scene.Player?.Fall();
         if (risesLeft <= 0)
         {
             // No rise left: the night is lost, and the fall says so on its own. The world stays dark
@@ -110,6 +112,7 @@ public partial class Game
             ShadeWorld(0, 0.01);
             rise();
             hud.HoldToasts = false;
+            scene?.Player?.Revive();
             hud.Fade(0, 1.0);
         });
     }

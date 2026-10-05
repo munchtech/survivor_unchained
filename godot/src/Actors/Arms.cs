@@ -19,24 +19,28 @@ public static class Arms
     /// several), its length in life, where along it the hand grips (0 the
     /// butt, 1 the tip); held pistol-fashion (a crossbow) or not.</summary>
     /// Or made in code (Build), not read from a file.
-    public sealed record Spec(string File, float Length, float Grip, bool Flip = false, float Roll = 0, string? Node = null, bool Pistol = false, Func<Node3D>? Build = null);
+    /// Lean: degrees its shaft leans in a diagonal grip, from square to the
+    /// fingers toward them (a sword's grip runs from the root of the
+    /// forefinger to the heel of the hand), for those whose own clips are
+    /// keyed to it (tools/anim/keyed.py GRIP), not the library's.
+    public sealed record Spec(string File, float Length, float Grip, bool Flip = false, float Roll = 0, string? Node = null, bool Pistol = false, Func<Node3D>? Build = null, float Lean = 0);
 
     public static readonly Dictionary<string, Spec> All = new()
     {
-        ["chevalier_sword"] = new("chevalier_sword", 1.0f, 0.1f),
-        ["viking_sword"] = new("viking_sword", 0.92f, 0.13f),
-        ["longsword"] = new("longsword", 1.05f, 0.22f, Flip: true),
+        ["chevalier_sword"] = new("chevalier_sword", 1.0f, 0.1f, Lean: 35),
+        ["viking_sword"] = new("viking_sword", 0.92f, 0.13f, Lean: 35),
+        ["longsword"] = new("longsword", 1.05f, 0.22f, Flip: true, Lean: 35),
         ["zweihander"] = new("zweihander", 1.6f, 0.2f),
-        ["mace"] = new("mace", 0.75f, 0.12f),
-        ["viking_axe"] = new("viking_axe", 0.8f, 0.15f, Roll: Mathf.Pi),
-        ["snake_axe"] = new("snake_axe", 1.3f, 0.22f),
+        ["mace"] = new("mace", 0.75f, 0.12f, Lean: 30),
+        ["viking_axe"] = new("viking_axe", 0.8f, 0.15f, Roll: Mathf.Pi, Lean: 30),
+        ["snake_axe"] = new("snake_axe", 1.3f, 0.22f, Lean: 30),
         ["mage_staff"] = new("mage_staff", 1.75f, 0.45f),
         ["short_staff"] = new("mage_staff", 1.1f, 0.3f),
         ["crossbow"] = new("crossbow", 0.85f, 0.3f, Pistol: true),
-        ["wand"] = new("", 0.38f, 0.12f, Build: Made.Wand),
+        ["wand"] = new("", 0.38f, 0.12f, Build: Made.Wand, Lean: 30),
         ["shield_round"] = new("shield_round", 0.66f, 0.5f),
-        ["daggers"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004"),
-        ["dagger_b"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004_01"),
+        ["daggers"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004", Lean: 30),
+        ["dagger_b"] = new("daggers", 0.4f, 0.2f, Node: "Cube_004_01", Lean: 30),
     };
 
     /// <summary>A weapon, normalised (a new node each call).</summary>
@@ -164,6 +168,10 @@ public static class Arms
         var x = new Vector3(0, 1, 0);
         var y = forearm ? new Vector3(0, 0, -1) : new Vector3(0, 0, 1);
         mount.Basis = new Basis(x, y, x.Cross(y));
+        // Her and the hero hold it in the diagonal grip their clips are keyed
+        // to: the shaft turned about the hand's across axis toward the fingers.
+        if (!forearm && person.Own != null && All[id].Lean != 0)
+            mount.Basis = new Basis(Vector3.Right, Mathf.DegToRad(-All[id].Lean)) * mount.Basis;
         mount.Position = forearm ? new Vector3(0, 0.14f, 0) : new Vector3(-0.025f, 0.075f, 0);
         var w = Make(id);
         if (All[id].Pistol)

@@ -1,94 +1,58 @@
 # Animation: status
 
-Agent a7dd95d00c4a6a017, branch `worktree-agent-a7dd95d00c4a6a017` (took over from a03acf30b3e9bdd70 on 5 October). Brief: `docs/handoff/animation.md`.
+Agent: the successor of a7dd95d00c4a6a017 (this session), branch `worktree-agent-aa15f092820132274` (took over on 5 October). Brief: `docs/handoff/animation.md`.
 
 ## State (2026-10-05)
 
-**The owner's wrist and natural-motion pass: the systemic causes are fixed and every library has been rebuilt.**
-- **What was wrong:** the same faults ran through her clips, the hero's and the folk's. All of them came from the tools, not from single clips:
-  - **Direction keys were blended straight through the sphere.** Two keys pointing far apart passed near nothing between them, and the hand rolled over in one frame.
-  - **The hand's aim was read in the wrong frame between keys.** One key aimed it in her space and the next in the chest's, and the frame switched at the nearest key.
-  - **Controls a key left out were held from the nearest key that had them.** A blade keyed only at the end turned the hand from the first frame. An aim held on after the hand had moved on left the wrist strained, and it then flipped.
-  - **Knuckles-only aims were rebuilt against the forearm's thumb axis,** which flipped wherever the two lined up.
-  - **Elbows and knees could bend off their hinge.** The IK's shortest turn left the upper arm's roll anywhere, so the forearm spun and elbows bent sideways.
-  - **No anatomical limits:** the wrist twisted up to 100°, with none of the twist in the forearm.
-  - **Hand paths cut through the shoulder,** so the elbow whipped from one side to the other.
-- **What was done** (`keyed.py`, `held.py`, `gait.py`, `retarget.py`):
-  - **Directions turn round the sphere,** and a strike's "fast" no longer flicks the hand's roll.
-  - **Every key's aim is made whole and put in one frame before blending.** A hand keyed without an aim lets go of it.
-  - **A knuckles-only or blade-only aim is the least turn from how the hand rides the forearm.**
-  - **The upper arm and thigh roll so the elbow and knee bend on their hinges.** Through a straight limb the hinge keeps its last direction.
-  - **Limits:** the forearm turns up to 95° and the wrist bends up to 70°. Past them the elbow swings round, chosen to be like the last frame, and then the hand falls short. Half the roll goes into the forearm.
-  - **The elbow's path is settled over the whole clip and smoothed** (`solve_frames`).
-  - **Takes spread the forearm roll** (`retarget.spread_twist`).
-  - **Runs swing the fist on an arc about the shoulder,** not a line through it.
-- **Clip fixes at the source:**
-  - `catch_breath`: the hand turns over on the way up and comes down round the front, not back through the shoulder;
-  - `death_back`: the flung arms no longer pass straight, which rolled them over.
-- **`audit.py`** checks every clip we make for:
-  - a hand or forearm spinning more than 30° about its own length in one frame;
-  - the wrist's bend and twist, and the forearm's twist;
-  - an elbow or knee bent off its hinge.
-- **Audit totals:**
-  - before: 9,945 frames flagged; 131 of 185 clips turned a hand more than 30° in a frame, up to 179°;
-  - after: 894 frames flagged, mostly the limits' own wrist-twist and bend counts. 13 clips still spin a hand more than 90° in one frame, all at the start of a fast move or in a fall:
-    - chain_strike (her and his);
-    - cast_bolt;
-    - the reaver's and warden's show;
-    - the reaver sprints;
-    - sword_heavy;
-    - vault_back;
-    - the folk's die_front.
-  - These need re-keying at the start of the move: a hand path through the shoulder, or a roll packed into one frame.
-- **Strips:** before and after of the worst five (`run_reaver`, `idle_arcanist_break`, `death_back`, `warden_show`, `f_die_side`), close up and at the game camera. They are in the scratchpad (`anim4/sh/ba_*.png`).
-- **The numbers are not the verdict.** `warden_show` passes the audit better but looks worse: the sword arm now comes up across her face in the hold. It is flagged below; don't pass it.
+**The wrist pass, second round: a wrist now bends as a wrist does, and weapons sit in the hand as they are held.**
+- **What was still wrong** (the owner's "reverse weird wrist motions ... attempting to correct"):
+  - **The wrist could bend 80 degrees sideways.** The solver had one limit for any bend. A wrist bends far toward the palm and back (about 80 and 70), but little to either side (about 25 toward the thumb, 40 toward the little finger). 8,899 frames across 165 clips were past that.
+  - **Weapons sat square across the fist.** A sword's grip runs from the root of the forefinger to the heel of the hand, so the blade leans toward the fingers. Held square, every guard and cut needed the wrist kinked 60 to 80 degrees toward the little finger (the idle warden held it so all the time).
+  - **The runs asked for the impossible.** The sword was keyed up over her shoulder behind her, so the hand flapped from 80 degrees one way to 60 the other every stride (`anim5/sh/wr_run_cur.png`).
+- **What was done:**
+  - **Anatomical wrist limits** (`keyed.Rig`): flexion 75, extension 65, toward the thumb 22, toward the little finger 38, read on the wrist's own axes (they turn with the forearm). The elbow swings round to meet them; past that the hand falls short. Retargeted takes are held to the same range (`retarget.keep_wrists`).
+  - **The diagonal grip** (`keyed.GRIP`, `Arms.Spec.Lean`): swords 35 degrees, axes, daggers, mace and wand 30, staff and crossbow square. Her and the hero only (`Rig.grips`; `Arms.Hold` for people with their own clips): the folk also play the library's clips, held square. The game, the review scene and the solver use the same lean. A clip's `meta.weapon` sets it.
+  - **A `thumb` control:** the wrist left straight and the forearm rolled so the thumb side faces a way. A carried weapon goes where the arm takes it.
+  - **Re-keyed at the source:** the runs and sprints (the sword hand at her side and ahead, the blade out and forward; a sprint's arm no longer flung straight behind her); `warden_show`; `bull_rush`'s rebound; `chain_strike`'s blow (a frame for the axe to come down, contact 3/30); `cast_raise` (the staff across overhead, then upright in both fists); the reaver's twirl; the folk's `die_front`.
+  - **Her fall** (the coordinator's report from the UI shot): the `death` knees went 17 cm into the ground and the shield stood on its edge 18 cm deep; `get_up`'s knees 17 cm. Re-keyed: the knees rest on the ground, the shield lies face up, the blade flat. **And she never fell at a story fall:** `StoryNight.OnFall` holds her at a breath of life, so the view kept her standing. `PlayerView.Fall()` (called from `GameFall.StoryFall`) puts her down, and `Revive()` (from `GetUp`) brings her up with `get_up`.
+- **`audit.py`** also flags a wrist bent past its range. Totals: 894 flagged frames before this round (without the range check), **229 now with it**; one clip spins a hand over 90 degrees in a frame (the hero's `chain_strike`, 106, at the blow).
 
 ## Sign-off log (sceptical: guilty until shown natural)
 
-Each line says what was checked, what was fixed, and the verdict. "Audit" is `tools/anim/audit.py`. "Ground" is the contact check: nothing through the ground, and knees and forearms on it where they bear weight. The only real-motion reference available is the 100STYLE captures, which back the idles and walks. No video was used: the web isn't ours to use.
+"Audit" is `tools/anim/audit.py`; "blade" is scratch `blade.py` (a held blade never through her); "ground" is scratch `groundall.py` (nothing more than 3 cm into the ground).
 
 | Clip(s) | Checked | Fixed | Verdict |
 |---|---|---|---|
-| flask_drink (C04 A6) | Audit; hand on the lips per frame; the cinematic at both cameras | The hands are placed by the flask | Good. Needs the flask prop and the camera move |
-| lie_side_wake, sit_back_heels, reach_coals (C01) | Ground; audit; sheets | Remade: knees and forearm through the ground; a prop hand that jumped | Good on sheets; to judge in C01 |
-| letter, kneel_to_stand_snap, take_from_log, cup_hands | Ground; audit; sheets | The snap's knees cleared; the cup turned palm up | Good on sheets; to judge in C01 |
-| walk_tired, walk_uphill, wade | 100STYLE capture; audit; sheets | — | Good |
-| catch_breath | Audit; frame trace | Re-keyed the rise and fall of the hand | Good by numbers; re-sheet |
-| death_back | Audit | Arms kept from passing straight | Fair: a violent fall, 45–65° a frame over 3 frames |
-| Strikes (sword_*, axe_*, axes_*, daggers_*) | Audit | Systemic fixes | The cuts roll 40–56° a frame for 3–4 frames: fast but even. Judge at speed in the game |
-| Runs | Audit; close-up strip | Arc swing; systemic fixes | Good |
-| Sprints (reaver) | Audit | — | **Flagged:** up to 97° a frame at f3; re-key |
-| idle_arcanist_break | Audit; strips | The tuck re-keyed (up before the shoulder, then back over the ear) | Good by numbers; re-sheet |
-| warden_show | Strips | — | **Regressed:** the sword arm comes up across her face in the hold. Re-key its pole and blade, or restore the old look |
-| chain_strike, cast_bolt, sword_heavy, vault_back, reaver_show | Audit | — | **Flagged:** one-frame rolls at the move's start; re-key |
-| Hero library | Audit | Rebuilt with the fixes | Same as hers. His body is pending (male hero lead) |
-| Folk slam (armed) | Audit | The axe swung up in front of the shoulder | Good by numbers |
-| Folk die_front | Audit | — | **Flagged:** up to 164° a frame; re-key |
-| Folk rally, kneel, lurch, walks | Audit | Rebuilt | Good by numbers |
+| warden_show | Audit; blade; sheets front, three-quarter, side, close | Re-keyed: the sword raised overhand, the elbow out, the point down over the rim at you; chin up, eyes over the rim | Good on sheets: face clear, arm beside her head. To judge at the creation screen |
+| run_warden, sprint_warden | Audit; blade; the hand close every frame; side | The thumb carry; the hand at her side | Good: the wrist straight through the stride (was 80 one way, 60 the other) |
+| Other runs and sprints | Audit; blade; sheets | The thumb carry; the sprint's arm kept bent | Good by numbers (sprint_reaver was 97 degrees in a frame) |
+| Strikes (sword, axe, axes, daggers) | Audit; close sheet of sword_fore | The grip's lean; the wrist's range | Good on the close sheet (was 80 toward the little finger). The cuts still roll the hand 60 to 87 degrees in one frame (sword_heavy, sword_fore, the hero's axes): to judge at the game camera |
+| Idles and breaks | Audit; close sheet (idle_warden) | The grip's lean; the reaver's twirl re-keyed | Good (idle_warden was 66 toward the little finger, always). The twirl rolls 36 a frame: it is a twirl |
+| death, get_up | Ground; shield facing; sheets at the arena camera and the side | Knees, shield, blade | Good on sheets; to see in a story fall in the game |
+| death_back | Ground; sheet at the arena camera | — | Fair: the shield's edge 5 cm into the ground |
+| bull_rush, chain_strike, cast_raise | Audit; blade | Re-keyed | Good by numbers (were 136, 162, 132 degrees in a frame) |
+| Folk die_front (and armed, pistol) | Audit; ground | The fall's arms; the shield arm lies as it falls | Good by numbers (was 164) |
+| C04 flask_drink | Contact (spout to lips) | Rebuilt | Holds: the spout within 1.4 cm of her lips through the drink |
+| C01 clips (cup_hands, letter, reach_coals, sit_back_heels, lie_side_wake, kneel_to_stand_snap, take_from_log) | Audit; ground | Rebuilt: hands keyed past a wrist's range now fall short | **To re-judge on sheets.** lie_side_wake's forearm 9 cm into the ground (the hero's 19); sit_back_heels' toes 8 |
+| leap | Ground | — | **Flagged:** a knee 10 cm into the ground at the landing (a retargeted take) |
+| The hero's chain_strike | Audit | — | **Flagged:** the blow spins his hand 106 degrees in a frame. His body is pending; fix with his rebuild |
+| Folk arms_crossed, talk (retargeted) | Audit | Held to the wrist's range | The tucked hand toward the thumb 35 before; to re-audit |
 
 ## Next
 
-1. **Finish the wrist pass:**
-   - re-key the flagged clips above, `warden_show` first;
-   - judge the strikes at speed in the game (`--on casts`);
-   - send the strips to the coordinator.
-2. Re-judge the C01 and C04 clips in their cinematics once cinematics blocks them in.
-3. The Warden's `wade_drag` (made: 100STYLE Heavyset over his body, the lamp up, the sword trailing; to judge in C02) and `lie_arm_up` (made).
-4. Grimtunnel's four, and the lampling's slam (`Beasts.cs`).
-5. The chain haul's landing crouch, and a heavier running flinch.
-6. The male hero's library; the boar's clips on the creatures lead's rig (af551cacc6292152f).
+1. Judge the strikes at the game camera (`anim_review` at `VIEW=arena PLAY=1.6`); re-judge the C01 clips on sheets; leap's landing.
+2. C01 and C04 in their cinematics; Grimtunnel's four and the lampling's slam (`Beasts.cs`); the chain haul's landing crouch and a heavier running flinch; the male hero's library.
 
-## Waiting on others
+## Notes for other areas
 
-- **Combat (a5115633c7006e4d4, handed off):** the plants (0.65 s and 0.7 s) and the kerchief_crossbow repoint are on their branch (3760c299). Check them in the game with `--on casts` once merged.
-- **Cinematics (successor of a79b6d8c81e14dc63):**
-  - block the C01 clips;
-  - A6's cues, camera and props (the flask, its cork and the letter need small builders);
-  - the Warden's C02 and C03 cues, and the heart's move.
+- **Combat and skills VFX:** her and the hero's swords, axes, daggers, mace and wand sit 30 to 35 degrees leaned in the fist (`Arms.Spec.Lean`, people with their own clips only). Anything reading a weapon's tip from its mount follows it.
+- **Experience and UI:** at a story fall she now goes down (`PlayerView.Fall`) and gets up at the rise (`Revive`). The UI's build7 fall shot was a run as the male hero (green): `--sex female` for her.
+- **Cinematics:** C01 and C04 clips were rebuilt; the hands are in the same places, turned within a wrist's reach. `chain_strike`'s contact moved to 3/30.
 
 ## Key decisions
 
-- **Fix motion at its source.** A flip is mended in the tool that makes it, or in the clip's keys. A second correction is never laid over the result.
-- **Contacts are measured** (`held.py`, `ground.py` in scratch). Her arms are short for her legs: when kneeling, her hands can't reach the ground.
-- **A cinematic clip is staged for its camera.** A6's drink is right-handed, so the camera goes to her left.
-- Earlier decisions stand: the slam and the kneel are roles of their own; blows land on a frame the bake samples; takes that don't fit are rejected.
+- **Fix motion at its source.** A flip or a strained wrist is mended in the tool or the clip's keys, never with a correction laid over the result.
+- **A wrist is not a ball joint.** Its range is anisotropic and read on its own axes; the forearm's roll carries them.
+- **Weapons are held as people hold them** (the diagonal grip), in the solver and the game alike.
+- **Contacts are measured** (`held.py`, scratch `ground.py`, `groundall.py`). Her arms are short for her legs.
+- **A cinematic clip is staged for its camera.**

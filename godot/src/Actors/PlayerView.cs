@@ -297,10 +297,17 @@ public partial class PlayerView : Node3D
         if (UpperHer(clip, 1.5)) { Strike(angle); lastMuzzle = time; }
     }
 
-    /// <summary>Up again after a fall (the prologue's second chances).</summary>
+    /// <summary>A story fall: down as at a death and held there, though the
+    /// fight keeps her at a breath of life while the fall is staged
+    /// (StoryNight.OnFall); up again with Revive. (Without it she stood
+    /// through her own fall.)</summary>
+    public void Fall() => fallen = true;
+    bool fallen;
+
+    /// <summary>Up again after a fall (the prologue's second chances, a story fall's rise).</summary>
     public void Revive()
     {
-        dead = false;
+        dead = fallen = false;
         tree.Active = true;
         Full("Lie_StandUp", 1.2);
     }
@@ -331,7 +338,7 @@ public partial class PlayerView : Node3D
         Position = new Vector3((float)p.X, (float)y, (float)p.Z);
         Reflections.Update(b, dt, heightAt);
         Ghostly(p.Alive && b.Art.WraithT > 0);
-        if (!p.Alive)
+        if (!p.Alive || fallen)
         {
             if (!dead)
             {

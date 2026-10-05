@@ -181,7 +181,8 @@ def _ease(k):
 def run_cycle(name, rig: Rig, g: Gait, meta=None) -> Clip:
     from keyed import solve_frames
     n = g.frames
-    rot, pos = solve_frames(rig, [pose_at(g, rig, f / n) for f in range(n + 1)], loop=True)
+    rot, pos = solve_frames(rig, [pose_at(g, rig, f / n) for f in range(n + 1)], loop=True,
+                            weapon=(meta or {}).get("weapon", ""))
     m = {"layer": "full", "speed": g.speed, "cycle": n / 30.0, "steps": 2,
          "source": "keyed (tools/anim/gait.py)", "licence": "own work"}
     m.update(meta or {})

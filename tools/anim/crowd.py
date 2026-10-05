@@ -417,13 +417,15 @@ def _held(rig: Rig, keys, laid, pistol=False):
     out = []
     for fr, pose, ease in keys:
         pose = merge(pose)
-        if fr < first:
+        entry = laid[max(k for k in laid if k <= fr)] if fr >= first else {}
+        if fr < first or any(s not in entry for s in "lr"):
             grot, gpos = _globals(rig, pose)
         for side in "lr":
             h = dict(pose.get(f"hand_{side}") or {})
             if not h:
                 continue
-            if fr >= first:
+            # (A hand the laying-down leaves out lies as its arm carries it.)
+            if fr >= first and side in entry:
                 blade, knuckles = laid[max(k for k in laid if k <= fr)][side]
                 if side == "r" and pistol:
                     # A crossbow lies on its flat with the thumb up, the stock along the fingers.
@@ -557,7 +559,7 @@ def _on_face(P, H, settle=0.0):
         "spine": (4, 2 - 2 * settle, 4), "clav_l": (-6, 25), "clav_r": (-6, 25), "neck": (16, 0, 0), "head": (60 + 4 * settle, 6, 0),
         "foot_l": {"pos": P(0.32, -0.01, -0.38), "rot": (20, 150, -40), "pole": (1, 0.1, 0.4)},
         "foot_r": {"pos": P(-0.16, -0.03, -0.56), "rot": (-15, 150, 0), "pole": (-0.2, -1, 0)},
-        "hand_l": {"frame": "char", "pos": P(0.42, 0.04, 0.96), "pole": (1, -0.15, -0.3), "knuckles": (0.2, 0, 1)},
+        "hand_l": {"frame": "char", "pos": P(0.36, 0.04, 1.04), "pole": (1, -0.15, -0.3), "knuckles": (0.2, 0, 1)},
         "hand_r": {"frame": "char", "pos": P(-0.30, 0.04, 0.46), "pole": (-1, 0.5, 0.2), "knuckles": (-0.1, 0, -1)},
         "fingers_l": "relaxed", "fingers_r": "open",
     }
@@ -588,27 +590,36 @@ def die_front(name, rig: Rig, armed=False, pistol=False) -> Clip:
              "foot_r": {"pos": P(-0.15, 0.02, -0.38), "rot": (-8, -70, 0), "pole": (-0.2, -1, 0.5)},
              "hand_l": arm((0.06, -0.44, 0.02), (0.6, -0.4, -0.5)), "hand_r": arm((-0.04, -0.44, 0.0), (-0.6, -0.4, -0.5)),
              "fingers_l": "relaxed", "fingers_r": "relaxed"}, "linear"),
-        # The sway on the knees, then over: the hips go, the arms trail.
+        # The sway on the knees, then over: the hips go, and the limp arms
+        # go on hanging to the ground as the body tips past them, so they
+        # come forward of the chest; the near one lands by the head, the
+        # other is caught under the side and swept back along it. (Kept
+        # trailing behind the chest and flung up by the head in the last
+        # three frames, the arm whipped over and the forearm rolled 120
+        # degrees in one.)
         (11, {"hips": {"pos": H(0, 0.48, 0.02), "rot": (6, 30, 8)}, "spine": (6, 22, 6), "neck": (0, 10, 0), "head": (14, 16, 18),
               "foot_l": {"pos": P(0.14, 0.02, -0.38), "rot": (8, -72, 0), "pole": (0.2, -1, 0.5)},
               "foot_r": {"pos": P(-0.15, 0.02, -0.40), "rot": (-8, -72, 0), "pole": (-0.2, -1, 0.5)},
-              "hand_l": arm((0.10, -0.40, -0.06), (0.6, -0.4, -0.5)), "hand_r": arm((-0.08, -0.40, -0.08), (-0.6, -0.4, -0.5)),
+              "hand_l": arm((0.10, -0.28, 0.30), (0.6, -0.5, -0.4)), "hand_r": arm((-0.08, -0.30, 0.26), (-0.6, -0.5, -0.4)),
               "fingers_l": "relaxed", "fingers_r": "relaxed"}, "auto"),
         (14, {"hips": {"pos": H(0, 0.40, 0.14), "rot": (8, 58, 8)}, "spine": (6, 14, 6), "neck": (6, -2, 0), "head": (20, 4, 14),
               "foot_l": {"pos": P(0.16, 0.02, -0.50), "rot": (8, -80, 0), "pole": (0.2, -0.2, 1)},
               "foot_r": {"pos": P(-0.15, 0.03, -0.54), "rot": (-8, -80, 0), "pole": (-0.2, -0.2, 1)},
-              "hand_l": arm((0.14, -0.36, -0.16), (0.6, -0.2, -0.5)), "hand_r": arm((-0.12, -0.36, -0.18), (-0.6, -0.2, -0.5)),
+              "hand_l": arm((0.12, -0.14, 0.40), (0.6, -0.6, -0.3)), "hand_r": arm((-0.14, -0.32, 0.16), (-0.6, -0.4, -0.4)),
               "fingers_l": "relaxed", "fingers_r": "open"}, "linear"),
         # The face hits; the chest takes it and the legs are thrown out behind.
         (17, merge(_on_face(P, H), hips={"pos": H(0.0, 0.13, 0.34), "rot": (6, 90, 4)}, neck=(10, -6, 0), head=(24, -2, 0),
                    foot_l={"pos": P(0.30, 0.10, -0.34), "rot": (20, 120, -30), "pole": (1, 0.1, 0.4)},
                    foot_r={"pos": P(-0.16, 0.08, -0.58), "rot": (-15, 120, 0), "pole": (-0.2, -1, 0)},
-                   hand_l={"frame": "char", "pos": P(0.30, 0.08, 0.80), "pole": (1, 0.3, -0.2), "knuckles": (0.2, 0, 1)}), "auto"),
+                   hand_l={"frame": "char", "pos": P(0.34, 0.08, 0.98), "pole": (1, 0.3, -0.2), "knuckles": (0.2, 0, 1)}), "auto"),
         # A bounce, and the head rolls onto its cheek.
         (20, merge(_on_face(P, H), hips={"pos": H(0.0, 0.16, 0.36), "rot": (8, 86, 6)}, neck=(16, -14, 0), head=(36, -10, 0)), "auto"),
         (24, _on_face(P, H, 1.0), "ease"),
     ]
-    laid = {17: {"r": ((-0.7, 0, -0.7), (0.7, 0, -0.7)), "l": ((1, 0, -0.2), (0.2, 0, 1))}}
+    # (The shield arm is left to lie as it falls: its forearm lands back up,
+    # the shield on it face up; turned to a set way it rolled the forearm
+    # over in a frame as the arm folded.)
+    laid = {17: {"r": ((-0.7, 0, -0.7), (0.7, 0, -0.7))}}
     return _fall(name, rig, keys, "the crowd's death: to its knees and over onto its face", laid, armed, pistol)
 
 
