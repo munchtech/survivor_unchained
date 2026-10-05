@@ -14,12 +14,11 @@ Agent a565196002a51af40, on branch `worktree-agent-a565196002a51af40` (integrati
 - **Journal:** the book is 1440 wide (a reading measure) and hugs the open section's writing (520 to 852 tall, measured until it holds); the sections are the house's tabs as type; no watermark; People has no tinted rows; Deeds ends in a ledger line; the Codex is a ledger of arts with what each takes, the discoveries beside the beasts.
 - **Map:** the map's window (1040) and the list (440) centred together between the bands; the list is type with distances in a right-aligned column, hugging its lines; zoom and find-me are words in its foot.
 - **The dial by night** reads at 1080 and 1440 (build7/9).
+- **The map's names** are set clear of each other as it moves (`Declutter`); the kit switch is seen on the Pack (build7/18).
 
-## Next
-1. The kit switch on screen: `--items iron_helm:3:of_the_long_chase@0 --nightkit iron_helm --open inventory`.
-2. The old screens: pause, rest, chapter, credits, creation (and the draft, which the owner likes).
-3. Map labels collide on the drawing (WENI/Old Wenna, the Wayfinder's Maps/Ysolde Marrow): place them clear of each other.
-4. Portraits when the face lead says her head has landed; the male Look when he resumes.
+## Next (the handoff, section 4, has the detail)
+1. The old screens, shot and judged (build7/20 to 23): pause as a fitted panel with the chain; rest as a held moment in type; the chapter's tally as a ledger line; creation's rows, card and buttons as type.
+2. Portraits when the face lead says her head has landed; the male Look when he resumes.
 
 ## Key decisions
 - One frame per screen; inside it only type, rules and space. Colour means tier, state or the one action.

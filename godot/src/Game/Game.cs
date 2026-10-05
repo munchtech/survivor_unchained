@@ -1133,6 +1133,7 @@ public partial class Game : Node, IZoneHost
         new(ToastKind.Loot, "Keen Iron Helm of Reach", null, "helm", 3),
         new(ToastKind.Gold, "+40 gold", null, null, null),
         new(ToastKind.Quest, "The Low Ford: the bridge is held", "Speak to the Ford-Warden"),
+        new(ToastKind.Quest, "The Beast Problem", "You went into the Hollow after dark to finish the Pack, and the Pack finished with you. Greymuzzle is still out there, and bolder for it."),
         new(ToastKind.Loot, "Vonnra's Last Lantern", "Legendary", "lantern", 4),
     };
     bool leaveDone, clearDone;

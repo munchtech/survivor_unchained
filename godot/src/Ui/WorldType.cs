@@ -158,15 +158,16 @@ public partial class Notice : Control
         if (!string.IsNullOrEmpty(sub))
         {
             int subSize = grand ? 17 : 15;
-            var s = WorldType.Lettering(sub, Style.TextItalic, subSize, new Color("#cfc4b0"));
-            s.SizeFlagsVertical = SizeFlags.ShrinkEnd;
             float indent = row.GetCombinedMinimumSize().X - Title.GetCombinedMinimumSize().X;
-            if (row.GetCombinedMinimumSize().X + 8 + s.GetCombinedMinimumSize().X <= Wide) row.AddChild(s);
+            // (measured by the font: a label out of the tree keeps the size of its first words)
+            bool fits = row.GetCombinedMinimumSize().X + 8 + Style.TextItalic.GetStringSize(sub, HorizontalAlignment.Left, -1, subSize).X <= Wide;
+            var s = WorldType.Lettering(fits ? sub : Kit.Balance(sub, Style.TextItalic, subSize, Wide - indent), Style.TextItalic, subSize, new Color("#cfc4b0"));
+            s.SizeFlagsVertical = SizeFlags.ShrinkEnd;
+            if (fits) row.AddChild(s);
             else
             {
                 // A long line (a quest's entry) sets under its title, broken evenly, rather than
                 // running across the screen and over the names on the world.
-                s.Text = Kit.Balance(sub, Style.TextItalic, subSize, Wide - indent);
                 var under = new HBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
                 under.AddChild(new Control { CustomMinimumSize = new Vector2(indent, 0), MouseFilter = MouseFilterEnum.Ignore });
                 under.AddChild(s);
