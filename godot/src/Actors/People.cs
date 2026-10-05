@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -348,7 +348,42 @@ public static class People
             person.Own = OwnClips.Him;
             person.Anim.AddAnimationLibrary(OwnClips.Him.Name, him);
         }
+        // Clean-shaven till a beard is chosen.
+        HisShadow(person, 0f, 0f, look.HairColor ?? HisHairColour);
         return person;
+    }
+
+    /// <summary>His own hair colour when none is chosen: a dark brown.</summary>
+    public static readonly Color HisHairColour = new("#3a2a20");
+
+    /// <summary>His brows' paint as tools/assets/hero_male_head.py leaves it
+    /// (it prints "BROWS painted"), the colour his brows are dyed from.</summary>
+    static readonly Color HisBrowPaint = new("#4c3c2e");
+
+    /// <summary>His head's shaved shadows and brows (shaders/heroine_skin.gdshader,
+    /// head_tex/hero_shadow.png from hero_male_head.py): stubble on his beard's
+    /// ground and his scalp, each 0 to 1, of his hair's colour, and his
+    /// painted brows dyed to it.</summary>
+    public static void HisShadow(Person p, float beard, float scalp, Color hair)
+    {
+        const string file = "res://art/people/head_tex/hero_shadow.png";
+        if (!ResourceLoader.Exists(file)) return;
+        var mask = GD.Load<Texture2D>(file);
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+            {
+                if (mi.Mesh.SurfaceGetMaterial(s)?.ResourceName != "skin_head" || mi.GetSurfaceOverrideMaterial(s) is not ShaderMaterial m) continue;
+                m.SetShaderParameter("shadow_mask", mask);
+                m.SetShaderParameter("beard_shadow", beard);
+                m.SetShaderParameter("scalp_shadow", scalp);
+                m.SetShaderParameter("shadow_colour", hair.Darkened(0.35f));
+                // (Not yet: dyed, his painted brows read as a smudge of
+                // colour, having no hairs. They're dyed once brow cards lie
+                // over them, the painted ones lifted to their shadow.)
+                m.SetShaderParameter("brow_dye", 0f);
+                m.SetShaderParameter("brow_paint", HisBrowPaint);
+                m.SetShaderParameter("brow_colour", hair);
+            }
     }
 
     /// <summary>His own skin's tone when none is chosen: his paint as it is,
@@ -803,8 +838,20 @@ public static class People
             if (ResourceLoader.Exists("res://art/people/head_tex/heroine_features.png"))
                 m.SetShaderParameter("features", GD.Load<Texture2D>("res://art/people/head_tex/heroine_features.png"));
         }
+        // His skin, all of it, rougher than hers: at her sheen his deep
+        // relief caught the light as wet plastic.
+        if (who == "hero")
+        {
+            m.SetShaderParameter("rough", HisSkin.Rough);
+            m.SetShaderParameter("shine", HisSkin.Shine);
+            m.SetShaderParameter("edge_rough", HisSkin.Edge);
+        }
         return m;
     }
+
+    /// <summary>His skin's roughness, sheen, and the roughness it gains seen
+    /// edge on (shaders/heroine_skin.gdshader).</summary>
+    static readonly (float Rough, float Shine, float Edge) HisSkin = (0.62f, 0.3f, 0.45f);
 
     static Color SkinTone(Look look) => look.Skin is Color tone ? tone.Lerp(Colors.White, 0.35f) : new Color(1.0f, 0.86f, 0.74f);
 
