@@ -83,7 +83,7 @@ def regrade(img, R, mat_name, factor):
     return out
 
 
-def binding(TW, H, rail, fillets, roll, pad_span, leather_span, name, shadow, ss=2, samples=192):
+def binding(TW, H, rail, fillets, roll, pad_span, leather_span, name, shadow, ss=2, samples=192, gilt=True, rail_wire=True):
     """A band of the day's book's binding, tiled along (file TW x H; everything below in shown
     px): black morocco with an oxblood depth, padded between `pad_span` so the light runs
     across it, the binders' gilt fillets at `fillets` (y, half width), the twisted gold wire
@@ -112,14 +112,14 @@ def binding(TW, H, rail, fillets, roll, pad_span, leather_span, name, shadow, ss
         h = h - np.clip(((rail1 + 2.5) - y) / 2.5, 0, 1) ** 2 * 2.5 * K
     # The gilt: fillets pressed in and laid with gold (a round groove, so one wall takes the
     # light), and the wire in a pressed channel.
-    gilt = np.zeros_like(X)
+    gilt_m = np.zeros_like(X)
     gh = np.zeros_like(X)
     for yr, half in fillets:
         d = y - yr
         m = np.clip((half - np.abs(d)) * K * ss * 0.5 + 0.5, 0, 1)
         prof = 4.0 * K - 0.5 * K - (1 - rounded(d, half)) * 0.45 * K
         gh = np.where(m > 0.5, prof, gh)
-        gilt = np.maximum(gilt, m)
+        gilt_m = np.maximum(gilt_m, m)
     wm = np.zeros_like(X)
     coins = np.zeros_like(X)
     holes = np.zeros_like(X)
@@ -150,7 +150,7 @@ def binding(TW, H, rail, fillets, roll, pad_span, leather_span, name, shadow, ss
         # The wire stops short of each coin (the coin is set in it).
         clear = cv2.dilate((coins > 0.5).astype(np.uint8), np.ones((int(1.2 * K * ss) * 2 + 1,) * 2, np.uint8)) > 0
         wm = wm * (~clear)
-    h = np.where(gilt > 0.5, gh, h)
+    h = np.where(gilt_m > 0.5, gh, h)
     h = np.where(wm > 0.5, np.maximum(h, wire_h), h)
     h = np.where(coins > 0.5, np.maximum(h, coin_h), h)
     h = np.where(leather, h, 0)
@@ -167,10 +167,10 @@ def binding(TW, H, rail, fillets, roll, pad_span, leather_span, name, shadow, ss
     h = np.where(on_rail, rail_h, h)
     shape_h = np.where(on_rail, rail_prof, shape_h)
     yw = (rail0 + rail1) / 2
-    groove = np.clip((2.3 - np.abs(y - yw)) * K * ss * 0.5 + 0.5, 0, 1) * on_rail
+    groove = np.clip((2.3 - np.abs(y - yw)) * K * ss * 0.5 + 0.5, 0, 1) * on_rail * rail_wire
     h = h - groove * 1.4 * K
     rwh, rwm = wire(R, X, yw * K, 3.6 * K, 3.2 * K, 1.8 * K)
-    rwm = rwm * on_rail
+    rwm = rwm * on_rail * rail_wire
     rwire_h = 7.6 * K + rwh
     h = np.where(rwm > 0.5, np.maximum(h, rwire_h), h)
     shape_h = np.where(rwm > 0.5, np.maximum(shape_h, rwire_h), shape_h)
@@ -191,7 +191,8 @@ def binding(TW, H, rail, fillets, roll, pad_span, leather_span, name, shadow, ss
     R.mat[:] = RL.IDS["morocco"]
     R.mat[on_rail] = RL.IDS["iron"]
     R.mat[(nails > 0.5)] = RL.IDS["iron"]
-    R.mat[(gilt > 0.5) & leather] = RL.IDS["gold"]
+    if gilt:
+        R.mat[(gilt_m > 0.5) & leather] = RL.IDS["gold"]
     R.mat[(wm > 0.5) & leather] = RL.IDS["gold"]
     R.mat[(coins > 0.5) & leather] = RL.IDS["gold"]
     R.mat[(holes > 0.5) & leather] = RL.IDS["morocco"]
@@ -245,6 +246,19 @@ def footer(ss=2, samples=192):
     are written (y 28-60, the screen's 1044-1076)."""
     return binding(1024, 136, (16.0, 28.0), ((30.8, 0.6),), None,
                    (32.0, 80.0), (27.0, 68.0), "page_footer", "above", ss, samples)
+
+
+def header_plain(ss=2, samples=192):
+    """The reduced kit's header (kit.py): the same band worn plain, the outer window's one
+    frame. Blind-tooled fillets (no gilt, no roll of coins), the strap rail nailed, no wire."""
+    return binding(1024, 200, (84.0, 98.0), ((5.2, 0.75), (80.6, 0.6)), None,
+                   (8.0, 79.0), (0.0, 85.0), "page_header_plain", "below", ss, samples, gilt=False, rail_wire=False)
+
+
+def footer_plain(ss=2, samples=192):
+    """The reduced kit's foot band, the plain header's twin (same layout as footer())."""
+    return binding(1024, 136, (16.0, 28.0), ((30.8, 0.6),), None,
+                   (32.0, 80.0), (27.0, 68.0), "page_footer_plain", "above", ss, samples, gilt=False, rail_wire=False)
 
 
 def header_v1(ss=2, samples=160):
