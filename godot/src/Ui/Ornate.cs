@@ -135,9 +135,8 @@ public partial class OrnateBox : StyleBox
         // A card lower than its slice's top and foot (a row of a list) wears the row's slice.
         if (Look == Kind.Card && r.Size.Y < sl.T + sl.B - 2 * sl.Oy && UiArt.Frames.TryGetValue("crest_row", out var row)) sl = row;
         if (UiArt.Tex(sl.File) is not { } tex) return false;
-        var at = r.GrowIndividual(sl.Out, sl.Oy, sl.Out, sl.Oy);
-        var mode = sl.Tile ? RenderingServer.NinePatchAxisMode.TileFit : RenderingServer.NinePatchAxisMode.Stretch;
-        RenderingServer.CanvasItemAddNinePatch(ci, at, new Rect2(Vector2.Zero, tex.GetSize()), tex.GetRid(), new Vector2(sl.L, sl.T), new Vector2(sl.R, sl.B), mode, mode, true, Colors.White);
+        // (its material, if it has one, laid at 1:1 under the slice's edge)
+        UiArt.DrawSlice(ci, r, sl, tex, sl.Ground != null ? UiArt.Tex(sl.Ground) : null);
         if (Look == Kind.Card)
         {
             float h = Math.Min(Crest, r.Size.Y * 0.3f);

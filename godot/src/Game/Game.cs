@@ -1306,6 +1306,8 @@ public partial class Game : Node, IZoneHost
             wb.Events.Emit(new Ev.Bark { X = x - 0.5, Z = z - 1.2, Text = "Hold the line!", Speaker = "Brannoc" });
             wb.Events.Emit(new Ev.Bark { X = x, Z = z, Text = "Blocked" });
         }
+        // --nohud: the world alone, for pictures of what a screen lies over.
+        if (Args.Has("nohud") && Mode == "play") Hud.ShowPlay(false);
         if (Args.Get("open") is not string want) return;
         tourT -= dt;
         if (tourT > 0) return;
@@ -1370,10 +1372,10 @@ public partial class Game : Node, IZoneHost
     /// <summary>A click as the mouse gives it: moved there, pressed, released ("r640:480" for the right button).</summary>
     void ClickAt(string spec)
     {
-        bool right = spec.StartsWith('r');
-        // hX:Y: pressed and held a second before it is let go (pictures of a hold-to-confirm press).
-        bool hold = spec.StartsWith('h');
-        var xy = spec.TrimStart('r', 'h').Split(':');
+        // (r: the right button; h: the mouse only comes to rest there, for pictures of a hover;
+        // p: pressed and held a second before it is let go, for pictures of a hold-to-confirm press)
+        bool right = spec.StartsWith('r'), hover = spec.StartsWith('h'), hold = spec.StartsWith('p');
+        var xy = spec.TrimStart('r', 'h', 'p').Split(':');
         if (xy.Length != 2 || !float.TryParse(xy[0], System.Globalization.CultureInfo.InvariantCulture, out var x)
             || !float.TryParse(xy[1], System.Globalization.CultureInfo.InvariantCulture, out var y)) return;
         var at = new Vector2(x, y);
@@ -1381,6 +1383,7 @@ public partial class Game : Node, IZoneHost
         Ui.Nav.KeyMode = false;
         var vp = GetViewport();
         vp.PushInput(new InputEventMouseMotion { Position = at, GlobalPosition = at });
+        if (hover) { GD.Print($"hover {spec}"); return; }
         var button = right ? MouseButton.Right : MouseButton.Left;
         vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = true });
         if (hold) GetTree().CreateTimer(1.0).Timeout += () => vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = false });
