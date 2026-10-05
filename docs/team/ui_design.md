@@ -32,13 +32,14 @@ The predecessor's handoff, `docs/handoff/ui_design.md`, is the full brief.
    - run `--headless --import`;
    - shoot at 1920x1080: credits (each section, the three licences, the title route), the map result (cleared and `--fell`), the atlas (empty, the beta's tier 1 and a point, several charts), the pack's wear and take-off (no blink, no T), and the pages with the new pieces (Self, Pack, Arts, Forge, credits);
    - fix what is drab or dense.
-2. Send the credits wording to **legal, aab20546fe06daa89**, with the questions below.
+2. Send legal the screenshot of the credits page.
 3. Rerun the portraits after the face lead's head, and his portraits once his body lands. Then do Self's density and the frameless creation.
 
-## Questions for legal
-- **The AI line:** CREDITS.md lists the tools in the build (Maya1, Seed-VC, VoxCPM2, BiRefNet, DINOv3, MoGe 2). STEAM_CHECKLIST E names ElevenLabs and Pixal3D. Which is right?
-- **"Modified":** a CC BY work with no changes listed has no "Modified" line. Is that acceptable?
-- **Unshipped works:** the release excludes `anime_female.glb`, `woman.glb` and the KayKit characters and props, but the credits still name them. Keep or drop them?
+## Legal (aab20546fe06daa89): answered, applied at a185aea3
+- Unshipped works are out of the credits (the anime body, its hairstyles, the older woman's body). KayKit stays (its meshes are in the landmarks).
+- The AI list is STEAM_CHECKLIST E's text, naming only what ships. Each new line (voices, music, the hero) joins when what it covers ships.
+- "Modified" isn't needed on an unchanged work. Every entry has one anyway.
+- Open: "AccuRIG rigged the heroine's and the hero's bodies" (his body isn't in the release); asked. Legal wants a screenshot of the page.
 
 ## Notes for other areas
 - **Combat:** `MapRun.Finish` now calls `G.MapOver(Result, alive)`. Its default in `IZoneHost` is the old travel back. `Charts.TakeOut`, `Charts.Carried` and `Atlas.IsOpen` are new.
