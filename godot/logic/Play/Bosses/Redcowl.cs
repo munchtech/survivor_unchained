@@ -467,7 +467,7 @@ public sealed class Redcowl : StoryBoss
 
     public override void Step(double dt)
     {
-        if (Hard && E != null && !Ending) E.Damage *= 1 + 0.015 * dt;
+        if (Hard && E != null && !Ending) E.Damage *= 1 + 0.03 * dt;
         StepGround(dt);
     }
 

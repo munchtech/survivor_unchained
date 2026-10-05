@@ -141,7 +141,7 @@ public sealed class Levy
         {
             shoveT = 0.5;
             var pike = men[0].E;
-            B.ShovePlayer(Fx, Fz, 2.2, biteGrace <= 0 ? pike.Damage * 0.8 : 0, "the levy's pikes");
+            B.ShovePlayer(Fx, Fz, 2.2, biteGrace <= 0 ? pike.Damage * 0.5 : 0, "the levy's pikes");
             if (biteGrace <= 0) biteGrace = 1.5;
         }
         if ((drawT -= dt) <= 0)

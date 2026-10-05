@@ -235,14 +235,39 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
 
     bool shutBehind;
 
+    static double SegDist(double x, double z, double x0, double z0, double x1, double z1)
+    {
+        double lx = x1 - x0, lz = z1 - z0, len2 = lx * lx + lz * lz;
+        double t = len2 > 0 ? Math.Clamp(((x - x0) * lx + (z - z0) * lz) / len2, -0.3, 1.3) : 0;
+        return Dist(x, z, x0 + lx * t, z0 + lz * t);
+    }
+
+    /// <summary>The boss's own ground: the space its start stands in.</summary>
+    string? BossGround => Fight.Place.SpaceAt(Fight.Place[Fight.BossStart].X, Fight.Place[Fight.BossStart].Z);
+    /// <summary>On it, and through its gate: on the same side of every gate into it as its start, and clear of
+    /// it (a gate's neck belongs to the space it opens, so in the neck she may still be on the near side).</summary>
+    bool OnBossGround()
+    {
+        if (BossGround is not { } g || B == null) return false;
+        var p = B.Player;
+        if (!Fight.Place.In(g, p.X, p.Z, 1.0)) return false;
+        var (sx, sz) = Fight.Place[Fight.BossStart];
+        foreach (var gate in Fight.Place.Gates.Where(q => q.Into == g))
+        {
+            double lx = gate.X1 - gate.X0, lz = gate.Z1 - gate.Z0;
+            double her = lx * (p.Z - gate.Z0) - lz * (p.X - gate.X0), start = lx * (sz - gate.Z0) - lz * (sx - gate.X0);
+            if (Math.Sign(her) != Math.Sign(start) || SegDist(p.X, p.Z, gate.X0, gate.Z0, gate.X1, gate.Z1) < 2.5) return false;
+        }
+        return true;
+    }
+
     /// <summary>On the boss's ground, the way back shuts behind her (his people close it): the fight is
     /// on its ground, and a fight that drifts back down the way in is a fight that never ends.</summary>
     void ShutBehind()
     {
         if (shutBehind || B == null) return;
-        var p = B.Player;
-        var ground = Fight.Place.SpaceAt(Fight.Place[Fight.BossStart].X, Fight.Place[Fight.BossStart].Z);
-        if (ground == null || !Fight.Place.In(ground, p.X, p.Z, 1.5)) return;
+        var ground = BossGround;
+        if (ground == null || !OnBossGround()) return;
         shutBehind = true;
         foreach (var g in Fight.Place.Gates.Where(g => g.Into == ground))
         {
@@ -328,7 +353,13 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
                 if (betweenT <= 0)
                 {
                     if (beatIx + 1 < Fight.Beats.Length) StartBeat(beatIx + 1);
-                    else BossOpen();
+                    // The boss comes when she steps onto his ground (or, if she does not come, the ember
+                    // takes her there after a while: a night is not lost standing at a gate).
+                    else if (OnBossGround() || betweenT < -20)
+                    {
+                        if (!OnBossGround()) { var (gx, gz) = Fight.Place[Fight.BossStart]; B.Player.X = gx; B.Player.Z = gz; }
+                        BossOpen();
+                    }
                 }
                 break;
             case Stage.Boss:
@@ -771,7 +802,7 @@ public sealed class StoryNight : ZoneRuntime, IStoryArena
 
     public override Dictionary<string, object?> Debug() => new()
     {
-        ["stage"] = Now.ToString(), ["beat"] = beatIx, ["falls"] = falls, ["level"] = Level, ["ember"] = B?.EmberLevel,
+        ["stage"] = Now.ToString(), ["beat"] = beatIx, ["falls"] = falls, ["level"] = Level, ["ember"] = B?.EmberLevel, ["shut"] = shutBehind, ["open"] = string.Join("+", open),
         ["alive"] = B?.Enemies.Living().Count(e => e.Disposition == Disposition.Hostile) ?? 0,
     };
 }

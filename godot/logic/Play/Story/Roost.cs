@@ -269,7 +269,7 @@ public sealed class RaidOnTheRoost : StoryFight
             doorSeed = door?.Seed ?? 0;
             // He holds the cage row: he does not follow her down the ruts. His door and his slam are the
             // lesson (go round it, off the ground it brings down), not his fists.
-            if (door != null) { door.HomeX = bx; door.HomeZ = bz; door.Leash = 7; door.Damage *= 0.6; }
+            if (door != null) { door.HomeX = bx; door.HomeZ = bz; door.Leash = 7; door.Damage *= 0.45; }
             A.Group("bruiser", 1, bx + 2, bz, 1);
         }
 
@@ -348,11 +348,11 @@ public sealed class RaidOnTheRoost : StoryFight
             var (px, pz) = A.Place["camp_in"];
             Form();
             var (bx, bz) = levy!.Behind();
-            captain = A.Foe("mb_pike_captain", bx, bz, 4);
+            captain = A.Foe("mb_pike_captain", bx, bz, 5);
             if (captain != null)
             {
                 // His line is the lesson, not his own teeth: less of them when she gets round to him.
-                captain.Damage *= 0.5;
+                captain.Damage *= 0.4;
                 capSeed = captain.Seed;
                 var def = captain.Def.Clone();
                 def.Summon = null;
