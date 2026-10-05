@@ -1281,8 +1281,9 @@ public partial class Game : Node, IZoneHost
     /// <summary>A click as the mouse gives it: moved there, pressed, released ("r640:480" for the right button).</summary>
     void ClickAt(string spec)
     {
-        bool right = spec.StartsWith('r');
-        var xy = spec.TrimStart('r').Split(':');
+        // (r: the right button; h: the mouse only comes to rest there, for pictures of a hover)
+        bool right = spec.StartsWith('r'), hover = spec.StartsWith('h');
+        var xy = spec.TrimStart('r', 'h').Split(':');
         if (xy.Length != 2 || !float.TryParse(xy[0], System.Globalization.CultureInfo.InvariantCulture, out var x)
             || !float.TryParse(xy[1], System.Globalization.CultureInfo.InvariantCulture, out var y)) return;
         var at = new Vector2(x, y);
@@ -1290,6 +1291,7 @@ public partial class Game : Node, IZoneHost
         Ui.Nav.KeyMode = false;
         var vp = GetViewport();
         vp.PushInput(new InputEventMouseMotion { Position = at, GlobalPosition = at });
+        if (hover) { GD.Print($"hover {spec}"); return; }
         var button = right ? MouseButton.Right : MouseButton.Left;
         vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = true });
         vp.PushInput(new InputEventMouseButton { Position = at, GlobalPosition = at, ButtonIndex = button, Pressed = false });

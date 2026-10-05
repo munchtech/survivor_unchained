@@ -99,8 +99,8 @@ public partial class InventoryScreen : Overlay
 {
     public override string Kind => "inventory";
     public override Act? Toggle => Act.Inventory;
-    public override float CameraShift => -400;
-    public override float CameraNear => 0.68f;
+    public override float CameraShift => -330;
+    public override float CameraNear => 0.56f;
     string? sel;
     bool filterOpen;
 
@@ -129,6 +129,9 @@ public partial class InventoryScreen : Overlay
     {
         var ch = Ch;
         if (!seeded) { seeded = true; foreach (var it in Carried(ch)) seen.Add(it.Uid); }
+        // The tiles are new: what was hovered is gone with the old ones until the pointer moves.
+        hoverIt = null;
+        hoverAt = null;
         var v = BookPanel("Pack");
         var body = Style.H(24, DollView(ch));
         var right = Style.V(Style.Gap3);
@@ -433,9 +436,17 @@ public partial class InventoryScreen : Overlay
 
     Control? FindTile(string uid)
     {
-        foreach (var n in FindChildren("*", "SlotView", true, false))
-            if (n is SlotView s && s.Item?.Uid == uid && s.IsVisibleInTree()) return s;
-        return null;
+        // (C# classes are Panels to the engine's own search by type, so the tree is walked here)
+        static SlotView? Walk(Node n, string uid)
+        {
+            foreach (var c in n.GetChildren())
+            {
+                if (c is SlotView s && s.Item?.Uid == uid && s.IsVisibleInTree()) return s;
+                if (Walk(c, uid) is { } found) return found;
+            }
+            return null;
+        }
+        return Walk(this, uid);
     }
 
     /* ------------------------------------------------------------- acts -- */

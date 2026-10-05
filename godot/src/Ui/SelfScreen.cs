@@ -23,8 +23,8 @@ public partial class SheetScreen : Overlay
 {
     public override string Kind => "character";
     public override Act? Toggle => Act.Character;
-    public override float CameraShift => -400;
-    public override float CameraNear => 0.68f;
+    public override float CameraShift => -330;
+    public override float CameraNear => 0.56f;
 
     static readonly (string Id, string Name, string Text)[] Attrs =
     {
@@ -113,8 +113,7 @@ public partial class SheetScreen : Overlay
         var knows = ch.Knowledge.Where(Know.ContainsKey).Select(k => Know[k]).ToList();
         var who = Style.Label($"Level {ch.Level}  ·  {arch.Name}  ·  {back.Name}{(knows.Count > 0 ? $", who knows {string.Join(" and ", knows)}" : "")}",
             Style.TextItalic, 16, Kit.Dim, false, HorizontalAlignment.Center);
-        v.AddChild(who);
-        v.AddChild(Xp(ch));
+        v.AddChild(Style.V(4, who, Xp(ch)));
 
         Attributes(v, ch);
         Traits(v, ch);
@@ -282,10 +281,10 @@ public partial class SheetScreen : Overlay
             var b = Style.Button("", () => G.Gear((j, bt) => j.PickTrait(id, bt)));
             var inner = Style.V(3, Style.Label(def.Name, Style.UiBold, 16, Style.EmberHi), Style.Label(def.Text, Style.Ui, 14, Kit.Ink2, true));
             inner.MouseFilter = MouseFilterEnum.Ignore;
-            inner.Position = new Vector2(14, 10);
+            inner.Position = new Vector2(12, 7);
             inner.Size = new Vector2(240, 70);
             b.AddChild(inner);
-            b.CustomMinimumSize = new Vector2(0, 92);
+            b.CustomMinimumSize = new Vector2(0, 74);
             b.SizeFlagsHorizontal = SizeFlags.ExpandFill;
             b.Resized += () => inner.Size = new Vector2(b.Size.X - 28, b.Size.Y - 20);
             Nav.Id(b, $"trait:{t}");
@@ -352,7 +351,7 @@ public partial class SheetScreen : Overlay
                     change.CustomMinimumSize = new Vector2(40, 0);
                     lines[l.Key] = (now, change);
                     var row = Style.H(6, label, now, change);
-                    var holder = new PanelContainer { MouseFilter = MouseFilterEnum.Stop, CustomMinimumSize = new Vector2(0, 28) };
+                    var holder = new PanelContainer { MouseFilter = MouseFilterEnum.Stop, CustomMinimumSize = new Vector2(0, 27) };
                     holder.AddThemeStyleboxOverride("panel", new LineUnder());
                     holder.AddChild(row);
                     var line = l;
@@ -375,11 +374,15 @@ public partial class SheetScreen : Overlay
     {
         var ch = Ch;
         var kit = Character.Kit(ch).Stats;
-        StatBlock? then = Spent > 0 || hovered != null && ch.Points - Spent > 0 ? Character.Kit(Would(hovered != null && ch.Points - Spent > 0 ? hovered : null)).Stats : null;
+        // What is put in and not yet kept shows; with nothing put in, the point hovered shows (never both,
+        // so a number is never two points ahead of what the strip says).
+        StatBlock? then = Spent > 0 ? Character.Kit(Would(null)).Stats : hovered != null && ch.Points > 0 ? Character.Kit(Would(hovered)).Stats : null;
         foreach (var l in Columns.SelectMany(c => c).SelectMany(g => g.Lines))
         {
             if (!lines.TryGetValue(l.Key, out var at) || !IsInstanceValid(at.Now)) continue;
             at.Now.Text = l.Fmt(kit, ch);
+            // A warding below nothing is a weakness: said in red.
+            at.Now.AddThemeColorOverride("font_color", l.Key.StartsWith("resist.") && kit.GetRaw(l.Key) < -1e-6 ? Style.Bad : Kit.Ink);
             bool moves = then != null && !l.Key.StartsWith("art:") && Math.Abs(then.Get(l.Key) - kit.Get(l.Key)) > 1e-6;
             at.Change.Text = moves ? Change(l.Key, kit.Get(l.Key), then!.Get(l.Key)) : "";
         }
@@ -533,11 +536,14 @@ public partial class Arrow : Control
 public partial class TraitTrack : Control
 {
     readonly List<(float X, int Level, string? Trait, int State)> nodes = new();
+    readonly float top;
 
     public TraitTrack(CharacterData ch, List<string> chosen, Action<string, Control> hover, Action leave)
     {
         MouseFilter = MouseFilterEnum.Ignore;
-        CustomMinimumSize = new Vector2(0, 78);
+        // Names go above the line too only once two are taken; until then the track keeps low.
+        top = chosen.Count >= 2 ? 38 : 22;
+        CustomMinimumSize = new Vector2(0, top + 40);
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
         int next = ch.TraitPicks > 0 ? 2 * (chosen.Count + 1) : ch.Level % 2 == 0 ? ch.Level + 2 : ch.Level + 1;
         int i = 0;
@@ -553,7 +559,7 @@ public partial class TraitTrack : Control
     void Lay(CharacterData ch, Action<string, Control> hover, Action leave)
     {
         foreach (var c in GetChildren()) { RemoveChild(c); c.QueueFree(); }
-        float x0 = 20, x1 = Size.X - 20, step = (x1 - x0) / Math.Max(1, nodes.Count - 1), y = 38;
+        float x0 = 20, x1 = Size.X - 20, step = (x1 - x0) / Math.Max(1, nodes.Count - 1), y = top;
         for (int i = 0; i < nodes.Count; i++)
         {
             var (_, lv, t, state) = nodes[i];
@@ -589,7 +595,7 @@ public partial class TraitTrack : Control
     public override void _Draw()
     {
         if (nodes.Count == 0) return;
-        float y = 38;
+        float y = top;
         DrawLine(new Vector2(nodes[0].X, y), new Vector2(nodes[^1].X, y), Kit.Rule.Lightened(0.15f), 1.5f, true);
         var font = Style.Display;
         foreach (var (x, lv, t, state) in nodes)

@@ -256,7 +256,7 @@ void fragment() {
         else if (caption != null)
         {
             // An empty place on the body: its name, quiet, where the thing would go.
-            var c = Style.Label(caption.ToUpperInvariant(), Style.UiBold, Math.Max(11, size / 6), Kit.Glyph, false, HorizontalAlignment.Center, false);
+            var c = Style.Label(caption.ToUpperInvariant(), Style.UiBold, size < 72 ? 10 : 12, Kit.Glyph, false, HorizontalAlignment.Center, false);
             c.VerticalAlignment = VerticalAlignment.Center;
             c.Size = new Vector2(size, size);
             box.AddChild(c);
@@ -431,11 +431,17 @@ void fragment() {
             foreach (var (key, before, after) in Character.Compare(ch, it, target)) diffs[key] = (before, after);
         }
         var lines = Style.V(3);
+        var uses = new Dictionary<string, int>();
+        void Use(string k) => uses[k] = uses.GetValueOrDefault(k) + 1;
+        foreach (var m in Drops.Implicit(def, it.Level)) Use(m.Stat);
+        if (!def.Base) foreach (var m in def.Mods ?? new()) Use(m.Stat);
+        foreach (var a in it.Affixes) if (Items.Affix(a.Id) is { } ad0) foreach (var k in ad0.Mods(a.Tier).Select(m => m.Stat).Distinct()) Use(k);
         Control Line(Control text, IEnumerable<string> keys)
         {
             text.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
             var row = Style.H(8, text);
-            var key = keys.FirstOrDefault(diffs.ContainsKey);
+            // (a number two lines both move is said once, after them, not beside the first)
+            var key = keys.FirstOrDefault(k => diffs.ContainsKey(k) && uses.GetValueOrDefault(k) == 1);
             if (key != null)
             {
                 var (b, a) = diffs[key];
@@ -485,7 +491,7 @@ void fragment() {
         if (diffs.Count > 0)
         {
             // What is lost from what is worn now: no line of this card says it.
-            var lost = Style.V(2, Style.Label($"In place of {(against != null ? Inventory.Name(against) : "nothing")}", Style.TextItalic, 14, Kit.Dim, true));
+            var lost = Style.V(2, Style.Label(against != null ? $"In place of {Inventory.Name(against)}" : "Wearing it", Style.TextItalic, 14, Kit.Dim, true));
             foreach (var (key, (b, a)) in diffs)
             {
                 var (text, good) = Delta(key, b, a);
@@ -562,7 +568,8 @@ public partial class CardBox : StyleBox
     {
         // The shadow it casts on the world, so it reads as lifted off what it is over.
         RenderingServer.CanvasItemAddRect(ci, new Rect2(r.Position + new Vector2(6, 8), r.Size), new Color(0, 0, 0, 0.4f));
-        if (UiArt.Frames.TryGetValue(Worn ? "tooltip_worn" : "tooltip", out var s) && UiArt.Tex(s.File) is { } tex && !(Worn && !UiArt.Has("tooltip_worn")))
+        // (the worn card is told apart by its quieter strip and its words, not by another frame)
+        if (UiArt.Frames.TryGetValue("tooltip", out var s) && UiArt.Tex(s.File) is { } tex)
             UiArt.DrawSlice(ci, r, s, tex, s.Ground != null ? UiArt.Tex(s.Ground) : null);
         else
         {
@@ -601,7 +608,7 @@ public partial class TileMark : Control
         string? art = kind switch { Kind.Link => $"link_set_{(size >= 20 ? 24 : 14)}", Kind.Up => "up", Kind.Anvil => "anvil", _ => null };
         if (art != null && UiArt.Icon("glyph", art) is { } t)
         {
-            DrawTextureRect(t, new Rect2(Vector2.Zero, new Vector2(size, size)), false, kind == Kind.Link ? Colors.White : colour);
+            DrawTextureRect(t, new Rect2(Vector2.Zero, new Vector2(size, size)), false, colour);
             return;
         }
         float s = size;

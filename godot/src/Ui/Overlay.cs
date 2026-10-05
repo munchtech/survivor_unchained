@@ -285,7 +285,7 @@ public abstract partial class Overlay : Control
         var panel = new TaperPanel(Kit.Window(32, 18, 18), 110) { Position = new Vector2(BookX, 16) };
         panel.CustomMinimumSize = new Vector2(BookW, 0);
         AddChild(panel);
-        var v = Style.V(Style.Gap4);
+        var v = Style.V(Style.Gap3);
         panel.AddChild(v);
         var head = Style.H(Style.Gap3);
         if (InBook)
@@ -298,7 +298,7 @@ public abstract partial class Overlay : Control
         btn.SizeFlagsVertical = SizeFlags.ShrinkBegin;
         head.AddChild(btn);
         v.AddChild(head);
-        v.AddChild(new Title(title));
+        v.AddChild(new Title(title, 30, false));
         sideX = BookX; sideW = BookW;
         return v;
     }
@@ -492,7 +492,7 @@ public abstract partial class Overlay : Control
             card.ResetSize();
             var cs = card.Size;
             float x = leftward ? edge - 14 - cs.X : edge + 14;
-            float y = Mathf.Clamp(r.Position.Y - 8, 8, vp.Y - 8 - cs.Y);
+            float y = Mathf.Max(8, Mathf.Min(r.Position.Y - 8, vp.Y - 8 - cs.Y));
             card.Position = new Vector2(x, y);
             if (worn == null) return;
             worn.ResetSize();
@@ -500,7 +500,7 @@ public abstract partial class Overlay : Control
             float wx = leftward ? x - 12 - ws.X : x + cs.X + 12;
             bool beside = leftward ? wx >= 8 : wx + ws.X <= vp.X - 8;
             // Beside it, its top a little lower, so the two read as a pair and not a wall; under it otherwise.
-            worn.Position = beside ? new Vector2(wx, Mathf.Clamp(y + 22, 8, vp.Y - 8 - ws.Y)) : new Vector2(x, Mathf.Min(y + cs.Y + 10, vp.Y - 8 - ws.Y));
+            worn.Position = beside ? new Vector2(wx, Mathf.Max(8, Mathf.Min(y + 22, vp.Y - 8 - ws.Y))) : new Vector2(x, Mathf.Max(8, Mathf.Min(y + cs.Y + 10, vp.Y - 8 - ws.Y)));
         }
         Place();
         Callable.From(() => { Place(); if (IsInstanceValid(holder)) holder.Modulate = Colors.White; }).CallDeferred();
