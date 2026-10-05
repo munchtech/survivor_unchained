@@ -413,6 +413,37 @@ public partial class Globe : Control
     }
 }
 
+/// <summary>A long reading whose ends melt away instead of being cut: what it holds (a scroll,
+/// filling it) is drawn through its own alpha, clear in the middle and fading to nothing over the
+/// top and foot, so a line half under the edge is a line going, not a sliver.</summary>
+public partial class FadeEnds : Control
+{
+    readonly float top, foot;
+
+    public FadeEnds(Control inside, float top = 26, float foot = 44)
+    {
+        this.top = top;
+        this.foot = foot;
+        ClipChildren = ClipChildrenMode.Only;
+        MouseFilter = MouseFilterEnum.Pass;
+        SizeFlagsHorizontal = SizeFlagsVertical = SizeFlags.ExpandFill;
+        Style.Fill(inside);
+        AddChild(inside);
+        Resized += QueueRedraw;
+    }
+
+    public override void _Draw()
+    {
+        float w = Size.X, h = Size.Y, a = Mathf.Min(top, h / 3), b = Mathf.Max(h - foot, h * 2 / 3);
+        var clear = new Color(1, 1, 1, 0);
+        void Band(float y0, float y1, Color c0, Color c1) =>
+            DrawPolygon(new[] { new Vector2(0, y0), new Vector2(w, y0), new Vector2(w, y1), new Vector2(0, y1) }, new[] { c0, c0, c1, c1 });
+        Band(0, a, clear, Colors.White);
+        Band(a, b, Colors.White, Colors.White);
+        Band(b, h, Colors.White, clear);
+    }
+}
+
 /// <summary>Behind a full-screen page: the world dark at the edges, faint in the middle, an ember glow along the foot.</summary>
 public partial class Backdrop : Control
 {
@@ -475,7 +506,8 @@ public partial class Backdrop : Control
             Texture = new GradientTexture2D
             {
                 Gradient = new Gradient { Colors = new[] { new Color(1, 0.42f, 0.12f, 0.08f), new Color(1, 0.42f, 0.12f, 0) }, Offsets = new[] { 0f, 1f } },
-                FillFrom = new Vector2(0.5f, 1), FillTo = new Vector2(0.5f, 0.6f), Width = 16, Height = 128,
+                // (on a page it keeps to the foot: the vellum carries the page, the warmth sits low)
+                FillFrom = new Vector2(0.5f, 1), FillTo = new Vector2(0.5f, page ? 0.8f : 0.6f), Width = 16, Height = 128,
             },
             StretchMode = TextureRect.StretchModeEnum.Scale, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = MouseFilterEnum.Ignore,
         };

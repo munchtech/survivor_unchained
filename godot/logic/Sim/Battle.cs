@@ -1157,12 +1157,14 @@ public sealed partial class Battle
     }
 
     /// <summary>From the Ashes: the survivor gets up burning, and so does everything near them.</summary>
+    double RiseRadius(int rank) => (rank >= 2 ? 8 : 4) * Math.Sqrt(Stats.Get(Stat.Area));
+
     void RiseBurning(int rank)
     {
         var p = Player;
         var was = credit;
         credit = "boon:from_the_ashes";
-        double r = (rank >= 2 ? 8 : 4) * Math.Sqrt(Stats.Get(Stat.Area)), dmg = 40 * (1 + 0.08 * (EmberLevel - 1));
+        double r = RiseRadius(rank), dmg = 40 * (1 + 0.08 * (EmberLevel - 1));
         Explode(p.X, p.Z, r, dmg, School.Fire, [Tag.Fire, Tag.Area], null);
         var burn = new StatusPayload(StatusKind.Burn, 1, 1, 4);
         ForEachHostileInRadius(p.X, p.Z, r, (e, _) => ApplyStatus(e, burn, dmg));
@@ -1281,6 +1283,8 @@ public sealed partial class Battle
                 p.Hp = MaxHp * (ashes && ar >= 2 ? 1 : 0.5);
                 p.Iframes = ashes && ar >= 3 ? 3.5 : 2;
                 if (ashes && ar >= 3) p.DashCharges = RoundInt(Stats.Get(Stat.DashCharges));
+                // Said before the fire it starts, so the view draws the rise and not a plain blast.
+                Events.Emit(new Ev.Rise { X = p.X, Z = p.Z, Ember = ashes, Rank = ashes ? ar : 1, Grace = p.Iframes, Radius = ashes ? RiseRadius(ar) : 0 });
                 if (ashes) RiseBurning(ar);
                 Events.Emit(new Ev.Announce { Title = ashes ? "You go cold. Then the ember catches." : "Something answers for you: not yet. You get up.", Tone = Tone.Boon });
             }
