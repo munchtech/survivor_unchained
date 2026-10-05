@@ -422,17 +422,19 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>The survivor as the map opened: what it paid is read against this at its end.</summary>
     CharacterData? mapStart;
+    List<ItemInstance?>? mapStash;
 
     MapRun StartMap()
     {
         mapStart = SurvivorUnchained.Core.Json.Clone(Journey.Ch);
+        mapStash = World.Stash.ToList();
         return new MapRun(this, currentMap!, World.Map!);
     }
 
     /// <summary>A map is over: what it paid on its own page, the world held behind it.</summary>
     public void MapOver(MapResult r, bool alive)
     {
-        var spoils = SurvivorUnchained.Maps.MapSpoils.Between(mapStart ?? Journey.Ch, Journey.Ch);
+        var spoils = SurvivorUnchained.Maps.MapSpoils.Between(mapStart ?? Journey.Ch, Journey.Ch, mapStash ?? World.Stash, World.Stash);
         // (pictures and probes of the atlas's pay read it from the log as well)
         if (Args.Has("shot"))
             GD.Print($"map paid: {spoils.Gear.Count} gear [{string.Join(", ", spoils.Gear.Select(g => $"{Inventory.RarityName(g)} {g.Def}"))}]; "

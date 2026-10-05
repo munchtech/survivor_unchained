@@ -436,6 +436,9 @@ public static class Drops
         bool owed = hoard && w != null && w.LootDebt >= Rules.Debt;
         bool first = x.StoryBoss && w != null && !w.FirstLegendary && EarlyLegendaries().Any();
         string? material = x.People != null ? PeopleMaterial(x.People) : null;
+        // Fire is the scars', iron the atlas's (crafting design 20.1): in a map the lamplings leave iron.
+        if (material == "ember_shard" && x.Source is DropSource.MapPack or DropSource.MapPackFine or DropSource.MapKeeper or DropSource.MapRuler or DropSource.Strongbox)
+            material = Iron;
         for (int k = 0; k < rolls; k++)
         {
             bool gear = R() < Math.Min(1, src.Chance * x.Gear);

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using SurvivorUnchained.Maps;
 using SurvivorUnchained.Rpg;
@@ -39,6 +40,14 @@ public class MapSpoilsTests
         Assert.Equal(360, s.Gold);
         // What she walked in with is not what the map paid.
         Assert.Empty(MapSpoils.Between(after, after).Gear);
+        // What the end of the map sent to Rook's storeroom is still its pay, and the page knows where it went.
+        var shelf = new List<ItemInstance?> { null, null };
+        var sent = Inventory.Make(after, "chain_shirt", rarity: 3);
+        var later = new List<ItemInstance?> { sent, null };
+        var t = MapSpoils.Between(before, after, shelf, later);
+        Assert.Contains(t.Gear, g => g.Uid == sent.Uid);
+        Assert.Contains(sent.Uid, t.Stored);
+        Assert.Empty(MapSpoils.Between(after, after, later, later).Gear);
     }
 
     [Fact]
