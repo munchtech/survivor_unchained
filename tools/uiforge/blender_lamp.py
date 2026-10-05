@@ -117,6 +117,12 @@ def main():
     coal = K.coal(r * 1.35 * ss, 29)
     coal.location = (0, P(0, cg["y"] + h * 0.12)[1], z0 * ss * U)
     cmat = K.coal_material(3)
+    # A lamp's coal is awake: wider cracks, the whole of it glowing dull red under them.
+    for nd in cmat.node_tree.nodes:
+        if nd.type == "MAP_RANGE" and abs(nd.inputs["From Max"].default_value - 0.035) < 1e-6:
+            nd.inputs["From Max"].default_value = 0.11
+        if nd.type == "MAP_RANGE" and abs(nd.inputs["From Min"].default_value - 0.42) < 1e-6:
+            nd.inputs["To Min"].default_value = 0.55
     coal.data.materials.append(cmat)
     # The short chain it hangs by, from the band down to its loop: links on end and flat in turn.
     chn = spec["chain"]

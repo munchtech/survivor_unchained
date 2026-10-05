@@ -543,21 +543,22 @@ def title_chain(cv: Canvas, cx, cy, text, font, size, src="kit", gap=8):
 TABS = []
 
 
-LAMP = {"x": 470, "top": 86, "lit": False}
+LAMP = {"x": 430, "top": 78, "lit": False}
 
 
 def lamp(cv: Canvas, src="kit", lit=False):
-    """The lamp-iron (lamp/lamp.png, 60x140 shown, hung from its top edge's middle) at LAMP, and
-    the light it throws on the page (lamp/light.png, its source at (260, 96) of 520x420)."""
+    """The lamp-iron (lamp/lamp.png, 120x200 shown, its chain running up off its top) at LAMP,
+    drawn under the head band so its chain goes up behind the rail, and the light it throws on
+    the page (lamp/light.png, 600x600, its source at the middle)."""
     s = cv.s
     lp = load("lamp/lamp_lit.png" if lit else "lamp/lamp.png", src)
     li = load("lamp/light.png", src)
     if lp is None or li is None:
         return
     cx, top = LAMP["x"], LAMP["top"]
-    coal_y = top + 95 + 5.5
-    cv.add(resize(li, 520 * s, 420 * s), (cx - 260) * s, (coal_y - 96) * s, 1.6 if lit else 1.0)
-    cv.over(resize(lp, 60 * s, 140 * s), (cx - 30) * s, top * s)
+    coal_y = top + 135 + 9
+    cv.add(resize(li, 600 * s, 600 * s), (cx - 300) * s, (coal_y - 300) * s, 1.6 if lit else 1.0)
+    cv.over(resize(lp, 120 * s, 200 * s), (cx - 60) * s, top * s)
 
 
 def self2(cv: Canvas, src="kit", chain="title", sel=1):
@@ -566,6 +567,8 @@ def self2(cv: Canvas, src="kit", chain="title", sel=1):
     rail the chain, broken under her name."""
     backdrop(cv, src, taper=(880, 1010))
     ink, ink_dim, gold, gold_hi, ember = "#e8dcc8", "#a89c8c", "#c9a256", "#f0d9a0", "#ff9a4a"
+    if LAMP.get("on"):
+        lamp(cv, src, LAMP.get("lit", False))
     hd = load("frames/header.png", src)
     cv.nine(hd, -4, -4, 1928, 100, 0, 0, 0, 12, True)
     if chain == "band":
@@ -596,8 +599,6 @@ def self2(cv: Canvas, src="kit", chain="title", sel=1):
     cv.text(1809, 49, "Esc", "alegreya-sans-700", 11, ink_dim, "ms", shadow=False)
     cv.text(1830, 50, "Close", "alegreya-sans-700", 15, gold_hi, "ls")
     cv.text(290, 520, "her figure, live 3D", "alegreya-400-italic", 15, "#4a423c", "ms", shadow=False)
-    if LAMP.get("on"):
-        lamp(cv, src, LAMP.get("lit", False))
     # Attributes: a tight row of four.
     cv.text(560, 124, "ATTRIBUTES", "alegreya-sans-800", 13, gold, "ls")
     cv.text(644, 127, "more with each level", "alegreya-400-italic", 14, ink_dim, "ls")
