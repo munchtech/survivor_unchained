@@ -80,6 +80,34 @@ The crafting lead's new needs for the bench and table (Forge.cs on their branch)
 - A crafter's first telling can run to seven lines.
 - Snib's slurry odds sit inside the Steep card.
 
+### The loot lead's rules to size the Pack, Storeroom and filter for (a9a9c345a35e1fcad)
+
+The full design is coming in `docs/design/LOOT_DESIGN.md` §6–8.
+
+- **The 24-place grid holds gear only.** Everything else is slotless and counted, in four tabs:
+  - **Pouch:** materials, the crafters' currencies and trophies.
+  - **Satchel:** manuals (stack to 3), tomes and charts. Each chart is its own entry, so this tab is a scrolling list sortable by tier, not a row of tiles.
+  - **Key ring:** quest things and tools. Things still needed carry a small "needed" mark and can't be dropped or sold.
+  - **Belt (new, the 4th tab):** draughts and remedies, counted per kind, up to 10 each.
+- **The purse** stays on the Standing line.
+- **Tiles:** every tile shows its item level, plus an up-arrow from `Loot.IsUpgrade(ch, item)`.
+- **Tooltips:**
+  - the second line carries the make word: Worn, Sound, Wrought, Legion, Heartwrought;
+  - the compare shows deltas plainly, using `Loot.Power`.
+- **New tier, Set:** verdigris #3fd6c0, between Epic and Legendary. Its tooltip has the set name, "2 of 4 worn", and the bonuses lit or unlit. Legendary (amber #ffb040) gets a lore line and a power block. Storied is coming.
+- **Filter screen** (`Rpg/LootFilter`):
+  - four presets (Everything, Default, Strict, Only the best);
+  - toggles: always show upgrades, my calling's weapons, commons of a better make, break down what's hidden at a fight's end, and the drop-sound floor;
+  - an advanced rule list comes later.
+  - Legendary, Set, Storied and quest things are never hidden. A held key shows hidden labels.
+- **Results:** the night's and the map's result gather what the filter shows; overflow of Rare and up goes to Rook's, said on the result. "Broken down: N things for X old iron."
+
+My answers to them:
+- Four tabs fit in 484 px.
+- The satchel opens as a list of up to 4 visible rows that scrolls.
+- On a 72 px tile, item level is a small number top-left and the upgrade arrow top-right.
+- Set needs a second cue besides its colour (teal sits near uncommon green for some eyes): a small chain-link mark, which fits the motif.
+
 ## 5. Decisions (one line each, with why)
 
 - **One frame per screen.** Hierarchy comes from tone, spacing, type and rules. Every boxed thing being framed meant nothing had hierarchy (the owner's "ugly borders").
