@@ -74,7 +74,7 @@
       "cam": {"pos": [-11.1, 1.5, 13.1], "at": [-1.64, 1.6, 5.71], "lens": 35, "focus": 1.1, "fstop": 2.8, "move": {"focus": 12.5, "start": 0.8, "end": 2.2, "ease": "inout"}},
       "cues": [
         {"at": 2.6, "do": "music", "mood": "silence"},
-        {"at": 2.6, "do": "look", "actor": "rook", "where": {"mark": "lamp", "y": 7.12}, "over": 0.5}
+        {"at": 2.6, "do": "head", "actor": "rook", "where": {"mark": "lamp", "y": 7.12}, "over": 0.7}
       ]
     },
     {
@@ -95,7 +95,7 @@
       "note": "Reverse: Rook's single from the square, her eyeline just off the lens to the right. Her eyes come down from the tower to the survivor, and she unfolds her arms.",
       "cam": {"pos": [-8.4, 1.3, 11.8], "at": {"actor": "rook", "bone": "chest", "off": [0, 0.24, 0]}, "lens": 45, "focus": {"actor": "rook", "bone": "head"}, "fstop": 2.8},
       "cues": [
-        {"do": "look", "actor": "rook", "where": [0.0, 1.4, 7.0], "over": 0.5},
+        {"do": "head", "actor": "rook", "amount": 0, "over": 0.6},
         {"at": 0.8, "do": "anim", "actor": "rook", "clip": "Idle_Loop", "blend": 0.6}
       ]
     },

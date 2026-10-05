@@ -840,6 +840,8 @@ public partial class GameHud : CanvasLayer
 
     public void Announce(Announcement a)
     {
+        // --clean: no title cards over the picture (previs stills taken as storyboard staging).
+        if (Args.Has("clean")) return;
         annKicker.Text = a.Kicker?.ToUpperInvariant() ?? "";
         annKicker.Visible = a.Kicker != null;
         annTitle.Text = a.Title.ToUpperInvariant();

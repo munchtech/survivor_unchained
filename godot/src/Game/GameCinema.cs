@@ -499,6 +499,20 @@ public partial class Game
                     }));
                     break;
                 }
+                case "head":
+                {
+                    // A look with the head and neck, the body left as it is ("look" turns the body):
+                    // "where" is the point looked at; "amount" 0 (or no "where") lets the head go.
+                    if (!people.TryGetValue(c.Actor, out var v)) break;
+                    var skel = v.Person.Skeleton;
+                    var turn = skel.GetNodeOrNull<HeadTurn>("HeadTurn");
+                    if (turn == null) skel.AddChild(turn = new HeadTurn());
+                    bool letGo = !c.Has("where") || c.Num("amount", 1) <= 0;
+                    if (!letGo) turn.Target = V(places.Resolve(c.Get("where")));
+                    turn.Want = letGo ? 0 : (float)c.Num("amount", 1);
+                    turn.Rate = (float)(1 / Math.Max(0.05, over));
+                    break;
+                }
                 case "gaze":
                 {
                     if (Life(c.Actor) is not { } life) break;

@@ -19,7 +19,7 @@ public partial class WardenView : Node3D, IBossView
 {
     readonly PersonView view;
     readonly OmniLight3D light;
-    readonly Node3D lamp, flame;
+    readonly Node3D lamp, flame, grip;
     readonly List<StandardMaterial3D> eyes = new(), skin = new();
     string pose = "";
     double heading, time, flash;
@@ -62,12 +62,14 @@ public partial class WardenView : Node3D, IBossView
             for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
                 if (mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial dyed && dyed.ResourceName == "MI_Ranger")
                     People.SetDye(dyed, SoakedMask, Soaked);
-        // The lantern hangs from the left fist.
-        var at = new BoneAttachment3D { BoneName = "hand_l" };
+        // The lantern hangs from the left fist by its bail, plumb, whatever the arm
+        // does (Hang): the grip is the hand's slot, where a held thing is held.
+        var at = new BoneAttachment3D { BoneName = "handslot.l" };
         view.Person.Skeleton.AddChild(at);
-        lamp = LampIron.Make();
-        lamp.Position = new Vector3(0, -0.1f, 0);
-        at.AddChild(lamp);
+        grip = new Node3D();
+        at.AddChild(grip);
+        lamp = LampIron.Make(Bail);
+        AddChild(lamp);
         flame = new Node3D { Position = new Vector3(0, LampIron.FlameY, 0) };
         lamp.AddChild(flame);
         flame.AddChild(new MeshInstance3D
@@ -134,6 +136,7 @@ public partial class WardenView : Node3D, IBossView
         flash = Math.Max(flash - dt * 6, e?.Flash ?? 0);
         foreach (var m in skin) m.Emission = new Color(1f, 0.8f, 0.6f) * (float)(flash * 0.25);
         double g = Glow * (pose == "sleep" ? 0.35 : 1) * (pose == "dead" ? 0 : 1);
+        Hang();
         Light(g, (float)y);
         lamp.Visible = pose != "dead" || g > 0.01;
         flame.Visible = LampLit && g > 0.01;
@@ -145,9 +148,22 @@ public partial class WardenView : Node3D, IBossView
     {
         time += dt;
         Visible = true;
+        Hang();
         Light(Glow, view.GlobalPosition.Y);
         lamp.Visible = true;
         flame.Visible = LampLit && Glow > 0.01;
+    }
+
+    /// <summary>The bail's length, ring to fist, in the lamp's own measure.</summary>
+    const float Bail = 0.07f;
+
+    /// <summary>The lamp hangs straight down from his fist on its bail, turned with him.</summary>
+    void Hang()
+    {
+        // As big as it was in his hand (the body is scaled up to a giant's).
+        float s = grip.GlobalTransform.Basis.Scale.X;
+        lamp.GlobalTransform = new Transform3D(new Godot.Basis(Vector3.Up, GlobalRotation.Y).Scaled(Vector3.One * s),
+            grip.GlobalPosition - new Vector3(0, Bail * s, 0));
     }
 
     void Light(double g, float ground)
@@ -179,7 +195,8 @@ public static class LampIron
     public const float FootY = -0.23f;
     static StandardMaterial3D? iron;
 
-    public static Node3D Make()
+    /// <summary>The lamp-iron; with a bail, an iron loop up from its ring that long, to hang it by.</summary>
+    public static Node3D Make(float bail = 0)
     {
         iron ??= new StandardMaterial3D { AlbedoColor = new Color("#1e1c1a"), Metallic = 0.7f, Roughness = 0.38f };
         var lamp = new Node3D { Name = "LampIron" };
@@ -194,6 +211,13 @@ public static class LampIron
         foreach (var (x, z) in new[] { (-1, -1), (-1, 1), (1, -1), (1, 1) })
             Iron(new BoxMesh { Size = new Vector3(0.012f, 0.16f, 0.012f) }, new Vector3(x * 0.058f, -0.14f, z * 0.058f));
         Iron(new TorusMesh { InnerRadius = 0.022f, OuterRadius = 0.032f, Rings = 12, RingSegments = 6 }, new Vector3(0, 0.0f, 0));
+        if (bail > 0)
+        {
+            // Two thin rods from the ring's sides up to a hook where the fist closes.
+            foreach (int side in new[] { -1, 1 })
+                Iron(new BoxMesh { Size = new Vector3(0.007f, bail, 0.007f) }, new Vector3(side * 0.02f, bail / 2 + 0.02f, 0));
+            Iron(new BoxMesh { Size = new Vector3(0.05f, 0.008f, 0.008f) }, new Vector3(0, bail + 0.02f, 0));
+        }
         return lamp;
     }
 }
