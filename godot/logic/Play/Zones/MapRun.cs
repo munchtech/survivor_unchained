@@ -549,6 +549,9 @@ public sealed class MapRun : ZoneRuntime, IBossArena
                 if (Atlas.Road(G.Journey.World) is { } road && R() < 0.2 * Atlas.Rank(G.Journey.World, Atlas.PeoplesRoad)) next = road;
                 o.Add(new Loot(PickupKind.Item, Charts.Ref(Charts.Roll(rng, tier, k == 0 ? Chart.People : next, Chart.RarityBonus)), 1, true, 2));
             }
+            // Now and then a thing of its own, carrying how it fought: a Mark for Vonnra to inscribe
+            // (crafting's, design 20.3), finer the harder the map.
+            if (Crafting.RulerMark(Chart.People, Chart.Tier, rng) is { } mark) o.Add(new Loot(PickupKind.Item, mark.Item, 1, true, mark.Grade));
             return o;
         }
         if (carriers.Remove(e.Id, out int grade))
