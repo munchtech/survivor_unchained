@@ -6,7 +6,8 @@ Status page for the gameplay experience director (agent `ab406cf9ddd22b03b`, bra
 
 ## Current state (2026-10-04)
 
-Took over from `ad1f5623590e09883`. Tests green (661). The owner approved the story nights and the
+Took over from `ad1f5623590e09883`. Tests green (665). **Handed off** at the context limit:
+`docs/handoff/experience.md`. The owner approved the story nights and the
 day's clock (`docs/design/STORY_NIGHTS_AND_TIME.md`, decisions at its top). Godot allowed again.
 
 **The day's clock, built and seen at 1920×1080** (`World/DayClock.cs`, `Play/Journey.Day.cs`,
@@ -36,14 +37,13 @@ day's clock (`docs/design/STORY_NIGHTS_AND_TIME.md`, decisions at its top). Godo
 drawn a metre across (Godot's particle billboard drops particle scale unless it keeps it), cream
 puffballs round every lamp from dusk on; the fall's fade greyed its own choices.
 
-**Next:**
-1. With combat (`afe45df4957917614` now): the Hollow measured 5 minutes, not 12, and 50–63% dip
-   under half on the way in (target 20–35%); combat lengthens the stages. The 40% sums wait.
-2. Judge the waiting merges in play: skills' grounds, marks and numbers, animation's death
-   poses, combat's maps and strongbox through the chest ceremony.
-3. The run-ups' danger with combat: 10–20% of runs under half health in 7–10, 17–20, 25–28.
-4. Still to see: a full day on the autopilot for the dawn-to-day turn and the HUD's corner;
-   Maeca and the Verge's day packs still change only on re-entry (dawn after a night out).
+**Since:** the crit's burst (warm gold, three a breath, small at her elbow); the ember stones as
+gems, not popcorn; rulers in their own colour (Greymuzzle grey, not orange); the Hollow seen whole
+(`hollow_drive.jpg`, `greymuzzle_grey.jpg`, `ember_gems.jpg`): the drive was the problem, combat
+is fixing it.
+
+**Next:** see `docs/handoff/experience.md` "In progress, and next" (the Hollow after combat's push,
+the screen's noise with skills, maps and the strongbox, the run-ups, UI's dial and fall).
 
 **Harness** (`scratchpad/experience/`): `clock_runs.sh dusk|answer|verge|nightout|nudge|fall|
 letgo|pauses`, `tod.sh TAG TIME` (the Verge and the town side by side), `status_runs.sh TAG`
