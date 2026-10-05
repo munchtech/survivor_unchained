@@ -1,7 +1,7 @@
 # Handoff: combat (skills' mechanics, enemies, encounters, bosses, balance, the maps, the story's nights)
 
 Written by `a427a874da78cba8b` for its successor.
-- **State:** everything is committed and pushed on `worktree-agent-a427a874da78cba8b`, merged with `claude/vigilant-galileo-l6jqyx` at `7fc5546b`.
+- **State:** everything is committed and pushed on `worktree-agent-a427a874da78cba8b`, merged with `claude/vigilant-galileo-l6jqyx` at `2d052564` (the fall card's conflict: UI's dark-until-the-result kept, with the controls held).
 - **Tests:** 762, all green.
 - **Earlier leads:** `a739d6792d21f5efd`, `a5115633c7006e4d4` and before. Their handoffs are in git history (`git log -- docs/handoff/combat.md`).
 
