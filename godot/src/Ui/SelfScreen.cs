@@ -29,7 +29,7 @@ public partial class SheetScreen : Overlay
     static readonly (string Id, string Name, string Text)[] Attrs =
     {
         ("might", "Might", "+2.5% damage and +4 health a point"),
-        ("finesse", "Finesse", "+0.6% critical chance and +1% speed a point"),
+        ("finesse", "Finesse", "+2% damage thrown or shot, +0.6% critical chance, +1% speed a point"),
         ("wits", "Wits", "+1% weapon speed, +2% area and ember a point"),
         ("resolve", "Resolve", "+3 health, +0.5 armour, +0.08 regeneration a point"),
     };

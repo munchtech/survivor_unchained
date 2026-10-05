@@ -132,6 +132,25 @@ public static class Kit
         return h;
     }
 
+    /// <summary>A section's head over a centred register (a result's page): its name and note
+    /// between two rules of a length, as the title sits between its chains, quieter.</summary>
+    public static HBoxContainer HeadMid(string title, string? note = null)
+    {
+        var h = Style.H(14);
+        h.AddChild(RuleH(24));
+        var t = Style.Label(title.ToUpperInvariant(), Style.UiHeavy, 14, HeadInk, false, HorizontalAlignment.Center, false);
+        t.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+        h.AddChild(t);
+        if (note != null)
+        {
+            var n = Style.Label(note, Style.TextItalic, 15, Dim, false, HorizontalAlignment.Left, false);
+            n.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+            h.AddChild(n);
+        }
+        h.AddChild(RuleH(24));
+        return h;
+    }
+
     /* ---------------------------------------------------------- widgets -- */
 
     /// <summary>A quiet action in words (Filter, Sort): no box, lit when the pointer is on it.</summary>

@@ -822,9 +822,30 @@ public partial class GameHud : CanvasLayer
     {
         if (fall != null && IsInstanceValid(fall)) fall.QueueFree();
         fall = null;
+        // The play's HUD steps back while the choice waits, as under a conversation: the two
+        // choices are the brightest things on the screen (the bars and the ember sat over them).
+        play.Modulate = risesLeft != null ? new Color(1, 1, 1, 0.4f) : Colors.White;
         if (risesLeft is not int n || rise == null || letGo == null) return;
         fall = new FallChoices(n, rise, letGo);
         root.AddChild(fall);
+    }
+
+    StoryChoices? choice;
+
+    /// <summary>A choice the story puts to her, over the live world: each answer on its key (null clears it).</summary>
+    public void Choice(StoryChoice? c, Act[] keys, Action<int> pick)
+    {
+        if (choice != null && IsInstanceValid(choice)) choice.QueueFree();
+        choice = null;
+        if (c == null) return;
+        choice = new StoryChoices(c, keys, pick);
+        root.AddChild(choice);
+    }
+
+    /// <summary>The answer whose key is held (-1: none), and how far to choosing it (0 to 1).</summary>
+    public void ChoiceHeld(int i, double k)
+    {
+        if (choice != null && IsInstanceValid(choice)) choice.Held(i, (float)Math.Clamp(k, 0, 1));
     }
 
     /// <summary>The day's clock on its dial by the place's name (null: where the clock does not run).</summary>

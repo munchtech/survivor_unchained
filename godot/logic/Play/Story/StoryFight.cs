@@ -50,9 +50,13 @@ public interface IStoryArena : IBossArena
     /// <summary>A creature the script moves (a living wall, a caller holding its howl): `tick` runs in
     /// its mind's place each step; false lets its own mind have the step.</summary>
     void Script(Enemy e, Func<Enemy, double, bool> tick);
-    /// <summary>A choice put in front of her where she stands (let him go, finish it).</summary>
+    /// <summary>Something to use where it lies (fire the crates, set down his lamp): a prompt near it.</summary>
     void Offer(string id, double x, double z, string verb, string name, Action act);
     void Withdraw(string id);
+    /// <summary>A choice put to her wherever she stands (let him go, or finish it): named on the screen, each
+    /// answer on its own key, until she answers or it is taken back (Unask).</summary>
+    void Ask(string who, string title, double x, double z, params ChoiceAnswer[] answers);
+    void Unask();
     /// <summary>The narrator's words (the story lead's), or someone's, said aloud.</summary>
     void Line(string text, string? speaker = null);
     /// <summary>A spared ending can be chosen in this fight (its outcome is in the spec).</summary>
@@ -217,6 +221,9 @@ public abstract class StoryFight
     public abstract StoryBoss Boss(IStoryArena a);
     /// <summary>The place's fires (id, point), and how long one burns.</summary>
     public virtual string[] Fires => [];
+    /// <summary>What the fight itself stands in its place as the night opens (the Vault's cover down the hall),
+    /// solid and drawn, before anything moves.</summary>
+    public virtual void Furnish(IStoryArena a) { }
     public virtual double Burns(IStoryArena a) => 20;
 }
 
@@ -228,6 +235,7 @@ public static class StoryScripts
         "hollow_by_night" => new HollowByNight(),
         "roost_raid" => new RaidOnTheRoost(),
         "dig_boils" => new DigBoilsOver(),
+        "vault_opened" => new VaultOpened(),
         _ => null,
     };
 

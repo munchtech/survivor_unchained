@@ -12,8 +12,11 @@ void fragment() {
 	float r = UV.x;
 	float hone = smoothstep(0.78, 0.97, r);
 	float lip = 1.0 - smoothstep(0.0, 0.1, r);
-	ALBEDO = vec3(0.13, 0.14, 0.15) * (1.0 - hone * 0.6);
-	METALLIC = 0.85;
-	ROUGHNESS = 0.3;
+	// Worn, not polished: a mirror-bright face caught the Dig's lamps and sky and the blade read
+	// as a white cog. Its brightness is its honed edge's, never its face's.
+	ALBEDO = vec3(0.075, 0.08, 0.085) * (1.0 - hone * 0.6);
+	METALLIC = 0.7;
+	ROUGHNESS = 0.55;
+	SPECULAR = 0.25;
 	EMISSION = COLOR.rgb * (hone * 1.1 + lip * 0.18) * hero_clear(VERTEX, VIEW_MATRIX, PROJECTION_MATRIX, VIEWPORT_SIZE);
 }

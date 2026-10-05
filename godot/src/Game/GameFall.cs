@@ -47,12 +47,17 @@ public partial class Game
         if (scene == null) { letGo(); return; }
         hud.Prompt(promptShown = null);
         ShadeWorld(1, 0.9);
+        // Nothing prints over the fall while it is staged (the experience director: a loss's quest
+        // line printed over the still-moving fight before its result). The notices wait, their time
+        // not running, and are told whole after: on getting up, or once she wakes from the loss.
+        hud.HoldToasts = true;
         // She goes down where she stands (the fight only holds her at a breath of life).
         scene.Player?.Fall();
         if (risesLeft <= 0)
         {
-            // No rise left: the night is lost, and the fall says so on its own.
-            Wait(1.6, () => { ShadeWorld(0, 0.6); letGo(); });
+            // No rise left: the night is lost, and the fall says so on its own. The world stays dark
+            // until the night's result is over it; it stands down (StoryNight.StandDown), her controls held.
+            Wait(1.6, () => { controls.Captured = true; letGo(); });
             return;
         }
         // The autopilot (runs and pictures) gets up, as a player mostly would.
@@ -78,8 +83,16 @@ public partial class Game
     bool FallKey(Act a)
     {
         if (a is Act.Confirm or Act.Interact) { var r = fallRise; EndFall(); if (r != null) GetUp(r); }
-        else if (a is Act.Cancel) { var l = fallLetGo; EndFall(); ShadeWorld(0, 0.6); l?.Invoke(); }
+        // Let go: the night stands down (StoryNight.StandDown) and her controls are held until its result.
+        else if (a is Act.Cancel) { var l = fallLetGo; EndFall(); controls.Captured = true; l?.Invoke(); }
         return true;
+    }
+
+    /// <summary>The fall's shade lifted from under a result (the night lost): the result's own
+    /// ground takes over from it.</summary>
+    void LiftFall()
+    {
+        if (fallShade != null && fallShade.Modulate.A > 0) ShadeWorld(0, 0.6);
     }
 
     void EndFall()
@@ -99,6 +112,7 @@ public partial class Game
         {
             ShadeWorld(0, 0.01);
             rise();
+            hud.HoldToasts = false;
             scene?.Player?.Revive();
             hud.Fade(0, 1.0);
         });

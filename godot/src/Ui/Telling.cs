@@ -172,7 +172,9 @@ public abstract partial class TellingScreen : Overlay
         var centre = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
         Style.Fill(centre);
         AddChild(centre);
-        var panel = Style.Panel(Kit.Window(Margin + 8, Margin, Margin));
+        // (a little more at the foot: the title's chains stand above its words, so equal pads
+        // looked heavier at the top)
+        var panel = Style.Panel(Kit.Window(Margin + 8, Margin, Margin + 10));
         panel.CustomMinimumSize = new Vector2(width, 0);
         panel.SelfModulate = Colors.White with { A = GroundAlpha };
         panel.MouseFilter = MouseFilterEnum.Stop;
@@ -220,6 +222,52 @@ public abstract partial class TellingScreen : Overlay
         row.AddChild(right);
         page.AddChild(row);
         return (left, right);
+    }
+
+    /// <summary>A register of the page opened: a little more air above its centred head than the
+    /// page's lines have between them, so the registers read as groups.</summary>
+    protected static void Register(VBoxContainer page, string title, string? note = null)
+    {
+        page.AddChild(Style.Gap(6));
+        page.AddChild(Kit.HeadMid(title, note));
+    }
+
+    /// <summary>A counted thing as a ledger entry: its picture and how many, with no tile (it is
+    /// counted, not a piece); greyed where it was lost.</summary>
+    protected static Control Counted(string id, int n, bool lost = false)
+    {
+        var def = Rpg.Items.Get(id);
+        var h = Sum(ItemPhotos.Icon(def.Icon, 36, Style.RarityOf(def.Rarity)), Rpg.Items.Several(id, n), lost ? Kit.Dim : Kit.Ink);
+        if (lost) h.Modulate = new Color(1, 1, 1, 0.6f);
+        return h;
+    }
+
+    /// <summary>A sum as a ledger entry: its mark and its words in its colour, on one centre line.</summary>
+    protected static HBoxContainer Sum(Control mark, string text, Color c)
+    {
+        var h = Style.H(Style.Gap2, mark, Style.Label(text, Style.UiBold, 17, c));
+        foreach (var x in h.GetChildren().OfType<Control>()) x.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        return h;
+    }
+
+    /// <summary>What came out as one centred ledger line (no boxes, no columns): the entries given,
+    /// then on a fall what spilled, greyed, behind a fine rule; past the panel's width it breaks
+    /// onto a second centred line rather than widening the panel.</summary>
+    protected static HFlowContainer LedgerLine(IEnumerable<Control> kept, Dictionary<string, int>? spilled = null)
+    {
+        var row = new HFlowContainer { MouseFilter = MouseFilterEnum.Ignore, Alignment = FlowContainer.AlignmentMode.Center };
+        row.AddThemeConstantOverride("h_separation", Style.Gap6);
+        row.AddThemeConstantOverride("v_separation", Style.Gap2);
+        foreach (var c in kept) row.AddChild(c);
+        if (spilled is { Count: > 0 })
+        {
+            if (row.GetChildCount() > 0) row.AddChild(new LedgerRule { CustomMinimumSize = new Vector2(29, 40), SizeFlagsVertical = SizeFlags.ShrinkCenter });
+            var lost = Style.H(Style.Gap4, Style.Label("SPILLED", Style.UiHeavy, 12, Kit.Dim, false, HorizontalAlignment.Left, false));
+            foreach (var (m, n) in spilled) lost.AddChild(Counted(m, n, true));
+            foreach (var c in lost.GetChildren().OfType<Control>()) c.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            row.AddChild(lost);
+        }
+        return row;
     }
 
     /// <summary>The way on, as type with its key, there from the first moment: pressed during the
