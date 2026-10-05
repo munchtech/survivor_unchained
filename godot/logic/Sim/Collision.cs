@@ -35,12 +35,15 @@ public sealed class Collider
     public bool Soft;
     /// <summary>Blocks the survivor only (an invisible edge of the zone).</summary>
     public bool PlayerOnly;
+    /// <summary>A gap in the ground (a crack, a sinkhole): walked into, it holds; a dash, a leap or a burrow
+    /// carries over it (Resolve's overGaps).</summary>
+    public bool Gap;
 }
 
 public readonly record struct RayHit(double T, Collider Collider);
 
 /// <summary>Options for a new collider.</summary>
-public readonly record struct ColliderOpts(string? Tag = null, bool Soft = false, bool PlayerOnly = false);
+public readonly record struct ColliderOpts(string? Tag = null, bool Soft = false, bool PlayerOnly = false, bool Gap = false);
 
 public sealed class CollisionWorld
 {
@@ -78,10 +81,10 @@ public sealed class CollisionWorld
     }
 
     public Collider AddCircle(double x, double z, double r, ColliderOpts o = default) =>
-        Insert(new Collider { Id = nextId++, Kind = ColliderKind.Circle, X = x, Z = z, R = r, Hw = r, Hd = r, Tag = o.Tag, Soft = o.Soft, PlayerOnly = o.PlayerOnly });
+        Insert(new Collider { Id = nextId++, Kind = ColliderKind.Circle, X = x, Z = z, R = r, Hw = r, Hd = r, Tag = o.Tag, Soft = o.Soft, PlayerOnly = o.PlayerOnly, Gap = o.Gap });
 
     public Collider AddBox(double x, double z, double hw, double hd, double rot = 0, ColliderOpts o = default) =>
-        Insert(new Collider { Id = nextId++, Kind = ColliderKind.Box, X = x, Z = z, R = Math.Sqrt(hw * hw + hd * hd), Hw = hw, Hd = hd, Rot = rot, Tag = o.Tag, Soft = o.Soft, PlayerOnly = o.PlayerOnly });
+        Insert(new Collider { Id = nextId++, Kind = ColliderKind.Box, X = x, Z = z, R = Math.Sqrt(hw * hw + hd * hd), Hw = hw, Hd = hd, Rot = rot, Tag = o.Tag, Soft = o.Soft, PlayerOnly = o.PlayerOnly, Gap = o.Gap });
 
     /// <summary>A collider as another world had it, its id kept (a zone
     /// loaded from data: the runtime refers to some colliders by id).</summary>
@@ -142,7 +145,7 @@ public sealed class CollisionWorld
 
     /// <summary>Push a circle out of every collider it overlaps. True if it
     /// touched anything. isPlayer lets player-only edges apply.</summary>
-    public bool Resolve(ref double px, ref double pz, double r, bool isPlayer = false)
+    public bool Resolve(ref double px, ref double pz, double r, bool isPlayer = false, bool overGaps = false)
     {
         bool touched = false;
         for (int iter = 0; iter < 3; iter++)
@@ -150,7 +153,7 @@ public sealed class CollisionWorld
             bool moved = false;
             foreach (var c in Near(px, pz, r + 0.5, scratch))
             {
-                if (c.PlayerOnly && !isPlayer) continue;
+                if (c.PlayerOnly && !isPlayer || c.Gap && overGaps) continue;
                 if (c.Kind == ColliderKind.Circle)
                 {
                     double dx = px - c.X, dz = pz - c.Z;

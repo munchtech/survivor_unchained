@@ -171,7 +171,7 @@ void Story()
                     foreach (var h in hands)
                         for (int s = 0; s < seeds; s++)
                             specs.Add(new StoryRunSpec(seed0 + s, c, pol, f, tier, level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), h == "deft",
-                                opt.Has("act2"), opt.Get("choice", "spare"), opt.Double("cap", 25), opt.Has("crates"), h == "naive"));
+                                opt.Has("act2"), opt.Get("choice", "spare"), opt.Double("cap", 25), opt.Has("crates"), h == "naive", opt.Has("learned")));
     Console.WriteLine($"{specs.Count} story nights, {opt.Int("par", 16)} at a time");
     var results = new ConcurrentBag<StoryRunResult>();
     var sw = Stopwatch.StartNew();

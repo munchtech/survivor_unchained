@@ -1097,11 +1097,12 @@ public partial class Game : Node, IZoneHost
             if (Args.Has("won")) mr.WinNow();
         }
         // --stage N: a story night begun at its Nth stage (from 0; its stage count is the boss), the
-        // ground behind opened (pictures and play of a stage or the boss: --stage 3).
+        // ground behind opened and the build the stages before would have left her (pictures and play of a
+        // stage or the boss: --stage 3).
         if (!minuteDone && Args.Has("stage") && zone is StoryNight sn2 && Battle != null)
         {
             minuteDone = true;
-            sn2.SkipTo((int)Args.Num("stage", 0));
+            sn2.SkipTo((int)Args.Num("stage", 0), floors: true);
         }
         // --lit: a story night's deadfalls all burning (pictures of them alight).
         if (!litDone && Args.Has("lit") && zone is StoryNight sn3 && Battle != null)

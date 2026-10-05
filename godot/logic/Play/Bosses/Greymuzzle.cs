@@ -27,7 +27,7 @@ namespace SurvivorUnchained.Play.Bosses;
 ///                or dead
 /// He is wordless: what is heard is the Pack.
 /// </summary>
-public sealed class Greymuzzle : StoryBoss
+public sealed class Greymuzzle : StoryBoss, IBound
 {
     public Greymuzzle(IStoryArena a) : base(a) { }
 
@@ -77,7 +77,9 @@ public sealed class Greymuzzle : StoryBoss
         public double FromX, FromZ, ToX, ToZ, RunT = -1;
     }
     readonly List<Wolf> ring = new(), guard = new();
-    double ringR = 12, biteT = 9, shoveT, biteGrace, frostR = 99, frostDrawT;
+    double ringR = 12, biteT = 9, shoveT, biteGrace, frostR = 99, frostDrawT, ringDrawT;
+    /// <summary>The dashes its edge is drawn in.</summary>
+    const int RingMarks = 36;
     bool ringBroken, longHunt, lyingDown;
     int lunges;
     double lungeT = 4, hamT = 3, howlT, sortieT, shakeT = 2, chainT = 3, turnT = 10, howlHp;
@@ -86,7 +88,8 @@ public sealed class Greymuzzle : StoryBoss
     bool moonCleared;
     bool atDen;
 
-    public const int RingWolves = 20;
+    /// <summary>Shoulder to shoulder as near as a crowd allows (twenty stood four metres apart).</summary>
+    public const int RingWolves = 30;
     /// <summary>The ring's reach round a fed fire: its light and a metre (two more with the bane).</summary>
     double FireRoom => Bane ? 7 : 1;
     bool Bane => S.Fact("bane.fires");
@@ -193,6 +196,21 @@ public sealed class Greymuzzle : StoryBoss
                 if (biteGrace <= 0) biteGrace = 2;
             }
         biteGrace -= dt;
+        // The ring's edge on the ground, where a step further is a shove: a pale line round the den floor that
+        // bows out round every fed fire. Seen at the screen, twenty wolves twelve metres out read as a scatter
+        // of wolves at the picture's edges, not as a wall.
+        if (!lyingDown && (ringDrawT -= dt) <= 0)
+        {
+            ringDrawT = 0.5;
+            for (int k = 0; k < RingMarks; k++)
+            {
+                double a0 = k * Math.PI * 2 / RingMarks, a1 = (k + 0.62) * Math.PI * 2 / RingMarks;
+                double r0 = RingAt(a0) - 0.8, r1 = RingAt(a1) - 0.8;
+                B.Events.Emit(new Ev.Telegraph { Id = 882000 + k, Shape = TelegraphShape.Line, Kind = TelegraphKind.Wall,
+                    X = C.X + Math.Cos(a0) * r0, Z = C.Z + Math.Sin(a0) * r0, X1 = C.X + Math.Cos(a1) * r1, Z1 = C.Z + Math.Sin(a1) * r1,
+                    Width = 0.3, Duration = 0.6, Hostile = true });
+            }
+        }
         // The cold: while he howls it closes in from the ring, and only a fed fire's light is clear.
         if (Channel != null && PhaseIx == 1)
         {
@@ -578,6 +596,8 @@ public sealed class Greymuzzle : StoryBoss
     /// <summary>Inside the ring, with a margin: a step past it is a shove.</summary>
     public bool Inside(double x, double z, double margin) => ringBroken || lyingDown || Dist(x, z, C.X, C.Z) < RingAt(Math.Atan2(z - C.Z, x - C.X)) - margin;
     public IReadOnlyList<Deadfall> Fires => S.Fires;
+    /// <summary>Where the guard before the den stands (a wall of the Pack: round its ends, not into it).</summary>
+    public IEnumerable<(double X, double Z)> Guarding => guard.Where(Here).Select(w => (w.E.X, w.E.Z));
     /// <summary>The den floor's middle: the ring stands round it.</summary>
     public (double X, double Z) Middle => C;
 
