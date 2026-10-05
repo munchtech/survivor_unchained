@@ -155,6 +155,12 @@ At tier 3 (before his blows were softened to ×1.0), plain hands won 17–25%.
 
 ### 4.3 Then
 
+0. **Arena art built the Hollow's place (`worktree-agent-a26767f7f9955cb56@f7c4c43c`, 662 tests green).** Merge it before touching `Hollow.cs` or `StoryNight.cs`:
+   - **The place is mirrored in z.** Every capsule, gate and point of `HollowByNight.Ground` is negated, so the way runs up the screen, away from the camera: the clough at the bottom, the den at the top. Directions in this page and in STORY_BOSSES ("north edge") now mean the top of the picture. Nothing in the stages or Greymuzzle depends on direction.
+   - `StoryNight.Open(gate)` also calls `G.Look.Show("gate:{id}", false)`. A shut gate is drawn as the ember's burning line, and it goes out as the gate opens.
+   - **Deadfalls use the map's own fire lights** (`map.FireLights`) where there is one for the fire's id, so lighting one sets its wood burning.
+   - `--night hollow [--stage N] [--lit]` shoots any stage; `--lit` lights every deadfall.
+   - **Their composition ask, yours to decide:** from `boss_start` the den's mouth is 23 m up the screen, at the very top edge of the frame. Bring `den_mouth` in to about 18 m from `boss_start` and the root plate and his way out sit in the upper third. Check the ring (12 m round `den`), the guard's arc before the mouth, and the porch still fit, and rerun `StoryNightTests`.
 0. **Skills' proposal for the rise's beat (`a94ac6b67f1279213`, handed off; their look is on `worktree-agent-a94ac6b67f1279213@4577e2f5`):**
    - `Battle.HurtPlayer` now emits `Ev.Rise { X, Z, Radius, Grace, Delay, Ember, Rank }` before `RiseBurning`, and the radius is `RiseRadius(rank)`. No mechanics changed.
    - **Yours to decide:** "You go cold. Then the ember catches." wants a beat. Today every body within 8 m burns in the frame the cold begins, while the fire's front takes 0.3 s to run out.
@@ -244,7 +250,7 @@ At tier 3 (before his blows were softened to ×1.0), plain hands won 17–25%.
   - the words: WRITING_PASS §21 (the pulls, the sights, the voices) and the rise's names and texts;
   - `chapter.done` marks Act 2.
   - **Owed:** Chid's node giving `keepers_office`.
-- **Arena art (`a26767f7f9955cb56`):** building the Hollow to `HollowByNight.Ground` (paused for the owner). They'll tell you before moving shapes.
+- **Arena art (`a26767f7f9955cb56`):** built the Hollow to `HollowByNight.Ground`, mirrored in z (§4.3). They'll tell you before moving shapes.
 - **Skills VFX** (`a94ac6b67f1279213` handed off; see `docs/handoff/skills.md`): the rise's look is built. A fed deadfall, the cold's band and the "His age" ring are on their successor's list.
 - **Cinematics (`a79b6d8c81e14dc63`, new lead):** the scripts match the design (C10's prompts in play, C11's "Finish it" as the blow, C13's laying down). The hook ids and their two asks are in §4.3.
 - **Crafting (`a7debf1459f14dfe7`):**
