@@ -14,17 +14,22 @@ ComfyUI with the prompt and seed recorded beside them.
              HUD's console, the well and the slab
   paper      the ledger paper and the hint note
   cards      the draft's cards, painted over forged guides
-  painted    the map's frame, the boss's casing, logo, ornaments
+  painted    the map's frame, the boss's casing, ornaments
+  logo       the title's logo, modelled as a relief (Cinzel's letters in forged steel, the chain)
   light      the focus ring and the bars' fills
   prompts    the pad's buttons, forged
   mapmarks   the map's marks, in ink on parchment
   glyphs     the interface's own marks as value art
   icons      the skills', arts', blessings' and evolutions' painted icons
+  emblems    the icons remade as modelled emblems, painted over (after icons: they replace theirs)
   medals     round pieces modelled as reliefs: the level medallion, the medallion ring, the health
              globe's rim and glass, the (unused) heart medallion and its stone (after icons: the
              stone is the heart icon)
   pieces     frames modelled as reliefs: the page header, the attribute pillar, the crested card
              and row, the banner, the open book, the ribbon, the plaque's rule
+  pages      the page's pieces as reliefs: the header band (leather and a forged rail), the backdrop's
+             grain and edges, the column divider and its stone, the section mark, the hero plate, the
+             light card (after pieces: the header is the page's now)
   items      the items' painted icons
   cursors    the pointer, the hand, the refusal
   arrow      the survivor's arrow on the minimap
@@ -66,9 +71,15 @@ def g_cards():
 def g_painted():
     import fitall
     # The minimap's rim and the art's ring are Blender pieces (chrome); the medallions are
-    # reliefs (medals). Only what is still painted from text is fitted here.
-    for n in ("mapframe", "bosscasing", "logo", "rule", "flourish"):
+    # reliefs (medals), and so is the logo (logo). Only what is still painted from text is
+    # fitted here.
+    for n in ("mapframe", "bosscasing", "rule", "flourish"):
         fitall.GROUPS[n]()
+
+
+def g_logo():
+    import logo
+    logo.main()
 
 
 def g_light():
@@ -99,6 +110,11 @@ def g_icons():
     iconpicks.main()
 
 
+def g_emblems():
+    import emblems
+    emblems.build()
+
+
 def g_medals():
     import medals
     for n in medals.BUILD:
@@ -109,6 +125,12 @@ def g_pieces():
     import pieces
     for n in pieces.BUILD:
         pieces.build(n)
+
+
+def g_pages():
+    import pages
+    for n in pages.BUILD:
+        pages.build(n)
 
 
 def g_items():

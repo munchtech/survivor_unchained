@@ -245,7 +245,13 @@ public partial class Section : Control
 
     public override void _Draw()
     {
-        DrawColoredPolygon(new[] { new Vector2(5, 7), new Vector2(10, 12), new Vector2(5, 17), new Vector2(0, 12) }, Style.Ember);
+        // The painted mark (ornaments/section_mark.png, an ember set in gold) where there is one.
+        if (UiArt.Art("ornaments/section_mark.png") is { } mark)
+        {
+            var s = mark.GetSize();
+            DrawTextureRect(mark, new Rect2(new Vector2(5, 12) - s / 2, s), false);
+        }
+        else DrawColoredPolygon(new[] { new Vector2(5, 7), new Vector2(10, 12), new Vector2(5, 17), new Vector2(0, 12) }, Style.Ember);
         var label = GetChild<HBoxContainer>(0);
         float x = 16 + label.GetCombinedMinimumSize().X + 12;
         if (x < Size.X - 4) DrawLine(new Vector2(x, 12), new Vector2(Size.X, 12), Style.Line, 1);
@@ -332,6 +338,17 @@ public partial class Globe : Control
     public string Number = "";
     public float Pulse;
     readonly float r;
+    // What was last drawn: the HUD asks every frame, and a redraw rebuilt every polygon.
+    (float, float, float, string, float, Color) drawn = (float.NaN, 0, 0, "", 0, default);
+
+    /// <summary>Redrawn only if what it shows has changed since it was last drawn.</summary>
+    public void Changed()
+    {
+        var now = (Level, Trail, Shield, Number, Pulse, Liquid);
+        if (now == drawn) return;
+        drawn = now;
+        QueueRedraw();
+    }
 
     public Globe(float radius)
     {
@@ -400,6 +417,7 @@ public partial class Globe : Control
 public partial class Backdrop : Control
 {
     public float Strength = 0.88f;
+    static Shader? blur;
 
     public Backdrop(Action? onClick = null, float strength = 0.88f)
     {
@@ -407,11 +425,33 @@ public partial class Backdrop : Control
         Style.Fill(this);
         MouseFilter = MouseFilterEnum.Stop;
         if (onClick != null) GuiInput += e => { if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left }) onClick(); };
+        // The world behind, out of focus and darkened (shaders/ui_backdrop.gdshader): the page
+        // sits in the place the survivor stands, never on flat black.
+        blur ??= GD.Load<Shader>("res://shaders/ui_backdrop.gdshader");
+        var world = new ColorRect { Material = new ShaderMaterial { Shader = blur }, MouseFilter = MouseFilterEnum.Ignore };
+        ((ShaderMaterial)world.Material).SetShaderParameter("dim", Mathf.Lerp(1.1f, 0.62f, strength));
+        Style.Fill(world);
+        AddChild(world);
+        // The painted layers over it (tools/uiforge/pages.py): soot and wear gathered at the edges,
+        // then a fine grain over all, so the dark between columns is a surface, not an empty screen.
+        if (UiArt.Tex("page/backdrop_edges.png", false) is { } edges)
+        {
+            var e = new TextureRect { Texture = edges, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Scale, MouseFilter = MouseFilterEnum.Ignore };
+            Style.Fill(e);
+            AddChild(e);
+        }
+        if (UiArt.Art("page/backdrop_grain.png") is { } grain)
+        {
+            var g = new TextureRect { Texture = grain, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.Tile, MouseFilter = MouseFilterEnum.Ignore };
+            Style.Fill(g);
+            AddChild(g);
+        }
         var dark = new TextureRect
         {
             Texture = new GradientTexture2D
             {
-                Gradient = new Gradient { Colors = new[] { new Color(0.03f, 0.02f, 0.04f, strength * 0.72f), new Color(0.02f, 0.015f, 0.03f, strength) }, Offsets = new[] { 0.2f, 1f } },
+                // (the blurred world is already dim: the shade only deepens toward the edges, where it frames the page)
+                Gradient = new Gradient { Colors = new[] { new Color(0.03f, 0.02f, 0.04f, strength * 0.12f), new Color(0.02f, 0.015f, 0.03f, strength * 0.7f) }, Offsets = new[] { 0.2f, 1f } },
                 Fill = GradientTexture2D.FillEnum.Radial, FillFrom = new Vector2(0.5f, 0.45f), FillTo = new Vector2(1.05f, 1.05f), Width = 256, Height = 256,
             },
             StretchMode = TextureRect.StretchModeEnum.Scale, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = MouseFilterEnum.Ignore,
@@ -422,7 +462,7 @@ public partial class Backdrop : Control
         {
             Texture = new GradientTexture2D
             {
-                Gradient = new Gradient { Colors = new[] { new Color(1, 0.42f, 0.12f, 0.16f), new Color(1, 0.42f, 0.12f, 0) }, Offsets = new[] { 0f, 1f } },
+                Gradient = new Gradient { Colors = new[] { new Color(1, 0.42f, 0.12f, 0.08f), new Color(1, 0.42f, 0.12f, 0) }, Offsets = new[] { 0f, 1f } },
                 FillFrom = new Vector2(0.5f, 1), FillTo = new Vector2(0.5f, 0.6f), Width = 16, Height = 128,
             },
             StretchMode = TextureRect.StretchModeEnum.Scale, ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, MouseFilter = MouseFilterEnum.Ignore,

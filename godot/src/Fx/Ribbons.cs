@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Godot;
 
 namespace SurvivorUnchained.View;
@@ -246,6 +247,20 @@ public partial class Ribbons : MeshInstance3D
             n++;
         }
         if (n < 2) return;
+        // A point just past the head at no width, so the head comes to a tip
+        // (cut off at its full width, an arrow's streak and a sweep's lead
+        // ended square).
+        if (n < MaxPts)
+        {
+            var on = tp[n - 1] - tp[n - 2];
+            float len = on.Length();
+            if (len > 1e-4f)
+            {
+                tp[n] = tp[n - 1] + on / len * Mathf.Min(len * 2, t.Width * 0.8f);
+                tw[n] = 0;
+                n++;
+            }
+        }
         // A trail no longer fed fades as a whole.
         float stale = Mathf.Clamp(1 - (now - t.Seen) / Mathf.Max(0.05f, t.Life), 0, 1);
         tw[0] = 0;
@@ -286,23 +301,72 @@ public partial class Ribbons : MeshInstance3D
         shade.Strip(s0, n);
     }
 
-    /// <summary>One mesh's worth of ribbon, filled afresh each frame.</summary>
+    /// <summary>One mesh's worth of ribbon. Its surface is made once, at full
+    /// size, and each frame only the part in use is written into it, laid out
+    /// as the engine lays it out; the indices past that part are all zero, so
+    /// their triangles have no area and draw nothing. Remaking the surface
+    /// every frame cost new GPU buffers, a copy of every array and the
+    /// renderer re-pairing the mesh with its material.</summary>
     sealed class Buffer
     {
+        /// <summary>A vertex's colour, UV and UV2 as the engine stores them
+        /// (Godot 4.5, checked at start): the colour as four bytes, cut down
+        /// from floats as the engine cuts them, then two pairs of floats.</summary>
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        struct Attr
+        {
+            public uint Color;
+            public Vector2 Uv, Uv2;
+        }
+
         public readonly ArrayMesh Mesh = new();
         readonly Vector3[] verts = new Vector3[Capacity];
-        readonly Color[] cols = new Color[Capacity];
-        readonly Vector2[] uvs = new Vector2[Capacity];
-        readonly Vector2[] uv2s = new Vector2[Capacity];
-        readonly int[] idx = new int[Capacity * 3];
+        readonly Attr[] attrs = new Attr[Capacity];
+        readonly ushort[] idx = new ushort[Capacity * 3];
         public int Nv, Ni;
+        // How many indices the GPU holds from the frame before (they are zeroed when this frame uses fewer).
+        int sent;
+        readonly bool inPlace;
+
+        public Buffer()
+        {
+            var arr = new Godot.Collections.Array();
+            arr.Resize((int)Godot.Mesh.ArrayType.Max);
+            arr[(int)Godot.Mesh.ArrayType.Vertex] = verts;
+            arr[(int)Godot.Mesh.ArrayType.Color] = new Color[Capacity];
+            arr[(int)Godot.Mesh.ArrayType.TexUV] = new Vector2[Capacity];
+            arr[(int)Godot.Mesh.ArrayType.TexUV2] = new Vector2[Capacity];
+            arr[(int)Godot.Mesh.ArrayType.Index] = new int[Capacity * 3];
+            Mesh.AddSurfaceFromArrays(Godot.Mesh.PrimitiveType.Triangles, arr, null, null, Godot.Mesh.ArrayFormat.FlagUseDynamicUpdate);
+            // Written in place only if the engine's layout is the one Attr assumes.
+            var f = (RenderingServer.ArrayFormat)(long)Mesh.SurfaceGetFormat(0);
+            inPlace = RenderingServer.MeshSurfaceGetFormatVertexStride(f, Capacity) == 12
+                && RenderingServer.MeshSurfaceGetFormatAttributeStride(f, Capacity) == Marshal.SizeOf<Attr>()
+                && RenderingServer.MeshSurfaceGetFormatOffset(f, Capacity, (int)Godot.Mesh.ArrayType.Color) == 0
+                && RenderingServer.MeshSurfaceGetFormatOffset(f, Capacity, (int)Godot.Mesh.ArrayType.TexUV) == 4
+                && RenderingServer.MeshSurfaceGetFormatOffset(f, Capacity, (int)Godot.Mesh.ArrayType.TexUV2) == 12
+                && RenderingServer.MeshSurfaceGetFormatIndexStride(f, Capacity) == 2;
+            if (!inPlace)
+            {
+                GD.PushWarning("Ribbons: the engine's mesh layout is not the one expected; remaking the mesh each frame instead.");
+                Mesh.ClearSurfaces();
+            }
+        }
 
         public bool Fits(int n) => Nv + n * 2 <= Capacity && Ni + (n - 1) * 6 <= idx.Length;
 
+        /// <summary>A colour as the engine stores it: each channel times 255 in
+        /// double, clamped and cut (not rounded), so the look is unchanged.</summary>
+        static uint Pack(Color c) =>
+            (uint)Math.Clamp(c.R * 255.0, 0, 255) | (uint)Math.Clamp(c.G * 255.0, 0, 255) << 8
+            | (uint)Math.Clamp(c.B * 255.0, 0, 255) << 16 | (uint)Math.Clamp(c.A * 255.0, 0, 255) << 24;
+
         public void Pair(Vector3 a, Vector3 b, Color c, float u, float energy, float style)
         {
-            verts[Nv] = a; cols[Nv] = c; uvs[Nv] = new Vector2(u, 0); uv2s[Nv] = new Vector2(energy, style); Nv++;
-            verts[Nv] = b; cols[Nv] = c; uvs[Nv] = new Vector2(u, 1); uv2s[Nv] = new Vector2(energy, style); Nv++;
+            uint packed = Pack(c);
+            var e = new Vector2(energy, style);
+            verts[Nv] = a; attrs[Nv] = new Attr { Color = packed, Uv = new Vector2(u, 0), Uv2 = e }; Nv++;
+            verts[Nv] = b; attrs[Nv] = new Attr { Color = packed, Uv = new Vector2(u, 1), Uv2 = e }; Nv++;
         }
 
         public void Strip(int first, int n)
@@ -310,31 +374,69 @@ public partial class Ribbons : MeshInstance3D
             for (int i = 0; i < n - 1; i++)
             {
                 int a = first + i * 2;
-                idx[Ni++] = a; idx[Ni++] = a + 1; idx[Ni++] = a + 2;
-                idx[Ni++] = a + 1; idx[Ni++] = a + 3; idx[Ni++] = a + 2;
+                idx[Ni++] = (ushort)a; idx[Ni++] = (ushort)(a + 1); idx[Ni++] = (ushort)(a + 2);
+                idx[Ni++] = (ushort)(a + 1); idx[Ni++] = (ushort)(a + 3); idx[Ni++] = (ushort)(a + 2);
             }
         }
 
         public void Flush()
         {
-            Mesh.ClearSurfaces();
-            if (Ni > 0)
-            {
-                var arr = new Godot.Collections.Array();
-                arr.Resize((int)Godot.Mesh.ArrayType.Max);
-                arr[(int)Godot.Mesh.ArrayType.Vertex] = verts.AsSpan(0, Nv).ToArray();
-                arr[(int)Godot.Mesh.ArrayType.Color] = cols.AsSpan(0, Nv).ToArray();
-                arr[(int)Godot.Mesh.ArrayType.TexUV] = uvs.AsSpan(0, Nv).ToArray();
-                arr[(int)Godot.Mesh.ArrayType.TexUV2] = uv2s.AsSpan(0, Nv).ToArray();
-                arr[(int)Godot.Mesh.ArrayType.Index] = idx.AsSpan(0, Ni).ToArray();
-                Mesh.AddSurfaceFromArrays(Godot.Mesh.PrimitiveType.Triangles, arr);
-            }
+            if (inPlace) Send();
+            else Remake();
             Nv = Ni = 0;
+        }
+
+        void Send()
+        {
+            var rid = Mesh.GetRid();
+            if (Nv > 0)
+            {
+                RenderingServer.MeshSurfaceUpdateVertexRegion(rid, 0, 0, MemoryMarshal.AsBytes(verts.AsSpan(0, Nv)));
+                RenderingServer.MeshSurfaceUpdateAttributeRegion(rid, 0, 0, MemoryMarshal.AsBytes(attrs.AsSpan(0, Nv)));
+            }
+            // Last frame's triangles past this frame's end are zeroed in the same upload.
+            int upto = Math.Max(Ni, sent);
+            if (upto > 0)
+            {
+                if (sent > Ni) Array.Clear(idx, Ni, sent - Ni);
+                RenderingServer.MeshSurfaceUpdateIndexRegion(rid, 0, 0, MemoryMarshal.AsBytes(idx.AsSpan(0, upto)));
+            }
+            sent = Ni;
+        }
+
+        /// <summary>The old way, kept for an engine whose layout differs.</summary>
+        void Remake()
+        {
+            Mesh.ClearSurfaces();
+            if (Ni == 0) return;
+            var cols = new Color[Nv];
+            var uvs = new Vector2[Nv];
+            var uv2s = new Vector2[Nv];
+            for (int i = 0; i < Nv; i++)
+            {
+                uint c = attrs[i].Color;
+                // Half a step up, so the engine cuts it back to the same byte.
+                cols[i] = new Color(((c & 255) + 0.5f) / 255f, ((c >> 8 & 255) + 0.5f) / 255f, ((c >> 16 & 255) + 0.5f) / 255f, ((c >> 24) + 0.5f) / 255f);
+                uvs[i] = attrs[i].Uv;
+                uv2s[i] = attrs[i].Uv2;
+            }
+            var ix = new int[Ni];
+            for (int i = 0; i < Ni; i++) ix[i] = idx[i];
+            var arr = new Godot.Collections.Array();
+            arr.Resize((int)Godot.Mesh.ArrayType.Max);
+            arr[(int)Godot.Mesh.ArrayType.Vertex] = verts.AsSpan(0, Nv).ToArray();
+            arr[(int)Godot.Mesh.ArrayType.Color] = cols;
+            arr[(int)Godot.Mesh.ArrayType.TexUV] = uvs;
+            arr[(int)Godot.Mesh.ArrayType.TexUV2] = uv2s;
+            arr[(int)Godot.Mesh.ArrayType.Index] = ix;
+            Mesh.AddSurfaceFromArrays(Godot.Mesh.PrimitiveType.Triangles, arr);
         }
     }
 
     void Flush()
     {
+        // Nothing to draw: hidden, rather than drawing a mesh of empty triangles.
+        Visible = glow.Ni > 0;
         glow.Flush();
         shade.Flush();
     }

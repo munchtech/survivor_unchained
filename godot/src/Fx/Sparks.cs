@@ -45,7 +45,7 @@ public partial class Sparks : MultiMeshInstance3D
             TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseColors = true, UseCustomData = true, InstanceCount = Uploads.Least, VisibleInstanceCount = 0,
             Mesh = new QuadMesh { Size = Vector2.One, Material = mat },
         };
-        sent = new Uploads(Uploads.Least, capacity);
+        sent = new Uploads(Multimesh, Uploads.Least, capacity);
         CastShadow = ShadowCastingSetting.Off;
         // They go everywhere: never culled as a whole.
         CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f));
@@ -103,10 +103,10 @@ public partial class Sparks : MultiMeshInstance3D
             buffer[o + 12] = c.R; buffer[o + 13] = c.G; buffer[o + 14] = c.B; buffer[o + 15] = a;
             buffer[o + 16] = Mathf.Max(0, p.Sprite); buffer[o + 17] = p.Spin; buffer[o + 18] = k; buffer[o + 19] = 0;
         }
-        sent.Send(Multimesh, buffer, count, Stride);
+        sent.Send(buffer, count, Stride);
     }
 
-    public void Clear() { count = 0; sent.Send(Multimesh, buffer, 0, Stride); }
+    public void Clear() { count = 0; sent.Send(buffer, 0, Stride); }
 }
 
 /// <summary>
@@ -114,18 +114,22 @@ public partial class Sparks : MultiMeshInstance3D
 /// as many places as are in use (rounded up to a power of two, so the
 /// MultiMesh is seldom remade), and nothing at all while it stays empty.
 /// Sending the whole of every batch's room each frame (a megabyte in all,
-/// copied three times and uploaded) cost more than what was in it.
+/// copied three times and uploaded) cost more than what was in it. The
+/// MultiMesh and its RID are kept here: asking the node for them is a call
+/// into the engine each time.
 /// </summary>
 public struct Uploads
 {
     /// <summary>The fewest places a batch keeps.</summary>
     public const int Least = 64;
+    readonly MultiMesh mm;
+    readonly Rid rid;
     readonly int most;
     int size, shown, low;
 
-    public Uploads(int size, int most) { this.size = size; this.most = most; shown = low = 0; }
+    public Uploads(MultiMesh mm, int size, int most) { this.mm = mm; rid = mm.GetRid(); this.size = size; this.most = most; shown = low = 0; }
 
-    public void Send(MultiMesh mm, float[] buffer, int count, int stride)
+    public void Send(float[] buffer, int count, int stride)
     {
         if (count == 0 && shown == 0) return;
         int want = size;
@@ -133,14 +137,17 @@ public struct Uploads
         // Well under its room for a few seconds: given back (a burst's peak is not kept for ever).
         else if (size > Least && count < size / 4) { if (++low > 240) want = Math.Max(Least, Pow2(Math.Max(1, count)) * 2); }
         else low = 0;
-        if (want != size)
+        bool resized = want != size;
+        if (resized)
         {
             size = want;
             low = 0;
             mm.InstanceCount = size;
         }
-        RenderingServer.MultimeshSetBuffer(mm.GetRid(), new ReadOnlySpan<float>(buffer, 0, size * stride));
-        mm.VisibleInstanceCount = shown = Math.Min(count, size);
+        RenderingServer.MultimeshSetBuffer(rid, new ReadOnlySpan<float>(buffer, 0, size * stride));
+        // (Remaking the room resets what is shown, so it is set again then.)
+        int n = Math.Min(count, size);
+        if (n != shown || resized) mm.VisibleInstanceCount = shown = n;
     }
 
     static int Pow2(int n)
@@ -167,7 +174,7 @@ public partial class Batch : MultiMeshInstance3D
         MaterialOverride = mat;
         int first = Math.Min(capacity, Uploads.Least);
         Multimesh = new MultiMesh { TransformFormat = MultiMesh.TransformFormatEnum.Transform3D, UseColors = true, InstanceCount = first, VisibleInstanceCount = 0, Mesh = mesh };
-        sent = new Uploads(first, capacity);
+        sent = new Uploads(Multimesh, first, capacity);
         CastShadow = shadow ? ShadowCastingSetting.On : ShadowCastingSetting.Off;
         CustomAabb = new Aabb(new Vector3(-1e4f, -1e4f, -1e4f), new Vector3(2e4f, 2e4f, 2e4f));
     }
@@ -185,5 +192,5 @@ public partial class Batch : MultiMeshInstance3D
         buffer[o + 12] = c.R; buffer[o + 13] = c.G; buffer[o + 14] = c.B; buffer[o + 15] = c.A;
     }
 
-    public void End() => sent.Send(Multimesh, buffer, count, 16);
+    public void End() => sent.Send(buffer, count, 16);
 }

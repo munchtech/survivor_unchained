@@ -172,8 +172,10 @@ silence between readings. The narrator never speaks; Vonnra carries all of it.
 
 | # | Shot | Lens | Camera | Framing and action | Dur. |
 |---|---|---|---|---|---|
-| 12 | MS | 50 | Static, B's side | She lets go of the hand. "The door is not for sale..." to the end. She looks at the palm she has let go of. | 7.0 |
-| 13 | 2S | 50 | As 4 | The choice "Close the book on this chapter." The survivor stands. | 2.0 |
+| 12 | MS | 50 | Static, B's side | She lets go of the hand. "The door is not for sale. That is all I see for free." She looks at the palm she has let go of. | 4.0 |
+| 12b | INSERT | 85 | Static, over the table, the lamp at frame left | Line `vonnra.f_chart` #1. Her hand takes a folded chart from under the ledger and lays it on the cloth between them, and opens one fold of it with a fingertip. The ground is in a quick, neat hand that is not hers, and every margin is written full, too small to read. "That would be ten gold, traveller. This once, no charge." | 4.0 |
+| 12c | MS | 50 | As 12 | "The rest you will walk into yourself, and you will, because you are the kind that does." She does not look at the chart again. | 3.5 |
+| 13 | 2S | 50 | As 4 | The choice "Close the book on this chapter." The survivor stands, and takes the chart. | 2.0 |
 
 **"You lit the lamps at the Low Ford."** (`vonnra.f_accuse`, then `f_door` #0):
 
@@ -184,7 +186,8 @@ silence between readings. The narrator never speaks; Vonnra carries all of it.
 | 14a | 2S | 100 | Static, profile from the south, tight: two faces and the lamp between them | The lamp at the height of their mouths. Vonnra's breath smokes across the flame, slowly, twice, and the flame leans from it. On the survivor's side of the flame, nothing. The flame gutters. Nobody says anything. | 4.0 |
 | 14b | ECU | 135 | Static | The survivor's eyes, the lamp's flame small in each, as at the ford. | 2.0 |
 | 15a | MCU | 50 | Static, up at Vonnra past the lamp | Line `vonnra.f_accuse`: "...Sit down, {name}. I have not finished reading." She sets the lamp down. | 4.0 |
-| 16a | 2S | 50 | As 4 | The survivor sits. Vonnra does not take the hand again. Line `vonnra.f_door` #0: "The door in the hillside is listening, as I am. That is all I see for free, {name}..." Then "Close the book on this chapter." | 9.0 |
+| 16a | 2S | 50 | As 4 | The survivor sits. Vonnra does not take the hand again. Line `vonnra.f_door` #0: "The door in the hillside is listening, as I am. That is all I see for free, {name}." | 5.0 |
+| 16b | INSERT | 85 | As 12b | Line `vonnra.f_chart` #0: the chart laid down as in 12b. "That would be ten gold. This once, no charge." (No "traveller" now, and not the name: she has spent it.) "The rest you will walk into yourself..." Then "Close the book on this chapter." | 7.0 |
 
 ### Alone (the stinger, after the chapter's choice)
 
@@ -260,13 +263,14 @@ the first line, which this pass added:
 | `vonnra.fortune#2` (warden, reaver) | ...No, the other one: the one you hold the blade with. ... |
 | `vonnra.f_beasts#0` to `#7` | the wolves (see `dialogue.json`) |
 | `vonnra.f_caravan#0` to `#5` | the caravan |
-| `vonnra.f_ember#0` to `#4` | the crates |
+| `vonnra.f_ember#0` to `#7` | the crates (#0, new: spared, Redcowl took them north over the ridge) |
 | `vonnra.f_pell#0` to `#4` | Pell |
 | `vonnra.f_self#0` to `#3` | the survivor |
 | `vonnra.f_past#0` to `#4` | before the ford |
 | `vonnra.f_below#0`, `#1` | below |
 | `vonnra.f_accuse` | ...Sit down, {name}. I have not finished reading. |
-| `vonnra.f_door#0`, `#1` | the door |
+| `vonnra.f_door#0`, `#1` | the door (it now ends at "That is all I see for free[, {name}].") |
+| `vonnra.f_chart#0` (accused), `#1` | the first chart, priced and waived: "That would be ten gold[, traveller]. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does." Its opening parenthesis is the picture (12b, 16b), not spoken. |
 
 `f_accuse`'s text in the data begins with a parenthesis for the text-only
 conversation ("For the first time she looks at your face... the lamp gutters."):
@@ -275,7 +279,7 @@ that is shots 13a to 14b, and it is not spoken.
 **The name.** `{name}` in a VO line is the survivor's name, and saying it is the
 only answer Vonnra gives (`VOICES.md`). Three lines carry it: `vonnra.f_accuse`
 ("...Sit down, {name}. I have not finished reading."), `vonnra.f_door#0` ("That
-is all I see for free, {name}. The rest...") and `vonnra.hub#0` ("{name}. Your
+is all I see for free, {name}.") and `vonnra.hub#0` ("{name}. Your
 chapter is written."). Each is written so the name stands alone at a pause, and
 is recorded so:
 - **two takes, split at the name**, each ending or starting on the pause;

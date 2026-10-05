@@ -61,7 +61,11 @@ shadows, the ember's red on her.
 Only if she knelt and promised in C05 (`promise.pack`) and the stream already
 runs clear (`stream.clear`): the fight can end without his death
 (`greymuzzle` = `spared`, a systems change: `STORY_BIBLE.md`, "The nights").
-Shots 1 to 3 as above. Then:
+**It is her choice** (the owner, 4 October): spent, he goes down on his side
+and the ring lies down where it stands, and two prompts wait at his side with
+no clock, "Let him go" and "Finish it". "Finish it" plays the death above and
+breaks the promise she knelt to make. "Let him go" plays this variant.
+Shots 1 to 3 as above, with the prompts after shot 3. Then:
 
 | # | Shot | Lens | Camera | Framing and action | Dur. |
 |---|---|---|---|---|---|

@@ -66,7 +66,7 @@ public partial class PersonView : Node3D, INpcView
 
     /// <summary>Her corrective layer stands down for her own clips (eased
     /// over the blend, so her pelvis does not jump).</summary>
-    void Native(string name) => native = name.StartsWith(HerClips.Prefix) ? 1 : 0;
+    void Native(string name) => native = person.Own?.Owns(name) == true ? 1 : 0;
     float native;
 
     public void Act(string clip, double speed = 1) => Act(clip, speed, false);
@@ -75,7 +75,7 @@ public partial class PersonView : Node3D, INpcView
     /// library clip given for anyone else).</summary>
     public void Flourish(string fallback)
     {
-        if (person.Body == "heroine" && HerClips.Has($"{person.Calling}_show")) Act(HerClips.Prefix + person.Calling + "_show");
+        if (person.Own is { } own && own.Has($"{person.Calling}_show")) Act(own.Prefix + person.Calling + "_show");
         else Act(fallback);
         breakT = Mathf.Max(breakT, 6);
     }
@@ -86,14 +86,14 @@ public partial class PersonView : Node3D, INpcView
 
     void Fidget(double delta)
     {
-        if (person.Body != "heroine" || walking || holding || actLeft > 0 || Driven) return;
+        if (person.Own is not { } own || walking || holding || actLeft > 0 || Driven) return;
         // Only while she stands in her calling's idle.
-        if (!People.Clip(person, loop).StartsWith(HerClips.Prefix + "idle_")) return;
+        if (!People.Clip(person, loop).StartsWith(own.Prefix + "idle_")) return;
         breakT -= delta;
         if (breakT > 0) return;
         breakT = rng.RandfRange(9, 15);
         var brk = $"idle_{person.Calling}_break";
-        if (HerClips.Has(brk)) Act(HerClips.Prefix + brk);
+        if (own.Has(brk)) Act(own.Prefix + brk);
     }
 
     /// <summary>A gesture once; held on its last frame (a fall, getting up)
@@ -131,6 +131,13 @@ public partial class PersonView : Node3D, INpcView
         Cinema = true;
         var name = People.Clip(person, clip);
         if (!person.Anim.HasAnimation(name)) { GD.PushWarning($"cinema: no clip {clip}"); return; }
+        // A gesture (a nod, an exhale) is laid over what plays, not played in its place.
+        if (person.Own is { } own && own.Owns(name) && own.Gesture(name[own.Prefix.Length..]) && person.Gestures is { } g)
+        {
+            g.Play(person.Anim.GetAnimation(name), speed, own.Holds(name[own.Prefix.Length..]));
+            return;
+        }
+        person.Gestures?.Release();
         person.Anim.CallbackModeProcess = AnimationMixer.AnimationCallbackModeProcess.Manual;
         person.Anim.Play(name, blend);
         person.Anim.SpeedScale = (float)speed;
@@ -149,7 +156,7 @@ public partial class PersonView : Node3D, INpcView
         // Standing, walking, jogging: the stride matched to the ground. Her
         // own run is played at the rate that keeps her feet planted.
         string run = People.Clip(person, RunClip);
-        float natural = run.StartsWith(HerClips.Prefix) ? HerClips.Speed(run[HerClips.Prefix.Length..]) * person.Root.Scale.X : 0;
+        float natural = person.Own is { } own && own.Owns(run) ? own.Speed(run[own.Prefix.Length..]) * person.Root.Scale.X : 0;
         string want = speed < 0.3 ? "" : natural > 0 || speed >= 2.6 ? RunClip : WalkClip;
         bool was = walking;
         walking = want != "";
@@ -210,6 +217,18 @@ public partial class PersonView : Node3D, INpcView
         }
         root.Free();
         return null;
+    }
+
+    public override void _Ready() => Settle();
+
+    /// <summary>Posed now, as it will be drawn. A figure added in the middle of a frame showed its
+    /// bind pose (a T) for that frame, and her corrective layer eased in from nothing: the pack's
+    /// doll did both on every refresh.</summary>
+    public void Settle()
+    {
+        if (Driven || Cinema || !IsInsideTree()) return;
+        if (person.Pose is HerPose hp) hp.Lower = hp.Upper = native;
+        if (person.Anim.IsPlaying()) person.Anim.Advance(0);
     }
 
     public override void _Process(double delta)

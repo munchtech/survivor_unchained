@@ -68,15 +68,27 @@ public sealed class CineSkip { public double From = 1.5, Hold = 0.8; }
 public sealed class CineWorld { public double Rate; public bool ZoneHeld = true; }
 
 /// <summary>Someone in it: the survivor, a person, one of the dead (spawned
-/// into the fight, so they are still there when play begins), a boss.</summary>
+/// into the fight, so they are still there when play begins), a boss, a
+/// crowd of extras, or a light that is a thing (the Warden's heart).</summary>
 public sealed class CineCast
 {
-    /// <summary>survivor, npc, enemy, boss.</summary>
+    /// <summary>survivor, npc, enemy, boss (the Ford-Warden's body, the
+    /// cinematic's own), extras (a crowd seen only here, one at each of At,
+    /// cued together by the cast's name), orb (a bright stone with its light).</summary>
     public string Kind = "npc";
     /// <summary>The enemy's def, the npc's id.</summary>
     public string? Def;
     /// <summary>Where they are when it begins.</summary>
     public string? Mark;
+    /// <summary>Extras: how each is dressed (an enemy visual, in turn), where
+    /// each stands (places), which way they all face, and the loop they hold.</summary>
+    public List<string>? Visual;
+    public List<JsonElement>? At;
+    public double Heading;
+    public string? Idle;
+    /// <summary>An orb's colour and size; a boss's or an orb's glow to begin with.</summary>
+    public string? Color;
+    public double Size = 0.42, Glow = 1;
 }
 
 public sealed class CineEnd
@@ -176,7 +188,9 @@ public sealed class CineCue
     public bool Bool(string k, bool or = false) => Args != null && Args.TryGetValue(k, out var v) && v.ValueKind is JsonValueKind.True or JsonValueKind.False ? v.GetBoolean() : or;
     public bool Has(string k) => Args != null && Args.ContainsKey(k);
     public JsonElement Get(string k) => Args != null && Args.TryGetValue(k, out var v) ? v : default;
-    public string Actor => Str("actor") ?? "her";
+    /// <summary>Whom it is done to (a cast name; a crowd's name is each of them).
+    /// Filled from "actor" by the JSON: a key a property claims never reaches Args.</summary>
+    public string Actor { get; set; } = "her";
 
     /// <summary>What a skip still does: what lasts after the cinematic (who is where,
     /// what was spawned, lights, the air, the world's pace, the game's events).</summary>
@@ -192,5 +206,6 @@ public sealed class CineCue
     [
         "line", "music", "sfx", "place", "anim", "move", "face", "gaze", "lids", "look", "light", "lit", "fire",
         "atmosphere", "vfx", "spawn", "world", "bars", "title", "event", "fade", "hide", "wet", "hold", "prop", "prints", "glow", "frost",
+        "lamp",
     ];
 }

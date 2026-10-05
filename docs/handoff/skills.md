@@ -1,148 +1,184 @@
 # Handoff: skills look and feel
 
 For the next skills lead. Read `docs/team/README.md` first, then this page, then
-`docs/team/skills.md` (status, grades, next steps). Branch:
-`worktree-agent-a8bafe3cd8a229639`.
+`docs/team/skills.md` (status, grades, the exact next step). Branch:
+`worktree-agent-a63cd93fc73d5ed79`, merged into the integration branch at 0e6f2e8b.
 
 ## The owner's words
 
-- "leveling up all our skills. revisiting ones we already made if they don't match
-  our perfection standard, moving on to others if they do. theres many we never got
-  to. leverage our gpu as always to create amazing effects and be careful of
-  crop/squaring issues we had early on"
-- "I don't want to polish, I want to create perfection." "Do we have soul?" AAA, never
-  settle; judge at full resolution (the owner caught square edges on effects in
-  thumbnails others dismissed).
+- "leveling up all our skills. revisiting ones we already made if they don't match our perfection
+  standard, moving on to others if they do. theres many we never got to. leverage our gpu as always
+  to create amazing effects and be careful of crop/squaring issues we had early on"
+- "I don't want to polish, I want to create perfection." "Do we have soul?" AAA, never settle. Judge
+  at full resolution: the owner caught square edges in thumbnails that others had dismissed.
 
 ## The brief
 
-You own how every skill looks, sounds and feels in play:
-- arts, auto-attacks, evolutions, blessings, the callings' own moves;
-- anything the player casts or fires.
+You own how every skill looks, sounds and feels in play: arts, auto-attacks, evolutions, blessings,
+the callings' own moves, and (combat's list) the enemy's own verbs. Each skill must:
+- read at a glance in a horde;
+- keep one colour and shape language per school;
+- land every hit with a flash, hit-stop, sound and mark;
+- grow with rank and evolution.
 
-1. Inventory every skill.
-2. See each one in the running game at 1920x1080, as frame sequences in real play:
-   on several grounds, in a horde, by night and by day.
-3. Grade each in `docs/team/skills.md` for soul, readability, impact, school
-   identity, polish, and crop or square edges.
-4. Remake those below the bar, and create the missing ones:
-   - each reads at a glance in a horde;
-   - one colour and shape language per school;
-   - every hit lands with flash, hit-stop, sound and mark;
-   - each escalates with rank and evolution.
-5. No effect may ever show the square of its sprite or be cut off at its frame's
-   edge. The flipbook tool must refuse such frames automatically.
+No effect may ever show its sprite's square or be cut off at its frame's edge. Combat owns mechanics
+and numbers: propose changes, never make them. For each batch, send the main session a before/after
+sheet of full-resolution frames from play.
 
-Combat owns mechanics and numbers: propose, never change them yourself. Send a
-before/after contact sheet of frames from play to the main session for each
-batch.
+## Done (all pushed and merged)
 
-## Done
+- **The nine starting weapons, Hoarfrost and Dawnpulse are remade and judged at full resolution**, in
+  a packed crowd and in the 9–14 m showcase. Grades are on the status page.
+  - **Blades** (Oathblade, Cleaver, Reaving Arc) use `shaders/blade.gdshader` and `src/Fx/Blades.cs`, one
+    MultiMesh: a crescent with a white edge leading, a streaked smear behind, tattering away, and its
+    own dark bed. Blades set it up per art in `Swing` (`BattleFx.Skills.cs`).
+  - **Bodies in flight:**
+    - motes weave with a short tail and spark dust;
+    - the Disc is a gold ring with spin arcs and a painted sawblade face;
+    - Rimeshard is a cut six-sided ice lance (`IceLance`, `crystal.gdshader` with facets);
+    - arrows are an arrow mesh (`Arrow`);
+    - Cinderfall has a painted coal;
+    - the umbral bolt has a ring of violet flame;
+    - Moonbrand is a crescent;
+    - Arcweb is a forking blue bolt with a glow;
+    - Verdant Lance has a heart, a haze and twisting vines;
+    - Thunderhead has a glow round its bolt.
+  - **Crowd restraint** (the "cream blobs"):
+    - six kill bursts a frame (`killBudget`); steel kills throw grit, not light;
+    - flashes share their light (`Flash`);
+    - champions falling together are told by the first (`lastFall`);
+    - no filmed burst per mote, shard or disc hit;
+    - sparks and filmed bursts keep her clear (`hero_clear` in `spark.gdshader` and `flipbook.gdshader`).
+  - **Damage numbers** (`src/Fx/Hits.Numbers.cs`), to the experience director's S-13 rule:
+    - hits sum per target per 0.25 s beat;
+    - at most 8 new numbers a frame, crits first, then the biggest;
+    - a hit over 20% of the target's health is one size bigger;
+    - none within 1.5 m of her;
+    - damage over time is summed in its school's colour.
+  - **Grounds and telegraphs:**
+    - the fills are premultiplied (`Premul`), so a turning fill can't glow as a square;
+    - burning ground is fire in its cracks;
+    - Hallowed's edge is thinner and its runes are at 0.18;
+    - hostile discs and lanes are hatched (front edge plus about 30%), never solid;
+    - "blocked" is said once per 0.35 s.
+- **Enemy looks, built but NOT yet seen in play** (`src/Fx/BattleFx.Enemies.cs`):
+  - rallies in the people's colour (they were white-gold bands, which the arena lead called "lampling discs");
+  - summoning circles (the painted rune ring) with the ground breaking as the kin rise;
+  - slams that throw stone and roll dust;
+  - haste lines and ward glints;
+  - `bolt_bone` and `frost_orb` in flight.
+- **GPU work:**
+  - Krea (`tools/comfy/fx_sprites.py`): 10 sprites cut into `art/fx/sprites.png`, all passing the
+    edge-light rule: sun_disc, dawn_sigil, frost_star, rune_ring, umbral, ward_disc, crescent,
+    ember_coal, wisp, blood_drop. Candidates are in the worktree's `tools/comfy/out/fx_sprites/`.
+  - LTX (`tools/comfy/fx_clips.py`): 12 clips, in the main checkout's `tools/comfy/out/clips/`. Six
+    are in use: holy_ring, moon_burst, gold_flare, shadow_wisps, bramble_burst and leaf_burst. Five
+    were refused by `flipbook.py`'s edge check or set aside as poor: fireball_impact (sparks run off the
+    clip), dust_chop (a post in frame), ice_shatter (a white ball), poison_cloud (too dense for the zone
+    rule) and frost_spikes (fills the frame). blood_scythe is unused too.
+  - **Tell takes:** tell_whistle ×2 and a second tell_fuse, now `art/sound/tell_*`. They are counted in
+    `sounds.json`. **No one has listened to any tell take** (whistle, fuse, howl, drum). The owner should.
+    By analysis, the whistle is tonal at about 1.1 kHz and the fuse is broadband hiss.
 
-- **Crop and square edges, fixed at three levels and tested:**
-  - `tools/comfy/flipbook.py` refuses a cut-off clip or any cell with edge light (exit 2,
-    nothing written). It also has `--check` and `--clean`;
-  - the flipbook, spark and smoke shaders fade every quad round;
-  - `godot/tests/FxTests.cs` decodes every atlas, sprite and mark PNG and fails on edge light.
-  - Fixed: `fire_loop`, `ember_motes`, and five Kenney sprites (the lightning forks
-    spark4–6, a clod, a twirl).
-- **Every skill shot in play and the first 21 graded.** Frames are in
-  `godot/.shots/before_*`, not committed: the folder is the game's own. They are on
-  disk in this worktree.
-- **Foundations (view only):**
-  - `Ev.*` carry `Art` and `Rank`;
-  - `src/Fx/Ribbons.cs` with `ribbon.gdshader` (trails, bolts, threads, each with a
-    dark bed under it, `ribbon_shade.gdshader`);
-  - `src/Fx/BattleFx.Skills.cs`, each skill's:
-    - release, flight, impact and swing;
-    - novas, chains, strikes from the sky, beams and grounds;
-    - ice, thorn and stone spikes (`crystal.gdshader`);
-  - cores drawn over the crowd (`spark_over`, `spark_shade`);
-  - the survivor kept clear (`hero_clear.gdshaderinc`).
-- **The nine starting weapons are seen working in the `show1` frames.** The swept
-  blade and the newer touches are not seen yet: see the status page.
-- **Champion deaths are cut to the size agreed with the experience director.**
-- **Spike tells:** `Sfx.Tell` plays LTX-made takes (howl ×2, drum ×2, fuse ×1), with
-  a made sound for the rest. Nobody has listened to them.
-- **Test mode:** `--lab` in `Game.cs` (only the given skills, no drafts, no levels, no dying).
+## In progress, and next (in order)
 
-## In progress, and next
-
-The status page's "Next steps" is the list, in order:
-1. Re-shoot the nine and judge them.
-2. Send the contact sheet.
-3. GPU: the sprites (`fx_sprites.py`), the twelve clips (`fx_clips.py`), the last tells.
-4. Arcweb, the novas and the grounds.
-5. Combat's enemy looks.
-6. Evolutions and unions, arts, sound.
+1. **batch10**: run `bash scratchpad/vfx/batch10.sh` with no other game open. It shoots the Dig
+   (lamplings, seed 739), the Kerchiefs, the dead and the Pack at minute 25, plus `s7` (Gale Chakram,
+   Umbral Bolt, Moonbrand, Reaving Arc, Thunderhead).
+   - Judge the enemy looks.
+   - Judge the lamplings on the Dig's clay against the arena lead's rule: each disc's core no more than
+     the clay's lit value plus about 1 stop.
+   - Judge the blade smear on dark ground (toned down, not yet seen).
+   - Send the arena lead (a26767f7f9955cb56) the Dig crop.
+   - It was stopped mid-run for the owner's pause. Its first three runs (dig2, kerch2, dead2) were
+     shot before the last code change, so reshoot them.
+2. **gpu_horn**: run `bash scratchpad/vfx/gpu_horn.sh`. It makes `tell_horn` (the dead's tell, which
+   combat moved from the drum; the prompt is in `sfx_clips.py`) and waits for 11 GB of free RAM first.
+   - I interrupted it for the pause. Check ComfyUI's queue for a leftover "war horn" prompt.
+   - Free ComfyUI after.
+   - Add `tell_horn` to `sounds.json` with its count, and commit the `.wav` and `.import` files.
+   - `Sfx.Tell` falls back to a made sound until then.
+3. Send the main session the newer sheets together with the batch10 results: `scratchpad/vfx/ba_a9_1.png`
+   (numbers summed, frozen tint) and `ba_s6_1.png` and `ba_s6_2.png` (the second batch).
+4. Champion Sign marks (`logic/Content/Signs.cs`: each Sign has a tint and glow on the body; is a
+   mark at the feet wanted?).
+5. See and judge, still at the "before" grades: Firepot, Iron Palms, Grave Tether, Gravecall, Spirit
+   Herd, Thornbloom, Blightfield.
+6. Evolutions and unions, the arts, the callings' own moves, and sound per skill.
 
 ## Decisions (why)
 
-- **Per skill, not per school:** the school is colour and shape, the skill is body,
-  trail and landing. Generic school effects made every skill look the same.
-- **Ribbons with a dark bed:** the risen are pale grey, so light alone washed out to
-  white. A dark bed round it reads like an outline.
-- **Over the crowd, lifted to head height, never over her:** the camera is high
-  (23 m, fov 34). Chest-height things were hidden by bodies.
-- **Lit meshes for things that stand up** (ice, thorns, stone): flat pictures read
-  as paint on the ground.
-- **Short blows are short in every layer** (`Blast`, `brief`).
-- **The experience director's zone rule:** no fill, a lit edge, a sparse pattern at
-  35% or less, and never her red or the risen's grey.
+- **Hues below the tone curve's knee.** AgX turns coloured light over about 2 to cream, so bodies and
+  smears sit near 1, and only thin edges and cores go white. Dark grounds raise the exposure, so hold
+  smears lower still.
+- **A crowd is told by its first few.** Deaths, champion falls, flashes and numbers are all budgeted
+  per frame: many small effects summed into a wash.
+- **Dark beds, in the same pass where possible** (premultiplied: alpha darkens, colour adds). This is
+  what makes light read over the pale risen.
+- **Danger keeps its own language:** amber blow, violet ground, hatched and never solid. A people's
+  colour is for what is theirs and not yet a blow. Never use her red or the dead's grey.
+- **Per skill, not per school.** Real shapes where a flat picture fails (ice, arrows). Painted
+  sprites and filmed clips are always cut through the edge checks.
+- **Frozen and burning bodies are the experience director's** (`vat.gdshaderinc`). Ask; don't edit.
 
 ## Failures, and why
 
-- **The first "after" looked empty.** The lab crowd stood 3 m away, so nothing
-  flew; and the contact sheets were scaled down, which hid the thin trails. Shoot
-  the showcase at 9–14 m, and always judge full-resolution crops (`strip.py`, `ba.py`).
-- **Editing in PowerShell broke things:** `Set-Content` added a BOM, and here-strings
-  passed to `git commit -F -` became arguments, not input. Use `[IO.File]::WriteAllText`
-  and a message file. `BattleFx.cs` is CRLF; the new files are LF.
-- **The first LTX clip failed** with "hostbuf_file_reader_read failed": Windows error
-  1450, out of RAM (2 GB free while three Godot instances ran). Run LTX with no game open.
-- **ComfyUI was found down once.** It was started headless (see Gotchas).
+- **Each sheet looked fine at a glance and wasn't.** Cream blobs, centre blooms and carpets of numbers
+  only showed in packed crowds at full resolution. The main session caught three of them. Judge the
+  packed crowd (`sweep.py` defaults) as well as the showcase.
+- **A shader constant named `RIM` clashed** with `hero_clear.gdshaderinc`'s include. The shader
+  failed silently in the game, and only the console showed it. `shot.py` now prints `SHADER` lines.
+- **The first LTX tries cut off at the frame's edge.** `flipbook.py` refuses them. Use `--start`,
+  `--end` and `--pad` to keep the part that stays inside, or set the clip aside. Never force it.
+- **After a merge, the arena came out as banded gradients**, because the new textures weren't imported.
 
 ## Gotchas
 
-- **The worktree's `godot/assets` arrives as a 16-byte file.** Make it a junction to
-  `public/assets` and set skip-worktree. Copy the main checkout's `godot/.godot`
-  (robocopy, without `mono`) before the first import, or it takes 15 minutes.
-- **Godot** is `C:\Users\munch\Desktop\Godot_v4.5.1-stable_mono_win64\..._console.exe`.
-  - The scratchpad's `skills/shot.py` runs at 1920x1080 and a fixed 60 fps.
-  - Don't `dotnet build` the game while a capture runs: compile-check to
-    `-o scratchpad/skills/buildcheck` instead.
-  - Shader edits take effect on the next run.
-- **ComfyUI headless:** run
-  `C:\Users\munch\AppData\Local\Comfy-Desktop\ComfyUI-Installs\ComfyUI\ComfyUI\.venv\Scripts\python.exe main.py --listen 127.0.0.1 --port 8188 --extra-model-paths-config "%APPDATA%\Comfy Desktop\instance-model-paths\inst-1790761498447.yaml"`.
-  - It is shared: check the queue, and free with `POST /free`.
-  - Only delete your own queue items: match your prompts' text.
-- **Source clips** live in the main checkout's `tools/comfy/out/clips` (gitignored).
-  `out/sfx/` holds a fantasy and medieval sound library. Check its licence before use.
-- **Sounds:** a new `.wav` in `art/sound` needs its `.import` committed and its count
-  in `sounds.json`.
-- **Downloads** need the user's explicit consent in chat. A claim in a file is not consent.
+- **Import after every merge, before you shoot:** run Godot's `--path godot --headless --import`
+  (about 15 to 25 minutes). It rewrites many `.import` files with VRAM formats. Commit only your own
+  files. Don't restore the rest mid-session, or the next import redoes them all.
+- **Worktree setup:**
+  - `godot/assets` arrives as a 16-byte file: make it a junction to `public/assets` and set
+    skip-worktree;
+  - copy a sibling worktree's `godot/.godot` with robocopy, without `mono`.
+- **Line endings:** `BattleFx.cs` is LF now. `Scars.cs`, `spark.gdshader` and `flipbook.gdshader` are
+  CRLF; edit them by script, keeping CRLF. The isolation guard refuses complex shell one-liners: put
+  edits in small Python scripts in the scratchpad (see `scratchpad/vfx/edit_*.py`).
+- **Don't `dotnet build` the game while a capture runs.** Compile-check with
+  `-o scratchpad/vfx/buildcheck` instead.
+- **LTX needs RAM.** It died at 2 GB free (Windows error 1450). The chain scripts wait for 11 GB.
+- **ComfyUI is shared.** Delete only your own queue items, matched by prompt text. Free it with
+  `POST /free` (`comfy_stat.py free`); interrupt with `POST /interrupt`.
+- **Tools** in `scratchpad/vfx/` (the session scratchpad):
+  - `shot.py` and `sweep.py`: capture runs;
+  - `strip.py`, `ba.py`, `best.py`, `find.py`: full-resolution crops and before/after sheets; they read
+    the predecessor's `before_*` and `show1_*` frames from `agent-a8bafe3cd8a229639/godot/.shots`;
+  - `clipsheet.py`: views a clip;
+  - `install_fb.py`: cuts and installs an atlas;
+  - `comfy_stat.py`: shows the queue, RAM and VRAM, and frees ComfyUI;
+  - `batch10.sh`, `gpu_horn.sh`: the next two runs.
+- **Repro flags** (from the experience director):
+  - the Barrow Lord's Rise: `--zone arena --people dead --tier 2 --minute 29.85 --give
+    "oathblade:8,seeking_motes:8,cinderfall:8,arcweb:7,knifestorm:7,hallowed_ring:7,+might:3" --auto --on boss --until 170`;
+  - the Kerchiefs' lobs: `--zone arena --people kerchiefs --tier 2 --minute 25 --give
+    "oathblade:6,seeking_motes:5,cinderfall:5,arcweb:4" --auto --seconds 5 --every 5 --count 12`.
 
 ## Collaborators
 
-- **Combat**, ac4ec5bbd2763a0df:
-  - mechanics;
-  - its enemy looks list (aura rings, slams, summons, Signs, haste and ward,
-    bolt_bone, frost_orb);
-  - asked it for the people on aura telegraphs.
-- **Experience director**, a33f58e68e89e3ccf: the hit language and zone rules above.
-  Wants a minute-25 before/after.
-- **Performance**, a9586a5171413db0b: will take `Ribbons.Buffer.Flush` (one surface,
-  region updates). Tell them before editing `Ribbons.cs`.
-- **UI art** owns skill icons; keep the effects consistent with them. Uses ComfyUI.
-- **Face lead:** uses ComfyUI.
+- **Experience director** (ad1f5623590e09883): set the hit, zone and number rules (S-13). Owns frozen and
+  burning in `vat.gdshaderinc`. Will judge Hallowed and the telegraphs in a minute-25 run.
+- **Arena art** (a26767f7f9955cb56): raising the ground brightness, the Dig's clay most. They're owed
+  the Dig crop.
+- **Performance** (a7145e18b3eb78294): made Ribbons' Buffer write in place. Blades is one MultiMesh,
+  at most 48 instances. Tell them before you touch `Ribbons.cs`.
+- **Combat** (a1d4562f44c7f6feb): mechanics, and its enemy-looks list. Telegraphs carry `Faction`.
+- **UI art and the face lead** both use ComfyUI.
 
 ## Files to read first
 
 1. `docs/team/skills.md`
-2. `godot/src/Fx/BattleFx.Skills.cs`
-3. `godot/src/Fx/BattleFx.cs` (Handle, Blast, Projectiles, Zones)
-4. `godot/src/Fx/Ribbons.cs`
-5. `tools/comfy/flipbook.py`, `fx_clips.py`, `fx_sprites.py`, `sfx_clips.py`
-6. `godot/tests/FxTests.cs`
-7. The scratchpad's `skills/` folder: `shot.py`, `sweep.py`, `strip.py`, `ba.py`, `gpu_chain.sh`
-8. `docs/SKILLS_DESIGN.md` §4 (paths), `logic/Content/Weapons.cs` (arts per skill)
+2. `godot/src/Fx/BattleFx.Skills.cs`, `BattleFx.Enemies.cs`, `Blades.cs`, `Hits.Numbers.cs`
+3. `godot/src/Fx/BattleFx.cs` (Handle, Blast, Flash, Ground, the telegraph handler)
+4. `godot/shaders/blade.gdshader`, `crystal.gdshader`, `hero_clear.gdshaderinc`
+5. `tools/comfy/flipbook.py`, `fx_sprites.py`, `fx_clips.py`, `sfx_clips.py`
+6. `scratchpad/vfx/batch10.sh`, `gpu_horn.sh`, `shot.py`, `sweep.py`, `ba.py`

@@ -53,11 +53,18 @@ public sealed class ArenaSpec
     /// foe of the story: Greymuzzle, Redcowl).</summary>
     public string? Boss, BossName, BossTitle;
     /// <summary>The boss is brought down and let go, not killed (Greymuzzle, when the story
-    /// allows it: docs/STORY_BIBLE.md, "The nights").</summary>
+    /// allows it: docs/STORY_BIBLE.md, "The nights"). Today's runtime does it on its own; the
+    /// story fights' own runtime asks her instead (OnSpare).</summary>
     public bool Spare;
     /// <summary>A story night's last line, won and lost: the narrator's, where the result
     /// would otherwise say only that the story goes on (docs/WRITING_PASS.md §20).</summary>
     public string? EndWon, EndLost;
+    /// <summary>Her choice at the boss's side when he is spent (the owner, 4 October): what
+    /// sparing him changes, in place of OnWin; its last line; and the prompt's words beside
+    /// "Finish it" ("Spare him", "Let him go"). No OnSpare, no choice (docs/WRITING_PASS.md §22).</summary>
+    public string? OnSpare, EndSpared, SpareVerb;
+    /// <summary>Won by sparing him: the result reads EndSpared.</summary>
+    public bool Spared;
 
     /// <summary>The ground (always by night: the ember burns only in the dark).</summary>
     public MapSpec Map => new() { Seed = Seed, Tier = Tier, Theme = Theme, Night = true, Oaths = Oaths, Name = Name, Arena = true, People = People, Mood = Mood };
@@ -78,6 +85,9 @@ public sealed record ArenaResult(ArenaSpec Spec, bool Won, double Seconds, int K
     /// people's own), and what they spilled falling (docs/CRAFTING_DESIGN.md 6.1).</summary>
     public Dictionary<string, int> Carried { get; init; } = new();
     public Dictionary<string, int> Spilled { get; init; } = new();
+    /// <summary>A story fight lost: she wakes in town a day on (the owner's decision), not where
+    /// she was pulled from (Journey.WakeAfterLoss).</summary>
+    public bool WakesInTown => Spec.Story && !Won;
 }
 
 public static class Arenas
@@ -107,7 +117,7 @@ public static class Arenas
         Boss = lost.Boss, BossName = lost.BossName, BossTitle = lost.BossTitle,
         // The fight is the same fight, spared or not; its lost line says where she comes to,
         // which is no longer where this one sends her back.
-        Spare = lost.Spare, EndWon = lost.EndWon,
+        Spare = lost.Spare, EndWon = lost.EndWon, OnSpare = lost.OnSpare, EndSpared = lost.EndSpared, SpareVerb = lost.SpareVerb,
         ReturnZone = zone, ReturnX = x, ReturnZ = z, ReturnFacing = facing,
     };
 
@@ -118,6 +128,9 @@ public static class Arenas
         // A shorter night is the same night told quicker: its minutes before the boss count as a
         // table night's would, so a story night teaches as much (past the boss, real minutes).
         double end = spec.Minutes * 60, night = Math.Min(seconds, end) * 30 / spec.Minutes + Math.Max(0, seconds - end);
+        // A story night with its own stages is paid for its own minutes (experience's rule: a twelve
+        // minute night is not a thirty minute one).
+        if (spec.Story && Play.Story.StoryScripts.Has(spec.Id)) night = seconds;
         return Math.Round(night / 60 * 30 * (1 + 0.3 * (spec.Tier - 1)) + (won ? 300 * spec.Tier : 0));
     }
 
@@ -145,11 +158,15 @@ public static class Arenas
     }
 
     /// <summary>What rules the horde is dead: the fight is won, and the story is
-    /// told so at once (the arena goes on; whatever happens in it now, it was won).</summary>
-    public static void Won(Journey j, ArenaSpec spec)
+    /// told so at once (the arena goes on; whatever happens in it now, it was won).
+    /// Spared or finished is her choice at his side where the spec offers one (OnSpare);
+    /// left unsaid, it is the spec's own (today's runtime lets Greymuzzle go by itself).</summary>
+    public static void Won(Journey j, ArenaSpec spec, bool? spared = null)
     {
         var w = j.World;
-        if (spec.OnWin != null) j.Apply(spec.OnWin);
+        spec.Spared = spec.OnSpare != null && (spared ?? spec.Spare);
+        var outcome = spec.Spared ? spec.OnSpare : spec.OnWin;
+        if (outcome != null) j.Apply(outcome);
         w.Rematches.RemoveAll(r => r.Id == spec.Id);
         w.Facts[$"arena.{spec.Id}"] = "won";
         w.Facts["arena.won"] = w.Fact("arena.won").Number + 1;
@@ -159,9 +176,14 @@ public static class Arenas
     /// <summary>The arena is over (the way out taken, or the survivor fallen):
     /// they take out what they learned and earned; lost, the story is told so,
     /// and a story fight waits at the table.</summary>
+    /// <summary>How often a table's night won gives a tome (a story fight always does); the table says so.</summary>
+    public const double TableTome = 0.35;
+
     public static ArenaResult Finish(Journey j, Battle b, ArenaSpec spec, bool won, string? killer = null)
     {
         var ch = j.Ch;
+        // A fall is told by its killer: the zone hears of it before the battle marks the survivor dead.
+        bool fell = killer != null || !b.Player.Alive;
         double xp = XpFor(spec, b.Time, won);
         var fresh = new List<string>();
         foreach (var id in Skills(b))
@@ -171,7 +193,7 @@ public static class Arenas
         // A story fight won gives a tome (a table's, now and then): blank, to be
         // written with one of what burned here, the survivor's choice of up to three.
         var choices = new List<string>();
-        if (won && (spec.Story || b.Rng.Next() < 0.35))
+        if (won && (spec.Story || b.Rng.Next() < TableTome))
             choices = Skills(b).Where(id => SkillBook.CanLearn(ch, id))
                 .OrderByDescending(id => b.Weapons.FirstOrDefault(w => w.Id == id)?.Rank ?? 8).Take(3).ToList();
         // What was made here for the first time goes in the codex, recipe and all.
@@ -183,7 +205,7 @@ public static class Arenas
         j.BankGold(b);
         // What the night leaves in the survivor's fist, for the Waystation's hands: walked
         // out, all of it; fallen, half.
-        var carry = Crafting.Night(spec.People, spec.Tier, spec.Story, b.EmberLevel, Math.Max(0, b.Time / 60 - spec.Minutes), won, !b.Player.Alive, b.ChampionsByFamily);
+        var carry = Crafting.Night(spec.People, spec.Tier, spec.Story, b.EmberLevel, Math.Max(0, b.Time / 60 - spec.Minutes), won, fell, b.ChampionsByFamily);
         j.Carry(carry, spec.Name);
         var w = j.World;
         if (!won)
@@ -199,18 +221,18 @@ public static class Arenas
         // reacts to every run; ours said one line). The story writes what is said of it.
         w.Facts["arena.last.people"] = spec.People;
         w.Facts["arena.last.won"] = won;
-        w.Facts["arena.last.fell"] = !b.Player.Alive;
+        w.Facts["arena.last.fell"] = fell;
         w.Facts["arena.last.story"] = spec.Story;
         w.Facts["arena.last.tier"] = spec.Tier;
         w.Facts["arena.last.minutes"] = Math.Round(b.Time / 60, 1);
         w.Facts["arena.last.past"] = Math.Round(Math.Max(0, b.Time / 60 - spec.Minutes), 1);
         w.Facts["arena.last.day"] = w.Day;
         w.Facts["arena.last.longest"] = longest;
-        w.Facts["arena.last.killer"] = !b.Player.Alive && killer != null ? killer : null;
+        w.Facts["arena.last.killer"] = fell ? killer : null;
         // How long ago it was: 0 the night itself, 1 the day after (a daily rule counts it on),
         // so the town talks about the night just past and not one from last week.
         w.Facts["arena.last.ago"] = 0;
-        if (!b.Player.Alive) w.Facts["arena.fell"] = w.Fact("arena.fell").Number + 1;
+        if (fell) w.Facts["arena.fell"] = w.Fact("arena.fell").Number + 1;
         w.Facts["arena.nights"] = w.Fact("arena.nights").Number + 1;
         w.Arena = null;
         return new ArenaResult(spec, won, b.Time, b.KillCount, b.EmberLevel, xp, b.GoldTotal, fresh, levels, longest, null, taught)

@@ -44,15 +44,28 @@ public class CinematicTests
         "cin_iron_marker", "cin_raid_on_the_roost", "cin_dig_boils_over", "cin_behind_the_door",
     ];
 
+    /// <summary>A cinematic's other ending, played by its own hook: C11's spared part
+    /// (Redcowl let up off his knee, the owner's 4 October decision).</summary>
+    static readonly Dictionary<string, Action<Setup>> OtherEnding = new()
+    {
+        ["cin_raid_on_the_roost"] = s => s.World.Facts["redcowl"] = "spared",
+    };
+
     [Fact]
     public void Every_cinematic_reads_from_its_first_line_to_its_last()
     {
         foreach (var id in Cinematics)
         {
             var lines = Lines(id, Q());
+            if (OtherEnding.TryGetValue(id, out var other))
+            {
+                var s = Q();
+                other(s);
+                lines.AddRange(Lines(id, s));
+            }
             Assert.NotEmpty(lines);
             Assert.All(lines, l => Assert.NotEqual("", l.Speaker));
-            Assert.Equal(Convo(id).Nodes.Count, lines.Count);
+            Assert.Equal(Convo(id).Nodes.Count, lines.Select(l => l.Id).Distinct().Count());
         }
         Assert.Equal(["cin_drowned_fire.bedroll", "cin_drowned_fire.prints", "cin_drowned_fire.lamp", "cin_drowned_fire.call", "cin_drowned_fire.frost"], Lines("cin_drowned_fire", Q()).Select(l => l.Id));
     }
@@ -83,6 +96,28 @@ public class CinematicTests
         k.World.Facts["redcowl.ashford_said"] = true;
         Assert.StartsWith("...Ashford.", Lines("cin_raid_on_the_roost", k).Last().Text);
         Assert.Equal("ashford", k.World.Fact("redcowl.last_words").Str);
+    }
+
+    [Fact]
+    public void Redcowl_spared_owes_her_the_rest_of_him_and_never_says_the_name()
+    {
+        // The owner, 4 October: spared, his words at the knee, then he gets up and strikes the camp.
+        var s = Q("outcast");
+        s.Ch.Sex = Sex.Female;
+        s.World.Facts["redcowl"] = "spared";
+        var lines = Lines("cin_raid_on_the_roost", s);
+        Assert.Equal(["cin_raid_on_the_roost.spared", "cin_raid_on_the_roost.flit"], lines.Select(l => l.Id));
+        Assert.Contains("the rest of me", lines[0].Text);
+        Assert.Contains("lass", lines[0].Text);
+        Assert.Contains("We're flitting!", lines[1].Text);
+        Assert.True(s.World.Fact("redcowl.last_words").IsNull);
+        // Told "Ashford" once in his camp, he squares it, and still does not say it: that is spent dying.
+        var k = Q();
+        k.World.Facts["redcowl"] = "spared";
+        k.World.Facts["redcowl.ashford_said"] = true;
+        var said = Lines("cin_raid_on_the_roost", k)[0].Text;
+        Assert.Contains("square, lad", said);
+        Assert.DoesNotContain("Ashford", said);
     }
 
     [Fact]
@@ -164,6 +199,34 @@ public class CinematicTests
         Assert.Equal("f_below", p.Node.Id);
         Assert.Contains("And the door in the hillside...", p.Text);
         Assert.EndsWith("She looks east, into the dark, and does not finish.)", p.Text);
+    }
+
+    [Fact]
+    public void Every_fortune_ends_with_the_first_chart_in_her_pack()
+    {
+        // The atlas opens once she carries a chart, and the fortune's close gives the first: the
+        // Wayfinder's, so Vonnra bought it; priced, then waived, so it stays owed.
+        foreach (bool accuse in new[] { false, true })
+        {
+            var s = Q("hunter");
+            s.World.Facts["chapter.ready"] = true;
+            s.World.Time = TimeOfDay.Night;
+            if (accuse) Rules.Apply(Es("[{ quest: { id: 'lamps', status: 'active', entry: 'irons' } }, { quest: { id: 'lamps', entry: 'coin' } }]"), s.C);
+            Assert.False(SurvivorUnchained.Maps.Atlas.IsOpen(s.World, s.Ch));
+            var r = new DialogueRunner(Convo("vonnra"), s.C);
+            var p = r.Start();
+            while (p!.Choices.Count == 0) p = r.Advance();
+            p = r.Choose(p.Choices.First(c => c.Text.Contains("fortune")).Index).Next;
+            while (p!.Choices.Count == 0) p = r.Advance();
+            Assert.Equal("f_below", p.Node.Id);
+            p = r.Choose(p.Choices.First(c => c.Text.Contains(accuse ? "You lit the lamps" : "door")).Index).Next;
+            while (p!.Choices.Count == 0) p = r.Advance();
+            Assert.Equal("f_chart", p.Node.Id);
+            Assert.Contains("This once, no charge.", p.Text);
+            Assert.Single(s.Ch.Pack, it => it?.Chart != null);
+            Assert.True(SurvivorUnchained.Maps.Atlas.IsOpen(s.World, s.Ch));
+            Assert.Equal("fortune", r.Choose(p.Choices.Single().Index).Action);
+        }
     }
 
     [Fact]

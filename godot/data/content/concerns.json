@@ -121,6 +121,12 @@
  ],
  "rav": [
   {
+   "when": {
+    "history": "spared_redcowl"
+   },
+   "text": "Watches the ridge from his door at first light. Says it's the air."
+  },
+  {
    "text": "Drinks to a man he will not name again, every night, at the same hour.",
    "when": {
     "history": "killed_redcowl"
@@ -395,6 +401,26 @@
   }
  ],
  "redcowl": [
+  {
+   "when": {
+    "all": [
+     {
+      "history": "spared_redcowl"
+     },
+     {
+      "fact": "be.crates",
+      "eq": "redcowl"
+     }
+    ]
+   },
+   "text": "Gone over the ridge with his people, and six crates nobody else is having."
+  },
+  {
+   "when": {
+    "history": "spared_redcowl"
+   },
+   "text": "Gone over the ridge with his people, on a leg that held."
+  },
   {
    "when": {
     "history": "killed_redcowl"

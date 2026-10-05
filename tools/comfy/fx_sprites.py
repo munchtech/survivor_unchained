@@ -27,8 +27,10 @@ STYLE = ("game visual effect texture, glowing light, centred, isolated on a pure
          "above, symmetrical, crisp, high contrast, nothing else in the image, no text, no frame, no border")
 
 SPRITES = {
-    "sun_disc": "a spinning disc of radiant golden holy light, a circular blade of sunlight with sharp rays round its rim "
-                "like a sunburst, a white-gold blazing centre",
+    # Judgement Disc's body, spun flat under its ring: read by its teeth and rays, so crisp lines, not a blur.
+    "sun_disc": "a holy chakram seen flat from directly above, a circular blade of golden sunlight: a bright thin outer ring "
+                "lined with many sharp curved teeth like a sunburst sawblade, fine engraved rays running in from the ring to "
+                "a small blazing hub, crisp thin luminous lines, dark gaps between the rays",
     "ward_disc": "a round ward of pale silver-blue light, a glowing circle of fine runes round a bright centre, like a "
                  "shield made of moonlight",
     "crescent": "a thin crescent moon of cold silver and lavender light, glowing softly, a little stardust round it",

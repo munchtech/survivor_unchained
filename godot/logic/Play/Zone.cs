@@ -75,6 +75,10 @@ public interface IZoneHost
     void Chest(ChestOpened c) => Announce(new Announcement(c.Hoard ?? "A chest", string.Join(" · ", c.Items.Select(i => i.Name)), "reward", 2.8));
     void Talk(string npc);
     void Travel(string zone, string? caption = null, string? sub = null);
+    /// <summary>A Wayfinder's map is over: the game tells it on its own page, then goes back to the
+    /// Waystation; a host without a page goes straight back.</summary>
+    void MapOver(Zones.MapResult r, bool alive) =>
+        After(alive ? 0.6 : 2.2, () => Travel("waystation", r.Chart.Name, r.Cleared ? "Cleared" : "The map closes"));
     /// <summary>Later, in game time (forgotten if the zone is left first).</summary>
     void After(double seconds, Action fn);
     void Save(string reason);
@@ -103,10 +107,19 @@ public interface IZoneHost
     void ArenaOver(Arena.ArenaResult result) { }
     /// <summary>Pulled into an ember arena (saved first, where the survivor stands).</summary>
     void EnterArena(Arena.ArenaSpec spec) { }
+    /// <summary>She fell in a story night (docs/design/STORY_NIGHTS_AND_TIME.md, "Falling and getting
+    /// up"): the host stages it and calls `rise` (back to the checkpoint) or `letGo` (the night lost),
+    /// and the night waits until it does. A host without a stage gets her up while she has rises
+    /// left, after a beat, and lets the night go when she has none. A rise's words are
+    /// Journey.RiseLine (counted, so the host asks for them once a rise).</summary>
+    void StoryFall(int risesLeft, Action rise, Action letGo) => After(1.0, risesLeft > 0 ? rise : letGo);
     /// <summary>A cinematic (godot/data/cinematics/ID.json) played now, `done`
     /// when it hands back or is skipped. False where none can play (no
-    /// screen, the tests): the zone then says its lines as captions.</summary>
-    bool Cinematic(string id, Action? done = null) => false;
+    /// screen, the tests): the zone then says its lines as captions. `marks`
+    /// moves the file's marks to where things really are (where a boss fell).</summary>
+    bool Cinematic(string id, Action? done = null, IReadOnlyDictionary<string, double[]>? marks = null) => false;
+    /// <summary>Whether that cinematic would play here now (a zone waits for its moment only if so).</summary>
+    bool CanCinematic(string id) => false;
 }
 
 /// <summary>The zone's look, as a runtime reaches into it.</summary>
@@ -149,6 +162,9 @@ public interface IZoneLook
     INpcView Fallen(PersonSpec spec, Held? arms, double x, double z, double facing, string clip);
     /// <summary>A bright thing with a light of its own (the Warden's heart).</summary>
     IOrb Orb(string color, double size);
+    /// <summary>The Kindling's ember-core: a lump of raw ember, split by glowing fissures that widen
+    /// as it is broken (Light: 0 whole, 1 nearly broken). A plain orb where nothing better is drawn.</summary>
+    IOrb EmberCore(double size) => Orb("#ff7a2a", size * 0.45);
 }
 
 /// <summary>A boss's own view: a pose (sleep, wake, walk, windup, cleave,
@@ -332,8 +348,14 @@ public abstract class ZoneRuntime
     protected string? FirstTime(NpcDef def, bool dark) =>
         def.Said?.FirstOrDefault(l => l.Once == true && (l.Night == null || l.Night == dark)
             && !W.Npc(def.Id).Flag(SaidKey(l.Text)).Truthy && Rules.Test(l.When, C))?.Text;
-    /// <summary>Remember that a once-only line has been said.</summary>
-    protected void MarkSaid(NpcDef def, string text) => W.Npc(def.Id).Flags[SaidKey(text)] = true;
+    /// <summary>Remember that a once-only line has been said, and do what saying it does.</summary>
+    protected void MarkSaid(NpcDef def, string text)
+    {
+        var n = W.Npc(def.Id);
+        if (n.Flag(SaidKey(text)).Truthy) return;
+        n.Flags[SaidKey(text)] = true;
+        if (def.Said?.FirstOrDefault(l => l.Once == true && l.Text == text)?.Effects is { Count: > 0 } fx) Rules.Apply(fx, C);
+    }
     static string SaidKey(string text) => "said:" + VoiceLines.Hash(text);
     /// <summary>A person's actor told what to say about how things stand.</summary>
     protected void Wire(NpcActor a, Func<bool> dark)
@@ -360,6 +382,12 @@ public abstract class ZoneRuntime
     /// worked out only now and then (the markers over people's heads) is worked
     /// out again before the next frame.</summary>
     public virtual void Touched() { }
+    /// <summary>The day's clock runs here (the town and the wild): never in an arena, which is its own
+    /// night, nor in the prologue, whose night is told.</summary>
+    public virtual bool ClockRuns => false;
+    /// <summary>The time of day turned while she is here (the clock, a skip): what the place does
+    /// about it beyond the light and the air, which the host turns.</summary>
+    public virtual void TimeTurned(TimeOfDay now) { }
     public virtual void Events(IReadOnlyList<CombatEvent> evs) { }
     /// <summary>The time of day the zone shows, from the world.</summary>
     public virtual TimeOfDay TimeOf(WorldState w) => w.Time;
@@ -403,10 +431,10 @@ public abstract class ZoneRuntime
     }
 
     /// <summary>A history change, as the web game's hist() writes one.</summary>
-    protected static string Hist(string id, string text, string[] tags, int spread, string? sentiment = null, string? reactions = null) =>
+    protected internal static string Hist(string id, string text, string[] tags, int spread, string? sentiment = null, string? reactions = null) =>
         $$"""{ "history": { "id": "{{id}}", "text": "{{Esc(text)}}", "tags": [{{string.Join(", ", Array.ConvertAll(tags, t => $"\"{t}\""))}}], "spread": {{spread}}{{(sentiment != null ? $", \"sentiment\": {sentiment}" : "")}}{{(reactions != null ? $", \"reactions\": {reactions}" : "")}} } }""";
 
-    protected static string Esc(string s) => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
+    protected internal static string Esc(string s) => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
 
     protected static double Dist(double ax, double az, double bx, double bz) => Math.Sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
 }

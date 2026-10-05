@@ -4,7 +4,7 @@
   "script": "docs/cinematics/shoot/c03.md",
   "conversation": "cin_heart_goes_down",
   "zone": "lowford",
-  "draft": "Animatic draft from the written script: every mark is relative to where he falls (W); cameras unsurveyed, cast and wiring to come.",
+  "draft": "Previs pass 1: blocked relative to where he falls (the zone moves w and her there), stand-in clips until Kimodo's kneel_fall, reach_flinch and Grimtunnel's burst, sniff and dive.",
   "bars": {"in": 0.4, "out": 0.8},
   "skip": {"from": 1.5, "hold": 0.8},
   "world": {"rate": 0, "zoneHeld": true},
@@ -13,130 +13,210 @@
     "her": [4.0, -38.0, 3.1416]
   },
   "cast": {
-    "her": {"kind": "survivor", "mark": "her"}
+    "her": {"kind": "survivor", "mark": "her"},
+    "warden": {"kind": "boss", "mark": "w", "glow": 1.0},
+    "heart": {"kind": "orb", "mark": "w", "color": "#bfe6ff", "size": 0.11, "glow": 0.0}
   },
   "shots": [
     {
-      "id": "1", "type": "MCU", "dur": 2.0,
-      "note": "His head and shoulders; the blow at a slow world: the last hit lands on his hood and helm (sparks, frost, fire or splinters by its school; no weapon in frame). The light in his eyes gutters. Cut on the impact.",
-      "cam": {"pos": {"mark": "w", "off": [-1.5, 3.6, 2.5]}, "at": {"mark": "w", "off": [0, 4.0, 0]}, "lens": 85},
+      "id": "1",
+      "type": "MCU",
+      "dur": 2.0,
+      "note": "His head and shoulders as the last blow lands on hood and helm, slowed: the light in his eyes gutters. Cut on the impact.",
+      "cam": {"pos": {"mark": "w", "off": [-1.6, 3.7, 2.6]}, "at": {"actor": "warden", "bone": "head", "off": [0, 0.3, 0]}, "lens": 50, "focus": {"actor": "warden", "bone": "head", "off": [0, 0.3, 0]}, "fstop": 2.8},
       "cues": [
+        {"do": "event", "name": "warden_cine"},
         {"do": "music", "mood": "silence"},
+        {"do": "anim", "actor": "warden", "clip": "Hit_Head", "from": 0, "speed": 0.3, "blend": 0},
+        {"do": "lit", "light": 12, "on": true},
+        {"do": "lit", "light": 13, "on": true},
+        {"do": "lit", "light": 14, "on": true},
+        {"do": "light", "light": 12, "level": 0.8, "color": "#8ac8ff"},
+        {"do": "light", "light": 13, "level": 0.8, "color": "#8ac8ff"},
+        {"do": "light", "light": 14, "level": 0.8, "color": "#8ac8ff"},
         {"at": 0.4, "do": "sfx", "name": "hit", "gain": 1.2},
-        {"at": 0.5, "do": "vfx", "kind": "shake", "amount": 0.5}
+        {"at": 0.4, "do": "vfx", "kind": "shake", "amount": 0.5},
+        {"at": 0.5, "do": "lamp", "actor": "warden", "glow": 0.25, "over": 0.6}
       ]
     },
     {
-      "id": "2", "type": "MLS", "dur": 4.0,
+      "id": "2",
+      "type": "MLS",
+      "dur": 4.0,
       "note": "Low at the water from the south-west: he goes down on his knees in the river; the greatsword falls from his right hand and sinks. His left arm stays up, the lamp held clear of the water, steady.",
-      "cam": {"pos": {"mark": "w", "off": [-5.0, 0.3, 5.0], "y": -0.75}, "at": {"mark": "w", "off": [0, 2.0, 0]}, "lens": 35},
+      "cam": {"pos": {"mark": "w", "off": [-6.0, 0.5, 5.5]}, "at": {"mark": "w", "off": [0, 1.5, 0]}, "lens": 28},
       "cues": [
-        {"at": 0.6, "do": "sfx", "name": "water_close", "gain": 0.5}
+        {"do": "anim", "actor": "warden", "clip": "Fixing_Kneeling", "from": 0.8, "speed": 0.25, "blend": 0.9},
+        {"at": 0.6, "do": "sfx", "name": "kneel_water", "gain": 0.8},
+        {"at": 1.4, "do": "hold", "actor": "warden", "slot": "handslot.r", "piece": null},
+        {"at": 1.4, "do": "sfx", "name": "sink", "gain": 0.7}
       ]
     },
     {
-      "id": "3", "type": "CU", "dur": 4.0, "fit": ["cin_heart_goes_down.morning"], "tail": 1.6,
-      "note": "Up at him past the lamp. He looks at the lamp, not at her. W4, in another voice: a man's, tired, sixty, no boom. The arm begins to shake.",
-      "cam": {"pos": {"mark": "w", "off": [0.4, 1.4, 1.6]}, "at": {"mark": "w", "off": [0, 3.0, 0]}, "lens": 85},
+      "id": "3",
+      "type": "CU",
+      "dur": 4.0,
+      "fit": ["cin_heart_goes_down.morning"],
+      "note": "Up at him past the lamp: he looks at the lamp, not at her. W4, in another voice: a tired man's. The arm begins to shake.",
+      "cam": {"pos": {"mark": "w", "off": [0.8, 0.8, 2.2]}, "at": {"actor": "warden", "bone": "head", "off": [0, 0.3, 0]}, "lens": 50, "focus": {"actor": "warden", "bone": "head", "off": [0, 0.3, 0]}, "fstop": 2.8},
       "cues": [
         {"at": 1.4, "do": "line", "id": "cin_heart_goes_down.morning"}
       ]
     },
     {
-      "id": "3b", "type": "MCU", "dur": 2.5,
-      "note": "On her, his lamp's light on her face: she looks at him and nods, once, slowly. Yes. The first thing she gives anyone in the game, given to the thing that drowned her. (Devout: then the Order's sign for the dead, finger and thumb closing on the air.)",
-      "cam": {"pos": {"actor": "her", "bone": "head", "off": [0.4, -0.05, -1.4]}, "at": {"actor": "her", "bone": "eyes"}, "lens": 50, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.8},
+      "id": "3b",
+      "type": "MCU",
+      "dur": 2.5,
+      "note": "On her, his lamp's light on her face: she looks at him, and nods, once, slowly. Yes. (Devout: then the Order's sign for the dead, finger and thumb closing on the air.)",
+      "cam": {"pos": {"actor": "her", "bone": "head", "off": [0.55, -0.1, -1.5]}, "at": {"actor": "her", "bone": "eyes"}, "lens": 50, "focus": {"actor": "her", "bone": "eyes"}, "fstop": 2.8},
       "cues": [
         {"do": "face", "keys": {"brows_sad": 0.35, "mouth_open": 0.05}, "over": 0.6},
-        {"do": "gaze", "look": [0, -0.4]}
+        {"do": "gaze", "look": [0, -0.4]},
+        {"at": 0.9, "do": "lids", "value": 0.6, "over": 0.3},
+        {"at": 1.6, "do": "lids", "value": null}
       ]
     },
     {
-      "id": "4", "type": "INSERT", "dur": 2.5,
+      "id": "4",
+      "type": "INSERT",
+      "dur": 2.5,
       "note": "The fist lowers, and the lamp goes into the river. The flame hisses out in a puff of steam. Dark.",
-      "cam": {"pos": {"mark": "w", "off": [-1.2, 0.2, 1.4], "y": -0.7}, "at": {"mark": "w", "off": [-0.6, 0.0, 0.4], "y": -0.95}, "lens": 65},
+      "cam": {"pos": {"mark": "w", "off": [2.8, 1.0, 2.2]}, "at": {"actor": "warden", "bone": "hand_l", "off": [0, -0.25, 0]}, "lens": 35},
       "cues": [
-        {"at": 1.2, "do": "sfx", "name": "breath_out", "gain": 1.6}
+        {"at": 1.1, "do": "lamp", "actor": "warden", "lit": false, "glow": 0.0, "over": 0.4},
+        {"at": 1.1, "do": "sfx", "name": "lamp_out", "gain": 1.0}
       ]
     },
     {
-      "id": "5", "type": "LS", "dur": 4.0,
-      "note": "Low behind her: he folds forward into the water and is still. The mist closes over him. A beat of nothing. Then the water over his chest lightens from beneath. 'The Ford-Warden falls', small, at the end.",
-      "cam": {"pos": {"actor": "her", "bone": "head", "off": [0.6, -0.6, 1.6]}, "at": {"mark": "w", "off": [0, 0.3, 0], "y": -0.6}, "lens": 28},
+      "id": "5",
+      "type": "LS",
+      "dur": 4.0,
+      "note": "From behind her, low: he folds forward into the water and is still. The mist closes over him. A beat of nothing. Then the water over his chest lightens from beneath.",
+      "cam": {"pos": {"mark": "her", "off": [1.3, 1.7, 3.6]}, "at": {"mark": "w", "off": [0, 0.5, -1.2]}, "lens": 28},
       "cues": [
+        {"do": "anim", "actor": "warden", "clip": "Death01", "from": 0.4, "speed": 0.45, "blend": 0.5},
         {"at": 1.0, "do": "sfx", "name": "water_close", "gain": 0.4},
+        {"at": 2.6, "do": "place", "actor": "heart", "where": {"mark": "w", "off": [0, 0, -2.4], "y": -1.25}},
+        {"at": 2.6, "do": "lamp", "actor": "heart", "glow": 0.35, "over": 1.2},
         {"at": "end-0.6", "do": "title", "title": "The Ford-Warden falls", "kind": "boon", "seconds": 2.6}
       ]
     },
     {
-      "id": "6", "type": "MS", "dur": 4.0,
-      "note": "Slow push toward the light: the heart rises out of the water, a stone the size of a fist full of cold light, turning, water running off it. Its hum and the river. The lamp motif's bell.",
-      "cam": {"pos": {"mark": "w", "off": [-1.6, 1.0, 2.6]}, "at": {"mark": "w", "off": [0, 0.8, 0], "y": 0.0}, "lens": 50, "move": {"push": 0.6, "ease": "slow"}},
+      "id": "6",
+      "type": "MS",
+      "dur": 4.0,
+      "note": "A slow push in toward the light: the heart rises out of the water, a stone the size of a fist full of cold light, turning, water running off it. No line: its hum, and the river.",
+      "cam": {"pos": {"mark": "w", "off": [1.8, 0.9, -0.8]}, "at": {"actor": "heart", "track": true}, "lens": 50, "move": {"push": 0.6, "ease": "slow"}},
       "cues": [
         {"do": "music", "mood": "mystery", "intensity": 0.5, "over": 3.0},
-        {"do": "sfx", "name": "impactGlass_light", "gain": 0.6}
+        {"do": "move", "actor": "heart", "to": {"mark": "w", "off": [0, 0, -2.4], "y": -0.35}, "dur": 3.4},
+        {"do": "lamp", "actor": "heart", "glow": 0.8, "over": 2.5},
+        {"do": "sfx", "name": "heart_hum", "gain": 0.8}
       ]
     },
     {
-      "id": "7", "type": "OTS", "dur": 3.5,
-      "note": "Over her shoulder: the heart drifts toward her like a thing finding its way. Her hand comes up into frame (calling: the shield arm lowers; the cleaver rests in the water; the arcanist's fire goes small and steady; the stalker unnocks).",
-      "cam": {"pos": {"actor": "her", "bone": "head", "off": [0.35, 0.15, 0.6]}, "at": {"mark": "w", "off": [0, 1.2, 1.5], "y": 0.4}, "lens": 50},
+      "id": "7",
+      "type": "OTS",
+      "dur": 3.5,
+      "note": "Over her shoulder: the heart drifts toward her, like a thing finding its way. Her hand comes up into frame.",
+      "cam": {"pos": {"actor": "her", "bone": "head", "off": [0.4, 0.12, 0.7]}, "at": {"actor": "heart"}, "lens": 50},
       "cues": [
         {"do": "music", "mood": "mystery", "intensity": 0.75, "over": 3.5},
+        {"do": "move", "actor": "heart", "to": {"mark": "her", "off": [0.42, 1.2, -0.5]}, "dur": 3.4},
         {"do": "gaze", "look": [0, 0.1], "wander": 0.02},
-        {"do": "face", "keys": {"eyes_wide": 0.3, "mouth_open": 0.12, "brows_sad": 0.15}, "over": 1.0}
+        {"do": "face", "keys": {"eyes_wide": 0.3, "mouth_open": 0.12, "brows_sad": 0.15}, "over": 1.0},
+        {"at": 1.2, "do": "anim", "clip": "her/cast_raise", "from": 0, "speed": 0.45, "blend": 0.5},
+        {"at": 1.0, "do": "sfx", "name": "heart_hum", "gain": 1.0}
       ]
     },
     {
-      "id": "8", "type": "ECU", "dur": 2.0,
-      "note": "Side-on: her fingertips and the heart a hand's breadth apart. Its light leans toward her fingers like a flame in a draught.",
-      "cam": {"pos": {"actor": "her", "bone": "hand_r", "off": [-0.9, 0.0, 0.2]}, "at": {"actor": "her", "bone": "hand_r", "off": [0, 0, -0.1]}, "lens": 100},
-      "cues": []
+      "id": "8",
+      "type": "ECU",
+      "dur": 2.0,
+      "note": "Side-on: her fingertips and the heart, a hand's breadth apart. Its light leans toward her fingers like a flame in a draught.",
+      "cam": {"pos": {"mark": "her", "off": [1.55, 1.3, -0.3]}, "at": {"mark": "her", "off": [0.43, 1.24, -0.18]}, "lens": 85, "focus": {"actor": "heart"}, "fstop": 2.0},
+      "cues": [
+        {"do": "move", "actor": "heart", "to": {"mark": "her", "off": [0.44, 1.24, -0.3]}, "dur": 2.0}
+      ]
     },
     {
-      "id": "9", "type": "MS", "dur": 3.0, "fit": ["cin_heart_goes_down.nobodys"], "tail": 0.4,
-      "note": "The mud bursts up under her hand: Grimtunnel, up to the waist, snatches the heart out of the air and hugs it to his chest. A hard shake. G1.",
-      "cam": {"pos": {"mark": "w", "off": [2.5, 1.2, 4.5]}, "at": {"mark": "w", "off": [0.6, 1.0, 2.0]}, "lens": 35},
+      "id": "9",
+      "type": "MS",
+      "dur": 3.0,
+      "fit": ["cin_heart_goes_down.nobodys"],
+      "note": "The mud bursts up under her hand: Grimtunnel, up to the waist, snatches the heart out of the air and hugs it to his chest. G1. A hard shake on the burst.",
+      "cam": {"pos": {"mark": "her", "off": [3.4, 1.6, 0.6]}, "at": {"mark": "her", "off": [0.2, 1.0, -0.9]}, "lens": 28},
       "cues": [
         {"do": "music", "mood": "silence"},
-        {"do": "sfx", "name": "frost_crack", "gain": 1.0},
+        {"do": "spawn", "actor": "grim", "def": "grimtunnel", "where": {"mark": "her", "off": [0.35, 0, -1.25]}, "style": "burrow", "tag": "grim", "neutral": true},
+        {"do": "event", "name": "grim_up"},
+        {"do": "sfx", "name": "burst", "gain": 1.0},
         {"do": "vfx", "kind": "shake", "amount": 0.6},
+        {"do": "face", "keys": {"eyes_wide": 0.7, "mouth_open": 0.2}, "over": 0.12},
+        {"do": "lids", "value": 1, "over": 0.06},
+        {"at": 0.18, "do": "lids", "value": null},
+        {"at": 0.25, "do": "move", "actor": "heart", "to": {"mark": "her", "off": [0.35, 1.05, -1.0]}, "dur": 0.25},
         {"at": 0.5, "do": "line", "id": "cin_heart_goes_down.nobodys"}
       ]
     },
     {
-      "id": "10", "type": "MS", "dur": 5.0, "fit": ["cin_heart_goes_down.downstairs"], "tail": 0.8,
-      "note": "From her eye height, down at him: the heart's light strains out of his arms toward her. He looks at it, up at her, at it. His head-lamp swings up into her face; two sniffs. Toad-still. His head dips: very nearly a bow. G2. Then a laugh shakes him back into himself.",
-      "cam": {"pos": {"actor": "her", "bone": "eyes", "off": [0.3, 0.0, -0.4]}, "at": {"mark": "w", "off": [0.6, 0.9, 2.0]}, "lens": 50},
+      "id": "10",
+      "type": "MS",
+      "dur": 5.0,
+      "fit": ["cin_heart_goes_down.downstairs"],
+      "note": "From her eye height, down at him: in his arms the heart's light goes on straining out toward her. He looks down at it, up at her, down at it. His head-lamp swings up into her face and his head jerks twice: sniffing. Then he goes still, toad-still, and his head dips: very nearly a bow. G2. Then a laugh shakes him, and he is grinning again.",
+      "cam": {"pos": {"mark": "her", "off": [0.55, 1.25, -0.3]}, "at": {"mark": "her", "off": [0.35, 1.55, -1.25]}, "lens": 28},
       "cues": [
-        {"at": 0.8, "do": "sfx", "name": "breath_out", "gain": 0.8},
-        {"at": 1.3, "do": "sfx", "name": "breath_out", "gain": 0.8},
-        {"at": 2.2, "do": "line", "id": "cin_heart_goes_down.downstairs"}
+        {"do": "face", "keys": {"eyes_wide": 0.1, "mouth_open": 0.05, "squint": 0.5, "nose_wrinkle": 0.2}, "over": 0.5},
+        {"at": 0.8, "do": "sfx", "name": "sniff", "gain": 0.8},
+        {"at": 1.3, "do": "sfx", "name": "sniff", "gain": 0.8},
+        {"at": 2.2, "do": "line", "id": "cin_heart_goes_down.downstairs"},
+        {"at": "after:cin_heart_goes_down.downstairs+0.2", "do": "face", "keys": {"squint": 0.1, "brows_sad": 0.3, "nose_wrinkle": 0}, "over": 0.6}
       ]
     },
     {
-      "id": "11", "type": "MS", "dur": 3.5, "fit": ["cin_heart_goes_down.grateful"], "tail": 0.8,
-      "note": "G3, broken in the middle, half over his shoulder as he dives head first, still clutching the heart; the hole folds in behind him; the heart's light shows for a moment through the mud going down, then is gone.",
-      "cam": {"pos": {"mark": "w", "off": [2.8, 1.0, 4.2]}, "at": {"mark": "w", "off": [0.6, 0.5, 2.0]}, "lens": 35},
+      "id": "11",
+      "type": "MS",
+      "dur": 3.5,
+      "fit": ["cin_heart_goes_down.grateful"],
+      "note": "G3, broken in the middle, half over his shoulder; he dives head first, still clutching the heart; the hole folds in behind him; the heart's light shows in the churned mud for a moment going down, then is gone.",
+      "cam": {"pos": {"mark": "her", "off": [3.2, 1.2, -1.6]}, "at": {"mark": "her", "off": [0.35, 0.6, -1.25]}, "lens": 35},
       "cues": [
         {"at": 0.2, "do": "line", "id": "cin_heart_goes_down.grateful"},
-        {"at": "end-1.0", "do": "sfx", "name": "roots", "gain": 1.0}
+        {"at": "end-1.2", "do": "event", "name": "grim_down"},
+        {"at": "end-1.2", "do": "sfx", "name": "roots", "gain": 1.0},
+        {"at": "end-1.2", "do": "move", "actor": "heart", "to": {"mark": "her", "off": [0.35, 0, -1.25], "y": -2.2}, "dur": 0.7},
+        {"at": "end-1.2", "do": "lamp", "actor": "heart", "glow": 0.0, "over": 0.9}
       ]
     },
     {
-      "id": "12", "type": "ELS", "dur": 5.0,
-      "note": "10 m up over the north bank, 60 m east, looking west along the river: the ford small, her in it; the road's blue irons either side. Silence. Then from under everything a groan, felt in the ground; the river shivers in rings; every lamp in the frame dips at once and comes back. The sky's lowest edge has gone grey. She looks down at her feet.",
-      "cam": {"pos": {"abs": [64.0, 9.0, -52.0]}, "at": {"abs": [3.0, 0.0, -42.0]}, "lens": 24},
+      "id": "12",
+      "type": "ELS",
+      "dur": 5.0,
+      "note": "High over the north bank, far east of the ford, looking west along the river: the ford small in the middle of the frame, her in it; the road's lamps either side of it, ember-blue. Silence. Then from under everything a groan, long and deep. The river shivers. Every lamp in the frame dips at once and comes back. The sky's lowest edge has gone grey. She looks down at her feet.",
+      "cam": {"pos": {"abs": [34.0, 6.5, -38.5]}, "at": {"mark": "her", "off": [0, 0, 0]}, "lens": 24},
       "cues": [
-        {"at": 1.5, "do": "sfx", "name": "drone", "gain": 1.4},
+        {"do": "event", "name": "grim_gone"},
+        {"do": "hide", "actor": "heart"},
+        {"do": "gaze", "look": [0, 0.9]},
+        {"do": "atmosphere", "preset": "dawn", "from": "night", "k1": 0.2, "over": 7.0},
+        {"at": 1.5, "do": "sfx", "name": "groan", "gain": 1.2},
         {"at": 1.5, "do": "vfx", "kind": "shake", "amount": 0.25},
+        {"at": 2.6, "do": "light", "light": 12, "from": 0.8, "level": 0.12, "over": 0.25},
+        {"at": 2.6, "do": "light", "light": 13, "from": 0.8, "level": 0.12, "over": 0.25},
+        {"at": 2.6, "do": "light", "light": 14, "from": 0.8, "level": 0.12, "over": 0.25},
+        {"at": 3.2, "do": "light", "light": 12, "from": 0.12, "level": 0.8, "over": 0.6},
+        {"at": 3.2, "do": "light", "light": 13, "from": 0.12, "level": 0.8, "over": 0.6},
+        {"at": 3.2, "do": "light", "light": 14, "from": 0.12, "level": 0.8, "over": 0.6},
         {"at": 3.6, "do": "music", "mood": "night", "intensity": 0.25, "over": 1.4}
       ]
     },
     {
-      "id": "13", "type": "MS", "dur": 2.0,
+      "id": "13",
+      "type": "MS",
+      "dur": 2.0,
       "note": "She stands in the ford with the dawn coming. Pull back and up into the follow camera. Bars out. Control.",
-      "cam": {"pos": {"mark": "her", "off": [0, 1.8, 4.0]}, "at": {"mark": "her", "off": [0, 1.2, 0]}, "lens": 35, "move": {"pos": {"mark": "her", "off": [0, 9.0, 8.0]}, "ease": "inout", "follow": true}},
+      "cam": {"pos": {"mark": "her", "off": [0.4, 1.8, 3.6]}, "at": {"mark": "her", "off": [0, 1.2, 0]}, "lens": 35, "move": {"pos": {"mark": "her", "off": [0, 9.0, 8.0]}, "ease": "inout", "follow": true}},
       "cues": []
     }
   ],

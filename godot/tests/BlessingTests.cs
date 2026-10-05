@@ -1,5 +1,7 @@
 using System.Linq;
 using SurvivorUnchained.Content;
+using SurvivorUnchained.Play;
+using SurvivorUnchained.Rpg;
 using SurvivorUnchained.Sim;
 using Xunit;
 
@@ -170,17 +172,59 @@ public class BlessingTests
         Assert.Equal(b.MaxHp * 0.5, b.Player.Hp, 1);
         Assert.True(wolf.Status.Has(StatusKind.Burn));
         Assert.Equal(0, b.Player.Ashes);
-        // The second rank lifts you whole; the third owes a second rising.
+        // Once a night at every rank (the owner: rising twice was too generous); the third rank
+        // owes no second rising.
         b.AddBoon("from_the_ashes");
         Assert.Equal(0, b.Player.Ashes);
         b.AddBoon("from_the_ashes");
-        Assert.Equal(1, b.Player.Ashes);
-        b.Player.Iframes = 0;
-        b.HurtPlayer(b.MaxHp * 5, School.Physical, "wolf", null, telegraphed: true);
-        Assert.Equal(b.MaxHp, b.Player.Hp, 1);
-        b.AddBoon("from_the_ashes");
+        Assert.Equal(0, b.Player.Ashes);
         b.Douse([]);
         Assert.Equal(0, b.Player.Ashes);
+    }
+
+    /// <summary>The owner: getting up and fighting on is rare, "or it is a balancing nightmare". Carried
+    /// as an art and drafted as a blessing, it still gets her up once a fight, and a blessing taken
+    /// after she has got up does not get her up again.</summary>
+    [Fact]
+    public void One_rise_a_fight_however_many_ways_she_carries_it()
+    {
+        var b = BattleTests.Arena(10);
+        b.Player.Revives = 1;
+        b.AddBoon("from_the_ashes");
+        b.HurtPlayer(b.MaxHp * 5, School.Physical, "wolf", null, telegraphed: true);
+        Assert.True(b.Player.Alive);
+        Assert.Equal(1, b.Player.Rose);
+        Assert.Equal(0, b.Player.Revives + b.Player.Ashes);
+        b.Player.Iframes = 0;
+        b.HurtPlayer(b.MaxHp * 5, School.Physical, "wolf", null, telegraphed: true);
+        Assert.False(b.Player.Alive);
+
+        var c = BattleTests.Arena(11);
+        c.Player.Rose = 1;
+        c.AddBoon("from_the_ashes");
+        Assert.Equal(0, c.Player.Ashes);
+    }
+
+    [Fact]
+    public void Cold_Then_Not_held_in_the_arts_place_is_a_rise_in_the_kit()
+    {
+        var a = Callings.Archetype("warden");
+        var j = Journey.Begin(new CreationChoice { Name = "T", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0] }, 5);
+        Assert.Equal(0, Character.Kit(j.Ch).Revives);
+        j.Ch.Ability = "cold_then_not";
+        Assert.Equal(1, Character.Kit(j.Ch).Revives);
+    }
+
+    [Fact]
+    public void From_the_ashes_whole_lifts_you_whole()
+    {
+        var b = BattleTests.Arena(9);
+        b.AddBoon("from_the_ashes");
+        b.AddBoon("from_the_ashes");
+        Assert.Equal(1, b.Player.Ashes);
+        b.HurtPlayer(b.MaxHp * 5, School.Physical, "wolf", null, telegraphed: true);
+        Assert.True(b.Player.Alive);
+        Assert.Equal(b.MaxHp, b.Player.Hp, 1);
     }
 
     [Fact]

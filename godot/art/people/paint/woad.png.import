@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/woad.png-005b16d6475e46c74212f5471551d8ee.cte
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0

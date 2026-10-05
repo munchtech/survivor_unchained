@@ -248,6 +248,34 @@
        }
       ]
      }
+    },
+    {
+     "text": "Count was one short last night. It's right this morning. Don't make me write it twice.",
+     "night": false,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 1
+       },
+       {
+        "fact": "arena.last.story",
+        "eq": true
+       },
+       {
+        "fact": "arena.last.won",
+        "eq": false
+       }
+      ]
+     }
+    },
+    {
+     "text": "Had Redcowl on his knee and let him up. Road's quiet. I'll give you that.",
+     "night": false,
+     "when": {
+      "fact": "redcowl",
+      "eq": "spared"
+     }
     }
    ]
   },
@@ -424,6 +452,53 @@
         "eq": "slaughtered"
        }
       ]
+     }
+    },
+    {
+     "text": "That's his. Wear it where I can't see it.",
+     "when": {
+      "hasTag": "greymuzzle_fang"
+     },
+     "once": true,
+     "effects": [
+      {
+       "rel": {
+        "npc": "maeca",
+        "affection": -10
+       }
+      }
+     ]
+    },
+    {
+     "text": "Heard you go down in the Hollow. Heard them walk away after. They don't leave meat.",
+     "night": false,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 1
+       },
+       {
+        "fact": "arena.last.story",
+        "eq": true
+       },
+       {
+        "fact": "arena.last.won",
+        "eq": false
+       },
+       {
+        "fact": "arena.last.people",
+        "eq": "pack"
+       }
+      ]
+     }
+    },
+    {
+     "text": "Heard you let the red one walk. ...Good.",
+     "night": false,
+     "when": {
+      "fact": "redcowl",
+      "eq": "spared"
      }
     }
    ]
@@ -675,6 +750,38 @@
         "eq": true
        }
       ]
+     }
+    },
+    {
+     "text": "Heard the lads laid you out proper. Hands crossed and all. That's manners, from them.",
+     "night": false,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 1
+       },
+       {
+        "fact": "arena.last.story",
+        "eq": true
+       },
+       {
+        "fact": "arena.last.won",
+        "eq": false
+       },
+       {
+        "fact": "arena.last.people",
+        "eq": "kerchiefs"
+       }
+      ]
+     }
+    },
+    {
+     "text": "Quiet up the ruts, these nights. I don't miss the trade.",
+     "night": false,
+     "when": {
+      "fact": "redcowl",
+      "eq": "spared"
      }
     }
    ]
@@ -1353,6 +1460,30 @@
        {
         "fact": "arena.last.fell",
         "eq": true
+       }
+      ]
+     }
+    },
+    {
+     "text": "They say the dead carried you back out of the old door. The dead do not, as a rule, give anything back. ...I am making a note.",
+     "night": false,
+     "when": {
+      "all": [
+       {
+        "fact": "arena.last.ago",
+        "eq": 1
+       },
+       {
+        "fact": "arena.last.story",
+        "eq": true
+       },
+       {
+        "fact": "arena.last.won",
+        "eq": false
+       },
+       {
+        "fact": "arena.last.people",
+        "eq": "dead"
        }
       ]
      }

@@ -46,10 +46,16 @@ FINGERS = ("index", "middle", "ring", "pinky")
 
 
 class Rig:
-    """Her skeleton, ready to be posed by controls."""
+    """Her skeleton, ready to be posed by controls. `body`: whose ("her",
+    or "him": the hero, who stands with his feet further apart, FEET_OUT,
+    and runs with his own carriage, gait.MANLY)."""
 
-    def __init__(self, sk: Skeleton):
+    FEET_OUT = {"her": 0.0, "him": 0.045}
+
+    def __init__(self, sk: Skeleton, body="her"):
         self.sk = sk
+        self.body = body
+        self.feet_out = self.FEET_OUT.get(body, 0.0)
         grot, gpos = sk.rest_globals()
         self.grest = grot[0]
         self.prest = gpos[0]
@@ -230,9 +236,10 @@ class Rig:
                 continue
             th, ca, fo = I[f"thigh_{side}"], I[f"calf_{side}"], I[f"foot_{side}"]
             rest_ankle = self.prest[fo]
-            p = np.array(spec.get("pos", (rest_ankle[0], 0, rest_ankle[2])), float)
-            target = np.array([p[0], rest_ankle[1] + p[1], p[2]])
             s = 1 if side == "l" else -1
+            p = np.array(spec.get("pos", (rest_ankle[0], 0, rest_ankle[2])), float)
+            # A body that stands wider sets each keyed foot further out.
+            target = np.array([p[0] + s * self.feet_out * ("pos" in spec), rest_ankle[1] + p[1], p[2]])
             pole = np.array(spec.get("pole", (s * 0.15, 0, 1.0)), float)
             kb, an = two_bone_ik(gpos[th], gpos[ca], gpos[fo], target, gpos[ca] + pole)
             r1 = qbetween(gpos[ca] - gpos[th], kb - gpos[th])

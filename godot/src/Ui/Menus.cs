@@ -87,6 +87,7 @@ public static class SettingsPanel
         v.AddChild(Row("Display", ["window", "fullscreen"], s.Fullscreen ? "fullscreen" : "window", x => s.Fullscreen = x == "fullscreen"));
         v.AddChild(Row("Gore", ["full", "reduced", "off"], s.Gore, x => s.Gore = x));
         v.AddChild(Row("Screen shake", ["full", "reduced", "off"], s.Motion, x => s.Motion = x));
+        v.AddChild(Row("Pad rumble", ["full", "low", "off"], s.Rumble, x => s.Rumble = x));
         v.AddChild(Row("Health under you", ["on", "off"], s.UnderBar ? "on" : "off", x => s.UnderBar = x == "on"));
         v.AddChild(Style.Label("Lower pictures trade shadow detail, grass, sparks and ambient occlusion for speed. Upscaling draws the world at fewer pixels and brings it up to your screen; the interface stays sharp. Reduced gore keeps a little blood and throws nothing. Screen shake off also stops the world holding still on a heavy blow. Health under you draws your health beneath your feet in a night's fight.",
             Style.TextItalic, Style.Caption, Style.InkDim, true));
@@ -103,7 +104,7 @@ public partial class ControlsPanel : VBoxContainer
     {
         ("Move", [Act.Up, Act.Left, Act.Down, Act.Right], "Left stick"), ("Dash", [Act.Dash], null), ("Ability", [Act.Ability], null),
         ("Draught", [Act.Ultimate], null), ("Talk, use, pick up", [Act.Interact], null), ("Pack", [Act.Inventory], "View"),
-        ("Self", [Act.Character], "View, then RB"), ("Arts", [Act.Arts], "View, then RB"), ("Journal", [Act.Journal], "View, then RB"), ("Map", [Act.Map], "View, then RB"), ("Pause", [Act.Pause], null),
+        ("Self", [Act.Character], "View, then RB"), ("Arts", [Act.Arts], "View, then RB"), ("Journal", [Act.Journal], "View, then RB"), ("Map", [Act.Map], "View, then RB"), ("Answer the night (hold)", [Act.Answer], "L3"), ("Pause", [Act.Pause], null),
         ("Turn the book's pages", [Act.TabPrev, Act.TabNext], "LB / RB"), ("A screen's own pages", [Act.SubPrev, Act.SubNext], "LT / RT"),
         ("In menus: choose, back", [Act.Confirm, Act.Cancel], "A, B"), ("In menus: more", [Act.Alt], "X, Y"),
         ("Draft: take a card", [Act.Pick1], "D-pad, A"), ("Draft: reroll", [Act.Reroll], "X"), ("Draft: banish", [Act.Banish], "Y"), ("Draft: skip", [Act.Skip], "R3"),
@@ -169,6 +170,15 @@ public partial class PauseScreen : Overlay
 
     public PauseScreen(Game g) : base(g) { menu = new MenuList(Refresh, 20); }
 
+    /// <summary>The ember on a line of the menu (back from the credits, on the credits).</summary>
+    public void FocusOn(string label)
+    {
+        focus = label;
+        Refresh();
+    }
+
+    string? focus;
+
     protected override void Build()
     {
         // The world stays in view, paused, behind a column down the left: the eye goes to the
@@ -213,8 +223,10 @@ public partial class PauseScreen : Overlay
         else menu.Add("Save", () => { G.Save("manual"); G.Toast(new Toast(ToastKind.World, "Journey saved")); });
         menu.Add("Settings", () => { panel = panel == "settings" ? "" : "settings"; Refresh(); });
         menu.Add("Controls", () => { panel = panel == "controls" ? "" : "controls"; Refresh(); });
+        menu.Add("Credits and licences", G.Credits);
         menu.Add("Leave to the title", G.QuitToTitle);
         menu.Add("Quit the game", G.QuitGame);
+        if (focus != null) { menu.Focus = Math.Max(0, menu.Items.FindIndex(i => i.Label == focus)); focus = null; }
         col.AddChild(menu.Build());
         col.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
         // The book, one press away: each page as a medallion with its key.

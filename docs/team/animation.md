@@ -1,60 +1,49 @@
 # Animation: status
 
-Branch `worktree-agent-a1e3002b800ee55ac`. Agent a1e3002b800ee55ac has handed off; a successor reads `docs/handoff/animation.md`.
+Agent a435f4dd0ac80df75, branch `worktree-agent-a435f4dd0ac80df75` (took over from a1e3002b800ee55ac). The brief, history and gotchas are in `docs/handoff/animation.md`.
 
-## State (2026-10-04)
+## State (paused for the owner, 2026-10-04)
 
-- **Her clips:** 68 in `godot/art/anim/heroine.res`, all listed in `tools/anim/manifest.json`.
-  - `death_back`: struck from in front, she goes over onto her back. PlayerView chooses it by where the killer stands. Debug: `--die T [--behind]`.
-  - C01's `lie_side_wake`, `sit_back_heels` and `reach_coals` (`clips/story.py`), judged on sheets only.
-- **The crowd's own motion** (`tools/anim/crowd.py`, packed into `folk.res` for both kit bodies):
-  - the Risen lurch at the crowd's pace (`lurch`, `lurch_armed`);
-  - the casters' rally (`rally`, `rally_armed`).
-  - The wolf's howl is a `cast` role in `Beasts.cs`.
-  - The VAT cache is v9.
-- **Townsfolk:** 20 clips in `folk.res`, unchanged.
-- **Tool:** `godot/tools_scenes/crowd_sheet.gd` draws any crowd kind's role as a contact sheet.
-- **Tests:** 539 pass.
+- **Corpse variety: done** (848fab2, 8b2b54f).
+  - Every kit body bakes `die`, `die2` and `die3` (`crowd.py`, `FolkClips.Deaths`): onto the back, onto the face, and in a heap on the side.
+  - Armed bodies lay the weapon flat (`_armed`, and `_pistol` for crossbows). A shield lies on its forearm. Armed side-falls go onto the left side, so the shield arm is the one on the ground.
+  - Wolves, boars and lamplings have three falls each (`Beasts.cs`). The VAT cache is v11.
+  - The experience director wired the pick (CrowdView.DeathOf, on their branch). `VatAsset.Death(k)` exists too.
+- **The hero's library: done** (72ab9a8). `build.py --body hero` builds 71 clips into `hero.res`, played as `him/`.
+  - His carriage: feet wider (`Rig.feet_out`), the runs with square hips (`gait.manly`), and his neck bowed 10° into the mocap takes (`retarget.lean_neck`).
+  - `OwnClips` (Her/Him) replaces HerClips' library half; `Person.Own` is hers or his. Seen on sheets and in the game (`--quick warden --sex male --body hero`).
+- **Gestures: done** (d7b091e). `her/nod`, `her/exhale` (held) and `her/shiver` are laid over any pose (`Gestures.cs`); a cinematic cue of one is laid over, not swapped in. Judged over `sit_log`. Cinematics placed them in its handoff.
+- **Kimodo:** the owner's run is complete (every prompt has 3 takes in `C:/Users/munch/Tools/mocap/kimodo`).
+  - `slam` takes: rejected. They don't read as a two-handed overhead slam.
+  - `kneel_shoot` take 0: a good drop to one knee and aim. Takes 1 and 2: rejected.
+- **In progress:** `slam` / `slam_armed` keyed in `crowd.py`, checked only on stick figures (it is in KEYED, but nothing maps to it yet). Timing: the gather; the fists up overhead by 0.7 s; the hang; the fists into the ground at 0.95 s; held.
 
-## Kimodo, for the owner
+## Next (exact)
 
-- **To run:** double-click "Run Kimodo" on the Desktop, once this branch is merged into the main checkout.
-- **Order:** it makes these first, then the rest:
-  1. lie_side_wake, sit_back_heels (C01; keyed versions exist, the takes are for comparison);
-  2. rise_stiff, bend_lift (C02's Warden);
-  3. kneel_shoot, slam (combat's crossbowmen and heavies);
-  4. kneel_fall (C03), flask_drink (C04).
-- **Safe to stop:** prompts already made are skipped, so it can be stopped and run again.
-- **Total:** 30 of the 55 prompts are still to make.
-
-## Clips for the cinematics (af7a79bc783cca7bc)
-
-- **Landed** (play as `her/<name>`): lie_side_wake, sit_back_heels, reach_coals. Still to be judged in C01 itself.
-- **To key by hand:** the nod, the exhale and the shiver.
-- **Waiting on Kimodo:**
-  - C01: letter, kneel_to_stand_snap, take_from_log, cup_hands.
-  - C02, the Warden on the kit male skeleton: lie_arm_up, rise_stiff, wade_drag, bend_lift; bowed_turn for the drowned.
-  - C03: kneel_fall, reach_flinch.
-  - C04: wade_out, sun_face, flask_drink, walk_uphill, unfold_arms, ladder, well_bucket, child_run.
-  - Grimtunnel: burst_hug, sniff, laugh, dive. He is on the lampling rig, so these need a Beasts.cs composition or a retarget.
-
-## Next
-
-1. Corpse variety for the experience director: die, die2 and die3 per crowd rig, the risen and the wolves first. They'll wire the pick by seed.
-2. The male hero's library: "him/", `hero.res`, masculine carriage. hero.glb is pushed on `worktree-agent-ae2de192cce8298ca@6df994d`.
-3. The cinematics' hand-keyed clips, then their Kimodo clips.
-4. Combat's kneel_shoot and slam once Kimodo has run.
-5. Polish: chain_strike's crouch on landing, and a heavier flinch over runs.
+1. Build and judge the slam: `python tools/anim/folk.py slam`. Map it as the `Cast` for kerchief_brute and skeleton_minion: add `"Slam"` to `FolkClips.Crowd`, and in `Visuals.cs` give those two `cast: "Slam"`. Then judge it on CrowdSheet (`VISUAL=kerchief_brute ROLE=cast`) and in the game with mb_barn_door, and bump `Vat.Version`.
+2. Kneel-to-shoot: combat's `RangedSpec.Aim` is in, on `worktree-agent-a1d4562f44c7f6feb@add1989a` (merge it first).
+   - The aim is `EnemyState.Casting` with `e.Cast == CastKind.Aim`, `e.Anim = Windup` and `AnimT = 0` at its start. It lasts 0.55 s on levy_crossbow, mb_old_quarrel and mb_levy_sergeant, and the shooter faces `e.LungeX/Z`.
+   - Then it shoots, with `e.Anim = Attack` and `AnimT = 0`.
+   - CrowdView's Casting case must play the windup role from `e.AnimT` when `e.Cast == CastKind.Aim`; today it would play "cast", or a looping windup on `time`.
+   Key `kneel_aim` as the windup, played from `e.AnimT`, and `kneel_shot` as the attack (the release, the kick, the rise). Add a `kerchief_crossbow` visual for levy_crossbow.
+3. Cinematics' Kimodo clips, judged with the scratch `try_takes.py` (whole takes as `k_<prompt>_<take>`; delete them and repack after). Start with C02's rise_stiff and bend_lift on the kit man, kneel_fall (C03) and flask_drink (C04).
+4. Polish: the chain haul's landing crouch, and a heavier flinch while running (a gesture through `Gestures` would do it).
 
 ## Key decisions
 
-- **Ill-fitting takes are rejected.** Mixamo and Kimodo takes that don't fit the game's action are not bent to fit, so the arts, her backward death and the dead's walk are keyed.
-- **Clips are made per skeleton:** hers, the kit women's, the kit men's, and his next.
-- **Casts play from their own start.** One generic rally covers every person caster until each has its own; slammers keep their windup.
-- **Unjudged clips stay out of full builds** (`JUDGED` sets), because HerClips plays anything in her library at once.
+- **Corpses lie three ways, and weapons lie flat.** A sword stood on end in a corpse read as a pillar.
+- **The hero's clips come from her code with a man's numbers, not from her clips.** Her line-walking hip sway read as feminine on him.
+- **Gestures are additive** (each bone's change from frame 0), so one nod serves any pose and any body.
+- Takes that don't fit the game's action are rejected, not bent to fit. That rejected Kimodo's slam.
+
+## Gotchas found this session
+
+- Keyed hands that mix `arm()` keys (chest frame) with `pos` keys: give the pos keys `"frame": "char"`. `crowd._in_char` turns a whole clip's hands into character space.
+- Bash refuses some multi-line python heredocs and `cd ... && git`. Write patch scripts to the scratchpad and run them plainly.
+- A full `--import` dirties hundreds of `.import` files. Restore them with `git checkout -- "*.import"`.
 
 ## Notes for other areas
 
-- **Combat:** CrowdView's cast time is `e.AnimT`, and the raise resets it (agreed).
-- **Performance:** HerPose's cached bone indices are kept.
-- **Main session:** the owner's Kimodo run is the only blocker for most of the cinematics' motion.
+- Experience: wire the pick only to the role names; v11 has die/die2/die3 for every kind.
+- Male hero: `him/` clips stand HerPose down (`Native = 1`). Rebuild his library after any rig change (re-dump `hero_skeleton.json`).
+- Cinematics: gesture cues use `"do": "anim"` with the clip `her/nod` and so on.

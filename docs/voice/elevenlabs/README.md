@@ -118,7 +118,11 @@ ElevenLabs charges per character generated. At three tries a line, all of Act
 1 is roughly 400,000 credits: two months of the Creator plan or one of Pro.
 The narrator alone is about a quarter of that.
 
-## The hymn at Nell's grave (open)
+## The hymn at Nell's grave (settled: Suno)
+
+**The owner's decision (4 October): they make the hymn themselves in Suno.**
+The lyrics are `cin_iron_marker.verse1` and `verse2` in `dialogue.json`, with
+C08's brief below. The options that follow are kept for the record.
 
 C08 (`docs/cinematics/c08_iron_marker.md`, "Lines", "Casting" and "Sound")
 needs "Lie Down" sung:

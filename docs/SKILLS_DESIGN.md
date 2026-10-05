@@ -765,9 +765,17 @@ gallery of every telegraph round the survivor):
 absurd build, an enrage for a weak one), measured with deft hands at tiers
 1–3 and the table's oaths: the Pack-Mother 69 → 84 s and the Red Hand 72 →
 84 s (both then raised a further tenth), the Barrow Lord 80 → 86 s, the
-Ganger 92 → 98 s. Health per boss: Pack-Mother `30 + 5t`, Barrow Lord
-`13 + 2.2t`, Gutterwick and Grimtunnel `18 + 3t`, the Red Hand `21 + 3.5t`,
-times its people's champion's.
+Ganger 92 → 98 s. Once minibosses carried chests the build met the boss
+stronger (78 / 81 / 104 / 79 s), so three were raised again by a fifth.
+Health per boss: Pack-Mother `37 + 6.2t`, Barrow Lord `15.5 + 2.6t`, Gutterwick
+and Grimtunnel `18 + 3t`, the Red Hand `26 + 4.3t`, times its body's.
+
+**The floors hold for every ending.** A boss that ends otherwise than dying
+(the Barrow Lord laid down, Grimtunnel down his hole, Greymuzzle let go)
+began its ending as soon as it was held at one, skipping the last phase's
+floor: a strong late build laid the Barrow Lord down in about 35 s. Every
+ending now waits for the floor (`ArenaBoss.Spent`). A test drives an absurd
+build through the game's own wiring against all six rulers: 60–77 s.
 
 ### Why this is the answer
 
@@ -816,7 +824,7 @@ falls or takes the way out. It climbs on three lines at once
 (`Play/Zones/ArenaRun.cs`, "the long night"):
 
 - **The horde hardens** by the minute (`ArenaRun.Hardening`): health
-  `1 + 0.1m + 0.006m²`, blows `1 + 0.035m`, smoothly for the first hour past
+  `1 + 0.1m + 0.004m²`, blows `1 + 0.035m`, smoothly for the first hour past
   the half hour; from then on both compound by 3% a minute, so by two hours
   past nothing stands. A little quicker too, to a ceiling of 15% (pace a
   player can still read and outrun). No minute is a tenth harder than the
@@ -840,6 +848,12 @@ their caps; nothing kills without a mark; every new pressure is announced.
 | Minutes past the half hour: median (p10–p90) | 21 (9–40) | 21 (11–38), with the dark's oaths and the returns |
 | Furthest | 62 | 53 (the first version, returns as walls: 39) |
 | What ended them | heralds and the Kerchiefs' bruisers first, then lamplings | the horde, spread across the peoples (lamplings first); no return a wall |
+
+Later, with greedy drafts only (8 seeds, 30 won runs): at the square's 0.006
+the median was 22 minutes past (15–38), furthest 54; at 0.004, 26 (16–41),
+furthest 43, so 0.004 stays. The square is not what ends the long night: the
+dark's oaths and the crowd are (lamp-throwers, the blight-sick, shield-men,
+crossbows, grave-callers), and only a quarter of runs stand at +30.
 
 ### Why this is the answer
 
@@ -1027,7 +1041,7 @@ story nights at twenty minutes and the table's at thirty.
   staying is the point. Its words are the story's: "It is nearly here", "The
   night's end", "Halfway through the dark".
 
-### 16.7 Two corrections found on the way
+### 16.7 Corrections found on the way
 
 - **Bad ground gave grace.** Each tick of the horde's ground on the survivor
   was a blow, and every blow buys 0.45 s untouchable. Standing in fire made
@@ -1040,6 +1054,13 @@ story nights at twenty minutes and the table's at thirty.
   The arena's rank and file now drop a fiftieth of their gold, and plain gear
   comes only from what carries a chest: a champion's turn, a captain, a
   herald, a miniboss, the boss.
+
+- **The oaths' bites come in at dusk too.** The tier's strength and an
+  oath's levels came in over the first minutes, but an oath's rule (the
+  blight's poison and its cut to mending, the winter's crawl) bit from the
+  first blow. At tier 3 the blight alone felled 6 of 32 runs in minutes 1–5,
+  before a draft had made anything to answer it with; with its bite coming
+  in over dusk, 2.
 
 ### 16.8 Decisions the studies left open
 
@@ -1087,6 +1108,88 @@ Recorded here because this area owns them; the story's are the bible's
 - **An oath's ember**: every oath that promised more ember paid none (the dead
   left the same stones under any oath); `MapRules.EmberGain` pays it now.
 
+### 16.9 From the third tier, the night asks the draft
+
+The experience lead's brief: below the third tier choice is expression; from
+it, a careless draft should lose noticeably more often than a planned one
+(about 60% won against 85%). Measured first, a random drafter won as often
+as a greedy one at tiers 1–3 (85% against 83%), and the third tier's losses
+were walls in its first five minutes, which no draft decides.
+
+From the third tier (`ArenaRun.Asks`):
+- **A longer dusk:** the tier's strength comes in over five minutes, not
+  three. The night is lost to the draft, not to its first minutes.
+- **The crowd softens less** with the minutes (its easing at two fifths of
+  the slope): it tests the build's reach.
+- **Its blows grow** from the eighth minute to twice by the half hour: a build
+  that cannot clear is touched more.
+- **Champions, heralds and minibosses come a quarter stronger** from the
+  sixth minute (not the boss: its contract sets its health): they test what
+  the build does to one.
+
+| Deft hands, table oaths, 8 seeds a tier | Before (16 seeds, tier 3) | After |
+|---|---|---|
+| Won, tier 3 (greedy / random) | 93% / 87% (with the longer dusk alone) | 87% / 71% |
+| Fell, tier 3 (greedy / random) | — | 9% / 19% |
+| Won, tiers 1 and 2 (greedy / random) | — | 96% / 84%, 93% / 84% (no change: the levers start at tier 3) |
+| Tier 4 at its own level (greedy / random) | 62% / 53% | 62% / 56%, fewer falls in its first five minutes |
+
+Stronger levers (champions half again as strong, the crowd's easing at a
+third) widened the gap no further and cost the planned draft too (71% /
+56%). With the bot's noise, a careless draft falling twice as often is the
+signal; the rest of a random draft's losses are bosses it cannot finish.
+
+### 16.10 Getting up: once, and only for a price
+
+The owner: **"GET UP TWICE IS TOO GENEROUS. get up once i guess is ok? but
+only in early game. as we move on you shouldn't get to rise and keep fighting
+unless you have a trait for it. thats a balancing nightmare"**, and then:
+**"the trait can just be a skill/spell right - can get it in arenas or learn
+it for story etc"**.
+
+**The rule:**
+- **Act 1's story fights:** one rise, to the start of the stage she fell in.
+- **Everywhere else:** none. A fall ends the fight. This covers story fights
+  from Act 2, the table's nights, the scars and the atlas's maps. The maps'
+  three falls are gone.
+- **The exception is one power with two names.** Carried, it gets her up in
+  place with half her health.
+- **One rise a fight, however many ways she has it.** In Act 1 the story's
+  own rise counts as one of those ways.
+
+**Cold, Then Not, and Not Yet.** It is what she is: a dead woman who keeps
+getting up. The story lead named its two ways in. It comes two ways, and each
+costs her a power:
+- **In the ember's draft** (every night: table, scar, story), it is a
+  legendary great blessing, as before. It is rare by its rarity, and taking it
+  is the night's great choice spent on getting up rather than on killing.
+  - The second rank still gets her up whole.
+  - The third no longer gets her up twice. She rises with her dash whole and
+    is untouchable a moment longer.
+- **Learned by day, it is the art Not Yet.** The name is the Order's answer at
+  the end of a watch ("Is it morning?" "Not yet.") and the Legion's Nondum.
+  It is held in the art's place (one art is carried), so the price is her
+  art: she goes into the fight without her bash, vault or smoke.
+  - It is the one way to have it on a map, where nothing is drafted.
+  - It is the one way to bring it into a story night from its first second.
+  - It is learned from *The Keeper's Office* (`keepers_office`), a book of the
+    Order's watch-hours. Chid gives it from Act 2's first morning, and at his
+    waking after an Act 2 fight is lost (the story lead's node to write).
+
+**What went:** Second Wind, a trait any survivor could pick at a level-up,
+which gave a free rise once a night. Its job is Cold, Then Not's now.
+
+**Built:**
+- the art (`AbilityKind.ColdThenNot`, `cold_then_not`, shown as Not Yet, which
+  sets the kit's one rise) and its book (`keepers_office`);
+- one rise a fight (`PlayerState.Rose`: any rise spends every source, and a
+  blessing taken after it arms nothing);
+- `MapRun.FallsAllowed = 1`;
+- the story's rise (`STORY_BOSSES.md` §0.4, §5.1).
+
+**Not built:** the art's look (the skills VFX lead), and Chid's node that gives
+the book (the story lead).
+
 ---
 
 ## 17. The two arenas: nights and maps
@@ -1105,7 +1208,10 @@ mindless survivors fun"**.
   champions and bosses at map tier, and loot.
 - **Crafting** will work map items.
 
-Nothing here is built yet. This section is the design to build from.
+Built (§17.8): the map's runtime, charts and their mods, packs by tier,
+magic and rare packs, altar keepers, the ruler at map strength, loot, falls
+and the atlas's record. The atlas's biases and chart crafting wait for the
+experience and crafting leads.
 
 ### 17.1 What makes them different
 
@@ -1277,6 +1383,55 @@ What combat can expose for the atlas to use:
   never as the long night's weather.
 - **The event** is the people's signature turn, lit at an altar by killing its
   guardian, so it is earned rather than timed.
+
+### 17.8 What was built, and measured
+
+- **`MapRun`** (`Play/Zones/MapRun.cs`) on MapGen's winding way: packs are set
+  down out of sight as the survivor nears them, rest until she is within 14 m
+  (the day's Wake and Leash), and charge in waves of two. Three in four of the
+  clearings' pack spots are used and one in three of the way's (a pack at
+  every spot was one long fight: a pack every 8 s, a map of 14 minutes).
+- **Charts** (`Maps/Charts.cs`): tier, people, seed, rarity and mods, carried
+  as a `wayfinder_chart` item with its map. Prefixes are the table's oaths
+  (the vigil has no turns to double here; the moonless is a suffix) and the
+  map's own: Signed, Twin guardians, Contested (from tier 8), Restless,
+  Hardened. Suffixes: of Thin Blood, of the Brittle, of Lead, of No Rest, of
+  the Moonless, of Sour Draughts (`MapRules`). Each pays quantity, rarity and
+  pack size.
+- **Kinds open by tier:** the first two stretches' at tier 1, the next every
+  two tiers, all by tier 9; Signs and altar keepers the same.
+- **The ruler** runs its night script on floors of 0.65 (10, 13 and 10 s),
+  with its body's health three and a half times over at the map's level and
+  its blows as its people's champion's. The night's per-ruler multipliers
+  were set against the ember's builds and their Breaks: a day build met the
+  four unevenly (the Pack-Mother 173 s, the Barrow Lord 67 s). What it calls
+  is softened as the half hour's horde is.
+- **Loot:** gear from magic (one) and rare (two) packs and keepers (two, a
+  chance of fine); the ruler drops three to five, its people's material, and
+  one to three charts, the first clear of a (people, tier) always giving the
+  next tier's. Gold at the day's rates.
+- **Falls:** three a map; each spills half of what was picked up there and
+  wakes her at the last altar she lit.
+- **The atlas** (`Maps.Atlas`): a cleared (people, tier) is marked; the first
+  clear of each gives a point.
+- **The harness:** `map --tiers 1,2,3 --people all` plays maps with a day
+  build (the calling's own path's skills at the day's rank, plain gear of a
+  rarity), walking a navigation field down the way to the ruler.
+
+| A day build at the map's level (level 10, 12, 14), gear rarity 2, 96 maps | Tier 1 | Tier 2 | Tier 3 |
+|---|---|---|---|
+| Cleared | 93% | 90% | 84% |
+| Closed (three falls) | 3% | 6% | 12% |
+| Minutes to clear (median) | 11.7 | 11.6 | 13.2 |
+| The ruler's time to kill | 60 s | 65 s | 65 s |
+| A pack every | 14 s | 13 s | 15 s |
+
+Open: the maps run at the top of the experience lead's 8–12 minutes, and a
+pack comes about every 14 s against their 20–40; the Pack-Mother's map
+still closes one map in six; the Kerchiefs' maps pay about 700 gold at the
+day's rate (crafting's to weigh); creature levels run to 40 at tier 16 while
+the survivor stops at 30, so gear must carry the high tiers once item levels
+exist.
 
 ---
 

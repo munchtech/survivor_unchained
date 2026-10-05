@@ -128,8 +128,11 @@ public sealed class Autopilot
     void Field(double dt, Battle b)
     {
         var p = b.Player;
-        var boss = g.Zone is ArenaRun { BossScript: { } s } && s.E is { Alive: true } be && be.State != EnemyState.Dying ? s : null;
-        (double X, double Z, double R) home = boss != null ? (boss.E.X, boss.E.Z, 10.0) : territory ??= (p.X, p.Z, 18);
+        var script = g.Zone switch { ArenaRun a => a.BossScript, MapRun m => m.BossScript, StoryNight sn => sn.BossScript, _ => null };
+        var boss = script is { } s && s.E is { Alive: true } be && be.State != EnemyState.Dying ? s : null;
+        // A story night's stage says where it wants her (a fire to light, a foe to find).
+        (double X, double Z)? goal = g.Zone is StoryNight night ? night.Goal : null;
+        (double X, double Z, double R) home = boss != null ? (boss.E.X, boss.E.Z, 10.0) : goal is var (gx, gz) ? (gx, gz, 4.0) : territory ??= (p.X, p.Z, 18);
         double rx = 0, rz = 0;
         int close = 0;
         var sectors = new bool[8];

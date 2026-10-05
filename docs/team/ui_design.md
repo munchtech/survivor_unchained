@@ -1,53 +1,55 @@
 # UI design (character creation first): status
 
-Agent a69858664f1d3dd29, branch `worktree-agent-a69858664f1d3dd29` (integration branch merged in at 8da202d).
-Predecessor's handoff: `docs/handoff/ui_design.md`.
+Agent a26f87c39952dcd9c, branch `worktree-agent-a26f87c39952dcd9c` (integration branch merged at 524e25c0).
+The predecessor's handoff, `docs/handoff/ui_design.md`, is the full brief.
 
-## How the owner reaches character customisation
-**New Journey; the Look is step II**, straight after the calling (Calling, Look, Arms, Origin, Name).
-- Step I has a card under the callings with her portrait, "II · Her look". Its Next button says "Next: her hair, face and paint".
-- The Look's parts are Hair, Face, Shape, Paint and Body (tabs, or `,` and `.`, or LT and RT).
-- To turn her, drag; the wheel or a double click brings her face near.
-- **Old builds:** the title's foot says when the code was built. If any `.cs` file is newer than the build, an ember line says to open the project in Godot and press Play. (Run from the project manager, Godot starts the last build without making a new one.)
+## Current state: code done, nothing yet seen in game (Godot is the owner's until the main session frees it)
+- **Credits and licences** (178768aa, db9f434b):
+  - `Content/Credits.cs` turns `CREDITS.md` into `data/credits.json` and `licences/CREDITS.txt`. It cuts paths, fetch-tool notes and review notes.
+  - `CreditsTests` is a golden file. Regenerate with `WRITE_CREDITS=1 dotnet test --filter CreditsTests`.
+  - The `licences/` folder ships the Godot, .NET and OFL texts, packed (`include_filter licences/*`) and copied beside the build (`export.sh`).
+  - The screen is `Ui/Credits.cs`, opened from the title's Credits and from the pause menu's "Credits and licences". Shots: `--quick --open credits`.
+- **The pack's bugs** (d2750bfc):
+  - `Loadouts.Look`: the world's figure is rebuilt only when what shows changes, and then follows the old one's place and pose;
+  - the pack's doll is kept across refreshes while it looks the same;
+  - `PersonView.Settle` poses a new figure as it is readied, so there is no T for a frame.
+- **Page pieces** (c3c3f1fc), each falling back to the drawn look while its file is missing:
+  - the backdrop's edges and grain;
+  - a column rail with its stone between page panes (`Overlay.Dividers`);
+  - `section_mark` in `Section`;
+  - `hero_plate` behind the figure on the pack and the self;
+  - `card_light` on the map result's finds.
+  The new PNGs have no `.import` yet: the UI art lead's step 2.
+- **Map result and atlas** (8aa77414):
+  - `MapResultScreen` tells the verdict, the time, falls, slain and packs, then the loot (best last), then the atlas line and grid. It shares `TellingScreen` with the night's result.
+  - The `MapSpoils` diff gives what the map paid.
+  - `IZoneHost.MapOver` hands a map's end to the game.
+  - The atlas is the Wayfinder's table's second page: the great atlas, the chart in hand with its oaths and the way in, and the points on the five biases.
+  - Shots: `--zone map --open mapresult [--fell]`; `--zone waystation --charts 3 --lit pack:1 --open atlas`.
 
-## Current state (pushed b6f31f7, merged; 539 tests green)
-- **Cameos are her portraits**, rendered from the game by `tools/assets/creation_portraits.py` (`tools_scenes/Portraits.cs`) into `art/ui/create/female/`. Cuts are rendered grey with a mask, and the cameo dyes them the chosen colour.
-  Rerun it after any head, hair, face or paint rebuild: `python tools/assets/creation_portraits.py [hair|face|paint|look]`.
-- **Face paints were retuned as seen on her** (`tools/assets/heroine_paint.py`):
-  - kohl is bold, with a wing;
-  - woad is a brow band plus cheek stripes;
-  - ochre and blood are opaque;
-  - ash is pale;
-  - gilt runs along the cheekbones.
-  Colours lean against AgX, which turns blue violet and deep red rust.
-- **Brows are dyed her hair's colour:** a pass in `heroine_paint.gdshader` finds each painted hair under the `paint/brows.png` mask. Dark colours look right. Fair ones read a little flat and cool on the shadow side.
-- **Face and Shape are split.** Shape has the column to itself, with its group tabs four to a row. A face to start from may set `skin` and `eyes`.
-- **The male hero's fields are agreed and built:**
-  - `HeroLook.Beards`;
-  - `BeardStyle` on CharacterData, CreationChoice and PersonSpec;
-  - a Beard row in his Hair part;
-  - `HeroKit(sex) = Lore.Hero(sex)`, so `heroes.male` in looks.json turns his Look on.
-- The plaque rule no longer runs through titles. Self's standing lines have stat icons.
+## Next
+1. **When Godot is free:**
+   - run `--headless --import`;
+   - shoot at 1920x1080: credits (each section, the three licences, the title route), the map result (cleared and `--fell`), the atlas (empty, the beta's tier 1 and a point, several charts), the pack's wear and take-off (no blink, no T), and the pages with the new pieces (Self, Pack, Arts, Forge, credits);
+   - fix what is drab or dense.
+2. Send legal the screenshot of the credits page.
+3. Rerun the portraits after the face lead's head, and his portraits once his body lands. Then do Self's density and the frameless creation.
 
-## Next (in order)
-1. The experience director's four findings:
-   - barks: one speaker at a time, never crossing;
-   - the result screen as the night's story;
-   - the map table says what a map pays;
-   - pausing only in arenas and on the night road.
-2. The painted pass over the portraits (UI art lead), once the face lead's new faces land.
-3. The old list: announcements, item card, journal deeds and codex, HUD dash and draught; `docs/ui_review/`; UI_DESIGN 10.
-
-## Waiting on others
-- **Face lead (ade92e8285938438f):** new head, faces and 47 sliders in 8 groups. After the main session writes `heroine.glb`, I rerun `heroine_paint.py` then `creation_portraits.py`. `LoadoutTests` expects 25 sliders, and the face lead updates that.
-- **Male hero (ab82cbe99e2937ddd):** will write `heroes.male` and his builder. I then render `creation_portraits.py --sex male` (Portraits.cs builds her only today).
-
-## Key decisions
-- Look is step II: the calling dresses her, then she is shaped. A woman or a man is chosen on step I.
-- Portraits are rendered from the game, not painted by hand, so they stay true when her head changes. The painted pass goes over them.
-- Paint is laid thick where it is meant to be solid. A thin coat over skin changes its hue in the tone mapping.
+## Legal (aab20546fe06daa89): answered, applied at a185aea3
+- Unshipped works are out of the credits (the anime body, its hairstyles, the older woman's body). KayKit stays (its meshes are in the landmarks).
+- The AI list is STEAM_CHECKLIST E's text, naming only what ships. Each new line (voices, music, the hero) joins when what it covers ships.
+- "Modified" isn't needed on an unchanged work. Every entry has one anyway.
+- The hero is out of the AccuRIG and MakeHuman lines while his body is out of the release; both come back when it ships. Legal wants a screenshot of the page.
 
 ## Notes for other areas
-- Main session: the title warns about stale builds, so the owner can see when to rebuild.
-- UI art: register the paint-over of `art/ui/create/female/*.png` once the faces settle. Paint the cut images in grey and leave their `_mask` as is.
-- Scratchpad: `scratchpad/uid3/` (`shot.ps1`, `por.ps1`, `paints.ps1`, `grid.py`, `c1.py`, `edlib.py`).
+- **Combat:** `MapRun.Finish` now calls `G.MapOver(Result, alive)`. Its default in `IZoneHost` is the old travel back. `Charts.TakeOut`, `Charts.Carried` and `Atlas.IsOpen` are new.
+- **Story:** the atlas opens once a chart is carried. Vonnra's fortune should give the first (`Journey.GiveChart`).
+- **UI art:** the six pieces are wired by name, so drop files in and they show. `card_light` and `hero_plate` still want rendering.
+- **Experience:** the map result and the atlas follow "A map's shape". Judge them from the shots.
+
+## Key decisions
+- **Ship a cleaned copy of CREDITS.md, never the file:** its review notes would reach the `.pck`. It is cleaned by rule, and a test fails if it drifts.
+- **The licence texts are the upstream files** at the shipped versions (Godot 4.5.1, .NET 8).
+- **A map's loot is read from before and after,** not counted in the fight: one source of truth, no bookkeeping in combat's code.
+- **The atlas lives at the Wayfinder's table as a second page,** not a new screen: it is the same table, and LT/RT turn it.
+- **The figure is rebuilt only when its look changes:** most gear doesn't show, so rebuilding for it was only a blink.

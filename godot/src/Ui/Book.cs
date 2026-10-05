@@ -38,7 +38,7 @@ public partial class SheetScreen : Overlay
     static readonly Dictionary<ConditionId, string> Cond = new()
     {
         [ConditionId.Wounded] = "Wounded: 20% less health until it heals", [ConditionId.Blightsick] = "Blight-sick: your wounds close slowly", [ConditionId.Poisoned] = "Poisoned",
-        [ConditionId.Blessed] = "Blessed: +15% holy damage", [ConditionId.Rested] = "Rested: +5% health", [ConditionId.Warmed] = "Warmed: +8% damage, +5% speed",
+        [ConditionId.Blessed] = "Blessed: +15% holy damage", [ConditionId.Rested] = "Rested: +5% health", [ConditionId.Warmed] = "Warmed: last night is still with you",
         [ConditionId.Wolfscent] = "Wolf-scented", [ConditionId.Hunted] = "Hunted",
     };
 

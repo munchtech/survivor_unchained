@@ -180,16 +180,23 @@ Act 1 asks none of them out loud; it plants all three.
 The owner: "story should be 40% of the game early on, end game is two types of
 arenas - permanent and our normal arenas."
 
-- **Early on, the story is two parts in five.** In Act 1:
-  - a day is about 20 minutes of play: the town, the Verge by day,
-    conversations, the cinematics;
-  - a **story night is 20 minutes**, and a Wayfinder's map is 30;
-  - Act 1 runs about seven days, which is roughly five to six hours;
-  - a typical route has three or four story nights and three or four maps, so
-    the days are about 40% of the time;
+- **Early on, the story is two parts in five, or a little more.** In Act 1
+  (the owner's decisions of 4 October, `docs/design/STORY_NIGHTS_AND_TIME.md`):
+  - a day is **12 minutes of free play**: the town, the Verge by day. The
+    clock stops for conversations and cinematics, so a day plays at about 20
+    minutes;
+  - a **story fight is a short night in its own place**: three beats and a
+    boss, 10 to 14 minutes (`docs/design/STORY_BOSSES.md`). A Wayfinder's map
+    is 30;
+  - Act 1 runs about eight days: four story fights and about four table
+    nights. The days are then about half the time (the experience director's
+    arithmetic). The shorter story fights push the share up. That is the
+    cost, stated plainly, and the share falls in Acts 2 and 3;
   - the story asks for about one night in two, and the Wayfinder offers the
-    rest. Story nights are shorter so the story is never gated behind two
-    hours of arena (`docs/EXPERIENCE_AUDIT.md`).
+    rest. Story fights are short so the story is never gated behind two hours
+    of arena (`docs/EXPERIENCE_AUDIT.md`);
+  - **a lost story fight costs a night**: she wakes in town the next morning,
+    with a day to get ready (section 9, "The nights").
 - **The share falls as the game goes on:** about a third in Act 2 and a
   quarter in Act 3, with the endgame all nights. The days get fewer and
   heavier, and the nights get longer and more yours.
@@ -439,6 +446,16 @@ None of them says it.
   Never says "Ashford", and lets nobody say it twice. *Ends:* killed in Act 1;
   holds the breakthrough's mouth with his people and the six crates and dies
   in it; takes the Waystation's gate after Holloway; hanged.
+  - **Spared at his knee** (the owner, 4 October: the Roost fight ends on her
+    choice, "Spare him" or "Finish it"). He laughs, and it costs him: "You
+    minded where you swung. That's two I owe, then. The saw-bones a leg, and
+    you the rest of me." (If she said the word in his camp: "Now you've let
+    me. That's us square. ...Near enough.") He gets up on the sewn leg, and
+    it holds. "We'll be off your road by light. Up, my lot! Boots on! We're
+    flitting!" Before first light the Kerchiefs go north over the ridge,
+    where no road goes, and leave the Roost and the Coyle cargo. He takes the
+    six crates only if he swore to keep them. He pays his debts: Act 2 brings
+    him back owing her (section 7, beat 7). Fact `redcowl` = `spared`.
 - **Ysolde Marrow, the Wayfinder.** *Face:* a cartographer of arenas. *Secret:*
   she writes down who comes back from her maps and sells the list to Sallow.
   Her brother Edric did come out of the barrow in the Morrow hills, twelve years
@@ -612,8 +629,9 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
 - Her night bark: "I count the lights on the ford road, every night. Somebody
   should." She counts her own work: the lights that go out are her ledger's
   struck lines (C09).
-- The free things she gives (the call, `vonnra.ford`, the coin, the fortune)
-  are each priced and then waived ("That would be five gold. This once, no
+- The free things she gives (the call, `vonnra.ford`, the coin, the fortune,
+  and the first chart at its close, `vonnra.f_chart`) are each priced and then
+  waived ("That would be five gold. This once, no
   charge."), so they stay owed. `vonnra.vault` is the one thing she never
   prices. Act 3: the toll she waived was the survivor's life.
 - `vonnra.f_accuse`: told to her face, she says neither yes nor no; she calls
@@ -712,6 +730,13 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
 - `rav.cb_killed_redcowl`: "Dunstan. That was his name, before the hat. Our
   mother's idea." (The one time Rav names him.) `redcowl.crates_keep`: "My
   mother'd laugh herself sick."
+- Spared instead (`redcowl` = `spared`): `rav.cb_spared_redcowl`, two cups
+  poured before she reaches his table, "Good work, that leg. Whoever did it.",
+  and the drink not on the slate (Rav, who never says no to a drink, gives
+  one away). Told "two he owes", `rav.owes_two`: "He's a terrible payer.
+  Always was." (The brother, for those listening.) The morning report
+  `roost.flitted`: Rav at the Flagon's door until the last torch is over the
+  ridge.
 - `rav.clerk` (outcast): the clerk's key, which Rav "found" on a stool.
 - `npcs.json` rav bark: "Red cloth's a hard habit to break."
 
@@ -724,6 +749,8 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
   through it with one".
 - `wayfinder.t_wayfinder`: her brother did not come out of a barrow in the
   Morrow hills; she has drawn it eleven times (Edric, Act 2).
+- `vonnra.f_chart`: the first chart, laid down at the fortune's close: "It is in the Wayfinder's hand, and its margins are written full." Vonnra buys from Ysolde too,
+  and the margins are what Ysolde sells (Act 2, Silverstair).
 
 **The cinematics** (`docs/cinematics/`; each script says what it plants and pays)
 - C01: her own prints come up from the river and none go down; her breath is
@@ -802,6 +829,17 @@ Each seed names the beat it pays (section 7 and 8). `WRITING_PASS.md` section
 Begins the dawn after the fortune (`chapter.done`). Each beat says what
 decides it. Facts are Act 1's unless marked.
 
+**Getting up, from here on** (the owner, 4 October). In Act 1's story fights
+she rises once. From Act 2 she does not rise at all unless she carries the
+rise, which is one power with two sources (combat's):
+- the ember's legendary great blessing, *Cold, Then Not*, by night, in the draft;
+- the art *Not Yet*, held in the art's place at the price of her art. It is
+  learned from *The Keeper's Office* (item `keepers_office`), a small book of
+  the Order's watch-hours. Chid gives it to her from the act's first morning,
+  and at his waking after a lost fight. Its last page has two lines on it:
+  "Is it morning? Not yet." Whoever wrote it makes their Cs the old way. It
+  is Chid's own hand, which pays in Act 3 with the note in Ashe's trunk.
+
 **1. The breakthrough.** The Dig breaks into the Morrow's outer workings.
 - *Where:* under the Penhale farm; but if `dig.pump` is `blown` the Dig's
   mouth fell in during Act 1 and the lamplings dug a new way down from the old
@@ -875,7 +913,13 @@ else.
 
 **7. The army.** If Redcowl lives and is not at war with the survivor, he
 comes to the Waystation with forty-one mouths and a dozen blades: the bandits
-are the army. With `be.crates` `redcowl` they bring six crates of powder for
+are the army. **Spared in Act 1** (`redcowl` = `spared`), he comes down off
+the ridge on the leg that held, because he owes her "the rest of me" (or they
+are "square, near enough", if she said the word), and he pays his debts: it is
+his reason, said once and laughed off, and it is why he holds where she asks
+him to hold. He is the one man in the valley who owes the survivor his life
+and knows it. The Penhales' ham (section 5, "Kindness from the wrong people")
+comes from up the ridge. With `be.crates` `redcowl` they bring six crates of powder for
 the tunnels. With `redcowl.ashford_said` he tells the survivor the levy's
 story. Rav's tip-off comes out (Redcowl tells it, laughing; a survivor with
 `redcowl.birds` guessed it). If Redcowl died in Act 1, Rav goes down to the
@@ -1106,10 +1150,13 @@ the story's view of them, so that the nights tell the story the days write.
   Snib getting the last word. The fight is won; he is not. Since C03 he never
   finishes "surface-meat" at her: he has smelled downstairs on her (Snib, who
   has not, still says it).
-- **The Barrow Lord is laid down, not killed.** At the end he will not lie down
-  until the survivor stands over him, and holy (the Order's school) does it
-  twice as fast. "Lie down" is the Order's word for the dead (the hymn, C02,
-  C08): an arena teaches it with the hands before the story says it.
+- **The Barrow Lord is laid down, not killed.** She lays him down and stands
+  over him, and holy (the Order's school) does it twice as fast. He will not
+  stay down: the Legion keeps its door from inside, and that is not done. He
+  rises within her reach, and his hand at the gate sends her home ("Redi.",
+  C13). The table's title says it: *Who Would Not Lie Down*. "Lie down" is the
+  Order's word for the dead (the hymn, C02, C08): an arena teaches it with the
+  hands before the story says it. (Combat's STORY_BOSSES.md, agreed.)
 - **Keegan's duel is at first light,** not by night. Her handbook's seventh
   article says the return is made "at dawn, when it is weakest", and she does it
   by the book: the ember has gone out of the survivor, who is ordinary and
@@ -1123,6 +1170,16 @@ the story's view of them, so that the nights tell the story the days write.
     sick, and she lets him. `greymuzzle` = `spared`; `beasts.outcome` stays
     `cured`; Maeca hears of it, and it is the one fight that raises her regard.
     C10 gains that variant (his eye on the den, then on her, and he walks).
+    It is her choice when he goes down (the owner, 4 October): "Let him go"
+    or "Finish it", offered only when the promise and the clean stream hold.
+    "Finish it" breaks the promise she knelt to make (`promise.broken`), and
+    Maeca knows it.
+  - *Redcowl spared:* yes (the owner, 4 October). At his knee, "Spare him" or
+    "Finish it". Finished: C11's last words, the red hat in the mud,
+    `redcowl` = `dead`. Spared: his words at the knee and his camp struck by
+    first light (section 5), `redcowl` = `spared`, `roost.cleared`. C11's last
+    words play only if he dies. The choice is `ArenaSpec.OnSpare`,
+    `EndSpared` and `SpareVerb`, and a prompt never fires by accident.
   - *The crates blown in the Roost fight:* yes, as the value that already exists:
     `be.crates` = `burned`, with its consequences (Act 2's breakthrough is
     narrower; the army has no powder). No new value.
@@ -1134,6 +1191,15 @@ the story's view of them, so that the nights tell the story the days write.
 - **Banes learned by day** (Maeca's fed fires, Chid's standard, Grimtunnel's own
   lamp): yes. They are story knowledge, earned in conversation, and the day half
   arming the night is the shape of the game.
+  - **Maeca** (`maeca.fire`, fact `bane.fires`): "Take fire, and feed it. They
+    won't come near a fire that's fed. That's not for your sake. It's so they
+    don't have to." She gives it to spare the Pack, not the survivor.
+  - **Chid** (`chid.legion`, fact `bane.pole`): "They never followed a man.
+    Never. They followed the pole." The Legion's dead follow what is carried
+    before them, which is a plain seed of Act 3, where they part for the
+    Morrow's own light.
+  - **Redcowl's leg** (`rav.redcowl`: Rav sewed it on), and Grimtunnel's own
+    lamp (the item `grimtunnels_lamp`).
 - **Thieves:** a lampling that takes ember stones off the ground is true to the
   lamplings, who carry their dead down on purpose ("Nobody's!"). Never what the
   survivor holds. Name it in their words (a carrier), not a genre's.
@@ -1173,6 +1239,49 @@ the story's view of them, so that the nights tell the story the days write.
 
   **The atlas is other places,** never these walked by day (there is no
   arena by day). They are the places the road forgets, in Ysolde's hand.
+- **Falling, getting up, and losing a story fight** (the owner, 4 October):
+  - In Act 1's story fights she gets up once, at the start of the stage she
+    fell in. The rise is told in the prologue's words, "You get up.", and
+    every later rise as "You get up. It takes less than it did." From Act 2,
+    only *Not Yet* or *Cold, Then Not* gets her up (section 7).
+  - A fall with no rise left loses the night. The result's last line is the
+    last thing she knows, never her coming to:
+    - the Pack standing round her in a ring, none of them coming in;
+    - a big hand closing her eyes;
+    - little hands lifting her;
+    - the dead carrying her up the stair, in step.
+  - She wakes the next morning on Chid's bench (`Journey.CarriedHome`). The
+    waking is a quiet seed of what she is:
+    - a wolf's spit dried on her collar (something carried her out);
+    - her hands crossed on her chest the way the Kerchiefs lay out their dead;
+    - lamp-soot handprints where little hands lifted her and put her down;
+    - a mailed hand's print over her breastbone.
+
+    Chid tells the carter lie, says what it cost ("a night. They come round
+    again"), and points her at whoever can help her get ready, unless she
+    already knows: Maeca for the Pack, Rav for the Roost, his own old book
+    for the Legion, and the lamp she carries for the Dig. The night is the
+    cost. She loses no gold and no wound comes of it.
+  - The town talks:
+    - a morning report for each fight's first loss: the Pack singing over a
+      kill and stopping in the middle; the Kerchiefs' burying song turning
+      to shouting; the lamplings' lamps coming down the hill and stopping
+      where the wall's lamps reach; the violet going out like a door
+      shutting;
+    - the morning's barks: Holloway's count one short; Maeca's "They don't
+      leave meat."; Rav's "the lads laid you out proper"; Keegan's "The dead
+      do not, as a rule, give anything back."
+- **The day's clock** (the experience director's, words in `Journey.DayLines`):
+  - at dusk, the gate's "Lamps are lit. Stay where they reach.", then one
+    line naming the night's fight;
+  - half the night gone: "Up on the Toll Tower, the one lamp is still lit.";
+  - a night left alone: "You see the night out on your feet. At first light
+    the warmth comes back into your hands.";
+  - straight on to a second fight the same night: "You do not go back to the
+    lamps. You go on."
+
+  The call is the Order's (section 1). The lines name the night, never the
+  clock.
 - **The town talks about your nights** (`npcs.json` `said`, keyed to
   `arena.last.*`). It talks the night itself (`arena.last.ago` 0) and the
   morning after (1), and then lets it go; `CinematicTests` proves that someone
@@ -1225,6 +1334,7 @@ each one's exact writer and reader.
 | Act 1 fact | Set by | Lands |
 |---|---|---|
 | `be.crates` (`redcowl`, `harlan`, unset; burned with the Roost) | `redcowl.crates_keep`, `harlan.crates` | Act 2 beat 1 (how wide the breakthrough), beat 7 (the army's powder), beat 5 (what Harlan sold) |
+| `redcowl` = `spared` | the Roost fight, "Spare him" at his knee | Act 2 beat 7 (he comes owing her); beat 1 (the crates go with him only if `be.crates` is `redcowl`) |
 | `redcowl.gave_charge` | `redcowl.crates_charge` | Act 1 (blow the pump with Redcowl's blessing); Act 2 (Redcowl remembers whose side the survivor took) |
 | `jory.knows_be`, `jory.told_knew`, `jory.lied_to` | `jory.truth`, `jory.salt` | Act 2 beat 5; beat 8 (Jory on the south road) |
 | `pell.fate` (`taken`, `ran`) | `redcowl.pell` | Act 2 beats 4 and 6 |
@@ -1295,18 +1405,30 @@ holds one object instead (Sella's bolt going home; Maeca's boots side by side
 outside the hides; Keegan's armour laid out in order; two cups at Rav's, one
 full; Ysolde's spectacles folded on the twelfth drawing).
 
-### Intimate scenes and the explicit slots
+### Intimate scenes: fade to black
 
-The game will have a setting for intimate scenes (show in full, or cut
-away), offered in the settings and when such a scene begins. Content reads
-it as the fact `settings.intimacy`: `"full"` shows the full scene; anything
-else (or nothing) shows the cut-away. **The lead wires the setting; nothing
-in the game writes the fact yet.** Every intimate scene is written in full
-before and after, with a cut-away version of the moment itself, and an
-explicit-variant slot keyed to `settings.intimacy == "full"` that holds a
-placeholder for the owner's writer:
+**The base game is not explicit** (the legal lead, `docs/legal/LEGAL_BRIEF.md`
+issue 6). Explicit sex would make it Adult Only on Steam: hidden by default,
+a slower review, and the payment processors' rules. Every intimate scene is
+written in full before and after, and the moment itself fades: close and
+sensual, ending before the act. That cut-away is the scene, for everyone.
+- No explicit slot or placeholder ships in the game's data, and nothing is
+  keyed to `settings.intimacy`. `StoryLint` fails if one lands.
+- The three Act 1 slots were removed on 4 October.
+- If explicit scenes are ever wanted, it is the owner's decision with the
+  lawyer: a separate Adult Only DLC with its own survey, so the base game
+  stays in the normal store.
+- **A love scene earns nothing in a fight** (the owner, 4 October; Australia's
+  R18+). The condition `warmed` stays as a record that the night happened
+  ("Warmed: last night is still with you" in the book), with no bonus. The
+  notices keep their words without numbers. Affection and trust still move,
+  because that is the relationship. Never give a love scene a mechanical
+  reward.
 
-| Slot | Node | Who, where, tone |
+The planned scenes, kept as notes (the beat sheets are in
+`docs/romance/scenes/`). None of this is game data:
+
+| Scene | Node | Who, where, tone |
 |---|---|---|
 | 1 | `sella.night` | Sella and the survivor, the blue room at the top of Rook's stairs, by lamplight; warm, unhurried and funny, tenderness at the edges and quickly put away; ends with her asleep across you and the sun up. |
 | 2 | `maeca.blind` | Maeca and the survivor, the Hunters' Blind in the Verge at night; wordless, wary, careful hands that become sure ones, frost outside, the Pack far off. |
@@ -1315,8 +1437,7 @@ placeholder for the owner's writer:
 | 5 | `rav.night` (Act 2) | Rav and the survivor, the back room of the Crooked Flagon after closing; funny until his fingers find the survivor's wrist. |
 | 6 | `wayfinder.night` (Act 2) | Ysolde and the survivor, her rooms over the map table; she draws them after. |
 
-Each slot's text starts `[explicit scene:` so it can be found and tested
-for; replace the whole placeholder with the scene.
+When the Act 2 scenes are written, write the cut-away and nothing past it.
 
 ## 12. Facts the story keeps
 
@@ -1341,3 +1462,9 @@ Act 1 (the writing pass): `nell.told`, `nell.buried`, `nell.asking`,
 `told_brannoc`, `lied_brannoc`, `crates_redcowl`, `crates_harlan`, `told_jory`,
 `gave_pell`, `accused_vonnra`. A new mystery quest, `lamps`. Every one is
 listed with its writer, its readers and its tests in `WRITING_PASS.md`.
+
+The story fights (the owner's decisions, 4 October): `redcowl` = `spared`;
+`player.carried_home` (the fight she lost, until Chid's waking tells it); the
+deed `spared_redcowl` and the entry `caravan/roost_spared`; the banes
+`bane.fires` and `bane.pole`, read now by Chid's waking. The fortune's chart
+is a change of its own (`{ "chart": ... }`). `WRITING_PASS.md` §22 has them all.

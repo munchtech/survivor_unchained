@@ -42,6 +42,9 @@ public sealed class PlayerState
     /// <summary>What felled the survivor when it was not a blow (poison, burning).</summary>
     public string? FellTo;
     public int Revives;
+    /// <summary>Times she has got up this fight (one at most: Cold, Then Not, however carried, or a
+    /// story night's own rise).</summary>
+    public int Rose;
     /// <summary>Risings From the Ashes still owed tonight (the ember's own, lost at dawn).</summary>
     public int Ashes;
     /// <summary>Blows that have reached the survivor since Watch Mail last turned one.</summary>
@@ -84,6 +87,9 @@ public sealed class MapRules
     /// full). An arena's thousand champions at the day's rate paid a Kerchief night 2.5k-3.3k gold,
     /// more than the rest of Act 1 together; there it is a tenth (crafting's measure).</summary>
     public double ChampionGold = 1;
+    /// <summary>A map's suffixes on the survivor: armour counted for less, a dash slower to come
+    /// back, regeneration, and what a draught mends (docs/SKILLS_DESIGN.md §17.2).</summary>
+    public double ArmourMul = 1, DashRecharge = 1, RegenMul = 1, DraughtMul = 1;
 }
 
 public sealed class BattleHooks
@@ -255,6 +261,8 @@ public sealed partial class Battle
     public readonly List<int> PendingBlessings = new();
     /// <summary>Great blessings owed (an arena's first, its fifteenth minute's).</summary>
     public int GreatOwed;
+    /// <summary>Cards more on the next great blessing (the ember-core broken in time).</summary>
+    public int GreatExtra;
     public readonly HashSet<string> Discoveries = new();
     /// <summary>Where the fight is coming from, for the adaptive director.</summary>
     public readonly DamageProfile Profile = new();
@@ -415,7 +423,7 @@ public sealed partial class Battle
         int maxCharges = RoundInt(st.Get(Stat.DashCharges));
         if (p.DashCharges < maxCharges)
         {
-            p.DashRecharge += dt * DashHaste() / st.Get(Stat.DashCooldown);
+            p.DashRecharge += dt * DashHaste() * Rules.DashRecharge / st.Get(Stat.DashCooldown);
             if (p.DashRecharge >= Abilities.Dash.Recharge) { p.DashRecharge = 0; p.DashCharges++; }
         }
 
@@ -424,7 +432,7 @@ public sealed partial class Battle
         if (blockRank > 0 && p.BlockT > 0) p.BlockT = Math.Max(0, p.BlockT - dt);
 
         // Regeneration and hazards on the survivor.
-        double regen = st.Get(Stat.Regen);
+        double regen = st.Get(Stat.Regen) * Rules.RegenMul;
         if (regen > 0 && p.Hp < MaxHp) HealPlayer(regen * dt, "regen", true);
         // Bitterroot draws it: what burns or poisons the survivor wears off twice as fast.
         double cure = Boons.ContainsKey("recovery") ? 2 : 1;
@@ -536,6 +544,7 @@ public sealed partial class Battle
         double x0 = p.X, z0 = p.Z;
         Events.Emit(new Ev.Dash { X0 = x0, Z0 = z0, X1 = x0 + p.DashDX * Abilities.Dash.Distance, Z1 = z0 + p.DashDZ * Abilities.Dash.Distance });
         Fire(TriggerEvent.Dash, new ProcCtx { X = p.X, Z = p.Z });
+        OpenGate(x0, z0);
         return true;
     }
 
@@ -571,6 +580,22 @@ public sealed partial class Battle
     {
         if (a == b) return false;
         return (War.TryGetValue(a, out var wa) && Array.IndexOf(wa, b) >= 0) || (War.TryGetValue(b, out var wb) && Array.IndexOf(wb, a) >= 0);
+    }
+
+    /// <summary>The farthest the survivor's side can hurt within r.</summary>
+    public Enemy? FarthestHostile(double x, double z, double r)
+    {
+        Enemy? best = null;
+        double bd = -1;
+        Spatial.Query(x, z, r, q);
+        foreach (var id in q)
+        {
+            var e = Enemies.Items[id];
+            if (!Targetable(e)) continue;
+            double d = (e.X - x) * (e.X - x) + (e.Z - z) * (e.Z - z);
+            if (d <= r * r && d > bd) { bd = d; best = e; }
+        }
+        return best;
     }
 
     public Enemy? NearestHostile(double x, double z, double r, Func<Enemy, bool>? filter = null)
@@ -1072,7 +1097,7 @@ public sealed partial class Battle
             });
         }
         double dmg = amount;
-        double armor = st.Get(Stat.Armor);
+        double armor = st.Get(Stat.Armor) * Rules.ArmourMul;
         foreach (var z in Zones.Items) if (z.Alive && z.Armor > 0 && Dist(z.X, z.Z, p.X, p.Z) < z.Radius) armor += z.Armor;
         dmg *= 1 - StatBlock.ArmorReduction(armor);
         dmg *= 1 - Clamp(st.GetRaw(Stat.ResistOf(school)), -1, 0.8);
@@ -1095,15 +1120,15 @@ public sealed partial class Battle
     /// blow; but it is not a blow. It is never dodged or blocked, sets off no thorns, and buys
     /// none of the moment of grace a blow buys (it did: standing in fire made the survivor
     /// untouchable by the crowd's teeth, half a second in every half second). Said once a second.</summary>
-    void HurtByGround(double amount, School school, double dt)
+    public void HurtByGround(double amount, School school, double dt, string? named = null)
     {
         var p = Player;
         if (!p.Alive || p.Iframes > 0 || p.Leap != null) return;
         var st = Stats;
-        double dmg = amount * (1 - StatBlock.ArmorReduction(st.Get(Stat.Armor))) * (1 - Clamp(st.GetRaw(Stat.ResistOf(school)), -1, 0.8));
+        double dmg = amount * (1 - StatBlock.ArmorReduction(st.Get(Stat.Armor) * Rules.ArmourMul)) * (1 - Clamp(st.GetRaw(Stat.ResistOf(school)), -1, 0.8));
         if (p.BulwarkT > 0) dmg *= Has("unmoving") ? 0.2 : 0.35;
         if (Art.WraithT > 0) dmg *= 0.5;
-        string source = school switch { School.Fire => "burning ground", School.Frost => "frozen ground", School.Nature => "foul ground", _ => "bad ground" };
+        string source = named ?? school switch { School.Fire => "burning ground", School.Frost => "frozen ground", School.Nature => "foul ground", _ => "bad ground" };
         Dot(ref groundSum, dmg, school, source, dt);
     }
 
@@ -1247,12 +1272,17 @@ public sealed partial class Battle
             {
                 // The ember's rising first: the kit's keeps for a night without it.
                 bool ashes = p.Ashes > 0;
-                if (ashes) p.Ashes--; else p.Revives--;
                 int ar = Boons.GetValueOrDefault("from_the_ashes");
+                // One rise a fight, however many ways she carries it (the owner: getting up and
+                // fighting on is rare, or it is a balancing nightmare).
+                p.Ashes = 0;
+                p.Revives = 0;
+                p.Rose++;
                 p.Hp = MaxHp * (ashes && ar >= 2 ? 1 : 0.5);
-                p.Iframes = 2;
+                p.Iframes = ashes && ar >= 3 ? 3.5 : 2;
+                if (ashes && ar >= 3) p.DashCharges = RoundInt(Stats.Get(Stat.DashCharges));
                 if (ashes) RiseBurning(ar);
-                Events.Emit(new Ev.Announce { Title = ashes ? "From the ashes" : "You rise again", Tone = Tone.Boon });
+                Events.Emit(new Ev.Announce { Title = ashes ? "You go cold. Then the ember catches." : "Something answers for you: not yet. You get up.", Tone = Tone.Boon });
             }
             else if (Hooks.OnPlayerDeath?.Invoke(p.LastKiller) == true)
                 p.Hp = Math.Max(p.Hp, 1);
@@ -1273,7 +1303,7 @@ public sealed partial class Battle
     {
         var p = Player;
         if (!p.Alive) return;
-        double h = amount * Stats.Get(Stat.Healing) * (1 - Rules.HealCut);
+        double h = amount * Stats.Get(Stat.Healing) * (1 - Rules.HealCut) * (source == "draught" ? Rules.DraughtMul : 1);
         double before = p.Hp;
         p.Hp = Math.Min(MaxHp, p.Hp + h);
         if (!silent && p.Hp - before > 0.5) Events.Emit(new Ev.PlayerHeal { Amount = p.Hp - before });
@@ -1317,6 +1347,7 @@ public sealed partial class Battle
         e.Speed = def.Speed * (0.92 + Rng.Next() * 0.16) * (e.Disposition == Disposition.Ally ? 1 : Rules.FoeSpeed * (1 + 0.05 * Boons.GetValueOrDefault("dark_bargain")));
         e.Elite = def.Elite || o.Elite;
         e.Boss = def.Boss || o.Boss;
+        e.Scripted = false;
         e.State = o.Style == SpawnStyle.Rise ? EnemyState.Rising : o.Style == SpawnStyle.Burrow ? EnemyState.Burrowed : EnemyState.Active;
         e.StateT = o.Style == SpawnStyle.Rise ? 1.1 : o.Style == SpawnStyle.Burrow ? 0.3 : 0;
         e.AttackT = 0.5 + Rng.Next() * 0.5;
@@ -1404,17 +1435,48 @@ public sealed partial class Battle
         return p;
     }
 
+    /// <summary>The most stones left lying before the rest are gathered into one, the night's hoard
+    /// stone (the genre's red gem): a late night left thousands carpeting the field, and once the
+    /// pool was full the ember was simply lost.</summary>
+    public const int EmberCap = 240;
+    /// <summary>The tier the hoard stone is drawn at (the stones' own run 0 to 3).</summary>
+    public const int HoardTier = 4;
+    /// <summary>Stones lying on the ground (counted each tick, the hoard stone apart).</summary>
+    public int EmbersLying { get; private set; }
+    Pickup? hoardStone;
+
+    /// <summary>The hoard stone lying, if there is one.</summary>
+    public Pickup? HoardStone => hoardStone is { Alive: true, Kind: PickupKind.Ember, Tier: HoardTier } h ? h : null;
+
     void DropEmber(double x, double z, double xp)
     {
+        if (EmbersLying >= EmberCap) { Hoard(x, z, xp); return; }
         // Many small stones for a big creature reads better than one.
         double left = xp;
         int guard = 0;
         while (left > 0 && guard++ < 6)
         {
             double v = left > 40 ? Math.Min(left, 40) : left;
-            SpawnPickup(PickupKind.Ember, x + (Rng.Next() - 0.5), z + (Rng.Next() - 0.5), v);
+            if (SpawnPickup(PickupKind.Ember, x + (Rng.Next() - 0.5), z + (Rng.Next() - 0.5), v) == null) Hoard(x, z, v);
+            else EmbersLying++;
             left -= v;
         }
+    }
+
+    /// <summary>Ember past the cap goes into the hoard stone, which lies where the overflow began
+    /// and does not cool, worth all of it: a jackpot to go and fetch.</summary>
+    void Hoard(double x, double z, double xp)
+    {
+        if (HoardStone is not { } h)
+        {
+            h = SpawnPickup(PickupKind.Ember, x, z, 0)!;
+            if (h == null) return;
+            h.Tier = HoardTier;
+            h.Persistent = true;
+            h.Vx = h.Vz = 0;
+            hoardStone = h;
+        }
+        h.Value += xp;
     }
 
     /// <summary>A creature's blow on the ground after `delay` (its own mark already shown):
@@ -1488,6 +1550,8 @@ public sealed partial class Battle
     public void EndMark(int id) =>
         Events.Emit(new Ev.Telegraph { Id = id, Shape = TelegraphShape.Circle, Kind = TelegraphKind.Wall, Radius = 0.01, Duration = 0.01, Hostile = true });
     public IReadOnlyList<EnemyBlow> Blows => blows;
+    /// <summary>Every marked blow still to land is called off (she got up at a checkpoint).</summary>
+    public void CancelBlows() => blows.Clear();
 
     /// <summary>Mark a blow and let it land after its delay: it hurts the survivor
     /// if they are still in its shape (a blow slipped by a dash in time is a
@@ -1867,9 +1931,11 @@ public sealed partial class Battle
     {
         var p = Player;
         double reach = Stats.Get(Stat.PickupRadius);
+        int lying = 0;
         foreach (var k in Pickups.Items)
         {
             if (!k.Alive) continue;
+            if (k.Kind == PickupKind.Ember && k.Tier != HoardTier) lying++;
             k.Age += dt;
             // Scatter, then settle.
             k.X += k.Vx * dt; k.Z += k.Vz * dt;
@@ -1899,6 +1965,7 @@ public sealed partial class Battle
             // Ember on the ground cools after a long while; gear does not.
             if (k.Alive && !k.Persistent && k.Kind == PickupKind.Ember && k.Age > 90) Pickups.Release(k);
         }
+        EmbersLying = lying;
     }
 
     void Collect(Pickup k)
@@ -1946,8 +2013,10 @@ public sealed partial class Battle
 
     public WeaponInst? AddWeapon(string id, int rank = 1)
     {
+        Journal('W', id, null, rank);
         if (!Content.Weapons.All.ContainsKey(id) || Weapons.Exists(w => w.Id == id) || Weapons.Count >= Content.Weapons.MaxWeapons) return null;
         var w = new WeaponInst(id, rank, Weapons.Count);
+        if (SkillMods.TryGetValue(id, out var sm)) Marks.Fold(w.Mods, sm);
         Weapons.Add(w);
         foreach (var t in w.Def.Triggers) AddTrigger(t, $"weapon:{id}", 1, id);
         CheckDiscoveries();
@@ -1970,6 +2039,7 @@ public sealed partial class Battle
     /// union comes in at full rank, and a combat slot is free again.</summary>
     public WeaponInst? Unite(string union)
     {
+        Journal('U', union);
         var u = Content.Unions.Find(union);
         if (u == null) return null;
         var a = Weapons.Find(w => w.Id == u.A);
@@ -1977,7 +2047,10 @@ public sealed partial class Battle
         if (a?.Evolution == null || c?.Evolution == null) return null;
         RemoveWeapon(u.A);
         RemoveWeapon(u.B);
+        // (Part of the union: the journal has it already.)
+        building++;
         var w = AddWeapon(u.Into, Content.Weapons.MaxRank);
+        building--;
         Events.Emit(new Ev.Evolve { Weapon = u.Into, Into = u.Id });
         Events.Emit(new Ev.Announce { Kicker = "Union", Title = u.Name, Subtitle = u.Description, Tone = Tone.Boon });
         return w;
@@ -1985,6 +2058,7 @@ public sealed partial class Battle
 
     public void RankWeapon(string id)
     {
+        Journal('R', id);
         var w = Weapons.Find(x => x.Id == id);
         if (w == null || w.Rank >= Content.Weapons.MaxRank) return;
         w.Rank++;
@@ -1993,6 +2067,7 @@ public sealed partial class Battle
     /// <summary>A finished weapon honed (the endless dark's draft): a little more damage each time.</summary>
     public void Hone(string id)
     {
+        Journal('H', id);
         var w = Weapons.Find(x => x.Id == id);
         if (w == null || w.Honed >= LevelUp.MaxHone) return;
         w.Honed++;
@@ -2003,6 +2078,7 @@ public sealed partial class Battle
     /// announcement of its own).</summary>
     public void Evolve(string id, string branch, bool chest = false)
     {
+        Journal('E', id, branch, chest ? 1 : 0);
         var w = Weapons.Find(x => x.Id == id);
         if (w == null) return;
         var evo = Array.Find(w.Def.Evolutions, e => e.Id == branch);
@@ -2018,6 +2094,7 @@ public sealed partial class Battle
 
     public void AddBoon(string id)
     {
+        Journal('B', id);
         var def = Content.Boons.Find(id);
         if (def == null) return;
         int r = Boons.GetValueOrDefault(id) + 1;
@@ -2035,7 +2112,8 @@ public sealed partial class Battle
         // Wisdom is the draft's own passive: each rank a reroll.
         if (id == "wisdom") Rerolls++;
         if (id == "spirit_companion") Summon("spirit_wolf", 0, 99);
-        if (id == "from_the_ashes" && r != 2) Player.Ashes++;
+        // Once a night at any rank: rising twice was too generous (the owner).
+        if (id == "from_the_ashes" && r == 1 && Player.Rose == 0) Player.Ashes++;
         if (id == "grave_call") Summon("ghoul_ally", 0, 99);
     }
 
@@ -2044,6 +2122,7 @@ public sealed partial class Battle
     /// with what they carry (their gear's skills, at the gear's ranks).</summary>
     public void Douse(IEnumerable<(string Id, int Rank)> kit)
     {
+        Built.Clear();
         foreach (var id in Boons.Keys.ToList())
         {
             Stats.RemoveSource($"boon:{id}");

@@ -13,6 +13,8 @@
 shader_type spatial;
 render_mode unshaded, blend_premul_alpha, depth_draw_never, cull_disabled, shadows_disabled, fog_disabled;
 
+#include "res://shaders/hero_clear.gdshaderinc"
+
 uniform sampler2D atlas : source_color, filter_linear_mipmap, repeat_disable;
 uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
 uniform int grid = 8;
@@ -72,6 +74,7 @@ void fragment() {
 		behind.xyz /= behind.w;
 		fade *= clamp((VERTEX.z - behind.z) / soft, 0.0, 1.0);
 	}
-	ALBEDO = c.rgb * tint.rgb * fade;
+	// Its light over her held to a third, as every effect's is (hero_clear).
+	ALBEDO = c.rgb * tint.rgb * fade * hero_clear(VERTEX, VIEW_MATRIX, PROJECTION_MATRIX, VIEWPORT_SIZE);
 	ALPHA = c.a * fade * (1.0 - add);
 }

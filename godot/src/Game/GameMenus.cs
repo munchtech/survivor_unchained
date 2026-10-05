@@ -32,6 +32,8 @@ public partial class Game
         if (cine != null) return true;
         // A chest opening: any key brings it all down, a second closes it.
         if (hudMode == "chest") { chestShown?.Skip(); return true; }
+        // A fall in a story night: get up, or let the night go (GameFall).
+        if (hudMode == "fall") return FallKey(a);
         if (hudMode is "draft" or "dialogue") return hud.Key(a);
         switch (a)
         {
@@ -64,10 +66,13 @@ public partial class Game
             "stash" => new StashScreen(this),
             "rest" => new RestScreen(this),
             "maps" => new MapTableScreen(this),
+            "atlas" => new MapTableScreen(this, "atlas"),
             "arts" => new ArtsScreen(this),
             "chapter" => new ChapterScreen(this),
+            "credits" => new CreditsScreen(this, () => { Open("pause"); (screens.Current as PauseScreen)?.FocusOn("Credits and licences"); }),
             _ when kind.StartsWith("shop:") => new ShopScreen(this, kind[5..]),
             _ when kind.StartsWith("forge:") => new ForgeScreen(this, kind[6..]),
+            _ when kind.StartsWith("still:") => new StillRoom(this, kind[6..]),
             _ => new PauseScreen(this),
         };
         if (o is MapScreen && zone != null && Battle is { } b)
@@ -77,12 +82,21 @@ public partial class Game
             Journey.Walk(zone.Id, extent, b.Player.X, b.Player.Z);
         }
         screens.Show(o);
-        // The pause menu stops the world; any other screen only in a fight (an arena, the night's
-        // road), where the horde would not wait. Elsewhere the world goes on behind it (the owner).
-        scene.SimPaused = o is PauseScreen || zone?.Combat == true;
+        // The pause menu stops the world; any other screen only where the ember burns (an arena,
+        // the prologue's night road), where the horde would not wait. Elsewhere, the Verge by
+        // day too, the world goes on behind it (the owner's rule).
+        // (the credits are opened from the pause menu, and the world waits for them as it does for it)
+        scene.SimPaused = o is PauseScreen or CreditsScreen || zone?.Ember == true;
         cam.ScreenShift = o.CameraShift;
         controls.Captured = true;
         hud.Prompt(promptShown = null);
+    }
+
+    /// <summary>The credits and licences, from the title or the pause menu; closing them goes back there.</summary>
+    public void Credits()
+    {
+        if (Mode == "title") screens.Show(new CreditsScreen(this, () => screens.Show(new TitleScreen(this, "Credits"))));
+        else Open("credits");
     }
 
     public void CloseOverlay()
@@ -118,9 +132,7 @@ public partial class Game
             hud.Fade(1, 0.8, "Nightfall", $"Day {w.Day}");
             Wait(1.4, () =>
             {
-                air.Set(zone!.AtmosphereFor(TimeOfDay.Night));
-                scene?.View.SetNight(true);
-                hud.ZoneInfo(zone.Name, zone.Region, w.Day, TimeOfDay.Night);
+                SetTimeOutright(TimeOfDay.Night);
                 hud.Fade(0, 1.2);
                 Save("night");
             });
@@ -134,9 +146,7 @@ public partial class Game
         Wait(0.95, () =>
         {
             screen?.Report(lines);
-            air.Set(zone!.AtmosphereFor(TimeOfDay.Day));
-            scene?.View.SetNight(false);
-            hud.ZoneInfo(zone.Name, zone.Region, w.Day, TimeOfDay.Day);
+            SetTimeOutright(TimeOfDay.Day);
             Save("rest");
             hud.Fade(0, 0.6);
         });
@@ -174,8 +184,12 @@ public partial class Game
         if (chestsWaiting.Count == 0 || Overlay != null || inTransit || cine != null || scene == null || Battle is not { } b) return;
         hudMode = "chest";
         scene.SimPaused = true;
-        chestShown = new ChestCeremony(chestsWaiting.Dequeue(), b, scene, cam, hud);
+        chestShown = new ChestCeremony(chestsWaiting.Dequeue(), b, scene, cam, hud, Haptics);
         hud.Over(chestShown);
+        // (--shot: frames of each opening as it happens in a night, not only staged ones.)
+        Shots.Want("chest", 0.45);
+        Shots.Want("chest", 1.6);
+        Shots.Want("chest", 2.8);
     }
 
     /* ------------------------------------------------------------ draft -- */
@@ -331,6 +345,8 @@ public partial class Game
     }
 
     string? afterTalk;
+    /// <summary>What follows this conversation's end (the town's morning after Chid's waking).</summary>
+    Action? talkDone;
 
     void EndDialogue()
     {
@@ -349,6 +365,7 @@ public partial class Game
         Save("talk");
         // A conversation that opened a shop, the storeroom, a bed.
         if (afterTalk is string next) { afterTalk = null; Open(next); }
+        if (talkDone is { } done) { talkDone = null; done(); }
     }
 
 
@@ -364,6 +381,8 @@ public partial class Game
             case "stash": afterTalk = "stash"; return false;
             // A crafter's bench (docs/CRAFTING_DESIGN.md): the one who was talked to.
             case "craft": if (talkNpc is string who) afterTalk = $"forge:{who}"; return false;
+            // A still-room: the crafter's brews and wares, beside the world (Wenna's).
+            case "still": if (talkNpc is string brewer) afterTalk = $"still:{brewer}"; return false;
             case "maps": afterTalk = "maps"; return false;
             case "rest": afterTalk = "rest"; return false;
             case "fortune": Save("chapter"); afterTalk = "chapter"; return false;

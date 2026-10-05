@@ -30,6 +30,16 @@ public partial class HerPose : SkeletonModifier3D
     public float Lower, Upper;
     /// <summary>Both halves at once.</summary>
     public float Native { set { Lower = Upper = value; } }
+    /// <summary>Her neck as her face's sliders shape it (People.HerFace),
+    /// each -1 to 1: longer or shorter (her head carried up or down along
+    /// her neck) and slimmer or stronger (her neck bone scaled across it,
+    /// her head given its own scale back). By her bones, not a shape key of
+    /// her body: what she wears at her throat (a collar, a choker) is
+    /// weighted to the same bones and follows.</summary>
+    public float NeckLength, NeckWidth;
+    /// <summary>How far either end of the sliders goes: metres along her
+    /// neck, and how much wider or narrower across it (front to back half that).</summary>
+    public const float NeckReach = 0.015f, NeckBreadth = 0.12f;
 
     public HerPose() { Name = "HerPose"; }
 
@@ -40,7 +50,7 @@ public partial class HerPose : SkeletonModifier3D
     // The bones it moves, found once (asking the skeleton for every bone's
     // name each frame made a string of each, and a frame's worth of garbage).
     Skeleton3D? found;
-    int pelvis = -1, upperL = -1, upperR = -1, spine3 = -1, neck = -1;
+    int pelvis = -1, upperL = -1, upperR = -1, spine3 = -1, neck = -1, head = -1;
     int[] fingers = System.Array.Empty<int>();
 
     void Find(Skeleton3D sk)
@@ -51,6 +61,7 @@ public partial class HerPose : SkeletonModifier3D
         upperR = sk.FindBone("upperarm_r");
         spine3 = sk.FindBone("spine_03");
         neck = sk.FindBone("neck_01");
+        head = sk.FindBone("Head");
         var list = new System.Collections.Generic.List<int>();
         for (int b = 0; b < sk.GetBoneCount(); b++)
         {
@@ -90,6 +101,15 @@ public partial class HerPose : SkeletonModifier3D
         {
             Turn(sk, pelvis, Vector3.Forward, HipTilt * lib);
             Turn(sk, spine3, Vector3.Forward, -HipTilt * 0.5f * lib);
+        }
+        if (neck >= 0 && head >= 0 && (NeckLength != 0 || NeckWidth != 0))
+        {
+            // (her head bone lies along her neck bone's own length: its y)
+            var along = sk.GetBoneRest(head).Origin.Normalized();
+            sk.SetBonePosePosition(head, sk.GetBonePosePosition(head) + along * NeckLength * NeckReach);
+            var across = new Vector3(1 + NeckWidth * NeckBreadth, 1, 1 + NeckWidth * NeckBreadth * 0.5f);
+            sk.SetBonePoseScale(neck, sk.GetBonePoseScale(neck) * across);
+            sk.SetBonePoseScale(head, sk.GetBonePoseScale(head) / across);
         }
     }
 

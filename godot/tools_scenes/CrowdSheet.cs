@@ -10,9 +10,12 @@ namespace SurvivorUnchained.Tools;
 /// beasts' motion as the crowd draws it (tools_scenes/crowd_sheet.gd runs
 /// it): the kind baked as the game bakes it (Vat.cs), then one body per cell
 /// in a row, each a step further into the role, under a plain studio light.
-/// VISUAL=its key (EnemyDef.Visual); ROLE=move|idle|attack|windup|cast|die|rise|hit;
+/// VISUAL=its key (EnemyDef.Visual); ROLE=move|idle|attack|windup|cast|die|die2|die3|rise|hit, or several
+/// comma-separated, taken in turn cell by cell;
 /// N=cells; STEP=seconds between them; START=seconds; YAW=degrees each is
-/// turned (90: seen from its side); CELL=cell width in metres; OUT=png.
+/// turned (90: seen from its side); YAWSTEP=degrees more for each cell; CELL=cell width in metres;
+/// LIFT=the camera's elevation in degrees (the game's is 64); SIZE=metres the picture spans top to
+/// bottom; LOOKY=the height it looks at; OUT=png.
 /// </summary>
 public partial class CrowdSheet : Node
 {
@@ -34,14 +37,15 @@ public partial class CrowdSheet : Node
         var crowd = new VatCrowd(asset);
         root.AddChild(crowd);
         int n = (int)Num("N", 8);
-        float step = Num("STEP", 0.1f), start = Num("START", 0), yaw = Mathf.DegToRad(Num("YAW", 90));
+        float step = Num("STEP", 0.1f), start = Num("START", 0), yaw = Mathf.DegToRad(Num("YAW", 90)), yawStep = Mathf.DegToRad(Num("YAWSTEP", 0));
         float h = Math.Max(asset.Height, 0.6f), cell = Num("CELL", h * 1.1f);
-        var role = Env("ROLE", "idle");
+        // Several roles (comma-separated) are taken in turn, cell by cell.
+        var roles = Env("ROLE", "idle").Split(",");
         crowd.Begin();
         for (int i = 0; i < n; i++)
         {
-            var at = new Transform3D(new Basis(Vector3.Up, yaw), new Vector3((i - (n - 1) / 2f) * cell, 0, 0));
-            crowd.Push(at, role, start + i * step, 0, 0, 0, 0, Colors.White, 0);
+            var at = new Transform3D(new Basis(Vector3.Up, yaw + i * yawStep), new Vector3((i - (n - 1) / 2f) * cell, 0, 0));
+            crowd.Push(at, roles[i % roles.Length], start + i * step, 0, 0, 0, 0, Colors.White, 0);
         }
         crowd.End();
         // The floor, checked, so a foot that slides shows.
@@ -59,9 +63,9 @@ public partial class CrowdSheet : Node
         root.AddChild(new DirectionalLight3D { RotationDegrees = new Vector3(-15, -150, 0), LightEnergy = 0.7f });
         // Orthographic, from the front and a little above: every cell the same size.
         float w = n * cell, lift = Num("LIFT", 12);
-        var cam = new Camera3D { Projection = Camera3D.ProjectionType.Orthogonal, Size = Math.Max(w * vp.Size.Y / vp.Size.X, h * 1.3f), Current = true };
+        var cam = new Camera3D { Projection = Camera3D.ProjectionType.Orthogonal, Size = Num("SIZE", Math.Max(w * vp.Size.Y / vp.Size.X, h * 1.3f)), Current = true };
         root.AddChild(cam);
-        var look = new Vector3(0, h * 0.5f, 0);
+        var look = new Vector3(0, Num("LOOKY", h * 0.5f), 0);
         cam.GlobalPosition = look + new Vector3(0, Mathf.Sin(Mathf.DegToRad(lift)), Mathf.Cos(Mathf.DegToRad(lift))) * 20;
         cam.LookAt(look);
     }

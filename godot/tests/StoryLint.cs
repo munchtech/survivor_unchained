@@ -94,6 +94,10 @@ public class StoryLint
 
     static void ReadCode(Uses u)
     {
+        // A cinematic reads facts too: a shot or a cue "when" the survivor has one (or has not: "!fact").
+        foreach (var f in System.IO.Directory.GetFiles(System.IO.Path.Combine(SurvivorUnchained.Core.DataFiles.Dir, "cinematics"), "*.json"))
+            foreach (Match m in Regex.Matches(System.IO.File.ReadAllText(f), @"""facts""\s*:\s*\[([^\]]*)\]"))
+                foreach (var k in All(m.Groups[1].Value, @"""!?([\w.]+)""")) u.FactsRead.Add(k);
         foreach (var (file, t) in Code.Value)
         {
             // Facts: the JSON embedded in scripts, and the scripts' own reads and
@@ -195,7 +199,6 @@ public class StoryLint
         // The readers found the story at all (a regex that matches nothing passes everything).
         Assert.True(u.FactsRead.Count > 60 && u.FactsWritten.Count > 60, $"{u.FactsRead.Count} read, {u.FactsWritten.Count} written");
         Assert.Contains("beasts.pelts_sold", u.FactsWritten);
-        Assert.Contains("settings.intimacy", u.FactsRead);
         Assert.Empty(u.FactsRead.Where(f => !u.FactsWritten.Contains(f) && !Outside(f)).OrderBy(f => f).Select(f => $"read, never written: {f}"));
     }
 
@@ -252,24 +255,23 @@ public class StoryLint
     }
 
     [Fact]
-    public void Every_explicit_slot_waits_behind_the_setting_with_a_cut_away_beside_it()
+    public void No_explicit_scene_ships_and_every_love_scene_fades_at_the_moment_itself()
     {
-        // Explicit scenes are the owner's writer's: the content holds a marked
-        // slot, shown only when the player asked for intimate scenes in full,
-        // and a cut-away for everyone else.
+        // The base game is not Adult Only (docs/legal/LEGAL_BRIEF.md, issue 6): an intimate scene is
+        // written before and after and fades at the moment itself, for everyone. No explicit slot or
+        // placeholder ships in the data, and nothing is keyed to a setting that would show one.
         var problems = new List<string>();
-        int slots = 0;
         foreach (var (id, c) in Dialogue.All)
             foreach (var (nid, n) in c.Nodes)
-            {
-                var marked = n.Text.Where(v => v.Text.StartsWith("[explicit scene:")).ToList();
-                slots += marked.Count;
-                foreach (var v in marked)
-                    if (v.When?.FactKey != "settings.intimacy" || v.When.Eq?.Str != "full") problems.Add($"{id}.{nid}: a slot not behind settings.intimacy = full");
-                if (marked.Count > 0 && !n.Text.Any(v => v.When == null && !v.Text.StartsWith("[explicit scene:"))) problems.Add($"{id}.{nid}: no cut-away");
-            }
+                foreach (var v in n.Text)
+                {
+                    if (v.Text.Contains("[explicit", StringComparison.OrdinalIgnoreCase)) problems.Add($"{id}.{nid}: an explicit slot");
+                    if (v.When?.FactKey == "settings.intimacy") problems.Add($"{id}.{nid}: a variant keyed to settings.intimacy");
+                }
         Assert.Empty(problems);
-        Assert.True(slots >= 3, $"{slots} slots");
+        // The scenes are still there, each with a variant for every night it can be had.
+        foreach (var (id, nid) in new[] { ("sella", "night"), ("sella", "free_night"), ("maeca", "blind") })
+            Assert.Contains(Dialogue.All[id].Nodes[nid].Text, v => v.When == null);
     }
 
     [Fact]
@@ -318,6 +320,15 @@ public class StoryLint
                 seen.Add(o.Spec.Name);
             }
         Assert.True(seen.Count > 40, $"{seen.Count} names in forty days");
+        // The atlas's charts are named the same way as they drop.
+        var rng = new SurvivorUnchained.Core.Rng(7);
+        foreach (var people in words.Keys)
+            for (int i = 0; i < 40; i++)
+            {
+                var c = SurvivorUnchained.Maps.Charts.Roll(rng, 1 + i % 4, people);
+                Assert.Matches(@"^The [A-Z][\w']+ [A-Z][\w-]+$", c.Name);
+                Assert.Contains(c.Name.Split(' ')[^1], words[people]);
+            }
     }
 
     static Ctx Ctx() => Lore.Context(WorldState.Fresh(1), H.Survivor());

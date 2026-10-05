@@ -17,7 +17,8 @@ public static class People
     public sealed record Look(
         string Sex, string[] Outfit, string? Hair = null, bool Beard = false,
         Color? HairColor = null, Color? Skin = null, Color? Cloth = null, Color? Under = null, double Figure = 0,
-        IReadOnlyDictionary<string, float>? Face = null, Color? Eyes = null, Color? EyeRing = null, string? Paint = null);
+        IReadOnlyDictionary<string, float>? Face = null, Color? Eyes = null, Color? EyeRing = null, string? Paint = null,
+        string? FaceShape = null);
 
     public static readonly string[] MaleRanger = { "Male_Ranger_Arms", "Male_Ranger_Body", "Male_Ranger_Legs", "Male_Ranger_Feet_Boots" };
     public static readonly string[] MalePeasant = { "Male_Peasant_Arms", "Male_Peasant_Body", "Male_Peasant_Legs", "Male_Peasant_Feet" };
@@ -88,7 +89,7 @@ public static class People
         var sex = spec.Sex == SurvivorUnchained.Rpg.Sex.Female ? "female" : "male";
         var outfit = spec.Outfit?.ToArray() ?? (sex == "female" ? FemalePeasant : MalePeasant);
         return new Look(sex, outfit, spec.Hair, spec.Beard == true, C(spec.HairColor), C(spec.Skin), C(spec.Dye?.Cloth), C(spec.Dye?.Under),
-            sex == "female" ? spec.Figure ?? 1 : 0, spec.Face?.ToDictionary(f => f.Key, f => (float)f.Value), C(spec.Eyes), C(spec.EyeRing), spec.Paint);
+            sex == "female" ? spec.Figure ?? 1 : 0, spec.Face?.ToDictionary(f => f.Key, f => (float)f.Value), C(spec.Eyes), C(spec.EyeRing), spec.Paint, spec.FaceShape);
     }
 
     public static Person Build(SurvivorUnchained.World.PersonSpec spec)
@@ -104,7 +105,7 @@ public static class People
         var p = body switch { SurvivorUnchained.Play.Loadouts.HerBody => Woman(look), "heroine" => Heroine(look), "hero" => Hero(look), "anime" => Her(look), _ => Build(look) };
         if (body == "hero" && look.Face != null) HerFace(p, look.Face);
         // Her own clips are chosen by her calling, which her outfit says.
-        if (body == "heroine") p.Calling = HerClips.Calling(look.Outfit);
+        if (p.Own != null) p.Calling = HerClips.Calling(look.Outfit);
         // Her body wears her calling's outfit, cut from it.
         if (body == "heroine" && look.Outfit.FirstOrDefault(o => o.StartsWith("her:")) is string her) HerOutfit(p, her[4..]);
         // Her hair, a mesh of its own: the style chosen if it is one of hers;
@@ -114,6 +115,7 @@ public static class People
             HerHair(p, HerHairs.Contains(look.Hair) ? look.Hair! : HerHairs[0], look.HairColor ?? HerHairColour);
             if (look.Face != null) HerFace(p, look.Face);
             HerPaint(p, look.Paint, look.HairColor);
+            p.FaceShape = look.FaceShape;                 // (its painting laid as her skin was made: Skin)
         }
         // A child's larger head.
         if (spec.Head is double h && h != 1)
@@ -124,8 +126,10 @@ public static class People
         return p;
     }
 
+    // Getting up ends in an idle but is not one: looped, a risen (or the Warden)
+    // would lie down and get up again.
     static bool IsCycle(string n) =>
-        n.Contains("Idle") || n.Contains("Walk") || n.Contains("Jog") || n.Contains("Sprint") || n.Contains("Fwd") || n == "Dance";
+        (n.Contains("Idle") && !n.StartsWith("LayTo")) || n.Contains("Walk") || n.Contains("Jog") || n.Contains("Sprint") || n.Contains("Fwd") || n == "Dance";
 
     public sealed class Person
     {
@@ -146,6 +150,8 @@ public static class People
         public string HairStyle = "";
         /// <summary>The paint on her face (Lore.Her.Paints), or none.</summary>
         public string? Paint;
+        /// <summary>The face she started from, whose painting her head wears (none: her own).</summary>
+        public string? FaceShape;
         /// <summary>The colour her brows are dyed (her hair's), or none: as painted.</summary>
         public Color? Brow;
         /// <summary>Her head's pose as she is drawn (her corrective layer
@@ -155,16 +161,20 @@ public static class People
         /// by its view, whether it goes unarmed: the townsfolk, who play
         /// their own clips (FolkClips) where they have them.</summary>
         public bool Kit, Woman, Folk;
+        /// <summary>The survivor's own clips (hers or his), when they have them.</summary>
+        public OwnClips? Own;
+        /// <summary>Gestures laid over whatever plays (a nod, an exhale).</summary>
+        public Gestures? Gestures;
     }
 
-    /// <summary>The clip a person plays for one the game names: the heroine's
-    /// own where she has it ("her/..."), the library's otherwise.</summary>
+    /// <summary>The clip a person plays for one the game names: a survivor's
+    /// own where they have it ("her/...", "him/..."), the library's otherwise.</summary>
     public static string Clip(Person p, string name)
     {
-        if (p.Body != "heroine") return p.Folk && FolkClips.For(p.Woman, name) is string folk ? folk : Resolve(name);
-        // (One of hers asked for by her own name.)
-        if (name.StartsWith(HerClips.Prefix)) return HerClips.Has(name[HerClips.Prefix.Length..]) ? name : Resolve("Idle");
-        return HerClips.For(p.Calling, p.Kind, name) is string her ? her : Resolve(name);
+        if (p.Own is not { } own) return p.Folk && FolkClips.For(p.Woman, name) is string folk ? folk : Resolve(name);
+        // (One of their own asked for by its own name.)
+        if (own.Owns(name)) return own.Has(name[own.Prefix.Length..]) ? name : Resolve("Idle");
+        return own.For(p.Calling, p.Kind, name) is string mine ? mine : Resolve(name);
     }
 
     /// <summary>A person, put together: returns its root (add it to the
@@ -275,6 +285,8 @@ public static class People
         var person = new Person { Root = root, Skeleton = skel, Anim = new AnimationPlayer(), Body = "heroine" };
         person.Pose = new HerPose();
         skel.AddChild(person.Pose);
+        person.Gestures = new Gestures();
+        skel.AddChild(person.Gestures);
         int headBone = skel.FindBone("Head");
         if (headBone >= 0) skel.SkeletonUpdated += () => person.HeadPose = skel.GetBoneGlobalPose(headBone);
         skel.AddChild(new HerJiggle());
@@ -291,7 +303,11 @@ public static class People
         person.Anim.RootNode = "..";
         person.Anim.AddAnimationLibrary("", Clips());
         // Her own clips beside the library's (tools/anim).
-        if (HerClips.Library() is AnimationLibrary her) person.Anim.AddAnimationLibrary("her", her);
+        if (OwnClips.Her.Library() is AnimationLibrary her)
+        {
+            person.Own = OwnClips.Her;
+            person.Anim.AddAnimationLibrary(OwnClips.Her.Name, her);
+        }
         return person;
     }
 
@@ -310,6 +326,8 @@ public static class People
         // clear of his lats rather than in, his hips square.
         person.Pose = new HerPose { ArmsIn = -5f, HipTilt = 0f, NeckPitch = HisNeckPitch };
         skel.AddChild(person.Pose);
+        person.Gestures = new Gestures();
+        skel.AddChild(person.Gestures);
         int headBone = skel.FindBone("Head");
         if (headBone >= 0) skel.SkeletonUpdated += () => person.HeadPose = skel.GetBoneGlobalPose(headBone);
         skel.AddChild(new HerFaceLife());
@@ -324,6 +342,12 @@ public static class People
         root.AddChild(person.Anim);
         person.Anim.RootNode = "..";
         person.Anim.AddAnimationLibrary("", Clips());
+        // His own clips beside the library's (tools/anim: hers, given a man's carriage).
+        if (OwnClips.Him.Library() is AnimationLibrary him)
+        {
+            person.Own = OwnClips.Him;
+            person.Anim.AddAnimationLibrary(OwnClips.Him.Name, him);
+        }
         return person;
     }
 
@@ -382,27 +406,39 @@ public static class People
                 m.Roughness = 0.35f;
                 return m;
             default:
-                return Skin(src, look, mesh, who == "hero" ? HisTone : null);
+                return Skin(src, look, mesh, who == "hero" ? HisTone : null, who);
         }
     }
 
-    /// <summary>Her face's sliders (tools/assets/heroine_head.py's SLIDERS),
-    /// each from -1 to 1 about her own face.</summary>
+    /// <summary>Her face's sliders (tools/assets/face_shapes.py's SLIDERS,
+    /// made by heroine_head.py), each from -1 to 1 about her own face: each
+    /// a shape key either way on her head, its parts and her hair; her
+    /// neck's by her bones (HerPose).</summary>
     public static readonly string[] HerSliders =
     {
-        "eyes_size", "eyes_spacing", "eyes_height", "eyes_tilt", "eyes_open", "brows_height", "brows_arch", "nose_width", "nose_length",
-        "nose_tip", "nose_bridge", "nostrils", "lips_upper", "lips_lower", "mouth_width", "mouth_corners", "cupids_bow", "cheekbones",
-        "cheeks", "jaw", "chin_width", "chin_length", "chin_forward", "ears_size", "ears_pointed",
+        "forehead_height", "forehead_slope", "forehead_round", "temples", "brow_ridge", "face_width", "face_shape",
+        "eyes_size", "eyes_spacing", "eyes_height", "eyes_tilt", "eyes_open", "eyes_depth", "eyes_inner", "brows_height", "brows_arch",
+        "nose_width", "nose_length", "nose_bridge", "nose_bridge_width", "nose_tip", "nose_tip_width", "nose_projection", "nostrils",
+        "cheekbone_height", "cheekbone_width", "cheekbone_prominence", "cheeks",
+        "lips_upper", "lips_lower", "mouth_width", "mouth_height", "mouth_corners", "cupids_bow", "lips_forward",
+        "jaw_width", "jaw_angle", "chin_width", "chin_length", "chin_forward", "jaw_forward",
+        "ears_size", "ears_pointed", "ears_out", "ears_lobes",
+        "neck_width", "neck_length",
     };
 
     /// <summary>Her face shaped: each slider (HerSliders) from -1 to 1, and
     /// her expressions (heroine_head.py's EXPRESSIONS: blink_l, smile, ...)
     /// from 0 to 1, on her head and on the parts of it that follow it (eyes,
-    /// brows, lashes, teeth).</summary>
+    /// brows, lashes, teeth, her hair); her neck by her bones.</summary>
     public static void HerFace(Person p, IReadOnlyDictionary<string, float> face, bool whole = false)
     {
         // (whole: every slider set, those not given back to her own face)
         var all = whole ? HerSliders.ToDictionary(s => s, s => face.TryGetValue(s, out var v) ? v : 0f) : face;
+        if (p.Pose is HerPose hp)
+        {
+            if (all.TryGetValue("neck_width", out var nw)) hp.NeckWidth = Mathf.Clamp(nw, -1, 1);
+            if (all.TryGetValue("neck_length", out var nl)) hp.NeckLength = Mathf.Clamp(nl, -1, 1);
+        }
         foreach (var mi in p.Meshes)
         {
             if (mi.Mesh is not ArrayMesh am || am.GetBlendShapeCount() == 0) continue;
@@ -556,7 +592,25 @@ public static class People
             }
         HerFace(p, look.Face ?? new Dictionary<string, float>(), whole: true);
         if (look.Paint != p.Paint || look.HairColor != p.Brow) HerPaint(p, look.Paint, look.HairColor);
+        if (look.FaceShape != p.FaceShape) HerHeadPaint(p, look.FaceShape);
     }
+
+    /// <summary>Her head's painting for a face she started from (Lore.Her's
+    /// faces: tools/assets/heroine_head.py's head_tex/heroine_head_ID.jpg,
+    /// each painted on her head shaped as that face, its brows, lips and
+    /// skin its own), or her own.</summary>
+    public static void HerHeadPaint(Person p, string? face)
+    {
+        p.FaceShape = face;
+        var file = HeadPaintFile(face);
+        foreach (var mi in p.Meshes)
+            for (int s = 0; mi.Mesh != null && s < mi.Mesh.GetSurfaceCount(); s++)
+                if (mi.Mesh.SurfaceGetMaterial(s)?.ResourceName == "skin_head" && mi.GetSurfaceOverrideMaterial(s) is ShaderMaterial skin)
+                    skin.SetShaderParameter("paint", file != null ? GD.Load<Texture2D>(file) : (mi.Mesh.SurfaceGetMaterial(s) as BaseMaterial3D)?.AlbedoTexture);
+    }
+
+    static string? HeadPaintFile(string? face) =>
+        face is { Length: > 0 } && ResourceLoader.Exists($"res://art/people/head_tex/heroine_head_{face}.jpg") ? $"res://art/people/head_tex/heroine_head_{face}.jpg" : null;
 
     static Shader? hairShader, eyeShader;
 
@@ -718,7 +772,7 @@ public static class People
     /// <summary>Her paint as skin: light carried under it (subsurface
     /// scattering, reddened as through flesh), a soft sheen rather than
     /// plastic, and warmed toward a sun-browned tone, or the tone chosen.</summary>
-    static Material Skin(BaseMaterial3D src, Look look, Mesh mesh, Color? own = null)
+    static Material Skin(BaseMaterial3D src, Look look, Mesh mesh, Color? own = null, string who = "heroine")
     {
         // shaders/heroine_skin.gdshader: pores, soft uneven sheen, light
         // under the skin. (Her vertex colours mark what each outfit hides,
@@ -735,6 +789,20 @@ public static class People
         }
         m.SetShaderParameter("pores", GD.Load<Texture2D>("res://art/people/skin_pores.png"));
         m.SetShaderParameter("pore_scale", PoreScale(mesh));
+        // Her face a little more matte than her body: at the shine her body
+        // has, her face read as plastic, and a light from behind lit the
+        // side of her brow as a hard white band.
+        // (hers alone: his head's paint is laid out otherwise)
+        if (src.ResourceName == "skin_head" && who == "heroine")
+        {
+            if (HeadPaintFile(look.FaceShape) is string painted) m.SetShaderParameter("paint", GD.Load<Texture2D>(painted));
+            m.SetShaderParameter("rough", 0.6f);
+            m.SetShaderParameter("shine", 0.36f);
+            // (her eyes, brows and lips deepened when her face is small on
+            // screen, so a face still reads from the game's camera)
+            if (ResourceLoader.Exists("res://art/people/head_tex/heroine_features.png"))
+                m.SetShaderParameter("features", GD.Load<Texture2D>("res://art/people/head_tex/heroine_features.png"));
+        }
         return m;
     }
 
