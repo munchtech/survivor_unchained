@@ -53,7 +53,9 @@ public abstract partial class Overlay : Control
     {
         tip = null;
         foreach (var c in GetChildren()) { RemoveChild(c); c.QueueFree(); }
+        panes.Clear();
         Build();
+        Dividers();
         Nav.Collect();
     }
 
@@ -249,16 +251,40 @@ public abstract partial class Overlay : Control
 
     /// <summary>A pane on a page, at a place, with a column inside it: no frame unless one is
     /// asked for (the page's one hero plate, say), so frames are not nested in frames.</summary>
-    protected static VBoxContainer Pane(Control parent, Rect2 at, StyleBox? box = null, int gap = Style.Gap3)
+    protected VBoxContainer Pane(Control parent, Rect2 at, StyleBox? box = null, int gap = Style.Gap3)
     {
         var p = Style.Panel(box ?? Style.Column(20));
         p.Position = at.Position;
         p.Size = at.Size;
         p.MouseFilter = MouseFilterEnum.Ignore;
         parent.AddChild(p);
+        panes.Add((parent, at));
         var v = Style.V(gap);
         p.AddChild(v);
         return v;
+    }
+
+    readonly System.Collections.Generic.List<(Control Parent, Rect2 At)> panes = new();
+
+    /// <summary>A forged rail down each gap between a page's columns, a stone at its middle
+    /// (frames/column_divider.png): the columns read as one page, not boxes floating apart.</summary>
+    void Dividers()
+    {
+        var stone = UiArt.Art("frames/column_divider_stone.png");
+        if (UiArt.Has("column_divider"))
+            foreach (var (parent, a) in panes)
+                foreach (var (other, b) in panes)
+                {
+                    float gap = b.Position.X - a.End.X, top = Mathf.Max(a.Position.Y, b.Position.Y), foot = Mathf.Min(a.End.Y, b.End.Y);
+                    if (other != parent || gap < 12 || gap > 48 || foot - top < 160) continue;
+                    var rail = new Panel { MouseFilter = MouseFilterEnum.Ignore, Position = new Vector2(a.End.X + gap / 2 - 12, top + 10), Size = new Vector2(24, foot - top - 20) };
+                    rail.AddThemeStyleboxOverride("panel", UiArt.Frame("column_divider", new StyleBoxEmpty()));
+                    parent.AddChild(rail);
+                    if (stone == null) continue;
+                    var s = stone.GetSize();
+                    parent.AddChild(new TextureRect { Texture = stone, MouseFilter = MouseFilterEnum.Ignore, Size = s, Position = rail.Position + new Vector2(12 - s.X / 2, rail.Size.Y / 2 - s.Y / 2) });
+                }
+        panes.Clear();
     }
 
     /// <summary>The page's footer of prompts, under the content area.</summary>

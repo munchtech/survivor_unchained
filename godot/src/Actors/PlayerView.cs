@@ -154,6 +154,18 @@ public partial class PlayerView : Node3D
         wraith.SetShaderParameter("rim", 0.9f);
     }
 
+    /// <summary>In place of the figure before it (what she holds changed): where it stood and
+    /// the way it faced, and posed now, not in its bind pose until the next frame's update.</summary>
+    public void Follow(PlayerView old)
+    {
+        Position = old.Position;
+        Rotation = old.Rotation;
+        heading = old.heading;
+        speed = old.speed;
+        Visible = old.Visible;
+        tree.Advance(0);
+    }
+
     void Gather(Node n)
     {
         if (n is GeometryInstance3D g && n is not global::SurvivorUnchained.View.Reflections) skin.Add(g);

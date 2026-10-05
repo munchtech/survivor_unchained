@@ -291,10 +291,15 @@ def lips(head, a):
     faces = [p for p in me.polygons if box[list(p.vertices)].all()]
     face, col = front_view(head, a, faces)
     red = (face >= 0) & (col[..., 0] - col[..., 1] > 55)
-    # (her lips only: the big patches of red, not a flush on her cheek)
+    # (her lips only: the big patches of red that cross her middle, not a
+    # flush on her cheek, nor her nostrils, reddened by nose() before this:
+    # taken for lips, the faces beside them were painted lip-red)
     lab, n = ndimage.label(red)
     area = ndimage.sum(red, lab, index=np.arange(1, n + 1))
-    red = np.isin(lab, np.nonzero(area > 0.05 * area.max())[0] + 1)
+    x0 = P[np.unique(np.concatenate([list(p.vertices) for p in faces])), 0].min()
+    mid = np.abs(x0 + (np.arange(red.shape[1]) + 0.5) * 0.0001) < 0.002
+    crosses = np.unique(lab[:, mid][red[:, mid]])
+    red = np.isin(lab, [k for k in np.nonzero(area > 0.05 * area.max())[0] + 1 if k in crosses])
     # (closed over 1.2 mm up and down only: the line between her lips, not round them)
     shut = ndimage.binary_closing(red, structure=np.ones((25, 3), bool))
     band = shut & ~red & (face >= 0) & (col[..., 0] - col[..., 1] < 50)
@@ -316,15 +321,17 @@ def lips(head, a):
     print("LIPS:", int(band.sum()), "pixels of a pale line between her lips;", len(hit), "faces,", int(pale.sum()), "texels given her lips' colour")
 
 
-def fix(head, path):
+def fix(head, path, raw=None):
     """All her face's paint put right, the file at `path` (her head's) in
-    place, from its raw copy (made from it the first time)."""
+    place, from its raw copy (made from it the first time; `raw` another
+    than RAW, for another face's paint)."""
     import shutil
     from PIL import Image
-    if not os.path.exists(RAW):
-        os.makedirs(os.path.dirname(RAW), exist_ok=True)
-        shutil.copy(path, RAW)
-    a = np.asarray(Image.open(RAW).convert("RGB"), np.float32).copy()
+    raw = raw or RAW
+    if not os.path.exists(raw):
+        os.makedirs(os.path.dirname(raw), exist_ok=True)
+        shutil.copy(path, raw)
+    a = np.asarray(Image.open(raw).convert("RGB"), np.float32).copy()
     lids(head, a)
     nose(head, a)
     lips(head, a)

@@ -33,6 +33,34 @@ FACES = {
                "and cheeks, bright green almond eyes with a slight upward tilt, softly arched auburn brows, a small straight nose "
                "with a gently upturned tip, full soft rose lips, high cheekbones, a delicate tapered jaw and a small chin, a slender neck. "
                "Copper-red hair.",
+    # Her other faces to start from: each a different bone structure and
+    # blood, every one of them beautiful (FACE_RESEARCH.md 3: presets differ
+    # by bone structure, never by oddity).
+    "highborn": "She is a stunningly beautiful Scandinavian woman of twenty-five with pale porcelain skin, clear ice-blue eyes, high "
+                "sculpted cheekbones, a long elegant straight nose, a narrow refined jaw and a delicate pointed chin, fine straight ash-blonde "
+                "brows, full soft lips, a long slender neck. Platinum blonde hair.",
+    "vixen": "She is a breathtakingly beautiful Slavic woman of twenty-three with fair skin, striking upturned feline grey-green eyes, high "
+             "wide cheekbones, a small straight nose, full pouting lips with a sharply defined cupid's bow, a small sharp chin, softly arched "
+             "dark brows. Dark brown hair.",
+    "doe": "She is a stunningly beautiful Mediterranean woman of twenty-four from southern Italy with warm olive skin, large soft dark brown "
+           "almond eyes, thick dark arched brows, a refined straight nose, full lips, a soft rounded jaw, a gentle oval face. Dark brown hair.",
+    "sunborn": "She is a stunningly beautiful West African woman of twenty-four with deep dark brown skin, large wide-set dark eyes, high "
+               "rounded cheekbones, a soft broad nose, full sculpted lips, a smooth oval face with a delicate chin, a graceful long neck. "
+               "Black hair.",
+    "moonlit": "She is a stunningly beautiful East Asian woman of twenty-three with fair luminous skin, elegant almond-shaped dark eyes, "
+               "straight soft brows, a small refined nose, full soft lips, a smooth heart-shaped face with a small delicate chin. Black hair.",
+    "saffron": "She is a stunningly beautiful South Asian woman of twenty-four with warm golden-brown skin, large expressive dark eyes with "
+               "long lashes, strong elegantly arched dark brows, a refined gently aquiline nose, full lips, high cheekbones, an oval face. "
+               "Black hair.",
+    "wildling": "She is a stunningly beautiful Latina woman of twenty-four with warm tan skin, wide bright hazel eyes, a wide mouth with "
+                "full lips made for laughing, a softly rounded nose tip, high full cheekbones, a heart-shaped face. Dark brown hair.",
+    "hardwon": "She is a stunningly beautiful athletic woman of twenty-six with lightly tanned skin and a few freckles, steady grey eyes, "
+               "straight strong brows, a defined angular jaw, a straight nose, full firm lips, sculpted cheekbones: a fierce warrior beauty "
+               "with the face of a fashion model. Dark blonde hair.",
+    # (silver hair painted her twenty years older: young, and fair-haired)
+    "fey": "She is a stunningly beautiful ethereal young elfin woman of twenty with flawless luminous pale porcelain skin, very large "
+           "wide-set silver-grey eyes with an upward tilt, very high sharp cheekbones, a tiny refined nose, small full rosy lips, a narrow "
+           "pointed chin, delicate fine pale brows, a youthful delicate face. Pale strawberry-blonde hair.",
 }
 SEEDS = [11, 23, 37, 41]
 

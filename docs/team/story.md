@@ -46,8 +46,8 @@ before recording. Agent a73ca9d35d0c487a9, branch `worktree-agent-a73ca9d35d0c48
   whispering places, no alpha or warlord.
 - **The base game is not explicit** (the legal lead's blocker): every love
   scene fades at the moment itself. No explicit slot ships, and `StoryLint`
-  holds it. Whether "Warmed" comes off the love scenes is the owner's call; it
-  is unchanged.
+  holds it. "Warmed" is flavour only (the owner's decision): the record and the
+  words stay, and there is no bonus. `QuestTests` holds it.
 - **Pacing (the owner's):** story about 40% early; story nights 20 minutes, the
   Wayfinder's maps 30; the endgame is the atlas (build maps) and the ember scars
   (survivors fun); after ending B they are the Wayfinder's book of the nights
@@ -98,7 +98,8 @@ before recording. Agent a73ca9d35d0c487a9, branch `worktree-agent-a73ca9d35d0c48
 
 ## Blockers
 
-None. The owner's open question: who sings the hymn at Nell's grave (C08).
+None. The hymn at Nell's grave (C08) is settled: the owner makes it in Suno.
+The words are `cin_iron_marker.verse1` and `verse2`.
 
 ## For other areas
 

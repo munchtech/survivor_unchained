@@ -130,6 +130,25 @@ def take_of(vo_id, raw):
     return t if t and t.get("hash") == text_hash(raw) else None
 
 
+def subtitle(raw):
+    """The words as the subtitle shows them (CineLines.Subtitle): a lower-case
+    (parenthesis) is how the line is said and is dropped; a capitalised one,
+    such as a translation, stays. A direction saying it is sung sets italics."""
+    sung = False
+
+    def cut(m):
+        nonlocal sung
+        if not m.group(1).lstrip()[:1].islower():
+            return m.group(0)
+        if "sung" in m.group(0).lower():
+            sung = True
+        return " "
+    shown = re.sub(r"\s*\(\s*([^()\s][^()]*)\)\s*", cut, raw)
+    shown = re.sub(r"[ \t]{2,}", " ", shown).strip()
+    shown = shown.replace(" ,", ",").replace(" ?", "?").replace(" !", "!")
+    return shown, sung
+
+
 def line_seconds(line_id):
     vo, raw, _ = find_line(line_id)
     if raw == "":
@@ -137,7 +156,7 @@ def line_seconds(line_id):
     t = take_of(vo, raw)
     if t:
         return t.get("read") or t["sec"]
-    return reading(raw)
+    return reading(subtitle(raw)[0])
 
 
 def offset(at, dur):
@@ -449,6 +468,31 @@ def sfx(name, g=1.0, pan=0.0):
         for f in (55.0, 82.41, 110.0):
             at(0, tone(f, Type="saw", A=4, Hold=3, D=4, G=0.045 * g, Lp=260, Lp2=520, Detune=R(-7, 7), Verb=0.7))
         at(0, hiss(A=4, D=6, G=0.035 * g, Bp=700, Q=1.2, Verb=0.6))
+    elif name == "kneel_water":
+        at(0, tone(90, 46, D=0.5, G=0.32 * g, Pan=pan))
+        at(0, hiss(A=0.01, D=0.7, G=0.13 * g, Bp=1200, Bp2=500, Q=0.8, Pan=pan))
+    elif name == "sink":
+        for i in range(6):
+            at(i * R(0.12, 0.22), tone(R(220, 320), R(600, 900), D=R(0.06, 0.1), G=0.04 * g * (1 - i / 8), Lp=1600, Pan=pan))
+        at(0, tone(70, 40, D=0.6, G=0.18 * g))
+    elif name == "lamp_out":
+        at(0, hiss(A=0.005, D=0.9, G=0.12 * g, Bp=4200, Bp2=2200, Q=1.2, Pan=pan))
+        at(0, tone(420, 160, D=0.08, G=0.08 * g, Pan=pan))
+    elif name == "heart_hum":
+        at(0, tone(740, 752, A=0.8, Hold=1.6, D=1.4, G=0.035 * g, Verb=0.6, Pan=pan))
+        at(0.2, tone(1110, 1122, A=0.9, Hold=1.2, D=1.4, G=0.014 * g, Verb=0.6, Pan=pan))
+    elif name == "burst":
+        at(0, tone(72, 30, D=0.8, G=0.6 * g))
+        at(0, hiss(A=0.005, D=1.0, G=0.3 * g, Lp=900, Lp2=200, Brown=True, Pan=pan))
+        for i in range(10):
+            at(0.15 + i * R(0.04, 0.09), hiss(D=R(0.02, 0.05), G=R(0.03, 0.07) * g, Bp=R(1500, 3500), Q=3, Pan=pan + R(-0.3, 0.3)))
+    elif name == "sniff":
+        at(0, hiss(A=0.02, D=0.12, G=0.07 * g, Bp=2600, Q=1.4, Pan=pan))
+        at(0.16, hiss(A=0.02, D=0.1, G=0.06 * g, Bp=2900, Q=1.4, Pan=pan))
+    elif name == "groan":
+        at(0, tone(31, 27, A=1.0, Hold=1.6, D=1.4, G=0.5 * g))
+        at(0.6, tone(52, 44, Type="saw", A=0.8, Hold=1.4, D=1.2, G=0.06 * g, Lp=320, Lp2=180, Verb=0.5))
+        at(0.4, hiss(A=1.0, D=2.0, G=0.06 * g, Lp=220, Lp2=90, Brown=True))
     else:
         rec = recording(name)
         if rec is None:
@@ -622,12 +666,13 @@ def render(items, ctx, out):
                 if raw == "":
                     continue
                 take = take_of(vo, raw)
-                secs = (take["sec"] if take else reading(raw)) + c.get("linger", 0.7)
+                shown, sung = subtitle(raw)
+                secs = (take["sec"] if take else reading(shown)) + c.get("linger", 0.7)
                 if take:
                     x = decode(os.path.join(GODOT, "art", "vo", take["file"]))
                     audio[i:i + len(x)] += x[: n_audio - i]
                 name = None if who in narrators else (NAMES.get(who) or who.replace("_", " ").title())
-                subs.append((t, t + secs, raw, name))
+                subs.append((t, t + secs, shown, name, sung))
             elif c["do"] == "sfx":
                 x = sfx(c["name"], c.get("gain", 1.0), c.get("pan", 0.0))
                 audio[i:i + len(x)] += x[: n_audio - i]
@@ -723,10 +768,10 @@ def encode(out, cuts, subs, titles, audio, total):
                         od.text(((W - F_SUB.getlength(sub)) / 2, H / 2 + 10), sub, font=F_SUB, fill=(200, 186, 150, al))
                     frame.paste(ov, (0, 0), ov)
                     d = ImageDraw.Draw(frame)
-        for a, b, raw, name in subs:
+        for a, b, raw, name, sung in subs:
             if a <= t < b:
                 k = min(1.0, (b - t) / 0.25)
-                f = F_ITAL if name is None else F_WORDS
+                f = F_ITAL if name is None or sung else F_WORDS
                 lines = wrap(raw, f, 1100)[:2]
                 base = H - BAR + max(12, (BAR - 40 * len(lines)) / 2) + (8 if name else 0)
                 col = tuple(int(c * k) for c in (236, 228, 212))

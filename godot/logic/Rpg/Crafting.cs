@@ -38,7 +38,7 @@ public sealed class SlurryRules
     public string Jar = "slurry_jar", Crafter = "snib", Mark = "slurried";
     public int Gold = 30, PerDay = 3;
     public Cond? Sold;
-    public Dictionary<string, int> Odds = new() { ["up"] = 25, ["slurry"] = 25, ["nothing"] = 30, ["down"] = 20 };
+    public Dictionary<string, int> Odds = new() { ["up"] = 25, ["affix"] = 25, ["nothing"] = 30, ["down"] = 20 };
     public List<string> Affixes = new();
 }
 /// <summary>Where one of a crafter's verbs opens later than the crafter does (Wenna's
@@ -131,7 +131,7 @@ public sealed class Quote
     public string? Material;
     /// <summary>The piece a binding unmakes for its power.</summary>
     public string? Donor;
-    /// <summary>What a gamble came to, once done ("up", "slurry", "nothing", "down").</summary>
+    /// <summary>What a gamble came to, once done ("up", "affix", "nothing", "down").</summary>
     public string? Outcome;
     /// <summary>What is made (a draught brewed, a base commissioned, a trophy set) and how many.</summary>
     public string? Def;
@@ -711,7 +711,7 @@ public static class Crafting
         q.Affix = roll.Id;
         q.Grade = Math.Min(roll.Tier, Math.Max(Cap(it), 0));
         q.After = Line(roll.Id, q.Grade);
-        if (a?.Kindled != null) { q.Blocked = Line(crafter, "bind.coal") ?? "That one is caged. It will not come out."; return q; }
+        if (a?.Kindled != null) { q.Blocked = Line(crafter, "bind.caged") ?? "That one is caged. It will not come out."; return q; }
         if (!Bindable(a)) { q.Blocked = "That will not let go of what holds it."; return q; }
         if (!Fits(Items.Get(it.Def), roll.Id)) { q.Blocked = "It doesn't take to that kind of piece."; return q; }
         if (replace >= 0)
@@ -751,6 +751,10 @@ public static class Crafting
         return q;
     }
 
+    /// <summary>How many jars Snib will still sell today.</summary>
+    public static int JarsLeft(WorldState w) =>
+        Math.Max(0, Rules.Slurry.PerDay - ((int)w.Fact("slurry.day").Number == w.Day ? (int)w.Fact("slurry.sold").Number : 0));
+
     /// <summary>A jar bought: paid, in the pouch, and counted against the day's three.</summary>
     public static bool Buy(CraftCtx x, Quote q)
     {
@@ -767,10 +771,12 @@ public static class Crafting
     /// <summary>Steep: a piece in a jar of the Dig's slurry, by the survivor's own hand. One affix past the
     /// forge's cap (to the bright grade), a slurry affix past the seams, only the veins, or a grade lost;
     /// then it is set for good (design 9). Said in full before the jar is opened.</summary>
-    public static Quote Steep(CraftCtx x, ItemInstance it)
+    public static Quote Steep(CraftCtx x, ItemInstance it, string crafter = "")
     {
         var s = Rules.Slurry;
-        var q = Begin(Verb.Steep, "", "Steep in slurry");
+        // At Snib's bench he does it, in his words; from the pack, by the survivor's own hand (a jar
+        // kept past the cure still steeps).
+        var q = Begin(Verb.Steep, crafter, "Steep in slurry");
         q.Takes[s.Jar] = 1;
         if (!Workable(it)) q.Blocked = "That's somebody's work. Leave it be.";
         else if (Slurried(it)) q.Blocked = "It has been steeped. Once is all it takes.";
@@ -778,6 +784,7 @@ public static class Crafting
         else if (Inventory.Count(x.Ch, s.Jar) < 1) q.Blocked = "You have no slurry.";
         q.HeatLo = q.HeatHi = it.Heat ?? 0;
         q.After = "It is set for good after, whatever it comes to.";
+        if (q.Blocked == null && crafter != "" && Closed(crafter, x.Ctx, Verb.Steep) is { } shut) q.Blocked = shut;
         return q;
     }
 
@@ -794,7 +801,7 @@ public static class Crafting
         string pick = rng.Weighted(s.Odds.Keys.ToList(), k => s.Odds[k]);
         var plain = it.Affixes.Select((a, i) => (a, i)).Where(p => Bindable(Items.Affix(p.a.Id))).ToList();
         // Nothing in it to raise or lower: what would have happened to an affix happens past the seams.
-        if (pick is "up" or "down" && plain.Count == 0) pick = pick == "up" ? "slurry" : "nothing";
+        if (pick is "up" or "down" && plain.Count == 0) pick = pick == "up" ? "affix" : "nothing";
         switch (pick)
         {
             case "up":
@@ -812,7 +819,7 @@ public static class Crafting
                 q.Affix = a.Id;
                 break;
             }
-            case "slurry":
+            case "affix":
             {
                 var pool = s.Affixes.Where(id => Items.Affix(id) is { } d && d.Slots.Contains(Items.Get(it.Def).Kind) && it.Affixes.All(b => b.Id != id)).ToList();
                 if (pool.Count == 0) { pick = "nothing"; break; }
@@ -875,7 +882,7 @@ public static class Crafting
         if (q.Verb is Verb.Brew or Verb.Buy or Verb.Commission) return Make(x, q);
         if (q.Verb == Verb.Steep)
         {
-            if (Inventory.Count(ch, Rules.Slurry.Jar) < 1 || Slurried(it)) return false;
+            if (Inventory.Count(ch, Rules.Slurry.Jar) < 1 || Slurried(it) || q.Crafter != "" && Closed(q.Crafter, x.Ctx, q.Verb) is not null) return false;
             Inventory.Take(ch, Rules.Slurry.Jar, 1);
             Steeped(x, it, q, rng);
             return true;

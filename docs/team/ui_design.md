@@ -1,50 +1,54 @@
 # UI design (character creation first): status
 
-Agent a26f87c39952dcd9c, branch `worktree-agent-a26f87c39952dcd9c`. It has the integration branch merged in, plus the predecessor's tip (a69858664f1d3dd29@29792ce3).
+Agent a26f87c39952dcd9c, branch `worktree-agent-a26f87c39952dcd9c` (integration branch merged at 524e25c0).
 The predecessor's handoff, `docs/handoff/ui_design.md`, is the full brief.
 
-## Current state (paused by the owner, 4 October)
-- The worktree is set up:
-  - `godot/assets` is a junction with skip-worktree;
-  - `override.cfg` sets the user folder `SurvivorUnchainedUiLead4`;
-  - the build and headless import are done.
-- Shot tools are in `scratchpad/uid4/` (`shot.ps1`, `edlib.py`), pointed at this worktree.
-- **`godot/licences/` holds the upstream texts, unchanged:**
-  - Godot 4.5.1-stable `LICENSE.txt` and `COPYRIGHT.txt`, as `GODOT_*`;
-  - .NET runtime `release/8.0` `LICENSE.TXT` and `THIRD-PARTY-NOTICES.TXT`, as `DOTNET_*`;
-  - the three `OFL-*.txt`, copied from `godot/art/fonts`.
-  Nothing ships them yet.
+## Current state: code done, nothing yet seen in game (Godot is the owner's until the main session frees it)
+- **Credits and licences** (178768aa, db9f434b):
+  - `Content/Credits.cs` turns `CREDITS.md` into `data/credits.json` and `licences/CREDITS.txt`. It cuts paths, fetch-tool notes and review notes.
+  - `CreditsTests` is a golden file. Regenerate with `WRITE_CREDITS=1 dotnet test --filter CreditsTests`.
+  - The `licences/` folder ships the Godot, .NET and OFL texts, packed (`include_filter licences/*`) and copied beside the build (`export.sh`).
+  - The screen is `Ui/Credits.cs`, opened from the title's Credits and from the pause menu's "Credits and licences". Shots: `--quick --open credits`.
+- **The pack's bugs** (d2750bfc):
+  - `Loadouts.Look`: the world's figure is rebuilt only when what shows changes, and then follows the old one's place and pose;
+  - the pack's doll is kept across refreshes while it looks the same;
+  - `PersonView.Settle` poses a new figure as it is readied, so there is no T for a frame.
+- **Page pieces** (c3c3f1fc), each falling back to the drawn look while its file is missing:
+  - the backdrop's edges and grain;
+  - a column rail with its stone between page panes (`Overlay.Dividers`);
+  - `section_mark` in `Section`;
+  - `hero_plate` behind the figure on the pack and the self;
+  - `card_light` on the map result's finds.
+  The new PNGs have no `.import` yet: the UI art lead's step 2.
+- **Map result and atlas** (8aa77414):
+  - `MapResultScreen` tells the verdict, the time, falls, slain and packs, then the loot (best last), then the atlas line and grid. It shares `TellingScreen` with the night's result.
+  - The `MapSpoils` diff gives what the map paid.
+  - `IZoneHost.MapOver` hands a map's end to the game.
+  - The atlas is the Wayfinder's table's second page: the great atlas, the chart in hand with its oaths and the way in, and the points on the five biases.
+  - Shots: `--zone map --open mapresult [--fell]`; `--zone waystation --charts 3 --lit pack:1 --open atlas`.
 
-## Next: the licences screen (the exact next step)
-1. Merge `origin/claude/vigilant-galileo-l6jqyx` again. It now has the performance lead's export work, so re-read `godot/export_presets.cfg` and `tools/godot/export.sh` before touching them.
-2. In `godot/logic`, write `Credits.Parse(md)`: `public/assets/CREDITS.md` becomes sections, groups and entries, made player-facing.
-   - Drop backticked paths, `-> file` tails, the fetch-tool note and the web-only section.
-   - Keep any Sketchfab line that `sketchfab.mjs` appends at the end.
-   - Don't ship CREDITS.md itself: its review notes (the boar's "personal use", PE-05 and PE-06) must not reach the `.pck`.
-3. A golden-file test writes `godot/data/credits.json` (for the screen) and `godot/licences/CREDITS.txt` from it when `WRITE_CREDITS=1`. Otherwise it fails if either is stale, or if any CC BY or OFL link in CREDITS.md is missing.
-4. Add `licences/README.txt`: an index of the folder plus the AI-use line from CREDITS.md's AI section.
-5. Export:
-   - add `licences/*` to `include_filter`, so the game can show the texts;
-   - make `export.sh` copy `godot/licences/` beside each build.
-6. `Ui/CreditsScreen.cs`, the page style (Backdrop, frameless `Style.Column`):
-   - a section index on the left, the scrolling credits on the right;
-   - Godot's MIT text and its components from `Engine.GetCopyrightInfo()`;
-   - the .NET and OFL texts read from `res://licences`;
-   - "Open the licences folder" via `OS.ShellOpen`.
-7. Hook it up:
-   - `Game.Open("credits")` keeps the world paused like the pause menu, and its close returns to the pause menu;
-   - the title's Credits item opens it, and its close returns to the title;
-   - the pause menu gets "Credits and licences";
-   - `--open credits` for shots.
-8. Take shots at 1920x1080. Then send the wording to the **legal lead, aab20546fe06daa89**, before pushing the screen.
+## Next
+1. **When Godot is free:**
+   - run `--headless --import`;
+   - shoot at 1920x1080: credits (each section, the three licences, the title route), the map result (cleared and `--fell`), the atlas (empty, the beta's tier 1 and a point, several charts), the pack's wear and take-off (no blink, no T), and the pages with the new pieces (Self, Pack, Arts, Forge, credits);
+   - fix what is drab or dense.
+2. Send the credits wording to **legal, aab20546fe06daa89**, with the questions below.
+3. Rerun the portraits after the face lead's head, and his portraits once his body lands. Then do Self's density and the frameless creation.
 
-After that, in the handoff's order: the UI art lead's six pieces, the map result and atlas, the portrait reruns, and the pack's two bugs.
+## Questions for legal
+- **The AI line:** CREDITS.md lists the tools in the build (Maya1, Seed-VC, VoxCPM2, BiRefNet, DINOv3, MoGe 2). STEAM_CHECKLIST E names ElevenLabs and Pixal3D. Which is right?
+- **"Modified":** a CC BY work with no changes listed has no "Modified" line. Is that acceptable?
+- **Unshipped works:** the release excludes `anime_female.glb`, `woman.glb` and the KayKit characters and props, but the credits still name them. Keep or drop them?
 
-## Waiting on others
-- **Face lead (ade92e8285938438f):** the new head. After `heroine.glb`, rerun `heroine_paint.py`, then `creation_portraits.py`.
-- **Male hero (ab82cbe99e2937ddd):** `heroes.male` and his builder. Then run `creation_portraits.py --sex male`.
+## Notes for other areas
+- **Combat:** `MapRun.Finish` now calls `G.MapOver(Result, alive)`. Its default in `IZoneHost` is the old travel back. `Charts.TakeOut`, `Charts.Carried` and `Atlas.IsOpen` are new.
+- **Story:** the atlas opens once a chart is carried. Vonnra's fortune should give the first (`Journey.GiveChart`).
+- **UI art:** the six pieces are wired by name, so drop files in and they show. `card_light` and `hero_plate` still want rendering.
+- **Experience:** the map result and the atlas follow "A map's shape". Judge them from the shots.
 
 ## Key decisions
-- Look is step II: the calling dresses her, then she is shaped.
-- Portraits are rendered from the game, so they stay true when her head changes.
-- The licence texts are the upstream files, byte for byte, from the tags that match what ships (Godot 4.5.1, .NET 8).
+- **Ship a cleaned copy of CREDITS.md, never the file:** its review notes would reach the `.pck`. It is cleaned by rule, and a test fails if it drifts.
+- **The licence texts are the upstream files** at the shipped versions (Godot 4.5.1, .NET 8).
+- **A map's loot is read from before and after,** not counted in the fight: one source of truth, no bookkeeping in combat's code.
+- **The atlas lives at the Wayfinder's table as a second page,** not a new screen: it is the same table, and LT/RT turn it.
+- **The figure is rebuilt only when its look changes:** most gear doesn't show, so rebuilding for it was only a blink.

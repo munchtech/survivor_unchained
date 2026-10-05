@@ -43,6 +43,11 @@ The owner's goal: identify everything we use that isn't ours (that we didn't mak
 
 The 9 high rows are PE-08, CR-02, UI-01, UI-02, UI-03, FX-03, AI-01, AI-13 and WL-04. The 11 UNKNOWN rows are PE-05, PE-06, PE-09, UI-05, AI-04, AI-14, AI-15, AI-17, DA-02, DA-03 and WL-02.
 
+> **Owner's answers (4 October 2026; see docs/legal/LEGAL_BRIEF.md 5(e) and 5(g)):**
+> - **The bodies (PE-05, PE-06, PE-09):** "they were from krea assets that have since been deleted". The plan and input pictures can't be shown, and Krea's 3D tool defaults to Hunyuan3D 2.1. **Replace before launch** (docs/art/MODELS_TO_MAKE.md).
+> - **The Ember Watch (DA-02):** the owner's own, made with Claude; no third party. **Cleared** (LEGAL_BRIEF 5(e)).
+> - **Everything not ours** is to be replaced over time. The owner lives in the United States.
+
 By file count (tracked files, without Godot's `.import` files):
 
 - 1,274 shipped files come from third-party asset sources:

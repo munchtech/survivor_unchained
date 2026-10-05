@@ -17,6 +17,11 @@ Took over from `ad1f5623590e09883`; merged the integration branch and its last c
 - **Waiting on merges** (not yet on the integration branch): skills `0d2e4a0b` (numbers that sum,
   grounds, marks), animation `d7b091ea` (die2/die3), combat `1b0f8bf1` (maps, strongbox),
   performance `29b5ae5b`. Combat's branch has no run-up danger work yet.
+- **Story nights and the day's clock** (the owner's new direction): proposal in
+  `docs/design/STORY_NIGHTS_AND_TIME.md` (`c59a9490`), waiting on the owner's four choices.
+  Agreed with story (`a73ca9d35d0c487a9`), arena art (`a26767f7f9955cb56`) and combat
+  (`a708da2c97bf85c95`), whose `docs/design/STORY_BOSSES.md` (`65cc4301`, its branch) holds the
+  beats, bosses and numbers, my three asks included. Build nothing until the owner approves.
 - **Exact next step:** the crowd's status read (skills is waiting). In `shaders/vat.gdshaderinc`,
   burning and frozen still add emission over the knee (burn: rim² 1.2 plus an `up` term, which
   from the 56° camera lights most of a body; glow threshold 1.1), so a crowd blooms cream/white.

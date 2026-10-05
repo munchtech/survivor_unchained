@@ -31,6 +31,24 @@ All the leads' paused branches are merged (597 tests green), except two whose ow
 7. **The owner lives in the United States.**
 8. **The hymn at Nell's grave:** the owner will make it in Suno.
 
+## Hold: the base bodies (the owner's call): likely staying
+
+The owner says the bodies were made with **TRELLIS** (MIT), not Hunyuan, from a picture the owner made with Krea 2 Turbo in our own ComfyUI. **They stay** (Krea 2's US$1M cap applies, as for the UI art); the legal lead is writing it up. The male hero lead goes back to polishing his current body once the GPU is free.
+
+The owner wants to keep the heroine's and hero's bodies if their Krea records clear them: which 3D model (not Hunyuan), a paid plan, and their own input picture. **Nobody replaces or rebuilds a body until the owner decides.** The MakeHuman rebuild plans (docs/team/hero_male.md, docs/art/MODELS_TO_MAKE.md) are fallbacks only.
+
+## Handoffs ready: start their successors when the GPU is free
+
+These are past their memory limit. Each has a handoff in docs/handoff/<area>.md, and their branches are merged:
+- animation (67cb4f2c);
+- performance (a3513e14);
+- crafting (fdb62e76);
+- UI art (bfa7bdb);
+- skills (0a7e8eff);
+- face (5fd76deb).
+
+The combat successor is already running (design only).
+
 ## Paused work that needs the GPU or Godot
 
 The owner is using the GPU. No Godot, no ComfyUI, no Blender until the owner says so. Waiting on that:

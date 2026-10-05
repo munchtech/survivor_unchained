@@ -26,7 +26,9 @@ from mathutils.bvhtree import BVHTree
 
 sys.stdout.reconfigure(line_buffering=True)
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "comfy"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import comfy  # noqa: E402
+import face_shapes as fs  # noqa: E402
 
 OUT = os.path.abspath(sys.argv[sys.argv.index("--") + 1])
 os.makedirs(OUT, exist_ok=True)
@@ -36,18 +38,98 @@ DRAW = 1536                        # its pixels across
 CENTRE = Vector((0.0, -0.02, 1.735))
 VIEWS = {"front": 0.0, "left": 55.0, "right": -55.0}
 DENOISE = 0.45                     # more and her features move away from her head's
-SEED = 7
-PROMPT = ("Photograph, {view} of the face of a beautiful young woman in her early twenties, fair porcelain skin with light delicate "
-          "freckles across her nose and cheeks, smooth skin with fine pores, bright green eyes, long dark eyelashes, softly arched dark "
-          "auburn eyebrows, bare clean eyelids, no eyeshadow, soft rose lips, completely bald smooth shaved head, calm neutral expression, flat "
-          "even soft studio lighting with no shadows, plain grey background, sharp focus, high detail.")
+SEED = int(os.environ.get("FACE_SEED", "7"))
+# A beauty campaign's photograph, as her reference faces were painted
+# (face_refs.py), but bald (her head is) and in flat light (it is taken off
+# after, and the game lights her): fine groomed brows (heavy ones read
+# masculine, FACE_RESEARCH.md), lashes and a lip tint, luminous skin.
+PROMPT = ("A high-end beauty campaign photograph, {view} of the face of a breathtakingly beautiful young woman of twenty-four, fair "
+          "porcelain skin with light delicate freckles across her nose and cheeks, luminous smooth skin with fine natural pores, bright "
+          "green eyes, long dark defined eyelashes, fine softly arched groomed auburn eyebrows, clean eyelids, subtle elegant makeup, "
+          "full soft rose lips with a soft lip tint, completely bald smooth shaved head, serene neutral expression, flat even soft "
+          "studio lighting with no shadows, plain grey background, sharp focus, high detail.")
 VIEW_WORDS = {"front": "straight-on front view", "left": "three-quarter view", "right": "three-quarter view"}
 
 head = bpy.data.objects["HeroineHead"]
 sc = bpy.context.scene
+SKIN_AS_IS = None
+
+# One of her other faces (face_presets.py), painted on her head shaped as
+# it: FACE_SHAPE a JSON file of its sliders ({slider: -1 to 1}, set on her
+# head's keys and its parts'), FACE_WHO the words for the woman it is (as
+# face_refs.FACES has her, without her hair).
+if os.environ.get("FACE_SHAPE"):
+    import json
+    _shape = json.load(open(os.environ["FACE_SHAPE"], encoding="utf-8-sig"))
+    for _o in bpy.data.objects:
+        if _o.type == "MESH" and _o.data.shape_keys:
+            _kb = _o.data.shape_keys.key_blocks
+            for _s, _v in _shape.items():
+                if _s + "+" in _kb:
+                    _kb[_s + "+"].value = max(_v, 0.0)
+                if _s + "-" in _kb:
+                    _kb[_s + "-"].value = max(-_v, 0.0)
+    bpy.context.view_layer.update()
+    print("SHAPED as", _shape)
+if os.environ.get("FACE_WHO"):
+    PROMPT = ("A high-end beauty campaign photograph, {view} of the face of " + os.environ["FACE_WHO"] + " Completely bald smooth "
+              "shaved head, serene neutral expression, subtle elegant makeup, defined lashes, luminous skin with fine natural pores, flat "
+              "even soft studio lighting with no shadows, plain grey background, sharp focus, high detail.")
+
+
+def as_shaped(o):
+    """An object's points and normals as its keys shape it (each key's move
+    at its value: no modifiers, which would renumber its points), in the world."""
+    me = o.data
+    V = np.zeros(len(me.vertices) * 3)
+    me.vertices.foreach_get("co", V)
+    V = V.reshape(-1, 3)
+    if me.shape_keys:
+        kb = me.shape_keys.key_blocks
+        base = np.zeros(len(V) * 3)
+        kb[0].data.foreach_get("co", base)
+        base = base.reshape(-1, 3)
+        V = base.copy()
+        for k in kb[1:]:
+            if k.value:
+                co = np.zeros(len(V) * 3)
+                k.data.foreach_get("co", co)
+                V += k.value * (co.reshape(-1, 3) - base)
+    mw = np.array(o.matrix_world)
+    V = V @ mw[:3, :3].T + mw[:3, 3]
+    # (normals from the faces round each point, as shaped)
+    N = np.zeros_like(V)
+    for p in me.polygons:
+        vs = list(p.vertices)
+        n = np.cross(V[vs[1]] - V[vs[0]], V[vs[-1]] - V[vs[0]])
+        N[vs] += n
+    N /= np.linalg.norm(N, axis=1)[:, None] + 1e-12
+    # (out from her, as Blender's own normals are)
+    own = np.array([v.normal[:] for v in me.vertices]) @ mw[:3, :3].T
+    if (N * own).sum(1).mean() < 0:
+        N = -N
+    return V, N
 
 
 # ------------------------------------------------------------ drawings --
+def clean_skin(size=21):
+    """Her head's skin as drawn, without MakeHuman's freckles (a grey
+    closing: every dark fleck smaller than `size` texels, 2 mm or so on her
+    face, filled from the skin round it). Drawn with them, the painting
+    copies every one, far more than the light freckles asked for. (The
+    drawing's only: nothing is saved.)"""
+    global SKIN_AS_IS
+    from scipy import ndimage
+    img = next(n.image for n in head.data.materials[0].node_tree.nodes if n.type == "TEX_IMAGE" and n.image)
+    w, h = img.size
+    a = np.array(img.pixels[:], np.float32).reshape(h, w, 4)
+    SKIN_AS_IS = a.copy()                    # (her skin's colouring, which the painting is matched to, as it is)
+    for k in range(3):
+        a[..., k] = ndimage.grey_closing(a[..., k], size=(size, size))
+    img.pixels.foreach_set(a.ravel())
+    img.update()
+
+
 def draw():
     """Her head and neck in their own colours, no light, from each view."""
     for eng in ("BLENDER_EEVEE_NEXT", "BLENDER_EEVEE"):
@@ -89,6 +171,7 @@ def draw():
                 m.surface_render_method = "DITHERED"
             else:
                 nt.links.new(em.outputs[0], out.inputs["Surface"])
+    clean_skin()
     cam = bpy.data.objects.new("FaceCam", bpy.data.cameras.new("FaceCam"))
     sc.collection.objects.link(cam)
     sc.camera = cam
@@ -159,13 +242,12 @@ def texels():
     and which way it faces (and its triangle and weights, for what else is
     known at her head's points)."""
     me = head.data
-    V = np.array([v.co[:] for v in me.vertices])
+    V, N = as_shaped(head)                 # (as shaped: one of her other faces, if asked for)
     me.calc_loop_triangles()
     T = np.array([t.vertices[:] for t in me.loop_triangles])
     L = np.array([t.loops[:] for t in me.loop_triangles])
     uvd = me.uv_layers[0].data
     UV = np.array([d.uv[:] for d in uvd])[L] * SIZE
-    N = np.array([v.normal[:] for v in me.vertices])
     rows, cols, tri, bary = [], [], [], []
     for k, t in enumerate(UV):
         x0, y0 = np.maximum(np.floor(t.min(0)).astype(int), 0)
@@ -200,7 +282,7 @@ def seen(V, N, toward):
     vs, fs = [], []
     for o in objs:
         base = len(vs)
-        vs += [tuple(o.matrix_world @ v.co) for v in o.data.vertices]
+        vs += [tuple(p) for p in as_shaped(o)[0]]
         fs += [[base + i for i in p.vertices] for p in o.data.polygons]
     bvh = BVHTree.FromPolygons(vs, fs)
     d = Vector(toward)
@@ -214,13 +296,29 @@ def match(src, ref, m):
     return mr + (src - ms) * np.clip(sr / ss, 0.8, 1.25)
 
 
+def free():
+    """The shared GPU given back (the server answers with nothing)."""
+    import json
+    import urllib.request
+    req = urllib.request.Request(comfy.URL + "/free", data=json.dumps({"unload_models": True, "free_memory": True}).encode(),
+                                 headers={"Content-Type": "application/json"})
+    urllib.request.urlopen(req).read()
+
+
 if __name__ == "__main__":
-    draw()
-    for name in VIEWS:
-        paint(name)
-        print("PAINTED", name)
+    # (FACE_LAY_ONLY=1: the drawings and paintings already in <out>, say the
+    # best view of each of several seeds gathered there, only laid back on)
+    if not os.environ.get("FACE_LAY_ONLY"):
+        draw()
+        try:
+            for name in VIEWS:
+                paint(name)
+                print("PAINTED", name)
+        finally:
+            free()
     rows, cols, T, tri, bary, V, N, P, Nt = texels()
-    base = np.array(head.data.materials[0].node_tree.nodes["Image Texture"].image.pixels[:], np.float32).reshape(SIZE, SIZE, 4)
+    base = SKIN_AS_IS if SKIN_AS_IS is not None else \
+        np.array(head.data.materials[0].node_tree.nodes["Image Texture"].image.pixels[:], np.float32).reshape(SIZE, SIZE, 4)
     cols_v, weights = {}, {}
     for name, ang in VIEWS.items():
         a = math.radians(ang)
@@ -243,6 +341,14 @@ if __name__ == "__main__":
     wsum = sum(weights.values())
     col = sum(cols_v[n] * weights[n][:, None] for n in VIEWS) / np.maximum(wsum, 1e-6)[:, None]
     cover = np.clip(wsum / 0.25, 0, 1)
+    # Her face only: none of it over her scalp, from 1 to 3 cm above her
+    # hairline (face_shapes.HAIRLINE), where her hair lies (a painting of a
+    # bald head can paint hair there, swept back, and it showed at her temples).
+    eye_z = float(np.mean([(bpy.data.objects["HeroineEyes"].matrix_world @ v.co).z
+                           for v in bpy.data.objects["HeroineEyes"].data.vertices]))
+    theta = np.arctan2(P[:, 0], -P[:, 1])
+    up = P[:, 2] - (eye_z + fs.hairline_height(theta))
+    cover *= 1 - np.clip((up - 0.01) / 0.02, 0, 1)
     # And all of it coloured as her skin (her head's own, which heroine_head.py
     # matched to her body), over her cheeks, brow and neck seen square on.
     skin = (cover > 0.9) & (np.abs(col - np.median(col[cover > 0.9], 0)).max(1) < 0.08)

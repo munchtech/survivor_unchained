@@ -75,6 +75,10 @@ public interface IZoneHost
     void Chest(ChestOpened c) => Announce(new Announcement(c.Hoard ?? "A chest", string.Join(" · ", c.Items.Select(i => i.Name)), "reward", 2.8));
     void Talk(string npc);
     void Travel(string zone, string? caption = null, string? sub = null);
+    /// <summary>A Wayfinder's map is over: the game tells it on its own page, then goes back to the
+    /// Waystation; a host without a page goes straight back.</summary>
+    void MapOver(Zones.MapResult r, bool alive) =>
+        After(alive ? 0.6 : 2.2, () => Travel("waystation", r.Chart.Name, r.Cleared ? "Cleared" : "The map closes"));
     /// <summary>Later, in game time (forgotten if the zone is left first).</summary>
     void After(double seconds, Action fn);
     void Save(string reason);
@@ -105,8 +109,11 @@ public interface IZoneHost
     void EnterArena(Arena.ArenaSpec spec) { }
     /// <summary>A cinematic (godot/data/cinematics/ID.json) played now, `done`
     /// when it hands back or is skipped. False where none can play (no
-    /// screen, the tests): the zone then says its lines as captions.</summary>
-    bool Cinematic(string id, Action? done = null) => false;
+    /// screen, the tests): the zone then says its lines as captions. `marks`
+    /// moves the file's marks to where things really are (where a boss fell).</summary>
+    bool Cinematic(string id, Action? done = null, IReadOnlyDictionary<string, double[]>? marks = null) => false;
+    /// <summary>Whether that cinematic would play here now (a zone waits for its moment only if so).</summary>
+    bool CanCinematic(string id) => false;
 }
 
 /// <summary>The zone's look, as a runtime reaches into it.</summary>

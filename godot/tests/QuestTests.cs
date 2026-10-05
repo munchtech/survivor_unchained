@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using SurvivorUnchained.Rpg;
+using SurvivorUnchained.Sim;
 using SurvivorUnchained.World;
 using Xunit;
 using static SurvivorUnchained.Tests.H;
@@ -194,6 +195,11 @@ public class QuestTests
         Talk(Convo("sella"), s.C, "how much", "15 gold, then", "kiss her");
         Assert.Equal(5, s.Ch.Gold);
         Assert.Contains(s.Ch.Conditions, c => c.Id == ConditionId.Warmed);
+        // Warmed only says the night happened: a fight is no different for it (the owner's call).
+        var stats = new[] { Stat.Damage, Stat.MoveSpeed, Stat.MaxHealth, Stat.Armor, Stat.CritChance, Stat.Regen };
+        var with = stats.Select(Character.Kit(s.Ch).Stats.Get).ToList();
+        s.Ch.Conditions.RemoveAll(c => c.Id == ConditionId.Warmed);
+        Assert.Equal(stats.Select(Character.Kit(s.Ch).Stats.Get).ToList(), with);
         Assert.Equal(1, s.World.Fact("sella.nights").Number);
         // Stopped there, she counts thirteen back: two were for the water.
         var stop = Q("hunter");

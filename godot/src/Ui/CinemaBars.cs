@@ -65,12 +65,13 @@ public partial class CinemaBars : CanvasLayer
         ring.Position = new Vector2(size.X - 96, size.Y - Mathf.Max(full, 90) / 2 - 22);
     }
 
-    /// <summary>A line under the picture for this long: the narrator's in italics, unnamed.</summary>
-    public void Say(string text, string? speaker, double seconds)
+    /// <summary>A line under the picture for this long: the narrator's in italics,
+    /// unnamed; a sung line in italics under its singer's name.</summary>
+    public void Say(string text, string? speaker, double seconds, bool sung = false)
     {
         // The script's '/' marks where a long line breaks.
         words.Text = text.Replace(" / ", "\n").Replace("/", "\n");
-        words.AddThemeFontOverride("font", speaker == null ? Style.TextItalic : Style.Text);
+        words.AddThemeFontOverride("font", speaker == null || sung ? Style.TextItalic : Style.Text);
         who.Text = speaker?.ToUpperInvariant() ?? "";
         who.Visible = speaker != null;
         sayT = sayFull = seconds;

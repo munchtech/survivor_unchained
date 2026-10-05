@@ -8,6 +8,29 @@ namespace SurvivorUnchained.Tests;
 /// <summary>What the survivor looks like and carries (Play/Loadout.cs).</summary>
 public class LoadoutTests
 {
+    [Fact]
+    public void Only_what_shows_changes_the_look()
+    {
+        // The figure is built again only when its look changes (a blink otherwise, the crafting lead's bug).
+        var a = Callings.Archetype("warden");
+        var ch = Character.Create(new CreationChoice { Name = "Ashe", Archetype = "warden", Background = "hunter", Palette = a.Palettes[0].Id, WeaponItem = a.Weapons[0], Ability = a.Abilities[0] }, 1, 7);
+        var look = Loadouts.Look(Loadouts.Of(ch));
+        Assert.Equal(look, Loadouts.Look(Loadouts.Of(ch)));
+        ch.Equipment.Ring1 = Inventory.Make(ch, "copper_ring");
+        ch.Equipment.Amulet = Inventory.Make(ch, "bone_amulet");
+        ch.Equipment.Head = Inventory.Make(ch, "iron_helm");
+        Assert.Equal(look, Loadouts.Look(Loadouts.Of(ch)));
+        var other = Callings.Archetype("reaver").Weapons[0];
+        Assert.NotEqual(look, Loadouts.Look(Loadouts.Of(Armed(ch, other))));
+    }
+
+    static CharacterData Armed(CharacterData ch, string weapon)
+    {
+        var c = Core.Json.Clone(ch);
+        c.Equipment.Weapon = Inventory.Make(c, weapon);
+        return c;
+    }
+
     [Theory]
     [InlineData("warden")]
     [InlineData("reaver")]
@@ -107,7 +130,14 @@ public class LoadoutTests
         // Every slider has its words and a range about her own face; every face starts from known sliders.
         var her = World.Lore.Her;
         var ids = her.Sliders.Select(s => s.Id).ToHashSet();
-        Assert.Equal(25, ids.Count);
+        // (tools/assets/face_shapes.py's SLIDERS, written by face_looks.py: every part of her face, her ears and her neck)
+        Assert.Equal(47, ids.Count);
+        // (eight groups of at most eight: creation's Shape part shows a group whole, unscrolled)
+        var groups = her.Sliders.GroupBy(s => s.Group).ToList();
+        Assert.Equal(new[] { "Head", "Brows", "Eyes", "Nose", "Cheeks", "Mouth", "Jaw", "Ears and neck" }, groups.Select(g => g.Key));
+        Assert.All(groups, g => Assert.InRange(g.Count(), 1, 8));
+        Assert.Contains("forehead_height", ids);
+        Assert.Contains("chin_width", ids);
         Assert.All(her.Sliders, s => Assert.True(s.Min <= 0 && s.Max > 0 && s.Low != "" && s.High != ""));
         Assert.All(her.Faces, f => Assert.All(f.Shape, kv =>
         {

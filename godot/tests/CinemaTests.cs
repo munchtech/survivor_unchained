@@ -151,6 +151,32 @@ public class CinemaTests
     }
 
     [Fact]
+    public void A_subtitle_drops_how_a_line_is_said_but_keeps_what_is_shown()
+    {
+        // A lower-case parenthesis is a direction for the voice (docs/VOICES.md):
+        // the subtitle drops it, and "sung" sets the line in italics. A capitalised
+        // one is words to show, as C13's translations of the Latin. The take is
+        // still matched to the words as written.
+        var ctx = Make("hunter", "Wren", 1).C;
+        var call = CineLines.Find("cin_none_cross.call", ctx);
+        Assert.Equal("Lamps are lit... stay where they reach...", call.Text);
+        Assert.True(call.Sung);
+        Assert.StartsWith("(sung, under the water)", call.Raw);
+        var grateful = CineLines.Find("cin_heart_goes_down.grateful", ctx);
+        Assert.Equal("Finders keepers, surface-m— ...Downstairs'll be ever so grateful.", grateful.Text);
+        Assert.False(grateful.Sung);
+        foreach (var node in new[] { "nondum", "redi" })
+        {
+            // The reader's variant: the Latin and its translation.
+            var latin = Dialogue.Find("cin_behind_the_door")!.Nodes[node].Text[0].Text;
+            Assert.Contains("(", latin);
+            Assert.Equal((latin, false), CineLines.Subtitle(latin));
+        }
+        Assert.Equal(("...Ashford. There. Now we've both said it.", false), CineLines.Subtitle("...Ashford. (a laugh) There. Now we've both said it."));
+        Assert.Equal(("Lie down, lie down.", true), CineLines.Subtitle("(sung) Lie down, lie down."));
+    }
+
+    [Fact]
     public void A_line_can_run_over_a_cut_and_a_cue_can_wait_for_it()
     {
         // The far lamp's line begins on the wide shot and ends on her close-up; the

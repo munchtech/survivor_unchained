@@ -108,6 +108,9 @@ public sealed class CharacterData
     /// eyes' colour and the paint she wears (both Lore.Hero's).</summary>
     public Dictionary<string, double>? Face;
     public string? Eyes, Paint;
+    /// <summary>The face she started from (Lore.Hero's faces): each its own
+    /// painting of her skin, brows and lips, which her head wears (none: her own).</summary>
+    public string? FaceShape;
     public int Level = 1;
     public double Xp;
     public Attributes Attributes = new();
@@ -146,7 +149,7 @@ public sealed class CharacterData
 public sealed class CreationChoice
 {
     public string Name = "", Archetype = "warden", Background = "hunter", Palette = "", WeaponItem = "", Ability = "";
-    public string? Model, Cloak, Skin, Hair, HairStyle, Eyes, Paint, BeardStyle;
+    public string? Model, Cloak, Skin, Hair, HairStyle, Eyes, Paint, FaceShape, BeardStyle;
     public bool? Headgear, Beard;
     public Sex? Sex;
     public double? Figure;
@@ -418,7 +421,7 @@ public static class Character
             Beard = c.Beard, BeardStyle = c.BeardStyle, Figure = c.Figure, Attributes = Callings.StartAttributes(c.Archetype),
             // (only the sliders moved from her own face are kept)
             Face = c.Face?.Where(f => Math.Abs(f.Value) > 1e-3).ToDictionary(f => f.Key, f => Math.Round(Math.Clamp(f.Value, -1, 1), 3)) is { Count: > 0 } face ? face : null,
-            Eyes = c.Eyes, Paint = c.Paint == "none" ? null : c.Paint,
+            Eyes = c.Eyes, Paint = c.Paint == "none" ? null : c.Paint, FaceShape = c.FaceShape is "own" or "" ? null : c.FaceShape,
             Knowledge = new(bg.Knowledge), Gold = 25, Ability = c.Ability, CreatedDay = day,
         };
         ch.Known = ArtBook.Starting(c.Archetype);
@@ -542,10 +545,9 @@ public static class Character
                 case ConditionId.Blightsick: st.Add(new(Stat.Regen, ModKind.Flat, -0.8, "cond:blightsick")); break;
                 case ConditionId.Blessed: st.Add(new(Stat.DamageOf(School.Holy), ModKind.Inc, 0.15, "cond:blessed")); break;
                 case ConditionId.Rested: st.Add(new(Stat.MaxHealth, ModKind.Inc, 0.05, "cond:rested")); break;
-                case ConditionId.Warmed:
-                    st.Add(new(Stat.Damage, ModKind.Inc, 0.08, "cond:warmed"));
-                    st.Add(new(Stat.MoveSpeed, ModKind.Inc, 0.05, "cond:warmed"));
-                    break;
+                // Warmed (a love scene's night) only says the night happened: the owner's call, so
+                // sex earns nothing in a fight (Australia's R18+; docs/legal/LEGAL_BRIEF.md, issue 7).
+                case ConditionId.Warmed: break;
             }
         }
         return kit;

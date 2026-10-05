@@ -84,6 +84,11 @@ public static class Loadouts
     }
 
     /// <summary>The survivor as their character sheet has them.</summary>
+    /// <summary>What shows of a loadout, as one string: alike if they look alike. Most of what is
+    /// worn does not show (a ring, an amulet, armour under the calling's clothes), and a figure
+    /// built again for nothing blinks.</summary>
+    public static string Look(Loadout lo) => Core.Json.Write(lo);
+
     public static Loadout Of(CharacterData ch)
     {
         var a = Callings.Archetype(ch.Archetype);
@@ -114,6 +119,7 @@ public static class Loadouts
             Eyes = eyes != null && eyes.Color != "" ? eyes.Color : null,
             EyeRing = eyes != null && eyes.Ring != "" ? eyes.Ring : null,
             Paint = kit != null && kit.Paints.Any(p => p.Id == ch.Paint && p.Id != "none") ? ch.Paint : null,
+            FaceShape = kit != null && kit.Faces.Any(f => f.Id == ch.FaceShape) ? ch.FaceShape : null,
             // The calling's colours dye the cloth; trousers take the darker
             // colour (or the cloth's, darker still).
             Dye = pal.Paint.TryGetValue("cloth", out var cloth)
