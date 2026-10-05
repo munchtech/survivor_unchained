@@ -321,7 +321,7 @@ public partial class Game : Node, IZoneHost
     /// the survivor stands: an arena left by quitting is as if never begun.</summary>
     public void EnterArena(ArenaSpec spec)
     {
-        if (inTransit || zone is ArenaRun) return;
+        if (inTransit || zone is ArenaRun or StoryNight) return;
         CloseOverlay();
         Save("arena");
         Arenas.Begin(World, spec);
@@ -331,7 +331,7 @@ public partial class Game : Node, IZoneHost
     /// <summary>Into a Wayfinder's map: the chart is used up as it opens (docs/SKILLS_DESIGN.md §17).</summary>
     public void EnterMap(SurvivorUnchained.Maps.Chart chart)
     {
-        if (inTransit || zone is MapRun || zone is ArenaRun) return;
+        if (inTransit || zone is MapRun || zone is ArenaRun or StoryNight) return;
         CloseOverlay();
         Save("map");
         World.Map = chart;
@@ -359,6 +359,19 @@ public partial class Game : Node, IZoneHost
         // The result stays up until the fade has gone dark: closed first, the emptied field showed
         // between it and the road.
         bool leaving = !inTransit;
+        if (result.WakesInTown)
+        {
+            // A story night lost (the owner: "having to die for a time"): carried home in the dark,
+            // she wakes on Chid's bench in the shrine a day on, as from any fall, and he tells her
+            // what it cost; the town's morning comes after him.
+            var lines = Journey.WakeAfterLoss(s, null, Rng.NextDouble);
+            Travel("waystation", "The shrine", $"Day {World.Day}", null, from: "death");
+            if (leaving) Wait(0.8, () => screens.Close());
+            Wait(3.9, () => { talkDone = () => Morning(lines); Talk("chid"); });
+            return;
+        }
+        // Back into the same night, with time to hear the town or go straight on to another fight.
+        Journey.BackFromFight();
         Travel(s.ReturnZone, null, null, new Arrival(s.ReturnX, s.ReturnZ, s.ReturnFacing));
         if (leaving) Wait(0.8, () => screens.Close());
     }
@@ -368,7 +381,9 @@ public partial class Game : Node, IZoneHost
         "lowford" => new Prologue(this, meta),
         "waystation" => new Waystation(this, meta),
         "verge" => new Verge(this, meta),
-        "arena" => new ArenaRun(this, currentMap!, World.Arena!),
+        // A story fight with its own stages and boss is a story night; the rest are the table's.
+        "arena" => World.Arena!.Story && SurvivorUnchained.Play.Story.StoryScripts.For(World.Arena.Id) is { } fight
+            ? new StoryNight(this, currentMap!, World.Arena, fight) : new ArenaRun(this, currentMap!, World.Arena!),
         "map" => StartMap(),
         _ => throw new ArgumentException($"no zone {id}"),
     };
@@ -422,6 +437,7 @@ public partial class Game : Node, IZoneHost
         hud.Prompt(promptShown = null);
         SetBoss(null);
         hud.Hint(CurrentHint = null);
+        objectivesBase = new();
         hud.Objectives(new());
         cam.FocusOverride = null;
     }
@@ -456,6 +472,7 @@ public partial class Game : Node, IZoneHost
         else RemoveFigure();
         Perf.Lap("the rest of the stage (lights, fires)");
         zone = Make(id, scene!.Data.Meta);
+        StopBlend();
         var time = zone.TimeOf(World);
         air.Set(zone.AtmosphereFor(time));
         air.Air(scene!.Data.Place?.Air);
@@ -479,7 +496,7 @@ public partial class Game : Node, IZoneHost
         scene.Showcase = null;
         var start = at ?? z.ArrivalFrom(from);
         var meta = scene.Data.Meta;
-        var b = Journey.StartBattle(z.Combat, meta.Collision(), scene.HeightAt, start.X, start.Z, start.Facing, (uint)Rng.Next(), arena: z is ArenaRun, ember: z.Ember);
+        var b = Journey.StartBattle(z.Combat, meta.Collision(), scene.HeightAt, start.X, start.Z, start.Facing, (uint)Rng.Next(), arena: z is ArenaRun or StoryNight, ember: z.Ember);
         Perf.Lap("play: the fight begun");
         // An arena is seen from higher and further out: the whole of the fight.
         var (pitch, dist) = z.Camera is var (cp, cd) ? (Mathf.DegToRad((float)cp), (float)cd) : camHome;
@@ -518,12 +535,12 @@ public partial class Game : Node, IZoneHost
 
     /// <summary>Travel; pulled (into an arena), the world swirls in and burns
     /// away instead of fading.</summary>
-    void Travel(string to, string? caption, string? sub, Arrival? at, bool pull = false)
+    void Travel(string to, string? caption, string? sub, Arrival? at, bool pull = false, string? from = null)
     {
         // One journey, one new place, one save: a second press at the gate waits.
         if (inTransit) return;
         inTransit = true;
-        var from = zone?.Id;
+        from ??= zone?.Id;
         Journey.Capture(Battle);
         if (scene != null) scene.SimPaused = true;
         controls.Captured = true;
@@ -592,7 +609,7 @@ public partial class Game : Node, IZoneHost
     public bool GiveItem(string def, int qty = 1, int? rarity = null) => Journey.GiveItem(def, qty, rarity);
     public void ReturnItem(ItemInstance it) => Journey.ReturnItem(it);
     public void SetBoss(BossBar? bar) { hud.Boss(bar); bossUp = bar is { IsBoss: true }; }
-    public void SetObjectives(List<Tracked> list) => hud.Objectives(list);
+    public void SetObjectives(List<Tracked> list) { objectivesBase = list; RefreshObjectives(); }
     public void SetHint(Hint? hint) => hud.Hint(CurrentHint = hint);
     public void SetAtmosphere(AtmospherePreset p, bool rebuild = true) => air.Set(p, rebuild);
     public void Capture(bool on) => controls.Captured = on;
@@ -638,7 +655,7 @@ public partial class Game : Node, IZoneHost
     public void Save(string reason)
     {
         // Nothing is kept of an arena until it is over (the save made on the way in stands).
-        if (zone == null || Mode != "play" || zone is ArenaRun) return;
+        if (zone == null || Mode != "play" || zone is ArenaRun or StoryNight) return;
         var b = Battle;
         if (b != null) Journey.Capture(b);
         var p = b?.Player;
@@ -800,8 +817,11 @@ public partial class Game : Node, IZoneHost
             Journey.Clock(dt, zone switch
             {
                 ArenaRun run => run.Spec.Story ? "story night" : "table night",
+                StoryNight => "story night",
                 _ => zone.Id switch { "lowford" => "prologue", "waystation" => "town", "map" => "map", _ => "wild" },
             });
+            // The day's own clock: free play moves it, and each turn is staged (GameClock).
+            TickDay(dt);
             UpdateInteraction();
             // The ground walked, on the map's fog.
             fogT -= dt;
@@ -819,6 +839,7 @@ public partial class Game : Node, IZoneHost
             Perf.End(Perf.Part.Zone);
             // An arena's camera breathes with its night (unless a conversation has it, or --cam fixed it).
             if (zone is ArenaRun ar && hudMode == null && camSaved == null && !Args.Has("cam")) cam.TargetDistance = (float)ar.CameraDistance;
+            if (zone is StoryNight sn && hudMode == null && camSaved == null && !Args.Has("cam")) cam.TargetDistance = (float)sn.CameraDistance;
             RunLater(dt);
         }
         else if (auto != null && Mode != "play") AutoFront();
@@ -945,7 +966,7 @@ public partial class Game : Node, IZoneHost
     /// <summary>What the corner map shows now: by day and on the story's roads, not in an arena.</summary>
     MinimapView? MiniView()
     {
-        if (zone == null || scene == null || zone is ArenaRun || Battle is not { } b || inTransit) return null;
+        if (zone == null || scene == null || zone is ArenaRun or StoryNight || Battle is not { } b || inTransit) return null;
         float extent = MapScreen.Extent(scene.Data.Meta);
         var seen = World.Zone(zone.Id).TryGetValue("seen", out var f) && f.Str is { Length: Journey.FogN * Journey.FogN } s ? s : new string('0', Journey.FogN * Journey.FogN);
         bool Seen(double x, double z)
@@ -1010,6 +1031,13 @@ public partial class Game : Node, IZoneHost
             minuteDone = true;
             mr.SkipTo(Args.Num("minute", 29.9f) * 60);
             if (Args.Has("won")) mr.WinNow();
+        }
+        // --stage N: a story night begun at its Nth stage (from 0; its stage count is the boss), the
+        // ground behind opened (pictures and play of a stage or the boss: --stage 3).
+        if (!minuteDone && Args.Has("stage") && zone is StoryNight sn2 && Battle != null)
+        {
+            minuteDone = true;
+            sn2.SkipTo((int)Args.Num("stage", 0));
         }
         // --chest 1,3,5! [--chest-at T]: chests of those sizes opened at her feet T seconds in, one
         // after another (! a boss's hoard), for pictures of the opening.

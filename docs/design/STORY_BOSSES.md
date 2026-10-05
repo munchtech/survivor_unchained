@@ -2,7 +2,7 @@
 
 The combat lead's half of `docs/design/STORY_NIGHTS_AND_TIME.md`. That document is the experience director's and covers the night's shape, falling and getting up, and the day's clock. This one covers what she fights: each story fight's way in (its beats, their goals and waves) and its boss (phases, telegraphs, adds, how the space changes, how it is beaten), plus the lengths, and what the simulation needs to run and measure it.
 
-It is a proposal. Nothing is built until the owner approves it. Every number here is a starting point for the harness, set against the units in `docs/bosses/SURVIVORS_BOSSES.md` §0.
+The owner approved it on 4 October. The Hollow by Night is built as the template (section 8 says what is built, what the first runs measured, and what is still to tune and to see in the game). Every number here is a starting point for the harness, set against the units in `docs/bosses/SURVIVORS_BOSSES.md` §0.
 
 The owner, 4 October: "story nights ... should be much more specialized and fun - smaller arena - and they don't need endless - they have proper arpg end bosses right?"
 
@@ -30,28 +30,30 @@ The way in teaches the boss. Each beat's named foe shows one of the boss's mecha
 
 ### 0.2 The build she brings
 
-- **The ember drafts from nothing,** as in any night, paid about 2.5 times quicker (experience agreed).
-- **The waves are finite,** so the build at the boss is set by the content, not by how long she lingers. The way in's kills, and the three named foes' small chests (one card each), are tuned so she reaches the boss with the draft count a table night has at minute 20, within two cards. That build is every story boss's yardstick.
+- **The ember drafts from nothing,** as in any night, paid 2.5 times quicker (experience agreed; `StoryNight.EmberPace`).
+- **The yardstick is a table night's twelfth minute, not its twentieth.** Measured (two table nights, warden, deft): a table night has killed about 1,000 by minute 3, 8,000 to 9,000 by minute 12 and 20,000 by minute 20, and its ember stands at about 13, 31 and 45. A twelve-minute night in a smaller place cannot feed the ember twenty thousand kills, and should not try. So the boss is measured against what the night gives: about a table night's minute-12 build (ember about 30, about 32 cards at the boss).
+- **Each stage has a crowd, finite and softened by its minute.** A story night is still a night: the crowd is the ember's food.
+  - Each stage keeps its crowd at a number (the Hollow's: 26, 38, 44), from its own points out of her reach, until its pool is spent (300, 520, 650).
+  - The crowd is softened as a table night's is at the minute the stage stands for (`ArenaRun.FodderEase`), so the build's growth shows as a crowd that melts.
+  - **An ember floor at each stage's end** (10, 20, 28): what its dead would have given her if she was quicker than they were many. A quick stage is not a weaker night.
 - **Two great blessings:**
   - one as the night opens, as now;
   - one as the boss ground opens, drawn from all of them, with one card that answers the boss's weakness (`SURVIVORS_BOSSES.md` §0.17).
-- **Creature levels are fixed per beat,** not by a clock. Over the tier's base (tier × 3 − 2):
-  - the beats are +1, +4 and +6;
-  - the boss is +8, a table night's minute 20.
+- **Creature levels are fixed per stage,** by the table minute each stands for (a level every two and a half minutes over the tier's base, tier × 3 − 2):
+  - the stages stand for minutes 2, 6 and 10: levels +0, +2 and +4;
+  - the boss stands for minute 12: +4.
 
-  A slow beat is not a harder one, and a beat is the same beat after a rise.
-- **Nothing respawns and nothing is farmed.** A beat's waves end when its goal is met. The story's nights are not grinds.
+  A slow stage is not a harder one, and a stage is the same stage after a rise.
+- **Nothing is farmed.** A stage's crowd is finite, and its named foe does not come again.
 
 ### 0.3 The beats
 
 - **Goals:** bring down a named foe, break things (locks, windlasses, standards), light things, silence a caller, or free someone. One goal a beat, two at most.
 - **One named foe a beat,** a miniboss from its people's roster (`MapOffers.Peoples`). Each previews one of the boss's mechanics: the boss is learned on the way in, as Nightreign's gauntlet before a Nightlord shows who is coming (`docs/bosses/RESEARCH.md` §4.5).
-- **Waves** are authored lists, set off by:
+- **Waves** are authored, on top of the stage's crowd (0.2), set off by:
   - the beat's start;
-  - the goal's progress (a lock broken, a picket silenced);
+  - the goal's progress (a lock broken, a picket silenced, Old Blue giving ground);
   - the named foe's arrival.
-
-  Between waves a trickle (8 alive at most) keeps the pulse without a crowd. The horde is never kept at a target count.
 - **Between beats:** a sight or a line (the story lead's), 5–10 s of quiet, and the way to the next space opens.
 
 ### 0.4 The contract for a story boss
@@ -71,7 +73,7 @@ Everything in `ArenaBoss` holds: gates with floors and ceilings, the Break, the 
 
   These are fields on the script, not the table's 180 and 300 s.
 - **The horde is off.** The only creatures on its ground are the adds it calls, each with a job. The arrival clears the field, as `MakeWay` does today.
-- **Health:** start at the table ruler's multiplier × 1.2, at the boss ground's level (+8), and measure to the time. **The target is the length, not the number.**
+- **Health:** start at the table ruler's multiplier × 1.6, at the boss ground's level (+4), and measure to the time. **The target is the length, not the number.** Greymuzzle: `66 + 10.9 × tier`, his blows at ×1.0 of his body's (the table's ×1.3 was set against a thirtieth-minute survivor).
 - **Damage:** in `SURVIVORS_BOSSES.md` §0.8's bands, as multiples of its blow:
   - contact ×0.4–0.6;
   - telegraphed blows ×1.5–2;
@@ -86,6 +88,12 @@ Everything in `ArenaBoss` holds: gates with floors and ceilings, the Break, the 
   - the hand at the gate (the Barrow Lord).
 
   The cinematic plays in and out through the boss hooks (`docs/cinematics/README.md` 11a).
+- **Getting up (the owner: "GET UP TWICE IS TOO GENEROUS"; `SKILLS_DESIGN.md` §16.10):**
+  - **Act 1:** one rise a night, to the start of the stage she fell in, with the build she brought into it; at the boss, to its opening, whole.
+  - **From Act 2 (`chapter.done`):** none, unless she carries the one power that gets her up.
+  - That power is **Not Yet**, an art held in the art's place (learned from Chid's *The Keeper's Office*), or **Cold, Then Not**, a legendary great blessing in the ember's draft.
+  - **One rise a fight,** however many ways she has it; in Act 1 the night's own rise is one of those ways.
+  - The third fall of the old rule is gone: a fall with no rise left is the night lost, and she wakes in town a day on (experience's).
 - **A rise at the boss** restores its ground to the moment it opened: the ring, walls, pits, posts, fires and frost. The arrival's cinematic does not play again: a two-second re-entry does instead (his howl, the laugh, "Nondum"), so the arrival hook is told whether this is a first arrival or a rise.
 - **Arena changes end with the fight,** within 3 s of the ending.
 
@@ -113,8 +121,8 @@ Measured by the `story` harness (section 5.4), at tiers 1–4, with 16 seeds, pl
 | The boss, at par | 3:00–4:00 |
 | The boss, absurd build | at least 1:55 (the floors hold) |
 | The boss, a build at half par | every phase by its ceilings; meets the soft enrage |
-| Cards at the boss | a table night's minute-20 count, within two |
-| Won on the first try, with the two rises, plain hands | planned 90% or more; careless 70–80% |
+| Cards at the boss | a table night's minute-12 count (about 32), within two |
+| Won on the first try, with Act 1's one rise, plain hands | planned 90% or more; careless 70–80% |
 | The boss on its first life, plain hands | 55–70%: it kills a first-timer sometimes |
 | Runs under half health somewhere on the way in, plain hands | 20–35%: the way in has a dip, not a stroll (the table night's run-ups measured 2–5%) |
 | Falls in a beat, plain hands | 5% of beats or fewer: the danger is at the boss |
@@ -131,7 +139,7 @@ Measured by the `story` harness (section 5.4), at tiers 1–4, with 16 seeds, pl
 - The cold is his weapon.
 - His age is his only opening.
 
-**The place** (what combat needs; the look is arena art's). About 55 m end to end, in three spaces:
+**The place** (what combat needs; the look is arena art's). About 60 by 80 m in all, in three spaces bent round in a hook (the outline and every point are in `HollowByNight.Ground`, `Play/Story/Hollow.cs`, for arena art to build to):
 - **The clough** (south): a cut 14–16 m wide and about 26 m long, the stream down its east side, a rock at its head.
 - **The sick water:** a flat about 24 m across where the stream pools. It has stepping stones, reeds, violet slurry shallows that slow and poison, and two deadfalls (heaps of dead wood) on the far bank.
 - **The den floor** (the boss ground): a bowl about 32 m across.
@@ -145,25 +153,25 @@ Measured by the `story` harness (section 5.4), at tiers 1–4, with 16 seeds, pl
 
 | # | Space | Goal | Named foe, and what it teaches | Waves | Length |
 |---|---|---|---|---|---|
-| 1 | The clough | Silence Old Blue | **Old Blue** (`mb_caller`) stands on the rock and howls: a 4 s channel on his bar. Damage, a stagger or one hit of fire breaks it, and each howl he finishes calls five wolves from the clough's head. Between howls he drops back up the cut. *Teaches the moon-howl: a howl is a channel, and fire breaks it.* | Wolves in twos and threes. Once, the runners ring her (the ring verb). | 1.5–2.5 min |
+| 1 | The clough | Silence Old Blue | **Old Blue** (`mb_caller`) howls from a rock: a 4 s channel on his bar. Damage, a stagger or one hit of fire breaks it, and each howl he finishes calls five wolves from the clough's head. Hurt to two thirds and to a third, he gives ground up the cut to the next rock (three in all), and the Pack comes down it at her. *Teaches the moon-howl: a howl is a channel, and fire breaks it.* | Wolves in twos and threes. Once, the runners ring her (the ring verb). | 1.5–2.5 min |
 | 2 | The sick water | Light both deadfalls on the far bank. Greenbelly comes for the first light. | **Greenbelly** (`mb_blight_mother`) wades out of the shallows, bursting and brooding. *Teaches the deadfalls: the ember lights dead wood, and the Pack will not cross the light.* | Blight-sick wolves out of the reeds, slow. The shallows slow and poison. | 2–3 min |
-| 3 | The den's mouth (the place's set piece) | Bring down Whitethroat | **Whitethroat** (`mb_whitethroat`) runs the Drive. The wolves close in a crescent (7 + tier) and he runs the gap they leave, a lane across it. Go through the wolves, never the gap. When his run misses, he stands panting for 2 s inside a pale-blue ring. *Teaches the ring, and that a wolf who misses is open.* | A crescent every 14 s: three or four drives. | 2–3 min |
+| 3 | The den's mouth (the place's set piece) | Bring down Whitethroat | **Whitethroat** (`mb_whitethroat`) runs the Drive. The wolves close in a crescent (7 + tier) and he runs the gap they leave, a lane across it. Go through the wolves, never the gap. Her yearlings take blows for her while she drives (she takes ×0.45); when her run misses, she stands panting for 2 s inside a pale-blue ring and takes ×1.5. *Teaches the ring, and that a wolf who misses is open.* | A crescent every 14 s: three or four drives. | 2–3 min |
 
 The sick lie in the den's mouth (the story's sight). Then the Pack backs off her into a ring, and he walks out through it (C10's arrival).
 
 ### The boss
 
-**Body.** `greymuzzle_hollow`: the Pack-Mother's numbers, slowed to Speed 4.6 for his limp. Health is her multiplier × 1.2, a start of `49 + 8.2 × tier`. He is wordless: what is heard is the Pack.
+**Body.** The Pack-Mother's body (`boss_pack`, named Greymuzzle), slowed to Speed 4.6 for his limp. Health `66 + 10.9 × tier` times his body's, his blows at ×1.0 (0.4). He is wordless: what is heard is the Pack.
 
 **The Pack's ring.** About twenty wolves stand shoulder to shoulder round the fight, 12 m from the bowl's middle, with a grey hard edge drawn at their feet.
 - They are not targets and cannot be hurt. They are the arena's wall.
-- Touching the ring, a wolf snaps: she is shoved 2.5 m back in and takes ×0.4. This gives no moment of grace, so the ring is never a safe place to stand (`SKILLS_DESIGN.md` §16.7's lesson with bad ground).
+- Touching the ring, a wolf snaps: she is shoved 2.5 m back in, and bitten (×0.3) at most every two seconds. A shove gives no moment of grace, so the ring is never a safe place to stand (`SKILLS_DESIGN.md` §16.7's lesson with bad ground). The first runs found a bot shoved ten times running for 10 each; the bite's two seconds of grace end that.
 - A lit deadfall inside the ring makes it bow out round the fire's light. Fires are room.
 
 | Phase | Its moves | How the space changes |
 |---|---|---|
 | **1. The Old Way** (100% to 65%) | **Stalk:** between moves he circles her at 7–9 m, limping (contact ×0.5).<br>**Lunge** (every 6 s): a lane through her and 4 m past, 2.2 m wide, marked 0.9 s, ×1.6. He ends where it ends, and if that is the ring, it opens for him.<br>**Hamstring** (within 5 m, every 5 s): a 70° cone, 4.2 m, 0.8 s, ×1.5, and she is slowed by 55% for 2 s.<br>**The ring's bite** (every 9 s): a growl behind her, then one wolf of the ring runs a lane across, marked 1.0 s, ×1.2, and goes back to its place.<br>**His age:** after every second lunge he stands and pants for 2.5 s. A pale-blue ring is round him, his breath smokes thick, and he takes ×1.25. | The ring holds at 12 m. Each fire she lights bows it out. |
-| **2. The Moon** (65% to 30%) | He goes back to the den's mouth. The ring opens on that side, and five wolves stand guard in an arc before it, open at both ends: melee's way in is round the guard's ends to his flank.<br>**The moon-howl** (as the phase begins, then every 22 s): he sits and howls, an 8 s channel ("The moon-howl: break it!").<br>&nbsp;&nbsp;– The moon clears and **the cold** comes in from the ring at 1.2 m a second: violet frost that chills and bites (×0.15 a second, no grace).<br>&nbsp;&nbsp;– The frost stops at a lit deadfall's light, which stays clear.<br>&nbsp;&nbsp;– **His dead** (pale wolves, not targets) run lanes across her every 2 s, marked 1.2 s, ×1.5. They swerve round a fed fire.<br>&nbsp;&nbsp;– Break the howl with damage of 6% of his health inside it, a stagger, or one hit of fire. He is then held for 3 s and the frost melts back.<br>**The guard** before the den is not a target. It shoves her 3 m back (×0.4) inside 2 m. Shots and zones pass over it.<br>**Between howls** he comes out, runs a chain of two lunges at her, goes back, and pants: melee's window. | The frost closes in during each howl. A fire is a room in it. |
+| **2. The Moon** (65% to 30%) | He goes back to the den's mouth. The ring opens on that side, and five wolves stand guard in an arc before it, open at both ends: melee's way in is round the guard's ends to his flank.<br>**The moon-howl** (as the phase begins, then every 22 s): he sits and howls, an 8 s channel ("The moon-howl: break it!").<br>&nbsp;&nbsp;– The moon clears and **the cold** comes in from the ring at 1.2 m a second: violet frost that chills and bites (×0.15 a second, no grace).<br>&nbsp;&nbsp;– The frost stops at a lit deadfall's light, which stays clear.<br>&nbsp;&nbsp;– **His dead** (pale wolves, not targets) run lanes across her every 2 s, marked 1.2 s, ×1.5. They swerve round a fed fire.<br>&nbsp;&nbsp;– Break the howl with damage of 6% of his health inside it, a stagger, or one hit of fire. He is then held for 3 s and the frost melts back.<br>**The guard** before the den is not a target. Inside 2 m it shoves her 3 m back onto the den floor (never into the ring), bitten as the ring bites. Shots and zones pass over it.<br>**Between howls** he comes out, runs a chain of two lunges at her, goes back, and pants: melee's window. | The frost closes in during each howl. A fire is a room in it. |
 | **3. On His Feet** (30% to 0) | He leaves the den's mouth for good. No more howls.<br>**Shake** (within 5.5 m, every 6 s): a 120° cone, 5 m, 1.0 s, ×1.8.<br>**Lunge chains of three** (every 8 s): each lane marked 0.8 s, ×1.6. The second and third lead where she is going (0.6 s). Then he pants for 3 s.<br>**The last of the Pack** (at 15%): the ring breaks and comes in, twelve wolves that are ordinary targets. | The ring closes to 9 m, then breaks at 15% and the bowl opens to its edge. |
 
 - **Weakness: fire.** It breaks the moon-howl, and the fires are fire.
@@ -176,7 +184,7 @@ The sick lie in the den's mouth (the story's sight). Then the Pack backs off her
     - Let go: he gets up and walks to the den (the `LetGo` built today), and `greymuzzle` becomes `spared`.
     - Finished: C10's death; `promise.broken` is set with the killed outcome, and Maeca turns against her as her rule says (story confirmed).
   - **Otherwise** he dies, with his look past her to the den.
-  - Today the let-go is automatic when its facts hold. A choice gives her the act the bible describes ("she lets him").
+  - Built on the story lead's `OnSpare` and `SpareVerb`, which `StoryFights.Spec` carries for the Hollow and the Roost: the choice is offered where the spec carries both outcomes.
 
 ---
 
@@ -429,3 +437,78 @@ The table's nights and rulers are unchanged throughout.
 
 - **The Road Back** (C14, `road_back`) is built in this shape when the story stages it: the Low Ford road at the wagon, the drowned out of the river, Brannoc holding the edge of his lantern's light as an ally, and Wat as the boss, won at dawn.
 - **The later story bosses** in `docs/bosses/` (the Thing in the Barn, the Warden of the Kiln Ford, the Silver Penitent, the Centurion of the Stair, Grimtunnel at the bottom) take this contract from the start.
+
+## 8. Built, measured, and what is left (4 October)
+
+### 8.1 Built: the template, on the Hollow
+
+- **The runtime:** `Play/Zones/StoryNight.cs`.
+  - The game makes a story night of any story fight with a script (`StoryScripts.For`); the other three still run as a table's night, told quicker, until theirs are written.
+  - `--stage N` begins one at its Nth stage, for pictures and play (`--stage 3` is the boss).
+- **The fight's pages:**
+  - `Play/Story/StoryPlace.cs`: the place as spaces of capsules, gates and points, its walls, and the spaces open now. Arts are bound by the open spaces, so no blink or leap crosses a shut gate.
+  - `Play/Story/StoryFight.cs`: the stage and fight bases, the deadfalls, and `IStoryArena`.
+  - `Play/Story/Hollow.cs`: the place and its three stages.
+- **The boss:**
+  - `Play/Bosses/StoryBoss.cs`: the contract, with a soft enrage at 4:30 and a hard one at 6:00.
+  - `Play/Bosses/Greymuzzle.cs`: the ring, the old way, the moon and its cold, on his feet, and his end.
+- **The battle:**
+  - `Sim/Checkpoint.cs`: a journal of the build's verbs, `Snapshot` and `Restore`, and `ShovePlayer`.
+  - `Battle.CancelBlows`; `HurtByGround` made public with a name; `Enemy.Scripted` (a creature the script moves in its mind's place).
+- **The rise:** one rise a fight (`PlayerState.Rose`), the art Not Yet (`cold_then_not`) and *The Keeper's Office*. The maps' falls go to one (`SKILLS_DESIGN.md` §16.10).
+- **The hands:**
+  - `BossSense` reads the stage's goal, the moon-howl's cold (to a fed fire, or to light one), and the ring as a wall.
+  - The harness's `Pilot` goes to the goal; `NavField` walks it round the walls within the place's box.
+- **The harness:** `story` (`balance/Harness/StorySim.cs`, `--fight --tiers --seeds --policies --bot --act2 --choice`), with section 0.6's table. `STORY_TRACE=KEY` traces one night.
+- **Tests:** `StoryNightTests` and `CheckpointTests`. They cover:
+  - the gate shut, the place holding her walking and dashing, and every stage walkable;
+  - stages ending on their goals, never a clock;
+  - Old Blue's howl broken by fire, and a deadfall lit (the Pack keeps out of its light);
+  - Act 1's one rise and the build put back, then the lost night waking her in town; from Act 2, no rise without the art;
+  - the ring holding, and a fire bowing it;
+  - the floors holding against an absurd build;
+  - her choice at his side, both ways;
+  - the cold, kept off by a fire;
+  - a rise at the boss beginning him again;
+  - pay for the night's own minutes.
+
+### 8.2 The first runs
+
+The Hollow, tier 1, small samples (the machine was the owner's: a few dozen nights, not a sweep):
+
+| Hands, draft | Runs | Won | Night (min) | Way in (min) | Stages (s) | Boss (s) | Under half on the way in | Boss on its first life |
+|---|---|---|---|---|---|---|---|---|
+| deft, greedy | 12 | 92% | 4.8 | 1.6 | 34 / 28 / 19 | 154 | 33% | 92% |
+| plain, greedy | 8 | 75% | 4.8 | 1.6 | 42 / 39 / 25 | 144 | 50% | 75% |
+| plain, random | 8 | 75% | 5.5 | 1.7 | 44 / 33 / 43 | 209 | 63% | 75% |
+
+What the runs found before these figures, all fixed:
+- the walls let a blink or a leap over a shut gate;
+- the ring and the guard shoved a bot to death in chains;
+- a named foe slid out of reach;
+- the bots stood pressed to a wall a metre from their way.
+
+### 8.3 What is left, in order (when the machine is free)
+
+1. **The way in is a third of its target** (1.6 minutes against 6 to 9). The stages need more to do, not more health: the yardstick is a fight, not a sponge.
+   - The clough: Old Blue's three rocks are a start.
+   - The water: the deadfalls held while the reeds come.
+   - The drive: more drives, each a lesson.
+   Measure with `story --tiers 1,2,3 --seeds 8 --bot plain,deft`.
+2. **The danger is in the wrong place.** Half the plain runs dip under half health on the way in (target 20–35%), and the boss is won at its first life 75% (target 55–70%). Soften the crowd's teeth a little and give him one more true threat, then measure.
+3. **Tier 3 and 4** need their own look (plain hands won 17–25% at tier 3 before his blows were softened).
+4. **Then the other three:** the Roost (Redcowl's spared end plays `.spared` then `.flit`), the Dig, and the Vault.
+5. **Data owed by others:**
+   - Chid's node giving *The Keeper's Office* (story);
+   - the place drawn to `HollowByNight.Ground` (arena art).
+
+### 8.4 To see in the game (none of it has been seen yet)
+
+- The place: the walls are invisible inside the old round arena until arena art builds the outline. Do the gates read as shut? (Today they are only marks of posts.)
+- The ring: twenty wolves standing still, facing in. Does it read as a wall, and does a shove read as a shove?
+- The deadfalls: today they are only a light coming on, with no wood and no flame drawn. They need a look (skills VFX or arena art).
+- The cold: a band of violet ground closing in. Is it readable over the ring and the lanes?
+- Greymuzzle panting (the pale-blue ring), lying down, the two prompts at his side, and his walk to the den.
+- The stage's lines (the story's words) as she crosses between stages, and "You get up." with its fade (experience's staging of `StoryFall`).
+- The camera: 22 m on the way in and 27 m at the boss. Is all of the den floor in view?
+- The art Not Yet in the arts screen: it has no active use, its icon is the blessing's, and it has no facets.

@@ -849,6 +849,12 @@
     "fact": "player.deaths",
     "gte": 2
    }
+  },
+  {
+   "text": "Redcowl's gone off over the ridge, they say. On his own two feet. Somebody let him.",
+   "when": {
+    "history": "spared_redcowl"
+   }
   }
  ]
 }

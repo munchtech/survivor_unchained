@@ -89,8 +89,9 @@ public class AuditTests
         var again = p.Fortune();
         Assert.DoesNotContain(again.Choices, c => c.Contains("You lit the lamps"));
         Assert.Equal((trust, respect), (v.Trust, v.Respect));
-        var door = again.R.Choose(again.Last.Choices.First(c => c.Text.Contains("door")).Index).Next!;
-        Assert.Equal("fortune", again.R.Choose(door.Choices[0].Index).Action);
+        again.R.Choose(again.Last.Choices.First(c => c.Text.Contains("door")).Index);
+        var close = again.R.Advance()!;
+        Assert.Equal("fortune", again.R.Choose(close.Choices[0].Index).Action);
         // The book closed: "Your chapter is written". She reads it no more, and is no longer waiting on you.
         Assert.DoesNotContain(p.Offered("vonnra"), c => c.Contains("fortune"));
         Assert.Null(p.Marker("vonnra"));

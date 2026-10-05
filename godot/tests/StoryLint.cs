@@ -320,6 +320,15 @@ public class StoryLint
                 seen.Add(o.Spec.Name);
             }
         Assert.True(seen.Count > 40, $"{seen.Count} names in forty days");
+        // The atlas's charts are named the same way as they drop.
+        var rng = new SurvivorUnchained.Core.Rng(7);
+        foreach (var people in words.Keys)
+            for (int i = 0; i < 40; i++)
+            {
+                var c = SurvivorUnchained.Maps.Charts.Roll(rng, 1 + i % 4, people);
+                Assert.Matches(@"^The [A-Z][\w']+ [A-Z][\w-]+$", c.Name);
+                Assert.Contains(c.Name.Split(' ')[^1], words[people]);
+            }
     }
 
     static Ctx Ctx() => Lore.Context(WorldState.Fresh(1), H.Survivor());

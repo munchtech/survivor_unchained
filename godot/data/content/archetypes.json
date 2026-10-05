@@ -508,15 +508,6 @@
     }
    ]
   },
-  "second_wind": {
-   "id": "second_wind",
-   "name": "Second Wind",
-   "source": "levelup",
-   "text": "Once a night, or once an arena, a killing blow leaves you standing at half health instead.",
-   "tags": [
-    "revive"
-   ]
-  },
   "pyromancer": {
    "id": "pyromancer",
    "name": "Pyromancer",

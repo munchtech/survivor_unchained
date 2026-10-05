@@ -159,24 +159,31 @@ public class MapTests
         Assert.Contains(charts, c => c.Tier == 2 && c.People == "kerchiefs");
     }
 
+    /// <summary>The owner: getting up and fighting on is rare, "or it is a balancing nightmare". A fall
+    /// closes the map and spills half of what was picked up there; only a trait that gets her up
+    /// keeps her in it, and it catches her before the fall counts.</summary>
     [Fact]
-    public void Three_falls_close_a_map_and_each_spills_half_of_what_was_picked_up_there()
+    public void A_fall_closes_a_map_and_spills_half_of_what_was_picked_up_there()
     {
         var r = Open(Chart("dead"));
-        var p = r.B.Player;
         // Something picked up here.
         r.B.Hooks.OnPickup!(new Pickup(0) { Kind = PickupKind.Material, Ref = "bone_dust", Value = 8 });
         Assert.Equal(8, r.J.Ch.Materials.GetValueOrDefault("bone_dust"));
-        p.X = r.Map.Start.X + 30;
-        Assert.True(r.B.Hooks.OnPlayerDeath!(null));
+        Assert.False(r.B.Hooks.OnPlayerDeath!(null));
         Assert.Equal(1, r.Zone.Falls);
         Assert.Equal(4, r.J.Ch.Materials.GetValueOrDefault("bone_dust"));
-        // Up again at the start, whole.
-        Assert.Equal(r.B.MaxHp, p.Hp, 3);
-        Assert.True(Math.Abs(p.X - r.Map.Start.X) < 0.01);
-        Assert.True(r.B.Hooks.OnPlayerDeath!(null));
-        Assert.False(r.B.Hooks.OnPlayerDeath!(null));
-        Assert.Equal(MapRun.FallsAllowed, r.Zone.Falls);
+    }
+
+    [Fact]
+    public void Cold_Then_Not_gets_her_up_on_a_map_before_the_fall_counts()
+    {
+        var r = Open(Chart("dead"));
+        var p = r.B.Player;
+        p.Revives = 1;
+        r.B.HurtPlayer(r.B.MaxHp * 5, School.Physical, "test", null);
+        Assert.True(p.Alive);
+        Assert.Equal(r.B.MaxHp * 0.5, p.Hp, 1);
+        Assert.Equal(0, r.Zone.Falls);
     }
 
     /// <summary>The experience lead's shape: three clearings before the ruler's at tiers 1-2, four at

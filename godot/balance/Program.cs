@@ -20,6 +20,9 @@ using SurvivorUnchained.Rpg;
  *   report  a summary of runs saved before (arena's .jsonl)
  *   map     the Wayfinder's maps, played by the Pilot's hands with a day build
  *           (--tiers 1,2,3 --people all --seeds N --level L|tier --gear R --mods a+b --cap MIN)
+ *   story   the story's nights, stage by stage and their bosses (docs/design/STORY_BOSSES.md 0.6)
+ *           (--fight hollow|all --tiers 1,2,3,4 --seeds N --policies greedy,random --bot plain,deft
+ *           --act2 --choice spare|finish --level N|tier --out PATH)
  *
  * Options: --callings warden,reaver|all  --policies greedy,random,path:steel|paths
  *          --seeds N  --seed0 S  --tier T (or --tiers 1,2,3)  --people pack,dead|all
@@ -46,6 +49,7 @@ switch (cmd)
     case "weapons": WeaponsAll(); break;
     case "report": Console.WriteLine(Report.Arena(Load(opt.Get("in", "balance.jsonl")))); break;
     case "map": Maps(); break;
+    case "story": Story(); break;
     default:
         Console.WriteLine("dotnet run -c Release --project godot/balance -- arena|probe|report [options]  (see Program.cs)");
         break;
@@ -116,6 +120,49 @@ void Arena()
     var md = Report.Arena(results.OrderBy(r => r.Spec.Key).ToList());
     File.WriteAllText(Path.ChangeExtension(outPath, ".md"), md);
     if (opt.Has("csv")) Report.Csv(results.OrderBy(r => r.Spec.Key).ToList(), opt.Get("csv", "out/csv"));
+    Console.WriteLine(md);
+}
+
+/* The story's nights: each fight with its stages and boss, by each pair of hands and draft. */
+void Story()
+{
+    // (Only the fights whose nights are written; the rest still run as a table's night.)
+    var written = new Dictionary<string, string> { ["hollow"] = "hollow_by_night", ["roost"] = "roost_raid", ["dig"] = "dig_boils", ["vault"] = "vault_opened" };
+    var fights = (opt.List("fight", "all") is ["all"] ? written.Keys.ToArray() : opt.List("fight", "hollow")).Where(f => SurvivorUnchained.Play.Story.StoryScripts.Has(written[f])).ToArray();
+    int seeds = opt.Int("seeds", 4), seed0 = opt.Int("seed0", 1);
+    var tiers = opt.List("tiers", "1").Select(int.Parse).ToArray();
+    var hands = opt.List("bot", "plain");
+    string level = opt.Get("level", "tier");
+    var specs = new List<StoryRunSpec>();
+    foreach (var f in fights)
+        foreach (var c in Callers())
+            foreach (var pol in opt.List("policies", "greedy,random"))
+                foreach (int tier in tiers)
+                    foreach (var h in hands)
+                        for (int s = 0; s < seeds; s++)
+                            specs.Add(new StoryRunSpec(seed0 + s, c, pol, f, tier, level == "tier" ? 1 + 3 * (tier - 1) : int.Parse(level), h == "deft",
+                                opt.Has("act2"), opt.Get("choice", "spare"), opt.Double("cap", 25)));
+    Console.WriteLine($"{specs.Count} story nights, {opt.Int("par", 16)} at a time");
+    var results = new ConcurrentBag<StoryRunResult>();
+    var sw = Stopwatch.StartNew();
+    int done = 0;
+    var gate = new object();
+    using var file = opt.Has("out") ? new StreamWriter(opt.Get("out", "story.jsonl")) : null;
+    Parallel.ForEach(specs, new ParallelOptions { MaxDegreeOfParallelism = opt.Int("par", 16) }, spec =>
+    {
+        StoryRunResult r;
+        try { r = StorySim.Play(spec); }
+        catch (Exception e) { Console.Error.WriteLine($"{spec.Key}: {e}"); return; }
+        results.Add(r);
+        lock (gate)
+        {
+            done++;
+            file?.WriteLine(JsonSerializer.Serialize(r, Opts.Json));
+            Console.WriteLine($"[{done}/{specs.Count} {sw.Elapsed:mm\\:ss}] {spec.Key}: {(r.Won ? $"won {r.Minutes:0.0}" : $"lost {r.Minutes:0.0} ({r.KilledBy}) [{r.Where}]")} falls {r.Falls} way in {r.WayIn:0.0} boss {(r.BossSeconds is double bs ? $"{bs:0}s" : $"phase {r.BossPhase}")} low {r.LowWayIn:0.00}  {r.Build}");
+        }
+    });
+    var md = StorySim.Report(results.OrderBy(r => r.Spec.Key).ToList());
+    if (opt.Has("out")) File.WriteAllText(Path.ChangeExtension(opt.Get("out", "story.jsonl"), ".md"), md);
     Console.WriteLine(md);
 }
 

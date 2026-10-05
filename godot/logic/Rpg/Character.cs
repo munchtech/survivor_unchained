@@ -537,6 +537,8 @@ public static class Character
             if (td.Tags?.Contains("revive") == true) kit.Revives++;
             if (td.Tags?.Contains("reroll") == true) kit.Rerolls++;
         }
+        // Cold, Then Not held in the art's place: once a fight, a killing blow does not end her.
+        if (ch.Ability == "cold_then_not") kit.Revives = Math.Max(kit.Revives, 1);
         foreach (var c in ch.Conditions)
         {
             switch (c.Id)

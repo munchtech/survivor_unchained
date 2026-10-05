@@ -105,6 +105,8 @@ public sealed class EventStream
     readonly List<CombatEvent> events = new();
     public IReadOnlyList<CombatEvent> Pending => events;
     public void Emit(CombatEvent e) => events.Add(e);
+    /// <summary>Unsay what was emitted after a mark (a build replayed at a checkpoint is not news).</summary>
+    public void Since(int mark) { if (mark < events.Count) events.RemoveRange(mark, events.Count - mark); }
 
     public List<CombatEvent> Drain()
     {

@@ -7,33 +7,37 @@ namespace SurvivorUnchained.Balance;
 
 /// <summary>Distance to one place over the ground the survivor can stand on, at half a metre, with
 /// what stands on the ground taken from the battle's own collision at her radius: the bots' way
-/// through a map. Downhill from anywhere is the shortest way there; Onward looks as far down it as
-/// a straight line stays clear.</summary>
+/// through a map (or a story night's place, within its bounds). Downhill from anywhere is the
+/// shortest way there; Onward looks as far down it as a straight line stays clear.</summary>
 public sealed class NavField
 {
     const double Cell = 0.5;
-    readonly int n;
-    readonly double half;
+    readonly int nx, nz;
+    readonly double ox, oz;
     readonly bool[] free;
     readonly float[] d;
 
-    public NavField(MapBuild map, Battle b, double toX, double toZ)
+    /// <param name="box">Only this rectangle (a story night's place: a fiftieth of a map's cells).</param>
+    public NavField(MapBuild map, Battle b, double toX, double toZ, (double X0, double Z0, double X1, double Z1)? box = null)
     {
-        half = map.Meta.Size / 2;
-        n = (int)(map.Meta.Size / Cell) + 1;
-        free = new bool[n * n];
+        double half = map.Meta.Size / 2;
+        var (x0, z0, x1, z1) = box ?? (-half, -half, half, half);
+        ox = x0; oz = z0;
+        nx = (int)((x1 - x0) / Cell) + 1;
+        nz = (int)((z1 - z0) / Cell) + 1;
+        free = new bool[nx * nz];
         double r = b.Player.Radius + 0.05;
-        for (int j = 0; j < n; j++)
-            for (int i = 0; i < n; i++)
+        for (int j = 0; j < nz; j++)
+            for (int i = 0; i < nx; i++)
             {
-                double x = i * Cell - half, z = j * Cell - half;
+                double x = ox + i * Cell, z = oz + j * Cell;
                 // As the survivor meets it: the player-only edges too (Blocked leaves them out).
                 double rx = x, rz = z;
-                free[j * n + i] = map.CanStand(x, z) && !b.Collision.Resolve(ref rx, ref rz, r, true);
+                free[j * nx + i] = map.CanStand(x, z) && !b.Collision.Resolve(ref rx, ref rz, r, true);
             }
-        d = new float[n * n];
+        d = new float[nx * nz];
         Array.Fill(d, float.MaxValue);
-        int start = Nearest(Index(toX, toZ));
+        int start = Nearest(Index(toX, toZ), any: true);
         if (start < 0) return;
         var q = new PriorityQueue<int, float>();
         d[start] = 0;
@@ -41,17 +45,17 @@ public sealed class NavField
         while (q.TryDequeue(out int k, out float dk))
         {
             if (dk > d[k]) continue;
-            int i = k % n, j = k / n;
+            int i = k % nx, j = k / nx;
             for (int dj = -1; dj <= 1; dj++)
                 for (int di = -1; di <= 1; di++)
                 {
                     if (di == 0 && dj == 0) continue;
                     int ii = i + di, jj = j + dj;
-                    if (ii < 0 || jj < 0 || ii >= n || jj >= n) continue;
-                    int m = jj * n + ii;
+                    if (ii < 0 || jj < 0 || ii >= nx || jj >= nz) continue;
+                    int m = jj * nx + ii;
                     if (!free[m]) continue;
                     // No cutting a corner between two blocked cells.
-                    if (di != 0 && dj != 0 && (!free[j * n + ii] || !free[jj * n + i])) continue;
+                    if (di != 0 && dj != 0 && (!free[j * nx + ii] || !free[jj * nx + i])) continue;
                     float step = (float)(Cell * (di != 0 && dj != 0 ? 1.414 : 1));
                     if (dk + step < d[m]) { d[m] = dk + step; q.Enqueue(m, d[m]); }
                 }
@@ -60,26 +64,27 @@ public sealed class NavField
 
     int Index(double x, double z)
     {
-        int i = (int)Math.Round((x + half) / Cell), j = (int)Math.Round((z + half) / Cell);
-        return i < 0 || j < 0 || i >= n || j >= n ? -1 : j * n + i;
+        int i = (int)Math.Round((x - ox) / Cell), j = (int)Math.Round((z - oz) / Cell);
+        return i < 0 || j < 0 || i >= nx || j >= nz ? -1 : j * nx + i;
     }
 
-    (double X, double Z) At(int k) => (k % n * Cell - half, k / n * Cell - half);
+    (double X, double Z) At(int k) => (ox + k % nx * Cell, oz + k / nx * Cell);
 
-    /// <summary>The nearest free cell to this one (itself if free), searching out a few metres.</summary>
-    int Nearest(int k)
+    /// <summary>The nearest free cell to this one (itself if free), searching out a few metres; `any`:
+    /// whether or not anything leads there yet (the field's own start).</summary>
+    int Nearest(int k, bool any = false)
     {
         if (k < 0) return -1;
         if (free[k]) return k;
-        int i0 = k % n, j0 = k / n;
+        int i0 = k % nx, j0 = k / nx;
         for (int r = 1; r < 16; r++)
             for (int dj = -r; dj <= r; dj++)
                 for (int di = -r; di <= r; di++)
                 {
                     if (Math.Abs(di) != r && Math.Abs(dj) != r) continue;
                     int ii = i0 + di, jj = j0 + dj;
-                    if (ii < 0 || jj < 0 || ii >= n || jj >= n) continue;
-                    if (free[jj * n + ii] && d[jj * n + ii] < float.MaxValue) return jj * n + ii;
+                    if (ii < 0 || jj < 0 || ii >= nx || jj >= nz) continue;
+                    if (free[jj * nx + ii] && (any || d[jj * nx + ii] < float.MaxValue)) return jj * nx + ii;
                 }
         return -1;
     }
@@ -104,14 +109,14 @@ public sealed class NavField
         int cur = k;
         for (int s = 0; s < (int)(reach / Cell); s++)
         {
-            int i = cur % n, j = cur / n, next = cur;
+            int i = cur % nx, j = cur / nx, next = cur;
             float bd = d[cur];
             for (int dj = -1; dj <= 1; dj++)
                 for (int di = -1; di <= 1; di++)
                 {
                     int ii = i + di, jj = j + dj;
-                    if (ii < 0 || jj < 0 || ii >= n || jj >= n) continue;
-                    int m = jj * n + ii;
+                    if (ii < 0 || jj < 0 || ii >= nx || jj >= nz) continue;
+                    int m = jj * nx + ii;
                     if (free[m] && d[m] < bd) { bd = d[m]; next = m; }
                 }
             if (next == cur) break;

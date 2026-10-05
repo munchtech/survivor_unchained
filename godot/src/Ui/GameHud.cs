@@ -13,7 +13,8 @@ namespace SurvivorUnchained.Ui;
 public sealed record MinimapView(string Zone, Texture2D Drawing, float Extent, string Seen, int N, List<MiniMark> Marks, double X, double Z, double Facing, bool Night);
 
 /// <summary>What is near and can be used, as the prompt shows it.</summary>
-public sealed record PromptView(string Key, string Verb, string Target, string? Hint, string? Locked);
+/// <summary>A prompt on the screen; `For` is the action whose pad button it shows (the use key's, mostly).</summary>
+public sealed record PromptView(string Key, string Verb, string Target, string? Hint, string? Locked, Act For = Act.Interact);
 
 /// <summary>
 /// The heads-up display (the web game's ui/hud): arranged so the eye never
@@ -781,7 +782,7 @@ public partial class GameHud : CanvasLayer
         if (p == null) return;
         foreach (var c in promptBox.GetChildren()) { promptBox.RemoveChild(c); c.QueueFree(); }
         // The key as the device in hand has it: a keycap, or the pad's button.
-        var key = Controls.Instance.UsingPad ? Style.PadButton(Controls.Instance.PadLabels(Act.Interact).FirstOrDefault() ?? "B")
+        var key = Controls.Instance.UsingPad ? Style.PadButton(Controls.Instance.PadLabels(p.For).FirstOrDefault() ?? "B")
             : Style.Panel(Style.Box(Hex("#0d0c10"), Style.GoldDim, 1, 17, 0), Style.Label(p.Key, Style.UiBold, 16, Style.GoldHi, false, HorizontalAlignment.Center));
         key.CustomMinimumSize = new Vector2(34, 34);
         bool locked = p.Locked != null;

@@ -1352,3 +1352,277 @@ changed:
     Steeped! Snib did not see it move. It did not move."
   - Narration in a `.before` slot carries no parentheses (the slot is already
     the narrator's): Brannoc's fang and Maeca's braid lost theirs.
+
+## 21. The story fights' words (4 October; combat's STORY_BOSSES.md, pending the owner)
+
+The new story fights are three beats ended by goals, then the boss, then the
+ending cinematic (C10 to C13). Combat holds these lines in its fight data. The
+pull names the place, never a clock. A line between beats is a sight, not a
+feeling. Nothing here says what the horde is.
+
+| Fight | The pull | After beat 1 | After beat 2 |
+|---|---|---|---|
+| The Hollow by Night | "The ember takes you down the clough, into the Hollow. The stream is loud here, and it smells wrong." | "The howling stops. In the quiet you can hear the stream, and something in the brush coughing." | "The deadfalls burn. Past them is the den's mouth, and in it, grey shapes that do not get up." |
+| Raid on the Roost | "The ember takes you up the ruts below the Roost. Somewhere above, a whistle, and another answering." | "Three whistles, and none answering. Ahead, the cage yard: four cages, and the fourth stands open with nobody in it." | "Past the cages, the camp's fires, and the levy forming up the way they were taught: in step, pikes level." |
+| The Dig Boils Over | "The ember takes you to the edge of the Dig. Every lamp in the hole is coming up at once." | "The last windlass goes over. Down the tub-way the brake-house lamp is lit, and the rails are singing." | "Past the brake-house stands the pump-house, and every lampling between you and it is carrying a crate." |
+| Behind the Sealed Door | "Through the door: a long hall, and the head of a stair. On the stair, something is coming up in step." | "The first ranks are down. The hall runs on ahead, long and straight, and at the end of it something is winding a great bow." | "Down the hall, three standards go up one after another, and the dead turn to face them." |
+
+- **The fights' own voices:**
+  - Old Blue (wordless): "(Old Blue howls from the rock, and every wolf in
+    the clough answers.)"
+  - The pickets: "(A whistle, short and sharp. Another answers it, further
+    up.)" and "Lights! Lights on the ruts!"
+  - Redcowl: "Red to me! Up, my lot!" At his last stand, behind the carts:
+    "(A child, crying for its mam.)", then cold: "Mind where you swing." (his
+    arrival's last words, C11, come back).
+  - Snib, in third person:
+    - "Not the WINDLASS! Snib has to wind that! Snib does not wind it. The
+      lads wind it."
+    - "Mind the tubs! Tubs are EXPENSIVE. Tubs are Boss's."
+    - "That is the Boss's SPARE! You cannot have the spare. ...You have the
+      spare."
+    - "The PUMP! Who will pump? Snib will not pump."
+  - Grimtunnel (first person, possessive; never finishes "surface-meat" at
+    her):
+    - "Still upstairs, are we? Downstairs'll want to hear about THIS."
+    - "Nobody's! Nobody's having my lamps!"
+    - "Ever so patient, downstairs is. I'm NOT."
+    - "Put that lamp DOWN, surface-m— you. That's MINE."
+  - The Signifer: "Signa!"
+- **Freeing the caravan's men in the raid** (beat 2) is the cages' own rescue:
+  `caravan.survivors` = `rescued`, `survivors_freed`, the caravan settled, and
+  the deed `freed_teamsters`, with the cage lines and Jory's "Is my uncle—?".
+  The fourth cage stays empty and open (Ewan).
+- **Greymuzzle's end** becomes her choice when the promise and the clean
+  stream hold: "Let him go" or "Finish it". "Finish it" breaks the promise.
+- **C13:** she lays the Barrow Lord down, he will not stay down, and he rises
+  within her reach for the hand and "Redi." (the bible, "The nights").
+
+## 22. The owner's decisions on the story fights, the day's clock and the first chart (4 October)
+
+The owner approved the story fights and the clock, with five decisions
+(`docs/design/STORY_NIGHTS_AND_TIME.md`, at the top). This is what they made
+of the words.
+
+### 22.1 Spare or finish, at his side
+
+- **The hook** (agreed with combat): `ArenaSpec.OnSpare`, `EndSpared` and
+  `SpareVerb`. The choice is offered only where `OnSpare` is set. Two prompts
+  wait at his side with no clock: `SpareVerb` and "Finish it". The choice
+  applies its outcome first (`Arenas.Won(j, spec, spared)`), then the end
+  hook plays. Left unsaid, `Won` falls back to `Spare`, today's automatic
+  let-go. The specs live in `logic/Play/StoryFights.cs` (experience moved
+  them out of the Verge).
+  [CODE and DATA, done; `VergeTests.Redcowl_on_his_knee_is_hers_to_spare_or_finish`,
+  `Greymuzzle_let_go_is_her_choice_and_finishing_him_breaks_the_promise`]
+- **Greymuzzle:** "Let him go" or "Finish it", only when the promise and the
+  clean stream hold. Finished, the promise she knelt to make is broken with
+  him (`promise.broken`, the deed `broke_promise`: "knelt to Greymuzzle and
+  promised him a cure, and finished him on his own den floor").
+- **Redcowl:** "Spare him" or "Finish it".
+  - Finished: C11's death part, his last words (`last`), and the red hat in
+    the mud, as before.
+  - Spared: C11's new parts. The conversation's entry plays `spared` once
+    `redcowl` is `spared`, so the outcome is applied before the hook.
+
+    | Node | Variant | Line |
+    |---|---|---|
+    | `spared` | `redcowl.ashford_said` (lass, lad) | "(a laugh, and it costs him) Ha! ...You said a word in my camp once, and I let you. Now you've let me. That's us square, lass. ...Near enough." |
+    | `spared` | otherwise (lass, lad) | "(a laugh, and it costs him) Ha! ...You minded where you swung. That's two I owe, then, lass. The saw-bones a leg, and you the rest of me." |
+    | `flit` | | "(cold, to her) We'll be off your road by light. (to the camp, the big voice back) Up, my lot! Boots on! We're flitting!" |
+
+    - "You minded where you swung" pays "Mind where you swing" (the bairns).
+    - "Two I owe" pays "Redcowl owes Rav a leg".
+    - He never says the word: that is spent dying.
+    - "Up, my lot!" is his rally from the fight.
+    - A flitting is a move made by night.
+  - The result's last line (`EndSpared`): "He walks back through his people,
+    and does not limp until he is past the fires. Behind the carts, someone is
+    waking the children and telling them to hush." (It mirrors the killed
+    line's hush, and the leg holds.)
+  - What it sets (`OnSpare`): `redcowl` = `spared`, `roost.cleared` (the camp
+    struck by first light), the entry `caravan/roost_spared`, the deed
+    `spared_redcowl` (the Kerchiefs' respect; Rav's affection and trust,
+    Maeca's and Holloway's respect), and `pack_led` as after a kill. It sets
+    neither `redcowl.last_words` nor `roost.hostile`.
+  - The six crates go with him only if he swore to keep them (`be.crates` =
+    `redcowl`). Otherwise they wait in the empty Roost with the Coyle cargo,
+    as after a kill, and the Watch has them at the act's end
+    (`crates.settle`).
+  - The journal (`roost_spared`): "You took Redcowl's Roost by night, and let
+    him get up off his knee. He is taking his people off the Old Road before
+    first light, and leaving the Coyle wagons where they stand."
+  - Every later beat reads the right fact:
+    - the morning report `roost.flitted`: "Before first light the wall saw
+      torches come up out of the ravine and go north over the ridge, where no
+      road goes. Holloway counted them all the way, down to a big man at the
+      back who would not get on a cart, and sent nobody after. Rav watched
+      from the Flagon's door until the last one was over.";
+    - Rav's callback `cb_spared_redcowl` (two cups, "Good work, that leg.
+      Whoever did it. ...That one doesn't go on the slate, pal."), and, told
+      "two he owes", `owes_two` ("He's a terrible payer. Always was.");
+    - barks: Holloway "Had Redcowl on his knee and let him up. Road's quiet.
+      I'll give you that."; Rav "Quiet up the ruts, these nights. I don't miss
+      the trade."; Maeca "Heard you let the red one walk. ...Good.";
+    - concerns: Redcowl "Gone over the ridge with his people, on a leg that
+      held." (and "...and six crates nobody else is having."); Rav "Watches
+      the ridge from his door at first light. Says it's the air.";
+    - a folk line: "Redcowl's gone off over the ridge, they say. On his own
+      two feet. Somebody let him.";
+    - the Kerchiefs' standing: "In your debt";
+    - the chapter's page: "You had Redcowl on his knee, and let him get up.
+      He took his people off the Old Road.";
+    - by day at the Roost, once: "The camp is struck: cold fires, and pale
+      squares in the grass where the tents stood. They took everything that
+      would carry. The Coyle wagons they left where they stood.";
+    - the fortune's crates (`f_ember`, a new first variant, so the voice ids
+      after it move up one): "And six crates on a cart going north over the
+      ridge, and a man walking behind it who knows what they are for...";
+    - Act 2, beat 7: he comes back owing her (the bible).
+- **Not touched:** Redcowl killed by day (`OnKill`) is unchanged, and so is
+  every reader of `redcowl` = `dead`.
+
+### 22.2 A lost story fight wakes her in town
+
+The owner: losing "costs her time" and "gives her a day to get new gear and
+prepare". So the cost is the night, said once by Chid, and never gold, a
+wound or things lost.
+- **The lost line is the last thing she knows,** never her coming to:
+
+  | Fight | `EndLost` |
+  |---|---|
+  | The Hollow | "The last thing you know is the stream, very loud, and the Pack standing round you in a ring. None of them comes in." |
+  | The Roost | "The last thing you know is the fire going small, and a big hand closing your eyes for you." |
+  | The Dig | "The last thing you know is little hands, a great many of them, lifting you." |
+  | The Door | "The last thing you know is the stair going by beneath you, and the dead carrying you up it, in step." |
+
+- **The waking** (`chid.carried`, then `carried_chid`). Experience's
+  `WakeAfterLoss` calls `Journey.CarriedHome(spec)` (`player.just_died`,
+  `player.carried_home`), brings her to the shrine and opens Chid's
+  conversation. The morning's news comes after it. The narrator, by the
+  night's people:
+  - "You wake on the bench in Chid's shrine, and it is morning." Then one of:
+    - the Pack: "Your collar is stiff with a wolf's spit, dried. Nothing ate
+      you. Something carried you out of the Hollow, and somebody else carried
+      you home.";
+    - the Kerchiefs: "Your hands are crossed on your chest, the way the
+      Kerchiefs lay out their dead. You do not remember crossing them.";
+    - the lamplings: "There is lamp-soot all over your coat in small
+      handprints, where a great many little hands lifted you, and then put
+      you down.";
+    - the dead: "Over your breastbone, faint as an old bruise, is the print of
+      a mailed hand."
+  - Chid: "You're awake! Good. Good. It's morning, and you've slept the whole
+    night on my bench, and that's all it's cost you: a night. They come round
+    again; it's the one thing you can say for them. (He doesn't look at you.)"
+    Then the carter lie for the place ("A carter, I expect.") and a pointer,
+    only if she lacks what it points to:
+    - Maeca at the door at first light (no `bane.fires`);
+    - Rav sat with her; "He knows that camp... He's stitched up half of it."
+      (no `once:redcowl`);
+    - "That old lamp of yours was lit when you came in. I didn't light it."
+      (with `grimtunnels_lamp`);
+    - "I've read about the ones behind that door. In a very old book. Ask me,
+      when you've eaten." (no `bane.pole`).
+  - "Who brought me in?": "Oh, somebody kind. There are more of them about at
+    night than you'd think. ...Eat something. The day's yours."
+  - It is told once: the facts are cleared as it opens, and the next world
+    death gets Chid's ordinary waking.
+  - `bane.fires` and `bane.pole` are read now, and are off StoryLint's seed
+    list.
+  [DATA and CODE, done; `VergeTests.A_lost_story_fight_wakes_her_on_Chids_bench_the_next_morning`]
+- **The town's talk:**
+  - a morning report for each fight's first loss (`rules.json`): `hollow.sang`,
+    `roost.sang`, `dig.lamps`, `vault.shut` (the Pack stops singing in the
+    middle; the burying song turns to shouting; the little lamps stop where
+    the wall's lamps reach; the violet goes out like a door shutting);
+  - the morning's barks: Holloway "Count was one short last night. It's right
+    this morning. Don't make me write it twice."; Maeca (the Pack) "Heard you
+    go down in the Hollow. Heard them walk away after. They don't leave
+    meat."; Rav (the Kerchiefs) "Heard the lads laid you out proper. Hands
+    crossed and all. That's manners, from them."; Keegan (the dead) "They say
+    the dead carried you back out of the old door. The dead do not, as a
+    rule, give anything back. ...I am making a note."; and Rook's "Face like a
+    wet week. Eat first. It'll still be there after." as before.
+
+### 22.3 Getting up, and the day's clock
+
+- **Getting up** (the owner, revised): once a fight in Act 1's story fights,
+  and from Act 2 only with the rise.
+  - "You get up." the first time ever, and "You get up. It takes less than
+    it did." after that (experience's `Journey.RiseLine()`, counting
+    `story.rises`).
+  - The rise is one power with two names (combat's): the blessing *Cold, Then
+    Not* ("You go cold. Then the ember catches.") and the art *Not Yet*
+    ("Something answers for you: not yet. You get up."), learned from *The
+    Keeper's Office*, which Chid gives her in Act 2 (the bible, section 7).
+  - The art's text: "Held in your art's place, it asks nothing of your hands
+    and gives them nothing. Once a fight, a blow that would end you does not:
+    you go down, something answers for you, not yet, and you are up with half
+    your health. Once a fight, however many ways you carry it." The
+    blessing's ranks: up at half and burning; up whole; up whole, the dash
+    with her, and a moment longer before anything can touch her.
+  - The book (combat's item `keepers_office`): "A small book of the Order's
+    watch-hours, read to pieces. Whoever wrote it makes their Cs the old way.
+    The last page has two lines on it and nothing else: Is it morning? Not
+    yet."
+  - **Chid's gift, written and waiting for the item** to reach the
+    integration branch (`chid.office`, an entry once `chapter.done`, and a
+    variant of `carried_chid` after a lost Act 2 fight if she has no book):
+    - "(He has a small book in both hands, held the way you hold a bird.) I
+      want you to have this. It's only an old office: the watch-hours, what
+      the keepers said at night. Nobody's said them in a long while. (He opens
+      it at the last page, and doesn't look at it.) There's a bit at the end.
+      You'll know it when you need it. ...Not now. It reads better in the
+      dark."
+    - "Who wrote it?": "Oh, a keeper. One of the old ones. Lovely hand,
+      hasn't he? Nobody makes a C like that any more." (His own words about
+      the note in Ashe's trunk, said again without noticing: Act 3.)
+- **The clock's words** (`Journey.DayLines`, experience's code):
+  - dusk: "Lamps are lit. Stay where they reach." Then the night's fight:
+    - the Hollow: "Out past the lamps, the Pack has stopped howling.";
+    - the Roost: "Up the Old Road the Kerchiefs' fires are lit all along the
+      ravine, the way a town lights its windows." (the town they lost,
+      unsaid);
+    - the Dig: "On the hill over the Dig, the lamps are all moving the same
+      way.";
+    - the Door: "Out in the Verge, the sealed door has woken. Its light is
+      violet.";
+    - nothing called: "Out in the Verge, the ember is coming up.";
+  - half the night gone: "Half the night is gone. Up on the Toll Tower, the one
+    lamp is still lit." (Vonnra counts the ford road's lights every night);
+  - a night left alone: "You see the night out on your feet. At first light
+    the warmth comes back into your hands." (the body's hours);
+  - straight on to a second fight the same night: "You do not go back to the
+    lamps. You go on.";
+  - the night's card: "Also out tonight:" and "Answer the night".
+
+### 22.4 The fortune gives the first chart
+
+- The fortune's close is two beats now. `f_door` (the door, "That is all I
+  see for free.") leads to `f_chart`: "(She takes a folded chart from under
+  the ledger and lays it between you. It is in the Wayfinder's hand, and its margins are written full.) That would be ten gold, traveller. This once, no charge. The
+  rest you will walk into yourself, and you will, because you are the kind
+  that does." Accused, it has neither "traveller" nor the name: she spent the
+  name on the door's line.
+- It is priced and waived like all her gifts, so it stays owed. The margins
+  are what Ysolde sells, and Vonnra has bought them too.
+- The chart is "The Lampless Howes": the Risen's ground, tier 1, plain. It
+  is given by a new change, `{ "chart": { "people", "tier", "rarity", "name" } }`,
+  because `give` takes item ids only (agreed with the UI lead). The
+  Wayfinder's atlas opens with it.
+  [DATA and CODE, done; `CinematicTests.Every_fortune_ends_with_the_first_chart_in_her_pack`]
+- Charts that drop in maps are now named as the table's maps are, in the
+  valley's words per people. The old list had "Weeping", "Whispering" and
+  "Wood". `StoryLint` holds them.
+
+### 22.5 For voice (paused; text-only notes)
+
+Vonnra's final packet has changed lines that need new takes:
+- `f_door` .0 and .1 now end at "That is all I see for free[, {name}]."
+- `f_chart` .0 and .1 are new.
+- `f_ember` has a new .0, so the old .0 to .6 are now .1 to .7.
+
+New lines for Redcowl (`spared` .0 to .3, `flit`), Rav (`cb_spared_redcowl`,
+`owes_two`, and barks appended to `said`), Chid (`carried`, `carried_chid`
+.0 to .8, `carried_who`), and barks for Holloway, Maeca and Keegan.

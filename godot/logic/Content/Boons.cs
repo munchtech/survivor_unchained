@@ -284,8 +284,8 @@ public static class Boons
         // The wards and answers the paths were missing: a ward for fire and for
         // storm, an answer to champions for the green and for the host.
         new() { Id = "from_the_ashes", Name = "Cold, Then Not", Icon = "embers", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing, Tags = [Tag.Fire],
-            Text = "Once a night, a blow that would end you does not. You go cold; then the ember catches, and you rise with half your health while everything near you burns.",
-            DeeperText = ["You rise whole, and the fire reaches twice as far.", "Twice a night."] },
+            Text = "Once a fight, a blow that would end you does not: you go cold, then the ember catches, and you are up with half your health, burning. Once a fight, however many ways you carry it.",
+            DeeperText = ["You are up whole, and the fire reaches twice as far.", "You are up whole, your dash with you, and a moment longer before anything can touch you."] },
         new() { Id = "grounding", Name = "Grounding", Icon = "static", Rarity = Rarity.Legendary, Max = 3, Kind = BoonKind.Blessing, Tags = [Tag.Storm, Tag.Chain],
             Text = "A fifth of every blow that reaches you is turned aside as lightning, which leaps from you to three creatures near you.",
             Triggers = [T(TriggerEvent.Hurt, [new Effect.Chain(3, 7, 4, Basis.Hit, School.Storm)], icd: 0.3)],

@@ -84,6 +84,10 @@ public sealed class QuestChange { public string Id = ""; public QuestStatus? Sta
 public sealed class TellChange { public string Npc = "", Event = ""; }
 public sealed class ConditionChange { public ConditionId Id; public int Days; public string? Note; }
 public sealed class ZoneChange { public string Id = "", Key = ""; public Fact Value; }
+/// <summary>A Wayfinder's chart given (Vonnra's at the fortune): who holds its ground, its tier, how
+/// fine, and its name if the story names it. Its ground comes from the world's seed, so it is the
+/// same map however often the story is played.</summary>
+public sealed class ChartGift { public string People = "pack"; public int Tier = 1, Rarity; public string? Name; }
 public sealed class LaterChange
 {
     public int Days;
@@ -103,6 +107,8 @@ public sealed class Change
     public NpcFlagChange? NpcFlag;
     public FactionChange? Faction;
     public string? Give, Take;
+    /// <summary>A chart, which an item id cannot say (its map rides on the item).</summary>
+    public ChartGift? Chart;
     /// <summary>With a give: who made it and the moment ("maeca:shedFur"), so the thing carries
     /// their history line (crafting.json, "history.shedFur").</summary>
     public string? Made;
@@ -248,6 +254,26 @@ public static class Rules
                 int slot = w.Stash.IndexOf(null);
                 if (slot >= 0) w.Stash[slot] = it;
                 ctx.Notify(new Notice($"{name} was sent to the inn - your pack is full.", NoticeTone.Warn));
+            }
+            return;
+        }
+        if (e.Chart != null)
+        {
+            var rng = new Rng(w.Seed * 31 + 7919);
+            var c = Maps.Charts.Roll(rng, e.Chart.Tier, e.Chart.People);
+            c.Mods.Clear();
+            c.Rarity = Math.Clamp(e.Chart.Rarity, 0, 2);
+            Maps.Charts.AddMods(c, rng, c.Rarity switch { 2 => 3, 1 => 1, _ => 0 });
+            if (e.Chart.Name != null) c.Name = e.Chart.Name;
+            var it = Inventory.Make(ch, Maps.Charts.Item, 1, c.Rarity);
+            it.Chart = c;
+            it.Name = Maps.Charts.Title(c);
+            if (Inventory.AddToPack(ch, it)) ctx.Notify(new Notice(it.Name, NoticeTone.Item));
+            else
+            {
+                int slot = w.Stash.IndexOf(null);
+                if (slot >= 0) w.Stash[slot] = it;
+                ctx.Notify(new Notice($"{it.Name} was sent to the inn - your pack is full.", NoticeTone.Warn));
             }
             return;
         }

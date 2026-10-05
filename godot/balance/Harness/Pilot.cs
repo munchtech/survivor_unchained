@@ -30,7 +30,9 @@ public static class Pilot
 
     /// <param name="onward">On a map: where the way goes on. Resting packs are left to rest, what
     /// lies about is picked up, and with nothing roused near, the hands walk on.</param>
-    public static (double X, double Z) Steer(Battle b, bool deft = false, ArenaBoss? boss = null, (double X, double Z)? onward = null)
+    /// <param name="goal">A story night's stage: where it wants her (a fire to light, a foe to find). With no
+    /// crush round her, the hands go there.</param>
+    public static (double X, double Z) Steer(Battle b, bool deft = false, ArenaBoss? boss = null, (double X, double Z)? onward = null, (double X, double Z)? goal = null)
     {
         var p = b.Player;
         double mx, mz;
@@ -80,17 +82,23 @@ public static class Pilot
             // Away and round: a quarter turn off straight back.
             mx = -cx / cl * 0.7 - cz / cl * 0.7; mz = -cz / cl * 0.7 + cx / cl * 0.7;
         }
+        // The stage's goal when nothing is at her throat: a player with a thing to do does it, and lets
+        // the weapons fire on the way (a fire takes two seconds of standing to light).
+        else if (goal is var (gx, gz))
+        {
+            if (Dist(gx, gz, p.X, p.Z) > 1.2) { mx = gx - p.X; mz = gz - p.Z; } else { mx = 0; mz = 0; }
+        }
         else if (stone != null && near > engage + 1) { mx = stone.X - p.X; mz = stone.Z - p.Z; }
         else if (nearest != null && near > engage) { mx = nearest.X - p.X; mz = nearest.Z - p.Z; }
         else if (nearest != null) { mx = -(nearest.Z - p.Z); mz = nearest.X - p.X; }
         else if (onward is var (ox, oz)) { mx = ox - p.X; mz = oz - p.Z; }
         else { mx = -p.X; mz = -p.Z; }
         double far = Math.Sqrt(p.X * p.X + p.Z * p.Z);
-        if (far > 60 && onward == null) { mx = mx * 0.3 - p.X / far; mz = mz * 0.3 - p.Z / far; }
+        if (far > 60 && onward == null && goal == null) { mx = mx * 0.3 - p.X / far; mz = mz * 0.3 - p.Z / far; }
         if (deft) Deft(b, press.Count >= 2 || stone != null, ref mx, ref mz);
         if (b.Collision.Blocked(p.X + mx * 0.1, p.Z + mz * 0.1, p.Radius)) (mx, mz) = (-mz, mx);
         // The boss's own fight, read last: it overrules the crowd.
-        if (ReadsBosses && (boss != null || b.Blows.Count > 0)) Boss(b, boss, deft, ref mx, ref mz);
+        if (ReadsBosses && (boss != null || b.Blows.Count > 0)) Boss(b, boss, deft, ref mx, ref mz, goal);
         double ml = Math.Sqrt(mx * mx + mz * mz);
         if (ml > 1e-6) { mx /= ml; mz /= ml; }
         return (mx, mz);
@@ -187,8 +195,8 @@ public static class Pilot
 
     /// <summary>The boss read as a player who has died to it once (Play/Bosses/BossSense.cs,
     /// shared with the game's autopilot).</summary>
-    public static void Boss(Battle b, ArenaBoss? boss, bool deft, ref double mx, ref double mz) =>
-        BossSense.Steer(b, boss, deft, Reach(b), ref mx, ref mz);
+    public static void Boss(Battle b, ArenaBoss? boss, bool deft, ref double mx, ref double mz, (double X, double Z)? goal = null) =>
+        BossSense.Steer(b, boss, deft, Reach(b), ref mx, ref mz, goal);
 
     static double Dist(double ax, double az, double bx, double bz) => Math.Sqrt((ax - bx) * (ax - bx) + (az - bz) * (az - bz));
 }

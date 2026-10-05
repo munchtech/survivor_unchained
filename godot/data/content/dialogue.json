@@ -4263,6 +4263,27 @@
       "goto": "t_maeca"
      },
      {
+      "text": "If I go into the Hollow after dark?",
+      "show": {
+       "all": [
+        {
+         "not": {
+          "fact": "beasts.outcome",
+          "exists": true
+         }
+        },
+        {
+         "not": {
+          "fact": "greymuzzle",
+          "exists": true
+         }
+        }
+       ]
+      },
+      "once": "fire",
+      "goto": "fire"
+     },
+     {
       "text": "Goodbye.",
       "end": true
      }
@@ -5433,6 +5454,27 @@
      {
       "set": {
        "shedfur.given": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "fire": {
+    "id": "fire",
+    "text": "(She looks at you for a long time.) If you're going in there with a blade, I'll not help you. ...Take fire, and feed it. They won't come near a fire that's fed. That's not for your sake. It's so they don't have to.",
+    "effects": [
+     {
+      "set": {
+       "bane.fires": true
       }
      }
     ],
@@ -10421,6 +10463,28 @@
     "when": {
      "all": [
       {
+       "history": "spared_redcowl"
+      },
+      {
+       "met": "rav"
+      },
+      {
+       "not": {
+        "npcFlag": {
+         "npc": "rav",
+         "key": "cb:spared_redcowl",
+         "eq": true
+        }
+       }
+      }
+     ]
+    },
+    "node": "cb_spared_redcowl"
+   },
+   {
+    "when": {
+     "all": [
+      {
        "history": "burned_roost"
       },
       {
@@ -11258,12 +11322,70 @@
     "id": "came_back_sorry",
     "text": "No. You're not, and you shouldn't be; he'd have said it was the job. Don't say it again, pal. I'll not be able to hear it twice.",
     "next": "hub"
+   },
+   "cb_spared_redcowl": {
+    "id": "cb_spared_redcowl",
+    "text": "(Two cups are out before you reach his table, and he fills them both.) Busy night up the ruts, I hear. Heard a man got up off his knee after, on a leg he'd no business still having. (He pushes one across.) Good work, that leg. Whoever did it. ...That one doesn't go on the slate, pal.",
+    "effects": [
+     {
+      "npcFlag": {
+       "npc": "rav",
+       "key": "cb:spared_redcowl",
+       "value": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "He said that's two he owes now. You a leg, and me the rest of him.",
+      "show": {
+       "not": {
+        "fact": "redcowl.ashford_said",
+        "eq": true
+       }
+      },
+      "goto": "owes_two"
+     },
+     {
+      "text": "Thanks, Rav.",
+      "goto": "hub"
+     }
+    ]
+   },
+   "owes_two": {
+    "id": "owes_two",
+    "text": "(a breath out through his nose) Did he. ...He's a terrible payer. Always was. (He drinks.) Drink your drink, pal.",
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
    }
   }
  },
  "chid": {
   "npc": "chid",
   "entry": [
+   {
+    "when": {
+     "all": [
+      {
+       "fact": "player.just_died",
+       "eq": true
+      },
+      {
+       "fact": "player.carried_home",
+       "exists": true
+      }
+     ]
+    },
+    "node": "carried"
+   },
    {
     "when": {
      "fact": "player.just_died",
@@ -11666,6 +11788,17 @@
       "text": "What was the Order like?",
       "once": "t_chid",
       "goto": "t_chid"
+     },
+     {
+      "text": "The old empire. Who were they?",
+      "show": {
+       "quest": {
+        "id": "vault",
+        "entry": "chid_empire"
+       }
+      },
+      "once": "legion",
+      "goto": "legion"
      },
      {
       "text": "Goodbye.",
@@ -12205,6 +12338,214 @@
      {
       "text": "Where did I fall?",
       "goto": "where"
+     }
+    ]
+   },
+   "legion": {
+    "id": "legion",
+    "text": "Soldiers! The Seventh, the Order's books called them. Very tidy, very old, very... thorough. Oh, and this is the part I liked: they never followed a man. Never. They followed the pole. A bronze hand on a pole, a standard, and wherever it went they went, and if it went down they stood about like a choir that's lost its place. ...I don't know why I'm telling you that. It's a very old book.",
+    "effects": [
+     {
+      "set": {
+       "bane.pole": true
+      }
+     }
+    ],
+    "choices": [
+     {
+      "text": "Something else.",
+      "goto": "hub"
+     },
+     {
+      "text": "Goodbye.",
+      "end": true
+     }
+    ]
+   },
+   "carried": {
+    "id": "carried",
+    "speaker": "narrator",
+    "text": [
+     {
+      "when": {
+       "fact": "arena.last.people",
+       "eq": "pack"
+      },
+      "text": "You wake on the bench in Chid's shrine, and it is morning. Your collar is stiff with a wolf's spit, dried. Nothing ate you. Something carried you out of the Hollow, and somebody else carried you home."
+     },
+     {
+      "when": {
+       "fact": "arena.last.people",
+       "eq": "kerchiefs"
+      },
+      "text": "You wake on the bench in Chid's shrine, and it is morning. Your hands are crossed on your chest, the way the Kerchiefs lay out their dead. You do not remember crossing them."
+     },
+     {
+      "when": {
+       "fact": "arena.last.people",
+       "eq": "lamplings"
+      },
+      "text": "You wake on the bench in Chid's shrine, and it is morning. There is lamp-soot all over your coat in small handprints, where a great many little hands lifted you, and then put you down."
+     },
+     {
+      "when": {
+       "fact": "arena.last.people",
+       "eq": "dead"
+      },
+      "text": "You wake on the bench in Chid's shrine, and it is morning. Over your breastbone, faint as an old bruise, is the print of a mailed hand."
+     },
+     {
+      "text": "You wake on the bench in Chid's shrine, and it is morning."
+     }
+    ],
+    "effects": [
+     {
+      "set": {
+       "player.just_died": false,
+       "player.carried_home": null
+      }
+     }
+    ],
+    "next": "carried_chid"
+   },
+   "carried_chid": {
+    "id": "carried_chid",
+    "text": [
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "arena.last.people",
+         "eq": "pack"
+        },
+        {
+         "not": {
+          "fact": "bane.fires",
+          "eq": true
+         }
+        }
+       ]
+      },
+      "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them. (He doesn't look at you.) Somebody brought you in off the Hollow road. A carter, I expect. ...Maeca was at the door at first light, asking after you. She wouldn't come in. If anybody knows those wolves, it's Maeca."
+     },
+     {
+      "when": {
+       "fact": "arena.last.people",
+       "eq": "pack"
+      },
+      "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them. (He doesn't look at you.) Somebody brought you in off the Hollow road. A carter, I expect. They get everywhere, carters."
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "arena.last.people",
+         "eq": "kerchiefs"
+        },
+        {
+         "not": {
+          "npcFlag": {
+           "npc": "rav",
+           "key": "once:redcowl",
+           "eq": true
+          }
+         }
+        }
+       ]
+      },
+      "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them. (He doesn't look at you.) Somebody brought you down off the Roost road. A carter, I expect. ...Rav was in before it was light. He sat with you a while and didn't say much, which isn't like him. He knows that camp, you know. He's stitched up half of it."
+     },
+     {
+      "when": {
+       "fact": "arena.last.people",
+       "eq": "kerchiefs"
+      },
+      "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them. (He doesn't look at you.) Somebody brought you down off the Roost road. A carter, I expect. ...Rav was in before it was light. He sat with you a while and didn't say much, which isn't like him."
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "arena.last.people",
+         "eq": "lamplings"
+        },
+        {
+         "hasItem": "grimtunnels_lamp"
+        }
+       ]
+      },
+      "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them. (He doesn't look at you.) Somebody brought you down off the Dig's hill. A carter, I expect. ...That old lamp of yours was lit when you came in. I didn't light it. Those little fellows must have been very taken with it."
+     },
+     {
+      "when": {
+       "fact": "arena.last.people",
+       "eq": "lamplings"
+      },
+      "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them. (He doesn't look at you.) Somebody brought you down off the Dig's hill. A carter, I expect. I've put the kettle on."
+     },
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "arena.last.people",
+         "eq": "dead"
+        },
+        {
+         "not": {
+          "fact": "bane.pole",
+          "eq": true
+         }
+        }
+       ]
+      },
+      "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them. (He doesn't look at you.) Somebody brought you in from the old door. A carter, I expect. (He's quiet a moment, which isn't like him.) I've read about the ones behind that door. In a very old book. Ask me, when you've eaten."
+     },
+     {
+      "when": {
+       "fact": "arena.last.people",
+       "eq": "dead"
+      },
+      "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them. (He doesn't look at you.) Somebody brought you in from the old door. A carter, I expect. (He's quiet a moment, which isn't like him.) They followed the pole, you know. Always the pole."
+     },
+     {
+      "text": "You're awake! Good. Good. It's morning, and you've slept the whole night on my bench, and that's all it's cost you: a night. They come round again; it's the one thing you can say for them. (He doesn't look at you.) Somebody brought you in. A carter, I expect."
+     }
+    ],
+    "choices": [
+     {
+      "text": "Thank you, Chid.",
+      "effects": [
+       {
+        "rel": {
+         "npc": "chid",
+         "affection": 10
+        }
+       }
+      ],
+      "end": true
+     },
+     {
+      "text": "Who brought me in?",
+      "once": "carried_who",
+      "goto": "carried_who"
+     }
+    ]
+   },
+   "carried_who": {
+    "id": "carried_who",
+    "text": "Oh, somebody kind. There are more of them about at night than you'd think. (He busies himself with the kettle.) ...Eat something. The day's yours.",
+    "choices": [
+     {
+      "text": "Thank you, Chid.",
+      "effects": [
+       {
+        "rel": {
+         "npc": "chid",
+         "affection": 10
+        }
+       }
+      ],
+      "end": true
      }
     ]
    }
@@ -13747,10 +14088,10 @@
        "fact": "vonnra.accused",
        "eq": true
       },
-      "text": "The door in the hillside is listening, as I am. That is all I see for free, {name}. The rest you will walk into yourself, and you will, because you are the kind that does."
+      "text": "The door in the hillside is listening, as I am. That is all I see for free, {name}."
      },
      {
-      "text": "The door is not for sale. That is all I see for free. The rest you will walk into yourself, and you will, because you are the kind that does."
+      "text": "The door is not for sale. That is all I see for free."
      }
     ],
     "effects": [
@@ -13767,6 +14108,32 @@
         "chapter"
        ],
        "spread": 0
+      }
+     }
+    ],
+    "next": "f_chart"
+   },
+   "f_chart": {
+    "id": "f_chart",
+    "text": [
+     {
+      "when": {
+       "fact": "vonnra.accused",
+       "eq": true
+      },
+      "text": "(She takes a folded chart from under the ledger and lays it between you. It is in the Wayfinder's hand, and its margins are written full.) That would be ten gold. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does."
+     },
+     {
+      "text": "(She takes a folded chart from under the ledger and lays it between you. It is in the Wayfinder's hand, and its margins are written full.) That would be ten gold, traveller. This once, no charge. The rest you will walk into yourself, and you will, because you are the kind that does."
+     }
+    ],
+    "effects": [
+     {
+      "chart": {
+       "people": "dead",
+       "tier": 1,
+       "rarity": 0,
+       "name": "The Lampless Howes"
       }
      }
     ],
@@ -13951,6 +14318,21 @@
    "f_ember": {
     "id": "f_ember",
     "text": [
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "be.crates",
+         "eq": "redcowl"
+        },
+        {
+         "fact": "redcowl",
+         "eq": "spared"
+        }
+       ]
+      },
+      "text": "And six crates on a cart going north over the ridge, and a man walking behind it who knows what they are for. He will not sell them. He is saving them. I wonder for what."
+     },
      {
       "when": {
        "fact": "be.crates",
@@ -20681,6 +21063,13 @@
   "npc": "cin_raid_on_the_roost",
   "entry": [
    {
+    "when": {
+     "fact": "redcowl",
+     "eq": "spared"
+    },
+    "node": "spared"
+   },
+   {
     "node": "bairns"
    }
   ],
@@ -20738,6 +21127,54 @@
       ]
      }
     ],
+    "choices": [
+     {
+      "text": "(Continue.)",
+      "end": true
+     }
+    ]
+   },
+   "spared": {
+    "id": "spared",
+    "speaker": "redcowl",
+    "text": [
+     {
+      "when": {
+       "all": [
+        {
+         "fact": "redcowl.ashford_said",
+         "eq": true
+        },
+        {
+         "sex": "female"
+        }
+       ]
+      },
+      "text": "(a laugh, and it costs him) Ha! ...You said a word in my camp once, and I let you. Now you've let me. That's us square, lass. ...Near enough."
+     },
+     {
+      "when": {
+       "fact": "redcowl.ashford_said",
+       "eq": true
+      },
+      "text": "(a laugh, and it costs him) Ha! ...You said a word in my camp once, and I let you. Now you've let me. That's us square, lad. ...Near enough."
+     },
+     {
+      "when": {
+       "sex": "female"
+      },
+      "text": "(a laugh, and it costs him) Ha! ...You minded where you swung. That's two I owe, then, lass. The saw-bones a leg, and you the rest of me."
+     },
+     {
+      "text": "(a laugh, and it costs him) Ha! ...You minded where you swung. That's two I owe, then, lad. The saw-bones a leg, and you the rest of me."
+     }
+    ],
+    "next": "flit"
+   },
+   "flit": {
+    "id": "flit",
+    "speaker": "redcowl",
+    "text": "(cold, to her) We'll be off your road by light. (to the camp, the big voice back) Up, my lot! Boots on! We're flitting!",
     "choices": [
      {
       "text": "(Continue.)",

@@ -4,112 +4,100 @@ Status page for the gameplay experience director (agent `ab406cf9ddd22b03b`, bra
 `worktree-agent-ab406cf9ddd22b03b`; successor to `ad1f5623590e09883`). The audit is
 `docs/EXPERIENCE_AUDIT.md`; evidence frames are in `docs/experience/`.
 
-## Paused for the owner (2026-10-04)
+## Current state (2026-10-04)
 
-Took over from `ad1f5623590e09883`; merged the integration branch and its last commit
-(`4abe07d8`). Tests green (567). No code changed yet. Paused at the owner's request.
+Took over from `ad1f5623590e09883`. Tests green (661). The owner approved the story nights and the
+day's clock (`docs/design/STORY_NIGHTS_AND_TIME.md`, decisions at its top). **Limit for now: no
+Godot or GPU**, code and `dotnet test` only.
 
-- **Worktree setup:** `godot/assets` is a junction to `public/assets` (skip-worktree set);
-  `godot/.godot` copied from the old worktree; `override.cfg` in place. The `--import` was stopped
-  at about 1%: rerun `--headless --path godot --import` (about 15 min) before any picture.
-- **Tools:** the scratchpad's `experience/` scripts now point at this worktree;
-  `experience/pending.sh` lists what each lead's branch holds that this one doesn't.
-- **Waiting on merges** (not yet on the integration branch): skills `0d2e4a0b` (numbers that sum,
-  grounds, marks), animation `d7b091ea` (die2/die3), combat `1b0f8bf1` (maps, strongbox),
-  performance `29b5ae5b`. Combat's branch has no run-up danger work yet.
-- **Story nights and the day's clock** (the owner's new direction): proposal in
-  `docs/design/STORY_NIGHTS_AND_TIME.md` (`c59a9490`), waiting on the owner's four choices.
-  Agreed with story (`a73ca9d35d0c487a9`), arena art (`a26767f7f9955cb56`) and combat
-  (`a708da2c97bf85c95`), whose `docs/design/STORY_BOSSES.md` (`65cc4301`, its branch) holds the
-  beats, bosses and numbers, my three asks included. Build nothing until the owner approves.
-- **Exact next step:** the crowd's status read (skills is waiting). In `shaders/vat.gdshaderinc`,
-  burning and frozen still add emission over the knee (burn: rim² 1.2 plus an `up` term, which
-  from the 56° camera lights most of a body; glow threshold 1.1), so a crowd blooms cream/white.
-  Plan: no full-body tint; fire as flickering tongues and soot only where they lick, ice as rime
-  patches darker than a pale body, a thin rim, all emission under about 1.0 so it stays
-  saturated. Shoot it first: `play.py frost -- --zone arena --people dead --time night --lab
-  --give hoarfrost:6 --horde 70 --dist 5 --spread 7` (and `cinderfall:6`), then change and reshoot.
-- **Then:** ask combat (`a1d4562f44c7f6feb`) where the run-ups' danger stands (targets 10–20%
-  under half in 7–10, 17–20, 25–28; wins within two points of 93%), and judge each merge as it lands.
-- **Do not build on the maps' length** until the owner confirms what "the Wayfinder's maps are
-  30" means (the main session is asking).
+**Built (`d95946c5` and after), not yet seen in a run:**
+- **The day's clock** (`World/DayClock.cs`, `Play/Journey.Day.cs`, `Game/GameClock.cs`):
+  - 12 minutes of free play from dawn to night (dawn 1, day 9, dusk 2), then 6 of night;
+  - free play is the town or the Verge with nothing over it: no page, talk, draft, chest,
+    cinematic, travel, pause or captured controls; never in arenas or the prologue;
+  - day 1 waits until `beasts` or `caravan` is in the journal (story's call).
+- **Dusk:** the light blends over a minute; in town the gate guard's evening call; anywhere, the
+  night's line (`Journey.DayLines`, story's drafts).
+- **Nightfall:** "Night" with the called fight's place; a "Tonight" entry above the objectives;
+  hold Answer (N, pad L3, rebindable) to be pulled to the called story fight, else the nearest
+  scar in the Verge, else the Wayfinder's table. A fight is called only once the story has pointed
+  her at it (`StoryFights.Called`: the bounty, the Roost found; the Dig and the vault always).
+- **A night left alone** passes at 6 minutes (nudge at 3): fade, a day on, no inn's rest.
+- **The skips:** the inn's sleep (next morning, healed) and "wait for nightfall" set the clock.
+- **Back from a fight:** the same night with at least 3 minutes left (several fights by intent).
+- **A story fight lost** (`ArenaResult.WakesInTown`): she wakes on Chid's bench in the shrine a
+  day on, healed (`Journey.WakeAfterLoss` calls story's `CarriedHome`); Chid's conversation tells
+  the waking for that fight, then the town's morning lines.
+- **Story's final words** in `Journey.DayLines`; a rise counted (`RiseLine`, story.rises); a
+  second fight answered the same night says "straight on" (`FoughtTonight`); the night's card
+  lists "Also out tonight".
+- **StoryFights** (`Play/StoryFights.cs`): the four fights out of the Verge so the night can call
+  them from anywhere; the Verge builds its interactables from it.
+- **The fall in a story night, staged** (`Game/GameFall.cs`, on combat's `StoryNight`, merged at
+  `aa68f38e`): the picture darkens and the world holds; with a rise left, "Get up" (confirm or the
+  use key) or "Let the night go" (back), no page; getting up is a short fade to the checkpoint and
+  the counted words (`RiseLine`); with none left, the night is lost and its result follows.
 
-## Before the pause (predecessor, 2026-10-04)
+**In-game checks owed (when Godot is allowed), all at 1920×1080:**
+1. A day run through on the autopilot at `--fixed-fps 60`: the light's blends at 1, 10 and 12
+   minutes (no pop, no grade stutter), lamps and shadows at dusk, the HUD's corner.
+2. Dusk in town (the call, then the line) and in the Verge (the line only); the night's
+   announcement and the "Tonight" entry; Answer from town and from the wood.
+3. The night passing: the fade, "Dawn · Day N", the lines, the scars going out in the Verge.
+4. A story fight lost: the result, the shrine at dawn, Chid's waking, then the morning lines.
+5. Pausing: the clock still in talk, the pack, the map, the shop, the rest page and cutscenes.
+7. A fall in the Hollow (`--stage 3` for the boss): the darkening, the two choices (keys and pad),
+   the fade to the checkpoint and "You get up."; then a second fall with none left.
+6. The Verge at a turn: Maeca and the night packs only change on re-entry (judge if it jars).
 
-Merged the integration branch at `f56ee42`. Tests green (567). Pushed. **Handed off:**
-`docs/handoff/experience.md` is the successor's brief. Since the list below: S-17 (her blows
-lean the camera, arts' hit-stop, a bigger flinch); the chest judged in a real night (its mouth's
-light, a softer column, the fan clear of the bars); the night re-measured (the run-ups carry no
-danger: briefed to combat, taken).
+**Next:**
+1. With combat: the Hollow measures 5 minutes, not 12, and 50–63% dip under half on the way in
+   (target 20–35%); combat lengthens the stages (more to do, not more health). The 40% sums wait.
+2. The crowd's status read for skills: drafted, unseen, on the side branch
+   `experience-status-read@9d5d30e6` (rime in patches, fire in tongues, all status light under 1).
+   Today (the predecessor's tint, skills' `scratchpad/vfx/ba_a9_1.png` rows 2 and 5): no longer
+   white, but frozen reads as grey bodies and burning as tan ones: the status barely reads. When
+   Godot is allowed: import first, then skills' worst case, before and after: `--quick arcanist
+   --zone arena --people dead --time night --tier 2 --lab --give hoarfrost:4 --horde 70,8:risen!
+   --dist 3 --spread 9 --seconds 2.5 --every 0.08 --count 24` (frames 13–14; `cinderfall:4`,
+   frames 21–23). Sheets to whoever holds the skills row (its lead handed off), then merge.
+3. Judge the waiting merges in play once Godot is allowed: skills' grounds, marks and numbers,
+   animation's death poses, combat's maps and strongbox through the chest ceremony.
+4. The run-ups' danger with combat (`a708da2c97bf85c95`): 10–20% of runs under half health in
+   7–10, 17–20, 25–28; wins within two points of 93%.
 
-**Done since the handoff (all seen at 1920×1080):**
-- **Verified:** the opening groups (in sight by 6 s), the camera (22 m early, about 31 m at minute
-  25), the dead (half value, 8–18 s), the fall, a story night's end. Fixed what the frames showed:
-  the boss's own 14 m death blast under the fall, the way out's prompt over her at the peak, the
-  title over the flash, chalk-white bones (now old bone, flat, skulls face up), a story night's
-  pointless way out and "comes again", the autopilot stranding her after a result, the hit flash
-  blooming pale bodies.
-- **The chest** (S-09, `ChestCeremony`): staged in the world, not on a page. The world held, the
-  edges dark, the camera in; the chest shakes and bursts; reels spin out and stop one by one on
-  the D minor ladder; an evolution first in gold; plates, a plaque, home to the bar. 1/3/5 at
-  84/12/4% (mean 1.4, as before). Skippable; quicker from the third chest.
-- **The evolution** (S-10): the slot crowned, a breath of slow motion, gold light and rings (no
-  pink disc). Discoveries are a side toast, not a title across the fight.
-- **Sound:** the ember ladder on D minor pentatonic, merged per frame (S-02); the lodestone's
-  breath; the level-up landing on major (S-04); the crowd's fall and the swell at 15/40/80/150
-  kills in 1.5 s with a camera kick (S-08).
-- **Feel:** a 120 ms dash and art buffer (S-05); rumble with a setting (S-14, `Haptics`).
-- **The ember carpet:** 240 stones at most; the rest goes into one red hoard stone under a beam.
-  Stones keep saturated colours (no cream popcorn).
-- **Onboarding:** the prologue's character levels are banked and paid at dawn ("What the night
-  taught you").
-- **Death poses:** `die`/`die2`/`die3` picked per body, never the nearest body's pose (animation's
-  v11 bake is on its branch, not merged yet).
-- **The 40%:** `WorldState.TimeIn` books play time by kind; `--log` prints the share a minute.
-- **The maps' shape:** decided in the audit's structure section; briefs sent (below).
+**Worktree:** `godot/assets` is a junction to `public/assets`; `godot/.godot` copied; the import
+was stopped at about 1% (rerun `--headless --path godot --import`, about 15 min, before any
+picture). Scratchpad tools in `experience/` point here.
 
-## The 40%, estimated from the content
+## Notes for other areas
 
-Act 1 holds about three hours of story: 15,000 words of dialogue (85 minutes if every branch is
-read; about 45 on one path), the Verge's walking and packs (about 50), the prologue (about 8), and
-four story nights (80). At 40%, that is about 4.5 hours of table nights and maps: some nine table
-nights, about two after each story night. Playtests now measure it (`TimeIn`).
+- **Story** (`a54dc034ed29f2e02`): its spare choices and lost lines are ported into
+  `StoryFights.Spec` (`415e16f3`); edit the story fights' specs there, not in the Verge.
+- **Combat** (`a708da2c97bf85c95`): `StoryFall` and `StoryFights` are pushed; `ClockRuns` is
+  false by default, so the story-night runtime needs nothing for the clock.
 
-## Next steps, in order
+## Decisions (with why)
 
-1. **Judge in play once merged:** skills' fixes (the pyre square, the Hallowed Ground, hostile
-   marks), animation's death poses, arena art's new grounds and crypt-free places, combat's maps.
-2. **Re-run the stretch table** when combat's run-ups land (measured: 7–10 5%, 17–20 3%,
-   25–28 2% under half health; target 10–20% each, wins within two points of 93%).
-3. **A full night at full resolution** with the autopilot, judging the swell and evolution in
-   context (the chest was judged in a real night).
-4. **The map's staging** when combat's maps land: the ruler's fall smaller than the night's, the
-   strongbox through the chest ceremony (`ChestItemKind.Gear`, combat's).
-
-## Decisions
-
+- **The night calls a story fight only once the story has pointed her at it:** the Pack and the
+  Roost stand open from the start, and they are the violent roads; a clock must never push her
+  down one unasked.
+- **Free play is the world with nothing over it:** the clock never eats talk, reading or menus,
+  so a slow reader never loses a night.
+- **The light turns over a minute; lamps and the corner turn at once:** a pop reads as a bug, a
+  slow change as the world.
 - **The chest is staged in the world;** a chest is worth 1.4 things on average, as before.
 - **The fall is the only screen-filling moment;** a boss's kill adds light and a ring, no blast.
-- **A story night needs no way out:** it lets her go by itself.
+- **One levelling system at a time:** the ember by night, the character's lessons at dawn.
 - **Unconfirmed: "the Wayfinder's maps are 30" read as the table's nights,** making the atlas's
   build maps about ten minutes. The owner is being asked; build on neither reading until then.
-- **One levelling system at a time:** the ember by night, the character's lessons at dawn.
-
-## Briefs sent (4 October)
-
-- **Skills** (`a63cd93fc73d5ed79`): items 1–3 done on its branch; damage numbers (S-13) are its to
-  build, to my rule (merge per target per 0.25 s, 8 new a frame, crits always).
-- **Arena art** (`ab03c3c85571e5085`, handed off): crypt fixed by its new places.
-- **Animation** (`a435f4dd0ac80df75`): death poses wired.
-- **Combat** (`a1d4562f44c7f6feb`): the maps' numbers (length, the breath before the ruler, the
-  event's strongbox, the atlas's first biases).
-- **UI design** (`a69858664f1d3dd29`): a map's result page and the atlas.
-- **Crafting** (`a97e32948c5bf419d`): chart verbs as choices of risk, against the loop.
+- **What came before** (the chest ceremony, the evolution, the ember ladder, the swell, rumble,
+  the hoard stone, the night's lessons) is in `docs/handoff/experience.md`.
 
 ## Tools (scratchpad `experience/`)
 
 - `play.py NAME -- [game args]`: a run at 1920×1080, fixed 60 fps (`--real` for wall time).
 - `sheet.py`, `tsheet.py`, `crop.py`, `keep.py` (to `docs/experience/`), `spec.py` (a `--wav`
-  spectrogram), `words.py` (dialogue words).
+  spectrogram), `words.py` (dialogue words), `pending.sh` (what each lead's branch holds).
 - The game: `--story` (a story night), `--chest 1,3,5!` (chests at her feet), `--log` (with stones,
   hoard and the story's share).

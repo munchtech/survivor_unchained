@@ -27,7 +27,9 @@ public sealed record MapResult(Chart Chart, bool Cleared, double Seconds, int Ki
 ///     spreads" becomes the atlas's);
 ///   - packs rest until the survivor comes near (the day's Wake and Leash), and charge only
 ///     once roused, in waves of two, with no spikes but at the altar's event;
-///   - three falls a map: each spills half of what was picked up here, the third closes it.
+///   - a fall closes the map and spills half of what was picked up here; only a trait that gets
+///     her up (Second Wind, Cold, Then Not) keeps her in it (the owner: getting up and fighting on
+///     is rare, or it is a balancing nightmare).
 /// </summary>
 public sealed class MapRun : ZoneRuntime, IBossArena
 {
@@ -71,7 +73,8 @@ public sealed class MapRun : ZoneRuntime, IBossArena
     readonly Dictionary<string, int> picked = new();
     readonly Dictionary<string, int> spilled = new();
 
-    public const int FallsAllowed = 3;
+    /// <summary>Falls a map takes: one. A trait that gets her up catches her before it counts.</summary>
+    public const int FallsAllowed = 1;
     /// <summary>The share of MapGen's pack spots set: in clearings, and along the ways (a pack about
     /// every 14 s: the experience lead's density, the ARPG's clear-speed fantasy).</summary>
     public static double ClearingKeep = 0.8, WayKeep = 0.62;
@@ -605,8 +608,9 @@ public sealed class MapRun : ZoneRuntime, IBossArena
 
     /* ------------------------------------------------------------- falls -- */
 
-    /// <summary>A fall: half of what was picked up here is spilled, and she is up again where she
-    /// was last safe (the last altar she lit, or the map's start). The third closes the map.</summary>
+    /// <summary>A fall: half of what was picked up here is spilled. While falls remain (none, since the
+    /// owner's rule) she is up again where she was last safe (the last altar she lit, or the map's
+    /// start); the last closes the map.</summary>
     bool OnFall(Enemy? killer)
     {
         if (B == null || over) return false;
@@ -679,7 +683,7 @@ public sealed class MapRun : ZoneRuntime, IBossArena
             : bossUp ? new Step($"{people.BossName} has come: beat it")
             : new Step($"Find {people.BossName} at the end of the way"),
             new Step($"Altars lit: {altars.Count(a => a.Lit)} of {altars.Count}", Optional: true, Done: altars.All(a => a.Lit)),
-            new Step($"Falls: {falls} of {FallsAllowed}", Optional: true),
+            new Step(FallsAllowed > 1 ? $"Falls: {falls} of {FallsAllowed}" : "A fall ends the map", Optional: true),
         };
         foreach (var m in Chart.Rolled) steps.Add(new Step($"{m.Name}: {m.Says.ToLowerInvariant()}", Optional: true));
         G.SetObjectives([new Tracked("map", Chart.Name, TrackTone.Main, steps)]);

@@ -45,9 +45,14 @@ These are past their memory limit. Each has a handoff in docs/handoff/<area>.md,
 - crafting (fdb62e76);
 - UI art (bfa7bdb);
 - skills (0a7e8eff);
-- face (5fd76deb).
+- face (5fd76deb);
+- cinematics (81b25319);
+- story (a8b5aa71);
+- UI design (fcec91aa, then 84cceb99);
+- story (7b548886, the fourth lead);
+- combat (ecb6e2c6: story nights built, the Hollow first, to tune when the machine is free).
 
-The combat successor is already running (design only).
+The experience director (ab406cf9ddd22b03b, about 450k), arena art (a26767f7f9955cb56), legal (aab20546fe06daa89) and the male hero (ab82cbe99e2937ddd) are still within their limits.
 
 ## Paused work that needs the GPU or Godot
 
