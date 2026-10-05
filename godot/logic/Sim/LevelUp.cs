@@ -15,8 +15,9 @@ public sealed record ChestItem(ChestItemKind Kind, string Id, string Name, strin
     double? X = null, double? Z = null);
 
 /// <summary>A chest opened: where it lay, what came out, whose hoard it was (a boss's, else
-/// null), and how many chests this night has opened (later ones open quicker).</summary>
-public sealed record ChestOpened(double X, double Z, int Seed, IReadOnlyList<ChestItem> Items, string? Hoard, int Opened);
+/// null), and how many chests this night has opened (later ones open quicker). Bare: no chest at
+/// all, a thing she has taken up shown alone in the same held moment (her first Legendary).</summary>
+public sealed record ChestOpened(double X, double Z, int Seed, IReadOnlyList<ChestItem> Items, string? Hoard, int Opened, bool Bare = false);
 
 /// <summary>What the draft remembers between drafts: what it showed last (so a
 /// reroll shows something new), how long since anything rare, how long a

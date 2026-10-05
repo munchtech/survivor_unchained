@@ -305,6 +305,19 @@ public partial class Game : Node, IZoneHost
         Journey.OnToast = Toast;
         Journey.OnAnnounce = Announce;
         Journey.OnTouch = () => screens.Current?.Refresh();
+        Journey.FirstLegendaryTaken = FirstLegendary;
+    }
+
+    /// <summary>Her first Legendary ever, as she takes it up: held in the world as a chest's
+    /// opening is (no page), its name over it in its colour, and home into her hands. Later ones
+    /// have the drop's own pillar and toll, and a toast.</summary>
+    void FirstLegendary(ItemInstance it, double x, double z)
+    {
+        if (Battle is not { } b) return;
+        var def = Items.Find(it.Def);
+        var name = it.Name ?? def?.Name ?? it.Def;
+        var shown = new ChestItem(ChestItemKind.Gear, it.Def, name, def?.Icon ?? "chest", 0, 0, (Content.Rarity)it.Rarity, null, null, b.Player.X, b.Player.Z);
+        Chest(new ChestOpened(x, z, 7, new[] { shown }, name, 1, Bare: true));
     }
 
     /// <summary>What the player has set, applied now.</summary>

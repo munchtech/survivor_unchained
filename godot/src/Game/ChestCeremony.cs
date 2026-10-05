@@ -31,7 +31,7 @@ public partial class ChestCeremony : Control
     readonly float lie;
     readonly double speed;
     readonly int count;
-    readonly bool gold;
+    readonly bool gold, bare;
 
     Node3D chest = null!;
     Node3D? lid;
@@ -78,6 +78,7 @@ public partial class ChestCeremony : Control
         at = new Vector3((float)c.X, (float)scene.HeightAt(c.X, c.Z), (float)c.Z);
         lie = c.Seed * 2.4f;
         gold = c.Items.Any(i => i.Kind == ChestItemKind.Evolution);
+        bare = c.Bare;
         speed = c.Opened >= 3 && c.Hoard == null && count < 5 ? 1.7 : 1;
         Style.Fill(this);
         MouseFilter = MouseFilterEnum.Ignore;
@@ -145,7 +146,8 @@ public partial class ChestCeremony : Control
             m.Size = new Vector2(s, s);
             m.PivotOffset = new Vector2(s / 2, s / 2);
             var ring = new Shine { Size = new Vector2(s * 3, s * 3), Colour = ColourOf(it) };
-            var plate = Plate(it, count > 5 ? 160 : 190);
+            // Shown alone, its name is the kicker over it: the plate says only what it is.
+            var plate = Plate(it, count > 5 ? 160 : 190, !bare);
             plate.Modulate = Colors.Transparent;
             AddChild(ring);
             AddChild(m);
@@ -154,7 +156,7 @@ public partial class ChestCeremony : Control
             land += NextReel + (it.Kind == ChestItemKind.Evolution ? EvoHold : 0);
         }
         string title = c.Hoard ?? (count >= 5 ? "A hoard" : count >= 3 ? "A rich chest" : "A chest");
-        kicker = new Plaque(title, count >= 5 || c.Hoard != null ? 34 : 28, count >= 5 ? 120 : 80, gold ? Gilt : Style.GoldHi) { Modulate = Colors.Transparent };
+        kicker = new Plaque(title, count >= 5 || c.Hoard != null ? 34 : 28, count >= 5 ? 120 : 80, gold ? Gilt : bare && count > 0 ? ColourOf(c.Items[0]).Lightened(0.15f) : Style.GoldHi) { Modulate = Colors.Transparent };
         AddChild(kicker);
         hint = Style.Hint(Act.Confirm, "Skip");
         hint.Modulate = Colors.Transparent;
@@ -165,14 +167,15 @@ public partial class ChestCeremony : Control
         cam.FocusOverride = at + Vector3.Up * 0.4f;
         near = Math.Min(savedDistance, count >= 5 || c.Hoard != null ? 13.5f : 12);
         cam.TargetDistance = near;
-        Sfx.ChestShake(Shake / speed, Total / speed + Outro);
+        // (a lock rattling, only where there is a chest)
+        if (!bare) Sfx.ChestShake(Shake / speed, Total / speed + Outro);
     }
 
     /// <summary>When the last reel stops, and how long the whole is held after.</summary>
     double LastLand => reels.Count > 0 ? reels[^1].Land : Shake + 0.6;
     double Total => LastLand + (count >= 5 || c.Hoard != null ? 1.8 : count >= 3 ? 1.3 : 0.9);
 
-    static Control Plate(ChestItem it, float width)
+    static Control Plate(ChestItem it, float width, bool named = true)
     {
         var col = ColourOf(it);
         var v = Style.V(2);
@@ -182,6 +185,7 @@ public partial class ChestCeremony : Control
         var ink = it.Kind switch { ChestItemKind.Evolution => Gilt, ChestItemKind.Gear => col.Lightened(0.15f), _ => Style.GoldHi };
         var name = Style.Label(it.Name, Style.Display, it.Kind == ChestItemKind.Evolution ? 22 : 19, ink, true, HorizontalAlignment.Center);
         name.CustomMinimumSize = new Vector2(width, 0);
+        name.Visible = named;
         v.AddChild(name);
         var detail = Style.Label(DetailOf(it).ToUpperInvariant(), Style.UiHeavy, Style.Badge, col.Lightened(0.2f), true, HorizontalAlignment.Center);
         detail.CustomMinimumSize = new Vector2(width, 0);
@@ -223,6 +227,8 @@ public partial class ChestCeremony : Control
         }
         Lift(chest);
         scene.AddChild(chest);
+        // Shown alone: no chest, only its light where the thing lay.
+        if (bare) foreach (var k in chest.GetChildren()) if (k != light && k is Node3D n3) n3.Visible = false;
         Place(0);
     }
 
@@ -288,15 +294,16 @@ public partial class ChestCeremony : Control
         r.M.Ring = col;
         r.M.Ink = col.Lightened(0.2f);
         r.M.Core = col.Darkened(0.82f);
-        r.M.Lit = r.It.Kind == ChestItemKind.Evolution;
+        r.M.Lit = r.It.Kind == ChestItemKind.Evolution || bare;
         r.M.QueueRedraw();
         r.Ring.Start();
         if (!sound) return;
         Sfx.ChestLand(reels.IndexOf(r), r.It.Kind == ChestItemKind.Evolution);
-        haptics.Add(r.It.Kind == ChestItemKind.Evolution ? 0.5f : 0.1f, 0.3f, r.It.Kind == ChestItemKind.Evolution ? 0.2f : 0.04f);
-        if (r.It.Kind == ChestItemKind.Evolution)
+        bool big = r.It.Kind == ChestItemKind.Evolution || bare;
+        haptics.Add(big ? 0.5f : 0.1f, 0.3f, big ? 0.2f : 0.04f);
+        if (big)
         {
-            scene.Fx.Flash(at + Vector3.Up * 2, Gilt, 14, 0.8f, 12);
+            scene.Fx.Flash(at + Vector3.Up * 2, bare ? ColourOf(r.It) : Gilt, 14, 0.8f, 12);
             cam.AddTrauma(0.18f);
         }
     }
