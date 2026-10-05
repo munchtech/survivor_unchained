@@ -61,7 +61,7 @@ public sealed class SoundBridge
             switch (e)
             {
                 case Ev.Hit h when !h.Dot:
-                    if (h.Blocked) Sfx.Blocked(At(h.X, h.Z)); else Sfx.Hit(h.School, h.Crit, At(h.X, h.Z));
+                    if (h.Blocked) Sfx.Blocked(At(h.X, h.Z)); else { Sfx.Hit(h.School, h.Crit, At(h.X, h.Z)); Sfx.HitOf(h.Art, At(h.X, h.Z)); }
                     break;
                 case Ev.Kill k when k.Def != "mirror":
                     Sfx.Kill(k.Family, k.Elite, k.Boss, At(k.X, k.Z));
@@ -73,10 +73,14 @@ public sealed class SoundBridge
                 case Ev.ShieldHit sh: Sfx.Blocked(); if (sh.Broke) Sfx.Shatter(); break;
                 case Ev.PlayerHeal hl when hl.Amount > 8: Sfx.Heal(); break;
                 case Ev.PlayerDeath: Sfx.Death(); break;
-                case Ev.Explosion ex: Sfx.Explosion(ex.Power, At(ex.X, ex.Z)); break;
+                case Ev.Explosion ex: Sfx.Burst(ex.Art, ex.Power, At(ex.X, ex.Z)); break;
                 case Ev.Nova n: Sfx.Nova(n.School); break;
-                case Ev.Slash s: Sfx.Swing(At(s.X, s.Z)); break;
-                case Ev.Muzzle m: Sfx.Shoot(m.School, At(m.X, m.Z)); break;
+                // Each skill in its own voice (Sfx.Skills), the school's where it has none.
+                case Ev.Slash s: Sfx.Swing(s.Art, At(s.X, s.Z)); break;
+                case Ev.Muzzle m: Sfx.Cast(m.Art, m.School, At(m.X, m.Z)); break;
+                case Ev.Strike st when st.Art != null: Sfx.Falling(st.Art, st.Delay, At(st.X, st.Z)); break;
+                case Ev.Chain ch when ch.Points.Length >= 2: Sfx.Arc(At(ch.Points[0], ch.Points[1])); break;
+                case Ev.Beam bm when bm.Art?.StartsWith("beam") == true: Sfx.Lance(bm.Art, bm.Duration, At(bm.X1, bm.Z1)); break;
                 case Ev.Dash: Sfx.Dash(); break;
                 case Ev.PerfectDodge: Sfx.Perfect(); break;
                 case Ev.Rise r: Sfx.Rise(r.Ember); break;

@@ -1,104 +1,89 @@
 # Skills: how every skill looks, sounds and feels
 
-Status page for the skills lead (a191ed81e2df462cf, branch `worktree-agent-a191ed81e2df462cf`; took
-over from abc6bbe020c7fe287). Tools and sheets live in the session scratchpad's `vfx/` (see the
+Status page for the skills lead (ad059388f00c19f9f, branch `worktree-agent-ad059388f00c19f9f`; took
+over from a191ed81e2df462cf). Tools and sheets live in the session scratchpad's `vfx/` (see the
 handoff).
 
-## Current state (2026-10-05, handed off)
+## Current state (2026-10-05, handed off; see `docs/handoff/skills.md`)
 
-Tests green (747). Pushed, last `8f84a1fc`; the handoff is `docs/handoff/skills.md`.
+Tests green (747). Everything below seen at 1920×1080 unless it says otherwise.
 
-- **Loot's light, remade** (`BattleFx.Loot.cs`, `shaders/loot_beam.gdshader`). Seen at 1920×1080
-  by day and by night, with the labels and the edge pointer:
-  - Every light is a quad upright on the screen: a hairline core in gaussian glows and a pool at
-    its foot. The old world-upright tubes leaned and swelled into a cream bar.
-  - Rare is a low blue glow; Epic a violet line with motes; Set two twisting strands; Legendary and
-    Storied a pillar past the screen's top.
-  - Lights grow as their thing lands. A Legendary's light falls onto it, then the pillar stands.
-- **Every other column of light** (`BattleFx.Pillar`: a strike from the sky, a level, an evolution,
-  a chest, the night won) is now a shaft in the same batch, held to the knee. The evolution's was a
-  solid cream bar.
-- **Cold, Then Not's wall** stands on cards turned to the camera; it is deeper orange. Seen.
-- **The Dig** (`Fx/MineTub.cs`, `BattleFx.Dig.cs`): a real tub with spoil and a lamp. Grimtunnel is
-  sunk in a mound of the Dig's clay. Seen.
-- **Hallowed Ground**: a ring of runes in the air (`shaders/rune_ring.gdshader`); holy blasts are
-  gold. **Grave Tether**: a violet coil with rose motes running back. **Burning ground** stands in
-  low flame. **The chakram's face** is worn steel (it read as a white cog). All seen.
+- **The main session's rulings, done:**
+  - Two elites at most flash white at once, on top of the three ordinary bodies (`CrowdView`).
+  - The Legendary's night foot is about 196 px of warm ground, from 328 (lamp 2.8 m reach, 1 m up;
+    pool 0.52 of its width). By day the foot still reads.
+- **The night won**: one ember-amber column with the ember riding up it (motes in the shaft), a
+  warm flash (no longer white-gold over the whole field). The cream hoop round her was the way
+  out's pulse (a holy-gold decal band): it is now a soft band of cold light that comes only after
+  the fall has landed. *The band itself is not yet seen after the change (shot queued).*
+- **A chest's column**: seen; a soft gold shaft, reads as light. Its core goes a little cream.
+- **Moonbrand**: the lavender was a lilac sigil at her hand on every cast, smoke-soft flames and a
+  stardust haze at each hit, and a half-metre lilac smear for a trail. Now: a silver crescent glint
+  at the hand, the brand stamped silver on a dark bed with violet jets of moonfire, a thin trail.
+  Seen near her and at range: violet-blue fire, no lavender puff. The crescent itself is small.
+- **Firepot**: a pot of blasting ember, not a fireball: a yellow-hot crack, tongues of flame
+  jetting out (each turned along its way on the screen), burning powder, dark clay sherds, char
+  smoke, a small deep-orange heart. Seen.
+- **Burn and poison ticks** no longer flash bodies white (they turned three bodies a frame into
+  white cut-outs on burning ground) and no longer flinch them (`Enemy.LastDot`).
+- **Combat's asks**:
+  - *A fed deadfall*: flame stands the length of the dead tree (fire_wall cards pressed to a line),
+    embers go up, it sinks and smokes in its last four seconds and goes out; it takes with a rush
+    when fed. Its reach is its own light. Seen at full, guttering and out (`--lit 9`).
+  - *His age*: the pale-blue ring was already there; the old wolf's breath now smokes in thick pale
+    puffs with each pant (also Whitethroat's "She missed"). Seen.
+- **Unions** (all nine swept): Frostfire Comet has its own art (`frostfire`: an ice heart and frost
+  tail in the fire; a burst half flame, half frost, with ice standing round its rim; a burning
+  ground in a rim of frost). Butcher's Wheel's cleavers turn in steel arcs with a blood wake (it was
+  one red ring). Rotwood (`zone_rot`) is a thicket of rotten thorns in a blight stain. A slow from a
+  ground that is not the cold no longer draws frost on the bodies (`Enemy.HeldUntil`). The
+  Tempest's bolts and bursts are electric blue, not white balls, and every survivor's falling blow
+  is marked by a faint gathering light, not a ring.
+- **Frost ribbons**: their glints were lit square cells (pale squares on a wide ribbon); now soft points.
+- **Sound per skill** (`Audio/Sfx.Skills.cs`): each skill's own voice as it leaves her, as it lands
+  and a little on each hit (bowstring, cold chime, fuse, chain, clay crack, thunder, glass); strikes,
+  chains and beams make sound now (they were silent). *Built; checked only as spectrograms of the
+  game's own mix (`--wav`), not heard.* Eight skills taped: each has its own shape, none clips
+  after the palm and pot were lowered (they hit 1.0). The owner or main session must listen.
+- **Seen after the last fixes**: Gyrestorm's thin wind ring; Aegis Wheel's break as a shockwave;
+  Thunderclap's burst blue. **Still wrong**: Rend and Mend and The Harrowing still read as hoops
+  (their open sweeps are wide bright arcs); Moonfall was pink-white balls from the arcane school's
+  burst under each moon (now skipped; not yet seen); Frostfire's frost ribbon drew pale squares
+  even with round glints (removed; not yet seen).
 
 ## Next step (exact)
 
-1. Moonbrand near her (lavender); the Firepot burst itself (still a soft orange fireball).
-2. Evolutions and unions, the arts, sound per skill.
-3. Combat's fed deadfall and "His age" ring; the Legendary's heavier fall arc (optional).
-4. See the night's victory column and a chest's (built, not yet shot).
-
-## Grades (now)
-
-1 (poor) to 5 (at the bar), from frames in play. "Before" is in this page's git history.
-
-| Skill | Soul | Reads in a horde | Impact | School | Polish | Crop/square |
-|---|---|---|---|---|---|---|
-| Oathblade | 4 | 4 | 4 | 4 | 4 | ok |
-| Cleaver | 4 | 4 | 4 | 4 | 4 | ok |
-| Axe Gyre | 3 | 4 | 3 | 3 | 3 | ok |
-| Judgement Disc | 3 | 3 | 3 | 4 | 3 | ok |
-| Seeking Motes | 3 | 4 | 3 | 4 | 3 | ok |
-| Cinderfall | 3 | 4 | 4 | 4 | 3 | ok |
-| Rimeshard | 3 | 4 | 3 | 4 | 3 | ok |
-| Volley | 3 | 4 | 3 | 3 | 3 | ok |
-| Knifestorm | 3 | 4 | 3 | 3 | 3 | ok |
-| Hoarfrost | 4 | 4 | 4 | 4 | 4 | ok |
-| Dawnpulse | 3 | 3 | 4 | 4 | 3 | ok |
-| Arcweb | 4 | 4 | 4 | 4 | 3 | ok |
-| Verdant Lance | 4 | 4 | 3 | 4 | 3 | ok |
-| Reaving Arc | 4 | 4 | 4 | 4 | 3 | ok |
-| Thunderhead | 3 | 3 | 3 | 4 | 3 | ok |
-| Gale Chakram | 4 | 4 | 3 | 4 | 4 | ok |
-| Umbral Bolt | 3 | 4 | 3 | 4 | 3 | ok |
-| Moonbrand | 3 | 3 | 3 | 4 | 3 | ok |
-| Iron Palms | 4 | 4 | 3 | 4 | 3 | ok |
-| Spirit Herd | 4 | 4 | 3 | 4 | 3 | ok |
-| Firepot | 3 | 3 | 3 | 3 | 3 | ok |
-| Grave Tether | 3 | 3 | 3 | 4 | 3 | ok |
-| Hallowed Ground | 4 | 4 | 3 | 4 | 3 | ok |
-| Cold, Then Not (rise) | 4 | 4 | 4 | 4 | 3 | ok |
-| Not Yet (rise) | 4 | 3 | 3 | 4 | 3 | ok |
-| Loot's light | 4 | 4 | 4 | — | 4 | ok |
-
-## Key decisions
-
-- **Loot's light is upright on the screen, not in the world**: a world-upright pillar leans and
-  swells under a pitched camera.
-- **Light is gaussians, never an edge**: a hairline core, deeper-coloured glows and a pool. By day,
-  a little of the ground behind is covered so the colour holds.
-- **Arrivals follow the pickup's age**, not the drop event: the event fires where it spawns, and the
-  thing slides on from there.
-- **Fire standing up faces the camera**: a cylinder's edge-on sides read as a smooth stripe.
-- **Measure colour, don't guess**: AgX turns wide orange at about 1 into apricot. Sample the frame.
-- **Hues below the tone curve's knee**: AgX turns coloured light over about 2 to cream.
-- **A crowd is told by its first few**: deaths, falls, flashes, dust, numbers and ward winks are budgeted.
-- **Nothing lights her but her own moments**: lights fade near her; effects are cleared over her.
-- **Danger keeps its language**: her grounds sit under it, at half while a boss is up.
-- **A decal's emission ignores alpha**: dim it in its colour.
-- **What is thrown is a thing, not light**: the chakram is worn steel with a honed edge.
+1. Shoot Moonfall, Frostfire Comet and the won night's foot and way-out band (`won5` was shot,
+   not yet looked at) after the last fixes.
+2. Evolutions (all swept, sheets in `vfx/v1/`): the reaving novas' hoops (Blades arcs: thinner and
+   darker, or a scythe that is seen to travel), Skybreak's and Ford Ice's white bars, Sunlance's
+   cream beam, Winter Ward's and Absolute Zero's rings, the Wild Hunt's green rings.
+3. Dawn's Judgement's discs read as soft gold blobs; Barrow Host's knights as pale ghosts.
+4. The arts; sound for the arts and the grounds.
 
 ## Judgements needed (the experience director is paused)
 
-- **Elites flash white en masse**: the struck flare's cap of three a frame exempts elites. Eight
-  elite risen hit by one Iron Palms or Hallowed Ground all go white
-  (`vfx/sw1/sw1_iron_palms.png`). Cap elites too, or keep the exemption? (The cap is in
-  `CrowdView.cs`, the experience director's rule.)
-- **The Legendary's foot by night**: its lamp and pool make a broad warm glow on the ground, about
-  300 px across. It reads as "something burns there". Keep it, or go smaller?
+- **The struck flare's white**: three ordinary bodies (and two elites) still go wholly white for a
+  frame or two. Over the pale dead they read as flat white cut-outs. A warmer, shaded flash would
+  keep the hit without the cut-out. Keep white, or warm it?
+- **Sound**: the skill voices want a listen before they are judged.
+
+## Key decisions
+
+- **Light upright on the screen**, gaussians never an edge, held below the tone curve's knee.
+- **No hoops**: a band of light on the ground is soft both sides and only where it must be (the way
+  out); a fire's reach is its own light, never a disc painted on the ground.
+- **Measure, don't guess**: warm glow widths by R−B along a row (`vfx/warmth.py`).
+- **A slow is not frost; a tick is not a blow**: the view is told which (`HeldUntil`, `LastDot`).
+- **A union is its own thing**: never another skill's art borrowed whole.
+- Inherited, still true: a crowd is told by its first few; nothing lights her but her own moments;
+  danger keeps its language; a decal's emission ignores alpha.
 
 ## Notes for other areas
 
-- **UI design** (`a4fdbc49786ba8b7f`): the ground labels sit over the new lights and read well. A
-  Rare's label covers most of its low glow; that is acceptable, since the glow is the find-me and
-  the name is the what. The Legendary label's own glow is a soft rectangle; it might sit better as an
-  ellipse.
-- **Performance** (`a0eb8c612c94d4aa5`): loot is one instanced batch of quads (one per Rare+ item,
-  plus a strike per falling Legendary) and at most two OmniLights. The wall is one 160-quad mesh.
-  Each Dig tub carries one small OmniLight (four tubs at most).
-- **Combat**: `--tubs` runs a tub past her for pictures. The tub runs at combat's 16 m/s.
-- **Animation**: `CrowdView` sinks a script's Under body by its size (Grimtunnel 0.54 m deeper).
+- **Combat**: the fed deadfall and "His age" breath are built (`BattleFx.Story.cs`); `--lit S` lights
+  the deadfalls for S seconds only. Frostfire Comet's art is now `frostfire` and Rotwood's `zone_rot`
+  (looks only). `Enemy.LastDot` and `Enemy.HeldUntil` are view-only fields.
+- **UI design**: the way out's ground band (cold blue, after the fall) sits under your prompt.
+- **Arena art**: the deadfalls' flames are drawn over your fires by BattleFx while fed.
+- **Performance**: each fed deadfall is one 48-card mesh; the way out is one quad in loot's batch.

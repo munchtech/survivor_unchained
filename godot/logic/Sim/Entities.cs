@@ -98,6 +98,11 @@ public sealed class Enemy : Pooled
     /// <summary>The last blow: how hard, whether it crit, which way it went.</summary>
     public double LastBlow;
     public bool LastCrit;
+    /// <summary>The last blow was a tick of something in it (a burn, a poison): drawn as no blow.</summary>
+    public bool LastDot;
+    /// <summary>Until when (Battle.Time) a ground that is not the cold holds it slowed: its chill is
+    /// drawn as no frost (a thicket's hold read as rime).</summary>
+    public double HeldUntil;
     public double LastDx, LastDz;
     /// <summary>Its death burst it apart: nothing left to lie there.</summary>
     public bool Burst;

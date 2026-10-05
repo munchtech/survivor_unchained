@@ -1023,6 +1023,9 @@ public partial class Game : Node, IZoneHost
         hud.SetBruise(scene.Bruise);
         // The boss's script, for the looks that read its state (Grimtunnel under the ground).
         scene.Fx.Boss = zone switch { ArenaRun ar => ar.BossScript, MapRun mr => mr.BossScript, StoryNight sn => sn.BossScript, _ => null };
+        // A story night's deadfalls and where they burn, for the look of a fed fire.
+        scene.Fx.Deadfalls = zone is StoryNight dn ? dn.Fires : null;
+        scene.Fx.FireSpots = scene.Fx.Deadfalls != null ? scene.View.Data.Meta.Fires : null;
         // Names over heads and barks have no place in a cinematic's picture either.
         scene.Voices.Quiet = hudMode == "dialogue" || screens.Current != null || cine != null;
         // Fallen: the world loses its colour.
@@ -1265,11 +1268,13 @@ public partial class Game : Node, IZoneHost
             minuteDone = true;
             sn2.SkipTo((int)Args.Num("stage", 0), floors: true);
         }
-        // --lit: a story night's deadfalls all burning (pictures of them alight).
+        // --lit [S]: a story night's deadfalls all burning (pictures of them alight); for S seconds
+        // only, if given (pictures of a fed fire taking, guttering and going out).
         if (!litDone && Args.Has("lit") && zone is StoryNight sn3 && Battle != null)
         {
             litDone = true;
-            foreach (var f in sn3.Fires) { f.Lit = 9999; f.EverLit = true; scene.SetLit(f.Light, true); }
+            double litFor = Args.Num("lit", 1) > 1 ? Args.Num("lit", 1) : 9999;
+            foreach (var f in sn3.Fires) { f.Lit = litFor; f.EverLit = true; scene.SetLit(f.Light, true); }
         }
         // --chest 1,3,5! [--chest-at T]: chests of those sizes opened at her feet T seconds in, one
         // after another (! a boss's hoard), for pictures of the opening.

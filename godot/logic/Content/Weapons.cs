@@ -493,7 +493,7 @@ public static class Weapons
         {
             Id = "frostfire_comet", Name = "Frostfire Comet", School = School.Fire, Behavior = WeaponBehavior.Aimed, Tags = [Tag.Projectile, Tag.Spell, Tag.Fire, Tag.Frost, Tag.Explosion],
             Base = new() { Cooldown = 1.5, Damage = 47.9, Speed = 9, Projectiles = 1, Pierce = 0, Range = 16, Splash = 2.8, Life = 2.4, Radius = 0.5, Status = S(Chill, 1, 2.5, 3), GroundOnHit = G(2.4, 3, 0.3) },
-            Art = "star", BossDamage = 1.6,
+            Art = "frostfire", BossDamage = 1.6,
             Description = "Fire and frost in one falling star: it bursts, freezes what it does not burn, and the frozen it finds explode.",
             Triggers = [T(TriggerEvent.Hit, [new Effect.Explode(2.4, 1.0, Basis.Hit, School.Fire)], new() { Weapon = "frostfire_comet", TargetStatus = Frozen }, icd: 0.1)],
         },
@@ -509,7 +509,7 @@ public static class Weapons
         {
             Id = "rotwood", Name = "Rotwood", School = School.Nature, Behavior = WeaponBehavior.Zone, Tags = [Tag.Zone, Tag.Area, Tag.Dot, Tag.Nature, Tag.Shadow],
             Base = new() { Cooldown = 3.6, Damage = 18.6, Radius = 4.2, Duration = 6, TickRate = 0.4, AtTarget = true, Slow = 0.45, Status = S(Poison, 0.8, 0.25, 4) },
-            Art = "zone_plague", BossDamage = 2.4,
+            Art = "zone_rot", BossDamage = 2.4,
             Description = "The blight grows thorns: a wide, slow thicket that holds what it rots, and spreads the rot from what dies in it.",
             Triggers = [T(TriggerEvent.Kill, [new Effect.Spread(Poison, 3, 3, 2)], new() { Weapon = "rotwood" }, icd: 0.1)],
         },

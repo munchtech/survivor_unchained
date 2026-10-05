@@ -408,7 +408,10 @@ public partial class BattleFx : Node3D
 
         if (light)
         {
-            var lt = school == School.Fire ? new Color(glow * 0.7f, glow * 0.45f, glow * 0.22f, 0.8f) : new Color(glow * 0.7f, glow * 0.7f, glow * 0.7f, 0.8f);
+            // In its school's hue: grey-white, a storm's burst under every bolt was a white ball.
+            var lt = school == School.Fire ? new Color(glow * 0.7f, glow * 0.45f, glow * 0.22f, 0.8f)
+                : school == School.Storm ? new Color(glow * 0.3f, glow * 0.45f, glow * 0.95f, 0.75f)
+                : new Color(glow * 0.7f, glow * 0.7f, glow * 0.7f, 0.8f);
             Books.Spawn(BlastOf(school), ground + Vector3.Up * 0.55f, r * 1.1f, life * 0.8f, lt, flat: true, sizeEnd: r * 2.1f);
             for (int i = 0; i < 6; i++)
             {
@@ -428,7 +431,9 @@ public partial class BattleFx : Node3D
         var tint = school == School.Frost ? new Color(glow * 0.8f, glow * 0.92f, glow * 1.15f, 1)
             // Fire's heart held to yellow (its filmed white core, tinted warm-pale, bloomed cream).
             : fire ? new Color(glow * 1.0f, glow * 0.6f, glow * 0.3f, 1)
-            : holy ? new Color(glow * 0.95f, glow * 0.7f, glow * 0.32f, 0.85f) : new Color(glow, glow, glow, 1);
+            : holy ? new Color(glow * 0.95f, glow * 0.7f, glow * 0.32f, 0.85f)
+            // A storm's in its own blue (white, Thunderclap's burst was a blown-out ball).
+            : school == School.Storm ? new Color(glow * 0.45f, glow * 0.65f, glow * 1.1f, 1) : new Color(glow, glow, glow, 1);
         if (On('b')) Books.Spawn(BlastOf(school), ground + Vector3.Up * 0.55f, r * 1.2f, life, tint, flat: true, sizeEnd: r * 2.4f);
         // What it throws.
         int n = On('d') ? Math.Min(48, 12 + (int)(r * 8)) : 0;
@@ -760,7 +765,8 @@ public partial class BattleFx : Node3D
                     Hits.Text(at + Vector3.Up * 0.3f, ((int)Math.Round(e.Absorbed)).ToString(), new Color(1.4f, 1.3f, 0.9f), 44);
                     Burst(at, School.Holy, e.Broke ? 26 : 8, e.Broke ? 6 : 3, size: e.Broke ? 0.1f : 0.07f);
                     Flash(at, Palette.Of(School.Holy).Light, e.Broke ? 8 : 3, e.Broke ? 0.4f : 0.2f, 7);
-                    if (e.Broke) { Nova(e.X, e.Z, 2.2f, Palette.Of(School.Holy).Glow, 0.3f); Cam?.AddTrauma(0.12f); }
+                    // Broken: the air thrown out, not a ring on the ground (a holy decal ring round her read as a cream hoop).
+                    if (e.Broke) { Waves.Add(V(e.X, Y(e.X, e.Z) + 0.4, e.Z), 2.6f, 0.35f, Palette.Of(School.Holy).Glow, 1f); Cam?.AddTrauma(0.12f); }
                     break;
                 }
                 case Ev.PlayerHeal e:
@@ -780,6 +786,16 @@ public partial class BattleFx : Node3D
                     break;
                 // The rise's fire is drawn by the rise (a ring going out from her), not as a blast.
                 case Ev.Explosion { School: School.Fire, Art: null } when rose:
+                    break;
+                case Ev.Explosion { Art: "firepot" } e:
+                    PotBurst(e);
+                    break;
+                case Ev.Explosion { Art: "frostfire" } e:
+                    FrostfireBurst(e);
+                    break;
+                // A moon's splash is drawn by its landing (Landing): the arcane school's filmed burst
+                // under it was a pink-white ball at every moon.
+                case Ev.Explosion { Art: "moonfall" }:
                     break;
                 case Ev.Explosion e:
                 {
@@ -863,7 +879,8 @@ public partial class BattleFx : Node3D
                 }
                 case Ev.Telegraph e:
                 {
-                    if (DigMark(e)) break;
+                    if (WayOut(e) || DigMark(e)) break;
+                    Winded(e);
                     var col = e.Hostile ? Palette.Telegraph(e.Kind) : e.Faction is { } pf ? People(pf) : Palette.Of(School.Holy).Glow;
                     // A crowd's marks are held near the ground's own lit value (the arena lead's rule: a
                     // stop over it at most): at full strength the Dig's lamplings' bombs burned cream
@@ -948,9 +965,12 @@ public partial class BattleFx : Node3D
                     float gy = Y(v.X, v.Z);
                     var at = V(v.X, gy, v.Z);
                     var gold = new Color(2.6f, 1.9f, 1.0f);
-                    Flash(at + Vector3.Up * 3, new Color("#ffe6b0"), 42, 1.8f, 28);
-                    // (One column, gold: its white core read as a cream bar.)
-                    Pillar(at, 34, 1.1f, gold, 1.6f);
+                    // Ember-warm, not white-gold: at 42 the whole field went cream round her.
+                    Flash(at + Vector3.Up * 3, new Color("#ff9a40"), 30, 1.6f, 24);
+                    // One column in the ember's own colour with the ember riding up it, leaving what
+                    // ruled the night. (Gold and four metres wide, it was a cream haze up the middle
+                    // of the screen, behind the words; white-cored, a cream bar.)
+                    Pillar(at, 34, 0.75f, new Color(1.1f, 0.6f, 0.2f), 1.8f, motes: 1);
                     Waves.Add(at + Vector3.Up * 0.4f, 9, 0.7f, gold, 1);
                     Waves.Add(at + Vector3.Up * 0.6f, 15, 1.1f, new Color(2.2f, 1.2f, 0.5f), 0.8f);
                     Waves.Add(at + Vector3.Up * 0.8f, 22, 1.6f, new Color(1.6f, 0.8f, 0.4f), 0.5f);
@@ -1277,6 +1297,8 @@ public partial class BattleFx : Node3D
         ArtTrails(b, fdt);
         StepRise(b, fdt);
         StepDig(fdt);
+        StepDeadfalls(fdt);
+        StepPanting(fdt);
         Projectiles(b, fdt, now);
         Pickups(b, now);
         StepFronts(fdt);
